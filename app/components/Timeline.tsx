@@ -9,6 +9,7 @@ import {
 } from '../utils';
 import { kneadMinFor, autolyseMinFor, type MixerType } from '../data';
 import { StepIcon, IconProof } from './StepIcons';
+import { formatPrefermentDose } from '../utils/prefermentDose';
 import LearnModal from './LearnModal';
 
 interface TimelineProps {
@@ -70,6 +71,37 @@ export const THEME: Record<StepKind, {
   preheat:     { dot: '#C4A030',       ring: 'rgba(196,160,48,.12)', line: '#E8D890',       pill: '#FDFBF2',      pillText: '#7A5A10' },
   eat:         { dot: '#5A9A50',       ring: 'rgba(90,154,80,.1)',   line: 'transparent',   pill: '#F2FAF0',      pillText: '#3A6A30' },
 };
+
+function proofWindow(schedule: ScheduleResult, numItems = 4) {
+  const divideH = (15 + 2 * Math.max(0, numItems - 4)) / 60;
+  // Final Proof — merged with warmup/rest. Starts when dough comes out of fridge.
+  // Duration runs to bakeStart (preheat overlaps with end of proof).
+  const finalProofStepStartRaw =
+    schedule.rtWarmupStart ??
+    (schedule.restRtHours > 0 ? schedule.coldRetardEnd : null) ??
+    schedule.finalProofStart;
+  // Express plans stamped Divide & Ball and Final Proof at the same minute —
+  // proof can't start until the balls exist. Clamp the displayed start to
+  // divide end (display only; total window is unchanged).
+  const divideEndMs = schedule.divideBallTime
+    ? schedule.divideBallTime.getTime() + divideH * 3600000
+    : null;
+  const finalProofStepStart = finalProofStepStartRaw && divideEndMs && finalProofStepStartRaw.getTime() < divideEndMs
+    ? new Date(divideEndMs)
+    : finalProofStepStartRaw;
+  // Duration must match the Guide's Final Proof card: wall-clock from the
+  // moment the dough is out (or shaped) to bakeStart. warmup+proofHours
+  // understates whenever the schedule carries slack (blockers, rounding) —
+  // the dough keeps proofing until it's baked, so the window is the truth.
+  const warmupStepH = schedule.rtWarmupStart && schedule.rtWarmupEnd
+    ? Math.max(0, (schedule.rtWarmupEnd.getTime() - schedule.rtWarmupStart.getTime()) / 3600000)
+    : (schedule.restRtHours ?? 0);
+  const proofWindowStart = finalProofStepStart ?? schedule.finalProofStart;
+  const finalProofStepDuration = proofWindowStart && schedule.bakeStart
+    ? Math.max(0, (schedule.bakeStart.getTime() - proofWindowStart.getTime()) / 3600000)
+    : warmupStepH + schedule.finalProofHours;
+  return { start: finalProofStepStart, durationH: finalProofStepDuration };
+}
 
 // ── Build timeline steps ──────────────────────
 export function buildItems(
@@ -340,32 +372,7 @@ export function buildItems(
     });
   }
 
-  // Final Proof — merged with warmup/rest. Starts when dough comes out of fridge.
-  // Duration runs to bakeStart (preheat overlaps with end of proof).
-  const finalProofStepStartRaw =
-    schedule.rtWarmupStart ??
-    (schedule.restRtHours > 0 ? schedule.coldRetardEnd : null) ??
-    schedule.finalProofStart;
-  // Express plans stamped Divide & Ball and Final Proof at the same minute —
-  // proof can't start until the balls exist. Clamp the displayed start to
-  // divide end (display only; total window is unchanged).
-  const divideEndMs = schedule.divideBallTime
-    ? schedule.divideBallTime.getTime() + divideH * 3600000
-    : null;
-  const finalProofStepStart = finalProofStepStartRaw && divideEndMs && finalProofStepStartRaw.getTime() < divideEndMs
-    ? new Date(divideEndMs)
-    : finalProofStepStartRaw;
-  // Duration must match the Guide's Final Proof card: wall-clock from the
-  // moment the dough is out (or shaped) to bakeStart. warmup+proofHours
-  // understates whenever the schedule carries slack (blockers, rounding) —
-  // the dough keeps proofing until it's baked, so the window is the truth.
-  const warmupStepH = schedule.rtWarmupStart && schedule.rtWarmupEnd
-    ? Math.max(0, (schedule.rtWarmupEnd.getTime() - schedule.rtWarmupStart.getTime()) / 3600000)
-    : (schedule.restRtHours ?? 0);
-  const proofWindowStart = finalProofStepStart ?? schedule.finalProofStart;
-  const finalProofStepDuration = proofWindowStart && schedule.bakeStart
-    ? Math.max(0, (schedule.bakeStart.getTime() - proofWindowStart.getTime()) / 3600000)
-    : warmupStepH + schedule.finalProofHours;
+  const { start: finalProofStepStart, durationH: finalProofStepDuration } = proofWindow(schedule, numItems);
   if (finalProofStepDuration > 0 || schedule.finalProofHours > 0) {
     items.push({
       kind: 'step', id: 'final_proof', stepKind: 'final_proof',
@@ -416,7 +423,7 @@ interface Phase {
   stepKind: StepKind;
 }
 
-export function buildPhases(schedule: ScheduleResult, preheatMin: number, t: (key: string, params?: Record<string, string | number>) => string = (k) => k): Phase[] {
+export function buildPhases(schedule: ScheduleResult, preheatMin: number, t: (key: string, params?: Record<string, string | number>) => string = (k) => k, numItems = 4): Phase[] {
   const phases: Phase[] = [
     { label: t('timeline.phaseLabels.mixing'), icon: '', iconKey: 'mix', durationH: schedule.mixingDurationH || 5 / 60, stepKind: 'mixing' },
   ];
@@ -429,11 +436,8 @@ export function buildPhases(schedule: ScheduleResult, preheatMin: number, t: (ke
     phases.push({ label: t('timeline.phaseLabels.coldRetard'), icon: '', iconKey: 'cold', durationH: schedule.coldRetardHours, stepKind: 'cold' });
   }
 
-  // Final Proof phase includes warmup. Preheat overlaps — not shown as a separate phase.
-  const warmupH = schedule.rtWarmupStart && schedule.rtWarmupEnd
-    ? Math.max(0, (schedule.rtWarmupEnd.getTime() - schedule.rtWarmupStart.getTime()) / 3600000)
-    : (schedule.restRtHours ?? 0);
-  const totalProofPhaseH = warmupH + schedule.finalProofHours;
+  // Use the same wall-clock window as the detailed step, also for saved plans.
+  const totalProofPhaseH = proofWindow(schedule, numItems).durationH;
   if (totalProofPhaseH > 0) {
     phases.push({ label: t('timeline.phaseLabels.finalProof'), icon: '⏰', iconKey: 'proof', durationH: totalProofPhaseH, stepKind: 'final_proof' });
   }
@@ -487,9 +491,9 @@ export default function Timeline({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [schedule, blocks, displayStartTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, bakeType],
   );
-  const phases = useMemo(() => buildPhases(schedule, preheatMin, t),
+  const phases = useMemo(() => buildPhases(schedule, preheatMin, t, numItems),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [schedule, preheatMin]);
+    [schedule, preheatMin, numItems]);
 
   const lastStepId = items[items.length - 1]?.id;
 
@@ -671,7 +675,7 @@ export default function Timeline({
                   const parts = [
                     `${Math.round(prefFlour)}g flour`,
                     `${Math.round(prefWater)}g water`,
-                    prefYeastGrams > 0 ? `${prefYeastGrams.toFixed(1)}g yeast` : null,
+                    prefYeastGrams > 0 ? `${formatPrefermentDose(prefYeastGrams)} yeast` : null,
                   ].filter(Boolean).join(' · ');
                   return (
                     <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)', marginBottom: '8px' }}>

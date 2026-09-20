@@ -1,0 +1,819 @@
+[
+  {
+    "id": "gmp_t55",
+    "brand": "Grands Moulins de Paris",
+    "name": "La Finoise — Gruau T55",
+    "type": "T55",
+    "country": "fr",
+    "w": 200,
+    "wPublished": false,
+    "protein": 10.5,
+    "hydration": [
+      57,
+      63
+    ],
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "Farine de gruau pour brioches et viennoiseries. Contient du germe de blé, E300 et enzymes.",
+    "bagImage": "",
+    "logo": null,
+    "proteinPublished": false,
+    "hydrationPublished": false,
+    "verification": {
+      "status": "partially-verified",
+      "fields": [
+        "name",
+        "type",
+        "ingredients",
+        "manufacturerCode",
+        "packSizesKg"
+      ],
+      "sources": [
+        "https://www.grandsmoulinsdeparis.com/produits/la-finoise-farine-de-ble-t55-46023"
+      ],
+      "note": "Only named fields verified; hydration and unpublished strength remain recipe estimates."
+    },
+    "ingredients": "Farine de blé, germe de blé, E300, enzymes (xylanase, alpha-amylase)",
+    "manufacturerCode": "46023",
+    "packSizesKg": [
+      25
+    ],
+    "productClass": "flour-with-improvers",
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "central_type85",
+    "brand": "Central Milling",
+    "name": "Organic Type 85",
+    "type": "bread",
+    "country": "us",
+    "w": 240,
+    "wPublished": false,
+    "protein": 12.5,
+    "hydration": [
+      67,
+      73
+    ],
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "High extraction. Excellent for sourdough and rustic loaves.",
+    "bagImage": "",
+    "logo": null,
+    "proteinPublished": true,
+    "verification": {
+      "checked": "2026-09-19",
+      "status": "partially-verified",
+      "fields": [
+        "identity",
+        "protein"
+      ],
+      "sources": [
+        "https://centralmilling.com/product/organic-type-85/"
+      ],
+      "note": "Only listed fields verified. Other values are provisional."
+    },
+    "hydrationPublished": false,
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "hodgson_bread",
+    "brand": "Hodgson Mill",
+    "name": "Best for Bread",
+    "type": "bread",
+    "country": "us",
+    "w": 230,
+    "wPublished": false,
+    "protein": 12,
+    "hydration": [
+      60,
+      66
+    ],
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "US bread flour.",
+    "bagImage": "",
+    "logo": null,
+    "proteinPublished": false,
+    "hydrationPublished": false,
+    "verification": {
+      "status": "not-yet-verified",
+      "fields": []
+    },
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "showa_camellia",
+    "brand": "Showa",
+    "name": "Camellia Bread Flour",
+    "type": "bread",
+    "country": "jp",
+    "w": 260,
+    "wPublished": false,
+    "protein": 13.5,
+    "hydration": [
+      62,
+      68
+    ],
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "Top Japanese bread flour. Used in many SEA bakeries.",
+    "bagImage": "",
+    "logo": null,
+    "catalogStatus": "duplicate-wrong-brand",
+    "replacedBy": "nisshin_camellia",
+    "proteinPublished": false,
+    "hydrationPublished": false,
+    "verification": {
+      "status": "not-yet-verified",
+      "fields": []
+    }
+  },
+  {
+    "id": "showa_lys_dor",
+    "brand": "Showa",
+    "name": "Lys d'Or",
+    "type": "00",
+    "country": "jp",
+    "w": 300,
+    "wPublished": false,
+    "protein": 14.5,
+    "hydration": [
+      64,
+      70
+    ],
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "Very high gluten Japanese flour. For chewy NY-style pizza.",
+    "bagImage": "",
+    "logo": null,
+    "catalogStatus": "duplicate-wrong-brand",
+    "replacedBy": "nippn_lysdor",
+    "proteinPublished": false,
+    "hydrationPublished": false,
+    "verification": {
+      "status": "not-yet-verified",
+      "fields": []
+    }
+  },
+  {
+    "id": "soufflet_t65",
+    "brand": "Moulins Soufflet",
+    "name": "T65 Tradition",
+    "type": "T65",
+    "country": "fr",
+    "w": 220,
+    "wPublished": false,
+    "protein": 11,
+    "hydration": [
+      62,
+      68
+    ],
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "Classic French tradition baguette flour.",
+    "bagImage": "",
+    "logo": null,
+    "proteinPublished": false,
+    "hydrationPublished": false,
+    "verification": {
+      "status": "identity-review",
+      "fields": [],
+      "sources": [
+        "https://www.moulins-soufflet.fr/en/parisette/"
+      ],
+      "checked": "2026-09-20",
+      "reason": "Manufacturer Parisette Classique is T65; Parisette Tradition is T55. Existing T65 Tradition is not an exact verified match. Do not silently alias either product. No proof of discontinuation."
+    },
+    "catalogStatus": "identity-review"
+  },
+  {
+    "id": "decollogne_t55",
+    "brand": "Moulin Decollogne",
+    "name": "Terroire T55",
+    "type": "T55",
+    "country": "fr",
+    "w": 180,
+    "wPublished": false,
+    "protein": 10,
+    "hydration": [
+      57,
+      63
+    ],
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "Farine professionnelle de blé T55.",
+    "bagImage": "",
+    "logo": null,
+    "proteinPublished": false,
+    "hydrationPublished": false,
+    "verification": {
+      "status": "partially-verified",
+      "fields": [
+        "name",
+        "type"
+      ],
+      "sources": [
+        "https://decollogne.fr/farine-bio/farine-boulanger-pro/",
+        "https://decollogne.fr/wp-content/uploads/2026/02/Decollogne-Gammes-Artisans-et-Pro.pdf"
+      ],
+      "note": "Only named fields verified; hydration and unpublished strength remain recipe estimates."
+    },
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "gmp_t110",
+    "brand": "Grands Moulins de Paris",
+    "name": "Meule T110 Bio",
+    "type": "T110",
+    "country": "fr",
+    "w": 190,
+    "wPublished": false,
+    "protein": 12,
+    "hydration": [
+      66,
+      72
+    ],
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "High extraction French flour. Earthy flavour.",
+    "bagImage": "",
+    "logo": null,
+    "proteinPublished": true,
+    "hydrationPublished": false,
+    "verification": {
+      "status": "partially-verified",
+      "fields": [
+        "name",
+        "type",
+        "ingredients",
+        "manufacturerCode",
+        "packSizesKg",
+        "protein"
+      ],
+      "sources": [
+        "https://www.grandsmoulinsdeparis.com/media/fiche_technique/03697.pdf"
+      ],
+      "note": "Only named fields verified; hydration and unpublished strength remain recipe estimates."
+    },
+    "manufacturerCode": "03697",
+    "packSizesKg": [
+      25
+    ],
+    "ingredients": "Farine de blé biologique T110 moulue à la meule de pierre",
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "redbournbury_strong",
+    "brand": "Redbournbury Mill",
+    "name": "Organic Strong White Flour",
+    "type": "bread",
+    "country": "uk",
+    "w": 255,
+    "wPublished": false,
+    "protein": 13,
+    "hydration": [
+      61,
+      67
+    ],
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "Organic strong white flour milled at Redbournbury Watermill. Protein, strength and hydration values are unpublished recipe estimates.",
+    "bagImage": "",
+    "logo": null,
+    "proteinPublished": false,
+    "hydrationPublished": false,
+    "verification": {
+      "status": "partially-verified",
+      "fields": [
+        "name"
+      ],
+      "sources": [
+        "https://www.bakerybits.co.uk/redbournbury-organic-strong-white-flour-3kg"
+      ],
+      "checked": "2026-09-20",
+      "note": "retailer-identity-confirmed; primary exact strong-white naming not yet established"
+    },
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "central_whole_wheat",
+    "brand": "Central Milling",
+    "name": "Organic Whole Wheat Hi-Pro Fine",
+    "type": "wholemeal",
+    "country": "us",
+    "w": 225,
+    "wPublished": false,
+    "protein": 13.5,
+    "hydration": [
+      66,
+      72
+    ],
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "Finely milled whole wheat. Retail Organic Whole Wheat Flour is the same Hi-Pro Fine product; distinct from Hi-Pro Medium. Untreated. Strength and hydration are recipe estimates.",
+    "bagImage": "",
+    "logo": null,
+    "proteinPublished": true,
+    "hydrationPublished": false,
+    "verification": {
+      "checked": "2026-09-20",
+      "status": "partially-verified",
+      "fields": [
+        "name",
+        "protein",
+        "manufacturerSku",
+        "ingredients"
+      ],
+      "sources": [
+        "https://centralmilling.com/product/high-protein-100-whole-wheat-flour-hi-pro-fine/",
+        "https://centralmilling.com/product/organic-whole-wheat-hi-pro-fine-value-pack/"
+      ]
+    },
+    "manufacturerSku": "O-2150",
+    "ingredients": "Organic Hard Red Spring Wheat",
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "ka_rye",
+    "brand": "King Arthur",
+    "name": "Organic Dark Rye Flour (Professional)",
+    "type": "rye",
+    "country": "us",
+    "w": 150,
+    "wPublished": false,
+    "protein": 10,
+    "hydration": [
+      72,
+      78
+    ],
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "Professional organic dark rye; distinct from retail Organic Medium Rye. Manufacturer protein10%. Strength and hydration remain estimates.",
+    "bagImage": "",
+    "logo": null,
+    "proteinPublished": true,
+    "hydrationPublished": false,
+    "verification": {
+      "status": "partially-verified",
+      "fields": [
+        "name",
+        "protein",
+        "manufacturerSkus",
+        "packSizesKg"
+      ],
+      "sources": [
+        "https://www.kingarthurbaking.com/pro/products"
+      ],
+      "checked": "2026-09-20"
+    },
+    "organic": true,
+    "manufacturerSkus": [
+      "28325",
+      "28350"
+    ],
+    "packSizesKg": [
+      9.07185,
+      18.1437
+    ],
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "bay_state_winona_t006",
+    "brand": "Bay State Milling",
+    "name": "Winona Patent T006 · Unbleached, Unbromated",
+    "country": "us",
+    "type": "bread",
+    "protein": 12.5,
+    "proteinPublished": true,
+    "w": null,
+    "wPublished": false,
+    "hydration": [
+      60,
+      68
+    ],
+    "hydrationPublished": false,
+    "bagImage": "",
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "Spring patent wheat flour, enriched. Manufacturer SKU27001-T006. Recipe hydration is an estimate.",
+    "verification": {
+      "status": "manufacturer-verified",
+      "fields": [
+        "brand",
+        "name",
+        "protein"
+      ],
+      "source": "https://baystatemilling.com/wp-content/uploads/2022/10/Traditional-Baking-Brochure_NEW.pdf"
+    },
+    "identitySource": "https://www.walnutcreekfoods.com/products/baking-supplies-bulk/flours-starches/flour-unbleached-unbromated-winona-t006",
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "gmp_meule_t80_bio",
+    "brand": "Grands Moulins de Paris",
+    "name": "Meule T80 Bio",
+    "type": "T80",
+    "country": "fr",
+    "w": 200,
+    "wPublished": false,
+    "protein": 11,
+    "hydration": [
+      64,
+      70
+    ],
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "Organic semi-wholemeal from Grands Moulins de Paris.",
+    "bagImage": "",
+    "logo": null,
+    "proteinPublished": true,
+    "hydrationPublished": false,
+    "verification": {
+      "status": "partially-verified",
+      "fields": [
+        "name",
+        "type",
+        "ingredients",
+        "manufacturerCode",
+        "packSizesKg",
+        "protein"
+      ],
+      "sources": [
+        "https://www.grandsmoulinsdeparis.com/produits/meule-t80-farine-de-ble-bio-t80-pour-pain-rustique-46500",
+        "https://www.grandsmoulinsdeparis.com/media/fiche_technique/46500.pdf"
+      ],
+      "note": "Only named fields verified; hydration and unpublished strength remain recipe estimates.",
+      "checked": "2026-09-20"
+    },
+    "manufacturerCode": "46500",
+    "packSizesKg": [
+      25
+    ],
+    "ingredients": "Farine de blé biologique moulue à la meule de pierre",
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "king_midas_special_untreated",
+    "brand": "King Midas",
+    "name": "Special Standard Patent Flour",
+    "type": "bread",
+    "country": "us",
+    "w": 235,
+    "wPublished": false,
+    "protein": 12.5,
+    "hydration": [
+      60,
+      66
+    ],
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "Official King Midas identity is Special, not Better for Bread. Mean 12.5 is calculation midpoint, not exact manufacturer value; published range 12.2-12.8. Multiple treated variants exist; choose untreated explicitly.",
+    "bagImage": "",
+    "logo": null,
+    "proteinPublished": false,
+    "hydrationPublished": false,
+    "verification": {
+      "checked": "2026-09-20",
+      "status": "partially-verified",
+      "fields": [
+        "name",
+        "proteinRange",
+        "protein",
+        "proteinPublished",
+        "productCode"
+      ],
+      "sources": [
+        "https://www.ardentmills.com/products/traditional-wheat/standard-flours/standard-patent/",
+        "https://contentlibrary.ardentmills.com/m/24b3d46e13f80f7f/original/standard-patent-king-midas-information-sheet.pdf"
+      ]
+    },
+    "proteinRange": [
+      12.2,
+      12.8
+    ],
+    "productCode": "5111701 untreated 50lb",
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "soufflet_gruau_rouge_t55",
+    "brand": "Moulins Soufflet",
+    "name": "La Gruau Rouge T55",
+    "country": "fr",
+    "type": "T55",
+    "protein": 13,
+    "proteinPublished": true,
+    "w": 300,
+    "wPublished": false,
+    "hydration": [
+      60,
+      68
+    ],
+    "hydrationPublished": false,
+    "ingredients": "Farine de blé, gluten de blé",
+    "packSizesKg": [
+      25
+    ],
+    "bagImage": "",
+    "bestFor": [],
+    "crowdFavourite": [],
+    "productClass": "flour-with-improvers",
+    "note": "T55 wheat flour with added wheat gluten for enriched doughs and brioche. Manufacturer nutrition lists 13 g protein per 100 g. Strength and hydration values are recipe estimates, not published specifications.",
+    "verification": {
+      "status": "partially-verified",
+      "fields": [
+        "name",
+        "ingredients",
+        "packSizesKg",
+        "protein"
+      ],
+      "sources": [
+        "https://espace-client.episens.fr/p/la-gruau-rouge--5a967468-c90d-41bf-bbab-aee086e434b3_MEU",
+        "https://res.cloudinary.com/aladinfarm/image/upload/v1724749563/products/EPISENS/Farines%20et%20Ingr%C3%A9dients/Fiche%20Technique/LA_GRUAU_ROUGE_FARINES_DE_NOS_REGIONS_20015325_FT_hwap58.pdf"
+      ],
+      "checked": "2026-09-20"
+    },
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "hayden_white_sonora_pastry",
+    "brand": "Hayden Flour Mills",
+    "name": "White Sonora Pastry Flour (Type00)",
+    "country": "us",
+    "type": "00",
+    "protein": 10.9,
+    "proteinPublished": true,
+    "w": 150,
+    "wPublished": false,
+    "hydration": [
+      58,
+      68
+    ],
+    "hydrationPublished": false,
+    "bestFor": [],
+    "crowdFavourite": [],
+    "bagImage": "",
+    "logo": null,
+    "note": "Finely sifted White Sonora pastry flour; manufacturer10.9% protein. Pure White Sonora, distinct from the all-purpose blend. W/hydration remain recipe estimates.",
+    "verification": {
+      "status": "partially-verified",
+      "fields": [
+        "name",
+        "protein"
+      ],
+      "sources": [
+        "https://haydenflourmills.com/products/white-sonora-type-00-flour"
+      ],
+      "checked": "2026-09-20"
+    },
+    "ingredients": "White Sonora Flour",
+    "packSizesKg": [
+      0.72575
+    ],
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "redman_pizza_00",
+    "brand": "Redman",
+    "name": "Pizza Tipo 00",
+    "type": "00",
+    "country": "sg",
+    "w": null,
+    "wPublished": false,
+    "protein": null,
+    "proteinPublished": false,
+    "hydration": null,
+    "hydrationPublished": false,
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "",
+    "bagImage": null,
+    "logo": null,
+    "verification": {
+      "status": "partially-verified",
+      "fields": [
+        "name",
+        "type"
+      ],
+      "source": "https://www.phoonhuat.com/wp-content/uploads/2021/12/20211203-Flour-f1.pdf",
+      "checked": "2026-09-20"
+    },
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "tomiz_yumechikara100",
+    "brand": "Tomiz",
+    "name": "Yumechikara 100% Bread Flour",
+    "type": "Bread",
+    "country": "jp",
+    "w": null,
+    "wPublished": false,
+    "protein": 12.5,
+    "proteinPublished": true,
+    "hydration": null,
+    "hydrationPublished": false,
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "",
+    "bagImage": null,
+    "logo": null,
+    "verification": {
+      "status": "partially-verified",
+      "fields": [
+        "name",
+        "type",
+        "protein"
+      ],
+      "source": "https://tomiz.com/item/01856902",
+      "checked": "2026-09-20",
+      "note": "Manufacturer analytical specification12.5±1.0%; nutrition table13.5g. Preserve specification range rather than implying exact12.5."
+    },
+    "ean": "4932503127969",
+    "proteinSpec": {
+      "operator": "range",
+      "min": 11.5,
+      "max": 13.5,
+      "unit": "%",
+      "published": true
+    },
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "redman_plain",
+    "brand": "Redman",
+    "name": "Plain Flour",
+    "type": "All Purpose",
+    "country": "sg",
+    "w": null,
+    "wPublished": false,
+    "protein": null,
+    "proteinPublished": false,
+    "hydration": null,
+    "hydrationPublished": false,
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "",
+    "bagImage": null,
+    "logo": null,
+    "ingredients": "Wheat flour",
+    "verification": {
+      "status": "partially-verified",
+      "fields": [
+        "name",
+        "type",
+        "ingredients"
+      ],
+      "source": "https://shop.redmanshop.com/collections/december-collection/products/000000000000128626",
+      "checked": "2026-09-20"
+    },
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  },
+  {
+    "id": "redman_unbleached_bread",
+    "brand": "Redman",
+    "name": "Unbleached Bread Flour",
+    "type": "Bread",
+    "country": "sg",
+    "w": null,
+    "wPublished": false,
+    "protein": null,
+    "proteinPublished": false,
+    "hydration": null,
+    "hydrationPublished": false,
+    "bestFor": [],
+    "crowdFavourite": [],
+    "note": "",
+    "bagImage": null,
+    "logo": null,
+    "ingredients": "Wheat flour",
+    "verification": {
+      "status": "partially-verified",
+      "fields": [
+        "name",
+        "type",
+        "ingredients"
+      ],
+      "source": "https://shop.redmanshop.com/products/000000000000067660",
+      "checked": "2026-09-20"
+    },
+    "catalogStatus": "retired",
+    "archiveReason": "photo-review",
+    "catalogArchive": {
+      "date": "2026-09-20",
+      "reason": "Excluded from new selection because an eligible exact product photo is not ready. Original identity and specifications are preserved; this is not a claim that the flour is invalid or discontinued.",
+      "restoreWhen": "An eligible exact product photograph has been verified and integrated.",
+      "decision": "User requested no selectable branded flour without a picture."
+    }
+  }
+]

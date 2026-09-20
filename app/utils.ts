@@ -701,6 +701,28 @@ const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHReq
   pain_viennois: { coldH: 6,  rtH: 2, coldHRequired: true },     // sweet: 8h
 };
 
+/** Durations describe the returned event times, including proof during preheat.
+ * Keep planning limits separate: a cap must never erase elapsed fermentation. */
+function accountScheduleTime(schedule: ScheduleResult): ScheduleResult {
+  const hours = (from: Date | null, to: Date | null) => from && to
+    ? Math.max(0, (to.getTime() - from.getTime()) / 3600000) : 0;
+  const coldHours = schedule.coldRetard2Start
+    ? hours(schedule.coldRetard1Start, schedule.coldRetard1End)
+      + hours(schedule.coldRetard2Start, schedule.coldRetard2End)
+    : hours(schedule.coldRetardStart, schedule.coldRetardEnd);
+  return {
+    ...schedule,
+    bulkFermHours: hours(schedule.bulkFermStart, schedule.coldRetardStart ?? schedule.finalProofStart),
+    finalProofHours: hours(schedule.finalProofStart, schedule.bakeStart),
+    restRtHours: schedule.restRtHours > 0
+      ? hours(schedule.coldRetardEnd, schedule.finalProofStart) : 0,
+    coldRetardHours: coldHours,
+    totalColdHours: coldHours,
+    // Includes handling between cold phases and warmup, not only named proof.
+    totalRTHours: Math.max(0, hours(schedule.bulkFermStart, schedule.bakeStart) - coldHours),
+  };
+}
+
 export function buildSchedule(
   startTime: Date,
   eatTime: Date,
@@ -892,7 +914,7 @@ export function buildSchedule(
     );
     const totalColdHours = coldRetard1Hours + coldRetard2Hours;
 
-    return {
+    return accountScheduleTime({
       mixingDurationH,
       bulkFermStart: r15(fermStart),
       bulkFermHours: actualBulkH,
@@ -920,7 +942,7 @@ export function buildSchedule(
       bulkConflict,
       coldExitConflict: null,
       scheduleNote,
-    };
+    });
   }
 
   // ── SINGLE PHASE ─────────────────────────────────────────────
@@ -932,7 +954,7 @@ export function buildSchedule(
     const bulkFermH   = Math.max(0, totalH - finalProofH);
     const finalProofStart = new Date(fermStart.getTime() + bulkFermH * 3600000);
     const divideBallTime  = pushOutOfBlockers(finalProofStart, relevantBlocks);
-    return {
+    return accountScheduleTime({
       mixingDurationH,
       bulkFermStart: r15(fermStart),
       bulkFermHours: bulkFermH,
@@ -958,7 +980,7 @@ export function buildSchedule(
       bulkConflict: null,
       coldExitConflict: null,
       scheduleNote,
-    };
+    });
   }
 
   // ── SINGLE-PHASE COLD RETARD: style-driven coldH ─────────────
@@ -1040,7 +1062,7 @@ export function buildSchedule(
   // Divide & Ball happens when dough comes out of fridge (pushed out of any blocker)
   const divideBallTime = pushOutOfBlockers(coldRetardEnd, relevantBlocks);
 
-  return {
+  return accountScheduleTime({
     mixingDurationH,
     bulkFermStart: r15(fermStart),
     bulkFermHours: actualBulkH,
@@ -1066,7 +1088,7 @@ export function buildSchedule(
     bulkConflict,
     coldExitConflict,
     scheduleNote,
-  };
+  });
 }
 
 // ══════════════════════════════════════════
@@ -1089,6 +1111,7 @@ export interface RecipeResult {
   oil: number;
   sugar: number;
   waterTemp: number;
+  thermal?: { idealWaterTemp: number; doughTempC: number; freeWaterG: number; targetDoughTemp: number };
   hydration: number;
   totalDough: number;
   autoPriority: string | null;     // what the engine chose automatically
@@ -1206,11 +1229,12 @@ export function calculateRecipe(
     : 1;
   const totalDough = Math.round(numItems * itemWeight * wasteMult);
   const hydPct = hydration / 100;
-  const flour  = Math.round(totalDough / (1 + hydPct + saltPct / 100));
-  const water  = Math.round(flour * hydPct);
-  const salt   = Math.round(flour * saltPct / 100);
-  const oilG   = oil   > 0 ? Math.round(flour * oil / 100)   : 0;
-  const sugarG = sugar > 0 ? Math.round(flour * sugar / 100 * 10) / 10 : 0;
+  const ingredientRatio = 1 + hydPct + (saltPct + Math.max(0, oil) + Math.max(0, sugar)) / 100;
+  let flour = Math.round(totalDough / ingredientRatio);
+  let water = 0;
+  let salt = 0;
+  let oilG = 0;
+  let sugarG = 0;
 
   // Water temperature — DDT (Desired Dough Temperature).
   // FDT varies by style: extensible doughs target lower, enriched higher.
@@ -1234,88 +1258,111 @@ export function calculateRecipe(
   const autoPriority = derivePriority(schedule);
   const effectivePriority = manualPriorityOverride !== undefined ? manualPriorityOverride : autoPriority;
 
-  if (yeastType === 'sourdough') {
-    sourdough = sourdoughGuidance(kitchenTemp, flour, feedToMixH, blendProfile?.fermToleranceMultiplier);
-  } else {
-    yeast = recommendYeast(
-      schedule.totalRTHours,
-      kitchenTemp,
-      schedule.totalColdHours,
-      fridgeTemp,
-      yeastType,
-      flour,
-      effectivePriority,
-      styleKey,
-    );
+  const prefInFridge = prefGoesInFridgeOverride !== undefined
+    ? prefGoesInFridgeOverride
+    : prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26);
+  let preferment: ReturnType<typeof computePrefermentRecipe> | null = null;
 
-    // STEP 4 — Apply fermentation tolerance from blend
-    if (yeast && blendProfile && blendProfile.fermToleranceMultiplier !== 1.0) {
-      let idyPct = yeast.pct / blendProfile.fermToleranceMultiplier;
-      idyPct = Math.round(idyPct * 10000) / 10000;
-      const rawGrams = Math.max(0.5, flour * idyPct / 100);
-      const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
-      yeast = {
-        ...yeast,
-        pct: idyPct,
-        grams: Math.round(rawGrams * 1000) / 1000,
-        convertedPct: Math.round(idyPct * conversion * 10000) / 10000,
-        convertedGrams: Math.round(flour * idyPct * conversion / 100 * 1000) / 1000,
-      };
-    }
+  // Yeast is an additional ingredient; preferment flour/water are already
+  // included in the totals. Re-evaluate the existing dosing rules as flour
+  // settles, rather than adding yeast on top of the requested batch weight.
+  for (let pass = 0; pass < 4; pass++) {
+    water = Math.round(flour * hydPct);
+    salt = Math.round(flour * saltPct / 100);
+    oilG = oil > 0 ? Math.round(flour * oil / 100) : 0;
+    sugarG = sugar > 0 ? Math.round(flour * sugar / 100 * 10) / 10 : 0;
+    yeast = null;
+    sourdough = null;
+    directNeedIDY = undefined;
 
-    // Whole-dough leavening requirement (direct-engine IDY grams), captured
-    // BEFORE any preferment reduction — this is what the preferment must
-    // ultimately deliver, and drives fraction-independent preferment dosing.
-    directNeedIDY = yeast ? yeast.grams : undefined;
+    if (yeastType === 'sourdough') {
+      sourdough = sourdoughGuidance(kitchenTemp, flour, feedToMixH, blendProfile?.fermToleranceMultiplier);
+    } else {
+      yeast = recommendYeast(
+        schedule.totalRTHours,
+        kitchenTemp,
+        schedule.totalColdHours,
+        fridgeTemp,
+        yeastType,
+        flour,
+        effectivePriority,
+        styleKey,
+      );
 
-    // Apply yeast reduction from preferment
-    if (yeast && prefermentType && prefermentType !== 'none') {
-      const prefData = PREFERMENT_TYPES[prefermentType];
-      if (prefData.yeastReduction > 0) {
-        const newGrams = Math.max(0.5, yeast.grams * (1 - prefData.yeastReduction));
-        const newConvertedGrams = Math.max(0.5, yeast.convertedGrams * (1 - prefData.yeastReduction));
+      // STEP 4 — Apply fermentation tolerance from blend
+      if (yeast && blendProfile && blendProfile.fermToleranceMultiplier !== 1.0) {
+        let idyPct = yeast.pct / blendProfile.fermToleranceMultiplier;
+        idyPct = Math.round(idyPct * 10000) / 10000;
+        const rawGrams = Math.max(0.5, flour * idyPct / 100);
+        const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
         yeast = {
           ...yeast,
-          grams: newGrams,
-          convertedGrams: newConvertedGrams,
-          // Keep percentages in lockstep with grams (recomputed from grams so
-          // the 0.5g floor stays consistent) — displays diverged otherwise.
-          pct: Math.round(newGrams / flour * 100 * 10000) / 10000,
-          convertedPct: Math.round(newConvertedGrams / flour * 100 * 10000) / 10000,
+          pct: idyPct,
+          grams: Math.round(rawGrams * 1000) / 1000,
+          convertedPct: Math.round(idyPct * conversion * 10000) / 10000,
+          convertedGrams: Math.round(flour * idyPct * conversion / 100 * 1000) / 1000,
+        };
+      }
+
+      // Whole-dough leavening requirement (direct-engine IDY grams), captured
+      // BEFORE any preferment reduction — this is what the preferment must
+      // ultimately deliver, and drives fraction-independent preferment dosing.
+      directNeedIDY = yeast ? yeast.grams : undefined;
+
+      // Apply yeast reduction from preferment
+      if (yeast && prefermentType && prefermentType !== 'none') {
+        const prefData = PREFERMENT_TYPES[prefermentType];
+        if (prefData.yeastReduction > 0) {
+          const newGrams = Math.max(0.5, yeast.grams * (1 - prefData.yeastReduction));
+          const newConvertedGrams = Math.max(0.5, yeast.convertedGrams * (1 - prefData.yeastReduction));
+          yeast = {
+            ...yeast,
+            grams: newGrams,
+            convertedGrams: newConvertedGrams,
+            // Keep percentages in lockstep with grams (recomputed from grams so
+            // the 0.5g floor stays consistent) — displays diverged otherwise.
+            pct: Math.round(newGrams / flour * 100 * 10000) / 10000,
+            convertedPct: Math.round(newConvertedGrams / flour * 100 * 10000) / 10000,
+          };
+        }
+      }
+
+      // Osmotic stress correction — sugar above 2% OF FLOUR slows yeast.
+      // (Was `sugarG > 2` — grams, not percent — so any dough with more than
+      // 2g total sugar silently got +20% yeast.)
+      if (yeast && sugar > 2) {
+        yeast = {
+          ...yeast,
+          grams: Math.round(yeast.grams * 1.2 * 1000) / 1000,
+          convertedGrams: Math.round(yeast.convertedGrams * 1.2 * 1000) / 1000,
+          pct: Math.round(yeast.pct * 1.2 * 10000) / 10000,
+          convertedPct: Math.round(yeast.convertedPct * 1.2 * 10000) / 10000,
+          osmoticStress: true,
+          warnings: [...yeast.warnings, { key: 'osmoticStress' as const }],
         };
       }
     }
 
-    // Osmotic stress correction — sugar above 2% OF FLOUR slows yeast.
-    // (Was `sugarG > 2` — grams, not percent — so any dough with more than
-    // 2g total sugar silently got +20% yeast.)
-    if (yeast && flour > 0 && (sugarG / flour) * 100 > 2) {
-      yeast = {
-        ...yeast,
-        grams: Math.round(yeast.grams * 1.2 * 1000) / 1000,
-        convertedGrams: Math.round(yeast.convertedGrams * 1.2 * 1000) / 1000,
-        pct: Math.round(yeast.pct * 1.2 * 10000) / 10000,
-        convertedPct: Math.round(yeast.convertedPct * 1.2 * 10000) / 10000,
-        osmoticStress: true,
-        warnings: [...yeast.warnings, { key: 'osmoticStress' as const }],
-      };
-    }
-  }
+    // Compute preferment recipe — climate-aware
+    preferment = (prefermentType && prefermentType !== 'none')
+      ? computePrefermentRecipe(
+          prefermentType, flour, water,
+          kitchenTemp, fridgeTemp, prefInFridge,
+          flourPctOverride,
+          yeastType,
+          prefActualHours,
+          directNeedIDY,
+        )
+      : null;
 
-  // Compute preferment recipe — climate-aware
-  const prefInFridge = prefGoesInFridgeOverride !== undefined
-    ? prefGoesInFridgeOverride
-    : prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26);
-  const preferment = (prefermentType && prefermentType !== 'none')
-    ? computePrefermentRecipe(
-        prefermentType, flour, water,
-        kitchenTemp, fridgeTemp, prefInFridge,
-        flourPctOverride,
-        yeastType,
-        prefActualHours,
-        directNeedIDY,
-      )
-    : null;
+    // Do not change the pending sourdough model: starter flour and water
+    // remain part of the formula totals, not an additional yeast mass.
+    const addedYeast = yeastType === 'sourdough' ? 0
+      : preferment ? preferment.prefYeastGrams : yeast?.convertedGrams ?? 0;
+    const nextFlour = Math.round((totalDough - addedYeast) / ingredientRatio);
+    if (nextFlour === flour || pass === 3) break;
+    flour = nextFlour;
+  }
 
   // ── DDT solve ────────────────────────────────────────────────
   // ONE model for every dough: an enthalpy balance over the masses actually
@@ -1371,18 +1418,19 @@ export function calculateRecipe(
     ? Math.round(levainForBalance.starterGramsMid / 2)
     : 0;
 
-  const waterTemp = solveWaterTempEnthalpy({
+  const thermal = solveWaterTempEnthalpy({
     targetFDT, kitchenTemp, flourTemp, friction: frictionRiseC,
     flourG: flour, waterG: water, saltG: salt,
     prefFlourG: levainInBalance ? levainHalfG : (preferment && isFlourPref ? preferment.prefFlour : 0),
     prefWaterG: levainInBalance ? levainHalfG : (preferment && isFlourPref ? preferment.prefWater : 0),
     prefTempC: levainInBalance ? kitchenTemp : prefTempC,
-  }).waterTemp;
+  });
+  const waterTemp = thermal.waterTemp;
 
   return {
     flour, water, salt, yeast, sourdough,
     oil: oilG, sugar: sugarG,
-    waterTemp, hydration, totalDough,
+    waterTemp, thermal: { idealWaterTemp: thermal.idealWaterTemp, doughTempC: thermal.doughTempC, freeWaterG: thermal.freeWaterG, targetDoughTemp: targetFDT }, hydration, totalDough,
     autoPriority,
     wastePct: mode === 'custom' && wastePct !== undefined && wastePct > 0 ? wastePct : undefined,
     targetDoughTemp: mode === 'custom' && targetDoughTemp !== undefined ? targetDoughTemp : undefined,

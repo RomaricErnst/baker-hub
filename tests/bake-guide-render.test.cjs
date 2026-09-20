@@ -1,0 +1,26 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const ts=require('typescript');
+const Module=require('node:module'),path=require('node:path');
+const resolve=Module._resolveFilename;
+Module._resolveFilename=function(request,...args){return resolve.call(this,request.startsWith('@/')?path.join(__dirname,'..',request.slice(2)):request,...args)};
+require.extensions['.tsx']=(module,filename)=>module._compile(ts.transpileModule(fs.readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true},fileName:filename}).outputText,filename);
+const {utils}=require('./load-production.cjs');
+const React=require('react');
+const {renderToStaticMarkup}=require('react-dom/server');
+const {NextIntlClientProvider}=require('next-intl');
+const Guide=require('../app/components/BakeGuide.tsx').default;
+const messages=require('../messages/en.json');
+test('real schedule guide preserves room, single-cold and two-cold stages with navigation',()=>{
+ const seen=new Set();
+ for(const style of ['neapolitan','pan','brioche'])for(const temp of [20,32])for(const horizon of [3,8,26]){
+  const schedule=utils.buildSchedule(new Date('2026-09-12T16:00Z'),new Date(+new Date('2026-09-12T16:00Z')+horizon*3600000),[],temp,60,'hand',style);
+  const branch=schedule.coldRetard2Start?'two':schedule.coldRetardStart?'single':'rt'; seen.add(branch);
+  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'Asia/Singapore'},React.createElement(Guide,{schedule,mixerType:'hand',styleKey:style,kitchenTemp:32,numItems:4,oil:0,hydration:65,locale:'en'})));
+  assert.ok(html.includes('All steps'));assert.ok(html.includes('Current step'));assert.ok(html.includes('Mark done &amp; continue'));assert.ok(html.includes('aria-expanded="true"'));
+  if(branch==='two')assert.ok(html.includes(messages.bakeGuide.stepTitles[style==='brioche'?'coldProof':'coldRetardBalls']));
+  if(branch==='rt')assert.ok(!html.includes(messages.bakeGuide.stepTitles.coldRetardBalls));
+ }
+ assert.ok(seen.has('two'));assert.ok(seen.has('rt'));
+});

@@ -17,6 +17,7 @@ import {
 import CreatePizzaSheet from './CreatePizzaSheet';
 import { loadCustomPizzas, type CustomPizzaDef } from '../lib/profile';
 import PizzaPlaceholder from './PizzaPlaceholder';
+import { SHOPPING_NOTE_FR } from '../lib/shoppingNoteTranslations';
 import type { Locale, FlavorChip } from '../lib/toppingTypes';
 
 // ─── Ingredient chips ─────────────────────────────────────────
@@ -376,9 +377,9 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
 
   return (
     <div style={S.card(qty > 0)} onClick={onTap}>
-      <div style={{ display: 'flex', gap: '8px', padding: '8px 12px 8px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 12px' }}>
         {/* Left: image spanning all rows */}
-        <div style={{ width: '80px', height: '80px', borderRadius: '16px', overflow: 'hidden', flexShrink: 0, background: '#2B2420' }}>
+        <div style={{ width: '100%', aspectRatio: '2 / 1', borderRadius: '12px', overflow: 'hidden', flexShrink: 0, background: '#2B2420' }}>
           {pizza.id.startsWith('custom_') ? (
             pizza.photoUrl
               ? <img src={pizza.photoUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -397,7 +398,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
               return `/pizzas/${pizza.id}.webp`;
             })()}
             alt={name}
-            loading="lazy" decoding="async" width={80} height={80}
+            loading="lazy" decoding="async" width={640} height={320}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             onError={e => {
               const img = e.target as HTMLImageElement;
@@ -631,6 +632,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
             </div>
           )}
 
+          {pizza.preparationSequence && <p style={{ fontSize: 13, lineHeight: 1.5 }}>{pizza.preparationSequence[l]}</p>}
           {pizza.wineNote && (
             <div style={{
               fontSize: '11px', color: '#7A4A8A',
@@ -766,9 +768,10 @@ interface ShoppingItem {
   qtyNote?: string;
   isCommonPantry?: boolean;
   hardToFind?: boolean;
-  goodEnough?: { name: Locale };
-  compromise?: { name: Locale };
+  goodEnough?: { name: Locale; note?: Locale };
+  compromise?: { name: Locale; note?: Locale };
   localSwap?: Partial<Record<string, { name: Locale }>>;
+  whereToFind?: import('../lib/toppingTypes').WhereToFind;
   forPizzas: string[];
 }
 
@@ -798,6 +801,7 @@ function buildShoppingList(
           isCommonPantry: ing.isCommonPantry,
           hardToFind: ing.hardToFind,
           goodEnough: ing.goodEnough,
+          whereToFind: ing.whereToFind,
           compromise: ing.compromise,
           localSwap: ing.localSwap as Partial<Record<string, { name: Locale }>> | undefined,
           forPizzas: [],
@@ -1098,8 +1102,8 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
               const name = item.name[l] ?? item.name.en;
               const isTicked = ticked[item.id] ?? false;
               const isExpanded = expandedSubs[item.id] ?? false;
-              const hasSubInfo = !!(item.goodEnough || item.compromise);
-              const showSubProactively = !!item.hardToFind || !!item.goodEnough;
+              const shops = item.whereToFind?.[shoppingLocation as import('../lib/toppingTypes').ShoppingContext];
+              const hasSubInfo = !!(item.goodEnough || item.compromise || item.localSwap?.[shoppingLocation] || shops);
               const localNote = item.localSwap?.[shoppingLocation]?.name;
 
               return (
@@ -1151,51 +1155,21 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                         <div style={{ fontSize: '11px', color: '#A09890', marginTop: '1px' }}>{item.qtyNote}</div>
                       )}
 
-                      {showSubProactively && (
-                        <div style={{ marginTop: '3px' }}>
-                          {item.goodEnough && (
-                            <div style={{ fontSize: '11px', color: '#6B7A5A' }}>
-                              <span style={{ fontWeight: 500 }}>{l === 'fr' ? 'Très proche :' : 'Also great:'}</span>
-                              {' '}{item.goodEnough.name[l] ?? item.goodEnough.name.en}
-                            </div>
-                          )}
-                          {item.compromise && (
-                            <div style={{ fontSize: '11px', color: '#8A7F78' }}>
-                              <span style={{ fontWeight: 500 }}>{l === 'fr' ? 'À défaut :' : 'If not available:'}</span>
-                              {' '}{item.compromise.name[l] ?? item.compromise.name.en}
-                            </div>
-                          )}
-                          {localNote && shoppingLocation !== 'international' && (
-                            <div style={{ fontSize: '11px', color: '#8A7F78', marginTop: '1px' }}>
-                              <span style={{ fontWeight: 500 }}>{LOCATIONS.find(loc => loc.key === shoppingLocation)?.label ?? ''}:</span>
-                              {' '}{localNote[l] ?? localNote.en}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {!showSubProactively && isExpanded && hasSubInfo && (
-                        <div style={{ marginTop: '3px', padding: '8px 8px', background: '#F0EBE0', borderRadius: '16px' }}>
-                          {item.goodEnough && (
-                            <div style={{ fontSize: '11px', color: '#6B7A5A', marginBottom: '2px' }}>
-                              <span style={{ fontWeight: 500 }}>{l === 'fr' ? 'Très proche :' : 'Also great:'}</span>
-                              {' '}{item.goodEnough.name[l] ?? item.goodEnough.name.en}
-                            </div>
-                          )}
-                          {item.compromise && (
-                            <div style={{ fontSize: '11px', color: '#8A7F78' }}>
-                              <span style={{ fontWeight: 500 }}>{l === 'fr' ? 'À défaut :' : 'If not available:'}</span>
-                              {' '}{item.compromise.name[l] ?? item.compromise.name.en}
-                            </div>
-                          )}
-                          {localNote && shoppingLocation !== 'international' && (
-                            <div style={{ fontSize: '11px', color: '#8A7F78', marginTop: '2px' }}>
-                              <span style={{ fontWeight: 500 }}>{LOCATIONS.find(loc => loc.key === shoppingLocation)?.label ?? ''}:</span>
-                              {' '}{localNote[l] ?? localNote.en}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      {hasSubInfo && <button type="button" onClick={() => toggleSub(item.id)} aria-expanded={isExpanded}
+                        style={{ background: 'none', border: '1px solid #E0D8CF', borderRadius: 8, padding: '7px 10px', marginTop: 6, cursor: 'pointer' }}>
+                        {l === 'fr' ? 'Alternatives et magasins' : 'Alternatives & shops'}
+                      </button>}
+                      {hasSubInfo && isExpanded && <div style={{ marginTop: 8, padding: 10, background: '#F0EBE0', borderRadius: 10 }}>
+                        {[item.goodEnough, item.compromise].filter(Boolean).map((option, index) => <div key={index} style={{ marginBottom: 6, fontSize: 12 }}>
+                          <strong>{option!.name[l]}</strong>{option!.note && <p style={{ margin: '3px 0' }}>{option!.note[l]}</p>}
+                        </div>)}
+                        {localNote && <p style={{ fontSize: 12 }}>{localNote[l]}</p>}
+                        {shops && <div style={{ fontSize: 12 }}><strong>{l === 'fr' ? 'Où chercher' : 'Where to look'}</strong>
+                          <p>{[...(shops.shops ?? []), ...(shops.online ?? [])].join(' · ')}</p>
+                          {shops.note && <p>{l === 'fr' ? (SHOPPING_NOTE_FR[shops.note] ?? shops.note) : shops.note}</p>}
+                          <p>{l === 'fr' ? 'Vérifiez la disponibilité auprès du magasin.' : 'Check availability with the shop.'}</p>
+                        </div>}
+                      </div>}
                     </div>
                   </div>
                 </div>
@@ -1395,6 +1369,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   const [filterSheetKey, setFilterSheetKey] = useState<string | null>(null);
   const [ingTab, setIngTab] = useState<string>('Cheese & Dairy');
   const [ingSearch, setIngSearch] = useState('');
+  const [ingredientSections, setIngredientSections] = useState<Record<string, boolean>>({});
+  const [pizzaCourse, setPizzaCourse] = useState<'savoury' | 'sweet'>('savoury');
   const [summarySheetOpen, setSummarySheetOpen] = useState(false);
   const [dessertSheetOpen, setDessertSheetOpen] = useState(false);
 
@@ -1476,9 +1452,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
   // Filtered pizzas
   const filtered = useMemo(() => {
-    const base = filterPizzas(PIZZAS, { ...filter, styleKey: (styleKey as import('../lib/toppingTypes').StyleKey) ?? undefined });
+    const base = filterPizzas(pizzaCourse === 'sweet' ? DESSERT_PIZZAS : PIZZAS, { ...(pizzaCourse === 'sweet' ? DEFAULT_FILTER : filter), styleKey: (styleKey as import('../lib/toppingTypes').StyleKey) ?? undefined });
     return matchesSearch ? base.filter(matchesSearch) : base;
-  }, [filter, styleKey, matchesSearch]);
+  }, [filter, styleKey, matchesSearch, pizzaCourse]);
 
   // Mes pizzas go through the exact same pipeline — a base or ingredient
   // filter (or the search) applies to the baker's creations too.
@@ -1680,10 +1656,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               {l === 'fr' ? 'Filtres' : 'Filters'}
             </span>
             {([
-              { key: 'occasion',   label: l === 'fr' ? 'Occasion' : 'Occasion',    count: filter.occasion.length },
-              { key: 'diet',       label: l === 'fr' ? 'Régime'   : 'Diet',         count: filter.dietary.length },
-              { key: 'base',       label: 'Base',                                    count: filter.base !== null ? 1 : 0 },
-              { key: 'ingredient', label: l === 'fr' ? 'Ingrédient': 'Ingredient',  count: (filter.ingredientChips ?? []).length + (filter.ingredientSearch ? 1 : 0) },
+              { key: 'ingredient', label: l === 'fr' ? 'Ingrédients' : 'Ingredients', count: (filter.ingredientChips ?? []).length },
+              { key: 'base', label: 'Base', count: filter.base !== null ? 1 : 0 },
+              { key: 'occasion', label: 'Occasion', count: filter.occasion.length },
             ] as const).map(chip => (
               <button
                 key={chip.key}
@@ -1962,76 +1937,41 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           }}
                         />
                       </div>
-                      {!ingSearch && (
-                        <div style={{ display: 'flex', borderBottom: '1px solid #E0D8CF' }}>
-                          {INGREDIENT_CHIPS.map(cat => {
-                            const tabLabel = l === 'fr' ? cat.category.fr : cat.category.en;
-                            const isActive = ingTab === tabLabel;
-                            return (
-                              <div
-                                key={cat.category.en}
-                                onClick={() => setIngTab(tabLabel)}
-                                style={{
-                                  flex: 1, padding: '8px 4px', textAlign: 'center',
-                                  fontSize: '11px', cursor: 'pointer',
-                                  color: isActive ? '#6B4423' : '#8A7F78',
-                                  borderBottom: isActive ? '2px solid #6B4423' : '2px solid transparent',
-                                  fontWeight: isActive ? 700 : 400,
-                                  fontFamily: 'var(--font-ui)',
-                                  whiteSpace: 'nowrap' as const, overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                }}
-                              >
-                                {tabLabel.split(' ')[0]}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px 16px' }}>
-                        {(ingSearch
-                          ? INGREDIENT_CHIPS.flatMap(c => c.items).filter(item => {
-                              const name = l === 'fr' ? item.fr : item.en;
-                              return name.toLowerCase().includes(ingSearch.toLowerCase());
-                            })
-                          : (INGREDIENT_CHIPS.find(c => {
-                              const label = l === 'fr' ? c.category.fr : c.category.en;
-                              return label === ingTab;
-                            })?.items ?? INGREDIENT_CHIPS[0].items)
-                        ).map(item => {
-                          const label = l === 'fr' ? item.fr : item.en;
-                          const active = (filter.ingredientChips ?? []).includes(item.search);
-                          return (
-                            <span
-                              key={item.search}
-                              onClick={() => setFilter((p: FilterState) => {
-                                const chips = p.ingredientChips ?? [];
-                                return {
-                                  ...p,
-                                  ingredientChips: active
-                                    ? chips.filter(c => c !== item.search)
-                                    : [...chips, item.search],
-                                };
-                              })}
-                              style={{
-                                padding: '8px 12px', borderRadius: '20px',
-                                border: active ? '1px solid #6B4423' : '1px solid #E0D8CF',
-                                background: active ? '#6B4423' : '#FDFBF7',
-                                color: active ? '#fff' : '#3D3530',
-                                fontSize: '12px', cursor: 'pointer',
-                                transition: 'all 0.12s', fontFamily: 'var(--font-ui)',
-                              }}
-                            >
-                              {label}
-                            </span>
-                          );
-                        })}
-                      </div>
+                      <fieldset style={{ margin: '8px 16px', border: 0, padding: 0 }}>
+                        <legend>{l === 'fr' ? 'Correspondance' : 'Match ingredients'}</legend>
+                        {(['any', 'all'] as const).map(mode => <label key={mode} style={{ marginRight: 16 }}>
+                          <input type="radio" name="ingredient-match" checked={(filter.ingredientMatchMode ?? 'any') === mode}
+                            onChange={() => setFilter(p => ({ ...p, ingredientMatchMode: mode }))} />
+                          {mode === 'any' ? (l === 'fr' ? 'Au moins un' : 'At least one') : (l === 'fr' ? 'Tous les ingrédients' : 'All selected')}
+                        </label>)}
+                      </fieldset>
+                      {INGREDIENT_CHIPS.map(group => {
+                        const items = group.items.filter(item => !ingSearch || `${item.en} ${item.fr}`.toLowerCase().includes(ingSearch.toLowerCase()));
+                        if (!items.length) return null;
+                        return <details key={group.category.en} open={!!ingSearch || !!ingredientSections[group.category.en]}
+                          onToggle={e => { const value=e.currentTarget.open; setIngredientSections(p => p[group.category.en] === value ? p : ({ ...p, [group.category.en]: value })); }}
+                          style={{ padding: '10px 16px', borderBottom: '1px solid #E0D8CF' }}>
+                          <summary>{group.category[l]}</summary>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 10 }}>
+                            {items.map(item => { const active=(filter.ingredientChips ?? []).includes(item.search); return <button type="button" key={item.search} aria-pressed={active}
+                              onClick={() => setFilter(p => ({ ...p, ingredientChips: active ? (p.ingredientChips ?? []).filter(x => x !== item.search) : [...(p.ingredientChips ?? []), item.search] }))}
+                              style={S.pill(active, 'terra')}>{item[l]}</button>; })}
+                          </div>
+                        </details>;
+                      })}
                     </>
                   )}
 
                   {filterSheetKey === 'more' && (
                     <>
+                      <fieldset style={{ margin: 16, border: 0, padding: 0 }}><legend>{l === 'fr' ? 'Salée ou sucrée' : 'Savoury or sweet'}</legend>
+                        {(['savoury','sweet'] as const).map(course => <label key={course} style={{ marginRight: 16 }}><input type="radio" name="pizza-course" checked={pizzaCourse === course} onChange={() => setPizzaCourse(course)} />{course === 'sweet' ? (l === 'fr' ? 'Pizzas dessert' : 'Dessert pizzas') : (l === 'fr' ? 'Pizzas salées' : 'Savoury pizzas')}</label>)}
+                        {pizzaCourse === 'sweet' && <p>{l === 'fr' ? 'Les filtres salés sont en pause.' : 'Savoury filters are paused.'}</p>}
+                      </fieldset>
+                      <FilterSection title={l === 'fr' ? 'Préférences alimentaires' : 'Dietary preferences'} open={open.diet} onToggle={() => togOpen('diet')}>
+                        {(['veg','vegan','no_pork','no_fish','no_nuts','dairy_free'] as DietaryTag[]).map(value => <button key={value} type="button" style={S.pill(filter.dietary.includes(value), 'terra')} onClick={() => toggleDietary(value)}>{({veg: l==='fr'?'Végétarien':'Vegetarian',vegan:l==='fr'?'Végétalien':'Vegan',no_pork:l==='fr'?'Sans porc':'No pork',no_fish:l==='fr'?'Sans poisson':'No fish',no_nuts:l==='fr'?'Sans fruits à coque':'No nuts',dairy_free:l==='fr'?'Sans produits laitiers':'Dairy free'} as Record<string,string>)[value]}</button>)}
+                      </FilterSection>
+
                       <FilterSection
                         title={l === 'fr' ? 'Complexité' : 'Complexity'}
                         badge={filter.complexity !== null ? '1' : undefined}

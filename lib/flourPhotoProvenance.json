@@ -1,0 +1,2335 @@
+{
+  "caputo_pizzeria": {
+    "url": "/images/flours/caputo_pizzeria.webp",
+    "source": "https://www.mulinocaputo.it/prodotti/pizzeria/",
+    "review": "Official product catalogue and Compliance page reviewed 2026-09-19; no explicit image-reuse prohibition found. Not a verified licence. User-authorized prototype use.",
+    "remoteUrl": "https://www.mulinocaputo.it/wp-content/uploads/2023/09/pizzeria-piena.png",
+    "localBytes": 62238,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "caputo_cuoco": {
+    "url": "/images/flours/caputo_cuoco.webp",
+    "source": "https://www.carlodeli.co.uk/product/cuoco-1kg",
+    "review": "Exact Cuoco bag visually verified. Terms /terms section 8 states intellectual property ownership; no explicit reproduction prohibition found. Not a verified licence; user-authorized prototype criterion.",
+    "remoteUrl": "https://www.carlodeli.co.uk/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0775%2F0949%2F3076%2Fproducts%2F91pfbi_ECtL._AC_UF894_1000_QL80.jpg%3Fv%3D1698792014&w=1920&q=75",
+    "localBytes": 81750,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "caputo_saccorosso": {
+    "url": "/images/flours/caputo_saccorosso.webp",
+    "source": "https://www.mulinocaputo.it/prodotti/saccorosso/",
+    "review": "Official product catalogue and Compliance page reviewed 2026-09-19; no explicit image-reuse prohibition found. Not a verified licence. User-authorized prototype use.",
+    "remoteUrl": "https://www.mulinocaputo.it/wp-content/uploads/2023/09/25-saccorosso-piena.png",
+    "localBytes": 50592,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "caputo_nuvola": {
+    "url": "/images/flours/caputo_nuvola.webp",
+    "source": "https://www.mulinocaputo.it/prodotti/nuvola-professional/",
+    "review": "Official product catalogue and Compliance page reviewed 2026-09-19; no explicit image-reuse prohibition found. Not a verified licence. User-authorized prototype use.",
+    "remoteUrl": "https://www.mulinocaputo.it/wp-content/uploads/2023/09/25-nuvola-piena.png",
+    "localBytes": 40568,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "caputo_nuvola_super": {
+    "url": "/images/flours/caputo_nuvola_super.webp",
+    "source": "https://www.mulinocaputo.it/prodotti/nuvola-super/",
+    "review": "Official product catalogue and Compliance page reviewed 2026-09-19; no explicit image-reuse prohibition found. Not a verified licence. User-authorized prototype use.",
+    "remoteUrl": "https://www.mulinocaputo.it/wp-content/uploads/2023/09/25-nuvola-super-piena.png",
+    "localBytes": 41770,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "caputo_classica": {
+    "url": "/images/flours/caputo_classica.webp",
+    "source": "https://www.mulinocaputo.it/prodotti/classica/",
+    "review": "Official product catalogue and Compliance page reviewed 2026-09-19; no explicit image-reuse prohibition found. Not a verified licence. User-authorized prototype use.",
+    "remoteUrl": "https://www.mulinocaputo.it/wp-content/uploads/2023/09/25-classica-piena.png",
+    "localBytes": 49404,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "caputo_americana": {
+    "url": "/images/flours/caputo_americana.webp",
+    "source": "https://www.mulinocaputo.it/prodotti/00-americana/",
+    "review": "Official product catalogue and Compliance page reviewed 2026-09-19; no explicit image-reuse prohibition found. Not a verified licence. User-authorized prototype use.",
+    "remoteUrl": "https://www.mulinocaputo.it/wp-content/uploads/2023/09/americana-25-piena.png",
+    "localBytes": 60540,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "caputo_americana_super": {
+    "url": "/images/flours/caputo_americana_super.webp",
+    "source": "https://www.mulinocaputo.it/prodotti/00-americana-super/",
+    "review": "Official product catalogue and Compliance page reviewed 2026-09-19; no explicit image-reuse prohibition found. Not a verified licence. User-authorized prototype use.",
+    "remoteUrl": "https://www.mulinocaputo.it/wp-content/uploads/2024/03/americana-super-piena.png",
+    "localBytes": 60322,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "caputo_manitoba": {
+    "url": "/images/flours/caputo_manitoba.webp",
+    "source": "https://www.mulinocaputo.it/fr/produire/manitoba-oro-5%C2%A0kg/",
+    "review": "Officialcurrent5kgManitobaOro14%W360–380 visuallyverified. No prominentUSflag, originalsidegeometricstarsretained, noediting. Officialfooter/compliancepageandtargetedsearch noexplicitimageprohibitionfound;notaffirmativelicence.",
+    "remoteUrl": "https://www.mulinocaputo.it/wp-content/uploads/2024/04/manitoba-5-piena.png",
+    "localBytes": 52002,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "caputo_semola": {
+    "url": "/images/flours/caputo_semola.webp",
+    "source": "https://www.mulinocaputo.it/prodotti/semola-di-grano-duro/",
+    "review": "Official product catalogue and Compliance page reviewed 2026-09-19; no explicit image-reuse prohibition found. Not a verified licence. User-authorized prototype use.",
+    "remoteUrl": "https://www.mulinocaputo.it/wp-content/uploads/2024/04/25-semola-piena-1.png",
+    "localBytes": 47642,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "stagioni_gold": {
+    "url": "/images/flours/stagioni_gold.webp",
+    "source": "https://le5stagioni.com/prodotto/oro/",
+    "review": "Copyright/all-rights-reserved footer present. No separate explicit image-reuse prohibition found in reviewed product pages and targeted terms search. Not licensed; user-authorized prototype criterion.",
+    "remoteUrl": "https://le5stagioni.com/wp-content/uploads/2025/03/Oro.png",
+    "localBytes": 29344,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "stagioni_rossa": {
+    "url": "/images/flours/stagioni_rossa.webp",
+    "source": "https://le5stagioni.com/prodotto/pizza-napoletana-rossa/",
+    "review": "Copyright/all-rights-reserved footer present. No separate explicit image-reuse prohibition found in reviewed product pages and targeted terms search. Not licensed; user-authorized prototype criterion.",
+    "remoteUrl": "https://le5stagioni.com/wp-content/uploads/2025/03/Pizza-Napoletana-Rossa.png",
+    "localBytes": 34406,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "stagioni_manitoba": {
+    "url": "/images/flours/stagioni_manitoba.webp",
+    "source": "https://le5stagioni.com/prodotto/tipozero-manitoba/",
+    "review": "Copyright/all-rights-reserved footer present. No separate explicit image-reuse prohibition found in reviewed product pages and targeted terms search. Not licensed; user-authorized prototype criterion.",
+    "remoteUrl": "https://le5stagioni.com/wp-content/uploads/2025/03/TipoZero-Manitoba.png",
+    "localBytes": 41770,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "stagioni_superiore": {
+    "url": "/images/flours/stagioni_superiore.webp",
+    "source": "https://le5stagioni.com/prodotto/superiore/",
+    "review": "Copyright/all-rights-reserved footer present. No separate explicit image-reuse prohibition found in reviewed product pages and targeted terms search. Not licensed; user-authorized prototype criterion.",
+    "remoteUrl": "https://le5stagioni.com/wp-content/uploads/2025/03/Superiore.png",
+    "localBytes": 30858,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "petra_5063": {
+    "url": "/images/flours/petra_5063.webp",
+    "source": "https://shop.farinaearte.it/macinazione-a-rulli-pizzeria/27-petra-5063-special.html",
+    "review": "Product footer and linked sales terms checked; no explicit reproduction prohibition found. Generic copyright retained; no licence claimed.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://shop.farinaearte.it/757-large_default/petra-5063-special.jpg",
+    "localBytes": 37548,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "petra_5037": {
+    "url": "/images/flours/petra_5037.webp",
+    "source": "https://shop.farinaearte.it/macinazione-a-rulli-pizzeria/29-petra-5037-unica.html",
+    "review": "Product footer and linked sales terms checked; no explicit reproduction prohibition found. Generic copyright retained; no licence claimed.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://shop.farinaearte.it/759-large_default/petra-5037-unica.jpg",
+    "localBytes": 37412,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "petra_0102": {
+    "url": "/images/flours/petra_0102.webp",
+    "source": "https://shop.farinaearte.it/hp-con-cereali-germogliati/250-petra-0102-hp-8027815112706.html",
+    "review": "Product footer and linked sales terms checked; no explicit reproduction prohibition found. Generic copyright retained; no licence claimed.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://shop.farinaearte.it/967-large_default/petra-0102-hp.jpg",
+    "localBytes": 24498,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "petra_3": {
+    "url": "/images/flours/petra_3.webp",
+    "source": "https://shop.farinaearte.it/macinazione-a-pietra/3-petra-3.html",
+    "review": "Product footer and linked sales terms checked; no explicit reproduction prohibition found. Generic copyright retained; no licence claimed.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://shop.farinaearte.it/718-large_default/petra-3.jpg",
+    "localBytes": 33630,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "petra_9": {
+    "url": "/images/flours/petra_9.webp",
+    "source": "https://shop.farinaearte.it/macinazione-a-pietra/7-petra-9.html",
+    "review": "Product footer and linked sales terms checked; no explicit reproduction prohibition found. Generic copyright retained; no licence claimed.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://shop.farinaearte.it/727-large_default/petra-9.jpg",
+    "localBytes": 36530,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "petra_5078": {
+    "url": "/images/flours/petra_5078.webp",
+    "source": "https://shop.farinaearte.it/macinazione-a-rulli-pizzeria/32-petra-5078-farina-piu-snella.html",
+    "review": "Product footer and linked sales terms checked; no explicit reproduction prohibition found. Generic copyright retained; no licence claimed.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://shop.farinaearte.it/760-large_default/petra-5078-farina-piu-snella.jpg",
+    "localBytes": 39884,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "molino_grassi_organic": {
+    "url": "/images/flours/molino_grassi_organic.webp",
+    "source": "https://world.openfoodfacts.org/product/8013971063976",
+    "review": "Open Food Facts contributors, image CC BY-SA3.0. Exact bag identity visually verified 2026-09-20. Attribution and CC BY-SA link shown in flour details; resized and converted to WebP.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/801/397/106/3976/front_en.3.400.jpg",
+    "localBytes": 24762,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/8013971063976"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "polselli_classica": {
+    "url": "/images/flours/polselli_classica.webp",
+    "source": "https://www.polselli.it/it/farina/nome/Classica/linea/convenzionale",
+    "review": "Official product page/footer inspected; generic copyright, no explicit reuse prohibition found in focused site search.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://www.polselli.it/public/farine/polselli-convenzionale-classica.png",
+    "localBytes": 43252,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "polselli_super": {
+    "url": "/images/flours/polselli_super.webp",
+    "source": "https://www.polselli.it/it/farina/nome/Super/linea/convenzionale",
+    "review": "Product/footer and privacy/cookie pages reviewed; generic copyright only, no specific reproduction restriction found.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://www.polselli.it/public/farine/polselli-convenzionale-super.png",
+    "localBytes": 37746,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "polselli_vivace": {
+    "url": "/images/flours/polselli_vivace.webp",
+    "source": "https://www.polselli.it/it/farina/nome/Vivace/linea/convenzionale",
+    "review": "Official product page/footer inspected; generic copyright, no explicit reuse prohibition found in focused site search.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://www.polselli.it/public/farine/polselli-convenzionale-vivace.png",
+    "localBytes": 42274,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "polselli_manitoba": {
+    "url": "/images/flours/polselli_manitoba.webp",
+    "source": "https://www.polselli.it/it/farina/nome/Manitoba/linea/retail",
+    "review": "Same official-site review as other Polselli entries. Exact retail Manitoba product image observed and visually verified during integration; local asset exists and detail mapping verified20September2026. No affirmative licence claimed.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://www.polselli.it/public/farine/1679666616_bcbccefb5ef2844a3ce216fab630dd99_farina.jpg",
+    "localBytes": 40108,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "molino_grassi_manitoba": {
+    "url": "/images/flours/molino_grassi_manitoba.webp",
+    "source": "https://shop.molinograssi.it/products/farina-00-manitoba",
+    "review": "Entire terms through article11 and product page reviewed; no explicit image reuse prohibition. No open licence claimed. Technical PDF has its own reproduction restriction; do not redistribute PDF.",
+    "remoteUrl": "https://shop.molinograssi.it/cdn/shop/products/FARINA00_MANITOBA.png?v=1663844363&width=1946",
+    "localBytes": 51446,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "pivetti_00": {
+    "url": "/images/flours/pivetti_00.webp",
+    "source": "https://seedsofitaly.com/pivetti-00-flour-all-purpose-baking-breads-pizze-pasta/",
+    "review": "Product page inspected including links; no terms/privacy/copyright links present in DOM. Focused site restriction search found no explicit image reuse prohibition. No licence claimed.",
+    "visualCheck": "Product packaging checked 2026-09-19",
+    "remoteUrl": "https://cdn11.bigcommerce.com/s-upo966sb1o/images/stencil/960w/products/3901/8987/PIVETTI_FARINA_00_5__98929.1763738424.jpg?c=1",
+    "localBytes": 36512,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "molino_marino_rossa": {
+    "url": "/images/flours/molino_marino_rossa.webp",
+    "source": "https://www.dallagiovanna.it/uniqua",
+    "review": "No explicit reuse restriction found in reviewed product page/footer and focused terms search; not a verified licence. User-authorized prototype use.",
+    "remoteUrl": "https://static.wixstatic.com/media/5fb4ff_9015424accda4a418749920a448ab17a~mv2.png/v1/crop/x_0%2Cy_45%2Cw_550%2Ch_769/fill/w_397%2Ch_555%2Cal_c%2Cq_85%2Cusm_0.66_1.00_0.01%2Cenc_avif%2Cquality_auto/UNIQUA-ROSSA_25-KG.png",
+    "localBytes": 18744,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "barilla_00": {
+    "url": "/images/flours/barilla_00.webp",
+    "source": "https://lavalledeisaporishop.it/shop/farina-00-barilla-1-kg/",
+    "review": "Product footer and linked terms reviewed. Generic all-rights-reserved footer, no explicit reproduction prohibition found. No licence claimed.",
+    "visualCheck": "Exact product bag verified 2026-09-19",
+    "remoteUrl": "https://lavalledeisaporishop.it/wp-content/uploads/2026/09/8076802795019-000-1494.jpg",
+    "localBytes": 26592,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "de_cecco_semolina": {
+    "url": "/images/flours/de_cecco_semolina.webp",
+    "source": "https://www.dececco.com/it_it/product/semola-di-grano-duro-rimacinata/",
+    "review": "Product/footer and privacy reviewed; general All Rights Reserved only; no explicit photo reuse prohibition found in reviewed pages. Not an open licence.",
+    "remoteUrl": "https://www.dececco.com/wp-content/uploads/2018/05/0FW0176-SEMOLA-GRANO-DURO-RIMACINATA-1.png",
+    "localBytes": 33284,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "mulino_casillo_00": {
+    "url": "/images/flours/mulino_casillo_00.webp",
+    "source": "https://world.openfoodfacts.org/product/8033971741001",
+    "review": "Exact bag visually verified. Open Food Facts contributors CC BY-SA3.0. Source/licence attribution in details; resized and WebP converted.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/803/397/174/1001/front_fr.43.400.jpg",
+    "localBytes": 11472,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/8033971741001"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "gmp_t45_gruau": {
+    "url": "/images/flours/gmp_t45_gruau.webp",
+    "source": "https://www.meatup.shop/products/grands-moulins-gruau-rouge-flour-t45-25kg",
+    "review": "No explicit reuse prohibition found in reviewed supplier pages; not a licence.",
+    "remoteUrl": "https://www.meatup.shop/cdn/shop/files/photo_2023-11-06_12-00-36.jpg?v=1757386280",
+    "localBytes": 63484,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "gmp_t45_violette": {
+    "url": "/images/flours/gmp_t45_violette.webp",
+    "source": "https://www.meatup.shop/products/moul-bie-patissiere-violette-flour-t45-25kg",
+    "review": "No explicit prohibition found in inspected supplier pages; not a licence.",
+    "remoteUrl": "https://www.meatup.shop/cdn/shop/products/3162780011496.jpg?v=1757386138",
+    "localBytes": 25998,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "gmp_t65": {
+    "url": "/images/flours/gmp_t65.webp",
+    "source": "https://shop.bakeplus.com/tradition-t65-25-kg.html",
+    "review": "No explicit reuse prohibition found in inspected product/footer and terms route; terms text incomplete. Not a licence.",
+    "remoteUrl": "https://shop.bakeplus.com/media/catalog/product/p/_/p_2020105_1.jpg?optimize=low&bg-color=255,255,255&fit=bounds&height=696&width=696&canvas=696:696",
+    "localBytes": 15332,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "francine_t45": {
+    "url": "/images/flours/francine_t45.webp",
+    "source": "https://www.bellefrance.shop/shop/162602-francine-ble-t45-1-kg-45769",
+    "review": "Exact regular T45 bag visually verified. BelleFrance sales terms reviewed by French audit agent: no explicit image prohibition found. Not a verified licence.",
+    "remoteUrl": "https://www.bellefrance.shop/web/image/product.product/45769/image_1024/%5B162602%5D%20FRANCINE%20Wheat%20Flour%20T45%201%20kg?unique=2bc13dd",
+    "localBytes": 23898,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "francine_pizza_00": {
+    "url": "/images/flours/francine_pizza_00.webp",
+    "source": "https://www.masecori-shop.de/essen-trinken/koch-backzutaten/mehl/francine-pizzamehl-tipo-00-ideale-elastizitaet-fuer-pizza-focaccia-1kg_7006738_10868/",
+    "review": "Supplier AGB and Impressum reviewed: no explicit reuse prohibition, generic copyright. Not a licence.",
+    "remoteUrl": "https://cdn03.plentyone.com/oaj0ywl1xs9h/item/images/7006738/middle/pizza-mehl-7006738-Pizzamehl-Tipo-00-Francine-Weichweizenmehl-italienische-Pizza-selber-machen-elastischer-Pizzateig-Backen-wie-in-Italien-Pizza-Napoletana-Rezept-Focaccia-Mehl-Calzone-.jpg",
+    "localBytes": 24278,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "francine_t65": {
+    "url": "/images/flours/francine_t65.webp",
+    "source": "https://www.bellefrance.shop/shop/162784-red-label-wheat-flour-t65-1kg-59307",
+    "review": "BelleFrance terms reviewed by French audit agent; no explicit image reuse prohibition found. Not a licence.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://www.bellefrance.shop/web/image/product.template/59307/image_1920",
+    "localBytes": 31594,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "foricher_t45": {
+    "url": "/images/flours/foricher_t45.webp",
+    "source": "https://www.eshop-lachapelloise.be/produit/1875/",
+    "review": "Reviewed supplier footer and linked notices: no explicit reuse prohibition found; no licence asserted.",
+    "remoteUrl": "https://www.eshop-lachapelloise.be/wp-content/uploads/2021/04/t45-1.jpg",
+    "localBytes": 21902,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "foricher_t65": {
+    "url": "/images/flours/foricher_t65.webp",
+    "source": "https://www.deliverdeli.com/t65-flour-bagatelle-red-label/",
+    "review": "Sales terms reviewed: https://www.deliverdeli.com/payment-terms/ . No explicit image reuse prohibition found. Not a verified licence. Full-size 900px image loaded in browser.",
+    "remoteUrl": "https://www.deliverdeli.com/wp-content/uploads/2022/02/t65-french-bread-flour.png",
+    "localBytes": 14838,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "viron_retrodor": {
+    "url": "/images/flours/viron_retrodor.webp",
+    "source": "https://www.farinex.ca/product?category=-1&kosher=-1&search=Retrodor",
+    "review": "Exact supplier VI55 RetrodorT55 MoulinsViron25kg. Source/footerprivacyreview noexplicitimagecopyrestrictionfound; notlicence.",
+    "remoteUrl": "https://s3.ca-central-1.wasabisys.com/farinex-cdn-public/website/products/images/1678083860-vi-55-retrodor-flour-t55-25-kg-1-1-1-1-1-1-1-1-1-1-1-1-1-1.jpg",
+    "localBytes": 9092,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "carrefour_t45": {
+    "url": "/images/flours/carrefour_t45.webp",
+    "source": "https://world.openfoodfacts.org/product/3270190117308",
+    "review": "Exact original Carrefour Farine de ble T45 Pour tout usage1kg package visually verified by agent, complete frontal bag on clean white background. Open Food Facts raw17 uploader org-carrefour, CC BY-SA3.0 https://creativecommons.org/licenses/by-sa/3.0/ . Retain contributor/source/licence attribution. Resize/WebP only; no AI alteration. Older orange packaging differs from newer shelfphoto but exactEAN and type preserved.",
+    "credit": {
+      "author": "org-carrefour / Open Food Facts contributors",
+      "license": "CC BY-SA3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3270190117308"
+    },
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/327/019/011/7308/17.400.jpg",
+    "localBytes": 26572,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "carrefour_t55": {
+    "url": "/images/flours/carrefour_t55.webp",
+    "source": "https://world.openfoodfacts.org/product/3245414662926",
+    "review": "Visuallyverified French/DutchCarrefourDiscountType55 bag, olderlowresolutionpackaging. RawOFFimage1, notSpanishselectedfront. CC BY-SA3.0 contributorcreditindetails, resized/WebP.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/324/541/466/2926/1.400.jpg",
+    "localBytes": 7742,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3245414662926"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "shipton_t55": {
+    "url": "/images/flours/shipton_t55.webp",
+    "source": "https://infusions4chefs.co.uk/shipton-mill-french-type-55-white-flour-25kg/",
+    "review": "Exact named original product; Infusions4Chefs terms previously fully reviewed without explicit image copying prohibition. Not a licence.",
+    "remoteUrl": "https://cdn11.bigcommerce.com/s-60yzq6/images/stencil/1280x1280/products/3827/16794/12990_-_SHIPTON_MILL_-_FRENCH_TYPE_WHITE_BREAD_T55_-_25KG__62394.1761831640.jpg?c=2",
+    "localBytes": 33232,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "shipton_strong": {
+    "url": "/images/flours/shipton_strong.webp",
+    "source": "https://www.albionfinefoods.com/white-no1-flour-shipton-mill/p/2964",
+    "review": "Exact supplier No1 productFLOUSHIPNO116, manufacturer WhiteFlour16kg bag (variant identified by source listing, generic front). Sales terms reviewed no explicit image copying prohibition found; not licence.",
+    "remoteUrl": "https://www.albionfinefoods.com/images_products_2/HD_FLOUSHIPNO116.jpg",
+    "localBytes": 29820,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "shipton_t45": {
+    "url": "/images/flours/shipton_t45.webp",
+    "source": "https://www.henderson-foodservice.com/370092-shipton-mill-white-wheat-flour-type-t45-1x25kg.html",
+    "review": "Actual browser confirms exact370092 T45 25kg listing with main product image. Downloaded photo is clean original purple SpecialityWhite25kg family bag, not labelledT45 on front; assignment relies on exact distributor product context. No fake or relabelled bag. Native browser footer inspected, CustomerServices expanded: privacy/cookies/slavery statement only. Supplier-information disclaimer refers terms but no accessible linked terms observed. Targeted indexed terms/copyright/permission searches yielded none; guessed /terms-and-conditions inaccessible. No explicit reuse prohibition found in limited review; not affirmative licence. Root visually verified original family pack supplied on exact T45 listing.",
+    "remoteUrl": "https://www.henderson-foodservice.com/media/catalog/product/cache/f7e3a2766b9a655912e97eacaab031ec/3/b/3b29eb3c6e239ba833398adbd7258a31.png",
+    "localBytes": 34178,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "marriages_strong": {
+    "url": "/images/flours/marriages_strong.webp",
+    "source": "https://infusions4chefs.co.uk/marriages-finest-strong-white-bread-flour-1-5kg/",
+    "review": "Published terms reviewed; sales/delivery/returns, no explicit photo reuse ban. No licence asserted.",
+    "remoteUrl": "https://cdn11.bigcommerce.com/s-60yzq6/images/stencil/1280w/products/1939/20436/12690_MARRIAGES_STRONG_WHITE_BREAD_FLOUR_1.5KG__26195.1756474630.jpg?c=2",
+    "localBytes": 27908,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "doves_organic_strong": {
+    "url": "/images/flours/doves_organic_strong.webp",
+    "source": "https://falmouthfood.coop/product/et-f629p-strong-white-flour-org",
+    "review": "Generic copyright footer and photographer credit, no explicit reuse prohibition on observed product page or domain terms search. Not licensed.",
+    "visualCheck": "Exact bag verified 2026-09-19",
+    "remoteUrl": "https://falmouthfood.coop/userdata/products/218/df-strongwhitebreadflour2020.jpg",
+    "localBytes": 24498,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "allinson_bread": {
+    "url": "/images/flours/allinson_bread.webp",
+    "source": "https://britishcornerstore.com/products/allinson-strong-white-bread-flour",
+    "review": "Exact Allinson Strong White1kg. Retailer product/footer and indexed policy search no explicit reuse prohibition found; not licence; photo may be syndicated.",
+    "remoteUrl": "https://britishcornerstore.com/cdn/shop/files/HB0110.jpg?v=1757335458&width=1000",
+    "localBytes": 16256,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "waitrose_bread": {
+    "url": "/images/flours/waitrose_bread.webp",
+    "source": "https://maxmartonline.com/waitrose-strong-white-bread-flour-15kg",
+    "review": "Terms reviewed: sale/delivery/liability/privacy, no explicit image reproduction prohibition found. Generic all-rights-reserved footer; no reuse licence claimed. Exact Essential Strong White bag visually verified.",
+    "remoteUrl": "https://maxmartonline.com/images/thumbs/0001425_waitrose-strong-white-bread-flour-15kg.jpeg",
+    "localBytes": 14824,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "marriages_organic_strong": {
+    "url": "/images/flours/marriages_organic_strong.webp",
+    "source": "https://world.openfoodfacts.org/product/5011259055708",
+    "review": "Exact bag visually verified. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence links in flour details; resized and WebP conversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/501/125/905/5708/front_en.4.400.jpg",
+    "localBytes": 26016,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/5011259055708"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "wessex_strong": {
+    "url": "/images/flours/wessex_strong.webp",
+    "source": "https://www.agrifresh.com.hk/products/wessex-mill-strong-white-bread-flour/",
+    "review": "No explicit restriction surfaced in targeted domain search; similarly named agrifreshmarket.com is different company/domain and cannot apply its restriction. Retailer migrated from Shopify, image load needs root verification. No license claim. Exact manufacturer bag visually verified 2026-09-20.",
+    "remoteUrl": "https://cdn.shopify.com/s/files/1/2707/1986/products/wessex-mill-strong-white-flour_1200x1200.png?v=1589208813",
+    "localBytes": 33656,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "matthews_strong_white": {
+    "url": "/images/flours/matthews_strong_white.webp",
+    "source": "https://cranleybarnfarms.co.uk/blog/f/fortified-flour-what-is-it?blogcategory=Christmas",
+    "review": "Generic all-rights-reserved footer, no terms link and no explicit reuse restriction surfaced in targeted domain search. Privacy link fetch failed. Not licensed claim; root visual check needed. Exact manufacturer bag visually verified 2026-09-20.",
+    "remoteUrl": "https://img1.wsimg.com/isteam/ip/60c1d9a1-047c-4c84-8664-6a468c91c6d0/CBFS_LR_PorkOthers-67.jpg",
+    "localBytes": 40796,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "ka_ap": {
+    "url": "/images/flours/ka_ap.webp",
+    "source": "https://commons.wikimedia.org/wiki/File:Sack_of_King_Arthur_all_purpose_flour.jpg",
+    "review": "Existing verified image replaced by locally optimized original for faster loading and sharper detail. Visually verified King Arthur Unbleached All-Purpose5lb. Original has outdoor background, retained faithfully; further cleaner-photo search remains. CC BY-SA4.0, Kenneth C. Zirkel,2022. Resize/WebP conversion only.",
+    "credit": {
+      "author": "Kenneth C. Zirkel",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sack_of_King_Arthur_all_purpose_flour.jpg"
+    },
+    "remoteUrl": "https://upload.wikimedia.org/wikipedia/commons/9/90/Sack_of_King_Arthur_all_purpose_flour.jpg",
+    "localBytes": 59076,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "ka_bread": {
+    "url": "/images/flours/ka_bread.webp",
+    "source": "https://sohomarketpanama.com/products/162",
+    "review": "Exact KingArthurUnbleachedBread5lb. Full retailerterms reviewed no explicit copyban; not licence.",
+    "remoteUrl": "https://sohomarketpanama.com/cdn/shop/products/KING-K3FLB_360x.jpg?v=1662675739",
+    "localBytes": 16282,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "ka_00": {
+    "url": "/images/flours/ka_00.webp",
+    "source": "https://world.openfoodfacts.org/product/071012060078",
+    "review": "Exact bag visually verified. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence in details; resized and WebP converted.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/007/101/206/0078/front_en.15.400.jpg",
+    "localBytes": 23410,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/071012060078"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "ka_sir_galahad": {
+    "url": "/images/flours/ka_sir_galahad.webp",
+    "source": "https://www.megansdesserts.com/store/king-arthur-sir-galahad-artisan-flour-50lbs-details.html",
+    "review": "Exact original bag visually verified. Supplier product/footer, shipping/returns and privacy reviewed; no explicit image reuse prohibition found under user criterion. No affirmative licence. Resized/WebP only.",
+    "remoteUrl": "https://www.megansdesserts.com/media/products/sir-galahad-artisan-flour-V2.webp",
+    "localBytes": 30994,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "ka_sir_lancelot": {
+    "url": "/images/flours/ka_sir_lancelot.webp",
+    "source": "https://world.openfoodfacts.org/product/071012130504",
+    "review": "Exact original bag visually verified. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence in details; resized and WebP converted.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/007/101/213/0504/front_en.3.400.jpg",
+    "localBytes": 31752,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/071012130504"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "ka_organic_ap": {
+    "url": "/images/flours/ka_organic_ap.webp",
+    "source": "https://online.citysuper.com.hk/products/king-arthur-organic-unbleached-all-purpose-flour-301455015",
+    "review": "Exact OrganicAP2.27kg relatedproductgalleryobserved; retailerdisclaimerandmembershipterms noexplicitreuseprohibition;notlicence.",
+    "remoteUrl": "https://online.citysuper.com.hk/cdn/shop/products/301455015-1-king-arthur-organic-unbleached-all-purpose-flour-2-27kg.jpg?v=1662551553&width=450",
+    "localBytes": 17222,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "gold_medal_ap": {
+    "url": "/images/flours/gold_medal_ap.webp",
+    "source": "https://seabrafoods.com/products/gold-medal-all-purpose-flour-5lb",
+    "review": "Visually verified20September2026. Exact original5lb GoldMedal product fully visible on cleanwhite background,1200px image replaces200px thumbnail. URL observed from publicShopify product JSON featured_image. Same previously reviewed Seabra source: genericcopyright, no explicit reuse prohibition found; terms endpoint unavailable. Limitedreview, not licence. No image content editing.",
+    "remoteUrl": "https://cdn.shopify.com/s/files/1/0608/4424/5227/products/gold-medal-all-purpose-flour-5lb-seabra-foods-online.jpg?v=1706325140",
+    "localBytes": 39358,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "gold_medal_bread": {
+    "url": "/images/flours/gold_medal_bread.webp",
+    "source": "https://world.openfoodfacts.org/product/016000106406",
+    "review": "Exact original bag visually verified. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence in details; resized and WebP conversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/001/600/010/6406/front_en.19.400.jpg",
+    "localBytes": 29102,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/016000106406"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "gold_medal_harvest": {
+    "url": "/images/flours/gold_medal_harvest.webp",
+    "source": "https://www.dutchvalleyfoods.com/harvest-king-enriched-unbleached-flour-50lb/",
+    "review": "Exact Harvest King 53722 50lb original bag visually verified. Supplier terms reviewed, no explicit reuse restriction found; not affirmative licence. WebP/resize only.",
+    "remoteUrl": "https://cdn11.bigcommerce.com/s-7gw5qujusi/images/stencil/original/products/530/19685/140029__37923.1762518314.jpg?c=1",
+    "localBytes": 50084,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "gold_medal_full_strength": {
+    "url": "/images/flours/gold_medal_full_strength.webp",
+    "source": "https://www.opentip.com/Gold-Medal-Full-Strength-Bakers-Enriched-Unbleached-Unbromated-Flour-50-Pounds-Per-Pack-1-Per-Case-p-9492956.html",
+    "review": "MPN16000-53395 on page, original bag label Unbleached Unbromated visually verified. Terms of use concerns shipping/returns. Copyright and trademark page generic copyright; written logo permission clause appears in custom-imprinted merchandise customer section. No explicit product image reuse ban found in limited review; not a licence.",
+    "remoteUrl": "https://cdnimages.opentip.com/full/DOF/DOF-612355.jpg",
+    "localBytes": 37234,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bobs_artisan_bread": {
+    "url": "/images/flours/bobs_artisan_bread.webp",
+    "source": "https://sohomarketpanama.com/products/1034-1",
+    "review": "Exact ArtisanBread5lb UPC039978002365. Full retailerterms reviewed no explicit copyban; not licence.",
+    "remoteUrl": "https://sohomarketpanama.com/cdn/shop/products/1317c054_artisanbreadflour_f.jpg?v=1662651536",
+    "localBytes": 43262,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bobs_ap": {
+    "url": "/images/flours/bobs_ap.webp",
+    "source": "https://world.openfoodfacts.org/product/039978533012",
+    "review": "Exact original bag visually verified. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence in details; resized and WebP conversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/003/997/853/3012/front_en.6.400.jpg",
+    "localBytes": 30090,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/039978533012"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "pillsbury_ap": {
+    "url": "/images/flours/pillsbury_ap.webp",
+    "source": "https://seabrafoods.com/products/pillsbury-all-purpose-flour-2lb",
+    "review": "Actual photo source is Seabra retailer, not manufacturer website. Product/footer and focused restriction search found no explicit prohibition; terms endpoint unavailable. No affirmative licence. Supersedes stale manufacturer-terms note.",
+    "remoteUrl": "https://seabrafoods.com/cdn/shop/products/pillsbury-all-purpose-flour-2lb-seabra-foods-online_1200x1200.jpg?v=1706325152",
+    "localBytes": 20862,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "pillsbury_bread": {
+    "url": "/images/flours/pillsbury_bread.webp",
+    "source": "https://world.openfoodfacts.org/product/051500200315",
+    "review": "Exact original bag visually verified; older packaging where applicable. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence in details; resized and WebP conversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/005/150/020/0315/front_en.15.400.jpg",
+    "localBytes": 20354,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/051500200315"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "central_high_mountain": {
+    "url": "/images/flours/central_high_mountain.webp",
+    "source": "https://www.foodrelated.com/prod/GG-2840/high-mountain-organic-high-gluten-flour-by-central-milling.html",
+    "review": "Root visually verified20September2026: full original High Mountain100%OrganicHiGlutenWheatFlour50lb bag on clean background. Source product and footer reviewed; focused site copyright/reproduce search found no explicit prohibition; parsed page exposes no terms link. Limited review, no licence claimed. User criterion applied. No image content editing.",
+    "remoteUrl": "https://www.foodrelated.com/Merchant5/graphics/00000001/GG-2840_front_530x530.jpg",
+    "localBytes": 21794,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "central_00": {
+    "url": "/images/flours/central_00.webp",
+    "source": "https://oakbarrel.com/central-milling-organic-pizza-flour-00-normal-5-lb/",
+    "review": "Original Central Milling Organic Pizza Type 00 5lb pack visually verified. Retailer names exact Normal variant, matching protein11.5 and W280–300. Footer and focused terms search reviewed20September2026, no explicit retailer image-reuse prohibition found; not affirmative licence. Original pack retained; resize/WebP only.",
+    "remoteUrl": "https://cdn11.bigcommerce.com/s-nvnlfr/images/stencil/1280x1280/products/1566/3286/PizzaFlour-Product__36866.1732149283.png?c=2",
+    "localBytes": 27178,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "giustos_high_perf": {
+    "url": "/images/flours/giustos_high_perf.webp",
+    "source": "https://lettieriandco.com/product/giustos-high-perf-high-pro-flour/",
+    "review": "Exact original product bag previously visually checked. Product/footer freshly reviewed 2026-09-20: generic copyright only, no terms link; focused restriction search found no explicit prohibition. Not affirmative licence; review limited to available pages.",
+    "visualCheck": "Exact product bag verified 2026-09-19",
+    "remoteUrl": "https://lettieriandco.com/wp-content/uploads/2016/10/Cropped_Image__16_-removebg-preview.png",
+    "localBytes": 39630,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "white_lily_ap": {
+    "url": "/images/flours/white_lily_ap.webp",
+    "source": "https://www.christinasspice.org/flour/p/06van4dhcfm2cibs2n3mqijxi11ic0",
+    "review": "Visually verified original WhiteLilyAllPurpose25lb bag, older packaging; not retailerrepack. Product andhomepage noexplicitimageprohibitionfound;notlicence.",
+    "remoteUrl": "https://images.squarespace-cdn.com/content/v1/5e98c7904b1bb311a56e3d67/1693960794902-OQECV26S8PE5BN2GFNWI/9BBCEF6A-3787-4A7D-B37C-96BBB2065786",
+    "localBytes": 58646,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "white_lily_bread": {
+    "url": "/images/flours/white_lily_bread.webp",
+    "source": "https://www.hghillfoodstores.com/shop/pantry/cooking_baking_needs/flour_meals/white_lily_bread_flour_unbleached_5_lb/p/565386",
+    "review": "Exact White Lily Bread Unbleached 5lb. HG Hill terms reread 2026-09-20: no explicit image-copy clause found, but contain no-authority statement for use of names/logos/marks and site-navigation-agent restrictions. No affirmative licence; retain these limits in review.",
+    "remoteUrl": "https://images.freshop.ncrcloud.com/00032500133018/a1efdf694623882c6396b3333c5eb655_large.png",
+    "localBytes": 37306,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "robin_hood_ap": {
+    "url": "/images/flours/robin_hood_ap.webp",
+    "source": "https://canadagrocerystore.com/products/robin-hood-original-all-purpose-flour-2-5kg",
+    "review": "Previously reviewed domain; product footer shows generic copyright, no terms link or indexed prohibition found. No licence claimed.",
+    "remoteUrl": "https://canadagrocerystore.com/cdn/shop/files/79240632-8b15-4157-b990-f84d897c64c2_316x498.jpg?v=1733681812",
+    "localBytes": 21996,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "robin_hood_bread": {
+    "url": "/images/flours/robin_hood_bread.webp",
+    "source": "https://canadagrocerystore.com/products/robin-hood-best-for-bread-homestyle-white-flour-2-5kg",
+    "review": "Exact product bag previously visually checked. Product/footer and focused terms search reviewed 2026-09-20; no explicit image reuse prohibition found. Terms endpoint unavailable; no affirmative licence.",
+    "visualCheck": "Exact product bag verified 2026-09-19",
+    "remoteUrl": "https://canadagrocerystore.com/cdn/shop/files/0280d75a-6998-4251-8401-e02e43e3e989_307x500.jpg?v=1762439783",
+    "localBytes": 23254,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "five_roses_ap": {
+    "url": "/images/flours/five_roses_ap.webp",
+    "source": "https://bonanzalalumiere.com/en/products/0005150041040",
+    "review": "Exact Five Roses White All Purpose 10kg EAN05150041040. Product/footer and targeted terms search no explicit reuse prohibition; not a licence.",
+    "remoteUrl": "https://bonanzalalumiere.com/cdn/shop/products/0005150041040-bonanza-lalumiere.jpg?v=1651645085",
+    "localBytes": 18474,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "anitas_ap": {
+    "url": "/images/flours/anitas_ap.webp",
+    "source": "https://world.openfoodfacts.org/product/623636400008",
+    "review": "Exact bag visually verified. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence in details; resized and WebP conversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/062/363/640/0008/front_fr.3.400.jpg",
+    "localBytes": 16820,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/623636400008"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "wholegrain_milling": {
+    "url": "/images/flours/wholegrain_milling.webp",
+    "source": "https://www.wholegrain.com.au/products/sustainable/",
+    "review": "Official product/footer reviewed; targeted reproduction search no match. No licence claimed.",
+    "remoteUrl": "https://www.wholegrain.com.au/wp-content/uploads/2026/02/1-sustainable-high-protein-premium-white-bakers-flour.webp",
+    "localBytes": 35570,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "coles_plain": {
+    "url": "/images/flours/coles_plain.webp",
+    "source": "https://world.openfoodfacts.org/product/9300601287048",
+    "review": "Exact original bag visually verified; older packaging where applicable. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence in details; resized and WebP conversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/930/060/128/7048/front_en.4.400.jpg",
+    "localBytes": 19140,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/9300601287048"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "defiance_bread": {
+    "url": "/images/flours/defiance_bread.webp",
+    "source": "https://www.foodfactor.net/produits/9310138212024/whitevbackers%2Bflour.php",
+    "review": "Open Food Facts contributors, CC BY-SA 3.0; attribution required; older packaging.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/931/013/821/2024/front_en.19.200.jpg",
+    "localBytes": 8260,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/9310138212024"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "prima_bread": {
+    "url": "/images/flours/prima_bread.webp",
+    "source": "https://www.ngnambee.com.sg/product/prima-bread-flour-1kg/",
+    "review": "Visually verified20September2026 original Prima unbleachedBreadFlour1kg greenbag fullpack cleanwhitebackground750x1000. Product/footer and full linked privacy policy https://www.ngnambee.com.sg/privacy-policy/ reviewed; no explicit reproductionban found, genericcopyright only. Not licence. No image content editing.",
+    "remoteUrl": "https://www.ngnambee.com.sg/wp-content/uploads/2023/07/PRIMA-BREAD-FLOUR-1KG.jpg",
+    "localBytes": 26892,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "prima_plain": {
+    "url": "/images/flours/prima_plain.webp",
+    "source": "https://world.openfoodfacts.org/product/8886350000011",
+    "review": "Exact original bag visually verified. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence in details; resized and WebP converted.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/888/635/000/0011/front_en.4.400.jpg",
+    "localBytes": 25422,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/8886350000011"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "prima_superior": {
+    "url": "/images/flours/prima_superior.webp",
+    "source": "https://www.primaflour.com/product-description/superior-bread-flour/",
+    "review": "Exact product image link observed. Prima terms already reviewed in canonical provenance no explicit reuse prohibition; Content protected notice present, no licence claimed. Prefer original PNG over SengHong thumbnail if actualresolution improves. Root visually verified exact clean original 450x616, replaces low-resolution thumbnail20September2026.",
+    "remoteUrl": "https://www.primaflour.com/wp-content/uploads/2021/11/Superior-bread-flour.png",
+    "localBytes": 45678,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "prima_clover": {
+    "url": "/images/flours/prima_clover.webp",
+    "source": "https://pohhocksg.com/shop/flour/bread-flour/prima-clover-brand/",
+    "review": "Exact Clover25kg manufacturer bag visually verified. Full source page/footer contains no terms link or explicit restriction; focused domain restriction search no results. Not a licence.",
+    "remoteUrl": "https://pohhocksg.com/wp-content/uploads/2018/08/PF_SIN_Clover_PackShot_030816-compressor.png",
+    "localBytes": 37258,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "prima_artisan": {
+    "url": "/images/flours/prima_artisan.webp",
+    "source": "https://www.primaflour.com/product-description/artisan-bread-flour/",
+    "review": "Exact product image link observed. Prima terms already reviewed in canonical provenance no explicit reuse prohibition; Content protected notice present, no licence claimed. Prefer original PNG over SengHong thumbnail if actualresolution improves. Root visually verified exact clean original 450x616, replaces low-resolution thumbnail20September2026.",
+    "remoteUrl": "https://www.primaflour.com/wp-content/uploads/2021/11/Artisan-bread-flour.png",
+    "localBytes": 33534,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bake_king_bread": {
+    "url": "/images/flours/bake_king_bread.webp",
+    "source": "https://bakeking.com.sg/product/bake-king-bread-flour-1kg-5kg/",
+    "review": "Terms reviewed: trademark reservation, no explicit photo reproduction ban. Disclaimer retrieval timed out. No licence claimed.",
+    "remoteUrl": "https://bakeking.com.sg/wp-content/uploads/2021/08/bake-king-bread-flour-1kg.jpg",
+    "localBytes": 34480,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bake_king_plain": {
+    "url": "/images/flours/bake_king_plain.webp",
+    "source": "https://bakeking.com.sg/product/bake-king-plain-flour-1kg-5kg/",
+    "review": "Terms reviewed: trademark reservation, no explicit photo reproduction ban. Disclaimer retrieval timed out. No licence claimed.",
+    "remoteUrl": "https://bakeking.com.sg/wp-content/uploads/2021/08/bake-king-plain-flour-1kg.jpg",
+    "localBytes": 33130,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "nisshin_camellia": {
+    "url": "/images/flours/nisshin_camellia.webp",
+    "source": "https://www.kameyaweb.co.jp/aec/user/shohin_detail?item_cd=5405",
+    "review": "Exact NisshinSeifun Camellia25kg professional sack. Guide/footer/targeted termsreview noexplicitreuseprohibition found; notlicence.",
+    "remoteUrl": "https://www.kameyaweb.co.jp/static/item/5405_1.jpg?1518167131000=",
+    "localBytes": 60210,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "nisshin_violet": {
+    "url": "/images/flours/nisshin_violet.webp",
+    "source": "https://hinoya-fine-foods.com/product/10507/",
+    "review": "Exact original Nisshin Violet 25kg. Sales-law page reviewed; generic copyright, no explicit image reuse prohibition found. Not a license claim.",
+    "remoteUrl": "https://hinoya-fine-foods.com/wp-content/uploads/2025/06/10507_0-1.jpg",
+    "localBytes": 44654,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "dalla_giovanna_uniqua_blu": {
+    "url": "/images/flours/dalla_giovanna_uniqua_blu.webp",
+    "source": "https://www.dallagiovanna.it/uniqua",
+    "review": "No explicit reuse restriction found in reviewed product page/footer and focused terms search; not a verified licence. User-authorized prototype use.",
+    "remoteUrl": "https://static.wixstatic.com/media/5fb4ff_191e271c6027444aa17c4103fb9e2196~mv2.png/v1/crop/x_14%2Cy_65%2Cw_525%2Ch_734/fill/w_421%2Ch_589%2Cal_c%2Cq_85%2Cusm_0.66_1.00_0.01%2Cenc_avif%2Cquality_auto/UNIQUA-BLU_25-KG.png",
+    "localBytes": 20166,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "dalla_giovanna_uniqua_gialla": {
+    "url": "/images/flours/dalla_giovanna_uniqua_gialla.webp",
+    "source": "https://www.dallagiovanna.it/uniqua",
+    "review": "No explicit reuse restriction found in reviewed product page/footer and focused terms search; not a verified licence. User-authorized prototype use.",
+    "remoteUrl": "https://static.wixstatic.com/media/5fb4ff_fd0a22902d22436e8bb4205c6138aeaa~mv2.png/v1/crop/x_0%2Cy_45%2Cw_550%2Ch_769/fill/w_397%2Ch_555%2Cal_c%2Cq_85%2Cusm_0.66_1.00_0.01%2Cenc_avif%2Cquality_auto/UNIQUA-GIALLA_25-KG.png",
+    "localBytes": 19096,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "pasini_ideale_pizza": {
+    "url": "/images/flours/pasini_ideale_pizza.webp",
+    "source": "https://www.molinopasini.com/it/farine/498-498-farina-ideale-per-pizza",
+    "review": "Official manufacturer bag render. Product and specification verified against official catalogue; no explicit reuse prohibition found in reviewed source. User-authorized prototype criterion, not a licence.",
+    "remoteUrl": "https://www.molinopasini.com/upload/catalogo/498/d_1kg-Pizza.jpg",
+    "localBytes": 14658,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "5stagioni_tipozero_superiore": {
+    "url": "/images/flours/5stagioni_tipozero_superiore.webp",
+    "source": "https://le5stagioni.com/prodotto/tipozero-superiore/",
+    "review": "Copyright/all-rights-reserved footer present. No separate explicit image-reuse prohibition found in reviewed product pages and targeted terms search. Not licensed; user-authorized prototype criterion.",
+    "remoteUrl": "https://le5stagioni.com/wp-content/uploads/2025/03/Tipozero-Superiore.png",
+    "localBytes": 36822,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "italmill_blu": {
+    "url": "/images/flours/italmill_blu.webp",
+    "source": "https://www.cibimarket.co.uk/products/italmill-flours-premium-quality-farine-del-gusto-blu-type-00-25-kg-1-in-a-box",
+    "review": "Full terms of service reviewed: only sales/delivery/payment/general premises conditions, no explicit reproduction prohibition; generic footer copyright. Not a licence.",
+    "remoteUrl": "https://www.cibimarket.co.uk/cdn/shop/files/836b5628-b157-40fd-a6f3-32c84111c6b0_removalai_preview.png?v=1761312242&width=460",
+    "localBytes": 37792,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "rossetto_00": {
+    "url": "/images/flours/rossetto_00.webp",
+    "source": "https://www.molinorossetto.com/it/le-classiche/2368-farina-00-grano-italiano-vpack.html",
+    "review": "Manufacturer sales terms reviewed, generic copyright only; no explicit prohibition located. Not a licence.",
+    "remoteUrl": "https://www.molinorossetto.com/2599-pos_zoom/farina-00-grano-italiano-vpack.jpg",
+    "localBytes": 10204,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "molino_agostini_00": {
+    "url": "/images/flours/molino_agostini_00.webp",
+    "source": "https://www.alpassofood.com/prodotto/farina-di-grano-tenero-tipo-00-bio/",
+    "review": "Full retailer sales terms reviewed: no explicit photo prohibition. No licence asserted.",
+    "remoteUrl": "https://i0.wp.com/www.alpassofood.com/wp-content/uploads/2021/05/tipo-00.jpg?resize=600%2C600&ssl=1",
+    "localBytes": 17948,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "caputo_bio": {
+    "url": "/images/flours/caputo_bio.webp",
+    "source": "https://grupocampania.com.mx/producto/harina-caputo-biologica/",
+    "review": "Product page/footer and focused site terms search checked; no specific reproduction prohibition found. Generic copyright is not a licence.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://grupocampania.com.mx/wp-content/uploads/2022/05/productos-08.png",
+    "localBytes": 18770,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "divella_00": {
+    "url": "/images/flours/divella_00.webp",
+    "source": "https://www.divella.it/it/prodotti/farina-00-1kg-5kg/",
+    "review": "Product page/footer and focused site terms search checked; no specific reproduction prohibition found. Generic copyright is not a licence.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://www.divella.it/wp-content/uploads/2022/12/sfarinati-farina-uso-domestico-farina-tipo-00-dettaglio.jpg",
+    "localBytes": 43402,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "barilla_semolina": {
+    "url": "/images/flours/barilla_semolina.webp",
+    "source": "https://www.barilla.com/it-it/prodotti/farine-e-cereali/farine",
+    "review": "Review recorded in research manifest.",
+    "remoteUrl": "https://images.ctfassets.net/niz9afzgmmyd/3AarpHDyJ3zGgRmvgNi4eE/ac2156a5bfcbf263313923aed53b4333/Product_card_-_Semola_rimacinata_di_Grano_duro.png?w=1200",
+    "localBytes": 22618,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "casillo_semola": {
+    "url": "/images/flours/casillo_semola.webp",
+    "source": "https://world.openfoodfacts.org/product/8033971741087",
+    "review": "Exact bag visually verified. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence in details; resized and WebP converted.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/803/397/174/1087/front_it.11.400.jpg",
+    "localBytes": 16966,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/8033971741087"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "mulino_marino_integrale": {
+    "url": "/images/flours/mulino_marino_integrale.webp",
+    "source": "https://www.mulinomarino.it/SHOP/farine-grano-tenero-e-duro/17-farina-bio-tipo-setaccio.html",
+    "review": "Official product footer and entire currently linked sales/use terms reviewed20September2026 including product information and use disclaimer. No explicit image-reuse prohibition found. Current footer links Terms and Privacy, not separate NoteLegali. Not affirmative licence.",
+    "remoteUrl": "https://www.mulinomarino.it/SHOP/280-large_default/farina-bio-tipo-setaccio.jpg",
+    "localBytes": 15062,
+    "termsSource": "https://www.mulinomarino.it/SHOP/content/3-termini-e-condizioni-di-uso",
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "molino_grassi_type1": {
+    "url": "/images/flours/molino_grassi_type1.webp",
+    "source": "https://www.molinograssi.it/product/tipo-1-macinata-a-pietra/",
+    "review": "Manufacturer product footer only generic copyright. Linked privacy and cookie pages no reproduction restriction; previously reviewed shop sales terms no explicit restriction. PDF restriction is limited to its document, not reused here.",
+    "visualCheck": "Exact organic Tipo1 verified",
+    "remoteUrl": "https://www.molinograssi.it/wp-content/uploads/2022/07/TIPO1_MACINATO_INPIETRA-1024x1024.png",
+    "localBytes": 34484,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "petra_1": {
+    "url": "/images/flours/petra_1.webp",
+    "source": "https://shop.farinaearte.it/macinazione-a-pietra/1-petra-1.html",
+    "review": "Product footer and linked sales terms checked; no explicit reproduction prohibition found. Generic copyright retained; no licence claimed.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://shop.farinaearte.it/721-large_default/petra-1.jpg",
+    "localBytes": 35454,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "celnat_t65_bio": {
+    "url": "/images/flours/celnat_t65_bio.webp",
+    "source": "https://www.foodnutrifacts.com/products/celnat-farine-de-bl-blanche-t65-3273120011516",
+    "review": "Exact EAN3273120011516 OFF photo, linked source record. OpenFoodFacts contributors CC BY-SA3.0, attribution required.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/327/312/001/1516/front_en.32.400.jpg",
+    "localBytes": 27026,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3273120011516"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "celnat_t80_bio": {
+    "url": "/images/flours/celnat_t80_bio.webp",
+    "source": "https://world.openfoodfacts.org/product/3273120011479",
+    "review": "ExactCelnatregularwheatT80Blue1kgbagvisuallyverifiedbarcodevisible. OFFcontributorsCCBYSA3.0creditedindetails. Replacesretailerphotoafterrestrictionaudit. Originalpackagingolder.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/327/312/001/1479/front_fr.26.400.jpg",
+    "localBytes": 27826,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3273120011479"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "foricher_t80": {
+    "url": "/images/flours/foricher_t80.webp",
+    "source": "https://www.eshop-lachapelloise.be/produit/1771/",
+    "review": "Reviewed supplier notices; no explicit reuse prohibition found. No licence asserted.",
+    "remoteUrl": "https://www.eshop-lachapelloise.be/wp-content/uploads/2021/04/t80_LR.jpg",
+    "localBytes": 19356,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "auchan_t55": {
+    "url": "/images/flours/auchan_t55.webp",
+    "source": "https://www.auchan.sn/farines/98827353-farine-menagere-t55-pouce1kg-3596710390168.html",
+    "review": "Exact EAN3596710390168. Sourcelegalnotice reviewed earlier noexplicitimage reuse banfound; notlicence.",
+    "remoteUrl": "https://www.auchan.sn/631876-large_default/farine-menagere-t55-pouce1kg.jpg",
+    "localBytes": 30698,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "monoprix_t55": {
+    "url": "/images/flours/monoprix_t55.webp",
+    "source": "https://world.openfoodfacts.org/product/3350033716698",
+    "review": "Open Food Facts contributors, image CC BY-SA3.0. Exact bag identity visually verified 2026-09-20. Attribution and CC BY-SA link shown in flour details; resized and converted to WebP.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/335/003/371/6698/front_en.33.400.jpg",
+    "localBytes": 17200,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3350033716698"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "cotswold_strong": {
+    "url": "/images/flours/cotswold_strong.webp",
+    "source": "https://www.souschef.co.uk/products/matthews-cotswold-canadian-high-protein-strong-bread-flour",
+    "review": "Exact1.5kgCanadianGreatWhite originalbag visuallyverified. Source termsreview no explicitphotoreusebanfound, notaffirmativelicence.",
+    "remoteUrl": "https://www.souschef.co.uk/cdn/shop/files/FW0003_5060062061611_1.jpg?v=1752228343",
+    "localBytes": 25912,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bacheldre_strong": {
+    "url": "/images/flours/bacheldre_strong.webp",
+    "source": "https://www.souschef.co.uk/products/bacheldre-organic-stoneground-unbleached-strong-white-flour",
+    "review": "Reviewed terms: sales contract and goods IP clause11; no explicit site-photo reproduction prohibition found. Generic copyright footer. No licence claimed.",
+    "remoteUrl": "https://www.souschef.co.uk/cdn/shop/products/image_4_2.jpg?v=1668177048&width=1000",
+    "localBytes": 12890,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "marriages_heritage": {
+    "url": "/images/flours/marriages_heritage.webp",
+    "source": "https://infusions4chefs.co.uk/marriages-very-strong-white-100-canadian-bread-flour-1-5kg/",
+    "review": "Exact named original product; Infusions4Chefs terms previously fully reviewed without explicit image copying prohibition. Not a licence.",
+    "remoteUrl": "https://cdn11.bigcommerce.com/s-60yzq6/images/stencil/1280x1280/products/1938/20437/12967_MARRIAGES_VERY_STRONG_CANADIAN_WHITE_FLOUR_1.5KG__78379.1756474437.jpg?c=2",
+    "localBytes": 30708,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "shipton_wholemeal": {
+    "url": "/images/flours/shipton_wholemeal.webp",
+    "source": "https://www.earthfare.co.uk/products/shipton-mill-organic-100-wholewheat-flour-1kg",
+    "review": "Previously reviewed brand terms restrict reuse to private noncommercial viewing; do not use manufacturer image.",
+    "remoteUrl": "https://www.earthfare.co.uk/cdn/shop/files/shipton-mill-organic-100-wholewheat-flour-1kg-4131457.jpg?v=1768476970&width=1024",
+    "localBytes": 12066,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "shipton_rye": {
+    "url": "/images/flours/shipton_rye.webp",
+    "source": "https://excelflour.com/products/organic-dark-rye-25kg",
+    "review": "Exact retailer title Organic Dark Rye25kg; actual Google Lens match from manufacturer603 product.js image. Visually verified full original OrganicRye25kg Shipton bag, no watermark. Linked terms page only heading and footer; generic copyright footer, no explicit reproduction prohibition found. Limited review; not affirmative licence. Root visually verified full pack on white background; optimized original only.",
+    "remoteUrl": "https://excelflour.com/cdn/shop/files/Shipton-Mill-Organic-Dark-Rye-Flour-25-Kg.jpg?v=1713620029&width=1080",
+    "localBytes": 28120,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "doves_wholemeal": {
+    "url": "/images/flours/doves_wholemeal.webp",
+    "source": "https://www.earthfare.co.uk/products/doves-farm-organic-wholemeal-strong-bread-flour-1-5kg",
+    "review": "Same Earthfare review: terms page shows delivery content; no indexed explicit reproduction prohibition found. Generic copyright; no licence claimed.",
+    "remoteUrl": "https://www.earthfare.co.uk/cdn/shop/files/doves-farm-organic-wholemeal-strong-bread-flour-15kg-1522942.jpg?v=1768484050&width=1024",
+    "localBytes": 18760,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "tesco_strong": {
+    "url": "/images/flours/tesco_strong.webp",
+    "source": "https://world.openfoodfacts.org/product/5000119004024",
+    "review": "Open Food Facts contributors, image CC BY-SA3.0. Exact bag identity visually verified 2026-09-20. Attribution and CC BY-SA link shown in flour details; resized and converted to WebP.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/500/011/900/4024/front_en.8.400.jpg",
+    "localBytes": 15806,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/5000119004024"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "sainsburys_strong": {
+    "url": "/images/flours/sainsburys_strong.webp",
+    "source": "https://world.openfoodfacts.org/product/0000000061575",
+    "review": "Exact bag visually verified. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence links in flour details; resized and WebP conversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/000/000/006/1575/front_en.5.400.jpg",
+    "localBytes": 11934,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/0000000061575"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "asda_strong": {
+    "url": "/images/flours/asda_strong.webp",
+    "source": "https://www.thefood.app/uk/products/90612/bake-by-asda-bake-by-asda-strong-white-bread-flour-15kg",
+    "review": "ExactstandardBAKEbyASDAStrongWhiteBreadFlour1.5kg bag visuallyverifiedbrowser. Source terms salesonlynoexplicitimagereusebanfound,notaffirmativelicence.",
+    "remoteUrl": "https://i.bnfcl.io/tmi-g/90612_Ngp8IgRnM.jpg",
+    "localBytes": 22212,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "doves_spelt": {
+    "url": "/images/flours/doves_spelt.webp",
+    "source": "https://www.balancewholefoods.co.uk/products/food-cupboard/flour/doves-farm-organic-wholemeal-spelt-flour-1kg",
+    "review": "No terms link in footer, only privacy/cookie/shipping/returns. Targeted restriction searches returned no prohibition. Generic all-rights-reserved footer; not licensed.",
+    "remoteUrl": "https://www.balancewholefoods.co.uk/images/products/doves-farm-organic-wholemeal-spelt-flour-1kg_2.jpg",
+    "localBytes": 20152,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "marriages_strong_wholemeal": {
+    "url": "/images/flours/marriages_strong_wholemeal.webp",
+    "source": "https://www.holleysfinefoods.com/products/home-baking-and-desserts/flour/marriages-stoneground-strong-wholemeal-bread-flour-15kg/",
+    "review": "Prior full Holleys website and sales terms reviewed no explicit image reproduction restriction. Genericcopyright only; not licensed. Originalbag cleanbackground image-search candidate, needs visual. Root and independent agent visually verified exact clean full front20September2026.",
+    "remoteUrl": "https://www.holleysfinefoods.com/_productimages/5226365/1000_mrg832.png",
+    "localBytes": 128258,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bacheldre_wholemeal": {
+    "url": "/images/flours/bacheldre_wholemeal.webp",
+    "source": "https://www.souschef.co.uk/products/bacheldre-organic-stoneground-strong-wholemeal-flour",
+    "review": "Reviewed terms: sales contract and goods IP clause11; no explicit site-photo reproduction prohibition found. Generic copyright footer. No licence claimed.",
+    "remoteUrl": "https://www.souschef.co.uk/cdn/shop/products/organic-100_-wholemeal-flour.jpg?v=1574569480&width=1000",
+    "localBytes": 22544,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "tesco_plain": {
+    "url": "/images/flours/tesco_plain.webp",
+    "source": "https://world.openfoodfacts.org/product/5000119004000",
+    "review": "Open Food Facts contributors, image CC BY-SA3.0. Exact bag identity visually verified 2026-09-20. Attribution and CC BY-SA link shown in flour details; resized and converted to WebP.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/500/011/900/4000/front_en.31.400.jpg",
+    "localBytes": 25680,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/5000119004000"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "allinson_strong_wholemeal": {
+    "url": "/images/flours/allinson_strong_wholemeal.webp",
+    "source": "https://thecoconutcambridge.com/products/allinsons-bread-flour-very-strong-wholemeal-1-5kg",
+    "review": "Footer only shipping and contact links, generic copyright. Targeted site terms/reproduce search returns no results. No explicit prohibition found, not licensed.",
+    "remoteUrl": "https://thecoconutcambridge.com/cdn/shop/products/2b33679e-f9c7-4a62-a04a-f445f823c1e0.jpg?v=1586312938",
+    "localBytes": 60268,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "rosenmehl_type550": {
+    "url": "/images/flours/rosenmehl_type550.webp",
+    "source": "https://www.rosenmehl.de/produkte/unsere-rosenmehle?cHash=dcd37e66c7b283e599d83ac77d3a0d55&tx_product_flourlist%5Baction%5D=show&tx_product_flourlist%5Bcontroller%5D=Product&tx_product_flourlist%5Bproduct%5D=70",
+    "review": "Impressum inspected generic copyright only; no explicit reuse ban. Not licensed. Official exact image link; root visual check pending.",
+    "remoteUrl": "https://www.rosenmehl.de/fileadmin/user_upload/Rosenmehl-Weizen550.png",
+    "localBytes": 32348,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "aurora_type405": {
+    "url": "/images/flours/aurora_type405.webp",
+    "source": "https://www.aurora-mehl.de/produkte/alle-mehle",
+    "review": "Official exact product image link extracted. Impressum generic copyright/all rights reserved only, no explicit copying restriction found. Compliance link fetch failed; not a licence. Visual and dimensions pending root.",
+    "remoteUrl": "https://www.aurora-mehl.de/fileadmin/user_upload/aurora_405_weizen_klassik.png",
+    "localBytes": 37036,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "aurora_type550": {
+    "url": "/images/flours/aurora_type550.webp",
+    "source": "https://www.aurora-mehl.de/produkte/alle-mehle",
+    "review": "Official exact product image link extracted. Impressum generic copyright/all rights reserved only, no explicit copying restriction found. Compliance link fetch failed; not a licence. Visual and dimensions pending root.",
+    "remoteUrl": "https://www.aurora-mehl.de/fileadmin/user_upload/aurora_550_weizen.png",
+    "localBytes": 37672,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "diamant_type405": {
+    "url": "/images/flours/diamant_type405.webp",
+    "source": "https://www.diamant-mehl.de/produkte/unsere-mehle?cHash=032054b8a00b15d737c6cb9a9f396609&tx_product_flourlist%5Baction%5D=show&tx_product_flourlist%5Bcontroller%5D=Product&tx_product_flourlist%5Bproduct%5D=22",
+    "review": "Imprint reviewed: generic all-rights-reserved copyright only, no explicit image reuse prohibition in reviewed page/navigation. No licence asserted.",
+    "identityNote": "Official Diamant Weizenmehl Extra Type405 pack, enriched B1B2B6. Packaging sizes500g/1kg/2.5kg; visualverify actual depictedsize.",
+    "remoteUrl": "https://www.diamant-mehl.de/fileadmin/user_upload/Diamant_Weizen_Type_405.png",
+    "localBytes": 38778,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "edeka_type550": {
+    "url": "/images/flours/edeka_type550.webp",
+    "source": "https://world.openfoodfacts.org/product/4311501768242",
+    "review": "Exact bag visually verified. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence links in flour details; resized and WebP conversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/431/150/176/8242/front_de.4.400.jpg",
+    "localBytes": 20800,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/4311501768242"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "rewe_bio_type1050": {
+    "url": "/images/flours/rewe_bio_type1050.webp",
+    "source": "https://world.openfoodfacts.org/product/4337256752848",
+    "review": "Exact bag visually verified. Open Food Facts contributors CC BY-SA3.0. Source/licence attribution in details; resized and WebP converted.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/433/725/675/2848/front_de.4.400.jpg",
+    "localBytes": 24874,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/4337256752848"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "schapfenmuehle_type550": {
+    "url": "/images/flours/schapfenmuehle_type550.webp",
+    "source": "https://shop.schapfenmuehle.de/Weizenmehl-Type-550-10-kg",
+    "review": "Reviewed product and imprint; no explicit image prohibition found. Domain copyright search found press resources only. Not a license.",
+    "visualCheck": "Exact bag verified 2026-09-19",
+    "remoteUrl": "https://shop.schapfenmuehle.de/media/image/product/47/md/weizenmehl-type-550-10-kg.png",
+    "localBytes": 21676,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "fazer_bread_fi": {
+    "url": "/images/flours/fazer_bread_fi.webp",
+    "source": "https://condite.fi/fazer-vehn%C3%A4jauho-puolikarkea-v600-25kg-1200002",
+    "review": "Exact V600 supplier listing, generic original Fazer Mills bag shown by supplier (front does not identify variant). Privacy/cookie policy reviewed, no explicit copying restriction found; not licence.",
+    "remoteUrl": "https://condite.fi/product/image/mediumlarge/1200002_vehn%C3%A4jauho_puolikarkea_1.jpg",
+    "localBytes": 6480,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "coop_vetemjol_se": {
+    "url": "/images/flours/coop_vetemjol_se.webp",
+    "source": "https://world.openfoodfacts.org/product/7340191153462",
+    "review": "Exact bag visually verified. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence links in flour details; resized and WebP conversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/734/019/115/3462/front_hu.3.400.jpg",
+    "localBytes": 15238,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/7340191153462"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "ardent_mills_occident": {
+    "url": "/images/flours/ardent_mills_occident.webp",
+    "source": "https://www.icbakers.com/item/20832/OCCIDENT-BAKERS-PATENT-FLOUR/",
+    "review": "ActualOccidentBakersPatent25lbfamilybag visuallyverified; exacttreatmentSKUunknown,row explicitlyfamily-only. Supplierordering/contactterms sales/SMS-only, no explicitreusebanfound,not affirmative licence.",
+    "remoteUrl": "https://www.icbakers.com/media/images/items/20832.jpg",
+    "localBytes": 10614,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "wheat_montana_natural": {
+    "url": "/images/flours/wheat_montana_natural.webp",
+    "source": "https://world.openfoodfacts.org/product/725963004352",
+    "review": "Exact bag visually verified. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence in details; resized and WebP conversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/072/596/300/4352/front_en.3.400.jpg",
+    "localBytes": 23246,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/725963004352"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "wheat_montana_bread": {
+    "url": "/images/flours/wheat_montana_bread.webp",
+    "source": "https://mymobilepantry.com/bronze-chief-whole-wheat-flour/",
+    "review": "Product page and indexed terms/copyright search checked; no explicit prohibition found. No licence claimed.",
+    "remoteUrl": "https://cdn11.bigcommerce.com/s-r4cbavabxk/images/stencil/800x800/products/249/515/754516__50913.1745971354.jpg?c=1",
+    "localBytes": 26250,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "ceresota_ap": {
+    "url": "/images/flours/ceresota_ap.webp",
+    "source": "https://harvestimefoods.com/ceresota-unbleached-flour-040300033056-4081/",
+    "review": "Terms shown cover privacy, security and returns; generic copyright footer, no explicit image copying prohibition found. No licence asserted.",
+    "identityNote": "Ceresota Unbleached Flour 5lb. Package visual verification pending.",
+    "remoteUrl": "https://cdn.powered-by-nitrosell.com/product_images/27/6592/040300033056.jpg",
+    "localBytes": 13566,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "lehi_bread": {
+    "url": "/images/flours/lehi_bread.webp",
+    "source": "https://shop.thestrawberryshopyork.com/products/unbleached-bread-flour-5-lbs",
+    "review": "Exact Lehi Mills Bread Flour5lb original bag visually verified, not a premix despite general brand tagline. Source terms reviewed no explicit reuse prohibition; no affirmative licence.",
+    "remoteUrl": "https://shop.thestrawberryshopyork.com/cdn/shop/files/Bread_flour-5lb-Front-1080.png?v=1767808652&width=1080",
+    "localBytes": 34928,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "arrowhead_ap": {
+    "url": "/images/flours/arrowhead_ap.webp",
+    "source": "https://tpss.provisions.coop/products/og2-arrowhead-mills-white-unbleached-8-5-lb-00125",
+    "review": "Root visually verified exact Arrowhead Mills Organic All Purpose Unbleached Flour 5lb original clean full bag, 1600x2256. Actual image URL observed in public retailer product JSON. Product page and linked https://tpss.provisions.coop/pages/terms-of-use reviewed; terms HTML body empty, no explicit reuse prohibition found in limited accessible review. This is not an affirmative licence. No image content editing.",
+    "remoteUrl": "https://cdn.shopify.com/s/files/1/0572/4353/3423/files/ea9f3cc9-9e50-4ecc-aa42-229e85234494-w1600.jpg?v=1786176574",
+    "localBytes": 69802,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "great_river_bread": {
+    "url": "/images/flours/great_river_bread.webp",
+    "source": "https://bigbangprice.com/product/B0049YMAII/",
+    "review": "500x500 cleanwhite originalGreatRiver25lbbag withflourmound; exactOrganicUnbleachedWheatBreadFlourlabel matchinglargereference. Goodcardquality,500pxlimit. Introduction explicitlygovernsBigBangPriceMOBILEapplicationandbindsdownload/useApp. IntellectualPropertyparagraphprohibitscopyingAppcontent. No separatewebsite-scope prohibitionfound inobservedproduct/footer/terms. FooterlinksAppterms. Conditional usercriterionnoexplicitWEBSITEreusebanfound; scope ambiguity disclosed,notlicense. Rootreviewrequired.",
+    "remoteUrl": "https://m.media-amazon.com/images/I/41XFJuBswpL._SL500_.jpg",
+    "localBytes": 25690,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "sunrise_bread": {
+    "url": "/images/flours/sunrise_bread.webp",
+    "source": "https://nelsongrassfarm.com/heritage-blend-bread-flour-5lb/",
+    "review": "Product page/footer and domain terms search found no explicit image-reuse prohibition. No license asserted.",
+    "identityNote": "Sunrise Heritage Bread Blend Flour 5lb UPC850015140135. Organic hard red and soft white heritage wheat only; not premix.",
+    "remoteUrl": "https://cdn11.bigcommerce.com/s-vzgguaxt89/images/stencil/760x760/products/2624/137854/DIngd0136SFM_1__02293__97409.1773187168.1280.1280__68470.1784862294.jpg?c=1",
+    "localBytes": 18186,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "pendleton_power": {
+    "url": "/images/flours/pendleton_power.webp",
+    "source": "https://www.megansdesserts.com/store/grain-craft-power-flour-25-lbs-details.html",
+    "review": "Exact original bag visually verified. Supplier product/footer, shipping/returns and privacy reviewed; no explicit image reuse prohibition found under user criterion. No affirmative licence. Resized/WebP only.",
+    "remoteUrl": "https://www.megansdesserts.com/media/products/ss_size1/grain_craft_power_25_500.jpg",
+    "localBytes": 12076,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "whole_foods_365_bread": {
+    "url": "/images/flours/whole_foods_365_bread.webp",
+    "source": "https://world.openfoodfacts.org/product/099482494391",
+    "review": "Exact original bag visually verified; older packaging where applicable. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence in details; resized and WebP conversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/009/948/249/4391/front_en.3.400.jpg",
+    "localBytes": 12034,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/099482494391"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bobs_whole_wheat": {
+    "url": "/images/flours/bobs_whole_wheat.webp",
+    "source": "https://sbnf.net/products/whole-wheat-flour-organic-bobs-red-mill-1",
+    "review": "Exact organic whole wheat UPC039978029874. Retailer terms checked without explicit reuse prohibition; not a licence.",
+    "remoteUrl": "https://sbnf.net/cdn/shop/files/WholeWheatOrganic.png?v=1730234516",
+    "localBytes": 59688,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "ka_white_whole_wheat": {
+    "url": "/images/flours/ka_white_whole_wheat.webp",
+    "source": "https://world.openfoodfacts.org/product/071012055555",
+    "review": "Exact bag visually verified. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence in details; resized and WebP converted.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/007/101/205/5555/front_en.21.400.jpg",
+    "localBytes": 19278,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/071012055555"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "hayden_mills_ap": {
+    "url": "/images/flours/hayden_mills_ap.webp",
+    "source": "https://www.searedliving.com/products/hayden-flour-mill-all-purpose-flour",
+    "review": "Exact All Purpose2lb box visuallyverified; currentmanufacturer confirms blend11.6%. Source footer/privacy/search reviewed no explicit reuse prohibition found, not affirmative licence.",
+    "remoteUrl": "https://www.searedliving.com/cdn/shop/files/AP-square.webp?v=1770832089&width=1080",
+    "localBytes": 37632,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "rogers_bread": {
+    "url": "/images/flours/rogers_bread.webp",
+    "source": "https://rogersfoods.com/shop/retail-products/white-bread-flour/",
+    "review": "Official Unbleached Bread Flour2.5kg pack. Manufacturer Disclaimer reviewed: corporate code, environmental/privacy statements; no explicit image reuse prohibition found. Not licence.",
+    "remoteUrl": "https://rogersfoods.com/wp-content/uploads/2021/06/00060179020223_A1C1_en.jpg",
+    "localBytes": 29640,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "nunweilers_wholegrain": {
+    "url": "/images/flours/nunweilers_wholegrain.webp",
+    "source": "https://nunweilersflour.com/products/whole-wheat-flour/",
+    "review": "Official product packshot; no explicit reuse prohibition found in source review; not a licence.",
+    "remoteUrl": "https://nunweilersflour.com/wp-content/uploads/2018/07/02-whole-wheat-flour.png",
+    "localBytes": 39332,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "laucke_wallaby": {
+    "url": "/images/flours/laucke_wallaby.webp",
+    "source": "https://adelaidesfinest.com.au/product/223883/laucke-wallaby-bakers-flour-5kg",
+    "review": "Product and terms reviewed. IP clause reserves ownership and grants customer feedback rights; no copying prohibition found. No licence claimed.",
+    "remoteUrl": "https://www.bananablue.com.au/images/product/9321885002080_1.jpg",
+    "localBytes": 35972,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "manildra_bakers": {
+    "url": "/images/flours/manildra_bakers.webp",
+    "source": "https://blayneywholesalefoods.com/manage_shop/product_details/5110",
+    "review": "Exact Bakers12.5kg; source/footer targetedpolicysearch no explicit reuse prohibition found; not licence.",
+    "remoteUrl": "https://blayneywholesalefoods.com/productimages/Large/10011.jpg",
+    "localBytes": 22628,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "lighthouse_bread": {
+    "url": "/images/flours/lighthouse_bread.webp",
+    "source": "https://www.lighthousebaking.com.au/products/lighthouse-bread-%26-pizza",
+    "review": "Official product/footer and site terms/reproduction searches reviewed; no terms link or explicit ban found. No licence claimed.",
+    "remoteUrl": "https://static.wixstatic.com/media/bca7d0_488398cd49614ec8ab344eeb2e6213ce~mv2.png/v1/fill/w_2400%2Ch_2400%2Cal_c/B%26P%20front_edited.png",
+    "localBytes": 31026,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "nippn_lysdor": {
+    "url": "/images/flours/nippn_lysdor.webp",
+    "source": "https://kotobukibuss.buyshop.jp/items/86780525",
+    "review": "Exact original Nisshin Lys d’Or 25kg sack. Generic copyright; no explicit prohibition found in product/legal search. Law page timed out; not a license claim.",
+    "remoteUrl": "https://baseec-img-mng.akamaized.net/images/item/origin/7e0a0bfcb73f8730c958ba59f475a5ee.jpg?im=Resize%2Cwidth%3D174%2Ctype%3Dnormal&imformat=generic&q=90",
+    "localBytes": 10800,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "nippn_super_king": {
+    "url": "/images/flours/nippn_super_king.webp",
+    "source": "https://www.profoods.co.jp/i/0500279",
+    "review": "Exact original Nisshin Super King 25kg. Product generic copyright; indexed reuse search found fraud impersonation notice only, not general image prohibition. Not a license claim.",
+    "remoteUrl": "https://www.profoods.co.jp/img/item/1010030/imgrc0069249486.jpg",
+    "localBytes": 34790,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "showa_dolce": {
+    "url": "/images/flours/showa_dolce.webp",
+    "source": "https://www.profoods.co.jp/i/1010332",
+    "review": "Exact original Ebetsu Dolce 25kg. Product generic copyright; indexed reuse search found fraud impersonation notice only, not general image prohibition. Not a license claim.",
+    "remoteUrl": "https://www.profoods.co.jp/img/item/1010332/1010332_1.jpg",
+    "localBytes": 25466,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "beksul_ap": {
+    "url": "/images/flours/beksul_ap.webp",
+    "source": "https://world.openfoodfacts.org/product/8801007039442",
+    "review": "Exact original bag visually verified (Beksul label confirms brand despite OFF incorrect free-text title). Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence in details; resized and WebP converted.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/880/100/703/9442/front_en.3.400.jpg",
+    "localBytes": 17104,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/8801007039442"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "beksul_strong": {
+    "url": "/images/flours/beksul_strong.webp",
+    "source": "https://seelamart.in/products/beksul-strong-flour-1-kg",
+    "review": "Terms page reviewed: order cancellation/returns/shipping; no explicit image reuse prohibition found. Not a license.",
+    "visualCheck": "Exact bag verified 2026-09-19",
+    "remoteUrl": "https://seelamart.in/cdn/shop/products/download_2.jpg?v=1627378451",
+    "localBytes": 9000,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "daehan_ap": {
+    "url": "/images/flours/daehan_ap.webp",
+    "source": "https://catalog.dhflour.co.kr/17-gompyo-wheat-flour(all-purpose)",
+    "review": "Unverified",
+    "visualCheck": "Product packaging checked 2026-09-19",
+    "remoteUrl": "https://framerusercontent.com/images/xdHN47Z6oLqPONO59iUvzPekPg.png?height=1500&width=1500",
+    "localBytes": 20558,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bogasari_cakra": {
+    "url": "/images/flours/bogasari_cakra.webp",
+    "source": "https://world.openfoodfacts.org/product/8993296101112",
+    "review": "Exactoriginalbag visuallyverified. OFFcontributorsCCBYSA3.0 creditedindetails. ResizedWebPconversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/899/329/610/1112/front_id.3.400.jpg",
+    "localBytes": 18688,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/8993296101112"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bogasari_segitiga": {
+    "url": "/images/flours/bogasari_segitiga.webp",
+    "source": "https://sedapfoodgroup.com/shop/segitiga-biru-flour-1kg/",
+    "review": "Generic copyright footer only; no terms link in observed product page; exact-domain terms/copyright search returned no results. Not a license.",
+    "visualCheck": "Exact bag verified 2026-09-19",
+    "remoteUrl": "https://sedapfoodgroup.com/wp-content/uploads/2024/01/Segitiga-Biru-Flour-1kg-600x600.webp",
+    "localBytes": 14314,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "maya_ap_ph": {
+    "url": "/images/flours/maya_ap_ph.webp",
+    "source": "https://www.citimartdelivery.com.ph/products/1104741",
+    "review": "Exact Maya AllPurpose800g. Product/footer targetedpolicysearch found no explicit reuse prohibition; not licence.",
+    "remoteUrl": "https://cdn.store-assets.com/s/377840/i/17237864.jpeg",
+    "localBytes": 29546,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "jovial_einkorn_us": {
+    "url": "/images/flours/jovial_einkorn_us.webp",
+    "source": "https://theedenmarket.com/products/einkhorn-flour",
+    "review": "Retailer exact Jovial AllPurpose Einkorn, potential packsizephoto difference; source/footerreview noexplicitreuseprohibition,notlicence.",
+    "remoteUrl": "https://theedenmarket.com/cdn/shop/files/Jovial_Einkorn_AP_Flour_10lb_Silo_1200x1200_f1b3ea23-6a4f-4b42-9f22-d11d24934014.webp?v=1763513615&width=1946",
+    "localBytes": 30454,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "doves_farm_rye": {
+    "url": "/images/flours/doves_farm_rye.webp",
+    "source": "https://falmouthfood.coop/product/et-f825p-wholemeal-stoneground-rye-flour-org-promo-20-off?search=",
+    "review": "Same reviewed Falmouth source, generic copyright only; no explicit prohibition found. Not a licence.",
+    "visualCheck": "Product packaging checked 2026-09-19",
+    "remoteUrl": "https://falmouthfood.coop/userdata/products/227/df-wmryeflour2020.jpg",
+    "localBytes": 23880,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "shipton_spelt": {
+    "url": "/images/flours/shipton_spelt.webp",
+    "source": "https://falmouthfood.coop/product/et-f852p-white-spelt-flour-org",
+    "review": "Same reviewed Falmouth source, generic copyright only; no explicit prohibition found. Not a licence.",
+    "visualCheck": "Product packaging checked 2026-09-19",
+    "remoteUrl": "https://falmouthfood.coop/userdata/products/264/f852p.jpg",
+    "localBytes": 19818,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "pillsbury_india_atta": {
+    "url": "/images/flours/pillsbury_india_atta.webp",
+    "source": "https://www.pillsbury.in/products/chakki-fresh-atta/",
+    "review": "Product page has no terms link; targeted pillsbury.in terms/copyright search found no indexed restriction. No licence claimed.",
+    "remoteUrl": "https://www.pillsbury.in/wp-content/uploads/2021/08/Chakki-Atta.jpg",
+    "localBytes": 19550,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "aashirvaad_atta": {
+    "url": "/images/flours/aashirvaad_atta.webp",
+    "source": "https://shop.aashirvaad.com/select/the_king_of_wheat_ec/index_en.html",
+    "review": "Official brand shop campaign exact Select pack link. Shop footer has privacy links only; main Aashirvaad homepage generic copyright/all rights reserved; targeted terms search no explicit reuse ban found. Not licensed. Root visual/dimensions pending.",
+    "remoteUrl": "https://shop.aashirvaad.com/select/the_king_of_wheat_ec/assets/sku_1_select_fop.jpg",
+    "localBytes": 12116,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "annapurna_maida_in": {
+    "url": "/images/flours/annapurna_maida_in.webp",
+    "source": "https://annapurnaworld.com/annapurna.php",
+    "review": "Official packaging artwork visually identifies Maida25kg; not physical sack photo. Source review noexplicitreuse prohibition found, notlicence.",
+    "remoteUrl": "https://annapurnaworld.com/gallery/flour/4.jpeg",
+    "localBytes": 102606,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "lubella_type500": {
+    "url": "/images/flours/lubella_type500.webp",
+    "source": "https://lubella.pl/produkt/poznanska/",
+    "review": "Manufacturer original Poznańska type500 bag visually verified. Footer/privacy page inspected; focused domain reuse restriction research no explicit ban found. Not a licence.",
+    "remoteUrl": "https://lubella.pl/app/uploads/2024/10/LUBMAK1PUS-PL-TO1KG-POZNAN-V20-3-2.png",
+    "localBytes": 58520,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "szymanowski_type550": {
+    "url": "/images/flours/szymanowski_type550.webp",
+    "source": "https://polskiemlyny.pl/katalog-produktow/maki-pszenne/szymanowska-maka-pszenna-luksusowa-typ-550/",
+    "review": "Officialproduct pack. Product/footer and focusedreview noexplicitreusebanfound, notlicence.",
+    "remoteUrl": "https://polskiemlyny.pl/wp-content/uploads/2025/08/maka-pszenna-luksusowa.jpg",
+    "localBytes": 36814,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "polskie_mlynarstwo_rye": {
+    "url": "/images/flours/polskie_mlynarstwo_rye.webp",
+    "source": "https://dodomku.pl/Polskie_Mlyny_Maka_Szymanowska_zytnia_typ_720/50310.html",
+    "review": "Exact EAN5900766002261. Retailer terms reviewed no explicit reuse prohibition; not a licence.",
+    "remoteUrl": "https://dodomku.pl/images/products/full/00050310.jpg?id=1438331269",
+    "localBytes": 11938,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "renata_bread_br": {
+    "url": "/images/flours/renata_bread_br.webp",
+    "source": "https://www.distribuidorahideal.com.br/mercearia/graos-e-farinhas/farinha-de-trigo-renata-dia-a-dia-1kg",
+    "review": "No licence claimed. Manufacturer site image not used: its terms explicitly restrict commercialization of content. Inspected product/footer/privacy no explicit reproduction prohibition.",
+    "remoteUrl": "https://images.tcdn.com.br/img/img_prod/858764/farinha_de_trigo_renata_dia_a_dia_1kg_2847_1_5dc3ab2665e304dd382d458706789c38.jpg",
+    "localBytes": 28052,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "molino_spadoni_00": {
+    "url": "/images/flours/molino_spadoni_00.webp",
+    "source": "https://www.molinospadoni.it/prodotti/farina-tipo-00-per-pizza-gran-mugnaio/",
+    "review": "Product page/footer and focused site terms search checked; no specific reproduction prohibition found. Generic copyright is not a licence.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://www.molinospadoni.it/wp-content/uploads/2019/11/gran-mugnaio-per-pizza-molino-spadoni.png",
+    "localBytes": 25284,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "mulino_marino_farro": {
+    "url": "/images/flours/mulino_marino_farro.webp",
+    "source": "https://www.mulinomarino.it/SHOP/farine-speciali/26-farina-farro-bianco-bio.html",
+    "review": "Official product footer and entire currently linked sales/use terms reviewed20September2026 including product information and use disclaimer. No explicit image-reuse prohibition found. Current footer links Terms and Privacy, not separate NoteLegali. Not affirmative licence.",
+    "remoteUrl": "https://www.mulinomarino.it/SHOP/265-large_default/farina-farro-bianco-bio.jpg",
+    "localBytes": 12452,
+    "termsSource": "https://www.mulinomarino.it/SHOP/content/3-termini-e-condizioni-di-uso",
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "gmp_t150": {
+    "url": "/images/flours/gmp_t150.webp",
+    "source": "https://www.meatup.shop/products/moul-bie-ruban-brun-wholemeal-flour-t150-25kg",
+    "review": "No explicit prohibition found in inspected supplier pages; not a licence.",
+    "remoteUrl": "https://www.meatup.shop/cdn/shop/products/3162780007949.jpg?v=1757386136",
+    "localBytes": 24078,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "francine_complete": {
+    "url": "/images/flours/francine_complete.webp",
+    "source": "https://www.bellefrance.shop/shop/162925-francine-complete-boite-1kg-45775",
+    "review": "BelleFrance terms reviewed by French audit agent; no explicit image reuse prohibition found. Not a licence.",
+    "visualCheck": "Exact product bag checked on contact sheet 2026-09-19",
+    "remoteUrl": "https://www.bellefrance.shop/web/image/product.template/45775/image_1920",
+    "localBytes": 53866,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bobs_dark_rye": {
+    "url": "/images/flours/bobs_dark_rye.webp",
+    "source": "https://sbnf.net/products/dark-rye-flour-organic-bobs-red-mill",
+    "review": "Exact OrganicDarkRye20oz UPC039978113139. Previously reviewed retailerterms noexplicitimagecopyban, not licence.",
+    "remoteUrl": "https://sbnf.net/cdn/shop/products/Bob_sDarkRyeFlour.png?v=1667516777",
+    "localBytes": 31452,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "gold_medal_whole_wheat": {
+    "url": "/images/flours/gold_medal_whole_wheat.webp",
+    "source": "https://seabrafoods.com/products/gold-medal-whole-wheat-flour-5lb",
+    "review": "Visually verified20September2026. Exact original5lb GoldMedal product fully visible on cleanwhite background,1200px image replaces200px thumbnail. URL observed from publicShopify product JSON featured_image. Same previously reviewed Seabra source: genericcopyright, no explicit reuse prohibition found; terms endpoint unavailable. Limitedreview, not licence. No image content editing.",
+    "remoteUrl": "https://cdn.shopify.com/s/files/1/0608/4424/5227/products/gold-medal-whole-wheat-flour-5lb-seabra-foods-online.jpg?v=1706325142",
+    "localBytes": 47798,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "caputo_tipo1": {
+    "url": "/images/flours/caputo_tipo1.webp",
+    "source": "https://www.mulinocaputo.it/prodotti/tipo-1-professional/",
+    "review": "Official product catalogue and Compliance page reviewed 2026-09-19; no explicit image-reuse prohibition found. Not a verified licence. User-authorized prototype use.",
+    "remoteUrl": "https://www.mulinocaputo.it/wp-content/uploads/2023/09/25-tipo-uno-piena.png",
+    "localBytes": 56730,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "ka_organic_bread": {
+    "url": "/images/flours/ka_organic_bread.webp",
+    "source": "https://online.citysuper.com.hk/products/king-arthur-organic-bread-flour-301455013",
+    "review": "Exact organic bread2.27kg, retailerdisclaimerandmembershiptermsreview no explicit image reproduction prohibition; notlicence.",
+    "remoteUrl": "https://online.citysuper.com.hk/cdn/shop/files/301455013_20241217_11_0002_02.jpg?v=1734420946&width=450",
+    "localBytes": 15332,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "dalla_giovanna_uniqua_bianca": {
+    "url": "/images/flours/dalla_giovanna_uniqua_bianca.webp",
+    "source": "https://www.dallagiovanna.it/uniqua",
+    "review": "No explicit restriction found in reviewed page; not a verified licence.",
+    "remoteUrl": "https://static.wixstatic.com/media/5fb4ff_df4bbea39b0442d194f3f612f6a69173~mv2.png/v1/crop/x_0%2Cy_45%2Cw_550%2Ch_769/fill/w_401%2Ch_561%2Cal_c%2Cq_85%2Cusm_0.66_1.00_0.01%2Cenc_avif%2Cquality_auto/UNIQUA-BIANCA_25-KG.png",
+    "localBytes": 16328,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "stagioni_classica": {
+    "url": "/images/flours/stagioni_classica.webp",
+    "source": "https://le5stagioni.com/prodotto/classica/",
+    "review": "Copyright/all-rights-reserved footer present. No separate explicit image-reuse prohibition found in reviewed product pages and targeted terms search. Not licensed; user-authorized prototype criterion.",
+    "remoteUrl": "https://le5stagioni.com/wp-content/uploads/2025/03/Classica.png",
+    "localBytes": 30960,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "stagioni_rinforzata": {
+    "url": "/images/flours/stagioni_rinforzata.webp",
+    "source": "https://le5stagioni.com/prodotto/rinforzata/",
+    "review": "Copyright/all-rights-reserved footer present. No separate explicit image-reuse prohibition found in reviewed product pages and targeted terms search. Not licensed; user-authorized prototype criterion.",
+    "remoteUrl": "https://le5stagioni.com/wp-content/uploads/2025/03/Rinforzata.png",
+    "localBytes": 29886,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "stagioni_napoletana_verde": {
+    "url": "/images/flours/stagioni_napoletana_verde.webp",
+    "source": "https://le5stagioni.com/prodotto/pizza-napoletana-verde/",
+    "review": "Copyright/all-rights-reserved footer present. No separate explicit image-reuse prohibition found in reviewed product pages and targeted terms search. Not licensed; user-authorized prototype criterion.",
+    "remoteUrl": "https://le5stagioni.com/wp-content/uploads/2025/03/Pizza-Napoletana-Verde.png",
+    "localBytes": 32438,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "caputo_integrale": {
+    "url": "/images/flours/caputo_integrale.webp",
+    "source": "https://www.mulinocaputo.it/prodotti/integrale-professional/",
+    "review": "Official product catalogue and Compliance page reviewed 2026-09-19; no explicit image-reuse prohibition found. Not a verified licence. User-authorized prototype use.",
+    "remoteUrl": "https://www.mulinocaputo.it/wp-content/uploads/2023/09/25-integrale-piena.png",
+    "localBytes": 51778,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "caputo_alba": {
+    "url": "/images/flours/caputo_alba.webp",
+    "source": "https://www.mulinocaputo.it/prodotti/farina-alba-25kg/",
+    "review": "Official product catalogue and Compliance page reviewed 2026-09-19; no explicit image-reuse prohibition found. Not a verified licence. User-authorized prototype use.",
+    "remoteUrl": "https://www.mulinocaputo.it/wp-content/uploads/2025/05/Alba-25kg-piena-1.png",
+    "localBytes": 44932,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "shipton_organic_no4": {
+    "url": "/images/flours/shipton_organic_no4.webp",
+    "source": "https://infusions4chefs.co.uk/shipton-mill-organic-white-flour-no-4-25kg/",
+    "review": "Exact named original product; Infusions4Chefs terms previously fully reviewed without explicit image copying prohibition. Not a licence.",
+    "remoteUrl": "https://cdn11.bigcommerce.com/s-60yzq6/images/stencil/300x300/products/4265/17671/21307_-_SHIPTON_MILL_-_NO4_-_25KG__87182.1765553425.jpg?c=2",
+    "localBytes": 10520,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "gmp_campaillette_grand_siecle": {
+    "url": "/images/flours/gmp_campaillette_grand_siecle.webp",
+    "source": "https://parspore.com/product/campaillette-grand-siecle/",
+    "review": "Original25kg manufacturerbag fromsupplier. Product/footer and targetedtermssearch no explicitreuse prohibition found; no licence claimed.",
+    "remoteUrl": "https://parspore.com/wp-content/uploads/2019/07/JPGFRENCH-FLRSTAND-GRAND-SIECLE-25kg-FP863-600x600.jpg",
+    "localBytes": 18226,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "ka_special_patent": {
+    "url": "/images/flours/ka_special_patent.webp",
+    "source": "https://world.openfoodfacts.org/product/071012110506",
+    "review": "Exact original bag visually verified; older packaging where applicable. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence in details; resized and WebP conversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/007/101/211/0506/front_en.3.400.jpg",
+    "localBytes": 19692,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/071012110506"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bobs_00": {
+    "url": "/images/flours/bobs_00.webp",
+    "source": "https://world.openfoodfacts.org/product/039978004147",
+    "review": "Exact bag visually verified. Open Food Facts contributors CC BY-SA3.0. Attribution/source/licence in details; resized and WebP converted.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/003/997/800/4147/front_en.3.400.jpg",
+    "localBytes": 34124,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/039978004147"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "pasini_verde": {
+    "url": "/images/flours/pasini_verde.webp",
+    "source": "https://www.molinopasini.com/it/farine/446-446-00-verde",
+    "review": "Official manufacturer bag render. Product and specification verified against official catalogue; no explicit reuse prohibition found in reviewed source. User-authorized prototype criterion, not a licence.",
+    "remoteUrl": "https://www.molinopasini.com/upload/catalogo/446/d_10Kg-Verde.jpg",
+    "localBytes": 10066,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "pasini_marrone": {
+    "url": "/images/flours/pasini_marrone.webp",
+    "source": "https://www.molinopasini.com/it/farine/447-447-00-marrone",
+    "review": "Official manufacturer bag render. Product and specification verified against official catalogue; no explicit reuse prohibition found in reviewed source. User-authorized prototype criterion, not a licence.",
+    "remoteUrl": "https://www.molinopasini.com/upload/catalogo/447/d_25kg-Marrone.jpg",
+    "localBytes": 11174,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "pivetti_maggica": {
+    "url": "/images/flours/pivetti_maggica.webp",
+    "source": "https://www.molinipivetti.it/en/product/maggica/",
+    "review": "Official product and downloadable technical sheet reviewed; no explicit image prohibition found on reviewed page. Not a licence.",
+    "remoteUrl": "https://www.molinipivetti.it/wp-content/uploads/2024/12/render-10kg-premium-magica-min.png",
+    "localBytes": 44744,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "anaconda_pao_rustico_br": {
+    "url": "/images/flours/anaconda_pao_rustico_br.webp",
+    "source": "https://anaconda.com.br/produto/farinha-anaconda-pao-rustico-rlu/",
+    "review": "Official plain fortified wheat flour Pao Rustico 5kg. No explicit reuse prohibition found; not a licence.",
+    "remoteUrl": "https://anaconda.com.br/wp-content/uploads/2026/01/MINI_RL05Ativo-3-1.png",
+    "localBytes": 54150,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "colagne_meule_bio_t65": {
+    "url": "/images/flours/colagne_meule_bio_t65.webp",
+    "source": "https://moulindecolagne.fr/farines/meule-bio-t65/",
+    "review": "Official plain organic meuleT65 productE0100020, legalnotice no explicit reuse prohibition; not licence. Manufacturer shared organic sack pictured on exact product page; front does not show T65 designation.",
+    "remoteUrl": "https://moulindecolagne.fr/wp-content/uploads/2023/11/Sac-farine-bio_Moulin-de-Colagne_01-scaled-1200x1200.webp",
+    "localBytes": 17834,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bourgeois_la_sauvage_t65": {
+    "url": "/images/flours/bourgeois_la_sauvage_t65.webp",
+    "source": "https://www.vandif.com/product/moulin-bourgeois-la-sauvage-t65-label-rouge-tradition-55-bag/",
+    "review": "Exact LaSauvageT65 25kg supplierSKU MBO005. Source/footerreview no explicit reuse restriction found, genericcopyright not licence.",
+    "remoteUrl": "https://www.vandif.com/wp-content/uploads/2025/04/MBO-005.jpg",
+    "localBytes": 23668,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "lo_conte_manitoba_100": {
+    "url": "/images/flours/lo_conte_manitoba_100.webp",
+    "source": "https://sugros.com/prodotto/lo-conte-farina-manitoba-favola-1-kg",
+    "review": "Visually verified current plainflour W500 bag, not olderW460mix also on page. Packstates16.6protein while canonicalmanufacturerreference15.5 retainedpendingrecheck. Sugros linked salesPDF reviewednoexplicitreusebanfound, not affirmative licence.",
+    "remoteUrl": "https://sugros.com/static/upload/foto/92/fa781a4437a6e5d240aea0ee04d49beb.png",
+    "localBytes": 41128,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "francine_bio_t55": {
+    "url": "/images/flours/francine_bio_t55.webp",
+    "source": "https://world.openfoodfacts.org/product/3068110703249",
+    "review": "Root visually verified complete exact Francine BioT55 original bag on clean white background, replacing shelf photo. Open Food Facts raw image16 contributor foodvisor, CC BY-SA3.0 https://creativecommons.org/licenses/by-sa/3.0/ . Source https://world.openfoodfacts.org/product/3068110703249 . Retain named contributor and licence in product credit. Resize/WebP only; no AI changes.",
+    "credit": {
+      "author": "foodvisor / Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3068110703249"
+    },
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/306/811/070/3249/16.400.jpg",
+    "localBytes": 18372,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "koopmans_professional_kristal": {
+    "url": "/images/flours/koopmans_professional_kristal.webp",
+    "source": "https://www.oetker-professional.nl/beeldbank/packshots/koopmans-professioneel?page=2",
+    "review": "Exact Professional Kristal1kg original manufacturer photo, publicly provided media library with Downloaden control. Linked policy reviewed, no explicit reuse prohibition found. Not a blanket licence claim.",
+    "remoteUrl": "https://www.oetker-professional.nl/images/800x600-canvas/1-50-230204-kristal-patentbloem-10x1kg.webp",
+    "localBytes": 18936,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "giustos_artisan_bread": {
+    "url": "/images/flours/giustos_artisan_bread.webp",
+    "source": "https://www.giustos.com/product-page/giusto-s-artisan-malted-unbleached-bread-flour-1",
+    "review": "Exact Artisan Malted Unbleached Bread Flour 5lb bag visually verified. Manufacturer footer copyright retained in image; source review found no explicit reuse prohibition under user criterion, not an affirmative licence.",
+    "remoteUrl": "https://static.wixstatic.com/media/db13a2_de57a1db390840deb6dac3eaaa1a8fb5~mv2.jpg",
+    "localBytes": 34656,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "decollogne_bio_t65": {
+    "url": "/images/flours/decollogne_bio_t65.webp",
+    "source": "https://world.openfoodfacts.org/product/3358050301163",
+    "review": "Exact retail BioT65 tin visually verified. OFF contributors CC BY-SA3.0; attribution/licence in details, resized and WebP conversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/335/805/030/1163/front_fr.9.400.jpg",
+    "localBytes": 17942,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3358050301163"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "soufflet_bio_t65": {
+    "url": "/images/flours/soufflet_bio_t65.webp",
+    "source": "https://world.openfoodfacts.org/product/3263380008883",
+    "review": "Exact named retail SKU visually verified. OFF contributors CC BY-SA3.0, credited in details. Resized/WebP conversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/326/338/000/8883/front_fr.8.400.jpg",
+    "localBytes": 21986,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3263380008883"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "aurora_roggen1150": {
+    "url": "/images/flours/aurora_roggen1150.webp",
+    "source": "https://world.openfoodfacts.org/product/4000406073147",
+    "review": "Exact named retail SKU visually verified. OFF contributors CC BY-SA3.0, credited in details. Resized/WebP conversion.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/400/040/607/3147/front_de.28.400.jpg",
+    "localBytes": 23064,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/4000406073147"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "meneba_orchidee": {
+    "url": "/images/flours/meneba_orchidee.webp",
+    "source": "https://dhoreca.nl/product/meneba-tarwebloem-orchidee-25-kg-2/",
+    "review": "Exact originalMenebaOrchidee25kg bag visually verified. Source footer/search reviewed no explicit reuse prohibition found; no affirmative licence.",
+    "remoteUrl": "https://dhoreca.nl/wp-content/uploads/2022/04/Meneba-Tarwebloem-Orchidee-25-kg.jpg",
+    "localBytes": 24086,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "gilchesters_organic_strong_white": {
+    "url": "/images/flours/gilchesters_organic_strong_white.webp",
+    "source": "https://www.shropshireorganics.co.uk/c/flour/gilchesters-organics-strong-white-wheat-flour",
+    "review": "Exact Unbleached White1.5kg original bag verified, manufacturer confirms current OrganicStrongWhite formername. Shropshire terms fully read20September2026 sales-only, no explicit reuse prohibition found; not affirmative licence.",
+    "remoteUrl": "https://growinggood.ams3.digitaloceanspaces.com/b83447023f7a68561151d809443b26b2.jpg",
+    "localBytes": 18154,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "ka_organic_medium_rye": {
+    "url": "/images/flours/ka_organic_medium_rye.webp",
+    "source": "https://world.openfoodfacts.org/product/0071012060061",
+    "review": "Open Food Facts contributor photo CC BY-SA 3.0. Root visually verified Classic Medium Organic Rye 3lb bag against manufacturer exact UPC071012060061. Distinct from professional dark rye; resized WebP only. Attribution linked in flour detail.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/007/101/206/0061/front_en.8.400.jpg",
+    "localBytes": 20486,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/0071012060061"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "sriboga_tali_emas_special": {
+    "url": "/images/flours/sriboga_tali_emas_special.webp",
+    "source": "https://www.sriboga-flourmill.com/produk/produk-kami/tali-emas-special-mAPp",
+    "review": "Exact manufacturer productpage bag visuallyverified. Genericcopyright/footerandtargetedpolicysearch no explicit image reuse restrictionfound,not affirmative licence. Originalsourceimagepreserved.",
+    "remoteUrl": "https://panel.sriboga-flourmill.com/storage/upload/image/master/master-a753481e-6bf6-11ef-a2ab-0242ac11005e.png",
+    "localBytes": 20548,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "sajo_mcsun_strong_grade1": {
+    "url": "/images/flours/sajo_mcsun_strong_grade1.webp",
+    "source": "https://do.sajo.co.kr/flour/flour_gangruk.asp",
+    "review": "Exact manufacturer productpage bag visuallyverified. Genericcopyright/footerandtargetedpolicysearch no explicit image reuse restrictionfound,not affirmative licence. Originalsourceimagepreserved.",
+    "remoteUrl": "https://do.sajo.co.kr/images/newmilling/kang02_big.jpg",
+    "localBytes": 11336,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "arawana_high_gluten_snowflake": {
+    "url": "/images/flours/arawana_high_gluten_snowflake.webp",
+    "source": "https://www.bwfhmall.cn/product/11491.html",
+    "review": "ExactHighGlutenSnowflakeWheatCore5kg originalbagvisuallyverified. Retailersource/footerandtargetedpolicysearch no explicitreusebanfound,notaffirmativelicence.",
+    "remoteUrl": "https://bw-1305298646.cos.ap-shanghai.myqcloud.com/images/eshop/JF00041/%E4%B8%BB%E5%9B%BE-01.jpg",
+    "localBytes": 23024,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "pilmico_sun_moon_star": {
+    "url": "/images/flours/pilmico_sun_moon_star.webp",
+    "source": "https://jeannegerbread.weebly.com/blog/tinapay-natin-bread-baking-competition",
+    "review": "Original25kgSunMoonStarbag visuallyverified in2016JeanneKhe eventphoto; lifestyleimage preserved, olderpackaging. Source no explicitreusebanfound, notaffirmativelicence.",
+    "remoteUrl": "https://jeannegerbread.weebly.com/uploads/7/8/1/2/78125140/img-0719_orig.jpg",
+    "localBytes": 34078,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "wudeli_five_star_fine": {
+    "url": "/images/flours/wudeli_five_star_fine.webp",
+    "source": "https://www.dinomartmy.com/products/五得利-特精小麦粉-wudeli-fine-wheat-flour-5kg",
+    "review": "Browserdisplayvisuallyconfirms五星特精小麦粉5kg. Sourcefooteronlygenericcopyright; linkedterms404,noexplicitbanfound,notaffirmativelicence.",
+    "remoteUrl": "https://cdn.store-assets.com/s/942373/i/95510576.jpeg?width=1024&format=webp",
+    "localBytes": 47700,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "carrefour_bio_t65": {
+    "url": "/images/flours/carrefour_bio_t65.webp",
+    "source": "https://world.openfoodfacts.org/product/3270190128724",
+    "review": "Exact branded bag visually verified; brand and product designation match the independently sourced SKU. Open Food Facts contributors, CC BY-SA 3.0. Retain source attribution and licence link; resize/WebP conversion only.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/327/019/012/8724/front_fr.330.400.jpg",
+    "localBytes": 16964,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3270190128724"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bio_village_t65": {
+    "url": "/images/flours/bio_village_t65.webp",
+    "source": "https://world.openfoodfacts.org/product/3564707000055",
+    "review": "Exact branded bag visually verified; brand and product designation match the independently sourced SKU. Open Food Facts contributors, CC BY-SA 3.0. Retain source attribution and licence link; resize/WebP conversion only.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/356/470/700/0055/front_fr.56.400.jpg",
+    "localBytes": 19622,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3564707000055"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "chabrior_bio_t65": {
+    "url": "/images/flours/chabrior_bio_t65.webp",
+    "source": "https://world.openfoodfacts.org/product/3250391781836",
+    "review": "Exact branded bag visually verified; brand and product designation match the independently sourced SKU. Open Food Facts contributors, CC BY-SA 3.0. Retain source attribution and licence link; resize/WebP conversion only.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/325/039/178/1836/front_fr.81.400.jpg",
+    "localBytes": 13438,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3250391781836"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "u_bio_t65": {
+    "url": "/images/flours/u_bio_t65.webp",
+    "source": "https://world.openfoodfacts.org/product/3256227732805",
+    "review": "Exact branded bag visually verified; brand and product designation match the independently sourced SKU. Open Food Facts contributors, CC BY-SA 3.0. Retain source attribution and licence link; resize/WebP conversion only.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/325/622/773/2805/front_en.38.400.jpg",
+    "localBytes": 22170,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3256227732805"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "auchan_bio_t65": {
+    "url": "/images/flours/auchan_bio_t65.webp",
+    "source": "https://world.openfoodfacts.org/product/3596710474417",
+    "review": "Exact branded bag visually verified; brand and product designation match the independently sourced SKU. Open Food Facts contributors, CC BY-SA 3.0. Retain source attribution and licence link; resize/WebP conversion only.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/359/671/047/4417/front_fr.74.400.jpg",
+    "localBytes": 16656,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3596710474417"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "monoprix_bio_t65": {
+    "url": "/images/flours/monoprix_bio_t65.webp",
+    "source": "https://world.openfoodfacts.org/product/3350033716704",
+    "review": "Exact branded bag visually verified; brand and product designation match the independently sourced SKU. Open Food Facts contributors, CC BY-SA 3.0. Retain source attribution and licence link; resize/WebP conversion only.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/335/003/371/6704/front_fr.19.400.jpg",
+    "localBytes": 21348,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3350033716704"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "eco_plus_t55": {
+    "url": "/images/flours/eco_plus_t55.webp",
+    "source": "https://world.openfoodfacts.org/product/3450970120302",
+    "review": "Exact branded bag visually verified; brand and product designation match the independently sourced SKU. Open Food Facts contributors, CC BY-SA 3.0. Retain source attribution and licence link; resize/WebP conversion only.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/345/097/012/0302/front_fr.61.400.jpg",
+    "localBytes": 21870,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3450970120302"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "chabrior_bio_t110": {
+    "url": "/images/flours/chabrior_bio_t110.webp",
+    "source": "https://world.openfoodfacts.org/product/3250391781867",
+    "review": "Exact branded bag visually verified; brand and product designation match the independently sourced SKU. Open Food Facts contributors, CC BY-SA 3.0. Retain source attribution and licence link; resize/WebP conversion only.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/325/039/178/1867/front_fr.55.400.jpg",
+    "localBytes": 28176,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3250391781867"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bio_village_t110": {
+    "url": "/images/flours/bio_village_t110.webp",
+    "source": "https://world.openfoodfacts.org/product/3564707147811",
+    "review": "Exact branded bag visually verified; brand and product designation match the independently sourced SKU. Open Food Facts contributors, CC BY-SA 3.0. Retain source attribution and licence link; resize/WebP conversion only.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/356/470/714/7811/front_fr.29.400.jpg",
+    "localBytes": 23362,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3564707147811"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "mon_fournil_pizza_t00": {
+    "url": "/images/flours/mon_fournil_pizza_t00.webp",
+    "source": "https://world.openfoodfacts.org/product/3760130560580",
+    "review": "Exact branded bag visually verified; brand and product designation match the independently sourced SKU. Open Food Facts contributors, CC BY-SA 3.0. Retain source attribution and licence link; resize/WebP conversion only.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/376/013/056/0580/front_fr.25.400.jpg",
+    "localBytes": 32766,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3760130560580"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "mon_fournil_pizza_w360": {
+    "url": "/images/flours/mon_fournil_pizza_w360.webp",
+    "source": "https://world.openfoodfacts.org/product/3760130561761",
+    "review": "Exact branded bag visually verified; brand and product designation match the independently sourced SKU. Open Food Facts contributors, CC BY-SA 3.0. Retain source attribution and licence link; resize/WebP conversion only. Front photo is cropped at sides, but Mon Fournil and Pizza W360 remain readable. Exact product identity; improve framing later.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/376/013/056/1761/front_fr.3.400.jpg",
+    "localBytes": 15916,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3760130561761"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "lemaire_bio_t65": {
+    "url": "/images/flours/lemaire_bio_t65.webp",
+    "source": "https://world.openfoodfacts.org/product/3483050001727",
+    "review": "Exact branded bag visually verified; brand and product designation match the independently sourced SKU. Open Food Facts contributors, CC BY-SA 3.0. Retain source attribution and licence link; resize/WebP conversion only. Front says organic wheat, not T65; exact EAN and OFF ingredient field identify T65. Historical package; OFF nutrition10% differs current manufacturer11%, retain latest primary11%.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/348/305/000/1727/front_fr.28.400.jpg",
+    "localBytes": 23192,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3483050001727"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "coeur_de_ble_pizza": {
+    "url": "/images/flours/coeur_de_ble_pizza.webp",
+    "source": "https://world.openfoodfacts.org/product/3307350019032",
+    "review": "Exact branded bag visually verified; brand and product designation match the independently sourced SKU. Open Food Facts contributors, CC BY-SA 3.0. Retain source attribution and licence link; resize/WebP conversion only. Current orange/green Type Napolitaine package; OFF nutrition13.7% corroborates current manufacturer formula, not older retailer10%.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/330/735/001/9032/front_fr.3.400.jpg",
+    "localBytes": 16560,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3307350019032"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "gruau_dor_gruau_t45": {
+    "url": "/images/flours/gruau_dor_gruau_t45.webp",
+    "source": "https://world.openfoodfacts.org/product/3051100180304",
+    "review": "Exact branded bag visually verified; brand and product designation match the independently sourced SKU. Open Food Facts contributors, CC BY-SA 3.0. Retain source attribution and licence link; resize/WebP conversion only.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/305/110/018/0304/front_fr.33.400.jpg",
+    "localBytes": 17502,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3051100180304"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "jardin_bio_t65": {
+    "url": "/images/flours/jardin_bio_t65.webp",
+    "source": "https://world.openfoodfacts.org/product/3478820047845",
+    "review": "Visually verified exact bag: brand and flour designation match. Open Food Facts contributors, CC BY-SA 3.0; retain source attribution and licence link. Resize/WebP conversion only.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/347/882/004/7845/front_fr.18.400.jpg",
+    "localBytes": 26130,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3478820047845"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "belle_france_fluide": {
+    "url": "/images/flours/belle_france_fluide.webp",
+    "source": "https://world.openfoodfacts.org/product/3258561100081",
+    "review": "Visually verified exact bag: brand and flour designation match. Open Food Facts contributors, CC BY-SA 3.0; retain source attribution and licence link. Resize/WebP conversion only.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/325/856/110/0081/front_fr.6.400.jpg",
+    "localBytes": 12982,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3258561100081"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "ecoprix_t55": {
+    "url": "/images/flours/ecoprix_t55.webp",
+    "source": "https://shop.cabf.eu/produit/farine-ble-type55-1kg-ep-6/",
+    "review": "Exact distributor EAN3064311051028 identified as Ecoprix1kg; original plain blue/white T55 bag visually checked. CABF legal page browser reviewed20September2026 contains header/footer but no substantive policy body; no explicit image-reuse prohibition found in available pages. Limited review, not affirmative licence. Resize/WebP only.",
+    "remoteUrl": "https://shop.cabf.eu/wp-content/uploads/2017/06/3064311051028_001-416x416.jpg",
+    "localBytes": 9278,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "carrefour_bio_t110": {
+    "url": "/images/flours/carrefour_bio_t110.webp",
+    "source": "https://world.openfoodfacts.org/product/3560071192259",
+    "review": "Visually verified exact bag: brand and flour designation match. Open Food Facts contributors, CC BY-SA 3.0; retain source attribution and licence link. Resize/WebP conversion only.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/356/007/119/2259/front_fr.45.400.jpg",
+    "localBytes": 26084,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3560071192259"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "redman_bread": {
+    "url": "/images/flours/redman_bread.webp",
+    "source": "https://shopmustafa.sg/products/redman-bread-flour-1kg",
+    "review": "Original Redman Bread Flour1kg front visually verified20September2026. ShopMustafa accessible sale terms contain no explicit image-reuse prohibition; clause7.3.9 applies to vouchers only. Referenced separate WebsiteTermsOfUse could not be located; no affirmative licence claimed. Used within user authorization for sources with no explicit prohibition found; resizeWebP only.",
+    "remoteUrl": "https://cdn.shopify.com/s/files/1/0658/3654/8283/files/1207_1.jpg?v=1767151251",
+    "localBytes": 33874,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "tomiz_haruyokoi_wholewheat": {
+    "url": "/images/flours/tomiz_haruyokoi_wholewheat.webp",
+    "source": "https://ichi-baking.com/list/details/id/4932503125132",
+    "review": "Original Tomiz Haruyokoi stoneground whole wheat500g bag visually verified by agent against exactEAN. ICHI general/member terms t=5 and shoppingterms t=2 browserreview20September2026 found no explicit copying/reuse prohibition; genericrightsreservedfooter, no affirmative licence. Browserobserved assetexport,resizeWebP only.",
+    "remoteUrl": "https://img.sys-ichi.com/2018/20260105184555710.jpeg",
+    "localBytes": 39844,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "prima_building": {
+    "url": "/images/flours/prima_building.webp",
+    "source": "https://www.primaflour.com/product-description/bread-flourprima-building-brand/",
+    "review": "Exact official manufacturer bag visually verified, complete product designation and packaging visible. Terms of Use https://www.primaflour.com/terms-of-use/ reviewed 2026-09-20: warranty/liability disclaimers and generic all-rights-reserved footer, no explicit reuse prohibition found; site also shows Content is protected notice. No licence inferred; accepted only under user no-explicit-prohibition sourcing criterion. No AI alterations.",
+    "remoteUrl": "https://www.primaflour.com/wp-content/uploads/2021/10/Untitled-1_0004_PF_SIN_Building_PackShot_260520.png",
+    "localBytes": 33284,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "prima_five_star": {
+    "url": "/images/flours/prima_five_star.webp",
+    "source": "https://www.primaflour.com/product-description/allpurpose-flourprima-five-star-brand/",
+    "review": "Exact official manufacturer bag visually verified, complete product designation and packaging visible. Terms of Use https://www.primaflour.com/terms-of-use/ reviewed 2026-09-20: warranty/liability disclaimers and generic all-rights-reserved footer, no explicit reuse prohibition found; site also shows Content is protected notice. No licence inferred; accepted only under user no-explicit-prohibition sourcing criterion. No AI alterations.",
+    "remoteUrl": "https://www.primaflour.com/wp-content/uploads/2021/10/Untitled-1_0004_PF_FiveStar_PackShot_280520.png",
+    "localBytes": 29814,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "prima_farm_rf": {
+    "url": "/images/flours/prima_farm_rf.webp",
+    "source": "https://www.primaflour.com/product-description/wholegrain-flourprima-farm-brand-fine-wholegrain-flour/",
+    "review": "Exact official manufacturer bag visually verified, complete product designation and packaging visible. Terms of Use https://www.primaflour.com/terms-of-use/ reviewed 2026-09-20: warranty/liability disclaimers and generic all-rights-reserved footer, no explicit reuse prohibition found; site also shows Content is protected notice. No licence inferred; accepted only under user no-explicit-prohibition sourcing criterion. No AI alterations. RF fine 20kg and SF superfine 20kg were individually verified from printed bag text; ignore incorrect shared image alt text.",
+    "remoteUrl": "https://www.primaflour.com/wp-content/uploads/2022/01/IP_FARMBRAMD_RFWGF_141221_FAP-RGB.png",
+    "localBytes": 50176,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "prima_tower": {
+    "url": "/images/flours/prima_tower.webp",
+    "source": "https://www.primaflour.com/product-description/french-flourprima-tower-brand/",
+    "review": "Exact official manufacturer bag visually verified, complete product designation and packaging visible. Terms of Use https://www.primaflour.com/terms-of-use/ reviewed 2026-09-20: warranty/liability disclaimers and generic all-rights-reserved footer, no explicit reuse prohibition found; site also shows Content is protected notice. No licence inferred; accepted only under user no-explicit-prohibition sourcing criterion. No AI alterations.",
+    "remoteUrl": "https://www.primaflour.com/wp-content/uploads/2021/10/Untitled-1_0001_PF_Tower_PackShot_280520.png",
+    "localBytes": 31196,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "prima_super": {
+    "url": "/images/flours/prima_super.webp",
+    "source": "https://www.primaflour.com/product-description/bread-flourprima-super-brand/",
+    "review": "Exact official manufacturer bag visually verified, complete product designation and packaging visible. Terms of Use https://www.primaflour.com/terms-of-use/ reviewed 2026-09-20: warranty/liability disclaimers and generic all-rights-reserved footer, no explicit reuse prohibition found; site also shows Content is protected notice. No licence inferred; accepted only under user no-explicit-prohibition sourcing criterion. No AI alterations.",
+    "remoteUrl": "https://www.primaflour.com/wp-content/uploads/2021/10/Untitled-1_0005_PF_SIN_Super_PackShot_260520.png",
+    "localBytes": 32692,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "prima_little_shepherd": {
+    "url": "/images/flours/prima_little_shepherd.webp",
+    "source": "https://www.primaflour.com/product-description/bread-flourlittle-shepherd-brand/",
+    "review": "Exact official manufacturer bag visually verified, complete product designation and packaging visible. Terms of Use https://www.primaflour.com/terms-of-use/ reviewed 2026-09-20: warranty/liability disclaimers and generic all-rights-reserved footer, no explicit reuse prohibition found; site also shows Content is protected notice. No licence inferred; accepted only under user no-explicit-prohibition sourcing criterion. No AI alterations.",
+    "remoteUrl": "https://www.primaflour.com/wp-content/uploads/2021/10/Untitled-1_0001_PF_SIN_LittleShepherd_PackShot_260520.png",
+    "localBytes": 32572,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "prima_farm_sf": {
+    "url": "/images/flours/prima_farm_sf.webp",
+    "source": "https://www.primaflour.com/product-description/wholegrain-flourprima-farm-brand-superfine-wholegrain-flour/",
+    "review": "Exact official manufacturer bag visually verified, complete product designation and packaging visible. Terms of Use https://www.primaflour.com/terms-of-use/ reviewed 2026-09-20: warranty/liability disclaimers and generic all-rights-reserved footer, no explicit reuse prohibition found; site also shows Content is protected notice. No licence inferred; accepted only under user no-explicit-prohibition sourcing criterion. No AI alterations. RF fine 20kg and SF superfine 20kg were individually verified from printed bag text; ignore incorrect shared image alt text.",
+    "remoteUrl": "https://www.primaflour.com/wp-content/uploads/2022/01/IP_FARMBRAND_SFWGF_141221_FAP-RGB.png",
+    "localBytes": 54064,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "prima_fir_tree": {
+    "url": "/images/flours/prima_fir_tree.webp",
+    "source": "https://www.primaflour.com/product-description/bread-flourprima-fir-tree-brand/",
+    "review": "Exact official manufacturer bag visually verified, complete product designation and packaging visible. Terms of Use https://www.primaflour.com/terms-of-use/ reviewed 2026-09-20: warranty/liability disclaimers and generic all-rights-reserved footer, no explicit reuse prohibition found; site also shows Content is protected notice. No licence inferred; accepted only under user no-explicit-prohibition sourcing criterion. No AI alterations.",
+    "remoteUrl": "https://www.primaflour.com/wp-content/uploads/2021/10/Untitled-1_0002_PF_SIN_FIRTREEr_PackShot_260520.png",
+    "localBytes": 31362,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "prima_motorcycle": {
+    "url": "/images/flours/prima_motorcycle.webp",
+    "source": "https://www.primaflour.com/product-description/allpurpose-flourprima-motorcycle-brand/",
+    "review": "Exact official manufacturer bag visually verified, complete product designation and packaging visible. Terms of Use https://www.primaflour.com/terms-of-use/ reviewed 2026-09-20: warranty/liability disclaimers and generic all-rights-reserved footer, no explicit reuse prohibition found; site also shows Content is protected notice. No licence inferred; accepted only under user no-explicit-prohibition sourcing criterion. No AI alterations.",
+    "remoteUrl": "https://www.primaflour.com/wp-content/uploads/2021/10/Untitled-1_0005_PF_Motorcycle_PackShot_280520.png",
+    "localBytes": 33196,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "tomiz_haruyokoi": {
+    "url": "/images/flours/tomiz_haruyokoi.webp",
+    "source": "https://online.citysuper.com.hk/products/haruyokoi-bread-flour",
+    "review": "Visually verified20September2026. Original 富澤商店 春よ恋1kg, barcode4932503629982; clear isolated white background. Fresh website disclaimer read in full: no reproduction restriction. Membership terms likewise none. Separate mobile app terms explicitly define Application as citysuper HK App; no incorporation into E-Shop website found. No explicit website reuse ban found under user criterion; not a licence. Do not replace current primary specs with old bag figures. No label/image content editing.",
+    "remoteUrl": "https://online.citysuper.com.hk/cdn/shop/files/301400570-TOMIZAWAHARUYOKOI100_WHEATFLOUR1KG_20241010__0007_01.jpg?v=1728965782",
+    "localBytes": 12646,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "tomiz_haruyutaka100": {
+    "url": "/images/flours/tomiz_haruyutaka100.webp",
+    "source": "https://online.citysuper.com.hk/products/haruyutaka-bread-flour",
+    "review": "Visually verified20September2026. Original TOMIZ はるゆたか100% 1kg, explicitly100%, not blend; older 2019-dated pack. Fresh website disclaimer read in full: no reproduction restriction. Membership terms likewise none. Separate mobile app terms explicitly define Application as citysuper HK App; no incorporation into E-Shop website found. No explicit website reuse ban found under user criterion; not a licence. Do not replace current primary specs with old bag figures. No label/image content editing.",
+    "remoteUrl": "https://online.citysuper.com.hk/cdn/shop/products/301400568-1-tomizawa-haruyutaka-bread-flour-1kg.jpg?v=1659523433",
+    "localBytes": 11750,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "tomiz_kitanokaori": {
+    "url": "/images/flours/tomiz_kitanokaori.webp",
+    "source": "https://online.citysuper.com.hk/products/tomizawa-kitanokaori-bread-flour-1kg",
+    "review": "Visually verified20September2026. Original TOMIZ キタノカオリ domestic strong flour1kg, not Yumechikara blend; older2019-dated pack. Fresh website disclaimer read in full: no reproduction restriction. Membership terms likewise none. Separate mobile app terms explicitly define Application as citysuper HK App; no incorporation into E-Shop website found. No explicit website reuse ban found under user criterion; not a licence. Do not replace current primary specs with old bag figures. No label/image content editing.",
+    "remoteUrl": "https://online.citysuper.com.hk/cdn/shop/products/301400569-1-tomizawa-kitanokaori-bread-flour-1kg.jpg?v=1659523467",
+    "localBytes": 14578,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "tomiz_monami": {
+    "url": "/images/flours/tomiz_monami.webp",
+    "source": "https://online.citysuper.com.hk/products/mon-amie-bread-flour",
+    "review": "Visually verified20September2026. Original TOMIZ モナミ strong flour 1kg, printed protein12.2±0.5%; older 2019-dated pack. Fresh website disclaimer read in full: no reproduction restriction. Membership terms likewise none. Separate mobile app terms explicitly define Application as citysuper HK App; no incorporation into E-Shop website found. No explicit website reuse ban found under user criterion; not a licence. Do not replace current primary specs with old bag figures. No label/image content editing.",
+    "remoteUrl": "https://online.citysuper.com.hk/cdn/shop/products/301400879-1-tomizawa-mon-amie-bread-flour-1kg.jpg?v=1659523483",
+    "localBytes": 12690,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "ebetsu_type_er": {
+    "url": "/images/flours/ebetsu_type_er.webp",
+    "source": "https://www.e-rich.tw/portal_c2_cnt.php?button_num=c2&folder_id=6657&owner_num=c2_23618",
+    "review": "Visually verified20September2026. Original TYPE ER Ebetsu Flour Mill NET25kg bag. Same flour family, manufacturer bulk pack, not canonical Tomiz1kg retail EAN. Preserve pack-size caveat. Shoppingterms read: photo-color disclaimer only; no explicitreuseban. Genericcopyrightfooter. TargetedChineseEnglishcopybansearch no prohibitionfound. Notlicensed. Do not replace current primary specs with old bag figures. No label/image content editing.",
+    "remoteUrl": "https://x.webdo.cc/userfiles/erich/image/12_TYPE_ER.png",
+    "localBytes": 23834,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "foricher_bagatelle_t55": {
+    "url": "/images/flours/foricher_bagatelle_t55.webp",
+    "source": "https://www.eshop-lachapelloise.be/produit/1766/",
+    "review": "Original Bagatelle T55 Cuisine et Patisserie1kg package visually verified. Same supplier as verified ForicherT45/T80. Supplier notices and sales terms reviewed previously; legal notice reread20September2026 only ownership/contact, no explicit reuse prohibition found. Not affirmative licence. Resize/WebP only.",
+    "remoteUrl": "https://www.eshop-lachapelloise.be/wp-content/uploads/2021/04/t55.jpg",
+    "localBytes": 19586,
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "carrefour_fluide_t45": {
+    "url": "/images/flours/carrefour_fluide_t45.webp",
+    "source": "https://world.openfoodfacts.org/product/3270190117315",
+    "review": "Exact original flour bag visually verified against brand, flour designation and EAN. Open Food Facts contributors CC BY-SA3.0; attribution and licence linked in product details. Resize/WebP only.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/327/019/011/7315/front_fr.116.400.jpg",
+    "localBytes": 30288,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/3270190117315"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bobs_organic_ap": {
+    "url": "/images/flours/bobs_organic_ap.webp",
+    "source": "https://world.openfoodfacts.org/product/0039978029911",
+    "review": "Exact Organic Unbleached White AllPurpose5lb front visually verified. OFFselectedfront incorrectlypointsback; this APIenumerated rawimage1 is correctfront. OFFcontributor fredcassous CC BY-SA3.0; retainattribution/licence.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/003/997/802/9911/1.400.jpg",
+    "localBytes": 37664,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/0039978029911"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bobs_organic_spelt": {
+    "url": "/images/flours/bobs_organic_spelt.webp",
+    "source": "https://world.openfoodfacts.org/product/0039978118943",
+    "review": "Exact Organic Spelt20oz front visually verified; Organic mark andwholegrain readable. OFFcontributors CC BY-SA3.0; retainattribution/licence.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/003/997/811/8943/front_en.4.400.jpg",
+    "localBytes": 16522,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/0039978118943"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  },
+  "bobs_spelt": {
+    "url": "/images/flours/bobs_spelt.webp",
+    "source": "https://world.openfoodfacts.org/product/0039978116505",
+    "review": "Exact Bob’s standard Spelt Flour wholegrain front visually verified; no Organic claim. OFF contributors CC BY-SA3.0; source attribution and licence required.",
+    "remoteUrl": "https://images.openfoodfacts.org/images/products/003/997/811/6505/front_en.4.400.jpg",
+    "localBytes": 20392,
+    "credit": {
+      "author": "Open Food Facts contributors",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://world.openfoodfacts.org/product/0039978116505"
+    },
+    "modifications": "Resized and converted to WebP; no generated product packaging."
+  }
+}

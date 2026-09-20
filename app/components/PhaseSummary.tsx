@@ -10,9 +10,9 @@ import { type ScheduleResult, hoursLabel } from '../utils';
 import { buildPhases } from './Timeline';
 import { StepIcon } from './StepIcons';
 
-export default function PhaseSummary({ schedule }: { schedule: ScheduleResult }) {
+export default function PhaseSummary({ schedule, numItems = 4 }: { schedule: ScheduleResult; numItems?: number }) {
   const t = useTranslations();
-  const phases = buildPhases(schedule, 0, t);
+  const phases = buildPhases(schedule, 0, t, numItems);
   if (phases.length === 0) return null;
   return (
     <div style={{

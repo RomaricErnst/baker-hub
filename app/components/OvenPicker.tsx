@@ -41,21 +41,33 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect, onP
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (collapseTimer.current) clearTimeout(collapseTimer.current); }, []);
 
-  const recommendedOven = null;
+  // This switches advice only; both designs retain the same pizza-oven calculation profile.
+  const [construction, setConstruction] = useState<'tabletop' | 'masonry'>('tabletop');
+  const ovenAdvice = selected === 'pizza_oven' ? <div style={{marginTop:12,padding:12,border:'1px solid var(--border)',borderRadius:12}}>
+    <p style={{margin:'0 0 8px',fontSize:13}}>{locale==='fr'?'Votre four ressemble à…':'Which oven looks like yours?'}</p>
+    <div role="group" aria-label={locale==='fr'?'Conseils par construction':'Advice by oven construction'} style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+      {(['tabletop','masonry'] as const).map(kind=><button key={kind} type="button" aria-pressed={construction===kind} onClick={()=>setConstruction(kind)} style={{padding:5,border:construction===kind?'2px solid var(--terra)':'1px solid var(--border)',borderRadius:9,background:'transparent',color:'inherit'}}>
+        <img src={`/images/approved/equipment-v2/${kind==='tabletop'?'portable-gas-oven':'masonry-oven'}.webp`} alt="" style={{width:'100%',height:85,objectFit:'cover',borderRadius:5}} />
+        {kind==='tabletop'?(locale==='fr'?'Four de table':'Tabletop'):(locale==='fr'?'Four maçonné':'Brick / masonry')}
+      </button>)}
+    </div>
+    <p style={{fontSize:12,margin:'8px 0 0'}}>{construction==='tabletop'?(locale==='fr'?'Suivez le préchauffage du fabricant ; contrôlez la sole avant chaque pizza.':'Follow the maker’s preheat guidance; check the floor before each pizza.'):(locale==='fr'?'Laissez la maçonnerie accumuler la chaleur ; une flamme chaude ne suffit pas à chauffer la sole.':'Allow the masonry to store heat; a hot flame alone does not mean the floor is ready.')}</p>
+    <p style={{fontSize:11,color:'var(--smoke)',margin:'6px 0 0'}}>{locale==='fr'?'Conseil uniquement — même profil de cuisson.':'Advice only — same baking profile.'}</p>
+  </div> : null;
 
   const pizzaOptions = [
-    { id: 'pizza_oven',         image: '/oven_fire.webp',           title: t('pizzaOven.title'),     tagline: t('pizzaOven.tagline') },
-    { id: 'home_oven_steel',    image: '/oven_stone.webp',          title: t('homeSteel.title'),     tagline: t('homeSteel.tagline') },
-    { id: 'home_oven_standard', image: '/oven_standard.webp',       title: t('homeStandard.title'),  tagline: t('homeStandard.tagline') },
-    { id: 'electric_pizza',     image: '/oven_electric.webp',       title: t('electricPizza.title'), tagline: t('electricPizza.tagline') },
+    { id: 'pizza_oven',         image: '/images/approved/equipment-v2/portable-gas-oven.webp',           title: t('pizzaOven.title'),     tagline: t('pizzaOven.tagline') },
+    { id: 'home_oven_steel',    image: '/images/approved/equipment-v2/home-oven-steel.webp',          title: t('homeSteel.title'),     tagline: t('homeSteel.tagline') },
+    { id: 'home_oven_standard', image: '/images/approved/equipment-v2/home-oven-standard.webp',       title: t('homeStandard.title'),  tagline: t('homeStandard.tagline') },
+    { id: 'electric_pizza',     image: '/images/approved/equipment-v2/electric-pizza-oven-v3.webp',       title: t('electricPizza.title'), tagline: t('electricPizza.tagline') },
   ];
 
   const allBreadOptions = [
-    { id: 'dutch_oven',            image: '/oven_dutch.webp',          title: t('dutchOven.title'),  tagline: t('dutchOven.tagline') },
-    { id: 'home_oven_stone_bread', image: '/oven_stone_bread.webp',    title: t('homeStoneB.title'), tagline: t('homeStoneB.tagline') },
-    { id: 'standard_bread',        image: '/oven_standard_bread.webp', title: t('standardB.title'),  tagline: t('standardB.tagline') },
-    { id: 'wood_fired',            image: '/oven_wood_bread.webp',     title: t('woodFired.title'),  tagline: t('woodFired.tagline') },
-    { id: 'steam_oven',            image: '/oven_steam.webp',          title: t('steamOven.title'),  tagline: t('steamOven.tagline') },
+    { id: 'dutch_oven',            image: '/images/approved/equipment-v2/dutch-oven.webp',          title: t('dutchOven.title'),  tagline: t('dutchOven.tagline') },
+    { id: 'home_oven_stone_bread', image: '/images/approved/equipment-v2/home-oven-stone.webp',    title: t('homeStoneB.title'), tagline: t('homeStoneB.tagline') },
+    { id: 'standard_bread',        image: '/images/approved/equipment-v2/home-oven-standard.webp', title: t('standardB.title'),  tagline: t('standardB.tagline') },
+    { id: 'wood_fired',            image: '/images/approved/equipment-v2/masonry-oven.webp',     title: t('woodFired.title'),  tagline: t('woodFired.tagline') },
+    { id: 'steam_oven',            image: '/images/approved/equipment-v2/steam-oven.webp',          title: t('steamOven.title'),  tagline: t('steamOven.tagline') },
   ];
 
   const options = bakeType === 'pizza'
@@ -70,17 +82,17 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect, onP
 
   if (!expanded && selectedOpt) {
     return (
-      <DecisionSummary
+      <div><DecisionSummary
         thumbnail={selectedOpt.image}
         title={selectedOpt.title}
         tagline={selectedOpt.tagline}
         onExpand={() => setExpanded(true)}
-      />
+      />{ovenAdvice}</div>
     );
   }
 
   return (
-    <DecisionList
+    <div><DecisionList
       options={options}
       selectedId={selectedId}
       onSelect={(id) => {
@@ -88,6 +100,6 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect, onP
         if (collapseTimer.current) clearTimeout(collapseTimer.current);
         collapseTimer.current = setTimeout(() => setExpanded(false), 420);
       }}
-    />
+    />{ovenAdvice}</div>
   );
 }

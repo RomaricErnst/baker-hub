@@ -150,6 +150,7 @@ export type Ingredient = {
 }
 
 export type Pizza = {
+  preparationSequence?: Locale
   // Core identity
   id: string
   name: Locale
@@ -215,7 +216,8 @@ export type FilterState = {
   complexity: ComplexityTier | null
   flavour: FlavorChip[]
   ingredientSearch: string    // free text — matches pizza name + all ingredient names
-  ingredientChips?: string[]  // selected quick-chips — OR logic
+  ingredientChips?: string[]
+  ingredientMatchMode?: 'any' | 'all'
   styleKey?: StyleKey
 }
 
@@ -388,7 +390,8 @@ export function filterPizzas(pizzas: Pizza[], f: FilterState): Pizza[] {
           .filter(ing => !!ing && !!ing.name && typeof ing.name.en === 'string')
           .flatMap(ing => [ing.name.en, ing.name.fr ?? '']),
       ].join(' ').toLowerCase();
-      if (!activeChips.some(chip => allText.includes(chip.toLowerCase()))) return false;
+      const matches = (chip: string) => allText.includes(chip.toLowerCase());
+      if (!(f.ingredientMatchMode === 'all' ? activeChips.every(matches) : activeChips.some(matches))) return false;
     }
     if (f.flavour.length > 0) {
       const chipMatch = f.flavour.some(chip => {

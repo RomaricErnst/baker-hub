@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Mono, Figtree } from "next/font/google";
+import localFont from "next/font/local";
 import "../globals.css";
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { getMessages } from 'next-intl/server';
@@ -9,11 +9,11 @@ import { routing } from '@/i18n/routing';
 // One family for everything readable — logo, titles, body, labels. Figtree is
 // built for interface text: generous x-height and well-differentiated letters
 // at 11px, which is where most of this app lives.
-const figtree = Figtree({ subsets: ["latin"], variable: "--font-ui" });
+const figtree = localFont({ src: "../fonts/figtree-latin.woff2", weight: "300 900", display: "swap", variable: "--font-ui" });
 
 // Kept for one job only: the yeast formula panel, where monospacing carries
 // meaning. Everywhere else, tabular figures on the UI face do the aligning.
-const dmMono = DM_Mono({ weight: ["400","500"], subsets: ["latin"], variable: "--font-dm-mono" });
+const dmMono = localFont({ src: [{path: "../fonts/dm-mono-400-latin.woff2", weight: "400"}, {path: "../fonts/dm-mono-500-latin.woff2", weight: "500"}], display: "swap", variable: "--font-dm-mono" });
 
 export const metadata: Metadata = {
   title: "Baker Hub",

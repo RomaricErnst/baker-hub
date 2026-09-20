@@ -9,7 +9,7 @@ export const PIZZA_STYLES = {
     name: 'Classic Neapolitan',
     nameFr: 'Napolitaine Classique',
     emoji: '🔥',
-    image: '/pizzas/margherita.webp',
+    image: '/images/approved/pizza-style/margherita-fresh-basil-v2.webp',
     desc: 'Light, airy, charred cornicione.',
     descFr: 'Légère, aérienne, cornicione grillé.',
     hydration: 62, salt: 2.8, yeast: 0.08,
@@ -22,7 +22,7 @@ export const PIZZA_STYLES = {
     name: 'New York Style',
     nameFr: 'New York Style',
     emoji: '🗽',
-    image: '/pizzas/ny_pepperoni_slice.webp',
+    image: '/images/approved/pizza-style/new-york-pepperoni.webp',
     desc: 'Foldable, crispy-edged big slices.',
     descFr: 'Grandes parts pliables, bords croustillants.',
     hydration: 62, salt: 2.5, yeast: 0.3,
@@ -35,7 +35,7 @@ export const PIZZA_STYLES = {
     name: 'Pizza Romana',
     nameFr: 'Pizza Romaine',
     emoji: '🫓',
-    image: '/pizzas/carciofi_romana.webp',
+    image: '/images/approved/pizza-style/carciofi-romana.webp',
     desc: 'Ultra-thin, cracker-crisp, rolled with a pin.',
     descFr: 'Ultra-fine, croustillante, étalée au rouleau.',
     hydration: 57, salt: 2.5, yeast: 0.3,
@@ -50,7 +50,7 @@ export const PIZZA_STYLES = {
     name: 'Roman Teglia',
     nameFr: 'Teglia Romaine',
     emoji: '🏛️',
-    image: '/pizzas/teglia_patata_provola.webp',
+    image: '/images/approved/pizza-style/roman-teglia-potato.webp',
     desc: 'High-hydration, ultra-crispy rectangular.',
     descFr: 'Haute hydratation, rectangulaire ultra-croustillante.',
     hydration: 78, salt: 2.5, yeast: 0.2,
@@ -63,7 +63,7 @@ export const PIZZA_STYLES = {
     name: 'Pan / Detroit',
     nameFr: 'Pan / Detroit',
     emoji: '🍞',
-    image: '/pizzas/detroit_red_top.webp',
+    image: '/images/approved/pizza-style/detroit-red-top.webp',
     desc: 'Thick, fluffy, crispy-bottomed.',
     descFr: 'Épaisse, moelleuse, base croustillante.',
     hydration: 70, salt: 2.5, yeast: 0.5,
@@ -76,7 +76,7 @@ export const PIZZA_STYLES = {
     name: 'Sourdough Pizza',
     nameFr: 'Pizza au levain',
     emoji: '🌾',
-    image: '/pizzas/margherita.webp',
+    image: '/images/approved/pizza-style/margherita-fresh-basil-v2.webp',
     desc: 'Complex, tangy, naturally leavened.',
     descFr: 'Complexe, acidulée, au levain naturel.',
     hydration: 72, salt: 2.5, yeast: 0,
@@ -259,7 +259,7 @@ export const OVEN_TYPES = {
     name: 'Pizza oven',
     nameFr: 'Four à pizza',
     emoji: '🔥',
-    image: '/oven_fire.webp',
+    image: '/images/approved/equipment-v2/portable-gas-oven.webp',
     desc: 'Leopard spotting, authentic cornicione, 90 sec.',
     descFr: 'Léopardage et cornicione en 90 sec.',
     hydrationDelta: -2,
@@ -271,7 +271,7 @@ export const OVEN_TYPES = {
     name: 'Home oven + stone',
     nameFr: 'Four + pierre ou acier',
     emoji: '🪨',
-    image: '/oven_stone.webp',
+    image: '/images/approved/equipment-v2/home-oven-steel.webp',
     desc: 'Crispy base, 5-7 min.',
     descFr: 'Base croustillante, 5-7 min.',
     hydrationDelta: 3,
@@ -283,7 +283,7 @@ export const OVEN_TYPES = {
     name: 'Home oven (standard)',
     nameFr: 'Four domestique standard',
     emoji: '🏠',
-    image: '/oven_standard.webp',
+    image: '/images/approved/equipment-v2/home-oven-standard.webp',
     desc: 'Best for thicker styles.',
     descFr: 'Idéal pour pizzas généreuses.',
     hydrationDelta: 4,
@@ -295,7 +295,7 @@ export const OVEN_TYPES = {
     name: 'Electric pizza oven',
     nameFr: 'Four électrique à pizza',
     emoji: '⚡',
-    image: '/oven_electric.webp',
+    image: '/images/approved/equipment-v2/electric-pizza-oven-v3.webp',
     desc: '400°C, easy to control.',
     descFr: '400°C, facile à contrôler.',
     hydrationDelta: -1,
@@ -317,7 +317,7 @@ export const BREAD_OVEN_TYPES = {
     forceOil: null,
     forceSugar: null,
     preheatMin: 45,
-    image: '/oven_wood_bread.webp',
+    image: '/images/approved/equipment-v2/masonry-oven.webp',
   },
   dutch_oven: {
     name: 'Dutch oven / Combo cooker',
@@ -329,7 +329,7 @@ export const BREAD_OVEN_TYPES = {
     forceOil: null,
     forceSugar: null,
     preheatMin: 45,
-    image: '/oven_dutch.webp',
+    image: '/images/approved/equipment-v2/dutch-oven.webp',
   },
   home_oven_stone_bread: {
     name: 'Home oven + stone/steel',
@@ -341,7 +341,7 @@ export const BREAD_OVEN_TYPES = {
     forceOil: null,
     forceSugar: null,
     preheatMin: 45,
-    image: '/oven_stone_bread.webp',
+    image: '/images/approved/equipment-v2/home-oven-stone.webp',
   },
   steam_oven: {
     name: 'Steam oven',
@@ -353,7 +353,7 @@ export const BREAD_OVEN_TYPES = {
     forceOil: null,
     forceSugar: null,
     preheatMin: 30,
-    image: '/oven_steam.webp',
+    image: '/images/approved/equipment-v2/steam-oven.webp',
   },
   standard_bread: {
     name: 'Standard home oven',
@@ -365,7 +365,7 @@ export const BREAD_OVEN_TYPES = {
     forceOil: null,
     forceSugar: null,
     preheatMin: 20,
-    image: '/oven_standard_bread.webp',
+    image: '/images/approved/equipment-v2/home-oven-standard.webp',
   },
 } as const;
 
@@ -375,7 +375,7 @@ export const MIXER_TYPES = {
     name: 'Stand Mixer',
     nameFr: 'Robot pâtissier',
     emoji: '⚙️',
-    image: '/mixer_stand.webp',
+    image: '/images/approved/equipment-v2/stand-mixer.webp',
     desc: 'KitchenAid, Kenwood, Bosch',
     descFr: 'KitchenAid, Kenwood, Bosch',
     maxHydration: 72,
@@ -442,7 +442,7 @@ export const MIXER_TYPES = {
     name: 'By Hand',
     nameFr: 'À la main',
     emoji: '🤲',
-    image: '/mixer_hand.webp',
+    image: '/images/approved/equipment-v2/hand-kneading.webp',
     desc: 'Classic technique',
     descFr: 'Technique classique',
     maxHydration: 70,
@@ -456,7 +456,7 @@ export const MIXER_TYPES = {
     name: 'No-Knead',
     nameFr: 'Sans pétrissage',
     emoji: '⏰',
-    image: '/mixer_noknead.webp',
+    image: '/images/approved/equipment-v2/no-knead.webp',
     desc: 'Time does the work',
     descFr: 'Le temps fait le travail',
     maxHydration: 100,
@@ -470,7 +470,7 @@ export const MIXER_TYPES = {
     name: 'Spiral Mixer',
     nameFr: 'Pétrin spirale',
     emoji: '🌀',
-    image: '/mixer_spiral.webp',
+    image: '/images/approved/equipment-v2/spiral-mixer-v3.webp',
     desc: 'Ooni Halo, Famag, Sunmix',
     descFr: 'Ooni Halo, Famag, Sunmix',
     maxHydration: 100,
@@ -612,7 +612,7 @@ export const YEAST_TYPES = {
     shortName: 'IDY',
     shortNameFr: 'LSI',
     emoji: '🟡',
-    image: '/yeast_instant.webp',
+    image: '/images/approved/leavening-v2/instant.webp',
     also: 'Rapid rise, Fast action, Easy bake',
     form: 'Fine powder or tiny granules',
     color: 'Light beige/cream',
@@ -627,7 +627,7 @@ export const YEAST_TYPES = {
     shortName: 'ADY',
     shortNameFr: 'LSA',
     emoji: '🟤',
-    image: '/yeast_active.webp',
+    image: '/images/approved/leavening-v2/active-dry.webp',
     also: 'Traditional yeast, Dry yeast',
     form: 'Larger brown granules',
     color: 'Tan/brown',
@@ -642,7 +642,7 @@ export const YEAST_TYPES = {
     shortName: 'Fresh',
     shortNameFr: 'Fraîche',
     emoji: '🧱',
-    image: '/yeast_fresh.webp',
+    image: '/images/approved/leavening-v2/fresh.webp',
     also: 'Cake yeast, Compressed yeast',
     form: 'Soft block, crumbly',
     color: 'Beige/grey, slightly moist',
@@ -657,7 +657,7 @@ export const YEAST_TYPES = {
     shortName: 'Starter',
     shortNameFr: 'Levain',
     emoji: '🫙',
-    image: '/yeast_sourdough.webp',
+    image: '/images/approved/leavening-v2/starter.webp',
     also: 'Levain, Wild yeast',
     form: 'Thick paste or liquid',
     color: 'Off-white to grey',
@@ -989,13 +989,13 @@ export function computePrefermentRecipe(
     const leaveningDoseIDY = nTargetGramsIDY / growth;
     prefYeastGramsIDY = Math.max(peakDoseIDY, leaveningDoseIDY);
   }
-  prefYeastGramsIDY = Math.round(prefYeastGramsIDY * 10) / 10;
+  // Preserve the model dose through conversion; round only for display.
 
   // Convert to baker's selected yeast type
   const yeastConversion = yeastType === 'active_dry' ? 1.33
     : yeastType === 'fresh' ? 3.00
     : 1.00;
-  const prefYeastGrams = Math.round(prefYeastGramsIDY * yeastConversion * 10) / 10;
+  const prefYeastGrams = prefYeastGramsIDY * yeastConversion;
 
   const finalWater = totalWaterGrams - prefWater;
 

@@ -429,45 +429,19 @@ export default function Header({
   return (
     <>
     <header style={{
-      background: 'var(--char)', color: 'var(--cream)',
+      background: 'var(--warm)', color: 'var(--char)',
       padding: '0 12px', display: 'flex', alignItems: 'center',
-      justifyContent: 'space-between', height: '68px',
+      justifyContent: 'space-between', height: '64px', borderBottom: '1px solid var(--border)',
       position: 'sticky', top: 0, zIndex: 100,
       
     }}>
-      {/* Left: menu button + logo + tagline */}
-      <div ref={menuRef} style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: '1 1 auto' }}>
-        <button
-          onClick={() => setMenuOpen(v => !v)}
-          aria-label="Menu"
-          style={{
-            background: menuOpen ? 'rgba(255,255,255,0.1)' : 'transparent',
-            border: 'none',
-            borderRadius: '12px', cursor: 'pointer',
-            padding: '12px 8px', display: 'flex', flexDirection: 'column',
-            gap: '4px', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          {[0,1,2].map(i => (
-            <span key={i} style={{
-              display: 'block', width: '24px', height: '2.5px',
-              background: 'var(--cream)', borderRadius: '1.5px',
-            }} />
-          ))}
-        </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <img src="/logo-mark.webp" width={36} height={36}
-            style={{ objectFit: 'contain' }} alt="Baker Hub" />
-          <div className="bh-wordmark" style={{
-            fontFamily: 'var(--font-ui)',
-            // The wordmark carries the brand on a sans now, so it leans on
-            // weight and tightening rather than on a serif's contrast.
-            fontSize: '17px', fontWeight: 800, letterSpacing: '-0.025em',
-            color: 'var(--cream)', lineHeight: 1,
-            whiteSpace: 'nowrap',
-          }}>Baker Hub</div>
-        </div>
+      <div ref={menuRef} style={{ minWidth: 0, flex: '1 1 auto' }}>
+        <div className="bh-wordmark" style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.025em', whiteSpace: 'nowrap' }}>bakerhub.</div>
       </div>
+      <button onClick={() => setMenuOpen(v => !v)} aria-expanded={menuOpen}
+        style={{ order: 2, border: 'none', background: 'transparent', color: 'var(--char)', minHeight: '44px', padding: '8px', fontSize: '13px', cursor: 'pointer' }}>
+        Menu
+      </button>
 
       {/* Back chip — pages outside the session flow (About) get a
           persistent way home in the sticky header instead of session
@@ -480,7 +454,7 @@ export default function Header({
             padding: '8px 12px',
             border: '1px solid rgba(240, 235, 224,0.25)',
             borderRadius: '20px',
-            color: 'var(--cream)',
+            color: 'var(--char)',
             fontSize: '12px',
             fontFamily: 'var(--font-ui)',
             textDecoration: 'none',
@@ -494,110 +468,19 @@ export default function Header({
         </a>
       )}
 
-      {/* Right: three round 44px targets. They used to be two labels sharing
-          one pill, which meant the destructive action sat a thumb-width from
-          the one bakers tap most, both at 11px.
-
-          Order and spacing are the mis-tap guard: Start over is set apart from
-          Save by 16px and rendered quietly (no fill, dim stroke), while the two
-          benign actions — Save and Profile — sit together at 8px. Nothing
-          destructive is ever adjacent to something frequent. */}
-      {!backHref && (() => {
-        // Save appears once there is something worth saving. Start over does
-        // NOT wait for that: it is also how a baker switches Pizza <-> Pain,
-        // so it has to be reachable from the first configuration screen.
-        // Gating both behind "has work" hid it for the whole setup flow.
-        const hasWork = (recipeGenerated || sessionSaved || sessionRestored) && !hideActionBar;
-        return (
-          <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-
-            {/* Start over — quiet, and the furthest of the three from Save */}
-            {onNewSession && (
-              <button
-                onClick={() => {
-                  if (!hasWork || window.confirm(tS('newSessionConfirm'))) onNewSession?.();
-                }}
-                aria-label={locale === 'fr' ? 'Recommencer' : 'Start over'}
-                title={locale === 'fr' ? 'Recommencer' : 'Start over'}
-                style={{
-                  width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
-                  border: '1px solid rgba(255,255,255,0.12)', background: 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', marginRight: '16px',
-                }}
-              >
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9A918A"
-                  strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M3 12a9 9 0 1 0 3-6.7" /><polyline points="3 4 3 9 8 9" />
-                </svg>
-              </button>
-            )}
-
-            {/* Save — the icon carries the state, since there is no label to
-                carry it: a floppy while unsaved, a tick once stored.
-                Signed out the save is real but local, so it wears gold, not
-                the sage tick. The menu said "Session saved" directly above
-                "Sign in to save your sessions"; a baker who cleared their
-                browser lost a session the app had twice called saved. */}
-            {hasWork && (
-              <button
-                onClick={() => { if (!sessionSaved) onSaveSession?.(); }}
-                aria-label={sessionSaved ? (user ? tS('saved') : tS('savedLocal')) : tS('saveSession')}
-                title={sessionSaved ? (user ? tS('saved') : tS('savedLocal')) : tS('saveSession')}
-                style={{
-                  width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
-                  border: sessionSaved && user
-                    ? '1px solid rgba(107,122,90,0.5)'
-                    : '1px solid rgba(200,138,82,0.45)',
-                  background: sessionSaved && user
-                    ? 'rgba(107,122,90,0.14)'
-                    : 'rgba(200,138,82,0.12)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: sessionSaved ? 'default' : 'pointer',
-                }}
-              >
-                {sessionSaved ? (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                    stroke={user ? '#93A683' : 'var(--terra-on-dark)'}
-                    strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M4 12.5l5 5 11-11" />
-                  </svg>
-                ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--terra-on-dark)"
-                    strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M4 4h12l4 4v12H4z" /><path d="M8 4v6h8V4" />
-                    <rect x="8" y="14" width="8" height="6" />
-                  </svg>
-                )}
-              </button>
-            )}
-          </div>
-        );
-      })()}
-      {/* Profile picto — far right, 44px tap target (Flo). */}
-      {!backHref && (
-        <button
-          onClick={() => window.dispatchEvent(new Event('bh-open-auth'))}
-          aria-label={user ? 'Profile' : 'Sign in'}
-          style={{
-            width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
-            border: '1px solid rgba(255,255,255,0.15)', background: 'transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', position: 'relative', marginLeft: '8px',
-          }}
-        >
-          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#C4BBAE" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-            <circle cx="12" cy="8.5" r="3.6" />
-            <path d="M4.5 20c1.6-3.4 4.3-5 7.5-5s5.9 1.6 7.5 5" />
-          </svg>
-          {user && (
-            <span style={{
-              position: 'absolute', top: '2px', right: '2px',
-              width: '10px', height: '10px', borderRadius: '50%',
-              background: 'var(--sage)', border: '1.5px solid #2B2420',
-            }} />
+      {!backHref && !hideActionBar && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+          {onSaveSession && (onNewSession || recipeGenerated || sessionRestored) && (
+            <button onClick={() => { if (!sessionSaved) onSaveSession(); }}
+              aria-label={sessionSaved ? (user ? tS('saved') : tS('savedLocal')) : (recipeGenerated ? tS('saveSession') : locale === 'fr' ? 'Enregistrer le brouillon' : 'Save draft')}
+              title={sessionSaved ? (user ? tS('saved') : tS('savedLocal')) : undefined}
+              style={{ border: 'none', borderRadius: '10px', background: 'transparent', color: 'var(--char)', minHeight: '44px', padding: '8px 10px', fontSize: '13px', whiteSpace: 'nowrap', cursor: sessionSaved ? 'default' : 'pointer' }}>
+              {sessionSaved
+                ? (user ? (locale === 'fr' ? 'Enregistré' : 'Saved') : (locale === 'fr' ? 'Local' : 'Saved here'))
+                : recipeGenerated ? (locale === 'fr' ? 'Enregistrer' : 'Save') : (locale === 'fr' ? 'Brouillon' : 'Save draft')}
+            </button>
           )}
-        </button>
+        </div>
       )}
 
     </header>
@@ -702,14 +585,10 @@ export default function Header({
                   </button>
                 )}
                 {onNewSession && <button
-                  // Same guard as the header icon. This copy called
-                  // onNewSession() straight through: the destructive action
-                  // was confirmed in one place and not the other.
+                  // The parent owns the save/discard/cancel guard for both entry points.
                   onClick={() => {
-                    if (window.confirm(tS('newSessionConfirm'))) {
-                      onNewSession();
-                      setMenuOpen(false);
-                    }
+                    setMenuOpen(false);
+                    onNewSession();
                   }}
                   style={{
                     fontSize: '13px', fontFamily: 'var(--font-ui)',

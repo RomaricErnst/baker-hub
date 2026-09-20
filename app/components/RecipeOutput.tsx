@@ -1,16 +1,24 @@
 'use client';
+import { mixingBatchPlan } from '../utils/mixingBatches';
 import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type RecipeResult, type YeastResult, type YeastWarningKey } from '../utils';
 import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, FLOUR_DATA, type PrefermentType, type FlourBlend } from '../data';
 import { type UnitSystem, displayWeight, displayTemp } from '../utils/units';
 import PlanNav from './PlanNav';
+import WaterPreparation, { type WaterSource, type WaterSettingsProps } from './WaterPreparation';
+import { formatPrefermentDose, prefermentDilution } from '../utils/prefermentDose';
 
-interface RecipeOutputProps {
+interface RecipeOutputProps extends WaterSettingsProps {
+  mixingBatches?: number;
+  onMixingBatchesChange?: (count: number) => void;
+  waterSource?: WaterSource;
+  onWaterSourceChange?: (source: WaterSource) => void;
   result: RecipeResult;
   numItems: number;
   itemWeight: number;
   styleName: string;
+  styleKey?: string;
   mixerType: string;
   kitchenTemp: number;
   fridgeTemp?: number;
@@ -178,77 +186,7 @@ function InfoCard({
   );
 }
 
-// ── Water info ────────────────────────────────
-interface WaterInfo {
-  targetTemp: number;
-  needsIce: boolean;
-  iceGrams: number;
-  tapGrams: number;
-  iceGuidance: string;   // ice protocol text (only when needsIce)
-  tempGuidance: string;  // short guidance for the ingredient sub-line
-}
 
-function computeWaterInfo(
-  targetTemp: number,
-  waterGrams: number,
-  ambientTemp: number,
-  isSpiral: boolean,
-  isFr = false,
-): WaterInfo {
-  // Physics-based ice split.
-  //
-  //   ice·(L + c·T)            = (W − ice)·c·(amb − T)
-  //   ice·(L/c + T)            = (W − ice)·(amb − T)
-  //   ice·(L/c + T + amb − T)  = W·(amb − T)
-  //   ice                      = W·(amb − T) / (L/c + amb)
-  //
-  // The T cancels. The denominator is L/c + ambient, NOT 80 + target, which is
-  // what stood here and over-prescribed ice by ~20%, worsening with ambient:
-  // at 30 °C targeting 10 °C it asked for 111 g where 91 g is right and landed
-  // the water at 5.6 °C, and at 34 °C targeting 6 °C it asked for more ice than
-  // could melt — the baker strains out the remainder and gets both the wrong
-  // temperature and less water than the hydration calls for.
-  const ICE_LATENT_OVER_CP = 79.8;   // L/c = 334 J/g ÷ 4.186 J/g·K
-  const rawIce = waterGrams * (ambientTemp - targetTemp) / (ICE_LATENT_OVER_CP + ambientTemp);
-  const iceGrams = Math.max(0, Math.round(rawIce));
-  const tapGrams = waterGrams - iceGrams;
-  const tempDiff = ambientTemp - targetTemp;
-
-  // Ice protocol: full mixing instructions when ≥50g needed
-  const needsIce = iceGrams >= 50;
-
-  let iceGuidance = '';
-  let tempGuidance: string;
-
-  if (needsIce) {
-    // Full ice protocol
-    tempGuidance = isFr ? 'ajoutez de la glace — voir la ligne eau ci-dessous' : 'add ice — see water row below';
-    iceGuidance = isSpiral
-      ? (isFr ? `${iceGrams}g de glace + ${tapGrams}g d'eau — glace directement dans la cuve` : `${iceGrams}g ice + ${tapGrams}g water — add ice directly to bowl`)
-      : (isFr ? `mélangez ${iceGrams}g de glace + ${tapGrams}g d'eau, remuez 1 min, filtrez avant usage` : `mix ${iceGrams}g ice + ${tapGrams}g water, stir 1 min, strain before using`);
-  } else if (tempDiff <= -8) {
-    // Target ABOVE ambient. Only reachable with a cold preferment in the mix —
-    // it is 25–55% of the dough mass, so the water has to carry the difference.
-    // Every branch below assumes target < ambient and would have silently told
-    // the baker "at room temperature", which is the opposite of what is needed.
-    tempGuidance = isFr ? 'eau chaude — au-dessus de la température de la pièce' : 'warm water — above room temperature';
-  } else if (tempDiff <= -3) {
-    tempGuidance = isFr ? 'eau tiède — légèrement au-dessus de la température de la pièce' : 'lukewarm water — slightly above room temperature';
-  } else if (iceGrams >= 20 && tempDiff >= 3) {
-    // Ice helpful but not critical — suggest as an easy option
-    tempGuidance = isFr ? `eau bien froide, ou ${iceGrams}g de glace dans ${tapGrams}g d'eau` : `chilled water, or add ${iceGrams}g ice to ${tapGrams}g water`;
-  } else if (tempDiff >= 12) {
-    tempGuidance = isFr ? 'eau très froide' : 'very cold water';
-  } else if (tempDiff >= 5) {
-    tempGuidance = isFr ? 'eau bien froide' : 'chilled water';
-  } else if (tempDiff >= 2) {
-    tempGuidance = isFr ? 'légèrement plus fraîche que la pièce' : 'slightly below room temperature';
-  } else {
-    tempGuidance = isFr ? 'à température ambiante' : 'at room temperature';
-  }
-
-  return { targetTemp, needsIce, iceGrams, tapGrams, iceGuidance, tempGuidance };
-}
 
 // ── Starter prep card ─────────────────────────
 function StarterPrepCard({
@@ -423,10 +361,10 @@ function StarterPrepCard({
 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
-  result, numItems, itemWeight, styleName, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
+  result, numItems, itemWeight, styleName, styleKey, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, units,
   feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
-  onEditSetup, onOpenGuide, onShare,
+  onEditSetup, onOpenGuide, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
 }: RecipeOutputProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -441,9 +379,12 @@ export default function RecipeOutput({
   const totalDoughG = numItems * itemWeight;
   const minBatches  = Math.ceil(totalDoughG / mixerMaxG);
   const needsBatches = minBatches > 1;
-  const [numBatches, setNumBatches] = useState(minBatches);
+  const [numBatches, setLocalBatches] = useState<number | undefined>();
+  const [batchIndex, setBatchIndex] = useState(0);
+  const setNumBatches = (count: number) => { setLocalBatches(count); onMixingBatchesChange?.(count); setBatchIndex(0); };
+  const batchPlan = mixingBatchPlan(result, mixerType, onMixingBatchesChange ? mixingBatches : numBatches, batchIndex);
   // effectiveBatches can be 1 if baker overrides — no Math.max constraint
-  const effectiveBatches = numBatches >= 1 ? numBatches : minBatches;
+  const effectiveBatches = batchPlan.count;
 
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
   // Sourdough starter accounting: half the starter is flour, half water
@@ -465,16 +406,12 @@ export default function RecipeOutput({
     : 0;
   const batchFlour = hasPref ? (pf?.finalFlour ?? flour) : flour;
   const batchWater = hasPref ? (pf?.finalWater ?? water) : water;
-  const flourPerBatch   = Math.round(batchFlour / effectiveBatches);
-  const waterPerBatch   = Math.round(batchWater / effectiveBatches);
-  const saltPerBatch    = Math.round(salt / effectiveBatches);
-  const poolishPerBatch = hasPref ? Math.round(poolishTotalG / effectiveBatches) : null;
-  const yeastGramsTotal = (yeast as YeastResult | null)?.convertedGrams ?? 0;
-  const yeastPerBatch   = !hasPref && yeastGramsTotal > 0
-    ? Math.round(yeastGramsTotal / effectiveBatches * 10) / 10
-    : null;
-  const batchDoughG = batchFlour + batchWater + salt + poolishTotalG
-    + (!hasPref && yeastGramsTotal > 0 ? yeastGramsTotal : 0);
+  const flourPerBatch = batchPlan.portion.flour;
+  const waterPerBatch = batchPlan.portion.water;
+  const saltPerBatch = batchPlan.portion.salt;
+  const poolishPerBatch = hasPref ? batchPlan.portion.preferment : null;
+  const yeastPerBatch = batchPlan.portion.yeast || null;
+  const batchDoughG = result.totalDough;
 
   const yeastInfo = yeast as YeastResult | null;
   // Translated yeast name — data.ts names are English-only ("Fresh Yeast"
@@ -504,45 +441,8 @@ export default function RecipeOutput({
   const itemLabel = numItems === 1 ? 'ball / loaf' : numItems <= 4 ? 'balls' : 'pieces';
 
   const isSpiral = mixerType === 'spiral';
-  const waterInfo = computeWaterInfo(waterTemp, water, kitchenTemp, isSpiral, locale === 'fr');
-  // For preferment mode: ice protocol applies to final dough water only
-  // Preferment water is mixed by hand at RT — no DDT adjustment needed
-  const finalDoughWaterInfo = result.preferment
-    ? computeWaterInfo(waterTemp, result.preferment.finalWater, kitchenTemp, isSpiral, locale === 'fr')
-    : null;
-
-  // Water row sub-line: source-agnostic temperature guidance
-  function makeWaterSubNode(info: WaterInfo, kitchenT: number): React.ReactNode {
-    if (info.iceGrams >= 50) {
-      return (
-        <>
-          {t('recipeOutput.waterTarget') + ' '}
-          <span style={{ fontWeight: 700, fontFamily: 'var(--font-ui)', color: 'var(--terra)' }}>{displayTemp(info.targetTemp, u)}</span>
-          {' · '}
-          <span style={{ fontWeight: 700, fontFamily: 'var(--font-ui)' }}>{info.iceGrams}g</span>
-          {' ' + (locale === 'fr' ? 'glaçons + ' : 'ice + ')}
-          <span style={{ fontWeight: 700, fontFamily: 'var(--font-ui)' }}>{info.tapGrams}g</span>
-          {' ' + (locale === 'fr' ? 'eau froide' : 'cold water')}
-        </>
-      );
-    }
-    const tempDiff = kitchenT - info.targetTemp;
-    const tempColor = tempDiff >= 14 ? 'var(--terra)' : tempDiff >= 8 ? 'var(--gold)' : undefined;
-    // Instructions only. The temperature and the ice split are things the
-    // baker acts on; why the number is what it is belongs in Protocol, not
-    // on a card someone is reading with wet hands.
-    return (
-      <>
-        {t('recipeOutput.waterUseAt') + ' '}
-        <span style={{ fontWeight: 700, fontFamily: 'var(--font-ui)', fontSize: '14px', color: tempColor }}>{displayTemp(info.targetTemp, u)}</span>
-        {` · ${info.tempGuidance}`}
-      </>
-    );
-  }
-  const waterSubNode = makeWaterSubNode(waterInfo, kitchenTemp);
-  const finalDoughWaterSubNode = finalDoughWaterInfo
-    ? makeWaterSubNode(finalDoughWaterInfo, kitchenTemp)
-    : waterSubNode;
+  const waterSubNode = <WaterPreparation readOnly waterGrams={waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
+  const finalDoughWaterSubNode = <WaterPreparation readOnly waterGrams={result.preferment?.finalWater ?? waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
 
   // Yeast sub-line: IDY conversion only (precision scale moved to its own callout)
   const needsPrecision = yeastInfo ? yeastInfo.convertedGrams < 0.5 : false;
@@ -672,7 +572,7 @@ export default function RecipeOutput({
                     // print, because the baker chose 60 and the engine used 60.
                     { label: 'Water', pct: `${hydration}%`, value: u === 'imperial' ? wStr(totalWater) : `${Math.round(totalWater).toLocaleString()}g` },
                     { label: 'Salt',  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: u === 'imperial' ? wStr(totalSalt) : `${Math.round(totalSalt).toLocaleString()}g` },
-                    ...(totalYeast > 0 ? [{ label: yeastLabel, pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: `${totalYeast}g` }] : []),
+                    ...(totalYeast > 0 ? [{ label: yeastLabel, pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: formatPrefermentDose(totalYeast) }] : []),
                   ].map((row, i) => (
                     <div key={i} style={{
                       display: 'grid',
@@ -734,7 +634,7 @@ export default function RecipeOutput({
                   label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{t('recipeOutput.ingredientYeast', {
                     type: pf.prefYeastType ? ((YEAST_TYPES as Record<string, { shortName: string }>)[pf.prefYeastType]?.shortName ?? 'IDY') : 'IDY'
                   })}</span>}
-                  grams={wStr(pf.prefYeastGrams)} noPct
+                  grams={formatPrefermentDose(pf.prefYeastGrams)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
@@ -794,7 +694,7 @@ export default function RecipeOutput({
                   grams={wStr(pf.finalFlour)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
               )}
-              <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={finalDoughWaterSubNode}
+              <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={<details><summary>{locale === 'fr' ? 'Préparation de l’eau' : 'Water preparation'}</summary>{finalDoughWaterSubNode}</details>}
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalWater / flour * 1000) / 10) : undefined} />
               <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} noPct
                 advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
@@ -838,7 +738,7 @@ export default function RecipeOutput({
                         { label: t('recipe.flour'), pct: '100%', value: u === 'imperial' ? wStr(totalFlour) : `${Math.round(totalFlour).toLocaleString()}g` },
                         { label: t('recipe.water'), pct: `${hydration}%`, value: u === 'imperial' ? wStr(totalWater) : `${Math.round(totalWater).toLocaleString()}g` },
                         { label: t('recipe.salt'),  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: u === 'imperial' ? wStr(totalSalt) : `${Math.round(totalSalt).toLocaleString()}g` },
-                        ...(totalYeast > 0 ? [{ label: yeastLabel, pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: `${totalYeast}g` }] : []),
+                        ...(totalYeast > 0 ? [{ label: yeastLabel, pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: formatPrefermentDose(totalYeast) }] : []),
                       ].map((row, i) => (
                         <div key={i} style={{
                           display: 'grid',
@@ -910,11 +810,11 @@ export default function RecipeOutput({
               </span>
             ) : undefined}
           />
-          <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(waterMain)} pct={pctStr(waterPct)} sub={sdActive ? (
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
-                {locale === 'fr' ? `+ ${sdHalf}g via le levain = ${water}g au total` : `+ ${sdHalf}g via the starter = ${water}g total`}
-              </span>
-            ) : waterSubNode} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
+          <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} pct={pctStr(waterPct)} sub={
+            <details><summary>{locale === 'fr' ? 'Répartition et préparation de l’eau' : 'Water allocation and preparation'}</summary>
+              {sdActive && <p>{locale === 'fr' ? `${wStr(sdHalf)} dans le levain ; ${wStr(waterMain)} à ajouter.` : `${wStr(sdHalf)} in the starter; add ${wStr(waterMain)}.`}</p>}
+              {waterSubNode}
+            </details>} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
           <IngRow label={t('recipeOutput.ingredientSalt')}  grams={wStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
 
           {yeastInfo && (
@@ -1045,7 +945,7 @@ export default function RecipeOutput({
 
 
       {/* ── Batch splitting callout ──────────────────────────────── */}
-      {needsBatches && (
+      {(needsBatches || effectiveBatches > 1) && (
         <div style={{
           background: '#F0EBE0',
           border: '1.5px solid #9C8248',
@@ -1106,6 +1006,8 @@ export default function RecipeOutput({
               }}
             />
           </div>
+          {batchPlan.overCapacity && <p role="alert">{locale === 'fr' ? 'Cette pétrissée dépasse la capacité indiquée du pétrin.' : 'This batch exceeds the stated mixer capacity.'}</p>}
+          {effectiveBatches > 1 && <label>{locale === 'fr' ? 'Afficher la pétrissée' : 'Show batch'} <select value={batchPlan.active} onChange={e=>setBatchIndex(Number(e.target.value))}>{Array.from({length:effectiveBatches},(_,i)=><option key={i} value={i}>{i+1} / {effectiveBatches}</option>)}</select></label>}
           {/* Per-batch breakdown */}
           <div style={{ background: 'white', borderRadius: '16px', padding: '12px 16px', border: '1px solid #E8D890', marginBottom: '12px' }}>
             <div style={{ fontSize: '11px', fontWeight: 600, color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '.07em', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
@@ -1127,7 +1029,8 @@ export default function RecipeOutput({
                 highlight: false,
                 isTotal: false,
               }] : []),
-              { label: t('recipeOutput.batchTotal'), value: `${(flourPerBatch + waterPerBatch + saltPerBatch + (poolishPerBatch ?? 0) + (yeastPerBatch !== null ? Math.round(yeastPerBatch) : 0)).toLocaleString()}g`, highlight: true, isTotal: true },
+              ...(['starter','oil','sugar'] as const).filter(key=>batchPlan.portion[key]>0).map(key=>({label:({starter:locale==='fr'?'Levain':'Starter',oil:locale==='fr'?'Huile':'Oil',sugar:locale==='fr'?'Sucre':'Sugar'})[key],value:`${batchPlan.portion[key]}g`,highlight:false,isTotal:false})),
+              { label: t('recipeOutput.batchTotal'), value: `${batchPlan.total.toLocaleString()}g`, highlight: true, isTotal: true },
             ].map((row, i) => (
               <div key={i} style={{
                 display: 'flex', justifyContent: 'space-between',
@@ -1145,7 +1048,7 @@ export default function RecipeOutput({
           </div>
           {/* Footer note */}
           <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
-            Combine all batches into one container immediately after mixing. Bulk fermentation and schedule are unchanged.
+            {locale === 'fr' ? 'La dernière pétrissée reçoit les écarts d’arrondi. Vérifiez le planning si le pétrissage prend plus de temps.' : 'The last batch takes rounding remainders. Review the schedule if mixing takes longer.'}
           </div>
         </div>
       )}
@@ -1169,7 +1072,17 @@ export default function RecipeOutput({
             </span>
           </div>
           <div style={{ fontSize: '12px', color: '#5A4010', lineHeight: 1.6, paddingLeft: '24px' }}>
-            {t('recipeOutput.precisionScaleBody', { amount: wStr(result.preferment.prefYeastGrams) })}
+            {t('recipeOutput.precisionScaleBody', { amount: formatPrefermentDose(result.preferment.prefYeastGrams) })}
+            {(() => {
+              const pf = result.preferment!;
+              const dilution = prefermentDilution(pf.prefYeastGrams, pf.prefWater);
+              if (!dilution) return null;
+              const yeastName = (YEAST_TYPES as Record<string, { shortName: string }>)[pf.prefYeastType]?.shortName ?? 'IDY';
+              const f = formatPrefermentDose;
+              return <p style={{ margin: '8px 0 0' }}>{locale === 'fr'
+                ? `Ou mélangez 1 g de levure ${yeastName} avec 99 g d’eau. Remuez juste avant de prélever ${f(dilution.solutionGrams)} de ce mélange pour le préferment. Cette portion contient ${f(pf.prefYeastGrams)} de levure et ${f(dilution.waterInSolutionGrams)} d’eau : ajoutez seulement ${f(dilution.remainingWaterGrams)} d’eau supplémentaire au préferment. Jetez le reste du mélange. L’eau de la pâte finale ne change pas.`
+                : `Or mix 1 g of ${yeastName} yeast with 99 g water. Stir just before taking ${f(dilution.solutionGrams)} of this mixture for the preferment. This portion contains ${f(pf.prefYeastGrams)} yeast and ${f(dilution.waterInSolutionGrams)} water: add only ${f(dilution.remainingWaterGrams)} more water to the preferment. Discard the leftover mixture. Final-dough water stays unchanged.`}</p>;
+            })()}
           </div>
         </div>
       )}

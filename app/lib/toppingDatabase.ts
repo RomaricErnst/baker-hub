@@ -4829,6 +4829,13 @@ export const DESSERT_PIZZAS: Pizza[] = [
 
 ]
 
+// Materialized, reviewed ingredient data; existing pizza IDs and callbacks remain stable.
+import { AUDITED_PIZZA_RECIPES } from './auditedPizzaRecipes';
+for (const pizza of [...PIZZAS, ...DESSERT_PIZZAS]) {
+ const reviewed = AUDITED_PIZZA_RECIPES[pizza.id];
+ if (reviewed) Object.assign(pizza, reviewed);
+}
+
 // ─── Helpers ─────────────────────────────────────────────────
 
 import { loadCustomPizzas, customPizzaToPizza } from './profile'

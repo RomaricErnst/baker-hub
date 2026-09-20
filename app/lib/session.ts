@@ -16,6 +16,10 @@ export interface SessionData {
   kitchenTemp: number;
   humidity: string;
   fridgeTemp: number;
+  waterSource?: 'room' | 'fridge' | 'tap' | 'measured';
+  measuredWaterTemp?: number;
+  waterMethod?: 'premelt' | 'direct';
+  spiralIceConfirmed?: boolean;
   flourBlend: unknown;
   prefermentType: string;
   prefermentFlourPct: number | undefined;
@@ -85,11 +89,12 @@ export interface SessionData {
   } | null;
 }
 
-export function saveSession(data: Omit<SessionData, 'version' | 'savedAt'>): void {
+export function saveSession(data: Omit<SessionData, 'version' | 'savedAt'>): boolean {
   try {
     const payload: SessionData = { ...data, version: 1, savedAt: Date.now() };
     localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
-  } catch {}
+    return true;
+  } catch { return false; }
 }
 
 export function loadSession(): SessionData | null {

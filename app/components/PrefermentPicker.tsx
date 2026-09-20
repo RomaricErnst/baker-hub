@@ -1,6 +1,6 @@
 'use client';
 import { PREFERMENT_TYPES, type PrefermentType } from '../data';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import DecisionList from './DecisionList';
 
 interface PrefermentPickerProps {
@@ -22,12 +22,13 @@ export default function PrefermentPicker({
   styleKey, hideTypes = [], kitchenTemp, yeastType,
 }: PrefermentPickerProps) {
   const t = useTranslations('preferment');
+  const fr = useLocale() === 'fr';
 
   const ALL_OPTIONS = [
     { id: 'none',    image: '/preferment-direct.webp',  title: t('none.title'),    tagline: t('none.tagline') },
     { id: 'poolish', image: '/preferment-poolish.webp', title: t('poolish.title'), tagline: t('poolish.tagline') },
     { id: 'biga',    image: '/preferment-biga.webp',    title: t('biga.title'),    tagline: t('biga.tagline') },
-    { id: 'levain',  image: '/yeast_sourdough.webp',    title: t('levain.title'),  tagline: t('levain.tagline') },
+    { id: 'levain',  image: '/images/approved/leavening-v2/starter.webp',    title: t('levain.title'),  tagline: t('levain.tagline') },
   ];
 
   const options = ALL_OPTIONS
@@ -49,7 +50,7 @@ export default function PrefermentPicker({
           {/* No heading here: the step page above already says "Preferment
               method". Two titles, one question. */}
           <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'var(--font-ui)' }}>
-            {t('subtitle')}
+            {fr ? 'Choisissez la méthode de votre pâte.' : 'Choose your dough method.'}
           </p>
           <DecisionList
             options={options}

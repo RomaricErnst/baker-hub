@@ -195,10 +195,10 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
 
   // Option IDs use YEAST_TYPES keys; i18n keys use simplified aliases (idy/ady)
   const options = [
-    { id: 'instant',    image: '/yeast_instant.webp',   title: t('idy.title'),       tagline: t('idy.tagline') },
-    { id: 'active_dry', image: '/yeast_active.webp',    title: t('ady.title'),       tagline: t('ady.tagline') },
-    { id: 'fresh',      image: '/yeast_fresh.webp',     title: t('fresh.title'),     tagline: t('fresh.tagline') },
-    { id: 'sourdough',  image: '/yeast_sourdough.webp', title: t('sourdough.title'), tagline: t('sourdough.tagline') },
+    { id: 'instant',    image: '/images/approved/leavening-v2/instant.webp',   title: t('idy.title'),       tagline: t('idy.tagline') },
+    { id: 'active_dry', image: '/images/approved/leavening-v2/active-dry.webp',    title: t('ady.title'),       tagline: t('ady.tagline') },
+    { id: 'fresh',      image: '/images/approved/leavening-v2/fresh.webp',     title: t('fresh.title'),     tagline: t('fresh.tagline') },
+    { id: 'sourdough',  image: '/images/approved/leavening-v2/starter.webp', title: t('sourdough.title'), tagline: t('sourdough.tagline') },
   ];
 
   const sourdoughRecommended = ['pain_levain', 'pain_campagne', 'sourdough'].includes(styleKey ?? '');

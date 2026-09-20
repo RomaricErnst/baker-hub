@@ -425,92 +425,11 @@ function SummaryBar({ flow, modeChip }:
 
   return (
     <>
-      <div style={{ background: 'var(--cream)', padding: '0 0 10px' }}>
-        {count === 0 ? (
-          // A scroller with no chips is a box of nothing. One quiet line
-          // instead — the stepper above already says where they are.
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '9px', minHeight: '38px',
-            border: '1px solid var(--border)', background: 'var(--warm)',
-            borderRadius: '20px', padding: '9px 13px', fontFamily: 'var(--font-ui)',
-          }}>
-            <span style={{ fontSize: '11.5px', color: '#9C8248', fontWeight: 700 }}>0/{total}</span>
-            <span style={{ fontSize: '12.5px', color: 'var(--smoke)' }}>
-              {fr ? 'Vos choix s\u2019afficheront ici' : 'Your choices will collect here'}
-            </span>
-          </div>
-        ) : (
-          <div style={{ position: 'relative' }}>
-            <div
-              ref={railRef}
-              data-noswipe
-              style={{
-                display: 'flex', gap: '6px', overflowX: 'auto', alignItems: 'stretch',
-                padding: '1px 0 2px', scrollbarWidth: 'none',
-                WebkitOverflowScrolling: 'touch',
-              }}
-            >
-              {/* The door. Solid against outlined chips — the fill is what
-                  earns the tap; the chevron only says which way it goes. */}
-              <button
-                onClick={() => { setDragY(0); setDragging(false); dragFrom.current = null; setOpen(true); }}
-                style={{
-                  position: 'sticky', left: 0, zIndex: 4, flex: '0 0 auto',
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  borderRadius: '20px', padding: '6px 10px', minHeight: '38px',
-                  fontFamily: 'var(--font-ui)', fontSize: '11.5px', lineHeight: 1.1,
-                  cursor: 'pointer', whiteSpace: 'nowrap', textAlign: 'left',
-                  boxShadow: '8px 0 11px -8px rgba(26,22,18,0.35)',
-                  ...(walkedPast
-                    ? { background: 'var(--cream)', color: '#9C8248', border: '1px solid var(--gold)' }
-                    : { background: 'var(--char)', color: 'var(--cream)', border: '1px solid var(--char)' }),
-                }}
-              >
-                <span>
-                  <span style={{
-                    display: 'block', fontSize: '8.5px', letterSpacing: '.05em',
-                    textTransform: 'uppercase', lineHeight: 1.25,
-                    color: walkedPast ? 'var(--smoke)' : 'rgba(245,240,232,0.6)',
-                  }}>
-                    {walkedPast
-                      ? (fr ? `${pending.length} à faire` : `${pending.length} left`)
-                      : (fr ? 'Choisis' : 'Set')}
-                  </span>
-                  <span style={{ fontWeight: walkedPast ? 600 : 400 }}>
-                    {walkedPast ? walkedPast.chip : `${count}/${total}`}
-                  </span>
-                </span>
-                <svg width="7" height="11" viewBox="0 0 7 11" fill="none" aria-hidden="true"
-                  style={{ flexShrink: 0 }}>
-                  <path d="M1.5 1L5.5 5.5L1.5 10" stroke="currentColor" strokeWidth="1.6"
-                    strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-
-              {modeChip && (
-                <button onClick={modeChip.onClick} style={chipStyle}>
-                  <span style={chipKeyStyle}>{fr ? 'Mode' : 'Mode'}</span>
-                  {modeChip.value}
-                </button>
-              )}
-              {/* Flow order, always. Sorting by what-changes-most would
-                  reshuffle the bar the moment the recipe generates — and
-                  rearranging a row the baker has just spent ten steps
-                  learning costs more than optimal order gains. */}
-              {answered.map(st => (
-                <button key={st.id} onClick={() => flow.onJump(st.id)} style={chipStyle}>
-                  <span style={chipKeyStyle}>{st.chip}</span>
-                  {st.short ?? st.value}
-                </button>
-              ))}
-            </div>
-            <div aria-hidden="true" style={{
-              position: 'absolute', top: 0, bottom: 0, right: 0, width: '22px',
-              pointerEvents: 'none',
-              background: 'linear-gradient(90deg, rgba(245,240,232,0), var(--cream))',
-            }} />
-          </div>
-        )}
+      <div style={{display:'flex',justifyContent:'flex-end',minHeight:44}}>
+        <button type="button" aria-haspopup="dialog" aria-expanded={open} onClick={()=>setOpen(true)}
+          style={{minHeight:44,padding:'0 4px',border:0,background:'transparent',fontSize:12,color:'var(--ash)',cursor:'pointer'}}>
+          {fr?'Étape':'Step'} {Math.max(1,flow.steps.findIndex(s=>s.id===flow.activeId)+1)}/{flow.steps.length} <span aria-hidden="true">⌄</span>
+        </button>
       </div>
 
       {open && (
@@ -805,7 +724,7 @@ function NeedsStyleFirst({ fr, onChoose }: { fr: boolean; onChoose: () => void }
   );
 }
 
-function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children: React.ReactNode }) {
+function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: number; children: React.ReactNode; nextOverride?: React.ReactNode }) {
   if (flow.activeId !== id) return null;
   const idx  = flow.steps.findIndex(s => s.id === id);
   const step = flow.steps[idx];
@@ -876,23 +795,20 @@ function StepPage({ flow, id, children }: { flow: StepFlow; id: number; children
     <div id={`step-${id}`} key={id} className="bh-step-page" style={{ padding: '16px 2px 4px' }}>
       {/* No step counter here: the summary bar above carries it, and two
           "3 of 9" forty pixels apart is just noise. */}
+      {idx > 0 && <button onClick={() => flow.onPrev(id)} style={{...BACK_CTA, width:'auto', marginBottom:12}}>{fr?'← Retour':'← Back'}</button>}
       <h2 style={{
-        fontFamily: 'var(--font-ui)', fontWeight: 700, fontSize: '29px',
+        fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: '30px',
         lineHeight: 1.12, letterSpacing: '-.015em', margin: '0 0 18px', color: 'var(--char)',
       }}>{step.title}</h2>
 
       {children}
 
       <div style={{
-        display: 'grid', gridTemplateColumns: idx > 0 ? 'auto 1fr' : '1fr',
+        display: 'grid', gridTemplateColumns: '1fr',
         gap: '12px', padding: '24px 0 32px',
       }}>
-        {idx > 0 && (
-          <button onClick={() => flow.onPrev(id)} style={BACK_CTA}>
-            {fr ? '← Précédent' : '← Back'}
-          </button>
-        )}
-        {next}
+
+        {nextOverride !== undefined ? nextOverride : next}
       </div>
     </div>
   );
@@ -1030,6 +946,13 @@ export default function Home() {
   const [yeastType, setYeastType] = useState<YeastType | null>(null);
 
   // Step 6 — climate
+  const [waterSource, setWaterSource] = useState<'room' | 'fridge' | 'tap' | 'measured'>('room');
+  const [measuredWaterTemp, setMeasuredWaterTemp] = useState<number | undefined>(undefined);
+  const [waterMethod, setWaterMethod] = useState<'premelt' | 'direct'>('premelt');
+  const [spiralIceConfirmed, setSpiralIceConfirmed] = useState(false);
+  const [mixingBatches, setMixingBatches] = useState<number | undefined>(undefined);
+  const [equipmentPanel, setEquipmentPanel] = useState<'oven'|'mixer'>('oven');
+  useEffect(() => { setMixingBatches(undefined); }, [numItems, itemWeight, mixerType, styleKey]);
   const [kitchenTemp, setKitchenTemp] = useState(22);
   const [humidity, setHumidity] = useState('normal');
   const [fridgeTemp, setFridgeTemp] = useState(6);
@@ -1107,7 +1030,7 @@ export default function Home() {
   const [showSignInForSave, setShowSignInForSave] = useState(false);
   // Le listener d'auth est monté une seule fois : sans refs il fermerait sur
   // le tout premier rendu et rejouerait une session vide.
-  const saveCurrentSessionRef = useRef<(() => Promise<void>) | null>(null);
+  const saveCurrentSessionRef = useRef<(() => Promise<boolean>) | null>(null);
   const shareCurrentSessionRef = useRef<(() => Promise<void>) | null>(null);
   const [savedToCloudName, setSavedToCloudName] = useState<string | null>(null);
   const [cloudSaveState, setCloudSaveState] = useState<'idle' | 'saving' | 'failed'>('idle');
@@ -1137,7 +1060,7 @@ export default function Home() {
     setSessionSaved(false);
   }, [
     styleKey, ovenType, mixerType, yeastType,
-    numItems, itemWeight, kitchenTemp, humidity,
+    numItems, itemWeight, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, humidity,
     fridgeTemp, manualHydration, prefermentType,
     prefermentFlourPct, eatTime, pizzaPartyQtys, bakedPartyQtys,
   ]);
@@ -1460,7 +1383,7 @@ export default function Home() {
     setYeastType(session.yeastType as YeastType | null);
     setKitchenTemp(session.kitchenTemp);
     setHumidity(session.humidity);
-    setFridgeTemp(session.fridgeTemp);
+    setFridgeTemp(session.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(session.waterSource ?? '') ? session.waterSource! : 'room'); setMeasuredWaterTemp(session.measuredWaterTemp); setWaterMethod(session.waterMethod ?? 'premelt'); setSpiralIceConfirmed(session.spiralIceConfirmed ?? false);
     if (session.flourBlend) setFlourBlend(session.flourBlend as FlourBlend);
     setPrefermentType(session.prefermentType as PrefermentType);
     // Absent means UNSETTLED, not settled. The `?? true` this replaces was
@@ -1827,7 +1750,7 @@ export default function Home() {
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, feedToMixH]);
+  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, humidity, schedule, fridgeTemp, yeastType, feedToMixH]);
 
   // Recipe with yeast adjusted by appliedMultiplier (large-batch tuning)
   const displayRecipe = recipe;
@@ -1862,7 +1785,7 @@ export default function Home() {
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, wastePct, addSeeds, prefGoesInFridge, feedToMixH]);
+  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, wastePct, addSeeds, prefGoesInFridge, feedToMixH]);
 
   const advancedDisplayRecipe = advancedRecipe;
 
@@ -1960,7 +1883,7 @@ export default function Home() {
     return {
       tab, bakeType, styleKey, numItems, itemWeight, pizzaDiameter,
       ovenType, mixerType, yeastType,
-      kitchenTemp, humidity, fridgeTemp,
+      kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
       qtyChosen, flourChosen, prefermentChosen,
       manualHydration, manualOil, manualSugar, manualSalt,
@@ -2177,7 +2100,7 @@ export default function Home() {
       const { saveNamedSession } = await import('../lib/supabase/saveBakeEvent');
       id = await saveNamedSession({
         tab, bakeType: bakeType ?? '', styleKey, numItems, itemWeight,
-        pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
+        pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, humidity,
         fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
         manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
         flourInFridge, wastePct, addSeeds, priorityOverride,
@@ -2196,6 +2119,7 @@ export default function Home() {
     if (!user) {
       stashAuthIntent('share');
       window.dispatchEvent(new Event('bh-open-auth'));
+      return;
     }
   }
 
@@ -2280,14 +2204,13 @@ export default function Home() {
     // there for the rest of the flow. So the collapsed card was showing the
     // baker a thing they could already see, one tap short of the step they
     // actually wanted.
-    if (tab === 'custom') advanceAdv(1);
-    else advance(1);
+    // Selection stays visible until the baker chooses Continue.
   }
 
   // Page mode: every navigation starts the new page at the top. The old
   // accordion scrolled to a step's anchor; there is no anchor to reach now.
   function scrollToStepTop() {
-    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 30);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
   // Both advance functions walk the step model rather than raw numbers. That
@@ -2366,17 +2289,17 @@ export default function Home() {
   const [confirmNewSession, setConfirmNewSession] = useState(false);
 
   function requestNewSession() {
-    if (recipeGenerated && !sessionSaved) { setConfirmNewSession(true); return; }
+    if (bakeType && !(sessionSaved && bakeEventId && user)) { setConfirmNewSession(true); return; }
     startOver();
   }
 
-  async function saveCurrentSession() {
+  async function saveCurrentSession(): Promise<boolean> {
             const sessionPayload = buildSessionPayload();
     const currentQtys = pizzaPartyGetQtysRef.current?.() ?? pizzaPartyQtys;
-    saveSession(sessionPayload);
+    const localSaved = saveSession(sessionPayload);
     // Optimistic - local save just succeeded; cloud write continues
     // in the background and reverts the pill on failure.
-    setSessionSaved(true);
+    setSessionSaved(localSaved);
     if (user) {
       try {
         const { saveNamedSession, savePizzaPartySelections, updateBakeEvent } = await import('../lib/supabase/saveBakeEvent');
@@ -2385,20 +2308,22 @@ export default function Home() {
           id = await saveNamedSession(sessionPayload as SessionData);
           if (id) setBakeEventId(id);
         } else {
-          await updateBakeEvent(id, sessionPayload as SessionData);
+          if (!await updateBakeEvent(id, sessionPayload as SessionData)) throw new Error('Session update failed');
         }
         if (id && Object.keys(currentQtys).length > 0 && styleKey) {
-          await savePizzaPartySelections(id, currentQtys, styleKey);
+          if (!await savePizzaPartySelections(id, currentQtys, styleKey)) throw new Error('Pizza selections update failed');
         }
-        if (!id) setSessionSaved(false);
+        if (!id) { setSessionSaved(false); setCloudSaveState('failed'); return false; }
         else {
+          setSessionSaved(true); setCloudSaveState('idle');
           const label = sessionLabel();
           setSavedToCloudName(label);
           setTimeout(() => setSavedToCloudName(c => (c === label ? null : c)), 5000);
+          return true;
         }
       } catch (e) {
         console.error('Cloud save failed:', e);
-        setSessionSaved(false);
+        setSessionSaved(false); setCloudSaveState('failed'); return false;
       }
     } else {
       // Le message disait « connectez-vous » sans dire où, et n'ouvrait rien :
@@ -2406,6 +2331,7 @@ export default function Home() {
       // sessionStorage pour qu'elle survive à la redirection Google.
       stashAuthIntent('save');
       window.dispatchEvent(new Event('bh-open-auth'));
+      return false;
     }
   }
 
@@ -2428,6 +2354,7 @@ export default function Home() {
     // Fresh session = fresh chance for profile blockers to apply — without
     // this reset, only the first session per page load ever received them.
     profileBlockersAppliedRef.current = false;
+    setEquipmentPanel('oven'); setMixingBatches(undefined);
     setBakeType(null); setStyleKey(null); setProfileFields(new Set());
     setNumItems(2); setItemWeight(270);
     setOvenType(null); setMixerType(null);
@@ -2435,7 +2362,7 @@ export default function Home() {
     setStartTime(now);
     setEatTime(null);
     setBlocks([]); setYeastType(null);
-    setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(6);
+    setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(6); setWaterSource('room'); setMeasuredWaterTemp(undefined); setWaterMethod('premelt'); setSpiralIceConfirmed(false);
     setShowResults(false); setActiveStep(1); setHighestStep(1);
     setAdvancedStep(1); setAdvancedHighestStep(1); setFlourBlend({ flour1: bakeType === 'bread' ? 'bread' : 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
@@ -2455,6 +2382,8 @@ export default function Home() {
     try {
       localStorage.removeItem('bh_shop_ticks_v1');
       localStorage.removeItem('bh_prep_ticks_v1');
+      const legacyProgress = localStorage.getItem('bh_guide_done_v1');
+      if (legacyProgress) localStorage.setItem('bh_guide_done_v1_backup', legacyProgress);
       localStorage.removeItem('bh_guide_done_v1');
     } catch {}
     // The welcome-back banner silences itself for the rest of the browser
@@ -2619,7 +2548,7 @@ export default function Home() {
     setYeastType(snap.yeastType as YeastType | null);
     setKitchenTemp(snap.kitchenTemp);
     setHumidity(snap.humidity);
-    setFridgeTemp(snap.fridgeTemp);
+    setFridgeTemp(snap.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(snap.waterSource ?? '') ? snap.waterSource! : 'room'); setMeasuredWaterTemp(snap.measuredWaterTemp); setWaterMethod(snap.waterMethod ?? 'premelt'); setSpiralIceConfirmed(snap.spiralIceConfirmed ?? false);
     if (snap.flourBlend) setFlourBlend(snap.flourBlend as FlourBlend);
     setPrefermentType(snap.prefermentType as PrefermentType);
     setQtyChosen(snap.qtyChosen ?? false);
@@ -2682,9 +2611,24 @@ export default function Home() {
       else if (savedTab === 'pizzaparty' && snap.bakeType !== 'pizza') setActiveTab('plan');
       else setActiveTab(savedTab);
       setTimeout(endRestore, 200);
+    } else {
+      setActiveTab('setup');
+      setActiveStep(snap.highestStep ?? 1); setHighestStep(snap.highestStep ?? 1);
+      setAdvancedStep(snap.advancedHighestStep ?? 1); setAdvancedHighestStep(snap.advancedHighestStep ?? 1);
+      setReviewMode(false); setSetupOverview(false); setShowResults(false);
+      setSessionSaved(!rb); setSessionRestored(true);
+      setTimeout(endRestore, 200);
     }
-    // Restore pizza selections from DB if available
-    if (event.pizza_party_id) {
+    // Modern snapshots are authoritative, including an intentionally empty pizza list.
+    // Legacy relational slots must not resurrect removed toppings after a partial save.
+    if (Object.prototype.hasOwnProperty.call(snap, 'pizzaParty')) {
+      const restoredQtys = snap.pizzaParty?.qtys ?? {};
+      setPizzaPartyQtys(restoredQtys);
+      setBakedPartyQtys(rb ? {} : (snap.pizzaParty?.bakedQtys ?? {}));
+      setPizzasConfirmed(Object.values(restoredQtys).some(q => q > 0));
+      setPizzaPartyTab(rb ? 'pick' : (['pick','shop','prep','bake'].includes(snap.pizzaPartyTab ?? '') ? snap.pizzaPartyTab as 'pick'|'shop'|'prep'|'bake' : 'pick'));
+      setPartyRestoreToken(v => v + 1);
+    } else if (event.pizza_party_id) {
       partyHydratingRef.current = true;
       const { fetchPizzaPartySlots } = await import('../lib/supabase/fetchBakeEvents');
       const slotsMap = await fetchPizzaPartySlots([event.id]);
@@ -3047,7 +2991,7 @@ export default function Home() {
                   : 'Save it to your history before starting a new one.'}
               </p>
               <button
-                onClick={async () => { await saveCurrentSession(); setConfirmNewSession(false); startOver(); }}
+                onClick={async () => { const preserved = await saveCurrentSession(); if (preserved) { setConfirmNewSession(false); startOver(); } }}
                 style={{ width: '100%', padding: '14px', minHeight: '44px', background: 'var(--terra)', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
               >
                 {locale === 'fr' ? 'Enregistrer, puis nouveau plan' : 'Save it, then start fresh'}
@@ -3069,109 +3013,6 @@ export default function Home() {
         )}
 
 
-        {bakeType && bakeType !== 'bread' && (
-          <div style={{
-            // Flo: no line under Ma Pâte. It was #2D2824 on a #2B2420 ground —
-            // all but invisible, which is why it survived the first pass, but
-            // it was still there.
-            background: '#2B2420',
-          }}>
-            {/* ── Journey bar ── */}
-            <div style={{ display: 'flex', gap: '8px', padding: '8px 12px 0' }}>
-              <button
-                onClick={() => { setActiveTab(recipeGenerated ? 'plan' : 'setup'); setNavHidden(false); }}
-                style={{
-                  flex: 1,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  textAlign: 'center',
-                  padding: '8px 12px',
-                  fontSize: '13px',
-                  fontWeight: activeTab !== 'pizzaparty' ? 600 : 400,
-                  color: activeTab !== 'pizzaparty' ? '#2B2420' : '#C4BBAE',
-                  background: activeTab !== 'pizzaparty' ? '#F0EBE0' : '#1A1612',
-                  border: activeTab !== 'pizzaparty' ? '1.5px solid transparent' : '1.5px solid #6D6054',
-                  borderBottom: 'none',
-                  borderRadius: '16px 16px 0 0',
-                  marginTop: activeTab !== 'pizzaparty' ? 0 : '6px',
-                  alignSelf: 'stretch',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-ui)',
-                  position: 'relative',
-                }}
-              >
-                {/* Echoes Setup's own icon — the first step inside this tab */}
-                <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-                  <line x1="2" y1="5" x2="18" y2="5" stroke={activeTab !== 'pizzaparty' ? '#6B4423' : '#B5AC9E'} strokeWidth="1.4" strokeLinecap="round"/>
-                  <circle cx="7" cy="5" r="2" fill={activeTab !== 'pizzaparty' ? '#F0EBE0' : '#2B2420'} stroke={activeTab !== 'pizzaparty' ? '#6B4423' : '#B5AC9E'} strokeWidth="1.4"/>
-                  <line x1="2" y1="10" x2="18" y2="10" stroke={activeTab !== 'pizzaparty' ? '#6B4423' : '#B5AC9E'} strokeWidth="1.4" strokeLinecap="round"/>
-                  <circle cx="13" cy="10" r="2" fill={activeTab !== 'pizzaparty' ? '#F0EBE0' : '#2B2420'} stroke={activeTab !== 'pizzaparty' ? '#6B4423' : '#B5AC9E'} strokeWidth="1.4"/>
-                  <line x1="2" y1="15" x2="18" y2="15" stroke={activeTab !== 'pizzaparty' ? '#6B4423' : '#B5AC9E'} strokeWidth="1.4" strokeLinecap="round"/>
-                  <circle cx="9" cy="15" r="2" fill={activeTab !== 'pizzaparty' ? '#F0EBE0' : '#2B2420'} stroke={activeTab !== 'pizzaparty' ? '#6B4423' : '#B5AC9E'} strokeWidth="1.4"/>
-                </svg>
-                {t('tabs.myDough')}
-                {activeTab === 'pizzaparty' && recipeGenerated && (
-                  <span style={{
-                    position: 'absolute', top: '3px', right: '8px',
-                    width: '11px', height: '11px', borderRadius: '50%',
-                    background: '#8BA888', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
-                      <path d="M1.5 3.5l1.5 1.5 2.5-2.5" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </span>
-                )}
-              </button>
-
-              {pizzaPartyEnabled && (() => {
-                const totalPizzaCount = Object.values(pizzaPartyQtys).reduce((a, b) => a + b, 0);
-                return (
-                  <button
-                    onClick={() => { setActiveTab('pizzaparty'); setNavHidden(false); }}
-                    style={{
-                      flex: 1,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                      textAlign: 'center',
-                      padding: '8px 12px',
-                      fontSize: '13px',
-                      fontWeight: activeTab === 'pizzaparty' ? 600 : 400,
-                      color: activeTab === 'pizzaparty' ? '#2B2420' : '#C4BBAE',
-                      background: activeTab === 'pizzaparty' ? '#F0EBE0' : '#1A1612',
-                      border: activeTab === 'pizzaparty' ? '1.5px solid transparent' : '1.5px solid #6D6054',
-                      borderBottom: 'none',
-                      borderRadius: '16px 16px 0 0',
-                      marginTop: activeTab === 'pizzaparty' ? 0 : '6px',
-                      alignSelf: 'stretch',
-                      cursor: 'pointer',
-                      fontFamily: 'var(--font-ui)',
-                      position: 'relative',
-                    }}
-                  >
-                    {/* Echoes Pick's own icon — the first step inside this tab */}
-                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-                      <path d="M10 2.5L3 17.5h14L10 2.5z" stroke={activeTab === 'pizzaparty' ? '#C88A52' : '#B5AC9E'} strokeWidth="1.4" strokeLinejoin="round"/>
-                      <path d="M4.5 17Q10 13.5 15.5 17" stroke={activeTab === 'pizzaparty' ? '#C88A52' : '#B5AC9E'} strokeWidth="1.2" strokeLinecap="round"/>
-                      <circle cx="10" cy="11" r="1" fill={activeTab === 'pizzaparty' ? '#C88A52' : '#B5AC9E'}/>
-                      <circle cx="7.5" cy="14" r="0.8" fill={activeTab === 'pizzaparty' ? '#C88A52' : '#B5AC9E'}/>
-                      <circle cx="12.5" cy="14" r="0.8" fill={activeTab === 'pizzaparty' ? '#C88A52' : '#B5AC9E'}/>
-                    </svg>
-                    {t('tabs.myPizzaParty')}
-                    {activeTab !== 'pizzaparty' && totalPizzaCount > 0 && (
-                      <span style={{
-                        position: 'absolute', top: '3px', right: '8px',
-                        background: '#C88A52', color: '#2B2420',
-                        fontFamily: 'var(--font-ui)', fontSize: '11px', fontWeight: 700,
-                        width: '15px', height: '15px', borderRadius: '50%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        {totalPizzaCount}
-                      </span>
-                    )}
-                  </button>
-                );
-              })()}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ── Main content ───────────────────── */}
@@ -3351,10 +3192,7 @@ export default function Home() {
             lineHeight: 1.2,
             margin: '0 0 20px',
           }}>
-            {t('hero.headline')}{' '}
-            <em style={{ color: 'var(--terra)', fontStyle: 'italic' }}>
-              {t('hero.headlineEm')}
-            </em>
+            {locale === 'fr' ? 'Que souhaitez-vous préparer ?' : 'What would you like to make?'}
           </h1>
 
           {/* Pizza / Bread picker — full cards before selection, compact toggle after */}
@@ -3397,7 +3235,7 @@ export default function Home() {
                 <img
                   src={opt.image}
                   alt={opt.label}
-                  style={{ width: '100%', height: 'clamp(180px, 30vh, 340px)', objectFit: 'cover', display: 'block' }}
+                  style={{ width: '100%', height: 'clamp(120px, 19vh, 180px)', objectFit: 'cover', display: 'block' }}
                 />
                 {/* Gradient overlay with text */}
                 <div style={{
@@ -3453,139 +3291,10 @@ export default function Home() {
         // scroll. They move as one piece now.
         transition: 'top 0.25s ease',
       }}>
-        {activeTab !== 'pizzaparty' ? (() => {
-          const steps = [
-            {
-              key: 'setup' as const,
-              label: t('tabs.setup'),
-              icon: (color: string) => (
-                <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
-                  <line x1="2" y1="5" x2="18" y2="5" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
-                  <circle cx="7" cy="5" r="2" fill="#FDFBF7" stroke={color} strokeWidth="1.4"/>
-                  <line x1="2" y1="10" x2="18" y2="10" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
-                  <circle cx="13" cy="10" r="2" fill="#FDFBF7" stroke={color} strokeWidth="1.4"/>
-                  <line x1="2" y1="15" x2="18" y2="15" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
-                  <circle cx="9" cy="15" r="2" fill="#FDFBF7" stroke={color} strokeWidth="1.4"/>
-                </svg>
-              ),
-              locked: false,
-              done: recipeGenerated && activeTab !== 'setup',
-            },
-            {
-              key: 'plan' as const,
-              label: t('tabs.plan'),
-              icon: (color: string) => (
-                <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
-                  <rect x="4" y="2" width="12" height="16" rx="2" stroke={color} strokeWidth="1.4"/>
-                  <line x1="7" y1="7" x2="13" y2="7" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
-                  <line x1="7" y1="10" x2="13" y2="10" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
-                  <line x1="7" y1="13" x2="11" y2="13" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
-                </svg>
-              ),
-              locked: !recipeGenerated,
-              done: recipeGenerated && activeTab !== 'plan' && activeTab !== 'setup',
-            },
-            {
-              key: 'guide' as const,
-              label: t('tabs.guide'),
-              icon: (color: string) => (
-                <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
-                  <path d="M10 17V7" stroke={color} strokeWidth="1.4"/>
-                  <path d="M4 5.5c2-.7 4-.7 6 1 2-1.7 4-1.7 6-1v11c-2-.7-4-.7-6 1-2-1.7-4-1.7-6-1V5.5z"
-                    stroke={color} strokeWidth="1.4" strokeLinejoin="round"/>
-                </svg>
-              ),
-              locked: !recipeGenerated,
-              done: false,
-            },
-          ];
-          // No green fill on the connector. The dots already say which
-          // phases are done, in the same sage, on the same line — the bar was
-          // the same fact a third time and the only one of the three that
-          // could be wrong, since it counted `done` flags rather than reading
-          // the dots. Hence a fill stuck at step one with every pizza baked.
-          // Compact phase bar. The icons went: a document glyph does not
-          // explain "Recipe" better than the word Recipe does, and the
-          // 32px discs they needed cost two rows of height at the top of
-          // every screen. The words stay — they are what tells a first
-          // timer these are phases and not unrelated tabs — and the node
-          // shrinks to a dot sitting on the connecting line.
-          return (
-            <div>
-            <div style={{ padding: '8px 24px 8px', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '14.5px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
-                {steps.map(s => {
-                  const isActive = activeTab === s.key;
-                  const dot = s.done ? '#8BA888' : isActive ? '#6B4423' : s.locked ? '#D8D0C2' : '#C9BEA9';
-                  const labelColor = s.done ? '#6B7A5A' : isActive ? '#6B4423' : s.locked ? '#B5AC9E' : '#8C8580';
-                  return (
-                    <button
-                      key={s.key}
-                      onClick={() => {
-                        if (s.locked) return;
-                        // Reaching Setup from here means the same thing as
-                        // reaching it from the recipe: "what did I choose".
-                        // It landed on whichever step happened to be open,
-                        // which is the problem the overview was built for.
-                        if (s.key === 'setup' && recipeGenerated) {
-                          // Same pair the recipe's own back control sets:
-                          // reviewMode frees every step for editing, the
-                          // overview is what gets shown.
-                          setReviewMode(true);
-                          setSetupOverview(true);
-                        }
-                        setActiveTab(s.key);
-                      }}
-                      style={{
-                        background: 'none', border: 'none', cursor: s.locked ? 'default' : 'pointer',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
-                        width: '56px', padding: 0, minHeight: '44px', justifyContent: 'flex-start',
-                      }}
-                    >
-                      {/* A ring for where you are, a filled dot for where you
-                          have been, a pale one for where you cannot go yet. */}
-                      <span style={{
-                        width: '13px', height: '13px', borderRadius: '50%',
-                        background: isActive ? 'var(--cream)' : dot,
-                        border: `2px solid ${dot}`, boxShadow: '0 0 0 3px var(--cream)',
-                        flexShrink: 0,
-                      }} />
-                      {/* Reachable phases wear an underline. Without it the
-                          row reads as a progress readout — three dots and
-                          three words — and nobody tries tapping a readout.
-                          Locked ones stay plain, which is honest: they are
-                          not links yet. */}
-                      <span style={{
-                        fontSize: '12.5px', lineHeight: 1.15, color: labelColor,
-                        fontWeight: isActive ? 700 : 400, fontFamily: 'var(--font-ui)',
-                        textAlign: 'center',
-                        textDecoration: s.locked || isActive ? 'none' : 'underline',
-                        textDecorationColor: '#D3C9B8',
-                        textUnderlineOffset: '3px',
-                        textDecorationThickness: '1px',
-                      }}>{s.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            {/* The rail lives INSIDE the phase bar's sticky box. Two sticky
-                elements each deriving an offset from the header is how they
-                ended up on the same line, and then how one of them ended up
-                behind the tab strip: two computations, two chances to be
-                wrong. One element cannot disagree with itself. */}
-            {activeTab === 'setup' && !!bakeType && modeChosen && (
-              tab === 'simple'
-                ? <SummaryBar flow={simpleFlow}
-                    modeChip={{ value: t('modeCards.simple.title'), onClick: () => setModeChosen(false) }} />
-                : <SummaryBar flow={customFlow}
-                    modeChip={{ value: t('modeCards.custom.title'), onClick: () => setModeChosen(false) }} />
-            )}
-            </div>
-          );
-        })() : (() => {
+        {activeTab !== 'pizzaparty' ? (
+          activeTab === 'setup' && modeChosen ? <SummaryBar flow={tab === 'simple' ? simpleFlow : customFlow}
+            modeChip={{value: tab === 'simple' ? 'Simple' : 'Custom', onClick: () => setModeChosen(false)}} /> : null
+        ) : (() => {
           // Shop/Prep/Bake all share ONE gate (pizzasConfirmed) — none of them
           // individually require the others to be visited or "done". A baker
           // who's picked their pizzas can jump straight to Bake without ever
@@ -3768,12 +3477,12 @@ export default function Home() {
                       // avoid — and refers to nothing they have not met yet.
                       // "Your style" failed on that count: the style step comes
                       // after this page.
-                      { key: 'simple' as const, title: t('modeCards.simple.title'),
+                      { key: 'simple' as const, title: locale === 'fr' ? 'Commencer simplement' : 'Start simple',
                         lead: locale === 'fr' ? 'Pour commencer' : 'To get started',
                         desc: locale === 'fr'
                           ? 'votre pâte en quelques touches'
                           : 'your dough in a few taps' },
-                      { key: 'custom' as const, title: t('modeCards.custom.title'),
+                      { key: 'custom' as const, title: locale === 'fr' ? 'Personnaliser ma pâte' : 'Customise my dough',
                         lead: locale === 'fr' ? 'Pour aller plus loin' : 'To go further',
                         desc: locale === 'fr'
                           ? 'farine, préferment, hydratation'
@@ -3980,9 +3689,7 @@ export default function Home() {
                         <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '12px 12px', overflow: 'hidden' }}>
                           <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>◎ {locale === 'fr' ? 'Diamètre' : 'Diameter'}</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                            <button onClick={() => { const d = Math.max(22, pizzaDiameter - 1); setPizzaDiameter(d); chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                            <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-ui)', minWidth: '48px', textAlign: 'center' }}>{pizzaDiameter}<span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--smoke)', marginLeft: '2px' }}>cm</span></span>
-                            <button onClick={() => { const d = Math.min(35, pizzaDiameter + 1); setPizzaDiameter(d); chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                            <input aria-label={locale==='fr'?'Diamètre (cm)':'Diameter (cm)'} type="number" inputMode="decimal" min={22} max={35} step={1} value={pizzaDiameter} onChange={e=>{if(e.target.value==='')return;const d=Math.max(22,Math.min(35,Number(e.target.value)));setPizzaDiameter(d);chooseItemWeight(pizzaWeightFromTable(styleKey??'neapolitan',d,pizzaCorn));}} style={{width:72,fontSize:18,padding:8,border:'1px solid var(--border)',borderRadius:8,background:'var(--warm)',color:'var(--char)'}}/><span>cm</span>
                           </div>
                         </div>
                       )}
@@ -4020,11 +3727,14 @@ export default function Home() {
             </StepPage>
 
             {/* ─── STEP 4: Equipment (oven + mixing) ── */}
-            <StepPage flow={simpleFlow} id={3}>
-              <div style={{
-                fontFamily: 'var(--font-ui)', fontSize: '11px', letterSpacing: '.11em',
-                textTransform: 'uppercase', color: 'var(--smoke)', margin: '0 0 10px',
-              }}>{locale === 'fr' ? 'Four' : 'Oven'}</div>
+            <StepPage flow={simpleFlow} id={3} nextOverride={!ovenType || !mixerType ? <button disabled={equipmentPanel==='oven'&&!ovenType || equipmentPanel==='mixer'&&!mixerType} onClick={()=>{setEquipmentPanel(ovenType?'mixer':'oven');scrollToStepTop();}} style={NEXT_CTA}>{locale==='fr'?(ovenType?'Choisir le pétrissage':'Choisir un four'):(ovenType?'Choose mixing method':'Choose an oven')}</button> : undefined}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:20}}>
+                {(['oven','mixer'] as const).map(panel=><button key={panel} aria-pressed={equipmentPanel===panel} onClick={()=>setEquipmentPanel(panel)} style={{padding:12,minHeight:68,border:`1px solid ${equipmentPanel===panel?'var(--terra)':'var(--border)'}`,borderRadius:12,textAlign:'left',background:equipmentPanel===panel?'#F0E5D3':'var(--warm)',color:'var(--char)'}}>
+                  <strong style={{display:'block',marginBottom:5}}>{panel==='oven'?(locale==='fr'?'Four':'Oven'):(locale==='fr'?'Pétrissage':'Mixing')}{(panel==='oven'?ovenType:mixerType)?' ✓':''}</strong>
+                  <span style={{fontSize:12}}>{panel==='oven'?(ovenType?localName(ovenData):locale==='fr'?'À choisir':'Not selected'):(mixerType?localName(MIXER_TYPES[mixerType]):locale==='fr'?'À choisir':'Not selected')}</span>
+                </button>)}
+              </div>
+              <div hidden={equipmentPanel!=='oven'}>
               <OvenPicker
                 bakeType={bakeType ?? 'pizza'}
                 styleKey={styleKey}
@@ -4032,19 +3742,18 @@ export default function Home() {
                 onSelect={setOvenType}
                 onPreselect={setOvenType}
               />
-              <div style={{
-                fontFamily: 'var(--font-ui)', fontSize: '11px', letterSpacing: '.11em',
-                textTransform: 'uppercase', color: 'var(--smoke)', margin: '28px 0 10px',
-              }}>{locale === 'fr' ? 'Pétrissage' : 'Mixing'}</div>
+              </div>
+              <div hidden={equipmentPanel!=='mixer'}>
               <MixerPicker
                 totalDoughG={numItems * itemWeight}
                 locale={locale}
                 selected={mixerType}
-                onSelect={setMixerType}
+                onSelect={value=>{setMixerType(value);setSpiralIceConfirmed(false);setWaterMethod('premelt');}}
                 styleKey={styleKey ?? undefined}
                 bakeType={bakeType ?? undefined}
                 kitchenTemp={kitchenTemp}
               />
+              </div>
             </StepPage>
 
             {/* ─── STEP 5: Climate ─────────────────── */}
@@ -4197,6 +3906,8 @@ export default function Home() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
 
                           <RecipeOutput
+                            styleKey={styleKey ?? undefined}
+                            waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches}
                             ovenType={ovenType}
                             onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); setSetupOverview(true); }}
                             onOpenGuide={() => setActiveTab('guide')}
@@ -4252,7 +3963,7 @@ export default function Home() {
                               const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
                               const payload = {
                                 tab, bakeType, styleKey, numItems, itemWeight,
-                                pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
+                                pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, humidity,
                                 fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                                 manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
                                 flourInFridge, wastePct, addSeeds, priorityOverride,
@@ -4316,6 +4027,7 @@ export default function Home() {
                 </div>
               ) : schedule && recipe && mixerType && (<>
                 <BakeGuide
+                  waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches} fridgeTemp={fridgeTemp}
                   schedule={schedule}
                   mixerType={mixerType}
                   styleKey={styleKey ?? 'neapolitan'}
@@ -4434,7 +4146,7 @@ export default function Home() {
                     const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
                     const payload = {
                       tab, bakeType, styleKey, numItems, itemWeight,
-                      pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
+                      pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, humidity,
                       fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                       manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
                       flourInFridge, wastePct, addSeeds, priorityOverride,
@@ -4616,9 +4328,7 @@ export default function Home() {
                         <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '12px 12px', overflow: 'hidden' }}>
                           <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>◎ {locale === 'fr' ? 'Diamètre' : 'Diameter'}</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                            <button onClick={() => { const d = Math.max(22, pizzaDiameter - 1); setPizzaDiameter(d); chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                            <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-ui)', minWidth: '48px', textAlign: 'center' }}>{pizzaDiameter}<span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--smoke)', marginLeft: '2px' }}>cm</span></span>
-                            <button onClick={() => { const d = Math.min(35, pizzaDiameter + 1); setPizzaDiameter(d); chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', d, pizzaCorn)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
+                            <input aria-label={locale==='fr'?'Diamètre (cm)':'Diameter (cm)'} type="number" inputMode="decimal" min={22} max={35} step={1} value={pizzaDiameter} onChange={e=>{if(e.target.value==='')return;const d=Math.max(22,Math.min(35,Number(e.target.value)));setPizzaDiameter(d);chooseItemWeight(pizzaWeightFromTable(styleKey??'neapolitan',d,pizzaCorn));}} style={{width:72,fontSize:18,padding:8,border:'1px solid var(--border)',borderRadius:8,background:'var(--warm)',color:'var(--char)'}}/><span>cm</span>
                           </div>
                         </div>
                       )}
@@ -4656,11 +4366,14 @@ export default function Home() {
             </StepPage>
 
             {/* ─── ADV STEP 4: Equipment (oven + mixing) ── */}
-            <StepPage flow={customFlow} id={3}>
-              <div style={{
-                fontFamily: 'var(--font-ui)', fontSize: '11px', letterSpacing: '.11em',
-                textTransform: 'uppercase', color: 'var(--smoke)', margin: '0 0 10px',
-              }}>{locale === 'fr' ? 'Four' : 'Oven'}</div>
+            <StepPage flow={customFlow} id={3} nextOverride={!ovenType || !mixerType ? <button disabled={equipmentPanel==='oven'&&!ovenType || equipmentPanel==='mixer'&&!mixerType} onClick={()=>{setEquipmentPanel(ovenType?'mixer':'oven');scrollToStepTop();}} style={NEXT_CTA}>{locale==='fr'?(ovenType?'Choisir le pétrissage':'Choisir un four'):(ovenType?'Choose mixing method':'Choose an oven')}</button> : undefined}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:20}}>
+                {(['oven','mixer'] as const).map(panel=><button key={panel} aria-pressed={equipmentPanel===panel} onClick={()=>setEquipmentPanel(panel)} style={{padding:12,minHeight:68,border:`1px solid ${equipmentPanel===panel?'var(--terra)':'var(--border)'}`,borderRadius:12,textAlign:'left',background:equipmentPanel===panel?'#F0E5D3':'var(--warm)',color:'var(--char)'}}>
+                  <strong style={{display:'block',marginBottom:5}}>{panel==='oven'?(locale==='fr'?'Four':'Oven'):(locale==='fr'?'Pétrissage':'Mixing')}{(panel==='oven'?ovenType:mixerType)?' ✓':''}</strong>
+                  <span style={{fontSize:12}}>{panel==='oven'?(ovenType?localName(ovenData):locale==='fr'?'À choisir':'Not selected'):(mixerType?localName(MIXER_TYPES[mixerType]):locale==='fr'?'À choisir':'Not selected')}</span>
+                </button>)}
+              </div>
+              <div hidden={equipmentPanel!=='oven'}>
               <OvenPicker
                 bakeType={bakeType ?? 'pizza'}
                 styleKey={styleKey}
@@ -4668,19 +4381,18 @@ export default function Home() {
                 onSelect={setOvenType}
                 onPreselect={setOvenType}
               />
-              <div style={{
-                fontFamily: 'var(--font-ui)', fontSize: '11px', letterSpacing: '.11em',
-                textTransform: 'uppercase', color: 'var(--smoke)', margin: '28px 0 10px',
-              }}>{locale === 'fr' ? 'Pétrissage' : 'Mixing'}</div>
+              </div>
+              <div hidden={equipmentPanel!=='mixer'}>
               <MixerPicker
                 totalDoughG={numItems * itemWeight}
                 locale={locale}
                 selected={mixerType}
-                onSelect={setMixerType}
+                onSelect={value=>{setMixerType(value);setSpiralIceConfirmed(false);setWaterMethod('premelt');}}
                 styleKey={styleKey ?? undefined}
                 bakeType={bakeType ?? undefined}
                 kitchenTemp={kitchenTemp}
               />
+              </div>
             </StepPage>
 
             {/* ─── ADV STEP 5: Climate ─────────────── */}
@@ -4832,7 +4544,7 @@ export default function Home() {
                           {t('prefermentSlider.flourIn', { name: pData.name })}
                         </label>
                         <span style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)' }}>
-                          {currentPct}%
+                          <input type="number" aria-label={locale === 'fr' ? 'Farine en préferment (%)' : 'Flour in preferment (%)'} min={10} max={60} step={1} value={currentPct} onChange={e => { const value=Number(e.target.value); if(e.target.value!=='' && value>=10 && value<=60) setPrefermentFlourPct(value); }} style={{width:68,padding:'6px 8px',border:'1px solid var(--border)',borderRadius:8,font:'inherit'}} />%
                         </span>
                       </div>
                       {/* Integrated colour bar slider — same pattern as Hydration */}
@@ -4843,6 +4555,7 @@ export default function Home() {
                         }} />
                         <input
                           type="range"
+                          aria-label={locale === 'fr' ? 'Ajuster la farine en préferment' : 'Adjust flour in preferment'}
                           min={10} max={60} step={5}
                           value={currentPct}
                           onChange={e => setPrefermentFlourPct(Number(e.target.value))}
@@ -4854,25 +4567,17 @@ export default function Home() {
                         <span style={{ position: 'absolute', left: '37.5%', transform: 'translateX(-50%)', color: 'var(--sage)', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('prefermentSlider.nightBefore')}</span>
                         <span style={{ position: 'absolute', right: 0 }}>{t('prefermentSlider.sameDay')}</span>
                       </div>
-                      {prefOffsetH > 0 && currentPct !== timeDefault && (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '.1rem' }}>
-                          <div style={{ fontSize: '12px', color: 'var(--gold)', fontStyle: 'italic' }}>
-                            For your {Math.round(prefOffsetH)}h window, {timeDefault}% of total flour is typical.
-                          </div>
-                          <button
-                            onClick={() => setPrefermentFlourPct(undefined)}
-                            style={{
-                              background: 'none', border: 'none', cursor: 'pointer',
-                              fontSize: '11px', color: 'var(--smoke)',
-                              fontFamily: 'var(--font-ui)',
-                              textDecoration: 'underline', textUnderlineOffset: '2px',
-                              padding: 0, flexShrink: 0,
-                            }}
-                          >
-                            Reset to recommendation
-                          </button>
-                        </div>
-                      )}
+                      <p style={{fontSize:12,margin:'8px 0',color:'var(--smoke)'}}>
+                        {locale === 'fr' ? `${currentPct}% de toute la farine` : `${currentPct}% of all flour`}
+                        {advancedRecipe ? ` · ${Math.round(advancedRecipe.flour * currentPct / 100)} g / ${Math.round(advancedRecipe.flour)} g` : ''}
+                      </p>
+                      <div style={{display:'flex',gap:10,alignItems:'center',fontSize:12}}>
+                        <span>{locale === 'fr' ? `Point de départ suggéré : ${timeDefault}%` : `Suggested starting point: ${timeDefault}%`}</span>
+                        {currentPct !== timeDefault && <button type="button" onClick={()=>setPrefermentFlourPct(undefined)} style={{background:'none',border:'none',textDecoration:'underline',cursor:'pointer',color:'var(--terra)'}}>{locale === 'fr' ? 'Utiliser' : 'Use suggestion'}</button>}
+                      </div>
+                      <details style={{fontSize:12,marginTop:8,color:'var(--smoke)'}}><summary style={{cursor:'pointer'}}>{locale === 'fr' ? 'Pourquoi ?' : 'Why?'}</summary>
+                        {locale === 'fr' ? `Basé sur ${Math.round(prefOffsetH)} h entre la préparation du préferment et le pétrissage final. La température et la maturité comptent aussi.` : `Based on ${Math.round(prefOffsetH)} h from preparing the preferment to final mixing. Temperature and ripeness also matter.`}
+                      </details>
                     </div>
                   );
                 })()}
@@ -5241,6 +4946,8 @@ export default function Home() {
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
                           <RecipeOutput
+                            styleKey={styleKey ?? undefined}
+                            waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches}
                             ovenType={ovenType}
                             onEditSetup={() => { setActiveTab('setup'); setReviewMode(true); setSetupOverview(true); }}
                             onOpenGuide={() => setActiveTab('guide')}
@@ -5300,7 +5007,7 @@ export default function Home() {
                               const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
                               const payload = {
                                 tab, bakeType, styleKey, numItems, itemWeight,
-                                pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
+                                pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, humidity,
                                 fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                                 manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
                                 flourInFridge, wastePct, addSeeds, priorityOverride,
@@ -5364,6 +5071,7 @@ export default function Home() {
                 </div>
               ) : schedule && advancedRecipe && mixerType && (<>
                 <BakeGuide
+                  waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches} fridgeTemp={fridgeTemp}
                   schedule={schedule}
                   mixerType={mixerType}
                   styleKey={styleKey ?? 'neapolitan'}
@@ -5482,7 +5190,7 @@ export default function Home() {
                     const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
                     const payload = {
                       tab, bakeType, styleKey, numItems, itemWeight,
-                      pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, humidity,
+                      pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, humidity,
                       fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                       manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
                       flourInFridge, wastePct, addSeeds, priorityOverride,
@@ -5514,7 +5222,13 @@ export default function Home() {
 
       </div>
 
-      {/* ── Bottom nav ── */}
+      <nav id="bh-bottom-nav" aria-label={locale === 'fr' ? 'Votre fournée' : 'Current bake'} style={{display:bakeType && modeChosen?'flex':'none',position:'fixed',bottom:0,left:0,right:0,zIndex:110,background:'var(--cream)',borderTop:'1px solid var(--border)',padding:'6px max(12px, calc((100vw - 680px) / 2)) calc(6px + env(safe-area-inset-bottom, 0px))',gap:4}}>
+        {([{key:'setup',label:locale==='fr'?'Plan':'Plan'}, {key:'plan',label:locale==='fr'?'Ingrédients':'Ingredients'}, {key:'guide',label:locale==='fr'?'Étapes':'Steps'}, ...(bakeType==='pizza'?[{key:'pizzaparty',label:'Pizzas'}]:[])] as const).map(item=><button key={item.key}
+          aria-current={activeTab===item.key?'page':undefined}
+          disabled={(item.key==='plan'||item.key==='guide')&&!recipeGenerated}
+          onClick={()=>{if(item.key==='setup'&&recipeGenerated){setReviewMode(true);setSetupOverview(true);}setActiveTab(item.key as typeof activeTab);setNavHidden(false);}}
+          style={{flex:1,minHeight:48,border:0,borderRadius:10,padding:'8px 4px',fontFamily:'var(--font-ui)',fontSize:13,fontWeight:activeTab===item.key?700:400,background:activeTab===item.key?'#F0E5D3':'transparent',color:'var(--char)',opacity:(item.key==='plan'||item.key==='guide')&&!recipeGenerated ? .45 : 1,cursor:'pointer'}}>{item.label}</button>)}
+      </nav>
       
       {/* ── Sign-in nudge toast ── */}
       {/* Confirmation qui nomme la fournée. Le doute venait d'un message qui

@@ -35,11 +35,15 @@ export function useBottomNavHeight(fallback = 0): number {
       setH(nav ? nav.offsetHeight : safeAreaBottom());
     };
     measure();
+    const nav = document.getElementById('bh-bottom-nav');
+    const observer = new ResizeObserver(measure);
+    if (nav) observer.observe(nav);
     window.addEventListener('resize', measure);
     window.addEventListener('orientationchange', measure);
     const vv = window.visualViewport;
     vv?.addEventListener('resize', measure);
     return () => {
+      observer.disconnect();
       window.removeEventListener('resize', measure);
       window.removeEventListener('orientationchange', measure);
       vv?.removeEventListener('resize', measure);

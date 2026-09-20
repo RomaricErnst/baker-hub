@@ -5,16 +5,25 @@ import { type ScheduleResult, formatTime, hoursLabel } from '../utils';
 import { MIXER_TYPES, AUTOLYSE_MIN, autolyseMinFor, type MixerType } from '../data';
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
+import { firstIncompleteStep, canChangeStepCompletion } from '../utils/guideProgress';
+import { mixingBatchPlan } from '../utils/mixingBatches';
 import PhaseSummary from './PhaseSummary';
+import WaterPreparation, { type WaterSource, type WaterSettingsProps } from './WaterPreparation';
 import { type UnitSystem, displayTemp, tempC, tempRange } from '../utils/units';
 import { getPrefPeakH_RT, getStarterFridgeWarmupH } from './FermentChart';
 import { GUIDE_FAQ } from '../lib/guideFaq';
+import { formatPrefermentDose } from '../utils/prefermentDose';
 
-interface BakeGuideProps {
+interface BakeGuideProps extends WaterSettingsProps {
   schedule: ScheduleResult;
   mixerType: MixerType;
   styleKey: string;
   kitchenTemp: number;
+  mixingBatches?: number;
+  onMixingBatchesChange?: (count: number) => void;
+  fridgeTemp?: number;
+  waterSource?: WaterSource;
+  onWaterSourceChange?: (source: WaterSource) => void;
   numItems: number;
   prefermentType?: string;
   oil: number;
@@ -175,97 +184,49 @@ function Pill({ label, color }: { label: string; color?: string }) {
 
 // ── Step card ────────────────────────────────────────
 function StepCard({
-  number, icon, title, time, duration, accent = D.terra,
-  open, done, onToggle, onDone, children, divRef,
+  number, title, time, duration, open, done, onToggle, onDone, children, divRef, final = false, completeLabel, preview = false, onReturnCurrent, onPrevious, onNext,
 }: {
   number: number; icon: React.ReactNode; title: string;
-  time?: Date; duration?: number | null;
-  accent?: string; open: boolean; done: boolean;
-  onToggle: () => void; onDone: () => void;
-  children: React.ReactNode;
-  divRef?: React.RefCallback<HTMLDivElement>;
+  time?: Date; duration?: number | null; accent?: string;
+  onPrevious?: () => void; onNext?: () => void; preview?: boolean; onReturnCurrent?: () => void; completeLabel?: string; final?: boolean; open: boolean; done: boolean; onToggle: () => void; onDone: () => void;
+  children: React.ReactNode; divRef?: React.RefCallback<HTMLDivElement>;
 }) {
-  // Variant B (Flo): neutral steps — done stays sage, otherwise no per-step
-  // colour; no rail, no dot, no number.
-  const ea = done ? D.sage : D.ash;
-  const _fmtLocale = useLocale();
+  const locale = useLocale();
+  const fr = locale === 'fr';
   return (
-    <div style={{ display: 'flex', gap: '0px' }}>
-    <div ref={divRef} style={{
-      flex: 1, minWidth: 0,
-      background: D.warm, borderRadius: '12px',
-      border: `1px solid ${done ? D.sage + '60' : D.border}`,
-      overflow: 'hidden',
-      boxShadow: '0 2px 12px rgba(43, 36, 32,0.06)',
-    }}>
-      {/* Card header */}
-      <div
-        onClick={onToggle}
-        style={{
-          display: 'flex', alignItems: 'center', gap: '12px',
-          padding: '12px 16px', cursor: 'pointer',
-          borderLeft: `4px solid ${ea}`,
-        }}
-      >
-        {/* Circle toggle — tap to mark done/undo, independent of accordion */}
-        <div
-          onClick={e => { e.stopPropagation(); onDone(); }}
-          style={{
-            width: '24px', height: '24px', borderRadius: '50%',
-            flexShrink: 0, cursor: 'pointer',
-            border: done ? '2px solid #6B7A5A' : '2px solid #C8C0B8',
-            background: done ? '#6B7A5A' : 'transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          {done && (
-            <svg viewBox="0 0 12 12" width={12} height={12} fill="none"
-              stroke="white" strokeWidth="2.2"
-              strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 6l3 3 5-5"/>
-            </svg>
-          )}
-        </div>
-        <span style={{ width: '26px', height: '26px', flexShrink: 0, alignSelf: 'center',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: ea }}>{icon}</span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontFamily: 'var(--font-ui)', fontSize: '15px',
-            fontWeight: 700, color: done ? D.smoke : D.char,
-            textDecoration: done ? 'line-through' : 'none',
-          }}>{title}</div>
-          {time && (
-            <div style={{ marginTop: '.2rem' }}>
-              <span style={{
-                display: 'inline-block', fontSize: '11px',
-                fontFamily: 'var(--font-ui)', color: ea,
-                background: `${ea}14`, border: `1px solid ${ea}30`,
-                borderRadius: '16px', padding: '1px 8px',
-              }}>
-                {formatTime(time, _fmtLocale)}
-                {duration ? ` · ${hoursLabel(duration)}` : ''}
-              </span>
-            </div>
-          )}
-        </div>
-        <span style={{
-          color: D.smoke, fontSize: '13px', flexShrink: 0,
-          display: 'inline-block', transition: 'transform .2s',
-          transform: open ? 'rotate(180deg)' : 'none',
-        }}>
-          ▾
+    <section ref={divRef} style={{ background: D.warm, borderRadius: 12,
+      border: `1px solid ${done ? D.sage + '60' : D.border}`, overflow: 'hidden', scrollMarginTop: 140 }}>
+      <button type="button" onClick={onToggle} aria-expanded={open}
+        aria-controls={`bake-step-${number}`} style={{ width: '100%', display: 'flex', gap: 12,
+          alignItems: 'center', padding: 16, border: 0, background: 'transparent', textAlign: 'left', cursor: 'pointer', color: D.char }}>
+        <span aria-hidden="true" style={{ color: done ? D.sage : D.terra }}>{done ? '✓' : number}</span>
+        <span style={{ flex: 1 }}>
+          <strong style={{ display: 'block', fontSize: 15 }}>{title}</strong>
+          {time && <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: D.smoke }}>
+            {formatTime(time, locale)}{duration ? ` · ${hoursLabel(duration)}` : ''}
+          </span>}
+          {done && <span style={{ fontSize: 12, color: D.sage }}>{fr ? 'Terminé' : 'Completed'}</span>}
         </span>
-      </div>
-      {/* Card body */}
-      {open && (
-        <div style={{ padding: '0 20px 20px', borderTop: `1px solid ${D.border}` }}>
-          {children}
+        <span aria-hidden="true">{open ? '−' : '+'}</span>
+      </button>
+      {open && <div id={`bake-step-${number}`} style={{ padding: '0 20px 20px', borderTop: `1px solid ${D.border}` }}>
+        {preview && <p style={{color:D.smoke,fontSize:12}}>{fr ? 'Aperçu — votre progression ne change pas.' : 'Preview — your progress stays unchanged.'}</p>}
+        {children}
+        <div style={{position:'sticky',bottom:0,background:D.warm,paddingTop:12,paddingBottom:'max(8px, env(safe-area-inset-bottom))',zIndex:2}}>
+        <nav aria-label={fr ? 'Navigation entre les étapes' : 'Step navigation'} style={{display:'flex',gap:8}}>
+          <button type="button" onClick={onPrevious} disabled={!onPrevious} style={{flex:1,minHeight:44}}>{fr ? 'Étape précédente' : 'Previous step'}</button>
+          <button type="button" onClick={onNext} disabled={final} style={{flex:1,minHeight:44}}>{fr ? 'Étape suivante' : 'Next step'}</button>
+        </nav>
+        <button type="button" onClick={preview ? onReturnCurrent : onDone} style={{ display: 'block', width: '100%', minHeight: 44,
+          marginTop: 20, padding: '12px 16px', borderRadius: 10, cursor: 'pointer',
+          background: done ? 'transparent' : D.terra, color: done ? D.terra : 'white',
+          border: `1px solid ${D.terra}`, fontWeight: 600 }}>
+          {preview ? (fr ? 'Revenir à l’étape en cours' : 'Back to current step') : done ? (fr ? 'Annuler cette étape et les suivantes' : 'Undo this and following steps')
+            : completeLabel ?? (final ? (fr ? 'Terminer la cuisson' : 'Mark bake complete') : (fr ? 'Marquer comme terminée' : 'Mark as completed'))}
+        </button>
         </div>
-      )}
-    </div>
-    </div>
+      </div>}
+    </section>
   );
 }
 
@@ -565,10 +526,10 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
         ctx.drawImage(img, 0, 0, c.width, c.height);
         resolve(c.toDataURL('image/jpeg', 0.85).split(',')[1]);
       };
-      img.onerror = () => resolve(null);
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
       img.src = url;
     });
-    if (b64) setPhotoB64(b64);
+    if (b64) { setPhotoB64(b64); setAnswer(null); } else setError(true);
   }
 
   async function ask() {
@@ -587,7 +548,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
         }),
       });
       const data = await res.json();
-      if (data.feedback) setAnswer(data.feedback); else setError(true);
+      if (res.ok && typeof data.feedback === 'string' && data.feedback.trim()) setAnswer(data.feedback); else setError(true);
     } catch { setError(true); } finally { setLoading(false); }
   }
 
@@ -625,6 +586,8 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           </svg>
         </button>
         <input
+          maxLength={500}
+          aria-label={l === 'fr' ? 'Votre question' : 'Your question'}
           value={q}
           onChange={e => setQ(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') ask(); }}
@@ -649,7 +612,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
         </button>
       </div>
       <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: D.smoke, fontStyle: 'italic', marginTop: '4px' }}>
-        {l === 'fr' ? 'Le Maestro lit vos questions et regarde vos photos — joignez-en une pour un avis visuel.' : 'Maestro reads questions and looks at photos — attach one for a visual read.'}
+        {l === 'fr' ? 'Une question sur cette étape ? Photo facultative.' : 'Ask about this step. Photo optional.'}
       </div>
       {answer && (
         <div style={{
@@ -800,7 +763,7 @@ const TERM_TO_STEPID: Record<string, string> = {
 };
 
 export default function BakeGuide({
-  schedule, mixerType, styleKey, kitchenTemp, numItems,
+  schedule, mixerType, styleKey, kitchenTemp, fridgeTemp = 4, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, onMixingBatchesChange, waterSource = 'room', onWaterSourceChange, numItems,
   prefermentType, oil, hydration, ovenType, prefStartTime, feedTime,
   feed2Time = null, fridgeOutTime = null,
   starterState = 'rt_fed', starterMature = true, starterHasRye = false,
@@ -814,34 +777,30 @@ export default function BakeGuide({
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
+  const [activeBatch, setActiveBatch] = useState(0);
+  const batch = recipe ? mixingBatchPlan(recipe, mixerType, mixingBatches, activeBatch) : null;
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const t = useTranslations('bakeGuide');
   const _fmtLocale = useLocale();
   const _isFr = _fmtLocale === 'fr';
-  // Persist ticked steps so reopening the app mid-bake keeps progress
-  const doneHydrated = useRef(false);
+  // A changed recipe/schedule must never inherit another bake's completion.
+  const progressKey = 'bh_guide_done_v2:' + JSON.stringify({
+    styleKey, mixerType, numItems, prefermentType, oil, hydration, ovenType,
+    schedule, prefStartTime, feedTime, feed2Time, recipe, mixingBatches,
+  });
   useEffect(() => {
+    let completed: number[] = [];
     try {
-      const raw = localStorage.getItem('bh_guide_done_v1');
-      if (raw) {
-        const arr = JSON.parse(raw) as number[];
-        if (arr.length > 0) {
-          setDoneSteps(new Set(arr));
-        // Default view: the first not-yet-done step opens; everything else
-        // stays collapsed so the spine reads as the protocole at a glance.
-        let firstUndone = 1;
-        while (arr.includes(firstUndone)) firstUndone++;
-        setCurrentStep(firstUndone);
-          setCurrentStep(Math.max(...arr) + 1);
-        }
-      }
+      const stored: unknown = JSON.parse(localStorage.getItem(progressKey) ?? '[]');
+      if (Array.isArray(stored)) completed = stored.filter((value): value is number =>
+        typeof value === 'number' && Number.isInteger(value) && value > 0 && value <= 30);
     } catch {}
-    doneHydrated.current = true;
-  }, []);
-  useEffect(() => {
-    if (!doneHydrated.current) return;
-    try { localStorage.setItem('bh_guide_done_v1', JSON.stringify([...doneSteps])); } catch {}
-  }, [doneSteps]);
+    setDoneSteps(new Set(completed));
+    try { setActiveBatch(Math.max(0, Number(localStorage.getItem(progressKey + ':batch')) || 0)); } catch { setActiveBatch(0); }
+    let firstUndone = 1;
+    while (completed.includes(firstUndone)) firstUndone++;
+    setCurrentStep(firstUndone);
+  }, [progressKey]);
 
   useEffect(() => {
     if (currentStep > 0) {
@@ -885,8 +844,8 @@ export default function BakeGuide({
   // subtract so mixing amounts match the Recipe card's tallying totals.
   const bgSdMid  = recipe?.sourdough ? recipe.sourdough.starterGramsMid : 0;
   const bgSdHalf = recipe?.sourdough && !recipe?.preferment ? Math.round(bgSdMid / 2) : 0;
-  const bgMainFlour = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalFlour : recipe.flour) - bgSdHalf : null;
-  const bgMainWater = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalWater : recipe.water) - bgSdHalf : null;
+  const bgMainFlour = batch?.portion.flour ?? null;
+  const bgMainWater = batch?.portion.water ?? null;
   // Feed-step amounts: at ratio 1:R:R, a seed of S grams yields S×(1+2R) of
   // ripe starter. Size the parts so the build covers the recipe's
   // recommended starter (bgSdMid) with ~10g to spare, rounded to 5g.
@@ -898,9 +857,9 @@ export default function BakeGuide({
   const feedTotal = feedSeed + 2 * feedPart;
   const bgWater90   = bgMainWater ? Math.round(bgMainWater * 0.9) : null;
   const bgWater10   = bgMainWater ? bgMainWater - (bgWater90 ?? 0) : null;
-  const bgSaltG     = recipe ? Math.round(recipe.salt) : null;
+  const bgSaltG = batch?.portion.salt ?? null;
   // convertedGrams, NOT grams — grams is the IDY-equivalent (see Timeline)
-  const bgYeastG    = recipe?.yeast?.convertedGrams ? String(parseFloat(recipe.yeast.convertedGrams.toFixed(1))) : null;
+  const bgYeastG = batch?.portion.yeast ? String(batch.portion.yeast) : null;
   // Mix STARTS before bulk fermentation — header and Mix step previously used
   // bulkFermStart, so the Guide disagreed with the Recipe timeline by the
   // mixing duration (16:15 vs 16:00 / 25h45 vs 26h).
@@ -910,9 +869,7 @@ export default function BakeGuide({
     raw.setMinutes(Math.floor(raw.getMinutes() / 15) * 15, 0, 0);
     return raw;
   })();
-  const bgPoolishG  = recipe?.preferment
-    ? Math.round((recipe.preferment.prefFlour ?? 0) + (recipe.preferment.prefWater ?? 0) + (recipe.preferment.prefYeastGrams ?? 0))
-    : null;
+  const bgPoolishG = batch?.portion.preferment || null;
   // Compact recipe facts for Maestro — so it explains the plan's own numbers
   // (e.g. "0.3g IDY is correct for a 31h cold ferment") instead of guessing
   // and contradicting the app. Only real, computed values.
@@ -962,15 +919,11 @@ export default function BakeGuide({
       leaven.push(`${prefermentType}: ${pf}% of the flour (${Math.round(p.prefFlour)}g flour + ${Math.round(p.prefWater)}g water), ${p.prefYeastGrams}g yeast, ferments ${p.fermentHoursMin}-${p.fermentHoursMax}h${p.cold ? ' in the fridge' : ' at room temp'}`);
     }
 
-    // ── The yeast guiding principle (so Maestro can explain, not just assert) ──
-    const principle = `YEAST GUIDING PRINCIPLE (the model behind these numbers): yeast dose is set by fermentation time and temperature, not by habit. Longer time or warmer temperature → LESS yeast; shorter or colder → more. A long cold retard (e.g. 24-48h at ~6°C) deliberately uses a very small dose (often 0.1-0.3% of flour, sometimes well under 0.5g) so the dough matures slowly and develops flavour without over-proofing. In a preferment (poolish/biga) the seed yeast is tiny because it multiplies as the preferment ripens; the grown population then leavens the whole dough, so the total flour — not just the preferment flour — determines the dose. Small numbers here are correct and intentional.`;
-
-    return `This baker's ACTUAL computed recipe and settings — trust every number, they come from a validated fermentation model (Modernist Pizza/Bread); never tell the baker a value is wrong.
+    return `Computed recipe estimates and settings, not measurements or proof of correctness.
 DOUGH: ${dough.join('; ')}.
 SCHEDULE: ${sched.join('; ')}.
 LEAVENING: ${leaven.join('; ')}.
-${principle}
-When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the number and explain WHY it fits THEIR specific time/temperature, then reassure.`;
+Actual dough condition and equipment may differ from these estimates.`;
   })();
 
   const bgFlour90Label = bgMainFlour && bgWater90 ? (l === 'fr' ? `${bgMainFlour}g de farine + ${bgWater90}g d’eau (90%)` : `${bgMainFlour}g flour + ${bgWater90}g water (90%)`) : (l === 'fr' ? 'Farine + 90% de votre eau' : 'Flour + 90% of your water');
@@ -983,25 +936,35 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
   let stepNum = 0;
   let lastStep = 0;
   const n = () => { stepNum++; lastStep = stepNum; return stepNum; };
-  const sc = () => {
+  const sc = (mixing = false) => {
     const s = lastStep;
     return {
+      preview: !canChangeStepCompletion(s, doneSteps),
+      onReturnCurrent: () => setCurrentStep(firstIncompleteStep(doneSteps)),
+      onPrevious: s > 1 ? () => setCurrentStep(s - 1) : undefined,
+      onNext: () => { const next = stepRefs.current.findIndex((el, i) => i > s && el !== null); if (next > s) setCurrentStep(next); },
+      completeLabel: mixing && batch && batch.count > 1 ? (l === 'fr' ? `Terminer la pétrissée ${batch.active + 1} sur ${batch.count}` : `Complete batch ${batch.active + 1} of ${batch.count}`) : undefined,
       open: currentStep === s,
       done: doneSteps.has(s),
       onToggle: () => setCurrentStep(prev => prev === s ? 0 : s),
       onDone: () => {
-        setDoneSteps(prev => {
-          const next = new Set(prev);
-          if (next.has(s)) {
-            // Cascade: untick this step and all later steps
-            for (let i = s; i <= 20; i++) next.delete(i);
-            return next;
-          } else {
-            next.add(s);
-            setCurrentStep(s + 1);
-            return next;
-          }
-        });
+        if (!canChangeStepCompletion(s, doneSteps)) return;
+        if (mixing && batch && !doneSteps.has(s) && batch.active + 1 < batch.count) {
+          setActiveBatch(batch.active + 1);
+          try { localStorage.setItem(progressKey + ':batch', String(batch.active + 1)); } catch {}
+          return;
+        }
+        const next = new Set(doneSteps);
+        if (next.has(s)) {
+          setActiveBatch(0);
+          try { localStorage.setItem(progressKey + ':batch', '0'); } catch {}
+          for (const i of next) if (i >= s) next.delete(i);
+        } else {
+          next.add(s);
+          // Completion records progress; browsing remains a separate action.
+        }
+        setDoneSteps(next);
+        try { localStorage.setItem(progressKey, JSON.stringify([...next])); } catch {}
       },
       divRef: (el: HTMLDivElement | null) => { stepRefs.current[s] = el; },
     };
@@ -1024,8 +987,20 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
         </div>
       </div>
 
-      {/* Executive summary — phase strip from the old protocole */}
-      <PhaseSummary schedule={schedule} />
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button type="button" onClick={() => setCurrentStep(0)} style={{ minHeight: 44, padding: '8px 16px', border: `1px solid ${D.border}`, borderRadius: 10, background: D.warm }}>
+          {_isFr ? 'Toutes les étapes' : 'All steps'}
+        </button>
+        <button type="button" onClick={() => {
+          let next = 1;
+          while (doneSteps.has(next) && stepRefs.current[next + 1]) next++;
+          setCurrentStep(next);
+        }} style={{ minHeight: 44, padding: '8px 16px', border: `1px solid ${D.border}`, borderRadius: 10, background: D.warm }}>
+          {_isFr ? 'Reprendre' : 'Current step'}
+        </button>
+      </div>
+            {/* Executive summary — phase strip from the old protocole */}
+      <PhaseSummary schedule={schedule} numItems={numItems} />
 
       {/* ── STEP: Make Poolish / Biga ───────────────── */}
       {hasPref && prefStartTime && (
@@ -1038,7 +1013,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             const parts = [
               `${Math.round(prefFlour)}g flour`,
               `${Math.round(prefWater)}g water`,
-              prefYeastGrams > 0 ? `${prefYeastGrams.toFixed(1)}g ${prefermentType ?? 'yeast'}` : null,
+              prefYeastGrams > 0 ? `${formatPrefermentDose(prefYeastGrams)} yeast` : null,
             ].filter(Boolean).join(' · ');
             return (
               <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: D.smoke, marginBottom: '8px' }}>
@@ -1261,9 +1236,14 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
       )}
 
       {/* ── STEP: Mix Dough ─────────────────────────── */}
-      <StepCard number={n()} {...sc()} icon={<IconMix />} title={t('stepTitles.mixDough')}
+      <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={t('stepTitles.mixDough')}
         time={bgMixStart} duration={schedule.mixingDurationH} accent={D.ash}>
 
+        {batch && <Section icon="" title={batch.count > 1 ? (l === 'fr' ? `Pétrissée ${batch.active + 1} sur ${batch.count}` : `Batch ${batch.active + 1} of ${batch.count}`) : (l === 'fr' ? 'À mélanger' : 'Use now')}>
+          {Object.entries(batch.portion).filter(([,grams]) => grams > 0).map(([key,grams]) => <div key={key} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{({flour:l==='fr'?'Farine':'Flour',water:l==='fr'?'Eau':'Water',salt:l==='fr'?'Sel':'Salt',oil:l==='fr'?'Huile':'Oil',sugar:l==='fr'?'Sucre':'Sugar',yeast:l==='fr'?'Levure':'Yeast',starter:l==='fr'?'Levain':'Starter',preferment:prefermentType ?? 'Preferment'} as Record<string,string>)[key]}</span><strong>{grams} g</strong></div>)}
+          {batch.overCapacity && <p role="alert">{l === 'fr' ? 'Cette quantité dépasse la capacité indiquée du pétrin. Augmentez le nombre de pétrissées dans les ingrédients.' : 'This batch exceeds the stated mixer capacity. Increase batches in Ingredients.'}</p>}
+          {batch.count > 1 && <p>{l === 'fr' ? 'Préparez le préferment une seule fois. Chaque pétrissée utilise sa part indiquée.' : hasPref ? 'Prepare the preferment once. Add only the portion listed for this batch.' : 'Repeat this mix for each batch.'}</p>}
+        </Section>}
         <Section icon="" title={t('sectionTitles.mixingOrder')}>
           {mixerType === 'hand' && !isSourdough && (
             <Steps items={hydration > 70 ? [
@@ -1308,7 +1288,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               ...(!hasPref ? [{ bold: bgYeastLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min' : 'Speed 1, 2 min') }] : []),
               { bold: bgSaltLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min jusqu’à absorption' : 'Speed 1, 2 min until absorbed') },
               ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'Vitesse 1, mélangez jusqu’à incorporation' : 'Speed 1, mix until incorporated') }] : []),
-              { bold: bgWater10Label, note: 'Speed 1, mix until absorbed — ~1 min' },
+              { bold: bgWater10Label, note: l === 'fr' ? 'Vitesse 1, jusqu’à absorption — environ 1 min' : 'Speed 1, mix until absorbed — about 1 min' },
               { bold: 'Speed 2 — 6–10 min', note: (l === 'fr' ? 'jusqu’à ce que la pâte se décolle du bol — test de la membrane' : 'until dough clears the bowl — windowpane test') },
               ...(oil > 0 ? [{ bold: (l === 'fr' ? 'Ajoutez l’huile en dernier' : 'Add oil last'), note: (l === 'fr' ? 'Vitesse 1, 1 min' : 'Speed 1, 1 min') }] : []),
             ]} />
@@ -1330,15 +1310,15 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 ...(autolyseMinFor(mixerType, styleKey) > 0 ? [{ bold: (l === 'fr' ? `Couvrez et laissez reposer ${AUTOLYSE_MIN} min` : `Cover and rest ${AUTOLYSE_MIN} min`), note: AUTOLYSE_NOTE[l] }] : []),
                 ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'Vitesse 1, mélangez jusqu’à incorporation' : 'Speed 1, mix until incorporated') }] : []),
                 { bold: bgSaltLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min' : 'Speed 1, 2 min') },
-                { bold: bgWater10Label, note: 'Speed 1, mix until absorbed — ~1 min' },
+                { bold: bgWater10Label, note: l === 'fr' ? 'Vitesse 1, jusqu’à absorption — environ 1 min' : 'Speed 1, mix until absorbed — about 1 min' },
                 { bold: (l === 'fr' ? 'Vitesse 2 jusqu’à la forme de citrouille' : 'Speed 2 until pumpkin shape forms'), note: l === 'fr' ? `en général 10–15 min — arrêtez si la FDT dépasse ${tempC(28, u)}` : `typically 10–15 min — stop if FDT exceeds ${tempC(28, u)}` },
                 ...(oil > 0 ? [{ bold: (l === 'fr' ? 'Ajoutez l’huile en dernier' : 'Add oil last'), note: (l === 'fr' ? 'Vitesse 1, 1 min' : 'Speed 1, 1 min') }] : []),
               ]} />
               <div style={{ marginTop: '12px' }}>
                 <img
                   src="/Pumpkin.jpeg"
-                  alt="Pumpkin shape — dough gathered into a smooth ball around the spiral"
-                  style={{ width: '100%', maxWidth: '340px', borderRadius: '16px', display: 'block', marginTop: '8px', border: '1px solid var(--border)' }}
+                  alt={l === 'fr' ? 'Pâte rassemblée autour de la spirale du pétrin' : 'Dough gathered around the mixer spiral'}
+                  style={{ width: '100%', height: '260px', objectFit: 'cover', borderRadius: '16px', display: 'block', marginTop: '8px', border: '1px solid var(--border)' }}
                   onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
               </div>
@@ -1412,10 +1392,9 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
         {!(simpleMode && recipe?.waterTemp == null) && (
         <Section icon="" title={t('sectionTitles.waterTemp')}>
-          <Bullets items={[
-            ...(recipe?.waterTemp != null ? [(l === 'fr' ? `Température de l’eau : ${Math.round(recipe.waterTemp)}°C` : `Water temperature: ${Math.round(recipe.waterTemp)}°C`)] : []),
-            (l === 'fr' ? `Température finale de pâte (FDT) visée : ${isNeapolitan ? tempC(23, u) : tempC(24, u)}` : `Target Final Dough Temperature (FDT): ${isNeapolitan ? tempC(23, u) : tempC(24, u)}`),
-          ]} />
+          {recipe?.waterTemp != null && bgMainWater != null && <WaterPreparation readOnly
+            waterGrams={bgMainWater} targetTemp={recipe.waterTemp} kitchenTemp={kitchenTemp}
+            fridgeTemp={fridgeTemp} locale={l} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={recipe.thermal?.targetDoughTemp} idealWaterTemp={recipe.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && recipe.oil === 0 && recipe.sugar === 0 && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />}
         </Section>
         )}
 
@@ -1717,16 +1696,11 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
-              ...(hasCold ? [
-                t.raw('finalProof.removeFridge') as { bold: string; note: string },
-                { bold: l === 'fr' ? `Repos ${kitchenTemp >= 30 ? '20–30' : kitchenTemp >= 26 ? '30–45' : '45–60'} min à température ambiante` : `Rest ${kitchenTemp >= 30 ? '20–30' : kitchenTemp >= 26 ? '30–45' : '45–60'} min at room temperature`, note: (l === 'fr' ? 'simple remise en température — l’apprêt reprend naturellement quand la pâte se détend' : 'warmup only — proofing begins naturally as dough relaxes') },
-              ] : [
-                ...(!isTwoPhase ? [t.raw('finalProof.shapeBalls') as { bold: string; note: string }] : [
-                  t.raw('finalProof.alreadyShaped') as { bold: string; note: string },
-                ]),
-              ]),
+              ...(isTwoPhase ? [t.raw('finalProof.removeFridge') as { bold: string; note: string }] : []),
+              { bold: l === 'fr' ? 'Laissez les pâtons se détendre, couverts' : 'Let the shaped dough relax, covered',
+                note: l === 'fr' ? 'À température ambiante, jusqu’à ce que la pâte soit souple et aérée.' : 'At room temperature, until relaxed and airy.' },
               t.raw('finalProof.pokeTest') as { bold: string; note: string },
-              { bold: l === 'fr' ? `Lancez le préchauffage du four ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} avant la cuisson` : `Start preheating your oven ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} before bake time`, note: (l === 'fr' ? 'le four chauffe pendant que la pâte finit son apprêt — les deux sont prêts en même temps' : 'oven heats while dough finishes proofing — they finish together') },
+              { bold: l === 'fr' ? `Lancez le préchauffage du four ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} avant la cuisson` : `Start preheating your oven ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} before bake time`, note: (l === 'fr' ? 'préchauffez pendant l’apprêt ; vérifiez que le four et la pâte sont prêts' : 'preheat overlaps proofing; check both are ready') },
             ]} />
           </Section>
 
@@ -1813,7 +1787,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
       </StepCard>
 
       {/* ── STEP: Bake & Eat ─────────────────────────── */}
-      <StepCard number={n()} {...sc()} icon={<IconBake />} title={t('stepTitles.bakeEat')} time={schedule.bakeStart} accent="#5A9A50">
+      <StepCard final number={n()} {...sc()} icon={<IconBake />} title={t('stepTitles.bakeEat')} time={schedule.bakeStart} accent="#5A9A50">
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           {isPan && (

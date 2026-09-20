@@ -265,13 +265,25 @@ export default function ClimatePicker({
     if (e.key === 'Enter') fetchClimate();
   }
 
+  function temperatureEntry(kind: 'kitchen' | 'fridge') {
+    const value=kind==='kitchen'?kitchenTemp:fridgeTemp;
+    const min=kind==='kitchen'?15:1, max=kind==='kitchen'?(mode==='simple'?35:38):15;
+    return <input type="number" aria-label={kind==='kitchen'?(isFr?'Température de la cuisine':'Kitchen temperature'):(isFr?'Température du frigo':'Fridge temperature')} min={cToDisplay(min,u)} max={cToDisplay(max,u)} step={1} value={cToDisplay(value,u)} onChange={e=>{
+      if(e.target.value==='')return;
+      const n=inputTempToC(Number(e.target.value),u);
+      if(!Number.isFinite(n)||n<min||n>max)return;
+      onChange(kind==='kitchen'?n:kitchenTemp,humidity,kind==='fridge'?n:fridgeTemp);
+      setSimpleChosen(true);
+    }} style={{width:72,padding:'6px 8px',border:'1px solid var(--border)',borderRadius:8,font:'inherit',color:'inherit'}} />;
+  }
+
   if (mode === 'simple') {
     // One temperature setting (Flo). Humidity is a hidden sensible default
     // derived from the temperature; Custom mode keeps the full controls.
     return (
       <div>
         <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'var(--font-ui)' }}>
-          {isFr ? 'À quelle température est votre cuisine en ce moment ?' : 'How warm is your kitchen right now?'}
+          {isFr ? 'Températures prévues pendant la fermentation.' : 'Expected temperatures during fermentation.'}
         </p>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
           <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
@@ -281,7 +293,7 @@ export default function ClimatePicker({
             fontFamily: 'var(--font-ui)', fontSize: '20px', fontWeight: 700,
             color: tempColor(kitchenTemp),
           }}>
-            {cToDisplay(kitchenTemp, u)}{tempUnit(u)}
+            {temperatureEntry('kitchen')}{tempUnit(u)}
           </span>
         </div>
         <input
@@ -302,6 +314,14 @@ export default function ClimatePicker({
           <span>{isFr ? 'Fraîche' : 'Cool'}</span>
           <span>{isFr ? 'Tropicale' : 'Tropical'}</span>
         </div>
+        <div style={{marginTop:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <span>{isFr?'Température du frigo':'Fridge temperature'}</span><span>{temperatureEntry('fridge')}{tempUnit(u)}</span>
+          </div>
+          <input type="range" aria-label={isFr?'Régler la température du frigo':'Adjust fridge temperature'} min={cToDisplay(1,u)} max={cToDisplay(15,u)} step={1} value={cToDisplay(fridgeTemp,u)} onChange={e=>onChange(kitchenTemp,humidity,inputTempToC(Number(e.target.value),u))} style={{width:'100%',marginTop:8}} />
+          <p style={{fontSize:12,color:'var(--smoke)',margin:'4px 0'}}>{isFr?'Utilisez la température habituelle de votre frigo.':'Use your fridge’s usual temperature.'}</p>
+          {fridgeTemp>8 && <p style={{fontSize:12,color:'var(--terra)'}}>{isFr?'Frigo chaud : la fermentation reste plus active.':'Warm fridge: fermentation stays more active.'}</p>}
+        </div>
       </div>
     );
   }
@@ -319,7 +339,7 @@ export default function ClimatePicker({
             fontWeight: 700,
             color: tempColor(kitchenTemp),
           }}>
-            {cToDisplay(kitchenTemp, u)}{tempUnit(u)}
+            {temperatureEntry('kitchen')}{tempUnit(u)}
           </span>
         </div>
 
@@ -592,7 +612,7 @@ export default function ClimatePicker({
               fontWeight: 700,
               color: '#6A7FA8',
             }}>
-              {cToDisplay(fridgeTemp, u)}{tempUnit(u)}
+              {temperatureEntry('fridge')}{tempUnit(u)}
             </span>
           </div>
 
