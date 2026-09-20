@@ -838,6 +838,51 @@ export function buildSchedule(
     .filter(b => b.from < bakeTime && b.to > fermStart)
     .sort((a, b) => a.from.getTime() - b.from.getTime());
 
+  // Keep a physically ordered fallback when a short window cannot fit a cold
+  // phase plus the required room-temperature proof. A duration clamp alone
+  // would leave the proof timestamp after bake while reporting zero hours.
+  const pureRoomTemperatureFallback = (note: string): ScheduleResult => {
+    const displayFermStart = fermStart.getTime() > bakeTime.getTime() ? bakeTime : fermStart;
+    const totalH = Math.max(0, (bakeTime.getTime() - displayFermStart.getTime()) / 3600000);
+    const rtFinalMaxH = maxFinalProofHours(kitchenTemp, false);
+    const finalProofH = Math.min(rtFinalMaxH, totalH);
+    const finalProofStart = new Date(Math.min(
+      bakeTime.getTime(),
+      displayFermStart.getTime() + Math.max(0, totalH - finalProofH) * 3600000,
+    ));
+    const divideBallTime = new Date(Math.min(
+      bakeTime.getTime(),
+      pushOutOfBlockers(finalProofStart, relevantBlocks).getTime(),
+    ));
+    return accountScheduleTime({
+      mixingDurationH,
+      bulkFermStart: r15(displayFermStart),
+      bulkFermHours: Math.max(0, (finalProofStart.getTime() - displayFermStart.getTime()) / 3600000),
+      coldRetardStart: null,
+      coldRetardEnd: null,
+      coldRetardHours: 0,
+      finalProofStart: r15(finalProofStart),
+      finalProofHours: finalProofH,
+      restRtHours: 0,
+      preheatStart: r15(bakeTime),
+      bakeStart: r15(eatTime),
+      totalRTHours: totalH,
+      totalColdHours: 0,
+      wasAutoAdjusted: false,
+      kitchenTemp,
+      coldRetard1Start: null,
+      coldRetard1End: null,
+      coldRetard2Start: null,
+      coldRetard2End: null,
+      divideBallTime: r15(divideBallTime),
+      rtWarmupStart: null,
+      rtWarmupEnd: null,
+      bulkConflict: null,
+      coldExitConflict: null,
+      scheduleNote: note,
+    });
+  };
+
   // ── TWO-PHASE: Tropical AND cold retard AND window >= 16h ────
   if (isTwoPhase) {
     const naturalBulkEnd = new Date(fermStart.getTime() + initialBulkH * 3600000);
@@ -897,6 +942,12 @@ export function buildSchedule(
     const rtWarmupStart = coldRetard2End;
     const rtWarmupEnd = new Date(rtWarmupStart.getTime() + rtWarmupH * 3600000);
 
+    if (rtWarmupEnd.getTime() > bakeTime.getTime()) {
+      return pureRoomTemperatureFallback(
+        'Not enough time for the planned cold phases — room-temperature timing shown; bake later for the full plan.',
+      );
+    }
+
     const finalProofStart = rtWarmupEnd;
     const actualFinalProofH = Math.min(
       maxFinalH,
@@ -946,38 +997,7 @@ export function buildSchedule(
 
   // ── PURE RT: no cold retard for this style ───────────────────
   if (!hasColdRetard) {
-    const totalH      = Math.max(0, (bakeTime.getTime() - fermStart.getTime()) / 3600000);
-    const finalProofH = Math.min(maxFinalH, totalH);
-    const bulkFermH   = Math.max(0, totalH - finalProofH);
-    const finalProofStart = new Date(fermStart.getTime() + bulkFermH * 3600000);
-    const divideBallTime  = pushOutOfBlockers(finalProofStart, relevantBlocks);
-    return accountScheduleTime({
-      mixingDurationH,
-      bulkFermStart: r15(fermStart),
-      bulkFermHours: bulkFermH,
-      coldRetardStart: null,
-      coldRetardEnd: null,
-      coldRetardHours: 0,
-      finalProofStart: r15(finalProofStart),
-      finalProofHours: finalProofH,
-      restRtHours: 0,
-      preheatStart: r15(bakeTime),
-      bakeStart: r15(eatTime),
-      totalRTHours: totalH,
-      totalColdHours: 0,
-      wasAutoAdjusted: false,
-      kitchenTemp,
-      coldRetard1Start: null,
-      coldRetard1End: null,
-      coldRetard2Start: null,
-      coldRetard2End: null,
-      divideBallTime: r15(divideBallTime),
-      rtWarmupStart: null,
-      rtWarmupEnd: null,
-      bulkConflict: null,
-      coldExitConflict: null,
-      scheduleNote,
-    });
+    return pureRoomTemperatureFallback(scheduleNote ?? 'Room-temperature fermentation fits this window.');
   }
 
   // ── SINGLE-PHASE COLD RETARD: style-driven coldH ─────────────
@@ -1021,6 +1041,12 @@ export function buildSchedule(
   // Safety: end must not precede start
   if (coldRetardEnd.getTime() < coldRetardStart.getTime()) {
     coldRetardEnd = new Date(coldRetardStart.getTime());
+  }
+
+  if (coldRetardEnd.getTime() + restH * 3600000 > bakeTime.getTime()) {
+    return pureRoomTemperatureFallback(
+      'Not enough time for the planned cold phase — room-temperature timing shown; bake later for the full plan.',
+    );
   }
 
   // Did the clamp leave the exit inside a block anyway? With work until 18:00
@@ -1109,7 +1135,16 @@ export interface RecipeResult {
   oil: number;
   sugar: number;
   waterTemp: number;
-  thermal?: { idealWaterTemp: number; doughTempC: number; freeWaterG: number; targetDoughTemp: number };
+  thermal?: {
+    idealWaterTemp: number;
+    doughTempC: number;
+    freeWaterG: number;
+    targetDoughTemp: number;
+    /** True when the ideal water temperature is outside the practical 2–40 °C range. */
+    waterWasClamped: boolean;
+    /** Signed achieved dough temperature minus the requested target (°C). */
+    doughTempResidualC: number;
+  };
   hydration: number;
   totalDough: number;
   autoPriority: string | null;     // what the engine chose automatically
@@ -1449,7 +1484,14 @@ export function calculateRecipe(
   return {
     flour, water, salt, yeast, sourdough, enrichment,
     oil: oilG, sugar: sugarG,
-    waterTemp, thermal: enrichment ? undefined : { idealWaterTemp: thermal.idealWaterTemp, doughTempC: thermal.doughTempC, freeWaterG: thermal.freeWaterG, targetDoughTemp: targetFDT }, hydration, totalDough,
+    waterTemp, thermal: enrichment ? undefined : {
+      idealWaterTemp: thermal.idealWaterTemp,
+      doughTempC: thermal.doughTempC,
+      freeWaterG: thermal.freeWaterG,
+      targetDoughTemp: targetFDT,
+      waterWasClamped: Math.abs(thermal.idealWaterTemp - thermal.waterTemp) > 0.1,
+      doughTempResidualC: thermal.doughTempC - targetFDT,
+    }, hydration, totalDough,
     autoPriority,
     wastePct: mode === 'custom' && wastePct !== undefined && wastePct > 0 ? wastePct : undefined,
     targetDoughTemp: mode === 'custom' && targetDoughTemp !== undefined ? targetDoughTemp : undefined,

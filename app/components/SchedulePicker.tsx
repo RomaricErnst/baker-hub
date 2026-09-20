@@ -76,6 +76,29 @@ interface SourdoughSolverResult {
   recommendedNextFeedRatio: 1 | 2 | 4 | 5 | 10 | null;
 }
 
+/**
+ * Return a mix time that is strictly in the future and strictly before bake.
+ * A stale saved mix may be before `now`, while a very short or already-past
+ * bake window may have no executable slot at all. Returning null for the
+ * latter lets the caller show a blocker instead of emitting a past schedule.
+ */
+export function futureMixBeforeBake(
+  proposed: Date,
+  bakeTime: Date,
+  now: Date = new Date(),
+): Date | null {
+  const proposedMs = proposed.getTime();
+  const bakeMs = bakeTime.getTime();
+  const nowMs = now.getTime();
+  if (![proposedMs, bakeMs, nowMs].every(Number.isFinite)) return null;
+  if (bakeMs <= nowMs) return null;
+
+  const firstFutureSlotMs = Math.ceil((nowMs + 15 * 60000) / (15 * 60000)) * (15 * 60000);
+  const candidateMs = proposedMs > nowMs ? proposedMs : firstFutureSlotMs;
+  if (candidateMs >= bakeMs) return null;
+  return new Date(candidateMs);
+}
+
 interface DerivedStarterState {
   peakTime: Date | null;
   feedTime: Date | null;
@@ -1702,6 +1725,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [starterHasRye, setStarterHasRye]       = useState(false);
   const [fridgeOutTime, setFridgeOutTime]       = useState<Date | null>(null);
   const [solverResult, setSolverResult]         = useState<SourdoughSolverResult | null>(null);
+  // Set by the sourdough solver when the bake has no executable future slot.
+  // Effects that invoke the solver must not immediately re-open the plan panel
+  // after that explicit blocker has cleared a stale result.
+  const sourdoughPlanBlockedRef = useRef(false);
   const [refeedSuggestion, setRefeedSuggestion] = useState<Date | null>(null);
   const [mixOverride, setMixOverride]           = useState(false);
   const [hasNotFedYet, setHasNotFedYet]         = useState<boolean | null>(hasNotFedYetProp ?? null);
@@ -2265,7 +2292,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     }
     setTimeout(() => {
       computeAndApplyRecommendation(solverBlocksRef.current, pendingEatTime);
-      setStartComputed(true);
+      setStartComputed(!isSourdough || !sourdoughPlanBlockedRef.current);
       onReady?.();
     }, 0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2305,7 +2332,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (isNaN(pendingEatTime.getTime())) return;
     const t = setTimeout(() => {
       computeAndApplyRecommendation(solverBlocksRef.current, pendingEatTime);
-      setStartComputed(true);
+      setStartComputed(!isSourdough || !sourdoughPlanBlockedRef.current);
       onReady?.();
     }, 0);
     return () => clearTimeout(t);
@@ -2362,7 +2389,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // Restore startComputed so the plan panel is visible after session restore
     // or bake-time change — the solver ran, so we have a result to show.
     if (lastFedAge !== null || (planningMode === 'know_peak' && knownPeakTime)) {
-      setStartComputed(true);
+      setStartComputed(!sourdoughPlanBlockedRef.current);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastFedTime, knownPeakTime, starterLocation, planningMode,
@@ -2893,9 +2920,22 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // ── Sourdough: joint mix+starter solver (scoring loop) ──────
   function findOptimalPositionSourdough(et: Date, manualMixOverride?: Date, blocksOverride?: AvailabilityBlock[]) {
     if (resumeFrozenRef.current) return;
+    // A past bake cannot produce a meaningful starter plan. Clear the stale
+    // result and leave an explicit blocker instead of allowing a saved mix
+    // time to be clamped to the bake itself.
+    if (et.getTime() <= Date.now()) {
+      sourdoughPlanBlockedRef.current = true;
+      setWindowTooShort(false);
+      setGuardNote(tRoot('schedulePicker.guardPast'));
+      setStartComputed(false);
+      setRefeedSuggestion(null);
+      setSolverResult(null);
+      return;
+    }
     // Guard: bail early if required inputs aren't ready yet
     if (planningMode === 'last_fed' && (!lastFedTime || lastFedAge === null)) return;
     if (planningMode === 'know_peak' && !knownPeakTime) return;
+    sourdoughPlanBlockedRef.current = false;
 
     // HOISTED — must be initialized before ANY buildAndSetResult() call.
     // inBlocker/inBlockerMs close over this const; the windowTooShort /
@@ -2982,20 +3022,23 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     // Helper: build and commit solverResult atomically at any exit point
     function buildAndSetResult() {
-      // Safety clamp: _newPendingStart defaults to the stale `pendingStart`
-      // state and the windowTooShort early-returns above call buildAndSetResult
-      // WITHOUT recomputing it — a saved session whose old mix is now in the
-      // past then rendered a Start Dough before "now". Never emit a past mix:
-      // clamp to the first future 15-min slot (bounded by bake). This only
-      // moves an already-stale/degenerate value; real solved plans overwrite
-      // _newPendingStart before their own buildAndSetResult call.
-      if (_newPendingStart.getTime() <= Date.now()) {
-        const _clampMs = Math.min(
-          Math.ceil((Date.now() + 15 * 60000) / (15 * 60000)) * (15 * 60000),
-          et.getTime(),
-        );
-        _newPendingStart = new Date(_clampMs);
+      // Safety guard: _newPendingStart defaults to the stale `pendingStart`
+      // state and some early exits do not recompute it. Never emit a past
+      // start, or silently choose the bake time when no future slot remains.
+      const safeStart = futureMixBeforeBake(_newPendingStart, et);
+      if (!safeStart) {
+        sourdoughPlanBlockedRef.current = true;
+        setWindowTooShort(false);
+        setGuardNote(et.getTime() <= Date.now()
+          ? tRoot('schedulePicker.guardPast')
+          : tRoot('schedulePicker.guardNoFutureSlot'));
+        setStartComputed(false);
+        setRefeedSuggestion(null);
+        setSolverResult(null);
+        return;
       }
+      sourdoughPlanBlockedRef.current = false;
+      _newPendingStart = safeStart;
 
       const _starterFeedTime = (() => {
         if (planningMode === 'know_peak') return null;
@@ -5026,9 +5069,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         }
         _feed2Time = buildFeed.getTime() > Date.now() ? buildFeed : null;
         _hasFutureFeedPath = _feed2Time !== null;
-        const mixHBF_fb = (bakeMs - _newPendingStart.getTime()) / 3600000;
-        const inZone = mixHBF_fb >= localSweetTo && mixHBF_fb <= localSweetFrom;
-        _starterPillState = inZone && _feed2Time && !inBlockerMs(_feed2Time.getTime()) ? 'green' : 'yellow';
+        // No scored candidate survived. Even when this build-feed fallback is
+        // executable and lands in the sweet window, keep it yellow: it is a
+        // constrained fallback, not a fully validated green path.
+        _starterPillState = 'yellow';
         // "Bake is far out" is only an honest explanation when the bake IS far
         // out. When this fallback fires for a near bake, keep _farHorizonPlan
         // false so the card falls back to the revival/drift notes and flag the
@@ -5052,7 +5096,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // on an undefined best / Invalid Date downstream.
     if (candidates.length === 0) {
       _windowTooShort = true;
-      _starterPillState = 'green';
+      // An empty candidate set has no validated executable plan. Never mark
+      // this dead-end green, even if a future refactor reaches this guard.
+      _starterPillState = 'yellow';
       setRefeedSuggestion(null);
       _feed2Time = null;
       buildAndSetResult();

@@ -229,6 +229,7 @@ export default function Header({
   sessionDoughSpec,
   onSaveSession,
   onNewSession,
+  onBack,
   onOpenProfile,
   onLoadBakeEvent,
   onResumeBakeEvent,
@@ -249,6 +250,7 @@ export default function Header({
   sessionDoughSpec?: string;
   onSaveSession?: () => void;
   onNewSession?: () => void;
+  onBack?: () => void;
   onOpenProfile?: () => void;
   onLoadBakeEvent?: (event: BakeEvent) => void;
   onResumeBakeEvent?: (event: BakeEvent) => void;
@@ -448,11 +450,19 @@ export default function Header({
       position: 'sticky', top: 0, zIndex: 100,
       
     }}>
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label={locale === 'fr' ? 'Retour' : 'Back'}
+          style={{ border: 'none', background: 'transparent', color: 'var(--char)', width: '44px', minHeight: '44px', padding: 0, fontSize: '24px', lineHeight: 1, cursor: 'pointer', flexShrink: 0 }}
+        >‹</button>
+      )}
       <div ref={menuRef} style={{ minWidth: 0, flex: '1 1 auto' }}>
         <div className="bh-wordmark" style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.025em', whiteSpace: 'nowrap' }}>bakerhub.</div>
       </div>
       <button onClick={() => setMenuOpen(v => !v)} aria-expanded={menuOpen} aria-controls="bakerhub-menu" aria-haspopup="dialog"
-        style={{ order: 2, border: 'none', background: 'transparent', color: 'var(--char)', minHeight: '44px', padding: '8px', fontSize: '13px', cursor: 'pointer' }}>
+        style={{ order: 3, border: 'none', background: 'transparent', color: 'var(--char)', minHeight: '44px', padding: '8px', fontSize: '13px', cursor: 'pointer' }}>
         Menu
       </button>
 
@@ -482,7 +492,7 @@ export default function Header({
       )}
 
       {!backHref && !hideActionBar && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+        <div style={{ order: 2, display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
           {onSaveSession && (onNewSession || recipeGenerated || sessionRestored) && (
             <button onClick={() => { if (!sessionSaved) onSaveSession(); }}
               aria-label={sessionSaved ? (user ? (locale === 'fr' ? 'Enregistré dans votre compte' : 'Saved to your account') : (locale === 'fr' ? 'Enregistré sur cet appareil' : 'Saved on this device')) : (locale === 'fr' ? 'Enregistrer' : 'Save')}
@@ -546,7 +556,7 @@ export default function Header({
               flexShrink: 0,
             }}>
               <div style={{ ...monoLabel, marginBottom: '8px' }}>
-                {locale === 'fr' ? 'Cette fournée' : 'This bake'}
+                {locale === 'fr' ? 'Ce plan' : 'This plan'}
               </div>
 
               {/* Summary card */}

@@ -53,7 +53,10 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
             }}
           >
             <div style={{
-              width: layout === 'photo' ? '100%' : layout === 'lateral' ? 100 : 56, height: layout === 'photo' ? 160 : layout === 'lateral' ? 100 : 56,
+              // The prototype uses a full-width, compact equipment photo.
+              // Keeping it around 110px gives the baker the visual cue
+              // without pushing the second choice below the fold.
+              width: layout === 'photo' ? '100%' : layout === 'lateral' ? 100 : 56, height: layout === 'photo' ? 110 : layout === 'lateral' ? 100 : 56,
               borderRadius: option.thumbnailBg ? '50%' : '8px',
               overflow: 'hidden', flexShrink: 0,
               background: option.thumbnailBg ?? '#2B2420',

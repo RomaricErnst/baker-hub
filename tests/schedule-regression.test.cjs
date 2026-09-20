@@ -31,3 +31,14 @@ test('blockers and rounding do not erase elapsed RT exposure',()=>{
  assert.equal(s.finalProofHours,hours(s.finalProofStart,s.bakeStart));
  assert.ok(Math.abs(s.totalRTHours+s.totalColdHours-hours(s.bulkFermStart,s.bakeStart))<1e-9);
 });
+test('short cold windows never place proof or cold exit after bake',()=>{
+ for(const [style,mixer] of [['pizza_romana','hand'],['baguette','spiral'],['brioche','hand']]){
+  const start=new Date('2026-09-25T08:07:00Z');
+  const horizon=style==='brioche'?1:2;
+  const bake=new Date(+start+horizon*3600000);
+  const s=utils.buildSchedule(start,bake,[],28,style==='brioche'?0:90,mixer,style);
+  assert.ok(s.finalProofStart<=s.bakeStart,`${style}: proof after bake`);
+  assert.ok(!s.coldRetardEnd||s.coldRetardEnd<=s.bakeStart,`${style}: cold exit after bake`);
+  assert.match(s.scheduleNote||'',/Not enough time|Room-temperature/);
+ }
+});

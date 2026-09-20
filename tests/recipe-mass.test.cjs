@@ -57,3 +57,15 @@ test('exact 2% sugar stays below osmotic correction while mass converges', () =>
     }
   }
 });
+
+test('thermal result exposes clipped water and the achieved dough-temperature residual', () => {
+  const start = new Date('2026-09-12T10:00:00Z');
+  const schedule = utils.buildSchedule(start, new Date('2026-09-12T22:00:00Z'), [], 38, 60, 'spiral', 'neapolitan');
+  const r = utils.calculateRecipe('neapolitan', 'home_oven_standard', 1, 250, 38, 'humid', schedule,
+    6, 'instant', 'custom', 'spiral', undefined, undefined, undefined, undefined, undefined,
+    undefined, 20, undefined, 23);
+  assert.ok(r.thermal);
+  assert.equal(r.thermal.waterWasClamped, true);
+  assert.ok(r.thermal.doughTempC > r.thermal.targetDoughTemp);
+  assert.equal(r.thermal.doughTempResidualC, r.thermal.doughTempC - r.thermal.targetDoughTemp);
+});

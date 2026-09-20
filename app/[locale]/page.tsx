@@ -2991,6 +2991,25 @@ export default function Home() {
             ? `${manualHydration}% · ${prefermentType !== 'none' ? prefermentType.charAt(0).toUpperCase() + prefermentType.slice(1) + ' · ' : ''}${locale === 'fr' ? 'Personnalisé' : 'Custom'}`
             : ''}
           onSaveSession={saveCurrentSession}
+          onBack={bakeType ? () => {
+            if (activeTab === 'setup') {
+              if (tab === 'simple' && activeStep > 1) {
+                setActiveStep(p => Math.max(1, p - 1));
+              } else if (tab === 'custom' && advancedStep > 1) {
+                setAdvancedStep(p => Math.max(1, p - 1));
+              } else {
+                setBakeType(null);
+                setModeChosen(false);
+              }
+              scrollToStepTop();
+            } else if (activeTab === 'guide' || activeTab === 'pizzaparty') {
+              setActiveTab('plan');
+            } else {
+              setActiveTab('setup');
+              setReviewMode(true);
+              setSetupOverview(true);
+            }
+          } : undefined}
           // Nothing to start over from on the landing page — the baker is
           // already at the start. It appears the moment they pick a bake type,
           // which is also the moment it becomes useful: it is how they switch
@@ -3776,24 +3795,21 @@ export default function Home() {
             </StepPage>
 
             {/* ─── STEP 4: Equipment (oven + mixing) ── */}
-            <StepPage flow={simpleFlow} id={3} nextOverride={!ovenType || !mixerType ? <button disabled={equipmentPanel==='oven'&&!ovenType || equipmentPanel==='mixer'&&!mixerType} onClick={()=>{setEquipmentPanel(ovenType?'mixer':'oven');scrollToStepTop();}} style={NEXT_CTA}>{locale==='fr'?(ovenType?'Choisir le pétrissage':'Choisir un four'):(ovenType?'Choose mixing method':'Choose an oven')}</button> : undefined}>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:20}}>
-                {(['oven','mixer'] as const).map(panel=><button key={panel} aria-pressed={equipmentPanel===panel} onClick={()=>setEquipmentPanel(panel)} style={{padding:12,minHeight:68,border:`1px solid ${equipmentPanel===panel?'var(--terra)':'var(--border)'}`,borderRadius:12,textAlign:'left',background:equipmentPanel===panel?'#F0E5D3':'var(--warm)',color:'var(--char)'}}>
-                  <strong style={{display:'block',marginBottom:5}}>{panel==='oven'?(locale==='fr'?'Four':'Oven'):(locale==='fr'?'Pétrissage':'Mixing')}{(panel==='oven'?ovenType:mixerType)?' ✓':''}</strong>
-                  <span style={{fontSize:12}}>{panel==='oven'?(ovenType?localName(ovenData):locale==='fr'?'À choisir':'Not selected'):(mixerType?localName(MIXER_TYPES[mixerType]):locale==='fr'?'À choisir':'Not selected')}</span>
-                </button>)}
-              </div>
-              <div hidden={equipmentPanel!=='oven'}>
-              <OvenPicker
+            <StepPage flow={simpleFlow} id={3}>
+              <p style={{margin:'-6px 0 16px',fontSize:13,color:'var(--smoke)'}}>{locale==='fr'?'Choisissez un four et une méthode de pétrissage.':'Choose an oven and a mixing method.'}</p>
+              <details open={!ovenType} style={{marginBottom:12,border:'1px solid var(--border)',borderRadius:14,padding:'0 12px',background:'var(--card)'}}>
+                <summary style={{padding:'14px 0',cursor:'pointer'}}><strong>1 · {locale==='fr'?'Four':'Oven'}</strong> · {ovenType ? localName(ovenData) : (locale==='fr'?'Choisir un four':'Choose an oven')}</summary>
+                <OvenPicker
                 bakeType={bakeType ?? 'pizza'}
                 styleKey={styleKey}
                 selected={ovenType}
                 onSelect={setOvenType}
                 onPreselect={setOvenType}
               />
-              </div>
-              <div hidden={equipmentPanel!=='mixer'}>
-              <MixerPicker
+              </details>
+              <details open={!mixerType} style={{marginBottom:12,border:'1px solid var(--border)',borderRadius:14,padding:'0 12px',background:'var(--card)'}}>
+                <summary style={{padding:'14px 0',cursor:'pointer'}}><strong>2 · {locale==='fr'?'Pétrissage':'Mixing method'}</strong> · {mixerType ? localName(MIXER_TYPES[mixerType]) : (locale==='fr'?'Choisir une méthode':'Choose a method')}</summary>
+                <MixerPicker
                 totalDoughG={numItems * itemWeight}
                 locale={locale}
                 selected={mixerType}
@@ -3803,7 +3819,7 @@ export default function Home() {
                 kitchenTemp={kitchenTemp}
               />
               {mixingBatchControl}
-              </div>
+              </details>
             </StepPage>
 
             {/* ─── STEP 5: Climate ─────────────────── */}
@@ -3994,7 +4010,7 @@ export default function Home() {
               {/* How did it go? card */}
               {eatTime && new Date() > eatTime && (
                 <div style={{ border: '1.5px solid var(--border)', borderRadius: '16px', background: 'var(--warm)', padding: '16px 16px', marginTop: '16px', marginBottom: '4px' }}>
-                  <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 600, color: 'var(--char)' }}>How did it go?</p>
+                  <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 600, color: 'var(--char)' }}>{locale === 'fr' ? 'Comment s’est passée la fournée ?' : 'How did it go?'}</p>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     <label htmlFor="bake-photo-input" style={{ width: '56px', height: '56px', borderRadius: '16px', border: '1.5px dashed var(--border)', background: bakePhotoUrl ? 'none' : 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }}>
                       {bakePhotoUrl
@@ -4046,10 +4062,10 @@ export default function Home() {
                         }}
                         style={{ flex: 1, background: 'var(--sage)', border: 'none', color: '#fff', borderRadius: '12px', padding: '12px 0', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
                       >
-                        ✓ Mark as baked
+                        ✓ {locale === 'fr' ? 'Marquer comme cuite' : 'Mark as baked'}
                       </button>
                     ) : (
-                      <p style={{ flex: 1, fontSize: '13px', color: 'var(--sage)', fontWeight: 600, margin: 0 }}>✓ Baked!</p>
+                      <p style={{ flex: 1, fontSize: '13px', color: 'var(--sage)', fontWeight: 600, margin: 0 }}>✓ {locale === 'fr' ? 'Cuisson terminée !' : 'Baked!'}</p>
                     )}
                   </div>
                 </div>
@@ -4415,24 +4431,21 @@ export default function Home() {
             </StepPage>
 
             {/* ─── ADV STEP 4: Equipment (oven + mixing) ── */}
-            <StepPage flow={customFlow} id={3} nextOverride={!ovenType || !mixerType ? <button disabled={equipmentPanel==='oven'&&!ovenType || equipmentPanel==='mixer'&&!mixerType} onClick={()=>{setEquipmentPanel(ovenType?'mixer':'oven');scrollToStepTop();}} style={NEXT_CTA}>{locale==='fr'?(ovenType?'Choisir le pétrissage':'Choisir un four'):(ovenType?'Choose mixing method':'Choose an oven')}</button> : undefined}>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:20}}>
-                {(['oven','mixer'] as const).map(panel=><button key={panel} aria-pressed={equipmentPanel===panel} onClick={()=>setEquipmentPanel(panel)} style={{padding:12,minHeight:68,border:`1px solid ${equipmentPanel===panel?'var(--terra)':'var(--border)'}`,borderRadius:12,textAlign:'left',background:equipmentPanel===panel?'#F0E5D3':'var(--warm)',color:'var(--char)'}}>
-                  <strong style={{display:'block',marginBottom:5}}>{panel==='oven'?(locale==='fr'?'Four':'Oven'):(locale==='fr'?'Pétrissage':'Mixing')}{(panel==='oven'?ovenType:mixerType)?' ✓':''}</strong>
-                  <span style={{fontSize:12}}>{panel==='oven'?(ovenType?localName(ovenData):locale==='fr'?'À choisir':'Not selected'):(mixerType?localName(MIXER_TYPES[mixerType]):locale==='fr'?'À choisir':'Not selected')}</span>
-                </button>)}
-              </div>
-              <div hidden={equipmentPanel!=='oven'}>
-              <OvenPicker
+            <StepPage flow={customFlow} id={3}>
+              <p style={{margin:'-6px 0 16px',fontSize:13,color:'var(--smoke)'}}>{locale==='fr'?'Choisissez un four et une méthode de pétrissage.':'Choose an oven and a mixing method.'}</p>
+              <details open={!ovenType} style={{marginBottom:12,border:'1px solid var(--border)',borderRadius:14,padding:'0 12px',background:'var(--card)'}}>
+                <summary style={{padding:'14px 0',cursor:'pointer'}}><strong>1 · {locale==='fr'?'Four':'Oven'}</strong> · {ovenType ? localName(ovenData) : (locale==='fr'?'Choisir un four':'Choose an oven')}</summary>
+                <OvenPicker
                 bakeType={bakeType ?? 'pizza'}
                 styleKey={styleKey}
                 selected={ovenType}
                 onSelect={setOvenType}
                 onPreselect={setOvenType}
               />
-              </div>
-              <div hidden={equipmentPanel!=='mixer'}>
-              <MixerPicker
+              </details>
+              <details open={!mixerType} style={{marginBottom:12,border:'1px solid var(--border)',borderRadius:14,padding:'0 12px',background:'var(--card)'}}>
+                <summary style={{padding:'14px 0',cursor:'pointer'}}><strong>2 · {locale==='fr'?'Pétrissage':'Mixing method'}</strong> · {mixerType ? localName(MIXER_TYPES[mixerType]) : (locale==='fr'?'Choisir une méthode':'Choose a method')}</summary>
+                <MixerPicker
                 totalDoughG={numItems * itemWeight}
                 locale={locale}
                 selected={mixerType}
@@ -4442,7 +4455,7 @@ export default function Home() {
                 kitchenTemp={kitchenTemp}
               />
               {mixingBatchControl}
-              </div>
+              </details>
             </StepPage>
 
             {/* ─── ADV STEP 5: Climate ─────────────── */}
@@ -4965,7 +4978,7 @@ export default function Home() {
               {/* How did it go? card */}
               {eatTime && new Date() > eatTime && (
                 <div style={{ border: '1.5px solid var(--border)', borderRadius: '16px', background: 'var(--warm)', padding: '16px 16px', marginTop: '16px', marginBottom: '4px' }}>
-                  <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 600, color: 'var(--char)' }}>How did it go?</p>
+                  <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 600, color: 'var(--char)' }}>{locale === 'fr' ? 'Comment s’est passée la fournée ?' : 'How did it go?'}</p>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     <label htmlFor="bake-photo-input" style={{ width: '56px', height: '56px', borderRadius: '16px', border: '1.5px dashed var(--border)', background: bakePhotoUrl ? 'none' : 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }}>
                       {bakePhotoUrl
@@ -5017,10 +5030,10 @@ export default function Home() {
                         }}
                         style={{ flex: 1, background: 'var(--sage)', border: 'none', color: '#fff', borderRadius: '12px', padding: '12px 0', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
                       >
-                        ✓ Mark as baked
+                        ✓ {locale === 'fr' ? 'Marquer comme cuite' : 'Mark as baked'}
                       </button>
                     ) : (
-                      <p style={{ flex: 1, fontSize: '13px', color: 'var(--sage)', fontWeight: 600, margin: 0 }}>✓ Baked!</p>
+                      <p style={{ flex: 1, fontSize: '13px', color: 'var(--sage)', fontWeight: 600, margin: 0 }}>✓ {locale === 'fr' ? 'Cuisson terminée !' : 'Baked!'}</p>
                     )}
                   </div>
                 </div>

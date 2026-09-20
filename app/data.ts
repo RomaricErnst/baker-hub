@@ -22,7 +22,10 @@ export const PIZZA_STYLES = {
     name: 'New York Style',
     nameFr: 'New York Style',
     emoji: '🗽',
-    image: '/images/approved/pizza-style/new-york-pepperoni.webp',
+    // The journey prototype uses the foldable slice to communicate the
+    // defining New York cue. Keep the same asset in the migrated app rather
+    // than the generic round pepperoni image.
+    image: '/pizzas/ny_pepperoni_slice.webp',
     desc: 'Foldable, crispy-edged big slices.',
     descFr: 'Grandes parts pliables, bords croustillants.',
     hydration: 62, salt: 2.5, yeast: 0.3,
