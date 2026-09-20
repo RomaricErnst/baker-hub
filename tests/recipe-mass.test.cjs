@@ -69,3 +69,15 @@ test('thermal result exposes clipped water and the achieved dough-temperature re
   assert.ok(r.thermal.doughTempC > r.thermal.targetDoughTemp);
   assert.equal(r.thermal.doughTempResidualC, r.thermal.doughTempC - r.thermal.targetDoughTemp);
 });
+
+
+test('refrigerated flour affects the thermal solve in both planning modes', () => {
+  const schedule = utils.buildSchedule(new Date('2026-09-21T08:00Z'), new Date('2026-09-22T18:00Z'), [], 24, 60, 'hand', 'neapolitan');
+  for (const mode of ['simple', 'custom']) {
+    const make = cold => utils.calculateRecipe('neapolitan', 'home_oven_standard', 4, 250, 24, 'normal', schedule, 4, 'instant', mode, 'hand', undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, cold);
+    const ambient = make(false), chilled = make(true);
+    assert.ok(chilled.thermal.idealWaterTemp > ambient.thermal.idealWaterTemp, mode);
+    assert.equal(chilled.flour, ambient.flour);
+    assert.equal(chilled.water, ambient.water);
+  }
+});

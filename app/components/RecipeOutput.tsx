@@ -72,8 +72,8 @@ function wStr(n: number): string {
 // ── Theme tokens for dark card ────────────────
 const D = {
   line:   'rgba(156, 130, 72,0.16)',   // gold-tinted dividers — warm, not cold
-  muted:  'rgba(240, 235, 224,0.60)',  // readable ingredient labels
-  sub:    'rgba(240, 235, 224,0.38)',  // secondary / column headers
+  muted:  'var(--char)',  // readable ingredient labels
+  sub:    'var(--char)',  // secondary / column headers
 };
 
 // The yeast and flour info dots lived here. Flour's guidance is actionable
@@ -108,7 +108,7 @@ function IngRow({
         <div style={{
           fontSize: '13px',
           fontWeight: highlight ? 600 : 400,
-          color: highlight ? 'var(--cream)' : D.muted,
+          color: highlight ? 'var(--char)' : D.muted,
           letterSpacing: '.02em',
         }}>
           {label}
@@ -116,7 +116,7 @@ function IngRow({
         {sub && (
           <div style={{
             fontSize: '12px',
-            color: 'rgba(255,255,255,.7)',
+            color: 'var(--smoke)',
             fontFamily: 'var(--font-ui)',
             marginTop: '.1rem',
             lineHeight: 1.5,
@@ -130,7 +130,7 @@ function IngRow({
         fontFamily: 'var(--font-ui)',
         fontSize: range ? '.82rem' : '1rem',
         fontWeight: 700,
-        color: highlight ? 'var(--cream)' : 'rgba(240, 235, 224,0.88)',
+        color: highlight ? 'var(--char)' : 'var(--char)',
         textAlign: 'right',
         whiteSpace: 'nowrap',
       }}>
@@ -371,7 +371,7 @@ export default function RecipeOutput({
   const u = units ?? 'metric';
   const wStr = (g: number) => displayWeight(g, u);
   const [showPriorityOverride, setShowPriorityOverride] = useState(false);
-  const [showTotals, setShowTotals] = useState(false);
+
   const [showDilution, setShowDilution] = useState(false);
 
   // Batch splitting — auto-triggered when total dough exceeds mixer default capacity
@@ -498,10 +498,10 @@ export default function RecipeOutput({
       }}>
         <div>
           <div style={{
-            fontFamily: 'var(--font-ui)', fontSize: '20px',
+            fontFamily: 'Georgia, serif', fontSize: '30px',
             fontWeight: 700, color: 'var(--char)', marginBottom: '.2rem',
           }}>
-            {t('recipeOutput.recipeReady')}
+            {locale === 'fr' ? 'Ingrédients de la pâte' : 'Dough ingredients'}
           </div>
           <div style={{
             fontSize: '12px', color: 'var(--smoke)',
@@ -523,80 +523,16 @@ export default function RecipeOutput({
             </div>
           )}
         </div>
-        {onSave && (
-          <button
-            onClick={onSave}
-            disabled={saveStatus === 'saving' || saveStatus === 'saved'}
-            style={{
-              padding: '8px 16px', minHeight: '44px', borderRadius: '12px', flexShrink: 0, marginLeft: '1rem',
-              border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--border)'}`,
-              background: 'transparent',
-              color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--smoke)',
-              fontSize: '12px', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
-              fontFamily: 'var(--font-ui)',
-            }}
-          >
-            {saveStatus === 'saving' ? t('recipeOutput.savingRecipe') : saveStatus === 'saved' ? t('recipeOutput.savedRecipe') : saveStatus === 'error' ? t('recipeOutput.saveError') : t('recipeOutput.saveRecipe')}
-          </button>
-        )}
-        {/* Total ingredients accordion now lives in the Final Dough card */}
-        {false && (
-          <div>
-            <button
-              onClick={() => setShowTotals(v => !v)}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                display: 'flex', alignItems: 'center', gap: '8px',
-                fontSize: '12px', color: 'rgba(156, 130, 72,0.7)',
-                fontFamily: 'var(--font-ui)',
-              }}
-            >
-              <span>{t('recipeOutput.totalIngredients')}</span>
-              <span style={{ fontSize: '11px', transition: 'transform .2s', transform: showTotals ? 'rotate(180deg)' : 'none' }}>▾</span>
-            </button>
-            {showTotals && (() => {
-              const pf = result.preferment!;
-              const totalFlour = flour;
-              const totalWater = water;
-              const totalSalt  = salt;
-              const totalYeast = pf.prefYeastGrams;
-              const yeastLabel = pf.prefYeastType
-                ? `Yeast (${(YEAST_TYPES as Record<string,{shortName:string}>)[pf.prefYeastType]?.shortName ?? 'IDY'})`
-                : 'Yeast (IDY)';
-              return (
-                <div style={{ marginTop: '8px' }}>
-                  {[
-                    { label: 'Flour', pct: '100%', value: u === 'imperial' ? wStr(totalFlour) : `${Math.round(totalFlour).toLocaleString()}g` },
-                    // The hydration the baker set, not a ratio recomputed from
-                    // grams that have already been rounded for weighing. 60% of
-                    // 639 g is 383.4 g, shown as 383 g to weigh, and 383/639
-                    // reads back as 59.9% — arithmetically honest and wrong to
-                    // print, because the baker chose 60 and the engine used 60.
-                    { label: 'Water', pct: `${hydration}%`, value: u === 'imperial' ? wStr(totalWater) : `${Math.round(totalWater).toLocaleString()}g` },
-                    { label: 'Salt',  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: u === 'imperial' ? wStr(totalSalt) : `${Math.round(totalSalt).toLocaleString()}g` },
-                    ...(totalYeast > 0 ? [{ label: yeastLabel, pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: formatPrefermentDose(totalYeast) }] : []),
-                  ].map((row, i) => (
-                    <div key={i} style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr auto auto',
-                      gap: '0 24px',
-                      alignItems: 'center',
-                      padding: '8px .1rem',
-                      borderBottom: `1px solid ${D.line}`,
-                      fontSize: '12px', fontFamily: 'var(--font-ui)',
-                    }}>
-                      <span style={{ color: D.muted }}>{row.label}</span>
-                      <span style={{ color: 'rgba(240, 235, 224,0.9)', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap' }}>{row.value}</span>
-                      <span style={{ color: 'var(--gold)', fontSize: '12px', textAlign: 'right', minWidth: '4rem', whiteSpace: 'nowrap' }}>{row.pct}</span>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
-          </div>
-        )}
       </div>
 
+      {hasPref && <section aria-label={locale === 'fr' ? 'Quantités totales' : 'Total ingredients'}>
+        <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} noPct />
+        <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} noPct />
+        <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} noPct />
+        {pf && pf.prefYeastGrams > 0 && <IngRow label={t(`recipe.yeastNames.${pf.prefYeastType ?? 'idy'}`)} grams={formatPrefermentDose(pf.prefYeastGrams)} noPct />}
+        {oil > 0 && <IngRow label={t('recipeOutput.ingredientOil')} grams={wStr(oil)} noPct />}
+        {sugar > 0 && <IngRow label={t('recipeOutput.ingredientSugar')} grams={wStr(sugar)} noPct />}
+      </section>}
       {/* ── Ingredients / Preferment cards ──────── */}
       {result.preferment && prefermentType && prefermentType !== 'none' ? (() => {
         const pf = result.preferment!;
@@ -604,10 +540,11 @@ export default function RecipeOutput({
         const prefTotal = Math.round(pf.prefFlour + pf.prefWater + pf.prefYeastGrams);
 
         return (
-          <>
+          <details>
+            <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Ingrédients par étape' : 'Ingredients by stage'}</summary>
             {/* CARD 1: Make your preferment */}
-            <div style={{ background: 'var(--char)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
-              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)', marginBottom: '16px' }}>
+            <div style={{ background: 'var(--warm)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: 'none' }}>
+              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)', marginBottom: '16px' }}>
                 {t('recipeOutput.makeYourPref', { name: pd.name })}
               </div>
               <IngRow
@@ -623,9 +560,9 @@ export default function RecipeOutput({
                   const f1 = FLOUR_DATA[flourBlend.flour1];
                   const f1DisplayName = flourBlend.brandProduct ?? f1.name;
                   if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
-                    return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>{f1DisplayName}</span>;
+                    return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>{f1DisplayName}</span>;
                   }
-                  return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Use your primary flour ({f1DisplayName})</span>;
+                  return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>{locale === 'fr' ? `Utilisez votre farine principale (${f1DisplayName})` : `Use your primary flour (${f1DisplayName})`}</span>;
                 })() : undefined}
               />
               <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(pf.prefWater)} noPct
@@ -651,8 +588,8 @@ export default function RecipeOutput({
             </div>
 
             {/* CARD 2: Final dough */}
-            <div style={{ background: 'var(--char)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
-              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)', marginBottom: '4px' }}>
+            <div style={{ background: 'var(--warm)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: 'none' }}>
+              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)', marginBottom: '4px' }}>
                 {t('recipeOutput.finalDoughTitle')}
               </div>
               <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: D.muted, marginBottom: '16px' }}>
@@ -711,64 +648,15 @@ export default function RecipeOutput({
                 </div>
                 <div style={{ minWidth: '4rem' }} />
               </div>
-              {/* Total ingredients accordion — preferment mode */}
-              <div style={{ marginTop: '16px', borderTop: `1px solid ${D.line}`, paddingTop: '12px' }}>
-                <button
-                  onClick={() => setShowTotals(v => !v)}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    fontSize: '12px', color: 'rgba(156, 130, 72,0.7)',
-                    fontFamily: 'var(--font-ui)',
-                  }}
-                >
-                  <span>{t('recipeOutput.totalIngredients')}</span>
-                  <span style={{ fontSize: '11px', transition: 'transform .2s', transform: showTotals ? 'rotate(180deg)' : 'none' }}>▾</span>
-                </button>
-                {showTotals && (() => {
-                  const pf = result.preferment!;
-                  const totalFlour = flour;
-                  const totalWater = water;
-                  const totalSalt  = salt;
-                  const totalYeast = pf.prefYeastGrams;
-                  const yeastLabel = pf.prefYeastType
-                    ? `Yeast (${(YEAST_TYPES as Record<string,{shortName:string}>)[pf.prefYeastType]?.shortName ?? 'IDY'})`
-                    : t('recipeOutput.yeastIDY');
-                  return (
-                    <div style={{ marginTop: '8px' }}>
-                      {[
-                        { label: t('recipe.flour'), pct: '100%', value: u === 'imperial' ? wStr(totalFlour) : `${Math.round(totalFlour).toLocaleString()}g` },
-                        { label: t('recipe.water'), pct: `${hydration}%`, value: u === 'imperial' ? wStr(totalWater) : `${Math.round(totalWater).toLocaleString()}g` },
-                        { label: t('recipe.salt'),  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: u === 'imperial' ? wStr(totalSalt) : `${Math.round(totalSalt).toLocaleString()}g` },
-                        ...(totalYeast > 0 ? [{ label: yeastLabel, pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: formatPrefermentDose(totalYeast) }] : []),
-                      ].map((row, i) => (
-                        <div key={i} style={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr auto auto',
-                          gap: '0 24px',
-                          alignItems: 'center',
-                          padding: '8px .1rem',
-                          borderBottom: `1px solid ${D.line}`,
-                          fontSize: '12px', fontFamily: 'var(--font-ui)',
-                        }}>
-                          <span style={{ color: D.muted }}>{row.label}</span>
-                          <span style={{ color: 'rgba(240, 235, 224,0.9)', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap' }}>{row.value}</span>
-                          <span style={{ color: 'var(--gold)', fontSize: '12px', textAlign: 'right', minWidth: '4rem', whiteSpace: 'nowrap' }}>{row.pct}</span>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
             </div>
-          </>
+          </details>
         );
       })() : (
         /* SCENARIO A: Single ingredients card */
-        <div style={{ background: 'var(--char)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
+        <div style={{ background: 'var(--warm)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: 'none' }}>
           {/* Card header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '16px' }}>
-            <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)' }}>
+            <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)' }}>
               {t('recipe.ingredients')}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 24px', width: '100%', maxWidth: '75%' }}>
@@ -789,7 +677,7 @@ export default function RecipeOutput({
               const f1DisplayName = flourBlend.brandProduct ?? f1.name;
               const f1Weight = Math.round(flour * flourBlend.ratio1 / 100);
               if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
-                return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>{f1DisplayName}</span>;
+                return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>{f1DisplayName}</span>;
               }
               const f2 = FLOUR_DATA[flourBlend.flour2];
               const hasF3 = !!flourBlend.flour3 && flourBlend.ratio2 !== undefined && (100 - flourBlend.ratio1 - flourBlend.ratio2) > 0;
@@ -799,7 +687,7 @@ export default function RecipeOutput({
               const f3Weight = hasF3 ? flour - f1Weight - f2Weight : 0;
               const f3 = hasF3 ? FLOUR_DATA[flourBlend.flour3!] : null;
               return (
-                <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+                <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
                   {flourBlend.ratio1}% {f1DisplayName} ({f1Weight.toLocaleString('en')}g)
                   {' · '}
                   {p2}% {flourBlend.customFlour2Name ?? f2.name} ({f2Weight.toLocaleString('en')}g)
@@ -807,7 +695,7 @@ export default function RecipeOutput({
                 </span>
               );
             })() : sdActive ? (
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
                 {locale === 'fr' ? `+ ${sdHalf}g via le levain = ${flour}g au total` : `+ ${sdHalf}g via the starter = ${flour}g total`}
               </span>
             ) : undefined}
@@ -852,7 +740,7 @@ export default function RecipeOutput({
                       onClick={() => setShowPriorityOverride(v => !v)}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
-                        color: 'rgba(240, 235, 224,0.45)', fontSize: '11px',
+                        color: 'var(--char)', fontSize: '11px',
                         fontFamily: 'var(--font-ui)', textDecoration: 'underline',
                         textUnderlineOffset: '2px', padding: 0,
                       }}
@@ -878,7 +766,7 @@ export default function RecipeOutput({
                             padding: '4px 12px', borderRadius: '20px', cursor: 'pointer',
                             border: `1.5px solid ${isActive ? 'var(--gold)' : 'rgba(156, 130, 72,0.2)'}`,
                             background: isActive ? 'rgba(156, 130, 72,0.15)' : 'transparent',
-                            color: isActive ? 'var(--gold)' : 'rgba(240, 235, 224,0.5)',
+                            color: isActive ? 'var(--gold)' : 'var(--char)',
                             fontSize: '11px', fontFamily: 'var(--font-ui)',
                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '.1rem',
                           }}
@@ -901,7 +789,7 @@ export default function RecipeOutput({
                 onClick={() => setShowDilution(v => !v)}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                  fontSize: '12px', color: 'rgba(240, 235, 224,0.40)',
+                  fontSize: '12px', color: 'var(--char)',
                   fontFamily: 'var(--font-ui)', textDecoration: 'underline',
                   textUnderlineOffset: '2px',
                 }}
@@ -909,7 +797,7 @@ export default function RecipeOutput({
                 {showDilution ? t('recipeOutput.dilutionHide') : t('recipeOutput.dilutionShow')}
               </button>
               {showDilution && (
-                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'rgba(240, 235, 224,0.50)', marginTop: '4px', lineHeight: 1.55 }}>
+                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--char)', marginTop: '4px', lineHeight: 1.55 }}>
                   {sachetDilutionNote}
                 </div>
               )}
@@ -1138,7 +1026,7 @@ export default function RecipeOutput({
 
           {/* Starter range */}
           <div style={{
-            background: 'var(--char)',
+            background: 'var(--warm)',
             borderRadius: '16px',
             padding: '20px 24px',
             border: '1px solid rgba(156, 130, 72,0.12)',
@@ -1151,7 +1039,7 @@ export default function RecipeOutput({
                 {sourdough.starterGramsMin}–{sourdough.starterGramsMax} g
               </span>
               <span style={{ fontSize: '13px', color: D.muted, fontFamily: 'var(--font-ui)' }}>
-                ({sourdough.starterPctMin}–{sourdough.starterPctMax}% of flour)
+                ({sourdough.starterPctMin}–{sourdough.starterPctMax}% {locale === 'fr' ? 'de la farine' : 'of flour'})
               </span>
             </div>
             <div style={{ fontSize: '12px', color: D.sub, marginTop: '8px', lineHeight: 1.5 }}>

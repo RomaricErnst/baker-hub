@@ -12,6 +12,7 @@ import { pushProfile, pullAndMergeProfile } from '../lib/supabase/profileSync';
 import StylePicker from '../components/StylePicker';
 import { NEXT_CTA, BACK_CTA } from '../lib/navButtons';
 import OvenPicker from '../components/OvenPicker';
+import PrototypeQuantityPicker from '../components/PrototypeQuantityPicker';
 import MixerPicker from '../components/MixerPicker';
 const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { ssr: false });
 import ClimatePicker from '../components/ClimatePicker';
@@ -30,7 +31,7 @@ import { clearSession, loadSession, saveSession, normalizeMixingBatches, stashAu
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
 import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
-import { type UnitSystem } from '../utils/units';
+import { type UnitSystem, cToDisplay, inputTempToC, tempUnit } from '../utils/units';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
   PIZZA_STYLES, BREAD_STYLES,
@@ -954,6 +955,7 @@ export default function Home() {
 
   // Step 3 — oven
   const [ovenType, setOvenType] = useState<AnyOvenType | null>(null);
+  const [ovenConstruction, setOvenConstruction] = useState<'tabletop'|'masonry'|'home'|'micro'>('tabletop');
 
   // Step 4 — mixer
   const [mixerType, setMixerType] = useState<MixerType | null>(null);
@@ -1400,6 +1402,7 @@ export default function Home() {
     setItemWeight(Math.max(wb.min, Math.min(wb.max, session.itemWeight)));
     setPizzaDiameter(session.pizzaDiameter);
     setOvenType(session.ovenType as AnyOvenType | null);
+    setOvenConstruction(session.ovenConstruction ?? 'tabletop');
     setMixerType(session.mixerType as MixerType | null);
     setYeastType(session.yeastType as YeastType | null);
     setKitchenTemp(session.kitchenTemp);
@@ -1765,13 +1768,13 @@ export default function Home() {
         kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'simple',
         mixerType as MixerType,
         undefined, undefined, undefined, undefined, undefined, undefined, undefined,
-        undefined, undefined, undefined, undefined, undefined,
+        undefined, undefined, flourInFridge, undefined, undefined,
         feedToMixH,
       );
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity, schedule, fridgeTemp, yeastType, feedToMixH]);
+  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity, schedule, fridgeTemp, yeastType, mixerType, flourInFridge, feedToMixH]);
 
   // Recipe with yeast adjusted by appliedMultiplier (large-batch tuning)
   const displayRecipe = recipe;
@@ -1904,7 +1907,7 @@ export default function Home() {
   function buildSessionPayload(overrides?: Partial<Omit<SessionData, 'version' | 'savedAt'>>): Omit<SessionData, 'version' | 'savedAt'> {
     return {
       tab, bakeType, styleKey, numItems, itemWeight, pizzaDiameter,
-      ovenType, mixerType, yeastType,
+      ovenType, ovenConstruction, mixerType, yeastType,
       kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
       qtyChosen, flourChosen, prefermentChosen,
@@ -1979,7 +1982,7 @@ export default function Home() {
     }
     setBakeType(bt);
     setStyleKey(null);
-    setOvenType(null);
+    setOvenType(null); setOvenConstruction('tabletop');
     setActiveStep(1);
     setHighestStep(1);
     // Custom flow counters must reset too — otherwise a stale high step
@@ -2122,7 +2125,7 @@ export default function Home() {
       const { saveNamedSession } = await import('../lib/supabase/saveBakeEvent');
       id = await saveNamedSession({
         tab, bakeType: bakeType ?? '', styleKey, numItems, itemWeight,
-        pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
+        pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
         fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
         manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
         flourInFridge, wastePct, addSeeds, priorityOverride,
@@ -2379,7 +2382,7 @@ export default function Home() {
     setEquipmentPanel('oven'); setMixingBatches(undefined);
     setBakeType(null); setStyleKey(null); setProfileFields(new Set());
     setNumItems(2); setItemWeight(270);
-    setOvenType(null); setMixerType(null);
+    setOvenType(null); setOvenConstruction('tabletop'); setMixerType(null);
     const now = new Date(); now.setMinutes(0, 0, 0);
     setStartTime(now);
     setEatTime(null);
@@ -2569,6 +2572,7 @@ export default function Home() {
     setItemWeight(snap.itemWeight);
     setPizzaDiameter(snap.pizzaDiameter);
     setOvenType(snap.ovenType as AnyOvenType | null);
+    setOvenConstruction(snap.ovenConstruction ?? 'tabletop');
     setMixerType(snap.mixerType as MixerType | null);
     setYeastType(snap.yeastType as YeastType | null);
     setKitchenTemp(snap.kitchenTemp);
@@ -2731,18 +2735,18 @@ export default function Home() {
   };
   const fr = locale === 'fr';
   const SIMPLE_STEPS: StepDef[] = [
-    { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: t('steps.2.title'),
+    { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: fr ? 'Choisissez votre pâte' : 'Choose your dough',
       value: styleKey ? styleDisplayName(styleKey) : null,
       // "Classic Neapolitan" and "New York Style" carry a qualifier the baker
       // does not need re-read on a summary line.
       short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
-    { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: t('steps.3.title'),
+    { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: fr ? 'Quelle quantité de pâte ?' : 'How much dough?',
       value: qtyChosen ? `${numItems} × ${itemWeight} g` : null, prefilled: false,
       gap: fr ? 'La quantité n\u2019est pas confirmée' : 'Quantity not confirmed' },
     // Oven and mixing are one page: same nature (your kitchen, not your
     // dough), both single-choice, both remembered by the profile.
-    { id: 3, group: 'kitchen', chip: fr ? 'Équipement' : 'Equipment', title: fr ? 'Votre matériel' : 'Your equipment',
+    { id: 3, group: 'kitchen', chip: fr ? 'Équipement' : 'Equipment', title: fr ? 'Votre équipement' : 'Your equipment',
       value: (ovenType && mixerType)
         ? `${localName(ovenData)} · ${localName(MIXER_TYPES[mixerType])}`
         : null,
@@ -2750,7 +2754,7 @@ export default function Home() {
       short: (ovenType && mixerType) ? localName(ovenData) : null,
       prefilled: profileFields.has('equip'),
       gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
-    { id: 4, group: 'kitchen', chip: fr ? 'Cuisine' : 'Kitchen', title: fr ? 'Votre cuisine et vos ingrédients' : 'Your kitchen and ingredients',
+    { id: 4, group: 'kitchen', chip: fr ? 'Cuisine' : 'Kitchen', title: fr ? 'Températures de préparation' : 'Preparation temperatures',
       value: `${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`, prefilled: true,
       gap: fr ? 'Le climat n\u2019est pas renseigné' : 'Climate not set' },
     { id: 6, group: 'dough', chip: fr ? 'Levure' : 'Yeast', title: t('steps.7.title'),
@@ -2785,18 +2789,18 @@ export default function Home() {
     return `${flourBlend.ratio1}% ${f1} + ${f2raw.replace(/^\d+%\s*/, '')}`;
   };
   const CUSTOM_STEPS: StepDef[] = ([
-    { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: t('steps.2.title'),
+    { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: fr ? 'Choisissez votre pâte' : 'Choose your dough',
       value: styleKey ? styleDisplayName(styleKey) : null,
       // "Classic Neapolitan" and "New York Style" carry a qualifier the baker
       // does not need re-read on a summary line.
       short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
-    { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: t('steps.3.title'),
+    { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: fr ? 'Quelle quantité de pâte ?' : 'How much dough?',
       value: qtyChosen ? `${numItems} × ${itemWeight} g` : null, prefilled: false,
       gap: fr ? 'La quantité n\u2019est pas confirmée' : 'Quantity not confirmed' },
     // Oven and mixing are one page: same nature (your kitchen, not your
     // dough), both single-choice, both remembered by the profile.
-    { id: 3, group: 'kitchen', chip: fr ? 'Équipement' : 'Equipment', title: fr ? 'Votre matériel' : 'Your equipment',
+    { id: 3, group: 'kitchen', chip: fr ? 'Équipement' : 'Equipment', title: fr ? 'Votre équipement' : 'Your equipment',
       value: (ovenType && mixerType)
         ? `${localName(ovenData)} · ${localName(MIXER_TYPES[mixerType])}`
         : null,
@@ -2804,7 +2808,7 @@ export default function Home() {
       short: (ovenType && mixerType) ? localName(ovenData) : null,
       prefilled: profileFields.has('equip'),
       gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
-    { id: 4, group: 'kitchen', chip: fr ? 'Cuisine' : 'Kitchen', title: fr ? 'Votre cuisine et vos ingrédients' : 'Your kitchen and ingredients',
+    { id: 4, group: 'kitchen', chip: fr ? 'Cuisine' : 'Kitchen', title: fr ? 'Températures de préparation' : 'Preparation temperatures',
       value: `${kitchenTemp}°C · ${HUMIDITY_LABEL[humidity]}`, prefilled: true,
       gap: fr ? 'Le climat n\u2019est pas renseigné' : 'Climate not set' },
     { id: 6, group: 'dough', chip: fr ? 'Farine' : 'Flour', title: t('steps.flour.title'),
@@ -2991,6 +2995,8 @@ export default function Home() {
             ? `${manualHydration}% · ${prefermentType !== 'none' ? prefermentType.charAt(0).toUpperCase() + prefermentType.slice(1) + ' · ' : ''}${locale === 'fr' ? 'Personnalisé' : 'Custom'}`
             : ''}
           onSaveSession={saveCurrentSession}
+          onReviewPlan={bakeType && modeChosen ? () => { setActiveTab('setup'); setReviewMode(true); setSetupOverview(true); scrollToStepTop(); } : undefined}
+          onSharePlan={shareCurrentSession}
           onBack={bakeType ? () => {
             if (activeTab === 'setup') {
               if (tab === 'simple' && activeStep > 1) {
@@ -3267,7 +3273,7 @@ export default function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', margin: '0 0 16px' }}>
             {([
               { type: 'pizza' as BakeType, image: '/pizzas/margherita.webp', label: t('bakeType.pizza.label'), desc: t('bakeType.pizza.desc'), activeBorder: 'var(--terra)', activeBg: '#FFF8F3' },
-              { type: 'bread' as BakeType, image: '/images/approved/bread/campagne.webp', label: t('bakeType.bread.label'), desc: t('bakeType.bread.desc'), activeBorder: 'var(--bread)', activeBg: 'var(--bread-l)' },
+              { type: 'bread' as BakeType, image: '/images/approved/bread/campagne-rustic.webp', label: t('bakeType.bread.label'), desc: t('bakeType.bread.desc'), activeBorder: 'var(--bread)', activeBg: 'var(--bread-l)' },
             ]).map(opt => (
               <div
                 key={opt.type}
@@ -3630,17 +3636,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Gentle discovery — profile-less bakers learn preferences exist */}
-              {!profilePrefilled && !recipeGenerated && !loadProfile() && (
-                <div style={{
-                  fontFamily: 'var(--font-ui)', fontSize: '11px',
-                  color: 'var(--smoke)', letterSpacing: '.05em', margin: '10px 2px 0',
-                }}>
-                  {locale === 'fr'
-                    ? 'Astuce : Mes préférences retient votre four et votre pétrin d\u2019une fournée à l\u2019autre'
-                    : 'Tip: My preferences remembers your oven and mixer between bakes'}
-                </div>
-              )}
 
             </div>
           )}
@@ -3698,128 +3693,32 @@ export default function Home() {
 
             {/* ─── STEP 3: Quantity ────────────────── */}
             <StepPage flow={simpleFlow} id={2}>
-              {(() => {
-                const showDiam = bakeType === 'pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '');
-                const isAtMax = styleKey === 'neapolitan' && itemWeight >= 278;
-                return (
-                  <div style={{ padding: '0 .1rem' }}>
-
-                    {/* ── ROW 1: Quantity — centred, large, primary ── */}
-                    <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                      <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '12px' }}>
-                        {isBread ? t('quantity.loaves') : t('quantity.howMany')}
-                      </div>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '16px' }}>
-                        <button onClick={() => chooseNumItems(n => Math.max(1, n - 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '17px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                          <input type="number" min={1} max={24} step={1} value={numItems}
-                            onChange={e => chooseNumItems(Math.max(1, Math.min(24, Math.round(+e.target.value))))}
-                            style={{ width: '52px', border: 'none', borderBottom: '2px solid var(--char)', background: 'transparent', fontSize: '32px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-ui)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
-                          <span style={{ fontSize: '15px', fontWeight: 500, color: 'var(--ash)', fontFamily: 'var(--font-ui)' }}>{isBread ? (locale === 'fr' ? (numItems === 1 ? 'pain' : 'pains') : (numItems === 1 ? 'loaf' : 'loaves')) : (numItems === 1 ? 'pizza' : 'pizzas')}</span>
-                        </div>
-                        <button onClick={() => chooseNumItems(n => Math.min(24, n + 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '17px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
-                      </div>
-                    </div>
-
-                    {/* ── ROW 2: Cornicione — compact, secondary ── */}
-                    {showDiam && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)', flexShrink: 0 }}>{t('quantity.corniceLabel')}</span>
-                        <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
-                          {([
-                            { value: 0, label: t('quantity.corniceThin')      },
-                            { value: 1, label: t('quantity.corniceClassic')   },
-                            { value: 2, label: t('quantity.corniceGenerous')  },
-                          ] as { value: number; label: string }[]).map(opt => (
-                            <button
-                              key={opt.value}
-                              onClick={() => { setPizzaCorn(opt.value); chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
-                              style={{
-                                flex: 1, padding: '4px 4px', borderRadius: '12px', whiteSpace: 'nowrap',
-                                border: crustActive === opt.value ? '2px solid #6B4423' : '1px solid #E8E0D5',
-                                background: crustActive === opt.value ? 'white' : 'transparent',
-                                color: crustActive === opt.value ? '#2B2420' : '#8A7F78',
-                                fontSize: '12px', fontWeight: crustActive === opt.value ? 600 : 400,
-                                fontFamily: 'var(--font-ui)', cursor: 'pointer',
-                              }}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {/* ── ROW 3: Diameter + Weight — two equal tiles ── */}
-                    <div style={{ display: 'grid', gridTemplateColumns: showDiam ? '1fr 1fr' : '1fr', gap: '12px', marginBottom: '20px' }}>
-
-                      {/* Diameter tile — stepper replaces slider */}
-                      {showDiam && (
-                        <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '12px 12px', overflow: 'hidden' }}>
-                          <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>◎ {locale === 'fr' ? 'Diamètre' : 'Diameter'}</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                            <input aria-label={locale==='fr'?'Diamètre (cm)':'Diameter (cm)'} type="number" inputMode="decimal" min={22} max={35} step={1} value={pizzaDiameter} onChange={e=>{if(e.target.value==='')return;const d=Math.max(22,Math.min(35,Number(e.target.value)));setPizzaDiameter(d);chooseItemWeight(pizzaWeightFromTable(styleKey??'neapolitan',d,pizzaCorn));}} style={{width:72,fontSize:18,padding:8,border:'1px solid var(--border)',borderRadius:8,background:'var(--warm)',color:'var(--char)'}}/><span>cm</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Weight tile */}
-                      <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '12px 12px', overflow: 'hidden' }}>
-                        <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>{isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                          <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); chooseItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: itemWeight >= 1000 ? '80px' : '64px', justifyContent: 'center' }}>
-                            <input type="number" min={weightBounds.min} max={weightBounds.max} step={weightBounds.step} value={itemWeight}
-                              onChange={e => { const w = Math.max(weightBounds.min, Math.min(weightBounds.max, Math.round(+e.target.value / weightBounds.step) * weightBounds.step)); chooseItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }}
-                              style={{ width: itemWeight >= 1000 ? '62px' : '48px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '17px', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-ui)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
-                            <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--smoke)' }}>g</span>
-                          </div>
-                          <button onClick={() => { const w = Math.min(weightBounds.max, itemWeight + weightBounds.step); chooseItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
-                        </div>
-                      </div>
-                    </div>
-                    {/* AVPN note */}
-                    {isAtMax && (
-                      <div style={{ marginTop: '12px', padding: '8px 12px', background: '#FEF9F0', borderRadius: '8px', border: '0.5px solid #F0D9A0', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                        <span style={{ fontSize: '11px', color: '#7A5A10', lineHeight: 1.4, flex: 1 }}><strong>{t('avpn.atLimit')}</strong> — {t('avpn.limitDesc')}</span>
-                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem 8px', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '12px', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>{t('avpn.learnMore')}</button>
-                      </div>
-                    )}
-                    {isAtMax && avpnOpen && (
-                      <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--cream)', borderRadius: '16px', fontSize: '11px', color: 'var(--ash)', lineHeight: 1.5 }}>
-                        {t('avpn.body')}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
+              <PrototypeQuantityPicker bakeType={bakeType ?? 'pizza'} locale={locale} units={units}
+                roundPizza={bakeType === 'pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '')}
+                count={numItems} itemWeight={itemWeight} diameter={pizzaDiameter}
+                crust={(['thin','classic','generous'] as const)[pizzaCorn] ?? 'classic'}
+                weightIsManual={crustActive < 0} weightBounds={weightBounds}
+                calculatedWeight={pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, pizzaCorn)}
+                calculateWeight={(diameter, crust) => pizzaWeightFromTable(styleKey ?? 'neapolitan', diameter, ['thin','classic','generous'].indexOf(crust))}
+                onCountChange={value => chooseNumItems(value)} onItemWeightChange={value => chooseItemWeight(value)}
+                onDiameterChange={setPizzaDiameter} onCrustChange={crust => setPizzaCorn(['thin','classic','generous'].indexOf(crust))}
+                onUseCalculatedWeight={() => chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, pizzaCorn))}
+              />
             </StepPage>
 
             {/* ─── STEP 4: Equipment (oven + mixing) ── */}
-            <StepPage flow={simpleFlow} id={3}>
-              <p style={{margin:'-6px 0 16px',fontSize:13,color:'var(--smoke)'}}>{locale==='fr'?'Choisissez un four et une méthode de pétrissage.':'Choose an oven and a mixing method.'}</p>
-              <details open={!ovenType} style={{marginBottom:12,border:'1px solid var(--border)',borderRadius:14,padding:'0 12px',background:'var(--card)'}}>
-                <summary style={{padding:'14px 0',cursor:'pointer'}}><strong>1 · {locale==='fr'?'Four':'Oven'}</strong> · {ovenType ? localName(ovenData) : (locale==='fr'?'Choisir un four':'Choose an oven')}</summary>
-                <OvenPicker
-                bakeType={bakeType ?? 'pizza'}
-                styleKey={styleKey}
-                selected={ovenType}
-                onSelect={setOvenType}
-                onPreselect={setOvenType}
-              />
-              </details>
-              <details open={!mixerType} style={{marginBottom:12,border:'1px solid var(--border)',borderRadius:14,padding:'0 12px',background:'var(--card)'}}>
-                <summary style={{padding:'14px 0',cursor:'pointer'}}><strong>2 · {locale==='fr'?'Pétrissage':'Mixing method'}</strong> · {mixerType ? localName(MIXER_TYPES[mixerType]) : (locale==='fr'?'Choisir une méthode':'Choose a method')}</summary>
-                <MixerPicker
-                totalDoughG={numItems * itemWeight}
-                locale={locale}
-                selected={mixerType}
-                onSelect={value=>{setMixerType(value);setSpiralIceConfirmed(false);setWaterMethod('premelt');}}
-                styleKey={styleKey ?? undefined}
-                bakeType={bakeType ?? undefined}
-                kitchenTemp={kitchenTemp}
-              />
-              {mixingBatchControl}
-              </details>
+            <StepPage flow={simpleFlow} id={3} nextOverride={!ovenType || !mixerType ? <button type="button" style={NEXT_CTA} onClick={()=>{setEquipmentPanel(!ovenType?'oven':'mixer');scrollToStepTop();}}>{!ovenType ? (fr?'Choisir le four':'Choose an oven') : (fr?'Choisir le pétrissage':'Choose mixing method')}</button> : undefined}>
+              <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:8,marginBottom:20}}>
+                {(['oven','mixer'] as const).map(panel => <button key={panel} type="button" onClick={()=>setEquipmentPanel(panel)} aria-pressed={equipmentPanel===panel} style={{width:'100%',minWidth:0,textAlign:'left',padding:12,border:'1px solid '+(equipmentPanel===panel?'var(--terra)':'var(--border)'),borderRadius:12,background:equipmentPanel===panel?'#f0e5d3':'white',color:'var(--char)'}}>
+                  <strong style={{display:'block',marginBottom:5}}>{panel==='oven'?(locale==='fr'?'Four':'Oven'):(locale==='fr'?'Pétrissage':'Mixing')}{(panel==='oven'?ovenType:mixerType)?' ✓':''}</strong>
+                  <span style={{display:'block',fontSize:12,lineHeight:1.4}}>{panel==='oven'?(ovenType==='pizza_oven'?(ovenConstruction==='masonry'?(locale==='fr'?'Four maçonné':'Brick / masonry oven'):(locale==='fr'?'Four à pizza compact':'Tabletop pizza oven')):ovenType?localName(ovenData):(locale==='fr'?'Non choisi':'Not selected')):mixerType?localName(MIXER_TYPES[mixerType]):(locale==='fr'?'Non choisi':'Not selected')}</span>
+                </button>)}
+              </div>
+              <h2 style={{fontSize:18,margin:'0 0 12px'}}>{equipmentPanel==='oven'?(locale==='fr'?'Choisissez un four':'Choose an oven'):(locale==='fr'?'Choisissez une méthode de pétrissage':'Choose a mixing method')}</h2>
+              {equipmentPanel==='oven' ? <OvenPicker bakeType={bakeType ?? 'pizza'} styleKey={styleKey} selected={ovenType} construction={ovenConstruction} onConstructionChange={setOvenConstruction} onSelect={setOvenType} /> : <>
+                <MixerPicker totalDoughG={numItems * itemWeight} locale={locale} selected={mixerType} onSelect={value=>{setMixerType(value);setSpiralIceConfirmed(false);setWaterMethod('premelt');}} styleKey={styleKey ?? undefined} bakeType={bakeType ?? undefined} kitchenTemp={kitchenTemp} />
+                {mixingBatchControl}
+              </>}
             </StepPage>
 
             {/* ─── STEP 5: Climate ─────────────────── */}
@@ -3828,9 +3727,30 @@ export default function Home() {
                 kitchenTemp={kitchenTemp} humidity={humidity}
                 fridgeTemp={fridgeTemp} mode="simple"
                 units={units}
+                flourInFridge={flourInFridge} onFlourInFridgeChange={setFlourInFridge}
                 onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
 
+              <details style={{marginTop:16}}>
+                <summary style={{minHeight:44,cursor:'pointer'}}>{locale==='fr'?'Préparation de l’eau · facultatif':'Water preparation · optional'}</summary>
+                <label style={{display:'block',fontSize:13,margin:'12px 0 6px'}}>{locale==='fr'?'Origine de l’eau':'Water source'}
+                  <select value={waterSource==='tap'?'measured':waterSource} onChange={e=>{setWaterSource(e.target.value as 'room'|'fridge'|'measured');setMeasuredWaterTemp(undefined);}} style={{display:'block',width:'100%',padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
+                    <option value="room">{locale==='fr'?'Eau à température ambiante':'Room-temperature water'}</option>
+                    <option value="fridge">{locale==='fr'?'Eau du réfrigérateur':'Water from the fridge'}</option>
+                    <option value="measured">{locale==='fr'?'Température mesurée':'Measured temperature'}</option>
+                  </select>
+                </label>
+                {(waterSource==='measured'||waterSource==='tap')&&<label style={{display:'block',fontSize:13,margin:'12px 0'}}>{locale==='fr'?'Température de l’eau':'Water temperature'} ({tempUnit(units)})
+                  <input type="number" min={cToDisplay(0,units)} max={cToDisplay(60,units)} step="0.1" value={measuredWaterTemp===undefined?'':cToDisplay(measuredWaterTemp,units)} onChange={e=>setMeasuredWaterTemp(e.target.value===''?undefined:inputTempToC(Number(e.target.value),units))} style={{display:'block',width:'100%',minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
+                </label>}
+                {mixerType==='spiral' ? <label style={{display:'block',fontSize:13,margin:'12px 0'}}>{locale==='fr'?'Si un refroidissement est nécessaire':'When cooling is needed'}
+                  <select value={waterMethod==='direct'&&spiralIceConfirmed?'direct':'premelt'} onChange={e=>{setWaterMethod(e.target.value as 'direct'|'premelt');setSpiralIceConfirmed(e.target.value==='direct');}} style={{display:'block',width:'100%',padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
+                    <option value="direct">{locale==='fr'?'Glace pendant le pétrissage':'Ice during mixing'}</option>
+                    <option value="premelt">{locale==='fr'?'Faire fondre la glace dans l’eau avant':'Melt ice in the water first'}</option>
+                  </select>
+                  <small>{locale==='fr'?'Glace au pétrissage uniquement si votre modèle le permet.':'Use ice during mixing only if your mixer permits it.'}</small>
+                </label> : <p style={{fontSize:12,color:'var(--smoke)'}}>{locale==='fr'?'Si nécessaire, la glace refroidit l’eau avant le pétrissage. Aucun glaçon dans le robot.':'If cooling is needed, melt the ice in the water before mixing. No solid ice goes into the mixer.'}</p>}
+              </details>
             </StepPage>
 
 
@@ -4029,7 +3949,7 @@ export default function Home() {
                               const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
                               const payload = {
                                 tab, bakeType, styleKey, numItems, itemWeight,
-                                pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
+                                pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
                                 fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                                 manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
                                 flourInFridge, wastePct, addSeeds, priorityOverride,
@@ -4212,7 +4132,7 @@ export default function Home() {
                     const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
                     const payload = {
                       tab, bakeType, styleKey, numItems, itemWeight,
-                      pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
+                      pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
                       fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                       manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
                       flourInFridge, wastePct, addSeeds, priorityOverride,
@@ -4335,127 +4255,32 @@ export default function Home() {
 
             {/* ─── ADV STEP 3: Quantity ────────────── */}
             <StepPage flow={customFlow} id={2}>
-              {(() => {
-                const showDiam = bakeType === 'pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '');
-                const isAtMax = styleKey === 'neapolitan' && itemWeight >= 278;
-                return (
-                  <div style={{ padding: '0 .1rem' }}>
-
-                    {/* ROW 1: Quantity — centred, large, primary */}
-                    <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                      <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '12px' }}>
-                        {isBread ? t('quantity.loaves') : t('quantity.howMany')}
-                      </div>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '16px' }}>
-                        <button onClick={() => chooseNumItems(n => Math.max(1, n - 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '17px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                          <input type="number" min={1} max={24} step={1} value={numItems}
-                            onChange={e => chooseNumItems(Math.max(1, Math.min(24, Math.round(+e.target.value))))}
-                            style={{ width: '52px', border: 'none', borderBottom: '2px solid var(--char)', background: 'transparent', fontSize: '32px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-ui)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
-                          <span style={{ fontSize: '15px', fontWeight: 500, color: 'var(--ash)', fontFamily: 'var(--font-ui)' }}>{isBread ? (locale === 'fr' ? (numItems === 1 ? 'pain' : 'pains') : (numItems === 1 ? 'loaf' : 'loaves')) : (numItems === 1 ? 'pizza' : 'pizzas')}</span>
-                        </div>
-                        <button onClick={() => chooseNumItems(n => Math.min(24, n + 1))} style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', background: 'var(--char)', color: '#fff', cursor: 'pointer', fontSize: '17px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
-                      </div>
-                    </div>
-
-                    {/* ROW 2: Cornicione */}
-                    {showDiam && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)', flexShrink: 0 }}>{t('quantity.corniceLabel')}</span>
-                        <div style={{ display: 'flex', gap: '4px', flex: 1 }}>
-                          {([
-                            { value: 0, label: t('quantity.corniceThin')      },
-                            { value: 1, label: t('quantity.corniceClassic')   },
-                            { value: 2, label: t('quantity.corniceGenerous')  },
-                          ] as { value: number; label: string }[]).map(opt => (
-                            <button
-                              key={opt.value}
-                              onClick={() => { setPizzaCorn(opt.value); chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, opt.value)); }}
-                              style={{
-                                flex: 1, padding: '4px 4px', borderRadius: '12px', whiteSpace: 'nowrap',
-                                border: crustActive === opt.value ? '2px solid #6B4423' : '1px solid #E8E0D5',
-                                background: crustActive === opt.value ? 'white' : 'transparent',
-                                color: crustActive === opt.value ? '#2B2420' : '#8A7F78',
-                                fontSize: '12px', fontWeight: crustActive === opt.value ? 600 : 400,
-                                fontFamily: 'var(--font-ui)', cursor: 'pointer',
-                              }}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {/* ROW 3: Diameter + Weight tiles */}
-                    <div style={{ display: 'grid', gridTemplateColumns: showDiam ? '1fr 1fr' : '1fr', gap: '12px', marginBottom: '20px' }}>
-
-                      {showDiam && (
-                        <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '12px 12px', overflow: 'hidden' }}>
-                          <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>◎ {locale === 'fr' ? 'Diamètre' : 'Diameter'}</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                            <input aria-label={locale==='fr'?'Diamètre (cm)':'Diameter (cm)'} type="number" inputMode="decimal" min={22} max={35} step={1} value={pizzaDiameter} onChange={e=>{if(e.target.value==='')return;const d=Math.max(22,Math.min(35,Number(e.target.value)));setPizzaDiameter(d);chooseItemWeight(pizzaWeightFromTable(styleKey??'neapolitan',d,pizzaCorn));}} style={{width:72,fontSize:18,padding:8,border:'1px solid var(--border)',borderRadius:8,background:'var(--warm)',color:'var(--char)'}}/><span>cm</span>
-                          </div>
-                        </div>
-                      )}
-
-                      <div style={{ background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: '16px', padding: '12px 12px', overflow: 'hidden' }}>
-                        <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: '12px', textAlign: 'center' }}>{isBread ? t('quantity.weightPerLoafLabel') : t('quantity.weightPerBallLabel')}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                          <button onClick={() => { const w = Math.max(weightBounds.min, itemWeight - weightBounds.step); chooseItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>−</button>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px', minWidth: itemWeight >= 1000 ? '80px' : '64px', justifyContent: 'center' }}>
-                            <input type="number" min={weightBounds.min} max={weightBounds.max} step={weightBounds.step} value={itemWeight}
-                              onChange={e => { const w = Math.max(weightBounds.min, Math.min(weightBounds.max, Math.round(+e.target.value / weightBounds.step) * weightBounds.step)); chooseItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }}
-                              style={{ width: itemWeight >= 1000 ? '62px' : '48px', border: 'none', borderBottom: '2px solid var(--terra)', background: 'transparent', fontSize: '17px', fontWeight: 700, color: 'var(--terra)', fontFamily: 'var(--font-ui)', textAlign: 'center', outline: 'none', MozAppearance: 'textfield' } as React.CSSProperties} />
-                            <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--smoke)' }}>g</span>
-                          </div>
-                          <button onClick={() => { const w = Math.min(weightBounds.max, itemWeight + weightBounds.step); chooseItemWeight(w); if (showDiam) setPizzaCorn(cornFromWeight(styleKey ?? 'neapolitan', pizzaDiameter, w)); }} style={{ width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'var(--terra)', color: '#fff', cursor: 'pointer', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* AVPN note */}
-                    {isAtMax && (
-                      <div style={{ marginTop: '12px', padding: '8px 12px', background: '#FEF9F0', borderRadius: '8px', border: '0.5px solid #F0D9A0', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                        <span style={{ fontSize: '11px', color: '#7A5A10', lineHeight: 1.4, flex: 1 }}><strong>{t('avpn.atLimit')}</strong> — {t('avpn.limitDesc')}</span>
-                        <button onClick={() => setAvpnOpen(o => !o)} style={{ padding: '.2rem 8px', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--warm)', color: 'var(--smoke)', fontSize: '12px', cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>{t('avpn.learnMore')}</button>
-                      </div>
-                    )}
-                    {isAtMax && avpnOpen && (
-                      <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--cream)', borderRadius: '16px', fontSize: '11px', color: 'var(--ash)', lineHeight: 1.5 }}>
-                        {t('avpn.body')}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
+              <PrototypeQuantityPicker bakeType={bakeType ?? 'pizza'} locale={locale} units={units}
+                roundPizza={bakeType === 'pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '')}
+                count={numItems} itemWeight={itemWeight} diameter={pizzaDiameter}
+                crust={(['thin','classic','generous'] as const)[pizzaCorn] ?? 'classic'}
+                weightIsManual={crustActive < 0} weightBounds={weightBounds}
+                calculatedWeight={pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, pizzaCorn)}
+                calculateWeight={(diameter, crust) => pizzaWeightFromTable(styleKey ?? 'neapolitan', diameter, ['thin','classic','generous'].indexOf(crust))}
+                onCountChange={value => chooseNumItems(value)} onItemWeightChange={value => chooseItemWeight(value)}
+                onDiameterChange={setPizzaDiameter} onCrustChange={crust => setPizzaCorn(['thin','classic','generous'].indexOf(crust))}
+                onUseCalculatedWeight={() => chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, pizzaCorn))}
+              />
             </StepPage>
 
             {/* ─── ADV STEP 4: Equipment (oven + mixing) ── */}
-            <StepPage flow={customFlow} id={3}>
-              <p style={{margin:'-6px 0 16px',fontSize:13,color:'var(--smoke)'}}>{locale==='fr'?'Choisissez un four et une méthode de pétrissage.':'Choose an oven and a mixing method.'}</p>
-              <details open={!ovenType} style={{marginBottom:12,border:'1px solid var(--border)',borderRadius:14,padding:'0 12px',background:'var(--card)'}}>
-                <summary style={{padding:'14px 0',cursor:'pointer'}}><strong>1 · {locale==='fr'?'Four':'Oven'}</strong> · {ovenType ? localName(ovenData) : (locale==='fr'?'Choisir un four':'Choose an oven')}</summary>
-                <OvenPicker
-                bakeType={bakeType ?? 'pizza'}
-                styleKey={styleKey}
-                selected={ovenType}
-                onSelect={setOvenType}
-                onPreselect={setOvenType}
-              />
-              </details>
-              <details open={!mixerType} style={{marginBottom:12,border:'1px solid var(--border)',borderRadius:14,padding:'0 12px',background:'var(--card)'}}>
-                <summary style={{padding:'14px 0',cursor:'pointer'}}><strong>2 · {locale==='fr'?'Pétrissage':'Mixing method'}</strong> · {mixerType ? localName(MIXER_TYPES[mixerType]) : (locale==='fr'?'Choisir une méthode':'Choose a method')}</summary>
-                <MixerPicker
-                totalDoughG={numItems * itemWeight}
-                locale={locale}
-                selected={mixerType}
-                onSelect={value=>{setMixerType(value);setSpiralIceConfirmed(false);setWaterMethod('premelt');}}
-                styleKey={styleKey ?? undefined}
-                bakeType={bakeType ?? undefined}
-                kitchenTemp={kitchenTemp}
-              />
-              {mixingBatchControl}
-              </details>
+            <StepPage flow={customFlow} id={3} nextOverride={!ovenType || !mixerType ? <button type="button" style={NEXT_CTA} onClick={()=>{setEquipmentPanel(!ovenType?'oven':'mixer');scrollToStepTop();}}>{!ovenType ? (fr?'Choisir le four':'Choose an oven') : (fr?'Choisir le pétrissage':'Choose mixing method')}</button> : undefined}>
+              <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:8,marginBottom:20}}>
+                {(['oven','mixer'] as const).map(panel => <button key={panel} type="button" onClick={()=>setEquipmentPanel(panel)} aria-pressed={equipmentPanel===panel} style={{width:'100%',minWidth:0,textAlign:'left',padding:12,border:'1px solid '+(equipmentPanel===panel?'var(--terra)':'var(--border)'),borderRadius:12,background:equipmentPanel===panel?'#f0e5d3':'white',color:'var(--char)'}}>
+                  <strong style={{display:'block',marginBottom:5}}>{panel==='oven'?(locale==='fr'?'Four':'Oven'):(locale==='fr'?'Pétrissage':'Mixing')}{(panel==='oven'?ovenType:mixerType)?' ✓':''}</strong>
+                  <span style={{display:'block',fontSize:12,lineHeight:1.4}}>{panel==='oven'?(ovenType==='pizza_oven'?(ovenConstruction==='masonry'?(locale==='fr'?'Four maçonné':'Brick / masonry oven'):(locale==='fr'?'Four à pizza compact':'Tabletop pizza oven')):ovenType?localName(ovenData):(locale==='fr'?'Non choisi':'Not selected')):mixerType?localName(MIXER_TYPES[mixerType]):(locale==='fr'?'Non choisi':'Not selected')}</span>
+                </button>)}
+              </div>
+              <h2 style={{fontSize:18,margin:'0 0 12px'}}>{equipmentPanel==='oven'?(locale==='fr'?'Choisissez un four':'Choose an oven'):(locale==='fr'?'Choisissez une méthode de pétrissage':'Choose a mixing method')}</h2>
+              {equipmentPanel==='oven' ? <OvenPicker bakeType={bakeType ?? 'pizza'} styleKey={styleKey} selected={ovenType} construction={ovenConstruction} onConstructionChange={setOvenConstruction} onSelect={setOvenType} /> : <>
+                <MixerPicker totalDoughG={numItems * itemWeight} locale={locale} selected={mixerType} onSelect={value=>{setMixerType(value);setSpiralIceConfirmed(false);setWaterMethod('premelt');}} styleKey={styleKey ?? undefined} bakeType={bakeType ?? undefined} kitchenTemp={kitchenTemp} />
+                {mixingBatchControl}
+              </>}
             </StepPage>
 
             {/* ─── ADV STEP 5: Climate ─────────────── */}
@@ -4464,8 +4289,29 @@ export default function Home() {
                 kitchenTemp={kitchenTemp} humidity={humidity}
                 fridgeTemp={fridgeTemp} mode="custom"
                 units={units}
+                flourInFridge={flourInFridge} onFlourInFridgeChange={setFlourInFridge}
                 onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
+              <details style={{marginTop:16}}>
+                <summary style={{minHeight:44,cursor:'pointer'}}>{locale==='fr'?'Préparation de l’eau · facultatif':'Water preparation · optional'}</summary>
+                <label style={{display:'block',fontSize:13,margin:'12px 0 6px'}}>{locale==='fr'?'Origine de l’eau':'Water source'}
+                  <select value={waterSource==='tap'?'measured':waterSource} onChange={e=>{setWaterSource(e.target.value as 'room'|'fridge'|'measured');setMeasuredWaterTemp(undefined);}} style={{display:'block',width:'100%',padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
+                    <option value="room">{locale==='fr'?'Eau à température ambiante':'Room-temperature water'}</option>
+                    <option value="fridge">{locale==='fr'?'Eau du réfrigérateur':'Water from the fridge'}</option>
+                    <option value="measured">{locale==='fr'?'Température mesurée':'Measured temperature'}</option>
+                  </select>
+                </label>
+                {(waterSource==='measured'||waterSource==='tap')&&<label style={{display:'block',fontSize:13,margin:'12px 0'}}>{locale==='fr'?'Température de l’eau':'Water temperature'} ({tempUnit(units)})
+                  <input type="number" min={cToDisplay(0,units)} max={cToDisplay(60,units)} step="0.1" value={measuredWaterTemp===undefined?'':cToDisplay(measuredWaterTemp,units)} onChange={e=>setMeasuredWaterTemp(e.target.value===''?undefined:inputTempToC(Number(e.target.value),units))} style={{display:'block',width:'100%',minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
+                </label>}
+                {mixerType==='spiral' ? <label style={{display:'block',fontSize:13,margin:'12px 0'}}>{locale==='fr'?'Si un refroidissement est nécessaire':'When cooling is needed'}
+                  <select value={waterMethod==='direct'&&spiralIceConfirmed?'direct':'premelt'} onChange={e=>{setWaterMethod(e.target.value as 'direct'|'premelt');setSpiralIceConfirmed(e.target.value==='direct');}} style={{display:'block',width:'100%',padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
+                    <option value="direct">{locale==='fr'?'Glace pendant le pétrissage':'Ice during mixing'}</option>
+                    <option value="premelt">{locale==='fr'?'Faire fondre la glace dans l’eau avant':'Melt ice in the water first'}</option>
+                  </select>
+                  <small>{locale==='fr'?'Glace au pétrissage uniquement si votre modèle le permet.':'Use ice during mixing only if your mixer permits it.'}</small>
+                </label> : <p style={{fontSize:12,color:'var(--smoke)'}}>{locale==='fr'?'Si nécessaire, la glace refroidit l’eau avant le pétrissage. Aucun glaçon dans le robot.':'If cooling is needed, melt the ice in the water before mixing. No solid ice goes into the mixer.'}</p>}
+              </details>
             </StepPage>
 
 
@@ -4829,18 +4675,6 @@ export default function Home() {
                                 : 'dialIn.mixerHand'),
                             })}
                           >
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '8px' }}>
-                              <input type="checkbox" checked={flourInFridge} onChange={e => setFlourInFridge(e.target.checked)}
-                                style={{ width: '13px', height: '13px', cursor: 'pointer', accentColor: 'var(--terra)', flexShrink: 0 }} />
-                              <span style={{ fontSize: '12px', color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>{t('dialIn.flourInFridge')}</span>
-                            </label>
-                            {/* Shown only once it applies — an unchecked box
-                                needs no explanation of what checking it does. */}
-                            {flourInFridge && (
-                              <div style={{ fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.4, marginTop: '4px' }}>
-                                {t('dialIn.flourFridgeInfo')}
-                              </div>
-                            )}
                           </PctStepper>
                         </div>
                       );
@@ -4997,7 +4831,7 @@ export default function Home() {
                               const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
                               const payload = {
                                 tab, bakeType, styleKey, numItems, itemWeight,
-                                pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
+                                pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
                                 fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                                 manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
                                 flourInFridge, wastePct, addSeeds, priorityOverride,
@@ -5180,7 +5014,7 @@ export default function Home() {
                     const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
                     const payload = {
                       tab, bakeType, styleKey, numItems, itemWeight,
-                      pizzaDiameter, ovenType, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
+                      pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
                       fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                       manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
                       flourInFridge, wastePct, addSeeds, priorityOverride,

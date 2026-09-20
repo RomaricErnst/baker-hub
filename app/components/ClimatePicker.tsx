@@ -1,9 +1,7 @@
 'use client';
-import { useState } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
-import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, tempC, displayTemp } from '../utils/units';
-import DecisionList from './DecisionList';
-import DecisionSummary from './DecisionSummary';
+
+import { type UnitSystem, cToDisplay, inputTempToC, tempC, tempUnit } from '../utils/units';
+import { useLocale } from 'next-intl';
 
 interface ClimatePickerProps {
   kitchenTemp: number;
@@ -11,646 +9,141 @@ interface ClimatePickerProps {
   fridgeTemp: number;
   mode: 'simple' | 'custom';
   units?: UnitSystem;
+  /** Optional because the parent owns this planning choice. */
+  flourInFridge?: boolean;
+  onFlourInFridgeChange?: (value: boolean) => void;
   onChange: (kitchenTemp: number, humidity: string, fridgeTemp: number) => void;
 }
 
-// ── WMO weather codes ────────────────────────
-const WMO: Record<number, string> = {
-   0: 'Clear sky',
-   1: 'Mainly clear',
-   2: 'Partly cloudy',
-   3: 'Overcast',
-  45: 'Fog',
-  48: 'Icy fog',
-  51: 'Light drizzle',
-  53: 'Drizzle',
-  55: 'Heavy drizzle',
-  61: 'Light rain',
-  63: 'Rain',
-  65: 'Heavy rain',
-  71: 'Light snow',
-  73: 'Snow',
-  75: 'Heavy snow',
-  77: 'Snow grains',
-  80: 'Showers',
-  81: 'Heavy showers',
-  82: 'Violent showers',
-  85: 'Snow showers',
-  86: 'Heavy snow showers',
-  95: 'Thunderstorm',
-  96: 'Thunderstorm + hail',
-  99: 'Severe thunderstorm',
-};
-
-const WMO_FR: Record<number, string> = {
-   0: 'Ciel dégagé',      1: 'Plutôt dégagé',    2: 'Partiellement nuageux', 3: 'Couvert',
-  45: 'Brouillard',       48: 'Brouillard givrant',
-  51: 'Bruine légère',    53: 'Bruine',          55: 'Forte bruine',
-  61: 'Pluie légère',     63: 'Pluie',           65: 'Forte pluie',
-  71: 'Neige légère',     73: 'Neige',           75: 'Forte neige',   77: 'Grésil',
-  80: 'Averses',          81: 'Fortes averses',  82: 'Averses violentes',
-  85: 'Averses de neige', 86: 'Fortes averses de neige',
-  95: 'Orage',            96: 'Orage avec grêle', 99: 'Orage violent',
-};
-
-function getWMODescFr(code: number): string {
-  if (WMO_FR[code]) return WMO_FR[code];
-  const lower = Object.keys(WMO_FR).map(Number).filter(k => k <= code).pop();
-  return lower !== undefined ? WMO_FR[lower] : 'Conditions inconnues';
-}
-
-function getWMO(code: number): string {
-  // Try exact match, then nearest lower code
-  if (WMO[code]) return WMO[code];
-  const lower = Object.keys(WMO).map(Number).filter(k => k <= code).pop();
-  return lower !== undefined ? WMO[lower] : 'Unknown conditions';
-}
-
-// The weather card used a platform emoji, which looked like nothing else in
-// the app and rendered differently on every device. WMO codes collapse into
-// six drawn shapes at the same line weight as the rest of the icons.
-function WeatherIcon({ code, size = 34 }: { code: number; size?: number }) {
-  const family =
-    code === 0 ? 'sun'
-    : code <= 2 ? 'partly'
-    : code === 3 || (code >= 45 && code <= 48) ? 'cloud'
-    : (code >= 71 && code <= 77) || code === 85 || code === 86 ? 'snow'
-    : code >= 95 ? 'storm'
-    : 'rain';
-  const p = {
-    fill: 'none', stroke: '#9C8248', strokeWidth: 1.6,
-    strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
-  };
-  const cloud = <path d="M7 17.5h9.4a3.4 3.4 0 0 0 .3-6.8 4.9 4.9 0 0 0-9.3-1A3.5 3.5 0 0 0 7 17.5z" {...p} />;
-  const rays = [0, 45, 90, 135, 180, 225, 270, 315].map(a => {
-    const r = (a * Math.PI) / 180;
-    return <line key={a}
-      x1={12 + 6.8 * Math.cos(r)} y1={12 + 6.8 * Math.sin(r)}
-      x2={12 + 9.3 * Math.cos(r)} y2={12 + 9.3 * Math.sin(r)} {...p} />;
-  });
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
-      {family === 'sun' && <><circle cx="12" cy="12" r="4" {...p} />{rays}</>}
-      {family === 'partly' && <><circle cx="8.5" cy="8" r="3" {...p} />{cloud}</>}
-      {family === 'cloud' && cloud}
-      {family === 'rain' && <>{cloud}
-        <line x1="9.5" y1="19.5" x2="8.5" y2="22" {...p} />
-        <line x1="13.5" y1="19.5" x2="12.5" y2="22" {...p} /></>}
-      {family === 'snow' && <>{cloud}
-        <line x1="8.2" y1="21" x2="10.2" y2="21" {...p} />
-        <line x1="9.2" y1="20" x2="9.2" y2="22" {...p} />
-        <line x1="13.2" y1="21" x2="15.2" y2="21" {...p} />
-        <line x1="14.2" y1="20" x2="14.2" y2="22" {...p} /></>}
-      {family === 'storm' && <>{cloud}
-        <polyline points="12.5,19 10.5,22 13,21.6 11.4,24.4" {...p} /></>}
-    </svg>
-  );
-}
-
-// ── Humidity ─────────────────────────────────
 const HUMIDITY_OPTIONS = [
-  { value: 'dry',        label: 'Dry',        desc: '< 40%'  },
-  { value: 'normal',     label: 'Normal',      desc: '40–65%' },
-  { value: 'humid',      label: 'Humid',       desc: '65–80%' },
-  { value: 'very-humid', label: 'Very Humid',  desc: '> 80%'  },
+  { value: 'dry', en: 'Dry', fr: 'Sec', range: '< 40%' },
+  { value: 'normal', en: 'Normal / unknown', fr: 'Normale / inconnue', range: '40–65%' },
+  { value: 'humid', en: 'Humid', fr: 'Humide', range: '65–80%' },
+  { value: 'very-humid', en: 'Very humid', fr: 'Très humide', range: '> 80%' },
 ] as const;
 
-function humidityCategory(pct: number): string {
-  if (pct < 40) return 'dry';
-  if (pct < 65) return 'normal';
-  if (pct < 80) return 'humid';
-  return 'very-humid';
+function controlStyle(): React.CSSProperties {
+  return {
+    width: '100%', minHeight: 44, padding: '9px 10px', border: '1px solid var(--border)',
+    borderRadius: 9, background: 'var(--paper)', color: 'var(--char)',
+    fontFamily: 'var(--font-ui)', fontSize: 16,
+  };
 }
 
-// ── Temp badge colour ────────────────────────
-// Outdoor → kitchen estimate. Simple, climate-agnostic heuristic (validated
-// against: heated homes in cold climates sit ≈18-21°C regardless of outdoor;
-// mild climates track outdoor; hot climates run ~2°C cooler indoors from
-// shade/thermal mass — Singapore outdoor 31 → kitchen ≈29). Always a
-// PREFILL: the baker can override below, and AC kitchens will.
-function outdoorToKitchen(outdoorC: number): number {
-  if (outdoorC < 18) return 18;
-  if (outdoorC > 28) return Math.min(38, outdoorC - 2);
-  return outdoorC;
-}
-
-function tempColor(t: number): string {
-  if (t >= 30) return 'var(--terra)';
-  if (t >= 25) return 'var(--gold)';
-  if (t <= 18) return '#6A7FA8';
-  return 'var(--sage)';
-}
-
-// ── Shared sub-styles ────────────────────────
-const SECTION_LABEL: React.CSSProperties = {
-  display: 'block',
-  fontSize: '12px',
-  color: 'var(--smoke)',
-  textTransform: 'uppercase',
-  letterSpacing: '.06em',
-  marginBottom: '8px',
-  fontFamily: 'var(--font-ui)',
-};
-
-interface WeatherData {
-  city: string;
-  country: string;
-  temp: number;
-  humidityPct: number;
-  weatherCode: number;
-}
-
-// ── Component ────────────────────────────────
+/**
+ * The climate step deliberately stays small: two measured temperatures, and
+ * humidity only in Custom mode. The latest prototype treats outdoor weather
+ * lookup as an optional idea, not a setup dependency, so it does not compete
+ * with the values that actually drive the schedule.
+ */
 export default function ClimatePicker({
-  kitchenTemp, humidity, fridgeTemp, mode, units, onChange,
+  kitchenTemp, humidity, fridgeTemp, mode, units = 'metric',
+  flourInFridge = false, onFlourInFridgeChange, onChange,
 }: ClimatePickerProps) {
-  const u = units ?? 'metric';
-  const tc = useTranslations('climate');
-  const isFr = useLocale() === 'fr';
-  // Simple mode: no chip is highlighted until the baker actually taps one —
-  // the default kitchen temperature must not read as a pre-selection.
-  const [simpleChosen, setSimpleChosen] = useState(false);
-  const [city, setCity] = useState('');
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  // Outdoor fetch is an optional helper — collapsed by default so the
-  // kitchen slider reads as the primary input (hierarchy, not wording).
-  const [outdoorOpen, setOutdoorOpen] = useState(false);
+  const fr = useLocale() === 'fr';
+  const kitchenMax = mode === 'simple' ? 35 : 38;
 
-  async function fetchWeatherAt(latitude: number, longitude: number, name: string, country: string) {
-    const wxRes = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
-      `&current=temperature_2m,relative_humidity_2m,weather_code&timezone=auto`
-    );
-    if (!wxRes.ok) throw new Error('Weather request failed');
-    const wxData = await wxRes.json();
-
-    const temp        = Math.round(wxData.current.temperature_2m);
-    const humidityPct = Math.round(wxData.current.relative_humidity_2m);
-    const weatherCode = wxData.current.weather_code;
-
-    setWeather({ city: name, country, temp, humidityPct, weatherCode });
-
-    // Prefill the manual controls — kitchen ESTIMATED from outdoor (see
-    // outdoorToKitchen), baker can always override below.
-    onChange(outdoorToKitchen(temp), humidityCategory(humidityPct), fridgeTemp);
-  }
-
-  async function fetchClimate() {
-    const q = city.trim();
-    if (!q) return;
-    setLoading(true);
-    setFetchError(null);
-    setWeather(null);
-
-    try {
-      // 1 — Geocoding
-      const geoRes = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=${isFr ? 'fr' : 'en'}&format=json`
-      );
-      if (!geoRes.ok) throw new Error('Geocoding request failed');
-      const geoData = await geoRes.json();
-
-      if (!geoData.results?.length) {
-        setFetchError(isFr ? `Ville « ${q} » introuvable. Essayez une autre orthographe ou une ville proche.` : `City "${q}" not found. Try a different spelling or nearby city.`);
-        setLoading(false);
-        return;
-      }
-
-      const { latitude, longitude, name, country } = geoData.results[0];
-      await fetchWeatherAt(latitude, longitude, name, country);
-
-    } catch (e) {
-      setFetchError(isFr ? 'Impossible de récupérer la météo.' : (e instanceof Error ? e.message : 'Failed to fetch weather data.'));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function fetchByLocation() {
-    if (!('geolocation' in navigator)) {
-      setFetchError(isFr ? 'Localisation indisponible — entrez votre ville.' : 'Location unavailable — type your city instead.');
-      return;
-    }
-    setLoading(true);
-    setFetchError(null);
-    setWeather(null);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          await fetchWeatherAt(
-            pos.coords.latitude, pos.coords.longitude,
-            isFr ? 'Votre position' : 'Your location', '',
-          );
-        } catch {
-          setFetchError(isFr ? 'Impossible de récupérer la météo.' : 'Failed to fetch weather data.');
-        } finally {
-          setLoading(false);
-        }
-      },
-      (err) => {
-        setLoading(false);
-        // Only a real denial says "refused" — timeouts and missing fixes
-        // (common on desktop or with location services off) say so honestly.
-        setFetchError(err.code === 1
-          ? (isFr ? 'Localisation refusée — entrez votre ville.' : 'Location declined — type your city instead.')
-          : (isFr ? 'Position introuvable — entrez votre ville.' : "Couldn't get your position — type your city instead."));
-      },
-      { timeout: 10000, maximumAge: 600000 },
-    );
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter') fetchClimate();
-  }
-
-  function temperatureEntry(kind: 'kitchen' | 'fridge') {
-    const value=kind==='kitchen'?kitchenTemp:fridgeTemp;
-    const min=kind==='kitchen'?15:1, max=kind==='kitchen'?(mode==='simple'?35:38):15;
-    return <input type="number" aria-label={kind==='kitchen'?(isFr?'Température de la cuisine':'Kitchen temperature'):(isFr?'Température du frigo':'Fridge temperature')} min={cToDisplay(min,u)} max={cToDisplay(max,u)} step={1} value={cToDisplay(value,u)} onChange={e=>{
-      if(e.target.value==='')return;
-      const n=inputTempToC(Number(e.target.value),u);
-      if(!Number.isFinite(n)||n<min||n>max)return;
-      onChange(kind==='kitchen'?n:kitchenTemp,humidity,kind==='fridge'?n:fridgeTemp);
-      setSimpleChosen(true);
-    }} style={{width:72,padding:'6px 8px',border:'1px solid var(--border)',borderRadius:8,font:'inherit',color:'inherit'}} />;
-  }
-
-  if (mode === 'simple') {
-    // One temperature setting (Flo). Humidity is a hidden sensible default
-    // derived from the temperature; Custom mode keeps the full controls.
+  function temperatureField(kind: 'kitchen' | 'fridge') {
+    const value = kind === 'kitchen' ? kitchenTemp : fridgeTemp;
+    const min = kind === 'kitchen' ? 15 : 1;
+    const max = kind === 'kitchen' ? kitchenMax : 15;
+    const label = kind === 'kitchen'
+      ? (fr ? 'Température de la cuisine' : 'Kitchen temperature')
+      : (fr ? 'Température du frigo' : 'Fridge temperature');
+    const update = (next: number) => onChange(kind === 'kitchen' ? next : kitchenTemp, humidity, kind === 'fridge' ? next : fridgeTemp);
     return (
-      <div>
-        <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'var(--font-ui)' }}>
-          {isFr ? 'Températures prévues pendant la fermentation.' : 'Expected temperatures during fermentation.'}
-        </p>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
-          <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-            {isFr ? 'Température de la cuisine' : 'Kitchen temperature'}
+      <section>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
+          <label htmlFor={`climate-${kind}`} style={{ fontSize: 14, fontWeight: 650, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
+            {label}
           </label>
-          <span style={{
-            fontFamily: 'var(--font-ui)', fontSize: '20px', fontWeight: 700,
-            color: tempColor(kitchenTemp),
-          }}>
-            {temperatureEntry('kitchen')}{tempUnit(u)}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--char)', fontFamily: 'var(--font-ui)', fontWeight: 700 }}>
+            <input
+              id={`climate-${kind}`}
+              type="number"
+              min={cToDisplay(min, units)} max={cToDisplay(max, units)} step={1}
+              value={cToDisplay(value, units)}
+              aria-label={label}
+              onChange={event => {
+                if (event.target.value === '') return;
+                const next = inputTempToC(Number(event.target.value), units);
+                if (Number.isFinite(next) && next >= min && next <= max) update(next);
+              }}
+              style={{ ...controlStyle(), width: 76, minHeight: 40, padding: '6px 8px', textAlign: 'right' }}
+            />
+            {tempUnit(units)}
           </span>
         </div>
         <input
           type="range"
-          min={u === 'imperial' ? 59 : 15}
-          max={u === 'imperial' ? 95 : 35}
-          step={1}
-          value={cToDisplay(kitchenTemp, u)}
-          onChange={e => {
-            const c = u === 'imperial' ? Math.round((+e.target.value - 32) * 5 / 9) : +e.target.value;
-            const hum = c >= 28 ? 'humid' : 'normal';
-            onChange(c, hum, fridgeTemp);
-            setSimpleChosen(true);
-          }}
-          style={{ width: '100%' }}
+          min={cToDisplay(min, units)} max={cToDisplay(max, units)} step={1}
+          value={cToDisplay(value, units)}
+          aria-label={label}
+          onChange={event => update(inputTempToC(Number(event.target.value), units))}
+          style={{ width: '100%', accentColor: kind === 'fridge' ? '#6A7FA8' : 'var(--terra)', cursor: 'pointer', height: 4 }}
         />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginTop: 4 }}>
-          <span>{isFr ? 'Fraîche' : 'Cool'}</span>
-          <span>{isFr ? 'Tropicale' : 'Tropical'}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 5, fontSize: 11, color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
+          {kind === 'kitchen' ? (
+            <><span>{tempC(min, units)} {fr ? 'frais' : 'cool'}</span><span>{tempC(22, units)} {fr ? 'idéal' : 'ideal'}</span><span>{tempC(30, units)} {fr ? 'chaud' : 'hot'}</span><span>{tempC(max, units)}</span></>
+          ) : (
+            <><span>{tempC(min, units)}</span><span>{tempC(6, units)} {fr ? 'standard' : 'standard'}</span><span>{tempC(8, units)} {fr ? 'chaud' : 'warm'}</span><span>{tempC(max, units)}</span></>
+          )}
         </div>
-        <div style={{marginTop:20}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <span>{isFr?'Température du frigo':'Fridge temperature'}</span><span>{temperatureEntry('fridge')}{tempUnit(u)}</span>
-          </div>
-          <input type="range" aria-label={isFr?'Régler la température du frigo':'Adjust fridge temperature'} min={cToDisplay(1,u)} max={cToDisplay(15,u)} step={1} value={cToDisplay(fridgeTemp,u)} onChange={e=>onChange(kitchenTemp,humidity,inputTempToC(Number(e.target.value),u))} style={{width:'100%',marginTop:8}} />
-          <p style={{fontSize:12,color:'var(--smoke)',margin:'4px 0'}}>{isFr?'Utilisez la température habituelle de votre frigo.':'Use your fridge’s usual temperature.'}</p>
-          {fridgeTemp>8 && <p style={{fontSize:12,color:'var(--terra)'}}>{isFr?'Frigo chaud : la fermentation reste plus active.':'Warm fridge: fermentation stays more active.'}</p>}
-        </div>
-      </div>
+        <p style={{ margin: '7px 0 0', fontSize: 12, color: 'var(--smoke)', lineHeight: 1.45 }}>
+          {kind === 'kitchen'
+            ? (fr ? 'Pendant la fermentation à température ambiante. Utilisez un thermomètre si possible.' : 'During room-temperature fermentation. Use a thermometer if available.')
+            : (fr ? 'Pendant la fermentation au froid.' : 'During cold fermentation.')}
+        </p>
+        {kind === 'fridge' && fridgeTemp > 8 && (
+          <p style={{ margin: '8px 0 0', padding: '8px 10px', background: '#EEF2FA', border: '1px solid #C4CDE0', borderRadius: 9, fontSize: 12, color: '#5A7090', lineHeight: 1.45 }}>
+            {fr ? <>Frigo à {Math.round(fridgeTemp)} °C : la fermentation restera plus active qu’à 6 °C.</> : <>At {Math.round(fridgeTemp)} °C, fermentation stays more active than at the 6 °C standard.</>}
+          </p>
+        )}
+      </section>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 22, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
+      {temperatureField('kitchen')}
+      {temperatureField('fridge')}
 
-      {/* ── Kitchen temperature ──────────────────── */}
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
-          <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>{isFr ? 'Température de la cuisine' : 'Kitchen temperature'}</label>
-          <span style={{
-            fontFamily: 'var(--font-ui)',
-            fontSize: '17px',
-            fontWeight: 700,
-            color: tempColor(kitchenTemp),
-          }}>
-            {temperatureEntry('kitchen')}{tempUnit(u)}
-          </span>
-        </div>
-
-        <input
-          type="range"
-          min={u === 'imperial' ? 59 : 15}
-          max={u === 'imperial' ? 100 : 38}
-          step={1}
-          value={cToDisplay(kitchenTemp, u)}
-          onChange={e => onChange(inputTempToC(Number(e.target.value), u), humidity, fridgeTemp)}
-          style={{ width: '100%', accentColor: 'var(--terra)', cursor: 'pointer', height: '4px' }}
-        />
-
-        {/* Axis labels */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between',
-          fontSize: '11px', color: 'var(--smoke)',
-          fontFamily: 'var(--font-ui)', marginTop: '4px',
-        }}>
-          <span>{tempC(15, u)} {isFr ? 'froid' : 'cool'}</span>
-          <span>{tempC(22, u)} {isFr ? 'idéal' : 'ideal'}</span>
-          <span>{tempC(30, u)} {isFr ? 'chaud' : 'hot'}</span>
-          <span>{tempC(38, u)}</span>
-        </div>
-
-      </div>
-
-      {/* ── City search ─────────────────────────── */}
-      <div>
-        <button
-          onClick={() => setOutdoorOpen(o => !o)}
-          style={{
-            width: '100%', padding: '12px 12px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            border: '1.5px solid var(--border)',
-            borderRadius: outdoorOpen ? '12px 12px 0 0' : '12px',
-            borderBottom: outdoorOpen ? 'none' : '1.5px solid var(--border)',
-            background: 'var(--cream)', cursor: 'pointer',
-          }}
-        >
-          <span style={{ ...SECTION_LABEL, marginBottom: 0, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M6.5 19 a4.5 4.5 0 1 1 .36-8.986 A6 6 0 1 1 18.5 12 a4 4 0 0 1-.5 7 Z" />
-            </svg>
-            {isFr ? 'Conditions extérieures' : 'Get outdoor conditions'}
-          </span>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--smoke)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-            style={{ transform: outdoorOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </button>
-        {outdoorOpen && (
-        <div style={{
-          border: '1.5px solid var(--border)', borderTop: 'none',
-          borderRadius: '0 0 16px 16px', padding: '12px',
-        }}>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <input
-            type="text"
-            placeholder={isFr ? 'Ville — ex. Naples, Tokyo, Paris' : 'City — e.g. Naples, Tokyo, Chicago'}
-            value={city}
-            onChange={e => setCity(e.target.value)}
-            onKeyDown={handleKeyDown}
-            style={{
-              flex: 1,
-              padding: '12px 16px',
-              border: '2px solid var(--border)',
-              borderRadius: '8px',
-              background: 'var(--warm)',
-              color: 'var(--char)',
-              fontSize: '14px',
-              fontFamily: 'var(--font-ui)',
-              outline: 'none',
-            }}
-          />
-          <button
-            onClick={fetchClimate}
-            disabled={loading || !city.trim()}
-            style={{
-              padding: '12px 20px', minHeight: '44px',
-              border: 'none',
-              borderRadius: '12px',
-              background: loading || !city.trim() ? 'var(--border)' : 'var(--terra)',
-              color: loading || !city.trim() ? 'var(--smoke)' : '#fff',
-              fontSize: '14px',
-              fontWeight: 500,
-              cursor: loading || !city.trim() ? 'default' : 'pointer',
-              transition: 'all .15s',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {loading ? (isFr ? 'Recherche…' : 'Fetching…') : (isFr ? 'Météo' : 'Get Climate')}
-          </button>
-        </div>
-
-        {/* Location chip — lives on its own line so it can never overflow the
-            card, and says what it does instead of being a mystery pin */}
-        <button
-          onClick={fetchByLocation}
-          disabled={loading}
-          style={{
-            marginTop: '8px',
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            padding: '8px 12px', minHeight: '44px',
-            border: '1.5px solid var(--border)',
-            borderRadius: '20px',
-            background: 'var(--cream)',
-            color: 'var(--ash)',
-            fontSize: '13px',
-            fontFamily: 'var(--font-ui)',
-            cursor: loading ? 'default' : 'pointer',
-            transition: 'all .15s',
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="7" />
-            <circle cx="12" cy="12" r="2.5" fill="var(--terra)" stroke="none" />
-            <line x1="12" y1="2" x2="12" y2="5" />
-            <line x1="12" y1="19" x2="12" y2="22" />
-            <line x1="2" y1="12" x2="5" y2="12" />
-            <line x1="19" y1="12" x2="22" y2="12" />
-          </svg>
-          {loading
-            ? (isFr ? 'Recherche…' : 'Locating…')
-            : (isFr ? 'Utiliser ma position' : 'Use my location')}
-        </button>
-
-        {/* Error */}
-        {fetchError && (
-          <div style={{
-            marginTop: '8px',
-            fontSize: '12px', color: 'var(--terra)',
-            background: '#FEF4EF', border: '1px solid #F5C4B0',
-            borderRadius: '16px', padding: '8px 12px',
-          }}>
-            {fetchError}
-          </div>
-        )}
-
-        {/* Loading skeleton */}
-        {loading && (
-          <div style={{
-            marginTop: '12px',
-            border: '1.5px solid var(--border)',
-            borderRadius: '16px',
-            padding: '16px 20px',
-            background: 'var(--warm)',
-            display: 'flex', alignItems: 'center', gap: '16px',
-          }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8A7F78"
-                 strokeWidth="1.6" strokeLinecap="round" style={{ opacity: .35 }} aria-hidden="true">
-              <path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z" />
-              <line x1="12" y1="9" x2="12" y2="15" />
-            </svg>
-            <div style={{ flex: 1 }}>
-              <div style={{ height: '12px', background: 'var(--border)', borderRadius: '16px', width: '55%', marginBottom: '8px' }} />
-              <div style={{ height: '10px', background: 'var(--border)', borderRadius: '16px', width: '35%' }} />
-            </div>
-          </div>
-        )}
-
-        {/* Weather card */}
-        {weather && !loading && (() => {
-          const wxDesc = getWMO(weather.weatherCode);
-          return (
-            <div style={{
-              marginTop: '12px',
-              border: '1.5px solid var(--border)',
-              borderRadius: '16px',
-              padding: '16px 20px',
-              background: 'var(--warm)',
-              display: 'flex', alignItems: 'center', gap: '16px',
-            }}>
-              <WeatherIcon code={weather.weatherCode} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: '15px', color: 'var(--char)' }}>
-                  {weather.country ? `${weather.city}, ${weather.country}` : weather.city}
-                </div>
-                <div style={{
-                  fontSize: '12px', color: 'var(--smoke)',
-                  fontFamily: 'var(--font-ui)', marginTop: '.1rem',
-                }}>
-                  {isFr ? getWMODescFr(weather.weatherCode) : wxDesc}
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{
-                  fontSize: '24px', fontWeight: 700,
-                  color: tempColor(weather.temp),
-                  fontFamily: 'var(--font-ui)',
-                  lineHeight: 1,
-                }}>
-                  {weather.temp}°C
-                </div>
-                <div style={{
-                  fontSize: '12px', color: 'var(--smoke)',
-                  fontFamily: 'var(--font-ui)', marginTop: '.15rem',
-                }}>
-                  {weather.humidityPct}% RH
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-        {weather && !loading && (
-          <div style={{
-            marginTop: '8px',
-            fontSize: '12px', color: 'var(--smoke)',
-            fontFamily: 'var(--font-ui)', fontStyle: 'italic',
-            lineHeight: 1.4,
-          }}>
-            {isFr
-              ? 'Cuisine estimée depuis l’extérieur — ajustez ci-dessous si besoin.'
-              : 'Kitchen estimated from outdoor — adjust below if it feels off.'}
-          </div>
-        )}
-        </div>
-        )}
-      </div>
-
-      {/* ── Humidity ────────────────────────────── */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '8px' }}>
-          <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>{isFr ? 'Humidité de la cuisine' : 'Kitchen humidity'}</label>
-          {(() => {
-            const active = HUMIDITY_OPTIONS.find(o => o.value === humidity);
-            return active ? (
-              <span style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
-                {active.desc}
-              </span>
-            ) : null;
-          })()}
-        </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'nowrap' }}>
-          {HUMIDITY_OPTIONS.map(opt => {
-            const active = humidity === opt.value;
-            return (
-              <button
-                key={opt.value}
-                onClick={() => onChange(kitchenTemp, opt.value, fridgeTemp)}
-                style={{
-                  padding: '4px 12px',
-                  borderRadius: '20px',
-                  border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                  background: active ? '#FEF4EF' : 'var(--warm)',
-                  color: active ? 'var(--terra)' : 'var(--smoke)',
-                  fontSize: '13px',
-                  fontWeight: active ? 500 : 400,
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-ui)',
-                  transition: 'all .15s',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {isFr ? ({ dry: 'Sec', normal: 'Normale', humid: 'Humide', 'very-humid': 'Très humide' } as Record<string, string>)[opt.value] : opt.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Fridge temperature (advanced only) ────── */}
       {mode === 'custom' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
-            <label style={{ ...SECTION_LABEL, marginBottom: 0 }}>{isFr ? 'Température du frigo' : 'Fridge temperature'}</label>
-            <span style={{
-              fontFamily: 'var(--font-ui)',
-              fontSize: '17px',
-              fontWeight: 700,
-              color: '#6A7FA8',
-            }}>
-              {temperatureEntry('fridge')}{tempUnit(u)}
+        <details>
+          <summary style={{ cursor: 'pointer', fontWeight: 650, minHeight: 44, display: 'flex', alignItems: 'center' }}>
+            {fr ? 'Humidité habituelle du stockage' : 'Usual flour-storage humidity'}
+            <span style={{ marginLeft: 'auto', fontWeight: 400, fontSize: 12, color: 'var(--smoke)' }}>
+              {HUMIDITY_OPTIONS.find(option => option.value === humidity)?.[fr ? 'fr' : 'en'] ?? (fr ? 'Normale / inconnue' : 'Normal / unknown')}
             </span>
+          </summary>
+          <div style={{ display: 'grid', gap: 7, marginTop: 9 }}>
+            {HUMIDITY_OPTIONS.map(option => {
+              const active = humidity === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => onChange(kitchenTemp, option.value, fridgeTemp)}
+                  style={{ ...controlStyle(), minHeight: 44, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`, background: active ? '#FEF4EF' : 'var(--paper)', fontSize: 13, textAlign: 'left' }}
+                >
+                  <span>{fr ? option.fr : option.en}</span><span style={{ color: 'var(--smoke)' }}>{option.range}</span>
+                </button>
+              );
+            })}
           </div>
-
-          <input
-            type="range"
-            min={u === 'imperial' ? 34 : 1}
-            max={u === 'imperial' ? 59 : 15}
-            step={1}
-            value={cToDisplay(fridgeTemp, u)}
-            onChange={e => onChange(kitchenTemp, humidity, inputTempToC(Number(e.target.value), u))}
-            style={{ width: '100%', accentColor: '#6A7FA8', cursor: 'pointer', height: '4px' }}
-          />
-
-          <div style={{
-            display: 'flex', justifyContent: 'space-between',
-            fontSize: '11px', color: 'var(--smoke)',
-            fontFamily: 'var(--font-ui)', marginTop: '4px',
-          }}>
-            <span>{tempC(1, u)}</span>
-            <span>{tempC(6, u)} standard</span>
-            <span>{tempC(8, u)} {isFr ? 'chaud' : 'warm'}</span>
-            <span>{tempC(15, u)}</span>
-          </div>
-
-          {fridgeTemp > 8 && (
-            <div style={{
-              marginTop: '8px',
-              fontSize: '12px', color: '#5A7090',
-              background: '#EEF2FA', border: '1px solid #C4CDE0',
-              borderRadius: '16px', padding: '8px 12px',
-            }}>
-              {isFr ? <>Un frigo à <span style={{ fontFamily: 'var(--font-ui)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> est plus chaud que le standard {tempC(6, u)} — la levure restera plus active pendant le froid.</> : <>Fridge at <span style={{ fontFamily: 'var(--font-ui)', fontWeight: 600 }}>{displayTemp(fridgeTemp, u)}</span> is warmer than the standard {tempC(6, u)} — yeast will be more active during cold retard.</>}
-            </div>
-          )}
-
-        </div>
+          <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--smoke)', lineHeight: 1.45 }}>
+            {fr ? 'Farine conservée hermétiquement : gardez « Normale ». Très humide : jusqu’à −2 points estimés, ajustables ensuite.' : 'Airtight flour storage: keep “Normal / unknown”. Very humid: an estimated reduction of up to 2 points, adjustable later.'}
+          </p>
+        </details>
       )}
 
+      {onFlourInFridgeChange && (
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minHeight: 44, cursor: 'pointer', fontSize: 14, lineHeight: 1.4 }}>
+          <input type="checkbox" checked={flourInFridge} onChange={event => onFlourInFridgeChange(event.target.checked)} style={{ width: 20, height: 20, marginTop: 1, accentColor: 'var(--terra)' }} />
+          <span><strong>{fr ? 'Farine conservée au réfrigérateur' : 'Flour kept in the fridge'}</strong><br /><span style={{ fontSize: 12, color: 'var(--smoke)' }}>{fr ? 'Cochez si la farine sera réellement froide au mélange.' : 'Check this only if the flour will be cold when you mix.'}</span></span>
+        </label>
+      )}
     </div>
   );
 }

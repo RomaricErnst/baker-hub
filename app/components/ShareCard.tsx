@@ -450,8 +450,8 @@ export default function ShareCard({
     ...liveGroups.flatMap(g =>
       g.key === 'schedule' ? ['', ...g.lines.map(li => li.text)] : g.lines.map(li => li.text)),
     '',
-    ...(bakerName ? [`Baked by ${bakerName}`] : []),
-    'Planned with bakerhub.app',
+    ...(bakerName ? [l === 'fr' ? `Préparé par ${bakerName}` : `Baked by ${bakerName}`] : []),
+    l === 'fr' ? 'Préparé avec bakerhub.app' : 'Planned with bakerhub.app',
     '',
     hashtagLine,
   ].join('\n');
@@ -716,9 +716,9 @@ export default function ShareCard({
     ctx.font      = '400 22px "DM Mono", monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.textAlign = 'left';
-    if (bakerName) ctx.fillText(`Baked by ${bakerName}`, 72, brandY);
+    if (bakerName) ctx.fillText(l === 'fr' ? `Préparé par ${bakerName}` : `Baked by ${bakerName}`, 72, brandY);
     ctx.textAlign = 'right';
-    ctx.fillText('Planned with bakerhub.app', 1080 - 72, brandY);
+    ctx.fillText(l === 'fr' ? 'Préparé avec bakerhub.app' : 'Planned with bakerhub.app', 1080 - 72, brandY);
 
     return canvas;
   }

@@ -1283,7 +1283,7 @@ export function calculateRecipe(
   const targetFDT = (mode === 'custom' && targetDoughTemp !== undefined)
     ? targetDoughTemp
     : TARGET_FDT[styleKey] ?? 24;
-  const flourTemp = (mode === 'custom' && flourInFridge)
+  const flourTemp = flourInFridge
     ? fridgeTemp
     : kitchenTemp;
   const frictionRiseC = mixerFrictionRiseC(mixerType);

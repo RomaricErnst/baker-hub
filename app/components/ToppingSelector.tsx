@@ -377,7 +377,19 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
   const budget = '€'.repeat(pizza.budget);
 
   return (
-    <div style={S.card(qty > 0)} onClick={onTap}>
+    <div
+      style={S.card(qty > 0)}
+      onClick={onTap}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onTap();
+        }
+      }}
+      aria-label={`${name}${qty > 0 ? ` · ${qty}` : ''}`}
+    >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 12px' }}>
         {/* Left: image spanning all rows */}
         <div style={{ width: '100%', aspectRatio: '2 / 1', borderRadius: '12px', overflow: 'hidden', flexShrink: 0, background: '#2B2420' }}>
@@ -472,7 +484,8 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  const imgSrc = approvedPizzaImage(pizza.id);
+  const hasCustomPhoto = pizza.id.startsWith('custom_') && !!pizza.photoUrl;
+  const imgSrc = hasCustomPhoto ? pizza.photoUrl! : approvedPizzaImage(pizza.id);
 
   // Drag-to-dismiss. A sheet that only closes via the ✕ reads as a page on a
   // phone; following the thumb and falling away past a threshold is what makes
@@ -547,23 +560,28 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           borderRadius: '20px 20px 0 0',
           overflow: 'hidden',
         }}>
-          <img
-            src={imgSrc} loading="lazy" decoding="async"
-            alt={pizza.name[l] ?? pizza.name.en}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center center',
-              display: 'block',
-            }}
-            onError={e => {
-              const img = e.target as HTMLImageElement;
-              img.style.display = 'none';
-            }}
-          />
+          {pizza.id.startsWith('custom_') && !pizza.photoUrl ? (
+            <PizzaPlaceholder name={pizza.name[l] ?? pizza.name.en} size="hero" />
+          ) : (
+            <img
+              src={imgSrc} loading="lazy" decoding="async"
+              alt={pizza.name[l] ?? pizza.name.en}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center center',
+                display: 'block',
+              }}
+              onError={e => {
+                const img = e.target as HTMLImageElement;
+                img.style.display = 'none';
+              }}
+            />
+          )}
           <button
             onClick={onClose}
+            aria-label={l === 'fr' ? 'Fermer les détails de la pizza' : 'Close pizza details'}
             style={{
               position: 'absolute', top: '2px', right: '2px',
               // 44px tap box, 28px painted disc: padding + content-box clip
@@ -844,13 +862,14 @@ const LOCATIONS = [
   { key: 'international',label: 'International' },
 ];
 
-function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onGoPrep }: {
+function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onGoPrep, onGoPizzas }: {
   qtys: Record<string, number>;
   locale: string;
   numItems: number;
   styleKey?: string;
   recipeIngredients?: Array<{ name: string; amount: string }>;
   onGoPrep?: () => void;
+  onGoPizzas?: () => void;
 }) {
   const l = locale as 'en' | 'fr';
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
@@ -911,6 +930,12 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
     let text = `Baker Hub — ${l === 'fr' ? 'Liste de courses Pizza Party' : 'Pizza Party Shopping List'}\n`;
     text += `${pizzaLines}\n\n`;
 
+    if (recipeIngredients?.length) {
+      text += `${l === 'fr' ? 'POUR VOTRE PÂTE' : 'FOR YOUR DOUGH'}\n`;
+      recipeIngredients.forEach(i => { text += `${i.name}  —  ${i.amount}\n`; });
+      text += '\n';
+    }
+
     sections.forEach(section => {
       text += `${section.label.toUpperCase()}\n`;
       section.items.forEach(item => {
@@ -922,11 +947,6 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
       text += '\n';
     });
 
-    if (recipeIngredients?.length) {
-      text += `${l === 'fr' ? 'POUR VOTRE PÂTE' : 'FOR YOUR DOUGH'}\n`;
-      recipeIngredients.forEach(i => { text += `${i.name}  —  ${i.amount}\n`; });
-      text += '\n';
-    }
     text += `bakerhub.app`;
     return text;
   }
@@ -966,13 +986,16 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           return p ? (p.name[l] ?? p.name.en) + (q > 1 ? ` ×${q}` : '') : null;
         }).filter(Boolean).join(', ');
 
+      // Keep one editable link per selected menu. A single global id caused a
+      // new party to silently overwrite the previous party's shared list.
+      const shareStorageKey = `bh_shopping_share_id:${title}`;
       let shareId: string | null = null;
-      try { shareId = localStorage.getItem('bh_shopping_share_id'); } catch {}
+      try { shareId = localStorage.getItem(shareStorageKey); } catch {}
 
       if (shareId) {
         const { error } = await supabase
           .from('shopping_list_shares')
-          .update({ title, items, dough_items: doughItems })
+          .update({ title, items, dough_items: doughItems, checked: ticked })
           .eq('id', shareId);
         if (error) shareId = null; // row may have been removed — fall through to create
       }
@@ -990,7 +1013,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           return;
         }
         shareId = data.id;
-        if (shareId) { try { localStorage.setItem('bh_shopping_share_id', shareId); } catch {} }
+        if (shareId) { try { localStorage.setItem(shareStorageKey, shareId); } catch {} }
       }
 
       const url = `${window.location.origin}/${locale}/list/${shareId}`;
@@ -1030,7 +1053,9 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
             fontFamily: 'var(--font-ui)',
           }}>
             {(() => {
-              const toBuy = sections.reduce((acc, s) => acc + s.items.filter(i => !ticked[i.id]).length, 0);
+              const toppingToBuy = sections.reduce((acc, s) => acc + s.items.filter(i => !ticked[i.id]).length, 0);
+              const doughToBuy = recipeIngredients?.filter((_, i) => !ticked['dough_' + i]).length ?? 0;
+              const toBuy = toppingToBuy + doughToBuy;
               return l === 'fr'
                 ? `${totalSelected} pizza${totalSelected > 1 ? 's' : ''} · ${toBuy} ingrédient${toBuy > 1 ? 's' : ''} à acheter`
                 : `${totalSelected} pizza${totalSelected > 1 ? 's' : ''} · ${toBuy} ingredient${toBuy > 1 ? 's' : ''} to buy`;
@@ -1068,6 +1093,45 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
       {/* List */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
+        {/* Dough is the first thing to buy. Keeping it above the toppings
+            mirrors the recipe and prevents the same flour/water being hidden
+            after a long topping catalogue. */}
+        {recipeIngredients && recipeIngredients.length > 0 && (
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ padding: '12px 12px 8px', background: '#F0EBE0', borderLeft: '3px solid #6B4423' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-ui)' }}>
+                {l === 'fr' ? 'Pour votre pâte' : 'For your dough'}
+              </span>
+            </div>
+            {recipeIngredients.map((ing, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px', borderBottom: '0.5px solid #F0EBE3' }}>
+                <button
+                  onClick={() => toggleTick('dough_' + i)}
+                  aria-label={ticked['dough_' + i]
+                    ? (l === 'fr' ? `Désélectionner ${ing.name}` : `Uncheck ${ing.name}`)
+                    : (l === 'fr' ? `Marquer ${ing.name} comme acheté` : `Mark ${ing.name} as bought`)}
+                  style={{
+                    width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
+                    border: ticked['dough_' + i] ? 'none' : '1.5px solid #C8C0B8',
+                    background: ticked['dough_' + i] ? '#6B7A5A' : 'transparent',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  {ticked['dough_' + i] && (
+                    <svg viewBox="0 0 12 12" width={10} height={10} fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+                      <path d="M2 6l3 3 5-5"/>
+                    </svg>
+                  )}
+                </button>
+                <span style={{ fontSize: '13px', color: ticked['dough_' + i] ? '#B0A89E' : '#2B2420', flex: 1, textDecoration: 'none' }}>
+                  {ing.name}
+                </span>
+                <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>{ing.amount}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {sections.map(section => (
           <div key={section.label} style={{ marginBottom: '20px' }}>
             <div style={{ padding: '12px 12px 8px 12px', background: '#F0EBE0', borderLeft: '3px solid #6B4423', marginTop: '8px' }}>
@@ -1156,38 +1220,6 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           </div>
         ))}
 
-        {recipeIngredients && recipeIngredients.length > 0 && (
-          <div>
-            <div style={{ padding: '8px 12px 4px 12px', background: '#F0EBE0', borderLeft: '3px solid #6B4423' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-ui)' }}>
-                {l === 'fr' ? 'Pour votre pâte' : 'For your dough'}
-              </span>
-            </div>
-            {recipeIngredients.map((ing, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px', borderBottom: '0.5px solid #F0EBE3' }}>
-                <button
-                  onClick={() => toggleTick('dough_' + i)}
-                  style={{
-                    width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
-                    border: ticked['dough_' + i] ? 'none' : '1.5px solid #C8C0B8',
-                    background: ticked['dough_' + i] ? '#6B7A5A' : 'transparent',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  {ticked['dough_' + i] && (
-                    <svg viewBox="0 0 12 12" width={10} height={10} fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
-                      <path d="M2 6l3 3 5-5"/>
-                    </svg>
-                  )}
-                </button>
-                <span style={{ fontSize: '13px', color: ticked['dough_' + i] ? '#B0A89E' : '#2B2420', flex: 1, textDecoration: 'none' }}>
-                  {ing.name}
-                </span>
-                <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>{ing.amount}</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Footer: primary = onward journey (prep), share is secondary */}
@@ -1197,6 +1229,13 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           style={{ ...NEXT_CTA, marginBottom: '8px' }}
         >
           {l === 'fr' ? 'Préparation →' : 'Prep →'}
+        </button>
+        <button
+          type="button"
+          onClick={() => onGoPizzas?.()}
+          style={{ ...SECONDARY_CTA, marginBottom: '8px' }}
+        >
+          {l === 'fr' ? 'Modifier les pizzas' : 'Change pizzas'}
         </button>
         <button
           onClick={handleShare}
@@ -1415,6 +1454,11 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
   // Name search across the pizza list
   const [nameSearch, setNameSearch] = useState('');
+  // Keep the catalogue scannable on a phone. The prototype presents twelve
+  // results at a time; without a page boundary a broad search rendered the
+  // whole catalogue and pushed the selected-pizza actions far below the fold.
+  const [pizzaPage, setPizzaPage] = useState(0);
+  const PIZZAS_PER_PAGE = 12;
 
   // Name-search predicate — shared by the curated list and Mes pizzas
   const matchesSearch = useMemo(() => {
@@ -1431,6 +1475,22 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
     const base = filterPizzas(pizzaCourse === 'sweet' ? DESSERT_PIZZAS : PIZZAS, { ...(pizzaCourse === 'sweet' ? DEFAULT_FILTER : filter), styleKey: (styleKey as import('../lib/toppingTypes').StyleKey) ?? undefined });
     return matchesSearch ? base.filter(matchesSearch) : base;
   }, [filter, styleKey, matchesSearch, pizzaCourse]);
+
+  const pizzaPageCount = Math.max(1, Math.ceil(filtered.length / PIZZAS_PER_PAGE));
+  const visibleFiltered = filtered.slice(
+    pizzaPage * PIZZAS_PER_PAGE,
+    (pizzaPage + 1) * PIZZAS_PER_PAGE,
+  );
+
+  // A new search, filter, style, or savoury/dessert catalogue always starts
+  // at the first page. Clamp as a safety net when a filter removes the page
+  // that was visible before it changed.
+  useEffect(() => {
+    setPizzaPage(0);
+  }, [nameSearch, filter, styleKey, pizzaCourse]);
+  useEffect(() => {
+    setPizzaPage(page => Math.min(page, pizzaPageCount - 1));
+  }, [pizzaPageCount]);
 
   // Mes pizzas go through the exact same pipeline — a base or ingredient
   // filter (or the search) applies to the baker's creations too.
@@ -1545,6 +1605,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   const clearAll = () => {
     setFilter({ ...DEFAULT_FILTER });
     setRegionParent('all');
+    setNameSearch('');
+    setIngSearch('');
+    setPizzaCourse('savoury');
   };
 
   // ── Render ──────────────────────────────────────────────────
@@ -1729,7 +1792,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               activeChips.push({ label: cLabels[filter.complexity] ?? String(filter.complexity), onRemove: () => setComplexity(null) });
             }
             (filter.ingredientChips ?? []).forEach(ic => activeChips.push({
-              label: ic,
+              label: INGREDIENT_CHIPS.flatMap(group => group.items).find(item => item.search === ic)?.[l] ?? ic,
               onRemove: () => setFilter((p: FilterState) => ({ ...p, ingredientChips: (p.ingredientChips ?? []).filter(c => c !== ic) })),
             }));
             if (filter.base !== null) activeChips.push({ label: BASE_LABELS[filter.base][l], onRemove: () => setBase(null) });
@@ -2239,7 +2302,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
               {/* Pizza cards */}
               <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {filtered.map(pizza => (
+                {visibleFiltered.map(pizza => (
                   <PizzaCard
                     key={pizza.id}
                     pizza={pizza}
@@ -2256,6 +2319,43 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       ? 'Aucune pizza ne correspond — essayez d\'effacer les filtres'
                       : 'No pizzas match — try clearing some filters'}
                   </div>
+                )}
+                {pizzaPageCount > 1 && (
+                  <nav
+                    aria-label={l === 'fr' ? 'Pages de pizzas' : 'Pizza pages'}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      gap: '8px', padding: '12px 0 4px',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setPizzaPage(page => Math.max(0, page - 1))}
+                      disabled={pizzaPage === 0}
+                      style={{
+                        ...SECONDARY_CTA, flex: 1, minHeight: '44px', padding: '10px 12px',
+                        opacity: pizzaPage === 0 ? 0.45 : 1,
+                        cursor: pizzaPage === 0 ? 'default' : 'pointer',
+                      }}
+                    >
+                      {l === 'fr' ? '← Précédent' : '← Previous'}
+                    </button>
+                    <span style={{ minWidth: '76px', textAlign: 'center', fontSize: '12px', color: '#8A7F78' }}>
+                      {pizzaPage + 1} / {pizzaPageCount}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPizzaPage(page => Math.min(pizzaPageCount - 1, page + 1))}
+                      disabled={pizzaPage >= pizzaPageCount - 1}
+                      style={{
+                        ...SECONDARY_CTA, flex: 1, minHeight: '44px', padding: '10px 12px',
+                        opacity: pizzaPage >= pizzaPageCount - 1 ? 0.45 : 1,
+                        cursor: pizzaPage >= pizzaPageCount - 1 ? 'default' : 'pointer',
+                      }}
+                    >
+                      {l === 'fr' ? 'Suivant →' : 'Next →'}
+                    </button>
+                  </nav>
                 )}
               </div>
 
@@ -2297,6 +2397,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           styleKey={styleKey}
           recipeIngredients={recipeIngredients}
           onGoPrep={() => onPillChange('party')}
+          onGoPizzas={() => onPillChange('pizzas')}
         />
 
         </>

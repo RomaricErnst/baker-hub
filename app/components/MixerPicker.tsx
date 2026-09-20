@@ -1,9 +1,7 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { type MixerType } from '../data';
 import DecisionList from './DecisionList';
-import DecisionSummary from './DecisionSummary';
 
 interface MixerPickerProps {
   selected: MixerType | null;
@@ -24,12 +22,6 @@ const NO_KNEAD_WARNING: Partial<Record<string, string>> = {
 
 export default function MixerPicker({ selected, onSelect, styleKey, bakeType, kitchenTemp, totalDoughG, locale }: MixerPickerProps) {
   const t = useTranslations('mixer');
-  // Same rule as OvenPicker: start collapsed when already chosen, and let the
-  // selection show for a beat before folding away.
-  const [expanded, setExpanded] = useState(selected == null);
-  const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (collapseTimer.current) clearTimeout(collapseTimer.current); }, []);
-
   const options = [
     { id: 'stand',    image: '/images/approved/equipment-v2/stand-mixer.webp',   title: t('stand.title'),    tagline: t('stand.tagline') },
     { id: 'hand',     image: '/images/approved/equipment-v2/hand-kneading.webp',    title: t('hand.title'),     tagline: t('hand.tagline') },
@@ -37,32 +29,8 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
     { id: 'spiral',   image: '/images/approved/equipment-v2/spiral-mixer-v3.webp',  title: t('spiral.title'),   tagline: t('spiral.tagline') },
   ];
 
-  const selectedOpt = options.find(o => o.id === selected);
-
-  return (
-    <>
-      {!expanded && selectedOpt ? (
-        <DecisionSummary
-          thumbnail={selectedOpt.image}
-          title={selectedOpt.title}
-          tagline={selectedOpt.tagline}
-          onExpand={() => setExpanded(true)}
-        />
-      ) : (
-        <div>
-          {/* Subtitle dropped: the Equipment page already carries two pickers
-              and two group labels, and each option states its own effect. */}
-          <DecisionList layout="photo"
-            options={options}
-            selectedId={selected ?? ''}
-            onSelect={(id) => {
-              onSelect(id as MixerType);
-              if (collapseTimer.current) clearTimeout(collapseTimer.current);
-              collapseTimer.current = setTimeout(() => setExpanded(false), 420);
-            }}
-          />
-        </div>
-      )}
+  return (<>
+      <DecisionList layout="photo" options={options} selectedId={selected ?? ''} onSelect={id => onSelect(id as MixerType)} />
 
       {/* Early batch hint — the 1500g cap otherwise only appears on the
           recipe page, after the baker has already committed to the mixer */}
@@ -85,7 +53,7 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
           borderRadius: '16px', padding: '12px 16px', fontSize: '12px',
           color: '#7A5A10', lineHeight: 1.55, display: 'flex', gap: '8px', alignItems: 'flex-start',
         }}>
-          <span>{NO_KNEAD_WARNING[styleKey]}</span>
+          <span>{locale === 'fr' ? 'Pour une pâte qui se tient mieux à l’étalage, choisissez le pétrissage à la main ou au robot.' : 'For dough that holds its shape more easily when stretching, choose hand or stand mixing.'}</span>
         </div>
       )}
     </>

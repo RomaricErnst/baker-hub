@@ -230,6 +230,8 @@ export default function Header({
   onSaveSession,
   onNewSession,
   onBack,
+  onReviewPlan,
+  onSharePlan,
   onOpenProfile,
   onLoadBakeEvent,
   onResumeBakeEvent,
@@ -251,6 +253,8 @@ export default function Header({
   onSaveSession?: () => void;
   onNewSession?: () => void;
   onBack?: () => void;
+  onReviewPlan?: () => void;
+  onSharePlan?: () => void;
   onOpenProfile?: () => void;
   onLoadBakeEvent?: (event: BakeEvent) => void;
   onResumeBakeEvent?: (event: BakeEvent) => void;
@@ -268,6 +272,11 @@ export default function Header({
 
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPage, setMenuPage] = useState<'main' | 'settings' | 'library' | 'account'>('main');
+  const menuButton: React.CSSProperties = { width: '100%', textAlign: 'left', minHeight: 44, padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, background: 'white', color: 'var(--char)', font: 'inherit', cursor: 'pointer', textDecoration: 'none', boxSizing: 'border-box' };
+  const menuGroup: React.CSSProperties = { fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--smoke)', margin: '12px 0 4px' };
+  useEffect(() => { if (!menuOpen) setMenuPage('main'); }, [menuOpen]);
+  useEffect(() => { drawerRef.current?.scrollTo(0, 0); drawerRef.current?.focus(); }, [menuPage]);
   const drawerRef = useRef<HTMLDivElement>(null);
   // Keep keyboard navigation inside the open menu and restore the trigger.
   useEffect(() => {
@@ -296,6 +305,7 @@ export default function Header({
     let timer: ReturnType<typeof setTimeout> | null = null;
     const open = () => {
       setMenuOpen(true);
+      setMenuPage('account');
       setAuthSpotlight(true);
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => setAuthSpotlight(false), 4000);
@@ -517,136 +527,40 @@ export default function Header({
         />
         {/* Drawer panel */}
         <div id="bakerhub-menu" ref={drawerRef} role="dialog" aria-modal="true" aria-label="Menu" tabIndex={-1} style={{
-          position: 'fixed', top: 0, left: 0, height: '100dvh', width: 'min(360px, 100vw)',
-          background: 'var(--warm)', borderRight: '1px solid var(--border)',
+          position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', maxHeight: '80dvh', width: 'min(390px, calc(100vw - 24px))', padding: 20, boxSizing: 'border-box', borderRadius: 20,
+          background: 'var(--warm)', border: '1px solid var(--border)',
           boxShadow: '4px 0 32px rgba(43,36,32,0.18)', zIndex: 200,
           display: 'flex', flexDirection: 'column', overflowY: 'auto', color: 'var(--char)',
-          animation: 'slideInLeft 0.25s ease',
+          fontFamily: 'var(--font-ui)', fontSize: 15, lineHeight: 1.5,
         }}>
           {/* Drawer header */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '16px 16px 12px', borderBottom: '1px solid var(--border)',
+            padding: '0 0 14px',
             position: 'sticky', top: 0, background: 'var(--warm)', zIndex: 2,
             flexShrink: 0,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <img src="/logo-mark.webp" alt="" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }}/>
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--char)' }}>
-                Baker Hub
-              </span>
-            </div>
-            <button
-              onClick={() => setMenuOpen(false)}
-              aria-label={locale === 'fr' ? 'Fermer' : 'Close'}
-              style={{
-                background: 'transparent', border: 'none', color: 'var(--smoke)',
-                fontSize: '17px', lineHeight: 1, cursor: 'pointer',
-                width: '44px', height: '44px', margin: '-11px -11px -11px 0',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >✕</button>
+            <strong>{menuPage === 'main' ? 'Menu' : menuPage === 'settings' ? (locale === 'fr' ? 'Langue et unités' : 'Language & units') : menuPage === 'library' ? (locale === 'fr' ? 'Mes fournées enregistrées' : 'My saved bakes') : (locale === 'fr' ? 'Compte' : 'Account')}</strong>
+            <button onClick={() => setMenuOpen(false)} style={{ ...menuButton, width: 'auto' }}>{locale === 'fr' ? 'Fermer' : 'Close'}</button>
           </div>
+          {menuPage !== 'main' && <button onClick={() => setMenuPage('main')} style={{ ...menuButton, marginBottom: 14 }}>{locale === 'fr' ? '‹ Retour au menu' : '‹ Back to menu'}</button>}
+          {menuPage === 'main' && <nav aria-label="Menu" style={{ display: 'grid', gap: 8 }}>
+            {onNewSession && <>
+              <div style={menuGroup}>{locale === 'fr' ? 'Ce plan' : 'This plan'}</div>
+              {onReviewPlan && <button style={menuButton} onClick={() => { setMenuOpen(false); onReviewPlan(); }}>{locale === 'fr' ? 'Revoir mes choix' : 'Review choices'}</button>}
+              {onSaveSession && <button style={menuButton} onClick={() => { setMenuOpen(false); onSaveSession(); }}>{locale === 'fr' ? (recipeGenerated ? 'Enregistrer la recette' : 'Enregistrer mes choix') : (recipeGenerated ? 'Save recipe' : 'Save draft')}</button>}
+              {recipeGenerated && onSharePlan && <button style={menuButton} onClick={() => { setMenuOpen(false); onSharePlan(); }}>{locale === 'fr' ? 'Partager la recette' : 'Share recipe'}</button>}
+              <button style={menuButton} onClick={() => { setMenuOpen(false); onNewSession(); }}>{locale === 'fr' ? 'Commencer une nouvelle fournée' : 'Start a new bake'}</button>
+            </>}
+            <div style={menuGroup}>Bakerhub</div>
+            <button style={menuButton} onClick={() => setMenuPage('library')}>{locale === 'fr' ? 'Mes fournées enregistrées' : 'My saved bakes'}</button>
+            <button style={menuButton} onClick={() => setMenuPage('account')}>{locale === 'fr' ? 'Compte' : 'Account'}</button>
+            {onOpenProfile && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenProfile(); }}>{locale === 'fr' ? 'Préférences de cuisine' : 'Kitchen preferences'}</button>}
+            <button style={menuButton} onClick={() => setMenuPage('settings')}>{locale === 'fr' ? 'Langue et unités' : 'Language & units'}</button>
+            <Link style={menuButton} href={locale === 'fr' ? '/fr/about' : '/about'} onClick={() => setMenuOpen(false)}>{locale === 'fr' ? 'À propos de Bakerhub' : 'About Bakerhub'}</Link>
+          </nav>}
 
-          {/* ── Current session — always visible ── */}
-          {(recipeGenerated || sessionRestored || onNewSession) && (
-            <div style={{
-              padding: '12px 16px',
-              borderBottom: '1px solid var(--border)',
-              flexShrink: 0,
-            }}>
-              <div style={{ ...monoLabel, marginBottom: '8px' }}>
-                {locale === 'fr' ? 'Ce plan' : 'This plan'}
-              </div>
-
-              {/* Summary card */}
-              {(sessionSummary || sessionDoughSpec) && <div style={{
-                background: 'var(--cream)',
-                border: '1px solid var(--border)',
-                borderRadius: '16px',
-                padding: '12px 12px',
-              }}>
-                {sessionSummary && (
-                  <div style={{
-                    fontSize: '12px', fontFamily: 'var(--font-ui)',
-                    fontWeight: 600, color: 'var(--char)',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>{sessionSummary}</div>
-                )}
-                {sessionDoughSpec && (
-                  <div style={{
-                    fontSize: '11px', fontFamily: 'var(--font-ui)',
-                    color: 'var(--smoke)', marginTop: '2px',
-                  }}>{sessionDoughSpec}</div>
-                )}
-              </div>}
-
-              {/* Action row */}
-              <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
-                {sessionSaved ? (
-                  <span style={{
-                    fontSize: '11px', fontFamily: 'var(--font-ui)',
-                    color: user ? 'var(--sage)' : 'var(--smoke)',
-                    cursor: 'default', lineHeight: 1.4,
-                  }}>
-                    {user ? tS('saved') : tS('savedLocalNote')}
-                  </span>
-                ) : onSaveSession ? (
-                  <button
-                    onClick={() => { onSaveSession?.(); setMenuOpen(false); }}
-                    style={{
-                      fontSize: '11px', fontFamily: 'var(--font-ui)',
-                      color: 'var(--terra)',
-                      border: '1px solid rgba(200, 138, 82,0.4)',
-                      borderRadius: '12px',
-                      background: 'rgba(200, 138, 82,0.1)',
-                      padding: '12px 16px', minHeight: '44px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {locale === 'fr' ? 'Enregistrer' : 'Save'}
-                  </button>
-                ) : null}
-                {onNewSession && <button
-                  // The parent owns the save/discard/cancel guard for both entry points.
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onNewSession();
-                  }}
-                  style={{
-                    fontSize: '13px', fontFamily: 'var(--font-ui)',
-                    color: 'var(--smoke)',
-                    background: 'none', border: 'none',
-                    padding: '12px 8px', minHeight: '44px',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                  }}
-                >
-                  {locale === 'fr' ? 'Nouvelle fournée' : 'Start a new bake'}
-                </button>}
-              </div>
-            </div>
-          )}
-
-          <div style={{ ...monoLabel, padding: '16px 16px 4px' }}>Bakerhub</div>
-          {/* ── Mon profil ── */}
-          {onOpenProfile && (
-            <button
-              onClick={() => { setMenuOpen(false); onOpenProfile(); }}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '12px 16px', background: 'transparent', border: 'none',
-                borderTop: '1px solid var(--border)',
-                cursor: 'pointer', width: '100%', textAlign: 'left', flexShrink: 0,
-              }}
-            >
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: 600, color: 'var(--char)' }}>
-                {locale === 'fr' ? 'Mes préférences' : 'My preferences'}
-              </span>
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>→</span>
-            </button>
-          )}
-
+          {menuPage === 'settings' && <>
           {/* ── Language · Units — always visible ── */}
           {([
             {
@@ -686,6 +600,8 @@ export default function Header({
             </div>
           ))}
 
+          </>}
+          {menuPage === 'library' && <>
           {/* ── My Sessions label — always visible ── */}
           <div style={{
             padding: '12px 16px 8px',
@@ -866,26 +782,8 @@ export default function Header({
             )}
           </div>
 
-          {/* ── About link — pinned footer ── */}
-          <div style={{
-            padding: '4px 16px 8px',
-            borderTop: '1px solid var(--border)',
-            flexShrink: 0,
-          }}>
-            <Link
-              href={locale === 'fr' ? '/fr/about' : '/about'}
-              onClick={() => setMenuOpen(false)}
-              style={{
-                fontFamily: 'var(--font-ui)', fontSize: '11px',
-                color: 'var(--smoke)', textDecoration: 'none',
-                padding: '12px 0', minHeight: '44px', boxSizing: 'border-box', display: 'block',
-                letterSpacing: '.04em', marginTop: '4px',
-              }}
-            >
-              {locale === 'fr' ? 'À propos' : 'About'}
-            </Link>
-          </div>
-
+          </>}
+          {menuPage === 'account' && <>
           {/* ── Auth — pinned footer ── */}
           <div style={{
             padding: '12px 16px',
@@ -1038,6 +936,8 @@ export default function Header({
               </div>
             )}
           </div>
+
+          </>}
 
         </div>
       </>,

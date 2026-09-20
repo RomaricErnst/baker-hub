@@ -12,6 +12,7 @@ export interface SessionData {
   itemWeight: number;
   pizzaDiameter: number;
   ovenType: string | null;
+  ovenConstruction?: 'tabletop' | 'masonry' | 'home' | 'micro';
   mixerType: string | null;
   yeastType: string | null;
   kitchenTemp: number;

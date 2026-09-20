@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
 import { PIZZAS, DESSERT_PIZZAS, getCustomPizzaList } from '../../lib/toppingDatabase';
 import type { Ingredient, IngredientUnit } from '../../lib/toppingTypes';
 
@@ -25,6 +24,8 @@ interface Props {
   locale: string;
   selectedPizzas: Record<string, number>;
   onGoToBake: () => void;
+  onGoToShopping: () => void;
+  onGoToPizzas: () => void;
   styleKey?: string;
 }
 
@@ -73,8 +74,7 @@ function assignStation(task: PrepTask): string {
   return 'board';
 }
 
-export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }: Props) {
-  const t = useTranslations('prep');
+export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShopping, onGoToPizzas, styleKey }: Props) {
   const l = locale as 'en' | 'fr';
   // Persisted so ticks survive leaving/reopening the app (cleared on Start Over)
   const [completed, setCompleted] = useState<Set<string>>(new Set());
@@ -328,8 +328,34 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
           cursor: 'pointer', border: 'none',
         }}
       >
-        {t('cta')}
+        {l === 'fr' ? 'Cuire les pizzas →' : 'Cook pizzas →'}
       </button>
+      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+        <button
+          type="button"
+          onClick={onGoToShopping}
+          style={{
+            flex: 1, minHeight: '44px', padding: '10px 12px',
+            border: '1px solid #E0D8CF', borderRadius: '12px',
+            background: '#FDFBF7', color: '#3D3530',
+            fontFamily: 'var(--font-ui)', fontSize: '13px', cursor: 'pointer',
+          }}
+        >
+          {l === 'fr' ? 'Liste de courses' : 'Shopping list'}
+        </button>
+        <button
+          type="button"
+          onClick={onGoToPizzas}
+          style={{
+            flex: 1, minHeight: '44px', padding: '10px 12px',
+            border: '1px solid #E0D8CF', borderRadius: '12px',
+            background: '#FDFBF7', color: '#3D3530',
+            fontFamily: 'var(--font-ui)', fontSize: '13px', cursor: 'pointer',
+          }}
+        >
+          {l === 'fr' ? 'Modifier les pizzas' : 'Change pizzas'}
+        </button>
+      </div>
     </div>
   );
 }

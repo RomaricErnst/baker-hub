@@ -150,6 +150,8 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           locale={locale}
           selectedPizzas={qtys}
           onGoToBake={() => onTabChange('bake')}
+          onGoToShopping={() => onTabChange('shop')}
+          onGoToPizzas={() => onTabChange('pick')}
           styleKey={pickStyleKey}
         />
       )}

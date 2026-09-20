@@ -24,3 +24,18 @@ Brioche/viennois originally omitted essential enriched ingredients in both proto
 Browser automation through CUA timed out. The alternative browser CLI successfully opened the local app and exercised the French mobile home, mode choice, style selection and quantity steps. The deployed preview fetch reaches Vercel login, and local placeholder account configuration cannot validate cloud login/save/restore. Do not claim account or complete deployed visual verification until a signed-in browser session is checked.
 
 Required before review handoff: complete EN/FR mobile/desktop journeys; direct, poolish, biga and sourdough paths; recipe/steps/graph agreement; save/reload/resume/rebake; profile/sharing/shopping; independent original-audit review; successful final build and deployed preview verification.
+
+
+## Latest parity checkpoint — 20 September
+
+Still **not ready for acceptance**. Integrated flat oven choices, oven/mixing tabs,
+shared quantity controls, compact climate controls with optional water preparation,
+recipe totals before preferment stage detail, the grouped menu and rustic-board bread
+assets. Removed the style-page preferences tip and duplicate refrigerated-flour control.
+
+The 67-test regression suite passed before the final small quantity/unit and thermal
+integration edits. A targeted refrigerated-flour regression has been added. Final
+TypeScript/build and EN/FR visual journeys at phone/tablet widths remain required.
+Local preview and browser automation are resource-constrained: browser reports
+“Resource temporarily unavailable”; local HTTP requests time out while compiling.
+Agent workers have exhausted their usage limits. Do not call this visual parity verified.

@@ -3951,7 +3951,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     if (windowHBF < effectiveMinFermH) {
       _windowTooShort = true;
-      _starterPillState = 'green';
+      // A short window has no validated starter/mix candidate. Keep the
+      // status honest so the visible blocker and later-bake suggestion are
+      // not paired with a reassuring green pill.
+      _starterPillState = 'yellow';
+      setWindowTooShort(true);
       setRefeedSuggestion(null);
       _feed2Time = null;
 
@@ -6815,7 +6819,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       </div>
 
-      {windowTooShort && eatTimeSet && !isSourdough && (
+      {windowTooShort && eatTimeSet && (
         <div style={{
           background: 'var(--cream)',
           borderRadius: '16px',

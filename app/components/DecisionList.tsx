@@ -45,7 +45,7 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
               padding: isSelected ? '10px 14px 10px 11px' : '10px 14px',
               minHeight: '62px',
               cursor: isDisabled ? 'default' : 'pointer',
-              borderBottom: idx < options.length - 1 ? '1px solid var(--border)' : 'none',
+              borderBottom: layout === 'compact' ? (idx < options.length - 1 ? '1px solid var(--border)' : 'none') : undefined,
               borderLeft: layout === 'compact' ? (isSelected ? '3px solid var(--gold)' : 'none') : undefined,
               background: isSelected ? 'rgba(156, 130, 72,0.08)' : 'white',
               opacity: isDisabled ? 0.5 : 1,
@@ -53,10 +53,7 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
             }}
           >
             <div style={{
-              // The prototype uses a full-width, compact equipment photo.
-              // Keeping it around 110px gives the baker the visual cue
-              // without pushing the second choice below the fold.
-              width: layout === 'photo' ? '100%' : layout === 'lateral' ? 100 : 56, height: layout === 'photo' ? 110 : layout === 'lateral' ? 100 : 56,
+              width: layout === 'photo' ? '100%' : layout === 'lateral' ? 100 : 56, height: layout === 'photo' ? 'auto' : layout === 'lateral' ? 100 : 56, aspectRatio: layout === 'photo' ? '2 / 1' : undefined,
               borderRadius: option.thumbnailBg ? '50%' : '8px',
               overflow: 'hidden', flexShrink: 0,
               background: option.thumbnailBg ?? '#2B2420',
