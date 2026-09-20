@@ -771,6 +771,10 @@ function StepVisual({ kind, locale }: { kind: 'mix' | 'spiral' | 'fold' | 'pooli
   </details>;
 }
 
+export function breadCoolingRange(style: string, weight: number): string {
+  return style === 'pain_seigle' ? '12–24 h' : ['baguette','fougasse','pain_viennois'].includes(style) && weight <= 400 ? '30–60 min' : weight <= 400 ? '1–2 h' : weight <= 1000 ? '2–3 h' : '3–4 h';
+}
+
 // ── Main component ───────────────────────────────────
 const TERM_TO_STEPID: Record<string, string> = {
   windowpane:        'mix',
@@ -1850,7 +1854,13 @@ Actual dough condition and equipment may differ from these estimates.`;
       </StepCard>
 
       {/* ── STEP: Bake & Eat ─────────────────────────── */}
-      <StepCard final={!isBread} number={n()} {...sc()} icon={<IconBake />} title={t('stepTitles.bakeEat')} time={schedule.bakeStart} accent="#5A9A50">
+      <StepCard final={!isBread} number={n()} {...sc()} completeLabel={!isBread ? (l === 'fr' ? 'Pâte prête' : 'Dough ready') : undefined} icon={<IconBake />} title={isBread ? t('stepTitles.bakeEat') : (l === 'fr' ? 'Votre pâte est prête' : 'Your dough is ready')} time={schedule.bakeStart} accent="#5A9A50">
+        {!isBread && <>
+          <p>{l === 'fr' ? 'Choisissez vos pizzas, préparez les garnitures, puis suivez la cuisson de chacune.' : 'Choose your pizzas, prepare the toppings, then follow each pizza through baking.'}</p>
+          {onNavigateToPizzaParty && <button type="button" onClick={onNavigateToPizzaParty} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{l === 'fr' ? 'Pizzas et garnitures →' : 'Pizzas & toppings →'}</button>}
+        </>}
+        <details open={isBread}>
+          <summary style={{display:isBread?'none':undefined,cursor:'pointer',minHeight:44}}>{l === 'fr' ? 'Conseils de cuisson' : 'Baking tips'}</summary>
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           {isPan && (
@@ -1936,10 +1946,18 @@ Actual dough condition and equipment may differ from these estimates.`;
           recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
         />
+        </details>
       </StepCard>
 
       {isBread && <StepCard final number={n()} {...sc()} icon={<IconBake />} title={l === 'fr' ? 'Laisser refroidir le pain' : 'Cool the bread'}>
-        <p>{l === 'fr' ? 'Laissez refroidir sur une grille avant de trancher. Laissez la vapeur s’échapper et la mie se stabiliser. Les pains volumineux ou denses prennent plus de temps.' : 'Cool on a rack before slicing. Let steam escape and the crumb set. Larger or denser loaves need longer.'}</p>
+        {(() => {
+          const weight = (recipe?.totalDough ?? numItems * 750) / Math.max(1,numItems);
+          const range = breadCoolingRange(styleKey, weight);
+          return <><Steps items={[
+            {bold:l === 'fr' ? 'Sortez le pain du moule ou de la cocotte et posez-le à découvert sur une grille.' : 'Remove the bread from its tin or pot and place it uncovered on a rack.',note:''},
+            {bold:l === 'fr' ? `Comptez environ ${range} avant de trancher.` : `Allow about ${range} before slicing.`,note:''},
+          ]}/><p style={{marginTop:16}}><strong>{l === 'fr' ? 'Prêt quand : ' : 'Ready when: '}</strong>{styleKey === 'pain_seigle' ? (l === 'fr' ? 'Attendez le lendemain pour trancher ; une fois refroidi, emballez-le pour éviter qu’il sèche.' : 'Wait until tomorrow to slice; once cool, wrap it to keep it from drying out.') : (l === 'fr' ? 'Le dessous du pain n’est plus chaud au toucher. Encore chaud ? Vérifiez dans 30 min.' : 'The loaf no longer feels warm underneath. Still warm? Check again in 30 min.')}</p></>;
+        })()}
         <StepExtras tips={<p>{l === 'fr' ? 'Laissez-le découvert pendant le refroidissement. Rangez-le une fois refroidi.' : 'Leave it uncovered while cooling. Store it once cool.'}</p>} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />
       </StepCard>}
 

@@ -32,3 +32,20 @@ test('sourdough choice uses planned starter events for any bread style',()=>{
  assert.equal((html.match(/Feed your starter<\/strong>/g)||[]).length,3);
  assert.ok(html.includes('starter.webp'));
 });
+test('sourdough pizza hands off to pizza journey, bread cooling uses loaf size',()=>{
+ for(const style of ['sourdough','pain_campagne']) {
+  const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-25T18:00Z'),[],22,45,'hand',style);
+  const recipe=utils.calculateRecipe(style,style==='sourdough'?'pizza_oven':'dutch_oven',1,800,22,'normal',schedule,6,'sourdough','custom','hand');
+  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,{schedule,recipe,mixerType:'hand',styleKey:style,kitchenTemp:22,numItems:1,oil:0,hydration:75,locale:'en',onNavigateToPizzaParty:()=>{}})));
+  if(style==='sourdough') {assert.ok(html.includes('Your dough is ready'));assert.ok(!html.includes('Cool the bread'));}
+  else {assert.ok(html.includes('Cool the bread'));}
+ }
+});
+
+test('cooling ranges distinguish small breads, loaves and rye',()=>{
+ const {breadCoolingRange}=require('../app/components/BakeGuide.tsx');
+ assert.equal(breadCoolingRange('baguette',250),'30–60 min');
+ assert.equal(breadCoolingRange('pain_campagne',800),'2–3 h');
+ assert.equal(breadCoolingRange('pain_campagne',1400),'3–4 h');
+ assert.equal(breadCoolingRange('pain_seigle',800),'12–24 h');
+});

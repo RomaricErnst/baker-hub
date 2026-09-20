@@ -4068,7 +4068,7 @@ export default function Home() {
                   starterLocation={starterLocation}
                   units={units}
                   locale={locale}
-                  onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}
+                  onNavigateToPizzaParty={pizzaPartyEnabled ? () => { setPizzaPartyTab(Object.values(pizzaPartyQtys).some(qty => qty > 0) ? 'prep' : 'pick'); setActiveTab('pizzaparty'); } : undefined}
                   recipe={recipe ?? null}
                   simpleMode={tab === 'simple'}
                   addSeeds={addSeeds && styleKey === 'pain_levain'}
@@ -4957,7 +4957,7 @@ export default function Home() {
                   starterLocation={starterLocation}
                   units={units}
                   locale={locale}
-                  onNavigateToPizzaParty={pizzaPartyEnabled ? () => setActiveTab('pizzaparty') : undefined}
+                  onNavigateToPizzaParty={pizzaPartyEnabled ? () => { setPizzaPartyTab(Object.values(pizzaPartyQtys).some(qty => qty > 0) ? 'prep' : 'pick'); setActiveTab('pizzaparty'); } : undefined}
                   recipe={advancedRecipe ?? null}
                   simpleMode={false}
                   addSeeds={addSeeds && styleKey === 'pain_levain'}
