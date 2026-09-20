@@ -85,3 +85,21 @@ The last tested live deployment before the levain fix was 9f5672f; 8083358 is
 being deployed. Do not equate build success with the outstanding live checks.
 Signed-in cloud save/share and an independent agent audit remain unverified:
 all three available audit workers returned usage-limit errors.
+
+## Review checkpoint — 21 September 2026, cc76157
+
+This checkpoint supersedes the test counts and reviewer availability above.
+Three fresh review agents completed independent checks of prototype parity,
+starter restoration/rebaking, and the original engine findings. Their concrete
+fixes are integrated in cc76157. All 85 regression tests and TypeScript pass.
+
+Corrections include normal numeric typing, independent step completion,
+fresh starter planning for sourdough rebakes, sugar adjustment in preferment
+dosing, buffered dough totals, starter-aware flour blend quantities, and actual
+preferment yeast percentages. Main water accounting passed the final review.
+
+The preceding 611628c deployment was checked for stable starter amounts after
+reload (115 g), canonical feeding times, and the simplified recipe layout.
+cc76157 is awaiting post-deployment browser acceptance. Signed-in cloud save
+and sharing have not been exercised. Scientific models remain estimates;
+these regression checks do not constitute experimental biological validation.

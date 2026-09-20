@@ -554,7 +554,8 @@ const sheetHeadStyle: React.CSSProperties = {
 // what am I making, where, with what, and when. The flow itself is the place
 // to answer questions one at a time; this is the place to find the one you
 // came back to change.
-function SetupReview({ flow, modeChip, onJump, onBackToRecipe }: {
+function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField }: {
+  nameField?: React.ReactNode;
   flow: StepFlow;
   modeChip?: { value: string; onClick: () => void };
   onJump: (id: number) => void;
@@ -581,6 +582,7 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe }: {
         fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700,
         margin: '2px 0 2px', letterSpacing: '-.4px',
       }}>{fr ? 'Vérifiez vos choix' : 'Review your choices'}</h2>
+      {nameField}
       <p style={{ fontSize: '13px', color: 'var(--smoke)', margin: '0 0 18px' }}>
         {fr
           ? `${done} sur ${total} \u00b7 touchez une ligne pour la changer`
@@ -3344,9 +3346,9 @@ export default function Home() {
           </h1>
 
           {/* Pizza / Bread picker — full cards before selection, compact toggle after */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', margin: '0 0 16px' }}>
+          <div className="bake-kind-grid" style={{ display: 'grid', gap: '12px', margin: '0 0 16px' }}>
             {([
-              { type: 'pizza' as BakeType, image: '/pizzas/margherita.webp', label: t('bakeType.pizza.label'), desc: t('bakeType.pizza.desc'), activeBorder: 'var(--terra)', activeBg: '#FFF8F3' },
+              { type: 'pizza' as BakeType, image: '/images/approved/pizza-style/margherita-fresh-basil-v2.webp', label: t('bakeType.pizza.label'), desc: t('bakeType.pizza.desc'), activeBorder: 'var(--terra)', activeBg: '#FFF8F3' },
               { type: 'bread' as BakeType, image: '/images/approved/bread/campagne-rustic.webp', label: t('bakeType.bread.label'), desc: t('bakeType.bread.desc'), activeBorder: 'var(--bread)', activeBg: 'var(--bread-l)' },
             ]).map(opt => (
               <div
@@ -3378,23 +3380,21 @@ export default function Home() {
                   transition: 'all .2s',
                 }}
               >
-                {/* Full-bleed image — clamped: at 38vh the Bread card sat
-                    fully below the fold on phones and could be missed */}
+                {/* Preserve the complete food silhouette on the opening choice. */}
                 <img
                   src={opt.image}
                   alt={opt.label}
-                  style={{ width: '100%', height: 'auto', aspectRatio: '16 / 9', maxHeight: 'min(28svh, 260px)', objectFit: 'cover', display: 'block' }}
+                  className="bake-kind-image" style={{ width: '100%', objectFit: 'contain', display: 'block', background: '#f3ede3' }}
                 />
-                {/* Gradient overlay with text */}
+                {/* Labels stay outside the image so they do not obscure the food. */}
                 <div style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0,
-                  padding: '32px 20px 20px',
-                  background: 'linear-gradient(to top, rgba(43, 36, 32,0.82) 0%, rgba(43, 36, 32,0.0) 100%)',
+                  padding: '12px 16px',
+                  background: 'var(--card)',
                 }}>
-                  <div style={{ fontWeight: 700, fontSize: '20px', color: 'white', marginBottom: '4px', fontFamily: 'var(--font-ui)' }}>
+                  <div style={{ fontWeight: 700, fontSize: '20px', color: 'var(--char)', marginBottom: '4px', fontFamily: 'var(--font-ui)' }}>
                     {opt.label}
                   </div>
-                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
+                  <div style={{ fontSize: '12px', color: 'var(--ash)', lineHeight: 1.5 }}>
                     {opt.desc}
                   </div>
                 </div>
@@ -3739,6 +3739,9 @@ export default function Home() {
                 first-time baker onto a review screen. */}
             {setupOverview && (
               <SetupReview
+                nameField={<label style={{display:'block',fontSize:16,fontWeight:600,marginBottom:16}}>{fr?'Nom de la préparation':'Bake name'}
+                <input value={bakeName} placeholder={bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night')} maxLength={100} onChange={e=>setBakeName(e.target.value)} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',fontWeight:400}} />
+              </label>}
                 flow={simpleFlow}
                 modeChip={{ value: t('modeCards.simple.title'), onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
                 onJump={id => { setSetupOverview(false); simpleFlow.onJump(id); }}
@@ -3749,9 +3752,6 @@ export default function Home() {
 
             {/* ─── STEP 1: Style picker ────────────── */}
             <StepPage flow={simpleFlow} id={1}>
-              <label style={{display:'block',fontSize:13,fontWeight:600,marginBottom:16}}>{fr?'Nom de la préparation':'Bake name'}
-                <input value={bakeName} placeholder={bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night')} maxLength={100} onChange={e=>setBakeName(e.target.value)} style={{display:'block',width:'100%',minHeight:44,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',fontWeight:400}} />
-              </label>
               {bakeType && (
                 <StylePicker
                   bakeType={bakeType}
@@ -3811,24 +3811,24 @@ export default function Home() {
               />
 
               <details style={{marginTop:16}}>
-                <summary style={{minHeight:44,cursor:'pointer'}}>{locale==='fr'?'Préparation de l’eau · facultatif':'Water preparation · optional'}</summary>
-                <label style={{display:'block',fontSize:13,margin:'12px 0 6px'}}>{locale==='fr'?'Origine de l’eau':'Water source'}
-                  <select value={waterSource==='tap'?'measured':waterSource} onChange={e=>{setWaterSource(e.target.value as 'room'|'fridge'|'measured');setMeasuredWaterTemp(undefined);}} style={{display:'block',width:'100%',padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
+                <summary style={{minHeight:44,fontSize:16,cursor:'pointer'}}>{locale==='fr'?'Préparation de l’eau · facultatif':'Water preparation · optional'}</summary>
+                <label style={{display:'block',fontSize:16,margin:'12px 0 6px'}}>{locale==='fr'?'Origine de l’eau':'Water source'}
+                  <select value={waterSource==='tap'?'measured':waterSource} onChange={e=>{setWaterSource(e.target.value as 'room'|'fridge'|'measured');setMeasuredWaterTemp(undefined);}} style={{display:'block',width:'100%',fontSize:16,padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
                     <option value="room">{locale==='fr'?'Eau à température ambiante':'Room-temperature water'}</option>
                     <option value="fridge">{locale==='fr'?'Eau du réfrigérateur':'Water from the fridge'}</option>
                     <option value="measured">{locale==='fr'?'Température mesurée':'Measured temperature'}</option>
                   </select>
                 </label>
-                {(waterSource==='measured'||waterSource==='tap')&&<label style={{display:'block',fontSize:13,margin:'12px 0'}}>{locale==='fr'?'Température de l’eau':'Water temperature'} ({tempUnit(units)})
-                  <input type="number" min={cToDisplay(0,units)} max={cToDisplay(60,units)} step="0.1" value={measuredWaterTemp===undefined?'':cToDisplay(measuredWaterTemp,units)} onChange={e=>setMeasuredWaterTemp(e.target.value===''?undefined:inputTempToC(Number(e.target.value),units))} style={{display:'block',width:'100%',minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
+                {(waterSource==='measured'||waterSource==='tap')&&<label style={{display:'block',fontSize:16,margin:'12px 0'}}>{locale==='fr'?'Température de l’eau':'Water temperature'} ({tempUnit(units)})
+                  <input type="number" min={cToDisplay(0,units)} max={cToDisplay(60,units)} step="0.1" value={measuredWaterTemp===undefined?'':cToDisplay(measuredWaterTemp,units)} onChange={e=>setMeasuredWaterTemp(e.target.value===''?undefined:inputTempToC(Number(e.target.value),units))} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
                 </label>}
-                {mixerType==='spiral' ? <label style={{display:'block',fontSize:13,margin:'12px 0'}}>{locale==='fr'?'Si un refroidissement est nécessaire':'When cooling is needed'}
-                  <select value={waterMethod==='direct'&&spiralIceConfirmed?'direct':'premelt'} onChange={e=>{setWaterMethod(e.target.value as 'direct'|'premelt');setSpiralIceConfirmed(e.target.value==='direct');}} style={{display:'block',width:'100%',padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
+                {mixerType==='spiral' ? <label style={{display:'block',fontSize:16,margin:'12px 0'}}>{locale==='fr'?'Si un refroidissement est nécessaire':'When cooling is needed'}
+                  <select value={waterMethod==='direct'&&spiralIceConfirmed?'direct':'premelt'} onChange={e=>{setWaterMethod(e.target.value as 'direct'|'premelt');setSpiralIceConfirmed(e.target.value==='direct');}} style={{display:'block',width:'100%',fontSize:16,padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
                     <option value="direct">{locale==='fr'?'Glace pendant le pétrissage':'Ice during mixing'}</option>
                     <option value="premelt">{locale==='fr'?'Faire fondre la glace dans l’eau avant':'Melt ice in the water first'}</option>
                   </select>
-                  <small>{locale==='fr'?'Glace au pétrissage uniquement si votre modèle le permet.':'Use ice during mixing only if your mixer permits it.'}</small>
-                </label> : <p style={{fontSize:12,color:'var(--smoke)'}}>{locale==='fr'?'Si nécessaire, la glace refroidit l’eau avant le pétrissage. Aucun glaçon dans le robot.':'If cooling is needed, melt the ice in the water before mixing. No solid ice goes into the mixer.'}</p>}
+                  <small style={{display:'block',fontSize:14,lineHeight:1.5,marginTop:8}}>{locale==='fr'?'Glace au pétrissage uniquement si votre modèle le permet.':'Use ice during mixing only if your mixer permits it.'}</small>
+                </label> : <p style={{fontSize:14,color:'var(--smoke)'}}>{locale==='fr'?'Si nécessaire, la glace refroidit l’eau avant le pétrissage. Aucun glaçon dans le robot.':'If cooling is needed, melt the ice in the water before mixing. No solid ice goes into the mixer.'}</p>}
               </details>
             </StepPage>
 
@@ -4268,6 +4268,9 @@ export default function Home() {
                 first-time baker onto a review screen. */}
             {setupOverview && (
               <SetupReview
+                nameField={<label style={{display:'block',fontSize:16,fontWeight:600,marginBottom:16}}>{fr?'Nom de la préparation':'Bake name'}
+                <input value={bakeName} placeholder={bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night')} maxLength={100} onChange={e=>setBakeName(e.target.value)} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',fontWeight:400}} />
+              </label>}
                 flow={customFlow}
                 modeChip={{ value: t('modeCards.custom.title'), onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
                 onJump={id => { setSetupOverview(false); customFlow.onJump(id); }}
@@ -4278,9 +4281,6 @@ export default function Home() {
 
             {/* ─── ADV STEP 1: Style picker ────────── */}
             <StepPage flow={customFlow} id={1}>
-              <label style={{display:'block',fontSize:13,fontWeight:600,marginBottom:16}}>{fr?'Nom de la préparation':'Bake name'}
-                <input value={bakeName} placeholder={bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night')} maxLength={100} onChange={e=>setBakeName(e.target.value)} style={{display:'block',width:'100%',minHeight:44,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',fontWeight:400}} />
-              </label>
               {bakeType && (<>
                 <StylePicker
                   bakeType={bakeType}
@@ -4380,24 +4380,24 @@ export default function Home() {
                 onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
               <details style={{marginTop:16}}>
-                <summary style={{minHeight:44,cursor:'pointer'}}>{locale==='fr'?'Préparation de l’eau · facultatif':'Water preparation · optional'}</summary>
-                <label style={{display:'block',fontSize:13,margin:'12px 0 6px'}}>{locale==='fr'?'Origine de l’eau':'Water source'}
-                  <select value={waterSource==='tap'?'measured':waterSource} onChange={e=>{setWaterSource(e.target.value as 'room'|'fridge'|'measured');setMeasuredWaterTemp(undefined);}} style={{display:'block',width:'100%',padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
+                <summary style={{minHeight:44,fontSize:16,cursor:'pointer'}}>{locale==='fr'?'Préparation de l’eau · facultatif':'Water preparation · optional'}</summary>
+                <label style={{display:'block',fontSize:16,margin:'12px 0 6px'}}>{locale==='fr'?'Origine de l’eau':'Water source'}
+                  <select value={waterSource==='tap'?'measured':waterSource} onChange={e=>{setWaterSource(e.target.value as 'room'|'fridge'|'measured');setMeasuredWaterTemp(undefined);}} style={{display:'block',width:'100%',fontSize:16,padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
                     <option value="room">{locale==='fr'?'Eau à température ambiante':'Room-temperature water'}</option>
                     <option value="fridge">{locale==='fr'?'Eau du réfrigérateur':'Water from the fridge'}</option>
                     <option value="measured">{locale==='fr'?'Température mesurée':'Measured temperature'}</option>
                   </select>
                 </label>
-                {(waterSource==='measured'||waterSource==='tap')&&<label style={{display:'block',fontSize:13,margin:'12px 0'}}>{locale==='fr'?'Température de l’eau':'Water temperature'} ({tempUnit(units)})
-                  <input type="number" min={cToDisplay(0,units)} max={cToDisplay(60,units)} step="0.1" value={measuredWaterTemp===undefined?'':cToDisplay(measuredWaterTemp,units)} onChange={e=>setMeasuredWaterTemp(e.target.value===''?undefined:inputTempToC(Number(e.target.value),units))} style={{display:'block',width:'100%',minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
+                {(waterSource==='measured'||waterSource==='tap')&&<label style={{display:'block',fontSize:16,margin:'12px 0'}}>{locale==='fr'?'Température de l’eau':'Water temperature'} ({tempUnit(units)})
+                  <input type="number" min={cToDisplay(0,units)} max={cToDisplay(60,units)} step="0.1" value={measuredWaterTemp===undefined?'':cToDisplay(measuredWaterTemp,units)} onChange={e=>setMeasuredWaterTemp(e.target.value===''?undefined:inputTempToC(Number(e.target.value),units))} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
                 </label>}
-                {mixerType==='spiral' ? <label style={{display:'block',fontSize:13,margin:'12px 0'}}>{locale==='fr'?'Si un refroidissement est nécessaire':'When cooling is needed'}
-                  <select value={waterMethod==='direct'&&spiralIceConfirmed?'direct':'premelt'} onChange={e=>{setWaterMethod(e.target.value as 'direct'|'premelt');setSpiralIceConfirmed(e.target.value==='direct');}} style={{display:'block',width:'100%',padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
+                {mixerType==='spiral' ? <label style={{display:'block',fontSize:16,margin:'12px 0'}}>{locale==='fr'?'Si un refroidissement est nécessaire':'When cooling is needed'}
+                  <select value={waterMethod==='direct'&&spiralIceConfirmed?'direct':'premelt'} onChange={e=>{setWaterMethod(e.target.value as 'direct'|'premelt');setSpiralIceConfirmed(e.target.value==='direct');}} style={{display:'block',width:'100%',fontSize:16,padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
                     <option value="direct">{locale==='fr'?'Glace pendant le pétrissage':'Ice during mixing'}</option>
                     <option value="premelt">{locale==='fr'?'Faire fondre la glace dans l’eau avant':'Melt ice in the water first'}</option>
                   </select>
-                  <small>{locale==='fr'?'Glace au pétrissage uniquement si votre modèle le permet.':'Use ice during mixing only if your mixer permits it.'}</small>
-                </label> : <p style={{fontSize:12,color:'var(--smoke)'}}>{locale==='fr'?'Si nécessaire, la glace refroidit l’eau avant le pétrissage. Aucun glaçon dans le robot.':'If cooling is needed, melt the ice in the water before mixing. No solid ice goes into the mixer.'}</p>}
+                  <small style={{display:'block',fontSize:14,lineHeight:1.5,marginTop:8}}>{locale==='fr'?'Glace au pétrissage uniquement si votre modèle le permet.':'Use ice during mixing only if your mixer permits it.'}</small>
+                </label> : <p style={{fontSize:14,color:'var(--smoke)'}}>{locale==='fr'?'Si nécessaire, la glace refroidit l’eau avant le pétrissage. Aucun glaçon dans le robot.':'If cooling is needed, melt the ice in the water before mixing. No solid ice goes into the mixer.'}</p>}
               </details>
             </StepPage>
 

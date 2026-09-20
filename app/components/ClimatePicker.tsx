@@ -54,7 +54,7 @@ export default function ClimatePicker({
     return (
       <section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
-          <label htmlFor={`climate-${kind}`} style={{ fontSize: 14, fontWeight: 650, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
+          <label htmlFor={`climate-${kind}`} style={{ fontSize: 16, fontWeight: 650, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
             {label}
           </label>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--char)', fontFamily: 'var(--font-ui)', fontWeight: 700 }}>
@@ -69,7 +69,7 @@ export default function ClimatePicker({
                 const next = inputTempToC(Number(event.target.value), units);
                 if (Number.isFinite(next) && next >= min && next <= max) update(next);
               }}
-              style={{ ...controlStyle(), width: 76, minHeight: 40, padding: '6px 8px', textAlign: 'right' }}
+              style={{ ...controlStyle(), width: 88, minHeight: 44, padding: '6px 8px', textAlign: 'right' }}
             />
             {tempUnit(units)}
           </span>
@@ -80,18 +80,18 @@ export default function ClimatePicker({
           value={cToDisplay(value, units)}
           aria-label={label}
           onChange={event => update(inputTempToC(Number(event.target.value), units))}
-          style={{ width: '100%', accentColor: kind === 'fridge' ? '#6A7FA8' : 'var(--terra)', cursor: 'pointer', height: 4 }}
+          style={{ width: '100%', accentColor: kind === 'fridge' ? '#6A7FA8' : 'var(--terra)', cursor: 'pointer', height: 44, margin: 0 }}
         />
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 5, fontSize: 11, color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 5, fontSize: 13, color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
           <span>{tempC(min, units)}</span><span>{tempC(max, units)}</span>
         </div>
-        <p style={{ margin: '7px 0 0', fontSize: 12, color: 'var(--smoke)', lineHeight: 1.45 }}>
+        <p style={{ margin: '7px 0 0', fontSize: 14, color: 'var(--smoke)', lineHeight: 1.45 }}>
           {kind === 'kitchen'
             ? (fr ? 'Pendant la fermentation à température ambiante. Utilisez un thermomètre si possible.' : 'During room-temperature fermentation. Use a thermometer if available.')
             : (fr ? 'Pendant la fermentation au froid.' : 'During cold fermentation.')}
         </p>
         {kind === 'fridge' && fridgeTemp > 8 && (
-          <p style={{ margin: '8px 0 0', padding: '8px 10px', background: '#EEF2FA', border: '1px solid #C4CDE0', borderRadius: 9, fontSize: 12, color: '#5A7090', lineHeight: 1.45 }}>
+          <p style={{ margin: '8px 0 0', padding: '8px 10px', background: '#EEF2FA', border: '1px solid #C4CDE0', borderRadius: 9, fontSize: 14, color: '#5A7090', lineHeight: 1.45 }}>
             {fr ? <>Frigo à {Math.round(fridgeTemp)} °C : la fermentation restera plus active qu’à 6 °C.</> : <>At {Math.round(fridgeTemp)} °C, fermentation stays more active than at 6 °C.</>}
           </p>
         )}
@@ -100,15 +100,15 @@ export default function ClimatePicker({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 22, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, fontSize: 16, lineHeight: 1.5, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
       {temperatureField('kitchen')}
       {temperatureField('fridge')}
 
       {mode === 'custom' && (
         <details className="bh-disclosure">
-          <summary style={{ cursor: 'pointer', fontWeight: 650, minHeight: 44, display: 'flex', alignItems: 'center' }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 650, minHeight: 44, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 12px' }}>
             {fr ? 'Humidité habituelle du stockage' : 'Usual flour-storage humidity'}
-            <span style={{ marginLeft: 'auto', fontWeight: 400, fontSize: 12, color: 'var(--smoke)' }}>
+            <span style={{ marginLeft: 'auto', fontWeight: 400, fontSize: 14, color: 'var(--smoke)' }}>
               {HUMIDITY_OPTIONS.find(option => option.value === humidity)?.[fr ? 'fr' : 'en'] ?? (fr ? 'Normale / inconnue' : 'Normal / unknown')}
             </span>
           </summary>
@@ -121,23 +121,23 @@ export default function ClimatePicker({
                   type="button"
                   aria-pressed={active}
                   onClick={() => onChange(kitchenTemp, option.value, fridgeTemp)}
-                  style={{ ...controlStyle(), minHeight: 44, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`, background: active ? '#FEF4EF' : 'var(--paper)', fontSize: 13, textAlign: 'left' }}
+                  style={{ ...controlStyle(), minHeight: 44, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`, background: active ? '#FEF4EF' : 'var(--paper)', fontSize: 16, textAlign: 'left' }}
                 >
                   <span>{fr ? option.fr : option.en}</span><span style={{ color: 'var(--smoke)' }}>{option.range}</span>
                 </button>
               );
             })}
           </div>
-          <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--smoke)', lineHeight: 1.45 }}>
+          <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--smoke)', lineHeight: 1.45 }}>
             {fr ? 'Farine conservée hermétiquement : gardez « Normale ». Très humide : jusqu’à −2 points estimés, ajustables ensuite.' : 'Airtight flour storage: keep “Normal / unknown”. Very humid: an estimated reduction of up to 2 points, adjustable later.'}
           </p>
         </details>
       )}
 
       {onFlourInFridgeChange && (
-        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minHeight: 44, cursor: 'pointer', fontSize: 14, lineHeight: 1.4 }}>
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minHeight: 44, cursor: 'pointer', fontSize: 16, lineHeight: 1.4 }}>
           <input type="checkbox" checked={flourInFridge} onChange={event => onFlourInFridgeChange(event.target.checked)} style={{ width: 20, height: 20, marginTop: 1, accentColor: 'var(--terra)' }} />
-          <span><strong>{fr ? 'Farine conservée au réfrigérateur' : 'Flour kept in the fridge'}</strong><br /><span style={{ fontSize: 12, color: 'var(--smoke)' }}>{fr ? 'Cochez si la farine sera réellement froide au mélange.' : 'Check this only if the flour will be cold when you mix.'}</span></span>
+          <span><strong>{fr ? 'Farine conservée au réfrigérateur' : 'Flour kept in the fridge'}</strong><br /><span style={{ fontSize: 14, color: 'var(--smoke)' }}>{fr ? 'Cochez si la farine sera réellement froide au mélange.' : 'Check this only if the flour will be cold when you mix.'}</span></span>
         </label>
       )}
     </div>

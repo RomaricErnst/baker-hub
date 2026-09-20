@@ -152,7 +152,7 @@ export default function PrototypeQuantityPicker({
   };
   const labelStyle: CSSProperties = {
     display: 'block',
-    fontSize: '12px',
+    fontSize: '16px',
     fontWeight: 650,
     color: 'var(--char)',
     fontFamily: 'var(--font-ui)',
@@ -187,7 +187,7 @@ export default function PrototypeQuantityPicker({
           onCommit={value => onCountChange(clamp(value, countMin, countMax, countStep))}
           style={{ ...inputStyle, fontSize: '24px', fontWeight: 700 }}
         />
-        <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--smoke)' }}>
+        <p style={{ margin: '6px 0 0', fontSize: '14px', color: 'var(--smoke)' }}>
           {count} {pieces}
         </p>
       </div>
@@ -215,7 +215,7 @@ export default function PrototypeQuantityPicker({
 
           <fieldset style={{ border: 0, padding: 0, margin: '16px 0 8px' }}>
             <legend style={labelStyle}>{fr ? 'Bord de la pizza' : 'Crust edge'}</legend>
-            <p style={{ margin: '-2px 0 8px', fontSize: '12px', color: 'var(--smoke)' }}>
+            <p style={{ margin: '-2px 0 8px', fontSize: '14px', color: 'var(--smoke)' }}>
               {fr ? 'L’épaisseur de la bordure.' : 'The outer rim of the pizza.'}
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
@@ -229,7 +229,7 @@ export default function PrototypeQuantityPicker({
                     minHeight: '44px', padding: '8px 4px', borderRadius: '9px',
                     border: crust === option.id && !usesManualWeight ? '2px solid var(--terra)' : '1px solid var(--border)',
                     background: crust === option.id && !usesManualWeight ? 'var(--paper)' : 'transparent',
-                    color: 'var(--char)', fontFamily: 'var(--font-ui)', fontSize: '12px',
+                    color: 'var(--char)', fontFamily: 'var(--font-ui)', fontSize: '14px',
                     fontWeight: crust === option.id && !usesManualWeight ? 650 : 400,
                     cursor: 'pointer',
                   }}
@@ -240,7 +240,7 @@ export default function PrototypeQuantityPicker({
             </div>
           </fieldset>
 
-          <p style={{ margin: '12px 0', fontSize: '12px', color: 'var(--smoke)', lineHeight: 1.5 }}>
+          <p style={{ margin: '12px 0', fontSize: '14px', color: 'var(--smoke)', lineHeight: 1.5 }}>
             {fr
               ? 'Le diamètre et la bordure déterminent ensemble le poids conseillé.'
               : 'Diameter and edge set the dough weight together.'}
@@ -248,7 +248,7 @@ export default function PrototypeQuantityPicker({
 
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: '14px' }}>
             <strong style={{ display: 'block', fontSize: '24px', lineHeight: 1.1 }}>{grams(itemWeight)}</strong>
-            <span style={{ display: 'block', marginTop: '4px', fontSize: '12px', color: 'var(--smoke)' }}>
+            <span style={{ display: 'block', marginTop: '4px', fontSize: '14px', color: 'var(--smoke)' }}>
               {fr ? `de pâte par pizza · ${usesManualWeight ? 'personnalisé' : 'calculé'}` : `dough per pizza · ${usesManualWeight ? 'custom' : 'calculated'}`}
             </span>
           </div>
@@ -268,7 +268,7 @@ export default function PrototypeQuantityPicker({
                 onCommit={value => onItemWeightChange(clamp(storedWeight(value), weightBounds.min, weightBounds.max, weightBounds.step))}
                 style={inputStyle}
               />
-              <p style={{ margin: '6px 0', fontSize: '12px', color: 'var(--smoke)' }}>
+              <p style={{ margin: '6px 0', fontSize: '14px', color: 'var(--smoke)' }}>
                 {fr ? 'Le diamètre reste inchangé.' : 'The diameter stays fixed.'}
               </p>
               <button type="button" onClick={() => { setManualEditing(false); onUseCalculatedWeight?.(); }} style={{ minHeight: '44px', padding: '8px 0', border: 0, background: 'transparent', color: 'var(--terra)', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
@@ -299,22 +299,22 @@ export default function PrototypeQuantityPicker({
             onCommit={value => onItemWeightChange(clamp(storedWeight(value), weightBounds.min, weightBounds.max, weightBounds.step))}
             style={inputStyle}
           />
-          <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--smoke)' }}>
+          <p style={{ margin: '6px 0 0', fontSize: '14px', color: 'var(--smoke)' }}>
             {bakeType === 'bread' ? (fr ? 'Définissez la taille de chaque pain.' : 'Set the size of each loaf.') : (fr ? 'Définissez la quantité de pâte par plaque.' : 'Set the dough weight for each tray.')}
           </p>
         </section>
       )}
 
-      <div aria-live="polite" style={{ marginTop: '14px', padding: '12px 14px', background: 'var(--cream)', borderRadius: '9px', fontSize: '13px', lineHeight: 1.5 }}>
+      <div aria-live="polite" style={{ marginTop: '14px', padding: '12px 14px', background: 'var(--cream)', borderRadius: '9px', fontSize: '14px', lineHeight: 1.5 }}>
         <strong>{count} × {grams(itemWeight)} = {grams(count * itemWeight)}</strong>
         <br />
         <span style={{ color: 'var(--smoke)' }}>{fr ? 'Pâte totale avant la marge éventuelle' : 'Total dough before any waste allowance'}</span>
       </div>
 
       {limitNote && (
-        <div style={{ marginTop: '12px', padding: '10px 12px', background: '#FEF9F0', borderRadius: '9px', border: '1px solid #F0D9A0', display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', lineHeight: 1.45 }}>
+        <div style={{ marginTop: '12px', padding: '10px 12px', background: '#FEF9F0', borderRadius: '9px', border: '1px solid #F0D9A0', display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '14px', lineHeight: 1.45 }}>
           <span style={{ flex: 1 }}>{limitNote}</span>
-          {onLimitMore && <button type="button" onClick={onLimitMore} style={{ minHeight: '36px', padding: '6px 10px', borderRadius: '18px', border: '1px solid var(--border)', background: 'var(--paper)', color: 'var(--smoke)', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>{limitMoreLabel ?? (fr ? 'En savoir plus' : 'Learn more')}</button>}
+          {onLimitMore && <button type="button" onClick={onLimitMore} style={{ minHeight: '44px', padding: '6px 10px', borderRadius: '18px', border: '1px solid var(--border)', background: 'var(--paper)', color: 'var(--smoke)', fontSize: '14px', cursor: 'pointer', whiteSpace: 'nowrap' }}>{limitMoreLabel ?? (fr ? 'En savoir plus' : 'Learn more')}</button>}
         </div>
       )}
 

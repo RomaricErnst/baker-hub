@@ -1,6 +1,10 @@
 'use client';
-import {useId} from 'react';
+import {useId, type CSSProperties} from 'react';
 import { displayTemp, displayWeight, cToDisplay, inputTempToC, tempUnit, type UnitSystem } from '../utils/units';
+const waterText: CSSProperties = {marginTop: 8, fontFamily: 'var(--font-ui)', fontSize: 16, lineHeight: 1.55, color: 'var(--char)'};
+const disclosureStyle: CSSProperties = {minHeight: 44, padding: '10px 0', boxSizing: 'border-box', cursor: 'pointer', fontSize: 16, fontWeight: 600, lineHeight: 1.5};
+const choiceLabelStyle: CSSProperties = {display: 'flex', alignItems: 'center', gap: 10, minHeight: 44, padding: '8px 0', boxSizing: 'border-box', cursor: 'pointer'};
+const choiceInputStyle: CSSProperties = {width: 20, height: 20, flexShrink: 0, margin: 0, accentColor: 'var(--terra)'};
 export type WaterSource = 'room' | 'fridge' | 'tap' | 'measured';
 export type WaterMethod = 'premelt' | 'direct';
 export interface WaterSettingsProps {
@@ -67,7 +71,7 @@ export default function WaterPreparation({waterGrams,targetTemp,kitchenTemp,frid
         ? 'Réchauffez l’eau ou la farine avant le mélange, puis contrôlez la pâte.'
         : 'Warm the water or flour before mixing, then check the dough.'
     : null;
-  if (readOnly) return <div style={{marginTop:6,fontSize:13}}>
+  if (readOnly) return <div style={{...waterText, fontSize:14}}>
     {split ? <>
       <div>{displayWeight(split.water,units)} {fr ? 'eau' : 'water'} · {displayTemp(split.ice > 0 || direct ? starting! : targetTemp,units)}</div>
       {split.ice > 0 && <div>{displayWeight(split.ice,units)} {fr ? 'glace' : 'ice'}</div>}
@@ -78,23 +82,23 @@ export default function WaterPreparation({waterGrams,targetTemp,kitchenTemp,frid
       {clamped && !thermalGap && <p>{fr ? 'Cible de pâte inaccessible avec cette préparation. Revoyez les réglages de la cuisine.' : 'This preparation cannot reach the dough target. Review kitchen settings.'}</p>}
     </> : <>{thermalGapText ? <><p>{thermalGapText}</p><p>{thermalAction}</p></> : <span>{fr ? 'Complétez la préparation de l’eau dans les réglages de la cuisine.' : 'Complete water preparation in kitchen settings.'}</span>}</>}
   </div>;
-  return <div style={{marginTop:6}}>
+  return <div style={waterText}>
     {targetDoughTemp!=null&&<p style={{margin:'0 0 8px'}}>{fr?'Pâte après pétrissage':'Dough after mixing'} · <strong>{displayTemp(targetDoughTemp,units)}</strong></p>}
-    {!readOnly && onSourceChange && <div role="group" aria-label={fr?'Source de l’eau':'Water source'} style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:6}}>
-      {(['room','fridge','tap','measured'] as const).map(key=><button key={key} type="button" aria-pressed={source===key} onClick={()=>onSourceChange(key)} style={{minHeight:40,padding:'5px 9px',border:'1px solid var(--border)',borderRadius:8,background:source===key?'var(--terra)':'transparent',color:source===key?'white':'inherit'}}>{({room:fr?'Ambiante':'Room',fridge:fr?'Frigo':'Fridge',tap:fr?'Robinet':'Tap',measured:fr?'Mesurée':'Measured'})[key]}</button>)}
+    {!readOnly && onSourceChange && <div role="group" aria-label={fr?'Source de l’eau':'Water source'} style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
+      {(['room','fridge','tap','measured'] as const).map(key=><button key={key} type="button" aria-pressed={source===key} onClick={()=>onSourceChange(key)} style={{minHeight:44,padding:'9px 12px',fontFamily:'inherit',fontSize:16,lineHeight:1.4,cursor:'pointer',border:'1px solid var(--border)',borderRadius:8,background:source===key?'var(--terra)':'transparent',color:source===key?'white':'inherit'}}>{({room:fr?'Ambiante':'Room',fridge:fr?'Frigo':'Fridge',tap:fr?'Robinet':'Tap',measured:fr?'Mesurée':'Measured'})[key]}</button>)}
     </div>}
-    {!readOnly&&entered&&onMeasuredWaterTempChange&&<label style={{display:'block',marginBottom:8}}>{fr?'Température de l’eau':'Water temperature'} ({tempUnit(units)}) <input aria-label={`${fr?'Température de l’eau':'Water temperature'} (${tempUnit(units)})`} type="number" min={units==='imperial'?32:0} max={units==='imperial'?140:60} step={units==='imperial'?1:0.5} value={measuredWaterTemp==null?'':units==='imperial'?cToDisplay(measuredWaterTemp,units):measuredWaterTemp} onChange={e=>onMeasuredWaterTempChange(e.target.value===''?undefined:inputTempToC(Number(e.target.value),units))} style={{width:80}} /></label>}
-    {!readOnly&&directIceSupported&&onWaterMethodChange&&<details style={{marginBottom:8}}><summary>{fr?'Méthode de refroidissement':'Cooling method'}</summary>
-      <label><input type="radio" name={fieldId} checked={!direct} onChange={()=>onWaterMethodChange('premelt')} />{fr?'Eau préparée séparément':'Prepare water separately'}</label><br/>
-      <label><input type="radio" name={fieldId} checked={direct} onChange={()=>onWaterMethodChange('direct')} />{fr?'Glace dans le pétrin à spirale':'Ice in spiral mixer'}</label>
-      {direct&&<label style={{display:'block'}}><input type="checkbox" checked={spiralIceConfirmed} onChange={e=>onSpiralIceConfirmedChange?.(e.target.checked)} />{fr?'Mon pétrin autorise les glaçons.':'My mixer allows ice cubes.'}</label>}
+    {!readOnly&&entered&&onMeasuredWaterTempChange&&<label style={{display:'flex',alignItems:'center',flexWrap:'wrap',gap:10,marginBottom:12}}>{fr?'Température de l’eau':'Water temperature'} ({tempUnit(units)}) <input aria-label={`${fr?'Température de l’eau':'Water temperature'} (${tempUnit(units)})`} type="number" min={units==='imperial'?32:0} max={units==='imperial'?140:60} step={units==='imperial'?1:0.5} value={measuredWaterTemp==null?'':units==='imperial'?cToDisplay(measuredWaterTemp,units):measuredWaterTemp} onChange={e=>onMeasuredWaterTempChange(e.target.value===''?undefined:inputTempToC(Number(e.target.value),units))} style={{width:96,minHeight:44,padding:'8px 10px',border:'1px solid var(--border)',borderRadius:8,background:'var(--paper)',color:'var(--char)',fontFamily:'inherit',fontSize:16}} /></label>}
+    {!readOnly&&directIceSupported&&onWaterMethodChange&&<details style={{marginBottom:8}}><summary style={disclosureStyle}>{fr?'Méthode de refroidissement':'Cooling method'}</summary>
+      <label style={choiceLabelStyle}><input style={choiceInputStyle} type="radio" name={fieldId} checked={!direct} onChange={()=>onWaterMethodChange('premelt')} />{fr?'Eau préparée séparément':'Prepare water separately'}</label>
+      <label style={choiceLabelStyle}><input style={choiceInputStyle} type="radio" name={fieldId} checked={direct} onChange={()=>onWaterMethodChange('direct')} />{fr?'Glace dans le pétrin à spirale':'Ice in spiral mixer'}</label>
+      {direct&&<label style={choiceLabelStyle}><input style={choiceInputStyle} type="checkbox" checked={spiralIceConfirmed} onChange={e=>onSpiralIceConfirmedChange?.(e.target.checked)} />{fr?'Mon pétrin autorise les glaçons.':'My mixer allows ice cubes.'}</label>}
     </details>}
-    <strong>{starting==null ? (fr?'Saisissez la température pour calculer la glace.':'Enter the water temperature to calculate ice.') : !allowed ? (fr?'Confirmez la compatibilité du pétrin.':'Confirm mixer compatibility.') : !split ? (fr?'Cible inaccessible avec cette eau et cette méthode.':'Target cannot be reached with this water and method.') : split.ice>0 ? `${displayWeight(split.water,units)} ${fr?'eau':'water'} + ${displayWeight(split.ice,units)} ${fr?'glace':'ice'}` : `${displayWeight(split.water,units)} ${fr?'eau':'water'}${!direct?` · ${displayTemp(targetTemp,units)}`:''}`}</strong>
+    <strong style={{display:'block',margin:'12px 0 8px'}}>{starting==null ? (fr?'Saisissez la température pour calculer la glace.':'Enter the water temperature to calculate ice.') : !allowed ? (fr?'Confirmez la compatibilité du pétrin.':'Confirm mixer compatibility.') : !split ? (fr?'Cible inaccessible avec cette eau et cette méthode.':'Target cannot be reached with this water and method.') : split.ice>0 ? `${displayWeight(split.water,units)} ${fr?'eau':'water'} + ${displayWeight(split.ice,units)} ${fr?'glace':'ice'}` : `${displayWeight(split.water,units)} ${fr?'eau':'water'}${!direct?` · ${displayTemp(targetTemp,units)}`:''}`}</strong>
     {split&&<div>{direct ? (fr?'Ajoutez l’eau et la glace, puis commencez à pétrir. La glace fond pendant le pétrissage.':'Add the water and ice, then start mixing. The ice melts during mixing.') : split.ice>0 ? (fr?'Remuez la glace dans l’eau jusqu’à fonte complète, puis utilisez cette eau pour la pâte.':'Stir the ice into the water until melted, then use this water in the dough.') : starting!=null&&starting<targetTemp ? (fr?'Réchauffez l’eau à la température indiquée.':'Warm the water to the temperature shown.') : null}</div>}
     {thermalGapText&&<div>{thermalGapText}</div>}
     {thermalAction&&<div>{thermalAction}</div>}
     {clamped&&!thermalGap&&<div>{fr?'Cette eau seule ne permet pas d’atteindre la température de pâte visée.':'This water alone cannot reach the target dough temperature.'}</div>}
-    <details style={{marginTop:4}}><summary style={{cursor:'pointer'}}>{fr?'Températures et hypothèses':'Temperatures & assumptions'}</summary>
+    <details style={{marginTop:12,fontSize:14,color:'var(--smoke)'}}><summary style={disclosureStyle}>{fr?'Températures et hypothèses':'Temperatures & assumptions'}</summary>
       <div>{starting!=null?`${entered?(fr?'Eau saisie':'Entered water'):(fr?'Eau estimée':'Estimated water')}: ${displayTemp(starting,units)}. `:''}{!direct?`${fr?'Eau préparée':'Prepared water'}: ${displayTemp(targetTemp,units)}.`:''}</div>
       <div>{fr?'Glace supposée à 0 °C. Vérifiez la pâte après pétrissage avec un thermomètre.':'Assumes ice at 0°C. Check dough after mixing with a thermometer.'}</div>
       {direct&&<div>{fr?'Estimation d’énergie ; la friction réelle du pétrin varie.':'Energy estimate; actual mixer friction varies.'}</div>}

@@ -240,3 +240,16 @@ button,
 .bh-disclosure > summary { list-style: none; }
 .bh-disclosure > summary::before { content: '▸'; display: inline-block; margin-right: .5em; }
 .bh-disclosure[open] > summary::before { transform: rotate(90deg); }
+
+/* Opening choices show the whole subject; catalogues remain compact. */
+.bake-kind-grid { grid-template-columns: minmax(0, 1fr); }
+.bake-kind-image { height: clamp(190px, 28svh, 290px); }
+@media (min-width: 600px) {
+  .bake-kind-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bake-kind-image { height: clamp(240px, 32vw, 330px); }
+}
+
+.dough-style-card { grid-template-columns: 112px minmax(0, 1fr); }
+@media (min-width: 600px) {
+  .dough-style-card { grid-template-columns: 160px minmax(0, 1fr); }
+}
