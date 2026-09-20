@@ -738,6 +738,12 @@ const SECTION_LABELS: Record<IngredientCategory, Locale> = {
 };
 
 
+export function shoppingNoteText(note: string | Locale | undefined, locale: string): string {
+  if (!note) return '';
+  if (typeof note !== 'string') return note[locale === 'fr' ? 'fr' : 'en'] || note.en || '';
+  return locale === 'fr' ? (SHOPPING_NOTE_FR[note] ?? note) : note;
+}
+
 function formatQty(total: number, unit: string, locale: string): string {
   const l = locale as 'en' | 'fr';
   const unitLabels: Record<string, Locale> = {
@@ -771,7 +777,7 @@ interface ShoppingItem {
   forPizzas: string[];
 }
 
-function buildShoppingList(
+export function buildShoppingList(
   qtys: Record<string, number>,
   locale: string,
   styleKey?: string,
@@ -790,7 +796,7 @@ function buildShoppingList(
         ingredientMap[ing.id] = {
           id: ing.id,
           name: ing.name,
-          category: ing.category,
+          category: ['fresh_basil','dill','lemon_wedge','rocket','fresh_coriander','fresh_chives','spring_onion','cucumber_fresh','red_onion_raw','kaffir_lime_leaves','lime_fresh','jalapeno_sliced','black_truffle_shavings','mixed_berries'].includes(ing.id) ? 'veg' : ['egg','whole_egg','poached_egg','mascarpone','ricotta','cream_cheese','cream_35','creme_fraiche','fromage_blanc','vanilla_cream','dark_choc_cream'].includes(ing.id) ? 'cheese' : ing.category === 'base' ? 'sauce' : ing.category,
           totalAmount: undefined,
           unit: undefined,
           qtyNote: undefined,
@@ -903,7 +909,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
   }, [ticked]);
 
   const { sections } = buildShoppingList(qtys, locale, styleKey);
-  const totalSelected = Object.values(qtys).filter(q => q > 0).length;
+  const totalSelected = Object.values(qtys).reduce((sum, qty) => sum + Math.max(0,qty), 0);
 
   function toggleTick(id: string) {
     setTicked(prev => ({ ...prev, [id]: !prev[id] }));
@@ -1047,6 +1053,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <h1 style={{fontFamily:'Georgia,serif',fontSize:30,margin:'16px 12px'}}>{l === 'fr' ? 'Liste de courses' : 'Shopping list'}</h1>
       {/* Header */}
       <div style={{ padding: '12px 12px 8px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1065,7 +1072,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           </span>
           <button
             onClick={() => setShowLocationPicker(v => !v)}
-            style={{ fontSize: '11px', color: '#8A7F78', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '4px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            style={{ fontSize: '12px', minHeight:44, color: '#8A7F78', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '4px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
             {shoppingLocation === 'singapore'
               ? (l === 'fr' ? `Où acheter : ${currentLocationLabel} ▾` : `Where to shop: ${currentLocationLabel} ▾`)
@@ -1113,7 +1120,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                     ? (l === 'fr' ? `Désélectionner ${ing.name}` : `Uncheck ${ing.name}`)
                     : (l === 'fr' ? `Marquer ${ing.name} comme acheté` : `Mark ${ing.name} as bought`)}
                   style={{
-                    width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
+                    width: '24px', height: '24px', borderRadius: '4px', flexShrink: 0,
                     border: ticked['dough_' + i] ? 'none' : '1.5px solid #C8C0B8',
                     background: ticked['dough_' + i] ? '#6B7A5A' : 'transparent',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1155,8 +1162,9 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                   <div style={{ display: 'flex', alignItems: 'flex-start', padding: '8px 12px', gap: '12px' }}>
                     <button
                       onClick={() => toggleTick(item.id)}
+                      role="checkbox" aria-checked={isTicked} aria-label={name}
                       style={{
-                        width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
+                        width: '24px', height: '24px', borderRadius: '4px', flexShrink: 0,
                         border: isTicked ? 'none' : '1.5px solid #C8C0B8',
                         background: isTicked ? (item.isCommonPantry ? '#C8C0B8' : '#6B7A5A') : 'transparent',
                         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1175,7 +1183,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                         <span
                           onClick={() => hasSubInfo && toggleSub(item.id)}
                           style={{
-                            fontSize: '13px',
+                            fontSize: '15px',
                             color: isTicked ? '#B0A89E' : '#2B2420',
                             textDecoration: 'none',
                             cursor: hasSubInfo ? 'pointer' : 'default',
@@ -1210,8 +1218,8 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                         {localNote && <p style={{ fontSize: 12 }}>{localNote[l]}</p>}
                         {shops && <div style={{ fontSize: 12 }}><strong>{l === 'fr' ? 'Où chercher' : 'Where to look'}</strong>
                           <p>{[...(shops.shops ?? []), ...(shops.online ?? [])].join(' · ')}</p>
-                          {shops.note && <p>{l === 'fr' ? (SHOPPING_NOTE_FR[shops.note] ?? shops.note) : shops.note}</p>}
-                          <p>{l === 'fr' ? 'Vérifiez la disponibilité auprès du magasin.' : 'Check availability with the shop.'}</p>
+                          {shops.note && <p>{shoppingNoteText(shops.note,l)}</p>}
+
                         </div>}
                       </div>}
                     </div>
@@ -1230,7 +1238,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           onClick={() => onGoPrep?.()}
           style={{ ...NEXT_CTA, marginBottom: '8px' }}
         >
-          {l === 'fr' ? 'Préparation →' : 'Prep →'}
+          {l === 'fr' ? 'Préparer les garnitures →' : 'Prepare toppings →'}
         </button>
         <button
           type="button"

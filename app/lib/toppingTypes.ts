@@ -79,7 +79,7 @@ export type ShoppingContext =
 export type ShopEntry = {
   shops: string[]
   online?: string[]
-  note?: string
+  note?: string | Locale
 }
 
 export type WhereToFind = Partial<Record<ShoppingContext, ShopEntry>>
