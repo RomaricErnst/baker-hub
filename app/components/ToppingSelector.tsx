@@ -1140,9 +1140,9 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                         >
                           {name}
                           {item.isCommonPantry && (
-                            <span style={{ fontSize: '11px', color: '#8A7F78', marginLeft: '5px', fontStyle: 'italic' }}>pantry</span>
+                            <span style={{ fontSize: '11px', color: '#8A7F78', marginLeft: '5px', fontStyle: 'italic' }}>{l === 'fr' ? 'placard' : 'pantry'}</span>
                           )}
-                          {hasSubInfo && !showSubProactively && (
+                          {hasSubInfo && (
                             <span style={{ fontSize: '11px', color: '#C8C0B8', marginLeft: '4px' }}>{isExpanded ? '▲' : '▼'}</span>
                           )}
                         </span>
