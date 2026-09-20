@@ -166,7 +166,7 @@ function pizzaWeightFromTable(sk: string, d: number, corn: number): number {
     if (d >= table[i][0] && d <= table[i + 1][0]) {
       const r = (d - table[i][0]) / (table[i + 1][0] - table[i][0]);
       const w = table[i][corn + 1] + r * (table[i + 1][corn + 1] - table[i][corn + 1]);
-      return Math.min(280, Math.max(200, Math.round(w / 5) * 5));
+      return Math.round(w / 5) * 5;
     }
   }
   return Math.round(table[table.length - 1][corn + 1] / 5) * 5;
@@ -3708,6 +3708,7 @@ export default function Home() {
               <PrototypeQuantityPicker bakeType={bakeType ?? 'pizza'} locale={locale} units={units}
                 roundPizza={bakeType === 'pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '')}
                 count={numItems} itemWeight={itemWeight} diameter={pizzaDiameter}
+                diameterBounds={{ min: PIZZA_WEIGHT_TABLE[styleKey ?? '']?.[0][0] ?? 22, max: PIZZA_WEIGHT_TABLE[styleKey ?? '']?.at(-1)?.[0] ?? 35 }}
                 crust={(['thin','classic','generous'] as const)[pizzaCorn] ?? 'classic'}
                 weightIsManual={crustActive < 0} weightBounds={weightBounds}
                 calculatedWeight={pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, pizzaCorn)}
@@ -4274,6 +4275,7 @@ export default function Home() {
               <PrototypeQuantityPicker bakeType={bakeType ?? 'pizza'} locale={locale} units={units}
                 roundPizza={bakeType === 'pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '')}
                 count={numItems} itemWeight={itemWeight} diameter={pizzaDiameter}
+                diameterBounds={{ min: PIZZA_WEIGHT_TABLE[styleKey ?? '']?.[0][0] ?? 22, max: PIZZA_WEIGHT_TABLE[styleKey ?? '']?.at(-1)?.[0] ?? 35 }}
                 crust={(['thin','classic','generous'] as const)[pizzaCorn] ?? 'classic'}
                 weightIsManual={crustActive < 0} weightBounds={weightBounds}
                 calculatedWeight={pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, pizzaCorn)}

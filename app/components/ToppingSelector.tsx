@@ -383,7 +383,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
       role="button"
       tabIndex={0}
       onKeyDown={e => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
           e.preventDefault();
           onTap();
         }

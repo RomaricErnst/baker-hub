@@ -21,6 +21,7 @@ export interface PrototypeQuantityPickerProps {
   count: number;
   itemWeight: number;
   diameter?: number;
+  diameterBounds?: { min: number; max: number };
   crust?: QuantityCrust;
   weightIsManual?: boolean;
   calculatedWeight?: number;
@@ -74,6 +75,7 @@ export default function PrototypeQuantityPicker({
   count,
   itemWeight,
   diameter = 30,
+  diameterBounds = { min: 22, max: 35 },
   crust = 'classic',
   weightIsManual = false,
   calculatedWeight,
@@ -113,7 +115,7 @@ export default function PrototypeQuantityPicker({
   const usesManualWeight = manualEditing || weightIsManual || (hasCalculatedWeight && !matchesCalculated);
 
   function setDiameter(next: number) {
-    const value = Math.max(22, Math.min(35, Math.round(next)));
+    const value = Math.max(diameterBounds.min, Math.min(diameterBounds.max, Math.round(next)));
     setManualEditing(false);
     onDiameterChange?.(value);
     if (roundPizza && calculateWeight) onItemWeightChange(calculateWeight(value, crust));
@@ -188,8 +190,8 @@ export default function PrototypeQuantityPicker({
             id="quantity-diameter"
             type="number"
             inputMode="decimal"
-            min={units === 'imperial' ? 8.7 : 22}
-            max={units === 'imperial' ? 13.8 : 35}
+            min={units === 'imperial' ? Math.round(diameterBounds.min / 2.54 * 10) / 10 : diameterBounds.min}
+            max={units === 'imperial' ? Math.round(diameterBounds.max / 2.54 * 10) / 10 : diameterBounds.max}
             step={units === 'imperial' ? 0.1 : 1}
             value={units === 'imperial' ? Math.round(diameter / 2.54 * 10) / 10 : diameter}
             onChange={event => {
