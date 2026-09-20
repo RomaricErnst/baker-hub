@@ -3199,7 +3199,7 @@ export default function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', margin: '0 0 16px' }}>
             {([
               { type: 'pizza' as BakeType, image: '/pizzas/margherita.webp', label: t('bakeType.pizza.label'), desc: t('bakeType.pizza.desc'), activeBorder: 'var(--terra)', activeBg: '#FFF8F3' },
-              { type: 'bread' as BakeType, image: '/pain_campagne.webp', label: t('bakeType.bread.label'), desc: t('bakeType.bread.desc'), activeBorder: 'var(--bread)', activeBg: 'var(--bread-l)' },
+              { type: 'bread' as BakeType, image: '/images/approved/bread/campagne.webp', label: t('bakeType.bread.label'), desc: t('bakeType.bread.desc'), activeBorder: 'var(--bread)', activeBg: 'var(--bread-l)' },
             ]).map(opt => (
               <div
                 key={opt.type}
