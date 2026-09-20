@@ -51,6 +51,9 @@ export interface SessionData {
   prefermentChosen?: boolean;
   // How far the baker advanced, per flow. Optional: snapshots written before
   // this field existed restore fine, they just fall back.
+  activeStep?: number;
+  advancedStep?: number;
+  setupOverview?: boolean;
   highestStep?: number;
   advancedHighestStep?: number;
   activeTab: string;

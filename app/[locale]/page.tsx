@@ -1530,8 +1530,13 @@ export default function Home() {
     setProtocolStale(false);
     setSessionRestored(true);
     setReviewMode(true);
-    setActiveStep(99);
-    setAdvancedStep(99);
+    setActiveStep(session.activeStep ?? 99);
+    setAdvancedStep(session.advancedStep ?? 99);
+    setSetupOverview(session.setupOverview ?? false);
+    if (session.activeTab === 'pizzaparty') {
+      setActiveTab('pizzaparty');
+      if (session.pizzaPartyTab) setPizzaPartyTab(session.pizzaPartyTab as 'pick'|'shop'|'prep'|'bake');
+    }
     try {
       const resume = JSON.parse(sessionStorage.getItem('bh_locale_resume') || 'null');
       if (resume) {
@@ -1936,7 +1941,7 @@ export default function Home() {
       // How far the baker got. Without it a resumed session reopened at
       // highestStep 1, so every step carrying a default read as unset —
       // "Quantity not confirmed" beside a finished recipe.
-      highestStep, advancedHighestStep,
+      highestStep, advancedHighestStep, activeStep, advancedStep, setupOverview,
       pizzaParty: buildPizzaPartySnapshot(),
       bakedDone,
       computedRecipe: buildComputedRecipe(),
