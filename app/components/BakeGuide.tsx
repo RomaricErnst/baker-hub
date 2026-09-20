@@ -1088,7 +1088,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       {isSourdough && starterEvents?.filter(event => !event.isPast && !['last_fed', 'known_peak'].includes(event.kind)).map((event, index) => {
         const feeding = ['refresh', 'intermediate_refresh', 'pre_mix'].includes(event.kind);
         const title = feeding ? (l === 'fr' ? 'Rafraîchir le levain' : 'Feed your starter') : event.kind === 'fridge_in' ? (l === 'fr' ? 'Réfrigérer le levain' : 'Refrigerate your starter') : (l === 'fr' ? 'Sortir le levain du réfrigérateur' : 'Take starter out of the fridge');
-        return <StepCard key={`${event.kind}-${index}`} number={n()} {...sc()} icon={<IconStarter />} title={title} time={event.time} accent="#6A7FA8">
+        return <StepCard key={`${event.kind}-${index}`} number={n()} {...sc()} icon={<IconStarter />} title={title} time={new Date(Math.round(event.time.getTime() / 900000) * 900000)} accent="#6A7FA8">
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={feeding ? [
               {bold: l === 'fr' ? `Mélangez ${feedSeed} g de levain, ${feedPart} g de farine et ${feedPart} g d’eau.` : `Mix ${feedSeed} g starter, ${feedPart} g flour and ${feedPart} g water.`, note: `1:${feedR}:${feedR}`},

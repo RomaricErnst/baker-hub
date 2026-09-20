@@ -15,6 +15,7 @@ import OvenPicker from '../components/OvenPicker';
 import PrototypeQuantityPicker from '../components/PrototypeQuantityPicker';
 import MixerPicker from '../components/MixerPicker';
 const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { ssr: false });
+import { starterFeedToMixHours } from '../lib/starterTiming';
 import type { StarterEvent } from '../components/SchedulePicker';
 import ClimatePicker from '../components/ClimatePicker';
 const RecipeOutput = dynamic(() => import('../components/RecipeOutput'), { ssr: false });
@@ -1776,10 +1777,9 @@ export default function Home() {
   }, [prefGoesInFridge, prefermentType, styleKey, kitchenTemp, fridgeTemp, mixerType, targetDoughTemp, eatTime, schedule]);
 
   const feedToMixH = useMemo(() => {
-    if (yeastType !== 'sourdough' || !feedTime || !startTime) return undefined;
-    const h = (startTime.getTime() - feedTime.getTime()) / 3600000;
-    return h > 0 ? h : undefined;
-  }, [yeastType, feedTime, startTime]);
+    if (yeastType !== 'sourdough' || !startTime) return undefined;
+    return starterFeedToMixHours(starterEvents, startTime, feedTime ?? lastFedTime);
+  }, [yeastType, feedTime, lastFedTime, startTime, starterEvents]);
 
   const recipe = useMemo(() => {
     if (!styleKey || !schedule || !ovenType || !yeastType) return null;

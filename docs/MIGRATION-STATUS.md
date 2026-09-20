@@ -58,3 +58,30 @@ pizza parity set 4 passed; refrigerated-flour/mass set 5 passed. TypeScript pass
 before the final guide and pizza layout changes; the next deployment must pass its
 build and be visually checked again. Remaining: final phone/tablet and EN journeys,
 all-step browsing/completion, named save/restore and full prototype page comparison.
+
+### Deployed acceptance checks — 21 September, continuation
+
+The branch is still withheld from final acceptance while the sourdough restore
+fix is checked live. The previous signed-off-looking preview was premature.
+
+Verified on the protected Vercel branch at phone and tablet widths:
+- Full-width stacked tabletop and masonry oven choices; mixing stays in its own
+  equipment tab. Shared quantity controls work for pizza and bread.
+- Climate title and optional water preparation now match the approved direction.
+- Pizza selection survives browser reload. Shopping, alternatives, preparation,
+  and cooking are reachable without scrolling to the catalogue bottom.
+- Multiple ingredient selections keep their section open; ANY/ALL selection works.
+- French/English switching retains the pizza preparation page and quantities.
+- Settings have an explicit close action; the grouped menu is deployed.
+
+Browser checks caught and corrected a localized shopping-note object crash,
+lost navigation during language changes, and missing saved starter events.
+Sourdough testing also found levain erroneously entering the commercial
+preferment calculation. The engine now keeps these paths separate; the recipe
+uses the chosen ripe-starter amount and subtracts its flour/water from additions.
+
+Current checks: 76 regression tests passed, TypeScript passed, i18n keys passed.
+The last tested live deployment before the levain fix was 9f5672f; 8083358 is
+being deployed. Do not equate build success with the outstanding live checks.
+Signed-in cloud save/share and an independent agent audit remain unverified:
+all three available audit workers returned usage-limit errors.

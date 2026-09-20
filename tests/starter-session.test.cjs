@@ -13,3 +13,11 @@ test('starter schedule survives JSON storage and rebake date shifting',()=>{
  assert.equal(shifted[0].bellPeakTime.getTime()-shifted[0].time.getTime(),6*3600000);
  assert.deepEqual(restoreStarterEvents(undefined),[]);
 });
+
+test('recipe starter timing stays unchanged after reopening the plan',()=>{
+ const {starterFeedToMixHours}=require('../app/lib/starterTiming.ts');
+ const mix=new Date('2026-09-23T12:00:00Z');
+ const events=[{kind:'last_fed',time:new Date('2026-09-21T00:00:00Z')},{kind:'pre_mix',time:new Date('2026-09-23T06:00:00Z')},{kind:'fridge_out',time:new Date('2026-09-23T11:00:00Z')}];
+ assert.equal(starterFeedToMixHours(events,mix,null),6);
+ assert.equal(starterFeedToMixHours(restoreStarterEvents(JSON.parse(JSON.stringify(serializeStarterEvents(events)))),mix,null),6);
+});

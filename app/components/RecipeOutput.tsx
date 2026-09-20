@@ -98,15 +98,15 @@ function IngRow({
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: '1fr auto auto',
+      gridTemplateColumns: '1fr auto',
       gap: '0 24px',
       alignItems: 'center',
-      padding: '8px .1rem',
+      padding: '12px .1rem',
       borderBottom: `1px solid ${D.line}`,
     }}>
       <div>
         <div style={{
-          fontSize: '13px',
+          fontSize: '15px',
           fontWeight: highlight ? 600 : 400,
           color: highlight ? 'var(--char)' : D.muted,
           letterSpacing: '.02em',
@@ -137,16 +137,7 @@ function IngRow({
         {grams}
       </div>
 
-      <div style={{
-        fontFamily: 'var(--font-ui)',
-        fontSize: '12px',
-        color: 'var(--gold)',
-        textAlign: 'right',
-        minWidth: '4rem',
-        whiteSpace: 'nowrap',
-      }}>
-        {noPct ? (advancedPct ?? '') : (advancedPct ?? pct)}
-      </div>
+
     </div>
   );
 }
@@ -576,14 +567,14 @@ export default function RecipeOutput({
                   grams={formatPrefermentDose(pf.prefYeastGrams)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
               )}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
                 <div style={{ fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>
                   {t('recipeOutput.prefTotalRow', { name: pd.name })}
                 </div>
                 <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   ~{wStr(prefTotal)}
                 </div>
-                <div style={{ minWidth: '4rem' }} />
+
               </div>
             </div>
 
@@ -639,32 +630,21 @@ export default function RecipeOutput({
                 advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
               {oil > 0 && <IngRow label={t('recipeOutput.ingredientOil')} grams={wStr(oil)} noPct />}
               {sugar > 0 && <IngRow label={t('recipeOutput.ingredientSugar')} grams={wStr(sugar)} noPct />}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
                 <div style={{ fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>
                   {t('recipeOutput.totalDough')}
                 </div>
                 <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   {u === 'imperial' ? wStr(numItems * itemWeight) : `${(numItems * itemWeight).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
                 </div>
-                <div style={{ minWidth: '4rem' }} />
+
               </div>
             </div>
           </details>
         );
       })() : (
-        /* SCENARIO A: Single ingredients card */
-        <div style={{ background: 'var(--warm)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: 'none' }}>
-          {/* Card header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '16px' }}>
-            <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)' }}>
-              {t('recipe.ingredients')}
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 24px', width: '100%', maxWidth: '75%' }}>
-              <span />
-              <span style={{ fontSize: '11px', color: D.sub, fontFamily: 'var(--font-ui)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em' }}>{t('recipe.weight')}</span>
-              <span style={{ fontSize: '11px', color: D.sub, fontFamily: 'var(--font-ui)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em', minWidth: '4rem' }}>{t('recipe.bakersPercent')}</span>
-            </div>
-          </div>
+        /* Direct dough additions */
+        <div>
 
           <IngRow
             label={t('recipeOutput.ingredientFlour')}
@@ -823,18 +803,27 @@ export default function RecipeOutput({
           )}
 
           {/* TOTAL DOUGH row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
             <div style={{ fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>
               {t('recipeOutput.totalDough')}
             </div>
             <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
               {u === 'imperial' ? wStr(numItems * itemWeight) : `${(numItems * itemWeight).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
             </div>
-            <div style={{ minWidth: '4rem' }} />
+
           </div>
         </div>
       )}
 
+
+      {mode === 'custom' && <details>
+        <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Pourcentages boulangers' : 'Baker’s percentages'}</summary>
+        <p style={{fontSize:13}}>{locale === 'fr' ? 'Calculés sur toute la farine, préferment ou levain inclus.' : 'Based on all flour, including flour in preferment or starter.'}</p>
+        <p>{t('recipeOutput.ingredientFlour')} : 100% · {t('recipeOutput.ingredientWater')} : {pctStr(waterPct)} · {t('recipeOutput.ingredientSalt')} : {pctStr(saltPct)}{oil > 0 ? ` · ${t('recipeOutput.ingredientOil')} : ${pctStr(oilPct)}` : ''}{sugar > 0 ? ` · ${t('recipeOutput.ingredientSugar')} : ${pctStr(sugarPct)}` : ''}</p>
+        {yeastInfo && <p>{yeastTypeName} : {pctStr(yeastInfo.convertedPct)}</p>}
+        {sourdough && <p>{t('recipeOutput.starterLabel')} : {pctStr(sdMid / flour * 100)}</p>}
+        {pf && <p>{locale === 'fr' ? 'Farine préfermentée' : 'Prefermented flour'} : {pctStr(pf.prefFlour / flour * 100)}</p>}
+      </details>}
 
       {/* ── Batch splitting callout ──────────────────────────────── */}
       {(needsBatches || effectiveBatches > 1) && (
