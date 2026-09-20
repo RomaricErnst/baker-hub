@@ -184,7 +184,7 @@ function Pill({ label, color }: { label: string; color?: string }) {
 
 // ── Step card ────────────────────────────────────────
 function StepCard({
-  number, title, time, duration, open, done, onToggle, onDone, children, divRef, final = false, completeLabel, preview = false, onReturnCurrent, onPrevious, onNext,
+  number, icon, title, time, duration, open, done, onToggle, onDone, children, divRef, final = false, completeLabel, preview = false, onReturnCurrent, onPrevious, onNext,
 }: {
   number: number; icon: React.ReactNode; title: string;
   time?: Date; duration?: number | null; accent?: string;
@@ -199,7 +199,8 @@ function StepCard({
       <button type="button" onClick={onToggle} aria-expanded={open}
         aria-controls={`bake-step-${number}`} style={{ width: '100%', display: 'flex', gap: 12,
           alignItems: 'center', padding: 16, border: 0, background: 'transparent', textAlign: 'left', cursor: 'pointer', color: D.char }}>
-        <span aria-hidden="true" style={{ color: done ? D.sage : D.terra }}>{done ? '✓' : number}</span>
+        <span aria-hidden="true" style={{ color: done ? D.sage : D.terra, minWidth: 18, textAlign: 'center' }}>{done ? '✓' : number}</span>
+        <span aria-hidden="true" style={{ color: done ? D.sage : D.terra, width: 22, height: 22, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</span>
         <span style={{ flex: 1 }}>
           <strong style={{ display: 'block', fontSize: 15 }}>{title}</strong>
           {time && <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: D.smoke }}>
@@ -845,6 +846,7 @@ export default function BakeGuide({
   // Shaping label: what we call the shaped piece
   const breadPieceLabel = isFougasse ? 'piece' : isBaguette ? 'baguette' : isLoafTin ? 'loaf' : 'loaf';
   const breadPiecePlural = numItems === 1 ? breadPieceLabel : (isBaguette ? 'baguettes' : isLoafTin ? 'loaves' : 'loaves');
+  const breadPiecePluralFr = isFougasse ? 'pâtons de fougasse' : isBaguette ? 'baguettes' : isLoafTin ? 'pains' : 'pâtons';
   const isSpiral      = mixerType === 'spiral';
   const hasPref       = !!prefermentType && prefermentType !== 'none';
   const isPoolish     = prefermentType === 'poolish';
@@ -1141,7 +1143,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           {starterState === 'fridge_fed' && (
             <StepCard
               number={n()} {...sc()} icon={<IconCold />}
-              title="Put starter in fridge"
+              title={l === 'fr' ? 'Mettre le levain au frigo' : 'Put starter in fridge'}
               time={feedTime}
               accent="#6A7FA8"
             >
@@ -1165,16 +1167,16 @@ Actual dough condition and equipment may differ from these estimates.`;
           {starterState === 'fridge_fed' && fridgeOutTime && (
             <StepCard
               number={n()} {...sc()} icon={<IconStarter />}
-              title="Remove starter from fridge"
+              title={l === 'fr' ? 'Sortir le levain du frigo' : 'Remove starter from fridge'}
               time={fridgeOutTime}
               accent="#6A7FA8"
             >
               <Section icon={null} title={t('sectionTitles.whatToDo')}>
                 <Steps items={[
                   { bold: (l === 'fr' ? 'Sortez du frigo et laissez à température ambiante' : 'Take out of fridge and leave at room temperature'),
-                    note: `at ${displayTemp(kitchenTemp, u)} allow around ${
-                      Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60)
-                    } min to reach peak activity` },
+                    note: l === 'fr'
+                      ? `à ${displayTemp(kitchenTemp, u)}, comptez environ ${Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60)} min pour retrouver son activité maximale`
+                      : `at ${displayTemp(kitchenTemp, u)} allow around ${Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60)} min to reach peak activity` },
                   { bold: (l === 'fr' ? 'Cherchez le dôme et des bulles actives sur les côtés' : 'Look for dome and active bubbles at the sides'),
                     note: (l === 'fr' ? 'pétrissez quand le levain est à son point le plus haut' : 'mix when the starter is at its highest point') },
                 ]} />
@@ -1186,7 +1188,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           {usingPeak2 && feed2Time && (
             <StepCard
               number={n()} {...sc()} icon={<IconStarter />}
-              title="Feed your starter — second feed"
+              title={l === 'fr' ? 'Rafraîchir le levain — deuxième repas' : 'Feed your starter — second feed'}
               time={feed2Time}
               accent="#6A7FA8"
             >
@@ -1206,9 +1208,9 @@ Actual dough condition and equipment may differ from these estimates.`;
                 tips={
                   <Section icon={null} title={t('sectionTitles.readyWhen')}>
                     <Bullets items={[
-                      'Same signs as the first feed — dome, doubled, bubbles at the sides',
-                      'Flavour will be slightly more sour than the first peak',
-                      'Mix at the dome — do not wait for it to collapse',
+                      l === 'fr' ? 'Mêmes signes qu’au premier repas : dôme, volume doublé, bulles sur les côtés' : 'Same signs as the first feed — dome, doubled, bubbles at the sides',
+                      l === 'fr' ? 'Le goût sera légèrement plus acide qu’au premier pic' : 'Flavour will be slightly more sour than the first peak',
+                      l === 'fr' ? 'Mélangez au dôme — n’attendez pas qu’il retombe' : 'Mix at the dome — do not wait for it to collapse',
                     ]} />
                   </Section>
                 }
@@ -1507,7 +1509,7 @@ Actual dough condition and equipment may differ from these estimates.`;
 
         <StepExtras
           tips={<>
-            <Section icon="" title="Watch for — bulk is done when">
+            <Section icon="" title={l === 'fr' ? 'Le pointage est terminé quand' : 'Watch for — bulk is done when'}>
               <Bullets items={t.raw('bulk.watchFor') as string[]} />
               <div style={{ marginTop: '8px' }}>
                 <LearnLink term="bulk_fermentation" label={l === 'fr' ? 'Guide du pointage' : 'Bulk fermentation guide'} onOpen={setLearnTerm} showSparkle={true} />
@@ -1563,7 +1565,9 @@ Actual dough condition and equipment may differ from these estimates.`;
               <Section icon={null} title={t('sectionTitles.pitfalls')}>
                 <Bullets items={[
                   (t.raw('coldRetard.pitfalls') as string[])[0],
-                  `Fridge temperature above ${tempC(8, u)}: dough over-ferments during retard — check your fridge`,
+                  l === 'fr'
+                    ? `Frigo au-dessus de ${tempC(8, u)} : la pâte fermente trop pendant le repos — vérifiez sa température`
+                    : `Fridge temperature above ${tempC(8, u)}: dough over-ferments during retard — check your fridge`,
                   (t.raw('coldRetard.pitfalls') as string[])[1],
                 ]} />
               </Section>
@@ -1585,26 +1589,26 @@ Actual dough condition and equipment may differ from these estimates.`;
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             {isBread ? (
               <Steps items={isFougasse ? [
-                { bold: `Divide into ${numItems} equal ${breadPiecePlural}`, note: (t.raw('divide.fougasse.steps') as { bold: string; note: string }[])[0].note },
+                { bold: l === 'fr' ? `Divisez en ${numItems} ${breadPiecePluralFr} de même poids` : `Divide into ${numItems} equal ${breadPiecePlural}`, note: (t.raw('divide.fougasse.steps') as { bold: string; note: string }[])[0].note },
                 ...(t.raw('divide.fougasse.steps') as { bold: string; note: string }[]).slice(1),
               ] : isBaguette ? [
-                { bold: `Divide into ${numItems} equal pieces`, note: (t.raw('divide.baguette.steps') as { bold: string; note: string }[])[0].note },
+                { bold: l === 'fr' ? `Divisez en ${numItems} morceaux de même poids` : `Divide into ${numItems} equal pieces`, note: (t.raw('divide.baguette.steps') as { bold: string; note: string }[])[0].note },
                 ...(t.raw('divide.baguette.steps') as { bold: string; note: string }[]).slice(1),
                 ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
               ] : isLoafTin ? [
-                { bold: `Divide into ${numItems} equal pieces`, note: (t.raw('divide.loafTin.steps') as { bold: string; note: string }[])[0].note },
+                { bold: l === 'fr' ? `Divisez en ${numItems} morceaux de même poids` : `Divide into ${numItems} equal pieces`, note: (t.raw('divide.loafTin.steps') as { bold: string; note: string }[])[0].note },
                 ...(t.raw('divide.loafTin.steps') as { bold: string; note: string }[]).slice(1),
                 ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
               ] : [
                 // Boule / pain campagne / pain levain / sourdough
-                { bold: `Divide into ${numItems} equal pieces`, note: (t.raw('divide.boule.steps') as { bold: string; note: string }[])[0].note },
+                { bold: l === 'fr' ? `Divisez en ${numItems} ${breadPiecePluralFr} de même poids` : `Divide into ${numItems} equal pieces`, note: (t.raw('divide.boule.steps') as { bold: string; note: string }[])[0].note },
                 ...(t.raw('divide.boule.steps') as { bold: string; note: string }[]).slice(1),
                 ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
               ]} />
             ) : (
               <>
                 <Steps items={[
-                  { bold: `Weigh dough and divide into ${numItems} equal pieces`, note: (t.raw('divide.pizza.steps') as { bold: string; note: string }[])[0].note },
+                  { bold: l === 'fr' ? `Pesez la pâte puis divisez-la en ${numItems} pâtons de même poids` : `Weigh dough and divide into ${numItems} equal pieces`, note: (t.raw('divide.pizza.steps') as { bold: string; note: string }[])[0].note },
                   ...(t.raw('divide.pizza.steps') as { bold: string; note: string }[]).slice(1),
                   ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
                 ]} />
@@ -1613,8 +1617,9 @@ Actual dough condition and equipment may differ from these estimates.`;
                     fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic',
                     fontFamily: 'var(--font-ui)', marginTop: '8px',
                   }}>
-                    Pan pizza: press dough directly into your oiled pan rather than
-                    forming a round ball. Let it relax 10 min then stretch to the edges.
+                    {l === 'fr'
+                      ? 'Pizza sur plaque : déposez la pâte directement dans le moule huilé au lieu de former une boule. Laissez-la détendre 10 min, puis étirez-la jusqu’aux bords.'
+                      : 'Pan pizza: press dough directly into your oiled pan rather than forming a round ball. Let it relax 10 min then stretch to the edges.'}
                   </div>
                 )}
               </>
@@ -1634,7 +1639,9 @@ Actual dough condition and equipment may differ from these estimates.`;
                   ? (t.raw('divide.boule.watchFor') as string[])
                   : [
                     ...(t.raw('divide.pizza.watchFor') as string[]),
-                    `At ${displayTemp(kitchenTemp, u)}, work within ${kitchenTemp >= 30 ? '15 min' : kitchenTemp >= 26 ? '20 min' : '30 min'} — warm kitchens make balls proof quickly`,
+                    l === 'fr'
+                      ? `À ${displayTemp(kitchenTemp, u)}, travaillez dans les ${kitchenTemp >= 30 ? '15 min' : kitchenTemp >= 26 ? '20 min' : '30 min'} : une cuisine chaude fait lever les pâtons rapidement`
+                      : `At ${displayTemp(kitchenTemp, u)}, work within ${kitchenTemp >= 30 ? '15 min' : kitchenTemp >= 26 ? '20 min' : '30 min'} — warm kitchens make balls proof quickly`,
                   ]
                 } />
               </Section>
@@ -1656,7 +1663,9 @@ Actual dough condition and equipment may differ from these estimates.`;
                     ...(t.raw('divide.boule.pitfalls') as string[]),
                   ] : [
                     ...(t.raw('divide.pizza.pitfalls') as string[]),
-                    `Hot kitchen (${kitchenTemp >= 30 ? 'like yours at ' + displayTemp(kitchenTemp, u) : '≥' + tempC(30, u)}): get balls into their boxes fast — they proof very quickly at warm temps`,
+                    l === 'fr'
+                      ? `Cuisine chaude (${kitchenTemp >= 30 ? 'la vôtre est à ' + displayTemp(kitchenTemp, u) : '≥' + tempC(30, u)}) : mettez vite les pâtons en bac, ils lèvent très rapidement`
+                      : `Hot kitchen (${kitchenTemp >= 30 ? 'like yours at ' + displayTemp(kitchenTemp, u) : '≥' + tempC(30, u)}): get balls into their boxes fast — they proof very quickly at warm temps`,
                   ]
                 } />
               </Section>
@@ -1740,7 +1749,9 @@ Actual dough condition and equipment may differ from these estimates.`;
                 <Bullets items={[
                   (t.raw('finalProof.pitfalls') as string[])[0],
                   (t.raw('finalProof.pitfalls') as string[])[1],
-                  `Warm kitchen (${displayTemp(kitchenTemp, u)}): proof can complete in ${kitchenTemp >= 30 ? '15–25 min' : kitchenTemp >= 26 ? '20–35 min' : '30–60 min'} after warmup — check early`,
+                  l === 'fr'
+                    ? `Cuisine à ${displayTemp(kitchenTemp, u)} : l’apprêt peut finir en ${kitchenTemp >= 30 ? '15–25 min' : kitchenTemp >= 26 ? '20–35 min' : '30–60 min'} après la remise à température — vérifiez tôt`
+                    : `Warm kitchen (${displayTemp(kitchenTemp, u)}): proof can complete in ${kitchenTemp >= 30 ? '15–25 min' : kitchenTemp >= 26 ? '20–35 min' : '30–60 min'} after warmup — check early`,
                   (t.raw('finalProof.pitfalls') as string[])[2],
                 ]} />
               </Section>

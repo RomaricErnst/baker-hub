@@ -16,6 +16,12 @@ test('step visuals exist, preserve containment and exclude rye membrane test',()
  a.match(guide,/<StepVisual kind={isPoolish \? 'poolish' : 'biga'}/);
  a.doesNotMatch(guide,/src="\/Pumpkin.jpeg"/);
 });
+test('step cards render the supplied equipment icon',()=>{
+ const guide=fs.readFileSync('app/components/BakeGuide.tsx','utf8');
+ const card=guide.slice(guide.indexOf('function StepCard('),guide.indexOf('// ── Learn link'));
+ a.match(card,/number, icon, title/);
+ a.match(card,/<span aria-hidden="true"[^>]*>\{icon\}<\/span>/);
+});
 test('bread cooling is a separate completion step without fabricated schedule time',()=>{
  const guide=fs.readFileSync('app/components/BakeGuide.tsx','utf8');
  a.match(guide,/<StepCard final={!isBread}/);
