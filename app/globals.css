@@ -46,7 +46,7 @@ body {
      figures. Tabular figures fix that on the UI face itself, which is what
      lets the monospace go everywhere except the formula panel. */
   font-variant-numeric: tabular-nums;
-  background: var(--cream);
+  background: var(--warm);
   color: var(--char);
   min-height: 100vh;
 }

@@ -1,4 +1,5 @@
 'use client';
+import type { StarterEvent } from './SchedulePicker';
 import { useState, useRef, useEffect, createContext, useContext } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type ScheduleResult, formatTime, hoursLabel } from '../utils';
@@ -33,6 +34,7 @@ interface BakeGuideProps extends WaterSettingsProps {
   ovenConstruction?: 'tabletop' | 'masonry' | 'home' | 'micro';
   prefStartTime?: Date | null;
   feedTime?: Date | null;
+  starterEvents?: StarterEvent[];
   feed2Time?: Date | null;
   fridgeOutTime?: Date | null;
   starterState?: 'rt_fed' | 'fridge_unfed' | 'fridge_fed';
@@ -64,14 +66,13 @@ function Section({ icon, title, children }: {
   return (
     <div style={{ marginTop: '16px' }}>
       <div style={{
-        fontSize: '11px', fontWeight: 600, color: D.smoke,
-        textTransform: 'uppercase', letterSpacing: '.07em',
+        fontSize: '18px', fontWeight: 700, color: D.char,
         fontFamily: 'var(--font-ui)', marginBottom: '8px',
         display: 'flex', alignItems: 'center', gap: '4px',
       }}>
         {icon && <span>{icon}</span>}{title}
       </div>
-      <div style={{ fontSize: '13px', color: D.ash, lineHeight: 1.65, fontFamily: 'var(--font-ui)' }}>
+      <div style={{ fontSize: '15px', color: D.ash, lineHeight: 1.6, fontFamily: 'var(--font-ui)' }}>
         {children}
       </div>
     </div>
@@ -137,9 +138,8 @@ function Steps({ items }: { items: { bold: string; note: string }[] }) {
       {items.map((item, i) => (
         <li key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
           <span style={{
-            width: '5px', height: '5px', borderRadius: '50%',
-            background: D.smoke, flexShrink: 0, marginTop: '8px',
-          }} />
+            minWidth: '18px', color: D.char, flexShrink: 0,
+          }}>{i + 1}.</span>
           <span>
             <strong style={{ color: D.char }}>{item.bold}</strong>
             {item.note && <em style={{ color: D.smoke }}>{' — '}{item.note}</em>}
@@ -202,8 +202,8 @@ function StepCard({
       <button type="button" onClick={overview ? onToggle : undefined} aria-expanded={open}
         aria-controls={`bake-step-${number}`} style={{ width: '100%', display: 'flex', gap: 12,
           alignItems: 'center', padding: overview ? 16 : '0 0 16px', border: 0, background: 'transparent', textAlign: 'left', cursor: 'pointer', color: D.char }}>
-        <span aria-hidden="true" style={{ color: done ? D.sage : D.terra, minWidth: 18, textAlign: 'center' }}>{done ? '✓' : number}</span>
-        <span aria-hidden="true" style={{ color: done ? D.sage : D.terra, width: 22, height: 22, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</span>
+        <span aria-hidden="true" style={{ display: overview ? undefined : 'none', color: done ? D.sage : D.terra, minWidth: 18, textAlign: 'center' }}>{done ? '✓' : number}</span>
+        <span aria-hidden="true" style={{ color: done ? D.sage : D.terra, width: 22, height: 22, display: overview ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</span>
         <span style={{ flex: 1 }}>
           <strong style={{ display: 'block', fontSize: overview ? 15 : 30, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}</strong>
           {!overview && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {number}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
@@ -756,9 +756,10 @@ function ExtLink({ href, label }: { href: string; label: string }) {
   );
 }
 
-function StepVisual({ kind, locale }: { kind: 'mix' | 'spiral' | 'fold' | 'poolish' | 'biga'; locale: string }) {
+function StepVisual({ kind, locale }: { kind: 'mix' | 'spiral' | 'fold' | 'poolish' | 'biga' | 'starter'; locale: string }) {
   const fr = locale === 'fr';
   const figures: Record<string, [string, string, string][]> = {
+    starter: [['/images/approved/leavening-v2/starter.webp', 'Look for a clear rise, bubbles and a rounded top before it collapses.', 'Observez une nette montée, des bulles et un dessus bombé avant qu’il ne retombe.']],
     mix: [['/step-visuals/windowpane-v1.webp', 'Wheat dough: gently stretch a small piece. Look for a thin membrane rather than immediate tearing. Let tight dough rest before testing again.', 'Pâte de blé : étirez doucement un petit morceau. Il doit former une membrane fine plutôt que se déchirer aussitôt. Si la pâte résiste, laissez-la reposer avant de réessayer.']],
     spiral: [['/step-visuals/spiral-pumpkin-wide-v1.webp', 'Spiral mixer: the dough gathers into a rounded “pumpkin” shape. This is a development cue, not a precise endpoint; also check stretch and temperature.', 'Pétrin à spirale : la pâte se rassemble en forme de « citrouille ». C’est un indice de développement ; vérifiez aussi son élasticité et sa température.']],
     fold: [['/step-visuals/bowl-fold-v1.webp', 'Bowl fold: lift one edge gently, then fold it over the middle. Turn the bowl and repeat without tearing.', 'Rabat en cuve : étirez doucement un bord, puis repliez-le au centre. Tournez le bol et répétez sans déchirer.'], ['/step-visuals/coil-fold-v2.webp', 'Coil fold: support the middle from underneath with both hands. Lift gently, then lower so the ends tuck under. Turn the container for the next side.', 'Rabat en bobine : soutenez le milieu par dessous avec les deux mains. Soulevez doucement, puis reposez pour replier les extrémités dessous. Tournez le bac pour le côté suivant.']],
@@ -783,7 +784,7 @@ const TERM_TO_STEPID: Record<string, string> = {
 
 export default function BakeGuide({
   schedule, mixerType, styleKey, kitchenTemp, fridgeTemp = 4, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, onMixingBatchesChange, waterSource = 'room', onWaterSourceChange, numItems,
-  prefermentType, oil, hydration, ovenType, ovenConstruction, prefStartTime, feedTime,
+  prefermentType, oil, hydration, ovenType, ovenConstruction, prefStartTime, feedTime, starterEvents,
   feed2Time = null, fridgeOutTime = null,
   starterState = 'rt_fed', starterMature = true, starterHasRye = false,
   usingPeak2 = false, planningMode = 'last_fed',
@@ -809,7 +810,7 @@ export default function BakeGuide({
   // A changed recipe/schedule must never inherit another bake's completion.
   const progressKey = 'bh_guide_done_v2:' + JSON.stringify({
     styleKey, mixerType, numItems, prefermentType, oil, hydration, ovenType,
-    schedule, prefStartTime, feedTime, feed2Time, recipe, mixingBatches,
+    schedule, prefStartTime, feedTime, feed2Time, starterEvents: starterEvents?.map(event => ({kind:event.kind,time:event.time})), recipe, mixingBatches,
   });
   useEffect(() => {
     let completed: number[] = [];
@@ -841,8 +842,8 @@ export default function BakeGuide({
     }
   }, [currentStep]);
 
-  const isSourdough   = styleKey === 'sourdough' || styleKey === 'pain_levain';
-  const isBread       = ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois','sourdough'].includes(styleKey);
+  const isSourdough = recipe ? !!recipe.sourdough : styleKey === 'sourdough' || styleKey === 'pain_levain';
+  const isBread       = ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
   const isNeapolitan  = styleKey === 'neapolitan';
   const isFougasse    = styleKey === 'fougasse';
   const isBaguette    = styleKey === 'baguette';
@@ -889,8 +890,8 @@ export default function BakeGuide({
   // mixing duration (16:15 vs 16:00 / 25h45 vs 26h).
   const bgMixStart  = (() => {
     const raw = new Date(schedule.bulkFermStart.getTime() - (schedule.mixingDurationH ?? 0.25) * 3600000);
-    // Snap down to the quarter-hour grid — 19:46 is engine precision, not baker time
-    raw.setMinutes(Math.floor(raw.getMinutes() / 15) * 15, 0, 0);
+    // Use the nearest quarter-hour for the displayed start — 19:46 is engine precision, not baker time
+    raw.setMinutes(Math.round(raw.getMinutes() / 15) * 15, 0, 0);
     return raw;
   })();
   const bgPoolishG = batch?.portion.preferment || null;
@@ -1080,13 +1081,29 @@ Actual dough condition and equipment may differ from these estimates.`;
         </StepCard>
       )}
 
+      {isSourdough && starterEvents?.filter(event => !event.isPast && !['last_fed', 'known_peak'].includes(event.kind)).map((event, index) => {
+        const feeding = ['refresh', 'intermediate_refresh', 'pre_mix'].includes(event.kind);
+        const title = feeding ? (l === 'fr' ? 'Rafraîchir le levain' : 'Feed your starter') : event.kind === 'fridge_in' ? (l === 'fr' ? 'Réfrigérer le levain' : 'Refrigerate your starter') : (l === 'fr' ? 'Sortir le levain du réfrigérateur' : 'Take starter out of the fridge');
+        return <StepCard key={`${event.kind}-${index}`} number={n()} {...sc()} icon={<IconStarter />} title={title} time={event.time} accent="#6A7FA8">
+          <Section icon="" title={t('sectionTitles.whatToDo')}>
+            <Steps items={feeding ? [
+              {bold: l === 'fr' ? `Mélangez ${feedSeed} g de levain, ${feedPart} g de farine et ${feedPart} g d’eau.` : `Mix ${feedSeed} g starter, ${feedPart} g flour and ${feedPart} g water.`, note: `1:${feedR}:${feedR}`},
+              {bold: l === 'fr' ? 'Couvrez sans fermer hermétiquement et marquez le niveau.' : 'Cover loosely and mark the level.', note: l === 'fr' ? `Laissez à ${displayTemp(kitchenTemp, u)}.` : `Keep at ${displayTemp(kitchenTemp, u)}.`},
+              {bold: l === 'fr' ? 'Attendez une nette montée, des bulles et un dessus encore bombé avant utilisation.' : 'Wait for a clear rise, bubbles and a still-domed top before use.', note: l === 'fr' ? 'Le créneau suivant reste indicatif : vérifiez le levain.' : 'The next time is a guide: check the starter.'},
+            ] : [{bold: event.kind === 'fridge_in' ? (l === 'fr' ? 'Couvrez le récipient et placez le levain au réfrigérateur.' : 'Cover the container and put the starter in the fridge.') : (l === 'fr' ? 'Sortez le récipient et laissez-le couvert à température ambiante.' : 'Take the container out and leave covered at room temperature.'), note: event.kind === 'fridge_in' ? displayTemp(fridgeTemp, u) : displayTemp(kitchenTemp, u)}]} />
+          </Section>
+          {feeding && <StepVisual kind="starter" locale={l} />}
+          <StepExtras tips={<p>{l === 'fr' ? 'S’il s’est affaissé, rafraîchissez à nouveau et ajustez le planning.' : 'If it has collapsed, feed again and adjust the schedule.'}</p>} faqKey="starter" coachStepId="starter" coachTitle={title} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType} />
+        </StepCard>;
+      })}
+
       {/* ── STEP: Feed Starter (sourdough) ──────────── */}
-      {isSourdough && feedTime && (
+      {isSourdough && !starterEvents?.length && feedTime && (
         <>
           {/* Feed 1 */}
           <StepCard
             number={n()} {...sc()} icon={<IconStarter />}
-            title={usingPeak2 ? 'Feed your starter — first feed' : 'Feed your starter'}
+            title={l === 'fr' ? (usingPeak2 ? 'Rafraîchir le levain — premier repas' : 'Rafraîchir le levain') : (usingPeak2 ? 'Feed your starter — first feed' : 'Feed your starter')}
             time={feedTime}
             accent="#6A7FA8"
           >

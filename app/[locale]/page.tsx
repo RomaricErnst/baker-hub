@@ -15,6 +15,7 @@ import OvenPicker from '../components/OvenPicker';
 import PrototypeQuantityPicker from '../components/PrototypeQuantityPicker';
 import MixerPicker from '../components/MixerPicker';
 const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { ssr: false });
+import type { StarterEvent } from '../components/SchedulePicker';
 import ClimatePicker from '../components/ClimatePicker';
 const RecipeOutput = dynamic(() => import('../components/RecipeOutput'), { ssr: false });
 import PlanNav from '../components/PlanNav';
@@ -996,6 +997,7 @@ export default function Home() {
 
 
   // Sourdough feed time + constraint solver outputs
+  const [starterEvents, setStarterEvents] = useState<StarterEvent[]>([]);
   const [feedTime, setFeedTime]             = useState<Date | null>(null);
   const [feed2Time, setFeed2Time]           = useState<Date | null>(null);
   const [fridgeOutTime, setFridgeOutTime]   = useState<Date | null>(null);
@@ -1364,7 +1366,7 @@ export default function Home() {
     // Revenir d'une connexion n'est pas « revenir plus tard ». Le baker était
     // au milieu de quelque chose il y a dix secondes : on le remet où il
     // était au lieu de lui proposer de reprendre ce qu'il n'a jamais quitté.
-    if (readAuthIntent()) {
+    if (readAuthIntent() || sessionStorage.getItem('bh_locale_resume')) {
       applySession(session);
       restoreSettledRef.current = true;
       setAuthTick(t => t + 1);
@@ -1530,6 +1532,15 @@ export default function Home() {
     setReviewMode(true);
     setActiveStep(99);
     setAdvancedStep(99);
+    try {
+      const resume = JSON.parse(sessionStorage.getItem('bh_locale_resume') || 'null');
+      if (resume) {
+        setActiveStep(resume.activeStep);
+        setAdvancedStep(resume.advancedStep);
+        setSetupOverview(!!resume.setupOverview);
+        sessionStorage.removeItem('bh_locale_resume');
+      }
+    } catch {}
     // Toast respawned on every reload/locale switch until acted on —
     // once dismissed/answered in this browser session, stay quiet.
     setShowWelcomeBack(false);
@@ -2968,7 +2979,7 @@ export default function Home() {
 
   // ── Render ────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--cream)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--warm)' }}>
       {/* ── Sticky header + journey bar (autohide on scroll down) ── */}
       <div ref={stickyHeadRef} style={{
         position: 'sticky',
@@ -3001,6 +3012,11 @@ export default function Home() {
           sessionDoughSpec={tab === 'custom' && manualHydration !== undefined
             ? `${manualHydration}% · ${prefermentType !== 'none' ? prefermentType.charAt(0).toUpperCase() + prefermentType.slice(1) + ' · ' : ''}${locale === 'fr' ? 'Personnalisé' : 'Custom'}`
             : ''}
+          onBeforeLocaleChange={() => {
+            if (!bakeType || !styleKey) return;
+            saveSession(buildSessionPayload());
+            try { sessionStorage.setItem('bh_locale_resume', JSON.stringify({activeStep, advancedStep, setupOverview})); } catch {}
+          }}
           onSaveSession={saveCurrentSession}
           onReviewPlan={bakeType && modeChosen ? () => { setActiveTab('setup'); setReviewMode(true); setSetupOverview(true); scrollToStepTop(); } : undefined}
           onSharePlan={shareCurrentSession}
@@ -3364,7 +3380,7 @@ export default function Home() {
         // is the height of the page. It also wraps BOTH modules, so dough and
         // party get one sticky element between them rather than one each.
         position: 'sticky', top: `${stickTop}px`, zIndex: 26,
-        background: 'var(--cream)',
+        background: 'var(--warm)',
         boxShadow: '0 6px 10px -10px rgba(26,22,18,0.45)',
         margin: '0 0 4px',
         // Same easing and duration as the header above it. The header glides
@@ -3797,6 +3813,7 @@ export default function Home() {
                 isSourdough={yeastType === 'sourdough'}
                 prefermentType={prefermentType ?? 'none'}
                 onFeedTimeChange={setFeedTime}
+                onStarterEventsChange={setStarterEvents}
                 onFeed2TimeChange={setFeed2Time}
                 onFridgeOutTimeChange={setFridgeOutTime}
                 onUsingPeak2Change={setUsingPeak2}
@@ -4026,6 +4043,7 @@ export default function Home() {
                 </div>
               ) : schedule && recipe && mixerType && (<>
                 <BakeGuide
+                  starterEvents={starterEvents}
                   ovenConstruction={ovenConstruction}
                   waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches} fridgeTemp={fridgeTemp}
                   schedule={schedule}
@@ -4408,6 +4426,7 @@ export default function Home() {
                 isSourdough={yeastType === 'sourdough'}
                 prefermentType={prefermentType ?? 'none'}
                 onFeedTimeChange={setFeedTime}
+                onStarterEventsChange={setStarterEvents}
                 onFeed2TimeChange={setFeed2Time}
                 onFridgeOutTimeChange={setFridgeOutTime}
                 onUsingPeak2Change={setUsingPeak2}
@@ -4913,6 +4932,7 @@ export default function Home() {
                 </div>
               ) : schedule && advancedRecipe && mixerType && (<>
                 <BakeGuide
+                  starterEvents={starterEvents}
                   ovenConstruction={ovenConstruction}
                   waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches} fridgeTemp={fridgeTemp}
                   schedule={schedule}
