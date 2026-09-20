@@ -1,3 +1,4 @@
+import type { StarterEvent } from '../components/SchedulePicker';
 import type { RecipeEnrichment } from '../utils/enrichedFormulas';
 const SESSION_KEY = 'bh_session_v1';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -62,6 +63,7 @@ export interface SessionData {
   pizzaParty?: { qtys: Record<string, number>; bakedQtys?: Record<string, number>; shopTicks?: Record<string, boolean>; prepTicks?: string[] } | null;
   bakedDone?: boolean;
   prefGoesInFridge?: boolean;
+  starterEvents?: Array<Omit<StarterEvent, 'time'|'bellPeakTime'|'bellStartTime'> & {time:number;bellPeakTime?:number;bellStartTime?:number}>;
   starterState?: string;
   starterLocation?: string;
   planningMode?: string;
@@ -145,4 +147,11 @@ export function readAuthIntent(): AuthIntent | null {
 }
 export function clearAuthIntent() {
   try { window.sessionStorage.removeItem(AUTH_INTENT_KEY); } catch { /* mode privé */ }
+}
+
+export function serializeStarterEvents(events: StarterEvent[]): NonNullable<SessionData['starterEvents']> {
+  return events.map(event => ({...event, time:event.time.getTime(), bellPeakTime:event.bellPeakTime?.getTime(), bellStartTime:event.bellStartTime?.getTime()}));
+}
+export function restoreStarterEvents(events: SessionData['starterEvents'], offsetMs = 0): StarterEvent[] {
+  return (events ?? []).filter(event => Number.isFinite(event.time)).map(event => ({...event, time:new Date(event.time + offsetMs), bellPeakTime:event.bellPeakTime == null ? undefined : new Date(event.bellPeakTime + offsetMs), bellStartTime:event.bellStartTime == null ? undefined : new Date(event.bellStartTime + offsetMs)}));
 }

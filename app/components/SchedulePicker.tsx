@@ -126,6 +126,7 @@ interface SchedulePickerProps {
   isSourdough?: boolean;
   onFeedTimeChange?: (t: Date) => void;
   onStarterEventsChange?: (events: StarterEvent[]) => void;
+  savedStarterEvents?: StarterEvent[];
   prefermentType?: string;
   onPrefOffsetChange?: (h: number) => void;
   onPrefGoesInFridgeChange?: (inFridge: boolean) => void;
@@ -1620,7 +1621,7 @@ function PlanList({
   );
 }
 
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
@@ -1726,9 +1727,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [starterHasRye, setStarterHasRye]       = useState(false);
   const [fridgeOutTime, setFridgeOutTime]       = useState<Date | null>(null);
   const [solverResult, setSolverResult]         = useState<SourdoughSolverResult | null>(null);
+  const savedEventLabels: Record<StarterEventKind, [string,string]> = {
+    last_fed:['Last fed','Dernier rafraîchi'], refresh:['Refresh feed','Rafraîchir le levain'], intermediate_refresh:['Refresh feed','Rafraîchir le levain'], pre_mix:['Pre-mix feed','Rafraîchi avant mélange'], fridge_in:['Refrigerate starter','Réfrigérer le levain'], fridge_out:['Take starter out','Sortir le levain'], known_peak:['Starter peak','Levain à son pic'],
+  };
+  const displayStarterEvents = solverResult?.starterEvents ?? savedStarterEvents.map(event => ({...event, label:savedEventLabels[event.kind][locale === 'fr' ? 1 : 0], isDraggable:false}));
   const eventSignature = JSON.stringify(isSourdough ? solverResult?.starterEvents ?? [] : []);
   useEffect(() => {
-    onStarterEventsChange?.(isSourdough ? solverResult?.starterEvents ?? [] : []);
+    // A newly mounted planner has no result yet; preserve the saved events
+    // until the solver publishes the replacement schedule.
+    if (!isSourdough || solverResult) onStarterEventsChange?.(isSourdough ? solverResult!.starterEvents : []);
   }, [eventSignature, onStarterEventsChange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Set by the sourdough solver when the bake has no executable future slot.
@@ -2305,7 +2312,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   }, []);
 
   useEffect(() => {
-    if (!eatTimeSet) return;
+    if (!eatTimeSet || resumeFrozenRef.current) return;
     setStartComputed(false);
     setShowFallbackPopup(false);
     setDismissedConflict(false);
@@ -7102,7 +7109,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               starterFridgeHoldOutTime={isSourdough ? (solverResult?.fridgeHoldOutTime ?? null) : null}
               starterPreMixStretchFactor={solverResult?.preMixStretchFactor ?? 1.0}
               starterRefreshStretchFactor={solverResult?.refreshStretchFactor ?? 1.0}
-              starterEvents={isSourdough ? (solverResult?.starterEvents ?? []) : []}
+              starterEvents={isSourdough ? displayStarterEvents : []}
               startTimeInPast={startTimeInPast}
               onMixChange={(h) => {
                 hasManuallyDragged.current = true;
@@ -7577,8 +7584,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           appliedNote(id) ?? busyNote(id, at) ?? (win ? roomNote(id, win[0], win[1]) : undefined);
 
         // 1 — sourdough starter events (history + feeds + fridge consequences)
-        if (isSourdough && solverResult?.starterEvents?.length) {
-          for (const ev of solverResult.starterEvents) {
+        if (isSourdough && displayStarterEvents.length) {
+          for (const ev of displayStarterEvents) {
             if (ev.kind === 'fridge_in') continue; // the casing on the curve says this
             const isHist = ev.isPast && !ev.isActive;
             const timeText = ev.kind === 'fridge_out'
@@ -7594,7 +7601,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   : `${ev.timeIsEstimate ? '≈ ' : ''}${fmtCardDT(ev.time, isFr)}`;
             const isCold = ev.kind === 'fridge_out';
             rows.push({
-              id: `ev:${solverResult.starterEvents.indexOf(ev)}`,
+              id: `ev:${displayStarterEvents.indexOf(ev)}`,
               at: ev.time.getTime(),
               name: ev.label,
               timeText,
@@ -7603,7 +7610,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               editable: !isCold && !isHist && ev.isDraggable,
               isHistory: isHist,
               note: isCold || isHist ? undefined
-                : noteFor(`ev:${solverResult.starterEvents.indexOf(ev)}`, ev.time),
+                : noteFor(`ev:${displayStarterEvents.indexOf(ev)}`, ev.time),
             });
           }
         }

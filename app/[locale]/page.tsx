@@ -28,7 +28,7 @@ import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
 import { archivedBlendSelections } from '../lib/flourRecovery';
-import { clearSession, loadSession, saveSession, normalizeMixingBatches, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
+import { clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
 import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
@@ -1448,6 +1448,7 @@ export default function Home() {
         return { label: block.label, from: new Date(block.from), to: new Date(block.to) };
       }));
     }
+    setStarterEvents(restoreStarterEvents(session.starterEvents));
     setRecipeGenerated(session.recipeGenerated);
     setModeChosen(session.modeChosen);
 
@@ -1945,6 +1946,7 @@ export default function Home() {
       pizzaParty: buildPizzaPartySnapshot(),
       bakedDone,
       computedRecipe: buildComputedRecipe(),
+      starterEvents: serializeStarterEvents(starterEvents),
       starterState, starterLocation, planningMode,
       lastFedTime: lastFedTime?.getTime() ?? null,
       knownPeakTime: knownPeakTime?.getTime() ?? null,
@@ -2447,6 +2449,7 @@ export default function Home() {
     setPizzaPartyQtys({});
     setBakePhotoUrl(null);
     setBakedDone(false);
+    setStarterEvents([]);
     // Sourdough starter state — full reset
     setLastFedTime(null);
     setKnownPeakTime(null);
@@ -2622,6 +2625,7 @@ export default function Home() {
         return { label: bl.label, from: shiftD(new Date(bl.from)), to: shiftD(new Date(bl.to)) };
       }));
     }
+    setStarterEvents(restoreStarterEvents(snap.starterEvents).map(event => ({...event, time:shiftD(event.time), bellPeakTime:event.bellPeakTime ? shiftD(event.bellPeakTime) : undefined, bellStartTime:event.bellStartTime ? shiftD(event.bellStartTime) : undefined})));
     setRecipeGenerated(snap.recipeGenerated);
     setModeChosen(snap.modeChosen);
     // Sourdough starter state — snapshots saved after Jul 2026 include these
@@ -2793,7 +2797,7 @@ export default function Home() {
       gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
     { id: 7, group: 'plan', chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
       value: eatTime
-        ? `${formatTime(startTime, locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
+        ? `${formatTime(new Date(Math.round(startTime.getTime() / 900000) * 900000), locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
         : null,
       // The chip gets the bake time alone. Start time and busy windows are
       // consequences of it — the baker picks when to eat, everything else is
@@ -2858,7 +2862,7 @@ export default function Home() {
     } as StepDef] : []),
     { id: 9, group: 'plan', chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
       value: eatTime
-        ? `${formatTime(startTime, locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
+        ? `${formatTime(new Date(Math.round(startTime.getTime() / 900000) * 900000), locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
         : null,
       // The chip gets the bake time alone. Start time and busy windows are
       // consequences of it — the baker picks when to eat, everything else is
@@ -3822,6 +3826,7 @@ export default function Home() {
                 prefermentType={prefermentType ?? 'none'}
                 onFeedTimeChange={setFeedTime}
                 onStarterEventsChange={setStarterEvents}
+                savedStarterEvents={starterEvents}
                 onFeed2TimeChange={setFeed2Time}
                 onFridgeOutTimeChange={setFridgeOutTime}
                 onUsingPeak2Change={setUsingPeak2}
@@ -4435,6 +4440,7 @@ export default function Home() {
                 prefermentType={prefermentType ?? 'none'}
                 onFeedTimeChange={setFeedTime}
                 onStarterEventsChange={setStarterEvents}
+                savedStarterEvents={starterEvents}
                 onFeed2TimeChange={setFeed2Time}
                 onFridgeOutTimeChange={setFridgeOutTime}
                 onUsingPeak2Change={setUsingPeak2}
