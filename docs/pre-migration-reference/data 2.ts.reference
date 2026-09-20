@@ -1,0 +1,1131 @@
+// ══════════════════════════════════════════
+// BAKER HUB — Master Data File
+// Single source of truth for all recipe data
+// ══════════════════════════════════════════
+
+// ── PIZZA STYLES ──────────────────────────
+export const PIZZA_STYLES = {
+  neapolitan: {
+    name: 'Classic Neapolitan',
+    nameFr: 'Napolitaine Classique',
+    emoji: '🔥',
+    image: '/pizzas/margherita.webp',
+    desc: 'Light, airy, charred cornicione.',
+    descFr: 'Légère, aérienne, cornicione grillé.',
+    hydration: 62, salt: 2.8, yeast: 0.08,
+    oil: 0, sugar: 0,
+    pref: 'none', bulkH: 3, ballW: 270,
+    ovenNote: 'No oil or sugar — these burn at 450°C+.',
+    flourNote: 'Caputo 00 Pizzeria or equivalent.',
+  },
+  newyork: {
+    name: 'New York Style',
+    nameFr: 'New York Style',
+    emoji: '🗽',
+    image: '/pizzas/ny_pepperoni_slice.webp',
+    desc: 'Foldable, crispy-edged big slices.',
+    descFr: 'Grandes parts pliables, bords croustillants.',
+    hydration: 62, salt: 2.5, yeast: 0.3,
+    oil: 2, sugar: 0.8,
+    pref: 'poolish', bulkH: 3.5, ballW: 300,
+    ovenNote: 'Oil and sugar help browning at lower home oven temps.',
+    flourNote: 'High-gluten bread flour (13%+ protein).',
+  },
+  pizza_romana: {
+    name: 'Pizza Romana',
+    nameFr: 'Pizza Romaine',
+    emoji: '🫓',
+    image: '/pizzas/carciofi_romana.webp',
+    desc: 'Ultra-thin, cracker-crisp, rolled with a pin.',
+    descFr: 'Ultra-fine, croustillante, étalée au rouleau.',
+    hydration: 57, salt: 2.5, yeast: 0.3,
+    oil: 2, sugar: 0,
+    pref: 'none', bulkH: 2, ballW: 260,
+    ovenNote: 'Roll very thin with a rolling pin — do NOT hand-stretch.',
+    ovenNoteFr: 'Étaler très finement au rouleau — ne pas étirer à la main.',
+    flourNote: 'Medium-strong flour W250-280. Low hydration = easy to handle.',
+    flourNoteFr: 'Farine mi-forte W250-280. Faible hydratation = facile à étaler.',
+  },
+  roman: {
+    name: 'Roman Teglia',
+    nameFr: 'Teglia Romaine',
+    emoji: '🏛️',
+    image: '/pizzas/teglia_patata_provola.webp',
+    desc: 'High-hydration, ultra-crispy rectangular.',
+    descFr: 'Haute hydratation, rectangulaire ultra-croustillante.',
+    hydration: 78, salt: 2.5, yeast: 0.2,
+    oil: 3, sugar: 0,
+    pref: 'biga', bulkH: 4, ballW: 700,
+    ovenNote: 'Oil is essential for the crispy base.',
+    flourNote: 'Strong flour W300+ for high hydration.',
+  },
+  pan: {
+    name: 'Pan / Detroit',
+    nameFr: 'Pan / Detroit',
+    emoji: '🍞',
+    image: '/pizzas/detroit_red_top.webp',
+    desc: 'Thick, fluffy, crispy-bottomed.',
+    descFr: 'Épaisse, moelleuse, base croustillante.',
+    hydration: 70, salt: 2.5, yeast: 0.5,
+    oil: 4, sugar: 0.5,
+    pref: 'none', bulkH: 3, ballW: 600,
+    ovenNote: 'High oil content — effectively fried in the pan.',
+    flourNote: 'Bread flour for strong gluten structure.',
+  },
+  sourdough: {
+    name: 'Sourdough Pizza',
+    nameFr: 'Pizza au levain',
+    emoji: '🌾',
+    image: '/pizzas/margherita.webp',
+    desc: 'Complex, tangy, naturally leavened.',
+    descFr: 'Complexe, acidulée, au levain naturel.',
+    hydration: 72, salt: 2.5, yeast: 0,
+    oil: 0, sugar: 0,
+    pref: 'levain', bulkH: 5, ballW: 280,
+    ovenNote: 'No commercial yeast — starter only.',
+    flourNote: 'Strong 00 or bread flour for long ferment.',
+  },
+} as const;
+
+// ── BREAD STYLES ──────────────────────────
+export const BREAD_STYLES = {
+  pain_campagne: {
+    name: 'Pain de campagne',
+    nameFr: 'Pain de campagne',
+    emoji: '🍞',
+    image: '/pain_campagne.webp',
+    desc: 'Rustic country bread. Wheat and rye blend, thick crust.',
+    descFr: 'Pain de campagne rustique. Blé et seigle, croûte épaisse.',
+    hydration: 72,
+    salt: 2.0,
+    yeast: 0.15,
+    oil: 0,
+    sugar: 0,
+    pref: 'none',
+    bulkH: 4,
+    ballW: 800,
+    ovenNote: 'Dutch oven: 240°C lid on 20min, lid off 20min.',
+    flourNote: 'T65 or blend T65 + 10% T130 rye.',
+  },
+  pain_levain: {
+    name: 'Pain au levain',
+    nameFr: 'Pain au levain',
+    emoji: '🫙',
+    image: '/pain_levain.webp',
+    desc: 'Wild yeast sourdough. Deep flavour, open crumb.',
+    descFr: 'Levain naturel. Saveur profonde, mie ouverte.',
+    hydration: 75,
+    salt: 2.0,
+    yeast: 0,
+    oil: 0,
+    sugar: 0,
+    pref: 'levain',
+    bulkH: 5,
+    ballW: 900,
+    ovenNote: 'Dutch oven: 250°C lid on 20min, lid off 25min.',
+    flourNote: 'Strong T65 or bread flour.',
+  },
+  baguette: {
+    name: 'Baguette',
+    nameFr: 'Baguette',
+    emoji: '🥖',
+    image: '/baguette.webp',
+    desc: 'Crispy crust, airy crumb. The French classic.',
+    descFr: 'Croûte croustillante, mie aérée. Le classique français.',
+    hydration: 68,
+    salt: 2.2,
+    yeast: 0.3,
+    oil: 0,
+    sugar: 0,
+    pref: 'poolish',
+    bulkH: 3,
+    ballW: 320,
+    ovenNote: 'Steam essential — add ice cubes to oven tray.',
+    flourNote: 'T55 or plain bread flour.',
+  },
+  pain_complet: {
+    name: 'Pain complet',
+    nameFr: 'Pain complet',
+    emoji: '🌾',
+    image: '/pain_complet.webp',
+    desc: 'Wholemeal loaf. Nutty, dense, nutritious.',
+    descFr: 'Pain complet. Goût de noisette, dense, nutritif.',
+    hydration: 70,
+    salt: 2.0,
+    yeast: 0.4,
+    oil: 1,
+    sugar: 0,
+    pref: 'none',
+    bulkH: 3,
+    ballW: 750,
+    ovenNote: 'Score deeply — wholemeal dough is denser.',
+    flourNote: 'T110 or T150 wholemeal flour.',
+  },
+  pain_seigle: {
+    name: 'Pain de seigle',
+    nameFr: 'Pain de seigle',
+    emoji: '🌑',
+    image: '/pain_seigle.webp',
+    desc: 'Dark rye bread. Dense, earthy, long-lasting.',
+    descFr: 'Pain de seigle. Dense, terreux, longue conservation.',
+    hydration: 78,
+    salt: 2.2,
+    yeast: 0.5,
+    oil: 0,
+    sugar: 0,
+    pref: 'none',
+    bulkH: 2,
+    ballW: 700,
+    ovenNote: 'Bake in a loaf tin. Rye spreads without support.',
+    flourNote: 'T130 or T170 rye flour, minimum 60% rye.',
+  },
+  fougasse: {
+    name: 'Fougasse',
+    nameFr: 'Fougasse',
+    emoji: '🌿',
+    image: '/fougasse.webp',
+    desc: 'Provençal flatbread. Olive oil, scored leaf pattern.',
+    descFr: 'Fougasse provençale. Huile d\u2019olive, motif de feuille incisé.',
+    hydration: 70,
+    salt: 2.2,
+    yeast: 0.5,
+    oil: 4,
+    sugar: 0,
+    pref: 'none',
+    bulkH: 2,
+    ballW: 400,
+    ovenNote: 'Flatten, cut leaf pattern, bake 220°C 15–18min.',
+    flourNote: 'T55 or T65.',
+  },
+  brioche: {
+    name: 'Brioche',
+    nameFr: 'Brioche',
+    emoji: '🥐',
+    image: '/brioche.webp',
+    desc: 'Enriched, buttery, pillowy soft.',
+    descFr: 'Enrichie, beurrée, moelleuse comme un nuage.',
+    hydration: 55,
+    salt: 2.0,
+    yeast: 0.8,
+    oil: 0,
+    sugar: 4,
+    pref: 'none',
+    bulkH: 3,
+    ballW: 500,
+    ovenNote: 'Egg wash for golden colour. 180°C fan.',
+    flourNote: 'T45 — lower protein for tenderness.',
+  },
+  pain_mie: {
+    name: 'Pain de mie',
+    nameFr: 'Pain de mie',
+    emoji: '🍞',
+    image: '/pain_mie.webp',
+    desc: 'Soft sandwich loaf. Fine crumb, thin crust.',
+    descFr: 'Pain de mie moelleux. Mie fine, croûte fine.',
+    hydration: 62,
+    salt: 1.8,
+    yeast: 0.6,
+    oil: 3,
+    sugar: 2,
+    pref: 'none',
+    bulkH: 2,
+    ballW: 600,
+    ovenNote: 'Bake in a Pullman tin with lid for square slices.',
+    flourNote: 'T55 or plain flour.',
+  },
+  pain_viennois: {
+    name: 'Pain viennois',
+    nameFr: 'Pain viennois',
+    emoji: '🥐',
+    image: '/pain_viennois.webp',
+    desc: 'Viennese soft roll. Slightly sweet, milk-enriched.',
+    descFr: 'Viennoiserie moelleuse, légèrement sucrée, enrichie au lait.',
+    hydration: 58,
+    salt: 1.8,
+    yeast: 0.7,
+    oil: 2,
+    sugar: 5,
+    pref: 'none',
+    bulkH: 2,
+    ballW: 80,
+    ovenNote: 'Egg wash. Score with scissors for classic look.',
+    flourNote: 'T45 or T55.',
+  },
+} as const;
+
+// ── OVEN TYPES ────────────────────────────
+export const OVEN_TYPES = {
+  pizza_oven: {
+    name: 'Pizza oven',
+    nameFr: 'Four à pizza',
+    emoji: '🔥',
+    image: '/oven_fire.webp',
+    desc: 'Leopard spotting, authentic cornicione, 90 sec.',
+    descFr: 'Léopardage et cornicione en 90 sec.',
+    hydrationDelta: -2,
+    forceOil: 0,
+    forceSugar: 0,
+    preheatMin: 45,
+  },
+  home_oven_steel: {
+    name: 'Home oven + stone',
+    nameFr: 'Four + pierre ou acier',
+    emoji: '🪨',
+    image: '/oven_stone.webp',
+    desc: 'Crispy base, 5-7 min.',
+    descFr: 'Base croustillante, 5-7 min.',
+    hydrationDelta: 3,
+    forceOil: null,
+    forceSugar: null,
+    preheatMin: 60,
+  },
+  home_oven_standard: {
+    name: 'Home oven (standard)',
+    nameFr: 'Four domestique standard',
+    emoji: '🏠',
+    image: '/oven_standard.webp',
+    desc: 'Best for thicker styles.',
+    descFr: 'Idéal pour pizzas généreuses.',
+    hydrationDelta: 4,
+    forceOil: null,
+    forceSugar: null,
+    preheatMin: 30,
+  },
+  electric_pizza: {
+    name: 'Electric pizza oven',
+    nameFr: 'Four électrique à pizza',
+    emoji: '⚡',
+    image: '/oven_electric.webp',
+    desc: '400°C, easy to control.',
+    descFr: '400°C, facile à contrôler.',
+    hydrationDelta: -1,
+    forceOil: 0,
+    forceSugar: 0,
+    preheatMin: 30,
+  },
+} as const;
+
+// ── BREAD OVEN TYPES ──────────────────────
+export const BREAD_OVEN_TYPES = {
+  wood_fired: {
+    name: 'Wood-fired oven',
+    nameFr: 'Four à bois',
+    emoji: '🔥',
+    desc: 'Exceptional crust, natural steam.',
+    descFr: 'Croûte exceptionnelle, vapeur naturelle.',
+    hydrationDelta: 0,
+    forceOil: null,
+    forceSugar: null,
+    preheatMin: 45,
+    image: '/oven_wood_bread.webp',
+  },
+  dutch_oven: {
+    name: 'Dutch oven / Combo cooker',
+    nameFr: 'Cocotte en fonte',
+    emoji: '🫕',
+    desc: 'Perfect steam, open crumb.',
+    descFr: 'Vapeur parfaite, mie ouverte.',
+    hydrationDelta: 2,
+    forceOil: null,
+    forceSugar: null,
+    preheatMin: 45,
+    image: '/oven_dutch.webp',
+  },
+  home_oven_stone_bread: {
+    name: 'Home oven + stone/steel',
+    nameFr: 'Four + pierre ou acier',
+    emoji: '🪨',
+    desc: 'Great for baguettes and batards.',
+    descFr: 'Idéal baguettes et bâtards.',
+    hydrationDelta: 2,
+    forceOil: null,
+    forceSugar: null,
+    preheatMin: 45,
+    image: '/oven_stone_bread.webp',
+  },
+  steam_oven: {
+    name: 'Steam oven',
+    nameFr: 'Four vapeur',
+    emoji: '💨',
+    desc: 'Professional results every time.',
+    descFr: 'Résultats professionnels garantis.',
+    hydrationDelta: 3,
+    forceOil: null,
+    forceSugar: null,
+    preheatMin: 30,
+    image: '/oven_steam.webp',
+  },
+  standard_bread: {
+    name: 'Standard home oven',
+    nameFr: 'Four domestique standard',
+    emoji: '🏠',
+    desc: 'Best for enriched breads.',
+    descFr: 'Idéal pour pains enrichis.',
+    hydrationDelta: 3,
+    forceOil: null,
+    forceSugar: null,
+    preheatMin: 20,
+    image: '/oven_standard_bread.webp',
+  },
+} as const;
+
+// ── MIXER TYPES ───────────────────────────
+export const MIXER_TYPES = {
+  stand: {
+    name: 'Stand Mixer',
+    nameFr: 'Robot pâtissier',
+    emoji: '⚙️',
+    image: '/mixer_stand.webp',
+    desc: 'KitchenAid, Kenwood, Bosch',
+    descFr: 'KitchenAid, Kenwood, Bosch',
+    maxHydration: 72,
+    kneadMin: 8,
+    // Mixing heat, as a RATE in °C of dough temperature per minute of mixing.
+    // The rise is this times kneadMin, so the app's own mixing instruction is
+    // what sets it — mixing time is the dominant variable, and a rate cannot
+    // be mistaken for a "friction factor" the way a bare number could.
+    //
+    // Rates triangulated across sources, all converted to a true rise first
+    // (published FF is stated for the classic formula, where FF / N is the
+    // real rise):
+    //   King Arthur   stand 7 min, FF 22-24°F -> 0.58-0.63    hand 8 min, FF 6-8°F -> 0.14-0.19
+    //   Hamelman      most mixers, FF 24-28°F -> 0.63-0.74
+    //   Modernist     6-9°C over a ~10 min mix -> 0.60-0.90
+    //   henzwell      planetary 0.69-1.04, spiral 0.42-0.63 (spiral is gentler per minute)
+    //   Perfect Loaf  Ooni spiral -> 0.65-0.74
+    // Migoya's 2°C/min is excluded as an outlier against six other sources.
+    //
+    // Spiral reads hotter than stand overall only because we prescribe a
+    // 14-minute spiral mix against 8 minutes for a stand mixer.
+    //
+    // ── Checked against the industrial literature, Aug 2026. No change. ──
+    // The field measures mixing work as SPECIFIC MECHANICAL ENERGY in kJ/kg,
+    // and since heat capacity is also per kg, the temperature rise is
+    // INDEPENDENT OF BATCH MASS. A rate x minutes model is therefore the right
+    // shape; scaling the rise by dough weight would be wrong. Under 3% of the
+    // work goes into gluten, the rest becomes heat, so friction really is
+    // nearly all of it.
+    //
+    // Converting the rates below at 62% hydration (dough cp 2711 J/kg.K,
+    // against 2750 published) gives:
+    //   hand      4.3 kJ/kg   4 folds
+    //   stand    13.0 kJ/kg   2 folds
+    //   spiral   20.9 kJ/kg   1 fold
+    //   no-knead  0           4 folds
+    // Monotonic: the more work the machine does, the fewer folds finish the
+    // job. Spiral at 20.9 sits on the published threshold for full development
+    // of a standard flour (18 kJ/kg) and is the one that needs a single fold.
+    // Modernist's only measured point — Neapolitan, stand, 21C water, stated
+    // 27C final dough temperature — is 16.3 kJ/kg, between our stand and
+    // spiral. Independent check: the Tweedy industrial mixer's published
+    // 1.22e7 J into 300 kg predicts 14.8C against a reported 15-16C.
+    //
+    // So "stand looks low against 18 kJ/kg" is not a fault: our mixers stop
+    // short of full development ON PURPOSE and the folds field finishes it.
+    //
+    // What is genuinely missing is a STYLE axis. kneadMin is flat per mixer,
+    // and Modernist publishes times per style: stand wants 10 min thin-crust,
+    // 11 Neapolitan, 15 New York, ~20 al taglio against our 8. Those differ
+    // because the development ENDPOINT differs — al taglio leaves the mixer at
+    // medium development and finishes with folds during bulk, which is why its
+    // rise is half Neapolitan's. Fixing that means SME per style, and it moves
+    // kneadMin, which also sets fermStart and the Timeline. Not a constant tweak.
+    //
+    // Hydration enters only through cp and is small: 80% hydration lowers the
+    // rise about 5% against 62%. Real, but below the noise in these rates.
+    frictionRiseCPerMin: 0.60,
+    folds: 2,
+    maxDoughG: 1500,
+    instructions: 'Speed 1 for 2 min to combine, Speed 2 for 6–8 min until dough clears the bowl.',
+  },
+  hand: {
+    name: 'By Hand',
+    nameFr: 'À la main',
+    emoji: '🤲',
+    image: '/mixer_hand.webp',
+    desc: 'Classic technique',
+    descFr: 'Technique classique',
+    maxHydration: 70,
+    kneadMin: 10,
+    frictionRiseCPerMin: 0.16,   // King Arthur, 8 min hand knead
+    folds: 4,
+    maxDoughG: 1500,
+    instructions: 'Mix until shaggy, rest 20 min (autolyse), then knead 8–10 min until smooth and elastic. Dough passes windowpane test.',
+  },
+  no_knead: {
+    name: 'No-Knead',
+    nameFr: 'Sans pétrissage',
+    emoji: '⏰',
+    image: '/mixer_noknead.webp',
+    desc: 'Time does the work',
+    descFr: 'Le temps fait le travail',
+    maxHydration: 100,
+    kneadMin: 0,
+    frictionRiseCPerMin: 0,      // a brief stir develops nothing and heats nothing
+    folds: 4,
+    maxDoughG: 3000,
+    instructions: 'Mix just until no dry flour remains (~2 min). Time and stretch & folds develop the gluten.',
+  },
+  spiral: {
+    name: 'Spiral Mixer',
+    nameFr: 'Pétrin spirale',
+    emoji: '🌀',
+    image: '/mixer_spiral.webp',
+    desc: 'Ooni Halo, Famag, Sunmix',
+    descFr: 'Ooni Halo, Famag, Sunmix',
+    maxHydration: 100,
+    kneadMin: 14,
+    frictionRiseCPerMin: 0.55,   // gentler per minute than a planetary
+    folds: 1,
+    maxDoughG: 5000,
+    instructions: '1st speed 3 min, 2nd speed 5–7 min. Handles high hydration effortlessly. In hot kitchens (≥26°C): add ice cubes directly into the mixing bowl with the water — the breaker bar will break them down as mixing progresses. This is the professional technique used in pizzerias in warm climates. Aim for roughly 20–30% ice by weight of your total water. For other mixers use ice-cold water only — ice cubes can damage stand mixer hooks.',
+  },
+} as const;
+
+// ── MIXING TIME BY STYLE ──────────────────
+// kneadMin in MIXER_TYPES is flat per mixer. Modernist Pizza publishes mixing
+// times PER STYLE, and the spread is large — a stand mixer's total, read off
+// the Machine Mixing Options pages:
+//
+//   Detroit-style (our `pan`)      6 min   p84
+//   Thin-crust                    10 min   p35
+//   Neapolitan                    11 min   p47
+//   New York                      15 min   p54
+//   High-hydration al taglio     ~20 min   p77  (+ a 30 min autolyse mid-mix)
+//
+// against our flat 8 for everything. So bulk fermentation currently starts up
+// to twelve minutes early on a New York dough and two minutes late on a pan.
+//
+// ONLY the stand-mixer column transfers. Every spiral, fork and diving-arm
+// time in the book assumes at least 8 kg of dough — five times our spiral cap
+// and eight times our stand cap — and the book states plainly that a larger
+// yield takes longer to mix. For the other mixers we keep their own character
+// and carry across only the RELATIVE difference between styles, normalised to
+// Neapolitan, which is the one style whose temperature rise is also published.
+//
+// Deliberately NOT used for friction. See mixerFrictionRiseC in utils.ts.
+const STAND_MIX_REFERENCE_MIN = 11;   // Neapolitan, p47
+
+//
+// Bread comes from Modernist Bread Vol. 6, same method — stand-mixer column
+// only, active mixing minutes, autolyse excluded:
+//
+//   Country-Style Bread (our pain_campagne)   7 min   p105
+//   Sourdough master    (our pain_levain)     7 min   p80
+//   French Lean Bread   (our baguette)       14 min   p61
+//
+// The lean bread is double the other two because its final mix carries a long
+// 8-minute low-speed phase after the autolyse, where the country and sourdough
+// doughs go straight to 4-5 min on medium. Both books repeat the same warning
+// about the big machines — "larger quantities of dough will take longer to
+// mix", spiral multiplied by at least 8 — which is why only this column is
+// used.
+//
+// NOT LISTED, and deliberately so: pain_complet, pain_seigle, fougasse,
+// brioche, pain_mie, pain_viennois. Rye wants less mixing than wheat and the
+// enriched doughs want considerably more to take the butter, so guessing a
+// number from the wheat breads would be wrong in both directions. They fall
+// through to the mixer's base until their pages are read.
+export const STYLE_STAND_MIX_MIN: Record<string, number> = {
+  // Pizza — Modernist Pizza Vol. 4
+  pan:           6,
+  neapolitan:   11,
+  sourdough:    11,   // no separate table; the closest published dough
+  pizza_romana: 20,
+  roman:        20,
+  newyork:      15,
+  // Bread — Modernist Bread Vol. 6
+  pain_campagne: 7,
+  pain_levain:   7,
+  baguette:     14,
+};
+
+// ── AUTOLYSE ──────────────────────────────
+// A rest between the initial and final mix, so the flour hydrates and the
+// gluten begins to organise without work. Its published purpose is to REDUCE
+// mixing time, which is why the Bake Guide has always prescribed one for hand
+// mixing: less kneading for the same development.
+//
+// ONE number, 30 min. The literature is a plateau, not a peak — 20-30 min for
+// refined flour, "more time won't hurt the dough" (Modernist Bread), "it
+// doesn't really matter as long as it is more than 20". A per-style table
+// would be false precision, and 30 sits on the scheduler's 15-minute grid.
+//
+// WHO GETS ONE, and why the list is short:
+//  - The three bread styles whose Modernist mixing times we adopted. Those
+//    times (7 min country and sourdough, 14 min lean) are measured WITH an
+//    autolyse in the method — without the rest the dough is not hydrated and
+//    those minutes do not develop it. The rest is not optional garnish, it is
+//    what makes the number true.
+//  - Hand mixing of any style, which is the rule the Bake Guide already had.
+//
+// EXCLUDED, each for a reason rather than for lack of data:
+//  - Rye (pain_seigle). Autolyse above ~30% rye degrades the dough; the rye
+//    should go in after. This is a no, not an omission.
+//  - Whole grain (pain_complet). Bran and germ want up to two hours, so the
+//    flat 30 would be wrong in the other direction.
+//  - Enriched (brioche, pain_mie, pain_viennois) — pages not read.
+//  - Machine-mixed pizza. A short autolyse "has virtually no impact on the
+//    final characteristics of the pizza" (PizzaBlab), and Modernist Pizza
+//    prescribes one for al taglio alone.
+//  - No-knead, which develops by time already.
+export const AUTOLYSE_MIN = 30;
+
+const AUTOLYSE_STYLES = new Set(['pain_campagne', 'pain_levain', 'baguette']);
+// Never, on any mixer. Rye degrades with a rest; the flour goes in after.
+const AUTOLYSE_NEVER = new Set(['pain_seigle']);
+
+/** Minutes of autolyse between the initial and final mix. 0 when there is none. */
+export function autolyseMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: string): number {
+  if (mixerType === 'no_knead') return 0;
+  // Rye first, and before the hand-mixing rule: an autolyse in a rye dough is
+  // harmful, not merely unhelpful, so it must not arrive through a mixer path.
+  if (styleKey && AUTOLYSE_NEVER.has(styleKey)) return 0;
+  if (styleKey && AUTOLYSE_STYLES.has(styleKey)) return AUTOLYSE_MIN;
+  return mixerType === 'hand' ? AUTOLYSE_MIN : 0;
+}
+
+/**
+ * Elapsed mixing minutes for a style on a given mixer.
+ *
+ * Stand mixer with a published time uses it directly. Every other mixer keeps
+ * its own base and is scaled by the style's ratio to Neapolitan, because the
+ * book's times for those machines are at batch sizes we do not support.
+ *
+ * Bread styles have no published table and fall through to the mixer's base —
+ * the honest answer until a bread source exists. Do not guess one in.
+ */
+export function kneadMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: string): number {
+  const base = MIXER_TYPES[mixerType]?.kneadMin ?? 10;
+  if (base === 0) return 0;                       // no-knead stays no-knead
+  const published = styleKey ? STYLE_STAND_MIX_MIN[styleKey] : undefined;
+  if (published === undefined) return base;
+  if (mixerType === 'stand') return published;
+  return Math.round(base * (published / STAND_MIX_REFERENCE_MIN));
+}
+
+// ── YEAST TYPES ───────────────────────────
+export const YEAST_TYPES = {
+  instant: {
+    name: 'Instant Dry',
+    nameFr: 'Levure Sèche Instantanée',
+    shortName: 'IDY',
+    shortNameFr: 'LSI',
+    emoji: '🟡',
+    image: '/yeast_instant.webp',
+    also: 'Rapid rise, Fast action, Easy bake',
+    form: 'Fine powder or tiny granules',
+    color: 'Light beige/cream',
+    usage: 'Add directly to flour — no proofing needed',
+    shelfLife: '1–2 years sealed',
+    conversion: 1.00,
+    commonIn: 'Europe, professional baking',
+  },
+  active_dry: {
+    name: 'Active Dry',
+    nameFr: 'Levure Sèche Active',
+    shortName: 'ADY',
+    shortNameFr: 'LSA',
+    emoji: '🟤',
+    image: '/yeast_active.webp',
+    also: 'Traditional yeast, Dry yeast',
+    form: 'Larger brown granules',
+    color: 'Tan/brown',
+    usage: 'Dissolve in warm water (38–43°C) for 5–10 min before adding to flour',
+    shelfLife: '1 year sealed',
+    conversion: 1.33,
+    commonIn: 'USA, widely available',
+  },
+  fresh: {
+    name: 'Fresh Yeast',
+    nameFr: 'Levure Fraîche',
+    shortName: 'Fresh',
+    shortNameFr: 'Fraîche',
+    emoji: '🧱',
+    image: '/yeast_fresh.webp',
+    also: 'Cake yeast, Compressed yeast',
+    form: 'Soft block, crumbly',
+    color: 'Beige/grey, slightly moist',
+    usage: 'Crumble directly into dough or dissolve in water',
+    shelfLife: '1–2 weeks refrigerated',
+    conversion: 3.00,
+    commonIn: 'Professional bakeries, Europe',
+  },
+  sourdough: {
+    name: 'Sourdough Starter',
+    nameFr: 'Levain',
+    shortName: 'Starter',
+    shortNameFr: 'Levain',
+    emoji: '🫙',
+    image: '/yeast_sourdough.webp',
+    also: 'Levain, Wild yeast',
+    form: 'Thick paste or liquid',
+    color: 'Off-white to grey',
+    usage: 'Feed 4–12h before use. Use at peak activity.',
+    shelfLife: 'Indefinite if maintained',
+    conversion: 0,
+    commonIn: 'Artisan baking worldwide',
+  },
+} as const;
+
+// ── FLOUR DATA ────────────────────────────
+export const FLOUR_DATA = {
+  pizza00: {
+    name: 'Pizza flour 00',
+    nameFr: 'Farine à pizza 00',
+    w: 250,
+    protein: 12.5,
+    hydrationBase: 62,
+    hydrationDelta: 0,
+    fermTolerance: 1.0,
+    absorbency: 1.0,
+  },
+  strong00: {
+    name: 'Strong 00 W270+',
+    nameFr: 'Farine 00 forte W270+',
+    w: 300,
+    protein: 13.5,
+    hydrationBase: 65,
+    hydrationDelta: +2,
+    fermTolerance: 1.2,
+    absorbency: 1.05,
+  },
+  bread: {
+    name: 'Bread flour / T65',
+    nameFr: 'Farine à pain / T65',
+    w: 200,
+    protein: 11.5,
+    hydrationBase: 65,
+    hydrationDelta: +1,
+    fermTolerance: 0.9,
+    absorbency: 1.02,
+  },
+  allpurpose: {
+    name: 'All-purpose / T55',
+    nameFr: 'Farine tout usage / T55',
+    w: 130,
+    protein: 10.0,
+    hydrationBase: 60,
+    hydrationDelta: -2,
+    fermTolerance: 0.75,
+    absorbency: 0.97,
+  },
+  semolina: {
+    name: 'Semolina / Semola rimacinata',
+    nameFr: 'Semoule fine / Semola',
+    w: 180,
+    protein: 12.0,
+    hydrationBase: 60,
+    hydrationDelta: -1,
+    fermTolerance: 0.85,
+    absorbency: 0.95,
+  },
+  wholemeal: {
+    name: 'Wholemeal / T110',
+    nameFr: 'Farine complète / T110',
+    w: 160,
+    protein: 13.0,
+    hydrationBase: 72,
+    hydrationDelta: +4,
+    fermTolerance: 0.8,
+    absorbency: 1.10,
+  },
+  rye: {
+    name: 'Rye / T130',
+    nameFr: 'Seigle / T130',
+    w: 120,
+    protein: 8.0,
+    hydrationBase: 75,
+    hydrationDelta: +6,
+    fermTolerance: 0.7,
+    absorbency: 1.15,
+  },
+  manitoba: {
+    name: 'Manitoba',
+    nameFr: 'Manitoba',
+    w: 360,
+    protein: 14.0,
+    hydrationBase: 68,
+    hydrationDelta: +3,
+    fermTolerance: 1.35,
+    absorbency: 1.12,
+  },
+} as const;
+
+export type FlourKey = keyof typeof FLOUR_DATA;
+
+// ── FLOUR BRANDS ──────────────────────────
+const FLOUR_BRANDS = {
+  caputo: {
+    name: 'Caputo',
+    logo: '🔵',
+    products: [
+      { name: 'Pizzeria', w: 260, protein: 12.5, desc: 'Blue bag — most common, 24-48h' },
+      { name: 'Cuoco', w: 300, protein: 13.0, desc: 'Red bag — strong, 48-72h' },
+      { name: 'Nuvola', w: 270, protein: 12.5, desc: 'Light airy cornicione' },
+      { name: 'Saccorosso', w: 330, protein: 13.5, desc: 'Professional, 72h+' },
+    ],
+  },
+  stagioni: {
+    name: '5 Stagioni',
+    logo: '⭐',
+    products: [
+      { name: 'Pizza', w: 270, protein: 12.5, desc: 'Classic — 24-48h' },
+      { name: 'Napoletana', w: 290, protein: 13.0, desc: 'Long ferment — 48-72h' },
+      { name: 'Gold', w: 380, protein: 14.0, desc: 'Professional — 72h+' },
+    ],
+  },
+} as const;
+
+type BrandKey = keyof typeof FLOUR_BRANDS;
+
+// ── PREFERMENT TYPES ──────────────────────
+export const PREFERMENT_TYPES = {
+  none: {
+    name: 'Direct',
+    nameFr: 'Direct',
+    emoji: '⚡',
+    image: '/preferment-direct.webp',
+    desc: 'No preferment — mix everything together.',
+    descFr: 'Sans pré-ferment — tout mélanger directement.',
+    flourPct: 0,
+    hydration: 0,
+    yeastPct: 0,
+    fermentHours: 0,
+    fermentTemp: 0,
+    cold: false,
+    yeastReduction: 0,
+    flavourNote: '',
+    bestFor: [] as string[],
+    flourPctMin: 0, flourPctMax: 0, flourPctStep: 0,
+  },
+  poolish: {
+    name: 'Poolish',
+    nameFr: 'Poolish',
+    emoji: '🏺',
+    image: '/preferment-poolish.webp',
+    desc: 'Liquid pre-ferment. Adds extensibility and complex flavour.',
+    descFr: 'Pré-ferment liquide. Apporte extensibilité et saveur complexe.',
+    flourPct: 50,
+    hydration: 100,
+    yeastPct: 0.2,
+    fermentHoursMin: 8,
+    fermentHoursMax: 16,
+    fermentTemp: 20,
+    cold: false,
+    yeastReduction: 0.30,
+    flavourNote: 'Extensible, open crumb, mild tang.',
+    flavourNoteFr: 'Pâte extensible, mie ouverte, légèrement acidulé.',
+    bestFor: ['baguette', 'newyork', 'roman'] as string[],
+    flourPctMin: 30, flourPctMax: 70, flourPctStep: 10,
+  },
+  biga: {
+    name: 'Biga',
+    nameFr: 'Biga',
+    emoji: '🧱',
+    image: '/preferment-biga.webp',
+    desc: 'Stiff Italian pre-ferment. Adds structure, strength and complex flavour.',
+    descFr: 'Pré-ferment rigide italien. Structure, force et saveur complexe.',
+    flourPct: 45,
+    hydration: 45,
+    yeastPct: 0.5,
+    fermentHoursMin: 16,
+    fermentHoursMax: 48,
+    fermentTemp: 4,
+    cold: true,
+    yeastReduction: 0.40,
+    flavourNote: 'Strong structure, complex flavour, ideal for high hydration.',
+    flavourNoteFr: 'Structure forte, saveur complexe, idéal pour haute hydratation.',
+    bestFor: ['roman', 'newyork', 'pain_campagne'] as string[],
+    flourPctMin: 25, flourPctMax: 60, flourPctStep: 5,
+  },
+  levain: {
+    name: 'Levain / Sourdough',
+    nameFr: 'Levain',
+    emoji: '🫙',
+    image: '',
+    desc: 'Wild yeast preferment. Deep flavour, better digestibility.',
+    descFr: 'Pré-ferment au levain naturel. Saveur profonde, meilleure digestibilité.',
+    flourPct: 20,
+    hydration: 100,
+    yeastPct: 0,
+    fermentHoursMin: 4,
+    fermentHoursMax: 12,
+    fermentTemp: 24,
+    cold: false,
+    yeastReduction: 1.0,
+    flavourNote: 'Tangy, digestible, unique wild yeast character.',
+    flavourNoteFr: 'Acidulé, digestible, caractère unique du levain naturel.',
+    bestFor: ['neapolitan', 'pain_levain', 'baguette'] as string[],
+    flourPctMin: 15, flourPctMax: 30, flourPctStep: 5,
+  },
+} as const;
+
+export type PrefermentType = keyof typeof PREFERMENT_TYPES;
+
+// ── Preferment yeast helpers (reproduced from Craig's model) ─────
+// These are local to the preferment calculation and intentionally
+// kept separate from the main yeast engine in utils.ts.
+const YEAST_MIN_PCT_PREF = 0.05;
+
+function rtIDYPref(hours: number, temp: number): number {
+  const raw = 9.5 / (Math.pow(Math.max(0.5, hours), 1.65) * Math.pow(2.5, (temp - 25) / 10));
+  const tropical = temp >= 33 ? 1.25 : temp >= 30 ? 1.15 : 1.0;
+  return raw / tropical;
+}
+
+function coldIDYPref(hours: number, fridgeT: number): number {
+  const raw = 7.5 / Math.pow(Math.max(1, hours), 1.313);
+  return raw / Math.pow(2.0, (fridgeT - 4) / 10);
+}
+
+export function computePrefermentRecipe(
+  prefermentType: PrefermentType,
+  totalFlourGrams: number,
+  totalWaterGrams: number,
+  kitchenTemp?: number,       // default 22 (standard temperate)
+  fridgeTemp?: number,        // default 4
+  prefGoesInFridge?: boolean, // default false for poolish, true for biga
+  flourPctOverride?: number,
+  yeastType?: string,         // for output conversion (default 'instant' = IDY)
+  actualFermentH?: number,    // baker's REAL planned window (from scheduler) — yeast calibrated to it
+  nTargetGramsIDY?: number,   // whole-dough leavening requirement (direct-engine IDY grams) — makes dosing fraction-independent
+): {
+  prefFlour: number;
+  prefWater: number;
+  prefYeastGrams: number;
+  prefYeastGramsIDY: number;
+  prefYeastType: string;
+  finalFlour: number;
+  finalWater: number;
+  fermentHoursMin: number;
+  fermentHoursMax: number;
+  cold: boolean;
+  schedule: string;
+  scheduleFr: string;
+} | null {
+  if (prefermentType === 'none') return null;
+  const p = PREFERMENT_TYPES[prefermentType];
+
+  const flourPct = flourPctOverride ?? p.flourPct;
+  const prefFlour = Math.round(totalFlourGrams * flourPct / 100);
+  const prefWater = Math.round(prefFlour * p.hydration / 100);
+  const finalFlour = totalFlourGrams - prefFlour;
+
+  // Climate-aware preferment yeast calibrated to the preferment's own fermentation window
+  const effectiveKT = kitchenTemp ?? 22;
+  const effectiveFT = fridgeTemp ?? 4;
+  const isInFridge = prefermentType === 'biga' || (prefGoesInFridge ?? false);
+
+  // Calibrate yeast to the baker's ACTUAL planned window when the scheduler
+  // provides it — a 20h biga needs more yeast than a 48h one. Falls back to
+  // the scientific optimum per type. Clamped to each type's viable range so a
+  // dragged/degenerate offset can't produce absurd yeast amounts.
+  let prefFermentH: number;
+  if (prefermentType === 'biga') {
+    prefFermentH = actualFermentH !== undefined && actualFermentH > 0
+      ? Math.max(12, Math.min(72, actualFermentH))
+      : 48;
+  } else if (isInFridge) {
+    prefFermentH = actualFermentH !== undefined && actualFermentH > 0
+      ? Math.max(6, Math.min(24, actualFermentH))
+      : 18; // fridge poolish optimal peak
+  } else if (actualFermentH !== undefined && actualFermentH > 0) {
+    // RT poolish: calibrate to the real planned window (clamped to viable RT range)
+    prefFermentH = Math.max(2, Math.min(16, actualFermentH));
+  } else {
+    // RT poolish peak hours, temp-dependent
+    if (effectiveKT >= 32)      prefFermentH = 3;
+    else if (effectiveKT >= 30) prefFermentH = 4;
+    else if (effectiveKT >= 28) prefFermentH = 5;
+    else if (effectiveKT >= 26) prefFermentH = 7;
+    else if (effectiveKT >= 24) prefFermentH = 9;
+    else if (effectiveKT >= 22) prefFermentH = 11;
+    else                        prefFermentH = 14;
+  }
+
+  // Environment correction factors — calibrated against Modernist Pizza Vol.4
+  // Craig's constants are for bulk dough (65% hydration, with salt).
+  // Preferments are different physical environments.
+  const rawPct = isInFridge
+    ? coldIDYPref(prefFermentH, effectiveFT)
+    : rtIDYPref(prefFermentH, effectiveKT);
+
+  const correctionFactor = prefermentType === 'biga'
+    ? 2.2          // stiff dough, constrained yeast — needs more IDY
+    : isInFridge
+      ? 1.65       // fridge poolish: liquid, CO₂ escapes freely
+      : 1 / 3.1;   // RT poolish: no salt, 100% hydration (tropical already in rtIDYPref)
+
+  const idyPct = Math.max(YEAST_MIN_PCT_PREF, rawPct * correctionFactor);
+
+  // ── Peak-ripening dose ──────────────────────────────────────────────
+  // The seed that makes THIS preferment ripe (at peak) at mix time, for its
+  // own flour and window. Scales with preferment flour — a bigger biga needs
+  // proportionally more seed to peak on the same clock.
+  const peakDoseIDY = prefFlour * idyPct / 100;
+
+  // ── Whole-dough leavening requirement (fraction-independent) ─────────
+  // A preferment is a yeast farm: the seed multiplies while it ripens, and
+  // the grown population is what actually leavens the FINAL dough. So the
+  // seed must be large enough to DELIVER the leavening the whole dough needs
+  // over its whole schedule — that target (nTargetGramsIDY) comes from the
+  // direct-dough engine and is based on TOTAL flour, so it no longer depends
+  // on the preferment fraction.
+  //
+  //   delivered ≈ seed × G,   G = 2^(fermH / tD(T))   (population growth)
+  //   tD(T) = doubling time, Q10=2, anchored at 22.1h @6°C so this reproduces
+  //   the validated points (20% biga 46h≈0.1g, fridge poolish 18h≈0.3g).
+  //
+  // We take the LARGER of the peak dose and the leavening dose so the
+  // preferment is never under-ripe AND never under-delivers. This only ever
+  // tops up an underdose (low fraction + long/warm final ferment); at the
+  // validated fractions it is a no-op.
+  let prefYeastGramsIDY = peakDoseIDY;
+  if (nTargetGramsIDY !== undefined && nTargetGramsIDY > 0) {
+    const fermTemp = isInFridge ? effectiveFT : effectiveKT;
+    const tD = 22.1 * Math.pow(2, -(fermTemp - 6) / 10); // doubling time (h)
+    const growth = Math.pow(2, prefFermentH / tD);        // population multiple
+    const leaveningDoseIDY = nTargetGramsIDY / growth;
+    prefYeastGramsIDY = Math.max(peakDoseIDY, leaveningDoseIDY);
+  }
+  prefYeastGramsIDY = Math.round(prefYeastGramsIDY * 10) / 10;
+
+  // Convert to baker's selected yeast type
+  const yeastConversion = yeastType === 'active_dry' ? 1.33
+    : yeastType === 'fresh' ? 3.00
+    : 1.00;
+  const prefYeastGrams = Math.round(prefYeastGramsIDY * yeastConversion * 10) / 10;
+
+  const finalWater = totalWaterGrams - prefWater;
+
+  const cold = p.cold;
+  const fermentHoursMin = p.fermentHoursMin;
+  const fermentHoursMax = p.fermentHoursMax;
+
+  const schedule = cold
+    ? `Mix preferment ${fermentHoursMax}h before baking. Ferment in fridge at ${p.fermentTemp}°C.`
+    : `Mix preferment ${fermentHoursMin}–${fermentHoursMax}h before baking. Ferment at room temperature.`;
+
+  const scheduleFr = cold
+    ? `Préparez le pré-ferment ${fermentHoursMax}h avant la cuisson. Fermentez au frigo à ${p.fermentTemp}°C.`
+    : `Préparez le pré-ferment ${fermentHoursMin}–${fermentHoursMax}h avant la cuisson. Fermentez à température ambiante.`;
+
+  return {
+    prefFlour,
+    prefWater,
+    prefYeastGrams,
+    prefYeastGramsIDY,
+    prefYeastType: yeastType ?? 'instant',
+    finalFlour,
+    finalWater,
+    fermentHoursMin,
+    fermentHoursMax,
+    cold,
+    schedule,
+    scheduleFr,
+  };
+}
+
+export interface FlourBlend {
+  flour1: FlourKey;
+  flour2: FlourKey | null;
+  ratio1: number;           // 0-100, percentage of flour1
+  flour3?: FlourKey | null; // optional third flour
+  ratio2?: number;          // 0-100, percentage of flour2 (flour3 = remainder)
+  wOverride?: number;       // manual W value override / blended W (legacy)
+  w1?: number;              // true W of flour1 (per-component, avoids double-blend)
+  w2?: number;              // true W of flour2
+  w3?: number;              // true W of flour3
+  brandKey?: BrandKey;      // selected brand
+  brandProduct?: string;    // selected product name
+  customFlour2Name?: string; // name of manually entered second flour
+  customFlour3Name?: string; // name of manually entered third flour
+
+  // How well each W is known. Every route into this page — scan, search,
+  // shortlist, flour type, typed W — writes the same record; what separates
+  // them is the quality of the W they produce, and that is worth carrying.
+  //   'exact'   read off a specific product in the database
+  //   'photo'   read off the bag's own label by the scanner
+  //   'typical' a representative value for a flour type
+  //   'manual'  the number the baker entered
+  w1Source?: WSource;
+  w2Source?: WSource;
+  w3Source?: WSource;
+}
+
+export type WSource = 'exact' | 'photo' | 'typical' | 'manual';
+
+// A blend is never better known than its least-known component: mixing a
+// scanned Caputo with a "typical" rye gives an approximate W, and printing it
+// without a tilde overstates what the app knows.
+export function blendWIsApproximate(b: FlourBlend): boolean {
+  // Only a positive 'typical' earns the tilde. undefined means the record
+  // predates this field — a session saved before provenance existed — and
+  // sprinkling tildes over old sessions would be noise, not honesty.
+  const used: (WSource | undefined)[] = [b.w1Source];
+  if (b.flour2) used.push(b.w2Source);
+  if (b.flour3) used.push(b.w3Source);
+  return used.some(s => s === 'typical');
+}
+
+export interface BlendProfile {
+  blendedW: number;
+  hydrationDelta: number;
+  fermToleranceMultiplier: number;
+  displayName: string;
+  displayNameFr: string;
+}
+
+export function computeBlendProfile(blend: FlourBlend): BlendProfile {
+  const f1 = FLOUR_DATA[blend.flour1];
+  // Per-component W when the picker stored it (w1); wOverride is the legacy
+  // slot which — for saved 2-flour blends — already holds the BLENDED W, so
+  // using it as flour1's W double-counted flour2. w1 fixes that; legacy
+  // blends fall back to the old behaviour unchanged.
+  const w1 = blend.w1 ?? blend.wOverride ?? f1.w;
+  if (!blend.flour2 || blend.ratio1 === 100) {
+    return {
+      blendedW: w1,
+      hydrationDelta: f1.hydrationDelta,
+      fermToleranceMultiplier: f1.fermTolerance,
+      displayName: f1.name,
+      displayNameFr: f1.nameFr,
+    };
+  }
+  const f2 = FLOUR_DATA[blend.flour2];
+  const w2 = blend.w2 ?? f2.w;
+  const hasF3 = !!blend.flour3 && blend.ratio2 !== undefined && (100 - blend.ratio1 - blend.ratio2) > 0;
+  const f3 = hasF3 ? FLOUR_DATA[blend.flour3!] : null;
+  const w3 = hasF3 ? (blend.w3 ?? f3!.w) : 0;
+  const p1 = blend.ratio1;
+  const p2 = hasF3 ? blend.ratio2! : 100 - blend.ratio1;
+  const p3 = hasF3 ? 100 - p1 - p2 : 0;
+  const r1 = p1 / 100, r2 = p2 / 100, r3 = p3 / 100;
+  const two = (n: number) => Math.round(n * 100) / 100;
+  const nameOf   = (f: typeof f1, custom?: string) => custom ?? f.name;
+  const nameFrOf = (f: typeof f1, custom?: string) => custom ?? f.nameFr;
+  const parts   = [`${p1}% ${f1.name}`, `${p2}% ${nameOf(f2, blend.customFlour2Name)}`];
+  const partsFr = [`${p1}% ${f1.nameFr}`, `${p2}% ${nameFrOf(f2, blend.customFlour2Name)}`];
+  if (hasF3 && f3) { parts.push(`${p3}% ${nameOf(f3, blend.customFlour3Name)}`); partsFr.push(`${p3}% ${nameFrOf(f3, blend.customFlour3Name)}`); }
+  return {
+    blendedW: Math.round(w1 * r1 + w2 * r2 + w3 * r3),
+    hydrationDelta: Math.round((f1.hydrationDelta * r1 + f2.hydrationDelta * r2 + (f3 ? f3.hydrationDelta : 0) * r3) * 10) / 10,
+    fermToleranceMultiplier: two(f1.fermTolerance * r1 + f2.fermTolerance * r2 + (f3 ? f3.fermTolerance : 1) * r3),
+    displayName: parts.join(' + '),
+    displayNameFr: partsFr.join(' + '),
+  };
+}
+
+// ── TYPE EXPORTS ──────────────────────────
+export type PizzaStyleKey = keyof typeof PIZZA_STYLES;
+export type BreadStyleKey = keyof typeof BREAD_STYLES;
+export type StyleKey = PizzaStyleKey | BreadStyleKey;
+export type BakeType = 'pizza' | 'bread';
+export type OvenType = keyof typeof OVEN_TYPES;
+export type BreadOvenType = keyof typeof BREAD_OVEN_TYPES;
+export type AnyOvenType = OvenType | BreadOvenType;
+export type MixerType = keyof typeof MIXER_TYPES;
+export type YeastType = keyof typeof YEAST_TYPES;
+
+export const ALL_STYLES = { ...PIZZA_STYLES, ...BREAD_STYLES };
