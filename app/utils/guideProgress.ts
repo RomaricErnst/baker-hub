@@ -3,6 +3,10 @@ export function firstIncompleteStep(completed: ReadonlySet<number>): number {
   while (completed.has(step)) step++;
   return step;
 }
-export function canChangeStepCompletion(step: number, completed: ReadonlySet<number>): boolean {
-  return completed.has(step) || step === firstIncompleteStep(completed);
+/** Completion and browsing are independent; undo changes only this step. */
+export function toggleStepCompletion(step: number, completed: ReadonlySet<number>): Set<number> {
+  const next = new Set(completed);
+  if (next.has(step)) next.delete(step);
+  else next.add(step);
+  return next;
 }

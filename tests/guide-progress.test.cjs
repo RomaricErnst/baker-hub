@@ -1,3 +1,17 @@
-const{test}=require('node:test'),a=require('node:assert/strict');require('./load-production.cjs');const{firstIncompleteStep,canChangeStepCompletion}=require('../app/utils/guideProgress.ts');
-test('preview cannot skip a stage or advance a future mixing batch',()=>{const done=new Set([1]);a.equal(firstIncompleteStep(done),2);a.equal(canChangeStepCompletion(2,done),true);for(const future of [3,4,8])a.equal(canChangeStepCompletion(future,done),false);a.deepEqual([...done],[1])});
-test('completion unlocks exactly next stage; completed steps remain undoable',()=>{const done=new Set([1,2,3]);a.equal(canChangeStepCompletion(1,done),true);a.equal(canChangeStepCompletion(4,done),true);a.equal(canChangeStepCompletion(5,done),false);done.delete(2);a.equal(firstIncompleteStep(done),2);a.equal(canChangeStepCompletion(4,done),false)});
+const {test} = require('node:test');
+const assert = require('node:assert/strict');
+require('./load-production.cjs');
+const {firstIncompleteStep, toggleStepCompletion} = require('../app/utils/guideProgress.ts');
+test('a browsed future step can be completed without completing intervening steps', () => {
+  const original = new Set([1]);
+  const completed = toggleStepCompletion(4, original);
+  assert.deepEqual([...completed], [1, 4]);
+  assert.equal(firstIncompleteStep(completed), 2);
+  assert.deepEqual([...original], [1]);
+});
+test('undo preserves completion of subsequent steps', () => {
+  const completed = toggleStepCompletion(2, new Set([1, 2, 3, 4]));
+  assert.deepEqual([...completed], [1, 3, 4]);
+  assert.equal(firstIncompleteStep(completed), 2);
+  assert.deepEqual([...toggleStepCompletion(2, completed)].sort(), [1, 2, 3, 4]);
+});

@@ -1,8 +1,23 @@
 'use client';
 
-import { useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties, type InputHTMLAttributes } from 'react';
 
 import { displayWeight, gToOz, ozToG, type UnitSystem } from '../utils/units';
+
+/** Keep incomplete keystrokes local; normalize only when the baker commits. */
+function DraftNumberInput({ value, onCommit, ...props }: Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onBlur' | 'onKeyDown'> & { value: number; onCommit: (value: number) => void }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  return <input {...props} value={draft ?? String(value)}
+    onChange={event => setDraft(event.target.value)}
+    onBlur={() => {
+      if (draft !== null && draft.trim() !== '' && Number.isFinite(Number(draft))) onCommit(Number(draft));
+      setDraft(null);
+    }}
+    onKeyDown={event => {
+      if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur(); }
+      if (event.key === 'Escape') { event.preventDefault(); setDraft(null); }
+    }} />;
+}
 
 export type QuantityCrust = 'thin' | 'classic' | 'generous';
 
@@ -161,7 +176,7 @@ export default function PrototypeQuantityPicker({
         <label htmlFor="quantity-count" style={labelStyle}>
           {bakeType === 'bread' ? (fr ? 'Nombre de pains' : 'Number of loaves') : (fr ? 'Nombre de pizzas' : 'Number of pizzas')}
         </label>
-        <input
+        <DraftNumberInput
           id="quantity-count"
           type="number"
           inputMode="numeric"
@@ -169,7 +184,7 @@ export default function PrototypeQuantityPicker({
           max={countMax}
           step={countStep}
           value={count}
-          onChange={event => onCountChange(clamp(Number(event.target.value), countMin, countMax, countStep))}
+          onCommit={value => onCountChange(clamp(value, countMin, countMax, countStep))}
           style={{ ...inputStyle, fontSize: '24px', fontWeight: 700 }}
         />
         <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--smoke)' }}>
@@ -186,7 +201,7 @@ export default function PrototypeQuantityPicker({
           <label htmlFor="quantity-diameter" style={labelStyle}>
             {fr ? 'Diamètre' : 'Pizza diameter'} <span style={{ fontWeight: 400, color: 'var(--smoke)' }}>({units === 'imperial' ? 'in' : 'cm'})</span>
           </label>
-          <input
+          <DraftNumberInput
             id="quantity-diameter"
             type="number"
             inputMode="decimal"
@@ -194,10 +209,7 @@ export default function PrototypeQuantityPicker({
             max={units === 'imperial' ? Math.round(diameterBounds.max / 2.54 * 10) / 10 : diameterBounds.max}
             step={units === 'imperial' ? 0.1 : 1}
             value={units === 'imperial' ? Math.round(diameter / 2.54 * 10) / 10 : diameter}
-            onChange={event => {
-              if (event.target.value === '') return;
-              setDiameter(Number(event.target.value) * (units === 'imperial' ? 2.54 : 1));
-            }}
+            onCommit={value => setDiameter(value * (units === 'imperial' ? 2.54 : 1))}
             style={{ ...inputStyle, maxWidth: '140px' }}
           />
 
@@ -246,14 +258,14 @@ export default function PrototypeQuantityPicker({
               <label htmlFor="quantity-custom-weight" style={labelStyle}>
                 {fr ? 'Votre poids de pâte' : 'Your dough weight'} ({weightUnit})
               </label>
-              <input
+              <DraftNumberInput
                 id="quantity-custom-weight"
                 type="number"
                 min={shownWeight(weightBounds.min)}
                 max={shownWeight(weightBounds.max)}
                 step={units === 'imperial' ? 0.1 : weightBounds.step}
                 value={shownWeight(itemWeight)}
-                onChange={event => onItemWeightChange(clamp(storedWeight(Number(event.target.value)), weightBounds.min, weightBounds.max, weightBounds.step))}
+                onCommit={value => onItemWeightChange(clamp(storedWeight(value), weightBounds.min, weightBounds.max, weightBounds.step))}
                 style={inputStyle}
               />
               <p style={{ margin: '6px 0', fontSize: '12px', color: 'var(--smoke)' }}>
@@ -277,14 +289,14 @@ export default function PrototypeQuantityPicker({
           <label htmlFor="quantity-item-weight" style={labelStyle}>
             {bakeType === 'bread' ? (fr ? 'Poids de pâte par pain' : 'Dough per loaf') : (fr ? 'Poids par pizza en plaque' : 'Dough per tray pizza')} ({weightUnit})
           </label>
-          <input
+          <DraftNumberInput
             id="quantity-item-weight"
             type="number"
             min={shownWeight(weightBounds.min)}
             max={shownWeight(weightBounds.max)}
             step={units === 'imperial' ? 0.1 : weightBounds.step}
             value={shownWeight(itemWeight)}
-            onChange={event => onItemWeightChange(clamp(storedWeight(Number(event.target.value)), weightBounds.min, weightBounds.max, weightBounds.step))}
+            onCommit={value => onItemWeightChange(clamp(storedWeight(value), weightBounds.min, weightBounds.max, weightBounds.step))}
             style={inputStyle}
           />
           <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--smoke)' }}>

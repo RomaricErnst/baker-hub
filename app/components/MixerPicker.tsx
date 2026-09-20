@@ -32,20 +32,6 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
   return (<>
       <DecisionList layout="photo" options={options} selectedId={selected ?? ''} onSelect={id => onSelect(id as MixerType)} />
 
-      {/* Early batch hint — the 1500g cap otherwise only appears on the
-          recipe page, after the baker has already committed to the mixer */}
-      {selected === 'stand' && (totalDoughG ?? 0) > 1500 && (
-        <div style={{
-          marginTop: '12px', background: '#FDFBF2', border: '1px solid #E8D890',
-          borderRadius: '16px', padding: '12px 16px', fontSize: '12px',
-          color: '#7A5A10', lineHeight: 1.55,
-        }}>
-          {locale === 'fr'
-            ? `Avec ${totalDoughG}g de pâte, vous pétrirez en ${Math.ceil((totalDoughG ?? 0) / 1500)} fois — le plan s'en occupe.`
-            : `With ${totalDoughG}g of dough you'll mix in ${Math.ceil((totalDoughG ?? 0) / 1500)} batches — the plan handles it.`}
-        </div>
-      )}
-
       {/* Contextual warnings — always visible after selection */}
       {selected === 'no_knead' && bakeType === 'pizza' && styleKey && NO_KNEAD_WARNING[styleKey] && (
         <div style={{

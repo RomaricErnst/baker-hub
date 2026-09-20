@@ -6,7 +6,7 @@ import { type ScheduleResult, formatTime, hoursLabel } from '../utils';
 import { MIXER_TYPES, AUTOLYSE_MIN, autolyseMinFor, type MixerType } from '../data';
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
-import { firstIncompleteStep, canChangeStepCompletion } from '../utils/guideProgress';
+import { toggleStepCompletion } from '../utils/guideProgress';
 import { mixingBatchPlan } from '../utils/mixingBatches';
 import PhaseSummary from './PhaseSummary';
 import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
@@ -226,7 +226,7 @@ function StepCard({
           marginTop: 8, padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
           background: done ? 'transparent' : D.terra, color: done ? D.terra : 'white',
           border: `1px solid ${D.terra}`, fontWeight: 600 }}>
-          {preview ? (fr ? 'Revenir à l’étape en cours' : 'Back to current step') : done ? (fr ? 'Annuler cette étape et les suivantes' : 'Undo this and following steps')
+          {preview ? (fr ? 'Revenir à l’étape en cours' : 'Back to current step') : done ? (fr ? 'Annuler cette étape' : 'Undo this step')
             : completeLabel ?? (final ? (fr ? 'Terminer la cuisson' : 'Mark bake complete') : (fr ? 'Marquer comme terminée' : 'Mark as completed'))}
         </button>
         </div>
@@ -970,29 +970,22 @@ Actual dough condition and equipment may differ from these estimates.`;
     const s = lastStep;
     return {
       overview: currentStep === 0, totalSteps,
-      preview: !canChangeStepCompletion(s, doneSteps),
-      onReturnCurrent: () => setCurrentStep(firstIncompleteStep(doneSteps)),
-      onPrevious: s > 1 ? () => setCurrentStep(s - 1) : undefined,
+            onPrevious: s > 1 ? () => setCurrentStep(s - 1) : undefined,
       onNext: () => { const next = stepRefs.current.findIndex((el, i) => i > s && el !== null); if (next > s) setCurrentStep(next); },
       completeLabel: mixing && batch && batch.count > 1 ? (l === 'fr' ? `Terminer la pétrissée ${batch.active + 1} sur ${batch.count}` : `Complete batch ${batch.active + 1} of ${batch.count}`) : undefined,
       open: currentStep === s,
       done: doneSteps.has(s),
       onToggle: () => setCurrentStep(prev => prev === s ? 0 : s),
       onDone: () => {
-        if (!canChangeStepCompletion(s, doneSteps)) return;
         if (mixing && batch && !doneSteps.has(s) && batch.active + 1 < batch.count) {
           setActiveBatch(batch.active + 1);
           try { localStorage.setItem(progressKey + ':batch', String(batch.active + 1)); } catch {}
           return;
         }
-        const next = new Set(doneSteps);
-        if (next.has(s)) {
+        const next = toggleStepCompletion(s, doneSteps);
+        if (doneSteps.has(s) && mixing) {
           setActiveBatch(0);
           try { localStorage.setItem(progressKey + ':batch', '0'); } catch {}
-          for (const i of next) if (i >= s) next.delete(i);
-        } else {
-          next.add(s);
-          // Completion records progress; browsing remains a separate action.
         }
         setDoneSteps(next);
         try { localStorage.setItem(progressKey, JSON.stringify([...next])); } catch {}

@@ -367,7 +367,7 @@ export default function RecipeOutput({
 
   // Batch splitting — auto-triggered when total dough exceeds mixer default capacity
   const mixerMaxG   = (MIXER_TYPES as Record<string, { maxDoughG?: number }>)[mixerType]?.maxDoughG ?? 9999;
-  const totalDoughG = numItems * itemWeight;
+  const totalDoughG = result.totalDough;
   const minBatches  = Math.ceil(totalDoughG / mixerMaxG);
   const needsBatches = minBatches > 1;
   const [batchIndex, setBatchIndex] = useState(0);
@@ -635,7 +635,7 @@ export default function RecipeOutput({
                   {t('recipeOutput.totalDough')}
                 </div>
                 <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  {u === 'imperial' ? wStr(numItems * itemWeight) : `${(numItems * itemWeight).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
+                  {u === 'imperial' ? wStr(totalDough) : `${totalDough.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
                 </div>
 
               </div>
@@ -655,7 +655,7 @@ export default function RecipeOutput({
             sub={mode === 'custom' && flourBlend ? (() => {
               const f1 = FLOUR_DATA[flourBlend.flour1];
               const f1DisplayName = flourBlend.brandProduct ?? f1.name;
-              const f1Weight = Math.round(flour * flourBlend.ratio1 / 100);
+              const f1Weight = Math.round(flourMain * flourBlend.ratio1 / 100);
               if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
                 return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>{f1DisplayName}</span>;
               }
@@ -663,8 +663,8 @@ export default function RecipeOutput({
               const hasF3 = !!flourBlend.flour3 && flourBlend.ratio2 !== undefined && (100 - flourBlend.ratio1 - flourBlend.ratio2) > 0;
               const p2 = hasF3 ? flourBlend.ratio2! : 100 - flourBlend.ratio1;
               const p3 = hasF3 ? 100 - flourBlend.ratio1 - p2 : 0;
-              const f2Weight = Math.round(flour * p2 / 100);
-              const f3Weight = hasF3 ? flour - f1Weight - f2Weight : 0;
+              const f2Weight = hasF3 ? Math.round(flourMain * p2 / 100) : flourMain - f1Weight;
+              const f3Weight = hasF3 ? flourMain - f1Weight - f2Weight : 0;
               const f3 = hasF3 ? FLOUR_DATA[flourBlend.flour3!] : null;
               return (
                 <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
@@ -808,7 +808,7 @@ export default function RecipeOutput({
               {t('recipeOutput.totalDough')}
             </div>
             <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
-              {u === 'imperial' ? wStr(numItems * itemWeight) : `${(numItems * itemWeight).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
+              {u === 'imperial' ? wStr(totalDough) : `${totalDough.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
             </div>
 
           </div>
@@ -820,7 +820,7 @@ export default function RecipeOutput({
         <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Pourcentages boulangers' : 'Baker’s percentages'}</summary>
         <p style={{fontSize:13}}>{locale === 'fr' ? 'Calculés sur toute la farine, préferment ou levain inclus.' : 'Based on all flour, including flour in preferment or starter.'}</p>
         <p>{t('recipeOutput.ingredientFlour')} : 100% · {t('recipeOutput.ingredientWater')} : {pctStr(waterPct)} · {t('recipeOutput.ingredientSalt')} : {pctStr(saltPct)}{oil > 0 ? ` · ${t('recipeOutput.ingredientOil')} : ${pctStr(oilPct)}` : ''}{sugar > 0 ? ` · ${t('recipeOutput.ingredientSugar')} : ${pctStr(sugarPct)}` : ''}</p>
-        {yeastInfo && <p>{yeastTypeName} : {pctStr(yeastInfo.convertedPct)}</p>}
+        {pf ? <p>{t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)} : {pctStr(pf.prefYeastGrams / flour * 100)}</p> : yeastInfo && <p>{yeastTypeName} : {pctStr(yeastInfo.convertedPct)}</p>}
         {sourdough && <p>{t('recipeOutput.starterLabel')} : {pctStr(sdMid / flour * 100)}</p>}
         {pf && <p>{locale === 'fr' ? 'Farine préfermentée' : 'Prefermented flour'} : {pctStr(pf.prefFlour / flour * 100)}</p>}
       </details>}

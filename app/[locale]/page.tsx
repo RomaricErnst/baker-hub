@@ -999,6 +999,7 @@ export default function Home() {
 
   // Sourdough feed time + constraint solver outputs
   const [starterEvents, setStarterEvents] = useState<StarterEvent[]>([]);
+  const [starterPlanResetKey, setStarterPlanResetKey] = useState(0);
   const [feedTime, setFeedTime]             = useState<Date | null>(null);
   const [feed2Time, setFeed2Time]           = useState<Date | null>(null);
   const [fridgeOutTime, setFridgeOutTime]   = useState<Date | null>(null);
@@ -2472,6 +2473,11 @@ export default function Home() {
   }
 
   function handleGenerate() {
+    if (yeastType === 'sourdough' && !recipeGenerated && !starterEvents.length) {
+      setActiveTab('setup'); setSetupOverview(false);
+      if (tab === 'custom') setAdvancedStep(9); else setActiveStep(7);
+      return;
+    }
     if (unsupportedEnrichedMethod || (tab === 'custom' && archivedFlourNames.length)) { setActiveTab('setup'); setSetupOverview(true); return; }
     if (recipeGenerated && user) {
       const msg = t('generate.confirmOverwrite');
@@ -2571,7 +2577,7 @@ export default function Home() {
 
   // ── Resume / rebake a saved bake event ──
   // Nav #5 — rebake clones a saved session with every scheduled time shifted
-  // rigidly to the next matching weekday/time, as a fresh unsaved session.
+  // to the next matching weekday/time. Sourdough needs a fresh starter plan.
   async function restoreFromBakeEvent(event: BakeEvent, opts?: { rebake?: boolean }) {
 
     if (!event.dough_snapshot) return;
@@ -2579,6 +2585,7 @@ export default function Home() {
     setShowWelcomeBack(false);
     const snap = event.dough_snapshot;
     const rb = !!opts?.rebake;
+    const freshStarterPlan = rb && snap.yeastType === 'sourdough';
     let deltaMs = 0;
     if (rb && snap.eatTime) {
       const oldEat = new Date(snap.eatTime);
@@ -2650,7 +2657,37 @@ export default function Home() {
     if (snap.starterFridgeInTime) setStarterFridgeInTime(new Date(snap.starterFridgeInTime));
     if (rb) setBakedDone(false); else if (snap.bakedDone) setBakedDone(true);
     setBakeEventId(rb ? null : event.id);
-    if (snap.recipeGenerated) {
+    if (freshStarterPlan) {
+      setStarterPlanResetKey(value => value + 1);
+      // Feeding history describes the original bake, not the starter today.
+      // Discard both observations and derived actions before solving again.
+      setStarterEvents([]);
+      setLastFedTime(null);
+      setKnownPeakTime(null);
+      setHasNotFedYet(null);
+      setLastFedAge(null);
+      setFeedTime(null);
+      setFeed2Time(null);
+      setFridgeOutTime(null);
+      setStarterFridgeInTime(null);
+      setStarterPeakTime(null);
+      setUsingPeak2(false);
+      setPlanningMode('last_fed');
+      setRecipeGenerated(false);
+      setShowResults(false);
+      setSessionSaved(false);
+      setSessionRestored(false);
+      setProtocolStale(false);
+      setScheduleReady(false);
+      setReviewMode(false);
+      setSetupOverview(false);
+      setActiveTab('setup');
+      setActiveStep(snap.tab === 'simple' ? 7 : 1);
+      setHighestStep(Math.max(snap.highestStep ?? 1, 7));
+      setAdvancedStep(snap.tab === 'custom' ? 9 : 1);
+      setAdvancedHighestStep(Math.max(snap.advancedHighestStep ?? 1, 9));
+      setTimeout(endRestore, 200);
+    } else if (snap.recipeGenerated) {
       setAdvancedStep(snap.tab === 'custom' ? 99 : 1);
       setActiveStep(snap.tab === 'custom' ? 1 : 99);
       setShowResults(true);
@@ -2719,7 +2756,8 @@ export default function Home() {
   const simpleRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && qtyChosen);
   const customRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && flourBlend
     && qtyChosen && flourChosen && (yeastType === 'sourdough' || prefermentChosen));
-  const canGenerate = !unsupportedEnrichedMethod && !(tab === 'custom' && archivedFlourNames.length) && (tab === 'simple' ? simpleRequiredDone : customRequiredDone);
+  const starterPlanReady = yeastType !== 'sourdough' || recipeGenerated || starterEvents.length > 0;
+  const canGenerate = starterPlanReady && !unsupportedEnrichedMethod && !(tab === 'custom' && archivedFlourNames.length) && (tab === 'simple' ? simpleRequiredDone : customRequiredDone);
   const mixerCapacityG = mixerType ? MIXER_TYPES[mixerType]?.maxDoughG ?? 9999 : 9999;
   const suggestedMixingBatches = Math.max(1, Math.ceil(numItems * itemWeight / mixerCapacityG));
   const selectedMixingBatches = mixingBatches ?? suggestedMixingBatches;
@@ -3813,7 +3851,7 @@ export default function Home() {
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => simpleFlow.onJump(1)} />
               ) : (
               <SchedulePicker
-                key={eatTime && !isNaN(eatTime.getTime()) ? eatTime.toISOString() : 'no-bake'}
+                key={`${starterPlanResetKey}:${eatTime && !isNaN(eatTime.getTime()) ? eatTime.toISOString() : 'no-bake'}`}
                 mode="simple"
                 startTime={startTime} eatTime={eatTime} blocks={blocks}
                 preheatMin={preheatMin}
@@ -4427,7 +4465,7 @@ export default function Home() {
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => customFlow.onJump(1)} />
               ) : (
               <SchedulePicker
-                key={eatTime && !isNaN(eatTime.getTime()) ? eatTime.toISOString() : 'no-bake'}
+                key={`${starterPlanResetKey}:${eatTime && !isNaN(eatTime.getTime()) ? eatTime.toISOString() : 'no-bake'}`}
                 mode="custom"
                 startTime={startTime} eatTime={eatTime} blocks={blocks}
                 preheatMin={preheatMin}

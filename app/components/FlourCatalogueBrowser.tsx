@@ -5,8 +5,8 @@ import {FLOUR_DB,FLOUR_PHOTO_PROVENANCE,type FlourEntry} from '@/lib/flourDataba
 import {FLOUR_DATA,type FlourKey} from '../data';
 
 export function flourTypeLabel(type:string,fr:boolean){
- const labels:Record<string,[string,string]>={all_purpose:['All-purpose','Tout usage'],bread:['Bread flour','Farine de pain'],french:['French wheat flour','Farine de blé française'],wheat:['Wheat','Blé'],whole_spelt:['Whole spelt','Épeautre complet'],whole_wheat:['Whole wheat','Blé complet'],wholemeal:['Whole wheat','Blé complet'],high_gluten:['High-gluten','Farine de force'],pastry:['Pastry','Pâtisserie'],rye:['Rye','Seigle'],semolina:['Semolina','Semoule'],spelt:['Spelt','Épeautre'],'t45_blend':['T45 blend','Mélange T45']};
- const label=labels[type.toLowerCase().replace(/\s+/g,'_')];return label?label[fr?1:0]:type;
+ const labels:Record<string,[string,string]>={all_purpose:['All-purpose','Tout usage'],bread:['Bread flour','Farine de pain'],bread_flour:['Bread flour','Farine de pain'],french:['French wheat flour','Farine de blé française'],french_wheat_flour:['French wheat flour','Farine de blé française'],wheat:['Wheat','Blé'],whole_spelt:['Whole spelt','Épeautre complet'],whole_wheat:['Whole wheat','Blé complet'],wholemeal:['Whole wheat','Blé complet'],high_gluten:['High-gluten','Farine de force'],pastry:['Pastry','Pâtisserie'],rye:['Rye','Seigle'],semolina:['Semolina','Semoule'],spelt:['Spelt','Épeautre'],'t45_blend':['T45 blend','Mélange T45']};
+ const label=labels[type.toLowerCase().replace(/\s+/g,'_')];return label?label[fr?1:0]:/^t\d+$/i.test(type)?type.toUpperCase():type;
 }
 export function flourBehaviour(entry:FlourEntry):FlourKey {
  const key=entry.type.toLowerCase().replace(/\s+/g,'_');
@@ -14,7 +14,9 @@ export function flourBehaviour(entry:FlourEntry):FlourKey {
  return types[key]||((entry.w??0)>=270?'strong00':'pizza00');
 }
 export function flourEngineW(entry:FlourEntry){return entry.w??FLOUR_DATA[flourBehaviour(entry)].w;}
-const normal=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[_-]/g,' ');
+const normal=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[_-]/g,' ').replace(/[’‘]/g,"'");
+const brandOption=(brand:string)=>brand.replace(/[’‘]/g,"'");
+export const flourTypeOption=(type:string)=>normal(flourTypeLabel(type,false)).replace(/\s+/g,'_');
 export function matchesFlour(entry:FlourEntry,query:string){const aliases:Record<string,string>={rye:'seigle',wholemeal:'whole wheat complete integrale',bread:'pain bread flour',all_purpose:'all purpose tout usage',spelt:'epeautre',semolina:'semoule semola'};const text=normal([entry.brand,entry.name,entry.type,aliases[entry.type]||''].join(' '));return normal(query).split(/\s+/).filter(Boolean).every(token=>text.includes(token));}
 export function flourNumbers(f:FlourEntry,fr:boolean){
  const p=f.proteinSpec;let protein:string;
@@ -43,12 +45,12 @@ export function FlourProductButton({entry,onChoose,selected=false}:{entry:FlourE
 }
 export default function FlourCatalogueBrowser({onChoose,recommendedIds,onGeneric,onScan}:{onChoose:(f:FlourEntry)=>void;recommendedIds:string[];onGeneric:()=>void;onScan:()=>void}){
  const fr=useLocale()==='fr',[query,setQuery]=useState(''),[brand,setBrand]=useState(''),[type,setType]=useState(''),[country,setCountry]=useState(''),[all,setAll]=useState(false),[page,setPage]=useState(0),top=useRef<HTMLDivElement>(null);
- const catalog=FLOUR_DB.filter(f=>f.brand!=='Generic'&&!!f.bagImage),active=!!(query||brand||type||country),filtered=catalog.filter(f=>matchesFlour(f,query)&&(!brand||f.brand===brand)&&(!type||f.type===type)&&(!country||f.country===country));
+ const catalog=FLOUR_DB.filter(f=>f.brand!=='Generic'&&!!f.bagImage),active=!!(query||brand||type||country),filtered=catalog.filter(f=>matchesFlour(f,query)&&(!brand||brandOption(f.brand)===brand)&&(!type||flourTypeOption(f.type)===type)&&(!country||f.country===country));
  const picks=recommendedIds.map(id=>catalog.find(f=>f.id===id)).filter((f):f is FlourEntry=>!!f),initial=!active&&!all,list=initial?(picks.length?picks:catalog).slice(0,4):filtered.slice(page*15,page*15+15);
  const field={width:'100%',minHeight:44,border:'1px solid var(--border)',borderRadius:8,background:'white',padding:8,color:'var(--char)'};
  return <div ref={top}>
  <label style={{display:'block',marginBottom:8}}>{fr?'Marque, farine ou type':'Brand, flour or type'}<input type="search" value={query} onChange={e=>{setQuery(e.target.value);setPage(0);}} onKeyDown={e=>{if(e.key==='Enter')e.currentTarget.blur();}} placeholder={fr?'Ex. Caputo, T65, complète':'e.g. Caputo, T65, wholemeal'} style={{...field,marginTop:6}}/></label>
- <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:6}}>{[{label:fr?'Marque':'Brand',value:brand,set:setBrand,values:catalog.map(f=>f.brand)},{label:'Type',value:type,set:setType,values:catalog.map(f=>f.type)},{label:fr?'Origine':'Origin',value:country,set:setCountry,values:catalog.map(f=>f.country)}].map(d=><label key={d.label} style={{fontSize:12}}>{d.label}<select value={d.value} style={field} onChange={e=>{d.set(e.target.value);setPage(0);}}><option value="">{fr?'Tous':'All'}</option>{[...new Set(d.values)].sort().map(v=><option key={v} value={v}>{d.label===(fr?'Origine':'Origin')?new Intl.DisplayNames([fr?'fr':'en'],{type:'region'}).of(v.toUpperCase())||v:d.label==='Type'?flourTypeLabel(v,fr):v}</option>)}</select></label>)}</div>
+ <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:6}}>{[{label:fr?'Marque':'Brand',value:brand,set:setBrand,values:catalog.map(f=>brandOption(f.brand))},{label:'Type',value:type,set:setType,values:catalog.map(f=>flourTypeOption(f.type))},{label:fr?'Origine':'Origin',value:country,set:setCountry,values:catalog.map(f=>f.country)}].map(d=><label key={d.label} style={{fontSize:12}}>{d.label}<select value={d.value} style={field} onChange={e=>{d.set(e.target.value);setPage(0);}}><option value="">{fr?'Tous':'All'}</option>{[...new Set(d.values)].sort().map(v=><option key={v} value={v}>{d.label===(fr?'Origine':'Origin')?new Intl.DisplayNames([fr?'fr':'en'],{type:'region'}).of(v.toUpperCase())||v:d.label==='Type'?flourTypeLabel(v,fr):v}</option>)}</select></label>)}</div>
  {active&&<button type="button" onClick={()=>{setQuery('');setBrand('');setType('');setCountry('');setPage(0);setAll(false);}} style={{minHeight:44}}>{fr?'Tout effacer':'Clear all'}</button>}
  <div style={{display:'flex',gap:10,margin:'12px 0'}}><button type="button" onClick={onGeneric} style={{minHeight:44}}>{fr?'Utiliser un type de farine':'Use a flour type'}</button><button type="button" onClick={onScan} style={{minHeight:44}}>{fr?'Scanner le sac':'Scan bag'}</button></div>
  <h3>{initial?(fr?'Pour votre style':'For your style'):`${filtered.length} ${fr?'résultat(s)':'results'}`}</h3>

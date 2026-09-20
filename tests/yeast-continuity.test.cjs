@@ -28,3 +28,17 @@ test('both languages state aliquot-only water subtraction and UI supplies the fi
  for(const lang of ['en','fr']){const text=JSON.parse(fs.readFileSync(`messages/${lang}.json`)).recipeOutput.dilutionBody;for(const key of ['waterG','solutionG','waterInSolutionG','remainingWaterG'])a.ok(text.includes(`{${key}}`));a.ok(lang==='en'?text.includes('Discard the unused mixture'):text.includes('Jetez le mélange inutilisé'));}
  const p=utils.commercialDilution(.07,150);a.ok(Math.abs(p.waterInSolutionGrams-7)<1e-10);a.ok(Math.abs(p.remainingWaterGrams+ p.waterInSolutionGrams-150)<1e-10);
 });
+test('preferment whole-dough target includes the final sugar correction',()=>{
+ const {data}=require('./load-production.cjs');
+ const schedule=utils.buildSchedule(new Date('2026-09-21T08:00Z'),new Date('2026-09-21T12:00Z'),[],24,60,'hand','pan');
+ for(const yeast of ['instant','active_dry','fresh']){
+  const r=utils.calculateRecipe('pan','home_oven_standard',1,1000,24,'normal',schedule,4,yeast,'custom','hand',70,0,10,undefined,'poolish',null,10,2,undefined,false,0,false,undefined,2);
+  const direct=utils.recommendYeast(schedule.totalRTHours,24,schedule.totalColdHours,4,yeast,r.flour,null,'pan');
+  const correctedIDY=Math.round(direct.grams*1.2*1000)/1000;
+  const expected=data.computePrefermentRecipe('poolish',r.flour,r.water,24,4,false,10,yeast,2,correctedIDY);
+  const uncorrected=data.computePrefermentRecipe('poolish',r.flour,r.water,24,4,false,10,yeast,2,direct.grams);
+  a.equal(r.preferment.prefYeastGrams,expected.prefYeastGrams);
+  a.ok(r.preferment.prefYeastGrams>uncorrected.prefYeastGrams*1.19);
+  a.ok(Math.abs(r.flour+r.water+r.salt+r.oil+r.sugar+r.preferment.prefYeastGrams-r.totalDough)<=2.6);
+ }
+});

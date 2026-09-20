@@ -1342,6 +1342,20 @@ export function calculateRecipe(
         };
       }
 
+      // Osmotic stress correction — sugar above 2% OF FLOUR slows yeast.
+      // (Was `sugarG > 2` — grams, not percent — so any dough with more than
+      // 2g total sugar silently got +20% yeast.)
+      if (yeast && sugar > 2) {
+        yeast = {
+          ...yeast,
+          grams: Math.round(yeast.grams * 1.2 * 1000) / 1000,
+          convertedGrams: Math.round(yeast.convertedGrams * 1.2 * 1000) / 1000,
+          pct: Math.round(yeast.pct * 1.2 * 10000) / 10000,
+          convertedPct: Math.round(yeast.convertedPct * 1.2 * 10000) / 10000,
+          osmoticStress: true,
+          warnings: [...yeast.warnings, { key: 'osmoticStress' as const }],
+        };
+      }
       // Whole-dough leavening requirement (direct-engine IDY grams), captured
       // BEFORE any preferment reduction — this is what the preferment must
       // ultimately deliver, and drives fraction-independent preferment dosing.
@@ -1365,20 +1379,6 @@ export function calculateRecipe(
         }
       }
 
-      // Osmotic stress correction — sugar above 2% OF FLOUR slows yeast.
-      // (Was `sugarG > 2` — grams, not percent — so any dough with more than
-      // 2g total sugar silently got +20% yeast.)
-      if (yeast && sugar > 2) {
-        yeast = {
-          ...yeast,
-          grams: Math.round(yeast.grams * 1.2 * 1000) / 1000,
-          convertedGrams: Math.round(yeast.convertedGrams * 1.2 * 1000) / 1000,
-          pct: Math.round(yeast.pct * 1.2 * 10000) / 10000,
-          convertedPct: Math.round(yeast.convertedPct * 1.2 * 10000) / 10000,
-          osmoticStress: true,
-          warnings: [...yeast.warnings, { key: 'osmoticStress' as const }],
-        };
-      }
     }
 
     // Compute preferment recipe — climate-aware
