@@ -7,6 +7,7 @@ export interface SessionData {
   savedAt: number;
   tab: string;
   bakeType: string | null;
+  bakeName?: string;
   styleKey: string | null;
   numItems: number;
   itemWeight: number;

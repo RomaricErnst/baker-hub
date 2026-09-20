@@ -72,7 +72,7 @@ export async function saveNamedSession(
     const time = new Date().toLocaleTimeString('en-GB', {
       hour: '2-digit', minute: '2-digit',
     });
-    const name = `${style} · ${n} ${type} · ${date} ${time}`;
+    const name = session.bakeName?.trim() || `${style} · ${n} ${type} · ${date} ${time}`;
 
     const { data, error } = await supabase
       .from('bake_events')
@@ -208,6 +208,7 @@ export async function updateBakeEvent(
     const { error } = await supabase
       .from('bake_events')
       .update({
+        ...(session.bakeName?.trim() ? { notes: session.bakeName.trim() } : {}),
         dough_snapshot: session,
         bake_date: session.eatTime
           ? new Date(session.eatTime).toISOString()

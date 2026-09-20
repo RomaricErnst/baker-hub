@@ -236,3 +236,7 @@ button,
   user-select: none;
   -webkit-touch-callout: none;
 }
+
+.bh-disclosure > summary { list-style: none; }
+.bh-disclosure > summary::before { content: '▸'; display: inline-block; margin-right: .5em; }
+.bh-disclosure[open] > summary::before { transform: rotate(90deg); }

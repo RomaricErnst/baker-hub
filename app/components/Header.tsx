@@ -272,6 +272,8 @@ export default function Header({
 
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shoppingLocation, setShoppingLocation] = useState('international');
+  useEffect(() => { const sync = () => { try { setShoppingLocation(localStorage.getItem('bh_shopping_location') || 'international'); } catch {} }; sync(); window.addEventListener('bh-shopping-location',sync); return () => window.removeEventListener('bh-shopping-location',sync); }, []);
   const [menuPage, setMenuPage] = useState<'main' | 'settings' | 'library' | 'account'>('main');
   const menuButton: React.CSSProperties = { width: '100%', textAlign: 'left', minHeight: 44, padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, background: 'white', color: 'var(--char)', font: 'inherit', cursor: 'pointer', textDecoration: 'none', boxSizing: 'border-box' };
   const menuGroup: React.CSSProperties = { fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--smoke)', margin: '12px 0 4px' };
@@ -560,47 +562,13 @@ export default function Header({
             <Link style={menuButton} href={locale === 'fr' ? '/fr/about' : '/about'} onClick={() => setMenuOpen(false)}>{locale === 'fr' ? 'À propos de Bakerhub' : 'About Bakerhub'}</Link>
           </nav>}
 
-          {menuPage === 'settings' && <>
-          {/* ── Language · Units — always visible ── */}
-          {([
-            {
-              label: locale === 'fr' ? 'Langue' : 'Language',
-              options: [
-                { key: 'en', display: 'EN', active: locale === 'en', onSelect: () => { router.replace(pathname, { locale: 'en' }); setMenuOpen(false); } },
-                { key: 'fr', display: 'FR', active: locale === 'fr', onSelect: () => { router.replace(pathname, { locale: 'fr' }); setMenuOpen(false); } },
-              ],
-            },
-            {
-              label: locale === 'fr' ? 'Unités' : 'Units',
-              options: [
-                { key: 'metric',   display: 'g/°C',   active: units === 'metric',   onSelect: () => onUnitsChange?.('metric') },
-                { key: 'imperial', display: 'oz/°F',  active: units === 'imperial', onSelect: () => onUnitsChange?.('imperial') },
-              ],
-            },
-          ] as const).map((row, idx) => (
-            <div key={row.label} style={{
-              padding: '12px 16px',
-              borderTop: idx === 0 ? '1px solid var(--border)' : undefined,
-              borderBottom: '1px solid var(--border)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              flexShrink: 0,
-            }}>
-              <span style={monoLabel}>{row.label}</span>
-              <div style={{ display: 'flex', gap: '4px' }}>
-                {row.options.map(opt => (
-                  <button key={opt.key} aria-pressed={opt.active} onClick={opt.onSelect} style={{
-                    minWidth: '48px', padding: '.22rem 8px', minHeight: '44px', borderRadius: '12px',
-                    border: 'none', cursor: 'pointer', fontFamily: 'var(--font-ui)',
-                    fontSize: '12px', fontWeight: 600, textAlign: 'center',
-                    background: opt.active ? 'var(--terra)' : 'transparent',
-                    color: opt.active ? '#fff' : 'var(--smoke)',
-                  }}>{opt.display}</button>
-                ))}
-              </div>
-            </div>
-          ))}
-
-          </>}
+          {menuPage === 'settings' && <div style={{display:'grid',gap:18}}>
+            <label>{locale === 'fr' ? 'Langue' : 'Language'}<select value={locale} onChange={e=>{router.replace(pathname,{locale:e.target.value});setMenuOpen(false);}} style={{...menuButton,width:'100%',marginTop:6}}><option value="en">English</option><option value="fr">Français</option></select></label>
+            <label>{locale === 'fr' ? 'Unités' : 'Units'}<select value={units} onChange={e=>onUnitsChange?.(e.target.value as 'metric'|'imperial')} style={{...menuButton,width:'100%',marginTop:6}}><option value="metric">{locale === 'fr' ? 'Métriques · g, °C' : 'Metric · g, °C'}</option><option value="imperial">{locale === 'fr' ? 'Impériales · oz, °F' : 'Imperial · oz, °F'}</option></select></label>
+            <label>{locale === 'fr' ? 'Pays des courses' : 'Shopping location'}<select value={shoppingLocation} onChange={e=>{const location=e.target.value;setShoppingLocation(location);try{localStorage.setItem('bh_shopping_location',location);}catch{}window.dispatchEvent(new CustomEvent('bh-shopping-location',{detail:location}));}} style={{...menuButton,width:'100%',marginTop:6}}>
+              {[['singapore',locale==='fr'?'Singapour':'Singapore'],['france','France'],['uk',locale==='fr'?'Royaume-Uni':'UK'],['us',locale==='fr'?'États-Unis':'US'],['australia',locale==='fr'?'Australie':'Australia'],['international','International']].map(([value,label])=><option key={value} value={value}>{label}</option>)}
+            </select></label>
+          </div>}
           {menuPage === 'library' && <>
           {/* ── My Sessions label — always visible ── */}
           <div style={{

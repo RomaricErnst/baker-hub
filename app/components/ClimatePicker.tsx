@@ -109,7 +109,7 @@ export default function ClimatePicker({
       {temperatureField('fridge')}
 
       {mode === 'custom' && (
-        <details>
+        <details className="bh-disclosure">
           <summary style={{ cursor: 'pointer', fontWeight: 650, minHeight: 44, display: 'flex', alignItems: 'center' }}>
             {fr ? 'Humidité habituelle du stockage' : 'Usual flour-storage humidity'}
             <span style={{ marginLeft: 'auto', fontWeight: 400, fontSize: 12, color: 'var(--smoke)' }}>

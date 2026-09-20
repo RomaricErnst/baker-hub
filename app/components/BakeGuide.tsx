@@ -8,6 +8,7 @@ import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, I
 import { firstIncompleteStep, canChangeStepCompletion } from '../utils/guideProgress';
 import { mixingBatchPlan } from '../utils/mixingBatches';
 import PhaseSummary from './PhaseSummary';
+import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import WaterPreparation, { type WaterSource, type WaterSettingsProps } from './WaterPreparation';
 import { type UnitSystem, displayTemp, tempC, tempRange } from '../utils/units';
 import { getPrefPeakH_RT, getStarterFridgeWarmupH } from './FermentChart';
@@ -29,6 +30,7 @@ interface BakeGuideProps extends WaterSettingsProps {
   oil: number;
   hydration: number;
   ovenType?: string;
+  ovenConstruction?: 'tabletop' | 'masonry' | 'home' | 'micro';
   prefStartTime?: Date | null;
   feedTime?: Date | null;
   feed2Time?: Date | null;
@@ -184,42 +186,44 @@ function Pill({ label, color }: { label: string; color?: string }) {
 
 // ── Step card ────────────────────────────────────────
 function StepCard({
-  number, icon, title, time, duration, open, done, onToggle, onDone, children, divRef, final = false, completeLabel, preview = false, onReturnCurrent, onPrevious, onNext,
+  number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, preview = false, onReturnCurrent, onPrevious, onNext,
 }: {
-  number: number; icon: React.ReactNode; title: string;
+  number: number; icon: React.ReactNode; title: string; overview?: boolean; totalSteps?: number;
   time?: Date; duration?: number | null; accent?: string;
   onPrevious?: () => void; onNext?: () => void; preview?: boolean; onReturnCurrent?: () => void; completeLabel?: string; final?: boolean; open: boolean; done: boolean; onToggle: () => void; onDone: () => void;
   children: React.ReactNode; divRef?: React.RefCallback<HTMLDivElement>;
 }) {
   const locale = useLocale();
   const fr = locale === 'fr';
+  const navigationHeight = useBottomNavHeight(64);
   return (
-    <section ref={divRef} style={{ background: D.warm, borderRadius: 12,
-      border: `1px solid ${done ? D.sage + '60' : D.border}`, overflow: 'hidden', scrollMarginTop: 140 }}>
-      <button type="button" onClick={onToggle} aria-expanded={open}
+    <section ref={divRef} style={{ display: open || overview ? undefined : 'none', background: D.warm, borderRadius: overview ? 12 : 0,
+      border: overview ? `1px solid ${done ? D.sage + '60' : D.border}` : 'none', scrollMarginTop: 140 }}>
+      <button type="button" onClick={overview ? onToggle : undefined} aria-expanded={open}
         aria-controls={`bake-step-${number}`} style={{ width: '100%', display: 'flex', gap: 12,
-          alignItems: 'center', padding: 16, border: 0, background: 'transparent', textAlign: 'left', cursor: 'pointer', color: D.char }}>
+          alignItems: 'center', padding: overview ? 16 : '0 0 16px', border: 0, background: 'transparent', textAlign: 'left', cursor: 'pointer', color: D.char }}>
         <span aria-hidden="true" style={{ color: done ? D.sage : D.terra, minWidth: 18, textAlign: 'center' }}>{done ? '✓' : number}</span>
         <span aria-hidden="true" style={{ color: done ? D.sage : D.terra, width: 22, height: 22, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</span>
         <span style={{ flex: 1 }}>
-          <strong style={{ display: 'block', fontSize: 15 }}>{title}</strong>
+          <strong style={{ display: 'block', fontSize: overview ? 15 : 30, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}</strong>
+          {!overview && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {number}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
           {time && <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: D.smoke }}>
             {formatTime(time, locale)}{duration ? ` · ${hoursLabel(duration)}` : ''}
           </span>}
           {done && <span style={{ fontSize: 12, color: D.sage }}>{fr ? 'Terminé' : 'Completed'}</span>}
         </span>
-        <span aria-hidden="true">{open ? '−' : '+'}</span>
+        {overview && <span aria-hidden="true">{open ? '−' : '+'}</span>}
       </button>
-      {open && <div id={`bake-step-${number}`} style={{ padding: '0 20px 20px', borderTop: `1px solid ${D.border}` }}>
+      {open && <div id={`bake-step-${number}`} style={{ padding: overview ? '0 20px 20px' : '0 0 20px' }}>
         {preview && <p style={{color:D.smoke,fontSize:12}}>{fr ? 'Aperçu — votre progression ne change pas.' : 'Preview — your progress stays unchanged.'}</p>}
         {children}
-        <div style={{position:'sticky',bottom:0,background:D.warm,paddingTop:12,paddingBottom:'max(8px, env(safe-area-inset-bottom))',zIndex:2}}>
+        <div style={{position:'sticky',bottom:navigationHeight,background:D.warm,paddingTop:12,paddingBottom:'max(8px, env(safe-area-inset-bottom))',zIndex:2}}>
         <nav aria-label={fr ? 'Navigation entre les étapes' : 'Step navigation'} style={{display:'flex',gap:8}}>
           <button type="button" onClick={onPrevious} disabled={!onPrevious} style={{flex:1,minHeight:44}}>{fr ? 'Étape précédente' : 'Previous step'}</button>
           <button type="button" onClick={onNext} disabled={final} style={{flex:1,minHeight:44}}>{fr ? 'Étape suivante' : 'Next step'}</button>
         </nav>
         <button type="button" onClick={preview ? onReturnCurrent : onDone} style={{ display: 'block', width: '100%', minHeight: 44,
-          marginTop: 20, padding: '12px 16px', borderRadius: 10, cursor: 'pointer',
+          marginTop: 8, padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
           background: done ? 'transparent' : D.terra, color: done ? D.terra : 'white',
           border: `1px solid ${D.terra}`, fontWeight: 600 }}>
           {preview ? (fr ? 'Revenir à l’étape en cours' : 'Back to current step') : done ? (fr ? 'Annuler cette étape et les suivantes' : 'Undo this and following steps')
@@ -779,7 +783,7 @@ const TERM_TO_STEPID: Record<string, string> = {
 
 export default function BakeGuide({
   schedule, mixerType, styleKey, kitchenTemp, fridgeTemp = 4, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, onMixingBatchesChange, waterSource = 'room', onWaterSourceChange, numItems,
-  prefermentType, oil, hydration, ovenType, prefStartTime, feedTime,
+  prefermentType, oil, hydration, ovenType, ovenConstruction, prefStartTime, feedTime,
   feed2Time = null, fridgeOutTime = null,
   starterState = 'rt_fed', starterMature = true, starterHasRye = false,
   usingPeak2 = false, planningMode = 'last_fed',
@@ -792,10 +796,13 @@ export default function BakeGuide({
   const enriched = !!recipe?.enrichment;
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
+  const [totalSteps, setTotalSteps] = useState(0);
+  useEffect(() => { if (totalSteps > 0 && currentStep > totalSteps) setCurrentStep(totalSteps); }, [totalSteps, currentStep]);
   const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
   const [activeBatch, setActiveBatch] = useState(0);
   const batch = recipe ? mixingBatchPlan(recipe, mixerType, mixingBatches, activeBatch) : null;
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  useEffect(() => { setTotalSteps(stepRefs.current.filter(Boolean).length); });
   const t = useTranslations('bakeGuide');
   const _fmtLocale = useLocale();
   const _isFr = _fmtLocale === 'fr';
@@ -957,6 +964,7 @@ Actual dough condition and equipment may differ from these estimates.`;
   const sc = (mixing = false) => {
     const s = lastStep;
     return {
+      overview: currentStep === 0, totalSteps,
       preview: !canChangeStepCompletion(s, doneSteps),
       onReturnCurrent: () => setCurrentStep(firstIncompleteStep(doneSteps)),
       onPrevious: s > 1 ? () => setCurrentStep(s - 1) : undefined,
@@ -995,7 +1003,7 @@ Actual dough condition and equipment may differ from these estimates.`;
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
       {/* ── Header ──────────────────────────────────── */}
-      <div style={{ marginBottom: '4px' }}>
+      <div style={{ marginBottom: '4px', display: currentStep === 0 ? undefined : 'none' }}>
         <div style={{ fontFamily: 'var(--font-ui)', fontSize: '20px', fontWeight: 700, color: D.char }}>
           {_isFr ? 'Guide de cuisson pas à pas' : 'Step-by-step bake guide'}
         </div>
@@ -1020,7 +1028,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         </button>
       </div>
             {/* Executive summary — phase strip from the old protocole */}
-      <PhaseSummary schedule={schedule} numItems={numItems} />
+      {currentStep === 0 && <PhaseSummary schedule={schedule} numItems={numItems} />}
 
       {/* ── STEP: Make Poolish / Biga ───────────────── */}
       {hasPref && prefStartTime && (
@@ -1784,7 +1792,10 @@ Actual dough condition and equipment may differ from these estimates.`;
               'preheat.standardBread.steps'
             ) as { bold: string; note: string }[])} />
           ) : ovenType === 'pizza_oven' ? (
-            <Steps items={t.raw('preheat.pizzaOven.steps') as { bold: string; note: string }[]} />
+            <Steps items={ovenConstruction === 'masonry' ? [
+              { bold: l === 'fr' ? 'Chauffez la sole et la voûte à cœur.' : 'Heat the floor and dome thoroughly.', note: l === 'fr' ? 'Suivez le temps de chauffe de votre four maçonné.' : 'Follow your masonry oven’s heat-up instructions.' },
+              { bold: l === 'fr' ? 'Contrôlez la température de la sole avant d’enfourner.' : 'Check the floor temperature before launching.', note: l === 'fr' ? 'Laissez-la remonter entre deux pizzas.' : 'Let it recover between pizzas.' },
+            ] : t.raw('preheat.pizzaOven.steps') as { bold: string; note: string }[]} />
           ) : ovenType === 'electric_pizza' ? (
             <Steps items={t.raw('preheat.electricPizza.steps') as { bold: string; note: string }[]} />
           ) : ovenType === 'home_oven_steel' ? (

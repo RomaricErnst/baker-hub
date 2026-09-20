@@ -814,10 +814,9 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
   // Both pages move together — only the incoming one animating reads as a
   // swap rather than a displacement, which is what loses the eye.
   return (
-    <div id={`step-${id}`} key={id} className="bh-step-page" style={{ padding: '16px 2px 4px' }}>
+    <div id={`step-${id}`} key={id} className="bh-step-page" style={{ padding: '8px 2px 4px' }}>
       {/* No step counter here: the summary bar above carries it, and two
           "3 of 9" forty pixels apart is just noise. */}
-      {idx > 0 && <button onClick={() => flow.onPrev(id)} style={{...BACK_CTA, width:'auto', marginBottom:12}}>{fr?'← Retour':'← Back'}</button>}
       <h2 style={{
         fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: '30px',
         lineHeight: 1.12, letterSpacing: '-.015em', margin: '0 0 18px', color: 'var(--char)',
@@ -955,6 +954,7 @@ export default function Home() {
 
   // Step 3 — oven
   const [ovenType, setOvenType] = useState<AnyOvenType | null>(null);
+  const [bakeName, setBakeName] = useState('');
   const [ovenConstruction, setOvenConstruction] = useState<'tabletop'|'masonry'|'home'|'micro'>('tabletop');
 
   // Step 4 — mixer
@@ -1396,6 +1396,7 @@ export default function Home() {
 
     setTab(session.tab as 'simple' | 'custom');
     setBakeType(session.bakeType as BakeType | null);
+    setBakeName(session.bakeName ?? '');
     setStyleKey(session.styleKey as StyleKey | null);
     setNumItems(session.numItems);
     const wb = getWeightBounds(session.styleKey as string | null, session.bakeType as string | null);
@@ -1906,7 +1907,7 @@ export default function Home() {
   // when the baker resumes a session (localStorage or DB).
   function buildSessionPayload(overrides?: Partial<Omit<SessionData, 'version' | 'savedAt'>>): Omit<SessionData, 'version' | 'savedAt'> {
     return {
-      tab, bakeType, styleKey, numItems, itemWeight, pizzaDiameter,
+      tab, bakeType, bakeName, styleKey, numItems, itemWeight, pizzaDiameter,
       ovenType, ovenConstruction, mixerType, yeastType,
       kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
@@ -2124,7 +2125,7 @@ export default function Home() {
     if (!id && user) {
       const { saveNamedSession } = await import('../lib/supabase/saveBakeEvent');
       id = await saveNamedSession({
-        tab, bakeType: bakeType ?? '', styleKey, numItems, itemWeight,
+        tab, bakeType: bakeType ?? '', bakeName, styleKey, numItems, itemWeight,
         pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
         fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
         manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
@@ -2380,7 +2381,7 @@ export default function Home() {
     // this reset, only the first session per page load ever received them.
     profileBlockersAppliedRef.current = false;
     setEquipmentPanel('oven'); setMixingBatches(undefined);
-    setBakeType(null); setStyleKey(null); setProfileFields(new Set());
+    setBakeType(null); setBakeName(''); setStyleKey(null); setProfileFields(new Set());
     setNumItems(2); setItemWeight(270);
     setOvenType(null); setOvenConstruction('tabletop'); setMixerType(null);
     const now = new Date(); now.setMinutes(0, 0, 0);
@@ -2567,6 +2568,7 @@ export default function Home() {
     const shiftD = (d: Date) => rb ? new Date(d.getTime() + deltaMs) : d;
     setTab(snap.tab as 'simple' | 'custom');
     setBakeType(snap.bakeType as BakeType | null);
+    setBakeName(snap.bakeName ?? '');
     setStyleKey(snap.styleKey as StyleKey | null);
     setNumItems(snap.numItems);
     setItemWeight(snap.itemWeight);
@@ -2734,6 +2736,11 @@ export default function Home() {
     return (locale === 'fr' ? r.nameFr : undefined) ?? r.name ?? null;
   };
   const fr = locale === 'fr';
+  const ovenDisplayName = ovenType === 'pizza_oven'
+    ? (ovenConstruction === 'masonry' ? (fr ? 'Four maçonné' : 'Brick / masonry oven') : (fr ? 'Four à pizza compact' : 'Tabletop pizza oven'))
+    : ovenType === 'steam_oven'
+      ? (ovenConstruction === 'micro' ? (fr ? 'Four de microboulangerie' : 'Microbakery oven') : (fr ? 'Four vapeur domestique' : 'Home steam oven'))
+      : localName(ovenData);
   const SIMPLE_STEPS: StepDef[] = [
     { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: fr ? 'Choisissez votre pâte' : 'Choose your dough',
       value: styleKey ? styleDisplayName(styleKey) : null,
@@ -2741,17 +2748,17 @@ export default function Home() {
       // does not need re-read on a summary line.
       short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
-    { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: fr ? 'Quelle quantité de pâte ?' : 'How much dough?',
+    { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: fr ? 'Quelle quantité de pâte ?' : 'How much dough?',
       value: qtyChosen ? `${numItems} × ${itemWeight} g` : null, prefilled: false,
       gap: fr ? 'La quantité n\u2019est pas confirmée' : 'Quantity not confirmed' },
     // Oven and mixing are one page: same nature (your kitchen, not your
     // dough), both single-choice, both remembered by the profile.
     { id: 3, group: 'kitchen', chip: fr ? 'Équipement' : 'Equipment', title: fr ? 'Votre équipement' : 'Your equipment',
       value: (ovenType && mixerType)
-        ? `${localName(ovenData)} · ${localName(MIXER_TYPES[mixerType])}`
+        ? `${ovenDisplayName} · ${localName(MIXER_TYPES[mixerType])}`
         : null,
       // The oven alone identifies the step; the mixer rarely changes the read.
-      short: (ovenType && mixerType) ? localName(ovenData) : null,
+      short: (ovenType && mixerType) ? ovenDisplayName : null,
       prefilled: profileFields.has('equip'),
       gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
     { id: 4, group: 'kitchen', chip: fr ? 'Cuisine' : 'Kitchen', title: fr ? 'Températures de préparation' : 'Preparation temperatures',
@@ -2795,17 +2802,17 @@ export default function Home() {
       // does not need re-read on a summary line.
       short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
-    { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: fr ? 'Quelle quantité de pâte ?' : 'How much dough?',
+    { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: fr ? 'Quelle quantité de pâte ?' : 'How much dough?',
       value: qtyChosen ? `${numItems} × ${itemWeight} g` : null, prefilled: false,
       gap: fr ? 'La quantité n\u2019est pas confirmée' : 'Quantity not confirmed' },
     // Oven and mixing are one page: same nature (your kitchen, not your
     // dough), both single-choice, both remembered by the profile.
     { id: 3, group: 'kitchen', chip: fr ? 'Équipement' : 'Equipment', title: fr ? 'Votre équipement' : 'Your equipment',
       value: (ovenType && mixerType)
-        ? `${localName(ovenData)} · ${localName(MIXER_TYPES[mixerType])}`
+        ? `${ovenDisplayName} · ${localName(MIXER_TYPES[mixerType])}`
         : null,
       // The oven alone identifies the step; the mixer rarely changes the read.
-      short: (ovenType && mixerType) ? localName(ovenData) : null,
+      short: (ovenType && mixerType) ? ovenDisplayName : null,
       prefilled: profileFields.has('equip'),
       gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
     { id: 4, group: 'kitchen', chip: fr ? 'Cuisine' : 'Kitchen', title: fr ? 'Températures de préparation' : 'Preparation temperatures',
@@ -3000,12 +3007,13 @@ export default function Home() {
           onBack={bakeType ? () => {
             if (activeTab === 'setup') {
               if (tab === 'simple' && activeStep > 1) {
-                setActiveStep(p => Math.max(1, p - 1));
+                simpleFlow.onPrev(activeStep);
               } else if (tab === 'custom' && advancedStep > 1) {
-                setAdvancedStep(p => Math.max(1, p - 1));
+                customFlow.onPrev(advancedStep);
+              } else if (modeChosen) {
+                setModeChosen(false);
               } else {
                 setBakeType(null);
-                setModeChosen(false);
               }
               scrollToStepTop();
             } else if (activeTab === 'guide' || activeTab === 'pizzaparty') {
@@ -3358,13 +3366,14 @@ export default function Home() {
         position: 'sticky', top: `${stickTop}px`, zIndex: 26,
         background: 'var(--cream)',
         boxShadow: '0 6px 10px -10px rgba(26,22,18,0.45)',
-        margin: '10px 0 4px',
+        margin: '0 0 4px',
         // Same easing and duration as the header above it. The header glides
         // its 100px over 0.25s; this bar's offset changed by state, so it
         // snapped the same distance instantly and the two came apart mid
         // scroll. They move as one piece now.
         transition: 'top 0.25s ease',
       }}>
+        {recipeGenerated && <div style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{numItems} {bakeType==='bread'?(fr?(numItems===1?'pain':'pains'):(numItems===1?'loaf':'loaves')):'pizzas'} · {styleKey ? styleDisplayName(styleKey) : ''}</div></div>}
         {activeTab !== 'pizzaparty' ? (
           activeTab === 'setup' && modeChosen ? <SummaryBar flow={tab === 'simple' ? simpleFlow : customFlow}
             modeChip={{value: tab === 'simple' ? 'Simple' : (locale === 'fr' ? 'Personnalisé' : 'Custom'), onClick: () => setModeChosen(false)}} /> : null
@@ -3537,7 +3546,7 @@ export default function Home() {
                   <h2 style={{
                     fontFamily: 'var(--font-ui)', fontSize: '26px', fontWeight: 800,
                     letterSpacing: '-.022em', lineHeight: 1.13, margin: '8px 0 16px',
-                  }}>{locale === 'fr' ? 'Comment voulez-vous procéder ?' : 'How would you like to work?'}</h2>
+                  }}>{locale === 'fr' ? 'Comment souhaitez-vous préparer votre recette ?' : 'How would you like to plan?'}</h2>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {([
                       // Same frame both sides: who it is for, then what you get.
@@ -3551,16 +3560,16 @@ export default function Home() {
                       // avoid — and refers to nothing they have not met yet.
                       // "Your style" failed on that count: the style step comes
                       // after this page.
-                      { key: 'simple' as const, title: locale === 'fr' ? 'Commencer simplement' : 'Start simple',
-                        lead: locale === 'fr' ? 'Pour commencer' : 'To get started',
+                      { key: 'simple' as const, title: 'Simple',
+                        lead: locale === 'fr' ? 'Réglages de pâte conseillés' : 'Suggested dough settings',
                         desc: locale === 'fr'
-                          ? 'votre pâte en quelques touches'
-                          : 'your dough in a few taps' },
-                      { key: 'custom' as const, title: locale === 'fr' ? 'Personnaliser ma pâte' : 'Customise my dough',
-                        lead: locale === 'fr' ? 'Pour aller plus loin' : 'To go further',
+                          ? 'Choisissez le style, la quantité et l’horaire.'
+                          : 'Choose your style, quantity and timing.' },
+                      { key: 'custom' as const, title: locale === 'fr' ? 'Personnalisé' : 'Custom',
+                        lead: locale === 'fr' ? 'Choisissez votre farine et votre levure ou levain' : 'Choose your flour and leavening',
                         desc: locale === 'fr'
-                          ? 'farine, préferment, hydratation'
-                          : 'flour, preferment, hydration' },
+                          ? 'Ajustez ensuite votre pâte.'
+                          : 'Then fine-tune your dough.' },
                     ]).map(m => (
                       <button
                         key={m.key}
@@ -3674,6 +3683,9 @@ export default function Home() {
 
             {/* ─── STEP 1: Style picker ────────────── */}
             <StepPage flow={simpleFlow} id={1}>
+              <label style={{display:'block',fontSize:13,fontWeight:600,marginBottom:16}}>{fr?'Nom de la préparation':'Bake name'}
+                <input value={bakeName} placeholder={bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night')} maxLength={100} onChange={e=>setBakeName(e.target.value)} style={{display:'block',width:'100%',minHeight:44,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',fontWeight:400}} />
+              </label>
               {bakeType && (
                 <StylePicker
                   bakeType={bakeType}
@@ -3948,7 +3960,7 @@ export default function Home() {
                             if (!evId) {
                               const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
                               const payload = {
-                                tab, bakeType, styleKey, numItems, itemWeight,
+                                tab, bakeType, bakeName, styleKey, numItems, itemWeight,
                                 pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
                                 fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                                 manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
@@ -4013,6 +4025,7 @@ export default function Home() {
                 </div>
               ) : schedule && recipe && mixerType && (<>
                 <BakeGuide
+                  ovenConstruction={ovenConstruction}
                   waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches} fridgeTemp={fridgeTemp}
                   schedule={schedule}
                   mixerType={mixerType}
@@ -4131,7 +4144,7 @@ export default function Home() {
                     if (!user) return null;
                     const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
                     const payload = {
-                      tab, bakeType, styleKey, numItems, itemWeight,
+                      tab, bakeType, bakeName, styleKey, numItems, itemWeight,
                       pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
                       fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                       manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
@@ -4195,6 +4208,9 @@ export default function Home() {
 
             {/* ─── ADV STEP 1: Style picker ────────── */}
             <StepPage flow={customFlow} id={1}>
+              <label style={{display:'block',fontSize:13,fontWeight:600,marginBottom:16}}>{fr?'Nom de la préparation':'Bake name'}
+                <input value={bakeName} placeholder={bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night')} maxLength={100} onChange={e=>setBakeName(e.target.value)} style={{display:'block',width:'100%',minHeight:44,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',fontWeight:400}} />
+              </label>
               {bakeType && (<>
                 <StylePicker
                   bakeType={bakeType}
@@ -4830,7 +4846,7 @@ export default function Home() {
                             if (!evId) {
                               const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
                               const payload = {
-                                tab, bakeType, styleKey, numItems, itemWeight,
+                                tab, bakeType, bakeName, styleKey, numItems, itemWeight,
                                 pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
                                 fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                                 manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
@@ -4895,6 +4911,7 @@ export default function Home() {
                 </div>
               ) : schedule && advancedRecipe && mixerType && (<>
                 <BakeGuide
+                  ovenConstruction={ovenConstruction}
                   waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches} fridgeTemp={fridgeTemp}
                   schedule={schedule}
                   mixerType={mixerType}
@@ -5013,7 +5030,7 @@ export default function Home() {
                     if (!user) return null;
                     const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
                     const payload = {
-                      tab, bakeType, styleKey, numItems, itemWeight,
+                      tab, bakeType, bakeName, styleKey, numItems, itemWeight,
                       pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
                       fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                       manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,

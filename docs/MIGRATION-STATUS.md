@@ -39,3 +39,22 @@ TypeScript/build and EN/FR visual journeys at phone/tablet widths remain require
 Local preview and browser automation are resource-constrained: browser reports
 “Resource temporarily unavailable”; local HTTP requests time out while compiling.
 Agent workers have exhausted their usage limits. Do not call this visual parity verified.
+
+### Mobile walkthrough follow-up — 21 September
+
+The Vercel checkpoint 0169a70 built successfully. A 390×844 browser walkthrough
+reached style, quantity, equipment, climate, flour details/selection, yeast,
+planning, review, recipe, guide, menu/settings and pizza catalogue. Screenshots
+revealed further mismatches; this is not acceptance sign-off.
+
+Follow-up corrections restore the exact whole New York pizza asset, preparation
+name and saved name, single-step guide presentation, shopping country settings,
+visible pizza review bar above bottom navigation, larger quantity touch targets,
+and explicit shopping/preparation routes from pizza review. Duplicate scale advice
+is consolidated. Header Back now follows the real step list rather than numeric IDs.
+
+Follow-up tests: recipe/guide/session set 9 passed; guide visual/content set 5 passed;
+pizza parity set 4 passed; refrigerated-flour/mass set 5 passed. TypeScript passed
+before the final guide and pizza layout changes; the next deployment must pass its
+build and be visually checked again. Remaining: final phone/tablet and EN journeys,
+all-step browsing/completion, named save/restore and full prototype page comparison.

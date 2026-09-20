@@ -942,7 +942,7 @@ export default function RecipeOutput({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
           {/* Min floor callout — shown when 0.5g IDY floor was applied */}
-          {yeastInfo.hitMinFloor && (
+          {yeastInfo.hitMinFloor && !needsPrecision && (
             <div style={{
               background: '#FFFBEE',
               border: '1.5px solid #9C8248',
@@ -979,7 +979,7 @@ export default function RecipeOutput({
 
           {/* Dilution tip */}
           {yeastInfo.dilutionTip && (
-            <InfoCard
+            <details className="bh-disclosure"><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Doser une petite quantité de levure' : 'Measure a small yeast dose'}</summary><InfoCard
               icon=""
               level="info"
               title={t('recipeOutput.dilutionTitle')}
@@ -989,17 +989,17 @@ export default function RecipeOutput({
                 waterInSolutionG: Number((yeastInfo.dilutionTip.waterInSolutionGrams ?? yeastInfo.dilutionTip.solutionG * 100 / 101).toFixed(3)),
                 remainingWaterG: Number((yeastInfo.dilutionTip.remainingWaterGrams ?? waterMain - yeastInfo.dilutionTip.solutionG * 100 / 101).toFixed(3)),
               })}
-            />
+            /></details>
           )}
 
           {/* Poolish recommendation */}
           {yeastInfo.recommendPoolish && (
-            <InfoCard
+            <details className="bh-disclosure"><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Autre méthode pour ce planning' : 'Alternative method for this schedule'}</summary><InfoCard
               icon=""
               level="poolish"
               title={t('recipeOutput.poolishTitle')}
               body={t('recipeOutput.poolishBody')}
-            />
+            /></details>
           )}
 
           {/* Not recommended warning */}
@@ -1022,7 +1022,7 @@ export default function RecipeOutput({
 
       {/* ── Sourdough guidance ────────────────────── */}
       {sourdough && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <details className="bh-disclosure"><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Préparer le levain' : 'Prepare the starter'}</summary>
 
           {/* Starter range */}
           <div style={{
@@ -1094,7 +1094,7 @@ export default function RecipeOutput({
             locale={locale}
           />
 
-        </div>
+        </details>
       )}
 
       {/* PlanNav used to render here (quiet variant, above the protocol

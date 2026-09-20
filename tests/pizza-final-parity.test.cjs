@@ -25,7 +25,9 @@ test('actual preparation and baking screens expose audited order; dessert has on
  const selector=fs.readFileSync('app/components/ToppingSelector.tsx','utf8');
  assert.doesNotMatch(selector,/[sS]etDessertSheetOpen|dessertSheetOpen|Sweet finish\?|partyComplete/);
  assert.match(selector,/filterPizzasByCourse\(customPizzas/);
- assert.match(selector,/totalQty > 0 && <button[^\n]*onPillChange\('shopping'\)/);
+ assert.match(selector,/onPillChange\('shopping'\)/);
+ assert.match(selector,/Review selection/);
+ assert.match(selector,/position: 'fixed', bottom: bottomNavH/);
 });
 
 test('catalogue, preview and bake use approved base photos without legacy variants',()=>{
