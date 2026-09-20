@@ -52,7 +52,7 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
         <div>
           {/* Subtitle dropped: the Equipment page already carries two pickers
               and two group labels, and each option states its own effect. */}
-          <DecisionList
+          <DecisionList layout="lateral"
             options={options}
             selectedId={selected ?? ''}
             onSelect={(id) => {

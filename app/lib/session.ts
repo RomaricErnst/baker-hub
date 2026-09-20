@@ -1,3 +1,4 @@
+import type { RecipeEnrichment } from '../utils/enrichedFormulas';
 const SESSION_KEY = 'bh_session_v1';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -20,6 +21,8 @@ export interface SessionData {
   measuredWaterTemp?: number;
   waterMethod?: 'premelt' | 'direct';
   spiralIceConfirmed?: boolean;
+  /** Undefined retains the automatic equipment recommendation. */
+  mixingBatches?: number;
   flourBlend: unknown;
   prefermentType: string;
   prefermentFlourPct: number | undefined;
@@ -74,6 +77,7 @@ export interface SessionData {
   feed2Time?: number | null;
   starterFridgeInTime?: number | null;
   computedRecipe?: {
+    enrichment?: RecipeEnrichment;
     flour: number;
     water: number;
     salt: number;
@@ -89,9 +93,13 @@ export interface SessionData {
   } | null;
 }
 
+export function normalizeMixingBatches(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 100 ? value : undefined;
+}
+
 export function saveSession(data: Omit<SessionData, 'version' | 'savedAt'>): boolean {
   try {
-    const payload: SessionData = { ...data, version: 1, savedAt: Date.now() };
+    const payload: SessionData = { ...data, mixingBatches: normalizeMixingBatches(data.mixingBatches), version: 1, savedAt: Date.now() };
     localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
     return true;
   } catch { return false; }
@@ -104,7 +112,7 @@ export function loadSession(): SessionData | null {
     const data = JSON.parse(raw) as SessionData;
     if (data.version !== 1) return null;
     if (Date.now() - data.savedAt > SESSION_TTL_MS) { clearSession(); return null; }
-    return data;
+    return { ...data, mixingBatches: normalizeMixingBatches(data.mixingBatches) };
   } catch { return null; }
 }
 

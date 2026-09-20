@@ -379,14 +379,14 @@ export default function RecipeOutput({
   const totalDoughG = numItems * itemWeight;
   const minBatches  = Math.ceil(totalDoughG / mixerMaxG);
   const needsBatches = minBatches > 1;
-  const [numBatches, setLocalBatches] = useState<number | undefined>();
   const [batchIndex, setBatchIndex] = useState(0);
-  const setNumBatches = (count: number) => { setLocalBatches(count); onMixingBatchesChange?.(count); setBatchIndex(0); };
-  const batchPlan = mixingBatchPlan(result, mixerType, onMixingBatchesChange ? mixingBatches : numBatches, batchIndex);
+  const batchPlan = mixingBatchPlan(result, mixerType, mixingBatches, batchIndex);
   // effectiveBatches can be 1 if baker overrides — no Math.max constraint
   const effectiveBatches = batchPlan.count;
 
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
+  const enrichment = result.enrichment;
+  const enrichmentRows = enrichment ? (['milk','eggs','butter'] as const).filter(key => enrichment[key] > 0).map(key => <IngRow key={key} label={({milk:locale === 'fr' ? 'Lait' : 'Milk',eggs:locale === 'fr' ? 'Œufs sans coquille' : 'Eggs, without shells',butter:locale === 'fr' ? 'Beurre' : 'Butter'})[key]} grams={wStr(enrichment[key])} pct={pctStr(enrichment[key] / flour * 100)} />) : null;
   // Sourdough starter accounting: half the starter is flour, half water
   // (100% hydration). Subtract from the main-dough amounts so the card's
   // total actually tallies. Preferment mode has its own accounting already.
@@ -436,7 +436,7 @@ export default function RecipeOutput({
   // Computed ingredient total (excl. starter)
   const ingredientTotal = flour + water + salt
     + (yeastInfo ? yeastInfo.convertedGrams : 0)
-    + oil + sugar;
+    + oil + sugar + (enrichment ? enrichment.milk + enrichment.eggs + enrichment.butter : 0);
 
   const itemLabel = numItems === 1 ? 'ball / loaf' : numItems <= 4 ? 'balls' : 'pieces';
 
@@ -486,6 +486,8 @@ export default function RecipeOutput({
     ? !EXPLANATION_BLOCKLIST.some(term => yeastInfo.explanation.toLowerCase().includes(term))
     : false;
 
+  if (enrichment?.unsupportedMethod) return <section role="alert"><h2>{locale === 'fr' ? 'Méthode non prise en charge' : 'Unsupported method'}</h2><p>{locale === 'fr' ? 'Cette formule enrichie nécessite une levure commerciale, sans préferment. Modifiez le choix de levure dans les réglages puis recalculez.' : 'This enriched formula requires commercial yeast without preferment. Update the leavening choice in setup and recalculate.'}</p>{onEditSetup && <button type="button" onClick={onEditSetup}>{locale === 'fr' ? 'Modifier les réglages' : 'Edit setup'}</button>}</section>;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
@@ -512,7 +514,7 @@ export default function RecipeOutput({
             </span>
             {' · '}
             <span style={{ color: 'var(--ash)', fontWeight: 600 }}>
-              {hydration}% {t('recipeOutput.hydrationLabel')}
+              {hydration}% {enrichment ? (locale === 'fr' ? 'eau équivalente estimée' : 'estimated water equivalent') : t('recipeOutput.hydrationLabel')}
             </span>
           </div>
           {wastePct !== undefined && wastePct > 0 && (
@@ -694,7 +696,7 @@ export default function RecipeOutput({
                   grams={wStr(pf.finalFlour)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
               )}
-              <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={<details><summary>{locale === 'fr' ? 'Préparation de l’eau' : 'Water preparation'}</summary>{finalDoughWaterSubNode}</details>}
+              <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={<details><summary>{locale === 'fr' ? 'Eau du mélange final' : 'Main-mix water'}</summary>{finalDoughWaterSubNode}</details>}
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalWater / flour * 1000) / 10) : undefined} />
               <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} noPct
                 advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
@@ -810,11 +812,13 @@ export default function RecipeOutput({
               </span>
             ) : undefined}
           />
-          <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} pct={pctStr(waterPct)} sub={
-            <details><summary>{locale === 'fr' ? 'Répartition et préparation de l’eau' : 'Water allocation and preparation'}</summary>
+          {water > 0 && <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} pct={pctStr(waterPct)} sub={
+            !enrichment ? <details><summary>{locale === 'fr' ? 'Eau du mélange final' : 'Main-mix water'}</summary>
               {sdActive && <p>{locale === 'fr' ? `${wStr(sdHalf)} dans le levain ; ${wStr(waterMain)} à ajouter.` : `${wStr(sdHalf)} in the starter; add ${wStr(waterMain)}.`}</p>}
               {waterSubNode}
-            </details>} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
+            </details> : undefined} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />}
+          {enrichmentRows}
+          {enrichment && <p style={{fontSize:12}}>{enrichment.note[locale === 'fr' ? 'fr' : 'en']} <a href={enrichment.sourceUrl} target="_blank" rel="noopener noreferrer">{locale === 'fr' ? 'Source de la formule' : 'Formula source'}</a></p>}
           <IngRow label={t('recipeOutput.ingredientSalt')}  grams={wStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
 
           {yeastInfo && (
@@ -965,47 +969,7 @@ export default function RecipeOutput({
               : <>{t('recipeOutput.largeBatchTotal', { grams: totalDoughG, mixer: (MIXER_TYPES as Record<string, { name: string }>)[mixerType]?.name ?? 'mixer', n: effectiveBatches })}</>
             }
           </div>
-          {/* Batch count selector: ×1, ×2, ×3 pills + free input */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-            {[1, 2, 3].map(n => (
-              <button
-                key={n}
-                onClick={() => setNumBatches(n)}
-                style={{
-                  padding: '4px 12px',
-                  borderRadius: '20px',
-                  border: `1.5px solid ${effectiveBatches === n ? '#9C8248' : '#C4B898'}`,
-                  background: effectiveBatches === n ? '#9C824820' : 'white',
-                  color: effectiveBatches === n ? '#7A5A10' : '#8A7F78',
-                  fontSize: '13px',
-                  fontFamily: 'var(--font-ui)',
-                  fontWeight: effectiveBatches === n ? 700 : 400,
-                  cursor: 'pointer',
-                }}
-              >
-                {n}×
-              </button>
-            ))}
-            <input
-              type="number"
-              min={1}
-              placeholder="other"
-              value={effectiveBatches > 3 ? effectiveBatches : ''}
-              onChange={e => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1) setNumBatches(v); }}
-              style={{
-                width: '80px',
-                padding: '4px 8px',
-                borderRadius: '20px',
-                border: `1.5px solid ${effectiveBatches > 3 ? '#9C8248' : '#C4B898'}`,
-                background: effectiveBatches > 3 ? '#9C824820' : 'white',
-                color: effectiveBatches > 3 ? '#7A5A10' : '#8A7F78',
-                fontSize: '13px',
-                fontFamily: 'var(--font-ui)',
-                textAlign: 'center',
-                outline: 'none',
-              }}
-            />
-          </div>
+          <p>{locale === 'fr' ? `${effectiveBatches} pétrissée${effectiveBatches > 1 ? 's' : ''}` : `${effectiveBatches} mixing batch${effectiveBatches > 1 ? 'es' : ''}`}</p>
           {batchPlan.overCapacity && <p role="alert">{locale === 'fr' ? 'Cette pétrissée dépasse la capacité indiquée du pétrin.' : 'This batch exceeds the stated mixer capacity.'}</p>}
           {effectiveBatches > 1 && <label>{locale === 'fr' ? 'Afficher la pétrissée' : 'Show batch'} <select value={batchPlan.active} onChange={e=>setBatchIndex(Number(e.target.value))}>{Array.from({length:effectiveBatches},(_,i)=><option key={i} value={i}>{i+1} / {effectiveBatches}</option>)}</select></label>}
           {/* Per-batch breakdown */}
@@ -1024,12 +988,12 @@ export default function RecipeOutput({
               { label: hasPref ? t('recipeOutput.waterFinalDough') : t('recipe.water'), value: `${waterPerBatch.toLocaleString()}g`, highlight: false, isTotal: false },
               { label: t('recipe.salt'), value: `${saltPerBatch.toLocaleString()}g`, highlight: false, isTotal: false },
               ...(yeastPerBatch !== null ? [{
-                label: `Yeast (${(yeast as YeastResult | null)?.yeastType ?? 'IDY'})`,
+                label: yeastTypeName || (locale === 'fr' ? 'Levure' : 'Yeast'),
                 value: `${yeastPerBatch}g`,
                 highlight: false,
                 isTotal: false,
               }] : []),
-              ...(['starter','oil','sugar'] as const).filter(key=>batchPlan.portion[key]>0).map(key=>({label:({starter:locale==='fr'?'Levain':'Starter',oil:locale==='fr'?'Huile':'Oil',sugar:locale==='fr'?'Sucre':'Sugar'})[key],value:`${batchPlan.portion[key]}g`,highlight:false,isTotal:false})),
+              ...(['starter','oil','sugar','milk','eggs','butter'] as const).filter(key=>batchPlan.portion[key]>0).map(key=>({label:({milk:locale==='fr'?'Lait':'Milk',eggs:locale==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:locale==='fr'?'Beurre':'Butter',starter:locale==='fr'?'Levain':'Starter',oil:locale==='fr'?'Huile':'Oil',sugar:locale==='fr'?'Sucre':'Sugar'})[key],value:`${batchPlan.portion[key]}g`,highlight:false,isTotal:false})),
               { label: t('recipeOutput.batchTotal'), value: `${batchPlan.total.toLocaleString()}g`, highlight: true, isTotal: true },
             ].map((row, i) => (
               <div key={i} style={{
@@ -1133,7 +1097,9 @@ export default function RecipeOutput({
               title={t('recipeOutput.dilutionTitle')}
               body={t('recipeOutput.dilutionBody', {
                 waterG: yeastInfo.dilutionTip.waterG,
-                solutionG: yeastInfo.dilutionTip.solutionG,
+                solutionG: Number(yeastInfo.dilutionTip.solutionG.toFixed(3)),
+                waterInSolutionG: Number((yeastInfo.dilutionTip.waterInSolutionGrams ?? yeastInfo.dilutionTip.solutionG * 100 / 101).toFixed(3)),
+                remainingWaterG: Number((yeastInfo.dilutionTip.remainingWaterGrams ?? waterMain - yeastInfo.dilutionTip.solutionG * 100 / 101).toFixed(3)),
               })}
             />
           )}

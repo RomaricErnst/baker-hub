@@ -158,6 +158,8 @@ export default function SessionViewer({
   }, [snap, schedule, cr]);
 
   const displayFlour = cr?.flour ?? recipe?.flour ?? null;
+  const displayEnrichment = cr?.enrichment ?? recipe?.enrichment ?? null;
+  const enrichmentParts = displayEnrichment ? (['milk','eggs','butter'] as const).filter(k => displayEnrichment[k] > 0).map(k => `${displayEnrichment[k]}g ${({milk:l === 'fr' ? 'lait' : 'milk',eggs:l === 'fr' ? 'œufs sans coquille' : 'eggs, without shells',butter:l === 'fr' ? 'beurre' : 'butter'})[k]}`) : [];
   const displayWater = cr?.water ?? recipe?.water ?? null;
   const displaySalt = cr?.salt ?? recipe?.salt ?? null;
   const displayHydration = cr?.hydration
@@ -227,10 +229,10 @@ export default function SessionViewer({
     ].filter((x): x is string => x != null && x !== '');
     lines.push(specParts.join(' · '));
     if (flourBlendName) lines.push(`  ${flourBlendName}`);
-    if (displayFlour && displayWater && displaySalt) {
+    if (displayFlour && (displayWater || displayEnrichment) && displaySalt) {
       const yeastPart = snap?.yeastType !== 'sourdough' && yeastRounded != null
         ? ` · ${yeastRounded}g ${YEAST_SHORT[snap?.yeastType ?? ''] ?? 'yeast'}` : '';
-      lines.push(`${displayFlour}g flour · ${displayWater}g water${yeastPart} · ${displaySalt}g salt`);
+      lines.push(`${displayFlour}g ${l === 'fr' ? 'farine' : 'flour'} · ${[displayWater ? `${displayWater}g ${l === 'fr' ? 'eau' : 'water'}` : '', ...enrichmentParts].filter(Boolean).join(' · ')}${yeastPart} · ${displaySalt}g ${l === 'fr' ? 'sel' : 'salt'}`);
     }
     lines.push('');
 
@@ -292,7 +294,7 @@ export default function SessionViewer({
     }
 
     return lines;
-  }, [cr, snap, styleName, flourBlendName, displayFlour, displayWater,
+  }, [cr, snap, styleName, flourBlendName, displayFlour, displayWater, displayEnrichment,
       displaySalt, displayHydration, yeastRounded, prefLabel,
       bakedQtys, localSlots, tRoot]);
 
@@ -481,16 +483,17 @@ export default function SessionViewer({
             )}
 
             <div style={{ ...monoSm, marginBottom: '4px' }}>
-              {displayFlour && displayWater && displaySalt
+              {displayFlour && (displayWater || displayEnrichment) && displaySalt
                 ? [
-                    `${displayFlour}g flour`,
-                    `${displayWater}g water`,
+                    `${displayFlour}g ${l === 'fr' ? 'farine' : 'flour'}`,
+                    displayWater ? `${displayWater}g ${l === 'fr' ? 'eau' : 'water'}` : null,
+                    ...enrichmentParts,
                     snap.yeastType === 'sourdough'
                       ? 'Levain'
                       : snap.yeastType && yeastRounded
                         ? `${yeastRounded}g ${YEAST_SHORT[snap.yeastType] ?? snap.yeastType}`
                         : null,
-                    `${displaySalt}g salt`,
+                    `${displaySalt}g ${l === 'fr' ? 'sel' : 'salt'}`,
                   ].filter(Boolean).join(' · ')
                 : `${snap.numItems} × ${snap.itemWeight}g`}
             </div>
@@ -768,6 +771,7 @@ export default function SessionViewer({
             flourLine={flourBlendName}
             recipeFlour={displayFlour}
             recipeWater={displayWater}
+            enrichment={displayEnrichment}
             recipeSalt={displaySalt}
             coldH={coldH}
             rtH={rtH}
@@ -779,8 +783,8 @@ export default function SessionViewer({
             bakeType={snap?.bakeType ?? 'pizza'}
             ovenType={snap?.ovenType ?? null}
             mixerType={snap?.mixerType ?? null}
-            manualOil={snap?.manualOil ?? null}
-            manualSugar={snap?.manualSugar ?? null}
+            manualOil={cr?.oil ?? recipe?.oil ?? null}
+            manualSugar={cr?.sugar ?? recipe?.sugar ?? null}
             yeastType={snap?.yeastType ?? null}
             yeastGrams={yeastRounded}
             bakeDate={snap?.eatTime

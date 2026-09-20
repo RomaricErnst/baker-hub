@@ -1,4 +1,5 @@
 'use client';
+import { approvedPizzaImage } from '../../lib/approvedPizzaImage';
 import { useState, useEffect } from 'react';
 import { NEXT_CTA, SECONDARY_CTA } from '@/app/lib/navButtons';
 import { useTranslations } from 'next-intl';
@@ -565,27 +566,10 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
     return ing.bakeOrder;
   }
 
-  function getImageSrc(pizzaId: string): string {
-    const variantMap: Record<string, string> = {
-      pizza_romana: '_pizza_romana',
-      newyork: '_newyork',
-      pan: '_pan',
-      roman: '_roman',
-    };
-    const suffix = styleKey && variantMap[styleKey];
-    if (suffix) return `/pizzas/${pizzaId}${suffix}.webp`;
-    return `/pizzas/${pizzaId}.webp`;
-  }
+  const getImageSrc = approvedPizzaImage;
 
-  function handleImageError(e: React.SyntheticEvent<HTMLImageElement>, pizzaId: string) {
-    const img = e.target as HTMLImageElement;
-    if (img.src.endsWith(`${pizzaId}_pan.webp`)) { img.style.display = 'none'; return; }
-    if (img.src.endsWith(`${pizzaId}.webp`)) {
-      // Some pizzas only ship a _pan visual (Detroit, Chicago, cheeseburger)
-      img.src = `/pizzas/${pizzaId}_pan.webp`;
-      return;
-    }
-    img.src = `/pizzas/${pizzaId}.webp`;
+  function handleImageError(e: React.SyntheticEvent<HTMLImageElement>, _pizzaId: string) {
+    e.currentTarget.style.display = 'none';
   }
 
   function getBeforeLabel(): string {
@@ -914,6 +898,10 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 </div>
               )}
 
+              {pizza.preparationSequence && <section style={{ margin: '12px 16px', padding: 12, background: 'var(--warm)', borderRadius: 12 }}>
+                <h3 style={{ fontSize: 14 }}>{l === 'fr' ? 'Ordre de préparation' : 'Preparation order'}</h3>
+                <p style={{ fontSize: 13, lineHeight: 1.5 }}>{pizza.preparationSequence[l]}</p>
+              </section>}
               {/* BEFORE section */}
               {beforeIngredients.length > 0 && (
                 <>

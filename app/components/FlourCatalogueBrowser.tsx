@@ -4,9 +4,14 @@ import {useLocale} from 'next-intl';
 import {FLOUR_DB,FLOUR_PHOTO_PROVENANCE,type FlourEntry} from '@/lib/flourDatabase';
 import {FLOUR_DATA,type FlourKey} from '../data';
 
+export function flourTypeLabel(type:string,fr:boolean){
+ const labels:Record<string,[string,string]>={all_purpose:['All-purpose','Tout usage'],bread:['Bread flour','Farine de pain'],french:['French wheat flour','Farine de blé française'],wheat:['Wheat','Blé'],whole_spelt:['Whole spelt','Épeautre complet'],whole_wheat:['Whole wheat','Blé complet'],wholemeal:['Whole wheat','Blé complet'],high_gluten:['High-gluten','Farine de force'],pastry:['Pastry','Pâtisserie'],rye:['Rye','Seigle'],semolina:['Semolina','Semoule'],spelt:['Spelt','Épeautre'],'t45_blend':['T45 blend','Mélange T45']};
+ const label=labels[type.toLowerCase().replace(/\s+/g,'_')];return label?label[fr?1:0]:type;
+}
 export function flourBehaviour(entry:FlourEntry):FlourKey {
- const types:Record<string,FlourKey>={bread:'bread',T65:'bread',T55:'allpurpose',T45:'allpurpose',T80:'bread',T110:'wholemeal',T150:'wholemeal',high_gluten:'manitoba',all_purpose:'allpurpose',allpurpose:'allpurpose',wholemeal:'wholemeal',whole_wheat:'wholemeal',rye:'rye',semolina:'semolina',manitoba:'manitoba'};
- return types[entry.type]||((entry.w??0)>=270?'strong00':'pizza00');
+ const key=entry.type.toLowerCase().replace(/\s+/g,'_');
+ const types:Record<string,FlourKey>={bread:'bread',t65:'bread',t55:'allpurpose',t45:'allpurpose',t45_blend:'allpurpose',t80:'bread',t110:'wholemeal',t150:'wholemeal',high_gluten:'manitoba',all_purpose:'allpurpose',allpurpose:'allpurpose',wholemeal:'wholemeal',whole_wheat:'wholemeal',whole_spelt:'wholemeal',rye:'rye',semolina:'semolina',manitoba:'manitoba',pastry:'allpurpose'};
+ return types[key]||((entry.w??0)>=270?'strong00':'pizza00');
 }
 export function flourEngineW(entry:FlourEntry){return entry.w??FLOUR_DATA[flourBehaviour(entry)].w;}
 const normal=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[_-]/g,' ');
@@ -28,8 +33,8 @@ export function FlourProductButton({entry,onChoose,selected=false}:{entry:FlourE
  {entry.bagImage&&<img src={entry.bagImage} alt="" loading="lazy" width={56} height={76} style={{objectFit:'contain'}}/>}<span style={{flex:1,minWidth:0}}><strong style={{display:'block'}}>{entry.brand} {entry.name}</strong><small style={{display:'block',marginTop:6,color:'var(--smoke)'}}>{flourNumbers(entry,fr)}</small></span><span aria-hidden>›</span></button>
  <dialog ref={dialog} onClose={()=>{setOpen(false);trigger.current?.focus();}} style={{margin:'auto',width:'min(92vw,460px)',maxHeight:'85dvh',padding:24,border:'1px solid var(--border)',borderRadius:18,background:'var(--warm)',color:'var(--char)'}} aria-label={`${entry.brand} ${entry.name}`}>
  <button type="button" onClick={()=>setOpen(false)} style={{float:'right',minHeight:44}}>{fr?'Fermer':'Close'}</button><h2>{entry.brand} {entry.name}</h2>
- {entry.bagImage&&<img src={entry.bagImage} alt={`${entry.brand} ${entry.name}`} width={240} height={280} style={{objectFit:'contain',display:'block',margin:'12px auto',maxWidth:'100%'}}/>}
- <p>{flourNumbers(entry,fr)}</p><p>{entry.manufacturerType||entry.type} · {new Intl.DisplayNames([fr?'fr':'en'],{type:'region'}).of(entry.country.toUpperCase())}</p>{entry.specificationNote&&<p>{fr?entry.specificationNote.fr:entry.specificationNote.en}</p>}
+ {entry.bagImage&&<img src={entry.bagImage} alt={`${entry.brand} ${entry.name}`} width={240} height={280} loading="lazy" decoding="async" style={{objectFit:'contain',display:'block',margin:'12px auto',maxWidth:'100%'}}/>}
+ <p>{flourNumbers(entry,fr)}</p><p>{entry.manufacturerType||flourTypeLabel(entry.type,fr)} · {new Intl.DisplayNames([fr?'fr':'en'],{type:'region'}).of(entry.country.toUpperCase())}</p>{entry.specificationNote&&<p>{fr?entry.specificationNote.fr:entry.specificationNote.en}</p>}
  {entry.hydration&&<p>{fr?'Hydratation indicative':'Indicative hydration'} · {entry.hydration[0]}–{entry.hydration[1]}%</p>}
  {entry.w==null&&<p>{fr?`Le calcul utilisera une estimation de type W ~${flourEngineW(entry)}, pas une mesure de cette farine.`:`The calculation will use a type estimate W ~${flourEngineW(entry)}, not a measurement of this flour.`}</p>}
  <button type="button" onClick={()=>{setOpen(false);onChoose();}} style={{width:'100%',minHeight:48,background:'var(--terra)',color:'white',border:0,borderRadius:10}}>{entry.w==null?(fr?'Utiliser avec l’estimation':'Use with type estimate'):(fr?'Choisir cette farine':'Use this flour')}</button>
@@ -43,7 +48,7 @@ export default function FlourCatalogueBrowser({onChoose,recommendedIds,onGeneric
  const field={width:'100%',minHeight:44,border:'1px solid var(--border)',borderRadius:8,background:'white',padding:8,color:'var(--char)'};
  return <div ref={top}>
  <label style={{display:'block',marginBottom:8}}>{fr?'Marque, farine ou type':'Brand, flour or type'}<input type="search" value={query} onChange={e=>{setQuery(e.target.value);setPage(0);}} onKeyDown={e=>{if(e.key==='Enter')e.currentTarget.blur();}} placeholder={fr?'Ex. Caputo, T65, complète':'e.g. Caputo, T65, wholemeal'} style={{...field,marginTop:6}}/></label>
- <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:6}}>{[{label:fr?'Marque':'Brand',value:brand,set:setBrand,values:catalog.map(f=>f.brand)},{label:'Type',value:type,set:setType,values:catalog.map(f=>f.type)},{label:fr?'Origine':'Origin',value:country,set:setCountry,values:catalog.map(f=>f.country)}].map(d=><label key={d.label} style={{fontSize:12}}>{d.label}<select value={d.value} style={field} onChange={e=>{d.set(e.target.value);setPage(0);}}><option value="">{fr?'Tous':'All'}</option>{[...new Set(d.values)].sort().map(v=><option key={v} value={v}>{d.label===(fr?'Origine':'Origin')?new Intl.DisplayNames([fr?'fr':'en'],{type:'region'}).of(v.toUpperCase())||v:v}</option>)}</select></label>)}</div>
+ <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:6}}>{[{label:fr?'Marque':'Brand',value:brand,set:setBrand,values:catalog.map(f=>f.brand)},{label:'Type',value:type,set:setType,values:catalog.map(f=>f.type)},{label:fr?'Origine':'Origin',value:country,set:setCountry,values:catalog.map(f=>f.country)}].map(d=><label key={d.label} style={{fontSize:12}}>{d.label}<select value={d.value} style={field} onChange={e=>{d.set(e.target.value);setPage(0);}}><option value="">{fr?'Tous':'All'}</option>{[...new Set(d.values)].sort().map(v=><option key={v} value={v}>{d.label===(fr?'Origine':'Origin')?new Intl.DisplayNames([fr?'fr':'en'],{type:'region'}).of(v.toUpperCase())||v:d.label==='Type'?flourTypeLabel(v,fr):v}</option>)}</select></label>)}</div>
  {active&&<button type="button" onClick={()=>{setQuery('');setBrand('');setType('');setCountry('');setPage(0);setAll(false);}} style={{minHeight:44}}>{fr?'Tout effacer':'Clear all'}</button>}
  <div style={{display:'flex',gap:10,margin:'12px 0'}}><button type="button" onClick={onGeneric} style={{minHeight:44}}>{fr?'Utiliser un type de farine':'Use a flour type'}</button><button type="button" onClick={onScan} style={{minHeight:44}}>{fr?'Scanner le sac':'Scan bag'}</button></div>
  <h3>{initial?(fr?'Pour votre style':'For your style'):`${filtered.length} ${fr?'résultat(s)':'results'}`}</h3>

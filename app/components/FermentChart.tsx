@@ -647,7 +647,7 @@ export default function FermentChart({
   // Fridge: fix sigma at optimal duration so curve shape is stable during drag
   // RT: use actual prefOffsetH (small sigma, negligible effect)
   const prefSigInput = prefNeedsFridge
-    ? getPrefOptH(prefermentType, kitchenTemp, true)
+    ? getPrefOptH(prefermentType, kitchenTemp, true, styleKey, fridgeTemp)
     : prefOffsetH;
   const prefSig = hasPref ? getPrefSig(prefermentType, kitchenTemp, prefNeedsFridge, prefSigInput) : 1;
 
@@ -666,7 +666,7 @@ export default function FermentChart({
   const doughPeakHBF = effectiveMixHBF - DOUGH_SWEET_CENTER;
   // Both fridge and RT: peak relative to prefStartAbsHBF so curve slides with diamond.
   // Fridge: peak is optH hours after start (at optimal → peaks at mix, earlier/later → shifts).
-  const prefOptHFridge = getPrefOptH(prefermentType, kitchenTemp, true);
+  const prefOptHFridge = getPrefOptH(prefermentType, kitchenTemp, true, styleKey, fridgeTemp);
   const prefPeakHBF = prefNeedsFridge
     ? prefStartAbsHBF - prefOptHFridge
     : prefStartAbsHBF - rtPeakH;

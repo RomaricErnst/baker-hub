@@ -15,6 +15,7 @@ export function mixingBatchPlan(recipe: RecipeResult, mixer: string, requested?:
     flour: pref?.finalFlour ?? recipe.flour - Math.round(starter / 2),
     water: pref?.finalWater ?? recipe.water - Math.round(starter / 2),
     salt: recipe.salt, oil: recipe.oil, sugar: recipe.sugar,
+    milk: recipe.enrichment?.milk ?? 0, eggs: recipe.enrichment?.eggs ?? 0, butter: recipe.enrichment?.butter ?? 0,
     preferment: pref ? pref.prefFlour + pref.prefWater + pref.prefYeastGrams : 0,
     starter, yeast: pref || starter ? 0 : recipe.yeast?.convertedGrams ?? 0,
   };

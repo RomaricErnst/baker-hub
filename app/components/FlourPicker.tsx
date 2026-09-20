@@ -4,6 +4,7 @@ import { useLocale } from 'next-intl';
 import { type FlourKey, type FlourBlend, type WSource, blendWIsApproximate } from '../data';
 import FlourScan from './FlourScan';
 import FlourCatalogueBrowser, {FlourProductButton, flourBehaviour, flourEngineW} from './FlourCatalogueBrowser';
+import { archivedBlendSelections } from '../lib/flourRecovery';
 import { FLOUR_DB, type FlourEntry } from '@/lib/flourDatabase';
 
 // ── Crowd favourite IDs ───────────────────────────
@@ -418,11 +419,11 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       brand: blend.customFlour2Name.split(' ')[0] ?? '',
       name: blend.customFlour2Name,
       type: 'bread',
-      country: 'it',
-      w: blend.wOverride ?? 260,
-      wPublished: false,
-      protein: 12,
-      hydration: [60, 75] as [number, number],
+      country: '',
+      w: blend.w2 ?? null,
+      wPublished: blend.w2Source === 'exact',
+      protein: null,
+      hydration: null,
       bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
     };
   });
@@ -531,6 +532,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   function selectDBEntry(f: FlourEntry) {
     const autoTile: FlourKey = flourBehaviour(f);
     onBlendChange({
+      ...blend,
       flour1: autoTile,
       flour2: blend.flour2,
       ratio1: blend.ratio1,
@@ -551,6 +553,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   function applyQuickType(label: string, w: number) {
     const autoTile: FlourKey = w >= 270 ? 'strong00' : 'pizza00';
     onBlendChange({
+      ...blend,
       flour1: autoTile,
       flour2: blend.flour2,
       ratio1: blend.ratio1,
@@ -622,6 +625,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   return (
     <div ref={selectionRef}>
 
+      {archivedBlendSelections(blend).length > 0 && <p role="alert" style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 12 }}>{isFr ? 'Une farine enregistrée est archivée. Remplacez-la explicitement ; vos anciennes valeurs restent conservées en attendant.' : 'A saved flour is archived. Choose its replacement explicitly; your previous values are retained until then.'} {archivedBlendSelections(blend).join(' · ')}</p>}
       {/* ── Selected flour — hero card (rendering only; same state) ── */}
       {chosenEntry&&<><FlourProductButton entry={chosenEntry} selected onChoose={()=>selectDBEntry(chosenEntry)}/><button type="button" onClick={()=>setPickerOpen(true)} style={{minHeight:44}}>{isFr?'Changer de farine':'Change flour'}</button></>}
       {blend.brandProduct && !chosenEntry && (

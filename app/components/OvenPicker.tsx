@@ -92,7 +92,7 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect, onP
   }
 
   return (
-    <div><DecisionList
+    <div><DecisionList layout="photo"
       options={options}
       selectedId={selectedId}
       onSelect={(id) => {

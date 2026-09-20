@@ -18,9 +18,9 @@ test('all displayed commercial ingredients conserve requested mass within weighi
         for (const weight of [250, 1000, 4000]) {
           const r = recipe(style, 1, weight, yeastType, pref);
           const dose = r.preferment?.prefYeastGrams ?? r.yeast.convertedGrams;
-          const sum = r.flour + r.water + r.salt + r.oil + r.sugar + dose;
+          const sum = r.flour + r.water + r.salt + r.oil + r.sugar + (r.enrichment?.milk ?? 0) + (r.enrichment?.eggs ?? 0) + (r.enrichment?.butter ?? 0) + dose;
           // Flour/water/salt/oil are weighed to 1g, sugar to 0.1g.
-          assert.ok(Math.abs(sum - r.totalDough) <= 2.6,
+          assert.ok(Math.abs(sum - r.totalDough) <= (r.enrichment ? 4 : 2.6),
             `${style}/${yeastType}/${pref}/${weight}: ${sum} vs ${r.totalDough}`);
           assert.equal(r.totalDough, weight);
           if (r.preferment) {
@@ -36,7 +36,7 @@ test('all displayed commercial ingredients conserve requested mass within weighi
 test('mixing-loss allowance is added once before calculating ingredients', () => {
   const r = recipe('pan', 4, 250, 'fresh', 'none', 1.5);
   assert.equal(r.totalDough, 1015);
-  assert.ok(Math.abs(r.flour + r.water + r.salt + r.oil + r.sugar + r.yeast.convertedGrams - 1015) <= 2.6);
+  assert.ok(Math.abs(r.flour + r.water + r.salt + r.oil + r.sugar + r.yeast.convertedGrams - 1015) <= (r.enrichment ? 4 : 2.6));
 });
 
 test('exact 2% sugar stays below osmotic correction while mass converges', () => {
@@ -50,7 +50,7 @@ test('exact 2% sugar stays below osmotic correction while mass converges', () =>
             6, yeastType, 'custom', 'hand', 70, 15, 2);
           assert.equal(r.yeast.osmoticStress, false);
           const actual = r.flour + r.water + r.salt + r.oil + r.sugar + r.yeast.convertedGrams;
-          assert.ok(Math.abs(actual - weight) <= 2.6,
+          assert.ok(Math.abs(actual - weight) <= (r.enrichment ? 4 : 2.6),
             `${weight}/${temp}/${horizon}/${yeastType}: ${actual}`);
         }
       }

@@ -8,9 +8,11 @@ interface PrefermentPickerProps {
   // the follow-on pills stay hidden, because a code default that looks chosen
   // is exactly what the preset rule exists to stop.
   selected: PrefermentType | null;
+  directOnly?: boolean;
   onSelect: (type: PrefermentType) => void;
   flourPct?: number;
-  onFlourPctChange?: (pct: number) => void;
+  onFlourPctChange?: (pct: number | undefined) => void;
+  suggestedFlourPct?: number;
   styleKey?: string;
   hideTypes?: PrefermentType[];
   kitchenTemp?: number;
@@ -18,16 +20,16 @@ interface PrefermentPickerProps {
 }
 
 export default function PrefermentPicker({
-  selected, onSelect, flourPct, onFlourPctChange,
+  selected, onSelect, flourPct, onFlourPctChange, suggestedFlourPct = 20, directOnly = false,
   styleKey, hideTypes = [], kitchenTemp, yeastType,
 }: PrefermentPickerProps) {
   const t = useTranslations('preferment');
   const fr = useLocale() === 'fr';
 
   const ALL_OPTIONS = [
-    { id: 'none',    image: '/preferment-direct.webp',  title: t('none.title'),    tagline: t('none.tagline') },
-    { id: 'poolish', image: '/preferment-poolish.webp', title: t('poolish.title'), tagline: t('poolish.tagline') },
-    { id: 'biga',    image: '/preferment-biga.webp',    title: t('biga.title'),    tagline: t('biga.tagline') },
+    { id: 'none',    image: '/images/approved/preferment/direct.webp',  title: t('none.title'),    tagline: t('none.tagline') },
+    { id: 'poolish', image: '/images/approved/preferment/poolish.webp', title: t('poolish.title'), tagline: t('poolish.tagline') },
+    { id: 'biga',    image: '/images/approved/preferment/biga.webp',    title: t('biga.title'),    tagline: t('biga.tagline') },
     { id: 'levain',  image: '/images/approved/leavening-v2/starter.webp',    title: t('levain.title'),  tagline: t('levain.tagline') },
   ];
 
@@ -49,14 +51,23 @@ export default function PrefermentPicker({
       <div>
           {/* No heading here: the step page above already says "Preferment
               method". Two titles, one question. */}
-          <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'var(--font-ui)' }}>
-            {fr ? 'Choisissez la méthode de votre pâte.' : 'Choose your dough method.'}
-          </p>
-          <DecisionList
-            options={options}
-            selectedId={selected ?? ''}
-            onSelect={(id) => onSelect(id as PrefermentType)}
-          />
+          {directOnly && <p style={{ fontSize: 13, color: 'var(--smoke)' }}>{fr ? 'Cette recette enrichie est actuellement prévue sans préferment.' : 'This enriched recipe currently supports the direct method only.'}</p>}
+          <div style={{ display: 'grid', gap: 12 }}>
+            {options.map(option => <div key={option.id}>
+              <DecisionList layout="lateral" options={[option]} disabledIds={directOnly && option.id !== 'none' ? [option.id] : []} selectedId={selected ?? ''} onSelect={id => onSelect(id as PrefermentType)} />
+              {!directOnly && selected === option.id && selected !== 'none' && selected !== 'levain' && onFlourPctChange && (
+                <div style={{ padding: '12px 14px', border: '1px solid var(--border)', borderTop: 0, borderRadius: '0 0 12px 12px', background: 'var(--warm)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 13 }}>
+                    {fr ? 'Part de toute la farine' : 'Share of all flour'}
+                    <span><input type="number" min={10} max={60} step={1} value={flourPct ?? suggestedFlourPct} onChange={e => { const value = Number(e.target.value); if (e.target.value !== '' && value >= 10 && value <= 60) onFlourPctChange(value); }} style={{ width: 72, minHeight: 44, border: '1px solid var(--border)', borderRadius: 8, padding: 8 }} /> %</span>
+                  </label>
+                  <input type="range" aria-label={fr ? 'Part de farine en préferment' : 'Prefermented flour share'} min={10} max={60} step={5} value={flourPct ?? suggestedFlourPct} onChange={e => onFlourPctChange(Number(e.target.value))} style={{ width: '100%', minHeight: 44, accentColor: 'var(--terra)' }} />
+                  <p style={{ margin: '4px 0', fontSize: 12, color: 'var(--smoke)' }}>{fr ? 'Point de départ suggéré' : 'Suggested starting point'} : {suggestedFlourPct}%</p>
+                  {flourPct !== undefined && flourPct !== suggestedFlourPct && <button type="button" onClick={() => onFlourPctChange(undefined)} style={{ minHeight: 44, background: 'transparent', border: 0, color: 'var(--terra)', textDecoration: 'underline', cursor: 'pointer' }}>{fr ? 'Revenir à la suggestion' : 'Reset to suggestion'}</button>}
+                </div>
+              )}
+            </div>)}
+          </div>
       </div>
 
       {/* Hydration / cold-ferment pills when a preferment is active */}

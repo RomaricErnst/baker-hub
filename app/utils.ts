@@ -1,3 +1,4 @@
+import { ENRICHED_FORMULAS, ENRICHMENT_WATER_FRACTIONS, type RecipeEnrichment } from './utils/enrichedFormulas';
 // ══════════════════════════════════════════
 // BAKER HUB — Utils & Engine
 // ══════════════════════════════════════════
@@ -124,7 +125,7 @@ export interface YeastResult {
   convertedGrams: number;// grams for selected yeast type
   yeastType: YeastType;
   scaleNeeded: string;
-  dilutionTip: { solutionG: number; waterG: number } | null;
+  dilutionTip: { solutionG: number; waterG: number; waterInSolutionGrams?: number; remainingWaterGrams?: number } | null;
   hitMinFloor: boolean;  // dose under 0.5 g — needs a 0.1 g precision scale
   // Longest room-temperature window this batch can still be DOSED for, i.e.
   // where the required IDY stays above what a 0.1 g scale can weigh. Null when
@@ -140,7 +141,15 @@ export interface YeastResult {
   osmoticStress: boolean; // true when sugar > 2% — yeast amount increased 20%
 }
 
-function recommendYeast(
+// Existing UI instructs 1 g yeast + waterG water: stock mass is waterG + 1.
+export function commercialDilution(doseGrams: number, availableWater = Infinity) {
+  if (!Number.isFinite(doseGrams) || doseGrams <= 0 || doseGrams >= 0.5) return null;
+  const waterG = 100;
+  if (doseGrams * waterG > availableWater) return null;
+  return {waterG, solutionG: doseGrams * (waterG + 1), waterInSolutionGrams: doseGrams * waterG, remainingWaterGrams: Number.isFinite(availableWater) ? availableWater - doseGrams * waterG : undefined};
+}
+
+export function recommendYeast(
   totalRTHours: number,
   kitchenTemp: number,
   totalColdHours: number,
@@ -158,26 +167,21 @@ function recommendYeast(
   const RT_ONLY_STYLES = new Set(['pan', 'roman', 'pain_seigle']);
   const isRTOnlyStyle = RT_ONLY_STYLES.has(styleKey ?? '');
 
-  if (totalColdHours > 0 && totalRTHours <= 4) {
-    // Primarily cold fermentation
-    rec = coldIDY(totalColdHours, fridgeTemp);
-    rec = Math.max(YEAST_MIN_PCT, rec);
-
-  } else if (totalColdHours > 0) {
-    // Mixed: room temp + cold
-    const rtRec = rtIDY(totalRTHours, kitchenTemp);
+  if (totalColdHours > 0) {
     const coldRec = coldIDY(totalColdHours, fridgeTemp);
-    if (rtRec === null) {
+    const rtRec = totalRTHours > 0 ? rtIDY(totalRTHours, kitchenTemp) : null;
+    // Keep the existing empirical blend, but never increase the cold-only
+    // dose merely because warm exposure was added. This conservative bound
+    // removes the arbitrary four-hour switch; it is not new calibration or
+    // a simulation of dough-core cooling.
+    if (rtRec === null || totalRTHours <= 0) {
       rec = Math.max(YEAST_MIN_PCT, coldRec);
     } else {
-      const rtWeight    = totalRTHours  / Math.max(rtRec ?? YEAST_MIN_PCT, YEAST_MIN_PCT);
-      const coldWeight  = totalColdHours / coldRec;
-      const totalWeight = rtWeight + coldWeight;
-      rec = Math.max(YEAST_MIN_PCT,
-        (coldRec * (coldWeight / totalWeight)) + ((rtRec ?? 0) * (rtWeight / totalWeight))
-      );
+      const rtWeight = totalRTHours / Math.max(rtRec, YEAST_MIN_PCT);
+      const coldWeight = totalColdHours / coldRec;
+      const blended = (coldRec * coldWeight + rtRec * rtWeight) / (coldWeight + rtWeight);
+      rec = Math.max(YEAST_MIN_PCT, Math.min(coldRec, blended));
     }
-
   } else {
     // Pure room temperature
     if (totalRTHours > YEAST_RT_MAX_H && !isRTOnlyStyle) {
@@ -279,14 +283,7 @@ function recommendYeast(
   //
   // Taking it from the dough's own water is the load-bearing half — added on
   // top it would change the hydration.
-  let dilutionTip: { solutionG: number; waterG: number } | null = null;
-  if (convertedGrams < 0.5) {
-    const DILUTION_WATER_G = 100;
-    dilutionTip = {
-      waterG: DILUTION_WATER_G,
-      solutionG: Math.round(convertedGrams * DILUTION_WATER_G * 10) / 10,
-    };
-  }
+  const dilutionTip = commercialDilution(convertedGrams);
 
   // Explanation
   let explanation = '';
@@ -1103,6 +1100,7 @@ function derivePriority(schedule: ScheduleResult): string | null {
 }
 
 export interface RecipeResult {
+  enrichment?: RecipeEnrichment;
   flour: number;
   water: number;
   salt: number;
@@ -1171,6 +1169,10 @@ export function calculateRecipe(
     ? computeBlendProfile(flourBlend)
     : null;
 
+  const enrichedFormula = ENRICHED_FORMULAS[styleKey as keyof typeof ENRICHED_FORMULAS];
+  const unsupportedEnrichedMethod = !!enrichedFormula && (yeastType === 'sourdough' || !!prefermentType && prefermentType !== 'none');
+  // Published direct-dough formula, explicitly marked if a legacy method is incompatible.
+  if (enrichedFormula) { prefermentType = 'none'; if (yeastType === 'sourdough') yeastType = 'instant'; }
   // Hydration
   // manualHydration = baker's exact value, zero engine adjustment
   // Otherwise: style baseline + oven + climate + blend — all modes
@@ -1209,17 +1211,18 @@ export function calculateRecipe(
     hydration = Math.max(hydFloor, hydration);
   }
 
+  if (enrichedFormula) hydration = enrichedFormula.water + enrichedFormula.milk * ENRICHMENT_WATER_FRACTIONS.milk + enrichedFormula.eggs * ENRICHMENT_WATER_FRACTIONS.eggs + enrichedFormula.butter * ENRICHMENT_WATER_FRACTIONS.butter;
   // Salt
-  const saltPct = mode === 'custom' && manualSalt !== undefined
+  const saltPct = enrichedFormula ? enrichedFormula.salt : mode === 'custom' && manualSalt !== undefined
     ? manualSalt
     : s.salt;
 
   // Oil and sugar
-  const oil = mode === 'custom' && manualOil !== undefined
+  const oil = enrichedFormula ? 0 : mode === 'custom' && manualOil !== undefined
     ? manualOil
     : oven.forceOil !== null ? oven.forceOil : s.oil;
 
-  const sugar = mode === 'custom' && manualSugar !== undefined
+  const sugar = enrichedFormula ? enrichedFormula.sugar : mode === 'custom' && manualSugar !== undefined
     ? manualSugar
     : oven.forceSugar !== null ? oven.forceSugar : s.sugar;
 
@@ -1228,8 +1231,8 @@ export function calculateRecipe(
     ? 1 + wastePct / 100
     : 1;
   const totalDough = Math.round(numItems * itemWeight * wasteMult);
-  const hydPct = hydration / 100;
-  const ingredientRatio = 1 + hydPct + (saltPct + Math.max(0, oil) + Math.max(0, sugar)) / 100;
+  const hydPct = (enrichedFormula ? enrichedFormula.water : hydration) / 100;
+  const ingredientRatio = 1 + hydPct + (enrichedFormula ? (enrichedFormula.milk + enrichedFormula.eggs + enrichedFormula.butter) / 100 : 0) + (saltPct + Math.max(0, oil) + Math.max(0, sugar)) / 100;
   let flour = Math.round(totalDough / ingredientRatio);
   let water = 0;
   let salt = 0;
@@ -1293,7 +1296,7 @@ export function calculateRecipe(
       if (yeast && blendProfile && blendProfile.fermToleranceMultiplier !== 1.0) {
         let idyPct = yeast.pct / blendProfile.fermToleranceMultiplier;
         idyPct = Math.round(idyPct * 10000) / 10000;
-        const rawGrams = Math.max(0.5, flour * idyPct / 100);
+        const rawGrams = Math.max(0.001, flour * idyPct / 100);
         const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
         yeast = {
           ...yeast,
@@ -1313,8 +1316,8 @@ export function calculateRecipe(
       if (yeast && prefermentType && prefermentType !== 'none') {
         const prefData = PREFERMENT_TYPES[prefermentType];
         if (prefData.yeastReduction > 0) {
-          const newGrams = Math.max(0.5, yeast.grams * (1 - prefData.yeastReduction));
-          const newConvertedGrams = Math.max(0.5, yeast.convertedGrams * (1 - prefData.yeastReduction));
+          const newGrams = Math.max(0.001, yeast.grams * (1 - prefData.yeastReduction));
+          const newConvertedGrams = Math.max(0.001, yeast.convertedGrams * (1 - prefData.yeastReduction));
           yeast = {
             ...yeast,
             grams: newGrams,
@@ -1426,11 +1429,27 @@ export function calculateRecipe(
     prefTempC: levainInBalance ? kitchenTemp : prefTempC,
   });
   const waterTemp = thermal.waterTemp;
+  const enrichment: RecipeEnrichment | undefined = enrichedFormula ? {
+    milk: Math.round(flour * enrichedFormula.milk / 100),
+    eggs: Math.round(flour * enrichedFormula.eggs / 100),
+    butter: Math.round(flour * enrichedFormula.butter / 100),
+    waterEquivalent: 0,
+    waterFractions: ENRICHMENT_WATER_FRACTIONS,
+    sourceUrl: enrichedFormula.sourceUrl, formulaVersion: enrichedFormula.formulaVersion,
+    unsupportedMethod: unsupportedEnrichedMethod,
+    note: {
+      en: 'Published ingredient ratios; direct commercial-yeast version. Yeast and timing are app estimates, not the source schedule. Hydration includes estimated water in milk, eggs and butter. Ingredient temperatures are not modelled. Weigh eggs without shells; egg wash is separate.',
+      fr: 'Proportions publiées ; version directe à levure boulangère. Levure et durées estimées par l’application, différentes du planning source. Hydratation incluant l’eau estimée du lait, des œufs et du beurre. Températures de ces ingrédients non modélisées. Pesez les œufs sans coquille ; dorure à part.',
+    },
+  } : undefined;
+  if (enrichment) enrichment.waterEquivalent = water + enrichment.milk * .87 + enrichment.eggs * .75 + enrichment.butter * .16;
+  // All flour-strength, preferment and sugar modifiers have now settled.
+  if (yeast) yeast = {...yeast, dilutionTip: commercialDilution(yeast.convertedGrams, water)};
 
   return {
-    flour, water, salt, yeast, sourdough,
+    flour, water, salt, yeast, sourdough, enrichment,
     oil: oilG, sugar: sugarG,
-    waterTemp, thermal: { idealWaterTemp: thermal.idealWaterTemp, doughTempC: thermal.doughTempC, freeWaterG: thermal.freeWaterG, targetDoughTemp: targetFDT }, hydration, totalDough,
+    waterTemp, thermal: enrichment ? undefined : { idealWaterTemp: thermal.idealWaterTemp, doughTempC: thermal.doughTempC, freeWaterG: thermal.freeWaterG, targetDoughTemp: targetFDT }, hydration, totalDough,
     autoPriority,
     wastePct: mode === 'custom' && wastePct !== undefined && wastePct > 0 ? wastePct : undefined,
     targetDoughTemp: mode === 'custom' && targetDoughTemp !== undefined ? targetDoughTemp : undefined,

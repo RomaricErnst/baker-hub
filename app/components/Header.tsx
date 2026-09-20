@@ -266,12 +266,25 @@ export default function Header({
 
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  // Escape closes the drawer, as it does on every other sheet.
+  const drawerRef = useRef<HTMLDivElement>(null);
+  // Keep keyboard navigation inside the open menu and restore the trigger.
   useEffect(() => {
     if (!menuOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    drawerRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+      if (e.key !== 'Tab') return;
+      const items = Array.from(drawerRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), [tabindex="0"]') ?? []).filter(el => el.offsetParent !== null);
+      const first = items[0], last = items[items.length - 1];
+      if (!first) { e.preventDefault(); return; }
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === drawerRef.current)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || document.activeElement === drawerRef.current)) { e.preventDefault(); first.focus(); }
+    };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = previousOverflow; if (previousFocus?.isConnected) previousFocus.focus(); };
   }, [menuOpen]);
   // Share (and future actions) can request the sign-in home: anonymous
   // bakers tapping "Save & Share" get the drawer with the auth block
@@ -438,7 +451,7 @@ export default function Header({
       <div ref={menuRef} style={{ minWidth: 0, flex: '1 1 auto' }}>
         <div className="bh-wordmark" style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.025em', whiteSpace: 'nowrap' }}>bakerhub.</div>
       </div>
-      <button onClick={() => setMenuOpen(v => !v)} aria-expanded={menuOpen}
+      <button onClick={() => setMenuOpen(v => !v)} aria-expanded={menuOpen} aria-controls="bakerhub-menu" aria-haspopup="dialog"
         style={{ order: 2, border: 'none', background: 'transparent', color: 'var(--char)', minHeight: '44px', padding: '8px', fontSize: '13px', cursor: 'pointer' }}>
         Menu
       </button>
@@ -472,12 +485,11 @@ export default function Header({
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
           {onSaveSession && (onNewSession || recipeGenerated || sessionRestored) && (
             <button onClick={() => { if (!sessionSaved) onSaveSession(); }}
-              aria-label={sessionSaved ? (user ? tS('saved') : tS('savedLocal')) : (recipeGenerated ? tS('saveSession') : locale === 'fr' ? 'Enregistrer le brouillon' : 'Save draft')}
-              title={sessionSaved ? (user ? tS('saved') : tS('savedLocal')) : undefined}
+              aria-label={sessionSaved ? (user ? (locale === 'fr' ? 'Enregistré dans votre compte' : 'Saved to your account') : (locale === 'fr' ? 'Enregistré sur cet appareil' : 'Saved on this device')) : (locale === 'fr' ? 'Enregistrer' : 'Save')}
+              title={sessionSaved ? (user ? (locale === 'fr' ? 'Enregistré dans votre compte' : 'Saved to your account') : (locale === 'fr' ? 'Enregistré sur cet appareil' : 'Saved on this device')) : undefined}
+              aria-disabled={sessionSaved}
               style={{ border: 'none', borderRadius: '10px', background: 'transparent', color: 'var(--char)', minHeight: '44px', padding: '8px 10px', fontSize: '13px', whiteSpace: 'nowrap', cursor: sessionSaved ? 'default' : 'pointer' }}>
-              {sessionSaved
-                ? (user ? (locale === 'fr' ? 'Enregistré' : 'Saved') : (locale === 'fr' ? 'Local' : 'Saved here'))
-                : recipeGenerated ? (locale === 'fr' ? 'Enregistrer' : 'Save') : (locale === 'fr' ? 'Brouillon' : 'Save draft')}
+              {sessionSaved ? (locale === 'fr' ? 'Enregistré' : 'Saved') : (locale === 'fr' ? 'Enregistrer' : 'Save')}
             </button>
           )}
         </div>
@@ -494,22 +506,23 @@ export default function Header({
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 199 }}
         />
         {/* Drawer panel */}
-        <div style={{
-          position: 'fixed', top: 0, left: 0, height: '100dvh', width: '300px',
-          background: '#2B2420', borderRight: '1px solid rgba(255,255,255,0.12)',
-          boxShadow: '4px 0 24px rgba(0,0,0,0.5)', zIndex: 200,
-          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        <div id="bakerhub-menu" ref={drawerRef} role="dialog" aria-modal="true" aria-label="Menu" tabIndex={-1} style={{
+          position: 'fixed', top: 0, left: 0, height: '100dvh', width: 'min(360px, 100vw)',
+          background: 'var(--warm)', borderRight: '1px solid var(--border)',
+          boxShadow: '4px 0 32px rgba(43,36,32,0.18)', zIndex: 200,
+          display: 'flex', flexDirection: 'column', overflowY: 'auto', color: 'var(--char)',
           animation: 'slideInLeft 0.25s ease',
         }}>
           {/* Drawer header */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '16px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)',
+            padding: '16px 16px 12px', borderBottom: '1px solid var(--border)',
+            position: 'sticky', top: 0, background: 'var(--warm)', zIndex: 2,
             flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <img src="/logo-mark.webp" alt="" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }}/>
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--cream)' }}>
+              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--char)' }}>
                 Baker Hub
               </span>
             </div>
@@ -526,27 +539,27 @@ export default function Header({
           </div>
 
           {/* ── Current session — always visible ── */}
-          {recipeGenerated && (
+          {(recipeGenerated || sessionRestored || onNewSession) && (
             <div style={{
               padding: '12px 16px',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
+              borderBottom: '1px solid var(--border)',
               flexShrink: 0,
             }}>
               <div style={{ ...monoLabel, marginBottom: '8px' }}>
-                {locale === 'fr' ? 'Session en cours' : 'Current session'}
+                {locale === 'fr' ? 'Cette fournée' : 'This bake'}
               </div>
 
               {/* Summary card */}
-              <div style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
+              {(sessionSummary || sessionDoughSpec) && <div style={{
+                background: 'var(--cream)',
+                border: '1px solid var(--border)',
                 borderRadius: '16px',
                 padding: '12px 12px',
               }}>
                 {sessionSummary && (
                   <div style={{
                     fontSize: '12px', fontFamily: 'var(--font-ui)',
-                    fontWeight: 600, color: 'var(--cream)',
+                    fontWeight: 600, color: 'var(--char)',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>{sessionSummary}</div>
                 )}
@@ -556,24 +569,24 @@ export default function Header({
                     color: 'var(--smoke)', marginTop: '2px',
                   }}>{sessionDoughSpec}</div>
                 )}
-              </div>
+              </div>}
 
               {/* Action row */}
               <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
                 {sessionSaved ? (
                   <span style={{
                     fontSize: '11px', fontFamily: 'var(--font-ui)',
-                    color: user ? 'var(--sage)' : 'rgba(255,255,255,0.5)',
+                    color: user ? 'var(--sage)' : 'var(--smoke)',
                     cursor: 'default', lineHeight: 1.4,
                   }}>
                     {user ? tS('saved') : tS('savedLocalNote')}
                   </span>
-                ) : (
+                ) : onSaveSession ? (
                   <button
                     onClick={() => { onSaveSession?.(); setMenuOpen(false); }}
                     style={{
                       fontSize: '11px', fontFamily: 'var(--font-ui)',
-                      color: 'var(--terra-on-dark)',
+                      color: 'var(--terra)',
                       border: '1px solid rgba(200, 138, 82,0.4)',
                       borderRadius: '12px',
                       background: 'rgba(200, 138, 82,0.1)',
@@ -581,9 +594,9 @@ export default function Header({
                       cursor: 'pointer',
                     }}
                   >
-                    {locale === 'fr' ? 'Enregistrer' : 'Save session'}
+                    {locale === 'fr' ? 'Enregistrer' : 'Save'}
                   </button>
-                )}
+                ) : null}
                 {onNewSession && <button
                   // The parent owns the save/discard/cancel guard for both entry points.
                   onClick={() => {
@@ -599,12 +612,13 @@ export default function Header({
                     textDecoration: 'underline',
                   }}
                 >
-                  {locale === 'fr' ? 'Nouvelle session' : 'New session'}
+                  {locale === 'fr' ? 'Nouvelle fournée' : 'Start a new bake'}
                 </button>}
               </div>
             </div>
           )}
 
+          <div style={{ ...monoLabel, padding: '16px 16px 4px' }}>Bakerhub</div>
           {/* ── Mon profil ── */}
           {onOpenProfile && (
             <button
@@ -612,11 +626,11 @@ export default function Header({
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '12px 16px', background: 'transparent', border: 'none',
-                borderTop: '1px solid rgba(255,255,255,0.08)',
+                borderTop: '1px solid var(--border)',
                 cursor: 'pointer', width: '100%', textAlign: 'left', flexShrink: 0,
               }}
             >
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: 600, color: 'var(--cream)' }}>
+              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: 600, color: 'var(--char)' }}>
                 {locale === 'fr' ? 'Mes préférences' : 'My preferences'}
               </span>
               <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>→</span>
@@ -633,7 +647,7 @@ export default function Header({
               ],
             },
             {
-              label: locale === 'fr' ? 'Unites' : 'Units',
+              label: locale === 'fr' ? 'Unités' : 'Units',
               options: [
                 { key: 'metric',   display: 'g/°C',   active: units === 'metric',   onSelect: () => onUnitsChange?.('metric') },
                 { key: 'imperial', display: 'oz/°F',  active: units === 'imperial', onSelect: () => onUnitsChange?.('imperial') },
@@ -642,15 +656,15 @@ export default function Header({
           ] as const).map((row, idx) => (
             <div key={row.label} style={{
               padding: '12px 16px',
-              borderTop: idx === 0 ? '1px solid rgba(255,255,255,0.08)' : undefined,
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
+              borderTop: idx === 0 ? '1px solid var(--border)' : undefined,
+              borderBottom: '1px solid var(--border)',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               flexShrink: 0,
             }}>
               <span style={monoLabel}>{row.label}</span>
               <div style={{ display: 'flex', gap: '4px' }}>
                 {row.options.map(opt => (
-                  <button key={opt.key} onClick={opt.onSelect} style={{
+                  <button key={opt.key} aria-pressed={opt.active} onClick={opt.onSelect} style={{
                     minWidth: '48px', padding: '.22rem 8px', minHeight: '44px', borderRadius: '12px',
                     border: 'none', cursor: 'pointer', fontFamily: 'var(--font-ui)',
                     fontSize: '12px', fontWeight: 600, textAlign: 'center',
@@ -665,27 +679,27 @@ export default function Header({
           {/* ── My Sessions label — always visible ── */}
           <div style={{
             padding: '12px 16px 8px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
+            borderTop: '1px solid var(--border)',
             flexShrink: 0,
           }}>
             <div style={{ ...monoLabel }}>
-              {locale === 'fr' ? 'Mes sessions' : 'My sessions'}
+              {locale === 'fr' ? 'Mes fournées enregistrées' : 'My saved bakes'}
             </div>
           </div>
 
           {/* ── My Sessions cards — scrollable ── */}
-          <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, padding: '4px 16px 12px' }}>
+          <div style={{ flex: '0 0 auto', minHeight: 0, padding: '4px 16px 12px' }}>
             {!user ? (
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
+              <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
                 {locale === 'fr' ? 'Connectez-vous pour sauvegarder vos sessions' : 'Sign in to save your sessions'}
               </div>
             ) : loadingRecipes ? (
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-ui)' }}>
+              <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
                 {locale === 'fr' ? 'Chargement...' : 'Loading...'}
               </div>
             ) : bakeEvents.length === 0 ? (
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
-                {locale === 'fr' ? 'Aucune session sauvegardee' : 'No saved sessions yet'}
+              <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
+                {locale === 'fr' ? 'Aucune fournée enregistrée' : 'No saved sessions yet'}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -695,25 +709,25 @@ export default function Header({
                   return (
                     <div key={event.id} style={{
                       borderRadius: '16px',
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'var(--cream)',
+                      border: '1px solid var(--border)',
                       position: 'relative',
                       minHeight: '96px',
                     }}>
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
-                          if (!window.confirm('Delete this session?')) return;
+                          if (!window.confirm(locale === 'fr' ? 'Supprimer cette fournée ?' : 'Delete this bake?')) return;
                           await deleteBakeEvent(event.id);
                           setBakeEvents(prev => prev.filter(ev => ev.id !== event.id));
                         }}
                         style={{
                           position: 'absolute', bottom: '8px', right: '10px',
                           background: 'none', border: 'none', cursor: 'pointer',
-                          color: 'rgba(255,255,255,0.25)',
-                          padding: '2px', lineHeight: 1, zIndex: 1,
+                          color: 'var(--smoke)',
+                          width: '44px', height: '44px', padding: '12px', lineHeight: 1, zIndex: 1,
                         }}
-                        title="Delete session"
+                        title={locale === 'fr' ? 'Supprimer cette fournée' : 'Delete this bake'} aria-label={locale === 'fr' ? 'Supprimer cette fournée' : 'Delete this bake'}
                       >
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -723,13 +737,13 @@ export default function Header({
                           <path d="M9 6V4h6v2"/>
                         </svg>
                       </button>
-                      <div
+                      <div role="button" tabIndex={0} onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setViewingEvent(event); setMenuOpen(false); } }}
                         onClick={() => { setViewingEvent(event); setMenuOpen(false); }}
-                        style={{ padding: '12px 12px 12px', cursor: 'pointer' }}
+                        style={{ padding: '12px 48px 12px 12px', cursor: 'pointer' }}
                       >
                         <div style={{
                           fontSize: '12px', fontFamily: 'var(--font-ui)',
-                          fontWeight: 600, color: 'var(--cream)',
+                          fontWeight: 600, color: 'var(--char)',
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         }}>{title}</div>
                         {spec && (
@@ -741,7 +755,7 @@ export default function Header({
                         {(eventSlots[event.id] ?? []).length > 0 && (
                           <div style={{
                             fontSize: '11px', fontFamily: 'var(--font-ui)',
-                            color: 'rgba(255,255,255,0.4)', marginTop: '2px',
+                            color: 'var(--smoke)', marginTop: '2px',
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           }}>
                             {(eventSlots[event.id] ?? []).map(s => {
@@ -758,7 +772,7 @@ export default function Header({
                             fontFamily: 'var(--font-ui)', fontSize: '11px',
                             padding: '2px 8px', borderRadius: '20px',
                             background: 'rgba(107,122,90,0.15)', color: 'var(--sage)',
-                          }}>Dough</span>
+                          }}>{locale === 'fr' ? 'Pâte' : 'Dough'}</span>
                           {event.pizza_party_id && (
                             <span style={{
                               fontFamily: 'var(--font-ui)', fontSize: '11px',
@@ -770,8 +784,8 @@ export default function Header({
                             <span style={{
                               fontFamily: 'var(--font-ui)', fontSize: '11px',
                               padding: '2px 8px', borderRadius: '20px',
-                              background: 'rgba(200, 138, 82,0.10)', color: 'var(--terra-on-dark)',
-                            }}>Baked</span>
+                              background: 'rgba(200, 138, 82,0.10)', color: 'var(--terra)',
+                            }}>{locale === 'fr' ? 'Cuit' : 'Baked'}</span>
                           )}
                           {/* Nav #5 — clone this session onto the next matching weekday/time */}
                           {onRebakeBakeEvent && event.dough_snapshot?.eatTime && (
@@ -783,10 +797,10 @@ export default function Header({
                               }}
                               style={{
                                 fontFamily: 'var(--font-ui)', fontSize: '11px',
-                                padding: '2px 8px', borderRadius: '20px',
-                                background: 'rgba(255,255,255,0.08)',
-                                border: '1px solid rgba(255,255,255,0.15)',
-                                color: 'var(--cream)', cursor: 'pointer',
+                                padding: '8px', minHeight: '44px', borderRadius: '12px',
+                                background: 'var(--cream)',
+                                border: '1px solid var(--border)',
+                                color: 'var(--char)', cursor: 'pointer',
                                 lineHeight: '1.6',
                               }}
                             >
@@ -845,7 +859,7 @@ export default function Header({
           {/* ── About link — pinned footer ── */}
           <div style={{
             padding: '4px 16px 8px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
+            borderTop: '1px solid var(--border)',
             flexShrink: 0,
           }}>
             <Link
@@ -854,7 +868,7 @@ export default function Header({
               style={{
                 fontFamily: 'var(--font-ui)', fontSize: '11px',
                 color: 'var(--smoke)', textDecoration: 'none',
-                padding: '4px 0', display: 'block',
+                padding: '12px 0', minHeight: '44px', boxSizing: 'border-box', display: 'block',
                 letterSpacing: '.04em', marginTop: '4px',
               }}
             >
@@ -865,7 +879,7 @@ export default function Header({
           {/* ── Auth — pinned footer ── */}
           <div style={{
             padding: '12px 16px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
+            borderTop: '1px solid var(--border)',
             flexShrink: 0,
             ...(authSpotlight && !user ? {
               boxShadow: 'inset 0 0 0 1.5px var(--gold)',
@@ -874,6 +888,7 @@ export default function Header({
               transition: 'box-shadow .3s, background .3s',
             } : { transition: 'box-shadow .3s, background .3s' }),
           }}>
+            <div style={{ ...monoLabel, marginBottom: '8px' }}>{locale === 'fr' ? 'Compte' : 'Account'}</div>
             {authSpotlight && !user && (
               <div style={{
                 fontSize: '12px', color: 'var(--gold)',
@@ -893,7 +908,7 @@ export default function Header({
                 }}>{user.email}</span>
                 <button onClick={signOut} style={{
                   padding: '4px 12px', minHeight: '44px', borderRadius: '8px', flexShrink: 0,
-                  border: '1.5px solid rgba(255,255,255,0.15)', background: 'transparent',
+                  border: '1.5px solid var(--border)', background: 'transparent',
                   color: 'var(--smoke)', fontSize: '11px', cursor: 'pointer',
                   fontFamily: 'var(--font-ui)',
                 }}>{tAuth('signOut')}</button>
@@ -901,13 +916,14 @@ export default function Header({
             ) : emailSent ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{
-                  fontSize: '12px', color: 'rgba(255,255,255,0.6)',
+                  fontSize: '12px', color: 'var(--smoke)',
                   fontFamily: 'var(--font-ui)', fontStyle: 'italic',
                   textAlign: 'center', padding: '2px 0', lineHeight: 1.45,
                 }}>
                   {tAuth('codeSent', { email: emailInput.trim() })}
                 </div>
                 <input
+                  aria-label={tAuth('codePlaceholder')}
                   type="text"
                   inputMode="numeric"
                   autoComplete="one-time-code"
@@ -919,8 +935,8 @@ export default function Header({
                   onKeyDown={e => e.key === 'Enter' && verifyEmailCode()}
                   style={{
                     width: '100%', padding: '8px', minHeight: '44px', borderRadius: '8px',
-                    border: '1px solid rgba(255,255,255,0.18)',
-                    background: 'rgba(255,255,255,0.08)', color: 'var(--cream)',
+                    border: '1px solid var(--border)',
+                    background: 'var(--cream)', color: 'var(--char)',
                     fontSize: '16px', fontFamily: 'var(--font-ui)', outline: 'none',
                     textAlign: 'center', letterSpacing: '0.3em',
                     fontVariantNumeric: 'tabular-nums', boxSizing: 'border-box',
@@ -931,8 +947,8 @@ export default function Header({
                   disabled={authBusy || codeInput.length !== 6}
                   style={{
                     width: '100%', padding: '8px', minHeight: '44px', borderRadius: '8px',
-                    background: 'var(--terra-on-dark)', border: 'none',
-                    color: '#2B2420', fontSize: '13px',
+                    background: 'var(--terra)', border: 'none',
+                    color: '#fff', fontSize: '13px',
                     cursor: authBusy || codeInput.length !== 6 ? 'default' : 'pointer',
                     opacity: authBusy || codeInput.length !== 6 ? 0.45 : 1,
                     fontFamily: 'var(--font-ui)', fontWeight: 500,
@@ -941,7 +957,7 @@ export default function Header({
                 >{tAuth('verify')}</button>
                 {authNote && (
                   <div style={{
-                    fontSize: '11px', color: 'rgba(255,255,255,0.55)',
+                    fontSize: '11px', color: 'var(--smoke)',
                     fontFamily: 'var(--font-ui)', fontStyle: 'italic',
                     textAlign: 'center', lineHeight: 1.45,
                   }}>{tAuth(authNote)}</div>
@@ -949,7 +965,7 @@ export default function Header({
                 <button onClick={useAnotherEmail} style={{
                   width: '100%', padding: '4px', minHeight: '44px', borderRadius: '12px',
                   border: 'none', background: 'transparent',
-                  color: 'rgba(255,255,255,0.45)', fontSize: '12px',
+                  color: 'var(--smoke)', fontSize: '12px',
                   cursor: 'pointer', fontFamily: 'var(--font-ui)', textAlign: 'center',
                 }}>{tAuth('useAnotherEmail')}</button>
               </div>
@@ -957,35 +973,35 @@ export default function Header({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <button onClick={signInWithGoogle} style={{
                   width: '100%', padding: '8px', minHeight: '44px', borderRadius: '12px',
-                  border: '1.5px solid rgba(255,255,255,0.15)',
-                  background: 'rgba(255,255,255,0.06)', color: 'var(--cream)',
+                  border: '1.5px solid var(--border)',
+                  background: 'var(--cream)', color: 'var(--char)',
                   fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)',
                   fontWeight: 500, textAlign: 'center',
                 }}>{tAuth('google')}</button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
-                  <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-ui)' }}>{tAuth('or')}</span>
-                  <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                  <div style={{ flex: 1, height: '1px', background: 'var(--cream)' }} />
+                  <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>{tAuth('or')}</span>
+                  <div style={{ flex: 1, height: '1px', background: 'var(--cream)' }} />
                 </div>
                 {showEmailForm ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <div style={{ display: 'flex', gap: '8px' }}>
                       <input
-                        type="email" placeholder={tAuth('emailPlaceholder')}
+                        type="email" aria-label={tAuth('emailPlaceholder')} placeholder={tAuth('emailPlaceholder')}
                         value={emailInput} onChange={e => setEmailInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && signInWithEmail()}
                         style={{
                           flex: 1, padding: '8px 8px', minHeight: '44px', borderRadius: '8px',
-                          border: '1px solid rgba(255,255,255,0.18)',
-                          background: 'rgba(255,255,255,0.08)', color: 'var(--cream)',
+                          border: '1px solid var(--border)',
+                          background: 'var(--cream)', color: 'var(--char)',
                           fontSize: '16px', fontFamily: 'var(--font-ui)', outline: 'none',
                           boxSizing: 'border-box', minWidth: 0,
                         }}
                       />
                       <button onClick={signInWithEmail} disabled={authBusy} style={{
                         padding: '8px 12px', minHeight: '44px', borderRadius: '8px', flexShrink: 0,
-                        background: 'var(--terra-on-dark)', border: 'none',
-                        color: '#2B2420', fontSize: '12px',
+                        background: 'var(--terra)', border: 'none',
+                        color: '#fff', fontSize: '12px',
                         cursor: authBusy ? 'default' : 'pointer',
                         opacity: authBusy ? 0.45 : 1,
                         fontFamily: 'var(--font-ui)', fontWeight: 500,
@@ -994,7 +1010,7 @@ export default function Header({
                       </div>
                     {authNote && (
                       <div style={{
-                        fontSize: '11px', color: 'rgba(255,255,255,0.55)',
+                        fontSize: '11px', color: 'var(--smoke)',
                         fontFamily: 'var(--font-ui)', fontStyle: 'italic',
                         textAlign: 'center', lineHeight: 1.45,
                       }}>{tAuth(authNote)}</div>
@@ -1003,8 +1019,8 @@ export default function Header({
                 ) : (
                   <button onClick={() => setShowEmailForm(true)} style={{
                     width: '100%', padding: '8px', minHeight: '44px', borderRadius: '12px',
-                    border: '1.5px solid rgba(255,255,255,0.15)',
-                    background: 'transparent', color: 'rgba(255,255,255,0.55)',
+                    border: '1.5px solid var(--border)',
+                    background: 'transparent', color: 'var(--smoke)',
                     fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)',
                     textAlign: 'center',
                   }}>{tAuth('emailEntry')}</button>

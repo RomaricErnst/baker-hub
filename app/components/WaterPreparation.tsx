@@ -42,7 +42,15 @@ export default function WaterPreparation({waterGrams,targetTemp,kitchenTemp,frid
   const target=direct?idealWaterTemp:targetTemp;
   const split=allowed&&starting!=null&&target!=null ? direct ? directIcePreparation(waterGrams,target,starting) : waterPreparation(waterGrams,target,starting) : null;
   const clamped=!direct&&idealWaterTemp!=null&&Math.abs(idealWaterTemp-targetTemp)>.1;
-  if(readOnly) return <div style={{marginTop:6,fontSize:13}}>{split ? <><div>{displayWeight(split.water,units)} {fr?'eau':'water'} · {displayTemp(direct?starting!:targetTemp,units)}</div>{split.ice>0&&<div>{displayWeight(split.ice,units)} {fr?'glace':'ice'}</div>}</> : <span>{fr?'Complétez la préparation de l’eau dans les réglages de la cuisine.':'Complete water preparation in kitchen settings.'}</span>}</div>;
+  if (readOnly) return <div style={{marginTop:6,fontSize:13}}>
+    {split ? <>
+      <div>{displayWeight(split.water,units)} {fr ? 'eau' : 'water'} · {displayTemp(split.ice > 0 || direct ? starting! : targetTemp,units)}</div>
+      {split.ice > 0 && <div>{displayWeight(split.ice,units)} {fr ? 'glace' : 'ice'}</div>}
+      {!direct && split.ice > 0 && <div>{fr ? 'Après fonte complète' : 'After melting completely'} · {displayWeight(split.water + split.ice,units)} · {displayTemp(targetTemp,units)}</div>}
+      {direct && split.ice > 0 && <div>{fr ? 'Glace ajoutée au pétrin' : 'Ice added in the mixer'}</div>}
+      {clamped && <p>{fr ? 'Cible de pâte inaccessible avec cette préparation. Revoyez les réglages de la cuisine.' : 'This preparation cannot reach the dough target. Review kitchen settings.'}</p>}
+    </> : <span>{fr ? 'Complétez la préparation de l’eau dans les réglages de la cuisine.' : 'Complete water preparation in kitchen settings.'}</span>}
+  </div>;
   return <div style={{marginTop:6}}>
     {targetDoughTemp!=null&&<p style={{margin:'0 0 8px'}}>{fr?'Pâte après pétrissage':'Dough after mixing'} · <strong>{displayTemp(targetDoughTemp,units)}</strong></p>}
     {!readOnly && onSourceChange && <div role="group" aria-label={fr?'Source de l’eau':'Water source'} style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:6}}>

@@ -36,6 +36,7 @@ interface ShareCardProps {
   flourLine: string | null;
   recipeFlour: number | null;
   recipeWater: number | null;
+  enrichment?: {milk:number;eggs:number;butter:number} | null;
   recipeSalt: number | null;
   coldH: number;
   rtH: number;
@@ -82,6 +83,9 @@ const OVEN_LABEL: Record<string, string> = {
   wood_fired:         'Wood-fired oven',
   dutch_oven:         'Dutch oven',
   home_oven_bread:    'Home oven',
+  home_oven_stone_bread: 'Home oven + baking stone',
+  steam_oven:         'Steam oven',
+  standard_bread:     'Standard bread oven',
   combo_cooker:       'Combo cooker',
 };
 const MIXER_LABEL: Record<string, string> = {
@@ -96,7 +100,7 @@ const YEAST_SHORT: Record<string, string> = {
 
 export default function ShareCard({
   styleName, sessionName, numItems, itemWeight, hydration, prefLabel, flourLine,
-  recipeFlour, recipeWater, recipeSalt, coldH, rtH,
+  recipeFlour, recipeWater, recipeSalt, enrichment, coldH, rtH,
   bakedQtys, localSlots, sessionPhotos, locale, status, bakeType,
   ovenType, mixerType, manualOil, manualSugar, yeastType, yeastGrams, bakeDate, protocolLines, onClose,
 }: ShareCardProps) {
@@ -136,9 +140,21 @@ export default function ShareCard({
   const [previewPage, setPreviewPage] = useState(0);
   const [showLines, setShowLines] = useState(false);
   const [cropSlot, setCropSlot] = useState<number | null>(null);
+  useEffect(() => {
+    const keydown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopImmediatePropagation();
+      if (cropSlot !== null) setCropSlot(null);
+      else if (showLines) setShowLines(false);
+      else onClose();
+    };
+    document.addEventListener('keydown', keydown, true);
+    return () => document.removeEventListener('keydown', keydown, true);
+  }, [cropSlot, showLines, onClose]);
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sharedOk, setSharedOk] = useState(false);
+  const [exportResult, setExportResult] = useState<'shared' | 'downloaded' | 'error' | null>(null);
   const [imgCopied, setImgCopied] = useState(false);
   const [copyingImg, setCopyingImg] = useState(false);
   const [canCopyImage, setCanCopyImage] = useState(false);
@@ -175,8 +191,8 @@ export default function ShareCard({
     prefLabel,
   ].filter(Boolean).join(' · ');
 
-  const oilStr = manualOil && manualOil > 0 ? ` · ${manualOil}g oil` : '';
-  const sugarStr = manualSugar && manualSugar > 0 ? ` · ${manualSugar}g sugar` : '';
+  const oilStr = manualOil && manualOil > 0 ? ` · ${manualOil}g ${l === 'fr' ? 'd’huile' : 'oil'}` : '';
+  const sugarStr = manualSugar && manualSugar > 0 ? ` · ${manualSugar}g ${l === 'fr' ? 'de sucre' : 'sugar'}` : '';
   // Inline percentages — merged into weightsLine, no separate pctLine
   const hydPct = recipeWater && recipeFlour
     ? Math.round(recipeWater / recipeFlour * 100)
@@ -191,29 +207,30 @@ export default function ShareCard({
       })()
     : null;
 
+  const enrichmentStr = enrichment ? (['milk','eggs','butter'] as const).filter(k => enrichment[k] > 0).map(k => `${enrichment[k]}g ${({milk:l === 'fr' ? 'lait' : 'milk',eggs:l === 'fr' ? 'œufs sans coquille' : 'eggs, without shells',butter:l === 'fr' ? 'beurre' : 'butter'})[k]}`).join(' · ') : '';
   const waterIngStr = recipeWater
-    ? `${recipeWater}g water${hydPct != null ? ` (${hydPct}%)` : ''}`
+    ? `${recipeWater}g ${l === 'fr' ? 'd’eau' : 'water'}${hydPct != null ? ` (${hydPct}%)` : ''}`
     : null;
   const yeastIngStr = yeastGrams && yeastGrams > 0 && yeastType !== 'sourdough'
-    ? ` · ${Number(yeastGrams).toFixed(1)}g ${YEAST_SHORT[yeastType ?? ''] ?? 'yeast'}${yeastPct != null ? ` (${yeastPct}%)` : ''}`
+    ? ` · ${Number(yeastGrams).toFixed(1)}g ${(l === 'fr' ? ({instant: 'levure instantanée', active_dry: 'levure sèche active', fresh: 'levure fraîche'} as Record<string, string>)[yeastType ?? ''] ?? 'levure' : YEAST_SHORT[yeastType ?? ''] ?? 'yeast')}${yeastPct != null ? ` (${yeastPct}%)` : ''}`
     : '';
   const saltIngStr = recipeSalt
-    ? `${recipeSalt}g salt${saltPct != null ? ` (${saltPct}%)` : ''}`
+    ? `${recipeSalt}g ${l === 'fr' ? 'de sel' : 'salt'}${saltPct != null ? ` (${saltPct}%)` : ''}`
     : null;
 
-  const weightsLine = recipeFlour && waterIngStr && saltIngStr
-    ? `${recipeFlour}g flour · ${waterIngStr}${yeastIngStr} · ${saltIngStr}${oilStr}${sugarStr}`
+  const weightsLine = recipeFlour && (waterIngStr || enrichmentStr) && saltIngStr
+    ? `${recipeFlour}g ${l === 'fr' ? 'de farine' : 'flour'} · ${[waterIngStr,enrichmentStr].filter(Boolean).join(' · ')}${yeastIngStr} · ${saltIngStr}${oilStr}${sugarStr}`
     : null;
   const pctLine = null; // merged inline above
 
   const timingLine = [
-    coldH > 0 ? `Cold ${formatH(coldH)}` : null,
-    rtH > 0 ? `RT ${formatH(rtH)}` : null,
+    coldH > 0 ? `${l === 'fr' ? 'Au froid' : 'Cold'} ${formatH(coldH)}` : null,
+    rtH > 0 ? `${l === 'fr' ? 'À température ambiante' : 'Room temperature'} ${formatH(rtH)}` : null,
   ].filter(Boolean).join(' · ');
 
   const gearLine = [
-    ovenType ? (OVEN_LABEL[ovenType] ?? ovenType) : null,
-    mixerType ? (MIXER_LABEL[mixerType] ?? mixerType) : null,
+    ovenType ? (l === 'fr' ? ({ pizza_oven: 'Four à pizza', home_oven_steel: 'Four domestique + pierre', home_oven_standard: 'Four domestique', electric_pizza: 'Four à pizza électrique', wood_fired: 'Four à bois', dutch_oven: 'Cocotte', home_oven_bread: 'Four domestique', combo_cooker: 'Cocotte combinée' } as Record<string, string>)[ovenType] ?? ovenType : OVEN_LABEL[ovenType] ?? ovenType) : null,
+    mixerType ? (l === 'fr' ? ({hand: 'À la main', stand: 'Robot pâtissier', no_knead: 'Sans pétrissage', spiral: 'Pétrin à spirale'} as Record<string, string>)[mixerType] ?? mixerType : MIXER_LABEL[mixerType] ?? mixerType) : null,
   ].filter(Boolean).join(' · ') || null;
 
   // Ready-to-post hashtag block — style/bake aware
@@ -719,11 +736,12 @@ export default function ShareCard({
     return out;
   }
 
-  async function handleShare() {
+  async function handleShare(downloadOnly = false) {
     setGenerating(true);
+    setExportResult(null);
     try {
       const blobs = await renderAllPages();
-      if (!blobs.length) return;
+      if (!blobs.length) throw new Error('No export images rendered');
       const files = blobs.map((b, i) => new File(
         [b], blobs.length > 1 ? `my-bake-${i + 1}.png` : 'my-bake.png',
         { type: 'image/png' },
@@ -731,21 +749,24 @@ export default function ShareCard({
       // Multi-file share is native, and Instagram reads it as a carousel —
       // which is the whole reason overflow paginates rather than producing
       // one tall image a feed would crop.
-      if (typeof navigator !== 'undefined' && navigator.share &&
+      if (!downloadOnly && typeof navigator !== 'undefined' && navigator.share &&
           navigator.canShare && navigator.canShare({ files })) {
         await navigator.share({ files, title: customTitle });
+        setExportResult('shared');
       } else {
         files.forEach(f => {
           const url = URL.createObjectURL(f);
           const a = document.createElement('a');
           a.href = url; a.download = f.name; a.click();
-          URL.revokeObjectURL(url);
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
         });
+        setExportResult('downloaded');
       }
       setSharedOk(true);
       setTimeout(() => setSharedOk(false), 4000);
-    } catch (e) { console.error('share error:', e); }
-    setGenerating(false);
+    } catch (e) {
+      if (!(e instanceof DOMException && e.name === 'AbortError')) setExportResult('error');
+    } finally { setGenerating(false); }
   }
 
   async function handleCopyImage() {
@@ -830,7 +851,7 @@ export default function ShareCard({
         <p style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)', margin: 0 }}>
           {l === 'fr' ? 'Partager cette fournée' : 'Share this bake'}
         </p>
-        <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '17px', width: '44px', height: '44px', marginRight: '-10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+        <button onClick={onClose} aria-label={l === 'fr' ? 'Fermer' : 'Close'} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '17px', width: '44px', height: '44px', marginRight: '-10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
       </div>
 
       {/* Scrollable body — single column on phones, preview left + sticky
@@ -938,6 +959,7 @@ export default function ShareCard({
             <div>
               <label style={labelStyle}>{l === 'fr' ? 'Titre' : 'Title'}</label>
               <input
+                aria-label={l === 'fr' ? 'Titre' : 'Title'}
                 value={customTitle}
                 onChange={e => setCustomTitle(e.target.value)}
                 placeholder={styleName}
@@ -949,6 +971,7 @@ export default function ShareCard({
                 {l === 'fr' ? 'PAR (optionnel)' : 'BAKED BY (optional)'}
               </label>
               <input
+                aria-label={l === 'fr' ? 'Votre nom (facultatif)' : 'Your name (optional)'}
                 value={bakerName}
                 onChange={e => setBakerName(e.target.value)}
                 placeholder={l === 'fr' ? 'Votre nom' : 'Your name'}
@@ -967,10 +990,10 @@ export default function ShareCard({
         {/* Shape. One question, one label — the Template/Size pair both read
             "Format" in French and one silently rewrote the other. */}
         <div>
-          <div style={sectionLbl}>{l === 'fr' ? 'Destination' : 'Where it is going'}</div>
+          <div style={sectionLbl}>{l === 'fr' ? 'Format de l’image' : 'Image format'}</div>
           <div style={{ display: 'flex', gap: '8px' }}>
             {([
-              ['post',   'Post 4:5'],
+              ['post', l === 'fr' ? 'Portrait 4:5' : 'Portrait 4:5'],
               ['square', l === 'fr' ? 'Carré 1:1' : 'Square 1:1'],
               ['story',  'Story 9:16'],
             ] as const).map(([key, lbl]) => (
@@ -1116,7 +1139,7 @@ export default function ShareCard({
                   <circle cx="12" cy="12" r="3.5" />
                 </svg>
                 <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', textAlign: 'center' }}>
-                  {l === 'fr' ? 'Pellicule' : 'Camera roll'}
+                  {l === 'fr' ? 'Ajouter des photos' : 'Add photos'}
                 </span>
                 <input
                   type="file"
@@ -1140,23 +1163,25 @@ export default function ShareCard({
 
               {allPhotos.length === 0 && (
                 <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', fontStyle: 'italic', alignSelf: 'center' }}>
-                  {l === 'fr' ? 'Aucune photo — choisissez depuis la pellicule' : 'No session photos — pick from camera roll'}
+                  {l === 'fr' ? 'Ajoutez vos photos si vous le souhaitez.' : 'Add your photos if you like.'}
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Caption */}
-        <div>
+        {/* Caption is optional; the image preview remains the main task. */}
+        <details>
+          <summary style={{ minHeight: '44px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>{l === 'fr' ? 'Ajouter une légende' : 'Add a caption'}</summary>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <div style={{ ...sectionLbl, marginBottom: 0 }}>{l === 'fr' ? 'Légende' : 'Caption'}</div>
             <span style={{
               fontFamily: 'var(--font-ui)', fontSize: '11px',
               color: 'var(--smoke)', opacity: 0.4,
-            }}>editable</span>
+            }}>{l === 'fr' ? 'Modifiable' : 'Editable'}</span>
           </div>
           <textarea
+            aria-label={l === 'fr' ? 'Légende' : 'Caption'}
             value={editableCaption}
             onChange={e => setEditableCaption(e.target.value)}
             rows={9}
@@ -1188,7 +1213,7 @@ export default function ShareCard({
           >
             {copied ? (l === 'fr' ? 'Copié ! ✓' : 'Copied! ✓') : (l === 'fr' ? 'Copier la légende' : 'Copy caption')}
           </button>
-        </div>
+        </details>
 
         </div>{/* /Controls column */}
 
@@ -1203,7 +1228,7 @@ export default function ShareCard({
         background: 'var(--warm)',
       }}>
         <button
-          onClick={handleShare}
+          onClick={() => handleShare()}
           disabled={generating}
           style={{
             width: '100%', padding: '16px',
@@ -1216,8 +1241,11 @@ export default function ShareCard({
         >
           {generating
             ? (l === 'fr' ? 'Génération...' : 'Generating...')
-            : (l === 'fr' ? 'Partager' : 'Share this bake')}
+            : (l === 'fr' ? (pageCount > 1 ? 'Partager les images' : 'Partager l’image') : (pageCount > 1 ? 'Share images' : 'Share image'))}
         </button>
+        <details style={{ marginTop: '8px' }}>
+          <summary style={{ minHeight: '44px', display: 'list-item', cursor: 'pointer', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontSize: '13px' }}>{l === 'fr' ? 'Télécharger ou copier' : 'Download or copy'}</summary>
+          <button disabled={generating} onClick={() => handleShare(true)} style={{ width: '100%', minHeight: '44px', border: '1px solid var(--border)', borderRadius: '12px', background: 'transparent', color: 'var(--char)', cursor: 'pointer' }}>{l === 'fr' ? (pageCount > 1 ? 'Télécharger les images' : 'Télécharger l’image') : (pageCount > 1 ? 'Download images' : 'Download image')}</button>
         {canCopyImage && (
           <button
             onClick={handleCopyImage}
@@ -1240,19 +1268,20 @@ export default function ShareCard({
               : (l === 'fr' ? 'Copier l’image' : 'Copy image to clipboard')}
           </button>
         )}
-        <p style={{
+        </details>
+        <p role="status" style={{
           fontFamily: 'var(--font-ui)', fontSize: '11px',
           color: sharedOk ? 'var(--sage)' : 'var(--smoke)', textAlign: 'center',
           marginTop: '8px', opacity: sharedOk ? 1 : 0.6,
           transition: 'color 0.2s ease',
         }}>
-          {sharedOk
-            ? (l === 'fr'
-                ? 'Image enregistrée ✓ — collez-la dans votre post'
-                : 'Image saved ✓ — drop it into your post')
-            : (l === 'fr'
-                ? 'Partage natif iOS/Android · Téléchargement PNG sur desktop'
-                : 'Native share on iOS/Android · Downloads PNG on desktop')}
+          {exportResult === 'error'
+            ? (l === 'fr' ? 'L’export a échoué. Réessayez ou choisissez Télécharger.' : 'Export failed. Try again or choose Download.')
+            : exportResult === 'shared'
+              ? (l === 'fr' ? 'Images partagées.' : 'Images shared.')
+              : exportResult === 'downloaded'
+                ? (l === 'fr' ? 'Téléchargement lancé.' : 'Download started.')
+                : (l === 'fr' ? 'Si le partage n’est pas disponible, les images seront téléchargées.' : 'If sharing is unavailable, your images will download.')}
         </p>
       </div>
 
@@ -1267,7 +1296,7 @@ export default function ShareCard({
             <p style={{ margin: 0, fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--char)' }}>
               {l === 'fr' ? 'Ce que dit la carte' : 'What the card says'}
             </p>
-            <button onClick={() => setShowLines(false)} aria-label="Done" style={{
+            <button onClick={() => setShowLines(false)} aria-label={l === 'fr' ? 'Terminé' : 'Done'} style={{
               background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)',
               fontSize: '17px', width: '44px', height: '44px',
             }}>✕</button>
@@ -1418,7 +1447,7 @@ export default function ShareCard({
                 ? (l === 'fr' ? 'Photo principale' : 'Hero photo')
                 : (l === 'fr' ? `Photo ${cropSlot + 1} sur ${photoCount}` : `Photo ${cropSlot + 1} of ${photoCount}`)}
             </p>
-            <button onClick={() => setCropSlot(null)} aria-label="Done" style={{
+            <button onClick={() => setCropSlot(null)} aria-label={l === 'fr' ? 'Terminé' : 'Done'} style={{
               background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)',
               fontSize: '17px', width: '44px', height: '44px',
             }}>✕</button>
@@ -1561,4 +1590,3 @@ function CropFrame({ url, aspect, crop, onChange }: {
     </div>
   );
 }
-

@@ -252,6 +252,10 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
 
   return (
     <div style={{ padding: '0 16px 24px' }}>
+      {allPizzas.filter(p => (selectedPizzas[p.id] ?? 0) > 0 && p.preparationSequence).map(p => <details key={p.id} style={{ marginBottom: 12 }}>
+        <summary>{p.name[l]} · {l === 'fr' ? 'Ordre de préparation' : 'Preparation order'}</summary>
+        <p style={{ fontSize: 13, lineHeight: 1.5 }}>{p.preparationSequence?.[l]}</p>
+      </details>)}
 
       {/* Style-specific notes */}
       {styleKey && STYLE_PREP_NOTES[styleKey] && (

@@ -11,6 +11,7 @@ interface Option {
 }
 
 interface DecisionListProps {
+  layout?: 'compact' | 'lateral' | 'photo';
   options: Option[];
   selectedId: string;
   onSelect: (id: string) => void;
@@ -22,32 +23,37 @@ interface DecisionListProps {
   infoLabel?: string;
 }
 
-export default function DecisionList({ options, selectedId, onSelect, disabledIds = [], onInfo, infoLabel }: DecisionListProps) {
+export default function DecisionList({ options, selectedId, onSelect, disabledIds = [], onInfo, infoLabel, layout = 'compact' }: DecisionListProps) {
   return (
-    <div style={{ border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
+    <div role="group" style={{ display: 'grid', gap: layout === 'compact' ? 0 : 10, border: layout === 'compact' ? '1px solid var(--border)' : undefined, borderRadius: '16px', overflow: 'hidden' }}>
       {options.map((option, idx) => {
         const isSelected = option.id === selectedId;
         const isDisabled = disabledIds.includes(option.id);
         return (
           <div
             key={option.id}
+            role="button" tabIndex={isDisabled ? -1 : 0} aria-pressed={isSelected} aria-disabled={isDisabled}
+            onKeyDown={e => { if(e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')){e.preventDefault();if(!isDisabled)onSelect(option.id);} }}
             onClick={() => !isDisabled && onSelect(option.id)}
             style={{
               display: 'flex',
+              flexWrap: layout === 'photo' ? 'wrap' : undefined,
+              border: layout === 'compact' ? undefined : `2px solid ${isSelected ? 'var(--terra)' : 'var(--border)'}`,
+              borderRadius: layout === 'compact' ? 0 : 12,
               alignItems: 'center',
               gap: '12px',
               padding: isSelected ? '10px 14px 10px 11px' : '10px 14px',
               minHeight: '62px',
               cursor: isDisabled ? 'default' : 'pointer',
               borderBottom: idx < options.length - 1 ? '1px solid var(--border)' : 'none',
-              borderLeft: isSelected ? '3px solid var(--gold)' : 'none',
+              borderLeft: layout === 'compact' ? (isSelected ? '3px solid var(--gold)' : 'none') : undefined,
               background: isSelected ? 'rgba(156, 130, 72,0.08)' : 'white',
               opacity: isDisabled ? 0.5 : 1,
               pointerEvents: isDisabled ? 'none' : undefined,
             }}
           >
             <div style={{
-              width: '56px', height: '56px',
+              width: layout === 'photo' ? '100%' : layout === 'lateral' ? 100 : 56, height: layout === 'photo' ? 160 : layout === 'lateral' ? 100 : 56,
               borderRadius: option.thumbnailBg ? '50%' : '8px',
               overflow: 'hidden', flexShrink: 0,
               background: option.thumbnailBg ?? '#2B2420',
@@ -76,11 +82,11 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
               </div>
               <div style={{
                 fontFamily: 'var(--font-ui)',
-                fontSize: '11px',
+                fontSize: layout === 'compact' ? '11px' : '13px',
                 color: 'var(--smoke)',
                 overflow: 'hidden',
                 display: '-webkit-box',
-                WebkitLineClamp: 2,
+                WebkitLineClamp: layout === 'compact' ? 2 : 4,
                 WebkitBoxOrient: 'vertical' as const,
                 lineHeight: 1.35,
               }}>
