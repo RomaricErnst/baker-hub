@@ -26,6 +26,18 @@ const PIZZA_FAV_BY_STYLE: Record<string, string[]> = {
   pan:          ['generic_bread', 'ka_bread', 'gold_medal_bread', 'caputo_americana'],
 };
 const CROWD_FAV_IDS = PIZZA_FAV_BY_STYLE.neapolitan;
+const BREAD_FAV_BY_STYLE: Record<string, string[]> = {
+  pain_campagne: ['francine_t65', 'foricher_t65', 'celnat_t80_bio', 'ka_bread'],
+  pain_levain: ['foricher_t65', 'ka_bread', 'celnat_t80_bio', 'francine_t65'],
+  baguette: ['francine_t65', 'foricher_t65', 'gmp_t65', 'francine_bio_t55'],
+  pain_complet: ['francine_complete', 'doves_wholemeal', 'bobs_whole_wheat', 'shipton_wholemeal'],
+  pain_seigle: ['doves_farm_rye', 'bobs_dark_rye', 'shipton_rye', 'ka_organic_medium_rye'],
+  brioche: ['gruau_dor_gruau_t45', 'gmp_t45_gruau', 'caputo_manitoba', 'ka_bread'],
+  pain_mie: ['francine_bio_t55', 'ka_bread', 'francine_t65', 'gmp_t65'],
+  pain_viennois: ['gruau_dor_gruau_t45', 'gmp_t45_gruau', 'ka_bread', 'francine_bio_t55'],
+  fougasse: ['francine_t65', 'foricher_t65', 'gmp_t65', 'francine_bio_t55'],
+};
+
 
 // ── Bread recommendations by style ───────────────
 const BREAD_REC_BY_STYLE: Record<string, string[]> = {
@@ -671,7 +683,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
           type list and the W field all fold away — the page then holds the
           choice and the invitation to blend, nothing else. */}
       {pickerOpen && <>
-        <FlourCatalogueBrowser onChoose={selectDBEntry} recommendedIds={PIZZA_FAV_BY_STYLE[styleKey ?? ''] ?? CROWD_FAV_IDS} onGeneric={()=>setRoad(road==='type'?null:'type')} onScan={()=>setRoad(road==='scan'?null:'scan')}/>
+        <FlourCatalogueBrowser onChoose={selectDBEntry} recommendedIds={bakeType === 'bread' ? (BREAD_FAV_BY_STYLE[styleKey ?? ''] ?? BREAD_FAV_BY_STYLE.pain_campagne) : (PIZZA_FAV_BY_STYLE[styleKey ?? ''] ?? CROWD_FAV_IDS)} onGeneric={()=>setRoad(road==='type'?null:'type')} onScan={()=>setRoad(road==='scan'?null:'scan')}/>
         {road==='scan'&&<FlourScan onResult={result=>{const key:FlourKey=result.w>=270?'strong00':'pizza00';onBlendChange({...blend,flour1:key,wOverride:result.w,w1:result.w,w1Source:'photo',brandProduct:result.name,brandKey:undefined});setRoad(null);setPickerOpen(false);}} onCancel={()=>setRoad(null)}/>}
         {road==='type'&&<section aria-label={isFr?'Type de farine':'Flour type'} style={{marginTop:16}}><h3>{isFr?'Choisir un type':'Choose a type'}</h3><p>{isFr?'Valeurs indicatives, pas les caractéristiques d’une marque.':'Typical values, not a brand’s measured specifications.'}</p><div style={{display:'flex',flexWrap:'wrap',gap:8}}>{QUICK_TYPES.map(t=><button type="button" key={t.label} onClick={()=>applyQuickType(t.label,t.w)} style={{minHeight:44,padding:10}}>{t.label} · W ~{t.w}</button>)}</div><label style={{display:'block',marginTop:12}}>{isFr?'Ou saisir la force W indiquée sur le sac':'Or enter the W printed on your bag'}<input type="number" min={50} max={500} value={manualQWText} onChange={e=>setManualQWText(e.target.value)} style={{minHeight:44,width:'100%'}}/></label><button type="button" disabled={!Number.isFinite(Number(manualQWText))||Number(manualQWText)<50||Number(manualQWText)>500} onClick={()=>{const w=Number(manualQWText);onBlendChange({...blend,flour1:w>=270?'strong00':'pizza00',wOverride:w,w1:w,w1Source:'exact',brandProduct:isFr?'Farine personnalisée':'Custom flour',brandKey:undefined});setPickerOpen(false);}}>{isFr?'Utiliser cette force':'Use this strength'}</button></section>}
       </>}

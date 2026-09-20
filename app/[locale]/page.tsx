@@ -3092,7 +3092,7 @@ export default function Home() {
       </div>
 
       {/* ── Main content ───────────────────── */}
-      <div style={{ maxWidth: '680px', margin: '0 auto', padding: `clamp(1rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.5rem) ${bakeType ? 'calc(80px + env(safe-area-inset-bottom, 0px))' : 'clamp(1rem, 3vw, 1.5rem)'}` }}>
+      <div style={{ maxWidth: '680px', margin: '0 auto', padding: `${bakeType ? '0' : 'clamp(1rem, 3vw, 1.5rem)'} clamp(1rem, 3vw, 1.5rem) ${bakeType ? 'calc(80px + env(safe-area-inset-bottom, 0px))' : 'clamp(1rem, 3vw, 1.5rem)'}` }}>
 
         {/* ── Nav #6: welcome-back inline banner (was a fixed toast that
              covered tap targets above the bottom nav) ── */}

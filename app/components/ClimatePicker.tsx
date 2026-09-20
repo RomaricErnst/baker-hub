@@ -83,11 +83,7 @@ export default function ClimatePicker({
           style={{ width: '100%', accentColor: kind === 'fridge' ? '#6A7FA8' : 'var(--terra)', cursor: 'pointer', height: 4 }}
         />
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 5, fontSize: 11, color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
-          {kind === 'kitchen' ? (
-            <><span>{tempC(min, units)} {fr ? 'frais' : 'cool'}</span><span>{tempC(22, units)} {fr ? 'idéal' : 'ideal'}</span><span>{tempC(30, units)} {fr ? 'chaud' : 'hot'}</span><span>{tempC(max, units)}</span></>
-          ) : (
-            <><span>{tempC(min, units)}</span><span>{tempC(6, units)} {fr ? 'standard' : 'standard'}</span><span>{tempC(8, units)} {fr ? 'chaud' : 'warm'}</span><span>{tempC(max, units)}</span></>
-          )}
+          <span>{tempC(min, units)}</span><span>{tempC(max, units)}</span>
         </div>
         <p style={{ margin: '7px 0 0', fontSize: 12, color: 'var(--smoke)', lineHeight: 1.45 }}>
           {kind === 'kitchen'
@@ -96,7 +92,7 @@ export default function ClimatePicker({
         </p>
         {kind === 'fridge' && fridgeTemp > 8 && (
           <p style={{ margin: '8px 0 0', padding: '8px 10px', background: '#EEF2FA', border: '1px solid #C4CDE0', borderRadius: 9, fontSize: 12, color: '#5A7090', lineHeight: 1.45 }}>
-            {fr ? <>Frigo à {Math.round(fridgeTemp)} °C : la fermentation restera plus active qu’à 6 °C.</> : <>At {Math.round(fridgeTemp)} °C, fermentation stays more active than at the 6 °C standard.</>}
+            {fr ? <>Frigo à {Math.round(fridgeTemp)} °C : la fermentation restera plus active qu’à 6 °C.</> : <>At {Math.round(fridgeTemp)} °C, fermentation stays more active than at 6 °C.</>}
           </p>
         )}
       </section>
