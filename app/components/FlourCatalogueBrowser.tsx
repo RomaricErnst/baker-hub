@@ -1,11 +1,11 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import {useLocale} from 'next-intl';
-import {FLOUR_DB,type FlourEntry} from '@/lib/flourDatabase';
+import {FLOUR_DB,FLOUR_PHOTO_PROVENANCE,type FlourEntry} from '@/lib/flourDatabase';
 import {FLOUR_DATA,type FlourKey} from '../data';
 
 export function flourBehaviour(entry:FlourEntry):FlourKey {
- const types:Record<string,FlourKey>={bread:'bread',T65:'bread',T55:'allpurpose',all_purpose:'allpurpose',allpurpose:'allpurpose',wholemeal:'wholemeal',whole_wheat:'wholemeal',rye:'rye',semolina:'semolina',manitoba:'manitoba'};
+ const types:Record<string,FlourKey>={bread:'bread',T65:'bread',T55:'allpurpose',T45:'allpurpose',T80:'bread',T110:'wholemeal',T150:'wholemeal',high_gluten:'manitoba',all_purpose:'allpurpose',allpurpose:'allpurpose',wholemeal:'wholemeal',whole_wheat:'wholemeal',rye:'rye',semolina:'semolina',manitoba:'manitoba'};
  return types[entry.type]||((entry.w??0)>=270?'strong00':'pizza00');
 }
 export function flourEngineW(entry:FlourEntry){return entry.w??FLOUR_DATA[flourBehaviour(entry)].w;}
@@ -21,6 +21,7 @@ export function flourNumbers(f:FlourEntry,fr:boolean){
  return `${strength} · ${fr?'Protéines':'Protein'} ${protein}`;
 }
 export function FlourProductButton({entry,onChoose,selected=false}:{entry:FlourEntry;onChoose:()=>void;selected?:boolean}){
+ const provenance=(FLOUR_PHOTO_PROVENANCE as Record<string,{source?:string;credit?:{author:string;license:string;licenseUrl:string;sourceUrl:string};modifications?:string}>)[entry.id];
  const fr=useLocale()==='fr',dialog=useRef<HTMLDialogElement>(null),trigger=useRef<HTMLButtonElement>(null),[open,setOpen]=useState(false);
  useEffect(()=>{if(open)dialog.current?.showModal();else if(dialog.current?.open)dialog.current.close();},[open]);
  return <><button ref={trigger} type="button" aria-haspopup="dialog" onClick={()=>setOpen(true)} style={{width:'100%',display:'flex',alignItems:'center',gap:14,textAlign:'left',padding:12,minHeight:96,border:'1px solid var(--border)',borderRadius:12,background:selected?'#f4ecdf':'var(--warm)',color:'var(--char)',marginBottom:8}}>
@@ -32,6 +33,7 @@ export function FlourProductButton({entry,onChoose,selected=false}:{entry:FlourE
  {entry.hydration&&<p>{fr?'Hydratation indicative':'Indicative hydration'} · {entry.hydration[0]}–{entry.hydration[1]}%</p>}
  {entry.w==null&&<p>{fr?`Le calcul utilisera une estimation de type W ~${flourEngineW(entry)}, pas une mesure de cette farine.`:`The calculation will use a type estimate W ~${flourEngineW(entry)}, not a measurement of this flour.`}</p>}
  <button type="button" onClick={()=>{setOpen(false);onChoose();}} style={{width:'100%',minHeight:48,background:'var(--terra)',color:'white',border:0,borderRadius:10}}>{entry.w==null?(fr?'Utiliser avec l’estimation':'Use with type estimate'):(fr?'Choisir cette farine':'Use this flour')}</button>
+ {provenance?.credit&&<p style={{fontSize:11,marginTop:12,color:'var(--smoke)'}}><a href={provenance.credit.sourceUrl} target="_blank" rel="noreferrer">{provenance.credit.author}</a> · <a href={provenance.credit.licenseUrl} target="_blank" rel="noreferrer">{provenance.credit.license}</a><br/>{fr?'Image redimensionnée et convertie en WebP.':'Image resized and converted to WebP.'}</p>}
  </dialog></>;
 }
 export default function FlourCatalogueBrowser({onChoose,recommendedIds,onGeneric,onScan}:{onChoose:(f:FlourEntry)=>void;recommendedIds:string[];onGeneric:()=>void;onScan:()=>void}){
