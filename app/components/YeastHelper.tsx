@@ -223,7 +223,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
           {/* "How you'll leaven the dough" only restated the title, and the
               line it cost was the difference between this page fitting on one
               screen and not. Each option already carries its own tagline. */}
-          <DecisionList
+          <DecisionList layout="lateral"
             options={orderedOptions.map(opt => ({
               ...opt,
               tagline: opt.id === 'sourdough' && sourdoughRecommended

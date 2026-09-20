@@ -1,6 +1,17 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLocale } from 'next-intl';
+import { FLOUR_DB } from '@/lib/flourDatabase';
+
+export function matchScannedFlour(name: string) {
+  const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const matches = FLOUR_DB.filter(entry => entry.brand && normalize(`${entry.brand} ${entry.name}`) === normalize(name));
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+export function validScannedValues(w: number, protein: number) {
+  return Number.isFinite(w) && w >= 50 && w <= 500 && Number.isFinite(protein) && protein > 0 && protein <= 30;
+}
 
 interface FlourScanProps {
   onResult: (result: { w: number; protein: number; name: string }) => void;
@@ -21,13 +32,17 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
     w: number; protein: number; name: string;
     readability: string; confidence: string; source: string; note: string;
   } | null>(null);
+  const requestRef = useRef<AbortController | null>(null);
+  useEffect(() => () => requestRef.current?.abort(), []);
+  function cancel() { requestRef.current?.abort(); onCancel(); }
+  const backButton = <button type="button" onClick={cancel} style={{minHeight:44,padding:'8px 0',background:'none',border:0,color:'var(--terra)',fontSize:16,cursor:'pointer'}}>{isFr ? '← Retour aux farines' : '← Back to flours'}</button>;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  async function analyzeImage(base64: string, mediaType: string) {
+  async function analyzeImage(base64: string, mediaType: string, signal: AbortSignal) {
     let text = '';
     try {
       const response = await fetch('/api/flour-scan', {
-        method: 'POST',
+        method: 'POST', signal,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ base64, mediaType }),
       });
@@ -35,7 +50,7 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
       const data = await response.json();
       if (!response.ok) {
         const errMsg = data.error ?? 'API error';
-        throw new Error(errMsg);
+        throw new Error(`service: ${errMsg}`);
       }
 
       // Extract text from Anthropic response
@@ -49,7 +64,7 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
       const parsed = JSON.parse(jsonMatch[0]);
 
       // Validate — w and name required, protein optional (default to 12)
-      if (parsed.w != null && Number(parsed.w) > 0 && parsed.name) {
+      if (validScannedValues(Number(parsed.w), Number(parsed.protein ?? 12)) && parsed.name && parsed.readability !== 'unreadable') {
         setExtractedResult({
           w: Number(parsed.w),
           protein: Number(parsed.protein ?? 12),
@@ -64,8 +79,9 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
         throw new Error('Missing required fields in response');
       }
     } catch (err) {
+      if (signal.aborted) return;
       const msg = err instanceof Error ? err.message : String(err);
-      const isBilling = msg.includes('credit') || msg.includes('billing') || msg.includes('balance');
+      const isBilling = msg.includes('service:') || msg.includes('credit') || msg.includes('billing') || msg.includes('balance') || err instanceof TypeError;
       setScanError(isBilling ? 'service' : 'image');
       console.error('FlourScan error:', err, '| Raw API text:', text);
       setScanState('error');
@@ -73,8 +89,15 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
   }
 
   async function handleFile(file: File) {
-    // Convert any image format to JPEG via canvas
-    // This handles HEIC/HEIF from iPhone, AVIF, WebP, etc.
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    requestRef.current = controller;
+    setScanState('analyzing'); setImagePreviewUrl(null);
+    setAdjusting(false); setAdjustedW(null); setAdjustedProtein(null); setExtractedResult(null);
+    try {
+    if (!file.type.startsWith('image/')) throw new Error('Not an image');
+    // Decode supported image formats to JPEG via canvas
+    // Browser-unsupported formats fall through to the retry/back state.
     const dataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => resolve(e.target?.result as string);
@@ -105,13 +128,19 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
       img.src = dataUrl;
     });
 
+    if (controller.signal.aborted) return;
     const base64 = jpeg.split(',')[1];
     setImagePreviewUrl(jpeg);
     setScanState('analyzing');
-    await analyzeImage(base64, 'image/jpeg');
+    await analyzeImage(base64, 'image/jpeg', controller.signal);
+    } catch {
+      if (!controller.signal.aborted) { setScanError('image'); setScanState('error'); }
+    }
   }
 
   function reset() {
+    requestRef.current?.abort();
+    setAdjusting(false); setAdjustedW(null); setAdjustedProtein(null);
     setScanState('upload');
     setImagePreviewUrl(null);
     setExtractedResult(null);
@@ -122,6 +151,8 @@ export default function FlourScan({ onResult, onCancel }: FlourScanProps) {
     return (
       <div>
         <div
+          role="button" tabIndex={0}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
           onClick={() => fileInputRef.current?.click()}
           onDragOver={e => e.preventDefault()}
           onDrop={e => {
@@ -167,16 +198,7 @@ style={{ display: 'none' }}
             if (file) handleFile(file);
           }}
         />
-        <button
-          onClick={onCancel}
-          style={{
-            marginTop: '12px', background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--smoke)', fontSize: '12px', fontFamily: 'var(--font-ui)',
-            textDecoration: 'underline', textUnderlineOffset: '2px', padding: '.2rem 0',
-          }}
-        >
-          ← Back
-        </button>
+        {backButton}
       </div>
     );
   }
@@ -185,6 +207,7 @@ style={{ display: 'none' }}
   if (scanState === 'analyzing') {
     return (
       <div>
+        {backButton}
         {imagePreviewUrl && (
           <img
             src={imagePreviewUrl}
@@ -215,10 +238,11 @@ style={{ display: 'none' }}
 
   // ── STATE 3: Result ─────────────────────────
   if (scanState === 'result' && extractedResult) {
-    const isDatabase = extractedResult.confidence === 'high' && extractedResult.source === 'database';
+    const matchedEntry = matchScannedFlour(extractedResult.name);
+    const isDatabase = !!matchedEntry;
     const isEstimated = !isDatabase;
-    const displayW = adjustedW ?? extractedResult.w;
-    const displayProtein = adjustedProtein ?? extractedResult.protein;
+    const displayW = matchedEntry?.w ?? adjustedW ?? extractedResult.w;
+    const displayProtein = matchedEntry?.protein ?? adjustedProtein ?? extractedResult.protein;
 
     return (
       <div>
@@ -243,7 +267,7 @@ style={{ display: 'none' }}
                 background: 'rgba(107,122,90,0.1)', border: '1px solid rgba(107,122,90,0.25)',
                 borderRadius: '16px', fontSize: '12px', color: '#4A7A3A', lineHeight: 1.4,
               }}>
-                ✓ Matched in our flour database
+                {isFr ? '✓ Produit retrouvé dans le catalogue' : '✓ Product found in the catalogue'}
               </div>
             ) : (
               <div style={{
@@ -252,8 +276,8 @@ style={{ display: 'none' }}
                 borderRadius: '16px', fontSize: '12px', color: '#6A5A10', lineHeight: 1.4,
               }}>
                 {isFr
-                  ? 'Valeurs estimées d’après le type de sachet — correct pour la plupart des farines. Ajustez ci-dessous si votre sachet indique d’autres chiffres.'
-                  : `Values estimated from bag type — looks right for most ${extractedResult.name.includes('pizza') ? 'pizza ' : ''}flours. Adjust below if your bag shows different numbers.`}
+                  ? 'Aucun produit exact retrouvé. Confirmez le type de farine à l’étape suivante ; ces valeurs restent estimées.'
+                  : 'No exact product found. Choose the flour type next; these values remain estimates.'}
               </div>
             )}
 
@@ -266,7 +290,7 @@ style={{ display: 'none' }}
                   borderRadius: '20px', padding: '.2rem 8px',
                   border: '1px solid rgba(107, 68, 35,0.2)',
                 }}>
-                  W {displayW}
+                  W {matchedEntry && !matchedEntry.wPublished ? '~' : ''}{displayW}
                 </span>
                 <span style={{
                   fontFamily: 'var(--font-ui)', fontSize: '12px',
@@ -345,8 +369,10 @@ style={{ display: 'none' }}
           </div>
         </div>
 
+        {backButton}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button
+            disabled={!validScannedValues(displayW, displayProtein)}
             onClick={() => onResult({ ...extractedResult, w: displayW, protein: displayProtein })}
             style={{
               flex: 2, padding: '12px 16px', border: 'none',
@@ -355,7 +381,7 @@ style={{ display: 'none' }}
               cursor: 'pointer',
             }}
           >
-            {isFr ? 'Utiliser cette farine →' : 'Use this flour →'}
+            {isDatabase ? (isFr ? 'Utiliser cette farine →' : 'Use this flour →') : (isFr ? 'Choisir le type de farine →' : 'Choose flour type →')}
           </button>
           <button
             onClick={reset}
@@ -389,6 +415,7 @@ style={{ display: 'none' }}
       <div style={{ fontSize: '13px', color: 'var(--smoke)', marginBottom: '16px', lineHeight: 1.5 }}>
         {isFr ? 'Réessayez avec une photo plus nette, bien éclairée, montrant l’avant du sachet.' : 'Try a clearer photo with good lighting, showing the front of the bag.'}
       </div>
+      {backButton}
       <button
         onClick={reset}
         style={{

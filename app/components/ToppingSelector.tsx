@@ -773,7 +773,7 @@ interface ShoppingItem {
   hardToFind?: boolean;
   goodEnough?: { name: Locale; note?: Locale };
   compromise?: { name: Locale; note?: Locale };
-  localSwap?: Partial<Record<string, { name: Locale }>>;
+  localSwap?: Partial<Record<string, { name: Locale; note?: Locale }>>;
   whereToFind?: import('../lib/toppingTypes').WhereToFind;
   forPizzas: string[];
 }
@@ -869,6 +869,54 @@ const LOCATIONS = [
   { key: 'international',label: 'International' },
 ];
 
+export function ingredientHelpData(item: Pick<ShoppingItem, 'goodEnough' | 'compromise' | 'localSwap' | 'whereToFind'>, location: string, locale: string) {
+  const l = locale === 'fr' ? 'fr' : 'en';
+  const seen = new Set<string>();
+  const alternatives = [item.goodEnough, item.compromise, item.localSwap?.[location]].flatMap(option => {
+    const name = (option?.name[l] || option?.name.en || '').trim();
+    if (!name || seen.has(name.toLowerCase())) return [];
+    seen.add(name.toLowerCase());
+    return [{name, note:option?.note?.[l] || option?.note?.en || ''}];
+  });
+  const where = item.whereToFind?.[location as import('../lib/toppingTypes').ShoppingContext];
+  const shops = (where?.shops ?? []).filter(value => value.trim());
+  const online = (where?.online ?? []).filter(value => value.trim());
+  const links = ((where as (typeof where & {links?: Array<{label:string | Locale;url:string}>}))?.links ?? [])
+    .map(link => ({...link,label:typeof link.label === 'string' ? link.label : link.label?.[l] || link.label?.en || ''}))
+    .filter(link => link.label.trim() && /^https:\/\//.test(link.url));
+  const hasWhere = shops.length + online.length + links.length > 0;
+  return {alternatives, shops, online, links, note:shoppingNoteText(where?.note,l), hasWhere,
+    available:alternatives.length > 0 || hasWhere,
+    label:alternatives.length ? 'Alternatives' : l === 'fr' ? 'Où le trouver' : 'Where to find it'};
+}
+
+export function IngredientShoppingHelp({item,location,locale,onLocationChange,onBack}: {
+  item: ShoppingItem; location:string; locale:string; onLocationChange:(value:string)=>void; onBack:()=>void;
+}) {
+  const l = locale === 'fr' ? 'fr' : 'en';
+  const help = ingredientHelpData(item,location,l);
+  return <section aria-label={item.name[l] || item.name.en} style={{padding:'16px 12px',fontFamily:'var(--font-ui)'}}>
+    <button type="button" autoFocus onClick={onBack} style={SECONDARY_CTA}>{l === 'fr' ? 'Retour aux courses' : 'Back to shopping list'}</button>
+    <h1 style={{fontFamily:'Georgia,serif',fontSize:30}}>{item.name[l] || item.name.en}</h1>
+    <label style={{display:'grid',gap:8,marginBottom:24}}>{l === 'fr' ? 'Pays des courses' : 'Shopping location'}
+      <select value={location} onChange={event=>onLocationChange(event.target.value)} style={{minHeight:44,padding:10,border:'1px solid var(--border)',borderRadius:10,background:'var(--cream)'}}>
+        {LOCATIONS.map(loc=><option key={loc.key} value={loc.key}>{loc.label}</option>)}
+      </select>
+    </label>
+    {help.alternatives.length > 0 && <><h2>Alternatives</h2>
+      <p style={{fontSize:13,color:'var(--smoke)'}}>{l === 'fr' ? 'Suggestions uniquement : votre liste de courses reste inchangée.' : 'Suggestions only — your shopping list stays unchanged.'}</p>
+      {help.alternatives.map(option=><div key={option.name} style={{padding:'14px 0',borderBottom:'1px solid var(--border)'}}><strong>{option.name}</strong>{option.note && <p>{option.note}</p>}</div>)}
+    </>}
+    {help.hasWhere && <><h2>{l === 'fr' ? 'Où chercher' : 'Where to look'}</h2>
+      {help.shops.length > 0 && <p>{help.shops.join(' · ')}</p>}
+      {help.online.length > 0 && <p>{help.online.join(' · ')}</p>}
+      {help.links.map(link=><p key={link.url}><a href={link.url} target="_blank" rel="noopener noreferrer">{link.label} ↗</a></p>)}
+      {help.note && <p>{help.note}</p>}
+    </>}
+    {!help.available && <p>{l === 'fr' ? 'Pas encore de suggestion pour ce pays.' : 'No suggestions for this location yet.'}</p>}
+  </section>;
+}
+
 function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onGoPrep, onGoPizzas }: {
   qtys: Record<string, number>;
   locale: string;
@@ -880,7 +928,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 }) {
   const l = locale as 'en' | 'fr';
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
-  const [expandedSubs, setExpandedSubs] = useState<Record<string, boolean>>({});
+  const [helpIngredientId, setHelpIngredientId] = useState<string | null>(null);
   const [shoppingLocation, setShoppingLocation] = useState<string>('international');
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   useEffect(() => { const sync = (event: Event) => setShoppingLocation((event as CustomEvent<string>).detail); window.addEventListener('bh-shopping-location',sync); return () => window.removeEventListener('bh-shopping-location',sync); }, []);
@@ -914,10 +962,6 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
   function toggleTick(id: string) {
     setTicked(prev => ({ ...prev, [id]: !prev[id] }));
-  }
-
-  function toggleSub(id: string) {
-    setExpandedSubs(prev => ({ ...prev, [id]: !prev[id] }));
   }
 
   function setLocation(loc: string) {
@@ -1050,6 +1094,9 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
     );
   }
 
+  const helpIngredient = sections.flatMap(section => section.items).find(item => item.id === helpIngredientId);
+  if (helpIngredient) return <IngredientShoppingHelp item={helpIngredient} location={shoppingLocation} locale={l} onLocationChange={setLocation} onBack={() => setHelpIngredientId(null)} />;
+
   const currentLocationLabel = LOCATIONS.find(loc => loc.key === shoppingLocation)?.label ?? 'International';
 
   return (
@@ -1153,10 +1200,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
             {section.items.map(item => {
               const name = item.name[l] ?? item.name.en;
               const isTicked = ticked[item.id] ?? false;
-              const isExpanded = expandedSubs[item.id] ?? false;
-              const shops = item.whereToFind?.[shoppingLocation as import('../lib/toppingTypes').ShoppingContext];
-              const hasSubInfo = !!(item.goodEnough || item.compromise || item.localSwap?.[shoppingLocation] || shops);
-              const localNote = item.localSwap?.[shoppingLocation]?.name;
+              const help = ingredientHelpData(item, shoppingLocation, l);
 
               return (
                 <div key={item.id} style={{ borderBottom: '0.5px solid #F0EBE3', background: isTicked ? '#FAFAF8' : '#FDFBF7' }}>
@@ -1182,12 +1226,10 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px' }}>
                         <span
-                          onClick={() => hasSubInfo && toggleSub(item.id)}
                           style={{
                             fontSize: '15px',
                             color: isTicked ? '#B0A89E' : '#2B2420',
                             textDecoration: 'none',
-                            cursor: hasSubInfo ? 'pointer' : 'default',
                             fontFamily: 'var(--font-ui)',
                           }}
                         >
@@ -1195,9 +1237,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                           {item.isCommonPantry && (
                             <span style={{ fontSize: '11px', color: '#8A7F78', marginLeft: '5px', fontStyle: 'italic' }}>{l === 'fr' ? 'placard' : 'pantry'}</span>
                           )}
-                          {hasSubInfo && (
-                            <span style={{ fontSize: '11px', color: '#C8C0B8', marginLeft: '4px' }}>{isExpanded ? '▲' : '▼'}</span>
-                          )}
+
                         </span>
                         <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)', flexShrink: 0 }}>
                           {item.totalAmount && item.unit ? formatQty(item.totalAmount, item.unit, locale) : ''}
@@ -1208,21 +1248,11 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                         <div style={{ fontSize: '11px', color: '#A09890', marginTop: '1px' }}>{item.qtyNote}</div>
                       )}
 
-                      {hasSubInfo && <button type="button" onClick={() => toggleSub(item.id)} aria-expanded={isExpanded}
-                        style={{ background: 'none', border: '1px solid #E0D8CF', borderRadius: 8, padding: '7px 10px', marginTop: 6, cursor: 'pointer' }}>
-                        {l === 'fr' ? 'Alternatives et magasins' : 'Alternatives & shops'}
+                      {help.available && <button type="button" onClick={() => setHelpIngredientId(item.id)}
+                        aria-label={`${help.label} · ${name}`}
+                        style={{ background: 'none', border: '1px solid #E0D8CF', borderRadius: 8, minHeight:44, padding: '7px 10px', marginTop: 6, cursor: 'pointer' }}>
+                        {help.label}
                       </button>}
-                      {hasSubInfo && isExpanded && <div style={{ marginTop: 8, padding: 10, background: '#F0EBE0', borderRadius: 10 }}>
-                        {[item.goodEnough, item.compromise].filter(Boolean).map((option, index) => <div key={index} style={{ marginBottom: 6, fontSize: 12 }}>
-                          <strong>{option!.name[l]}</strong>{option!.note && <p style={{ margin: '3px 0' }}>{option!.note[l]}</p>}
-                        </div>)}
-                        {localNote && <p style={{ fontSize: 12 }}>{localNote[l]}</p>}
-                        {shops && <div style={{ fontSize: 12 }}><strong>{l === 'fr' ? 'Où chercher' : 'Where to look'}</strong>
-                          <p>{[...(shops.shops ?? []), ...(shops.online ?? [])].join(' · ')}</p>
-                          {shops.note && <p>{shoppingNoteText(shops.note,l)}</p>}
-
-                        </div>}
-                      </div>}
                     </div>
                   </div>
                 </div>

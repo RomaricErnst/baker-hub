@@ -1,6 +1,7 @@
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslations, useLocale } from 'next-intl';
 import type { User } from '@supabase/supabase-js';
 import Header from '../components/Header';
@@ -448,14 +449,15 @@ function SummaryBar({ flow, modeChip }:
 
   return (
     <>
-      <div style={{display:'flex',justifyContent:'flex-end',minHeight:44}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:44}}>
+        <span style={{fontSize:14,fontWeight:600}}>{fr?'Votre recette':'Your recipe'}</span>
         <button type="button" aria-haspopup="dialog" aria-expanded={open} onClick={()=>setOpen(true)}
-          style={{minHeight:44,padding:'0 4px',border:0,background:'transparent',fontSize:12,color:'var(--ash)',cursor:'pointer'}}>
+          style={{minHeight:44,padding:'0 4px',border:0,background:'transparent',fontSize:14,color:'var(--ash)',cursor:'pointer'}}>
           {fr?'Étape':'Step'} {Math.max(1,flow.steps.findIndex(s=>s.id===flow.activeId)+1)}/{flow.steps.length} <span aria-hidden="true">⌄</span>
         </button>
       </div>
 
-      {open && (
+      {open && createPortal(
         <>
           <div onClick={() => setOpen(false)} style={{
             position: 'fixed', inset: 0, background: 'rgba(26,22,18,0.45)', zIndex: 150,
@@ -539,7 +541,7 @@ function SummaryBar({ flow, modeChip }:
             )}
           </div>
         </>
-      )}
+      , document.body)}
     </>
   );
 }
@@ -1035,6 +1037,8 @@ export default function Home() {
   const [manualSugar, setManualSugar]         = useState<number | undefined>(undefined);
   const [manualSalt, setManualSalt]           = useState<number | undefined>(undefined);
   const [targetDoughTemp, setTargetDoughTemp] = useState<number | undefined>(undefined);
+  const [measuredFlourTemp, setMeasuredFlourTemp] = useState<number | undefined>(undefined);
+  const [measuredPrefermentTemp, setMeasuredPrefermentTemp] = useState<number | undefined>(undefined);
   const [flourInFridge, setFlourInFridge]     = useState<boolean>(false);
   const [wastePct, setWastePct]               = useState<number | undefined>(undefined);
 
@@ -1441,6 +1445,7 @@ export default function Home() {
     setManualSalt(session.manualSalt);
     setTargetDoughTemp(session.targetDoughTemp);
     setFlourInFridge(session.flourInFridge);
+    setMeasuredFlourTemp(session.measuredFlourTemp); setMeasuredPrefermentTemp(session.measuredPrefermentTemp);
     setAddSeeds(session.addSeeds ?? false);
     setWastePct(session.wastePct);
     setPriorityOverride(session.priorityOverride);
@@ -1793,12 +1798,12 @@ export default function Home() {
         mixerType as MixerType,
         undefined, undefined, undefined, undefined, undefined, undefined, undefined,
         undefined, undefined, flourInFridge, undefined, undefined,
-        feedToMixH,
+        feedToMixH, undefined, measuredFlourTemp, measuredPrefermentTemp,
       );
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity, schedule, fridgeTemp, yeastType, mixerType, flourInFridge, feedToMixH]);
+  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity, schedule, fridgeTemp, yeastType, mixerType, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, feedToMixH]);
 
   // Recipe with yeast adjusted by appliedMultiplier (large-batch tuning)
   const displayRecipe = recipe;
@@ -1820,7 +1825,7 @@ export default function Home() {
             // the poolish/biga timing-based schedule below doesn't apply to
             // it and was pushing short-window plans up to 45% starter.
             ? undefined
-            : prefOffsetH <= 4 ? 45 : prefOffsetH <= 7 ? 40 : prefOffsetH <= 12 ? 30 : 20
+            : 20
         ),
         manualSalt,
         targetDoughTemp,
@@ -1829,11 +1834,12 @@ export default function Home() {
         prefGoesInFridge,
         feedToMixH,
         prefermentType !== 'none' && prefermentType !== 'levain' && prefOffsetH > 0 ? prefOffsetH : undefined,
+        measuredFlourTemp, measuredPrefermentTemp,
       );
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, wastePct, addSeeds, prefGoesInFridge, feedToMixH]);
+  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, prefGoesInFridge, feedToMixH]);
 
   const advancedDisplayRecipe = advancedRecipe;
 
@@ -1936,7 +1942,7 @@ export default function Home() {
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
       qtyChosen, flourChosen, prefermentChosen,
       manualHydration, manualOil, manualSugar, manualSalt,
-      targetDoughTemp, flourInFridge, wastePct, addSeeds, priorityOverride,
+      targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
       prefGoesInFridge,
       startTime: startTime?.getTime() ?? null,
       eatTime: eatTime?.getTime() ?? null,
@@ -2153,7 +2159,7 @@ export default function Home() {
         pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
         fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
         manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-        flourInFridge, wastePct, addSeeds, priorityOverride,
+        flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
         eatTime: eatTime?.getTime() ?? null,
         blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
         pizzaParty: buildPizzaPartySnapshot(),
@@ -2416,6 +2422,7 @@ export default function Home() {
     setShowResults(false); setActiveStep(1); setHighestStep(1);
     setAdvancedStep(1); setAdvancedHighestStep(1); setFlourBlend({ flour1: bakeType === 'bread' ? 'bread' : 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
+    setManualSalt(undefined); setTargetDoughTemp(undefined); setWastePct(undefined); setFlourInFridge(false); setMeasuredFlourTemp(undefined); setMeasuredPrefermentTemp(undefined); setPrefermentFlourPct(undefined);
     setRecipeGenerated(false); setProtocolStale(false); setActiveTab('setup');
     setReviewMode(false); setSetupOverview(false);
     setModeChosen(false);
@@ -2488,7 +2495,7 @@ export default function Home() {
     setSessionSaved(false);
     setSetupOverview(false);
     if (prefermentType !== 'none' && prefermentFlourPct === undefined) {
-      const timeDefault = prefOffsetH <= 4 ? 45 : prefOffsetH <= 7 ? 40 : prefOffsetH <= 12 ? 30 : 20;
+      const timeDefault = 20;
       setPrefermentFlourPct(timeDefault);
     }
     justGeneratedRef.current = true;
@@ -2624,6 +2631,7 @@ export default function Home() {
     setManualSalt(snap.manualSalt);
     setTargetDoughTemp(snap.targetDoughTemp);
     setFlourInFridge(snap.flourInFridge);
+    setMeasuredFlourTemp(snap.measuredFlourTemp); setMeasuredPrefermentTemp(snap.measuredPrefermentTemp);
     setWastePct(snap.wastePct);
     setPriorityOverride(snap.priorityOverride);
     if (snap.eatTime) setEatTime(shiftD(new Date(snap.eatTime)));
@@ -4033,7 +4041,7 @@ export default function Home() {
                                 pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
                                 fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                                 manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-                                flourInFridge, wastePct, addSeeds, priorityOverride,
+                                flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
                                 eatTime: eatTime?.getTime() ?? null,
                                 blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                                 recipeGenerated, activeTab, modeChosen,
@@ -4218,7 +4226,7 @@ export default function Home() {
                       pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
                       fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                       manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-                      flourInFridge, wastePct, addSeeds, priorityOverride,
+                      flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
                       eatTime: eatTime?.getTime() ?? null,
                       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                       recipeGenerated, activeTab, modeChosen,
@@ -4449,7 +4457,8 @@ export default function Home() {
                   selected={prefermentChosen ? prefermentType : null}
                   onSelect={(pt) => { setPrefermentChosen(true); setPrefermentType(pt); }}
                   flourPct={prefermentFlourPct}
-                  suggestedFlourPct={prefOffsetH <= 4 ? 45 : prefOffsetH <= 7 ? 40 : prefOffsetH <= 12 ? 30 : 20}
+                  suggestedFlourPct={20}
+                  totalFlourGrams={advancedRecipe?.flour ?? (styleKey ? numItems * itemWeight / (1 + (ALL_STYLES[styleKey].hydration + ALL_STYLES[styleKey].salt + ALL_STYLES[styleKey].oil + ALL_STYLES[styleKey].sugar) / 100) : undefined)}
                   onFlourPctChange={setPrefermentFlourPct}
                   styleKey={styleKey ?? undefined}
                   hideTypes={['levain']}
@@ -4519,279 +4528,41 @@ export default function Home() {
               )}
             </StepPage>
 
-            {/* ─── ADV STEP 11: Dial your dough ────── */}
+            {/* Prototype: one clear field per dough setting. */}
             <StepPage flow={customFlow} id={10}>
-              <div>
-                <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginBottom: '16px', lineHeight: 1.5 }}>
-                  {locale === 'fr' ? 'Ces valeurs sont adaptées à votre pâte. Ajustez-les si vous le souhaitez.' : 'These values are tailored to your dough. Adjust them if you wish.'}
-                </div>
-
-                {enrichedDirectOnly && (
-                  <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: 10, background: 'var(--warm)', color: 'var(--smoke)', fontSize: 12, lineHeight: 1.5 }}>
-                    {locale === 'fr'
-                      ? 'Cette formule enrichie fixe l’eau, le sel, le beurre, le lait et les œufs. Les réglages qui ne s’appliquent pas sont masqués.'
-                      : 'This enriched formula fixes the water, salt, butter, milk and eggs. Controls that do not apply are hidden.'}
-                  </div>
-                )}
-                {(() => {
-                  const zone = STYLE_HYDRATION_ZONES[styleKey!] ?? FALLBACK_ZONE;
-                  const sliderMin = zone.min;
-                  const sliderMax = zone.max;
-                  const defaultHyd = Math.round((zone.classicMin + zone.classicMax) / 2);
-                  // Engine recommendation rounded to 0.5% — used as slider default
-                  const engineHyd = advancedRecipe
-                    ? Math.round(advancedRecipe.hydration * 2) / 2
-                    : defaultHyd;
-                  const currentHyd = manualHydration ?? engineHyd;
-                  // Adjustment note: only when engine rec differs from style baseline
-                  // and baker has not manually set a value
-                  const styleBaseHyd = styleKey ? ALL_STYLES[styleKey].hydration : defaultHyd;
-                  const hydDiff = Math.round((engineHyd - styleBaseHyd) * 2) / 2;
-                  const hydAdjustNote: string | null = (manualHydration === undefined && Math.abs(hydDiff) >= 0.5)
-                    ? (() => {
-                        const reasons: string[] = [];
-                        const bp = flourBlend ? computeBlendProfile(flourBlend) : null;
-                        const blendDelta   = bp ? Math.round(bp.hydrationDelta * 2) / 2 : 0;
-                        const climateDelta = (kitchenTemp >= 28 || humidity === 'very-humid') ? -2
-                                           : kitchenTemp <= 18 ? 2 : 0;
-                        const ovenDelta    = Math.round((hydDiff - blendDelta - climateDelta) * 2) / 2;
-                        if (Math.abs(blendDelta)   >= 0.5) reasons.push(`${locale === 'fr' ? 'votre farine' : 'your flour blend'} (${blendDelta > 0 ? '+' : ''}${blendDelta}%)`);
-                        if (Math.abs(climateDelta) >= 0.5) reasons.push(
-                          climateDelta < 0 ? (locale === 'fr' ? 'votre cuisine chaude (−2%)' : 'your warm kitchen (−2%)') : (locale === 'fr' ? 'votre cuisine fraîche (+2%)' : 'your cool kitchen (+2%)')
-                        );
-                        if (Math.abs(ovenDelta)    >= 0.5) reasons.push(`${locale === 'fr' ? 'votre four' : 'your oven'} (${ovenDelta > 0 ? '+' : ''}${ovenDelta}%)`);
-                        if (reasons.length === 0) return null;
-                        return locale === 'fr' ? `Base du style : ${styleBaseHyd}% — ajustée à ${engineHyd}% pour ${reasons.join(' et ')}.` : `${zone.name} starts at ${styleBaseHyd}% — adjusted to ${engineHyd}% for ${reasons.join(' and ')}.`;
-                      })()
-                    : null;
-
-                  function hydrationZoneLabel(h: number): { label: string; color: string; note: string } {
-                    if (h < zone.classicMin) return {
-                      label: t('dialIn.hydration.belowClassic'),
-                      color: '#5A7A98',
-                      note: h < zone.min + 3
-                        ? t('dialIn.hydration.noteStiff')
-                        : t('dialIn.hydration.noteBelowClassic', { name: zone.name }),
-                    };
-                    if (h <= zone.classicMax) return {
-                      label: t('dialIn.hydration.classic'),
-                      color: 'var(--sage)',
-                      note: t('dialIn.hydration.noteClassic', { name: zone.name }),
-                    };
-                    if (h <= zone.advancedMax) return {
-                      label: t('dialIn.hydration.extended'),
-                      color: 'var(--gold)',
-                      note: t('dialIn.hydration.noteExtended'),
-                    };
-                    return {
-                      label: t('dialIn.hydration.advanced'),
-                      color: '#C4624A',
-                      note: h >= zone.max - 2
-                        ? t('dialIn.hydration.noteExtreme')
-                        : t('dialIn.hydration.noteHigh'),
-                    };
-                  }
-
-                  const hZone = hydrationZoneLabel(currentHyd);
-                  return (
-                    <div style={{ display: enrichedDirectOnly ? 'none' : undefined, marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
-                        <label style={{ fontSize: '12px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>
-                          {locale === 'fr' ? 'Hydratation de la pâte' : 'Dough hydration'}
-                        </label>
-                        <span style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: hZone.color }}>
-                          <input type="number" min={sliderMin} max={sliderMax} step={0.5} value={currentHyd} aria-label={locale === 'fr' ? 'Hydratation (%)' : 'Hydration (%)'} onChange={e => { const value = Number(e.target.value); if (e.target.value !== '' && Number.isFinite(value) && value >= sliderMin && value <= sliderMax) setManualHydration(value); }} style={{ width: 80, minHeight: 44, padding: '8px', border: '1px solid var(--border)', borderRadius: 8, font: 'inherit', background: 'var(--warm)' }} /> %
-                        </span>
-                      </div>
-                      <p style={{ fontSize: 12, color: 'var(--smoke)' }}>{locale === 'fr' ? 'Plage habituelle' : 'Typical range'} : {zone.classicMin}–{zone.classicMax}%</p>
-                      {manualHydration !== undefined && <button type="button" onClick={() => setManualHydration(undefined)} style={{ minHeight: 44, padding: '8px 0', border: 0, background: 'transparent', color: 'var(--terra)', textDecoration: 'underline', cursor: 'pointer' }}>{locale === 'fr' ? 'Revenir à la recommandation' : 'Reset to recommendation'}</button>}
-                      {manualHydration === undefined && Math.abs(hydDiff) >= 0.5 && (
-                        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', marginTop: '4px', lineHeight: 1.4, marginBottom: '8px' }}>
-                          {(() => {
-                            const parts: string[] = [];
-                            const bp = flourBlend ? computeBlendProfile(flourBlend) : null;
-                            if (bp?.hydrationDelta) parts.push(`${locale === 'fr' ? 'farine' : 'flour'} ${bp.hydrationDelta > 0 ? '+' : ''}${bp.hydrationDelta}%`);
-                            if (ovenData?.hydrationDelta) parts.push(`${locale === 'fr' ? 'four' : 'oven'} ${ovenData.hydrationDelta > 0 ? '+' : ''}${ovenData.hydrationDelta}%`);
-                            if (kitchenTemp >= 28 || humidity === 'very-humid') parts.push(locale === 'fr' ? 'climat −2%' : 'climate −2%');
-                            else if (kitchenTemp <= 18) parts.push(locale === 'fr' ? 'climat +2%' : 'climate +2%');
-                            if (parts.length === 0) return null;
-                            return (
-                              <>
-                                {locale === 'fr' ? 'Ajusté à partir de' : 'Adjusted from'} {styleBaseHyd}% · {parts.join(' · ')}{' · '}
-                                <span
-                                  onClick={() => setManualHydration(styleBaseHyd)}
-                                  style={{ color: 'var(--terra)', cursor: 'pointer', textDecoration: 'underline' }}
-                                >{locale === 'fr' ? 'Utiliser' : 'Use'} {styleBaseHyd}%</span>
-                              </>
-                            );
-                          })()}
-                        </div>
-                      )}
-                      {/* Zone pill + note: only shown when baker set value manually,
-                          or when no engine adjustment is explaining the current value */}
-                      {(manualHydration !== undefined || !hydAdjustNote) && (<>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '4px' }}>
-                        <span style={{
-                          fontSize: '11px', fontFamily: 'var(--font-ui)', fontWeight: 600,
-                          color: hZone.color, flexShrink: 0,
-                          background: hZone.color === 'var(--sage)' ? 'rgba(139,168,136,0.12)' :
-                                      hZone.color === 'var(--gold)' ? 'rgba(156, 130, 72,0.12)' :
-                                      hZone.color === '#C4624A' ? 'rgba(196,98,74,0.1)' : 'rgba(90,122,152,0.1)',
-                          borderRadius: '20px', padding: '.2rem 8px',
-                        }}>
-                          {hZone.label}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: '12px' }}>
-                        {hZone.note}
-                      </div>
-                      </>)}
-                    </div>
-                  );
-                })()}
-
-                {/* Salt · Oil · Sugar — one row, wraps on mobile */}
-                <div style={{ display: enrichedDirectOnly ? 'none' : undefined, paddingTop: '4px' }}>
-                <div style={{
-                  display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px',
-                  alignItems: 'start',
-                }}>
-                  {/* Salt · Oil · Sugar — all three through one component */}
-                  {(() => {
-                    const styleSalt = styleKey ? (ALL_STYLES[styleKey]?.salt ?? 2.5) : 2.5;
-                    const v = manualSalt ?? styleSalt;
-                    const STEP = 0.1;
-                    const isDefault = manualSalt === undefined || manualSalt === styleSalt;
-                    return (
-                      <PctStepper
-                        label={t('dialIn.saltPct')}
-                        display={`${v}%`}
-                        onDec={() => setManualSalt(Math.max(1.5, Math.round((v - STEP) * 10) / 10))}
-                        onInc={() => setManualSalt(Math.min(3.5, Math.round((v + STEP) * 10) / 10))}
-                        reset={isDefault ? undefined : {
-                          onReset: () => setManualSalt(undefined),
-                          label: `${styleSalt}%`,
-                        }}
-                        zone={
-                          v < 2    ? { word: t('dialIn.zone.saltFlat'),    color: '#A8B8D0' } :
-                          v <= 2.5 ? { word: t('dialIn.zone.saltMild'),    color: '#8BA888' } :
-                          v <= 3   ? { word: t('dialIn.zone.saltClassic'), color: 'var(--sage)' } :
-                          v <= 3.2 ? { word: t('dialIn.zone.saltFull'),    color: '#9C8248' } :
-                                     { word: t('dialIn.zone.saltSlows'),   color: '#9C8248' }
-                        }
-                        note={v < 2 ? t('dialIn.salt.veryLow') : undefined}
-                      />
-                    );
-                  })()}
-                  {(() => {
-                    const v = manualOil ?? 0;
-                    const isHighTemp = ovenType === 'pizza_oven' || ovenType === 'electric_pizza';
-                    const STEP = 0.5;
-                    return (
-                      <PctStepper
-                        label={t('dialIn.oilPct')}
-                        display={v === 0 ? t('dialIn.none') : `${v}%`}
-                        onDec={() => setManualOil(Math.max(0, Math.round((v - STEP) * 10) / 10))}
-                        onInc={() => setManualOil(Math.min(10, Math.round((v + STEP) * 10) / 10))}
-                        reset={v === 0 ? undefined : {
-                          onReset: () => setManualOil(undefined),
-                          label: t('dialIn.none'),
-                        }}
-                        zone={
-                          v === 0 ? { word: t('dialIn.zone.oilNone'),     color: 'var(--sage)' } :
-                          v <= 2  ? { word: t('dialIn.zone.oilBrowning'), color: '#8BA888' } :
-                          v <= 5  ? { word: t('dialIn.zone.oilPan'),      color: '#9C8248' } :
-                                    { word: t('dialIn.zone.oilEnriched'), color: '#C4785F' }
-                        }
-                        note={(v > 0 && isHighTemp) ? t('dialIn.oil.highTempNote')
-                          : v > 5 ? t('dialIn.oil.high') : undefined}
-                      />
-                    );
-                  })()}
-                  {(() => {
-                    const v = manualSugar ?? 0;
-                    const sg = sugarGuidance(v, ovenType ?? '', t);
-                    const STEP = 0.5;
-                    return (
-                      <PctStepper
-                        label={t('dialIn.sugarPct')}
-                        display={v === 0 ? t('dialIn.none') : `${v}%`}
-                        onDec={() => setManualSugar(Math.max(0, Math.round((v - STEP) * 10) / 10))}
-                        onInc={() => setManualSugar(Math.min(10, Math.round((v + STEP) * 10) / 10))}
-                        reset={v === 0 ? undefined : {
-                          onReset: () => setManualSugar(undefined),
-                          label: t('dialIn.none'),
-                        }}
-                        zone={
-                          v === 0 ? { word: t('dialIn.zone.sugarNone'),     color: 'var(--sage)' } :
-                          v <= 1  ? { word: t('dialIn.zone.sugarSubtle'),   color: '#8BA888' } :
-                          v <= 2  ? { word: t('dialIn.zone.sugarBrowning'), color: '#9C8248' } :
-                          v <= 4  ? { word: t('dialIn.zone.sugarSlows'),    color: '#9C8248' } :
-                                    { word: t('dialIn.zone.sugarBrioche'),  color: '#C4785F' }
-                        }
-                        note={v > 2 ? sg.note : undefined}
-                      />
-                    );
-                  })()}
-                </div>
-                </div>
-                {/* No "Precision" heading: it named a category rather than
-                    telling the baker anything, and the rule stripe already
-                    separates these two from the row above. */}
-                <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
-                  <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                    {/* DDT stepper */}
-                    {(() => {
-                      const styleFDT = styleKey ? ({ neapolitan:23, newyork:24, roman:25, pan:25, sourdough:24, pain_campagne:24, pain_levain:24, baguette:24, pain_complet:24, pain_seigle:24, fougasse:25, brioche:22, pain_mie:24, pain_viennois:23 } as Record<string,number>)[styleKey] ?? 24 : 24;
-                      const v = targetDoughTemp ?? styleFDT;
-                      const mixerFriction = mixerType ? ({ stand:5, hand:1, no_knead:0, spiral:8 } as Record<string,number>)[mixerType] ?? 3 : 3;
-                      const isDefaultDDT = targetDoughTemp === undefined || targetDoughTemp === styleFDT;
-                      return (
-                        <div style={{ flex: 1, minWidth: '120px' }}>
-                          <PctStepper
-                            label={t('dialIn.doughTemp')}
-                            display={`${v}°C`}
-                            onDec={() => setTargetDoughTemp(Math.max(18, v - 1))}
-                            onInc={() => setTargetDoughTemp(Math.min(28, v + 1))}
-                            reset={isDefaultDDT ? undefined : {
-                              onReset: () => setTargetDoughTemp(undefined),
-                              label: `${styleFDT}°C`,
-                            }}
-                            note={isDefaultDDT ? undefined : t('dialIn.doughTempInfo', {
-                              friction: mixerFriction,
-                              mixer: t(mixerType === 'spiral' ? 'dialIn.mixerSpiral'
-                                : mixerType === 'stand' ? 'dialIn.mixerStand'
-                                : 'dialIn.mixerHand'),
-                            })}
-                          >
-                          </PctStepper>
-                        </div>
-                      );
-                    })()}
-                    {/* Mixing loss stepper */}
-                    {(() => {
-                      const v = wastePct ?? 1.5;
-                      const STEP = 0.5;
-                      return (
-                        <div style={{ flex: 1, minWidth: '120px' }}>
-                          <PctStepper
-                            label={t('dialIn.mixingLoss')}
-                            display={wastePct === 0 ? t('dialIn.none') : `${v}%`}
-                            onDec={() => setWastePct(Math.max(0, Math.round((v - STEP) * 10) / 10))}
-                            onInc={() => setWastePct(Math.min(5, Math.round((v + STEP) * 10) / 10))}
-                            reset={wastePct === undefined || wastePct === 1.5 ? undefined : {
-                              onReset: () => setWastePct(undefined),
-                              label: '1.5%',
-                            }}
-                            note={wastePct === undefined || wastePct === 1.5
-                              ? undefined : t('dialIn.mixingLossInfo')}
-                          />
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </div>
+              <p style={{fontSize:14,color:'var(--ash)',marginBottom:18}}>{fr?'Les valeurs conseillées sont déjà renseignées. Modifiez uniquement ce qui vous convient.':'Recommended values are filled in. Adjust only what you need.'}</p>
+              {enrichedDirectOnly && <p style={{fontSize:14}}>{fr?'Cette formule enrichie fixe les proportions d’eau, de sel, de matière grasse et de sucre.':'This enriched formula fixes the water, salt, fat and sugar proportions.'}</p>}
+              {(() => {
+                const style = styleKey ? ALL_STYLES[styleKey] : null;
+                const zone = STYLE_HYDRATION_ZONES[styleKey!] ?? FALLBACK_ZONE;
+                const recommendation = styleKey && schedule && ovenType && yeastType ? calculateRecipe(styleKey, ovenType as OvenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'custom', mixerType as MixerType, undefined, manualOil, manualSugar, flourBlend, prefermentType, priorityOverride, prefermentFlourPct ?? 20, manualSalt, targetDoughTemp, flourInFridge, wastePct, prefGoesInFridge, feedToMixH, prefOffsetH || undefined, measuredFlourTemp, measuredPrefermentTemp) : null;
+                const recommendedHyd = recommendation?.hydration ?? style?.hydration ?? 64;
+                const defaultTemp = styleKey ? ({neapolitan:23,newyork:24,roman:25,pan:25,sourdough:24,brioche:22,pain_viennois:23,fougasse:25} as Record<string,number>)[styleKey] ?? 24 : 24;
+                const fields = [
+                  ...(!enrichedDirectOnly ? [
+                    {label:fr?'Hydratation (%)':'Hydration (%)',value:manualHydration ?? recommendedHyd,min:zone.min,max:zone.max,step:0.5,set:setManualHydration},
+                    {label:fr?'Sel (% de farine)':'Salt (% of flour)',value:manualSalt ?? style?.salt ?? 2.5,min:1.5,max:3.5,step:0.1,set:setManualSalt},
+                    {label:fr?'Huile (% de farine)':'Oil (% of flour)',value:manualOil ?? style?.oil ?? 0,min:0,max:10,step:0.5,set:setManualOil},
+                    {label:fr?'Sucre (% de farine)':'Sugar (% of flour)',value:manualSugar ?? style?.sugar ?? 0,min:0,max:10,step:0.5,set:setManualSugar},
+                  ] : []),
+                  {label:fr?'Température de pâte après pétrissage (°C)':'Dough temperature after mixing (°C)',value:targetDoughTemp ?? defaultTemp,min:18,max:28,step:1,set:setTargetDoughTemp},
+                  {label:fr?'Marge de pâte supplémentaire (%)':'Extra dough allowance (%)',value:wastePct ?? 1.5,min:0,max:5,step:0.5,set:setWastePct},
+                ];
+                return <>
+                  {!enrichedDirectOnly&&<div style={{marginBottom:16,fontSize:14}}><p>{fr?'Hydratation conseillée':'Suggested hydration'} : {recommendedHyd}%</p>{manualHydration!==undefined&&<button type="button" onClick={()=>setManualHydration(undefined)} style={{minHeight:44}}>{fr?'Rétablir l’hydratation conseillée':'Reset suggested hydration'}</button>}<details><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Pourquoi cette valeur ?':'Why this value?'}</summary><p>{fr?'Base du style':'Style starting point'} : {style?.hydration}%</p><p>{fr?'Four':'Oven'} : {['pan','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey??'')?Math.round((ovenData?.hydrationDelta??0)/2):(ovenData?.hydrationDelta??0)}%</p><p>{fr?'Conditions de stockage et cuisine':'Storage and kitchen conditions'} : {kitchenTemp>=28||humidity==='very-humid'?-2:kitchenTemp<=18?2:0}%</p><p>{fr?'Farine':'Flour'} : {flourBlend?Math.max(-5,Math.min(8,computeBlendProfile(flourBlend).hydrationDelta)):0}%</p></details></div>}
+                  {fields.map(field=><label key={field.label} style={{display:'block',fontSize:16,marginBottom:18}}>{field.label}
+                    <input type="number" key={`${field.label}:${field.value}`} defaultValue={Math.round(field.value*100)/100} min={field.min} max={field.max} step={field.step} onBlur={e=>{const n=Number(e.target.value);if(e.target.value!==''&&Number.isFinite(n))field.set(Math.min(field.max,Math.max(field.min,n)));else e.target.value=String(field.value);}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}}} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white'}}/>
+                  </label>)}
+                  <details style={{margin:'12px 0'}}><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Températures mesurées · facultatif':'Measured temperatures · optional'}</summary>
+                    {[{label:fr?'Farine (°C)':'Flour (°C)',value:measuredFlourTemp,set:setMeasuredFlourTemp},...((prefermentType!=='none'||yeastType==='sourdough')?[{label:fr?'Préferment ou levain (°C)':'Preferment or starter (°C)',value:measuredPrefermentTemp,set:setMeasuredPrefermentTemp}]:[])].map(field=><label key={field.label} style={{display:'block',fontSize:16,margin:'12px 0'}}>{field.label}<input type="number" value={field.value??''} min={-5} max={45} step={0.5} placeholder={fr?'Estimation automatique':'Automatic estimate'} onChange={e=>field.set(e.target.value===''?undefined:Number(e.target.value))} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:10,border:'1px solid var(--border)',borderRadius:9}}/></label>)}
+                  </details>
+                  <details style={{margin:'12px 0'}}><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Aide pour ajuster':'Help with adjustments'}</summary>
+                    {!enrichedDirectOnly&&<><p>{fr?'Hydratation habituelle pour ce style':'Typical hydration for this style'} : {zone.classicMin}–{zone.classicMax}%. {fr?'Choisissez le bas de la plage pour une pâte plus facile à manipuler.':'Choose the lower end for easier handling.'}</p><p>{oilGuidance(manualOil ?? style?.oil ?? 0,ovenType ?? '',styleKey ?? '',t)}</p><p>{sugarGuidance(manualSugar ?? style?.sugar ?? 0,ovenType ?? '',t).note}</p></>}
+                    <p>{fr?'La marge compense la pâte restant dans le bol. 1,5 % convient généralement.':'The allowance covers dough left in the bowl. 1.5% is a practical starting point.'}</p>
+                  </details>
+                  <button type="button" style={{minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:9}} onClick={()=>{setManualHydration(undefined);setManualSalt(undefined);setManualOil(undefined);setManualSugar(undefined);setTargetDoughTemp(undefined);setWastePct(undefined);}}>{fr?'Rétablir les valeurs conseillées':'Reset recommended values'}</button>
+                </>;
+              })()}
             </StepPage>
 
             {/* Precision section removed — merged into the dough step below */}
@@ -4923,7 +4694,7 @@ export default function Home() {
                                 pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
                                 fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                                 manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-                                flourInFridge, wastePct, addSeeds, priorityOverride,
+                                flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
                                 eatTime: eatTime?.getTime() ?? null,
                                 blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                                 recipeGenerated, activeTab, modeChosen,
@@ -5108,7 +4879,7 @@ export default function Home() {
                       pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
                       fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
                       manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-                      flourInFridge, wastePct, addSeeds, priorityOverride,
+                      flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
                       eatTime: eatTime?.getTime() ?? null,
                       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
                       recipeGenerated, activeTab, modeChosen,

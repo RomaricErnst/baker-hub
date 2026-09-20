@@ -53,18 +53,18 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
             }}
           >
             <div style={{
-              width: layout === 'photo' ? '100%' : layout === 'lateral' ? 100 : 56, height: layout === 'photo' ? 'auto' : layout === 'lateral' ? 100 : 56, aspectRatio: layout === 'photo' ? '2 / 1' : undefined,
+              width: layout === 'photo' ? '100%' : layout === 'lateral' ? 72 : 56, height: layout === 'photo' ? 'auto' : layout === 'lateral' ? 72 : 56, aspectRatio: layout === 'photo' ? '2 / 1' : undefined,
               borderRadius: option.thumbnailBg ? '50%' : '8px',
               overflow: 'hidden', flexShrink: 0,
               background: option.thumbnailBg ?? '#2B2420',
             }}>
               {!option.thumbnailBg && option.image && (
-                <img src={option.image} alt={option.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={option.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', fontWeight: 600, color: 'var(--char)' }}>
+                <span style={{ fontFamily: 'var(--font-ui)', fontSize: '16px', fontWeight: 600, color: 'var(--char)' }}>
                   {option.title}
                 </span>
                 {option.badge && (
@@ -82,7 +82,7 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
               </div>
               <div style={{
                 fontFamily: 'var(--font-ui)',
-                fontSize: layout === 'compact' ? '11px' : '13px',
+                fontSize: '14px',
                 color: 'var(--smoke)',
                 overflow: 'hidden',
                 display: '-webkit-box',

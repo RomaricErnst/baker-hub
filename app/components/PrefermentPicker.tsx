@@ -13,6 +13,7 @@ interface PrefermentPickerProps {
   flourPct?: number;
   onFlourPctChange?: (pct: number | undefined) => void;
   suggestedFlourPct?: number;
+  totalFlourGrams?: number;
   styleKey?: string;
   hideTypes?: PrefermentType[];
   kitchenTemp?: number;
@@ -21,7 +22,7 @@ interface PrefermentPickerProps {
 
 export default function PrefermentPicker({
   selected, onSelect, flourPct, onFlourPctChange, suggestedFlourPct = 20, directOnly = false,
-  styleKey, hideTypes = [], kitchenTemp, yeastType,
+  styleKey, hideTypes = [], kitchenTemp, yeastType, totalFlourGrams,
 }: PrefermentPickerProps) {
   const t = useTranslations('preferment');
   const fr = useLocale() === 'fr';
@@ -63,6 +64,26 @@ export default function PrefermentPicker({
                   </label>
                   <input type="range" aria-label={fr ? 'Part de farine en préferment' : 'Prefermented flour share'} min={10} max={60} step={5} value={flourPct ?? suggestedFlourPct} onChange={e => onFlourPctChange(Number(e.target.value))} style={{ width: '100%', minHeight: 44, accentColor: 'var(--terra)' }} />
                   <p style={{ margin: '4px 0', fontSize: 12, color: 'var(--smoke)' }}>{fr ? 'Point de départ suggéré' : 'Suggested starting point'} : {suggestedFlourPct}%</p>
+                  <p style={{ margin: '4px 0', fontSize: 12, color: 'var(--smoke)' }}>{fr ? 'Point de départ avant de définir le planning.' : 'Starting point until the schedule is set.'}</p>
+                  {totalFlourGrams !== undefined && Number.isFinite(totalFlourGrams) && totalFlourGrams > 0 && (() => {
+                    const pct = flourPct ?? suggestedFlourPct;
+                    const prefFlour = Math.round(totalFlourGrams * pct / 100);
+                    const prefWater = Math.round(prefFlour * PREFERMENT_TYPES[selected].hydration / 100);
+                    const format = (grams: number) => `${grams.toLocaleString(fr ? 'fr-FR' : 'en-US')} g`;
+                    return <p aria-live="polite" style={{ fontSize: 13 }}>{fr
+                      ? `${pct} % de toute la farine · ${format(prefFlour)} de farine + ${format(prefWater)} d’eau (estimation)`
+                      : `${pct}% of all flour · ${format(prefFlour)} flour + ${format(prefWater)} water (estimate)`}</p>;
+                  })()}
+                  <details style={{ marginTop: 8, fontSize: 13 }}>
+                    <summary style={{ minHeight: 44, cursor: 'pointer' }}>{fr ? 'M’aider à choisir' : 'Help me choose'}</summary>
+                    {selected === 'poolish' ? <ul>
+                      <li>{fr ? 'Premier essai ? Gardez 20 %.' : 'First try? Keep 20%.'}</li>
+                      <li>{fr ? '10 % : un changement plus discret par rapport à votre pâte directe habituelle.' : '10%: a smaller change from your usual direct dough.'}</li>
+                      <li>{fr ? '30 % : davantage de farine mûrit à l’avance ; essayez après avoir appris à reconnaître un poolish prêt.' : '30%: more of the flour matures ahead; try it once you know when your poolish is ready.'}</li>
+                      <li>{fr ? 'Plus n’est pas forcément mieux. Pour une forte proportion, suivez une recette éprouvée.' : 'Higher is not automatically better. Follow a tested recipe for large proportions.'}</li>
+                    </ul> : <p>{fr ? 'Cette biga utilise 45 % d’eau par rapport à sa farine. Pour choisir une proportion, suivez une recette éprouvée.' : 'This recipe’s biga uses 45% water relative to its flour. Follow a tested recipe to choose its proportion.'}</p>}
+                    <p>{fr ? 'Le pourcentage de préferment est sa part de toute la farine de la recette. Ce n’est pas son hydratation.' : 'Preferment percentage means its share of all recipe flour. It is different from hydration.'}</p>
+                  </details>
                   {flourPct !== undefined && flourPct !== suggestedFlourPct && <button type="button" onClick={() => onFlourPctChange(undefined)} style={{ minHeight: 44, background: 'transparent', border: 0, color: 'var(--terra)', textDecoration: 'underline', cursor: 'pointer' }}>{fr ? 'Revenir à la suggestion' : 'Reset to suggestion'}</button>}
                 </div>
               )}

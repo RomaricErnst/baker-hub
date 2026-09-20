@@ -1193,6 +1193,8 @@ export function calculateRecipe(
   prefGoesInFridgeOverride?: boolean,      // custom mode only — from SchedulePicker
   feedToMixH?: number,                     // sourdough only — hours from feed to mix
   prefActualHours?: number,                // actual planned preferment window (prefOffsetH)
+  measuredFlourTemp?: number,              // measured temperature at mixing, °C
+  measuredPrefermentTemp?: number,         // measured poolish, biga or levain temperature, °C
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = (ovenType in OVEN_TYPES)
@@ -1283,9 +1285,9 @@ export function calculateRecipe(
   const targetFDT = (mode === 'custom' && targetDoughTemp !== undefined)
     ? targetDoughTemp
     : TARGET_FDT[styleKey] ?? 24;
-  const flourTemp = flourInFridge
-    ? fridgeTemp
-    : kitchenTemp;
+  const flourTemp = typeof measuredFlourTemp === 'number' && Number.isFinite(measuredFlourTemp)
+    ? measuredFlourTemp
+    : flourInFridge ? fridgeTemp : kitchenTemp;
   const frictionRiseC = mixerFrictionRiseC(mixerType);
 
   // Yeast or sourdough
@@ -1445,8 +1447,8 @@ export function calculateRecipe(
   //
   // kitchenTemp, not fridgeTemp, even for a fridge starter: the sourdough plan
   // emits fridge_out ahead of the mix by warmupH, so a levain that reaches the
-  // bowl is at room temperature by construction. If that stops being true,
-  // this is the line that breaks.
+  // bowl defaults to room temperature. A measured temperature overrides that
+  // assumption for the actual ingredient going into the bowl.
   //
   // The preferment channel is a single bucket, so this only applies when there
   // is no poolish or biga — the same guard the recipe card uses for sdActive.
@@ -1461,7 +1463,9 @@ export function calculateRecipe(
     flourG: flour, waterG: water, saltG: salt,
     prefFlourG: levainInBalance ? levainHalfG : (preferment && isFlourPref ? preferment.prefFlour : 0),
     prefWaterG: levainInBalance ? levainHalfG : (preferment && isFlourPref ? preferment.prefWater : 0),
-    prefTempC: levainInBalance ? kitchenTemp : prefTempC,
+    prefTempC: typeof measuredPrefermentTemp === 'number' && Number.isFinite(measuredPrefermentTemp)
+      ? measuredPrefermentTemp
+      : levainInBalance ? kitchenTemp : prefTempC,
   });
   const waterTemp = thermal.waterTemp;
   const enrichment: RecipeEnrichment | undefined = enrichedFormula ? {

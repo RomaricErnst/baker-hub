@@ -1621,7 +1621,30 @@ function PlanList({
   );
 }
 
+export function ScheduleViewTabs({ value, onChange, id, isFr }: {
+  value: 'actions' | 'graph'; onChange: (value: 'actions' | 'graph') => void; id: string; isFr: boolean;
+}) {
+  const options = ['actions', 'graph'] as const;
+  return <div role="tablist" aria-label={isFr ? 'Affichage du planning' : 'Schedule view'} style={{display:'flex',gap:8,marginBottom:16}}>
+    {options.map(option => <button key={option} type="button" role="tab" id={`${id}-${option}-tab`}
+      aria-controls={`${id}-${option}-panel`} aria-selected={value === option} tabIndex={value === option ? 0 : -1}
+      onClick={() => onChange(option)}
+      onKeyDown={event => {
+        if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+        event.preventDefault();
+        const next = event.key === 'Home' ? 'actions' : event.key === 'End' ? 'graph' : option === 'actions' ? 'graph' : 'actions';
+        onChange(next);
+        document.getElementById(`${id}-${next}-tab`)?.focus();
+      }}
+      style={{flex:1,minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:12,background:value === option ? 'var(--char)' : 'var(--cream)',color:value === option ? 'var(--cream)' : 'var(--char)',fontFamily:'var(--font-ui)',fontSize:13,fontWeight:600,cursor:'pointer'}}>
+      {option === 'actions' ? (isFr ? 'Actions' : 'Action items') : (isFr ? 'Courbe de fermentation' : 'Fermentation graph')}
+    </button>)}
+  </div>;
+}
+
 export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+  const [scheduleView, setScheduleView] = useState<'actions' | 'graph'>('actions');
+  const scheduleViewId = useId();
   const t = useTranslations('scheduler');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
@@ -6936,8 +6959,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {/* Divider */}
       <div style={{ borderTop: '1px solid var(--border)', margin: '1.1rem 0 1rem' }} />
 
-      {/* Fermentation chart */}
-      {isSourdough && lastFedAge === null && (
+      <ScheduleViewTabs value={scheduleView} onChange={setScheduleView} id={scheduleViewId} isFr={isFr} />
+
+      {/* Fermentation chart stays separate from the action list. */}
+      {isSourdough && planningMode === 'last_fed' && lastFedAge === null && (
         <div style={{
           padding: '24px 20px',
           textAlign: 'center',
@@ -6951,7 +6976,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             : 'Tell us when your starter was last fed to see your plan.'}
         </div>
       )}
-      <div style={{ marginBottom: startInvalid ? '.5rem' : '1rem', display: isSourdough && lastFedAge === null ? 'none' : undefined }}>
+      <div role="tabpanel" id={`${scheduleViewId}-graph-panel`} aria-labelledby={`${scheduleViewId}-graph-tab`} hidden={scheduleView !== 'graph'} tabIndex={0} style={{ marginBottom: startInvalid ? '.5rem' : '1rem' }}>
+      {scheduleView === 'graph' && <>
         <div style={{ fontSize: '11px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
           {(hasDragged || appliedSuggestion !== null)
             ? t('schedulerTitle.yours')
@@ -6980,61 +7006,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           );
         })()}
         {startComputed ? (
-          mode === 'simple' ? (
-            <>
-            {/* The dated card is gone. It printed the same start time the row
-                below already carries, so the page said one thing twice — and
-                because the row was reading bulkFermStart the two copies did
-                not even agree. Editing now lives on the row itself, which is
-                also how custom mode does it. */}
-            {schedule && (
-              <SimplePlan
-                schedule={schedule}
-                isFr={isFr}
-                movedNote={movedNote}
-                pendingStart={pendingStart}
-                onEditStart={() => setSimpleEditingStart(v => !v)}
-              />
-            )}
-            <SimpleStartTime
-              editing={simpleEditingStart}
-              pendingStart={pendingStart}
-              isFr={isFr}
-              onStartChange={(newStart) => {
-                setPendingStart(newStart);
-                const bakeMs = pendingEatTime.getTime();
-                const h = (bakeMs - newStart.getTime()) / 3600000;
-                const inB = blocks.some(b => {
-                  const s = (bakeMs - b.from.getTime()) / 3600000;
-                  const e = (bakeMs - b.to.getTime())   / 3600000;
-                  return h > Math.min(s,e) && h < Math.max(s,e);
-                });
-                const typicalBulkH = kitchenTemp >= 30 ? 0.5 : kitchenTemp >= 28 ? 0.75 : 1.5;
-                const bulkEndHBF = h - typicalBulkH;
-                const bulkEndInB = !inB && bulkEndHBF > 0 && blocks.some(b => {
-                  const s = (bakeMs - b.from.getTime()) / 3600000;
-                  const e = (bakeMs - b.to.getTime())   / 3600000;
-                  return bulkEndHBF > Math.min(s,e) && bulkEndHBF < Math.max(s,e);
-                });
-                const fmtBulkDur = (h: number) => h === 0.5 ? '30min' : h === 0.75 ? '45min' : '1h30';
-                const fmtBulkTime = (hbf: number) => new Date(bakeMs - hbf * 3600000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                setBlockerNote(
-                  inB ? tRoot('schedulePicker.blockerNote')
-                  : bulkEndInB ? tRoot('schedulePicker.bulkNote', { dur: fmtBulkDur(typicalBulkH), time: fmtBulkTime(bulkEndHBF) })
-                  : null
-                );
-                onChange(newStart, pendingEatTime, blocks);
-                if (isSourdough) {
-                  // Pin the dragged mix so effect-triggered re-solves (ratio
-                  // apply, refresh drags) keep honoring it — pendingStart
-                  // alone was recomputed away on the next solve.
-                  manualMixRef.current = newStart.getTime();
-                  findOptimalPositionSourdough(pendingEatTime, newStart);
-                }
-              }}
-            />
-            </>
-          ) : (
             <FermentChart
               eatTime={pendingEatTime}
               prefermentType={(skipPoolishNote || prefAlgoRed) ? 'none' : (isSourdough ? 'sourdough' : prefermentType)}
@@ -7205,7 +7176,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 findOptimalPositionSourdough(pendingEatTime, undefined, solverBlocksRef.current);
               }}
             />
-          )
         ) : (
           <div style={{
             textAlign: 'center', fontFamily: 'var(--font-ui)',
@@ -7216,15 +7186,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           </div>
         )}
 
+      </>}
       </div>
 
       {eatTimeSet && (
         <div style={{ marginTop: '8px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
-          {/* Reset pill — SIMPLE mode only. In custom mode Reset lives
-              directly under the chart (FermentChart), because the baker has
-              to see the diamond jump back for the press to confirm itself. */}
-          {mode === 'simple' && (hasDragged || nextFeedRatioOverride !== null) && !startTimeInPast && (
+          {/* Actions have their own reset; the graph retains its existing control. */}
+          {scheduleView === 'actions' && (hasDragged || nextFeedRatioOverride !== null) && !startTimeInPast && (
             <button
               onClick={resetToRecommendation}
               style={{
@@ -7480,8 +7449,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         );
       })()}
 
-      {/* ── Info cards (pref + mix start times) — custom mode only ── */}
-      {startComputed && mode !== 'simple' && (() => {
+      {/* Both modes use the full action list, including starter and preferment actions. */}
+      <div role="tabpanel" id={`${scheduleViewId}-actions-panel`} aria-labelledby={`${scheduleViewId}-actions-tab`} hidden={scheduleView !== 'actions'} tabIndex={0}>
+      {startComputed && scheduleView === 'actions' && (() => {
         const isLevainType = prefermentType === 'levain' || isSourdough;
         const cardPrefColor = isLevainType ? '#4A7FA5' : '#C4A030';
         // The pref/mix ZONE-TIER computation (green/gold/red bands and their
@@ -7586,7 +7556,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // 1 — sourdough starter events (history + feeds + fridge consequences)
         if (isSourdough && displayStarterEvents.length) {
           for (const ev of displayStarterEvents) {
-            if (ev.kind === 'fridge_in') continue; // the casing on the curve says this
             const isHist = ev.isPast && !ev.isActive;
             const timeText = ev.kind === 'fridge_out'
               ? fmtCardDT(ev.time, isFr)
@@ -7599,7 +7568,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 : ev.timeIsEstimate && ev.isPast
                   ? dayOnly(ev.time)
                   : `${ev.timeIsEstimate ? '≈ ' : ''}${fmtCardDT(ev.time, isFr)}`;
-            const isCold = ev.kind === 'fridge_out';
+            const isCold = ev.kind === 'fridge_out' || ev.kind === 'fridge_in';
             rows.push({
               id: `ev:${displayStarterEvents.indexOf(ev)}`,
               at: ev.time.getTime(),
@@ -7710,6 +7679,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         );
       })()}
 
+
+      </div>
 
       {/* scheduleNote moved into Start Dough card */}
 

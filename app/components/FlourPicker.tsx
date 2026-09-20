@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useLocale } from 'next-intl';
-import { type FlourKey, type FlourBlend, type WSource, blendWIsApproximate } from '../data';
-import FlourScan from './FlourScan';
+import { FLOUR_DATA, type FlourKey, type FlourBlend, type WSource, blendWIsApproximate } from '../data';
+import FlourScan, {matchScannedFlour} from './FlourScan';
 import FlourCatalogueBrowser, {FlourProductButton, flourBehaviour, flourEngineW} from './FlourCatalogueBrowser';
 import { archivedBlendSelections } from '../lib/flourRecovery';
 import { FLOUR_DB, type FlourEntry } from '@/lib/flourDatabase';
@@ -136,21 +136,22 @@ const TYPE_LABELS: Record<string, string> = {
   'rye': 'Rye', 'spelt': 'Spelt', 'semolina': 'Semolina',
 };
 
-// ── Quick pick type list ──────────────────────────
-const QUICK_TYPES = [
-  { label: '00 · Pizza flour', w: 260, protein: 12.0 },
-  { label: '0',           w: 240, protein: 11.5 },
-  { label: 'T45 / Gruau', w: 310, protein: 13.0 },
-  { label: 'T55',         w: 200, protein: 10.5 },
-  { label: 'T65',         w: 220, protein: 11.0 },
-  { label: 'T80',         w: 210, protein: 11.5 },
-  { label: 'T110 / T150', w: 190, protein: 11.0 },
-  { label: 'Bread flour', w: 270, protein: 12.8 },
-  { label: 'All-purpose', w: 190, protein: 10.5 },
-  { label: 'Manitoba',    w: 380, protein: 14.0 },
-  { label: 'Wholemeal',   w: 185, protein: 12.0 },
-  { label: 'Rye',         w: 160, protein: 10.0 },
-];
+// Manual label metadata is retained with the blend through existing save/restore.
+// Protein is descriptive: it does not replace the selected type or infer W.
+export type ManualFlourBlend = FlourBlend & {
+  manualFlour1?: { type: FlourKey; protein?: number; proteinSource?: 'manual' };
+};
+export function manualFlourSelection(blend: FlourBlend, type: FlourKey, name: string, wText: string, proteinText: string, locale: string): ManualFlourBlend | null {
+  const w = wText.trim() === '' ? undefined : Number(wText);
+  const protein = proteinText.trim() === '' ? undefined : Number(proteinText);
+  if (w !== undefined && (!Number.isFinite(w) || w < 1 || w > 500)) return null;
+  if (protein !== undefined && (!Number.isFinite(protein) || protein < 1 || protein > 30)) return null;
+  const selectedW = w ?? FLOUR_DATA[type].w;
+  return {...blend, flour1: type, w1: selectedW, wOverride: selectedW,
+    w1Source: w === undefined ? 'typical' : 'manual', brandKey: undefined,
+    brandProduct: name.trim() || (locale === 'fr' ? FLOUR_DATA[type].nameFr : FLOUR_DATA[type].name),
+    manualFlour1: {type, ...(protein === undefined ? {} : {protein, proteinSource: 'manual' as const})}};
+}
 
 // ── W strength helper ─────────────────────────────
 function wStrength(w: number): { label: string; color: string } {
@@ -384,6 +385,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   const [openSection, setOpenSection] = useState<'search' | 'blend' | null>('search');
 
   // Scan state
+  const [unmatchedScan, setUnmatchedScan] = useState<string | null>(null);
 
   // "I know my type or W value" collapsible in Section 2
   const [manualQW, setManualQW] = useState<number | null>(null);
@@ -391,6 +393,17 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   // already-valid values (100-450), so typing '2' of '280' was rejected
   // char-by-char and the field appeared dead.
   const [manualQWText, setManualQWText] = useState('');
+  const [manualType, setManualType] = useState<FlourKey>(blend.flour1 ?? 'pizza00');
+  const [manualName, setManualName] = useState('');
+  const [manualProtein, setManualProtein] = useState('');
+  const savedManual = (blend as ManualFlourBlend).manualFlour1;
+  function openManualFlour() {
+    setManualType(blend.flour1 ?? 'pizza00');
+    setManualName(savedManual ? blend.brandProduct ?? '' : '');
+    setManualProtein(savedManual?.protein === undefined ? '' : String(savedManual.protein));
+    setManualQWText(savedManual && blend.w1Source === 'manual' ? String(blend.w1 ?? '') : '');
+    setRoad('type');
+  }
 
   // Search section filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -417,6 +430,19 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   // the shortlist and one row of entries, and whatever is opened appears under
   // it. Everything else stays shut.
   const [road, setRoad] = useState<'scan' | 'search' | 'type' | 'w' | null>(null);
+  const flourRoadRef = useRef<HTMLDivElement>(null);
+  const flourSearchRef = useRef<HTMLDivElement>(null);
+  const previousRoadRef = useRef<typeof road>(null);
+  useEffect(() => {
+    const previous = previousRoadRef.current;
+    previousRoadRef.current = road;
+    if (road === 'scan' || road === 'type') {
+      flourRoadRef.current?.focus({preventScroll: true});
+      flourRoadRef.current?.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+    } else if (previous === 'scan' || previous === 'type') {
+      flourSearchRef.current?.querySelector<HTMLElement>('input, button')?.focus({preventScroll: true});
+    }
+  }, [road]);
   const [pickerOverride, setPickerOverride] = useState<boolean | null>(null);
   const pickerOpen = pickerOverride ?? !blend.brandProduct;
   const setPickerOpen = (v: boolean) => setPickerOverride(v ? true : null);
@@ -464,7 +490,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const selectionRef=useRef<HTMLDivElement>(null);
-  const chosenEntry=FLOUR_DB.find(f=>`${f.brand} ${f.name}`===blend.brandProduct);
+  const chosenEntry=savedManual ? undefined : FLOUR_DB.find(f=>`${f.brand} ${f.name}`===blend.brandProduct);
   const blendRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -526,6 +552,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   }
 
   function assignBlendFlour(entry: FlourEntry, key: FlourKey, label: string, r1ForSlot2 = 85, source?: WSource) {
+    setUnmatchedScan(null);
     // Same rule for additions: default to what the database says it knows.
     source = source ?? (entry.wPublished ? 'exact' : 'typical');
     if (blendSlot === 3) {
@@ -542,6 +569,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   }
 
   function selectDBEntry(f: FlourEntry) {
+    setUnmatchedScan(null); setRoad(null);
     const autoTile: FlourKey = flourBehaviour(f);
     onBlendChange({
       ...blend,
@@ -557,23 +585,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       w1Source: f.wPublished ? 'exact' : 'typical',
       brandKey: undefined,
       brandProduct: `${f.brand} ${f.name}`,
-    });
-    setPickerOpen(false);
-    requestAnimationFrame(()=>selectionRef.current?.scrollIntoView({block:'nearest',behavior:'smooth'}));
-  }
-
-  function applyQuickType(label: string, w: number) {
-    const autoTile: FlourKey = w >= 270 ? 'strong00' : 'pizza00';
-    onBlendChange({
-      ...blend,
-      flour1: autoTile,
-      flour2: blend.flour2,
-      ratio1: blend.ratio1,
-      wOverride: w,
-      w1: w,
-      w1Source: 'typical',
-      brandKey: undefined,
-      brandProduct: label,
+      ...{manualFlour1: undefined},
     });
     setPickerOpen(false);
     requestAnimationFrame(()=>selectionRef.current?.scrollIntoView({block:'nearest',behavior:'smooth'}));
@@ -636,6 +648,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
   return (
     <div ref={selectionRef}>
+      {unmatchedScan && <p role="status">{isFr ? `« ${unmatchedScan} » : aucun produit exact retrouvé. Choisissez le type correspondant au sachet, ou recherchez une autre farine. Votre sélection actuelle reste inchangée.` : `“${unmatchedScan}”: no exact product found. Choose the type shown on the bag, or search for another flour. Your current selection is unchanged.`}</p>}
 
       {archivedBlendSelections(blend).length > 0 && <p role="alert" style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 12 }}>{isFr ? 'Une farine enregistrée est archivée. Remplacez-la explicitement ; vos anciennes valeurs restent conservées en attendant.' : 'A saved flour is archived. Choose its replacement explicitly; your previous values are retained until then.'} {archivedBlendSelections(blend).join(' · ')}</p>}
       {/* ── Selected flour — hero card (rendering only; same state) ── */}
@@ -661,6 +674,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               {locale === 'fr' ? 'Changer' : 'Change'}
             </button>
           </div>
+          {savedManual?.protein !== undefined && <p style={{fontSize:14,margin:'8px 0'}}>{isFr ? 'Protéines indiquées sur le sachet' : 'Protein entered from the bag'} : {savedManual.protein}%</p>}
           {/* The W and how well it is known. "W ~220, typical for this type"
               is not the same promise as "W 260, read off the label", and the
               app used to print both the same way. */}
@@ -683,9 +697,40 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
           type list and the W field all fold away — the page then holds the
           choice and the invitation to blend, nothing else. */}
       {pickerOpen && <>
-        <FlourCatalogueBrowser onChoose={selectDBEntry} recommendedIds={bakeType === 'bread' ? (BREAD_FAV_BY_STYLE[styleKey ?? ''] ?? BREAD_FAV_BY_STYLE.pain_campagne) : (PIZZA_FAV_BY_STYLE[styleKey ?? ''] ?? CROWD_FAV_IDS)} onGeneric={()=>setRoad(road==='type'?null:'type')} onScan={()=>setRoad(road==='scan'?null:'scan')}/>
-        {road==='scan'&&<FlourScan onResult={result=>{const key:FlourKey=result.w>=270?'strong00':'pizza00';onBlendChange({...blend,flour1:key,wOverride:result.w,w1:result.w,w1Source:'photo',brandProduct:result.name,brandKey:undefined});setRoad(null);setPickerOpen(false);}} onCancel={()=>setRoad(null)}/>}
-        {road==='type'&&<section aria-label={isFr?'Type de farine':'Flour type'} style={{marginTop:16}}><h3>{isFr?'Choisir un type':'Choose a type'}</h3><p>{isFr?'Valeurs indicatives, pas les caractéristiques d’une marque.':'Typical values, not a brand’s measured specifications.'}</p><div style={{display:'flex',flexWrap:'wrap',gap:8}}>{QUICK_TYPES.map(t=><button type="button" key={t.label} onClick={()=>applyQuickType(t.label,t.w)} style={{minHeight:44,padding:10}}>{t.label} · W ~{t.w}</button>)}</div><label style={{display:'block',marginTop:12}}>{isFr?'Ou saisir la force W indiquée sur le sac':'Or enter the W printed on your bag'}<input type="number" min={50} max={500} value={manualQWText} onChange={e=>setManualQWText(e.target.value)} style={{minHeight:44,width:'100%'}}/></label><button type="button" disabled={!Number.isFinite(Number(manualQWText))||Number(manualQWText)<50||Number(manualQWText)>500} onClick={()=>{const w=Number(manualQWText);onBlendChange({...blend,flour1:w>=270?'strong00':'pizza00',wOverride:w,w1:w,w1Source:'exact',brandProduct:isFr?'Farine personnalisée':'Custom flour',brandKey:undefined});setPickerOpen(false);}}>{isFr?'Utiliser cette force':'Use this strength'}</button></section>}
+        <div ref={flourSearchRef} hidden={road === 'scan' || road === 'type'}>
+        <FlourCatalogueBrowser onChoose={selectDBEntry} recommendedIds={bakeType === 'bread' ? (BREAD_FAV_BY_STYLE[styleKey ?? ''] ?? BREAD_FAV_BY_STYLE.pain_campagne) : (PIZZA_FAV_BY_STYLE[styleKey ?? ''] ?? CROWD_FAV_IDS)} onGeneric={openManualFlour} onScan={()=>setRoad(road==='scan'?null:'scan')}/>
+        </div>
+        {(road === 'scan' || road === 'type') && <div ref={flourRoadRef} tabIndex={-1} aria-label={road === 'scan' ? (isFr ? 'Scanner une farine' : 'Scan a flour') : (isFr ? 'Choisir un type de farine' : 'Choose a flour type')}>
+          {road === 'type' && <button type="button" onClick={()=>{setRoad(null);setUnmatchedScan(null);}} style={{minHeight:44,padding:'8px 0',border:0,background:'transparent',fontSize:16,color:'var(--terra)',cursor:'pointer'}}>{isFr ? '← Retour à la recherche de farine' : '← Back to flour search'}</button>}
+        {road==='scan'&&<FlourScan onResult={result=>{const match=matchScannedFlour(result.name);if(match){selectDBEntry(match);}else{setUnmatchedScan(result.name);setManualName(result.name);setManualType(blend.flour1 ?? 'pizza00');setManualProtein('');setManualQWText('');setRoad('type');}}} onCancel={()=>{setRoad(null);setUnmatchedScan(null);}}/>}
+        {road==='type'&&<section aria-label={isFr?'Saisir une farine':'Enter your flour'} style={{marginTop:16}}>
+          <h3>{isFr?'Saisir votre farine':'Enter your flour'}</h3>
+          <label style={{display:'block',marginBottom:16}}>{isFr?'Type de farine':'Flour type'}
+            <select value={manualType} onChange={e=>setManualType(e.target.value as FlourKey)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}>
+              {(Object.keys(FLOUR_DATA) as FlourKey[]).map(type=><option key={type} value={type}>{isFr?FLOUR_DATA[type].nameFr:FLOUR_DATA[type].name}</option>)}
+            </select>
+          </label>
+          <label style={{display:'block',marginBottom:16}}>{isFr?'Nom du produit · facultatif':'Product name · optional'}
+            <input type="text" value={manualName} onChange={e=>setManualName(e.target.value)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}/>
+          </label>
+          <details><summary style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{isFr?'Ajouter les valeurs du sachet · facultatif':'Add values from the bag · optional'}</summary>
+            <label style={{display:'block',marginBottom:16}}>{isFr?'Force W':'Strength W'}
+              <input type="number" min={1} max={500} value={manualQWText} onChange={e=>setManualQWText(e.target.value)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}/>
+            </label>
+            <label style={{display:'block',marginBottom:16}}>{isFr?'Protéines (%)':'Protein (%)'}
+              <input type="number" min={1} max={30} step={0.1} value={manualProtein} onChange={e=>setManualProtein(e.target.value)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}/>
+            </label>
+            <p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Le taux de protéines est conservé comme information du sachet ; il ne sert pas à déduire la force W.':'Protein is saved as bag information; it is not used to infer W.'}</p>
+          </details>
+          <p style={{fontSize:14}}>{isFr?'Sans force W indiquée, nous utilisons une estimation pour le type choisi.':'Without a stated W, we use an estimate for the selected flour type.'}</p>
+          <button type="button" disabled={!manualFlourSelection(blend,manualType,manualName,manualQWText,manualProtein,locale)} onClick={()=>{
+            const selection=manualFlourSelection(blend,manualType,manualName,manualQWText,manualProtein,locale);
+            if(!selection)return;
+            onBlendChange(selection);setRoad(null);setUnmatchedScan(null);setPickerOpen(false);
+            requestAnimationFrame(()=>selectionRef.current?.scrollIntoView({block:'nearest',behavior:'smooth'}));
+          }} style={{minHeight:44,padding:'10px 16px',fontSize:16}}>{isFr?'Utiliser cette farine':'Use this flour'}</button>
+        </section>}
+        </div>}
       </>}
 
       {/* ── Blend (custom mode only) ────────────────── */}
@@ -940,15 +985,14 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     <div style={{ marginTop: '16px', marginBottom: '16px' }}>
                       <FlourScan
                         onResult={result => {
-                          const genericEntry: FlourEntry = {
-                            id: result.name, brand: '', name: result.name,
-                            type: 'bread', country: 'us', w: result.w, wPublished: true,
-                            protein: 12, hydration: [60, 75],
-                            bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
-                          };
-                          if (blendSlot === 2) setBlendRatio(85);
-                          assignBlendFlour(genericEntry, (result.w >= 270 ? 'strong00' : 'pizza00') as FlourKey, result.name, undefined, 'photo');
-                          setBlendRoad(null);
+                          const match = matchScannedFlour(result.name);
+                          if (match) {
+                            if (blendSlot === 2) setBlendRatio(85);
+                            assignBlendFlour(match, flourBehaviour(match), `${match.brand} ${match.name}`);
+                            setUnmatchedScan(null); setBlendRoad(null);
+                          } else {
+                            setUnmatchedScan(result.name); setBlendRoad('type');
+                          }
                         }}
                         onCancel={() => setBlendRoad(null)}
                       />

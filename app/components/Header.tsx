@@ -570,6 +570,7 @@ export default function Header({
             <label>{locale === 'fr' ? 'Pays des courses' : 'Shopping location'}<select value={shoppingLocation} onChange={e=>{const location=e.target.value;setShoppingLocation(location);try{localStorage.setItem('bh_shopping_location',location);}catch{}window.dispatchEvent(new CustomEvent('bh-shopping-location',{detail:location}));}} style={{...menuButton,width:'100%',marginTop:6}}>
               {[['singapore',locale==='fr'?'Singapour':'Singapore'],['france','France'],['uk',locale==='fr'?'Royaume-Uni':'UK'],['us',locale==='fr'?'États-Unis':'US'],['australia',locale==='fr'?'Australie':'Australia'],['international','International']].map(([value,label])=><option key={value} value={value}>{label}</option>)}
             </select></label>
+            <button type="button" onClick={() => setMenuOpen(false)} style={{ ...menuButton, background: 'var(--terra)', color: 'white', textAlign: 'center', minHeight: 44 }}>{locale === 'fr' ? 'Terminé' : 'Done'}</button>
           </div>}
           {menuPage === 'library' && <>
           {/* ── My Sessions label — always visible ── */}

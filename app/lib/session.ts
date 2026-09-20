@@ -36,6 +36,8 @@ export interface SessionData {
   manualSalt: number | undefined;
   targetDoughTemp: number | undefined;
   flourInFridge: boolean;
+  measuredFlourTemp?: number;
+  measuredPrefermentTemp?: number;
   addSeeds?: boolean;
   wastePct: number | undefined;
   priorityOverride: string | null | undefined;

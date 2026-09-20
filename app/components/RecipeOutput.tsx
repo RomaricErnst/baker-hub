@@ -901,6 +901,8 @@ export default function RecipeOutput({
           poolish/biga there, so callouts based on the main-dough yeast
           amount would contradict the preferment card. */}
       {yeastInfo && hasPref && result.preferment && result.preferment.prefYeastGrams > 0 && result.preferment.prefYeastGrams < 0.5 && (
+        <details className="bh-disclosure">
+          <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Petite dose de levure' : 'Small yeast dose'}</summary>
         <div style={{
           background: '#FFFBEE',
           border: '1.5px solid #9C8248',
@@ -926,10 +928,13 @@ export default function RecipeOutput({
             })()}
           </div>
         </div>
+        </details>
       )}
       {yeastInfo && !hasPref && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
+          {(yeastInfo.hitMinFloor || needsPrecision || yeastInfo.dilutionTip) && <details className="bh-disclosure">
+            <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Petite dose de levure' : 'Small yeast dose'}</summary>
           {/* Min floor callout — shown when 0.5g IDY floor was applied */}
           {yeastInfo.hitMinFloor && !needsPrecision && (
             <div style={{
@@ -968,7 +973,7 @@ export default function RecipeOutput({
 
           {/* Dilution tip */}
           {yeastInfo.dilutionTip && (
-            <details className="bh-disclosure"><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Doser une petite quantité de levure' : 'Measure a small yeast dose'}</summary><InfoCard
+            <InfoCard
               icon=""
               level="info"
               title={t('recipeOutput.dilutionTitle')}
@@ -978,8 +983,10 @@ export default function RecipeOutput({
                 waterInSolutionG: Number((yeastInfo.dilutionTip.waterInSolutionGrams ?? yeastInfo.dilutionTip.solutionG * 100 / 101).toFixed(3)),
                 remainingWaterG: Number((yeastInfo.dilutionTip.remainingWaterGrams ?? waterMain - yeastInfo.dilutionTip.solutionG * 100 / 101).toFixed(3)),
               })}
-            /></details>
+            />
           )}
+
+          </details>}
 
           {/* Poolish recommendation */}
           {yeastInfo.recommendPoolish && (

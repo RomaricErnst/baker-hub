@@ -8,8 +8,9 @@ function make(yeast='instant',pref='none',blend){
  const schedule=utils.buildSchedule(new Date('2026-09-21T08:00Z'),new Date('2026-09-22T18:00Z'),[],24,60,'hand','neapolitan');
  return utils.calculateRecipe('neapolitan','home_oven_standard',1,1000,24,'normal',schedule,4,yeast,'custom','hand',undefined,undefined,undefined,blend,pref,null,20,undefined,undefined,false,1.5,false,undefined,12);
 }
-function render(result,pref='none',flourBlend,locale='en'){
- return renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require(`../messages/${locale}.json`),timeZone:'UTC'},React.createElement(Recipe,{result,numItems:1,itemWeight:1000,styleName:'Neapolitan',styleKey:'neapolitan',mixerType:'hand',kitchenTemp:24,fermEquivHours:30,mode:'custom',prefermentType:pref,flourBlend,wastePct:1.5}))).replace(/<[^>]+>/g,'');
+function render(result,pref='none',flourBlend,locale='en',raw=false){
+ const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require(`../messages/${locale}.json`),timeZone:'UTC'},React.createElement(Recipe,{result,numItems:1,itemWeight:1000,styleName:'Neapolitan',styleKey:'neapolitan',mixerType:'hand',kitchenTemp:24,fermEquivHours:30,mode:'custom',prefermentType:pref,flourBlend,wastePct:1.5})));
+ return raw?html:html.replace(/<[^>]+>/g,'');
 }
 test('direct, starter and preferment total rows include the mixing allowance',()=>{
  for(const [yeast,pref] of [['instant','none'],['sourdough','levain'],['instant','poolish'],['instant','biga']]){
@@ -32,5 +33,22 @@ test('preferment baker percentages describe the selected seed yeast actually wei
   r.preferment.prefYeastGrams=r.flour*.0025;r.yeast.convertedPct=1.2;
   const section=render(r,pref).split('Baker’s percentages')[1];
   a.ok(section);a.match(section,/Fresh yeast : 0\.25%/i);a.doesNotMatch(section,/Fresh yeast : 1\.2%/i);
+ }
+});
+
+test('small yeast precision and dilution instructions stay in one initially closed disclosure',()=>{
+ for(const locale of ['en','fr'])for(const pref of ['none','poolish','biga']){
+  const r=make('instant',pref);
+  if(r.preferment)r.preferment.prefYeastGrams=.04;
+  else {r.yeast.convertedGrams=.04;r.yeast.hitMinFloor=true;r.yeast.dilutionTip=utils.commercialDilution(.04,r.water);}
+  const html=render(r,pref,undefined,locale,true);
+  const label=locale==='fr'?'Petite dose de levure':'Small yeast dose';
+  const match=html.match(new RegExp('<details([^>]*)><summary[^>]*>'+label+'</summary>([\\s\\S]*?)</details>'));
+  a.ok(match,`${locale}/${pref}`);a.doesNotMatch(match[1],/\bopen\b/);
+  const messages=require(`../messages/${locale}.json`);
+  a.ok(match[2].includes(messages.recipeOutput.precisionScaleTitle));
+  a.ok(match[2].includes(pref==='none'?messages.recipeOutput.dilutionTitle:locale==='fr'?'Jetez le reste':'Discard the leftover'));
+  a.doesNotMatch(match[2],/<details/);
+  const outside=html.replace(match[0],'');a.ok(!outside.includes(messages.recipeOutput.precisionScaleTitle));
  }
 });

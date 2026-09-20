@@ -186,11 +186,11 @@ function Pill({ label, color }: { label: string; color?: string }) {
 
 // ── Step card ────────────────────────────────────────
 function StepCard({
-  number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, preview = false, onReturnCurrent, onPrevious, onNext,
+  number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext,
 }: {
   number: number; icon: React.ReactNode; title: string; overview?: boolean; totalSteps?: number;
   time?: Date; duration?: number | null; accent?: string;
-  onPrevious?: () => void; onNext?: () => void; preview?: boolean; onReturnCurrent?: () => void; completeLabel?: string; final?: boolean; open: boolean; done: boolean; onToggle: () => void; onDone: () => void;
+  onPrevious?: () => void; onNext?: () => void; preview?: boolean; onReturnCurrent?: () => void; completeLabel?: string; batchCompletion?: boolean; final?: boolean; open: boolean; done: boolean; onToggle: () => void; onDone: () => void;
   children: React.ReactNode; divRef?: React.RefCallback<HTMLDivElement>;
 }) {
   const locale = useLocale();
@@ -218,17 +218,16 @@ function StepCard({
         {preview && <p style={{color:D.smoke,fontSize:12}}>{fr ? 'Aperçu — votre progression ne change pas.' : 'Preview — your progress stays unchanged.'}</p>}
         {children}
         <div style={{position:'sticky',bottom:navigationHeight,background:D.warm,paddingTop:12,paddingBottom:'max(8px, env(safe-area-inset-bottom))',zIndex:2}}>
+        {preview ? <button type="button" onClick={onReturnCurrent} style={{minHeight:44}}>{fr ? 'Revenir à l’étape en cours' : 'Back to current step'}</button>
+          : batchCompletion && !done ? <button type="button" onClick={onDone} style={{minHeight:44,padding:'8px 12px',marginBottom:8,border:`1px solid ${D.terra}`,borderRadius:10,background:D.terra,color:'white',cursor:'pointer'}}>{completeLabel}</button>
+          : <label style={{display:'inline-flex',alignItems:'center',gap:8,fontSize:14,minHeight:44,margin:'0 0 4px',cursor:'pointer'}}>
+              <input type="checkbox" checked={done} onChange={onDone} title={done ? (fr ? 'Annuler cette étape' : 'Undo this step') : (fr ? 'Marquer comme terminée' : 'Mark as completed')} style={{width:18,height:18,margin:0,accentColor:D.terra}}/>
+              {fr ? 'Étape faite' : 'Step done'}
+            </label>}
         <nav aria-label={fr ? 'Navigation entre les étapes' : 'Step navigation'} style={{display:'flex',gap:8}}>
           <button type="button" onClick={onPrevious} disabled={!onPrevious} style={{flex:1,minHeight:44}}>{fr ? 'Étape précédente' : 'Previous step'}</button>
           <button type="button" onClick={onNext} disabled={final} style={{flex:1,minHeight:44}}>{fr ? 'Étape suivante' : 'Next step'}</button>
         </nav>
-        <button type="button" onClick={preview ? onReturnCurrent : onDone} style={{ display: 'block', width: '100%', minHeight: 44,
-          marginTop: 8, padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
-          background: done ? 'transparent' : D.terra, color: done ? D.terra : 'white',
-          border: `1px solid ${D.terra}`, fontWeight: 600 }}>
-          {preview ? (fr ? 'Revenir à l’étape en cours' : 'Back to current step') : done ? (fr ? 'Annuler cette étape' : 'Undo this step')
-            : completeLabel ?? (final ? (fr ? 'Terminer la cuisson' : 'Mark bake complete') : (fr ? 'Marquer comme terminée' : 'Mark as completed'))}
-        </button>
         </div>
       </div>}
     </section>
@@ -972,6 +971,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       overview: currentStep === 0, totalSteps,
             onPrevious: s > 1 ? () => setCurrentStep(s - 1) : undefined,
       onNext: () => { const next = stepRefs.current.findIndex((el, i) => i > s && el !== null); if (next > s) setCurrentStep(next); },
+      batchCompletion: mixing && !!batch && batch.count > 1,
       completeLabel: mixing && batch && batch.count > 1 ? (l === 'fr' ? `Terminer la pétrissée ${batch.active + 1} sur ${batch.count}` : `Complete batch ${batch.active + 1} of ${batch.count}`) : undefined,
       open: currentStep === s,
       done: doneSteps.has(s),
@@ -1048,7 +1048,15 @@ Actual dough condition and equipment may differ from these estimates.`;
             );
           })()}
 
-          <Section icon="" title={t('sectionTitles.whatToDo')}>
+          {!enriched && !(simpleMode && recipe?.waterTemp == null) && (
+        <Section icon="" title={t('sectionTitles.waterTemp')}>
+          {recipe?.waterTemp != null && bgMainWater != null && <WaterPreparation readOnly
+            waterGrams={bgMainWater} targetTemp={recipe.waterTemp} kitchenTemp={kitchenTemp}
+            fridgeTemp={fridgeTemp} locale={l} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={recipe.thermal?.targetDoughTemp} achievedDoughTempC={recipe.thermal?.doughTempC} waterWasClamped={recipe.thermal?.waterWasClamped} idealWaterTemp={recipe.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && recipe.oil === 0 && recipe.sugar === 0 && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />}
+        </Section>
+        )}
+
+        <Section icon="" title={t('sectionTitles.whatToDo')}>
             {isPoolish ? (
               <Steps items={t.raw(kitchenTemp >= 26 ? 'poolish.stepsFridge' : 'poolish.stepsRT') as { bold: string; note: string }[]} />
             ) : (
@@ -1056,6 +1064,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             )}
           </Section>
 
+          <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Utilisez à maturité ; vérifiez aussi la pâte, pas seulement l’horloge.':'Use when ripe; check the dough as well as the clock.'}</p>
           <StepVisual kind={isPoolish ? 'poolish' : 'biga'} locale={l} />
           <StepExtras
             tips={<>
@@ -1287,6 +1296,24 @@ Actual dough condition and equipment may differ from these estimates.`;
           {batch.overCapacity && <p role="alert">{l === 'fr' ? 'Cette quantité dépasse la capacité indiquée du pétrin. Augmentez le nombre de pétrissées dans les réglages du matériel.' : 'This batch exceeds the stated mixer capacity. Increase batches in equipment settings.'}</p>}
           {batch.count > 1 && <p>{l === 'fr' ? 'Préparez le préferment une seule fois. Chaque pétrissée utilise sa part indiquée.' : hasPref ? 'Prepare the preferment once. Add only the portion listed for this batch.' : 'Repeat this mix for each batch.'}</p>}
         </Section>}
+        <Section icon="" title={t('sectionTitles.whatToDo')}>
+          <Steps items={enriched ? [
+            {bold:l==='fr'?'Pesez tous les ingrédients indiqués.':'Weigh all the listed ingredients.',note:l==='fr'?'Pesez les œufs sans coquille.':'Weigh eggs without shells.'},
+            {bold:l==='fr'?'Mélangez sans le beurre jusqu’à ce que la pâte gagne en tenue.':'Mix without the butter until the dough begins to gain strength.',note:''},
+            {bold:l==='fr'?'Ajoutez le beurre souple progressivement ; laissez chaque ajout s’incorporer.':'Add softened butter gradually; let each addition incorporate.',note:''},
+          ] : [
+            {bold:l==='fr'?'Pesez les ingrédients de cette pétrissée indiqués ci-dessus.':'Weigh this batch’s ingredients shown above.',note:recipe?.yeast?.yeastType==='active_dry'?(l==='fr'?'Réactivez la levure selon le sachet avec une partie de l’eau mesurée.':'Activate the yeast as directed on its packet using part of the measured water.'):''},
+            {bold:hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'
+              ?(waterMethod==='direct'&&spiralIceConfirmed&&mixerType==='spiral'?(l==='fr'?'Mélangez la farine avec 90 % de l’eau liquide prévue ; réservez le reste. Ajoutez la glace mesurée au pétrissage si elle est indiquée ci-dessus.':'Combine flour with 90% of the planned liquid water; reserve the rest. Add the measured ice during mixing if shown above.'):(l==='fr'?'Mélangez la farine avec 90 % de l’eau préparée ; réservez le reste.':'Combine flour with 90% of the prepared water; reserve the rest.'))
+              :(l==='fr'?'Mélangez la farine avec l’eau préparée ci-dessus.':'Combine flour with the water preparation shown above.'),note:''},
+            {bold:isSourdough?(l==='fr'?'Incorporez le levain mûr et le sel.':'Incorporate the ripe starter and salt.'):hasPref?(l==='fr'?`Incorporez votre ${prefermentType} préparé, puis le sel.`:`Incorporate the prepared ${prefermentType}, then the salt.`):(l==='fr'?'Incorporez la levure et le sel.':'Incorporate the yeast and salt.'),note:''},
+            ...(hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'?[{bold:l==='fr'?'Quand la pâte se tient, ajoutez progressivement l’eau réservée ; laissez chaque ajout s’incorporer.':'Once the dough holds together, add the reserved water gradually; let each addition absorb.',note:''}]:[]),
+            {bold:mixerType==='no_knead'?(l==='fr'?'Arrêtez une fois homogène. Couvrez ; les repos et rabats prévus développeront la pâte.':'Stop once combined. Cover; scheduled rests and folds develop the dough.'):styleKey==='pain_seigle'?(l==='fr'?'Mélangez jusqu’à homogénéité ; le seigle reste collant.':'Mix until evenly combined; rye dough remains sticky.'):(l==='fr'?'Pétrissez jusqu’à une pâte homogène et élastique, aux vitesses autorisées par votre pétrin.':'Knead until cohesive and elastic, using only your mixer’s permitted dough speeds.'),note:''},
+            ...(oil>0?[{bold:l==='fr'?'Ajoutez l’huile mesurée en dernier et mélangez jusqu’à absorption.':'Add the measured oil last and mix until absorbed.',note:''}]:[]),
+          ]}/>
+        </Section>
+        <p style={{fontSize:16,lineHeight:1.5,margin:'16px 0'}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{mixerType==='no_knead'?(l==='fr'?'Il ne reste aucune farine sèche ; couvrez et poursuivez le repos prévu.':'No dry flour remains; cover and continue the planned rest.'):styleKey==='pain_seigle'?(l==='fr'?'La pâte est homogène, sans farine sèche ; elle peut rester collante.':'Evenly combined, without dry flour; it may stay sticky.'):(l==='fr'?'Il ne reste aucune farine sèche. Vérifiez le développement et la température de la pâte ; toute glace ajoutée doit avoir fondu.':'No dry flour remains. Check dough development and temperature; any added ice must have melted.')}</p>
+        <details><summary style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{l==='fr'?'Technique de pétrissage · aide':'Mixing technique · help'}</summary>
         <Section icon="" title={t('sectionTitles.mixingOrder')}>
           {enriched && <Steps items={[
             {bold:l === 'fr' ? 'Pesez tous les ingrédients indiqués' : 'Weigh all the listed ingredients',note:l === 'fr' ? 'Pesez les œufs sans coquille. Le lait et les œufs sont des ingrédients distincts de l’eau.' : 'Weigh eggs without shells. Milk and eggs are separate ingredients from plain water.'},
@@ -1408,6 +1435,8 @@ Actual dough condition and equipment may differ from these estimates.`;
           </>}
         </Section>
 
+        </details>
+
         {/* Blending advice — only when there is actually a blend. Two or three
             flours behave as one dough only if they are combined dry first;
             everything below follows from that. */}
@@ -1435,13 +1464,6 @@ Actual dough condition and equipment may differ from these estimates.`;
           );
         })()}
 
-        {!enriched && !(simpleMode && recipe?.waterTemp == null) && (
-        <Section icon="" title={t('sectionTitles.waterTemp')}>
-          {recipe?.waterTemp != null && bgMainWater != null && <WaterPreparation readOnly
-            waterGrams={bgMainWater} targetTemp={recipe.waterTemp} kitchenTemp={kitchenTemp}
-            fridgeTemp={fridgeTemp} locale={l} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={recipe.thermal?.targetDoughTemp} achievedDoughTempC={recipe.thermal?.doughTempC} waterWasClamped={recipe.thermal?.waterWasClamped} idealWaterTemp={recipe.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && recipe.oil === 0 && recipe.sugar === 0 && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />}
-        </Section>
-        )}
 
         <StepExtras
           tips={<>
@@ -1528,6 +1550,8 @@ Actual dough condition and equipment may differ from these estimates.`;
             ]),
           ]} />
         </Section>
+
+        <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'La pâte est aérée et a gagné en tenue ; jugez-la avec le planning.':'The dough is aerated and has gained strength; judge it alongside the schedule.'}</p>
 
         <StepExtras
           tips={<>
@@ -1819,6 +1843,8 @@ Actual dough condition and equipment may differ from these estimates.`;
           )}
         </Section>
 
+        <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Le four et la surface de cuisson sont chauds, et la pâte est prête.':'The oven and baking surface are heated, and the dough is ready.'}</p>
+
         <StepExtras
           tips={
             <Section icon={null} title={t('sectionTitles.pitfalls')}>
@@ -1887,6 +1913,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           )}
         </Section>
 
+        {isBread && <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Le pain est cuit à cœur ; posez-le sur la grille de refroidissement.':'The bread is baked through; move it to the cooling rack.'}</p>}
         <StepExtras
           tips={<>
             <Section icon="" title={t('sectionTitles.watchFor')}>
@@ -1946,10 +1973,10 @@ Actual dough condition and equipment may differ from these estimates.`;
         {(() => {
           const weight = (recipe?.totalDough ?? numItems * 750) / Math.max(1,numItems);
           const range = breadCoolingRange(styleKey, weight);
-          return <><Steps items={[
+          return <><Section icon="" title={t('sectionTitles.whatToDo')}><Steps items={[
             {bold:l === 'fr' ? 'Sortez le pain du moule ou de la cocotte et posez-le à découvert sur une grille.' : 'Remove the bread from its tin or pot and place it uncovered on a rack.',note:''},
             {bold:l === 'fr' ? `Comptez environ ${range} avant de trancher.` : `Allow about ${range} before slicing.`,note:''},
-          ]}/><p style={{marginTop:16}}><strong>{l === 'fr' ? 'Prêt quand : ' : 'Ready when: '}</strong>{styleKey === 'pain_seigle' ? (l === 'fr' ? 'Attendez le lendemain pour trancher ; une fois refroidi, emballez-le pour éviter qu’il sèche.' : 'Wait until tomorrow to slice; once cool, wrap it to keep it from drying out.') : (l === 'fr' ? 'Le dessous du pain n’est plus chaud au toucher. Encore chaud ? Vérifiez dans 30 min.' : 'The loaf no longer feels warm underneath. Still warm? Check again in 30 min.')}</p></>;
+          ]}/></Section><p style={{marginTop:16}}><strong>{l === 'fr' ? 'Prêt quand : ' : 'Ready when: '}</strong>{styleKey === 'pain_seigle' ? (l === 'fr' ? 'Attendez le lendemain pour trancher ; une fois refroidi, emballez-le pour éviter qu’il sèche.' : 'Wait until tomorrow to slice; once cool, wrap it to keep it from drying out.') : (l === 'fr' ? 'Le dessous du pain n’est plus chaud au toucher. Encore chaud ? Vérifiez dans 30 min.' : 'The loaf no longer feels warm underneath. Still warm? Check again in 30 min.')}</p></>;
         })()}
         <StepExtras tips={<p>{l === 'fr' ? 'Laissez-le découvert pendant le refroidissement. Rangez-le une fois refroidi.' : 'Leave it uncovered while cooling. Store it once cool.'}</p>} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />
       </StepCard>}
