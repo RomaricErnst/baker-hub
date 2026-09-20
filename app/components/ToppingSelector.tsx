@@ -740,8 +740,8 @@ const SECTION_LABELS: Record<IngredientCategory, Locale> = {
 
 export function shoppingNoteText(note: string | Locale | undefined, locale: string): string {
   if (!note) return '';
-  if (typeof note !== 'string') return note[locale === 'fr' ? 'fr' : 'en'] || note.en || '';
-  return locale === 'fr' ? (SHOPPING_NOTE_FR[note] ?? note) : note;
+  const text = typeof note !== 'string' ? note[locale === 'fr' ? 'fr' : 'en'] || note.en || '' : locale === 'fr' ? (SHOPPING_NOTE_FR[note] ?? note) : note;
+  return /^(Product references; check your store for availability|Références produits)/i.test(text) ? '' : text;
 }
 
 function formatQty(total: number, unit: string, locale: string): string {
@@ -757,7 +757,8 @@ function formatQty(total: number, unit: string, locale: string): string {
     pinch:  { en: 'pinches', fr: 'pincées' },
     drizzle:{ en: 'drizzles', fr: 'filets' },
   };
-  const label = unitLabels[unit]?.[l] ?? unit;
+  const singular: Record<string, Locale> = { slices: {en:'slice',fr:'tranche'}, leaves: {en:'leaf',fr:'feuille'}, sprigs: {en:'sprig',fr:'brin'}, pinch: {en:'pinch',fr:'pincée'}, drizzle: {en:'drizzle',fr:'filet'} };
+  const label = (total === 1 ? singular[unit]?.[l] : undefined) ?? unitLabels[unit]?.[l] ?? unit;
   return `${total} ${label}`;
 }
 

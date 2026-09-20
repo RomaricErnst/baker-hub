@@ -1538,6 +1538,9 @@ export default function Home() {
         setActiveStep(resume.activeStep);
         setAdvancedStep(resume.advancedStep);
         setSetupOverview(!!resume.setupOverview);
+        if (resume.activeTab) setActiveTab(resume.activeTab);
+        if (resume.pizzaPartyTab) setPizzaPartyTab(resume.pizzaPartyTab);
+        setReviewMode(!!resume.reviewMode);
         sessionStorage.removeItem('bh_locale_resume');
       }
     } catch {}
@@ -3015,7 +3018,7 @@ export default function Home() {
           onBeforeLocaleChange={() => {
             if (!bakeType || !styleKey) return;
             saveSession(buildSessionPayload());
-            try { sessionStorage.setItem('bh_locale_resume', JSON.stringify({activeStep, advancedStep, setupOverview})); } catch {}
+            try { sessionStorage.setItem('bh_locale_resume', JSON.stringify({activeStep, advancedStep, setupOverview, activeTab, pizzaPartyTab, reviewMode})); } catch {}
           }}
           onSaveSession={saveCurrentSession}
           onReviewPlan={bakeType && modeChosen ? () => { setActiveTab('setup'); setReviewMode(true); setSetupOverview(true); scrollToStepTop(); } : undefined}

@@ -15,7 +15,8 @@ function formatQty(amount: number, unit: IngredientUnit, locale: string): string
     pinch:  { en: 'pinches', fr: 'pincées' },
     drizzle:{ en: 'drizzles', fr: 'filets' },
   };
-  const label = unitLabels[unit]?.[locale as 'en' | 'fr'] ?? unit;
+  const singular: Record<string, {en:string;fr:string}> = { slices: {en:'slice',fr:'tranche'}, leaves: {en:'leaf',fr:'feuille'}, sprigs: {en:'sprig',fr:'brin'}, pinch: {en:'pinch',fr:'pincée'}, drizzle: {en:'drizzle',fr:'filet'} };
+  const label = (amount === 1 ? singular[unit]?.[locale as 'en'|'fr'] : undefined) ?? unitLabels[unit]?.[locale as 'en' | 'fr'] ?? unit;
   return `${Math.round(amount)} ${label}`;
 }
 
