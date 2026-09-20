@@ -1382,7 +1382,7 @@ export function calculateRecipe(
     }
 
     // Compute preferment recipe — climate-aware
-    preferment = (prefermentType && prefermentType !== 'none')
+    preferment = (yeastType !== 'sourdough' && prefermentType && prefermentType !== 'none' && prefermentType !== 'levain')
       ? computePrefermentRecipe(
           prefermentType, flour, water,
           kitchenTemp, fridgeTemp, prefInFridge,

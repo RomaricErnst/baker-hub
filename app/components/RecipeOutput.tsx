@@ -700,9 +700,9 @@ export default function RecipeOutput({
               </span>
             ) : undefined}
           />
-          {water > 0 && <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} pct={pctStr(waterPct)} sub={
+          {water > 0 && <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(sdActive ? waterMain : water)} pct={pctStr(waterPct)} sub={
             !enrichment ? <details><summary>{locale === 'fr' ? 'Eau du mélange final' : 'Main-mix water'}</summary>
-              {sdActive && <p>{locale === 'fr' ? `${wStr(sdHalf)} dans le levain ; ${wStr(waterMain)} à ajouter.` : `${wStr(sdHalf)} in the starter; add ${wStr(waterMain)}.`}</p>}
+              {sdActive && <p>{locale === 'fr' ? `${wStr(sdHalf)} d’eau sont déjà dans le levain indiqué ci-dessous.` : `${wStr(sdHalf)} water is already in the starter shown below.`}</p>}
               {waterSubNode}
             </details> : undefined} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />}
           {enrichmentRows}
@@ -808,7 +808,7 @@ export default function RecipeOutput({
             <IngRow
               label={t('recipeOutput.starterLabel')}
               sub={t('recipeOutput.starterSub')}
-              grams={`${sourdough.starterGramsMin}–${sourdough.starterGramsMax} g`}
+              grams={wStr(sdMid)}
               pct={`${sourdough.starterPctMin}–${sourdough.starterPctMax}%`}
               range
             />

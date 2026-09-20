@@ -81,3 +81,16 @@ test('refrigerated flour affects the thermal solve in both planning modes', () =
     assert.equal(chilled.water, ambient.water);
   }
 });
+
+
+test('levain selection uses ripe starter, never a commercial preferment yeast dose', () => {
+  for (const style of ['pain_campagne','pain_levain','sourdough']) {
+    const r=recipe(style,1,800,'sourdough','levain');
+    assert.equal(r.yeast,null);
+    assert.equal(r.preferment,null);
+    assert.ok(r.sourdough.starterGramsMid > 20);
+    const half=Math.round(r.sourdough.starterGramsMid/2);
+    const actual=(r.flour-half)+(r.water-half)+r.sourdough.starterGramsMid+r.salt+r.oil+r.sugar;
+    assert.ok(Math.abs(actual-r.totalDough)<=3);
+  }
+});
