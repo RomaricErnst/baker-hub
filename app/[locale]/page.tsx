@@ -3584,42 +3584,20 @@ export default function Home() {
                   is the same mechanic every other choice uses. */}
               {!modeChosen && (
                 <div style={{ padding: '4px 0 8px' }}>
-                  {/* Mode is the first step of setup, so it says so. Without a
-                      number here it read as a step zero sitting outside the
-                      count, which is exactly what it is not. */}
-                  <div style={{
-                    fontFamily: 'var(--font-ui)', fontSize: '11px', letterSpacing: '.12em',
-                    textTransform: 'uppercase', color: '#9C8248', fontWeight: 600,
-                  }}>{locale === 'fr'
-                    ? 'Votre façon de préparer'
-                    : 'Your approach'}</div>
                   <h2 style={{
                     fontFamily: 'var(--font-ui)', fontSize: '26px', fontWeight: 800,
                     letterSpacing: '-.022em', lineHeight: 1.13, margin: '8px 0 16px',
-                  }}>{locale === 'fr' ? 'Comment souhaitez-vous préparer votre recette ?' : 'How would you like to plan?'}</h2>
+                  }}>{locale === 'fr' ? 'À votre façon' : 'Your way'}</h2>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {([
-                      // Same frame both sides: who it is for, then what you get.
-                      //
-                      // No numeral: the card is drawn before the yeast is
-                      // chosen and the sourdough path drops a step, so any
-                      // figure here can become false.
-                      //
-                      // Simple names no technical term — preferment and
-                      // hydration are the words a beginner picks Simple to
-                      // avoid — and refers to nothing they have not met yet.
-                      // "Your style" failed on that count: the style step comes
-                      // after this page.
                       { key: 'simple' as const, title: 'Simple',
-                        lead: locale === 'fr' ? 'Réglages de pâte conseillés' : 'Suggested dough settings',
                         desc: locale === 'fr'
-                          ? 'Choisissez le style, la quantité et l’horaire.'
-                          : 'Choose your style, quantity and timing.' },
+                          ? 'Des réglages conseillés pour votre style de pâte.'
+                          : 'Recommended settings for your dough style.' },
                       { key: 'custom' as const, title: locale === 'fr' ? 'Personnalisé' : 'Custom',
-                        lead: locale === 'fr' ? 'Choisissez votre farine et votre levure ou levain' : 'Choose your flour and leavening',
                         desc: locale === 'fr'
-                          ? 'Ajustez ensuite votre pâte.'
-                          : 'Then fine-tune your dough.' },
+                          ? 'Choisissez votre farine, levure ou levain, et votre préferment.'
+                          : 'Choose your flour, yeast or sourdough starter, and preferment.' },
                     ]).map(m => (
                       <button
                         key={m.key}
@@ -3639,9 +3617,8 @@ export default function Home() {
                               textTransform: 'uppercase', color: '#9C8248', fontWeight: 700,
                             }}>{locale === 'fr' ? 'votre habitude' : 'your usual'}</span>
                           )}
-                          <span style={{ display: 'block', fontSize: '12.5px', color: 'var(--smoke)', marginTop: '3px', lineHeight: 1.45 }}>
-                            {m.lead}{' · '}
-                            <span style={{ color: 'var(--ash)', fontWeight: 700 }}>{m.desc}</span>
+                          <span style={{ display: 'block', fontSize: '14px', color: 'var(--ash)', marginTop: '4px', lineHeight: 1.45 }}>
+                            {m.desc}
                           </span>
                         </span>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9C8248"
