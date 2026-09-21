@@ -151,3 +151,7 @@ three-flour blending, guide layout and scheduling. Deployment and targeted onlin
 verification follow this commit. Real signed-in cloud save/share and physical
 camera capture remain outside the exercised scope; image-file scanning was
 previously checked online. Numerical fermentation tests are not biological trials.
+
+Follow-up before handoff: changing a restored preferment/yeast method now revokes
+both the past-preparation exception and cached approval. Independent review and
+146 tests pass. Unchanged selections retain legitimate resume behavior.

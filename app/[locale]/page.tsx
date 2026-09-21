@@ -2252,6 +2252,23 @@ export default function Home() {
 
   // Visible quantity and preferment defaults can be accepted on Continue.
   // Flour requires an explicit selection through FlourPicker.
+  function choosePreferment(pt: PrefermentType) {
+    if (pt !== prefermentType) {
+      setSessionRestored(false);
+      setPrefermentValidity({ type: pt, valid: false });
+    }
+    setPrefermentChosen(true);
+    setPrefermentType(pt);
+  }
+
+  function chooseYeast(yt: YeastType) {
+    if (yt !== yeastType) {
+      setSessionRestored(false);
+      setPrefermentValidity({ type: prefermentType, valid: false });
+    }
+    setYeastType(yt);
+  }
+
   function markStepSettled(id: number) {
     if (id === 2) setQtyChosen(true);
     if (id === 8) setPrefermentChosen(true);
@@ -3297,7 +3314,7 @@ export default function Home() {
         <div ref={modeSelectorRef} style={{ textAlign: 'center', marginBottom: '16px' }}>
           {unsupportedEnrichedMethod && <div role="alert" style={{ padding: 14, marginBottom: 16, border: '1px solid var(--border)', borderRadius: 12, textAlign: 'left' }}>
             <p>{locale === 'fr' ? 'Cette recette enrichie est actuellement prévue avec de la levure et sans préferment. Votre ancien choix est conservé ; choisissez la méthode prise en charge pour créer une nouvelle recette.' : 'This enriched recipe currently supports commercial yeast and no preferment. Your saved choice is preserved; choose the supported method to create a new recipe.'}</p>
-            <button type="button" onClick={() => { setPrefermentType('none'); setPrefermentChosen(true); setYeastType('instant'); setSetupOverview(false); if (tab === 'custom') setAdvancedStep(7); else setActiveStep(6); }} style={NEXT_CTA}>{locale === 'fr' ? 'Utiliser la levure instantanée sans préferment' : 'Use instant yeast without preferment'}</button>
+            <button type="button" onClick={() => { choosePreferment('none'); chooseYeast('instant'); setSetupOverview(false); if (tab === 'custom') setAdvancedStep(7); else setActiveStep(6); }} style={NEXT_CTA}>{locale === 'fr' ? 'Utiliser la levure instantanée sans préferment' : 'Use instant yeast without preferment'}</button>
           </div>}
           {tab === 'custom' && archivedFlourNames.length > 0 && <div role="alert" style={{ padding: 14, marginBottom: 16, border: '1px solid var(--border)', borderRadius: 12, textAlign: 'left' }}><p>{locale === 'fr' ? 'Ces farines enregistrées ne sont plus proposées dans le catalogue. Choisissez leur remplacement pour créer une nouvelle recette :' : 'These saved flours are no longer selectable. Choose replacements before creating a new recipe:'} {archivedFlourNames.join(' · ')}</p><button type="button" onClick={() => { setSetupOverview(false); setAdvancedStep(6); }} style={NEXT_CTA}>{locale === 'fr' ? 'Revoir mes farines' : 'Review my flours'}</button></div>}
 
@@ -3806,7 +3823,7 @@ export default function Home() {
             <StepPage flow={simpleFlow} id={6}>
               <YeastHelper
                 selected={yeastType}
-                onSelect={(yt) => setYeastType(yt)}
+                onSelect={chooseYeast}
                 onClose={() => {}}
                 disabledIds={['sourdough']}
                 disabledNote={locale === 'fr' ? 'Le levain nécessite le mode personnalisé' : 'Sourdough requires Custom mode'}
@@ -4306,7 +4323,7 @@ export default function Home() {
               <YeastHelper
                 selected={yeastType}
                 onSelect={(yt) => {
-                  setYeastType(yt);
+                  chooseYeast(yt);
                   if (yt === 'sourdough') {
                     setPrefermentType('levain');
                   } else {
@@ -4333,7 +4350,7 @@ export default function Home() {
               <StepPage flow={customFlow} id={8}>
                 <PrefermentPicker
                   selected={prefermentChosen ? prefermentType : null}
-                  onSelect={(pt) => { setPrefermentChosen(true); setPrefermentType(pt); }}
+                  onSelect={choosePreferment}
                   flourPct={prefermentFlourPct}
                   suggestedFlourPct={20}
                   totalFlourGrams={advancedRecipe?.flour ?? (styleKey ? numItems * itemWeight / (1 + (ALL_STYLES[styleKey].hydration + ALL_STYLES[styleKey].salt + ALL_STYLES[styleKey].oil + ALL_STYLES[styleKey].sugar) / 100) : undefined)}
