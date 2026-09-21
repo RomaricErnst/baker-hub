@@ -770,7 +770,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
         // clipped. Nothing inside paints to these corners, so the clip bought
         // nothing and cost the whole control.
         <div ref={blendRef} style={{ marginTop: '12px', borderRadius: '16px', border: '1px solid #E8E0D5', background: '#F8F4EF' }}>
-          <div
+          <button type="button" aria-expanded={openSection === 'blend'}
             onClick={() => {
               if (openSection === 'blend') {
                 setBlendFilterOrigin(null);
@@ -781,6 +781,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               setOpenSection(openSection === 'blend' ? null : 'blend');
             }}
             style={{
+              width:'100%',minHeight:44,textAlign:'left',border:0,background:'transparent',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               padding: '12px 16px', cursor: 'pointer',
               fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: 500,
@@ -788,7 +789,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               borderBottom: openSection === 'blend' ? '1px solid #E8E0D5' : 'none',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               {!blend.flour2 && <span style={{ fontSize: '14px', color: '#6B4423', fontWeight: 600 }}>+</span>}
               {/* The header used to read "Add a second flour" while the panel
                   was picking the THIRD — the search for flour three appeared
@@ -810,9 +811,9 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   border: '1px solid #DDD8D0',
                 }}>{locale === 'fr' ? 'facultatif' : 'optional'}</span>
               )}
-            </div>
+            </span>
             <span style={{ fontSize: '12px', color: '#8A7F78' }}>{openSection === 'blend' ? '▾' : '›'}</span>
-          </div>
+          </button>
           {openSection === 'blend' && (
             <div style={{ paddingTop: '12px', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px', scrollMarginTop: '80px' }}>
 
@@ -886,7 +887,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   })()}
                   <button
                     onClick={() => { setBlendSelectedF2(null); setBlendSelectedF3(null); setBlendSlot(2); onBlendChange({ ...blend, flour2: null, ratio1: 100, customFlour2Name: undefined, w2: undefined, flour3: null, ratio2: undefined, w3: undefined, customFlour3Name: undefined }); }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '12px', textDecoration: 'underline', padding: 0 }}
+                    style={{ minHeight:44, background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '12px', textDecoration: 'underline', padding: 0 }}
                   >
                     {locale === 'fr' ? 'Retirer le mélange' : 'Remove blend'}
                   </button>
