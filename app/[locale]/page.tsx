@@ -896,6 +896,7 @@ export default function Home() {
   // gold and names it, and Generate waits. Same reasoning as Climate.
   const [qtyChosen, setQtyChosen] = useState(false);
   const [flourChosen, setFlourChosen] = useState(false);
+  const [manualFlourEntry, setManualFlourEntry] = useState(false);
   const [prefermentChosen, setPrefermentChosen] = useState(false);
 
   // Wrappers for the quantity controls only. Choosing a style also sets a
@@ -4304,9 +4305,9 @@ export default function Home() {
 
 
             {/* ─── ADV STEP 7: Flour ───────────────── */}
-            <StepPage flow={customFlow} id={6} nextOverride={!flourChosen || archivedFlourNames.length ? <button type="button" disabled aria-describedby="choose-flour-note" style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{fr ? 'Continuer' : 'Continue'}</button> : undefined}>
-              {(!flourChosen || archivedFlourNames.length > 0) && <p id="choose-flour-note" style={{fontSize:14,color:'var(--smoke)'}}>{fr ? 'Sélectionnez votre farine dans la liste.' : 'Select your flour from the list.'}</p>}
+            <StepPage flow={customFlow} id={6} nextOverride={manualFlourEntry ? null : !flourChosen || archivedFlourNames.length ? <button type="button" disabled style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{fr ? 'Continuer' : 'Continue'}</button> : undefined}>
               <FlourPicker
+                onManualEntryChange={setManualFlourEntry}
                 blend={flourBlend}
                 onBlendChange={b => { setFlourChosen(true); setFlourBlend(b); }}
                 bakeType={bakeType ?? 'pizza'}

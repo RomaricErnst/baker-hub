@@ -181,6 +181,7 @@ interface FlourPickerProps {
   bakeType?: 'pizza' | 'bread';
   mode?: 'simple' | 'custom';
   styleKey?: string | null;
+  onManualEntryChange?: (active: boolean) => void;
 }
 
 // ── Main component ────────────────────────────────
@@ -405,7 +406,7 @@ function WQualityTag({ kind, locale }: { kind: WSource; locale: string }) {
   );
 }
 
-export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', mode = 'custom', styleKey }: FlourPickerProps) {
+export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', mode = 'custom', styleKey, onManualEntryChange }: FlourPickerProps) {
   // Accordion
   const [openSection, setOpenSection] = useState<'search' | 'blend' | null>('search');
 
@@ -511,6 +512,10 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   // list and a W field all at once — which is exactly what the base stopped
   // doing, and why the two still looked like different products.
   const [blendRoad, setBlendRoad] = useState<'scan' | 'search' | 'type' | 'w' | null>(null);
+  useEffect(() => {
+    onManualEntryChange?.(road === 'type' || blendRoad === 'type');
+    return () => onManualEntryChange?.(false);
+  }, [road, blendRoad, onManualEntryChange]);
 
   const locale = useLocale();
   const isFr = locale === 'fr';
@@ -731,22 +736,22 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
         {(road === 'scan' || road === 'type') && <div ref={flourRoadRef} tabIndex={-1} aria-label={road === 'scan' ? (isFr ? 'Scanner une farine' : 'Scan a flour') : (isFr ? 'Choisir un type de farine' : 'Choose a flour type')}>
           {road === 'type' && <button type="button" onClick={()=>{setRoad(null);setUnmatchedScan(null);}} style={{minHeight:44,padding:'8px 0',border:0,background:'transparent',fontSize:16,color:'var(--terra)',cursor:'pointer'}}>{isFr ? '← Retour à la recherche de farine' : '← Back to flour search'}</button>}
         {road==='scan'&&<FlourScan onResult={result=>{const match=matchScannedFlour(result.name);if(match){selectDBEntry(match);}else{setUnmatchedScan(result.name);setManualName(result.name);setManualType(blend.flour1 ?? 'pizza00');setManualProtein('');setManualQWText('');setRoad('type');}}} onCancel={()=>{setRoad(null);setUnmatchedScan(null);}}/>}
-        {road==='type'&&<section aria-label={isFr?'Saisir une farine':'Enter your flour'} style={{marginTop:16}}>
-          <h3>{isFr?'Saisir votre farine':'Enter your flour'}</h3>
+        {road==='type'&&<section className="manual-flour-form" aria-label={isFr?'Saisir une farine':'Enter your flour'}>
+          <h3>{isFr?'Votre farine':'Your flour'}</h3>
           <label style={{display:'block',marginBottom:16}}>{isFr?'Type de farine':'Flour type'}
-            <select value={manualType} onChange={e=>setManualType(e.target.value as FlourKey)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}>
+            <select value={manualType} onChange={e=>setManualType(e.target.value as FlourKey)} className="manual-flour-input">
               {(Object.keys(FLOUR_DATA) as FlourKey[]).map(type=><option key={type} value={type}>{isFr?FLOUR_DATA[type].nameFr:FLOUR_DATA[type].name}</option>)}
             </select>
           </label>
           <label style={{display:'block',marginBottom:16}}>{isFr?'Nom du produit · facultatif':'Product name · optional'}
-            <input type="text" value={manualName} onChange={e=>setManualName(e.target.value)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}/>
+            <input type="text" placeholder={isFr?'Ex. Farine T65 du moulin':'e.g. Local mill bread flour'} value={manualName} onChange={e=>setManualName(e.target.value)} className="manual-flour-input"/>
           </label>
           <details><summary style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{isFr?'Ajouter les valeurs du sachet · facultatif':'Add values from the bag · optional'}</summary>
             <label style={{display:'block',marginBottom:16}}>{isFr?'Force W':'Strength W'}
-              <input type="number" min={1} max={500} value={manualQWText} onChange={e=>setManualQWText(e.target.value)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}/>
+              <input type="number" inputMode="numeric" placeholder="Ex. 280" min={1} max={500} value={manualQWText} onChange={e=>setManualQWText(e.target.value)} className="manual-flour-input"/>
             </label>
             <label style={{display:'block',marginBottom:16}}>{isFr?'Protéines (%)':'Protein (%)'}
-              <input type="number" min={1} max={30} step={0.1} value={manualProtein} onChange={e=>setManualProtein(e.target.value)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}/>
+              <input type="number" inputMode="decimal" placeholder="Ex. 12.5" min={1} max={30} step={0.1} value={manualProtein} onChange={e=>setManualProtein(e.target.value)} className="manual-flour-input"/>
             </label>
             <p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Protéines : information du sachet, non utilisée pour calculer W.':'Protein is recorded from the bag; it is not used to calculate W.'}</p>
           </details>
@@ -756,7 +761,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             if(!selection)return;
             onBlendChange(selection);setRoad(null);setUnmatchedScan(null);setPickerOpen(false);
             requestAnimationFrame(()=>selectionRef.current?.scrollIntoView({block:'nearest',behavior:'smooth'}));
-          }} style={{minHeight:44,padding:'10px 16px',fontSize:16}}>{isFr?'Utiliser cette farine':'Use this flour'}</button>
+          }} className="manual-flour-submit">{isFr?'Utiliser cette farine':'Use this flour'}</button>
         </section>}
         </div>}
       </>}
@@ -908,22 +913,22 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                     else{setUnmatchedScan(result.name);setManualName(result.name);setManualType('bread');setManualProtein('');setManualQWText('');setBlendRoad('type');}
                   }} onCancel={()=>{setBlendRoad(null);setUnmatchedScan(null);}}/>}
                   {blendRoad==='type'&&<button type="button" onClick={()=>{setBlendRoad(null);setUnmatchedScan(null);}} style={{minHeight:44}}>{isFr?'← Retour à la recherche de farine':'← Back to flour search'}</button>}
-        {blendRoad==='type'&&<section aria-label={isFr?'Saisir une farine':'Enter your flour'} style={{marginTop:16}}>
-          <h3>{isFr?'Saisir votre farine':'Enter your flour'}</h3>
+        {blendRoad==='type'&&<section className="manual-flour-form" aria-label={isFr?'Saisir une farine':'Enter your flour'}>
+          <h3>{isFr?'Votre farine':'Your flour'}</h3>
           <label style={{display:'block',marginBottom:16}}>{isFr?'Type de farine':'Flour type'}
-            <select value={manualType} onChange={e=>setManualType(e.target.value as FlourKey)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}>
+            <select value={manualType} onChange={e=>setManualType(e.target.value as FlourKey)} className="manual-flour-input">
               {(Object.keys(FLOUR_DATA) as FlourKey[]).map(type=><option key={type} value={type}>{isFr?FLOUR_DATA[type].nameFr:FLOUR_DATA[type].name}</option>)}
             </select>
           </label>
           <label style={{display:'block',marginBottom:16}}>{isFr?'Nom du produit · facultatif':'Product name · optional'}
-            <input type="text" value={manualName} onChange={e=>setManualName(e.target.value)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}/>
+            <input type="text" placeholder={isFr?'Ex. Farine T65 du moulin':'e.g. Local mill bread flour'} value={manualName} onChange={e=>setManualName(e.target.value)} className="manual-flour-input"/>
           </label>
           <details><summary style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{isFr?'Ajouter les valeurs du sachet · facultatif':'Add values from the bag · optional'}</summary>
             <label style={{display:'block',marginBottom:16}}>{isFr?'Force W':'Strength W'}
-              <input type="number" min={1} max={500} value={manualQWText} onChange={e=>setManualQWText(e.target.value)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}/>
+              <input type="number" inputMode="numeric" placeholder="Ex. 280" min={1} max={500} value={manualQWText} onChange={e=>setManualQWText(e.target.value)} className="manual-flour-input"/>
             </label>
             <label style={{display:'block',marginBottom:16}}>{isFr?'Protéines (%)':'Protein (%)'}
-              <input type="number" min={1} max={30} step={0.1} value={manualProtein} onChange={e=>setManualProtein(e.target.value)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}/>
+              <input type="number" inputMode="decimal" placeholder="Ex. 12.5" min={1} max={30} step={0.1} value={manualProtein} onChange={e=>setManualProtein(e.target.value)} className="manual-flour-input"/>
             </label>
             <p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Protéines : information du sachet, non utilisée pour calculer W.':'Protein is recorded from the bag; it is not used to calculate W.'}</p>
           </details>
@@ -936,7 +941,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               hydration:null,bestFor:[],crowdFavourite:[],note:'',bagImage:'',logo:null};
             if(blendSlot===2)setBlendRatio(blend.flour2 ? blend.ratio1 : 85);
             assignBlendFlour(entry,manualType,entry.name,blend.flour2 ? blend.ratio1 : 85,selection.w1Source);
-          }} style={{minHeight:44,padding:'10px 16px',fontSize:16}}>{isFr?'Utiliser cette farine':'Use this flour'}</button>
+          }} className="manual-flour-submit">{isFr?'Utiliser cette farine':'Use this flour'}</button>
         </section>}
                 </div>
               )}

@@ -259,3 +259,37 @@ button,
 @media (min-width: 600px) {
   .decision-illustration { width: 160px; height: 160px; }
 }
+
+/* Manual flour entry shares the catalogue's visible form controls. */
+.manual-flour-form {
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--warm);
+}
+.manual-flour-form h3 { margin: 0 0 20px; font-size: 18px; font-weight: 650; }
+.manual-flour-input {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid #b8ada0;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--char);
+  font: inherit;
+  font-size: 16px;
+}
+.manual-flour-input::placeholder { color: #82766a; }
+.manual-flour-input:focus-visible { outline: 2px solid var(--terra); outline-offset: 2px; }
+.manual-flour-form details { margin: 8px 0 16px; border-top: 1px solid var(--border); }
+.manual-flour-submit {
+  width: 100%; min-height: 48px; padding: 12px 16px; margin-top: 16px;
+  border: 0; border-radius: 9px; background: var(--terra); color: #fff;
+  font: inherit; font-weight: 650; cursor: pointer;
+}
+.manual-flour-submit:disabled { opacity: .5; cursor: not-allowed; }
+.manual-flour-submit:focus-visible { outline: 2px solid var(--terra); outline-offset: 3px; }
+@media (max-width: 480px) { .manual-flour-form { padding: 16px; } }
