@@ -1,7 +1,16 @@
 'use client';
 
 import { type UnitSystem, cToDisplay, inputTempToC, tempC, tempUnit } from '../utils/units';
+import { useState, type InputHTMLAttributes } from 'react';
 import { useLocale } from 'next-intl';
+
+function TemperatureInput({ value, onCommit, ...props }: Omit<InputHTMLAttributes<HTMLInputElement>, 'value'|'onChange'|'onBlur'|'onKeyDown'> & { value:number; onCommit:(value:number)=>void }) {
+  const [draft,setDraft]=useState<string|null>(null);
+  return <input {...props} value={draft ?? String(value)} onChange={e=>setDraft(e.target.value)} onBlur={()=>{
+    if(draft!==null&&draft.trim()!==''&&Number.isFinite(Number(draft)))onCommit(Number(draft));
+    setDraft(null);
+  }} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}else if(e.key==='Escape'){e.preventDefault();setDraft(null);}}}/>;
+}
 
 interface ClimatePickerProps {
   kitchenTemp: number;
@@ -58,16 +67,15 @@ export default function ClimatePicker({
             {label}
           </label>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--char)', fontFamily: 'var(--font-ui)', fontWeight: 700 }}>
-            <input
+            <TemperatureInput
               id={`climate-${kind}`}
               type="number"
               min={cToDisplay(min, units)} max={cToDisplay(max, units)} step={1}
               value={cToDisplay(value, units)}
               aria-label={label}
-              onChange={event => {
-                if (event.target.value === '') return;
-                const next = inputTempToC(Number(event.target.value), units);
-                if (Number.isFinite(next) && next >= min && next <= max) update(next);
+              onCommit={value => {
+                const next = inputTempToC(value, units);
+                update(Math.min(max, Math.max(min, next)));
               }}
               style={{ ...controlStyle(), width: 88, minHeight: 44, padding: '6px 8px', textAlign: 'right' }}
             />

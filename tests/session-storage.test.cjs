@@ -29,3 +29,8 @@ test('cloud autosave and named save retain the batch override in the persisted s
  for(const snapshot of snapshots)assert.equal(JSON.parse(JSON.stringify(snapshot)).mixingBatches,4);
  const {normalizeMixingBatches}=require('../app/lib/session.ts');const rebake={...snapshots[0],eatTime:session.eatTime+604800000};assert.equal(normalizeMixingBatches(rebake.mixingBatches),4);
 });
+
+test('optional container capacity survives local storage without changing recipe fields',()=>{
+ const store=new Map();global.localStorage={setItem:(k,v)=>store.set(k,v),getItem:k=>store.get(k)??null,removeItem:k=>store.delete(k)};
+ for(const capacity of [undefined,3,5.5]) {saveSession({bakeType:'pizza',containerCapacityLitres:capacity,itemWeight:250});assert.equal(loadSession().containerCapacityLitres,capacity);assert.equal(loadSession().itemWeight,250);}
+});

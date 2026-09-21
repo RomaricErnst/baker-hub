@@ -2,6 +2,7 @@
 import { PREFERMENT_TYPES, type PrefermentType } from '../data';
 import { useTranslations, useLocale } from 'next-intl';
 import DecisionList from './DecisionList';
+import { useEffect, useState } from 'react';
 
 interface PrefermentPickerProps {
   // null means the step has not been settled yet — nothing is highlighted and
@@ -26,6 +27,17 @@ export default function PrefermentPicker({
 }: PrefermentPickerProps) {
   const t = useTranslations('preferment');
   const fr = useLocale() === 'fr';
+  const committedPct = flourPct ?? suggestedFlourPct;
+  const [pctDraft, setPctDraft] = useState(String(committedPct));
+  useEffect(() => { setPctDraft(String(committedPct)); }, [committedPct, selected]);
+  function commitPct() {
+    const value = Number(pctDraft);
+    if (pctDraft.trim() !== '' && Number.isFinite(value)) {
+      const bounded = Math.max(10, Math.min(60, Math.round(value)));
+      setPctDraft(String(bounded));
+      if (bounded !== committedPct) onFlourPctChange?.(bounded);
+    } else setPctDraft(String(committedPct));
+  }
 
   const ALL_OPTIONS = [
     { id: 'none',    image: '/images/approved/preferment/direct.webp',  title: t('none.title'),    tagline: t('none.tagline') },
@@ -60,9 +72,9 @@ export default function PrefermentPicker({
                 <div style={{ padding: '12px 14px', border: '1px solid var(--border)', borderTop: 0, borderRadius: '0 0 12px 12px', background: 'var(--warm)' }}>
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 13 }}>
                     {fr ? 'Part de toute la farine' : 'Share of all flour'}
-                    <span><input type="number" min={10} max={60} step={1} value={flourPct ?? suggestedFlourPct} onChange={e => { const value = Number(e.target.value); if (e.target.value !== '' && value >= 10 && value <= 60) onFlourPctChange(value); }} style={{ width: 72, minHeight: 44, border: '1px solid var(--border)', borderRadius: 8, padding: 8 }} /> %</span>
+                    <span><input type="number" min={10} max={60} step={1} value={pctDraft} onChange={e => setPctDraft(e.target.value)} onBlur={commitPct} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }} style={{ width: 72, minHeight: 44, border: '1px solid var(--border)', borderRadius: 8, padding: 8 }} /> %</span>
                   </label>
-                  <input type="range" aria-label={fr ? 'Part de farine en préferment' : 'Prefermented flour share'} min={10} max={60} step={5} value={flourPct ?? suggestedFlourPct} onChange={e => onFlourPctChange(Number(e.target.value))} style={{ width: '100%', minHeight: 44, accentColor: 'var(--terra)' }} />
+                  <input type="range" aria-label={fr ? 'Part de farine en préferment' : 'Prefermented flour share'} min={10} max={60} step={1} value={flourPct ?? suggestedFlourPct} onChange={e => { setPctDraft(e.target.value); onFlourPctChange(Number(e.target.value)); }} style={{ width: '100%', minHeight: 44, accentColor: 'var(--terra)' }} />
                   <p style={{ margin: '4px 0', fontSize: 12, color: 'var(--smoke)' }}>{fr ? 'Point de départ suggéré' : 'Suggested starting point'} : {suggestedFlourPct}%</p>
                   <p style={{ margin: '4px 0', fontSize: 12, color: 'var(--smoke)' }}>{fr ? 'Point de départ avant de définir le planning.' : 'Starting point until the schedule is set.'}</p>
                   {totalFlourGrams !== undefined && Number.isFinite(totalFlourGrams) && totalFlourGrams > 0 && (() => {

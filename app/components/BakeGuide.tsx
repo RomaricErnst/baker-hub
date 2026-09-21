@@ -197,7 +197,7 @@ function StepCard({
   const fr = locale === 'fr';
   const navigationHeight = useBottomNavHeight(64);
   return (
-    <section ref={divRef} style={{ display: open || overview ? undefined : 'none', background: D.warm, borderRadius: overview ? 12 : 0,
+    <section ref={divRef} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${number}`} style={{ display: open || overview ? undefined : 'none', background: D.warm, borderRadius: overview ? 12 : 0,
       border: overview ? `1px solid ${done ? D.sage + '60' : D.border}` : 'none', scrollMarginTop: 140 }}>
       <button type="button" onClick={overview ? onToggle : undefined} aria-expanded={open}
         aria-controls={`bake-step-${number}`} style={{ width: '100%', display: 'flex', gap: 12,
@@ -806,6 +806,11 @@ export default function BakeGuide({
   const [activeBatch, setActiveBatch] = useState(0);
   const batch = recipe ? mixingBatchPlan(recipe, mixerType, mixingBatches, activeBatch) : null;
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const focusRequestedStep = useRef<number | null>(null);
+  function navigateGuideStep(step: number) {
+    focusRequestedStep.current = step;
+    setCurrentStep(step);
+  }
   useEffect(() => { setTotalSteps(stepRefs.current.filter(Boolean).length); });
   const t = useTranslations('bakeGuide');
   const _fmtLocale = useLocale();
@@ -816,6 +821,7 @@ export default function BakeGuide({
     schedule, prefStartTime, feedTime, feed2Time, starterEvents: starterEvents?.map(event => ({kind:event.kind,time:event.time})), recipe, mixingBatches,
   });
   useEffect(() => {
+    focusRequestedStep.current = null;
     let completed: number[] = [];
     try {
       const stored: unknown = JSON.parse(localStorage.getItem(progressKey) ?? '[]');
@@ -833,6 +839,10 @@ export default function BakeGuide({
     if (currentStep > 0) {
       const el = stepRefs.current[currentStep];
       if (el) {
+        if (focusRequestedStep.current === currentStep) {
+          focusRequestedStep.current = null;
+          el.focus({ preventScroll: true });
+        }
         const r = el.getBoundingClientRect();
         const headerH = 120; // sticky header + journey bar
         // Scroll only when the next step isn't comfortably visible —
@@ -969,8 +979,8 @@ Actual dough condition and equipment may differ from these estimates.`;
     const s = lastStep;
     return {
       overview: currentStep === 0, totalSteps,
-            onPrevious: s > 1 ? () => setCurrentStep(s - 1) : undefined,
-      onNext: () => { const next = stepRefs.current.findIndex((el, i) => i > s && el !== null); if (next > s) setCurrentStep(next); },
+      onPrevious: s > 1 ? () => navigateGuideStep(s - 1) : undefined,
+      onNext: () => { const next = stepRefs.current.findIndex((el, i) => i > s && el !== null); if (next > s) navigateGuideStep(next); },
       batchCompletion: mixing && !!batch && batch.count > 1,
       completeLabel: mixing && batch && batch.count > 1 ? (l === 'fr' ? `Terminer la pétrissée ${batch.active + 1} sur ${batch.count}` : `Complete batch ${batch.active + 1} of ${batch.count}`) : undefined,
       open: currentStep === s,

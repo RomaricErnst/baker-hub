@@ -40,3 +40,31 @@ Browser evidence: Cuoco search -> scan -> cancel retains query; product details
 and graph tabs both work for a dated Poolish plan; fine-tuning renders on phone.
 Physical camera capture/live recognition and authenticated cloud save/share are
 not yet verified. Automated recognition-handling tests do not replace those checks.
+
+## Acceptance round 2 — three independent reviewers
+
+UX review reproduced temperature input rejecting intermediate digits; fixed
+with draft/commit inputs and verified 28°C kitchen /10°C fridge. Preferment
+input uses the same commit behavior. Flour now requires an explicit product/type
+selection; advancing and generation cannot silently confirm an unseen default.
+
+Fidelity review restored per-pizza ingredient quantities, before/after-bake
+placement, style notes, one-point preferment slider increments and the optional
+saved fermentation-container capacity. Shopping alternatives remain in shopping
+as explicitly requested by the user, even where a prototype wrapper differs.
+
+Science/features review found partial snapshots in share/photo/pizza fallback
+saves. All now use the canonical payload; sharing refreshes existing saved data
+and refuses to publish stale data after a write failure. Focused handler tests
+cover new/existing/error/auth paths. A separate 972-case mass and preferment-seed
+matrix found no failures; this is numerical regression evidence, not biological
+calibration.
+
+Live e2db59c preview: actual image upload through the scanner identified Caputo
+Cuoco and selecting it returned the real catalogue entry in the flour summary.
+This verifies the deployed recognition service and upload path; physical camera
+capture remains untested. Signed-in cloud writes remain covered by handler tests,
+not a real authenticated account walkthrough.
+
+Acceptance rule: fix required defects and unexplained prototype regressions;
+record optional ideas separately rather than endlessly redesigning the branch.

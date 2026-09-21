@@ -290,7 +290,7 @@ style={{ display: 'none' }}
                   borderRadius: '20px', padding: '.2rem 8px',
                   border: '1px solid rgba(107, 68, 35,0.2)',
                 }}>
-                  W {matchedEntry && !matchedEntry.wPublished ? '~' : ''}{displayW}
+                  W {matchedEntry?.wRange ? `${matchedEntry.wRangePublished?'':'~'}${matchedEntry.wRange[0]}–${matchedEntry.wRange[1]}` : `${matchedEntry && !matchedEntry.wPublished?'~':''}${displayW}`}
                 </span>
                 <span style={{
                   fontFamily: 'var(--font-ui)', fontSize: '12px',
@@ -298,7 +298,7 @@ style={{ display: 'none' }}
                   borderRadius: '20px', padding: '.2rem 8px',
                   border: '1px solid rgba(107,122,90,0.25)',
                 }}>
-                  {displayProtein}% protein
+                  {displayProtein}% {isFr?'de protéines':'protein'}
                 </span>
                 {isEstimated && (
                   <button

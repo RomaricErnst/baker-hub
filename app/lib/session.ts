@@ -26,6 +26,7 @@ export interface SessionData {
   spiralIceConfirmed?: boolean;
   /** Undefined retains the automatic equipment recommendation. */
   mixingBatches?: number;
+  containerCapacityLitres?: number;
   flourBlend: unknown;
   prefermentType: string;
   prefermentFlourPct: number | undefined;

@@ -10,6 +10,8 @@ import WaterPreparation, { type WaterSource, type WaterSettingsProps } from './W
 import { formatPrefermentDose, prefermentDilution } from '../utils/prefermentDose';
 
 interface RecipeOutputProps extends WaterSettingsProps {
+  containerCapacityLitres?: number;
+  onContainerCapacityChange?: (litres: number | undefined) => void;
   mixingBatches?: number;
   onMixingBatchesChange?: (count: number) => void;
   waterSource?: WaterSource;
@@ -352,7 +354,7 @@ function StarterPrepCard({
 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
-  result, numItems, itemWeight, styleName, styleKey, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
+  containerCapacityLitres, onContainerCapacityChange, result, numItems, itemWeight, styleName, styleKey, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, units,
   feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
   onEditSetup, onOpenGuide, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
@@ -823,6 +825,18 @@ export default function RecipeOutput({
         {pf ? <p>{t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)} : {pctStr(pf.prefYeastGrams / flour * 100)}</p> : yeastInfo && <p>{yeastTypeName} : {pctStr(yeastInfo.convertedPct)}</p>}
         {sourdough && <p>{t('recipeOutput.starterLabel')} : {pctStr(sdMid / flour * 100)}</p>}
         {pf && <p>{locale === 'fr' ? 'Farine préfermentée' : 'Prefermented flour'} : {pctStr(pf.prefFlour / flour * 100)}</p>}
+      </details>}
+
+      {onContainerCapacityChange && <details className="bh-disclosure">
+        <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Récipient de fermentation' : 'Fermentation container'}</summary>
+        <label style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',fontSize:14}}>
+          {locale === 'fr' ? 'Capacité du récipient (litres)' : 'Container capacity (litres)'}
+          <input type="number" min={0.5} step={0.5} defaultValue={containerCapacityLitres ?? 3} key={containerCapacityLitres ?? 'default'}
+            onBlur={e => { const value = Number(e.target.value); if (e.target.value !== '' && Number.isFinite(value) && value >= 0.5) onContainerCapacityChange(value); else { e.target.value = String(containerCapacityLitres ?? 3); } }}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+            style={{width:90,minHeight:44,padding:8,border:'1px solid var(--border)',borderRadius:8}} />
+        </label>
+        <p style={{fontSize:13}}>{locale === 'fr' ? 'Prévoyez de la place pour que la pâte gonfle.' : 'Allow room for the dough to expand.'}</p>
       </details>}
 
       {/* ── Batch splitting callout ──────────────────────────────── */}

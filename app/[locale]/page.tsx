@@ -980,6 +980,7 @@ export default function Home() {
   const [waterMethod, setWaterMethod] = useState<'premelt' | 'direct'>('premelt');
   const [spiralIceConfirmed, setSpiralIceConfirmed] = useState(false);
   const [mixingBatches, setMixingBatches] = useState<number | undefined>(undefined);
+  const [containerCapacityLitres, setContainerCapacityLitres] = useState<number | undefined>(3);
   const [equipmentPanel, setEquipmentPanel] = useState<'oven'|'mixer'>('oven');
   useEffect(() => { if (!isRestoringRef.current) setMixingBatches(undefined); }, [numItems, itemWeight, mixerType, styleKey]);
   const [kitchenTemp, setKitchenTemp] = useState(22);
@@ -1418,7 +1419,7 @@ export default function Home() {
     setYeastType(session.yeastType as YeastType | null);
     setKitchenTemp(session.kitchenTemp);
     setHumidity(session.humidity);
-    setFridgeTemp(session.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(session.waterSource ?? '') ? session.waterSource! : 'room'); setMeasuredWaterTemp(session.measuredWaterTemp); setWaterMethod(session.waterMethod ?? 'premelt'); setSpiralIceConfirmed(session.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(session.mixingBatches));
+    setFridgeTemp(session.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(session.waterSource ?? '') ? session.waterSource! : 'room'); setMeasuredWaterTemp(session.measuredWaterTemp); setWaterMethod(session.waterMethod ?? 'premelt'); setSpiralIceConfirmed(session.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(session.mixingBatches)); setContainerCapacityLitres(session.containerCapacityLitres);
     if (session.flourBlend) setFlourBlend(session.flourBlend as FlourBlend);
     setPrefermentType(session.prefermentType as PrefermentType);
     // Absent means UNSETTLED, not settled. The `?? true` this replaces was
@@ -1938,7 +1939,7 @@ export default function Home() {
     return {
       tab, bakeType, bakeName, styleKey, numItems, itemWeight, pizzaDiameter,
       ovenType, ovenConstruction, mixerType, yeastType,
-      kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity, fridgeTemp,
+      kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, containerCapacityLitres, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
       qtyChosen, flourChosen, prefermentChosen,
       manualHydration, manualOil, manualSugar, manualSalt,
@@ -2151,32 +2152,25 @@ export default function Home() {
   }, [user, authTick]);
 
   async function shareCurrentSession() {
-    let id = bakeEventId;
-    if (!id && user) {
-      const { saveNamedSession } = await import('../lib/supabase/saveBakeEvent');
-      id = await saveNamedSession({
-        tab, bakeType: bakeType ?? '', bakeName, styleKey, numItems, itemWeight,
-        pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
-        fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
-        manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-        flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
-        eatTime: eatTime?.getTime() ?? null,
-        blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
-        pizzaParty: buildPizzaPartySnapshot(),
-        bakedDone,
-        computedRecipe: buildComputedRecipe(),
-      } as SessionData);
-      if (id) { setBakeEventId(id); setSessionSaved(true); }
-    }
-    if (id) { setShareSessionId(id); return; }
-    // Anonyme et non sauvegardé — on invite à se connecter, en retenant que
-    // c'était « partager » : la feuille s'ouvrira toute seule au retour, sur
-    // la fournée qui vient d'être faite et pas sur une autre.
     if (!user) {
       stashAuthIntent('share');
       window.dispatchEvent(new Event('bh-open-auth'));
       return;
     }
+    // Sharing publishes the current plan, including edits since the last save.
+    const { saveNamedSession, updateBakeEvent } = await import('../lib/supabase/saveBakeEvent');
+    const snapshot = buildSessionPayload() as SessionData;
+    let id = bakeEventId;
+    const saved = id ? await updateBakeEvent(id, snapshot) : !!(id = await saveNamedSession(snapshot));
+    if (!saved || !id) {
+      setSessionSaved(false);
+      setCloudSaveState('failed');
+      return;
+    }
+    setBakeEventId(id);
+    setSessionSaved(true);
+    setCloudSaveState('idle');
+    setShareSessionId(id);
   }
 
   function firstIncompleteStep(isCustom: boolean): number {
@@ -2184,6 +2178,7 @@ export default function Home() {
     // Oven and mixing share the equipment page (3) since A2.
     if (!ovenType || !mixerType) return 3;   // qty (2) + climate (4) have sane defaults
     if (isCustom) {
+      if (!flourChosen || archivedFlourNames.length) return 6;
       if (!yeastType) return 7;       // flour (6) has a default blend
       return 9;                       // preferment (8) defaults to Direct — scheduler is the goal
     }
@@ -2296,12 +2291,10 @@ export default function Home() {
     return list[list.length - 1].id;
   }
 
-  // Quantity is step 2 in both flows, Flour 6 and Preferment 8 in Custom.
-  // Simple has neither of the latter two, so the tab guard keeps a Simple
-  // step 6 (Yeast) from settling a Flour page that does not exist there.
+  // Visible quantity and preferment defaults can be accepted on Continue.
+  // Flour requires an explicit selection through FlourPicker.
   function markStepSettled(id: number) {
     if (id === 2) setQtyChosen(true);
-    if (id === 6 && tab === 'custom') setFlourChosen(true);
     if (id === 8) setPrefermentChosen(true);
   }
 
@@ -2317,20 +2310,8 @@ export default function Home() {
   }
 
   function advanceAdv(from: number) {
-    // Moving forward FROM a step's own page settles it.
-    //
-    // The three defaulted steps show a working value — an empty stepper or a
-    // blank blend is a broken control, not an unanswered question — so a baker
-    // who reads the page and taps forward has accepted what is on it. Treating
-    // that as unanswered was the worst of both worlds: it displayed a value and
-    // then reported "Quantity not confirmed" for it, which is what came back
-    // from the device.
-    //
-    // This is not the old walk-past-adopts rule returning. It fires only when
-    // the baker is ON the page and moves forward from it, so a value restored
-    // from storage or a page never reached still counts for nothing. That was
-    // always the real distinction; highestStep alone could not make it, because
-    // a restored session brings a highestStep the baker never earned.
+    // Flour is settled only by choosing a product or entering a flour type.
+    if (from === 6 && (!flourChosen || archivedFlourNames.length)) return;
     markStepSettled(from);
     const next = nextUnanswered(CUSTOM_STEPS, from, advancedHighestStep);
     setAdvancedStep(next);
@@ -2410,7 +2391,7 @@ export default function Home() {
     // Fresh session = fresh chance for profile blockers to apply — without
     // this reset, only the first session per page load ever received them.
     profileBlockersAppliedRef.current = false;
-    setEquipmentPanel('oven'); setMixingBatches(undefined);
+    setEquipmentPanel('oven'); setMixingBatches(undefined); setContainerCapacityLitres(3);
     setBakeType(null); setBakeName(''); setStyleKey(null); setProfileFields(new Set());
     setNumItems(2); setItemWeight(270);
     setOvenType(null); setOvenConstruction('tabletop'); setMixerType(null);
@@ -2482,6 +2463,10 @@ export default function Home() {
   }
 
   function handleGenerate() {
+    if (tab === 'custom' && (!flourChosen || archivedFlourNames.length)) {
+      setActiveTab('setup'); setSetupOverview(false); setAdvancedStep(6); scrollToStepTop();
+      return;
+    }
     if (yeastType === 'sourdough' && !recipeGenerated && !starterEvents.length) {
       setActiveTab('setup'); setSetupOverview(false);
       if (tab === 'custom') setAdvancedStep(9); else setActiveStep(7);
@@ -2517,7 +2502,7 @@ export default function Home() {
   }
 
   function loadRecipe(r: SavedRecipe) {
-    setMixingBatches(undefined); // Legacy recipes have no saved batch choice.
+    setMixingBatches(undefined); setContainerCapacityLitres(3); // Legacy recipes have no saved equipment capacity.
     const isCustom = r.mode === 'custom';
 
     // Core setup
@@ -2617,7 +2602,7 @@ export default function Home() {
     setYeastType(snap.yeastType as YeastType | null);
     setKitchenTemp(snap.kitchenTemp);
     setHumidity(snap.humidity);
-    setFridgeTemp(snap.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(snap.waterSource ?? '') ? snap.waterSource! : 'room'); setMeasuredWaterTemp(snap.measuredWaterTemp); setWaterMethod(snap.waterMethod ?? 'premelt'); setSpiralIceConfirmed(snap.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(snap.mixingBatches));
+    setFridgeTemp(snap.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(snap.waterSource ?? '') ? snap.waterSource! : 'room'); setMeasuredWaterTemp(snap.measuredWaterTemp); setWaterMethod(snap.waterMethod ?? 'premelt'); setSpiralIceConfirmed(snap.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(snap.mixingBatches)); setContainerCapacityLitres(snap.containerCapacityLitres);
     if (snap.flourBlend) setFlourBlend(snap.flourBlend as FlourBlend);
     setPrefermentType(snap.prefermentType as PrefermentType);
     setQtyChosen(snap.qtyChosen ?? false);
@@ -2960,6 +2945,7 @@ export default function Home() {
     // moves past anything, so without this the same step is reported missing
     // for ever and the CTA sends you to the page you just came from.
     onGapReturn: () => {
+      if (advancedStep === 6 && (!flourChosen || archivedFlourNames.length)) return;
       // Leaving a gap step means the baker has seen it and settled it, so it
       // counts as answered from here on. `find` returns the FIRST unanswered
       // step, so everything before it is already answered and raising the
@@ -3981,6 +3967,7 @@ export default function Home() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
 
                           <RecipeOutput
+                            containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
                             styleKey={styleKey ?? undefined}
                             waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches}
                             ovenType={ovenType}
@@ -4036,22 +4023,7 @@ export default function Home() {
                             let evId = bakeEventId;
                             if (!evId) {
                               const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
-                              const payload = {
-                                tab, bakeType, bakeName, styleKey, numItems, itemWeight,
-                                pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
-                                fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
-                                manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-                                flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
-                                eatTime: eatTime?.getTime() ?? null,
-                                blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
-                                recipeGenerated, activeTab, modeChosen,
-      // How far the baker got. Without it a resumed session reopened at
-      // highestStep 1, so every step carrying a default read as unset —
-      // "Quantity not confirmed" beside a finished recipe.
-      highestStep, advancedHighestStep,
-                                pizzaParty: buildPizzaPartySnapshot(),
-                                bakedDone,
-                              };
+                              const payload = buildSessionPayload();
                               evId = await upsertBakeEvent({ session: payload as SessionData });
                               if (evId) setBakeEventId(evId);
                             }
@@ -4221,22 +4193,7 @@ export default function Home() {
                     if (bakeEventId) return bakeEventId;
                     if (!user) return null;
                     const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
-                    const payload = {
-                      tab, bakeType, bakeName, styleKey, numItems, itemWeight,
-                      pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
-                      fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
-                      manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-                      flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
-                      eatTime: eatTime?.getTime() ?? null,
-                      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
-                      recipeGenerated, activeTab, modeChosen,
-      // How far the baker got. Without it a resumed session reopened at
-      // highestStep 1, so every step carrying a default read as unset —
-      // "Quantity not confirmed" beside a finished recipe.
-      highestStep, advancedHighestStep,
-                      pizzaParty: buildPizzaPartySnapshot(),
-                      bakedDone,
-                    };
+                    const payload = buildSessionPayload();
                     const id = await upsertBakeEvent({ session: payload as SessionData });
                     if (id) setBakeEventId(id);
                     return id;
@@ -4411,7 +4368,8 @@ export default function Home() {
 
 
             {/* ─── ADV STEP 7: Flour ───────────────── */}
-            <StepPage flow={customFlow} id={6}>
+            <StepPage flow={customFlow} id={6} nextOverride={!flourChosen || archivedFlourNames.length ? <button type="button" disabled aria-describedby="choose-flour-note" style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{fr ? 'Choisissez une farine' : 'Choose flour'}</button> : undefined}>
+              {(!flourChosen || archivedFlourNames.length > 0) && <p id="choose-flour-note" style={{fontSize:14,color:'var(--smoke)'}}>{fr ? 'Choisissez un produit ou saisissez votre type de farine pour continuer.' : 'Choose a product or enter your flour type to continue.'}</p>}
               <FlourPicker
                 blend={flourBlend}
                 onBlendChange={b => { setFlourChosen(true); setFlourBlend(b); }}
@@ -4630,6 +4588,7 @@ export default function Home() {
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
                           <RecipeOutput
+                            containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
                             styleKey={styleKey ?? undefined}
                             waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches}
                             ovenType={ovenType}
@@ -4689,22 +4648,7 @@ export default function Home() {
                             let evId = bakeEventId;
                             if (!evId) {
                               const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
-                              const payload = {
-                                tab, bakeType, bakeName, styleKey, numItems, itemWeight,
-                                pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
-                                fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
-                                manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-                                flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
-                                eatTime: eatTime?.getTime() ?? null,
-                                blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
-                                recipeGenerated, activeTab, modeChosen,
-      // How far the baker got. Without it a resumed session reopened at
-      // highestStep 1, so every step carrying a default read as unset —
-      // "Quantity not confirmed" beside a finished recipe.
-      highestStep, advancedHighestStep,
-                                pizzaParty: buildPizzaPartySnapshot(),
-                                bakedDone,
-                              };
+                              const payload = buildSessionPayload();
                               evId = await upsertBakeEvent({ session: payload as SessionData });
                               if (evId) setBakeEventId(evId);
                             }
@@ -4874,22 +4818,7 @@ export default function Home() {
                     if (bakeEventId) return bakeEventId;
                     if (!user) return null;
                     const { upsertBakeEvent } = await import('../lib/supabase/saveBakeEvent');
-                    const payload = {
-                      tab, bakeType, bakeName, styleKey, numItems, itemWeight,
-                      pizzaDiameter, ovenType, ovenConstruction, mixerType, yeastType, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, humidity,
-                      fridgeTemp, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
-                      manualHydration, manualOil, manualSugar, manualSalt, targetDoughTemp,
-                      flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
-                      eatTime: eatTime?.getTime() ?? null,
-                      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
-                      recipeGenerated, activeTab, modeChosen,
-      // How far the baker got. Without it a resumed session reopened at
-      // highestStep 1, so every step carrying a default read as unset —
-      // "Quantity not confirmed" beside a finished recipe.
-      highestStep, advancedHighestStep,
-                      pizzaParty: buildPizzaPartySnapshot(),
-                      bakedDone,
-                    };
+                    const payload = buildSessionPayload();
                     const id = await upsertBakeEvent({ session: payload as SessionData });
                     if (id) setBakeEventId(id);
                     return id;

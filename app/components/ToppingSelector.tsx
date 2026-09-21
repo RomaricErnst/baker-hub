@@ -470,6 +470,30 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
   );
 }
 
+export function PizzaIngredientDetails({pizza,locale,styleKey}: {pizza: Pizza; locale: string; styleKey?: string}) {
+  const l = locale === 'fr' ? 'fr' : 'en';
+  const style = styleKey as import('../lib/toppingTypes').StyleKey | undefined;
+  return <div>
+    <p style={{fontSize:13,color:'var(--smoke)'}}>{l === 'fr' ? 'Quantités pour une pizza' : 'Amounts for one pizza'}</p>
+    {(['before','after'] as const).map(order => {
+      const ingredients = pizza.ingredients.filter(ingredient => (style && ingredient.bakeOrderByStyle?.[style] || ingredient.bakeOrder) === order);
+      if (!ingredients.length) return null;
+      return <section key={order}>
+        <h3 style={{fontSize:16,margin:'16px 0 8px'}}>{order === 'before' ? (l === 'fr' ? 'Avant cuisson' : 'Before baking') : (l === 'fr' ? 'Après cuisson' : 'After baking')}</h3>
+        {ingredients.map(ingredient => {
+          const note = (style && ingredient.prepNoteByStyle?.[style]) || ingredient.prepNote;
+          const quantity = ingredient.qtyPerPizza;
+          const multiplier = style ? ingredient.qtyMultiplierByStyle?.[style] ?? 1 : 1;
+          return <div key={ingredient.id} style={{padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+            <div style={{display:'flex',justifyContent:'space-between',gap:12,fontSize:14}}><strong>{ingredient.name[l]}</strong><span>{quantity ? formatQty(quantity.amount * multiplier,quantity.unit,locale) : ''}</span></div>
+            {note && <p style={{fontSize:13,lineHeight:1.5,margin:'4px 0'}}>{note[l]}</p>}
+          </div>;
+        })}
+      </section>;
+    })}
+  </div>;
+}
+
 // ─── Pizza sheet ──────────────────────────────────────────────
 
 function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
@@ -611,22 +635,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
             {pizza.name[l] ?? pizza.name.en}
           </div>
 
-          {pizza.ingredients.length > 0 && (
-            <div style={{
-              display: 'flex', flexWrap: 'wrap',
-              gap: '4px', marginBottom: '8px',
-            }}>
-              {pizza.ingredients.map(ing => (
-                <span key={ing.id} style={{
-                  fontSize: '11px', color: '#3D3530',
-                  background: '#F0EBE0', borderRadius: '20px',
-                  padding: '2px 8px', border: '1px solid #E0D8CF',
-                }}>
-                  {ing.name[l] ?? ing.name.en}
-                </span>
-              ))}
-            </div>
-          )}
+          <PizzaIngredientDetails pizza={pizza} locale={locale} styleKey={styleKey} />
 
           {pizza.preparationSequence && <p style={{ fontSize: 13, lineHeight: 1.5 }}>{pizza.preparationSequence[l]}</p>}
           {pizza.wineNote && (
