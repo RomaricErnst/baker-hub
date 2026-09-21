@@ -1,3 +1,7 @@
+# Bakerhub
+
+Start with [PROJECT-HANDOFF.md](PROJECT-HANDOFF.md) for the current migration branch, preview, product decisions and verification status.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

@@ -1,3 +1,5 @@
+> Current continuation state: see [PROJECT-HANDOFF.md](../PROJECT-HANDOFF.md), updated 22 September 2026. The chronology below is historical; its older status/test counts are superseded by the dated reviews. Latest app checkpoint: 3bb09af; 154 tests and TypeScript passed; preview deployed.
+
 # Migration acceptance — 20 September 2026
 
 Branch: codex/prototype-migration-20260920. **Not ready for user acceptance yet.** Earlier preview builds were incomplete; deployment success is not evidence of feature parity.
