@@ -37,7 +37,7 @@ import { useSessionSave } from '../hooks/useSessionSave';
 import { type UnitSystem, cToDisplay, inputTempToC, tempUnit } from '../utils/units';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
-  PIZZA_STYLES, BREAD_STYLES,
+  PIZZA_STYLES, BREAD_STYLES, FLOUR_DATA,
   computeBlendProfile,
   type BakeType, type StyleKey, type OvenType, type BreadOvenType, type AnyOvenType, type MixerType, type YeastType, type FlourBlend, type PrefermentType,
 } from '../data';
@@ -552,99 +552,48 @@ const sheetHeadStyle: React.CSSProperties = {
 };
 
 // ── Setup review ──────────────────────────────
-// Where "← Setup" from the recipe lands. Ten rows become four questions:
-// what am I making, where, with what, and when. The flow itself is the place
-// to answer questions one at a time; this is the place to find the one you
-// came back to change.
-function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField }: {
+function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale = false, reviewValues = {} }: {
   nameField?: React.ReactNode;
   flow: StepFlow;
   modeChip?: { value: string; onClick: () => void };
   onJump: (id: number) => void;
   onBackToRecipe: () => void;
+  stale?: boolean;
+  reviewValues?: Record<number, string | null>;
 }) {
   const fr = flow.locale === 'fr';
-  const total = flow.steps.length;
-  const done  = flow.steps.filter(s => stepAnswered(s, flow.highestStep, flow.steps)).length;
-  const groups = GROUP_ORDER
-    .map(g => ({ g, steps: flow.steps.filter(s => (s.group ?? 'dough') === g) }))
-    .filter(x => x.steps.length > 0);
-
-  // Only the mode button uses this now; every step row goes through SetupRow.
-  const rowStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
-    padding: '13px 15px', background: 'none', border: 'none',
-    cursor: 'pointer', fontFamily: 'var(--font-ui)', textAlign: 'left',
-    minHeight: '44px',
-  };
-
+  // Timing closes the review; the guided step order remains unchanged.
+  const steps = [...flow.steps.filter(s => s.group !== 'plan'), ...flow.steps.filter(s => s.group === 'plan')];
+  const rows = [
+    ...(modeChip ? [{ key: 'mode', label: 'Mode', value: modeChip.value, onClick: modeChip.onClick }] : []),
+    ...steps.map(step => ({ key: String(step.id), label: step.chip, value: reviewValues[step.id] ?? step.value ?? step.gap, onClick: () => onJump(step.id) })),
+  ];
   return (
     <div style={{ padding: '4px 0 8px' }}>
-      <h2 style={{
-        fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700,
-        margin: '2px 0 2px', letterSpacing: '-.4px',
-      }}>{fr ? 'Vérifiez vos choix' : 'Review your choices'}</h2>
+      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700, margin: '2px 0 6px', letterSpacing: '-.4px' }}>{fr ? 'Vérifier mes choix' : 'Review my choices'}</h2>
+      <p style={{ fontSize: '13px', color: 'var(--smoke)', margin: '0 0 18px' }}>{fr ? 'Tout est prêt pour votre recette ?' : 'Everything ready for your recipe?'}</p>
       {nameField}
-      <p style={{ fontSize: '13px', color: 'var(--smoke)', margin: '0 0 18px' }}>
-        {fr
-          ? `${done} sur ${total} \u00b7 touchez une ligne pour la changer`
-          : `${done} of ${total} set \u00b7 tap any line to change`}
-      </p>
-
-      {modeChip && (
-        <button onClick={modeChip.onClick} style={{
-          ...rowStyle, background: 'var(--warm)', border: '1px solid var(--border)',
-          borderRadius: '18px', marginBottom: '16px',
-          boxShadow: '0 2px 12px rgba(26,22,18,0.06)',
-        }}>
-          <span style={{ ...sheetKeyStyle, width: '84px' }}>{fr ? 'Mode' : 'Mode'}</span>
-          <span style={{ flex: 1, fontSize: '14.5px', fontWeight: 600, color: 'var(--char)' }}>{modeChip.value}</span>
-          <SheetChevron />
-        </button>
-      )}
-
-      {groups.map(({ g, steps }) => (
-        <div key={g}>
-          <div style={{
-            fontFamily: 'var(--font-ui)', fontSize: '10.5px', letterSpacing: '.1em',
-            textTransform: 'uppercase', color: 'var(--smoke)', margin: '18px 4px 7px',
-          }}>{fr ? GROUP_TITLE[g].fr : GROUP_TITLE[g].en}</div>
-          <div style={{
-            background: 'var(--warm)', border: '1px solid var(--border)',
-            borderRadius: '18px', overflow: 'hidden',
-            boxShadow: '0 2px 12px rgba(26,22,18,0.06)',
-          }}>
-            {steps.map((st, i) => (
-              <SetupRow
-                key={st.id}
-                step={st}
-                ok={stepAnswered(st, flow.highestStep, flow.steps)}
-                inset
-                last={i === steps.length - 1}
-                onClick={() => onJump(st.id)}
-              />
-            ))}
+      <div>
+        {rows.map(row => (
+          <div key={row.key} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 0', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontSize: '12px', color: 'var(--smoke)', marginBottom: '5px' }}>{row.label}</span>
+              <strong style={{ fontSize: '14px', lineHeight: 1.5, fontWeight: 600 }}>{row.value}</strong>
+            </div>
+            <button onClick={row.onClick} aria-label={`${fr ? 'Modifier' : 'Edit'} : ${row.label}`} style={{ minHeight: '44px', border: 'none', background: 'none', color: 'var(--terra)', font: 'inherit', fontSize: '13px', cursor: 'pointer', padding: '8px 0 8px 8px' }}>{fr ? 'Modifier' : 'Edit'}</button>
           </div>
-        </div>
-      ))}
-
+        ))}
+      </div>
       {(flow.recipeGenerated || flow.showGenerate) && (
-        <button onClick={onBackToRecipe} style={{
-          ...NEXT_CTA, background: 'var(--warm)', color: 'var(--ash)',
-          border: '1px solid var(--border)', boxShadow: 'none',
-          fontSize: '14px', fontWeight: 600, marginTop: '22px',
-        }}>
-          {flow.recipeGenerated ? (fr ? 'Retour à la recette' : 'Back to recipe') : (fr ? 'Créer la recette' : 'Create recipe')}
+        <button onClick={onBackToRecipe} style={{ ...NEXT_CTA, marginTop: '22px' }}>
+          {!flow.recipeGenerated ? (fr ? 'Créer la recette' : 'Create recipe') : stale ? (fr ? 'Mettre à jour la recette' : 'Update recipe') : (fr ? 'Voir les ingrédients' : 'View ingredients')}
         </button>
       )}
     </div>
   );
 }
 
-// One row for both surfaces. The sheet and the review page show the same
-// list; letting each style its own rows is how two visual languages for one
-// idea appear. They differ in how the list is SORTED — the sheet by status,
-// the page by subject — and in nothing else.
+// Compact row for the progress sheet.
 function SetupRow({ step, ok, onClick, inset, last }: {
   step: StepDef; ok: boolean; onClick: () => void;
   inset?: boolean; last?: boolean;
@@ -771,7 +720,12 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
   };
 
   let next: React.ReactNode = null;
-  if (flow.gapReturn && !isLast) {
+  if (id === 1 && !step.value) {
+    next = <div style={{ width: '100%' }}>
+      <p style={{ fontSize: '13px', color: 'var(--ash)', margin: '0 0 8px' }}>{fr ? 'Sélectionnez un style pour continuer.' : 'Select a style to continue.'}</p>
+      <button disabled style={{ ...nextStyle, opacity: 0.5, cursor: 'not-allowed' }}>{fr ? 'Continuer' : 'Continue'}</button>
+    </div>;
+  } else if (flow.gapReturn && !isLast) {
     // Filling one gap should hand the baker straight to the next one. Bouncing
     // back to the last step to be told what is still missing makes them walk
     // the same loop once per gap. This step counts as settled the moment they
@@ -806,7 +760,7 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
     } else if (flow.showGenerate) {
       next = <button onClick={flow.onGenerate} style={nextStyle}>{flow.generateLabel}</button>;
     } else if (flow.recipeGenerated) {
-      next = <button onClick={flow.onSeePlan} style={nextStyle}>{fr ? 'Voir ma recette →' : 'See my recipe →'}</button>;
+      next = <button onClick={flow.onSeePlan} style={nextStyle}>{fr ? 'Voir les ingrédients →' : 'View ingredients →'}</button>;
     }
   } else {
     // Label the step Suivant actually reaches, not the one that happens to sit
@@ -1028,6 +982,13 @@ export default function Home() {
 
   // Advanced mode manual overrides
   const [prefermentType, setPrefermentType] = useState<PrefermentType>('none');
+  const [prefermentValidity, setPrefermentValidity] = useState<{type: PrefermentType; valid: boolean}>({type:'none',valid:false});
+  const onPrefermentValidityChange = React.useCallback((valid: boolean) => {
+    setPrefermentValidity(previous => previous.type === prefermentType && previous.valid === valid ? previous : {type:prefermentType,valid});
+  }, [prefermentType]);
+  const commercialPrefermentPlanReady = tab !== 'custom' || yeastType === 'sourdough' || !['poolish','biga'].includes(prefermentType)
+    || (prefermentValidity.type === prefermentType && prefermentValidity.valid);
+
   const [prefermentFlourPct, setPrefermentFlourPct] = useState<number | undefined>(undefined);
   const [prefOffsetH, setPrefOffsetH] = useState<number>(0);
   // Driven by SchedulePicker algo result — single source of truth for fridge/RT decision
@@ -1757,7 +1718,7 @@ export default function Home() {
   }, [startTime, prefOffsetH, prefermentType]);
 
   // prefGoesInFridge is the algo's decision reported via onPrefGoesInFridgeChange.
-  // Biga always fridge (scientifically correct — no RT biga).
+  // This planner uses refrigerated biga; poolish supports either storage method.
   // Poolish: algo decides fridge or RT based on dual search result.
   // This single value flows to Timeline, RecipeOutput, and buildComputedRecipe.
   const prefGoesInFridge = !prefermentType || prefermentType === 'none' || prefermentType === 'levain'
@@ -1780,10 +1741,8 @@ export default function Home() {
       mixerType: (mixerType ?? 'hand') as MixerType,
       targetDoughTemp,
     });
-    const mixHBF = schedule ? (eatTime.getTime() - schedule.bulkFermStart.getTime()) / 3600000 : 0;
-    const removeHBF = mixHBF + rtWarmupH;
-    return new Date(eatTime.getTime() - removeHBF * 3600000);
-  }, [prefGoesInFridge, prefermentType, styleKey, kitchenTemp, fridgeTemp, mixerType, targetDoughTemp, eatTime, schedule]);
+    return new Date(startTime.getTime() - rtWarmupH * 3600000);
+  }, [prefGoesInFridge, prefermentType, styleKey, kitchenTemp, fridgeTemp, mixerType, targetDoughTemp, eatTime, startTime]);
 
   const feedToMixH = useMemo(() => {
     if (yeastType !== 'sourdough' || !startTime) return undefined;
@@ -2299,6 +2258,7 @@ export default function Home() {
   }
 
   function advance(from: number) {
+    if (from === 1 && !styleKey) return;
     // Same rule as the custom flow — see advanceAdv. Simple has no Flour or
     // Preferment page, so only Quantity can be settled here.
     markStepSettled(from);
@@ -2310,6 +2270,7 @@ export default function Home() {
   }
 
   function advanceAdv(from: number) {
+    if (from === 1 && !styleKey) return;
     // Flour is settled only by choosing a product or entering a flour type.
     if (from === 6 && (!flourChosen || archivedFlourNames.length)) return;
     markStepSettled(from);
@@ -2463,6 +2424,16 @@ export default function Home() {
   }
 
   function handleGenerate() {
+    if (!styleKey) {
+      setActiveTab('setup'); setSetupOverview(false);
+      if (tab === 'custom') setAdvancedStep(1); else setActiveStep(1);
+      scrollToStepTop();
+      return;
+    }
+    if (!commercialPrefermentPlanReady) {
+      setActiveTab('setup'); setSetupOverview(false); setAdvancedStep(9); scrollToStepTop();
+      return;
+    }
     if (tab === 'custom' && (!flourChosen || archivedFlourNames.length)) {
       setActiveTab('setup'); setSetupOverview(false); setAdvancedStep(6); scrollToStepTop();
       return;
@@ -2752,7 +2723,7 @@ export default function Home() {
   const customRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && flourBlend
     && qtyChosen && flourChosen && (yeastType === 'sourdough' || prefermentChosen));
   const starterPlanReady = yeastType !== 'sourdough' || recipeGenerated || starterEvents.length > 0;
-  const canGenerate = starterPlanReady && !unsupportedEnrichedMethod && !(tab === 'custom' && archivedFlourNames.length) && (tab === 'simple' ? simpleRequiredDone : customRequiredDone);
+  const canGenerate = commercialPrefermentPlanReady && starterPlanReady && !unsupportedEnrichedMethod && !(tab === 'custom' && archivedFlourNames.length) && (tab === 'simple' ? simpleRequiredDone : customRequiredDone);
   const mixerCapacityG = mixerType ? MIXER_TYPES[mixerType]?.maxDoughG ?? 9999 : 9999;
   const suggestedMixingBatches = Math.max(1, Math.ceil(numItems * itemWeight / mixerCapacityG));
   const selectedMixingBatches = mixingBatches ?? suggestedMixingBatches;
@@ -2844,13 +2815,16 @@ export default function Home() {
   // Preferment (8) is absent on the sourdough path, so this list is 10 or 9
   // entries long. Positions are indexes into it; ids never move.
   const flourSummary = (): string => {
-    if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
-      return flourBlend.brandProduct ?? computeBlendProfile(flourBlend).displayName;
-    }
-    const f1 = flourBlend.brandProduct ?? computeBlendProfile({ ...flourBlend, flour2: null, ratio1: 100 }).displayName;
-    const f2raw = flourBlend.customFlour2Name ?? computeBlendProfile(flourBlend).displayName.split('+')[1]?.trim() ?? '';
-    return `${flourBlend.ratio1}% ${f1} + ${f2raw.replace(/^\d+%\s*/, '')}`;
+    const primary = flourBlend.brandProduct ?? localName(FLOUR_DATA[flourBlend.flour1]) ?? '';
+    if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) return `100% ${primary}`;
+    const hasThird = !!flourBlend.flour3 && flourBlend.ratio2 !== undefined && 100 - flourBlend.ratio1 - flourBlend.ratio2 > 0;
+    const secondRatio = hasThird ? flourBlend.ratio2! : 100 - flourBlend.ratio1;
+    const parts = [`${flourBlend.ratio1}% ${primary}`, `${secondRatio}% ${flourBlend.customFlour2Name ?? localName(FLOUR_DATA[flourBlend.flour2])}`];
+    if (hasThird) parts.push(`${100 - flourBlend.ratio1 - secondRatio}% ${flourBlend.customFlour3Name ?? localName(FLOUR_DATA[flourBlend.flour3!])}`);
+    return parts.join(' + ');
   };
+  const reviewTiming = eatTime ? eatTime.toLocaleString(fr ? 'fr-FR' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
+  const reviewKitchen = `${kitchenTemp}°C · ${fr ? 'réfrigérateur' : 'fridge'} ${fridgeTemp}°C`;
   const CUSTOM_STEPS: StepDef[] = ([
     { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: fr ? 'Choisissez votre pâte' : 'Choose your dough',
       value: styleKey ? styleDisplayName(styleKey) : null,
@@ -2945,6 +2919,7 @@ export default function Home() {
     // moves past anything, so without this the same step is reported missing
     // for ever and the CTA sends you to the page you just came from.
     onGapReturn: () => {
+      if (advancedStep === 1 && !styleKey) return;
       if (advancedStep === 6 && (!flourChosen || archivedFlourNames.length)) return;
       // Leaving a gap step means the baker has seen it and settled it, so it
       // counts as answered from here on. `find` returns the FIRST unanswered
@@ -2997,6 +2972,7 @@ export default function Home() {
     recipeGenerated,
     gapReturn: gapReturnTo != null,
     onGapReturn: () => {
+      if (activeStep === 1 && !styleKey) return;
       const settled = Math.max(highestStep, activeStep + 1);
       const found = SIMPLE_STEPS.find(
         st => st.id > activeStep && !stepAnswered(st, settled, SIMPLE_STEPS));
@@ -3235,7 +3211,7 @@ export default function Home() {
               }}
             >
               {pendingSession?.recipeGenerated
-                ? (locale === 'fr' ? 'Voir ma recette →' : 'See my recipe →')
+                ? (locale === 'fr' ? 'Voir les ingrédients →' : 'View ingredients →')
                 : (locale === 'fr' ? 'Reprendre →' : 'Resume →')}
             </button>
             {/* Dismiss as an icon, not a worded button. "Start fresh" was the
@@ -3342,8 +3318,8 @@ export default function Home() {
           {/* Pizza / Bread picker — full cards before selection, compact toggle after */}
           <div className="bake-kind-grid" style={{ display: 'grid', gap: '12px', margin: '0 0 16px' }}>
             {([
-              { type: 'pizza' as BakeType, image: '/images/approved/pizza-style/margherita-fresh-basil-v2.webp', label: t('bakeType.pizza.label'), desc: t('bakeType.pizza.desc'), activeBorder: 'var(--terra)', activeBg: '#FFF8F3' },
-              { type: 'bread' as BakeType, image: '/images/approved/bread/campagne-rustic.webp', label: t('bakeType.bread.label'), desc: t('bakeType.bread.desc'), activeBorder: 'var(--bread)', activeBg: 'var(--bread-l)' },
+              { type: 'pizza' as BakeType, image: '/images/approved/opening-v2/pizza.webp', label: t('bakeType.pizza.label'), desc: t('bakeType.pizza.desc'), activeBorder: 'var(--terra)', activeBg: '#FFF8F3' },
+              { type: 'bread' as BakeType, image: '/images/approved/opening-v2/bread.webp', label: t('bakeType.bread.label'), desc: t('bakeType.bread.desc'), activeBorder: 'var(--bread)', activeBg: 'var(--bread-l)' },
             ]).map(opt => (
               <div
                 key={opt.type}
@@ -3378,7 +3354,7 @@ export default function Home() {
                 <img
                   src={opt.image}
                   alt={opt.label}
-                  className="bake-kind-image" style={{ width: '100%', objectFit: 'contain', display: 'block', background: '#f3ede3' }}
+                  className="bake-kind-image" width={1200} height={800} style={{ width: '100%', objectFit: 'cover', display: 'block', background: '#f3ede3' }}
                 />
                 {/* Labels stay outside the image so they do not obscure the food. */}
                 <div style={{
@@ -3387,9 +3363,6 @@ export default function Home() {
                 }}>
                   <div style={{ fontWeight: 700, fontSize: '20px', color: 'var(--char)', marginBottom: '4px', fontFamily: 'var(--font-ui)' }}>
                     {opt.label}
-                  </div>
-                  <div style={{ fontSize: '12px', color: 'var(--ash)', lineHeight: 1.5 }}>
-                    {opt.desc}
                   </div>
                 </div>
                 {/* Selected checkmark */}
@@ -3733,13 +3706,15 @@ export default function Home() {
                 first-time baker onto a review screen. */}
             {setupOverview && (
               <SetupReview
+                stale={protocolStale}
                 nameField={<label style={{display:'block',fontSize:16,fontWeight:600,marginBottom:16}}>{fr?'Nom de la préparation':'Bake name'}
                 <input value={bakeName} placeholder={bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night')} maxLength={100} onChange={e=>setBakeName(e.target.value)} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',fontWeight:400}} />
               </label>}
                 flow={simpleFlow}
+                reviewValues={{ 4: reviewKitchen, 7: reviewTiming }}
                 modeChip={{ value: t('modeCards.simple.title'), onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
                 onJump={id => { setSetupOverview(false); simpleFlow.onJump(id); }}
-                onBackToRecipe={() => { if (!recipeGenerated) { handleGenerate(); return; } setSetupOverview(false); setActiveTab('plan'); }}
+                onBackToRecipe={() => { if (!recipeGenerated || protocolStale) { handleGenerate(); return; } setSetupOverview(false); setActiveTab('plan'); }}
               />
             )}
             <div ref={simpleSwipeRef} style={{ display: setupOverview ? 'none' : undefined }}>
@@ -3856,6 +3831,9 @@ export default function Home() {
                 bakeType={bakeType ?? 'pizza'}
                 isSourdough={yeastType === 'sourdough'}
                 prefermentType={prefermentType ?? 'none'}
+                onPrefermentValidityChange={onPrefermentValidityChange}
+                savedPrefOffsetHours={prefOffsetH}
+                savedPrefGoesInFridge={prefGoesInFridge}
                 onFeedTimeChange={setFeedTime}
                 onStarterEventsChange={setStarterEvents}
                 savedStarterEvents={starterEvents}
@@ -3887,7 +3865,7 @@ export default function Home() {
                 onStarterPeakTimeChange={setStarterPeakTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
-                onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
+                onChange={(st, et, bl) => { if (sessionRestored && et.getTime() !== eatTime?.getTime()) setSessionRestored(false); setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 sessionRestored={sessionRestored}
                 recipeGenerated={recipeGenerated}
                 flourStrength={1.0}
@@ -4104,66 +4082,6 @@ export default function Home() {
                   simpleMode={tab === 'simple'}
                   addSeeds={addSeeds && styleKey === 'pain_levain'}
                 />
-                {/* Share + party — end of the journey. Quiet chips while
-                    baking, gold celebration once marked baked. Anonymous
-                    tap opens the sign-in drawer. */}
-                {(
-                  <div style={{ marginTop: '16px' }}>
-                    {/* Back left, forward right, one line — the same grid every
-                        step in the dough flow uses. Three stacked full-width
-                        buttons made the end of the protocol read as three equal
-                        choices when it is one path with a way back.
-                        The label shortens to fit the 1fr column beside Back,
-                        and shortening it also brings it under the naming rule:
-                        a forward control names its destination. */}
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: pizzaPartyEnabled ? 'auto 1fr' : '1fr',
-                      gap: '10px', alignItems: 'stretch',
-                    }}>
-                      <button onClick={() => setActiveTab('plan')} style={BACK_CTA}>
-                        {locale === 'fr' ? '← Recette' : '← Recipe'}
-                      </button>
-                      {pizzaPartyEnabled && (
-                        <button
-                          onClick={() => setActiveTab('pizzaparty')}
-                          // Back to the CTA's own size. The 14px override was
-                          // only ever there because "Suivant : Pizza Party"
-                          // wrapped; without the prefix it fits.
-                          style={{ ...NEXT_CTA, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        >
-                          {locale === 'fr' ? 'Pizza Party →' : 'Pizza Party →'}
-                        </button>
-                      )}
-                    </div>
-                    <button
-                      onClick={shareCurrentSession}
-                      style={bakedDone ? {
-                        marginTop: '10px',
-                        width: '100%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                        padding: '12px 0', minHeight: '44px', border: 'none', borderRadius: '12px',
-                        background: 'var(--gold)', color: 'var(--char)',
-                        fontSize: '13px', fontWeight: 600,
-                        fontFamily: 'var(--font-ui)', cursor: 'pointer',
-                      } : {
-                        marginTop: '10px',
-                        alignSelf: 'flex-start',
-                        display: 'inline-flex', alignItems: 'center', gap: '8px',
-                        padding: '8px 16px', border: '1.5px solid var(--border)',
-                        borderRadius: '20px', background: 'var(--warm)',
-                        color: 'var(--ash)', fontSize: '12px',
-                        fontFamily: 'var(--font-ui)', cursor: 'pointer',
-                      }}
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={bakedDone ? 'var(--char)' : 'var(--terra)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <circle cx="6" cy="12" r="3" /><circle cx="18" cy="6" r="3" /><circle cx="18" cy="18" r="3" />
-                        <line x1="8.7" y1="10.7" x2="15.3" y2="7.3" /><line x1="8.7" y1="13.3" x2="15.3" y2="16.7" />
-                      </svg>
-                      {t('planNav.share')}
-                    </button>
-                  </div>
-                )}
                 </>
 
               )}
@@ -4233,13 +4151,15 @@ export default function Home() {
                 first-time baker onto a review screen. */}
             {setupOverview && (
               <SetupReview
+                stale={protocolStale}
                 nameField={<label style={{display:'block',fontSize:16,fontWeight:600,marginBottom:16}}>{fr?'Nom de la préparation':'Bake name'}
                 <input value={bakeName} placeholder={bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night')} maxLength={100} onChange={e=>setBakeName(e.target.value)} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',fontWeight:400}} />
               </label>}
                 flow={customFlow}
+                reviewValues={{ 4: reviewKitchen, 8: prefermentChosen ? (prefermentType === 'none' ? t('preferment.direct') : `${localName(PREFERMENT_TYPES[prefermentType])} · ${prefermentFlourPct ?? 20}%`) : null, 9: reviewTiming }}
                 modeChip={{ value: t('modeCards.custom.title'), onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
                 onJump={id => { setSetupOverview(false); customFlow.onJump(id); }}
-                onBackToRecipe={() => { if (!recipeGenerated) { handleGenerate(); return; } setSetupOverview(false); setActiveTab('plan'); }}
+                onBackToRecipe={() => { if (!recipeGenerated || protocolStale) { handleGenerate(); return; } setSetupOverview(false); setActiveTab('plan'); }}
               />
             )}
             <div ref={customSwipeRef} style={{ display: setupOverview ? 'none' : undefined }}>
@@ -4368,8 +4288,8 @@ export default function Home() {
 
 
             {/* ─── ADV STEP 7: Flour ───────────────── */}
-            <StepPage flow={customFlow} id={6} nextOverride={!flourChosen || archivedFlourNames.length ? <button type="button" disabled aria-describedby="choose-flour-note" style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{fr ? 'Choisissez une farine' : 'Choose flour'}</button> : undefined}>
-              {(!flourChosen || archivedFlourNames.length > 0) && <p id="choose-flour-note" style={{fontSize:14,color:'var(--smoke)'}}>{fr ? 'Choisissez un produit ou saisissez votre type de farine pour continuer.' : 'Choose a product or enter your flour type to continue.'}</p>}
+            <StepPage flow={customFlow} id={6} nextOverride={!flourChosen || archivedFlourNames.length ? <button type="button" disabled aria-describedby="choose-flour-note" style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{fr ? 'Continuer' : 'Continue'}</button> : undefined}>
+              {(!flourChosen || archivedFlourNames.length > 0) && <p id="choose-flour-note" style={{fontSize:14,color:'var(--smoke)'}}>{fr ? 'Sélectionnez votre farine dans la liste.' : 'Select your flour from the list.'}</p>}
               <FlourPicker
                 blend={flourBlend}
                 onBlendChange={b => { setFlourChosen(true); setFlourBlend(b); }}
@@ -4443,6 +4363,9 @@ export default function Home() {
                 bakeType={bakeType ?? 'pizza'}
                 isSourdough={yeastType === 'sourdough'}
                 prefermentType={prefermentType ?? 'none'}
+                onPrefermentValidityChange={onPrefermentValidityChange}
+                savedPrefOffsetHours={prefOffsetH}
+                savedPrefGoesInFridge={prefGoesInFridge}
                 onFeedTimeChange={setFeedTime}
                 onStarterEventsChange={setStarterEvents}
                 savedStarterEvents={starterEvents}
@@ -4474,7 +4397,7 @@ export default function Home() {
                 onStarterPeakTimeChange={setStarterPeakTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
-                onChange={(st, et, bl) => { setStartTime(st); setEatTime(et); setBlocks(bl); }}
+                onChange={(st, et, bl) => { if (sessionRestored && et.getTime() !== eatTime?.getTime()) setSessionRestored(false); setStartTime(st); setEatTime(et); setBlocks(bl); }}
                 onReady={() => {}}
                 sessionRestored={sessionRestored}
                 recipeGenerated={recipeGenerated}
@@ -4507,10 +4430,12 @@ export default function Home() {
                   {label:fr?'Marge de pâte supplémentaire (%)':'Extra dough allowance (%)',value:wastePct ?? 1.5,min:0,max:5,step:0.5,set:setWastePct},
                 ];
                 return <>
-                  {!enrichedDirectOnly&&<div style={{marginBottom:16,fontSize:14}}><p>{fr?'Hydratation conseillée':'Suggested hydration'} : {recommendedHyd}%</p>{manualHydration!==undefined&&<button type="button" onClick={()=>setManualHydration(undefined)} style={{minHeight:44}}>{fr?'Rétablir l’hydratation conseillée':'Reset suggested hydration'}</button>}<details><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Pourquoi cette valeur ?':'Why this value?'}</summary><p>{fr?'Base du style':'Style starting point'} : {style?.hydration}%</p><p>{fr?'Four':'Oven'} : {['pan','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey??'')?Math.round((ovenData?.hydrationDelta??0)/2):(ovenData?.hydrationDelta??0)}%</p><p>{fr?'Conditions de stockage et cuisine':'Storage and kitchen conditions'} : {kitchenTemp>=28||humidity==='very-humid'?-2:kitchenTemp<=18?2:0}%</p><p>{fr?'Farine':'Flour'} : {flourBlend?Math.max(-5,Math.min(8,computeBlendProfile(flourBlend).hydrationDelta)):0}%</p></details></div>}
-                  {fields.map(field=><label key={field.label} style={{display:'block',fontSize:16,marginBottom:18}}>{field.label}
+
+                  {fields.map(field=><div key={field.label}><label style={{display:'block',fontSize:16,marginBottom:18}}>{field.label}
                     <input type="number" key={`${field.label}:${field.value}`} defaultValue={Math.round(field.value*100)/100} min={field.min} max={field.max} step={field.step} onBlur={e=>{const n=Number(e.target.value);if(e.target.value!==''&&Number.isFinite(n))field.set(Math.min(field.max,Math.max(field.min,n)));else e.target.value=String(field.value);}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}}} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white'}}/>
-                  </label>)}
+                  </label>
+                  {field.set===setManualHydration&&<div style={{marginBottom:16,fontSize:14}}><p>{fr?'Hydratation conseillée':'Suggested hydration'} : {recommendedHyd}%</p>{manualHydration!==undefined&&<button type="button" onClick={()=>setManualHydration(undefined)} style={{minHeight:44}}>{fr?'Rétablir l’hydratation conseillée':'Reset suggested hydration'}</button>}<details><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Pourquoi cette valeur ?':'Why this value?'}</summary><p>{fr?'Base du style':'Style starting point'} : {style?.hydration}%</p><p>{fr?'Four':'Oven'} : {['pan','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey??'')?Math.round((ovenData?.hydrationDelta??0)/2):(ovenData?.hydrationDelta??0)}%</p><p>{fr?'Conditions de stockage et cuisine':'Storage and kitchen conditions'} : {kitchenTemp>=28||humidity==='very-humid'?-2:kitchenTemp<=18?2:0}%</p><p>{fr?'Farine':'Flour'} : {flourBlend?Math.max(-5,Math.min(8,computeBlendProfile(flourBlend).hydrationDelta)):0}%</p></details></div>}
+                  </div>)}
                   <details style={{margin:'12px 0'}}><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Températures mesurées · facultatif':'Measured temperatures · optional'}</summary>
                     {[{label:fr?'Farine (°C)':'Flour (°C)',value:measuredFlourTemp,set:setMeasuredFlourTemp},...((prefermentType!=='none'||yeastType==='sourdough')?[{label:fr?'Préferment ou levain (°C)':'Preferment or starter (°C)',value:measuredPrefermentTemp,set:setMeasuredPrefermentTemp}]:[])].map(field=><label key={field.label} style={{display:'block',fontSize:16,margin:'12px 0'}}>{field.label}<input type="number" value={field.value??''} min={-5} max={45} step={0.5} placeholder={fr?'Estimation automatique':'Automatic estimate'} onChange={e=>field.set(e.target.value===''?undefined:Number(e.target.value))} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:10,border:'1px solid var(--border)',borderRadius:9}}/></label>)}
                   </details>
@@ -4729,66 +4654,6 @@ export default function Home() {
                   simpleMode={false}
                   addSeeds={addSeeds && styleKey === 'pain_levain'}
                 />
-                {/* Share + party — end of the journey. Quiet chips while
-                    baking, gold celebration once marked baked. Anonymous
-                    tap opens the sign-in drawer. */}
-                {(
-                  <div style={{ marginTop: '16px' }}>
-                    {/* Back left, forward right, one line — the same grid every
-                        step in the dough flow uses. Three stacked full-width
-                        buttons made the end of the protocol read as three equal
-                        choices when it is one path with a way back.
-                        The label shortens to fit the 1fr column beside Back,
-                        and shortening it also brings it under the naming rule:
-                        a forward control names its destination. */}
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: pizzaPartyEnabled ? 'auto 1fr' : '1fr',
-                      gap: '10px', alignItems: 'stretch',
-                    }}>
-                      <button onClick={() => setActiveTab('plan')} style={BACK_CTA}>
-                        {locale === 'fr' ? '← Recette' : '← Recipe'}
-                      </button>
-                      {pizzaPartyEnabled && (
-                        <button
-                          onClick={() => setActiveTab('pizzaparty')}
-                          // Back to the CTA's own size. The 14px override was
-                          // only ever there because "Suivant : Pizza Party"
-                          // wrapped; without the prefix it fits.
-                          style={{ ...NEXT_CTA, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        >
-                          {locale === 'fr' ? 'Pizza Party →' : 'Pizza Party →'}
-                        </button>
-                      )}
-                    </div>
-                    <button
-                      onClick={shareCurrentSession}
-                      style={bakedDone ? {
-                        marginTop: '10px',
-                        width: '100%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                        padding: '12px 0', minHeight: '44px', border: 'none', borderRadius: '12px',
-                        background: 'var(--gold)', color: 'var(--char)',
-                        fontSize: '13px', fontWeight: 600,
-                        fontFamily: 'var(--font-ui)', cursor: 'pointer',
-                      } : {
-                        marginTop: '10px',
-                        alignSelf: 'flex-start',
-                        display: 'inline-flex', alignItems: 'center', gap: '8px',
-                        padding: '8px 16px', border: '1.5px solid var(--border)',
-                        borderRadius: '20px', background: 'var(--warm)',
-                        color: 'var(--ash)', fontSize: '12px',
-                        fontFamily: 'var(--font-ui)', cursor: 'pointer',
-                      }}
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={bakedDone ? 'var(--char)' : 'var(--terra)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <circle cx="6" cy="12" r="3" /><circle cx="18" cy="6" r="3" /><circle cx="18" cy="18" r="3" />
-                        <line x1="8.7" y1="10.7" x2="15.3" y2="7.3" /><line x1="8.7" y1="13.3" x2="15.3" y2="16.7" />
-                      </svg>
-                      {t('planNav.share')}
-                    </button>
-                  </div>
-                )}
                 </>
 
               )}

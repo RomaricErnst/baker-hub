@@ -76,7 +76,6 @@ export default function PrefermentPicker({
                   </label>
                   <input type="range" aria-label={fr ? 'Part de farine en préferment' : 'Prefermented flour share'} min={10} max={60} step={1} value={flourPct ?? suggestedFlourPct} onChange={e => { setPctDraft(e.target.value); onFlourPctChange(Number(e.target.value)); }} style={{ width: '100%', minHeight: 44, accentColor: 'var(--terra)' }} />
                   <p style={{ margin: '4px 0', fontSize: 12, color: 'var(--smoke)' }}>{fr ? 'Point de départ suggéré' : 'Suggested starting point'} : {suggestedFlourPct}%</p>
-                  <p style={{ margin: '4px 0', fontSize: 12, color: 'var(--smoke)' }}>{fr ? 'Point de départ avant de définir le planning.' : 'Starting point until the schedule is set.'}</p>
                   {totalFlourGrams !== undefined && Number.isFinite(totalFlourGrams) && totalFlourGrams > 0 && (() => {
                     const pct = flourPct ?? suggestedFlourPct;
                     const prefFlour = Math.round(totalFlourGrams * pct / 100);
@@ -88,13 +87,16 @@ export default function PrefermentPicker({
                   })()}
                   <details style={{ marginTop: 8, fontSize: 13 }}>
                     <summary style={{ minHeight: 44, cursor: 'pointer' }}>{fr ? 'M’aider à choisir' : 'Help me choose'}</summary>
-                    {selected === 'poolish' ? <ul>
-                      <li>{fr ? 'Premier essai ? Gardez 20 %.' : 'First try? Keep 20%.'}</li>
-                      <li>{fr ? '10 % : un changement plus discret par rapport à votre pâte directe habituelle.' : '10%: a smaller change from your usual direct dough.'}</li>
-                      <li>{fr ? '30 % : davantage de farine mûrit à l’avance ; essayez après avoir appris à reconnaître un poolish prêt.' : '30%: more of the flour matures ahead; try it once you know when your poolish is ready.'}</li>
-                      <li>{fr ? 'Plus n’est pas forcément mieux. Pour une forte proportion, suivez une recette éprouvée.' : 'Higher is not automatically better. Follow a tested recipe for large proportions.'}</li>
-                    </ul> : <p>{fr ? 'Cette biga utilise 45 % d’eau par rapport à sa farine. Pour choisir une proportion, suivez une recette éprouvée.' : 'This recipe’s biga uses 45% water relative to its flour. Follow a tested recipe to choose its proportion.'}</p>}
-                    <p>{fr ? 'Le pourcentage de préferment est sa part de toute la farine de la recette. Ce n’est pas son hydratation.' : 'Preferment percentage means its share of all recipe flour. It is different from hydration.'}</p>
+                    <ul>
+                      <li>{fr ? '20 % : commencez ici, puis gardez ce repère pour comparer vos essais.' : '20%: start here, then keep this proportion while comparing your bakes.'}</li>
+                      <li>{selected === 'biga'
+                        ? (fr ? '10 % : moins de biga ferme à incorporer, pour vous familiariser avec cette méthode.' : '10%: less stiff biga to incorporate while you get familiar with the method.')
+                        : (fr ? '10 % : moins de poolish à préparer, pour apprendre à reconnaître sa maturité.' : '10%: less poolish to prepare while you learn to recognise its maturity.')}</li>
+                      <li>{selected === 'biga'
+                        ? (fr ? '30 % : essayez lorsque vous maîtrisez la maturité de la biga et son incorporation homogène.' : '30%: try once you can recognise ripe biga and incorporate it evenly.')
+                        : (fr ? '30 % : davantage de farine mûrit à l’avance ; essayez lorsque vous reconnaissez un poolish prêt.' : '30%: more flour matures ahead; try once you can recognise a ripe poolish.')}</li>
+                    </ul>
+                    <p>{fr ? 'Augmentez progressivement ; plus n’est pas forcément mieux.' : 'Increase gradually; more is not always better.'}</p>
                   </details>
                   {flourPct !== undefined && flourPct !== suggestedFlourPct && <button type="button" onClick={() => onFlourPctChange(undefined)} style={{ minHeight: 44, background: 'transparent', border: 0, color: 'var(--terra)', textDecoration: 'underline', cursor: 'pointer' }}>{fr ? 'Revenir à la suggestion' : 'Reset to suggestion'}</button>}
                 </div>
@@ -103,35 +105,6 @@ export default function PrefermentPicker({
           </div>
       </div>
 
-      {/* Hydration / cold-ferment pills when a preferment is active */}
-      {selected !== null && selected !== 'none' && (() => {
-        const pData = PREFERMENT_TYPES[selected] as { hydration?: number; cold?: boolean };
-        if (!pData.hydration && !pData.cold) return null;
-        return (
-          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '8px' }}>
-            {pData.hydration && (
-              <span style={{
-                fontSize: '11px', fontFamily: 'var(--font-ui)',
-                background: 'var(--cream)', color: 'var(--ash)',
-                borderRadius: '20px', padding: '.1rem 8px',
-                border: '1px solid var(--border)',
-              }}>
-                {pData.hydration}% {t('hydration')}
-              </span>
-            )}
-            {pData.cold && (
-              <span style={{
-                fontSize: '11px', fontFamily: 'var(--font-ui)',
-                background: 'rgba(107,122,90,0.1)', color: 'var(--sage)',
-                borderRadius: '20px', padding: '.1rem 8px',
-                border: '1px solid rgba(107,122,90,0.25)',
-              }}>
-                {t('coldFerment')}
-              </span>
-            )}
-          </div>
-        );
-      })()}
     </div>
   );
 }

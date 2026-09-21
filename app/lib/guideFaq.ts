@@ -90,8 +90,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "Il reste des morceaux de biga dans ma pâte finale"
       },
       "a": {
-        "en": "Harmless — they disappear during bulk. Next time, dissolve the biga in the recipe water for a minute before adding flour; it incorporates far more easily.",
-        "fr": "Sans gravité — ils disparaissent pendant le pointage. La prochaine fois, délayez la biga une minute dans l'eau de la recette avant la farine ; elle s'incorpore bien plus facilement."
+        "en": "Break the biga into small pieces and incorporate it fully during mixing, using the water already allocated to the final dough. Do not rely on fermentation to remove unmixed lumps or add extra water without updating the recipe.",
+        "fr": "Divisez la biga en petits morceaux et incorporez-la complètement au pétrissage, avec l’eau déjà prévue pour la pâte finale. Ne comptez pas sur la fermentation pour éliminer les morceaux non incorporés et n’ajoutez pas d’eau sans revoir la recette."
       }
     },
     {
@@ -216,8 +216,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "De combien doit-elle lever pendant la pointe ?"
       },
       "a": {
-        "en": "Look for 50–80% growth, a domed top and visible bubbles at the sides — not a full doubling for pizza. Judge by the dough, not the clock.",
-        "fr": "Visez 50–80% de volume en plus, un dessus bombé et des bulles sur les côtés — pas un doublement complet pour la pizza. Jugez la pâte, pas l'horloge."
+        "en": "Use the readiness cues for this recipe and stage. Mark the starting level in a straight-sided container and check volume, bubbles and dough strength together; no single rise percentage fits every dough.",
+        "fr": "Suivez les repères de cette recette et de cette étape. Marquez le niveau initial dans un récipient à bords droits et observez ensemble volume, bulles et tenue ; aucun pourcentage de levée ne convient à toutes les pâtes."
       }
     },
     {
@@ -226,8 +226,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "Je dois partir avant la fin de la pointe"
       },
       "a": {
-        "en": "Put the dough in the fridge — cold slows fermentation ~5×. Resume where you left off when back, adding a little extra time for the dough to re-warm.",
-        "fr": "Mettez la pâte au frigo — le froid ralentit la fermentation ~5×. Reprenez au retour, en ajoutant un peu de temps pour qu'elle se réchauffe."
+        "en": "Cover and refrigerate the dough if you need to slow it down. Fermentation continues while the dough cools and depends on its temperature; refrigeration does not pause the clock. On return, check its rise and condition, then reassess the remaining schedule.",
+        "fr": "Couvrez et réfrigérez la pâte pour ralentir sa fermentation. Elle continue de fermenter pendant son refroidissement, selon sa température ; le froid ne met pas le planning en pause. Au retour, vérifiez sa levée et son état, puis réévaluez le temps restant."
       }
     },
     {
@@ -246,8 +246,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "De combien doit-elle vraiment monter ?"
       },
       "a": {
-        "en": "For pizza, think 50–70% — not doubled. A straight-sided container with a rubber band at the start level beats every guess.",
-        "fr": "Pour la pizza, visez 50–70% — pas le double. Un récipient à bords droits avec un élastique au niveau de départ vaut mieux que toutes les estimations."
+        "en": "Follow this step’s readiness cues rather than aiming automatically for doubling. A straight-sided container with the starting level marked makes the change in volume easier to judge.",
+        "fr": "Suivez les repères de cette étape plutôt que de viser systématiquement un doublement. Un récipient à bords droits avec le niveau initial marqué permet de mieux juger la montée."
       }
     },
     {
@@ -362,8 +362,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "La pâte est encore froide du frigo — cuire quand même ?"
       },
       "a": {
-        "en": "Cold pizza dough tears and stays dense in the centre. Give it the full warmup — it is worth pushing dinner 20 min rather than fighting cold dough.",
-        "fr": "Une pâte froide se déchire et reste dense au centre. Respectez le réchauffage complet — mieux vaut décaler le dîner de 20 min que lutter contre une pâte froide."
+        "en": "For pizza, check that the dough can be stretched without forcing or tearing and follow the planned warm-up. Bread may be baked cold if the recipe calls for it and proofing is complete; temperature alone does not establish readiness.",
+        "fr": "Pour la pizza, vérifiez que la pâte s’étire sans forcer ni se déchirer et suivez le réchauffage prévu. Le pain peut être cuit froid si la recette le prévoit et si l’apprêt est terminé ; la température seule ne suffit pas à juger la maturité."
       }
     },
     {

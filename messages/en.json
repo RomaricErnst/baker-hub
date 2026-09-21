@@ -130,7 +130,7 @@
       "title": "Your baking plan"
     },
     "flour": {
-      "title": "Your flour"
+      "title": "Which flour do you use?"
     }
   },
   "bakeType": {
@@ -1662,15 +1662,15 @@
       "open": "Read and adjust this chart",
       "close": "Hide chart details",
       "dragLead": "Drag any diamond",
-      "dragRest": "to move that step — the plan works itself out around it. Each curve is how lively that dough is, and higher is riper.",
+      "dragRest": "to move that step and read its time below. Curves are estimates, not measurements of readiness.",
       "all": "Show everything",
       "fridge": "In the fridge",
-      "fridgeDesc": "Where the line glows blue, that dough is cold and barely moving.",
+      "fridgeDesc": "The blue outline marks the planned fridge phase for that dough or preferment.",
       "busy": "Your busy times",
       "busyDesc": "Work and night hours you blocked out.",
       "window": "Room to move",
       "windowDesc": "How far a step can shift and still keep the plan on track.",
-      "foot": "These switch on by themselves while you drag, then step back out of the way."
+      "foot": "Layers appear while dragging, then return to your selected settings."
     }
   },
   "prefermentSlider": {
@@ -1682,27 +1682,27 @@
   "style": {
     "neapolitan": {
       "title": "Classic Neapolitan",
-      "tagline": "The one that started it all."
+      "tagline": "Thin, soft centre with a puffy, airy rim."
     },
     "newyork": {
-      "title": "New York Style",
-      "tagline": "Foldable, crispy-edged big slices"
+      "title": "New York pizza",
+      "tagline": "Large pizza with thin, foldable slices and a crisp base."
     },
     "pizza_romana": {
-      "title": "Pizza Romana",
-      "tagline": "Ultra-thin, cracker-crisp, rolled with a pin"
+      "title": "Thin Roman pizza",
+      "tagline": "Very thin dough, rolled out for a crisp bite."
     },
     "roman": {
-      "title": "Roman Teglia",
-      "tagline": "High-hydration, ultra-crispy rectangular"
+      "title": "Roman tray pizza",
+      "tagline": "Rectangular pizza with an airy crumb and a crisp base."
     },
     "pan": {
-      "title": "Pan / Detroit",
-      "tagline": "Thick, buttery, cheese-crust edges"
+      "title": "Pan pizza",
+      "tagline": "Thick dough baked in a pan, with a soft crumb and crisp edges."
     },
     "sourdough": {
-      "title": "Sourdough Pizza",
-      "tagline": "Naturally leavened, tangy, chewy"
+      "title": "Sourdough pizza",
+      "tagline": "Sourdough fermentation, a mild tang and a soft crumb."
     }
   },
   "session": {

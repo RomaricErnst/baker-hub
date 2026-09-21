@@ -125,3 +125,29 @@ Real signed-in cloud save/share and physical camera capture have not been
 exercised; save/share payload and failure paths have automated coverage, and
 online image-file scanning has been exercised. Original site/code backups remain
 as recorded above; this is the migration branch, not a replacement of main.
+
+## Screenshot feedback correction round — 21 September 2026
+
+This supersedes the preceding acceptance language: user screenshots exposed
+material UX and schedule defects that the earlier checks missed. The corrected
+round contains direct flour selection with optional details, visible catalogue
+filters, consistent second/third flour entry, keyboard-operable blend ratios,
+wide opening photographs and consistent illustrated equipment cards. Style
+selection is explicit. Review rows show all flour proportions and actual timing;
+hydration advice sits beside its input and total-formula percentages beside grams.
+
+Preferment guidance uses practical incremental choices without unrelated badges.
+The graph retains selected commercial preferments and blocks invalid plans rather
+than silently changing method. Actions, graph, parent state, generated guide and
+reload were exercised for biga and poolish, including bake-time edits. A dedup
+bug that left parent dates stale and a fridge-removal bulk-start offset were fixed.
+Guide instructions now use calculated doses and planned storage, keep final-mix
+water out of preferment preparation, and handle rye, sugar and scheduled autolyse.
+Duplicate help/navigation and contradictory FAQ claims were removed.
+
+Verification: 144 automated tests, TypeScript and translation-key checks pass.
+Local phone/tablet checks cover opening images, equipment, flour selection/details,
+three-flour blending, guide layout and scheduling. Deployment and targeted online
+verification follow this commit. Real signed-in cloud save/share and physical
+camera capture remain outside the exercised scope; image-file scanning was
+previously checked online. Numerical fermentation tests are not biological trials.

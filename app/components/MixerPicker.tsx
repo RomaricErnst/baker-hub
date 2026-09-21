@@ -30,7 +30,7 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
   ];
 
   return (<>
-      <DecisionList layout="photo" options={options} selectedId={selected ?? ''} onSelect={id => onSelect(id as MixerType)} />
+      <DecisionList layout="illustrated" options={options} selectedId={selected ?? ''} onSelect={id => onSelect(id as MixerType)} />
 
       {/* Contextual warnings — always visible after selection */}
       {selected === 'no_knead' && bakeType === 'pizza' && styleKey && NO_KNEAD_WARNING[styleKey] && (

@@ -7,7 +7,7 @@ test('enriched recipe quantities are separate ingredients and zero plain water i
 });
 test('enriched mixing replaces lean autolyse and suppresses unmodelled water-temperature advice',()=>{
  const guide=read('BakeGuide');
- a.match(guide,/enriched && <Steps/);a.match(guide,/!enriched && <>/);a.match(guide,/Add softened butter gradually/);
+ a.match(guide,/enriched && <Steps/);a.match(guide,/!enriched && styleKey !== 'pain_seigle' && <>/);a.match(guide,/!enriched && styleKey === 'pain_seigle' && <p>/);a.match(guide,/Add softened butter gradually/);
  a.match(guide,/!enriched && !\(simpleMode && recipe\?\.waterTemp == null\)/);
  a.match(guide,/enrichment\?\.unsupportedMethod/);a.match(read('RecipeOutput'),/enrichment\?\.unsupportedMethod/);
 });

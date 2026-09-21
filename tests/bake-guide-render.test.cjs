@@ -49,3 +49,27 @@ test('cooling ranges distinguish small breads, loaves and rye',()=>{
  assert.equal(breadCoolingRange('pain_campagne',1400),'3–4 h');
  assert.equal(breadCoolingRange('pain_seigle',800),'12–24 h');
 });
+
+test('spiral mixing groups both visual cues and keeps secondary guidance behind help',()=>{
+ const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-24T18:00Z'),[],22,60,'spiral','neapolitan');
+ const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,{schedule,mixerType:'spiral',styleKey:'neapolitan',kitchenTemp:22,numItems:4,oil:0,hydration:65,locale:'en'})));
+ assert.ok(html.includes('Help with this step'));
+ assert.equal((html.match(/See what to look for/g)||[]).length,1);
+ assert.ok(html.includes('windowpane-v1.webp'));assert.ok(html.includes('spiral-pumpkin-wide-v1.webp'));
+ assert.doesNotMatch(html,/streaks that kneading will not remove|do not add more before 20 minutes/);
+});
+
+test('preferment instructions use actual dose and planned location without final-mix water',()=>{
+ for(const pref of ['poolish','biga'])for(const cold of [false,true]){
+ const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-25T18:00Z'),[],28,60,'spiral','neapolitan');
+ const recipe=utils.calculateRecipe('neapolitan','pizza_oven',4,260,28,'normal',schedule,4,'fresh','custom','spiral',undefined,undefined,undefined,undefined,pref,null,20);
+ recipe.preferment.cold=cold;recipe.preferment.prefYeastGrams=.175;recipe.preferment.prefYeastType='fresh';
+ const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,{schedule,recipe,prefermentType:pref,prefStartTime:new Date('2026-09-23T20:00Z'),mixerType:'spiral',styleKey:'neapolitan',kitchenTemp:28,numItems:4,oil:0,hydration:62,locale:'en'})));
+ const section=html.split('aria-label="'+messages.bakeGuide.stepTitles[pref==='biga'?'makeBiga':'makePoolish'])[1];
+ assert.ok(section,'preferment section is rendered');
+ const prefHtml=section.split('</section>')[0];
+ assert.ok(prefHtml.includes('0.175 g'));assert.match(prefHtml,/fresh yeast/i);
+ assert.ok(prefHtml.includes(cold?'Refrigerate according to this plan.':'Leave at room temperature according to this plan.'));
+ assert.doesNotMatch(prefHtml,/Water temperature|50-60|0\.1-0\.2|always ferments cold|air exchange|pinch of IDY/);
+ }
+});

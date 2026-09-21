@@ -99,6 +99,23 @@ export function futureMixBeforeBake(
   return new Date(candidateMs);
 }
 
+/** Keep an unworkable selected preferment visible, but do not call it a usable plan. */
+export function solverNotificationAlreadySynced(last: {s: number; e: number} | null, next: {s: number; e: number}, parent: {s: number; e: number | undefined}): boolean {
+  return !!last && last.s === next.s && last.e === next.e && parent.s === next.s && parent.e === next.e;
+}
+
+export function commercialPrefermentPlanValid({type, inFridge, mixTime, bakeTime, offsetHours, blocks, now = new Date(), alreadyStarted = false}: {
+  type: string; inFridge: boolean; mixTime: Date; bakeTime: Date; offsetHours: number;
+  blocks: AvailabilityBlock[]; now?: Date; alreadyStarted?: boolean;
+}): boolean {
+  if (type !== 'poolish' && type !== 'biga') return true;
+  const mix = +mixTime, bake = +bakeTime, prep = mix - offsetHours * 3600000;
+  const minimum = type === 'biga' ? 12 : inFridge ? 3 : 1;
+  if (![mix, bake, prep, offsetHours].every(Number.isFinite) || offsetHours < minimum || prep >= mix || mix >= bake) return false;
+  if (!alreadyStarted && prep < +now - 60000) return false;
+  return !blocks.some(block => [prep,mix].some(time => time >= +block.from && time < +block.to));
+}
+
 interface DerivedStarterState {
   peakTime: Date | null;
   feedTime: Date | null;
@@ -128,6 +145,7 @@ interface SchedulePickerProps {
   onStarterEventsChange?: (events: StarterEvent[]) => void;
   savedStarterEvents?: StarterEvent[];
   prefermentType?: string;
+  onPrefermentValidityChange?: (valid: boolean) => void;
   onPrefOffsetChange?: (h: number) => void;
   onPrefGoesInFridgeChange?: (inFridge: boolean) => void;
   onFridgeOutTimeChange?: (t: Date | null) => void;
@@ -159,6 +177,8 @@ interface SchedulePickerProps {
   mode?: 'simple' | 'custom';   // default 'custom'
   onReady?: () => void;
   sessionRestored?: boolean;
+  savedPrefOffsetHours?: number;
+  savedPrefGoesInFridge?: boolean;
   recipeGenerated?: boolean;
   fridgeTemp?: number;
   flourStrength?: number;
@@ -623,7 +643,7 @@ function prefZoneConstants(prefermentType: string, prefGoesInFridge: boolean, ki
   return { plateauH, plateauLowH, rtTol, rtTolUpper };
 }
 
-function findOptimalPosition(
+export function findOptimalPosition(
   sweetCenter: number,
   sweetFrom: number,
   sweetTo: number,
@@ -655,7 +675,7 @@ function findOptimalPosition(
     return activeBlocks.some(b => {
       const s = (ms - b.from.getTime()) / 3600000;
       const e = (ms - b.to.getTime())   / 3600000;
-      return hbf > Math.min(s, e) && hbf < Math.max(s, e);
+      return hbf > Math.min(s, e) && hbf <= Math.max(s, e);
     });
   }
   function inSweet(hbf: number): boolean {
@@ -871,14 +891,15 @@ function findOptimalPosition(
   const fallbackPrefOffset = Math.min(
     getPrefOptH(prefermentType, kitchenTemp, prefGoesInFridge, styleKey, fridgeTemp),
     nowHBF - sweetCenter - 0.25);
+  const fallbackOffset = hasPref ? Math.max(prefermentType === 'biga' ? 12 : prefGoesInFridge ? 3 : 1, fallbackPrefOffset) : 0;
   return {
     mixHBF:        sweetCenter,
-    prefHBF:       sweetCenter + Math.max(0, fallbackPrefOffset),
+    prefHBF:       sweetCenter + fallbackOffset,
     mixInZone:     false,
     prefInZone:    false,
     fallback:      true,
     mixInBlocker:  isInBlocker(sweetCenter),
-    prefInBlocker: hasPref && isInBlocker(sweetCenter + Math.max(0, fallbackPrefOffset)),
+    prefInBlocker: hasPref && isInBlocker(sweetCenter + fallbackOffset),
     score:         0,
   };
 }
@@ -1642,7 +1663,7 @@ export function ScheduleViewTabs({ value, onChange, id, isFr }: {
   </div>;
 }
 
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   const [scheduleView, setScheduleView] = useState<'actions' | 'graph'>('actions');
   const scheduleViewId = useId();
   const t = useTranslations('scheduler');
@@ -1703,7 +1724,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const solverNotifyBudgetRef = useRef<{ t: number; n: number }>({ t: 0, n: 0 });
   function notifyFromSolver(start: Date, et: Date, blks: AvailabilityBlock[]) {
     const s = start.getTime(), e = et.getTime();
-    if (lastSolverNotifyRef.current && lastSolverNotifyRef.current.s === s && lastSolverNotifyRef.current.e === e) return;
+    if (solverNotificationAlreadySynced(lastSolverNotifyRef.current, {s, e}, {s: startTime.getTime(), e: eatTime?.getTime()})) return;
     const now = Date.now();
     if (now - solverNotifyBudgetRef.current.t > 500) solverNotifyBudgetRef.current = { t: now, n: 0 };
     if (++solverNotifyBudgetRef.current.n > 4) return;
@@ -1896,8 +1917,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // Preferment offset state (non-sourdough)
   const [prefOffsetH, setPrefOffsetH] = useState<number>(() =>
-    getPrefOptH(prefermentType, kitchenTemp)
+    sessionRestored && Number.isFinite(savedPrefOffsetHours) ? savedPrefOffsetHours! : getPrefOptH(prefermentType, kitchenTemp)
   );
+  const restoredCommercialPlan = useRef(sessionRestored ? {
+    type: prefermentType, mix: startTime.getTime(), bake: eatTime?.getTime(),
+    offset: savedPrefOffsetHours, fridge: savedPrefGoesInFridge, blocks: JSON.stringify(blocks),
+  } : null);
 
   // Recommendation ghost diamond + fallback popup
   const [recommendedHBF, setRecommendedHBF] = useState<number | null>(null);
@@ -1911,7 +1936,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // Tracks whether the recommendation algo chose fridge or RT poolish.
   // This is the single source of truth — render-time display reads this,
   // not an independent re-computation from mixOffsetH.
-  const [algoChoseFridge, setAlgoChoseFridge] = useState<boolean>(true);
+  const [algoChoseFridge, setAlgoChoseFridge] = useState<boolean>(() => sessionRestored ? (savedPrefGoesInFridge ?? true) : true);
   const [constraintsOpen, setConstraintsOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
   // Plan-list focus: the row whose NAME button was tapped. That step is
@@ -1923,7 +1948,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const [appliedSuggestion, setAppliedSuggestion] = useState<{ id: string; from: number } | null>(null);
   const [skipPoolishNote, setSkipPoolishNote] = useState(false);
   // True when algo found a poolish slot but scored red (under-fermentation risk).
-  // Distinct from skipPoolishNote (window too short). Hides poolish from graph.
+  // Distinct from skipPoolishNote (window too short); neither hides the selected method.
   const [prefAlgoRed, setPrefAlgoRed] = useState(false);
   // Which plan-list row has its time field open.
   const [editingRow, setEditingRow] = useState<string | null>(null);
@@ -2155,7 +2180,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const sweetFrom   = Math.min(sweetFromRaw,   nowHBF - 0.25);
     const sweetTo     = Math.min(sweetToRaw,     sweetFrom - 0.5);
 
-    if (!hasColdLocal && totalWindowH < sweetToRaw) {
+    if (!hasPrefActive && !hasColdLocal && totalWindowH < sweetToRaw) {
       setGuardNote(isFr
         ? 'Fenêtre courte — une pâte du jour peut quand même être excellente.'
         : 'Working with a short window — same-day dough can still be wonderful.');
@@ -2179,15 +2204,15 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     const minWindowForYellowPoolish = poolishMinH + minTotalRT_noPreheat;
     const skipPoolishDueToTime = hasPrefActive && totalWindowH < minWindowForYellowPoolish;
     if (skipPoolishDueToTime) {
-      // Suppress preferment — direct dough gives better result than underdeveloped poolish
+      // Retain a short-window diagnostic; never erase the selected preferment.
       setSkipPoolishNote(true);
       setPrefAlgoRed(false);
     } else {
       setSkipPoolishNote(false);
     }
 
-    // Pass hasPref=false to findOptimalPosition when skipping poolish
-    const effectiveHasPref = hasPrefActive && !skipPoolishDueToTime;
+    // Always solve the selected method. A short window is a visible conflict, not permission to switch to direct dough.
+    const effectiveHasPref = hasPrefActive;
 
     // Minimum viable poolish: 3h RT, 12h fridge
     const prefMinViableH = poolishMinH;
@@ -2297,7 +2322,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         ));
       }
       // Score 0 with sweetCenter free: tight window note via existing guardShort path
-      if (result.score === 0 && !result.mixInBlocker) {
+      if (!hasPrefActive && result.score === 0 && !result.mixInBlocker) {
         setGuardNote(isFr
         ? 'Fenêtre courte — une pâte du jour peut quand même être excellente.'
         : 'Working with a short window — same-day dough can still be wonderful.');
@@ -2537,6 +2562,18 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const prefRemoveFromFridgeTime = prefRemoveFromFridgeHBF !== null
     ? new Date(pendingEatTime.getTime() - prefRemoveFromFridgeHBF * 3600000)
     : null;
+
+  const savedCommercial = restoredCommercialPlan.current;
+  const unchangedRestoredCommercialPlan = !!savedCommercial && savedCommercial.type === prefermentType
+    && savedCommercial.mix === pendingStart.getTime() && savedCommercial.bake === pendingEatTime.getTime()
+    && savedCommercial.offset === prefOffsetH && (savedCommercial.fridge ?? true) === prefGoesInFridge && savedCommercial.blocks === JSON.stringify(localBlocks);
+  const restoredPrepOverdue = hasPrefActive && unchangedRestoredCommercialPlan
+    && pendingStart.getTime() - prefOffsetH * 3600000 < Date.now();
+  const commercialPrefValid = !hasPrefActive || (startComputed && commercialPrefermentPlanValid({
+    type: prefermentType, inFridge: prefGoesInFridge, mixTime: pendingStart, bakeTime: pendingEatTime,
+    offsetHours: prefOffsetH, blocks: localBlocks, alreadyStarted: unchangedRestoredCommercialPlan,
+  }));
+  useEffect(() => { onPrefermentValidityChange?.(commercialPrefValid); }, [commercialPrefValid, onPrefermentValidityChange]);
 
   // Phase timeline strip data for FermentChart
   const phases = schedule ? {
@@ -6959,6 +6996,14 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {/* Divider */}
       <div style={{ borderTop: '1px solid var(--border)', margin: '1.1rem 0 1rem' }} />
 
+      {hasPrefActive && !commercialPrefValid && <p role="alert" style={{fontSize:14,color:'var(--terra)',lineHeight:1.5}}>{isFr
+        ? `Le créneau ne permet pas de préparer ${prefermentType === 'biga' ? 'la biga' : 'le poolish'} avant le mélange sans conflit. Décalez la cuisson ou modifiez les disponibilités.`
+        : `This window cannot fit ${prefermentType === 'biga' ? 'biga' : 'poolish'} before mixing without a conflict. Move the bake time or adjust busy times.`}</p>}
+
+      {restoredPrepOverdue && <p role="status" style={{fontSize:14,color:'var(--terra)',lineHeight:1.5}}>{isFr
+        ? 'L’heure prévue de préparation du préferment est passée. Si vous ne l’avez pas préparé, choisissez un nouveau planning.'
+        : 'The planned preferment preparation time has passed. If you have not prepared it, choose a new schedule.'}</p>}
+
       <ScheduleViewTabs value={scheduleView} onChange={setScheduleView} id={scheduleViewId} isFr={isFr} />
 
       {/* Fermentation chart stays separate from the action list. */}
@@ -6983,32 +7028,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             ? t('schedulerTitle.yours')
             : t('schedulerTitle.recommended')}
         </div>
-        {/* Why this plan — one calm line naming the main scheduling decision.
-            The engine chooses well but silently; naming the reason builds trust. */}
-        {startComputed && (() => {
-          const windowH = (pendingEatTime.getTime() - pendingStart.getTime()) / 3600000;
-          const coldH = schedule?.totalColdHours ?? 0;
-          const why = kitchenTemp >= 30
-            ? (isFr ? `Cuisine à ${kitchenTemp}°C — la majeure partie de la fermentation se fait au frigo.` : `${kitchenTemp}°C kitchen — most of the fermentation happens in the fridge.`)
-            : windowH <= 8
-            ? (isFr ? 'Fenêtre courte — plan rapide, un peu plus de levure.' : 'Short window — a quicker plan with a little more yeast.')
-            : kitchenTemp <= 18
-            ? (isFr ? `Cuisine fraîche (${kitchenTemp}°C) — chaque étape reçoit un peu plus de temps.` : `Cool kitchen (${kitchenTemp}°C) — each stage gets a little more time.`)
-            : coldH >= 12
-            ? (isFr ? 'Un long repos au froid — plus de goût, et plus de souplesse dans la journée.' : 'A long cold rest — deeper flavour, and more room in your day.')
-            : coldH <= 0
-            ? (isFr ? 'Tout à température ambiante — une mie plus légère et plus vive.' : 'All at room temperature — a lighter, brighter crumb.')
-            : (isFr ? `Calculé à rebours depuis votre heure de cuisson, à ${kitchenTemp}°C.` : `Timed backwards from your bake time at ${kitchenTemp}°C.`);
-          return (
-            <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginBottom: '8px', lineHeight: 1.5 }}>
-              {why}
-            </div>
-          );
-        })()}
         {startComputed ? (
             <FermentChart
               eatTime={pendingEatTime}
-              prefermentType={(skipPoolishNote || prefAlgoRed) ? 'none' : (isSourdough ? 'sourdough' : prefermentType)}
+              prefermentType={isSourdough ? 'sourdough' : prefermentType}
               kitchenTemp={kitchenTemp}
               fridgeTemp={fridgeTemp}
               styleKey={styleKey ?? 'neapolitan'}
@@ -7585,7 +7608,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         }
 
         // 2 — preferment (poolish / biga)
-        if (!isSourdough && cardPrefTime && !(skipPoolishNote || prefAlgoRed)) {
+        if (!isSourdough && cardPrefTime) {
           rows.push({
             id: 'pref',
             at: cardPrefTime.getTime(),

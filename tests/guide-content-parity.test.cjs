@@ -30,3 +30,11 @@ test('bread cooling is a separate completion step without fabricated schedule ti
  const diagnostics=ts.transpileModule(guide,{reportDiagnostics:true,compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).diagnostics||[];
  a.equal(diagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error).length,0);
 });
+
+test('interrupted fermentation is reassessed rather than paused by a fixed cooling factor',()=>{
+ const faq=loadFaq(),answer=faq.bulk.find(e=>/have to leave/.test(e.q.en)).a;
+ a.match(answer.en,/continues while the dough cools/);a.match(answer.en,/reassess/);
+ a.match(answer.fr,/réévaluez/);a.doesNotMatch(JSON.stringify(answer),/5×|5x|where you left off/);
+ a.doesNotMatch(JSON.stringify(faq.biga),/disappear during bulk|disparaissent pendant le pointage/);
+ a.match(faq.biga.find(e=>/chunks/.test(e.q.en)).a.en,/incorporate it fully during mixing/);
+});

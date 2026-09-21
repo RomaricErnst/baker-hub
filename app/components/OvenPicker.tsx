@@ -53,7 +53,7 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect, con
       });
 
   const selectedId = selected === 'pizza_oven' ? (construction === 'masonry' ? 'masonry' : 'tabletop') : selected === 'steam_oven' ? (construction === 'micro' ? 'micro' : 'home') : selected ?? '';
-  return <DecisionList layout="photo" options={options} selectedId={selectedId} onSelect={(id) => {
+  return <DecisionList layout="illustrated" options={options} selectedId={selectedId} onSelect={(id) => {
     if (id === 'tabletop' || id === 'masonry') {
       onConstructionChange?.(id);
       onSelect('pizza_oven');

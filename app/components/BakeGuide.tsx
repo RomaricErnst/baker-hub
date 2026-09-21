@@ -650,10 +650,11 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
 
 // ── Step extras — Tips & tricks / FAQ / Maestro tabs ─────────────
 // Keeps the timeline clean: the step card shows only "what to do";
-// everything secondary lives behind these three pills, closed by default.
-function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext }: {
+// Secondary guidance is grouped under one help disclosure for every step.
+function StepExtras({ tips, faqKey, faqOverride, coachStepId, coachTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext }: {
   tips: React.ReactNode;
   faqKey?: string;
+  faqOverride?: (typeof GUIDE_FAQ)[string];
   coachStepId?: string;
   coachTitle: string;
   styleKey: string;
@@ -663,11 +664,11 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
   ovenType?: string;
   recipeContext?: string;
 }) {
-  const [tab, setTab] = useState<'tips' | 'faq' | 'coach' | null>(null);
+  const [tab, setTab] = useState<'tips' | 'faq' | 'coach' | null>('tips');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const l = locale === 'fr' ? 'fr' : 'en';
   const simpleFaq = useContext(SimpleModeCtx);
-  const faq = (faqKey ? (GUIDE_FAQ[faqKey] ?? []) : []).filter(e =>
+  const faq = (faqOverride ?? (faqKey ? (GUIDE_FAQ[faqKey] ?? []) : [])).filter(e =>
     !simpleFaq || !(JARGON_RE.test(e.q.en + ' ' + e.q.fr + ' ' + e.a.en + ' ' + e.a.fr)));
 
   const pills: Array<{ id: 'tips' | 'faq' | 'coach'; label: string }> = [
@@ -677,18 +678,20 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
   ];
 
   return (
-    <div style={{ marginTop: '16px', borderTop: `1px solid ${D.border}`, paddingTop: '12px' }}>
+    <details style={{ marginTop: '16px', borderTop: `1px solid ${D.border}`, paddingTop: '12px' }}>
+      <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:16}}>{l === 'fr' ? 'Aide pour cette étape' : 'Help with this step'}</summary>
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
         {pills.map(p => (
           <button
             key={p.id}
+            aria-expanded={tab === p.id}
             onClick={() => setTab(prev => prev === p.id ? null : p.id)}
             style={{
               border: tab === p.id ? `1.5px solid ${D.terra}` : `1px solid ${D.border}`,
               background: tab === p.id ? '#fff' : 'transparent',
               color: tab === p.id ? D.terra : D.smoke,
-              borderRadius: '20px', padding: '4px 12px',
-              fontSize: '12px', fontFamily: 'var(--font-ui)',
+              minHeight:44, borderRadius: '20px', padding: '8px 12px',
+              fontSize: '14px', fontFamily: 'var(--font-ui)',
               cursor: 'pointer', transition: 'all .15s',
             }}
           >
@@ -704,11 +707,12 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
           {faq.map((f, i) => (
             <div key={i} style={{ border: `1px solid ${D.border}`, borderRadius: '12px', overflow: 'hidden' }}>
               <button
+                aria-expanded={openFaq === i}
                 onClick={() => setOpenFaq(prev => prev === i ? null : i)}
                 style={{
-                  width: '100%', textAlign: 'left', background: openFaq === i ? '#fff' : 'transparent',
+                  minHeight:44, width: '100%', textAlign: 'left', background: openFaq === i ? '#fff' : 'transparent',
                   border: 'none', cursor: 'pointer', padding: '8px 12px',
-                  fontSize: '13px', fontWeight: 600, color: D.char,
+                  fontSize: '14px', fontWeight: 600, color: D.char,
                   fontFamily: 'var(--font-ui)',
                   display: 'flex', justifyContent: 'space-between', gap: '8px',
                 }}
@@ -717,7 +721,7 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
                 <span style={{ color: D.smoke, flexShrink: 0 }}>{openFaq === i ? '−' : '+'}</span>
               </button>
               {openFaq === i && (
-                <div style={{ padding: '0 12px 12px', fontSize: '12px', color: D.ash, lineHeight: 1.6, fontFamily: 'var(--font-ui)' }}>
+                <div style={{ padding: '0 12px 12px', fontSize: '14px', color: D.ash, lineHeight: 1.6, fontFamily: 'var(--font-ui)' }}>
                   {f.a[l]}
                 </div>
               )}
@@ -740,7 +744,7 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
           />
         </div>
       )}
-    </div>
+    </details>
   );
 }
 
@@ -755,7 +759,7 @@ function ExtLink({ href, label }: { href: string; label: string }) {
   );
 }
 
-function StepVisual({ kind, locale }: { kind: 'mix' | 'spiral' | 'fold' | 'poolish' | 'biga' | 'starter'; locale: string }) {
+function StepVisual({ kind, includeSpiral = false, locale }: { includeSpiral?: boolean; kind: 'mix' | 'spiral' | 'fold' | 'poolish' | 'biga' | 'starter'; locale: string }) {
   const fr = locale === 'fr';
   const figures: Record<string, [string, string, string][]> = {
     starter: [['/images/approved/leavening-v2/starter.webp', 'Look for a clear rise, bubbles and a rounded top before it collapses.', 'Observez une nette montée, des bulles et un dessus bombé avant qu’il ne retombe.']],
@@ -765,8 +769,8 @@ function StepVisual({ kind, locale }: { kind: 'mix' | 'spiral' | 'fold' | 'pooli
     poolish: [['/preferment-photos/poolish-v1.webp', 'Poolish is loose and bubbly as it matures. Judge its rise and surface as well as the schedule.', 'La poolish est souple et bulleuse à maturité. Observez sa montée et sa surface, en complément du planning.']],
     biga: [['/preferment-photos/biga-v1.webp', 'Biga starts rough, not smooth. When mature, break a piece open to check for aeration inside.', 'La biga commence en morceaux irréguliers. À maturité, ouvrez un morceau pour observer les alvéoles à l’intérieur.']],
   };
-  return <details style={{ margin: '14px 0' }}><summary>{fr ? 'Voir les signes à observer' : 'See what to look for'}</summary>
-    {figures[kind].map(([src,en,french]) => <figure key={src} style={{margin:'12px 0'}}><img src={src} alt={fr ? french : en} loading="lazy" style={{display:'block',width:'100%',maxHeight:280,objectFit:'contain',borderRadius:12}}/><figcaption style={{fontSize:14,lineHeight:1.45,marginTop:8}}>{fr ? french : en}</figcaption></figure>)}
+  return <details style={{ margin: '14px 0' }}><summary style={{minHeight:44,padding:'10px 0',fontSize:16,cursor:'pointer'}}>{fr ? 'Voir les signes à observer' : 'See what to look for'}</summary>
+    {[...figures[kind], ...(includeSpiral ? figures.spiral : [])].map(([src,en,french]) => <figure key={src} style={{margin:'12px 0'}}><img src={src} alt={fr ? french : en} loading="lazy" style={{display:'block',width:'100%',maxHeight:280,objectFit:'contain',borderRadius:12}}/><figcaption style={{fontSize:14,lineHeight:1.45,marginTop:8}}>{fr ? french : en}</figcaption></figure>)}
   </details>;
 }
 
@@ -813,6 +817,7 @@ export default function BakeGuide({
   }
   useEffect(() => { setTotalSteps(stepRefs.current.filter(Boolean).length); });
   const t = useTranslations('bakeGuide');
+  const rootT = useTranslations();
   const _fmtLocale = useLocale();
   const _isFr = _fmtLocale === 'fr';
   // A changed recipe/schedule must never inherit another bake's completion.
@@ -913,7 +918,7 @@ export default function BakeGuide({
   // and contradicting the app. Only real, computed values.
   const maestroRecipeContext = (() => {
     if (!recipe) return undefined;
-    const totalFlour = Math.round(recipe.flour + (recipe.preferment?.prefFlour ?? 0));
+    const totalFlour = Math.round(recipe.flour);
     const coldH = Math.round(schedule.totalColdHours ?? 0);
     const rtH = Math.round((schedule.totalRTHours ?? 0));
 
@@ -1058,37 +1063,25 @@ Actual dough condition and equipment may differ from these estimates.`;
             );
           })()}
 
-          {!enriched && !(simpleMode && recipe?.waterTemp == null) && (
-        <Section icon="" title={t('sectionTitles.waterTemp')}>
-          {recipe?.waterTemp != null && bgMainWater != null && <WaterPreparation readOnly
-            waterGrams={bgMainWater} targetTemp={recipe.waterTemp} kitchenTemp={kitchenTemp}
-            fridgeTemp={fridgeTemp} locale={l} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={recipe.thermal?.targetDoughTemp} achievedDoughTempC={recipe.thermal?.doughTempC} waterWasClamped={recipe.thermal?.waterWasClamped} idealWaterTemp={recipe.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && recipe.oil === 0 && recipe.sugar === 0 && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />}
-        </Section>
-        )}
-
         <Section icon="" title={t('sectionTitles.whatToDo')}>
-            {isPoolish ? (
-              <Steps items={t.raw(kitchenTemp >= 26 ? 'poolish.stepsFridge' : 'poolish.stepsRT') as { bold: string; note: string }[]} />
-            ) : (
-              <Steps items={t.raw('biga.steps') as { bold: string; note: string }[]} />
-            )}
+            <Steps items={[
+              {bold:l === 'fr' ? 'Pesez la farine, l’eau et la levure indiquées ci-dessus.' : 'Weigh the flour, water and yeast listed above.',
+                note:recipe?.preferment ? (l === 'fr' ? `Utilisez ${formatPrefermentDose(recipe.preferment.prefYeastGrams)} de ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)}.` : `Use ${formatPrefermentDose(recipe.preferment.prefYeastGrams)} ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)}.`) : ''},
+              {bold:isPoolish ? (l === 'fr' ? 'Mélangez jusqu’à disparition de la farine sèche.' : 'Stir until no dry flour remains.') : (l === 'fr' ? 'Mélangez pour humidifier toute la farine ; gardez une texture grumeleuse.' : 'Mix to moisten all the flour; keep a rough, lumpy texture.'),note:''},
+              {bold:l === 'fr' ? 'Couvrez le récipient et laissez de la place pour la levée.' : 'Cover the container and leave room for expansion.',note:''},
+              {bold:recipe?.preferment?.cold ? (l === 'fr' ? 'Placez au réfrigérateur selon ce planning.' : 'Refrigerate according to this plan.') : (l === 'fr' ? 'Laissez à température ambiante selon ce planning.' : 'Leave at room temperature according to this plan.'),
+                note:l === 'fr' ? `Mélange final prévu : ${formatTime(bgMixStart, _fmtLocale)}. Vérifiez la maturité avant utilisation.` : `Main mix planned: ${formatTime(bgMixStart, _fmtLocale)}. Check maturity before use.`},
+            ]} />
           </Section>
 
-          <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Utilisez à maturité ; vérifiez aussi la pâte, pas seulement l’horloge.':'Use when ripe; check the dough as well as the clock.'}</p>
+          <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{isPoolish ? (l==='fr'?'La surface est bulleuse et commence à s’aplanir après la levée.':'The surface is bubbly and beginning to flatten after rising.') : (l==='fr'?'La biga a gonflé ; un morceau ouvert montre des alvéoles à l’intérieur.':'The biga has expanded; a broken-open piece shows aeration inside.')}</p>
           <StepVisual kind={isPoolish ? 'poolish' : 'biga'} locale={l} />
           <StepExtras
-            tips={<>
-              <Section icon="" title={t('sectionTitles.watchForReady')}>
-                <Bullets items={t.raw(isPoolish ? 'poolish.readyWhen' : 'biga.readyWhen') as string[]} />
-              </Section>
-              <Section icon={null} title={t('sectionTitles.pitfalls')}>
-                <Bullets items={t.raw(isPoolish ? 'poolish.pitfalls' : 'biga.pitfalls') as string[]} />
-              </Section>
-              <div style={{ marginTop: '8px' }}>
-                <LearnLink term="preferment_ready" label={l === 'fr' ? 'Est-il prêt ?' : 'Is it ready?'} onOpen={setLearnTerm} showSparkle={true} />
-              </div>
-            </>}
-            faqKey={isPoolish ? 'poolish' : 'biga'}
+            tips={<p>{l === 'fr' ? 'Fiez-vous aux quantités et à l’emplacement de cette recette. Si la maturité ne correspond pas au planning, revoyez le planning avant de poursuivre.' : 'Use this recipe’s quantities and planned location. If maturity does not match the schedule, review the plan before continuing.'}</p>}
+            faqOverride={[
+              {q:{en:'Should I change the yeast dose?',fr:'Faut-il changer la dose de levure ?'},a:{en:'Use the measured dose shown for this preferment and the selected yeast type. Do not replace it with a generic pinch or percentage.',fr:'Utilisez la dose indiquée pour ce préferment et le type de levure choisi. Ne la remplacez pas par une pincée ou un pourcentage générique.'}},
+              {q:{en:'What should I check before mixing?',fr:'Que vérifier avant le mélange final ?'},a:{en:isPoolish?'Check for bubbles and a risen surface beginning to flatten; use the visual guide below.':'Break a piece open and look for internal aeration; use the visual guide below.',fr:isPoolish?'Observez les bulles et une surface levée qui commence à s’aplanir ; consultez les signes illustrés.':'Ouvrez un morceau et observez les alvéoles à l’intérieur ; consultez les signes illustrés.'}},
+            ]}
             coachStepId={isPoolish ? 'poolish' : 'biga'}
             coachTitle={isPoolish ? t('stepTitles.makePoolish') : t('stepTitles.makeBiga')}
             recipeContext={maestroRecipeContext}
@@ -1104,7 +1097,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={feeding ? [
               {bold: l === 'fr' ? `Mélangez ${feedSeed} g de levain, ${feedPart} g de farine et ${feedPart} g d’eau.` : `Mix ${feedSeed} g starter, ${feedPart} g flour and ${feedPart} g water.`, note: `1:${feedR}:${feedR}`},
-              {bold: l === 'fr' ? 'Couvrez sans fermer hermétiquement et marquez le niveau.' : 'Cover loosely and mark the level.', note: l === 'fr' ? `Laissez à ${displayTemp(kitchenTemp, u)}.` : `Keep at ${displayTemp(kitchenTemp, u)}.`},
+              {bold: l === 'fr' ? 'Couvrez le récipient et marquez le niveau.' : 'Cover the container and mark the level.', note: l === 'fr' ? `Laissez à ${displayTemp(kitchenTemp, u)}.` : `Keep at ${displayTemp(kitchenTemp, u)}.`},
               {bold: l === 'fr' ? 'Attendez une nette montée, des bulles et un dessus encore bombé avant utilisation.' : 'Wait for a clear rise, bubbles and a still-domed top before use.', note: l === 'fr' ? 'Le créneau suivant reste indicatif : vérifiez le levain.' : 'The next time is a guide: check the starter.'},
             ] : [{bold: event.kind === 'fridge_in' ? (l === 'fr' ? 'Couvrez le récipient et placez le levain au réfrigérateur.' : 'Cover the container and put the starter in the fridge.') : (l === 'fr' ? 'Sortez le récipient et laissez-le couvert à température ambiante.' : 'Take the container out and leave covered at room temperature.'), note: event.kind === 'fridge_in' ? displayTemp(fridgeTemp, u) : displayTemp(kitchenTemp, u)}]} />
           </Section>
@@ -1304,8 +1297,16 @@ Actual dough condition and equipment may differ from these estimates.`;
         {batch && <Section icon="" title={batch.count > 1 ? (l === 'fr' ? `Pétrissée ${batch.active + 1} sur ${batch.count}` : `Batch ${batch.active + 1} of ${batch.count}`) : (l === 'fr' ? 'À mélanger' : 'Use now')}>
           {Object.entries(batch.portion).filter(([,grams]) => grams > 0).map(([key,grams]) => <div key={key} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{({milk:l==='fr'?'Lait':'Milk',eggs:l==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:l==='fr'?'Beurre':'Butter',flour:l==='fr'?'Farine':'Flour',water:l==='fr'?'Eau':'Water',salt:l==='fr'?'Sel':'Salt',oil:l==='fr'?'Huile':'Oil',sugar:l==='fr'?'Sucre':'Sugar',yeast:l==='fr'?'Levure':'Yeast',starter:l==='fr'?'Levain':'Starter',preferment:prefermentType ?? 'Preferment'} as Record<string,string>)[key]}</span><strong>{grams} g</strong></div>)}
           {batch.overCapacity && <p role="alert">{l === 'fr' ? 'Cette quantité dépasse la capacité indiquée du pétrin. Augmentez le nombre de pétrissées dans les réglages du matériel.' : 'This batch exceeds the stated mixer capacity. Increase batches in equipment settings.'}</p>}
-          {batch.count > 1 && <p>{l === 'fr' ? 'Préparez le préferment une seule fois. Chaque pétrissée utilise sa part indiquée.' : hasPref ? 'Prepare the preferment once. Add only the portion listed for this batch.' : 'Repeat this mix for each batch.'}</p>}
+          {batch.count > 1 && <p>{l === 'fr' ? (hasPref ? 'Préparez le préferment une seule fois. Chaque pétrissée utilise sa part indiquée.' : 'Répétez ce mélange pour chaque pétrissée.') : hasPref ? 'Prepare the preferment once. Add only the portion listed for this batch.' : 'Repeat this mix for each batch.'}</p>}
         </Section>}
+          {!enriched && !(simpleMode && recipe?.waterTemp == null) && (
+        <Section icon="" title={t('sectionTitles.waterTemp')}>
+          {recipe?.waterTemp != null && bgMainWater != null && <WaterPreparation readOnly
+            waterGrams={bgMainWater} targetTemp={recipe.waterTemp} kitchenTemp={kitchenTemp}
+            fridgeTemp={fridgeTemp} locale={l} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={recipe.thermal?.targetDoughTemp} achievedDoughTempC={recipe.thermal?.doughTempC} waterWasClamped={recipe.thermal?.waterWasClamped} idealWaterTemp={recipe.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && recipe.oil === 0 && recipe.sugar === 0 && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />}
+        </Section>
+        )}
+
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           <Steps items={enriched ? [
             {bold:l==='fr'?'Pesez tous les ingrédients indiqués.':'Weigh all the listed ingredients.',note:l==='fr'?'Pesez les œufs sans coquille.':'Weigh eggs without shells.'},
@@ -1316,13 +1317,21 @@ Actual dough condition and equipment may differ from these estimates.`;
             {bold:hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'
               ?(waterMethod==='direct'&&spiralIceConfirmed&&mixerType==='spiral'?(l==='fr'?'Mélangez la farine avec 90 % de l’eau liquide prévue ; réservez le reste. Ajoutez la glace mesurée au pétrissage si elle est indiquée ci-dessus.':'Combine flour with 90% of the planned liquid water; reserve the rest. Add the measured ice during mixing if shown above.'):(l==='fr'?'Mélangez la farine avec 90 % de l’eau préparée ; réservez le reste.':'Combine flour with 90% of the prepared water; reserve the rest.'))
               :(l==='fr'?'Mélangez la farine avec l’eau préparée ci-dessus.':'Combine flour with the water preparation shown above.'),note:''},
+            ...(!isSourdough && autolyseMinFor(mixerType, styleKey) > 0 ? [{bold:l==='fr'?`Couvrez et laissez reposer ${autolyseMinFor(mixerType, styleKey)} min, comme prévu au planning.`:`Cover and rest ${autolyseMinFor(mixerType, styleKey)} min, as scheduled.`,note:''}] : []),
             {bold:isSourdough?(l==='fr'?'Incorporez le levain mûr et le sel.':'Incorporate the ripe starter and salt.'):hasPref?(l==='fr'?`Incorporez votre ${prefermentType} préparé, puis le sel.`:`Incorporate the prepared ${prefermentType}, then the salt.`):(l==='fr'?'Incorporez la levure et le sel.':'Incorporate the yeast and salt.'),note:''},
             ...(hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'?[{bold:l==='fr'?'Quand la pâte se tient, ajoutez progressivement l’eau réservée ; laissez chaque ajout s’incorporer.':'Once the dough holds together, add the reserved water gradually; let each addition absorb.',note:''}]:[]),
             {bold:mixerType==='no_knead'?(l==='fr'?'Arrêtez une fois homogène. Couvrez ; les repos et rabats prévus développeront la pâte.':'Stop once combined. Cover; scheduled rests and folds develop the dough.'):styleKey==='pain_seigle'?(l==='fr'?'Mélangez jusqu’à homogénéité ; le seigle reste collant.':'Mix until evenly combined; rye dough remains sticky.'):(l==='fr'?'Pétrissez jusqu’à une pâte homogène et élastique, aux vitesses autorisées par votre pétrin.':'Knead until cohesive and elastic, using only your mixer’s permitted dough speeds.'),note:''},
+            ...(recipe && recipe.sugar > 0 ? [{bold:l==='fr'?'Incorporez le sucre mesuré pendant le mélange.':'Incorporate the measured sugar during mixing.',note:''}] : []),
             ...(oil>0?[{bold:l==='fr'?'Ajoutez l’huile mesurée en dernier et mélangez jusqu’à absorption.':'Add the measured oil last and mix until absorbed.',note:''}]:[]),
           ]}/>
         </Section>
         <p style={{fontSize:16,lineHeight:1.5,margin:'16px 0'}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{mixerType==='no_knead'?(l==='fr'?'Il ne reste aucune farine sèche ; couvrez et poursuivez le repos prévu.':'No dry flour remains; cover and continue the planned rest.'):styleKey==='pain_seigle'?(l==='fr'?'La pâte est homogène, sans farine sèche ; elle peut rester collante.':'Evenly combined, without dry flour; it may stay sticky.'):(l==='fr'?'Il ne reste aucune farine sèche. Vérifiez le développement et la température de la pâte ; toute glace ajoutée doit avoir fondu.':'No dry flour remains. Check dough development and temperature; any added ice must have melted.')}</p>
+        {recipe?.blendProfile?.displayName?.includes(' + ') && <p style={{fontSize:15,lineHeight:1.5}}>{l === 'fr'
+          ? 'Pesez chaque farine selon les quantités indiquées et mélangez-les pour bien les répartir.'
+          : 'Weigh each flour according to the listed amounts, then mix them to distribute evenly.'}</p>}
+
+        <StepExtras
+          tips={<>
         <details><summary style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{l==='fr'?'Technique de pétrissage · aide':'Mixing technique · help'}</summary>
         <Section icon="" title={t('sectionTitles.mixingOrder')}>
           {enriched && <Steps items={[
@@ -1330,7 +1339,8 @@ Actual dough condition and equipment may differ from these estimates.`;
             {bold:l === 'fr' ? 'Mélangez sans le beurre' : 'Mix without the butter',note:l === 'fr' ? 'Incorporez la farine, les liquides, la levure ou le levain, le sel et le sucre. Pétrissez jusqu’à ce que la pâte gagne en tenue.' : 'Combine flour, liquids, yeast or starter, salt and sugar. Mix until the dough begins to gain strength.'},
             {bold:l === 'fr' ? 'Ajoutez le beurre souple progressivement' : 'Add softened butter gradually',note:l === 'fr' ? 'Attendez l’incorporation de chaque ajout. Arrêtez quand la pâte est homogène et élastique ; surveillez son échauffement.' : 'Let each addition incorporate. Stop when the dough is smooth and elastic; monitor warming.'},
           ]} />}
-          {!enriched && <>
+          {!enriched && styleKey === 'pain_seigle' && <p>{l === 'fr' ? 'Mélangez tous les ingrédients indiqués jusqu’à homogénéité, sans farine sèche. Le seigle peut rester collant ; ne recherchez pas une membrane de gluten.' : 'Combine all listed ingredients until even, without dry flour. Rye may remain sticky; do not aim for a gluten windowpane.'}</p>}
+          {!enriched && styleKey !== 'pain_seigle' && <>
 
           {mixerType === 'hand' && !isSourdough && (
             <Steps items={hydration > 70 ? [
@@ -1447,51 +1457,18 @@ Actual dough condition and equipment may differ from these estimates.`;
 
         </details>
 
-        {/* Blending advice — only when there is actually a blend. Two or three
-            flours behave as one dough only if they are combined dry first;
-            everything below follows from that. */}
-        {(() => {
-          if (enriched) return null;
-          const parts = recipe?.blendProfile?.displayName?.split(' + ') ?? [];
-          if (parts.length < 2) return null;
-          return (
-            <Section icon="" title={l === 'fr' ? 'Votre mélange de farines' : 'Your flour blend'}>
-              <Steps items={[
-                { bold: l === 'fr' ? 'Pesez chaque farine séparément' : 'Weigh each flour separately',
-                  note: l === 'fr'
-                    ? `${parts.join(' + ')} — les pourcentages portent sur la farine totale, pas les unes sur les autres`
-                    : `${parts.join(' + ')} — the percentages are of total flour, not of each other` },
-                { bold: l === 'fr' ? 'Fouettez-les à sec avant l\u2019eau' : 'Whisk them together dry, before the water',
-                  note: l === 'fr'
-                    ? 'chaque farine boit à sa vitesse ; versées séparément dans l\u2019eau elles laissent des traînées qui ne partent plus au pétrissage'
-                    : 'each flour drinks at its own rate; added separately to water they leave streaks that kneading will not remove' },
-                { bold: l === 'fr' ? 'Laissez l\u2019autolyse faire le travail' : 'Let the autolyse do the work',
-                  note: l === 'fr'
-                    ? 'la pâte paraîtra plus ferme au début — l\u2019eau supplémentaire est déjà dans la recette, n\u2019en rajoutez pas avant 20 minutes'
-                    : 'the dough will feel stiffer at first — the extra water is already in the recipe, do not add more before 20 minutes' },
-              ]} />
-            </Section>
-          );
-        })()}
 
-
-        <StepExtras
-          tips={<>
             {(() => {
               const parts = recipe?.blendProfile?.displayName?.split(' + ') ?? [];
               if (parts.length < 2) return null;
               return (
                 <Section icon={null} title={l === 'fr' ? 'Questions sur le mélange' : 'About blending'}>
                   <Bullets items={l === 'fr' ? [
-                    'La pâte colle plus ou se déchire ? Le son du complet et du seigle coupe le réseau de gluten — travaillez plus doucement et fiez-vous aux rabats plutôt qu\u2019au pétrissage.',
-                    'Ne prolongez pas le pointage parce qu\u2019il « paraît lent » : le plan tient déjà compte de la tolérance réduite de votre mélange.',
-                    'Le préferment utilise le même mélange que la pâte finale — pesez chaque farine selon la recette, pas la base seule.',
-                    'Changer une farine du mélange change sa force W, donc le plan : régénérez la recette plutôt que de substituer au moment du pétrissage.',
+                    'Suivez les quantités de chaque farine indiquées dans la recette, y compris pour le préferment.',
+                    'Si vous changez de farine, mettez à jour vos choix et recalculez la recette.',
                   ] : [
-                    'Dough sticking more, or tearing? The bran in wholemeal and rye cuts the gluten network — work more gently and trust the folds rather than the kneading.',
-                    'Do not extend the bulk because it "looks slow": the plan already accounts for your blend\u2019s reduced tolerance.',
-                    'The preferment uses the same blend as the final dough — weigh each flour as the recipe states, not the base alone.',
-                    'Swapping one flour changes the blend\u2019s W, and so the plan: regenerate the recipe rather than substituting at the mixing bowl.',
+                    'Follow the listed amounts for each flour, including in the preferment.',
+                    'If you change a flour, update your choices and recalculate the recipe.',
                   ]} />
                 </Section>
               );
@@ -1500,7 +1477,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             <Section icon="" title={t('sectionTitles.waterTemp')}>
               <Bullets items={[
                 ...(t.raw('mix.waterTempBullets') as string[]),
-                (l === 'fr' ? `FDT au-dessus de ${tempC(28, u)} : placez la pâte 15 min au frigo avant le pointage` : `FDT above ${tempC(28, u)}: refrigerate dough for 15 min before bulk fermentation`),
+                (l === 'fr' ? 'Comparez la température mesurée à la cible de cette recette et réévaluez le planning si la pâte est plus chaude ; un bref passage au froid ne refroidit pas immédiatement son centre.' : 'Compare measured dough temperature with this recipe’s target and reassess timing if warmer; a brief chill does not immediately cool its centre.'),
               ]} />
               <div style={{ marginTop: '8px' }}>
                 <LearnLink term="fdt" label={l === 'fr' ? 'Qu’est-ce que la FDT ?' : 'What is FDT?'} onOpen={setLearnTerm} />
@@ -1535,8 +1512,8 @@ Actual dough condition and equipment may differ from these estimates.`;
           recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
         />
-        {styleKey !== 'pain_seigle' && mixerType !== 'no_knead' && <StepVisual kind="mix" locale={l} />}
-        {styleKey !== 'pain_seigle' && mixerType === 'spiral' && <StepVisual kind="spiral" locale={l} />}
+        {styleKey !== 'pain_seigle' && mixerType !== 'no_knead' && <StepVisual kind="mix" includeSpiral={mixerType === 'spiral'} locale={l} />}
+
       </StepCard>
 
       {/* ── STEP: Bulk Fermentation ──────────────────── */}

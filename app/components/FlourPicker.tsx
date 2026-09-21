@@ -150,6 +150,8 @@ const TYPE_LABELS: Record<string, string> = {
 // Protein is descriptive: it does not replace the selected type or infer W.
 export type ManualFlourBlend = FlourBlend & {
   manualFlour1?: { type: FlourKey; protein?: number; proteinSource?: 'manual' };
+  manualFlour2?: { type: FlourKey; protein?: number; proteinSource?: 'manual' };
+  manualFlour3?: { type: FlourKey; protein?: number; proteinSource?: 'manual' };
 };
 export function manualFlourSelection(blend: FlourBlend, type: FlourKey, name: string, wText: string, proteinText: string, locale: string): ManualFlourBlend | null {
   const w = wText.trim() === '' ? undefined : Number(wText);
@@ -188,7 +190,7 @@ interface FlourPickerProps {
 // two parts it separates; the others hold still. Three flours is the ceiling —
 // below about 14% a segment can no longer hold its own name, and two 5%
 // segments on a narrow phone are 18px wide.
-function BlendBar({ parts, onChange, locale, approx }: {
+export function BlendBar({ parts, onChange, locale, approx }: {
   parts: { name: string; pct: number; w: number }[];
   onChange: (pcts: number[]) => void;
   locale: string;
@@ -250,8 +252,21 @@ function BlendBar({ parts, onChange, locale, approx }: {
         {parts.map((p, i) => {
           if (i >= parts.length - 1) return null;
           return (
-            <div key={`g${i}`} onPointerDown={e => grab(i, e)} style={{
-              position: 'absolute', top: 0, bottom: 0, width: '30px', marginLeft: '-15px',
+            <div key={`g${i}`} role="slider" tabIndex={0}
+              aria-label={`${p.name} · ${locale === 'fr' ? 'pourcentage de farine' : 'flour percentage'}`}
+              aria-valuemin={5} aria-valuemax={p.pct + parts[i + 1].pct - 5}
+              aria-valuenow={p.pct} aria-valuetext={`${p.pct}% ${p.name} · ${parts[i + 1].pct}% ${parts[i + 1].name}`}
+              onKeyDown={e => {
+                const pair = p.pct + parts[i + 1].pct;
+                const delta = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : 0;
+                if (!delta && e.key !== 'Home' && e.key !== 'End') return;
+                e.preventDefault();
+                const left = e.key === 'Home' ? 5 : e.key === 'End' ? pair - 5 : Math.max(5, Math.min(pair - 5, p.pct + delta));
+                const next = parts.map(part => part.pct); next[i] = left; next[i + 1] = pair - left;
+                onChange(next);
+              }}
+              onPointerDown={e => grab(i, e)} style={{
+              position: 'absolute', top: 0, bottom: 0, width: '44px', marginLeft: '-22px',
               left: `${bounds[i]}%`, cursor: 'ew-resize', zIndex: 3,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
@@ -267,7 +282,7 @@ function BlendBar({ parts, onChange, locale, approx }: {
         display: 'flex', justifyContent: 'space-between', fontSize: '12px',
         color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
       }}>
-        <span>{locale === 'fr' ? 'Glissez pour ajuster' : 'Drag to adjust'}</span>
+        <span>{locale === 'fr' ? 'Glissez ou utilisez les flèches du clavier' : 'Drag or use the keyboard arrows'}</span>
         <span style={{ color: '#9C8248' }}>{locale === 'fr' ? 'Force du mélange' : 'Blend strength'} W{approx ? ' ~' : ' '}{blendW}</span>
       </div>
     </div>
@@ -461,16 +476,17 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   const [blendFilterBrand, setBlendFilterBrand] = useState<string | null>(null);
   const [blendSelectedF2, setBlendSelectedF2] = useState<FlourEntry | null>(() => {
     if (!blend.flour2 || !blend.customFlour2Name) return null;
-    // Reconstruct a minimal FlourEntry from saved blend data so the selected state is restored
+    const known = FLOUR_DB.find(entry => `${entry.brand} ${entry.name}`.trim() === blend.customFlour2Name);
+    if (known) return known;
     return {
       id: 'restored',
-      brand: blend.customFlour2Name.split(' ')[0] ?? '',
+      brand: '',
       name: blend.customFlour2Name,
       type: 'bread',
-      country: '',
+      country: 'zz',
       w: blend.w2 ?? null,
       wPublished: blend.w2Source === 'exact',
-      protein: null,
+      protein: (blend as ManualFlourBlend).manualFlour2?.protein ?? null,
       hydration: null,
       bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
     };
@@ -481,11 +497,12 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   const [blendSlot, setBlendSlot] = useState<2 | 3>(2);
   const [blendSelectedF3, setBlendSelectedF3] = useState<FlourEntry | null>(() => {
     if (!blend.flour3 || !blend.customFlour3Name) return null;
-    return {
-      brand: blend.customFlour3Name.split(' ')[0] ?? '',
-      name: blend.customFlour3Name,
-      w: blend.w3 ?? 220,
-    } as FlourEntry;
+    return FLOUR_DB.find(entry => `${entry.brand} ${entry.name}`.trim() === blend.customFlour3Name) ?? {
+      id:'restored-third', brand:'', name:blend.customFlour3Name, type:blend.flour3, country:'zz',
+      w:blend.w3 ?? null,wPublished:blend.w3Source === 'exact',protein:(blend as ManualFlourBlend).manualFlour3?.protein ?? null,hydration:null,
+      bestFor:[],crowdFavourite:[],note:'',bagImage:'',logo:null,
+    };
+
   });
   const [blendRatio2, setBlendRatio2] = useState(() => blend.ratio2 ?? 10);
   const [blendShowFullSearch, setBlendShowFullSearch] = useState(false);
@@ -565,17 +582,18 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
     setUnmatchedScan(null);
     // Same rule for additions: default to what the database says it knows.
     source = source ?? (entry.wPublished ? 'exact' : 'typical');
+    const manualMetadata = entry.id.startsWith('manual-') ? {type:key, ...(entry.protein == null ? {} : {protein:entry.protein,proteinSource:'manual' as const})} : undefined;
     if (blendSlot === 3) {
       setBlendSelectedF3(entry);
-      const r1 = Math.min(blendRatio, 80);
-      const r2 = Math.min(blendRatio2, 100 - r1 - 5);
+      const r1 = blend.flour3 ? blendRatio : Math.min(blendRatio, 80);
+      const r2 = blend.flour3 ? (blend.ratio2 ?? blendRatio2) : Math.min(blendRatio2, 100 - r1 - 5);
       setBlendRatio(r1); setBlendRatio2(r2);
-      onBlendChange({ ...blend, flour3: key, ratio1: r1, ratio2: r2, w3: flourEngineW(entry), w3Source: source, customFlour3Name: label });
+      onBlendChange({ ...blend, flour3: key, ratio1: r1, ratio2: r2, w3: flourEngineW(entry), w3Source: source, customFlour3Name: label, ...{manualFlour3:manualMetadata} });
     } else {
       setBlendSelectedF2(entry);
-      onBlendChange({ ...blend, flour2: key, ratio1: r1ForSlot2, w2: flourEngineW(entry), w2Source: source, customFlour2Name: label });
+      onBlendChange({ ...blend, flour2: key, ratio1: r1ForSlot2, w2: flourEngineW(entry), w2Source: source, customFlour2Name: label, ...{manualFlour2:manualMetadata} });
     }
-    setBlendShowFullSearch(false); setBlendSearchQuery('');
+    setBlendShowFullSearch(false); setBlendSearchQuery(''); setBlendRoad(null);
   }
 
   function selectDBEntry(f: FlourEntry) {
@@ -708,7 +726,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
           choice and the invitation to blend, nothing else. */}
       {pickerOpen && <>
         <div ref={flourSearchRef} hidden={road === 'scan' || road === 'type'}>
-        <FlourCatalogueBrowser onChoose={selectDBEntry} recommendedIds={bakeType === 'bread' ? (BREAD_FAV_BY_STYLE[styleKey ?? ''] ?? BREAD_FAV_BY_STYLE.pain_campagne) : (PIZZA_FAV_BY_STYLE[styleKey ?? ''] ?? CROWD_FAV_IDS)} onGeneric={openManualFlour} onScan={()=>setRoad(road==='scan'?null:'scan')}/>
+        <FlourCatalogueBrowser styleKey={styleKey ?? undefined} onChoose={selectDBEntry} recommendedIds={bakeType === 'bread' ? (BREAD_FAV_BY_STYLE[styleKey ?? ''] ?? BREAD_FAV_BY_STYLE.pain_campagne) : (PIZZA_FAV_BY_STYLE[styleKey ?? ''] ?? CROWD_FAV_IDS)} onGeneric={openManualFlour} onScan={()=>setRoad(road==='scan'?null:'scan')}/>
         </div>
         {(road === 'scan' || road === 'type') && <div ref={flourRoadRef} tabIndex={-1} aria-label={road === 'scan' ? (isFr ? 'Scanner une farine' : 'Scan a flour') : (isFr ? 'Choisir un type de farine' : 'Choose a flour type')}>
           {road === 'type' && <button type="button" onClick={()=>{setRoad(null);setUnmatchedScan(null);}} style={{minHeight:44,padding:'8px 0',border:0,background:'transparent',fontSize:16,color:'var(--terra)',cursor:'pointer'}}>{isFr ? '← Retour à la recherche de farine' : '← Back to flour search'}</button>}
@@ -776,7 +794,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   was picking the THIRD — the search for flour three appeared
                   inside a section named for flour two. */}
               <span>{
-                blendSlot === 3
+                blendSlot === 3 && blendShowFullSearch
                   ? (locale === 'fr' ? 'Ajouter une 3e farine' : 'Add a third flour')
                   : blend.flour2
                     ? (locale === 'fr' ? 'Votre mélange' : 'Your blend')
@@ -801,24 +819,12 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               {/* If flour2 selected: show confirmation + ratio slider —
                   unless the baker is actively picking a third flour, which
                   reuses the same search UI below */}
-              {blendSelectedF2 && !(blendSlot === 3 && !blendSelectedF3 && blendShowFullSearch) ? (
+              {blendSelectedF2 && !blendShowFullSearch ? (
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <div>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#2B2420', fontFamily: 'var(--font-ui)' }}>
-                        {blendSelectedF2.brand ? `${blendSelectedF2.brand} ${blendSelectedF2.name}` : blendSelectedF2.name}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>
-                        W{blendSelectedF2.w} · {blendSelectedF2.protein}% protein
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => { setBlendSlot(2); setBlendSelectedF2(null); setBlendShowFullSearch(false); setBlendSearchQuery(''); }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '12px', textDecoration: 'underline' }}
-                    >
-                      {locale === 'fr' ? 'Changer' : 'Change'}
-                    </button>
-                  </div>
+                  <FlourProductButton entry={blendSelectedF2} selected onChoose={()=>{}} />
+                  <button type="button" onClick={()=>{setBlendSlot(2);setBlendShowFullSearch(true);setBlendRoad(null);}} style={{minHeight:44}}>{isFr?'Changer de farine':'Change flour'}</button>
+                  {blendSelectedF3 && <><FlourProductButton entry={blendSelectedF3} selected onChoose={()=>{}} />
+                    <button type="button" onClick={()=>{setBlendSlot(3);setBlendShowFullSearch(true);setBlendRoad(null);}} style={{minHeight:44}}>{isFr?'Changer la 3e farine':'Change third flour'}</button></>}
                   {/* The bar replaces two ranges that each owned a raw ratio
                       field. Percentages live here as one list; the write-back
                       keeps the engine's contract untouched — ratio1 is the
@@ -887,339 +893,50 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                 </div>
               ) : (
                 <div>
-                  {/* Preset chips — only if styleKey has presets */}
-                  {styleKey && BLEND_PRESETS[styleKey] && BLEND_PRESETS[styleKey].length > 0 && (
-                    <div style={{ marginBottom: '16px' }}>
-                      <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
-                        Popular with {styleKey.replace('_', ' ')}:
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {BLEND_PRESETS[styleKey].map(preset => (
-                          <button
-                            key={preset.label}
-                            onClick={() => {
-                              const generic = BLEND_GENERIC_TYPES[preset.type];
-                              if (generic) {
-                                const genericEntry: FlourEntry = {
-                                  id: preset.type, brand: '', name: generic.label,
-                                  type: 'bread', country: 'us', w: generic.w, wPublished: false,
-                                  protein: generic.protein, hydration: [60, 75],
-                                  bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
-                                };
-                                if (blendSlot === 2) setBlendRatio(preset.ratio);
-                                assignBlendFlour(genericEntry, preset.type as FlourKey, generic.label, preset.ratio, 'typical');
-                              }
-                            }}
-                            style={{
-                              padding: '8px 12px', borderRadius: '20px',
-                              border: '1.5px solid #E8E0D5', background: '#FDFBF7',
-                              fontSize: '13px', color: '#3D3530',
-                              fontFamily: 'var(--font-ui)', cursor: 'pointer',
-                            }}
-                          >
-                            {preset.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {blendSlot === 3 && (
-                    <div style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      background: 'var(--cream)', borderRadius: '16px', padding: '8px 12px', marginTop: '4px',
-                      fontSize: '12px', color: '#3D3530', fontFamily: 'var(--font-ui)',
-                    }}>
-                      <span>{locale === 'fr' ? 'Choisissez votre 3e farine' : 'Pick your third flour'}</span>
-                      <button
-                        onClick={() => { setBlendSlot(2); setBlendShowFullSearch(false); setBlendSearchQuery(''); }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '12px', textDecoration: 'underline', padding: 0 }}
-                      >
-                        {locale === 'fr' ? 'Annuler' : 'Cancel'}
-                      </button>
-                    </div>
-                  )}
-                  {/* Same sentence, same row as the base flour — the W lives
-                      inside the sentence rather than under the buttons. No scan
-                      here: the camera belongs to the flour the dough is built
-                      on, not to what you sprinkle into it. */}
-                  <p style={{
-                    fontFamily: 'var(--font-ui)', fontSize: '12.5px', color: '#8A7F78',
-                    lineHeight: 1.45, margin: '14px 0 0',
-                  }}>
-                    {locale === 'fr' ? 'Sinon, déterminez sa force — ou ' : 'Otherwise, work out its strength — or '}
-                    <button
-                      onClick={() => chooseBlendRoad('w')}
-                      style={{
-                        background: 'none', border: 'none', padding: 0, font: 'inherit',
-                        color: '#6B4423', textDecoration: 'underline', textUnderlineOffset: '3px', cursor: 'pointer',
-                      }}
-                    >{locale === 'fr' ? 'saisissez-la directement' : 'enter it directly'}</button>
-                    {locale === 'fr' ? ' si vous la connaissez.' : ' if you know it.'}
-                  </p>
-
-                  {/* Same placement as the base flour: the field opens under
-                      the sentence that offered it, not under the buttons. */}
-                  {blendRoad === 'w' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '16px', background: '#F0EBE0', marginTop: '12px' }}>
-                      <span style={{ fontSize: '13px', color: '#3D3530', fontFamily: 'var(--font-ui)', flexShrink: 0 }}>{locale === 'fr' ? 'Force (W)' : 'Strength (W)'}</span>
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        placeholder="380"
-                        min={100} max={450}
-                        style={{
-                          width: '68px', padding: '0 8px', height: '44px',
-                          border: '1.5px solid #E8E0D5', borderRadius: '8px',
-                          fontFamily: 'var(--font-ui)', fontSize: '15px',
-                          fontWeight: 700, color: '#2B2420',
-                          background: 'white', outline: 'none', textAlign: 'center',
-                        }}
-                        onChange={e => {
-                          const v = parseInt(e.target.value);
-                          if (!isNaN(v) && v >= 100 && v <= 450) {
-                            const genericEntry: FlourEntry = {
-                              id: `W${v}`, brand: '', name: `Custom W${v}`,
-                              type: 'bread', country: 'us', w: v, wPublished: true,
-                              protein: 12, hydration: [60, 75],
-                              bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
-                            };
-                            if (blendSlot === 2) setBlendRatio(85);
-                            assignBlendFlour(genericEntry, (v >= 270 ? 'strong00' : 'pizza00') as FlourKey, `Custom W${v}`, undefined, 'manual');
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
-                  {blendRoad === 'scan' && (
-                    <div style={{ marginTop: '16px', marginBottom: '16px' }}>
-                      <FlourScan
-                        onResult={result => {
-                          const match = matchScannedFlour(result.name);
-                          if (match) {
-                            if (blendSlot === 2) setBlendRatio(85);
-                            assignBlendFlour(match, flourBehaviour(match), `${match.brand} ${match.name}`);
-                            setUnmatchedScan(null); setBlendRoad(null);
-                          } else {
-                            setUnmatchedScan(result.name); setBlendRoad('type');
-                          }
-                        }}
-                        onCancel={() => setBlendRoad(null)}
-                      />
-                    </div>
-                  )}
-
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                    {([
-                      { k: 'scan' as const, n: locale === 'fr' ? 'Scanner' : 'Scan',
-                        c: locale === 'fr' ? 'le sac' : 'the bag' },
-                      { k: 'search' as const, n: locale === 'fr' ? 'Chercher' : 'Search',
-                        c: `${FLOUR_DB.length} ${locale === 'fr' ? 'farines' : 'flours'}` },
-                      { k: 'type' as const, n: locale === 'fr' ? 'Type' : 'Type',
-                        c: locale === 'fr' ? 'valeur courante' : 'typical value' },
-                    ]).map(r => (
-                      <button
-                        key={r.k}
-                        onClick={() => chooseBlendRoad(r.k)}
-                        style={{
-                          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                          border: `1px solid ${blendRoad === r.k ? '#6B4423' : '#E8E0D5'}`,
-                          background: blendRoad === r.k ? '#F7F1E9' : '#FDFBF7',
-                          borderRadius: '12px', padding: '11px 6px', minHeight: '44px',
-                          fontFamily: 'var(--font-ui)', fontSize: '12.5px', fontWeight: 600,
-                          color: '#3D3530', cursor: 'pointer',
-                        }}
-                      >
-                        <span>{r.n}</span>
-                        <span style={{ fontSize: '10.5px', fontWeight: 400, color: '#8A7F78', textAlign: 'center' }}>{r.c}</span>
-                      </button>
-                    ))}
+                  {(blendSelectedF2 || blendSlot===3) && <button type="button" onClick={()=>{setBlendSlot(2);setBlendShowFullSearch(false);setBlendRoad(null);}} style={{minHeight:44}}>{isFr?'Annuler':'Cancel'}</button>}
+                  <div hidden={blendRoad==='scan'||blendRoad==='type'}>
+                    <FlourCatalogueBrowser key={blendSlot} styleKey={styleKey ?? undefined}
+                      recommendedIds={bakeType==='bread' ? (BREAD_FAV_BY_STYLE[styleKey ?? ''] ?? BREAD_FAV_BY_STYLE.pain_campagne) : (PIZZA_FAV_BY_STYLE[styleKey ?? ''] ?? CROWD_FAV_IDS)}
+                      onChoose={entry=>{const ratio=blend.flour2 ? blend.ratio1 : 85;if(blendSlot===2)setBlendRatio(ratio);assignBlendFlour(entry,flourBehaviour(entry),`${entry.brand} ${entry.name}`.trim(),ratio);}}
+                      onGeneric={()=>{setManualName('');setManualType('bread');setManualProtein('');setManualQWText('');setBlendRoad('type');}}
+                      onScan={()=>setBlendRoad('scan')} />
                   </div>
-
-                  {blendRoad === 'search' && (
-                  <div style={{ marginTop: '12px' }}>
-                    {/* Search gets its own row. Four controls shared one line
-                        with minWidth 0, so the input collapsed to a blank white
-                        box — its placeholder clipped away — while Brand ran off
-                        the right edge. Same cause, both symptoms. */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
-                      <input
-                        type="text"
-                        placeholder={locale === 'fr' ? 'Rechercher une farine…' : 'Search flour...'}
-                        value={blendSearchQuery}
-                        onChange={e => { setBlendSearchQuery(e.target.value); setBlendShowFullSearch(true); }}
-                        style={{
-                          flexBasis: '100%', padding: '12px', minHeight: '44px',
-                          border: '1px solid #E8E0D5', borderRadius: '8px',
-                          fontSize: '13px', fontFamily: 'var(--font-ui)',
-                          background: 'white', outline: 'none', color: '#2B2420',
-                        }}
-                      />
-                      <FilterMenu label={locale === 'fr' ? 'Type' : 'Type'} value={blendFilterType}
-                        options={[...new Set(FLOUR_DB.map(f => f.type))].sort()}
-                        onChange={setBlendFilterType} format={v => TYPE_LABELS[v] ?? v} />
-                      <FilterMenu label={locale === 'fr' ? 'Origine' : 'Origin'} value={blendFilterOrigin}
-                        options={Object.keys(ORIGIN_GROUPS)} format={value => flourOriginLabel(value, locale)}
-                        onChange={v => { setBlendFilterOrigin(v); setBlendApacCountry(null); setBlendEuropeCountry(null); setBlendAmericasCountry(null); }} />
-                      <FilterMenu label={locale === 'fr' ? 'Marque' : 'Brand'} value={blendFilterBrand}
-                        options={blendBrandOptions} onChange={setBlendFilterBrand} />
-                    </div>
-
-                    {/* APAC / Europe / Americas country sub-filter pills for blend */}
-                    {(blendFilterOrigin === 'Asia-Pacific' || blendFilterOrigin === 'Europe' || blendFilterOrigin === 'Americas') && (
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px', marginBottom: '4px' }}>
-                        {(blendFilterOrigin === 'Asia-Pacific' ? APAC_COUNTRIES :
-                          blendFilterOrigin === 'Europe' ? EUROPE_COUNTRIES :
-                          AMERICAS_COUNTRIES).map(({ code, flag, name }) => {
-                          const active = blendFilterOrigin === 'Asia-Pacific'
-                            ? blendApacCountry === code
-                            : blendFilterOrigin === 'Europe'
-                            ? blendEuropeCountry === code
-                            : blendAmericasCountry === code;
-                          return (
-                            <button
-                              key={code}
-                              onClick={() => {
-                                if (blendFilterOrigin === 'Asia-Pacific') {
-                                  setBlendApacCountry(active ? null : code);
-                                } else if (blendFilterOrigin === 'Europe') {
-                                  setBlendEuropeCountry(active ? null : code);
-                                } else {
-                                  setBlendAmericasCountry(active ? null : code);
-                                }
-                              }}
-                              title={flourOriginLabel(name, locale)}
-                              aria-label={flourOriginLabel(name, locale)}
-                              style={{
-                                padding: '4px 8px',
-                                borderRadius: '20px',
-                                border: active ? '1.5px solid #6B4423' : '1px solid #E8E0D5',
-                                background: active ? '#FDF0EB' : 'transparent',
-                                fontSize: '17px',
-                                cursor: 'pointer',
-                                lineHeight: 1,
-                              }}
-                            >
-                              {flag}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Results — only when search/filter active */}
-                    {(blendSearchQuery || blendFilterType || blendFilterOrigin || blendFilterBrand) && (() => {
-                      const blendResults = FLOUR_DB
-                        .filter(f => !blendSearchQuery || `${f.brand} ${f.name}`.toLowerCase().includes(blendSearchQuery.toLowerCase()))
-                        .filter(f => !blendFilterType || f.type === blendFilterType)
-                        .filter(f => {
-                          if (!blendFilterOrigin) return true;
-                          const groupCountries = ORIGIN_GROUPS[blendFilterOrigin] ?? [];
-                          if (blendFilterOrigin === 'Asia-Pacific' && blendApacCountry) return f.country === blendApacCountry;
-                          if (blendFilterOrigin === 'Europe' && blendEuropeCountry) return f.country === blendEuropeCountry;
-                          if (blendFilterOrigin === 'Americas' && blendAmericasCountry) return f.country === blendAmericasCountry;
-                          return groupCountries.includes(f.country);
-                        })
-                        .filter(f => !blendFilterBrand || f.brand === blendFilterBrand)
-                        .slice(0, 30);
-                      if (blendResults.length === 0) {
-                        return (
-                          <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)', padding: '8px 0' }}>
-                            {locale === 'fr' ? 'Pas dans notre base — utilisez le type ou le W ci-dessous.' : 'Not in our database — use the type or W option below.'}
-                          </div>
-                        );
-                      }
-                      return (
-                        <div style={{ position: 'relative' }}>
-                        {/* The list clips at 200px — about three rows — and said
-                            nothing about it, so a filtered search looked like it
-                            had three results. A count above and a fade at the cut
-                            both say there is more without spending a row on it. */}
-                        <div style={{
-                          fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)',
-                          padding: '2px 0 6px', letterSpacing: '.03em',
-                        }}>
-                          {blendResults.length >= 30
-                            ? (locale === 'fr' ? '30+ farines — faites défiler' : '30+ flours — scroll for more')
-                            : (locale === 'fr' ? `${blendResults.length} farines — faites défiler` : `${blendResults.length} flours — scroll for more`)}
-                        </div>
-                        <div style={{ maxHeight: '200px', overflowY: 'auto', position: 'relative' }}>
-                          {blendResults.map(f => (
-                            <FlourRow
-                              key={f.id}
-                              f={f}
-                              onClick={() => {
-                                if (blendSlot === 2) setBlendRatio(85);
-                                setBlendFilterType(null);
-                                setBlendFilterBrand(null);
-                                assignBlendFlour(f, dbTypeToFlourKey(f), `${f.brand} ${f.name}`);
-                              }}
-                            />
-                          ))}
-                        </div>
-                        <div aria-hidden="true" style={{
-                          position: 'absolute', left: 0, right: 0, bottom: 0, height: '26px',
-                          pointerEvents: 'none',
-                          background: 'linear-gradient(180deg, rgba(245,240,232,0), var(--cream))',
-                        }} />
-                        </div>
-                      );
-                    })()}
-
-                    </div>
-                    )}
-
-                    {/* Type and W are their own roads here too — no header
-                        repeating the button that opened them. */}
-                    {blendRoad === 'type' && (
-                    <div style={{ marginTop: '12px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-                        <WQualityTag kind="typical" locale={locale} />
-                      </div>
-                      <div style={{ background: '#F0EBE0', borderRadius: '16px', padding: '4px 0 8px' }}>
-                        {(() => {
-                          const presetTypes = new Set((BLEND_PRESETS[styleKey ?? ''] ?? []).map(p => p.type));
-                          return ([
-                            { label: '00 · Pizza flour',   type: 'pizza00',    w: 260, protein: 12.0 },
-                            { label: 'Semolina rimacinata', type: 'semolina',   w: 200, protein: 12.5 },
-                            { label: 'Manitoba',            type: 'manitoba',   w: 380, protein: 14.0 },
-                            { label: 'Wholemeal',           type: 'wholemeal',  w: 185, protein: 12.0 },
-                            { label: 'Rye',                 type: 'rye',        w: 160, protein: 10.0 },
-                            { label: 'Bread flour',         type: 'bread',      w: 270, protein: 12.8 },
-                            { label: 'All-purpose',         type: 'allpurpose', w: 190, protein: 10.5 },
-                          ] as { label: string; type: FlourKey; w: number; protein: number }[])
-                            .filter(t => !presetTypes.has(t.type as FlourKey))
-                            .map(t => (
-                          <button
-                            key={t.label}
-                            onClick={() => {
-                              const genericEntry: FlourEntry = {
-                                id: t.label, brand: '', name: t.label,
-                                type: 'bread', country: 'us', w: t.w, wPublished: false,
-                                protein: t.protein, hydration: [60, 75],
-                                bestFor: [], crowdFavourite: [], note: '', bagImage: '', logo: null,
-                              };
-                              if (blendSlot === 2) setBlendRatio(85);
-                              assignBlendFlour(genericEntry, t.type as FlourKey, t.label, undefined, 'typical');
-                            }}
-                            style={{
-                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                              width: 'calc(100% - 8px)', margin: '0 4px', padding: '8px 12px',
-                              border: 'none', background: 'transparent', borderRadius: '16px',
-                              fontFamily: 'var(--font-ui)', cursor: 'pointer', textAlign: 'left',
-                            }}
-                          >
-                            <span style={{ fontSize: '13px', color: '#2B2420' }}>{t.label}</span>
-                            <span style={{ fontSize: '12px', color: '#8A7F78' }}>
-                              {t.w > 0 ? `W~${t.w}` : '—'} · ~{t.protein}% protein
-                            </span>
-                          </button>
-                        ))
-                        })()
-                        }
-                      </div>
-                    </div>
-                    )}
+                  {blendRoad==='scan'&&<FlourScan onResult={result=>{
+                    const match=matchScannedFlour(result.name);
+                    if(match){const ratio=blend.flour2 ? blend.ratio1 : 85;if(blendSlot===2)setBlendRatio(ratio);assignBlendFlour(match,flourBehaviour(match),`${match.brand} ${match.name}`.trim(),ratio);}
+                    else{setUnmatchedScan(result.name);setManualName(result.name);setManualType('bread');setManualProtein('');setManualQWText('');setBlendRoad('type');}
+                  }} onCancel={()=>{setBlendRoad(null);setUnmatchedScan(null);}}/>}
+                  {blendRoad==='type'&&<button type="button" onClick={()=>{setBlendRoad(null);setUnmatchedScan(null);}} style={{minHeight:44}}>{isFr?'← Retour à la recherche de farine':'← Back to flour search'}</button>}
+        {blendRoad==='type'&&<section aria-label={isFr?'Saisir une farine':'Enter your flour'} style={{marginTop:16}}>
+          <h3>{isFr?'Saisir votre farine':'Enter your flour'}</h3>
+          <label style={{display:'block',marginBottom:16}}>{isFr?'Type de farine':'Flour type'}
+            <select value={manualType} onChange={e=>setManualType(e.target.value as FlourKey)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}>
+              {(Object.keys(FLOUR_DATA) as FlourKey[]).map(type=><option key={type} value={type}>{isFr?FLOUR_DATA[type].nameFr:FLOUR_DATA[type].name}</option>)}
+            </select>
+          </label>
+          <label style={{display:'block',marginBottom:16}}>{isFr?'Nom du produit · facultatif':'Product name · optional'}
+            <input type="text" value={manualName} onChange={e=>setManualName(e.target.value)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}/>
+          </label>
+          <details><summary style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{isFr?'Ajouter les valeurs du sachet · facultatif':'Add values from the bag · optional'}</summary>
+            <label style={{display:'block',marginBottom:16}}>{isFr?'Force W':'Strength W'}
+              <input type="number" min={1} max={500} value={manualQWText} onChange={e=>setManualQWText(e.target.value)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}/>
+            </label>
+            <label style={{display:'block',marginBottom:16}}>{isFr?'Protéines (%)':'Protein (%)'}
+              <input type="number" min={1} max={30} step={0.1} value={manualProtein} onChange={e=>setManualProtein(e.target.value)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}/>
+            </label>
+            <p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Le taux de protéines est conservé comme information du sachet ; il ne sert pas à déduire la force W.':'Protein is saved as bag information; it is not used to infer W.'}</p>
+          </details>
+          <p style={{fontSize:14}}>{isFr?'Sans force W indiquée, nous utilisons une estimation pour le type choisi.':'Without a stated W, we use an estimate for the selected flour type.'}</p>
+          <button type="button" disabled={!manualFlourSelection(blend,manualType,manualName,manualQWText,manualProtein,locale)} onClick={()=>{
+            const selection=manualFlourSelection(blend,manualType,manualName,manualQWText,manualProtein,locale);
+            if(!selection)return;
+            const entry: FlourEntry = {id:`manual-${blendSlot}`,brand:'',name:selection.brandProduct ?? '',type:manualType,country:'zz',
+              w:selection.w1 ?? null,wPublished:selection.w1Source==='manual',protein:selection.manualFlour1?.protein ?? null,
+              hydration:null,bestFor:[],crowdFavourite:[],note:'',bagImage:'',logo:null};
+            if(blendSlot===2)setBlendRatio(blend.flour2 ? blend.ratio1 : 85);
+            assignBlendFlour(entry,manualType,entry.name,blend.flour2 ? blend.ratio1 : 85,selection.w1Source);
+          }} style={{minHeight:44,padding:'10px 16px',fontSize:16}}>{isFr?'Utiliser cette farine':'Use this flour'}</button>
+        </section>}
                 </div>
               )}
             </div>

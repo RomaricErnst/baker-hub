@@ -134,9 +134,10 @@ function IngRow({
         fontWeight: 700,
         color: highlight ? 'var(--char)' : 'var(--char)',
         textAlign: 'right',
-        whiteSpace: 'nowrap',
+        whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 12,
       }}>
-        {grams}
+        {!noPct && advancedPct && <span style={{fontSize:14,fontWeight:400,color:"var(--smoke)"}}>{advancedPct}</span>}
+        <span>{grams}</span>
       </div>
 
 
@@ -379,7 +380,7 @@ export default function RecipeOutput({
 
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
   const enrichment = result.enrichment;
-  const enrichmentRows = enrichment ? (['milk','eggs','butter'] as const).filter(key => enrichment[key] > 0).map(key => <IngRow key={key} label={({milk:locale === 'fr' ? 'Lait' : 'Milk',eggs:locale === 'fr' ? 'Œufs sans coquille' : 'Eggs, without shells',butter:locale === 'fr' ? 'Beurre' : 'Butter'})[key]} grams={wStr(enrichment[key])} pct={pctStr(enrichment[key] / flour * 100)} />) : null;
+  const enrichmentRows = enrichment ? (['milk','eggs','butter'] as const).filter(key => enrichment[key] > 0).map(key => <IngRow key={key} label={({milk:locale === 'fr' ? 'Lait' : 'Milk',eggs:locale === 'fr' ? 'Œufs sans coquille' : 'Eggs, without shells',butter:locale === 'fr' ? 'Beurre' : 'Butter'})[key]} grams={wStr(enrichment[key])} advancedPct={mode === 'custom' ? pctStr(enrichment[key] / flour * 100) : undefined} />) : null;
   // Sourdough starter accounting: half the starter is flour, half water
   // (100% hydration). Subtract from the main-dough amounts so the card's
   // total actually tallies. Preferment mode has its own accounting already.
@@ -518,13 +519,16 @@ export default function RecipeOutput({
         </div>
       </div>
 
-      {hasPref && <section aria-label={locale === 'fr' ? 'Quantités totales' : 'Total ingredients'}>
-        <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} noPct />
-        <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} noPct />
-        <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} noPct />
-        {pf && pf.prefYeastGrams > 0 && <IngRow label={t(`recipe.yeastNames.${pf.prefYeastType ?? 'idy'}`)} grams={formatPrefermentDose(pf.prefYeastGrams)} noPct />}
-        {oil > 0 && <IngRow label={t('recipeOutput.ingredientOil')} grams={wStr(oil)} noPct />}
-        {sugar > 0 && <IngRow label={t('recipeOutput.ingredientSugar')} grams={wStr(sugar)} noPct />}
+      {(hasPref || (sdActive && mode === 'custom')) && <section aria-label={locale === 'fr' ? 'Quantités totales' : 'Total ingredients'}>
+        <h3 style={{fontSize:17}}>{locale === 'fr' ? 'Quantités totales de la recette' : 'Total recipe ingredients'}</h3>
+        {mode === 'custom' && <p style={{fontSize:14}}>{locale === 'fr' ? 'Pourcentages sur toute la farine, préferment ou levain inclus.' : 'Percentages use all flour, including flour in preferment or starter.'}</p>}
+        <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={mode === 'custom' ? '100%' : undefined} />
+        <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
+        <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
+        {pf && pf.prefYeastGrams > 0 && <IngRow label={t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)} grams={formatPrefermentDose(pf.prefYeastGrams)} advancedPct={mode === 'custom' ? pctStr(pf.prefYeastGrams / flour * 100) : undefined} />}
+        {oil > 0 && <IngRow label={t('recipeOutput.ingredientOil')} grams={wStr(oil)} advancedPct={mode === 'custom' ? pctStr(oilPct) : undefined} />}
+        {sugar > 0 && <IngRow label={t('recipeOutput.ingredientSugar')} grams={wStr(sugar)} advancedPct={mode === 'custom' ? pctStr(sugarPct) : undefined} />}
+        {mode === 'custom' && <IngRow label={locale === 'fr' ? 'Dont farine préfermentée' : 'Of which prefermented flour'} grams={wStr(pf ? pf.prefFlour : sdHalf)} advancedPct={pctStr((pf ? pf.prefFlour : sdHalf) / flour * 100)} sub={locale === 'fr' ? 'Déjà comprise dans la farine totale.' : 'Already included in total flour.'} />}
       </section>}
       {/* ── Ingredients / Preferment cards ──────── */}
       {result.preferment && prefermentType && prefermentType !== 'none' ? (() => {
@@ -651,6 +655,7 @@ export default function RecipeOutput({
           <IngRow
             label={t('recipeOutput.ingredientFlour')}
             grams={wStr(flourMain)}
+            noPct={sdActive}
             pct="100%"
             highlight
             advancedPct={mode === 'custom' ? '100%' : undefined}
@@ -682,7 +687,7 @@ export default function RecipeOutput({
               </span>
             ) : undefined}
           />
-          {water > 0 && <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(sdActive ? waterMain : water)} pct={pctStr(waterPct)} sub={
+          {water > 0 && <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(sdActive ? waterMain : water)} noPct={sdActive} pct={pctStr(waterPct)} sub={
             !enrichment ? <details><summary>{locale === 'fr' ? 'Eau du mélange final' : 'Main-mix water'}</summary>
               {sdActive && <p>{locale === 'fr' ? `${wStr(sdHalf)} d’eau sont déjà dans le levain indiqué ci-dessous.` : `${wStr(sdHalf)} water is already in the starter shown below.`}</p>}
               {waterSubNode}
@@ -817,15 +822,6 @@ export default function RecipeOutput({
         </div>
       )}
 
-
-      {mode === 'custom' && <details>
-        <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Pourcentages boulangers' : 'Baker’s percentages'}</summary>
-        <p style={{fontSize:13}}>{locale === 'fr' ? 'Calculés sur toute la farine, préferment ou levain inclus.' : 'Based on all flour, including flour in preferment or starter.'}</p>
-        <p>{t('recipeOutput.ingredientFlour')} : 100% · {t('recipeOutput.ingredientWater')} : {pctStr(waterPct)} · {t('recipeOutput.ingredientSalt')} : {pctStr(saltPct)}{oil > 0 ? ` · ${t('recipeOutput.ingredientOil')} : ${pctStr(oilPct)}` : ''}{sugar > 0 ? ` · ${t('recipeOutput.ingredientSugar')} : ${pctStr(sugarPct)}` : ''}</p>
-        {pf ? <p>{t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)} : {pctStr(pf.prefYeastGrams / flour * 100)}</p> : yeastInfo && <p>{yeastTypeName} : {pctStr(yeastInfo.convertedPct)}</p>}
-        {sourdough && <p>{t('recipeOutput.starterLabel')} : {pctStr(sdMid / flour * 100)}</p>}
-        {pf && <p>{locale === 'fr' ? 'Farine préfermentée' : 'Prefermented flour'} : {pctStr(pf.prefFlour / flour * 100)}</p>}
-      </details>}
 
       {onContainerCapacityChange && <details className="bh-disclosure">
         <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Récipient de fermentation' : 'Fermentation container'}</summary>

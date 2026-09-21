@@ -527,6 +527,7 @@ export default function FermentChart({
   // to run per pointermove).
   const [localRefreshHBF, setLocalRefreshHBF] = useState<number | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [selectedMarker, setSelectedMarker] = useState<'mix' | 'pref' | 'refresh' | null>(null);
 
   // ── Chart layers ─────────────────────────────────────────
   // All three off by default: the resting chart is curves, diamonds and the
@@ -580,11 +581,9 @@ export default function FermentChart({
   // Two temporary reveals, neither of which touches the baker's ticks.
   // Dragging: the one moment all three are genuinely needed (still in its
   // window? just dropped into work hours? after now?).
-  // Guide open: the explanations need something to point at. This replaces a
-  // first-open auto-enable that switched all three on permanently — opening a
-  // legend to look is not a tap on "fridge", and it was the same mistake as a
-  // walked-past step recording itself as a choice.
-  const revealAll = dragging !== null || guideOpen;
+  // Opening help never changes visible layers. Only an active drag temporarily
+  // reveals constraints; release/cancel immediately restores checkbox choices.
+  const revealAll = dragging !== null;
   const L = {
     fridge: layers.fridge || revealAll,
     busy:   layers.busy   || revealAll,
@@ -943,7 +942,7 @@ export default function FermentChart({
   function inBlocker(hbf: number): boolean {
     return blocks.some(b => {
       const { hbfStart, hbfEnd } = blockerHBF(b);
-      return hbf > hbfEnd && hbf < hbfStart;
+      return hbf > hbfEnd && hbf <= hbfStart;
     });
   }
 
@@ -993,6 +992,7 @@ export default function FermentChart({
     if (which === 'pref' && prefStartAbsHBF > nowHBF + 1) return;
     e.preventDefault();
     e.stopPropagation();
+    setSelectedMarker(which);
     setDragging(which);
     (e.target as Element).setPointerCapture(e.pointerId);
     onDragStart?.();
@@ -1009,7 +1009,7 @@ export default function FermentChart({
       const h = Math.max(0.25, Math.min(nowHBF, snap15(xToHBF(x, W, WH))));
       setLocalRefreshHBF(h);
     } else {
-      const abs = Math.min(WH - 0.05, snap15(xToHBF(x, W, WH)));
+      const abs = Math.max(effectiveMixHBF + 0.25, Math.min(nowHBF, WH - 0.05, snap15(xToHBF(x, W, WH))));
       onPrefChange(abs - effectiveMixHBF);
     }
   }
@@ -1113,6 +1113,7 @@ export default function FermentChart({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
+        onPointerCancel={onPointerUp}
       >
         {/* ── Clip paths for blockers ── */}
         <defs>
@@ -1167,10 +1168,10 @@ export default function FermentChart({
              Only where the engine already computes a range: Make Poolish from
              getPrefOptH/prefZoneMax, Start Dough from sweetFrom/sweetTo.
              Sourdough starter feeds have no such range and get no window. */}
-        {(L.window || focusId === 'mix') && hasDoughWindow && renderWindow(
+        {L.window && hasDoughWindow && renderWindow(
           doughZoneFrom, doughZoneTo, DOUGH_SWEET_CENTER, SAGE, focusId === 'mix',
         )}
-        {(L.window || focusId === 'pref') && hasPrefWindow && renderWindow(
+        {L.window && hasPrefWindow && renderWindow(
           prefZoneFrom, prefZoneTo, prefOptWindowHBF, prefColor, focusId === 'pref',
         )}
 
@@ -2034,6 +2035,23 @@ export default function FermentChart({
           </text>
         ))}
       </svg>
+
+      {(() => {
+        const selected = dragging ?? selectedMarker ?? (focusId === 'pref' ? 'pref' : 'mix');
+        const refresh = starterEvents.find(event => event.kind === 'refresh');
+        const refreshHBF = localRefreshHBF ?? (refresh ? (bakeMs - +refresh.time) / 3600000
+          : starterFridgeHoldRefreshTime ? (bakeMs - +starterFridgeHoldRefreshTime) / 3600000 : prefStartAbsHBF);
+        const hbf = selected === 'mix' ? effectiveMixHBF : selected === 'refresh' ? refreshHBF
+          : isLevain ? activeFeedHBF ?? prefStartAbsHBF : prefStartAbsHBF;
+        const name = selected === 'mix' ? (isFr ? 'Mélanger la pâte' : 'Mix the dough')
+          : selected === 'refresh' ? (isFr ? 'Rafraîchir le levain' : 'Feed the starter')
+          : isLevain ? (isFr ? 'Préparer le levain' : 'Prepare starter')
+          : prefermentType === 'biga' ? (isFr ? 'Préparer la biga' : 'Prepare biga') : (isFr ? 'Préparer le poolish' : 'Prepare poolish');
+        return <div aria-live="polite" aria-atomic="true" style={{fontSize:14,lineHeight:1.5,marginTop:8}}>
+          <strong>{name}</strong> · {fmtDT(new Date(bakeMs - hbf * 3600000), isFr)}
+          {inBlocker(hbf) && <span style={{color:'var(--terra)'}}> · {isFr ? 'Créneau occupé' : 'Busy time'}</span>}
+        </div>;
+      })()}
 
       {/* ── Reset ────────────────────────────────────────────
           Directly under the chart, above the guide link: the baker must SEE

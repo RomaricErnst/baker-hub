@@ -9,6 +9,5 @@ test('flour origin names localize independently of unchanged filter keys',()=>{
   assert.equal(flourOriginLabel(key,'fr'),translated);assert.equal(flourOriginLabel(key,'en'),key);
  }
  assert.equal(flourOriginLabel('Canada','fr'),'Canada');
- assert.match(source,/options=\{Object\.keys\(ORIGIN_GROUPS\)\} format=\{value => flourOriginLabel\(value, locale\)\}/);
- assert.match(source,/aria-label=\{flourOriginLabel\(name, locale\)\}/);
+ assert.equal((source.match(/<FlourCatalogueBrowser\b/g)||[]).length,2);
 });

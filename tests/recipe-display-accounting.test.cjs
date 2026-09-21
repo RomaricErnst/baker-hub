@@ -31,8 +31,8 @@ test('preferment baker percentages describe the selected seed yeast actually wei
   const r=make('fresh',pref);
   // Distinct doses make an accidental reference to unused final-dough yeast observable.
   r.preferment.prefYeastGrams=r.flour*.0025;r.yeast.convertedPct=1.2;
-  const section=render(r,pref).split('Baker’s percentages')[1];
-  a.ok(section);a.match(section,/Fresh yeast : 0\.25%/i);a.doesNotMatch(section,/Fresh yeast : 1\.2%/i);
+  const section=render(r,pref,undefined,'en',true).match(/<section aria-label="Total ingredients">([\s\S]*?)<\/section>/)?.[1].replace(/<[^>]+>/g,'');
+  a.ok(section);a.match(section,/Fresh yeast0\.25%[\d. ]+g/i);a.doesNotMatch(section,/Fresh yeast1\.2%[\d. ]+g/i);
  }
 });
 
@@ -50,5 +50,16 @@ test('small yeast precision and dilution instructions stay in one initially clos
   a.ok(match[2].includes(pref==='none'?messages.recipeOutput.dilutionTitle:locale==='fr'?'Jetez le reste':'Discard the leftover'));
   a.doesNotMatch(match[2],/<details/);
   const outside=html.replace(match[0],'');a.ok(!outside.includes(messages.recipeOutput.precisionScaleTitle));
+ }
+});
+
+test('total formula percentages accompany total weights, never remaining stage water',()=>{
+ for(const pref of ['biga','poolish']){
+  const r=make('instant',pref),html=render(r,pref,undefined,'en',true);
+  const totals=html.match(/<section aria-label="Total ingredients">([\s\S]*?)<\/section>/)[1].replace(/<[^>]+>/g,'');
+  a.match(totals,new RegExp('Flour100%'+Math.round(r.flour)+' g'));
+  a.match(totals,new RegExp('Water[0-9.]+%'+Math.round(r.water)+' g'));
+  a.match(totals,/Of which prefermented flour[\s\S]*20%/);
+  a.doesNotMatch(html,/Baker’s percentages/);
  }
 });

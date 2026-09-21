@@ -243,13 +243,19 @@ button,
 
 /* Opening choices show the whole subject; catalogues remain compact. */
 .bake-kind-grid { grid-template-columns: minmax(0, 1fr); }
-.bake-kind-image { height: clamp(190px, 28svh, 290px); }
+.bake-kind-image { height: auto; aspect-ratio: 3 / 2; }
 @media (min-width: 600px) {
   .bake-kind-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .bake-kind-image { height: clamp(240px, 32vw, 330px); }
+
 }
 
 .dough-style-card { grid-template-columns: 112px minmax(0, 1fr); }
 @media (min-width: 600px) {
   .dough-style-card { grid-template-columns: 160px minmax(0, 1fr); }
+}
+
+/* Whole-appliance thumbnails match the dough style cards. */
+.decision-illustration { width: 112px; height: 112px; }
+@media (min-width: 600px) {
+  .decision-illustration { width: 160px; height: 160px; }
 }

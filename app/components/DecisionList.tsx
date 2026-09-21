@@ -11,7 +11,7 @@ interface Option {
 }
 
 interface DecisionListProps {
-  layout?: 'compact' | 'lateral' | 'photo';
+  layout?: 'compact' | 'lateral' | 'photo' | 'illustrated';
   options: Option[];
   selectedId: string;
   onSelect: (id: string) => void;
@@ -52,14 +52,14 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
               pointerEvents: isDisabled ? 'none' : undefined,
             }}
           >
-            <div style={{
-              width: layout === 'photo' ? '100%' : layout === 'lateral' ? 72 : 56, height: layout === 'photo' ? 'auto' : layout === 'lateral' ? 72 : 56, aspectRatio: layout === 'photo' ? '2 / 1' : undefined,
+            <div className={layout === 'illustrated' ? 'decision-illustration' : undefined} style={{
+              width: layout === 'illustrated' ? undefined : layout === 'photo' ? '100%' : layout === 'lateral' ? 72 : 56, height: layout === 'illustrated' ? undefined : layout === 'photo' ? 'auto' : layout === 'lateral' ? 72 : 56, aspectRatio: layout === 'photo' ? '2 / 1' : undefined,
               borderRadius: option.thumbnailBg ? '50%' : '8px',
               overflow: 'hidden', flexShrink: 0,
-              background: option.thumbnailBg ?? '#2B2420',
+              background: option.thumbnailBg ?? (layout === 'illustrated' ? '#f3ede3' : '#2B2420'),
             }}>
               {!option.thumbnailBg && option.image && (
-                <img src={option.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={option.image} alt="" style={{ width: '100%', height: '100%', objectFit: layout === 'illustrated' ? 'contain' : 'cover' }} />
               )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
