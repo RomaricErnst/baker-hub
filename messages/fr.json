@@ -152,7 +152,7 @@
     "weightPerLoafLabel": "Poids / pain",
     "largeBatchNote": "Grande fournée — pensez à diviser en deux sessions",
     "howMany": "Quantité",
-    "corniceLabel": "Épaisseur des bords",
+    "corniceLabel": "Bordure",
     "corniceThin": "Fine",
     "corniceClassic": "Classique",
     "corniceGenerous": "Généreuse"
@@ -188,14 +188,14 @@
     "startMovedNote": "Départ déplacé à {time} pour éviter votre indisponibilité.",
     "scenario": {
       "plentyPreferred": "Commencez entre {start} et {end}.",
-      "plentyPreferredSub": "Commencer un peu plus tard reste très bien — juste une pousse au froid plus courte.",
+      "plentyPreferredSub": "Commencer plus tard raccourcit le repos au froid.",
       "plenty": "Idéalement commencez vers {start}.",
-      "plentySub": "N'importe quand entre {start} et {end} convient.",
+      "plentySub": "Créneau conseillé : {start}–{end}.",
       "tight": "Fenêtre serrée — commencez dès que possible.",
-      "tooShort": "Très peu de temps — commencez maintenant pour le meilleur résultat possible."
+      "tooShort": "Créneau très court : choisissez une cuisson plus tardive."
     },
     "conflict": {
-      "continueAnyway": "Un pointage plus court, c'est bien"
+      "continueAnyway": "Garder le pointage plus court"
     },
     "blockers": {
       "heading": "Des contraintes horaires ?",
@@ -217,8 +217,8 @@
     },
     "adjustLabel": "Fenêtres de fermentation · ajuster le timing",
     "adjustDoughLabel": "Pâte :",
-    "adjustDoughVerb": "glissez le losange vert — la courbe doit être proche de son pic à la cuisson",
-    "adjustPrefVerb": "glissez le losange doré — la courbe doit être proche de son pic au démarrage",
+    "adjustDoughVerb": "déplacez le losange vert pour changer l’heure du mélange",
+    "adjustPrefVerb": "déplacez le losange doré pour changer l’heure du préferment",
     "summaryFridgeBlock": "créneau bloqué",
     "summaryFridgeBlocks": "créneaux bloqués"
   },
@@ -226,7 +226,7 @@
     "title": "Peaufinez votre pâte",
     "doughTemp": "Temp. pâte",
     "flourInFridge": "Farine au frigo",
-    "mixingLoss": "Déchet de pétrissage",
+    "mixingLoss": "Marge de pâte",
     "saltPct": "Sel",
     "oilPct": "Huile",
     "sugarPct": "Sucre",
@@ -238,10 +238,10 @@
       "advanced": "Technique avancée",
       "noteStiff": "La pâte sera assez ferme — un peu plus d'eau peut aider à l'étirer.",
       "noteBelowClassic": "En dessous de la plage classique pour {name}. La pâte sera plus ferme et un peu plus dense.",
-      "noteClassic": "Plage authentique pour {name}. Bonne maniabilité et texture traditionnelle.",
-      "noteExtended": "Mie plus ouverte et aérée. Nécessite une technique de façonnage assurée.",
-      "noteExtreme": "Hydratation extrême. Pâte très collante — mains mouillées et coupe-pâte indispensables.",
-      "noteHigh": "Territoire haute hydratation. Excellente mie ouverte mais difficile à manipuler."
+      "noteClassic": "Une plage courante pour {name}, pour commencer sans ajustement.",
+      "noteExtended": "La pâte sera plus souple et collante ; utilisez un coupe-pâte.",
+      "noteExtreme": "Pâte très collante : utilisez des mains mouillées et un coupe-pâte.",
+      "noteHigh": "Pâte plus difficile à façonner ; réduisez l’eau si vous débutez."
     },
     "salt": {
       "veryLow": "Très faible — peut manquer de goût."
@@ -252,14 +252,14 @@
       "highTempNote": "Pour un four à haute température, 0% d'huile est idéal — l'huile peut brûler à très haute température.",
       "home1": "Aide le brunissement et la tendreté à basse température. Choix classique pour four domestique.",
       "home2": "Plage pizza pan — base croustillante, presque frite. Idéal pour Detroit et styles pan.",
-      "high": "Territoire pâte enrichie — l'huile affaiblit le gluten. Levure osmotolérante (SAF Gold) recommandée."
+      "high": "Pour une pâte enrichie ; incorporez l’huile après le début du pétrissage."
     },
     "sugar": {
       "traditionalHighTemp": "Traditionnel — sans sucre. Parfait à haute température.",
       "traditionalHome": "Classique. Ajoutez 0,5% pour favoriser la caramélisation dans un four domestique.",
       "subtle": "Légère coloration. Bon pour la cuisson domestique en dessous de 280°C.",
       "noticeable": "Douceur perceptible et bonne coloration. Adapté aux styles enrichis.",
-      "osmotic": "Au-delà de 2%, le sucre crée un stress osmotique sur la levure — ajoutez 10% de levure en plus.",
+      "osmotic": "Le sucre influe sur la fermentation ; utilisez la dose de levure calculée.",
       "high": "Taux élevé (niveau brioche) — la levure standard peut peiner. SAF Gold recommandée."
     },
     "none": "Sans",
@@ -267,8 +267,8 @@
     "mixerSpiral": "spiral",
     "mixerStand": "sur socle",
     "mixerHand": "à la main",
-    "flourFridgeInfo": "La farine froide retire environ 8°C, compensés automatiquement.",
-    "mixingLossInfo": "Une marge pour ce qui reste dans le bol. Les quantités augmentent, le plan ne change pas.",
+    "flourFridgeInfo": "La température de l’eau tient compte de la farine froide.",
+    "mixingLossInfo": "Augmente les quantités pour compenser la pâte restant dans le bol.",
     "zone": {
       "oilBrowning": "dorure",
       "oilEnriched": "enrichie",
@@ -296,37 +296,37 @@
     "hydration": "hydratation",
     "coldFerment": "Fermentation froide",
     "heading": "Pré-ferment",
-    "subtitle": "Tête de fermentation optionnelle pour la saveur et la structure.",
+    "subtitle": "Préparez une partie de la farine avant le mélange final.",
     "none": {
-      "title": "Aucun",
-      "tagline": "Pâte directe, le chemin le plus simple"
+      "title": "Pâte directe",
+      "tagline": "Tous les ingrédients sont réunis au mélange principal."
     },
     "poolish": {
       "title": "Poolish",
-      "tagline": "Liquide, acidulé, fenêtre de 12–18h"
+      "tagline": "Même poids de farine et d’eau, avec de la levure."
     },
     "biga": {
       "title": "Biga",
-      "tagline": "Solide, flexible, jusqu'à 72h"
+      "tagline": "Mélange ferme de farine, d’eau et de levure."
     },
     "levain": {
       "title": "Levain",
-      "tagline": "À base de levain, fermentation naturelle"
+      "tagline": "Levain mûr incorporé à la pâte finale."
     },
     "recommended": "Recommandé"
   },
   "yeastDesc": {
     "simple": {
-      "instant": "Sachet de poudre fine. Plus fiable, longue conservation.",
-      "active_dry": "Granulés bruns. Très disponible. Dissoudre dans de l'eau tiède.",
-      "fresh": "Bloc beige souple. Saveur légèrement plus riche. À utiliser dans les 2 semaines.",
-      "sourdough": "Fermentation sauvage. Saveur plus profonde, meilleure digestibilité. Nécessite un levain actif."
+      "instant": "Poudre fine à mélanger directement à la farine.",
+      "active_dry": "Granulés à réhydrater selon les instructions du sachet.",
+      "fresh": "Bloc souple à conserver au réfrigérateur ; vérifiez la date sur l’emballage.",
+      "sourdough": "Prévoyez un levain actif, prêt à utiliser au mélange."
     },
     "custom": {
-      "instant": "Poudre fine · ×1.0 référence · plus précis",
-      "active_dry": "Granulés bruns · ×1,33 vs LSI · dissoudre à 38°C",
-      "fresh": "Bloc souple · ×3,0 vs LSI · conserver au frigo",
-      "sourdough": "Levure sauvage · remplace la formule · levain actif au pic requis"
+      "instant": "Poudre fine · à mélanger à la farine",
+      "active_dry": "Granulés · suivez les instructions du sachet",
+      "fresh": "Bloc souple · à conserver au réfrigérateur",
+      "sourdough": "Levain actif · prévoyez son rafraîchi dans le planning"
     }
   },
   "avpn": {
@@ -348,38 +348,38 @@
     "humidityHumid": "Humide",
     "humidityVeryHumid": "Très humide",
     "fridgeTemp": "Température du frigo",
-    "warmNudge": "Dans un climat chaud, les températures de l'après-midi peuvent dépasser 28°C. Si votre cuisine se réchauffe en journée, entrez plutôt la température maximale attendue.",
-    "fridgeWarning": "Frigo à {temp}°C — plus chaud que les 4°C standard. La levure sera plus active pendant la pousse au froid.",
+    "warmNudge": "Indiquez la température où la pâte reposera. Si elle change en journée, revérifiez la pâte et le planning.",
+    "fridgeWarning": "À {temp}°C, la fermentation peut rester plus active que dans un réfrigérateur plus froid.",
     "priority": "Priorité de fermentation",
     "priorityFlavour": "Saveur avant tout",
     "priorityBalanced": "Équilibré",
     "prioritySpeed": "Pousse rapide",
     "heading": "Votre cuisine",
-    "subtitle": "Le climat décide de la vitesse de fermentation.",
+    "subtitle": "La température influence la durée de fermentation.",
     "cool": {
       "title": "Cuisine fraîche",
-      "tagline": "Fermentation lente, plus de flexibilité",
+      "tagline": "La fermentation prend généralement plus de temps.",
       "badge": "moins de 20°C"
     },
     "normal": {
       "title": "Tempérée",
-      "tagline": "Timing standard des recettes occidentales",
+      "tagline": "Utilisez la température ambiante mesurée.",
       "badge": "20–26°C"
     },
     "warm": {
-      "title": "Méditerranéenne",
-      "tagline": "Équilibrée, horaires flexibles",
+      "title": "Cuisine chaude",
+      "tagline": "Surveillez la pâte au fil de la fermentation.",
       "badge": "26–30°C"
     },
     "tropical": {
-      "title": "Tropicale",
-      "tagline": "Fermentation rapide, pousse au froid indispensable",
+      "title": "Cuisine très chaude",
+      "tagline": "Surveillez régulièrement la pâte et suivez les phases au froid prévues.",
       "badge": "30°C+"
     }
   },
   "timeline": {
     "bakingProtocol": "Votre protocole de cuisson",
-    "quickBakeNote": "Plan express — cette pâte privilégie la rapidité à la profondeur de fermentation. Elle cuira très bien aujourd'hui ; avec un jour d'avance, une fermentation lente apporte plus de goût et une mie plus légère.",
+    "quickBakeNote": "Fermentation courte : vérifiez la levée avant de cuire.",
     "startBaking": "Démarrer le mode cuisson",
     "autoAdjusted": "Planning ajusté automatiquement — une fenêtre à température ambiante était trop longue. Une phase de pousse au froid a été ajoutée pour éviter la surfermentation.",
     "steps": {
@@ -428,7 +428,7 @@
     "coldTips": {
       "bulk": "La masse de pâte entière va au frigo. La fermentation froide ralentit la levure et développe les arômes. Aucune action nécessaire.",
       "balls": "Les pâtons reposent au frigo. Cela les raffermit et rend l'apprêt final plus maîtrisé.",
-      "single": "La pâte repose au frigo. La fermentation froide développe les arômes lentement — aucune action, le temps travaille pour vous.",
+      "single": "Gardez la pâte couverte au frigo jusqu’à la prochaine étape prévue.",
       "shaped": "La pâte façonnée pousse au frigo. Le froid la raffermit, approfondit les arômes et facilite la grigne."
     },
     "divideTip": "Pesez et divisez la pâte en {n} pâton{plural}. Pincez le dessous pour créer une tension de surface.",
@@ -442,8 +442,8 @@
       "long": "Commencez maintenant — pendant que la pâte finit son apprêt. Donnez-lui les {min} min complètes pour saturer votre surface de cuisson.",
       "short": "Commencez maintenant — pendant que la pâte finit son apprêt. Mettez le four à température maximale pendant {min} minutes."
     },
-    "eatTipPizza": "Votre pâte est parfaitement fermentée. Étirez, garnissez et enfournez. Buon appetito !",
-    "eatTipBread": "Votre pâte est parfaitement fermentée. Grignez, enfournez et régalez-vous. Buon appétit !",
+    "eatTipPizza": "Vérifiez la maturité de la pâte, puis étalez, garnissez et cuisez.",
+    "eatTipBread": "Vérifiez l’apprêt, puis grignez et enfournez.",
     "phaseLabels": {
       "mixing": "Frasage",
       "bulkFerm": "Pointage",
@@ -510,7 +510,7 @@
     "prioritySpeedDesc": "Plus de levure, plus vite",
     "dilutionTitle": "Dilution requise — quantité trop petite à peser directement",
     "poolishTitle": "Poolish recommandé",
-    "poolishBody": "La fermentation longue à température ambiante est difficile à contrôler. Un poolish apporte une meilleure saveur et un timing plus prévisible. Mélangez 50% de votre farine avec un poids égal d'eau et une pincée de levure 8 à 16h avant la cuisson.",
+    "poolishBody": "Pour un poolish, utilisez les quantités de farine, d’eau et de levure de la recette et suivez l’heure de préparation.",
     "notRecommendedTitle": "Ce planning de fermentation n'est pas recommandé",
     "notRecommendedBody": "La combinaison de temps et de température risque de provoquer une surfermentation. Ajoutez une pousse au froid ou réduisez votre heure de démarrage.",
     "watchOut": "Attention",
@@ -561,12 +561,12 @@
     "selectDateFirst": "Sélectionnez d'abord une date",
     "guardPast": "Cette heure de cuisson est déjà passée — choisissez une date ultérieure.",
     "guardNoFutureSlot": "Il ne reste aucun horaire de pétrissage possible avant la cuisson — choisissez une heure plus tardive.",
-    "blockerNote": "Le démarrage de la pâte tombe dans une de vos indisponibilités — c'est bien si ça vous convient.",
+    "blockerNote": "Le pétrissage chevauche une indisponibilité. Modifiez le planning ou vérifiez que vous pourrez pétrir à cette heure.",
     "bulkNote": "Votre pâte a besoin d'environ {dur} pour lever — soyez libre avant {time} pour la mettre au frigo, ou démarrez un peu plus tôt.",
     "fallbackBtn1": "Démarrer juste avant ou après mon indisponibilité",
-    "fallbackBtn1Sub": "La pâte sera quand même excellente.",
+    "fallbackBtn1Sub": "Modifie la durée de fermentation.",
     "fallbackBtn2": "Mélanger pendant mon indisponibilité — ça ira",
-    "fallbackBtn2Sub": "Toujours dans la fenêtre idéale — la pâte sera excellente.",
+    "fallbackBtn2Sub": "Vous devrez être disponible à cette heure.",
     "keepAsIs": "Garder comme ça",
     "gotIt": "Compris, je m'adapte",
     "fermentationGuide": "Guide de fermentation",
@@ -583,25 +583,25 @@
       "6pm": "18h"
     },
     "simpleStatus": {
-      "ready": "Pâte prête à la cuisson",
-      "earlyOk": "Un peu tôt — ça devrait quand même bien se passer",
+      "ready": "Maturité estimée à l’heure de cuisson",
+      "earlyOk": "Plus tôt que conseillé : surveillez la levée",
       "tooEarly": "Trop tôt — risque de surfermentation",
-      "lateOk": "Un peu tard — ça devrait aller",
+      "lateOk": "Plus tard que conseillé : surveillez la levée",
       "tooLate": "Trop tard — risque de sous-fermentation"
     },
     "bakeLabel": "Cuisson",
-    "doughReadyAtBake": "Pâte prête à la cuisson",
-    "doughEarlyOk": "Pic légèrement avant — devrait bien aller",
-    "doughLateOk": "Encore en pousse — devrait bien aller",
+    "doughReadyAtBake": "Maturité estimée à l’heure de cuisson",
+    "doughEarlyOk": "Pic estimé avant cuisson : surveillez la levée",
+    "doughLateOk": "Encore en levée à la cuisson : vérifiez la maturité",
     "doughPeaksBefore": "Pic avant la cuisson — risque de surfermentation",
     "doughPeaksAfter": "Pic de pâte juste après la cuisson",
     "prefReadyAtStartDough": "Prêt au démarrage de la pâte",
     "prefReadyAtMix": "Prêt au démarrage de la pâte",
-    "prefEarlyOk": "Légèrement passé son pic — utilisez-le, ça ira",
+    "prefEarlyOk": "Pic estimé légèrement dépassé : vérifiez la maturité",
     "prefTooEarly": "Passé son pic — risque de surfermentation",
-    "prefLateOk": "En développement — utilisez-le, ça ira",
+    "prefLateOk": "Encore en développement : vérifiez la maturité avant de mélanger",
     "prefTooLate": "Pas prêt — risque de sous-fermentation",
-    "prefTooShortTime": "Pas assez de temps — pâte directe recommandée",
+    "prefTooShortTime": "Temps insuffisant : changez l’heure de cuisson ou la méthode de préferment.",
     "prefInFridgeReady": "Au frigo — prêt au démarrage",
     "prefReadyWhenDoughStarts": "Prêt au démarrage de la pâte",
     "bakeRow": "Cuisson",
@@ -640,7 +640,7 @@
       "breadMedium": "Farine à pain forte recommandée — T65 ou W200+",
       "breadLong": "Farine riche en protéines indispensable — T65 forte ou W260+"
     },
-    "yeastReassurance": "C'est intentionnel — moins de levure, plus de temps = saveur plus profonde. Faites confiance au processus.",
+    "yeastReassurance": "La dose de levure dépend de la durée et des températures prévues.",
     "iceProtocol": "Protocole eau glacée",
     "precisionScale": "Balance de précision recommandée — c'est une très petite quantité de levure."
   },
@@ -704,16 +704,16 @@
           "note": "voir recette pour les quantités exactes — 100% hydratation"
         },
         {
-          "bold": "Ajoutez une pincée de LSI",
-          "note": "très petite quantité — le poolish fermente lentement"
+          "bold": "Ajoutez la levure pesée",
+          "note": "utilisez la dose de la recette"
         },
         {
           "bold": "Mélangez vigoureusement jusqu'à homogénéité",
           "note": "~2 min — consistance de pâte à crêpe épaisse"
         },
         {
-          "bold": "Couvrez bien avec du film alimentaire",
-          "note": "pressez-le sur la surface pour éviter la croûte"
+          "bold": "Couvrez le récipient",
+          "note": "laissez de la place pour la montée"
         },
         {
           "bold": "Laissez à température ambiante",
@@ -734,24 +734,24 @@
     "biga": {
       "steps": [
         {
-          "bold": "Pesez farine et eau",
-          "note": "voir recette — biga ~50-60% hydratation, plus ferme que le poolish"
+          "bold": "Pesez la farine et l’eau",
+          "note": "utilisez les quantités de la recette, à 45% d’hydratation"
         },
         {
-          "bold": "Ajoutez une infime quantité de LSI",
-          "note": "0,1-0,2% de farine — la biga fermente très lentement"
+          "bold": "Ajoutez la levure pesée",
+          "note": "utilisez la dose de la recette"
         },
         {
-          "bold": "Mélangez grossièrement jusqu'à homogénéité",
-          "note": "la biga est volontairement grumeleuse — ne pas trop mélanger"
+          "bold": "Mélangez grossièrement",
+          "note": "humidifiez toute la farine, sans lisser la pâte"
         },
         {
-          "bold": "Couvrez sans serrer",
-          "note": "la biga a besoin d'échanges d'air contrairement au poolish"
+          "bold": "Couvrez le récipient",
+          "note": "laissez de la place pour la montée"
         },
         {
           "bold": "Placez au frigo",
-          "note": "la biga fermente toujours au froid — jamais à température ambiante"
+          "note": "suivez ce planning de fermentation au froid"
         }
       ],
       "readyWhen": [
@@ -760,9 +760,9 @@
         "Volume augmenté de 50-70%"
       ],
       "pitfalls": [
-        "Sur-fermentée : forte odeur d'alcool, surface plate — jetez et recommencez",
-        "Biga qui sent l'acétone : sur-fermentée et inutilisable",
-        "Utiliser de l'eau tiède — toujours de l'eau froide pour la biga"
+        "Une biga dense et sans bulles n’est pas prête : vérifiez avant de mélanger.",
+        "Une odeur piquante de dissolvant indique une fermentation excessive.",
+        "Utilisez la température d’eau indiquée dans la recette."
       ]
     },
     "starter": {
@@ -784,8 +784,8 @@
           "note": "suivi visuel de la montée"
         },
         {
-          "bold": "Laissez découvert ou légèrement couvert",
-          "note": "le levain a besoin d'air"
+          "bold": "Couvrez le récipient",
+          "note": "laissez de la place pour la montée"
         }
       ],
       "readyWhen": [
@@ -1050,7 +1050,7 @@
       },
       "coverCold": {
         "bold": "Couvrez et réfrigérez",
-        "note": "développe les arômes"
+        "note": "suivez la durée de repos au froid prévue"
       }
     },
     "coldBalls": {
@@ -1093,7 +1093,7 @@
       },
       "pokeTest": {
         "bold": "Commencez le test du creux après réchauffage — toutes les 15–20 min",
-        "note": "ne pas y aller au temps — au ressenti"
+        "note": "observez la vitesse à laquelle l’empreinte se résorbe"
       },
       "pokeResponses": [
         "Revient immédiatement, pâte tendue — besoin de plus de temps",
@@ -1619,14 +1619,14 @@
       "6pm": "18h"
     },
     "mixStatus": {
-      "ready": "Pâte prête à la cuisson",
+      "ready": "Maturité estimée à l’heure de cuisson",
       "peaksBefore": "La pâte atteint son pic avant la cuisson",
       "peaksAfter": "La pâte atteint son pic juste après la cuisson"
     },
     "prefStatus": {
-      "inFridge": "Au frigo — prêt au démarrage",
-      "readyAtMix": "Prêt au démarrage de la pâte",
-      "earlyOk": "Légèrement passé son pic — encore utilisable",
+      "inFridge": "Au frigo : maturité estimée au mélange",
+      "readyAtMix": "Maturité estimée au mélange",
+      "earlyOk": "Pic estimé dépassé : vérifiez la maturité",
       "notYetPeak": "Pas encore au pic — en développement",
       "pastPeak": "Passé son pic — risque de surfermentation"
     },
@@ -1721,39 +1721,39 @@
     "subtitle": "Définit la durée et la température de cuisson.",
     "pizzaOven": {
       "title": "Four à pizza haute température",
-      "tagline": "Ooni, Gozney, bois — cuisson en 60–90 sec"
+      "tagline": "Four dédié à la cuisson des pizzas à haute température."
     },
     "homeSteel": {
       "title": "Four + pierre ou acier",
-      "tagline": "Base croustillante, 5–7 min"
+      "tagline": "Pierre ou acier préchauffé sous la pizza."
     },
     "homeStandard": {
       "title": "Four domestique standard",
-      "tagline": "Idéal pour pizzas épaisses — Pan, Detroit"
+      "tagline": "Plaque ou moule, sans pierre ni acier."
     },
     "electricPizza": {
       "title": "Four électrique à pizza",
-      "tagline": "400°C compact — Ooni Volt, Effeuno"
+      "tagline": "Modèle de table à haute température."
     },
     "dutchOven": {
       "title": "Cocotte en fonte",
-      "tagline": "Vapeur parfaite, mie ouverte — idéal maison"
+      "tagline": "Récipient couvert qui retient la vapeur de la pâte."
     },
     "homeStoneB": {
       "title": "Four + pierre ou acier",
-      "tagline": "Idéal pour baguettes et bâtards"
+      "tagline": "Pain posé sur une pierre ou un acier préchauffé."
     },
     "standardB": {
       "title": "Four domestique standard",
-      "tagline": "Idéal pains enrichis — brioche, pain de mie"
+      "tagline": "Pain cuit sur plaque ou dans un moule."
     },
     "woodFired": {
       "title": "Four à bois",
-      "tagline": "Croûte exceptionnelle, vapeur naturelle"
+      "tagline": "Pain cuit sur la sole d’un four à bois."
     },
     "steamOven": {
       "title": "Four vapeur",
-      "tagline": "Résultats pro — micro-boulangerie"
+      "tagline": "Four avec injection de vapeur."
     }
   },
   "mixer": {
@@ -1761,39 +1761,39 @@
     "subtitle": "Influence le développement du gluten et la friction.",
     "stand": {
       "title": "Robot pâtissier",
-      "tagline": "Type KitchenAid, 8 min de pétrissage"
+      "tagline": "Avec crochet ; suivez les vitesses de pétrissage du fabricant."
     },
     "hand": {
       "title": "Pétrissage à la main",
-      "tagline": "Traditionnel, 10–15 min"
+      "tagline": "Mélange et pétrissage manuels."
     },
     "no_knead": {
       "title": "Sans pétrissage",
-      "tagline": "Sans effort, la fermentation fait le travail"
+      "tagline": "Mélange bref, puis repos et rabats prévus au planning."
     },
     "spiral": {
       "title": "Pétrin spiral",
-      "tagline": "Équipement pro, développement rapide"
+      "tagline": "Crochet en spirale et cuve tournante."
     }
   },
   "yeast": {
     "heading": "Votre levure",
-    "subtitle": "Comment vous allez faire lever la pâte.",
+    "subtitle": "Choisissez celle que vous avez.",
     "idy": {
       "title": "Levure sèche instantanée",
-      "tagline": "La plus courante, aucune activation nécessaire"
+      "tagline": "À mélanger directement à la farine"
     },
     "ady": {
       "title": "Levure sèche active",
-      "tagline": "Nécessite de l'eau tiède pour s'activer"
+      "tagline": "Suivez les instructions de réhydratation du sachet"
     },
     "fresh": {
       "title": "Levure fraîche",
-      "tagline": "Levure en bloc, saveur la plus riche"
+      "tagline": "Bloc à conserver au réfrigérateur"
     },
     "sourdough": {
       "title": "Levain",
-      "tagline": "Fermentation naturelle, acidulé, plus lent"
+      "tagline": "Utilisez un levain actif, prêt à incorporer"
     }
   },
   "prep": {
@@ -1838,7 +1838,7 @@
     "shareBaked": "Partager cette fournée"
   },
   "yeastWarnings": {
-    "poolishSuggestion": "Une fermentation à température ambiante au-delà de {hours} h est difficile à prévoir. Une poolish donne plus de contrôle et plus de goût.",
+    "poolishSuggestion": "Au-delà de {hours}h à température ambiante, surveillez régulièrement la pâte. Un poolish nécessite son propre planning de préparation.",
     "overFermentRT": "{hours} h à {temp} °C dépasse ce que cette pâte supporte à température ambiante — elle sur-fermentera. Une phase au froid la porterait.",
     "hotClimateRT": "À {temp} °C, plus de 4 h à température ambiante, cela va vite. Un passage au froid ou une poolish vous laissent plus de marge.",
     "fridgeWarm": "Un frigo à {temp} °C est plus chaud que la référence de 4 °C — la levure reste plus active que ne le supposent les durées.",

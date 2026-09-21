@@ -21,7 +21,7 @@ test('clipped water exposes the achieved dough temperature and a feasible interv
  a.match(en,/Predicted after mixing: 24°C vs 23°C target \(\+1\.4 °C\)/);
  a.match(en,/Chill the flour before mixing or use direct ice with a compatible mixer/);
  const fr=renderToStaticMarkup(React.createElement(Water,{...base,locale:'fr'}));
- a.match(fr,/Après pétrissage prévu : 24°C au lieu de 23°C \(\+1\.4 °C\)/);
+ a.match(fr,/Température estimée après pétrissage : 24°C au lieu de 23°C \(\+1\.4 °C\)/);
  a.match(fr,/Refroidissez la farine avant le mélange ou utilisez la glace directe/);
 });
 test('direct ice clears the clipped-water warning when it can reach the ideal target',()=>{

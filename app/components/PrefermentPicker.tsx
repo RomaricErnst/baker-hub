@@ -71,11 +71,11 @@ export default function PrefermentPicker({
               {!directOnly && selected === option.id && selected !== 'none' && selected !== 'levain' && onFlourPctChange && (
                 <div style={{ padding: '12px 14px', border: '1px solid var(--border)', borderTop: 0, borderRadius: '0 0 12px 12px', background: 'var(--warm)' }}>
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 13 }}>
-                    {fr ? 'Part de toute la farine' : 'Share of all flour'}
+                    {fr ? 'Farine réservée au préferment' : 'Flour allocated to preferment'}
                     <span><input type="number" min={10} max={60} step={1} value={pctDraft} onChange={e => setPctDraft(e.target.value)} onBlur={commitPct} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }} style={{ width: 72, minHeight: 44, border: '1px solid var(--border)', borderRadius: 8, padding: 8 }} /> %</span>
                   </label>
                   <input type="range" aria-label={fr ? 'Part de farine en préferment' : 'Prefermented flour share'} min={10} max={60} step={1} value={flourPct ?? suggestedFlourPct} onChange={e => { setPctDraft(e.target.value); onFlourPctChange(Number(e.target.value)); }} style={{ width: '100%', minHeight: 44, accentColor: 'var(--terra)' }} />
-                  <p style={{ margin: '4px 0', fontSize: 12, color: 'var(--smoke)' }}>{fr ? 'Point de départ suggéré' : 'Suggested starting point'} : {suggestedFlourPct}%</p>
+                  <p style={{ margin: '4px 0', fontSize: 12, color: 'var(--smoke)' }}>{fr ? 'Proportion suggérée' : 'Suggested proportion'} : {suggestedFlourPct}%</p>
                   {totalFlourGrams !== undefined && Number.isFinite(totalFlourGrams) && totalFlourGrams > 0 && (() => {
                     const pct = flourPct ?? suggestedFlourPct;
                     const prefFlour = Math.round(totalFlourGrams * pct / 100);
@@ -88,7 +88,7 @@ export default function PrefermentPicker({
                   <details style={{ marginTop: 8, fontSize: 13 }}>
                     <summary style={{ minHeight: 44, cursor: 'pointer' }}>{fr ? 'M’aider à choisir' : 'Help me choose'}</summary>
                     <ul>
-                      <li>{fr ? '20 % : commencez ici, puis gardez ce repère pour comparer vos essais.' : '20%: start here, then keep this proportion while comparing your bakes.'}</li>
+                      <li>{fr ? `${suggestedFlourPct} % : commencez ici pour un premier essai.` : `${suggestedFlourPct}%: start here for your first attempt.`}</li>
                       <li>{selected === 'biga'
                         ? (fr ? '10 % : moins de biga ferme à incorporer, pour vous familiariser avec cette méthode.' : '10%: less stiff biga to incorporate while you get familiar with the method.')
                         : (fr ? '10 % : moins de poolish à préparer, pour apprendre à reconnaître sa maturité.' : '10%: less poolish to prepare while you learn to recognise its maturity.')}</li>

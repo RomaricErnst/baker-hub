@@ -36,63 +36,35 @@ interface YeastHelperProps {
 const IDENTIFY = (fr: boolean) => [
   {
     id: 'instant' as YeastType,
-    name: fr ? 'Instantanée' : 'Instant dry',
-    dose: '×1',
-    use: fr ? 'Le choix par défaut, et le seul qui pardonne six mois oubliés dans un placard.'
-            : 'The default choice, and the only one that forgives six months forgotten in a cupboard.',
-    look: fr ? 'Granules très fins, presque une poudre, beige clair'
-             : 'Very fine granules, almost a powder, pale beige',
-    label: fr ? '« Instantanée », « Instant », « Rapid Rise », « Fast Action », « Briochin »'
-              : '"Instant", "Rapid Rise", "Fast Action", "Easy Bake", "Quick"',
-    pro: fr ? 'Se verse directement dans la farine, sans réveil. La plus concentrée, et la plus stable au fil des mois.'
-            : 'Goes straight into the flour, no waking needed. The most concentrated, and the most stable over months.',
-    con: fr ? 'Se dose en très petites quantités — sous 1 g, une balance au dixième devient utile.'
-            : 'Used in very small amounts — below 1g a 0.01g scale starts to matter.',
+    name: fr ? 'Instantanée' : 'Instant dry', dose: '×1',
+    look: fr ? 'Granules fins, beige clair' : 'Fine, pale beige granules',
+    label: fr ? '« Instantanée », « Instant », « Fast Action »' : '“Instant”, “Rapid Rise”, “Fast Action”',
+    pro: fr ? 'Mélangez directement à la farine.' : 'Mix directly into the flour.',
+    con: fr ? 'Pour une dose inférieure à 1 g, utilisez une balance de précision ou l’aide au dosage.' : 'Below 1 g, use a precision scale or the small-dose helper.',
   },
   {
     id: 'active_dry' as YeastType,
-    name: fr ? 'Active' : 'Active dry',
-    dose: '×1,33',
-    use: fr ? 'Quand c\u2019est ce que vend votre supermarché — elle fait le même pain, avec une étape de plus.'
-            : 'When it is what your supermarket sells — same bread, one more step.',
-    look: fr ? 'Granules plus gros, bruns, visibles à l\u2019œil nu'
-             : 'Larger granules, brown, clearly visible',
-    label: fr ? '« Active », « Traditionnelle », « Boulangère », « Active Dry »'
-              : '"Active Dry", "Traditional", "Original"',
-    pro: fr ? 'La plus répandue en grande surface, et la moins chère.'
-            : 'The most widely stocked, and the cheapest.',
-    con: fr ? 'Doit être réveillée dans l\u2019eau tiède avant le pétrissage — versée sèche dans la farine, une partie ne repart jamais. Il en faut un tiers de plus.'
-            : 'Must be woken in warm water before mixing — added dry to the flour, part of it never restarts. Needs a third more.',
+    name: fr ? 'Sèche active' : 'Active dry', dose: '×1,33',
+    look: fr ? 'Granules plus gros que l’instantanée' : 'Larger granules than instant yeast',
+    label: fr ? '« Sèche active », « Active Dry » ; vérifiez le mode d’emploi' : '“Active Dry”; check the instructions',
+    pro: fr ? 'Réhydratez si le sachet le demande, à la température indiquée.' : 'Rehydrate if the packet requires it, at the stated temperature.',
+    con: fr ? 'Prélevez cette eau sur la quantité de la recette.' : 'Take that water from the recipe’s allowance.',
   },
   {
     id: 'fresh' as YeastType,
-    name: fr ? 'Fraîche' : 'Fresh',
-    dose: '×3',
-    use: fr ? 'Quand vous boulangez dans la semaine qui suit l\u2019achat. Au-delà, elle se perd.'
-            : 'When you bake within a week of buying it. Beyond that, it goes to waste.',
-    look: fr ? 'Un bloc mou beige-gris qui s\u2019émiette, au rayon frais'
-             : 'A soft beige-grey block that crumbles, sold refrigerated',
-    label: fr ? '« Fraîche », « Levure de boulanger fraîche », « Cube »'
-              : '"Fresh", "Cake yeast", "Compressed"',
-    pro: fr ? 'Le goût le plus rond, et le démarrage le plus franc. Le choix des professionnels.'
-            : 'The roundest flavour and the most decisive start. What professionals use.',
-    con: fr ? 'Périssable — deux semaines au frais, et elle meurt sans prévenir. Il en faut trois fois plus.'
-            : 'Perishable — two weeks refrigerated, and it dies without warning. Needs three times as much.',
+    name: fr ? 'Fraîche' : 'Fresh', dose: '×3',
+    look: fr ? 'Bloc beige qui s’émiette, vendu au frais' : 'A crumbly beige block, sold refrigerated',
+    label: fr ? '« Levure de boulanger fraîche »' : '“Fresh”, “Cake yeast”, “Compressed”',
+    pro: fr ? 'Émiettez-la pour bien la répartir au mélange.' : 'Crumble it to distribute evenly during mixing.',
+    con: fr ? 'Conservez au réfrigérateur et respectez la date sur l’emballage.' : 'Keep refrigerated and follow the date on the pack.',
   },
   {
     id: 'sourdough' as YeastType,
-    name: fr ? 'Levain' : 'Sourdough',
-    dose: '—',
-    use: fr ? 'Quand le pain est le sujet, pas le support. Demande d\u2019en avoir un vivant.'
-            : 'When the bread is the subject, not the base. Requires keeping one alive.',
-    look: fr ? 'Un bocal de pâte vivante que vous nourrissez vous-même'
-             : 'A jar of living culture you feed yourself',
-    label: fr ? '« Levain », « Sourdough starter », « Lievito madre »'
-              : '"Sourdough starter", "Levain", "Lievito madre"',
-    pro: fr ? 'Le goût, la conservation, la digestibilité. Rien d\u2019autre ne le remplace.'
-            : 'Flavour, keeping quality, digestibility. Nothing else replaces it.',
-    con: fr ? 'Sa force dépend de sa santé et de sa dernière rafraîchi — le plan suit la pâte, pas l\u2019horloge.'
-            : 'Its strength depends on its health and last feed — the plan follows the dough, not the clock.',
+    name: fr ? 'Levain' : 'Sourdough', dose: '—',
+    look: fr ? 'Culture de farine et d’eau entretenue par des rafraîchis' : 'A flour-and-water culture maintained with feeds',
+    label: fr ? '« Levain actif », « Sourdough starter »' : '“Active starter”, “Sourdough starter”, “Levain”',
+    pro: fr ? 'Prévoyez le rafraîchi pour que le levain soit prêt au mélange.' : 'Time the feed so your starter is ready for mixing.',
+    con: fr ? 'Vérifiez sa montée et ses bulles ; le temps seul ne suffit pas.' : 'Check its rise and bubbles; time alone is not enough.',
   },
 ];
 
@@ -156,19 +128,16 @@ function YeastInfoSheet({ id, onPick, onClose, fr }: {
         </p>
         <div style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--ash)', lineHeight: 1.55 }}>
           <div style={{ marginBottom: '5px' }}>
-            <span style={{ color: '#6B7A5A', fontWeight: 700 }}>+ </span>{y.pro}
+            {y.pro}
           </div>
-          <div><span style={{ color: '#9C8248', fontWeight: 700 }}>− </span>{y.con}</div>
+          <div>{y.con}</div>
         </div>
-        <p style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--ash)', fontStyle: 'italic', margin: '12px 0 0', lineHeight: 1.5 }}>
-          {y.use}
-        </p>
         {/* The dose is relative to instant, which is the engine's reference —
             and the plan converts it, so this is context, not a task. */}
         <p style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)', margin: '12px 0 0', lineHeight: 1.5 }}>
           {y.id === 'sourdough'
-            ? (fr ? 'Le plan suit la pâte plutôt que l\u2019horloge — la quantité dépend de votre levain.'
-                  : 'The plan follows the dough rather than the clock — the amount depends on your starter.')
+            ? (fr ? 'Renseignez vos rafraîchis à l’étape du planning.'
+                  : 'Enter your starter feeds in the planning step.')
             : (fr ? `Dose ${y.dose} par rapport à l\u2019instantanée. Le plan la convertit pour vous.`
                   : `Dose ${y.dose} against instant. The plan converts it for you.`)}
         </p>
@@ -180,7 +149,7 @@ function YeastInfoSheet({ id, onPick, onClose, fr }: {
             color: '#6B4423', fontFamily: 'var(--font-ui)', fontSize: '14px',
             fontWeight: 600, cursor: 'pointer',
           }}
-        >{fr ? 'C\u2019est celle-là' : 'That\u2019s the one'}</button>
+        >{y.id === 'sourdough' ? (fr ? 'Utiliser ce levain' : 'Use this starter') : (fr ? 'Utiliser cette levure' : 'Use this yeast')}</button>
       </div>
     </>,
     document.body,

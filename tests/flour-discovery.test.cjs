@@ -18,5 +18,5 @@ test('selection does not require opening details',()=>{
 });
 test('initial catalogue has visible facets and inline expansion rather than a hidden catalogue mode',()=>{
  const html=renderToStaticMarkup(React.createElement(Catalogue,{recommendedIds:['caputo_pizzeria'],styleKey:'neapolitan',onChoose:()=>{},onGeneric:()=>{},onScan:()=>{}}));
- a.equal((html.match(/<select/g)||[]).length,3);a.doesNotMatch(html,/<details|Voir les 244|Pour votre style/);a.match(html,/Choix populaires/);a.match(html,/Afficher plus de farines/);a.match(html,/Scanner mon sac/);
+ a.equal((html.match(/<select/g)||[]).length,3);a.doesNotMatch(html,/<details|Voir les 244|Pour votre style/);a.match(html,/Choix courants/);a.match(html,/Afficher plus de farines/);a.match(html,/Scanner mon sac/);
 });

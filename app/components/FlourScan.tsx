@@ -276,8 +276,8 @@ style={{ display: 'none' }}
                 borderRadius: '16px', fontSize: '12px', color: '#6A5A10', lineHeight: 1.4,
               }}>
                 {isFr
-                  ? 'Aucun produit exact retrouvé. Confirmez le type de farine à l’étape suivante ; ces valeurs restent estimées.'
-                  : 'No exact product found. Choose the flour type next; these values remain estimates.'}
+                  ? 'Produit non retrouvé dans le catalogue. Choisissez son type à l’étape suivante et saisissez les valeurs du sachet si vous les connaissez.'
+                  : 'Product not found in the catalogue. Choose its flour type next and enter the bag’s values if known.'}
               </div>
             )}
 

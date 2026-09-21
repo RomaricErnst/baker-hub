@@ -1285,7 +1285,7 @@ export default function ShareCard({
         </p>
       </div>
 
-      {/* ── What the card says ─────────────────────────────── */}
+      {/* ── Card content ─────────────────────────────── */}
       {showLines && (
         <div style={sheetStyle}>
           <div style={{
@@ -1294,7 +1294,7 @@ export default function ShareCard({
             borderBottom: '1px solid var(--border)', flexShrink: 0,
           }}>
             <p style={{ margin: 0, fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--char)' }}>
-              {l === 'fr' ? 'Ce que dit la carte' : 'What the card says'}
+              {l === 'fr' ? 'Contenu de la carte' : 'Card content'}
             </p>
             <button onClick={() => setShowLines(false)} aria-label={l === 'fr' ? 'Terminé' : 'Done'} style={{
               background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)',
@@ -1350,8 +1350,8 @@ export default function ShareCard({
                       }}
                     >
                       {g.lines.every(li => isOn(g.key, li.key))
-                        ? (l === 'fr' ? 'Tout retirer' : 'Turn off')
-                        : (l === 'fr' ? 'Tout ajouter' : 'Turn on')}
+                        ? (l === 'fr' ? 'Masquer ce groupe' : 'Hide this group')
+                        : (l === 'fr' ? 'Afficher ce groupe' : 'Show this group')}
                     </button>
                   </div>
 

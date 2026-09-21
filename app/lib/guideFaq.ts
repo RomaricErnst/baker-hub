@@ -60,8 +60,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "Ma biga semble sèche et grumeleuse — est-ce normal ?"
       },
       "a": {
-        "en": "Yes. At ~45% hydration a biga should look like rough, shaggy lumps — not a smooth dough. Resist the urge to knead it smooth; the loose structure is what develops its signature aroma.",
-        "fr": "Oui. À ~45% d'hydratation, une biga doit ressembler à des morceaux grossiers — pas à une pâte lisse. Ne la pétrissez pas : cette structure lâche développe son arôme caractéristique."
+        "en": "Yes. At 45% hydration, keep rough lumps. Moisten all the flour without kneading the biga smooth.",
+        "fr": "Oui. À 45% d’hydratation, gardez des morceaux grossiers. Humidifiez toute la farine sans pétrir la biga jusqu’à la lisser."
       }
     },
     {
@@ -70,8 +70,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "Seulement 24h au lieu de 48h — ça marche quand même ?"
       },
       "a": {
-        "en": "Yes. A fridge biga is solid from ~24h; 48h just gives deeper flavour. Your yeast amount was calibrated to your actual planned window, so the timing still works.",
-        "fr": "Oui. Une biga au frigo est au point dès ~24h ; 48h donne simplement plus de profondeur. La levure a été calibrée sur votre fenêtre réelle, donc le timing reste bon."
+        "en": "Change the bake time in your plan to recalculate the yeast dose. Check the biga’s readiness before mixing; elapsed time alone is not enough.",
+        "fr": "Modifiez l’heure de cuisson dans le planning pour recalculer la levure. Vérifiez la maturité de la biga avant de mélanger ; la durée seule ne suffit pas."
       }
     },
     {
@@ -100,8 +100,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "Ma biga sent l'alcool"
       },
       "a": {
-        "en": "Slightly boozy is normal — a stiff biga ferments with little oxygen. A sharp nail-polish note means it went too far: usable, but shorten the time or find a cooler spot next round.",
-        "fr": "Légèrement alcoolisée, c'est normal — une biga ferme fermente avec peu d'oxygène. Une note piquante de dissolvant signifie qu'elle est allée trop loin : utilisable, mais raccourcissez ou placez-la plus au frais la prochaine fois."
+        "en": "A mild alcoholic smell can occur. A sharp solvent smell suggests excessive fermentation; review the duration and temperature before your next batch.",
+        "fr": "Une légère odeur alcoolisée peut apparaître. Une odeur piquante de dissolvant suggère une fermentation excessive ; revoyez la durée et la température pour la prochaine fournée."
       }
     }
   ],
@@ -256,8 +256,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "Ma cuisine est devenue plus chaude que prévu"
       },
       "a": {
-        "en": "The biology follows the thermometer, not the plan — check the dough earlier. The visual cues (volume, surface bubbles) outrank the clock whenever they disagree.",
-        "fr": "La biologie suit le thermomètre, pas le plan — surveillez la pâte plus tôt. Les repères visuels (volume, bulles en surface) priment sur l'horloge dès qu'ils divergent."
+        "en": "Check the dough earlier: a warmer kitchen speeds fermentation. Follow its rise and surface bubbles before moving to the next step.",
+        "fr": "Surveillez la pâte plus tôt : la chaleur accélère la fermentation. Observez la montée et les bulles avant de passer à l’étape suivante."
       }
     }
   ],
@@ -352,8 +352,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "Le test du doigt dit sur-levée — récupérable ?"
       },
       "a": {
-        "en": "For pizza: handle gently, stretch a little thinner and bake — it will still be good, just less puffy. For bread: reshape gently, proof 20–30 min and bake; expect a denser crumb.",
-        "fr": "Pour la pizza : manipulez doucement, étalez un peu plus fin et cuisez — ce sera bon, juste moins gonflé. Pour le pain : refaçonnez délicatement, laissez 20–30 min et cuisez ; la mie sera plus dense."
+        "en": "For pizza: handle gently, stretch a little thinner and bake — expect less puffing. For bread: reshape gently, proof 20–30 min and bake; expect a denser crumb.",
+        "fr": "Pour la pizza : manipulez doucement, étalez un peu plus fin et cuisez — elle gonflera moins. Pour le pain : refaçonnez délicatement, laissez 20–30 min et cuisez ; la mie sera plus dense."
       }
     },
     {
@@ -394,8 +394,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "Un préchauffage plus court, vraiment un problème ?"
       },
       "a": {
-        "en": "Yes, for steel/stone: the surface needs the full time to store heat even if the air reaches temperature quickly. A cool surface = pale, dense base — the most common home-oven mistake.",
-        "fr": "Oui, pour l'acier/la pierre : la surface a besoin de tout ce temps pour emmagasiner la chaleur, même si l'air est vite chaud. Surface tiède = base pâle et dense — l'erreur n°1 au four domestique."
+        "en": "Yes, for steel/stone: the surface needs the full time to store heat even if the air reaches temperature quickly. A cool surface = pale, dense base.",
+        "fr": "Oui, pour l'acier/la pierre : la surface a besoin de tout ce temps pour emmagasiner la chaleur, même si l'air est vite chaud. Surface tiède = base pâle et dense."
       }
     },
     {

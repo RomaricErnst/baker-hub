@@ -58,7 +58,7 @@ export default function WaterPreparation({waterGrams,targetTemp,kitchenTemp,frid
         const residualC=achievedDoughTempC-targetDoughTemp;
         const residual=units==='imperial' ? `${residualC>0?'+':''}${Math.round(residualC*9/5)} °F` : `${residualC>0?'+':''}${residualC.toFixed(1)} °C`;
         return fr
-          ? `Après pétrissage prévu : ${displayTemp(achievedDoughTempC,units)} au lieu de ${displayTemp(targetDoughTemp,units)} (${residual}).`
+          ? `Température estimée après pétrissage : ${displayTemp(achievedDoughTempC,units)} au lieu de ${displayTemp(targetDoughTemp,units)} (${residual}).`
           : `Predicted after mixing: ${displayTemp(achievedDoughTempC,units)} vs ${displayTemp(targetDoughTemp,units)} target (${residual}).`;
       })()
     : null;
@@ -83,7 +83,7 @@ export default function WaterPreparation({waterGrams,targetTemp,kitchenTemp,frid
     </> : <>{thermalGapText ? <><p>{thermalGapText}</p><p>{thermalAction}</p></> : <span>{fr ? 'Complétez la préparation de l’eau dans les réglages de la cuisine.' : 'Complete water preparation in kitchen settings.'}</span>}</>}
   </div>;
   return <div style={waterText}>
-    {targetDoughTemp!=null&&<p style={{margin:'0 0 8px'}}>{fr?'Pâte après pétrissage':'Dough after mixing'} · <strong>{displayTemp(targetDoughTemp,units)}</strong></p>}
+    {targetDoughTemp!=null&&<p style={{margin:'0 0 8px'}}>{fr?'Température de pâte visée':'Target dough temperature'} · <strong>{displayTemp(targetDoughTemp,units)}</strong></p>}
     {!readOnly && onSourceChange && <div role="group" aria-label={fr?'Source de l’eau':'Water source'} style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
       {(['room','fridge','tap','measured'] as const).map(key=><button key={key} type="button" aria-pressed={source===key} onClick={()=>onSourceChange(key)} style={{minHeight:44,padding:'9px 12px',fontFamily:'inherit',fontSize:16,lineHeight:1.4,cursor:'pointer',border:'1px solid var(--border)',borderRadius:8,background:source===key?'var(--terra)':'transparent',color:source===key?'white':'inherit'}}>{({room:fr?'Ambiante':'Room',fridge:fr?'Frigo':'Fridge',tap:fr?'Robinet':'Tap',measured:fr?'Mesurée':'Measured'})[key]}</button>)}
     </div>}
@@ -99,9 +99,9 @@ export default function WaterPreparation({waterGrams,targetTemp,kitchenTemp,frid
     {thermalAction&&<div>{thermalAction}</div>}
     {clamped&&!thermalGap&&<div>{fr?'Cette eau seule ne permet pas d’atteindre la température de pâte visée.':'This water alone cannot reach the target dough temperature.'}</div>}
     <details style={{marginTop:12,fontSize:14,color:'var(--smoke)'}}><summary style={disclosureStyle}>{fr?'Températures et hypothèses':'Temperatures & assumptions'}</summary>
-      <div>{starting!=null?`${entered?(fr?'Eau saisie':'Entered water'):(fr?'Eau estimée':'Estimated water')}: ${displayTemp(starting,units)}. `:''}{!direct?`${fr?'Eau préparée':'Prepared water'}: ${displayTemp(targetTemp,units)}.`:''}</div>
+      <div>{starting!=null?`${entered?(fr?'Température saisie':'Entered temperature'):(fr?'Eau estimée':'Estimated water')}: ${displayTemp(starting,units)}. `:''}{!direct?`${fr?'Eau préparée':'Prepared water'}: ${displayTemp(targetTemp,units)}.`:''}</div>
       <div>{fr?'Glace supposée à 0 °C. Vérifiez la pâte après pétrissage avec un thermomètre.':'Assumes ice at 0°C. Check dough after mixing with a thermometer.'}</div>
-      {direct&&<div>{fr?'Estimation d’énergie ; la friction réelle du pétrin varie.':'Energy estimate; actual mixer friction varies.'}</div>}
+      {direct&&<div>{fr?'Le calcul estime l’échauffement du pétrin ; vérifiez la température réelle de la pâte.':'The calculation estimates mixer heating; check the actual dough temperature.'}</div>}
       {!directIceSupported&&<div>{fr?'Glace directe non proposée pour ce matériel ou cette recette.':'Direct ice is not offered for this equipment or recipe.'}</div>}
       {(clamped||!split)&&<div>{fr?'Refroidissez la farine ou adaptez le pétrissage avant de recalculer.':'Chill the flour or adjust mixing before recalculating.'}</div>}
     </details>

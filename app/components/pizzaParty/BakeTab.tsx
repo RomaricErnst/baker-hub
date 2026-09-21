@@ -1473,8 +1473,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   lineHeight: 1.5,
                 }}>
                   {l === 'fr'
-                    ? 'Connectez-vous pour sauvegarder cette photo — retrouvez-la dans Mes sessions.'
-                    : 'Sign in to save this photo — find it in My Sessions.'}
+                    ? 'Connectez-vous pour sauvegarder cette photo — retrouvez-la dans Mes fournées enregistrées.'
+                    : 'Sign in to save this photo — find it in My saved bakes.'}
                 </div>
               )}
             </div>

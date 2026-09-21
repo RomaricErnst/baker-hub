@@ -29,7 +29,7 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect, con
   const t = useTranslations('oven');
   const locale = useLocale();
   const pizzaOptions = [
-    { id: 'tabletop', image: '/images/approved/equipment-v2/portable-gas-oven.webp', title: locale === 'fr' ? 'Four à pizza compact' : 'Tabletop pizza oven', tagline: locale === 'fr' ? 'Four à pizza compact · gaz ou bois' : 'Compact pizza oven · gas or wood' },
+    { id: 'tabletop', image: '/images/approved/equipment-v2/portable-gas-oven.webp', title: locale === 'fr' ? 'Four à pizza compact' : 'Tabletop pizza oven', tagline: locale === 'fr' ? 'Modèle de table, à gaz ou à bois' : 'Tabletop model, gas or wood' },
     { id: 'masonry', image: '/images/approved/equipment-v2/masonry-oven.webp', title: locale === 'fr' ? 'Four maçonné' : 'Brick / masonry oven', tagline: locale === 'fr' ? 'Four fixe avec sole et voûte épaisses' : 'Built-in oven with a heavy floor and dome' },
     { id: 'home_oven_steel',    image: '/images/approved/equipment-v2/home-oven-steel.webp',          title: t('homeSteel.title'),     tagline: t('homeSteel.tagline') },
     { id: 'home_oven_standard', image: '/images/approved/equipment-v2/home-oven-standard.webp',       title: t('homeStandard.title'),  tagline: t('homeStandard.tagline') },
@@ -41,8 +41,8 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect, con
     { id: 'home_oven_stone_bread', image: '/images/approved/equipment-v2/home-oven-stone.webp',    title: t('homeStoneB.title'), tagline: t('homeStoneB.tagline') },
     { id: 'standard_bread',        image: '/images/approved/equipment-v2/home-oven-standard.webp', title: t('standardB.title'),  tagline: t('standardB.tagline') },
     { id: 'wood_fired',            image: '/images/approved/equipment-v2/bread-wood-open.webp',     title: t('woodFired.title'),  tagline: t('woodFired.tagline') },
-    { id: 'home', image: '/images/approved/equipment-v2/bread-home-open.webp', title: locale==='fr'?'Four vapeur domestique':'Home steam oven', tagline: locale==='fr'?'Four domestique avec injection de vapeur':'Domestic oven with steam injection' },
-    { id: 'micro', image: '/images/approved/equipment-v2/bread-micro-open.webp', title: locale==='fr'?'Four de microboulangerie':'Microbakery oven', tagline: locale==='fr'?'Four de boulangerie vertical avec injection de vapeur':'Upright bakery oven with steam injection' },
+    { id: 'home', image: '/images/approved/equipment-v2/bread-home-open.webp', title: locale==='fr'?'Four vapeur domestique':'Home steam oven', tagline: locale==='fr'?'Avec injection de vapeur':'With steam injection' },
+    { id: 'micro', image: '/images/approved/equipment-v2/bread-micro-open.webp', title: locale==='fr'?'Four de microboulangerie':'Microbakery oven', tagline: locale==='fr'?'Modèle vertical avec injection de vapeur':'Upright model with steam injection' },
   ];
 
   const options = bakeType === 'pizza'

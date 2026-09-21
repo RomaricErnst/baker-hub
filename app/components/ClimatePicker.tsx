@@ -95,8 +95,8 @@ export default function ClimatePicker({
         </div>
         <p style={{ margin: '7px 0 0', fontSize: 14, color: 'var(--smoke)', lineHeight: 1.45 }}>
           {kind === 'kitchen'
-            ? (fr ? 'Pendant la fermentation à température ambiante. Utilisez un thermomètre si possible.' : 'During room-temperature fermentation. Use a thermometer if available.')
-            : (fr ? 'Pendant la fermentation au froid.' : 'During cold fermentation.')}
+            ? (fr ? 'Mesurez près de l’endroit où la pâte reposera.' : 'Measure near where the dough will rest.')
+            : (fr ? 'Mesurez dans le réfrigérateur, près de la pâte.' : 'Measure inside the fridge, near the dough.')}
         </p>
         {kind === 'fridge' && fridgeTemp > 8 && (
           <p style={{ margin: '8px 0 0', padding: '8px 10px', background: '#EEF2FA', border: '1px solid #C4CDE0', borderRadius: 9, fontSize: 14, color: '#5A7090', lineHeight: 1.45 }}>
@@ -137,7 +137,7 @@ export default function ClimatePicker({
             })}
           </div>
           <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--smoke)', lineHeight: 1.45 }}>
-            {fr ? 'Farine conservée hermétiquement : gardez « Normale ». Très humide : jusqu’à −2 points estimés, ajustables ensuite.' : 'Airtight flour storage: keep “Normal / unknown”. Very humid: an estimated reduction of up to 2 points, adjustable later.'}
+            {fr ? 'Farine conservée hermétiquement : gardez « Normale ». Très humide : réduction estimée de l’hydratation jusqu’à 2 points, ajustable ensuite.' : 'Airtight flour storage: keep “Normal / unknown”. Very humid: an estimated hydration reduction of up to 2 percentage points, adjustable later.'}
           </p>
         </details>
       )}

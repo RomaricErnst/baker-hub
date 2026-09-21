@@ -573,22 +573,11 @@ export default function Header({
             <button type="button" onClick={() => setMenuOpen(false)} style={{ ...menuButton, background: 'var(--terra)', color: 'white', textAlign: 'center', minHeight: 44 }}>{locale === 'fr' ? 'Terminé' : 'Done'}</button>
           </div>}
           {menuPage === 'library' && <>
-          {/* ── My Sessions label — always visible ── */}
-          <div style={{
-            padding: '12px 16px 8px',
-            borderTop: '1px solid var(--border)',
-            flexShrink: 0,
-          }}>
-            <div style={{ ...monoLabel }}>
-              {locale === 'fr' ? 'Mes fournées enregistrées' : 'My saved bakes'}
-            </div>
-          </div>
-
           {/* ── My Sessions cards — scrollable ── */}
           <div style={{ flex: '0 0 auto', minHeight: 0, padding: '4px 16px 12px' }}>
             {!user ? (
               <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
-                {locale === 'fr' ? 'Connectez-vous pour sauvegarder vos sessions' : 'Sign in to save your sessions'}
+                {locale === 'fr' ? 'Connectez-vous pour retrouver vos fournées enregistrées' : 'Sign in to view your saved bakes'}
               </div>
             ) : loadingRecipes ? (
               <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
@@ -596,7 +585,7 @@ export default function Header({
               </div>
             ) : bakeEvents.length === 0 ? (
               <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
-                {locale === 'fr' ? 'Aucune fournée enregistrée' : 'No saved sessions yet'}
+                {locale === 'fr' ? 'Aucune fournée enregistrée' : 'No saved bakes yet'}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -767,7 +756,6 @@ export default function Header({
               transition: 'box-shadow .3s, background .3s',
             } : { transition: 'box-shadow .3s, background .3s' }),
           }}>
-            <div style={{ ...monoLabel, marginBottom: '8px' }}>{locale === 'fr' ? 'Compte' : 'Account'}</div>
             {authSpotlight && !user && (
               <div style={{
                 fontSize: '12px', color: 'var(--gold)',

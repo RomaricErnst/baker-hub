@@ -1156,10 +1156,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
             onClick={() => setShowLocationPicker(v => !v)}
             style={{ fontSize: '12px', minHeight:44, color: '#8A7F78', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '4px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
-            {shoppingLocation === 'singapore'
-              ? (l === 'fr' ? `Où acheter : ${currentLocationLabel} ▾` : `Where to shop: ${currentLocationLabel} ▾`)
-              : (l === 'fr' ? `Ma région : ${currentLocationLabel} ▾` : `My region: ${currentLocationLabel} ▾`)
-            }
+            {l === 'fr' ? `Pays des courses : ${currentLocationLabel} ▾` : `Shopping location: ${currentLocationLabel} ▾`}
           </button>
         </div>
         {showLocationPicker && (

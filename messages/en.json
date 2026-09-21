@@ -188,14 +188,14 @@
     "startMovedNote": "Start moved to {time} to avoid your unavailability block.",
     "scenario": {
       "plentyPreferred": "Aim to start between {start} and {end}.",
-      "plentyPreferredSub": "Starting a few hours later is still great — just a shorter cold rest.",
+      "plentyPreferredSub": "Starting later shortens the cold rest.",
       "plenty": "Best to start around {start}.",
-      "plentySub": "Anywhere from {start} to {end} gives good results.",
+      "plentySub": "Suggested window: {start}–{end}.",
       "tight": "Tight window — start as soon as possible.",
-      "tooShort": "Very little time — start now for the best you can get."
+      "tooShort": "Very short window — choose a later bake time."
     },
     "conflict": {
-      "continueAnyway": "Shorter bulk is fine"
+      "continueAnyway": "Keep the shorter bulk"
     },
     "blockers": {
       "heading": "Any time constraints?",
@@ -217,8 +217,8 @@
     },
     "adjustLabel": "Fermentation windows · adjust timing",
     "adjustDoughLabel": "Dough:",
-    "adjustDoughVerb": "drag the green diamond — curve should be near its peak at Bake",
-    "adjustPrefVerb": "drag the gold diamond — curve should be near its peak at Start Dough",
+    "adjustDoughVerb": "drag the green diamond to move mixing",
+    "adjustPrefVerb": "drag the gold diamond to move preferment preparation",
     "summaryFridgeBlock": "busy window",
     "summaryFridgeBlocks": "busy windows"
   },
@@ -226,7 +226,7 @@
     "title": "Fine-tune your dough",
     "doughTemp": "Dough temp",
     "flourInFridge": "Flour in fridge",
-    "mixingLoss": "Mixing loss",
+    "mixingLoss": "Extra dough",
     "saltPct": "Salt",
     "oilPct": "Oil",
     "sugarPct": "Sugar",
@@ -238,10 +238,10 @@
       "advanced": "Advanced technique",
       "noteStiff": "Dough will be quite stiff — a little more water may help with stretching.",
       "noteBelowClassic": "Below the {name} classic range. Dough will be firmer and a bit denser.",
-      "noteClassic": "Authentic {name} range. Great handling and traditional texture.",
-      "noteExtended": "More open crumb and airiness. Requires confident shaping technique.",
-      "noteExtreme": "Extreme hydration. Expect very sticky dough — wet hands, bench scraper essential.",
-      "noteHigh": "High hydration territory. Excellent open crumb but challenging to handle."
+      "noteClassic": "A common range for {name}; a starting point without adjustment.",
+      "noteExtended": "Expect softer, stickier dough; use a dough scraper.",
+      "noteExtreme": "Very sticky dough: use wet hands and a dough scraper.",
+      "noteHigh": "Harder to shape; reduce the water if you are new to this."
     },
     "salt": {
       "veryLow": "Very low — may taste flat."
@@ -252,14 +252,14 @@
       "highTempNote": "For best results in a high-temp oven, keeping oil at 0% works beautifully — oil can cause burning at very high temps.",
       "home1": "Helps browning and tenderness at home oven temps. Classic choice for home baking.",
       "home2": "Pan pizza range — creates a crispy, almost-fried base. Right at home in Detroit and pan styles.",
-      "high": "Entering enriched dough territory — high oil softens gluten development. An osmotolerant yeast (SAF Gold) helps."
+      "high": "For enriched dough; add oil after mixing has begun."
     },
     "sugar": {
       "traditionalHighTemp": "Traditional — no sugar. Works beautifully at high-temp.",
       "traditionalHome": "Classic. Add 0.5% to help caramelisation in a home oven below 280°C.",
       "subtle": "Subtle colour boost. Good for home oven baking below 280°C.",
       "noticeable": "Noticeable sweetness and good browning. Works well for enriched styles.",
-      "osmotic": "Above 2%, sugar adds osmotic stress on yeast — fermentation slows. Add extra 10% yeast.",
+      "osmotic": "Sugar affects fermentation; use the calculated yeast dose.",
       "high": "High sugar territory (brioche level) — standard yeast may struggle. SAF Gold recommended."
     },
     "none": "None",
@@ -267,8 +267,8 @@
     "mixerSpiral": "spiral",
     "mixerStand": "stand",
     "mixerHand": "hand",
-    "flourFridgeInfo": "Cold flour removes about 8°C, offset automatically.",
-    "mixingLossInfo": "A buffer for what stays in the bowl. Quantities scale up; the plan does not change.",
+    "flourFridgeInfo": "Water temperature accounts for chilled flour.",
+    "mixingLossInfo": "Adds dough to allow for what stays in the bowl.",
     "zone": {
       "oilBrowning": "browning",
       "oilEnriched": "enriched",
@@ -296,37 +296,37 @@
     "hydration": "hydration",
     "coldFerment": "Cold ferment",
     "heading": "Preferment",
-    "subtitle": "Optional head start for flavour and structure.",
+    "subtitle": "Prepare part of the flour ahead of the final mix.",
     "none": {
-      "title": "None",
-      "tagline": "Straight dough, simplest path"
+      "title": "Direct dough",
+      "tagline": "All ingredients are combined at the main mix."
     },
     "poolish": {
       "title": "Poolish",
-      "tagline": "Liquid, tangier, 12–18h window"
+      "tagline": "Equal weights of flour and water, with yeast."
     },
     "biga": {
       "title": "Biga",
-      "tagline": "Stiff, forgiving, up to 72h"
+      "tagline": "Firm mixture of flour, water and yeast."
     },
     "levain": {
       "title": "Levain",
-      "tagline": "Sourdough-based, naturally leavened"
+      "tagline": "Ripe starter added to the final dough."
     },
     "recommended": "Recommended"
   },
   "yeastDesc": {
     "simple": {
-      "instant": "Fine powder sachet. Most reliable, longest shelf life.",
-      "active_dry": "Brown granules. Widely available. Dissolve in warm water first.",
-      "fresh": "Soft beige block. Slightly richer flavour. Use within 2 weeks.",
-      "sourdough": "Wild fermentation. Deeper flavour, better digestibility. Needs an active starter."
+      "instant": "Fine powder; mix directly into the flour.",
+      "active_dry": "Granules; rehydrate as directed on the packet.",
+      "fresh": "Soft block; refrigerate and check the date on the pack.",
+      "sourdough": "Have an active starter ready for mixing."
     },
     "custom": {
-      "instant": "Fine powder · ×1.0 reference · most precise",
-      "active_dry": "Brown granules · ×1.33 vs IDY · proof in 38°C water",
-      "fresh": "Soft block · ×3.0 vs IDY · keep refrigerated",
-      "sourdough": "Wild yeast · replaces formula · needs active starter at peak"
+      "instant": "Fine powder · mix into flour",
+      "active_dry": "Granules · follow packet instructions",
+      "fresh": "Soft block · keep refrigerated",
+      "sourdough": "Active starter · plan its feed before mixing"
     }
   },
   "avpn": {
@@ -348,38 +348,38 @@
     "humidityHumid": "Humid",
     "humidityVeryHumid": "Very Humid",
     "fridgeTemp": "Fridge temperature",
-    "warmNudge": "In a warm climate, afternoon temps can push above 28°C. If your kitchen heats up during the day, consider entering your expected peak temperature instead.",
-    "fridgeWarning": "Fridge at {temp}°C is warmer than the standard 4°C — yeast will be more active during cold retard.",
+    "warmNudge": "Enter the temperature where the dough will rest. If it changes during the day, recheck the dough and timing.",
+    "fridgeWarning": "At {temp}°C, fermentation can remain more active than in a colder fridge.",
     "priority": "Fermentation priority",
     "priorityFlavour": "Flavour first",
     "priorityBalanced": "Balanced",
     "prioritySpeed": "Faster proof",
     "heading": "Your kitchen",
-    "subtitle": "Your climate decides how fast the dough ferments.",
+    "subtitle": "Temperature helps determine fermentation timing.",
     "cool": {
       "title": "Cool kitchen",
-      "tagline": "Slow ferment, more time flexibility",
+      "tagline": "Fermentation generally takes longer.",
       "badge": "under 20°C"
     },
     "normal": {
       "title": "Temperate",
-      "tagline": "Standard Western recipe timing",
+      "tagline": "Use the measured room temperature.",
       "badge": "20–26°C"
     },
     "warm": {
-      "title": "Mediterranean",
-      "tagline": "Balanced, forgiving schedules",
+      "title": "Warm kitchen",
+      "tagline": "Check the dough as fermentation progresses.",
       "badge": "26–30°C"
     },
     "tropical": {
-      "title": "Tropical",
-      "tagline": "Fast ferment, cold retard essential",
+      "title": "Very warm kitchen",
+      "tagline": "Check the dough frequently and follow the planned cold stages.",
       "badge": "30°C+"
     }
   },
   "timeline": {
     "bakingProtocol": "Your baking protocol",
-    "quickBakeNote": "Quick-bake plan — this dough trades fermentation depth for speed. It will bake up fine today; when you can plan a day ahead, a slow ferment brings fuller flavour and a lighter crumb.",
+    "quickBakeNote": "Short fermentation: check the dough’s rise before baking.",
     "startBaking": "Start Baking Mode",
     "autoAdjusted": "Schedule auto-adjusted — a room temperature window was too long for your kitchen temperature. A cold retard phase was added automatically to prevent over-fermentation.",
     "steps": {
@@ -428,7 +428,7 @@
     "coldTips": {
       "bulk": "Whole dough mass goes into the fridge. Cold bulk fermentation slows yeast activity and develops flavour. No action needed.",
       "balls": "Individual dough balls rest in the fridge. This firms them up and makes final proofing more controlled.",
-      "single": "Dough rests in the fridge. Cold fermentation builds flavour slowly — no action needed, time works for you.",
+      "single": "Keep the dough covered in the fridge until the next planned step.",
       "shaped": "The shaped dough proofs in the fridge. Cold proofing firms it up, deepens flavour, and makes scoring easier."
     },
     "divideTip": "Weigh and divide dough into {n} ball{plural}. Pinch the bottom tight for surface tension.",
@@ -442,8 +442,8 @@
       "long": "Start now — while dough finishes its final proof. Give it the full {min} min to fully saturate your baking surface.",
       "short": "Start now — while dough finishes its final proof. Set oven to maximum temperature for {min} minutes."
     },
-    "eatTipPizza": "Your dough is perfectly fermented. Stretch, top and bake. Buon appetito!",
-    "eatTipBread": "Your dough is perfectly fermented. Score, load and bake. Buon appétit!",
+    "eatTipPizza": "Check the dough’s readiness, then stretch, top and bake.",
+    "eatTipBread": "Check proofing, then score and bake.",
     "phaseLabels": {
       "mixing": "Mixing",
       "bulkFerm": "Bulk Fermentation",
@@ -510,7 +510,7 @@
     "prioritySpeedDesc": "More yeast, faster",
     "dilutionTitle": "Dilution required — amount too small to weigh directly",
     "poolishTitle": "Poolish preferment recommended",
-    "poolishBody": "Long room-temperature fermentation is hard to control. A poolish gives you better flavour and more predictable timing. Mix 50% of your flour with an equal weight of water and a pinch of yeast 8–16h before baking.",
+    "poolishBody": "For a poolish, use the flour, water and yeast amounts shown in your recipe and follow its preparation time.",
     "notRecommendedTitle": "This fermentation schedule is not recommended",
     "notRecommendedBody": "The combination of time and temperature will likely cause over-fermentation. Add a cold retard phase or reduce your start time.",
     "watchOut": "Watch out",
@@ -561,12 +561,12 @@
     "selectDateFirst": "Select date first",
     "guardPast": "This bake time has passed — try picking a later date.",
     "guardNoFutureSlot": "There is no workable mix time left before this bake — choose a later time.",
-    "blockerNote": "Start Dough falls in one of your busy windows — that's fine if it works for you.",
+    "blockerNote": "Mixing overlaps a busy time. Change the schedule or confirm you can mix then.",
     "bulkNote": "Your dough needs ~{dur} to rise — be free by {time} to put it in the fridge, or start a bit earlier.",
     "fallbackBtn1": "Start just before or after my busy time",
-    "fallbackBtn1Sub": "Dough will still be great.",
+    "fallbackBtn1Sub": "Changes the fermentation duration.",
     "fallbackBtn2": "Mix during my busy time — I'll make it work",
-    "fallbackBtn2Sub": "Still within the ideal window — dough will be excellent.",
+    "fallbackBtn2Sub": "Requires your availability at that time.",
     "keepAsIs": "Keep as is",
     "gotIt": "Got it, I'll make it work",
     "fermentationGuide": "Fermentation guide",
@@ -583,25 +583,25 @@
       "6pm": "6pm"
     },
     "simpleStatus": {
-      "ready": "Dough ready at bake",
-      "earlyOk": "A little early — should still turn out well",
+      "ready": "Estimated ready at bake time",
+      "earlyOk": "Earlier than recommended — check the rise",
       "tooEarly": "Too early — risk of over-fermentation",
-      "lateOk": "Slightly late — dough will be fine",
+      "lateOk": "Later than recommended — check the rise",
       "tooLate": "Too late — risk of under-fermentation"
     },
     "bakeLabel": "Bake",
-    "doughReadyAtBake": "Dough ready at bake",
-    "doughEarlyOk": "Peaks just before bake — should be fine",
-    "doughLateOk": "Still rising at bake — should be fine",
+    "doughReadyAtBake": "Estimated ready at bake time",
+    "doughEarlyOk": "Estimated peak before bake — check the rise",
+    "doughLateOk": "Still rising at bake — check readiness",
     "doughPeaksBefore": "Dough peaks before bake — over-fermentation risk",
     "doughPeaksAfter": "Dough peaks just after bake",
     "prefReadyAtStartDough": "Ready at Start Dough",
     "prefReadyAtMix": "Ready at Start Dough",
-    "prefEarlyOk": "Just past peak — use it, it'll be fine",
+    "prefEarlyOk": "Slightly past estimated peak — check readiness",
     "prefTooEarly": "Past its peak — over-fermentation risk",
-    "prefLateOk": "Still developing — use it, it'll be fine",
+    "prefLateOk": "Still developing — check readiness before mixing",
     "prefTooLate": "Not ready — under-fermentation risk",
-    "prefTooShortTime": "Not enough time — skip poolish for better results",
+    "prefTooShortTime": "Not enough time — change the bake time or preferment method.",
     "prefInFridgeReady": "In fridge — ready at Start Dough",
     "prefReadyWhenDoughStarts": "Ready when dough starts",
     "bakeRow": "Bake",
@@ -640,7 +640,7 @@
       "breadMedium": "Strong bread flour recommended — T65 or bread flour W200+",
       "breadLong": "High-protein flour essential — T65 forte or bread flour W260+"
     },
-    "yeastReassurance": "Yes, that's intentional — less yeast, more time = deeper flavour. Trust the process.",
+    "yeastReassurance": "The yeast dose depends on your planned duration and temperatures.",
     "iceProtocol": "Ice water protocol",
     "precisionScale": "Precision scale recommended — this is a very small amount of yeast."
   },
@@ -704,16 +704,16 @@
           "note": "see recipe for exact amounts — 100% hydration"
         },
         {
-          "bold": "Add a pinch of IDY",
-          "note": "very small amount — poolish ferments slowly"
+          "bold": "Add the weighed yeast",
+          "note": "use the recipe dose"
         },
         {
           "bold": "Stir vigorously until no dry flour remains",
           "note": "~2 min — smooth, thick batter consistency"
         },
         {
-          "bold": "Cover tightly with cling film",
-          "note": "press it to the surface to prevent skin"
+          "bold": "Cover the container",
+          "note": "leave room for expansion"
         },
         {
           "bold": "Leave at room temperature",
@@ -734,24 +734,24 @@
     "biga": {
       "steps": [
         {
-          "bold": "Weigh flour and water",
-          "note": "see recipe — biga is ~50-60% hydration, stiffer than poolish"
+          "bold": "Weigh the flour and water",
+          "note": "use the recipe amounts, at 45% hydration"
         },
         {
-          "bold": "Add a tiny amount of IDY",
-          "note": "0.1-0.2% of flour — biga ferments very slowly"
+          "bold": "Add the weighed yeast",
+          "note": "use the recipe dose"
         },
         {
-          "bold": "Mix roughly until just combined",
-          "note": "biga is intentionally shaggy — do not over-mix"
+          "bold": "Mix roughly",
+          "note": "moisten all the flour without kneading smooth"
         },
         {
-          "bold": "Cover loosely",
-          "note": "biga needs some air exchange unlike poolish"
+          "bold": "Cover the container",
+          "note": "leave room for expansion"
         },
         {
-          "bold": "Place in fridge",
-          "note": "biga always ferments cold — never at room temp"
+          "bold": "Refrigerate",
+          "note": "follow this cold-fermentation schedule"
         }
       ],
       "readyWhen": [
@@ -760,9 +760,9 @@
         "Has increased in volume by 50-70%"
       ],
       "pitfalls": [
-        "Over-fermented: strong alcohol smell, flat surface, watery — discard and start again",
-        "Biga that smells like acetone is over-fermented and unusable",
-        "Using warm water — always use cold water for biga"
+        "A dense biga without bubbles is not ready: check before mixing.",
+        "A sharp solvent smell indicates excessive fermentation.",
+        "Use the water temperature specified in the recipe."
       ]
     },
     "starter": {
@@ -784,8 +784,8 @@
           "note": "tracks rise visually"
         },
         {
-          "bold": "Leave uncovered or lightly covered",
-          "note": "starter needs air"
+          "bold": "Cover the container",
+          "note": "leave room for expansion"
         }
       ],
       "readyWhen": [
@@ -1050,7 +1050,7 @@
       },
       "coverCold": {
         "bold": "Cover and refrigerate",
-        "note": "develops flavour overnight"
+        "note": "follow the planned cold-rest duration"
       }
     },
     "coldBalls": {
@@ -1093,7 +1093,7 @@
       },
       "pokeTest": {
         "bold": "Start poke test after warmup — every 15–20 min",
-        "note": "do not go by time — go by feel"
+        "note": "check how quickly the indentation springs back"
       },
       "pokeResponses": [
         "Springs back immediately, feels tight — needs more time",
@@ -1619,14 +1619,14 @@
       "6pm": "6pm"
     },
     "mixStatus": {
-      "ready": "Dough ready at bake",
+      "ready": "Estimated ready at bake time",
       "peaksBefore": "Dough peaks before bake",
       "peaksAfter": "Dough peaks just after bake"
     },
     "prefStatus": {
-      "inFridge": "In fridge — ready at Start Dough",
-      "readyAtMix": "Ready at Start Dough",
-      "earlyOk": "Just past peak — still usable",
+      "inFridge": "In fridge — estimated ready at mixing",
+      "readyAtMix": "Estimated ready at mixing",
+      "earlyOk": "Past estimated peak — check readiness",
       "notYetPeak": "Not yet at peak — still developing",
       "pastPeak": "Past its peak — over-fermentation risk"
     },
@@ -1721,39 +1721,39 @@
     "subtitle": "Shapes your bake time and temperature.",
     "pizzaOven": {
       "title": "High-heat pizza oven",
-      "tagline": "Ooni, Gozney, wood-fired — 60–90 sec bake"
+      "tagline": "Dedicated oven for high-temperature pizza baking."
     },
     "homeSteel": {
       "title": "Home oven + stone or steel",
-      "tagline": "Crispy base, 5–7 min bake"
+      "tagline": "Preheated stone or steel supports the pizza base."
     },
     "homeStandard": {
       "title": "Home oven (standard)",
-      "tagline": "Best for thicker styles — Pan, Detroit"
+      "tagline": "Baking tray or pan, without a stone or steel."
     },
     "electricPizza": {
       "title": "Electric pizza oven",
-      "tagline": "400°C countertop — Ooni Volt, Effeuno"
+      "tagline": "Countertop model with high-temperature settings."
     },
     "dutchOven": {
       "title": "Dutch oven / Combo cooker",
-      "tagline": "Perfect steam, open crumb — most home bakers"
+      "tagline": "Covered pot that retains steam released by the dough."
     },
     "homeStoneB": {
       "title": "Home oven + stone or steel",
-      "tagline": "Great for baguettes and bâtards"
+      "tagline": "Bread baked directly on a preheated stone or steel."
     },
     "standardB": {
       "title": "Standard home oven",
-      "tagline": "Best for enriched breads — brioche, pain de mie"
+      "tagline": "Bread baked on a tray or in a tin."
     },
     "woodFired": {
       "title": "Wood-fired oven",
-      "tagline": "Exceptional crust and natural steam"
+      "tagline": "Bread baked on the hearth of a wood-fired oven."
     },
     "steamOven": {
       "title": "Steam oven",
-      "tagline": "Professional results — micro-bakery"
+      "tagline": "Oven with steam injection."
     }
   },
   "mixer": {
@@ -1761,39 +1761,39 @@
     "subtitle": "Affects dough development and friction.",
     "stand": {
       "title": "Stand mixer",
-      "tagline": "KitchenAid-style, 8 min knead"
+      "tagline": "Hook attachment; use the manufacturer’s dough speeds."
     },
     "hand": {
       "title": "Hand knead",
-      "tagline": "Traditional, 10–15 min"
+      "tagline": "Mix and knead by hand."
     },
     "no_knead": {
       "title": "No knead",
-      "tagline": "Hands-off, long ferment does the work"
+      "tagline": "Mix briefly, then follow the planned rests and folds."
     },
     "spiral": {
       "title": "Spiral mixer",
-      "tagline": "Pro equipment, fast development"
+      "tagline": "Spiral hook with a rotating bowl."
     }
   },
   "yeast": {
     "heading": "Your yeast",
-    "subtitle": "How you'll leaven the dough.",
+    "subtitle": "Choose the yeast you have.",
     "idy": {
       "title": "Instant dry yeast",
-      "tagline": "Most common, no activation needed"
+      "tagline": "Mix directly into the flour"
     },
     "ady": {
       "title": "Active dry yeast",
-      "tagline": "Needs warm water to wake up"
+      "tagline": "Follow the packet’s rehydration instructions"
     },
     "fresh": {
       "title": "Fresh yeast",
-      "tagline": "Cake yeast, strongest flavor"
+      "tagline": "Block yeast; keep refrigerated"
     },
     "sourdough": {
       "title": "Sourdough starter",
-      "tagline": "Natural leaven, tangy, slower"
+      "tagline": "Use an active starter, ready to mix"
     }
   },
   "prep": {
@@ -1838,7 +1838,7 @@
     "shareBaked": "Share this bake"
   },
   "yeastWarnings": {
-    "poolishSuggestion": "Room temperature fermentation past {hours}h is hard to predict. A poolish gives more control and more flavour.",
+    "poolishSuggestion": "Beyond {hours}h at room temperature, check the dough regularly. A poolish needs its own preparation schedule.",
     "overFermentRT": "{hours}h at {temp}°C is longer than this dough will hold at room temperature — it will over-ferment. A cold phase would carry it.",
     "hotClimateRT": "At {temp}°C, more than 4h at room temperature moves fast. A cold retard or a poolish gives you more room.",
     "fridgeWarm": "A fridge at {temp}°C is warmer than the 4°C reference — the yeast stays more active than the timings assume.",

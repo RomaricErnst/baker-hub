@@ -24,84 +24,84 @@ const TERMS: Record<string, TermContent> = {
   windowpane: {
     title: 'The Windowpane Test',
     emoji: '',
-    explanation: 'Stretch a small piece of dough between your fingers until it\'s thin enough to see light through without tearing. If it stretches thin and translucent like a window — gluten is fully developed. If it tears immediately — knead more.',
-    tip: 'Take a golf-ball sized piece of dough. Slowly stretch it in all directions from the center. Rotate as you stretch.',
+    explanation: "For wheat dough, gently stretch a small piece to check whether it forms a thin membrane. This is one development cue; flour type and dough temperature also matter.",
+    tip: "If the dough resists stretching, rest it covered and try again. Do not keep kneading solely to obtain a membrane, especially with rye or whole-grain dough.",
     videoLabel: 'Read full guide →',
     videoUrl: 'https://www.pizzablab.com/the-encyclopizza/windowpane-test/',
   },
   pumpkin: {
     title: 'The Pumpkin Shape',
     emoji: '',
-    explanation: 'As your dough develops in a spiral mixer, it will gradually pull away from the sides of the bowl and wrap tightly around the breaker bar, forming a smooth rounded ball resembling a pumpkin. This shape tells you the gluten network is developing correctly — the dough has enough strength to hold itself together against the centrifugal force of the rotating bowl.',
-    tip: 'Watch for the transition: at first the dough looks shaggy and sticks to the bowl walls. As mixing progresses it slowly gathers and climbs the breaker bar. A full pumpkin shape means you are roughly 60–70% developed — continue mixing until the surface is smooth and the dough pulls completely clean from the bowl.',
-    secondTip: 'If adding water gradually (bassinage), wait for the pumpkin to reform after each water addition before adding more. If the pumpkin collapses and the dough spreads flat, you have added water too fast — stop and let the dough recover before continuing.',
+    explanation: "In a spiral mixer, dough can gather into a rounded mass around the bar. This indicates that it is gaining cohesion, but does not measure a percentage of development.",
+    tip: "Check dough elasticity and temperature as well as its shape. Follow the mixer’s permitted dough speeds.",
+    secondTip: "When adding reserved water, allow each addition to incorporate before adding more.",
   },
   autolyse: {
     title: 'Autolyse',
     emoji: '',
-    explanation: 'Mixing flour and water and letting it rest before adding other ingredients. During this rest, flour hydrates naturally and gluten begins forming without any kneading. The result is more extensible, easier to work dough.',
-    tip: 'Baker Hub reserves 30 min, which is enough for any refined flour — more will not hurt. Whole grain wants longer. Skip it entirely for rye, where a rest weakens the dough. Keep it covered to prevent drying.',
+    explanation: "A rest after combining flour and water, before adding the other ingredients. Use it when it is included in this recipe’s mixing sequence.",
+    tip: "Keep the dough covered and follow the planned duration. Do not add an extra rest to a recipe that does not schedule one.",
     videoLabel: 'Read full guide →',
     videoUrl: 'https://www.pizzablab.com/the-encyclopizza/autolyse/',
   },
   bassinage: {
     title: 'Bassinage',
     emoji: '',
-    explanation: 'A French technique meaning \'wetting\'. Instead of adding all the water at once, hold back 10–20% and add it gradually after the dough has developed initial structure. This lets the gluten form properly in a slightly drier dough first, then absorbs the extra water without becoming a sticky unworkable mass.',
-    tip: 'Wait until the dough forms a cohesive ball (or pumpkin shape in a spiral mixer) before adding the reserved water. Add it in small pours of 30–50g at a time — wait for each addition to be fully absorbed before adding more.',
-    secondTip: 'Bassinage is most useful for doughs above 70% hydration. Below 70% just add all the water at once — the technique adds complexity without much benefit at lower hydrations.',
+    explanation: "Adding part of the recipe’s water gradually after the dough begins to hold together. This is reserved water, not extra water.",
+    tip: "Use the quantity reserved in your mixing instructions. Add small amounts and let each addition incorporate.",
+    secondTip: "Follow your recipe’s sequence; there is no need to add this technique to every dough.",
   },
   fdt: {
     title: 'Final Dough Temperature',
     emoji: '',
-    explanation: 'FDT is the temperature of your dough immediately after mixing. It directly controls how fast fermentation begins — too warm and yeast activates too fast, too cold and it barely moves. Target FDT is 23–25°C for most pizza and bread doughs.',
-    tip: 'To hit your target FDT, adjust your water temperature before mixing. Baker Hub calculates this for you in the recipe output. In hot kitchens use cold or ice water. In cold kitchens use slightly warm water.',
-    secondTip: 'Never let FDT exceed 28°C — above this yeast becomes unpredictable and gluten weakens. If your dough feels warm to the touch after mixing, refrigerate it for 15 min before bulk fermentation.',
+    explanation: "Final dough temperature is measured immediately after mixing. Compare it with the target shown in your recipe.",
+    tip: "Prepare the water using the recipe’s instructions, then measure the dough with a thermometer. The calculated temperature is an estimate.",
+    secondTip: "If the dough is warmer than planned, check its rise sooner; if cooler, allow more time. Check the recipe’s readiness cues before moving on.",
     videoLabel: 'Read full guide →',
     videoUrl: 'https://www.pizzablab.com/learning-and-resources/mixing-kneading/pizza-dough-kneading-fundamentals/',
   },
   poke_test: {
     title: 'The Poke Test',
     emoji: '',
-    explanation: 'Press a floured finger gently about 1cm into the dough and watch how it responds. This tells you if the final proof is complete and the dough is ready to bake.',
-    tip: 'Springs back immediately and feels tight → needs more proofing time. Springs back slowly and partially → ready to bake, this is what you want. Doesn\'t spring back at all and feels slack → overproofed, bake immediately.',
-    secondTip: 'Do the poke test on a dough ball that has been at room temperature for at least 20 min. Cold dough straight from the fridge will always feel tight regardless of fermentation state.',
+    explanation: "Gently press the dough with a floured fingertip and observe its response. Combine this observation with the rise, surface and recipe’s proofing cues.",
+    tip: "For bread, a slow, partial return with visible rise can indicate readiness. If the dough is still firm, springs back quickly and has barely risen, allow more proofing time.",
+    secondTip: "Temperature and flour affect the result. Do not use the finger test alone to decide whether to bake.",
   },
   bulk_fermentation: {
     title: 'Bulk Fermentation',
     emoji: '',
-    explanation: 'The first long rise after mixing, where the whole dough mass ferments together before being divided. During this time yeast produces CO2 (rise) and enzymes break down starches and proteins (flavour). This is where most of the flavour develops.',
-    tip: 'Bulk is done when dough has grown 50–75%, feels airy when you shake the container, and the surface looks slightly domed and bubbly.',
+    explanation: "The dough ferments as one mass before dividing and shaping. Follow the volume and texture cues given for this stage.",
+    tip: "Mark the starting level in a straight-sided container. Check the rise, bubbles and dough strength together rather than using a fixed increase for every recipe.",
     videoLabel: 'Read full guide →',
     videoUrl: 'https://www.theperfectloaf.com/guides/the-ultimate-guide-to-bread-dough-bulk-fermentation/',
   },
   preferment_ready: {
     title: 'Is it ready?',
     emoji: '',
-    explanation: 'A ready poolish/biga/starter shows: a domed or just-past-peak surface, bubbles throughout, and slight recession from the edges. Flat = needs more time. Collapsed or alcoholic smell = overfermented.',
-    tip: 'For poolish: the dome should be just starting to recede. For biga: break a piece open — you should see a network of bubbles inside. For sourdough starter: it should have doubled, smell tangy-yeasty, and pass the float test.',
-    secondTip: 'If the poolish or biga smells strongly of alcohol or acetone, it has gone too far. A mildly over-peaked poolish can still work if the rest of the fermentation is shortened — but if it smells like acetone, discard it.',
+    explanation: "Check the preferment itself as well as the planned time. Its appearance depends on whether it is poolish, biga or starter.",
+    tip: "Poolish: bubbly surface beginning to flatten after rising. Biga: expanded mass with aeration inside a broken-open piece. Starter: clear rise and bubbles; the float test alone is not sufficient.",
+    secondTip: "If maturity does not match the plan, reassess the schedule before mixing. Smell alone cannot determine readiness.",
   },
   shape_check: {
     title: 'Check your shape',
     emoji: '',
-    explanation: 'A well-shaped dough ball has: a smooth, taut surface with no tears, a clean seam pinched tight underneath, and holds its round shape without spreading immediately.',
-    tip: 'The surface should feel like a drum — firm tension all around. If the surface tears, re-shape before proofing. For pizza balls: a loose, spreading ball will be hard to open without tearing. For bread boules: insufficient tension means a flat loaf.',
-    secondTip: 'If the dough keeps tearing when you try to tighten it, it needs a 5 min bench rest. Cover loosely and let the gluten relax before trying again.',
+    explanation: "Shape with an even surface and close the seam without tearing the dough. Use the method shown for your bread or pizza.",
+    tip: "Stop tightening if the surface begins to tear. Dough strength and hydration affect how firmly it holds its shape.",
+    secondTip: "If the dough resists, cover it and let it relax before continuing gently.",
   },
   score_technique: {
     title: 'Scoring technique',
     emoji: '',
-    explanation: 'Hold the lame or razor at 30–45 degrees to the dough surface. Cut with a single swift motion — hesitation causes dragging. Depth: 5–7mm.',
-    tip: 'For a boule: score a cross or leaf pattern centred on the dome. For a baguette: 5–7 overlapping diagonal cuts. Wet the blade slightly to reduce sticking. Cold dough scores more cleanly — if your dough is very soft, refrigerate 15 min before scoring.',
-    secondTip: 'The score controls where the bread opens. A weak score produces a split crust; no score at all can cause blowouts at the sides. One confident deep cut beats multiple hesitant shallow ones.',
+    explanation: "Score the dough just before baking, following the pattern and depth for your bread. Use a sharp blade and a controlled motion.",
+    tip: "Support the dough without pressing it down. Avoid repeated passes that drag or tear the surface.",
+    secondTip: "Scoring helps direct expansion in the oven; it does not correct under- or over-proofing.",
   },
   stretch_bake: {
     title: 'Stretch & bake tips',
     emoji: '',
-    explanation: 'Stretch with knuckles and gravity — no rolling pin. Start from the centre and let weight do the work. Keep the cornicione ring intact. Top quickly: sauce first, then cheese, then toppings.',
-    tip: 'Wet toppings go last or they make the base soggy. Launch with a single confident forward push — hesitation causes sticking. Watch for leoparding on the cornicione: dark spots mean proper fermentation and heat.',
-    secondTip: 'If the dough springs back and resists stretching, cover it and rest 5 more minutes. Cold dough straight from the fridge is almost impossible to stretch — always bring balls to room temperature first.',
+    explanation: "Open the dough using the method for your pizza style. Preserve the rim where the style calls for one; thin Roman pizza may be rolled out.",
+    tip: "Drain wet toppings, top the pizza and check that it moves freely on the peel before launching.",
+    secondTip: "If the dough resists stretching, cover and rest it before trying again. Use the recipe’s warm-up and baking cues.",
   },
 };
 
@@ -267,8 +267,8 @@ export default function LearnModal({ term, onClose, footer }: LearnModalProps) {
                 try {
                   const host = new URL(content.videoUrl).hostname.replace('www.', '').split('.')[0];
                   const site = host.charAt(0).toUpperCase() + host.slice(1);
-                  return `${isFr ? 'Guide complet sur' : 'Full guide on'} ${site} ↗`;
-                } catch { return `${isFr ? 'Guide complet' : 'Full guide'} ↗`; }
+                  return `${isFr ? 'Source : ' : 'Source: '} ${site} ↗`;
+                } catch { return `${isFr ? 'Source' : 'Source'} ↗`; }
               })()}
             </a>
           )}

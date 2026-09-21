@@ -39,7 +39,7 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
           borderRadius: '16px', padding: '12px 16px', fontSize: '12px',
           color: '#7A5A10', lineHeight: 1.55, display: 'flex', gap: '8px', alignItems: 'flex-start',
         }}>
-          <span>{locale === 'fr' ? 'Pour une pâte qui se tient mieux à l’étalage, choisissez le pétrissage à la main ou au robot.' : 'For dough that holds its shape more easily when stretching, choose hand or stand mixing.'}</span>
+          <span>{locale === 'fr' ? 'Pour ce style, choisissez le pétrissage à la main ou avec un pétrin.' : 'For this style, choose hand kneading or a mixer.'}</span>
         </div>
       )}
     </>

@@ -32,15 +32,14 @@ interface Props {
 
 const STYLE_PREP_NOTES: Partial<Record<string, { en: string; fr: string }[]>> = {
   roman: [
-    { en: 'Oil your baking tray generously — the teglia base needs to fry slightly in the oil for the crispy bottom.', fr: "Huiler généreusement votre plaque — la base teglia doit légèrement frire dans l'huile pour le fond croustillant." },
-    { en: 'First bake: bake the dough plain at 250°C for 10 min until set. Then add toppings and bake a further 10–12 min.', fr: "Première cuisson : cuire la pâte seule à 250°C pendant 10 min. Puis ajouter les garnitures et cuire encore 10–12 min." },
-    { en: 'Dimple the surface with oiled fingers just before the first bake — this gives the teglia its characteristic texture.', fr: "Faire des empreintes dans la surface avec les doigts huilés juste avant la première cuisson." },
+    { en: 'Oil the tray to help release the dough and crisp the base.', fr: 'Huilez la plaque pour faciliter le démoulage et rendre le dessous croustillant.' },
+    { en: 'Follow the baking steps for your oven. Add each topping before or after baking as indicated for the selected pizza.', fr: 'Suivez les étapes de cuisson adaptées à votre four. Ajoutez chaque garniture avant ou après cuisson selon la pizza choisie.' },
+    { en: 'Dimple the dough gently with oiled fingers before baking.', fr: 'Marquez doucement la pâte du bout des doigts huilés avant la cuisson.' },
   ],
   pan: [
-    { en: 'Oil the pan heavily — the cheese at the edges will fry in the oil and create the frico crust. This is not optional.', fr: "Huiler généreusement le moule — le fromage sur les bords va frire dans l'huile et créer la croûte frico." },
-    { en: 'Press the cheese all the way to the edges and corners of the pan before baking — it must touch the pan walls.', fr: "Pousser le fromage jusqu'aux bords et coins du moule avant d'enfourner." },
-    { en: 'Sauce goes on TOP of the cheese, not underneath. Add it after placing cheese, in stripes across the surface.', fr: "La sauce va SUR le fromage, pas en dessous. L'ajouter après le fromage, en lignes sur la surface." },
-    { en: 'Bake at 230°C for 20–25 min. The crust is done when the edges are deep golden and pulling away from the pan.', fr: "Cuire à 230°C pendant 20–25 min. La croûte est prête quand les bords sont bien dorés et se décollent du moule." },
+    { en: 'Oil the pan, including the corners, to help release the pizza.', fr: 'Huilez le moule, y compris les coins, pour faciliter le démoulage.' },
+    { en: 'Follow the topping order for the selected pizza; not every pan pizza uses cheese or sauce.', fr: 'Suivez l’ordre des garnitures de la pizza choisie ; une pizza en moule ne contient pas toujours du fromage ou de la sauce.' },
+    { en: 'Use the baking steps for your oven. Check that the base is cooked as well as the edges.', fr: 'Suivez les étapes de cuisson adaptées à votre four. Vérifiez la cuisson du dessous, pas seulement celle des bords.' },
   ],
 };
 
@@ -262,7 +261,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
       {styleKey && STYLE_PREP_NOTES[styleKey] && (
         <div style={{ margin: '0 0 16px', border: '1px solid #E8E0D5', borderRadius: '16px', overflow: 'hidden' }}>
           <div style={{ background: '#2B2420', color: 'white', padding: '8px 16px', fontSize: '11px', fontFamily: 'var(--font-ui)', letterSpacing: '1px', textTransform: 'uppercase' }}>
-            {styleKey === 'pan' ? (l === 'fr' ? 'Style Detroit' : 'Detroit Style') : (l === 'fr' ? 'Style Teglia' : 'Teglia Style')}
+            {styleKey === 'pan' ? (l === 'fr' ? 'Pizza en moule' : 'Pan pizza') : (l === 'fr' ? 'Pizza sur plaque' : 'Tray pizza')}
           </div>
           {STYLE_PREP_NOTES[styleKey]!.map((note, i) => (
             <div key={i} style={{ padding: '12px 16px', borderBottom: i < STYLE_PREP_NOTES[styleKey]!.length - 1 ? '1px solid #E8E0D5' : 'none', fontSize: '13px', color: '#3D3530', fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}>
@@ -309,7 +308,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
             <div>
               {!hasEarly && (
                 <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: '#8A7F78', marginBottom: '12px' }}>
-                  {l === 'fr' ? 'Tout est flexible — pendant que le four chauffe ou juste avant.' : 'All flexible — while the oven heats or just before.'}
+                  {l === 'fr' ? 'Préparez ces ingrédients pendant le préchauffage ou juste avant de garnir.' : 'Prepare these ingredients during preheating or just before topping.'}
                 </div>
               )}
               {flexStations.map(s => renderStationBlock(s))}

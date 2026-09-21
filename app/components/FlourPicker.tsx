@@ -748,7 +748,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             <label style={{display:'block',marginBottom:16}}>{isFr?'Protéines (%)':'Protein (%)'}
               <input type="number" min={1} max={30} step={0.1} value={manualProtein} onChange={e=>setManualProtein(e.target.value)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}/>
             </label>
-            <p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Le taux de protéines est conservé comme information du sachet ; il ne sert pas à déduire la force W.':'Protein is saved as bag information; it is not used to infer W.'}</p>
+            <p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Protéines : information du sachet, non utilisée pour calculer W.':'Protein is recorded from the bag; it is not used to calculate W.'}</p>
           </details>
           <p style={{fontSize:14}}>{isFr?'Sans force W indiquée, nous utilisons une estimation pour le type choisi.':'Without a stated W, we use an estimate for the selected flour type.'}</p>
           <button type="button" disabled={!manualFlourSelection(blend,manualType,manualName,manualQWText,manualProtein,locale)} onClick={()=>{
@@ -925,7 +925,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             <label style={{display:'block',marginBottom:16}}>{isFr?'Protéines (%)':'Protein (%)'}
               <input type="number" min={1} max={30} step={0.1} value={manualProtein} onChange={e=>setManualProtein(e.target.value)} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:10,marginTop:6}}/>
             </label>
-            <p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Le taux de protéines est conservé comme information du sachet ; il ne sert pas à déduire la force W.':'Protein is saved as bag information; it is not used to infer W.'}</p>
+            <p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Protéines : information du sachet, non utilisée pour calculer W.':'Protein is recorded from the bag; it is not used to calculate W.'}</p>
           </details>
           <p style={{fontSize:14}}>{isFr?'Sans force W indiquée, nous utilisons une estimation pour le type choisi.':'Without a stated W, we use an estimate for the selected flour type.'}</p>
           <button type="button" disabled={!manualFlourSelection(blend,manualType,manualName,manualQWText,manualProtein,locale)} onClick={()=>{

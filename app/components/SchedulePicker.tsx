@@ -2182,8 +2182,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
     if (!hasPrefActive && !hasColdLocal && totalWindowH < sweetToRaw) {
       setGuardNote(isFr
-        ? 'Fenêtre courte — une pâte du jour peut quand même être excellente.'
-        : 'Working with a short window — same-day dough can still be wonderful.');
+        ? 'Créneau court : surveillez la levée avant de cuire.'
+        : 'Short window: check the rise before baking.');
     } else {
       setGuardNote(null);
     }
@@ -2324,8 +2324,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       // Score 0 with sweetCenter free: tight window note via existing guardShort path
       if (!hasPrefActive && result.score === 0 && !result.mixInBlocker) {
         setGuardNote(isFr
-        ? 'Fenêtre courte — une pâte du jour peut quand même être excellente.'
-        : 'Working with a short window — same-day dough can still be wonderful.');
+        ? 'Créneau court : surveillez la levée avant de cuire.'
+        : 'Short window: check the rise before baking.');
       } else {
         setBlockerNote(null);
       }
@@ -3283,8 +3283,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           const _p2RightAtMixH = Math.max(1.0, Math.min(1.5, (_p2AdjEff ?? 14) * 0.4));
           if (_p2Peak && _p2GapH > _p2RightAtMixH) {
             return isFr
-              ? `Un seul rafraîchi suffit — pic vers ${fmtCardHM(_p2Peak, true)}. Fiez-vous à votre levain autant qu'à l'heure.`
-              : `One refresh is enough — it peaks around ${fmtCardHM(_p2Peak, false)}. Trust your starter as much as the clock.`;
+              ? `Un seul rafraîchi suffit — pic vers ${fmtCardHM(_p2Peak, true)}. Vérifiez sa montée avant de mélanger.`
+              : `One refresh is enough — it peaks around ${fmtCardHM(_p2Peak, false)}. Check its rise before mixing.`;
           }
           return isFr
             ? 'Un seul rafraîchi suffit — votre levain pique pile au pétrissage.'
@@ -7424,19 +7424,19 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             {earlierIsReasonable && earlierStart ? (
               <>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--char)', marginBottom: '.2rem' }}>
-                  Your bulk fermentation begins during a busy window.
+                  {isFr ? 'Le pointage commence pendant une indisponibilité.' : 'Bulk fermentation starts during a busy time.'}
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--smoke)', lineHeight: 1.5, marginBottom: '12px' }}>
-                  Start dough at {formatSliderDisplay(earlierStart, isFr)} so you can kick off bulk fermentation while you&apos;re free.
+                  {isFr ? 'Commencez la pâte à ' : 'Start the dough at '}{formatSliderDisplay(earlierStart, isFr)}{isFr ? ' pour commencer le pointage avant.' : ' to begin bulk fermentation beforehand.'}
                 </div>
               </>
             ) : (
               <>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--char)', marginBottom: '.2rem' }}>
-                  Your bulk fermentation will run into your busy window.
+                  {isFr ? 'Le pointage chevauche une indisponibilité.' : 'Bulk fermentation overlaps a busy time.'}
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--smoke)', lineHeight: 1.5, marginBottom: '12px' }}>
-                  Your dough will still be worth it — the flavour develops regardless.
+                  {isFr ? 'Vérifiez que vous serez disponible pour les rabats et l’étape suivante.' : 'Check that you can do the folds and the next step.'}
                 </div>
               </>
             )}
@@ -7454,7 +7454,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                     fontFamily: 'var(--font-ui)',
                   }}
                 >
-                  Start at {formatSliderDisplay(earlierStart, isFr)} →
+                  {isFr ? 'Commencer à ' : 'Start at '}{formatSliderDisplay(earlierStart, isFr)} →
                 </button>
               )}
               <button

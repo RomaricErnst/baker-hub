@@ -571,7 +571,6 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale 
   return (
     <div style={{ padding: '4px 0 8px' }}>
       <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700, margin: '2px 0 6px', letterSpacing: '-.4px' }}>{fr ? 'Vérifier mes choix' : 'Review my choices'}</h2>
-      <p style={{ fontSize: '13px', color: 'var(--smoke)', margin: '0 0 18px' }}>{fr ? 'Tout est prêt pour votre recette ?' : 'Everything ready for your recipe?'}</p>
       {nameField}
       <div>
         {rows.map(row => (
@@ -2750,7 +2749,7 @@ export default function Home() {
         {locale === 'fr' ? 'Nombre de pétrissées' : 'Mixing batches'}
         <input type="number" min={1} max={100} step={1} value={selectedMixingBatches} onChange={e => { const value = Number(e.target.value); if (e.target.value !== '' && Number.isInteger(value) && value >= 1 && value <= 100) setMixingBatches(value); }} style={{ width: 72, minHeight: 44, padding: 8, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--cream)', font: 'inherit' }} />
       </label>
-      <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--smoke)' }}>{locale === 'fr' ? `${Math.round(numItems * itemWeight / selectedMixingBatches)} g de pâte par pétrissée. La recommandation utilise une capacité indicative de ${mixerCapacityG} g ; vérifiez celle de votre appareil.` : `${Math.round(numItems * itemWeight / selectedMixingBatches)} g dough per batch. The recommendation uses an estimated ${mixerCapacityG} g capacity; check your equipment’s limit.`}</p>
+      <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--smoke)' }}>{locale === 'fr' ? `${Math.round(numItems * itemWeight / selectedMixingBatches)} g par pétrissée. Capacité estimée : ${mixerCapacityG} g. Vérifiez la limite de votre appareil.` : `${Math.round(numItems * itemWeight / selectedMixingBatches)} g per batch. Estimated capacity: ${mixerCapacityG} g. Check your equipment’s limit.`}</p>
       {numItems * itemWeight / selectedMixingBatches > mixerCapacityG && <p role="alert" style={{ fontSize: 12 }}>{locale === 'fr' ? 'Cette quantité dépasse la capacité indicative. Augmentez le nombre de pétrissées si nécessaire.' : 'This amount exceeds the estimated capacity. Increase the batch count if needed.'}</p>}
       {mixingBatches !== undefined && <button type="button" onClick={() => setMixingBatches(undefined)} style={{ minHeight: 44, padding: '8px 0', border: 0, background: 'transparent', color: 'var(--terra)', cursor: 'pointer', textDecoration: 'underline' }}>{locale === 'fr' ? 'Revenir à la recommandation' : 'Reset to recommendation'}</button>}
     </div>
@@ -3667,8 +3666,8 @@ export default function Home() {
                 }}>
                   <div style={{ fontSize: '14px', color: 'var(--ash)', lineHeight: 1.5, marginBottom: '8px' }}>
                     {locale === 'fr'
-                      ? 'Votre profil est au levain — le levain vit en mode personnalisé.'
-                      : 'Your profile bakes sourdough — sourdough lives in Custom mode.'}
+                      ? 'Pour utiliser votre levain, choisissez le mode personnalisé.'
+                      : 'Choose Custom to use your sourdough starter.'}
                   </div>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <button

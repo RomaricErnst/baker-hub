@@ -122,9 +122,6 @@ export default function PrototypeQuantityPicker({
   const piece = itemLabel ?? (bakeType === 'bread'
     ? (fr ? 'pain' : 'loaf')
     : (fr ? 'pizza' : 'pizza'));
-  const pieces = count === 1 ? piece : (bakeType === 'bread'
-    ? (fr ? 'pains' : 'loaves')
-    : (fr ? 'pizzas' : 'pizzas'));
   const hasCalculatedWeight = roundPizza && calculatedWeight !== undefined;
   const matchesCalculated = hasCalculatedWeight && Math.round(itemWeight) === Math.round(calculatedWeight!);
   const usesManualWeight = manualEditing || weightIsManual || (hasCalculatedWeight && !matchesCalculated);
@@ -187,9 +184,6 @@ export default function PrototypeQuantityPicker({
           onCommit={value => onCountChange(clamp(value, countMin, countMax, countStep))}
           style={{ ...inputStyle, fontSize: '24px', fontWeight: 700 }}
         />
-        <p style={{ margin: '6px 0 0', fontSize: '14px', color: 'var(--smoke)' }}>
-          {count} {pieces}
-        </p>
       </div>
 
       {roundPizza ? (
@@ -214,10 +208,7 @@ export default function PrototypeQuantityPicker({
           />
 
           <fieldset style={{ border: 0, padding: 0, margin: '16px 0 8px' }}>
-            <legend style={labelStyle}>{fr ? 'Bord de la pizza' : 'Crust edge'}</legend>
-            <p style={{ margin: '-2px 0 8px', fontSize: '14px', color: 'var(--smoke)' }}>
-              {fr ? 'L’épaisseur de la bordure.' : 'The outer rim of the pizza.'}
-            </p>
+            <legend style={labelStyle}>{fr ? 'Bordure' : 'Crust edge'}</legend>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
               {CRUSTS.map(option => (
                 <button
@@ -240,16 +231,10 @@ export default function PrototypeQuantityPicker({
             </div>
           </fieldset>
 
-          <p style={{ margin: '12px 0', fontSize: '14px', color: 'var(--smoke)', lineHeight: 1.5 }}>
-            {fr
-              ? 'Le diamètre et la bordure déterminent ensemble le poids conseillé.'
-              : 'Diameter and edge set the dough weight together.'}
-          </p>
-
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: '14px' }}>
             <strong style={{ display: 'block', fontSize: '24px', lineHeight: 1.1 }}>{grams(itemWeight)}</strong>
             <span style={{ display: 'block', marginTop: '4px', fontSize: '14px', color: 'var(--smoke)' }}>
-              {fr ? `de pâte par pizza · ${usesManualWeight ? 'personnalisé' : 'calculé'}` : `dough per pizza · ${usesManualWeight ? 'custom' : 'calculated'}`}
+              {fr ? `de pâte par pizza · ${usesManualWeight ? 'personnalisé' : 'conseillé'}` : `dough per pizza · ${usesManualWeight ? 'custom' : 'suggested'}`}
             </span>
           </div>
 
@@ -299,9 +284,6 @@ export default function PrototypeQuantityPicker({
             onCommit={value => onItemWeightChange(clamp(storedWeight(value), weightBounds.min, weightBounds.max, weightBounds.step))}
             style={inputStyle}
           />
-          <p style={{ margin: '6px 0 0', fontSize: '14px', color: 'var(--smoke)' }}>
-            {bakeType === 'bread' ? (fr ? 'Définissez la taille de chaque pain.' : 'Set the size of each loaf.') : (fr ? 'Définissez la quantité de pâte par plaque.' : 'Set the dough weight for each tray.')}
-          </p>
         </section>
       )}
 
