@@ -783,7 +783,7 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
 
       {children}
 
-      <div style={{
+      <div className="bh-step-actions" style={{
         display: 'grid', gridTemplateColumns: '1fr',
         gap: '12px', padding: '8px 0', position:'sticky', bottom:navigationHeight, zIndex:90, background:'var(--warm)',
       }}>

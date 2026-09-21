@@ -303,3 +303,13 @@ button,
 @media (prefers-reduced-motion: reduce) {
   .bh-header-stack, #bh-top-stepper { transition: none !important; }
 }
+
+@media (max-width: 767px) {
+  [data-mobile-setup="true"] .bh-step-actions {
+    bottom: 0 !important;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    margin-inline: calc(-1 * (clamp(1rem, 3vw, 1.5rem) + 2px));
+    padding-inline: calc(clamp(1rem, 3vw, 1.5rem) + 2px) !important;
+    background: var(--warm);
+  }
+}
