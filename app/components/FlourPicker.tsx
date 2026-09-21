@@ -91,6 +91,16 @@ const ORIGIN_GROUPS: Record<string, string[]> = {
   'Asia-Pacific': ['jp', 'cn', 'kr', 'sg', 'au', 'in', 'th', 'id', 'my', 'vn', 'ph'],
 };
 
+const ORIGIN_LABELS_FR: Record<string, string> = {
+  France:'France', Italy:'Italie', UK:'Royaume-Uni', Americas:'Amériques', Europe:'Europe', 'Asia-Pacific':'Asie-Pacifique',
+  Singapore:'Singapour', Japan:'Japon', Korea:'Corée', Australia:'Australie', India:'Inde', Indonesia:'Indonésie', Malaysia:'Malaisie', Thailand:'Thaïlande', Philippines:'Philippines', Vietnam:'Viêt Nam', China:'Chine',
+  Germany:'Allemagne', Netherlands:'Pays-Bas', Sweden:'Suède', Norway:'Norvège', Finland:'Finlande', Poland:'Pologne', Austria:'Autriche',
+  'United States':'États-Unis', Canada:'Canada', Brazil:'Brésil', Mexico:'Mexique', Argentina:'Argentine',
+};
+export function flourOriginLabel(value: string, locale: string): string {
+  return locale === 'fr' ? ORIGIN_LABELS_FR[value] ?? value : value;
+}
+
 // ── APAC country sub-filter ───────────────────────
 const APAC_COUNTRIES: { code: string; flag: string; name: string }[] = [
   { code: 'sg', flag: 'SG', name: 'Singapore' },
@@ -1049,7 +1059,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         options={[...new Set(FLOUR_DB.map(f => f.type))].sort()}
                         onChange={setBlendFilterType} format={v => TYPE_LABELS[v] ?? v} />
                       <FilterMenu label={locale === 'fr' ? 'Origine' : 'Origin'} value={blendFilterOrigin}
-                        options={Object.keys(ORIGIN_GROUPS)}
+                        options={Object.keys(ORIGIN_GROUPS)} format={value => flourOriginLabel(value, locale)}
                         onChange={v => { setBlendFilterOrigin(v); setBlendApacCountry(null); setBlendEuropeCountry(null); setBlendAmericasCountry(null); }} />
                       <FilterMenu label={locale === 'fr' ? 'Marque' : 'Brand'} value={blendFilterBrand}
                         options={blendBrandOptions} onChange={setBlendFilterBrand} />
@@ -1078,7 +1088,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                                   setBlendAmericasCountry(active ? null : code);
                                 }
                               }}
-                              title={name}
+                              title={flourOriginLabel(name, locale)}
+                              aria-label={flourOriginLabel(name, locale)}
                               style={{
                                 padding: '4px 8px',
                                 borderRadius: '20px',

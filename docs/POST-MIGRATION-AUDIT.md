@@ -68,3 +68,13 @@ not a real authenticated account walkthrough.
 
 Acceptance rule: fix required defects and unexplained prototype regressions;
 record optional ideas separately rather than endlessly redesigning the branch.
+
+### Final live follow-up
+
+Online176d441 walkthrough exposed pizza detail overflow after adding useful
+ingredient quantities. Bounded viewport panel, scrollable contents, persistent
+close/quantity controls, focus trap/restoration, Escape and 44px quantity targets
+correct it. Mobile390×844 and tablet768×1024 geometry was independently checked;
+final keyboard recheck/deployed confirmation is tracked by the root review.
+French country/origin labels and Italian deli generic wording were corrected.
+Full suite114/114 and TypeScript pass. No unrelated design deviation added.

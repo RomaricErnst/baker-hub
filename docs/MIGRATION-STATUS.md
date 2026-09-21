@@ -103,3 +103,25 @@ reload (115 g), canonical feeding times, and the simplified recipe layout.
 cc76157 is awaiting post-deployment browser acceptance. Signed-in cloud save
 and sharing have not been exercised. Scientific models remain estimates;
 these regression checks do not constitute experimental biological validation.
+
+## Final acceptance round — 21 September 2026
+
+This checkpoint supersedes earlier counts and reviewer availability. Three
+independent reviewers completed the renewed prototype, UX and engine review.
+The 176d441 online build passed explicit flour selection, live bag-image upload,
+climate and preferment numeric editing, generated guide navigation/focus, and
+pizza selection through shopping and ingredient help. The 972-case independent
+recipe accounting matrix reported no failures; these are software checks, not
+experimental fermentation validation.
+
+The final live pizza walkthrough found an overflowing detail panel. The follow-up
+bounds the panel, scrolls its contents while retaining close/quantity controls,
+and adds keyboard focus containment/restoration and 44px quantity targets.
+Remaining country/origin labels and generic Italian-shop wording are localized.
+All 114 regression tests and TypeScript pass. Final deployment and targeted
+online panel checks are the remaining acceptance gate for this follow-up.
+
+Real signed-in cloud save/share and physical camera capture have not been
+exercised; save/share payload and failure paths have automated coverage, and
+online image-file scanning has been exercised. Original site/code backups remain
+as recorded above; this is the migration branch, not a replacement of main.

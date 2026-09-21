@@ -496,16 +496,23 @@ export function PizzaIngredientDetails({pizza,locale,styleKey}: {pizza: Pizza; l
 
 // ─── Pizza sheet ──────────────────────────────────────────────
 
-function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
+export function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
   pizza: Pizza; qty: number; locale: string; styleKey?: string;
   onQtyChange: (delta: number) => void;
   onClose: () => void;
 }) {
   const l = locale as 'en' | 'fr';
 
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+    dialogRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
   }, []);
 
   const hasCustomPhoto = pizza.id.startsWith('custom_') && !!pizza.photoUrl;
@@ -545,9 +552,19 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
       }}
       onClick={onClose}
     >
-      <div
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={pizza.name[l] ?? pizza.name.en}
+        onKeyDown={e => {
+          if (e.key === 'Escape') { e.stopPropagation(); onClose(); }
+          if (e.key !== 'Tab') return;
+          const focusable = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter(element => element.getClientRects().length > 0);
+          const first = focusable[0], last = focusable[focusable.length - 1];
+          if (!first) { e.preventDefault(); e.currentTarget.focus(); }
+          else if (e.shiftKey && (document.activeElement === first || document.activeElement === e.currentTarget)) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }}
         style={{
           width: '100%',
+          maxHeight: 'calc(100dvh - 81px - env(safe-area-inset-bottom))',
           background: '#FDFBF7',
           borderRadius: '20px 20px 0 0',
           display: 'flex',
@@ -555,7 +572,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           overflow: 'hidden',
           transform: `translateY(${dragY}px)`,
           transition: dragFrom.current === null ? 'transform 0.22s ease' : 'none',
-          touchAction: 'none',
+          touchAction: 'pan-y',
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -565,15 +582,34 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           onPointerUp={onDragEnd}
           onPointerCancel={onDragEnd}
           style={{
-            padding: '10px 0 6px', display: 'flex', justifyContent: 'center',
+            minHeight: 44, touchAction: 'none', padding: '10px 0 6px', display: 'flex', justifyContent: 'center',
             cursor: 'grab', flexShrink: 0, background: '#FDFBF7',
             position: 'relative', zIndex: 2,
           }}
         >
           <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: '#D9D0C2' }} />
+          <button
+            type="button"
+            onPointerDown={e => e.stopPropagation()}
+            onClick={onClose}
+            aria-label={l === 'fr' ? 'Fermer les détails de la pizza' : 'Close pizza details'}
+            style={{
+              position: 'absolute', top: '2px', right: '2px',
+              // 44px tap box, 28px painted disc: padding + content-box clip
+              // keeps the visual unchanged while the finger gets a real target.
+              width: '44px', height: '44px', padding: '8px',
+              background: 'rgba(43, 36, 32,0.6)',
+              backgroundClip: 'content-box',
+              border: 'none', borderRadius: '50%',
+              color: 'white', fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >&#x2715;</button>
         </div>
 
-        {/* Image — takes all remaining space, shrinks to zero if needed */}
+        <div data-pizza-detail-scroll style={{flex:'1 1 auto',minHeight:0,overflowY:'auto',overscrollBehavior:'contain',touchAction:'pan-y'}}>
+        {/* Image and ingredient details share the scrollable body. */}
         <div style={{
           position: 'relative',
           width: '100%',
@@ -603,22 +639,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
               }}
             />
           )}
-          <button
-            onClick={onClose}
-            aria-label={l === 'fr' ? 'Fermer les détails de la pizza' : 'Close pizza details'}
-            style={{
-              position: 'absolute', top: '2px', right: '2px',
-              // 44px tap box, 28px painted disc: padding + content-box clip
-              // keeps the visual unchanged while the finger gets a real target.
-              width: '44px', height: '44px', padding: '8px',
-              background: 'rgba(43, 36, 32,0.6)',
-              backgroundClip: 'content-box',
-              border: 'none', borderRadius: '50%',
-              color: 'white', fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >&#x2715;</button>
+
         </div>
 
         {/* Info — title, ingredients, wine — fixed height, never compressed */}
@@ -663,6 +684,8 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           )}
         </div>
 
+        </div>
+
         {/* Footer — qty controls, always visible */}
         <div style={{
           flexShrink: 0,
@@ -685,7 +708,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
               <button
                 onClick={e => { e.stopPropagation(); onQtyChange(-1); }}
                 style={{
-                  width: '36px', height: '36px', borderRadius: '50%',
+                  width: '44px', height: '44px', borderRadius: '50%',
                   border: '1.5px solid #E0D8CF', background: '#FDFBF7',
                   cursor: 'pointer', fontSize: '20px', color: '#2B2420',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -702,7 +725,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
               <button
                 onClick={e => { e.stopPropagation(); onQtyChange(1); }}
                 style={{
-                  width: '36px', height: '36px', borderRadius: '50%',
+                  width: '44px', height: '44px', borderRadius: '50%',
                   border: 'none', background: '#6B4423',
                   cursor: 'pointer', fontSize: '20px', color: 'white',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -870,12 +893,12 @@ export function buildShoppingList(
 }
 
 const LOCATIONS = [
-  { key: 'singapore',    label: 'Singapore' },
-  { key: 'france',       label: 'France' },
-  { key: 'uk',           label: 'UK' },
-  { key: 'us',           label: 'US' },
-  { key: 'australia',    label: 'Australia' },
-  { key: 'international',label: 'International' },
+  { key: 'singapore',    label: 'Singapore', labelFr: 'Singapour' },
+  { key: 'france',       label: 'France', labelFr: 'France' },
+  { key: 'uk',           label: 'UK', labelFr: 'Royaume-Uni' },
+  { key: 'us',           label: 'US', labelFr: 'États-Unis' },
+  { key: 'australia',    label: 'Australia', labelFr: 'Australie' },
+  { key: 'international',label: 'International', labelFr: 'International' },
 ];
 
 export function ingredientHelpData(item: Pick<ShoppingItem, 'goodEnough' | 'compromise' | 'localSwap' | 'whereToFind'>, location: string, locale: string) {
@@ -888,8 +911,9 @@ export function ingredientHelpData(item: Pick<ShoppingItem, 'goodEnough' | 'comp
     return [{name, note:option?.note?.[l] || option?.note?.en || ''}];
   });
   const where = item.whereToFind?.[location as import('../lib/toppingTypes').ShoppingContext];
-  const shops = (where?.shops ?? []).filter(value => value.trim());
-  const online = (where?.online ?? []).filter(value => value.trim());
+  const placeLabel = (value: string) => l === 'fr' ? value.replace(/\bItalian delis\b/gi, 'Épiceries italiennes') : value;
+  const shops = (where?.shops ?? []).filter(value => value.trim()).map(placeLabel);
+  const online = (where?.online ?? []).filter(value => value.trim()).map(placeLabel);
   const links = ((where as (typeof where & {links?: Array<{label:string | Locale;url:string}>}))?.links ?? [])
     .map(link => ({...link,label:typeof link.label === 'string' ? link.label : link.label?.[l] || link.label?.en || ''}))
     .filter(link => link.label.trim() && /^https:\/\//.test(link.url));
@@ -909,7 +933,7 @@ export function IngredientShoppingHelp({item,location,locale,onLocationChange,on
     <h1 style={{fontFamily:'Georgia,serif',fontSize:30}}>{item.name[l] || item.name.en}</h1>
     <label style={{display:'grid',gap:8,marginBottom:24}}>{l === 'fr' ? 'Pays des courses' : 'Shopping location'}
       <select value={location} onChange={event=>onLocationChange(event.target.value)} style={{minHeight:44,padding:10,border:'1px solid var(--border)',borderRadius:10,background:'var(--cream)'}}>
-        {LOCATIONS.map(loc=><option key={loc.key} value={loc.key}>{loc.label}</option>)}
+        {LOCATIONS.map(loc=><option key={loc.key} value={loc.key}>{l === 'fr' ? loc.labelFr : loc.label}</option>)}
       </select>
     </label>
     {help.alternatives.length > 0 && <><h2>Alternatives</h2>
@@ -1106,7 +1130,8 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
   const helpIngredient = sections.flatMap(section => section.items).find(item => item.id === helpIngredientId);
   if (helpIngredient) return <IngredientShoppingHelp item={helpIngredient} location={shoppingLocation} locale={l} onLocationChange={setLocation} onBack={() => setHelpIngredientId(null)} />;
 
-  const currentLocationLabel = LOCATIONS.find(loc => loc.key === shoppingLocation)?.label ?? 'International';
+  const currentLocation = LOCATIONS.find(loc => loc.key === shoppingLocation);
+  const currentLocationLabel = (l === 'fr' ? currentLocation?.labelFr : currentLocation?.label) ?? 'International';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -1150,7 +1175,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                   color: shoppingLocation === loc.key ? 'white' : '#3D3530',
                 }}
               >
-                {loc.label}
+                {l === 'fr' ? loc.labelFr : loc.label}
               </button>
             ))}
           </div>
