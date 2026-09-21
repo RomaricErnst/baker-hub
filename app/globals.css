@@ -293,3 +293,13 @@ button,
 .manual-flour-submit:disabled { opacity: .5; cursor: not-allowed; }
 .manual-flour-submit:focus-visible { outline: 2px solid var(--terra); outline-offset: 3px; }
 @media (max-width: 480px) { .manual-flour-form { padding: 16px; } }
+
+/* Keep setup focused on the current choice on small screens. */
+@media (max-width: 767px) {
+  [data-mobile-setup="true"] #bh-bottom-nav { display: none !important; }
+  [data-mobile-setup="true"] #bh-top-stepper { position: relative !important; top: auto !important; box-shadow: none !important; }
+  .bh-header-stack header { height: 56px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bh-header-stack, #bh-top-stepper { transition: none !important; }
+}

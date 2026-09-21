@@ -647,6 +647,9 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
             return (
               <div
                 key={pizza.id}
+                role="button"
+                tabIndex={0}
+                onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSheetPizzaId(pizza.id); } }}
                 onClick={() => setSheetPizzaId(pizza.id)}
                 style={{
                   border: cardDone ? '1px solid rgba(107,122,90,0.45)' : '1px solid var(--border)',

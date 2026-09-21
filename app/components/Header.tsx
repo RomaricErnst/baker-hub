@@ -232,6 +232,7 @@ export default function Header({
   onNewSession,
   onBack,
   onReviewPlan,
+  onOpenPizzas,
   onSharePlan,
   onOpenProfile,
   onLoadBakeEvent,
@@ -256,6 +257,7 @@ export default function Header({
   onNewSession?: () => void;
   onBack?: () => void;
   onReviewPlan?: () => void;
+  onOpenPizzas?: () => void;
   onSharePlan?: () => void;
   onOpenProfile?: () => void;
   onLoadBakeEvent?: (event: BakeEvent) => void;
@@ -552,6 +554,7 @@ export default function Header({
             {onNewSession && <>
               <div style={menuGroup}>{locale === 'fr' ? 'Ce plan' : 'This plan'}</div>
               {onReviewPlan && <button style={menuButton} onClick={() => { setMenuOpen(false); onReviewPlan(); }}>{locale === 'fr' ? 'Revoir mes choix' : 'Review choices'}</button>}
+              {onOpenPizzas && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenPizzas(); }}>{locale === 'fr' ? 'Choisir mes pizzas' : 'Choose pizzas'}</button>}
               {onSaveSession && <button style={menuButton} onClick={() => { setMenuOpen(false); onSaveSession(); }}>{locale === 'fr' ? (recipeGenerated ? 'Enregistrer la recette' : 'Enregistrer mes choix') : (recipeGenerated ? 'Save recipe' : 'Save draft')}</button>}
               {recipeGenerated && onSharePlan && <button style={menuButton} onClick={() => { setMenuOpen(false); onSharePlan(); }}>{locale === 'fr' ? 'Partager la recette' : 'Share recipe'}</button>}
               <button style={menuButton} onClick={() => { setMenuOpen(false); onNewSession(); }}>{locale === 'fr' ? 'Commencer une nouvelle fournée' : 'Start a new bake'}</button>

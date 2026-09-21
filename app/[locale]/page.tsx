@@ -1112,16 +1112,8 @@ export default function Home() {
   useEffect(() => { if (activeTab !== 'setup') setSetupOverview(false); }, [activeTab]);
   const [pizzaPartyTab, setPizzaPartyTab] = useState<'pick' | 'shop' | 'prep' | 'bake'>('pick');
   const [navHidden, setNavHidden] = useState(false);
-  // Where the sticky stack starts. The header autohides by sliding to -100px,
-  // so its visible bottom edge moves — anything pinned to a fixed
-  // stickyHeadH either floated below a gap or, with the rail's old
-  // raised -> top:0 shortcut, jumped up behind the tab strip and got sliced
-  // in half. One number, derived from what is actually on screen.
-  // The header's real bottom edge. It autohides by sliding to top:-100px
-  // (line ~2628), so a fixed height was right only while it was showing. The
-  // 100 is not a guess — it is the same literal, and the two must move
-  // together if either changes.
-  const HEADER_HIDE_PX = 100;
+  // Hide exactly the measured header height; keep the following bar aligned.
+  const HEADER_HIDE_PX = stickyHeadH;
   const stickTop = Math.max(0, stickyHeadH - (navHidden ? HEADER_HIDE_PX : 0));
   const lastScrollY = useRef(0);
   useEffect(() => {
@@ -1140,15 +1132,20 @@ export default function Home() {
     window.scrollTo(0, 0);
   }, [pizzaPartyTab, activeTab]);
   useEffect(() => {
-    const el = document.documentElement;
+    let travel = 0;
+    let direction = 0;
     const onScroll = () => {
-      const curr = el.scrollTop || document.body.scrollTop;
-      if (curr > lastScrollY.current && curr > 40) {
-        setNavHidden(true);
-      } else if (curr < lastScrollY.current) {
-        setNavHidden(false);
-      }
+      const curr = Math.max(0, Math.min(window.scrollY, document.documentElement.scrollHeight - window.innerHeight));
+      const delta = curr - lastScrollY.current;
       lastScrollY.current = curr;
+      if (curr < 24) { setNavHidden(false); travel = 0; return; }
+      if (document.querySelector('[role="dialog"][aria-modal="true"]') || stickyHeadRef.current?.querySelector(':focus-visible')) return;
+      if (Math.abs(delta) < 2) return;
+      const nextDirection = Math.sign(delta);
+      travel = nextDirection === direction ? travel + Math.abs(delta) : Math.abs(delta);
+      direction = nextDirection;
+      if (direction > 0 && curr > 96 && travel >= 32) setNavHidden(true);
+      if (direction < 0 && travel >= 16) setNavHidden(false);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -3018,9 +3015,9 @@ export default function Home() {
 
   // ── Render ────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--warm)' }}>
+    <div data-mobile-setup={activeTab === 'setup' && !recipeGenerated ? 'true' : undefined} style={{ minHeight: '100vh', background: 'var(--warm)' }}>
       {/* ── Sticky header + journey bar (autohide on scroll down) ── */}
-      <div ref={stickyHeadRef} style={{
+      <div ref={stickyHeadRef} className="bh-header-stack" onFocusCapture={() => setNavHidden(false)} style={{
         position: 'sticky',
         top: navHidden ? `-${HEADER_HIDE_PX}px` : '0',
         zIndex: 100,
@@ -3058,6 +3055,7 @@ export default function Home() {
           }}
           onSaveSession={saveCurrentSession}
           onReviewPlan={bakeType && modeChosen ? () => { setActiveTab('setup'); setReviewMode(true); setSetupOverview(true); scrollToStepTop(); } : undefined}
+          onOpenPizzas={bakeType === 'pizza' && modeChosen ? () => { setActiveTab('pizzaparty'); setNavHidden(false); } : undefined}
           onSharePlan={shareCurrentSession}
           onBack={bakeType ? () => {
             if (activeTab === 'setup') {
@@ -3072,7 +3070,7 @@ export default function Home() {
               }
               scrollToStepTop();
             } else if (activeTab === 'guide' || activeTab === 'pizzaparty') {
-              setActiveTab('plan');
+              setActiveTab(recipeGenerated ? 'plan' : 'setup');
             } else {
               setActiveTab('setup');
               setReviewMode(true);
@@ -3403,6 +3401,8 @@ export default function Home() {
         </div>
         )}
 
+{recipeGenerated && <div style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{numItems} {bakeType==='bread'?(fr?(numItems===1?'pain':'pains'):(numItems===1?'loaf':'loaves')):'pizzas'} · {styleKey ? styleDisplayName(styleKey) : ''}</div></div>}
+
 {!!bakeType && <div id="bh-top-stepper" style={{
         // THIS is the sticky element, not its children. A sticky box only
         // stays stuck while its parent is in view, and this wrapper was only
@@ -3423,7 +3423,7 @@ export default function Home() {
         // scroll. They move as one piece now.
         transition: 'top 0.25s ease',
       }}>
-        {recipeGenerated && <div style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{numItems} {bakeType==='bread'?(fr?(numItems===1?'pain':'pains'):(numItems===1?'loaf':'loaves')):'pizzas'} · {styleKey ? styleDisplayName(styleKey) : ''}</div></div>}
+
         {activeTab !== 'pizzaparty' ? (
           activeTab === 'setup' && modeChosen ? <SummaryBar flow={tab === 'simple' ? simpleFlow : customFlow}
             modeChip={{value: tab === 'simple' ? 'Simple' : (locale === 'fr' ? 'Personnalisé' : 'Custom'), onClick: () => setModeChosen(false)}} /> : null
@@ -3557,7 +3557,7 @@ export default function Home() {
                         fontSize: '12.5px', lineHeight: 1.15, color: labelColor,
                         fontWeight: isActive ? 700 : 400, fontFamily: 'var(--font-ui)',
                         textAlign: 'center',
-                        textDecoration: s.locked || isActive ? 'none' : 'underline',
+                        textDecorationLine: s.locked || isActive ? 'none' : 'underline',
                         textDecorationColor: '#D3C9B8',
                         textUnderlineOffset: '3px',
                         textDecorationThickness: '1px',
