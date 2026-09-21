@@ -19,7 +19,8 @@ test('32C live regression includes warmup, proof during preheat and handling bet
  const s=utils.buildSchedule(new Date('2026-09-12T16:00Z'),new Date('2026-09-13T18:00Z'),[],32,60,'hand','neapolitan');
  assert.equal(s.finalProofHours,2);
  assert.equal(hours(s.rtWarmupStart,s.bakeStart),2.5);
- assert.equal(s.totalRTHours,3.25);
+ // Exact ten-minute hand mixing ends at16:10, not the rounded16:15.
+ assert.ok(Math.abs(s.totalRTHours - (3 + 20/60)) < 1e-9);
  assert.equal(s.preheatStart.toISOString(),'2026-09-13T17:00:00.000Z');
  assert.equal(s.rtWarmupStart.toISOString(),'2026-09-13T15:30:00.000Z');
 });
@@ -41,4 +42,27 @@ test('short cold windows never place proof or cold exit after bake',()=>{
   assert.ok(!s.coldRetardEnd||s.coldRetardEnd<=s.bakeStart,`${style}: cold exit after bake`);
   assert.match(s.scheduleNote||'',/Not enough time|Room-temperature/);
  }
+});
+
+test('bulk starts after every minute of mixing and autolyse, preserving canonical mix start',()=>{
+ const branches=new Set();
+ for(const style of ['pain_campagne','pain_levain','neapolitan','pan'])for(const mixer of ['hand','stand','spiral'])for(const horizon of [8,26]){
+  const start=new Date('2026-09-21T23:00:00Z'),bake=new Date(+start+horizon*3600000);
+  const s=utils.buildSchedule(start,bake,[],22,45,mixer,style);
+  branches.add(s.coldRetard2Start?'two':s.coldRetardStart?'single':'rt');
+  assert.equal(+s.bulkFermStart-s.mixingDurationH*3600000,+start,`${style}/${mixer}/${horizon}`);
+  assert.ok(Math.abs(s.mixingDurationH+s.totalRTHours+s.totalColdHours-hours(start,s.bakeStart))<1e-9);
+ }
+ assert.deepEqual([...branches].sort(),['rt','single','two']);
+ const country=utils.buildSchedule(new Date('2026-09-21T23:00Z'),new Date('2026-09-22T18:00Z'),[],22,45,'hand','pain_campagne');
+ assert.equal(country.mixingDurationH,0.6);
+ assert.equal(country.bulkFermStart.toISOString(),'2026-09-21T23:36:00.000Z');
+});
+
+test('short country-bread fallback never rounds proof before its full preparation window',()=>{
+ const s=utils.buildSchedule(new Date('2026-09-21T23:00Z'),new Date('2026-09-22T00:00Z'),[],22,0,'hand','pain_campagne');
+ assert.equal(s.bulkFermStart.toISOString(),'2026-09-21T23:36:00.000Z');
+ assert.ok(s.finalProofStart>=s.bulkFermStart);
+ assert.ok(s.divideBallTime>=s.bulkFermStart);
+ assert.ok(Math.abs(s.mixingDurationH+s.totalRTHours-1)<1e-9);
 });

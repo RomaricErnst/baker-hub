@@ -750,6 +750,8 @@ export function buildSchedule(
   // agreed — they disagreed once before, see the note at BakeGuide ~896.
   const autolyseMin = autolyseMinFor(mixerType, styleKey);
   const mixWindowMin = kneadMin + autolyseMin;
+  // Preserve the exact preparation window; rounding bulk backwards silently
+  // removes kneading and makes consumers infer a different mix start.
   const fermStart = new Date(startTime.getTime() + mixWindowMin * 60000);
   const mixingDurationH = mixWindowMin / 60;
   const preheatH = preheatMin / 60;
@@ -856,12 +858,12 @@ export function buildSchedule(
     ));
     return accountScheduleTime({
       mixingDurationH,
-      bulkFermStart: r15(displayFermStart),
+      bulkFermStart: displayFermStart,
       bulkFermHours: Math.max(0, (finalProofStart.getTime() - displayFermStart.getTime()) / 3600000),
       coldRetardStart: null,
       coldRetardEnd: null,
       coldRetardHours: 0,
-      finalProofStart: r15(finalProofStart),
+      finalProofStart: new Date(Math.max(+displayFermStart, +r15(finalProofStart))),
       finalProofHours: finalProofH,
       restRtHours: 0,
       preheatStart: r15(bakeTime),
@@ -874,7 +876,7 @@ export function buildSchedule(
       coldRetard1End: null,
       coldRetard2Start: null,
       coldRetard2End: null,
-      divideBallTime: r15(divideBallTime),
+      divideBallTime: new Date(Math.max(+displayFermStart, +r15(divideBallTime))),
       rtWarmupStart: null,
       rtWarmupEnd: null,
       bulkConflict: null,
@@ -964,7 +966,7 @@ export function buildSchedule(
 
     return accountScheduleTime({
       mixingDurationH,
-      bulkFermStart: r15(fermStart),
+      bulkFermStart: fermStart,
       bulkFermHours: actualBulkH,
       // Backward compat: map to two-phase ends
       coldRetardStart: r15(coldRetard1Start),
@@ -1087,7 +1089,7 @@ export function buildSchedule(
 
   return accountScheduleTime({
     mixingDurationH,
-    bulkFermStart: r15(fermStart),
+    bulkFermStart: fermStart,
     bulkFermHours: actualBulkH,
     coldRetardStart: r15(coldRetardStart),
     coldRetardEnd: r15(coldRetardEnd),

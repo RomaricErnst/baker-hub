@@ -73,3 +73,13 @@ test('preferment instructions use actual dose and planned location without final
  assert.doesNotMatch(prefHtml,/Water temperature|50-60|0\.1-0\.2|always ferments cold|air exchange|pinch of IDY/);
  }
 });
+
+test('short mixing duration retains exact minutes and hand instructions exclude machine speeds',()=>{
+ const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-24T18:00Z'),[],22,45,'hand','pain_campagne');
+ schedule.mixingDurationH=.6;
+ const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,{schedule,mixerType:'hand',styleKey:'pain_campagne',kitchenTemp:22,numItems:1,oil:0,hydration:65,locale:'en'})));
+ assert.match(html,/ · 36 min/);
+ assert.match(html,/Cover and rest 30 min, as scheduled/);
+ assert.match(html,/Knead by hand until cohesive and elastic/);
+ assert.doesNotMatch(html,/using only your mixer’s permitted dough speeds/);
+});

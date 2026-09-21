@@ -208,7 +208,7 @@ function StepCard({
           <strong style={{ display: 'block', fontSize: overview ? 15 : 30, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}</strong>
           {!overview && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {number}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
           {time && <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: D.smoke }}>
-            {formatTime(time, locale)}{duration ? ` · ${hoursLabel(duration)}` : ''}
+            {formatTime(time, locale)}{duration ? ` · ${duration < 1 ? `${Math.round(duration * 60)} min` : hoursLabel(duration)}` : ''}
           </span>}
           {done && <span style={{ fontSize: 12, color: D.sage }}>{fr ? 'Terminé' : 'Completed'}</span>}
         </span>
@@ -1320,7 +1320,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             ...(!isSourdough && autolyseMinFor(mixerType, styleKey) > 0 ? [{bold:l==='fr'?`Couvrez et laissez reposer ${autolyseMinFor(mixerType, styleKey)} min, comme prévu au planning.`:`Cover and rest ${autolyseMinFor(mixerType, styleKey)} min, as scheduled.`,note:''}] : []),
             {bold:isSourdough?(l==='fr'?'Incorporez le levain mûr et le sel.':'Incorporate the ripe starter and salt.'):hasPref?(l==='fr'?`Incorporez votre ${prefermentType} préparé, puis le sel.`:`Incorporate the prepared ${prefermentType}, then the salt.`):(l==='fr'?'Incorporez la levure et le sel.':'Incorporate the yeast and salt.'),note:''},
             ...(hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'?[{bold:l==='fr'?'Quand la pâte se tient, ajoutez progressivement l’eau réservée ; laissez chaque ajout s’incorporer.':'Once the dough holds together, add the reserved water gradually; let each addition absorb.',note:''}]:[]),
-            {bold:mixerType==='no_knead'?(l==='fr'?'Arrêtez une fois homogène. Couvrez ; les repos et rabats prévus développeront la pâte.':'Stop once combined. Cover; scheduled rests and folds develop the dough.'):styleKey==='pain_seigle'?(l==='fr'?'Mélangez jusqu’à homogénéité ; le seigle reste collant.':'Mix until evenly combined; rye dough remains sticky.'):(l==='fr'?'Pétrissez jusqu’à une pâte homogène et élastique, aux vitesses autorisées par votre pétrin.':'Knead until cohesive and elastic, using only your mixer’s permitted dough speeds.'),note:''},
+            {bold:mixerType==='no_knead'?(l==='fr'?'Arrêtez une fois homogène. Couvrez ; les repos et rabats prévus développeront la pâte.':'Stop once combined. Cover; scheduled rests and folds develop the dough.'):styleKey==='pain_seigle'?(l==='fr'?'Mélangez jusqu’à homogénéité ; le seigle reste collant.':'Mix until evenly combined; rye dough remains sticky.'):mixerType==='hand'?(l==='fr'?'Pétrissez à la main jusqu’à une pâte homogène et élastique.':'Knead by hand until cohesive and elastic.'):(l==='fr'?'Pétrissez jusqu’à une pâte homogène et élastique, aux vitesses autorisées par votre pétrin.':'Knead until cohesive and elastic, using only your mixer’s permitted dough speeds.'),note:''},
             ...(recipe && recipe.sugar > 0 ? [{bold:l==='fr'?'Incorporez le sucre mesuré pendant le mélange.':'Incorporate the measured sugar during mixing.',note:''}] : []),
             ...(oil>0?[{bold:l==='fr'?'Ajoutez l’huile mesurée en dernier et mélangez jusqu’à absorption.':'Add the measured oil last and mix until absorbed.',note:''}]:[]),
           ]}/>

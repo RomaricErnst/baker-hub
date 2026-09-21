@@ -155,3 +155,16 @@ previously checked online. Numerical fermentation tests are not biological trial
 Follow-up before handoff: changing a restored preferment/yeast method now revokes
 both the past-preparation exception and cached approval. Independent review and
 146 tests pass. Unchanged selections retain legitimate resume behavior.
+
+Online checks on 386a7bd/7db17b4/71403af exercised visible flour filters,
+inline catalogue expansion, direct selection, optional details, second-flour
+selection and keyboard expansion/collapse. Phone and tablet images/equipment
+were inspected. Deployed restored biga/poolish method changes, date edits,
+generation and reload agree. A fresh French bread journey reached ingredients
+and guide; previous/next browsing did not mark steps complete. This caught
+sub-hour duration rounding and hand-kneading copy, corrected in the follow-up.
+
+The bread follow-up now preserves the exact end of mixing across room-temperature,
+one-cold-stage and two-cold-stage schedules; rounding could otherwise remove
+minutes from kneading. Short guide durations show actual minutes and hand mixing
+has its own wording. 148 tests and TypeScript pass after these corrections.
