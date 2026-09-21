@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect, useRef, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH } from '../utils';
-import FermentChart, { getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
+import FermentChart, { scheduleColdIntervals, getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
 
 export type StarterEventKind =
   | 'last_fed'
@@ -193,20 +193,14 @@ type StarterState = 'rt_fed' | 'fridge_unfed' | 'fridge_fed';
 
 // ── Card date+time formatter ─────────────────
 // "Fri 28 Mar · 9pm" / "ven. 28 mars · 21h"
-function fmtCardHM(d: Date, isFr = false): string {
-  // Always display in 15min increments
-  const rounded = new Date(d);
-  const raw = rounded.getMinutes();
-  const snap = Math.round(raw / 15) * 15;
-  if (snap === 60) { rounded.setHours(rounded.getHours() + 1); rounded.setMinutes(0); }
-  else rounded.setMinutes(snap);
-  const h = rounded.getHours(), m = rounded.getMinutes();
+export function fmtCardHM(d: Date, isFr = false): string {
+  const h = d.getHours(), m = d.getMinutes();
   if (isFr) return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}`;
   const ap = h < 12 ? 'am' : 'pm';
   const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return m === 0 ? `${h12}${ap}` : `${h12}:${String(m).padStart(2, '0')}${ap}`;
 }
-function fmtCardDT(d: Date, isFr = false): string {
+export function fmtCardDT(d: Date, isFr = false): string {
   const loc = isFr ? 'fr-FR' : 'en-US';
   const wd = d.toLocaleDateString(loc, { weekday: 'short' });
   const mo = d.toLocaleDateString(loc, { month: 'short' });
@@ -246,14 +240,8 @@ function computeStarterPeakMs(feedMs: number, refPeakMs: number | null, adjPeakH
 
 // ── Time formatter ────────────────────────────
 // "4pm" / "4:30pm" — minutes omitted when zero
-function formatTimeShort(d: Date, isFr = false): string {
-  const rounded = new Date(d);
-  const raw = rounded.getMinutes();
-  const snap = Math.round(raw / 15) * 15;
-  if (snap === 60) { rounded.setHours(rounded.getHours() + 1); rounded.setMinutes(0); }
-  else rounded.setMinutes(snap);
-  const h = rounded.getHours();
-  const m = rounded.getMinutes();
+export function formatTimeShort(d: Date, isFr = false): string {
+  const h = d.getHours(), m = d.getMinutes();
   if (isFr) return m === 0 ? `${h}h` : `${h}h${m.toString().padStart(2, '0')}`;
   const ampm = h < 12 ? 'am' : 'pm';
   const h12  = h === 0 ? 12 : h > 12 ? h - 12 : h;
@@ -1658,7 +1646,7 @@ export function ScheduleViewTabs({ value, onChange, id, isFr }: {
         document.getElementById(`${id}-${next}-tab`)?.focus();
       }}
       style={{flex:1,minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:12,background:value === option ? 'var(--char)' : 'var(--cream)',color:value === option ? 'var(--cream)' : 'var(--char)',fontFamily:'var(--font-ui)',fontSize:13,fontWeight:600,cursor:'pointer'}}>
-      {option === 'actions' ? (isFr ? 'Actions' : 'Action items') : (isFr ? 'Courbe de fermentation' : 'Fermentation graph')}
+      {option === 'actions' ? (isFr ? 'Actions' : 'Action items') : (isFr ? 'Planning visuel' : 'Visual schedule')}
     </button>)}
   </div>;
 }
@@ -7066,6 +7054,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
               prefInFridge={prefGoesInFridge}
               hasColdRetard={hasColdRetard}
               phases={phases}
+              doughColdIntervals={scheduleColdIntervals(schedule)}
+              prefermentFridgeOutTime={prefRemoveFromFridgeTime}
               scheduleNote={schedule?.scheduleNote ?? null}
               blocks={isSourdough ? localBlocks : blocks}
               recommendedMixHBF={recommendedHBF}

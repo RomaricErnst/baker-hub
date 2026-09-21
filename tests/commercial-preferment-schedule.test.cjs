@@ -26,7 +26,7 @@ const compileTs = (module, filename) => {
 require.extensions['.ts'] = compileTs;
 require.extensions['.tsx'] = compileTs;
 
-const {findOptimalPosition,commercialPrefermentPlanValid,solverNotificationAlreadySynced}=require('../app/components/SchedulePicker.tsx');
+const {findOptimalPosition,commercialPrefermentPlanValid,solverNotificationAlreadySynced,fmtCardHM,fmtCardDT,formatTimeShort}=require('../app/components/SchedulePicker.tsx');
 const now=new Date('2026-10-01T08:00Z'),bake=new Date('2026-10-04T18:00Z');
 function solve(type,blocks=[],hours=82){return findOptimalPosition(26,36,6,blocks,bake,type!=='none',type==='biga'?48:18,24,hours,type,type==='biga'?12:3,3,0,type==='biga'||type==='poolish',4,'neapolitan');}
 test('direct has one mix; selected commercial preferments always retain a distinct preparation event',()=>{
@@ -83,4 +83,16 @@ test('returning to a previous recommendation resynchronizes a parent changed by 
  assert.equal(solverNotificationAlreadySynced(recommendation,recommendation,{s:80,e:300}),false);
  assert.equal(solverNotificationAlreadySynced(recommendation,recommendation,{s:100,e:300}),true);
  assert.equal(solverNotificationAlreadySynced(null,recommendation,recommendation),false);
+});
+
+test('action times preserve canonical minutes, including the end of a day',()=>{
+ const nearMidnight=new Date(2026,8,23,23,56);
+ assert.equal(fmtCardHM(nearMidnight,true),'23h56');
+ assert.equal(fmtCardHM(nearMidnight,false),'11:56pm');
+ assert.equal(formatTimeShort(nearMidnight,true),'23h56');
+ assert.equal(formatTimeShort(nearMidnight,false),'11:56pm');
+ assert.match(fmtCardDT(nearMidnight,true),/23 .*23h56$/);
+ assert.match(fmtCardDT(nearMidnight,false),/23 .*11:56pm$/);
+ assert.equal(fmtCardHM(new Date(2026,8,23,7,4),true),'7h04');
+ assert.equal(fmtCardHM(new Date(2026,8,23,3,19),true),'3h19');
 });
