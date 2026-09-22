@@ -7768,6 +7768,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
             editingId={editingRow}
             collapseLabel={(n) => tRoot('schedulePicker.completedSteps', { count: n })}
             editor={editingRow ? (
+              <div style={{ display: 'grid', gap: 4 }}>
               <input
                 key={editingRow}
                 ref={readinessEditorRef}
@@ -7783,7 +7784,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                 })()}
                 autoFocus
                 onBlur={e => { commitRowTime(editingRow, e.target.value); setEditingRow(null); }}
-                onKeyDown={e => { if (e.key === 'Escape') setEditingRow(null); }}
+                onKeyDown={e => { if (e.key === 'Escape') setEditingRow(null); if (e.key === 'Enter') { commitRowTime(editingRow, e.currentTarget.value); setEditingRow(null); } }}
                 style={{
                   fontSize: '16px', minHeight: 44, minWidth: 0, boxSizing: 'border-box', padding: '4px 8px', borderRadius: '8px',
                   border: '1.5px solid var(--terra)', background: 'var(--warm)',
@@ -7791,6 +7792,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
                   width: '100%', outline: 'none',
                 }}
               />
+              <button
+                type="button"
+                onPointerDown={e => e.preventDefault()}
+                onClick={() => {
+                  if (readinessEditorRef.current) commitRowTime(editingRow, readinessEditorRef.current.value);
+                  setEditingRow(null);
+                }}
+                style={{ minHeight: 44, fontSize: 16, fontWeight: 500, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--warm)', color: 'var(--char)', cursor: 'pointer' }}
+              >{isFr ? 'Valider' : 'Done'}</button>
+              </div>
             ) : null}
           />
         );
