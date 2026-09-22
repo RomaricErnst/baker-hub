@@ -62,7 +62,7 @@ for (const locale of ['fr', 'en']) {
       body: JSON.stringify({ code: 'session_not_found', message: 'Anonymous UI test' }),
     }));
     const fr = locale === 'fr';
-    await page.goto(`/${locale}`);
+    await page.goto(fr ? '/fr' : '/');
     await page.evaluate(() => document.fonts.ready);
     await page.getByRole('button', { name: 'Pizza', exact: true }).tap();
     await expect(page.getByRole('heading', { name: fr ? 'À votre façon' : 'Your way', exact: true })).toBeVisible();

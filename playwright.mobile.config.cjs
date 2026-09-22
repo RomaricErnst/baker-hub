@@ -11,7 +11,7 @@ module.exports = defineConfig({
   use: {
     ...devices['iPhone 13'],
     browserName: 'webkit',
-    baseURL: 'http://127.0.0.1:3015',
+    baseURL: 'http://localhost:3015',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -20,8 +20,8 @@ module.exports = defineConfig({
     use: { viewport: { width, height: width === 320 ? 568 : 664 } },
   })),
   webServer: {
-    command: 'npm run start -- --hostname 127.0.0.1 --port 3015',
-    url: 'http://127.0.0.1:3015/fr',
+    command: 'npm run start -- --hostname localhost --port 3015',
+    url: 'http://localhost:3015/fr',
     timeout: 120000,
     reuseExistingServer: false,
   },

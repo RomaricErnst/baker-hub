@@ -16,7 +16,7 @@ concurrency:
 jobs:
   iphone:
     if: github.ref == 'refs/heads/codex/prototype-migration-20260920'
-    runs-on: ubuntu-24.04
+    runs-on: macos-14
     timeout-minutes: 20
     env:
       CI: 'true'
@@ -35,7 +35,7 @@ jobs:
       - run: npm ci
       - name: Install pinned browser test tools separately
         run: npm install --prefix .ci-tools --no-audit --no-fund @playwright/test@1.58.2
-      - name: Install WebKit and Linux dependencies
+      - name: Install WebKit on macOS
         run: node .ci-tools/node_modules/playwright/cli.js install --with-deps webkit
       - run: npm test
       - name: Build isolated app
