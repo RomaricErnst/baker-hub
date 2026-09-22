@@ -459,7 +459,7 @@ export default function Header({
 
   return (
     <>
-    <header style={{
+    <header className="bh-header" style={{
       background: 'var(--warm)', color: 'var(--char)',
       padding: '0 12px', display: 'flex', alignItems: 'center',
       justifyContent: 'space-between', height: '64px', borderBottom: '1px solid var(--border)',
@@ -477,8 +477,8 @@ export default function Header({
       <div ref={menuRef} style={{ minWidth: 0, flex: '1 1 auto' }}>
         <div className="bh-wordmark" style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.025em', whiteSpace: 'nowrap' }}>bakerhub.</div>
       </div>
-      <button onClick={() => setMenuOpen(v => !v)} aria-expanded={menuOpen} aria-controls="bakerhub-menu" aria-haspopup="dialog"
-        style={{ order: 3, border: 'none', background: 'transparent', color: 'var(--char)', minHeight: '44px', padding: '8px', fontSize: '13px', cursor: 'pointer' }}>
+      <button className="bh-header-menu" onClick={() => setMenuOpen(v => !v)} aria-expanded={menuOpen} aria-controls="bakerhub-menu" aria-haspopup="dialog"
+        style={{ order: 3, border: 'none', background: 'transparent', color: 'var(--char)', minHeight: '44px', minWidth: '44px', flexShrink: 0, padding: '8px', fontFamily: 'var(--font-ui)', fontSize: '16px', fontWeight: 500, cursor: 'pointer' }}>
         Menu
       </button>
 
@@ -490,7 +490,7 @@ export default function Header({
           href={backHref}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: '8px',
-            padding: '8px 12px',
+            padding: '8px 12px', minHeight: '44px', minWidth: '44px',
             border: '1px solid rgba(240, 235, 224,0.25)',
             borderRadius: '20px',
             color: 'var(--char)',
@@ -510,11 +510,11 @@ export default function Header({
       {!backHref && !hideActionBar && (
         <div style={{ order: 2, display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
           {onSaveSession && (onNewSession || recipeGenerated || sessionRestored) && (
-            <button onClick={() => { if (!sessionSaved) onSaveSession(); }}
+            <button className="bh-header-save" onClick={() => { if (!sessionSaved) onSaveSession(); }}
               aria-label={sessionSaved ? (user ? (locale === 'fr' ? 'Enregistré dans votre compte' : 'Saved to your account') : (locale === 'fr' ? 'Enregistré sur cet appareil' : 'Saved on this device')) : (locale === 'fr' ? 'Enregistrer' : 'Save')}
               title={sessionSaved ? (user ? (locale === 'fr' ? 'Enregistré dans votre compte' : 'Saved to your account') : (locale === 'fr' ? 'Enregistré sur cet appareil' : 'Saved on this device')) : undefined}
               aria-disabled={sessionSaved}
-              style={{ border: 'none', borderRadius: '10px', background: 'transparent', color: 'var(--char)', minHeight: '44px', padding: '8px 10px', fontSize: '13px', whiteSpace: 'nowrap', cursor: sessionSaved ? 'default' : 'pointer' }}>
+              style={{ border: '1px solid var(--border)', borderRadius: '10px', background: 'transparent', color: 'var(--char)', minHeight: '44px', minWidth: '44px', padding: '8px 10px', fontFamily: 'var(--font-ui)', fontSize: '16px', fontWeight: 500, whiteSpace: 'nowrap', cursor: sessionSaved ? 'default' : 'pointer' }}>
               {sessionSaved ? (locale === 'fr' ? 'Enregistré' : 'Saved') : (locale === 'fr' ? 'Enregistrer' : 'Save')}
             </button>
           )}

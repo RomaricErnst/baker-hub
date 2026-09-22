@@ -190,12 +190,13 @@ body {
   --radius-pill:20px;
 }
 
-/* ── Header wordmark ──────────────────────────
-   Three 44px targets plus the burger and the mark leave no room for the
-   wordmark on the narrowest phones. Below 360px the mark identifies the brand
-   on its own — better than shrinking targets or ellipsising the name. */
-@media (max-width: 372px) {
-  .bh-wordmark { display: none; }
+/* Keep the wordmark readable alongside the 44px header controls. */
+@media (max-width: 767px) {
+  .bh-wordmark { font-size: 24px !important; }
+}
+@media (max-width: 359px) {
+  .bh-header { padding-inline: 8px !important; }
+  .bh-header-menu, .bh-header-save { padding-inline: 6px !important; }
 }
 
 
