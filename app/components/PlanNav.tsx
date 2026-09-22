@@ -17,7 +17,7 @@ interface PlanNavProps {
 }
 
 const PILL_BASE: React.CSSProperties = {
-  flex: 1,
+  flex: '1 1 0%', minWidth: 0, minHeight: 44,
   display: 'flex', flexDirection: 'column',
   alignItems: 'center', justifyContent: 'center', gap: '1px',
   padding: '8px 0',
@@ -27,9 +27,9 @@ const PILL_BASE: React.CSSProperties = {
 };
 
 const LABEL_ROW: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: '8px',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: '4px', maxWidth: '100%', padding: '0 4px',
   fontSize: '14px', fontWeight: 500,
-  whiteSpace: 'nowrap',
+  whiteSpace: 'normal', textAlign: 'center',
 };
 
 export default function PlanNav({ variant, onEditSetup, onOpenGuide, onShare }: PlanNavProps) {
@@ -91,7 +91,7 @@ export default function PlanNav({ variant, onEditSetup, onOpenGuide, onShare }: 
           aria-label={t('share')}
           title={t('share')}
           style={{
-            width: '46px', flexShrink: 0,
+            width: '46px', minHeight: 44, flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: '1.5px solid var(--border)',
             borderRadius: '12px',

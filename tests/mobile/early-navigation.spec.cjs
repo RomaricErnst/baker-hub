@@ -75,7 +75,7 @@ test('early bread selections survive mode choice, matching bread style and later
  await testInfo.attach('setup-actions-above-two-tabs',{body:await page.screenshot(),contentType:'image/png'});
 });
 
-test('generated dough uses local phases and returns to Recipe after browsing fillings',async({page})=>{
+test('generated dough uses local phases and returns to Recipe after browsing fillings',async({page},testInfo)=>{
  await anonymous(page);
  const bake=Date.now()+4*24*3600000;
  const session={version:1,savedAt:Date.now(),tab:'custom',bakeType:'bread',styleKey:'bagel',numItems:6,itemWeight:110,pizzaDiameter:30,ovenType:'standard_bread',mixerType:'hand',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:5,flourBlend:{flour1:'bread',flour2:null,ratio1:100},prefermentType:'none',prefermentFlourPct:20,prefOffsetH:0,prefGoesInFridge:false,flourInFridge:false,startTime:bake-6*3600000,eatTime:bake,blocks:[],recipeGenerated:true,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,activeStep:99,advancedStep:99,highestStep:99,advancedHighestStep:99,setupOverview:false,activeTab:'plan'};
@@ -93,6 +93,12 @@ test('generated dough uses local phases and returns to Recipe after browsing fil
  await bottom(page).getByRole('button',{name:'Ma pâte',exact:true}).tap();
  await expect(phases.getByRole('button',{name:'Recette',exact:true})).toHaveAttribute('aria-current','step');
  await twoDestinations(page,true,'Garnitures');
+ const share=page.getByRole('button',{name:'Partager cette fournée',exact:true});
+ await share.scrollIntoViewIfNeeded();
+ const footer=share.locator('..');
+ const bounds=await footer.boundingBox();
+ expect(bounds.x+bounds.width).toBeLessThanOrEqual(page.viewportSize().width);
+ await testInfo.attach('recipe-footer-fits',{body:await footer.screenshot(),contentType:'image/png'});
 });
 
 test('Safari companion scrolling hides chrome, preserves phase access and reveals navigation',async({page},testInfo)=>{
