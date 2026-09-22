@@ -7652,20 +7652,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           );
         };
 
-        // "Anywhere 5:00–9:30pm keeps the plan on track" — only for a
-        // selected row that actually has an engine-computed window.
-        const roomNote = (id: string, fromHBF: number, toHBF: number): React.ReactNode | undefined => {
-          if (focusRow !== id || !(fromHBF > toHBF)) return undefined;
-          const a = new Date(bakeMs - fromHBF * 3600000);
-          const b = new Date(bakeMs - toHBF * 3600000);
-          return tRoot('schedulePicker.roomIs', {
-            range: `${fmtCardHM(a, isFr)}–${fmtCardHM(b, isFr)}`,
-          });
-        };
-
-        // Priority: applied suggestion → busy conflict → room to move.
-        const noteFor = (id: string, at: Date, win?: [number, number]): React.ReactNode | undefined =>
-          appliedNote(id) ?? busyNote(id, at) ?? (win ? roomNote(id, win[0], win[1]) : undefined);
+        // Window guidance lives in the shared readiness panel, with full dates.
+        // Row notes retain applied suggestions and availability conflicts only.
+        const noteFor = (id: string, at: Date): React.ReactNode | undefined =>
+          appliedNote(id) ?? busyNote(id, at);
 
         // 1 — sourdough starter events (history + feeds + fridge consequences)
         if (isSourdough && displayStarterEvents.length) {
@@ -7721,7 +7711,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           marker: 'step',
           color: '#3D5A30',
           editable: !startTimeInPast,
-          note: noteFor('mix', pendingStart, [doughZoneFrom, doughZoneTo]),
+          note: noteFor('mix', pendingStart),
         });
 
         // 4 — Out of fridge: a cold consequence, not a step. Plain text, no
