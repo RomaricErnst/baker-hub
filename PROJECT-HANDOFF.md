@@ -6,15 +6,15 @@ Updated 22 September 2026. Read this first. It supersedes the September 13 hando
 
 - Repository: `RomaricErnst/baker-hub` on GitHub.
 - Active branch: `codex/prototype-migration-20260920`. Continue from this branch, not main or the old release-candidate branch.
-- Latest application commit at this handoff: `8f816ac` (WebKit-verified narrow header spacing). Handoff/documentation commits may follow without changing application behaviour.
-- Local checkout: `/Users/romaricernst/Documents/Codex/2026-09-11/create-an-image-of/work/baker-hub-migration`.
+- Latest application commit at this handoff: `35952d1` (reviewed advisory windows and neutral availability conflicts). Handoff/documentation commits may follow without changing application behaviour.
+- Historical Mac checkout: `/Users/romaricernst/Documents/Codex/2026-09-11/create-an-image-of/work/baker-hub-migration`. Current task reconstructed source under `/workspace/scratch/fd6e75875f58/fermentation-work`; this temporary workspace is not a portable backup. GitHub branch is authoritative.
 - Stable test URL: https://baker-hub-git-codex-prototype-mig-b4b24a-thebaker-hubs-projects.vercel.app/fr
-- Latest immutable preview build (READY; mobile UI verified separately in CI): https://baker-5prje3pz8-thebaker-hubs-projects.vercel.app/fr
-- Deployment: `dpl_8Gd755dct1NAFypuS7JXVt4eB8rx`, READY. New pushes can supersede it.
+- Latest immutable preview build (READY; mobile UI verified separately in CI): https://baker-72wnea2e6-thebaker-hubs-projects.vercel.app/fr
+- Deployment: `dpl_C1Uxpi9KDrzeuQCDbvxGSq9TzzUB`, READY. New pushes can supersede it.
 - Temporary Vercel share tokens expire; obtain fresh access if the preview requests login. Do not store tokens or credentials in this document.
 - Vercel project `prj_qDz6tdakJGeFFtVApo9mpAU7rNQq`; team `team_WioBBEisA4hox7JpPyBX0Vtr`. Branch pushes auto-deploy previews.
 
-The next task is to continue Romaric's mobile feedback and polish this branch. No known unfinished implementation from the latest footer/graph requests remains. Do not represent the whole product as universally verified: limits below remain.
+The next task is to continue Romaric's mobile feedback and polish this branch. Actionable mixing-window feedback is implemented; biological maturity calibration remains separate. Do not represent the whole product as universally verified: limits below remain.
 
 ## Product and working agreement
 
@@ -65,9 +65,22 @@ Current prototype reference is archived at `docs/continuation-reference/option-a
 - Drag and keyboard 15-minute adjustments use existing scheduling callbacks. Actions and visual schedule show identical canonical minutes; display-only rounding was removed, including midnight date bugs.
 - Solver biology helpers were not revalidated by this graphical redesign. Bars describe durations, not measured maturity. Read `docs/FERMENTATION-VISUAL-REVIEW-20260922.md`.
 
+### Actionable fermentation windows — 22 September 2026
+- User confirmed that a window is the desired model. Added one compact panel above both Actions and Visual schedule: recommended mixing range, planned-time marker, before / within / after the recommended window status, contextual explanation and adjustment action. Preserve existing duration/cold lanes.
+- Same component in Simple and Custom, French and English. Preferment checks remain distinct; optional physical signs and temperatures appear in a disclosure. No decorative maturity curves or universal readiness guarantees.
+- Commercial guidance uses the actual solver bounds, including style/flour/cold availability. Sourdough uses existing solver bounds, but contradictory hot-climate bounds and unsupported combinations show unavailable guidance instead of false green. Started/overdue/impossible plans retain distinct states.
+- Adjustment opens and focuses the existing time editor. Explicit Valider / Done and Enter commit an edit; focus loss still commits. Safari touch does not reliably blur a field when tapping non-focusable text.
+- Read `docs/FERMENTATION-WINDOWS-20260922.md` for rationale, test coverage and engine limitations. No dose, starter-ratio or production configuration change.
+
 ## Verification and limits
 
-Latest app: 154 automated tests and TypeScript passed; Vercel READY. WebKit 26.6 iPhone simulation tested 375×600 and 390×664; iPad ingredient layout 768×900. Setup, flour/manual/scan UI, date changes/review, pizza pick/filter/detail/review/shop/prep/bake, ingredient/guide and bread cooling were exercised. Direct/biga/poolish/sourdough timeline rendering was checked, with pointer/keyboard changes agreeing with Actions. Deployed sourdough timeline checked too.
+Latest fermentation verification: application `8e8d448`, test correction `efcfaad9`; run https://github.com/RomaricErnst/baker-hub/actions/runs/35680216465 passed all 167 unit tests, i18n/build and 24/24 iPhone WebKit checks. Artifact `10674932091` retains screenshots/report/traces for 14 days. Direct/poolish/biga/sourdough, both modes/languages and 320/375/390/430px were exercised. The current preview is READY, target preview. Live preview manual checks confirmed early/within/late feedback, explicit time confirmation, correction preserving bake time and matching visual view.
+
+Science and blocker reviews are complete: `docs/SCIENCE-REVIEW-20260922.md` and `docs/BLOCKER-REVIEW-20260922.md`. Reviewers ran 47 and 18 targeted tests respectively and bounded production probes; no calibrated formula changes were justified. Preserve prior constants. Current summary corrections include advisory wording, neutral availability priority, a review-availability action, half-open interval edges and preheat/shaping points. Final post-review run https://github.com/RomaricErnst/baker-hub/actions/runs/35686741003 at `35952d1` passed all 170 unit tests, i18n/build and all 24 iPhone WebKit cases. The direct-dough case now also creates a custom block at bake time, verifies neutral conflict status and follows its availability action at all four widths. Final preview `dpl_C1Uxpi9KDrzeuQCDbvxGSq9TzzUB` is READY, preview target only.
+
+Open findings: some short active handling overlaps are not represented, split-cold conflicts lack complete automatic repair, and sourdough boundary conventions are not globally unified. Hot room-only sourdough window inconsistencies remain guarded/unavailable. A latent extreme mixed-RT dose discontinuity was found but not reached in 2,700 ordinary generated schedules; investigate restored/blocked reachability before changing its contract. Do not claim the whole engine is scientifically or exhaustively verified.
+
+Historical migration baseline: 154 automated tests and TypeScript passed; Vercel READY. WebKit 26.6 iPhone simulation tested 375×600 and 390×664; iPad ingredient layout 768×900. Setup, flour/manual/scan UI, date changes/review, pizza pick/filter/detail/review/shop/prep/bake, ingredient/guide and bread cooling were exercised. Direct/biga/poolish/sourdough timeline rendering was checked, with pointer/keyboard changes agreeing with Actions. Deployed sourdough timeline checked too.
 
 Do not overclaim:
 - Physical iPhone Safari toolbar/keyboard behaviour and real camera capture are not reproduced fully by WebKit emulation. User's native screenshots can expose additional issues (as the footer did).
@@ -99,7 +112,7 @@ Do not overclaim:
 - `app/[locale]/page.tsx`: journey state, setup/review, sticky navigation.
 - `app/components/Header.tsx`, `app/globals.css`, `app/hooks/useBottomNavHeight.ts`: menu/mobile bars/safe area.
 - `FlourPicker.tsx`, `FlourScan.tsx`: flour selection/manual/scan.
-- `SchedulePicker.tsx`, `FermentChart.tsx`, `app/utils.ts`: planner, visual timeline, engine. FermentChart still exports engine helpers used by the planner; preserve them during cleanup.
+- `SchedulePicker.tsx`, `FermentationReadiness.tsx`, `app/utils/fermentationAssessment.ts`, `FermentChart.tsx`, `app/utils.ts`: planner, visual timeline, engine. FermentChart still exports engine helpers used by the planner; preserve them during cleanup.
 - `RecipeOutput.tsx`, `BakeGuide.tsx`: quantities and instructions.
 - `ToppingSelector.tsx`, `app/components/pizzaParty/*`: pizza journey.
 - `docs/WORDING-REVIEW-20260921.md`, `docs/MOBILE-WEBKIT-REVIEW-20260921.md`, `docs/FERMENTATION-VISUAL-REVIEW-20260922.md`: recent evidence.
@@ -119,3 +132,4 @@ Original production baseline commit: `7a118048886dadb572c426d0643db1dedd4f5b80`;
 ## Starting from a phone/new chat
 
 Connect/open this repository and select the migration branch, then read this file. If a general chat cannot read the repository, attach this handoff; it can discuss feedback, but implementation also requires repository access. Do not assume conversation history or local Mac files transferred automatically. Confirm the branch and current commit before editing. Continue from the user's new feedback rather than restarting the migration or flour hunt.
+
