@@ -4,6 +4,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH } from '../utils';
 import FermentChart, { scheduleColdIntervals, getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
 import FermentationReadiness from './FermentationReadiness';
+import { hasActionConflict } from '../utils/fermentationAssessment';
 
 export type StarterEventKind =
   | 'last_fed'
@@ -1966,6 +1967,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // Which plan-list row has its time field open.
   const [editingRow, setEditingRow] = useState<string | null>(null);
   const readinessEditorRef = useRef<HTMLInputElement>(null);
+  const availabilityControlsRef = useRef<HTMLDivElement>(null);
   // Summary actions open the same editor as the list. Bring it into view
   // after switching tabs, including when several starter steps precede it.
   useEffect(() => {
@@ -6062,6 +6064,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     ? new Date(pendingEatTime.getTime() - readinessToH! * 3600000) : null;
   const readinessNow = Date.now();
   const readinessActionTimes = [pendingStart, pendingEatTime];
+  if (schedule) readinessActionTimes.push(schedule.bulkFermStart, schedule.divideBallTime, schedule.preheatStart);
   if (isSourdough) {
     readinessActionTimes.push(...displayStarterEvents
       .filter(event => event.kind !== 'last_fed' && event.kind !== 'known_peak')
@@ -6073,8 +6076,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   for (const interval of scheduleColdIntervals(schedule)) {
     readinessActionTimes.push(interval.from, interval.to);
   }
-  const readinessBusy = readinessActionTimes.some(at => at.getTime() > readinessNow
-    && localBlocks.some(block => at > block.from && at < block.to))
+  const readinessBusy = hasActionConflict(readinessActionTimes, localBlocks, readinessNow)
     || !!(bulkConflict && pendingStart.getTime() > readinessNow)
     || !!(coldExitConflict && coldExitConflict.at.getTime() > readinessNow);
   const editReadinessTime = (row: 'mix' | 'bake') => {
@@ -6748,7 +6750,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
       {eatTimeSet && (<div>
 
       {/* Blocker section — always visible */}
-      <div style={{ marginBottom: '16px' }}>
+      <div ref={availabilityControlsRef} tabIndex={-1} role="group" aria-label={isFr ? 'Mes disponibilités' : 'My availability'} style={{ marginBottom: '16px' }}>
         <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--char)', marginBottom: '8px' }}>
           {isFr
             ? 'Bloquez vos indisponibilités — nous planifions autour.'
@@ -7090,6 +7092,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           unavailableReason={startTimeInPast ? 'started' : readinessUnsupported ? 'unsupported' : undefined}
           onEditMix={() => editReadinessTime('mix')}
           onEditBake={() => editReadinessTime('bake')}
+          onReviewAvailability={() => {
+            availabilityControlsRef.current?.scrollIntoView({ block: 'center', behavior: 'auto' });
+            availabilityControlsRef.current?.focus({ preventScroll: true });
+          }}
         />
       )}
 

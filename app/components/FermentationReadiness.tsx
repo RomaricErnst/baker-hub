@@ -20,6 +20,7 @@ interface FermentationReadinessProps {
   fridgeTemp: number;
   onEditMix: () => void;
   onEditBake: () => void;
+  onReviewAvailability?: () => void;
   canEdit: boolean;
   unavailableReason?: 'started' | 'unsupported';
 }
@@ -28,7 +29,7 @@ interface FermentationReadinessProps {
 export default function FermentationReadiness({
   isFr, mixTime, bakeTime, windowFrom, windowTo, isSourdough,
   prefermentType, starterPeak, starterState, blocked, overdue, busy,
-  kitchenTemp, fridgeTemp, onEditMix, onEditBake, canEdit, unavailableReason,
+  kitchenTemp, fridgeTemp, onEditMix, onEditBake, onReviewAvailability, canEdit, unavailableReason,
 }: FermentationReadinessProps) {
   const titleId = useId();
   const t = (fr: string, en: string) => isFr ? fr : en;
@@ -42,20 +43,22 @@ export default function FermentationReadiness({
   const status = blocked || overdue || unavailableReason ? 'unavailable' : assessment.status;
   const hasWindow = status !== 'unavailable' && validDate(windowFrom) && validDate(windowTo);
   const inWindow = status === 'within';
+  const clearWindow = inWindow && !busy;
   const outside = status === 'early' || status === 'late';
   const marker = status === 'early' ? 8 : status === 'late' ? 92 : 20 + (assessment.marker ?? .5) * 60;
   const label = unavailableReason === 'started' ? t('Pétrissage prévu déjà passé', 'Planned mixing time has passed')
-    : unavailableReason === 'unsupported' ? t('Méthode non prise en charge', 'Method not supported')
+    : unavailableReason === 'unsupported' ? t('Créneau non calculé', 'Window not calculated')
     : blocked ? t('Plan à revoir', 'Review this plan')
     : overdue ? t('Horaire dépassé', 'Time has passed')
+      : inWindow && busy ? t('Horaire à ajuster', 'Timing needs adjusting')
       : inWindow ? t('Dans le créneau', 'Within the window')
-        : status === 'early' ? t('Pétrissage trop tôt', 'Mixing too early')
-          : status === 'late' ? t('Pétrissage trop tard', 'Mixing too late')
+        : status === 'early' ? t('Avant le créneau conseillé', 'Before the recommended window')
+          : status === 'late' ? t('Après le créneau conseillé', 'After the recommended window')
             : t('Créneau non disponible', 'Window unavailable');
   const explanation = unavailableReason === 'started'
-    ? t('Si la pâte est en cours, suivez le guide et observez son évolution. Le planning seul ne confirme pas sa maturité.', 'If your dough is underway, follow the guide and check its development. The schedule alone cannot confirm maturity.')
+    ? t('Déjà commencé ? Suivez le guide. Sinon, choisissez un nouvel horaire.', 'Already started? Follow the guide. Otherwise, choose a new time.')
     : unavailableReason === 'unsupported'
-      ? t('Pour ce style, choisissez une pâte directe à levure boulangère dans les étapes précédentes.', 'For this style, choose direct dough with commercial yeast in the previous steps.')
+      ? t('Pour ce style, le calcul est disponible en pâte directe à levure boulangère.', 'For this style, timing guidance is available for direct dough with commercial yeast.')
     : blocked
     ? t('Ce plan ne peut pas être suivi tel quel. Revoyez l’heure de cuisson.', 'This plan cannot be followed as it stands. Review your bake time.')
     : overdue
@@ -88,10 +91,10 @@ export default function FermentationReadiness({
         <span style={{
           display: 'inline-flex', gap: 6, alignItems: 'center', borderRadius: 20,
           padding: '4px 9px', fontSize: 13, fontWeight: 500,
-          background: inWindow ? '#e6eadf' : outside ? '#f2e4d7' : '#e9e6df',
-          color: inWindow ? '#3b4d32' : outside ? '#794522' : '#504a43',
+          background: clearWindow ? '#e6eadf' : outside ? '#f2e4d7' : '#e9e6df',
+          color: clearWindow ? '#3b4d32' : outside ? '#794522' : '#504a43',
         }}>
-          <span aria-hidden="true">{inWindow ? '✓' : outside || blocked || overdue ? '!' : '—'}</span>{label}
+          <span aria-hidden="true">{clearWindow ? '✓' : outside || blocked || overdue ? '!' : '—'}</span>{label}
         </span>
         {!inWindow && <p style={{fontSize: 14, lineHeight: 1.4, margin: '8px 0'}}>{explanation}</p>}
       </div>
@@ -129,6 +132,10 @@ export default function FermentationReadiness({
       {busy && <p style={{fontSize: 13, lineHeight: 1.4, margin: '8px 0 0'}}>
         {t('Une étape tombe pendant une indisponibilité. Vérifiez les horaires dans les actions du plan.', 'A step falls during an unavailable period. Check the times in the plan actions.')}
       </p>}
+      {canEdit && busy && !blocked && !overdue && !unavailableReason && !outside && onReviewAvailability && <button type="button" onClick={onReviewAvailability} style={{
+        minHeight: 44, width: '100%', marginTop: 8, padding: '9px 12px', font: 'inherit', fontSize: 16,
+        border: '1px solid var(--border)', borderRadius: 10, background: 'transparent', color: 'var(--char)', cursor: 'pointer',
+      }}>{t('Vérifier mes disponibilités', 'Review my availability')}</button>}
       {canEdit && !unavailableReason && (outside || blocked || overdue) && <button type="button" onClick={blocked ? onEditBake : onEditMix} style={{
         minHeight: 44, minWidth: 44, width: '100%', marginTop: 12, padding: '9px 12px',
         font: 'inherit', fontSize: 16, fontWeight: 500, color: 'var(--char, #29241f)',
@@ -139,17 +146,17 @@ export default function FermentationReadiness({
           {t('Comment vérifier ?', 'What should I check?')}
         </summary>
         <p style={{margin: '4px 0 8px'}}>
-          {t('Ce créneau est un repère de planning, pas une mesure de maturité.', 'This window is schedule guidance, not a measurement of maturity.')}
+          {t('Les horaires vous guident ; vérifiez aussi l’évolution de la pâte.', 'Use the timings as a guide and check how the dough develops.')}
           {' '}{t('Observez une pâte qui prend du volume et devient aérée ; son aspect dépend du style.', 'Look for dough gaining volume and becoming aerated; its appearance depends on the style.')}
         </p>
         {hasPreferment && <p style={{margin: '0 0 8px'}}>
           {isSourdough
-            ? t('Levain : cherchez une montée visible et des bulles. Le pic affiché reste une estimation.', 'Starter: look for visible rise and bubbles. The displayed peak is an estimate.')
+            ? t('Levain : cherchez une montée visible et des bulles.', 'Starter: look for visible rise and bubbles.')
             : preferment === 'biga'
               ? t('Biga : vérifiez une structure aérée à l’intérieur. Sa surface ferme ne se lit pas comme celle d’un poolish.', 'Biga: check for an aerated interior. Its firm surface looks different from poolish.')
               : t('Poolish : cherchez des bulles et une surface aérée ; un affaissement marqué invite à vérifier son état.', 'Poolish: look for bubbles and an aerated surface; marked collapse calls for checking its condition.')}
         </p>}
-        {!isSourdough && <p style={{margin: '0 0 8px'}}>{t('Le calcul ajuste la levure au planning. Être dans le créneau ne garantit pas une pâte prête.', 'The calculation adjusts yeast to the schedule. Being within the window does not guarantee ready dough.')}</p>}
+        {!isSourdough && <p style={{margin: '0 0 8px'}}>{t('La quantité de levure s’adapte aux horaires et aux températures.', 'The yeast quantity adjusts to your timing and temperatures.')}</p>}
         {Number.isFinite(kitchenTemp) && Number.isFinite(fridgeTemp) && <p style={{margin: 0}}>
           {t('Températures du plan', 'Plan temperatures')} : {t('pièce', 'room')} {kitchenTemp} °C · {t('réfrigérateur', 'fridge')} {fridgeTemp} °C.
         </p>}

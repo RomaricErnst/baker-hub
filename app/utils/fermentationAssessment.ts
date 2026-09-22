@@ -43,3 +43,9 @@ export function assessTimingWindow({
   if (mix > to) return {status: 'late', marker, offsetMinutes: (mix - to) / 60000};
   return {status: 'within', marker, offsetMinutes: 0};
 }
+
+/** Only scheduled actions conflict; passive fermentation may span unavailable time. */
+export function hasActionConflict(actions: Date[], blocks: {from: Date; to: Date}[], now: number): boolean {
+  return actions.some(action => Number.isFinite(+action) && +action >= now
+    && blocks.some(block => +block.from <= +action && +action < +block.to));
+}

@@ -50,7 +50,7 @@ for(const scenario of cases){
    const early=new Date(+bake-40*3600000);
    await page.locator('input[type="datetime-local"]:visible').fill(new Date(+early-early.getTimezoneOffset()*60000).toISOString().slice(0,16));
    await page.getByRole('button',{name:'Valider',exact:true}).tap();
-   await expect(card.getByText(/Pétrissage trop tôt/)).toBeVisible();
+   await expect(card.getByText(/Avant le créneau conseillé/)).toBeVisible();
    await testInfo.attach('outside-window',{body:await card.screenshot(),contentType:'image/png'});
    await card.getByRole('button',{name:'Ajuster le pétrissage'}).tap();
    const editor=page.locator('input[type="datetime-local"]:visible');
@@ -61,6 +61,18 @@ for(const scenario of cases){
    await editor.fill(value);await page.getByRole('button',{name:'Valider',exact:true}).tap();
    await expect(card.getByText(/Dans le créneau/)).toBeVisible();
    await expect(page.getByRole('tab',{name:'Actions',exact:true})).toHaveAttribute('aria-selected','true');
+   // Baking exactly when a block starts is a conflict, even with a good mix window.
+   await page.getByRole('button',{name:'＋ Personnalisé',exact:true}).tap();
+   await page.getByPlaceholder('Libellé — ex. Week-end en déplacement').fill('Indisponible cuisson');
+   const local=d=>new Date(+d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+   await page.locator('input[type="datetime-local"]:visible').nth(0).fill(local(bake));
+   await page.locator('input[type="datetime-local"]:visible').nth(1).fill(local(new Date(+bake+3600000)));
+   await page.getByRole('button',{name:'Ajouter',exact:true}).tap();
+   await expect(card.getByText('Horaire à ajuster',{exact:true})).toBeVisible();
+   await expect(card.getByText('Dans le créneau',{exact:true})).toHaveCount(0);
+   await card.getByRole('button',{name:'Vérifier mes disponibilités',exact:true}).tap();
+   await expect(page.getByRole('group',{name:'Mes disponibilités',exact:true})).toBeFocused();
+
   }
   expect(errors).toEqual([]);
  });

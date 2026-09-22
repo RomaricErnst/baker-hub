@@ -9,7 +9,7 @@ require.extensions['.ts'] = (module, filename) => {
     fileName: filename,
   }).outputText, filename);
 };
-const {assessTimingWindow} = require('../app/utils/fermentationAssessment.ts');
+const {assessTimingWindow,hasActionConflict} = require('../app/utils/fermentationAssessment.ts');
 const Module = require('node:module');
 const path = require('node:path');
 const resolve = Module._resolveFilename;
@@ -169,4 +169,14 @@ test('contradictory hot sourdough style bounds remain unavailable rather than re
   }
   assert.deepEqual(invalid.sort(), ['roman/30', 'roman/35', 'pan/30', 'pan/35',
     'pain_seigle/30', 'pain_seigle/35'].sort());
+});
+
+test('availability uses half-open boundaries and scheduled actions, not passive spans',()=>{
+ const from=date('2030-06-04T09:00:00Z'),to=date('2030-06-04T18:00:00Z');
+ const blocks=[{from,to}],now=+from-3600000;
+ assert.equal(hasActionConflict([from],blocks,now),true);
+ assert.equal(hasActionConflict([to],blocks,now),false);
+ assert.equal(hasActionConflict([new Date(+from-1),to],blocks,now),false);
+ assert.equal(hasActionConflict([from],blocks,+to),false);
+ assert.equal(hasActionConflict([new Date(+from+1)],blocks,now),true);
 });
