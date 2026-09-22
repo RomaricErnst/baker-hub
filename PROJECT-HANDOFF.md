@@ -6,11 +6,11 @@ Updated 22 September 2026. Read this first. It supersedes the September 13 hando
 
 - Repository: `RomaricErnst/baker-hub` on GitHub.
 - Active branch: `codex/prototype-migration-20260920`. Continue from this branch, not main or the old release-candidate branch.
-- Latest application commit at this handoff: `35952d1` (reviewed advisory windows and neutral availability conflicts). Handoff/documentation commits may follow without changing application behaviour.
+- Latest application commit at this handoff: `4df1872` (bounded availability repairs); final test-only correction `f39a68b` passed CI. Handoff/documentation commits may follow without changing application behaviour.
 - Historical Mac checkout: `/Users/romaricernst/Documents/Codex/2026-09-11/create-an-image-of/work/baker-hub-migration`. Current task reconstructed source under `/workspace/scratch/fd6e75875f58/fermentation-work`; this temporary workspace is not a portable backup. GitHub branch is authoritative.
 - Stable test URL: https://baker-hub-git-codex-prototype-mig-b4b24a-thebaker-hubs-projects.vercel.app/fr
-- Latest immutable preview build (READY; mobile UI verified separately in CI): https://baker-72wnea2e6-thebaker-hubs-projects.vercel.app/fr
-- Deployment: `dpl_C1Uxpi9KDrzeuQCDbvxGSq9TzzUB`, READY. New pushes can supersede it.
+- Latest immutable preview build (READY; mobile UI verified separately in CI): https://baker-cq8hym6yp-thebaker-hubs-projects.vercel.app/fr
+- Deployment: `dpl_FvWZbWekpiwuRJs1iHFmQjtvbE91`, READY, preview target only. New pushes can supersede it.
 - Temporary Vercel share tokens expire; obtain fresh access if the preview requests login. Do not store tokens or credentials in this document.
 - Vercel project `prj_qDz6tdakJGeFFtVApo9mpAU7rNQq`; team `team_WioBBEisA4hox7JpPyBX0Vtr`. Branch pushes auto-deploy previews.
 
@@ -72,13 +72,24 @@ Current prototype reference is archived at `docs/continuation-reference/option-a
 - Adjustment opens and focuses the existing time editor. Explicit Valider / Done and Enter commit an edit; focus loss still commits. Safari touch does not reliably blur a field when tapping non-focusable text.
 - Read `docs/FERMENTATION-WINDOWS-20260922.md` for rationale, test coverage and engine limitations. No dose, starter-ratio or production configuration change.
 
+### Bounded availability repair — 22 September 2026
+- Preserve one automatic protocol recommendation in Simple and Custom. Cold fermentation before and after balling/shaping is valid; no new protocol toggle is introduced.
+- Shared half-open checks cover known active mixing/shaping spans and action points; passive autolyse and fermentation remain compatible with unavailability.
+- Shaping and the second cold exit are checked together to retain existing minimum cold, warmup and proof time. Verified proposals retain the cold-phase count and require explicit acceptance to change mixing/baking time.
+- Commercial proposals validate the selected direct/poolish/biga method, preparation/storage/warmup and advised mixing range for every candidate, then check preparation deadlines again on tap. Recurring availability is extended through the search horizon. Accepted plans survive the bake-key remount.
+- Sourdough receives the clear conflicting action/time and manual planning controls, **not an automatic repair**: the starter solver can change feeds after a bake edit, so current green starter events cannot certify that new plan.
+- No calibrated science formulas changed. Exact baseline comparison: 6,480 no-block schedules unchanged except added metadata. Read `docs/SCHEDULE-AVAILABILITY-20260922.md` and the final science gate in `docs/SCIENCE-REVIEW-20260922.md`.
+
 ## Verification and limits
+
+**Latest availability repair verification:** [run 35689438983](https://github.com/RomaricErnst/baker-hub/actions/runs/35689438983) at `f39a68b` passed all **179 unit tests, i18n/build and 28/28 iPhone WebKit cases**. Existing 24 cases remain green; the four added cases cover explicit later-bake acceptance, stable parent times after remount, cleared conflicts and preserved two-phase cold fermentation at 320/375/390/430px. Artifact `10677462989` retains report/screenshots until 6 October 2026. Final application preview `dpl_FvWZbWekpiwuRJs1iHFmQjtvbE91` is READY and not production. Direct French deployed checks also confirmed the repair and both cold intervals. The earlier failed runs were obsolete source-shape assertions and a new test's incorrect English tab label; all were corrected without weakening behavioral assertions.
+
 
 Latest fermentation verification: application `8e8d448`, test correction `efcfaad9`; run https://github.com/RomaricErnst/baker-hub/actions/runs/35680216465 passed all 167 unit tests, i18n/build and 24/24 iPhone WebKit checks. Artifact `10674932091` retains screenshots/report/traces for 14 days. Direct/poolish/biga/sourdough, both modes/languages and 320/375/390/430px were exercised. The current preview is READY, target preview. Live preview manual checks confirmed early/within/late feedback, explicit time confirmation, correction preserving bake time and matching visual view.
 
 Science and blocker reviews are complete: `docs/SCIENCE-REVIEW-20260922.md` and `docs/BLOCKER-REVIEW-20260922.md`. Reviewers ran 47 and 18 targeted tests respectively and bounded production probes; no calibrated formula changes were justified. Preserve prior constants. Current summary corrections include advisory wording, neutral availability priority, a review-availability action, half-open interval edges and preheat/shaping points. Final post-review run https://github.com/RomaricErnst/baker-hub/actions/runs/35686741003 at `35952d1` passed all 170 unit tests, i18n/build and all 24 iPhone WebKit cases. The direct-dough case now also creates a custom block at bake time, verifies neutral conflict status and follows its availability action at all four widths. Final preview `dpl_C1Uxpi9KDrzeuQCDbvxGSq9TzzUB` is READY, preview target only.
 
-Open findings: some short active handling overlaps are not represented, split-cold conflicts lack complete automatic repair, and sourdough boundary conventions are not globally unified. Hot room-only sourdough window inconsistencies remain guarded/unavailable. A latent extreme mixed-RT dose discontinuity was found but not reached in 2,700 ordinary generated schedules; investigate restored/blocked reachability before changing its contract. Do not claim the whole engine is scientifically or exhaustively verified.
+Remaining limits after the bounded availability repair: untimed handling is not fully represented, automatic sourdough availability repair is deliberately withheld, and sourdough boundary conventions are not globally unified. Hot room-only sourdough window inconsistencies remain guarded/unavailable. A latent extreme mixed-RT dose discontinuity was found but not reached in 2,700 ordinary generated schedules; investigate restored/blocked reachability before changing its contract. Do not claim the whole engine is scientifically or exhaustively verified.
 
 Historical migration baseline: 154 automated tests and TypeScript passed; Vercel READY. WebKit 26.6 iPhone simulation tested 375×600 and 390×664; iPad ingredient layout 768×900. Setup, flour/manual/scan UI, date changes/review, pizza pick/filter/detail/review/shop/prep/bake, ingredient/guide and bread cooling were exercised. Direct/biga/poolish/sourdough timeline rendering was checked, with pointer/keyboard changes agreeing with Actions. Deployed sourdough timeline checked too.
 
@@ -133,3 +144,9 @@ Original production baseline commit: `7a118048886dadb572c426d0643db1dedd4f5b80`;
 
 Connect/open this repository and select the migration branch, then read this file. If a general chat cannot read the repository, attach this handoff; it can discuss feedback, but implementation also requires repository access. Do not assume conversation history or local Mac files transferred automatically. Confirm the branch and current commit before editing. Continue from the user's new feedback rather than restarting the migration or flour hunt.
 
+
+## Next product idea — sandwich companion (discussion only)
+
+Finish and verify the current fermentation work first. Romaric proposes a bread companion analogous to the pizza selection/toppings/shopping flow: optional sandwich recipes adapted to the chosen bread, quantities and a combined shopping list. Initial source audit: baguette exists in `BREAD_STYLES`; dedicated focaccia, bagel, pita, kebab-bread and ciabatta recipes were not found in the current catalogue. Bread families to validate before designing: focaccia, bagel, pita, bread suited to kebab, baguette; ciabatta is an additional candidate, not approved implementation. The user supplied Antico Fornaio focaccia menu photos as visual/appetite references (mortadella/pistachio, grilled vegetables, salmon, porchetta, etc.). Aim for roughly a dozen appealing recipes per supported family; for baguette, roughly ten fillings/sandwiches, not ten new dough formulas. Jambon-beurre and similar familiar choices should feature. Research current French popularity before ranking choices; no market claim established yet. No sandwich implementation, dough formula additions or catalogue edits have been made. Next step: audit supported breads and propose the module before implementing it.
+
+A current concept example, not a national popularity ranking: [France Snacking, 7 September 2026 — La Cantina](https://www.snacking.fr/actualites/8230-Avec-La-Cantina-Jean-Francois-Monferran-se-relance-dans-le-snacking-italien/) describes panuozzi and focacce alongside pizzas in Saint-Étienne. Panuozzo could be a later bridge from the existing pizza dough journey, subject to its own preparation guide; it is not part of the current implementation.

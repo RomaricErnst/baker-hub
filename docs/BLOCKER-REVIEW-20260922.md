@@ -73,3 +73,8 @@ Added regression checks for interval boundaries, neutral priority, preheat/shapi
 Remaining: detailed active handling spans are not represented, sourdough/row boundary predicates are not globally unified, and split-cold conflicts are surfaced without a universal automatic repair. The existing solver gaps above remain open. No whole-engine feasibility or biological validation claim is made.
 
 Live preview follow-up: enabled weekday 09:00–18:00 availability on a Monday 18:00 bake. After recalculation the summary showed neutral “Horaire à ajuster”; its availability button focused the named controls. No formula or candidate-score changes. Post-review unit count is 170, including three new conflict regressions. Run 35686377559 passed unit/build checks; mobile test matched the exact text without its status icon, corrected in 35952d1. Final rerun recorded in handoff.
+
+
+## Subsequent bounded repair
+
+The earlier remaining-findings paragraph is historical. `71dc7fa` adds known active mixing/shaping spans, shared half-open conflict checks, and joint two-cold-phase shaping/exit feasibility. Commercial proposals preserve the protocol and are checked again on acceptance; the old unchecked cold/bulk suggestions are removed. Automatic sourdough repair remains deliberately withheld pending pure candidate starter-plan validation. Untimed handling is not fully represented. See `SCHEDULE-AVAILABILITY-20260922.md` for the current scope and final handoff for deployment/CI evidence.

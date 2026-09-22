@@ -92,6 +92,25 @@ Attempts to inspect King Arthur's professional temperature/fermentation pages an
 
 Keep calibrated recipe constants and current guarded windows; soften the status language, retain one clear adjustment action and optional physical signs, and preserve impossible/unsupported-plan guards. Record the hot-sourdough inconsistency and latent mixed-exposure edge case for scoped follow-up. This provides useful scheduling advice without suggesting that a timestamp measures the dough.
 
+## Follow-up science gate: availability repair implementation
+
+Read-only independent check of the subsequent local `buildSchedulePhases`/`buildSchedule` wrapper, `findScheduleRepair`, and `scheduleAvailability.ts` changes. No dosing, temperature-response or starter-ratio coefficient changes were found in this scope. The existing split protocol remains bulk-cold → 15-minute shaping → ball-cold → warmup → final proof; the repair does not silently substitute one cold phase for two.
+
+The constrained shaping/exit scan couples both actions so that moving shaping does not consume the minimum second cold period. Explicit repair validation retains phase count, initial bulk, first cold (2 h tropical / 4 h otherwise), second cold (2 h), the existing warmup allowance, and at least 1 h final proof before preheat. That last requirement is conservative because proof can also continue during preheat; it must not be described as a newly validated biological minimum. Single-phase proposals retain the existing constructed rest/proof ordering. Active mixing budgets are split around passive autolyse rather than treating all preparation as hands-on time. Passive cold and fermentation may overlap unavailable periods.
+
+Verification: **20 relevant availability/schedule/yeast/sourdough-guard tests passed**. An independent 75-case probe over five styles, five climates (16/22/30/35/38°C), and three two-hour next-day blockers returned 15 repair proposals. Every returned proposal had no recorded action conflict and conserved elapsed fermentation time (`totalRTHours + totalColdHours == bakeStart - bulkFermStart`). No code was edited by this review.
+
+**Integration condition:** `findScheduleRepair` validates known dough actions, not the entire selected preferment/starter biology. Every proposed candidate must pass the caller's method-specific acceptance function (preferment preparation/duration/storage, or sourdough feed/peak/availability constraints); a recipe-level proposal is not scientifically cleared solely because the helper returns one. This check was completed before the caller integration was finished, so it is a helper-level gate, not final end-to-end acceptance. Time changes also require recalculating dose/recipe from the accepted schedule, not retaining an old ingredient dose.
+
+### Final caller gate at `71dc7fa`
+
+The two requested integration safeguards are now present and were independently inspected:
+
+- Automatic proposals are explicitly disabled for sourdough (`!isSourdough`). The existing starter solver may re-optimize feeds after a bake-time change, so validating only its previous green state was insufficient. Sourdough keeps the conflict explanation and manual adjustment route; no false automatic-repair promise is made.
+- Commercial proposals use `acceptsCommercialRepair` both during candidate search and again when Apply is tapped with fresh `Date.now()`. It checks the advisory range, selected preferment duration/storage/preparation validity, and every preparation/warmup action being future and clear of blockers. An expired proposal opens manual editing instead of silently applying a past preparation.
+
+**Bounded science gate passed for this integration.** Existing recipe calibration remains unchanged; automatic repair is confined to the commercial protocols that the caller actually validates. This gate is source/contract verification, not a claim that every recipe has been empirically validated or that final CI/browser verification has completed. The coordinator records those separate results in the handoff.
+
 ## Integrated outcome
 
 The root implementation adopted advisory before/after-window wording, reduced repeated cautions, and made known availability conflicts neutral and actionable (`cd6380a`). Formula constants, dosing, thermal balance and candidate scoring were preserved. See BLOCKER-REVIEW-20260922.md for the remaining scheduling gaps and final handoff for runtime evidence.
