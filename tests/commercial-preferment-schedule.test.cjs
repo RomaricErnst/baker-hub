@@ -72,7 +72,7 @@ test('blocked interval includes its start and excludes its end',()=>{
 });
 test('restore retains canonical offset and fridge, and only unchanged saved plans may have historical prep',()=>{
  const source=fs.readFileSync(path.join(__dirname,'../app/components/SchedulePicker.tsx'),'utf8');
- assert.match(source,/sessionRestored && Number.isFinite\(savedPrefOffsetHours\)/);
+ assert.match(source,/\(sessionRestored \|\| confirmedPlan\) && Number.isFinite\(savedPrefOffsetHours\)/);
  assert.match(source,/savedCommercial.fridge \?\? true/);
  assert.match(source,/alreadyStarted: unchangedRestoredCommercialPlan/);
  assert.match(source,/If you have not prepared it, choose a new schedule/);
@@ -96,3 +96,4 @@ test('action times preserve canonical minutes, including the end of a day',()=>{
  assert.equal(fmtCardHM(new Date(2026,8,23,7,4),true),'7h04');
  assert.equal(fmtCardHM(new Date(2026,8,23,3,19),true),'3h19');
 });
+

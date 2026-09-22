@@ -1,3 +1,4 @@
+import { actionConflicts, findAvailabilityConflicts, isTimeBlocked, type AvailabilityAction, type AvailabilityConflict } from './utils/scheduleAvailability';
 import { ENRICHED_FORMULAS, ENRICHMENT_WATER_FRACTIONS, type RecipeEnrichment } from './utils/enrichedFormulas';
 // ══════════════════════════════════════════
 // BAKER HUB — Utils & Engine
@@ -440,6 +441,9 @@ export interface AvailabilityBlock {
 }
 
 export interface ScheduleResult {
+  /** Known hands-on work; passive rests are deliberately absent. */
+  availabilityActions?: AvailabilityAction[];
+  availabilityConflicts?: AvailabilityConflict[];
   mixingDurationH: number;
   bulkFermStart: Date;
   bulkFermHours: number;
@@ -720,7 +724,7 @@ function accountScheduleTime(schedule: ScheduleResult): ScheduleResult {
   };
 }
 
-export function buildSchedule(
+function buildSchedulePhases(
   startTime: Date,
   eatTime: Date,
   availabilityBlocks: AvailabilityBlock[],
@@ -904,12 +908,26 @@ export function buildSchedule(
 
     const earliestDivide = new Date(coldRetard1Start.getTime() + minCold1H * 3600000);
     const latestDivide   = new Date(bakeTime.getTime() - (minCold2H + minFinalRT + preheatH) * 3600000);
-    const isInAnyBlocker = (t: Date) => relevantBlocks.some(b => t >= b.from && t < b.to);
+    const divideIsBlocked = (t: Date) => actionConflicts({ id: 'divide', at: t, end: new Date(+t + divideH * 3600000) }, relevantBlocks)
+      || isTimeBlocked(+t + divideH * 3600000, relevantBlocks);
     let divideBallTime: Date = earliestDivide;
+    let constrainedExit: Date | null = null;
+    const naturalExit = r15(new Date(+bakeTime - (rtWarmupH + maxFinalH) * 3600000));
+    const maxExit = +bakeTime - (rtWarmupH + minFinalRT) * 3600000;
     if (earliestDivide.getTime() <= latestDivide.getTime()) {
-      let scan = new Date(earliestDivide);
+      // With constraints, scan the actual quarter-hour timestamps returned below.
+      // Shape and the second cold exit are one choice: a clear shaping slot is
+      // not useful if it removes the minimum second cold or final proof.
+      let scan = relevantBlocks.length ? new Date(Math.ceil(+earliestDivide / 900000) * 900000) : new Date(earliestDivide);
       while (scan.getTime() <= latestDivide.getTime()) {
-        if (!isInAnyBlocker(scan)) { divideBallTime = scan; break; }
+        if (!divideIsBlocked(scan)) {
+          if (!relevantBlocks.length) { divideBallTime = scan; break; }
+          const minExit = Math.max(+naturalExit, +scan + (divideH + minCold2H) * 3600000);
+          for (let at = Math.ceil(minExit / 900000) * 900000; at <= maxExit; at += 900000) {
+            if (!isTimeBlocked(at, relevantBlocks)) { constrainedExit = new Date(at); break; }
+          }
+          if (constrainedExit) { divideBallTime = scan; break; }
+        }
         scan = new Date(scan.getTime() + 15 * 60000);
       }
     }
@@ -922,19 +940,10 @@ export function buildSchedule(
     // Phase 2 starts after divide & ball
     const coldRetard2Start = new Date(divideBallTime.getTime() + divideBallDurationH * 3600000);
 
-    // Phase 2 ends to leave rtWarmupH + finalProofH before bake
-    let coldRetard2End = new Date(bakeTime.getTime() - rtWarmupH * 3600000 - maxFinalH * 3600000);
-
-    // Clamp: if blocks exist, extend phase 2 end to cover last block (but not past bakeTime - rtWarmupH)
-    let wasAutoAdjusted = false;
-    if (relevantBlocks.length > 1) {
-      const lastBlockEnd = new Date(Math.max(...relevantBlocks.map(b => b.to.getTime())));
-      const maxColdEnd = new Date(bakeTime.getTime() - rtWarmupH * 3600000);
-      if (lastBlockEnd.getTime() > coldRetard2End.getTime()) {
-        coldRetard2End = new Date(Math.min(lastBlockEnd.getTime(), maxColdEnd.getTime()));
-        wasAutoAdjusted = true;
-      }
-    }
+    // Passive cold can overlap unavailable time. Only the joint action scan
+    // above may move this exit; it preserves both cold phases and final proof.
+    let coldRetard2End = constrainedExit ?? new Date(bakeTime.getTime() - rtWarmupH * 3600000 - maxFinalH * 3600000);
+    const wasAutoAdjusted = constrainedExit != null && (+constrainedExit !== +naturalExit || +divideBallTime !== +r15(earliestDivide));
 
     // Safety: phase 2 end must not precede start
     if (coldRetard2End.getTime() < coldRetard2Start.getTime()) {
@@ -1057,7 +1066,7 @@ export function buildSchedule(
   let coldExitConflict: ScheduleResult['coldExitConflict'] = null;
   {
     const exitMs = coldRetardEnd.getTime();
-    const hit = relevantBlocks.find(b => exitMs > b.from.getTime() && exitMs < b.to.getTime());
+    const hit = relevantBlocks.find(b => exitMs >= b.from.getTime() && exitMs < b.to.getTime());
     if (hit) {
       // Earliest bake whose exit clears the window: the block ends, then the
       // dough still needs its rest and proof. Rounded up to the quarter hour
@@ -1119,6 +1128,119 @@ export function buildSchedule(
 // ══════════════════════════════════════════
 // 4. RECIPE CALCULATOR
 // ══════════════════════════════════════════
+
+/** Build canonical phases, then describe only work with an existing time budget. */
+export function buildSchedule(
+  startTime: Date, eatTime: Date, availabilityBlocks: AvailabilityBlock[],
+  kitchenTemp: number, preheatMin: number, mixerType: MixerType = 'hand',
+  styleKey: string = 'neapolitan',
+): ScheduleResult {
+  const schedule = buildSchedulePhases(startTime, eatTime, availabilityBlocks, kitchenTemp, preheatMin, mixerType, styleKey);
+  const actions: AvailabilityAction[] = [];
+  const activeMin = kneadMinFor(mixerType, styleKey);
+  const restMin = autolyseMinFor(mixerType, styleKey);
+  if (activeMin > 0) {
+    // Existing guide: approximately 2 min combine (3 spiral), followed by
+    // passive autolyse. Split the existing budget; do not add mixing time.
+    const initialMin = restMin > 0 ? Math.min(activeMin, mixerType === 'spiral' ? 3 : 2) : activeMin;
+    actions.push({ id: 'mix', at: new Date(startTime), end: new Date(+startTime + initialMin * 60000) });
+    if (restMin > 0 && activeMin > initialMin) actions.push({
+      id: 'mix-finish', at: new Date(+startTime + (initialMin + restMin) * 60000),
+      end: new Date(+startTime + (activeMin + restMin) * 60000),
+    });
+  } else actions.push({ id: 'mix', at: new Date(startTime) });
+  const point = (id: string, at: Date | null) => { if (at) actions.push({ id, at }); };
+  point('cold-in', schedule.coldRetard1Start);
+  point('cold-out', schedule.coldRetard1End);
+  actions.push({ id: 'divide', at: schedule.divideBallTime,
+    ...(schedule.coldRetard2Start && +schedule.coldRetard2Start > +schedule.divideBallTime
+      ? { end: schedule.coldRetard2Start } : {}),
+  });
+  point('cold-in-2', schedule.coldRetard2Start);
+  point('cold-out-2', schedule.coldRetard2End);
+  point('preheat', schedule.preheatStart);
+  point('bake', schedule.bakeStart);
+  schedule.availabilityActions = actions;
+  schedule.availabilityConflicts = findAvailabilityConflicts(actions, availabilityBlocks);
+  return schedule;
+}
+
+export interface ScheduleRepairInput {
+  startTime: Date;
+  eatTime: Date;
+  availabilityBlocks: AvailabilityBlock[];
+  kitchenTemp: number;
+  preheatMin: number;
+  mixerType?: MixerType;
+  styleKey?: string;
+  /** Supply the planning clock explicitly for reproducible candidate checks. */
+  now?: Date;
+  allowStartShift?: boolean;
+  /** Method-specific constraints are checked for every candidate, not only the first. */
+  acceptCandidate?: (candidate: { startTime: Date; eatTime: Date; schedule: ScheduleResult }) => boolean;
+}
+export interface ScheduleRepair {
+  startTime: Date;
+  eatTime: Date;
+  schedule: ScheduleResult;
+  kind: 'start' | 'bake';
+}
+
+/** An explicit proposal only: callers must never apply it without a user action.
+ * Validates known dough actions, not untimed preferment work or starter biology.
+ * Callers must additionally validate their selected preferment/starter plan.
+ */
+export function findScheduleRepair(input: ScheduleRepairInput): ScheduleRepair | null {
+  const { startTime, eatTime, availabilityBlocks, kitchenTemp, preheatMin } = input;
+  const mixer = input.mixerType ?? 'hand', style = input.styleKey ?? 'neapolitan';
+  const now = +(input.now ?? new Date());
+  if (![+startTime, +eatTime, now, kitchenTemp, preheatMin].every(Number.isFinite)
+      || +startTime < now || +startTime >= +eatTime || preheatMin < 0) return null;
+  const build = (start: Date, bake: Date) => buildSchedule(start, bake, availabilityBlocks, kitchenTemp, preheatMin, mixer, style);
+  const original = build(startTime, eatTime);
+  const phases = (s: ScheduleResult) => s.coldRetard2Start ? 2 : s.coldRetard1Start ? 1 : 0;
+  const phaseCount = phases(original);
+  // A short-window room-only fallback is not a repair of a required-cold method.
+  if (STYLE_FERM_DEFAULTS[style]?.coldHRequired && phaseCount === 0) return null;
+  const valid = (s: ScheduleResult, start: Date, bake: Date) => {
+    if (phases(s) !== phaseCount || +start < now || +s.bulkFermStart < +start || +s.bulkFermStart > +s.preheatStart
+      || +s.preheatStart > +s.bakeStart || +s.finalProofStart > +s.bakeStart
+      || !s.availabilityActions?.every(a => Number.isFinite(+a.at) && +a.at >= +start && +a.at <= +s.bakeStart
+        && (!a.end || (+a.end >= +a.at && +a.end <= +s.bakeStart)))
+      || s.availabilityConflicts?.length || s.bulkConflict) return false;
+    const preferredInitialBulkH = kitchenTemp >= 30 ? .5 : kitchenTemp >= 28 ? .75 : 1.5;
+    if (phaseCount > 0 && s.bulkFermHours < preferredInitialBulkH) return false;
+    if (phaseCount === 2) {
+      const first = (+s.coldRetard1End! - +s.coldRetard1Start!) / 3600000;
+      const second = (+s.coldRetard2End! - +s.coldRetard2Start!) / 3600000;
+      if (+s.coldRetard1Start! < +s.bulkFermStart || first < (kitchenTemp >= 28 ? 2 : 4) || second < 2
+        || +s.coldRetard2Start! - +s.coldRetard1End! !== 15 * 60000
+        || +s.finalProofStart - +s.coldRetard2End! < (kitchenTemp >= 30 ? .5 : .75) * 3600000
+        || +s.preheatStart - +s.finalProofStart < 3600000) return false;
+    } else if (phaseCount === 1) {
+      if (+s.coldRetard1Start! < +s.bulkFermStart || +s.coldRetard1End! <= +s.coldRetard1Start!
+        || +s.finalProofStart < +s.coldRetard1End! || +s.preheatStart - +s.finalProofStart < 3600000) return false;
+    }
+    // Canonical build rounds the bake display; do not offer a different bake
+    // than the one returned to the caller.
+    return +s.bakeStart === +bake && (input.acceptCandidate?.({ startTime: start, eatTime: bake, schedule: s }) ?? true);
+  };
+  if (!original.availabilityConflicts?.length && !original.bulkConflict) return null;
+  // Try nearest start moves first, with the selected bake held fixed.
+  for (let step = 1; input.allowStartShift !== false && step <= 48; step++) for (const direction of [-1, 1]) {
+    const start = new Date(+startTime + direction * step * 900000);
+    if (+start < now || +start >= +eatTime) continue;
+    const schedule = build(start, eatTime);
+    if (valid(schedule, start, eatTime)) return { startTime: start, eatTime: new Date(eatTime), schedule, kind: 'start' };
+  }
+  // Later bake is a separate explicit choice, never a mutation of the plan.
+  for (let step = 1; step <= 192; step++) {
+    const bake = new Date(Math.ceil(+eatTime / 900000) * 900000 + step * 900000);
+    const schedule = build(startTime, bake);
+    if (valid(schedule, startTime, bake)) return { startTime: new Date(startTime), eatTime: bake, schedule, kind: 'bake' };
+  }
+  return null;
+}
 
 function derivePriority(schedule: ScheduleResult): string | null {
   const windowH = (schedule.bakeStart.getTime() - schedule.bulkFermStart.getTime()) / 3600000;
@@ -1598,3 +1720,4 @@ export function hoursLabel(h: number): string {
   const mins = Math.round((rounded - hrs) * 60);
   return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
 }
+

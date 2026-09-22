@@ -16,6 +16,9 @@ interface FermentationReadinessProps {
   blocked: boolean;
   overdue: boolean;
   busy: boolean;
+  conflictDescription?: string;
+  repairLabel?: string;
+  onApplyRepair?: () => void;
   kitchenTemp: number;
   fridgeTemp: number;
   onEditMix: () => void;
@@ -30,6 +33,7 @@ export default function FermentationReadiness({
   isFr, mixTime, bakeTime, windowFrom, windowTo, isSourdough,
   prefermentType, starterPeak, starterState, blocked, overdue, busy,
   kitchenTemp, fridgeTemp, onEditMix, onEditBake, onReviewAvailability, canEdit, unavailableReason,
+  conflictDescription, repairLabel, onApplyRepair,
 }: FermentationReadinessProps) {
   const titleId = useId();
   const t = (fr: string, en: string) => isFr ? fr : en;
@@ -130,13 +134,21 @@ export default function FermentationReadiness({
         )}
       </div>}
       {busy && <p style={{fontSize: 13, lineHeight: 1.4, margin: '8px 0 0'}}>
-        {t('Une étape tombe pendant une indisponibilité. Vérifiez vos disponibilités ou ajustez l’heure de cuisson.', 'A step falls during an unavailable period. Review your availability or adjust the bake time.')}
+        {conflictDescription ?? t('Une étape tombe pendant une indisponibilité.', 'A step falls during an unavailable period.')}
       </p>}
-      {canEdit && busy && !blocked && !overdue && !unavailableReason && !outside && onReviewAvailability && <button type="button" onClick={onReviewAvailability} style={{
+      {canEdit && busy && !unavailableReason && onApplyRepair && repairLabel && <>
+        <p style={{fontSize:13,lineHeight:1.4,margin:'8px 0 0'}}>{t('Proposition vérifiée avec vos indisponibilités et les étapes au froid conservées. Les horaires restent des estimations.', 'Proposal checked against your unavailable times, keeping the fridge stages. Timings remain estimates.')}</p>
+        <button type="button" onClick={onApplyRepair} style={{minHeight:44,width:'100%',marginTop:8,padding:'9px 12px',font:'inherit',fontSize:16,border:'1px solid var(--terra)',borderRadius:10,background:'var(--terra)',color:'#fff',cursor:'pointer'}}>{repairLabel}</button>
+      </>}
+      {canEdit && busy && onReviewAvailability && <button type="button" onClick={onReviewAvailability} style={{
         minHeight: 44, width: '100%', marginTop: 8, padding: '9px 12px', font: 'inherit', fontSize: 16,
         border: '1px solid var(--border)', borderRadius: 10, background: 'transparent', color: 'var(--char)', cursor: 'pointer',
       }}>{t('Vérifier mes disponibilités', 'Review my availability')}</button>}
-      {canEdit && !unavailableReason && (outside || blocked || overdue) && <button type="button" onClick={blocked ? onEditBake : onEditMix} style={{
+      {canEdit && busy && !onApplyRepair && <button type="button" onClick={onEditBake} style={{
+        minHeight:44,width:'100%',padding:'9px 12px',font:'inherit',fontSize:16,
+        border:0,background:'transparent',color:'var(--char)',cursor:'pointer',textDecoration:'underline',
+      }}>{t('Ajuster la cuisson', 'Adjust bake time')}</button>}
+      {canEdit && !busy && !unavailableReason && (outside || blocked || overdue) && <button type="button" onClick={blocked ? onEditBake : onEditMix} style={{
         minHeight: 44, minWidth: 44, width: '100%', marginTop: 12, padding: '9px 12px',
         font: 'inherit', fontSize: 16, fontWeight: 500, color: 'var(--char, #29241f)',
         background: 'transparent', border: '1px solid var(--border)', borderRadius: 10, cursor: 'pointer',

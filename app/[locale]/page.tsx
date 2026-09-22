@@ -925,6 +925,7 @@ export default function Home() {
     const d = new Date(); d.setMinutes(0, 0, 0); return d;
   });
   const [eatTime, setEatTime] = useState<Date | null>(null);
+  const [acceptedScheduleRepair, setAcceptedScheduleRepair] = useState<string | null>(null);
   const [blocks, setBlocks] = useState<AvailabilityBlock[]>([]);
   const [yeastType, setYeastType] = useState<YeastType | null>(null);
 
@@ -1723,6 +1724,19 @@ export default function Home() {
     : prefermentType === 'biga'
       ? true
       : prefGoesInFridgeState;
+
+  // Explicitly accepted proposals must survive the scheduler's bake-key remount.
+  // Any changed recipe input, timestamp or availability invalidates this marker.
+  const repairContext = JSON.stringify([kitchenTemp, fridgeTemp, preheatMin, mixerType, styleKey,
+    yeastType, prefermentType, prefOffsetH, prefGoesInFridge, tang, starterPlanResetKey]);
+  const repairKey = (st: Date, et: Date | null, bl: AvailabilityBlock[]) =>
+    JSON.stringify([repairContext, +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label])]);
+  const confirmedSchedulePlan = acceptedScheduleRepair === repairKey(startTime, eatTime, blocks);
+  const handleScheduleChange = (st: Date, et: Date, bl: AvailabilityBlock[], options?: {preservePlan: boolean}) => {
+    setAcceptedScheduleRepair(options?.preservePlan ? repairKey(st, et, bl) : null);
+    if (sessionRestored && +et !== (eatTime ? +eatTime : null)) setSessionRestored(false);
+    setStartTime(st); setEatTime(et); setBlocks(bl);
+  };
 
   const prefRemoveFromFridgeTime = useMemo(() => {
     if (!prefGoesInFridge || !eatTime) return null;
@@ -3816,6 +3830,8 @@ export default function Home() {
               <SchedulePicker
                 key={`${starterPlanResetKey}:${eatTime && !isNaN(eatTime.getTime()) ? eatTime.toISOString() : 'no-bake'}`}
                 mode="simple"
+                mixerType={mixerType ?? 'hand'}
+                confirmedPlan={confirmedSchedulePlan}
                 startTime={startTime} eatTime={eatTime} blocks={blocks}
                 preheatMin={preheatMin}
                 styleKey={styleKey ?? ''}
@@ -3859,7 +3875,7 @@ export default function Home() {
                 onStarterPeakTimeChange={setStarterPeakTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
-                onChange={(st, et, bl) => { if (sessionRestored && et.getTime() !== eatTime?.getTime()) setSessionRestored(false); setStartTime(st); setEatTime(et); setBlocks(bl); }}
+                onChange={handleScheduleChange}
                 sessionRestored={sessionRestored}
                 recipeGenerated={recipeGenerated}
                 flourStrength={1.0}
@@ -4348,6 +4364,8 @@ export default function Home() {
               <SchedulePicker
                 key={`${starterPlanResetKey}:${eatTime && !isNaN(eatTime.getTime()) ? eatTime.toISOString() : 'no-bake'}`}
                 mode="custom"
+                mixerType={mixerType ?? 'hand'}
+                confirmedPlan={confirmedSchedulePlan}
                 startTime={startTime} eatTime={eatTime} blocks={blocks}
                 preheatMin={preheatMin}
                 styleKey={styleKey ?? ''}
@@ -4391,7 +4409,7 @@ export default function Home() {
                 onStarterPeakTimeChange={setStarterPeakTime}
                 onPrefOffsetChange={setPrefOffsetH}
                 onPrefGoesInFridgeChange={setPrefGoesInFridgeState}
-                onChange={(st, et, bl) => { if (sessionRestored && et.getTime() !== eatTime?.getTime()) setSessionRestored(false); setStartTime(st); setEatTime(et); setBlocks(bl); }}
+                onChange={handleScheduleChange}
                 onReady={() => {}}
                 sessionRestored={sessionRestored}
                 recipeGenerated={recipeGenerated}
@@ -4801,3 +4819,4 @@ export default function Home() {
     </div>
   );
 }
+

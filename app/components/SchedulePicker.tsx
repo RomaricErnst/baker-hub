@@ -1,10 +1,11 @@
 'use client';
 import { useState, useMemo, useEffect, useRef, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH } from '../utils';
+import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH, findScheduleRepair } from '../utils';
 import FermentChart, { scheduleColdIntervals, getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
 import FermentationReadiness from './FermentationReadiness';
-import { hasActionConflict } from '../utils/fermentationAssessment';
+import { isTimeBlocked, findAvailabilityConflicts, type AvailabilityAction } from '../utils/scheduleAvailability';
+import type { MixerType } from '../data';
 
 export type StarterEventKind =
   | 'last_fed'
@@ -161,10 +162,12 @@ interface SchedulePickerProps {
   eatTime: Date | null;
   blocks: AvailabilityBlock[];
   preheatMin: number;
+  mixerType?: MixerType;
+  confirmedPlan?: boolean;
   styleKey: string;
   kitchenTemp: number;
   schedule?: ScheduleResult | null;
-  onChange: (startTime: Date, eatTime: Date, blocks: AvailabilityBlock[]) => void;
+  onChange: (startTime: Date, eatTime: Date, blocks: AvailabilityBlock[], options?: { preservePlan: boolean }) => void;
   bakeType?: 'pizza' | 'bread';
   isSourdough?: boolean;
   onFeedTimeChange?: (t: Date) => void;
@@ -1677,7 +1680,7 @@ export function ScheduleViewTabs({ value, onChange, id, isFr }: {
   </div>;
 }
 
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, mixerType = 'hand', confirmedPlan = false, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   const [scheduleView, setScheduleView] = useState<'actions' | 'graph'>('actions');
   const scheduleViewId = useId();
   const t = useTranslations('scheduler');
@@ -1899,7 +1902,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // recomputed the ideal mix and the dragged diamond snapped back. Same
   // lifecycle as manualRefreshRef: cleared on any input / bake-time /
   // blocker change and on Reset.
-  const manualMixRef = useRef<number | null>(null);
+  const manualMixRef = useRef<number | null>(confirmedPlan ? +startTime : null);
   // Blocks the solver actually validated against (effectiveBlocks at the
   // last solve). The blocked-hours disclosure must read THIS, not the parent
   // blocks prop — the prop can lag pill toggles (observed live: a feed at
@@ -1931,7 +1934,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // Preferment offset state (non-sourdough)
   const [prefOffsetH, setPrefOffsetH] = useState<number>(() =>
-    sessionRestored && Number.isFinite(savedPrefOffsetHours) ? savedPrefOffsetHours! : getPrefOptH(prefermentType, kitchenTemp)
+    (sessionRestored || confirmedPlan) && Number.isFinite(savedPrefOffsetHours) ? savedPrefOffsetHours! : getPrefOptH(prefermentType, kitchenTemp)
   );
   const restoredCommercialPlan = useRef(sessionRestored ? {
     type: prefermentType, mix: startTime.getTime(), bake: eatTime?.getTime(),
@@ -1945,12 +1948,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     outsideZone: { mixHBF: number; qualityPct: number } | null;
     inBlocker:   { mixHBF: number; overlapMin: number } | null;
   } | null>(null);
-  const hasManuallyDragged = useRef(false);
+  const hasManuallyDragged = useRef(confirmedPlan);
   const [hasDragged, setHasDragged] = useState(false);
   // Tracks whether the recommendation algo chose fridge or RT poolish.
   // This is the single source of truth — render-time display reads this,
   // not an independent re-computation from mixOffsetH.
-  const [algoChoseFridge, setAlgoChoseFridge] = useState<boolean>(() => sessionRestored ? (savedPrefGoesInFridge ?? true) : true);
+  const [algoChoseFridge, setAlgoChoseFridge] = useState<boolean>(() => (sessionRestored || confirmedPlan) ? (savedPrefGoesInFridge ?? true) : true);
   const [constraintsOpen, setConstraintsOpen] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
   // Plan-list focus: the row whose NAME button was tapped. That step is
@@ -2366,7 +2369,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     if (hasManuallyDragged.current) return;
     // If a session was restored, trust the saved times — do not recompute.
     // Baker already planned this; engine would overwrite their schedule.
-    if (sessionRestored) {
+    if (sessionRestored || confirmedPlan) {
       setStartComputed(true);
       onReady?.();
       return;
@@ -2381,6 +2384,16 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   useEffect(() => {
     if (!eatTimeSet || resumeFrozenRef.current) return;
+    if (confirmedPlan) {
+      setPendingStart(startTime);
+      setHasDragged(true);
+      hasManuallyDragged.current = true;
+      manualMixRef.current = +startTime;
+      if (isSourdough) findOptimalPositionSourdough(pendingEatTime, startTime, solverBlocksRef.current);
+      setStartComputed(true);
+      onReady?.();
+      return;
+    }
     setStartComputed(false);
     setShowFallbackPopup(false);
     setDismissedConflict(false);
@@ -2422,7 +2435,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
   // Auto-regenerate preset blocks when bake date changes
   useEffect(() => {
-    if (!eatTimeSet) return;
+    if (!eatTimeSet || confirmedPlan) return;
     const wasWorkActive = blocks.some(b => b.label.startsWith('Work · '));
     // Night preset labels are `<Weekday> night` (suffix), not `Night · ` —
     // the old prefix check never matched, so nights were both (a) never
@@ -2449,6 +2462,11 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // Sourdough constraint re-evaluation when key inputs change
   useEffect(() => {
     if (!isSourdough || !eatTimeSet) return;
+    if (confirmedPlan) {
+      findOptimalPositionSourdough(pendingEatTime, startTime, solverBlocksRef.current);
+      setStartComputed(!sourdoughPlanBlockedRef.current);
+      return;
+    }
     // Reset drag state so solver picks ideal mix time, not a stale dragged position
     setHasDragged(false);
     hasManuallyDragged.current = false;
@@ -2519,7 +2537,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // Bake time in blocker detection
   const bakeTimeInBlocker = useMemo(() => {
     const bakeMs = pendingEatTime.getTime();
-    return blocks.some(b => bakeMs > b.from.getTime() && bakeMs < b.to.getTime());
+    return isTimeBlocked(bakeMs, blocks);
   }, [pendingEatTime, blocks]);
   const _tropFactor = kitchenTemp >= 33 ? 1.25 : kitchenTemp >= 30 ? 1.15 : 1.0;
   const _prefColdH = _sfDef.preferredColdH ?? _sfDef.coldH;
@@ -2677,7 +2695,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   // clears nights, the ref keeps us from re-adding them.
   const nightsDefaultApplied = useRef(false);
   useEffect(() => {
-    if (!isSourdough || !eatTimeSet || sessionRestored) return;
+    if (!isSourdough || !eatTimeSet || sessionRestored || confirmedPlan) return;
     if (nightsDefaultApplied.current) return;
     if (nights.length === 0) return;
     // Already has any blocker (from session/parent or a prior manual toggle) →
@@ -4185,16 +4203,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     // blocksOverride (passed by applyAndUpdate) always wins when present.
     // NOTE: effectiveBlocks is declared at the TOP of the solver (TDZ fix).
     function inBlocker(mixHBF: number): boolean {
-      return effectiveBlocks.some(b => {
-        const s = (bakeMs - b.from.getTime()) / 3600000;
-        const e = (bakeMs - b.to.getTime())   / 3600000;
-        return mixHBF > Math.min(s, e) && mixHBF < Math.max(s, e);
-      });
+      return isTimeBlocked(bakeMs - mixHBF * 3600000, effectiveBlocks);
     }
     function inBlockerMs(timeMs: number): boolean {
-      return effectiveBlocks.some(b =>
-        timeMs > b.from.getTime() && timeMs < b.to.getTime()
-      );
+      return isTimeBlocked(timeMs, effectiveBlocks);
     }
     // POLICY (Jul 2026): blockers bind the present too. Planning from inside
     // a blocked window (e.g. lunch break at the office) does not mean the
@@ -6042,7 +6054,6 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const { scenario } = suggestion;
   const startInvalid = startComputed && pendingStart >= pendingEatTime;
   const bulkConflict = schedule?.bulkConflict ?? null;
-  const coldExitConflict = schedule?.coldExitConflict ?? null;
   // These are planning windows supplied by the existing engine, not a new
   // maturity model. In particular, a missing sourdough solve is unknown.
   const commercialReadinessBounds = commercialReadinessWindow({
@@ -6063,22 +6074,83 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   const readinessWindowTo = readinessWindowValid
     ? new Date(pendingEatTime.getTime() - readinessToH! * 3600000) : null;
   const readinessNow = Date.now();
-  const readinessActionTimes = [pendingStart, pendingEatTime];
-  if (schedule) readinessActionTimes.push(schedule.bulkFermStart, schedule.divideBallTime, schedule.preheatStart);
-  if (isSourdough) {
-    readinessActionTimes.push(...displayStarterEvents
+  // Preserve every explicit block and extend enabled recurring presets through
+  // the repair search horizon. Later candidates must not escape future nights.
+  const repairBlocks = [...localBlocks];
+  const repairHorizon = new Date(+pendingEatTime + 48 * 3600000);
+  const appendPreset = (entries: ReturnType<typeof getWorkdaysInWindow>) => {
+    for (const entry of entries) if (!repairBlocks.some(b => +b.from === +entry.blockStart && +b.to === +entry.blockEnd)) {
+      repairBlocks.push({ from: entry.blockStart, to: entry.blockEnd, label: entry.label });
+    }
+  };
+  if (localBlocks.some(b => b.label.startsWith('Work · '))) appendPreset(getWorkdaysInWindow(pendingEatTime, repairHorizon));
+  if (localBlocks.some(b => b.label.endsWith(' night'))) appendPreset(getNightsInWindow(pendingEatTime, repairHorizon));
+  const methodActions = (mix: Date): AvailabilityAction[] => {
+    if (isSourdough) return displayStarterEvents
       .filter(event => event.kind !== 'last_fed' && event.kind !== 'known_peak')
-      .map(event => event.time));
-  } else if (hasPrefActive) {
-    readinessActionTimes.push(new Date(pendingStart.getTime() - prefOffsetH * 3600000));
-    if (prefRemoveFromFridgeTime) readinessActionTimes.push(prefRemoveFromFridgeTime);
-  }
-  for (const interval of scheduleColdIntervals(schedule)) {
-    readinessActionTimes.push(interval.from, interval.to);
-  }
-  const readinessBusy = hasActionConflict(readinessActionTimes, localBlocks, readinessNow)
-    || !!(bulkConflict && pendingStart.getTime() > readinessNow)
-    || !!(coldExitConflict && coldExitConflict.at.getTime() > readinessNow);
+      .map(event => ({ id: event.kind.startsWith('fridge') ? 'starter-cold' : 'starter-feed', at: event.time }));
+    if (!hasPrefActive) return [];
+    return [{ id: 'preferment', at: new Date(+mix - prefOffsetH * 3600000) },
+      ...(prefGoesInFridge && prefRTWarmupH > 0
+        ? [{ id: 'preferment-cold-out', at: new Date(+mix - prefRTWarmupH * 3600000) }] : [])];
+  };
+  const readinessConflicts = findAvailabilityConflicts([
+    ...(schedule?.availabilityActions ?? [{ id: 'mix', at: pendingStart }, { id: 'bake', at: pendingEatTime }]),
+    ...methodActions(pendingStart),
+  ], repairBlocks, readinessNow).sort((a, b) => +a.action.at - +b.action.at);
+  const readinessBusy = readinessConflicts.length > 0
+    || !!(bulkConflict && +pendingStart > readinessNow);
+  const conflictNames: Record<string, [string, string]> = {
+    mix: ['Pétrissage', 'Mixing'], 'mix-finish': ['Fin du pétrissage', 'Finish mixing'],
+    divide: ['Division et façonnage', 'Divide and shape'], preheat: ['Préchauffage', 'Preheat'], bake: ['Cuisson', 'Bake'],
+    'cold-in': ['Mise au froid', 'Into the fridge'], 'cold-in-2': ['Deuxième mise au froid', 'Second fridge stage'],
+    'cold-out': ['Sortie du froid', 'Out of the fridge'], 'cold-out-2': ['Deuxième sortie du froid', 'Second fridge exit'],
+    'starter-feed': ['Rafraîchi du levain', 'Feed starter'], 'starter-cold': ['Étape au froid du levain', 'Starter fridge step'],
+    preferment: ['Préparation du préferment', 'Prepare preferment'], 'preferment-cold-out': ['Sortie du préferment', 'Preferment fridge exit'],
+  };
+  const firstReadinessConflict = readinessConflicts[0];
+  const conflictDescription = firstReadinessConflict
+    ? `${(conflictNames[firstReadinessConflict.action.id] ?? ['Étape', 'Step'])[isFr ? 0 : 1]} · ${fmtCardDT(firstReadinessConflict.action.at, isFr)}${firstReadinessConflict.action.end ? `–${fmtCardHM(firstReadinessConflict.action.end, isFr)}` : ''} · ${firstReadinessConflict.block.label ?? (isFr ? 'Indisponible' : 'Unavailable')}`
+    : undefined;
+  // A commercial proposal is checked both while offered and again on tap.
+  // Starter plans remain manual: the later sourdough solve may change feeds.
+  const acceptsCommercialRepair = (candidate: { startTime: Date; eatTime: Date }, now: number) => {
+    if (isSourdough || +candidate.startTime < now) return false;
+    const duration = (+candidate.eatTime - +candidate.startTime) / 3600000;
+    const bounds = commercialReadinessWindow({ ...(STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK),
+      flourStrength, kitchenTemp, preheatMin, totalWindowH: (+candidate.eatTime - now) / 3600000 });
+    if (!(bounds.from > bounds.to && duration >= bounds.to && duration <= bounds.from)) return false;
+    if (!commercialPrefermentPlanValid({type:prefermentType, inFridge:prefGoesInFridge,
+      mixTime:candidate.startTime, bakeTime:candidate.eatTime, offsetHours:prefOffsetH,
+      blocks:repairBlocks, now:new Date(now)})) return false;
+    const actions = methodActions(candidate.startTime);
+    return actions.every(action => +action.at >= now)
+      && findAvailabilityConflicts(actions, repairBlocks, now).length === 0;
+  };
+  const verifiedRepair = useMemo(() => !isSourdough && readinessBusy && readinessWindowValid && !restoredPrepOverdue && !startInvalid
+    && !windowTooShort && !solverResult?.windowTooShort
+    ? findScheduleRepair({ startTime: pendingStart, eatTime: pendingEatTime, availabilityBlocks: repairBlocks,
+      kitchenTemp, preheatMin, mixerType, styleKey, now: new Date(readinessNow), allowStartShift: true,
+      acceptCandidate: candidate => acceptsCommercialRepair(candidate, readinessNow),
+    }) : null, [readinessBusy, readinessWindowValid, restoredPrepOverdue, startInvalid, windowTooShort, solverResult, pendingStart, pendingEatTime, localBlocks, kitchenTemp, preheatMin, mixerType, styleKey, isSourdough, flourStrength, prefermentType, prefGoesInFridge, prefOffsetH, prefRTWarmupH, displayStarterEvents]);
+  const applyVerifiedRepair = () => {
+    if (!verifiedRepair) return;
+    if (!acceptsCommercialRepair(verifiedRepair, Date.now())) {
+      setGuardNote(isFr ? 'Cette proposition a expiré. Choisissez un nouvel horaire.' : 'This proposal has expired. Choose a new time.');
+      editReadinessTime('bake');
+      return;
+    }
+    manualMixRef.current = +verifiedRepair.startTime;
+    hasManuallyDragged.current = true;
+    setHasDragged(true);
+    setPendingStart(verifiedRepair.startTime);
+    setPendingEatTime(verifiedRepair.eatTime);
+    setLocalBlocks(repairBlocks);
+    setStartComputed(true);
+    setRecommendedHBF(null);
+    setDismissedConflict(false);
+    onChange(verifiedRepair.startTime, verifiedRepair.eatTime, repairBlocks, { preservePlan: true });
+  };
   const editReadinessTime = (row: 'mix' | 'bake') => {
     if (startTimeInPast) {
       if (row === 'bake') {
@@ -7086,6 +7158,9 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
           blocked={startInvalid || windowTooShort || !!solverResult?.windowTooShort || !commercialPrefValid}
           overdue={restoredPrepOverdue}
           busy={readinessBusy}
+          conflictDescription={conflictDescription}
+          repairLabel={verifiedRepair ? `${verifiedRepair.kind === 'start' ? (isFr ? 'Pétrir à ' : 'Mix at ') : (isFr ? 'Cuire à ' : 'Bake at ')}${fmtCardDT(verifiedRepair.kind === 'start' ? verifiedRepair.startTime : verifiedRepair.eatTime, isFr)}` : undefined}
+          onApplyRepair={verifiedRepair ? applyVerifiedRepair : undefined}
           kitchenTemp={kitchenTemp}
           fridgeTemp={fridgeTemp}
           canEdit={!startTimeInPast}
@@ -7455,119 +7530,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         </div>
       )}
 
-      {/* The dough must leave the fridge before it can proof, and that moment
-          is fixed by the bake time — the schedule already stretches the retard
-          to the end of the last busy window and then has to clamp. So this is
-          not a warning about a mistake; it is the one move left, and it is the
-          baker's. An observation with a way to act on it, never an alarm. */}
-      {coldExitConflict && !dismissedConflict && (
-        <div style={{
-          background: 'var(--cream)', borderLeft: '4px solid var(--gold)',
-          borderRadius: '16px', padding: '12px 16px',
-          marginBottom: '12px', fontFamily: 'var(--font-ui)',
-        }}>
-          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--char)', marginBottom: '.2rem' }}>
-            {isFr
-              ? `Cette pâte sort du froid à ${fmtCardDT(coldExitConflict.at, isFr)}, pendant « ${coldExitConflict.blockLabel} ».`
-              : `This dough comes out of the fridge at ${fmtCardDT(coldExitConflict.at, isFr)}, during ${coldExitConflict.blockLabel}.`}
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--smoke)', lineHeight: 1.5, marginBottom: '12px' }}>
-            {isFr
-              ? 'La sortie du froid est calée sur l’heure de cuisson : la pâte doit sortir avant de pousser. Cuire plus tard la déplace hors de cette fenêtre.'
-              : 'The fridge exit is set by your bake time — the dough has to come out before it can proof. Baking later moves it clear of the window.'}
-          </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => {
-                onChange(pendingStart, coldExitConflict.suggestedBake, blocks);
-                setPendingEatTime(coldExitConflict.suggestedBake);
-                setDismissedConflict(true);
-              }}
-              style={{
-                background: 'var(--terra)', color: 'white', border: 'none',
-                borderRadius: '12px', padding: '8px 16px',
-                fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                fontFamily: 'var(--font-ui)',
-              }}
-            >
-              {isFr ? 'Cuire à ' : 'Bake at '}{fmtCardDT(coldExitConflict.suggestedBake, isFr)} →
-            </button>
-            <button
-              onClick={() => setDismissedConflict(true)}
-              style={{
-                background: 'transparent', color: 'var(--smoke)',
-                border: '1px solid var(--border)', borderRadius: '12px',
-                padding: '8px 16px', fontSize: '12px', cursor: 'pointer',
-                fontFamily: 'var(--font-ui)',
-              }}
-            >
-              {isFr ? 'Garder cette heure' : 'Keep this time'}
-            </button>
-          </div>
-        </div>
-      )}
-      {bulkConflict && !dismissedConflict && (() => {
-        const MIN_REASONABLE_HOUR = 7;
-        const earlierStart = bulkConflict.suggestedEarlierStart;
-        const earlierIsReasonable = earlierStart
-          ? earlierStart.getHours() >= MIN_REASONABLE_HOUR
-          : false;
-        return (
-          <div style={{
-            background: 'var(--cream)', borderLeft: '4px solid var(--terra)',
-            borderRadius: '16px', padding: '12px 16px',
-            marginBottom: '12px', fontFamily: 'var(--font-ui)',
-          }}>
-            {earlierIsReasonable && earlierStart ? (
-              <>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--char)', marginBottom: '.2rem' }}>
-                  {isFr ? 'Le pointage commence pendant une indisponibilité.' : 'Bulk fermentation starts during a busy time.'}
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--smoke)', lineHeight: 1.5, marginBottom: '12px' }}>
-                  {isFr ? 'Commencez la pâte à ' : 'Start the dough at '}{formatSliderDisplay(earlierStart, isFr)}{isFr ? ' pour commencer le pointage avant.' : ' to begin bulk fermentation beforehand.'}
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--char)', marginBottom: '.2rem' }}>
-                  {isFr ? 'Le pointage chevauche une indisponibilité.' : 'Bulk fermentation overlaps a busy time.'}
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--smoke)', lineHeight: 1.5, marginBottom: '12px' }}>
-                  {isFr ? 'Vérifiez que vous serez disponible pour les rabats et l’étape suivante.' : 'Check that you can do the folds and the next step.'}
-                </div>
-              </>
-            )}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {earlierIsReasonable && earlierStart && (
-                <button
-                  onClick={() => {
-                    adjustStart(-(bulkConflict.suggestEarlierByMin / 60));
-                    setDismissedConflict(true);
-                  }}
-                  style={{
-                    background: 'var(--terra)', color: 'white', border: 'none',
-                    borderRadius: '12px', padding: '8px 16px',
-                    fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                    fontFamily: 'var(--font-ui)',
-                  }}
-                >
-                  {isFr ? 'Commencer à ' : 'Start at '}{formatSliderDisplay(earlierStart, isFr)} →
-                </button>
-              )}
-              <button
-                onClick={() => setDismissedConflict(true)}
-                style={{
-                  background: 'transparent', color: 'var(--smoke)',
-                  border: '1px solid var(--border)', borderRadius: '12px', padding: '8px 16px',
-                  fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-ui)',
-                }}
-              >
-                {earlierIsReasonable && earlierStart ? tRoot('schedulePicker.keepAsIs') : tRoot('schedulePicker.gotIt')}
-              </button>
-            </div>
-          </div>
-        );
-      })()}
+      {/* Availability conflicts and verified repairs are presented once, in
+          the shared summary above the tabs. No unchecked phase-only shifts. */}
 
       {/* Both modes use the full action list, including starter and preferment actions. */}
       <div role="tabpanel" id={`${scheduleViewId}-actions-panel`} aria-labelledby={`${scheduleViewId}-actions-tab`} hidden={scheduleView !== 'actions'} tabIndex={0}>
@@ -7592,22 +7556,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
         // One row per event in chronological order, including Bake and Out of
         // fridge — both were previously missing or buried in the cards.
         const _blocks = isSourdough ? localBlocks : blocks;
-        const inAnyBlocker = (d: Date) => _blocks.some(b =>
-          d.getTime() > b.from.getTime() && d.getTime() < b.to.getTime());
-        // Nearest clear slot: walk outward from the time in 15-minute steps
-        // until outside every blocker. Blocker edges are exclusive (> <),
-        // matching the engine convention everywhere else.
-        const nearestClear = (d: Date): Date | null => {
-          const STEP = 15 * 60000;
-          for (let i = 1; i <= 4 * 12; i++) {
-            for (const dir of [-1, 1]) {
-              const cand = new Date(d.getTime() + dir * i * STEP);
-              if (cand.getTime() < Date.now()) continue;
-              if (!inAnyBlocker(cand)) return cand;
-            }
-          }
-          return null;
-        };
+        const inAnyBlocker = (d: Date) => isTimeBlocked(d, _blocks);
         const rows: PlanRow[] = [];
 
         // Estimated history renders day-only — the minute is fiction.
@@ -7616,29 +7565,8 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
 
         const busyNote = (id: string, at: Date): React.ReactNode | undefined => {
           if (!inAnyBlocker(at)) return undefined;
-          // Neither case is a warning. The engine one is unavoidable, so it
-          // offers nothing; the baker one was a decision, and warning someone
-          // about their own choice is what the UX rules forbid.
-          if (!hasDragged && appliedSuggestion === null) {
-            return tRoot('schedulePicker.busyEngine');
-          }
-          const alt = nearestClear(at);
-          if (!alt) return tRoot('schedulePicker.busyEngine');
-          return (
-            <>
-              {tRoot('schedulePicker.busyBakerA')}{' '}
-              <button
-                onClick={() => applySuggestedTime(id, alt)}
-                style={{
-                  display: 'inline-block', margin: '0 2px', padding: '2px 10px',
-                  border: '1px solid rgba(156,130,72,.5)', borderRadius: '20px',
-                  fontFamily: 'var(--font-mono, DM Mono, monospace)', fontSize: '11.5px',
-                  color: '#9A7010', cursor: 'pointer', background: 'rgba(156,130,72,.08)',
-                }}
-              >{fmtCardHM(alt, isFr)}</button>{' '}
-              {tRoot('schedulePicker.busyBakerB')}
-            </>
-          );
+          return isFr ? 'Cette étape chevauche une indisponibilité. Vérifiez le planning ci-dessus.'
+            : 'This step overlaps an unavailable period. Review the plan above.';
         };
 
         const appliedNote = (id: string): React.ReactNode | undefined => {
