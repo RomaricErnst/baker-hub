@@ -1,6 +1,7 @@
 'use client';
 import { useTranslations, useLocale } from 'next-intl';
 import { type AnyOvenType } from '../data';
+import { getBreadProtocol } from '../utils/breadProfiles';
 import DecisionList from './DecisionList';
 
 const BREAD_OVEN_EXCLUDES: Record<string, string[]> = {
@@ -37,6 +38,7 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect, con
   ];
 
   const allBreadOptions = [
+    { id: 'griddle', image: '/images/approved/equipment-v2/griddle.webp', title: locale==='fr'?'Poêle ou plancha':'Skillet or griddle', tagline: locale==='fr'?'Cuisson sur une surface chaude':'Cook on a hot flat surface' },
     { id: 'dutch_oven',            image: '/images/approved/equipment-v2/dutch-oven.webp',          title: t('dutchOven.title'),  tagline: t('dutchOven.tagline') },
     { id: 'home_oven_stone_bread', image: '/images/approved/equipment-v2/home-oven-stone.webp',    title: t('homeStoneB.title'), tagline: t('homeStoneB.tagline') },
     { id: 'standard_bread',        image: '/images/approved/equipment-v2/home-oven-standard.webp', title: t('standardB.title'),  tagline: t('standardB.tagline') },
@@ -49,7 +51,9 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect, con
     ? pizzaOptions
     : allBreadOptions.filter(o => {
         const excluded = styleKey ? (BREAD_OVEN_EXCLUDES[styleKey] ?? []) : [];
-        return !excluded.includes(o.id);
+        const profile = styleKey ? getBreadProtocol(styleKey) : undefined;
+        const equipmentId = o.id === 'home' || o.id === 'micro' ? 'steam_oven' : o.id;
+        return !excluded.includes(o.id) && (profile ? profile.equipment.includes(equipmentId) : o.id !== 'griddle');
       });
 
   const selectedId = selected === 'pizza_oven' ? (construction === 'masonry' ? 'masonry' : 'tabletop') : selected === 'steam_oven' ? (construction === 'micro' ? 'micro' : 'home') : selected ?? '';
@@ -62,3 +66,4 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect, con
     } else onSelect(id as AnyOvenType);
   }} />;
 }
+

@@ -43,6 +43,8 @@ export interface PrototypeQuantityPickerProps {
   weightBounds?: QuantityWeightBounds;
   countBounds?: { min?: number; max?: number; step?: number };
   itemLabel?: string;
+  countLabel?: string;
+  weightLabel?: string;
   calculateWeight?: (diameter: number, crust: QuantityCrust) => number;
   onCountChange: (value: number) => void;
   onItemWeightChange: (value: number) => void;
@@ -96,7 +98,7 @@ export default function PrototypeQuantityPicker({
   calculatedWeight,
   weightBounds = DEFAULT_WEIGHT_BOUNDS,
   countBounds = {},
-  itemLabel,
+  itemLabel, countLabel, weightLabel,
   calculateWeight,
   onCountChange,
   onItemWeightChange,
@@ -171,7 +173,7 @@ export default function PrototypeQuantityPicker({
     <div style={{ fontFamily: 'var(--font-ui)', color: 'var(--char)' }}>
       <div style={{ marginBottom: '16px' }}>
         <label htmlFor="quantity-count" style={labelStyle}>
-          {bakeType === 'bread' ? (fr ? 'Nombre de pains' : 'Number of loaves') : (fr ? 'Nombre de pizzas' : 'Number of pizzas')}
+          {countLabel ?? (bakeType === 'bread' ? (fr ? 'Nombre de pains' : 'Number of loaves') : (fr ? 'Nombre de pizzas' : 'Number of pizzas'))}
         </label>
         <DraftNumberInput
           id="quantity-count"
@@ -272,7 +274,7 @@ export default function PrototypeQuantityPicker({
             {fr ? `Chaque ${piece}` : `Each ${piece}`}
           </h2>
           <label htmlFor="quantity-item-weight" style={labelStyle}>
-            {bakeType === 'bread' ? (fr ? 'Poids de pâte par pain' : 'Dough per loaf') : (fr ? 'Poids par pizza en plaque' : 'Dough per tray pizza')} ({weightUnit})
+            {weightLabel ?? (bakeType === 'bread' ? (fr ? 'Poids de pâte par pain' : 'Dough per loaf') : (fr ? 'Poids par pizza en plaque' : 'Dough per tray pizza'))} ({weightUnit})
           </label>
           <DraftNumberInput
             id="quantity-item-weight"
@@ -308,3 +310,4 @@ export default function PrototypeQuantityPicker({
     </div>
   );
 }
+

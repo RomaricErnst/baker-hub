@@ -1,3 +1,4 @@
+import { BREAD_FERMENTATION_DEFAULTS, getBreadProtocol, breadActiveCookMinutes, breadPoachMinutes } from './utils/breadProfiles';
 import { actionConflicts, findAvailabilityConflicts, isTimeBlocked, type AvailabilityAction, type AvailabilityConflict } from './utils/scheduleAvailability';
 import { ENRICHED_FORMULAS, ENRICHMENT_WATER_FRACTIONS, type RecipeEnrichment } from './utils/enrichedFormulas';
 // ══════════════════════════════════════════
@@ -14,6 +15,7 @@ import { ENRICHED_FORMULAS, ENRICHMENT_WATER_FRACTIONS, type RecipeEnrichment } 
 
 import {
   ALL_STYLES,
+  FLOUR_DATA,
   OVEN_TYPES,
   BREAD_OVEN_TYPES,
   MIXER_TYPES,
@@ -441,6 +443,11 @@ export interface AvailabilityBlock {
 }
 
 export interface ScheduleResult {
+  doughMethod?: 'yeasted' | 'unleavened';
+  preparationInvalid?: boolean;
+  activeCookMinutes?: number;
+  poachStart?: Date;
+  poachMinutes?: number;
   /** Known hands-on work; passive rests are deliberately absent. */
   availabilityActions?: AvailabilityAction[];
   availabilityConflicts?: AvailabilityConflict[];
@@ -532,6 +539,8 @@ const CP_FLOUR = 1800;   // J/kg·K (dry solids)
 
 /** Target dough temperature by style. Hoisted so the warm-up solver can read it. */
 export const TARGET_FDT: Record<string, number> = {
+  focaccia: 24, bagel: 24, pita: 24, greek_pita: 24, kebab_bread: 24,
+  batbout: 24, laffa: 24, piadina: 24, pan_bagnat: 24, ciabatta: 24, panuozzo: 23,
   neapolitan: 23, newyork: 24, roman: 25, pan: 25,
   sourdough: 24, pain_campagne: 24, pain_levain: 24,
   baguette: 24, pain_complet: 24, pain_seigle: 24,
@@ -683,6 +692,7 @@ export function requiredPrefWarmupH(o: {
 }
 
 const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHRequired?: boolean }> = {
+  ...BREAD_FERMENTATION_DEFAULTS,
   // Pizza — sweet spot = coldH + rtH (where dough peaks at bake)
   neapolitan:    { coldH: 24, rtH: 2 },                          // sweet: 26h
   newyork:       { coldH: 24, rtH: 2 },                          // sweet: 26h
@@ -1133,9 +1143,37 @@ function buildSchedulePhases(
 export function buildSchedule(
   startTime: Date, eatTime: Date, availabilityBlocks: AvailabilityBlock[],
   kitchenTemp: number, preheatMin: number, mixerType: MixerType = 'hand',
-  styleKey: string = 'neapolitan',
+  styleKey: string = 'neapolitan', numItems?: number,
 ): ScheduleResult {
-  const schedule = buildSchedulePhases(startTime, eatTime, availabilityBlocks, kitchenTemp, preheatMin, mixerType, styleKey);
+  const poachMinutes = breadPoachMinutes(styleKey, numItems);
+  const fermentationEnd = poachMinutes ? new Date(+eatTime - poachMinutes * 60000) : eatTime;
+  // Poaching ends fermentation. For bagels only, derive the dough phases up
+  // to that action; the selected oven time remains unchanged.
+  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey);
+  if (poachMinutes) {
+    schedule.poachStart = fermentationEnd;
+    schedule.poachMinutes = poachMinutes;
+    schedule.bakeStart = new Date(eatTime);
+    schedule.preheatStart = new Date(Math.min(+eatTime - preheatMin * 60000, +fermentationEnd));
+    schedule.finalProofHours = Math.max(0, (+fermentationEnd - +schedule.finalProofStart) / 3600000);
+    schedule.totalRTHours = Math.max(0, (+fermentationEnd - +schedule.bulkFermStart) / 3600000 - schedule.totalColdHours);
+    schedule.preparationInvalid = +fermentationEnd - +startTime < BREAD_FERMENTATION_DEFAULTS.bagel.minTotalFermH * 3600000
+      || +schedule.bulkFermStart >= +fermentationEnd || +schedule.divideBallTime >= +fermentationEnd
+      || +schedule.divideBallTime > +schedule.finalProofStart;
+  }
+  if (getBreadProtocol(styleKey)?.method === 'unleavened') {
+    // Piadina relaxes; it does not ferment. Preserve the requested cooking
+    // time and do not create a yeast dose or a fictional maturity window.
+    const mixEnd = new Date(+startTime + kneadMinFor(mixerType, styleKey) * 60000);
+    Object.assign(schedule, {
+      doughMethod: 'unleavened', preparationInvalid: +eatTime - +startTime < 45 * 60000 || +eatTime - +startTime > 2 * 3600000, bulkFermStart: mixEnd, bulkFermHours: 0,
+      finalProofStart: mixEnd, finalProofHours: 0,
+      restRtHours: Math.max(0, (+eatTime - 10 * 60000 - +mixEnd) / 3600000),
+      totalRTHours: 0, totalColdHours: 0, divideBallTime: mixEnd,
+      preheatStart: new Date(+eatTime - preheatMin * 60000), bakeStart: new Date(eatTime),
+      scheduleNote: 'Unleavened dough: covered rest before rolling and cooking.',
+    });
+  }
   const actions: AvailabilityAction[] = [];
   const activeMin = kneadMinFor(mixerType, styleKey);
   const restMin = autolyseMinFor(mixerType, styleKey);
@@ -1158,8 +1196,14 @@ export function buildSchedule(
   });
   point('cold-in-2', schedule.coldRetard2Start);
   point('cold-out-2', schedule.coldRetard2End);
+  if (schedule.poachStart) actions.push({ id: 'poach', at: schedule.poachStart, end: schedule.bakeStart });
+  if (schedule.doughMethod === 'unleavened') actions.push({ id: 'roll', at: new Date(+eatTime - 10 * 60000), end: new Date(eatTime) });
   point('preheat', schedule.preheatStart);
-  point('bake', schedule.bakeStart);
+  const activeCookMinutes = breadActiveCookMinutes(styleKey, numItems);
+  if (activeCookMinutes) {
+    schedule.activeCookMinutes = activeCookMinutes;
+    actions.push({ id: 'bake', at: schedule.bakeStart, end: new Date(+schedule.bakeStart + activeCookMinutes * 60000) });
+  } else point('bake', schedule.bakeStart);
   schedule.availabilityActions = actions;
   schedule.availabilityConflicts = findAvailabilityConflicts(actions, availabilityBlocks);
   return schedule;
@@ -1172,6 +1216,7 @@ export interface ScheduleRepairInput {
   kitchenTemp: number;
   preheatMin: number;
   mixerType?: MixerType;
+  numItems?: number;
   styleKey?: string;
   /** Supply the planning clock explicitly for reproducible candidate checks. */
   now?: Date;
@@ -1196,7 +1241,7 @@ export function findScheduleRepair(input: ScheduleRepairInput): ScheduleRepair |
   const now = +(input.now ?? new Date());
   if (![+startTime, +eatTime, now, kitchenTemp, preheatMin].every(Number.isFinite)
       || +startTime < now || +startTime >= +eatTime || preheatMin < 0) return null;
-  const build = (start: Date, bake: Date) => buildSchedule(start, bake, availabilityBlocks, kitchenTemp, preheatMin, mixer, style);
+  const build = (start: Date, bake: Date) => buildSchedule(start, bake, availabilityBlocks, kitchenTemp, preheatMin, mixer, style, input.numItems);
   const original = build(startTime, eatTime);
   const phases = (s: ScheduleResult) => s.coldRetard2Start ? 2 : s.coldRetard1Start ? 1 : 0;
   const phaseCount = phases(original);
@@ -1206,8 +1251,9 @@ export function findScheduleRepair(input: ScheduleRepairInput): ScheduleRepair |
     if (phases(s) !== phaseCount || +start < now || +s.bulkFermStart < +start || +s.bulkFermStart > +s.preheatStart
       || +s.preheatStart > +s.bakeStart || +s.finalProofStart > +s.bakeStart
       || !s.availabilityActions?.every(a => Number.isFinite(+a.at) && +a.at >= +start && +a.at <= +s.bakeStart
-        && (!a.end || (+a.end >= +a.at && +a.end <= +s.bakeStart)))
-      || s.availabilityConflicts?.length || s.bulkConflict) return false;
+        && (!a.end || (+a.end >= +a.at && +a.end <= +s.bakeStart + (a.id === 'bake' ? s.activeCookMinutes ?? 0 : 0) * 60000)))
+      || s.availabilityConflicts?.length || s.bulkConflict || s.preparationInvalid
+      || (s.poachStart && (+s.finalProofStart > +s.poachStart || +s.divideBallTime >= +s.poachStart))) return false;
     const preferredInitialBulkH = kitchenTemp >= 30 ? .5 : kitchenTemp >= 28 ? .75 : 1.5;
     if (phaseCount > 0 && s.bulkFermHours < preferredInitialBulkH) return false;
     if (phaseCount === 2) {
@@ -1250,6 +1296,8 @@ function derivePriority(schedule: ScheduleResult): string | null {
 }
 
 export interface RecipeResult {
+  protocolIssue?: 'method' | 'equipment' | 'timing';
+  flourParts?: { key: string; name: string; nameFr: string; grams: number; pct: number }[];
   enrichment?: RecipeEnrichment;
   flour: number;
   water: number;
@@ -1326,10 +1374,21 @@ export function calculateRecipe(
     : BREAD_OVEN_TYPES[ovenType as BreadOvenType];
   if (!s || !oven) throw new Error('Unknown style or oven');
 
+  if (styleKey === 'batbout' && (mode !== 'custom' || !flourBlend)) {
+    flourBlend = { flour1: 'bread', flour2: 'semolina', ratio1: 67 };
+  }
   const blendProfile: BlendProfile | null = flourBlend
     ? computeBlendProfile(flourBlend)
     : null;
 
+  const breadProtocol = getBreadProtocol(styleKey);
+  const unleavened = breadProtocol?.method === 'unleavened';
+  const methodKey = yeastType === 'sourdough' ? 'levain' : prefermentType ?? 'none';
+  const protocolIssue = breadProtocol && schedule.preparationInvalid ? 'timing' as const
+    : breadProtocol && !breadProtocol.equipment.includes(ovenType) ? 'equipment' as const
+    : breadProtocol && !breadProtocol.supportedMixers.includes(mixerType) ? 'method' as const
+    : breadProtocol && !unleavened && !breadProtocol.supportedPreferments.includes(methodKey as 'none' | 'poolish' | 'biga' | 'levain') ? 'method' as const : undefined;
+  if (unleavened) prefermentType = 'none';
   const enrichedFormula = ENRICHED_FORMULAS[styleKey as keyof typeof ENRICHED_FORMULAS];
   const unsupportedEnrichedMethod = !!enrichedFormula && (yeastType === 'sourdough' || !!prefermentType && prefermentType !== 'none');
   // Published direct-dough formula, explicitly marked if a legacy method is incompatible.
@@ -1339,6 +1398,8 @@ export function calculateRecipe(
   // Otherwise: style baseline + oven + climate + blend — all modes
   // Climate is a physical reality, not a UI mode concept
   const HYDRATION_FLOOR: Record<string, number> = {
+    focaccia: 70, bagel: 55, pita: 58, greek_pita: 62, kebab_bread: 60,
+    batbout: 60, laffa: 62, piadina: 48, pan_bagnat: 58, ciabatta: 72, panuozzo: 60,
     neapolitan: 56, newyork: 58, roman: 70, pan: 68,
     sourdough: 58, pain_campagne: 68, pain_levain: 70,
     baguette: 65, pain_complet: 68, pain_seigle: 70,
@@ -1351,7 +1412,7 @@ export function calculateRecipe(
   const ENRICHED_STYLES = new Set([
     'pan', 'fougasse', 'brioche', 'pain_mie', 'pain_viennois',
   ]);
-  const isEnriched = ENRICHED_STYLES.has(styleKey);
+  const isEnriched = ENRICHED_STYLES.has(styleKey) || ['focaccia', 'piadina', 'pan_bagnat', 'laffa'].includes(styleKey);
 
   let hydration: number;
   if (mode === 'custom' && manualHydration !== undefined) {
@@ -1372,6 +1433,7 @@ export function calculateRecipe(
     hydration = Math.max(hydFloor, hydration);
   }
 
+  if (unleavened && !(mode === 'custom' && manualHydration !== undefined)) hydration = s.hydration;
   if (enrichedFormula) hydration = enrichedFormula.water + enrichedFormula.milk * ENRICHMENT_WATER_FRACTIONS.milk + enrichedFormula.eggs * ENRICHMENT_WATER_FRACTIONS.eggs + enrichedFormula.butter * ENRICHMENT_WATER_FRACTIONS.butter;
   // Salt
   const saltPct = enrichedFormula ? enrichedFormula.salt : mode === 'custom' && manualSalt !== undefined
@@ -1439,9 +1501,9 @@ export function calculateRecipe(
     sourdough = null;
     directNeedIDY = undefined;
 
-    if (yeastType === 'sourdough') {
+    if (!unleavened && yeastType === 'sourdough') {
       sourdough = sourdoughGuidance(kitchenTemp, flour, feedToMixH, blendProfile?.fermToleranceMultiplier);
-    } else {
+    } else if (!unleavened) {
       yeast = recommendYeast(
         schedule.totalRTHours,
         kitchenTemp,
@@ -1609,8 +1671,27 @@ export function calculateRecipe(
   // All flour-strength, preferment and sugar modifiers have now settled.
   if (yeast) yeast = {...yeast, dilutionTip: commercialDilution(yeast.convertedGrams, water)};
 
+  let flourParts: RecipeResult['flourParts'];
+  if (styleKey === 'batbout' && flourBlend) {
+    const hasSecond = !!flourBlend.flour2 && flourBlend.ratio1 < 100;
+    const hasThird = hasSecond && !!flourBlend.flour3 && flourBlend.ratio2 !== undefined
+      && flourBlend.ratio1 + flourBlend.ratio2 < 100;
+    const components = [
+      { key: flourBlend.flour1, pct: hasSecond ? flourBlend.ratio1 : 100, custom: flourBlend.brandProduct },
+      ...(hasSecond ? [{ key: flourBlend.flour2!, pct: hasThird ? flourBlend.ratio2! : 100 - flourBlend.ratio1, custom: flourBlend.customFlour2Name }] : []),
+      ...(hasThird ? [{ key: flourBlend.flour3!, pct: 100 - flourBlend.ratio1 - flourBlend.ratio2!, custom: flourBlend.customFlour3Name }] : []),
+    ];
+    let remaining = flour;
+    flourParts = components.map((part, index) => {
+      const grams = index === components.length - 1 ? remaining : Math.round(flour * part.pct / 100);
+      remaining -= grams;
+      const definition = FLOUR_DATA[part.key];
+      return { key: part.key, name: part.custom ?? definition.name, nameFr: part.custom ?? definition.nameFr, grams, pct: part.pct };
+    });
+  }
+
   return {
-    flour, water, salt, yeast, sourdough, enrichment,
+    flour, water, salt, yeast, sourdough, enrichment, protocolIssue, flourParts,
     oil: oilG, sugar: sugarG,
     waterTemp, thermal: enrichment ? undefined : {
       idealWaterTemp: thermal.idealWaterTemp,

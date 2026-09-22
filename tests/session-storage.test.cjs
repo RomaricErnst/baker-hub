@@ -24,9 +24,9 @@ test('cloud autosave and named save retain the batch override in the persisted s
  const snapshots=[];const client={auth:{getUser:async()=>({data:{user:{id:'u'}}})},from:()=>{const chain={upsert(row){snapshots.push(row.dough_snapshot);return chain},insert(row){snapshots.push(row.dough_snapshot);return chain},select(){return chain},single:async()=>({data:{id:'saved'},error:null})};return chain;}};
  const module={exports:{}};const code=ts.transpileModule(fs.readFileSync('app/lib/supabase/saveBakeEvent.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
  vm.runInNewContext(code,{module,exports:module.exports,require:p=>p.endsWith('/client')?{createClient:()=>client}:{ALL_STYLES:{}},console,Date});
- const session={mixingBatches:4,bakeType:'pizza',numItems:8,eatTime:Date.now()};
+ const session={mixingBatches:4,bakeType:'bread',numItems:8,eatTime:Date.now(),sandwichParty:{familyId:'baguette',qtys:{},completed:{},shopTicks:{},prepTicks:{},tab:'pick'}};
  assert.equal(await module.exports.upsertBakeEvent({session}),'saved');assert.equal(await module.exports.saveNamedSession(session),'saved');
- for(const snapshot of snapshots)assert.equal(JSON.parse(JSON.stringify(snapshot)).mixingBatches,4);
+ for(const snapshot of snapshots){assert.equal(JSON.parse(JSON.stringify(snapshot)).mixingBatches,4);assert.deepEqual(JSON.parse(JSON.stringify(snapshot.sandwichParty)),session.sandwichParty);}
  const {normalizeMixingBatches}=require('../app/lib/session.ts');const rebake={...snapshots[0],eatTime:session.eatTime+604800000};assert.equal(normalizeMixingBatches(rebake.mixingBatches),4);
 });
 
@@ -34,3 +34,4 @@ test('optional container capacity survives local storage without changing recipe
  const store=new Map();global.localStorage={setItem:(k,v)=>store.set(k,v),getItem:k=>store.get(k)??null,removeItem:k=>store.delete(k)};
  for(const capacity of [undefined,3,5.5]) {saveSession({bakeType:'pizza',containerCapacityLitres:capacity,itemWeight:250});assert.equal(loadSession().containerCapacityLitres,capacity);assert.equal(loadSession().itemWeight,250);}
 });
+

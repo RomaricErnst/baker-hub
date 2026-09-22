@@ -15,6 +15,8 @@ import {
 } from '@/app/lib/supabase/fetchBakeEvents';
 import { saveComment, uploadBakePhoto, deleteBakePhoto, updateSessionName } from '@/app/lib/supabase/saveBakeEvent';
 import { PIZZAS, DESSERT_PIZZAS } from '@/app/lib/toppingDatabase';
+import { normalizeSandwichSnapshot, getSandwichRecipe, estimatedSandwichKcal, effectiveIngredients } from '@/app/lib/sandwich';
+import { SANDWICH_INGREDIENTS } from '@/app/lib/sandwichCatalog';
 import ShareCard from '@/app/components/ShareCard';
 
 interface SessionViewerProps {
@@ -110,6 +112,8 @@ export default function SessionViewer({
 
   const snap = event?.dough_snapshot ?? null;
   const cr = snap?.computedRecipe ?? null;
+  const sandwichPlan = useMemo(()=>normalizeSandwichSnapshot(snap?.sandwichParty),[snap?.sandwichParty]);
+  const selectedSandwiches = Object.entries(sandwichPlan.qtys).flatMap(([id,qty])=>{const recipe=getSandwichRecipe(id);return recipe ? [{recipe,qty}] : [];});
 
   const schedule = useMemo(() => {
     if (cr) return null;
@@ -158,6 +162,8 @@ export default function SessionViewer({
   }, [snap, schedule, cr]);
 
   const displayFlour = cr?.flour ?? recipe?.flour ?? null;
+  const displayFlourParts = cr?.flourParts ?? recipe?.flourParts;
+  const flourPartsText = displayFlourParts?.map(part=>`${part.grams}g ${l==='fr'?part.nameFr:part.name}`).join(' + ');
   const displayEnrichment = cr?.enrichment ?? recipe?.enrichment ?? null;
   const enrichmentParts = displayEnrichment ? (['milk','eggs','butter'] as const).filter(k => displayEnrichment[k] > 0).map(k => `${displayEnrichment[k]}g ${({milk:l === 'fr' ? 'lait' : 'milk',eggs:l === 'fr' ? 'œufs sans coquille' : 'eggs, without shells',butter:l === 'fr' ? 'beurre' : 'butter'})[k]}`) : [];
   const displayWater = cr?.water ?? recipe?.water ?? null;
@@ -232,7 +238,7 @@ export default function SessionViewer({
     if (displayFlour && (displayWater || displayEnrichment) && displaySalt) {
       const yeastPart = snap?.yeastType !== 'sourdough' && yeastRounded != null
         ? ` · ${yeastRounded}g ${YEAST_SHORT[snap?.yeastType ?? ''] ?? 'yeast'}` : '';
-      lines.push(`${displayFlour}g ${l === 'fr' ? 'farine' : 'flour'} · ${[displayWater ? `${displayWater}g ${l === 'fr' ? 'eau' : 'water'}` : '', ...enrichmentParts].filter(Boolean).join(' · ')}${yeastPart} · ${displaySalt}g ${l === 'fr' ? 'sel' : 'salt'}`);
+      lines.push(`${flourPartsText || `${displayFlour}g ${l === 'fr' ? 'farine' : 'flour'}`} · ${[displayWater ? `${displayWater}g ${l === 'fr' ? 'eau' : 'water'}` : '', ...enrichmentParts].filter(Boolean).join(' · ')}${yeastPart} · ${displaySalt}g ${l === 'fr' ? 'sel' : 'salt'}`);
     }
     lines.push('');
 
@@ -293,8 +299,18 @@ export default function SessionViewer({
         lines.push(`    ${name}${qty > 1 ? ` ×${qty}` : ''}`);
     }
 
+    if (selectedSandwiches.length) {
+      lines.push('', '  Sandwiches:');
+      for (const {recipe,qty} of selectedSandwiches) {
+        const overrides=sandwichPlan.ingredientOverrides?.[recipe.id];
+        lines.push(`    ${qty} × ${recipe.name[l === 'fr' ? 'fr' : 'en']} · ≈${estimatedSandwichKcal(recipe,overrides)} kcal / ${l === 'fr' ? 'sandwich' : 'sandwich'}`);
+        lines.push(`      ${recipe.breadGrams}g ${l === 'fr' ? 'pain cuit par portion' : 'baked bread per portion'}`);
+        for (const part of effectiveIngredients(recipe,overrides)) lines.push(`      ${part.grams * qty}g ${SANDWICH_INGREDIENTS[part.ingredientId].name[l === 'fr' ? 'fr' : 'en']}`);
+      }
+    }
+
     return lines;
-  }, [cr, snap, styleName, flourBlendName, displayFlour, displayWater, displayEnrichment,
+  }, [sandwichPlan, flourPartsText, l, cr, snap, styleName, flourBlendName, displayFlour, displayWater, displayEnrichment,
       displaySalt, displayHydration, yeastRounded, prefLabel,
       bakedQtys, localSlots, tRoot]);
 
@@ -485,7 +501,7 @@ export default function SessionViewer({
             <div style={{ ...monoSm, marginBottom: '4px' }}>
               {displayFlour && (displayWater || displayEnrichment) && displaySalt
                 ? [
-                    `${displayFlour}g ${l === 'fr' ? 'farine' : 'flour'}`,
+                    flourPartsText || `${displayFlour}g ${l === 'fr' ? 'farine' : 'flour'}`,
                     displayWater ? `${displayWater}g ${l === 'fr' ? 'eau' : 'water'}` : null,
                     ...enrichmentParts,
                     snap.yeastType === 'sourdough'
@@ -515,6 +531,19 @@ export default function SessionViewer({
               </div>
             )}
           </div>
+
+          {selectedSandwiches.length > 0 && <>
+            <div style={divider} />
+            <section aria-label={l==='fr'?'Sandwichs enregistrés':'Saved sandwiches'} style={{padding:'16px 20px 0'}}>
+              <div style={sectionLabel}>Sandwiches</div>
+              {selectedSandwiches.map(({recipe,qty})=><div key={recipe.id} style={{marginBottom:12}}>
+                <strong>{qty} × {recipe.name[l==='fr'?'fr':'en']}</strong>
+                <div style={monoSm}>{recipe.breadGrams} g {l==='fr'?'de pain cuit par sandwich':'baked bread per sandwich'} · ≈{estimatedSandwichKcal(recipe,sandwichPlan.ingredientOverrides?.[recipe.id])} kcal</div>
+                <div style={monoSm}>{sandwichPlan.completed[recipe.id] ?? 0}/{qty} {l==='fr'?'assemblés':'assembled'}</div>
+              </div>)}
+              <p style={monoSm}>{l==='fr'?'Calories indicatives, pain et garnitures compris.':'Estimated calories include bread and fillings.'}</p>
+            </section>
+          </>}
 
           {/* ── PIZZA PLAN SECTION ── */}
           {(localSlots.length > 0 || event.pizza_party_id || event.status === 'pizza_planned') && (<>
@@ -802,3 +831,4 @@ export default function SessionViewer({
     document.body,
   );
 }
+

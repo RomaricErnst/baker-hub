@@ -1,6 +1,7 @@
 'use client';
 import { useTranslations } from 'next-intl';
 import { type MixerType } from '../data';
+import { getBreadProtocol } from '../utils/breadProfiles';
 import DecisionList from './DecisionList';
 
 interface MixerPickerProps {
@@ -27,7 +28,7 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
     { id: 'hand',     image: '/images/approved/equipment-v2/hand-kneading.webp',    title: t('hand.title'),     tagline: t('hand.tagline') },
     { id: 'no_knead', image: '/images/approved/equipment-v2/no-knead.webp', title: t('no_knead.title'), tagline: t('no_knead.tagline') },
     { id: 'spiral',   image: '/images/approved/equipment-v2/spiral-mixer-v3.webp',  title: t('spiral.title'),   tagline: t('spiral.tagline') },
-  ];
+  ].filter(option=>!styleKey || !getBreadProtocol(styleKey) || getBreadProtocol(styleKey)!.supportedMixers.includes(option.id as MixerType));
 
   return (<>
       <DecisionList layout="illustrated" options={options} selectedId={selected ?? ''} onSelect={id => onSelect(id as MixerType)} />
@@ -45,3 +46,4 @@ export default function MixerPicker({ selected, onSelect, styleKey, bakeType, ki
     </>
   );
 }
+

@@ -5,12 +5,13 @@ const vm=require('node:vm');
 const ts=require('typescript');
 require('./load-production.cjs');
 const {restoreStarterEvents,normalizeMixingBatches}=require('../app/lib/session.ts');
+const {normalizeSandwichSnapshot}=require('../app/lib/sandwich.ts');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../app/[locale]/page.tsx'),'utf8');
 // Execute the actual page restoration handler with state setters captured.
 const handler=source.slice(source.indexOf('  async function restoreFromBakeEvent('),source.indexOf('  // ── Computed: Generate button'));
 async function restore(yeastType,rebake) {
  const state={};
- const context={Date,Math,Boolean,Object,JSON,isRestoringRef:{current:false},restoreStarterEvents,normalizeMixingBatches,endRestore(){},setTimeout(){},localStorage:{setItem(){}}};
+ const context={Date,Math,Boolean,Object,JSON,isRestoringRef:{current:false},restoreStarterEvents,normalizeMixingBatches,normalizeSandwichSnapshot,endRestore(){},setTimeout(){},localStorage:{setItem(){}}};
  for(const name of new Set(handler.match(/\bset[A-Z]\w*/g))) context[name]=value=>{state[name]=typeof value==='function'?value(0):value;};
  const time=Date.now()-14*86400000;
  context.event={id:'saved-bake',dough_snapshot:{yeastType,tab:'custom',recipeGenerated:true,modeChosen:true,eatTime:time,startTime:time-86400000,starterEvents:[{kind:'pre_mix',time:time-90000000,isPast:false}],lastFedTime:time-100000000,knownPeakTime:time-86400000,feed2Time:time-90000000,fridgeOutTime:time-87000000,starterFridgeInTime:time-95000000,lastFedAge:'today',planningMode:'know_peak',ovenType:'dutch_oven',mixerType:'hand',itemWeight:800,containerCapacityLitres:5,pizzaParty:{qtys:{}},activeTab:'guide'}};
@@ -36,3 +37,4 @@ test('commercial yeast rebake retains existing generated recipe behaviour',async
  const {state}=await restore('instant',true);
  assert.equal(state.setRecipeGenerated,true);assert.equal(state.setShowResults,true);assert.equal(state.setActiveTab,'setup');
 });
+

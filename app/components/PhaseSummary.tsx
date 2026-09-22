@@ -5,14 +5,15 @@
 // its icon, themed card and duration pill). Rendered at the top of the
 // Protocole tab, above the unified step spine.
 
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { type ScheduleResult, hoursLabel } from '../utils';
 import { buildPhases } from './Timeline';
 import { StepIcon } from './StepIcons';
 
 export default function PhaseSummary({ schedule, numItems = 4 }: { schedule: ScheduleResult; numItems?: number }) {
   const t = useTranslations();
-  const phases = buildPhases(schedule, 0, t, numItems);
+  const locale = useLocale();
+  const phases = buildPhases(schedule, 0, t, numItems, locale);
   if (phases.length === 0) return null;
   return (
     <div style={{
@@ -62,3 +63,4 @@ export default function PhaseSummary({ schedule, numItems = 4 }: { schedule: Sch
     </div>
   );
 }
+

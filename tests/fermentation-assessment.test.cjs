@@ -25,6 +25,7 @@ require.extensions['.tsx'] = (module, filename) => {
   }).outputText, filename);
 };
 const {commercialReadinessWindow, STYLE_FERM_DEFAULTS, climateRtH} = require('../app/components/SchedulePicker.tsx');
+const {getBreadProtocol} = require('../app/utils/breadProfiles.ts');
 const date = text => new Date(text);
 const base = {
   mixTime: date('2026-09-23T12:00:00Z'),
@@ -101,9 +102,10 @@ const assessHours = ({from, to}, mixHours) => {
 };
 
 test('all actual commercial style windows remain finite across climate, flour and cold availability', () => {
-  assert.equal(Object.keys(STYLE_FERM_DEFAULTS).length, 15);
+  assert.equal(Object.keys(STYLE_FERM_DEFAULTS).length, 26);
   let valid = 0, unavailable = 0;
   for (const [style, defaults] of Object.entries(STYLE_FERM_DEFAULTS)) {
+    if (getBreadProtocol(style)?.method === 'unleavened') continue;
     for (const kitchenTemp of [16, 22, 30, 35]) {
       for (const flourStrength of [0.8, 1, 1.2]) {
         for (const totalWindowH of [1, 96]) {
@@ -156,6 +158,8 @@ test('commercial climate dosing does not shorten roomy timing guides and stronge
 test('contradictory hot sourdough style bounds remain unavailable rather than reversed into green', () => {
   const invalid = [];
   for (const [style, defaults] of Object.entries(STYLE_FERM_DEFAULTS)) {
+    const protocol = getBreadProtocol(style);
+    if (protocol && !protocol.supportedPreferments.includes('levain')) continue;
     for (const kitchenTemp of [16, 22, 30, 35]) {
       const from = (defaults.preferredColdH ?? defaults.coldH)
         + climateRtH(defaults.rtH, kitchenTemp, true);

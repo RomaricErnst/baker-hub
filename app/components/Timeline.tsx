@@ -11,6 +11,7 @@ import { kneadMinFor, autolyseMinFor, type MixerType } from '../data';
 import { StepIcon, IconProof } from './StepIcons';
 import { formatPrefermentDose } from '../utils/prefermentDose';
 import LearnModal from './LearnModal';
+import { getBreadProtocol } from '../utils/breadProfiles';
 
 interface TimelineProps {
   schedule: ScheduleResult;
@@ -35,7 +36,7 @@ interface TimelineProps {
 }
 
 // ── Step kinds ────────────────────────────────
-export type StepKind = 'feed_starter' | 'make_preferment' | 'mixing' | 'autolyse' | 'bulk_ferm' | 'divide_ball' | 'final_proof' | 'cold' | 'rest_rt' | 'rt_warmup' | 'preheat' | 'eat';
+export type StepKind = 'feed_starter' | 'make_preferment' | 'mixing' | 'autolyse' | 'bulk_ferm' | 'divide_ball' | 'final_proof' | 'cold' | 'rest_rt' | 'rt_warmup' | 'preheat' | 'poach' | 'eat';
 
 interface TimelineStep {
   kind: 'step';
@@ -68,6 +69,7 @@ export const THEME: Record<StepKind, {
   cold:        { dot: '#6A7FA8',       ring: 'rgba(106,127,168,.1)', line: '#C4CDE0',       pill: '#EEF2FA',      pillText: '#3A5A8A', cardBg: '#EEF2FA', cardBorder: '#C4CDE0' },
   rest_rt:     { dot: '#B87850',       ring: 'rgba(184,120,80,.1)',  line: '#DDB898',       pill: '#FDF0E8',      pillText: '#7A3A10', cardBg: '#FDF4EE', cardBorder: '#DDB898' },
   rt_warmup:   { dot: '#B87850',       ring: 'rgba(184,120,80,.1)',  line: '#DDB898',       pill: '#FDF0E8',      pillText: '#7A3A10', cardBg: '#FDF4EE', cardBorder: '#DDB898' },
+  poach:       { dot: 'var(--terra)', ring: 'rgba(107,68,35,.1)', line: 'var(--border)', pill: 'var(--cream)', pillText: 'var(--terra)' },
   preheat:     { dot: '#C4A030',       ring: 'rgba(196,160,48,.12)', line: '#E8D890',       pill: '#FDFBF2',      pillText: '#7A5A10' },
   eat:         { dot: '#5A9A50',       ring: 'rgba(90,154,80,.1)',   line: 'transparent',   pill: '#F2FAF0',      pillText: '#3A6A30' },
 };
@@ -98,7 +100,7 @@ function proofWindow(schedule: ScheduleResult, numItems = 4) {
     : (schedule.restRtHours ?? 0);
   const proofWindowStart = finalProofStepStart ?? schedule.finalProofStart;
   const finalProofStepDuration = proofWindowStart && schedule.bakeStart
-    ? Math.max(0, (schedule.bakeStart.getTime() - proofWindowStart.getTime()) / 3600000)
+    ? Math.max(0, ((schedule.poachStart ?? schedule.bakeStart).getTime() - proofWindowStart.getTime()) / 3600000)
     : warmupStepH + schedule.finalProofHours;
   return { start: finalProofStepStart, durationH: finalProofStepDuration };
 }
@@ -126,8 +128,19 @@ export function buildItems(
   // Mixing time is style-dependent — see kneadMinFor. Optional so callers that
   // predate it still compile; they fall back to the mixer's flat base.
   styleKey?: string,
+  locale = 'en',
+  itemWeight?: number,
 ): TimelineStep[] {
   const items: TimelineStep[] = [];
+  const profile = getBreadProtocol(styleKey ?? '');
+  const lang = locale === 'fr' ? 'fr' : 'en';
+  if (profile?.method === 'unleavened') return [
+    {kind:'step',id:'mixing',stepKind:'mixing',time:startTime,label:t('timeline.steps.mixing'),iconKey:'mix',durationH:schedule.mixingDurationH},
+    {kind:'step',id:'rest',stepKind:'rest_rt',time:schedule.bulkFermStart,label:lang === 'fr' ? 'Repos couvert' : 'Covered rest',tip:profile.proof[lang].join(' '),iconKey:'proof',durationH:(profile.restMinutes ?? 30)/60},
+    {kind:'step',id:'divide',stepKind:'divide_ball',time:schedule.divideBallTime ?? schedule.finalProofStart,label:lang === 'fr' ? 'Diviser et abaisser' : 'Divide and roll',iconKey:'divide',durationH:null},
+    {kind:'step',id:'preheat',stepKind:'preheat',time:schedule.preheatStart,label:lang === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle',iconKey:'preheat',durationH:preheatMin/60},
+    {kind:'step',id:'eat',stepKind:'eat',time:schedule.bakeStart,label:lang === 'fr' ? 'Cuire à la poêle' : 'Cook on the griddle',iconKey:'bake',durationH:schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : null},
+  ];
 
   // 0a — Make Poolish / Biga (when prefStartTime provided)
   if (prefStartTime && (prefermentType === 'poolish' || prefermentType === 'biga')) {
@@ -236,7 +249,7 @@ export function buildItems(
         tip += ` — Wet hands prevent sticking at this hydration. Keep a small bowl of water nearby and dip your hands before each touch. Avoid bench flour — it hydrates instantly and makes things worse.`;
       }
     }
-    return tip;
+    return profile ? profile.shaping[lang].join(' ').replaceAll('{count}', String(numItems)).replaceAll('{weight}', String(Math.round(itemWeight ?? profile.portions.weight))) : tip;
   }
 
   // 1 — Mix & Knead
@@ -380,7 +393,7 @@ export function buildItems(
       label: t('timeline.steps.finalProof'),
       icon: '⏰',
       iconKey: 'proof',
-      tip: schedule.coldRetardStart
+      tip: profile ? profile.proof[lang].join(' ') : schedule.coldRetardStart
         ? t(bakeType === 'bread' ? 'timeline.finalProofTipsBread.withCold' : 'timeline.finalProofTips.withCold')
         : t(bakeType === 'bread' ? 'timeline.finalProofTipsBread.withoutCold' : 'timeline.finalProofTips.withoutCold'),
       durationH: finalProofStepDuration,
@@ -391,24 +404,30 @@ export function buildItems(
   items.push({
     kind: 'step', id: 'preheat', stepKind: 'preheat',
     time: schedule.preheatStart,
-    label: t('timeline.steps.preheat'),
+    label: profile?.cooking === 'griddle' ? (lang === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle') : t('timeline.steps.preheat'),
     icon: '',
     iconKey: 'preheat',
-    tip: preheatMin >= 45
+    tip: profile ? profile.preheat[lang].join(' ') : preheatMin >= 45
       ? t('timeline.preheatTips.long', { min: preheatMin })
       : t('timeline.preheatTips.short', { min: preheatMin }),
     durationH: preheatMin / 60,
+  });
+
+  if (profile?.cooking === 'boil-bake' && schedule.poachStart) items.push({
+    kind:'step', id:'poach', stepKind:'poach', time:schedule.poachStart,
+    label:lang === 'fr' ? 'Pocher les bagels' : 'Poach the bagels', iconKey:'preheat',
+    tip:profile.cookingSteps[lang][0], durationH:(schedule.poachMinutes ?? 0)/60,
   });
 
   // Bake & Eat!
   items.push({
     kind: 'step', id: 'eat', stepKind: 'eat',
     time: schedule.bakeStart,
-    label: t('timeline.steps.eat'),
+    label: profile?.cooking === 'griddle' ? (lang === 'fr' ? 'Cuire à la poêle' : 'Cook on the griddle') : profile?.cooking === 'boil-bake' ? (schedule.poachStart ? (lang === 'fr' ? 'Cuire les bagels au four' : 'Bake the bagels') : (lang === 'fr' ? 'Pocher puis cuire' : 'Poach, then bake')) : t('timeline.steps.eat'),
     icon: '',
     iconKey: 'bake',
-    tip: bakeType === 'bread' ? t('timeline.eatTipBread') : t('timeline.eatTipPizza'),
-    durationH: null,
+    tip: profile ? (profile.cooking === 'boil-bake' && schedule.poachStart ? profile.cookingSteps[lang].slice(1) : profile.cookingSteps[lang]).join(' ') : bakeType === 'bread' ? t('timeline.eatTipBread') : t('timeline.eatTipPizza'),
+    durationH: schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : null,
   });
 
   return items;
@@ -423,10 +442,15 @@ interface Phase {
   stepKind: StepKind;
 }
 
-export function buildPhases(schedule: ScheduleResult, preheatMin: number, t: (key: string, params?: Record<string, string | number>) => string = (k) => k, numItems = 4): Phase[] {
+export function buildPhases(schedule: ScheduleResult, preheatMin: number, t: (key: string, params?: Record<string, string | number>) => string = (k) => k, numItems = 4, locale = 'en'): Phase[] {
   const phases: Phase[] = [
     { label: t('timeline.phaseLabels.mixing'), icon: '', iconKey: 'mix', durationH: schedule.mixingDurationH || 5 / 60, stepKind: 'mixing' },
   ];
+
+  if (schedule.doughMethod === 'unleavened') {
+    phases.push({label:locale === 'fr' ? 'Repos couvert' : 'Covered rest',icon:'',iconKey:'proof',durationH:schedule.restRtHours,stepKind:'rest_rt'});
+    return phases;
+  }
 
   if (schedule.bulkFermHours > 0) {
     phases.push({ label: t('timeline.phaseLabels.bulkFerm'), icon: '', iconKey: 'bulk', durationH: schedule.bulkFermHours, stepKind: 'bulk_ferm' });
@@ -487,13 +511,13 @@ export default function Timeline({
   })();
 
   const items = useMemo(
-    () => buildItems(schedule, blocks, displayStartTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, t, bakeType, styleKey),
+    () => buildItems(schedule, blocks, displayStartTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, t, bakeType, styleKey, _fmtLocale, recipe ? recipe.totalDough / Math.max(1,numItems) : undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [schedule, blocks, displayStartTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, bakeType],
+    [schedule, blocks, displayStartTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, bakeType, styleKey, _fmtLocale, recipe],
   );
-  const phases = useMemo(() => buildPhases(schedule, preheatMin, t, numItems),
+  const phases = useMemo(() => buildPhases(schedule, preheatMin, t, numItems, _fmtLocale),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [schedule, preheatMin, numItems]);
+    [schedule, preheatMin, numItems, _fmtLocale]);
 
   const lastStepId = items[items.length - 1]?.id;
 
@@ -739,3 +763,4 @@ export default function Timeline({
     </div>
   );
 }
+

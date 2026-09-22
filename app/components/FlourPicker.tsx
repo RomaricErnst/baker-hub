@@ -27,6 +27,17 @@ const PIZZA_FAV_BY_STYLE: Record<string, string[]> = {
 };
 const CROWD_FAV_IDS = PIZZA_FAV_BY_STYLE.neapolitan;
 const BREAD_FAV_BY_STYLE: Record<string, string[]> = {
+  focaccia: ['ka_bread', 'caputo_manitoba', 'foricher_t65', 'generic_bread'],
+  bagel: ['ka_bread', 'ka_sir_lancelot', 'caputo_manitoba', 'generic_bread'],
+  pita: ['francine_bio_t55', 'francine_t65', 'ka_bread', 'generic_bread'],
+  greek_pita: ['francine_bio_t55', 'francine_t65', 'ka_bread', 'generic_bread'],
+  kebab_bread: ['francine_t65', 'ka_bread', 'francine_bio_t55', 'generic_bread'],
+  batbout: ['francine_bio_t55', 'francine_t65', 'ka_bread', 'generic_bread'],
+  laffa: ['francine_bio_t55', 'francine_t65', 'ka_bread', 'generic_bread'],
+  piadina: ['francine_bio_t55', 'caputo_classica', 'generic_00', 'generic_bread'],
+  pan_bagnat: ['francine_t65', 'foricher_t65', 'francine_bio_t55', 'generic_bread'],
+  ciabatta: ['ka_bread', 'caputo_manitoba', 'foricher_t65', 'generic_bread'],
+  panuozzo: ['caputo_pizzeria', 'caputo_cuoco', 'ka_bread', 'generic_00'],
   pain_campagne: ['francine_t65', 'foricher_t65', 'celnat_t80_bio', 'ka_bread'],
   pain_levain: ['foricher_t65', 'ka_bread', 'celnat_t80_bio', 'francine_t65'],
   baguette: ['francine_t65', 'foricher_t65', 'gmp_t65', 'francine_bio_t55'],
@@ -681,6 +692,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
   return (
     <div ref={selectionRef}>
+      {styleKey==='batbout' && <p style={{fontSize:14,lineHeight:1.5,marginBottom:12}}>{isFr?'Mélange de départ : 67 % de farine de blé et 33 % de semoule fine. Votre mélange personnalisé détermine les quantités de la recette.':'Starting blend: 67% wheat flour and 33% fine semolina. Your custom blend determines the recipe quantities.'}</p>}
       {unmatchedScan && <p role="status">{isFr ? `« ${unmatchedScan} » : aucun produit exact retrouvé. Choisissez le type correspondant au sachet, ou recherchez une autre farine. Votre sélection actuelle reste inchangée.` : `“${unmatchedScan}”: no exact product found. Choose the type shown on the bag, or search for another flour. Your current selection is unchanged.`}</p>}
 
       {archivedBlendSelections(blend).length > 0 && <p role="alert" style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 12 }}>{isFr ? 'Une farine enregistrée est archivée. Remplacez-la explicitement ; vos anciennes valeurs restent conservées en attendant.' : 'A saved flour is archived. Choose its replacement explicitly; your previous values are retained until then.'} {archivedBlendSelections(blend).join(' · ')}</p>}
@@ -902,7 +914,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   {(blendSelectedF2 || blendSlot===3) && <button type="button" onClick={()=>{setBlendSlot(2);setBlendShowFullSearch(false);setBlendRoad(null);}} style={{minHeight:44}}>{isFr?'Annuler':'Cancel'}</button>}
                   <div hidden={blendRoad==='scan'||blendRoad==='type'}>
                     <FlourCatalogueBrowser key={blendSlot} styleKey={styleKey ?? undefined}
-                      recommendedIds={bakeType==='bread' ? (BREAD_FAV_BY_STYLE[styleKey ?? ''] ?? BREAD_FAV_BY_STYLE.pain_campagne) : (PIZZA_FAV_BY_STYLE[styleKey ?? ''] ?? CROWD_FAV_IDS)}
+                      recommendedIds={styleKey==='batbout' && blendSlot===2 ? ['caputo_semola','generic_semolina'] : bakeType==='bread' ? (BREAD_FAV_BY_STYLE[styleKey ?? ''] ?? BREAD_FAV_BY_STYLE.pain_campagne) : (PIZZA_FAV_BY_STYLE[styleKey ?? ''] ?? CROWD_FAV_IDS)}
                       onChoose={entry=>{const ratio=blend.flour2 ? blend.ratio1 : 85;if(blendSlot===2)setBlendRatio(ratio);assignBlendFlour(entry,flourBehaviour(entry),`${entry.brand} ${entry.name}`.trim(),ratio);}}
                       onGeneric={()=>{setManualName('');setManualType('bread');setManualProtein('');setManualQWText('');setBlendRoad('type');}}
                       onScan={()=>setBlendRoad('scan')} />
@@ -953,3 +965,4 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
     </div>
   );
 }
+

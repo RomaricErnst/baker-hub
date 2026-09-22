@@ -1,4 +1,5 @@
 'use client';
+import { BREAD_FERMENTATION_DEFAULTS, getBreadProtocol, breadActiveCookMinutes } from '../utils/breadProfiles';
 import { useState, useMemo, useEffect, useRef, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH, findScheduleRepair } from '../utils';
@@ -163,6 +164,7 @@ interface SchedulePickerProps {
   blocks: AvailabilityBlock[];
   preheatMin: number;
   mixerType?: MixerType;
+  numItems?: number;
   confirmedPlan?: boolean;
   styleKey: string;
   kitchenTemp: number;
@@ -336,6 +338,7 @@ export const STYLE_FERM_DEFAULTS: Record<string, {
   preferredColdH?: number; minColdH?: number;
   minTotalFermH: number; coldHRequired?: boolean;
 }> = {
+  ...BREAD_FERMENTATION_DEFAULTS,
   // Pizza — sweet spot = coldH + rtH. RT durations are minimums; climate adjusts yeast not timing.
   // preferredColdH = max useful cold before diminishing returns
   // minColdH = minimum cold retard for acceptable results
@@ -1680,7 +1683,55 @@ export function ScheduleViewTabs({ value, onChange, id, isFr }: {
   </div>;
 }
 
-export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin, mixerType = 'hand', confirmedPlan = false, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+/** Unleavened flatbread has a short preparation plan, not a fermentation solver. */
+function UnleavenedSchedulePicker(props: SchedulePickerProps) {
+  const isFr = useLocale() === 'fr';
+  const localValue = (date: Date) => {
+    const copy = new Date(+date - date.getTimezoneOffset() * 60000);
+    return copy.toISOString().slice(0, 16);
+  };
+  const [value, setValue] = useState(() => localValue(props.eatTime ?? new Date(Date.now() + 60 * 60000)));
+  const [confirmed, setConfirmed] = useState(!!props.eatTime);
+  const cook = new Date(value);
+  const validDate = Number.isFinite(+cook);
+  const start = new Date(+cook - 45 * 60000);
+  const cookMinutes = breadActiveCookMinutes(props.styleKey, props.numItems);
+  const cookEnd = new Date(+cook + cookMinutes * 60000);
+  const busy = validDate && findAvailabilityConflicts([
+    { id: 'mix', at: start, end: new Date(+start + 5 * 60000) },
+    { id: 'roll', at: new Date(+cook - 10 * 60000), end: cook },
+    { id: 'preheat', at: new Date(+cook - props.preheatMin * 60000) },
+    { id: 'cook', at: cook, end: cookEnd },
+  ], props.blocks, Date.now()).length > 0;
+  const future = validDate && +start >= Date.now();
+  const ready = future && !busy;
+  useEffect(() => { props.onPrefermentValidityChange?.(true); }, [props.onPrefermentValidityChange]);
+  return <section aria-label={isFr ? 'Repos et cuisson' : 'Rest and cook'} style={{ padding: '8px 0' }}>
+    <h3 style={{ fontSize: 22, margin: '0 0 12px' }}>{isFr ? 'Repos et cuisson' : 'Rest and cook'}</h3>
+    <p style={{ lineHeight: 1.5 }}>{isFr ? 'Préparez la pâte 45 min avant cuisson : mélange, 30 min de repos couvert, puis abaisse.' : 'Start 45 minutes before cooking: mix, rest covered for 30 minutes, then roll.'}</p>
+    <label style={{ display: 'block', margin: '20px 0 8px', fontWeight: 500 }} htmlFor="piadina-cook-time">{isFr ? 'Commencer la cuisson à' : 'Start pan-cooking at'}</label>
+    <input id="piadina-cook-time" type="datetime-local" value={value} onChange={event => { setValue(event.target.value); setConfirmed(false); }}
+      style={{ width: '100%', boxSizing: 'border-box', minHeight: 48, fontSize: 16, padding: 12, border: '1px solid var(--border)', borderRadius: 12, color: 'var(--char)', background: 'var(--cream)' }} />
+    {validDate && <p>{isFr ? 'Commencer à ' : 'Start at '}{fmtCardDT(start, isFr)}</p>}
+    {validDate && <p>{isFr ? 'Cuisson terminée vers ' : 'Cooking finished around '}{fmtCardDT(cookEnd, isFr)}{isFr ? ' · une galette à la fois' : ' · one flatbread at a time'}</p>}
+    {!future && <p role="status">{isFr ? 'Choisissez une cuisson laissant au moins 45 min pour préparer la pâte.' : 'Choose a cooking time at least 45 minutes ahead to prepare the dough.'}</p>}
+    {busy && <p role="status">{isFr ? 'Une étape tombe pendant une indisponibilité. Décalez la cuisson pour garder ce repos.' : 'A hands-on step overlaps your unavailable time. Move cooking to keep this rest.'}</p>}
+    <button type="button" disabled={!ready} onClick={() => {
+      props.onChange(start, cook, props.blocks, { preservePlan: true });
+      props.onReady?.(); setConfirmed(true);
+    }} style={{ width: '100%', minHeight: 48, marginTop: 12, padding: 12, border: 'none', borderRadius: 12,
+      background: ready ? 'var(--terra)' : 'var(--border)', color: ready ? 'white' : 'var(--smoke)', fontSize: 16, fontWeight: 600 }}>
+      {confirmed ? (isFr ? 'Planning confirmé' : 'Plan confirmed') : (isFr ? 'Valider le planning' : 'Confirm plan')}
+    </button>
+  </section>;
+}
+
+export default function SchedulePicker(props: SchedulePickerProps) {
+  return getBreadProtocol(props.styleKey)?.method === 'unleavened'
+    ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
+}
+
+function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, confirmedPlan = false, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   const [scheduleView, setScheduleView] = useState<'actions' | 'graph'>('actions');
   const scheduleViewId = useId();
   const t = useTranslations('scheduler');
@@ -6102,6 +6153,7 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     || !!(bulkConflict && +pendingStart > readinessNow);
   const conflictNames: Record<string, [string, string]> = {
     mix: ['Pétrissage', 'Mixing'], 'mix-finish': ['Fin du pétrissage', 'Finish mixing'],
+    poach: ['Pochage', 'Poaching'], roll: ['Abaisse', 'Rolling'],
     divide: ['Division et façonnage', 'Divide and shape'], preheat: ['Préchauffage', 'Preheat'], bake: ['Cuisson', 'Bake'],
     'cold-in': ['Mise au froid', 'Into the fridge'], 'cold-in-2': ['Deuxième mise au froid', 'Second fridge stage'],
     'cold-out': ['Sortie du froid', 'Out of the fridge'], 'cold-out-2': ['Deuxième sortie du froid', 'Second fridge exit'],
@@ -6133,10 +6185,10 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
   };
   const verifiedRepair = useMemo(() => !isSourdough && readinessBusy && readinessWindowValid && !restoredPrepOverdue && !startInvalid
     && !windowTooShort && !solverResult?.windowTooShort
-    ? findScheduleRepair({ startTime: pendingStart, eatTime: pendingEatTime, availabilityBlocks: repairBlocks,
+    ? findScheduleRepair({ startTime: pendingStart, eatTime: pendingEatTime, availabilityBlocks: repairBlocks, numItems,
       kitchenTemp, preheatMin, mixerType, styleKey, now: new Date(readinessNow), allowStartShift: true,
       acceptCandidate: candidate => acceptsCommercialRepair(candidate, readinessNow),
-    }) : null, [readinessBusy, readinessWindowValid, restoredPrepOverdue, startInvalid, windowTooShort, solverResult, pendingStart, pendingEatTime, localBlocks, kitchenTemp, preheatMin, mixerType, styleKey, isSourdough, flourStrength, prefermentType, prefGoesInFridge, prefOffsetH, prefRTWarmupH, displayStarterEvents]);
+    }) : null, [readinessBusy, readinessWindowValid, restoredPrepOverdue, startInvalid, windowTooShort, solverResult, pendingStart, pendingEatTime, localBlocks, kitchenTemp, preheatMin, mixerType, numItems, styleKey, isSourdough, flourStrength, prefermentType, prefGoesInFridge, prefOffsetH, prefRTWarmupH, displayStarterEvents]);
   const applyVerifiedRepair = () => {
     if (!verifiedRepair) return;
     if (!acceptsCommercialRepair(verifiedRepair, Date.now())) {

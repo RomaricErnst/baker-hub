@@ -15,6 +15,7 @@ import { type UnitSystem, displayTemp, tempC, tempRange } from '../utils/units';
 import { getPrefPeakH_RT, getStarterFridgeWarmupH } from './FermentChart';
 import { GUIDE_FAQ } from '../lib/guideFaq';
 import { formatPrefermentDose } from '../utils/prefermentDose';
+import { getBreadProtocol } from '../utils/breadProfiles';
 
 interface BakeGuideProps extends WaterSettingsProps {
   schedule: ScheduleResult;
@@ -47,6 +48,7 @@ interface BakeGuideProps extends WaterSettingsProps {
   units?: UnitSystem;
   locale?: string;
   onNavigateToPizzaParty?: () => void;
+  onNavigateToFillings?: () => void;
   simpleMode?: boolean;
   addSeeds?: boolean;
   recipe?: import('../utils').RecipeResult | null;
@@ -797,7 +799,7 @@ export default function BakeGuide({
   usingPeak2 = false, planningMode = 'last_fed',
   feedRatio = 1, starterLocation = 'rt',
   units, locale,
-  onNavigateToPizzaParty, recipe, simpleMode, addSeeds,
+  onNavigateToPizzaParty, onNavigateToFillings, recipe, simpleMode, addSeeds,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
   const l = locale === 'fr' ? 'fr' : 'en';
@@ -861,7 +863,11 @@ export default function BakeGuide({
   }, [currentStep]);
 
   const isSourdough = recipe ? !!recipe.sourdough : styleKey === 'sourdough' || styleKey === 'pain_levain';
-  const isBread       = ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
+  const breadProtocol = getBreadProtocol(styleKey);
+  const hasPoachStep = breadProtocol?.cooking === 'boil-bake' && !!schedule.poachStart;
+  const profileSteps = (lines: readonly string[]) => lines.map(line => ({ bold: line.replace(/(\d+)\s?°C/g, (_, degrees) => displayTemp(Number(degrees), u)).replaceAll('{count}', String(numItems)).replaceAll('{weight}', String(Math.round((recipe?.totalDough ?? numItems * (breadProtocol?.portions.weight ?? 100)) / Math.max(1,numItems)))), note: '' }));
+  const fillingsAction = onNavigateToFillings && <button type="button" onClick={onNavigateToFillings} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{l === 'fr' ? 'Sandwiches et garnitures →' : 'Sandwiches & fillings →'}</button>;
+  const isBread       = !!breadProtocol || ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
   const isNeapolitan  = styleKey === 'neapolitan';
   const isFougasse    = styleKey === 'fougasse';
   const isBaguette    = styleKey === 'baguette';
@@ -1009,7 +1015,36 @@ Actual dough condition and equipment may differ from these estimates.`;
     };
   };
 
+  if (recipe?.protocolIssue) return <section role="alert"><h2>{l === 'fr' ? 'Ajustez ce pain avant de commencer' : 'Adjust this bread before starting'}</h2><p>{recipe.protocolIssue === 'equipment' ? (l === 'fr' ? 'Choisissez un matériel de cuisson compatible dans les réglages.' : 'Choose compatible cooking equipment in setup.') : recipe.protocolIssue === 'timing' ? (l === 'fr' ? 'Laissez assez de temps pour mélanger, reposer et abaisser la pâte avant cuisson.' : 'Allow enough time to mix, rest and roll the dough before cooking.') : (l === 'fr' ? 'Choisissez la méthode de levée prise en charge dans les réglages.' : 'Choose the supported leavening method in setup.')}</p></section>;
+
   if (recipe?.enrichment?.unsupportedMethod) return <p role="alert">{l === 'fr' ? 'Modifiez le choix de levure dans les réglages et recalculez cette formule enrichie avant de suivre les étapes.' : 'Update the leavening choice in setup and recalculate this enriched formula before following the steps.'}</p>;
+
+  if (breadProtocol?.method === 'unleavened') return <SimpleModeCtx.Provider value={!!simpleMode}>
+    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+      <button type="button" onClick={() => setCurrentStep(0)} style={{minHeight:44,padding:'8px 16px',border:`1px solid ${D.border}`,borderRadius:10,background:D.warm}}>{l === 'fr' ? 'Toutes les étapes' : 'All steps'}</button>
+      <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={l === 'fr' ? 'Mélanger la pâte' : 'Mix the dough'} time={bgMixStart} duration={schedule.mixingDurationH}>
+        <Section icon="" title={l === 'fr' ? 'À mélanger' : 'Use now'}>
+          {batch && Object.entries(batch.portion).filter(([,grams]) => grams > 0).map(([key,grams]) => <p key={key}>{({flour:l === 'fr' ? 'Farine' : 'Flour',water:l === 'fr' ? 'Eau' : 'Water',salt:l === 'fr' ? 'Sel' : 'Salt',oil:l === 'fr' ? 'Huile' : 'Oil',sugar:l === 'fr' ? 'Sucre' : 'Sugar'} as Record<string,string>)[key] ?? key} · {Math.round(grams)} g</p>)}
+          <Steps items={[{bold:l === 'fr' ? 'Mélangez la farine, le sel, l’eau et la matière grasse mesurés. Pétrissez jusqu’à obtenir une pâte lisse et souple.' : 'Combine the measured flour, salt, water and fat. Knead until smooth and pliable.',note:''}]} />
+        </Section>
+      </StepCard>
+      <StepCard number={n()} {...sc()} icon={<IconProof />} title={l === 'fr' ? 'Laisser reposer, couvert' : 'Rest, covered'} time={schedule.bulkFermStart} duration={breadProtocol.restMinutes ? breadProtocol.restMinutes / 60 : undefined}>
+        <Steps items={profileSteps(breadProtocol.proof[l])} />
+        <p>{l === 'fr' ? 'Cette pâte sans levure se détend ; elle n’a pas besoin de lever.' : 'This unleavened dough relaxes; it does not need to rise.'}</p>
+      </StepCard>
+      <StepCard number={n()} {...sc()} icon={<IconDivide />} title={l === 'fr' ? 'Diviser et abaisser' : 'Divide and roll'} time={schedule.divideBallTime ?? undefined}>
+        <Steps items={profileSteps(breadProtocol.shaping[l])} />
+      </StepCard>
+      <StepCard number={n()} {...sc()} icon={<IconPreheat />} title={l === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle'} time={schedule.preheatStart}>
+        <Steps items={profileSteps(breadProtocol.preheat[l])} />
+      </StepCard>
+      <StepCard final number={n()} {...sc()} icon={<IconBake />} title={l === 'fr' ? 'Cuire et garnir' : 'Cook and fill'} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined}>
+        <Steps items={profileSteps(breadProtocol.cookingSteps[l])} />
+        <Steps items={profileSteps(breadProtocol.cooling[l])} />
+        {fillingsAction}
+      </StepCard>
+    </div>
+  </SimpleModeCtx.Provider>;
 
   return (
     <SimpleModeCtx.Provider value={!!simpleMode}>
@@ -1295,7 +1330,15 @@ Actual dough condition and equipment may differ from these estimates.`;
         time={bgMixStart} duration={schedule.mixingDurationH} accent={D.ash}>
 
         {batch && <Section icon="" title={batch.count > 1 ? (l === 'fr' ? `Pétrissée ${batch.active + 1} sur ${batch.count}` : `Batch ${batch.active + 1} of ${batch.count}`) : (l === 'fr' ? 'À mélanger' : 'Use now')}>
-          {Object.entries(batch.portion).filter(([,grams]) => grams > 0).map(([key,grams]) => <div key={key} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{({milk:l==='fr'?'Lait':'Milk',eggs:l==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:l==='fr'?'Beurre':'Butter',flour:l==='fr'?'Farine':'Flour',water:l==='fr'?'Eau':'Water',salt:l==='fr'?'Sel':'Salt',oil:l==='fr'?'Huile':'Oil',sugar:l==='fr'?'Sucre':'Sugar',yeast:l==='fr'?'Levure':'Yeast',starter:l==='fr'?'Levain':'Starter',preferment:prefermentType ?? 'Preferment'} as Record<string,string>)[key]}</span><strong>{grams} g</strong></div>)}
+          {Object.entries(batch.portion).filter(([key,grams]) => grams > 0 && !(key === 'flour' && recipe?.flourParts?.length)).map(([key,grams]) => <div key={key} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{({milk:l==='fr'?'Lait':'Milk',eggs:l==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:l==='fr'?'Beurre':'Butter',flour:l==='fr'?'Farine':'Flour',water:l==='fr'?'Eau':'Water',salt:l==='fr'?'Sel':'Salt',oil:l==='fr'?'Huile':'Oil',sugar:l==='fr'?'Sucre':'Sugar',yeast:l==='fr'?'Levure':'Yeast',starter:l==='fr'?'Levain':'Starter',preferment:prefermentType ?? 'Preferment'} as Record<string,string>)[key]}</span><strong>{grams} g</strong></div>)}
+          {!!recipe?.flourParts?.length && (() => {
+            let remainder = batch.portion.flour;
+            return recipe.flourParts.map((part,index) => {
+              const grams = index === recipe.flourParts!.length - 1 ? remainder : Math.round(batch.portion.flour * part.pct / 100);
+              remainder -= grams;
+              return <div key={part.key} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{l === 'fr' ? part.nameFr : part.name}</span><strong>{grams} g</strong></div>;
+            });
+          })()}
           {batch.overCapacity && <p role="alert">{l === 'fr' ? 'Cette quantité dépasse la capacité indiquée du pétrin. Augmentez le nombre de pétrissées dans les réglages du matériel.' : 'This batch exceeds the stated mixer capacity. Increase batches in equipment settings.'}</p>}
           {batch.count > 1 && <p>{l === 'fr' ? (hasPref ? 'Préparez le préferment une seule fois. Chaque pétrissée utilise sa part indiquée.' : 'Répétez ce mélange pour chaque pétrissée.') : hasPref ? 'Prepare the preferment once. Add only the portion listed for this batch.' : 'Repeat this mix for each batch.'}</p>}
         </Section>}
@@ -1521,7 +1564,10 @@ Actual dough condition and equipment may differ from these estimates.`;
         time={schedule.bulkFermStart} duration={schedule.bulkFermHours} accent={D.terra}>
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
-          <Steps items={[
+          {breadProtocol ? <Steps items={[
+            {bold:l === 'fr' ? 'Gardez la pâte couverte pendant le pointage prévu. Observez son gonflement : la chaleur accélère la pousse.' : 'Keep the dough covered during the planned bulk rise. Watch its expansion; a warmer kitchen speeds the rise.',note:''},
+            ...(['ciabatta','focaccia'].includes(styleKey) ? [{bold:l === 'fr' ? 'Si la pâte s’étale, effectuez des rabats doux au début du pointage pour lui donner de la tenue. Préservez les bulles qui se forment ensuite.' : 'If the dough spreads, give it gentle folds early in bulk to build strength. Preserve bubbles as they develop.',note:''}] : []),
+          ]} /> : <Steps items={[
             ...(t.raw('bulk.stepsBase') as { bold: string; note: string }[]),
             ...(schedule.bulkFermHours >= 1.5 ? [
               t.raw('bulk.set1') as { bold: string; note: string },
@@ -1535,12 +1581,12 @@ Actual dough condition and equipment may differ from these estimates.`;
             ] : [
               t.raw('bulk.setVeryShort') as { bold: string; note: string },
             ]),
-          ]} />
+          ]} />}
         </Section>
 
         <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'La pâte est aérée et a gagné en tenue ; jugez-la avec le planning.':'The dough is aerated and has gained strength; judge it alongside the schedule.'}</p>
 
-        <StepExtras
+        {!breadProtocol && <StepExtras
           tips={<>
             <Section icon="" title={l === 'fr' ? 'Le pointage est terminé quand' : 'Watch for — bulk is done when'}>
               <Bullets items={t.raw('bulk.watchFor') as string[]} />
@@ -1567,7 +1613,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           coachTitle={t('stepTitles.bulkFerm')}
           recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
-        />
+        />}
         {styleKey !== 'pain_seigle' && (hydration > 70 || mixerType === 'no_knead') && <StepVisual kind="fold" locale={l} />}
       </StepCard>
 
@@ -1580,17 +1626,20 @@ Actual dough condition and equipment may differ from these estimates.`;
           accent="#6A7FA8">
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
-            <Steps items={[
+            {breadProtocol ? <Steps items={[
+              {bold:l === 'fr' ? 'Couvrez le récipient en laissant de la place à la pâte pour gonfler, puis placez-le au réfrigérateur.' : 'Cover the container, leaving room for expansion, then refrigerate.',note:''},
+              {bold:l === 'fr' ? 'Suivez l’horaire prévu et vérifiez la pâte avant de la façonner.' : 'Follow the planned time and check the dough before shaping.',note:formatTime(schedule.divideBallTime ?? schedule.coldRetard1End, _fmtLocale)},
+            ]} /> : <Steps items={[
               ...(t.raw('coldRetard.steps') as { bold: string; note: string }[]).slice(0, 2),
               { bold: isBread
                   ? (_isFr ? 'Réglez une alarme pour la division & le façonnage' : 'Set your alarm for Divide & Shape time')
                   : (_isFr ? 'Réglez une alarme pour la division & le boulage' : 'Set your alarm for Divide & Ball time'),
                 note: formatTime(schedule.divideBallTime ?? schedule.coldRetard1End, _fmtLocale) },
               (t.raw('coldRetard.steps') as { bold: string; note: string }[])[2],
-            ]} />
+            ]} />}
           </Section>
 
-          <StepExtras
+          {!breadProtocol && <StepExtras
             tips={<>
               <Section icon="" title={t('sectionTitles.whatToExpect')}>
                 <Bullets items={t.raw('coldRetard.watchFor') as string[]} />
@@ -1609,7 +1658,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             coachTitle={isTwoPhase ? t('stepTitles.coldRetardWhole') : t('stepTitles.coldRetard')}
             recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
-          />
+          />}
         </StepCard>
       )}
 
@@ -1620,7 +1669,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           time={schedule.divideBallTime} duration={divideMin / 60} accent="#8A6A4A">
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
-            {isBread ? (
+            {breadProtocol ? <Steps items={profileSteps(breadProtocol.shaping[l])} /> : isBread ? (
               <Steps items={isFougasse ? [
                 { bold: l === 'fr' ? `Divisez en ${numItems} ${breadPiecePluralFr} de même poids` : `Divide into ${numItems} equal ${breadPiecePlural}`, note: (t.raw('divide.fougasse.steps') as { bold: string; note: string }[])[0].note },
                 ...(t.raw('divide.fougasse.steps') as { bold: string; note: string }[]).slice(1),
@@ -1659,7 +1708,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             )}
           </Section>
 
-          <StepExtras
+          {!breadProtocol && <StepExtras
             tips={<>
               <Section icon="" title={isBread ? t('sectionTitles.watchFor') : t('sectionTitles.watchForBall')}>
                 <Bullets items={isFougasse
@@ -1711,7 +1760,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             coachTitle={isBread ? t('stepTitles.divideShape') : t('stepTitles.divideBall')}
             recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
-          />
+          />}
         </StepCard>
       )}
 
@@ -1726,12 +1775,12 @@ Actual dough condition and equipment may differ from these estimates.`;
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
-              ...(t.raw('coldBalls.steps') as { bold: string; note: string }[]),
+              ...(breadProtocol ? [{bold:l === 'fr' ? 'Couvrez la pâte façonnée sans l’écraser et placez-la au réfrigérateur sur son support.' : 'Cover the shaped dough without pressing it down and refrigerate on its support.',note:''}] : t.raw('coldBalls.steps') as { bold: string; note: string }[]),
               { bold: _isFr ? 'Réglez une alarme pour la remise à température' : 'Set your alarm for warmup time', note: schedule.rtWarmupStart ? formatTime(schedule.rtWarmupStart, _fmtLocale) : (_isFr ? 'voir le planning' : 'see schedule') },
             ]} />
           </Section>
 
-          <StepExtras
+          {!breadProtocol && <StepExtras
             tips={<>
               <Section icon="" title={t('sectionTitles.whatToExpect')}>
                 <Bullets items={t.raw('coldBalls.watchFor') as string[]} />
@@ -1744,7 +1793,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             coachTitle={isBread ? t('stepTitles.coldProof') : t('stepTitles.coldRetardBalls')}
             recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
-          />
+          />}
         </StepCard>
       )}
 
@@ -1753,7 +1802,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         <StepCard number={n()} {...sc()} icon={<IconProof />} title={t('stepTitles.finalProof')}
           time={schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? schedule.finalProofStart}
           duration={(() => {
-            const proofEnd = schedule.bakeStart;
+            const proofEnd = schedule.poachStart ?? schedule.bakeStart;
             const proofStart = schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? schedule.finalProofStart;
             if (!proofStart || !proofEnd) return schedule.finalProofHours;
             return Math.max(0, (proofEnd.getTime() - proofStart.getTime()) / 3600000);
@@ -1761,16 +1810,16 @@ Actual dough condition and equipment may differ from these estimates.`;
           accent="#7A8C6E">
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
-            <Steps items={[
+            {breadProtocol ? <Steps items={profileSteps(breadProtocol.proof[l])} /> : <Steps items={[
               ...(isTwoPhase ? [t.raw('finalProof.removeFridge') as { bold: string; note: string }] : []),
               { bold: l === 'fr' ? 'Laissez les pâtons se détendre, couverts' : 'Let the shaped dough relax, covered',
                 note: l === 'fr' ? 'À température ambiante, jusqu’à ce que la pâte soit souple et aérée.' : 'At room temperature, until relaxed and airy.' },
               t.raw('finalProof.pokeTest') as { bold: string; note: string },
               { bold: l === 'fr' ? `Lancez le préchauffage du four ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} avant la cuisson` : `Start preheating your oven ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} before bake time`, note: (l === 'fr' ? 'préchauffez pendant l’apprêt ; vérifiez que le four et la pâte sont prêts' : 'preheat overlaps proofing; check both are ready') },
-            ]} />
+            ]} />}
           </Section>
 
-          <StepExtras
+          {!breadProtocol && <StepExtras
             tips={<>
               <Section icon="" title={t('sectionTitles.pokeTest')}>
                 <Bullets items={t.raw('finalProof.pokeResponses') as string[]} />
@@ -1794,12 +1843,12 @@ Actual dough condition and equipment may differ from these estimates.`;
             coachTitle={t('stepTitles.finalProof')}
             recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
-          />
+          />}
         </StepCard>
       )}
 
       {/* ── STEP: Preheat Oven ───────────────────────── */}
-      <StepCard number={n()} {...sc()} icon={<IconPreheat />} title={t('stepTitles.preheatOven')}
+      <StepCard number={n()} {...sc()} icon={<IconPreheat />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle') : t('stepTitles.preheatOven')}
         time={schedule.preheatStart} accent={D.gold}>
 
         <div style={{ fontSize: '12px', color: D.smoke, fontStyle: 'italic',
@@ -1808,7 +1857,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         </div>
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
-          {isBread ? (
+          {breadProtocol ? <Steps items={profileSteps(breadProtocol.preheat[l])} /> : isBread ? (
             <Steps items={(t.raw(
               ovenType === 'dutch_oven' ? 'preheat.dutch.steps' :
               ovenType === 'home_oven_stone_bread' ? 'preheat.stoneBread.steps' :
@@ -1830,9 +1879,9 @@ Actual dough condition and equipment may differ from these estimates.`;
           )}
         </Section>
 
-        <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Le four et la surface de cuisson sont chauds, et la pâte est prête.':'The oven and baking surface are heated, and the dough is ready.'}</p>
+        {!breadProtocol && <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Le four et la surface de cuisson sont chauds, et la pâte est prête.':'The oven and baking surface are heated, and the dough is ready.'}</p>}
 
-        <StepExtras
+        {!breadProtocol && <StepExtras
           tips={
             <Section icon={null} title={t('sectionTitles.pitfalls')}>
               <Bullets items={isBread
@@ -1856,11 +1905,16 @@ Actual dough condition and equipment may differ from these estimates.`;
           coachTitle={t('stepTitles.preheatOven')}
           recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
-        />
+        />}
       </StepCard>
 
+      {hasPoachStep && <StepCard number={n()} {...sc()} icon={<IconPreheat />} title={l === 'fr' ? 'Pocher les bagels' : 'Poach the bagels'} time={schedule.poachStart} duration={(schedule.poachMinutes ?? 0) / 60}>
+        <Steps items={profileSteps(breadProtocol!.cookingSteps[l].slice(0,1))} />
+        <p>{l === 'fr' ? 'Ce créneau comprend le pochage et la manipulation de toute la fournée. Gardez la plaque prête pour l’enfournement prévu.' : 'This window includes poaching and handling the whole batch. Have the tray ready for the planned oven time.'}</p>
+      </StepCard>}
+
       {/* ── STEP: Bake & Eat ─────────────────────────── */}
-      <StepCard final={!isBread} number={n()} {...sc()} completeLabel={!isBread ? (l === 'fr' ? 'Pâte prête' : 'Dough ready') : undefined} icon={<IconBake />} title={isBread ? t('stepTitles.bakeEat') : (l === 'fr' ? 'Votre pâte est prête' : 'Your dough is ready')} time={schedule.bakeStart} accent="#5A9A50">
+      <StepCard final={!isBread} number={n()} {...sc()} completeLabel={!isBread ? (l === 'fr' ? 'Pâte prête' : 'Dough ready') : undefined} icon={<IconBake />} title={breadProtocol?.cooking === 'boil-bake' ? (hasPoachStep ? (l === 'fr' ? 'Cuire les bagels au four' : 'Bake the bagels') : (l === 'fr' ? 'Pocher puis cuire au four' : 'Poach, then bake')) : breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Cuire à la poêle' : 'Cook on the griddle') : isBread ? t('stepTitles.bakeEat') : (l === 'fr' ? 'Votre pâte est prête' : 'Your dough is ready')} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined} accent="#5A9A50">
         {!isBread && <>
           <p>{l === 'fr' ? 'Choisissez vos pizzas, préparez les garnitures, puis suivez la cuisson de chacune.' : 'Choose your pizzas, prepare the toppings, then follow each pizza through baking.'}</p>
           {onNavigateToPizzaParty && <button type="button" onClick={onNavigateToPizzaParty} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{l === 'fr' ? 'Pizzas et garnitures →' : 'Pizzas & toppings →'}</button>}
@@ -1879,7 +1933,7 @@ Actual dough condition and equipment may differ from these estimates.`;
               {l === 'fr' ? 'Pan / Detroit / Deep Dish : la pâte cuit dans le moule huilé, sans enfournement à la pelle. Pour une Detroit, poussez le fromage jusqu’aux bords pour les caraméliser, puis ajoutez la sauce après cuisson. Pour une Deep Dish, faites remonter la pâte sur les parois et ajoutez le fromage, la garniture puis la sauce.' : 'Pan / Detroit / Deep Dish: dough bakes in the oiled pan; no launching needed. For Detroit, push cheese to the edges for caramelised crusts and add sauce after baking. For Deep Dish, press dough up the sides, then add cheese, toppings and sauce in that order.'}
             </div>
           )}
-          {isBread ? (
+          {breadProtocol ? <Steps items={profileSteps(hasPoachStep ? breadProtocol.cookingSteps[l].slice(1) : breadProtocol.cookingSteps[l])} /> : isBread ? (
             <Steps items={(t.raw(
               ovenType === 'dutch_oven' ? 'bake.dutch.steps' :
               ovenType === 'home_oven_stone_bread' ? 'bake.stoneBread.steps' :
@@ -1900,8 +1954,8 @@ Actual dough condition and equipment may differ from these estimates.`;
           )}
         </Section>
 
-        {isBread && <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Le pain est cuit à cœur ; posez-le sur la grille de refroidissement.':'The bread is baked through; move it to the cooling rack.'}</p>}
-        <StepExtras
+        {isBread && !breadProtocol && <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Le pain est cuit à cœur ; posez-le sur la grille de refroidissement.':'The bread is baked through; move it to the cooling rack.'}</p>}
+        {!breadProtocol && <StepExtras
           tips={<>
             <Section icon="" title={t('sectionTitles.watchFor')}>
               {isBread ? (
@@ -1952,12 +2006,12 @@ Actual dough condition and equipment may differ from these estimates.`;
           coachTitle={t('stepTitles.bakeEat')}
           recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
-        />
+        />}
         </details>
       </StepCard>
 
-      {isBread && <StepCard final number={n()} {...sc()} icon={<IconBake />} title={l === 'fr' ? 'Laisser refroidir le pain' : 'Cool the bread'}>
-        {(() => {
+      {isBread && <StepCard final number={n()} {...sc()} icon={<IconBake />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Garder les pains souples' : 'Keep the breads soft') : (l === 'fr' ? 'Laisser refroidir le pain' : 'Cool the bread')}>
+        {breadProtocol ? <Steps items={profileSteps(breadProtocol.cooling[l])} /> : (() => {
           const weight = (recipe?.totalDough ?? numItems * 750) / Math.max(1,numItems);
           const range = breadCoolingRange(styleKey, weight);
           return <><Section icon="" title={t('sectionTitles.whatToDo')}><Steps items={[
@@ -1965,7 +2019,8 @@ Actual dough condition and equipment may differ from these estimates.`;
             {bold:l === 'fr' ? `Comptez environ ${range} avant de trancher.` : `Allow about ${range} before slicing.`,note:''},
           ]}/></Section><p style={{marginTop:16}}><strong>{l === 'fr' ? 'Prêt quand : ' : 'Ready when: '}</strong>{styleKey === 'pain_seigle' ? (l === 'fr' ? 'Attendez le lendemain pour trancher ; une fois refroidi, emballez-le pour éviter qu’il sèche.' : 'Wait until tomorrow to slice; once cool, wrap it to keep it from drying out.') : (l === 'fr' ? 'Le dessous du pain n’est plus chaud au toucher. Encore chaud ? Vérifiez dans 30 min.' : 'The loaf no longer feels warm underneath. Still warm? Check again in 30 min.')}</p></>;
         })()}
-        <StepExtras tips={<p>{l === 'fr' ? 'Laissez-le découvert pendant le refroidissement. Rangez-le une fois refroidi.' : 'Leave it uncovered while cooling. Store it once cool.'}</p>} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />
+        {!breadProtocol && <StepExtras tips={<p>{l === 'fr' ? 'Laissez-le découvert pendant le refroidissement. Rangez-le une fois refroidi.' : 'Leave it uncovered while cooling. Store it once cool.'}</p>} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />}
+        {fillingsAction}
       </StepCard>}
 
       {learnTerm && (
@@ -1978,3 +2033,4 @@ Actual dough condition and equipment may differ from these estimates.`;
     </SimpleModeCtx.Provider>
   );
 }
+

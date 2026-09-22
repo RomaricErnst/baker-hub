@@ -8,6 +8,7 @@ import { type UnitSystem, displayWeight, displayTemp } from '../utils/units';
 import PlanNav from './PlanNav';
 import WaterPreparation, { type WaterSource, type WaterSettingsProps } from './WaterPreparation';
 import { formatPrefermentDose, prefermentDilution } from '../utils/prefermentDose';
+import { getBreadProtocol } from '../utils/breadProfiles';
 
 interface RecipeOutputProps extends WaterSettingsProps {
   containerCapacityLitres?: number;
@@ -380,6 +381,7 @@ export default function RecipeOutput({
 
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
   const enrichment = result.enrichment;
+  const breadProtocol = getBreadProtocol(styleKey ?? '');
   const enrichmentRows = enrichment ? (['milk','eggs','butter'] as const).filter(key => enrichment[key] > 0).map(key => <IngRow key={key} label={({milk:locale === 'fr' ? 'Lait' : 'Milk',eggs:locale === 'fr' ? 'Œufs sans coquille' : 'Eggs, without shells',butter:locale === 'fr' ? 'Beurre' : 'Butter'})[key]} grams={wStr(enrichment[key])} advancedPct={mode === 'custom' ? pctStr(enrichment[key] / flour * 100) : undefined} />) : null;
   // Sourdough starter accounting: half the starter is flour, half water
   // (100% hydration). Subtract from the main-dough amounts so the card's
@@ -480,6 +482,8 @@ export default function RecipeOutput({
     ? !EXPLANATION_BLOCKLIST.some(term => yeastInfo.explanation.toLowerCase().includes(term))
     : false;
 
+  if (result.protocolIssue) return <section role="alert"><h2>{locale === 'fr' ? 'Réglages à ajuster' : 'Adjust these settings'}</h2><p>{result.protocolIssue === 'equipment' ? (locale === 'fr' ? 'Choisissez un matériel adapté à ce pain.' : 'Choose suitable equipment for this bread.') : result.protocolIssue === 'timing' ? (locale === 'fr' ? 'Prévoyez le temps de mélange, de repos et de façonnage avant cuisson.' : 'Allow time for mixing, resting and shaping before cooking.') : (locale === 'fr' ? 'Cette méthode de levée n’est pas prise en charge pour ce pain.' : 'This leavening method is not supported for this bread.')}</p>{onEditSetup && <button type="button" onClick={onEditSetup} style={{minHeight:44}}>{locale === 'fr' ? 'Modifier les réglages' : 'Edit setup'}</button>}</section>;
+
   if (enrichment?.unsupportedMethod) return <section role="alert"><h2>{locale === 'fr' ? 'Méthode non prise en charge' : 'Unsupported method'}</h2><p>{locale === 'fr' ? 'Cette formule enrichie nécessite une levure commerciale, sans préferment. Modifiez le choix de levure dans les réglages puis recalculez.' : 'This enriched formula requires commercial yeast without preferment. Update the leavening choice in setup and recalculate.'}</p>{onEditSetup && <button type="button" onClick={onEditSetup}>{locale === 'fr' ? 'Modifier les réglages' : 'Edit setup'}</button>}</section>;
 
   return (
@@ -518,6 +522,14 @@ export default function RecipeOutput({
           )}
         </div>
       </div>
+
+      {breadProtocol && <p style={{fontSize:15,lineHeight:1.5,margin:0}}>{breadProtocol.method === 'unleavened'
+        ? (locale === 'fr' ? 'Sans levure : un repos couvert détend la pâte avant de l’abaisser.' : 'Unleavened: a covered rest relaxes the dough before rolling.')
+        : breadProtocol.cooking === 'boil-bake'
+          ? (locale === 'fr' ? 'Prévoyez une casserole pour le pochage, puis une plaque pour la cuisson au four.' : 'Have a pan ready for poaching, then a baking tray for the oven.')
+          : breadProtocol.cooking === 'griddle'
+            ? (locale === 'fr' ? 'Cuisson à la poêle ou sur une plaque : gardez les pains cuits couverts pour qu’ils restent souples.' : 'Cook on a skillet or griddle; keep cooked breads covered to stay soft.')
+            : (locale === 'fr' ? 'Suivez le façonnage et la cuisson propres à ce pain dans le guide.' : 'Follow this bread’s shaping and baking steps in the guide.')}</p>}
 
       {(hasPref || (sdActive && mode === 'custom')) && <section aria-label={locale === 'fr' ? 'Quantités totales' : 'Total ingredients'}>
         <h3 style={{fontSize:17}}>{locale === 'fr' ? 'Quantités totales de la recette' : 'Total recipe ingredients'}</h3>
@@ -652,7 +664,7 @@ export default function RecipeOutput({
         /* Direct dough additions */
         <div>
 
-          <IngRow
+          {result.flourParts?.length ? result.flourParts.map(part => <IngRow key={part.key} label={locale === 'fr' ? part.nameFr : part.name} grams={wStr(part.grams)} pct={pctStr(part.pct)} highlight advancedPct={mode === 'custom' ? pctStr(part.pct) : undefined} />) : <IngRow
             label={t('recipeOutput.ingredientFlour')}
             grams={wStr(flourMain)}
             noPct={sdActive}
@@ -686,7 +698,7 @@ export default function RecipeOutput({
                 {locale === 'fr' ? `+ ${sdHalf}g via le levain = ${flour}g au total` : `+ ${sdHalf}g via the starter = ${flour}g total`}
               </span>
             ) : undefined}
-          />
+          />}
           {water > 0 && <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(sdActive ? waterMain : water)} noPct={sdActive} pct={pctStr(waterPct)} sub={
             !enrichment ? <details><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Eau du mélange final' : 'Main-mix water'}</summary>
               {sdActive && <p>{locale === 'fr' ? `${wStr(sdHalf)} d’eau sont déjà dans le levain indiqué ci-dessous.` : `${wStr(sdHalf)} water is already in the starter shown below.`}</p>}
@@ -1110,3 +1122,4 @@ export default function RecipeOutput({
     </div>
   );
 }
+

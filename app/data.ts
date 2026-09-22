@@ -1,3 +1,4 @@
+import { BREAD_STYLE_DEFINITIONS, getBreadProtocol } from './utils/breadProfiles';
 // ══════════════════════════════════════════
 // BAKER HUB — Master Data File
 // Single source of truth for all recipe data
@@ -92,6 +93,7 @@ export const PIZZA_STYLES = {
 
 // ── BREAD STYLES ──────────────────────────
 export const BREAD_STYLES = {
+  ...BREAD_STYLE_DEFINITIONS,
   pain_campagne: {
     name: 'Pain de campagne',
     nameFr: 'Pain de campagne',
@@ -310,6 +312,12 @@ export const OVEN_TYPES = {
 
 // ── BREAD OVEN TYPES ──────────────────────
 export const BREAD_OVEN_TYPES = {
+  griddle: {
+    name: 'Heavy pan / griddle', nameFr: 'Poêle épaisse / plancha', emoji: '🍳',
+    desc: 'For soft flatbreads cooked on the hob.', descFr: 'Pour les pains plats cuits sur le feu.',
+    hydrationDelta: 0, forceOil: null, forceSugar: null, preheatMin: 5,
+    image: '/images/approved/equipment-v2/griddle.webp',
+  },
   wood_fired: {
     name: 'Wood-fired oven',
     nameFr: 'Four à bois',
@@ -580,6 +588,7 @@ const AUTOLYSE_NEVER = new Set(['pain_seigle']);
 
 /** Minutes of autolyse between the initial and final mix. 0 when there is none. */
 export function autolyseMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: string): number {
+  if (styleKey && getBreadProtocol(styleKey) && !['focaccia', 'ciabatta'].includes(styleKey)) return 0;
   if (mixerType === 'no_knead') return 0;
   // Rye first, and before the hand-mixing rule: an autolyse in a rye dough is
   // harmful, not merely unhelpful, so it must not arrive through a mixer path.
@@ -599,6 +608,7 @@ export function autolyseMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: s
  * the honest answer until a bread source exists. Do not guess one in.
  */
 export function kneadMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: string): number {
+  if (styleKey === 'piadina') return mixerType === 'hand' ? 5 : 3;
   const base = MIXER_TYPES[mixerType]?.kneadMin ?? 10;
   if (base === 0) return 0;                       // no-knead stays no-knead
   const published = styleKey ? STYLE_STAND_MIX_MIN[styleKey] : undefined;
@@ -1132,3 +1142,4 @@ export type MixerType = keyof typeof MIXER_TYPES;
 export type YeastType = keyof typeof YEAST_TYPES;
 
 export const ALL_STYLES = { ...PIZZA_STYLES, ...BREAD_STYLES };
+

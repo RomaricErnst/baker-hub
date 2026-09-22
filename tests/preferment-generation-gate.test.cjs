@@ -17,7 +17,13 @@ test('direct generate call returns to planner when commercial preferment is inva
  for(const name of ['setActiveTab','setSetupOverview','setAdvancedStep'])context[name]=value=>calls.push([name,value]);
  vm.runInNewContext(ts.transpileModule(handler+'\nhandleGenerate()',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText,context);
  assert.deepEqual(calls,[['setActiveTab','setup'],['setSetupOverview',false],['setAdvancedStep',9]]);
- assert.match(source,/const canGenerate = commercialPrefermentPlanReady &&/);
+ // Evaluate the real button gate, independently of operand ordering. A
+ // valid recipe must not bypass the current commercial-preferment check.
+ const generateGate=source.match(/const canGenerate =[\s\S]*?;/)[0];
+ for(const tab of ['simple','custom'])for(const commercialPrefermentPlanReady of [false,true])for(const protocolIssue of [undefined,'method','equipment','timing']){
+  const allowed=vm.runInNewContext(generateGate+'\ncanGenerate',{tab,commercialPrefermentPlanReady,starterPlanReady:true,unsupportedEnrichedMethod:false,archivedFlourNames:[],simpleRequiredDone:true,customRequiredDone:true,recipe:{protocolIssue},advancedRecipe:{protocolIssue}});
+  assert.equal(allowed,commercialPrefermentPlanReady && !protocolIssue,`${tab}: commercial=${commercialPrefermentPlanReady}, protocol=${protocolIssue}`);
+ }
 });
 
 test('resumed schedule date edits revoke restore exemption before keyed remount; equal dates retain it',()=>{
@@ -36,3 +42,16 @@ test('resumed schedule date edits revoke restore exemption before keyed remount;
  assert.equal((source.match(/savedPrefGoesInFridge=\{prefGoesInFridge\}/g)||[]).length,2);
 });
 
+
+test('direct generate call sends unsupported bread protocols back to the relevant choice',()=>{
+ const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);let handler;
+ function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='handleGenerate')handler=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);
+ const code=ts.transpileModule(handler+'\nhandleGenerate()',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
+ for(const tab of ['simple','custom'])for(const protocolIssue of ['equipment','method','timing']){
+  const calls=[],context={tab,styleKey:'bagel',commercialPrefermentPlanReady:true,recipe:{protocolIssue},advancedRecipe:{protocolIssue},scrollToStepTop(){}};
+  for(const name of ['setActiveTab','setSetupOverview','setActiveStep','setAdvancedStep'])context[name]=value=>calls.push([name,value]);
+  vm.runInNewContext(code,context);
+  const next=protocolIssue==='equipment'?3:protocolIssue==='timing'?(tab==='custom'?9:7):(tab==='custom'?7:6);
+  assert.deepEqual(calls,[['setActiveTab','setup'],['setSetupOverview',false],[tab==='custom'?'setAdvancedStep':'setActiveStep',next]]);
+ }
+});

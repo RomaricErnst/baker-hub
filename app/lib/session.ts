@@ -1,3 +1,4 @@
+import { normalizeSandwichSnapshot, type SandwichSnapshot } from './sandwich';
 import type { StarterEvent } from '../components/SchedulePicker';
 import type { RecipeEnrichment } from '../utils/enrichedFormulas';
 const SESSION_KEY = 'bh_session_v1';
@@ -62,6 +63,7 @@ export interface SessionData {
   advancedHighestStep?: number;
   activeTab: string;
   pizzaPartyTab?: string;
+  sandwichParty?: SandwichSnapshot | null;
   modeChosen: boolean;
   pizzaParty?: { qtys: Record<string, number>; bakedQtys?: Record<string, number>; shopTicks?: Record<string, boolean>; prepTicks?: string[] } | null;
   bakedDone?: boolean;
@@ -89,6 +91,7 @@ export interface SessionData {
   computedRecipe?: {
     enrichment?: RecipeEnrichment;
     flour: number;
+    flourParts?: Array<{key:string;name:string;nameFr:string;grams:number;pct:number}>;
     water: number;
     salt: number;
     oil: number;
@@ -109,7 +112,7 @@ export function normalizeMixingBatches(value: unknown): number | undefined {
 
 export function saveSession(data: Omit<SessionData, 'version' | 'savedAt'>): boolean {
   try {
-    const payload: SessionData = { ...data, mixingBatches: normalizeMixingBatches(data.mixingBatches), version: 1, savedAt: Date.now() };
+    const payload: SessionData = { ...data, sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), version: 1, savedAt: Date.now() };
     localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
     return true;
   } catch { return false; }
@@ -122,7 +125,7 @@ export function loadSession(): SessionData | null {
     const data = JSON.parse(raw) as SessionData;
     if (data.version !== 1) return null;
     if (Date.now() - data.savedAt > SESSION_TTL_MS) { clearSession(); return null; }
-    return { ...data, mixingBatches: normalizeMixingBatches(data.mixingBatches) };
+    return { ...data, sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches) };
   } catch { return null; }
 }
 
@@ -158,3 +161,4 @@ export function serializeStarterEvents(events: StarterEvent[]): NonNullable<Sess
 export function restoreStarterEvents(events: SessionData['starterEvents'], offsetMs = 0): StarterEvent[] {
   return (events ?? []).filter(event => Number.isFinite(event.time)).map(event => ({...event, time:new Date(event.time + offsetMs), bellPeakTime:event.bellPeakTime == null ? undefined : new Date(event.bellPeakTime + offsetMs), bellStartTime:event.bellStartTime == null ? undefined : new Date(event.bellStartTime + offsetMs)}));
 }
+
