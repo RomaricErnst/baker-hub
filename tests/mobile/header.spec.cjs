@@ -81,7 +81,10 @@ for (const locale of ['fr', 'en']) {
     await capture(page, testInfo, `${locale}-menu`);
     await dialog.getByRole('button', { name: fr ? 'Fermer' : 'Close', exact: true }).tap();
     await expect(dialog).toBeHidden();
-    await menu.tap();
+    // Safari does not focus buttons on a touch tap. Exercise restoration
+    // from a genuine keyboard-focused trigger, separately from touch closing.
+    await menu.focus();
+    await menu.press('Enter');
     await expect(dialog).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();

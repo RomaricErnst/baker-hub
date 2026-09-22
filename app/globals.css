@@ -195,7 +195,8 @@ body {
   .bh-wordmark { font-size: 24px !important; }
 }
 @media (max-width: 359px) {
-  .bh-header { padding-inline: 8px !important; }
+  /* WebKit's serif metrics need this space with Back + French Save. */
+  .bh-header { padding-inline: 0 !important; }
   .bh-header-menu, .bh-header-save { padding-inline: 6px !important; }
 }
 
