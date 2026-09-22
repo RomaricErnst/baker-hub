@@ -51,6 +51,10 @@ interface BakeGuideProps extends WaterSettingsProps {
   onNavigateToFillings?: () => void;
   simpleMode?: boolean;
   addSeeds?: boolean;
+  phase?: 'preparation' | 'cooking';
+  active?: boolean;
+  onNavigateToCooking?: () => void;
+  onNavigateToPreparation?: () => void;
   recipe?: import('../utils').RecipeResult | null;
 }
 
@@ -188,9 +192,10 @@ function Pill({ label, color }: { label: string; color?: string }) {
 
 // ── Step card ────────────────────────────────────────
 function StepCard({
-  number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext,
+  number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext, hidden = false, stepPhase = 'preparation', previousLabel, nextLabel,
 }: {
   number: number; icon: React.ReactNode; title: string; overview?: boolean; totalSteps?: number;
+  hidden?: boolean; stepPhase?: 'preparation' | 'cooking'; previousLabel?: string; nextLabel?: string;
   time?: Date; duration?: number | null; accent?: string;
   onPrevious?: () => void; onNext?: () => void; preview?: boolean; onReturnCurrent?: () => void; completeLabel?: string; batchCompletion?: boolean; final?: boolean; open: boolean; done: boolean; onToggle: () => void; onDone: () => void;
   children: React.ReactNode; divRef?: React.RefCallback<HTMLDivElement>;
@@ -199,7 +204,7 @@ function StepCard({
   const fr = locale === 'fr';
   const navigationHeight = useBottomNavHeight(64);
   return (
-    <section ref={divRef} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${number}`} style={{ display: open || overview ? undefined : 'none', background: D.warm, borderRadius: overview ? 12 : 0,
+    <section ref={divRef} data-guide-phase={stepPhase} hidden={hidden} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${number}`} style={{ display: !hidden && (open || overview) ? undefined : 'none', background: D.warm, borderRadius: overview ? 12 : 0,
       border: overview ? `1px solid ${done ? D.sage + '60' : D.border}` : 'none', scrollMarginTop: 140 }}>
       <button type="button" onClick={overview ? onToggle : undefined} aria-expanded={open}
         aria-controls={`bake-step-${number}`} style={{ width: '100%', display: 'flex', gap: 12,
@@ -227,8 +232,8 @@ function StepCard({
               {fr ? 'Étape faite' : 'Step done'}
             </label>}
         <nav aria-label={fr ? 'Navigation entre les étapes' : 'Step navigation'} style={{display:'flex',gap:8}}>
-          <button type="button" onClick={onPrevious} disabled={!onPrevious} style={{flex:1,minHeight:44}}>{fr ? 'Étape précédente' : 'Previous step'}</button>
-          <button type="button" onClick={onNext} disabled={final} style={{flex:1,minHeight:44}}>{fr ? 'Étape suivante' : 'Next step'}</button>
+          <button type="button" onClick={onPrevious} disabled={!onPrevious} style={{flex:1,minHeight:44}}>{previousLabel ?? (fr ? 'Étape précédente' : 'Previous step')}</button>
+          <button type="button" onClick={onNext} disabled={final} style={{flex:1,minHeight:44}}>{nextLabel ?? (fr ? 'Étape suivante' : 'Next step')}</button>
         </nav>
         </div>
       </div>}
@@ -800,6 +805,7 @@ export default function BakeGuide({
   feedRatio = 1, starterLocation = 'rt',
   units, locale,
   onNavigateToPizzaParty, onNavigateToFillings, recipe, simpleMode, addSeeds,
+  phase, active = true, onNavigateToCooking, onNavigateToPreparation,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
   const l = locale === 'fr' ? 'fr' : 'en';
@@ -813,7 +819,14 @@ export default function BakeGuide({
   const batch = recipe ? mixingBatchPlan(recipe, mixerType, mixingBatches, activeBatch) : null;
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const focusRequestedStep = useRef<number | null>(null);
+  const viewedPhase = useRef<'preparation' | 'cooking' | undefined>(undefined);
+  const phasePositions = useRef<Partial<Record<'preparation' | 'cooking', number>>>({});
   function navigateGuideStep(step: number) {
+    const targetPhase = stepRefs.current[step]?.dataset.guidePhase;
+    if (phase && targetPhase !== phase) {
+      if (targetPhase === 'cooking') onNavigateToCooking?.();
+      if (targetPhase === 'preparation') onNavigateToPreparation?.();
+    }
     focusRequestedStep.current = step;
     setCurrentStep(step);
   }
@@ -829,6 +842,8 @@ export default function BakeGuide({
   });
   useEffect(() => {
     focusRequestedStep.current = null;
+    viewedPhase.current = undefined;
+    phasePositions.current = {};
     let completed: number[] = [];
     try {
       const stored: unknown = JSON.parse(localStorage.getItem(progressKey) ?? '[]');
@@ -842,10 +857,33 @@ export default function BakeGuide({
     setCurrentStep(firstUndone);
   }, [progressKey]);
 
+  // Browsing and completion are independent. Each destination resumes its last
+  // viewed step (including overview=0); explicit Previous/Next takes precedence.
   useEffect(() => {
-    if (currentStep > 0) {
+    if (!active || !phase) return;
+    const changedPhase = viewedPhase.current !== phase;
+    viewedPhase.current = phase;
+    const belongsToPhase = currentStep === 0 || stepRefs.current[currentStep]?.dataset.guidePhase === phase;
+    const explicitNavigation = focusRequestedStep.current === currentStep && currentStep > 0;
+    if (belongsToPhase && (!changedPhase || explicitNavigation)) {
+      phasePositions.current[phase] = currentStep;
+      return;
+    }
+    const candidates = stepRefs.current.flatMap((el, index) => el?.dataset.guidePhase === phase ? [index] : []);
+    const remembered = phasePositions.current[phase];
+    const target = remembered === 0 || (remembered !== undefined && candidates.includes(remembered))
+      ? remembered
+      : belongsToPhase ? currentStep : candidates.find(index => !doneSteps.has(index)) ?? candidates[0];
+    if (target !== undefined) {
+      phasePositions.current[phase] = target;
+      setCurrentStep(target);
+    }
+  }, [active, phase, currentStep, doneSteps, totalSteps]);
+
+  useEffect(() => {
+    if (active && currentStep > 0) {
       const el = stepRefs.current[currentStep];
-      if (el) {
+      if (el && !el.hidden) {
         if (focusRequestedStep.current === currentStep) {
           focusRequestedStep.current = null;
           el.focus({ preventScroll: true });
@@ -860,7 +898,7 @@ export default function BakeGuide({
         }
       }
     }
-  }, [currentStep]);
+  }, [currentStep, active, phase]);
 
   const isSourdough = recipe ? !!recipe.sourdough : styleKey === 'sourdough' || styleKey === 'pain_levain';
   const breadProtocol = getBreadProtocol(styleKey);
@@ -986,9 +1024,13 @@ Actual dough condition and equipment may differ from these estimates.`;
   let stepNum = 0;
   let lastStep = 0;
   const n = () => { stepNum++; lastStep = stepNum; return stepNum; };
-  const sc = (mixing = false) => {
+  const sc = (mixing = false, stepPhase: 'preparation' | 'cooking' = 'preparation') => {
     const s = lastStep;
     return {
+      stepPhase,
+      hidden: !!phase && phase !== stepPhase,
+      previousLabel: phase && stepRefs.current[s - 1]?.dataset.guidePhase === 'preparation' && stepPhase === 'cooking' ? (l === 'fr' ? 'Retour au protocole' : 'Back to preparation') : undefined,
+      nextLabel: phase && stepRefs.current[s + 1]?.dataset.guidePhase === 'cooking' && stepPhase === 'preparation' ? (l === 'fr' ? 'Passer à la cuisson' : 'Go to cooking') : undefined,
       overview: currentStep === 0, totalSteps,
       onPrevious: s > 1 ? () => navigateGuideStep(s - 1) : undefined,
       onNext: () => { const next = stepRefs.current.findIndex((el, i) => i > s && el !== null); if (next > s) navigateGuideStep(next); },
@@ -1015,13 +1057,19 @@ Actual dough condition and equipment may differ from these estimates.`;
     };
   };
 
+  const overviewLabel = phase === 'preparation'
+    ? (l === 'fr' ? 'Étapes du protocole' : 'Preparation steps')
+    : phase === 'cooking'
+      ? (l === 'fr' ? 'Étapes de cuisson' : 'Cooking steps')
+      : (l === 'fr' ? 'Toutes les étapes' : 'All steps');
+
   if (recipe?.protocolIssue) return <section role="alert"><h2>{l === 'fr' ? 'Ajustez ce pain avant de commencer' : 'Adjust this bread before starting'}</h2><p>{recipe.protocolIssue === 'equipment' ? (l === 'fr' ? 'Choisissez un matériel de cuisson compatible dans les réglages.' : 'Choose compatible cooking equipment in setup.') : recipe.protocolIssue === 'timing' ? (l === 'fr' ? 'Laissez assez de temps pour mélanger, reposer et abaisser la pâte avant cuisson.' : 'Allow enough time to mix, rest and roll the dough before cooking.') : (l === 'fr' ? 'Choisissez la méthode de levée prise en charge dans les réglages.' : 'Choose the supported leavening method in setup.')}</p></section>;
 
   if (recipe?.enrichment?.unsupportedMethod) return <p role="alert">{l === 'fr' ? 'Modifiez le choix de levure dans les réglages et recalculez cette formule enrichie avant de suivre les étapes.' : 'Update the leavening choice in setup and recalculate this enriched formula before following the steps.'}</p>;
 
   if (breadProtocol?.method === 'unleavened') return <SimpleModeCtx.Provider value={!!simpleMode}>
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
-      <button type="button" onClick={() => setCurrentStep(0)} style={{minHeight:44,padding:'8px 16px',border:`1px solid ${D.border}`,borderRadius:10,background:D.warm}}>{l === 'fr' ? 'Toutes les étapes' : 'All steps'}</button>
+      <button type="button" onClick={() => setCurrentStep(0)} style={{minHeight:44,padding:'8px 16px',border:`1px solid ${D.border}`,borderRadius:10,background:D.warm}}>{overviewLabel}</button>
       <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={l === 'fr' ? 'Mélanger la pâte' : 'Mix the dough'} time={bgMixStart} duration={schedule.mixingDurationH}>
         <Section icon="" title={l === 'fr' ? 'À mélanger' : 'Use now'}>
           {batch && Object.entries(batch.portion).filter(([,grams]) => grams > 0).map(([key,grams]) => <p key={key}>{({flour:l === 'fr' ? 'Farine' : 'Flour',water:l === 'fr' ? 'Eau' : 'Water',salt:l === 'fr' ? 'Sel' : 'Salt',oil:l === 'fr' ? 'Huile' : 'Oil',sugar:l === 'fr' ? 'Sucre' : 'Sugar'} as Record<string,string>)[key] ?? key} · {Math.round(grams)} g</p>)}
@@ -1035,10 +1083,10 @@ Actual dough condition and equipment may differ from these estimates.`;
       <StepCard number={n()} {...sc()} icon={<IconDivide />} title={l === 'fr' ? 'Diviser et abaisser' : 'Divide and roll'} time={schedule.divideBallTime ?? undefined}>
         <Steps items={profileSteps(breadProtocol.shaping[l])} />
       </StepCard>
-      <StepCard number={n()} {...sc()} icon={<IconPreheat />} title={l === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle'} time={schedule.preheatStart}>
+<StepCard number={n()} {...sc(false, 'cooking')} icon={<IconPreheat />} title={l === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle'} time={schedule.preheatStart}>
         <Steps items={profileSteps(breadProtocol.preheat[l])} />
       </StepCard>
-      <StepCard final number={n()} {...sc()} icon={<IconBake />} title={l === 'fr' ? 'Cuire et garnir' : 'Cook and fill'} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined}>
+      <StepCard final number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={l === 'fr' ? 'Cuire et garnir' : 'Cook and fill'} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined}>
         <Steps items={profileSteps(breadProtocol.cookingSteps[l])} />
         <Steps items={profileSteps(breadProtocol.cooling[l])} />
         {fillingsAction}
@@ -1051,7 +1099,7 @@ Actual dough condition and equipment may differ from these estimates.`;
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
       {/* ── Header ──────────────────────────────────── */}
-      <div style={{ marginBottom: '4px', display: currentStep === 0 ? undefined : 'none' }}>
+      <div style={{ marginBottom: '4px', display: currentStep === 0 && !phase ? undefined : 'none' }}>
         <div style={{ fontFamily: 'var(--font-ui)', fontSize: '20px', fontWeight: 700, color: D.char }}>
           {_isFr ? 'Guide de cuisson pas à pas' : 'Step-by-step bake guide'}
         </div>
@@ -1065,18 +1113,22 @@ Actual dough condition and equipment may differ from these estimates.`;
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button type="button" onClick={() => setCurrentStep(0)} style={{ minHeight: 44, padding: '8px 16px', border: `1px solid ${D.border}`, borderRadius: 10, background: D.warm }}>
-          {_isFr ? 'Toutes les étapes' : 'All steps'}
+          {overviewLabel}
         </button>
         <button type="button" onClick={() => {
           let next = 1;
           while (doneSteps.has(next) && stepRefs.current[next + 1]) next++;
+          if (phase) {
+            const candidates = stepRefs.current.flatMap((el, index) => el?.dataset.guidePhase === phase ? [index] : []);
+            next = candidates.find(index => !doneSteps.has(index)) ?? candidates[0] ?? next;
+          }
           setCurrentStep(next);
         }} style={{ minHeight: 44, padding: '8px 16px', border: `1px solid ${D.border}`, borderRadius: 10, background: D.warm }}>
           {_isFr ? 'Reprendre' : 'Current step'}
         </button>
       </div>
             {/* Executive summary — phase strip from the old protocole */}
-      {currentStep === 0 && <PhaseSummary schedule={schedule} numItems={numItems} />}
+      {currentStep === 0 && !phase && <PhaseSummary schedule={schedule} numItems={numItems} />}
 
       {/* ── STEP: Make Poolish / Biga ───────────────── */}
       {hasPref && prefStartTime && (
@@ -1848,7 +1900,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       )}
 
       {/* ── STEP: Preheat Oven ───────────────────────── */}
-      <StepCard number={n()} {...sc()} icon={<IconPreheat />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle') : t('stepTitles.preheatOven')}
+      <StepCard number={n()} {...sc(false, 'cooking')} icon={<IconPreheat />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle') : t('stepTitles.preheatOven')}
         time={schedule.preheatStart} accent={D.gold}>
 
         <div style={{ fontSize: '12px', color: D.smoke, fontStyle: 'italic',
@@ -1908,13 +1960,13 @@ Actual dough condition and equipment may differ from these estimates.`;
         />}
       </StepCard>
 
-      {hasPoachStep && <StepCard number={n()} {...sc()} icon={<IconPreheat />} title={l === 'fr' ? 'Pocher les bagels' : 'Poach the bagels'} time={schedule.poachStart} duration={(schedule.poachMinutes ?? 0) / 60}>
+      {hasPoachStep && <StepCard number={n()} {...sc(false, 'cooking')} icon={<IconPreheat />} title={l === 'fr' ? 'Pocher les bagels' : 'Poach the bagels'} time={schedule.poachStart} duration={(schedule.poachMinutes ?? 0) / 60}>
         <Steps items={profileSteps(breadProtocol!.cookingSteps[l].slice(0,1))} />
         <p>{l === 'fr' ? 'Ce créneau comprend le pochage et la manipulation de toute la fournée. Gardez la plaque prête pour l’enfournement prévu.' : 'This window includes poaching and handling the whole batch. Have the tray ready for the planned oven time.'}</p>
       </StepCard>}
 
       {/* ── STEP: Bake & Eat ─────────────────────────── */}
-      <StepCard final={!isBread} number={n()} {...sc()} completeLabel={!isBread ? (l === 'fr' ? 'Pâte prête' : 'Dough ready') : undefined} icon={<IconBake />} title={breadProtocol?.cooking === 'boil-bake' ? (hasPoachStep ? (l === 'fr' ? 'Cuire les bagels au four' : 'Bake the bagels') : (l === 'fr' ? 'Pocher puis cuire au four' : 'Poach, then bake')) : breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Cuire à la poêle' : 'Cook on the griddle') : isBread ? t('stepTitles.bakeEat') : (l === 'fr' ? 'Votre pâte est prête' : 'Your dough is ready')} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined} accent="#5A9A50">
+      <StepCard final={!isBread} number={n()} {...sc(false, 'cooking')} completeLabel={!isBread ? (l === 'fr' ? 'Pâte prête' : 'Dough ready') : undefined} icon={<IconBake />} title={breadProtocol?.cooking === 'boil-bake' ? (hasPoachStep ? (l === 'fr' ? 'Cuire les bagels au four' : 'Bake the bagels') : (l === 'fr' ? 'Pocher puis cuire au four' : 'Poach, then bake')) : breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Cuire à la poêle' : 'Cook on the griddle') : isBread ? t('stepTitles.bakeEat') : (l === 'fr' ? 'Votre pâte est prête' : 'Your dough is ready')} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined} accent="#5A9A50">
         {!isBread && <>
           <p>{l === 'fr' ? 'Choisissez vos pizzas, préparez les garnitures, puis suivez la cuisson de chacune.' : 'Choose your pizzas, prepare the toppings, then follow each pizza through baking.'}</p>
           {onNavigateToPizzaParty && <button type="button" onClick={onNavigateToPizzaParty} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{l === 'fr' ? 'Pizzas et garnitures →' : 'Pizzas & toppings →'}</button>}
@@ -2010,7 +2062,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         </details>
       </StepCard>
 
-      {isBread && <StepCard final number={n()} {...sc()} icon={<IconBake />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Garder les pains souples' : 'Keep the breads soft') : (l === 'fr' ? 'Laisser refroidir le pain' : 'Cool the bread')}>
+      {isBread && <StepCard final number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Garder les pains souples' : 'Keep the breads soft') : (l === 'fr' ? 'Laisser refroidir le pain' : 'Cool the bread')}>
         {breadProtocol ? <Steps items={profileSteps(breadProtocol.cooling[l])} /> : (() => {
           const weight = (recipe?.totalDough ?? numItems * 750) / Math.max(1,numItems);
           const range = breadCoolingRange(styleKey, weight);
@@ -2033,4 +2085,3 @@ Actual dough condition and equipment may differ from these estimates.`;
     </SimpleModeCtx.Provider>
   );
 }
-

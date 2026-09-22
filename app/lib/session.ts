@@ -1,3 +1,4 @@
+import type { BakeNavigationMemory } from './bakeNavigation';
 import { normalizeSandwichSnapshot, type SandwichSnapshot } from './sandwich';
 import type { StarterEvent } from '../components/SchedulePicker';
 import type { RecipeEnrichment } from '../utils/enrichedFormulas';
@@ -62,6 +63,7 @@ export interface SessionData {
   highestStep?: number;
   advancedHighestStep?: number;
   activeTab: string;
+  navigation?: BakeNavigationMemory;
   pizzaPartyTab?: string;
   sandwichParty?: SandwichSnapshot | null;
   modeChosen: boolean;

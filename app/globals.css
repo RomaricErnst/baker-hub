@@ -307,7 +307,8 @@ button,
 
 @media (max-width: 767px) {
   [data-mobile-setup="true"] .bh-step-actions {
-    padding-bottom: 8px !important;
+    bottom: 0 !important;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
     margin-inline: calc(-1 * (clamp(1rem, 3vw, 1.5rem) + 2px));
     padding-inline: calc(clamp(1rem, 3vw, 1.5rem) + 2px) !important;
     background: var(--warm);
@@ -336,3 +337,28 @@ button,
 [data-reading="true"] [data-companion-action] { display:none; }
 .bh-companion-steps .bh-nav-reveal { flex:0 0 44px; align-self:center; justify-content:center; border:1px solid var(--border); border-radius:8px; background:var(--warm); font-size:20px; }
 @media (prefers-reduced-motion:reduce) { #bh-bottom-nav { transition:none; } }
+
+/* Six destinations share one compact, inline navigator. Its expansion never
+   changes bottom action offsets or covers the current page. */
+.bh-bake-navigator { margin: 8px 0 16px; color: var(--char); }
+.bh-bake-navigator-trigger {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  width:100%; min-height:48px; padding:12px 14px; border:1px solid var(--border);
+  border-radius:12px; background:var(--cream); color:var(--char);
+  font:inherit; font-size:16px; font-weight:600; text-align:left; cursor:pointer;
+}
+.bh-bake-navigator-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding-top:8px; }
+.bh-bake-navigator-card {
+  display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
+  gap:5px; min-height:64px; min-width:0; padding:12px; border:1px solid var(--border);
+  border-radius:12px; background:var(--cream); color:var(--char); font:inherit;
+  font-size:15px; text-align:left; overflow-wrap:break-word; cursor:pointer;
+}
+.bh-bake-navigator-card small { font-size:12px; font-weight:400; line-height:1.4; }
+.bh-bake-navigator-card[aria-current="page"] { background:var(--terra); color:#fff; border-color:var(--terra); }
+.bh-bake-navigator button:focus-visible { outline:2px solid var(--terra); outline-offset:3px; }
+.bh-section-choices { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 20px; }
+.bh-section-choices button { flex:1 1 130px; min-height:44px; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--cream); color:var(--char); font:inherit; cursor:pointer; }
+.bh-section-choices button[aria-pressed="true"] { background:var(--terra); color:#fff; border-color:var(--terra); }
+.bh-batch-actions { position:sticky; bottom:0; z-index:90; display:grid; gap:8px; padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px)); background:var(--warm); }
+[data-keyboard-open="true"] .bh-batch-actions { display:none !important; }

@@ -8,9 +8,9 @@ test('both Continue handlers leave an unset style untouched',()=>{
 test('generation without a style returns to explicit choice in both modes',()=>{
  for(const tab of ['simple','custom']){
   const calls=[],context={styleKey:null,tab,scrollToStepTop(){}};
-  for(const name of ['setActiveTab','setSetupOverview','setActiveStep','setAdvancedStep'])context[name]=v=>calls.push([name,v]);
+  for(const name of ['setActiveTab','setBatchView','setSetupOverview','setActiveStep','setAdvancedStep'])context[name]=v=>calls.push([name,v]);
   vm.runInNewContext(fn('handleGenerate')+';handleGenerate();',context);
-  assert.deepEqual(calls,[['setActiveTab','setup'],['setSetupOverview',false],[tab==='custom'?'setAdvancedStep':'setActiveStep',1]]);
+  assert.deepEqual(calls,[['setActiveTab','batch'],['setBatchView','style'],['setSetupOverview',false],[tab==='custom'?'setAdvancedStep':'setActiveStep',1]]);
  }
 });
 test('empty style has disabled Continue; selected card has a visible bilingual cue',()=>{

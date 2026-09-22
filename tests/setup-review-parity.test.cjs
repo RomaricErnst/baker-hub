@@ -15,7 +15,16 @@ test('review includes calendar date and fridge temperature without changing stor
  assert.match(context.result[0],/4 mars 2030/);assert.match(context.result[0],/18:30/);assert.equal(context.result[1],'23°C · réfrigérateur 5°C');
 });
 test('both review actions regenerate stale recipes and expose explicit edits; guide footer removed',()=>{
- assert.equal((source.match(/if \(!recipeGenerated \|\| protocolStale\) \{ handleGenerate\(\); return; \}/g)||[]).length,2);
+ assert.equal((source.match(/onBackToRecipe=\{finishSetupEdit\}/g)||[]).length,2);
+ let handler;
+ function visit(n){if(ts.isFunctionDeclaration(n)&&n.name?.text==='finishSetupEdit')handler=n.getText(tree);ts.forEachChild(n,visit);}visit(tree);
+ assert.ok(handler);
+ for(const [recipeGenerated,protocolStale,fillingsReturn,expected] of [[false,false,null,'generate'],[true,true,null,'generate'],[true,false,{destination:'protocol'},'return'],[true,false,null,'recipe']]){
+  const calls=[];
+  const context={recipeGenerated,protocolStale,fillingsReturn,handleGenerate(){calls.push('generate');},setSetupOverview(value){assert.equal(value,false);},finishFillings(){calls.push('return');},openDestination(value){calls.push(value);}};
+  vm.runInNewContext(ts.transpileModule(handler+';finishSetupEdit();',{}).outputText,context);
+  assert.deepEqual(calls,[expected]);
+ }
  assert.match(source,/Mettre à jour la recette/);assert.match(source,/aria-label=\{`\$\{fr \? 'Modifier' : 'Edit'\}/);
  assert.match(source,/prefermentFlourPct \?\? 20/);
  assert.doesNotMatch(source,/Share \+ party — end of the journey|← Recette|Voir ma recette/);

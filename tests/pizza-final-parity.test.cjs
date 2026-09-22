@@ -27,7 +27,9 @@ test('actual preparation and baking screens expose audited order; dessert has on
  assert.match(selector,/filterPizzasByCourse\(customPizzas/);
  assert.match(selector,/onPillChange\('shopping'\)/);
  assert.match(selector,/Review selection/);
- assert.match(selector,/position: 'fixed', bottom: bottomNavH/);
+ const action=selector.slice(selector.indexOf('<div data-companion-action style={{'));
+ assert.match(action,/position:\s*'fixed',\s*bottom:\s*0/);
+ assert.match(action,/padding:.*env\(safe-area-inset-bottom/);
 });
 
 test('catalogue, preview and bake use approved base photos without legacy variants',()=>{

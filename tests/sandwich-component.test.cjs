@@ -40,8 +40,15 @@ test('controlled sandwich state supplies shopping, cooking and reversible servic
 });
 test('empty shopping never invents bread or filling purchases',()=>{
  const html=render({...createSandwichSnapshot('baguette'),tab:'shop'});
- assert.match(html,/Choose your sandwiches and quantities/);
+ assert.match(html,/>Shopping<\/h2>/);
  assert.doesNotMatch(html,/Combined fillings|type="checkbox"/);
+});
+test('plain bread shopping exposes real dough purchases without a sandwich selection',()=>{
+ const html=render({...createSandwichSnapshot('baguette'),tab:'shop'},{breadIngredients:[{id:'flour',name:'Actual bread flour',grams:520}]});
+ assert.match(html,/<details open="">/);
+ assert.match(html,/Actual bread flour/);assert.match(html,/520 g/);
+ assert.equal((html.match(/type="checkbox"/g)||[]).length,1);
+ assert.doesNotMatch(html,/Combined fillings|Choose your sandwiches and quantities/);
 });
 
 test('cards state baked bread portions and warn only on a definite bread shortfall',()=>{

@@ -1,7 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { NEXT_CTA, SECONDARY_CTA } from '../lib/navButtons';
-import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import { createClient } from '@/app/lib/supabase/client';
 import {
   PIZZAS, DESSERT_PIZZAS, getPizzaById, getCustomPizzaList,
@@ -188,6 +187,9 @@ interface Props {
   /** Dough ingredients from the generated recipe — shown as a
       "For your dough" section so the baker shops once. */
   recipeIngredients?: Array<{ name: string; amount: string }>;
+  onSelectionDone?:()=>void;
+  selectionDoneLabel?:string;
+  active?:boolean;
 }
 
 // ─── Sub-region maps ─────────────────────────────────────────
@@ -1119,14 +1121,6 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
   }
 
 
-  if (totalSelected === 0) {
-    return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px', color: '#8A7F78', fontSize: '13px', textAlign: 'center' }}>
-        {l === 'fr' ? 'Ajoutez des pizzas pour voir la liste de courses' : 'Add pizzas to see your shopping list'}
-      </div>
-    );
-  }
-
   const helpIngredient = sections.flatMap(section => section.items).find(item => item.id === helpIngredientId);
   if (helpIngredient) return <IngredientShoppingHelp item={helpIngredient} location={shoppingLocation} locale={l} onLocationChange={setLocation} onBack={() => setHelpIngredientId(null)} />;
 
@@ -1148,8 +1142,8 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
               const doughToBuy = recipeIngredients?.filter((_, i) => !ticked['dough_' + i]).length ?? 0;
               const toBuy = toppingToBuy + doughToBuy;
               return l === 'fr'
-                ? `${totalSelected} pizza${totalSelected > 1 ? 's' : ''} · ${toBuy} ingrédient${toBuy > 1 ? 's' : ''} à acheter`
-                : `${totalSelected} pizza${totalSelected > 1 ? 's' : ''} · ${toBuy} ingredient${toBuy > 1 ? 's' : ''} to buy`;
+                ? `${totalSelected>0?`${totalSelected} pizza${totalSelected > 1 ? 's' : ''} · `:''}${toBuy} ingrédient${toBuy > 1 ? 's' : ''} à acheter`
+                : `${totalSelected>0?`${totalSelected} pizza${totalSelected > 1 ? 's' : ''} · `:''}${toBuy} ingredient${toBuy > 1 ? 's' : ''} to buy`;
             })()}
           </span>
           <button
@@ -1300,14 +1294,14 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           onClick={() => onGoPrep?.()}
           style={{ ...NEXT_CTA, marginBottom: '8px' }}
         >
-          {l === 'fr' ? 'Préparer les garnitures →' : 'Prepare toppings →'}
+          {totalSelected>0?(l === 'fr' ? 'Préparer les garnitures →' : 'Prepare toppings →'):(l==='fr'?'Passer au protocole →':'Start preparation →')}
         </button>
         <button
           type="button"
           onClick={() => onGoPizzas?.()}
           style={{ ...SECONDARY_CTA, marginBottom: '8px' }}
         >
-          {l === 'fr' ? 'Modifier les pizzas' : 'Change pizzas'}
+          {totalSelected>0?(l === 'fr' ? 'Modifier les pizzas' : 'Change pizzas'):(l==='fr'?'Choisir des garnitures':'Choose toppings')}
         </button>
         <button
           onClick={handleShare}
@@ -1353,7 +1347,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
 // ─── Main component ───────────────────────────────────────────
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionDone,selectionDoneLabel,active=true }: Props) {
   const l = locale as 'en' | 'fr';
 
   // On-screen keyboard detection — position:fixed bottom bars anchor to the
@@ -1361,7 +1355,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // ingredient search), leaving the summary bar "stuck" mid-screen. Hide it
   // while the keyboard is up; the resize event on close restores it.
   const [keyboardOpen, setKeyboardOpen] = useState(false);
-  const bottomNavH = useBottomNavHeight();
   useEffect(() => {
     const vv = typeof window !== 'undefined' ? window.visualViewport : null;
     if (!vv) return;
@@ -2532,8 +2525,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       >
                         <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>
                           {l === 'fr'
-                            ? 'Définissez vos quantités dans Ma Pâte'
-                            : 'Set your dough quantities in My Dough'}
+                            ? 'Définissez vos quantités dans Ma fournée'
+                            : 'Set your dough quantities in My bake'}
                         </span>
                         <span style={{ fontSize: '12px', color: '#6B4423', fontFamily: 'var(--font-ui)' }}>→</span>
                       </div>
@@ -2553,8 +2546,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       >
                         <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>
                           {l === 'fr'
-                            ? 'Vous aurez peut-être besoin de plus de pâte — ajustez dans Ma Pâte'
-                            : 'You may need more dough — adjust in My Dough'}
+                            ? 'Vous aurez peut-être besoin de plus de pâte — ajustez dans Ma fournée'
+                            : 'You may need more dough — adjust in My bake'}
                         </span>
                         <span style={{ fontSize: '12px', color: '#9C8248', fontFamily: 'var(--font-ui)' }}>→</span>
                       </div>
@@ -2564,7 +2557,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
             </div>
             <div style={{padding:'12px 16px',display:'grid',gap:8,borderTop:'1px solid var(--border)'}}>
-              <button type="button" onClick={()=>{closeSummary();onPillChange('shopping');}} style={NEXT_CTA}>{l === 'fr' ? 'Liste de courses' : 'Shopping list'}</button>
+              <button type="button" onClick={()=>{closeSummary();if(onSelectionDone)onSelectionDone();else onPillChange('shopping');}} style={NEXT_CTA}>{selectionDoneLabel??(l === 'fr' ? 'Liste de courses' : 'Shopping list')}</button>
               <button type="button" onClick={()=>{closeSummary();onPillChange('party');}} style={SECONDARY_CTA}>{l === 'fr' ? 'Préparer les garnitures' : 'Prepare toppings'}</button>
               <button type="button" onClick={closeSummary} style={SECONDARY_CTA}>{l === 'fr' ? 'Choisir d’autres pizzas' : 'Choose more pizzas'}</button>
             </div>
@@ -2696,13 +2689,13 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {/* ── Sticky bar — always visible when pizzas pill active ──
            Hidden while the mobile keyboard is open: fixed bars anchor to the
            visual viewport and would float mid-screen above the keyboard. */}
-      {activePill === 'pizzas' && totalQty > 0 && !keyboardOpen && (
+      {active && activePill === 'pizzas' && (totalQty > 0 || !!onSelectionDone) && !keyboardOpen && (
         <div data-companion-action style={{
           // The bar sits ON the home indicator, so it pins to bottom 0 and
           // carries the safe-area inset as padding instead. Offsetting by
           // bottomNavH AND padding by the inset counted the same gap twice,
           // and on a rounded screen the second line still landed in the curve.
-          position: 'fixed', bottom: bottomNavH, left: 0, right: 0,
+          position: 'fixed', bottom: 0, left: 0, right: 0,
           // The only dark surface below the header, which is why this bar read
           // as belonging to a different product. Sticky is right — you need
           // the count and the way out while browsing — the costume was not.
@@ -2716,13 +2709,13 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           // additive constant against the bar's recast surface. Matched by the
           // three sheet bodies above, whose last row used to sit under the
           // home indicator with no inset at all.
-          padding: '10px 16px',
+          padding: '10px 16px calc(10px + env(safe-area-inset-bottom, 0px))',
           display: 'flex', alignItems: 'center', gap: '12px',
           justifyContent: 'space-between',
           zIndex: 90,
         }}>
-          <button type="button" disabled={totalQty === 0} onClick={() => setSummarySheetOpen(true)} style={{...NEXT_CTA,width:'100%',minHeight:44,opacity:totalQty===0?.65:1}}>
-            {totalQty === 0 ? (l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas') : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`)}
+          <button type="button" disabled={totalQty === 0&&!onSelectionDone} onClick={() => totalQty===0?onSelectionDone?.():setSummarySheetOpen(true)} style={{...NEXT_CTA,width:'100%',minHeight:44,opacity:totalQty===0&&!onSelectionDone ? .65 : 1}}>
+            {totalQty === 0 ? (onSelectionDone?(l==='fr'?'Continuer sans garnitures':'Continue without toppings'):(l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas')) : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`)}
           </button>
 
         </div>

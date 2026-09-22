@@ -14,11 +14,11 @@ function props(style,lang='en'){
  const schedule=utils.buildSchedule(start,bake,[],22,profile.cooking==='griddle'?10:45,'hand',style);
  return {schedule,mixerType:'hand',styleKey:style,kitchenTemp:22,numItems:3,oil:0,hydration:65,locale:lang,onNavigateToFillings(){},recipe:{totalDough:600,flour:350,water:220,salt:7,oil:23,sugar:0,hydration:65,yeast:null,waterTemp:null}};
 }
-function render(style,lang,step){
+function render(style,lang,step,extra={}){
  const original=React.useState;
  // Render each selected step independently, without altering production props.
  React.useState=initial=>original(initial===1?step:initial);
- try{return renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:lang,messages:require('../messages/'+lang+'.json'),timeZone:'UTC'},React.createElement(Guide,props(style,lang))));}
+ try{return renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:lang,messages:require('../messages/'+lang+'.json'),timeZone:'UTC'},React.createElement(Guide,{...props(style,lang),...extra})));}
  finally{React.useState=original;}
 }
 test('all new bread guides render bilingual protocol stages and fillings handoff',()=>{
@@ -31,6 +31,23 @@ test('all new bread guides render bilingual protocol stages and fillings handoff
    assert.doesNotMatch(html,lang==='fr'?/Pointage|Apprêt|Préchauffer le four/:/Bulk Fermentation|Final Proof|Preheat Oven/);
    assert.match(html,lang==='fr'?/sans levure/:/unleavened/);
   }
+ }
+});
+
+test('phase views partition every bread protocol without renumbering or duplicating stages',()=>{
+ for(const style of Object.keys(BREAD_PROTOCOLS)) {
+  const sections=html=>[...html.matchAll(/<section\b([^>]*data-guide-phase[^>]*)>/g)].map(match=>({
+   label:match[1].match(/aria-label="([^"]*)"/)[1],hidden:/\bhidden=""/.test(match[1]),phase:match[1].match(/data-guide-phase="([^"]*)"/)[1]
+  }));
+  const all=sections(render(style,'en',0)),prep=sections(render(style,'en',0,{phase:'preparation'})),cook=sections(render(style,'en',0,{phase:'cooking'}));
+  assert.deepEqual(prep.map(s=>s.label),all.map(s=>s.label),style+' preparation retains identifiers');
+  assert.deepEqual(cook.map(s=>s.label),all.map(s=>s.label),style+' cooking retains identifiers');
+  assert.ok(prep.some(s=>!s.hidden));assert.ok(cook.some(s=>!s.hidden));
+  for(let i=0;i<all.length;i++) assert.notEqual(prep[i].hidden,cook[i].hidden,style+' exactly one destination owns '+all[i].label);
+  const cooking=cook.filter(s=>!s.hidden).map(s=>s.label).join('|');
+  assert.match(cooking,style==='piadina'||BREAD_PROTOCOLS[style].cooking==='griddle'?/Heat the griddle/:/Preheat/);
+  assert.doesNotMatch(cooking,/Mix the dough|Mix Dough|Bulk Fermentation|Final Proof/);
+  if(style==='bagel')assert.match(cooking,/Poach the bagels.*Bake the bagels.*Cool the bread/);
  }
 });
 test('bagel poaching, pocket pita and ciabatta instructions replace generic loaf advice',()=>{
