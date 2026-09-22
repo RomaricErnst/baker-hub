@@ -88,17 +88,21 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await expect(page.getByRole('heading',{name:'À votre façon',exact:true})).toHaveCount(0);
   const style=page.locator('.bh-batch-content').getByRole('button',{name:bread?/^Baguette\b/:/Napolitaine/i});
   await style.tap();
-  await page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+  await page.locator('.bh-batch-actions').getByRole('button',{name:'Choisir la quantité',exact:true}).tap();
   const quantity=page.getByLabel(bread?'Nombre de pains':'Nombre de pizzas',{exact:true});
   await quantity.fill('5');await quantity.blur();
   await expect.poll(async()=>({style:(await stored(page))?.styleKey,count:(await stored(page))?.numItems})).toEqual({style:bread?'baguette':'neapolitan',count:5});
   const chosenStyle=(await stored(page)).styleKey;
-  await page.getByRole('button',{name:bread?'Ajouter des garnitures':'Choisir mes pizzas',exact:true}).tap();
+  const choose=page.locator('.bh-batch-actions').getByRole('button',{name:bread?'Choisir mes sandwichs':'Choisir mes pizzas',exact:true});
+  await fits(page,choose);
+  await unobscured(choose);
+  expect((await choose.boundingBox()).height).toBeGreaterThanOrEqual(44);
+  await page.locator('.bh-batch-actions').getByRole('button',{name:bread?'Choisir mes sandwichs':'Choisir mes pizzas',exact:true}).tap();
   await expect(bread?page.getByRole('article').first():page.getByRole('button',{name:'Margherita',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'← Ma pâte et mes quantités',exact:true}).tap();
   await expect(quantity).toHaveValue('5');
   expect((await stored(page)).styleKey).toBe(chosenStyle);
-  const organise=page.locator('.bh-batch-actions').getByRole('button',{name:'Organiser ma fournée',exact:true});
+  const organise=page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer sans garnitures',exact:true});
   await organise.scrollIntoViewIfNeeded();
   await fits(page,organise);
   await unobscured(organise);
@@ -144,6 +148,29 @@ test('plain bread has useful shopping without requiring any filling selection',a
  expect(Object.keys((await stored(page)).sandwichParty?.qtys||{})).toHaveLength(0);
  await noOverflow(page);
  await testInfo.attach('plain-bread-shopping',{body:await page.screenshot(),contentType:'image/png'});
+});
+
+test('country bread offers illustrated tartines and keeps loaf quantities when returning',async({page},testInfo)=>{
+ await anonymous(page);await page.goto('/fr');
+ await page.getByRole('button',{name:'Pain',exact:true}).tap();
+ await page.locator('.bh-batch-content').getByRole('button',{name:/^Pain de campagne/}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:'Choisir la quantité',exact:true}).tap();
+ const count=page.getByLabel('Nombre de pains',{exact:true});
+ await count.fill('2');await count.blur();
+ await expect(page.getByRole('heading',{name:'Votre pain devient une tartine',exact:true})).toBeVisible();
+ const images=page.locator('.bh-fillings-example img');
+ await expect(images).toHaveCount(3);
+ await images.first().scrollIntoViewIfNeeded();
+ await expect.poll(()=>images.evaluateAll(items=>items.every(img=>img.complete&&img.naturalWidth>0))).toBe(true);
+ await noOverflow(page);
+ await testInfo.attach('tartine-invitation',{body:await page.screenshot(),contentType:'image/png'});
+ await page.locator('.bh-batch-actions').getByRole('button',{name:'Choisir mes tartines',exact:true}).tap();
+ await expect(page.getByRole('article').first()).toBeVisible();
+ await page.getByRole('button',{name:'← Ma pâte et mes quantités',exact:true}).tap();
+ await expect(count).toHaveValue('2');
+ await page.getByRole('button',{name:'Changer de pâte',exact:true}).tap();
+ await expect(page.getByRole('heading',{name:'Choisissez votre pâte',exact:true})).toBeVisible();
+ await expect.poll(async()=>(await stored(page))?.styleKey).toBe('pain_campagne');
 });
 
 for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppings'} return to the exact dough step and keep completion and quantities`,async({page},testInfo)=>{
@@ -204,6 +231,30 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await expect(current).toHaveAttribute('aria-label',stepLabel);
  expect(await page.evaluate(()=>Object.fromEntries(Object.entries(localStorage).filter(([key])=>key.startsWith('bh_guide_done_v2:'))))).toEqual(progress);
  await noOverflow(page);
+ // The recommended forward path must include dough and baking, not jump
+ // directly from shopping through toppings to serving.
+ await navigate(page,'Courses');
+ await page.getByRole('button',{name:'Commencer le protocole →',exact:true}).tap();
+ await expect(choices.getByRole('button',{name:'La pâte',exact:true})).toHaveAttribute('aria-pressed','true');
+ for(let step=0;step<25;step++){
+  if(await page.getByRole('button',{name:'Préparer les garnitures',exact:true}).isVisible())break;
+  await page.getByRole('button',{name:'Étape suivante',exact:true}).tap();
+ }
+ await page.getByRole('button',{name:'Préparer les garnitures',exact:true}).tap();
+ await expect(choices.getByRole('button',{name:'Les garnitures',exact:true})).toHaveAttribute('aria-pressed','true');
+ await page.getByRole('button',{name:bread?'Passer à la cuisson du pain →':'Cuire les pizzas →',exact:true}).tap();
+ await expect(navigator(page)).toContainText('Cuisson & service');
+ await expect(choices.getByRole('button',{name:'Guide de cuisson',exact:true})).toHaveAttribute('aria-pressed','true');
+ const serveLabel=bread?'Assembler mes sandwichs →':'Cuire mes pizzas →';
+ for(let step=0;step<12;step++){
+  if(await page.getByRole('button',{name:serveLabel,exact:true}).isVisible())break;
+  await page.getByRole('button',{name:'Étape suivante',exact:true}).tap();
+ }
+ await page.getByRole('button',{name:serveLabel,exact:true}).tap();
+ await expect(choices.getByRole('button',{name:bread?'Assembler et servir':'Cuire les pizzas',exact:true})).toHaveAttribute('aria-pressed','true');
+ expect(await page.evaluate(()=>Object.fromEntries(Object.entries(localStorage).filter(([key])=>key.startsWith('bh_guide_done_v2:'))))).toEqual(progress);
+ await noOverflow(page);
+
 });
 
 test('late fillings opened from Recipe return to Recipe without changing the dough',async({page})=>{
@@ -218,7 +269,7 @@ test('late fillings opened from Recipe return to Recipe without changing the dou
  await page.getByRole('button',{name:'Voir ma sélection · 1',exact:true}).tap();
  await page.getByRole('button',{name:/^Revenir à la recette(?: →)?$/}).tap();
  await expect(navigator(page)).toContainText('Recette');
- await expect(page.getByRole('button',{name:'Voir les recettes de ma sélection',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Modifier mes sandwichs',exact:true})).toBeVisible();
  const after=await stored(page);
  for(const key of ['styleKey','numItems','itemWeight','eatTime','recipeGenerated'])expect(after[key],key).toEqual(before[key]);
  await noOverflow(page);

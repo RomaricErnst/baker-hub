@@ -12,6 +12,7 @@ import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import { pushProfile, pullAndMergeProfile } from '../lib/supabase/profileSync';
 import StylePicker from '../components/StylePicker';
 import BakeNavigator from '../components/BakeNavigator';
+import FillingsInvitation from '../components/FillingsInvitation';
 import {destinationForRoute,routeForDestination,restoredBakeRoute,normalizeNavigation,type BakeRoute,type BakeDestination,type BatchView,type BakeNavigationMemory} from '../lib/bakeNavigation';
 import { useMobileKeyboard } from '../hooks/useMobileKeyboard';
 import { NEXT_CTA, BACK_CTA } from '../lib/navButtons';
@@ -24,7 +25,6 @@ import { starterFeedToMixHours } from '../lib/starterTiming';
 import type { StarterEvent } from '../components/SchedulePicker';
 import ClimatePicker from '../components/ClimatePicker';
 const RecipeOutput = dynamic(() => import('../components/RecipeOutput'), { ssr: false });
-import PlanNav from '../components/PlanNav';
 const BakeGuide = dynamic(() => import('../components/BakeGuide'), { ssr: false });
 import { getPrefPeakH_RT } from '../components/FermentChart';
 import YeastHelper from '../components/YeastHelper';
@@ -2366,8 +2366,11 @@ export default function Home() {
     else setSandwichParty(previous=>({...previous,tab:phase==='bake'?'serve':phase}));
     if(phase==='pick'){captureEditReturn();setBatchView('fillings');setActiveTab('batch');}
     else if(phase==='shop')setActiveTab('shopping');
-    else if(phase==='prep'){setProtocolView(hasFillings?'fillings':'dough');setActiveTab('guide');}
-    else {setServiceView('fillings');setActiveTab('service');}
+    else if(phase==='prep'){
+      if(destination==='shopping'&&!recipeGenerated){openDestination('organisation');return;}
+      setProtocolView(destination==='shopping'?'dough':hasFillings?'fillings':'dough');setActiveTab('guide');
+    }
+    else {setServiceView('dough');setActiveTab('service');}
     setNavHidden(false);scrollToStepTop();
   }
   function captureEditReturn() {
@@ -3270,7 +3273,7 @@ export default function Home() {
           onOpenSandwiches={sandwichEnabled ? openLateFillings : undefined}
           onOpenPizzas={bakeType === 'pizza' ? openLateFillings : undefined}
           onSharePlan={shareCurrentSession}
-          onBack={bakeType ? () => {
+          onBack={bakeType && (destination==='batch'||destination==='organisation') ? () => {
             if (destination === 'batch') {
               if (batchView === 'fillings' && fillingsReturn) finishFillings();
               else if (batchView === 'fillings') { setBatchView('quantity'); scrollToStepTop(); }
@@ -3612,7 +3615,9 @@ export default function Home() {
 
 {recipeGenerated && <div style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{numItems} {bakeType==='bread'?(fr?(numItems===1?'pain':'pains'):(numItems===1?'bread':'breads')):'pizzas'} · {styleKey ? styleDisplayName(styleKey) : ''}</div></div>}
 
-{bakeType && <BakeNavigator active={destination} fr={fr} onChange={openDestination} />}
+{bakeType && <BakeNavigator active={destination} fr={fr} onChange={openDestination} top={stickTop} />}
+
+          {(['recipe','shopping','protocol','service'] as string[]).includes(destination)&&<button type="button" className="bh-section-back" onClick={()=>openDestination(destination==='recipe'?'organisation':destination==='shopping'?'recipe':destination==='protocol'?'shopping':'protocol')}>← {destination==='recipe'?'Organisation':destination==='shopping'?(fr?'Recette':'Recipe'):destination==='protocol'?(fr?'Courses':'Shopping'):(fr?'Protocole':'Preparation')}</button>}
 
           {destination==='organisation' && modeChosen && <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>setModeChosen(false)}} />}
 
@@ -3621,8 +3626,9 @@ export default function Home() {
               <h2>{fr?'Choisissez votre pâte':'Choose your dough'}</h2>
               <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
               {styleKey==='pain_levain'&&<div style={{marginTop:16}}><label><input type="checkbox" checked={addSeeds} onChange={event=>setAddSeeds(event.target.checked)} /> {fr?'Ajouter des graines':'Add seeds'}</label><p>{fr?'Les graines trempent à l’avance : 2 h minimum, idéalement la veille.':'Soak the seeds ahead: at least 2 hours, ideally overnight.'}</p></div>}
-              <div className="bh-batch-actions"><button type="button" disabled={!styleKey} style={{...NEXT_CTA,opacity:styleKey?1:.5}} onClick={()=>{setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{fr?'Continuer':'Continue'}</button></div>
+              <div className="bh-batch-actions"><button type="button" disabled={!styleKey} style={{...NEXT_CTA,opacity:styleKey?1:.5}} onClick={()=>{setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{fr?'Choisir la quantité':'Choose quantity'}</button></div>
             </> : <>
+              <div className="bh-batch-context"><span>{styleKey?styleDisplayName(styleKey):''}</span><button type="button" onClick={()=>{setBatchView('style');scrollToStepTop();}}>{fr?'Changer de pâte':'Change dough'}</button></div>
               <h2>{fr?'Quelle quantité de pâte ?':'How much dough?'}</h2>
                             <PrototypeQuantityPicker bakeType={bakeType ?? 'pizza'} locale={locale} units={units}
                 itemLabel={breadProtocol ? (styleKey==='focaccia' ? (fr?'plaque':'tray') : (fr?'pièce':'piece')) : undefined}
@@ -3639,8 +3645,12 @@ export default function Home() {
                 onDiameterChange={setPizzaDiameter} onCrustChange={crust => setPizzaCorn(['thin','classic','generous'].indexOf(crust))}
                 onUseCalculatedWeight={() => chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, pizzaCorn))}
               />
-              {(pizzaPartyEnabled||sandwichEnabled)&&<div className="bh-optional-fillings"><h3>{fr?'Avec des garnitures ?':'Add toppings or fillings?'}</h3><p>{fr?'Facultatif : choisissez vos recettes et leurs quantités.':'Optional: choose your recipes and quantities.'}</p><button type="button" style={{...NEXT_CTA,background:'var(--warm)',color:'var(--terra)',border:'1px solid var(--border)'}} onClick={()=>{setQtyChosen(true);setBatchView('fillings');scrollToStepTop();}}>{hasFillings?(fr?'Modifier ma sélection':'Edit my selection'):(bakeType==='pizza'?(fr?'Choisir mes pizzas':'Choose my pizzas'):(fr?'Ajouter des garnitures':'Add fillings'))}</button></div>}
-              <div className="bh-batch-actions"><button type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(fillingsReturn&&recipeGenerated){if(protocolStale){setActiveTab('setup');setSetupOverview(true);}else finishFillings();}else openDestination('organisation');}}>{fillingsReturn&&recipeGenerated?fillingsDoneLabel:(fr?'Organiser ma fournée':'Organise my bake')}</button></div>
+              {(pizzaPartyEnabled||sandwichEnabled)&&<FillingsInvitation fr={fr} pizza={bakeType==='pizza'} styleKey={styleKey??''} count={numItems}
+                selectedCount={Object.values(bakeType==='pizza'?pizzaPartyQtys:sandwichParty.qtys).reduce((sum,qty)=>sum+qty,0)}
+                onChoose={()=>{setQtyChosen(true);setBatchView('fillings');scrollToStepTop();}} />}
+              <div className={`bh-batch-actions ${!recipeGenerated&&!hasFillings&&(pizzaPartyEnabled||sandwichEnabled)?'bh-batch-actions-choice':''}`}>
+                {!recipeGenerated&&!hasFillings&&(pizzaPartyEnabled||sandwichEnabled)&&<button type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setBatchView('fillings');scrollToStepTop();}}>{bakeType==='pizza'?(fr?'Choisir mes pizzas':'Choose my pizzas'):sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'Choisir mes tartines':'Choose my toasts'):(fr?'Choisir mes sandwichs':'Choose my sandwiches')}</button>}
+                <button type="button" className={!recipeGenerated&&!hasFillings&&(pizzaPartyEnabled||sandwichEnabled)?'bh-dough-only':undefined} style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(fillingsReturn&&recipeGenerated){if(protocolStale){setActiveTab('setup');setSetupOverview(true);}else finishFillings();}else openDestination('organisation');}}>{fillingsReturn&&recipeGenerated?fillingsDoneLabel:!recipeGenerated&&!hasFillings&&(pizzaPartyEnabled||sandwichEnabled)?(fr?'Continuer sans garnitures':'Continue without fillings'):(fr?'Organiser ma fournée':'Organise my bake')}</button></div>
             </>}
           </section>}
 
@@ -3650,7 +3660,7 @@ export default function Home() {
             {hasFillings&&<button type="button" aria-pressed={(destination==='protocol'?protocolView:serviceView)==='fillings'} onClick={()=>{if(destination==='protocol')setProtocolView('fillings');else setServiceView('fillings');}}>{destination==='protocol'?(fr?'Les garnitures':'Toppings and fillings'):(bakeType==='pizza'?(fr?'Cuire les pizzas':'Cook the pizzas'):(fr?'Assembler et servir':'Assemble and serve'))}</button>}
           </section>}
           {destination==='shopping'&&bakeType==='pizza'&&!recipeGenerated&&<div className="bh-section-empty"><p>{fr?'Complétez l’organisation pour ajouter les ingrédients de votre pâte.':'Complete organisation to include your dough ingredients.'}</p><button type="button" style={NEXT_CTA} onClick={()=>openDestination('organisation')}>{fr?'Compléter l’organisation':'Complete organisation'}</button></div>}
-          {destination==='recipe'&&hasFillings&&<button type="button" className="bh-recipe-fillings-link" onClick={openLateFillings}>{fr?'Voir les recettes de ma sélection':'View my selected recipes'}</button>}
+          {destination==='recipe'&&hasFillings&&<button type="button" className="bh-recipe-fillings-link" onClick={openLateFillings}>{bakeType==='pizza'?(fr?'Modifier mes pizzas':'Edit my pizzas'):sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'Modifier mes tartines':'Edit my toasts'):(fr?'Modifier mes sandwichs':'Edit my sandwiches')}</button>}
           {(destination==='protocol'||destination==='service')&&!recipeGenerated&&(destination==='protocol'?protocolView:serviceView)==='dough'&&<div className="bh-section-empty"><p>{fr?'Complétez l’organisation pour obtenir votre protocole.':'Complete your organisation to get the dough instructions.'}</p><button type="button" style={NEXT_CTA} onClick={()=>openDestination('organisation')}>{fr?'Compléter l’organisation':'Complete organisation'}</button></div>}
 
           {/* Mode + Pizza Party — only shown after bakeType selected.
@@ -4080,12 +4090,10 @@ export default function Home() {
 
               {!bakeTimeIsPast && (
                 <div style={{ marginTop: '12px' }}>
-                  <PlanNav
-                    variant="cta"
-                    onEditSetup={openSetupReview}
-                    onOpenGuide={() => {setProtocolView('dough');openDestination('protocol');}}
-                    onShare={shareCurrentSession}
-                  />
+                  <div className="bh-recipe-next">
+                    <button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}>{fr?'Préparer mes courses':'Prepare my shopping list'} →</button>
+                    <button type="button" className="bh-section-back" onClick={()=>{setProtocolView('dough');openDestination('protocol');}}>{fr?'Déjà les ingrédients ? Passer au protocole':'Already have the ingredients? Start preparation'}</button>
+                  </div>
                 </div>
               )}
 
@@ -4097,7 +4105,8 @@ export default function Home() {
                 <BakeGuide
                   phase={destination==='service'?'cooking':'preparation'}
                   active={destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough'}
-                  onNavigateToCooking={()=>openDestination('service')}
+                  onNavigateToCooking={()=>{setServiceView('dough');openDestination('service');}}
+                  onPrepareFillings={hasFillings?()=>{setProtocolView('fillings');openDestination('protocol');}:undefined}
                   onNavigateToPreparation={()=>openDestination('protocol')}
                   starterEvents={starterEvents}
                   ovenConstruction={ovenConstruction}
@@ -4124,8 +4133,10 @@ export default function Home() {
                   starterLocation={starterLocation}
                   units={units}
                   locale={locale}
-                  onNavigateToFillings={undefined}
-                  onNavigateToPizzaParty={pizzaPartyEnabled ? ()=>{if(hasFillings){setProtocolView('fillings');openDestination('protocol');}else openLateFillings();} : undefined}
+                  onNavigateToFillings={hasBreadFillings?()=>{setServiceView('fillings');openDestination('service');}:undefined}
+                  fillingsActionLabel={sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'Assembler mes tartines':'Assemble my toasts'):(fr?'Assembler mes sandwichs':'Assemble my sandwiches')}
+                  pizzaActionLabel={hasFillings?(fr?'Cuire mes pizzas':'Cook my pizzas'):(fr?'Choisir mes pizzas':'Choose my pizzas')}
+                  onNavigateToPizzaParty={pizzaPartyEnabled ? ()=>{if(hasFillings){setServiceView('fillings');openDestination('service');}else openLateFillings();} : undefined}
                   recipe={recipe ?? null}
                   simpleMode={tab === 'simple'}
                   addSeeds={addSeeds && styleKey === 'pain_levain'}
@@ -4587,12 +4598,10 @@ export default function Home() {
 
               {!bakeTimeIsPast && (
                 <div style={{ marginTop: '12px' }}>
-                  <PlanNav
-                    variant="cta"
-                    onEditSetup={openSetupReview}
-                    onOpenGuide={() => {setProtocolView('dough');openDestination('protocol');}}
-                    onShare={shareCurrentSession}
-                  />
+                  <div className="bh-recipe-next">
+                    <button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}>{fr?'Préparer mes courses':'Prepare my shopping list'} →</button>
+                    <button type="button" className="bh-section-back" onClick={()=>{setProtocolView('dough');openDestination('protocol');}}>{fr?'Déjà les ingrédients ? Passer au protocole':'Already have the ingredients? Start preparation'}</button>
+                  </div>
                 </div>
               )}
 
@@ -4604,7 +4613,8 @@ export default function Home() {
                 <BakeGuide
                   phase={destination==='service'?'cooking':'preparation'}
                   active={destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough'}
-                  onNavigateToCooking={()=>openDestination('service')}
+                  onNavigateToCooking={()=>{setServiceView('dough');openDestination('service');}}
+                  onPrepareFillings={hasFillings?()=>{setProtocolView('fillings');openDestination('protocol');}:undefined}
                   onNavigateToPreparation={()=>openDestination('protocol')}
                   starterEvents={starterEvents}
                   ovenConstruction={ovenConstruction}
@@ -4631,8 +4641,10 @@ export default function Home() {
                   starterLocation={starterLocation}
                   units={units}
                   locale={locale}
-                  onNavigateToFillings={undefined}
-                  onNavigateToPizzaParty={pizzaPartyEnabled ? ()=>{if(hasFillings){setProtocolView('fillings');openDestination('protocol');}else openLateFillings();} : undefined}
+                  onNavigateToFillings={hasBreadFillings?()=>{setServiceView('fillings');openDestination('service');}:undefined}
+                  fillingsActionLabel={sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'Assembler mes tartines':'Assemble my toasts'):(fr?'Assembler mes sandwichs':'Assemble my sandwiches')}
+                  pizzaActionLabel={hasFillings?(fr?'Cuire mes pizzas':'Cook my pizzas'):(fr?'Choisir mes pizzas':'Choose my pizzas')}
+                  onNavigateToPizzaParty={pizzaPartyEnabled ? ()=>{if(hasFillings){setServiceView('fillings');openDestination('service');}else openLateFillings();} : undefined}
                   recipe={advancedRecipe ?? null}
                   simpleMode={false}
                   addSeeds={addSeeds && styleKey === 'pain_levain'}

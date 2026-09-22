@@ -165,7 +165,7 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
         </details>}
         {total>0&&<div className={styles.panelHeading}><h3>{t('Garnitures regroupées','Combined fillings')}</h3></div>}
         {shopping.map(({ingredientId:id,grams,key})=><label key={id} className={styles.check}><input type="checkbox" checked={!!snapshot.shopTicks[key]} onChange={event=>update({shopTicks:{...snapshot.shopTicks,[key]:event.target.checked}})}/><span className={snapshot.shopTicks[key]?styles.checked:''}>{ingredientName(id)}</span><strong className={styles.checkAmount}>{amountText(grams)}</strong></label>)}
-        <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('prep')}>{t('Passer aux préparations','Start preparation')} →</button>
+        <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('prep')}>{doughConfigured?t('Commencer le protocole','Start the dough preparation'):t('Compléter l’organisation','Complete organisation')} →</button>
       </>}
       {tab==='prep'&&total>0&&<>
         <h3>{t('Préparez les garnitures','Prepare the fillings')}</h3><p className={styles.muted}>{readySteps}/{prepSteps.length} {t('étapes cochées','steps checked')} · {t('Les quantités ci-dessous suivent votre sélection.','Quantities below follow your selection.')}</p>
@@ -174,7 +174,7 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
           {stepsFor(recipe).filter(step=>step.phase!=='assemble').map(step=>{const key=sandwichPrepKey(recipe,step.id,count(snapshot.qtys[recipe.id]),snapshot.ingredientOverrides?.[recipe.id]);return <label key={key} className={styles.check}><input type="checkbox" checked={!!snapshot.prepTicks[key]} onChange={event=>update({prepTicks:{...snapshot.prepTicks,[key]:event.target.checked}})}/><span className={snapshot.prepTicks[key]?styles.checked:''}><strong>{tr(step.title)}</strong>{step.minutes>0?` · ≈ ${step.minutes} min`:''}<br/>{tr(step.instruction)}</span></label>;})}
           <button className={`${styles.button} ${styles.wide}`} type="button" onClick={()=>setDetailId(recipe.id)}>{t('Voir la recette','View recipe')}</button>
         </section>)}
-        <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('serve')}>{t('Passer à l’assemblage','Start assembly')} →</button>
+        <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('serve')}>{hideNavigation?t('Passer à la cuisson du pain','Go to bread cooking'):t('Passer à l’assemblage','Start assembly')} →</button>
       </>}
       {tab==='serve'&&total>0&&<>
         <div className={styles.panelHeading}><h3>{t('Assembler et servir','Assemble and serve')}</h3><span aria-live="polite">{completed}/{total}</span></div>

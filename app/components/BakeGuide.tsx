@@ -48,7 +48,10 @@ interface BakeGuideProps extends WaterSettingsProps {
   units?: UnitSystem;
   locale?: string;
   onNavigateToPizzaParty?: () => void;
+  pizzaActionLabel?: string;
   onNavigateToFillings?: () => void;
+  fillingsActionLabel?: string;
+  onPrepareFillings?: () => void;
   simpleMode?: boolean;
   addSeeds?: boolean;
   phase?: 'preparation' | 'cooking';
@@ -804,7 +807,7 @@ export default function BakeGuide({
   usingPeak2 = false, planningMode = 'last_fed',
   feedRatio = 1, starterLocation = 'rt',
   units, locale,
-  onNavigateToPizzaParty, onNavigateToFillings, recipe, simpleMode, addSeeds,
+  onNavigateToPizzaParty, pizzaActionLabel, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
   phase, active = true, onNavigateToCooking, onNavigateToPreparation,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
@@ -904,7 +907,7 @@ export default function BakeGuide({
   const breadProtocol = getBreadProtocol(styleKey);
   const hasPoachStep = breadProtocol?.cooking === 'boil-bake' && !!schedule.poachStart;
   const profileSteps = (lines: readonly string[]) => lines.map(line => ({ bold: line.replace(/(\d+)\s?°C/g, (_, degrees) => displayTemp(Number(degrees), u)).replaceAll('{count}', String(numItems)).replaceAll('{weight}', String(Math.round((recipe?.totalDough ?? numItems * (breadProtocol?.portions.weight ?? 100)) / Math.max(1,numItems)))), note: '' }));
-  const fillingsAction = onNavigateToFillings && <button type="button" onClick={onNavigateToFillings} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{l === 'fr' ? 'Sandwiches et garnitures →' : 'Sandwiches & fillings →'}</button>;
+  const fillingsAction = onNavigateToFillings && <button type="button" onClick={onNavigateToFillings} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{fillingsActionLabel ?? (l === 'fr' ? 'Sandwiches et garnitures' : 'Sandwiches & fillings')} →</button>;
   const isBread       = !!breadProtocol || ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
   const isNeapolitan  = styleKey === 'neapolitan';
   const isFougasse    = styleKey === 'fougasse';
@@ -1030,10 +1033,10 @@ Actual dough condition and equipment may differ from these estimates.`;
       stepPhase,
       hidden: !!phase && phase !== stepPhase,
       previousLabel: phase && stepRefs.current[s - 1]?.dataset.guidePhase === 'preparation' && stepPhase === 'cooking' ? (l === 'fr' ? 'Retour au protocole' : 'Back to preparation') : undefined,
-      nextLabel: phase && stepRefs.current[s + 1]?.dataset.guidePhase === 'cooking' && stepPhase === 'preparation' ? (l === 'fr' ? 'Passer à la cuisson' : 'Go to cooking') : undefined,
+      nextLabel: phase && stepRefs.current[s + 1]?.dataset.guidePhase === 'cooking' && stepPhase === 'preparation' ? (onPrepareFillings?(l === 'fr' ? 'Préparer les garnitures' : 'Prepare toppings and fillings'):(l === 'fr' ? 'Passer à la cuisson' : 'Go to cooking')) : undefined,
       overview: currentStep === 0, totalSteps,
       onPrevious: s > 1 ? () => navigateGuideStep(s - 1) : undefined,
-      onNext: () => { const next = stepRefs.current.findIndex((el, i) => i > s && el !== null); if (next > s) navigateGuideStep(next); },
+      onNext: () => { const next = stepRefs.current.findIndex((el, i) => i > s && el !== null); if (next > s) {if(phase==='preparation'&&stepRefs.current[next]?.dataset.guidePhase==='cooking'&&onPrepareFillings)onPrepareFillings();else navigateGuideStep(next);} },
       batchCompletion: mixing && !!batch && batch.count > 1,
       completeLabel: mixing && batch && batch.count > 1 ? (l === 'fr' ? `Terminer la pétrissée ${batch.active + 1} sur ${batch.count}` : `Complete batch ${batch.active + 1} of ${batch.count}`) : undefined,
       open: currentStep === s,
@@ -1968,8 +1971,8 @@ Actual dough condition and equipment may differ from these estimates.`;
       {/* ── STEP: Bake & Eat ─────────────────────────── */}
       <StepCard final={!isBread} number={n()} {...sc(false, 'cooking')} completeLabel={!isBread ? (l === 'fr' ? 'Pâte prête' : 'Dough ready') : undefined} icon={<IconBake />} title={breadProtocol?.cooking === 'boil-bake' ? (hasPoachStep ? (l === 'fr' ? 'Cuire les bagels au four' : 'Bake the bagels') : (l === 'fr' ? 'Pocher puis cuire au four' : 'Poach, then bake')) : breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Cuire à la poêle' : 'Cook on the griddle') : isBread ? t('stepTitles.bakeEat') : (l === 'fr' ? 'Votre pâte est prête' : 'Your dough is ready')} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined} accent="#5A9A50">
         {!isBread && <>
-          <p>{l === 'fr' ? 'Choisissez vos pizzas, préparez les garnitures, puis suivez la cuisson de chacune.' : 'Choose your pizzas, prepare the toppings, then follow each pizza through baking.'}</p>
-          {onNavigateToPizzaParty && <button type="button" onClick={onNavigateToPizzaParty} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{l === 'fr' ? 'Pizzas et garnitures →' : 'Pizzas & toppings →'}</button>}
+          <p>{l === 'fr' ? 'Suivez les conseils de cuisson adaptés à votre four, puis la cuisson de chaque pizza.' : 'Follow the baking advice for your oven, then cook each pizza.'}</p>
+          {onNavigateToPizzaParty && <button type="button" onClick={onNavigateToPizzaParty} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{pizzaActionLabel ?? (l === 'fr' ? 'Pizzas et garnitures' : 'Pizzas & toppings')} →</button>}
         </>}
         <details open={isBread}>
           <summary style={{display:isBread?'none':undefined,cursor:'pointer',minHeight:44}}>{l === 'fr' ? 'Conseils de cuisson' : 'Baking tips'}</summary>

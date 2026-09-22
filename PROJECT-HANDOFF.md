@@ -1,5 +1,15 @@
 # Bakerhub — continuation handoff
 
+## Latest prototype revision — 23 September 2026
+
+For the navigation refinement, continue on `codex/navigation-polish-20260923`, created from `5a16793` on `codex/navigation-six-sections-20260922`. This entry supersedes the older active-branch instruction below for this task. Local checkout: `/Users/romaricernst/Documents/Codex/baker-navigation-polish`.
+
+The user requested UI/UX specialist advice before proceeding and then explicitly approved revision. Two independent specialist reviews prioritized a coherent forward journey over cosmetic changes. The implemented path is quantity → optional illustrated pizza/sandwich/tartine discovery → organisation → recipe → shopping → dough preparation → selected garnitures → baking/cooling → assembly or pizza cooking queue. Direct navigation remains available; completion ticks are not gates. The section map stays collapsed initially, is sticky while scrolling, and now names its six destinations clearly. See `docs/NAVIGATION-UX-20260923.md`.
+
+Verification: production build/i18n/TypeScript and 233 unit tests passed. Mobile WebKit: 60/68 passed initially; eight failures came from the renamed editing-link assertion and a test reading a debounced saved draft too early. Corrected those assertions (including waiting for the actual saved value), then all eight affected tests passed at 320/375/390/430px. All 68 cases are therefore covered by the passing runs. Complete pizza and bread forward journeys preserve checked preparation work. A specialist accepted revised 390px screenshots/source; the parent also inspected rendered quantity/card/menu screens. Physical Safari toolbar/keyboard and authenticated cloud saving remain unverified.
+
+Keep original six-section and migration branches, plus main/production, for the user's later comparison. This branch is preview-only. Publication details are supplied by the deployment/PR attached to this task.
+
 Updated 22 September 2026. Read this first. It supersedes the September 13 handoff and earlier acceptance summaries; older reports remain historical evidence, not current status.
 
 ## Resume the correct work

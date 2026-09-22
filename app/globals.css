@@ -341,14 +341,14 @@ button,
 
 /* Six destinations share one compact, inline navigator. Its expansion never
    changes bottom action offsets or covers the current page. */
-.bh-bake-navigator { margin: 8px 0 16px; color: var(--char); }
+.bh-bake-navigator { position:sticky; z-index:95; margin:8px 0 16px; padding:4px 0; background:var(--warm); color:var(--char); transition:top .25s ease; }
 .bh-bake-navigator-trigger {
   display:flex; align-items:center; justify-content:space-between; gap:12px;
   width:100%; min-height:48px; padding:12px 14px; border:1px solid var(--border);
   border-radius:12px; background:var(--cream); color:var(--char);
   font:inherit; font-size:16px; font-weight:600; text-align:left; cursor:pointer;
 }
-.bh-bake-navigator-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding-top:8px; }
+.bh-bake-navigator-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:8px 3px 4px; max-height:calc(100dvh - var(--bh-navigator-top, 56px) - 92px); overflow-y:auto; overscroll-behavior:contain; }
 .bh-bake-navigator-card {
   display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
   gap:5px; min-height:64px; min-width:0; padding:12px; border:1px solid var(--border);
@@ -358,8 +358,39 @@ button,
 .bh-bake-navigator-card small { font-size:12px; font-weight:400; line-height:1.4; }
 .bh-bake-navigator-card[aria-current="page"] { background:var(--terra); color:#fff; border-color:var(--terra); }
 .bh-bake-navigator button:focus-visible { outline:2px solid var(--terra); outline-offset:3px; }
+.bh-navigator-current { display:flex; align-items:center; gap:8px; min-width:0; }
+.bh-navigator-current svg { flex-shrink:0; }
+.bh-navigator-disclosure { font-size:12px; font-weight:500; text-align:right; max-width:120px; flex-shrink:0; }
+.bh-bake-navigator-card svg { margin-bottom:3px; }
+.bh-batch-context { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:14px; color:var(--smoke); }
+.bh-batch-context button, .bh-fillings-context button, .bh-late-fillings, .bh-recipe-fillings-link { min-height:44px; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--cream); color:var(--terra); font:inherit; font-size:14px; cursor:pointer; }
+.bh-fillings-invitation { margin:24px 0 12px; padding:16px; border:1px solid var(--border); border-radius:16px; background:var(--cream); }
+.bh-fillings-eyebrow { font-size:12px; font-weight:600; color:var(--terra); }
+.bh-fillings-invitation h3 { margin:6px 0 8px; font-size:21px; line-height:1.25; }
+.bh-fillings-invitation p { font-size:14px; line-height:1.5; margin:0 0 14px; color:var(--smoke); }
+.bh-fillings-preview { display:block; width:100%; padding:0; overflow:hidden; border:1px solid var(--border); border-radius:12px; background:var(--warm); font:inherit; color:var(--char); text-align:left; cursor:pointer; }
+.bh-fillings-examples { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
+.bh-fillings-example { min-width:0; }
+.bh-fillings-example img { display:block; width:100%; height:auto; aspect-ratio:3/2; object-fit:cover; }
+.bh-fillings-example > span { display:block; padding:7px 5px 10px; font-size:12px; line-height:1.3; overflow-wrap:break-word; }
+.bh-fillings-choose { display:flex; justify-content:space-between; align-items:center; gap:8px; min-height:48px; padding:12px; border-top:1px solid var(--border); color:var(--terra); font-size:15px; font-weight:600; }
+.bh-fillings-invitation .bh-fillings-optional { font-size:12px; margin:12px 0 0; }
+.bh-fillings-preview:focus-visible, .bh-batch-context button:focus-visible { outline:2px solid var(--terra); outline-offset:3px; }
+@media (max-width:360px) {
+  .bh-bake-navigator-trigger { gap:8px; padding:10px; }
+  .bh-navigator-disclosure { max-width:94px; }
+  .bh-fillings-invitation { padding:12px; }
+}
 .bh-section-choices { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 20px; }
 .bh-section-choices button { flex:1 1 130px; min-height:44px; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--cream); color:var(--char); font:inherit; cursor:pointer; }
 .bh-section-choices button[aria-pressed="true"] { background:var(--terra); color:#fff; border-color:var(--terra); }
 .bh-batch-actions { position:sticky; bottom:0; z-index:90; display:grid; gap:8px; padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px)); background:var(--warm); }
+.bh-batch-actions-choice { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+.bh-batch-actions-choice button { min-width:0; white-space:normal; }
+.bh-batch-actions .bh-dough-only { background:var(--cream)!important; color:var(--terra)!important; border:1px solid var(--border)!important; box-shadow:none!important; }
+.bh-section-back { display:block; min-height:44px; padding:10px 0; margin:0 0 8px; border:0; background:transparent; color:var(--terra); font:inherit; font-size:14px; text-align:left; cursor:pointer; }
+.bh-recipe-next { display:grid; gap:8px; }
+.bh-section-back:focus-visible { outline:2px solid var(--terra); outline-offset:2px; }
+.bh-batch-content input, .bh-batch-content button { scroll-margin-top:140px; }
+@media (prefers-reduced-motion:reduce) { .bh-bake-navigator { transition:none; } }
 [data-keyboard-open="true"] .bh-batch-actions { display:none !important; }
