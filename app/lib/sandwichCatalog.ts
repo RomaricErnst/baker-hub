@@ -186,7 +186,7 @@ export const SANDWICH_RECIPES: SandwichRecipe[] = recipeRows.map(([familyId,slug
   const ingredients=encoded.split(' ').map(part=>{const [ingredientId,grams]=part.split(':');return {ingredientId,grams:Number(grams)};});
   const vegetarian=ingredients.every(i=>SANDWICH_INGREDIENTS[i.ingredientId].vegetarian);
   const id=`${familyId}-${slug}`;
-  return {id,familyId,name:text(fr,en),kind,lighter,vegetarian,ingredients,steps:buildSandwichSteps(id,familyId,ingredients,vegetarian),allergens:[...new Set<SandwichAllergen>(['gluten',...ingredients.flatMap(i=>SANDWICH_INGREDIENTS[i.ingredientId].allergens)])],image:info.image,breadGrams:info.breadGrams,sourceIds:familyId==='pan_bagnat'&&kind==='classic'?['nice-pan-bagnat']:familyId==='piadina'&&kind==='classic'?['romagna-piadina']:['bakerhub-editorial']};
+  return {id,familyId,name:text(fr,en),kind,lighter,vegetarian,ingredients,steps:buildSandwichSteps(id,familyId,ingredients,vegetarian),allergens:[...new Set<SandwichAllergen>(['gluten',...ingredients.flatMap(i=>SANDWICH_INGREDIENTS[i.ingredientId].allergens)])],image:`/images/approved/sandwich/${id}.webp`,breadGrams:info.breadGrams,sourceIds:familyId==='pan_bagnat'&&kind==='classic'?['nice-pan-bagnat']:familyId==='piadina'&&kind==='classic'?['romagna-piadina']:['bakerhub-editorial']};
 });
 const recipeEnergy = (r:SandwichRecipe) => r.breadGrams*SANDWICH_FAMILIES.find(f=>f.id===r.familyId)!.breadKcalPer100g/100+r.ingredients.reduce((sum,i)=>sum+i.grams*SANDWICH_INGREDIENTS[i.ingredientId].kcalPer100g/100,0);
 // "Lighter" means >=20% less estimated energy than this family's classic recipes,

@@ -136,7 +136,7 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
         {filter==='light' && <p className={styles.muted}>{t('Au moins 20 % de calories en moins que la moyenne des classiques de ce pain, aux portions indiquées. Pain inclus.','At least 20% fewer calories than the classics for this bread on average, at the listed portions. Bread included.')}</p>}
         <div className={styles.grid}>{filtered.map(recipe=><article key={recipe.id} className={`${styles.card} ${styles.recipeCard} ${count(snapshot.qtys[recipe.id])?styles.selected:''}`}>
           <button type="button" className={styles.photoButton} aria-label={`${t('Voir la recette','View recipe')} ${tr(recipe.name)}`} onClick={()=>setDetailId(recipe.id)}>
-            <img className={styles.recipePhoto} src={tartine ? breadImage : recipe.image} alt={tartine ? breadName : tr(recipe.name)} width={640} height={480} loading="lazy" decoding="async"/>
+            <img className={styles.recipePhoto} src={recipe.image} alt={tr(recipe.name)} width={640} height={480} loading="lazy" decoding="async"/>
           </button>
           <button type="button" className={styles.detailButton} onClick={()=>setDetailId(recipe.id)}><h3>{tr(recipe.name)}</h3></button>
           <div className={styles.tags}><span className={styles.tag}>{Object.keys(snapshot.ingredientOverrides?.[recipe.id]??{}).length?t('Personnalisé','Customized'):recipe.kind==='classic'?t('Traditionnel','Traditional'):t('Création','Inspired')}</span>{lighter(recipe)&&<span className={styles.tag}>{t('Plus léger','Lighter')}</span>}{recipe.vegetarian&&<span className={styles.tag}>{t('Végétarien','Vegetarian')}</span>}</div>
@@ -193,8 +193,8 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
       <div className={styles.sheet} role="dialog" aria-modal="true" aria-labelledby={detailHeading} ref={dialogRef}>
         <div className={styles.sheetHeader}><h2 id={detailHeading}>{tr(detail.name)}</h2><button type="button" ref={closeRef} className={styles.button} aria-label={t('Fermer la recette','Close recipe')} onClick={()=>setDetailId(null)}>×</button></div>
         <div className={styles.sheetBody}>
-          <img className={styles.recipePhoto} src={tartine ? breadImage : detail.image} alt={tartine ? breadName : tr(detail.name)} width={640} height={480} decoding="async"/>
-          {!tartine&&Object.keys(snapshot.ingredientOverrides?.[detail.id]??{}).length>0&&<p className={styles.muted}>{t('Photo de la recette de base ; vos garnitures ont été personnalisées.','Photo shows the original recipe; you have customized the fillings.')}</p>}
+          <img className={styles.recipePhoto} src={detail.image} alt={tr(detail.name)} width={640} height={480} decoding="async"/>
+          {Object.keys(snapshot.ingredientOverrides?.[detail.id]??{}).length>0&&<p className={styles.muted}>{t('Photo de la recette de base ; vos garnitures ont été personnalisées.','Photo shows the original recipe; you have customized the fillings.')}</p>}
           <p className={styles.muted}>{tartine ? t('Pour une portion de tartine','For one toast portion') : t('Pour un sandwich','For one sandwich')} · ≈ {kcal(detail)} kcal · {t('pain inclus','bread included')}</p>
           <h3>{t('Pain','Bread')}</h3><p>{breadName} · ≈ {detail.breadGrams} g</p>
           <p className={styles.muted}>{t('Calories estimées avec des aliments génériques ; le pain et les marques peuvent modifier le résultat.','Calories use generic food estimates; bread and brands can change the result.')}</p>

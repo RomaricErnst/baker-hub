@@ -64,8 +64,18 @@ test('each recipe card loads its own catalogue image with localized alt and stab
   const html=render(createSandwichSnapshot(family.id),{styleKey:family.id==='tartine'?'pain_campagne':family.id,isFr});
   const recipes=SANDWICH_RECIPES.filter(r=>r.familyId===family.id);
   for(const recipe of recipes){
-   const escapedName=(family.id==='tartine'?'Pain de campagne':recipe.name[isFr?'fr':'en']).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+   const escapedName=recipe.name[isFr?'fr':'en'].replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
    assert.ok(html.includes(`src="${recipe.image}" alt="${escapedName}" width="640" height="480" loading="lazy" decoding="async"`),recipe.id);
   }
  }
+});
+
+
+test('all filling recipes have distinct dish-image paths rather than shared bread photographs',()=>{
+ assert.equal(new Set(SANDWICH_RECIPES.map(recipe=>recipe.image)).size,SANDWICH_RECIPES.length);
+ for(const recipe of SANDWICH_RECIPES) assert.equal(recipe.image,`/images/approved/sandwich/${recipe.id}.webp`);
+ const recipe=SANDWICH_RECIPES.find(recipe=>recipe.id==='tartine-avocat-oeuf');
+ const html=render(createSandwichSnapshot('tartine'),{styleKey:'pain_seigle',isFr:true});
+ assert.ok(html.includes('src="/images/approved/bread/seigle-rustic.webp" alt="Pain de seigle"'));
+ assert.ok(html.includes(`src="${recipe.image}" alt="Avocat et œuf dur"`));
 });
