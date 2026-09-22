@@ -35,15 +35,23 @@ for(const scenario of cases){
   await expect(card.getByText(fr?'Températures du plan':'Plan temperatures',{exact:false})).toBeVisible();
   await card.locator('summary').tap();
   if(scenario.name==='simple-direct'){
-   await expect(card.getByText('Pétrissage trop tôt',{exact:true})).toBeVisible();
+   // Restoration can legitimately re-solve an uncommitted direct plan.
+   // Make a real user edit to exercise outside-window feedback.
+   await page.getByRole('tab',{name:'Actions',exact:true}).tap();
+   await page.getByRole('tabpanel',{name:'Actions',exact:true}).getByRole('button').nth(1).tap();
+   const early=new Date(+bake-40*3600000);
+   await page.locator('input[type="datetime-local"]:visible').fill(new Date(+early-early.getTimezoneOffset()*60000).toISOString().slice(0,16));
+   await card.getByRole('heading').tap();
+   await expect(card.getByText(/Pétrissage trop tôt/)).toBeVisible();
+   await testInfo.attach('outside-window',{body:await card.screenshot(),contentType:'image/png'});
    await card.getByRole('button',{name:'Ajuster le pétrissage'}).tap();
    const editor=page.locator('input[type="datetime-local"]:visible');
    await expect(editor).toHaveCount(1);await expect(editor).toBeFocused();
    await expect(editor).toHaveCSS('font-size','16px');
    const next=new Date(+bake-20*3600000);
    const value=new Date(+next-next.getTimezoneOffset()*60000).toISOString().slice(0,16);
-   await editor.fill(value);await editor.press('Tab');
-   await expect(card.getByText('Dans le créneau',{exact:true})).toBeVisible();
+   await editor.fill(value);await card.getByRole('heading').tap();
+   await expect(card.getByText(/Dans le créneau/)).toBeVisible();
    await expect(page.getByRole('tab',{name:'Actions',exact:true})).toHaveAttribute('aria-selected','true');
   }
   expect(errors).toEqual([]);
