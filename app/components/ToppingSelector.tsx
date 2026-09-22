@@ -1188,12 +1188,13 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
             {recipeIngredients.map((ing, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px', borderBottom: '0.5px solid #F0EBE3' }}>
                 <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={!!ticked['dough_' + i]}
                   onClick={() => toggleTick('dough_' + i)}
-                  aria-label={ticked['dough_' + i]
-                    ? (l === 'fr' ? `Désélectionner ${ing.name}` : `Uncheck ${ing.name}`)
-                    : (l === 'fr' ? `Marquer ${ing.name} comme acheté` : `Mark ${ing.name} as bought`)}
+                  aria-label={ing.name}
                   style={{
-                    width: '24px', height: '24px', borderRadius: '4px', flexShrink: 0,
+                    width: '44px', height: '44px', borderRadius: '4px', flexShrink: 0,
                     border: ticked['dough_' + i] ? 'none' : '1.5px solid #C8C0B8',
                     background: ticked['dough_' + i] ? '#6B7A5A' : 'transparent',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',

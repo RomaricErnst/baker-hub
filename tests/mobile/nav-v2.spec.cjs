@@ -109,7 +109,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await testInfo.attach('quantity-single-action-no-bottom-tabs',{body:await page.screenshot(),contentType:'image/png'});
   await organise.tap();
   await expect(page.getByRole('heading',{name:'À votre façon',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé\b/}).tap();
+  await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé(?:\s|$)/}).tap();
   await expect(page.getByRole('heading',{name:'Votre équipement',exact:true})).toBeVisible();
   await expect.poll(async()=>(await stored(page)).tab).toBe(mode);
   expect((await stored(page)).numItems).toBe(5);
@@ -170,6 +170,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
   await card.getByRole('button',{name:'+',exact:true}).tap();
   await card.getByRole('button',{name:'+',exact:true}).tap();
  }
+ await expect.poll(async()=>bread?(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']:Object.values((await stored(page))?.pizzaParty?.qtys||{}).reduce((sum,n)=>sum+n,0)).toBe(2);
  await page.getByRole('button',{name:bread?'Voir ma sélection · 2':'Voir ma sélection · 2 pizzas',exact:true}).tap();
  const back=page.getByRole('button',{name:/^Revenir au protocole(?: →)?$/});
  await back.scrollIntoViewIfNeeded();
@@ -190,6 +191,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await choices.getByRole('button',{name:'La pâte',exact:true}).tap();
  await expect(current).toHaveAttribute('aria-label',stepLabel);
  expect(await page.evaluate(()=>Object.fromEntries(Object.entries(localStorage).filter(([key])=>key.startsWith('bh_guide_done_v2:'))))).toEqual(progress);
+ await expect.poll(async()=>bread?(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']:Object.values((await stored(page))?.pizzaParty?.qtys||{}).reduce((sum,n)=>sum+n,0)).toBe(2);
  const after=await stored(page);
  for(const key of ['styleKey','numItems','itemWeight','eatTime','recipeGenerated'])expect(after[key],key).toEqual(before[key]);
  if(bread)expect(after.sandwichParty.qtys['baguette-jambon-beurre']).toBe(2);
@@ -212,6 +214,7 @@ test('late fillings opened from Recipe return to Recipe without changing the dou
  const article=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Jambon-beurre',exact:true})});
  await article.getByRole('spinbutton').fill('1');
  await article.getByRole('spinbutton').blur();
+ await expect.poll(async()=>(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']).toBe(1);
  await page.getByRole('button',{name:'Voir ma sélection · 1',exact:true}).tap();
  await page.getByRole('button',{name:/^Revenir à la recette(?: →)?$/}).tap();
  await expect(navigator(page)).toContainText('Recette');
