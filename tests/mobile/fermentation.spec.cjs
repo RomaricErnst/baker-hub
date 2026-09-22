@@ -104,8 +104,10 @@ test.describe('verified availability repair',()=>{
   };
   await page.goto('/');
   await expect(card).toBeVisible({timeout:20000});await settle();
-  await page.getByRole('tab',{name:'Actions',exact:true}).tap();
-  await page.getByRole('tabpanel',{name:'Actions',exact:true}).getByRole('button').nth(1).tap();
+  const actionTab=page.getByRole('tab',{name:'Action items',exact:true});
+  await expect(actionTab).toBeVisible();
+  await actionTab.tap();
+  await page.getByRole('tabpanel',{name:'Action items',exact:true}).getByRole('button').nth(1).tap();
   await page.locator('input[type="datetime-local"]:visible').fill('2026-09-27T16:00');
   await page.getByRole('button',{name:'Done',exact:true}).tap();
   await expect.poll(async()=>{const s=await stored();return [s.startTime,s.eatTime];}).toEqual([start,bake]);
@@ -155,7 +157,7 @@ test.describe('verified availability repair',()=>{
   // wait through autosave, and ensure its mount solver has not replaced the plan.
   const details=await inspectColdPhases();
   await expect(page.getByRole('tabpanel',{name:'Visual schedule',exact:true}).getByText('Busy time',{exact:true})).toHaveCount(0);
-  await page.getByRole('tab',{name:'Actions',exact:true}).tap();
+  await actionTab.tap();
   await settle();
   expect((await stored()).eatTime).toBe(accepted.eatTime);
   expect((await stored()).startTime).toBe(start);
