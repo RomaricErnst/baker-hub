@@ -21,6 +21,14 @@ for(const scenario of cases){
   await page.goto(fr?'/fr':'/');
   const card=page.getByRole('region',{name:fr?'Votre créneau de pétrissage':'Your mixing window'});
   await expect(card).toBeVisible({timeout:20000});
+  // Restored drafts are re-solved asynchronously after their first render.
+  // Compare views only after the visible planning result has settled.
+  let previous='',unchangedSince=Date.now();
+  await expect.poll(async()=>{
+   const current=await card.innerText();
+   if(current!==previous){previous=current;unchangedSince=Date.now();}
+   return Date.now()-unchangedSince;
+  },{timeout:10000,intervals:[100]}).toBeGreaterThanOrEqual(1000);
   const text=await card.innerText();
   const box=await card.boundingBox();
   expect(box.x).toBeGreaterThanOrEqual(0);
