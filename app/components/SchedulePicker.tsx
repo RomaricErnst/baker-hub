@@ -6109,8 +6109,12 @@ export default function SchedulePicker({ startTime, eatTime, blocks, preheatMin,
     preferment: ['Préparation du préferment', 'Prepare preferment'], 'preferment-cold-out': ['Sortie du préferment', 'Preferment fridge exit'],
   };
   const firstReadinessConflict = readinessConflicts[0];
+  const conflictBlockLabel = firstReadinessConflict?.block.label;
+  const localizedConflictBlock = conflictBlockLabel?.startsWith('Work · ') ? (isFr ? 'Travail' : 'Work')
+    : conflictBlockLabel?.endsWith(' night') ? (isFr ? 'Nuit' : 'Night')
+    : conflictBlockLabel ?? (isFr ? 'Indisponible' : 'Unavailable');
   const conflictDescription = firstReadinessConflict
-    ? `${(conflictNames[firstReadinessConflict.action.id] ?? ['Étape', 'Step'])[isFr ? 0 : 1]} · ${fmtCardDT(firstReadinessConflict.action.at, isFr)}${firstReadinessConflict.action.end ? `–${fmtCardHM(firstReadinessConflict.action.end, isFr)}` : ''} · ${firstReadinessConflict.block.label ?? (isFr ? 'Indisponible' : 'Unavailable')}`
+    ? `${(conflictNames[firstReadinessConflict.action.id] ?? ['Étape', 'Step'])[isFr ? 0 : 1]} · ${fmtCardDT(firstReadinessConflict.action.at, isFr)}${firstReadinessConflict.action.end ? `–${fmtCardHM(firstReadinessConflict.action.end, isFr)}` : ''} · ${localizedConflictBlock}`
     : undefined;
   // A commercial proposal is checked both while offered and again on tap.
   // Starter plans remain manual: the later sourdough solve may change feeds.

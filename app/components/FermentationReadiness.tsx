@@ -137,7 +137,7 @@ export default function FermentationReadiness({
         {conflictDescription ?? t('Une étape tombe pendant une indisponibilité.', 'A step falls during an unavailable period.')}
       </p>}
       {canEdit && busy && !unavailableReason && onApplyRepair && repairLabel && <>
-        <p style={{fontSize:13,lineHeight:1.4,margin:'8px 0 0'}}>{t('Proposition vérifiée avec vos indisponibilités et les étapes au froid conservées. Les horaires restent des estimations.', 'Proposal checked against your unavailable times, keeping the fridge stages. Timings remain estimates.')}</p>
+        <p style={{fontSize:13,lineHeight:1.4,margin:'8px 0 0'}}>{t('Proposition vérifiée avec vos indisponibilités.', 'Proposal checked against your unavailable times.')}</p>
         <button type="button" onClick={onApplyRepair} style={{minHeight:44,width:'100%',marginTop:8,padding:'9px 12px',font:'inherit',fontSize:16,border:'1px solid var(--terra)',borderRadius:10,background:'var(--terra)',color:'#fff',cursor:'pointer'}}>{repairLabel}</button>
       </>}
       {canEdit && busy && onReviewAvailability && <button type="button" onClick={onReviewAvailability} style={{

@@ -21,17 +21,18 @@ test('direct generate call returns to planner when commercial preferment is inva
 });
 
 test('resumed schedule date edits revoke restore exemption before keyed remount; equal dates retain it',()=>{
- const callbacks=[...source.matchAll(/onChange=\{\(st, et, bl\) => \{ (if \(sessionRestored[^\n]+?) \}\}/g)];
- assert.equal(callbacks.length,2);
- for(const match of callbacks){
-  const restoredDate=new Date('2030-04-03T18:00Z');
-  for(const changed of [false,true]){
-   const clears=[];
-   const context={sessionRestored:true,eatTime:restoredDate,et:new Date(+restoredDate+(changed?3600000:0)),st:new Date(),bl:[],setSessionRestored:v=>clears.push(v),setStartTime:()=>{},setEatTime:()=>{},setBlocks:()=>{}};
-   vm.runInNewContext(match[1],context);
-   assert.equal(clears.length,changed?1:0);
-  }
+ assert.equal((source.match(/onChange=\{handleScheduleChange\}/g)||[]).length,2);
+ const declaration=source.match(/const handleScheduleChange =[\s\S]*?\n  };/)[0];
+ const compiled=ts.transpileModule(declaration+'\nhandleScheduleChange(st,et,bl,options)',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
+ const restoredDate=new Date('2030-04-03T18:00Z');
+ for(const changed of [false,true])for(const preservePlan of [false,true]){
+  const clears=[],markers=[];
+  const context={sessionRestored:true,eatTime:restoredDate,et:new Date(+restoredDate+(changed?3600000:0)),st:new Date(),bl:[],options:{preservePlan},repairKey:()=> 'accepted-key',setAcceptedScheduleRepair:v=>markers.push(v),setSessionRestored:v=>clears.push(v),setStartTime:()=>{},setEatTime:()=>{},setBlocks:()=>{}};
+  vm.runInNewContext(compiled,context);
+  assert.equal(clears.length,changed?1:0);
+  assert.deepEqual(markers,[preservePlan?'accepted-key':null]);
  }
  assert.equal((source.match(/savedPrefOffsetHours=\{prefOffsetH\}/g)||[]).length,2);
  assert.equal((source.match(/savedPrefGoesInFridge=\{prefGoesInFridge\}/g)||[]).length,2);
 });
+
