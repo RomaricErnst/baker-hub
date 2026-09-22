@@ -6,11 +6,11 @@ Updated 22 September 2026. Read this first. It supersedes the September 13 hando
 
 - Repository: `RomaricErnst/baker-hub` on GitHub.
 - Active branch: `codex/prototype-migration-20260920`. Continue from this branch, not main or the old release-candidate branch.
-- Latest application commit at this handoff: `3bb09af` (visual fermentation schedule). Handoff/documentation commits may follow without changing application behaviour.
+- Latest application commit at this handoff: `9a32a88` (header readability and touch targets). Handoff/documentation commits may follow without changing application behaviour.
 - Local checkout: `/Users/romaricernst/Documents/Codex/2026-09-11/create-an-image-of/work/baker-hub-migration`.
 - Stable test URL: https://baker-hub-git-codex-prototype-mig-b4b24a-thebaker-hubs-projects.vercel.app/fr
-- Verified immutable build: https://baker-e1vczyjm0-thebaker-hubs-projects.vercel.app/fr
-- Deployment: `dpl_7MTdNrz3A5RzPQfjmEiAQyQF3Znh`, READY. New pushes can supersede it.
+- Verified immutable build: https://baker-mtwdobga3-thebaker-hubs-projects.vercel.app/fr
+- Deployment: `dpl_FZUe7AKdxV9ugAA9cXPbyXTLXZ7Y`, READY. New pushes can supersede it.
 - Temporary Vercel share tokens expire; obtain fresh access if the preview requests login. Do not store tokens or credentials in this document.
 - Vercel project `prj_qDz6tdakJGeFFtVApo9mpAU7rNQq`; team `team_WioBBEisA4hox7JpPyBX0Vtr`. Branch pushes auto-deploy previews.
 
@@ -35,6 +35,11 @@ Current prototype reference is archived at `docs/continuation-reference/option-a
 - Phone setup hides bottom destination tabs; Continue remains sticky. Tabs return for generated recipe/pizza module. Menu offers pizza access during setup.
 - Mobile header is 56px, hides after deliberate downward scrolling, returns upward; ignores small jitter. Setup progress and generated bake name scroll away. Controls retain practical touch targets.
 - Latest iPhone safe-area fix (`44b7bac`): opaque action background reaches full width and bottom edge, with safe-area padding inside rather than transparent space below Continue.
+
+### Header readability — 22 September 2026
+- Header Menu and Save/Enregistrer use 16px Figtree, weight 500; Save has the subtle existing border color. Header actions have minimum 44px width/height.
+- Mobile wordmark is 24px. Removed the obsolete below-373px hide rule; below 360px, header side padding is 8px and Menu/Save side padding is 6px to fit Back + wordmark + French Save + Menu.
+- Existing 56px mobile header, scroll handling, callbacks, save guard and accessibility behavior remain unchanged.
 
 ### Flour and recipe data
 - Flour catalogue was expanded/cleaned, premixes excluded, photographed products integrated locally. Historical migration checkpoint reported 244 pictured branded entries plus 12 generic types; re-count live data before making a new completeness claim.
@@ -69,6 +74,13 @@ Do not overclaim:
 - Authenticated real cloud save/share/reopen was not fully exercised. Payload and failure paths have automated coverage; image-file scanning was checked separately.
 - Numerical tests are not baking experiments or biological validation. Climate/humidity adjustments still need source-based judgment if revisited; don't infer scientific validity from green tests.
 - Existing audit reports contain old unresolved/closed states. Reconcile each against code and evidence; don't blanket-close the original audit.
+
+### Header verification — 22 September 2026
+- Application commit `9a32a88` deployed READY to the preview above; no production promotion.
+- Deployed Chrome checks: French and English setup Save changes to Enregistré/Saved and opens the existing account prompt; menu opens/closes; Escape closes and restores focus to Menu; language switching works.
+- Measured deployed label styles: 16px / 500; Back, Menu and Save are 44px high, all >=44px wide. French unsaved text widths: Enregistrer 79.625px, Menu 40.3125px; Georgia wordmark at 28px measured 117.422px (24px estimate 100.65px). With the narrow CSS, total required width including Back and outer padding is about 306.6px at a 320px viewport.
+- Narrow layouts were checked by source and measured width budget, **not rendered mobile emulation**: this cloud browser does not expose viewport resizing. Physical iPhone/keyboard/scroll behavior remains unverified here.
+- Full local checkout/TypeScript/test suite could not run in this restricted network environment; the GitHub connector was used to edit the two files and Vercel confirmed a successful build. Existing earlier 154-test evidence is historical, not rerun for this change. Real authenticated cloud save remains unverified.
 
 ## Where to look
 
