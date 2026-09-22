@@ -24,8 +24,10 @@ async function unobscured(locator){
  })).toBe(true);
 }
 async function noOverflow(page){
- const overflow=await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.right>innerWidth+1;}).slice(-8).map(el=>({tag:el.tagName,text:el.textContent.slice(0,80),right:el.getBoundingClientRect().right})));
- expect(await page.evaluate(()=>document.documentElement.scrollWidth),JSON.stringify(overflow)).toBeLessThanOrEqual(page.viewportSize().width);
+ const viewport=page.viewportSize().width;
+ const geometry=await page.evaluate(expected=>({expected,innerWidth,visualWidth:visualViewport?.width,htmlWidth:document.documentElement.scrollWidth,htmlClientWidth:document.documentElement.clientWidth,bodyWidth:document.body.scrollWidth,bodyClientWidth:document.body.clientWidth,offenders:[...document.querySelectorAll('body *')].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.right>expected+1;}).slice(-20).map(el=>({tag:el.tagName,className:String(el.className),text:el.textContent.slice(0,100),left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right,width:el.getBoundingClientRect().width,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}))}),viewport);
+ if(geometry.htmlWidth>viewport)await test.info().attach('horizontal-overflow-geometry',{body:JSON.stringify(geometry,null,2),contentType:'application/json'});
+ expect(geometry.htmlWidth,JSON.stringify(geometry)).toBeLessThanOrEqual(viewport);
 }
 async function navigate(page,label,locale='fr'){
  await navigator(page).scrollIntoViewIfNeeded();
@@ -89,6 +91,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
   const quantity=page.getByLabel(bread?'Nombre de pains':'Nombre de pizzas',{exact:true});
   await quantity.fill('5');await quantity.blur();
+  await expect.poll(async()=>({style:(await stored(page))?.styleKey,count:(await stored(page))?.numItems})).toEqual({style:bread?'baguette':'neapolitan',count:5});
   const chosenStyle=(await stored(page)).styleKey;
   await page.getByRole('button',{name:bread?'Ajouter des garnitures':'Choisir mes pizzas',exact:true}).tap();
   await expect(bread?page.getByRole('article').first():page.getByRole('button',{name:'Margherita',exact:true})).toBeVisible();

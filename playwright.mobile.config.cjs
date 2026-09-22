@@ -6,7 +6,7 @@ module.exports = defineConfig({
   timeout: 60000,
   expect: { timeout: 10000 },
   workers: 2,
-  maxFailures: 5,
+  maxFailures: process.env.BAKER_NAV_V2 === '1' ? 0 : 5,
   retries: 0,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {

@@ -110,10 +110,11 @@ body {
 /* ── Step pages ──────────────────────────────
    One page mounts at a time, so there is no outgoing element to animate
    against. A short entrance is enough to say "the page turned"; slowing it
-   further only adds latency across six or nine steps. */
+   further only adds latency across six or nine steps. Opacity alone avoids
+   expanding the mobile layout viewport during the entrance transition. */
 @keyframes bhStepIn {
-  from { opacity: 0; transform: translateX(20px); }
-  to   { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 .bh-step-page {
   animation: bhStepIn 320ms cubic-bezier(.25, .8, .3, 1) both;
