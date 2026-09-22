@@ -2,7 +2,7 @@
 
 ## Scope
 
-82 filling recipes: baguette 10, focaccia 10, bagel 8, and 6 each for pocket pita, Greek pita, kebab bread, batbout, laffa, piadina, pan-bagnat bread, ciabatta and panuozzo. These are sandwich fillings, not 82 dough formulas. Family images show the bread family, not a photograph of every filling.
+88 filling recipes: 6 tartines, baguette 10, focaccia 10, bagel 8, and 6 each for pocket pita, Greek pita, kebab bread, batbout, laffa, piadina, pan-bagnat bread, ciabatta and panuozzo. These are sandwich fillings, not 88 dough formulas. Family images show the bread family, not a photograph of every filling.
 
 `classic` means a familiar combination selected for the catalogue, not a protected traditional designation or a popularity ranking. All catalogue quantities and steps are Bakerhub editorial adaptations. `inspired` identifies creative variations. Only one pan bagnat is labelled classic; the five alternatives explicitly start with “Inspired / Inspiré”. No claim of ten traditional pan-bagnat recipes is made.
 
@@ -16,7 +16,7 @@ The remaining familiar combinations are editorial selections, not recipes copied
 
 ## Portion and energy basis
 
-Every ingredient quantity is **edible grams for one sandwich serving**. Meat is explicitly already cooked; canned foods are drained; eggs are peeled and hard-boiled. Vegetable weights are before the recipe’s roasting/sautéing step unless their label says cooked. Oil, sauces, cheese and nuts are counted. Shopping therefore buys cooked meat/falafel/egg or asks the baker to supply an equivalent cooked portion; it never silently treats raw meat weight as cooked yield.
+Every ingredient quantity is **edible grams for one serving**: one sandwich, or one tartine portion. Meat is explicitly already cooked; canned foods are drained; eggs are peeled and hard-boiled. Vegetable weights are before the recipe’s roasting/sautéing step unless their label says cooked. Oil, sauces, cheese and nuts are counted. Shopping therefore buys cooked meat/falafel/egg or asks the baker to supply an equivalent cooked portion; it never silently treats raw meat weight as cooked yield.
 
 `estimatedSandwichKcal` adds a stated **baked bread portion** plus every retained filling. A family’s default portion is a reference serving, not a statement that one pan or loaf makes one sandwich. The parent dough amount is not treated as baked bread mass: baking removes water. The interface must display the reference bread grams beside the calorie estimate and avoid claiming that a custom dough piece has exactly this energy value.
 
@@ -45,7 +45,7 @@ Allergens identify expected ingredients, not a certified allergen-free result. P
 ## State, shopping and serving
 
 - Canonical family/ingredient/recipe definitions: `app/lib/sandwichCatalog.ts`; pure state helpers: `app/lib/sandwich.ts`.
-- Selection quantities count complete sandwich servings, independent of parent loaf/pan count. Filling totals sum identical ingredient IDs across recipes.
+- Selection quantities count complete sandwich or tartine servings, independent of parent loaf/pan count. Filling totals sum identical ingredient IDs across recipes.
 - Shopping contains filling ingredients; the UI joins these with the parent dough ingredients rather than adding purchased bread a second time.
 - Family switching explicitly resets selections, overrides, shopping/prep ticks and serving progress; unrelated pizza state is separate.
 - Valid per-recipe customization can survive zero selected quantity. Restored quantities are finite nonnegative integers capped at 99 per recipe; unknown/foreign-family IDs and invalid overrides are rejected.
@@ -55,3 +55,14 @@ Allergens identify expected ingredients, not a certified allergen-free result. P
 - Serving queues retain each recipe separately and clamp completed portions to the selected amount.
 
 Domain tests cover catalogue coverage, shared shopping, family isolation, invalidation, hostile/stale restore data, customization before selection, rebake and independent serving queues. Nutrition tests are reviewed separately. Unit tests demonstrate software contracts, not biological or nutritional validation.
+
+
+## Tartines for sliced loaves — 22 September 2026
+
+The `tartine` companion family maps explicitly to `pain_campagne`, `pain_levain`, `pain_complet`, `pain_seigle` and `pain_mie`. It does not alter the selected dough or offer a second bread selection. Brioche, pain viennois and fougasse remain unmapped until suitable content is added; unknown style keys remain unsupported.
+
+Six editorial combinations: avocado and hard-boiled egg; goat cheese, honey and walnuts; ham and Emmental; mushrooms and ricotta; tomato, ricotta and basil; tuna, yogurt and cucumber. Existing ingredient definitions are reused, including the **peeled hard-boiled egg**; no poached/fried egg estimate or cooking claim is introduced.
+
+One tartine quantity is an **open-faced portion with 60 g baked bread**, consisting of one large slice or several smaller slices, not one loaf and not a guaranteed slice count. Preparation weighs that portion, optionally toasts it and keeps assembly open-faced. Toppings and shopping scale by portion; parent dough ingredients continue to represent the entire bake once. Switching between the five supported loaf styles retains the tartine selection because the companion family is unchanged.
+
+Bread energy uses an explicitly generic sliced-bread reference of 250 kcal/100 g. This is neither analysis of the user's loaf nor a claim that country, sourdough, wholemeal, rye and sandwich loaves have identical energy or allergens. The existing nutrition and bread-product allergen limitations above apply. The two lighter choices retain the same 60 g reference bread portion and satisfy the existing internal comparison against the family classics. The fallback illustration uses the existing country-bread image; it is not a photograph of the assembled tartine.

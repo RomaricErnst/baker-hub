@@ -1177,6 +1177,8 @@ export default function Home() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
   const pizzaPartyEnabled = bakeType === 'pizza';
+  const sandwichEnabled = bakeType === 'bread' && !!styleKey && !!sandwichFamilyForStyle(styleKey);
+  useEffect(() => { if (activeTab === 'sandwiches' && !sandwichEnabled) setActiveTab('setup'); }, [activeTab, sandwichEnabled]);
   const [pizzasConfirmed, setPizzasConfirmed] = useState(false);
 
   // M2 — Mode chosen: false on page load, true after baker selects a mode
@@ -1471,7 +1473,7 @@ export default function Home() {
       setProtocolStale(false);
     } else {
       const companionTab = session.bakeType === 'pizza' ? 'pizzaparty' : 'sandwiches';
-      setActiveTab(session.activeTab === companionTab ? companionTab : 'setup');
+      setActiveTab(session.activeTab === companionTab && (session.bakeType === 'pizza' || !!session.styleKey && !!sandwichFamilyForStyle(session.styleKey)) ? companionTab : 'setup');
       if (session.tab === 'custom') {
         setAdvancedStep(session.styleKey ? (session.ovenType ? 3 : 2) : 1);
       } else {
@@ -2782,7 +2784,7 @@ export default function Home() {
       else setActiveTab(savedTab);
       setTimeout(endRestore, 200);
     } else {
-      const earlyCompanion = !rb && ((snap.activeTab === 'pizzaparty' && snap.bakeType === 'pizza') || (snap.activeTab === 'sandwiches' && snap.bakeType === 'bread'));
+      const earlyCompanion = !rb && ((snap.activeTab === 'pizzaparty' && snap.bakeType === 'pizza') || (snap.activeTab === 'sandwiches' && snap.bakeType === 'bread' && !!snap.styleKey && !!sandwichFamilyForStyle(snap.styleKey)));
       setActiveTab(earlyCompanion ? snap.activeTab as 'pizzaparty'|'sandwiches' : 'setup');
       setActiveStep(snap.styleKey ? snap.activeStep ?? snap.highestStep ?? 1 : 1); setHighestStep(snap.highestStep ?? 1);
       setAdvancedStep(snap.styleKey ? snap.advancedStep ?? snap.advancedHighestStep ?? 1 : 1); setAdvancedHighestStep(snap.advancedHighestStep ?? 1);
@@ -3155,7 +3157,7 @@ export default function Home() {
           }}
           onSaveSession={saveCurrentSession}
           onReviewPlan={bakeType && modeChosen ? () => { setActiveTab('setup'); setReviewMode(true); setSetupOverview(true); scrollToStepTop(); } : undefined}
-          onOpenSandwiches={bakeType === 'bread' ? () => { setActiveTab('sandwiches'); setNavHidden(false); } : undefined}
+          onOpenSandwiches={sandwichEnabled ? () => { setActiveTab('sandwiches'); setNavHidden(false); } : undefined}
           onOpenPizzas={bakeType === 'pizza' ? () => { setActiveTab('pizzaparty'); setNavHidden(false); } : undefined}
           onSharePlan={shareCurrentSession}
           onBack={bakeType ? () => {
@@ -3539,7 +3541,7 @@ export default function Home() {
             {key:'bake',label:t('tabs.bake'),locked:!pizzasConfirmed,
               done:Object.values(pizzaPartyQtys).some(q=>q>0) && Object.entries(pizzaPartyQtys).every(([id,q])=>(bakedPartyQtys[id]??0)>=q)},
           ]} />}
-        {activeTab === 'sandwiches' && (sandwichParty.familyId || (styleKey && sandwichFamilyForStyle(styleKey))) && <CompanionSteps onReveal={navHidden ? ()=>setNavHidden(false) : undefined} label={fr ? 'Étapes des sandwichs' : 'Sandwich steps'} active={sandwichParty.tab}
+        {activeTab === 'sandwiches' && sandwichEnabled && <CompanionSteps onReveal={navHidden ? ()=>setNavHidden(false) : undefined} label={fr ? 'Étapes des sandwichs' : 'Sandwich steps'} active={sandwichParty.tab}
           onChange={next=>setSandwichParty(previous=>({...previous,tab:next}))} steps={[
             {key:'pick',label:fr?'Choisir':'Choose'}, {key:'shop',label:fr?'Courses':'Shopping'},
             {key:'prep',label:fr?'Préparer':'Prepare'}, {key:'serve',label:fr?'Servir':'Serve'},
@@ -4052,7 +4054,7 @@ export default function Home() {
                   starterLocation={starterLocation}
                   units={units}
                   locale={locale}
-                  onNavigateToFillings={bakeType === 'bread' ? () => { setActiveTab('sandwiches'); setNavHidden(false); } : undefined}
+                  onNavigateToFillings={sandwichEnabled ? () => { setActiveTab('sandwiches'); setNavHidden(false); } : undefined}
                   onNavigateToPizzaParty={pizzaPartyEnabled ? () => { setPizzaPartyTab(Object.values(pizzaPartyQtys).some(qty => qty > 0) ? 'prep' : 'pick'); setActiveTab('pizzaparty'); } : undefined}
                   recipe={recipe ?? null}
                   simpleMode={tab === 'simple'}
@@ -4631,7 +4633,7 @@ export default function Home() {
                   starterLocation={starterLocation}
                   units={units}
                   locale={locale}
-                  onNavigateToFillings={bakeType === 'bread' ? () => { setActiveTab('sandwiches'); setNavHidden(false); } : undefined}
+                  onNavigateToFillings={sandwichEnabled ? () => { setActiveTab('sandwiches'); setNavHidden(false); } : undefined}
                   onNavigateToPizzaParty={pizzaPartyEnabled ? () => { setPizzaPartyTab(Object.values(pizzaPartyQtys).some(qty => qty > 0) ? 'prep' : 'pick'); setActiveTab('pizzaparty'); } : undefined}
                   recipe={advancedRecipe ?? null}
                   simpleMode={false}
@@ -4683,9 +4685,9 @@ export default function Home() {
           </div>
         )}
 
-      {bakeType === 'bread' && activeTab === 'sandwiches' && <div style={{paddingBottom:80}}>
+      {sandwichEnabled && activeTab === 'sandwiches' && <div style={{paddingBottom:80}}>
         <SandwichParty isFr={locale === 'fr'} styleKey={styleKey} snapshot={sandwichParty}
-          onChange={setSandwichParty} hideNavigation doughConfigured={recipeGenerated} breadIngredients={recipeGenerated ? sandwichDoughIngredients : []}
+          onChange={setSandwichParty} onRevealNavigation={()=>setNavHidden(false)} hideNavigation doughConfigured={recipeGenerated} breadIngredients={recipeGenerated ? sandwichDoughIngredients : []}
           onAdjustBread={()=>{setActiveTab('setup');setNavHidden(false);if(recipeGenerated){setSetupOverview(false);setReviewMode(true);if(tab==='custom')setAdvancedStep(2);else setActiveStep(2);}scrollToStepTop();}}
           availableDoughWeight={recipeGenerated ? ((tab === 'custom' ? advancedRecipe : recipe)?.totalDough ?? numItems * itemWeight) : undefined}
           numItems={numItems} />
@@ -4694,7 +4696,7 @@ export default function Home() {
 
 
 
-      <nav id="bh-bottom-nav" data-collapsed={bottomNavCollapsed || undefined} inert={bottomNavCollapsed} aria-hidden={bottomNavCollapsed || undefined} onFocusCapture={()=>setNavHidden(false)} aria-label={locale === 'fr' ? 'Votre fournée' : 'Current bake'} style={{display:bakeType?'flex':'none',position:'fixed',bottom:0,left:0,right:0,zIndex:110,background:'var(--cream)',borderTop:'1px solid var(--border)',padding:'6px max(12px, calc((100vw - 680px) / 2)) calc(6px + env(safe-area-inset-bottom, 0px))',gap:4}}>
+      <nav id="bh-bottom-nav" data-collapsed={bottomNavCollapsed || undefined} inert={bottomNavCollapsed} aria-hidden={bottomNavCollapsed || undefined} onFocusCapture={()=>setNavHidden(false)} aria-label={locale === 'fr' ? 'Votre fournée' : 'Current bake'} style={{display:(pizzaPartyEnabled||sandwichEnabled)?'flex':'none',position:'fixed',bottom:0,left:0,right:0,zIndex:110,background:'var(--cream)',borderTop:'1px solid var(--border)',padding:'6px max(12px, calc((100vw - 680px) / 2)) calc(6px + env(safe-area-inset-bottom, 0px))',gap:4}}>
         {([{key:'dough',label:fr?'Ma pâte':'My dough'}, {key:'companion',label:bakeType==='pizza'?'Pizzas':fr?'Garnitures':'Fillings'}] as const).map(item=>{
           const inDough = activeTab==='setup'||activeTab==='plan'||activeTab==='guide';
           const active = item.key==='dough' ? inDough : !inDough;

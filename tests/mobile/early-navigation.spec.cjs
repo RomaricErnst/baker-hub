@@ -8,14 +8,15 @@ async function anonymous(page){
 async function twoDestinations(page,fr,companion){
  await expect(bottom(page)).toBeVisible();
  await expect(bottom(page).getByRole('button')).toHaveText([fr?'Ma pâte':'My dough',companion]);
- expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize().width);
+ const overflow=await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(el=>{const r=el.getBoundingClientRect();return r.right>innerWidth+1&&r.width>0;}).slice(-12).map(el=>({tag:el.tagName,text:el.textContent.slice(0,100),right:el.getBoundingClientRect().right})));
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth),JSON.stringify(overflow)).toBeLessThanOrEqual(page.viewportSize().width);
 }
 async function revealNavigation(page){
  const reveal=page.getByRole('button',{name:'Navigation',exact:true});
  if(await reveal.isVisible())await reveal.tap();
 }
 async function actionAboveNavigation(page){
- const action=page.locator('.bh-step-page:visible .bh-step-actions');
+ const action=page.locator('.bh-step-page:visible .bh-step-actions button').last();
  await action.scrollIntoViewIfNeeded();
  await expect(action).toBeVisible();
  await expect.poll(async()=>{
@@ -44,29 +45,31 @@ for(const fr of [false,true]){
 test('early bread selections survive mode choice, matching bread style and later setup navigation',async({page},testInfo)=>{
  await anonymous(page);await page.goto('/');
  await page.getByRole('button',{name:'Bread',exact:true}).tap();
+ await expect(bottom(page)).toBeHidden();
+ await page.getByRole('button',{name:/^Simple\b/}).tap();
+ await expect(bottom(page)).toBeHidden();
+ await page.getByRole('button',{name:/^Baguette\b/}).tap();
  await twoDestinations(page,false,'Fillings');
  await bottom(page).getByRole('button',{name:'Fillings',exact:true}).tap();
- await page.getByRole('button',{name:'Baguette',exact:true}).tap();
+ await expect(page.getByRole('heading',{name:'Which bread will you fill?',exact:true})).toHaveCount(0);
  const quantity=page.getByRole('spinbutton',{name:/^Quantity /}).first();
  const quantityName=await quantity.getAttribute('aria-label');
  await quantity.fill('2');await quantity.blur();
  await expect.poll(async()=>Object.values((await stored(page))?.sandwichParty?.qtys??{})).toEqual([2]);
- expect((await stored(page)).styleKey).toBeNull();
+ expect((await stored(page)).styleKey).toBe('baguette');
  await revealNavigation(page);
  await bottom(page).getByRole('button',{name:'My dough',exact:true}).tap();
- await expect(page.getByRole('heading',{name:'Your way',exact:true})).toBeVisible();
- await page.getByRole('button',{name:/^Simple\b/}).tap();
- await page.getByRole('button',{name:/^Baguette\b/}).tap();
+ await expect(page.getByRole('button',{name:/^Baguette\b/})).toBeVisible();
  await actionAboveNavigation(page);
  await page.locator('.bh-step-page:visible').getByRole('button',{name:'Continue',exact:true}).tap();
- await expect(page.getByLabel('Number of pieces',{exact:true})).toBeVisible();
- await page.getByLabel('Number of pieces',{exact:true}).fill('5');
- await page.getByLabel('Number of pieces',{exact:true}).blur();
+ await expect(page.getByLabel('Number of loaves',{exact:true})).toBeVisible();
+ await page.getByLabel('Number of loaves',{exact:true}).fill('5');
+ await page.getByLabel('Number of loaves',{exact:true}).blur();
  await bottom(page).getByRole('button',{name:'Fillings',exact:true}).tap();
  await expect(page.getByRole('spinbutton',{name:quantityName,exact:true})).toHaveValue('2');
  await revealNavigation(page);
  await bottom(page).getByRole('button',{name:'My dough',exact:true}).tap();
- await expect(page.getByLabel('Number of pieces',{exact:true})).toHaveValue('5');
+ await expect(page.getByLabel('Number of loaves',{exact:true})).toHaveValue('5');
  await actionAboveNavigation(page);
  await twoDestinations(page,false,'Fillings');
  await testInfo.attach('setup-actions-above-two-tabs',{body:await page.screenshot(),contentType:'image/png'});
@@ -95,8 +98,10 @@ test('generated dough uses local phases and returns to Recipe after browsing fil
 test('Safari companion scrolling hides chrome, preserves phase access and reveals navigation',async({page},testInfo)=>{
  await anonymous(page);await page.goto('/fr');
  await page.getByRole('button',{name:'Pain',exact:true}).tap();
+ await expect(bottom(page)).toBeHidden();
+ await page.getByRole('button',{name:/^Simple\b/}).tap();
+ await page.getByRole('button',{name:/^Baguette\b/}).tap();
  await bottom(page).getByRole('button',{name:'Garnitures',exact:true}).tap();
- await page.getByRole('button',{name:'Baguette',exact:true}).tap();
  await expect(page.getByRole('article').first()).toBeVisible();
  await page.evaluate(()=>window.scrollTo(0,450));
  await expect.poll(async()=>{
@@ -113,7 +118,7 @@ test('Safari companion scrolling hides chrome, preserves phase access and reveal
  await reveal.tap();
  await expect.poll(async()=>{
   const nav=await bottom(page).boundingBox();
-  return !!nav&&nav.y+nav.height<=page.viewportSize().height+1;
+  return !!nav&&nav.height>=60&&nav.y+nav.height<=page.viewportSize().height+1;
  }).toBe(true);
  expect(Math.abs((await page.evaluate(()=>window.scrollY))-before)).toBeLessThanOrEqual(1);
  await page.evaluate(()=>window.scrollBy(0,160));
@@ -121,12 +126,34 @@ test('Safari companion scrolling hides chrome, preserves phase access and reveal
  await page.evaluate(()=>window.scrollBy(0,-60));
  await expect.poll(async()=>{
   const nav=await bottom(page).boundingBox();
-  return nav.y+nav.height<=page.viewportSize().height+1;
+  return nav.height>=60&&nav.y+nav.height<=page.viewportSize().height+1;
  }).toBe(true);
+ await expect.poll(async()=>(await page.locator('header.bh-header').boundingBox()).y).toBeGreaterThanOrEqual(0);
  await testInfo.attach('safari-upward-scroll-navigation-visible',{body:await page.screenshot(),contentType:'image/png'});
  await bottom(page).getByRole('button',{name:'Ma pâte',exact:true}).tap();
- await page.getByRole('button',{name:/^Simple\b/}).tap();
  await page.evaluate(()=>window.scrollTo(0,450));
  await actionAboveNavigation(page);
  await twoDestinations(page,true,'Garnitures');
+});
+
+for(const style of ['Pain de campagne','Pain complet']) test(`${style}: chosen loaf opens tartines without a second bread choice`,async({page},testInfo)=>{
+ await anonymous(page); await page.goto('/fr');
+ await page.getByRole('button',{name:'Pain',exact:true}).tap();
+ await expect(bottom(page)).toBeHidden();
+ await page.getByRole('button',{name:/^Simple\b/}).tap();
+ await page.getByRole('button',{name:new RegExp('^'+style+'\\b')}).tap();
+ await bottom(page).getByRole('button',{name:'Garnitures',exact:true}).tap();
+ await expect(page.getByRole('heading',{name:'Vos tartines',exact:true})).toBeVisible();
+ await expect(page.getByRole('heading',{name:/Quel pain/})).toHaveCount(0);
+ const avocado=page.getByRole('article').filter({hasText:'Avocat'}).first();
+ await expect(avocado).toContainText(/œuf/);
+ await avocado.getByRole('spinbutton').fill('2');
+ await avocado.getByRole('button',{name:'Recette et garnitures',exact:true}).tap();
+ const dialog=page.getByRole('dialog');
+ await expect(dialog).toContainText(style);
+ await expect(dialog).toContainText('60 g');
+ await expect(dialog).toContainText(/tartine/);
+ await testInfo.attach('tartine-selected-loaf',{body:await dialog.screenshot(),contentType:'image/png'});
+ await dialog.getByRole('button',{name:'Terminé',exact:true}).tap();
+ await expect(page.getByRole('button',{name:'Voir ma sélection · 2',exact:true})).toBeVisible();
 });

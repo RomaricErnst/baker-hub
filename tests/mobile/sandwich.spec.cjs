@@ -68,7 +68,16 @@ for(const scenario of [
   await dialog.getByRole('button',{name:fr?'Terminé':'Done',exact:true}).tap();
   await expect(dialog).toBeHidden();
   await expect(article.getByText(fr?'Personnalisé':'Customized',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:fr?'Voir ma sélection · 2':'Review selection · 2',exact:true}).tap();
+  // Closing the sheet must reveal the next action without an extra scroll.
+  const review=page.getByRole('button',{name:fr?'Voir ma sélection · 2':'Review selection · 2',exact:true});
+  await expect(review).toBeVisible();
+  await expect(page.locator('#bh-bottom-nav')).not.toHaveAttribute('data-collapsed','true');
+  await expect.poll(async()=>{
+   const [button,nav]=await Promise.all([review.boundingBox(),page.locator('#bh-bottom-nav').boundingBox()]);
+   return !!button&&!!nav&&nav.height>=60&&button.y>=0&&button.y+button.height<=nav.y+1;
+  }).toBe(true);
+  await testInfo.attach(`${scenario.style}-review-action-restored`,{body:await page.screenshot(),contentType:'image/png'});
+  await review.tap();
   await page.getByRole('button',{name:fr?'Préparer mes courses →':'Build my shopping list →',exact:true}).tap();
   const cheese=page.getByRole('checkbox',{name:new RegExp(scenario.ingredient+'\\s+40 g')});
   await expect(cheese).toBeVisible();

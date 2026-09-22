@@ -1,6 +1,7 @@
 /** Short destination names stay stable across setup and the generated recipe. */
 export function breadCompanionLabel(family: string | null | undefined, fr: boolean): string {
   const names: Record<string, string> = {
+    tartine: fr ? 'Tartines' : 'Open-faced toasts',
     baguette: fr ? 'Sandwichs' : 'Sandwiches', focaccia: 'Focaccias', ciabatta: 'Ciabattas',
     pan_bagnat: 'Pans bagnats', panuozzo: 'Panuozzi', bagel: 'Bagels',
     pita: 'Pitas', greek_pita: 'Pitas', kebab_bread: 'Kebabs', batbout: 'Batbouts',

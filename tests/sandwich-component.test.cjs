@@ -13,14 +13,14 @@ const {createSandwichSnapshot}=require('../app/lib/sandwich.ts');
 const render=(snapshot,props={})=>renderToStaticMarkup(React.createElement(SandwichParty,{isFr:false,styleKey:'baguette',snapshot,onChange(){},...props}));
 test('sandwich browsing stays in the selected family and unsupported bread is explicit',()=>{
  for(const family of SANDWICH_FAMILIES){
-   const html=render(createSandwichSnapshot(family.id),{styleKey:family.id});
+   const html=render(createSandwichSnapshot(family.id),{styleKey:family.id==='tartine'?'pain_campagne':family.id});
    const own=SANDWICH_RECIPES.find(r=>r.familyId===family.id);
    assert.ok(own);assert.ok(html.includes(own.name.en.replace(/&/g,'&amp;').replace(/'/g,'&#x27;')));
    const buttons=(html.match(/Recipe and fillings/g)||[]).length;
    assert.equal(buttons,SANDWICH_RECIPES.filter(r=>r.familyId===family.id).length);
  }
- const html=render(createSandwichSnapshot(),{styleKey:'pain_seigle'});
- assert.match(html,/Which bread will you fill/);assert.doesNotMatch(html,/Recipe and fillings/);
+ const html=render(createSandwichSnapshot(),{styleKey:'fougasse'});
+ assert.doesNotMatch(html,/Which bread will you fill/);assert.doesNotMatch(html,/Recipe and fillings/);
 });
 test('controlled sandwich state supplies shopping, cooking and reversible service counters in both languages',()=>{
  const recipe=SANDWICH_RECIPES.find(r=>r.familyId==='baguette');
@@ -61,7 +61,7 @@ test('cards state baked bread portions and warn only on a definite bread shortfa
 
 test('each recipe card loads its own catalogue image with localized alt and stable aspect dimensions',()=>{
  for(const isFr of [false,true]) for(const family of SANDWICH_FAMILIES){
-  const html=render(createSandwichSnapshot(family.id),{styleKey:family.id,isFr});
+  const html=render(createSandwichSnapshot(family.id),{styleKey:family.id==='tartine'?'pain_campagne':family.id,isFr});
   const recipes=SANDWICH_RECIPES.filter(r=>r.familyId===family.id);
   for(const recipe of recipes){
    const escapedName=recipe.name[isFr?'fr':'en'].replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');

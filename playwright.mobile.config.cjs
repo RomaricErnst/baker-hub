@@ -5,7 +5,8 @@ module.exports = defineConfig({
   testMatch: '**/*.spec.cjs',
   timeout: 60000,
   expect: { timeout: 10000 },
-  workers: 1,
+  workers: 2,
+  maxFailures: 5,
   retries: 0,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {

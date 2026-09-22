@@ -6,11 +6,11 @@ Updated 22 September 2026. Read this first. It supersedes the September 13 hando
 
 - Repository: `RomaricErnst/baker-hub` on GitHub.
 - Active branch: `codex/prototype-migration-20260920`. Continue from this branch, not main or the old release-candidate branch.
-- Latest application commit at this handoff: `4df1872` (bounded availability repairs); final test-only correction `f39a68b` passed CI. Handoff/documentation commits may follow without changing application behaviour.
-- Historical Mac checkout: `/Users/romaricernst/Documents/Codex/2026-09-11/create-an-image-of/work/baker-hub-migration`. Current task reconstructed source under `/workspace/scratch/fd6e75875f58/fermentation-work`; this temporary workspace is not a portable backup. GitHub branch is authoritative.
+- Latest application commit at this handoff: `9e66b73` (early companion access, consistent dough/companion navigation, mobile reading space). Handoff/documentation commits may follow without changing application behaviour.
+- Historical Mac checkout: `/Users/romaricernst/Documents/Codex/2026-09-11/create-an-image-of/work/baker-hub-migration`. Current checkout is `/workspace/scratch/81bba1c35e5b/baker-hub`; this temporary workspace is not a portable backup. GitHub branch is authoritative.
 - Stable test URL: https://baker-hub-git-codex-prototype-mig-b4b24a-thebaker-hubs-projects.vercel.app/fr
-- Latest immutable preview build (READY; mobile UI verified separately in CI): https://baker-cq8hym6yp-thebaker-hubs-projects.vercel.app/fr
-- Deployment: `dpl_FvWZbWekpiwuRJs1iHFmQjtvbE91`, READY, preview target only. New pushes can supersede it.
+- Latest immutable preview build (READY; mobile UI verified separately in CI): https://baker-lzkhetrnm-thebaker-hubs-projects.vercel.app/fr
+- Deployment: `dpl_ESuvsmQW6zcy7uusRXbuqcraPBjN`, READY, preview target only. New pushes can supersede it.
 - Temporary Vercel share tokens expire; obtain fresh access if the preview requests login. Do not store tokens or credentials in this document.
 - Vercel project `prj_qDz6tdakJGeFFtVApo9mpAU7rNQq`; team `team_WioBBEisA4hox7JpPyBX0Vtr`. Branch pushes auto-deploy previews.
 
@@ -32,7 +32,7 @@ Current prototype reference is archived at `docs/continuation-reference/option-a
 - Flat oven choices include tabletop pizza oven and masonry oven. Oven/mixing use explicit subchoices, not legacy nested forms.
 - Bake naming occurs in review, not style selection. No ambiguous “Brouillon/Local” labels.
 - Hydration advice belongs with hydration control. Review lists actual choices, flour proportions and scheduling.
-- Phone setup hides bottom destination tabs; Continue remains sticky. Tabs return for generated recipe/pizza module. Menu offers pizza access during setup.
+- Pizza exposes My dough/Pizzas immediately; bread exposes My dough/Fillings only after selecting a supported bread style. Continue sits above them. Generated dough exposes Plan/Recipe/Guide locally. Reading can collapse the header and bottom bar; upward scroll or Navigation restores them. See the latest navigation section below.
 - Mobile header is 56px, hides after deliberate downward scrolling, returns upward; ignores small jitter. Setup progress and generated bake name scroll away. Controls retain practical touch targets.
 - Latest iPhone safe-area fix (`44b7bac`): opaque action background reaches full width and bottom edge, with safe-area padding inside rather than transparent space below Continue.
 
@@ -82,7 +82,7 @@ Current prototype reference is archived at `docs/continuation-reference/option-a
 
 ## Verification and limits
 
-**Latest availability repair verification:** [run 35689438983](https://github.com/RomaricErnst/baker-hub/actions/runs/35689438983) at `f39a68b` passed all **179 unit tests, i18n/build and 28/28 iPhone WebKit cases**. Existing 24 cases remain green; the four added cases cover explicit later-bake acceptance, stable parent times after remount, cleared conflicts and preserved two-phase cold fermentation at 320/375/390/430px. Artifact `10677462989` retains report/screenshots until 6 October 2026. Final application preview `dpl_FvWZbWekpiwuRJs1iHFmQjtvbE91` is READY and not production. Direct French deployed checks also confirmed the repair and both cold intervals. The earlier failed runs were obsolete source-shape assertions and a new test's incorrect English tab label; all were corrected without weakening behavioral assertions.
+**Latest availability repair verification:** [run 35689438983](https://github.com/RomaricErnst/baker-hub/actions/runs/35689438983) at `f39a68b` passed all **179 unit tests, i18n/build and 28/28 iPhone WebKit cases**. Existing 24 cases remain green; the four added cases cover explicit later-bake acceptance, stable parent times after remount, cleared conflicts and preserved two-phase cold fermentation at 320/375/390/430px. Artifact `10677462989` retains report/screenshots until 6 October 2026. Final application preview `dpl_ESuvsmQW6zcy7uusRXbuqcraPBjN` is READY and not production. Direct French deployed checks also confirmed the repair and both cold intervals. The earlier failed runs were obsolete source-shape assertions and a new test's incorrect English tab label; all were corrected without weakening behavioral assertions.
 
 
 Latest fermentation verification: application `8e8d448`, test correction `efcfaad9`; run https://github.com/RomaricErnst/baker-hub/actions/runs/35680216465 passed all 167 unit tests, i18n/build and 24/24 iPhone WebKit checks. Artifact `10674932091` retains screenshots/report/traces for 14 days. Direct/poolish/biga/sourdough, both modes/languages and 320/375/390/430px were exercised. The current preview is READY, target preview. Live preview manual checks confirmed early/within/late feedback, explicit time confirmation, correction preserving bake time and matching visual view.
@@ -169,10 +169,10 @@ Verification additions: bread climate/method matrices, exact flour mass, indepen
 
 User requested early Pizza/filling access, agent-led navigation review, Safari vertical-space care, clear recipe/protocol destinations, and preview publication. Two independent reviews recommended stable hierarchy rather than adding bottom tabs after generation.
 
-- No bottom bar on the initial Pizza/Bread chooser. Immediately after choosing, show exactly two stable destinations: **Ma pâte / My dough** and **Pizzas** or **Garnitures / Fillings**, including Simple/Custom selection.
+- No bottom bar on the initial Pizza/Bread chooser. Pizza then shows **Ma pâte / My dough** and **Pizzas** immediately. Per the latest user correction, bread shows **Ma pâte / My dough** and **Garnitures / Fillings** only after choosing a supported bread style.
 - After recipe generation, dough has local **Plan / Recette / Protocole** (EN Plan / Recipe / Guide). The bottom dough button resumes its last visited view; tapping its current destination does nothing. Plan explicitly opens the choices overview.
 - Both companions share `CompanionSteps`. Bread-specific names belong in headings (bagels, pitas, focaccias), not the fixed destination label. Traditional breads precede sandwich additions.
-- Sandwich ideas can be explored before dough setup. Family/quantity decisions autosave; matching subsequent dough selection retains fillings; changing to an incompatible family asks before clearing. Early shopping explicitly excludes unconfigured dough and offers Finish my dough. Local/language/cloud restore paths preserve early companion destinations.
+- Fillings use the selected bread directly, with no second family picker. Quantities autosave; changing to another bread in the same family retains fillings, while changing to an incompatible family asks before clearing. Early shopping explicitly excludes unconfigured dough and offers Finish my dough. Local/language/cloud restore paths preserve early companion destinations.
 - Sandwich browsing adopts pizza photo proportions, concise cards, search, a selected-only Review selection action and quantity review sheet.
 - Deliberate downward scroll hides the header; outside setup it also collapses bottom destinations and browsing actions. Upward movement, page boundaries, destination changes or a compact Navigation reveal control restore access. Setup keeps its bottom destinations and Continue. Focused navigation does not disappear. Reduced motion is honored; mobile keyboard shrink hides fixed bars.
 - Resize observer updates defer to animation frames rather than mutating observed layout during delivery. No fermentation formulas changed.
@@ -180,3 +180,9 @@ User requested early Pizza/filling access, agent-led navigation review, Safari v
 Verification checkpoint: local 222 unit tests passed before the final scroll refinements; 10 affected tests and TypeScript passed afterward. Final build / macOS WebKit / preview evidence must be recorded after completion. Local WebKit download succeeded but launch lacked system libraries; native Safari browser toolbar and keyboard behavior remain unverified. Added 20 browser checks across four widths for early discovery, preserved selections/steps, generated local navigation and scrolling. Do not call authored tests passed until CI evidence exists.
 
 The user briefly requested an inline prototype, then explicitly chose to test the online preview instead. Continue preview-only; no production promotion.
+
+## Latest correction — bread-first garnitures and tartines
+
+User requested fillings only after bread selection and tartines for traditional loaves, including avocado and egg. Added six bilingual tartines (88 companion recipes total /13 families). Campagne, levain, complet, seigle and mie map to tartines; brioche, viennois and fougasse have no companion destination pending suitable content. Tartine quantities count60g baked-bread portions (one large or several small slices), not loaves. The chosen bread name/image remains visible; avocado-and-egg uses the existing hard-boiled egg ingredient. No fermentation formula changes.
+
+CI35708067892 on9e66b73 finished47/64 mobile tests passed. Failures:8 hidden selection CTA after dialog close,4 outdated Baguette quantity labels,4 container-geometry assertions despite visually separated Continue,1 recipe overflow326px at320px. Parent/agent visually reviewed320/390/430 screenshots. Modal close now reveals navigation/actions without scrolling focused controls; keyboard hiding also covers landscape widths. Tests now follow bread-first selection, measure real buttons, await full reveal height and log overflow contributors. Rerun evidence pending. Local226 unit tests and TypeScript passed after tartine changes.

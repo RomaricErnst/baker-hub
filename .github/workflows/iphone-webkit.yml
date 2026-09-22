@@ -41,6 +41,7 @@ jobs:
       - name: Build isolated app
         run: npm run build
       - name: Run iPhone rendering and interaction checks
+        timeout-minutes: 15
         run: node .ci-tools/node_modules/@playwright/test/cli.js test --config=playwright.mobile.config.cjs
       - name: Upload screenshots, traces and report
         if: always()
