@@ -93,7 +93,6 @@ export const PIZZA_STYLES = {
 
 // ── BREAD STYLES ──────────────────────────
 export const BREAD_STYLES = {
-  ...BREAD_STYLE_DEFINITIONS,
   pain_campagne: {
     name: 'Pain de campagne',
     nameFr: 'Pain de campagne',
@@ -256,6 +255,7 @@ export const BREAD_STYLES = {
     ovenNote: 'Egg wash. Score with scissors for classic look.',
     flourNote: 'T45 or T55.',
   },
+  ...BREAD_STYLE_DEFINITIONS,
 } as const;
 
 // ── OVEN TYPES ────────────────────────────

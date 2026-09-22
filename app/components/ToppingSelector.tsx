@@ -2697,7 +2697,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
            Hidden while the mobile keyboard is open: fixed bars anchor to the
            visual viewport and would float mid-screen above the keyboard. */}
       {activePill === 'pizzas' && totalQty > 0 && !keyboardOpen && (
-        <div style={{
+        <div data-companion-action style={{
           // The bar sits ON the home indicator, so it pins to bottom 0 and
           // carries the safe-area inset as padding instead. Offsetting by
           // bottomNavH AND padding by the inset counted the same gap twice,

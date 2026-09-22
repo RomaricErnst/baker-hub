@@ -11,6 +11,8 @@ import { loadProfile, setProfileListener } from '../lib/profile';
 import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import { pushProfile, pullAndMergeProfile } from '../lib/supabase/profileSync';
 import StylePicker from '../components/StylePicker';
+import CompanionSteps from '../components/CompanionSteps';
+import { useMobileKeyboard } from '../hooks/useMobileKeyboard';
 import { NEXT_CTA, BACK_CTA } from '../lib/navButtons';
 import OvenPicker from '../components/OvenPicker';
 import PrototypeQuantityPicker from '../components/PrototypeQuantityPicker';
@@ -1100,6 +1102,12 @@ export default function Home() {
 
   // P6 — Active tab in two-tab layout
   const [activeTab, setActiveTab] = useState<'setup' | 'plan' | 'guide' | 'pizzaparty' | 'sandwiches'>('setup');
+  const lastDoughTab = useRef<'setup' | 'plan' | 'guide'>('setup');
+  const lastDoughOverview = useRef(false);
+  useEffect(() => {
+    if (activeTab === 'setup' || activeTab === 'plan' || activeTab === 'guide') lastDoughTab.current = activeTab;
+    if (activeTab === 'setup') lastDoughOverview.current = setupOverview;
+  }, [activeTab, setupOverview]);
   // The summary bar used to pin at a hardcoded 97px (pizza) / 62px (bread),
   // which is the height the sticky header HAPPENED to be. The header is
   // z-100 and the bar z-25, so any underestimate does not push the bar down,
@@ -1112,9 +1120,10 @@ export default function Home() {
     if (!el || typeof ResizeObserver === 'undefined') return;
     const sync = () => setStickyHeadH(Math.round(el.getBoundingClientRect().height));
     sync();
-    const ro = new ResizeObserver(sync);
+    let frame = 0;
+    const ro = new ResizeObserver(() => { cancelAnimationFrame(frame); frame = requestAnimationFrame(sync); });
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => { cancelAnimationFrame(frame); ro.disconnect(); };
   }, []);
 
   // The overview is a destination, not a mode: leaving Setup by any route
@@ -1122,11 +1131,13 @@ export default function Home() {
   useEffect(() => { if (activeTab !== 'setup') setSetupOverview(false); }, [activeTab]);
   const [pizzaPartyTab, setPizzaPartyTab] = useState<'pick' | 'shop' | 'prep' | 'bake'>('pick');
   const [navHidden, setNavHidden] = useState(false);
+  const bottomNavCollapsed = navHidden && activeTab !== 'setup';
   // Hide exactly the measured header height; keep the following bar aligned.
   const HEADER_HIDE_PX = stickyHeadH;
   const stickTop = Math.max(0, stickyHeadH - (navHidden ? HEADER_HIDE_PX : 0));
   const lastScrollY = useRef(0);
   useEffect(() => {
+    setNavHidden(false);
     window.scrollTo(0, 0);
   }, [activeTab]);
   // Party sub-tabs are four phases swapping content on one screen, so arriving
@@ -1140,7 +1151,12 @@ export default function Home() {
   useEffect(() => {
     if (activeTab !== 'pizzaparty') return;
     window.scrollTo(0, 0);
+    setNavHidden(false);
   }, [pizzaPartyTab, activeTab]);
+  useEffect(() => {
+    if (activeTab !== 'sandwiches') return;
+    setNavHidden(false);window.scrollTo(0, 0);
+  }, [sandwichParty.tab, activeTab]);
   useEffect(() => {
     let travel = 0;
     let direction = 0;
@@ -1148,14 +1164,14 @@ export default function Home() {
       const curr = Math.max(0, Math.min(window.scrollY, document.documentElement.scrollHeight - window.innerHeight));
       const delta = curr - lastScrollY.current;
       lastScrollY.current = curr;
-      if (curr < 24) { setNavHidden(false); travel = 0; return; }
-      if (document.querySelector('[role="dialog"][aria-modal="true"]') || stickyHeadRef.current?.querySelector(':focus-visible')) return;
+      if (curr < 24 || curr >= document.documentElement.scrollHeight - window.innerHeight - 24) { setNavHidden(false); travel = 0; return; }
+      if (document.querySelector('[role="dialog"][aria-modal="true"]') || document.querySelector('.bh-header-stack :focus-visible, #bh-bottom-nav :focus-visible, .bh-companion-steps :focus-visible')) return;
       if (Math.abs(delta) < 2) return;
       const nextDirection = Math.sign(delta);
       travel = nextDirection === direction ? travel + Math.abs(delta) : Math.abs(delta);
       direction = nextDirection;
       if (direction > 0 && curr > 96 && travel >= 32) setNavHidden(true);
-      if (direction < 0 && travel >= 16) setNavHidden(false);
+      if (direction < 0 && travel >= 12) setNavHidden(false);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -1171,6 +1187,7 @@ export default function Home() {
 
   // Baker profile — Mon profil sheet + new-session prefill
   const bottomNavH = useBottomNavHeight();
+  const keyboardOpen = useMobileKeyboard();
   const [profileOpen, setProfileOpen] = useState(false);
   // Sourdough-vs-Simple nudge — shown when a levain profile taps Simple
   const [sdNudgeOpen, setSdNudgeOpen] = useState(false);
@@ -1441,10 +1458,10 @@ export default function Home() {
     setHighestStep(restoredHighest);
     setAdvancedHighestStep(restoredAdvHighest);
 
+    if (session.pizzaPartyTab && ['pick', 'shop', 'prep', 'bake'].includes(session.pizzaPartyTab))
+      setPizzaPartyTab(session.pizzaPartyTab as 'pick' | 'shop' | 'prep' | 'bake');
     if (session.recipeGenerated) {
       setActiveTab(session.activeTab as 'setup' | 'plan' | 'guide' | 'pizzaparty' | 'sandwiches');
-    if (session.pizzaPartyTab)
-      setPizzaPartyTab(session.pizzaPartyTab as 'pick' | 'shop' | 'prep' | 'bake');
       if (session.tab === 'custom') {
         setAdvancedStep(99);
       } else {
@@ -1453,10 +1470,12 @@ export default function Home() {
       setShowResults(true);
       setProtocolStale(false);
     } else {
+      const companionTab = session.bakeType === 'pizza' ? 'pizzaparty' : 'sandwiches';
+      setActiveTab(session.activeTab === companionTab ? companionTab : 'setup');
       if (session.tab === 'custom') {
-        setAdvancedStep(session.ovenType ? 3 : 2);
+        setAdvancedStep(session.styleKey ? (session.ovenType ? 3 : 2) : 1);
       } else {
-        setActiveStep(session.ovenType ? 3 : 2);
+        setActiveStep(session.styleKey ? (session.ovenType ? 3 : 2) : 1);
       }
     }
 
@@ -2248,6 +2267,9 @@ export default function Home() {
   }
 
   function selectStyle(sk: StyleKey) {
+    const nextFamily = sandwichFamilyForStyle(sk);
+    if (bakeType === 'bread' && sandwichParty.familyId !== nextFamily && Object.values(sandwichParty.qtys).some(q=>q>0)
+      && !window.confirm(fr ? 'Changer de pain remplace vos garnitures sélectionnées. Continuer ?' : 'Changing bread replaces your selected fillings. Continue?')) return;
     setStyleKey(sk);
     setSandwichParty(previous => switchSandwichFamily(previous, sandwichFamilyForStyle(sk)));
     if (sk === 'batbout') { setFlourBlend({flour1:'bread',flour2:'semolina',ratio1:67}); setFlourChosen(false); }
@@ -2760,9 +2782,10 @@ export default function Home() {
       else setActiveTab(savedTab);
       setTimeout(endRestore, 200);
     } else {
-      setActiveTab('setup');
-      setActiveStep(snap.highestStep ?? 1); setHighestStep(snap.highestStep ?? 1);
-      setAdvancedStep(snap.advancedHighestStep ?? 1); setAdvancedHighestStep(snap.advancedHighestStep ?? 1);
+      const earlyCompanion = !rb && ((snap.activeTab === 'pizzaparty' && snap.bakeType === 'pizza') || (snap.activeTab === 'sandwiches' && snap.bakeType === 'bread'));
+      setActiveTab(earlyCompanion ? snap.activeTab as 'pizzaparty'|'sandwiches' : 'setup');
+      setActiveStep(snap.styleKey ? snap.activeStep ?? snap.highestStep ?? 1 : 1); setHighestStep(snap.highestStep ?? 1);
+      setAdvancedStep(snap.styleKey ? snap.advancedStep ?? snap.advancedHighestStep ?? 1 : 1); setAdvancedHighestStep(snap.advancedHighestStep ?? 1);
       setReviewMode(false); setSetupOverview(false); setShowResults(false);
       setSessionSaved(!rb); setSessionRestored(true);
       setTimeout(endRestore, 200);
@@ -3092,7 +3115,7 @@ export default function Home() {
 
   // ── Render ────────────────────────────────
   return (
-    <div data-mobile-setup={activeTab === 'setup' && !recipeGenerated ? 'true' : undefined} style={{ minHeight: '100vh', background: 'var(--warm)' }}>
+    <div data-reading={bottomNavCollapsed || undefined} data-keyboard-open={keyboardOpen || undefined} data-mobile-setup={activeTab === 'setup' && !recipeGenerated ? 'true' : undefined} style={{ minHeight: '100vh', background: 'var(--warm)' }}>
       {/* ── Sticky header + journey bar (autohide on scroll down) ── */}
       <div ref={stickyHeadRef} className="bh-header-stack" onFocusCapture={() => setNavHidden(false)} style={{
         position: 'sticky',
@@ -3126,14 +3149,14 @@ export default function Home() {
             ? `${manualHydration}% · ${prefermentType !== 'none' ? prefermentType.charAt(0).toUpperCase() + prefermentType.slice(1) + ' · ' : ''}${locale === 'fr' ? 'Personnalisé' : 'Custom'}`
             : ''}
           onBeforeLocaleChange={() => {
-            if (!bakeType || !styleKey) return;
+            if (!bakeType) return;
             saveSession(buildSessionPayload());
             try { sessionStorage.setItem('bh_locale_resume', JSON.stringify({activeStep, advancedStep, setupOverview, activeTab, pizzaPartyTab, reviewMode})); } catch {}
           }}
           onSaveSession={saveCurrentSession}
           onReviewPlan={bakeType && modeChosen ? () => { setActiveTab('setup'); setReviewMode(true); setSetupOverview(true); scrollToStepTop(); } : undefined}
-          onOpenSandwiches={bakeType === 'bread' && recipeGenerated ? () => { setActiveTab('sandwiches'); setNavHidden(false); } : undefined}
-          onOpenPizzas={bakeType === 'pizza' && modeChosen ? () => { setActiveTab('pizzaparty'); setNavHidden(false); } : undefined}
+          onOpenSandwiches={bakeType === 'bread' ? () => { setActiveTab('sandwiches'); setNavHidden(false); } : undefined}
+          onOpenPizzas={bakeType === 'pizza' ? () => { setActiveTab('pizzaparty'); setNavHidden(false); } : undefined}
           onSharePlan={shareCurrentSession}
           onBack={bakeType ? () => {
             if (activeTab === 'setup') {
@@ -3481,7 +3504,7 @@ export default function Home() {
 
 {recipeGenerated && <div style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{numItems} {bakeType==='bread'?(fr?(numItems===1?'pain':'pains'):(numItems===1?'bread':'breads')):'pizzas'} · {styleKey ? styleDisplayName(styleKey) : ''}</div></div>}
 
-{!!bakeType && <div id="bh-top-stepper" style={{
+{!!bakeType && <div id="bh-top-stepper" onFocusCapture={()=>setNavHidden(false)} style={{
         // THIS is the sticky element, not its children. A sticky box only
         // stays stuck while its parent is in view, and this wrapper was only
         // as tall as the bar inside it — so the bar left the screen with its
@@ -3502,151 +3525,25 @@ export default function Home() {
         transition: 'top 0.25s ease',
       }}>
 
-        {activeTab !== 'pizzaparty' ? (
-          activeTab === 'setup' && modeChosen ? <SummaryBar flow={tab === 'simple' ? simpleFlow : customFlow}
-            modeChip={{value: tab === 'simple' ? 'Simple' : (locale === 'fr' ? 'Personnalisé' : 'Custom'), onClick: () => setModeChosen(false)}} /> : null
-        ) : (() => {
-          // Shop/Prep/Bake all share ONE gate (pizzasConfirmed) — none of them
-          // individually require the others to be visited or "done". A baker
-          // who's picked their pizzas can jump straight to Bake without ever
-          // opening Shop or Prep. Only lock what's actually not usable yet.
-          const sum = (r: Record<string, number>) =>
-            Object.values(r).reduce((a, b) => a + (b || 0), 0);
-          const partyOrdered = sum(pizzaPartyQtys);
-          const partyBaked = sum(bakedPartyQtys);
-          const steps = [
-            {
-              key: 'pick' as const,
-              label: t('tabs.pizzas'),
-              locked: false,
-              done: pizzasConfirmed && pizzaPartyTab !== 'pick',
-              icon: (color: string) => (
-                <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
-                  <path d="M10 2.5L3 17.5h14L10 2.5z" stroke={color} strokeWidth="1.4" strokeLinejoin="round"/>
-                  <path d="M4.5 17Q10 13.5 15.5 17" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
-                  <circle cx="10" cy="11" r="1" fill={color}/>
-                  <circle cx="7.5" cy="14" r="0.8" fill={color}/>
-                  <circle cx="12.5" cy="14" r="0.8" fill={color}/>
-                </svg>
-              ),
-            },
-            {
-              key: 'shop' as const,
-              label: t('tabs.shopping'),
-              locked: !pizzasConfirmed,
-              done: false,
-              icon: (color: string) => (
-                <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
-                  <path d="M4 7h12l-1 9H5L4 7z" stroke={color} strokeWidth="1.4" strokeLinejoin="round"/>
-                  <path d="M7 7V5.5a3 3 0 0 1 6 0V7" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
-                  <line x1="8" y1="11" x2="8" y2="13" stroke={color} strokeWidth="1.3" strokeLinecap="round"/>
-                  <line x1="12" y1="11" x2="12" y2="13" stroke={color} strokeWidth="1.3" strokeLinecap="round"/>
-                </svg>
-              ),
-            },
-            {
-              key: 'prep' as const,
-              label: t('tabs.prep'),
-              locked: !pizzasConfirmed,
-              done: false,
-              icon: (color: string) => (
-                <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
-                  <line x1="0" y1="16" x2="20" y2="16" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
-                  <path d="M2 10h6c0 3.5-1.3 6-3 6S2 13.5 2 10z"
-                    stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                  <line x1="1.5" y1="10" x2="8.5" y2="10" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
-                  <rect x="11" y="9" width="7" height="7" rx="1.2" stroke={color} strokeWidth="1.4"/>
-                  <path d="M12 9V7.5h5V9" stroke={color} strokeWidth="1.3" strokeLinecap="round"/>
-                  <line x1="11" y1="12" x2="18" y2="12" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
-                </svg>
-              ),
-            },
-            {
-              key: 'bake' as const,
-              label: t('tabs.bake'),
-              locked: !pizzasConfirmed,
-              // The only phase with a completion the page can already see.
-              // Shop and Prep keep their checklist ticks inside their own
-              // components, so their dots stay honest at false until that
-              // state is lifted — a green dot for a phase nobody finished
-              // would be the one encoding of three that could be wrong.
-              done: partyOrdered > 0 && partyBaked >= partyOrdered,
-              icon: (color: string) => (
-                <svg width="15" height="15" viewBox="0 0 20 20" fill="none"
-                  stroke={color} strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="8.5" y="2" width="3" height="4" rx=".5" fill={color} stroke="none"/>
-                  <path d="M2 17V11a8 4.5 0 0116 0v6" strokeWidth="1.4"/>
-                  <line x1="1.5" y1="17" x2="18.5" y2="17" strokeWidth="1.4"/>
-                  <path d="M6 17v-4.5a4 2.5 0 018 0V17" fill={color} fillOpacity="0.18" stroke="none"/>
-                </svg>
-              ),
-            },
-          ];
-          // No green fill on the connector. The dots already say which
-          // phases are done, in the same sage, on the same line — the bar was
-          // the same fact a third time and the only one of the three that
-          // could be wrong, since it counted `done` flags rather than reading
-          // the dots. Hence a fill stuck at step one with every pizza baked.
-          // Compact phase bar. The icons went: a document glyph does not
-          // explain "Recipe" better than the word Recipe does, and the
-          // 32px discs they needed cost two rows of height at the top of
-          // every screen. The words stay — they are what tells a first
-          // timer these are phases and not unrelated tabs — and the node
-          // shrinks to a dot sitting on the connecting line.
-          // Sticky under the measured header, same as My Dough's. Neither
-          // was sticky before — the claim that the dough bar rode inside the
-          // sticky header was wrong: that header closes well above Main
-          // content and both bars render inside it. No fold on scroll: at
-          // this height it is not worth a fourth listener on a page that
-          // already runs three.
-          return (
-            <div style={{ padding: '8px 24px 8px', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '14.5px', left: '44px', right: '44px', height: '2px', background: '#E0D8CC' }}>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
-                {steps.map(s => {
-                  const isActive = pizzaPartyTab === s.key;
-                  const dot = s.done ? '#8BA888' : isActive ? 'var(--terra)' : s.locked ? '#D8D0C2' : '#C9BEA9';
-                  const labelColor = s.done ? '#6B7A5A' : isActive ? 'var(--terra)' : s.locked ? '#B5AC9E' : '#8C8580';
-                  return (
-                    <button
-                      key={s.key}
-                      onClick={() => !s.locked && setPizzaPartyTab(s.key)}
-                      style={{
-                        background: 'none', border: 'none', cursor: s.locked ? 'default' : 'pointer',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
-                        width: '52px', padding: 0, minHeight: '44px', justifyContent: 'flex-start',
-                      }}
-                    >
-                      {/* A ring for where you are, a filled dot for where you
-                          have been, a pale one for where you cannot go yet. */}
-                      <span style={{
-                        width: '13px', height: '13px', borderRadius: '50%',
-                        background: isActive ? 'var(--cream)' : dot,
-                        border: `2px solid ${dot}`, boxShadow: '0 0 0 3px var(--cream)',
-                        flexShrink: 0,
-                      }} />
-                      {/* Reachable phases wear an underline. Without it the
-                          row reads as a progress readout — three dots and
-                          three words — and nobody tries tapping a readout.
-                          Locked ones stay plain, which is honest: they are
-                          not links yet. */}
-                      <span style={{
-                        fontSize: '12.5px', lineHeight: 1.15, color: labelColor,
-                        fontWeight: isActive ? 700 : 400, fontFamily: 'var(--font-ui)',
-                        textAlign: 'center',
-                        textDecorationLine: s.locked || isActive ? 'none' : 'underline',
-                        textDecorationColor: '#D3C9B8',
-                        textUnderlineOffset: '3px',
-                        textDecorationThickness: '1px',
-                      }}>{s.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
+        {activeTab === 'setup' && modeChosen && !recipeGenerated && <SummaryBar flow={tab === 'simple' ? simpleFlow : customFlow}
+          modeChip={{value: tab === 'simple' ? 'Simple' : (fr ? 'Personnalisé' : 'Custom'), onClick: () => setModeChosen(false)}} />}
+        {recipeGenerated && (activeTab === 'setup' || activeTab === 'plan' || activeTab === 'guide') && <CompanionSteps onReveal={navHidden ? ()=>setNavHidden(false) : undefined}
+          label={fr ? 'Votre pâte' : 'Your dough'} active={activeTab}
+          steps={[{key:'setup',label:'Plan'}, {key:'plan',label:fr?'Recette':'Recipe'}, {key:'guide',label:fr?'Protocole':'Guide'}]}
+          onChange={next=>{if(next==='setup'){setReviewMode(true);setSetupOverview(true);}setActiveTab(next);setNavHidden(false);scrollToStepTop();}} />}
+        {activeTab === 'pizzaparty' && <CompanionSteps onReveal={navHidden ? ()=>setNavHidden(false) : undefined} label={fr ? 'Étapes des pizzas' : 'Pizza steps'} active={pizzaPartyTab}
+          onChange={setPizzaPartyTab} steps={[
+            {key:'pick',label:t('tabs.pizzas'),done:pizzasConfirmed && pizzaPartyTab !== 'pick'},
+            {key:'shop',label:t('tabs.shopping'),locked:!pizzasConfirmed},
+            {key:'prep',label:t('tabs.prep'),locked:!pizzasConfirmed},
+            {key:'bake',label:t('tabs.bake'),locked:!pizzasConfirmed,
+              done:Object.values(pizzaPartyQtys).some(q=>q>0) && Object.entries(pizzaPartyQtys).every(([id,q])=>(bakedPartyQtys[id]??0)>=q)},
+          ]} />}
+        {activeTab === 'sandwiches' && (sandwichParty.familyId || (styleKey && sandwichFamilyForStyle(styleKey))) && <CompanionSteps onReveal={navHidden ? ()=>setNavHidden(false) : undefined} label={fr ? 'Étapes des sandwichs' : 'Sandwich steps'} active={sandwichParty.tab}
+          onChange={next=>setSandwichParty(previous=>({...previous,tab:next}))} steps={[
+            {key:'pick',label:fr?'Choisir':'Choose'}, {key:'shop',label:fr?'Courses':'Shopping'},
+            {key:'prep',label:fr?'Préparer':'Prepare'}, {key:'serve',label:fr?'Servir':'Serve'},
+          ]} />}
       </div>}
 
           {/* Mode + Pizza Party — only shown after bakeType selected.
@@ -3660,7 +3557,7 @@ export default function Home() {
                   decision taken once per session. Shown here only until it is
                   made; afterwards it lives as a chip in the summary row, which
                   is the same mechanic every other choice uses. */}
-              {!modeChosen && (
+              {!modeChosen && activeTab === 'setup' && (
                 <div style={{ padding: '4px 0 8px' }}>
                   <h2 style={{
                     fontFamily: 'var(--font-ui)', fontSize: '26px', fontWeight: 800,
@@ -4177,7 +4074,7 @@ export default function Home() {
                   t={t}
                   activeTab={pizzaPartyTab}
                   onTabChange={setPizzaPartyTab}
-                  doughConfigured={!!styleKey}
+                  doughConfigured={recipeGenerated}
                   onHasSelection={setPizzasConfirmed}
                   bakeEventId={bakeEventId}
                   initialQtys={pizzaPartyQtys}
@@ -4756,7 +4653,7 @@ export default function Home() {
                   t={t}
                   activeTab={pizzaPartyTab}
                   onTabChange={setPizzaPartyTab}
-                  doughConfigured={!!styleKey}
+                  doughConfigured={recipeGenerated}
                   onHasSelection={setPizzasConfirmed}
                   bakeEventId={bakeEventId}
                   initialQtys={pizzaPartyQtys}
@@ -4786,22 +4683,25 @@ export default function Home() {
           </div>
         )}
 
-      </div>
-
-      {bakeType === 'bread' && recipeGenerated && activeTab === 'sandwiches' && <div style={{maxWidth:680,margin:'0 auto',padding:'0 16px 96px'}}>
+      {bakeType === 'bread' && activeTab === 'sandwiches' && <div style={{paddingBottom:80}}>
         <SandwichParty isFr={locale === 'fr'} styleKey={styleKey} snapshot={sandwichParty}
-          onChange={setSandwichParty} breadIngredients={sandwichDoughIngredients}
-          onAdjustBread={()=>{setActiveTab('setup');setSetupOverview(false);setReviewMode(true);if(tab==='custom')setAdvancedStep(2);else setActiveStep(2);setNavHidden(false);}}
-          availableDoughWeight={(tab === 'custom' ? advancedRecipe : recipe)?.totalDough ?? numItems * itemWeight}
+          onChange={setSandwichParty} hideNavigation doughConfigured={recipeGenerated} breadIngredients={recipeGenerated ? sandwichDoughIngredients : []}
+          onAdjustBread={()=>{setActiveTab('setup');setNavHidden(false);if(recipeGenerated){setSetupOverview(false);setReviewMode(true);if(tab==='custom')setAdvancedStep(2);else setActiveStep(2);}scrollToStepTop();}}
+          availableDoughWeight={recipeGenerated ? ((tab === 'custom' ? advancedRecipe : recipe)?.totalDough ?? numItems * itemWeight) : undefined}
           numItems={numItems} />
       </div>}
+      </div>
 
-      <nav id="bh-bottom-nav" aria-label={locale === 'fr' ? 'Votre fournée' : 'Current bake'} style={{display:bakeType && modeChosen?'flex':'none',position:'fixed',bottom:0,left:0,right:0,zIndex:110,background:'var(--cream)',borderTop:'1px solid var(--border)',padding:'6px max(12px, calc((100vw - 680px) / 2)) calc(6px + env(safe-area-inset-bottom, 0px))',gap:4}}>
-        {([{key:'setup',label:locale==='fr'?'Plan':'Plan'}, {key:'plan',label:locale==='fr'?'Ingrédients':'Ingredients'}, {key:'guide',label:locale==='fr'?'Étapes':'Steps'}, ...(bakeType==='pizza'?[{key:'pizzaparty',label:'Pizzas'}]:recipeGenerated?[{key:'sandwiches',label:'Sandwiches'}]:[])] as const).map(item=><button key={item.key}
-          aria-current={activeTab===item.key?'page':undefined}
-          disabled={(item.key==='plan'||item.key==='guide')&&!recipeGenerated}
-          onClick={()=>{if(item.key==='setup'&&recipeGenerated){setReviewMode(true);setSetupOverview(true);}setActiveTab(item.key as typeof activeTab);setNavHidden(false);}}
-          style={{flex:1,minHeight:48,border:0,borderRadius:10,padding:'8px 4px',fontFamily:'var(--font-ui)',fontSize:13,fontWeight:activeTab===item.key?700:400,background:activeTab===item.key?'#F0E5D3':'transparent',color:'var(--char)',opacity:(item.key==='plan'||item.key==='guide')&&!recipeGenerated ? .45 : 1,cursor:'pointer'}}>{item.label}</button>)}
+
+
+      <nav id="bh-bottom-nav" data-collapsed={bottomNavCollapsed || undefined} inert={bottomNavCollapsed} aria-hidden={bottomNavCollapsed || undefined} onFocusCapture={()=>setNavHidden(false)} aria-label={locale === 'fr' ? 'Votre fournée' : 'Current bake'} style={{display:bakeType?'flex':'none',position:'fixed',bottom:0,left:0,right:0,zIndex:110,background:'var(--cream)',borderTop:'1px solid var(--border)',padding:'6px max(12px, calc((100vw - 680px) / 2)) calc(6px + env(safe-area-inset-bottom, 0px))',gap:4}}>
+        {([{key:'dough',label:fr?'Ma pâte':'My dough'}, {key:'companion',label:bakeType==='pizza'?'Pizzas':fr?'Garnitures':'Fillings'}] as const).map(item=>{
+          const inDough = activeTab==='setup'||activeTab==='plan'||activeTab==='guide';
+          const active = item.key==='dough' ? inDough : !inDough;
+          return <button key={item.key} type="button" aria-current={active?'page':undefined}
+            onClick={()=>{if(active)return;if(item.key==='dough')setSetupOverview(lastDoughOverview.current);setActiveTab(item.key==='dough'?(recipeGenerated?lastDoughTab.current:'setup'):bakeType==='pizza'?'pizzaparty':'sandwiches');setNavHidden(false);scrollToStepTop();}}
+            style={{flex:1,minHeight:48,border:0,borderRadius:10,padding:'8px 4px',fontFamily:'var(--font-ui)',fontSize:14,fontWeight:active?700:400,background:active?'#F0E5D3':'transparent',color:'var(--char)',cursor:'pointer'}}>{item.label}</button>;
+        })}
       </nav>
       
       {/* ── Sign-in nudge toast ── */}
@@ -4901,4 +4801,3 @@ export default function Home() {
     </div>
   );
 }
-

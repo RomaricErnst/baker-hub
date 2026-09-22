@@ -35,13 +35,13 @@ test.describe('fresh unleavened bread setup',()=>{
   await expect(rest.getByText(/Cooking finished around .*6:30pm/)).toBeVisible(); // 5 pieces × 6 minutes
   await page.getByRole('button',{name:'Review my choices',exact:true}).tap();
   await page.getByRole('button',{name:'Create recipe',exact:true}).tap();
-  await expect(page.getByRole('button',{name:'Sandwiches',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Fillings',exact:true})).toBeVisible();
   await expect.poll(async()=>page.evaluate(()=>{
    const s=JSON.parse(localStorage.getItem('bh_session_v1')||'null');
    return s&&{generated:s.recipeGenerated,style:s.styleKey,oven:s.ovenType,count:s.numItems,weight:s.itemWeight,pref:s.prefermentType,minutes:(s.eatTime-s.startTime)/60000,cold:s.computedRecipe?.coldH,rt:s.computedRecipe?.rtH,yeast:s.computedRecipe?.yeastGrams};
   })).toEqual({generated:true,style:'piadina',oven:'griddle',count:5,weight:140,pref:'none',minutes:45,cold:0,rt:0,yeast:null});
-  await page.getByRole('button',{name:'Sandwiches',exact:true}).tap();
-  await expect(page.getByRole('heading',{name:'Your sandwiches',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Fillings',exact:true}).tap();
+  await expect(page.getByRole('heading',{name:'Your piadine',exact:true})).toBeVisible();
   await expect(page.getByRole('img',{name:'Piadina',exact:true})).toBeVisible();
   await testInfo.attach('fresh-piadina-sandwich-handoff',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
   expect(errors).toEqual([]);

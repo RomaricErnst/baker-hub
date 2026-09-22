@@ -28,13 +28,16 @@ export function useBottomNavHeight(fallback = 0): number {
     };
     measure();
     const nav = document.getElementById('bh-bottom-nav');
-    const observer = new ResizeObserver(measure);
+    let frame = 0;
+    const scheduleMeasure = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); };
+    const observer = new ResizeObserver(scheduleMeasure);
     if (nav) observer.observe(nav);
     window.addEventListener('resize', measure);
     window.addEventListener('orientationchange', measure);
     const vv = window.visualViewport;
     vv?.addEventListener('resize', measure);
     return () => {
+      cancelAnimationFrame(frame);
       observer.disconnect();
       window.removeEventListener('resize', measure);
       window.removeEventListener('orientationchange', measure);

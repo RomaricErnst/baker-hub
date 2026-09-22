@@ -3,6 +3,18 @@ import { saveSession, type SessionData } from '../lib/session';
 
 type SavePayload = Omit<SessionData, 'version' | 'savedAt'>;
 
+export function hasSessionWork(data: Pick<SavePayload, 'bakeType' | 'styleKey' | 'recipeGenerated' | 'pizzaParty' | 'sandwichParty'>): boolean {
+  if (!data.bakeType) return false;
+  if (data.styleKey || data.recipeGenerated) return true;
+  const positiveQuantity = (qty: number) => Number.isFinite(qty) && qty > 0;
+  if (data.bakeType === 'pizza') return Object.values(data.pizzaParty?.qtys ?? {}).some(positiveQuantity);
+  if (data.bakeType === 'bread') {
+    // A family is an explicit browsing choice, unlike untouched dough defaults.
+    return !!data.sandwichParty?.familyId || Object.values(data.sandwichParty?.qtys ?? {}).some(positiveQuantity);
+  }
+  return false;
+}
+
 export function useSessionSave(
   data: SavePayload,
   onSaved: () => void,
@@ -17,13 +29,9 @@ export function useSessionSave(
   dataRef.current = data;
 
   useEffect(() => {
-    // Nothing is written until the baker has actually chosen something. This
-    // is what keeps autosave from manufacturing a history: no bake type and no
-    // style means there is nothing to resume, and a session written at that
-    // point would be indistinguishable from a completed setup on the next
-    // launch. Load-bearing — do not relax it to "save early, filter later".
-    if (!data.bakeType) return;
-    if (!data.styleKey && !data.recipeGenerated) return;
+    // Persist explicit dough or companion choices, never an untouched landing
+    // page. Recipe browsing is available before dough setup now.
+    if (!hasSessionWork(data)) return;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       if (skipRef?.current) return; // restore in flight — never persist mixed state

@@ -3,10 +3,11 @@ import Image from 'next/image';
 import {useLocale,useTranslations} from 'next-intl';
 import {PIZZA_STYLES,BREAD_STYLES,type StyleKey,type BakeType} from '../data';
 interface StylePickerProps{bakeType:BakeType;selected:StyleKey|null;onSelect:(key:StyleKey)=>void;disabledIds?:string[];disabledNote?:string;}
+const breadOrder = ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois','focaccia','ciabatta','pan_bagnat','panuozzo','bagel','pita','greek_pita','kebab_bread','batbout','laffa','piadina'];
 export default function StylePicker({bakeType,selected,onSelect,disabledIds=[],disabledNote}:StylePickerProps){
  const fr=useLocale()==='fr',t=useTranslations('style');
  const styles=bakeType==='bread'?BREAD_STYLES:PIZZA_STYLES;
- return <div style={{display:'grid',gap:10}}>{Object.entries(styles).map(([key,s])=>{
+ return <div style={{display:'grid',gap:10}}>{Object.entries(styles).sort(([a],[b]) => bakeType === 'bread' ? breadOrder.indexOf(a) - breadOrder.indexOf(b) : 0).map(([key,s])=>{
   const disabled=disabledIds.includes(key),active=selected===key;
   const title=bakeType==='pizza'?t(`${key}.title`):(fr&&'nameFr' in s?s.nameFr:s.name);
   const description=bakeType==='pizza'?t(`${key}.tagline`):(fr&&'descFr' in s?s.descFr:s.desc);

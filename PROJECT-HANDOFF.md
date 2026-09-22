@@ -164,3 +164,19 @@ Nutrition is approximate generic-food energy including the stated bread portion,
 Eleven bread images and the griddle tile match the existing rustic catalogue; source prompts and final paths are in `docs/BREAD-IMAGE-PROMPTS.md`. They are illustrations of bread families, not photographs of tested baking outcomes.
 
 Verification additions: bread climate/method matrices, exact flour mass, independent nutrition checks, bilingual guide rendering, persistence/share/rebake tests and twelve new macOS iPhone-WebKit checks across 320/375/390/430 widths. Final CI/deployment evidence is recorded after execution; do not treat authored browser tests as passed before that evidence exists. Production remains untouched.
+
+## Navigation and companion alignment — continuation 22 September 2026
+
+User requested early Pizza/filling access, agent-led navigation review, Safari vertical-space care, clear recipe/protocol destinations, and preview publication. Two independent reviews recommended stable hierarchy rather than adding bottom tabs after generation.
+
+- No bottom bar on the initial Pizza/Bread chooser. Immediately after choosing, show exactly two stable destinations: **Ma pâte / My dough** and **Pizzas** or **Garnitures / Fillings**, including Simple/Custom selection.
+- After recipe generation, dough has local **Plan / Recette / Protocole** (EN Plan / Recipe / Guide). The bottom dough button resumes its last visited view; tapping its current destination does nothing. Plan explicitly opens the choices overview.
+- Both companions share `CompanionSteps`. Bread-specific names belong in headings (bagels, pitas, focaccias), not the fixed destination label. Traditional breads precede sandwich additions.
+- Sandwich ideas can be explored before dough setup. Family/quantity decisions autosave; matching subsequent dough selection retains fillings; changing to an incompatible family asks before clearing. Early shopping explicitly excludes unconfigured dough and offers Finish my dough. Local/language/cloud restore paths preserve early companion destinations.
+- Sandwich browsing adopts pizza photo proportions, concise cards, search, a selected-only Review selection action and quantity review sheet.
+- Deliberate downward scroll hides the header; outside setup it also collapses bottom destinations and browsing actions. Upward movement, page boundaries, destination changes or a compact Navigation reveal control restore access. Setup keeps its bottom destinations and Continue. Focused navigation does not disappear. Reduced motion is honored; mobile keyboard shrink hides fixed bars.
+- Resize observer updates defer to animation frames rather than mutating observed layout during delivery. No fermentation formulas changed.
+
+Verification checkpoint: local 222 unit tests passed before the final scroll refinements; 10 affected tests and TypeScript passed afterward. Final build / macOS WebKit / preview evidence must be recorded after completion. Local WebKit download succeeded but launch lacked system libraries; native Safari browser toolbar and keyboard behavior remain unverified. Added 20 browser checks across four widths for early discovery, preserved selections/steps, generated local navigation and scrolling. Do not call authored tests passed until CI evidence exists.
+
+The user briefly requested an inline prototype, then explicitly chose to test the online preview instead. Continue preview-only; no production promotion.

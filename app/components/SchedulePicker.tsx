@@ -979,9 +979,14 @@ function SimpleColourBar({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(entries => setW(entries[0].contentRect.width));
+    let frame = 0;
+    const ro = new ResizeObserver(entries => {
+      const width = entries[0].contentRect.width;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => setW(width));
+    });
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => { cancelAnimationFrame(frame); ro.disconnect(); };
   }, []);
 
   const bakeMs     = eatTime.getTime();
