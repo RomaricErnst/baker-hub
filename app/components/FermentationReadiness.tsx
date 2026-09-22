@@ -130,7 +130,7 @@ export default function FermentationReadiness({
         )}
       </div>}
       {busy && <p style={{fontSize: 13, lineHeight: 1.4, margin: '8px 0 0'}}>
-        {t('Une étape tombe pendant une indisponibilité. Vérifiez les horaires dans les actions du plan.', 'A step falls during an unavailable period. Check the times in the plan actions.')}
+        {t('Une étape tombe pendant une indisponibilité. Vérifiez vos disponibilités ou ajustez l’heure de cuisson.', 'A step falls during an unavailable period. Review your availability or adjust the bake time.')}
       </p>}
       {canEdit && busy && !blocked && !overdue && !unavailableReason && !outside && onReviewAvailability && <button type="button" onClick={onReviewAvailability} style={{
         minHeight: 44, width: '100%', marginTop: 8, padding: '9px 12px', font: 'inherit', fontSize: 16,

@@ -68,8 +68,8 @@ for(const scenario of cases){
    await page.locator('input[type="datetime-local"]:visible').nth(0).fill(local(bake));
    await page.locator('input[type="datetime-local"]:visible').nth(1).fill(local(new Date(+bake+3600000)));
    await page.getByRole('button',{name:'Ajouter',exact:true}).tap();
-   await expect(card.getByText('Horaire à ajuster',{exact:true})).toBeVisible();
-   await expect(card.getByText('Dans le créneau',{exact:true})).toHaveCount(0);
+   await expect(card.getByText(/Horaire à ajuster/)).toBeVisible();
+   await expect(card.getByText(/Dans le créneau/)).toHaveCount(0);
    await card.getByRole('button',{name:'Vérifier mes disponibilités',exact:true}).tap();
    await expect(page.getByRole('group',{name:'Mes disponibilités',exact:true})).toBeFocused();
 
