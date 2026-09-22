@@ -181,7 +181,7 @@ for(const overview of [false,true]) test(`custom bread ${overview?'review':'fine
   const [a,n]=await Promise.all([action.boundingBox(),bottom(page).boundingBox()]);
   return !!a&&!!n&&a.height>=44&&a.y>=0&&a.y+a.height<=n.y+1;
  }).toBe(true);
- await expect(page.getByText('Le planning du levain reste à compléter.',{exact:true})).toBeVisible();
+ await expect(page.getByRole('status').filter({hasText:'Le planning du levain reste à compléter.'})).toBeVisible();
  await testInfo.attach('blocked-setup-action-visible',{body:await page.screenshot(),contentType:'image/png'});
  await action.tap();
  await expect(page.getByRole('heading',{name:overview?'Vérifier mes choix':'Peaufinez votre pâte',exact:true})).toBeHidden();
