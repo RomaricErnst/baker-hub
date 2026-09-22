@@ -82,6 +82,14 @@ Do not overclaim:
 - Narrow layouts were checked by source and measured width budget, **not rendered mobile emulation**: this cloud browser does not expose viewport resizing. Physical iPhone/keyboard/scroll behavior remains unverified here.
 - Full local checkout/TypeScript/test suite could not run in this restricted network environment; the GitHub connector was used to edit the two files and Vercel confirmed a successful build. Existing earlier 154-test evidence is historical, not rerun for this change. Real authenticated cloud save remains unverified.
 
+### Repeatable iPhone rendering checks
+- `.github/workflows/iphone-webkit.yml` runs on code pushes to the migration branch only (or manual dispatch on that branch). It has read-only repository permissions and no deployment step.
+- Installs pinned Playwright test tooling separately under `.ci-tools`; builds this exact commit and runs an isolated local app with fake Supabase configuration. No production credentials are used.
+- `playwright.mobile.config.cjs` and `tests/mobile/header.spec.cjs` exercise WebKit with iPhone touch/mobile settings at 320, 375, 390 and 430px, in French and English.
+- Checks rendered dimensions, header overlap/overflow, 56px header, 24px logo, 16px/500 labels, 44px targets, menu tap/close/Escape/focus, local draft save and account prompt, and language switching. Captures screenshots/geometry and failure traces as a 14-day GitHub Actions artifact.
+- This is a local CI build audit, not a test of the protected Vercel deployment or authenticated cloud saving. Safari toolbar, keyboard, real camera and physical iPhone behavior remain out of scope.
+- Initial CI execution is pending; inspect the GitHub Actions result before claiming these checks passed.
+
 ## Where to look
 
 - `app/[locale]/page.tsx`: journey state, setup/review, sticky navigation.

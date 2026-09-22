@@ -1,0 +1,54 @@
+name: iPhone WebKit audit
+
+on:
+  push:
+    branches: [codex/prototype-migration-20260920]
+    paths-ignore: ['docs/**', 'PROJECT-HANDOFF.md', '**/*.md']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: iphone-webkit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  iphone:
+    if: github.ref == 'refs/heads/codex/prototype-migration-20260920'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      # Deliberately fake, isolated configuration. No production services or secrets.
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: mobile-audit-placeholder-not-a-secret
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Install pinned browser test tools separately
+        run: npm install --prefix .ci-tools --no-audit --no-fund @playwright/test@1.58.2
+      - name: Install WebKit and Linux dependencies
+        run: node .ci-tools/node_modules/playwright/cli.js install --with-deps webkit
+      - run: npm test
+      - name: Build isolated app
+        run: npm run build
+      - name: Run iPhone rendering and interaction checks
+        run: node .ci-tools/node_modules/@playwright/test/cli.js test --config=playwright.mobile.config.cjs
+      - name: Upload screenshots, traces and report
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: iphone-webkit-${{ github.sha }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
