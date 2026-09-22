@@ -6,11 +6,11 @@ Updated 22 September 2026. Read this first. It supersedes the September 13 hando
 
 - Repository: `RomaricErnst/baker-hub` on GitHub.
 - Active branch: `codex/prototype-migration-20260920`. Continue from this branch, not main or the old release-candidate branch.
-- Latest application commit at this handoff: `9a32a88` (header readability and touch targets). Handoff/documentation commits may follow without changing application behaviour.
+- Latest application commit at this handoff: `8f816ac` (WebKit-verified narrow header spacing). Handoff/documentation commits may follow without changing application behaviour.
 - Local checkout: `/Users/romaricernst/Documents/Codex/2026-09-11/create-an-image-of/work/baker-hub-migration`.
 - Stable test URL: https://baker-hub-git-codex-prototype-mig-b4b24a-thebaker-hubs-projects.vercel.app/fr
-- Verified immutable build: https://baker-mtwdobga3-thebaker-hubs-projects.vercel.app/fr
-- Deployment: `dpl_FZUe7AKdxV9ugAA9cXPbyXTLXZ7Y`, READY. New pushes can supersede it.
+- Latest immutable preview build (READY; mobile UI verified separately in CI): https://baker-5prje3pz8-thebaker-hubs-projects.vercel.app/fr
+- Deployment: `dpl_8Gd755dct1NAFypuS7JXVt4eB8rx`, READY. New pushes can supersede it.
 - Temporary Vercel share tokens expire; obtain fresh access if the preview requests login. Do not store tokens or credentials in this document.
 - Vercel project `prj_qDz6tdakJGeFFtVApo9mpAU7rNQq`; team `team_WioBBEisA4hox7JpPyBX0Vtr`. Branch pushes auto-deploy previews.
 
@@ -38,7 +38,7 @@ Current prototype reference is archived at `docs/continuation-reference/option-a
 
 ### Header readability — 22 September 2026
 - Header Menu and Save/Enregistrer use 16px Figtree, weight 500; Save has the subtle existing border color. Header actions have minimum 44px width/height.
-- Mobile wordmark is 24px. Removed the obsolete below-373px hide rule; below 360px, header side padding is 8px and Menu/Save side padding is 6px to fit Back + wordmark + French Save + Menu.
+- Mobile wordmark is 24px. Removed the obsolete below-373px hide rule; below 360px, header side padding is 0 and Menu/Save side padding is 6px to fit Back + wordmark + French Save + Menu.
 - Existing 56px mobile header, scroll handling, callbacks, save guard and accessibility behavior remain unchanged.
 
 ### Flour and recipe data
@@ -88,7 +88,11 @@ Do not overclaim:
 - `playwright.mobile.config.cjs` and `tests/mobile/header.spec.cjs` exercise WebKit with iPhone touch/mobile settings at 320, 375, 390 and 430px, in French and English.
 - Checks rendered dimensions, header overlap/overflow, 56px header, 24px logo, 16px/500 labels, 44px targets, menu tap/close/Escape/focus, local draft save and account prompt, and language switching. Captures screenshots/geometry and failure traces as a 14-day GitHub Actions artifact.
 - This is a local CI build audit, not a test of the protected Vercel deployment or authenticated cloud saving. Safari toolbar, keyboard, real camera and physical iPhone behavior remain out of scope.
-- Initial CI execution is pending; inspect the GitHub Actions result before claiming these checks passed.
+- Final runner is `macos-14`, with Playwright 1.58.2 WebKit and iPhone 13 device parameters; custom viewport widths above. Use `localhost` and canonical English `/`, French `/fr`. This deliberately does not require Georgia font substitutes from Linux.
+- **Verified result at commit `8f816ac`: all 8 WebKit cases passed (39.3 seconds), all 154 existing tests passed, i18n check and production build passed.** Run: https://github.com/RomaricErnst/baker-hub/actions/runs/35675704456 . Screenshot/report artifact: `10672534018` (expires 6 October 2026).
+- The rendered audit supersedes the earlier source-only header assessment. It caught a 320px French logo/Save overlap on both Linux and macOS. Removing the narrow header's outer 8px padding on each side fixed it while preserving 24px logo, 16px/500 labels, 56px header and 44px targets. Screenshots at 320px and the 390px menu were visually inspected.
+- Initial Linux run also hit English loopback redirects; these did not recur with macOS/localhost and canonical routes. No application routing was changed. Keyboard-focus restoration is tested from an explicitly keyboard-focused trigger, separately from touch taps (Safari taps do not necessarily focus buttons).
+- Header/local-save/menu/language checks are now repeatable on this branch. This is not a complete application journey or physical iPhone acceptance test.
 
 ## Where to look
 
