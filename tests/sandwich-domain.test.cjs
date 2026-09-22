@@ -19,7 +19,7 @@ test('sandwich catalogue covers all approved families with credible classic/insp
       a.ok(r.steps.some(s=>s.phase==='prep'));
       a.ok(r.steps.some(s=>s.phase==='assemble'));
       a.ok(r.steps.every(s=>s.instruction.fr&&s.instruction.en));
-      a.ok(r.ingredients.every(i=>c.SANDWICH_INGREDIENTS[i.ingredientId]&&i.grams>0));
+      a.ok(r.ingredients.every(i=>c.SANDWICH_INGREDIENTS[i.ingredientId]&&(i.grams>0||(i.grams===0&&i.optionalGrams>0))));
     }
   }
   const pan=c.SANDWICH_RECIPES.filter(r=>r.familyId==='pan_bagnat');

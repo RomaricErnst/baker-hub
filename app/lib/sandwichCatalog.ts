@@ -2,7 +2,7 @@ export type SandwichFamily = 'baguette' | 'focaccia' | 'bagel' | 'pita' | 'greek
 export type SandwichText = { fr: string; en: string };
 export type SandwichAllergen = 'gluten' | 'milk' | 'egg' | 'fish' | 'sesame' | 'nuts' | 'mustard' | 'soy';
 export interface SandwichIngredient { id: string; name: SandwichText; kcalPer100g: number; allergens: SandwichAllergen[]; vegetarian: boolean; category: 'vegetables' | 'protein' | 'dairy' | 'pantry' | 'bread'; source: string; referenceFood: string; provenance: 'generic-food-estimate'; }
-export interface SandwichPortion { ingredientId: string; grams: number; }
+export interface SandwichPortion { ingredientId: string; grams: number; optionalGrams?: number; }
 export interface SandwichStep { id: string; title: SandwichText; instruction: SandwichText; minutes: number; phase: 'prep' | 'cook' | 'assemble' | 'chill'; }
 export interface SandwichRecipe { id: string; familyId: SandwichFamily; name: SandwichText; kind: 'classic' | 'inspired'; lighter: boolean; vegetarian: boolean; ingredients: SandwichPortion[]; steps: SandwichStep[]; allergens: SandwichAllergen[]; image: string; breadGrams: number; sourceIds: string[]; }
 export interface SandwichFamilyInfo { id: SandwichFamily; name: SandwichText; image: string; breadGrams: number; breadKcalPer100g: number; comparisonKcal: number; }
@@ -37,6 +37,9 @@ const ingredientRows: IngredientRow[] = [
  ['tuna','Thon au naturel égoutté','Drained tuna in water',116,'protein',['fish'],false],['smoked_salmon','Saumon fumé prêt à consommer','Ready-to-eat smoked salmon',180,'protein',['fish'],false],
  ['sardine','Sardines à l’huile égouttées','Drained sardines in oil',208,'protein',['fish'],false],['anchovy','Anchois à l’huile égouttés','Drained anchovies in oil',210,'protein',['fish'],false],
  ['egg','Œuf dur écalé','Peeled hard-boiled egg',155,'protein',['egg']],['chickpea','Pois chiches cuits égouttés','Drained cooked chickpeas',139,'protein'],
+ ['egg_to_poach','Œuf à pocher','Egg for poaching',143,'protein',['egg']],
+ ['pomegranate','Graines de grenade','Pomegranate seeds',83,'vegetables'],
+ ['salt','Sel','Salt',0,'pantry'],['black_pepper','Poivre noir','Black pepper',251,'pantry'],
  ['white_bean','Haricots blancs cuits égouttés','Drained cooked white beans',114,'protein'],['falafel','Falafels déjà cuits','Cooked falafel',333,'protein',[],true],
  ['hummus','Houmous au tahini','Tahini hummus',237,'pantry',['sesame']],['tahini','Tahini','Tahini',595,'pantry',['sesame']],
  ['mozzarella','Mozzarella égouttée','Drained mozzarella',250,'dairy',['milk']],['burrata','Burrata égouttée','Drained burrata',300,'dairy',['milk']],
@@ -62,10 +65,10 @@ for (const f of SANDWICH_FAMILIES) SANDWICH_INGREDIENTS[`bread_${f.id}`] = {id:`
 // Ingredient quantities are edible grams for ONE serving: a sandwich, or an open-faced tartine portion.
 type RecipeRow = [SandwichFamily,string,string,string,'classic'|'inspired',boolean,string];
 const recipeRows: RecipeRow[] = [
- ['tartine','avocat-oeuf','Avocat et œuf dur','Avocado & hard-boiled egg','inspired',false,'avocado:60 egg:55 lemon:5'],
+ ['tartine','avocat-oeuf','Avocat, œuf poché et feta','Avocado, poached egg & feta','inspired',false,'avocado:60 egg_to_poach:55 feta:25 lemon:5 salt:0.3 black_pepper:0.1 pomegranate:0:15'],
  ['tartine','chevre-miel-noix','Chèvre, miel et noix','Goat cheese, honey & walnuts','classic',false,'goat_cheese:40 honey:8 walnut:10'],
  ['tartine','jambon-emmental','Jambon et emmental','Ham & Emmental','classic',false,'ham:45 emmental:25 butter:5'],
- ['tartine','champignons-ricotta','Champignons et ricotta','Mushrooms & ricotta','inspired',false,'mushroom:80 ricotta:35 olive_oil:3 parsley:3'],
+ ['tartine','champignons-ricotta','Champignons et ricotta','Mushrooms & ricotta','inspired',false,'mushroom:80 ricotta:35 olive_oil:3 parsley:0:3'],
  ['tartine','tomate-ricotta','Tomate, ricotta et basilic','Tomato, ricotta & basil','inspired',true,'tomato:70 ricotta:30 basil:3'],
  ['tartine','thon-yaourt','Thon, yaourt et concombre','Tuna, yogurt & cucumber','inspired',true,'tuna:50 yogurt:20 cucumber:40 lemon:5'],
  ['baguette','jambon-beurre','Jambon-beurre','Ham & butter','classic',false,'ham:70 butter:18 pickle:20'],
@@ -78,17 +81,17 @@ const recipeRows: RecipeRow[] = [
  ['baguette','legumes-mozza','Légumes rôtis et mozzarella','Roasted vegetables & mozzarella','inspired',false,'courgette:60 pepper:50 mozzarella:55 olive_oil:5 basil:3'],
  ['baguette','poulet-citron','Poulet citron et croquant','Lemon chicken & crunch','inspired',true,'chicken:55 yogurt:20 lemon:8 lettuce:25 cucumber:50 carrot:30'],
  ['baguette','thon-yaourt','Thon, yaourt et concombre','Tuna, yogurt & cucumber','inspired',true,'tuna:65 yogurt:20 cucumber:60 tomato:40 lemon:6'],
- ['focaccia','mortadelle-pistache','Mortadelle, burrata et pistache','Mortadella, burrata & pistachio','classic',false,'mortadella:65 burrata:60 pistachio:12 rocket:15'],
+ ['focaccia','mortadelle-pistache','Mortadelle et burrata','Mortadella & burrata','classic',false,'mortadella:65 burrata:60 pistachio:0:12 rocket:15'],
  ['focaccia','crudo-mozza','Jambon cru et mozzarella','Prosciutto & mozzarella','classic',false,'prosciutto:60 mozzarella:65 tomato:50 rocket:15'],
  ['focaccia','porchetta','Porchetta et roquette','Porchetta & rocket','classic',false,'porchetta:100 rocket:20 mustard:8'],
  ['focaccia','caprese','Tomate, mozzarella et basilic','Tomato, mozzarella & basil','classic',false,'mozzarella:85 tomato:90 basil:5 olive_oil:8'],
  ['focaccia','salame-provolone','Salami et provolone','Salami & provolone','classic',false,'salami:55 provolone:45 rocket:20'],
  ['focaccia','saumon-avocat','Saumon et avocat','Salmon & avocado','inspired',false,'smoked_salmon:65 avocado:65 cream_cheese:25 lemon:6'],
- ['focaccia','champignons-ricotta','Champignons et ricotta','Mushrooms & ricotta','inspired',false,'mushroom:120 ricotta:70 olive_oil:6 parsley:4'],
+ ['focaccia','champignons-ricotta','Champignons et ricotta','Mushrooms & ricotta','inspired',false,'mushroom:120 ricotta:70 olive_oil:6 parsley:0:4'],
  ['focaccia','aubergine-pesto','Aubergine, mozzarella et pesto','Aubergine, mozzarella & pesto','inspired',false,'aubergine:100 mozzarella:60 pesto:15 olive_oil:5'],
  ['focaccia','poulet-roquette','Poulet, roquette et citron','Chicken, rocket & lemon','inspired',true,'chicken:60 rocket:25 tomato:70 yogurt:20 lemon:8'],
  ['focaccia','legumes-ricotta','Légumes rôtis et ricotta','Roasted vegetables & ricotta','inspired',true,'courgette:80 pepper:60 ricotta:35 olive_oil:3 basil:4'],
- ['bagel','saumon-cream-cheese','Saumon et fromage frais','Smoked salmon & cream cheese','classic',false,'smoked_salmon:75 cream_cheese:45 cucumber:35 caper:8 onion:10'],
+ ['bagel','saumon-cream-cheese','Saumon et fromage frais','Smoked salmon & cream cheese','classic',false,'smoked_salmon:75 cream_cheese:45 cucumber:35 caper:0:8 onion:10'],
  ['bagel','oeuf-cheddar','Œuf et emmental','Egg & Emmental','classic',false,'egg:100 emmental:40 butter:8'],
  ['bagel','thon-mayo','Thon mayonnaise','Tuna mayonnaise','classic',false,'tuna:85 mayonnaise:25 lettuce:20 tomato:40'],
  ['bagel','roast-beef','Bœuf, moutarde et cornichons','Roast beef, mustard & gherkins','classic',false,'roast_beef:90 cream_cheese:25 mustard:10 pickle:25'],
@@ -141,7 +144,7 @@ const recipeRows: RecipeRow[] = [
  ['ciabatta','caprese','Tomate, mozzarella et basilic','Tomato, mozzarella & basil','classic',false,'mozzarella:85 tomato:90 olive_oil:8 basil:5'],
  ['ciabatta','crudo','Jambon cru et mozzarella','Prosciutto & mozzarella','classic',false,'prosciutto:65 mozzarella:65 rocket:20 olive_oil:5'],
  ['ciabatta','porchetta','Porchetta et poivrons','Porchetta & peppers','classic',false,'porchetta:110 pepper:70 olive_oil:5 rocket:20'],
- ['ciabatta','champignons-provolone','Champignons et provolone','Mushrooms & provolone','inspired',false,'mushroom:110 provolone:65 olive_oil:8 parsley:5'],
+ ['ciabatta','champignons-provolone','Champignons et provolone','Mushrooms & provolone','inspired',false,'mushroom:110 provolone:65 olive_oil:8 parsley:0:5'],
  ['ciabatta','dinde-crudites','Dinde et crudités','Turkey & fresh salad','inspired',true,'turkey:60 yogurt:20 cucumber:55 tomato:55 lettuce:20 mustard:5'],
  ['ciabatta','haricots-roquette','Haricots blancs et roquette','White beans & rocket','inspired',true,'white_bean:75 rocket:25 tomato:80 olive_oil:3 lemon:8'],
  ['panuozzo','pancetta-mozza','Pancetta et mozzarella','Pancetta & mozzarella','classic',false,'pancetta:60 mozzarella:85'],
@@ -157,6 +160,16 @@ export function buildSandwichSteps(id: string, familyId: SandwichFamily, ingredi
   const has = (ingredientId: string) => ingredients.some(i=>i.ingredientId===ingredientId);
   const steps: SandwichStep[] = [];
   const add = (key:string,fr:string,en:string,frInstruction:string,enInstruction:string,minutes:number,phase:SandwichStep['phase']) => steps.push({id:`${id}-${key}`,title:text(fr,en),instruction:text(frInstruction,enInstruction),minutes,phase});
+  if (id==='tartine-avocat-oeuf') {
+    add('prep','Préparer la garniture','Prepare the toppings','Pesez les garnitures par portion. Préparez le citron et, si elle est sélectionnée, la grenade. Émiettez la feta si elle est conservée.','Weigh the toppings per portion. Prepare the lemon and, if selected, the pomegranate. Crumble the feta if retained.',3,'prep');
+    add('bread','Trancher et toaster','Slice and toast','Pesez 60 g de pain déjà cuit et refroidi par portion : une grande tranche ou plusieurs petites. Toastez légèrement. Une portion ne correspond pas à un pain entier.','Weigh 60 g of baked, cooled bread per portion: one large slice or several small ones. Toast lightly. One portion is not one whole loaf.',3,'cook');
+    if (has('avocado')) add('avocado','Écraser l’avocat','Mash the avocado','Écrasez l’avocat à la fourchette avec le citron s’il est conservé. Assaisonnez avec un peu du sel et du poivre prévus, en tenant compte de la feta déjà salée.','Mash the avocado with the lemon if retained. Season with a little of the listed salt and pepper, allowing for the saltiness of the feta.',2,'prep');
+    if (has('egg_to_poach')) add('egg','Pocher l’œuf','Poach the egg','Comptez environ 1 œuf par portion (55 g sans coquille). Cassez chaque œuf dans une petite tasse. Glissez-le dans une casserole d’eau frémissante, sans gros bouillons. Pochez 3–4 min, jusqu’à ce que le blanc soit pris ; prolongez pour un jaune plus ferme. Égouttez délicatement avec une écumoire.','Allow about 1 egg per portion (55 g without shell). Crack each egg into a small cup. Slide into gently simmering water, not a rolling boil. Poach for 3–4 minutes until the white is set; cook longer for a firmer yolk. Lift out gently with a slotted spoon and drain.',5,'cook');
+    const toppingsFr=[has('avocado')?'Étalez l’avocat sur le pain.':'Disposez les garnitures conservées sur le pain.',has('feta')?'Répartissez la feta émiettée.':'',has('egg_to_poach')?'Déposez délicatement l’œuf poché.':'',has('salt')||has('black_pepper')?'Terminez avec le sel et le poivre conservés, selon votre goût.':'',has('pomegranate')?'Parsemez les graines de grenade sélectionnées.':'','Servez ouvert, sans seconde tranche par-dessus, aussitôt.'].filter(Boolean).join(' ');
+    const toppingsEn=[has('avocado')?'Spread the avocado over the toast.':'Arrange the retained toppings over the toast.',has('feta')?'Scatter over the crumbled feta.':'',has('egg_to_poach')?'Gently place the poached egg on top.':'',has('salt')||has('black_pepper')?'Finish with the retained salt and pepper to taste.':'',has('pomegranate')?'Sprinkle over the selected pomegranate seeds.':'','Serve open-faced, without another slice on top, immediately.'].filter(Boolean).join(' ');
+    add('assemble','Garnir et servir','Top and serve',toppingsFr,toppingsEn,2,'assemble');
+    return steps;
+  }
   add('prep','Préparer la garniture','Prepare the filling','Lavez et séchez les légumes et les herbes. Émincez les crudités, râpez la carotte si présente. Égouttez les conserves et les fromages indiqués égouttés. Pesez les quantités par sandwich.','Wash and dry the vegetables and herbs. Thinly slice salad vegetables; grate carrot if included. Drain canned ingredients and cheeses labelled drained. Weigh the amounts per sandwich.',8,'prep');
   if (familyId==='tartine') steps[0].instruction = text(steps[0].instruction.fr.replace('par sandwich','par portion de tartine'),steps[0].instruction.en.replace('per sandwich','per tartine portion'));
   if (has('egg')) add('egg','Préparer l’œuf','Prepare the egg','Utilisez l’œuf dur écalé prévu dans la liste. Si vous le cuisez vous-même, faites-le cuire jusqu’à ce que le blanc et le jaune soient fermes, refroidissez-le rapidement, puis écalez et tranchez.','Use the peeled hard-boiled egg listed. If cooking it yourself, cook until white and yolk are firm, cool promptly, then peel and slice.',10,'cook');
@@ -183,10 +196,10 @@ export function buildSandwichSteps(id: string, familyId: SandwichFamily, ingredi
 }
 export const SANDWICH_RECIPES: SandwichRecipe[] = recipeRows.map(([familyId,slug,fr,en,kind,lighter,encoded])=>{
   const info=SANDWICH_FAMILIES.find(f=>f.id===familyId)!;
-  const ingredients=encoded.split(' ').map(part=>{const [ingredientId,grams]=part.split(':');return {ingredientId,grams:Number(grams)};});
+  const ingredients=encoded.split(' ').map(part=>{const [ingredientId,grams,optionalGrams]=part.split(':');return {ingredientId,grams:Number(grams),...(optionalGrams?{optionalGrams:Number(optionalGrams)}:{})};});
   const vegetarian=ingredients.every(i=>SANDWICH_INGREDIENTS[i.ingredientId].vegetarian);
   const id=`${familyId}-${slug}`;
-  return {id,familyId,name:text(fr,en),kind,lighter,vegetarian,ingredients,steps:buildSandwichSteps(id,familyId,ingredients,vegetarian),allergens:[...new Set<SandwichAllergen>(['gluten',...ingredients.flatMap(i=>SANDWICH_INGREDIENTS[i.ingredientId].allergens)])],image:`/images/approved/sandwich/${id}.webp`,breadGrams:info.breadGrams,sourceIds:familyId==='pan_bagnat'&&kind==='classic'?['nice-pan-bagnat']:familyId==='piadina'&&kind==='classic'?['romagna-piadina']:['bakerhub-editorial']};
+  return {id,familyId,name:text(fr,en),kind,lighter,vegetarian,ingredients,steps:buildSandwichSteps(id,familyId,ingredients.filter(i=>i.grams>0),vegetarian),allergens:[...new Set<SandwichAllergen>(['gluten',...ingredients.flatMap(i=>SANDWICH_INGREDIENTS[i.ingredientId].allergens)])],image:`/images/approved/sandwich/${id}.webp`,breadGrams:info.breadGrams,sourceIds:familyId==='pan_bagnat'&&kind==='classic'?['nice-pan-bagnat']:familyId==='piadina'&&kind==='classic'?['romagna-piadina']:['bakerhub-editorial']};
 });
 const recipeEnergy = (r:SandwichRecipe) => r.breadGrams*SANDWICH_FAMILIES.find(f=>f.id===r.familyId)!.breadKcalPer100g/100+r.ingredients.reduce((sum,i)=>sum+i.grams*SANDWICH_INGREDIENTS[i.ingredientId].kcalPer100g/100,0);
 // "Lighter" means >=20% less estimated energy than this family's classic recipes,

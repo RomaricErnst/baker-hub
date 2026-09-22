@@ -19,7 +19,7 @@ test('full sandwich estimates retain bread energy when all fillings are removed'
 test('unknown nutrient data fails explicitly instead of producing a low calorie claim', () => {
   assert.throws(()=>estimatedSandwichKcal({...recipes[0],ingredients:[{ingredientId:'unknown-food',grams:100}]}),/Missing sandwich nutrition/);
   for (const ingredient of Object.values(ingredients)) {
-    assert.ok(Number.isFinite(ingredient.kcalPer100g)&&ingredient.kcalPer100g>0&&ingredient.kcalPer100g<=900,ingredient.id);
+    assert.ok(Number.isFinite(ingredient.kcalPer100g)&&(ingredient.kcalPer100g>0||(ingredient.id==='salt'&&ingredient.kcalPer100g===0))&&ingredient.kcalPer100g<=900,ingredient.id);
     assert.equal(ingredient.provenance,'generic-food-estimate');
     assert.ok(ingredient.referenceFood.length>0);
   }

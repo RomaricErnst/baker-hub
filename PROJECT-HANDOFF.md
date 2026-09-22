@@ -1,5 +1,11 @@
 # Bakerhub — continuation handoff
 
+## Recipe update and next UX target — 23 September 2026
+
+Avocado tartine now uses poached egg, feta, salt/pepper and opt-in pomegranate, with regenerated photography. Six recipes have selective optional finishing touches backed by existing ingredient overrides. See `docs/TARTINE-AND-OPTIONAL-GARNISHES-20260923.md` for defaults, image prompt and verification.
+
+New product direction from the user: Bakerhub remains a baking companion, but should accommodate purchased pizza dough and existing bread/wraps without forcing dough setup. The landing-page entry is being explored in conversation. Simple mode's target user is a competent home cook with no baking experience, sent a chicken-pita task for tonight: minimal decisions, recommended defaults, hand/KitchenAid methods, actionable instructions. Custom is for expert control. The helper scenario requires a separate UX audit; do not claim the new beginner journey is already implemented by the recipe change.
+
 ## Latest prototype revision — 23 September 2026
 
 For the navigation refinement, continue on `codex/navigation-polish-20260923`, created from `5a16793` on `codex/navigation-six-sections-20260922`. This entry supersedes the older active-branch instruction below for this task. Local checkout: `/Users/romaricernst/Documents/Codex/baker-navigation-polish`.
