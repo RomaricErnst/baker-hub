@@ -163,3 +163,28 @@ for(const style of ['Pain de campagne','Pain complet']) test(`${style}: chosen l
  await dialog.getByRole('button',{name:'Terminé',exact:true}).tap();
  await expect(page.getByRole('button',{name:'Voir ma sélection · 2',exact:true})).toBeVisible();
 });
+
+for(const overview of [false,true]) test(`custom bread ${overview?'review':'fine-tune'} keeps a visible action when the starter plan is incomplete`,async({page},testInfo)=>{
+ await anonymous(page);
+ const bake=Date.now()+4*24*3600000;
+ const session={version:1,savedAt:Date.now(),tab:'custom',bakeType:'bread',styleKey:'pain_levain',numItems:2,itemWeight:800,pizzaDiameter:30,ovenType:'standard_bread',mixerType:'hand',yeastType:'sourdough',kitchenTemp:22,humidity:'normal',fridgeTemp:5,flourBlend:{flour1:'bread',flour2:null,ratio1:100},prefermentType:'none',prefermentFlourPct:20,prefOffsetH:0,prefGoesInFridge:false,flourInFridge:false,startTime:bake-12*3600000,eatTime:bake,blocks:[],starterEvents:[],recipeGenerated:false,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,activeStep:10,advancedStep:10,highestStep:99,advancedHighestStep:99,setupOverview:overview,activeTab:'setup'};
+ await page.addInitScript(data=>{
+  localStorage.setItem('bh_session_v1',JSON.stringify(data));
+  sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:10,advancedStep:10,setupOverview:data.setupOverview,activeTab:'setup',reviewMode:true}));
+ },session);
+ await page.goto('/fr');
+ await expect(page.getByRole('heading',{name:overview?'Vérifier mes choix':'Peaufinez votre pâte',exact:true})).toBeVisible();
+ await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+ const action=page.getByRole('button',{name:'Compléter le plan →',exact:true});
+ await expect(action).toBeVisible();
+ await expect.poll(async()=>{
+  const [a,n]=await Promise.all([action.boundingBox(),bottom(page).boundingBox()]);
+  return !!a&&!!n&&a.height>=44&&a.y>=0&&a.y+a.height<=n.y+1;
+ }).toBe(true);
+ await expect(page.getByText('Le planning du levain reste à compléter.',{exact:true})).toBeVisible();
+ await testInfo.attach('blocked-setup-action-visible',{body:await page.screenshot(),contentType:'image/png'});
+ await action.tap();
+ await expect(page.getByRole('heading',{name:overview?'Vérifier mes choix':'Peaufinez votre pâte',exact:true})).toBeHidden();
+ await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(false);
+ await expect.poll(async()=>(await stored(page))?.advancedStep).toBe(9);
+});

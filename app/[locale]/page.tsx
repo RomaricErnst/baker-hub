@@ -14,6 +14,7 @@ import StylePicker from '../components/StylePicker';
 import CompanionSteps from '../components/CompanionSteps';
 import { useMobileKeyboard } from '../hooks/useMobileKeyboard';
 import { NEXT_CTA, BACK_CTA } from '../lib/navButtons';
+import { getSetupBlocker, type SetupBlocker } from '../lib/setupBlocker';
 import OvenPicker from '../components/OvenPicker';
 import PrototypeQuantityPicker from '../components/PrototypeQuantityPicker';
 import MixerPicker from '../components/MixerPicker';
@@ -274,6 +275,7 @@ type StepFlow = {
   nextIdFor: (id: number) => number;
   onGenerate: () => void;
   showGenerate: boolean;
+  generationBlocker?: SetupBlocker;
   generateLabel: string;
   onSeePlan: () => void;
   recipeGenerated: boolean;
@@ -558,6 +560,22 @@ const sheetHeadStyle: React.CSSProperties = {
   textTransform: 'uppercase', color: 'var(--smoke)', padding: '14px 2px 4px',
 };
 
+// A populated step summary does not imply a valid baking protocol.
+// Keep an actionable correction at the end of setup and on its review.
+function SetupBlockerAction({flow,onJump}: {flow:StepFlow;onJump?:(id:number)=>void}) {
+  const fr=flow.locale==='fr';
+  const gap=flow.steps.find(step=>!stepAnswered(step,flow.highestStep,flow.steps));
+  const blocker=flow.generationBlocker;
+  const target=gap ?? flow.steps.find(step=>step.id===blocker?.stepId) ?? flow.steps.find(step=>step.group==='plan') ?? flow.steps[0];
+  if(!target) return null;
+  const reason=gap?.gap ?? blocker?.reason ?? (fr?'Vérifiez le planning avant de créer la recette.':'Review the schedule before creating the recipe.');
+  const action=gap?.chip ?? blocker?.action ?? (fr?'Revoir le plan':'Review the plan');
+  return <div style={{width:'100%'}}>
+    <p role="status" style={{fontSize:13,color:'var(--ash)',margin:'0 0 8px'}}>{reason}</p>
+    <button type="button" onClick={()=> (onJump??flow.onJump)(target.id)} style={{...NEXT_CTA,background:'var(--warm)',color:'#6B4423',border:'1.5px solid #6B4423',boxShadow:'none'}}>{action} →</button>
+  </div>;
+}
+
 // ── Setup review ──────────────────────────────
 function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale = false, reviewValues = {} }: {
   nameField?: React.ReactNode;
@@ -590,11 +608,11 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale 
           </div>
         ))}
       </div>
-      {(flow.recipeGenerated || flow.showGenerate) && (
+      {(flow.recipeGenerated || flow.showGenerate) ? (
         <button onClick={onBackToRecipe} style={{ ...NEXT_CTA, marginTop: '22px' }}>
           {!flow.recipeGenerated ? (fr ? 'Créer la recette' : 'Create recipe') : stale ? (fr ? 'Mettre à jour la recette' : 'Update recipe') : (fr ? 'Voir les ingrédients' : 'View ingredients')}
         </button>
-      )}
+      ) : <div style={{marginTop:22}}><SetupBlockerAction flow={flow} onJump={onJump} /></div>}
     </div>
   );
 }
@@ -767,6 +785,8 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
       next = <button onClick={flow.onGenerate} style={nextStyle}>{flow.generateLabel}</button>;
     } else if (flow.recipeGenerated) {
       next = <button onClick={flow.onSeePlan} style={nextStyle}>{fr ? 'Voir les ingrédients →' : 'View ingredients →'}</button>;
+    } else {
+      next = <SetupBlockerAction flow={flow} />;
     }
   } else {
     // Label the step Suivant actually reaches, not the one that happens to sit
@@ -2840,6 +2860,22 @@ export default function Home() {
     && qtyChosen && flourChosen && (yeastType === 'sourdough' || prefermentChosen));
   const starterPlanReady = yeastType !== 'sourdough' || recipeGenerated || starterEvents.length > 0;
   const canGenerate = !(tab === 'custom' ? advancedRecipe : recipe)?.protocolIssue && commercialPrefermentPlanReady && starterPlanReady && !unsupportedEnrichedMethod && !(tab === 'custom' && archivedFlourNames.length) && (tab === 'simple' ? simpleRequiredDone : customRequiredDone);
+  const missingRequiredStep = !bakeType || !styleKey ? 1
+    : !numItems || !itemWeight || !qtyChosen ? 2
+    : !ovenType || !mixerType ? 3
+    : tab==='custom' && (!flourBlend || !flourChosen) ? 6
+    : !yeastType ? (tab==='custom'?7:6)
+    : tab==='custom' && yeastType!=='sourdough' && !prefermentChosen ? 8
+    : !eatTime ? (tab==='custom'?9:7) : undefined;
+  const generationBlocker = !canGenerate ? getSetupBlocker({
+    custom:tab==='custom',fr:locale==='fr',
+    protocolIssue:(tab==='custom'?advancedRecipe:recipe)?.protocolIssue,
+    unsupportedMixer:!!(breadProtocol&&mixerType&&!breadProtocol.supportedMixers.includes(mixerType)),
+    unsupportedMethod:unsupportedEnrichedMethod,sourdough:yeastType==='sourdough',hasPreferment:prefermentType!=='none',
+    prefermentPlanReady:commercialPrefermentPlanReady,starterPlanReady,
+    archivedFlour:tab==='custom'&&archivedFlourNames.length>0,
+    requirementsComplete:tab==='simple'?simpleRequiredDone:customRequiredDone,missingRequiredStep,
+  }) : undefined;
   const mixerCapacityG = mixerType ? MIXER_TYPES[mixerType]?.maxDoughG ?? 9999 : 9999;
   const suggestedMixingBatches = Math.max(1, Math.ceil(numItems * itemWeight / mixerCapacityG));
   const selectedMixingBatches = mixingBatches ?? suggestedMixingBatches;
@@ -3025,6 +3061,7 @@ export default function Home() {
     nextIdFor: (id) => nextUnanswered(CUSTOM_STEPS, id, advancedHighestStep),
     onGenerate: () => { setSetupOverview(true); scrollToStepTop(); },
     showGenerate: canGenerate && !!eatTime && !(sessionRestored && recipeGenerated),
+    generationBlocker,
     generateLabel: locale === 'fr' ? 'Vérifier mes choix' : 'Review my choices',
     onSeePlan: () => setActiveTab('plan'),
     recipeGenerated,
@@ -3083,6 +3120,7 @@ export default function Home() {
     nextIdFor: (id) => nextUnanswered(SIMPLE_STEPS, id, highestStep),
     onGenerate: () => { setSetupOverview(true); scrollToStepTop(); },
     showGenerate: canGenerate && !(sessionRestored && recipeGenerated),
+    generationBlocker,
     generateLabel: locale === 'fr' ? 'Vérifier mes choix' : 'Review my choices',
     onSeePlan: () => setActiveTab('plan'),
     recipeGenerated,
