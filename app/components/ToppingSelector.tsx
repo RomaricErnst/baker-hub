@@ -1299,7 +1299,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           onClick={() => onGoPrep?.()}
           style={{ ...NEXT_CTA, marginBottom: '8px' }}
         >
-          {baseReady?(l==='fr'?'Préparer les garnitures →':'Prepare the toppings →'):(l==='fr'?'Commencer le protocole →':'Start the dough preparation →')}
+          {baseReady?(l==='fr'?'Préparer les garnitures →':'Prepare the toppings →'):(l==='fr'?'Commencer la préparation →':'Start the dough preparation →')}
         </button>
         <button
           type="button"

@@ -2,7 +2,7 @@ const { defineConfig, devices } = require('./.ci-tools/node_modules/@playwright/
 
 module.exports = defineConfig({
   testDir: './tests/mobile',
-  testMatch: process.env.BAKER_NAV_V2 === '1' ? ['**/header.spec.cjs', '**/nav-v2.spec.cjs', '**/existing-base.spec.cjs'] : '**/*.spec.cjs',
+  testMatch: process.env.BAKER_NAV_V2 === '1' ? ['**/header.spec.cjs', '**/nav-v2.spec.cjs', '**/existing-base.spec.cjs', '**/planning-calendar.spec.cjs'] : '**/*.spec.cjs',
   timeout: 60000,
   expect: { timeout: 10000 },
   workers: 2,

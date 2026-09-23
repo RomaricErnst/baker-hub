@@ -31,6 +31,6 @@ test('Simple climate puts fridge and technical settings behind a closed disclosu
  const props={kitchenTemp:31,fridgeTemp:5,humidity:'humid',onChange(){},onFlourInFridgeChange(){}};
  const simple=renderToStaticMarkup(React.createElement(Climate,{...props,mode:'simple'}));
  const custom=renderToStaticMarkup(React.createElement(Climate,{...props,mode:'custom'}));
- assert.match(simple,/value="31"/);assert.match(simple,/<details><summary[^>]*>Advanced settings · fridge and flour<\/summary><section>/);assert.doesNotMatch(simple,/<details open/);
- assert.match(simple,/Why this temperature/);assert.doesNotMatch(custom,/Advanced settings · fridge and flour|Why this temperature/);assert.match(custom,/Fridge temperature/);assert.match(custom,/Usual flour-storage humidity/);
+ assert.match(simple,/31°C/);assert.match(simple,/aria-expanded="false"/);assert.match(simple,/id="climate-kitchen-editor" hidden=""/);assert.match(simple,/value="31"/);assert.match(simple,/<details><summary[^>]*>Advanced settings · fridge and flour<\/summary><section>/);assert.doesNotMatch(simple,/<details open/);
+ assert.match(simple,/where the dough rests/);assert.doesNotMatch(custom,/Advanced settings · fridge and flour|Why this temperature/);assert.match(custom,/Fridge temperature/);assert.match(custom,/Usual flour-storage humidity/);
 });

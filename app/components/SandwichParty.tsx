@@ -168,7 +168,7 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
         </details>}
         {total>0&&<div className={styles.panelHeading}><h3>{t('Garnitures regroupées','Combined fillings')}</h3></div>}
         {shopping.map(({ingredientId:id,grams,key})=><label key={id} className={styles.check}><input type="checkbox" checked={!!snapshot.shopTicks[key]} onChange={event=>update({shopTicks:{...snapshot.shopTicks,[key]:event.target.checked}})}/><span className={snapshot.shopTicks[key]?styles.checked:''}>{ingredientName(id)}</span><strong className={styles.checkAmount}>{amountText(grams)}</strong></label>)}
-        <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('prep')}>{baseReady?t('Préparer les garnitures','Prepare the fillings'):doughConfigured?t('Commencer le protocole','Start the dough preparation'):t('Compléter l’organisation','Complete organisation')} →</button>
+        <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('prep')}>{baseReady?t('Préparer les garnitures','Prepare the fillings'):doughConfigured?t('Commencer la préparation','Start the dough preparation'):t('Compléter l’organisation','Complete organisation')} →</button>
       </>}
       {tab==='prep'&&total>0&&<>
         <h3>{t('Préparez les garnitures','Prepare the fillings')}</h3><p className={styles.muted}>{readySteps}/{prepSteps.length} {t('étapes cochées','steps checked')} · {t('Les quantités ci-dessous suivent votre sélection.','Quantities below follow your selection.')}</p>

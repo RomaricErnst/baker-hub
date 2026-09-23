@@ -9,7 +9,7 @@ const icons:Record<BakeDestination,string>={
   protocol:'M3 5l2 2 3-4 M11 5h10 M3 12l2 2 3-4 M11 12h10 M3 19l2 2 3-4 M11 19h10',
   service:'M3 18h18 M5 15a7 7 0 0 1 14 0H5Z M12 6V4 M10 4h4 M2 21h20',
 };
-function DestinationIcon({destination}:{destination:BakeDestination}){
+export function DestinationIcon({destination}:{destination:BakeDestination}){
   return <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={icons[destination]} /></svg>;
 }
 export default function BakeNavigator({active,fr,onChange,top=0}:{active:BakeDestination;fr:boolean;onChange:(destination:BakeDestination)=>void;top?:number}){

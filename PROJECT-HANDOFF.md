@@ -1,5 +1,17 @@
 # Bakerhub — continuation handoff
 
+## Planning, bread discovery and cooking — 23 September 2026
+
+Continue on `codex/navigation-polish-20260923` in `/Users/romaricernst/Documents/Codex/baker-navigation-polish`. Same preview: https://baker-hub-git-codex-navigation-po-c489c6-thebaker-hubs-projects.vercel.app/fr . User authorized implementation, independent UX review, testing and preview push.
+
+The unified dated agenda replaces competing planning views, with optional time edits, actual consequence previews, Keep/Cancel, invalid-edit blocking and availability above/in the timeline. Positive feedback follows edits only. Long waits are explicitly compressed. Simple and Custom use the same interaction. An independent reviewer preferred this over the old split views and fixed-scale mockup, then verified fixes for unsaved-draft navigation, preheat duration and separated conflicts.
+
+Bread cards retain dominant bread photos plus small meal examples, clearer wrap names and a preserving Pizza/Pain chooser at the bottom. Simple temperature setup is compact; water preparation remains practical at the preparation stage. Recipe offers Courses as primary and Préparation as secondary with matching section icons.
+
+Cooking is a forward sequence rather than competing guide/queue tabs: preheat → visible oven-specific instructions → pizza queue, or bread bake → cooling → serving/assembly. Cooking has local counters, while saved progress identifiers remain stable. Contextual Next is primary; no dead final Next. See `docs/PLANNING-AND-COOKING-20260923.md` for implementation and timing limits.
+
+Build, i18n, TypeScript and all 259 unit/component/domain tests passed. Independent browser checks passed at 320/390px and desktop; final WebKit results are recorded in the linked implementation report. Complex multiple-feed starter edits still require dedicated replanning. Ready-time estimates are limited to supported protocols and clearly labelled endpoints, not arbitrary full dinner deadlines. No physical baking or authenticated cloud-saving acceptance is claimed.
+
 ## Latest entry and Simple-mode iteration — 23 September 2026
 
 Continue on `codex/navigation-polish-20260923` in `/Users/romaricernst/Documents/Codex/baker-navigation-polish`. The user authorized testing and pushing all improvements to this preview branch. Two independent agents tested three working landing variants and both chose B: dominant pizza/loaf photography plus two supporting examples, still only two primary actions. All temporary A/B/C switches were removed. Four visible bread groups have optional in-page jump links; a style selection goes directly to quantity. Brioche remains a bread-only journey.

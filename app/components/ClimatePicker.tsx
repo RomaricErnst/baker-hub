@@ -51,6 +51,7 @@ export default function ClimatePicker({
 }: ClimatePickerProps) {
   const fr = useLocale() === 'fr';
   const kitchenMax = 38;
+  const [editingKitchen,setEditingKitchen] = useState(false);
   const Advanced = mode === 'simple' ? 'details' : 'div';
 
   function temperatureField(kind: 'kitchen' | 'fridge') {
@@ -110,9 +111,11 @@ export default function ClimatePicker({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, fontSize: 16, lineHeight: 1.5, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-      {mode === 'simple' && <p style={{margin:0,fontSize:16}}>{fr?'Vérifiez cette température là où la pâte reposera, dans une pièce climatisée ou chaude. La valeur affichée est à confirmer avec votre cuisine.':'Check this temperature where the dough will rest, whether the room is air-conditioned or warm. Confirm that the displayed value matches your kitchen.'}</p>}
-      {temperatureField('kitchen')}
-      {mode === 'simple' && <details><summary style={{minHeight:44,cursor:'pointer',fontSize:16}}>{fr?'Pourquoi cette température ?':'Why this temperature?'}</summary><p>{fr?'La pâte lève plus vite au chaud. Le planning utilise cette valeur : corrigez-la si la pièce change.':'Dough rises faster in warmth. The schedule uses this value: correct it if the room changes.'}</p></details>}
+      {mode === 'simple' ? <section>
+        <p style={{margin:'0 0 8px',fontSize:16}}>{fr?`Il fait environ ${tempC(kitchenTemp,units)} là où la pâte repose ?`:`Is it about ${tempC(kitchenTemp,units)} where the dough rests?`}</p>
+        <button type="button" aria-expanded={editingKitchen} aria-controls="climate-kitchen-editor" onClick={()=>setEditingKitchen(value=>!value)} style={{minHeight:44,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:9,background:'var(--paper)',color:'var(--char)',fontSize:16,cursor:'pointer'}}>{editingKitchen?(fr?'Fermer':'Close'):(fr?'Modifier':'Edit')}</button>
+        <div id="climate-kitchen-editor" hidden={!editingKitchen} style={{marginTop:editingKitchen?16:0}}>{temperatureField('kitchen')}</div>
+      </section> : temperatureField('kitchen')}
       <Advanced style={mode === 'custom' ? {display:'flex',flexDirection:'column',gap:24} : undefined}>
       {mode === 'simple' && <summary style={{minHeight:44,cursor:'pointer',fontSize:16}}>{fr?'Réglages avancés · frigo et farine':'Advanced settings · fridge and flour'}</summary>}
       {temperatureField('fridge')}

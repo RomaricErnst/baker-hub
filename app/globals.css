@@ -410,3 +410,15 @@ button,
 .bh-bread-group { scroll-margin-top:145px; }
 .bh-bread-jumps { display:flex; flex-wrap:wrap; gap:4px 14px; margin:0 0 18px; }
 .bh-bread-jumps a { display:flex; align-items:center; min-height:44px; color:var(--terra); text-underline-offset:4px; font-size:14px; }
+
+/* The family chooser preserves the current bake until another family is picked. */
+.bh-type-dialog { width: min(620px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); padding: 0; border: 1px solid var(--border); border-radius: 16px; background: var(--paper); color: var(--char); }
+.bh-type-dialog::backdrop { background: rgba(30,24,18,.42); }
+.bh-type-dialog-inner { padding: 18px; }
+.bh-type-dialog-inner h2 { font-size: 24px; margin: 12px 0; }
+.bh-type-dialog-inner p { font-size: 14px; margin-bottom: 16px; }
+.bh-recipe-next button { display:flex; justify-content:center; align-items:center; gap:8px; }
+.bh-recipe-next button svg { flex-shrink:0; }
+.bh-guide-step-nav button { min-width:0; overflow-wrap:anywhere; }
+.bh-guide-step-nav button:disabled { opacity:.45; }
+@media(max-width:380px) { .bh-guide-step-nav { flex-wrap:wrap; } .bh-guide-step-nav .bh-guide-next { flex-basis:100% !important; order:-1; } }
