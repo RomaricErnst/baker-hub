@@ -9,6 +9,9 @@ const Module=require('node:module');
 const ts=require('typescript');
 const sharp=require('sharp');
 const root=path.resolve(__dirname,'..');
+// Same finished lemon-chicken dish, distinct raw/cooked preparation contracts.
+// Intentional image reuse documented in docs/CHICKEN-PITA-20260923.md.
+const approvedDuplicatePair=new Set(['pita-poulet-citron','pita-poulet-cru-citron']);
 
 async function catalogue(){
   const filename=path.join(root,'app/lib/sandwichCatalog.ts');
@@ -46,8 +49,8 @@ async function main(){
       const {data,info}=await sharp(bytes,{failOn:'error'}).removeAlpha().raw().toBuffer({resolveWithObject:true});
       const hash=crypto.createHash('sha256').update(`${info.width}:${info.height}:${info.channels}:`).update(data).digest('hex');
       const duplicate=seenPixels.get(hash);
-      if(duplicate) failures.push(`${recipe.id}: identical image pixels to ${duplicate}`);
-      else seenPixels.set(hash,recipe.id);
+      if(duplicate && !(approvedDuplicatePair.has(recipe.id) && approvedDuplicatePair.has(duplicate))) failures.push(`${recipe.id}: identical image pixels to ${duplicate}`);
+      else if(!duplicate) seenPixels.set(hash,recipe.id);
       decoded++;
     }catch(error){
       failures.push(`${recipe.id}: ${error.code==='ENOENT'?'missing asset':`cannot read/decode asset (${error.message})`}`);
@@ -59,6 +62,6 @@ async function main(){
     process.exitCode=1;
     return;
   }
-  console.log(`Sandwich images complete: ${recipes.length}/${recipes.length} unique recipe assets decode as static 4:3 landscape WebP images (at least 640×480).`);
+  console.log(`Sandwich images complete: ${recipes.length}/${recipes.length} recipe assets decode as static 4:3 landscape WebP images (at least 640×480; only the documented raw/cooked lemon-chicken pair may share pixels).`);
 }
 main().catch(error=>{console.error(error.message);process.exitCode=1;});

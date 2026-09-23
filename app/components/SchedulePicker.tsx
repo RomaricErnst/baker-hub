@@ -144,6 +144,14 @@ export function commercialPrefermentPlanValid({type, inFridge, mixTime, bakeTime
   return !blocks.some(block => [prep,mix].some(time => time >= +block.from && time < +block.to));
 }
 
+/** Reuse the solver's peak-use band; an observed peak cannot move with the bake date. */
+export function knownPeakMixUsable(mixTime: Date, peakTime: Date, peakRiseH: number, flourStrength = 1): boolean {
+  const gapH = (+mixTime - +peakTime) / 3600000;
+  if (![gapH, peakRiseH, flourStrength].every(Number.isFinite) || peakRiseH <= 0) return false;
+  const tolerance = Math.max(1, Math.min(3, peakRiseH * 0.15)) * Math.max(0.7, Math.min(1.5, flourStrength));
+  return gapH >= -tolerance - 0.5 && gapH <= tolerance;
+}
+
 interface DerivedStarterState {
   peakTime: Date | null;
   feedTime: Date | null;
@@ -172,7 +180,7 @@ interface SchedulePickerProps {
   onChange: (startTime: Date, eatTime: Date, blocks: AvailabilityBlock[], options?: { preservePlan: boolean }) => void;
   bakeType?: 'pizza' | 'bread';
   isSourdough?: boolean;
-  onFeedTimeChange?: (t: Date) => void;
+  onFeedTimeChange?: (t: Date | null) => void;
   onStarterEventsChange?: (events: StarterEvent[]) => void;
   savedStarterEvents?: StarterEvent[];
   prefermentType?: string;
@@ -205,6 +213,8 @@ interface SchedulePickerProps {
   ratioMode?: 'recommend' | 'keep';
   onRatioModeChange?: (m: 'recommend' | 'keep') => void;
   onStarterPeakTimeChange?: (t: Date | null) => void;
+  starterTimingValid?: boolean;
+  onStarterTimingValidityChange?: (valid: boolean) => void;
   mode?: 'simple' | 'custom';   // default 'custom'
   onReady?: () => void;
   sessionRestored?: boolean;
@@ -1736,7 +1746,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, confirmedPlan = false, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, confirmedPlan = false, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', onReady, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   const [scheduleView, setScheduleView] = useState<'actions' | 'graph'>('actions');
   const scheduleViewId = useId();
   const t = useTranslations('scheduler');
@@ -1840,20 +1850,32 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   const [lastFedTime, setLastFedTime]           = useState<Date | null>(lastFedTimeProp ?? null);
   const [knownPeakTime, setKnownPeakTime]       = useState<Date | null>(knownPeakTimeProp ?? null);
   // Derived for BakeGuide backward compat
+  const [showStarterDetails, setShowStarterDetails] = useState(false);
+  const [simpleStarterUncertain, setSimpleStarterUncertain] = useState(!starterTimingValidProp);
+  useEffect(() => { if (!starterTimingValidProp) setSimpleStarterUncertain(true); }, [starterTimingValidProp]);
+  const [simpleReadyObserved,setSimpleReadyObserved] = useState(false);
   const [starterMature, setStarterMature]       = useState(true);
   const [starterHasRye, setStarterHasRye]       = useState(false);
   const [fridgeOutTime, setFridgeOutTime]       = useState<Date | null>(null);
   const [solverResult, setSolverResult]         = useState<SourdoughSolverResult | null>(null);
+  const [lastFeedRatio, setLastFeedRatio]         = useState<1 | 2 | 4 | 5 | 10>(lastFeedRatioProp ?? 1);
+  const simpleKnownPeakConflict = mode === 'simple' && isSourdough && planningMode === 'know_peak'
+    && !!knownPeakTime && !knownPeakMixUsable(pendingStart, knownPeakTime,
+      getPrefPeakH_RT('sourdough', kitchenTemp, styleKey) * (starterHasRye ? 0.8 : 1) * (starterMature ? 1 : 1.2) * (1 + 0.5 * Math.log(lastFeedRatio)), flourStrength);
+  const starterTimingValid = !simpleKnownPeakConflict && (mode !== 'simple' || !simpleStarterUncertain
+    || !!solverResult?.starterEvents.length);
+  useEffect(() => { onStarterTimingValidityChange?.(starterTimingValid); }, [starterTimingValid, onStarterTimingValidityChange]);
   const savedEventLabels: Record<StarterEventKind, [string,string]> = {
     last_fed:['Last fed','Dernier rafraîchi'], refresh:['Refresh feed','Rafraîchir le levain'], intermediate_refresh:['Refresh feed','Rafraîchir le levain'], pre_mix:['Pre-mix feed','Rafraîchi avant mélange'], fridge_in:['Refrigerate starter','Réfrigérer le levain'], fridge_out:['Take starter out','Sortir le levain'], known_peak:['Starter peak','Levain à son pic'],
   };
-  const displayStarterEvents = solverResult?.starterEvents ?? savedStarterEvents.map(event => ({...event, label:savedEventLabels[event.kind][locale === 'fr' ? 1 : 0], isDraggable:false}));
+  const displayStarterEvents = simpleKnownPeakConflict ? [] : solverResult?.starterEvents ?? savedStarterEvents.map(event => ({...event, label:savedEventLabels[event.kind][locale === 'fr' ? 1 : 0], isDraggable:false}));
   const eventSignature = JSON.stringify(isSourdough ? solverResult?.starterEvents ?? [] : []);
   useEffect(() => {
     // A newly mounted planner has no result yet; preserve the saved events
     // until the solver publishes the replacement schedule.
-    if (!isSourdough || solverResult) onStarterEventsChange?.(isSourdough ? solverResult!.starterEvents : []);
-  }, [eventSignature, onStarterEventsChange]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (simpleKnownPeakConflict) onStarterEventsChange?.([]);
+    else if (!isSourdough || solverResult) onStarterEventsChange?.(isSourdough ? solverResult!.starterEvents : []);
+  }, [eventSignature, simpleKnownPeakConflict, onStarterEventsChange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Set by the sourdough solver when the bake has no executable future slot.
   // Effects that invoke the solver must not immediately re-open the plan panel
@@ -1863,7 +1885,6 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   const [mixOverride, setMixOverride]           = useState(false);
   const [hasNotFedYet, setHasNotFedYet]         = useState<boolean | null>(hasNotFedYetProp ?? null);
   const [lastFedAge, setLastFedAge]             = useState<'today'|'yesterday'|'days23'|'days45'|'week'|null>(lastFedAgeProp ?? null);
-  const [lastFeedRatio, setLastFeedRatio]         = useState<1 | 2 | 4 | 5 | 10>(lastFeedRatioProp ?? 1);
   const [nextFeedRatio, setNextFeedRatio]         = useState<1 | 2 | 4 | 5 | 10>(nextFeedRatioProp ?? lastFeedRatioProp ?? 1);
   const [nextFeedRatioOverride, setNextFeedRatioOverride] = useState<1 | 2 | 4 | 5 | 10 | null>(nextFeedRatioOverrideProp ?? null);
   const [ratioMode, setRatioMode] = useState<'recommend' | 'keep'>(ratioModeProp ?? 'recommend');
@@ -3204,6 +3225,16 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         setSolverResult(null);
         return;
       }
+      if (mode === 'simple' && planningMode === 'know_peak' && knownPeakTime
+        && !knownPeakMixUsable(safeStart, knownPeakTime, adjPeakH_derived, flourStrength)) {
+        setPendingStart(safeStart);
+        sourdoughPlanBlockedRef.current = true;
+        setStartComputed(false);
+        setSolverResult(null);
+        onStarterEventsChange?.([]);
+        onFeedTimeChange?.(null);
+        return;
+      }
       sourdoughPlanBlockedRef.current = false;
       _newPendingStart = safeStart;
 
@@ -3903,7 +3934,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         if (!act.length) return null;
         return act.reduce((a, b) => (b.time.getTime() > a.time.getTime() ? b : a)).bellPeakTime ?? null;
       })();
-      const _committedPeakTime: Date | null = _activeBellPeak ??
+      const _committedPeakTime: Date | null = planningMode === 'know_peak' ? knownPeakTime : _activeBellPeak ??
         ((_isFridgeHoldPath && _feed2Time && _adjPeakH)
           ? new Date(_feed2Time.getTime() + _adjPeakH * _preMixStretchFactor * 3600000)
           // Feed2-driven peak SECOND: future-feed / peak2 winners peak off the
@@ -5500,7 +5531,8 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     const activeFeed = _winnerHasFutureFeed && best.feed2Ms
       ? new Date(best.feed2Ms)
       : lastFedTime ?? new Date(best.feedMs);
-    onFeedTimeChange?.(activeFeed);
+    // A known peak is an observation, not evidence of when the last feed happened.
+    onFeedTimeChange?.(planningMode === 'know_peak' ? null : activeFeed);
     if (_winnerHasFutureFeed && best.feed2Ms) {
       onFeed2TimeChange?.(new Date(best.feed2Ms));
     }
@@ -6402,6 +6434,53 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
             </div>
           </div>
 
+          {mode === 'simple' && (
+            <div style={{ display: 'grid', gap: '12px', fontSize: '15px', lineHeight: 1.5 }}>
+              <p style={{ margin: 0 }}>{isFr
+                ? 'Cette recette utilise un levain nourri avec autant de farine que d’eau, en poids. Un levain ferme ou une proportion inconnue nécessite de vérifier la recette avant de continuer.'
+                : 'This recipe uses a starter fed with equal weights of flour and water. A stiff starter or an unknown proportion needs a recipe check before continuing.'}</p>
+              <p style={{ margin: 0 }}>{isFr
+                ? 'Votre levain actif a-t-il bien monté depuis son repas, avec des bulles, sans être retombé ? Vérifiez-le à température ambiante.'
+                : 'Has your active starter risen well since feeding, with bubbles, without collapsing? Check it at room temperature.'}</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                <button type="button" style={{ ...starterPillButton(planningMode === 'know_peak'), minHeight: 44 }} onClick={() => {
+                  const observedPeak = new Date();
+                  setPlanningMode('know_peak'); onPlanningModeChange?.('know_peak');
+                  setKnownPeakTime(observedPeak); onKnownPeakTimeChange?.(observedPeak);
+                  setStarterLocation('rt'); onStarterLocationChange?.('rt');
+                  setLastFedTime(null); onLastFedTimeChange?.(null);
+                  setLastFedAge(null); onLastFedAgeChange?.(null);
+                  setFridgeOutTime(null); onFridgeOutTimeChange?.(null);
+                  setHasNotFedYet(false); onHasNotFedYetChange?.(false);
+                  onFeedTimeChange?.(null);
+                  onStarterStateChange?.('rt_fed');
+                  setSimpleStarterUncertain(false); setSimpleReadyObserved(true); setShowStarterDetails(false);
+                }}>{isFr ? 'Oui, il est prêt maintenant' : 'Yes, ready now'}</button>
+                <button type="button" style={{ ...starterPillButton(simpleStarterUncertain), minHeight: 44 }} onClick={() => {
+                  setPlanningMode('last_fed'); onPlanningModeChange?.('last_fed');
+                  setKnownPeakTime(null); onKnownPeakTimeChange?.(null);
+                  setLastFedTime(null); onLastFedTimeChange?.(null);
+                  setLastFedAge(null); onLastFedAgeChange?.(null);
+                  onStarterPeakTimeChange?.(null);
+                  onFeedTimeChange?.(null); onStarterEventsChange?.([]);
+                  setSolverResult(null); setStartComputed(false);
+                  setSimpleStarterUncertain(true); setSimpleReadyObserved(false); setShowStarterDetails(true);
+                }}>{isFr ? 'Pas encore / Je ne sais pas' : 'Not yet / Not sure'}</button>
+              </div>
+              <p role="status" style={{ margin: 0 }}>{simpleStarterUncertain
+                ? (isFr ? 'Prochaine étape : indiquez ci-dessous son dernier repas. S’il ne monte pas encore, nourrissez-le selon votre routine et attendez une montée nette avant de confirmer qu’il est prêt. L’horaire reste à vérifier.' : 'Next: enter its last feed below. If it is not rising yet, feed it using your usual routine and wait for a clear rise before confirming readiness. Timing still needs checking.')
+                : planningMode === 'know_peak' && knownPeakTime
+                  ? (isFr ? `${simpleReadyObserved?'Levain déclaré prêt à':'Levain attendu prêt à'} ${fmtCardDT(knownPeakTime, true)}. Consultez le créneau de mélange ci-dessous ; prêt maintenant ne garantit pas du pain ce soir.` : `${simpleReadyObserved?'Starter reported ready at':'Starter expected ready at'} ${fmtCardDT(knownPeakTime)}. Check the mixing window below; ready now does not guarantee bread tonight.`)
+                  : (isFr ? 'Prochaine étape : vérifiez votre levain, puis choisissez une réponse.' : 'Next: check your starter, then choose an answer.')}</p>
+              <p style={{ margin: 0, color: 'var(--smoke)' }}>{isFr
+                ? `Cuisine : ${kitchenTemp} °C. Vérifiez les signes de levée plus tôt s’il fait chaud ; les heures restent des estimations.`
+                : `Kitchen: ${kitchenTemp}°C. Check rising signs earlier in a warm kitchen; times remain estimates.`}</p>
+              <button type="button" aria-expanded={showStarterDetails} onClick={() => {setShowStarterDetails(v => !v);setSimpleReadyObserved(false);}} style={{ ...starterPillButton(false), minHeight: 44 }}>
+                {showStarterDetails ? (isFr ? 'Masquer les détails du levain' : 'Hide starter details') : (isFr ? 'Autre horaire / détails du levain' : 'Other timing / starter details')}
+              </button>
+            </div>
+          )}
+          {(mode !== 'simple' || showStarterDetails) && <div style={{ display: 'grid', gap: '16px' }}>
           {/* ── Q1: Where has it been since last fed? ── */}
           <div>
             <div style={STARTER_LABEL_STYLE}>
@@ -6875,6 +6954,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
             </div>
           )}
 
+          </div>}
         </div>
       )}
 
@@ -7180,6 +7260,9 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         </div>
       )}
 
+      {simpleKnownPeakConflict && eatTimeSet && <p role="alert" style={{fontSize:15,color:'var(--terra)',lineHeight:1.5}}>{isFr
+        ? 'Votre levain prêt à l’heure indiquée ne peut pas attendre jusqu’à ce mélange sans nouveau rafraîchi. Prochaine étape : choisissez « Autre horaire / détails du levain » pour planifier un rafraîchi, ou rapprochez la cuisson. La recette reste bloquée tant que ce créneau n’est pas compatible.'
+        : 'Your starter cannot wait from the stated peak until this mix without another feed. Next: choose “Other timing / starter details” to plan a feed, or move baking earlier. The recipe stays blocked until this timing is compatible.'}</p>}
       {guardNote && !windowTooShort && eatTimeSet && (
         <div style={{
           fontSize: '13px',
@@ -7216,7 +7299,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           prefermentType={prefermentType}
           starterPeak={readinessUnsupported ? null : solverResult?.peakTime ?? null}
           starterState={readinessUnsupported ? null : solverResult?.starterPillState ?? null}
-          blocked={startInvalid || windowTooShort || !!solverResult?.windowTooShort || !commercialPrefValid}
+          blocked={simpleKnownPeakConflict || sourdoughPlanBlockedRef.current || startInvalid || windowTooShort || !!solverResult?.windowTooShort || !commercialPrefValid}
           overdue={restoredPrepOverdue}
           busy={readinessBusy}
           conflictDescription={conflictDescription}

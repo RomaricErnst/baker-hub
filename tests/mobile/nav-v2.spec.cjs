@@ -88,7 +88,6 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await expect(page.getByRole('heading',{name:'À votre façon',exact:true})).toHaveCount(0);
   const style=page.locator('.bh-batch-content').getByRole('button',{name:bread?/^Baguette\b/:/Napolitaine/i});
   await style.tap();
-  await page.locator('.bh-batch-actions').getByRole('button',{name:'Choisir la quantité',exact:true}).tap();
   const quantity=page.getByLabel(bread?'Nombre de pains':'Nombre de pizzas',{exact:true});
   await quantity.fill('5');await quantity.blur();
   await expect.poll(async()=>({style:(await stored(page))?.styleKey,count:(await stored(page))?.numItems})).toEqual({style:bread?'baguette':'neapolitan',count:5});
@@ -154,7 +153,6 @@ test('country bread offers illustrated tartines and keeps loaf quantities when r
  await anonymous(page);await page.goto('/fr');
  await page.getByRole('button',{name:'Pain',exact:true}).tap();
  await page.locator('.bh-batch-content').getByRole('button',{name:/^Pain de campagne/}).tap();
- await page.locator('.bh-batch-actions').getByRole('button',{name:'Choisir la quantité',exact:true}).tap();
  const count=page.getByLabel('Nombre de pains',{exact:true});
  await count.fill('2');await count.blur();
  await expect(page.getByRole('heading',{name:'Votre pain devient une tartine',exact:true})).toBeVisible();

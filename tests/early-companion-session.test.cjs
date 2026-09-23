@@ -34,3 +34,17 @@ test('a pre-setup sandwich session round-trips its family, customized fillings a
     assert.equal(restored.sandwichParty.ingredientOverrides['baguette-jambon-beurre'].ham,50);
   } finally { global.localStorage=previous; }
 });
+
+test('generated starter timing blocker survives normalized local save and load',()=>{
+ const storage=new Map(), previous=global.localStorage;
+ global.localStorage={setItem:(key,value)=>storage.set(key,value),getItem:key=>storage.get(key)??null,removeItem:key=>storage.delete(key)};
+ try {
+  saveSession({bakeType:'bread',styleKey:'pain_levain',recipeGenerated:true,starterTimingValid:false,starterEvents:[],planningMode:'last_fed'});
+  const restored=loadSession();
+  assert.equal(restored.recipeGenerated,true);assert.equal(restored.starterTimingValid,false);assert.deepEqual(restored.starterEvents,[]);
+  const fs=require('node:fs'),vm=require('node:vm');
+  const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
+  const gate=source.match(/const starterPlanReady =[\s\S]*?;/)[0];
+  assert.equal(vm.runInNewContext(gate+'\nstarterPlanReady',{...restored,yeastType:'sourdough'}),false);
+ } finally {global.localStorage=previous;}
+});

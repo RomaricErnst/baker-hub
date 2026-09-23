@@ -29,6 +29,7 @@ const ingredientRows: IngredientRow[] = [
  ['basil','Basilic','Basil',23,'vegetables'],['parsley','Persil','Parsley',36,'vegetables'],['mint','Menthe','Mint',44,'vegetables'],['garlic','Ail','Garlic',149,'vegetables'],
  ['lemon','Jus de citron','Lemon juice',22,'pantry'],['olive_oil','Huile d’olive','Olive oil',884,'pantry'],['butter','Beurre','Butter',717,'dairy',['milk']],
  ['ham','Jambon blanc cuit','Cooked ham',145,'protein',[],false],['chicken','Blanc de poulet déjà cuit','Cooked chicken breast',165,'protein',[],false],
+ ['chicken_raw','Blanc de poulet cru sans peau ni os','Raw boneless skinless chicken breast',120,'protein',[],false],
  ['turkey','Dinde rôtie déjà cuite','Cooked roast turkey',135,'protein',[],false],['roast_beef','Rôti de bœuf déjà cuit','Cooked roast beef',175,'protein',[],false],
  ['mortadella','Mortadelle sans pistache','Mortadella without pistachios',311,'protein',[],false],['prosciutto','Jambon cru','Prosciutto',270,'protein',[],false],
  ['salami','Salami','Salami',407,'protein',[],false],['porchetta','Porchetta déjà cuite','Cooked porchetta',330,'protein',[],false],
@@ -100,10 +101,11 @@ const recipeRows: RecipeRow[] = [
  ['bagel','dinde-croquante','Dinde et légumes croquants','Turkey & crunchy vegetables','inspired',true,'turkey:55 cucumber:50 lettuce:25 mustard:8 yogurt:15'],
  ['bagel','thon-citron','Thon citron et radis','Lemon tuna & radish','inspired',true,'tuna:65 radish:40 cucumber:40 yogurt:20 lemon:6'],
  ['pita','falafel-tahini','Falafels et tahini','Falafel & tahini','classic',false,'falafel:100 tahini:18 tomato:50 cucumber:40 parsley:5 lemon:10'],
- ['pita','poulet-shawarma','Poulet façon shawarma','Shawarma-inspired chicken','inspired',false,'chicken:100 yogurt:35 olive_oil:8 cumin:1 paprika:1 cabbage:40 pickle:20'],
+ ['pita','poulet-shawarma','Shawarma · poulet déjà cuit','Shawarma · already cooked chicken','inspired',false,'chicken:100 yogurt:35 olive_oil:8 cumin:1 paprika:1 cabbage:40 pickle:20'],
  ['pita','aubergine-oeuf','Aubergine, œuf et tahini','Aubergine, egg & tahini','inspired',false,'aubergine:100 egg:60 tahini:18 olive_oil:8 parsley:5'],
  ['pita','agneau','Agneau, crudités et yaourt','Lamb, salad & yogurt','classic',false,'lamb:110 yogurt:30 tomato:50 onion:20 olive_oil:5'],
- ['pita','poulet-citron','Poulet citron et concombre','Lemon chicken & cucumber','inspired',true,'chicken:65 yogurt:25 cucumber:70 lettuce:20 lemon:8'],
+ ['pita','poulet-citron','Poulet citron · déjà cuit','Lemon chicken · already cooked','inspired',true,'chicken:65 yogurt:25 cucumber:70 lettuce:20 lemon:8'],
+ ['pita','poulet-cru-citron','Poulet citron · à cuisiner cru','Lemon chicken · cook from raw','inspired',true,'chicken_raw:100 yogurt:25 cucumber:70 lettuce:20 lemon:8 olive_oil:3'],
  ['pita','pois-chiches','Pois chiches et légumes croquants','Chickpeas & crunchy vegetables','inspired',true,'chickpea:70 tomato:50 cucumber:50 yogurt:20 lemon:8 parsley:5'],
  ['greek_pita','poulet-tzatziki','Poulet et tzatziki','Chicken & tzatziki','classic',false,'chicken:120 tzatziki:50 tomato:55 onion:25 olive_oil:8 oregano:1'],
  ['greek_pita','agneau-feta','Agneau et feta','Lamb & feta','inspired',false,'lamb:100 feta:40 tomato:50 onion:20 yogurt:25'],
@@ -123,7 +125,7 @@ const recipeRows: RecipeRow[] = [
  ['batbout','oeuf-fromage','Œuf et fromage','Egg & cheese','classic',false,'egg:85 emmental:40 mayonnaise:15 tomato:40'],
  ['batbout','thon-citron','Thon citron et légumes','Lemon tuna & vegetables','inspired',true,'tuna:60 yogurt:20 cucumber:50 carrot:35 lemon:8'],
  ['batbout','haricots-cumin','Haricots blancs et cumin','White beans & cumin','inspired',true,'white_bean:75 tomato:55 parsley:5 lemon:10 yogurt:20 cumin:1'],
- ['laffa','shawarma-poulet','Poulet façon shawarma','Shawarma-inspired chicken','inspired',false,'chicken:120 tahini:25 tomato:55 pickle:30 olive_oil:8 cumin:1 paprika:1'],
+ ['laffa','shawarma-poulet','Shawarma · poulet déjà cuit','Shawarma · already cooked chicken','inspired',false,'chicken:120 tahini:25 tomato:55 pickle:30 olive_oil:8 cumin:1 paprika:1'],
  ['laffa','falafel-houmous','Falafels et houmous','Falafel & hummus','classic',false,'falafel:115 hummus:55 tomato:60 cucumber:40 parsley:5'],
  ['laffa','agneau-tahini','Agneau et tahini citronné','Lamb & lemon tahini','classic',false,'lamb:120 tahini:25 tomato:55 onion:25 lemon:10'],
  ['laffa','aubergine-oeuf','Aubergine, œuf et tahini','Aubergine, egg & tahini','inspired',false,'aubergine:110 egg:70 tahini:25 olive_oil:8 parsley:5'],
@@ -157,9 +159,44 @@ const recipeRows: RecipeRow[] = [
 
 const perishableSafe = text('Servez aussitôt. Sinon, réfrigérez rapidement à 4 °C ou moins : au plus 2 h hors du froid, 1 h s’il fait plus de 32 °C. Respectez les dates des produits.', 'Serve promptly. Otherwise refrigerate promptly at 4°C or below: no more than 2 hours unrefrigerated, or 1 hour above 32°C. Follow product use-by dates.');
 export function buildSandwichSteps(id: string, familyId: SandwichFamily, ingredients: SandwichPortion[], vegetarian: boolean): SandwichStep[] {
-  const has = (ingredientId: string) => ingredients.some(i=>i.ingredientId===ingredientId);
+  const has = (ingredientId: string) => ingredients.some(i=>i.ingredientId===ingredientId && i.grams>0);
   const steps: SandwichStep[] = [];
   const add = (key:string,fr:string,en:string,frInstruction:string,enInstruction:string,minutes:number,phase:SandwichStep['phase']) => steps.push({id:`${id}-${key}`,title:text(fr,en),instruction:text(frInstruction,enInstruction),minutes,phase});
+  // These pocket-pita meals deliberately distinguish raw and ready-cooked weights.
+  if (id==='pita-poulet-cru-citron' || id==='pita-poulet-citron' || id==='pita-poulet-shawarma') {
+    const names = (ids: string[], lang: 'fr' | 'en') => ids.filter(has).map(key=>SANDWICH_INGREDIENTS[key].name[lang].toLowerCase()).join(', ');
+    const saladIds = ['cucumber','lettuce','cabbage','pickle'];
+    const sauceIds = ['yogurt','lemon','cumin','paprika'];
+    add('prep','Préparer avant la cuisson des pitas','Prepare before baking the pitas',
+      'Pesez les quantités de garniture indiquées pour toutes les portions. Préparez une poêle antiadhésive, une assiette propre et un thermomètre alimentaire. Gardez les produits frais à 4 °C ou moins jusqu’à leur utilisation.',
+      'Weigh the listed filling quantities for all portions. Have a nonstick pan, a clean plate and a food thermometer ready. Keep perishables at 4°C or below until needed.',3,'prep');
+    if (saladIds.some(has)) add('salad','Préparer les crudités','Prepare the salad',
+      `Préparez les ingrédients sélectionnés : ${names(saladIds,'fr')}. Lavez et séchez les légumes frais, puis émincez-les.${has('pickle')?' Égouttez et tranchez les cornichons.':''} Réservez au réfrigérateur dans un récipient propre.`,
+      `Prepare the selected ingredients: ${names(saladIds,'en')}. Wash and dry fresh vegetables, then slice thinly.${has('pickle')?' Drain and slice the gherkins.':''} Refrigerate in a clean container.`,4,'prep');
+    if (has('chicken_raw')) {
+      add('raw','Découper le poulet cru','Cut the raw chicken',
+        'Utilisez du poulet réfrigéré, entièrement décongelé si nécessaire. La quantité indiquée est pesée crue, sans peau ni os. Ne rincez pas le poulet. Sur une planche réservée à la viande crue, coupez-le en lanières régulières d’environ 1 cm d’épaisseur. Lavez ensuite les mains au savon, et la planche, le couteau et les surfaces à l’eau chaude savonneuse avant de toucher la sauce ou les crudités. Gardez le poulet au froid si vous ne le cuisez pas immédiatement.',
+        'Use chilled chicken, fully thawed if necessary. The listed weight is raw, without skin or bones. Do not rinse chicken. On a board reserved for raw meat, cut into even strips about 1 cm thick. Then wash hands with soap and clean the board, knife and surfaces with hot, soapy water before touching sauce or salad. Refrigerate the chicken if not cooking immediately.',4,'prep');
+      add('cook','Cuire le poulet à cœur','Cook the chicken through',
+        `Commencez lorsque les pitas approchent de leur cuisson, ou juste après leur sortie du four si vous cuisinez seul. Chauffez la poêle à feu moyen${has('olive_oil')?' avec toute l’huile mesurée':''}. Déposez le poulet en une seule couche ; faites plusieurs fournées si nécessaire. Faites cuire environ 6–10 min par fournée, en retournant régulièrement. Vérifiez au thermomètre au centre des morceaux les plus épais : au moins 74 °C avant de retirer du feu. Le temps est indicatif ; poursuivez si nécessaire. Transférez avec un ustensile propre sur l’assiette propre.`,
+        `Start when the pitas are close to baking, or just after they leave the oven if cooking alone. Heat the pan over medium heat${has('olive_oil')?' with all the measured oil':''}. Add chicken in a single layer; cook in batches if needed. Cook for approximately 6–10 minutes per batch, turning regularly. Check the centre of the thickest pieces with a food thermometer: at least 74°C before removing from heat. Timing is a guide; continue cooking as needed. Transfer with a clean utensil to the clean plate.`,10,'cook');
+    } else if (has('chicken')) {
+      add('heat','Réchauffer le poulet déjà cuit','Reheat the already cooked chicken',
+        `Utilisez uniquement du poulet déjà cuit : la quantité indiquée est son poids cuit. Lorsque les pitas sont presque prêtes, émincez et réchauffez le poulet dans la poêle à feu moyen${has('olive_oil')?' avec toute l’huile mesurée':''}, en remuant, selon les instructions de l’emballage. Pour des restes, vérifiez au thermomètre au moins 74 °C à cœur. Comptez environ 5–8 min, à adapter ; gardez les crudités à part.`,
+        `Use already cooked chicken only: the listed quantity is its cooked weight. When the pitas are nearly ready, slice and reheat the chicken in the pan over medium heat${has('olive_oil')?' with all the measured oil':''}, stirring, according to package instructions. For leftovers, check at least 74°C throughout with a thermometer. Allow approximately 5–8 minutes, adjusting as needed; keep salad separate.`,8,'cook');
+    }
+    if (sauceIds.some(has)) add('sauce',has('yogurt')?'Mélanger la sauce':'Préparer l’assaisonnement',has('yogurt')?'Mix the sauce':'Prepare the dressing',
+      `Dans un bol propre, mélangez uniquement les quantités prévues de ${names(sauceIds,'fr')}.${has('olive_oil')&&!has('chicken_raw')&&!has('chicken')?' Ajoutez l’huile mesurée.':''} Gardez au froid jusqu’au moment de garnir.`,
+      `In a clean bowl, mix only the listed amounts of ${names(sauceIds,'en')}.${has('olive_oil')&&!has('chicken_raw')&&!has('chicken')?' Add the measured oil.':''} Keep chilled until filling.`,2,'prep');
+    if (has('olive_oil') && !has('chicken_raw') && !has('chicken') && !sauceIds.some(has)) add('oil','Assaisonner','Dress the filling','Répartissez l’huile mesurée sur les garnitures conservées ou directement sur le pain.','Drizzle the measured oil over the retained filling or directly over the bread.',1,'prep');
+    const fillingIds = [...(has('chicken_raw')?['chicken_raw']:has('chicken')?['chicken']:[]),...saladIds.filter(has)];
+    const fillingNames = (lang: 'fr'|'en') => fillingIds.map(key=>key==='chicken_raw'||key==='chicken'?(lang==='fr'?'poulet cuit':'cooked chicken'):SANDWICH_INGREDIENTS[key].name[lang].toLowerCase()).join(', ');
+    add('assemble','Garnir les pitas prêtes et servir','Fill the ready pitas and serve',
+      `Attendez que les pitas soient cuites et assez tièdes pour être manipulées. Ouvrez délicatement une poche dans chaque pita${sauceIds.some(has)?', répartissez la sauce ou l’assaisonnement':''}${fillingIds.length?`, puis ${fillingNames('fr')}`:''}. Si la poche ne s’ouvre pas, servez le pain plié autour de la garniture. Servez aussitôt.`,
+      `Wait until the pitas are baked and cool enough to handle. Carefully open a pocket in each pita${sauceIds.some(has)?', divide the sauce or dressing between them':''}${fillingIds.length?`, then add ${fillingNames('en')}`:''}. If a pocket does not open, serve the bread folded around the filling. Serve immediately.`,3,'assemble');
+    add('serve','Si le repas attend','If serving is delayed',perishableSafe.fr,perishableSafe.en,0,'chill');
+    return steps;
+  }
   if (id==='tartine-avocat-oeuf') {
     add('prep','Préparer la garniture','Prepare the toppings','Pesez les garnitures par portion. Préparez le citron et, si elle est sélectionnée, la grenade. Émiettez la feta si elle est conservée.','Weigh the toppings per portion. Prepare the lemon and, if selected, the pomegranate. Crumble the feta if retained.',3,'prep');
     add('bread','Trancher et toaster','Slice and toast','Pesez 60 g de pain déjà cuit et refroidi par portion : une grande tranche ou plusieurs petites. Toastez légèrement. Une portion ne correspond pas à un pain entier.','Weigh 60 g of baked, cooled bread per portion: one large slice or several small ones. Toast lightly. One portion is not one whole loaf.',3,'cook');

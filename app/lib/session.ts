@@ -83,6 +83,8 @@ export interface SessionData {
   nextFeedRatio?: number;
   nextFeedRatioOverride?: number | null;
   ratioMode?: 'recommend' | 'keep';
+  /** False preserves a known blocked/uncertain starter plan across resume. */
+  starterTimingValid?: boolean;
   starterMature?: boolean;
   starterHasRye?: boolean;
   tang?: string;

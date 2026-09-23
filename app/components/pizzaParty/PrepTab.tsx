@@ -21,6 +21,7 @@ function formatQty(amount: number, unit: IngredientUnit, locale: string): string
 }
 
 interface Props {
+  storagePrefix?:string;
   bakeTime: Date;
   locale: string;
   selectedPizzas: Record<string, number>;
@@ -74,7 +75,7 @@ function assignStation(task: PrepTask): string {
   return 'board';
 }
 
-export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShopping, onGoToPizzas, styleKey }: Props) {
+export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShopping, onGoToPizzas, styleKey, storagePrefix="bh" }: Props) {
   const l = locale as 'en' | 'fr';
   // Persisted so ticks survive leaving/reopening the app (cleared on Start Over)
   const [completed, setCompleted] = useState<Set<string>>(new Set());
@@ -82,7 +83,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('bh_prep_ticks_v1');
+      const raw = localStorage.getItem(`${storagePrefix}_prep_ticks_v1`);
       if (raw) setCompleted(new Set(JSON.parse(raw) as string[]));
     } catch {}
     ticksHydrated.done = true;
@@ -91,7 +92,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
 
   useEffect(() => {
     if (!ticksHydrated.done) return;
-    try { localStorage.setItem('bh_prep_ticks_v1', JSON.stringify([...completed])); } catch {}
+    try { localStorage.setItem(`${storagePrefix}_prep_ticks_v1`, JSON.stringify([...completed])); } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completed]);
 

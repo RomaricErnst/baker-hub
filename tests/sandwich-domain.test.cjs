@@ -7,8 +7,8 @@ const recipe=id=>c.SANDWICH_RECIPES.find(r=>r.id===id);
 
 test('sandwich catalogue covers all approved families with credible classic/inspired distinctions',()=>{
   a.equal(c.SANDWICH_FAMILIES.length,13);
-  a.equal(c.SANDWICH_RECIPES.length,88);
-  a.equal(new Set(c.SANDWICH_RECIPES.map(r=>r.id)).size,88);
+  a.equal(c.SANDWICH_RECIPES.length,89);
+  a.equal(new Set(c.SANDWICH_RECIPES.map(r=>r.id)).size,89);
   for(const f of c.SANDWICH_FAMILIES){
     const recipes=c.SANDWICH_RECIPES.filter(r=>r.familyId===f.id);
     a.ok(recipes.length>=6,f.id);

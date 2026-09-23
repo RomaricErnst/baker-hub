@@ -1,5 +1,22 @@
 # Bakerhub — continuation handoff
 
+## Latest entry and Simple-mode iteration — 23 September 2026
+
+Continue on `codex/navigation-polish-20260923` in `/Users/romaricernst/Documents/Codex/baker-navigation-polish`. The user authorized testing and pushing all improvements to this preview branch. Two independent agents tested three working landing variants and both chose B: dominant pizza/loaf photography plus two supporting examples, still only two primary actions. All temporary A/B/C switches were removed. Four visible bread groups have optional in-page jump links; a style selection goes directly to quantity. Brioche remains a bread-only journey.
+
+`/[locale]/with-my-base` now supports purchased pizza dough, existing bread and wraps without dough setup. It reuses catalogues and stores its own local draft/ticks separately. Pizza baking uses package instructions; bread goes directly to filling preparation and assembly. Individual-bread selection reviews can match planned bread count to sandwich count in one explicit tap.
+
+Simple preserves supported sourdough, recommends missing household equipment, emphasizes hand/KitchenAid mixing, and keeps advanced kitchen/water details optional. Starter equal-weight hydration is confirmed explicitly. Ready-now and uncertain paths retain the validated planning engine; a discovered known-peak fallback contradiction now blocks incompatible later mixing rather than inventing a new peak or feed. The guard covers editing a previously generated bake, switching to uncertain readiness, and reloading the saved blocked draft. Valid nearby mixing was verified through recipe generation at 22°C.
+
+Raw-chicken pita is a separate recipe with 400 g raw chicken for four portions, preserving cooked-chicken recipes. The avocado/poached-egg/feta/optional-pomegranate update and other opt-in garnishes from the previous commit remain included. See `docs/SIMPLE-AND-ENTRY-UX-20260923.md` and `docs/CHICKEN-PITA-20260923.md`.
+
+Verification so far: production build/i18n/TypeScript passed; 249 automated unit/component/domain checks passed; all 89 recipe images decoded. Independent Chrome checks at 320/390 and desktop widths covered landing comparison, grouped bread, pita quantity reconciliation, bread-only brioche, purchased pizza through served/reload, and valid/invalid/uncertain sourdough. Parent checks covered optional tartine shopping/reload/preparation/assembly, raw chicken shopping/preparation, wrap discovery and base-switch preservation. All 76 mobile WebKit cases passed at 320/375/390/430px, including new existing-base persistence/isolation tests. Deployment results are supplied with the task preview link.
+
+Warm-case limitation: two 30°C active-starter next-morning schedules correctly blocked; a positive 30°C case was not established. No claim of arbitrary hot-kitchen timing feasibility.
+
+Limits: no physical kitchen trial, no new task-preset sharing across devices, and no authenticated cloud-saving acceptance in this iteration. Preview browser checks are local production-equivalent builds; deployment readiness is separately verified using Vercel metadata.
+
+
 ## Recipe update and next UX target — 23 September 2026
 
 Avocado tartine now uses poached egg, feta, salt/pepper and opt-in pomegranate, with regenerated photography. Six recipes have selective optional finishing touches backed by existing ingredient overrides. See `docs/TARTINE-AND-OPTIONAL-GARNISHES-20260923.md` for defaults, image prompt and verification.

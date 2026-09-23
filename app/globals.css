@@ -394,3 +394,19 @@ button,
 .bh-batch-content input, .bh-batch-content button { scroll-margin-top:140px; }
 @media (prefers-reduced-motion:reduce) { .bh-bake-navigator { transition:none; } }
 [data-keyboard-open="true"] .bh-batch-actions { display:none !important; }
+
+/* One-screen bread groups; every style is selectable without opening a category. */
+.bh-bread-group-grid { display:grid; gap:10px; }
+.dough-style-card.bh-bread-style-card { grid-template-columns:76px minmax(0,1fr); }
+.bh-opening-choice { display:flex; flex-direction:column; width:100%; padding:0; border:1px solid var(--border); border-radius:16px; overflow:hidden; text-align:left; background:var(--card); color:var(--char); cursor:pointer; box-shadow:var(--card-shadow); }
+.bh-opening-choice:hover { border-color:var(--terra); }
+.bh-opening-choice:focus-visible { outline:3px solid var(--terra); outline-offset:3px; }
+.bh-opening-foods { display:grid; grid-template-columns:1.7fr 1fr; grid-template-rows:70px 70px; gap:3px; background:#f3ede3; }
+.bh-opening-foods img { width:100%; height:100%; object-fit:cover; }
+.bh-opening-foods img:first-child { grid-row:span 2; }
+@media(min-width:700px) { .bh-bread-group-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .bh-opening-foods { grid-template-rows:85px 85px; } }
+
+
+.bh-bread-group { scroll-margin-top:145px; }
+.bh-bread-jumps { display:flex; flex-wrap:wrap; gap:4px 14px; margin:0 0 18px; }
+.bh-bread-jumps a { display:flex; align-items:center; min-height:44px; color:var(--terra); text-underline-offset:4px; font-size:14px; }

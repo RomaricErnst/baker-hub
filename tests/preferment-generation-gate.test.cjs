@@ -55,3 +55,19 @@ test('direct generate call sends unsupported bread protocols back to the relevan
   assert.deepEqual(calls,[['setActiveTab','setup'],['setSetupOverview',false],[tab==='custom'?'setAdvancedStep':'setActiveStep',next]]);
  }
 });
+
+test('known peak timing conflict blocks both new and previously generated sourdough plans',()=>{
+ const declaration=source.match(/const starterPlanReady =[\s\S]*?;/)[0];
+ for(const recipeGenerated of [false,true]) for(const starterTimingValid of [false,true]) {
+  assert.equal(vm.runInNewContext(declaration+'\nstarterPlanReady',{yeastType:'sourdough',recipeGenerated,starterTimingValid,starterEvents:[{kind:'known_peak'}]}),starterTimingValid);
+ }
+ const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);let handler;
+ function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='handleGenerate')handler=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);
+ const code=ts.transpileModule(handler+'\nhandleGenerate()',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
+ for(const recipeGenerated of [false,true]) {
+  const calls=[],context={tab:'simple',styleKey:'pain_levain',commercialPrefermentPlanReady:true,recipe:{},yeastType:'sourdough',starterEqualWeightsConfirmed:true,starterTimingValid:false,recipeGenerated,starterEvents:[{kind:'known_peak'}],scrollToStepTop(){}};
+  for(const name of ['setActiveTab','setSetupOverview','setActiveStep'])context[name]=value=>calls.push([name,value]);
+  vm.runInNewContext(code,context);
+  assert.deepEqual(calls,[['setActiveTab','setup'],['setSetupOverview',false],['setActiveStep',7]]);
+ }
+});
