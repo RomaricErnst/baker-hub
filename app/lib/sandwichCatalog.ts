@@ -1,15 +1,16 @@
-export type SandwichFamily = 'baguette' | 'focaccia' | 'bagel' | 'pita' | 'greek_pita' | 'kebab_bread' | 'batbout' | 'laffa' | 'piadina' | 'pan_bagnat' | 'ciabatta' | 'panuozzo' | 'tartine';
+export type SandwichFamily = 'baguette' | 'focaccia' | 'bagel' | 'pita' | 'greek_pita' | 'kebab_bread' | 'batbout' | 'laffa' | 'piadina' | 'pan_bagnat' | 'ciabatta' | 'panuozzo' | 'tartine' | 'pain_mie';
 export type SandwichText = { fr: string; en: string };
 export type SandwichAllergen = 'gluten' | 'milk' | 'egg' | 'fish' | 'sesame' | 'nuts' | 'mustard' | 'soy';
 export interface SandwichIngredient { id: string; name: SandwichText; kcalPer100g: number; allergens: SandwichAllergen[]; vegetarian: boolean; category: 'vegetables' | 'protein' | 'dairy' | 'pantry' | 'bread'; source: string; referenceFood: string; provenance: 'generic-food-estimate'; }
 export interface SandwichPortion { ingredientId: string; grams: number; optionalGrams?: number; }
 export interface SandwichStep { id: string; title: SandwichText; instruction: SandwichText; minutes: number; phase: 'prep' | 'cook' | 'assemble' | 'chill'; }
-export interface SandwichRecipe { id: string; familyId: SandwichFamily; name: SandwichText; kind: 'classic' | 'inspired'; lighter: boolean; vegetarian: boolean; ingredients: SandwichPortion[]; steps: SandwichStep[]; allergens: SandwichAllergen[]; image: string; breadGrams: number; sourceIds: string[]; }
+export interface SandwichRecipe { id: string; familyId: SandwichFamily; name: SandwichText; kind: 'classic' | 'inspired'; lighter: boolean; vegetarian: boolean; ingredients: SandwichPortion[]; steps: SandwichStep[]; allergens: SandwichAllergen[]; image: string; breadGrams: number; breadSlices?: number; sourceIds: string[]; }
 export interface SandwichFamilyInfo { id: SandwichFamily; name: SandwichText; image: string; breadGrams: number; breadKcalPer100g: number; comparisonKcal: number; }
 const text = (fr: string, en: string): SandwichText => ({fr, en});
 const family = (id: SandwichFamily, fr: string, en: string, breadGrams: number, breadKcalPer100g: number, comparisonKcal: number): SandwichFamilyInfo => ({id,name:text(fr,en),image:`/images/approved/bread/${id}-rustic.webp`,breadGrams,breadKcalPer100g,comparisonKcal});
 export const SANDWICH_FAMILIES: SandwichFamilyInfo[] = [
   {...family('tartine','Pain en tranches','Sliced bread',60,250,350),image:'/images/approved/bread/campagne-rustic.webp'},
+  family('pain_mie','Pain de mie','Sandwich loaf',60,265,650),
   family('baguette','Baguette','Baguette',100,275,650), family('focaccia','Focaccia','Focaccia',100,300,750),
   family('bagel','Bagel','Bagel',95,270,650), family('pita','Pita à poche','Pocket pita',80,275,650),
   family('greek_pita','Pita grecque','Greek pita',85,290,700), family('kebab_bread','Pain kebab','Kebab bread',100,275,750),
@@ -28,6 +29,10 @@ const ingredientRows: IngredientRow[] = [
  ['avocado','Avocat','Avocado',160,'vegetables'],['radish','Radis','Radish',16,'vegetables'],['fennel','Fenouil','Fennel',31,'vegetables'],
  ['basil','Basilic','Basil',23,'vegetables'],['parsley','Persil','Parsley',36,'vegetables'],['mint','Menthe','Mint',44,'vegetables'],['garlic','Ail','Garlic',149,'vegetables'],
  ['lemon','Jus de citron','Lemon juice',22,'pantry'],['olive_oil','Huile d’olive','Olive oil',884,'pantry'],['butter','Beurre','Butter',717,'dairy',['milk']],
+ ['bacon_cooked','Bacon déjà cuit prêt à consommer','Ready-to-eat cooked bacon',541,'protein',[],false],
+ ['milk','Lait demi-écrémé','Semi-skimmed milk',47,'dairy',['milk']],
+ ['wheat_flour','Farine de blé pour la béchamel','Wheat flour for béchamel',364,'pantry',['gluten']],
+ ['nutmeg','Noix de muscade moulue','Ground nutmeg',525,'pantry'],
  ['ham','Jambon blanc cuit','Cooked ham',145,'protein',[],false],['chicken','Blanc de poulet déjà cuit','Cooked chicken breast',165,'protein',[],false],
  ['chicken_raw','Blanc de poulet cru sans peau ni os','Raw boneless skinless chicken breast',120,'protein',[],false],
  ['turkey','Dinde rôtie déjà cuite','Cooked roast turkey',135,'protein',[],false],['roast_beef','Rôti de bœuf déjà cuit','Cooked roast beef',175,'protein',[],false],
@@ -66,6 +71,11 @@ for (const f of SANDWICH_FAMILIES) SANDWICH_INGREDIENTS[`bread_${f.id}`] = {id:`
 // Ingredient quantities are edible grams for ONE serving: a sandwich, or an open-faced tartine portion.
 type RecipeRow = [SandwichFamily,string,string,string,'classic'|'inspired',boolean,string];
 const recipeRows: RecipeRow[] = [
+ // Editorial portions, not a cooked/nutrition trial. Structure references checked 2026-09-23:
+ // https://www.bbcgoodfood.com/recipes/club-sandwich
+ // https://www.atelierdeschefs.fr/recettes/13755/croque-monsieur-bechamel/
+ ['pain_mie','club-sandwich','Club sandwich au poulet et bacon','Chicken & bacon club sandwich','classic',false,'chicken:70 bacon_cooked:25 mayonnaise:20 lettuce:20 tomato:60'],
+ ['pain_mie','croque-monsieur','Croque-monsieur à la béchamel','Croque monsieur with béchamel','classic',false,'ham:50 emmental:40 milk:60 wheat_flour:5 butter:5 mustard:0:4 salt:0.2 black_pepper:0.1 nutmeg:0:0.1'],
  ['tartine','avocat-oeuf','Avocat, œuf poché et feta','Avocado, poached egg & feta','inspired',false,'avocado:60 egg_to_poach:55 feta:25 lemon:5 salt:0.3 black_pepper:0.1 pomegranate:0:15'],
  ['tartine','chevre-miel-noix','Chèvre, miel et noix','Goat cheese, honey & walnuts','classic',false,'goat_cheese:40 honey:8 walnut:10'],
  ['tartine','jambon-emmental','Jambon et emmental','Ham & Emmental','classic',false,'ham:45 emmental:25 butter:5'],
@@ -162,6 +172,62 @@ export function buildSandwichSteps(id: string, familyId: SandwichFamily, ingredi
   const has = (ingredientId: string) => ingredients.some(i=>i.ingredientId===ingredientId && i.grams>0);
   const steps: SandwichStep[] = [];
   const add = (key:string,fr:string,en:string,frInstruction:string,enInstruction:string,minutes:number,phase:SandwichStep['phase']) => steps.push({id:`${id}-${key}`,title:text(fr,en),instruction:text(frInstruction,enInstruction),minutes,phase});
+  if (familyId==='pain_mie') {
+    const names = (ids: string[], lang: 'fr' | 'en') => ids.filter(has).map(key=>SANDWICH_INGREDIENTS[key].name[lang].toLowerCase()).join(', ');
+    if (id==='pain_mie-club-sandwich') {
+      const vegetables=['lettuce','tomato'];
+      const meats=['chicken','bacon_cooked'];
+      add('prep','Préparer la garniture froide','Prepare the cold filling',
+        ['Pesez les garnitures pour toutes les portions.',vegetables.some(has)?`Lavez et séchez ${names(vegetables,'fr')}.`:'',has('tomato')?'Coupez la tomate en fines rondelles et épongez son jus.':'',meats.some(has)?`Utilisez uniquement les produits déjà cuits et prêts à consommer : ${names(meats,'fr')}. Les poids indiqués sont cuits ; émincez-les sur une planche propre.`:'','Gardez les garnitures périssables au réfrigérateur à 4 °C ou moins jusqu’au montage.'].filter(Boolean).join(' '),
+        ['Weigh the fillings for all portions.',vegetables.some(has)?`Wash and dry ${names(vegetables,'en')}.`:'',has('tomato')?'Thinly slice the tomato and blot away its juice.':'',meats.some(has)?`Use only the already cooked, ready-to-eat products: ${names(meats,'en')}. Listed weights are cooked; slice on a clean board.`:'','Refrigerate perishable fillings at 4°C or below until assembly.'].filter(Boolean).join(' '),6,'prep');
+      // Every bread-dependent action belongs to serving; the preparation screen runs before the loaf is baked.
+      add('toast','Trancher et toaster le pain refroidi','Slice and toast the cooled bread',
+        'Attendez que le pain de mie soit cuit et complètement refroidi. Par club, prévoyez 3 tranches d’environ 30 g chacune, soit 90 g de pain cuit. Toastez-les légèrement des deux côtés, puis laissez retomber la chaleur sur une grille. Une portion est un club à deux étages, pas un pain entier.',
+        'Wait until the sandwich loaf is baked and fully cooled. For each club, use 3 slices of about 30 g each, or 90 g baked bread. Lightly toast both sides and let the heat subside on a rack. One portion is a two-layer club, not a whole loaf.',4,'assemble');
+      const first=['chicken','lettuce'];
+      const second=['tomato','bacon_cooked'];
+      add('stack','Monter les deux étages','Build both layers',
+        [has('mayonnaise')?'Répartissez la mayonnaise mesurée sur les 4 faces intérieures : le dessus de la première tranche, les deux faces de celle du milieu et le dessous de la dernière.':'',first.some(has)?`Sur la première tranche, disposez ${names(first,'fr')}.`:'Posez la première tranche à plat.',`Ajoutez la tranche centrale${second.some(has)?`, puis ${names(second,'fr')}`:''}. Fermez avec la troisième tranche, face tartinée vers l’intérieur si elle l’est. Pressez très légèrement.`].filter(Boolean).join(' '),
+        [has('mayonnaise')?'Divide the measured mayonnaise over the 4 inward-facing surfaces: the top of the first slice, both sides of the middle slice and the underside of the last.':'',first.some(has)?`Layer ${names(first,'en')} on the first slice.`:'Lay the first slice flat.',`Add the middle slice${second.some(has)?`, then ${names(second,'en')}`:''}. Close with the third slice, spread side inward if spread. Press very gently.`].filter(Boolean).join(' '),4,'assemble');
+      add('serve','Couper et servir le club','Cut and serve the club','Coupez en 2 ou 4 triangles avec un couteau dentelé. Si vous utilisez des piques pour maintenir les étages, retirez-les avant de manger. '+perishableSafe.fr,'Cut into 2 or 4 triangles with a serrated knife. If using picks to secure the layers, remove them before eating. '+perishableSafe.en,1,'assemble');
+      return steps;
+    }
+    if (id==='pain_mie-croque-monsieur') {
+      const sauceCore=['milk','wheat_flour','butter'];
+      const sauceComplete=sauceCore.every(has);
+      const saucePartial=sauceCore.some(has)&&!sauceComplete;
+      const seasoning=['salt','black_pepper','nutmeg'];
+      add('prep','Préparer les ingrédients du croque','Prepare the croque ingredients',
+        ['Pesez les ingrédients pour toutes les portions.',has('emmental')?'Râpez l’emmental ; réservez-en la moitié pour le dessus.':'',has('ham')?'Utilisez le jambon blanc déjà cuit prévu dans la liste.':'','Gardez les produits périssables au réfrigérateur à 4 °C ou moins.'].filter(Boolean).join(' '),
+        ['Weigh the ingredients for all portions.',has('emmental')?'Grate the Emmental; reserve half for the topping.':'',has('ham')?'Use the already cooked ham listed.':'','Keep perishables refrigerated at 4°C or below.'].filter(Boolean).join(' '),3,'prep');
+      if (saucePartial) {
+        const correctionFr='La béchamel est incomplète. Rétablissez les quantités de lait, farine et beurre, ou retirez les trois pour une version sans béchamel. Ne poursuivez pas le montage avec de la farine crue ; les étapes de sauce et de cuisson réapparaîtront après correction.';
+        const correctionEn='The béchamel is incomplete. Restore the milk, flour and butter amounts, or remove all three for a version without béchamel. Do not assemble with raw flour; the sauce and baking steps will return after correction.';
+        add('correct-sauce','Corriger la béchamel','Correct the béchamel',correctionFr,correctionEn,0,'prep');
+        add('correct-before-serving','Vérifier les ingrédients avant de continuer','Check ingredients before continuing',correctionFr,correctionEn,0,'assemble');
+        return steps;
+      }
+      if (sauceComplete) {
+        add('bechamel','Cuire la béchamel','Cook the béchamel',
+          'Dans une casserole, faites fondre le beurre à feu doux. Incorporez la farine et remuez 2 min sans laisser brunir. Versez le lait progressivement en fouettant. Portez à petits bouillons, puis faites cuire environ 5 min en remuant jusqu’à obtenir une sauce épaisse et lisse.'+(seasoning.some(has)?` Ajoutez les quantités prévues de ${names(seasoning,'fr')}, selon votre goût.`:''),
+          'Melt the butter in a saucepan over low heat. Stir in the flour for 2 minutes without browning. Whisk in the milk gradually. Bring to a gentle simmer and cook for about 5 minutes, stirring until thick and smooth.'+(seasoning.some(has)?` Add the listed amounts of ${names(seasoning,'en')} to taste.`:''),8,'cook');
+        add('chill-sauce','Réserver la sauce jusqu’au montage','Keep the sauce until assembly',
+          'Si le pain n’est pas encore prêt, transvasez la béchamel dans un récipient peu profond et réfrigérez rapidement à 4 °C ou moins. Ne la laissez pas attendre pendant la levée ou la cuisson du pain. Sortez-la seulement au moment de monter les croques. '+perishableSafe.fr,
+          'If the bread is not ready yet, transfer the béchamel to a shallow container and refrigerate promptly at 4°C or below. Do not leave it out during the bread’s rise or bake. Take it out only when assembling the croques. '+perishableSafe.en,0,'chill');
+      }
+      add('bread','Préparer le pain refroidi et le four','Prepare the cooled bread and oven',
+        'Une fois le pain de mie cuit et complètement refroidi, coupez 2 tranches d’environ 30 g par croque, soit 60 g de pain cuit. Une portion est un croque, pas un pain entier. Préchauffez le four à 180 °C en chaleur statique. Posez les premières tranches sur une plaque garnie de papier cuisson.',
+        'Once the sandwich loaf is baked and fully cooled, cut 2 slices of about 30 g per croque, or 60 g baked bread. One portion is a croque, not a whole loaf. Preheat a conventional oven to 180°C. Place the bottom slices on a baking-paper-lined tray.',5,'assemble');
+      add('stack','Assembler les croques','Assemble the croques',
+        [has('mustard')?'Étalez la moutarde mesurée sur les tranches du dessous.':'',sauceComplete?'Étalez la moitié de la béchamel sur ces tranches ; réservez le reste pour le dessus.':'Version personnalisée sans béchamel.',has('ham')?'Ajoutez le jambon.':'',has('emmental')?'Ajoutez la moitié de l’emmental.':'','Fermez avec les secondes tranches.',sauceComplete?'Nappez avec le reste de béchamel.':'',has('emmental')?'Répartissez le reste d’emmental sur le dessus.':'',!sauceComplete&&seasoning.some(has)?`Assaisonnez avec ${names(seasoning,'fr')}, selon votre goût.`:''].filter(Boolean).join(' '),
+        [has('mustard')?'Spread the measured mustard on the bottom slices.':'',sauceComplete?'Spread half the béchamel over these slices; reserve the rest for the top.':'Customized version without béchamel.',has('ham')?'Add the ham.':'',has('emmental')?'Add half the Emmental.':'','Close with the second slices.',sauceComplete?'Cover with the remaining béchamel.':'',has('emmental')?'Scatter the remaining Emmental on top.':'',!sauceComplete&&seasoning.some(has)?`Season with ${names(seasoning,'en')} to taste.`:''].filter(Boolean).join(' '),4,'assemble');
+      add('bake','Cuire les croques montés','Bake the assembled croques',
+        `Enfournez à 180 °C pour environ 10–15 min${has('emmental')?', jusqu’à ce que le dessus soit doré et le fromage fondu':', jusqu’à ce que le pain soit doré'}. La garniture doit être bien chaude au centre. Si vous réchauffez une sauce préparée à l’avance ou des restes, vérifiez 74 °C à cœur avec un thermomètre et prolongez si nécessaire. Le temps dépend du four et de la température de départ.`,
+        `Bake at 180°C for about 10–15 minutes${has('emmental')?', until golden on top and the cheese has melted':', until the bread is golden'}. The filling must be hot in the centre. When reheating made-ahead sauce or leftovers, check 74°C in the centre with a food thermometer and continue if needed. Timing depends on the oven and starting temperature.`,15,'assemble');
+      add('serve','Servir chaud','Serve hot','Sortez la plaque avec des gants et transférez les croques sur les assiettes avec une spatule. Laissez retomber la chaleur pour éviter de vous brûler, puis servez. '+perishableSafe.fr,'Use oven gloves to remove the tray and a spatula to transfer the croques to plates. Let the heat subside enough to avoid burns, then serve. '+perishableSafe.en,1,'assemble');
+      return steps;
+    }
+  }
   // These pocket-pita meals deliberately distinguish raw and ready-cooked weights.
   if (id==='pita-poulet-cru-citron' || id==='pita-poulet-citron' || id==='pita-poulet-shawarma') {
     const names = (ids: string[], lang: 'fr' | 'en') => ids.filter(has).map(key=>SANDWICH_INGREDIENTS[key].name[lang].toLowerCase()).join(', ');
@@ -236,7 +302,7 @@ export const SANDWICH_RECIPES: SandwichRecipe[] = recipeRows.map(([familyId,slug
   const ingredients=encoded.split(' ').map(part=>{const [ingredientId,grams,optionalGrams]=part.split(':');return {ingredientId,grams:Number(grams),...(optionalGrams?{optionalGrams:Number(optionalGrams)}:{})};});
   const vegetarian=ingredients.every(i=>SANDWICH_INGREDIENTS[i.ingredientId].vegetarian);
   const id=`${familyId}-${slug}`;
-  return {id,familyId,name:text(fr,en),kind,lighter,vegetarian,ingredients,steps:buildSandwichSteps(id,familyId,ingredients.filter(i=>i.grams>0),vegetarian),allergens:[...new Set<SandwichAllergen>(['gluten',...ingredients.flatMap(i=>SANDWICH_INGREDIENTS[i.ingredientId].allergens)])],image:`/images/approved/sandwich/${id}.webp`,breadGrams:info.breadGrams,sourceIds:familyId==='pan_bagnat'&&kind==='classic'?['nice-pan-bagnat']:familyId==='piadina'&&kind==='classic'?['romagna-piadina']:['bakerhub-editorial']};
+  return {id,familyId,name:text(fr,en),kind,lighter,vegetarian,ingredients,steps:buildSandwichSteps(id,familyId,ingredients.filter(i=>i.grams>0),vegetarian),allergens:[...new Set<SandwichAllergen>(['gluten',...ingredients.flatMap(i=>SANDWICH_INGREDIENTS[i.ingredientId].allergens)])],image:`/images/approved/sandwich/${id}.webp`,breadGrams:id==='pain_mie-club-sandwich'?90:info.breadGrams,...(familyId==='pain_mie'?{breadSlices:id==='pain_mie-club-sandwich'?3:2}:{}),sourceIds:familyId==='pan_bagnat'&&kind==='classic'?['nice-pan-bagnat']:familyId==='piadina'&&kind==='classic'?['romagna-piadina']:['bakerhub-editorial']};
 });
 const recipeEnergy = (r:SandwichRecipe) => r.breadGrams*SANDWICH_FAMILIES.find(f=>f.id===r.familyId)!.breadKcalPer100g/100+r.ingredients.reduce((sum,i)=>sum+i.grams*SANDWICH_INGREDIENTS[i.ingredientId].kcalPer100g/100,0);
 // "Lighter" means >=20% less estimated energy than this family's classic recipes,

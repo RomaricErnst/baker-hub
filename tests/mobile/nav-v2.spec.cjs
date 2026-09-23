@@ -306,7 +306,13 @@ test('landing photos stay above text and bread meal examples are readable',async
  await expect(loaves).toHaveCount(5);
  const sources=[];
  for(const card of await loaves.all()){
+  await card.scrollIntoViewIfNeeded();
   const photos=card.locator('.bh-bread-photo');await expect(photos).toHaveCount(2);
+  await expect.poll(()=>photos.locator('img').evaluateAll(images=>images.every(img=>img.complete&&img.naturalWidth>0))).toBe(true);
+  for(const photo of await photos.all()){
+   const frame=await photo.locator('.bh-bread-photo-frame').boundingBox();
+   expect((await photo.locator('.bh-bread-photo-caption').boundingBox()).y).toBeGreaterThanOrEqual(frame.y+frame.height);
+  }
   const meal=photos.nth(1);const box=await meal.boundingBox();expect(box.width).toBeGreaterThanOrEqual(100);expect(box.height).toBeGreaterThanOrEqual(120);
   expect((await card.locator('.bh-bread-card-copy').boundingBox()).y).toBeGreaterThanOrEqual(box.y+box.height);
   sources.push(await meal.locator('img').getAttribute('src'));

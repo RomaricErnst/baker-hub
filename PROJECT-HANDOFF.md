@@ -1,5 +1,9 @@
 # Bakerhub — continuation handoff
 
+## Bread framing and pain de mie recipes — 23 September 2026
+
+Captions now sit below the 126px image frame; bread-only cards use a compact centered photo. New generated rye tartine uses a dark rye base. Pain de mie now illustrates a proper club sandwich and has its own club/croque family with slice counts and recipe-specific bread weights. Bread-dependent steps, including croque oven cooking, occur at serving after baked bread is ready. Existing saved pain-de-mie tartine selections are preserved until explicitly replaced. Purchased pain de mie is also available in the existing-base entry. Image prompts, saved asset paths and recipe sources: `docs/BREAD-IMAGE-FRAMING-20260923.md`. Full automated suite:265 passed. Final browser/build/deployment results are in the task.
+
 ## Mobile imagery correction — 23 September 2026
 
 The user reported landing mosaic images covering copy on physical iPhone, and unreadably small/repeated meal examples. Landing photos now live in a fixed-height clipped grid with positioned image wrappers, separate from text. Bread catalogue cards use a shallow 126px bread/meal pair above the title, captioned as bread and optional meal idea; plain breads keep one image. All five sliced breads now illustrate distinct existing tartine recipes. One card still selects one bread; group jumps remain. Independent Chrome review at 320/390/1280 and parent Chrome/WebKit at 320/390 found readable examples and no image overlap or horizontal overflow. Build/i18n/TypeScript and catalogue asset mapping passed. All 28 focused mobile WebKit cases passed across 320/375/390/430px (24 initial passes plus four new geometry tests passing after correcting the expected laffa quantity label). Same preview branch and link as below.

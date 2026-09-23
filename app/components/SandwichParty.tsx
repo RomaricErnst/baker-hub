@@ -47,7 +47,8 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
   const dialogRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const configuredFamilyId = styleKey ? sandwichFamilyForStyle(styleKey) : null;
-  const familyId = configuredFamilyId;
+  const legacyMieTartines = styleKey === 'pain_mie' && snapshot.familyId === 'tartine' && Object.values(snapshot.qtys).some(q=>q>0);
+  const familyId = legacyMieTartines ? 'tartine' : configuredFamilyId;
   const family = SANDWICH_FAMILIES.find(item => item.id === familyId);
   const tartine = familyId === 'tartine';
   const individualBread = !!familyId && ['pita','greek_pita','batbout','laffa','piadina','pan_bagnat','bagel','kebab_bread'].includes(familyId);
@@ -103,6 +104,7 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
     <button className={styles.button} type="button" aria-label={`${t('Ajouter un','Add one')} ${tr(recipe.name)}`} disabled={count(snapshot.qtys[recipe.id])>=99} onClick={()=>setQuantity(recipe,count(snapshot.qtys[recipe.id])+1)}>+</button>
   </div>;
   const shopping = aggregateSandwichShopping(snapshot.qtys,snapshot.ingredientOverrides,family?.id);
+  const breadSlices = selected.reduce((sum,recipe)=>sum+(recipe.breadSlices??0)*count(snapshot.qtys[recipe.id]),0);
   const breadGrams = selected.reduce((sum,recipe)=>sum+recipe.breadGrams*count(snapshot.qtys[recipe.id]),0);
   // Baked weight cannot be inferred precisely from raw dough. Exceeding the
   // raw amount is nevertheless a definite shortfall for these bread portions.
@@ -122,10 +124,11 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
       {family && <img src={breadImage} alt={breadName}/>}
     </div>
     {(family||tab==='shop') && <>
+      {legacyMieTartines&&tab==='pick'&&<div className={styles.card}><p>{t('Cette fournée conserve vos tartines choisies précédemment.','This bake keeps your previously selected toasts.')}</p><button type="button" className={styles.button} onClick={()=>onChange({...snapshot,familyId:'pain_mie',qtys:{},completed:{},prepTicks:{},ingredientOverrides:{}})}>{t('Remplacer par des clubs ou croques','Replace with clubs or croques')}</button></div>}
       {!hideNavigation && <CompanionSteps label={t('Étapes des sandwichs','Sandwich steps')} active={tab} onChange={go}
         steps={[{key:'pick',label:t('Choisir','Choose')},{key:'shop',label:t('Courses','Shopping')},{key:'prep',label:t('Préparer','Prepare')},{key:'serve',label:t('Servir','Serve')}]} />}
       {total>0 && <div className={styles.summary} aria-live="polite">
-        <strong>{total} {tartine ? t('tartines','toasts') : t('sandwichs','sandwiches')}</strong> · {t('Pain à prévoir','Bread needed')} ≈ {amountText(breadGrams)}
+        <strong>{total} {tartine ? t('tartines','toasts') : t('sandwichs','sandwiches')}</strong> · {t('Pain à prévoir','Bread needed')} {breadSlices>0?`${breadSlices} ${t('tranches','slices')} · `:''}≈ {amountText(breadGrams)}
         <div className={styles.muted}>{tartine ? t('Une portion de tartine = 60 g de pain, soit une grande tranche ou plusieurs petites.','One toast portion = 60 g of bread: one large slice or several small ones.') : individualBread?t('Un pain par sandwich.','One bread per sandwich.'):t('Les quantités comptent les sandwichs, pas les pains.','Quantities count sandwiches, not loaves.')}
           {numItems && availableDoughWeight ? ` ${t('Votre fournée','Your batch')} : ${numItems} ${t('pièce(s)','piece(s)')} · ${amountText(availableDoughWeight)} ${t('de pâte avant cuisson','dough before baking')}.` : ''}</div>
       </div>}
@@ -149,7 +152,7 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
           <div className={styles.tags}><span className={styles.tag}>{Object.keys(snapshot.ingredientOverrides?.[recipe.id]??{}).length?t('Personnalisé','Customized'):recipe.kind==='classic'?t('Traditionnel','Traditional'):t('Création','Inspired')}</span>{lighter(recipe)&&<span className={styles.tag}>{t('Plus léger','Lighter')}</span>}{recipe.vegetarian&&<span className={styles.tag}>{t('Végétarien','Vegetarian')}</span>}</div>
           <p className={styles.muted}>{ingredientsFor(recipe).map(item=>ingredientName(item.ingredientId)).join(' · ')}</p>
           <div className={styles.muted}>≈ {kcal(recipe)} kcal / {tartine ? t('portion, pain inclus','portion, bread included') : t('sandwich, pain inclus','sandwich, bread included')}</div>
-          <div className={styles.muted}>{recipe.breadGrams} g {t('de pain cuit + garnitures','baked bread + fillings')}</div>
+          <div className={styles.muted}>{recipe.breadSlices?`${recipe.breadSlices} ${t('tranches','slices')} · `:''}{recipe.breadGrams} g {t('de pain cuit + garnitures','baked bread + fillings')}</div>
           {quantityControls(recipe)}
           <button className={`${styles.button} ${styles.wide}`} type="button" onClick={()=>setDetailId(recipe.id)}>{t('Recette et garnitures','Recipe and fillings')}</button>
         </article>)}</div>
@@ -186,7 +189,7 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
         {selected.map(recipe=>{const done=Math.min(count(snapshot.completed[recipe.id]),count(snapshot.qtys[recipe.id]));const qty=count(snapshot.qtys[recipe.id]);return <section key={recipe.id} className={styles.card} style={{marginBottom:12}}>
           <div className={styles.cardTop}><h3>{tr(recipe.name)}</h3><span>{done}/{qty}</span></div>
           <ol className={styles.steps}>{stepsFor(recipe).filter(step=>step.phase==='assemble').map(step=><li key={step.id}><strong>{tr(step.title)}</strong>{tr(step.instruction)}</li>)}</ol>
-          <div className={styles.filters}><button type="button" className={button} disabled={done>=qty} onClick={()=>update({completed:{...snapshot.completed,[recipe.id]:done+1}})}>{tartine ? t('Une tartine prête','One toast ready') : t('Un sandwich prêt','One sandwich ready')}</button><button type="button" className={styles.button} disabled={!done} onClick={()=>update({completed:{...snapshot.completed,[recipe.id]:done-1}})}>{t('Annuler le dernier','Undo last')}</button></div>
+          <div className={styles.filters}><button type="button" className={button} disabled={done>=qty||stepsFor(recipe).some(step=>step.id.endsWith('-correct-before-serving'))} onClick={()=>update({completed:{...snapshot.completed,[recipe.id]:done+1}})}>{tartine ? t('Une tartine prête','One toast ready') : t('Un sandwich prêt','One sandwich ready')}</button><button type="button" className={styles.button} disabled={!done} onClick={()=>update({completed:{...snapshot.completed,[recipe.id]:done-1}})}>{t('Annuler le dernier','Undo last')}</button></div>
         </section>;})}
       </>}
     </>}
@@ -205,7 +208,7 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
           {Object.keys(snapshot.ingredientOverrides?.[detail.id]??{}).length>0&&<p className={styles.muted}>{t('Photo de la recette de base ; vos garnitures ont été personnalisées.','Photo shows the original recipe; you have customized the fillings.')}</p>}
           {detail.ingredients.some(item=>item.optionalGrams)&&<p className={styles.muted}>{t('Photo avec les garnitures facultatives proposées ci-dessous.','Photo includes the optional toppings offered below.')}</p>}
           <p className={styles.muted}>{tartine ? t('Pour une portion de tartine','For one toast portion') : t('Pour un sandwich','For one sandwich')} · ≈ {kcal(detail)} kcal · {t('pain inclus','bread included')}</p>
-          <h3>{t('Pain','Bread')}</h3><p>{breadName} · ≈ {detail.breadGrams} g</p>
+          <h3>{t('Pain','Bread')}</h3><p>{breadName} · {detail.breadSlices?`${detail.breadSlices} ${t('tranches','slices')} · `:''}≈ {detail.breadGrams} g</p>
           <p className={styles.muted}>{t('Calories estimées avec des aliments génériques ; le pain et les marques peuvent modifier le résultat.','Calories use generic food estimates; bread and brands can change the result.')}</p>
           <h3>{tartine ? t('Garnitures par portion','Toppings per portion') : t('Garnitures par sandwich','Fillings per sandwich')}</h3>
           <p className={styles.muted}>{t('Ajustez les grammes ; 0 retire un ingrédient. Les courses et calories suivent vos changements.','Adjust grams; 0 removes an ingredient. Shopping quantities and calories follow your changes.')}</p>

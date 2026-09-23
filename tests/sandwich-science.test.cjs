@@ -38,6 +38,11 @@ test('lighter catalogue choices use an equal bread portion and actual classic co
     const members = recipes.filter(r=>r.familyId===family.id);
     const classics = members.filter(r=>r.kind==='classic');
     assert.ok(classics.length>0,family.id);
+    if(family.id==='pain_mie'){
+      assert.deepEqual(members.map(r=>r.breadGrams).sort((a,b)=>a-b),[60,90]);
+      assert.ok(members.every(r=>!r.lighter&&!isLighterSandwich(r)),family.id);
+      continue; // Distinct slice counts are deliberately not given an equal-bread lighter comparison.
+    }
     assert.ok(members.every(r=>r.breadGrams===family.breadGrams),family.id);
     const unrounded = r=>r.breadGrams*family.breadKcalPer100g/100+r.ingredients.reduce((sum,i)=>sum+i.grams*ingredients[i.ingredientId].kcalPer100g/100,0);
     const reference = classics.reduce((sum,r)=>sum+unrounded(r),0)/classics.length;

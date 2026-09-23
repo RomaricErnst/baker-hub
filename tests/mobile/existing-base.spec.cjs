@@ -42,3 +42,19 @@ test('purchased pizza skips dough setup and persists served count',async({page})
  await page.getByRole('button',{name:'Annuler',exact:true}).tap();
  await expect(page.getByText('0 / 1 servies',{exact:true})).toBeVisible();await intact(page);
 });
+
+test('pain de mie clubs and croques use slices and cook after assembly',async({page})=>{
+ await open(page);await page.getByRole('button',{name:'Pain de mie · clubs & croques',exact:true}).tap();
+ await page.getByRole('spinbutton',{name:'Quantité Club sandwich au poulet et bacon',exact:true}).fill('2');
+ await page.getByRole('spinbutton',{name:'Quantité Croque-monsieur à la béchamel',exact:true}).fill('1');
+ await expect(page.getByText(/8 tranches/)).toBeVisible();
+ await page.getByRole('button',{name:'Courses',exact:true}).tap();
+ await expect(page.locator('label').filter({hasText:'Lait demi-écrémé'})).toBeVisible();
+ await page.getByRole('button',{name:'Préparer les garnitures →',exact:true}).tap();
+ await expect(page.getByText(/béchamel/i).first()).toBeVisible();
+ await page.getByRole('button',{name:'Passer à l’assemblage →',exact:true}).tap();
+ await expect(page.getByRole('heading',{name:'Assembler et servir',exact:true})).toBeVisible();
+ await expect(page.locator('ol').filter({hasText:/180/})).toBeVisible();
+ await page.getByRole('button',{name:'Un sandwich prêt',exact:true}).first().tap();
+ await page.reload();await expect(page.getByRole('heading',{name:'Assembler et servir',exact:true})).toBeVisible();await intact(page);
+});

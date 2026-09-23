@@ -8,7 +8,7 @@ import {createSandwichSnapshot,normalizeSandwichSnapshot,sandwichFamilyForStyle,
 import {getPizzaById} from '../lib/toppingDatabase';
 
 const STORAGE='bh_existing_base_v1';
-const bases=[['pizza','Pâte à pizza','Pizza dough'],['pain_campagne','Pain en tranches · tartines','Sliced bread · tartines'],['pita','Pitas','Pitas'],['laffa','Wraps souples','Soft wraps'],['baguette','Baguette','Baguette'],['focaccia','Focaccia','Focaccia'],['ciabatta','Ciabatta','Ciabatta'],['bagel','Bagels','Bagels']];
+const bases=[['pizza','Pâte à pizza','Pizza dough'],['pain_campagne','Pain en tranches · tartines','Sliced bread · tartines'],['pain_mie','Pain de mie · clubs & croques','Sandwich loaf · clubs & croques'],['pita','Pitas','Pitas'],['laffa','Wraps souples','Soft wraps'],['baguette','Baguette','Baguette'],['focaccia','Focaccia','Focaccia'],['ciabatta','Ciabatta','Ciabatta'],['bagel','Bagels','Bagels']];
 type Phase='pick'|'shop'|'prep'|'bake';
 type Draft={base:string;portions:number;pizza:Record<string,number>;done:Record<string,number>;phase:Phase;sandwiches:Record<string,SandwichSnapshot>};
 const fresh=():Draft=>({base:'',portions:4,pizza:{},done:{},phase:'pick',sandwiches:{}});

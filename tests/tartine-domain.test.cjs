@@ -8,7 +8,7 @@ const d=require('../app/lib/sandwich.ts');
 const tartines=SANDWICH_RECIPES.filter(r=>r.familyId==='tartine');
 
 test('only supported sliced loaves resolve to tartines, preserving selected bread identity',()=>{
-  for(const style of ['pain_campagne','pain_levain','pain_complet','pain_seigle','pain_mie']) assert.equal(d.sandwichFamilyForStyle(style),'tartine');
+  for(const style of ['pain_campagne','pain_levain','pain_complet','pain_seigle']) assert.equal(d.sandwichFamilyForStyle(style),'tartine');
   for(const style of ['brioche','pain_viennois','fougasse','unknown','tartine','neapolitan']) assert.equal(d.sandwichFamilyForStyle(style),null);
   assert.equal(d.sandwichFamilyForStyle('baguette'),'baguette');
 });

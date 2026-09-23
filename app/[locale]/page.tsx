@@ -1157,7 +1157,7 @@ export default function Home() {
   const destination=destinationForRoute(activeTab,pizzaPartyTab,sandwichParty.tab);
   const browsingFillings=destination==='batch'&&(batchView==='fillings'||activeTab==='pizzaparty'||activeTab==='sandwiches');
   const hasPizzaFillings=Object.values(pizzaPartyQtys).some(q=>q>0);
-  const hasBreadFillings=!!styleKey&&!!sandwichFamilyForStyle(styleKey)&&sandwichParty.familyId===sandwichFamilyForStyle(styleKey)&&Object.values(sandwichParty.qtys).some(q=>q>0);
+  const hasBreadFillings=!!styleKey&&!!sandwichFamilyForStyle(styleKey)&&(sandwichParty.familyId===sandwichFamilyForStyle(styleKey)||(styleKey==='pain_mie'&&sandwichParty.familyId==='tartine'))&&Object.values(sandwichParty.qtys).some(q=>q>0);
   const hasFillings=bakeType==='pizza'?hasPizzaFillings:hasBreadFillings;
   const firstSelectedPizza=Object.entries(pizzaPartyQtys).find(([,qty])=>qty>0)?.[0];
   const readyTimeEstimate=getServingTimeEstimate({bakeType:bakeType??'pizza',styleKey:styleKey??'',numItems,itemWeight,ovenType:ovenType??'',hasFillings,pizzaOvenTemp:firstSelectedPizza?getPizzaById(firstSelectedPizza)?.ovenTemp:undefined});

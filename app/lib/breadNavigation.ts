@@ -7,12 +7,12 @@ export const BREAD_GROUPS = [
 ] as const;
 
 /** Meal ideas illustrate possible uses; selecting a bread does not select its filling. */
-export const BREAD_MEAL_EXAMPLES: Record<string, {recipeId:string; kind:'tartine'|'sandwich'|'wrap'}> = {
+export const BREAD_MEAL_EXAMPLES: Record<string, {recipeId:string; kind:'tartine'|'sandwich'|'wrap'; image?:string}> = {
   pain_campagne:{recipeId:'tartine-avocat-oeuf',kind:'tartine'},
   pain_levain:{recipeId:'tartine-champignons-ricotta',kind:'tartine'},
   pain_complet:{recipeId:'tartine-thon-yaourt',kind:'tartine'},
-  pain_seigle:{recipeId:'tartine-chevre-miel-noix',kind:'tartine'},
-  pain_mie:{recipeId:'tartine-jambon-emmental',kind:'tartine'},
+  pain_seigle:{recipeId:'tartine-chevre-miel-noix',kind:'tartine',image:'/images/approved/sandwich/tartine-seigle-chevre-v2.webp'},
+  pain_mie:{recipeId:'pain_mie-club-sandwich',kind:'sandwich'},
   baguette:{recipeId:'baguette-jambon-beurre',kind:'sandwich'},
   focaccia:{recipeId:'focaccia-caprese',kind:'sandwich'},
   ciabatta:{recipeId:'ciabatta-caprese',kind:'sandwich'},

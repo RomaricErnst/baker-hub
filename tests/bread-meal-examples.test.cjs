@@ -15,7 +15,7 @@ test('bread meal examples cover exactly supported families and use a matching ex
     const recipe=getSandwichRecipe(example.recipeId);
     a.ok(recipe,style);
     a.equal(recipe.familyId,family,style);
-    a.ok(fs.existsSync(path.resolve(__dirname,'../public',recipe.image.slice(1))),style);
+    a.ok(fs.existsSync(path.resolve(__dirname,'../public',(example.image??recipe.image).slice(1))),style);
     if(family==='tartine')a.equal(example.kind,'tartine');
     if(['laffa','piadina'].includes(family))a.equal(example.kind,'wrap');
   }
