@@ -6,9 +6,13 @@ export const BREAD_GROUPS = [
  {id:'sharing',fr:'Brioches & pains à partager',en:'Brioches & sharing breads',keys:['brioche','pain_viennois','fougasse']},
 ] as const;
 
-/** Small meal examples accompany, but never replace, the primary bread photo. */
+/** Meal ideas illustrate possible uses; selecting a bread does not select its filling. */
 export const BREAD_MEAL_EXAMPLES: Record<string, {recipeId:string; kind:'tartine'|'sandwich'|'wrap'}> = {
-  ...Object.fromEntries(['pain_campagne','pain_levain','pain_complet','pain_seigle','pain_mie'].map(key=>[key,{recipeId:'tartine-avocat-oeuf',kind:'tartine' as const}])),
+  pain_campagne:{recipeId:'tartine-avocat-oeuf',kind:'tartine'},
+  pain_levain:{recipeId:'tartine-champignons-ricotta',kind:'tartine'},
+  pain_complet:{recipeId:'tartine-thon-yaourt',kind:'tartine'},
+  pain_seigle:{recipeId:'tartine-chevre-miel-noix',kind:'tartine'},
+  pain_mie:{recipeId:'tartine-jambon-emmental',kind:'tartine'},
   baguette:{recipeId:'baguette-jambon-beurre',kind:'sandwich'},
   focaccia:{recipeId:'focaccia-caprese',kind:'sandwich'},
   ciabatta:{recipeId:'ciabatta-caprese',kind:'sandwich'},

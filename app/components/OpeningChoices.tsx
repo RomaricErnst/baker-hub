@@ -9,7 +9,7 @@ export default function OpeningChoices({fr,onSelect}:Props){
   {type:'bread' as BakeType,title:fr?'Pain & repas':'Bread & meals',description:fr?'Pain seul, sandwichs, tartines et wraps.':'Bread on its own, sandwiches, tartines and wraps.',images:['/images/approved/opening-v2/bread.webp','/images/approved/sandwich/pita-poulet-cru-citron.webp','/images/approved/sandwich/laffa-falafel-houmous.webp']},
  ];
  return <div className="bake-kind-grid" style={{display:'grid',gap:14,marginBottom:16}}>{choices.map(choice=><button key={choice.type} className="bh-opening-choice" type="button" onClick={()=>onSelect(choice.type)} aria-label={choice.type==='bread'?(fr?'Pain':'Bread'):'Pizza'} aria-describedby={`opening-description-${choice.type}`}>
-  <div className="bh-opening-foods" aria-hidden="true">{choice.images.map((src,index)=><Image key={src} src={src} alt="" width={600} height={450} sizes="(max-width:600px) 33vw, 150px" priority={index===0}/>)}</div>
+  <div className="bh-opening-foods" aria-hidden="true">{choice.images.map((src,index)=><span key={src}><Image src={src} alt="" fill sizes="(max-width:600px) 60vw, 300px" priority={index===0}/></span>)}</div>
   <span style={{display:'block',padding:'14px 16px'}}><strong style={{display:'block',fontSize:22,marginBottom:6}}>{choice.title}<span style={{float:'right'}} aria-hidden="true">→</span></strong><span id={`opening-description-${choice.type}`} style={{display:'block',fontSize:15,lineHeight:1.45,color:'var(--ash)'}}>{choice.description}</span></span>
  </button>)}</div>;
 }

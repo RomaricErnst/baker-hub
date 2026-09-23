@@ -1,5 +1,9 @@
 # Bakerhub — continuation handoff
 
+## Mobile imagery correction — 23 September 2026
+
+The user reported landing mosaic images covering copy on physical iPhone, and unreadably small/repeated meal examples. Landing photos now live in a fixed-height clipped grid with positioned image wrappers, separate from text. Bread catalogue cards use a shallow 126px bread/meal pair above the title, captioned as bread and optional meal idea; plain breads keep one image. All five sliced breads now illustrate distinct existing tartine recipes. One card still selects one bread; group jumps remain. Independent Chrome review at 320/390/1280 and parent Chrome/WebKit at 320/390 found readable examples and no image overlap or horizontal overflow. Build/i18n/TypeScript and catalogue asset mapping passed. All 28 focused mobile WebKit cases passed across 320/375/390/430px (24 initial passes plus four new geometry tests passing after correcting the expected laffa quantity label). Same preview branch and link as below.
+
 ## Planning, bread discovery and cooking — 23 September 2026
 
 Continue on `codex/navigation-polish-20260923` in `/Users/romaricernst/Documents/Codex/baker-navigation-polish`. Same preview: https://baker-hub-git-codex-navigation-po-c489c6-thebaker-hubs-projects.vercel.app/fr . User authorized implementation, independent UX review, testing and preview push.

@@ -290,3 +290,28 @@ test('bread family return preserves choices; wraps and meal examples are discove
  await page.getByRole('button',{name:/^Continuer avec/}).tap();
  await expect(quantity).toHaveValue('5');await noOverflow(page);
 });
+
+test('landing photos stay above text and bread meal examples are readable',async({page})=>{
+ await anonymous(page);await page.goto('/fr');
+ for(const card of await page.locator('.bh-opening-choice').all()){
+  await expect(card).toBeVisible();
+  expect(await card.evaluate(el=>{
+   const media=el.querySelector('.bh-opening-foods').getBoundingClientRect();
+   const copy=el.querySelector(':scope > span').getBoundingClientRect();
+   return copy.top>=media.bottom-1&&[...el.querySelectorAll('img')].every(img=>{const r=img.getBoundingClientRect();return r.top>=media.top-1&&r.bottom<=media.bottom+1&&r.right<=media.right+1;});
+  })).toBe(true);
+ }
+ await page.getByRole('button',{name:'Pain',exact:true}).tap();
+ const loaves=page.locator('#bread-group-loaves').locator('..').locator('.bh-bread-style-card');
+ await expect(loaves).toHaveCount(5);
+ const sources=[];
+ for(const card of await loaves.all()){
+  const photos=card.locator('.bh-bread-photo');await expect(photos).toHaveCount(2);
+  const meal=photos.nth(1);const box=await meal.boundingBox();expect(box.width).toBeGreaterThanOrEqual(100);expect(box.height).toBeGreaterThanOrEqual(120);
+  expect((await card.locator('.bh-bread-card-copy').boundingBox()).y).toBeGreaterThanOrEqual(box.y+box.height);
+  sources.push(await meal.locator('img').getAttribute('src'));
+ }
+ expect(new Set(sources).size).toBe(5);await noOverflow(page);
+ await page.getByRole('button',{name:'Pain à wrap · Laffa',exact:true}).tap();
+ await expect(page.getByLabel('Nombre de pièces',{exact:true})).toBeVisible();
+});
