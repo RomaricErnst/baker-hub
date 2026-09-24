@@ -366,7 +366,7 @@ button,
 .bh-batch-context button, .bh-fillings-context button, .bh-late-fillings, .bh-recipe-fillings-link { min-height:44px; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--cream); color:var(--terra); font:inherit; font-size:14px; cursor:pointer; }
 .bh-fillings-invitation { margin:24px 0 12px; padding:16px; border:1px solid var(--border); border-radius:16px; background:var(--cream); }
 .bh-fillings-eyebrow { font-size:12px; font-weight:600; color:var(--terra); }
-.bh-fillings-invitation h3 { margin:6px 0 8px; font-size:21px; line-height:1.25; }
+.bh-fillings-invitation h3 { margin:0 0 12px; font-size:16px; line-height:1.25; }
 .bh-fillings-invitation p { font-size:14px; line-height:1.5; margin:0 0 14px; color:var(--smoke); }
 .bh-fillings-preview { display:block; width:100%; padding:0; overflow:hidden; border:1px solid var(--border); border-radius:12px; background:var(--warm); font:inherit; color:var(--char); text-align:left; cursor:pointer; }
 .bh-fillings-examples { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
@@ -435,3 +435,7 @@ button,
 
 .bh-batch-actions-navigation { grid-template-columns:auto minmax(0,1fr); align-items:center; }
 .bh-back-action { min-height:44px; padding:10px 12px; border:0; background:transparent; color:var(--terra); font:inherit; font-size:14px; cursor:pointer; flex-shrink:0; }
+
+/* Shared hierarchy for equivalent journey screens. */
+.bh-page-title { font-family:var(--font-display, Georgia, serif); font-size:28px; font-weight:700; line-height:1.15; letter-spacing:-.015em; color:var(--char); margin:0 0 18px; }
+.bh-section-title { font-family:var(--font-ui), sans-serif; font-size:18px; font-weight:600; line-height:1.3; color:var(--char); margin:0 0 12px; }

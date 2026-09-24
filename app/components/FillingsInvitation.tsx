@@ -20,7 +20,7 @@ export default function FillingsInvitation({ fr, pizza, styleKey, count, selecte
 
   return <section className="bh-fillings-invitation" aria-labelledby="fillings-invitation-title">
     <div className="bh-fillings-invitation-copy">
-      <h3 id="fillings-invitation-title">{fr ? 'Garnitures' : pizza ? 'Toppings' : 'Fillings'}</h3><small style={{color:'var(--smoke)'}}>{fr?'Facultatif':'Optional'}</small>
+      <h3 id="fillings-invitation-title">{fr ? 'Garnitures' : pizza ? 'Toppings' : 'Fillings'} <small style={{color:'var(--smoke)',fontSize:14,fontWeight:400}}>· {fr?'facultatif':'optional'}</small></h3>
     </div>
     <button className="bh-fillings-preview" type="button" onClick={onChoose} aria-label={actionLabel}>
       <span className="bh-fillings-examples" aria-hidden="true">{examples.map(item => <span key={item.id} className="bh-fillings-example">

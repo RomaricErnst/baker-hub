@@ -63,3 +63,5 @@
 .search { display:block; width:100%; min-height:44px; font:inherit; font-size:16px; padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--cream); color:var(--char); }
 .selectionBar { display:flex; align-items:center; gap:8px; bottom:0; position:fixed; left:0; right:0; z-index:90; background:var(--warm); border-top:1px solid var(--border); padding:10px max(16px,calc((100vw - 648px) / 2)) calc(10px + env(safe-area-inset-bottom, 0px)); box-shadow:0 -4px 14px -10px #1a161273; }
 .selectionBar .wide { margin:0; flex:1; min-width:0; width:auto; }
+
+.party h2.pageTitle { font-family:var(--font-display, Georgia, serif); font-size:28px; font-weight:700; line-height:1.15; letter-spacing:-.015em; margin:0 0 18px; }

@@ -21,7 +21,7 @@ export default function ScheduleTimeline({rows,blocks,isFr,editingEnabled,editin
   const button={minHeight:44,padding:'8px 12px',fontSize:16,border:'1px solid var(--border)',borderRadius:10,background:'var(--paper)',color:'var(--char)',cursor:'pointer'};
   return <section aria-label={isFr?'Étapes du planning':'Schedule steps'} style={{marginTop:20}}>
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',marginBottom:12}}>
-      <h3 style={{fontSize:19,margin:0}}>{isFr?'Mon planning':'My schedule'}</h3>
+      <h3 className="bh-section-title" style={{margin:0}}>{isFr?'Mon planning':'My schedule'}</h3>
 
     </div>
     {items.map((item,index)=>{

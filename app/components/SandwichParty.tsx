@@ -120,7 +120,7 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
 
   return <div className={styles.party}>
     <div className={styles.hero}>
-      <div><h2 ref={headingRef} tabIndex={-1}>{heading}</h2>
+      <div><h2 className={styles.pageTitle} ref={headingRef} tabIndex={-1}>{heading}</h2>
         <div className={styles.muted}>{breadName}</div>
       </div>
       {family && <img src={breadImage} alt={breadName}/>}

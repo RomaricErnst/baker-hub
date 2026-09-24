@@ -1,5 +1,13 @@
 # Bakerhub — continuation handoff
 
+## Shared heading hierarchy — 24 September 2026
+
+Aligned style/quantity, all guided setup steps including equipment, mode choice and pizza/bread topping catalogue page titles to 28px display type, 700 weight, 1.15 line height. Section headings use 18px UI type; optional garnish card heading remains 16px. Fixes unstyled batch headings inherited as body text and independent 26/30px title styles. No navigation renaming in this change.
+
+## Garnish action label — 24 September 2026
+
+User confirmed the single clickable photo card: Choisir mes garnitures →, becoming Modifier ma sélection · N → after selection. Compact heading now reads Garnitures · facultatif on one line; no additional button. Prior navigation CI36007489094 completed successfully.
+
 ## Garnish navigation simplification — 24 September 2026
 
 One optional illustrated garnish entry replaces duplicate controls. Quantity footer uses Précédent and Définir ma recette; catalogue retains selection review and Back. Existing-base review leads to Préparer les garnitures with Voir les courses secondary; scratch leads to recipe setup; late edits retain explicit return destinations. Review-sheet edit-selection is a discreet action. Existing bread retains Back even with no selection; header/footer return to the same chooser and preserve choices. UI/UX agent reviewed the revised diff and found no material blockers. TypeScript, 278 unit tests and production build pass. Application commit 0784dec40ea4d7448860537f11eec17e40ba0b9a deployed READY as dpl_3kQLKnmAM9wQiUVbvZ3QmEMGuyWG. Deployed browser verified the single garnish entry, review sheet actions, retained 4 × 280g and one topping after Back, and recipe CTA opening equipment setup. Visual layout inspected. Mobile CI36006955891 still running at this checkpoint. Scoped catalogue Back tests to the footer because pagination also has Précédent. Preview only.

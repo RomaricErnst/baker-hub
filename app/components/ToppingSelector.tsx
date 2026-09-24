@@ -1134,7 +1134,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <h1 style={{fontFamily:'Georgia,serif',fontSize:30,margin:'16px 12px'}}>{l === 'fr' ? 'Liste de courses' : 'Shopping list'}</h1>
+      <h1 className="bh-page-title" style={{margin:'16px 12px'}}>{l === 'fr' ? 'Liste de courses' : 'Shopping list'}</h1>
       {/* Header */}
       <div style={{ padding: '12px 12px 8px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1733,7 +1733,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
       {activePill === 'pizzas' && (
         <>
-          <h1 style={{fontFamily:'Georgia, serif',fontSize:26,lineHeight:1.15,margin:'10px 0 4px'}}>{l === 'fr' ? 'Quelles garnitures ?' : 'Which toppings?'}</h1>
+          <h1 className="bh-page-title">{l === 'fr' ? 'Quelles garnitures ?' : 'Which toppings?'}</h1>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><span style={{fontSize:13,color:'var(--smoke)'}}>{totalQty} / {numItems} {l === 'fr' ? 'sélectionnées' : 'selected'}</span><button type="button" onClick={() => setCreateOpen(true)} style={{minHeight:44,border:0,background:'none',color:'var(--terra)',textDecoration:'underline',padding:'4px 0',fontSize:13,cursor:'pointer'}}>{l === 'fr' ? 'Créer ma pizza' : 'Create my pizza'}</button></div>
           {/* ── Results strip ── */}
           <div style={{ padding: '0 0 6px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>

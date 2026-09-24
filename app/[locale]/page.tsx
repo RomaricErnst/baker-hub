@@ -809,10 +809,7 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
     <div id={`step-${id}`} key={id} className="bh-step-page" style={{ padding: '8px 2px 4px' }}>
       {/* No step counter here: the summary bar above carries it, and two
           "3 of 9" forty pixels apart is just noise. */}
-      <h2 style={{
-        fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: '30px',
-        lineHeight: 1.12, letterSpacing: '-.015em', margin: '0 0 18px', color: 'var(--char)',
-      }}>{step.title}</h2>
+      <h2 className="bh-page-title">{step.title}</h2>
 
       {children}
 
@@ -3270,7 +3267,7 @@ export default function Home() {
     {equipmentPanel==='mixer' && ovenType && <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:12,fontSize:14}}>
       <span>{ovenDisplayName}</span><button type="button" onClick={()=>{setEquipmentPanel('oven');scrollToStepTop();}} style={{minHeight:44,border:0,background:'transparent',color:'var(--terra)',textDecoration:'underline'}}>{fr?'Modifier le four':'Change oven'}</button>
     </div>}
-    <h3 style={{fontSize:18,margin:'0 0 12px'}}>{equipmentPanel==='oven'?(fr?'Four':'Oven'):(fr?'Pétrissage':'Mixing')}</h3>
+    <h3 className="bh-section-title">{equipmentPanel==='oven'?(fr?'Four':'Oven'):(fr?'Pétrissage':'Mixing')}</h3>
     {equipmentPanel==='oven' ? <OvenPicker bakeType={bakeType ?? 'pizza'} styleKey={styleKey} selected={ovenType} construction={ovenConstruction} onConstructionChange={setOvenConstruction} onSelect={setOvenType} /> : <>
       {tab==='simple' ? <SimpleMixerPicker locale={locale} selected={mixerType} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);}setMixerType(value);}} styleKey={styleKey ?? undefined} /> : <MixerPicker totalDoughG={numItems * itemWeight} locale={locale} selected={mixerType} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);}setMixerType(value);}} styleKey={styleKey ?? undefined} bakeType={bakeType ?? undefined} kitchenTemp={kitchenTemp} />}
       {mixingBatchControl}
@@ -3611,14 +3608,14 @@ export default function Home() {
 
           {bakeType && !showProductHome && destination==='batch' && !browsingFillings && <section className="bh-batch-content">
             {batchView==='style' ? <>
-              <h2>{bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Quel style de pizza ?':'Which pizza style?')}</h2>
+              <h2 className="bh-page-title">{bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Quel style de pizza ?':'Which pizza style?')}</h2>
               <a href={`/${locale}/with-my-base?family=${bakeType}`} style={{display:'inline-flex',alignItems:'center',minHeight:44,marginBottom:12,color:'var(--terra)',fontSize:16}}>{bakeType==='bread'?(fr?'J’ai déjà une pâte ou du pain →':'I already have dough or bread →'):(fr?'J’ai déjà ma pâte →':'I already have my dough →')}</a>
               <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
               <button type="button" className="bh-section-back" onClick={backToProducts}>{fr?'← Pizza ou pain':'← Pizza or bread'}</button>
               {styleKey&&<div className="bh-batch-actions"><button type="button" style={NEXT_CTA} onClick={()=>{setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{fr?'Continuer avec':'Continue with'} {styleDisplayName(styleKey)} →</button></div>}
             </> : <>
               <div className="bh-batch-context"><span>{styleKey?styleDisplayName(styleKey):''}</span><button type="button" onClick={()=>{setBatchView('style');scrollToStepTop();}}>{bakeType==='bread'?(fr?'Changer de pain':'Change bread'):(fr?'Changer de pizza':'Change pizza')}</button></div>
-              <h2>{fr?'Quelle quantité de pâte ?':'How much dough?'}</h2>
+              <h2 className="bh-page-title">{fr?'Quelle quantité de pâte ?':'How much dough?'}</h2>
               {styleKey==='pain_levain'&&<div style={{marginTop:16}}><label><input type="checkbox" checked={addSeeds} onChange={event=>setAddSeeds(event.target.checked)} /> {fr?'Ajouter des graines':'Add seeds'}</label><p>{fr?'Les graines trempent à l’avance : 2 h minimum, idéalement la veille.':'Soak the seeds ahead: at least 2 hours, ideally overnight.'}</p></div>}
 
                             <PrototypeQuantityPicker bakeType={bakeType ?? 'pizza'} locale={locale} units={units}
@@ -3668,10 +3665,7 @@ export default function Home() {
                   is the same mechanic every other choice uses. */}
               {!modeChosen && destination === 'organisation' && (
                 <div style={{ padding: '4px 0 8px' }}>
-                  <h2 style={{
-                    fontFamily: 'var(--font-ui)', fontSize: '26px', fontWeight: 800,
-                    letterSpacing: '-.022em', lineHeight: 1.13, margin: '8px 0 16px',
-                  }}>{locale === 'fr' ? 'À votre façon' : 'Your way'}</h2>
+                  <h2 className="bh-page-title">{locale === 'fr' ? 'À votre façon' : 'Your way'}</h2>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {([
                       { key: 'simple' as const, title: 'Simple',
