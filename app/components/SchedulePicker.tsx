@@ -8032,8 +8032,10 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
             const id='starter:'+event.kind;
             const requested=editingRow===id?(event.kind==='pre_mix'?basePins.feed:basePins.refresh):null;
             const at=requested??+event.time;
+            // Keep the track stationary while its handle moves.
+            const axisTime=+(displayStarterEvents.find(e=>e.kind===event.kind)?.time??event.time);
             anchors.push({id:id+(!editable?':'+anchors.length:''),name:event.label,at,editable,
-              ...clampBounds(+event.time-6*hour,Math.min(+starterMix-step,+event.time+6*hour),at),
+              ...clampBounds(axisTime-6*hour,Math.min(+pendingStart-step,axisTime+6*hour),at),
               detail:event.kind.startsWith('fridge')?(isFr?'Calculé avec les rafraîchis':'Calculated with the feeds'):event.cardNote,
               note:editingRow===id?starterPreview?.message:null});
           }

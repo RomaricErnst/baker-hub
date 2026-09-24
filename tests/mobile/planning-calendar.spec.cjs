@@ -54,4 +54,5 @@ for(const storage of ['rt','fridge'])test(`levain ${storage} future feeds use st
  await mix.focus();await mix.press('ArrowDown');await expect(confirm(plan)).toBeEnabled();await confirm(plan).click();
  await expect.poll(async()=>(await stored(page)).startTime).toBe(original+900000);expect((await stored(page)).eatTime).toBe(+bake);expect((await stored(page)).starterEvents.length).toBeGreaterThan(0);
  const events=(await stored(page)).starterEvents;await page.reload();await expect(plan).toBeVisible();expect((await stored(page)).starterEvents).toEqual(events);
+ const feed=row(plan,'starter:pre_mix').getByRole('slider');await expect(feed).toBeVisible();const limits=[await feed.getAttribute('min'),await feed.getAttribute('max')];await feed.focus();await feed.press('ArrowDown');await expect(feed).toHaveAttribute('min',limits[0]);await expect(feed).toHaveAttribute('max',limits[1]);await expect(mix).toHaveValue(String(original+900000));await plan.getByRole('button',{name:'Annuler',exact:true}).click();
 });
