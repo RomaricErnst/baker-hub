@@ -1,5 +1,10 @@
 # Bakerhub — continuation handoff
 
+## Setup naming and selection consistency — 25 September 2026
+
+User approved Organisation for the complete setup (equipment, dough, timing), preserving six destinations and Recipe for the generated result. Removed redundant Votre recette above the step counter. Mode entry uses Comment définir votre recette ? with Me laisser guider / Personnaliser ma recette. Garnish invitation has one top action with optional marker, no repeated bottom action. Setting choices remain selected until Continue in both modes; removed commercial-yeast auto advance and the legacy custom-mode delayed return to Plan. Navigation scroll resets after mounting to avoid sticky-title clipping. Votre équipement remains singular. TypeScript passed; preview/runtime verification pending.
+
+
 ## Inline key timing controls — 24 September 2026
 
 User approved the isolated inline interaction prototype and authorized preview deployment, explicitly including sourdough. Setup now shows vertical controls beside each key action, on explicitly labeled per-action axes; fixed bake time remains above. Detailed dough agenda stays in preparation. Commercial mixing keeps preferment coupled and preferment-only edits preserve mixing; both use the existing full-plan validator. Green slot previews use the same validation as confirmation. Reset appears only after a timing change; exact date/time entry, cancel and atomic confirmation remain available.

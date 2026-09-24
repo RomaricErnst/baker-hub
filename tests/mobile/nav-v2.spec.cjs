@@ -2,9 +2,9 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 
 // These contracts cover the replacement journey. Legacy mobile specs remain
 // intact as the reference for functionality outside this navigation change.
-const destinations=['Ma fournée','Mon planning','Recette','Courses','Préparation','Cuisson & service'];
+const destinations=['Ma fournée','Organisation','Recette','Courses','Préparation','Cuisson & service'];
 // English labels match BAKE_DESTINATIONS in app/lib/bakeNavigation.ts.
-const englishDestinations=['My bake','My schedule','Recipe','Shopping','Preparation','Cooking & serving'];
+const englishDestinations=['My bake','Setup','Recipe','Shopping','Preparation','Cooking & serving'];
 const navigator=page=>page.locator('.bh-bake-navigator-trigger');
 const stored=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null'));
 async function anonymous(page){
@@ -61,7 +61,7 @@ async function seed(page,{mode='custom',bread=true,activeTab='plan',style,locale
 
 for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}: all destinations, shopping and preparation are usable`,async({page},testInfo)=>{
  await seed(page,{bread,locale:'en'});
- for(const label of ['My bake','My schedule','Recipe','Cooking & serving','Shopping','Preparation']){
+ for(const label of ['My bake','Setup','Recipe','Cooking & serving','Shopping','Preparation']){
   await navigate(page,label,'en');
   if(label==='Shopping'){
    await expect(page.getByRole('checkbox').first()).toBeVisible();
@@ -85,7 +85,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await expect(navigator(page)).toHaveCount(0);
   await page.getByRole('button',{name:bread?'Pain':'Pizza',exact:true}).tap();
   await expect(page.getByRole('heading',{name:bread?'Choisissez votre pain':'Quel style de pizza ?',exact:true})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'À votre façon',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Comment définir votre recette ?',exact:true})).toHaveCount(0);
   const style=page.locator('.bh-batch-content').getByRole('button',{name:bread?/^Baguette\b/:/Napolitaine/i});
   await style.tap();
   const quantity=page.getByLabel(bread?'Nombre de pains':'Nombre de pizzas',{exact:true});
@@ -112,8 +112,11 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await noOverflow(page);
   await testInfo.attach('quantity-single-action-no-bottom-tabs',{body:await page.screenshot(),contentType:'image/png'});
   await organise.tap();
-  await expect(page.getByRole('heading',{name:'À votre façon',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé(?:\s|$)/}).tap();
+  await expect(page.getByRole('heading',{name:'Comment définir votre recette ?',exact:true})).toBeVisible();
+  const modeHeading = await page.getByRole('heading',{name:'Comment définir votre recette ?',exact:true}).boundingBox();
+  const sectionBar = await page.locator('.bh-bake-navigator').boundingBox();
+  expect(modeHeading.y).toBeGreaterThanOrEqual(sectionBar.y + sectionBar.height);
+  await page.getByRole('button',{name:mode==='simple'?/^(Me laisser guider|Guide me)\b/:/^Personnaliser ma recette\b/}).tap();
   await expect(page.getByRole('heading',{name:'Votre équipement',exact:true})).toBeVisible();
   await expect.poll(async()=>(await stored(page)).tab).toBe(mode);
   expect((await stored(page)).numItems).toBe(5);
@@ -125,7 +128,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
  test(`${mode} ${bread?'bread':'pizza'}: generated bake exposes six consistent destinations`,async({page},testInfo)=>{
   await seed(page,{mode,bread});
   const before=await stored(page);
-  for(const label of ['Courses','Préparation','Cuisson & service','Recette','Mon planning','Ma fournée']){
+  for(const label of ['Courses','Préparation','Cuisson & service','Recette','Organisation','Ma fournée']){
    await navigate(page,label);
    await expect(page.locator('#bh-bottom-nav')).toHaveCount(0);
   }
@@ -156,7 +159,7 @@ test('country bread offers illustrated tartines and keeps loaf quantities when r
  await page.locator('.bh-batch-content').getByRole('button',{name:/^Pain de campagne/}).tap();
  const count=page.getByLabel('Nombre de pains',{exact:true});
  await count.fill('2');await count.blur();
- await expect(page.getByRole('heading',{name:'Garnitures · facultatif',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Choisir mes garnitures',exact:true})).toBeVisible();
  const images=page.locator('.bh-fillings-example img');
  await expect(images).toHaveCount(3);
  await images.first().scrollIntoViewIfNeeded();
@@ -345,7 +348,7 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  const recommended=Number(await weight.inputValue());
  await expect.poll(async()=>(await stored(page))?.itemWeight).toBe(recommended);
  await page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true}).tap();
- await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé(?:\s|$)/}).tap();
+ await page.getByRole('button',{name:mode==='simple'?/^(Me laisser guider|Guide me)\b/:/^Personnaliser ma recette\b/}).tap();
  const step=page.locator('#step-3');
  await expect(step.getByRole('heading',{name:'Four',exact:true})).toBeVisible();
  await step.getByRole('button',{name:/Four à pizza compact/}).tap();

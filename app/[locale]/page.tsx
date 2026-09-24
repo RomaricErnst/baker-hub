@@ -464,8 +464,7 @@ function SummaryBar({ flow, modeChip }:
 
   return (
     <>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:44}}>
-        <span style={{fontSize:14,fontWeight:600}}>{fr?'Votre recette':'Your recipe'}</span>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'flex-end',minHeight:44}}>
         <button type="button" aria-haspopup="dialog" aria-expanded={open} onClick={()=>setOpen(true)}
           style={{minHeight:44,padding:'0 4px',border:0,background:'transparent',fontSize:14,color:'var(--ash)',cursor:'pointer'}}>
           {fr?'Étape':'Step'} {Math.max(1,flow.steps.findIndex(s=>s.id===flow.activeId)+1)}/{flow.steps.length} <span aria-hidden="true">⌄</span>
@@ -1695,30 +1694,7 @@ export default function Home() {
   }, [eatTime]);
 
   // Nav #1 — after an upstream edit (single-tap choices) with a plan already
-  // built, re-open + scroll to the baking-plan step so the chart never
-  // "disappears" behind a collapsed summary. Normal accordion flow only —
-  // in reviewMode every card is already expanded (sticky stale pill covers it).
-  const planReturnMountedRef = useRef(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (!planReturnMountedRef.current) { planReturnMountedRef.current = true; return; }
-    if (isRestoringRef.current || reviewMode || !eatTime || activeTab !== 'setup') return;
-    const isCustom = tab === 'custom';
-    const planStep = isCustom ? 9 : 7;
-    const highest = isCustom ? advancedHighestStep : highestStep;
-    const active = isCustom ? advancedStep : activeStep;
-    if (highest < planStep || active >= planStep) return;
-    // Accordion-era behaviour: reopen the plan card below so its chart never
-    // sits stale. With one page per step that same jump would throw the baker
-    // off the page they are editing, 650ms after they touched a control — so
-    // the simple flow keeps its page and lets the chips show the change.
-    if (!isCustom) return;
-    const tmr = setTimeout(() => {
-      setAdvancedStep(9); setAdvancedHighestStep(p => Math.max(p, 9)); scrollToStepTop();
-    }, 650);
-    return () => clearTimeout(tmr);
-  }, [styleKey, ovenType, mixerType, yeastType, prefermentType]);
-
+  // Changing a setting keeps the baker on the current step.
   useEffect(() => {
     setScheduleReady(false);
   }, [bakeType, styleKey]);
@@ -2367,6 +2343,9 @@ export default function Home() {
   // accordion scrolled to a step's anchor; there is no anchor to reach now.
   function scrollToStepTop() {
     window.scrollTo({ top: 0, behavior: 'instant' });
+    // Run again after the new step mounts so browser scroll anchoring cannot
+    // leave its heading behind the sticky navigation.
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   }
 
   function openDestination(next:BakeDestination) {
@@ -3607,9 +3586,9 @@ export default function Home() {
 {showBakeTypeChooser&&bakeType&&<BakeTypeChooser fr={fr} current={bakeType} onChoose={selectBakeType} onClose={()=>setShowBakeTypeChooser(false)}/>}
 {bakeType && !showProductHome && <BakeNavigator active={destination} fr={fr} onChange={openDestination} top={stickTop} />}
 
-          {(['recipe','shopping','protocol','service'] as string[]).includes(destination)&&<button type="button" className="bh-section-back" onClick={()=>openDestination(destination==='recipe'?'organisation':destination==='shopping'?'recipe':destination==='protocol'?'shopping':'protocol')}>← {destination==='recipe'?(fr?'Mon planning':'My schedule'):destination==='shopping'?(fr?'Recette':'Recipe'):destination==='protocol'?(fr?'Courses':'Shopping'):(fr?'Préparation':'Preparation')}</button>}
+          {(['recipe','shopping','protocol','service'] as string[]).includes(destination)&&<button type="button" className="bh-section-back" onClick={()=>openDestination(destination==='recipe'?'organisation':destination==='shopping'?'recipe':destination==='protocol'?'shopping':'protocol')}>← {destination==='recipe'?(fr?'Organisation':'Setup'):destination==='shopping'?(fr?'Recette':'Recipe'):destination==='protocol'?(fr?'Courses':'Shopping'):(fr?'Préparation':'Preparation')}</button>}
 
-          {destination==='organisation' && modeChosen && <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>setModeChosen(false)}} />}
+          {destination==='organisation' && modeChosen && <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>{setModeChosen(false);scrollToStepTop();}}} />}
 
           {bakeType && !showProductHome && destination==='batch' && !browsingFillings && <section className="bh-batch-content">
             {batchView==='style' ? <>
@@ -3670,14 +3649,14 @@ export default function Home() {
                   is the same mechanic every other choice uses. */}
               {!modeChosen && destination === 'organisation' && (
                 <div style={{ padding: '4px 0 8px' }}>
-                  <h2 className="bh-page-title">{locale === 'fr' ? 'À votre façon' : 'Your way'}</h2>
+                  <h2 className="bh-page-title">{locale === 'fr' ? 'Comment définir votre recette ?' : 'How would you like to set up your recipe?'}</h2>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {([
-                      { key: 'simple' as const, title: 'Simple',
+                      { key: 'simple' as const, title: locale === 'fr' ? 'Me laisser guider' : 'Guide me',
                         desc: locale === 'fr'
-                          ? 'Une recette guidée, avec levure ou levain actif.'
-                          : 'A guided recipe, with yeast or an active starter.' },
-                      { key: 'custom' as const, title: locale === 'fr' ? 'Personnalisé' : 'Custom',
+                          ? 'Une recette avec les réglages conseillés.'
+                          : 'A recipe with recommended settings.' },
+                      { key: 'custom' as const, title: locale === 'fr' ? 'Personnaliser ma recette' : 'Customize my recipe',
                         desc: locale === 'fr'
                           ? 'Choisissez votre farine, levure ou levain, et votre préferment.'
                           : 'Choose your flour, yeast or sourdough starter, and preferment.' },
@@ -4224,7 +4203,6 @@ export default function Home() {
                     setPrefermentType('levain');
                   } else {
                     if (prefermentType === 'levain') setPrefermentType('none');
-                    advanceAdv(7);
                   }
                 }}
                 onClose={() => {}}

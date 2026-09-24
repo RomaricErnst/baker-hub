@@ -368,13 +368,13 @@ button,
 .bh-fillings-eyebrow { font-size:12px; font-weight:600; color:var(--terra); }
 .bh-fillings-invitation h3 { margin:0 0 12px; font-size:16px; line-height:1.25; }
 .bh-fillings-invitation p { font-size:14px; line-height:1.5; margin:0 0 14px; color:var(--smoke); }
-.bh-fillings-preview { display:block; width:100%; padding:0; overflow:hidden; border:1px solid var(--border); border-radius:12px; background:var(--warm); font:inherit; color:var(--char); text-align:left; cursor:pointer; }
+.bh-fillings-preview { display:block; width:100%; padding:0; overflow:hidden; border:0; border-radius:0; background:transparent; font:inherit; color:var(--char); text-align:left; cursor:pointer; }
 .bh-fillings-examples { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
 .bh-fillings-example { min-width:0; }
 .bh-fillings-example img { display:block; width:100%; height:auto; aspect-ratio:3/2; object-fit:cover; }
 .bh-fillings-example > span { display:block; padding:7px 5px 10px; font-size:12px; line-height:1.3; overflow-wrap:break-word; }
-.bh-fillings-choose { display:flex; justify-content:space-between; align-items:center; gap:8px; min-height:48px; padding:12px; border-top:1px solid var(--border); color:var(--terra); font-size:15px; font-weight:600; }
-.bh-fillings-invitation .bh-fillings-optional { font-size:12px; margin:12px 0 0; }
+.bh-fillings-choose { display:flex; justify-content:space-between; align-items:center; gap:8px; min-height:48px; padding:0 0 12px; color:var(--terra); font-size:15px; font-weight:600; }
+.bh-fillings-invitation .bh-fillings-optional { font-size:13px; font-weight:400; color:var(--smoke); white-space:nowrap; }
 .bh-fillings-preview:focus-visible, .bh-batch-context button:focus-visible { outline:2px solid var(--terra); outline-offset:3px; }
 @media (max-width:360px) {
   .bh-bake-navigator-trigger { gap:8px; padding:10px; }
