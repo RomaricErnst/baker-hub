@@ -6,7 +6,7 @@ User approved revising the entry without adding a step for from-scratch users. P
 
 Baked bread skips redundant origin/state fields in Ma fournée; state correction remains in Organisation. The filling heading asks what to prepare with the bread. Bread and meal images in the from-scratch catalogue now both fill identical frames using cover, without stretching.
 
-Verification before publication: TypeScript, 270 unit tests and production build/i18n passed. Added a mobile regression for explicit resume, new bread selection and reload; updated raw-bagel entry test. Current revision mobile/browser checks and preview publication pending. Previous revision CI run 35949978019 is now confirmed SUCCESS. Preview only; production remains untouched.
+Verification: TypeScript, 270 unit tests and production build/i18n passed. Published app `15263fa09e4a2f31f8e6cc9ca068de74e87fd969`; Vercel preview `dpl_9EvrQ1CMqWccjBAS7YUxkquXAHY1` READY. Direct deployed browser checks confirmed Pizza/Bread open straight to styles, matching bread/meal frame dimensions and cover treatment, bread-only entry with no preselected bagel, explicit Resume preserving a filling quantity through reload, and a new baguette starting empty without origin/state fields. Existing pizza dough shortcut reaches toppings and retained dough-handling controls. Added a mobile regression for explicit resume, new bread selection and reload; updated raw-bagel entry test. CI 35953246661 passed unit tests, image checks and build; iPhone suite was still running at this checkpoint. Previous revision CI run 35949978019 is confirmed SUCCESS. Preview only; production remains untouched.
 
 ## Scheduling dependencies and existing bases — 24 September 2026
 
