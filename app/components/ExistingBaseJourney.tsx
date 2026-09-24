@@ -64,6 +64,8 @@ export default function ExistingBaseJourney(){
    url.searchParams.set('section',section);history.pushState(history.state,'',url);
    setDraft(d=>({...d,section}));window.scrollTo({top:0,behavior:'smooth'});
  };
+ const backFromSelection=()=>setEditing(true);
+ const goBack=()=>{if(editing||!draft.base)location.assign('/'+locale);else if(draft.section==='batch')backFromSelection();else go('batch');};
  const setPizza=useCallback((pizza:Record<string,number>)=>setDraft(d=>JSON.stringify(d.pizza)===JSON.stringify(pizza)?d:{...d,pizza}),[]);
  const setPhase=(phase:Phase|string)=>go(sectionForPhase(phase));
  const current=draft.sandwiches[draft.base];
@@ -81,7 +83,7 @@ export default function ExistingBaseJourney(){
    {detail.notes&&<p style={{whiteSpace:'pre-wrap'}}>{detail.notes}</p>}
  </section>;
  if(!loaded)return <main style={{padding:24}}>{tr('Chargement…','Loading…')}</main>;
- return <><Header hideActionBar onBack={()=>draft.section==='batch'?location.assign('/'+locale):go('batch')}/>
+ return <><Header hideActionBar onBack={goBack}/>
  <main style={{maxWidth:850,margin:'0 auto',padding:'16px 16px 120px',fontFamily:'var(--font-ui)',color:'var(--char)'}}>
   {draft.base&&!editing&&<BakeNavigator active={draft.section} fr={fr} onChange={go}/>}
   {(!draft.base||editing)?<section aria-label={tr('Votre base','Your base')}>
@@ -115,12 +117,12 @@ export default function ExistingBaseJourney(){
    {draft.section==='service'&&raw&&detail.baked&&draft.base!=='pizza'&&<button style={control} onClick={()=>updateDetail({baked:false})}>{tr('Annuler « pain cuit »','Undo “bread baked”')}</button>}
    {!['organisation','recipe'].includes(draft.section)&&(draft.base==='pizza'?<>
     {draft.section==='batch'&&<label style={{display:'flex',gap:12,alignItems:'center',margin:'16px 0'}}>{tr('Pizzas à garnir','Pizzas to top')}<input aria-label={tr('Pizzas à garnir','Pizzas to top')} style={{...control,width:85}} type="number" min={1} max={99} value={draft.portions} onChange={e=>setDraft(d=>({...d,portions:Math.min(99,Math.max(1,Math.floor(Number(e.target.value)||1)))}))}/></label>}
-    {phase!=='bake'?<PizzaParty locale={locale} t={t} numItems={draft.portions} bakeTime={new Date()} activeTab={phase} onTabChange={setPhase} initialQtys={draft.pizza} onQtysSnapshot={setPizza} doughConfigured baseReady storagePrefix="bh_existing_base" onGoToMyDough={()=>go('batch')} onSelectionDone={()=>go('shopping')} selectionDoneLabel={tr('Voir les courses','View shopping')}/>:<section>
+    {phase!=='bake'?<PizzaParty locale={locale} t={t} numItems={draft.portions} bakeTime={new Date()} activeTab={phase} onTabChange={setPhase} initialQtys={draft.pizza} onQtysSnapshot={setPizza} doughConfigured baseReady storagePrefix="bh_existing_base" onGoToMyDough={()=>go('batch')} onSelectionBack={backFromSelection} onSelectionDone={()=>go('shopping')} selectionDoneLabel={tr('Voir les courses','View shopping')}/>:<section>
      <h2>{raw?tr('Cuire et servir vos pizzas','Bake and serve your pizzas'):tr('Garnir et réchauffer vos bases cuites','Top and reheat your baked bases')}</h2>
      <p>{instructions} {tr('Ajoutez les finitions fraîches après cuisson ou réchauffage.','Add fresh finishes after baking or reheating.')}</p>
      {Object.entries(draft.pizza).filter(([,n])=>n>0).map(([id,n])=><div key={id} style={{...control,marginTop:12}}><strong>{getPizzaById(id)?.name[fr?'fr':'en']||id}</strong>{getPizzaById(id)?.preparationSequence&&<p>{getPizzaById(id)?.preparationSequence?.[fr?'fr':'en']}</p>}{(['before','after'] as const).map(order=><p key={order}><strong>{order==='before'?tr('Avant cuisson : ','Before baking: '):tr('Après cuisson : ','After baking: ')}</strong>{getPizzaById(id)?.ingredients.filter(i=>i.bakeOrder===order).map(i=>i.name[fr?'fr':'en']).join(', ')||'—'}</p>)}<p>{Math.min(draft.done[id]||0,n)} / {n} {tr('servies','served')}</p><button style={control} disabled={(draft.done[id]||0)>=n} onClick={()=>setDraft(d=>({...d,done:{...d.done,[id]:Math.min(n,(d.done[id]||0)+1)}}))}>{tr('Une pizza cuite et servie','One pizza baked and served')}</button>{!!draft.done[id]&&<button style={{...control,marginLeft:8}} onClick={()=>setDraft(d=>({...d,done:{...d.done,[id]:Math.max(0,(d.done[id]||0)-1)}}))}>{tr('Annuler','Undo')}</button>}</div>)}
     </section>}
-   </>:draft.section==='service'&&needsBake?null:<SandwichParty key={draft.base} isFr={fr} styleKey={draft.base} snapshot={snapshot} onChange={s=>setDraft(d=>({...d,sandwiches:{...d.sandwiches,[d.base]:s}}))} hideNavigation baseReady deferBreadSteps={raw} doughConfigured phase={phase==='bake'?'serve':phase} onPhaseChange={setPhase} onSelectionDone={()=>go('shopping')} selectionDoneLabel={tr('Voir les courses','View shopping')}/> )}
+   </>:draft.section==='service'&&needsBake?null:<SandwichParty key={draft.base} isFr={fr} styleKey={draft.base} snapshot={snapshot} onChange={s=>setDraft(d=>({...d,sandwiches:{...d.sandwiches,[d.base]:s}}))} hideNavigation baseReady deferBreadSteps={raw} doughConfigured phase={phase==='bake'?'serve':phase} onPhaseChange={setPhase} onSelectionBack={backFromSelection} onSelectionDone={()=>go('shopping')} selectionDoneLabel={tr('Voir les courses','View shopping')}/> )}
    {draft.section==='protocol'&&<button style={{...control,marginTop:16}} onClick={()=>go('service')}>{tr('Cuisson & service','Cooking & serving')} →</button>}
   </>}
  </main></>;

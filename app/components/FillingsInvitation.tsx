@@ -16,11 +16,11 @@ export default function FillingsInvitation({ fr, pizza, styleKey, count, selecte
   const family = sandwichFamilyForStyle(styleKey);
   const examples = pizza ? pizzaExamples.map(item => ({...item, name: !fr && item.nameEn ? item.nameEn : item.name}))
     : SANDWICH_RECIPES.filter(item => item.familyId === family).slice(0, 3).map(item => ({...item, name: item.name[fr ? 'fr' : 'en']}));
-  const actionLabel = selectedCount > 0 ? (fr ? `Modifier ma sélection · ${selectedCount}` : `Edit my selection · ${selectedCount}`) : (fr ? 'Voir les recettes' : 'Explore recipes');
+  const actionLabel = selectedCount > 0 ? (fr ? `Modifier ma sélection · ${selectedCount}` : `Edit my selection · ${selectedCount}`) : (fr ? 'Choisir mes garnitures' : pizza ? 'Choose my toppings' : 'Choose my fillings');
 
   return <section className="bh-fillings-invitation" aria-labelledby="fillings-invitation-title">
     <div className="bh-fillings-invitation-copy">
-      <h3 id="fillings-invitation-title">{fr ? 'Garnitures' : pizza ? 'Toppings' : 'Fillings'}</h3>
+      <h3 id="fillings-invitation-title">{fr ? 'Garnitures' : pizza ? 'Toppings' : 'Fillings'}</h3><small style={{color:'var(--smoke)'}}>{fr?'Facultatif':'Optional'}</small>
     </div>
     <button className="bh-fillings-preview" type="button" onClick={onChoose} aria-label={actionLabel}>
       <span className="bh-fillings-examples" aria-hidden="true">{examples.map(item => <span key={item.id} className="bh-fillings-example">

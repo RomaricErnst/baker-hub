@@ -1,5 +1,10 @@
 # Bakerhub — continuation handoff
 
+## Garnish navigation simplification — 24 September 2026
+
+One optional illustrated garnish entry replaces duplicate controls. Quantity footer uses Précédent and Définir ma recette; catalogue retains selection review and Back. Existing-base review leads to Préparer les garnitures with Voir les courses secondary; scratch leads to recipe setup; late edits retain explicit return destinations. Review-sheet edit-selection is a discreet action. Existing bread retains Back even with no selection; header/footer return to the same chooser and preserve choices. UI/UX agent reviewed the revised diff and found no material blockers. TypeScript, 278 unit tests and production build pass. Runtime/mobile verification pending at this checkpoint; preview only.
+
+
 ## Pizza style versus toppings — 24 September 2026
 
 User approved concise heading clarification: style entry and both setup modes use “Quel style de pizza ?” / “Which pizza style?”. Topping catalogue heading uses “Quelles garnitures ?” / “Which toppings?”. No explanatory paragraph added. Existing photos retained; matching toppings across style photographs is a future image update, not part of this copy change. Preview only.

@@ -27,6 +27,7 @@ export interface SandwichPartyProps {
   doughConfigured?: boolean;
   phase?:SandwichSnapshot['tab'];
   onPhaseChange?:(phase:SandwichSnapshot['tab'])=>void;
+  onSelectionBack?:()=>void;
   onSelectionDone?:()=>void;
   selectionDoneLabel?:string;
   active?:boolean;
@@ -36,7 +37,7 @@ export interface SandwichPartyProps {
 
 const count = (value: number) => Number.isFinite(value) ? Math.max(0,Math.min(99,Math.floor(value))) : 0;
 
-export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionDone,selectionDoneLabel,active=true,baseReady=false,deferBreadSteps=false}:SandwichPartyProps) {
+export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onSelectionDone,selectionDoneLabel,active=true,baseReady=false,deferBreadSteps=false}:SandwichPartyProps) {
   const tr = (value:Translation) => value[isFr ? 'fr' : 'en'];
   const t = (fr:string,en:string) => isFr ? fr : en;
   const [search,setSearch] = useState('');
@@ -158,9 +159,10 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
           <button className={`${styles.button} ${styles.wide}`} type="button" onClick={()=>setDetailId(recipe.id)}>{t('Recette et garnitures','Recipe and fillings')}</button>
         </article>)}</div>
         {!filtered.length&&<p className={styles.empty}>{t('Aucune recette dans ce filtre. Essayez « Tout ».','No recipes in this filter. Try “All”.')}</p>}
-        {active&&total>0&&!reviewOpen&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}><button type="button" className={`${button} ${styles.wide}`} onClick={()=>setReviewOpen(true)}>{t('Voir ma sélection','Review selection')} · {total}</button></div>}
+        {active&&total>0&&!reviewOpen&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('← Précédent','← Back')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={()=>setReviewOpen(true)}>{t('Voir ma sélection','Review selection')} · {total}</button></div>}
 
-        {active&&!baseReady&&total===0&&onSelectionDone&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}><button type="button" className={`${button} ${styles.wide}`} onClick={onSelectionDone}>{t('Continuer sans garnitures','Continue without fillings')}</button></div>}
+        {active&&baseReady&&total===0&&onSelectionBack&&<div data-companion-action className={styles.selectionBar}><button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('← Précédent','← Back')}</button></div>}
+        {active&&!baseReady&&total===0&&onSelectionDone&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('← Précédent','← Back')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={onSelectionDone}>{selectionDoneLabel??t('Définir ma recette','Set up my recipe')}</button></div>}
       </>}
       {tab!=='pick'&&tab!=='shop'&&!total&&<div className={styles.empty}><p>{tartine ? t('Choisissez vos tartines et leurs quantités pour commencer.','Choose your toasts and quantities to begin.') : t('Choisissez vos sandwichs et leurs quantités pour commencer.','Choose your sandwiches and quantities to begin.')}</p><button className={button} type="button" onClick={()=>go('pick')}>{tartine ? t('Choisir mes tartines','Choose toasts') : t('Choisir mes sandwichs','Choose sandwiches')}</button></div>}
       {tab==='shop'&&<>
@@ -198,7 +200,7 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
       <div className={styles.sheet} role="dialog" aria-modal="true" aria-label={t('Ma sélection','My selection')} ref={dialogRef}>
         <div className={styles.sheetHeader}><h2>{t('Ma sélection','My selection')}</h2><button ref={closeRef} type="button" className={styles.button} aria-label={t('Fermer la sélection','Close selection')} onClick={()=>setReviewOpen(false)}>×</button></div>
         <div className={styles.sheetBody}>{individualBread&&onMatchBreadCount&&numItems!==total&&<div className={styles.card}><p>{t(`${total} sandwichs sélectionnés ; ${numItems??0} pains prévus.`,`${total} sandwiches selected; ${numItems??0} breads planned.`)}</p><button type="button" className={styles.button} onClick={()=>onMatchBreadCount(total)}>{t(`Prévoir ${total} pains pour ces sandwichs`,`Make ${total} breads for these sandwiches`)}</button><p className={styles.muted}>{t('Gardez la fournée actuelle si vous voulez du pain en plus.','Keep your current batch if you want extra bread.')}</p></div>}{selected.map(recipe=><div key={recipe.id} className={styles.card}><strong>{tr(recipe.name)}</strong>{quantityControls(recipe)}</div>)}</div>
-        <div className={styles.sheetFooter}><button type="button" className={`${button} ${styles.wide}`} style={{marginTop:0}} onClick={()=>{setReviewOpen(false);if(onSelectionDone)onSelectionDone();else go('shop');}}>{selectionDoneLabel??t('Préparer mes courses','Build my shopping list')} →</button></div>
+        <div className={styles.sheetFooter}><button type="button" className={`${button} ${styles.wide}`} style={{marginTop:0}} onClick={()=>{setReviewOpen(false);if(baseReady)go('prep');else if(onSelectionDone)onSelectionDone();else go('shop');}}>{baseReady?t('Préparer les garnitures','Prepare fillings'):selectionDoneLabel??t('Voir les courses','View shopping')} →</button>{baseReady&&<button type="button" className={styles.button} onClick={()=>{setReviewOpen(false);go('shop');}}>{t('Voir les courses','View shopping')}</button>}<button type="button" className="bh-back-action" onClick={()=>setReviewOpen(false)}>{t('← Modifier ma sélection','← Edit my selection')}</button></div>
       </div>
     </div>}
     {detail&&family&&<div className={styles.backdrop} onClick={event=>{if(event.target===event.currentTarget)setDetailId(null);setReviewOpen(false);}}>

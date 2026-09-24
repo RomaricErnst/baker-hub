@@ -187,6 +187,7 @@ interface Props {
   /** Dough ingredients from the generated recipe — shown as a
       "For your dough" section so the baker shops once. */
   recipeIngredients?: Array<{ name: string; amount: string }>;
+  onSelectionBack?:()=>void;
   onSelectionDone?:()=>void;
   selectionDoneLabel?:string;
   active?:boolean;
@@ -1352,7 +1353,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
 // ─── Main component ───────────────────────────────────────────
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionDone,selectionDoneLabel,active=true,storagePrefix="bh",baseReady=false }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionBack,onSelectionDone,selectionDoneLabel,active=true,storagePrefix="bh",baseReady=false }: Props) {
   const l = locale as 'en' | 'fr';
 
   // On-screen keyboard detection — position:fixed bottom bars anchor to the
@@ -2516,7 +2517,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   })}
                   {/* Dough awareness */}
                   {(() => {
-                    if (doughConfigured && totalQty <= numItems) return null;
+                    if (totalQty <= numItems) return null;
                     if (!doughConfigured) return (
                       <div
                         onClick={onGoToMyDough}
@@ -2564,9 +2565,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
             </div>
             <div style={{padding:'12px 16px',display:'grid',gap:8,borderTop:'1px solid var(--border)'}}>
-              <button type="button" onClick={()=>{closeSummary();if(onSelectionDone)onSelectionDone();else onPillChange('shopping');}} style={NEXT_CTA}>{selectionDoneLabel??(l === 'fr' ? 'Liste de courses' : 'Shopping list')}</button>
-              <button type="button" onClick={()=>{closeSummary();onPillChange('party');}} style={SECONDARY_CTA}>{l === 'fr' ? 'Préparer les garnitures' : 'Prepare toppings'}</button>
-              <button type="button" onClick={closeSummary} style={SECONDARY_CTA}>{l === 'fr' ? 'Choisir d’autres pizzas' : 'Choose more pizzas'}</button>
+              <button type="button" onClick={()=>{closeSummary();if(baseReady)onPillChange('party');else if(onSelectionDone)onSelectionDone();else onPillChange('shopping');}} style={NEXT_CTA}>{baseReady?(l==='fr'?'Préparer les garnitures':'Prepare toppings'):selectionDoneLabel??(l==='fr'?'Voir les courses':'View shopping')}</button>
+              {(baseReady||!doughConfigured)&&<button type="button" onClick={()=>{closeSummary();onPillChange(baseReady?'shopping':'party');}} style={SECONDARY_CTA}>{baseReady?(l==='fr'?'Voir les courses':'View shopping'):(l==='fr'?'Préparer les garnitures':'Prepare toppings')}</button>}
+              <button type="button" onClick={closeSummary} className="bh-back-action">{l==='fr'?'← Modifier ma sélection':'← Edit my selection'}</button>
             </div>
           </div>
         </>
@@ -2721,8 +2722,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           justifyContent: 'space-between',
           zIndex: 90,
         }}>
+          {onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{l==='fr'?'← Précédent':'← Back'}</button>}
           <button type="button" disabled={totalQty === 0&&(!onSelectionDone||baseReady)} onClick={() => totalQty===0?onSelectionDone?.():setSummarySheetOpen(true)} style={{...NEXT_CTA,width:'100%',minHeight:44,opacity:totalQty===0&&(!onSelectionDone||baseReady) ? .65 : 1}}>
-            {totalQty === 0 ? (onSelectionDone&&!baseReady?(l==='fr'?'Continuer sans garnitures':'Continue without toppings'):(l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas')) : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`)}
+            {totalQty === 0 ? (onSelectionDone&&!baseReady?(selectionDoneLabel??(l==='fr'?'Définir ma recette':'Set up my recipe')):(l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas')) : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`)}
           </button>
 
         </div>

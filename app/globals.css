@@ -432,3 +432,6 @@ button,
 
 .bh-bread-photo-frame { position:relative; display:block; height:126px; overflow:hidden; }
 .bh-bread-photos:not(.bh-bread-photos-pair) { max-width:190px; justify-self:center; }
+
+.bh-batch-actions-navigation { grid-template-columns:auto minmax(0,1fr); align-items:center; }
+.bh-back-action { min-height:44px; padding:10px 12px; border:0; background:transparent; color:var(--terra); font:inherit; font-size:14px; cursor:pointer; flex-shrink:0; }
