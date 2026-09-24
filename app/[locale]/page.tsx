@@ -1321,7 +1321,7 @@ export default function Home() {
       setStyleKey(prefStyle as StyleKey); applied = true;
     }
     if (!mixerType && prof.mixerType && prof.mixerType in MIXER_TYPES) {
-      setMixerType(prof.mixerType as MixerType); applied = true; markProfile('equip');
+      setMixerType(prof.mixerType as MixerType); setWaterMethod(prof.mixerType==='spiral'?'direct':'premelt'); applied = true; markProfile('equip');
     }
     // Sourdough-native styles override the yeast preference (same rule as
     // the tap-time prefill in selectBakeType).
@@ -1441,7 +1441,7 @@ export default function Home() {
     setYeastType(session.yeastType as YeastType | null);
     setKitchenTemp(session.kitchenTemp);
     setHumidity(session.humidity);
-    setFridgeTemp(session.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(session.waterSource ?? '') ? session.waterSource! : 'room'); setMeasuredWaterTemp(session.measuredWaterTemp); setWaterMethod(session.waterMethod ?? 'premelt'); setSpiralIceConfirmed(session.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(session.mixingBatches)); setContainerCapacityLitres(session.containerCapacityLitres);
+    setFridgeTemp(session.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(session.waterSource ?? '') ? session.waterSource! : 'room'); setMeasuredWaterTemp(session.measuredWaterTemp); setWaterMethod(session.waterMethod ?? (session.mixerType==='spiral'?'direct':'premelt')); setSpiralIceConfirmed(session.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(session.mixingBatches)); setContainerCapacityLitres(session.containerCapacityLitres);
     if (session.flourBlend) setFlourBlend(session.flourBlend as FlourBlend);
     setPrefermentType(session.prefermentType as PrefermentType);
     // Absent means UNSETTLED, not settled. The `?? true` this replaces was
@@ -1812,12 +1812,12 @@ export default function Home() {
   const repairKey = (st: Date, et: Date | null, bl: AvailabilityBlock[]) =>
     JSON.stringify([repairContext, +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label])]);
   const confirmedSchedulePlan = acceptedScheduleRepair === repairKey(startTime, eatTime, blocks);
-  const handleScheduleChange = (st: Date, et: Date, bl: AvailabilityBlock[], options?: {preservePlan: boolean}) => {
+  const handleScheduleChange = (st: Date, et: Date, bl: AvailabilityBlock[], options?: {preservePlan: boolean; prefOffsetHours?: number}) => {
     setAcceptedScheduleRepair(options?.preservePlan ? repairKey(st, et, bl) : null);
     if (sessionRestored && +et !== (eatTime ? +eatTime : null)) setSessionRestored(false);
     setStartTime(st); setEatTime(et); setBlocks(bl);
     // Applying is durable immediately; the general autosave is deliberately debounced.
-    if(options?.preservePlan)saveSession(buildSessionPayload({startTime:+st,eatTime:+et,blocks:bl.map(b=>({label:b.label,from:+b.from,to:+b.to}))}));
+    if(options?.preservePlan)saveSession(buildSessionPayload({...(options.prefOffsetHours!==undefined?{prefOffsetH:options.prefOffsetHours}:{}),startTime:+st,eatTime:+et,blocks:bl.map(b=>({label:b.label,from:+b.from,to:+b.to}))}));
   };
 
   const prefRemoveFromFridgeTime = useMemo(() => {
@@ -2144,7 +2144,7 @@ export default function Home() {
       // was handed a Neapolitan they never picked — and once Suivant started
       // skipping answered steps, they never even saw the page to change it.
       if (prof.mixerType && prof.mixerType in MIXER_TYPES) {
-        setMixerType(prof.mixerType as MixerType); applied = true; markProfile('equip'); markProfile('equip');
+        setMixerType(prof.mixerType as MixerType); setWaterMethod(prof.mixerType==='spiral'?'direct':'premelt'); applied = true; markProfile('equip'); markProfile('equip');
       }
       // The style-yields-to-sourdough rule went with the style prefill: with no
       // style applied there is nothing for the yeast preference to yield to.
@@ -2720,6 +2720,7 @@ export default function Home() {
     setItemWeight(r.item_weight);
     setOvenType(r.oven_type as AnyOvenType);
     setMixerType((r.mixer_type ?? 'hand') as MixerType);
+    setWaterMethod(r.mixer_type==='spiral'?'direct':'premelt'); setSpiralIceConfirmed(false);
     setYeastType((r.yeast_type ?? 'instant') as YeastType);
     setKitchenTemp(r.kitchen_temp);
     setHumidity(r.humidity ?? 'normal');
@@ -2811,7 +2812,7 @@ export default function Home() {
     setYeastType(snap.yeastType as YeastType | null);
     setKitchenTemp(snap.kitchenTemp);
     setHumidity(snap.humidity);
-    setFridgeTemp(snap.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(snap.waterSource ?? '') ? snap.waterSource! : 'room'); setMeasuredWaterTemp(snap.measuredWaterTemp); setWaterMethod(snap.waterMethod ?? 'premelt'); setSpiralIceConfirmed(snap.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(snap.mixingBatches)); setContainerCapacityLitres(snap.containerCapacityLitres);
+    setFridgeTemp(snap.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(snap.waterSource ?? '') ? snap.waterSource! : 'room'); setMeasuredWaterTemp(snap.measuredWaterTemp); setWaterMethod(snap.waterMethod ?? (snap.mixerType==='spiral'?'direct':'premelt')); setSpiralIceConfirmed(snap.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(snap.mixingBatches)); setContainerCapacityLitres(snap.containerCapacityLitres);
     if (snap.flourBlend) setFlourBlend(snap.flourBlend as FlourBlend);
     setPrefermentType(snap.prefermentType as PrefermentType);
     setQtyChosen(snap.qtyChosen ?? false);
@@ -3268,7 +3269,7 @@ export default function Home() {
     </div>}
     <h3 style={{fontSize:18,margin:'0 0 12px'}}>{equipmentPanel==='oven'?(fr?'Four':'Oven'):(fr?'Pétrissage':'Mixing')}</h3>
     {equipmentPanel==='oven' ? <OvenPicker bakeType={bakeType ?? 'pizza'} styleKey={styleKey} selected={ovenType} construction={ovenConstruction} onConstructionChange={setOvenConstruction} onSelect={setOvenType} /> : <>
-      {tab==='simple' ? <SimpleMixerPicker locale={locale} selected={mixerType} onSelect={value=>{setMixerType(value);setSpiralIceConfirmed(false);setWaterMethod('premelt');}} styleKey={styleKey ?? undefined} /> : <MixerPicker totalDoughG={numItems * itemWeight} locale={locale} selected={mixerType} onSelect={value=>{setMixerType(value);setSpiralIceConfirmed(false);setWaterMethod('premelt');}} styleKey={styleKey ?? undefined} bakeType={bakeType ?? undefined} kitchenTemp={kitchenTemp} />}
+      {tab==='simple' ? <SimpleMixerPicker locale={locale} selected={mixerType} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);}setMixerType(value);}} styleKey={styleKey ?? undefined} /> : <MixerPicker totalDoughG={numItems * itemWeight} locale={locale} selected={mixerType} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);}setMixerType(value);}} styleKey={styleKey ?? undefined} bakeType={bakeType ?? undefined} kitchenTemp={kitchenTemp} />}
       {mixingBatchControl}
     </>}
   </>;
@@ -4187,11 +4188,11 @@ export default function Home() {
                   <input type="number" min={cToDisplay(0,units)} max={cToDisplay(60,units)} step="0.1" value={measuredWaterTemp===undefined?'':cToDisplay(measuredWaterTemp,units)} onChange={e=>setMeasuredWaterTemp(e.target.value===''?undefined:inputTempToC(Number(e.target.value),units))} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
                 </label>}
                 {mixerType==='spiral' ? <label style={{display:'block',fontSize:16,margin:'12px 0'}}>{locale==='fr'?'Si un refroidissement est nécessaire':'When cooling is needed'}
-                  <select value={waterMethod==='direct'&&spiralIceConfirmed?'direct':'premelt'} onChange={e=>{setWaterMethod(e.target.value as 'direct'|'premelt');setSpiralIceConfirmed(e.target.value==='direct');}} style={{display:'block',width:'100%',fontSize:16,padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
+                  <select value={waterMethod} onChange={e=>{setWaterMethod(e.target.value as 'direct'|'premelt');setSpiralIceConfirmed(false);}} style={{display:'block',width:'100%',fontSize:16,padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
                     <option value="direct">{locale==='fr'?'Glace pendant le pétrissage':'Ice during mixing'}</option>
                     <option value="premelt">{locale==='fr'?'Faire fondre la glace dans l’eau avant':'Melt ice in the water first'}</option>
                   </select>
-                  <small style={{display:'block',fontSize:14,lineHeight:1.5,marginTop:8}}>{locale==='fr'?'Glace au pétrissage uniquement si votre modèle le permet.':'Use ice during mixing only if your mixer permits it.'}</small>
+                  <small style={{display:'block',fontSize:14,lineHeight:1.5,marginTop:8}}>{locale==='fr'?'Vérifiez que votre pétrin accepte la glace.':'Check that your mixer allows ice.'}</small>
                 </label> : <p style={{fontSize:14,color:'var(--smoke)'}}>{locale==='fr'?'Si nécessaire, la glace refroidit l’eau avant le pétrissage. Aucun glaçon dans le robot.':'If cooling is needed, melt the ice in the water before mixing. No solid ice goes into the mixer.'}</p>}
               </details>
             </StepPage>

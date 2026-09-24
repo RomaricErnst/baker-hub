@@ -365,4 +365,20 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  await expect(step.getByRole('heading',{name:'Pétrissage',exact:true})).toBeVisible();
  await expect.poll(async()=>(await stored(page))?.mixerType).toBe('stand');
  expect((await stored(page)).ovenType).toBe('pizza_oven');
+ if(mode==='simple')await step.getByText('Autre méthode',{exact:true}).tap();
+ await step.getByRole('button',{name:/Pétrin à spirale/}).tap();
+ await expect.poll(async()=>(await stored(page))?.waterMethod).toBe('direct');
+ if(mode==='custom'){
+  await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+  await climate.getByText('Préparation de l’eau · facultatif',{exact:true}).tap();
+  const cooling=climate.getByRole('combobox',{name:/Si un refroidissement est nécessaire/});
+  await expect(cooling).toHaveValue('direct');
+  await expect(climate.getByText('Vérifiez que votre pétrin accepte la glace.',{exact:true})).toBeVisible();
+  await cooling.selectOption('premelt');
+  await climate.getByRole('button',{name:'Précédent',exact:true}).tap();
+  await step.getByRole('button',{name:/Pétrin à spirale/}).tap();
+  await expect.poll(async()=>(await stored(page))?.waterMethod).toBe('premelt');
+ }
+ await step.getByRole('button',{name:mode==='simple'?/KitchenAid \/ robot pâtissier/:/Robot pâtissier/}).tap();
+ await expect.poll(async()=>(await stored(page))?.waterMethod).toBe('premelt');
 });

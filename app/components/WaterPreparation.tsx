@@ -37,15 +37,14 @@ export function waterPreparation(waterGrams: number, targetTemp: number, sourceT
   return directIcePreparation(waterGrams,Math.min(targetTemp,sourceTemp),sourceTemp);
 }
 export default function WaterPreparation({waterGrams,targetTemp,kitchenTemp,fridgeTemp,locale,units='metric',source='room',onSourceChange,
-  measuredWaterTemp,onMeasuredWaterTempChange,waterMethod='premelt',onWaterMethodChange,spiralIceConfirmed=false,onSpiralIceConfirmedChange,
+  measuredWaterTemp,onMeasuredWaterTempChange,waterMethod='premelt',onWaterMethodChange,
   idealWaterTemp,targetDoughTemp,achievedDoughTempC,waterWasClamped=false,directIceSupported=false,readOnly=false}:Props) {
   const fieldId=useId();
   const fr=locale==='fr', entered=source==='tap'||source==='measured';
   const starting=entered ? measuredWaterTemp : source==='room'?kitchenTemp:fridgeTemp;
   const direct=waterMethod==='direct'&&directIceSupported;
-  const allowed=!direct||spiralIceConfirmed;
   const target=direct?idealWaterTemp:targetTemp;
-  const split=allowed&&starting!=null&&target!=null ? direct ? directIcePreparation(waterGrams,target,starting) : waterPreparation(waterGrams,target,starting) : null;
+  const split=starting!=null&&target!=null ? direct ? directIcePreparation(waterGrams,target,starting) : waterPreparation(waterGrams,target,starting) : null;
   const clamped=!direct&&idealWaterTemp!=null&&Math.abs(idealWaterTemp-targetTemp)>.1;
   // The solver's clipped-water result is useful only when this preparation
   // cannot use direct ice to hit the unconstrained target. Keep the residual
@@ -71,12 +70,14 @@ export default function WaterPreparation({waterGrams,targetTemp,kitchenTemp,frid
         ? 'Réchauffez l’eau ou la farine avant le mélange, puis contrôlez la pâte.'
         : 'Warm the water or flour before mixing, then check the dough.'
     : null;
+  const compatibilityNote=direct&&split&&split.ice>0?<small style={{display:'block',fontSize:14,color:'var(--smoke)'}}>{fr?'Vérifiez que votre pétrin accepte la glace.':'Check that your mixer allows ice.'}</small>:null;
   if (readOnly) return <div style={{...waterText, fontSize:14}}>
     {split ? <>
       <div>{displayWeight(split.water,units)} {fr ? 'eau' : 'water'} · {displayTemp(split.ice > 0 || direct ? starting! : targetTemp,units)}</div>
       {split.ice > 0 && <div>{displayWeight(split.ice,units)} {fr ? 'glace' : 'ice'}</div>}
       {!direct && split.ice > 0 && <div>{fr ? 'Après fonte complète' : 'After melting completely'} · {displayWeight(split.water + split.ice,units)} · {displayTemp(targetTemp,units)}</div>}
       {direct && split.ice > 0 && <div>{fr ? 'Glace ajoutée au pétrin' : 'Ice added in the mixer'}</div>}
+      {compatibilityNote}
       {thermalGapText && <p>{thermalGapText}</p>}
       {thermalAction && <p>{thermalAction}</p>}
       {clamped && !thermalGap && <p>{fr ? 'Cible de pâte inaccessible avec cette préparation. Revoyez les réglages de la cuisine.' : 'This preparation cannot reach the dough target. Review kitchen settings.'}</p>}
@@ -91,10 +92,11 @@ export default function WaterPreparation({waterGrams,targetTemp,kitchenTemp,frid
     {!readOnly&&directIceSupported&&onWaterMethodChange&&<details style={{marginBottom:8}}><summary style={disclosureStyle}>{fr?'Méthode de refroidissement':'Cooling method'}</summary>
       <label style={choiceLabelStyle}><input style={choiceInputStyle} type="radio" name={fieldId} checked={!direct} onChange={()=>onWaterMethodChange('premelt')} />{fr?'Eau préparée séparément':'Prepare water separately'}</label>
       <label style={choiceLabelStyle}><input style={choiceInputStyle} type="radio" name={fieldId} checked={direct} onChange={()=>onWaterMethodChange('direct')} />{fr?'Glace dans le pétrin à spirale':'Ice in spiral mixer'}</label>
-      {direct&&<label style={choiceLabelStyle}><input style={choiceInputStyle} type="checkbox" checked={spiralIceConfirmed} onChange={e=>onSpiralIceConfirmedChange?.(e.target.checked)} />{fr?'Mon pétrin autorise les glaçons.':'My mixer allows ice cubes.'}</label>}
+
     </details>}
-    <strong style={{display:'block',margin:'12px 0 8px'}}>{starting==null ? (fr?'Saisissez la température pour calculer la glace.':'Enter the water temperature to calculate ice.') : !allowed ? (fr?'Confirmez la compatibilité du pétrin.':'Confirm mixer compatibility.') : !split ? (fr?'Cible inaccessible avec cette eau et cette méthode.':'Target cannot be reached with this water and method.') : split.ice>0 ? `${displayWeight(split.water,units)} ${fr?'eau':'water'} + ${displayWeight(split.ice,units)} ${fr?'glace':'ice'}` : `${displayWeight(split.water,units)} ${fr?'eau':'water'}${!direct?` · ${displayTemp(targetTemp,units)}`:''}`}</strong>
+    <strong style={{display:'block',margin:'12px 0 8px'}}>{starting==null ? (fr?'Saisissez la température pour calculer la glace.':'Enter the water temperature to calculate ice.') : !split ? (fr?'Cible inaccessible avec cette eau et cette méthode.':'Target cannot be reached with this water and method.') : split.ice>0 ? `${displayWeight(split.water,units)} ${fr?'eau':'water'} + ${displayWeight(split.ice,units)} ${fr?'glace':'ice'}` : `${displayWeight(split.water,units)} ${fr?'eau':'water'}${!direct?` · ${displayTemp(targetTemp,units)}`:''}`}</strong>
     {split&&<div>{direct ? (fr?'Ajoutez l’eau et la glace, puis commencez à pétrir. La glace fond pendant le pétrissage.':'Add the water and ice, then start mixing. The ice melts during mixing.') : split.ice>0 ? (fr?'Remuez la glace dans l’eau jusqu’à fonte complète, puis utilisez cette eau pour la pâte.':'Stir the ice into the water until melted, then use this water in the dough.') : starting!=null&&starting<targetTemp ? (fr?'Réchauffez l’eau à la température indiquée.':'Warm the water to the temperature shown.') : null}</div>}
+    {compatibilityNote}
     {thermalGapText&&<div>{thermalGapText}</div>}
     {thermalAction&&<div>{thermalAction}</div>}
     {clamped&&!thermalGap&&<div>{fr?'Cette eau seule ne permet pas d’atteindre la température de pâte visée.':'This water alone cannot reach the target dough temperature.'}</div>}

@@ -182,7 +182,7 @@ interface SchedulePickerProps {
   styleKey: string;
   kitchenTemp: number;
   schedule?: ScheduleResult | null;
-  onChange: (startTime: Date, eatTime: Date, blocks: AvailabilityBlock[], options?: { preservePlan: boolean }) => void;
+  onChange: (startTime: Date, eatTime: Date, blocks: AvailabilityBlock[], options?: { preservePlan: boolean; prefOffsetHours?: number }) => void;
   bakeType?: 'pizza' | 'bread';
   isSourdough?: boolean;
   onFeedTimeChange?: (t: Date | null) => void;
@@ -7932,7 +7932,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           setPickerDate(`${target.getFullYear()}-${String(target.getMonth()+1).padStart(2,'0')}-${String(target.getDate()).padStart(2,'0')}`);
           setPickerHour(target.getHours());setPickerMinute(target.getMinutes());
           setLocalBlocks(appliedBlocks);
-          onChange(start,bake,appliedBlocks,{preservePlan:true});
+          onChange(start,bake,appliedBlocks,{preservePlan:true,prefOffsetHours:offset});
         };
         const closeEdit=()=>{setEditingRow(null);setEditingEnabled(false);setAlternativeBake(null);setEditBaseTimes(null);};
         const saveEdit=()=>{

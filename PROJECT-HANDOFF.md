@@ -1,5 +1,11 @@
 # Bakerhub — continuation handoff
 
+## Spiral ice default and atomic schedule saving — 24 September 2026
+
+User explicitly requested direct ice as the spiral-mixer default, with a small compatibility reminder. Selecting a different mixer now defaults spiral to direct and other mixers to premelt. Reselecting the same mixer preserves the chosen method. Profile prefills and legacy recipes use the same default; existing saved water-method choices remain unchanged. Direct ice uses the existing thermal calculation and recipe/equipment restrictions. Removed the blocking compatibility checkbox without falsely marking a machine as user-confirmed. Setup, recipe and guide retain “Vérifiez que votre pétrin accepte la glace.” where relevant. Ooni explicitly describes ice substitution for Halo Pro (https://ooni.com/blogs/recipes/ooni-100-biga-dough-using-halo-pro); this is not evidence that most spiral models permit it.
+
+CI35976396579 completed128/132 mobile checks: keyboard direction now passes, but the four paired cases caught the immediate save using the previous preferment offset while React state updated asynchronously. Apply/Undo now pass the chosen offset in the same save payload as mixing/bake times. Final verification and preview publication pending. Production unchanged.
+
 ## Coupled scheduling controls — 24 September 2026
 
 First paired-control deployment 8e77bd68d999beafbc837dfa29d118aa5802a336 is READY (dpl_CzSg84Gtsig3yjzNz7t14ZXeikBJ). Browser verified mixing 11:30 → 11:15 shifts poolish 22:45 → 22:30 and cold-in 13:15 → 13:00, while fixed baking remains19:30. Then moving poolish back to22:45 preserves mixing11:15 before applying;23:00 is rejected specifically by the23:00–07:00 night block. CI35975337237 passes128 tests, including all new quantity/equipment tests. Four paired-control cases exposed Safari interpreting ArrowDown opposite to Chrome on native vertical ranges; key handling now explicitly maps Down to15minutes later and Up to15minutes earlier. Final rerun pending. Automatic approval review rejected committing prototype screenshots to GitHub as an unapproved image disclosure; captures remain outside the repository, and no alternate upload was attempted.
