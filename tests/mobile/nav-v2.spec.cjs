@@ -99,7 +99,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   expect((await choose.boundingBox()).height).toBeGreaterThanOrEqual(44);
   await page.getByRole('button',{name:'Choisir mes garnitures',exact:true}).tap();
   await expect(bread?page.getByRole('article').first():page.getByRole('button',{name:'Margherita',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'← Précédent',exact:true}).tap();
+  await page.locator('[data-companion-action]').getByRole('button',{name:'← Précédent',exact:true}).tap();
   await expect(quantity).toHaveValue('5');
   expect((await stored(page)).styleKey).toBe(chosenStyle);
   const organise=page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true});
@@ -165,7 +165,7 @@ test('country bread offers illustrated tartines and keeps loaf quantities when r
  await testInfo.attach('tartine-invitation',{body:await page.screenshot(),contentType:'image/png'});
  await page.getByRole('button',{name:'Choisir mes garnitures',exact:true}).tap();
  await expect(page.getByRole('article').first()).toBeVisible();
- await page.getByRole('button',{name:'← Précédent',exact:true}).tap();
+ await page.locator('[data-companion-action]').getByRole('button',{name:'← Précédent',exact:true}).tap();
  await expect(count).toHaveValue('2');
  await page.getByRole('button',{name:'Changer de pain',exact:true}).tap();
  await expect(page.getByRole('heading',{name:'Choisissez votre pain',exact:true})).toBeVisible();
