@@ -18,11 +18,11 @@ test('actions are the default in both modes and retain starter feeds and fridge 
  const events=['refresh','fridge_in','fridge_out','pre_mix'].map((kind,i)=>({kind,time:new Date(+start-(5-i)*3600000),isPast:false,isActive:true,isDraggable:false,label:kind,cardTimeFormat:'absolute'}));
  for(const mode of ['simple','custom']) {
   const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Picker,{mode,startTime:start,eatTime:eat,blocks:[],preheatMin:45,styleKey:'pain_levain',kitchenTemp:22,schedule,onChange(){},isSourdough:true,lastFedAge:'today',lastFedTime:new Date(+start-8*3600000),savedStarterEvents:events,sessionRestored:true,recipeGenerated:true})));
-  assert.match(html,/aria-label="Your schedule"/);
-  assert.match(html,/aria-label="Edit Start Dough"/);
+  assert.match(html,/aria-label="Your key times"/);
+  assert.match(html,/aria-label="Adjust Mix the dough"/);
   assert.doesNotMatch(html,/Unsaved proposal|compressed interval/);
   assert.doesNotMatch(html,/role="tab"/);
-  assert.match(html,/Wait ·/);
+  assert.doesNotMatch(html,/Wait ·|compressed interval/);
   for(const label of ['Refresh feed','Refrigerate starter','Take starter out','Pre-mix feed'])assert.ok(html.includes(label),mode+': '+label);
  }
 });

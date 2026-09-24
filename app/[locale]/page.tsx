@@ -1809,12 +1809,13 @@ export default function Home() {
   const repairKey = (st: Date, et: Date | null, bl: AvailabilityBlock[]) =>
     JSON.stringify([repairContext, +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label])]);
   const confirmedSchedulePlan = acceptedScheduleRepair === repairKey(startTime, eatTime, blocks);
-  const handleScheduleChange = (st: Date, et: Date, bl: AvailabilityBlock[], options?: {preservePlan: boolean; prefOffsetHours?: number}) => {
+  const handleScheduleChange = (st: Date, et: Date, bl: AvailabilityBlock[], options?: {preservePlan: boolean; prefOffsetHours?: number; starterPlan?: {events:StarterEvent[];fridgeOutTime:Date|null;usingPeak2:boolean;feed2Time:Date|null;starterFridgeInTime:Date|null}}) => {
     setAcceptedScheduleRepair(options?.preservePlan ? repairKey(st, et, bl) : null);
     if (sessionRestored && +et !== (eatTime ? +eatTime : null)) setSessionRestored(false);
     setStartTime(st); setEatTime(et); setBlocks(bl);
+    if(options?.starterPlan){setStarterEvents(options.starterPlan.events);setFridgeOutTime(options.starterPlan.fridgeOutTime);setUsingPeak2(options.starterPlan.usingPeak2);setFeed2Time(options.starterPlan.feed2Time);setStarterFridgeInTime(options.starterPlan.starterFridgeInTime);}
     // Applying is durable immediately; the general autosave is deliberately debounced.
-    if(options?.preservePlan)saveSession(buildSessionPayload({...(options.prefOffsetHours!==undefined?{prefOffsetH:options.prefOffsetHours}:{}),startTime:+st,eatTime:+et,blocks:bl.map(b=>({label:b.label,from:+b.from,to:+b.to}))}));
+    if(options?.preservePlan)saveSession(buildSessionPayload({...(options.starterPlan?{starterEvents:serializeStarterEvents(options.starterPlan.events),fridgeOutTime:options.starterPlan.fridgeOutTime?.getTime()??null,usingPeak2:options.starterPlan.usingPeak2,feed2Time:options.starterPlan.feed2Time?.getTime()??null,starterFridgeInTime:options.starterPlan.starterFridgeInTime?.getTime()??null}:{}),...(options.prefOffsetHours!==undefined?{prefOffsetH:options.prefOffsetHours}:{}),startTime:+st,eatTime:+et,blocks:bl.map(b=>({label:b.label,from:+b.from,to:+b.to}))}));
   };
 
   const prefRemoveFromFridgeTime = useMemo(() => {

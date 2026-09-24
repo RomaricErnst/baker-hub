@@ -1,5 +1,13 @@
 # Bakerhub — continuation handoff
 
+## Inline key timing controls — 24 September 2026
+
+User approved the isolated inline interaction prototype and authorized preview deployment, explicitly including sourdough. Setup now shows vertical controls beside each key action, on explicitly labeled per-action axes; fixed bake time remains above. Detailed dough agenda stays in preparation. Commercial mixing keeps preferment coupled and preferment-only edits preserve mixing; both use the existing full-plan validator. Green slot previews use the same validation as confirmation. Reset appears only after a timing change; exact date/time entry, cancel and atomic confirmation remain available.
+
+Sourdough uses read-only probes of the existing joint starter solver, with cloned pin refs and captured effects. Mixing recomputes upcoming feeds/cold actions; dragging a feed keeps mixing pinned. Historical feeds/observed peak are immutable. Known-peak edits check its usability window; multi-feed/cold plans use the engine's candidate maturity score, not a room-temperature peak formula. Upcoming revival and fridge actions remain visible. Invalid candidates cannot commit. Applying persists starter events and dependent times atomically with mixing/bake times. Restored events stay authoritative until an explicit edit. Existing conflict guidance retained beside mixing.
+
+TypeScript and production build passed; 281 unit/component tests include real-solver probes for known peak, RT feeds and week-old refrigerated revival, with no parent writes during probing. Mobile inline-control, persistence and levain tests updated; deployment and macOS WebKit verification pending. Preview only.
+
 ## Shared heading hierarchy — 24 September 2026
 
 Aligned style/quantity, all guided setup steps including equipment, mode choice and pizza/bread topping catalogue page titles to 28px display type, 700 weight, 1.15 line height. Section headings use 18px UI type; optional garnish card heading remains 16px. Fixes unstyled batch headings inherited as body text and independent 26/30px title styles. No navigation renaming in this change.

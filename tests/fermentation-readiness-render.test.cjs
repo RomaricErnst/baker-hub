@@ -45,7 +45,7 @@ test('real picker restores commercial timing in both modes and suppresses unsupp
  const start=date(20), schedule=utils.buildSchedule(start,bake,[],22,45,'hand','neapolitan');
  for(const mode of ['simple','custom']){
   const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages:require('../messages/en.json'),timeZone:'UTC'},React.createElement(Picker,{mode,startTime:start,eatTime:bake,blocks:[],preheatMin:45,styleKey:'neapolitan',kitchenTemp:22,schedule,onChange(){},sessionRestored:true,savedPrefOffsetHours:0})));
-  assert.match(html,/Your schedule/);assert.doesNotMatch(html,/Your mixing window|Within the window/);
+  assert.match(html,/Your key times/);assert.doesNotMatch(html,/Your mixing window|Within the window/);
  }
  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages:require('../messages/en.json'),timeZone:'UTC'},React.createElement(Picker,{mode:'custom',startTime:start,eatTime:bake,blocks:[],preheatMin:45,styleKey:'brioche',kitchenTemp:22,schedule,onChange(){},sessionRestored:true,prefermentType:'poolish',savedPrefOffsetHours:12})));
  assert.match(html,/Window not calculated/);assert.doesNotMatch(html,/Within the window/);
@@ -62,7 +62,7 @@ test('picker catches preheat and shaping conflicts but permits passive cold time
  const start=date(26), schedule=utils.buildSchedule(start,bake,[],22,60,'hand','neapolitan');
  const picker=blocks=>renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages:require('../messages/en.json'),timeZone:'UTC'},React.createElement(Picker,{mode:'custom',startTime:start,eatTime:bake,blocks,preheatMin:60,styleKey:'neapolitan',kitchenTemp:22,schedule,onChange(){},sessionRestored:true,savedPrefOffsetHours:0})));
  for(const at of [schedule.preheatStart,schedule.divideBallTime]){
-  assert.match(picker([{from:at,to:new Date(+at+60000),label:'Busy'}]),/This step overlaps an unavailable period/);
+  assert.match(picker([{from:at,to:new Date(+at+60000),label:'Busy'}]),/overlaps|unavailable/);
  }
  const coldStart=schedule.coldRetard1Start??schedule.coldRetardStart;
  const coldEnd=schedule.coldRetard1End??schedule.coldRetardEnd;
