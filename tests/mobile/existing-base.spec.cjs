@@ -64,8 +64,8 @@ test('pain de mie clubs and croques use slices and cook after assembly',async({p
 });
 
 test('raw bagel requires baking and cooling; six sections and browser Back preserve choices',async({page})=>{
- await open(page);await page.getByRole('button',{name:'Bagels',exact:true}).tap();
- await page.getByLabel('État de la base').selectOption('dough');
+ await open(page);await page.getByRole('button',{name:'J’ai une pâte à cuire',exact:true}).tap();
+ await page.getByRole('button',{name:'Bagels',exact:true}).tap();
  await page.getByLabel('Origine').selectOption('homemade');
  await page.getByLabel('Avancement').selectOption('shaped');
  await navigate(page,'Cuisson & service');
@@ -74,8 +74,27 @@ test('raw bagel requires baking and cooling; six sections and browser Back prese
  await page.getByRole('button',{name:'Mon pain est cuit et refroidi',exact:true}).tap();
  await expect(page.getByRole('button',{name:'Annuler « pain cuit »'})).toBeVisible();
  await page.goBack();await expect(page.locator('.bh-bake-navigator-trigger')).toContainText('Ma fournée');
- await expect(page.getByLabel('État de la base')).toHaveValue('dough');
+ await expect(page.getByLabel('Avancement')).toHaveValue('shaped');
  await page.goForward();await expect(page.locator('.bh-bake-navigator-trigger')).toContainText('Cuisson & service');
  await page.reload();await expect(page.getByRole('button',{name:'Annuler « pain cuit »'})).toBeVisible();
+ await intact(page);
+});
+
+test('a new bread entry offers resume without silently selecting the previous bagel',async({page})=>{
+ await open(page);await page.getByRole('button',{name:'Bagels',exact:true}).tap();
+ await page.getByRole('spinbutton').first().fill('2');
+ await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_existing_base_v1')).base)).toBe('bagel');
+ await page.goto('/fr/with-my-base?family=bread');
+ await expect(page.getByRole('button',{name:'Reprendre : Bagels',exact:true})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Quel pain avez-vous ?',exact:true})).toBeVisible();
+ await expect(page.locator('.bh-bake-navigator-trigger')).toHaveCount(0);
+ await page.getByRole('button',{name:'Reprendre : Bagels',exact:true}).tap();
+ await expect(page.getByRole('spinbutton').first()).toHaveValue('2');
+ await page.reload();await expect(page.getByRole('spinbutton').first()).toHaveValue('2');
+ await page.goto('/fr/with-my-base?family=bread');
+ await page.getByRole('button',{name:'Baguette',exact:true}).tap();
+ await expect(page.getByLabel('Origine')).toHaveCount(0);
+ await expect(page.getByLabel('État de la base')).toHaveCount(0);
+ await expect(page.getByRole('spinbutton').first()).toHaveValue('0');
  await intact(page);
 });

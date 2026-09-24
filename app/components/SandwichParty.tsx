@@ -58,7 +58,7 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
   const breadImage = selectedBread?.image ?? family?.image;
   const destinationName = breadCompanionLabel(family?.id,isFr);
   const heading = tabHeading();
-  function tabHeading(){if((phase??snapshot.tab)==='shop')return t('Courses','Shopping');return family ? `${isFr?'Vos':'Your'} ${destinationName.toLocaleLowerCase(isFr?'fr':'en')}` : t('Garnitures','Fillings');}
+  function tabHeading(){if((phase??snapshot.tab)==='shop')return t('Courses','Shopping');if(baseReady&&(phase??snapshot.tab)==='pick')return t('Que préparer avec ce pain ?','What would you like to make with this bread?');return family ? `${isFr?'Vos':'Your'} ${destinationName.toLocaleLowerCase(isFr?'fr':'en')}` : t('Garnitures','Fillings');}
   const familyRecipes = SANDWICH_RECIPES.filter(recipe => recipe.familyId === family?.id);
   const selected = familyRecipes.filter(recipe => count(snapshot.qtys[recipe.id]) > 0);
   const total = selected.reduce((sum,recipe) => sum+count(snapshot.qtys[recipe.id]),0);

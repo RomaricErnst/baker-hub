@@ -3575,7 +3575,6 @@ export default function Home() {
           </h1>
 
           <OpeningChoices fr={fr} onSelect={selectBakeType}/>
-          <a href={`/${locale}/with-my-base`} style={{display:'block',padding:16,border:'1px solid var(--border)',borderRadius:12,color:'var(--char)',textDecoration:'none',fontSize:16}}><strong>{fr?'J’ai déjà une pâte ou du pain →':'I already have dough or bread →'}</strong><div style={{marginTop:6,color:'var(--smoke)'}}>{fr?'Pâte à pizza achetée, pain ou wraps : choisir les garnitures et préparer.':'Purchased pizza dough, bread or wraps: choose fillings and prepare.'}</div></a>
           </div>
 
           </div>
@@ -3596,6 +3595,7 @@ export default function Home() {
           {bakeType && !showProductHome && destination==='batch' && !browsingFillings && <section className="bh-batch-content">
             {batchView==='style' ? <>
               <h2>{bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Choisissez votre pizza':'Choose your pizza')}</h2>
+              <a href={`/${locale}/with-my-base?family=${bakeType}`} style={{display:'inline-flex',alignItems:'center',minHeight:44,marginBottom:12,color:'var(--terra)',fontSize:16}}>{bakeType==='bread'?(fr?'J’ai déjà une pâte ou du pain →':'I already have dough or bread →'):(fr?'J’ai déjà ma pâte →':'I already have my dough →')}</a>
               <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
               <button type="button" className="bh-section-back" onClick={backToProducts}>{fr?'← Pizza ou pain':'← Pizza or bread'}</button>
               {styleKey&&<div className="bh-batch-actions"><button type="button" style={NEXT_CTA} onClick={()=>{setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{fr?'Continuer avec':'Continue with'} {styleDisplayName(styleKey)} →</button></div>}

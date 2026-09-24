@@ -1,5 +1,13 @@
 # Bakerhub — continuation handoff
 
+## Existing-base entry and image consistency — 24 September 2026
+
+User approved revising the entry without adding a step for from-scratch users. Pizza / Bread still goes straight to style and quantity. The existing-base shortcut is now on each family's style screen, not the landing page. Bread entry offers baked bread / dough inline, bread-only photos and explicit selection. Opening the shortcut never silently restores a prior bagel; a separate named Resume action restores it. Active preparation URLs carry `active=1`, so reload preserves the current preparation and section. Empty entry screens do not overwrite the saved draft. New preparation resets selections; changing bread inside an active preparation preserves per-bread selections and dough state. Six-section navigation appears only after selecting a base.
+
+Baked bread skips redundant origin/state fields in Ma fournée; state correction remains in Organisation. The filling heading asks what to prepare with the bread. Bread and meal images in the from-scratch catalogue now both fill identical frames using cover, without stretching.
+
+Verification before publication: TypeScript, 270 unit tests and production build/i18n passed. Added a mobile regression for explicit resume, new bread selection and reload; updated raw-bagel entry test. Current revision mobile/browser checks and preview publication pending. Previous revision CI run 35949978019 is now confirmed SUCCESS. Preview only; production remains untouched.
+
 ## Scheduling dependencies and existing bases — 24 September 2026
 
 Continue on `codex/navigation-polish-20260923`; baseline reviewed was `ffbccc259ff88ebe01061cafe2a480b078aef771`. User authorized discarding only the agent's test bake, implementation and preview verification. No production deployment.

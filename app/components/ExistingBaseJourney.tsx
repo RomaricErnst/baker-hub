@@ -8,6 +8,8 @@ import Header from './Header';
 import {BAKE_DESTINATIONS,type BakeDestination} from '../lib/bakeNavigation';
 import {aggregateSandwichShopping,createSandwichSnapshot,normalizeSandwichSnapshot,sandwichFamilyForStyle,type SandwichSnapshot} from '../lib/sandwich';
 import {getPizzaById} from '../lib/toppingDatabase';
+import Image from 'next/image';
+import {BREAD_STYLES} from '../data';
 
 const STORAGE='bh_existing_base_v1';
 const bases=[['pizza','Pizza','Pizza'],['pain_campagne','Pain de campagne · tartines','Country bread · tartines'],['pain_mie','Pain de mie · clubs & croques','Sandwich loaf · clubs & croques'],['pita','Pitas','Pitas'],['laffa','Wraps souples','Soft wraps'],['baguette','Baguette','Baguette'],['focaccia','Focaccia','Focaccia'],['ciabatta','Ciabatta','Ciabatta'],['bagel','Bagels','Bagels']];
@@ -22,20 +24,40 @@ export default function ExistingBaseJourney(){
  const locale=useLocale(),t=useTranslations(),fr=locale==='fr';
  const tr=(a:string,b:string)=>fr?a:b;
  const [draft,setDraft]=useState<Draft>(fresh),[loaded,setLoaded]=useState(false),[editing,setEditing]=useState(false);
+ const [saved,setSaved]=useState<Draft|null>(null);
+ const [family,setFamily]=useState<'pizza'|'bread'|null>(null);
+ const [startingKind,setStartingKind]=useState<BaseDetails['kind']>('baked');
  useEffect(()=>{
+   const params=new URLSearchParams(location.search);
+   const requestedFamily=params.get('family');
+   setFamily(requestedFamily==='pizza'||requestedFamily==='bread'?requestedFamily:null);
+   if(requestedFamily==='pizza')setStartingKind('dough');
    try{
      const d=JSON.parse(localStorage.getItem(STORAGE)||'null');
      if(d&&bases.some(b=>b[0]===d.base)){
        const sandwiches=Object.fromEntries(bases.filter(b=>b[0]!=='pizza').map(b=>[b[0],normalizeSandwichSnapshot(d.sandwiches?.[b[0]])]));
        const details=Object.fromEntries(bases.map(([base])=>{const value=d.details?.[base];return [base,{kind:value?.kind==='dough'?'dough':value?.kind==='baked'?'baked':defaultDetails(base).kind,origin:value?.origin==='homemade'?'homemade' as const:'purchased' as const,stage:['bulk','shaped','ready'].includes(value?.stage)?value.stage:'ready',baked:value?.baked===true,notes:typeof value?.notes==='string'?value.notes.slice(0,2000):''}];}));
-       setDraft({base:d.base,portions:Math.min(99,Math.max(1,Number(d.portions)||4)),pizza:quantities(d.pizza),done:quantities(d.done),section:BAKE_DESTINATIONS.some(s=>s.id===d.section)?d.section:sectionForPhase(d.base==='pizza'?d.phase:sandwiches[d.base]?.tab),sandwiches,details});
+       const restored:Draft={base:d.base,portions:Math.min(99,Math.max(1,Number(d.portions)||4)),pizza:quantities(d.pizza),done:quantities(d.done),section:BAKE_DESTINATIONS.some(s=>s.id===d.section)?d.section:sectionForPhase(d.base==='pizza'?d.phase:sandwiches[d.base]?.tab),sandwiches,details};
+       setSaved(restored);
+       if(params.get('active')==='1')setDraft(restored);
      }
    }catch{}
    const pop=()=>{const section=new URLSearchParams(location.search).get('section');if(BAKE_DESTINATIONS.some(s=>s.id===section))setDraft(d=>({...d,section:section as BakeDestination}));};
    pop();window.addEventListener('popstate',pop);setLoaded(true);
    return()=>window.removeEventListener('popstate',pop);
  },[]);
- useEffect(()=>{if(loaded)try{localStorage.setItem(STORAGE,JSON.stringify(draft));}catch{}},[draft,loaded]);
+ useEffect(()=>{if(loaded&&draft.base)try{localStorage.setItem(STORAGE,JSON.stringify(draft));}catch{}},[draft,loaded]);
+ const activate=(next:Draft)=>{
+   setDraft(next);setEditing(false);setStartingKind((next.details[next.base]??defaultDetails(next.base)).kind);
+   const url=new URL(location.href);url.searchParams.set('active','1');url.searchParams.set('section',next.section);
+   history.replaceState(history.state,'',url);window.scrollTo({top:0});
+ };
+ const chooseBase=(base:string)=>{
+   const kind=base==='pizza'?'dough':startingKind;
+   if(!editing&&base==='pizza')try{localStorage.removeItem('bh_existing_base_prep_ticks_v1');}catch{}
+   const next=editing?{...draft,base,section:'batch' as const,details:{...draft.details,[base]:draft.details[base]??{...defaultDetails(base),kind:(draft.details[draft.base]??defaultDetails(draft.base)).kind}}}:{...fresh(),base,details:{[base]:{...defaultDetails(base),kind}}};
+   activate(next);
+ };
  const go=(section:BakeDestination)=>{
    const url=new URL(location.href);
    if(url.searchParams.get('section')!==draft.section){url.searchParams.set('section',draft.section);history.replaceState(history.state,'',url);}
@@ -61,17 +83,26 @@ export default function ExistingBaseJourney(){
  if(!loaded)return <main style={{padding:24}}>{tr('Chargement…','Loading…')}</main>;
  return <><Header hideActionBar onBack={()=>draft.section==='batch'?location.assign('/'+locale):go('batch')}/>
  <main style={{maxWidth:850,margin:'0 auto',padding:'16px 16px 120px',fontFamily:'var(--font-ui)',color:'var(--char)'}}>
-  <BakeNavigator active={draft.section} fr={fr} onChange={go}/>
+  {draft.base&&!editing&&<BakeNavigator active={draft.section} fr={fr} onChange={go}/>}
   {(!draft.base||editing)?<section aria-label={tr('Votre base','Your base')}>
-   <h1>{tr('Qu’avez-vous ?','What do you have?')}</h1>
-   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(145px,1fr))',gap:10}}>{bases.map(([id,frName,enName])=><button key={id} style={control} onClick={()=>{setDraft(d=>({...d,base:id,section:'batch'}));setEditing(false);}}>{fr?frName:enName}</button>)}</div>
+   {!editing&&saved&&(!family||(saved.base==='pizza'?'pizza':'bread')===family)&&<button style={{...control,marginBottom:20}} onClick={()=>activate(saved)}>{tr('Reprendre : ','Resume: ')}{bases.find(b=>b[0]===saved.base)?.[fr?1:2]}</button>}
+   <h1>{family==='pizza'?tr('Avec ma pâte à pizza','With my pizza dough'):startingKind==='dough'?tr('Quelle pâte avez-vous ?','What dough do you have?'):tr('Quel pain avez-vous ?','What bread do you have?')}</h1>
+   {!editing&&family!=='pizza'&&<div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:20}}>{(['baked','dough'] as const).map(kind=><button key={kind} aria-pressed={startingKind===kind} style={{...control,border:startingKind===kind?'2px solid var(--terra)':control.border}} onClick={()=>setStartingKind(kind)}>{kind==='baked'?tr('J’ai du pain déjà cuit','I have baked bread'):tr('J’ai une pâte à cuire','I have dough to bake')}</button>)}</div>}
+   {family==='pizza'&&!editing?<button style={control} onClick={()=>chooseBase('pizza')}>{tr('Garnir mes pizzas →','Top my pizzas →')}</button>:<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(145px,1fr))',gap:10}}>{bases.filter(([id])=>family==='bread'?id!=='pizza':editing?(draft.base==='pizza'?id==='pizza':id!=='pizza'):true).map(([id,frName,enName])=>{
+    const bread=(BREAD_STYLES as Record<string,{image:string}>)[id];
+    return <button key={id} style={{...control,textAlign:'left'}} onClick={()=>chooseBase(id)}>{bread&&<span style={{display:'block',position:'relative',aspectRatio:'4/3',overflow:'hidden',borderRadius:8,marginBottom:10}}><Image src={bread.image} alt="" fill sizes="(max-width:600px) 45vw, 240px" style={{objectFit:'cover'}}/></span>}{fr?frName:enName}</button>;
+   })}</div>}
    {editing&&<button style={{...control,marginTop:12}} onClick={()=>setEditing(false)}>{tr('Revenir à ma préparation','Return to my preparation')}</button>}
   </section>:<>
-   <div style={{display:'flex',gap:12,alignItems:'center',justifyContent:'space-between',margin:'20px 0'}}><strong>{bases.find(b=>b[0]===draft.base)?.[fr?1:2]} · {raw?tr('Pâte existante','Existing dough'):tr('Déjà cuit','Already baked')}</strong><button style={control} onClick={()=>setEditing(true)}>{tr('Changer de base','Change base')}</button></div>
-   {(draft.section==='batch'||draft.section==='organisation')&&<section>
+   <div style={{display:'flex',gap:12,alignItems:'center',justifyContent:'space-between',margin:'20px 0'}}><strong>{bases.find(b=>b[0]===draft.base)?.[fr?1:2]} · {raw?tr('Pâte existante','Existing dough'):tr('Déjà cuit','Already baked')}</strong>{draft.base!=='pizza'&&<button style={control} onClick={()=>setEditing(true)}>{tr('Changer de pain','Change bread')}</button>}</div>
+   {((draft.section==='batch'&&raw)||draft.section==='organisation')&&<section>
      <h2>{tr('Votre point de départ','Your starting point')}</h2>
+     {draft.section==='organisation'&&
      <label>{tr('État de la base','Base state')} <select style={control} value={detail.kind} onChange={e=>updateDetail({kind:e.target.value as BaseDetails['kind'],baked:false})}><option value="dough">{tr('Pâte à préparer et cuire','Dough to prepare and bake')}</option><option value="baked">{tr('Pain / base déjà cuit','Already baked bread / base')}</option></select></label>
+     }
+     {raw&&
      <label style={{display:'block',marginTop:12}}>{tr('Origine','Source')} <select style={control} value={detail.origin} onChange={e=>updateDetail({origin:e.target.value as BaseDetails['origin']})}><option value="purchased">{tr('Achetée','Purchased')}</option><option value="homemade">{tr('Faite maison','Homemade')}</option></select></label>
+     }
      {raw&&<><label style={{display:'block',marginTop:12}}>{tr('Avancement','Progress')} <select style={control} value={detail.stage} onChange={e=>updateDetail({stage:e.target.value as BaseDetails['stage'],baked:false})}><option value="bulk">{tr('À diviser / façonner','Needs dividing / shaping')}</option><option value="shaped">{tr('Façonnée, apprêt à terminer','Shaped, final proof remaining')}</option><option value="ready">{tr('Prête à cuire','Ready to bake')}</option></select></label><p>{instructions}</p></>}
      {draft.section==='organisation'&&<><p>{raw?tr('Gardez les consignes de votre pâte. Aucune fabrication de pâte à recommencer.','Keep your dough’s instructions. No need to make dough again.'):tr('Aucune fermentation ni cuisson du pain à planifier. Passez directement aux garnitures et à l’assemblage.','No bread fermentation or baking to plan. Go straight to fillings and assembly.')}</p><label>{tr('Mes consignes (facultatif)','My instructions (optional)')}<textarea maxLength={2000} value={detail.notes} onChange={e=>updateDetail({notes:e.target.value})} style={{...control,width:'100%',boxSizing:'border-box'}}/></label><button style={control} onClick={()=>go('protocol')}>{tr('Préparer','Prepare')}</button></>}
    </section>}
