@@ -13,6 +13,7 @@ async function openPlan(page,mode='simple',blocks=[],preferment=false,night=fals
 test('vertical slider keeps morning mixing through a blocked night and supports undo',async({page},testInfo)=>{
  const {plan,start,bake}=await openPlan(page,'simple',[],true,true);
  await plan.getByRole('button',{name:'Modifier Préparer le Poolish',exact:true}).tap();
+ await plan.getByText('Saisir une heure précise',{exact:true}).click();
  const pref=new Date(+start-16*3600000);
  await plan.getByLabel('Date de l’étape').fill(local(pref).split('T')[0]);
  await plan.locator('input[type="time"]').fill(local(pref).split('T')[1]);
@@ -35,7 +36,7 @@ for(const mode of ['simple','custom'])test(`${mode}: quiet calendar, draft cance
  await expect(plan.getByText(/intervalle raccourci/)).toHaveCount(0);
  await expect(plan.getByText('Préchauffage',{exact:true})).toBeVisible();
  await plan.getByRole('button',{name:'Modifier Commencer la pâte',exact:true}).tap();
- const editor={fill:async(value)=>{await plan.getByLabel('Date de l’étape').fill(value.split('T')[0]);await plan.locator('input[type="time"]').fill(value.split('T')[1]);}};
+ const editor={fill:async(value)=>{if(!await plan.getByLabel('Date de l’étape').isVisible())await plan.getByText('Saisir une heure précise',{exact:true}).click();await plan.getByLabel('Date de l’étape').fill(value.split('T')[0]);await plan.locator('input[type="time"]').fill(value.split('T')[1]);}};
  await expect(page.getByRole('button',{name:mode==='simple'?/Voir les ingrédients/:/^Continuer$/})).toHaveCount(0);
  const proposed=new Date(+start+15*60000);await editor.fill(local(proposed));
  await expect(plan.getByRole('button',{name:'Appliquer',exact:true})).toBeEnabled();
@@ -65,6 +66,7 @@ test('unavailable periods are shaded and action conflicts remain visible',async(
 for(const mode of ['simple','custom'])test(`${mode}: preferment window preserves mixing, applies and survives reload`,async({page})=>{
  const {plan,start,bake}=await openPlan(page,mode,[],true);
  await plan.getByRole('button',{name:'Modifier Préparer le Poolish',exact:true}).tap();
+ await plan.getByText('Saisir une heure précise',{exact:true}).click();
  await expect(plan.getByRole('slider')).toBeVisible();
  await plan.getByRole('button',{name:'+15 min',exact:true}).tap();
  await expect(plan.getByRole('button',{name:'Appliquer',exact:true})).toBeEnabled();
@@ -75,6 +77,7 @@ for(const mode of ['simple','custom'])test(`${mode}: preferment window preserves
  await expect(plan.getByRole('button',{name:'Modifier Commencer la pâte',exact:true})).toContainText(local(start).split('T')[1]);
  expect((await stored(page)).prefOffsetH).toBe(11.75);
  await plan.getByRole('button',{name:'Modifier Préparer le Poolish',exact:true}).tap();
+ await plan.getByText('Saisir une heure précise',{exact:true}).click();
  const late=new Date(+bake-13*3600000);
  await plan.getByLabel('Date de l’étape').fill(local(late).split('T')[0]);await plan.locator('input[type="time"]').fill(local(late).split('T')[1]);
  await expect(plan.getByRole('button',{name:'Appliquer',exact:true})).toBeDisabled();

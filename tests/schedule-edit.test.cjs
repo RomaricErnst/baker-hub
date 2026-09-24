@@ -21,6 +21,16 @@ test('blocked requested preferment and impossible maturity remain invalid',()=>{
  assert.equal(proposeScheduleEdit({...request,blocks:[{from:input.at,to:new Date(+input.at+H),label:'Busy'}]}).issue,'busy');
  assert.equal(proposeScheduleEdit({...request,at:new Date(+bake-9*H)}).valid,false);
 });
+test('an explicitly earlier bake finds a compatible earlier mixing time',()=>{
+ const requested=new Date(+start+7*H);
+ const result=proposeScheduleEdit({...input,id:'bake',at:requested,prefWindow:{min:10,max:18}});
+ assert.equal(result.valid,true);assert.equal(+result.times.bake,+requested);assert.ok(+result.times.start<+start);
+});
+test('cold-out remains outside the night block when mixing must move',()=>{
+ const start=new Date('2030-04-02T07:00Z'),bake=new Date('2030-04-02T18:00Z');
+ const result=proposeScheduleEdit({...input,start,bake,at:new Date('2030-04-01T15:00Z'),prefWindow:{min:10,max:18},blocks:[{from:new Date('2030-04-01T23:00Z'),to:start,label:'Night'}]});
+ assert.equal(result.valid,true);assert.equal(+result.times.start,+start+H);assert.equal(result.times.prefHours,17);
+});
 test('moving preferment moves mixing, retains its maturation and keeps fixed bake',()=>{
  const moved=new Date(+input.at+H),result=proposeScheduleEdit({...input,at:moved});
  assert.equal(result.valid,true);assert.equal(+result.times.start,+start+H);assert.equal(result.times.prefHours,12);assert.equal(+result.times.bake,+bake);

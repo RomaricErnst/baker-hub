@@ -46,6 +46,21 @@ function assessEdit(input: EditInput): EditResult {
 /** Keep unaffected anchors where possible. Search the existing method's maturity
  * window, never a fixed recommended duration. Baking is always pinned. */
 export function proposeScheduleEdit(input: EditInput): EditResult {
+  if(input.id==='bake'){
+    const retained=assessEdit(input);
+    if(retained.valid||['past','date','unsupported'].includes(retained.issue??''))return retained;
+    const bounds=input.window(input.at);
+    if(!bounds.from||!bounds.to)return retained;
+    const step=15*60000;
+    const starts:number[]=[];
+    for(let at=Math.ceil(Math.max(+bounds.from,(input.now??Date.now())+1)/step)*step;at<=+bounds.to;at+=step)starts.push(at);
+    starts.sort((a,b)=>Math.abs(a-+input.start)-Math.abs(b-+input.start));
+    for(const at of starts){
+      const candidate=proposeScheduleEdit({...input,id:'mix',at:new Date(at),bake:input.at});
+      if(candidate.valid)return candidate;
+    }
+    return retained;
+  }
   const window=input.prefWindow;
   if(!window||!input.hasPreferment||!['pref','mix'].includes(input.id))return assessEdit(input);
   const pref=input.id==='pref'?+input.at:+input.start-input.prefHours*HOUR;

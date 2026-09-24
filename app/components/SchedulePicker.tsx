@@ -7947,16 +7947,17 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           onEdit={id=>{const row=rows.find(r=>r.id===id);if(row){setEditingEnabled(true);beginRowEdit(id,row.at);}}}
           onToggleEditing={closeEdit}
           editor={<div data-schedule-editor style={{display:'grid',gap:10}}>
-            <ScheduleTimeSlider from={sliderFrom} to={sliderTo} value={+draft} onChange={setDraftAt} blocks={repairBlocks} isFr={isFr} label={isFr?'Ajuster '+editedRow?.name:'Adjust '+editedRow?.name}/>
+            <ScheduleTimeSlider from={Math.ceil(sliderFrom/900000)*900000} to={Math.floor(sliderTo/900000)*900000} value={+draft} onChange={setDraftAt} blocks={repairBlocks} isFr={isFr} label={isFr?'Ajuster '+editedRow?.name:'Adjust '+editedRow?.name}/>
             {prefWindow&&<small>{isFr?'Maturation conseillée':'Recommended maturation'} · {duration(prefWindow.min)}–{duration(prefWindow.max)} · {prefGoesInFridge?(isFr?'au réfrigérateur':'in the fridge'):(isFr?'à température ambiante':'at room temperature')}</small>}
-            {changed&&preview?.valid&&+draftMix!==+pendingStart&&<p role="status" style={{margin:0,fontSize:14}}>{isFr?'Pétrissage déplacé au ':'Mixing moved to '}{fmtCardDT(draftMix,isFr)}</p>}
+            {changed&&preview?.valid&&editingRow!=='mix'&&+draftMix!==+pendingStart&&<p role="status" style={{margin:0,fontSize:14}}>{isFr?'Pétrissage déplacé au ':'Mixing moved to '}{fmtCardDT(draftMix,isFr)}</p>}
+            <details><summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer',textDecoration:'underline',textUnderlineOffset:4,fontSize:14}}>{isFr?'Saisir une heure précise':'Enter an exact time'}</summary><div style={{display:'grid',gap:10}}>
             <label>{isFr?'Date':'Date'}<input type="date" aria-label={isFr?'Date de l’étape':'Step date'} value={draftRowTime.split('T')[0]??''} onChange={e=>{setAlternativeBake(null);setDraftRowTime(e.target.value+'T'+(draftRowTime.split('T')[1]||'08:00'));}} style={{minHeight:44,fontSize:16,width:'100%',boxSizing:'border-box'}}/></label>
             <label>{isFr?'Heure':'Time'}<input ref={readinessEditorRef} type="time" aria-label={editedRow?.name} value={draftRowTime.split('T')[1]??''}
               onChange={e=>{setAlternativeBake(null);setDraftRowTime(draftRowTime.split('T')[0]+'T'+e.target.value);}}
               onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();closeEdit();}if(e.key==='Enter'){e.preventDefault();saveEdit();}}}
               style={{minHeight:44,fontSize:16,width:'100%',minWidth:0,boxSizing:'border-box',border:'1px solid var(--border)',borderRadius:8,padding:8}}/></label>
             <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{[-30,-15,15,30].map(minutes=><button key={minutes} type="button" style={{minHeight:44,padding:8}} onClick={()=>{const at=new Date(+draft+minutes*60000);if(!Number.isFinite(+at))return;setAlternativeBake(null);setDraftRowTime(`${at.getFullYear()}-${String(at.getMonth()+1).padStart(2,'0')}-${String(at.getDate()).padStart(2,'0')}T${String(at.getHours()).padStart(2,'0')}:${String(at.getMinutes()).padStart(2,'0')}`);}}>{minutes>0?'+':''}{minutes} min</button>)}</div>
-            {draftFrom&&draftTo&&<p style={{margin:0,fontSize:14}}>{isFr?'Pétrissage conseillé':'Recommended mixing'} : {fmtCardDT(draftFrom,isFr)} → {fmtCardDT(draftTo,isFr)}</p>}
+            </div></details>
             {changed&&draftMessage&&<p role="alert" style={{margin:0,color:'var(--terra)',fontSize:14}}>{draftMessage}{rangeExplanation&&<> {rangeExplanation}</>}</p>}
             {canFindLater&&<button type="button" style={{minHeight:44}} onClick={()=>{const later=laterBakeAlternative(editInput);setNoLaterBake(!later);if(later)setAlternativeBake(later.times.bake);}}>{isFr?'Chercher une cuisson plus tardive':'Find a later bake time'}</button>}
             {canFindLater&&noLaterBake&&<small role="status">{isFr?'Aucune solution dans les 48 prochaines heures avec ces réglages.':'No solution in the next 48 hours with these settings.'}</small>}
