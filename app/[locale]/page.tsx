@@ -3028,7 +3028,7 @@ export default function Home() {
       ? (ovenConstruction === 'micro' ? (fr ? 'Four de microboulangerie' : 'Microbakery oven') : (fr ? 'Four vapeur domestique' : 'Home steam oven'))
       : localName(ovenData);
   const SIMPLE_STEPS: StepDef[] = ([
-    { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Choisissez votre pizza':'Choose your pizza'),
+    { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Quel style de pizza ?':'Which pizza style?'),
       value: styleKey ? styleDisplayName(styleKey) : null,
       // "Classic Neapolitan" and "New York Style" carry a qualifier the baker
       // does not need re-read on a summary line.
@@ -3085,7 +3085,7 @@ export default function Home() {
   const reviewTiming = eatTime ? eatTime.toLocaleString(fr ? 'fr-FR' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
   const reviewKitchen = `${kitchenTemp}°C · ${fr ? 'réfrigérateur' : 'fridge'} ${fridgeTemp}°C`;
   const CUSTOM_STEPS: StepDef[] = ([
-    { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Choisissez votre pizza':'Choose your pizza'),
+    { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Quel style de pizza ?':'Which pizza style?'),
       value: styleKey ? styleDisplayName(styleKey) : null,
       // "Classic Neapolitan" and "New York Style" carry a qualifier the baker
       // does not need re-read on a summary line.
@@ -3608,7 +3608,7 @@ export default function Home() {
 
           {bakeType && !showProductHome && destination==='batch' && !browsingFillings && <section className="bh-batch-content">
             {batchView==='style' ? <>
-              <h2>{bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Choisissez votre pizza':'Choose your pizza')}</h2>
+              <h2>{bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Quel style de pizza ?':'Which pizza style?')}</h2>
               <a href={`/${locale}/with-my-base?family=${bakeType}`} style={{display:'inline-flex',alignItems:'center',minHeight:44,marginBottom:12,color:'var(--terra)',fontSize:16}}>{bakeType==='bread'?(fr?'J’ai déjà une pâte ou du pain →':'I already have dough or bread →'):(fr?'J’ai déjà ma pâte →':'I already have my dough →')}</a>
               <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
               <button type="button" className="bh-section-back" onClick={backToProducts}>{fr?'← Pizza ou pain':'← Pizza or bread'}</button>

@@ -1,5 +1,9 @@
 # Bakerhub — continuation handoff
 
+## Pizza style versus toppings — 24 September 2026
+
+User approved concise heading clarification: style entry and both setup modes use “Quel style de pizza ?” / “Which pizza style?”. Topping catalogue heading uses “Quelles garnitures ?” / “Which toppings?”. No explanatory paragraph added. Existing photos retained; matching toppings across style photographs is a future image update, not part of this copy change. Preview only.
+
 ## Spiral ice default and atomic schedule saving — 24 September 2026
 
 User explicitly requested direct ice as the spiral-mixer default, with a small compatibility reminder. Selecting a different mixer now defaults spiral to direct and other mixers to premelt. Reselecting the same mixer preserves the chosen method. Profile prefills and legacy recipes use the same default; existing saved water-method choices remain unchanged. Direct ice uses the existing thermal calculation and recipe/equipment restrictions. Removed the blocking compatibility checkbox without falsely marking a machine as user-confirmed. Setup, recipe and guide retain “Vérifiez que votre pétrin accepte la glace.” where relevant. Ooni explicitly describes ice substitution for Halo Pro (https://ooni.com/blogs/recipes/ooni-100-biga-dough-using-halo-pro); this is not evidence that most spiral models permit it.
