@@ -156,7 +156,7 @@ test('country bread offers illustrated tartines and keeps loaf quantities when r
  await page.locator('.bh-batch-content').getByRole('button',{name:/^Pain de campagne/}).tap();
  const count=page.getByLabel('Nombre de pains',{exact:true});
  await count.fill('2');await count.blur();
- await expect(page.getByRole('heading',{name:'Garnitures',exact:true})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Garnitures · facultatif',exact:true})).toBeVisible();
  const images=page.locator('.bh-fillings-example img');
  await expect(images).toHaveCount(3);
  await images.first().scrollIntoViewIfNeeded();

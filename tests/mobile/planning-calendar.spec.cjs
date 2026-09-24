@@ -46,8 +46,8 @@ test('levain known peak uses maturity window; observation never becomes a dragga
  await enter(plan,'mix',new Date(+bake-3600000));await expect(confirm(plan)).toBeDisabled();await plan.getByRole('button',{name:'Annuler',exact:true}).click();expect((await stored(page)).startTime).toBe(+start+900000);
  await page.reload();await expect(plan).toBeVisible();await expect(row(plan,'mix').getByRole('slider')).toHaveValue(String(+start+900000));
 });
-test('levain future feeds use starter solver and cancel leaves saved plan intact',async({page})=>{
- const {plan,bake}=await openPlan(page,'custom',[],false,false,{yeastType:'sourdough',planningMode:'last_fed',lastFedTime:Date.now()-3*3600000,lastFedAge:'today',starterLocation:'rt',lastFeedRatio:1,nextFeedRatio:1,ratioMode:'keep',starterTimingValid:true});
+for(const storage of ['rt','fridge'])test(`levain ${storage} future feeds use starter solver and cancel leaves saved plan intact`,async({page})=>{
+ const {plan,bake}=await openPlan(page,'custom',[],false,false,{yeastType:'sourdough',planningMode:'last_fed',lastFedTime:Date.now()-(storage==='rt'?3*3600000:8*86400000),lastFedAge:storage==='rt'?'today':'week',starterLocation:storage,lastFeedRatio:1,nextFeedRatio:1,ratioMode:'keep',starterTimingValid:true});
  const mix=row(plan,'mix').getByRole('slider');await expect(mix).toBeVisible();const original=(await stored(page)).startTime;
  await mix.focus();await mix.press('ArrowDown');await expect(plan.locator('[data-key-timing^="starter:"]')).not.toHaveCount(0);
  await expect(confirm(plan)).toBeEnabled();await plan.getByRole('button',{name:'Annuler',exact:true}).click();expect((await stored(page)).startTime).toBe(original);

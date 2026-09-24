@@ -2888,7 +2888,6 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
       starterIsDepletedAt: null, starterRefeedTime: null,
       starterStateNote: null, adjPeakH: 0,
     };
-    onStarterPeakTimeChange?.(null);
     const peakH = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
     const ryeF  = starterHasRye ? 0.8 : 1.0;
     const matF  = starterMature ? 1.0 : 1.2;
@@ -2898,7 +2897,6 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     const warmupH  = getStarterFridgeWarmupH(kitchenTemp);
 
     if (planningMode === 'know_peak' && knownPeakTime) {
-      onStarterPeakTimeChange?.(knownPeakTime);
       return { ...NULL_RESULT, peakTime: knownPeakTime, adjPeakH, feedTime: lastFedTime ?? null };
     }
 
@@ -2939,7 +2937,6 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
             return 1.5;
           })();
           const decliningPeak = new Date(refeedNow.getTime() + adjPeakH * _revivalStretch * 3600000);
-          onStarterPeakTimeChange?.(decliningPeak);
           return {
             peakTime: decliningPeak,
             feedTime: lastFedTime,
@@ -2966,7 +2963,6 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         // (scoring peak ≠ cold bell → false green). The fridge-scan below owns
         // the "use straight from removal" path and searches the removal time
         // itself, keeping scoring ≡ bell ≡ card by construction.
-        onStarterPeakTimeChange?.(null);
         return { ...NULL_RESULT, peakTime: null, feedTime: lastFedTime, adjPeakH };
       }
 
@@ -3058,7 +3054,6 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           }
         }
 
-        onStarterPeakTimeChange?.(rtPeakTime);
         return {
           peakTime: rtPeakTime,
           feedTime: lastFedTime,
@@ -3080,7 +3075,6 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
       // candidate which findOptimalPositionSourdough picks up as Peak 2B.
       if (hoursSinceFeed < troughH) {
         const decliningPeak = new Date(lastFedTime.getTime() + adjPeakH * 3600000);
-        onStarterPeakTimeChange?.(decliningPeak);
         return {
           peakTime: decliningPeak,
           feedTime: lastFedTime,
@@ -3115,7 +3109,6 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         return 1.5;
       })();
       const depletedPeak = new Date(refeedNow.getTime() + adjPeakH * _depletedStretch * 3600000);
-      onStarterPeakTimeChange?.(depletedPeak);
       return {
         peakTime: depletedPeak,
         feedTime: lastFedTime,
@@ -3250,6 +3243,8 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
 
     // Get derived starter state (no setState calls inside)
     const derived = deriveStarterPeakTime(et, targetMixTime);
+    if(probe)probe.effects.push(()=>onStarterPeakTimeChange?.(derived.peakTime));
+    else onStarterPeakTimeChange?.(derived.peakTime);
     const _feedTime = derived.feedTime;
     let _starterRefeedTime = derived.starterRefeedTime;
     // Baker-pinned refresh (dragged diamond): honored across all families —
@@ -4643,6 +4638,16 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     // at gen time — the same coherence guard the Path B generator already
     // enforces, applied to non-Path-B too.
     function pushCand(c: Omit<Candidate, 'actionTimesMs'>): void {
+      // Preview candidates must be scored and checked at the baker's pinned
+      // mix, not at a nearby ideal peak that will later be overwritten.
+      if(targetMixTime){
+        const mixHBF=(bakeMs-+targetMixTime)/3600000;
+        const sscore=starterScore(mixHBF,c.peakHBF);
+        if(sscore!==2||!riseCompleteEnough(mixHBF,c.peakHBF,c.feed2Ms??c.feedMs))return;
+        const comfort=!!(c.isFutureFeedPath||c.isFridgeHoldPath);
+        c={...c,mixHBF,sscore,score:c.score-combinedScore(c.mixHBF,c.peakHBF,c.feedMs,comfort)+combinedScore(mixHBF,c.peakHBF,c.feedMs,comfort)};
+      }
+
       // Baker-pinned pre-mix: only candidates whose future feed sits on the
       // pin survive (22.5 min = 1.5 grid steps). Peak-2 candidates are
       // governed by manualRefreshRef, not this pin.
@@ -4884,10 +4889,10 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
       const idealMixTime2 = targetMixTime ?? new Date(bakeMs - ((sweetFromHBF + sweetToHBF) / 2) * 3600000);
       const idealMixHBF2  = (bakeMs - idealMixTime2.getTime()) / 3600000;
       const baseFeed2    = new Date(idealMixTime2.getTime() - adjPeakH * 3600000);
-      const searchStart2 = targetMixTime
+      const searchStart2 = manualFeed2Ref.current!=null ? new Date(manualFeed2Ref.current) : targetMixTime
         ? new Date(baseFeed2.getTime() - 15 * 60000)
         : new Date(baseFeed2.getTime() - 36 * 3600000);
-      const searchEnd2 = targetMixTime
+      const searchEnd2 = manualFeed2Ref.current!=null ? new Date(manualFeed2Ref.current) : targetMixTime
         ? new Date(baseFeed2.getTime() + 15 * 60000)
         : new Date(baseFeed2.getTime() + 2 * 3600000);
 
@@ -5143,12 +5148,12 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
       const refreshPeakMs = refreshMs_pathB + _adjPeakH_refresh * 3600000;
       const idealMixTime_pathB = targetMixTime ?? new Date(bakeMs - ((sweetFromHBF + sweetToHBF) / 2) * 3600000);
       const baseFeed_pathB = new Date(idealMixTime_pathB.getTime() - adjPeakH * 3600000);
-      const searchStart_pathB = targetMixTime
+      const searchStart_pathB = manualFeed2Ref.current!=null ? new Date(manualFeed2Ref.current) : targetMixTime
         ? new Date(baseFeed_pathB.getTime() - 15 * 60000)
         : new Date(baseFeed_pathB.getTime() - 24 * 3600000);
       // Widened upper bound (was +2h) so mid-range pre-mix feeds — which peak
       // at a later, in-zone mix — are reachable via Path B as well.
-      const searchEnd_pathB = targetMixTime
+      const searchEnd_pathB = manualFeed2Ref.current!=null ? new Date(manualFeed2Ref.current) : targetMixTime
         ? new Date(baseFeed_pathB.getTime() + 15 * 60000)
         : new Date(baseFeed_pathB.getTime() + 14 * 3600000);
       const minHoldH = 6;
@@ -7619,7 +7624,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
                 cursor: 'pointer',
               }}
             >
-              <span style={{ color: 'var(--terra)' }}>↺</span>
+              <span aria-hidden="true" style={{ color: 'var(--terra)' }}>↺</span>
               {locale === 'fr' ? 'Revenir à la recommandation' : 'Reset to recommendation'}
             </button>
           )}
@@ -8058,6 +8063,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
             setKeyAdjusted(JSON.stringify([+checked.probe.start,+pendingEatTime,prefOffsetH,result.starterEvents.map(e=>[e.kind,+e.time])])!==keyBaselineRef.current);setStarterPins(null);closeEdit();
           }else{setKeyAdjusted(JSON.stringify([+draftMix,+draftBake,draftPrefOffset,displayStarterEvents.map(e=>[e.kind,+e.time])])!==keyBaselineRef.current);saveEdit();}
         };
+        if(isSourdough&&((planningMode==='know_peak'&&!knownPeakTime)||(planningMode==='last_fed'&&(!lastFedTime||lastFedAge===null))))return null;
         return <ScheduleKeyTimings anchors={anchors} blocks={repairBlocks} isFr={isFr} onChange={isSourdough?starterChange:commercialChange} check={check} cacheKey={cacheKey}>
           {editingRow&&<div style={{display:'grid',gap:8,marginTop:12}}>
             <button type="button" onClick={accept} disabled={!dirty||!valid} style={{minHeight:48,padding:12,border:0,borderRadius:10,background:'var(--terra)',color:'white',fontSize:16}}>{isFr?'Valider ces horaires':'Confirm these times'}</button>
