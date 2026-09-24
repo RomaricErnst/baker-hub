@@ -4651,8 +4651,8 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
       // Baker-pinned pre-mix: only candidates whose future feed sits on the
       // pin survive (22.5 min = 1.5 grid steps). Peak-2 candidates are
       // governed by manualRefreshRef, not this pin.
-      if (manualFeed2Ref.current != null && !c.usingPeak2) {
-        if (c.feed2Ms == null || Math.abs(c.feed2Ms - manualFeed2Ref.current) > 22.5 * 60000) return;
+      if (manualFeed2Ref.current != null) {
+        if (c.usingPeak2 || c.feed2Ms == null || Math.abs(c.feed2Ms - manualFeed2Ref.current) > 22.5 * 60000) return;
       }
       const fridgeTimes = computeNonPathBFridgeTimes(c, adjPeakH, ratioMultiplier);
       if (fridgeTimes && !(fridgeTimes.fridgeInMs < fridgeTimes.fridgeOutMs)) return;
@@ -5716,8 +5716,8 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         // blockers — and rec stayed null because every ratio looked clear.
         function pushCand_r(c: Omit<Candidate, 'actionTimesMs'>): void {
           // Mirror pushCand's pre-mix pin (evaluator ≡ solver).
-          if (manualFeed2Ref.current != null && !c.usingPeak2) {
-            if (c.feed2Ms == null || Math.abs(c.feed2Ms - manualFeed2Ref.current) > 22.5 * 60000) return;
+          if (manualFeed2Ref.current != null) {
+            if (c.usingPeak2 || c.feed2Ms == null || Math.abs(c.feed2Ms - manualFeed2Ref.current) > 22.5 * 60000) return;
           }
           const fridgeTimes = computeNonPathBFridgeTimes(c, adjPeakH_r, ratioMult_r);
           if (fridgeTimes && !(fridgeTimes.fridgeInMs < fridgeTimes.fridgeOutMs)) return;
@@ -8047,7 +8047,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         anchors.push({id:'mix',name:isFr?'Pétrir la pâte':'Mix the dough',at:+times.start,editable:!startTimeInPast&&!readinessUnsupported,
           ...clampBounds(+(bounds.from??new Date(+times.start-6*hour)),+(bounds.to??new Date(+times.start+6*hour)),+times.start),
           detail:duration((+times.bake-+times.start)/hour)+(isFr?' avant cuisson':' before baking'),
-          note:editingRow==='mix'?(isSourdough?starterPreview?.message:draftMessage):!editingRow?readinessPanel:null});
+          note:editingRow==='mix'?(isSourdough?starterPreview?.message:draftMessage):!editingRow?(isSourdough&&!solverResult&&!readinessUnsupported?starterPreview?.message:readinessPanel):null});
         const cacheKey=JSON.stringify([originalSignature,starterPins,editingRow,draftRowTime,editBaseTimes,kitchenTemp,fridgeTemp,flourStrength,lastFeedRatio,nextFeedRatio,ratioMode,starterLocation,planningMode,lastFedAge,knownPeakTime,prefermentType,repairBlocks]);
         const check=(id:string,at:number)=>isSourdough?evaluateStarter(pinsFor(id,at)).valid:proposeScheduleEdit({...slotInput,id,at:new Date(at)}).valid;
         const dirty=isSourdough?starterPins!==null&&(+starterMix!==+pendingStart||JSON.stringify(starterEvents.map(e=>[e.kind,+e.time]))!==JSON.stringify(displayStarterEvents.map(e=>[e.kind,+e.time]))):changed&&(+draftMix!==+pendingStart||+draftBake!==+pendingEatTime||draftPrefOffset!==prefOffsetH);
