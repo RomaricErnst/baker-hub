@@ -21,7 +21,7 @@ export default function ScheduleTimeline({rows,blocks,isFr,editingEnabled,editin
   const button={minHeight:44,padding:'8px 12px',fontSize:16,border:'1px solid var(--border)',borderRadius:10,background:'var(--paper)',color:'var(--char)',cursor:'pointer'};
   return <section aria-label={isFr?'Votre planning':'Your schedule'} style={{marginTop:20}}>
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',marginBottom:12}}>
-      <h3 style={{fontSize:19,margin:0}}>{isFr?'Votre planning':'Your schedule'}</h3>
+      <h3 style={{fontSize:19,margin:0}}>{isFr?'Mon planning':'My schedule'}</h3>
 
     </div>
     {items.map((item,index)=>{
@@ -32,7 +32,7 @@ export default function ScheduleTimeline({rows,blocks,isFr,editingEnabled,editin
       return <div key={r.id}>{day}<div style={{display:'grid',gridTemplateColumns:'54px minmax(0,1fr)',gap:12,padding:'10px 0',alignItems:'start'}}>
         <time dateTime={new Date(r.at).toISOString()} style={{fontSize:15,fontVariantNumeric:'tabular-nums',paddingTop:10}}>{r.originalAt!==undefined&&<span style={{display:'block',textDecoration:'line-through',opacity:.5,fontSize:12}}>{timelineDayKey(r.originalAt)!==timelineDayKey(r.at)?new Date(r.originalAt).toLocaleDateString(isFr?'fr-FR':'en-GB',{day:'numeric',month:'short'})+' ':''}{fmt(r.originalAt)}</span>}{r.editable?<button type="button" aria-label={`${isFr?'Modifier':'Edit'} ${r.name}`} onClick={()=>onEdit(r.id)} style={{border:0,background:'transparent',color:'inherit',font:'inherit',padding:'4px 0',minHeight:44,cursor:'pointer',textDecoration:'underline',textUnderlineOffset:4}}>{fmt(r.at)}</button>:r.timeText.startsWith('≈')?'≈':fmt(r.at)}</time>
         <div style={{borderLeft:`3px solid ${r.color}`,padding:'10px 12px',borderRadius:5,background:'var(--warm)',minWidth:0,opacity:r.isHistory?.7:1}}>
-          <div style={{display:'flex',gap:8,justifyContent:'space-between',alignItems:'center',flexWrap:'wrap'}}><strong style={{fontSize:16}}>{r.name}</strong></div>
+          <div style={{display:'flex',gap:8,justifyContent:'space-between',alignItems:'center',flexWrap:'wrap'}}><strong style={{fontSize:16}}>{r.name}</strong>{r.editable&&editingId!==r.id&&<button type="button" onClick={()=>onEdit(r.id)} style={button}>{isFr?'Modifier':'Edit'}</button>}</div>
           {r.endAt&&r.endAt>r.at&&<div style={{fontSize:13,color:'var(--smoke)',marginTop:4}}>{timelineDuration(r.endAt-r.at)}</div>}
           {r.isHistory&&<div style={{fontSize:13}}>{isFr?'Déjà passé':'Past event'}</div>}
           {editingId===r.id&&<div style={{marginTop:10}}>{editor}</div>}

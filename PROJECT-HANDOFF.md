@@ -1,5 +1,13 @@
 # Bakerhub — continuation handoff
 
+## Maturity windows and vertical schedule editor — 24 September 2026
+
+User approved a direct branch prototype. The previous editor incorrectly froze the preferment recommendation as a required duration. Commercial edits now preserve the other anchor when inside the existing method's recommended window, otherwise search quarter-hour offsets and revalidate the full schedule. The window uses the existing getPrefOptH/prefZoneConstants temperature/storage model; no new fermentation calibration. Current storage mode is retained and explicitly shown. Fixed baking time is preserved; later baking remains a separate explicit proposal. Complex starter plans retain their existing restrictions.
+
+Selected actions reveal a linear vertical time slider, shaded unavailability, exact date/time fallback, Apply/Cancel and undo. The surrounding agenda remains compact and is not itself a draggable time scale. Only the handle consumes touch scrolling. The slider spans candidate times, not a guarantee that every point satisfies all downstream constraints; the actual builder validates each edit. Planning copy becomes “Planifier la préparation” and “Mon planning”.
+
+Local verification: 274 unit/domain/component tests and TypeScript passed, production build passed. Regression includes poolish 15:00 → mixing 07:00 → bake 18:00 with 23:00–07:00 blocked, preserving morning mixing with 16h maturation in the provided cold-window test. Added iPhone-WebKit slider/window/undo coverage and updated persistence expectations. Deployment and runtime verification are pending at this checkpoint. Preview only, production unchanged.
+
 ## Approved incised b icon — 24 September 2026
 
 User selected concept 3 and authorized preview publication. Added a flat cocoa/ivory SVG master and actual 32/180/192/512px PNG exports, plus 16/32/48px favicon ICO. Incision belongs to the standalone icon; the bakerhub. header wordmark is unchanged. Versioned filenames replace the dough-photo references in metadata and manifest; manifest MIME types and dimensions now match the assets. Existing installed home-screen shortcuts may retain cached artwork. Regenerate PNGs with scripts/build-brand-icons.cjs. Visual check at 512 and 32px: legible b and open counter; incision subtle at favicon size. Preview only.

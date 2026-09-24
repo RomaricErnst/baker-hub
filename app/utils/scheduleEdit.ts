@@ -7,6 +7,7 @@ export type EditIssue = 'date'|'past'|'preferment'|'range'|'busy'|'timing'|'unsu
 export interface EditInput extends Omit<ScheduleDraftInput,'from'|'to'|'methodValid'|'extraActions'> {
   id: string; at: Date; prefHours: number; hasPreferment: boolean;
   prefWarmupHours: number; supported: boolean;
+  prefWindow?: {min: number; max: number};
   window: (bake: Date) => {from: Date|null; to: Date|null};
   methodValid: (times: EditTimes) => boolean;
   extraActions?: ScheduleDraftInput['extraActions'];
@@ -16,10 +17,8 @@ export type EditResult = {
   schedule: ReturnType<typeof assessScheduleDraft>['schedule'];
   conflict?: string; earliestMix?: Date; availableHours?: number;
 };
-/** A time edit is an intent, not an independent timestamp. Preserve the chosen
- * preferment duration and storage method. Never move the baking target here.
- * Durations come from the current protocol, not a new maturity calibration. */
-export function proposeScheduleEdit(input: EditInput): EditResult {
+/** Validate one candidate with the actual builder and the chosen storage method. */
+function assessEdit(input: EditInput): EditResult {
   const {id,at,prefHours,hasPreferment,now=Date.now()}=input;
   const start=id==='mix'?at:id==='pref'?new Date(+at+prefHours*HOUR):input.start;
   const bake=id==='bake'?at:input.bake;
@@ -33,14 +32,32 @@ export function proposeScheduleEdit(input: EditInput): EditResult {
   const bounds=input.window(bake);
   const methodActions=hasPreferment?[{id:'preferment',at:pref},...(input.prefWarmupHours>0?[{id:'preferment-cold-out',at:new Date(+start-input.prefWarmupHours*HOUR)}]:[])]:[];
   const actions=[...methodActions,...(input.extraActions??[])];
-  const conflict=findAvailabilityConflicts(actions,input.blocks,now)[0];
+  const conflict=findAvailabilityConflicts([...actions,{id:'mix',at:start}],input.blocks,now)[0];
   if(conflict)return fail('busy',{conflict:conflict.action.id});
+  if(hasPreferment&&input.prefWindow&&(prefHours<input.prefWindow.min||prefHours>input.prefWindow.max))return fail('preferment');
   if(!input.methodValid(times))return fail('preferment');
   const result=assessScheduleDraft({...input,start,bake,...bounds,extraActions:actions,methodValid:true,now});
   return {times,schedule:result.schedule,valid:result.valid,
     issue:result.reason==='method'?'preferment':result.reason,
     conflict:result.conflict?.id,
     ...(id==='pref'?{earliestMix:start,availableHours:(+input.start-+at)/HOUR}:{})};
+}
+
+/** Keep unaffected anchors where possible. Search the existing method's maturity
+ * window, never a fixed recommended duration. Baking is always pinned. */
+export function proposeScheduleEdit(input: EditInput): EditResult {
+  const window=input.prefWindow;
+  if(!window||!input.hasPreferment||!['pref','mix'].includes(input.id))return assessEdit(input);
+  const pref=input.id==='pref'?+input.at:+input.start-input.prefHours*HOUR;
+  const mix=input.id==='mix'?+input.at:+input.start;
+  const evaluate=(offset:number)=>assessEdit({...input,prefHours:offset});
+  const retained=evaluate((mix-pref)/HOUR);
+  if(retained.valid||+input.at<=(input.now??Date.now())||['date','unsupported'].includes(retained.issue??''))return retained;
+  const offsets=new Set<number>([window.min,window.max]);
+  for(let h=Math.ceil(window.min*4)/4;h<=window.max;h+=.25)offsets.add(h);
+  const ordered=[...offsets].sort((a,b)=>Math.abs(a-(mix-pref)/HOUR)-Math.abs(b-(mix-pref)/HOUR));
+  for(const offset of ordered){const candidate=evaluate(offset);if(candidate.valid)return candidate;}
+  return retained;
 }
 
 /** Alternatives are proposals only. Every candidate is revalidated against the
