@@ -2,7 +2,7 @@ name: iPhone WebKit audit
 
 on:
   push:
-    branches: [codex/prototype-migration-20260920, codex/navigation-six-sections-20260922]
+    branches: [codex/prototype-migration-20260920, codex/navigation-six-sections-20260922, codex/navigation-polish-20260923]
     paths-ignore: ['docs/**', 'PROJECT-HANDOFF.md', '**/*.md']
   workflow_dispatch:
 
@@ -15,13 +15,13 @@ concurrency:
 
 jobs:
   iphone:
-    if: github.ref == 'refs/heads/codex/prototype-migration-20260920' || github.ref == 'refs/heads/codex/navigation-six-sections-20260922'
+    if: github.ref == 'refs/heads/codex/prototype-migration-20260920' || github.ref == 'refs/heads/codex/navigation-six-sections-20260922' || github.ref == 'refs/heads/codex/navigation-polish-20260923'
     runs-on: macos-14
     timeout-minutes: 20
     env:
       CI: 'true'
       NEXT_TELEMETRY_DISABLED: '1'
-      BAKER_NAV_V2: ${{ github.ref == 'refs/heads/codex/navigation-six-sections-20260922' && '1' || '0' }}
+      BAKER_NAV_V2: ${{ github.ref != 'refs/heads/codex/prototype-migration-20260920' && '1' || '0' }}
       # Deliberately fake, isolated configuration. No production services or secrets.
       NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
       NEXT_PUBLIC_SUPABASE_ANON_KEY: mobile-audit-placeholder-not-a-secret

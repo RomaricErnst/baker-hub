@@ -285,10 +285,13 @@ test('bread family return preserves choices; wraps and meal examples are discove
  const quantity=page.getByLabel('Nombre de pièces',{exact:true});await quantity.fill('5');await quantity.blur();
  await page.getByRole('button',{name:'Changer de pain',exact:true}).tap();
  await page.getByRole('button',{name:'← Pizza ou pain',exact:true}).tap();
- const dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();
- await dialog.getByRole('button',{name:'Pain',exact:true}).tap();await expect(dialog).toHaveCount(0);
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+ await expect(page.getByRole('heading',{name:'Que souhaitez-vous préparer ?',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Pain',exact:true}).tap();
  await page.getByRole('button',{name:/^Continuer avec/}).tap();
  await expect(quantity).toHaveValue('5');await noOverflow(page);
+ await page.goBack();await expect(page.getByRole('heading',{name:'Choisissez votre pain',exact:true})).toBeVisible();
+ await page.goForward();await expect(quantity).toHaveValue('5');
 });
 
 test('landing photos stay above text and bread meal examples are readable',async({page})=>{

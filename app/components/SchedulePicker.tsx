@@ -7,6 +7,7 @@ import FermentChart, { scheduleColdIntervals, getPrefOptH, getPrefPeakH_RT, getS
 import FermentationReadiness from './FermentationReadiness';
 import ScheduleTimeline from './ScheduleTimeline';
 import {assessScheduleDraft} from '../utils/scheduleDraft';
+import {proposeScheduleEdit, laterBakeAlternative, type EditInput} from '../utils/scheduleEdit';
 import { isTimeBlocked, findAvailabilityConflicts, type AvailabilityAction } from '../utils/scheduleAvailability';
 import type { MixerType } from '../data';
 
@@ -2062,10 +2063,13 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   const [editingEnabled, setEditingEnabled] = useState(false);
   const [draftRowTime, setDraftRowTime] = useState('');
   const [lastEditedRow, setLastEditedRow] = useState<string | null>(null);
+  const [undoTimes,setUndoTimes]=useState<{start:Date;bake:Date;offset:number;blocks:AvailabilityBlock[]}|null>(null);
+  const [alternativeBake,setAlternativeBake]=useState<Date|null>(null);
+  const acceptedBakeRef=useRef<number|null>(null);
   function beginRowEdit(id:string,at:number) {
     const d=new Date(at);
     setDraftRowTime(new Date(+d-d.getTimezoneOffset()*60000).toISOString().slice(0,16));
-    setEditingEnabled(true);setEditingRow(id);setLastEditedRow(null);
+    setEditingEnabled(true);setEditingRow(id);setLastEditedRow(null);setAlternativeBake(null);
   }
   const readinessEditorRef = useRef<HTMLInputElement>(null);
   const availabilityControlsRef = useRef<HTMLDivElement>(null);
@@ -2115,7 +2119,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   // Everything the baker does afterwards, including editing the bake time,
   // re-plans normally — that is the escape hatch for someone who had not
   // actually started.
-  const resumeFrozenRef = useRef(sessionRestored && recipeGenerated);
+  const resumeFrozenRef = useRef(sessionRestored || confirmedPlan);
   useEffect(() => {
     const t = setTimeout(() => { resumeFrozenRef.current = false; }, 150);
     return () => clearTimeout(t);
@@ -2482,6 +2486,11 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
 
   useEffect(() => {
     if (!eatTimeSet || resumeFrozenRef.current) return;
+    if (acceptedBakeRef.current === +pendingEatTime) {
+      acceptedBakeRef.current = null;
+      setStartComputed(true);
+      return;
+    }
     if (confirmedPlan) {
       setPendingStart(startTime);
       setHasDragged(true);
@@ -2533,7 +2542,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
 
   // Auto-regenerate preset blocks when bake date changes
   useEffect(() => {
-    if (!eatTimeSet || confirmedPlan) return;
+    if (!eatTimeSet || confirmedPlan || resumeFrozenRef.current) return;
     const wasWorkActive = blocks.some(b => b.label.startsWith('Work · '));
     // Night preset labels are `<Weekday> night` (suffix), not `Night · ` —
     // the old prefix check never matched, so nights were both (a) never
@@ -7812,6 +7821,10 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           });
         }
 
+        if(!isSourdough&&cardPrefTime&&prefGoesInFridge&&prefRTWarmupH>0&&prefRemoveFromFridgeTime){
+          rows.push({id:'pref-out',at:+prefRemoveFromFridgeTime,name:isFr?'Sortir le préferment du réfrigérateur':'Take preferment out of the fridge',timeText:fmtCardDT(prefRemoveFromFridgeTime,isFr),marker:'cold',color:'#5B87AD',editable:false,waitLabel:isFr?'Retour à température':'Warming up'});
+        }
+
         // 3 — Start Dough
         rows.push({
           id: 'mix',
@@ -7849,26 +7862,34 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         });
 
         if(readyOffset) rows.push({id:'ready',at:+pendingEatTime+readyOffset*60000,name:readyTimeLabel??(isFr?'Prêt':'Ready'),timeText:fmtCardDT(new Date(+pendingEatTime+readyOffset*60000),isFr),marker:'bake',color:'#7A4A22',editable:false});
-        for(const row of rows) if(lastEditedRow===row.id && row.id!=='mix')row.note=<>{row.note}<p style={{margin:'4px 0'}}>{isFr?'Horaire conservé.':'Time kept.'}</p></>;
+        for(const row of rows) if(row.id==='pref')row.waitLabel=isFr?'Maturation du préferment':'Preferment maturation';
         rows.sort((a, b) => a.at - b.at);
 
         const editedRow=rows.find(r=>r.id===editingRow);
         const draft=new Date(draftRowTime);
         const changed=!!editedRow&&+draft!==editedRow.at;
-        const draftMix=editingRow==='mix'?draft:pendingStart;
-        const draftBake=editingRow==='bake'?draft:pendingEatTime;
-        const draftPrefOffset=editingRow==='pref'?(+pendingStart-+draft)/3600000:prefOffsetH;
-        const draftBounds=isSourdough?{from:readinessFromH,to:readinessToH}:commercialReadinessWindow({...(STYLE_FERM_DEFAULTS[styleKey]??FERM_FALLBACK),flourStrength,kitchenTemp,preheatMin,totalWindowH:(+draftBake-Date.now())/3600000});
-        const draftFrom=draftBounds.from!==null?new Date(+draftBake-draftBounds.from*3600000):null;
-        const draftTo=draftBounds.to!==null?new Date(+draftBake-draftBounds.to*3600000):null;
-        const starterPreviewSupported=!isSourdough||(planningMode==='know_peak'&&!!knownPeakTime&&displayStarterEvents.every(e=>e.kind==='known_peak'||e.kind==='last_fed')
-          &&knownPeakMixUsable(draftMix,knownPeakTime,getPrefPeakH_RT('sourdough',kitchenTemp,styleKey)*(starterHasRye?.8:1)*(starterMature?1:1.2)*(1+.5*Math.log(lastFeedRatio)),flourStrength));
-        const extraActions=isSourdough?methodActions(draftMix):hasPrefActive?[{id:'preferment',at:new Date(+draftMix-draftPrefOffset*3600000)},...(prefGoesInFridge&&prefRTWarmupH>0?[{id:'preferment-cold-out',at:new Date(+draftMix-prefRTWarmupH*3600000)}]:[])]:[];
-        const preview=changed?assessScheduleDraft({start:draftMix,bake:draftBake,blocks:_blocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,from:draftFrom,to:draftTo,extraActions,
-          methodValid:starterPreviewSupported&&!editingRow?.startsWith('ev:')&&!readinessUnsupported&&commercialPrefermentPlanValid({type:prefermentType,inFridge:prefGoesInFridge,mixTime:draftMix,bakeTime:draftBake,offsetHours:draftPrefOffset,blocks:_blocks})}):null;
+        const editInput:EditInput={
+          id:editingRow??'',at:draft,start:pendingStart,bake:alternativeBake??pendingEatTime,
+          blocks:repairBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,
+          prefHours:prefOffsetH,hasPreferment:hasPrefActive,
+          prefWarmupHours:prefGoesInFridge?prefRTWarmupH:0,
+          supported:!readinessUnsupported&&(!isSourdough||(planningMode==='know_peak'&&!!knownPeakTime&&displayStarterEvents.every(e=>e.kind==='known_peak'||e.kind==='last_fed'))),
+          window:bake=>{
+            const bounds=isSourdough?{from:readinessFromH,to:readinessToH}:commercialReadinessWindow({...(STYLE_FERM_DEFAULTS[styleKey]??FERM_FALLBACK),flourStrength,kitchenTemp,preheatMin,totalWindowH:(+bake-Date.now())/3600000});
+            return {from:bounds.from!==null?new Date(+bake-bounds.from*3600000):null,to:bounds.to!==null?new Date(+bake-bounds.to*3600000):null};
+          },
+          methodValid:times=>isSourdough?!!knownPeakTime&&knownPeakMixUsable(times.start,knownPeakTime,getPrefPeakH_RT('sourdough',kitchenTemp,styleKey)*(starterHasRye?.8:1)*(starterMature?1:1.2)*(1+.5*Math.log(lastFeedRatio)),flourStrength):commercialPrefermentPlanValid({type:prefermentType,inFridge:prefGoesInFridge,mixTime:times.start,bakeTime:times.bake,offsetHours:times.prefHours,blocks:repairBlocks}),
+          extraActions:isSourdough?methodActions(pendingStart):[],
+        };
+        const preview=changed?proposeScheduleEdit(editInput):null;
+        const draftMix=preview?.times.start??pendingStart;
+        const draftBake=preview?.times.bake??pendingEatTime;
+        const draftPrefOffset=prefOffsetH;
+        const {from:draftFrom,to:draftTo}=editInput.window(draftBake);
+        const later=changed&&preview&&!preview.valid&&!isSourdough&&!['past','date','unsupported','busy'].includes(preview.issue??'')?laterBakeAlternative(editInput):null;
         const previewRows=rows.filter(row=>!row.id.startsWith('dough:')||!preview?.schedule||preview.schedule.availabilityActions?.some(a=>`dough:${a.id}`===row.id)).map(row=>{
           const action=preview?.schedule?.availabilityActions?.find(a=>`dough:${a.id}`===row.id||a.id===row.id);
-          const at=row.id==='pref'?+draftMix-draftPrefOffset*3600000:row.id==='ready'?+draftBake+readyOffset*60000:action?+action.at:row.at;
+          const at=row.id==='pref'?+draftMix-draftPrefOffset*3600000:row.id==='pref-out'?+draftMix-prefRTWarmupH*3600000:row.id==='ready'?+draftBake+readyOffset*60000:action?+action.at:row.at;
           return preview?.schedule?{...row,at,originalAt:at!==row.at?row.at:undefined,endAt:action?(action.id==='preheat'?+action.at+preheatMin*60000:action.end?+action.end:undefined):row.endAt,note:undefined,timeText:fmtCardDT(new Date(at),isFr)}:row;
         }).sort((a,b)=>a.at-b.at);
         // A new candidate may introduce or remove a cold phase: display its full action set.
@@ -7877,24 +7898,56 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           previewRows.push({id:`dough:${action.id}`,at:+action.at,endAt:action.id==='preheat'?+action.at+preheatMin*60000:action.end?+action.end:undefined,name:(conflictNames[action.id]??['Étape','Step'])[isFr?0:1],timeText:fmtCardDT(action.at,isFr),marker:action.id.startsWith('cold')?'cold':'step',color:action.id.startsWith('cold')?'#5B87AD':'#3D5A30',editable:false,waitLabel:action.id==='cold-in'||action.id==='cold-in-2'?(isFr?'Fermentation au réfrigérateur':'Fermentation in the fridge'):undefined});
         }
         previewRows.sort((a,b)=>a.at-b.at);
-        const draftMessage=preview?.reason==='busy'?(isFr?'Indisponibilité pendant ':'Unavailable during ')+(conflictNames[preview.conflict?.id??'']??['une étape','an action'])[isFr?0:1]
-          :preview?.reason==='range'?(isFr?'Ce créneau sort de la plage conseillée. Choisissez une heure dans la plage indiquée.':'This time falls outside the recommended range. Choose a time inside the shown range.')
-          :preview?.reason==='method'?(isSourdough?(isFr?'Ce changement nécessite de recalculer le plan du levain. Modifiez ses informations ci-dessus ; cet horaire ne peut pas être validé ici.':'This change requires a new starter plan. Update its details above; this time cannot be validated here.'):(isFr?'Le préferment ne peut pas être préparé dans ce créneau.':'The preferment cannot be prepared in this window.'))
-          :preview?.reason?(isFr?'Ce plan ne laisse pas le temps nécessaire aux étapes. Choisissez un autre horaire.':'This plan does not leave enough time for its actions. Choose another time.'):null;
-        const saveEdit=()=>{if(!changed||!preview?.valid)return;commitRowTime(editingRow,draftRowTime);setLastEditedRow(editingRow);setEditingRow(null);};
-        return <ScheduleTimeline rows={changed&&preview?.schedule?previewRows:rows} blocks={_blocks} isFr={isFr} editingEnabled={editingEnabled} editingId={editingRow}
-          onEdit={id=>{const row=rows.find(r=>r.id===id);if(row)beginRowEdit(id,row.at);}}
-          onToggleEditing={()=>{setEditingEnabled(v=>!v);setEditingRow(null);}}
+        const duration=(hours:number)=>Math.max(0,hours).toLocaleString(isFr?'fr-FR':'en-GB',{maximumFractionDigits:1})+' h';
+        const remaining=(+draftBake-+draftMix)/3600000;
+        const minNeeded=draftTo?(+draftBake-+draftTo)/3600000:null;
+        const maxAllowed=draftFrom?(+draftBake-+draftFrom)/3600000:null;
+        const rangeExplanation=preview&&!preview.valid&&minNeeded!==null&&remaining<minNeeded
+          ?(isFr?`Temps avant cuisson : ${duration(remaining)} ; ce protocole demande au moins ${duration(minNeeded)}. Il manque ${duration(minNeeded-remaining)}.`:`Time before baking: ${duration(remaining)}; this protocol needs at least ${duration(minNeeded)}. Short by ${duration(minNeeded-remaining)}.`)
+          :preview&&!preview.valid&&maxAllowed!==null&&remaining>maxAllowed
+          ?(isFr?`Fermentation trop longue : ${duration(remaining)} avant cuisson, au-delà de la limite conseillée de ${duration(maxAllowed)}.`:`Fermentation too long: ${duration(remaining)} before baking, beyond the recommended ${duration(maxAllowed)} limit.`):null;
+        const draftMessage=preview?.issue==='busy'?(isFr?'Vous êtes indisponible pendant ':'You are unavailable during ')+(conflictNames[preview.conflict??'']??['une étape','an action'])[isFr?0:1]+'.'
+          :preview?.issue==='past'?(isFr?'Ce changement placerait une préparation dans le passé. Choisissez un départ plus tardif.':'This change would put preparation in the past. Choose a later start.')
+          :preview?.issue==='unsupported'?(isFr?'Ce changement nécessite de recalculer le plan du levain dans ses réglages.':'Replan the starter in its settings before changing this time.')
+          :preview?.issue==='date'?(isFr?'Indiquez une date et une heure complètes.':'Enter a complete date and time.')
+          :preview&&!preview.valid?(editingRow==='pref'?(isFr?`Ce préferment conserve ses ${prefOffsetH.toLocaleString('fr-FR',{maximumFractionDigits:1})} h de maturation : le pétrissage passe au ${fmtCardDT(draftMix,true)}. Ce départ ne permet pas de respecter la cuisson fixée au ${fmtCardDT(pendingEatTime,true)}.`:`Keeping this preferment’s ${prefOffsetH.toFixed(1)} h maturation moves mixing to ${fmtCardDT(draftMix,false)}, which conflicts with baking at ${fmtCardDT(pendingEatTime,false)}.`):(isFr?'Ce départ ne respecte pas les durées du protocole avant la cuisson fixée. Choisissez un pétrissage dans la plage indiquée.':'This start does not fit the protocol before the fixed bake. Choose mixing within the indicated window.')):null;
+        const applyTimes=(start:Date,bake:Date,offset:number,appliedBlocks:AvailabilityBlock[]=repairBlocks)=>{
+          acceptedBakeRef.current=+bake;
+          hasManuallyDragged.current=true;setHasDragged(true);setRecommendedHBF(null);
+          if(isSourdough){setMixOverride(true);manualMixRef.current=+start;}
+          setPendingStart(start);setPendingEatTime(bake);setPrefOffsetH(offset);onPrefOffsetChange?.(offset);
+          const target=new Date(+bake+readyOffset*60000);
+          setPickerDate(`${target.getFullYear()}-${String(target.getMonth()+1).padStart(2,'0')}-${String(target.getDate()).padStart(2,'0')}`);
+          setPickerHour(target.getHours());setPickerMinute(target.getMinutes());
+          setLocalBlocks(appliedBlocks);
+          onChange(start,bake,appliedBlocks,{preservePlan:true});
+        };
+        const closeEdit=()=>{setEditingRow(null);setEditingEnabled(false);setAlternativeBake(null);};
+        const saveEdit=()=>{
+          if(!changed)return;
+          const checked=proposeScheduleEdit(editInput);if(!checked.valid)return;
+          setUndoTimes({start:pendingStart,bake:pendingEatTime,offset:prefOffsetH,blocks:localBlocks});
+          applyTimes(checked.times.start,checked.times.bake,checked.times.prefHours);closeEdit();
+        };
+        return <>
+          {undoTimes&&!editingRow&&<button type="button" onClick={()=>{applyTimes(undoTimes.start,undoTimes.bake,undoTimes.offset,undoTimes.blocks);setUndoTimes(null);}} style={{minHeight:44}}>{isFr?'Annuler le dernier ajustement':'Undo last adjustment'}</button>}
+          <ScheduleTimeline rows={changed&&preview?.schedule?previewRows:rows} blocks={_blocks} isFr={isFr} editingEnabled={editingEnabled} editingId={editingRow}
+          onEdit={id=>{const row=rows.find(r=>r.id===id);if(row){setEditingEnabled(true);beginRowEdit(id,row.at);}}}
+          onToggleEditing={closeEdit}
           editor={<div style={{display:'grid',gap:10}}>
-            <input ref={readinessEditorRef} type="datetime-local" aria-label={editedRow?.name} value={draftRowTime}
-              onChange={e=>setDraftRowTime(e.target.value)}
-              onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();setEditingRow(null);}if(e.key==='Enter'){e.preventDefault();saveEdit();}}}
-              style={{minHeight:44,fontSize:16,width:'100%',minWidth:0,boxSizing:'border-box',border:'1px solid var(--border)',borderRadius:8,padding:8}}/>
-            {(editingRow==='mix'||editingRow==='bake')&&draftFrom&&draftTo&&<p style={{margin:0,fontSize:14}}>{isFr?'Pétrissage conseillé':'Recommended mixing'} : {fmtCardDT(draftFrom,isFr)} → {fmtCardDT(draftTo,isFr)}</p>}
-            {changed&&draftMessage&&<p role="alert" style={{margin:0,color:'var(--terra)',fontSize:14}}>{draftMessage}</p>}
-            {changed&&preview?.valid&&<p role="status" style={{margin:0,fontSize:14}}>{isFr?'Cette proposition respecte les durées et vos disponibilités. Les heures déplacées sont affichées ci-dessous.':'This proposal fits the timing limits and your availability. Changed times are shown below.'}</p>}
-            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button type="button" disabled={!changed||!preview?.valid} onClick={saveEdit} style={{minHeight:44,fontSize:16,padding:'8px 12px'}}>{isFr?'Garder cet horaire':'Keep this time'}</button><button type="button" onClick={()=>setEditingRow(null)} style={{minHeight:44,fontSize:16,padding:'8px 12px'}}>{isFr?'Annuler':'Cancel'}</button></div>
-          </div>}/>;
+            <label>{isFr?'Date':'Date'}<input type="date" aria-label={isFr?'Date de l’étape':'Step date'} value={draftRowTime.split('T')[0]??''} onChange={e=>{setAlternativeBake(null);setDraftRowTime(e.target.value+'T'+(draftRowTime.split('T')[1]||'08:00'));}} style={{minHeight:44,fontSize:16,width:'100%',boxSizing:'border-box'}}/></label>
+            <label>{isFr?'Heure':'Time'}<input ref={readinessEditorRef} type="time" aria-label={editedRow?.name} value={draftRowTime.split('T')[1]??''}
+              onChange={e=>{setAlternativeBake(null);setDraftRowTime(draftRowTime.split('T')[0]+'T'+e.target.value);}}
+              onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();closeEdit();}if(e.key==='Enter'){e.preventDefault();saveEdit();}}}
+              style={{minHeight:44,fontSize:16,width:'100%',minWidth:0,boxSizing:'border-box',border:'1px solid var(--border)',borderRadius:8,padding:8}}/></label>
+            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{[-30,-15,15,30].map(minutes=><button key={minutes} type="button" style={{minHeight:44,padding:8}} onClick={()=>{const at=new Date(+draft+minutes*60000);if(!Number.isFinite(+at))return;setAlternativeBake(null);setDraftRowTime(`${at.getFullYear()}-${String(at.getMonth()+1).padStart(2,'0')}-${String(at.getDate()).padStart(2,'0')}T${String(at.getHours()).padStart(2,'0')}:${String(at.getMinutes()).padStart(2,'0')}`);}}>{minutes>0?'+':''}{minutes} min</button>)}</div>
+            {draftFrom&&draftTo&&<p style={{margin:0,fontSize:14}}>{isFr?'Pétrissage conseillé':'Recommended mixing'} : {fmtCardDT(draftFrom,isFr)} → {fmtCardDT(draftTo,isFr)}</p>}
+            {changed&&draftMessage&&<p role="alert" style={{margin:0,color:'var(--terra)',fontSize:14}}>{draftMessage}{rangeExplanation&&<> {rangeExplanation}</>}</p>}
+            {later&&<button type="button" style={{minHeight:44}} onClick={()=>setAlternativeBake(later.times.bake)}>{isFr?'Proposer la cuisson au ':'Preview baking at '}{fmtCardDT(later.times.bake,isFr)}</button>}
+            {alternativeBake&&<p role="status">{isFr?'Nouvelle cuisson à confirmer : ':'New bake time to confirm: '}{fmtCardDT(alternativeBake,isFr)}{readyOffset>0&&<> · {readyTimeLabel}: {fmtCardDT(new Date(+alternativeBake+readyOffset*60000),isFr)}</>}</p>}
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button type="button" disabled={!changed||!preview?.valid} onClick={saveEdit} style={{minHeight:44,fontSize:16,padding:'8px 12px'}}>{isFr?'Appliquer':'Apply'}</button><button type="button" onClick={closeEdit} style={{minHeight:44,fontSize:16,padding:'8px 12px'}}>{isFr?'Annuler':'Cancel'}</button></div>
+          </div>}/>
+        </>;
 
       })()}
 

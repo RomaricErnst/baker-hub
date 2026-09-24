@@ -19,9 +19,10 @@ test('actions are the default in both modes and retain starter feeds and fridge 
  for(const mode of ['simple','custom']) {
   const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Picker,{mode,startTime:start,eatTime:eat,blocks:[],preheatMin:45,styleKey:'pain_levain',kitchenTemp:22,schedule,onChange(){},isSourdough:true,lastFedAge:'today',lastFedTime:new Date(+start-8*3600000),savedStarterEvents:events,sessionRestored:true,recipeGenerated:true})));
   assert.match(html,/aria-label="Your schedule"/);
-  assert.match(html,/Edit times/);
+  assert.match(html,/aria-label="Edit Start Dough"/);
+  assert.doesNotMatch(html,/Unsaved proposal|compressed interval/);
   assert.doesNotMatch(html,/role="tab"/);
-  assert.match(html,/compressed interval/);
+  assert.match(html,/Wait ·/);
   for(const label of ['Refresh feed','Refrigerate starter','Take starter out','Pre-mix feed'])assert.ok(html.includes(label),mode+': '+label);
  }
 });

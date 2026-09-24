@@ -1,5 +1,20 @@
 # Bakerhub — continuation handoff
 
+## Scheduling dependencies and existing bases — 24 September 2026
+
+Continue on `codex/navigation-polish-20260923`; baseline reviewed was `ffbccc259ff88ebe01061cafe2a480b078aef771`. User authorized discarding only the agent's test bake, implementation and preview verification. No production deployment.
+
+- Schedule time labels now open the editor directly. Separate date/time controls, ±15/30 minutes, one Apply/Cancel pair and one-step undo replace nested edit modes. Cross-day comparisons include dates; repeated compressed-interval and unsaved-proposal copy is removed.
+- `scheduleEdit.ts` uses the production builder. Moving commercial preferment retains the currently selected maturation duration/storage protocol and moves mixing/dependent actions. The bake/serving target stays fixed. Invalid plans explain the timing shortfall or availability conflict; a later bake is a separate proposal requiring explicit Apply. No biological constants or maturity curves were invented. Complex multi-feed starter edits still require dedicated replanning.
+- Accepted edits are written immediately to the local session. Restore guards now also protect pre-recipe schedules, and changing the baking time no longer remounts the scheduler and erases undo/accepted edits.
+- Style Back returns directly to the opening choices without clearing the selected family/style/quantities. Re-entering the same family preserves work; changing families warns when selections would be reset. Browser history stores navigation, not duplicated recipe state.
+- Existing-base journeys use Header/BakeNavigator and all six optional destinations, keeping their separate local draft. Distinguish existing dough from baked bread, purchased from homemade, and dough progress. Raw bread/bagels require baking/cooling confirmation before assembly; bagel poaching is explicit. Unknown dough fermentation is not guessed: original recipe/package instructions are retained as optional notes. Existing snapshots migrate and keep per-base fillings/progress. Bread slicing/toasting is deferred until after raw bread has been baked.
+- Generic filling prep names only selected vegetables; bagel toast copy no longer mentions unselected salmon/cream cheese. Singular portions corrected.
+
+Verification at implementation checkpoint: 270 unit/component/domain tests passed, TypeScript passed, production build/i18n passed. iPhone WebKit workflow now includes this branch; updated tests cover new controls, preferment propagation/reload before recipe generation, raw bagel gating and browser Back. Deployment/mobile runtime outcomes must be recorded after the preview checks; this checkpoint is not a claim of live verification. No physical baking or authenticated cloud-saving acceptance.
+
+Publication authorization: Romaric explicitly approved “Go ahead and push to prototype” on 24 September, resolving the prior approval blocker. Local implementation commits: `cc1b19c`, `9f6a60e`. The command-line transport lacks GitHub authentication; use the connected GitHub app to publish the identical code snapshot as a fast-forward from `ffbccc259ff88ebe01061cafe2a480b078aef771`. Preview only; no production promotion. Record actual deployment and CI outcomes after publication.
+
 ## Bread framing and pain de mie recipes — 23 September 2026
 
 Captions now sit below the 126px image frame; bread-only cards use a compact centered photo. New generated rye tartine uses a dark rye base. Pain de mie now illustrates a proper club sandwich and has its own club/croque family with slice counts and recipe-specific bread weights. Bread-dependent steps, including croque oven cooking, occur at serving after baked bread is ready. Existing saved pain-de-mie tartine selections are preserved until explicitly replaced. Purchased pain de mie is also available in the existing-base entry. Image prompts, saved asset paths and recipe sources: `docs/BREAD-IMAGE-FRAMING-20260923.md`. Full automated suite:265 passed. Final browser/build/deployment results are in the task.

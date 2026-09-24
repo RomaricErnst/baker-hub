@@ -1816,6 +1816,8 @@ export default function Home() {
     setAcceptedScheduleRepair(options?.preservePlan ? repairKey(st, et, bl) : null);
     if (sessionRestored && +et !== (eatTime ? +eatTime : null)) setSessionRestored(false);
     setStartTime(st); setEatTime(et); setBlocks(bl);
+    // Applying is durable immediately; the general autosave is deliberately debounced.
+    if(options?.preservePlan)saveSession(buildSessionPayload({startTime:+st,eatTime:+et,blocks:bl.map(b=>({label:b.label,from:+b.from,to:+b.to}))}));
   };
 
   const prefRemoveFromFridgeTime = useMemo(() => {
@@ -2068,7 +2070,36 @@ export default function Home() {
   );
 
   // ── Handlers ──────────────────────────────
+  const [showProductHome,setShowProductHome]=useState(false);
+  const navigationHistory=useRef<string|null>(null);
+  const replayingNavigation=useRef(false);
+  useEffect(()=>{
+    const pop=(event:PopStateEvent)=>{
+      const saved=event.state?.bakerNavigation;
+      if(!saved)return;
+      replayingNavigation.current=true;
+      setShowProductHome(saved.home||(!saved.family));
+      setActiveTab(saved.route);setBatchView(saved.view);
+      setActiveStep(saved.simpleStep);setAdvancedStep(saved.customStep);
+      setSetupOverview(saved.overview);
+    };
+    window.addEventListener('popstate',pop);return()=>window.removeEventListener('popstate',pop);
+  },[]);
+  useEffect(()=>{
+    if(isRestoringRef.current)return;
+    const value={home:showProductHome||!bakeType,family:bakeType,route:activeTab,view:batchView,simpleStep:activeStep,customStep:advancedStep,overview:setupOverview};
+    const encoded=JSON.stringify(value);
+    if(encoded===navigationHistory.current)return;
+    if(navigationHistory.current===null||replayingNavigation.current){
+      history.replaceState({...history.state,bakerNavigation:value},'');
+    }else history.pushState({...history.state,bakerNavigation:value},'');
+    navigationHistory.current=encoded;replayingNavigation.current=false;
+  },[showProductHome,bakeType,activeTab,batchView,activeStep,advancedStep,setupOverview,sessionRestored]);
+  function backToProducts(){setShowProductHome(true);setActiveTab('batch');scrollToStepTop();}
   function selectBakeType(bt: BakeType) {
+    if(bakeType===bt){setShowProductHome(false);setActiveTab('batch');setBatchView('style');return;}
+    if(bakeType&&styleKey&&!window.confirm(fr?'Changer de famille réinitialise les choix de cette fournée. Continuer ?':'Changing product family resets this bake’s choices. Continue?'))return;
+    setShowProductHome(false);
     setActiveTab('batch');setBatchView('style');setFillingsReturn(null);
     setSandwichParty(createSandwichSnapshot());
     // Switching to bread retires any Pizza Party selections + their persisted
@@ -2549,7 +2580,7 @@ export default function Home() {
     // this reset, only the first session per page load ever received them.
     profileBlockersAppliedRef.current = false;
     setEquipmentPanel('oven'); setMixingBatches(undefined); setContainerCapacityLitres(3);
-    setBakeType(null); setBakeName(''); setStyleKey(null); setProfileFields(new Set());
+    setShowProductHome(false);setBakeType(null); setBakeName(''); setStyleKey(null); setProfileFields(new Set());
     setNumItems(2); setItemWeight(270);
     setOvenType(null); setOvenConstruction('tabletop'); setMixerType(null);
     const now = new Date(); now.setMinutes(0, 0, 0);
@@ -3274,12 +3305,12 @@ export default function Home() {
           onOpenSandwiches={sandwichEnabled ? openLateFillings : undefined}
           onOpenPizzas={bakeType === 'pizza' ? openLateFillings : undefined}
           onSharePlan={shareCurrentSession}
-          onBack={bakeType && (destination==='batch'||destination==='organisation') ? () => {
+          onBack={bakeType && !showProductHome && (destination==='batch'||destination==='organisation') ? () => {
             if (destination === 'batch') {
               if (batchView === 'fillings' && fillingsReturn) finishFillings();
               else if (batchView === 'fillings') { setBatchView('quantity'); scrollToStepTop(); }
               else if (batchView === 'quantity') { setBatchView('style'); scrollToStepTop(); }
-              else setBakeType(null);
+              else backToProducts();
             } else if (destination === 'organisation') {
               if (setupOverview) { setSetupOverview(false); scrollToStepTop(); }
               else if (!modeChosen) { setBatchView('quantity'); openDestination('batch'); }
@@ -3529,7 +3560,7 @@ export default function Home() {
           </div>}
           {tab === 'custom' && archivedFlourNames.length > 0 && <div role="alert" style={{ padding: 14, marginBottom: 16, border: '1px solid var(--border)', borderRadius: 12, textAlign: 'left' }}><p>{locale === 'fr' ? 'Ces farines enregistrées ne sont plus proposées dans le catalogue. Choisissez leur remplacement pour créer une nouvelle recette :' : 'These saved flours are no longer selectable. Choose replacements before creating a new recipe:'} {archivedFlourNames.join(' · ')}</p><button type="button" onClick={() => { setSetupOverview(false); setAdvancedStep(6); }} style={NEXT_CTA}>{locale === 'fr' ? 'Revoir mes farines' : 'Review my flours'}</button></div>}
 
-          {!bakeType && (
+          {(!bakeType||showProductHome) && (
           <div style={{ minHeight: 'calc(100dvh - 260px)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <h1 style={{
@@ -3556,17 +3587,17 @@ export default function Home() {
 {recipeGenerated && <div style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{numItems} {bakeType==='bread'?(fr?(numItems===1?'pain':'pains'):(numItems===1?'bread':'breads')):'pizzas'} · {styleKey ? styleDisplayName(styleKey) : ''}</div></div>}
 
 {showBakeTypeChooser&&bakeType&&<BakeTypeChooser fr={fr} current={bakeType} onChoose={selectBakeType} onClose={()=>setShowBakeTypeChooser(false)}/>}
-{bakeType && <BakeNavigator active={destination} fr={fr} onChange={openDestination} top={stickTop} />}
+{bakeType && !showProductHome && <BakeNavigator active={destination} fr={fr} onChange={openDestination} top={stickTop} />}
 
           {(['recipe','shopping','protocol','service'] as string[]).includes(destination)&&<button type="button" className="bh-section-back" onClick={()=>openDestination(destination==='recipe'?'organisation':destination==='shopping'?'recipe':destination==='protocol'?'shopping':'protocol')}>← {destination==='recipe'?'Organisation':destination==='shopping'?(fr?'Recette':'Recipe'):destination==='protocol'?(fr?'Courses':'Shopping'):(fr?'Préparation':'Preparation')}</button>}
 
           {destination==='organisation' && modeChosen && <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>setModeChosen(false)}} />}
 
-          {bakeType && destination==='batch' && !browsingFillings && <section className="bh-batch-content">
+          {bakeType && !showProductHome && destination==='batch' && !browsingFillings && <section className="bh-batch-content">
             {batchView==='style' ? <>
               <h2>{bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Choisissez votre pizza':'Choose your pizza')}</h2>
               <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
-              <button type="button" className="bh-section-back" onClick={()=>setShowBakeTypeChooser(true)}>{fr?'← Pizza ou pain':'← Pizza or bread'}</button>
+              <button type="button" className="bh-section-back" onClick={backToProducts}>{fr?'← Pizza ou pain':'← Pizza or bread'}</button>
               {styleKey&&<div className="bh-batch-actions"><button type="button" style={NEXT_CTA} onClick={()=>{setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{fr?'Continuer avec':'Continue with'} {styleDisplayName(styleKey)} →</button></div>}
             </> : <>
               <div className="bh-batch-context"><span>{styleKey?styleDisplayName(styleKey):''}</span><button type="button" onClick={()=>{setBatchView('style');scrollToStepTop();}}>{bakeType==='bread'?(fr?'Changer de pain':'Change bread'):(fr?'Changer de pizza':'Change pizza')}</button></div>
@@ -3776,7 +3807,7 @@ export default function Home() {
                 readyTimeLabel={readyTimeEstimate?.[fr?'labelFr':'labelEn']}
                 readyTimeNote={readyTimeEstimate?.[fr?'noteFr':'noteEn']}
                 numItems={numItems}
-                key={`${starterPlanResetKey}:${eatTime && !isNaN(eatTime.getTime()) ? eatTime.toISOString() : 'no-bake'}`}
+                key={starterPlanResetKey}
                 mode="simple"
                 mixerType={mixerType ?? 'hand'}
                 confirmedPlan={confirmedSchedulePlan}
@@ -4250,7 +4281,7 @@ export default function Home() {
                 readyTimeLabel={readyTimeEstimate?.[fr?'labelFr':'labelEn']}
                 readyTimeNote={readyTimeEstimate?.[fr?'noteFr':'noteEn']}
                 numItems={numItems}
-                key={`${starterPlanResetKey}:${eatTime && !isNaN(eatTime.getTime()) ? eatTime.toISOString() : 'no-bake'}`}
+                key={starterPlanResetKey}
                 mode="custom"
                 mixerType={mixerType ?? 'hand'}
                 confirmedPlan={confirmedSchedulePlan}
