@@ -817,10 +817,11 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
       {children}
 
       <div className="bh-step-actions" style={{
-        display: 'grid', gridTemplateColumns: '1fr',
+        display: nextOverride===null?'none':'grid', gridTemplateColumns: 'auto minmax(0,1fr)',
         gap: '12px', padding: '8px 0 calc(8px + env(safe-area-inset-bottom, 0px))', position:'sticky', bottom:0, zIndex:90, background:'var(--warm)',
       }}>
 
+        <button type="button" onClick={()=>flow.onPrev(id)} style={{minHeight:44,padding:'8px 4px',border:0,background:'transparent',color:'var(--terra)',fontSize:14,cursor:'pointer',textDecoration:'underline',textUnderlineOffset:4}}>{fr?'Précédent':'Back'}</button>
         {nextOverride !== undefined ? nextOverride : next}
       </div>
     </div>
@@ -1163,7 +1164,7 @@ export default function Home() {
   const readyTimeEstimate=getServingTimeEstimate({bakeType:bakeType??'pizza',styleKey:styleKey??'',numItems,itemWeight,ovenType:ovenType??'',hasFillings,pizzaOvenTemp:firstSelectedPizza?getPizzaById(firstSelectedPizza)?.ovenTemp:undefined});
   const companionVisible=browsingFillings||destination==='shopping'||destination==='protocol'&&protocolView==='fillings'||destination==='service'&&serviceView==='fillings';
   const companionPhase=destination==='shopping'?'shop':destination==='protocol'?'prep':destination==='service'?'bake':'pick';
-  const fillingsDoneLabel=fillingsReturn?(fillingsReturn.destination==='recipe'?(locale==='fr'?'Revenir à la recette':'Return to recipe'):fillingsReturn.destination==='shopping'?(locale==='fr'?'Revenir aux courses':'Return to shopping'):fillingsReturn.destination==='service'?(locale==='fr'?'Revenir à la cuisson':'Return to cooking'):(locale==='fr'?'Revenir à la préparation':'Return to preparation')):(locale==='fr'?'Planifier la préparation':'Plan preparation');
+  const fillingsDoneLabel=fillingsReturn?(fillingsReturn.destination==='recipe'?(locale==='fr'?'Revenir à la recette':'Return to recipe'):fillingsReturn.destination==='shopping'?(locale==='fr'?'Revenir aux courses':'Return to shopping'):fillingsReturn.destination==='service'?(locale==='fr'?'Revenir à la cuisson':'Return to cooking'):(locale==='fr'?'Revenir à la préparation':'Return to preparation')):(locale==='fr'?'Continuer':'Continue');
   const [navHidden, setNavHidden] = useState(false);
   const bottomNavCollapsed = false;
   // Hide exactly the measured header height; keep the following bar aligned.
@@ -1226,7 +1227,6 @@ export default function Home() {
   const keyboardOpen = useMobileKeyboard();
   const [profileOpen, setProfileOpen] = useState(false);
   // Simple begins with a compact equipment confirmation.
-  const [simpleEquipmentEditing, setSimpleEquipmentEditing] = useState(false);
   const [profilePrefilled, setProfilePrefilled] = useState(false);
   // Which steps carry a value the profile supplied rather than one the baker
   // chose in this session. They are marked `prefilled`, which means the page
@@ -2315,7 +2315,6 @@ export default function Home() {
       if (!ovenType && (!profile || profile.equipment.includes(ordinaryOven))) setOvenType(ordinaryOven);
       if (!ovenType && profile?.cooking === 'griddle' && profile.equipment.includes('griddle')) setOvenType('griddle');
       if (!mixerType && (!profile || profile.supportedMixers.includes('hand'))) setMixerType('hand');
-      setSimpleEquipmentEditing(false);
     }
     setTab(key); setModeChosen(true); setProtocolStale(true); setActiveTab('setup');
     // Land on the first step that actually needs input — completed
@@ -2384,6 +2383,7 @@ export default function Home() {
   }
   function openSetupStep(id:number,custom=tab==='custom') {
     setSetupOverview(false);setGapReturnTo(null);
+    if(id===3)setEquipmentPanel(ovenType?'mixer':'oven');
     if(custom){setAdvancedStep(id);setAdvancedHighestStep(value=>Math.max(value,id));}
     else {setActiveStep(id);setHighestStep(value=>Math.max(value,id));}
     if(id<=2){setBatchView(id===1?'style':'quantity');setActiveTab('batch');}
@@ -3159,6 +3159,7 @@ export default function Home() {
     onJump: (id) => openSetupStep(id,true),
     onGapJump: (id) => {openSetupStep(id,true);setGapReturnTo(CUSTOM_LAST);},
     onPrev: (id) => {
+      if(id===3){if(equipmentPanel==='mixer')setEquipmentPanel('oven');else setModeChosen(false);scrollToStepTop();return;}
       const i = CUSTOM_STEPS.findIndex(x => x.id === id);
       openSetupStep(CUSTOM_STEPS[Math.max(0, i - 1)].id,true);
     },
@@ -3217,6 +3218,7 @@ export default function Home() {
     onJump: (id) => openSetupStep(id,false),
     onGapJump: (id) => {openSetupStep(id,false);setGapReturnTo(SIMPLE_LAST);},
     onPrev: (id) => {
+      if(id===3){if(equipmentPanel==='mixer')setEquipmentPanel('oven');else setModeChosen(false);scrollToStepTop();return;}
       const i = SIMPLE_STEPS.findIndex(x => x.id === id);
       openSetupStep(SIMPLE_STEPS[Math.max(0, i - 1)].id,false);
     },
@@ -3253,12 +3255,23 @@ export default function Home() {
   const simpleOrganisationFlow:StepFlow={...simpleFlow,steps:SIMPLE_STEPS.filter(step=>step.id>=3),activeId:Math.max(3,simpleFlow.activeId)};
   const customOrganisationFlow:StepFlow={...customFlow,steps:CUSTOM_STEPS.filter(step=>step.id>=3),activeId:Math.max(3,customFlow.activeId)};
   const simpleSwipeRef = useStepSwipe(simpleOrganisationFlow,
-    tab === 'simple' && activeTab === 'setup' && simpleFlow.activeId !== SIMPLE_LAST);
+    tab === 'simple' && activeTab === 'setup' && simpleFlow.activeId !== SIMPLE_LAST && simpleFlow.activeId !== 3);
   const customSwipeRef = useStepSwipe(customOrganisationFlow,
-    tab === 'custom' && activeTab === 'setup' && customFlow.activeId !== 9);
+    tab === 'custom' && activeTab === 'setup' && customFlow.activeId !== 9 && customFlow.activeId !== 3);
 
 
 
+
+  const equipmentChoices = <>
+    {equipmentPanel==='mixer' && ovenType && <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:12,fontSize:14}}>
+      <span>{ovenDisplayName}</span><button type="button" onClick={()=>{setEquipmentPanel('oven');scrollToStepTop();}} style={{minHeight:44,border:0,background:'transparent',color:'var(--terra)',textDecoration:'underline'}}>{fr?'Modifier le four':'Change oven'}</button>
+    </div>}
+    <h3 style={{fontSize:18,margin:'0 0 12px'}}>{equipmentPanel==='oven'?(fr?'Four':'Oven'):(fr?'Pétrissage':'Mixing')}</h3>
+    {equipmentPanel==='oven' ? <OvenPicker bakeType={bakeType ?? 'pizza'} styleKey={styleKey} selected={ovenType} construction={ovenConstruction} onConstructionChange={setOvenConstruction} onSelect={setOvenType} /> : <>
+      {tab==='simple' ? <SimpleMixerPicker locale={locale} selected={mixerType} onSelect={value=>{setMixerType(value);setSpiralIceConfirmed(false);setWaterMethod('premelt');}} styleKey={styleKey ?? undefined} /> : <MixerPicker totalDoughG={numItems * itemWeight} locale={locale} selected={mixerType} onSelect={value=>{setMixerType(value);setSpiralIceConfirmed(false);setWaterMethod('premelt');}} styleKey={styleKey ?? undefined} bakeType={bakeType ?? undefined} kitchenTemp={kitchenTemp} />}
+      {mixingBatchControl}
+    </>}
+  </>;
 
   // ── Render ────────────────────────────────
   return (
@@ -3623,8 +3636,8 @@ export default function Home() {
                 selectedCount={Object.values(bakeType==='pizza'?pizzaPartyQtys:sandwichParty.qtys).reduce((sum,qty)=>sum+qty,0)}
                 onChoose={()=>{setQtyChosen(true);setBatchView('fillings');scrollToStepTop();}} />}
               <div className={`bh-batch-actions ${!recipeGenerated&&!hasFillings&&(pizzaPartyEnabled||sandwichEnabled)?'bh-batch-actions-choice':''}`}>
-                {!recipeGenerated&&!hasFillings&&(pizzaPartyEnabled||sandwichEnabled)&&<button type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setBatchView('fillings');scrollToStepTop();}}>{bakeType==='pizza'?(fr?'Choisir mes pizzas':'Choose my pizzas'):sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'Choisir mes tartines':'Choose my toasts'):(fr?'Choisir mes sandwichs':'Choose my sandwiches')}</button>}
-                <button type="button" className={!recipeGenerated&&!hasFillings&&(pizzaPartyEnabled||sandwichEnabled)?'bh-dough-only':undefined} style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(fillingsReturn&&recipeGenerated){if(protocolStale){setActiveTab('setup');setSetupOverview(true);}else finishFillings();}else openDestination('organisation');}}>{fillingsReturn&&recipeGenerated?fillingsDoneLabel:!recipeGenerated&&!hasFillings&&(pizzaPartyEnabled||sandwichEnabled)?(fr?'Continuer sans garnitures':'Continue without fillings'):(fr?'Planifier la préparation':'Plan preparation')}</button></div>
+                {!recipeGenerated&&!hasFillings&&(pizzaPartyEnabled||sandwichEnabled)&&<button type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setBatchView('fillings');scrollToStepTop();}}>{fr?'Choisir les garnitures':bakeType==='pizza'?'Choose toppings':'Choose fillings'}</button>}
+                <button type="button" className={!recipeGenerated&&!hasFillings&&(pizzaPartyEnabled||sandwichEnabled)?'bh-dough-only':undefined} style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(fillingsReturn&&recipeGenerated){if(protocolStale){setActiveTab('setup');setSetupOverview(true);}else finishFillings();}else openDestination('organisation');}}>{fillingsReturn&&recipeGenerated?fillingsDoneLabel:!recipeGenerated&&!hasFillings&&(pizzaPartyEnabled||sandwichEnabled)?(fr?'Sans garnitures':'Without fillings'):(fr?'Continuer':'Continue')}</button></div>
             </>}
           </section>}
 
@@ -3744,25 +3757,8 @@ export default function Home() {
 
             {/* ─── STEP 1: Style picker ────────────── */}
             {/* ─── STEP 4: Equipment (oven + mixing) ── */}
-            <StepPage flow={simpleOrganisationFlow} id={3} nextOverride={!ovenType || !mixerType ? <button type="button" style={NEXT_CTA} onClick={()=>{setEquipmentPanel(!ovenType?'oven':'mixer');scrollToStepTop();}}>{!ovenType ? (fr?'Choisir le four':'Choose an oven') : (fr?'Choisir le pétrissage':'Choose mixing method')}</button> : undefined}>
-              <p style={{fontSize:16,lineHeight:1.5,margin:'0 0 12px'}}>{fr?'Confirmez ce que vous utiliserez. Vous pourrez modifier ces choix à tout moment.':'Confirm what you will use. You can change these choices at any time.'}</p>
-              {ovenType && mixerType && <div style={{padding:16,border:'1px solid var(--border)',borderRadius:12,marginBottom:12}}>
-                <strong>{ovenDisplayName} · {mixerType==='stand' ? (fr?'KitchenAid / robot pâtissier':'KitchenAid / stand mixer') : localName(MIXER_TYPES[mixerType])}</strong>
-                <button type="button" onClick={()=>setSimpleEquipmentEditing(value=>!value)} aria-expanded={simpleEquipmentEditing} style={{display:'block',minHeight:44,marginTop:8,border:0,background:'transparent',color:'var(--terra)',fontSize:16,cursor:'pointer'}}>{simpleEquipmentEditing?(fr?'Fermer les choix':'Close choices'):(fr?'Modifier':'Edit')}</button>
-              </div>}
-              {(simpleEquipmentEditing || !ovenType || !mixerType) && <>
-              <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:8,marginBottom:20}}>
-                {(['oven','mixer'] as const).map(panel => <button key={panel} type="button" onClick={()=>setEquipmentPanel(panel)} aria-pressed={equipmentPanel===panel} style={{width:'100%',minWidth:0,textAlign:'left',padding:12,border:'1px solid '+(equipmentPanel===panel?'var(--terra)':'var(--border)'),borderRadius:12,background:equipmentPanel===panel?'#f0e5d3':'white',color:'var(--char)'}}>
-                  <strong style={{display:'block',marginBottom:5}}>{panel==='oven'?(locale==='fr'?'Four':'Oven'):(locale==='fr'?'Pétrissage':'Mixing')}{(panel==='oven'?ovenType:mixerType)?' ✓':''}</strong>
-                  <span style={{display:'block',fontSize:12,lineHeight:1.4}}>{panel==='oven'?(ovenType==='pizza_oven'?(ovenConstruction==='masonry'?(locale==='fr'?'Four maçonné':'Brick / masonry oven'):(locale==='fr'?'Four à pizza compact':'Tabletop pizza oven')):ovenType?localName(ovenData):(locale==='fr'?'Non choisi':'Not selected')):mixerType?localName(MIXER_TYPES[mixerType]):(locale==='fr'?'Non choisi':'Not selected')}</span>
-                </button>)}
-              </div>
-              <h2 style={{fontSize:18,margin:'0 0 12px'}}>{equipmentPanel==='oven'?(locale==='fr'?'Choisissez votre mode de cuisson':'Choose your cooking equipment'):(locale==='fr'?'Choisissez une méthode de pétrissage':'Choose a mixing method')}</h2>
-              {equipmentPanel==='oven' ? <OvenPicker bakeType={bakeType ?? 'pizza'} styleKey={styleKey} selected={ovenType} construction={ovenConstruction} onConstructionChange={setOvenConstruction} onSelect={setOvenType} /> : <>
-                <SimpleMixerPicker locale={locale} selected={mixerType} onSelect={value=>{setMixerType(value);setSpiralIceConfirmed(false);setWaterMethod('premelt');}} styleKey={styleKey ?? undefined} />
-                {mixingBatchControl}
-              </>}
-              </>}
+            <StepPage flow={simpleOrganisationFlow} id={3} nextOverride={equipmentPanel==='oven' || !mixerType ? <button type="button" disabled={equipmentPanel==='oven'?!ovenType:!mixerType} style={{...NEXT_CTA,opacity:(equipmentPanel==='oven'?!ovenType:!mixerType)?.5:1}} onClick={()=>{setEquipmentPanel('mixer');scrollToStepTop();}}>{fr?'Continuer':'Continue'}</button> : undefined}>
+              {equipmentChoices}
             </StepPage>
 
             {/* ─── STEP 5: Climate ─────────────────── */}
@@ -4165,18 +4161,8 @@ export default function Home() {
 
             {/* ─── ADV STEP 1: Style picker ────────── */}
             {/* ─── ADV STEP 4: Equipment (oven + mixing) ── */}
-            <StepPage flow={customOrganisationFlow} id={3} nextOverride={!ovenType || !mixerType ? <button type="button" style={NEXT_CTA} onClick={()=>{setEquipmentPanel(!ovenType?'oven':'mixer');scrollToStepTop();}}>{!ovenType ? (fr?'Choisir le four':'Choose an oven') : (fr?'Choisir le pétrissage':'Choose mixing method')}</button> : undefined}>
-              <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:8,marginBottom:20}}>
-                {(['oven','mixer'] as const).map(panel => <button key={panel} type="button" onClick={()=>setEquipmentPanel(panel)} aria-pressed={equipmentPanel===panel} style={{width:'100%',minWidth:0,textAlign:'left',padding:12,border:'1px solid '+(equipmentPanel===panel?'var(--terra)':'var(--border)'),borderRadius:12,background:equipmentPanel===panel?'#f0e5d3':'white',color:'var(--char)'}}>
-                  <strong style={{display:'block',marginBottom:5}}>{panel==='oven'?(locale==='fr'?'Four':'Oven'):(locale==='fr'?'Pétrissage':'Mixing')}{(panel==='oven'?ovenType:mixerType)?' ✓':''}</strong>
-                  <span style={{display:'block',fontSize:12,lineHeight:1.4}}>{panel==='oven'?(ovenType==='pizza_oven'?(ovenConstruction==='masonry'?(locale==='fr'?'Four maçonné':'Brick / masonry oven'):(locale==='fr'?'Four à pizza compact':'Tabletop pizza oven')):ovenType?localName(ovenData):(locale==='fr'?'Non choisi':'Not selected')):mixerType?localName(MIXER_TYPES[mixerType]):(locale==='fr'?'Non choisi':'Not selected')}</span>
-                </button>)}
-              </div>
-              <h2 style={{fontSize:18,margin:'0 0 12px'}}>{equipmentPanel==='oven'?(locale==='fr'?'Choisissez votre mode de cuisson':'Choose your cooking equipment'):(locale==='fr'?'Choisissez une méthode de pétrissage':'Choose a mixing method')}</h2>
-              {equipmentPanel==='oven' ? <OvenPicker bakeType={bakeType ?? 'pizza'} styleKey={styleKey} selected={ovenType} construction={ovenConstruction} onConstructionChange={setOvenConstruction} onSelect={setOvenType} /> : <>
-                <MixerPicker totalDoughG={numItems * itemWeight} locale={locale} selected={mixerType} onSelect={value=>{setMixerType(value);setSpiralIceConfirmed(false);setWaterMethod('premelt');}} styleKey={styleKey ?? undefined} bakeType={bakeType ?? undefined} kitchenTemp={kitchenTemp} />
-                {mixingBatchControl}
-              </>}
+            <StepPage flow={customOrganisationFlow} id={3} nextOverride={equipmentPanel==='oven' || !mixerType ? <button type="button" disabled={equipmentPanel==='oven'?!ovenType:!mixerType} style={{...NEXT_CTA,opacity:(equipmentPanel==='oven'?!ovenType:!mixerType)?.5:1}} onClick={()=>{setEquipmentPanel('mixer');scrollToStepTop();}}>{fr?'Continuer':'Continue'}</button> : undefined}>
+              {equipmentChoices}
             </StepPage>
 
             {/* ─── ADV STEP 5: Climate ─────────────── */}

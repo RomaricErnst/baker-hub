@@ -1,5 +1,13 @@
 # Bakerhub — continuation handoff
 
+## Lighter quantities and consistent step navigation — 24 September 2026
+
+User approved simplifying quantity entry, equipment and navigation on the prototype. Removed the repeated total-mass card; the recipe retains totals. Round-pizza mass is directly editable with a suggested-weight reset; diameter/crust changes preserve an explicit override. Fillings invitation now has a short heading and pictures. Routine forward buttons say Continuer / Continue; return-to-recipe and generated-output actions retain explicit destinations.
+
+Four then Pétrissage are sequential choices in the equipment section, with preserved choices and a Change oven shortcut. Shared setup footers pair Précédent / Back with the primary action; header Back follows the same path. Back from climate returns to mixing, then oven, then mode selection. The footer is hidden during pending schedule edits and manual flour entry. Equipment swiping cannot skip the mixing choice.
+
+Local TypeScript, 276 tests, production build/i18n and diff checks pass. Added mobile regressions for manual weight, recommendation reset, sequential equipment and Back preservation in Simple/Custom. Deployment and mobile CI results pending at this checkpoint. No scheduling-engine or production changes. On the question of spiral ice defaults, recommendation is conditional on cooling demand and confirmed mixer compatibility; this revision does not silently change the existing water method.
+
 ## Maturity windows and vertical schedule editor — 24 September 2026
 
 User approved a direct branch prototype. The previous editor incorrectly froze the preferment recommendation as a required duration. Commercial edits now preserve the other anchor when inside the existing method's recommended window, otherwise search quarter-hour offsets and revalidate the full schedule. The window uses the existing getPrefOptH/prefZoneConstants temperature/storage model; no new fermentation calibration. Current storage mode is retained and explicitly shown. Fixed baking time is preserved; later baking remains a separate explicit proposal. Complex starter plans retain their existing restrictions.
