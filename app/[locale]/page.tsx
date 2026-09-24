@@ -1645,7 +1645,11 @@ export default function Home() {
     const w = window as unknown as { requestIdleCallback?: (cb: () => void) => number; cancelIdleCallback?: (id: number) => void };
     let timer: ReturnType<typeof setTimeout> | null = null;
     let idleId: number | null = null;
-    const warm = () => { void import('../components/PizzaParty'); };
+    const warm = () => {
+      // Optional preload may be interrupted by navigation/reload. The real
+      // screen loader still owns reporting errors when it is opened.
+      void import('../components/PizzaParty').catch(() => {});
+    };
     if (w.requestIdleCallback) idleId = w.requestIdleCallback(warm);
     else timer = setTimeout(warm, 1500);
     return () => { if (idleId !== null && w.cancelIdleCallback) w.cancelIdleCallback(idleId); if (timer) clearTimeout(timer); };
