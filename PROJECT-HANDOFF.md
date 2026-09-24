@@ -1,5 +1,9 @@
 # Bakerhub — continuation handoff
 
+## Lighter bread catalogue copy — 24 September 2026
+
+Removed the introductory optional-fillings sentence in French and English, without replacement. Bread/meal photos and their idea captions provide the hint; the existing “Continuer sans garnitures” action remains on quantity setup. No navigation or scheduling behaviour changed. Prior entry revision iPhone CI 35953246661 is now confirmed SUCCESS. This copy-only revision is preview-only.
+
 ## Existing-base entry and image consistency — 24 September 2026
 
 User approved revising the entry without adding a step for from-scratch users. Pizza / Bread still goes straight to style and quantity. The existing-base shortcut is now on each family's style screen, not the landing page. Bread entry offers baked bread / dough inline, bread-only photos and explicit selection. Opening the shortcut never silently restores a prior bagel; a separate named Resume action restores it. Active preparation URLs carry `active=1`, so reload preserves the current preparation and section. Empty entry screens do not overwrite the saved draft. New preparation resets selections; changing bread inside an active preparation preserves per-bread selections and dough state. Six-section navigation appears only after selecting a base.

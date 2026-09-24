@@ -28,7 +28,6 @@ export default function StylePicker({bakeType,selected,onSelect,disabledIds=[],d
  }
  if(!bread)return <div style={{display:'grid',gap:10}}>{Object.keys(styles).map(card)}</div>;
  return <div>
-  <p style={{fontSize:15,color:'var(--smoke)',marginTop:0}}>{fr?'Les garnitures sont proposées ensuite, si vous en voulez.':'Optional fillings come next, if you want them.'}</p>
   <nav className="bh-bread-jumps" aria-label={fr?'Aller à un groupe de pains':'Jump to a bread group'}>{BREAD_GROUPS.map((item,index)=><a key={item.id} href={`#bread-group-${item.id}`}>{(fr?['À trancher','À garnir','Pitas & wraps','Moelleux & partage']:['Loaves','Sandwich breads','Pitas & wraps','Soft & sharing'])[index]}</a>)}</nav>
   {BREAD_GROUPS.map(item=><section className="bh-bread-group" key={item.id} aria-labelledby={`bread-group-${item.id}`} style={{marginBottom:24}}><h3 className="bh-bread-group" id={`bread-group-${item.id}`} style={{fontSize:18,margin:'0 0 10px'}}>{fr?item.fr:item.en}</h3><div className="bh-bread-group-grid">{item.keys.map(card)}</div></section>)}
  </div>;
