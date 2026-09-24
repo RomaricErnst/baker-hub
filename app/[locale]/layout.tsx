@@ -25,8 +25,8 @@ export const metadata: Metadata = {
     title: 'Baker Hub',
   },
   icons: {
-    icon: '/logos/logo_icon_1024.png',
-    apple: '/logos/logo_icon_1024.png',
+    icon: [{ url: '/logos/bakerhub-b-incised.svg', type: 'image/svg+xml' }, { url: '/logos/bakerhub-b-32.png', sizes: '32x32', type: 'image/png' }],
+    apple: [{ url: '/logos/bakerhub-b-180.png', sizes: '180x180', type: 'image/png' }],
   },
 };
 

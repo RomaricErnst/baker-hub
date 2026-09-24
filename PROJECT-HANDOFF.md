@@ -1,5 +1,9 @@
 # Bakerhub — continuation handoff
 
+## Approved incised b icon — 24 September 2026
+
+User selected concept 3 and authorized preview publication. Added a flat cocoa/ivory SVG master and actual 32/180/192/512px PNG exports, plus 16/32/48px favicon ICO. Incision belongs to the standalone icon; the bakerhub. header wordmark is unchanged. Versioned filenames replace the dough-photo references in metadata and manifest; manifest MIME types and dimensions now match the assets. Existing installed home-screen shortcuts may retain cached artwork. Regenerate PNGs with scripts/build-brand-icons.cjs. Visual check at 512 and 32px: legible b and open counter; incision subtle at favicon size. Preview only.
+
 ## Lighter bread catalogue copy — 24 September 2026
 
 Removed the introductory optional-fillings sentence in French and English, without replacement. Bread/meal photos and their idea captions provide the hint; the existing “Continuer sans garnitures” action remains on quantity setup. No navigation or scheduling behaviour changed. Prior entry revision iPhone CI 35953246661 is now confirmed SUCCESS. This copy-only revision is preview-only.
