@@ -7,8 +7,9 @@ import FermentChart, { scheduleColdIntervals, getPrefOptH, getPrefPeakH_RT, getS
 import FermentationReadiness from './FermentationReadiness';
 import ScheduleTimeline from './ScheduleTimeline';
 import ScheduleTimeSlider from './ScheduleTimeSlider';
+import ScheduleAnchorControls from './ScheduleAnchorControls';
 import {assessScheduleDraft} from '../utils/scheduleDraft';
-import {proposeScheduleEdit, laterBakeAlternative, type EditInput} from '../utils/scheduleEdit';
+import {proposeScheduleEdit, laterBakeAlternative, scheduleEditSlots, type EditInput, type EditTimes} from '../utils/scheduleEdit';
 import { isTimeBlocked, findAvailabilityConflicts, type AvailabilityAction } from '../utils/scheduleAvailability';
 import type { MixerType } from '../data';
 
@@ -2063,24 +2064,20 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   useEffect(() => { onEditingChange?.(editingRow !== null); return () => onEditingChange?.(false); }, [editingRow, onEditingChange]);
   const [editingEnabled, setEditingEnabled] = useState(false);
   const [draftRowTime, setDraftRowTime] = useState('');
+  const [editBaseTimes,setEditBaseTimes]=useState<EditTimes|null>(null);
   const [lastEditedRow, setLastEditedRow] = useState<string | null>(null);
   const [undoTimes,setUndoTimes]=useState<{start:Date;bake:Date;offset:number;blocks:AvailabilityBlock[]}|null>(null);
   const [alternativeBake,setAlternativeBake]=useState<Date|null>(null);
   const [noLaterBake,setNoLaterBake]=useState(false);
   const acceptedBakeRef=useRef<number|null>(null);
   function beginRowEdit(id:string,at:number) {
+    setEditBaseTimes(null);
     const d=new Date(at);
     setDraftRowTime(new Date(+d-d.getTimezoneOffset()*60000).toISOString().slice(0,16));
     setEditingEnabled(true);setEditingRow(id);setLastEditedRow(null);setAlternativeBake(null);setNoLaterBake(false);
   }
   const readinessEditorRef = useRef<HTMLInputElement>(null);
   const availabilityControlsRef = useRef<HTMLDivElement>(null);
-  // Summary actions open the same editor as the list. Bring it into view
-  // after switching tabs, including when several starter steps precede it.
-  useEffect(() => {
-    if (!editingRow || scheduleView !== 'actions') return;
-    readinessEditorRef.current?.closest('[data-schedule-editor]')?.scrollIntoView({ block: 'center', behavior: 'auto' });
-  }, [editingRow, scheduleView]);
   const pickerDateTimeRef = useRef<string>(pickerDateTime);
   const [localBlocks, setLocalBlocks] = useState<AvailabilityBlock[]>(blocks);
   // The blocks the solver must see, always current.
@@ -7868,7 +7865,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
 
         const editedRow=rows.find(r=>r.id===editingRow);
         const draft=new Date(draftRowTime);
-        const changed=!!editedRow&&+draft!==editedRow.at;
+        const changed=!!editedRow&&(+draft!==editedRow.at||editBaseTimes!==null);
         const prefOpt=getPrefOptH(prefermentType,kitchenTemp,prefGoesInFridge,styleKey,fridgeTemp);
         const prefZone=prefZoneConstants(prefermentType,prefGoesInFridge,kitchenTemp);
         const prefWindow=!isSourdough&&hasPrefActive?{
@@ -7876,9 +7873,9 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           max:Math.min(prefermentType==='biga'?72:prefGoesInFridge?24:16,prefOpt+(prefGoesInFridge?prefZone.plateauH:prefZone.rtTolUpper)),
         }:undefined;
         const editInput:EditInput={
-          id:editingRow??'',at:draft,start:pendingStart,bake:alternativeBake??pendingEatTime,
+          id:editingRow??'',at:draft,start:editBaseTimes?.start??pendingStart,bake:alternativeBake??editBaseTimes?.bake??pendingEatTime,now:Date.now(),
           blocks:repairBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,
-          prefHours:prefOffsetH,hasPreferment:hasPrefActive,
+          prefHours:editBaseTimes?.prefHours??prefOffsetH,hasPreferment:hasPrefActive,
           prefWindow,
           prefWarmupHours:prefGoesInFridge?prefRTWarmupH:0,
           supported:!readinessUnsupported&&(!isSourdough||(planningMode==='know_peak'&&!!knownPeakTime&&displayStarterEvents.every(e=>e.kind==='known_peak'||e.kind==='last_fed'))),
@@ -7890,15 +7887,15 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           extraActions:isSourdough?methodActions(pendingStart):[],
         };
         const preview=changed?proposeScheduleEdit(editInput):null;
-        const draftMix=preview?.times.start??pendingStart;
-        const draftBake=preview?.times.bake??pendingEatTime;
-        const draftPrefOffset=preview?.times.prefHours??prefOffsetH;
+        const draftMix=preview&&Number.isFinite(+preview.times.start)?preview.times.start:pendingStart;
+        const draftBake=preview&&Number.isFinite(+preview.times.bake)?preview.times.bake:pendingEatTime;
+        const draftPrefOffset=preview&&Number.isFinite(preview.times.prefHours)?preview.times.prefHours:prefOffsetH;
         const {from:draftFrom,to:draftTo}=editInput.window(draftBake);
         const originalBounds=editInput.window(pendingEatTime);
         const sliderFrom=editingRow==='pref'&&prefWindow&&originalBounds.from?Math.max(Date.now(),+originalBounds.from-prefWindow.max*3600000):editingRow==='mix'&&originalBounds.from?Math.max(Date.now(),+originalBounds.from):Math.max(Date.now(),+(editedRow?.at??pendingEatTime)-12*3600000);
         const sliderTo=editingRow==='pref'&&prefWindow&&originalBounds.to?+originalBounds.to-prefWindow.min*3600000:editingRow==='mix'&&originalBounds.to?+originalBounds.to:+(editedRow?.at??pendingEatTime)+12*3600000;
         const setDraftAt=(at:number)=>{const d=new Date(at);setAlternativeBake(null);setDraftRowTime(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`);};
-        const canFindLater=changed&&preview&&!preview.valid&&!isSourdough&&!['past','date','unsupported','busy'].includes(preview.issue??'');
+        const canFindLater=changed&&preview&&!preview.valid&&!isSourdough&&['range','timing'].includes(preview.issue??'');
         const previewRows=rows.filter(row=>!row.id.startsWith('dough:')||!preview?.schedule||preview.schedule.availabilityActions?.some(a=>`dough:${a.id}`===row.id)).map(row=>{
           const action=preview?.schedule?.availabilityActions?.find(a=>`dough:${a.id}`===row.id||a.id===row.id);
           const at=row.id==='pref'?+draftMix-draftPrefOffset*3600000:row.id==='pref-out'?+draftMix-prefRTWarmupH*3600000:row.id==='ready'?+draftBake+readyOffset*60000:action?+action.at:row.at;
@@ -7922,6 +7919,9 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           :preview?.issue==='past'?(isFr?'Ce changement placerait une préparation dans le passé. Choisissez un départ plus tardif.':'This change would put preparation in the past. Choose a later start.')
           :preview?.issue==='unsupported'?(isFr?'Ce changement nécessite de recalculer le plan du levain dans ses réglages.':'Replan the starter in its settings before changing this time.')
           :preview?.issue==='date'?(isFr?'Indiquez une date et une heure complètes.':'Enter a complete date and time.')
+          :preview?.issue==='preferment'&&prefWindow?(isFr?`Maturation du préferment : ${duration(draftPrefOffset)} ; fenêtre conseillée : ${duration(prefWindow.min)}–${duration(prefWindow.max)}. Déplacez le préferment ou le pétrissage.`:`Preferment maturation: ${duration(draftPrefOffset)}; recommended window: ${duration(prefWindow.min)}–${duration(prefWindow.max)}. Move the preferment or mixing.`)
+          :preview?.schedule?.bulkConflict?(isFr?`Repos avant mise au froid trop court : il manque ${preview.schedule.bulkConflict.missingMin} min. Avancez le pétrissage.`:`Rest before refrigeration is short by ${preview.schedule.bulkConflict.missingMin} min. Start mixing earlier.`)
+          :preview?.schedule?.coldExitConflict?(isFr?`La sortie du réfrigérateur tombe pendant ${preview.schedule.coldExitConflict.blockLabel}. Déplacez la cuisson ou cette indisponibilité.`:`Taking the dough out overlaps ${preview.schedule.coldExitConflict.blockLabel}. Move the bake or this unavailable period.`)
           :preview&&!preview.valid?(isFr?'Aucun horaire compatible avec ce départ, vos disponibilités et la cuisson fixée.':'No schedule fits this start, your availability and the fixed bake time.'):null;
         const applyTimes=(start:Date,bake:Date,offset:number,appliedBlocks:AvailabilityBlock[]=repairBlocks)=>{
           acceptedBakeRef.current=+bake;
@@ -7934,22 +7934,26 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           setLocalBlocks(appliedBlocks);
           onChange(start,bake,appliedBlocks,{preservePlan:true});
         };
-        const closeEdit=()=>{setEditingRow(null);setEditingEnabled(false);setAlternativeBake(null);};
+        const closeEdit=()=>{setEditingRow(null);setEditingEnabled(false);setAlternativeBake(null);setEditBaseTimes(null);};
         const saveEdit=()=>{
           if(!changed)return;
           const checked=proposeScheduleEdit(editInput);if(!checked.valid)return;
           setUndoTimes({start:pendingStart,bake:pendingEatTime,offset:prefOffsetH,blocks:localBlocks});
           applyTimes(checked.times.start,checked.times.bake,checked.times.prefHours);closeEdit();
         };
-        return <>
-          {undoTimes&&!editingRow&&<button type="button" onClick={()=>{applyTimes(undoTimes.start,undoTimes.bake,undoTimes.offset,undoTimes.blocks);setUndoTimes(null);}} style={{minHeight:44}}>{isFr?'Annuler le dernier ajustement':'Undo last adjustment'}</button>}
-          <ScheduleTimeline rows={changed&&preview?.schedule?previewRows:rows} blocks={_blocks} isFr={isFr} editingEnabled={editingEnabled} editingId={editingRow}
-          onEdit={id=>{const row=rows.find(r=>r.id===id);if(row){setEditingEnabled(true);beginRowEdit(id,row.at);}}}
-          onToggleEditing={closeEdit}
-          editor={<div data-schedule-editor style={{display:'grid',gap:10}}>
-            <ScheduleTimeSlider from={Math.ceil(sliderFrom/900000)*900000} to={Math.floor(sliderTo/900000)*900000} value={+draft} onChange={setDraftAt} blocks={repairBlocks} isFr={isFr} label={isFr?'Ajuster '+editedRow?.name:'Adjust '+editedRow?.name}/>
-            {prefWindow&&<small>{isFr?'Maturation conseillée':'Recommended maturation'} · {duration(prefWindow.min)}–{duration(prefWindow.max)} · {prefGoesInFridge?(isFr?'au réfrigérateur':'in the fridge'):(isFr?'à température ambiante':'at room temperature')}</small>}
-            {changed&&preview?.valid&&editingRow!=='mix'&&+draftMix!==+pendingStart&&<p role="status" style={{margin:0,fontSize:14}}>{isFr?'Pétrissage déplacé au ':'Mixing moved to '}{fmtCardDT(draftMix,isFr)}</p>}
+        const paired=!isSourdough&&!readinessUnsupported;
+        const pairFrom=Math.floor(Math.min(+pendingStart,hasPrefActive?+pendingStart-prefOffsetH*3600000:Infinity,Math.max(Date.now(),+(originalBounds.from??pendingStart)-(prefWindow?.max??0)*3600000))/900000)*900000;
+        const pairTo=Math.ceil(Math.max(+pendingStart,+(originalBounds.to??pendingStart))/900000)*900000;
+        const displayedTimes={start:draftMix,bake:draftBake,prefHours:draftPrefOffset};
+        const slotInput={...editInput,...displayedTimes};
+        const anchors=paired?[...(hasPrefActive?[{id:'pref',name:prefLabel,at:+draftMix-draftPrefOffset*3600000,slots:scheduleEditSlots(slotInput,'pref',pairFrom,pairTo)}]:[]),{id:'mix',name:tRoot('schedulePicker.startDough'),at:+draftMix,slots:scheduleEditSlots(slotInput,'mix',pairFrom,pairTo)}]:[];
+        const openEditor=(id:string)=>{const row=rows.find(r=>r.id===id);if(row){if(paired&&id!=='bake')editAnchor(id,anchors.find(anchor=>anchor.id===id)?.at??row.at);else beginRowEdit(id,row.at);if(paired&&id!=='bake')document.getElementById('schedule-anchor-panel')?.scrollIntoView({block:'start',behavior:'smooth'});}};
+        const editAnchor=(id:string,at:number)=>{
+          if(id!==editingRow){beginRowEdit(id,at);setEditBaseTimes(displayedTimes);}else setDraftAt(at);
+        };
+        const editor=<div data-schedule-editor style={{display:'grid',gap:10}}>
+            {(!paired||editingRow==='bake')&&<ScheduleTimeSlider from={Math.ceil(sliderFrom/900000)*900000} to={Math.floor(sliderTo/900000)*900000} value={+draft} onChange={setDraftAt} slots={scheduleEditSlots(editInput,editingRow??'',sliderFrom,sliderTo)} blocks={repairBlocks} isFr={isFr} label={isFr?'Ajuster '+editedRow?.name:'Adjust '+editedRow?.name}/>}
+            {prefWindow&&editingRow==='pref'&&<small>{isFr?'Maturation du préferment':'Preferment maturation'} · {duration(draftPrefOffset)} ({duration(prefWindow.min)}–{duration(prefWindow.max)}) · {prefGoesInFridge?(isFr?'au réfrigérateur':'in the fridge'):(isFr?'à température ambiante':'at room temperature')}</small>}
             <details><summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer',textDecoration:'underline',textUnderlineOffset:4,fontSize:14}}>{isFr?'Saisir une heure précise':'Enter an exact time'}</summary><div style={{display:'grid',gap:10}}>
             <label>{isFr?'Date':'Date'}<input type="date" aria-label={isFr?'Date de l’étape':'Step date'} value={draftRowTime.split('T')[0]??''} onChange={e=>{setAlternativeBake(null);setDraftRowTime(e.target.value+'T'+(draftRowTime.split('T')[1]||'08:00'));}} style={{minHeight:44,fontSize:16,width:'100%',boxSizing:'border-box'}}/></label>
             <label>{isFr?'Heure':'Time'}<input ref={readinessEditorRef} type="time" aria-label={editedRow?.name} value={draftRowTime.split('T')[1]??''}
@@ -7963,8 +7967,16 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
             {canFindLater&&noLaterBake&&<small role="status">{isFr?'Aucune solution dans les 48 prochaines heures avec ces réglages.':'No solution in the next 48 hours with these settings.'}</small>}
             {alternativeBake&&<p role="status">{isFr?'Nouvelle cuisson à confirmer : ':'New bake time to confirm: '}{fmtCardDT(alternativeBake,isFr)}{readyOffset>0&&<> · {readyTimeLabel}: {fmtCardDT(new Date(+alternativeBake+readyOffset*60000),isFr)}</>}</p>}
             <div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button type="button" disabled={!changed||!preview?.valid} onClick={saveEdit} style={{minHeight:44,fontSize:16,padding:'8px 12px'}}>{isFr?'Appliquer':'Apply'}</button><button type="button" onClick={closeEdit} style={{minHeight:44,fontSize:16,padding:'8px 12px'}}>{isFr?'Annuler':'Cancel'}</button></div>
-          </div>}/>
-        </>;
+          </div>;
+        return <section aria-label={isFr?'Votre planning':'Your schedule'}>
+          {undoTimes&&!editingRow&&<button type="button" onClick={()=>{applyTimes(undoTimes.start,undoTimes.bake,undoTimes.offset,undoTimes.blocks);setUndoTimes(null);}} style={{minHeight:44}}>{isFr?'Annuler le dernier ajustement':'Undo last adjustment'}</button>}
+          {paired&&pairTo>pairFrom&&<div id="schedule-anchor-panel" style={{scrollMarginTop:140}}>
+            <ScheduleAnchorControls anchors={anchors} from={pairFrom} to={pairTo} blocks={repairBlocks} isFr={isFr} onChange={editAnchor} onEdit={openEditor}/>
+            {editingRow&&editingRow!=='bake'&&editor}
+          </div>}
+          <ScheduleTimeline rows={changed&&preview?.schedule?previewRows:rows} blocks={_blocks} isFr={isFr} editingEnabled={editingEnabled} editingId={editingRow}
+            onEdit={openEditor} onToggleEditing={closeEdit} editor={!paired||editingRow==='bake'?editor:null}/>
+        </section>;
 
       })()}
 

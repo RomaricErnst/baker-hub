@@ -340,7 +340,9 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  const reset=page.getByRole('button',{name:/^Revenir au poids conseillé/});
  await expect(reset).toBeVisible();await reset.tap();
  await expect(reset).toHaveCount(0);
- await expect.poll(async()=>(await stored(page)).itemWeight).not.toBe(280);
+ await expect(weight).not.toHaveValue('280');
+ const recommended=Number(await weight.inputValue());
+ await expect.poll(async()=>(await stored(page))?.itemWeight).toBe(recommended);
  await page.locator('.bh-batch-actions').getByRole('button',{name:'Sans garnitures',exact:true}).tap();
  await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé(?:\s|$)/}).tap();
  const step=page.locator('#step-3');
@@ -351,7 +353,7 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  await step.getByRole('button',{name:mode==='simple'?/KitchenAid \/ robot pâtissier/:/Robot pâtissier/}).tap();
  await step.locator('.bh-step-actions').getByRole('button',{name:'Précédent',exact:true}).tap();
  await expect(step.getByRole('heading',{name:'Four',exact:true})).toBeVisible();
- expect((await stored(page)).mixerType).toBe('stand');
+ await expect.poll(async()=>(await stored(page))?.mixerType).toBe('stand');
  await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
  await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
  const climate=page.locator('#step-4');await expect(climate).toBeVisible();
@@ -361,6 +363,6 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  await testInfo.attach('climate-back-and-continue',{body:await page.screenshot(),contentType:'image/png'});
  await back.tap();
  await expect(step.getByRole('heading',{name:'Pétrissage',exact:true})).toBeVisible();
- expect((await stored(page)).mixerType).toBe('stand');
+ await expect.poll(async()=>(await stored(page))?.mixerType).toBe('stand');
  expect((await stored(page)).ovenType).toBe('pizza_oven');
 });

@@ -1,5 +1,13 @@
 # Bakerhub — continuation handoff
 
+## Coupled scheduling controls — 24 September 2026
+
+User reported misleading green validity and stale later actions during a mixing drag. Code inspection confirmed the green background only showed free calendar time; early preferment failures returned no candidate schedule, leaving downstream rows unchanged. The horizontal reference keeps preferment offset when mixing moves and changes the offset independently when preferment moves.
+
+Commercial plans now show two compact vertical controls together (one for direct dough) on a shared linear axis. Green slots use the same full builder/method/availability checks as Apply; grey is incompatible, hatching marks unavailability. Mixing shifts preferment with it; if that lands on an unavailable/past preparation, search the existing maturation window for the closest viable preferment. Preferment-only edits keep mixing pinned and report the maturation conflict instead of silently moving it. Every buildable candidate previews later dough actions even if a preferment constraint rejects it. Both handles may be adjusted before one Apply/Cancel; fixed bake remains fixed. Complex starter plans retain the prior editor and restrictions. No new biological calibration or implicit RT/fridge switch.
+
+Quantity/navigation application f0844f202548f9229e57f3d826915554554bd6ad deployed READY as dpl_6FotRDEbyXPkWNjkggjrTLBUMfuk. Browser confirmed direct 280g entry, oven then mixing and climate Back preserving selected stand mixer. CI35974008764 passed 121 cases; 7 new quantity/equipment cases read debounced storage before its write. Tests now wait for the exact persisted value. No claim that this first mobile run fully passed. New scheduling regression covers linked handles, independent preferment, downstream preview, Apply and undo. Local278 tests and build passed before publication; new mobile results pending. Spiral-ice default remains unchanged pending the conditional-default design decision; selecting a spiral alone does not imply compatible model.
+
 ## Lighter quantities and consistent step navigation — 24 September 2026
 
 User approved simplifying quantity entry, equipment and navigation on the prototype. Removed the repeated total-mass card; the recipe retains totals. Round-pizza mass is directly editable with a suggested-weight reset; diameter/crust changes preserve an explicit override. Fillings invitation now has a short heading and pictures. Routine forward buttons say Continuer / Continue; return-to-recipe and generated-output actions retain explicit destinations.

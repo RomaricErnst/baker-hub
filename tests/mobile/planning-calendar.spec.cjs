@@ -18,7 +18,7 @@ test('vertical slider keeps morning mixing through a blocked night and supports 
  await plan.getByLabel('Date de l’étape').fill(local(pref).split('T')[0]);
  await plan.locator('input[type="time"]').fill(local(pref).split('T')[1]);
  await expect(plan.getByRole('button',{name:'Appliquer',exact:true})).toBeEnabled();
- const slider=plan.getByRole('slider');await expect(slider).toBeVisible();
+ const slider=plan.getByRole('slider',{name:'Ajuster Préparer le Poolish',exact:true});await expect(slider).toBeVisible();
  await slider.focus();await slider.press('ArrowDown');
  await expect(plan.getByRole('button',{name:'Appliquer',exact:true})).toBeEnabled();
  await testInfo.attach('vertical-window',{body:await plan.screenshot(),contentType:'image/png'});
@@ -67,7 +67,7 @@ for(const mode of ['simple','custom'])test(`${mode}: preferment window preserves
  const {plan,start,bake}=await openPlan(page,mode,[],true);
  await plan.getByRole('button',{name:'Modifier Préparer le Poolish',exact:true}).tap();
  await plan.getByText('Saisir une heure précise',{exact:true}).click();
- await expect(plan.getByRole('slider')).toBeVisible();
+ await expect(plan.getByRole('slider',{name:'Ajuster Préparer le Poolish',exact:true})).toBeVisible();
  await plan.getByRole('button',{name:'+15 min',exact:true}).tap();
  await expect(plan.getByRole('button',{name:'Appliquer',exact:true})).toBeEnabled();
  await plan.getByRole('button',{name:'Appliquer',exact:true}).tap();
@@ -81,7 +81,30 @@ for(const mode of ['simple','custom'])test(`${mode}: preferment window preserves
  const late=new Date(+bake-13*3600000);
  await plan.getByLabel('Date de l’étape').fill(local(late).split('T')[0]);await plan.locator('input[type="time"]').fill(local(late).split('T')[1]);
  await expect(plan.getByRole('button',{name:'Appliquer',exact:true})).toBeDisabled();
- await expect(plan.getByRole('alert')).toContainText('Aucun horaire compatible');
+ await expect(plan.getByRole('alert')).toContainText('Maturation du préferment');
  expect((await stored(page)).eatTime).toBe(+bake);
  await plan.getByRole('button',{name:'Annuler',exact:true}).tap();
+});
+
+test('paired anchors preview downstream changes and allow switching handles before applying',async({page},testInfo)=>{
+ const {plan,start,bake}=await openPlan(page,'custom',[],true);
+ const pref=plan.getByRole('slider',{name:'Ajuster Préparer le Poolish',exact:true});
+ const mix=plan.getByRole('slider',{name:'Ajuster Commencer la pâte',exact:true});
+ await expect(pref).toBeVisible();await expect(mix).toBeVisible();
+ const cold=plan.locator('[data-schedule-step="dough:cold-in"]');
+ const coldBefore=Number(await cold.getAttribute('data-at'));
+ await mix.focus();await mix.press('ArrowDown');
+ await expect(mix).toHaveValue(String(+start+900000));
+ await expect(pref).toHaveValue(String(+start-12*3600000+900000));
+ await expect(cold).toHaveAttribute('data-at',String(coldBefore+900000));
+ expect((await stored(page)).startTime).toBe(+start);
+ await pref.focus();await pref.press('ArrowDown');
+ await expect(mix).toHaveValue(String(+start+900000));
+ await expect(plan.getByRole('button',{name:'Appliquer',exact:true})).toBeEnabled();
+ await testInfo.attach('paired-planning-controls',{body:await page.screenshot(),contentType:'image/png'});
+ await plan.getByRole('button',{name:'Appliquer',exact:true}).tap();
+ await expect.poll(async()=>(await stored(page)).startTime).toBe(+start+900000);
+ expect((await stored(page)).prefOffsetH).toBe(11.75);expect((await stored(page)).eatTime).toBe(+bake);
+ await page.getByRole('button',{name:'Annuler le dernier ajustement',exact:true}).tap();
+ await expect.poll(async()=>(await stored(page)).startTime).toBe(+start);
 });
