@@ -17,7 +17,16 @@ async function expand(plan,id){const r=row(plan,id);if(!await r.getByRole('slide
 async function enter(plan,id,date){const r=row(plan,id);if(!await r.locator('input[type="datetime-local"]').count())await r.locator('.bh-key-time').click();await r.locator('input[type="datetime-local"]').fill(local(date));}
 for(const mode of ['simple','custom'])test(`${mode}: inline draft, cancel, invalid edit and atomic commit`,async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));const {plan,start,bake}=await openPlan(page,mode);
- await expect(reset(page)).toHaveCount(0);await expect(plan.getByText('Préchauffage',{exact:true})).toHaveCount(0);
+ await expect(reset(page)).toHaveCount(0);
+ const interventions=plan.locator('details').filter({has:page.locator('summary').filter({hasText:'Voir toutes les interventions'})});
+ await expect(interventions).not.toHaveAttribute('open','');
+ await expect(plan.getByText('Préchauffage',{exact:true})).toBeHidden();
+ await interventions.locator('summary').tap();
+ await expect(plan.getByText('Préchauffage',{exact:true})).toBeVisible();
+ const preheat=interventions.locator('li').filter({has:page.getByText('Préchauffage',{exact:true})});
+ const preheatAt=Date.parse(await preheat.locator('time').getAttribute('datetime'));
+ expect(preheatAt).toBeGreaterThan(+start);expect(preheatAt).toBeLessThan(+bake);
+ await interventions.locator('summary').tap();
  const proposed=new Date(+start+900000);await enter(plan,'mix',proposed);await expect(confirm(plan)).toBeEnabled();
  expect((await stored(page)).startTime).toBe(+start);await plan.getByRole('button',{name:'Annuler',exact:true}).click();await expect(reset(page)).toHaveCount(0);
  await enter(plan,'mix',new Date(+bake-3600000));await expect(confirm(plan)).toBeDisabled();

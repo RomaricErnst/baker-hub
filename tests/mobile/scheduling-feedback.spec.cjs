@@ -30,7 +30,9 @@ async function enter(plan,id,value){
  await r.locator('input[type="datetime-local"]').fill(value);
 }
 async function fits(page,locator){
- await locator.scrollIntoViewIfNeeded();
+ // Native viewport visibility ignores fixed setup actions; center the control
+ // as a baker can by scrolling, then retain the strict real hit-target check.
+ await locator.evaluate(el=>el.scrollIntoView({block:'center',behavior:'instant'}));
  const r=await locator.boundingBox();expect(r.x).toBeGreaterThanOrEqual(0);expect(r.x+r.width).toBeLessThanOrEqual(page.viewportSize().width+1);
  expect(await locator.evaluate(el=>{const r=el.getBoundingClientRect(),top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return top===el||el.contains(top);})).toBe(true);
 }
@@ -268,7 +270,7 @@ for(const locale of ['fr','en'])test(`${locale}: explicit oven target and sugges
  await page.getByRole('button',{name:locale==='fr'?/^Jours ouvrés/:/^Weekdays/}).tap();
  await expect.poll(async()=>(await stored(page)).blocks.length).toBeGreaterThan(0);
  expect((await stored(page)).eatTime).toBe(selected.eatTime);await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
- await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:locale==='fr'?'Précédent':'Previous',exact:true}).tap();
+ await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:locale==='fr'?'Précédent':'Back',exact:true}).tap();
  await expect(page.locator('#step-8')).toBeVisible();await page.goBack();await expect(plan).toBeVisible();
  await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
  await page.reload();await expect(plan).toBeVisible();await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);

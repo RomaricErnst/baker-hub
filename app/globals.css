@@ -470,3 +470,6 @@ button,
 .bh-key-exact { display:block; margin:10px 0 0; font-size:13px; }
 .bh-key-exact input { display:block; width:100%; min-width:0; max-width:100%; min-height:44px; font-size:16px; padding:6px; margin-top:4px; border:1px solid var(--border); border-radius:8px; background:var(--warm); color:var(--char); }
 .bh-key-fixed { display:block; margin:6px 0; font-size:18px; }
+
+/* Keep focused timing controls clear of the sticky section and action bars. */
+.bh-key-time,.bh-key-modify,.bh-key-editor input { scroll-margin-block:150px; }
