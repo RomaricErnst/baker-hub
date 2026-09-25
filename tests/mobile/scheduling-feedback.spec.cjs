@@ -213,8 +213,12 @@ test('previous/continue and browser back/forward reopen scheduling with confirme
  await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:'Précédent',exact:true}).tap();
  await expect(page.locator('#step-8')).toBeVisible();
  await page.locator('#step-8 .bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+ // Continue skips already answered steps via nextUnanswered. The saved valid
+ // schedule is answered, so the existing flow lands on Fine-tune (step10).
+ await expect(page.locator('#step-10')).toBeVisible();
+ await page.locator('#step-10 .bh-step-actions').getByRole('button',{name:'Précédent',exact:true}).tap();
  await expect(plan).toBeVisible();await expect(reset(page)).toBeVisible();
- await page.goBack();await expect(page.locator('#step-8')).toBeVisible();
+ await page.goBack();await expect(page.locator('#step-10')).toBeVisible();
  await page.goForward();await expect(plan).toBeVisible();await expect(reset(page)).toBeVisible();
  const after=await stored(page);
  expect(after.startTime).toBe(before.startTime);expect(after.eatTime).toBe(before.eatTime);

@@ -44,13 +44,21 @@ Reviewed the follow-up local changes after the parent reported CI run `360894428
 - Legacy warning panels are suppressed once the full candidate timeline is available, leaving the candidate-derived inline message instead of duplicate committed-state warnings.
 - Independently reran 31 edit/search/sourdough-probe tests after these changes; all passed. No new biological coefficients or empirical maturity claims were introduced.
 
-Bounded source/core review passed for this follow-up. Parent-reported live checks reproduced the old stale warning, then confirmed immediate clearing in the corrected preview, persisted Reset after confirmation/reload, manual preferment retention when enabling nights, and Reset with fixed bake/current blockers. Final patch build/browser results must be recorded separately before claiming deployment completion. The completion-versus-expired-preparation limitation above remains.
+Parent-reported live checks reproduced the old stale warning, then confirmed immediate clearing in the corrected preview, persisted Reset after confirmation/reload, and manual preferment retention when enabling nights. The initial source review of the Reset seed was insufficient: it did not follow the seed variable back to its manual-time dependency. The stricter browser assertion below supersedes that earlier provisional Reset approval. The completion-versus-expired-preparation limitation above remains.
+
+### Reset seed correction after stricter browser testing
+
+The parent reported eight Reset failures (French/English at four widths, 172 other cases passing) for the preceding corrective patch: Reset retained the manually chosen 20:15 time. `renderSweetCenter` clamps `mixOffsetH` for cold-fermented styles, so it is partly derived from the manual mixing time and is not an independent recommendation.
+
+Reviewed the one-line correction to seed `input.start` from `pendingEatTime - _optimalMix * 3600000`. `_optimalMix` is calculated from the existing style cold preference through `biasCold` plus existing `climateRtH`, without reading `mixOffsetH`. The same fixed-bake search then validates this independent seed against current blockers, supported windows and unchanged storage. This addresses the specific dependency error without modifying scientific coefficients. Final TypeScript/browser rerun evidence must be recorded by the parent before declaring the Reset regression resolved in deployment.
 
 ## Remaining limits and acceptance gates
 
 - Verify the caller passes current method/storage/windows/pins and uses the same candidate for messages, slider colors and confirmation. Verify persisted times also recalculate recipe quantities/dosing.
 - Check current biological-model limits, including unsupported hot room-only sourdough bounds. Do not manufacture a green window by swapping or loosening bounds.
-- Untimed feed/preferment/no-knead handling remains represented as points; no claim of comprehensive hands-on duration coverage.
+- **Folds are not included in availability validation at all.** `BakeGuide` still prescribes folds during bulk, but `buildSchedule().availabilityActions` contains no fold action. Consequently a green candidate does not establish that the baker is available for those folds. This is an omitted-action limitation, not merely an unknown duration; no fold timestamps were invented in this repair.
+- Starter feeds, commercial-preferment preparation, no-knead combining, refrigerator transfers and starting oven preheat are checked as timestamp-only actions, without handling-duration overlap coverage. Passive preheating is not itself a continuous hands-on interval.
+- Divide/shaping receives a modeled active span only when a later second-cold-phase entry supplies its end; other branches check its timestamp only. Modeled mixing/finishing, bagel poaching, piadina rolling and applicable active cooking retain their represented spans. This is not comprehensive hands-on duration coverage.
 - Search is bounded, not a proof of impossibility. A failed search needs a concise bounded-result message.
 - Numerical tests are not physical baking validation. Physical iPhone Safari and authenticated cloud-save behavior require separate evidence.
 
