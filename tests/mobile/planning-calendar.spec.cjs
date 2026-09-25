@@ -11,7 +11,7 @@ async function openPlan(page,mode='simple',blocks=[],preferment=false,night=fals
  await page.goto('/fr');const plan=page.getByRole('region',{name:'Vos moments clés',exact:true});await expect(plan).toBeVisible();return {plan,start,bake};
 }
 const confirm=plan=>plan.getByRole('button',{name:'Valider ces horaires',exact:true});
-const reset=page=>page.getByRole('button',{name:'Revenir à la recommandation',exact:true});
+const reset=page=>page.getByRole('button',{name:'Réinitialiser les horaires',exact:true});
 const row=(plan,id)=>plan.locator(`[data-key-timing="${id}"]`);
 async function enter(plan,id,date){const r=row(plan,id);if(!await r.locator('input[type="datetime-local"]').count())await r.locator('.bh-key-time').click();await r.locator('input[type="datetime-local"]').fill(local(date));}
 for(const mode of ['simple','custom'])test(`${mode}: inline draft, cancel, invalid edit and atomic commit`,async({page})=>{
@@ -56,3 +56,4 @@ for(const storage of ['rt','fridge'])test(`levain ${storage} future feeds use st
  const events=(await stored(page)).starterEvents;await page.reload();await expect(plan).toBeVisible();expect((await stored(page)).starterEvents).toEqual(events);
  const feed=row(plan,'starter:pre_mix').getByRole('slider');await expect(feed).toBeVisible();const limits=[await feed.getAttribute('min'),await feed.getAttribute('max')];await feed.focus();await feed.press('ArrowDown');await expect(feed).toHaveAttribute('min',limits[0]);await expect(feed).toHaveAttribute('max',limits[1]);await expect(mix).toHaveValue(String(original+900000));await plan.getByRole('button',{name:'Annuler',exact:true}).click();
 });
+

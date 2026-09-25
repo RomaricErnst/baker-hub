@@ -11,6 +11,9 @@ export function assessScheduleDraft(input:ScheduleDraftInput):{schedule:Schedule
   const {start,bake,from,to,extraActions=[],now=Date.now()}=input;
   if(![+start,+bake].every(Number.isFinite)||+start<=now||+bake<=+start)return {schedule:null,valid:false,reason:'date'};
   const schedule=buildSchedule(start,bake,input.blocks,input.kitchenTemp,input.preheatMin,input.mixerType,input.styleKey,input.numItems);
+  // The builder historically rounds bake anchors. Never approve a candidate
+  // whose rendered agenda silently differs from the requested fixed time.
+  if(+schedule.bakeStart!==+bake)return {schedule,valid:false,reason:'timing'};
   if(!input.methodValid)return {schedule,valid:false,reason:'method'};
   if(!from||!to||+from>=+to||+start<+from||+start>+to)return {schedule,valid:false,reason:'range'};
   const actions=[...(schedule.availabilityActions??[]),...extraActions];
@@ -19,3 +22,4 @@ export function assessScheduleDraft(input:ScheduleDraftInput):{schedule:Schedule
   if(schedule.preparationInvalid||schedule.bulkConflict||schedule.coldExitConflict||actions.some(a=>+a.at<now))return {schedule,valid:false,reason:'timing'};
   return {schedule,valid:true,reason:null};
 }
+

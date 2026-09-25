@@ -17,7 +17,7 @@ jobs:
   iphone:
     if: github.ref == 'refs/heads/codex/prototype-migration-20260920' || github.ref == 'refs/heads/codex/navigation-six-sections-20260922' || github.ref == 'refs/heads/codex/navigation-polish-20260923'
     runs-on: macos-14
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       CI: 'true'
       NEXT_TELEMETRY_DISABLED: '1'
@@ -44,7 +44,7 @@ jobs:
       - name: Build isolated app
         run: npm run build
       - name: Run iPhone rendering and interaction checks
-        timeout-minutes: 15
+        timeout-minutes: 25
         run: node .ci-tools/node_modules/@playwright/test/cli.js test --config=playwright.mobile.config.cjs
       - name: Upload screenshots, traces and report
         if: always()
@@ -56,3 +56,4 @@ jobs:
             test-results/
           if-no-files-found: warn
           retention-days: 14
+

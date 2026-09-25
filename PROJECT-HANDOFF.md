@@ -1,5 +1,16 @@
 # Bakerhub — continuation handoff
 
+## Shared scheduling feedback and persistent Reset — 25 September 2026
+
+The user's screenshot sequence is reproduced on the existing preview: after confirming a poolish preparation, a custom blocker creates a warning; moving preparation to a valid draft enables confirmation but leaves the committed-plan warning visible. Reset was visible immediately after Apply but disappeared after reload/resume while times persisted. Exact screenshot recipe/temperatures were not provided; controlled Asia/Singapore regression fixes25 September08:49 and26 September19:30 bake with explicit22°C/5°C/spiral assumptions.
+
+Commercial blocker changes and Reset now use the same full-candidate validation and bounded fixed-bake search as editing, preserving chosen storage and explicit manual pins. Sourdough uses read-only joint solver probes, complete action validation and exact displayed-event checks. Current and draft feedback share validation; stale global preferment warning removed. Saved timingOverrides distinguish automatic times from manual choices, survive local/cloud resume, and clear on Reset/rebake. Reset retains current blockers and other recipe inputs; Cancel discards only the draft. Custom block removal now identifies the actual block rather than using a filtered index.
+
+No biological coefficients changed. Green means compatibility with the existing estimated model. Preferment/starter handling durations remain point events where unmodeled; completed versus missed past preparation is not explicitly represented, so elapsed preparation is conservatively preserved. Search exhaustion is not proof of biological impossibility. Read docs/SCHEDULING-INDEPENDENT-REVIEW-20260925.md.
+
+Local verification before publication:300 unit/component tests pass, TypeScript and production build pass. Nine added browser scenarios cover36 width cases, bringing the authored mobile matrix to180; their execution/preview verification is pending. Local WebKit could not launch because its system libraries are absent and dependency installation is restricted; do not label authored tests as passed. Preview only; production untouched.
+
+
 ## Conditional batches and stable setup navigation — 25 September 2026
 
 User approved hiding routine batch questions and requested top-of-page navigation plus investigation of flour requiring two taps. Batch controls now appear above existing mixer-specific capacity estimates or with an explicit manual override; smaller quantities offer a discreet split action. Hand/no-knead use lots/batches wording. Existing recipe calculation and thresholds remain unchanged.
@@ -360,3 +371,4 @@ Navigation/tartine app commit 42da084 passed all72 iPhone WebKit tests in CI 357
 Application `c6193fb`; test correction `dfceeecd`. CI [35713615578](https://github.com/RomaricErnst/baker-hub/actions/runs/35713615578) passed 230/230 unit tests, build, 80/80 macOS iPhone-WebKit tests across 320/375/390/430 widths. The earlier 4 review-case failures were a test selector matching an additional hidden status; the visible status assertion now passes, including actual correction routing. Agent and parent inspected corrected 320px Fine-tune, choices review and recipe-footer screenshots, plus 320/390px tartines and reading navigation.
 
 Preview build `dpl_G3T5GmRHSDQ7vuUAdeNv1onhiUZv` is READY for the application commit. Test-only build `dpl_7jnD23V1v98eikPX9wByajy3iGnC` is READY with identical app behavior. Production remains untouched. See `docs/NAVIGATION-REVIEW-20260922.md` for behavior, evidence and emulation limits. Continue from user feedback on the live preview; do not restart the implementation.
+

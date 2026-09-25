@@ -33,7 +33,30 @@ test('week-old refrigerated levain retains revival actions and validates the com
  assert.ok(c.anchors.some(a=>a.id.startsWith('starter:')));const mix=c.anchors.find(a=>a.id==='mix');assert.ok(c.check('mix',mix.at));assert.deepEqual(effects,[]);
 });
 test('optimized next-day levain slot probes complete without applying ratio changes',()=>{
- const bake=new Date(Date.now()+29*3600000),start=new Date(+bake-26*3600000);const {controls:c,effects}=setup({eatTime:bake,startTime:start,planningMode:'last_fed',knownPeakTime:null,lastFedAge:'today',lastFedTime:new Date(Date.now()-2*3600000),starterLocation:'rt',nextFeedRatio:1,ratioMode:'recommend',blocks:[{from:new Date(+bake-20*3600000),to:new Date(+bake-12*3600000),label:'night'}]});
- for(const a of c.anchors.filter(a=>a.editable))for(let t=Math.ceil(a.from/900000)*900000;t<=a.to;t+=900000)c.check(a.id,t);
+ const bake=new Date(Math.ceil((Date.now()+29*3600000)/900000)*900000),start=new Date(+bake-26*3600000);const {controls:c,effects}=setup({eatTime:bake,startTime:start,planningMode:'last_fed',knownPeakTime:null,lastFedAge:'today',lastFedTime:new Date(Date.now()-2*3600000),starterLocation:'rt',nextFeedRatio:1,ratioMode:'recommend',blocks:[{from:new Date(+bake-20*3600000),to:new Date(+bake-12*3600000),label:'night'}]});
+ let valid=0;for(const a of c.anchors.filter(a=>a.editable))for(let t=Math.ceil(a.from/900000)*900000;t<=a.to;t+=900000)if(c.check(a.id,t))valid++;
+ assert.ok(valid>0,'optimized fixture includes a valid candidate');assert.deepEqual(effects,[]);
+});
+
+
+test('starter slot validation checks complete mixing duration and half-open boundaries',()=>{
+ const {start,bake}=setup();
+ const params={startTime:start,eatTime:bake,knownPeakTime:start,mixerType:'stand'};
+ const plan=utils.buildSchedule(start,bake,[],22,45,'stand','neapolitan',2);
+ const active=plan.availabilityActions.find(a=>a.id==='mix'&&a.end);
+ assert.ok(active,'fixture has a modeled active mixing span');
+ const before=setup({...params,blocks:[{from:new Date(+start-60000),to:start,label:'Ends at mix'}]});
+ assert.equal(before.controls.check('mix',+start),true,'block end is free');
+ const exact=setup({...params,blocks:[{from:start,to:new Date(+start+60000),label:'Starts at mix'}]});
+ assert.equal(exact.controls.check('mix',+start),false,'block start is busy');
+ const crossing=setup({...params,blocks:[{from:new Date(+active.at+60000),to:new Date(+active.end),label:'Crosses active mixing'}]});
+ assert.equal(crossing.controls.check('mix',+start),false,'a clear start does not excuse an active-duration conflict');
+ assert.deepEqual([...before.effects,...exact.effects,...crossing.effects],[]);
+});
+
+test('starter previews cannot discard or reschedule a historical preparation',()=>{
+ const past=new Date(Date.now()-3600000);
+ const {controls:c,start,effects}=setup({savedStarterEvents:[{kind:'refresh',time:past,isPast:true,isActive:false,isDraggable:false,label:'Completed refresh',cardTimeFormat:'absolute',bellStyle:'none',bellSigmaScale:1}]});
+ assert.equal(c.check('mix',+start+900000),false,'a recomputed plan without the historical action must not be approved');
  assert.deepEqual(effects,[]);
 });

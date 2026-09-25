@@ -27,6 +27,7 @@ import MixerPicker from '../components/MixerPicker';
 const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { ssr: false });
 import { starterFeedToMixHours } from '../lib/starterTiming';
 import type { StarterEvent } from '../components/SchedulePicker';
+import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 import ClimatePicker from '../components/ClimatePicker';
 import SimpleMixerPicker from '../components/SimpleMixerPicker';
 const RecipeOutput = dynamic(() => import('../components/RecipeOutput'), { ssr: false });
@@ -960,6 +961,7 @@ export default function Home() {
   });
   const [eatTime, setEatTime] = useState<Date | null>(null);
   const [acceptedScheduleRepair, setAcceptedScheduleRepair] = useState<string | null>(null);
+  const [timingOverrides, setTimingOverrides] = useState<TimingOverrides>({});
   const [blocks, setBlocks] = useState<AvailabilityBlock[]>([]);
   const [yeastType, setYeastType] = useState<YeastType | null>(null);
 
@@ -1397,6 +1399,7 @@ export default function Home() {
       // Not a generated session — wipe schedule times, keep all other settings
       session.eatTime = null;
       session.startTime = null;
+      session.timingOverrides = {};
       session.blocks = [];
     }
     // Generated sessions with past bake times are kept as historical record
@@ -1437,6 +1440,7 @@ export default function Home() {
     setPrefermentChosen(session.prefermentChosen ?? false);
     setPrefermentFlourPct(session.prefermentFlourPct);
     setPrefOffsetH(session.prefOffsetH);
+    setTimingOverrides(normalizeTimingOverrides(session.timingOverrides));
     setManualHydration(session.manualHydration);
     setManualOil(session.manualOil);
     setManualSugar(session.manualSugar);
@@ -1763,18 +1767,20 @@ export default function Home() {
 
   // Explicitly accepted proposals must survive the scheduler's bake-key remount.
   // Any changed recipe input, timestamp or availability invalidates this marker.
-  const repairContext = JSON.stringify([kitchenTemp, fridgeTemp, preheatMin, mixerType, styleKey,
-    yeastType, prefermentType, prefOffsetH, prefGoesInFridge, tang, starterPlanResetKey]);
-  const repairKey = (st: Date, et: Date | null, bl: AvailabilityBlock[]) =>
-    JSON.stringify([repairContext, +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label])]);
+  const repairKey = (st: Date, et: Date | null, bl: AvailabilityBlock[], offset = prefOffsetH) =>
+    JSON.stringify([[kitchenTemp, fridgeTemp, preheatMin, mixerType, styleKey,
+      yeastType, prefermentType, offset, prefGoesInFridge, tang, starterPlanResetKey],
+      +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label])]);
   const confirmedSchedulePlan = acceptedScheduleRepair === repairKey(startTime, eatTime, blocks);
-  const handleScheduleChange = (st: Date, et: Date, bl: AvailabilityBlock[], options?: {preservePlan: boolean; prefOffsetHours?: number; starterPlan?: {events:StarterEvent[];fridgeOutTime:Date|null;usingPeak2:boolean;feed2Time:Date|null;starterFridgeInTime:Date|null}}) => {
-    setAcceptedScheduleRepair(options?.preservePlan ? repairKey(st, et, bl) : null);
+  const handleScheduleChange = (st: Date, et: Date, bl: AvailabilityBlock[], options?: {preservePlan: boolean; timingOverrides?: TimingOverrides; prefOffsetHours?: number; starterPlan?: {events:StarterEvent[];fridgeOutTime:Date|null;usingPeak2:boolean;feed2Time:Date|null;starterFridgeInTime:Date|null}}) => {
+    setAcceptedScheduleRepair(options?.preservePlan ? repairKey(st, et, bl, options.prefOffsetHours) : null);
     if (sessionRestored && +et !== (eatTime ? +eatTime : null)) setSessionRestored(false);
     setStartTime(st); setEatTime(et); setBlocks(bl);
+    if (options?.prefOffsetHours !== undefined) setPrefOffsetH(options.prefOffsetHours);
+    if (options?.timingOverrides !== undefined) setTimingOverrides(normalizeTimingOverrides(options.timingOverrides));
     if(options?.starterPlan){setStarterEvents(options.starterPlan.events);setFridgeOutTime(options.starterPlan.fridgeOutTime);setUsingPeak2(options.starterPlan.usingPeak2);setFeed2Time(options.starterPlan.feed2Time);setStarterFridgeInTime(options.starterPlan.starterFridgeInTime);}
     // Applying is durable immediately; the general autosave is deliberately debounced.
-    if(options?.preservePlan)saveSession(buildSessionPayload({...(options.starterPlan?{starterEvents:serializeStarterEvents(options.starterPlan.events),fridgeOutTime:options.starterPlan.fridgeOutTime?.getTime()??null,usingPeak2:options.starterPlan.usingPeak2,feed2Time:options.starterPlan.feed2Time?.getTime()??null,starterFridgeInTime:options.starterPlan.starterFridgeInTime?.getTime()??null}:{}),...(options.prefOffsetHours!==undefined?{prefOffsetH:options.prefOffsetHours}:{}),startTime:+st,eatTime:+et,blocks:bl.map(b=>({label:b.label,from:+b.from,to:+b.to}))}));
+    if(options?.preservePlan || options?.timingOverrides !== undefined)saveSession(buildSessionPayload({...(options?.timingOverrides !== undefined ? {timingOverrides:normalizeTimingOverrides(options.timingOverrides)} : {}),...(options.starterPlan?{starterEvents:serializeStarterEvents(options.starterPlan.events),fridgeOutTime:options.starterPlan.fridgeOutTime?.getTime()??null,usingPeak2:options.starterPlan.usingPeak2,feed2Time:options.starterPlan.feed2Time?.getTime()??null,starterFridgeInTime:options.starterPlan.starterFridgeInTime?.getTime()??null}:{}),...(options.prefOffsetHours!==undefined?{prefOffsetH:options.prefOffsetHours}:{}),startTime:+st,eatTime:+et,blocks:bl.map(b=>({label:b.label,from:+b.from,to:+b.to}))}));
   };
 
   const prefRemoveFromFridgeTime = useMemo(() => {
@@ -1966,7 +1972,7 @@ export default function Home() {
       tab, bakeType, bakeName, styleKey, numItems, itemWeight, pizzaDiameter,
       ovenType, ovenConstruction, mixerType, yeastType,
       kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, containerCapacityLitres, humidity, fridgeTemp,
-      flourBlend, prefermentType, prefermentFlourPct, prefOffsetH,
+      flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, timingOverrides,
       qtyChosen, flourChosen, prefermentChosen,
       manualHydration, manualOil, manualSugar, manualSalt,
       targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
@@ -2570,6 +2576,7 @@ export default function Home() {
     setOvenType(null); setOvenConstruction('tabletop'); setMixerType(null);
     const now = new Date(); now.setMinutes(0, 0, 0);
     setStartTime(now);
+    setTimingOverrides({});
     setEatTime(null);
     setBlocks([]); setYeastType(null);
     setStarterTimingValid(true);
@@ -2805,6 +2812,7 @@ export default function Home() {
     setPrefermentChosen(snap.prefermentChosen ?? false);
     setPrefermentFlourPct(snap.prefermentFlourPct);
     setPrefOffsetH(snap.prefOffsetH);
+    setTimingOverrides(rb ? {} : normalizeTimingOverrides(snap.timingOverrides));
     setManualHydration(snap.manualHydration);
     setManualOil(snap.manualOil);
     setManualSugar(snap.manualSugar);
@@ -3798,6 +3806,7 @@ export default function Home() {
                 mode="simple"
                 mixerType={mixerType ?? 'hand'}
                 confirmedPlan={confirmedSchedulePlan}
+                timingOverrides={timingOverrides}
                 startTime={startTime} eatTime={eatTime} blocks={blocks}
                 preheatMin={preheatMin}
                 styleKey={styleKey ?? ''}
@@ -4261,6 +4270,7 @@ export default function Home() {
                 mode="custom"
                 mixerType={mixerType ?? 'hand'}
                 confirmedPlan={confirmedSchedulePlan}
+                timingOverrides={timingOverrides}
                 startTime={startTime} eatTime={eatTime} blocks={blocks}
                 preheatMin={preheatMin}
                 styleKey={styleKey ?? ''}

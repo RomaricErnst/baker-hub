@@ -9,9 +9,10 @@ function TimingRow({anchor,blocks,isFr,onChange,check,cacheKey}:{anchor:KeyTimin
  const {id,at,from,to,editable}=anchor;
  useEffect(()=>{
   setSlots([]);if(!editable||to<=from)return;setChecking(true);
+  const checkCandidate=checkRef.current;
   let cancelled=false,timer:ReturnType<typeof setTimeout>;let at=Math.ceil(from/900000)*900000;const next:EditSlot[]=[];
   // Yield between small batches: starter probes must not block touch scrolling.
-  const batch=()=>{for(let i=0;i<4&&at<=to;i++,at+=900000)next.push({at,valid:checkRef.current(id,at)});if(cancelled)return;if(at<=to)timer=setTimeout(batch,0);else{setSlots(next);setChecking(false);}};
+  const batch=()=>{if(cancelled)return;for(let i=0;i<4&&at<=to;i++,at+=900000)next.push({at,valid:checkCandidate(id,at)});if(cancelled)return;if(at<=to)timer=setTimeout(batch,0);else{setSlots(next);setChecking(false);}};
   timer=setTimeout(batch,0);return()=>{cancelled=true;clearTimeout(timer);};
  },[id,from,to,editable,cacheKey]);
  const fmt=(value:number)=>new Date(value).toLocaleString(isFr?'fr-FR':'en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false});
@@ -41,3 +42,4 @@ export default function ScheduleKeyTimings({anchors,blocks,isFr,onChange,check,c
   {children}
  </section>;
 }
+
