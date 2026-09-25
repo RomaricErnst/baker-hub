@@ -6429,7 +6429,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
       const input=commercialCandidateInput(candidateBlocks);
       if(resetRecommendation){
         // Re-seed from the current model's preferred centre, not the manual time.
-        input.start=new Date(+pendingEatTime-renderSweetCenter*3600000);
+        input.start=new Date(+pendingEatTime-_optimalMix*3600000);
         input.at=input.start;
         input.prefHours=hasPrefActive?getPrefOptH(prefermentType,kitchenTemp,prefGoesInFridge,styleKey,fridgeTemp):0;
       }
@@ -8102,19 +8102,19 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
             const at=requested??+event.time;
             // Keep the track stationary while its handle moves.
             const axisTime=+(displayStarterEvents.find(e=>e.kind===event.kind)?.time??event.time);
-            anchors.push({id:id+(!editable?':'+anchors.length:''),name:event.label,at,editable,
+            anchors.push({valid:starterPreview?.valid,id:id+(!editable?':'+anchors.length:''),name:event.label,at,editable,
               ...clampBounds(axisTime-6*hour,Math.min(+pendingStart-step,axisTime+6*hour),at),
               detail:event.kind.startsWith('fridge')?(isFr?'Calculé avec les rafraîchis':'Calculated with the feeds'):event.cardNote,
               note:editingRow===id?starterPreview?.message:null});
           }
         }else if(hasPrefActive){
           const at=+draftMix-draftPrefOffset*hour;
-          anchors.push({id:'pref',name:prefLabel,at,editable:!startTimeInPast&&!readinessUnsupported,
+          anchors.push({id:'pref',name:prefLabel,at,valid:preview?.valid,editable:!startTimeInPast&&!readinessUnsupported,
             ...clampBounds(+draftMix-(prefWindow?.max??prefOffsetH+6)*hour,+draftMix-(prefWindow?.min??Math.max(.25,prefOffsetH-6))*hour,at),
             detail:(isFr?'Maturation : ':'Maturation: ')+duration(draftPrefOffset)+' · '+(prefGoesInFridge?(isFr?'au froid':'in the fridge'):(isFr?'à température ambiante':'at room temperature')),
             note:editingRow==='pref'||(!editingRow&&(preview?.issue==='preferment'||preview?.conflict?.startsWith('preferment')))?draftMessage:null});
         }
-        anchors.push({id:'mix',name:isFr?'Pétrir la pâte':'Mix the dough',at:+times.start,editable:!startTimeInPast&&!readinessUnsupported,
+        anchors.push({id:'mix',name:isFr?'Pétrir la pâte':'Mix the dough',at:+times.start,valid:isSourdough?starterPreview?.valid:preview?.valid,editable:!startTimeInPast&&!readinessUnsupported,
           ...clampBounds(+(bounds.from??new Date(+times.start-6*hour)),+(bounds.to??new Date(+times.start+6*hour)),+times.start),
           detail:duration((+times.bake-+times.start)/hour)+(isFr?' avant cuisson':' before baking'),
           note:editingRow==='mix'||!editingRow?(isSourdough?starterPreview?.message:(preview?.issue==='preferment'||preview?.conflict?.startsWith('preferment'))?null:draftMessage):null});
@@ -8171,4 +8171,3 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     </div>
   );
 }
-

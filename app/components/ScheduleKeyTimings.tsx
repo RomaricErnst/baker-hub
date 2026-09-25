@@ -2,7 +2,7 @@
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import type {AvailabilityBlock} from '../utils';
 import type {EditSlot} from '../utils/scheduleEdit';
-export type KeyTimingAnchor={id:string;name:string;at:number;from:number;to:number;editable:boolean;detail?:ReactNode;note?:ReactNode};
+export type KeyTimingAnchor={id:string;name:string;at:number;from:number;to:number;editable:boolean;valid?:boolean;detail?:ReactNode;note?:ReactNode};
 function TimingRow({anchor,blocks,isFr,onChange,check,cacheKey}:{anchor:KeyTimingAnchor;blocks:AvailabilityBlock[];isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string}){
  const [exact,setExact]=useState(false),[slots,setSlots]=useState<EditSlot[]>([]),[checking,setChecking]=useState(false);
  const checkRef=useRef(check);checkRef.current=check;
@@ -19,14 +19,14 @@ function TimingRow({anchor,blocks,isFr,onChange,check,cacheKey}:{anchor:KeyTimin
  const pos=(value:number)=>Math.max(0,Math.min(100,(value-from)/(to-from)*100));
  const nearest=slots.filter(s=>s.valid).sort((a,b)=>Math.abs(a.at-at)-Math.abs(b.at-at))[0];
  const date=new Date(at),local=new Date(at-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
- return <div data-key-timing={id} className="bh-key-timing">
+ return <div data-key-timing={id} data-candidate-valid={anchor.valid===true?'true':'false'} className="bh-key-timing">
   {editable&&to>from?<div className="bh-key-axis"><small>{fmt(from)}</small><div className="bh-key-track">
    {slots.filter(s=>s.valid).map(s=><span key={s.at} className="bh-key-valid" style={{top:`${pos(s.at-450000)}%`,height:`${pos(s.at+450000)-pos(s.at-450000)}%`}}/>)}
    {blocks.filter(b=>+b.to>from&&+b.from<to).map((b,i)=><span key={i} className="bh-key-busy" style={{top:`${pos(+b.from)}%`,height:`${pos(+b.to)-pos(+b.from)}%`}}/>)}
    <input type="range" min={from} max={to} step={900000} value={Math.max(from,Math.min(to,at))} aria-label={(isFr?'Ajuster ':'Adjust ')+anchor.name} aria-valuetext={fmt(at)} onChange={e=>onChange(id,+e.target.value)} onKeyDown={e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();onChange(id,Math.max(from,Math.min(to,at+(e.key==='ArrowDown'?900000:-900000))));}}}/>
   </div><small>{fmt(to)}</small></div>:<div className="bh-key-fixed" aria-hidden="true">•</div>}
   <div className="bh-key-content"><h3 className="bh-section-title">{anchor.name}</h3>
-   {editable?<button type="button" className="bh-key-time" aria-expanded={exact} onClick={()=>setExact(!exact)}>{fmt(at)}</button>:<strong>{fmt(at)}</strong>}
+   {editable?<button type="button" className="bh-key-time" aria-expanded={exact} onClick={()=>setExact(!exact)}>{fmt(at)}{anchor.valid===true&&<span className="bh-key-valid-selection" role="img" aria-label={isFr?'Compatible avec le planning estimé':'Compatible with the estimated schedule'} style={{marginInlineStart:8,color:'#507540',fontSize:14,textDecoration:'none'}}>✓</span>}</button>:<strong>{fmt(at)}</strong>}
    {exact&&<label className="bh-key-exact"><span className="sr-only">{isFr?'Date et heure':'Date and time'}</span><input type="datetime-local" step={900} value={local} onChange={e=>{const next=+new Date(e.target.value);if(Number.isFinite(next))onChange(id,next);}}/></label>}
    {anchor.detail&&<div className="bh-key-detail">{anchor.detail}</div>}
    {checking&&editable&&<small className="bh-key-detail">{isFr?'Vérification des créneaux…':'Checking available slots…'}</small>}
