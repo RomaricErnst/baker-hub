@@ -8,6 +8,10 @@ Commercial blocker changes and Reset now use the same full-candidate validation 
 
 No biological coefficients changed. Green means compatibility with the existing estimated model. Preferment/starter handling durations remain point events where unmodeled; completed versus missed past preparation is not explicitly represented, so elapsed preparation is conservatively preserved. Search exhaustion is not proof of biological impossibility. Read docs/SCHEDULING-INDEPENDENT-REVIEW-20260925.md.
 
+First preview b2239d8 is READY as dpl_8zDxe1vtToEjah745WdZUTh75k7P. CI36089442827 passed all300 unit tests, build and180/180 macOS iPhone-WebKit cases (9.6min), including all36 new scheduling cases. Parent CUA verified stale warning clears on valid draft, Apply and reload preserve Reset, night blocker preserves explicit preferment, Reset recomputes Fri19:30poolish/Sat07:00mix with Sat19:30bake fixed and current work/night/custom blocks intact. Independent interaction reviewer inspected the coherent settled desktop timeline; physical iPhone not reproduced.
+
+Final corrective patch extends canonical validity to visible disabled Continue and recipe generation in both modes, re-seeds Reset from the current model preference even if the manual schedule remains valid, and suppresses old duplicate warning panels. New/updated gate assertions pass; final CI rerun pending. No production change.
+
 Local verification before publication:300 unit/component tests pass, TypeScript and production build pass. Nine added browser scenarios cover36 width cases, bringing the authored mobile matrix to180; their execution/preview verification is pending. Local WebKit could not launch because its system libraries are absent and dependency installation is restricted; do not label authored tests as passed. Preview only; production untouched.
 
 

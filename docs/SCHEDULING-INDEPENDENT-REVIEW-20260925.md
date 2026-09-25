@@ -33,7 +33,18 @@ Caller review also flagged two messaging/history issues for integration: a faile
 
 Latest independent execution: **37 tests passed** across schedule-edit, schedule-search, schedule-regression and key-timing-starter files after the two core corrections. The concise failed-pin message now says no slot was found while retaining the selected times. The current integration conservatively preserves elapsed commercial preparation on Reset because it has no explicit completion-aware distinction; resetting an expired but unstarted recommendation remains a limitation.
 
-The caller's legacy sourdough input-change effects still need interaction coverage: unlike blocker toggles, changing the bake time, style or temperature can trigger direct historical solver calls that clear manual references. This review does not certify pin preservation across those broader state transitions from core tests alone.
+The caller's legacy sourdough input-change effects were subsequently narrowed: populated explicit timing overrides route through the pin-preserving replan helper, including bake/input/ratio-triggered solves. No-override legacy initialization remains distinct. This resolves the identified source-level overwrite route; broader interaction evidence remains separate from the core gate.
+
+## Final corrective integration review
+
+Reviewed the follow-up local changes after the parent reported CI run `36089442827` at `b2239d8` passing 300 unit tests/build and 180 macOS WebKit cases. That CI evidence was supplied by the coordinating agent, not independently fetched by this reviewer, and precedes the final corrective patch.
+
+- `onScheduleValidityChange` now carries canonical committed validation into both Simple and Custom Continue/generation gates. Unconfirmed edits separately withhold Continue, so a valid draft cannot generate a recipe using old committed times.
+- Commercial Reset now seeds the current model's preferred mixing centre and preferment duration before searching with current blockers, rather than accepting the old valid manual schedule as the recommendation. Storage mode and bake time remain unchanged.
+- Legacy warning panels are suppressed once the full candidate timeline is available, leaving the candidate-derived inline message instead of duplicate committed-state warnings.
+- Independently reran 31 edit/search/sourdough-probe tests after these changes; all passed. No new biological coefficients or empirical maturity claims were introduced.
+
+Bounded source/core review passed for this follow-up. Parent-reported live checks reproduced the old stale warning, then confirmed immediate clearing in the corrected preview, persisted Reset after confirmation/reload, manual preferment retention when enabling nights, and Reset with fixed bake/current blockers. Final patch build/browser results must be recorded separately before claiming deployment completion. The completion-versus-expired-preparation limitation above remains.
 
 ## Remaining limits and acceptance gates
 

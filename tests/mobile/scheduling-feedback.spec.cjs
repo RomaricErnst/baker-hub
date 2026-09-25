@@ -82,6 +82,9 @@ for(const locale of ['fr','en'])test(`${locale}: committed manual time is preser
  const blocks=(await stored(page)).blocks;
  await fits(page,reset(page));await reset(page).tap();await expect(reset(page)).toHaveCount(0);
  expect((await stored(page)).blocks).toEqual(blocks);expect((await stored(page)).eatTime).toBe(BAKE);
+ await expect.poll(async()=>(await stored(page)).startTime).not.toBe(pinned);
+ expect((await stored(page)).timingOverrides??{}).toEqual({});
+ await expect(plan.locator('.bh-key-note')).toHaveCount(0);
  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize().width);
 });
 

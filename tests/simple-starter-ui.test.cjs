@@ -42,8 +42,8 @@ test('observed starter peak cannot be reused eleven hours later, including warm 
 test('restored Simple known peak outside mix window renders a blocker instead of readiness',()=>{
  const peak=new Date(Date.now()+15*60000), start=new Date(+peak+11*3600000), eat=new Date(+start+24*3600000);
  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'Asia/Singapore'},React.createElement(Picker,{startTime:start,eatTime:eat,blocks:[],preheatMin:45,styleKey:'pain_levain',kitchenTemp:22,bakeType:'bread',isSourdough:true,mode:'simple',planningMode:'know_peak',knownPeakTime:peak,sessionRestored:true,onChange:()=>{}})));
- assert.ok(html.includes('Your starter cannot wait from the stated peak until this mix without another feed.'));
- assert.ok(html.includes('The recipe stays blocked until this timing is compatible.'));
+ assert.ok(html.includes('Outside the estimated starter maturity window.'));
+ assert.equal((html.match(/class="bh-key-note"/g)||[]).length,1,'one canonical warning instead of stale repeated messages');
 });
 
 test('Not sure keeps timing validity false until a replacement starter plan exists',()=>{
@@ -57,3 +57,4 @@ test('Not sure keeps timing validity false until a replacement starter plan exis
  assert.equal(valid({simpleKnownPeakConflict:true,solverResult:{starterEvents:[{kind:'known_peak'}]}}),false);
  assert.equal(valid({mode:'custom'}),true);
 });
+

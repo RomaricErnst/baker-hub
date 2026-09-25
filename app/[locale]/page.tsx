@@ -1014,6 +1014,7 @@ export default function Home() {
   const [starterPeakTime, setStarterPeakTime] = useState<Date | null>(null);
   const [starterTimingValid, setStarterTimingValid] = useState(true);
   const [scheduleEditing, setScheduleEditing] = useState(false);
+  const [scheduleCandidateValid, setScheduleCandidateValid] = useState(true);
   const [starterMature, setStarterMature]   = useState(true);
   const [starterHasRye, setStarterHasRye]   = useState(false);
   const [tang, setTang] = useState<'mild' | 'balanced' | 'tangy'>('balanced');
@@ -1391,6 +1392,7 @@ export default function Home() {
 
   function applySession(session: SessionData) {
     isRestoringRef.current = true;
+    setScheduleCandidateValid(true);
 
     const restoredEatTimeIsPast = session.eatTime
       ? new Date(session.eatTime) < new Date()
@@ -2565,6 +2567,7 @@ export default function Home() {
   }
 
   function startOver() {
+    setScheduleCandidateValid(true);
     setBatchView('style');setProtocolView('dough');setServiceView('dough');setFillingsReturn(null);
     setSandwichParty(createSandwichSnapshot());
     // Fresh session = fresh chance for profile blockers to apply — without
@@ -2649,6 +2652,11 @@ export default function Home() {
       if (tab === 'custom') setAdvancedStep(1); else setActiveStep(1);
       scrollToStepTop();
       return;
+    }
+    if (!scheduleCandidateValid || scheduleEditing) {
+      setActiveTab('setup'); setSetupOverview(false);
+      if (tab === 'custom') setAdvancedStep(9); else setActiveStep(7);
+      scrollToStepTop(); return;
     }
     if (!commercialPrefermentPlanReady) {
       setActiveTab('setup'); setSetupOverview(false); setAdvancedStep(9); scrollToStepTop();
@@ -2777,6 +2785,7 @@ export default function Home() {
 
     if (!event.dough_snapshot) return;
     isRestoringRef.current = true;
+    setScheduleCandidateValid(true);
     setShowWelcomeBack(false);
     const snap = event.dough_snapshot;
     const rb = !!opts?.rebake;
@@ -2959,7 +2968,7 @@ export default function Home() {
   const customRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && flourBlend
     && qtyChosen && flourChosen && (yeastType === 'sourdough' || prefermentChosen));
   const starterPlanReady = yeastType !== 'sourdough' || (starterTimingValid && (recipeGenerated || starterEvents.length > 0));
-  const canGenerate = !(tab === 'custom' ? advancedRecipe : recipe)?.protocolIssue && commercialPrefermentPlanReady && starterPlanReady && !unsupportedEnrichedMethod && !(tab === 'custom' && archivedFlourNames.length) && (tab === 'simple' ? simpleRequiredDone : customRequiredDone);
+  const canGenerate = scheduleCandidateValid && !scheduleEditing && !(tab === 'custom' ? advancedRecipe : recipe)?.protocolIssue && commercialPrefermentPlanReady && starterPlanReady && !unsupportedEnrichedMethod && !(tab === 'custom' && archivedFlourNames.length) && (tab === 'simple' ? simpleRequiredDone : customRequiredDone);
   const missingRequiredStep = !bakeType || !styleKey ? 1
     : !numItems || !itemWeight || !qtyChosen ? 2
     : !ovenType || !mixerType ? 3
@@ -2972,7 +2981,7 @@ export default function Home() {
     protocolIssue:(tab==='custom'?advancedRecipe:recipe)?.protocolIssue,
     unsupportedMixer:!!(breadProtocol&&mixerType&&!breadProtocol.supportedMixers.includes(mixerType)),
     unsupportedMethod:unsupportedEnrichedMethod,sourdough:yeastType==='sourdough',hasPreferment:prefermentType!=='none',
-    prefermentPlanReady:commercialPrefermentPlanReady,starterPlanReady,
+    prefermentPlanReady:commercialPrefermentPlanReady,starterPlanReady,schedulePlanReady:scheduleCandidateValid && !scheduleEditing,
     archivedFlour:tab==='custom'&&archivedFlourNames.length>0,
     requirementsComplete:tab==='simple'?simpleRequiredDone:customRequiredDone,missingRequiredStep,
   }) : undefined;
@@ -3792,7 +3801,7 @@ export default function Home() {
             </StepPage>
 
             {/* ─── STEP 8: Scheduler ───────────────── */}
-            <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={scheduleEditing ? null : undefined}>
+            <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={scheduleEditing ? null : !scheduleCandidateValid ? <button type="button" disabled style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{fr?'Continuer':'Continue'}</button> : undefined}>
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => simpleFlow.onJump(1)} />
               ) : (
@@ -3817,6 +3826,7 @@ export default function Home() {
                 isSourdough={yeastType === 'sourdough'}
                 prefermentType={prefermentType ?? 'none'}
                 onPrefermentValidityChange={onPrefermentValidityChange}
+                onScheduleValidityChange={setScheduleCandidateValid}
                 savedPrefOffsetHours={prefOffsetH}
                 savedPrefGoesInFridge={prefGoesInFridge}
                 onFeedTimeChange={setFeedTime}
@@ -4256,7 +4266,7 @@ export default function Home() {
             )}
 
             {/* ─── ADV STEP 10: Scheduler ──────────── */}
-            <StepPage flow={customOrganisationFlow} id={9} nextOverride={scheduleEditing ? null : undefined}>
+            <StepPage flow={customOrganisationFlow} id={9} nextOverride={scheduleEditing ? null : !scheduleCandidateValid ? <button type="button" disabled style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{fr?'Continuer':'Continue'}</button> : undefined}>
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => customFlow.onJump(1)} />
               ) : (
@@ -4281,6 +4291,7 @@ export default function Home() {
                 isSourdough={yeastType === 'sourdough'}
                 prefermentType={prefermentType ?? 'none'}
                 onPrefermentValidityChange={onPrefermentValidityChange}
+                onScheduleValidityChange={setScheduleCandidateValid}
                 savedPrefOffsetHours={prefOffsetH}
                 savedPrefGoesInFridge={prefGoesInFridge}
                 onFeedTimeChange={setFeedTime}
