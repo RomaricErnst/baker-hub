@@ -57,7 +57,9 @@ test('poolish live invalid-to-valid draft updates feedback, Cancel restores and 
  const {plan}=await seed(page);
  // Under these explicit assumptions the pre-block plan matures for 11 hours.
  const before=await stored(page);
- await enter(plan,'pref','2026-09-25T19:45');
+ // Automatic mixing may now move with preparation. Fifteen minutes before
+ // baking is outside every supported poolish maturation path.
+ await enter(plan,'pref','2026-09-26T19:15');
  await expect(confirm(plan)).toBeDisabled();
  await expect(row(plan,'pref')).toHaveAttribute('data-candidate-valid','false');
  await expect(row(plan,'pref').locator('.bh-key-valid-selection')).toHaveCount(0);

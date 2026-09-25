@@ -449,7 +449,7 @@ button,
 .bh-key-valid-selection { color:#2e673c; font-size:15px; }
 .bh-key-detail,.bh-key-legend { font-size:13px; color:var(--smoke); margin:4px 0; }
 .bh-key-window { font-size:13px; line-height:1.5; color:#32623d; margin-top:6px; overflow-wrap:break-word; }
-.bh-key-window[aria-busy="true"] { color:var(--smoke); }
+.bh-key-window[aria-busy="true"],.bh-key-window[data-has-windows="false"] { color:var(--smoke); }
 .bh-key-window-dot { display:inline-block; width:7px; height:7px; margin-right:6px; border-radius:50%; background:#477b4c; }
 .bh-key-note { font-size:14px; color:var(--terra); margin-top:8px; }
 .bh-key-editor { margin-top:12px; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--cream); }

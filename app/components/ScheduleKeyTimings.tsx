@@ -55,7 +55,7 @@ function TimingRow({anchor,blocks,isFr,onChange,check,cacheKey,hasDraft}:{anchor
    </div>
    {canEdit?<button type="button" className="bh-key-time" aria-expanded={open} aria-controls={editorId} onClick={()=>setOpen(value=>!value)}>{fmt(at)}{anchor.valid===true&&<span className="bh-key-valid-selection" role="img" aria-label={isFr?'Compatible avec le planning estimé':'Compatible with the estimated schedule'}>✓</span>}</button>:<strong className="bh-key-fixed">{fmt(at)}</strong>}
    {anchor.detail&&<div className="bh-key-detail">{anchor.detail}</div>}
-   {canEdit&&<div className="bh-key-window" aria-busy={checking}>
+   {canEdit&&<div className="bh-key-window" data-has-windows={windows.length>0} aria-busy={checking}>
     {checking?(isFr?'Vérification des créneaux…':'Checking available slots…'):windows.length>0?<><span aria-hidden="true" className="bh-key-window-dot"/>{isFr?'Ajustable : ':'Adjustable: '}{windows.slice(0,open?windows.length:2).map(rangeLabel).join(' · ')}{!open&&windows.length>2&&` · +${windows.length-2} ${isFr?'créneaux':'windows'}`}</>:(isFr?'Aucun autre horaire compatible trouvé.':'No alternative compatible time found.')}
    </div>}
    {anchor.note&&<div className="bh-key-note" aria-live="polite">{anchor.note}</div>}
