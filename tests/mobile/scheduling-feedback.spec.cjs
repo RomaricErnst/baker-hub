@@ -8,8 +8,9 @@ const NOW=Date.parse('2026-09-25T08:49:00+08:00');
 const BAKE=Date.parse('2026-09-26T19:30:00+08:00');
 const stored=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null'));
 const row=(plan,id)=>plan.locator(`[data-key-timing="${id}"]`);
-const reset=page=>page.getByRole('button',{name:/^(Réinitialiser les horaires|Reset times)$/});
-const confirm=plan=>plan.getByRole('button',{name:/^(Valider ces horaires|Confirm these times)$/});
+async function expand(plan,id){const r=row(plan,id);if(!await r.getByRole('slider').isVisible())await r.locator('.bh-key-modify').tap();await expect(r.getByRole('slider')).toBeVisible();}
+const reset=page=>page.getByRole('button',{name:/^(Revenir aux horaires recommandés|Return to recommended times)$/});
+const confirm=plan=>plan.getByRole('button',{name:/^(Appliquer|Apply)$/});
 async function seed(page,{locale='fr',mode='custom',preferment='poolish',extra={}}={}){
  await page.clock.setFixedTime(NOW);
  const data={version:1,savedAt:NOW,tab:mode,bakeType:'pizza',styleKey:'neapolitan',numItems:4,itemWeight:260,pizzaDiameter:30,ovenType:'pizza_oven',mixerType:'spiral',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:5,flourBlend:null,prefermentType:preferment,prefOffsetH:preferment==='none'?0:11,prefGoesInFridge:true,flourInFridge:false,startTime:Date.parse('2026-09-25T20:00:00+08:00'),eatTime:BAKE,blocks:[],recipeGenerated:false,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,activeStep:7,advancedStep:9,highestStep:7,advancedHighestStep:9,setupOverview:false,activeTab:'setup',...extra};
@@ -105,13 +106,13 @@ test('custom full blackout has no green slots; removing it preserves the precedi
  await availability.getByRole('button',{name:'Ajouter',exact:true}).tap();
  await expect.poll(async()=>(await stored(page)).blocks.some(b=>b.label==='Absence totale')).toBe(true);
  await expect(plan.getByText('Vérification des créneaux…',{exact:true})).toHaveCount(0,{timeout:30000});
- await expect(plan.locator('.bh-key-valid')).toHaveCount(0);
+ await expand(plan,'mix');await expect(plan.locator('.bh-key-valid')).toHaveCount(0);
  await enter(plan,'mix','2026-09-25T20:15');await expect(confirm(plan)).toBeDisabled();
  await plan.getByRole('button',{name:'Annuler',exact:true}).tap();
  await availability.getByRole('button',{name:'Supprimer Absence totale',exact:true}).tap();
  await expect.poll(async()=>(await stored(page)).blocks).toEqual(workBlocks);
  expect((await stored(page)).eatTime).toBe(BAKE);
- await expect.poll(()=>plan.locator('.bh-key-valid').count(),{timeout:30000}).toBeGreaterThan(0);
+ await expand(plan,'mix');await expect.poll(()=>plan.locator('.bh-key-valid').count(),{timeout:30000}).toBeGreaterThan(0);
 });
 
 test('biga rapid overnight toggles keep the final blockers and fixed bake authoritative',async({page})=>{
@@ -131,7 +132,7 @@ test('biga rapid overnight toggles keep the final blockers and fixed bake author
 for(const storage of ['rt','fridge'])test(`levain ${storage}: blocker changes preserve confirmed mixing and Reset after reload retains blocks`,async({page})=>{
  const bake=Date.parse('2026-09-30T18:00:00+08:00');
  const {plan}=await seed(page,{preferment:'none',extra:{startTime:bake-26*3600000,eatTime:bake,yeastType:'sourdough',planningMode:'last_fed',lastFedTime:NOW-(storage==='rt'?3*3600000:8*86400000),lastFedAge:storage==='rt'?'today':'week',starterLocation:storage,lastFeedRatio:1,nextFeedRatio:1,ratioMode:'keep',starterTimingValid:true}});
- const mix=row(plan,'mix').getByRole('slider');await mix.focus();await mix.press('ArrowDown');await expect(confirm(plan)).toBeEnabled();await confirm(plan).tap();
+ await expand(plan,'mix');const mix=row(plan,'mix').getByRole('slider');await mix.focus();await mix.press('ArrowRight');await expect(confirm(plan)).toBeEnabled();await confirm(plan).tap();
  const pinned=(await stored(page)).startTime;
  await page.getByRole('button',{name:/^Nuits/}).tap();
  await expect.poll(async()=>(await stored(page)).blocks.length).toBeGreaterThan(0);
@@ -144,15 +145,17 @@ for(const storage of ['rt','fridge'])test(`levain ${storage}: blocker changes pr
 
 test('rapid real pointer drag holds its axis and the last candidate controls feedback and commit',async({page})=>{
  const {plan}=await seed(page,{preferment:'none'});
- const mixRow=row(plan,'mix'),slider=mixRow.getByRole('slider');
+ await expand(plan,'mix');const mixRow=row(plan,'mix'),slider=mixRow.getByRole('slider');
  await slider.evaluate(el=>el.scrollIntoView({block:'center',behavior:'instant'}));
  const limits=[await slider.getAttribute('min'),await slider.getAttribute('max')];
  const before=await stored(page),box=await slider.boundingBox();
- const x=box.x+box.width/2;
+ const y=box.y+box.height/2;
+ expect(box.width).toBeGreaterThan(box.height*3);
+ await expect(slider).toHaveAttribute('aria-orientation','horizontal');
  // Real mouse/pointer input through WebKit's native range, not setting value
  // or dispatching synthetic input events. Physical touch remains a separate gate.
- await page.mouse.move(x,box.y+box.height*.45);await page.mouse.down();
- for(const fraction of [.82,.18,.73,.35,.60])await page.mouse.move(x,box.y+box.height*fraction,{steps:3});
+ await page.mouse.move(box.x+box.width*.45,y);await page.mouse.down();
+ for(const fraction of [.82,.18,.73,.35,.60])await page.mouse.move(box.x+box.width*fraction,y,{steps:3});
  await page.mouse.up();
  await expect(confirm(plan)).toBeVisible();
  await expect(slider).toHaveAttribute('min',limits[0]);await expect(slider).toHaveAttribute('max',limits[1]);
@@ -223,5 +226,49 @@ test('previous/continue and browser back/forward reopen scheduling with confirme
  const after=await stored(page);
  expect(after.startTime).toBe(before.startTime);expect(after.eatTime).toBe(before.eatTime);
  expect(after.timingOverrides).toEqual(before.timingOverrides);expect(after.blocks).toEqual(before.blocks);
- await expect(row(plan,'mix').getByRole('slider')).toHaveValue(String(before.startTime));
+ await expand(plan,'mix');await expect(row(plan,'mix').getByRole('slider')).toHaveValue(String(before.startTime));
+});
+
+test('compact Organisation progress and folded horizontal timing editor stay usable on narrow screens',async({page},info)=>{
+ const {plan}=await seed(page,{mode:'simple',preferment:'none'});
+ const navigator=page.locator('.bh-bake-navigator');
+ await expect(navigator).toContainText('Organisation');
+ const progress=navigator.getByRole('button',{name:/Étape \d+\/\d+/});
+ await expect(progress).toBeVisible();
+ const navBox=await navigator.boundingBox(),stepBox=await progress.boundingBox();
+ expect(stepBox.y).toBeGreaterThanOrEqual(navBox.y);expect(stepBox.y+stepBox.height).toBeLessThanOrEqual(navBox.y+navBox.height+1);
+ expect(navBox.height).toBeLessThanOrEqual(66);
+ await progress.tap();await expect(page.getByRole('dialog',{name:'Votre plan',exact:true})).toBeVisible();
+ await page.keyboard.press('Escape');await expect(page.getByRole('dialog',{name:'Votre plan',exact:true})).toBeHidden();
+ const mix=row(plan,'mix');await expect(mix.getByRole('slider')).toHaveCount(0);
+ await expect(mix.locator('.bh-key-window')).toBeVisible();
+ const before=await stored(page);
+ await expand(plan,'mix');const slider=mix.getByRole('slider');
+ await expect(slider).toHaveAttribute('aria-orientation','horizontal');
+ const box=await slider.boundingBox();expect(box.width).toBeGreaterThan(box.height*3);
+ await fits(page,mix.locator('.bh-key-modify'));await fits(page,slider);
+ await info.attach('horizontal-inline-editor',{body:await page.screenshot(),contentType:'image/png'});
+ await mix.locator('.bh-key-modify').tap();await expect(slider).toHaveCount(0);
+ expect((await stored(page)).startTime).toBe(before.startTime);expect((await stored(page)).eatTime).toBe(before.eatTime);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize().width);
+});
+
+for(const locale of ['fr','en'])test(`${locale}: explicit oven target and suggested times survive availability, back and reload`,async({page})=>{
+ const {plan}=await seed(page,{locale,preferment:'none'});
+ const time=page.getByLabel(locale==='fr'?'Heure d’enfournement':'Oven time',{exact:true});
+ const date=page.getByLabel(locale==='fr'?'Date d’enfournement':'Baking date',{exact:true});
+ await expect(time).toHaveValue('19:30');await expect(date).toHaveValue('2026-09-26');
+ const suggestions=page.locator('details').filter({has:page.locator('summary').filter({hasText:locale==='fr'?'Autres horaires proposés':'Other suggested times'})});
+ await expect(suggestions).toBeVisible();await suggestions.locator('summary').tap();
+ const preset=suggestions.getByRole('button').first();await expect(preset).toBeVisible();await preset.tap();
+ await expect.poll(async()=>(await stored(page)).eatTime).not.toBe(BAKE);
+ const selected=await stored(page),selectedDate=await date.inputValue(),selectedTime=await time.inputValue();
+ await page.getByRole('button',{name:locale==='fr'?/^Jours ouvrés/:/^Weekdays/}).tap();
+ await expect.poll(async()=>(await stored(page)).blocks.length).toBeGreaterThan(0);
+ expect((await stored(page)).eatTime).toBe(selected.eatTime);await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
+ await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:locale==='fr'?'Précédent':'Previous',exact:true}).tap();
+ await expect(page.locator('#step-8')).toBeVisible();await page.goBack();await expect(plan).toBeVisible();
+ await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
+ await page.reload();await expect(plan).toBeVisible();await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
+ expect((await stored(page)).eatTime).toBe(selected.eatTime);
 });

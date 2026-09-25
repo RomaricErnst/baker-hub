@@ -16,6 +16,7 @@ import { getPrefPeakH_RT, getStarterFridgeWarmupH } from './FermentChart';
 import { GUIDE_FAQ } from '../lib/guideFaq';
 import { formatPrefermentDose } from '../utils/prefermentDose';
 import { getBreadProtocol } from '../utils/breadProfiles';
+import { scheduledFoldMinutes } from '../utils/scheduleFolds';
 
 interface BakeGuideProps extends WaterSettingsProps {
   schedule: ScheduleResult;
@@ -1520,7 +1521,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             <Steps items={[
               { bold: (l === 'fr' ? 'Mélangez tous les ingrédients, sel compris' : 'Combine all ingredients including salt'), note: (l === 'fr' ? 'mélangez juste jusqu’à absorption de la farine — ~2 min' : 'mix just until no dry flour remains — ~2 min') },
               ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'mélangez jusqu’à incorporation' : 'mix until incorporated') }] : []),
-              { bold: (l === 'fr' ? 'Couvrez et laissez reposer' : 'Cover and rest'), note: (l === 'fr' ? 'rabats toutes les 30 min pendant les 2 premières heures' : 'stretch & folds every 30 min for the first 2 hours') },
+              { bold: (l === 'fr' ? 'Couvrez et laissez reposer' : 'Cover and rest'), note: (l === 'fr' ? 'suivez les rabats indiqués dans le pointage ci-dessous' : 'follow the folds listed in the bulk step below') },
             ]} />
           )}
           {isSourdough && (
@@ -1628,18 +1629,10 @@ Actual dough condition and equipment may differ from these estimates.`;
             ...(['ciabatta','focaccia'].includes(styleKey) ? [{bold:l === 'fr' ? 'Si la pâte s’étale, effectuez des rabats doux au début du pointage pour lui donner de la tenue. Préservez les bulles qui se forment ensuite.' : 'If the dough spreads, give it gentle folds early in bulk to build strength. Preserve bubbles as they develop.',note:''}] : []),
           ]} /> : <Steps items={[
             ...(t.raw('bulk.stepsBase') as { bold: string; note: string }[]),
-            ...(schedule.bulkFermHours >= 1.5 ? [
-              t.raw('bulk.set1') as { bold: string; note: string },
-              t.raw('bulk.set2') as { bold: string; note: string },
-              ...(schedule.bulkFermHours >= 2 ? [
-                t.raw('bulk.set3') as { bold: string; note: string },
-                t.raw('bulk.set4') as { bold: string; note: string },
-              ] : []),
-            ] : schedule.bulkFermHours >= 0.5 ? [
-              t.raw('bulk.setShort') as { bold: string; note: string },
-            ] : [
-              t.raw('bulk.setVeryShort') as { bold: string; note: string },
-            ]),
+            ...(scheduledFoldMinutes(schedule.bulkFermHours, styleKey).length
+              ? scheduledFoldMinutes(schedule.bulkFermHours, styleKey).map(minutes =>
+                  t.raw(minutes === 15 ? 'bulk.setShort' : `bulk.set${minutes / 30}`) as { bold: string; note: string })
+              : [t.raw('bulk.setVeryShort') as { bold: string; note: string }]),
           ]} />}
         </Section>
 

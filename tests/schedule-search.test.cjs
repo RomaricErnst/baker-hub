@@ -3,6 +3,14 @@ require('./load-production.cjs');
 const {findFixedBakeSchedule,validateScheduleCandidate,proposeScheduleEdit}=require('../app/utils/scheduleEdit.ts');
 const H=3600000,now=Date.parse('2030-04-01T08:00Z'),start=new Date('2030-04-02T08:00Z'),bake=new Date('2030-04-03T18:00Z');
 const base={id:'mix',at:start,start,bake,prefHours:12,hasPreferment:true,prefWarmupHours:0,prefWindow:{min:8,max:18},supported:true,blocks:[],kitchenTemp:22,preheatMin:45,mixerType:'hand',styleKey:'neapolitan',numItems:2,window:b=>({from:new Date(+b-60*H),to:new Date(+b-8*H)}),methodValid:()=>true,now};
+test('preferment edit moves an automatic mix when needed, while requested preparation and bake stay fixed',()=>{
+ const at=new Date(+start-9*H), input={...base,id:'pref',at,prefWindow:{min:10,max:18}};
+ const result=proposeScheduleEdit(input);
+ assert.equal(result.valid,true);assert.notEqual(+result.times.start,+start);
+ assert.equal(+result.times.start-result.times.prefHours*H,+at);assert.equal(+result.times.bake,+bake);
+ assert.equal(validateScheduleCandidate({...input,pins:{preferment:at}},result.times).valid,true);
+ assert.equal(proposeScheduleEdit({...input,pins:{mix:start}}).valid,false);
+});
 test('fixed bake search repairs blockers and validates dependent actions together',()=>{
  const input={...base,blocks:[{from:new Date(+start-H),to:new Date(+start+2*H),label:'Work'}]};
  assert.equal(validateScheduleCandidate(input).valid,false);

@@ -8,8 +8,8 @@ test('poolish this afternoon keeps morning mixing with a blocked night',()=>{
  const result=proposeScheduleEdit({...input,start,bake,at:new Date('2030-04-01T15:00Z'),prefHours:11,prefWarmupHours:0,prefWindow:{min:8,max:16},blocks:[{from:new Date('2030-04-01T23:00Z'),to:start,label:'Night'}]});
  assert.equal(result.valid,true);assert.equal(+result.times.start,+start);assert.equal(result.times.prefHours,16);assert.equal(+result.times.bake,+bake);
 });
-test('preferment-only editing preserves mixing and reports an insufficient maturity window',()=>{
- const result=proposeScheduleEdit({...input,at:new Date(+start-9*H),prefWindow:{min:10,max:18}});
+test('preferment-only editing preserves explicit mixing pin and reports insufficient maturity',()=>{
+ const result=proposeScheduleEdit({...input,at:new Date(+start-9*H),pins:{mix:start},prefWindow:{min:10,max:18}});
  assert.equal(result.valid,false);assert.equal(result.issue,'preferment');assert.equal(+result.times.start,+start);assert.equal(result.times.prefHours,9);assert.equal(+result.times.bake,+bake);
 });
 test('moving mixing shifts preferment by the same delta',()=>{
@@ -26,9 +26,9 @@ test('an explicitly earlier bake finds a compatible earlier mixing time',()=>{
  const result=proposeScheduleEdit({...input,id:'bake',at:requested,prefWindow:{min:10,max:18}});
  assert.equal(result.valid,true);assert.equal(+result.times.bake,+requested);assert.ok(+result.times.start<+start);
 });
-test('preferment-only edit cannot silently move mixing to avoid a cold-out conflict',()=>{
+test('preferment-only edit cannot silently move explicitly pinned mixing to avoid a cold-out conflict',()=>{
  const start=new Date('2030-04-02T07:00Z'),bake=new Date('2030-04-02T18:00Z');
- const result=proposeScheduleEdit({...input,start,bake,at:new Date('2030-04-01T15:00Z'),prefWindow:{min:10,max:18},blocks:[{from:new Date('2030-04-01T23:00Z'),to:start,label:'Night'}]});
+ const result=proposeScheduleEdit({...input,start,bake,pins:{mix:start},at:new Date('2030-04-01T15:00Z'),prefWindow:{min:10,max:18},blocks:[{from:new Date('2030-04-01T23:00Z'),to:start,label:'Night'}]});
  assert.equal(result.valid,false);assert.equal(result.conflict,'preferment-cold-out');assert.equal(+result.times.start,+start);assert.equal(result.times.prefHours,16);
 });
 test('moving preferment moves mixing, retains its maturation and keeps fixed bake',()=>{

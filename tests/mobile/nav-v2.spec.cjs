@@ -40,7 +40,7 @@ async function navigate(page,label,locale='fr'){
   expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
  }
  await nav.getByRole('button').filter({has:page.getByText(label,{exact:true})}).tap();
- await expect(navigator(page)).toContainText(label);
+ await expect(page.locator('.bh-navigator-current')).toContainText(label);
  await expect(navigator(page)).toHaveAttribute('aria-expanded','false');
  await noOverflow(page);
 }
@@ -210,7 +210,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  expect(b.y+b.height).toBeLessThanOrEqual(page.viewportSize().height+1);
  await testInfo.attach('late-fillings-return-action',{body:await page.screenshot(),contentType:'image/png'});
  await back.tap();
- await expect(navigator(page)).toContainText('Préparation');
+ await expect(page.locator('.bh-navigator-current')).toContainText('Préparation');
  await expect(current).toHaveAttribute('aria-label',stepLabel);
  const choices=page.getByRole('region',{name:'À préparer',exact:true});
  await expect(choices.getByRole('button')).toHaveText(['La pâte','Les garnitures']);
@@ -245,7 +245,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await page.getByRole('button',{name:/^Préparer les garnitures(?: →)?$/}).tap();
  await expect(choices.getByRole('button',{name:'Les garnitures',exact:true})).toHaveAttribute('aria-pressed','true');
  await page.getByRole('button',{name:bread?'Passer à la cuisson du pain →':'Cuire les pizzas →',exact:true}).tap();
- await expect(navigator(page)).toContainText('Cuisson & service');
+ await expect(page.locator('.bh-navigator-current')).toContainText('Cuisson & service');
  if(bread)await expect(choices.getByRole('button',{name:'Guide de cuisson',exact:true})).toHaveAttribute('aria-pressed','true');else await expect(choices).toHaveCount(0);
  const serveLabel=bread?'Assembler mes sandwichs →':'Commencer la cuisson des pizzas →';
  for(let step=0;step<12;step++){
@@ -270,7 +270,7 @@ test('late fillings opened from Recipe return to Recipe without changing the dou
  await expect.poll(async()=>(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']).toBe(1);
  await page.getByRole('button',{name:'Voir ma sélection · 1',exact:true}).tap();
  await page.getByRole('button',{name:/^Revenir à la recette(?: →)?$/}).tap();
- await expect(navigator(page)).toContainText('Recette');
+ await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
  await expect(page.getByRole('button',{name:'Modifier mes sandwichs',exact:true})).toBeVisible();
  const after=await stored(page);
  for(const key of ['styleKey','numItems','itemWeight','eatTime','recipeGenerated'])expect(after[key],key).toEqual(before[key]);

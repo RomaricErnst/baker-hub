@@ -1,5 +1,18 @@
 # Bakerhub — continuation handoff
 
+## Recommendation-first scheduling and compact Organisation — 25 September 2026
+
+User authorized the existing preview only. Organisation progress now shares the section navigation bar; its step menu remains separate from the six-section menu. Scheduling explicitly targets first pizza/bread oven entry (pan-cooked breads use cooking start), retaining the canonical saved oven anchor rather than adding a serving-time offset. Target controls stay above alternative-time presets.
+
+Key actions default to compact rows with compatible-window text. Modify opens a horizontal time strip and exact date/time input. Adjacent validated quarter-hour choices form green bands; isolated valid times remain points. Slot results are keyed to current constraints and cancelled on replacement. Apply/Cancel remain distinct; persistent “Revenir aux horaires recommandés” recomputes using current availability. Candidate-derived intervention details expose dependent folds/transitions and a changed mixing time before Apply.
+
+Commercial preferment changes may move automatic mixing using the supported fixed-bake search, while explicit mixing choices stay pinned. Shared fold offsets come directly from the existing generic BakeGuide prescriptions and are now checked as availability point events. Passive initial bulk retains its existing modeled duration across blocks; canonical actions determine conflicts. No biological coefficients changed.
+
+Verification at this checkpoint: TypeScript and local production build passed; 309 unit/component tests passed after core fixes. Adapted mobile matrix has 204 authored cases; runtime execution still pending. Local WebKit cannot launch (missing system libraries; dependency install unavailable). Do not report the new browser checks as passed until CI evidence is recorded. Production unchanged.
+
+Remaining limits: conditional bread folds depend on dough and have no invented timestamps; some handling durations remain point checks. Fermentation is estimated, search bounded, and completed versus expired work remains the prior documented distinction gap. Optional “Ce que vérifie le planning” discloses these model boundaries.
+
+
 ## Shared scheduling feedback and persistent Reset — 25 September 2026
 
 The user's screenshot sequence is reproduced on the existing preview: after confirming a poolish preparation, a custom blocker creates a warning; moving preparation to a valid draft enables confirmation but leaves the committed-plan warning visible. Reset was visible immediately after Apply but disappeared after reload/resume while times persisted. Exact screenshot recipe/temperatures were not provided; controlled Asia/Singapore regression fixes25 September08:49 and26 September19:30 bake with explicit22°C/5°C/spiral assumptions.

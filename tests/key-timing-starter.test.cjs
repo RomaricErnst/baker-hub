@@ -28,6 +28,21 @@ test('room-temperature levain computes future feeds through the joint solver',()
  const {controls:c,start,effects}=setup({planningMode:'last_fed',knownPeakTime:null,lastFedAge:'today',lastFedTime:new Date(Date.now()-3*3600000),starterLocation:'rt',nextFeedRatio:1});
  assert.ok(c.anchors.some(a=>a.id.startsWith('starter:')));assert.ok(c.check('mix',+start+900000));const feed=c.anchors.find(a=>a.id==='starter:pre_mix');assert.ok(feed);assert.ok(c.check(feed.id,feed.at+900000),'nearby feed retains mixing');assert.deepEqual(effects,[]);
 });
+test('feed windows may move automatic mixing but retain an explicit mixing pin',()=>{
+ const params={planningMode:'last_fed',knownPeakTime:null,lastFedAge:'today',lastFedTime:new Date(Date.now()-3*3600000),starterLocation:'rt',nextFeedRatio:1};
+ const automatic=setup(params),mix=automatic.controls.anchors.find(a=>a.id==='mix'),feed=automatic.controls.anchors.find(a=>a.id==='starter:pre_mix');
+ assert.ok(feed&&mix);
+ const pinned=setup({...params,startTime:automatic.start,eatTime:automatic.bake,timingOverrides:{mix:mix.at}});
+ let expanded=false;
+ for(let delta=900000;delta<=6*3600000&&!expanded;delta+=900000){
+  for(const sign of [-1,1]){
+   const at=feed.at+sign*delta;
+   if(!pinned.controls.check(feed.id,at)&&automatic.controls.check(feed.id,at)){expanded=true;break;}
+  }
+ }
+ assert.equal(expanded,true,'unpinning automatic mixing exposes at least one additional valid feed time');
+ assert.deepEqual([...automatic.effects,...pinned.effects],[],'search remains read-only');
+});
 test('week-old refrigerated levain retains revival actions and validates the complete plan',()=>{
  const {controls:c,effects}=setup({planningMode:'last_fed',knownPeakTime:null,lastFedAge:'week',lastFedTime:new Date(Date.now()-8*86400000),starterLocation:'fridge',nextFeedRatio:1});
  assert.ok(c.anchors.some(a=>a.id.startsWith('starter:')));const mix=c.anchors.find(a=>a.id==='mix');assert.ok(c.check('mix',mix.at));assert.deepEqual(effects,[]);

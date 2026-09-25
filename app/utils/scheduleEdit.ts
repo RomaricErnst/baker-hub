@@ -120,8 +120,8 @@ export function findFixedBakeSchedule(input: EditInput, pins: TimingPins = input
   return {candidate:retained,found:false,searched,exhausted:true};
 }
 
-/** Mixing leads the coupled anchors; preferment-only edits keep mixing pinned.
- * Search the existing maturity window when the linked preferment is unavailable.
+/** Keep automatic anchors where feasible; move them jointly when necessary.
+ * Explicit user pins remain fixed except for the anchor currently being edited.
  * Baking stays pinned unless explicitly edited. */
 export function proposeScheduleEdit(input: EditInput): EditResult {
   // The anchor being edited replaces that anchor's old pin; other explicit
@@ -142,10 +142,17 @@ export function proposeScheduleEdit(input: EditInput): EditResult {
   if(!window||!input.hasPreferment||!['pref','mix'].includes(input.id))return assessEdit(input);
   const evaluate=(offset:number)=>assessEdit({...input,prefHours:offset});
   // Mixing is the primary anchor: its preferment follows by the same delta.
-  // Editing preferment alone keeps mixing pinned and changes maturation length.
+  // First try retaining mixing and changing only maturation length.
   const preferred=input.id==='mix'?input.prefHours:(+input.start-+input.at)/HOUR;
   const retained=evaluate(preferred);
-  if(input.id==='pref')return retained;
+  if(input.id==='pref') {
+    if(retained.valid || input.pins?.mix || !Number.isFinite(+input.at) || +input.at < (input.now??Date.now())) return retained;
+    // A recommendation is not a manual mixing pin. Search dependent mixing
+    // times while holding the requested preparation and baking times fixed.
+    const result=findFixedBakeSchedule({...input,start:retained.times.start,prefHours:preferred},
+      {...input.pins,preferment:input.at});
+    return result.found ? result.candidate : retained;
+  }
   if(['range','timing','date','unsupported'].includes(retained.issue??'') || (retained.issue==='busy'&&retained.conflict!=='preferment'))return retained;
   if(retained.valid||+input.at<=(input.now??Date.now())||['date','unsupported'].includes(retained.issue??''))return retained;
   const offsets=new Set<number>([window.min,window.max]);
@@ -175,4 +182,3 @@ export function scheduleEditSlots(input:EditInput,id:string,from:number,to:numbe
   }
   return slots;
 }
-

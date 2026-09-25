@@ -223,6 +223,7 @@ interface SchedulePickerProps {
   onStarterPeakTimeChange?: (t: Date | null) => void;
   starterTimingValid?: boolean;
   onStarterTimingValidityChange?: (valid: boolean) => void;
+  /** Optional serving estimate after the canonical oven/cooking target; never changes target input semantics. */
   readyTimeOffsetMinutes?: number;
   readyTimeLabel?: string;
   readyTimeNote?: string;
@@ -1720,11 +1721,10 @@ function UnleavenedSchedulePicker(props: SchedulePickerProps) {
     const copy = new Date(+date - date.getTimezoneOffset() * 60000);
     return copy.toISOString().slice(0, 16);
   };
-  const readyOffset=Number.isFinite(props.readyTimeOffsetMinutes)?Math.max(0,props.readyTimeOffsetMinutes??0):0;
-  const [value, setValue] = useState(() => localValue(new Date(+(props.eatTime ?? new Date(Date.now() + 60 * 60000))+readyOffset*60000)));
+  const [value, setValue] = useState(() => localValue(props.eatTime ?? new Date(Date.now() + 60 * 60000)));
   const [confirmed, setConfirmed] = useState(!!props.eatTime);
   useEffect(() => { props.onEditingChange?.(!confirmed); return () => props.onEditingChange?.(false); }, [confirmed, props.onEditingChange]);
-  const cook = new Date(+new Date(value)-readyOffset*60000);
+  const cook = new Date(value);
   const validDate = Number.isFinite(+cook);
   const start = new Date(+cook - 45 * 60000);
   const cookMinutes = breadActiveCookMinutes(props.styleKey, props.numItems);
@@ -1742,7 +1742,7 @@ function UnleavenedSchedulePicker(props: SchedulePickerProps) {
   return <section aria-label={isFr ? 'Repos et cuisson' : 'Rest and cook'} style={{ padding: '8px 0' }}>
     <h3 style={{ fontSize: 22, margin: '0 0 12px' }}>{isFr ? 'Repos et cuisson' : 'Rest and cook'}</h3>
     <p style={{ lineHeight: 1.5 }}>{isFr ? 'Préparez la pâte 45 min avant cuisson : mélange, 30 min de repos couvert, puis abaisse.' : 'Start 45 minutes before cooking: mix, rest covered for 30 minutes, then roll.'}</p>
-    <label style={{ display: 'block', margin: '20px 0 8px', fontWeight: 500 }} htmlFor="piadina-cook-time">{readyOffset?props.readyTimeLabel:(isFr ? 'Commencer la cuisson à' : 'Start pan-cooking at')}</label>
+    <label style={{ display: 'block', margin: '20px 0 8px', fontWeight: 500 }} htmlFor="piadina-cook-time">{isFr ? 'Quand commencer la cuisson des piadinas ?' : 'When will you start cooking the piadinas?'}</label>
     <input id="piadina-cook-time" type="datetime-local" value={value} onChange={event => { setValue(event.target.value); setConfirmed(false); }}
       style={{ width: '100%', boxSizing: 'border-box', minHeight: 48, fontSize: 16, padding: 12, border: '1px solid var(--border)', borderRadius: 12, color: 'var(--char)', background: 'var(--cream)' }} />
     {validDate && <p>{isFr ? 'Commencer à ' : 'Start at '}{fmtCardDT(start, isFr)}</p>}
@@ -1773,8 +1773,16 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const isFr = locale === 'fr';
-  const alreadySet = eatTime !== null && eatTime > new Date();
-  // Skip phase 1 if a future bake time is already set (return-to-edit case)
+  // Persist the canonical cooking anchor even when a restored target has passed.
+  const alreadySet = eatTime !== null && Number.isFinite(+eatTime);
+  const panCook = getBreadProtocol(styleKey)?.cooking === 'griddle';
+  const targetLabel = panCook
+    ? (isFr ? 'Quand commencer la cuisson des pains ?' : 'When will you start cooking the breads?')
+    : bakeType === 'pizza'
+      ? (isFr ? 'Quand enfourner la première pizza ?' : 'When will the first pizza go into the oven?')
+      : (isFr ? 'Quand enfourner le pain ?' : 'When will the bread go into the oven?');
+  const targetTimeLabel = panCook ? (isFr ? 'Heure de cuisson' : 'Cooking time') : (isFr ? 'Heure d’enfournement' : 'Oven time');
+  // Skip phase 1 when a saved cooking target exists (return-to-edit case)
   const [phase, setPhase] = useState<PickerPhase>(() => alreadySet ? 'start_confirm' : 'bake_time');
   const [pendingEatTime, setPendingEatTime] = useState<Date>(eatTime ?? new Date());
   const [pendingStart, setPendingStart] = useState(startTime);
@@ -1835,7 +1843,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   }
   const [pickerDateTime, setPickerDateTime] = useState<string>(() => {
     if (alreadySet && eatTime) {
-      const d = new Date(+eatTime + readyOffset * 60000);
+      const d = new Date(+eatTime);
       const yyyy = d.getFullYear();
       const mm = String(d.getMonth() + 1).padStart(2, '0');
       const dd = String(d.getDate()).padStart(2, '0');
@@ -1848,15 +1856,15 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   // Split state for custom time picker UI
   const [pickerDate, setPickerDate] = useState<string>(() => {
     if (alreadySet && eatTime) {
-      const d = new Date(+eatTime + readyOffset * 60000);
+      const d = new Date(+eatTime);
       return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
     return '';
   });
-  const [pickerHour, setPickerHour] = useState<number>(() => alreadySet && eatTime ? new Date(+eatTime + readyOffset * 60000).getHours() : 18);
+  const [pickerHour, setPickerHour] = useState<number>(() => alreadySet && eatTime ? new Date(+eatTime).getHours() : 18);
   const [pickerMinute, setPickerMinute] = useState<number>(() => {
     if (alreadySet && eatTime) {
-      const m = new Date(+eatTime + readyOffset * 60000).getMinutes();
+      const m = new Date(+eatTime).getMinutes();
       return m;
     }
     return 0;
@@ -2171,7 +2179,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     const [datePart, timePart] = dt.split('T');
     const [yyyy, mm, dd] = datePart.split('-').map(Number);
     const [hh, mi] = timePart.split(':').map(Number);
-    const d = new Date(+new Date(yyyy, mm - 1, dd, hh, mi, 0, 0) - readyOffset * 60000);
+    const d = new Date(yyyy, mm - 1, dd, hh, mi, 0, 0);
     setPendingEatTime(d);
     setEatTimeSet(true);
     onChange(pendingStart, d, blocks);
@@ -2849,7 +2857,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     const [datePart, timePart] = dt.split('T');
     const [yyyy, mm, dd] = datePart.split('-').map(Number);
     const [hh, mi] = timePart.split(':').map(Number);
-    const et = new Date(+new Date(yyyy, mm - 1, dd, hh, mi, 0, 0) - readyOffset * 60000);
+    const et = new Date(yyyy, mm - 1, dd, hh, mi, 0, 0);
     setPendingEatTime(et);
     setEatTimeSet(true);
     hasManuallyDragged.current = false;
@@ -6253,7 +6261,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     const message=valid?null:!historyKept||!noNewPastActions||validation.reason==='date'
       ?(isFr?'Ce changement déplacerait une préparation passée. Choisissez un autre horaire.':'This change would move a past preparation. Choose another time.')
       :validation.reason==='busy'?(isFr?'Vous êtes indisponible pendant ':'You are unavailable during ')+(conflictNames[validation.conflict?.id??'']??['une étape','an action'])[isFr?0:1]+'.'
-      :!pinKept?(isFr?'Ce rafraîchi ne conserve pas les horaires choisis. Réinitialisez les horaires pour les libérer.':'This feed cannot keep your chosen times. Reset times to release them.')
+      :!pinKept?(isFr?'Ce rafraîchi ne conserve pas les horaires choisis. Revenez aux horaires recommandés pour les libérer.':'This feed cannot keep your chosen times. Return to recommended times to release them.')
       :!storageKept?(isFr?'Ce changement nécessite un autre passage au froid. Conservez le protocole ou choisissez un autre horaire.':'This change requires a different fridge step. Keep the protocol or choose another time.')
       :!peakOK?(isFr?'Ce créneau sort de la fenêtre de maturité estimée du levain.':'Outside the estimated starter maturity window.')
       :!displayedPlanKept?(isFr?'Ces horaires nécessitent un nouveau calcul du plan du levain.':'These times need a fresh starter plan calculation.')
@@ -6272,6 +6280,10 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   function replanStarter(candidateBlocks:AvailabilityBlock[],overrides:TimingOverrides) {
     if(startTimeInPast||resumeFrozenRef.current||+pendingEatTime<=Date.now())return null;
     const pins:StarterPins={mix:overrides.mix??null,feed:overrides.feed??null,refresh:overrides.refresh??null};
+    return searchStarterCandidate(pins,candidateBlocks);
+  }
+
+  function searchStarterCandidate(pins:StarterPins,candidateBlocks:AvailabilityBlock[]) {
     const initial=evaluateStarterCandidate(pins,candidateBlocks);
     // Availability must not silently replace a cold starter plan with an RT
     // plan (or the reverse). Initial planning, without a saved plan, is free.
@@ -6323,6 +6335,8 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   const conflictNames: Record<string, [string, string]> = {
     mix: ['Pétrissage', 'Mixing'], 'mix-finish': ['Fin du pétrissage', 'Finish mixing'],
     poach: ['Pochage', 'Poaching'], roll: ['Abaisse', 'Rolling'],
+    'fold-1': ['Rabat 1', 'Fold 1'], 'fold-2': ['Rabat 2', 'Fold 2'],
+    'fold-3': ['Rabat 3', 'Fold 3'], 'fold-4': ['Rabat 4', 'Fold 4'],
     divide: ['Division et façonnage', 'Divide and shape'], preheat: ['Préchauffage', 'Preheat'], bake: ['Cuisson', 'Bake'],
     'cold-in': ['Mise au froid', 'Into the fridge'], 'cold-in-2': ['Deuxième mise au froid', 'Second fridge stage'],
     'cold-out': ['Sortie du froid', 'Out of the fridge'], 'cold-out-2': ['Deuxième sortie du froid', 'Second fridge exit'],
@@ -6492,7 +6506,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     const now=Date.now();
     for(let day=0;day<3&&found.length<3;day++)for(const hour of [11,19]) {
       const target=new Date(now);target.setDate(target.getDate()+day);target.setHours(hour,30,0,0);
-      const bake=new Date(+target-readyOffset*60000);if(+bake<=now)continue;
+      const bake=new Date(+target);if(+bake<=now)continue;
       const candidateBlocks=[...localBlocks];
       const append=(entries:ReturnType<typeof getWorkdaysInWindow>)=>{for(const e of entries)if(!candidateBlocks.some(b=>+b.from===+e.blockStart&&+b.to===+e.blockEnd))candidateBlocks.push({from:e.blockStart,to:e.blockEnd,label:e.label});};
       if(localBlocks.some(b=>b.label.startsWith('Work · ')))append(getWorkdaysInWindow(new Date(now),bake));
@@ -6516,18 +6530,11 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
       {/* Bake time inputs — always visible */}
       <div style={{ marginBottom: '16px' }}>
         <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--char)', marginBottom: '4px' }}>
-          {isFr ? 'C’est pour quand ?' : 'When is it for?'}
+          {targetLabel}
         </div>
         <div style={{ fontSize: '12px', color: 'var(--smoke)', marginBottom: '12px', lineHeight: 1.5 }}>
-          {readyOffset ? readyTimeLabel : (isFr ? 'Début de cuisson' : 'Start baking')}
+          {isFr ? 'Le planning s’adapte à cet horaire.' : 'Your plan works back from this time.'}
         </div>
-        {readyTimeNote&&<details style={{fontSize:14,marginBottom:10}}><summary style={{minHeight:44,cursor:'pointer'}}>{isFr?'Comment estimer cette heure ?':'How is this time estimated?'}</summary><p>{readyTimeNote}</p></details>}
-        {suggestedTargets.length>0&&<div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>{suggestedTargets.map(candidate=><button type="button" key={+candidate.bake} onClick={()=>{
-          setPendingStart(candidate.start);setPendingEatTime(candidate.bake);setEatTimeSet(true);setStartComputed(true);setLocalBlocks(candidate.blocks);
-          const target=new Date(+candidate.bake+readyOffset*60000);setPickerDate(`${target.getFullYear()}-${String(target.getMonth()+1).padStart(2,'0')}-${String(target.getDate()).padStart(2,'0')}`);setPickerHour(target.getHours());setPickerMinute(target.getMinutes());
-          onChange(candidate.start,candidate.bake,candidate.blocks,{preservePlan:true});onReady?.();
-        }} style={{minHeight:44,fontSize:15,padding:'8px 10px',background:'var(--warm)',border:'1px solid var(--border)',borderRadius:10}}>{fmtCardDT(new Date(+candidate.bake+readyOffset*60000),isFr)}</button>)}</div>}
-        {isSourdough&&<p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Choisissez votre horaire : sa faisabilité dépendra de votre levain.':'Choose your time: feasibility depends on your starter.'}</p>}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative' }}>
           {/* Date — native picker styled as "Sat 4 Apr" */}
           <div style={{ flex: 2, minWidth: 0, position: 'relative' }}>
@@ -6552,6 +6559,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
             <input
               ref={dateInputRef}
               type="date"
+              aria-label={panCook ? (isFr ? 'Date de cuisson' : 'Cooking date') : (isFr ? 'Date d’enfournement' : 'Baking date')}
               value={pickerDate}
               onChange={e => {
                 const d = e.target.value;
@@ -6611,11 +6619,18 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
               }}
             />
           </div>
-          <input type="time" aria-label={readyOffset ? readyTimeLabel : (isFr ? 'Début de cuisson' : 'Start baking')} step={60}
+          <input type="time" aria-label={targetTimeLabel} step={60}
             value={`${String(pickerHour).padStart(2,'0')}:${String(pickerMinute).padStart(2,'0')}`}
             onChange={e=>{const [h,m]=e.target.value.split(':').map(Number);if(!Number.isFinite(h)||!Number.isFinite(m))return;setPickerHour(h);setPickerMinute(m);if(pickerDate)applyTimePick(pickerDate,h,m);}}
             disabled={!pickerDate} style={{...INPUT_STYLE,flex:1,width:undefined,minWidth:0,fontSize:16}} />
         </div>
+        {readyTimeNote&&readyOffset>0&&<details style={{fontSize:14,marginBottom:10}}><summary style={{minHeight:44,cursor:'pointer'}}>{isFr?'Après la cuisson':'After baking'}</summary><p>{readyTimeNote}</p></details>}
+        {suggestedTargets.length>0&&<details open={!eatTimeSet} style={{marginTop:8}}><summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer',fontSize:14}}>{isFr?'Autres horaires proposés':'Other suggested times'}</summary><div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>{suggestedTargets.map(candidate=><button type="button" key={+candidate.bake} onClick={()=>{
+          setPendingStart(candidate.start);setPendingEatTime(candidate.bake);setEatTimeSet(true);setStartComputed(true);setLocalBlocks(candidate.blocks);
+          const target=new Date(+candidate.bake);setPickerDate(`${target.getFullYear()}-${String(target.getMonth()+1).padStart(2,'0')}-${String(target.getDate()).padStart(2,'0')}`);setPickerHour(target.getHours());setPickerMinute(target.getMinutes());
+          onChange(candidate.start,candidate.bake,candidate.blocks,{preservePlan:true});onReady?.();
+        }} style={{minHeight:44,fontSize:15,padding:'8px 10px',background:'var(--warm)',border:'1px solid var(--border)',borderRadius:10}}>{fmtCardDT(new Date(+candidate.bake),isFr)}</button>)}</div></details>}
+        {isSourdough&&<p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Choisissez votre horaire : sa faisabilité dépendra de votre levain.':'Choose your time: feasibility depends on your starter.'}</p>}
       </div>
 
       {/* Phase 2 content — only once bake time is set */}
@@ -8049,7 +8064,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           hasManuallyDragged.current=true;setHasDragged(true);setRecommendedHBF(null);
           if(isSourdough){setMixOverride(true);manualMixRef.current=+start;}
           setPendingStart(start);setPendingEatTime(bake);setPrefOffsetH(offset);onPrefOffsetChange?.(offset);
-          const target=new Date(+bake+readyOffset*60000);
+          const target=new Date(+bake);
           setPickerDate(`${target.getFullYear()}-${String(target.getMonth()+1).padStart(2,'0')}-${String(target.getDate()).padStart(2,'0')}`);
           setPickerHour(target.getHours());setPickerMinute(target.getMinutes());
           setLocalBlocks(appliedBlocks);
@@ -8079,13 +8094,19 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         // Starter edits go through the joint starter solver, not the commercial
         // preferment window. Observed feeds/peaks stay immutable.
         type Pins={mix:number|null;feed:number|null;refresh:number|null};
-        const basePins:Pins=starterPins??{mix:+pendingStart,feed:manualTimes.feed??null,refresh:manualTimes.refresh??null};
-        const evaluateStarter=(pins:Pins)=>evaluateStarterCandidate(pins,repairBlocks);
+        const basePins:Pins=starterPins??{mix:manualTimes.mix??null,feed:manualTimes.feed??null,refresh:manualTimes.refresh??null};
+        const evaluateStarter=(pins:Pins)=>{
+          // Prefer the displayed automatic mix, but it is not an explicit pin.
+          // A feed edit may move dependent mixing through the same bounded
+          // search as automatic replanning, with storage/history safeguards.
+          const retained=evaluateStarterCandidate({...pins,mix:pins.mix??+pendingStart},repairBlocks);
+          return retained.valid||pins.mix!==null?retained:(searchStarterCandidate(pins,repairBlocks)??retained);
+        };
         const starterPreview=isSourdough?(starterPins?evaluateStarter(basePins):validateCurrentStarterCandidate(repairBlocks)):null;
         const starterResult=starterPreview?.probe.result??solverResult;
         const starterMix=starterPreview?.probe.start??pendingStart;
         const starterEvents=starterPins?starterResult?.starterEvents??displayStarterEvents:displayStarterEvents.length?displayStarterEvents:starterResult?.starterEvents??[];
-        const pinsFor=(id:string,at:number):Pins=>id==='mix'?{...basePins,mix:at}:id==='starter:pre_mix'?{...basePins,mix:+starterMix,feed:at}:{...basePins,mix:+starterMix,refresh:at};
+        const pinsFor=(id:string,at:number):Pins=>id==='mix'?{...basePins,mix:at}:id==='starter:pre_mix'?{...basePins,feed:at}:{...basePins,refresh:at};
         const starterChange=(id:string,at:number)=>{
           captureBaseline();draftOverridesRef.current={...draftOverridesRef.current,[id==='mix'?'mix':id==='starter:pre_mix'?'feed':'refresh']:at};setStarterPins(pinsFor(id,at));setEditingRow(id);setEditingEnabled(true);
         };
@@ -8110,7 +8131,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         }else if(hasPrefActive){
           const at=+draftMix-draftPrefOffset*hour;
           anchors.push({id:'pref',name:prefLabel,at,valid:preview?.valid,editable:!startTimeInPast&&!readinessUnsupported,
-            ...clampBounds(+draftMix-(prefWindow?.max??prefOffsetH+6)*hour,+draftMix-(prefWindow?.min??Math.max(.25,prefOffsetH-6))*hour,at),
+            ...clampBounds(+(originalBounds.from??draftMix)-(prefWindow?.max??prefOffsetH+6)*hour,+(originalBounds.to??draftMix)-(prefWindow?.min??Math.max(.25,prefOffsetH-6))*hour,at),
             detail:(isFr?'Maturation : ':'Maturation: ')+duration(draftPrefOffset)+' · '+(prefGoesInFridge?(isFr?'au froid':'in the fridge'):(isFr?'à température ambiante':'at room temperature')),
             note:editingRow==='pref'||(!editingRow&&(preview?.issue==='preferment'||preview?.conflict?.startsWith('preferment')))?draftMessage:null});
         }
@@ -8134,14 +8155,25 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
             setKeyAdjusted(JSON.stringify([+checked.probe.start,+pendingEatTime,prefOffsetH,result.starterEvents.map(e=>[e.kind,+e.time])])!==keyBaselineRef.current);setStarterPins(null);closeEdit();
           }else{setKeyAdjusted(JSON.stringify([+draftMix,+draftBake,draftPrefOffset,displayStarterEvents.map(e=>[e.kind,+e.time])])!==keyBaselineRef.current);saveEdit();}
         };
+        // Show the actual candidate's downstream actions, including changed folds
+        // and cold transitions. A sourdough draft uses its own validation build.
+        const interventionRows = isSourdough
+          ? [
+              ...starterEvents.filter(event=>event.kind!=='known_peak'&&event.kind!=='last_fed').map((event,index)=>({id:`feed:${index}`,at:+event.time,name:event.label})),
+              ...(starterPreview?.validation.schedule?.availabilityActions??[]).map(action=>({id:action.id,at:+action.at,name:(conflictNames[action.id]??['Étape','Step'])[isFr?0:1]})),
+            ].filter(row=>Number.isFinite(row.at)).sort((a,b)=>a.at-b.at)
+          : previewRows.filter(row=>row.id!=='ready'&&Number.isFinite(row.at)).map(row=>({id:row.id,at:row.at,name:row.name}));
         if(isSourdough&&((planningMode==='know_peak'&&!knownPeakTime)||(planningMode==='last_fed'&&(!lastFedTime||lastFedAge===null))))return null;
-        return <ScheduleKeyTimings anchors={anchors} blocks={repairBlocks} isFr={isFr} onChange={isSourdough?starterChange:commercialChange} check={check} cacheKey={cacheKey}>
+        return <ScheduleKeyTimings anchors={anchors} blocks={repairBlocks} isFr={isFr} onChange={isSourdough?starterChange:commercialChange} check={check} cacheKey={cacheKey} hasDraft={dirty}>
+          {dirty&&editingRow!=='mix'&&+times.start!==+pendingStart&&<p role="status" className="bh-key-detail">{isFr?'Le pétrissage passera à ':'Mixing will move to '}{fmtCardDT(times.start,isFr)}.</p>}
+          {interventionRows.length>0&&<details className="bh-key-detail" style={{marginTop:12}}><summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer'}}>{isFr?'Voir toutes les interventions':'See all hands-on steps'}</summary><ol style={{listStyle:'none',padding:0,margin:0}}>{interventionRows.map(row=><li key={row.id} style={{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:'4px 12px',padding:'8px 0',borderBottom:'1px solid var(--border)'}}><span>{row.name}</span><time dateTime={new Date(row.at).toISOString()} style={{fontWeight:600}}>{fmtCardDT(new Date(row.at),isFr)}</time></li>)}</ol></details>}
           {editingRow&&<div style={{display:'grid',gap:8,marginTop:12}}>
-            <button type="button" onClick={accept} disabled={!dirty||!valid} style={{minHeight:48,padding:12,border:0,borderRadius:10,background:'var(--terra)',color:'white',fontSize:16}}>{isFr?'Valider ces horaires':'Confirm these times'}</button>
+            <button type="button" onClick={accept} disabled={!dirty||!valid} style={{minHeight:48,padding:12,border:0,borderRadius:10,background:'var(--terra)',color:'white',fontSize:16}}>{isFr?'Appliquer':'Apply'}</button>
             <button type="button" className="bh-back-action" onClick={cancel}>{isFr?'Annuler':'Cancel'}</button>
           </div>}
-          {searchFailed&&hasTimingOverrides&&!editingRow&&!(isSourdough?starterPreview?.message:draftMessage)&&<p className="bh-key-detail">{isFr?'Aucun créneau trouvé en conservant vos horaires. Réinitialisez-les pour élargir la recherche.':'No slot found while keeping your chosen times. Reset them to widen the search.'}</p>}
-          {(dirty||hasTimingOverrides)&&<button type="button" className="bh-back-action" onClick={resetToRecommendation}>{isFr?'Réinitialiser les horaires':'Reset times'}</button>}
+          {searchFailed&&hasTimingOverrides&&!editingRow&&!(isSourdough?starterPreview?.message:draftMessage)&&<p className="bh-key-detail">{isFr?'Aucun créneau trouvé avec vos horaires. Revenez aux horaires recommandés pour élargir la recherche.':'No slot found with your chosen times. Return to recommended times to widen the search.'}</p>}
+          <details className="bh-key-detail" style={{marginTop:12}}><summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer'}}>{isFr?'Ce que vérifie le planning':'What the planner checks'}</summary><p>{isFr?'Les créneaux vérifient les étapes prévues et les durées modélisées. Certains gestes restent vérifiés à leur heure de début seulement ; les rabats optionnels des pains dépendent de la pâte. La fermentation reste une estimation.':'Windows check planned actions and modeled durations. Some handling is checked only at its start time; optional bread folds depend on the dough. Fermentation remains an estimate.'}</p></details>
+          {(dirty||hasTimingOverrides)&&<button type="button" className="bh-back-action" onClick={resetToRecommendation}>{isFr?'Revenir aux horaires recommandés':'Return to recommended times'}</button>}
         </ScheduleKeyTimings>;
 
       })()}

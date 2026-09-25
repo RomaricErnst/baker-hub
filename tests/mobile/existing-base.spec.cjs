@@ -73,9 +73,9 @@ test('raw bagel requires baking and cooling; six sections and browser Back prese
  await expect(page.getByRole('heading',{name:'Assembler et servir'})).toHaveCount(0);
  await page.getByRole('button',{name:'Mon pain est cuit et refroidi',exact:true}).tap();
  await expect(page.getByRole('button',{name:'Annuler « pain cuit »'})).toBeVisible();
- await page.goBack();await expect(page.locator('.bh-bake-navigator-trigger')).toContainText('Ma fournée');
+ await page.goBack();await expect(page.locator('.bh-navigator-current')).toContainText('Ma fournée');
  await expect(page.getByLabel('Avancement')).toHaveValue('shaped');
- await page.goForward();await expect(page.locator('.bh-bake-navigator-trigger')).toContainText('Cuisson & service');
+ await page.goForward();await expect(page.locator('.bh-navigator-current')).toContainText('Cuisson & service');
  await page.reload();await expect(page.getByRole('button',{name:'Annuler « pain cuit »'})).toBeVisible();
  await intact(page);
 });
