@@ -419,7 +419,7 @@ for(const mode of ['simple','custom'])test(`${mode}: batch details are condition
   await page.locator('#step-4 .bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
   const flour=page.locator('#step-6');
   await expect(flour).toBeVisible();await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
-  await unobscured(flour.locator('h2'));
+  await unobscured(flour.getByRole('heading',{name:'Quelle farine utilisez-vous ?',exact:true}));
   const search=flour.getByRole('searchbox');
   await search.fill('Nuvola');
   // Leave search focused: one real tap must select, even after typing.
