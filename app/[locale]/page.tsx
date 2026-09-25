@@ -415,7 +415,7 @@ function SummaryBar({ flow, modeChip }:
       else if (!e.shiftKey && (document.activeElement === last || document.activeElement === overviewRef.current)) { e.preventDefault(); first.focus(); }
     };
     document.addEventListener('keydown', keydown);
-    return () => { document.removeEventListener('keydown', keydown); document.body.style.overflow = overflow; if (previous?.isConnected) previous.focus(); };
+    return () => { document.removeEventListener('keydown', keydown); document.body.style.overflow = overflow; if (previous?.isConnected) previous.focus({preventScroll: true}); };
   }, [open]);
   // A bottom sheet that can only be dismissed by tapping outside is a sheet in
   // appearance only — the grab handle promises a drag it did not accept.
@@ -1167,27 +1167,6 @@ export default function Home() {
   const HEADER_HIDE_PX = stickyHeadH;
   const stickTop = Math.max(0, stickyHeadH - (navHidden ? HEADER_HIDE_PX : 0));
   const lastScrollY = useRef(0);
-  useEffect(() => {
-    setNavHidden(false);
-    window.scrollTo(0, 0);
-  }, [activeTab]);
-  // Party sub-tabs are four phases swapping content on one screen, so arriving
-  // at Shopping halfway down the Pizzas list is the same disorientation the
-  // effect above exists to prevent. Instant, per the standing rule against
-  // smooth scrolling — it moves targets under fingers.
-  //
-  // The activeTab guard is load-bearing: setPizzaPartyTab('pick') also fires
-  // from the two reset paths while the baker is somewhere else entirely, and
-  // without it the page jumps under them.
-  useEffect(() => {
-    if (activeTab !== 'pizzaparty') return;
-    window.scrollTo(0, 0);
-    setNavHidden(false);
-  }, [pizzaPartyTab, activeTab]);
-  useEffect(() => {
-    if (activeTab !== 'sandwiches') return;
-    setNavHidden(false);window.scrollTo(0, 0);
-  }, [sandwichParty.tab, activeTab]);
   useEffect(() => {
     let travel = 0;
     let direction = 0;
@@ -2339,13 +2318,35 @@ export default function Home() {
     setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();
   }
 
-  // Page mode: every navigation starts the new page at the top. The old
-  // accordion scrolled to a step's anchor; there is no anchor to reach now.
+  // Reset after React has committed the destination, including changes that
+  // stay on the same route (quantity, mode, equipment and individual steps).
+  // A value edit or opening/closing a detail sheet must not reset reading.
+  const visiblePageKey = showProductHome ? 'home'
+    : destination === 'organisation'
+      ? `organisation:${modeChosen}:${tab}:${setupOverview}:${tab === 'simple' ? activeStep : advancedStep}:${equipmentPanel}`
+      : `${destination}:${destination === 'batch' ? batchView : destination === 'protocol' ? protocolView : destination === 'service' ? serviceView : ''}:${companionVisible ? companionPhase : ''}`;
+  useEffect(() => {
+    setNavHidden(false);
+    lastScrollY.current = 0;
+    const reset = () => window.scrollTo({ top: 0, behavior: 'instant' });
+    reset();
+    let settledFrame = 0;
+    const frame = requestAnimationFrame(() => {
+      reset();
+      settledFrame = requestAnimationFrame(reset);
+    });
+    return () => { cancelAnimationFrame(frame); cancelAnimationFrame(settledFrame); };
+  }, [visiblePageKey]);
+
+  useEffect(() => {
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = 'manual';
+    return () => { window.history.scrollRestoration = previous; };
+  }, []);
+
   function scrollToStepTop() {
+    setNavHidden(false);
     window.scrollTo({ top: 0, behavior: 'instant' });
-    // Run again after the new step mounts so browser scroll anchoring cannot
-    // leave its heading behind the sticky navigation.
-    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   }
 
   function openDestination(next:BakeDestination) {
@@ -2970,17 +2971,25 @@ export default function Home() {
   const mixerCapacityG = mixerType ? MIXER_TYPES[mixerType]?.maxDoughG ?? 9999 : 9999;
   const suggestedMixingBatches = Math.max(1, Math.ceil(numItems * itemWeight / mixerCapacityG));
   const selectedMixingBatches = mixingBatches ?? suggestedMixingBatches;
-  const mixingBatchControl = mixerType ? (
+  const manualMixing = mixerType === 'hand' || mixerType === 'no_knead';
+  const showMixingBatches = suggestedMixingBatches > 1 || mixingBatches !== undefined;
+  const mixingBatchControl = mixerType ? (showMixingBatches ? (
     <div style={{ marginTop: 16, padding: '14px', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--warm)' }}>
       <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 14, fontWeight: 600 }}>
-        {locale === 'fr' ? 'Nombre de pétrissées' : 'Mixing batches'}
+        {locale === 'fr' ? (manualMixing ? 'Nombre de lots' : 'Nombre de pétrissées') : 'Mixing batches'}
         <input type="number" min={1} max={100} step={1} value={selectedMixingBatches} onChange={e => { const value = Number(e.target.value); if (e.target.value !== '' && Number.isInteger(value) && value >= 1 && value <= 100) setMixingBatches(value); }} style={{ width: 72, minHeight: 44, padding: 8, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--cream)', font: 'inherit' }} />
       </label>
-      <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--smoke)' }}>{locale === 'fr' ? `${Math.round(numItems * itemWeight / selectedMixingBatches)} g par pétrissée. Capacité estimée : ${mixerCapacityG} g. Vérifiez la limite de votre appareil.` : `${Math.round(numItems * itemWeight / selectedMixingBatches)} g per batch. Estimated capacity: ${mixerCapacityG} g. Check your equipment’s limit.`}</p>
-      {numItems * itemWeight / selectedMixingBatches > mixerCapacityG && <p role="alert" style={{ fontSize: 12 }}>{locale === 'fr' ? 'Cette quantité dépasse la capacité indicative. Augmentez le nombre de pétrissées si nécessaire.' : 'This amount exceeds the estimated capacity. Increase the batch count if needed.'}</p>}
+      <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--smoke)' }}>{locale === 'fr'
+        ? `${Math.round(numItems * itemWeight / selectedMixingBatches)} g par ${manualMixing ? 'lot' : 'pétrissée'}. ${manualMixing ? 'Quantité indicative' : 'Capacité estimée'} : ${mixerCapacityG} g.${manualMixing ? '' : ' Vérifiez la limite de votre appareil.'}`
+        : `${Math.round(numItems * itemWeight / selectedMixingBatches)} g per batch. ${manualMixing ? 'Suggested batch size' : 'Estimated capacity'}: ${mixerCapacityG} g.${manualMixing ? '' : ' Check your equipment’s limit.'}`}</p>
+      {numItems * itemWeight / selectedMixingBatches > mixerCapacityG && <p role="alert" style={{ fontSize: 12 }}>{locale === 'fr' ? 'Cette quantité dépasse la capacité indicative. Augmentez le nombre de lots si nécessaire.' : 'This amount exceeds the estimated capacity. Increase the batch count if needed.'}</p>}
       {mixingBatches !== undefined && <button type="button" onClick={() => setMixingBatches(undefined)} style={{ minHeight: 44, padding: '8px 0', border: 0, background: 'transparent', color: 'var(--terra)', cursor: 'pointer', textDecoration: 'underline' }}>{locale === 'fr' ? 'Revenir à la recommandation' : 'Reset to recommendation'}</button>}
     </div>
-  ) : null;
+  ) : (
+    <button type="button" onClick={() => setMixingBatches(2)} style={{ marginTop: 8, minHeight: 44, padding: '8px 0', border: 0, background: 'transparent', color: 'var(--terra)', cursor: 'pointer', textDecoration: 'underline', font: 'inherit', fontSize: 13 }}>
+      {locale === 'fr' ? (manualMixing ? 'Préparer en plusieurs lots' : 'Diviser en plusieurs pétrissées') : 'Split into multiple batches'}
+    </button>
+  )) : null;
 
 
   // ── Styles ────────────────────────────────

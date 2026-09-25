@@ -388,3 +388,50 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  await step.getByRole('button',{name:mode==='simple'?/KitchenAid \/ robot pâtissier/:/Robot pâtissier/}).tap();
  await expect.poll(async()=>(await stored(page))?.waterMethod).toBe('premelt');
 });
+
+for(const mode of ['simple','custom'])test(`${mode}: batch details are conditional and setup headings reset above the fold`,async({page})=>{
+ await anonymous(page);await page.goto('/fr');
+ await page.getByRole('button',{name:'Pizza',exact:true}).tap();
+ await page.locator('.bh-batch-content').getByRole('button',{name:/Napolitaine/i}).tap();
+ await page.getByLabel('Pâte par pizza (g)',{exact:true}).fill('500');
+ await page.getByLabel('Pâte par pizza (g)',{exact:true}).blur();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true}).tap();
+ await page.getByRole('button',{name:mode==='simple'?/^Me laisser guider\b/:/^Personnaliser ma recette\b/}).tap();
+ const step=page.locator('#step-3');
+ await step.getByRole('button',{name:/Four à pizza compact/}).tap();
+ await expect(step.getByRole('button',{name:/Four à pizza compact/})).toHaveAttribute('aria-pressed','true');
+ await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+ await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
+ await step.getByRole('button',{name:mode==='simple'?/KitchenAid \/ robot pâtissier/:/Robot pâtissier/}).tap();
+ await expect(step.getByLabel('Nombre de pétrissées',{exact:true})).toHaveValue('2');
+ if(mode==='simple')await step.getByText('Autre méthode',{exact:true}).tap();
+ await step.getByRole('button',{name:/Pétrin (?:à spirale|spiral)/}).tap();
+ await expect(step.getByLabel('Nombre de pétrissées',{exact:true})).toHaveCount(0);
+ await step.getByRole('button',{name:'Diviser en plusieurs pétrissées',exact:true}).tap();
+ await expect(step.getByLabel('Nombre de pétrissées',{exact:true})).toHaveValue('2');
+ await step.getByRole('button',{name:'Revenir à la recommandation',exact:true}).tap();
+ await expect(step.getByLabel('Nombre de pétrissées',{exact:true})).toHaveCount(0);
+ await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+ await expect(page.locator('#step-4')).toBeVisible();
+ await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
+ await unobscured(page.locator('#step-4 h2'));
+ if(mode==='custom'){
+  await page.locator('#step-4 .bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+  const flour=page.locator('#step-6');
+  await expect(flour).toBeVisible();await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
+  await unobscured(flour.locator('h2'));
+  const search=flour.getByRole('searchbox');
+  await search.fill('Nuvola');
+  // Leave search focused: one real tap must select, even after typing.
+  await flour.getByRole('button',{name:/^Caputo Nuvola W/}).tap();
+  await expect(flour.getByRole('button',{name:/^Caputo Nuvola W/})).toHaveAttribute('aria-pressed','true');
+  await expect(flour.getByText('✓ Farine sélectionnée',{exact:true})).toBeVisible();
+  await flour.getByRole('button',{name:'Changer de farine',exact:true}).tap();
+  await expect(search).toBeVisible();
+  await search.fill('Pizzeria');
+  await flour.getByRole('button',{name:/^Caputo Pizzeria W/}).tap();
+  await expect(flour.getByRole('button',{name:/^Caputo Pizzeria W/})).toHaveAttribute('aria-pressed','true');
+  await flour.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+  await expect(flour).toHaveCount(0);await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
+ }
+});

@@ -1,5 +1,13 @@
 # Bakerhub — continuation handoff
 
+## Conditional batches and stable setup navigation — 25 September 2026
+
+User approved hiding routine batch questions and requested top-of-page navigation plus investigation of flour requiring two taps. Batch controls now appear above existing mixer-specific capacity estimates or with an explicit manual override; smaller quantities offer a discreet split action. Hand/no-knead use lots/batches wording. Existing recipe calculation and thresholds remain unchanged.
+
+Visible-page identity now resets scroll after React commit and two animation frames, covering same-route setup steps, mode, oven/mixer, quantity and destinations. History restoration is manual; ordinary value/detail changes do not reset reading. Focus restoration in setup overview and flour details uses preventScroll. Removed the flour selection smooth-scroll animation and made manual-entry scrolling instant.
+
+Live pre-change desktop verification: opening Flour, selecting Caputo Nuvola and Change flour each worked with one click. Exact physical-iPhone two-tap symptom is not reproduced or claimed fixed. Added WebKit regressions for conditional stand/spiral batches, manual override/reset, single-tap equipment/flour/search/Continue and unobscured headings at the configured mobile widths. TSX transpilation and test syntax checks passed locally; full build/mobile CI and preview verification pending at publication. No production change.
+
 ## Setup naming and selection consistency — 25 September 2026
 
 User approved Organisation for the complete setup (equipment, dough, timing), preserving six destinations and Recipe for the generated result. Removed redundant Votre recette above the step counter. Mode entry uses Comment définir votre recette ? with Me laisser guider / Personnaliser ma recette. Garnish invitation has one top action with optional marker, no repeated bottom action. Setting choices remain selected until Continue in both modes; removed commercial-yeast auto advance and the legacy custom-mode delayed return to Plan. Navigation scroll resets after mounting to avoid sticky-title clipping. Votre équipement remains singular. TypeScript passed; preview/runtime verification pending.
