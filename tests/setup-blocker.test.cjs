@@ -19,6 +19,7 @@ test('each protocol-only blocker directs completed setup to the relevant correct
       [{protocolIssue:'method',sourdough:true},custom?7:6],
       [{unsupportedMethod:true,hasPreferment:true},custom?8:6],
       [{prefermentPlanReady:false},custom?9:7],
+      [{schedulePlanReady:false},custom?9:7],
       [{starterPlanReady:false,sourdough:true},custom?9:7],
       [{requirementsComplete:false,missingRequiredStep:2},2],
     ];
@@ -72,3 +73,4 @@ test('valid setup keeps its existing review action',()=>{
   assert.match(html,/Vérifier mes choix/);
   assert.doesNotMatch(html,/Compléter le plan|Revoir le plan/);
 });
+

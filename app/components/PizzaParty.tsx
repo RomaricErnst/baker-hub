@@ -31,9 +31,12 @@ interface PizzaPartyProps {
   onBakedQtysChange?: (qtys: Record<string, number>) => void;
   bakedQtys?: Record<string, number>;
   recipeIngredients?: Array<{ name: string; amount: string }>;
+  onSelectionBack?:()=>void;
   onSelectionDone?:()=>void;
   selectionDoneLabel?:string;
   active?:boolean;
+  storagePrefix?:string;
+  baseReady?:boolean;
 }
 
 function tabToPill(tab: Tab): Pill {
@@ -47,7 +50,7 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients,onSelectionDone,selectionDoneLabel,active=true }: PizzaPartyProps) {
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients,onSelectionBack,onSelectionDone,selectionDoneLabel,active=true,storagePrefix="bh",baseReady=false }: PizzaPartyProps) {
   // initialQtys ne sert qu'au tout premier montage : un useState ne relit pas
   // sa valeur initiale. A la reprise d'une session, les pizzas etaient bien
   // dans l'etat de la page — donc dans le resume — mais le selecteur gardait
@@ -129,6 +132,8 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
       {/* ToppingSelector stays mounted across pick/shop to preserve filter state */}
       <div style={{ display: showSelector ? 'block' : 'none' }}>
         <ToppingSelector
+          baseReady={baseReady}
+          storagePrefix={storagePrefix}
           locale={locale}
           numItems={numItems}
           activePill={tabToPill(activeTab)}
@@ -144,6 +149,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           doughConfigured={doughConfigured}
           onGoToMyDough={onGoToMyDough}
           recipeIngredients={recipeIngredients}
+          onSelectionBack={onSelectionBack}
           onSelectionDone={onSelectionDone}
           selectionDoneLabel={selectionDoneLabel}
           active={active}
@@ -152,6 +158,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
 
       {activeTab === 'prep' && (
         <PrepTab
+          storagePrefix={storagePrefix}
           bakeTime={bakeTime}
           locale={locale}
           selectedPizzas={qtys}

@@ -66,10 +66,6 @@ const CRUSTS: Array<{ id: QuantityCrust; en: string; fr: string }> = [
   { id: 'generous', en: 'Generous', fr: 'Généreuse' },
 ];
 
-function grams(value: number): string {
-  return `${Math.round(value).toLocaleString('en-US')} g`;
-}
-
 function clamp(value: number, min: number, max: number, step: number): number {
   if (!Number.isFinite(value)) return min;
   const stepped = Math.round(value / step) * step;
@@ -82,7 +78,7 @@ function clamp(value: number, min: number, max: number, step: number): number {
  * The component keeps the choice in one readable sequence: number of pieces,
  * then size (for round pizzas), then the resulting dough mass. Pizza diameter
  * and crust edge drive the suggested mass; bakers can explicitly switch to a
- * custom mass without losing the calculated value or the total dough preview.
+ * custom mass without losing the calculated recommendation.
  */
 export default function PrototypeQuantityPicker({
   bakeType,
@@ -130,16 +126,13 @@ export default function PrototypeQuantityPicker({
 
   function setDiameter(next: number) {
     const value = Math.max(diameterBounds.min, Math.min(diameterBounds.max, Math.round(next)));
-    setManualEditing(false);
     onDiameterChange?.(value);
-    if (roundPizza && calculateWeight) onItemWeightChange(calculateWeight(value, crust));
+    if (!usesManualWeight && roundPizza && calculateWeight) onItemWeightChange(calculateWeight(value, crust));
   }
 
   function setCrust(next: QuantityCrust) {
-    setManualEditing(false);
     onCrustChange?.(next);
-    if (roundPizza && calculateWeight) onItemWeightChange(calculateWeight(diameter, next));
-    onWeightModeChange?.(false);
+    if (!usesManualWeight && roundPizza && calculateWeight) onItemWeightChange(calculateWeight(diameter, next));
   }
 
   const cardStyle: CSSProperties = {
@@ -216,14 +209,14 @@ export default function PrototypeQuantityPicker({
                 <button
                   key={option.id}
                   type="button"
-                  aria-pressed={crust === option.id && !usesManualWeight}
+                  aria-pressed={crust === option.id}
                   onClick={() => setCrust(option.id)}
                   style={{
                     minHeight: '44px', padding: '8px 4px', borderRadius: '9px',
-                    border: crust === option.id && !usesManualWeight ? '2px solid var(--terra)' : '1px solid var(--border)',
-                    background: crust === option.id && !usesManualWeight ? 'var(--paper)' : 'transparent',
+                    border: crust === option.id ? '2px solid var(--terra)' : '1px solid var(--border)',
+                    background: crust === option.id ? 'var(--paper)' : 'transparent',
                     color: 'var(--char)', fontFamily: 'var(--font-ui)', fontSize: '14px',
-                    fontWeight: crust === option.id && !usesManualWeight ? 650 : 400,
+                    fontWeight: crust === option.id ? 650 : 400,
                     cursor: 'pointer',
                   }}
                 >
@@ -233,40 +226,17 @@ export default function PrototypeQuantityPicker({
             </div>
           </fieldset>
 
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '14px' }}>
-            <strong style={{ display: 'block', fontSize: '24px', lineHeight: 1.1 }}>{grams(itemWeight)}</strong>
-            <span style={{ display: 'block', marginTop: '4px', fontSize: '14px', color: 'var(--smoke)' }}>
-              {fr ? `de pâte par pizza · ${usesManualWeight ? 'personnalisé' : 'conseillé'}` : `dough per pizza · ${usesManualWeight ? 'custom' : 'suggested'}`}
-            </span>
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+            <label htmlFor="quantity-custom-weight" style={labelStyle}>{fr ? 'Pâte par pizza' : 'Dough per pizza'} ({weightUnit})</label>
+            <DraftNumberInput id="quantity-custom-weight" type="number" inputMode="decimal"
+              min={shownWeight(weightBounds.min)} max={shownWeight(weightBounds.max)}
+              step={units === 'imperial' ? 0.1 : weightBounds.step} value={shownWeight(itemWeight)}
+              onCommit={value => { setManualEditing(true); onWeightModeChange?.(true); onItemWeightChange(clamp(storedWeight(value), weightBounds.min, weightBounds.max, weightBounds.step)); }}
+              style={{...inputStyle,maxWidth:160,boxSizing:'border-box'}} />
+            {usesManualWeight && <button type="button" onClick={() => { setManualEditing(false); onWeightModeChange?.(false); onUseCalculatedWeight?.(); }} style={{display:'block',minHeight:44,padding:'8px 0',border:0,background:'transparent',color:'var(--terra)',textDecoration:'underline',cursor:'pointer',fontFamily:'var(--font-ui)'}}>
+              {fr ? 'Revenir au poids conseillé' : 'Use suggested weight'}{calculatedWeight !== undefined ? ` · ${grams(calculatedWeight)}` : ''}
+            </button>}
           </div>
-
-          {usesManualWeight ? (
-            <div style={{ marginTop: '14px' }}>
-              <label htmlFor="quantity-custom-weight" style={labelStyle}>
-                {fr ? 'Votre poids de pâte' : 'Your dough weight'} ({weightUnit})
-              </label>
-              <DraftNumberInput
-                id="quantity-custom-weight"
-                type="number"
-                min={shownWeight(weightBounds.min)}
-                max={shownWeight(weightBounds.max)}
-                step={units === 'imperial' ? 0.1 : weightBounds.step}
-                value={shownWeight(itemWeight)}
-                onCommit={value => onItemWeightChange(clamp(storedWeight(value), weightBounds.min, weightBounds.max, weightBounds.step))}
-                style={inputStyle}
-              />
-              <p style={{ margin: '6px 0', fontSize: '14px', color: 'var(--smoke)' }}>
-                {fr ? 'Le diamètre reste inchangé.' : 'The diameter stays fixed.'}
-              </p>
-              <button type="button" onClick={() => { setManualEditing(false); onUseCalculatedWeight?.(); }} style={{ minHeight: '44px', padding: '8px 0', border: 0, background: 'transparent', color: 'var(--terra)', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
-                {fr ? 'Utiliser le poids calculé' : 'Use calculated weight'}
-              </button>
-            </div>
-          ) : (
-            <button type="button" onClick={() => { setManualEditing(true); onWeightModeChange?.(true); }} style={{ minHeight: '44px', marginTop: '10px', padding: '8px 0', border: 0, background: 'transparent', color: 'var(--terra)', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
-              {fr ? 'Définir le poids moi-même' : 'Set weight myself'}
-            </button>
-          )}
         </section>
       ) : (
         <section style={cardStyle} aria-labelledby="quantity-each-item">
@@ -289,12 +259,6 @@ export default function PrototypeQuantityPicker({
         </section>
       )}
 
-      <div aria-live="polite" style={{ marginTop: '14px', padding: '12px 14px', background: 'var(--cream)', borderRadius: '9px', fontSize: '14px', lineHeight: 1.5 }}>
-        <strong>{count} × {grams(itemWeight)} = {grams(count * itemWeight)}</strong>
-        <br />
-        <span style={{ color: 'var(--smoke)' }}>{fr ? 'Pâte totale avant la marge éventuelle' : 'Total dough before any waste allowance'}</span>
-      </div>
-
       {limitNote && (
         <div style={{ marginTop: '12px', padding: '10px 12px', background: '#FEF9F0', borderRadius: '9px', border: '1px solid #F0D9A0', display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '14px', lineHeight: 1.45 }}>
           <span style={{ flex: 1 }}>{limitNote}</span>
@@ -310,4 +274,3 @@ export default function PrototypeQuantityPicker({
     </div>
   );
 }
-

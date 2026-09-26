@@ -45,7 +45,7 @@ test('real picker restores commercial timing in both modes and suppresses unsupp
  const start=date(20), schedule=utils.buildSchedule(start,bake,[],22,45,'hand','neapolitan');
  for(const mode of ['simple','custom']){
   const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages:require('../messages/en.json'),timeZone:'UTC'},React.createElement(Picker,{mode,startTime:start,eatTime:bake,blocks:[],preheatMin:45,styleKey:'neapolitan',kitchenTemp:22,schedule,onChange(){},sessionRestored:true,savedPrefOffsetHours:0})));
-  assert.match(html,/Your mixing window/);assert.match(html,/Within the window/);
+  assert.match(html,/Your key times/);assert.doesNotMatch(html,/Your mixing window|Within the window/);
  }
  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages:require('../messages/en.json'),timeZone:'UTC'},React.createElement(Picker,{mode:'custom',startTime:start,eatTime:bake,blocks:[],preheatMin:45,styleKey:'brioche',kitchenTemp:22,schedule,onChange(){},sessionRestored:true,prefermentType:'poolish',savedPrefOffsetHours:12})));
  assert.match(html,/Window not calculated/);assert.doesNotMatch(html,/Within the window/);
@@ -62,11 +62,25 @@ test('picker catches preheat and shaping conflicts but permits passive cold time
  const start=date(26), schedule=utils.buildSchedule(start,bake,[],22,60,'hand','neapolitan');
  const picker=blocks=>renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages:require('../messages/en.json'),timeZone:'UTC'},React.createElement(Picker,{mode:'custom',startTime:start,eatTime:bake,blocks,preheatMin:60,styleKey:'neapolitan',kitchenTemp:22,schedule,onChange(){},sessionRestored:true,savedPrefOffsetHours:0})));
  for(const at of [schedule.preheatStart,schedule.divideBallTime]){
-  assert.match(picker([{from:at,to:new Date(+at+60000),label:'Busy'}]),/Timing needs adjusting/);
+  assert.match(picker([{from:at,to:new Date(+at+60000),label:'Busy'}]),/overlaps|unavailable/);
  }
  const coldStart=schedule.coldRetard1Start??schedule.coldRetardStart;
  const coldEnd=schedule.coldRetard1End??schedule.coldRetardEnd;
  assert.ok(coldStart&&coldEnd&&+coldEnd-+coldStart>7200000);
  const middle=new Date((+coldStart + +coldEnd)/2);
  assert.doesNotMatch(picker([{from:new Date(+middle-60000),to:new Date(+middle+60000),label:'Passive cold'}]),/Timing needs adjusting/);
+});
+
+test('compact schedule stays quiet until an edit or an actual problem',()=>{
+ assert.equal(render({compact:true}), '');
+ assert.doesNotMatch(render({compact:true,showRange:true}),/Within the window|Time kept/);
+ assert.match(render({compact:true,showConfirmation:true}),/Time kept within/);
+ assert.match(render({compact:true,busy:true,conflictDescription:'Preheat overlaps work'}),/Preheat overlaps work/);
+ assert.match(render({compact:true,blocked:true}),/Review this plan/);
+});
+
+test('compact early mixing keeps its own explanation when another conflict exists',()=>{
+ const html=render({compact:true,busy:true,mixTime:date(50),conflictDescription:'Preheat overlaps work'});
+ assert.match(html,/Fermentation is longer than advised/);
+ assert.doesNotMatch(html,/Preheat overlaps work/);
 });

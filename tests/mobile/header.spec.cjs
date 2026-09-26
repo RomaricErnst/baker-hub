@@ -66,7 +66,7 @@ for (const locale of ['fr', 'en']) {
     await page.goto(fr ? '/fr' : '/');
     await page.evaluate(() => document.fonts.ready);
     await page.getByRole('button', { name: 'Pizza', exact: true }).tap();
-    await expect(page.getByRole('heading', { name: navV2 ? (fr ? 'Choisissez votre pâte' : 'Choose your dough') : (fr ? 'À votre façon' : 'Your way'), exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: navV2 ? (fr ? 'Quel style de pizza ?' : 'Which pizza style?') : (fr ? 'Comment définir votre recette ?' : 'How would you like to set up your recipe?'), exact: true })).toBeVisible();
     await verifyHeader(page, testInfo, `${locale}-unsaved`);
 
     const menu = page.locator('.bh-header-menu');
@@ -105,7 +105,7 @@ for (const locale of ['fr', 'en']) {
     await menu.tap();
     await dialog.getByRole('button', { name: fr ? 'Langue et unités' : 'Language & units', exact: true }).tap();
     await dialog.getByRole('combobox', { name: fr ? 'Langue' : 'Language', exact: true }).selectOption({ label: fr ? 'English' : 'Français' });
-    await expect(page.getByRole('heading', { name: navV2 ? (fr ? 'Choose your dough' : 'Choisissez votre pâte') : (fr ? 'Your way' : 'À votre façon'), exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: navV2 ? (fr ? 'Which pizza style?' : 'Quel style de pizza ?') : (fr ? 'How would you like to set up your recipe?' : 'Comment définir votre recette ?'), exact: true })).toBeVisible();
     await expect(dialog).toBeHidden();
     await verifyHeader(page, testInfo, `${locale}-switched-language`);
     expect(errors, 'uncaught application errors').toEqual([]);

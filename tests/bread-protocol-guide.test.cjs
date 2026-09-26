@@ -34,14 +34,17 @@ test('all new bread guides render bilingual protocol stages and fillings handoff
  }
 });
 
-test('phase views partition every bread protocol without renumbering or duplicating stages',()=>{
+test('phase views preserve stage identities while cooking displays local numbering',()=>{
  for(const style of Object.keys(BREAD_PROTOCOLS)) {
   const sections=html=>[...html.matchAll(/<section\b([^>]*data-guide-phase[^>]*)>/g)].map(match=>({
    label:match[1].match(/aria-label="([^"]*)"/)[1],hidden:/\bhidden=""/.test(match[1]),phase:match[1].match(/data-guide-phase="([^"]*)"/)[1]
   }));
   const all=sections(render(style,'en',0)),prep=sections(render(style,'en',0,{phase:'preparation'})),cook=sections(render(style,'en',0,{phase:'cooking'}));
   assert.deepEqual(prep.map(s=>s.label),all.map(s=>s.label),style+' preparation retains identifiers');
-  assert.deepEqual(cook.map(s=>s.label),all.map(s=>s.label),style+' cooking retains identifiers');
+  assert.deepEqual(cook.map(s=>s.label.replace(/ · Step \d+$/,'')),all.map(s=>s.label.replace(/ · Step \d+$/,'')),style+' cooking retains stage titles');
+  const identities=html=>[...html.matchAll(/aria-controls="(bake-step-\d+)"/g)].map(match=>match[1]);
+  assert.deepEqual(identities(render(style,'en',0,{phase:'cooking'})),identities(render(style,'en',0)),style+' cooking retains global element identifiers');
+  cook.filter(s=>!s.hidden).forEach((s,index)=>assert.ok(s.label.endsWith(' · Step '+(index+1)),style+' local cooking number'));
   assert.ok(prep.some(s=>!s.hidden));assert.ok(cook.some(s=>!s.hidden));
   for(let i=0;i<all.length;i++) assert.notEqual(prep[i].hidden,cook[i].hidden,style+' exactly one destination owns '+all[i].label);
   const cooking=cook.filter(s=>!s.hidden).map(s=>s.label).join('|');

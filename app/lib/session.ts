@@ -2,6 +2,7 @@ import type { BakeNavigationMemory } from './bakeNavigation';
 import { normalizeSandwichSnapshot, type SandwichSnapshot } from './sandwich';
 import type { StarterEvent } from '../components/SchedulePicker';
 import type { RecipeEnrichment } from '../utils/enrichedFormulas';
+import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 const SESSION_KEY = 'bh_session_v1';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -45,6 +46,7 @@ export interface SessionData {
   wastePct: number | undefined;
   priorityOverride: string | null | undefined;
   startTime?: number | null;
+  timingOverrides?: TimingOverrides;
   eatTime: number | null;
   blocks: unknown[];
   recipeGenerated: boolean;
@@ -83,6 +85,8 @@ export interface SessionData {
   nextFeedRatio?: number;
   nextFeedRatioOverride?: number | null;
   ratioMode?: 'recommend' | 'keep';
+  /** False preserves a known blocked/uncertain starter plan across resume. */
+  starterTimingValid?: boolean;
   starterMature?: boolean;
   starterHasRye?: boolean;
   tang?: string;
@@ -114,7 +118,7 @@ export function normalizeMixingBatches(value: unknown): number | undefined {
 
 export function saveSession(data: Omit<SessionData, 'version' | 'savedAt'>): boolean {
   try {
-    const payload: SessionData = { ...data, sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), version: 1, savedAt: Date.now() };
+    const payload: SessionData = { ...data, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), version: 1, savedAt: Date.now() };
     localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
     return true;
   } catch { return false; }
@@ -127,7 +131,7 @@ export function loadSession(): SessionData | null {
     const data = JSON.parse(raw) as SessionData;
     if (data.version !== 1) return null;
     if (Date.now() - data.savedAt > SESSION_TTL_MS) { clearSession(); return null; }
-    return { ...data, sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches) };
+    return { ...data, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches) };
   } catch { return null; }
 }
 

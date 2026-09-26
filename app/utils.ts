@@ -1,4 +1,5 @@
 import { BREAD_FERMENTATION_DEFAULTS, getBreadProtocol, breadActiveCookMinutes, breadPoachMinutes } from './utils/breadProfiles';
+import { scheduledFoldMinutes } from './utils/scheduleFolds';
 import { actionConflicts, findAvailabilityConflicts, isTimeBlocked, type AvailabilityAction, type AvailabilityConflict } from './utils/scheduleAvailability';
 import { ENRICHED_FORMULAS, ENRICHMENT_WATER_FRACTIONS, type RecipeEnrichment } from './utils/enrichedFormulas';
 // ══════════════════════════════════════════
@@ -901,19 +902,11 @@ function buildSchedulePhases(
 
   // ── TWO-PHASE: Tropical AND cold retard AND window >= 16h ────
   if (isTwoPhase) {
-    const naturalBulkEnd = new Date(fermStart.getTime() + initialBulkH * 3600000);
-    const firstBlock = relevantBlocks[0] ?? null;
-    let bulkConflict: ScheduleResult['bulkConflict'] = null;
-    let actualBulkH = initialBulkH;
-    if (firstBlock && firstBlock.from < naturalBulkEnd && firstBlock.from > fermStart) {
-      const availableBulkH = (firstBlock.from.getTime() - fermStart.getTime()) / 3600000;
-      const missingMin = Math.round((initialBulkH - availableBulkH) * 60);
-      if (missingMin > 15) {
-        const earlierStart = new Date(startTime.getTime() - missingMin * 60000);
-        bulkConflict = { missingMin, suggestEarlierByMin: missingMin, suggestedEarlierStart: earlierStart };
-      }
-      actualBulkH = availableBulkH;
-    }
+    // Bulk fermentation is passive except for the guide's scheduled folds.
+    // Preserve its modeled duration; canonical actions below check folds and
+    // fridge entry, and the fixed-bake solver moves mixing when required.
+    const bulkConflict: ScheduleResult['bulkConflict'] = null;
+    const actualBulkH = initialBulkH;
     const coldRetard1Start = new Date(fermStart.getTime() + actualBulkH * 3600000);
 
     const earliestDivide = new Date(coldRetard1Start.getTime() + minCold1H * 3600000);
@@ -1025,19 +1018,10 @@ function buildSchedulePhases(
   // Structure: Mix → initial bulk RT → Cold Retard (coldH) → Rest RT → Final Proof → Preheat → Bake
   const INITIAL_BULK_H = initialBulkH;
 
-  const naturalBulkEnd = new Date(fermStart.getTime() + INITIAL_BULK_H * 3600000);
-  const firstBlock = relevantBlocks[0] ?? null;
-  let bulkConflict: ScheduleResult['bulkConflict'] = null;
-  let actualBulkH = INITIAL_BULK_H;
-  if (firstBlock && firstBlock.from < naturalBulkEnd && firstBlock.from > fermStart) {
-    const availableBulkH = (firstBlock.from.getTime() - fermStart.getTime()) / 3600000;
-    const missingMin = Math.round((INITIAL_BULK_H - availableBulkH) * 60);
-    if (missingMin > 15) {
-      const earlierStart = new Date(startTime.getTime() - missingMin * 60000);
-      bulkConflict = { missingMin, suggestEarlierByMin: missingMin, suggestedEarlierStart: earlierStart };
-    }
-    actualBulkH = availableBulkH;
-  }
+  // Do not truncate passive bulk when an availability block starts. Fold
+  // points and the fridge transfer are checked by canonical availability.
+  const bulkConflict: ScheduleResult['bulkConflict'] = null;
+  const actualBulkH = INITIAL_BULK_H;
 
   const coldRetardStart = new Date(fermStart.getTime() + actualBulkH * 3600000);
 
@@ -1187,6 +1171,9 @@ export function buildSchedule(
       end: new Date(+startTime + (activeMin + restMin) * 60000),
     });
   } else actions.push({ id: 'mix', at: new Date(startTime) });
+  scheduledFoldMinutes(schedule.bulkFermHours, styleKey).forEach((minutes, index) => {
+    actions.push({ id: `fold-${index + 1}`, at: new Date(+schedule.bulkFermStart + minutes * 60000) });
+  });
   const point = (id: string, at: Date | null) => { if (at) actions.push({ id, at }); };
   point('cold-in', schedule.coldRetard1Start);
   point('cold-out', schedule.coldRetard1End);
@@ -1801,4 +1788,3 @@ export function hoursLabel(h: number): string {
   const mins = Math.round((rounded - hrs) * 60);
   return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
 }
-

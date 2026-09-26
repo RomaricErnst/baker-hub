@@ -4,6 +4,9 @@ import { useId } from 'react';
 import { assessTimingWindow } from '../utils/fermentationAssessment';
 
 interface FermentationReadinessProps {
+  compact?: boolean;
+  showRange?: boolean;
+  showConfirmation?: boolean;
   isFr: boolean;
   mixTime: Date;
   bakeTime: Date;
@@ -30,7 +33,7 @@ interface FermentationReadinessProps {
 
 /** A schedule decision aid, deliberately distinct from measured dough maturity. */
 export default function FermentationReadiness({
-  isFr, mixTime, bakeTime, windowFrom, windowTo, isSourdough,
+  compact=false, showRange=false, showConfirmation=false, isFr, mixTime, bakeTime, windowFrom, windowTo, isSourdough,
   prefermentType, starterPeak, starterState, blocked, overdue, busy,
   kitchenTemp, fridgeTemp, onEditMix, onEditBake, onReviewAvailability, canEdit, unavailableReason,
   conflictDescription, repairLabel, onApplyRepair,
@@ -80,6 +83,23 @@ export default function FermentationReadiness({
   const prefermentNote = isSourdough && validDate(starterPeak)
     ? `${t('Pic estimé', 'Estimated peak')} · ${format(starterPeak)}`
     : t('Maturité à vérifier au pétrissage', 'Check maturity at mixing');
+
+  if(compact) {
+    const attention=blocked||overdue||busy||outside||status==='unavailable'||(isSourdough&&starterState!==null&&starterState!=='green');
+    if(!attention&&!showRange&&!showConfirmation)return null;
+    const buttonStyle={minHeight:44,fontSize:16,padding:'8px 10px',border:'1px solid var(--border)',borderRadius:8,background:'transparent',color:'var(--char)',cursor:'pointer'};
+    return <div aria-live="polite" style={{fontSize:14,lineHeight:1.5}}>
+      {attention&&<p style={{margin:'4px 0',color:'var(--terra)'}}><strong>{label}</strong> · {busy&&!outside?conflictDescription:explanation}</p>}
+      {!attention&&showConfirmation&&<p style={{margin:'4px 0'}}>{t('Horaire conservé dans la plage conseillée.', 'Time kept within the recommended range.')}</p>}
+      {(showRange||outside)&&hasWindow&&<p style={{margin:'4px 0'}}>{t('Plage conseillée','Recommended range')} : {format(windowFrom!)} → {format(windowTo!)}</p>}
+      {attention&&hasPreferment&&<p style={{margin:'4px 0'}}>{prefermentName} · {prefermentNote}</p>}
+      {attention&&canEdit&&<div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+        {busy&&onReviewAvailability&&<button type="button" style={buttonStyle} onClick={onReviewAvailability}>{t('Modifier mes disponibilités','Edit availability')}</button>}
+        {busy&&onApplyRepair&&repairLabel&&<button type="button" style={buttonStyle} onClick={onApplyRepair}>{repairLabel}</button>}
+        {!busy&&<button type="button" style={buttonStyle} onClick={blocked?onEditBake:onEditMix}>{blocked?t('Modifier la cuisson','Edit baking'):t('Modifier le pétrissage','Edit mixing')}</button>}
+      </div>}
+    </div>;
+  }
 
   return (
     <section aria-labelledby={titleId} style={{

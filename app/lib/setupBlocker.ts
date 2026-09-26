@@ -14,6 +14,7 @@ export interface SetupBlockerInput {
   hasPreferment: boolean;
   prefermentPlanReady: boolean;
   starterPlanReady: boolean;
+  schedulePlanReady?: boolean;
   archivedFlour: boolean;
   requirementsComplete: boolean;
   missingRequiredStep?: number;
@@ -33,8 +34,10 @@ export function getSetupBlocker(input: SetupBlockerInput): SetupBlocker | undefi
     return block(preferment?8:custom?7:6,'La méthode choisie ne convient pas à cette pâte.','The selected method is not supported for this dough.',preferment?'Revoir le préferment':'Revoir la levure',preferment?'Review preferment':'Review yeast');
   }
   if(input.protocolIssue==='timing') return block(plan,'Le temps prévu ne permet pas de préparer ce pain.','The planned timing does not allow this bread to be prepared.','Ajuster le plan','Adjust the plan');
+  if(input.schedulePlanReady===false) return block(plan,'Le planning reste à ajuster.','The schedule still needs adjusting.','Ajuster le plan','Adjust the plan');
   if(!input.prefermentPlanReady) return block(plan,'Le planning du préferment reste à compléter.','The preferment schedule still needs to be completed.','Compléter le plan','Complete the plan');
   if(!input.starterPlanReady) return block(plan,'Le planning du levain reste à compléter.','The starter schedule still needs to be completed.','Compléter le plan','Complete the plan');
   if(!input.requirementsComplete) return block(input.missingRequiredStep??plan,'Un choix reste à compléter avant de créer la recette.','Complete the remaining choice before creating the recipe.','Compléter ce choix','Complete this choice');
   return undefined;
 }
+

@@ -187,9 +187,12 @@ interface Props {
   /** Dough ingredients from the generated recipe — shown as a
       "For your dough" section so the baker shops once. */
   recipeIngredients?: Array<{ name: string; amount: string }>;
+  onSelectionBack?:()=>void;
   onSelectionDone?:()=>void;
   selectionDoneLabel?:string;
   active?:boolean;
+  baseReady?:boolean;
+  storagePrefix?:string;
 }
 
 // ─── Sub-region maps ─────────────────────────────────────────
@@ -952,12 +955,14 @@ export function IngredientShoppingHelp({item,location,locale,onLocationChange,on
   </section>;
 }
 
-function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onGoPrep, onGoPizzas }: {
+function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onGoPrep, onGoPizzas, storagePrefix="bh", baseReady=false }: {
   qtys: Record<string, number>;
   locale: string;
   numItems: number;
   styleKey?: string;
   recipeIngredients?: Array<{ name: string; amount: string }>;
+  storagePrefix?:string;
+  baseReady?:boolean;
   onGoPrep?: () => void;
   onGoPizzas?: () => void;
 }) {
@@ -976,7 +981,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
       if (saved) setShoppingLocation(saved);
     } catch {}
     try {
-      const rawTicks = localStorage.getItem('bh_shop_ticks_v1');
+      const rawTicks = localStorage.getItem(`${storagePrefix}_shop_ticks_v1`);
       if (rawTicks) {
         const restored = JSON.parse(rawTicks) as Record<string, boolean>;
         setTicked(prev => ({ ...restored, ...prev }));
@@ -988,7 +993,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
   useEffect(() => {
     if (!shopTicksHydrated.done) return;
-    try { localStorage.setItem('bh_shop_ticks_v1', JSON.stringify(ticked)); } catch {}
+    try { localStorage.setItem(`${storagePrefix}_shop_ticks_v1`, JSON.stringify(ticked)); } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticked]);
 
@@ -1129,7 +1134,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <h1 style={{fontFamily:'Georgia,serif',fontSize:30,margin:'16px 12px'}}>{l === 'fr' ? 'Liste de courses' : 'Shopping list'}</h1>
+      <h1 className="bh-page-title" style={{margin:'16px 12px'}}>{l === 'fr' ? 'Liste de courses' : 'Shopping list'}</h1>
       {/* Header */}
       <div style={{ padding: '12px 12px 8px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1295,7 +1300,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           onClick={() => onGoPrep?.()}
           style={{ ...NEXT_CTA, marginBottom: '8px' }}
         >
-          {totalSelected>0?(l === 'fr' ? 'Préparer les garnitures →' : 'Prepare toppings →'):(l==='fr'?'Passer au protocole →':'Start preparation →')}
+          {baseReady?(l==='fr'?'Préparer les garnitures →':'Prepare the toppings →'):(l==='fr'?'Commencer la préparation →':'Start the dough preparation →')}
         </button>
         <button
           type="button"
@@ -1348,7 +1353,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
 // ─── Main component ───────────────────────────────────────────
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionDone,selectionDoneLabel,active=true }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionBack,onSelectionDone,selectionDoneLabel,active=true,storagePrefix="bh",baseReady=false }: Props) {
   const l = locale as 'en' | 'fr';
 
   // On-screen keyboard detection — position:fixed bottom bars anchor to the
@@ -1688,7 +1693,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       ══════════════════════════════════════ */}
       {/* Context line: style name + count */}
 
-      {activePill === 'pizzas' && (
+      {activePill === 'pizzas' && !baseReady && (
         <div style={{
           background: '#FDFBF7',
           borderBottom: '1px solid #E0D8CF',
@@ -1728,7 +1733,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
       {activePill === 'pizzas' && (
         <>
-          <h1 style={{fontFamily:'Georgia, serif',fontSize:26,lineHeight:1.15,margin:'10px 0 4px'}}>{l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas'}</h1>
+          <h1 className="bh-page-title">{l === 'fr' ? 'Quelles garnitures ?' : 'Which toppings?'}</h1>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><span style={{fontSize:13,color:'var(--smoke)'}}>{totalQty} / {numItems} {l === 'fr' ? 'sélectionnées' : 'selected'}</span><button type="button" onClick={() => setCreateOpen(true)} style={{minHeight:44,border:0,background:'none',color:'var(--terra)',textDecoration:'underline',padding:'4px 0',fontSize:13,cursor:'pointer'}}>{l === 'fr' ? 'Créer ma pizza' : 'Create my pizza'}</button></div>
           {/* ── Results strip ── */}
           <div style={{ padding: '0 0 6px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
@@ -2443,6 +2448,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {activePill === 'shopping' && (
         <>
         <ShoppingList
+          baseReady={baseReady}
+          storagePrefix={storagePrefix}
           qtys={qtys}
           locale={locale}
           numItems={numItems}
@@ -2510,7 +2517,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   })}
                   {/* Dough awareness */}
                   {(() => {
-                    if (doughConfigured && totalQty <= numItems) return null;
+                    if (totalQty <= numItems) return null;
                     if (!doughConfigured) return (
                       <div
                         onClick={onGoToMyDough}
@@ -2547,8 +2554,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       >
                         <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>
                           {l === 'fr'
-                            ? 'Vous aurez peut-être besoin de plus de pâte — ajustez dans Ma fournée'
-                            : 'You may need more dough — adjust in My bake'}
+                            ? (baseReady?'Prévoyez plus de pâte ou réduisez votre sélection.':'Vous aurez peut-être besoin de plus de pâte — ajustez dans Ma fournée')
+                            : (baseReady?'Allow more dough or reduce your selection.':'You may need more dough — adjust in My bake')}
                         </span>
                         <span style={{ fontSize: '12px', color: '#9C8248', fontFamily: 'var(--font-ui)' }}>→</span>
                       </div>
@@ -2558,9 +2565,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
             </div>
             <div style={{padding:'12px 16px',display:'grid',gap:8,borderTop:'1px solid var(--border)'}}>
-              <button type="button" onClick={()=>{closeSummary();if(onSelectionDone)onSelectionDone();else onPillChange('shopping');}} style={NEXT_CTA}>{selectionDoneLabel??(l === 'fr' ? 'Liste de courses' : 'Shopping list')}</button>
-              <button type="button" onClick={()=>{closeSummary();onPillChange('party');}} style={SECONDARY_CTA}>{l === 'fr' ? 'Préparer les garnitures' : 'Prepare toppings'}</button>
-              <button type="button" onClick={closeSummary} style={SECONDARY_CTA}>{l === 'fr' ? 'Choisir d’autres pizzas' : 'Choose more pizzas'}</button>
+              <button type="button" onClick={()=>{closeSummary();if(baseReady)onPillChange('party');else if(onSelectionDone)onSelectionDone();else onPillChange('shopping');}} style={NEXT_CTA}>{baseReady?(l==='fr'?'Préparer les garnitures':'Prepare toppings'):selectionDoneLabel??(l==='fr'?'Voir les courses':'View shopping')}</button>
+              {(baseReady||!doughConfigured)&&<button type="button" onClick={()=>{closeSummary();onPillChange(baseReady?'shopping':'party');}} style={SECONDARY_CTA}>{baseReady?(l==='fr'?'Voir les courses':'View shopping'):(l==='fr'?'Préparer les garnitures':'Prepare toppings')}</button>}
+              <button type="button" onClick={closeSummary} className="bh-back-action">{l==='fr'?'← Modifier ma sélection':'← Edit my selection'}</button>
             </div>
           </div>
         </>
@@ -2715,8 +2722,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           justifyContent: 'space-between',
           zIndex: 90,
         }}>
-          <button type="button" disabled={totalQty === 0&&!onSelectionDone} onClick={() => totalQty===0?onSelectionDone?.():setSummarySheetOpen(true)} style={{...NEXT_CTA,width:'100%',minHeight:44,opacity:totalQty===0&&!onSelectionDone ? .65 : 1}}>
-            {totalQty === 0 ? (onSelectionDone?(l==='fr'?'Continuer sans garnitures':'Continue without toppings'):(l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas')) : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`)}
+          {onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{l==='fr'?'← Précédent':'← Back'}</button>}
+          <button type="button" disabled={totalQty === 0&&(!onSelectionDone||baseReady)} onClick={() => totalQty===0?onSelectionDone?.():setSummarySheetOpen(true)} style={{...NEXT_CTA,width:'100%',minHeight:44,opacity:totalQty===0&&(!onSelectionDone||baseReady) ? .65 : 1}}>
+            {totalQty === 0 ? (onSelectionDone&&!baseReady?(selectionDoneLabel??(l==='fr'?'Définir ma recette':'Set up my recipe')):(l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas')) : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`)}
           </button>
 
         </div>

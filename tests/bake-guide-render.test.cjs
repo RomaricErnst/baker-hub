@@ -37,7 +37,7 @@ test('sourdough pizza hands off to pizza journey, bread cooling uses loaf size',
   const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-25T18:00Z'),[],22,45,'hand',style);
   const recipe=utils.calculateRecipe(style,style==='sourdough'?'pizza_oven':'dutch_oven',1,800,22,'normal',schedule,6,'sourdough','custom','hand');
   const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,{schedule,recipe,mixerType:'hand',styleKey:style,kitchenTemp:22,numItems:1,oil:0,hydration:75,locale:'en',onNavigateToPizzaParty:()=>{}})));
-  if(style==='sourdough') {assert.ok(html.includes('Your dough is ready'));assert.ok(!html.includes('Cool the bread'));}
+  if(style==='sourdough') {assert.ok(html.includes('Bake the pizzas'));assert.ok(!html.includes('Cool the bread'));}
   else {assert.ok(html.includes('Cool the bread'));}
  }
 });
@@ -82,4 +82,35 @@ test('short mixing duration retains exact minutes and hand instructions exclude 
  assert.match(html,/Cover and rest 30 min, as scheduled/);
  assert.match(html,/Knead by hand until cohesive and elastic/);
  assert.doesNotMatch(html,/using only your mixer’s permitted dough speeds/);
+});
+
+
+test('cooking phase shows local step numbers while pizza advice leads into one queue action',()=>{
+ const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-24T18:00Z'),[],22,60,'hand','neapolitan');
+ const props={schedule,mixerType:'hand',styleKey:'neapolitan',ovenType:'home_oven_steel',kitchenTemp:22,numItems:4,oil:0,hydration:65,locale:'en',phase:'cooking',onNavigateToPizzaParty:()=>{}};
+ const render=()=>renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,props)));
+ const initial=render();
+ assert.match(initial,/aria-label="Preheat Oven · Step 1"/);
+ assert.match(initial,/aria-label="Bake the pizzas · Step 2"/);
+ const finalSection=initial.split('data-guide-title="Bake the pizzas"')[1];
+ const globalStep=Number(finalSection.match(/aria-controls="bake-step-(\d+)"/)[1]);
+ assert.ok(globalStep>2,'persisted global step identity is retained');
+ const useState=React.useState;
+ try {
+   React.useState=(value)=>useState(value===1?globalStep:value);
+   const html=render();
+   const pizza=html.split('data-guide-title="Bake the pizzas"')[1].split('</section>')[0];
+   assert.match(pizza,/Step 2 \/ 2/);
+   assert.ok(pizza.indexOf('Bake 5–7 min')<pizza.indexOf('Start baking the pizzas'));
+   assert.ok(pizza.includes('Stretch on a peel'));
+   assert.doesNotMatch(pizza,/Baking tips|Your dough is ready|bh-guide-next/);
+   assert.equal((pizza.match(/Start baking the pizzas/g)||[]).length,1);
+   props.pizzaActionLabel='Choose my pizzas';
+   assert.ok(render().includes('Choose my pizzas'),'empty-selection handoff label is preserved');
+   props.phase='preparation';
+   let suppliedTotal=false;
+   React.useState=(value)=>{ if(value===0&&!suppliedTotal){suppliedTotal=true;return useState(globalStep);} return useState(value); };
+   const preparation=render().split('data-guide-title="Mix your dough"')[1].split('</section>')[0];
+   assert.ok(preparation.includes(`Step 1 / ${globalStep-2}`),'preparation count excludes cooking stages');
+ } finally { React.useState=useState; }
 });

@@ -31,7 +31,7 @@ for(const fr of [false,true]){
   await expect(bottom(page)).toBeHidden();
   await page.getByRole('button',{name:'Pizza',exact:true}).tap();
   await twoDestinations(page,fr,'Pizzas');
-  const mode=page.getByRole('heading',{name:fr?'À votre façon':'Your way',exact:true});
+  const mode=page.getByRole('heading',{name:fr?'Comment définir votre recette ?':'How would you like to set up your recipe?',exact:true});
   await expect(mode).toBeVisible();
   await bottom(page).getByRole('button',{name:'Pizzas',exact:true}).tap();
   await expect(mode).toBeHidden();
@@ -46,7 +46,7 @@ test('early bread selections survive mode choice, matching bread style and later
  await anonymous(page);await page.goto('/');
  await page.getByRole('button',{name:'Bread',exact:true}).tap();
  await expect(bottom(page)).toBeHidden();
- await page.getByRole('button',{name:/^Simple\b/}).tap();
+ await page.getByRole('button',{name:/^(Me laisser guider|Guide me)\b/}).tap();
  await expect(bottom(page)).toBeHidden();
  await page.getByRole('button',{name:/^Baguette\b/}).tap();
  await twoDestinations(page,false,'Fillings');
@@ -105,7 +105,7 @@ test('Safari companion scrolling hides chrome, preserves phase access and reveal
  await anonymous(page);await page.goto('/fr');
  await page.getByRole('button',{name:'Pain',exact:true}).tap();
  await expect(bottom(page)).toBeHidden();
- await page.getByRole('button',{name:/^Simple\b/}).tap();
+ await page.getByRole('button',{name:/^(Me laisser guider|Guide me)\b/}).tap();
  await page.getByRole('button',{name:/^Baguette\b/}).tap();
  await bottom(page).getByRole('button',{name:'Garnitures',exact:true}).tap();
  await expect(page.getByRole('article').first()).toBeVisible();
@@ -146,7 +146,7 @@ for(const style of ['Pain de campagne','Pain complet']) test(`${style}: chosen l
  await anonymous(page); await page.goto('/fr');
  await page.getByRole('button',{name:'Pain',exact:true}).tap();
  await expect(bottom(page)).toBeHidden();
- await page.getByRole('button',{name:/^Simple\b/}).tap();
+ await page.getByRole('button',{name:/^(Me laisser guider|Guide me)\b/}).tap();
  await page.getByRole('button',{name:new RegExp('^'+style+'\\b')}).tap();
  await bottom(page).getByRole('button',{name:'Garnitures',exact:true}).tap();
  await expect(page.getByRole('heading',{name:'Vos tartines',exact:true})).toBeVisible();

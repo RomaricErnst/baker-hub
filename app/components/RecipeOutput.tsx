@@ -642,7 +642,7 @@ export default function RecipeOutput({
                   grams={wStr(pf.finalFlour)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
               )}
-              <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={<details><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Eau du mélange final' : 'Main-mix water'}</summary>{finalDoughWaterSubNode}</details>}
+              <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={<details><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Préparer l’eau' : 'Prepare the water'}</summary>{finalDoughWaterSubNode}</details>}
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalWater / flour * 1000) / 10) : undefined} />
               <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} noPct
                 advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
@@ -700,7 +700,7 @@ export default function RecipeOutput({
             ) : undefined}
           />}
           {water > 0 && <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(sdActive ? waterMain : water)} noPct={sdActive} pct={pctStr(waterPct)} sub={
-            !enrichment ? <details><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Eau du mélange final' : 'Main-mix water'}</summary>
+            !enrichment ? <details><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Préparer l’eau' : 'Prepare the water'}</summary>
               {sdActive && <p>{locale === 'fr' ? `${wStr(sdHalf)} d’eau sont déjà dans le levain indiqué ci-dessous.` : `${wStr(sdHalf)} water is already in the starter shown below.`}</p>}
               {waterSubNode}
             </details> : undefined} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />}

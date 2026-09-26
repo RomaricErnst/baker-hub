@@ -16,7 +16,7 @@ export function createSandwichSnapshot(familyId: SandwichFamily | null = null): 
   return {familyId,qtys:{},completed:{},shopTicks:{},prepTicks:{},tab:'pick',ingredientOverrides:{}};
 }
 export function sandwichFamilyForStyle(styleKey: string): SandwichFamily | null {
-  const aliases: Record<string,SandwichFamily> = {pain_campagne:'tartine',pain_levain:'tartine',pain_complet:'tartine',pain_seigle:'tartine',pain_mie:'tartine',baguette:'baguette',focaccia:'focaccia',bagel:'bagel',bagels:'bagel',pita:'pita',greek_pita:'greek_pita',kebab_bread:'kebab_bread',batbout:'batbout',laffa:'laffa',piadina:'piadina',pan_bagnat:'pan_bagnat',ciabatta:'ciabatta',panuozzo:'panuozzo'};
+  const aliases: Record<string,SandwichFamily> = {pain_campagne:'tartine',pain_levain:'tartine',pain_complet:'tartine',pain_seigle:'tartine',pain_mie:'pain_mie',baguette:'baguette',focaccia:'focaccia',bagel:'bagel',bagels:'bagel',pita:'pita',greek_pita:'greek_pita',kebab_bread:'kebab_bread',batbout:'batbout',laffa:'laffa',piadina:'piadina',pan_bagnat:'pan_bagnat',ciabatta:'ciabatta',panuozzo:'panuozzo'};
   return own(aliases,styleKey) ? aliases[styleKey] : null;
 }
 export const getSandwichFamily = sandwichFamilyForStyle;
@@ -85,6 +85,8 @@ function sandwichEnergy(recipe: SandwichRecipe, overrides: Record<string,number>
   return kcal;
 }
 export function isLighterSandwich(recipe: SandwichRecipe, overrides: Record<string,number> = {}): boolean {
+  // Club and croque use different slice counts, so this family has no equal-bread energy comparison.
+  if (recipe.familyId === 'pain_mie') return false;
   const family=SANDWICH_FAMILIES.find(f=>f.id===recipe.familyId);
   return !!family && sandwichEnergy(recipe,overrides)<=family.comparisonKcal*.8;
 }

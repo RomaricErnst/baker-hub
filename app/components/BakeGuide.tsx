@@ -16,6 +16,7 @@ import { getPrefPeakH_RT, getStarterFridgeWarmupH } from './FermentChart';
 import { GUIDE_FAQ } from '../lib/guideFaq';
 import { formatPrefermentDose } from '../utils/prefermentDose';
 import { getBreadProtocol } from '../utils/breadProfiles';
+import { scheduledFoldMinutes } from '../utils/scheduleFolds';
 
 interface BakeGuideProps extends WaterSettingsProps {
   schedule: ScheduleResult;
@@ -48,7 +49,10 @@ interface BakeGuideProps extends WaterSettingsProps {
   units?: UnitSystem;
   locale?: string;
   onNavigateToPizzaParty?: () => void;
+  pizzaActionLabel?: string;
   onNavigateToFillings?: () => void;
+  fillingsActionLabel?: string;
+  onPrepareFillings?: () => void;
   simpleMode?: boolean;
   addSeeds?: boolean;
   phase?: 'preparation' | 'cooking';
@@ -192,9 +196,9 @@ function Pill({ label, color }: { label: string; color?: string }) {
 
 // ── Step card ────────────────────────────────────────
 function StepCard({
-  number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext, hidden = false, stepPhase = 'preparation', previousLabel, nextLabel,
+  number, displayNumber = number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext, hidden = false, stepPhase = 'preparation', previousLabel, nextLabel,
 }: {
-  number: number; icon: React.ReactNode; title: string; overview?: boolean; totalSteps?: number;
+  number: number; displayNumber?: number; icon: React.ReactNode; title: string; overview?: boolean; totalSteps?: number;
   hidden?: boolean; stepPhase?: 'preparation' | 'cooking'; previousLabel?: string; nextLabel?: string;
   time?: Date; duration?: number | null; accent?: string;
   onPrevious?: () => void; onNext?: () => void; preview?: boolean; onReturnCurrent?: () => void; completeLabel?: string; batchCompletion?: boolean; final?: boolean; open: boolean; done: boolean; onToggle: () => void; onDone: () => void;
@@ -204,16 +208,16 @@ function StepCard({
   const fr = locale === 'fr';
   const navigationHeight = useBottomNavHeight(64);
   return (
-    <section ref={divRef} data-guide-phase={stepPhase} hidden={hidden} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${number}`} style={{ display: !hidden && (open || overview) ? undefined : 'none', background: D.warm, borderRadius: overview ? 12 : 0,
+    <section ref={divRef} data-guide-phase={stepPhase} data-guide-title={title} hidden={hidden} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${displayNumber}`} style={{ display: !hidden && (open || overview) ? undefined : 'none', background: D.warm, borderRadius: overview ? 12 : 0,
       border: overview ? `1px solid ${done ? D.sage + '60' : D.border}` : 'none', scrollMarginTop: 140 }}>
       <button type="button" onClick={overview ? onToggle : undefined} aria-expanded={open}
         aria-controls={`bake-step-${number}`} style={{ width: '100%', display: 'flex', gap: 12,
           alignItems: 'center', padding: overview ? 16 : '0 0 16px', border: 0, background: 'transparent', textAlign: 'left', cursor: 'pointer', color: D.char }}>
-        <span aria-hidden="true" style={{ display: overview ? undefined : 'none', color: done ? D.sage : D.terra, minWidth: 18, textAlign: 'center' }}>{done ? '✓' : number}</span>
+        <span aria-hidden="true" style={{ display: overview ? undefined : 'none', color: done ? D.sage : D.terra, minWidth: 18, textAlign: 'center' }}>{done ? '✓' : displayNumber}</span>
         <span aria-hidden="true" style={{ color: done ? D.sage : D.terra, width: 22, height: 22, display: overview ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</span>
         <span style={{ flex: 1 }}>
           <strong style={{ display: 'block', fontSize: overview ? 15 : 30, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}</strong>
-          {!overview && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {number}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
+          {!overview && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {displayNumber}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
           {time && <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: D.smoke }}>
             {formatTime(time, locale)}{duration ? ` · ${duration < 1 ? `${Math.round(duration * 60)} min` : hoursLabel(duration)}` : ''}
           </span>}
@@ -231,9 +235,9 @@ function StepCard({
               <input type="checkbox" checked={done} onChange={onDone} title={done ? (fr ? 'Annuler cette étape' : 'Undo this step') : (fr ? 'Marquer comme terminée' : 'Mark as completed')} style={{width:18,height:18,margin:0,accentColor:D.terra}}/>
               {fr ? 'Étape faite' : 'Step done'}
             </label>}
-        <nav aria-label={fr ? 'Navigation entre les étapes' : 'Step navigation'} style={{display:'flex',gap:8}}>
+        <nav aria-label={fr ? 'Navigation entre les étapes' : 'Step navigation'} className="bh-guide-step-nav" style={{display:'flex',gap:8}}>
           <button type="button" onClick={onPrevious} disabled={!onPrevious} style={{flex:1,minHeight:44}}>{previousLabel ?? (fr ? 'Étape précédente' : 'Previous step')}</button>
-          <button type="button" onClick={onNext} disabled={final} style={{flex:1,minHeight:44}}>{nextLabel ?? (fr ? 'Étape suivante' : 'Next step')}</button>
+          {!final && <button type="button" className="bh-guide-next" onClick={onNext} style={{flex:1,minHeight:48,border:0,borderRadius:10,padding:'10px 14px',background:D.terra,color:'white',fontWeight:600}}>{nextLabel ?? (fr ? 'Étape suivante' : 'Next step')} →</button>}
         </nav>
         </div>
       </div>}
@@ -804,7 +808,7 @@ export default function BakeGuide({
   usingPeak2 = false, planningMode = 'last_fed',
   feedRatio = 1, starterLocation = 'rt',
   units, locale,
-  onNavigateToPizzaParty, onNavigateToFillings, recipe, simpleMode, addSeeds,
+  onNavigateToPizzaParty, pizzaActionLabel, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
   phase, active = true, onNavigateToCooking, onNavigateToPreparation,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
@@ -819,6 +823,7 @@ export default function BakeGuide({
   const batch = recipe ? mixingBatchPlan(recipe, mixerType, mixingBatches, activeBatch) : null;
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const focusRequestedStep = useRef<number | null>(null);
+  const previousGuideView = useRef({active:false,phase});
   const viewedPhase = useRef<'preparation' | 'cooking' | undefined>(undefined);
   const phasePositions = useRef<Partial<Record<'preparation' | 'cooking', number>>>({});
   function navigateGuideStep(step: number) {
@@ -881,30 +886,32 @@ export default function BakeGuide({
   }, [active, phase, currentStep, doneSteps, totalSteps]);
 
   useEffect(() => {
-    if (active && currentStep > 0) {
-      const el = stepRefs.current[currentStep];
-      if (el && !el.hidden) {
-        if (focusRequestedStep.current === currentStep) {
-          focusRequestedStep.current = null;
-          el.focus({ preventScroll: true });
-        }
-        const r = el.getBoundingClientRect();
-        const headerH = 120; // sticky header + journey bar
-        // Scroll only when the next step isn't comfortably visible —
-        // instant, landing just under the header (no smooth: targets
-        // must not move under fingers).
-        if (r.top < headerH || r.top > window.innerHeight * 0.6) {
-          window.scrollTo({ top: r.top + window.scrollY - headerH, behavior: 'smooth' });
-        }
-      }
+    const samePage=previousGuideView.current.active&&previousGuideView.current.phase===phase;
+    previousGuideView.current={active,phase};
+    const requested=focusRequestedStep.current===currentStep;
+    // Entering/reopening a section belongs to the page-level scroll reset.
+    // Only an explicit next/previous instruction within this section may
+    // bring its card into view; restoring remembered progress must not scroll.
+    if(!active||!samePage){focusRequestedStep.current=null;return;}
+    if(!requested||currentStep<=0)return;
+    focusRequestedStep.current=null;
+    const el=stepRefs.current[currentStep];
+    if(!el||el.hidden)return;
+    el.focus({preventScroll:true});
+    const r=el.getBoundingClientRect();
+    const headerBottom=Math.max(0,
+      document.querySelector('.bh-header-stack')?.getBoundingClientRect().bottom??0,
+      document.querySelector('.bh-bake-navigator')?.getBoundingClientRect().bottom??0)+12;
+    if(r.top<headerBottom||r.top>window.innerHeight*.6){
+      window.scrollTo({top:Math.max(0,r.top+window.scrollY-headerBottom),behavior:'instant'});
     }
-  }, [currentStep, active, phase]);
+  }, [currentStep,active,phase]);
 
   const isSourdough = recipe ? !!recipe.sourdough : styleKey === 'sourdough' || styleKey === 'pain_levain';
   const breadProtocol = getBreadProtocol(styleKey);
   const hasPoachStep = breadProtocol?.cooking === 'boil-bake' && !!schedule.poachStart;
   const profileSteps = (lines: readonly string[]) => lines.map(line => ({ bold: line.replace(/(\d+)\s?°C/g, (_, degrees) => displayTemp(Number(degrees), u)).replaceAll('{count}', String(numItems)).replaceAll('{weight}', String(Math.round((recipe?.totalDough ?? numItems * (breadProtocol?.portions.weight ?? 100)) / Math.max(1,numItems)))), note: '' }));
-  const fillingsAction = onNavigateToFillings && <button type="button" onClick={onNavigateToFillings} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{l === 'fr' ? 'Sandwiches et garnitures →' : 'Sandwiches & fillings →'}</button>;
+  const fillingsAction = onNavigateToFillings && <button type="button" onClick={onNavigateToFillings} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{fillingsActionLabel ?? (l === 'fr' ? 'Sandwiches et garnitures' : 'Sandwiches & fillings')} →</button>;
   const isBread       = !!breadProtocol || ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
   const isNeapolitan  = styleKey === 'neapolitan';
   const isFougasse    = styleKey === 'fougasse';
@@ -1023,17 +1030,21 @@ Actual dough condition and equipment may differ from these estimates.`;
 
   let stepNum = 0;
   let lastStep = 0;
+  let cookingStepNumber = 0;
+  const cookingStepTotal = breadProtocol?.method === 'unleavened' ? 2 : isBread ? 3 + (hasPoachStep ? 1 : 0) : 2;
   const n = () => { stepNum++; lastStep = stepNum; return stepNum; };
   const sc = (mixing = false, stepPhase: 'preparation' | 'cooking' = 'preparation') => {
     const s = lastStep;
+    if (stepPhase === 'cooking') cookingStepNumber++;
     return {
+      displayNumber: phase === 'cooking' && stepPhase === 'cooking' ? cookingStepNumber : s,
       stepPhase,
       hidden: !!phase && phase !== stepPhase,
-      previousLabel: phase && stepRefs.current[s - 1]?.dataset.guidePhase === 'preparation' && stepPhase === 'cooking' ? (l === 'fr' ? 'Retour au protocole' : 'Back to preparation') : undefined,
-      nextLabel: phase && stepRefs.current[s + 1]?.dataset.guidePhase === 'cooking' && stepPhase === 'preparation' ? (l === 'fr' ? 'Passer à la cuisson' : 'Go to cooking') : undefined,
-      overview: currentStep === 0, totalSteps,
+      previousLabel: phase && stepRefs.current[s - 1]?.dataset.guidePhase === 'preparation' && stepPhase === 'cooking' ? (l === 'fr' ? 'Retour à la préparation' : 'Back to preparation') : undefined,
+      nextLabel: phase && stepRefs.current[s + 1]?.dataset.guidePhase === 'cooking' && stepPhase === 'preparation' ? (onPrepareFillings?(l === 'fr' ? 'Préparer les garnitures' : 'Prepare toppings and fillings'):(l === 'fr' ? 'Cuisson & service' : 'Cooking & serving')) : stepRefs.current[s+1]?.dataset.guideTitle ? `${l==='fr'?'Suivante':'Next'} : ${stepRefs.current[s+1]?.dataset.guideTitle}` : undefined,
+      overview: currentStep === 0, totalSteps: phase === 'cooking' ? cookingStepTotal : phase === 'preparation' ? Math.max(0,totalSteps-cookingStepTotal) : totalSteps,
       onPrevious: s > 1 ? () => navigateGuideStep(s - 1) : undefined,
-      onNext: () => { const next = stepRefs.current.findIndex((el, i) => i > s && el !== null); if (next > s) navigateGuideStep(next); },
+      onNext: () => { const next = stepRefs.current.findIndex((el, i) => i > s && el !== null); if (next > s) {if(phase==='preparation'&&stepRefs.current[next]?.dataset.guidePhase==='cooking'&&onPrepareFillings)onPrepareFillings();else navigateGuideStep(next);} },
       batchCompletion: mixing && !!batch && batch.count > 1,
       completeLabel: mixing && batch && batch.count > 1 ? (l === 'fr' ? `Terminer la pétrissée ${batch.active + 1} sur ${batch.count}` : `Complete batch ${batch.active + 1} of ${batch.count}`) : undefined,
       open: currentStep === s,
@@ -1058,7 +1069,7 @@ Actual dough condition and equipment may differ from these estimates.`;
   };
 
   const overviewLabel = phase === 'preparation'
-    ? (l === 'fr' ? 'Étapes du protocole' : 'Preparation steps')
+    ? (l === 'fr' ? 'Étapes de préparation' : 'Preparation steps')
     : phase === 'cooking'
       ? (l === 'fr' ? 'Étapes de cuisson' : 'Cooking steps')
       : (l === 'fr' ? 'Toutes les étapes' : 'All steps');
@@ -1410,7 +1421,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           ] : [
             {bold:l==='fr'?'Pesez les ingrédients de cette pétrissée indiqués ci-dessus.':'Weigh this batch’s ingredients shown above.',note:recipe?.yeast?.yeastType==='active_dry'?(l==='fr'?'Réactivez la levure selon le sachet avec une partie de l’eau mesurée.':'Activate the yeast as directed on its packet using part of the measured water.'):''},
             {bold:hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'
-              ?(waterMethod==='direct'&&spiralIceConfirmed&&mixerType==='spiral'?(l==='fr'?'Mélangez la farine avec 90 % de l’eau liquide prévue ; réservez le reste. Ajoutez la glace mesurée au pétrissage si elle est indiquée ci-dessus.':'Combine flour with 90% of the planned liquid water; reserve the rest. Add the measured ice during mixing if shown above.'):(l==='fr'?'Mélangez la farine avec 90 % de l’eau préparée ; réservez le reste.':'Combine flour with 90% of the prepared water; reserve the rest.'))
+              ?(waterMethod==='direct'&&mixerType==='spiral'&&recipe?.oil===0&&recipe?.sugar===0&&!['brioche','pain_mie','pain_viennois'].includes(styleKey)?(l==='fr'?'Mélangez la farine avec 90 % de l’eau liquide prévue ; réservez le reste. Ajoutez la glace mesurée au pétrissage si elle est indiquée ci-dessus.':'Combine flour with 90% of the planned liquid water; reserve the rest. Add the measured ice during mixing if shown above.'):(l==='fr'?'Mélangez la farine avec 90 % de l’eau préparée ; réservez le reste.':'Combine flour with 90% of the prepared water; reserve the rest.'))
               :(l==='fr'?'Mélangez la farine avec l’eau préparée ci-dessus.':'Combine flour with the water preparation shown above.'),note:''},
             ...(!isSourdough && autolyseMinFor(mixerType, styleKey) > 0 ? [{bold:l==='fr'?`Couvrez et laissez reposer ${autolyseMinFor(mixerType, styleKey)} min, comme prévu au planning.`:`Cover and rest ${autolyseMinFor(mixerType, styleKey)} min, as scheduled.`,note:''}] : []),
             {bold:isSourdough?(l==='fr'?'Incorporez le levain mûr et le sel.':'Incorporate the ripe starter and salt.'):hasPref?(l==='fr'?`Incorporez votre ${prefermentType} préparé, puis le sel.`:`Incorporate the prepared ${prefermentType}, then the salt.`):(l==='fr'?'Incorporez la levure et le sel.':'Incorporate the yeast and salt.'),note:''},
@@ -1513,7 +1524,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             <Steps items={[
               { bold: (l === 'fr' ? 'Mélangez tous les ingrédients, sel compris' : 'Combine all ingredients including salt'), note: (l === 'fr' ? 'mélangez juste jusqu’à absorption de la farine — ~2 min' : 'mix just until no dry flour remains — ~2 min') },
               ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'mélangez jusqu’à incorporation' : 'mix until incorporated') }] : []),
-              { bold: (l === 'fr' ? 'Couvrez et laissez reposer' : 'Cover and rest'), note: (l === 'fr' ? 'rabats toutes les 30 min pendant les 2 premières heures' : 'stretch & folds every 30 min for the first 2 hours') },
+              { bold: (l === 'fr' ? 'Couvrez et laissez reposer' : 'Cover and rest'), note: (l === 'fr' ? 'suivez les rabats indiqués dans le pointage ci-dessous' : 'follow the folds listed in the bulk step below') },
             ]} />
           )}
           {isSourdough && (
@@ -1621,18 +1632,10 @@ Actual dough condition and equipment may differ from these estimates.`;
             ...(['ciabatta','focaccia'].includes(styleKey) ? [{bold:l === 'fr' ? 'Si la pâte s’étale, effectuez des rabats doux au début du pointage pour lui donner de la tenue. Préservez les bulles qui se forment ensuite.' : 'If the dough spreads, give it gentle folds early in bulk to build strength. Preserve bubbles as they develop.',note:''}] : []),
           ]} /> : <Steps items={[
             ...(t.raw('bulk.stepsBase') as { bold: string; note: string }[]),
-            ...(schedule.bulkFermHours >= 1.5 ? [
-              t.raw('bulk.set1') as { bold: string; note: string },
-              t.raw('bulk.set2') as { bold: string; note: string },
-              ...(schedule.bulkFermHours >= 2 ? [
-                t.raw('bulk.set3') as { bold: string; note: string },
-                t.raw('bulk.set4') as { bold: string; note: string },
-              ] : []),
-            ] : schedule.bulkFermHours >= 0.5 ? [
-              t.raw('bulk.setShort') as { bold: string; note: string },
-            ] : [
-              t.raw('bulk.setVeryShort') as { bold: string; note: string },
-            ]),
+            ...(scheduledFoldMinutes(schedule.bulkFermHours, styleKey).length
+              ? scheduledFoldMinutes(schedule.bulkFermHours, styleKey).map(minutes =>
+                  t.raw(minutes === 15 ? 'bulk.setShort' : `bulk.set${minutes / 30}`) as { bold: string; note: string })
+              : [t.raw('bulk.setVeryShort') as { bold: string; note: string }]),
           ]} />}
         </Section>
 
@@ -1966,14 +1969,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       </StepCard>}
 
       {/* ── STEP: Bake & Eat ─────────────────────────── */}
-      <StepCard final={!isBread} number={n()} {...sc(false, 'cooking')} completeLabel={!isBread ? (l === 'fr' ? 'Pâte prête' : 'Dough ready') : undefined} icon={<IconBake />} title={breadProtocol?.cooking === 'boil-bake' ? (hasPoachStep ? (l === 'fr' ? 'Cuire les bagels au four' : 'Bake the bagels') : (l === 'fr' ? 'Pocher puis cuire au four' : 'Poach, then bake')) : breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Cuire à la poêle' : 'Cook on the griddle') : isBread ? t('stepTitles.bakeEat') : (l === 'fr' ? 'Votre pâte est prête' : 'Your dough is ready')} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined} accent="#5A9A50">
-        {!isBread && <>
-          <p>{l === 'fr' ? 'Choisissez vos pizzas, préparez les garnitures, puis suivez la cuisson de chacune.' : 'Choose your pizzas, prepare the toppings, then follow each pizza through baking.'}</p>
-          {onNavigateToPizzaParty && <button type="button" onClick={onNavigateToPizzaParty} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{l === 'fr' ? 'Pizzas et garnitures →' : 'Pizzas & toppings →'}</button>}
-        </>}
-        <details open={isBread}>
-          <summary style={{display:isBread?'none':undefined,cursor:'pointer',minHeight:44}}>{l === 'fr' ? 'Conseils de cuisson' : 'Baking tips'}</summary>
-
+      <StepCard final={!isBread} number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'boil-bake' ? (hasPoachStep ? (l === 'fr' ? 'Cuire les bagels au four' : 'Bake the bagels') : (l === 'fr' ? 'Pocher puis cuire au four' : 'Poach, then bake')) : breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Cuire à la poêle' : 'Cook on the griddle') : isBread ? (l === 'fr' ? 'Cuire le pain' : 'Bake the bread') : (l === 'fr' ? 'Cuire les pizzas' : 'Bake the pizzas')} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined} accent="#5A9A50">
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           {isPan && (
             <div style={{
@@ -2059,7 +2055,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
         />}
-        </details>
+        {!isBread && onNavigateToPizzaParty && <button type="button" onClick={onNavigateToPizzaParty} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{pizzaActionLabel ?? (l === 'fr' ? 'Commencer la cuisson des pizzas' : 'Start baking the pizzas')} →</button>}
       </StepCard>
 
       {isBread && <StepCard final number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Garder les pains souples' : 'Keep the breads soft') : (l === 'fr' ? 'Laisser refroidir le pain' : 'Cool the bread')}>

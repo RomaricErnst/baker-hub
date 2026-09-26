@@ -2,7 +2,7 @@
 
 ## Scope
 
-88 filling recipes: 6 tartines, baguette 10, focaccia 10, bagel 8, and 6 each for pocket pita, Greek pita, kebab bread, batbout, laffa, piadina, pan-bagnat bread, ciabatta and panuozzo. These are sandwich fillings, not 88 dough formulas. Family images show the bread family, not a photograph of every filling.
+89 filling recipes: 6 tartines, baguette 10, focaccia 10, bagel 8, pocket pita 7, and 6 each for Greek pita, kebab bread, batbout, laffa, piadina, pan-bagnat bread, ciabatta and panuozzo. These are sandwich fillings, not 89 dough formulas. Family images show the bread family, not a photograph of every filling.
 
 `classic` means a familiar combination selected for the catalogue, not a protected traditional designation or a popularity ranking. All catalogue quantities and steps are Bakerhub editorial adaptations. `inspired` identifies creative variations. Only one pan bagnat is labelled classic; the five alternatives explicitly start with “Inspired / Inspiré”. No claim of ten traditional pan-bagnat recipes is made.
 
@@ -16,7 +16,7 @@ The remaining familiar combinations are editorial selections, not recipes copied
 
 ## Portion and energy basis
 
-Every ingredient quantity is **edible grams for one serving**: one sandwich, or one tartine portion. Meat is explicitly already cooked; canned foods are drained; eggs are peeled and hard-boiled. Vegetable weights are before the recipe’s roasting/sautéing step unless their label says cooked. Oil, sauces, cheese and nuts are counted. Shopping therefore buys cooked meat/falafel/egg or asks the baker to supply an equivalent cooked portion; it never silently treats raw meat weight as cooked yield.
+Every ingredient quantity is **edible grams for one serving**: one sandwich, or one tartine portion. Meat is explicitly already cooked except `chicken_raw` in `pita-poulet-cru-citron`, weighed raw without skin or bones; canned foods are drained; eggs are peeled and hard-boiled. Vegetable weights are before the recipe’s roasting/sautéing step unless their label says cooked. Oil, sauces, cheese and nuts are counted. Shopping therefore buys the explicitly labelled raw or cooked meat/falafel/egg; it never silently treats raw meat weight as cooked yield.
 
 `estimatedSandwichKcal` adds a stated **baked bread portion** plus every retained filling. A family’s default portion is a reference serving, not a statement that one pan or loaf makes one sandwich. The parent dough amount is not treated as baked bread mass: baking removes water. The interface must display the reference bread grams beside the calorie estimate and avoid claiming that a custom dough piece has exactly this energy value.
 

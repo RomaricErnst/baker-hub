@@ -6,20 +6,20 @@ const d=require('../app/lib/sandwich.ts');
 const recipe=id=>c.SANDWICH_RECIPES.find(r=>r.id===id);
 
 test('sandwich catalogue covers all approved families with credible classic/inspired distinctions',()=>{
-  a.equal(c.SANDWICH_FAMILIES.length,13);
-  a.equal(c.SANDWICH_RECIPES.length,88);
-  a.equal(new Set(c.SANDWICH_RECIPES.map(r=>r.id)).size,88);
+  a.equal(c.SANDWICH_FAMILIES.length,14);
+  a.equal(c.SANDWICH_RECIPES.length,91);
+  a.equal(new Set(c.SANDWICH_RECIPES.map(r=>r.id)).size,91);
   for(const f of c.SANDWICH_FAMILIES){
     const recipes=c.SANDWICH_RECIPES.filter(r=>r.familyId===f.id);
-    a.ok(recipes.length>=6,f.id);
-    a.ok(recipes.filter(r=>r.lighter).length>=2,f.id);
+    if(f.id==='pain_mie'){a.equal(recipes.length,2);a.ok(recipes.every(r=>!r.lighter));}
+    else {a.ok(recipes.length>=6,f.id);a.ok(recipes.filter(r=>r.lighter).length>=2,f.id);}
     for(const r of recipes){
       a.ok(r.name.fr&&r.name.en);
-      a.equal(r.breadGrams,f.breadGrams);
+      a.equal(r.breadGrams,r.id==='pain_mie-club-sandwich'?90:f.breadGrams);
       a.ok(r.steps.some(s=>s.phase==='prep'));
       a.ok(r.steps.some(s=>s.phase==='assemble'));
       a.ok(r.steps.every(s=>s.instruction.fr&&s.instruction.en));
-      a.ok(r.ingredients.every(i=>c.SANDWICH_INGREDIENTS[i.ingredientId]&&i.grams>0));
+      a.ok(r.ingredients.every(i=>c.SANDWICH_INGREDIENTS[i.ingredientId]&&(i.grams>0||(i.grams===0&&i.optionalGrams>0))));
     }
   }
   const pan=c.SANDWICH_RECIPES.filter(r=>r.familyId==='pan_bagnat');

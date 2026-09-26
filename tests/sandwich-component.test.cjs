@@ -84,5 +84,5 @@ test('all filling recipes have distinct dish-image paths rather than shared brea
  const recipe=SANDWICH_RECIPES.find(recipe=>recipe.id==='tartine-avocat-oeuf');
  const html=render(createSandwichSnapshot('tartine'),{styleKey:'pain_seigle',isFr:true});
  assert.ok(html.includes('src="/images/approved/bread/seigle-rustic.webp" alt="Pain de seigle"'));
- assert.ok(html.includes(`src="${recipe.image}" alt="Avocat et œuf dur"`));
+ assert.ok(html.includes(`src="${recipe.image}" alt="Avocat, œuf poché et feta"`));
 });

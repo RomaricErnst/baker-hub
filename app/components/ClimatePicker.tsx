@@ -50,7 +50,9 @@ export default function ClimatePicker({
   flourInFridge = false, onFlourInFridgeChange, onChange,
 }: ClimatePickerProps) {
   const fr = useLocale() === 'fr';
-  const kitchenMax = mode === 'simple' ? 35 : 38;
+  const kitchenMax = 38;
+  const [editingKitchen,setEditingKitchen] = useState(false);
+  const Advanced = mode === 'simple' ? 'details' : 'div';
 
   function temperatureField(kind: 'kitchen' | 'fridge') {
     const value = kind === 'kitchen' ? kitchenTemp : fridgeTemp;
@@ -109,10 +111,16 @@ export default function ClimatePicker({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, fontSize: 16, lineHeight: 1.5, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-      {temperatureField('kitchen')}
+      {mode === 'simple' ? <section>
+        <p style={{margin:'0 0 8px',fontSize:16}}>{fr?`Il fait environ ${tempC(kitchenTemp,units)} là où la pâte repose ?`:`Is it about ${tempC(kitchenTemp,units)} where the dough rests?`}</p>
+        <button type="button" aria-expanded={editingKitchen} aria-controls="climate-kitchen-editor" onClick={()=>setEditingKitchen(value=>!value)} style={{minHeight:44,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:9,background:'var(--paper)',color:'var(--char)',fontSize:16,cursor:'pointer'}}>{editingKitchen?(fr?'Fermer':'Close'):(fr?'Modifier':'Edit')}</button>
+        <div id="climate-kitchen-editor" hidden={!editingKitchen} style={{marginTop:editingKitchen?16:0}}>{temperatureField('kitchen')}</div>
+      </section> : temperatureField('kitchen')}
+      <Advanced style={mode === 'custom' ? {display:'flex',flexDirection:'column',gap:24} : undefined}>
+      {mode === 'simple' && <summary style={{minHeight:44,cursor:'pointer',fontSize:16}}>{fr?'Réglages avancés · frigo et farine':'Advanced settings · fridge and flour'}</summary>}
       {temperatureField('fridge')}
 
-      {mode === 'custom' && (
+      {(
         <details className="bh-disclosure">
           <summary style={{ cursor: 'pointer', fontWeight: 650, minHeight: 44, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 12px' }}>
             {fr ? 'Humidité habituelle du stockage' : 'Usual flour-storage humidity'}
@@ -148,6 +156,7 @@ export default function ClimatePicker({
           <span><strong>{fr ? 'Farine conservée au réfrigérateur' : 'Flour kept in the fridge'}</strong><br /><span style={{ fontSize: 14, color: 'var(--smoke)' }}>{fr ? 'Cochez si la farine sera réellement froide au mélange.' : 'Check this only if the flour will be cold when you mix.'}</span></span>
         </label>
       )}
+      </Advanced>
     </div>
   );
 }

@@ -475,7 +475,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
     previousRoadRef.current = road;
     if (road === 'scan' || road === 'type') {
       flourRoadRef.current?.focus({preventScroll: true});
-      flourRoadRef.current?.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+      flourRoadRef.current?.scrollIntoView({block: 'nearest', behavior: 'instant'});
     } else if (previous === 'scan' || previous === 'type') {
       flourSearchRef.current?.querySelector<HTMLElement>('input, button')?.focus({preventScroll: true});
     }
@@ -543,7 +543,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       // visual viewport is much shorter and the dropdown stayed off-screen.
       const _visibleH = window.visualViewport?.height ?? window.innerHeight;
       if (rect.bottom > _visibleH) {
-        setTimeout(() => blendRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
+        setTimeout(() => blendRef.current?.scrollIntoView({ behavior: 'instant', block: 'nearest' }), 150);
       }
     }
   }, [openSection]);
@@ -632,7 +632,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       ...{manualFlour1: undefined},
     });
     setPickerOpen(false);
-    requestAnimationFrame(()=>selectionRef.current?.scrollIntoView({block:'nearest',behavior:'smooth'}));
+    // Keep the selected card stable; animated scrolling can move the next tap target.
   }
 
   // ── Dynamic filter options ──

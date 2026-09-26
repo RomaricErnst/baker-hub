@@ -308,7 +308,9 @@ button,
 
 @media (max-width: 767px) {
   [data-mobile-setup="true"] .bh-step-actions {
-    bottom: 0 !important;
+    position:relative !important;
+    bottom:auto !important;
+    margin-top:20px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
     margin-inline: calc(-1 * (clamp(1rem, 3vw, 1.5rem) + 2px));
     padding-inline: calc(clamp(1rem, 3vw, 1.5rem) + 2px) !important;
@@ -341,14 +343,19 @@ button,
 
 /* Six destinations share one compact, inline navigator. Its expansion never
    changes bottom action offsets or covers the current page. */
-.bh-bake-navigator { margin: 8px 0 16px; color: var(--char); }
-.bh-bake-navigator-trigger {
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  width:100%; min-height:48px; padding:12px 14px; border:1px solid var(--border);
-  border-radius:12px; background:var(--cream); color:var(--char);
-  font:inherit; font-size:16px; font-weight:600; text-align:left; cursor:pointer;
-}
-.bh-bake-navigator-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding-top:8px; }
+.bh-bake-navigator { position:sticky; z-index:95; margin:8px 0 16px; padding:4px 0; background:var(--warm); color:var(--char); transition:none; }
+.bh-navigator-band { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:52px; padding:2px 10px; border:1px solid var(--border); border-radius:12px; background:var(--cream); }
+.bh-navigator-context { display:flex; align-items:center; gap:8px; min-width:0; font-size:16px; font-weight:600; }
+.bh-bake-navigator-trigger { flex-shrink:0; display:flex; align-items:center; justify-content:center; min-height:44px; padding:0 4px; border:0; background:transparent; color:var(--char); font:inherit; text-align:right; cursor:pointer; }
+.bh-step-trigger { display:inline-flex; align-items:center; gap:4px; min-height:44px; padding:0 4px; border:0; background:transparent; font:inherit; font-size:12px; font-weight:400; color:var(--terra); white-space:nowrap; cursor:pointer; }
+.bh-step-trigger > span { text-decoration:underline; text-underline-offset:3px; }
+.bh-step-trigger svg { align-self:center; flex-shrink:0; }
+.bh-organisation-progress { display:flex; align-items:baseline; }
+.bh-navigator-context:has(.bh-organisation-progress),
+.bh-navigator-context:has(.bh-organisation-progress) .bh-navigator-current { align-items:baseline; }
+.bh-navigator-context:has(.bh-organisation-progress) .bh-navigator-current svg { align-self:center; }
+@media(max-width:400px){ .bh-navigator-context { gap:4px; font-size:15px; } .bh-navigator-context:has(.bh-organisation-progress) .bh-navigator-current svg { display:none; } .bh-navigator-band { gap:4px; padding-inline:8px; } }
+.bh-bake-navigator-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:8px 3px 4px; max-height:calc(100dvh - var(--bh-navigator-top, 56px) - 92px); overflow-y:auto; overscroll-behavior:contain; }
 .bh-bake-navigator-card {
   display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
   gap:5px; min-height:64px; min-width:0; padding:12px; border:1px solid var(--border);
@@ -358,8 +365,162 @@ button,
 .bh-bake-navigator-card small { font-size:12px; font-weight:400; line-height:1.4; }
 .bh-bake-navigator-card[aria-current="page"] { background:var(--terra); color:#fff; border-color:var(--terra); }
 .bh-bake-navigator button:focus-visible { outline:2px solid var(--terra); outline-offset:3px; }
+.bh-navigator-current { display:flex; align-items:center; gap:8px; min-width:0; }
+.bh-navigator-current svg { flex-shrink:0; }
+.bh-navigator-disclosure { font-size:12px; font-weight:500; text-align:right; max-width:120px; flex-shrink:0; }
+.bh-bake-navigator-card svg { margin-bottom:3px; }
+.bh-batch-context { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-start; gap:0 4px; font-size:14px; color:var(--smoke); }
+.bh-batch-context button { display:inline-flex; align-items:center; gap:8px; min-width:44px; min-height:44px; padding:0 4px; border:0; background:none; color:var(--terra); font:inherit; cursor:pointer; }
+.bh-batch-context button span:last-child { text-decoration:underline; text-underline-offset:3px; }
+.bh-fillings-context button, .bh-late-fillings, .bh-recipe-fillings-link { min-height:44px; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--cream); color:var(--terra); font:inherit; font-size:14px; cursor:pointer; }
+.bh-fillings-invitation { margin:24px 0 12px; padding:16px; border:1px solid var(--border); border-radius:16px; background:var(--cream); }
+.bh-fillings-eyebrow { font-size:12px; font-weight:600; color:var(--terra); }
+.bh-fillings-invitation h3 { margin:0 0 12px; font-size:16px; line-height:1.25; }
+.bh-fillings-invitation p { font-size:14px; line-height:1.5; margin:0 0 14px; color:var(--smoke); }
+.bh-fillings-preview { display:block; width:100%; padding:0; overflow:hidden; border:0; border-radius:0; background:transparent; font:inherit; color:var(--char); text-align:left; cursor:pointer; }
+.bh-fillings-examples { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
+.bh-fillings-example { min-width:0; }
+.bh-fillings-example img { display:block; width:100%; height:auto; aspect-ratio:3/2; object-fit:cover; }
+.bh-fillings-example > span { display:block; padding:7px 5px 10px; font-size:12px; line-height:1.3; overflow-wrap:break-word; }
+.bh-fillings-choose { display:flex; justify-content:space-between; align-items:center; gap:8px; min-height:48px; padding:0 0 12px; color:var(--terra); font-size:15px; font-weight:600; }
+.bh-fillings-invitation .bh-fillings-optional { font-size:13px; font-weight:400; color:var(--smoke); white-space:nowrap; }
+.bh-fillings-preview:focus-visible, .bh-batch-context button:focus-visible { outline:2px solid var(--terra); outline-offset:3px; }
+@media (max-width:360px) {
+  .bh-bake-navigator-trigger { gap:8px; padding:10px; }
+  .bh-navigator-disclosure { max-width:94px; }
+  .bh-fillings-invitation { padding:12px; }
+}
 .bh-section-choices { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 20px; }
 .bh-section-choices button { flex:1 1 130px; min-height:44px; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--cream); color:var(--char); font:inherit; cursor:pointer; }
 .bh-section-choices button[aria-pressed="true"] { background:var(--terra); color:#fff; border-color:var(--terra); }
 .bh-batch-actions { position:sticky; bottom:0; z-index:90; display:grid; gap:8px; padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px)); background:var(--warm); }
+.bh-batch-actions-choice { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+.bh-batch-actions-choice button { min-width:0; white-space:normal; }
+.bh-batch-actions .bh-dough-only { background:var(--cream)!important; color:var(--terra)!important; border:1px solid var(--border)!important; box-shadow:none!important; }
+.bh-section-back { display:block; min-height:44px; padding:10px 0; margin:0 0 8px; border:0; background:transparent; color:var(--terra); font:inherit; font-size:14px; text-align:left; cursor:pointer; }
+.bh-recipe-next { display:grid; gap:8px; }
+.bh-section-back:focus-visible { outline:2px solid var(--terra); outline-offset:2px; }
+.bh-batch-content input, .bh-batch-content button { scroll-margin-top:140px; scroll-margin-bottom:140px; }
+@media (prefers-reduced-motion:reduce) { .bh-bake-navigator { transition:none; } }
 [data-keyboard-open="true"] .bh-batch-actions { display:none !important; }
+
+/* One-screen bread groups; every style is selectable without opening a category. */
+.bh-bread-group-grid { display:grid; gap:10px; }
+.dough-style-card.bh-bread-style-card { grid-template-columns:minmax(0,1fr); }
+.bh-opening-choice { display:flex; flex-direction:column; width:100%; padding:0; border:1px solid var(--border); border-radius:16px; overflow:hidden; text-align:left; background:var(--card); color:var(--char); cursor:pointer; box-shadow:var(--card-shadow); }
+.bh-opening-choice:hover { border-color:var(--terra); }
+.bh-opening-choice:focus-visible { outline:3px solid var(--terra); outline-offset:3px; }
+.bh-opening-foods { display:grid; width:100%; height:143px; flex:none; min-height:0; overflow:hidden; grid-template-columns:minmax(0,1.7fr) minmax(0,1fr); grid-template-rows:repeat(2,minmax(0,1fr)); gap:3px; background:#f3ede3; }
+.bh-opening-foods > span { position:relative; min-width:0; min-height:0; overflow:hidden; }
+.bh-opening-foods img { width:100%; height:100%; object-fit:cover; }
+.bh-opening-foods > span:first-child { grid-row:span 2; }
+@media(min-width:700px) { .bh-bread-group-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .bh-opening-foods { height:173px; } }
+
+
+.bh-bread-group { scroll-margin-top:145px; }
+.bh-bread-jumps { display:flex; flex-wrap:wrap; gap:4px 14px; margin:0 0 18px; }
+.bh-bread-jumps a { display:flex; align-items:center; min-height:44px; color:var(--terra); text-underline-offset:4px; font-size:14px; }
+
+/* The family chooser preserves the current bake until another family is picked. */
+.bh-type-dialog { width: min(620px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); padding: 0; border: 1px solid var(--border); border-radius: 16px; background: var(--paper); color: var(--char); }
+.bh-type-dialog::backdrop { background: rgba(30,24,18,.42); }
+.bh-type-dialog-inner { padding: 18px; }
+.bh-type-dialog-inner h2 { font-size: 24px; margin: 12px 0; }
+.bh-type-dialog-inner p { font-size: 14px; margin-bottom: 16px; }
+.bh-recipe-next button { display:flex; justify-content:center; align-items:center; gap:8px; }
+.bh-recipe-next button svg { flex-shrink:0; }
+.bh-guide-step-nav button { min-width:0; overflow-wrap:anywhere; }
+.bh-guide-step-nav button:disabled { opacity:.45; }
+@media(max-width:380px) { .bh-guide-step-nav { flex-wrap:wrap; } .bh-guide-step-nav .bh-guide-next { flex-basis:100% !important; order:-1; } }
+
+.bh-bread-photos { display:grid; grid-template-columns:minmax(0,1fr); width:100%; gap:6px; overflow:hidden; border-radius:8px; }
+.bh-bread-photos-pair { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.bh-bread-photo { position:relative; display:block; min-width:0; min-height:0; overflow:hidden; background:#f3ede3; border-radius:6px; }
+.bh-bread-photo-caption { display:block; padding:5px 7px; font-size:12px; line-height:1.25; font-weight:600; background:#fffcf6; color:#48331f; }
+.bh-bread-card-copy { display:block; width:100%; }
+
+.bh-bread-photo-frame { position:relative; display:block; height:126px; overflow:hidden; }
+.bh-bread-photos:not(.bh-bread-photos-pair) { max-width:190px; justify-self:center; }
+
+.bh-batch-actions-navigation { grid-template-columns:auto minmax(0,1fr); align-items:center; }
+.bh-back-action { min-height:44px; padding:10px 12px; border:0; background:transparent; color:var(--terra); font:inherit; font-size:14px; cursor:pointer; flex-shrink:0; }
+
+/* Shared hierarchy for equivalent journey screens. */
+.bh-page-title { font-family:var(--font-display, Georgia, serif); font-size:28px; font-weight:700; line-height:1.15; letter-spacing:-.015em; color:var(--char); margin:0 0 18px; }
+.bh-section-title { font-family:var(--font-ui), sans-serif; font-size:18px; font-weight:600; line-height:1.3; color:var(--char); margin:0 0 12px; }
+
+.bh-key-timing { padding:16px 0; border-bottom:1px solid var(--border); }
+.bh-key-content { min-width:0; }
+.bh-key-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.bh-key-heading .bh-section-title { margin:0; font-size:16px; }
+.bh-key-modify { flex-shrink:0; min-height:44px; padding:0 4px; border:0; background:none; color:var(--terra); font:inherit; font-size:14px; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+.bh-key-time { display:flex; align-items:center; gap:8px; min-height:44px; padding:0; border:0; background:none; color:var(--char); font:inherit; font-size:20px; font-weight:600; text-align:left; cursor:pointer; }
+.bh-key-valid-selection { color:#2e673c; font-size:15px; }
+.bh-key-detail,.bh-key-legend { font-size:13px; color:var(--smoke); margin:4px 0; }
+.bh-key-window { font-size:13px; line-height:1.5; color:#32623d; margin-top:6px; overflow-wrap:break-word; }
+.bh-key-window[aria-busy="true"],.bh-key-window[data-has-windows="false"] { color:var(--smoke); }
+.bh-key-window-dot { display:inline-block; width:7px; height:7px; margin-right:6px; border-radius:50%; background:#477b4c; }
+.bh-key-note { font-size:14px; color:var(--terra); margin-top:8px; }
+.bh-key-editor { margin-top:12px; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--cream); }
+.bh-key-exact { display:block; margin:10px 0 0; font-size:13px; }
+.bh-key-exact input { display:block; width:100%; min-width:0; max-width:100%; min-height:44px; font-size:16px; padding:6px; margin-top:4px; border:1px solid var(--border); border-radius:8px; background:var(--warm); color:var(--char); }
+.bh-key-fixed { display:block; margin:6px 0; font-size:18px; }
+
+/* Keep focused timing controls clear of the sticky section and action bars. */
+.bh-key-time,.bh-key-modify,.bh-key-editor input { scroll-margin-block:150px; }
+
+/* Keep taps away from Safari's bottom edge; do not animate touch targets. */
+@media (pointer: coarse) {
+ button, a, summary, input, select { touch-action: manipulation; }
+ .bh-header-stack { transition: none !important; }
+ .bh-batch-actions { position:relative; bottom:auto; margin-top:20px; padding-bottom:calc(24px + env(safe-area-inset-bottom,0px)); }
+}
+
+.bh-key-reset { min-height:44px; padding:8px 0; border:0; background:none; color:var(--terra); font:inherit; font-size:14px; text-decoration:underline; text-underline-offset:3px; }
+.bh-key-lock { display:flex; align-items:center; gap:8px; min-height:44px; font-size:13px; color:var(--ash); }
+.bh-key-lock input { width:18px; height:18px; accent-color:var(--terra); }
+.bh-key-window { min-height:20px; }
+/* Preview review should exercise the product without a floating toolbar. */
+html[data-preview="true"] vercel-live-feedback { display:none !important; }
+
+[data-navigation-page] { overflow-anchor:none; }
+.bh-plan-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:4px 12px; min-height:44px; }
+.bh-plan-state { font-size:14px; font-weight:600; color:#32623d; }
+.bh-plan-state[data-valid="false"] { color:#93531c; }
+.bh-plan-notice { padding:12px; border:1px solid #d4ad82; border-radius:10px; background:#fff7e9; font-size:14px; line-height:1.5; }
+.bh-plan-notice p { margin:8px 0; }
+.bh-target-presets { margin-top:10px; font-size:14px; }
+.bh-target-choices { display:flex; flex-wrap:wrap; gap:8px; margin-block:8px; }
+.bh-target-choices button { min-height:44px; padding:8px 10px; border:1px solid var(--border); border-radius:10px; background:var(--warm); color:var(--char); font:inherit; font-size:14px; }
+.bh-linked-actions { padding:8px 12px 12px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px 12px; background:var(--warm); border-radius:0 0 12px 12px; }
+.bh-linked-feedback { grid-column:1/-1; min-height:20px; font-size:12px; color:var(--ash); }
+.bh-apply-plan { min-height:44px; padding:10px 16px; border:0; border-radius:10px; background:var(--terra); color:white; font:inherit; font-weight:600; }
+.bh-apply-plan:disabled { opacity:.5; }
+.bh-clock-input { display:flex; position:relative; align-items:center; flex:1; min-width:0; min-height:44px; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--warm); color:var(--char); font-size:16px; }
+.bh-clock-input > input { position:absolute !important; inset:0 !important; opacity:0; width:100% !important; height:100% !important; margin:0 !important; padding:0 !important; cursor:pointer; }
+.bh-clock-input > span { pointer-events:none; overflow-wrap:anywhere; }
+.bh-clock-input:focus-within { outline:2px solid var(--terra); outline-offset:2px; }
+.bh-clock-input:has(input:disabled) { opacity:.5; }
+
+@media (hover:hover) { .bh-clock-input > input:focus { opacity:1; background:var(--warm); color:var(--char); } }
+
+/* A chronological list: spacing conveys order, not elapsed time. */
+.bh-timeline-hint { margin:4px 0 14px; color:var(--smoke); font-size:13px; }
+.bh-schedule-timeline { list-style:none; margin:0; padding:0 0 0 10px; }
+.bh-timeline-day { position:relative; margin:0; padding:16px 0 8px 22px; color:var(--ash); font-size:13px; text-transform:capitalize; }
+.bh-schedule-timeline .bh-key-timing { position:relative; margin:0; padding:8px 0 18px 22px; border:0; border-left:2px solid var(--border); }
+.bh-schedule-timeline .bh-key-timing:last-child { border-left-color:transparent; }
+.bh-timeline-node { position:absolute; left:-6px; top:15px; width:10px; height:10px; border-radius:50%; border:2px solid var(--terra); background:var(--warm); }
+.bh-schedule-timeline .bh-key-content { padding:0 8px; border-radius:10px; }
+.bh-schedule-timeline [data-selected] .bh-key-content { background:var(--cream); padding:8px; margin-top:-8px; }
+.bh-schedule-timeline .bh-key-heading .bh-section-title { font-size:15px; }
+.bh-schedule-timeline .bh-key-time { font-size:22px; min-height:44px; }
+.bh-time-edit { font-size:13px; font-weight:400; color:var(--terra); text-decoration:underline; text-underline-offset:3px; }
+.bh-schedule-timeline .bh-key-exact { margin:4px 0; }
+.bh-schedule-timeline .bh-key-editor { border:0; padding:0 0 8px; margin:4px 0 0; background:transparent; }
+.bh-time-steps { display:flex; gap:8px; }
+.bh-time-steps button { min-height:44px; flex:1; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--warm); font:inherit; color:var(--terra); font-size:14px; }
+.bh-time-steps button:disabled { opacity:.45; }
+.bh-kept-time { display:inline-block; color:var(--ash); font-size:12px; padding:2px 0; }
+.bh-visually-hidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.bh-schedule-timeline button:focus-visible { outline:2px solid var(--terra); outline-offset:3px; }
