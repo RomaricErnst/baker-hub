@@ -263,8 +263,8 @@ for(const locale of ['fr','en'])test(`${locale}: explicit oven target and sugges
  const date=page.getByLabel(locale==='fr'?'Date d’enfournement':'Baking date',{exact:true});
  await expect(time).toHaveValue('19:30');await expect(date).toHaveValue('2026-09-26');
  const suggestions=page.locator('details').filter({has:page.locator('summary').filter({hasText:locale==='fr'?'Autres horaires proposés':'Other suggested times'})});
- await expect(suggestions).toBeVisible();await suggestions.locator('summary').tap();
- const preset=suggestions.getByRole('button').first();await expect(preset).toBeVisible();await preset.tap();
+ await expect(suggestions).toHaveCount(0);
+ await time.fill('18:30');
  await expect.poll(async()=>(await stored(page)).eatTime).not.toBe(BAKE);
  const selected=await stored(page),selectedDate=await date.inputValue(),selectedTime=await time.inputValue();
  await page.getByRole('button',{name:locale==='fr'?/^Jours ouvrés/:/^Weekdays/}).tap();
@@ -275,4 +275,36 @@ for(const locale of ['fr','en'])test(`${locale}: explicit oven target and sugges
  await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
  await page.reload();await expect(plan).toBeVisible();await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
  expect((await stored(page)).eatTime).toBe(selected.eatTime);
+});
+
+
+test('preferment follows mixing unless explicitly locked; reset stays above the editors',async({page})=>{
+ const {plan}=await seed(page);
+ await enter(plan,'pref','2026-09-25T09:15');
+ await confirm(plan).tap();
+ await expand(plan,'pref');await expand(plan,'mix');
+ const pref=row(plan,'pref'),mix=row(plan,'mix');
+ const prefInput=pref.locator('input[type="datetime-local"]');
+ const mixInput=mix.locator('input[type="datetime-local"]');
+ await mixInput.fill('2026-09-25T20:15');
+ await expect(prefInput).not.toHaveValue('2026-09-25T09:15');
+ await expect(confirm(plan)).toBeEnabled();
+ await pref.getByRole('checkbox',{name:'Fixer cet horaire'}).check();
+ const locked=await prefInput.inputValue();
+ await mixInput.fill('2026-09-25T20:30');
+ await expect(prefInput).toHaveValue(locked);
+ await confirm(plan).tap();
+ await expect.poll(async()=>(await stored(page)).timingOverrides.prefLocked).toBe(true);
+ await page.reload();await expect(plan).toBeVisible();
+ await expect(pref.getByRole('checkbox',{name:'Fixer cet horaire'})).toBeChecked();
+ await expand(plan,'pref');await expand(plan,'mix');
+ await pref.getByRole('checkbox',{name:'Fixer cet horaire'}).uncheck();
+ await mixInput.fill('2026-09-25T20:45');
+ await expect(prefInput).not.toHaveValue(locked);
+ const resetButton=reset(page);
+ expect(await resetButton.evaluate(el=>!!(el.compareDocumentPosition(document.querySelector('[data-key-timing="pref"]'))&Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
+ await resetButton.tap();
+ await expect(reset(page)).toHaveCount(0);
+ await expand(plan,'pref');await expect(pref.getByRole('checkbox',{name:'Fixer cet horaire'})).not.toBeChecked();
+ expect((await stored(page)).eatTime).toBe(BAKE);
 });

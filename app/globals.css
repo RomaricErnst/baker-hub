@@ -308,7 +308,7 @@ button,
 
 @media (max-width: 767px) {
   [data-mobile-setup="true"] .bh-step-actions {
-    bottom: 0 !important;
+    bottom: 24px !important;
     padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
     margin-inline: calc(-1 * (clamp(1rem, 3vw, 1.5rem) + 2px));
     padding-inline: calc(clamp(1rem, 3vw, 1.5rem) + 2px) !important;
@@ -473,3 +473,24 @@ button,
 
 /* Keep focused timing controls clear of the sticky section and action bars. */
 .bh-key-time,.bh-key-modify,.bh-key-editor input { scroll-margin-block:150px; }
+
+/* Keep taps away from Safari's bottom edge; do not animate touch targets. */
+@media (pointer: coarse) {
+ button, a, summary, input, select { touch-action: manipulation; }
+ .bh-header-stack { transition: none !important; }
+ .bh-batch-actions { bottom:24px; }
+ .bh-key-track input { touch-action:pan-y; }
+}
+.bh-key-reset-space { min-height:52px; }
+.bh-key-reset { min-height:44px; padding:8px 0; border:0; background:none; color:var(--terra); font:inherit; font-size:14px; text-decoration:underline; text-underline-offset:3px; }
+.bh-key-lock { display:flex; align-items:center; gap:8px; min-height:44px; font-size:13px; color:var(--ash); }
+.bh-key-lock input { width:18px; height:18px; accent-color:var(--terra); }
+.bh-key-window { min-height:42px; }
+#schedule-anchor-panel[data-dragging] .bh-key-valid { background:#dedbd4; }
+#schedule-anchor-panel[data-dragging] .bh-key-note { visibility:hidden; }
+.bh-key-track input { transition:none; }
+
+/* Preview review should exercise the product without a floating toolbar. */
+html[data-preview="true"] vercel-live-feedback { display:none !important; }
+
+#schedule-anchor-panel[data-dragging] .bh-key-window { color:var(--smoke); }

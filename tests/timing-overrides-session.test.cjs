@@ -73,3 +73,11 @@ test('actual apply handler persists pins and preferment offset immediately; rese
   assert.equal(state.AcceptedScheduleRepair,null);
   assert.deepEqual(state.TimingOverrides,{});
 });
+
+test('preferment locking is explicit and requires a valid preparation time',()=>{
+ const pref=Date.parse('2026-09-27T09:00:00Z');
+ assert.deepEqual(normalizeTimingOverrides({pref}),{pref});
+ assert.deepEqual(normalizeTimingOverrides({pref,prefLocked:true}),{pref,prefLocked:true});
+ assert.deepEqual(normalizeTimingOverrides({pref:undefined,prefLocked:true}),{});
+ assert.deepEqual(normalizeTimingOverrides({pref,prefLocked:false}),{pref});
+});

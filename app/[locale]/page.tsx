@@ -1173,10 +1173,17 @@ export default function Home() {
   useEffect(() => {
     let travel = 0;
     let direction = 0;
+    let touchingControl = false;
+    const holdTarget = (event:PointerEvent) => { touchingControl = !!(event.target as Element)?.closest?.('button, a, input, select, summary'); };
+    const releaseTarget = () => { touchingControl = false; };
+    window.addEventListener('pointerdown',holdTarget,{passive:true});
+    window.addEventListener('pointerup',releaseTarget,{passive:true});
+    window.addEventListener('pointercancel',releaseTarget,{passive:true});
     const onScroll = () => {
       const curr = Math.max(0, Math.min(window.scrollY, document.documentElement.scrollHeight - window.innerHeight));
       const delta = curr - lastScrollY.current;
       lastScrollY.current = curr;
+      if (touchingControl) return;
       if (curr < 24 || curr >= document.documentElement.scrollHeight - window.innerHeight - 24) { setNavHidden(false); travel = 0; return; }
       if (document.querySelector('[role="dialog"][aria-modal="true"]') || document.querySelector('.bh-header-stack :focus-visible, .bh-bake-navigator :focus-visible')) return;
       if (Math.abs(delta) < 2) return;
@@ -1187,7 +1194,7 @@ export default function Home() {
       if (direction < 0 && travel >= 12) setNavHidden(false);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('pointerdown',holdTarget); window.removeEventListener('pointerup',releaseTarget); window.removeEventListener('pointercancel',releaseTarget); };
   }, []);
   const pizzaPartyEnabled = bakeType === 'pizza';
   const sandwichEnabled = bakeType === 'bread' && !!styleKey && !!sandwichFamilyForStyle(styleKey);

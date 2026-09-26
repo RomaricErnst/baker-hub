@@ -47,7 +47,7 @@ export default async function LocaleLayout({
   }
   const messages = await getMessages();
   return (
-    <html lang={locale}>
+    <html lang={locale} data-preview={process.env.VERCEL_ENV === 'preview' ? 'true' : undefined}>
       <body className={`${figtree.variable} ${dmMono.variable} antialiased`}>
         <NextIntlClientProvider messages={messages}>
           {children}
