@@ -14,6 +14,7 @@ import WaterPreparation, { type WaterSource, type WaterSettingsProps } from './W
 import { type UnitSystem, displayTemp, tempC, tempRange } from '../utils/units';
 import { getPrefPeakH_RT, getStarterFridgeWarmupH } from './FermentChart';
 import { GUIDE_FAQ } from '../lib/guideFaq';
+import { WOOD_OVEN_FAQ } from '../lib/woodOvenFaq';
 import { formatPrefermentDose } from '../utils/prefermentDose';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { scheduledFoldMinutes } from '../utils/scheduleFolds';
@@ -1957,6 +1958,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             </Section>
           }
           faqKey="preheat"
+          faqOverride={!isBread && ovenType==='pizza_oven' ? [GUIDE_FAQ.preheat[0], ...WOOD_OVEN_FAQ.preheat] : undefined}
           coachTitle={t('stepTitles.preheatOven')}
           recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
@@ -2050,6 +2052,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             )}
           </>}
           faqKey="bake"
+          faqOverride={!isBread && ovenType==='pizza_oven' ? WOOD_OVEN_FAQ.bake : undefined}
           coachStepId={isBread ? 'bake' : 'pizza_maestro'}
           coachTitle={t('stepTitles.bakeEat')}
           recipeContext={maestroRecipeContext}

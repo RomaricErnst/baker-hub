@@ -1233,7 +1233,7 @@
         "pitfalls": [
           "Launching on a cold floor: always check with a thermometer — looks hot does not mean it is hot",
           "Flame too high at launch: push back the fire before loading or the top burns before the base is cooked",
-          "Forgetting to rotate: wood-fired ovens have a hot side — turn the pizza every 20–30 seconds"
+          "Flame ovens have a hot side: turn according to colour once the base has set"
         ]
       },
       "electricPizza": {
@@ -1475,7 +1475,7 @@
             "note": "launch only above 400°C floor"
           },
           {
-            "bold": "Launch with a confident forward motion, then rotate every 20–30 sec",
+            "bold": "Launch confidently; start turning once the base has set",
             "note": "hesitation sticks — one fluid motion; the wood fire has a hot side, keep rotating with the turning peel"
           },
           {
@@ -1492,7 +1492,7 @@
         "pitfalls": [
           "Cold floor at launch: always check with a thermometer — looks hot does not mean it is hot",
           "Flame too close: push fire back before launching or the top burns before the base is done",
-          "Not rotating: wood-fired ovens have a hot side — rotate every 20–30 sec or expect uneven char"
+          "Turn according to colour once the base is firm enough to slide the peel underneath"
         ]
       },
       "electricPizza": {

@@ -1233,7 +1233,7 @@
         "pitfalls": [
           "Enfourner sur une sole froide : vérifiez toujours au thermomètre — chaud à l'œil ne suffit pas",
           "Flamme trop proche : repoussez le feu avant d'enfourner sinon le dessus brûle avant la base",
-          "Ne pas tourner : les fours à bois ont un côté chaud — tournez la pizza toutes les 20–30 sec"
+          "Les fours à flamme ont un côté chaud : tournez selon la coloration, une fois la base prise"
         ]
       },
       "electricPizza": {
@@ -1475,7 +1475,7 @@
             "note": "enfournez seulement au-dessus de 400°C"
           },
           {
-            "bold": "Enfournez d'un geste assuré, puis tournez toutes les 20–30 sec",
+            "bold": "Enfournez d'un geste assuré ; tournez une fois la base prise",
             "note": "l'hésitation colle — un mouvement fluide ; ensuite le feu à bois a un côté chaud, rotation constante à la pelle"
           },
           {
@@ -1492,7 +1492,7 @@
         "pitfalls": [
           "Sole froide au lancement : vérifiez toujours au thermomètre",
           "Flamme trop proche : repoussez le feu avant d'enfourner",
-          "Ne pas tourner : les fours à bois ont un côté chaud — tournez toutes les 20–30 sec"
+          "Tournez selon la coloration, une fois la base assez ferme pour passer la pelle dessous"
         ]
       },
       "electricPizza": {
