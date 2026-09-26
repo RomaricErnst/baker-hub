@@ -310,7 +310,7 @@ test('preferment follows mixing unless explicitly locked; reset stays above the 
 });
 
 
-test('one shared editor opens both linked timings and Cancel restores both',async({page})=>{
+test('one shared editor opens both linked timings and Cancel restores both',async({page},info)=>{
  const {plan}=await seed(page);
  const before=await stored(page);
  await expand(plan,'mix');
@@ -320,8 +320,16 @@ test('one shared editor opens both linked timings and Cancel restores both',asyn
  await expect(plan.locator('.bh-linked-times')).toContainText('Préferment');
  const prefBefore=await row(plan,'pref').locator('input[type="datetime-local"]').inputValue();
  await enter(plan,'mix','2026-09-25T22:00');
+ await expect(row(plan,'pref').locator('input[type="datetime-local"]')).toHaveValue(prefBefore);
+ await expect(plan.locator('.bh-linked-feedback')).toContainText('Préferment conservé');
+ // Use a future morning: an evening edit can legitimately keep preferment
+ // at the earliest future slot instead of moving it before the fixed clock.
+ await enter(plan,'mix','2026-09-26T07:15');
  await expect(row(plan,'pref').locator('input[type="datetime-local"]')).not.toHaveValue(prefBefore);
  await expect(plan.locator('.bh-linked-feedback')).toContainText('Préferment recalé');
+ await expect(confirm(plan)).toBeEnabled();
+ await expect(plan.locator('.bh-key-window[aria-busy="true"]')).toHaveCount(0);
+ await info.attach('linked-editor-both-timings',{body:await plan.screenshot(),contentType:'image/png'});
  await plan.getByRole('button',{name:'Annuler',exact:true}).tap();
  await expect(plan.getByRole('slider')).toHaveCount(0);
  expect((await stored(page)).startTime).toBe(before.startTime);
@@ -335,7 +343,7 @@ test('night conflict offers a verified later bake while preserving unavailable n
  await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','false');
  const alternatives=plan.locator('.bh-plan-notice .bh-target-choices');
  await expect(alternatives).toBeVisible();
- await alternatives.getByRole('button').filter({hasText:/27.*19:30/}).tap();
+ await alternatives.getByRole('button').filter({hasText:/27.*19h30/}).tap();
  await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','true');
  await expect(row(plan,'pref')).toHaveAttribute('data-candidate-valid','true');
  const state=await stored(page);

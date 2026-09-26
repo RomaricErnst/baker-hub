@@ -8183,7 +8183,9 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         if(isSourdough&&((planningMode==='know_peak'&&!knownPeakTime)||(planningMode==='last_fed'&&(!lastFedTime||lastFedAge===null))))return null;
 
         const adjustment=dirty&&editingRow==='mix'&&hasPrefActive&&!activeOverrides.prefLocked
-          ? <>{isFr?'Préferment recalé à ':'Preferment moved to '}{fmtCardDT(new Date(+draftMix-draftPrefOffset*hour),isFr)}.</>
+          ? <>{+draftMix-draftPrefOffset*hour===+pendingStart-prefOffsetH*hour
+              ? (isFr?'Préferment conservé à ':'Preferment kept at ')
+              : (isFr?'Préferment recalé à ':'Preferment moved to ')}{fmtCardDT(new Date(+draftMix-draftPrefOffset*hour),isFr)}{+draftMix-draftPrefOffset*hour===+pendingStart-prefOffsetH*hour?(isFr?' — compatible avec ce pétrissage.':' — compatible with this mixing time.'):'.'}</>
           :dirty&&editingRow!=='mix'&&+times.start!==+pendingStart?<>{isFr?'Pétrissage recalé à ':'Mixing moved to '}{fmtCardDT(times.start,isFr)}.</>:null;
         const notice=!valid&&!keyDragging?<div className="bh-plan-notice" role="status">
           <strong>{isFr?'Les horaires doivent être ajustés ensemble.':'These times need to be adjusted together.'}</strong>

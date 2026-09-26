@@ -31,3 +31,13 @@ Horizontal editing remains deliberate: it follows the familiar earlier Simple ti
 The planning screen omits After baking; serving/cooling information belongs to its existing guide. Alternative bake presets appear only before choosing a target or when the chosen plan is incompatible. A valid saved oven target stays visible without the repeated presets disclosure.
 
 Touch targets must remain stationary during a tap, clear the browser edge and stay unobscured by sticky controls. Physical iPhone Safari chrome is a separate validation gate from WebKit viewport emulation; neither a desktop drag nor passing CI proves the native first-tap issue resolved.
+
+## Linked adjustment panel — 26 September, second recording
+
+The baker's new recording showed that separate editors obscure the relationship. Opening either action now reveals both horizontal controls in one panel, with a two-time recap, the retained oven target and one Apply/Cancel transaction. The existing model optimum still guides automatic preferment following; explicit locks remain visible. This preserves the relational value of the earlier diamonds/graph without requiring a second scientific chart to change an hour.
+
+An invalid selected plan must offer a concrete next action. Alternative oven targets now run the same complete fixed-bake candidate search as availability replanning, including recurring blocks and actual manual locks. They appear beside the conflict, never as an unexplained empty “Other times” heading. Choosing one commits the verified dependent plan atomically. Search remains bounded; failure does not prove physical impossibility.
+
+The noon Saturday/night-block example was reproduced with explicit fixture assumptions (cold poolish, kitchen22°C/fridge6°C, spiral mixer, Neapolitan4×260g). The model found no supported plan for Sunday11:30 but did find Sunday19:30. Do not misdescribe this as automatic replanning never running, and do not loosen fermentation bounds to make a green window appear.
+
+Mobile setup keeps the site header stable and puts navigation actions in document flow so they cannot cover controls. Step transitions reset scroll before paint, release stale input focus, and cancel delayed settling as soon as the baker interacts. Plan states distinguish recommendation, applied customization, pending changes and conflicts. Read-only clock faces use 24-hour formatting while retaining native date/time controls.

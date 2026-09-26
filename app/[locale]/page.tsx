@@ -2348,20 +2348,21 @@ export default function Home() {
     lastScrollY.current = 0;
     let interacted=false;
     const stop=()=>{interacted=true;};
+    const stopAfterScroll=()=>{if(window.scrollY>0)interacted=true;};
     // Release focus from a removed page before Safari scrolls it back into view.
     if(document.activeElement instanceof HTMLElement)document.activeElement.blur();
     const reset = () => {if(!interacted)window.scrollTo({ top: 0, behavior: 'instant' });};
     window.addEventListener('pointerdown',stop,{passive:true});
     window.addEventListener('wheel',stop,{passive:true});
     window.addEventListener('keydown',stop);
-    const settle=setTimeout(reset,250);
+    window.addEventListener('scroll',stopAfterScroll,{passive:true});
     reset();
     let settledFrame = 0;
     const frame = requestAnimationFrame(() => {
       reset();
       settledFrame = requestAnimationFrame(reset);
     });
-    return () => { cancelAnimationFrame(frame); cancelAnimationFrame(settledFrame);clearTimeout(settle);window.removeEventListener('pointerdown',stop);window.removeEventListener('wheel',stop);window.removeEventListener('keydown',stop); };
+    return () => { cancelAnimationFrame(frame); cancelAnimationFrame(settledFrame);window.removeEventListener('pointerdown',stop);window.removeEventListener('wheel',stop);window.removeEventListener('keydown',stop);window.removeEventListener('scroll',stopAfterScroll); };
   }, [visiblePageKey]);
 
   useEffect(() => {
