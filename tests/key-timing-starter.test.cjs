@@ -72,6 +72,43 @@ test('starter slot validation checks complete mixing duration and half-open boun
 test('starter previews cannot discard or reschedule a historical preparation',()=>{
  const past=new Date(Date.now()-3600000);
  const {controls:c,start,effects}=setup({savedStarterEvents:[{kind:'refresh',time:past,isPast:true,isActive:false,isDraggable:false,label:'Completed refresh',cardTimeFormat:'absolute',bellStyle:'none',bellSigmaScale:1}]});
+ const historical=c.anchors.find(a=>a.id.startsWith('starter:refresh')&&a.at===+past);assert.ok(historical,'past work remains visible');assert.equal(historical.editable,false);
  assert.equal(c.check('mix',+start+900000),false,'a recomputed plan without the historical action must not be approved');
  assert.deepEqual(effects,[]);
+});
+
+test('only explicitly kept final feeds constrain a subsequent mixing edit',()=>{
+ const params={planningMode:'last_fed',knownPeakTime:null,lastFedAge:'today',lastFedTime:new Date(Date.now()-3*3600000),starterLocation:'rt',nextFeedRatio:1};
+ const initial=setup(params),feed=initial.controls.anchors.find(a=>a.id==='starter:pre_mix');assert.ok(feed);
+ const same={...params,startTime:initial.start,eatTime:initial.bake};
+ const automatic=setup({...same,timingOverrides:{feed:feed.at}});
+ const kept=setup({...same,timingOverrides:{feed:feed.at,feedLocked:true}});
+ assert.equal(automatic.controls.anchors.find(a=>a.id==='starter:pre_mix').locked,false);
+ assert.equal(kept.controls.anchors.find(a=>a.id==='starter:pre_mix').locked,true);
+ assert.ok(kept.controls.anchors.find(a=>a.id==='mix').control,'keep control belongs to mixing');
+ assert.equal(kept.controls.anchors.find(a=>a.id==='starter:pre_mix').control,undefined);
+ let freed=false;
+ for(let delta=900000;delta<=6*3600000&&!freed;delta+=900000){
+  const at=+initial.start+delta;
+  if(automatic.controls.check('mix',at)&&!kept.controls.check('mix',at))freed=true;
+ }
+ assert.equal(freed,true,'unkept feed recalculates to support a mixing time beyond the retained feed window');
+ assert.deepEqual([...automatic.effects,...kept.effects],[],'checking remains read-only');
+});
+
+
+test('poolish keeping lives beside mixing and remains visible on the preparation row',()=>{
+ const bake=new Date(Date.now()+3*86400000),start=new Date(+bake-12*3600000),pref=+start-14*3600000;
+ const args={isSourdough:false,prefermentType:'poolish',savedPrefOffsetHours:14,startTime:start,eatTime:bake};
+ const automatic=setup({...args,timingOverrides:{pref}}).controls;
+ const kept=setup({...args,timingOverrides:{pref,prefLocked:true}}).controls;
+ for(const c of [automatic,kept]){
+  assert.equal(c.anchors.find(a=>a.id==='pref').control,undefined);
+  const control=c.anchors.find(a=>a.id==='mix').control;assert.ok(control);
+  assert.match(renderToStaticMarkup(control),/Keep the time of the poolish/);
+ }
+ assert.equal(automatic.anchors.find(a=>a.id==='pref').locked,false);
+ assert.equal(kept.anchors.find(a=>a.id==='pref').locked,true);
+ assert.match(renderToStaticMarkup(automatic.anchors.find(a=>a.id==='mix').control),/If you move mixing/);
+ assert.match(renderToStaticMarkup(kept.anchors.find(a=>a.id==='mix').control),/Time kept/);
 });

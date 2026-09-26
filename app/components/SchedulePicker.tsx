@@ -8120,9 +8120,9 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         const starterResult=starterPreview?.probe.result??solverResult;
         const starterMix=starterPreview?.probe.start??pendingStart;
         const starterEvents=starterPins?starterResult?.starterEvents??displayStarterEvents:displayStarterEvents.length?displayStarterEvents:starterResult?.starterEvents??[];
-        const pinsFor=(id:string,at:number):Pins=>id==='mix'?{...basePins,mix:at}:id==='starter:pre_mix'?{...basePins,feed:at}:{...basePins,refresh:at};
+        const pinsFor=(id:string,at:number):Pins=>id==='mix'?{...basePins,mix:at,feed:activeOverrides.feedLocked?basePins.feed:null}:id==='starter:pre_mix'?{...basePins,feed:at}:{...basePins,refresh:at};
         const starterChange=(id:string,at:number)=>{
-          captureBaseline();draftOverridesRef.current={...draftOverridesRef.current,[id==='mix'?'mix':id==='starter:pre_mix'?'feed':'refresh']:at};setStarterPins(pinsFor(id,at));setEditingRow(id);setEditingEnabled(true);
+          captureBaseline();draftOverridesRef.current={...draftOverridesRef.current,...(id==='mix'&&!activeOverrides.feedLocked?{feed:undefined,feedLocked:undefined}:{}),[id==='mix'?'mix':id==='starter:pre_mix'?'feed':'refresh']:at};setStarterPins(pinsFor(id,at));setEditingRow(id);setEditingEnabled(true);
         };
         const times=isSourdough?{start:starterMix,bake:pendingEatTime,prefHours:prefOffsetH}:displayedTimes;
         const bounds=isSourdough&&starterResult?{from:starterResult.sourdoughSweetFrom!=null?new Date(+times.bake-starterResult.sourdoughSweetFrom*hour):null,to:starterResult.sourdoughSweetTo!=null?new Date(+times.bake-starterResult.sourdoughSweetTo*hour):null}:editInput.window(times.bake);
@@ -8130,8 +8130,8 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         const anchors:KeyTimingAnchor[]=[];
         if(isSourdough){
           for(const event of starterEvents){
-            if(event.kind==='last_fed'||event.kind==='known_peak'||event.isPast&&!event.isActive)continue;
-            const editable=!startTimeInPast&&!readinessUnsupported&&+event.time>Date.now()&&['refresh','pre_mix'].includes(event.kind);
+            if(event.kind==='known_peak')continue;
+            const editable=!startTimeInPast&&!readinessUnsupported&&!event.isPast&&+event.time>Date.now()&&['refresh','pre_mix'].includes(event.kind);
             const id='starter:'+event.kind;
             const requested=editingRow===id?(event.kind==='pre_mix'?basePins.feed:basePins.refresh):null;
             const at=requested??+event.time;
@@ -8139,7 +8139,8 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
             const axisTime=+(displayStarterEvents.find(e=>e.kind===event.kind)?.time??event.time);
             anchors.push({valid:starterPreview?.valid,id:id+(!editable?':'+anchors.length:''),name:event.label,at,editable,
               ...clampBounds(axisTime-6*hour,Math.min(+pendingStart-step,axisTime+6*hour),at),
-              detail:event.kind.startsWith('fridge')?(isFr?'Calculé avec les rafraîchis':'Calculated with the feeds'):event.cardNote,
+              locked:event.kind==='pre_mix'&&!!activeOverrides.feedLocked,
+              detail:event.kind==='last_fed'?(isFr?'Déjà effectué':'Already done'):event.isPast?(isFr?'Horaire passé':'Past time'):event.kind.startsWith('fridge')?(isFr?'Calculé avec les rafraîchis':'Calculated with the feeds'):event.cardNote,
               note:editingRow===id?starterPreview?.message:null});
           }
         }else if(hasPrefActive){
@@ -8147,18 +8148,42 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           anchors.push({id:'pref',name:prefLabel,at,valid:preview?.valid,editable:!startTimeInPast&&!readinessUnsupported,
             ...clampBounds(+(originalBounds.from??draftMix)-(prefWindow?.max??prefOffsetH+6)*hour,+(originalBounds.to??draftMix)-(prefWindow?.min??Math.max(.25,prefOffsetH-6))*hour,at),
             locked:!!activeOverrides.prefLocked,
-            control:<label className="bh-key-lock"><input disabled={startTimeInPast||readinessUnsupported} type="checkbox" checked={!!activeOverrides.prefLocked} onChange={event=>{captureBaseline();draftOverridesRef.current={...draftOverridesRef.current,pref:at,prefLocked:event.target.checked||undefined};beginRowEdit('pref',at);setEditBaseTimes(displayedTimes);}}/>{isFr?'Fixer cet horaire':'Keep this time fixed'}</label>,
             detail:draftPrefOffset<=0?undefined:(isFr?'Maturation : ':'Maturation: ')+duration(draftPrefOffset)+' · '+(prefGoesInFridge?(isFr?'au froid':'in the fridge'):(isFr?'à température ambiante':'at room temperature')),
             note:preview?.issue==='preferment'||preview?.conflict?.startsWith('preferment')?draftMessage:null});
         }
+        const finalFeed=starterEvents.find(event=>event.kind==='pre_mix'&&+event.time>Date.now());
+        const keptPreparation=isSourdough?!!activeOverrides.feedLocked:!!activeOverrides.prefLocked;
+        const preparationAt=isSourdough?(activeOverrides.feed??(finalFeed?+finalFeed.time:undefined)):+draftMix-draftPrefOffset*hour;
+        const preparationName=isSourdough
+          ?(isFr?'du rafraîchi pour la pâte':'of the final feed')
+          :prefermentType==='poolish'?(isFr?'du poolish':'of the poolish')
+          :prefermentType==='biga'?(isFr?'de la biga':'of the biga'):(isFr?'du préferment':'of the preferment');
+        const keepPreparationControl=(hasPrefActive||isSourdough&&(finalFeed||activeOverrides.feedLocked))&&preparationAt!==undefined?<>
+          <p className="bh-key-detail">{keptPreparation
+            ?(isFr?'Heure conservée : ':'Time kept: ')+fmtCardDT(new Date(preparationAt),isFr)+'.'
+            :isSourdough?(isFr?'Si vous déplacez le pétrissage, le rafraîchi pour la pâte est recalculé.':'If you move mixing, the final feed is recalculated.')
+            :(isFr?'Si vous déplacez le pétrissage, l’heure '+preparationName+' est recalculée.':'If you move mixing, the time '+preparationName+' is recalculated.')}</p>
+          <label className="bh-key-lock"><input disabled={startTimeInPast||readinessUnsupported} type="checkbox" checked={keptPreparation} onChange={event=>{
+            captureBaseline();
+            const keep=event.target.checked;
+            if(isSourdough){
+              draftOverridesRef.current={...draftOverridesRef.current,feed:keep?preparationAt:undefined,feedLocked:keep||undefined};
+              setStarterPins({...basePins,mix:+starterMix,feed:keep?preparationAt:null});setEditingRow('mix');setEditingEnabled(true);
+            }else{
+              draftOverridesRef.current={...draftOverridesRef.current,pref:keep?preparationAt:undefined,prefLocked:keep||undefined};
+              beginRowEdit('mix',+draftMix);setEditBaseTimes(displayedTimes);
+            }
+          }}/>{(isFr?'Conserver l’heure ':'Keep the time ')+preparationName}</label>
+        </>:undefined;
         anchors.push({id:'mix',name:isFr?'Pétrir la pâte':'Mix the dough',at:+times.start,valid:isSourdough?starterPreview?.valid:preview?.valid,editable:!startTimeInPast&&!readinessUnsupported,
           ...clampBounds(+(bounds.from??new Date(+times.start-6*hour)),+(bounds.to??new Date(+times.start+6*hour)),+times.start),
+          control:keepPreparationControl,
           detail:duration((+times.bake-+times.start)/hour)+(isFr?' avant cuisson':' before baking'),
           note:isSourdough?starterPreview?.message:(preview?.issue==='preferment'||preview?.conflict?.startsWith('preferment'))?null:draftMessage});
         const cacheKey=JSON.stringify([originalSignature,activeOverrides,manualTimes,starterPins,editingRow,draftRowTime,editBaseTimes,kitchenTemp,fridgeTemp,flourStrength,lastFeedRatio,nextFeedRatio,ratioMode,starterLocation,planningMode,lastFedAge,knownPeakTime,prefermentType,repairBlocks]);
         const check=(id:string,at:number)=>isSourdough?evaluateStarter(pinsFor(id,at)).valid:proposeScheduleEdit({...slotInput,id,at:new Date(at),...(id==='mix'&&hasPrefActive&&!activeOverrides.prefLocked?{prefHours:getPrefOptH(prefermentType,kitchenTemp,prefGoesInFridge,styleKey,fridgeTemp),pins:{...slotInput.pins,preferment:undefined}}:{})}).valid;
         const overrideChanged=JSON.stringify(activeOverrides)!==JSON.stringify(normalizeTimingOverrides(manualTimes));
-        const dirty=isSourdough?starterPins!==null&&(+starterMix!==+pendingStart||JSON.stringify(starterEvents.map(e=>[e.kind,+e.time]))!==JSON.stringify(displayStarterEvents.map(e=>[e.kind,+e.time]))):changed&&(+draftMix!==+pendingStart||+draftBake!==+pendingEatTime||draftPrefOffset!==prefOffsetH||overrideChanged);
+        const dirty=isSourdough?starterPins!==null&&(+starterMix!==+pendingStart||JSON.stringify(starterEvents.map(e=>[e.kind,+e.time]))!==JSON.stringify(displayStarterEvents.map(e=>[e.kind,+e.time]))||overrideChanged):changed&&(+draftMix!==+pendingStart||+draftBake!==+pendingEatTime||draftPrefOffset!==prefOffsetH||overrideChanged);
         const valid=isSourdough?!!starterPreview?.valid:!!preview?.valid;
         const cancel=()=>{setStarterPins(null);closeEdit();};
         const accept=()=>{
@@ -8184,7 +8209,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
 
         const adjustment=dirty&&editingRow==='mix'&&hasPrefActive&&!activeOverrides.prefLocked
           ? <>{+draftMix-draftPrefOffset*hour===+pendingStart-prefOffsetH*hour
-              ? (isFr?'Préferment conservé à ':'Preferment kept at ')
+              ? (isFr?'Préferment inchangé à ':'Preferment unchanged at ')
               : (isFr?'Préferment recalé à ':'Preferment moved to ')}{fmtCardDT(new Date(+draftMix-draftPrefOffset*hour),isFr)}{+draftMix-draftPrefOffset*hour===+pendingStart-prefOffsetH*hour?(isFr?' — compatible avec ce pétrissage.':' — compatible with this mixing time.'):'.'}</>
           :dirty&&editingRow!=='mix'&&+times.start!==+pendingStart?<>{isFr?'Pétrissage recalé à ':'Mixing moved to '}{fmtCardDT(times.start,isFr)}.</>:null;
         const notice=!valid&&!keyDragging?<div className="bh-plan-notice" role="status">

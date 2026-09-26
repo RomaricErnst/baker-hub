@@ -19,9 +19,11 @@ test('actions are the default in both modes and retain starter feeds and fridge 
  for(const mode of ['simple','custom']) {
   const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Picker,{mode,startTime:start,eatTime:eat,blocks:[],preheatMin:45,styleKey:'pain_levain',kitchenTemp:22,schedule,onChange(){},isSourdough:true,lastFedAge:'today',lastFedTime:new Date(+start-8*3600000),savedStarterEvents:events,sessionRestored:true,recipeGenerated:true})));
   assert.match(html,/aria-label="Your key times"/);
-  assert.match(html,/aria-label="Edit Mix the dough"/);
+  assert.match(html,/aria-label="Edit Mix the dough, /);
   assert.doesNotMatch(html,/aria-orientation="horizontal"/); // editors open on demand
-  assert.match(html,/bh-key-window/);
+  assert.doesNotMatch(html,/bh-key-window/); // windows belong to the selected editor
+  assert.match(html,/bh-schedule-timeline/);
+  assert.match(html,/Tap a time to adjust it/);
   assert.doesNotMatch(html,/Unsaved proposal|compressed interval/);
   assert.doesNotMatch(html,/role="tab"/);
   assert.doesNotMatch(html,/Wait ·|compressed interval/);

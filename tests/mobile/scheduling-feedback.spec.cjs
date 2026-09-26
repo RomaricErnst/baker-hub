@@ -8,7 +8,7 @@ const NOW=Date.parse('2026-09-25T08:49:00+08:00');
 const BAKE=Date.parse('2026-09-26T19:30:00+08:00');
 const stored=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null'));
 const row=(plan,id)=>plan.locator(`[data-key-timing="${id}"]`);
-async function expand(plan,id){const r=row(plan,id);if(!await r.getByRole('slider').isVisible())await r.locator('.bh-key-modify').tap();await expect(r.getByRole('slider')).toBeVisible();}
+async function expand(plan,id){const r=row(plan,id);if(!await r.locator('.bh-key-exact').isVisible())await r.locator('.bh-key-time').tap();await expect(r.locator('.bh-key-exact')).toBeVisible();}
 const reset=page=>page.getByRole('button',{name:/^(Revenir aux horaires recommandés|Return to recommended times)$/});
 const confirm=plan=>plan.getByRole('button',{name:/^(Appliquer|Apply)$/});
 async function seed(page,{locale='fr',mode='custom',preferment='poolish',extra={}}={}){
@@ -110,13 +110,13 @@ test('custom full blackout has no green slots; removing it preserves the precedi
  await availability.getByRole('button',{name:'Ajouter',exact:true}).tap();
  await expect.poll(async()=>(await stored(page)).blocks.some(b=>b.label==='Absence totale')).toBe(true);
  await expect(plan.getByText('Vérification des créneaux…',{exact:true})).toHaveCount(0,{timeout:30000});
- await expand(plan,'mix');await expect(plan.locator('.bh-key-valid')).toHaveCount(0);
+ await expand(plan,'mix');await expect(row(plan,'mix').locator('.bh-key-window')).toHaveAttribute('data-has-windows','false');
  await enter(plan,'mix','2026-09-25T20:15');await expect(confirm(plan)).toBeDisabled();
  await plan.getByRole('button',{name:'Annuler',exact:true}).tap();
  await availability.getByRole('button',{name:'Supprimer Absence totale',exact:true}).tap();
  await expect.poll(async()=>(await stored(page)).blocks).toEqual(workBlocks);
  expect((await stored(page)).eatTime).toBe(BAKE);
- await expand(plan,'mix');await expect.poll(()=>plan.locator('.bh-key-valid').count(),{timeout:30000}).toBeGreaterThan(0);
+ await expand(plan,'mix');await expect(row(plan,'mix').locator('.bh-key-window')).toHaveAttribute('data-has-windows','true',{timeout:30000});
 });
 
 test('biga rapid overnight toggles keep the final blockers and fixed bake authoritative',async({page})=>{
@@ -136,7 +136,7 @@ test('biga rapid overnight toggles keep the final blockers and fixed bake author
 for(const storage of ['rt','fridge'])test(`levain ${storage}: blocker changes preserve confirmed mixing and Reset after reload retains blocks`,async({page})=>{
  const bake=Date.parse('2026-09-30T18:00:00+08:00');
  const {plan}=await seed(page,{preferment:'none',extra:{startTime:bake-26*3600000,eatTime:bake,yeastType:'sourdough',planningMode:'last_fed',lastFedTime:NOW-(storage==='rt'?3*3600000:8*86400000),lastFedAge:storage==='rt'?'today':'week',starterLocation:storage,lastFeedRatio:1,nextFeedRatio:1,ratioMode:'keep',starterTimingValid:true}});
- await expand(plan,'mix');const mix=row(plan,'mix').getByRole('slider');await mix.focus();await mix.press('ArrowRight');await expect(confirm(plan)).toBeEnabled();await confirm(plan).tap();
+ await expand(plan,'mix');await row(plan,'mix').getByRole('button',{name:'+ 30 min',exact:true}).tap();await expect(confirm(plan)).toBeEnabled();await confirm(plan).tap();
  const pinned=(await stored(page)).startTime;
  await page.getByRole('button',{name:/^Nuits/}).tap();
  await expect.poll(async()=>(await stored(page)).blocks.length).toBeGreaterThan(0);
@@ -147,28 +147,18 @@ for(const storage of ['rt','fridge'])test(`levain ${storage}: blocker changes pr
  expect((await stored(page)).blocks).toEqual(blocks);expect((await stored(page)).eatTime).toBe(bake);
 });
 
-test('rapid real pointer drag holds its axis and the last candidate controls feedback and commit',async({page})=>{
+test('rapid time-step taps keep the last candidate authoritative for feedback and commit',async({page})=>{
  const {plan}=await seed(page,{preferment:'none'});
- await expand(plan,'mix');const mixRow=row(plan,'mix'),slider=mixRow.getByRole('slider');
- await slider.evaluate(el=>el.scrollIntoView({block:'center',behavior:'instant'}));
- const limits=[await slider.getAttribute('min'),await slider.getAttribute('max')];
- const before=await stored(page),box=await slider.boundingBox();
- const y=box.y+box.height/2;
- expect(box.width).toBeGreaterThan(box.height*3);
- await expect(slider).toHaveAttribute('aria-orientation','horizontal');
- // Real mouse/pointer input through WebKit's native range, not setting value
- // or dispatching synthetic input events. Physical touch remains a separate gate.
- await page.mouse.move(box.x+box.width*.45,y);await page.mouse.down();
- for(const fraction of [.82,.18,.73,.35,.60])await page.mouse.move(box.x+box.width*fraction,y,{steps:3});
- await page.mouse.up();
+ await expand(plan,'mix');const mixRow=row(plan,'mix');
+ const before=await stored(page);
+ await expect(plan.getByRole('slider')).toHaveCount(0);
+ for(const direction of ['+','+','-','+','+'])await mixRow.getByRole('button',{name:`${direction} 30 min`,exact:true}).tap();
  await expect(confirm(plan)).toBeVisible();
- await expect(slider).toHaveAttribute('min',limits[0]);await expect(slider).toHaveAttribute('max',limits[1]);
- const finalTime=Number(await slider.inputValue());
- expect(finalTime).not.toBe(before.startTime);
- const valid=await mixRow.getAttribute('data-candidate-valid');
+ const finalTime=Number(await mixRow.getAttribute('data-at'));
+ expect(finalTime).toBe(before.startTime+90*60000);
  await expect(plan.getByText('Vérification des créneaux…',{exact:true})).toHaveCount(0,{timeout:30000});
- await expect(slider).toHaveValue(String(finalTime));await expect(mixRow).toHaveAttribute('data-candidate-valid',valid);
- expect((await mixRow.locator('.bh-key-time').innerText()).startsWith(await slider.getAttribute('aria-valuetext'))).toBe(true);
+ await expect(mixRow).toHaveAttribute('data-at',String(finalTime));
+ const valid=await mixRow.getAttribute('data-candidate-valid');
  expect((await stored(page)).startTime).toBe(before.startTime);
  if(valid==='true'){
   await expect(confirm(plan)).toBeEnabled();await expect(mixRow.locator('.bh-key-valid-selection')).toHaveCount(1);
@@ -230,10 +220,10 @@ test('previous/continue and browser back/forward reopen scheduling with confirme
  const after=await stored(page);
  expect(after.startTime).toBe(before.startTime);expect(after.eatTime).toBe(before.eatTime);
  expect(after.timingOverrides).toEqual(before.timingOverrides);expect(after.blocks).toEqual(before.blocks);
- await expand(plan,'mix');await expect(row(plan,'mix').getByRole('slider')).toHaveValue(String(before.startTime));
+ await expand(plan,'mix');await expect(row(plan,'mix')).toHaveAttribute('data-at',String(before.startTime));
 });
 
-test('compact Organisation progress and folded horizontal timing editor stay usable on narrow screens',async({page},info)=>{
+test('compact Organisation progress and one-tap timing editor stay usable on narrow screens',async({page},info)=>{
  const {plan}=await seed(page,{mode:'simple',preferment:'none'});
  const navigator=page.locator('.bh-bake-navigator');
  await expect(navigator).toContainText('Organisation');
@@ -245,14 +235,17 @@ test('compact Organisation progress and folded horizontal timing editor stay usa
  await progress.tap();await expect(page.getByRole('dialog',{name:'Votre plan',exact:true})).toBeVisible();
  await page.keyboard.press('Escape');await expect(page.getByRole('dialog',{name:'Votre plan',exact:true})).toBeHidden();
  const mix=row(plan,'mix');await expect(mix.getByRole('slider')).toHaveCount(0);
- await expect(mix.locator('.bh-key-window')).toBeVisible();
+ await expect(mix.locator('.bh-key-window')).toHaveCount(0);
+ await expect(confirm(plan)).toHaveCount(0);
  const before=await stored(page);
- await expand(plan,'mix');const slider=mix.getByRole('slider');
- await expect(slider).toHaveAttribute('aria-orientation','horizontal');
- const box=await slider.boundingBox();expect(box.width).toBeGreaterThan(box.height*3);
- await fits(page,plan.getByRole('button',{name:'Fermer',exact:true}));await fits(page,slider);
- await info.attach('horizontal-inline-editor',{body:await page.screenshot(),contentType:'image/png'});
- await plan.getByRole('button',{name:'Fermer',exact:true}).tap();await expect(slider).toHaveCount(0);
+ await expand(plan,'mix');const exact=mix.locator('.bh-key-exact');
+ await expect(plan.getByRole('slider')).toHaveCount(0);
+ await expect(confirm(plan)).toHaveCount(0);
+ await expect(mix.locator('.bh-key-window')).toBeVisible();
+ await fits(page,mix.locator('.bh-key-modify'));await fits(page,exact);
+ await fits(page,mix.getByRole('button',{name:'+ 30 min',exact:true}));
+ await info.attach('compact-inline-editor',{body:await page.screenshot(),contentType:'image/png'});
+ await mix.locator('.bh-key-modify').tap();await expect(exact).toHaveCount(0);
  expect((await stored(page)).startTime).toBe(before.startTime);expect((await stored(page)).eatTime).toBe(before.eatTime);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize().width);
 });
@@ -282,56 +275,68 @@ test('preferment follows mixing unless explicitly locked; reset stays above the 
  const {plan}=await seed(page);
  await enter(plan,'pref','2026-09-25T09:15');
  await confirm(plan).tap();
- await expand(plan,'pref');await expand(plan,'mix');
+ await expand(plan,'mix');
  const pref=row(plan,'pref'),mix=row(plan,'mix');
- const prefInput=pref.locator('input[type="datetime-local"]');
  const mixInput=mix.locator('input[type="datetime-local"]');
+ const prefBefore=await pref.getAttribute('data-at');
  await mixInput.fill('2026-09-26T07:15');
- await expect(prefInput).not.toHaveValue('2026-09-25T09:15');
+ await expect(pref).not.toHaveAttribute('data-at',prefBefore);
  await expect(confirm(plan)).toBeEnabled();
- await pref.getByRole('checkbox',{name:'Fixer cet horaire'}).check();
- const locked=await prefInput.inputValue();
+ await mix.locator('.bh-key-lock input[type="checkbox"]').check();
+ const locked=await pref.getAttribute('data-at');
  await mixInput.fill('2026-09-26T07:30');
- await expect(prefInput).toHaveValue(locked);
+ await expect(pref).toHaveAttribute('data-at',locked);
+ await expect(pref).toContainText('Heure conservée');
  await confirm(plan).tap();
  await expect.poll(async()=>(await stored(page)).timingOverrides.prefLocked).toBe(true);
  await page.reload();await expect(plan).toBeVisible();
- await expect(pref.getByRole('checkbox',{name:'Fixer cet horaire'})).toBeChecked();
- await expand(plan,'pref');await expand(plan,'mix');
- await pref.getByRole('checkbox',{name:'Fixer cet horaire'}).uncheck();
+ await expect(pref).toContainText('Heure conservée');
+ await expand(plan,'mix');
+ await expect(mix.locator('.bh-key-lock input[type="checkbox"]')).toBeChecked();
+ await mix.locator('.bh-key-lock input[type="checkbox"]').uncheck();
  await mixInput.fill('2026-09-26T07:45');
- await expect(prefInput).not.toHaveValue(locked);
+ await expect(pref).not.toHaveAttribute('data-at',locked);
  const resetButton=reset(page);
  expect(await resetButton.evaluate(el=>!!(el.compareDocumentPosition(document.querySelector('[data-key-timing="pref"]'))&Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
  await resetButton.tap();
  await expect(reset(page)).toHaveCount(0);
- await expand(plan,'pref');await expect(pref.getByRole('checkbox',{name:'Fixer cet horaire'})).not.toBeChecked();
+ await expand(plan,'mix');await expect(mix.locator('.bh-key-lock input[type="checkbox"]')).not.toBeChecked();
  expect((await stored(page)).eatTime).toBe(BAKE);
 });
 
 
-test('one shared editor opens both linked timings and Cancel restores both',async({page},info)=>{
+test('one selected editor keeps linked times visible and Cancel restores both',async({page},info)=>{
  const {plan}=await seed(page);
  const before=await stored(page);
  await expand(plan,'mix');
- await expect(row(plan,'pref').getByRole('slider')).toBeVisible();
- await expect(row(plan,'mix').getByRole('slider')).toBeVisible();
- await expect(confirm(plan)).toHaveCount(1);
- await expect(plan.locator('.bh-linked-times')).toContainText('Préferment');
- const prefBefore=await row(plan,'pref').locator('input[type="datetime-local"]').inputValue();
+ await expect(plan.getByRole('slider')).toHaveCount(0);
+ await expect(plan.locator('.bh-key-exact')).toHaveCount(1);
+ await expect(row(plan,'pref').locator('.bh-key-time')).toBeVisible();
+ await expect(row(plan,'mix').locator('.bh-key-exact')).toBeVisible();
+ await expect(row(plan,'pref').locator('.bh-key-window')).toHaveCount(0);
+ await expect(confirm(plan)).toHaveCount(0);
+ const prefBefore=await row(plan,'pref').getAttribute('data-at');
  await enter(plan,'mix','2026-09-25T22:00');
- await expect(row(plan,'pref').locator('input[type="datetime-local"]')).toHaveValue(prefBefore);
- await expect(plan.locator('.bh-linked-feedback')).toContainText('Préferment conservé');
+ await expect(row(plan,'pref')).toHaveAttribute('data-at',prefBefore);
+ await expect(plan.locator('.bh-linked-feedback')).toContainText('Préferment inchangé');
  // Use a future morning: an evening edit can legitimately keep preferment
  // at the earliest future slot instead of moving it before the fixed clock.
  await enter(plan,'mix','2026-09-26T07:15');
- await expect(row(plan,'pref').locator('input[type="datetime-local"]')).not.toHaveValue(prefBefore);
+ await expect(row(plan,'pref')).not.toHaveAttribute('data-at',prefBefore);
  await expect(plan.locator('.bh-linked-feedback')).toContainText('Préferment recalé');
  await expect(confirm(plan)).toBeEnabled();
  await expect(plan.locator('.bh-key-window[aria-busy="true"]')).toHaveCount(0);
- await info.attach('linked-editor-both-timings',{body:await plan.screenshot(),contentType:'image/png'});
+ // Selecting another row moves the sole editor without discarding the draft.
+ const changedMix=await row(plan,'mix').getAttribute('data-at');
+ await expand(plan,'pref');
+ await expect(plan.locator('.bh-key-exact')).toHaveCount(1);
+ await expect(row(plan,'mix').locator('.bh-key-exact')).toHaveCount(0);
+ await expect(row(plan,'mix').locator('.bh-key-window')).toHaveCount(0);
+ await expect(row(plan,'mix')).toHaveAttribute('data-at',changedMix);
+ await info.attach('linked-compact-editor',{body:await plan.screenshot(),contentType:'image/png'});
  await plan.getByRole('button',{name:'Annuler',exact:true}).tap();
- await expect(plan.getByRole('slider')).toHaveCount(0);
+ await expect(plan.locator('.bh-key-exact')).toHaveCount(0);
+ await expect(confirm(plan)).toHaveCount(0);
  expect((await stored(page)).startTime).toBe(before.startTime);
  expect((await stored(page)).prefOffsetH).toBe(before.prefOffsetH);
 });

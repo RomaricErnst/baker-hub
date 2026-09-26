@@ -81,3 +81,14 @@ test('preferment locking is explicit and requires a valid preparation time',()=>
  assert.deepEqual(normalizeTimingOverrides({pref:undefined,prefLocked:true}),{});
  assert.deepEqual(normalizeTimingOverrides({pref,prefLocked:false}),{pref});
 });
+
+test('final-feed keeping is explicit, requires a valid feed and survives session storage',()=>{
+ const feed=Date.parse('2026-09-27T09:00:00Z');
+ assert.deepEqual(normalizeTimingOverrides({feed}),{feed});
+ assert.deepEqual(normalizeTimingOverrides({feed,feedLocked:true}),{feed,feedLocked:true});
+ assert.deepEqual(normalizeTimingOverrides({feed:undefined,feedLocked:true}),{});
+ assert.deepEqual(normalizeTimingOverrides({feed,feedLocked:false}),{feed});
+ const store=new Map();global.localStorage={setItem:(k,v)=>store.set(k,v),getItem:k=>store.get(k)??null,removeItem:k=>store.delete(k)};
+ assert.equal(saveSession({bakeType:'bread',startTime:feed+5*3600000,timingOverrides:{feed,feedLocked:true}}),true);
+ assert.deepEqual(loadSession().timingOverrides,{feed,feedLocked:true});
+});

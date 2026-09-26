@@ -455,20 +455,6 @@ button,
 .bh-key-window-dot { display:inline-block; width:7px; height:7px; margin-right:6px; border-radius:50%; background:#477b4c; }
 .bh-key-note { font-size:14px; color:var(--terra); margin-top:8px; }
 .bh-key-editor { margin-top:12px; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--cream); }
-.bh-key-axis { display:block; padding-inline:12px; }
-.bh-key-track { position:relative; height:44px; width:100%; border-radius:8px; background:#e4e1db; }
-.bh-key-valid,.bh-key-busy { position:absolute; top:0; bottom:0; background:#83b77d; }
-.bh-key-busy { background:repeating-linear-gradient(135deg,#bdb8af,#bdb8af 4px,#eeeae4 4px,#eeeae4 8px); }
-.bh-key-track input { -webkit-appearance:none; appearance:none; position:absolute; inset:0; z-index:2; margin:0; width:100%; height:44px; background:transparent; direction:ltr; touch-action:pan-y; cursor:ew-resize; }
-.bh-key-track input::-webkit-slider-runnable-track { height:44px; background:transparent; border:0; }
-.bh-key-track input::-webkit-slider-thumb { -webkit-appearance:none; width:24px; height:44px; border:2px solid #6b4423; border-radius:12px; background:#fffdf8; box-shadow:0 1px 4px #0003; }
-.bh-key-track input::-moz-range-track { height:44px; background:transparent; border:0; }
-.bh-key-track input::-moz-range-progress { background:transparent; }
-.bh-key-track input::-moz-range-thumb { width:20px; height:40px; border:2px solid #6b4423; border-radius:12px; background:#fffdf8; }
-.bh-key-track input:focus-visible { outline:2px solid var(--terra); outline-offset:4px; border-radius:8px; }
-.bh-key-axis-labels { display:flex; justify-content:space-between; gap:8px; margin:6px -8px 8px; }
-.bh-key-axis-labels small { font-size:11px; color:var(--ash); }
-.bh-key-axis-labels small:last-child { text-align:right; }
 .bh-key-exact { display:block; margin:10px 0 0; font-size:13px; }
 .bh-key-exact input { display:block; width:100%; min-width:0; max-width:100%; min-height:44px; font-size:16px; padding:6px; margin-top:4px; border:1px solid var(--border); border-radius:8px; background:var(--warm); color:var(--char); }
 .bh-key-fixed { display:block; margin:6px 0; font-size:18px; }
@@ -481,27 +467,15 @@ button,
  button, a, summary, input, select { touch-action: manipulation; }
  .bh-header-stack { transition: none !important; }
  .bh-batch-actions { position:relative; bottom:auto; margin-top:20px; padding-bottom:calc(24px + env(safe-area-inset-bottom,0px)); }
- .bh-key-track input { touch-action:pan-y; }
 }
 
 .bh-key-reset { min-height:44px; padding:8px 0; border:0; background:none; color:var(--terra); font:inherit; font-size:14px; text-decoration:underline; text-underline-offset:3px; }
 .bh-key-lock { display:flex; align-items:center; gap:8px; min-height:44px; font-size:13px; color:var(--ash); }
 .bh-key-lock input { width:18px; height:18px; accent-color:var(--terra); }
 .bh-key-window { min-height:20px; }
-#schedule-anchor-panel[data-dragging] .bh-key-valid { background:#dedbd4; }
-#schedule-anchor-panel[data-dragging] .bh-key-note { visibility:hidden; }
-.bh-key-track input { transition:none; }
-
 /* Preview review should exercise the product without a floating toolbar. */
 html[data-preview="true"] vercel-live-feedback { display:none !important; }
 
-#schedule-anchor-panel[data-dragging] .bh-key-window { color:var(--smoke); }
-
-/* Its own strip is a map of validated candidate positions, still useful while
-   dragging. Other actions' old windows are neutral until the plan is solved. */
-#schedule-anchor-panel[data-dragging] [data-local-drag] .bh-key-valid { background:#83b77d; }
-
-/* Linked timing adjustments: one reviewable panel, two compact controls. */
 [data-mobile-setup="true"] { overflow-anchor:none; }
 .bh-plan-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:4px 12px; min-height:44px; }
 .bh-plan-state { font-size:14px; font-weight:600; color:#32623d; }
@@ -511,20 +485,6 @@ html[data-preview="true"] vercel-live-feedback { display:none !important; }
 .bh-target-presets { margin-top:10px; font-size:14px; }
 .bh-target-choices { display:flex; flex-wrap:wrap; gap:8px; margin-block:8px; }
 .bh-target-choices button { min-height:44px; padding:8px 10px; border:1px solid var(--border); border-radius:10px; background:var(--warm); color:var(--char); font:inherit; font-size:14px; }
-.bh-linked-title { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-.bh-linked-summary { padding:10px 12px; background:var(--cream); border-radius:12px 12px 0 0; }
-.bh-linked-summary p { font-size:12px; line-height:1.4; margin:6px 0; }
-.bh-linked-times { display:flex; flex-wrap:wrap; gap:8px 20px; font-size:12px; }
-.bh-linked-times b { display:block; color:var(--char); font-size:15px; }
-#schedule-anchor-panel[data-open] .bh-linked-editor { border:1px solid var(--border); border-radius:12px; margin-top:8px; }
-#schedule-anchor-panel[data-open] .bh-key-timing { padding:8px 12px; }
-#schedule-anchor-panel[data-open] .bh-key-heading .bh-section-title { font-size:14px; }
-#schedule-anchor-panel[data-open] .bh-key-modify { display:none; }
-#schedule-anchor-panel[data-open] .bh-key-time { font-size:18px; min-height:36px; }
-#schedule-anchor-panel[data-open] .bh-key-detail { font-size:12px; }
-#schedule-anchor-panel[data-open] .bh-key-editor { margin-top:6px; padding:8px; }
-#schedule-anchor-panel[data-open] .bh-key-lock { min-height:44px; }
-#schedule-anchor-panel[data-open] .bh-key-exact { display:flex; align-items:center; gap:8px; margin-top:4px; font-size:12px; }
 .bh-linked-actions { padding:8px 12px 12px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px 12px; background:var(--warm); border-radius:0 0 12px 12px; }
 .bh-linked-feedback { grid-column:1/-1; min-height:20px; font-size:12px; color:var(--ash); }
 .bh-apply-plan { min-height:44px; padding:10px 16px; border:0; border-radius:10px; background:var(--terra); color:white; font:inherit; font-weight:600; }
@@ -536,3 +496,24 @@ html[data-preview="true"] vercel-live-feedback { display:none !important; }
 .bh-clock-input:has(input:disabled) { opacity:.5; }
 
 @media (hover:hover) { .bh-clock-input > input:focus { opacity:1; background:var(--warm); color:var(--char); } }
+
+/* A chronological list: spacing conveys order, not elapsed time. */
+.bh-timeline-hint { margin:4px 0 14px; color:var(--smoke); font-size:13px; }
+.bh-schedule-timeline { list-style:none; margin:0; padding:0 0 0 10px; }
+.bh-timeline-day { position:relative; margin:0; padding:16px 0 8px 22px; color:var(--ash); font-size:13px; text-transform:capitalize; }
+.bh-schedule-timeline .bh-key-timing { position:relative; margin:0; padding:8px 0 18px 22px; border:0; border-left:2px solid var(--border); }
+.bh-schedule-timeline .bh-key-timing:last-child { border-left-color:transparent; }
+.bh-timeline-node { position:absolute; left:-6px; top:15px; width:10px; height:10px; border-radius:50%; border:2px solid var(--terra); background:var(--warm); }
+.bh-schedule-timeline .bh-key-content { padding:0 8px; border-radius:10px; }
+.bh-schedule-timeline [data-selected] .bh-key-content { background:var(--cream); padding:8px; margin-top:-8px; }
+.bh-schedule-timeline .bh-key-heading .bh-section-title { font-size:15px; }
+.bh-schedule-timeline .bh-key-time { font-size:22px; min-height:44px; }
+.bh-time-edit { font-size:14px; color:var(--terra); }
+.bh-schedule-timeline .bh-key-exact { margin:4px 0; }
+.bh-schedule-timeline .bh-key-editor { border:0; padding:0 0 8px; margin:4px 0 0; background:transparent; }
+.bh-time-steps { display:flex; gap:8px; }
+.bh-time-steps button { min-height:44px; flex:1; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--warm); font:inherit; color:var(--terra); font-size:14px; }
+.bh-time-steps button:disabled { opacity:.45; }
+.bh-kept-time { display:inline-block; color:var(--ash); font-size:12px; padding:2px 0; }
+.bh-visually-hidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.bh-schedule-timeline button:focus-visible { outline:2px solid var(--terra); outline-offset:3px; }
