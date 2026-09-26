@@ -173,7 +173,7 @@ test('country bread offers illustrated tartines and keeps loaf quantities when r
  await expect(page.getByRole('article').first()).toBeVisible();
  await page.locator('[data-companion-action]').getByRole('button',{name:'← Précédent',exact:true}).tap();
  await expect(count).toHaveValue('2');
- await page.getByRole('button',{name:'Changer de pain',exact:true}).tap();
+ await page.locator('.bh-batch-context').getByRole('button',{name:'Modifier le pain choisi',exact:true}).tap();
  await expect(page.getByRole('heading',{name:'Choisissez votre pain',exact:true})).toBeVisible();
  await expect.poll(async()=>(await stored(page))?.styleKey).toBe('pain_campagne');
 });
@@ -290,7 +290,7 @@ test('bread family return preserves choices; wraps and meal examples are discove
  const brioche=page.getByRole('button',{name:/^Brioche\b/});await expect(brioche.locator('img')).toHaveCount(1);
  await page.getByRole('button',{name:/^Pita à poche/}).tap();
  const quantity=page.getByLabel('Nombre de pièces',{exact:true});await quantity.fill('5');await quantity.blur();
- await page.getByRole('button',{name:'Changer de pain',exact:true}).tap();
+ await page.locator('.bh-batch-context').getByRole('button',{name:'Modifier le pain choisi',exact:true}).tap();
  await page.getByRole('button',{name:'← Pizza ou pain',exact:true}).tap();
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Que souhaitez-vous préparer ?',exact:true})).toBeVisible();
