@@ -39,9 +39,9 @@ for(const mode of ['simple','custom'])test(`${mode}: preferment independent, mix
  const {plan,start,bake}=await openPlan(page,mode,[],true);
  await expand(plan,'mix');await expand(plan,'pref');
  const mix=row(plan,'mix').getByRole('slider'),pref=row(plan,'pref').getByRole('slider');await expect(pref).toBeVisible();await expect(mix).toBeVisible();
- await mix.focus();await mix.press('ArrowRight');await expect(mix).toHaveValue(String(+start+900000));await expect(pref).toHaveValue(String(+start-12*3600000+900000));
+ await mix.focus();await mix.press('ArrowRight');await expect(mix).toHaveValue(String(+start+900000));await expect(pref).toHaveValue(String(+start-15*3600000+900000));
  await pref.focus();await pref.press('ArrowRight');await expect(mix).toHaveValue(String(+start+900000));await expect(confirm(plan)).toBeEnabled();await confirm(plan).click();
- await expect.poll(async()=>(await stored(page)).prefOffsetH).toBe(11.75);expect((await stored(page)).startTime).toBe(+start+900000);expect((await stored(page)).eatTime).toBe(+bake);
+ await expect.poll(async()=>(await stored(page)).prefOffsetH).toBe(14.75);expect((await stored(page)).startTime).toBe(+start+900000);expect((await stored(page)).eatTime).toBe(+bake);
  await page.reload();await expect(plan).toBeVisible();await expand(plan,'mix');await expect(mix).toHaveValue(String(+start+900000));
  await enter(plan,'pref',new Date(+start-2*3600000));await expect(confirm(plan)).toBeDisabled();await expect(row(plan,'pref')).toContainText('Maturation du préferment');
 });

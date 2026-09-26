@@ -286,12 +286,12 @@ test('preferment follows mixing unless explicitly locked; reset stays above the 
  const pref=row(plan,'pref'),mix=row(plan,'mix');
  const prefInput=pref.locator('input[type="datetime-local"]');
  const mixInput=mix.locator('input[type="datetime-local"]');
- await mixInput.fill('2026-09-25T20:15');
+ await mixInput.fill('2026-09-26T07:15');
  await expect(prefInput).not.toHaveValue('2026-09-25T09:15');
  await expect(confirm(plan)).toBeEnabled();
  await pref.getByRole('checkbox',{name:'Fixer cet horaire'}).check();
  const locked=await prefInput.inputValue();
- await mixInput.fill('2026-09-25T20:30');
+ await mixInput.fill('2026-09-26T07:30');
  await expect(prefInput).toHaveValue(locked);
  await confirm(plan).tap();
  await expect.poll(async()=>(await stored(page)).timingOverrides.prefLocked).toBe(true);
@@ -299,7 +299,7 @@ test('preferment follows mixing unless explicitly locked; reset stays above the 
  await expect(pref.getByRole('checkbox',{name:'Fixer cet horaire'})).toBeChecked();
  await expand(plan,'pref');await expand(plan,'mix');
  await pref.getByRole('checkbox',{name:'Fixer cet horaire'}).uncheck();
- await mixInput.fill('2026-09-25T20:45');
+ await mixInput.fill('2026-09-26T07:45');
  await expect(prefInput).not.toHaveValue(locked);
  const resetButton=reset(page);
  expect(await resetButton.evaluate(el=>!!(el.compareDocumentPosition(document.querySelector('[data-key-timing="pref"]'))&Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);

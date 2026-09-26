@@ -33,6 +33,12 @@ function TimingRow({anchor,blocks,isFr,onChange,check,cacheKey,hasDraft,dragging
   if(commit&&value!==null)onChange(id,value);
  };
 
+ const finishRef=useRef(finish);finishRef.current=finish;
+ useEffect(()=>{
+  const up=()=>finishRef.current(true),cancel=()=>finishRef.current(false);
+  window.addEventListener('pointerup',up);window.addEventListener('pointercancel',cancel);
+  return()=>{window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',cancel);};
+ },[]);
  const canEdit=editable&&to>from;
  const queryKey=JSON.stringify([id,from,to,editable,cacheKey]);
  const slots=result?.key===queryKey?result.slots:[];
@@ -80,8 +86,8 @@ function TimingRow({anchor,blocks,isFr,onChange,check,cacheKey,hasDraft,dragging
           boundary stays a point; never expand it into unavailable minutes. */}
       {windows.map(window=><span key={window.from} className="bh-key-valid" style={{left:`${pos(window.from)}%`,width:`${pos(window.to)-pos(window.from)}%`,minWidth:window.from===window.to?3:undefined}}/>)}
       {blocks.filter(b=>+b.to>from&&+b.from<to).map((b,i)=><span key={i} className="bh-key-busy" style={{left:`${pos(+b.from)}%`,width:`${pos(+b.to)-pos(+b.from)}%`}}/>)}
-      <input type="range" min={from} max={to} step={STEP} value={Math.max(from,Math.min(to,at))} aria-orientation="horizontal" aria-label={(isFr?'Ajuster ':'Adjust ')+anchor.name} aria-valuetext={fmt(at)} onPointerDown={e=>{activePointer.current=true;latest.current=committedAt;setDragAt(committedAt);onInteractionChange(true);e.currentTarget.setPointerCapture(e.pointerId);}}
-       onPointerUp={()=>finish(true)} onPointerCancel={()=>finish(false)} onLostPointerCapture={()=>finish(true)}
+      <input type="range" min={from} max={to} step={STEP} value={Math.max(from,Math.min(to,at))} aria-orientation="horizontal" aria-label={(isFr?'Ajuster ':'Adjust ')+anchor.name} aria-valuetext={fmt(at)} onPointerDown={()=>{activePointer.current=true;latest.current=committedAt;setDragAt(committedAt);onInteractionChange(true);}}
+       onPointerUp={()=>finish(true)} onPointerCancel={()=>finish(false)}
        onChange={e=>{const value=+e.target.value;if(activePointer.current){latest.current=value;setDragAt(value);}else onChange(id,value);}} />
      </div>
      <div className="bh-key-axis-labels"><small>{fmt(from)}</small><small>{fmt(to)}</small></div>

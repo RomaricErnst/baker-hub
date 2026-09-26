@@ -391,7 +391,7 @@ button,
 .bh-section-back { display:block; min-height:44px; padding:10px 0; margin:0 0 8px; border:0; background:transparent; color:var(--terra); font:inherit; font-size:14px; text-align:left; cursor:pointer; }
 .bh-recipe-next { display:grid; gap:8px; }
 .bh-section-back:focus-visible { outline:2px solid var(--terra); outline-offset:2px; }
-.bh-batch-content input, .bh-batch-content button { scroll-margin-top:140px; }
+.bh-batch-content input, .bh-batch-content button { scroll-margin-top:140px; scroll-margin-bottom:140px; }
 @media (prefers-reduced-motion:reduce) { .bh-bake-navigator { transition:none; } }
 [data-keyboard-open="true"] .bh-batch-actions { display:none !important; }
 
@@ -478,7 +478,7 @@ button,
 @media (pointer: coarse) {
  button, a, summary, input, select { touch-action: manipulation; }
  .bh-header-stack { transition: none !important; }
- .bh-batch-actions { bottom:24px; }
+ .bh-batch-actions { bottom:24px; margin-top:24px; }
  .bh-key-track input { touch-action:pan-y; }
 }
 .bh-key-reset-space { min-height:52px; }
