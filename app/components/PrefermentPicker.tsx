@@ -23,7 +23,7 @@ interface PrefermentPickerProps {
 
 export default function PrefermentPicker({
   selected, onSelect, flourPct, onFlourPctChange, suggestedFlourPct = 20, directOnly = false,
-  styleKey, hideTypes = [], kitchenTemp, yeastType, totalFlourGrams,
+  styleKey, hideTypes = [], kitchenTemp, yeastType,
 }: PrefermentPickerProps) {
   const t = useTranslations('preferment');
   const fr = useLocale() === 'fr';
@@ -76,15 +76,6 @@ export default function PrefermentPicker({
                   </label>
                   <input type="range" aria-label={fr ? 'Part de farine en préferment' : 'Prefermented flour share'} min={10} max={60} step={1} value={flourPct ?? suggestedFlourPct} onChange={e => { setPctDraft(e.target.value); onFlourPctChange(Number(e.target.value)); }} style={{ width: '100%', minHeight: 44, accentColor: 'var(--terra)' }} />
                   <p style={{ margin: '4px 0', fontSize: 12, color: 'var(--smoke)' }}>{fr ? 'Proportion suggérée' : 'Suggested proportion'} : {suggestedFlourPct}%</p>
-                  {totalFlourGrams !== undefined && Number.isFinite(totalFlourGrams) && totalFlourGrams > 0 && (() => {
-                    const pct = flourPct ?? suggestedFlourPct;
-                    const prefFlour = Math.round(totalFlourGrams * pct / 100);
-                    const prefWater = Math.round(prefFlour * PREFERMENT_TYPES[selected].hydration / 100);
-                    const format = (grams: number) => `${grams.toLocaleString(fr ? 'fr-FR' : 'en-US')} g`;
-                    return <p aria-live="polite" style={{ fontSize: 13 }}>{fr
-                      ? `${pct} % de toute la farine · ${format(prefFlour)} de farine + ${format(prefWater)} d’eau (estimation)`
-                      : `${pct}% of all flour · ${format(prefFlour)} flour + ${format(prefWater)} water (estimate)`}</p>;
-                  })()}
                   <details style={{ marginTop: 8, fontSize: 13 }}>
                     <summary style={{ minHeight: 44, cursor: 'pointer' }}>{fr ? 'M’aider à choisir' : 'Help me choose'}</summary>
                     <ul>

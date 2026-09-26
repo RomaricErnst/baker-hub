@@ -469,7 +469,7 @@ function SummaryBar({ flow, modeChip }:
       <div className="bh-organisation-progress">
         <button type="button" aria-haspopup="dialog" aria-expanded={open} onClick={()=>setOpen(true)}
           className="bh-step-trigger">
-          {fr?'Étape':'Step'} {Math.max(1,flow.steps.findIndex(s=>s.id===flow.activeId)+1)}/{flow.steps.length} <span aria-hidden="true">⌄</span>
+          <span>{fr?'Étape':'Step'} {Math.max(1,flow.steps.findIndex(s=>s.id===flow.activeId)+1)}/{flow.steps.length}</span><svg aria-hidden="true" width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="m4 6 4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
       </div>
 

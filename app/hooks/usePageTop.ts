@@ -13,7 +13,7 @@ export function usePageTop(pageKey:string){
   const stop=()=>{interacted=true;};
   const scroll=()=>{if(window.scrollY>0)settling=false;};
   const viewportChanged=()=>{if(!interacted){reset();cancelAnimationFrame(frame);frame=requestAnimationFrame(reset);}};
-  const restore=()=>{interacted=false;viewportChanged();};
+  const restore=()=>{interacted=false;if(document.activeElement instanceof HTMLElement)document.activeElement.blur();viewportChanged();};
   const previous=history.scrollRestoration;history.scrollRestoration='manual';
   if(document.activeElement instanceof HTMLElement)document.activeElement.blur();
   reset();

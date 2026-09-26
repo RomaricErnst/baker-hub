@@ -823,6 +823,7 @@ export default function BakeGuide({
   const batch = recipe ? mixingBatchPlan(recipe, mixerType, mixingBatches, activeBatch) : null;
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const focusRequestedStep = useRef<number | null>(null);
+  const previousGuideView = useRef({active:false,phase});
   const viewedPhase = useRef<'preparation' | 'cooking' | undefined>(undefined);
   const phasePositions = useRef<Partial<Record<'preparation' | 'cooking', number>>>({});
   function navigateGuideStep(step: number) {
@@ -885,24 +886,26 @@ export default function BakeGuide({
   }, [active, phase, currentStep, doneSteps, totalSteps]);
 
   useEffect(() => {
-    if (active && currentStep > 0) {
-      const el = stepRefs.current[currentStep];
-      if (el && !el.hidden) {
-        if (focusRequestedStep.current === currentStep) {
-          focusRequestedStep.current = null;
-          el.focus({ preventScroll: true });
-        }
-        const r = el.getBoundingClientRect();
-        const headerH = 120; // sticky header + journey bar
-        // Scroll only when the next step isn't comfortably visible —
-        // instant, landing just under the header (no smooth: targets
-        // must not move under fingers).
-        if (r.top < headerH || r.top > window.innerHeight * 0.6) {
-          window.scrollTo({ top: r.top + window.scrollY - headerH, behavior: 'smooth' });
-        }
-      }
+    const samePage=previousGuideView.current.active&&previousGuideView.current.phase===phase;
+    previousGuideView.current={active,phase};
+    const requested=focusRequestedStep.current===currentStep;
+    // Entering/reopening a section belongs to the page-level scroll reset.
+    // Only an explicit next/previous instruction within this section may
+    // bring its card into view; restoring remembered progress must not scroll.
+    if(!active||!samePage){focusRequestedStep.current=null;return;}
+    if(!requested||currentStep<=0)return;
+    focusRequestedStep.current=null;
+    const el=stepRefs.current[currentStep];
+    if(!el||el.hidden)return;
+    el.focus({preventScroll:true});
+    const r=el.getBoundingClientRect();
+    const headerBottom=Math.max(0,
+      document.querySelector('.bh-header-stack')?.getBoundingClientRect().bottom??0,
+      document.querySelector('.bh-bake-navigator')?.getBoundingClientRect().bottom??0)+12;
+    if(r.top<headerBottom||r.top>window.innerHeight*.6){
+      window.scrollTo({top:Math.max(0,r.top+window.scrollY-headerBottom),behavior:'instant'});
     }
-  }, [currentStep, active, phase]);
+  }, [currentStep,active,phase]);
 
   const isSourdough = recipe ? !!recipe.sourdough : styleKey === 'sourdough' || styleKey === 'pain_levain';
   const breadProtocol = getBreadProtocol(styleKey);
