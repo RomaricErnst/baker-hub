@@ -494,3 +494,7 @@ button,
 html[data-preview="true"] vercel-live-feedback { display:none !important; }
 
 #schedule-anchor-panel[data-dragging] .bh-key-window { color:var(--smoke); }
+
+/* Its own strip is a map of validated candidate positions, still useful while
+   dragging. Other actions' old windows are neutral until the plan is solved. */
+#schedule-anchor-panel[data-dragging] [data-local-drag] .bh-key-valid { background:#83b77d; }

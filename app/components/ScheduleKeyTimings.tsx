@@ -60,7 +60,7 @@ function TimingRow({anchor,blocks,isFr,onChange,check,cacheKey,hasDraft,dragging
  const rangeLabel=(window:SlotWindow)=>window.from===window.to?fmt(window.from):`${fmt(window.from)} – ${fmt(window.to)}`;
  const nearest=slots.filter(s=>s.valid).reduce<EditSlot|undefined>((best,s)=>!best||Math.abs(s.at-at)<Math.abs(best.at-at)?s:best,undefined);
  const date=new Date(at),local=new Date(at-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
- return <div data-key-timing={id} data-candidate-valid={!dragging&&anchor.valid===true?'true':'false'} className="bh-key-timing">
+ return <div data-key-timing={id} data-local-drag={dragAt!==null||undefined} data-candidate-valid={!dragging&&anchor.valid===true?'true':'false'} className="bh-key-timing">
   <div className="bh-key-content">
    <div className="bh-key-heading"><h3 className="bh-section-title">{anchor.name}</h3>
     {canEdit&&<button type="button" className="bh-key-modify" aria-label={(isFr?'Modifier ':'Edit ')+anchor.name} aria-expanded={open} aria-controls={editorId} onClick={()=>setOpen(value=>!value)}>{open?(isFr?'Fermer':'Close'):(isFr?'Modifier':'Edit')}</button>}
