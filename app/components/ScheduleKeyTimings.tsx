@@ -1,6 +1,7 @@
 'use client';
 import {useEffect,useId,useRef,useState,type ReactNode} from 'react';
 import type {AvailabilityBlock} from '../utils';
+import ScheduleClockInput from './ScheduleClockInput';
 import type {EditSlot} from '../utils/scheduleEdit';
 export type KeyTimingAnchor={id:string;name:string;at:number;from:number;to:number;editable:boolean;valid?:boolean;detail?:ReactNode;note?:ReactNode;control?:ReactNode;locked?:boolean};
 const STEP=900000;
@@ -15,8 +16,7 @@ function compatibleWindows(slots:EditSlot[]):SlotWindow[]{
  }
  return windows;
 }
-function TimingRow({anchor,blocks,isFr,onChange,check,cacheKey,hasDraft,dragging,onInteractionChange}:{dragging:boolean;onInteractionChange:(value:boolean)=>void;anchor:KeyTimingAnchor;blocks:AvailabilityBlock[];isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string;hasDraft?:boolean}){
- const [open,setOpen]=useState(false);
+function TimingRow({anchor,blocks,isFr,onChange,check,cacheKey,open,onToggle,dragging,onInteractionChange}:{dragging:boolean;onInteractionChange:(value:boolean)=>void;anchor:KeyTimingAnchor;blocks:AvailabilityBlock[];isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string;open:boolean;onToggle:()=>void}){
  const [result,setResult]=useState<{key:string;slots:EditSlot[]}|null>(null);
  const checkRef=useRef(check);checkRef.current=check;
  const editorId=useId();
@@ -43,7 +43,6 @@ function TimingRow({anchor,blocks,isFr,onChange,check,cacheKey,hasDraft,dragging
  const queryKey=JSON.stringify([id,from,to,editable,cacheKey]);
  const slots=result?.key===queryKey?result.slots:[];
  const checking=canEdit&&result?.key!==queryKey;
- useEffect(()=>{if(!hasDraft)setOpen(false);},[hasDraft]);
  useEffect(()=>{
   if(!canEdit||dragging)return;
   const checkCandidate=checkRef.current;
@@ -69,13 +68,13 @@ function TimingRow({anchor,blocks,isFr,onChange,check,cacheKey,hasDraft,dragging
  return <div data-key-timing={id} data-local-drag={dragAt!==null||undefined} data-candidate-valid={!dragging&&anchor.valid===true?'true':'false'} className="bh-key-timing">
   <div className="bh-key-content">
    <div className="bh-key-heading"><h3 className="bh-section-title">{anchor.name}</h3>
-    {canEdit&&<button type="button" className="bh-key-modify" aria-label={(isFr?'Modifier ':'Edit ')+anchor.name} aria-expanded={open} aria-controls={editorId} onClick={()=>setOpen(value=>!value)}>{open?(isFr?'Fermer':'Close'):(isFr?'Modifier':'Edit')}</button>}
+    {canEdit&&<button type="button" className="bh-key-modify" aria-label={(isFr?'Modifier ':'Edit ')+anchor.name} aria-expanded={open} aria-controls={editorId} onClick={onToggle}>{open?(isFr?'Fermer':'Close'):(isFr?'Modifier':'Edit')}</button>}
    </div>
-   {canEdit?<button type="button" className="bh-key-time" aria-expanded={open} aria-controls={editorId} onClick={()=>setOpen(value=>!value)}>{fmt(at)}{!dragging&&anchor.valid===true&&<span className="bh-key-valid-selection" role="img" aria-label={isFr?'Compatible avec le planning estimé':'Compatible with the estimated schedule'}>✓</span>}</button>:<strong className="bh-key-fixed">{fmt(at)}</strong>}
+   {canEdit?<button type="button" className="bh-key-time" aria-expanded={open} aria-controls={editorId} onClick={onToggle}>{fmt(at)}{!dragging&&anchor.valid===true&&<span className="bh-key-valid-selection" role="img" aria-label={isFr?'Compatible avec le planning estimé':'Compatible with the estimated schedule'}>✓</span>}</button>:<strong className="bh-key-fixed">{fmt(at)}</strong>}
    {(open||anchor.locked)&&anchor.control}
    {anchor.detail&&<div className="bh-key-detail">{anchor.detail}</div>}
    {canEdit&&<div className="bh-key-window" data-has-windows={windows.length>0} aria-busy={checking}>
-    {dragging?(isFr?'Relâchez pour recalculer le planning.':'Release to recalculate the plan.'):checking?(isFr?'Vérification des créneaux…':'Checking available slots…'):windows.length>0?<><span aria-hidden="true" className="bh-key-window-dot"/>{isFr?'Ajustable : ':'Adjustable: '}{windows.slice(0,open?windows.length:2).map(rangeLabel).join(' · ')}{!open&&windows.length>2&&` · +${windows.length-2} ${isFr?'créneaux':'windows'}`}</>:(isFr?'Aucun autre horaire compatible trouvé.':'No alternative compatible time found.')}
+    {dragging?(isFr?'Relâchez pour recalculer le planning.':'Release to recalculate the plan.'):checking?(isFr?'Vérification des créneaux…':'Checking available slots…'):windows.length>0?<><span aria-hidden="true" className="bh-key-window-dot"/>{isFr?'Ajustable : ':'Adjustable: '}{windows.slice(0,open?windows.length:2).map(rangeLabel).join(' · ')}{!open&&windows.length>2&&` · +${windows.length-2} ${isFr?'créneaux':'windows'}`}</>:(anchor.valid?(isFr?'Horaire actuel compatible.':'Current time is compatible.'):(isFr?'Le planning doit être corrigé.':'The plan needs a correction.'))}
    </div>}
    {anchor.note&&<div className="bh-key-note" aria-live="polite">{anchor.note}</div>}
    {anchor.note&&typeof anchor.note==='string'&&!checking&&nearest&&<button type="button" className="bh-back-action" onClick={()=>onChange(id,nearest.at)}>{isFr?'Utiliser ':'Use '}{fmt(nearest.at)}</button>}
@@ -92,18 +91,38 @@ function TimingRow({anchor,blocks,isFr,onChange,check,cacheKey,hasDraft,dragging
      </div>
      <div className="bh-key-axis-labels"><small>{fmt(from)}</small><small>{fmt(to)}</small></div>
     </div>
-    <p className="bh-key-legend">{isFr?'Vert : compatible · Hachures : indisponible':'Green: compatible · Hatching: unavailable'}</p>
-    <label className="bh-key-exact"><span>{isFr?'Date et heure':'Date and time'}</span><input type="datetime-local" step={900} value={local} onChange={e=>{const next=+new Date(e.target.value);if(Number.isFinite(next))onChange(id,next);}}/></label>
+    
+    <label className="bh-key-exact"><span>{isFr?'Date et heure':'Date and time'}</span><ScheduleClockInput isFr={isFr} type="datetime-local" step={900} value={local} onChange={e=>{const next=+new Date(e.target.value);if(Number.isFinite(next))onChange(id,next);}}/></label>
    </div>}
   </div>
  </div>;
 }
-export default function ScheduleKeyTimings({anchors,blocks,isFr,onChange,check,cacheKey,hasDraft,children,header,onInteractionChange}:{header?:ReactNode;onInteractionChange:(value:boolean)=>void;anchors:KeyTimingAnchor[];blocks:AvailabilityBlock[];isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string;hasDraft?:boolean;children?:ReactNode}){
+export default function ScheduleKeyTimings({anchors,blocks,isFr,onChange,check,cacheKey,hasDraft,children,header,onInteractionChange,onCancel,onApply,canApply,onOpenChange,notice,ovenAt,personalized,adjustment}:{header?:ReactNode;notice?:ReactNode;adjustment?:ReactNode;onApply:()=>void;canApply:boolean;onOpenChange:(open:boolean)=>void;ovenAt:number;personalized:boolean;onCancel:()=>void;onInteractionChange:(value:boolean)=>void;anchors:KeyTimingAnchor[];blocks:AvailabilityBlock[];isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string;hasDraft?:boolean;children?:ReactNode}){
  const [dragging,setDragging]=useState(false);
+ const [open,setOpen]=useState(false);
+ useEffect(()=>{onOpenChange(open);return()=>onOpenChange(false);},[open,onOpenChange]);
+ useEffect(()=>{if(!hasDraft)setOpen(false);},[hasDraft]);
  const interaction=(value:boolean)=>{setDragging(value);onInteractionChange(value);};
- return <section data-dragging={dragging||undefined} aria-label={isFr?'Vos moments clés':'Your key times'} id="schedule-anchor-panel">
-  <div className="bh-key-reset-space">{header}</div>
-  {anchors.map(anchor=><TimingRow key={anchor.id} {...{anchor,blocks,isFr,onChange,check,cacheKey,hasDraft,dragging}} onInteractionChange={interaction}/>)}
+ const toggle=()=>{if(dragging)return;if(open)onCancel();setOpen(!open);};
+ const valid=anchors.every(anchor=>anchor.valid);
+ const fmt=(at:number)=>new Date(at).toLocaleString(isFr?'fr-FR':'en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false});
+ return <section data-open={open||undefined} data-dragging={dragging||undefined} aria-label={isFr?'Vos moments clés':'Your key times'} id="schedule-anchor-panel">
+  <div className="bh-plan-heading">
+   <span className="bh-plan-state" data-valid={valid} role="status">{dragging?(isFr?'Ajustement en cours':'Adjusting'):!valid?(isFr?'À corriger':'Needs attention'):hasDraft?(isFr?'Modifications à appliquer':'Changes to apply'):personalized?(isFr?'Planning personnalisé':'Your adjusted plan'):(isFr?'Planning recommandé':'Recommended plan')}</span>
+   {header}
+  </div>
+  {notice}
+  <div className="bh-linked-editor">
+   {open&&<div className="bh-linked-summary">
+    <div className="bh-linked-title"><strong>{isFr?'Ajuster le planning':'Adjust your plan'}</strong><button type="button" className="bh-back-action" onClick={toggle}>{isFr?'Fermer':'Close'}</button></div>
+    <div className="bh-linked-times">{anchors.filter(a=>a.editable).map(a=><span key={a.id}>{a.id==='pref'?(isFr?'Préferment':'Preferment'):a.id==='mix'?(isFr?'Pétrissage':'Mixing'):a.name}<b>{fmt(a.at)}{a.locked?' · 🔒':''}</b></span>)}</div>
+    <p>{isFr?'Enfournement conservé : ':'Baking time kept: '}{fmt(ovenAt)}</p>
+    {anchors.some(a=>a.id==='pref')&&<p>{isFr?'Le préferment suit le pétrissage, sauf si vous fixez son horaire.':'Preferment follows mixing unless you keep its time fixed.'}</p>}
+    <p className="bh-key-legend">{isFr?'Vert : planning compatible · Hachures : indisponible':'Green: compatible plan · Hatching: unavailable'}</p>
+   </div>}
+   {anchors.map(anchor=><TimingRow key={anchor.id} {...{anchor,blocks,isFr,onChange,check,cacheKey,open,dragging}} onToggle={toggle} onInteractionChange={interaction}/>)}
+   {open&&<div className="bh-linked-actions"><div className="bh-linked-feedback" role="status">{dragging?(isFr?'Relâchez pour recalculer les horaires liés.':'Release to update linked times.'):adjustment}</div><button type="button" className="bh-apply-plan" disabled={dragging||!canApply} onClick={()=>{onApply();setOpen(false);}}>{isFr?'Appliquer':'Apply'}</button><button type="button" className="bh-back-action" onClick={()=>{onCancel();setOpen(false);}}>{isFr?'Annuler':'Cancel'}</button></div>}
+  </div>
   {children}
  </section>;
 }

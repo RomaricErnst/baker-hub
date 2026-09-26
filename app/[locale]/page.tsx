@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations, useLocale } from 'next-intl';
@@ -1183,6 +1183,9 @@ export default function Home() {
       const curr = Math.max(0, Math.min(window.scrollY, document.documentElement.scrollHeight - window.innerHeight));
       const delta = curr - lastScrollY.current;
       lastScrollY.current = curr;
+      // Setup has stable navigation: Safari toolbar movement must not trigger
+      // another application header movement at the same time.
+      if (document.querySelector('[data-mobile-setup="true"]')) { setNavHidden(false); return; }
       if (touchingControl) return;
       if (curr < 24 || curr >= document.documentElement.scrollHeight - window.innerHeight - 24) { setNavHidden(false); travel = 0; return; }
       if (document.querySelector('[role="dialog"][aria-modal="true"]') || document.querySelector('.bh-header-stack :focus-visible, .bh-bake-navigator :focus-visible')) return;
@@ -2340,17 +2343,25 @@ export default function Home() {
     : destination === 'organisation'
       ? `organisation:${modeChosen}:${tab}:${setupOverview}:${tab === 'simple' ? activeStep : advancedStep}:${equipmentPanel}`
       : `${destination}:${destination === 'batch' ? batchView : destination === 'protocol' ? protocolView : destination === 'service' ? serviceView : ''}:${companionVisible ? companionPhase : ''}`;
-  useEffect(() => {
+  useLayoutEffect(() => {
     setNavHidden(false);
     lastScrollY.current = 0;
-    const reset = () => window.scrollTo({ top: 0, behavior: 'instant' });
+    let interacted=false;
+    const stop=()=>{interacted=true;};
+    // Release focus from a removed page before Safari scrolls it back into view.
+    if(document.activeElement instanceof HTMLElement)document.activeElement.blur();
+    const reset = () => {if(!interacted)window.scrollTo({ top: 0, behavior: 'instant' });};
+    window.addEventListener('pointerdown',stop,{passive:true});
+    window.addEventListener('wheel',stop,{passive:true});
+    window.addEventListener('keydown',stop);
+    const settle=setTimeout(reset,250);
     reset();
     let settledFrame = 0;
     const frame = requestAnimationFrame(() => {
       reset();
       settledFrame = requestAnimationFrame(reset);
     });
-    return () => { cancelAnimationFrame(frame); cancelAnimationFrame(settledFrame); };
+    return () => { cancelAnimationFrame(frame); cancelAnimationFrame(settledFrame);clearTimeout(settle);window.removeEventListener('pointerdown',stop);window.removeEventListener('wheel',stop);window.removeEventListener('keydown',stop); };
   }, [visiblePageKey]);
 
   useEffect(() => {

@@ -308,7 +308,9 @@ button,
 
 @media (max-width: 767px) {
   [data-mobile-setup="true"] .bh-step-actions {
-    bottom: 24px !important;
+    position:relative !important;
+    bottom:auto !important;
+    margin-top:20px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
     margin-inline: calc(-1 * (clamp(1rem, 3vw, 1.5rem) + 2px));
     padding-inline: calc(clamp(1rem, 3vw, 1.5rem) + 2px) !important;
@@ -478,14 +480,14 @@ button,
 @media (pointer: coarse) {
  button, a, summary, input, select { touch-action: manipulation; }
  .bh-header-stack { transition: none !important; }
- .bh-batch-actions { bottom:24px; margin-top:24px; }
+ .bh-batch-actions { position:relative; bottom:auto; margin-top:20px; padding-bottom:calc(24px + env(safe-area-inset-bottom,0px)); }
  .bh-key-track input { touch-action:pan-y; }
 }
-.bh-key-reset-space { min-height:52px; }
+
 .bh-key-reset { min-height:44px; padding:8px 0; border:0; background:none; color:var(--terra); font:inherit; font-size:14px; text-decoration:underline; text-underline-offset:3px; }
 .bh-key-lock { display:flex; align-items:center; gap:8px; min-height:44px; font-size:13px; color:var(--ash); }
 .bh-key-lock input { width:18px; height:18px; accent-color:var(--terra); }
-.bh-key-window { min-height:42px; }
+.bh-key-window { min-height:20px; }
 #schedule-anchor-panel[data-dragging] .bh-key-valid { background:#dedbd4; }
 #schedule-anchor-panel[data-dragging] .bh-key-note { visibility:hidden; }
 .bh-key-track input { transition:none; }
@@ -498,3 +500,39 @@ html[data-preview="true"] vercel-live-feedback { display:none !important; }
 /* Its own strip is a map of validated candidate positions, still useful while
    dragging. Other actions' old windows are neutral until the plan is solved. */
 #schedule-anchor-panel[data-dragging] [data-local-drag] .bh-key-valid { background:#83b77d; }
+
+/* Linked timing adjustments: one reviewable panel, two compact controls. */
+[data-mobile-setup="true"] { overflow-anchor:none; }
+.bh-plan-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:4px 12px; min-height:44px; }
+.bh-plan-state { font-size:14px; font-weight:600; color:#32623d; }
+.bh-plan-state[data-valid="false"] { color:#93531c; }
+.bh-plan-notice { padding:12px; border:1px solid #d4ad82; border-radius:10px; background:#fff7e9; font-size:14px; line-height:1.5; }
+.bh-plan-notice p { margin:8px 0; }
+.bh-target-presets { margin-top:10px; font-size:14px; }
+.bh-target-choices { display:flex; flex-wrap:wrap; gap:8px; margin-block:8px; }
+.bh-target-choices button { min-height:44px; padding:8px 10px; border:1px solid var(--border); border-radius:10px; background:var(--warm); color:var(--char); font:inherit; font-size:14px; }
+.bh-linked-title { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.bh-linked-summary { padding:10px 12px; background:var(--cream); border-radius:12px 12px 0 0; }
+.bh-linked-summary p { font-size:12px; line-height:1.4; margin:6px 0; }
+.bh-linked-times { display:flex; flex-wrap:wrap; gap:8px 20px; font-size:12px; }
+.bh-linked-times b { display:block; color:var(--char); font-size:15px; }
+#schedule-anchor-panel[data-open] .bh-linked-editor { border:1px solid var(--border); border-radius:12px; margin-top:8px; }
+#schedule-anchor-panel[data-open] .bh-key-timing { padding:8px 12px; }
+#schedule-anchor-panel[data-open] .bh-key-heading .bh-section-title { font-size:14px; }
+#schedule-anchor-panel[data-open] .bh-key-modify { display:none; }
+#schedule-anchor-panel[data-open] .bh-key-time { font-size:18px; min-height:36px; }
+#schedule-anchor-panel[data-open] .bh-key-detail { font-size:12px; }
+#schedule-anchor-panel[data-open] .bh-key-editor { margin-top:6px; padding:8px; }
+#schedule-anchor-panel[data-open] .bh-key-lock { min-height:44px; }
+#schedule-anchor-panel[data-open] .bh-key-exact { display:flex; align-items:center; gap:8px; margin-top:4px; font-size:12px; }
+.bh-linked-actions { padding:8px 12px 12px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px 12px; background:var(--warm); border-radius:0 0 12px 12px; }
+.bh-linked-feedback { grid-column:1/-1; min-height:20px; font-size:12px; color:var(--ash); }
+.bh-apply-plan { min-height:44px; padding:10px 16px; border:0; border-radius:10px; background:var(--terra); color:white; font:inherit; font-weight:600; }
+.bh-apply-plan:disabled { opacity:.5; }
+.bh-clock-input { display:flex; position:relative; align-items:center; flex:1; min-width:0; min-height:44px; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--warm); color:var(--char); font-size:16px; }
+.bh-clock-input > input { position:absolute !important; inset:0 !important; opacity:0; width:100% !important; height:100% !important; margin:0 !important; padding:0 !important; cursor:pointer; }
+.bh-clock-input > span { pointer-events:none; overflow-wrap:anywhere; }
+.bh-clock-input:focus-within { outline:2px solid var(--terra); outline-offset:2px; }
+.bh-clock-input:has(input:disabled) { opacity:.5; }
+
+@media (hover:hover) { .bh-clock-input > input:focus { opacity:1; background:var(--warm); color:var(--char); } }

@@ -250,9 +250,9 @@ test('compact Organisation progress and folded horizontal timing editor stay usa
  await expand(plan,'mix');const slider=mix.getByRole('slider');
  await expect(slider).toHaveAttribute('aria-orientation','horizontal');
  const box=await slider.boundingBox();expect(box.width).toBeGreaterThan(box.height*3);
- await fits(page,mix.locator('.bh-key-modify'));await fits(page,slider);
+ await fits(page,plan.getByRole('button',{name:'Fermer',exact:true}));await fits(page,slider);
  await info.attach('horizontal-inline-editor',{body:await page.screenshot(),contentType:'image/png'});
- await mix.locator('.bh-key-modify').tap();await expect(slider).toHaveCount(0);
+ await plan.getByRole('button',{name:'Fermer',exact:true}).tap();await expect(slider).toHaveCount(0);
  expect((await stored(page)).startTime).toBe(before.startTime);expect((await stored(page)).eatTime).toBe(before.eatTime);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize().width);
 });
@@ -307,4 +307,39 @@ test('preferment follows mixing unless explicitly locked; reset stays above the 
  await expect(reset(page)).toHaveCount(0);
  await expand(plan,'pref');await expect(pref.getByRole('checkbox',{name:'Fixer cet horaire'})).not.toBeChecked();
  expect((await stored(page)).eatTime).toBe(BAKE);
+});
+
+
+test('one shared editor opens both linked timings and Cancel restores both',async({page})=>{
+ const {plan}=await seed(page);
+ const before=await stored(page);
+ await expand(plan,'mix');
+ await expect(row(plan,'pref').getByRole('slider')).toBeVisible();
+ await expect(row(plan,'mix').getByRole('slider')).toBeVisible();
+ await expect(confirm(plan)).toHaveCount(1);
+ await expect(plan.locator('.bh-linked-times')).toContainText('Préferment');
+ const prefBefore=await row(plan,'pref').locator('input[type="datetime-local"]').inputValue();
+ await enter(plan,'mix','2026-09-25T22:00');
+ await expect(row(plan,'pref').locator('input[type="datetime-local"]')).not.toHaveValue(prefBefore);
+ await expect(plan.locator('.bh-linked-feedback')).toContainText('Préferment recalé');
+ await plan.getByRole('button',{name:'Annuler',exact:true}).tap();
+ await expect(plan.getByRole('slider')).toHaveCount(0);
+ expect((await stored(page)).startTime).toBe(before.startTime);
+ expect((await stored(page)).prefOffsetH).toBe(before.prefOffsetH);
+});
+
+test('night conflict offers a verified later bake while preserving unavailable nights',async({page})=>{
+ const {plan}=await seed(page,{extra:{fridgeTemp:6,startTime:Date.parse('2026-09-26T23:30:00+08:00'),eatTime:Date.parse('2026-09-27T11:30:00+08:00')}});
+ await page.clock.setFixedTime(Date.parse('2026-09-26T12:00:00+08:00'));
+ await page.getByRole('button',{name:/^Nuits/}).tap();
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','false');
+ const alternatives=plan.locator('.bh-plan-notice .bh-target-choices');
+ await expect(alternatives).toBeVisible();
+ await alternatives.getByRole('button').filter({hasText:/27.*19:30/}).tap();
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','true');
+ await expect(row(plan,'pref')).toHaveAttribute('data-candidate-valid','true');
+ const state=await stored(page);
+ expect(state.eatTime).toBe(Date.parse('2026-09-27T19:30:00+08:00'));
+ expect(state.blocks.length).toBeGreaterThan(0);
+ expect(state.blocks.some(b=>state.startTime>=b.from&&state.startTime<b.to)).toBe(false);
 });
