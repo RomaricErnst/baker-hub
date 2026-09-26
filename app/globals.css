@@ -351,7 +351,9 @@ button,
 .bh-step-trigger > span { text-decoration:underline; text-underline-offset:3px; }
 .bh-step-trigger svg { align-self:center; flex-shrink:0; }
 .bh-organisation-progress { display:flex; align-items:baseline; }
-.bh-navigator-context:has(.bh-organisation-progress) { align-items:baseline; }
+.bh-navigator-context:has(.bh-organisation-progress),
+.bh-navigator-context:has(.bh-organisation-progress) .bh-navigator-current { align-items:baseline; }
+.bh-navigator-context:has(.bh-organisation-progress) .bh-navigator-current svg { align-self:center; }
 @media(max-width:400px){ .bh-navigator-context { gap:4px; font-size:15px; } .bh-navigator-context:has(.bh-organisation-progress) .bh-navigator-current svg { display:none; } .bh-navigator-band { gap:4px; padding-inline:8px; } }
 .bh-bake-navigator-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:8px 3px 4px; max-height:calc(100dvh - var(--bh-navigator-top, 56px) - 92px); overflow-y:auto; overscroll-behavior:contain; }
 .bh-bake-navigator-card {
