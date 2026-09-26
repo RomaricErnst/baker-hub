@@ -93,7 +93,10 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await expect.poll(async()=>({style:(await stored(page))?.styleKey,count:(await stored(page))?.numItems})).toEqual({style:bread?'baguette':'neapolitan',count:5});
   const chosenStyle=(await stored(page)).styleKey;
   const choose=page.getByRole('button',{name:'Choisir mes garnitures',exact:true});
-  await choose.scrollIntoViewIfNeeded();
+  // Browser viewport visibility excludes neither sticky navigation nor the
+  // lifted action bar. Scroll the card to the middle, as a baker can, and
+  // retain the strict elementFromPoint check before the single tap.
+  await choose.evaluate(el=>el.scrollIntoView({block:'center',behavior:'instant'}));
   await fits(page,choose);
   await unobscured(choose);
   expect((await choose.boundingBox()).height).toBeGreaterThanOrEqual(44);
