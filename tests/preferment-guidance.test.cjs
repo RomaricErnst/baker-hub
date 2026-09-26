@@ -18,7 +18,7 @@ test('both preferments give actionable bilingual trial proportions without old h
   assert.ok(html.includes(locale==='fr'?'commencez ici':'start here'));
   assert.ok(html.includes(locale==='fr'?'plus n’est pas forcément mieux':'more is not always better'));
   assert.doesNotMatch(html,/45 ?%|coldFerment|Fermentation froide/);
-  if(selected==='biga'){assert.match(html,/90 g/);assert.ok(html.includes(locale==='fr'?'incorporation homogène':'incorporate it evenly'));}
-  else assert.match(html,/200 g/);
+  assert.doesNotMatch(html,/\b\d+ g\b|estimation|\(estimate\)/);
+  if(selected==='biga')assert.ok(html.includes(locale==='fr'?'incorporation homogène':'incorporate it evenly'));
  }
 });
