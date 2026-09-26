@@ -80,7 +80,7 @@ for(const storage of ['rt','fridge'])test(`levain ${storage} future feeds use st
  await enter(plan,'mix',new Date(original+900000));await expect(confirm(plan)).toBeEnabled();await confirm(plan).click();
  await expect.poll(async()=>(await stored(page)).startTime).toBe(original+900000);expect((await stored(page)).eatTime).toBe(+bake);expect((await stored(page)).starterEvents.length).toBeGreaterThan(0);
  const events=(await stored(page)).starterEvents;await page.reload();await expect(plan).toBeVisible();expect((await stored(page)).starterEvents).toEqual(events);
- await expand(plan,'mix');await expand(plan,'starter:pre_mix');const feedAt=Number(await row(plan,'starter:pre_mix').getAttribute('data-at'));await enter(plan,'starter:pre_mix',new Date(feedAt+900000));await expectAt(plan,'starter:pre_mix',feedAt+900000);await expectAt(plan,'mix',original+900000);await plan.getByRole('button',{name:'Annuler',exact:true}).click();
+ await expand(plan,'mix');await expand(plan,'starter:pre_mix');const feedAt=Number(await row(plan,'starter:pre_mix').getAttribute('data-at'));await enter(plan,'starter:pre_mix',new Date(feedAt+900000));await expectAt(plan,'starter:pre_mix',+new Date(local(new Date(feedAt+900000))));await expectAt(plan,'mix',original+900000);await plan.getByRole('button',{name:'Annuler',exact:true}).click();
 });
 
 test('levain final-feed lock is a persistent edit, constrains mixing, releases and resets',async({page})=>{
