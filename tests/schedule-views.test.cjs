@@ -23,7 +23,8 @@ test('actions are the default in both modes and retain starter feeds and fridge 
   assert.doesNotMatch(html,/aria-orientation="horizontal"/); // editors open on demand
   assert.doesNotMatch(html,/bh-key-window/); // windows belong to the selected editor
   assert.match(html,/bh-schedule-timeline/);
-  assert.match(html,/Tap a time to adjust it/);
+  assert.doesNotMatch(html,/Tap a time to adjust it/);
+  assert.match(html,/>Edit<\/span>/);
   assert.doesNotMatch(html,/Unsaved proposal|compressed interval/);
   assert.doesNotMatch(html,/role="tab"/);
   assert.doesNotMatch(html,/Wait ·|compressed interval/);

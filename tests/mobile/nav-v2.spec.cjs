@@ -445,7 +445,14 @@ test('page landing survives delayed Safari viewport changes and history restore 
  await anonymous(page);await page.goto('/fr');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.locator('.bh-batch-content').getByRole('button',{name:/Napolitaine/i}).tap();
+ // Reproduce the recording: scroll the long quantity page, let the browser
+ // viewport expand, then enter the short mode page via its bottom action.
+ await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));window.scrollTo(0,document.documentElement.scrollHeight);});
+ const originalSize=page.viewportSize();
+ await page.setViewportSize({...originalSize,height:originalSize.height+70});
  await page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true}).tap();
+ await expect(page.locator('.bh-header-stack .bh-bake-navigator')).toHaveCount(1);
+ await expect(page.locator('.bh-bake-navigator')).toHaveCSS('position','static');
  // Keep enough document height to reproduce a retained scroll offset even
  // when this particular two-card page otherwise fits the test viewport.
  await page.addStyleTag({content:'[data-navigation-page]{min-height:calc(100dvh + 300px)!important}'});

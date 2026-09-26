@@ -75,7 +75,6 @@ export default function ScheduleKeyTimings({anchors,isFr,onChange,check,cacheKey
  return <section data-open={open||undefined} aria-label={isFr?'Vos moments clés':'Your key times'} id="schedule-anchor-panel">
   <div className="bh-plan-heading"><span className="bh-plan-state" data-valid={valid} role="status">{!valid?(isFr?'À corriger':'Needs attention'):hasDraft?(isFr?'Modifications à appliquer':'Changes to apply'):personalized?(isFr?'Planning personnalisé':'Your adjusted plan'):(isFr?'Planning recommandé':'Recommended plan')}</span>{header}</div>
   {notice}
-  <p className="bh-timeline-hint">{isFr?'Touchez une heure pour l’ajuster.':'Tap a time to adjust it.'}</p>
   <div className="bh-linked-editor">
    <ol className="bh-schedule-timeline">{events.map((anchor,index)=><TimelineEvent key={anchor.id} heading={index===0||day(events[index-1].at)!==day(anchor.at)?day(anchor.at):null}><TimingRow {...{anchor,isFr,onChange,check,cacheKey}} open={selectedId===anchor.id} onToggle={()=>setSelectedId(selectedId===anchor.id?null:anchor.id)}/></TimelineEvent>)}</ol>
    {hasDraft&&<div className="bh-linked-actions"><div className="bh-linked-feedback" role="status">{adjustment}</div><button type="button" className="bh-apply-plan" disabled={!canApply} onClick={()=>{onApply();setSelectedId(null);}}>{isFr?'Appliquer':'Apply'}</button><button type="button" className="bh-back-action" onClick={()=>{onCancel();setSelectedId(null);}}>{isFr?'Annuler':'Cancel'}</button></div>}
