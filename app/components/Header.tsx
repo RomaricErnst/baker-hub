@@ -284,7 +284,7 @@ export default function Header({
   const menuButton: React.CSSProperties = { width: '100%', textAlign: 'left', minHeight: 44, padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, background: 'white', color: 'var(--char)', font: 'inherit', cursor: 'pointer', textDecoration: 'none', boxSizing: 'border-box' };
   const menuGroup: React.CSSProperties = { fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--smoke)', margin: '12px 0 4px' };
   useEffect(() => { if (!menuOpen) setMenuPage('main'); }, [menuOpen]);
-  useEffect(() => { drawerRef.current?.scrollTo(0, 0); drawerRef.current?.focus(); }, [menuPage]);
+  useEffect(() => { drawerRef.current?.scrollTo(0, 0); drawerRef.current?.focus({preventScroll:true}); }, [menuPage]);
   const drawerRef = useRef<HTMLDivElement>(null);
   // Keep keyboard navigation inside the open menu and restore the trigger.
   useEffect(() => {
@@ -292,7 +292,7 @@ export default function Header({
     const previousFocus = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    drawerRef.current?.focus();
+    drawerRef.current?.focus({preventScroll:true});
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMenuOpen(false);
       if (e.key !== 'Tab') return;
@@ -303,7 +303,7 @@ export default function Header({
       else if (!e.shiftKey && (document.activeElement === last || document.activeElement === drawerRef.current)) { e.preventDefault(); first.focus(); }
     };
     document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = previousOverflow; if (previousFocus?.isConnected) previousFocus.focus(); };
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = previousOverflow; if (previousFocus?.isConnected) previousFocus.focus({preventScroll:true}); };
   }, [menuOpen]);
   // Share (and future actions) can request the sign-in home: anonymous
   // bakers tapping "Save & Share" get the drawer with the auth block

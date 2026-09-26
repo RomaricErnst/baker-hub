@@ -42,6 +42,7 @@ async function navigate(page,label,locale='fr'){
  await nav.getByRole('button').filter({has:page.getByText(label,{exact:true})}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText(label);
  await expect(navigator(page)).toHaveAttribute('aria-expanded','false');
+ await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
  await noOverflow(page);
 }
 async function seed(page,{mode='custom',bread=true,activeTab='plan',style,locale='fr'}={}){
@@ -437,4 +438,40 @@ for(const mode of ['simple','custom'])test(`${mode}: batch details are condition
   await flour.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
   await expect(flour).toHaveCount(0);await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
  }
+});
+
+
+test('page landing survives delayed Safari viewport changes and history restore without pulling back user scrolling',async({page},info)=>{
+ await anonymous(page);await page.goto('/fr');
+ await page.getByRole('button',{name:'Pizza',exact:true}).tap();
+ await page.locator('.bh-batch-content').getByRole('button',{name:/Napolitaine/i}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true}).tap();
+ // Keep enough document height to reproduce a retained scroll offset even
+ // when this particular two-card page otherwise fits the test viewport.
+ await page.addStyleTag({content:'[data-navigation-page]{min-height:calc(100dvh + 300px)!important}'});
+ const heading=page.getByRole('heading',{name:'Comment définir votre recette ?',exact:true});
+ const clearHeading=async()=>{
+  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
+  await expect.poll(()=>heading.evaluate(el=>{
+   const r=el.getBoundingClientRect(),bar=document.querySelector('.bh-bake-navigator').getBoundingClientRect();
+   const hit=document.elementFromPoint(r.x+8,r.y+2);
+   return r.top>=bar.bottom&&!!hit&&(hit===el||el.contains(hit));
+  })).toBe(true);
+ };
+ await clearHeading();
+ // Model a late browser viewport adjustment, after the initial two frames.
+ await page.waitForTimeout(150);
+ await page.evaluate(()=>window.scrollTo({top:35,behavior:'instant'}));
+ const size=page.viewportSize();await page.setViewportSize({...size,height:size.height+80});
+ await clearHeading();
+ await info.attach('full-mode-heading-after-viewport-change',{body:await page.screenshot(),contentType:'image/png'});
+ // A new deliberate reading gesture ends landing ownership.
+ await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));window.scrollTo({top:65,behavior:'instant'});});
+ const readingY=await page.evaluate(()=>scrollY);expect(readingY).toBeGreaterThan(0);
+ await page.setViewportSize(size);await page.waitForTimeout(100);
+ expect(await page.evaluate(()=>scrollY)).toBe(readingY);
+ // BFCache pageshow is a fresh arrival even when React does not remount.
+ await page.evaluate(()=>window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true})));
+ await clearHeading();
+ await page.reload();await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
 });

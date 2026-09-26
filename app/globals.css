@@ -343,7 +343,7 @@ button,
 
 /* Six destinations share one compact, inline navigator. Its expansion never
    changes bottom action offsets or covers the current page. */
-.bh-bake-navigator { position:sticky; z-index:95; margin:8px 0 16px; padding:4px 0; background:var(--warm); color:var(--char); transition:top .25s ease; }
+.bh-bake-navigator { position:sticky; z-index:95; margin:8px 0 16px; padding:4px 0; background:var(--warm); color:var(--char); transition:none; }
 .bh-navigator-band { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:52px; padding:2px 10px; border:1px solid var(--border); border-radius:12px; background:var(--cream); }
 .bh-navigator-context { display:flex; align-items:center; gap:8px; min-width:0; font-size:16px; font-weight:600; }
 .bh-bake-navigator-trigger { flex-shrink:0; display:flex; align-items:center; justify-content:center; min-height:44px; padding:0 4px; border:0; background:transparent; color:var(--char); font:inherit; text-align:right; cursor:pointer; }
@@ -478,7 +478,7 @@ button,
 /* Preview review should exercise the product without a floating toolbar. */
 html[data-preview="true"] vercel-live-feedback { display:none !important; }
 
-[data-mobile-setup="true"] { overflow-anchor:none; }
+[data-navigation-page] { overflow-anchor:none; }
 .bh-plan-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:4px 12px; min-height:44px; }
 .bh-plan-state { font-size:14px; font-weight:600; color:#32623d; }
 .bh-plan-state[data-valid="false"] { color:#93531c; }

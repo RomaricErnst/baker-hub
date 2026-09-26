@@ -1,4 +1,5 @@
 'use client';
+import {usePageTop} from '../hooks/usePageTop';
 import {useCallback,useEffect,useState} from 'react';
 import {useLocale,useTranslations} from 'next-intl';
 import SandwichParty from './SandwichParty';
@@ -47,6 +48,7 @@ export default function ExistingBaseJourney(){
    return()=>window.removeEventListener('popstate',pop);
  },[]);
  useEffect(()=>{if(loaded&&draft.base)try{localStorage.setItem(STORAGE,JSON.stringify(draft));}catch{}},[draft,loaded]);
+ usePageTop(`${loaded}:${editing}:${draft.base}:${draft.section}`);
  const activate=(next:Draft)=>{
    setDraft(next);setEditing(false);setStartingKind((next.details[next.base]??defaultDetails(next.base)).kind);
    const url=new URL(location.href);url.searchParams.set('active','1');url.searchParams.set('section',next.section);
@@ -62,7 +64,7 @@ export default function ExistingBaseJourney(){
    const url=new URL(location.href);
    if(url.searchParams.get('section')!==draft.section){url.searchParams.set('section',draft.section);history.replaceState(history.state,'',url);}
    url.searchParams.set('section',section);history.pushState(history.state,'',url);
-   setDraft(d=>({...d,section}));window.scrollTo({top:0,behavior:'smooth'});
+   setDraft(d=>({...d,section}));window.scrollTo({top:0,behavior:'instant'});
  };
  const backFromSelection=()=>setEditing(true);
  const goBack=()=>{if(editing||!draft.base)location.assign('/'+locale);else if(draft.section==='batch')backFromSelection();else go('batch');};

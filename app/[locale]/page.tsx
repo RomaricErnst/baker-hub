@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
+import {usePageTop} from '../hooks/usePageTop';
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations, useLocale } from 'next-intl';
@@ -1142,7 +1143,7 @@ export default function Home() {
   // its labels sliced off. Measured, so the two can never drift apart again.
   const stickyHeadRef = useRef<HTMLDivElement | null>(null);
   const [stickyHeadH, setStickyHeadH] = useState(97);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = stickyHeadRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
     const sync = () => setStickyHeadH(Math.round(el.getBoundingClientRect().height));
@@ -1594,13 +1595,6 @@ export default function Home() {
     // baker changes their mind on the next launch.
     setPendingSession(null);
   }
-
-  // Scroll to results when they appear
-  useEffect(() => {
-    if (showResults) {
-      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
-    }
-  }, [showResults]);
 
   // Set protocolStale when config changes after recipe generated.
   // Skip the first mount invocation — initial state is not a user change.
@@ -2343,33 +2337,8 @@ export default function Home() {
     : destination === 'organisation'
       ? `organisation:${modeChosen}:${tab}:${setupOverview}:${tab === 'simple' ? activeStep : advancedStep}:${equipmentPanel}`
       : `${destination}:${destination === 'batch' ? batchView : destination === 'protocol' ? protocolView : destination === 'service' ? serviceView : ''}:${companionVisible ? companionPhase : ''}`;
-  useLayoutEffect(() => {
-    setNavHidden(false);
-    lastScrollY.current = 0;
-    let interacted=false;
-    const stop=()=>{interacted=true;};
-    const stopAfterScroll=()=>{if(window.scrollY>0)interacted=true;};
-    // Release focus from a removed page before Safari scrolls it back into view.
-    if(document.activeElement instanceof HTMLElement)document.activeElement.blur();
-    const reset = () => {if(!interacted)window.scrollTo({ top: 0, behavior: 'instant' });};
-    window.addEventListener('pointerdown',stop,{passive:true});
-    window.addEventListener('wheel',stop,{passive:true});
-    window.addEventListener('keydown',stop);
-    window.addEventListener('scroll',stopAfterScroll,{passive:true});
-    reset();
-    let settledFrame = 0;
-    const frame = requestAnimationFrame(() => {
-      reset();
-      settledFrame = requestAnimationFrame(reset);
-    });
-    return () => { cancelAnimationFrame(frame); cancelAnimationFrame(settledFrame);window.removeEventListener('pointerdown',stop);window.removeEventListener('wheel',stop);window.removeEventListener('keydown',stop);window.removeEventListener('scroll',stopAfterScroll); };
-  }, [visiblePageKey]);
-
-  useEffect(() => {
-    const previous = window.history.scrollRestoration;
-    window.history.scrollRestoration = 'manual';
-    return () => { window.history.scrollRestoration = previous; };
-  }, []);
+  usePageTop(visiblePageKey);
+  useLayoutEffect(()=>{setNavHidden(false);lastScrollY.current=0;},[visiblePageKey]);
 
   function scrollToStepTop() {
     setNavHidden(false);
@@ -2715,7 +2684,7 @@ export default function Home() {
     setProtocolStale(false);
     setShowResults(true);
     if(fillingsReturn)finishFillings();else setActiveTab('plan');
-    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
+    scrollToStepTop();
     if (user) {
       const sessionPayload = buildSessionPayload({
         bakeType: bakeType ?? '',
@@ -3305,7 +3274,7 @@ export default function Home() {
 
   // ── Render ────────────────────────────────
   return (
-    <div data-reading={bottomNavCollapsed || undefined} data-keyboard-open={keyboardOpen || undefined} data-mobile-setup={(destination==='organisation'||destination==='batch')&&!recipeGenerated?'true':undefined} style={{ minHeight: '100vh', background: 'var(--warm)' }}>
+    <div data-navigation-page={visiblePageKey} data-reading={bottomNavCollapsed || undefined} data-keyboard-open={keyboardOpen || undefined} data-mobile-setup={(destination==='organisation'||destination==='batch')&&!recipeGenerated?'true':undefined} style={{ minHeight: '100vh', background: 'var(--warm)' }}>
       {/* ── Sticky header + journey bar (autohide on scroll down) ── */}
       <div ref={stickyHeadRef} className="bh-header-stack" onFocusCapture={() => setNavHidden(false)} style={{
         position: 'sticky',

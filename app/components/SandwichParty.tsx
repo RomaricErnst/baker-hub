@@ -77,7 +77,7 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
   const lighter = (recipe:Recipe) => isLighterSandwich(recipe,snapshot.ingredientOverrides?.[recipe.id]);
   const stepsFor = (recipe:Recipe) => effectiveSandwichSteps(recipe,snapshot.ingredientOverrides?.[recipe.id]);
   const update = (patch:Partial<SandwichSnapshot>) => onChange({...snapshot,...patch,familyId:family?.id ?? snapshot.familyId});
-  const go = (next:SandwichSnapshot['tab']) => { if(onPhaseChange)onPhaseChange(next);else update({tab:next}); headingRef.current?.scrollIntoView({block:'start'}); };
+  const go = (next:SandwichSnapshot['tab']) => { if(onPhaseChange)onPhaseChange(next);else {update({tab:next});headingRef.current?.scrollIntoView({block:'start'});} };
   const setQuantity = (recipe:Recipe,value:number) => {
     onRevealNavigation?.();
     onChange(updateSandwichRecipe({...snapshot,familyId:family?.id ?? null},recipe.id,count(value),snapshot.ingredientOverrides?.[recipe.id]));
