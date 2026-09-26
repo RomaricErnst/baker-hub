@@ -459,8 +459,14 @@ test('page landing survives delayed Safari viewport changes and history restore 
   })).toBe(true);
  };
  await clearHeading();
- // Model a late browser viewport adjustment, after the initial two frames.
+ // Safari may retain an offset without a resize after the initial frames.
  await page.waitForTimeout(150);
+ await page.evaluate(()=>window.scrollTo({top:85,behavior:'instant'}));
+ await clearHeading();
+ // A visual-viewport scroll can happen independently from window resize.
+ await page.evaluate(()=>{window.scrollTo({top:85,behavior:'instant'});window.visualViewport?.dispatchEvent(new Event('scroll'));});
+ await clearHeading();
+ // Model a late browser viewport adjustment, after the initial two frames.
  await page.evaluate(()=>window.scrollTo({top:35,behavior:'instant'}));
  const size=page.viewportSize();await page.setViewportSize({...size,height:size.height+80});
  await clearHeading();
