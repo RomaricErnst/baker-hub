@@ -2174,6 +2174,7 @@ export default function Home() {
       } catch {}
     }
     setBakeType(bt);
+    setTotalFlourTarget(undefined);
     setStyleKey(null);
     setOvenType(null); setOvenConstruction('tabletop');
     setActiveStep(1);

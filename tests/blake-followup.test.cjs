@@ -50,6 +50,19 @@ test('multiple autolyse batches are prepared once before the first mixing anchor
  a.equal(+schedule.availabilityActions.find(x=>x.id==='mix').at,+start);
  a.equal(schedule.batchMixWindows.length,2);
 });
+test('changing bake family clears the bread flour target only after confirmation',()=>{
+ const ts=require('typescript'),vm=require('node:vm');
+ const source=fs.readFileSync('app/[locale]/page.tsx','utf8'),tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+ let handler;function visit(n){if(ts.isFunctionDeclaration(n)&&n.name?.text==='selectBakeType')handler=n.getText(tree);ts.forEachChild(n,visit);}visit(tree);
+ const cleared=new Error('target-cleared');let value=750,allow=false;
+ const context={bakeType:'bread',styleKey:'brioche',hasWorkInProgress:true,fr:true,window:{confirm:()=>allow},createSandwichSnapshot:()=>({})};
+ for(const name of new Set(handler.match(/\bset[A-Z]\w+/g)))context[name]=()=>{};
+ context.setTotalFlourTarget=v=>{value=v;throw cleared;};
+ vm.createContext(context);vm.runInContext(ts.transpileModule(handler,{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText,context);
+ context.selectBakeType('pizza');a.equal(value,750);
+ context.selectBakeType('bread');a.equal(value,750);
+ allow=true;a.throws(()=>context.selectBakeType('pizza'),error=>error===cleared);a.equal(value,undefined);
+});
 test('French rye references have actual local product pictures and no invented W',()=>{
  const catalogue=require('../lib/flourCatalogue.json'),provenance=require('../lib/flourPhotoProvenance.json');
  for(const id of ['celnat_seigle_t130','foricher_seigle_t130','foricher_seigle_t170']){
