@@ -87,8 +87,15 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await page.getByRole('button',{name:bread?'Pain':'Pizza',exact:true}).tap();
   await expect(page.getByRole('heading',{name:bread?'Choisissez votre pain':'Quel style de pizza ?',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Comment définir votre recette ?',exact:true})).toHaveCount(0);
+  const continueBeforeChoice=page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true});
+  await continueBeforeChoice.scrollIntoViewIfNeeded();
+  await expect(continueBeforeChoice).toBeVisible();
+  await expect(continueBeforeChoice).toBeDisabled();
   const style=page.locator('.bh-batch-content').getByRole('button',{name:bread?/^Baguette\b/:/Napolitaine/i});
   await style.tap();
+  await expect(style).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByRole('heading',{name:bread?'Choisissez votre pain':'Quel style de pizza ?',exact:true})).toBeVisible();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
   const quantity=page.getByLabel(bread?'Nombre de pains':'Nombre de pizzas',{exact:true});
   await quantity.fill('5');await quantity.blur();
   await expect.poll(async()=>({style:(await stored(page))?.styleKey,count:(await stored(page))?.numItems})).toEqual({style:bread?'baguette':'neapolitan',count:5});
@@ -161,6 +168,7 @@ test('country bread offers illustrated tartines and keeps loaf quantities when r
  await anonymous(page);await page.goto('/fr');
  await page.getByRole('button',{name:'Pain',exact:true}).tap();
  await page.locator('.bh-batch-content').getByRole('button',{name:/^Pain de campagne/}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
  const count=page.getByLabel('Nombre de pains',{exact:true});
  await count.fill('2');await count.blur();
  await expect(page.getByRole('button',{name:'Choisir mes garnitures',exact:true})).toBeVisible();
@@ -290,6 +298,7 @@ test('bread family return preserves choices; wraps and meal examples are discove
  await expect(wrap.locator('img')).toHaveCount(2);
  const brioche=page.getByRole('button',{name:/^Brioche\b/});await expect(brioche.locator('img')).toHaveCount(1);
  await page.getByRole('button',{name:/^Pita à poche/}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
  const quantity=page.getByLabel('Nombre de pièces',{exact:true});await quantity.fill('5');await quantity.blur();
  await page.locator('.bh-batch-context').getByRole('button',{name:'Modifier le pain choisi',exact:true}).tap();
  await page.getByRole('button',{name:'← Pizza ou pain',exact:true}).tap();
@@ -332,6 +341,7 @@ test('landing photos stay above text and bread meal examples are readable',async
  }
  expect(new Set(sources).size).toBe(5);await noOverflow(page);
  await page.getByRole('button',{name:'Pain à wrap · Laffa',exact:true}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
  await expect(page.getByLabel('Nombre de pièces',{exact:true})).toBeVisible();
 });
 
@@ -339,6 +349,7 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  await anonymous(page);await page.goto('/fr');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.locator('.bh-batch-content').getByRole('button',{name:/Napolitaine/i}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
  const weight=page.getByLabel('Pâte par pizza (g)',{exact:true});
  const diameter=page.getByLabel('Diamètre',{exact:false});
  await expect(weight).toBeVisible();
@@ -397,6 +408,7 @@ for(const mode of ['simple','custom'])test(`${mode}: batch details are condition
  await anonymous(page);await page.goto('/fr');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.locator('.bh-batch-content').getByRole('button',{name:/Napolitaine/i}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
  await page.getByLabel('Pâte par pizza (g)',{exact:true}).fill('500');
  await page.getByLabel('Pâte par pizza (g)',{exact:true}).blur();
  await page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true}).tap();
@@ -445,6 +457,7 @@ test('page landing survives delayed Safari viewport changes and history restore 
  await anonymous(page);await page.goto('/fr');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.locator('.bh-batch-content').getByRole('button',{name:/Napolitaine/i}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
  // Reproduce the recording: scroll the long quantity page, let the browser
  // viewport expand, then enter the short mode page via its bottom action.
  await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));window.scrollTo(0,document.documentElement.scrollHeight);});

@@ -2327,7 +2327,7 @@ export default function Home() {
     } else {
       setItemWeight(ALL_STYLES[sk].ballW);
     }
-    setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();
+    // Stay on the chooser until the baker confirms with Continue.
   }
 
   // Reset after React has committed the destination, including changes that
@@ -3614,7 +3614,10 @@ export default function Home() {
               <a href={`/${locale}/with-my-base?family=${bakeType}`} style={{display:'inline-flex',alignItems:'center',minHeight:44,marginBottom:12,color:'var(--terra)',fontSize:16}}>{bakeType==='bread'?(fr?'J’ai déjà une pâte ou du pain →':'I already have dough or bread →'):(fr?'J’ai déjà ma pâte →':'I already have my dough →')}</a>
               <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
               <button type="button" className="bh-section-back" onClick={backToProducts}>{fr?'← Pizza ou pain':'← Pizza or bread'}</button>
-              {styleKey&&<div className="bh-batch-actions"><button type="button" style={NEXT_CTA} onClick={()=>{setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{fr?'Continuer avec':'Continue with'} {styleDisplayName(styleKey)} →</button></div>}
+              <div className="bh-batch-actions">
+                {!styleKey&&<p id="bh-style-choice-hint" style={{margin:0,fontSize:14,color:'var(--ash)'}}>{fr?(bakeType==='bread'?'Choisissez un pain pour continuer.':'Choisissez un style de pizza pour continuer.'):(bakeType==='bread'?'Choose a bread to continue.':'Choose a pizza style to continue.')}</p>}
+                <button type="button" disabled={!styleKey} aria-describedby={!styleKey?'bh-style-choice-hint':undefined} style={{...NEXT_CTA,opacity:styleKey?1:0.5,cursor:styleKey?'pointer':'not-allowed'}} onClick={()=>{if(!styleKey)return;setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{styleKey?`${fr?'Continuer avec':'Continue with'} ${styleDisplayName(styleKey)} →`:(fr?'Continuer':'Continue')}</button>
+              </div>
             </> : <>
               <div className="bh-batch-context"><span>{styleKey?styleDisplayName(styleKey):''}</span><button type="button" aria-label={bakeType==='bread'?(fr?'Modifier le pain choisi':'Edit selected bread'):(fr?'Modifier le style de pizza':'Edit pizza style')} onClick={()=>{setBatchView('style');scrollToStepTop();}}><span aria-hidden="true">·</span><span>{fr?'Modifier':'Edit'}</span></button></div>
               <h2 className="bh-page-title">{fr?'Quelle quantité de pâte ?':'How much dough?'}</h2>
