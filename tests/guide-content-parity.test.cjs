@@ -12,7 +12,7 @@ test('approved FAQ corrections and new cooling/fold questions are bilingual',()=
 test('step visuals exist, preserve containment and exclude rye membrane test',()=>{
  const guide=fs.readFileSync('app/components/BakeGuide.tsx','utf8');
  for(const asset of ['step-visuals/windowpane-v1.webp','step-visuals/spiral-pumpkin-wide-v1.webp','step-visuals/bowl-fold-v1.webp','step-visuals/coil-fold-v2.webp','preferment-photos/poolish-v1.webp','preferment-photos/biga-v1.webp']){a.ok(fs.statSync('public/'+asset).size>1000);a.ok(guide.includes('/'+asset));}
- a.match(guide,/objectFit:'contain'/);a.match(guide,/styleKey !== 'pain_seigle' && mixerType !== 'no_knead' && <StepVisual kind="mix"/);
+ a.match(guide,/objectFit:'contain'/);a.match(guide,/styleKey !== 'pain_seigle' && mixerType !== 'no_knead' \? <StepVisual kind="mix"/);
  a.match(guide,/<StepVisual kind={isPoolish \? 'poolish' : 'biga'}/);
  a.doesNotMatch(guide,/src="\/Pumpkin.jpeg"/);
 });

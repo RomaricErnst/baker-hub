@@ -201,11 +201,11 @@ function Pill({ label, color }: { label: string; color?: string }) {
 
 // ── Step card ────────────────────────────────────────
 function StepCard({
-  number, displayNumber = number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext, hidden = false, stepPhase = 'preparation', previousLabel, nextLabel, externalProgress = false,
+  number, displayNumber = number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext, hidden = false, stepPhase = 'preparation', previousLabel, nextLabel, externalProgress = false, passive = false, overviewNote,
 }: {
   number: number; displayNumber?: number; icon: React.ReactNode; title: string; overview?: boolean; totalSteps?: number;
   externalProgress?: boolean; hidden?: boolean; stepPhase?: 'preparation' | 'cooking'; previousLabel?: string; nextLabel?: string;
-  time?: Date; duration?: number | null; accent?: string;
+  time?: Date; duration?: number | null; accent?: string; passive?: boolean; overviewNote?: React.ReactNode;
   onPrevious?: () => void; onNext?: () => void; preview?: boolean; onReturnCurrent?: () => void; completeLabel?: string; batchCompletion?: boolean; final?: boolean; open: boolean; done: boolean; onToggle: () => void; onDone: () => void;
   children: React.ReactNode; divRef?: React.RefCallback<HTMLDivElement>;
 }) {
@@ -213,22 +213,23 @@ function StepCard({
   const fr = locale === 'fr';
   const TitleContainer = overview ? 'button' : 'div';
   return (
-    <section ref={divRef} data-guide-step={number} data-guide-phase={stepPhase} data-guide-title={title} hidden={hidden} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${displayNumber}`} style={{ display: !hidden && (open || overview) ? undefined : 'none', background: D.warm, borderRadius: overview ? 12 : 0,
-      border: overview ? `1px solid ${done ? D.sage + '60' : D.border}` : 'none', scrollMarginTop: 140 }}>
-      <TitleContainer type={overview ? "button" : undefined} onClick={overview ? onToggle : undefined} aria-expanded={overview ? open : undefined}
-        aria-controls={overview?`bake-step-${number}`:undefined} style={{ width: '100%', display: 'flex', gap: 12,
-          alignItems: 'center', padding: overview ? 16 : '0 0 16px', border: 0, background: 'transparent', textAlign: 'left', cursor: overview ? 'pointer' : 'default', color: D.char }}>
+    <section ref={divRef} data-guide-step={number} data-guide-phase={stepPhase} data-guide-title={title} hidden={hidden} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${displayNumber}`} style={{ display: !hidden && (open || overview) ? undefined : 'none', background: D.warm, borderRadius: 0,
+      border: 'none', borderBottom: overview ? `1px solid ${D.border}` : undefined, scrollMarginTop: 140 }}>
+      <TitleContainer type={overview ? "button" : undefined} onClick={overview ? onToggle : undefined} aria-label={overview ? `${fr ? 'Voir' : 'View'} : ${title}` : undefined}
+         style={{ width: '100%', display: 'flex', gap: 12,
+          alignItems: 'center', minHeight:44, padding: overview ? '12px 0' : '0 0 16px', border: 0, background: 'transparent', textAlign: 'left', cursor: overview ? 'pointer' : 'default', color: D.char }}>
         <span aria-hidden="true" style={{ display: overview ? undefined : 'none', color: done ? D.sage : D.terra, minWidth: 18, textAlign: 'center' }}>{done ? '✓' : displayNumber}</span>
         <span aria-hidden="true" style={{ color: done ? D.sage : D.terra, width: 22, height: 22, display: overview ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</span>
         <span style={{ flex: 1 }}>
           <strong role={overview?undefined:'heading'} aria-level={overview?undefined:2} style={{ display: 'block', fontSize: overview ? 15 : 28, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}</strong>
           {!overview && !externalProgress && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {displayNumber}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
           {time && <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: D.smoke }}>
-            {formatTime(time, locale)}{duration ? ` · ${duration < 1 ? `${Math.round(duration * 60)} min` : hoursLabel(duration)}` : ''}
+            {formatTime(time, locale)}{duration ? ` · ${overview ? (passive ? (fr ? 'repos ' : 'rest ') : (fr ? 'durée ' : 'duration ')) : ''}${duration < 1 ? `${Math.round(duration * 60)} min` : hoursLabel(duration)}` : ''}
           </span>}
+          {overview && overviewNote && <span style={{display:'block',fontSize:12,lineHeight:1.5,color:D.terra,marginTop:4}}>{overviewNote}</span>}
           {done && <span style={{ fontSize: 12, color: D.sage }}>{fr ? 'Terminé' : 'Completed'}</span>}
         </span>
-        {overview && <span aria-hidden="true">{open ? '−' : '+'}</span>}
+        {overview && <span aria-hidden="true">{'›'}</span>}
       </TitleContainer>
       {open && <div id={`bake-step-${number}`} style={{ padding: overview ? '0 20px 20px' : '0 0 20px' }}>
         {preview && <p style={{color:D.smoke,fontSize:12}}>{fr ? 'Aperçu — votre progression ne change pas.' : 'Preview — your progress stays unchanged.'}</p>}
@@ -776,7 +777,7 @@ export default function BakeGuide({
   const l = locale === 'fr' ? 'fr' : 'en';
   const enriched = !!recipe?.enrichment;
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(phase === 'preparation' ? 0 : 1);
   const [totalSteps, setTotalSteps] = useState(0);
   useEffect(() => { if (totalSteps > 0 && currentStep > totalSteps) setCurrentStep(totalSteps); }, [totalSteps, currentStep]);
   const [loadedProgressKey,setLoadedProgressKey]=useState<string|null>(null);
@@ -828,22 +829,22 @@ export default function BakeGuide({
     try { setActiveBatch(Math.max(0, Number(localStorage.getItem(progressKey + ':batch')) || 0)); } catch { setActiveBatch(0); }
     let firstUndone = 1;
     while (completed.includes(firstUndone)) firstUndone++;
-    setCurrentStep(phase&&phasePositions.current[phase]!==undefined?phasePositions.current[phase]!:firstUndone);
+    setCurrentStep(phase&&phasePositions.current[phase]!==undefined?phasePositions.current[phase]!:(phase==='preparation'&&completed.length===0?0:firstUndone));
     setLoadedProgressKey(progressKey);
   }, [progressKey]);
 
 
 
   // Browsing and completion are independent. Each destination resumes its last
-  // viewed step (including overview=0); explicit Previous/Next takes precedence.
+  // viewed detail; overview browsing preserves it. Explicit navigation takes precedence.
   useEffect(() => {
-    if (!active || !phase) return;
+    if (!active || !phase || loadedProgressKey !== progressKey) return;
     const changedPhase = viewedPhase.current !== phase;
     viewedPhase.current = phase;
     const belongsToPhase = currentStep === 0 || stepRefs.current[currentStep]?.dataset.guidePhase === phase;
     const explicitNavigation = focusRequestedStep.current === currentStep && currentStep > 0;
     if (belongsToPhase && (!changedPhase || explicitNavigation)) {
-      phasePositions.current[phase] = currentStep;
+      if(currentStep > 0) phasePositions.current[phase] = currentStep;
       if(loadedProgressKey===progressKey){
         try {localStorage.setItem(progressKey+':view',JSON.stringify(phasePositions.current));} catch {}
       }
@@ -853,7 +854,7 @@ export default function BakeGuide({
     const remembered = phasePositions.current[phase];
     const target = remembered === 0 || (remembered !== undefined && candidates.includes(remembered))
       ? remembered
-      : belongsToPhase ? currentStep : candidates.find(index => !doneSteps.has(index)) ?? candidates[0];
+      : phase === 'preparation' && !doneSteps.size ? 0 : belongsToPhase ? currentStep : candidates.find(index => !doneSteps.has(index)) ?? candidates[0];
     if (target !== undefined) {
       phasePositions.current[phase] = target;
       setCurrentStep(target);
@@ -1025,7 +1026,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       completeLabel: mixing && batch && batch.count > 1 ? (l === 'fr' ? `Terminer la pétrissée ${batch.active + 1} sur ${batch.count}` : `Complete batch ${batch.active + 1} of ${batch.count}`) : undefined,
       open: currentStep === s,
       done: doneSteps.has(s),
-      onToggle: () => setCurrentStep(prev => prev === s ? 0 : s),
+      onToggle: () => navigateGuideStep(s),
       onDone: () => {
         if (mixing && batch && !doneSteps.has(s) && batch.active + 1 < batch.count) {
           setActiveBatch(batch.active + 1);
@@ -1054,21 +1055,27 @@ Actual dough condition and equipment may differ from these estimates.`;
   const preparationTotal = Math.max(0,totalSteps-cookingStepTotal);
   const resumeStep = () => {
     const candidates=stepRefs.current.flatMap((el,index)=>el&&(!phase||el.dataset.guidePhase===phase)?[index]:[]);
-    navigateGuideStep(candidates.find(index=>!doneSteps.has(index))??candidates[0]??1);
+    const remembered=phase?phasePositions.current[phase]:undefined;
+    navigateGuideStep(remembered&&candidates.includes(remembered)?remembered:candidates.find(index=>!doneSteps.has(index))??candidates[0]??1);
   };
   const progressControl = active && progressTarget ? createPortal(
-    <button type="button" className="bh-step-trigger" aria-label={currentStep===0?(l==='fr'?'Reprendre l’étape en cours':'Resume current step'):overviewLabel} aria-expanded={currentStep===0} onClick={()=>{if(currentStep===0)resumeStep();else {setCurrentStep(0);window.scrollTo({top:0,behavior:'instant'});}}}>
-      <span>{currentStep===0?(l==='fr'?'Reprendre':'Resume'):`${l==='fr'?'Étape':'Step'} ${phase==='cooking'?Math.max(1,currentStep-preparationTotal):currentStep} / ${phase==='cooking'?cookingStepTotal:preparationTotal}`}</span>
-      <svg aria-hidden="true" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d={currentStep===0?'M2 8l4-4 4 4':'M2 4l4 4 4-4'}/></svg>
-    </button>,progressTarget) : null;
+    currentStep===0 ? <span>{l==='fr'?'Vue d’ensemble':'Overview'}</span> :
+    <div style={{display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
+      <span>{l==='fr'?'Étape':'Step'} {phase==='cooking'?Math.max(1,currentStep-preparationTotal):currentStep} / {phase==='cooking'?cookingStepTotal:preparationTotal}</span>
+      <button type="button" className="bh-step-trigger" onClick={()=>{setCurrentStep(0);window.scrollTo({top:0,behavior:'instant'});}}>{l==='fr'?'Vue d’ensemble':'Overview'}</button>
+    </div>, progressTarget) : null;
+  const overviewAction = currentStep===0 && phase ? <button type="button" onClick={resumeStep} style={{minHeight:48,padding:'12px 16px',border:0,borderRadius:10,background:D.terra,color:'white',fontSize:16,cursor:'pointer'}}>
+    {phase==='cooking' ? (l==='fr'?'Reprendre la cuisson':'Resume cooking') : phasePositions.current.preparation ? (l==='fr'?'Reprendre la préparation':'Resume preparation') : (l==='fr'?'Commencer la préparation':'Start preparation')} →
+  </button> : null;
 
   if (recipe?.protocolIssue) return <section role="alert"><h2>{l === 'fr' ? 'Ajustez ce pain avant de commencer' : 'Adjust this bread before starting'}</h2><p>{recipe.protocolIssue === 'equipment' ? (l === 'fr' ? 'Choisissez un matériel de cuisson compatible dans les réglages.' : 'Choose compatible cooking equipment in setup.') : recipe.protocolIssue === 'timing' ? (l === 'fr' ? 'Laissez assez de temps pour mélanger, reposer et abaisser la pâte avant cuisson.' : 'Allow enough time to mix, rest and roll the dough before cooking.') : (l === 'fr' ? 'Choisissez la méthode de levée prise en charge dans les réglages.' : 'Choose the supported leavening method in setup.')}</p></section>;
 
   if (recipe?.enrichment?.unsupportedMethod) return <p role="alert">{l === 'fr' ? 'Modifiez le choix de levure dans les réglages et recalculez cette formule enrichie avant de suivre les étapes.' : 'Update the leavening choice in setup and recalculate this enriched formula before following the steps.'}</p>;
 
   if (breadProtocol?.method === 'unleavened') return <SimpleModeCtx.Provider value={!!simpleMode}>
-    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+    <div style={{display:'flex',flexDirection:'column',gap:currentStep===0?4:16}}>
       {progressControl}
+      {overviewAction}
       {!progressTarget&&<button type="button" onClick={() => setCurrentStep(0)} style={{minHeight:44,padding:'8px 16px',border:`1px solid ${D.border}`,borderRadius:10,background:D.warm}}>{overviewLabel}</button>}
       <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={l === 'fr' ? 'Pétrir la pâte' : 'Mix the dough'} time={bgMixStart} duration={schedule.mixingDurationH}>
         <Section icon="" title={l === 'fr' ? 'À mélanger' : 'Use now'}>
@@ -1076,7 +1083,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           <Steps items={[{bold:l === 'fr' ? 'Mélangez la farine, le sel, l’eau et la matière grasse mesurés. Pétrissez jusqu’à obtenir une pâte lisse et souple.' : 'Combine the measured flour, salt, water and fat. Knead until smooth and pliable.',note:''}]} />
         </Section>
       </StepCard>
-      <StepCard number={n()} {...sc()} icon={<IconProof />} title={l === 'fr' ? 'Laisser reposer, couvert' : 'Rest, covered'} time={schedule.bulkFermStart} duration={breadProtocol.restMinutes ? breadProtocol.restMinutes / 60 : undefined}>
+      <StepCard number={n()} {...sc()} icon={<IconProof />} title={l === 'fr' ? 'Laisser reposer, couvert' : 'Rest, covered'} passive time={schedule.bulkFermStart} duration={breadProtocol.restMinutes ? breadProtocol.restMinutes / 60 : undefined}>
         <Steps items={profileSteps(breadProtocol.proof[l])} />
         <p>{l === 'fr' ? 'Cette pâte sans levure se détend ; elle n’a pas besoin de lever.' : 'This unleavened dough relaxes; it does not need to rise.'}</p>
       </StepCard>
@@ -1097,8 +1104,9 @@ Actual dough condition and equipment may differ from these estimates.`;
 
   return (
     <SimpleModeCtx.Provider value={!!simpleMode}>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: currentStep === 0 ? '4px' : '16px' }}>
       {progressControl}
+      {overviewAction}
 
       {/* ── Header ──────────────────────────────────── */}
       <div style={{ marginBottom: '4px', display: currentStep === 0 && !phase ? undefined : 'none' }}>
@@ -1613,7 +1621,7 @@ Actual dough condition and equipment may differ from these estimates.`;
 
       {/* ── STEP: Bulk Fermentation ──────────────────── */}
       <StepCard number={n()} {...sc()} icon={<IconBulk />} title={t('stepTitles.bulkFerm')}
-        time={schedule.bulkFermStart} duration={schedule.bulkFermHours} accent={D.terra}>
+        passive time={schedule.bulkFermStart} duration={schedule.bulkFermHours} overviewNote={schedule.availabilityActions?.filter(a=>a.id.startsWith('fold-')).map((a,i)=><span key={a.id} style={{display:'block'}}>{l==='fr'?'Rabat':'Fold'} {i+1} · {formatTime(a.at,_fmtLocale)}</span>)} accent={D.terra}>
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           {breadProtocol ? <Steps items={[
@@ -1666,7 +1674,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       {hasCold && schedule.coldRetard1Start && schedule.coldRetard1End && (
         <StepCard number={n()} {...sc()} icon={<IconCold />}
           title={isTwoPhase ? t('stepTitles.coldRetardWhole') : t('stepTitles.coldRetard')}
-          time={schedule.coldRetard1Start}
+          passive time={schedule.coldRetard1Start}
           duration={(schedule.coldRetard1End.getTime() - schedule.coldRetard1Start.getTime()) / 3600000}
           accent="#6A7FA8">
 
@@ -1814,7 +1822,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         (schedule.coldRetard2End.getTime() - schedule.coldRetard2Start.getTime()) > 0 && (
         <StepCard number={n()} {...sc()} icon={<IconCold />}
           title={isBread ? t('stepTitles.coldProof') : t('stepTitles.coldRetardBalls')}
-          time={schedule.coldRetard2Start}
+          passive time={schedule.coldRetard2Start}
           duration={(schedule.coldRetard2End.getTime() - schedule.coldRetard2Start.getTime()) / 3600000}
           accent="#6A7FA8">
 
@@ -1845,7 +1853,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       {/* ── STEP: Final Proof (merged warmup + proof for cold-retard styles) */}
       {(schedule.finalProofHours > 0 || schedule.restRtHours > 0 || schedule.rtWarmupStart) && (
         <StepCard number={n()} {...sc()} icon={<IconProof />} title={t('stepTitles.finalProof')}
-          time={schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? schedule.finalProofStart}
+          passive time={schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? schedule.finalProofStart}
           duration={(() => {
             const proofEnd = schedule.poachStart ?? schedule.bakeStart;
             const proofStart = schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? schedule.finalProofStart;
