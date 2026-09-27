@@ -741,10 +741,10 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
     },
     "shaping": {
       "en": [
-        "Divide into {count} pieces of {weight} g. Rest, then press into thick rounds; dimple or dock to avoid a full pocket."
+        "Divide into {count} pieces of {weight} g and round them gently. Keep covered; do not roll them yet."
       ],
       "fr": [
-        "Divisez en {count} pâtons de {weight} g. Détendez puis étalez en disques épais ; marquez ou piquez pour éviter une grande poche."
+        "Divisez en {count} pâtons de {weight} g et boulez délicatement. Gardez-les couverts ; ne les étalez pas encore."
       ]
     },
     "proof": {

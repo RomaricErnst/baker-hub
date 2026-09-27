@@ -1,6 +1,7 @@
 'use client';
+import {createDraftStorage} from '../lib/draftStorage';
 import {usePageTop} from '../hooks/usePageTop';
-import {useCallback,useEffect,useState} from 'react';
+import {useCallback,useEffect,useState,useRef} from 'react';
 import {useLocale,useTranslations} from 'next-intl';
 import SandwichParty from './SandwichParty';
 import JourneyCompletion from './JourneyCompletion';
@@ -31,6 +32,8 @@ export default function ExistingBaseJourney(){
  const tr=(a:string,b:string)=>fr?a:b;
  const [draft,setDraft]=useState<Draft>(fresh),[loaded,setLoaded]=useState(false),[editing,setEditing]=useState(false);
  const [saved,setSaved]=useState<Draft|null>(null);
+ const storageRef=useRef<ReturnType<typeof createDraftStorage>|null>(null);
+ const [saveConflict,setSaveConflict]=useState(false);
  const [family,setFamily]=useState<'pizza'|'bread'|null>(null);
  const [startingKind,setStartingKind]=useState<BaseDetails['kind']>('baked');
  useEffect(()=>{
@@ -39,7 +42,8 @@ export default function ExistingBaseJourney(){
    setFamily(requestedFamily==='pizza'||requestedFamily==='bread'?requestedFamily:null);
    if(requestedFamily==='pizza')setStartingKind('dough');
    try{
-     const d=JSON.parse(localStorage.getItem(STORAGE)||'null');
+     storageRef.current=createDraftStorage(localStorage,STORAGE,()=>setSaveConflict(true));
+     const d=JSON.parse(storageRef.current.read()||'null');
      if(d&&bases.some(b=>b[0]===d.base)){
        const sandwiches=Object.fromEntries(bases.filter(b=>b[0]!=='pizza').map(b=>[b[0],normalizeSandwichSnapshot(d.sandwiches?.[b[0]])]));
        const details=Object.fromEntries(bases.map(([base])=>{const value=d.details?.[base];return [base,{kind:value?.kind==='dough'?'dough':value?.kind==='baked'?'baked':defaultDetails(base).kind,origin:value?.origin==='homemade'?'homemade' as const:'purchased' as const,stage:['bulk','shaped','ready'].includes(value?.stage)?value.stage:'ready',baked:value?.baked===true,served:value?.served===true,notes:typeof value?.notes==='string'?value.notes.slice(0,2000):''}];}));
@@ -52,7 +56,7 @@ export default function ExistingBaseJourney(){
    pop();window.addEventListener('popstate',pop);setLoaded(true);
    return()=>window.removeEventListener('popstate',pop);
  },[]);
- useEffect(()=>{if(loaded&&draft.base)try{localStorage.setItem(STORAGE,JSON.stringify(draft));}catch{}},[draft,loaded]);
+ useEffect(()=>{if(loaded&&draft.base)try{storageRef.current?.write(JSON.stringify(draft));}catch{}},[draft,loaded]);
  usePageTop(`${loaded}:${editing}:${draft.base}:${draft.section}`);
  const activate=(next:Draft)=>{
    setDraft(next);setEditing(false);setStartingKind((next.details[next.base]??defaultDetails(next.base)).kind);
@@ -60,6 +64,11 @@ export default function ExistingBaseJourney(){
    history.replaceState(history.state,'',url);window.scrollTo({top:0});
  };
  const chooseBase=(base:string)=>{
+   if(!editing&&storageRef.current?.read()){
+     if(!window.confirm(tr('Cette nouvelle préparation remplace la reprise locale de votre base existante. Continuer ?','This new preparation replaces the local resume draft for your existing base. Continue?')))return;
+     storageRef.current.acceptCurrent();setSaveConflict(false);setSaved(null);
+   }
+
    const kind=base==='pizza'?'dough':startingKind;
    if(!editing&&base==='pizza')try{localStorage.removeItem('bh_existing_base_prep_ticks_v1');}catch{}
    const next=editing?{...draft,base,section:'batch' as const,details:{...draft.details,[base]:draft.details[base]??{...defaultDetails(base),kind:(draft.details[draft.base]??defaultDetails(draft.base)).kind}}}:{...fresh(),base,details:{[base]:{...defaultDetails(base),kind}}};
@@ -139,6 +148,7 @@ export default function ExistingBaseJourney(){
  </section>;
  if(!loaded)return <main style={{padding:24}}>{tr('Chargement…','Loading…')}</main>;
  return <><Header hideActionBar onBack={goBack}/>
+ {saveConflict&&<div role="alert" style={{padding:16}}><p>{tr('Une autre fenêtre a modifié cette préparation. La sauvegarde locale est suspendue. Rechargez pour reprendre la version actuelle.','Another window changed this preparation. Local saving is paused. Reload to resume the current version.')}</p><button style={{minHeight:44}} onClick={()=>location.reload()}>{tr('Recharger et reprendre','Reload and resume')}</button></div>}
  <main style={{maxWidth:850,margin:'0 auto',padding:'16px 16px 120px',fontFamily:'var(--font-ui)',color:'var(--char)'}}>
   {draft.base&&!editing&&<BakeNavigator active={draft.section} fr={fr} onChange={go}/>}
   {(!draft.base||editing)?<section aria-label={tr('Votre base','Your base')}>

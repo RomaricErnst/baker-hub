@@ -25,7 +25,8 @@ test('anonymous local save is described distinctly from account history before r
   assert.match(local,fr?/dans votre compte/:/to your account/);
   assert.doesNotMatch(local,fr?/n.est pas enregistré/:/is not saved/);
   const unsaved=render(page.SessionReplacementNotice,{fr,localOnly:false});
-  assert.match(unsaved,fr?/n’est pas dans votre historique/:/not in your history/);
+  assert.match(unsaved,fr?/Conserver cette version/:/Keep this version/);
+  assert.doesNotMatch(unsaved,fr?/n’est pas dans votre historique/:/not in your history/);
  }
 });
 test('incomplete current planning has no button looping back to itself; other gaps remain reachable',()=>{

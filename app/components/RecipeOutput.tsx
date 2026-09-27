@@ -1,4 +1,6 @@
 'use client';
+import type { StarterEvent } from './SchedulePicker';
+import { recommendedFlourName } from '../lib/flourGuidance';
 import { mixingBatchPlan } from '../utils/mixingBatches';
 import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
@@ -39,6 +41,8 @@ interface RecipeOutputProps extends WaterSettingsProps {
   wastePct?: number;
   flourBlend?: FlourBlend;
   units?: UnitSystem;
+  starterEvents?: StarterEvent[];
+  mixingTime?: Date;
   feedTime?: Date | null;
   feed2Time?: Date | null;
   fridgeOutTime?: Date | null;
@@ -186,11 +190,13 @@ function InfoCard({
 
 // ── Starter prep card ─────────────────────────
 function StarterPrepCard({
-  sourdough, feedTime, feed2Time, fridgeOutTime,
+  sourdough, feedTime, feed2Time, fridgeOutTime, starterEvents = [], mixingTime,
   starterPeakTime, planningMode, usingPeak2,
   feedRatio, starterLocation, locale,
 }: {
   sourdough: { starterGramsMin: number; starterGramsMax: number } | null;
+  starterEvents?: StarterEvent[];
+  mixingTime?: Date;
   feedTime?: Date | null;
   feed2Time?: Date | null;
   fridgeOutTime?: Date | null;
@@ -203,16 +209,20 @@ function StarterPrepCard({
 }) {
   if (!sourdough) return null;
   const isFr = locale === 'fr';
-  const fmt = (d: Date) => d.toLocaleTimeString(
-    isFr ? 'fr-FR' : 'en-US',
-    { hour: 'numeric', minute: '2-digit', hour12: !isFr }
-  );
   const fmtFull = (d: Date) => d.toLocaleDateString(
     isFr ? 'fr-FR' : 'en-US',
     { weekday: 'short', month: 'short', day: 'numeric',
       hour: 'numeric', minute: '2-digit', hour12: !isFr }
   );
-  const hasSchedule = !!(feedTime || starterPeakTime);
+  // Canonical saved solver events survive reload and pair each feed with its own peak.
+  // Independent legacy scalar props are only a fallback for older sessions.
+  const events = starterEvents.filter(event => event.kind !== 'last_fed' || event.isActive).slice().sort((a,b) => +a.time-+b.time);
+  const hasSchedule = !!(events.length || feedTime || starterPeakTime);
+  const ratioParts = feedRatio ?? 1;
+  const ratioText = isFr ? `1 part de levain, ${ratioParts} part${ratioParts > 1 ? 's' : ''} de farine, ${ratioParts} part${ratioParts > 1 ? 's' : ''} d’eau (en poids)` : `1 part starter, ${ratioParts} part${ratioParts > 1 ? 's' : ''} flour, ${ratioParts} part${ratioParts > 1 ? 's' : ''} water (by weight)`;
+  const eventLabels: Record<string,string> = isFr
+    ? {last_fed:'Dernier rafraîchi',refresh:'Rafraîchir',intermediate_refresh:'Rafraîchi intermédiaire',pre_mix:'Rafraîchi final',fridge_in:'Mettre au frigo',fridge_out:'Sortir du frigo',known_peak:'Pic observé / renseigné'}
+    : {last_fed:'Last feed',refresh:'Feed',intermediate_refresh:'Intermediate feed',pre_mix:'Final feed',fridge_in:'Refrigerate',fridge_out:'Remove from fridge',known_peak:'Observed / stated peak'};
   const discardKeep = Math.round(sourdough.starterGramsMax * 0.2);
   const ratioLabel = feedRatio && feedRatio > 1
     ? `1:${feedRatio}:${feedRatio}` : '1:1:1';
@@ -259,7 +269,14 @@ function StarterPrepCard({
       {/* Scheduled timeline */}
       {hasSchedule && (
         <div style={{ display:'flex', flexDirection:'column', gap: '8px' }}>
-          {feedTime && planningMode !== 'know_peak' && (
+          {events.length > 0 && events.map((event,index) => <div style={rowStyle} key={`${event.kind}:${index}`}>
+            <div style={labelStyle}>{eventLabels[event.kind]}</div>
+            <div style={valueStyle}>{fmtFull(event.time)}</div>
+            {['refresh','intermediate_refresh','pre_mix'].includes(event.kind) && <div style={noteStyle}>{ratioLabel} — {ratioText}</div>}
+            {event.bellPeakTime && event.kind !== 'known_peak' && <div style={noteStyle}>{isFr ? 'Pic estimé de ce rafraîchi : ' : 'Estimated peak of this feed: '}{fmtFull(event.bellPeakTime)}</div>}
+            {['fridge_in','fridge_out'].includes(event.kind) && event.cardNote && <div style={noteStyle}>{event.cardNote}</div>}
+          </div>)}
+          {!events.length && feedTime && planningMode !== 'know_peak' && (
             <div style={rowStyle}>
               <div style={labelStyle}>
                 {usingPeak2
@@ -268,21 +285,19 @@ function StarterPrepCard({
               </div>
               <div style={valueStyle}>{fmtFull(feedTime)}</div>
               <div style={noteStyle}>
-                {ratioLabel} — {isFr
-                  ? 'parts égales levain, farine, eau'
-                  : 'equal parts starter, flour, water'}
+                {ratioLabel} — {ratioText}
               </div>
             </div>
           )}
-          {fridgeOutTime && starterLocation === 'fridge' && (
+          {!events.length && fridgeOutTime && starterLocation === 'fridge' && (
             <div style={rowStyle}>
               <div style={labelStyle}>
                 {isFr ? 'Sortir du frigo' : 'Remove from fridge'}
               </div>
-              <div style={valueStyle}>{fmt(fridgeOutTime)}</div>
+              <div style={valueStyle}>{fmtFull(fridgeOutTime)}</div>
             </div>
           )}
-          {usingPeak2 && feed2Time && (
+          {!events.length && usingPeak2 && feed2Time && (
             <div style={rowStyle}>
               <div style={labelStyle}>
                 {isFr ? 'Repas 2' : 'Feed 2'}
@@ -295,14 +310,15 @@ function StarterPrepCard({
               </div>
             </div>
           )}
-          {starterPeakTime && (
+          {!events.length && starterPeakTime && (
             <div style={rowStyle}>
               <div style={labelStyle}>
                 {isFr ? 'Pic' : 'Peak'}
               </div>
-              <div style={valueStyle}>{fmt(starterPeakTime)}</div>
+              <div style={valueStyle}>{fmtFull(starterPeakTime)}</div>
             </div>
           )}
+          {mixingTime && <div style={rowStyle}><div style={labelStyle}>{isFr ? 'Incorporer au pétrissage' : 'Use when mixing'}</div><div style={valueStyle}>{fmtFull(mixingTime)}</div><div style={noteStyle}>{isFr ? 'Le pic est estimé : vérifiez un levain actif, gonflé et non retombé avant de pétrir.' : 'The peak is estimated: check for an active, risen starter that has not collapsed before mixing.'}</div></div>}
         </div>
       )}
 
@@ -359,7 +375,7 @@ function StarterPrepCard({
 export default function RecipeOutput({
   containerCapacityLitres, onContainerCapacityChange, result, numItems, itemWeight, styleName, styleKey, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, units,
-  feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
+  starterEvents, mixingTime, feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
   onEditSetup, onOpenGuide, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixerCapacityG, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
 }: RecipeOutputProps) {
   const t = useTranslations();
@@ -1102,6 +1118,8 @@ export default function RecipeOutput({
           {/* ── Starter preparation card ──────────── */}
           <StarterPrepCard
             sourdough={sourdough}
+            starterEvents={starterEvents}
+            mixingTime={mixingTime}
             feedTime={feedTime}
             feed2Time={feed2Time}
             fridgeOutTime={fridgeOutTime}
@@ -1115,6 +1133,8 @@ export default function RecipeOutput({
 
         </details>
       )}
+
+      {mode === 'simple' && styleKey && <p style={{fontSize:14,color:'var(--smoke)'}}>{locale === 'fr' ? 'Farine conseillée : ' : 'Recommended flour: '}{recommendedFlourName(styleKey,locale)}</p>}
 
       {/* PlanNav used to render here (quiet variant, above the protocol
           timeline). Since the protocol moved to its own tab, page.tsx's

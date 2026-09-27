@@ -48,10 +48,11 @@ test('exact validator returns full candidate but refuses a past extra action',()
  const result=validateScheduleCandidate({...base,extraActions:[{id:'required-feed',at:new Date(now-60000)}]});
  assert.equal(result.valid,false);assert.equal(result.issue,'timing');assert.ok(result.schedule);
 });
-test('a rounded off-grid baking agenda is not a valid fixed-time candidate',()=>{
+test('minute-exact baking anchor and preheat remain valid without quarter-hour rounding',()=>{
  const input={...base,bake:new Date(+bake+7*60000)};
- const result=validateScheduleCandidate(input);assert.equal(result.valid,false);assert.equal(result.issue,'timing');
- assert.equal(+result.times.bake,+input.bake);assert.notEqual(+result.schedule.bakeStart,+input.bake);
+ const result=validateScheduleCandidate(input);assert.equal(result.valid,true);assert.equal(result.issue,null);
+ assert.equal(+result.times.bake,+input.bake);assert.equal(+result.schedule.bakeStart,+input.bake);
+ assert.equal(+result.schedule.preheatStart,+input.bake-input.preheatMin*60000);
 });
 test('a complete blocked supported window reports bounded search exhaustion',()=>{
  const input={...base,window:()=>({from:start,to:new Date(+start+H)}),blocks:[{from:new Date(+start-24*H),to:bake,label:'Unavailable'}]};

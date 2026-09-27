@@ -11,9 +11,18 @@ import ScheduleClockInput from './ScheduleClockInput';
 import ScheduleKeyTimings, {type KeyTimingAnchor} from './ScheduleKeyTimings';
 import {assessScheduleDraft} from '../utils/scheduleDraft';
 import {proposeScheduleEdit, validateScheduleCandidate, findFixedBakeSchedule, laterBakeAlternative, scheduleEditSlots, type EditInput, type EditTimes} from '../utils/scheduleEdit';
-import { isTimeBlocked, findAvailabilityConflicts, type AvailabilityAction } from '../utils/scheduleAvailability';
+import { foldActionLabel, isTimeBlocked, findAvailabilityConflicts, type AvailabilityAction } from '../utils/scheduleAvailability';
 import { kneadMinFor, type MixerType } from '../data';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
+
+export function BatchRepairNotice({isFr, numItems, itemWeight, mixerCapacityG, wastePct = 0, onEditQuantity}: {isFr:boolean;numItems:number;itemWeight?:number;mixerCapacityG?:number;wastePct?:number;onEditQuantity?:()=>void}) {
+  const oneLoad = itemWeight && mixerCapacityG ? Math.min(numItems, Math.floor(mixerCapacityG / (itemWeight * (1 + Math.max(0,wastePct) / 100)))) : 0;
+  return <div>
+    <p>{isFr ? 'Ce planning ne gère pas les pétrissées qui se chevauchent avec les gestes des premiers lots. Augmenter artificiellement la capacité du pétrin ne résout pas cette limite.' : 'This planner does not support mixer loads overlapping the handling of earlier batches. Increasing the stated mixer capacity does not resolve this limit.'}</p>
+    {oneLoad > 0 && oneLoad < numItems && <p>{isFr ? `Essayez une fournée de ${oneLoad} pièces de ${itemWeight} g : un seul lot, marge de perte comprise, tient dans votre capacité de ${mixerCapacityG} g. Le planning sera recalculé avec vos horaires.` : `Try a bake of ${oneLoad} pieces at ${itemWeight} g: one load, including any mixing-loss allowance, fits your ${mixerCapacityG} g capacity. The planner will recheck your timings.`}</p>}
+    {onEditQuantity && <button type="button" className="bh-back-action" onClick={onEditQuantity}>{isFr ? 'Réduire ma quantité' : 'Reduce my quantity'}</button>}
+  </div>;
+}
 
 export type StarterEventKind =
   | 'last_fed'
@@ -181,6 +190,10 @@ interface SchedulePickerProps {
   mixerType?: MixerType;
   numItems?: number;
   mixingBatches?: number;
+  mixerCapacityG?: number;
+  itemWeight?: number;
+  wastePct?: number;
+  onEditQuantity?: () => void;
   confirmedPlan?: boolean;
   timingOverrides?: TimingOverrides;
   styleKey: string;
@@ -1789,7 +1802,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   const readyOffset = Number.isFinite(readyTimeOffsetMinutes) && readyTimeOffsetMinutes! > 0 ? readyTimeOffsetMinutes! : 0;
   const [scheduleView, setScheduleView] = useState<'actions' | 'graph'>('actions');
   const scheduleViewId = useId();
@@ -3318,8 +3331,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
 
     // Get derived starter state (no setState calls inside)
     const derived = deriveStarterPeakTime(et, targetMixTime);
-    if(probe)probe.effects.push(()=>onStarterPeakTimeChange?.(derived.peakTime));
-    else onStarterPeakTimeChange?.(derived.peakTime);
+    // Publish only the winning plan peak below, not the historical starter peak.
     const _feedTime = derived.feedTime;
     let _starterRefeedTime = derived.starterRefeedTime;
     // Baker-pinned refresh (dragged diamond): honored across all families —
@@ -4116,6 +4128,9 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           })),
         });
       }
+
+      if(probe)probe.effects.push(()=>onStarterPeakTimeChange?.(_committedPeakTime));
+      else onStarterPeakTimeChange?.(_committedPeakTime);
 
       setSolverResult({
         usingPeak2:             _usingPeak2,
@@ -6306,8 +6321,8 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     const valid=validation.valid&&allBatchPeaksUsable;
     const message=valid?null:!historyKept||!noNewPastActions||validation.reason==='date'
       ?(isFr?'Ce changement déplacerait une préparation passée. Choisissez un autre horaire.':'This change would move a past preparation. Choose another time.')
-      :validation.schedule?.batchTimingConflict?(isFr?'Le premier lot nécessite un rabat avant la fin des pétrissées. Réduisez la quantité ou planifiez les lots séparément.':'The first batch needs a fold before all mixing finishes. Reduce the quantity or plan the batches separately.')
-      :validation.reason==='busy'?(isFr?'Vous êtes indisponible pendant ':'You are unavailable during ')+(conflictNames[validation.conflict?.id??'']??['une étape','an action'])[isFr?0:1]+'.'
+      :validation.schedule?.batchTimingConflict?(isFr?'Le premier lot nécessite un rabat avant la fin des pétrissées. Réduisez la quantité de cette fournée.':'The first batch needs a fold before all mixing finishes. Reduce the quantity of this bake.')
+      :validation.reason==='busy'?(isFr?'Vous êtes indisponible pendant ':'You are unavailable during ')+(foldActionLabel(validation.conflict?.id??'',locale,mixingBatches) ?? (conflictNames[validation.conflict?.id??'']??['une étape','an action'])[isFr?0:1])+'.'
       :!pinKept?(isFr?'Ce rafraîchi ne conserve pas les horaires choisis. Revenez aux horaires recommandés pour les libérer.':'This feed cannot keep your chosen times. Return to recommended times to release them.')
       :!storageKept?(isFr?'Ce changement nécessite un autre passage au froid. Conservez le protocole ou choisissez un autre horaire.':'This change requires a different fridge step. Keep the protocol or choose another time.')
       :(!peakOK||!allBatchPeaksUsable)?(isFr?'Ce créneau sort de la fenêtre de maturité estimée du levain.':'Outside the estimated starter maturity window.')
@@ -6402,7 +6417,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     : conflictBlockLabel?.endsWith(' night') ? (isFr ? 'Nuit' : 'Night')
     : conflictBlockLabel ?? (isFr ? 'Indisponible' : 'Unavailable');
   const conflictDescription = firstReadinessConflict
-    ? `${(conflictNames[firstReadinessConflict.action.id] ?? ['Étape', 'Step'])[isFr ? 0 : 1]} · ${fmtCardDT(firstReadinessConflict.action.at, isFr)}${firstReadinessConflict.action.end ? `–${fmtCardHM(firstReadinessConflict.action.end, isFr)}` : ''} · ${localizedConflictBlock}`
+    ? `${(foldActionLabel(firstReadinessConflict.action.id,locale,mixingBatches) ?? (conflictNames[firstReadinessConflict.action.id] ?? ['Étape', 'Step'])[isFr ? 0 : 1])} · ${fmtCardDT(firstReadinessConflict.action.at, isFr)}${firstReadinessConflict.action.end ? `–${fmtCardHM(firstReadinessConflict.action.end, isFr)}` : ''} · ${localizedConflictBlock}`
     : undefined;
   // A commercial proposal is checked both while offered and again on tap.
   // Starter plans remain manual: the later sourdough solve may change feeds.
@@ -8062,7 +8077,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         for(const action of schedule?.availabilityActions ?? []) {
           if(action.id === 'mix' || action.id === 'bake' || +action.at < +pendingStart || +action.at > +pendingEatTime) continue;
           rows.push({id:`dough:${action.id}`,at:+action.at,endAt:action.id==='preheat'?+action.at+preheatMin*60000:action.end ? +action.end : undefined,
-            name:(conflictNames[action.id] ?? ['Étape','Step'])[isFr?0:1],timeText:fmtCardDT(action.at,isFr),
+            name:(foldActionLabel(action.id,locale,mixingBatches) ?? (conflictNames[action.id] ?? ['Étape','Step'])[isFr?0:1]),timeText:fmtCardDT(action.at,isFr),
             waitLabel:action.id==='cold-in'||action.id==='cold-in-2'?(isFr?'Fermentation au réfrigérateur':'Fermentation in the fridge'):action.id==='preheat'?(isFr?'Préchauffage du four':'Oven preheating'):action.id==='mix-finish'||action.id==='cold-out-2'?(isFr?'Levée à température ambiante':'Rise at room temperature'):action.id==='mix'?(isFr?'Repos de la pâte':'Dough rest'):undefined,
             marker:action.id.startsWith('cold')?'cold':'step',color:action.id.startsWith('cold')?'#5B87AD':'#3D5A30',editable:false,
             note:noteFor(action.id,action.at)});
@@ -8113,7 +8128,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         // A new candidate may introduce or remove a cold phase: display its full action set.
         for(const action of preview?.schedule?.availabilityActions??[]) {
           if(action.id==='mix'||action.id==='bake'||previewRows.some(row=>row.id===`dough:${action.id}`))continue;
-          previewRows.push({id:`dough:${action.id}`,at:+action.at,endAt:action.id==='preheat'?+action.at+preheatMin*60000:action.end?+action.end:undefined,name:(conflictNames[action.id]??['Étape','Step'])[isFr?0:1],timeText:fmtCardDT(action.at,isFr),marker:action.id.startsWith('cold')?'cold':'step',color:action.id.startsWith('cold')?'#5B87AD':'#3D5A30',editable:false,waitLabel:action.id==='cold-in'||action.id==='cold-in-2'?(isFr?'Fermentation au réfrigérateur':'Fermentation in the fridge'):undefined});
+          previewRows.push({id:`dough:${action.id}`,at:+action.at,endAt:action.id==='preheat'?+action.at+preheatMin*60000:action.end?+action.end:undefined,name:(foldActionLabel(action.id,locale,mixingBatches) ?? (conflictNames[action.id]??['Étape','Step'])[isFr?0:1]),timeText:fmtCardDT(action.at,isFr),marker:action.id.startsWith('cold')?'cold':'step',color:action.id.startsWith('cold')?'#5B87AD':'#3D5A30',editable:false,waitLabel:action.id==='cold-in'||action.id==='cold-in-2'?(isFr?'Fermentation au réfrigérateur':'Fermentation in the fridge'):undefined});
         }
         previewRows.sort((a,b)=>a.at-b.at);
         const duration=(hours:number)=>Math.max(0,hours).toLocaleString(isFr?'fr-FR':'en-GB',{maximumFractionDigits:1})+' h';
@@ -8132,7 +8147,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         ], repairBlocks, Date.now()).find(c=>c.action.id===preview.conflict) : undefined;
         const blockedPeriod = draftConflict
           ? `${fmtCardHM(draftConflict.block.from,isFr)}–${fmtCardHM(draftConflict.block.to,isFr)}` : null;
-        const draftMessage=preview?.issue==='busy'?(isFr?'Vous êtes indisponible pendant ':'You are unavailable during ')+(conflictNames[preview.conflict??'']??['une étape','an action'])[isFr?0:1]+' · '+fmtCardDT(draftConflict?.action.at ?? (preview.conflict==='mix'?draftMix:preview.conflict==='preferment'?new Date(+draftMix-draftPrefOffset*3600000):preview.schedule?.availabilityActions?.find(a=>a.id===preview.conflict)?.at??draftMix),isFr)+'.'
+        const draftMessage=preview?.issue==='busy'?(isFr?'Vous êtes indisponible pendant ':'You are unavailable during ')+(foldActionLabel(preview.conflict??'',locale,mixingBatches) ?? (conflictNames[preview.conflict??'']??['une étape','an action'])[isFr?0:1])+' · '+fmtCardDT(draftConflict?.action.at ?? (preview.conflict==='mix'?draftMix:preview.conflict==='preferment'?new Date(+draftMix-draftPrefOffset*3600000):preview.schedule?.availabilityActions?.find(a=>a.id===preview.conflict)?.at??draftMix),isFr)+'.'
           :preview?.issue==='past'?(isFr?'Ce changement placerait une préparation dans le passé. Choisissez un départ plus tardif.':'This change would put preparation in the past. Choose a later start.')
           :preview?.issue==='unsupported'?(isFr?'Fenêtre non calculée pour cette méthode. Revoyez les réglages.':'Window not calculated for this method. Review its settings.')
           :preview?.issue==='date'?(isFr?'Indiquez une date et une heure complètes.':'Enter a complete date and time.')
@@ -8141,7 +8156,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           :preview?.issue==='preferment'&&draftPrefOffset<=0?(isFr?'Le préferment doit être préparé avant le pétrissage. Choisissez un créneau proposé.':'Prepare the preferment before mixing. Choose a suggested window.')
           :preview?.issue==='preferment'&&prefWindow?(isFr?`Maturation du préferment : ${duration(draftPrefOffset)} ; fenêtre conseillée : ${duration(prefWindow.min)}–${duration(prefWindow.max)}. Déplacez le préferment ou le pétrissage.`:`Preferment maturation: ${duration(draftPrefOffset)}; recommended window: ${duration(prefWindow.min)}–${duration(prefWindow.max)}. Move the preferment or mixing.`)
           :preview?.schedule?.coldTimingConflict?coldTimingMessage(preview.schedule.coldTimingConflict,isFr)
-          :preview?.schedule?.batchTimingConflict?(isFr?`Le premier lot nécessite un rabat à ${fmtCardHM(preview.schedule.batchTimingConflict.firstFoldAt,isFr)}, avant la fin des pétrissées à ${fmtCardHM(preview.schedule.batchTimingConflict.mixingEnd,isFr)}. Planifiez ces lots séparément ou réduisez leur nombre en respectant la capacité du pétrin.`:`The first batch needs a fold at ${fmtCardHM(preview.schedule.batchTimingConflict.firstFoldAt,isFr)}, before mixing finishes at ${fmtCardHM(preview.schedule.batchTimingConflict.mixingEnd,isFr)}. Plan these batches separately, or reduce their number within your mixer’s capacity.`)
+          :preview?.schedule?.batchTimingConflict?(isFr?`Le premier lot nécessite un rabat à ${fmtCardHM(preview.schedule.batchTimingConflict.firstFoldAt,isFr)}, avant la fin des pétrissées à ${fmtCardHM(preview.schedule.batchTimingConflict.mixingEnd,isFr)}. Réduisez la quantité de cette fournée en respectant la capacité du pétrin.`:`The first batch needs a fold at ${fmtCardHM(preview.schedule.batchTimingConflict.firstFoldAt,isFr)}, before mixing finishes at ${fmtCardHM(preview.schedule.batchTimingConflict.mixingEnd,isFr)}. Reduce this bake’s quantity within your mixer’s capacity.`)
           :preview?.schedule?.bulkConflict?(isFr?`Repos avant mise au froid trop court : il manque ${preview.schedule.bulkConflict.missingMin} min. Avancez le pétrissage.`:`Rest before refrigeration is short by ${preview.schedule.bulkConflict.missingMin} min. Start mixing earlier.`)
           :preview?.schedule?.coldExitConflict?(isFr?`La sortie du réfrigérateur tombe pendant ${preview.schedule.coldExitConflict.blockLabel}. Déplacez la cuisson ou cette indisponibilité.`:`Taking the dough out overlaps ${preview.schedule.coldExitConflict.blockLabel}. Move the bake or this unavailable period.`)
           :preview&&!preview.valid?(isFr?'Aucun créneau trouvé dans la fenêtre prévue. Ajustez ce départ.':'No slot found within the supported window. Adjust this start.'):null;
@@ -8274,7 +8289,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         const interventionRows = isSourdough
           ? [
               ...starterEvents.filter(event=>event.kind!=='known_peak'&&event.kind!=='last_fed').map((event,index)=>({id:`feed:${index}`,at:+event.time,name:event.label})),
-              ...(starterPreview?.validation.schedule?.availabilityActions??[]).map(action=>({id:action.id,at:+action.at,name:(conflictNames[action.id]??['Étape','Step'])[isFr?0:1]})),
+              ...(starterPreview?.validation.schedule?.availabilityActions??[]).map(action=>({id:action.id,at:+action.at,name:(foldActionLabel(action.id,locale,mixingBatches) ?? (conflictNames[action.id]??['Étape','Step'])[isFr?0:1])})),
             ].filter(row=>Number.isFinite(row.at)).sort((a,b)=>a.at-b.at)
           : previewRows.filter(row=>row.id!=='ready'&&Number.isFinite(row.at)).map(row=>({id:row.id,at:row.at,name:row.name}));
         if(isSourdough&&((planningMode==='know_peak'&&!knownPeakTime)||(planningMode==='last_fed'&&(!lastFedTime||lastFedAge===null))))return null;
@@ -8284,14 +8299,15 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
               ? (isFr?'Préferment inchangé à ':'Preferment unchanged at ')
               : (isFr?'Préferment recalé à ':'Preferment moved to ')}{fmtCardDT(new Date(+draftMix-draftPrefOffset*hour),isFr)}{+draftMix-draftPrefOffset*hour===+pendingStart-prefOffsetH*hour?(isFr?' — compatible avec ce pétrissage.':' — compatible with this mixing time.'):'.'}</>
           :dirty&&editingRow!=='mix'&&+times.start!==+pendingStart?<>{isFr?'Pétrissage recalé à ':'Mixing moved to '}{fmtCardDT(times.start,isFr)}.</>:null;
+        const batchConflict=(isSourdough?starterPreview?.validation.schedule:preview?.schedule)?.batchTimingConflict;
         const notice=!valid&&!keyDragging?<div className="bh-plan-notice" role="status">
           <strong>{isSourdough ? (starterPreview?.message || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.')) : (rangeExplanation || draftMessage || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.'))}</strong>
           {blockedPeriod&&<p>{isFr?`Cette intervention tombe dans votre indisponibilité de ${blockedPeriod}. Ajustez ce créneau ou l’heure de cuisson.`:`This hands-on step overlaps your unavailable period (${blockedPeriod}). Adjust that period or your baking time.`}</p>}
           {!dirty&&suggestedTargets.length>0&&<><p>{isFr?'Pour respecter vos indisponibilités et les durées de fermentation, choisissez un autre enfournement :':'To respect your availability and fermentation times, choose another baking time:'}</p>{targetChoices}</>}
           {!dirty&&hasTimingOverrides&&<p>{isFr?'Vos horaires choisis sont conservés. Le retour à la recommandation les libère pour chercher un autre planning.':'Your chosen times are kept. Return to the recommendation to release them and find another plan.'}</p>}
-          <button type="button" className="bh-back-action" onClick={()=>{availabilityControlsRef.current?.scrollIntoView({block:'center',behavior:'auto'});availabilityControlsRef.current?.focus({preventScroll:true});}}>{isFr?'Modifier mes indisponibilités':'Change my availability'}</button>
+          {batchConflict ? <BatchRepairNotice isFr={isFr} numItems={numItems ?? 1} itemWeight={itemWeight} mixerCapacityG={mixerCapacityG} wastePct={wastePct} onEditQuantity={onEditQuantity} /> : <button type="button" className="bh-back-action" onClick={()=>{availabilityControlsRef.current?.scrollIntoView({block:'center',behavior:'auto'});availabilityControlsRef.current?.focus({preventScroll:true});}}>{isFr?'Modifier mes indisponibilités':'Change my availability'}</button>}
         </div>:undefined;
-        return <ScheduleKeyTimings anchors={anchors} blocks={repairBlocks} isFr={isFr} onChange={isSourdough?starterChange:commercialChange} check={check} cacheKey={cacheKey} hasDraft={dirty} onInteractionChange={setKeyDragging} onCancel={cancel} ovenAt={+times.bake} personalized={hasTimingOverrides} adjustment={adjustment} onApply={accept} canApply={dirty&&valid} onOpenChange={setKeyEditorOpen} notice={notice} header={(dirty||hasTimingOverrides||keyDragging)?<button type="button" className="bh-key-reset" disabled={keyDragging} onClick={resetToRecommendation}>{isFr?'Revenir aux horaires recommandés':'Return to recommended times'}</button>:undefined}>
+        return <ScheduleKeyTimings anchors={anchors} blocks={repairBlocks} isFr={isFr} onChange={isSourdough?starterChange:commercialChange} check={check} cacheKey={cacheKey} hasDraft={dirty} onInteractionChange={setKeyDragging} onCancel={cancel} ovenAt={+times.bake} personalized={hasTimingOverrides} adjustment={adjustment} onApply={accept} canApply={dirty&&valid} onOpenChange={setKeyEditorOpen} notice={notice} header={(dirty||hasTimingOverrides||keyDragging||!valid)?<button type="button" className="bh-key-reset" disabled={keyDragging} onClick={resetToRecommendation}>{isFr?'Revenir aux horaires recommandés':'Return to recommended times'}</button>:undefined}>
           {interventionRows.length>0&&<details className="bh-key-detail" style={{marginTop:12}}><summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer'}}>{isFr?'Voir toutes les interventions':'See all hands-on steps'}</summary><ol style={{listStyle:'none',padding:0,margin:0}}>{interventionRows.map(row=><li key={row.id} style={{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:'4px 12px',padding:'8px 0',borderBottom:'1px solid var(--border)'}}><span>{row.name}</span><time dateTime={new Date(row.at).toISOString()} style={{fontWeight:600}}>{fmtCardDT(new Date(row.at),isFr)}</time></li>)}</ol></details>}
           {searchFailed&&hasTimingOverrides&&!editingRow&&!(isSourdough?starterPreview?.message:draftMessage)&&<p className="bh-key-detail">{isFr?'Aucun créneau trouvé avec vos horaires. Revenez aux horaires recommandés pour élargir la recherche.':'No slot found with your chosen times. Return to recommended times to widen the search.'}</p>}
           <details className="bh-key-detail" style={{marginTop:12}}><summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer'}}>{isFr?'Ce que vérifie le planning':'What the planner checks'}</summary><p>{isFr?'Les créneaux vérifient les étapes prévues et les durées modélisées. Certains gestes restent vérifiés à leur heure de début seulement ; les rabats optionnels des pains dépendent de la pâte. La fermentation reste une estimation.':'Windows check planned actions and modeled durations. Some handling is checked only at its start time; optional bread folds depend on the dough. Fermentation remains an estimate.'}</p></details>

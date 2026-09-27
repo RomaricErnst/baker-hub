@@ -4,7 +4,8 @@ import {createPortal} from 'react-dom';
 import type { StarterEvent } from './SchedulePicker';
 import { useState, useRef, useEffect, createContext, useContext } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { type ScheduleResult, formatTime, hoursLabel } from '../utils';
+import { foldActionLabel } from '../utils/scheduleAvailability';
+import { type ScheduleResult, formatTime, hoursLabel, finalProofWindow } from '../utils';
 import { MIXER_TYPES, AUTOLYSE_MIN, autolyseMinFor, type MixerType } from '../data';
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
@@ -1092,7 +1093,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           <Steps items={[{bold:l === 'fr' ? 'Mélangez la farine, le sel, l’eau et la matière grasse mesurés. Pétrissez jusqu’à obtenir une pâte lisse et souple.' : 'Combine the measured flour, salt, water and fat. Knead until smooth and pliable.',note:''}]} />
         </Section>
       </StepCard>
-      <StepCard number={n()} {...sc()} icon={<IconProof />} title={l === 'fr' ? 'Laisser reposer, couvert' : 'Rest, covered'} passive time={schedule.bulkFermStart} duration={breadProtocol.restMinutes ? breadProtocol.restMinutes / 60 : undefined}>
+      <StepCard number={n()} {...sc()} icon={<IconProof />} title={l === 'fr' ? 'Laisser reposer, couvert' : 'Rest, covered'} passive time={schedule.bulkFermStart} duration={schedule.restRtHours}>
         <Steps items={profileSteps(breadProtocol.proof[l])} />
         <p>{l === 'fr' ? 'Cette pâte sans levure se détend ; elle n’a pas besoin de lever.' : 'This unleavened dough relaxes; it does not need to rise.'}</p>
       </StepCard>
@@ -1632,7 +1633,7 @@ Actual dough condition and equipment may differ from these estimates.`;
 
       {/* ── STEP: Bulk Fermentation ──────────────────── */}
       <StepCard number={n()} {...sc()} icon={<IconBulk />} title={t('stepTitles.bulkFerm')}
-        passive time={schedule.bulkFermStart} duration={schedule.bulkFermHours} overviewNote={schedule.availabilityActions?.filter(a=>a.id.startsWith('fold-')).map((a,i)=><span key={a.id} style={{display:'block'}}>{l==='fr'?'Rabat':'Fold'} {i+1} · {formatTime(a.at,_fmtLocale)}</span>)} accent={D.terra}>
+        passive time={schedule.bulkFermStart} duration={schedule.bulkFermHours} overviewNote={schedule.availabilityActions?.filter(a=>a.id.startsWith('fold-')).map(a=><span key={a.id} style={{display:'block'}}>{foldActionLabel(a.id, l, schedule.mixingBatches)} · {formatTime(a.at,_fmtLocale)}</span>)} accent={D.terra}>
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           {breadProtocol ? <Steps items={[
@@ -1729,7 +1730,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       {/* ── STEP: Divide & Shape (bread) / Divide & Ball (pizza) ── */}
       {schedule.divideBallTime && (
         <StepCard number={n()} {...sc()} icon={<IconDivide />}
-          title={isBread ? t('stepTitles.divideShape') : t('stepTitles.divideBall')}
+          title={styleKey === 'greek_pita' ? (l === 'fr' ? 'Diviser et bouler' : 'Divide and round') : isBread ? t('stepTitles.divideShape') : t('stepTitles.divideBall')}
           time={schedule.divideBallTime} duration={divideMin / 60} accent="#8A6A4A">
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
@@ -1863,14 +1864,9 @@ Actual dough condition and equipment may differ from these estimates.`;
 
       {/* ── STEP: Final Proof (merged warmup + proof for cold-retard styles) */}
       {(schedule.finalProofHours > 0 || schedule.restRtHours > 0 || schedule.rtWarmupStart) && (
-        <StepCard number={n()} {...sc()} icon={<IconProof />} title={t('stepTitles.finalProof')}
-          passive time={schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? schedule.finalProofStart}
-          duration={(() => {
-            const proofEnd = schedule.poachStart ?? schedule.bakeStart;
-            const proofStart = schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? schedule.finalProofStart;
-            if (!proofStart || !proofEnd) return schedule.finalProofHours;
-            return Math.max(0, (proofEnd.getTime() - proofStart.getTime()) / 3600000);
-          })()}
+        <StepCard number={n()} {...sc()} icon={<IconProof />} title={styleKey === 'greek_pita' ? (l === 'fr' ? 'Détendre les pâtons, couverts' : 'Relax the portions, covered') : t('stepTitles.finalProof')}
+          passive time={finalProofWindow(schedule, numItems).start}
+          duration={finalProofWindow(schedule, numItems).hours}
           accent="#7A8C6E">
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
@@ -1912,6 +1908,14 @@ Actual dough condition and equipment may differ from these estimates.`;
       )}
 
       {/* ── STEP: Preheat Oven ───────────────────────── */}
+      {styleKey === 'greek_pita' && schedule.rollStart && <StepCard number={n()} {...sc()} icon={<IconDivide />} title={l === 'fr' ? 'Étaler et piquer' : 'Roll and dock'} time={schedule.rollStart} duration={(+schedule.bakeStart - +schedule.rollStart) / 3600000}>
+        <Steps items={[{bold:l === 'fr'
+          ? `Étalez les pâtons détendus en disques d’environ 5 mm d’épaisseur (environ 18 cm pour 140 g). Piquez avec une fourchette pour éviter une grande poche.`
+          : `Roll the relaxed portions into rounds about 5 mm thick (about 18 cm for 140 g). Dock with a fork to prevent a large pocket.`,note:l === 'fr'
+          ? 'Gardez les disques couverts pendant que la poêle chauffe. Si un pâton se rétracte, couvrez-le quelques minutes de plus avant de reprendre.'
+          : 'Keep the rounds covered while the pan heats. If a portion springs back, cover it for a few more minutes before continuing.'}]} />
+      </StepCard>}
+
       <StepCard number={n()} {...sc(false, 'cooking')} icon={<IconPreheat />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle') : t('stepTitles.preheatOven')}
         time={schedule.preheatStart} accent={D.gold}>
 
@@ -1991,6 +1995,9 @@ Actual dough condition and equipment may differ from these estimates.`;
               {l === 'fr' ? 'Pan / Detroit / Deep Dish : la pâte cuit dans le moule huilé, sans enfournement à la pelle. Pour une Detroit, poussez le fromage jusqu’aux bords pour les caraméliser, puis ajoutez la sauce après cuisson. Pour une Deep Dish, faites remonter la pâte sur les parois et ajoutez le fromage, la garniture puis la sauce.' : 'Pan / Detroit / Deep Dish: dough bakes in the oiled pan; no launching needed. For Detroit, push cheese to the edges for caramelised crusts and add sauce after baking. For Deep Dish, press dough up the sides, then add cheese, toppings and sauce in that order.'}
             </div>
           )}
+          {styleKey === 'pain_viennois' && recipe && recipe.totalDough / Math.max(1, numItems) < 200 && <p>{l === 'fr'
+            ? `Vos pièces font environ ${Math.round(recipe.totalDough / Math.max(1, numItems))} g : elles sont plus petites que les baguettes de référence de 200 g. Contrôlez-les avant 15 min, puis régulièrement : croûte dorée et centre pris. Le poids seul ne détermine pas la cuisson ; la forme et le four comptent aussi.`
+            : `Your pieces weigh about ${Math.round(recipe.totalDough / Math.max(1, numItems))} g: they are smaller than the reference 200 g baguettes. Check before 15 minutes, then regularly: golden crust and a set centre. Weight alone does not determine baking time; shape and oven matter too.`}</p>}
           {breadProtocol ? <Steps items={profileSteps(hasPoachStep ? breadProtocol.cookingSteps[l].slice(1) : breadProtocol.cookingSteps[l])} /> : isBread ? (
             <Steps items={(t.raw(
               ovenType === 'dutch_oven' ? 'bake.dutch.steps' :

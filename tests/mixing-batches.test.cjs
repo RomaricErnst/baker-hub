@@ -24,7 +24,12 @@ test('one, three and five sequential batches reserve their full mixing window an
   a.equal(+s.firstBatchReadyAt,+start+11*60000);
   a.equal(+s.batchMixWindows.at(-1).end,+s.bulkFermStart);
   a.ok(Math.abs(s.totalRTHours+s.totalColdHours-(+s.bakeStart-+s.firstBatchReadyAt)/3600000)<1e-9);
-  a.ok(s.availabilityActions.filter(x=>x.id.startsWith('fold')).every(x=>+x.at>+s.bulkFermStart));
+  const offsets=require('../app/utils/scheduleFolds.ts').scheduledFoldMinutes(s.bulkFermHours,'neapolitan');
+  for (const fold of s.availabilityActions.filter(x=>x.id.startsWith('fold'))) {
+   const [,number,lot='1']=/^fold-(\d+)(?:-batch-(\d+))?$/.exec(fold.id);
+   a.equal(+fold.at,+s.batchMixWindows[Number(lot)-1].end+offsets[Number(number)-1]*60000);
+  }
+  if(s.batchTimingConflict) a.equal(+s.availabilityActions.find(x=>x.id==='fold-1').at,+s.batchTimingConflict.firstFoldAt);
  }
 });
 test('later-batch work conflicts cannot be hidden by a clear first batch',()=>{

@@ -11,6 +11,7 @@ import type { User } from '@supabase/supabase-js';
 import { useRef } from 'react';
 import PizzaPlaceholder from '../PizzaPlaceholder';
 import { AskMaestro } from '../BakeGuide';
+import SelectionCoverage from './SelectionCoverage';
 
 // Word units need a space and a FR translation — raw join produced "5leaves".
 const UNIT_LABELS: Record<string, { en: string; fr: string }> = {
@@ -601,7 +602,7 @@ export default function BakeTab({ selectedPizzas, plannedPizzaCount, locale, sty
           fontFamily: 'var(--font-ui)', fontSize: '26px',
           fontWeight: 700, color: 'var(--char)', margin: '0 0 2px',
         }}>
-          {allSelectedDone ? (l === 'fr' ? 'Service terminé pour votre sélection' : 'Your selected pizzas are baked') : t('header.title')}
+          {allSelectedDone ? (l === 'fr' ? 'Service terminé pour votre sélection' : 'Your selected pizzas are baked') : totalDone > 0 ? (l === 'fr' ? 'Quelle pizza part ensuite ?' : 'Which pizza goes next?') : t('header.title')}
         </h2>
         <p style={{
           fontFamily: 'var(--font-ui)', fontSize: '13px',
@@ -609,6 +610,7 @@ export default function BakeTab({ selectedPizzas, plannedPizzaCount, locale, sty
         }}>
           {allSelectedDone ? (l === 'fr' ? 'Retrouvez les pizzas servies ci-dessous.' : 'Your baked pizzas are listed below.') : t('header.subtitle')}
         </p>
+        {plannedPizzaCount != null && <SelectionCoverage selected={totalOrdered} planned={plannedPizzaCount} locale={l} />}
         {totalDone > 0 && (
           <div style={{ marginBottom: '16px' }}>
             <div style={{
@@ -622,7 +624,6 @@ export default function BakeTab({ selectedPizzas, plannedPizzaCount, locale, sty
                   ? `${totalDone} / ${totalOrdered} cuites`
                   : `${totalDone} / ${totalOrdered} baked`)}
             </div>
-            {plannedPizzaCount != null && plannedPizzaCount > totalOrdered && <p style={{fontSize:13,color:'var(--smoke)',margin:'0 0 8px'}}>{l === 'fr' ? `Ce suivi couvre ${totalOrdered} pizza${totalOrdered > 1 ? 's' : ''} sur ${plannedPizzaCount} prévues. Les ${plannedPizzaCount - totalOrdered} autres ne sont pas suivies ici.` : `This tracks ${totalOrdered} of ${plannedPizzaCount} planned pizzas. The other ${plannedPizzaCount - totalOrdered} are not tracked here.`}</p>}
             {extraDone > 0 && <p style={{fontSize:12,color:'var(--smoke)',margin:'0 0 8px'}}>{l === 'fr' ? `+ ${extraDone} hors quantité prévue` : `+ ${extraDone} beyond planned quantity`}</p>}
             <div style={{ height: '4px', borderRadius: '2px', background: 'var(--border)' }}>
               <div style={{
