@@ -1097,8 +1097,8 @@ Actual dough condition and equipment may differ from these estimates.`;
     navigateGuideStep(candidates.find(index=>!doneSteps.has(index))??candidates[0]??1);
   };
   const progressControl = active && progressTarget ? createPortal(
-    <button type="button" className="bh-step-trigger" aria-label={currentStep===0?(l==='fr'?'Reprendre la préparation':'Resume preparation'):overviewLabel} aria-expanded={currentStep===0} onClick={()=>{if(currentStep===0)resumeStep();else {setCurrentStep(0);window.scrollTo({top:0,behavior:'instant'});}}}>
-      <span>{currentStep===0?(l==='fr'?'Reprendre':'Resume'):`${l==='fr'?'Étape':'Step'} ${currentStep} / ${preparationTotal}`}</span>
+    <button type="button" className="bh-step-trigger" aria-label={currentStep===0?(l==='fr'?'Reprendre l’étape en cours':'Resume current step'):overviewLabel} aria-expanded={currentStep===0} onClick={()=>{if(currentStep===0)resumeStep();else {setCurrentStep(0);window.scrollTo({top:0,behavior:'instant'});}}}>
+      <span>{currentStep===0?(l==='fr'?'Reprendre':'Resume'):`${l==='fr'?'Étape':'Step'} ${phase==='cooking'?Math.max(1,currentStep-preparationTotal):currentStep} / ${phase==='cooking'?cookingStepTotal:preparationTotal}`}</span>
       <svg aria-hidden="true" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d={currentStep===0?'M2 8l4-4 4 4':'M2 4l4 4 4-4'}/></svg>
     </button>,progressTarget) : null;
 

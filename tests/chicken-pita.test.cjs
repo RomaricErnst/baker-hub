@@ -42,13 +42,15 @@ test('ingredient removal updates salad, sauce, chicken cooking and assembly toge
   a.match(allText(noYogurt),/lemon juice/);
 });
 
-test('existing cooked chicken IDs and saved quantities remain cooked with tailored steps',()=>{
+test('existing chicken recipes retain cooked-weight quantities while defaulting to home cooking',()=>{
   for(const id of ['pita-poulet-shawarma','pita-poulet-citron']){
     const recipe=d.getSandwichRecipe(id);
-    a.match(recipe.name.en,/already cooked/);
+    a.doesNotMatch(recipe.name.en,/already cooked/);
+    a.ok(recipe.steps.some(step=>step.title.en==='Cook the chicken'));
+    a.match(allText(recipe.steps),/74°C/);
     a.ok(recipe.ingredients.some(i=>i.ingredientId==='chicken'));
     a.ok(!recipe.ingredients.some(i=>i.ingredientId==='chicken_raw'));
-    a.match(allText(recipe.steps),/cooked weight/);
+    a.match(allText(recipe.steps),/cooked (?:chicken )?weight/);
     a.doesNotMatch(allText(recipe.steps),/carrot|tahini|mustard|cheese/);
     a.equal(d.normalizeSandwichSnapshot({familyId:'pita',qtys:{[id]:4}}).qtys[id],4);
   }

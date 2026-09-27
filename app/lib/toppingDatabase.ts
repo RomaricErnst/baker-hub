@@ -372,9 +372,9 @@ const ING: Record<string, Ingredient> = {
   },
 
   speck: {
-    id: 'speck', category: 'meat', bakeOrder: 'before',
-    name: { en: 'Speck Alto Adige', fr: 'Speck Alto Adige' },
-    prepNote: { en: 'Lay flat, add last 2 min of baking or after', fr: 'Poser à plat, ajouter les 2 dernières min ou après' },
+    id: 'speck', category: 'meat', bakeOrder: 'after',
+    name: {"en": "Speck Alto Adige", "fr": "Speck Alto Adige"},
+    prepNote: {"en": "Add thin slices after baking.", "fr": "Ajoutez de fines tranches après cuisson."},
     qtyPerPizza: { amount: 60, unit: 'g', noteEN: '4–5 slices', noteFR: '4–5 tranches' },
     hardToFind: true,
     goodEnough: { name: { en: 'Good quality smoked ham', fr: 'Jambon fumé de qualité' } },
@@ -1105,15 +1105,9 @@ const ING: Record<string, Ingredient> = {
   },
 
   egg: {
-    id: 'egg', category: 'base', bakeOrder: 'before',
-    name: { en: 'Egg (cracked on top)', fr: 'Œuf (cassé sur la pizza)' },
-    prepNote: { en: 'Crack directly onto pizza halfway through baking — yolk stays runny', fr: 'Casser directement sur la pizza à mi-cuisson — jaune reste coulant' },
-    prepNoteByStyle: {
-      neapolitan: { en: 'Add in the last 60–90 seconds only — at 450°C the egg sets almost instantly. Add too early and the yolk will be hard.', fr: 'Ajouter les 60–90 dernières secondes seulement — à 450°C l\'œuf se cuit presque instantanément. Trop tôt et le jaune sera dur.', timing: 0 },
-      sourdough:  { en: 'Add in the last 60–90 seconds — same as Neapolitan, high heat sets the egg very quickly.', fr: 'Ajouter les 60–90 dernières secondes — même que le napolitain, la chaleur élevée cuit l\'œuf très rapidement.', timing: 0 },
-      pan:        { en: 'Add at the 10-minute mark — lower temperature (230°C) needs more time to set the egg properly.', fr: 'Ajouter à la 10e minute — la température plus basse (230°C) nécessite plus de temps pour cuire l\'œuf correctement.', timing: 0 },
-      roman:      { en: 'Add halfway through — mid-temperature oven sets the egg in about 5–7 min.', fr: 'Ajouter à mi-cuisson — le four à température moyenne cuit l\'œuf en 5–7 min environ.', timing: 0 },
-    },
+    id: 'egg', category: 'base', bakeOrder: 'after',
+    name: {"en": "Egg (cooked separately)", "fr": "Œuf (cuit séparément)"},
+    prepNote: {"en": "Cook the egg separately, then add to the baked pizza. Cook until both white and yolk are firm; use commercially pasteurised eggs if serving with a soft yolk.", "fr": "Faites cuire l’œuf séparément, puis ajoutez-le à la pizza cuite. Faites cuire jusqu’à ce que blanc et jaune soient fermes ; utilisez des œufs pasteurisés du commerce si le jaune reste coulant."},
     qtyPerPizza: { amount: 1, unit: 'pcs', noteEN: 'per pizza', noteFR: 'par pizza' },
   },
 
@@ -1171,8 +1165,8 @@ const ING: Record<string, Ingredient> = {
 
   salsiccia: {
     id: 'salsiccia', category: 'meat', bakeOrder: 'before',
-    name: { en: 'Italian sausage (salsiccia)', fr: 'Saucisse italienne (salsiccia)' },
-    prepNote: { en: 'Remove casing, crumble and pan-brown ~5 min — raw sausage will not cook through in a home oven. Only a 450°C+ pizza oven cooks raw crumbles the traditional way.', fr: "Retirer le boyau, émietter et dorer à la poêle ~5 min — la saucisse crue ne cuit pas à cœur dans un four domestique. Seul un four à pizza 450°C+ cuit les miettes crues à la traditionnelle.", timing: 15 },
+    name: {"en": "Italian sausage (salsiccia)", "fr": "Saucisse italienne (salsiccia)"},
+    prepNote: {"en": "Remove the casing, crumble and cook separately to 71°C at the centre (74°C for poultry sausage), checked with a food thermometer. Drain before topping; a hot pizza oven does not replace checking the meat is cooked through.", "fr": "Retirez le boyau, émiettez et faites cuire séparément à 71 °C à cœur (74 °C pour une saucisse de volaille), vérifiés au thermomètre. Égouttez avant de garnir ; la chaleur du four à pizza ne remplace pas une cuisson à cœur.", "timing": 15},
     qtyPerPizza: { amount: 80, unit: 'g', noteEN: 'crumble or slice', noteFR: 'émietter ou trancher' },
     qtyMultiplierByStyle: { roman: 1.3, pan: 1.4 },
     goodEnough: { name: { en: 'Any good pork sausage, casing removed', fr: 'Toute bonne saucisse de porc, sans boyau' } },
@@ -1576,8 +1570,8 @@ const ING: Record<string, Ingredient> = {
 
   foieGras: {
     id: 'foie_gras', category: 'meat', bakeOrder: 'after',
-    name: { en: 'Foie gras (sliced)', fr: 'Foie gras (tranché)' },
-    prepNote: { en: 'Add immediately after baking — it just needs to warm through', fr: 'Ajouter immédiatement après cuisson — il a juste besoin de se réchauffer' },
+    name: {"en": "Ready-to-eat cooked or mi-cuit foie gras", "fr": "Foie gras cuit ou mi-cuit prêt à consommer"},
+    prepNote: {"en": "Use ready-to-eat cooked or mi-cuit foie gras, not raw foie gras. Keep chilled according to its label, then slice and add after baking.", "fr": "Utilisez du foie gras cuit ou mi-cuit prêt à consommer, jamais du foie gras cru. Gardez au froid selon l’étiquette, puis tranchez et ajoutez après cuisson."},
     qtyPerPizza: { amount: 40, unit: 'g', noteEN: '2 thin slices', noteFR: '2 tranches fines' },
     hardToFind: true,
     compromise: { name: { en: 'Good duck liver pâté', fr: 'Bonne terrine de foie de canard' } },
@@ -4845,7 +4839,26 @@ import { loadCustomPizzas, customPizzaToPizza } from './profile'
 export function getCustomPizzaList(): Pizza[] {
   return loadCustomPizzas()
     .sort((a, b) => b.createdAt - a.createdAt)
-    .map(customPizzaToPizza)
+    .map(def => {
+      const pizza = customPizzaToPizza(def);
+      pizza.ingredients = pizza.ingredients.map((ingredient, index) => {
+        const refId = def.ingredients[index].refId;
+        if (!refId) return ingredient;
+        const matches = [...PIZZAS, ...DESSERT_PIZZAS].flatMap(p => p.ingredients).filter(i => i.id === refId);
+        const reference = matches[0];
+        if (!reference) return ingredient;
+        // Do not transfer instructions specific to a different sauce/recipe.
+        const prepNote = refId === 'coconut_milk' ? {en: 'For a coconut-based sauce, reduce until thick enough to spread, then cool before topping. Keep prepared sauce chilled until needed.', fr: 'Pour une sauce au lait de coco, faites réduire jusqu’à une texture tartinable, puis laissez refroidir avant de garnir. Gardez la sauce préparée au froid jusqu’à utilisation.'} : reference.prepNote;
+        return {
+          ...ingredient,
+          prepNote: ingredient.prepNote ?? prepNote,
+          prepNoteByStyle: reference.prepNoteByStyle,
+          // These eggs are cooked separately in the shared safety instructions.
+          ...(['egg','whole_egg','poached_egg'].includes(refId) ? {bakeOrder: 'after' as const} : {}),
+        };
+      });
+      return pizza;
+    })
 }
 
 export function getPizzaById(id: string): Pizza | undefined {

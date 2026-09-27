@@ -60,7 +60,7 @@ interface PrepTask {
 
 const STATIONS = [
   { id: 'cool',    en: 'Needs to cool before topping',    fr: 'Doit refroidir avant de garnir' },
-  { id: 'time',    en: 'Needs time — marinade or pickle', fr: 'Nécessite du temps — marinade ou saumure' },
+  { id: 'time',    en: 'Allow time ahead', fr: 'À anticiper' },
   { id: 'board',   en: 'Board — slice & tear',            fr: 'Planche — trancher & déchirer' },
   { id: 'grate',   en: 'Grate & crush',                   fr: 'Râper & concasser' },
   { id: 'drain',   en: 'Open & drain',                    fr: 'Ouvrir & égoutter' },
@@ -115,14 +115,19 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
     const pizza = allPizzas.find(p => p.id === pizzaId);
     if (!pizza) return;
     pizza.ingredients.forEach((ing: Ingredient) => {
-      if (!ing.prepNote) return;
-      if (!taskMap[ing.id]) {
-        const styleNote = styleKey ? (ing as any).prepNoteByStyle?.[styleKey] : undefined;
-        const note = styleNote ?? ing.prepNote;
+      const styleNote = styleKey ? (ing as any).prepNoteByStyle?.[styleKey] : undefined;
+      const note = styleNote ?? ing.prepNote;
+      if (!note) return;
+      // A shared ingredient can require different preparations (e.g. laksa vs rendang).
+      // Aggregate only the same instruction and unit, never whichever recipe came first.
+      const taskKey = JSON.stringify([ing.id, note.en, note.fr, note.timing ?? 0, ing.qtyPerPizza?.unit]);
+      let signature = 2166136261;
+      for (let index = 0; index < taskKey.length; index++) signature = Math.imul(signature ^ taskKey.charCodeAt(index), 16777619);
+      if (!taskMap[taskKey]) {
         const timing = note.timing ?? 0;
         const mustCool = timing >= 15 && (ing.category === 'meat' || ing.category === 'sauce');
-        taskMap[ing.id] = {
-          id: `ing_${ing.id}`,
+        taskMap[taskKey] = {
+          id: `ing_${ing.id}_${signature >>> 0}`,
           ingredientName: ing.name[l] ?? ing.name.en,
           text: note.en,
           textFr: note.fr,
@@ -135,13 +140,13 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
       }
       if (ing.qtyPerPizza) {
         const multiplier = styleKey ? ((ing as any).qtyMultiplierByStyle?.[styleKey] ?? 1) : 1;
-        taskMap[ing.id].totalAmount = (taskMap[ing.id].totalAmount ?? 0) + ing.qtyPerPizza.amount * qty * multiplier;
-        taskMap[ing.id].unit = ing.qtyPerPizza.unit;
+        taskMap[taskKey].totalAmount = (taskMap[taskKey].totalAmount ?? 0) + ing.qtyPerPizza.amount * qty * multiplier;
+        taskMap[taskKey].unit = ing.qtyPerPizza.unit;
       }
     });
   });
 
-  const tasks = Object.values(taskMap);
+  const tasks = Object.values(taskMap).map(task => ({...task, id: `${task.id}:${task.totalAmount ?? 0}:${task.unit ?? ""}`}));
   const taskTotal=tasks.length;
   const taskDone=tasks.filter(task=>completed.has(task.id)).length;
   useEffect(()=>{onProgress?.({done:taskDone,total:taskTotal});},[taskDone,taskTotal,onProgress]);
@@ -291,8 +296,8 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
               </div>
               <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: '#8A7F78', marginBottom: '12px' }}>
                 {l === 'fr'
-                  ? 'Ces ingrédients ont besoin de temps ou doivent refroidir — ils se gardent au frigo.'
-                  : 'These need time or must cool — they keep in the fridge until you\'re ready.'}
+                  ? 'Ces préparations demandent du temps. Gardez les ingrédients périssables au froid jusqu’à leur utilisation.'
+                  : 'These preparations need time. Keep perishable ingredients chilled until needed.'}
               </div>
               {earlyStations.map(s => renderStationBlock(s))}
             </div>

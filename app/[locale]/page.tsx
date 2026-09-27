@@ -3289,7 +3289,7 @@ export default function Home() {
   </>;
 
   const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings&&fillingsReturn?fillingsReturn.destination:destination} fr={fr} onChange={openDestination} top={destination==='organisation'?0:stickTop}
-    progress={destination==='organisation' && modeChosen && !setupOverview ? <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>{setModeChosen(false);scrollToStepTop();}}} /> : destination==='protocol'&&protocolView==='dough'&&recipeGenerated ? <div className="bh-organisation-progress" ref={setGuideProgressTarget}/> : destination==='protocol'&&protocolView==='fillings' ? <span className="bh-fillings-progress">{fillingsProgress.done}/{fillingsProgress.total} {fr?'faites':'done'}</span> : undefined} /> : null;
+    progress={destination==='organisation' && modeChosen && !setupOverview ? <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>{setModeChosen(false);scrollToStepTop();}}} /> : undefined} /> : null;
 
   // ── Render ────────────────────────────────
   return (
@@ -3620,7 +3620,7 @@ export default function Home() {
 {showBakeTypeChooser&&bakeType&&<BakeTypeChooser fr={fr} current={bakeType} onChoose={selectBakeType} onClose={()=>setShowBakeTypeChooser(false)}/>}
 {destination!=='organisation' && bakeNavigator}
 
-          {(['recipe','shopping','service'] as string[]).includes(destination)&&<button type="button" className="bh-section-back" onClick={()=>openDestination(destination==='recipe'?'organisation':destination==='shopping'?'recipe':destination==='protocol'?'shopping':'protocol')}>← {destination==='recipe'?(fr?'Organisation':'Setup'):destination==='shopping'?(fr?'Recette':'Recipe'):destination==='protocol'?(fr?'Courses':'Shopping'):(fr?'Préparation':'Preparation')}</button>}
+          {((['recipe','shopping'] as string[]).includes(destination)||destination==='service'&&!hasFillings)&&<button type="button" className="bh-section-back" onClick={()=>openDestination(destination==='recipe'?'organisation':destination==='shopping'?'recipe':destination==='protocol'?'shopping':'protocol')}>← {destination==='recipe'?(fr?'Organisation':'Setup'):destination==='shopping'?(fr?'Recette':'Recipe'):destination==='protocol'?(fr?'Courses':'Shopping'):(fr?'Préparation':'Preparation')}</button>}
 
 
 
@@ -3663,15 +3663,16 @@ export default function Home() {
             </>}
           </section>}
 
-          {destination==='service'&&hasFillings&&<button type="button" className="bh-section-back" onClick={prepareFillingsFromService}>{fillingsProgress.total>0&&fillingsProgress.done>=fillingsProgress.total?(fr?'Revoir la préparation des garnitures':'Review filling preparation'):(fr?'Préparer les garnitures':'Prepare toppings and fillings')}</button>}
-          {destination==='protocol'&&protocolView==='fillings'&&prepReturnToService!=null&&<button type="button" className="bh-section-back" onClick={()=>openCompanionPhase('bake')}>{fr?'← Revenir à la cuisson et au service':'← Return to cooking and serving'}</button>}
 
           {destination==='service'&&bakeType==='pizza'&&serviceView==='fillings'&&<button type="button" className="bh-section-back" onClick={()=>{setServiceView('dough');scrollToStepTop();}}>{fr?'← Four et conseils de cuisson':'← Oven and cooking advice'}</button>}
 
           {hasFillings&&(destination==='protocol'||(destination==='service'&&bakeType!=='pizza'))&&<section className={`bh-section-choices${destination==='protocol'?' bh-preparation-tabs':''}`} aria-label={fr?'À préparer':'What to prepare'}>
             <button type="button" aria-pressed={(destination==='protocol'?protocolView:serviceView)==='dough'} onClick={()=>{if(destination==='protocol')setProtocolView('dough');else setServiceView('dough');}}>{destination==='protocol'?(fr?'Pâte':'Dough'):(fr?'Guide de cuisson':'Cooking guide')}</button>
-            {hasFillings&&<button type="button" aria-pressed={(destination==='protocol'?protocolView:serviceView)==='fillings'} onClick={()=>{if(destination==='protocol')setProtocolView('fillings');else setServiceView('fillings');}}>{destination==='protocol'?`${fr?'Garnitures':'Fillings'} · ${fillingsProgress.done>=fillingsProgress.total?(fr?'prêtes':'ready'):`${fillingsProgress.total-fillingsProgress.done} ${fr?'à faire':'left'}`}`:(bakeType==='pizza'?(fr?'Cuire les pizzas':'Cook the pizzas'):(fr?'Assembler et servir':'Assemble and serve'))}</button>}
+            {hasFillings&&<button type="button" aria-pressed={(destination==='protocol'?protocolView:serviceView)==='fillings'} onClick={()=>{if(destination==='protocol')setProtocolView('fillings');else setServiceView('fillings');}}>{destination==='protocol'?(fr?'Garnitures':'Fillings'):(bakeType==='pizza'?(fr?'Cuire les pizzas':'Cook the pizzas'):(fr?'Assembler et servir':'Assemble and serve'))}</button>}
           </section>}
+          {destination==='service'&&hasFillings&&<button type="button" className="bh-section-back" onClick={prepareFillingsFromService}>{fillingsProgress.total>0&&fillingsProgress.done>=fillingsProgress.total?(fr?'Revoir la préparation des garnitures':'Review filling preparation'):(fr?'Préparer les garnitures':'Prepare toppings and fillings')}</button>}
+          {recipeGenerated&&((destination==='protocol'&&protocolView==='dough')||(destination==='service'&&serviceView==='dough'))&&<div className="bh-local-progress" ref={setGuideProgressTarget}/>}
+          {destination==='protocol'&&protocolView==='fillings'&&hasFillings&&<p className="bh-local-progress bh-fillings-progress" role="status">{fillingsProgress.done} / {fillingsProgress.total} {fr?'tâches terminées':'tasks complete'}</p>}
           {destination==='shopping'&&bakeType==='pizza'&&!recipeGenerated&&<div className="bh-section-empty"><p>{fr?'Complétez l’organisation pour ajouter les ingrédients de votre pâte.':'Complete organisation to include your dough ingredients.'}</p><button type="button" style={NEXT_CTA} onClick={()=>openDestination('organisation')}>{fr?'Compléter l’organisation':'Complete organisation'}</button></div>}
           {destination==='recipe'&&hasFillings&&<button type="button" className="bh-recipe-fillings-link" onClick={openLateFillings}>{bakeType==='pizza'?(fr?'Modifier mes pizzas':'Edit my pizzas'):sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'Modifier mes tartines':'Edit my toasts'):(fr?'Modifier mes sandwichs':'Edit my sandwiches')}</button>}
           {(destination==='protocol'||destination==='service')&&!recipeGenerated&&(destination==='protocol'?protocolView:serviceView)==='dough'&&<div className="bh-section-empty"><p>{fr?'Complétez l’organisation pour obtenir vos étapes de préparation.':'Complete your organisation to get the dough instructions.'}</p><button type="button" style={NEXT_CTA} onClick={()=>openDestination('organisation')}>{fr?'Compléter l’organisation':'Complete organisation'}</button></div>}
@@ -4058,7 +4059,7 @@ export default function Home() {
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && recipe && mixerType && (<>
                 <BakeGuide
-                  progressTarget={destination==='protocol'&&protocolView==='dough'?guideProgressTarget:null}
+                  progressTarget={(destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough')?guideProgressTarget:null}
                   phase={destination==='service'?'cooking':'preparation'}
                   active={destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough'}
                   onNavigateToCooking={()=>{setServiceView('dough');openDestination('service');}}
@@ -4565,7 +4566,7 @@ export default function Home() {
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && advancedRecipe && mixerType && (<>
                 <BakeGuide
-                  progressTarget={destination==='protocol'&&protocolView==='dough'?guideProgressTarget:null}
+                  progressTarget={(destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough')?guideProgressTarget:null}
                   phase={destination==='service'?'cooking':'preparation'}
                   active={destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough'}
                   onNavigateToCooking={()=>{setServiceView('dough');openDestination('service');}}

@@ -2566,7 +2566,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
             </div>
             <div style={{padding:'12px 16px',display:'grid',gap:8,borderTop:'1px solid var(--border)'}}>
-              <button type="button" onClick={()=>{closeSummary();if(baseReady)onPillChange('party');else if(onSelectionDone)onSelectionDone();else onPillChange('shopping');}} style={NEXT_CTA}>{baseReady?(l==='fr'?'Préparer les garnitures':'Prepare toppings'):selectionDoneLabel??(l==='fr'?'Voir les courses':'View shopping')}</button>
+              <button type="button" onClick={()=>{closeSummary();if(directSelectionReturn&&onSelectionDone)onSelectionDone();else if(baseReady)onPillChange('party');else if(onSelectionDone)onSelectionDone();else onPillChange('shopping');}} style={NEXT_CTA}>{directSelectionReturn?selectionDoneLabel:baseReady?(l==='fr'?'Préparer les garnitures':'Prepare toppings'):selectionDoneLabel??(l==='fr'?'Voir les courses':'View shopping')}</button>
               {(baseReady||!doughConfigured)&&<button type="button" onClick={()=>{closeSummary();onPillChange(baseReady?'shopping':'party');}} style={SECONDARY_CTA}>{baseReady?(l==='fr'?'Voir les courses':'View shopping'):(l==='fr'?'Préparer les garnitures':'Prepare toppings')}</button>}
               <button type="button" onClick={closeSummary} className="bh-back-action">{l==='fr'?'← Modifier ma sélection':'← Edit my selection'}</button>
             </div>

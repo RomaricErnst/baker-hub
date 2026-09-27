@@ -178,7 +178,14 @@ export function recommendYeast(
     // dose merely because warm exposure was added. This conservative bound
     // removes the arbitrary four-hour switch; it is not new calibration or
     // a simulation of dough-core cooling.
-    if (rtRec === null || totalRTHours <= 0) {
+    if (totalRTHours > 0 && rtRec === null) {
+      // Unsupported warm exposure does not disappear when a cold phase is
+      // added. Match the existing pure-RT rejection contract; this minimum
+      // is a finite placeholder, not a validated dose for the rejected plan.
+      notRecommended = true;
+      warnings.push({ key: 'overFermentRT', params: { hours: totalRTHours, temp: kitchenTemp } });
+      rec = YEAST_MIN_PCT;
+    } else if (totalRTHours <= 0 || rtRec === null) {
       rec = Math.max(YEAST_MIN_PCT, coldRec);
     } else {
       const rtWeight = totalRTHours / Math.max(rtRec, YEAST_MIN_PCT);
