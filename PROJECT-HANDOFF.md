@@ -1,5 +1,11 @@
 # Bakerhub — continuation handoff
 
+## Mat feedback — final validation and publication, 27 September 2026
+
+The user corrected the friend's name to Mat (earlier branch/PR labels say Blake). PR #9 merged as ff06e291cfe17f8cfe8b68990490b86420182ad8 after final head 141221a passed 418 unit/component tests and all 392 macOS iPhone-WebKit scenarios across 320/375/390/430px (CI 36330294041; 16.4 minutes mobile). Build, image checks and sourdough round trips passed. Final preview browser verified consistent traditional-oven summary naming and a single optional toppings edit action preserving 4x260g dough. Bread-only flour target resets on a confirmed family change.
+
+User explicitly requested publishing all changes to the public site. Production deployment for the merge: dpl_6H8dXfQehCVp7mw9JMx6E2P1Bs6n; final READY/domain verification is recorded in PR #9 comments. His iPhone report of missing fixed Continue was on the old public deployment 5e8696f, before publication. The fixed bar applies to the style catalogue at mobile widths. Physical iPhone verification remains unperformed; automated WebKit checks passed. Prepare the French WhatsApp update for Mat; do not send it on the user's behalf.
+
 ## Blake feedback — 27 September 2026
 
 Final review follow-up: 417 local unit tests and build pass. Browser verified pizza toppings selection returns to Recipe preserving4x260g, sourdough recipe counts750g total flour including105g levain flour, and autolyse18:28 precedes19:00 mixing in both schedule and guide. Remaining copy cleanup makes traditional oven naming consistent beyond the picker and removes a duplicate toppings edit button. Initial mobile failures were test harness issues (null autosave read before first save, obsolete button labels); fixed with trace evidence. Full final WebKit result and merge/deployment outcome are recorded in PR9 checks/comments; do not infer success from these local results. No physical baking/iPhone validation.
