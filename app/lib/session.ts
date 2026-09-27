@@ -1,3 +1,4 @@
+import { createDraftStorage } from './draftStorage';
 import type { BakeNavigationMemory } from './bakeNavigation';
 import { normalizeSandwichSnapshot, type SandwichSnapshot } from './sandwich';
 import type { StarterEvent } from '../components/SchedulePicker';
@@ -5,6 +6,22 @@ import type { RecipeEnrichment } from '../utils/enrichedFormulas';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 const SESSION_KEY = 'bh_session_v1';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const draftStores = new WeakMap<Storage, ReturnType<typeof createDraftStorage>>();
+function sessionStore() {
+  let store = draftStores.get(localStorage);
+  if (!store) {
+    store = createDraftStorage(localStorage, SESSION_KEY, () => {
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('bh-session-conflict'));
+    });
+    draftStores.set(localStorage, store);
+  }
+  return store;
+}
+/** Call only after the baker explicitly resumes or agrees to replace the local draft. */
+export function acceptCurrentSessionStorage(): void {
+  try { sessionStore().acceptCurrent(); } catch {}
+}
+
 
 export interface SessionData {
   version: 1;
@@ -128,14 +145,13 @@ export function normalizeResultNotes(value: unknown): string {
 export function saveSession(data: Omit<SessionData, 'version' | 'savedAt'>): boolean {
   try {
     const payload: SessionData = { ...data, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), mixerCapacityG: normalizeMixerCapacity(data.mixerCapacityG), resultNotes: normalizeResultNotes(data.resultNotes), version: 1, savedAt: Date.now() };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
-    return true;
+    return sessionStore().write(JSON.stringify(payload));
   } catch { return false; }
 }
 
 export function loadSession(): SessionData | null {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = sessionStore().read();
     if (!raw) return null;
     const data = JSON.parse(raw) as SessionData;
     if (data.version !== 1) return null;
@@ -144,8 +160,8 @@ export function loadSession(): SessionData | null {
   } catch { return null; }
 }
 
-export function clearSession(): void {
-  try { localStorage.removeItem(SESSION_KEY); } catch {}
+export function clearSession(): boolean {
+  try { return sessionStore().clear(); } catch { return false; }
 }
 
 

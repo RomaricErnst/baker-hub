@@ -35,3 +35,12 @@ export function findAvailabilityConflicts(
   }
   return result;
 }
+
+/** Explicit lot identity for shared event lists and conflict diagnostics. */
+export function foldActionLabel(id: string, locale: string, mixingBatches = 1): string | null {
+  const match = /^fold-(\d+)(?:-batch-(\d+))?$/.exec(id);
+  if (!match) return null;
+  const fr = locale === 'fr';
+  const fold = `${fr ? 'Rabat' : 'Fold'} ${match[1]}`;
+  return mixingBatches > 1 ? `${fr ? 'Lot' : 'Batch'} ${match[2] ?? '1'} · ${fold}` : fold;
+}

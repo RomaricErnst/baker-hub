@@ -11,11 +11,11 @@ const {restoredBakeRoute}=require('../app/lib/bakeNavigation.ts');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../app/[locale]/page.tsx'),'utf8');
 // Execute the actual page restoration handler with state setters captured.
 const handler=source.slice(source.indexOf('  async function restoreFromBakeEvent('),source.indexOf('  // ── Computed: Generate button'));
-async function restore(yeastType,rebake,starterTimingValid,overrides={}) {
+async function restore(yeastType,rebake,starterTimingValid,overrides={},acceptReplacement=true) {
  const state={};
  const storage={};
  const navigationHandler=source.slice(source.indexOf('  function restoreNavigation('),source.indexOf('  // Both advance functions'));
- const context={Date,Math,Boolean,Object,JSON,isRestoringRef:{current:false},restoreStarterEvents,normalizeMixingBatches,normalizeTimingOverrides,normalizeSandwichSnapshot,sandwichFamilyForStyle,restoredBakeRoute,endRestore(){},setTimeout(){},localStorage:{setItem(key,value){storage[key]=value;}}};
+ const context={confirmLocalReplacement:()=>acceptReplacement,Date,Math,Boolean,Object,JSON,isRestoringRef:{current:false},restoreStarterEvents,normalizeMixingBatches,normalizeTimingOverrides,normalizeSandwichSnapshot,sandwichFamilyForStyle,restoredBakeRoute,endRestore(){},setTimeout(){},localStorage:{setItem(key,value){storage[key]=value;}}};
  for(const name of new Set((handler+navigationHandler).match(/\bset[A-Z]\w*/g))) context[name]=value=>{state[name]=typeof value==='function'?value(0):value;};
  const time=Date.now()-14*86400000;
  context.event={id:'saved-bake',dough_snapshot:{yeastType,tab:'custom',recipeGenerated:true,modeChosen:true,eatTime:time,startTime:time-86400000,timingOverrides:{mix:time-86400000,feed:time-90000000},starterEvents:[{kind:'pre_mix',time:time-90000000,isPast:false}],lastFedTime:time-100000000,knownPeakTime:time-86400000,feed2Time:time-90000000,fridgeOutTime:time-87000000,starterFridgeInTime:time-95000000,lastFedAge:'today',planningMode:'know_peak',ovenType:'dutch_oven',mixerType:'hand',itemWeight:800,containerCapacityLitres:5,pizzaParty:{qtys:{}},activeTab:'guide'}};
@@ -65,4 +65,9 @@ test('restoring another cloud bake clears absent blockers, completion and starte
  assert.equal(state.setPlanningMode,'last_fed');assert.equal(state.setStarterState,'rt_fed');assert.equal(state.setStarterLocation,'rt');
  assert.equal(state.setAddSeeds,false);assert.equal(state.setPrefGoesInFridgeState,false);
  assert.equal(storage.bh_shop_ticks_v1,'{}');assert.equal(storage.bh_prep_ticks_v1,'[]');
+});
+
+test('declining a saved bake replacement preserves all current state and storage',async()=>{
+ const {state,storage}=await restore('instant',false,true,{},false);
+ assert.deepEqual(state,{});assert.deepEqual(storage,{});
 });

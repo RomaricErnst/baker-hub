@@ -44,7 +44,8 @@ import PrefermentPicker from '../components/PrefermentPicker';
 import { createClient } from '../lib/supabase/client';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
 import { archivedBlendSelections } from '../lib/flourRecovery';
-import { clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
+import { flourShoppingName } from '../lib/flourGuidance';
+import { acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
 import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
@@ -738,10 +739,10 @@ function NeedsStyleFirst({ fr, onChoose }: { fr: boolean; onChoose: () => void }
 function SessionReplacementNotice({ fr, localOnly }: { fr: boolean; localOnly: boolean }) {
   return <>
     <p style={{ margin: 0, fontSize: '17px', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-      {localOnly ? (fr ? 'Cette fournée est conservée sur cet appareil' : 'This bake is saved on this device') : (fr ? 'Cette fournée n’est pas dans votre historique' : 'This bake is not in your history')}
+      {localOnly ? (fr ? 'Cette fournée est conservée sur cet appareil' : 'This bake is saved on this device') : (fr ? 'Conserver cette version avant de recommencer ?' : 'Keep this version before starting again?')}
     </p>
     <p style={{ margin: '0 0 6px', fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}>
-      {fr ? 'Une nouvelle fournée remplacera la reprise sur cet appareil. Pour conserver celle-ci dans votre historique, enregistrez-la dans votre compte.' : 'A new bake will replace the resume saved on this device. Save this bake to your account to keep it in your history.'}
+      {fr ? 'Une nouvelle fournée remplacera la reprise sur cet appareil. Pour conserver cette version dans votre historique, enregistrez-la dans votre compte.' : 'A new bake will replace the resume saved on this device. Save this version to your account to keep it in your history.'}
     </p>
   </>;
 }
@@ -1408,6 +1409,13 @@ export default function Home() {
   // without choosing leaves it unapplied, because a fresh start is the safe
   // default and the session is still on disk if they change their mind.
   const [pendingSession, setPendingSession] = useState<SessionData | null>(null);
+  const [localSaveConflict, setLocalSaveConflict] = useState(false);
+  useEffect(() => {
+    const conflict = () => setLocalSaveConflict(true);
+    window.addEventListener('bh-session-conflict', conflict);
+    return () => window.removeEventListener('bh-session-conflict', conflict);
+  }, []);
+
 
   useEffect(() => {
     const session = loadSession();
@@ -1935,7 +1943,7 @@ export default function Home() {
     const cr = tab === 'custom' ? advancedRecipe : recipe;
     if (!cr) return undefined;
     const items: Array<{ name: string; amount: string }> = [
-      { name: locale === 'fr' ? 'Farine' : 'Flour', amount: `${Math.round(cr.flour)}g` },
+      { name: flourShoppingName(styleKey ?? '', locale, tab, flourBlend), amount: `${Math.round(cr.flour)}g` },
       { name: locale === 'fr' ? 'Sel' : 'Salt', amount: `${Math.round(cr.salt)}g` },
     ];
     const yg = cr.preferment != null ? cr.preferment.prefYeastGrams : cr.yeast?.convertedGrams;
@@ -1946,14 +1954,14 @@ export default function Home() {
     }
     if ((cr.oil ?? 0) > 0) items.push({ name: locale === 'fr' ? 'Huile d’olive' : 'Olive oil', amount: `${Math.round(cr.oil ?? 0)}g` });
     return items;
-  }, [tab, advancedRecipe, recipe, yeastType, locale]);
+  }, [tab, advancedRecipe, recipe, yeastType, locale, styleKey, flourBlend]);
 
   const sandwichDoughIngredients = useMemo(() => {
     const cr = tab === 'custom' ? advancedRecipe : recipe;
     if (!cr) return undefined;
     const fr = locale === 'fr';
     const rows = [
-      ...(cr.flourParts?.length ? cr.flourParts.map(part=>({id:`flour_${part.key}`,name:fr?part.nameFr:part.name,grams:part.grams})) : [{id:'flour', name:fr?'Farine':'Flour', grams:cr.flour}]),
+      ...(cr.flourParts?.length ? cr.flourParts.map(part=>({id:`flour_${part.key}`,name:fr?part.nameFr:part.name,grams:part.grams})) : [{id:'flour', name:flourShoppingName(styleKey ?? '', locale, tab, flourBlend), grams:cr.flour}]),
       {id:'water', name:fr?'Eau':'Water', grams:cr.water},
       {id:'salt', name:fr?'Sel':'Salt', grams:cr.salt},
       {id:'olive_oil', name:fr?'Huile':'Oil', grams:cr.oil},
@@ -1962,7 +1970,7 @@ export default function Home() {
       ...(['milk','eggs','butter'] as const).map(id=>({id,name:({milk:fr?'Lait':'Milk',eggs:eggShoppingLabel(cr.enrichment?.eggs ?? 0,fr),butter:fr?'Beurre':'Butter'})[id],grams:cr.enrichment?.[id] ?? 0})),
     ];
     return rows.filter(row=>Number.isFinite(row.grams)&&row.grams>0);
-  }, [tab, advancedRecipe, recipe, locale]);
+  }, [tab, advancedRecipe, recipe, locale, styleKey, flourBlend]);
 
   // Builds the computedRecipe payload from the live recipe object — single source of truth
   function buildComputedRecipe(): SessionData['computedRecipe'] {
@@ -2133,8 +2141,13 @@ export default function Home() {
   },[showProductHome,bakeType,activeTab,batchView,activeStep,advancedStep,setupOverview,sessionRestored]);
   function backToProducts(){setShowProductHome(true);setActiveTab('batch');scrollToStepTop();}
   function selectBakeType(bt: BakeType) {
+    // A dismissed resume banner is not consent to replace the local draft.
+    if (!bakeType) {
+      if (!confirmLocalReplacement()) return;
+      setPendingSession(null); setShowWelcomeBack(false);
+    }
     if(bakeType===bt){setShowProductHome(false);setActiveTab('batch');setBatchView('style');return;}
-    if(bakeType&&styleKey&&!window.confirm(fr?'Changer de famille réinitialise les choix de cette fournée. Continuer ?':'Changing product family resets this bake’s choices. Continue?'))return;
+    if(bakeType&&(styleKey||hasWorkInProgress)&&!window.confirm(fr?'Changer de famille réinitialise les choix de cette fournée. Continuer ?':'Changing product family resets this bake’s choices. Continue?'))return;
     setShowProductHome(false);
     setActiveTab('batch');setBatchView('style');setFillingsReturn(null);setPrepReturnToService(null);setShoppingReturnToFillings(false);
     setSandwichParty(createSandwichSnapshot());
@@ -2563,6 +2576,16 @@ export default function Home() {
   // path out: keep it, drop it, or back out. A saved session just restarts.
   const [confirmNewSession, setConfirmNewSession] = useState(false);
 
+  function confirmLocalReplacement(): boolean {
+    const existing = loadSession();
+    if ((existing || bakeType) && !window.confirm(fr
+      ? 'Cette action remplace la reprise automatique sur cet appareil. Les fournées enregistrées dans votre compte restent disponibles. Continuer ?'
+      : 'This replaces the automatic resume draft on this device. Bakes saved to your account remain available. Continue?')) return false;
+    acceptCurrentSessionStorage(); setLocalSaveConflict(false);
+    setPendingSession(null); setShowWelcomeBack(false);
+    return true;
+  }
+
   function requestNewSession() {
     if (bakeType && !(sessionSaved && bakeEventId && user)) { setConfirmNewSession(true); return; }
     startOver();
@@ -2629,6 +2652,9 @@ export default function Home() {
   }
 
   function startOver() {
+    // Refuse to clear a draft another tab has changed since our last write.
+    if (!clearSession()) return;
+    setPendingSession(null);
     setScheduleCandidateValid(true);
     setBatchView('style');setProtocolView('dough');setServiceView('dough');setFillingsReturn(null);setPrepReturnToService(null);setShoppingReturnToFillings(false);
     setSandwichParty(createSandwichSnapshot());
@@ -2662,7 +2688,6 @@ export default function Home() {
     setPizzaPartyTab('pick');
     setPizzasConfirmed(false);
     customOnlyStateRef.current = null;
-    clearSession();
     // Clear persisted Pizza Party ticks + guide progress — they belong to the old bake
     try {
       localStorage.removeItem('bh_shop_ticks_v1');
@@ -2771,6 +2796,7 @@ export default function Home() {
   }
 
   function loadRecipe(r: SavedRecipe) {
+    if (!confirmLocalReplacement()) return;
     setMixingBatches(undefined); setContainerCapacityLitres(3); // Legacy recipes have no saved equipment capacity.
     const isCustom = r.mode === 'custom';
 
@@ -2846,6 +2872,7 @@ export default function Home() {
   async function restoreFromBakeEvent(event: Pick<BakeEvent, 'id' | 'dough_snapshot' | 'pizza_party_id'>, opts?: { rebake?: boolean }) {
 
     if (!event.dough_snapshot) return;
+    if (!confirmLocalReplacement()) return;
     isRestoringRef.current = true;
     setScheduleCandidateValid(true);
     setShowWelcomeBack(false);
@@ -3440,6 +3467,10 @@ export default function Home() {
           onOpenProfile={() => setProfileOpen(true)}
         />
 
+        {localSaveConflict && <div role="alert" style={{padding:16,background:'var(--warm)',color:'var(--char)'}}>
+          <p>{fr ? 'Une autre fenêtre a modifié la reprise locale. La sauvegarde de cette fenêtre est suspendue pour préserver cette fournée. Rechargez pour reprendre la version actuelle.' : 'Another window changed the local draft. Saving in this window is paused to protect that bake. Reload to resume the current version.'}</p>
+          <button type="button" style={{minHeight:44}} onClick={() => window.location.reload()}>{fr ? 'Recharger et reprendre' : 'Reload and resume'}</button>
+        </div>}
         {profileOpen && (
           <ProfileSheet locale={locale} onClose={() => setProfileOpen(false)} />
         )}
@@ -3552,7 +3583,8 @@ export default function Home() {
                 // mount — see the comment on pendingSession — so Resume now
                 // does the thing it says rather than dismissing a banner over
                 // state that had already appeared by itself.
-                const s = pendingSession;
+                const s = loadSession();
+                acceptCurrentSessionStorage();
                 answerWelcomeBack();
                 if (!s) return;
                 applySession(s);
@@ -3891,6 +3923,8 @@ export default function Home() {
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => simpleFlow.onJump(1)} />
               ) : (
               <SchedulePicker
+                mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={0}
+                onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
                 mixingBatches={selectedMixingBatches}
                 onEditingChange={setScheduleEditing}
                 readyTimeOffsetMinutes={readyTimeEstimate?Math.ceil(readyTimeEstimate.minutes):undefined}
@@ -4029,6 +4063,7 @@ export default function Home() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
 
                           <RecipeOutput
+                            starterEvents={starterEvents} mixingTime={startTime}
                             containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
                             styleKey={styleKey ?? undefined}
                             waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixerCapacityG={customMixerCapacityG} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches}
@@ -4362,6 +4397,8 @@ export default function Home() {
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => customFlow.onJump(1)} />
               ) : (
               <SchedulePicker
+                mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={wastePct}
+                onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
                 mixingBatches={selectedMixingBatches}
                 onEditingChange={setScheduleEditing}
                 readyTimeOffsetMinutes={readyTimeEstimate?Math.ceil(readyTimeEstimate.minutes):undefined}
@@ -4534,6 +4571,7 @@ export default function Home() {
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
                           <RecipeOutput
+                            starterEvents={starterEvents} mixingTime={startTime}
                             containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
                             styleKey={styleKey ?? undefined}
                             waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixerCapacityG={customMixerCapacityG} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches}

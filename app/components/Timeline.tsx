@@ -6,6 +6,7 @@ import {
   type ScheduleResult,
   formatTime,
   hoursLabel,
+  finalProofWindow,
 } from '../utils';
 import { kneadMinFor, autolyseMinFor, type MixerType } from '../data';
 import { StepIcon, IconProof } from './StepIcons';
@@ -75,34 +76,8 @@ export const THEME: Record<StepKind, {
 };
 
 function proofWindow(schedule: ScheduleResult, numItems = 4) {
-  const divideH = (15 + 2 * Math.max(0, numItems - 4)) / 60;
-  // Final Proof — merged with warmup/rest. Starts when dough comes out of fridge.
-  // Duration runs to bakeStart (preheat overlaps with end of proof).
-  const finalProofStepStartRaw =
-    schedule.rtWarmupStart ??
-    (schedule.restRtHours > 0 ? schedule.coldRetardEnd : null) ??
-    schedule.finalProofStart;
-  // Express plans stamped Divide & Ball and Final Proof at the same minute —
-  // proof can't start until the balls exist. Clamp the displayed start to
-  // divide end (display only; total window is unchanged).
-  const divideEndMs = schedule.divideBallTime
-    ? schedule.divideBallTime.getTime() + divideH * 3600000
-    : null;
-  const finalProofStepStart = finalProofStepStartRaw && divideEndMs && finalProofStepStartRaw.getTime() < divideEndMs
-    ? new Date(divideEndMs)
-    : finalProofStepStartRaw;
-  // Duration must match the Guide's Final Proof card: wall-clock from the
-  // moment the dough is out (or shaped) to bakeStart. warmup+proofHours
-  // understates whenever the schedule carries slack (blockers, rounding) —
-  // the dough keeps proofing until it's baked, so the window is the truth.
-  const warmupStepH = schedule.rtWarmupStart && schedule.rtWarmupEnd
-    ? Math.max(0, (schedule.rtWarmupEnd.getTime() - schedule.rtWarmupStart.getTime()) / 3600000)
-    : (schedule.restRtHours ?? 0);
-  const proofWindowStart = finalProofStepStart ?? schedule.finalProofStart;
-  const finalProofStepDuration = proofWindowStart && schedule.bakeStart
-    ? Math.max(0, ((schedule.poachStart ?? schedule.bakeStart).getTime() - proofWindowStart.getTime()) / 3600000)
-    : warmupStepH + schedule.finalProofHours;
-  return { start: finalProofStepStart, durationH: finalProofStepDuration };
+  const window = finalProofWindow(schedule, numItems);
+  return { start: window.start, durationH: window.hours };
 }
 
 // ── Build timeline steps ──────────────────────
@@ -136,8 +111,8 @@ export function buildItems(
   const lang = locale === 'fr' ? 'fr' : 'en';
   if (profile?.method === 'unleavened') return [
     {kind:'step',id:'mixing',stepKind:'mixing',time:startTime,label:t('timeline.steps.mixing'),iconKey:'mix',durationH:schedule.mixingDurationH},
-    {kind:'step',id:'rest',stepKind:'rest_rt',time:schedule.bulkFermStart,label:lang === 'fr' ? 'Repos couvert' : 'Covered rest',tip:profile.proof[lang].join(' '),iconKey:'proof',durationH:(profile.restMinutes ?? 30)/60},
-    {kind:'step',id:'divide',stepKind:'divide_ball',time:schedule.divideBallTime ?? schedule.finalProofStart,label:lang === 'fr' ? 'Diviser et abaisser' : 'Divide and roll',iconKey:'divide',durationH:null},
+    {kind:'step',id:'rest',stepKind:'rest_rt',time:schedule.bulkFermStart,label:lang === 'fr' ? 'Repos couvert' : 'Covered rest',tip:profile.proof[lang].join(' '),iconKey:'proof',durationH:schedule.restRtHours},
+    {kind:'step',id:'divide',stepKind:'divide_ball',time:schedule.divideBallTime ?? schedule.finalProofStart,label:lang === 'fr' ? 'Diviser et abaisser' : 'Divide and roll',iconKey:'divide',durationH:(schedule.divisionMinutes ?? 10)/60},
     {kind:'step',id:'preheat',stepKind:'preheat',time:schedule.preheatStart,label:lang === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle',iconKey:'preheat',durationH:preheatMin/60},
     {kind:'step',id:'eat',stepKind:'eat',time:schedule.bakeStart,label:lang === 'fr' ? 'Cuire à la poêle' : 'Cook on the griddle',iconKey:'bake',durationH:schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : null},
   ];
@@ -319,7 +294,7 @@ export function buildItems(
     items.push({
       kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
       time: schedule.divideBallTime,
-      label: t(bakeType === 'bread' ? 'timeline.steps.divideShape' : 'timeline.steps.divideBall'),
+      label: styleKey === 'greek_pita' ? (lang === 'fr' ? 'Diviser et bouler' : 'Divide and round') : t(bakeType === 'bread' ? 'timeline.steps.divideShape' : 'timeline.steps.divideBall'),
       icon: '',
       iconKey: 'divide',
       tip: divideBallTip(),
@@ -377,7 +352,7 @@ export function buildItems(
     items.push({
       kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
       time: schedule.divideBallTime,
-      label: t(bakeType === 'bread' ? 'timeline.steps.divideShape' : 'timeline.steps.divideBall'),
+      label: styleKey === 'greek_pita' ? (lang === 'fr' ? 'Diviser et bouler' : 'Divide and round') : t(bakeType === 'bread' ? 'timeline.steps.divideShape' : 'timeline.steps.divideBall'),
       icon: '',
       iconKey: 'divide',
       tip: divideBallTip(),
@@ -390,7 +365,7 @@ export function buildItems(
     items.push({
       kind: 'step', id: 'final_proof', stepKind: 'final_proof',
       time: finalProofStepStart ?? schedule.finalProofStart,
-      label: t('timeline.steps.finalProof'),
+      label: styleKey === 'greek_pita' ? (lang === 'fr' ? 'Détendre les pâtons, couverts' : 'Relax the portions, covered') : t('timeline.steps.finalProof'),
       icon: '⏰',
       iconKey: 'proof',
       tip: profile ? profile.proof[lang].join(' ') : schedule.coldRetardStart
@@ -399,6 +374,12 @@ export function buildItems(
       durationH: finalProofStepDuration,
     });
   }
+
+  if (styleKey === 'greek_pita' && schedule.rollStart) items.push({
+    kind:'step', id:'roll', stepKind:'divide_ball', time:schedule.rollStart,
+    label:lang === 'fr' ? 'Étaler et piquer' : 'Roll and dock', iconKey:'divide',
+    durationH:(+schedule.bakeStart - +schedule.rollStart)/3600000,
+  });
 
   // Preheat Oven
   items.push({

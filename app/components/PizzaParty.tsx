@@ -5,6 +5,7 @@ import ToppingSelector from './ToppingSelector';
 import PrepTab from './pizzaParty/PrepTab';
 import BakeTab from './pizzaParty/BakeTab';
 import type { CompletionActions } from './JourneyCompletion';
+import SelectionCoverage from './pizzaParty/SelectionCoverage';
 
 type Tab = PizzaPartyTab;
 type Pill = 'pizzas' | 'shopping' | 'party';
@@ -109,6 +110,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
 
   return (
     <div>
+      {(activeTab === 'shop' || activeTab === 'prep') && <SelectionCoverage selected={Object.values(qtys).reduce((sum,n)=>sum+Math.max(0,n),0)} planned={numItems} locale={locale} />}
       {slotNote && (
         <div style={{
           background: 'rgba(156, 130, 72,0.12)',

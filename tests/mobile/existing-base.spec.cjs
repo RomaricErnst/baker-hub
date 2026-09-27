@@ -92,7 +92,12 @@ test('a new bread entry offers resume without silently selecting the previous ba
  await expect(page.getByRole('spinbutton').first()).toHaveValue('2');
  await page.reload();await expect(page.getByRole('spinbutton').first()).toHaveValue('2');
  await page.goto('/fr/with-my-base?family=bread');
- await page.getByRole('button',{name:'Baguette',exact:true}).tap();
+ const replacementDialog=page.waitForEvent('dialog');
+ const chooseNewBase=page.getByRole('button',{name:'Baguette',exact:true}).tap();
+ const confirmation=await replacementDialog;
+ expect(confirmation.type()).toBe('confirm');
+ expect(confirmation.message()).toBe('Cette nouvelle préparation remplace la reprise locale de votre base existante. Continuer ?');
+ await confirmation.accept();await chooseNewBase;
  await expect(page.getByLabel('Origine')).toHaveCount(0);
  await expect(page.getByLabel('État de la base')).toHaveCount(0);
  await expect(page.getByRole('spinbutton').first()).toHaveValue('0');

@@ -54,8 +54,7 @@ export function useSessionSave(
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       if (skipRef?.current) return; // restore in flight — never persist mixed state
-      saveSession(dataRef.current);
-      onSaved();
+      if (saveSession(dataRef.current)) onSaved();
     }, debounceMs);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps

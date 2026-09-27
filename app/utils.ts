@@ -903,8 +903,8 @@ function buildSchedulePhases(
       finalProofStart: new Date(Math.max(+displayFermStart, +r15(finalProofStart))),
       finalProofHours: finalProofH,
       restRtHours: 0,
-      preheatStart: r15(bakeTime),
-      bakeStart: r15(eatTime),
+      preheatStart: new Date(bakeTime),
+      bakeStart: new Date(eatTime),
       totalRTHours: totalH,
       totalColdHours: 0,
       wasAutoAdjusted: false,
@@ -1007,8 +1007,8 @@ function buildSchedulePhases(
       finalProofStart: r15(finalProofStart),
       finalProofHours: actualFinalProofH,
       restRtHours: 0,
-      preheatStart: r15(bakeTime),
-      bakeStart: r15(eatTime),
+      preheatStart: new Date(bakeTime),
+      bakeStart: new Date(eatTime),
       totalRTHours: actualBulkH + rtWarmupH + actualFinalProofH,
       totalColdHours,
       wasAutoAdjusted,
@@ -1120,8 +1120,8 @@ function buildSchedulePhases(
     finalProofStart: r15(finalProofStart),
     finalProofHours: finalProofH,
     restRtHours: restH,
-    preheatStart: r15(bakeTime),
-    bakeStart: r15(eatTime),
+    preheatStart: new Date(bakeTime),
+    bakeStart: new Date(eatTime),
     totalRTHours: actualBulkH + finalProofH,
     totalColdHours: actualColdH,
     wasAutoAdjusted,
@@ -1144,6 +1144,15 @@ function buildSchedulePhases(
 // ══════════════════════════════════════════
 
 /** Existing guide budget, shared by the planner and all consumers. */
+/** Shared visible proof/relaxation bounds: never overlap division. */
+export function finalProofWindow(schedule: ScheduleResult, numItems = 4): { start: Date; end: Date; hours: number } {
+  const rawStart = schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? schedule.finalProofStart;
+  const divisionEnd = +schedule.divideBallTime + (schedule.divisionMinutes ?? divisionMinutesFor(numItems)) * 60000;
+  const start = new Date(Math.max(+rawStart, divisionEnd));
+  const end = schedule.rollStart ?? schedule.poachStart ?? schedule.bakeStart;
+  return { start, end, hours: Math.max(0, (+end - +start) / 3600000) };
+}
+
 export function divisionMinutesFor(numItems = 4): number {
   return 15 + 2 * Math.max(0, (Number.isFinite(numItems) ? Math.floor(numItems) : 4) - 4);
 }
@@ -1184,7 +1193,19 @@ export function buildSchedule(
       schedule.finalProofHours = Math.max(0, (+schedule.bakeStart - +schedule.finalProofStart) / 3600000);
     }
     if (+divisionEnd >= +fermentationEnd) schedule.preparationInvalid = true;
-    if (!schedule.coldRetardStart) schedule.bulkFermHours = Math.max(0, (+schedule.finalProofStart - +schedule.bulkFermStart) / 3600000);
+    if (!schedule.coldRetardStart) schedule.bulkFermHours = Math.max(0, (+schedule.divideBallTime - +schedule.bulkFermStart) / 3600000);
+  }
+  if (styleKey === 'greek_pita') {
+    // Greek pita is divided, relaxed, then rolled/docked immediately before
+    // cooking. Keep the existing total fermentation window; allocate the
+    // covered relaxation explicitly instead of a generic shaped proof.
+    const rollMinutes = Math.max(10, Math.ceil((numItems ?? 4) * 2));
+    schedule.rollStart = new Date(+eatTime - rollMinutes * 60000);
+    schedule.finalProofStart = new Date(+schedule.rollStart - 15 * 60000);
+    schedule.divideBallTime = new Date(+schedule.finalProofStart - schedule.divisionMinutes * 60000);
+    schedule.finalProofHours = 15 / 60;
+    schedule.bulkFermHours = Math.max(0, (+schedule.divideBallTime - +schedule.bulkFermStart) / 3600000);
+    if (+schedule.divideBallTime <= +schedule.bulkFermStart) schedule.preparationInvalid = true;
   }
   if (poachMinutes) {
     schedule.poachStart = fermentationEnd;
@@ -1250,9 +1271,12 @@ export function buildSchedule(
       schedule.preparationInvalid = true;
     }
   }
-  foldMinutes.forEach((minutes, index) => {
-    actions.push({ id: `fold-${index + 1}`, at: new Date(+schedule.bulkFermStart + minutes * 60000) });
-  });
+  for (const [batchIndex, window] of schedule.batchMixWindows.entries()) {
+    foldMinutes.forEach((minutes, index) => {
+      actions.push({ id: `fold-${index + 1}${batchIndex ? `-batch-${batchIndex + 1}` : ''}`,
+        at: new Date(+window.end + minutes * 60000) });
+    });
+  }
   const point = (id: string, at: Date | null) => { if (at) actions.push({ id, at }); };
   point('cold-in', schedule.coldRetard1Start);
   point('cold-out', schedule.coldRetard1End);
@@ -1262,7 +1286,7 @@ export function buildSchedule(
   point('cold-in-2', schedule.coldRetard2Start);
   point('cold-out-2', schedule.coldRetard2End);
   if (schedule.poachStart) actions.push({ id: 'poach', at: schedule.poachStart, end: schedule.bakeStart });
-  if (schedule.doughMethod === 'unleavened') actions.push({ id: 'roll', at: schedule.rollStart!, end: new Date(eatTime) });
+  if (schedule.rollStart) actions.push({ id: 'roll', at: schedule.rollStart!, end: new Date(eatTime) });
   point('preheat', schedule.preheatStart);
   const activeCookMinutes = breadActiveCookMinutes(styleKey, numItems);
   if (activeCookMinutes) {
@@ -1861,9 +1885,9 @@ function formatHoursSchedule(h: number): string {
 }
 
 export function hoursLabel(h: number): string {
-  const rounded = Math.round(h * 4) / 4; // round to nearest 0.25h = 15min
-  if (rounded < 1) return `${Math.round(rounded * 60)} min`;
-  const hrs = Math.floor(rounded);
-  const mins = Math.round((rounded - hrs) * 60);
+  const totalMinutes = Math.max(0, Math.round(h * 60));
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+  const hrs = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
   return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
 }
