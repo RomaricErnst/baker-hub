@@ -10,7 +10,8 @@ const Coverage=require('../app/components/pizzaParty/SelectionCoverage.tsx').def
 test('guided purchases identify usable flour while custom blends retain selected products',()=>{
  assert.match(recommendedFlourName('greek_pita','en'),/bread flour/i);
  assert.match(recommendedFlourName('neapolitan','fr'),/pizza 00/i);
- assert.match(recommendedFlourName('pizza_romana','en'),/W300/);
+ assert.match(recommendedFlourName('roman','en'),/W300/);
+ assert.match(recommendedFlourName('pizza_romana','en'),/W250–280/);
  assert.match(recommendedFlourName('pain_complet','fr'),/complète/);
  assert.match(recommendedFlourName('pain_seigle','en'),/rye/i);
  const blend={flour1:'bread',flour2:'rye',ratio1:70,flour3:'wholemeal',ratio2:20,brandProduct:'My wheat',customFlour2Name:'My rye',customFlour3Name:'My wholemeal'};

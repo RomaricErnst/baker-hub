@@ -2142,7 +2142,7 @@ export default function Home() {
   function backToProducts(){setShowProductHome(true);setActiveTab('batch');scrollToStepTop();}
   function selectBakeType(bt: BakeType) {
     // A dismissed resume banner is not consent to replace the local draft.
-    if (!bakeType && pendingSession) {
+    if (!bakeType) {
       if (!confirmLocalReplacement()) return;
       setPendingSession(null); setShowWelcomeBack(false);
     }

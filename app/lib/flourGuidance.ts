@@ -4,7 +4,8 @@ import { FLOUR_DATA, type FlourBlend } from '../data';
 const recommendations: Record<string, {fr:string;en:string}> = {
   neapolitan: {fr:'Farine à pizza 00 (type Pizzeria ou équivalent)',en:'00 pizza flour (Pizzeria type or equivalent)'},
   newyork: {fr:'Farine de blé panifiable forte (13 % de protéines ou plus)',en:'Strong bread flour (13% protein or more)'},
-  pizza_romana: {fr:'Farine de blé forte pour pizza (W300 ou plus)',en:'Strong pizza flour (W300 or higher)'},
+  pizza_romana: {fr:'Farine à pizza mi-forte (W250–280)',en:'Medium-strong pizza flour (W250–280)'},
+  roman: {fr:'Farine de blé forte pour pizza (W300 ou plus)',en:'Strong pizza flour (W300 or higher)'},
   sourdough: {fr:'Farine de blé panifiable forte (T65 ou 00 forte)',en:'Strong bread flour or strong 00 flour'},
   pain_campagne: {fr:'Farine de blé panifiable T65 ou équivalent',en:'White bread flour (French T65 or equivalent)'},
   pain_levain: {fr:'Farine de blé panifiable forte T65 ou équivalent',en:'Strong white bread flour (French T65 or equivalent)'},

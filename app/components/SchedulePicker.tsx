@@ -4738,11 +4738,12 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         c={...c,mixHBF,sscore,score:c.score-combinedScore(c.mixHBF,c.peakHBF,c.feedMs,comfort)+combinedScore(mixHBF,c.peakHBF,c.feedMs,comfort)};
       }
 
-      // Baker-pinned pre-mix: only candidates whose future feed sits on the
-      // pin survive (22.5 min = 1.5 grid steps). Peak-2 candidates are
-      // governed by manualRefreshRef, not this pin.
+      // Every family that renders a pre_mix event must honor its exact pin,
+      // including a delayed single refresh (usingPeak2). Excluding that family
+      // prevented a valid committed recommendation from validating itself and
+      // manufactured a new "refresh now" action during the validation probe.
       if (manualFeed2Ref.current != null) {
-        if (c.usingPeak2 || c.feed2Ms == null || Math.abs(c.feed2Ms - manualFeed2Ref.current) > 22.5 * 60000) return;
+        if (c.feed2Ms == null || c.feed2Ms !== manualFeed2Ref.current) return;
       }
       const fridgeTimes = computeNonPathBFridgeTimes(c, adjPeakH, ratioMultiplier);
       if (fridgeTimes && !(fridgeTimes.fridgeInMs < fridgeTimes.fridgeOutMs)) return;
@@ -5807,7 +5808,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         function pushCand_r(c: Omit<Candidate, 'actionTimesMs'>): void {
           // Mirror pushCand's pre-mix pin (evaluator ≡ solver).
           if (manualFeed2Ref.current != null) {
-            if (c.usingPeak2 || c.feed2Ms == null || Math.abs(c.feed2Ms - manualFeed2Ref.current) > 22.5 * 60000) return;
+            if (c.feed2Ms == null || c.feed2Ms !== manualFeed2Ref.current) return;
           }
           const fridgeTimes = computeNonPathBFridgeTimes(c, adjPeakH_r, ratioMult_r);
           if (fridgeTimes && !(fridgeTimes.fridgeInMs < fridgeTimes.fridgeOutMs)) return;
