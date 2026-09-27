@@ -510,10 +510,10 @@ export default function RecipeOutput({
             <span style={{ color: 'var(--ash)', fontWeight: 600 }}>
               {numItems} × {itemWeight}g
             </span>
-            {' · '}
+            {!enrichment && <>{' · '}
             <span style={{ color: 'var(--ash)', fontWeight: 600 }}>
-              {hydration}% {enrichment ? (locale === 'fr' ? 'eau équivalente estimée' : 'estimated water equivalent') : t('recipeOutput.hydrationLabel')}
-            </span>
+              {hydration}% {t('recipeOutput.hydrationLabel')}
+            </span></>}
           </div>
           {wastePct !== undefined && wastePct > 0 && (
             <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginTop: '.2rem' }}>
@@ -704,7 +704,6 @@ export default function RecipeOutput({
               {waterSubNode}
             </details> : undefined} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />}
           {enrichmentRows}
-          {enrichment && <p style={{fontSize:12}}>{enrichment.note[locale === 'fr' ? 'fr' : 'en']} <a href={enrichment.sourceUrl} target="_blank" rel="noopener noreferrer">{locale === 'fr' ? 'Source de la formule' : 'Formula source'}</a></p>}
           <IngRow label={t('recipeOutput.ingredientSalt')}  grams={wStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
 
           {yeastInfo && (
@@ -910,7 +909,7 @@ export default function RecipeOutput({
           </div>
           {/* Footer note */}
           <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
-            {locale === 'fr' ? 'La dernière pétrissée reçoit les écarts d’arrondi. Vérifiez le planning si le pétrissage prend plus de temps.' : 'The last batch takes rounding remainders. Review the schedule if mixing takes longer.'}
+            {locale === 'fr' ? 'Vérifiez le planning si le pétrissage prend plus de temps.' : 'Review the schedule if mixing takes longer.'}
           </div>
         </div>
       )}
