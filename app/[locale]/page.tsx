@@ -282,6 +282,7 @@ type StepFlow = {
   onNext: (id: number) => void;
   nextIdFor: (id: number) => number;
   onGenerate: () => void;
+  onReview?: () => void;
   showGenerate: boolean;
   generationBlocker?: SetupBlocker;
   generateLabel: string;
@@ -603,7 +604,7 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale 
   ];
   return (
     <div style={{ padding: '4px 0 8px' }}>
-      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700, margin: '2px 0 6px', letterSpacing: '-.4px' }}>{fr ? 'Vérifier mes choix' : 'Review my choices'}</h2>
+      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700, margin: '2px 0 6px', letterSpacing: '-.4px' }}>{fr ? 'Revoir mes choix' : 'Review my choices'}</h2>
       {nameField}
       <div>
         {rows.map(row => (
@@ -618,7 +619,7 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale 
       </div>
       {(flow.recipeGenerated || flow.showGenerate) ? (
         <button onClick={onBackToRecipe} style={{ ...NEXT_CTA, marginTop: '22px' }}>
-          {returnLabel && flow.recipeGenerated && !stale ? returnLabel : !flow.recipeGenerated ? (fr ? 'Créer la recette' : 'Create recipe') : stale ? (fr ? 'Mettre à jour la recette' : 'Update recipe') : (fr ? 'Voir les ingrédients' : 'View ingredients')}
+          {returnLabel && flow.recipeGenerated && !stale ? returnLabel : !flow.recipeGenerated ? (fr ? 'Créer ma recette' : 'Create my recipe') : stale ? (fr ? 'Mettre à jour la recette' : 'Update recipe') : (fr ? 'Voir les ingrédients' : 'View ingredients')}
         </button>
       ) : <div style={{marginTop:22}}><SetupBlockerAction flow={flow} onJump={onJump} /></div>}
     </div>
@@ -821,6 +822,7 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
 
         <button type="button" onClick={()=>flow.onPrev(id)} style={{minHeight:44,padding:'8px 4px',border:0,background:'transparent',color:'var(--terra)',fontSize:14,cursor:'pointer',textDecoration:'underline',textUnderlineOffset:4}}>{fr?'Précédent':'Back'}</button>
         {nextOverride !== undefined ? nextOverride : next}
+        {isLast && nextOverride === undefined && flow.onReview && <button type="button" className="bh-back-action" onClick={flow.onReview} style={{gridColumn:2,justifySelf:'center',minHeight:44}}>{fr ? 'Revoir mes choix' : 'Review my choices'}</button>}
       </div>
     </div>
   );
@@ -3166,10 +3168,11 @@ export default function Home() {
     },
     onNext: (id) => {if(fillingsReturn&&recipeGenerated){setSetupOverview(true);scrollToStepTop();}else advanceAdv(id);},
     nextIdFor: (id) => nextUnanswered(CUSTOM_STEPS, id, advancedHighestStep),
-    onGenerate: () => { setSetupOverview(true); scrollToStepTop(); },
+    onGenerate: handleGenerate,
+    onReview: () => { setSetupOverview(true); scrollToStepTop(); },
     showGenerate: canGenerate && !!eatTime && !(sessionRestored && recipeGenerated),
     generationBlocker,
-    generateLabel: locale === 'fr' ? 'Vérifier mes choix' : 'Review my choices',
+    generateLabel: recipeGenerated ? (fr ? 'Mettre à jour ma recette' : 'Update my recipe') : (fr ? 'Créer ma recette' : 'Create my recipe'),
     onSeePlan: finishSetupEdit,
     recipeGenerated,
     gapReturn: gapReturnTo != null,
@@ -3225,10 +3228,11 @@ export default function Home() {
     },
     onNext: (id) => {if(fillingsReturn&&recipeGenerated){setSetupOverview(true);scrollToStepTop();}else advance(id);},
     nextIdFor: (id) => nextUnanswered(SIMPLE_STEPS, id, highestStep),
-    onGenerate: () => { setSetupOverview(true); scrollToStepTop(); },
+    onGenerate: handleGenerate,
+    onReview: () => { setSetupOverview(true); scrollToStepTop(); },
     showGenerate: canGenerate && !(sessionRestored && recipeGenerated),
     generationBlocker,
-    generateLabel: locale === 'fr' ? 'Vérifier mes choix' : 'Review my choices',
+    generateLabel: recipeGenerated ? (fr ? 'Mettre à jour ma recette' : 'Update my recipe') : (fr ? 'Créer ma recette' : 'Create my recipe'),
     onSeePlan: finishSetupEdit,
     recipeGenerated,
     gapReturn: gapReturnTo != null,

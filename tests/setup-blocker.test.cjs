@@ -49,7 +49,7 @@ test('fine-tune and review retain a visible correction when every displayed valu
   for(const html of [final,review]) {
     assert.match(html,/Le planning du levain reste à compléter/);
     assert.match(html,/Compléter le plan/);
-    assert.doesNotMatch(html,/Créer la recette/);
+    assert.doesNotMatch(html,/Créer ma recette/);
   }
   let target;
   const action=components.SetupBlockerAction({flow:current,onJump:id=>{target=id;}});
@@ -68,9 +68,10 @@ test('unclassified final-step failure still opens a concrete step instead of an 
   assert.equal(target,9);
 });
 
-test('valid setup keeps its existing review action',()=>{
-  const html=renderToStaticMarkup(React.createElement(components.StepPage,{flow:flow({showGenerate:true,generationBlocker:undefined,generateLabel:'Vérifier mes choix'}),id:10}));
-  assert.match(html,/Vérifier mes choix/);
+test('valid setup offers direct creation and optional review',()=>{
+  const html=renderToStaticMarkup(React.createElement(components.StepPage,{flow:flow({showGenerate:true,generationBlocker:undefined,generateLabel:'Créer ma recette',onReview(){}}),id:10}));
+  assert.match(html,/Créer ma recette/);
+  assert.match(html,/Revoir mes choix/);
   assert.doesNotMatch(html,/Compléter le plan|Revoir le plan/);
 });
 

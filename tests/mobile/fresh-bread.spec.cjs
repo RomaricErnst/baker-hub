@@ -33,8 +33,7 @@ test.describe('fresh unleavened bread setup',()=>{
   await rest.getByRole('button',{name:'Confirm plan',exact:true}).tap();
   await expect(rest.getByRole('button',{name:'Plan confirmed',exact:true})).toBeVisible();
   await expect(rest.getByText(/Cooking finished around .*6:30pm/)).toBeVisible(); // 5 pieces × 6 minutes
-  await page.getByRole('button',{name:'Review my choices',exact:true}).tap();
-  await page.getByRole('button',{name:'Create recipe',exact:true}).tap();
+  await page.getByRole('button',{name:'Create my recipe',exact:true}).tap();
   await expect(page.getByRole('button',{name:'Fillings',exact:true})).toBeVisible();
   await expect.poll(async()=>page.evaluate(()=>{
    const s=JSON.parse(localStorage.getItem('bh_session_v1')||'null');

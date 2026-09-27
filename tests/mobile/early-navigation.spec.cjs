@@ -173,7 +173,7 @@ for(const overview of [false,true]) test(`custom bread ${overview?'review':'fine
   sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:10,advancedStep:10,setupOverview:data.setupOverview,activeTab:'setup',reviewMode:true}));
  },session);
  await page.goto('/fr');
- await expect(page.getByRole('heading',{name:overview?'Vérifier mes choix':'Peaufinez votre pâte',exact:true})).toBeVisible();
+ await expect(page.getByRole('heading',{name:overview?'Revoir mes choix':'Peaufinez votre pâte',exact:true})).toBeVisible();
  await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
  const action=page.getByRole('button',{name:'Compléter le plan →',exact:true});
  await expect(action).toBeVisible();
@@ -184,7 +184,7 @@ for(const overview of [false,true]) test(`custom bread ${overview?'review':'fine
  await expect(page.getByRole('status').filter({hasText:'Le planning du levain reste à compléter.'})).toBeVisible();
  await testInfo.attach('blocked-setup-action-visible',{body:await page.screenshot(),contentType:'image/png'});
  await action.tap();
- await expect(page.getByRole('heading',{name:overview?'Vérifier mes choix':'Peaufinez votre pâte',exact:true})).toBeHidden();
+ await expect(page.getByRole('heading',{name:overview?'Revoir mes choix':'Peaufinez votre pâte',exact:true})).toBeHidden();
  await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(false);
  await expect.poll(async()=>(await stored(page))?.advancedStep).toBe(9);
 });
