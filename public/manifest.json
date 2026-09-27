@@ -1,22 +1,22 @@
 {
   "name": "Baker Hub",
   "short_name": "Baker Hub",
-  "description": "Artisan dough planner for serious home bakers",
+  "description": "Plan, bake and prepare pizza, bread and sandwiches",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1A1612",
-  "theme_color": "#1A1612",
+  "background_color": "#543920",
+  "theme_color": "#543920",
   "icons": [
     {
-      "src": "/logos/logo_icon_1024.png",
+      "src": "/logos/bakerhub-b-512.png",
       "sizes": "512x512",
-      "type": "image/webp",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/logos/logo_icon_1024.png",
+      "src": "/logos/bakerhub-b-192.png",
       "sizes": "192x192",
-      "type": "image/webp",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

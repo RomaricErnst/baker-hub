@@ -1,0 +1,622 @@
+{
+  "date": "2026-09-22",
+  "note": "Generated illustrations of the base recipes, not photographs of tested cooking results. WebP 1000x750 quality84.",
+  "images": [
+    {
+      "id": "bagel-avocat-oeuf",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/bagel-avocat-oeuf.webp",
+      "sourceFilename": "exec-ef11c6ac-4bec-4d7d-83f4-3a320fdd9e08.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, one finished Avocado & egg sandwich in a plain glossy golden ring-shaped bagel, sliced horizontally, unmistakable hole visible in top. Exact filling only: Avocado 75g, Peeled hard-boiled egg 55g, Tomato 40g, Lemon juice 5g. If egg, show firm yellow hard-boiled egg slices NEVER fried or runny. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No seeds, added ingredients, herbs or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "bagel-dinde-croquante",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/bagel-dinde-croquante.webp",
+      "sourceFilename": "exec-127bb301-b5d8-4f12-878a-ae639d76c528.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, finished Turkey & crunchy vegetables sandwich made with plain glossy golden ring-shaped bagel, sliced horizontally, unmistakable hole visible in top. Exact filling only: Cooked roast turkey 55g, Cucumber 50g, Lettuce 25g, Mustard 8g, Plain yogurt 15g. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No seeds, added ingredients, or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "bagel-oeuf-cheddar",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/bagel-oeuf-cheddar.webp",
+      "sourceFilename": "exec-c5e75661-3491-4f4d-80ca-acf4d243109c.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, one finished Egg & Emmental sandwich in a plain glossy golden ring-shaped bagel, sliced horizontally, unmistakable hole visible in top. Exact filling only: Peeled hard-boiled egg 100g, Emmental 40g, Butter 8g. If egg, show firm yellow hard-boiled egg slices NEVER fried or runny. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No seeds, added ingredients, herbs or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "bagel-pomme-brie",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/bagel-pomme-brie.webp",
+      "sourceFilename": "exec-9877ba54-8a53-4bcf-9c0c-80e0a35ec2b6.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, one finished Brie, apple & walnuts sandwich in a plain glossy golden ring-shaped bagel, sliced horizontally, unmistakable hole visible in top. Exact filling only: Brie 55g, Apple 60g, Shelled walnuts 10g, Honey 5g. If egg, show firm yellow hard-boiled egg slices NEVER fried or runny. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No seeds, added ingredients, herbs or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "bagel-roast-beef",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/bagel-roast-beef.webp",
+      "sourceFilename": "exec-11cfb391-3416-4a01-9d82-0421ca22b026.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, one finished Roast beef, mustard & gherkins sandwich in a plain glossy golden ring-shaped bagel, sliced horizontally, unmistakable hole visible in top. Exact filling only: Cooked roast beef 90g, Cream cheese 25g, Mustard 10g, Drained gherkins 25g. If egg, show firm yellow hard-boiled egg slices NEVER fried or runny. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No seeds, added ingredients, herbs or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "bagel-saumon-cream-cheese",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/bagel-saumon-cream-cheese.webp",
+      "sourceFilename": "exec-3631aee9-276e-4e63-9336-22e4a7a99220.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, one finished Smoked salmon & cream cheese sandwich in a plain glossy golden ring-shaped bagel, sliced horizontally, unmistakable hole visible in top. Exact filling only: Ready-to-eat smoked salmon 75g, Cream cheese 45g, Cucumber 35g, Drained capers 8g, Red onion 10g. If egg, show firm yellow hard-boiled egg slices NEVER fried or runny. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No seeds, added ingredients, herbs or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "bagel-thon-citron",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/bagel-thon-citron.webp",
+      "sourceFilename": "exec-5abbacb4-8c76-4f3f-af68-2455496da462.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, finished Lemon tuna & radish sandwich made with plain glossy golden ring-shaped bagel, sliced horizontally, unmistakable hole visible in top. Exact filling only: Drained tuna in water 65g, Radish 40g, Cucumber 40g, Plain yogurt 20g, Lemon juice 6g. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No seeds, added ingredients, or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "bagel-thon-mayo",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/bagel-thon-mayo.webp",
+      "sourceFilename": "exec-0a2a63ce-dff4-499a-ba6a-1638619c4125.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, one finished Tuna mayonnaise sandwich in a plain glossy golden ring-shaped bagel, sliced horizontally, unmistakable hole visible in top. Exact filling only: Drained tuna in water 85g, Mayonnaise 25g, Lettuce 20g, Tomato 40g. If egg, show firm yellow hard-boiled egg slices NEVER fried or runny. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No seeds, added ingredients, herbs or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "baguette-brie-noix",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/baguette-brie-noix.webp",
+      "sourceFilename": "exec-cf7a51f8-e79c-41e8-8051-f3b1ca9b5f47.png",
+      "prompt": "Use case: photorealistic-natural. Food recipe card landscape4:3. Warm beige stone and rustic wooden board, natural daylight, elevated three-quarter view, centered entire elongated crusty French baguette sandwich with margins. Bread horizontally split, upper crust slightly tilted to reveal fillings. Recipe Brie & walnuts. ONLY ingredients besides bread: Brie 60g, Shelled walnuts 15g, Lettuce 20g, Butter 8g. Realistic modest quantities. No unlisted garnish, no extra herbs, no side dishes, no utensils, no text or watermark."
+    },
+    {
+      "id": "baguette-chevre-miel",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/baguette-chevre-miel.webp",
+      "sourceFilename": "exec-18788fc2-142c-4599-b4f4-7024ef931a31.png",
+      "prompt": "Use case: photorealistic-natural. Food recipe card landscape4:3. Warm beige stone and rustic wooden board, natural daylight, elevated three-quarter view, centered entire elongated crusty French baguette sandwich with margins. Bread horizontally split, upper crust slightly tilted to reveal fillings. Recipe Goat cheese, honey & walnuts. ONLY ingredients besides bread: Goat cheese 55g, Honey 10g, Shelled walnuts 12g, Rocket 20g. Realistic modest quantities. No unlisted garnish, no extra herbs, no side dishes, no utensils, no text or watermark."
+    },
+    {
+      "id": "baguette-jambon-beurre",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/baguette-jambon-beurre.webp",
+      "sourceFilename": "exec-f02d2f8f-7797-4ac6-bcff-49aa2db7bbf4.png",
+      "prompt": "Use case: photorealistic-natural. Recipe card food photograph landscape4:3. Warm beige stone, rustic wooden board, natural daylight, elevated three-quarter camera, centered food with margins. Subject: one elongated crusty French baguette sandwich split horizontally, upper crust slightly tilted to show filling, entire baguette portion visible. Recipe Ham & butter. EXACT filling ingredients: Cooked ham 70g, Butter 18g, Drained gherkins 20g. No extra ingredients, herbs or garnishes. Dressings spread inside; lemon juice invisible, no lemon wedges. Realistic quantities, appetizing natural texture. No side dishes, utensils, text or watermark."
+    },
+    {
+      "id": "baguette-legumes-mozza",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/baguette-legumes-mozza.webp",
+      "sourceFilename": "exec-3a8c4b62-7f9b-40ce-9e5b-b1282106e94a.png",
+      "prompt": "Use case: photorealistic-natural. Food recipe card landscape4:3. Warm beige stone and rustic wooden board, natural daylight, elevated three-quarter view, centered entire elongated crusty French baguette sandwich with margins. Bread horizontally split, upper crust slightly tilted to reveal fillings. Recipe Roasted vegetables & mozzarella. ONLY ingredients besides bread: Courgette 60g, Bell pepper 50g, Drained mozzarella 55g, Olive oil 5g, Basil 3g. Vegetables roasted if recipe says roasted. Realistic modest quantities. Lemon juice invisible within dressing, no wedges. No unlisted garnish, no extra herbs, no side dishes, no utensils, no text or watermark."
+    },
+    {
+      "id": "baguette-parisien",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/baguette-parisien.webp",
+      "sourceFilename": "exec-63323e05-1ddb-4ff1-95cd-420f13544a94.png",
+      "prompt": "Use case: photorealistic-natural. Food recipe card landscape4:3. Warm beige stone and rustic wooden board, natural daylight, elevated3/4 view, centered entire elongated crusty French baguette sandwich with room around it. Bread horizontally split, upper crust slightly tilted to reveal fillings. Recipe Ham & Emmental. ONLY ingredients besides bread: Cooked ham 65g, Emmental 35g, Butter 12g, Lettuce 15g. Realistic modest quantities. Eggs if listed must be sliced hard-boiled egg with firm pale-yellow yolk, no fried or runny eggs. No unlisted garnish, no pepper, no herbs, no sides, no utensils, no text or watermark."
+    },
+    {
+      "id": "baguette-poulet-citron",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/baguette-poulet-citron.webp",
+      "sourceFilename": "exec-b6d00e18-ced6-4881-ab43-4eeed34021cc.png",
+      "prompt": "Use case: photorealistic-natural. Food recipe card landscape4:3. Warm beige stone and rustic wooden board, natural daylight, elevated three-quarter view, centered entire elongated crusty French baguette sandwich with margins. Bread horizontally split, upper crust slightly tilted to reveal fillings. Recipe Lemon chicken & crunch. ONLY ingredients besides bread: Cooked chicken breast 55g, Plain yogurt 20g, Lemon juice 8g, Lettuce 25g, Cucumber 50g, Carrot 30g. Vegetables roasted if recipe says roasted. Realistic modest quantities. Lemon juice invisible within dressing, no wedges. No unlisted garnish, no extra herbs, no side dishes, no utensils, no text or watermark."
+    },
+    {
+      "id": "baguette-poulet-mayo",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/baguette-poulet-mayo.webp",
+      "sourceFilename": "exec-e37a2111-d3e4-41a9-a88a-f62a65a06cfc.png",
+      "prompt": "Use case: photorealistic-natural. Food recipe card landscape4:3. Warm beige stone and rustic wooden board, natural daylight, elevated3/4 view, centered entire elongated crusty French baguette sandwich with room around it. Bread horizontally split, upper crust slightly tilted to reveal fillings. Recipe Chicken & mayonnaise. ONLY ingredients besides bread: Cooked chicken breast 85g, Mayonnaise 20g, Lettuce 20g, Tomato 50g. Realistic modest quantities. Eggs if listed must be sliced hard-boiled egg with firm pale-yellow yolk, no fried or runny eggs. No unlisted garnish, no pepper, no herbs, no sides, no utensils, no text or watermark."
+    },
+    {
+      "id": "baguette-rosette",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/baguette-rosette.webp",
+      "sourceFilename": "exec-5d981314-d602-4d83-a08b-d3d946f821a8.png",
+      "prompt": "Use case: photorealistic-natural. Food recipe card landscape4:3. Warm beige stone and rustic wooden board, natural daylight, elevated three-quarter view, centered entire elongated crusty French baguette sandwich with margins. Bread horizontally split, upper crust slightly tilted to reveal fillings. Recipe Salami & gherkins. ONLY ingredients besides bread: Salami 65g, Butter 15g, Drained gherkins 25g. Realistic modest quantities. No unlisted garnish, no extra herbs, no side dishes, no utensils, no text or watermark."
+    },
+    {
+      "id": "baguette-thon-crudites",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/baguette-thon-crudites.webp",
+      "sourceFilename": "exec-816bcabe-68df-4664-b99e-586032a09707.png",
+      "prompt": "Use case: photorealistic-natural. Food recipe card landscape4:3. Warm beige stone and rustic wooden board, natural daylight, elevated3/4 view, centered entire elongated crusty French baguette sandwich with room around it. Bread horizontally split, upper crust slightly tilted to reveal fillings. Recipe Tuna salad. ONLY ingredients besides bread: Drained tuna in water 80g, Mayonnaise 18g, Tomato 60g, Lettuce 20g, Peeled hard-boiled egg 40g. Realistic modest quantities. Eggs if listed must be sliced hard-boiled egg with firm pale-yellow yolk, no fried or runny eggs. No unlisted garnish, no pepper, no herbs, no sides, no utensils, no text or watermark."
+    },
+    {
+      "id": "baguette-thon-yaourt",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/baguette-thon-yaourt.webp",
+      "sourceFilename": "exec-05724f8f-94f0-4e23-a739-0d99cb06d5fd.png",
+      "prompt": "Use case: photorealistic-natural. Food recipe card landscape4:3. Warm beige stone and rustic wooden board, natural daylight, elevated three-quarter view, centered entire elongated crusty French baguette sandwich with margins. Bread horizontally split, upper crust slightly tilted to reveal fillings. Recipe Tuna, yogurt & cucumber. ONLY ingredients besides bread: Drained tuna in water 65g, Plain yogurt 20g, Cucumber 60g, Tomato 40g, Lemon juice 6g. Vegetables roasted if recipe says roasted. Realistic modest quantities. Lemon juice invisible within dressing, no wedges. No unlisted garnish, no extra herbs, no side dishes, no utensils, no text or watermark."
+    },
+    {
+      "id": "batbout-boeuf-poivron",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/batbout-boeuf-poivron.webp",
+      "sourceFilename": "exec-6492e28a-e27f-42d6-93b5-43c93ccdc2d5.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Beef & roasted pepper sandwich in small round Moroccan batbout bread, soft pale semolina-dusted griddle bread with toasted brown spots, slit open as a pocket, NOT a burger bun. Exact filling: Cooked roast beef 95g, Bell pepper 80g, Olive oil 8g, Plain yogurt 30g, Ground cumin 1g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture. No other food or props in background."
+    },
+    {
+      "id": "batbout-haricots-cumin",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/batbout-haricots-cumin.webp",
+      "sourceFilename": "exec-fa68e7d4-8f89-4afb-a06f-d69e8dfc131f.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: White beans & cumin. Bread: small round Moroccan griddle-cooked batbout bread, pale semolina-dusted surface with browned patches, split and filled pocket. Filling exactly: Drained cooked white beans 75g, Tomato 55g, Parsley 5g, Lemon juice 10g, Plain yogurt 20g, Ground cumin 1g. All ingredients assembled inside bread, no other fillings or garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "batbout-oeuf-fromage",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/batbout-oeuf-fromage.webp",
+      "sourceFilename": "exec-353ec776-8e76-4057-b8ea-beedf9900281.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Egg & cheese. Bread: small round Moroccan griddle-cooked batbout bread, pale semolina-dusted surface with browned patches, split and filled pocket. Filling exactly: Peeled hard-boiled egg 85g, Emmental 40g, Mayonnaise 15g, Tomato 40g. All ingredients assembled inside bread, no other fillings or garnish. Eggs hard-boiled, solid yolk. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "batbout-poulet-epices",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/batbout-poulet-epices.webp",
+      "sourceFilename": "exec-5830ad21-4bde-4a17-80b2-a5d7301d1aa8.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Mild-spiced chicken sandwich in small round Moroccan batbout bread, soft pale semolina-dusted griddle bread with toasted brown spots, slit open as a pocket, NOT a burger bun. Exact filling: Cooked chicken breast 100g, Mayonnaise 18g, Carrot 40g, Olive oil 5g, Ground cumin 1g, Sweet paprika 1g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture. No other food or props in background."
+    },
+    {
+      "id": "batbout-thon-citron",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/batbout-thon-citron.webp",
+      "sourceFilename": "exec-6c0abec3-4fd2-4253-9b3d-9f86dab13b68.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Lemon tuna & vegetables. Bread: small round Moroccan griddle-cooked batbout bread, pale semolina-dusted surface with browned patches, split and filled pocket. Filling exactly: Drained tuna in water 60g, Plain yogurt 20g, Cucumber 50g, Carrot 35g, Lemon juice 8g. All ingredients assembled inside bread, no other fillings or garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "batbout-thon-olive",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/batbout-thon-olive.webp",
+      "sourceFilename": "exec-56103d0b-4aea-49e9-a641-ed1323df820b.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Tuna, olives & mayonnaise sandwich in small round Moroccan batbout bread, soft pale semolina-dusted griddle bread with toasted brown spots, slit open as a pocket, NOT a burger bun. Exact filling: Drained tuna in water 80g, Pitted olives 25g, Mayonnaise 20g, Lettuce 20g, Tomato 40g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture. No other food or props in background."
+    },
+    {
+      "id": "ciabatta-caprese",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/ciabatta-caprese.webp",
+      "sourceFilename": "exec-9e6a842d-ca4f-4212-8e8a-ede44d818fb8.png",
+      "prompt": "Use case: photorealistic-natural. Food catalog landscape4:3 photograph of one finished Tomato, mozzarella & basil sandwich, in oblong flour-dusted ciabatta with airy crumb, sliced horizontally with upper half slightly ajar showing the filling. Ingredients exclusively: Drained mozzarella 85g, Tomato 90g, Olive oil 8g, Basil 5g. Center whole sandwich with generous room, elevated three-quarter view, worn woodenboard on warm beige stone, natural soft window daylight, true food textures, appetizing realistic portions. No unlisted toppings or garnish, no scattered ingredients, no props, no text."
+    },
+    {
+      "id": "ciabatta-champignons-provolone",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/ciabatta-champignons-provolone.webp",
+      "sourceFilename": "exec-71e8d2b4-27d0-4fbf-b115-d0f60cbc417d.png",
+      "prompt": "Use case: photorealistic-natural. Food catalog landscape4:3 photograph of one finished Mushrooms & provolone sandwich, in oblong flour-dusted ciabatta with airy crumb, sliced horizontally with upper half slightly ajar showing filling. Ingredients exclusively: Mushroom 110g, Provolone 65g, Olive oil 8g, Parsley 5g. Mushrooms and peppers cooked if present; cheese gently melted if hot sandwich. Center whole sandwich with generous room, elevated three-quarter view, worn woodenboard on warm beige stone, natural soft window daylight, true food textures, appetizing realistic portions. No unlisted toppings or garnish, no scattered ingredients, no props, no text."
+    },
+    {
+      "id": "ciabatta-crudo",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/ciabatta-crudo.webp",
+      "sourceFilename": "exec-b48e81dc-fbcf-4b92-a88d-a47b41b646d8.png",
+      "prompt": "Use case: photorealistic-natural. Food catalog landscape4:3 photograph of one finished Prosciutto & mozzarella sandwich, in oblong flour-dusted ciabatta with airy crumb, sliced horizontally with upper half slightly ajar showing filling. Ingredients exclusively: Prosciutto 65g, Drained mozzarella 65g, Rocket 20g, Olive oil 5g. Mushrooms and peppers cooked if present; cheese gently melted if hot sandwich. Center whole sandwich with generous room, elevated three-quarter view, worn woodenboard on warm beige stone, natural soft window daylight, true food textures, appetizing realistic portions. No unlisted toppings or garnish, no scattered ingredients, no props, no text."
+    },
+    {
+      "id": "ciabatta-dinde-crudites",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/ciabatta-dinde-crudites.webp",
+      "sourceFilename": "exec-36cf2c79-cb90-45b1-b3d6-b33dee4958b1.png",
+      "prompt": "Use case: photorealistic-natural. Food catalog landscape4:3 photograph of one finished Turkey & fresh salad sandwich, in oblong flour-dusted ciabatta with airy crumb, sliced horizontally with upper half slightly ajar showing filling. Ingredients exclusively: Cooked roast turkey 60g, Plain yogurt 20g, Cucumber 55g, Tomato 55g, Lettuce 20g, Mustard 5g. For pancetta sandwich mozzarella slightly melted. Center whole sandwich with generous room, elevated three-quarter view, worn woodenboard on warm beige stone, natural soft window daylight, true food textures, appetizing realistic portions. No unlisted toppings or garnish, no scattered ingredients, no props, no text."
+    },
+    {
+      "id": "ciabatta-haricots-roquette",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/ciabatta-haricots-roquette.webp",
+      "sourceFilename": "exec-7c217020-e549-470b-8c54-ed52ac1f5e09.png",
+      "prompt": "Use case: photorealistic-natural. Food catalog landscape4:3 photograph of one finished White beans & rocket sandwich, in oblong flour-dusted ciabatta with airy crumb, sliced horizontally with upper half slightly ajar showing filling. Ingredients exclusively: Drained cooked white beans 75g, Rocket 25g, Tomato 80g, Olive oil 3g, Lemon juice 8g. For pancetta sandwich mozzarella slightly melted. Center whole sandwich with generous room, elevated three-quarter view, worn woodenboard on warm beige stone, natural soft window daylight, true food textures, appetizing realistic portions. No unlisted toppings or garnish, no scattered ingredients, no props, no text."
+    },
+    {
+      "id": "ciabatta-porchetta",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/ciabatta-porchetta.webp",
+      "sourceFilename": "exec-26598c4c-e244-4c71-ac55-6bd2b6aeade2.png",
+      "prompt": "Use case: photorealistic-natural. Food catalog landscape4:3 photograph of one finished Porchetta & peppers sandwich, in oblong flour-dusted ciabatta with airy crumb, sliced horizontally with upper half slightly ajar showing filling. Ingredients exclusively: Cooked porchetta 110g, Bell pepper 70g, Olive oil 5g, Rocket 20g. Mushrooms and peppers cooked if present; cheese gently melted if hot sandwich. Center whole sandwich with generous room, elevated three-quarter view, worn woodenboard on warm beige stone, natural soft window daylight, true food textures, appetizing realistic portions. No unlisted toppings or garnish, no scattered ingredients, no props, no text."
+    },
+    {
+      "id": "focaccia-aubergine-pesto",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/focaccia-aubergine-pesto.webp",
+      "sourceFilename": "exec-b7a01429-abaa-4c72-9712-e4f0c67b8147.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, finished Aubergine, mozzarella & pesto sandwich in rectangular golden dimpled focaccia sliced horizontally. Exact filling only: Aubergine 100g, Drained mozzarella 60g, Basil pesto 15g, Olive oil 5g. Cook vegetables appropriately. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No added ingredients, no rosemary or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "focaccia-caprese",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/focaccia-caprese.webp",
+      "sourceFilename": "exec-62ccaa0a-ae5b-40e5-bd57-71f78177e3a9.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, finished Tomato, mozzarella & basil sandwich in rectangular golden dimpled focaccia sliced horizontally. Exact filling: Drained mozzarella 85g, Tomato 90g, Basil 5g, Olive oil 8g. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No added ingredients, no rosemary or garnish, no text, no props."
+    },
+    {
+      "id": "focaccia-champignons-ricotta",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/focaccia-champignons-ricotta.webp",
+      "sourceFilename": "exec-5b3d7c53-c458-41d5-8b4c-a8024bdeab23.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, finished Mushrooms & ricotta sandwich in rectangular golden dimpled focaccia sliced horizontally. Exact filling only: Mushroom 120g, Ricotta 70g, Olive oil 6g, Parsley 4g. Cook vegetables appropriately. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No added ingredients, no rosemary or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "focaccia-crudo-mozza",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/focaccia-crudo-mozza.webp",
+      "sourceFilename": "exec-deb2aef1-d7be-43aa-8ece-fa11d6814b28.png",
+      "prompt": "Use case: photorealistic-natural. Food recipe card landscape4:3. Warm beige stone and rustic wooden board, natural daylight, elevated three-quarter view, centered entire rectangular Italian focaccia sandwich with generous margins. Golden dimpled olive-oil focaccia, airy thick crumb, NO rosemary or herb topping. Horizontally split, top slightly lifted to reveal filling. Recipe Prosciutto & mozzarella. ONLY filling ingredients: Prosciutto 60g, Drained mozzarella 65g, Tomato 50g, Rocket 15g. Realistic modest quantities; appropriate thin sliced cooked pork if porchetta, thin folded prosciutto if listed. No unlisted garnish, pepper, seeds, herbs or vegetables. No side dishes, utensils, text or watermark."
+    },
+    {
+      "id": "focaccia-legumes-ricotta",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/focaccia-legumes-ricotta.webp",
+      "sourceFilename": "exec-cefa263c-1c61-4850-b523-6b90ef6200b4.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, finished Roasted vegetables & ricotta sandwich in rectangular golden dimpled focaccia sliced horizontally. Exact filling only: Courgette 80g, Bell pepper 60g, Ricotta 35g, Olive oil 3g, Basil 4g. Cook vegetables appropriately. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No added ingredients, no rosemary or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "focaccia-mortadelle-pistache",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/focaccia-mortadelle-pistache.webp",
+      "sourceFilename": "exec-bde30a83-8826-418e-8db9-adaaf43385ba.png",
+      "prompt": "Use case: photorealistic-natural. Food recipe card landscape4:3. Warm beige stone and rustic wooden board, natural daylight, elevated three-quarter view, centered entire rectangular Italian focaccia sandwich with generous margins. Golden dimpled olive-oil focaccia, airy thick crumb, NO rosemary or herb topping. Horizontally split, top slightly lifted to reveal filling. Recipe Mortadella, burrata & pistachio. ONLY filling ingredients: Mortadella without pistachios 65g, Drained burrata 60g, Shelled pistachios 12g, Rocket 15g. Realistic modest quantities; appropriate thin sliced cooked pork if porchetta, thin folded prosciutto if listed. No unlisted garnish, pepper, seeds, herbs or vegetables. No side dishes, utensils, text or watermark."
+    },
+    {
+      "id": "focaccia-porchetta",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/focaccia-porchetta.webp",
+      "sourceFilename": "exec-91f4e8e9-7e13-4bed-b3d3-89c08eac6185.png",
+      "prompt": "Use case: photorealistic-natural. Food recipe card landscape4:3. Warm beige stone and rustic wooden board, natural daylight, elevated three-quarter view, centered entire rectangular Italian focaccia sandwich with generous margins. Golden dimpled olive-oil focaccia, airy thick crumb, NO rosemary or herb topping. Horizontally split, top slightly lifted to reveal filling. Recipe Porchetta & rocket. ONLY filling ingredients: Cooked porchetta 100g, Rocket 20g, Mustard 8g. Realistic modest quantities; appropriate thin sliced cooked pork if porchetta, thin folded prosciutto if listed. No unlisted garnish, pepper, seeds, herbs or vegetables. No side dishes, utensils, text or watermark."
+    },
+    {
+      "id": "focaccia-poulet-roquette",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/focaccia-poulet-roquette.webp",
+      "sourceFilename": "exec-974d1b66-d85b-49b6-a68f-527e11cf1abf.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, finished Chicken, rocket & lemon sandwich in rectangular golden dimpled focaccia sliced horizontally. Exact filling only: Cooked chicken breast 60g, Rocket 25g, Tomato 70g, Plain yogurt 20g, Lemon juice 8g. Cook vegetables appropriately. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No added ingredients, no rosemary or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "focaccia-salame-provolone",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/focaccia-salame-provolone.webp",
+      "sourceFilename": "exec-f3cddff5-0351-4572-a49d-ede5929798d7.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, finished Salami & provolone sandwich in rectangular golden dimpled focaccia sliced horizontally. Exact filling only: Salami 55g, Provolone 45g, Rocket 20g. Cook vegetables appropriately. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No added ingredients, no rosemary or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "focaccia-saumon-avocat",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/focaccia-saumon-avocat.webp",
+      "sourceFilename": "exec-f09825ed-c16a-48db-852a-8ee05b7dca06.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, finished Salmon & avocado sandwich in rectangular golden dimpled focaccia sliced horizontally. Exact filling only: Ready-to-eat smoked salmon 65g, Avocado 65g, Cream cheese 25g, Lemon juice 6g. Cook vegetables appropriately. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No added ingredients, no rosemary or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "greek_pita-agneau-feta",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/greek_pita-agneau-feta.webp",
+      "sourceFilename": "exec-e1558398-99de-4c2a-8b5b-e1e94948f8f1.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Lamb & feta sandwich in soft lightly charred Greek pita flatbread folded around filling, NOT a hollow pocket. Exact filling: Cooked roast lamb 100g, Feta 40g, Tomato 50g, Red onion 20g, Plain yogurt 25g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture. No other food or props in background."
+    },
+    {
+      "id": "greek_pita-dinde-citron",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/greek_pita-dinde-citron.webp",
+      "sourceFilename": "exec-e14d20b0-2a76-4992-a8bb-80d5cdf2ea3e.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Turkey, lemon & cucumber sandwich in soft lightly charred Greek pita flatbread folded around filling, NOT a hollow pocket. Exact filling: Cooked roast turkey 65g, Plain yogurt 25g, Cucumber 70g, Tomato 50g, Lemon juice 8g, Dried oregano 1g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture. No other food or props in background."
+    },
+    {
+      "id": "greek_pita-falafel",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/greek_pita-falafel.webp",
+      "sourceFilename": "exec-2bd49e62-7498-49fe-885c-73393628b857.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Falafel & Greek-style salad sandwich in soft lightly charred Greek pita flatbread folded around filling, NOT a hollow pocket. Exact filling: Cooked falafel 100g, Feta 30g, Tomato 60g, Tzatziki 30g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture. No other food or props in background."
+    },
+    {
+      "id": "greek_pita-halloumi-feta",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/greek_pita-halloumi-feta.webp",
+      "sourceFilename": "exec-0b7ed573-34f2-4e54-a9f3-417d14ba0673.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Feta, olives & tomatoes sandwich in soft lightly charred Greek pita flatbread folded around filling, NOT a hollow pocket. Exact filling: Feta 90g, Pitted olives 30g, Tomato 80g, Cucumber 40g, Olive oil 8g, Dried oregano 1g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture. No other food or props in background."
+    },
+    {
+      "id": "greek_pita-haricots-herbes",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/greek_pita-haricots-herbes.webp",
+      "sourceFilename": "exec-ee8cf575-8ecb-4114-94a9-512aff7ada9f.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished White beans & herbs sandwich in soft lightly charred Greek pita flatbread folded around filling, NOT a hollow pocket. Exact filling: Drained cooked white beans 80g, Tomato 60g, Cucumber 50g, Plain yogurt 20g, Parsley 5g, Lemon juice 8g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture. No other food or props in background."
+    },
+    {
+      "id": "greek_pita-poulet-tzatziki",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/greek_pita-poulet-tzatziki.webp",
+      "sourceFilename": "exec-34a82c58-beac-4632-b4bf-16eb0f0d44f2.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Chicken & tzatziki sandwich in soft Greek pita flatbread folded around filling, NOT a hollow pocket. Exact filling: Cooked chicken breast 120g, Tzatziki 50g, Tomato 55g, Red onion 25g, Olive oil 8g, Dried oregano 1g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture."
+    },
+    {
+      "id": "kebab_bread-agneau",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/kebab_bread-agneau.webp",
+      "sourceFilename": "exec-c1e6a063-63ea-4730-a03b-9bebf1b136da.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Lamb & mild harissa sandwich in thick soft oval Turkish kebab bread with lightly dimpled golden crust, sliced horizontally and generously stuffed, NOT a wrap. Exact filling: Cooked roast lamb 115g, Plain yogurt 40g, Harissa 10g, Tomato 55g, Red onion 25g, Olive oil 5g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture. No other food or props in background."
+    },
+    {
+      "id": "kebab_bread-boeuf-classique",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/kebab_bread-boeuf-classique.webp",
+      "sourceFilename": "exec-de78c708-bda5-45d6-881f-44052867e639.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Beef kebab & salad sandwich in thick soft oval Turkish kebab bread with lightly dimpled golden crust, sliced horizontally and generously stuffed, NOT a wrap. Exact filling: Cooked beef kebab slices 130g, Plain yogurt 40g, Mayonnaise 15g, Red cabbage 45g, Tomato 50g, Red onion 20g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture. No other food or props in background."
+    },
+    {
+      "id": "kebab_bread-falafel",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/kebab_bread-falafel.webp",
+      "sourceFilename": "exec-12c787ce-7104-496c-a459-4675f8781373.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Falafel & hummus sandwich in thick soft oval Turkish kebab bread with lightly dimpled golden crust, sliced horizontally and generously stuffed, NOT a wrap. Exact filling: Cooked falafel 95g, Tahini hummus 50g, Tomato 50g, Red cabbage 35g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture. No other food or props in background."
+    },
+    {
+      "id": "kebab_bread-pois-chiches-croquants",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/kebab_bread-pois-chiches-croquants.webp",
+      "sourceFilename": "exec-89755012-7390-48f9-89ba-f9b03e53e19d.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Lemony chickpeas & crunch sandwich in thick soft oval Turkish kebab bread with lightly dimpled golden crust, sliced horizontally and generously stuffed, NOT a wrap. Exact filling: Drained cooked chickpeas 75g, Plain yogurt 20g, Cucumber 50g, Carrot 40g, Lemon juice 10g, Parsley 5g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture. No other food or props in background."
+    },
+    {
+      "id": "kebab_bread-poulet",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/kebab_bread-poulet.webp",
+      "sourceFilename": "exec-7a4c654d-9d1a-411d-83e3-373af55f4e1e.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Chicken, salad & white sauce sandwich in thick soft oval Turkish kebab bread with lightly dimpled golden crust, sliced horizontally and generously stuffed, NOT a wrap. Exact filling: Cooked chicken breast 120g, Plain yogurt 35g, Mayonnaise 20g, Red cabbage 40g, Tomato 50g, Olive oil 7g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture. No other food or props in background."
+    },
+    {
+      "id": "kebab_bread-poulet-yaourt",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/kebab_bread-poulet-yaourt.webp",
+      "sourceFilename": "exec-9614d488-08a1-416b-856f-e30085d40993.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Chicken, yogurt & fresh salad sandwich in thick soft oval Turkish kebab bread with lightly dimpled golden crust, sliced horizontally and generously stuffed, NOT a wrap. Exact filling: Cooked chicken breast 70g, Plain yogurt 30g, Red cabbage 55g, Tomato 60g, Lemon juice 8g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture. No other food or props in background."
+    },
+    {
+      "id": "laffa-agneau-tahini",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/laffa-agneau-tahini.webp",
+      "sourceFilename": "exec-e07a7e24-fe48-4537-9a73-c336bcf22b97.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Lamb & lemon tahini. Bread: large thin flexible laffa flatbread rolled as a wrap, cut diagonally into two halves revealing fillings. Filling ONLY: Cooked roast lamb 120g, Tahini 25g, Tomato 55g, Red onion 25g, Lemon juice 10g. NO EGG, NO AUBERGINE, NO CHEESE. All listed ingredients assembled inside bread, no other fillings or garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "laffa-aubergine-oeuf",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/laffa-aubergine-oeuf.webp",
+      "sourceFilename": "exec-828e8bac-3471-4437-ada2-d6ac7cc5163d.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Aubergine, egg & tahini. Bread: large thin flexible laffa flatbread rolled as a wrap, cut diagonally into two halves revealing fillings. Filling exactly: Aubergine 110g, Peeled hard-boiled egg 70g, Tahini 25g, Olive oil 8g, Parsley 5g. Aubergine cooked golden, eggs hard-boiled solid yolks if present. All ingredients assembled inside bread, no other fillings or garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "laffa-dinde-croquante",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/laffa-dinde-croquante.webp",
+      "sourceFilename": "exec-4d9e4b57-22bd-4e26-bf32-3eed9a7a9800.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Lemon turkey & crunch. Bread: large thin flexible laffa flatbread rolled as a wrap, cut diagonally into two halves revealing fillings. Filling ONLY: Cooked roast turkey 75g, Plain yogurt 30g, Cucumber 60g, Red cabbage 45g, Lemon juice 8g. NO EGG, NO AUBERGINE, NO CHEESE. All listed ingredients assembled inside bread, no other fillings or garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "laffa-falafel-houmous",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/laffa-falafel-houmous.webp",
+      "sourceFilename": "exec-bc2409bf-22ff-477a-9b42-7289e2a83c5f.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Falafel & hummus. Bread: large thin flexible laffa flatbread rolled as a wrap, cut diagonally into two halves revealing fillings. Filling ONLY: Cooked falafel 115g, Tahini hummus 55g, Tomato 60g, Cucumber 40g, Parsley 5g. NO EGG, NO AUBERGINE, NO CHEESE. All listed ingredients assembled inside bread, no other fillings or garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "laffa-haricots-tomate",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/laffa-haricots-tomate.webp",
+      "sourceFilename": "exec-7054aee1-0625-4475-8d9a-6857ffcee5db.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: White beans & tomatoes. Bread: large thin flexible laffa flatbread rolled as a wrap, cut diagonally into two halves revealing fillings. Filling ONLY: Drained cooked white beans 90g, Tomato 80g, Cucumber 50g, Parsley 5g, Lemon juice 10g, Olive oil 3g. All listed ingredients assembled inside bread, absolutely no additional ingredients, no garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "laffa-shawarma-poulet",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/laffa-shawarma-poulet.webp",
+      "sourceFilename": "exec-87f12465-c1cd-4b9c-9d65-d13a7c2dad9d.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Shawarma-inspired chicken. Bread: large thin flexible laffa flatbread rolled as a wrap, cut diagonally into two halves revealing fillings. Filling exactly: Cooked chicken breast 120g, Tahini 25g, Tomato 55g, Drained gherkins 30g, Olive oil 8g, Ground cumin 1g, Sweet paprika 1g. All ingredients assembled inside bread, no other fillings or garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "pan_bagnat-haricots-crudites",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/pan_bagnat-haricots-crudites.webp",
+      "sourceFilename": "exec-c9b0527e-4b42-41d9-81dd-29687231c2ad.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Inspired: white beans & salad. Bread: round golden crusty pan bagnat roll split horizontally, filled and lightly pressed. Filling ONLY: Drained cooked white beans 70g, Tomato 90g, Cucumber 50g, Radish 30g, Olive oil 3g, Lemon juice 8g, Basil 4g. No egg. All listed ingredients assembled inside bread, absolutely no additional ingredients, no garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "pan_bagnat-mozza-legumes",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/pan_bagnat-mozza-legumes.webp",
+      "sourceFilename": "exec-8c04d5bd-293b-4f26-8bd3-a9d3b6adf9bd.png",
+      "prompt": "Use case: photorealistic-natural. Food catalog landscape4:3 photograph of one finished Inspired: mozzarella & vegetables sandwich, in round golden crusty pan bagnat roll, sliced horizontally with upper half slightly ajar showing the filling. Ingredients exclusively: Drained mozzarella 85g, Tomato 100g, Bell pepper 40g, Pitted olives 20g, Olive oil 8g, Basil 4g. Center whole sandwich with generous room, elevated three-quarter view, worn woodenboard on warm beige stone, natural soft window daylight, true food textures, appetizing realistic portions. No unlisted toppings or garnish, no scattered ingredients, no props, no text."
+    },
+    {
+      "id": "pan_bagnat-nicois",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/pan_bagnat-nicois.webp",
+      "sourceFilename": "exec-ebebbab9-c4c4-42c8-b21e-d534600d1279.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Niçois pan bagnat. Bread: round golden crusty pan bagnat roll split horizontally, filled and lightly pressed. Filling ONLY: Tomato 100g, Drained tuna in water 60g, Peeled hard-boiled egg 50g, Drained anchovies in oil 12g, Bell pepper 25g, Red onion 15g, Pitted olives 20g, Olive oil 12g, Basil 4g, Garlic 2g, Radish 20g, Shelled tender fresh broad beans 20g. Egg is hard-boiled with fully solid yolk; raw tender broad beans, radish slices and anchovy fillets visible among vegetables. All listed ingredients assembled inside bread, absolutely no additional ingredients, no garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "pan_bagnat-poulet-basilic",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/pan_bagnat-poulet-basilic.webp",
+      "sourceFilename": "exec-dbccd0c3-ea7a-4e39-9a77-df94af962aff.png",
+      "prompt": "Use case: photorealistic-natural. Website food catalog photograph, landscape4:3. A finished Inspired: chicken & basil sandwich in a round golden crusty pan bagnat bread roll sliced horizontally, slightly ajar showing filling, centered entire sandwich with generous breathing space. Filling only: Cooked chicken breast 90g, Tomato 80g, Peeled hard-boiled egg 50g, Pitted olives 20g, Olive oil 8g, Basil 4g. Hard boiled egg fully set yolk. On worn wooden board over warm beige stone, natural window daylight, elevated three-quarter view, realistic appetizing food texture. No extra garnish, no scattered ingredients, no props, no text."
+    },
+    {
+      "id": "pan_bagnat-sardines",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/pan_bagnat-sardines.webp",
+      "sourceFilename": "exec-78110b5b-fec1-4ac5-893b-c197c64bbc06.png",
+      "prompt": "Use case: photorealistic-natural. Food catalog landscape4:3 photograph of one finished Inspired: sardines & fennel sandwich, in round golden crusty pan bagnat roll, sliced horizontally with upper half slightly ajar showing the filling. Ingredients exclusively: Drained sardines in oil 95g, Fennel 60g, Tomato 70g, Pitted olives 15g, Olive oil 6g, Lemon juice 10g. Center whole sandwich with generous room, elevated three-quarter view, worn woodenboard on warm beige stone, natural soft window daylight, true food textures, appetizing realistic portions. No unlisted toppings or garnish, no scattered ingredients, no props, no text."
+    },
+    {
+      "id": "pan_bagnat-thon-citron",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/pan_bagnat-thon-citron.webp",
+      "sourceFilename": "exec-5f9942d9-941d-4ebe-bdb2-04a15cc767bf.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Inspired: lemon tuna & salad. Bread: round golden crusty pan bagnat roll split horizontally, filled and lightly pressed. Filling ONLY: Drained tuna in water 65g, Tomato 90g, Cucumber 50g, Red onion 10g, Olive oil 3g, Lemon juice 8g, Basil 4g. No egg. All listed ingredients assembled inside bread, absolutely no additional ingredients, no garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "panuozzo-aubergine-mozza",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/panuozzo-aubergine-mozza.webp",
+      "sourceFilename": "exec-253fbe63-f9fe-43c6-9e9e-690da896993e.png",
+      "prompt": "Use case: photorealistic-natural. Food catalog landscape4:3 photograph of one finished Aubergine & mozzarella sandwich, in elongated panuozzo pizza-dough bread, rustic inflated oval crust with golden leopard blisters (not ciabatta), sliced horizontally with upper half slightly ajar showing filling. Ingredients exclusively: Aubergine 110g, Drained mozzarella 90g, Tomato sauce 45g, Olive oil 8g, Basil 4g. Vegetables cooked, cheese gently melted when present, spinach wilted if present. Center whole sandwich with generous room, elevated three-quarter view, worn woodenboard on warm beige stone, natural soft window daylight, true food textures, appetizing realistic portions. No unlisted toppings or garnish, no scattered ingredients, no props, no text."
+    },
+    {
+      "id": "panuozzo-jambon-provolone",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/panuozzo-jambon-provolone.webp",
+      "sourceFilename": "exec-e9c50eaf-4b45-4022-bda7-c80bb52cb856.png",
+      "prompt": "Use case: photorealistic-natural. Food catalog landscape4:3 photograph of one finished Ham & provolone sandwich, in elongated panuozzo pizza-dough bread, rustic inflated oval crust with golden leopard blisters (not ciabatta), sliced horizontally with upper half slightly ajar showing filling. Ingredients exclusively: Cooked ham 85g, Provolone 70g, Tomato sauce 35g. Vegetables cooked, cheese gently melted when present, spinach wilted if present. Center whole sandwich with generous room, elevated three-quarter view, worn woodenboard on warm beige stone, natural soft window daylight, true food textures, appetizing realistic portions. No unlisted toppings or garnish, no scattered ingredients, no props, no text."
+    },
+    {
+      "id": "panuozzo-legumes-ricotta",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/panuozzo-legumes-ricotta.webp",
+      "sourceFilename": "exec-c36c95a4-8a76-413a-8215-a7cc0bd5b351.png",
+      "prompt": "Use case: photorealistic-natural. Food catalog landscape4:3 photograph of one finished Roasted vegetables & ricotta sandwich, in elongated panuozzo pizza-dough bread, rustic inflated oval crust with golden leopard blisters (not ciabatta), sliced horizontally with upper half slightly ajar showing filling. Ingredients exclusively: Courgette 90g, Bell pepper 70g, Ricotta 40g, Olive oil 3g, Basil 4g. Courgette and pepper roasted if present; tomato fresh if present. Center whole sandwich with generous room, elevated three-quarter view, worn woodenboard on warm beige stone, natural soft window daylight, true food textures, appetizing realistic portions. No unlisted toppings or garnish, no scattered ingredients, no props, no text."
+    },
+    {
+      "id": "panuozzo-pancetta-mozza",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/panuozzo-pancetta-mozza.webp",
+      "sourceFilename": "exec-10de7c31-5fed-4bbb-9f4d-33f495e965f9.png",
+      "prompt": "Use case: photorealistic-natural. Food catalog landscape4:3 photograph of one finished Pancetta & mozzarella sandwich, in elongated panuozzo pizza-dough bread, rustic inflated oval crust with golden leopard blisters (not ciabatta), sliced horizontally with upper half slightly ajar showing filling. Ingredients exclusively: Cooked pancetta 60g, Drained mozzarella 85g. For pancetta sandwich mozzarella slightly melted. Center whole sandwich with generous room, elevated three-quarter view, worn woodenboard on warm beige stone, natural soft window daylight, true food textures, appetizing realistic portions. No unlisted toppings or garnish, no scattered ingredients, no props, no text."
+    },
+    {
+      "id": "panuozzo-poulet-tomate",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/panuozzo-poulet-tomate.webp",
+      "sourceFilename": "exec-913f9779-aec1-4baa-a199-e3077df05bcf.png",
+      "prompt": "Use case: photorealistic-natural. Food catalog landscape4:3 photograph of one finished Chicken, tomato & rocket sandwich, in elongated panuozzo pizza-dough bread, rustic inflated oval crust with golden leopard blisters (not ciabatta), sliced horizontally with upper half slightly ajar showing filling. Ingredients exclusively: Cooked chicken breast 65g, Tomato 80g, Rocket 25g, Plain yogurt 20g, Lemon juice 8g. Courgette and pepper roasted if present; tomato fresh if present. Center whole sandwich with generous room, elevated three-quarter view, worn woodenboard on warm beige stone, natural soft window daylight, true food textures, appetizing realistic portions. No unlisted toppings or garnish, no scattered ingredients, no props, no text."
+    },
+    {
+      "id": "panuozzo-saucisse-legumes",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/panuozzo-saucisse-legumes.webp",
+      "sourceFilename": "exec-3e41605d-d2cf-4871-9ddf-4cf4146e549c.png",
+      "prompt": "Use case: photorealistic-natural. Food catalog landscape4:3 photograph of one finished Sausage & spinach sandwich, in elongated panuozzo pizza-dough bread, rustic inflated oval crust with golden leopard blisters (not ciabatta), sliced horizontally with upper half slightly ajar showing filling. Ingredients exclusively: Cooked pork sausage 110g, Spinach 100g, Olive oil 8g, Garlic 3g. Vegetables cooked, cheese gently melted when present, spinach wilted if present. Center whole sandwich with generous room, elevated three-quarter view, worn woodenboard on warm beige stone, natural soft window daylight, true food textures, appetizing realistic portions. No unlisted toppings or garnish, no scattered ingredients, no props, no text."
+    },
+    {
+      "id": "piadina-crudo-squacquerone",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/piadina-crudo-squacquerone.webp",
+      "sourceFilename": "exec-f1d0a383-b403-4027-8759-b6db3ddb0ea4.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Prosciutto, squacquerone & rocket. Bread: thin Italian piadina flatbread with griddle-brown spots folded in a semicircle around fillings, not a rolled burrito. Filling ONLY: Prosciutto 65g, Squacquerone 70g, Rocket 25g. All listed ingredients assembled inside bread, absolutely no additional ingredients, no garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "piadina-jambon-fromage",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/piadina-jambon-fromage.webp",
+      "sourceFilename": "exec-af1c708b-5c25-4633-8001-917e89e900b8.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Ham & provolone. Bread: thin Italian piadina flatbread with griddle-brown spots folded in a semicircle around fillings, not a rolled burrito. Filling ONLY: Cooked ham 80g, Provolone 60g, Tomato 40g. All listed ingredients assembled inside bread, absolutely no additional ingredients, no garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "piadina-legumes-chevre",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/piadina-legumes-chevre.webp",
+      "sourceFilename": "exec-2f89dc6e-baf8-4204-8f9d-aa77c6198fb1.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Grilled vegetables & goat cheese. Bread: thin Italian piadina flatbread with griddle-brown spots folded in a semicircle around fillings, not a rolled burrito. Filling ONLY: Courgette 75g, Aubergine 70g, Goat cheese 60g, Olive oil 6g. Vegetables grilled tender with golden edges. All listed ingredients assembled inside bread, absolutely no additional ingredients, no garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "piadina-legumes-ricotta",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/piadina-legumes-ricotta.webp",
+      "sourceFilename": "exec-8be3f0ce-1f1c-4060-b46d-ffceaf159fad.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Roasted vegetables & ricotta. Bread: thin Italian piadina flatbread with griddle-brown spots folded in a semicircle around fillings, not a rolled burrito. Filling ONLY: Courgette 80g, Bell pepper 60g, Ricotta 35g, Olive oil 3g, Basil 4g. Vegetables roasted tender with golden edges.No egg. All listed ingredients assembled inside bread, absolutely no additional ingredients, no garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "piadina-poulet-citron",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/piadina-poulet-citron.webp",
+      "sourceFilename": "exec-f119b76e-c6f2-4ca6-8196-a3579870658c.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Lemon chicken & salad. Bread: thin Italian piadina flatbread with griddle-brown spots folded in a semicircle around fillings, not a rolled burrito. Filling ONLY: Cooked chicken breast 55g, Plain yogurt 20g, Lettuce 30g, Tomato 60g, Lemon juice 8g.  All listed ingredients assembled inside bread, absolutely no additional ingredients, no garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "piadina-salame",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/piadina-salame.webp",
+      "sourceFilename": "exec-09963db5-2b54-44c8-bea6-e71b7344196c.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for Bakerhub recipe card: Salami & mozzarella. Bread: thin Italian piadina flatbread with griddle-brown spots folded in a semicircle around fillings, not a rolled burrito. Filling ONLY: Salami 60g, Drained mozzarella 65g, Rocket 20g.  All listed ingredients assembled inside bread, absolutely no additional ingredients, no garnish. Warm beige stone backdrop, worn wooden board, soft natural daylight, elevated three-quarter view. Landscape 4:3, entire finished sandwich centered with generous breathing room, filling visible, appetizing realistic textures. No text, utensils, hands, side dishes, extra herbs, or watermark."
+    },
+    {
+      "id": "pita-agneau",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/pita-agneau.webp",
+      "sourceFilename": "exec-2b1d1c65-c914-449f-b853-240ac241f393.png",
+      "prompt": "Use case: photorealistic-natural. Bakerhub recipe catalog photograph, landscape 4:3. Warm beige stone background and worn wooden board, soft natural daylight, elevated three-quarter view. One finished pita pocket sandwich with roasted lamb slices, plain yogurt sauce, tomato and red onion, small olive oil sheen. ONLY these ingredients plus bread, no lettuce, no garnish, no fries, no text. Pita is a thin pale round pocket cut open and stuffed, not a wrap. Entire sandwich centered with generous breathing room and clearly visible filling. Authentic appetizing natural textures, restrained rustic food photography."
+    },
+    {
+      "id": "pita-aubergine-oeuf",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/pita-aubergine-oeuf.webp",
+      "sourceFilename": "exec-60dcc392-b60e-4762-9598-73fd35fbd4a1.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, finished Aubergine, egg & tahini sandwich made with thin round lightly blistered pita bread cut in half across diameter, with the two semicircular pockets stuffed and leaning together; clearly enclosed bottom and open cut top, NOT a rolled wrap. Exact filling only: Aubergine 100g, Peeled hard-boiled egg 60g, Tahini 18g, Olive oil 8g, Parsley 5g. Egg must be sliced hard-boiled with firm yellow yolk; aubergine cooked golden brown. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No seeds, added ingredients, or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "pita-falafel-tahini",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/pita-falafel-tahini.webp",
+      "sourceFilename": "exec-e7ef1c57-d711-4e8b-8d78-e927512ebd66.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 food catalog photograph, finished Falafel & tahini sandwich made with thin round lightly blistered pita bread cut in half across diameter, with the two semicircular pockets stuffed and leaning together; clearly enclosed bottom and open cut top, NOT a rolled wrap. Exact filling only: Cooked falafel 100g, Tahini 18g, Tomato 50g, Cucumber 40g, Parsley 5g, Lemon juice 10g. Warm beige stone background, worn wooden board, natural daylight, elevated three-quarter view. Entire sandwich centered with generous margins, filling clearly visible. No seeds, added ingredients, or unlisted garnish, no text, no props."
+    },
+    {
+      "id": "pita-pois-chiches",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/pita-pois-chiches.webp",
+      "sourceFilename": "exec-eaa7f90e-cbb0-4b4f-9169-6110b354c0bb.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Chickpeas & crunchy vegetables sandwich in thin pale round pita pocket, slit open and stuffed, not a wrap. Exact filling: Drained cooked chickpeas 70g, Tomato 50g, Cucumber 50g, Plain yogurt 20g, Lemon juice 8g, Parsley 5g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture."
+    },
+    {
+      "id": "pita-poulet-citron",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/pita-poulet-citron.webp",
+      "sourceFilename": "exec-02eb6c27-9b8c-4572-b0d5-afc36cb1d227.png",
+      "prompt": "Use case: photorealistic-natural. Landscape 4:3 catalog food photograph. Finished Lemon chicken & cucumber sandwich in thin pale round pita pocket, slit open and stuffed, not a wrap. Exact filling: Cooked chicken breast 65g, Plain yogurt 25g, Cucumber 70g, Lettuce 20g, Lemon juice 8g. Only listed filling ingredients plus bread; no fries, no unlisted herbs or salad, no text. Worn wooden board on warm beige stone, soft natural daylight, elevated three-quarter view. Entire sandwich centered with breathing room and visible filling; authentic appetizing rustic food texture."
+    },
+    {
+      "id": "pita-poulet-shawarma",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/pita-poulet-shawarma.webp",
+      "sourceFilename": "exec-bdbcc607-1c28-4f1d-9be6-3443ad7228fa.png",
+      "prompt": "Use case: photorealistic-natural. Landscape4:3 food photograph of two semicircular thin pita bread pockets filled with shawarma-inspired cooked chicken breast, yogurt sauce, ground cumin, sweet paprika, red cabbage shreds, sliced pickled gherkins, olive oil. STRICT exact filling ingredients ONLY those named. No eggs, no aubergine, no cheese, no lettuce, no herbs. Pita pockets closed at bottom open across top, not wraps. Whole dish centered on worn wooden board, warm beige stone background, natural daylight, elevated three-quarter view, generous margins. No text or props."
+    },
+    {
+      "id": "tartine-avocat-oeuf",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/tartine-avocat-oeuf.webp",
+      "sourceFilename": "exec-b9bcb0b0-bf3a-455f-9757-d1b404a937a6.png",
+      "prompt": "Use case: photorealistic-natural. Asset: Bakerhub recipe catalogue food illustration, one individual landscape image. Create one editorial food photograph of an open-faced French country-bread tartine with avocado and hard-boiled egg: one thick rustic sourdough slice, mashed avocado 60g spread on top, one sliced fully hard-boiled egg (firm yellow yolk, never fried or poached), subtle lemon juice. ONLY these ingredients; no herbs, seeds, chili, pepper garnish or other food. Entire prepared tartine comfortably centered on worn wooden board, warm beige stone backdrop, soft natural window daylight, elevated three-quarter angle, realistic appetizing textures, restrained French bakery aesthetic. Landscape 4:3 framing with generous breathing room and all food within central 70% to suit card crops. No text, logos, watermark, people or utensils. This is a single finished dish, not a collage."
+    },
+    {
+      "id": "tartine-champignons-ricotta",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/tartine-champignons-ricotta.webp",
+      "sourceFilename": "exec-f8c46bb7-71c3-47a1-893e-18022d4213af.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for recipe card. Landscape 4:3. Warm beige stone background, rustic wooden board, natural daylight, elevated three-quarter camera, central food with generous margins. One appetizing open-faced tartine on a thick rustic country sourdough slice, NO upper slice. Recipe Mushrooms & ricotta. ONLY toppings: Mushroom 80g, Ricotta 35g, Olive oil 3g, Parsley 3g. Mushrooms cooked if present. Realistic modest quantities, clear identifiable ingredients. No other garnishes, no pepper or herbs unless listed. No side dishes, utensils, text, labels, watermark."
+    },
+    {
+      "id": "tartine-chevre-miel-noix",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/tartine-chevre-miel-noix.webp",
+      "sourceFilename": "exec-f890efc9-d749-4c00-9392-3175288a64ca.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for recipe card. Landscape 4:3. Warm beige stone background, rustic wooden board, natural daylight, elevated three-quarter camera, central food with generous margins. One appetizing open-faced tartine on a thick rustic country sourdough slice, NO upper slice. Recipe Goat cheese, honey & walnuts. ONLY toppings: Goat cheese 40g, Honey 8g, Shelled walnuts 10g. Mushrooms cooked if present. Realistic modest quantities, clear identifiable ingredients. No other garnishes, no pepper or herbs unless listed. No side dishes, utensils, text, labels, watermark."
+    },
+    {
+      "id": "tartine-jambon-emmental",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/tartine-jambon-emmental.webp",
+      "sourceFilename": "exec-70a5e41e-48b8-4502-a946-529e46e0dcc0.png",
+      "prompt": "Use case: photorealistic-natural. Professional food photograph for recipe card. Landscape 4:3. Warm beige stone background, rustic wooden board, natural daylight, elevated three-quarter camera, central food with generous margins. One appetizing open-faced tartine on a thick rustic country sourdough slice, NO upper slice. Recipe Ham & Emmental. ONLY toppings: Cooked ham 45g, Emmental 25g, Butter 5g. Mushrooms cooked if present. Realistic modest quantities, clear identifiable ingredients. No other garnishes, no pepper or herbs unless listed. No side dishes, utensils, text, labels, watermark."
+    },
+    {
+      "id": "tartine-thon-yaourt",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/tartine-thon-yaourt.webp",
+      "sourceFilename": "exec-4bc9bf77-5e6d-4141-8bab-0bf1a9961f8c.png",
+      "prompt": "Use case: photorealistic-natural. Recipe card food photograph landscape4:3. Warm beige stone, rustic wooden board, natural daylight, elevated three-quarter camera, centered food with margins. Subject: one open-faced tartine on thick rustic country sourdough slice, NO upper slice. Recipe Tuna, yogurt & cucumber. EXACT filling ingredients: Drained tuna in water 50g, Plain yogurt 20g, Cucumber 40g, Lemon juice 5g. No extra ingredients, herbs or garnishes. Dressings spread inside; lemon juice invisible, no lemon wedges. Realistic quantities, appetizing natural texture. No side dishes, utensils, text or watermark."
+    },
+    {
+      "id": "tartine-tomate-ricotta",
+      "mode": "built-in image_gen",
+      "output": "public/images/approved/sandwich/tartine-tomate-ricotta.webp",
+      "sourceFilename": "exec-fa8b47d5-ac79-4336-95df-90fa760a6d79.png",
+      "prompt": "Use case: photorealistic-natural. Recipe card food photograph landscape4:3. Warm beige stone, rustic wooden board, natural daylight, elevated three-quarter camera, centered food with margins. Subject: one open-faced tartine on thick rustic country sourdough slice, NO upper slice. Recipe Tomato, ricotta & basil. EXACT filling ingredients: Tomato 70g, Ricotta 30g, Basil 3g. No extra ingredients, herbs or garnishes. Dressings spread inside; lemon juice invisible, no lemon wedges. Realistic quantities, appetizing natural texture. No side dishes, utensils, text or watermark."
+    }
+  ]
+}

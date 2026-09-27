@@ -1,3 +1,8 @@
+import type { BakeNavigationMemory } from './bakeNavigation';
+import { normalizeSandwichSnapshot, type SandwichSnapshot } from './sandwich';
+import type { StarterEvent } from '../components/SchedulePicker';
+import type { RecipeEnrichment } from '../utils/enrichedFormulas';
+import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 const SESSION_KEY = 'bh_session_v1';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -6,16 +11,25 @@ export interface SessionData {
   savedAt: number;
   tab: string;
   bakeType: string | null;
+  bakeName?: string;
   styleKey: string | null;
   numItems: number;
   itemWeight: number;
   pizzaDiameter: number;
   ovenType: string | null;
+  ovenConstruction?: 'tabletop' | 'masonry' | 'home' | 'micro';
   mixerType: string | null;
   yeastType: string | null;
   kitchenTemp: number;
   humidity: string;
   fridgeTemp: number;
+  waterSource?: 'room' | 'fridge' | 'tap' | 'measured';
+  measuredWaterTemp?: number;
+  waterMethod?: 'premelt' | 'direct';
+  spiralIceConfirmed?: boolean;
+  /** Undefined retains the automatic equipment recommendation. */
+  mixingBatches?: number;
+  containerCapacityLitres?: number;
   flourBlend: unknown;
   prefermentType: string;
   prefermentFlourPct: number | undefined;
@@ -26,10 +40,13 @@ export interface SessionData {
   manualSalt: number | undefined;
   targetDoughTemp: number | undefined;
   flourInFridge: boolean;
+  measuredFlourTemp?: number;
+  measuredPrefermentTemp?: number;
   addSeeds?: boolean;
   wastePct: number | undefined;
   priorityOverride: string | null | undefined;
   startTime?: number | null;
+  timingOverrides?: TimingOverrides;
   eatTime: number | null;
   blocks: unknown[];
   recipeGenerated: boolean;
@@ -42,14 +59,20 @@ export interface SessionData {
   prefermentChosen?: boolean;
   // How far the baker advanced, per flow. Optional: snapshots written before
   // this field existed restore fine, they just fall back.
+  activeStep?: number;
+  advancedStep?: number;
+  setupOverview?: boolean;
   highestStep?: number;
   advancedHighestStep?: number;
   activeTab: string;
+  navigation?: BakeNavigationMemory;
   pizzaPartyTab?: string;
+  sandwichParty?: SandwichSnapshot | null;
   modeChosen: boolean;
   pizzaParty?: { qtys: Record<string, number>; bakedQtys?: Record<string, number>; shopTicks?: Record<string, boolean>; prepTicks?: string[] } | null;
   bakedDone?: boolean;
   prefGoesInFridge?: boolean;
+  starterEvents?: Array<Omit<StarterEvent, 'time'|'bellPeakTime'|'bellStartTime'> & {time:number;bellPeakTime?:number;bellStartTime?:number}>;
   starterState?: string;
   starterLocation?: string;
   planningMode?: string;
@@ -62,6 +85,8 @@ export interface SessionData {
   nextFeedRatio?: number;
   nextFeedRatioOverride?: number | null;
   ratioMode?: 'recommend' | 'keep';
+  /** False preserves a known blocked/uncertain starter plan across resume. */
+  starterTimingValid?: boolean;
   starterMature?: boolean;
   starterHasRye?: boolean;
   tang?: string;
@@ -70,7 +95,9 @@ export interface SessionData {
   feed2Time?: number | null;
   starterFridgeInTime?: number | null;
   computedRecipe?: {
+    enrichment?: RecipeEnrichment;
     flour: number;
+    flourParts?: Array<{key:string;name:string;nameFr:string;grams:number;pct:number}>;
     water: number;
     salt: number;
     oil: number;
@@ -85,11 +112,16 @@ export interface SessionData {
   } | null;
 }
 
-export function saveSession(data: Omit<SessionData, 'version' | 'savedAt'>): void {
+export function normalizeMixingBatches(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 100 ? value : undefined;
+}
+
+export function saveSession(data: Omit<SessionData, 'version' | 'savedAt'>): boolean {
   try {
-    const payload: SessionData = { ...data, version: 1, savedAt: Date.now() };
+    const payload: SessionData = { ...data, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), version: 1, savedAt: Date.now() };
     localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
-  } catch {}
+    return true;
+  } catch { return false; }
 }
 
 export function loadSession(): SessionData | null {
@@ -99,7 +131,7 @@ export function loadSession(): SessionData | null {
     const data = JSON.parse(raw) as SessionData;
     if (data.version !== 1) return null;
     if (Date.now() - data.savedAt > SESSION_TTL_MS) { clearSession(); return null; }
-    return data;
+    return { ...data, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches) };
   } catch { return null; }
 }
 
@@ -128,3 +160,11 @@ export function readAuthIntent(): AuthIntent | null {
 export function clearAuthIntent() {
   try { window.sessionStorage.removeItem(AUTH_INTENT_KEY); } catch { /* mode privé */ }
 }
+
+export function serializeStarterEvents(events: StarterEvent[]): NonNullable<SessionData['starterEvents']> {
+  return events.map(event => ({...event, time:event.time.getTime(), bellPeakTime:event.bellPeakTime?.getTime(), bellStartTime:event.bellStartTime?.getTime()}));
+}
+export function restoreStarterEvents(events: SessionData['starterEvents'], offsetMs = 0): StarterEvent[] {
+  return (events ?? []).filter(event => Number.isFinite(event.time)).map(event => ({...event, time:new Date(event.time + offsetMs), bellPeakTime:event.bellPeakTime == null ? undefined : new Date(event.bellPeakTime + offsetMs), bellStartTime:event.bellStartTime == null ? undefined : new Date(event.bellStartTime + offsetMs)}));
+}
+

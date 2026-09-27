@@ -1,7 +1,7 @@
 'use client';
 // Mon profil — baker preferences persisted locally (bh_profile_v1).
 // Every change saves instantly; new sessions prefill from here.
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PIZZA_STYLES, BREAD_STYLES } from '../data';
 import { loadProfile, updateProfile, deleteCustomPizza, DEFAULT_BLOCKERS, type BakerProfile } from '../lib/profile';
 import { createClient } from '../lib/supabase/client';
@@ -19,12 +19,30 @@ const S = {
     background: active ? 'rgba(107, 68, 35,0.07)' : 'var(--warm)',
     color: 'var(--char)', borderRadius: '20px', padding: '8px 12px',
     fontFamily: 'var(--font-ui)', fontSize: '12px', cursor: 'pointer',
-    lineHeight: 1.2,
+    lineHeight: 1.2, minHeight: '44px',
   }),
 };
 
 export default function ProfileSheet({ locale, onClose }: { locale: string; onClose: () => void }) {
   const fr = locale === 'fr';
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    sheetRef.current?.focus();
+    const keydown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key !== 'Tab') return;
+      const items = Array.from(sheetRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), summary') ?? []).filter(x => x.offsetParent !== null);
+      const first = items[0], last = items[items.length - 1];
+      if (!first) return;
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === sheetRef.current)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || document.activeElement === sheetRef.current)) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', keydown);
+    return () => { document.removeEventListener('keydown', keydown); document.body.style.overflow = overflow; if (previous?.isConnected) previous.focus(); };
+  }, [onClose]);
   const [profile, setProfile] = useState<BakerProfile>(() => ({ version: 1, ...(loadProfile() ?? {}) }));
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   useEffect(() => {
@@ -54,22 +72,23 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
   ) => (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '0 16px' }}>
       {entries.map(e => (
-        <button key={e.key} onClick={() => onPick(current === e.key ? null : e.key)} style={S.pill(current === e.key)}>
+        <button key={e.key} aria-pressed={current === e.key} onClick={() => onPick(current === e.key ? null : e.key)} style={S.pill(current === e.key)}>
           {e.label}
         </button>
       ))}
     </div>
   );
 
-  const timeInput = (value: string, onChange: (v: string) => void) => (
+  const timeInput = (value: string, onChange: (v: string) => void, label: string) => (
     <input
+      aria-label={label}
       type="time"
       value={value}
       onChange={e => onChange(e.target.value)}
       style={{
         border: '1px solid var(--border)', borderRadius: '8px', padding: '4px 8px',
         fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--char)',
-        background: 'var(--warm)', width: '86px',
+        background: 'var(--warm)', width: '110px', minHeight: '44px',
       }}
     />
   );
@@ -79,6 +98,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', flexWrap: 'wrap' }}>
         <button
+          aria-pressed={b.enabled}
           onClick={() => patch({ blockers: { ...blockers, [key]: { ...b, enabled: !b.enabled } } })}
           style={{ ...S.pill(b.enabled), minWidth: '104px', textAlign: 'left' as const }}
         >
@@ -86,9 +106,9 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         </button>
         {b.enabled && (
           <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {timeInput(b.from, v => patch({ blockers: { ...blockers, [key]: { ...b, from: v } } }))}
+            {timeInput(b.from, v => patch({ blockers: { ...blockers, [key]: { ...b, from: v } } }), `${label} — ${fr ? 'début' : 'start'}`)}
             <span style={{ color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontSize: '11px' }}>→</span>
-            {timeInput(b.to, v => patch({ blockers: { ...blockers, [key]: { ...b, to: v } } }))}
+            {timeInput(b.to, v => patch({ blockers: { ...blockers, [key]: { ...b, to: v } } }), `${label} — ${fr ? 'fin' : 'end'}`)}
           </span>
         )}
       </div>
@@ -98,33 +118,33 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 290 }} />
-      <div style={{
+      <div ref={sheetRef} role="dialog" aria-modal="true" aria-label={fr ? 'Mes préférences' : 'My preferences'} tabIndex={-1} style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
-        background: 'var(--cream)', borderRadius: '20px 20px 0 0',
+        width: 'min(640px, 100%)', margin: '0 auto', background: 'var(--cream)', borderRadius: '20px 20px 0 0',
         zIndex: 300, maxHeight: 'calc(100dvh - 40px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
         paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))',
       }}>
         <div style={{ width: 36, height: 4, background: 'rgba(0,0,0,0.15)', borderRadius: 2, margin: '14px auto 10px' }} />
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '0 16px 12px', borderBottom: '1px solid var(--border)',
+          position: 'sticky', top: 0, background: 'var(--cream)', zIndex: 1, gap: '12px', padding: '12px 16px', borderBottom: '1px solid var(--border)',
         }}>
           <div>
             <span style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)' }}>
               {fr ? 'Mes préférences' : 'My preferences'}
             </span>
             <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', marginTop: '2px' }}>
-              {fr ? 'Enregistré automatiquement à chaque changement — prérempli dans chaque nouvelle session.' : 'Saved automatically on every change — prefilled into each new session.'}
+              {fr ? 'Enregistré automatiquement pour vos prochaines fournées.' : 'Saved automatically for your next bakes.'}
               {signedIn !== null && (
                 <span style={{ display: 'block', marginTop: '2px', color: signedIn ? 'var(--sage, #6B7A5A)' : 'var(--smoke)' }}>
                   {signedIn
-                    ? (fr ? 'Synchronisé avec votre compte ✓' : 'Synced with your account ✓')
-                    : (fr ? 'Local sur cet appareil — connectez-vous pour synchroniser' : 'Local to this device — sign in to sync')}
+                    ? (fr ? 'Compte connecté · préférences enregistrées sur cet appareil' : 'Account connected · preferences saved on this device')
+                    : (fr ? 'Enregistré sur cet appareil' : 'Saved on this device')}
                 </span>
               )}
             </div>
           </div>
-          <button onClick={onClose} style={{
+          <button onClick={onClose} aria-label={fr ? 'Fermer' : 'Close'} style={{
             width: 44, height: 44, padding: 8, margin: -8, borderRadius: '50%',
             border: 'none', backgroundClip: 'content-box',
             background: 'var(--warm)', cursor: 'pointer', fontSize: 16, color: 'var(--smoke)',
@@ -134,7 +154,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
 
         <span style={S.label}>{fr ? 'Mode par défaut' : 'Default mode'}</span>
         <div style={{ display: 'flex', gap: '8px', padding: '0 16px' }}>
-          {([['simple', 'Simple'], ['custom', fr ? 'Avancé' : 'Custom']] as const).map(([key, label]) => (
+          {([['simple', 'Simple'], ['custom', fr ? 'Personnalisé' : 'Custom']] as const).map(([key, label]) => (
             <button key={key} onClick={() => patch({ preferredMode: profile.preferredMode === key ? null : key })} style={S.pill(profile.preferredMode === key)}>
               {label}
             </button>
@@ -144,7 +164,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
         <span style={S.label}>{fr ? 'Mes pizzas' : 'My pizzas'}</span>
         {customs.length === 0 ? (
           <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic', padding: '0 16px' }}>
-            {fr ? 'Créez vos pizzas depuis Ma Pizza Party — elles vivront ici.' : 'Create pizzas from My Pizza Party — they will live here.'}
+            {fr ? 'Vos pizzas personnelles apparaîtront ici.' : 'Your custom pizzas will appear here.'}
           </div>
         ) : customs.map(cp => (
           <div key={cp.id} style={{
@@ -159,11 +179,11 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
               </div>
             </div>
             <button
-              onClick={() => { deleteCustomPizza(cp.id); setProfile({ version: 1, ...(loadProfile() ?? {}) }); }}
+              onClick={() => { if (!window.confirm(fr ? `Supprimer ${cp.name} ?` : `Delete ${cp.name}?`)) return; deleteCustomPizza(cp.id); setProfile({ version: 1, ...(loadProfile() ?? {}) }); }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)',
-                textDecoration: 'underline', textUnderlineOffset: '2px',
+                textDecoration: 'underline', textUnderlineOffset: '2px', minHeight: '44px', padding: '8px',
               }}
             >
               {fr ? 'Supprimer' : 'Delete'}
@@ -193,10 +213,10 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
           profile.yeastType, key => patch({ yeastType: key }),
         )}
 
-        <span style={S.label}>{fr ? 'Préferment — mode Avancé' : 'Preferment — Custom mode'}</span>
+        <span style={S.label}>{fr ? 'Préferment — mode personnalisé' : 'Preferment — Custom mode'}</span>
         {pillRow(
           [
-            { key: 'none', label: 'Direct' },
+            { key: 'none', label: fr ? 'Sans préferment' : 'No preferment' },
             { key: 'poolish', label: 'Poolish' },
             { key: 'biga', label: 'Biga' },
           ],

@@ -1,3 +1,7 @@
+import { BREAD_FERMENTATION_DEFAULTS, getBreadProtocol, breadActiveCookMinutes, breadPoachMinutes } from './utils/breadProfiles';
+import { scheduledFoldMinutes } from './utils/scheduleFolds';
+import { actionConflicts, findAvailabilityConflicts, isTimeBlocked, type AvailabilityAction, type AvailabilityConflict } from './utils/scheduleAvailability';
+import { ENRICHED_FORMULAS, ENRICHMENT_WATER_FRACTIONS, type RecipeEnrichment } from './utils/enrichedFormulas';
 // ══════════════════════════════════════════
 // BAKER HUB — Utils & Engine
 // ══════════════════════════════════════════
@@ -12,6 +16,7 @@
 
 import {
   ALL_STYLES,
+  FLOUR_DATA,
   OVEN_TYPES,
   BREAD_OVEN_TYPES,
   MIXER_TYPES,
@@ -124,7 +129,7 @@ export interface YeastResult {
   convertedGrams: number;// grams for selected yeast type
   yeastType: YeastType;
   scaleNeeded: string;
-  dilutionTip: { solutionG: number; waterG: number } | null;
+  dilutionTip: { solutionG: number; waterG: number; waterInSolutionGrams?: number; remainingWaterGrams?: number } | null;
   hitMinFloor: boolean;  // dose under 0.5 g — needs a 0.1 g precision scale
   // Longest room-temperature window this batch can still be DOSED for, i.e.
   // where the required IDY stays above what a 0.1 g scale can weigh. Null when
@@ -140,7 +145,15 @@ export interface YeastResult {
   osmoticStress: boolean; // true when sugar > 2% — yeast amount increased 20%
 }
 
-function recommendYeast(
+// Existing UI instructs 1 g yeast + waterG water: stock mass is waterG + 1.
+export function commercialDilution(doseGrams: number, availableWater = Infinity) {
+  if (!Number.isFinite(doseGrams) || doseGrams <= 0 || doseGrams >= 0.5) return null;
+  const waterG = 100;
+  if (doseGrams * waterG > availableWater) return null;
+  return {waterG, solutionG: doseGrams * (waterG + 1), waterInSolutionGrams: doseGrams * waterG, remainingWaterGrams: Number.isFinite(availableWater) ? availableWater - doseGrams * waterG : undefined};
+}
+
+export function recommendYeast(
   totalRTHours: number,
   kitchenTemp: number,
   totalColdHours: number,
@@ -158,26 +171,28 @@ function recommendYeast(
   const RT_ONLY_STYLES = new Set(['pan', 'roman', 'pain_seigle']);
   const isRTOnlyStyle = RT_ONLY_STYLES.has(styleKey ?? '');
 
-  if (totalColdHours > 0 && totalRTHours <= 4) {
-    // Primarily cold fermentation
-    rec = coldIDY(totalColdHours, fridgeTemp);
-    rec = Math.max(YEAST_MIN_PCT, rec);
-
-  } else if (totalColdHours > 0) {
-    // Mixed: room temp + cold
-    const rtRec = rtIDY(totalRTHours, kitchenTemp);
+  if (totalColdHours > 0) {
     const coldRec = coldIDY(totalColdHours, fridgeTemp);
-    if (rtRec === null) {
+    const rtRec = totalRTHours > 0 ? rtIDY(totalRTHours, kitchenTemp) : null;
+    // Keep the existing empirical blend, but never increase the cold-only
+    // dose merely because warm exposure was added. This conservative bound
+    // removes the arbitrary four-hour switch; it is not new calibration or
+    // a simulation of dough-core cooling.
+    if (totalRTHours > 0 && rtRec === null) {
+      // Unsupported warm exposure does not disappear when a cold phase is
+      // added. Match the existing pure-RT rejection contract; this minimum
+      // is a finite placeholder, not a validated dose for the rejected plan.
+      notRecommended = true;
+      warnings.push({ key: 'overFermentRT', params: { hours: totalRTHours, temp: kitchenTemp } });
+      rec = YEAST_MIN_PCT;
+    } else if (totalRTHours <= 0 || rtRec === null) {
       rec = Math.max(YEAST_MIN_PCT, coldRec);
     } else {
-      const rtWeight    = totalRTHours  / Math.max(rtRec ?? YEAST_MIN_PCT, YEAST_MIN_PCT);
-      const coldWeight  = totalColdHours / coldRec;
-      const totalWeight = rtWeight + coldWeight;
-      rec = Math.max(YEAST_MIN_PCT,
-        (coldRec * (coldWeight / totalWeight)) + ((rtRec ?? 0) * (rtWeight / totalWeight))
-      );
+      const rtWeight = totalRTHours / Math.max(rtRec, YEAST_MIN_PCT);
+      const coldWeight = totalColdHours / coldRec;
+      const blended = (coldRec * coldWeight + rtRec * rtWeight) / (coldWeight + rtWeight);
+      rec = Math.max(YEAST_MIN_PCT, Math.min(coldRec, blended));
     }
-
   } else {
     // Pure room temperature
     if (totalRTHours > YEAST_RT_MAX_H && !isRTOnlyStyle) {
@@ -279,14 +294,7 @@ function recommendYeast(
   //
   // Taking it from the dough's own water is the load-bearing half — added on
   // top it would change the hydration.
-  let dilutionTip: { solutionG: number; waterG: number } | null = null;
-  if (convertedGrams < 0.5) {
-    const DILUTION_WATER_G = 100;
-    dilutionTip = {
-      waterG: DILUTION_WATER_G,
-      solutionG: Math.round(convertedGrams * DILUTION_WATER_G * 10) / 10,
-    };
-  }
+  const dilutionTip = commercialDilution(convertedGrams);
 
   // Explanation
   let explanation = '';
@@ -443,6 +451,14 @@ export interface AvailabilityBlock {
 }
 
 export interface ScheduleResult {
+  doughMethod?: 'yeasted' | 'unleavened';
+  preparationInvalid?: boolean;
+  activeCookMinutes?: number;
+  poachStart?: Date;
+  poachMinutes?: number;
+  /** Known hands-on work; passive rests are deliberately absent. */
+  availabilityActions?: AvailabilityAction[];
+  availabilityConflicts?: AvailabilityConflict[];
   mixingDurationH: number;
   bulkFermStart: Date;
   bulkFermHours: number;
@@ -531,6 +547,8 @@ const CP_FLOUR = 1800;   // J/kg·K (dry solids)
 
 /** Target dough temperature by style. Hoisted so the warm-up solver can read it. */
 export const TARGET_FDT: Record<string, number> = {
+  focaccia: 24, bagel: 24, pita: 24, greek_pita: 24, kebab_bread: 24,
+  batbout: 24, laffa: 24, piadina: 24, pan_bagnat: 24, ciabatta: 24, panuozzo: 23,
   neapolitan: 23, newyork: 24, roman: 25, pan: 25,
   sourdough: 24, pain_campagne: 24, pain_levain: 24,
   baguette: 24, pain_complet: 24, pain_seigle: 24,
@@ -682,6 +700,7 @@ export function requiredPrefWarmupH(o: {
 }
 
 const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHRequired?: boolean }> = {
+  ...BREAD_FERMENTATION_DEFAULTS,
   // Pizza — sweet spot = coldH + rtH (where dough peaks at bake)
   neapolitan:    { coldH: 24, rtH: 2 },                          // sweet: 26h
   newyork:       { coldH: 24, rtH: 2 },                          // sweet: 26h
@@ -701,7 +720,29 @@ const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHReq
   pain_viennois: { coldH: 6,  rtH: 2, coldHRequired: true },     // sweet: 8h
 };
 
-export function buildSchedule(
+/** Durations describe the returned event times, including proof during preheat.
+ * Keep planning limits separate: a cap must never erase elapsed fermentation. */
+function accountScheduleTime(schedule: ScheduleResult): ScheduleResult {
+  const hours = (from: Date | null, to: Date | null) => from && to
+    ? Math.max(0, (to.getTime() - from.getTime()) / 3600000) : 0;
+  const coldHours = schedule.coldRetard2Start
+    ? hours(schedule.coldRetard1Start, schedule.coldRetard1End)
+      + hours(schedule.coldRetard2Start, schedule.coldRetard2End)
+    : hours(schedule.coldRetardStart, schedule.coldRetardEnd);
+  return {
+    ...schedule,
+    bulkFermHours: hours(schedule.bulkFermStart, schedule.coldRetardStart ?? schedule.finalProofStart),
+    finalProofHours: hours(schedule.finalProofStart, schedule.bakeStart),
+    restRtHours: schedule.restRtHours > 0
+      ? hours(schedule.coldRetardEnd, schedule.finalProofStart) : 0,
+    coldRetardHours: coldHours,
+    totalColdHours: coldHours,
+    // Includes handling between cold phases and warmup, not only named proof.
+    totalRTHours: Math.max(0, hours(schedule.bulkFermStart, schedule.bakeStart) - coldHours),
+  };
+}
+
+function buildSchedulePhases(
   startTime: Date,
   eatTime: Date,
   availabilityBlocks: AvailabilityBlock[],
@@ -731,6 +772,8 @@ export function buildSchedule(
   // agreed — they disagreed once before, see the note at BakeGuide ~896.
   const autolyseMin = autolyseMinFor(mixerType, styleKey);
   const mixWindowMin = kneadMin + autolyseMin;
+  // Preserve the exact preparation window; rounding bulk backwards silently
+  // removes kneading and makes consumers infer a different mix start.
   const fermStart = new Date(startTime.getTime() + mixWindowMin * 60000);
   const mixingDurationH = mixWindowMin / 60;
   const preheatH = preheatMin / 60;
@@ -819,31 +862,82 @@ export function buildSchedule(
     .filter(b => b.from < bakeTime && b.to > fermStart)
     .sort((a, b) => a.from.getTime() - b.from.getTime());
 
+  // Keep a physically ordered fallback when a short window cannot fit a cold
+  // phase plus the required room-temperature proof. A duration clamp alone
+  // would leave the proof timestamp after bake while reporting zero hours.
+  const pureRoomTemperatureFallback = (note: string): ScheduleResult => {
+    const displayFermStart = fermStart.getTime() > bakeTime.getTime() ? bakeTime : fermStart;
+    const totalH = Math.max(0, (bakeTime.getTime() - displayFermStart.getTime()) / 3600000);
+    const rtFinalMaxH = maxFinalProofHours(kitchenTemp, false);
+    const finalProofH = Math.min(rtFinalMaxH, totalH);
+    const finalProofStart = new Date(Math.min(
+      bakeTime.getTime(),
+      displayFermStart.getTime() + Math.max(0, totalH - finalProofH) * 3600000,
+    ));
+    const divideBallTime = new Date(Math.min(
+      bakeTime.getTime(),
+      pushOutOfBlockers(finalProofStart, relevantBlocks).getTime(),
+    ));
+    return accountScheduleTime({
+      mixingDurationH,
+      bulkFermStart: displayFermStart,
+      bulkFermHours: Math.max(0, (finalProofStart.getTime() - displayFermStart.getTime()) / 3600000),
+      coldRetardStart: null,
+      coldRetardEnd: null,
+      coldRetardHours: 0,
+      finalProofStart: new Date(Math.max(+displayFermStart, +r15(finalProofStart))),
+      finalProofHours: finalProofH,
+      restRtHours: 0,
+      preheatStart: r15(bakeTime),
+      bakeStart: r15(eatTime),
+      totalRTHours: totalH,
+      totalColdHours: 0,
+      wasAutoAdjusted: false,
+      kitchenTemp,
+      coldRetard1Start: null,
+      coldRetard1End: null,
+      coldRetard2Start: null,
+      coldRetard2End: null,
+      divideBallTime: new Date(Math.max(+displayFermStart, +r15(divideBallTime))),
+      rtWarmupStart: null,
+      rtWarmupEnd: null,
+      bulkConflict: null,
+      coldExitConflict: null,
+      scheduleNote: note,
+    });
+  };
+
   // ── TWO-PHASE: Tropical AND cold retard AND window >= 16h ────
   if (isTwoPhase) {
-    const naturalBulkEnd = new Date(fermStart.getTime() + initialBulkH * 3600000);
-    const firstBlock = relevantBlocks[0] ?? null;
-    let bulkConflict: ScheduleResult['bulkConflict'] = null;
-    let actualBulkH = initialBulkH;
-    if (firstBlock && firstBlock.from < naturalBulkEnd && firstBlock.from > fermStart) {
-      const availableBulkH = (firstBlock.from.getTime() - fermStart.getTime()) / 3600000;
-      const missingMin = Math.round((initialBulkH - availableBulkH) * 60);
-      if (missingMin > 15) {
-        const earlierStart = new Date(startTime.getTime() - missingMin * 60000);
-        bulkConflict = { missingMin, suggestEarlierByMin: missingMin, suggestedEarlierStart: earlierStart };
-      }
-      actualBulkH = availableBulkH;
-    }
+    // Bulk fermentation is passive except for the guide's scheduled folds.
+    // Preserve its modeled duration; canonical actions below check folds and
+    // fridge entry, and the fixed-bake solver moves mixing when required.
+    const bulkConflict: ScheduleResult['bulkConflict'] = null;
+    const actualBulkH = initialBulkH;
     const coldRetard1Start = new Date(fermStart.getTime() + actualBulkH * 3600000);
 
     const earliestDivide = new Date(coldRetard1Start.getTime() + minCold1H * 3600000);
     const latestDivide   = new Date(bakeTime.getTime() - (minCold2H + minFinalRT + preheatH) * 3600000);
-    const isInAnyBlocker = (t: Date) => relevantBlocks.some(b => t >= b.from && t < b.to);
+    const divideIsBlocked = (t: Date) => actionConflicts({ id: 'divide', at: t, end: new Date(+t + divideH * 3600000) }, relevantBlocks)
+      || isTimeBlocked(+t + divideH * 3600000, relevantBlocks);
     let divideBallTime: Date = earliestDivide;
+    let constrainedExit: Date | null = null;
+    const naturalExit = r15(new Date(+bakeTime - (rtWarmupH + maxFinalH) * 3600000));
+    const maxExit = +bakeTime - (rtWarmupH + minFinalRT) * 3600000;
     if (earliestDivide.getTime() <= latestDivide.getTime()) {
-      let scan = new Date(earliestDivide);
+      // With constraints, scan the actual quarter-hour timestamps returned below.
+      // Shape and the second cold exit are one choice: a clear shaping slot is
+      // not useful if it removes the minimum second cold or final proof.
+      let scan = relevantBlocks.length ? new Date(Math.ceil(+earliestDivide / 900000) * 900000) : new Date(earliestDivide);
       while (scan.getTime() <= latestDivide.getTime()) {
-        if (!isInAnyBlocker(scan)) { divideBallTime = scan; break; }
+        if (!divideIsBlocked(scan)) {
+          if (!relevantBlocks.length) { divideBallTime = scan; break; }
+          const minExit = Math.max(+naturalExit, +scan + (divideH + minCold2H) * 3600000);
+          for (let at = Math.ceil(minExit / 900000) * 900000; at <= maxExit; at += 900000) {
+            if (!isTimeBlocked(at, relevantBlocks)) { constrainedExit = new Date(at); break; }
+          }
+          if (constrainedExit) { divideBallTime = scan; break; }
+        }
         scan = new Date(scan.getTime() + 15 * 60000);
       }
     }
@@ -856,19 +950,10 @@ export function buildSchedule(
     // Phase 2 starts after divide & ball
     const coldRetard2Start = new Date(divideBallTime.getTime() + divideBallDurationH * 3600000);
 
-    // Phase 2 ends to leave rtWarmupH + finalProofH before bake
-    let coldRetard2End = new Date(bakeTime.getTime() - rtWarmupH * 3600000 - maxFinalH * 3600000);
-
-    // Clamp: if blocks exist, extend phase 2 end to cover last block (but not past bakeTime - rtWarmupH)
-    let wasAutoAdjusted = false;
-    if (relevantBlocks.length > 1) {
-      const lastBlockEnd = new Date(Math.max(...relevantBlocks.map(b => b.to.getTime())));
-      const maxColdEnd = new Date(bakeTime.getTime() - rtWarmupH * 3600000);
-      if (lastBlockEnd.getTime() > coldRetard2End.getTime()) {
-        coldRetard2End = new Date(Math.min(lastBlockEnd.getTime(), maxColdEnd.getTime()));
-        wasAutoAdjusted = true;
-      }
-    }
+    // Passive cold can overlap unavailable time. Only the joint action scan
+    // above may move this exit; it preserves both cold phases and final proof.
+    let coldRetard2End = constrainedExit ?? new Date(bakeTime.getTime() - rtWarmupH * 3600000 - maxFinalH * 3600000);
+    const wasAutoAdjusted = constrainedExit != null && (+constrainedExit !== +naturalExit || +divideBallTime !== +r15(earliestDivide));
 
     // Safety: phase 2 end must not precede start
     if (coldRetard2End.getTime() < coldRetard2Start.getTime()) {
@@ -877,6 +962,12 @@ export function buildSchedule(
 
     const rtWarmupStart = coldRetard2End;
     const rtWarmupEnd = new Date(rtWarmupStart.getTime() + rtWarmupH * 3600000);
+
+    if (rtWarmupEnd.getTime() > bakeTime.getTime()) {
+      return pureRoomTemperatureFallback(
+        'Not enough time for the planned cold phases — room-temperature timing shown; bake later for the full plan.',
+      );
+    }
 
     const finalProofStart = rtWarmupEnd;
     const actualFinalProofH = Math.min(
@@ -892,9 +983,9 @@ export function buildSchedule(
     );
     const totalColdHours = coldRetard1Hours + coldRetard2Hours;
 
-    return {
+    return accountScheduleTime({
       mixingDurationH,
-      bulkFermStart: r15(fermStart),
+      bulkFermStart: fermStart,
       bulkFermHours: actualBulkH,
       // Backward compat: map to two-phase ends
       coldRetardStart: r15(coldRetard1Start),
@@ -920,64 +1011,24 @@ export function buildSchedule(
       bulkConflict,
       coldExitConflict: null,
       scheduleNote,
-    };
+    });
   }
 
   // ── SINGLE PHASE ─────────────────────────────────────────────
 
   // ── PURE RT: no cold retard for this style ───────────────────
   if (!hasColdRetard) {
-    const totalH      = Math.max(0, (bakeTime.getTime() - fermStart.getTime()) / 3600000);
-    const finalProofH = Math.min(maxFinalH, totalH);
-    const bulkFermH   = Math.max(0, totalH - finalProofH);
-    const finalProofStart = new Date(fermStart.getTime() + bulkFermH * 3600000);
-    const divideBallTime  = pushOutOfBlockers(finalProofStart, relevantBlocks);
-    return {
-      mixingDurationH,
-      bulkFermStart: r15(fermStart),
-      bulkFermHours: bulkFermH,
-      coldRetardStart: null,
-      coldRetardEnd: null,
-      coldRetardHours: 0,
-      finalProofStart: r15(finalProofStart),
-      finalProofHours: finalProofH,
-      restRtHours: 0,
-      preheatStart: r15(bakeTime),
-      bakeStart: r15(eatTime),
-      totalRTHours: totalH,
-      totalColdHours: 0,
-      wasAutoAdjusted: false,
-      kitchenTemp,
-      coldRetard1Start: null,
-      coldRetard1End: null,
-      coldRetard2Start: null,
-      coldRetard2End: null,
-      divideBallTime: r15(divideBallTime),
-      rtWarmupStart: null,
-      rtWarmupEnd: null,
-      bulkConflict: null,
-      coldExitConflict: null,
-      scheduleNote,
-    };
+    return pureRoomTemperatureFallback(scheduleNote ?? 'Room-temperature fermentation fits this window.');
   }
 
   // ── SINGLE-PHASE COLD RETARD: style-driven coldH ─────────────
   // Structure: Mix → initial bulk RT → Cold Retard (coldH) → Rest RT → Final Proof → Preheat → Bake
   const INITIAL_BULK_H = initialBulkH;
 
-  const naturalBulkEnd = new Date(fermStart.getTime() + INITIAL_BULK_H * 3600000);
-  const firstBlock = relevantBlocks[0] ?? null;
-  let bulkConflict: ScheduleResult['bulkConflict'] = null;
-  let actualBulkH = INITIAL_BULK_H;
-  if (firstBlock && firstBlock.from < naturalBulkEnd && firstBlock.from > fermStart) {
-    const availableBulkH = (firstBlock.from.getTime() - fermStart.getTime()) / 3600000;
-    const missingMin = Math.round((INITIAL_BULK_H - availableBulkH) * 60);
-    if (missingMin > 15) {
-      const earlierStart = new Date(startTime.getTime() - missingMin * 60000);
-      bulkConflict = { missingMin, suggestEarlierByMin: missingMin, suggestedEarlierStart: earlierStart };
-    }
-    actualBulkH = availableBulkH;
-  }
+  // Do not truncate passive bulk when an availability block starts. Fold
+  // points and the fridge transfer are checked by canonical availability.
+  const bulkConflict: ScheduleResult['bulkConflict'] = null;
+  const actualBulkH = INITIAL_BULK_H;
 
   const coldRetardStart = new Date(fermStart.getTime() + actualBulkH * 3600000);
 
@@ -1004,13 +1055,19 @@ export function buildSchedule(
     coldRetardEnd = new Date(coldRetardStart.getTime());
   }
 
+  if (coldRetardEnd.getTime() + restH * 3600000 > bakeTime.getTime()) {
+    return pureRoomTemperatureFallback(
+      'Not enough time for the planned cold phase — room-temperature timing shown; bake later for the full plan.',
+    );
+  }
+
   // Did the clamp leave the exit inside a block anyway? With work until 18:00
   // and a bake at 18:00 no exit can clear it — the dough must come out before
   // it bakes. Exclusive edges, same convention as every other blocker test.
   let coldExitConflict: ScheduleResult['coldExitConflict'] = null;
   {
     const exitMs = coldRetardEnd.getTime();
-    const hit = relevantBlocks.find(b => exitMs > b.from.getTime() && exitMs < b.to.getTime());
+    const hit = relevantBlocks.find(b => exitMs >= b.from.getTime() && exitMs < b.to.getTime());
     if (hit) {
       // Earliest bake whose exit clears the window: the block ends, then the
       // dough still needs its rest and proof. Rounded up to the quarter hour
@@ -1040,9 +1097,9 @@ export function buildSchedule(
   // Divide & Ball happens when dough comes out of fridge (pushed out of any blocker)
   const divideBallTime = pushOutOfBlockers(coldRetardEnd, relevantBlocks);
 
-  return {
+  return accountScheduleTime({
     mixingDurationH,
-    bulkFermStart: r15(fermStart),
+    bulkFermStart: fermStart,
     bulkFermHours: actualBulkH,
     coldRetardStart: r15(coldRetardStart),
     coldRetardEnd: r15(coldRetardEnd),
@@ -1066,12 +1123,164 @@ export function buildSchedule(
     bulkConflict,
     coldExitConflict,
     scheduleNote,
-  };
+  });
 }
 
 // ══════════════════════════════════════════
 // 4. RECIPE CALCULATOR
 // ══════════════════════════════════════════
+
+/** Build canonical phases, then describe only work with an existing time budget. */
+export function buildSchedule(
+  startTime: Date, eatTime: Date, availabilityBlocks: AvailabilityBlock[],
+  kitchenTemp: number, preheatMin: number, mixerType: MixerType = 'hand',
+  styleKey: string = 'neapolitan', numItems?: number,
+): ScheduleResult {
+  const poachMinutes = breadPoachMinutes(styleKey, numItems);
+  const fermentationEnd = poachMinutes ? new Date(+eatTime - poachMinutes * 60000) : eatTime;
+  // Poaching ends fermentation. For bagels only, derive the dough phases up
+  // to that action; the selected oven time remains unchanged.
+  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey);
+  if (poachMinutes) {
+    schedule.poachStart = fermentationEnd;
+    schedule.poachMinutes = poachMinutes;
+    schedule.bakeStart = new Date(eatTime);
+    schedule.preheatStart = new Date(Math.min(+eatTime - preheatMin * 60000, +fermentationEnd));
+    schedule.finalProofHours = Math.max(0, (+fermentationEnd - +schedule.finalProofStart) / 3600000);
+    schedule.totalRTHours = Math.max(0, (+fermentationEnd - +schedule.bulkFermStart) / 3600000 - schedule.totalColdHours);
+    schedule.preparationInvalid = +fermentationEnd - +startTime < BREAD_FERMENTATION_DEFAULTS.bagel.minTotalFermH * 3600000
+      || +schedule.bulkFermStart >= +fermentationEnd || +schedule.divideBallTime >= +fermentationEnd
+      || +schedule.divideBallTime > +schedule.finalProofStart;
+  }
+  if (getBreadProtocol(styleKey)?.method === 'unleavened') {
+    // Piadina relaxes; it does not ferment. Preserve the requested cooking
+    // time and do not create a yeast dose or a fictional maturity window.
+    const mixEnd = new Date(+startTime + kneadMinFor(mixerType, styleKey) * 60000);
+    Object.assign(schedule, {
+      doughMethod: 'unleavened', preparationInvalid: +eatTime - +startTime < 45 * 60000 || +eatTime - +startTime > 2 * 3600000, bulkFermStart: mixEnd, bulkFermHours: 0,
+      finalProofStart: mixEnd, finalProofHours: 0,
+      restRtHours: Math.max(0, (+eatTime - 10 * 60000 - +mixEnd) / 3600000),
+      totalRTHours: 0, totalColdHours: 0, divideBallTime: mixEnd,
+      preheatStart: new Date(+eatTime - preheatMin * 60000), bakeStart: new Date(eatTime),
+      scheduleNote: 'Unleavened dough: covered rest before rolling and cooking.',
+    });
+  }
+  const actions: AvailabilityAction[] = [];
+  const activeMin = kneadMinFor(mixerType, styleKey);
+  const restMin = autolyseMinFor(mixerType, styleKey);
+  if (activeMin > 0) {
+    // Existing guide: approximately 2 min combine (3 spiral), followed by
+    // passive autolyse. Split the existing budget; do not add mixing time.
+    const initialMin = restMin > 0 ? Math.min(activeMin, mixerType === 'spiral' ? 3 : 2) : activeMin;
+    actions.push({ id: 'mix', at: new Date(startTime), end: new Date(+startTime + initialMin * 60000) });
+    if (restMin > 0 && activeMin > initialMin) actions.push({
+      id: 'mix-finish', at: new Date(+startTime + (initialMin + restMin) * 60000),
+      end: new Date(+startTime + (activeMin + restMin) * 60000),
+    });
+  } else actions.push({ id: 'mix', at: new Date(startTime) });
+  scheduledFoldMinutes(schedule.bulkFermHours, styleKey).forEach((minutes, index) => {
+    actions.push({ id: `fold-${index + 1}`, at: new Date(+schedule.bulkFermStart + minutes * 60000) });
+  });
+  const point = (id: string, at: Date | null) => { if (at) actions.push({ id, at }); };
+  point('cold-in', schedule.coldRetard1Start);
+  point('cold-out', schedule.coldRetard1End);
+  actions.push({ id: 'divide', at: schedule.divideBallTime,
+    ...(schedule.coldRetard2Start && +schedule.coldRetard2Start > +schedule.divideBallTime
+      ? { end: schedule.coldRetard2Start } : {}),
+  });
+  point('cold-in-2', schedule.coldRetard2Start);
+  point('cold-out-2', schedule.coldRetard2End);
+  if (schedule.poachStart) actions.push({ id: 'poach', at: schedule.poachStart, end: schedule.bakeStart });
+  if (schedule.doughMethod === 'unleavened') actions.push({ id: 'roll', at: new Date(+eatTime - 10 * 60000), end: new Date(eatTime) });
+  point('preheat', schedule.preheatStart);
+  const activeCookMinutes = breadActiveCookMinutes(styleKey, numItems);
+  if (activeCookMinutes) {
+    schedule.activeCookMinutes = activeCookMinutes;
+    actions.push({ id: 'bake', at: schedule.bakeStart, end: new Date(+schedule.bakeStart + activeCookMinutes * 60000) });
+  } else point('bake', schedule.bakeStart);
+  schedule.availabilityActions = actions;
+  schedule.availabilityConflicts = findAvailabilityConflicts(actions, availabilityBlocks);
+  return schedule;
+}
+
+export interface ScheduleRepairInput {
+  startTime: Date;
+  eatTime: Date;
+  availabilityBlocks: AvailabilityBlock[];
+  kitchenTemp: number;
+  preheatMin: number;
+  mixerType?: MixerType;
+  numItems?: number;
+  styleKey?: string;
+  /** Supply the planning clock explicitly for reproducible candidate checks. */
+  now?: Date;
+  allowStartShift?: boolean;
+  /** Method-specific constraints are checked for every candidate, not only the first. */
+  acceptCandidate?: (candidate: { startTime: Date; eatTime: Date; schedule: ScheduleResult }) => boolean;
+}
+export interface ScheduleRepair {
+  startTime: Date;
+  eatTime: Date;
+  schedule: ScheduleResult;
+  kind: 'start' | 'bake';
+}
+
+/** An explicit proposal only: callers must never apply it without a user action.
+ * Validates known dough actions, not untimed preferment work or starter biology.
+ * Callers must additionally validate their selected preferment/starter plan.
+ */
+export function findScheduleRepair(input: ScheduleRepairInput): ScheduleRepair | null {
+  const { startTime, eatTime, availabilityBlocks, kitchenTemp, preheatMin } = input;
+  const mixer = input.mixerType ?? 'hand', style = input.styleKey ?? 'neapolitan';
+  const now = +(input.now ?? new Date());
+  if (![+startTime, +eatTime, now, kitchenTemp, preheatMin].every(Number.isFinite)
+      || +startTime < now || +startTime >= +eatTime || preheatMin < 0) return null;
+  const build = (start: Date, bake: Date) => buildSchedule(start, bake, availabilityBlocks, kitchenTemp, preheatMin, mixer, style, input.numItems);
+  const original = build(startTime, eatTime);
+  const phases = (s: ScheduleResult) => s.coldRetard2Start ? 2 : s.coldRetard1Start ? 1 : 0;
+  const phaseCount = phases(original);
+  // A short-window room-only fallback is not a repair of a required-cold method.
+  if (STYLE_FERM_DEFAULTS[style]?.coldHRequired && phaseCount === 0) return null;
+  const valid = (s: ScheduleResult, start: Date, bake: Date) => {
+    if (phases(s) !== phaseCount || +start < now || +s.bulkFermStart < +start || +s.bulkFermStart > +s.preheatStart
+      || +s.preheatStart > +s.bakeStart || +s.finalProofStart > +s.bakeStart
+      || !s.availabilityActions?.every(a => Number.isFinite(+a.at) && +a.at >= +start && +a.at <= +s.bakeStart
+        && (!a.end || (+a.end >= +a.at && +a.end <= +s.bakeStart + (a.id === 'bake' ? s.activeCookMinutes ?? 0 : 0) * 60000)))
+      || s.availabilityConflicts?.length || s.bulkConflict || s.preparationInvalid
+      || (s.poachStart && (+s.finalProofStart > +s.poachStart || +s.divideBallTime >= +s.poachStart))) return false;
+    const preferredInitialBulkH = kitchenTemp >= 30 ? .5 : kitchenTemp >= 28 ? .75 : 1.5;
+    if (phaseCount > 0 && s.bulkFermHours < preferredInitialBulkH) return false;
+    if (phaseCount === 2) {
+      const first = (+s.coldRetard1End! - +s.coldRetard1Start!) / 3600000;
+      const second = (+s.coldRetard2End! - +s.coldRetard2Start!) / 3600000;
+      if (+s.coldRetard1Start! < +s.bulkFermStart || first < (kitchenTemp >= 28 ? 2 : 4) || second < 2
+        || +s.coldRetard2Start! - +s.coldRetard1End! !== 15 * 60000
+        || +s.finalProofStart - +s.coldRetard2End! < (kitchenTemp >= 30 ? .5 : .75) * 3600000
+        || +s.preheatStart - +s.finalProofStart < 3600000) return false;
+    } else if (phaseCount === 1) {
+      if (+s.coldRetard1Start! < +s.bulkFermStart || +s.coldRetard1End! <= +s.coldRetard1Start!
+        || +s.finalProofStart < +s.coldRetard1End! || +s.preheatStart - +s.finalProofStart < 3600000) return false;
+    }
+    // Canonical build rounds the bake display; do not offer a different bake
+    // than the one returned to the caller.
+    return +s.bakeStart === +bake && (input.acceptCandidate?.({ startTime: start, eatTime: bake, schedule: s }) ?? true);
+  };
+  if (!original.availabilityConflicts?.length && !original.bulkConflict) return null;
+  // Try nearest start moves first, with the selected bake held fixed.
+  for (let step = 1; input.allowStartShift !== false && step <= 48; step++) for (const direction of [-1, 1]) {
+    const start = new Date(+startTime + direction * step * 900000);
+    if (+start < now || +start >= +eatTime) continue;
+    const schedule = build(start, eatTime);
+    if (valid(schedule, start, eatTime)) return { startTime: start, eatTime: new Date(eatTime), schedule, kind: 'start' };
+  }
+  // Later bake is a separate explicit choice, never a mutation of the plan.
+  for (let step = 1; step <= 192; step++) {
+    const bake = new Date(Math.ceil(+eatTime / 900000) * 900000 + step * 900000);
+    const schedule = build(startTime, bake);
+    if (valid(schedule, startTime, bake)) return { startTime: new Date(startTime), eatTime: bake, schedule, kind: 'bake' };
+  }
+  return null;
+}
 
 function derivePriority(schedule: ScheduleResult): string | null {
   const windowH = (schedule.bakeStart.getTime() - schedule.bulkFermStart.getTime()) / 3600000;
@@ -1081,6 +1290,9 @@ function derivePriority(schedule: ScheduleResult): string | null {
 }
 
 export interface RecipeResult {
+  protocolIssue?: 'method' | 'equipment' | 'timing';
+  flourParts?: { key: string; name: string; nameFr: string; grams: number; pct: number }[];
+  enrichment?: RecipeEnrichment;
   flour: number;
   water: number;
   salt: number;
@@ -1089,6 +1301,16 @@ export interface RecipeResult {
   oil: number;
   sugar: number;
   waterTemp: number;
+  thermal?: {
+    idealWaterTemp: number;
+    doughTempC: number;
+    freeWaterG: number;
+    targetDoughTemp: number;
+    /** True when the ideal water temperature is outside the practical 2–40 °C range. */
+    waterWasClamped: boolean;
+    /** Signed achieved dough temperature minus the requested target (°C). */
+    doughTempResidualC: number;
+  };
   hydration: number;
   totalDough: number;
   autoPriority: string | null;     // what the engine chose automatically
@@ -1137,6 +1359,8 @@ export function calculateRecipe(
   prefGoesInFridgeOverride?: boolean,      // custom mode only — from SchedulePicker
   feedToMixH?: number,                     // sourdough only — hours from feed to mix
   prefActualHours?: number,                // actual planned preferment window (prefOffsetH)
+  measuredFlourTemp?: number,              // measured temperature at mixing, °C
+  measuredPrefermentTemp?: number,         // measured poolish, biga or levain temperature, °C
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = (ovenType in OVEN_TYPES)
@@ -1144,15 +1368,32 @@ export function calculateRecipe(
     : BREAD_OVEN_TYPES[ovenType as BreadOvenType];
   if (!s || !oven) throw new Error('Unknown style or oven');
 
+  if (styleKey === 'batbout' && (mode !== 'custom' || !flourBlend)) {
+    flourBlend = { flour1: 'bread', flour2: 'semolina', ratio1: 67 };
+  }
   const blendProfile: BlendProfile | null = flourBlend
     ? computeBlendProfile(flourBlend)
     : null;
 
+  const breadProtocol = getBreadProtocol(styleKey);
+  const unleavened = breadProtocol?.method === 'unleavened';
+  const methodKey = yeastType === 'sourdough' ? 'levain' : prefermentType ?? 'none';
+  const protocolIssue = breadProtocol && schedule.preparationInvalid ? 'timing' as const
+    : breadProtocol && !breadProtocol.equipment.includes(ovenType) ? 'equipment' as const
+    : breadProtocol && !breadProtocol.supportedMixers.includes(mixerType) ? 'method' as const
+    : breadProtocol && !unleavened && !breadProtocol.supportedPreferments.includes(methodKey as 'none' | 'poolish' | 'biga' | 'levain') ? 'method' as const : undefined;
+  if (unleavened) prefermentType = 'none';
+  const enrichedFormula = ENRICHED_FORMULAS[styleKey as keyof typeof ENRICHED_FORMULAS];
+  const unsupportedEnrichedMethod = !!enrichedFormula && (yeastType === 'sourdough' || !!prefermentType && prefermentType !== 'none');
+  // Published direct-dough formula, explicitly marked if a legacy method is incompatible.
+  if (enrichedFormula) { prefermentType = 'none'; if (yeastType === 'sourdough') yeastType = 'instant'; }
   // Hydration
   // manualHydration = baker's exact value, zero engine adjustment
   // Otherwise: style baseline + oven + climate + blend — all modes
   // Climate is a physical reality, not a UI mode concept
   const HYDRATION_FLOOR: Record<string, number> = {
+    focaccia: 70, bagel: 55, pita: 58, greek_pita: 62, kebab_bread: 60,
+    batbout: 60, laffa: 62, piadina: 48, pan_bagnat: 58, ciabatta: 72, panuozzo: 60,
     neapolitan: 56, newyork: 58, roman: 70, pan: 68,
     sourdough: 58, pain_campagne: 68, pain_levain: 70,
     baguette: 65, pain_complet: 68, pain_seigle: 70,
@@ -1165,7 +1406,7 @@ export function calculateRecipe(
   const ENRICHED_STYLES = new Set([
     'pan', 'fougasse', 'brioche', 'pain_mie', 'pain_viennois',
   ]);
-  const isEnriched = ENRICHED_STYLES.has(styleKey);
+  const isEnriched = ENRICHED_STYLES.has(styleKey) || ['focaccia', 'piadina', 'pan_bagnat', 'laffa'].includes(styleKey);
 
   let hydration: number;
   if (mode === 'custom' && manualHydration !== undefined) {
@@ -1186,17 +1427,19 @@ export function calculateRecipe(
     hydration = Math.max(hydFloor, hydration);
   }
 
+  if (unleavened && !(mode === 'custom' && manualHydration !== undefined)) hydration = s.hydration;
+  if (enrichedFormula) hydration = enrichedFormula.water + enrichedFormula.milk * ENRICHMENT_WATER_FRACTIONS.milk + enrichedFormula.eggs * ENRICHMENT_WATER_FRACTIONS.eggs + enrichedFormula.butter * ENRICHMENT_WATER_FRACTIONS.butter;
   // Salt
-  const saltPct = mode === 'custom' && manualSalt !== undefined
+  const saltPct = enrichedFormula ? enrichedFormula.salt : mode === 'custom' && manualSalt !== undefined
     ? manualSalt
     : s.salt;
 
   // Oil and sugar
-  const oil = mode === 'custom' && manualOil !== undefined
+  const oil = enrichedFormula ? 0 : mode === 'custom' && manualOil !== undefined
     ? manualOil
     : oven.forceOil !== null ? oven.forceOil : s.oil;
 
-  const sugar = mode === 'custom' && manualSugar !== undefined
+  const sugar = enrichedFormula ? enrichedFormula.sugar : mode === 'custom' && manualSugar !== undefined
     ? manualSugar
     : oven.forceSugar !== null ? oven.forceSugar : s.sugar;
 
@@ -1205,12 +1448,13 @@ export function calculateRecipe(
     ? 1 + wastePct / 100
     : 1;
   const totalDough = Math.round(numItems * itemWeight * wasteMult);
-  const hydPct = hydration / 100;
-  const flour  = Math.round(totalDough / (1 + hydPct + saltPct / 100));
-  const water  = Math.round(flour * hydPct);
-  const salt   = Math.round(flour * saltPct / 100);
-  const oilG   = oil   > 0 ? Math.round(flour * oil / 100)   : 0;
-  const sugarG = sugar > 0 ? Math.round(flour * sugar / 100 * 10) / 10 : 0;
+  const hydPct = (enrichedFormula ? enrichedFormula.water : hydration) / 100;
+  const ingredientRatio = 1 + hydPct + (enrichedFormula ? (enrichedFormula.milk + enrichedFormula.eggs + enrichedFormula.butter) / 100 : 0) + (saltPct + Math.max(0, oil) + Math.max(0, sugar)) / 100;
+  let flour = Math.round(totalDough / ingredientRatio);
+  let water = 0;
+  let salt = 0;
+  let oilG = 0;
+  let sugarG = 0;
 
   // Water temperature — DDT (Desired Dough Temperature).
   // FDT varies by style: extensible doughs target lower, enriched higher.
@@ -1221,9 +1465,9 @@ export function calculateRecipe(
   const targetFDT = (mode === 'custom' && targetDoughTemp !== undefined)
     ? targetDoughTemp
     : TARGET_FDT[styleKey] ?? 24;
-  const flourTemp = (mode === 'custom' && flourInFridge)
-    ? fridgeTemp
-    : kitchenTemp;
+  const flourTemp = typeof measuredFlourTemp === 'number' && Number.isFinite(measuredFlourTemp)
+    ? measuredFlourTemp
+    : flourInFridge ? fridgeTemp : kitchenTemp;
   const frictionRiseC = mixerFrictionRiseC(mixerType);
 
   // Yeast or sourdough
@@ -1234,88 +1478,111 @@ export function calculateRecipe(
   const autoPriority = derivePriority(schedule);
   const effectivePriority = manualPriorityOverride !== undefined ? manualPriorityOverride : autoPriority;
 
-  if (yeastType === 'sourdough') {
-    sourdough = sourdoughGuidance(kitchenTemp, flour, feedToMixH, blendProfile?.fermToleranceMultiplier);
-  } else {
-    yeast = recommendYeast(
-      schedule.totalRTHours,
-      kitchenTemp,
-      schedule.totalColdHours,
-      fridgeTemp,
-      yeastType,
-      flour,
-      effectivePriority,
-      styleKey,
-    );
-
-    // STEP 4 — Apply fermentation tolerance from blend
-    if (yeast && blendProfile && blendProfile.fermToleranceMultiplier !== 1.0) {
-      let idyPct = yeast.pct / blendProfile.fermToleranceMultiplier;
-      idyPct = Math.round(idyPct * 10000) / 10000;
-      const rawGrams = Math.max(0.5, flour * idyPct / 100);
-      const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
-      yeast = {
-        ...yeast,
-        pct: idyPct,
-        grams: Math.round(rawGrams * 1000) / 1000,
-        convertedPct: Math.round(idyPct * conversion * 10000) / 10000,
-        convertedGrams: Math.round(flour * idyPct * conversion / 100 * 1000) / 1000,
-      };
-    }
-
-    // Whole-dough leavening requirement (direct-engine IDY grams), captured
-    // BEFORE any preferment reduction — this is what the preferment must
-    // ultimately deliver, and drives fraction-independent preferment dosing.
-    directNeedIDY = yeast ? yeast.grams : undefined;
-
-    // Apply yeast reduction from preferment
-    if (yeast && prefermentType && prefermentType !== 'none') {
-      const prefData = PREFERMENT_TYPES[prefermentType];
-      if (prefData.yeastReduction > 0) {
-        const newGrams = Math.max(0.5, yeast.grams * (1 - prefData.yeastReduction));
-        const newConvertedGrams = Math.max(0.5, yeast.convertedGrams * (1 - prefData.yeastReduction));
-        yeast = {
-          ...yeast,
-          grams: newGrams,
-          convertedGrams: newConvertedGrams,
-          // Keep percentages in lockstep with grams (recomputed from grams so
-          // the 0.5g floor stays consistent) — displays diverged otherwise.
-          pct: Math.round(newGrams / flour * 100 * 10000) / 10000,
-          convertedPct: Math.round(newConvertedGrams / flour * 100 * 10000) / 10000,
-        };
-      }
-    }
-
-    // Osmotic stress correction — sugar above 2% OF FLOUR slows yeast.
-    // (Was `sugarG > 2` — grams, not percent — so any dough with more than
-    // 2g total sugar silently got +20% yeast.)
-    if (yeast && flour > 0 && (sugarG / flour) * 100 > 2) {
-      yeast = {
-        ...yeast,
-        grams: Math.round(yeast.grams * 1.2 * 1000) / 1000,
-        convertedGrams: Math.round(yeast.convertedGrams * 1.2 * 1000) / 1000,
-        pct: Math.round(yeast.pct * 1.2 * 10000) / 10000,
-        convertedPct: Math.round(yeast.convertedPct * 1.2 * 10000) / 10000,
-        osmoticStress: true,
-        warnings: [...yeast.warnings, { key: 'osmoticStress' as const }],
-      };
-    }
-  }
-
-  // Compute preferment recipe — climate-aware
   const prefInFridge = prefGoesInFridgeOverride !== undefined
     ? prefGoesInFridgeOverride
     : prefermentType === 'biga' || (prefermentType === 'poolish' && kitchenTemp >= 26);
-  const preferment = (prefermentType && prefermentType !== 'none')
-    ? computePrefermentRecipe(
-        prefermentType, flour, water,
-        kitchenTemp, fridgeTemp, prefInFridge,
-        flourPctOverride,
+  let preferment: ReturnType<typeof computePrefermentRecipe> | null = null;
+
+  // Yeast is an additional ingredient; preferment flour/water are already
+  // included in the totals. Re-evaluate the existing dosing rules as flour
+  // settles, rather than adding yeast on top of the requested batch weight.
+  for (let pass = 0; pass < 4; pass++) {
+    water = Math.round(flour * hydPct);
+    salt = Math.round(flour * saltPct / 100);
+    oilG = oil > 0 ? Math.round(flour * oil / 100) : 0;
+    sugarG = sugar > 0 ? Math.round(flour * sugar / 100 * 10) / 10 : 0;
+    yeast = null;
+    sourdough = null;
+    directNeedIDY = undefined;
+
+    if (!unleavened && yeastType === 'sourdough') {
+      sourdough = sourdoughGuidance(kitchenTemp, flour, feedToMixH, blendProfile?.fermToleranceMultiplier);
+    } else if (!unleavened) {
+      yeast = recommendYeast(
+        schedule.totalRTHours,
+        kitchenTemp,
+        schedule.totalColdHours,
+        fridgeTemp,
         yeastType,
-        prefActualHours,
-        directNeedIDY,
-      )
-    : null;
+        flour,
+        effectivePriority,
+        styleKey,
+      );
+
+      // STEP 4 — Apply fermentation tolerance from blend
+      if (yeast && blendProfile && blendProfile.fermToleranceMultiplier !== 1.0) {
+        let idyPct = yeast.pct / blendProfile.fermToleranceMultiplier;
+        idyPct = Math.round(idyPct * 10000) / 10000;
+        const rawGrams = Math.max(0.001, flour * idyPct / 100);
+        const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
+        yeast = {
+          ...yeast,
+          pct: idyPct,
+          grams: Math.round(rawGrams * 1000) / 1000,
+          convertedPct: Math.round(idyPct * conversion * 10000) / 10000,
+          convertedGrams: Math.round(flour * idyPct * conversion / 100 * 1000) / 1000,
+        };
+      }
+
+      // Osmotic stress correction — sugar above 2% OF FLOUR slows yeast.
+      // (Was `sugarG > 2` — grams, not percent — so any dough with more than
+      // 2g total sugar silently got +20% yeast.)
+      if (yeast && sugar > 2) {
+        yeast = {
+          ...yeast,
+          grams: Math.round(yeast.grams * 1.2 * 1000) / 1000,
+          convertedGrams: Math.round(yeast.convertedGrams * 1.2 * 1000) / 1000,
+          pct: Math.round(yeast.pct * 1.2 * 10000) / 10000,
+          convertedPct: Math.round(yeast.convertedPct * 1.2 * 10000) / 10000,
+          osmoticStress: true,
+          warnings: [...yeast.warnings, { key: 'osmoticStress' as const }],
+        };
+      }
+      // Whole-dough leavening requirement (direct-engine IDY grams), captured
+      // BEFORE any preferment reduction — this is what the preferment must
+      // ultimately deliver, and drives fraction-independent preferment dosing.
+      directNeedIDY = yeast ? yeast.grams : undefined;
+
+      // Apply yeast reduction from preferment
+      if (yeast && prefermentType && prefermentType !== 'none') {
+        const prefData = PREFERMENT_TYPES[prefermentType];
+        if (prefData.yeastReduction > 0) {
+          const newGrams = Math.max(0.001, yeast.grams * (1 - prefData.yeastReduction));
+          const newConvertedGrams = Math.max(0.001, yeast.convertedGrams * (1 - prefData.yeastReduction));
+          yeast = {
+            ...yeast,
+            grams: newGrams,
+            convertedGrams: newConvertedGrams,
+            // Keep percentages in lockstep with grams (recomputed from grams so
+            // the 0.5g floor stays consistent) — displays diverged otherwise.
+            pct: Math.round(newGrams / flour * 100 * 10000) / 10000,
+            convertedPct: Math.round(newConvertedGrams / flour * 100 * 10000) / 10000,
+          };
+        }
+      }
+
+    }
+
+    // Compute preferment recipe — climate-aware
+    preferment = (yeastType !== 'sourdough' && prefermentType && prefermentType !== 'none' && prefermentType !== 'levain')
+      ? computePrefermentRecipe(
+          prefermentType, flour, water,
+          kitchenTemp, fridgeTemp, prefInFridge,
+          flourPctOverride,
+          yeastType,
+          prefActualHours,
+          directNeedIDY,
+        )
+      : null;
+
+    // Do not change the pending sourdough model: starter flour and water
+    // remain part of the formula totals, not an additional yeast mass.
+    const addedYeast = yeastType === 'sourdough' ? 0
+      : preferment ? preferment.prefYeastGrams : yeast?.convertedGrams ?? 0;
+    const nextFlour = Math.round((totalDough - addedYeast) / ingredientRatio);
+    if (nextFlour === flour || pass === 3) break;
+    flour = nextFlour;
+  }
 
   // ── DDT solve ────────────────────────────────────────────────
   // ONE model for every dough: an enthalpy balance over the masses actually
@@ -1360,8 +1627,8 @@ export function calculateRecipe(
   //
   // kitchenTemp, not fridgeTemp, even for a fridge starter: the sourdough plan
   // emits fridge_out ahead of the mix by warmupH, so a levain that reaches the
-  // bowl is at room temperature by construction. If that stops being true,
-  // this is the line that breaks.
+  // bowl defaults to room temperature. A measured temperature overrides that
+  // assumption for the actual ingredient going into the bowl.
   //
   // The preferment channel is a single bucket, so this only applies when there
   // is no poolish or biga — the same guard the recipe card uses for sdActive.
@@ -1371,18 +1638,63 @@ export function calculateRecipe(
     ? Math.round(levainForBalance.starterGramsMid / 2)
     : 0;
 
-  const waterTemp = solveWaterTempEnthalpy({
+  const thermal = solveWaterTempEnthalpy({
     targetFDT, kitchenTemp, flourTemp, friction: frictionRiseC,
     flourG: flour, waterG: water, saltG: salt,
     prefFlourG: levainInBalance ? levainHalfG : (preferment && isFlourPref ? preferment.prefFlour : 0),
     prefWaterG: levainInBalance ? levainHalfG : (preferment && isFlourPref ? preferment.prefWater : 0),
-    prefTempC: levainInBalance ? kitchenTemp : prefTempC,
-  }).waterTemp;
+    prefTempC: typeof measuredPrefermentTemp === 'number' && Number.isFinite(measuredPrefermentTemp)
+      ? measuredPrefermentTemp
+      : levainInBalance ? kitchenTemp : prefTempC,
+  });
+  const waterTemp = thermal.waterTemp;
+  const enrichment: RecipeEnrichment | undefined = enrichedFormula ? {
+    milk: Math.round(flour * enrichedFormula.milk / 100),
+    eggs: Math.round(flour * enrichedFormula.eggs / 100),
+    butter: Math.round(flour * enrichedFormula.butter / 100),
+    waterEquivalent: 0,
+    waterFractions: ENRICHMENT_WATER_FRACTIONS,
+    sourceUrl: enrichedFormula.sourceUrl, formulaVersion: enrichedFormula.formulaVersion,
+    unsupportedMethod: unsupportedEnrichedMethod,
+    note: {
+      en: 'Published ingredient ratios; direct commercial-yeast version. Yeast and timing are app estimates, not the source schedule. Hydration includes estimated water in milk, eggs and butter. Ingredient temperatures are not modelled. Weigh eggs without shells; egg wash is separate.',
+      fr: 'Proportions publiées ; version directe à levure boulangère. Levure et durées estimées par l’application, différentes du planning source. Hydratation incluant l’eau estimée du lait, des œufs et du beurre. Températures de ces ingrédients non modélisées. Pesez les œufs sans coquille ; dorure à part.',
+    },
+  } : undefined;
+  if (enrichment) enrichment.waterEquivalent = water + enrichment.milk * .87 + enrichment.eggs * .75 + enrichment.butter * .16;
+  // All flour-strength, preferment and sugar modifiers have now settled.
+  if (yeast) yeast = {...yeast, dilutionTip: commercialDilution(yeast.convertedGrams, water)};
+
+  let flourParts: RecipeResult['flourParts'];
+  if (styleKey === 'batbout' && flourBlend) {
+    const hasSecond = !!flourBlend.flour2 && flourBlend.ratio1 < 100;
+    const hasThird = hasSecond && !!flourBlend.flour3 && flourBlend.ratio2 !== undefined
+      && flourBlend.ratio1 + flourBlend.ratio2 < 100;
+    const components = [
+      { key: flourBlend.flour1, pct: hasSecond ? flourBlend.ratio1 : 100, custom: flourBlend.brandProduct },
+      ...(hasSecond ? [{ key: flourBlend.flour2!, pct: hasThird ? flourBlend.ratio2! : 100 - flourBlend.ratio1, custom: flourBlend.customFlour2Name }] : []),
+      ...(hasThird ? [{ key: flourBlend.flour3!, pct: 100 - flourBlend.ratio1 - flourBlend.ratio2!, custom: flourBlend.customFlour3Name }] : []),
+    ];
+    let remaining = flour;
+    flourParts = components.map((part, index) => {
+      const grams = index === components.length - 1 ? remaining : Math.round(flour * part.pct / 100);
+      remaining -= grams;
+      const definition = FLOUR_DATA[part.key];
+      return { key: part.key, name: part.custom ?? definition.name, nameFr: part.custom ?? definition.nameFr, grams, pct: part.pct };
+    });
+  }
 
   return {
-    flour, water, salt, yeast, sourdough,
+    flour, water, salt, yeast, sourdough, enrichment, protocolIssue, flourParts,
     oil: oilG, sugar: sugarG,
-    waterTemp, hydration, totalDough,
+    waterTemp, thermal: enrichment ? undefined : {
+      idealWaterTemp: thermal.idealWaterTemp,
+      doughTempC: thermal.doughTempC,
+      freeWaterG: thermal.freeWaterG,
+      targetDoughTemp: targetFDT,
+      waterWasClamped: Math.abs(thermal.idealWaterTemp - thermal.waterTemp) > 0.1,
+      doughTempResidualC: thermal.doughTempC - targetFDT,
+    }, hydration, totalDough,
     autoPriority,
     wastePct: mode === 'custom' && wastePct !== undefined && wastePct > 0 ? wastePct : undefined,
     targetDoughTemp: mode === 'custom' && targetDoughTemp !== undefined ? targetDoughTemp : undefined,

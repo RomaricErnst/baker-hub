@@ -1,3 +1,4 @@
+import { BREAD_STYLE_DEFINITIONS, getBreadProtocol } from './utils/breadProfiles';
 // ══════════════════════════════════════════
 // BAKER HUB — Master Data File
 // Single source of truth for all recipe data
@@ -9,7 +10,7 @@ export const PIZZA_STYLES = {
     name: 'Classic Neapolitan',
     nameFr: 'Napolitaine Classique',
     emoji: '🔥',
-    image: '/pizzas/margherita.webp',
+    image: '/images/approved/pizza-style/margherita-fresh-basil-v2.webp',
     desc: 'Light, airy, charred cornicione.',
     descFr: 'Légère, aérienne, cornicione grillé.',
     hydration: 62, salt: 2.8, yeast: 0.08,
@@ -22,7 +23,10 @@ export const PIZZA_STYLES = {
     name: 'New York Style',
     nameFr: 'New York Style',
     emoji: '🗽',
-    image: '/pizzas/ny_pepperoni_slice.webp',
+    // The journey prototype uses the foldable slice to communicate the
+    // defining New York cue. Keep the same asset in the migrated app rather
+    // than the generic round pepperoni image.
+    image: '/images/approved/pizza-style/new-york-whole-v3.webp',
     desc: 'Foldable, crispy-edged big slices.',
     descFr: 'Grandes parts pliables, bords croustillants.',
     hydration: 62, salt: 2.5, yeast: 0.3,
@@ -35,7 +39,7 @@ export const PIZZA_STYLES = {
     name: 'Pizza Romana',
     nameFr: 'Pizza Romaine',
     emoji: '🫓',
-    image: '/pizzas/carciofi_romana.webp',
+    image: '/images/approved/pizza-style/carciofi-romana.webp',
     desc: 'Ultra-thin, cracker-crisp, rolled with a pin.',
     descFr: 'Ultra-fine, croustillante, étalée au rouleau.',
     hydration: 57, salt: 2.5, yeast: 0.3,
@@ -50,7 +54,7 @@ export const PIZZA_STYLES = {
     name: 'Roman Teglia',
     nameFr: 'Teglia Romaine',
     emoji: '🏛️',
-    image: '/pizzas/teglia_patata_provola.webp',
+    image: '/images/approved/pizza-style/roman-teglia-potato.webp',
     desc: 'High-hydration, ultra-crispy rectangular.',
     descFr: 'Haute hydratation, rectangulaire ultra-croustillante.',
     hydration: 78, salt: 2.5, yeast: 0.2,
@@ -63,7 +67,7 @@ export const PIZZA_STYLES = {
     name: 'Pan / Detroit',
     nameFr: 'Pan / Detroit',
     emoji: '🍞',
-    image: '/pizzas/detroit_red_top.webp',
+    image: '/images/approved/pizza-style/detroit-red-top.webp',
     desc: 'Thick, fluffy, crispy-bottomed.',
     descFr: 'Épaisse, moelleuse, base croustillante.',
     hydration: 70, salt: 2.5, yeast: 0.5,
@@ -76,7 +80,7 @@ export const PIZZA_STYLES = {
     name: 'Sourdough Pizza',
     nameFr: 'Pizza au levain',
     emoji: '🌾',
-    image: '/pizzas/margherita.webp',
+    image: '/images/approved/pizza-style/margherita-fresh-basil-v2.webp',
     desc: 'Complex, tangy, naturally leavened.',
     descFr: 'Complexe, acidulée, au levain naturel.',
     hydration: 72, salt: 2.5, yeast: 0,
@@ -93,7 +97,7 @@ export const BREAD_STYLES = {
     name: 'Pain de campagne',
     nameFr: 'Pain de campagne',
     emoji: '🍞',
-    image: '/pain_campagne.webp',
+    image: '/images/approved/bread/campagne-rustic.webp',
     desc: 'Rustic country bread. Wheat and rye blend, thick crust.',
     descFr: 'Pain de campagne rustique. Blé et seigle, croûte épaisse.',
     hydration: 72,
@@ -111,7 +115,7 @@ export const BREAD_STYLES = {
     name: 'Pain au levain',
     nameFr: 'Pain au levain',
     emoji: '🫙',
-    image: '/pain_levain.webp',
+    image: '/images/approved/bread/levain-rustic.webp',
     desc: 'Wild yeast sourdough. Deep flavour, open crumb.',
     descFr: 'Levain naturel. Saveur profonde, mie ouverte.',
     hydration: 75,
@@ -129,7 +133,7 @@ export const BREAD_STYLES = {
     name: 'Baguette',
     nameFr: 'Baguette',
     emoji: '🥖',
-    image: '/baguette.webp',
+    image: '/images/approved/bread/baguette-rustic.webp',
     desc: 'Crispy crust, airy crumb. The French classic.',
     descFr: 'Croûte croustillante, mie aérée. Le classique français.',
     hydration: 68,
@@ -147,7 +151,7 @@ export const BREAD_STYLES = {
     name: 'Pain complet',
     nameFr: 'Pain complet',
     emoji: '🌾',
-    image: '/pain_complet.webp',
+    image: '/images/approved/bread/complet-rustic.webp',
     desc: 'Wholemeal loaf. Nutty, dense, nutritious.',
     descFr: 'Pain complet. Goût de noisette, dense, nutritif.',
     hydration: 70,
@@ -165,7 +169,7 @@ export const BREAD_STYLES = {
     name: 'Pain de seigle',
     nameFr: 'Pain de seigle',
     emoji: '🌑',
-    image: '/pain_seigle.webp',
+    image: '/images/approved/bread/seigle-rustic.webp',
     desc: 'Dark rye bread. Dense, earthy, long-lasting.',
     descFr: 'Pain de seigle. Dense, terreux, longue conservation.',
     hydration: 78,
@@ -183,7 +187,7 @@ export const BREAD_STYLES = {
     name: 'Fougasse',
     nameFr: 'Fougasse',
     emoji: '🌿',
-    image: '/fougasse.webp',
+    image: '/images/approved/bread/fougasse-rustic.webp',
     desc: 'Provençal flatbread. Olive oil, scored leaf pattern.',
     descFr: 'Fougasse provençale. Huile d\u2019olive, motif de feuille incisé.',
     hydration: 70,
@@ -201,25 +205,25 @@ export const BREAD_STYLES = {
     name: 'Brioche',
     nameFr: 'Brioche',
     emoji: '🥐',
-    image: '/brioche.webp',
+    image: '/images/approved/bread/brioche-rustic.webp',
     desc: 'Enriched, buttery, pillowy soft.',
     descFr: 'Enrichie, beurrée, moelleuse comme un nuage.',
-    hydration: 55,
-    salt: 2.0,
+    hydration: 54.5,
+    salt: 2.5,
     yeast: 0.8,
     oil: 0,
-    sugar: 4,
+    sugar: 12,
     pref: 'none',
     bulkH: 3,
     ballW: 500,
     ovenNote: 'Egg wash for golden colour. 180°C fan.',
-    flourNote: 'T45 — lower protein for tenderness.',
+    flourNote: 'Strong all-purpose flour suitable for enriched dough; weigh eggs without shells.',
   },
   pain_mie: {
     name: 'Pain de mie',
     nameFr: 'Pain de mie',
     emoji: '🍞',
-    image: '/pain_mie.webp',
+    image: '/images/approved/bread/mie-rustic.webp',
     desc: 'Soft sandwich loaf. Fine crumb, thin crust.',
     descFr: 'Pain de mie moelleux. Mie fine, croûte fine.',
     hydration: 62,
@@ -237,20 +241,21 @@ export const BREAD_STYLES = {
     name: 'Pain viennois',
     nameFr: 'Pain viennois',
     emoji: '🥐',
-    image: '/pain_viennois.webp',
+    image: '/images/approved/bread/viennois-rustic.webp',
     desc: 'Viennese soft roll. Slightly sweet, milk-enriched.',
     descFr: 'Viennoiserie moelleuse, légèrement sucrée, enrichie au lait.',
-    hydration: 58,
-    salt: 1.8,
+    hydration: 57.83,
+    salt: 1.4,
     yeast: 0.7,
-    oil: 2,
-    sugar: 5,
+    oil: 0,
+    sugar: 4,
     pref: 'none',
     bulkH: 2,
     ballW: 80,
     ovenNote: 'Egg wash. Score with scissors for classic look.',
     flourNote: 'T45 or T55.',
   },
+  ...BREAD_STYLE_DEFINITIONS,
 } as const;
 
 // ── OVEN TYPES ────────────────────────────
@@ -259,7 +264,7 @@ export const OVEN_TYPES = {
     name: 'Pizza oven',
     nameFr: 'Four à pizza',
     emoji: '🔥',
-    image: '/oven_fire.webp',
+    image: '/images/approved/equipment-v2/portable-gas-oven.webp',
     desc: 'Leopard spotting, authentic cornicione, 90 sec.',
     descFr: 'Léopardage et cornicione en 90 sec.',
     hydrationDelta: -2,
@@ -271,7 +276,7 @@ export const OVEN_TYPES = {
     name: 'Home oven + stone',
     nameFr: 'Four + pierre ou acier',
     emoji: '🪨',
-    image: '/oven_stone.webp',
+    image: '/images/approved/equipment-v2/home-oven-steel.webp',
     desc: 'Crispy base, 5-7 min.',
     descFr: 'Base croustillante, 5-7 min.',
     hydrationDelta: 3,
@@ -283,7 +288,7 @@ export const OVEN_TYPES = {
     name: 'Home oven (standard)',
     nameFr: 'Four domestique standard',
     emoji: '🏠',
-    image: '/oven_standard.webp',
+    image: '/images/approved/equipment-v2/home-oven-standard.webp',
     desc: 'Best for thicker styles.',
     descFr: 'Idéal pour pizzas généreuses.',
     hydrationDelta: 4,
@@ -295,7 +300,7 @@ export const OVEN_TYPES = {
     name: 'Electric pizza oven',
     nameFr: 'Four électrique à pizza',
     emoji: '⚡',
-    image: '/oven_electric.webp',
+    image: '/images/approved/equipment-v2/electric-pizza-oven-v3.webp',
     desc: '400°C, easy to control.',
     descFr: '400°C, facile à contrôler.',
     hydrationDelta: -1,
@@ -307,6 +312,12 @@ export const OVEN_TYPES = {
 
 // ── BREAD OVEN TYPES ──────────────────────
 export const BREAD_OVEN_TYPES = {
+  griddle: {
+    name: 'Heavy pan / griddle', nameFr: 'Poêle épaisse / plancha', emoji: '🍳',
+    desc: 'For soft flatbreads cooked on the hob.', descFr: 'Pour les pains plats cuits sur le feu.',
+    hydrationDelta: 0, forceOil: null, forceSugar: null, preheatMin: 5,
+    image: '/images/approved/equipment-v2/griddle.webp',
+  },
   wood_fired: {
     name: 'Wood-fired oven',
     nameFr: 'Four à bois',
@@ -317,7 +328,7 @@ export const BREAD_OVEN_TYPES = {
     forceOil: null,
     forceSugar: null,
     preheatMin: 45,
-    image: '/oven_wood_bread.webp',
+    image: '/images/approved/equipment-v2/masonry-oven.webp',
   },
   dutch_oven: {
     name: 'Dutch oven / Combo cooker',
@@ -329,7 +340,7 @@ export const BREAD_OVEN_TYPES = {
     forceOil: null,
     forceSugar: null,
     preheatMin: 45,
-    image: '/oven_dutch.webp',
+    image: '/images/approved/equipment-v2/dutch-oven.webp',
   },
   home_oven_stone_bread: {
     name: 'Home oven + stone/steel',
@@ -341,7 +352,7 @@ export const BREAD_OVEN_TYPES = {
     forceOil: null,
     forceSugar: null,
     preheatMin: 45,
-    image: '/oven_stone_bread.webp',
+    image: '/images/approved/equipment-v2/home-oven-stone.webp',
   },
   steam_oven: {
     name: 'Steam oven',
@@ -353,7 +364,7 @@ export const BREAD_OVEN_TYPES = {
     forceOil: null,
     forceSugar: null,
     preheatMin: 30,
-    image: '/oven_steam.webp',
+    image: '/images/approved/equipment-v2/steam-oven.webp',
   },
   standard_bread: {
     name: 'Standard home oven',
@@ -365,7 +376,7 @@ export const BREAD_OVEN_TYPES = {
     forceOil: null,
     forceSugar: null,
     preheatMin: 20,
-    image: '/oven_standard_bread.webp',
+    image: '/images/approved/equipment-v2/home-oven-standard.webp',
   },
 } as const;
 
@@ -375,7 +386,7 @@ export const MIXER_TYPES = {
     name: 'Stand Mixer',
     nameFr: 'Robot pâtissier',
     emoji: '⚙️',
-    image: '/mixer_stand.webp',
+    image: '/images/approved/equipment-v2/stand-mixer.webp',
     desc: 'KitchenAid, Kenwood, Bosch',
     descFr: 'KitchenAid, Kenwood, Bosch',
     maxHydration: 72,
@@ -442,7 +453,7 @@ export const MIXER_TYPES = {
     name: 'By Hand',
     nameFr: 'À la main',
     emoji: '🤲',
-    image: '/mixer_hand.webp',
+    image: '/images/approved/equipment-v2/hand-kneading.webp',
     desc: 'Classic technique',
     descFr: 'Technique classique',
     maxHydration: 70,
@@ -456,7 +467,7 @@ export const MIXER_TYPES = {
     name: 'No-Knead',
     nameFr: 'Sans pétrissage',
     emoji: '⏰',
-    image: '/mixer_noknead.webp',
+    image: '/images/approved/equipment-v2/no-knead.webp',
     desc: 'Time does the work',
     descFr: 'Le temps fait le travail',
     maxHydration: 100,
@@ -470,7 +481,7 @@ export const MIXER_TYPES = {
     name: 'Spiral Mixer',
     nameFr: 'Pétrin spirale',
     emoji: '🌀',
-    image: '/mixer_spiral.webp',
+    image: '/images/approved/equipment-v2/spiral-mixer-v3.webp',
     desc: 'Ooni Halo, Famag, Sunmix',
     descFr: 'Ooni Halo, Famag, Sunmix',
     maxHydration: 100,
@@ -577,6 +588,7 @@ const AUTOLYSE_NEVER = new Set(['pain_seigle']);
 
 /** Minutes of autolyse between the initial and final mix. 0 when there is none. */
 export function autolyseMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: string): number {
+  if (styleKey && getBreadProtocol(styleKey) && !['focaccia', 'ciabatta'].includes(styleKey)) return 0;
   if (mixerType === 'no_knead') return 0;
   // Rye first, and before the hand-mixing rule: an autolyse in a rye dough is
   // harmful, not merely unhelpful, so it must not arrive through a mixer path.
@@ -596,6 +608,7 @@ export function autolyseMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: s
  * the honest answer until a bread source exists. Do not guess one in.
  */
 export function kneadMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: string): number {
+  if (styleKey === 'piadina') return mixerType === 'hand' ? 5 : 3;
   const base = MIXER_TYPES[mixerType]?.kneadMin ?? 10;
   if (base === 0) return 0;                       // no-knead stays no-knead
   const published = styleKey ? STYLE_STAND_MIX_MIN[styleKey] : undefined;
@@ -612,7 +625,7 @@ export const YEAST_TYPES = {
     shortName: 'IDY',
     shortNameFr: 'LSI',
     emoji: '🟡',
-    image: '/yeast_instant.webp',
+    image: '/images/approved/leavening-v2/instant.webp',
     also: 'Rapid rise, Fast action, Easy bake',
     form: 'Fine powder or tiny granules',
     color: 'Light beige/cream',
@@ -627,7 +640,7 @@ export const YEAST_TYPES = {
     shortName: 'ADY',
     shortNameFr: 'LSA',
     emoji: '🟤',
-    image: '/yeast_active.webp',
+    image: '/images/approved/leavening-v2/active-dry.webp',
     also: 'Traditional yeast, Dry yeast',
     form: 'Larger brown granules',
     color: 'Tan/brown',
@@ -642,7 +655,7 @@ export const YEAST_TYPES = {
     shortName: 'Fresh',
     shortNameFr: 'Fraîche',
     emoji: '🧱',
-    image: '/yeast_fresh.webp',
+    image: '/images/approved/leavening-v2/fresh.webp',
     also: 'Cake yeast, Compressed yeast',
     form: 'Soft block, crumbly',
     color: 'Beige/grey, slightly moist',
@@ -657,7 +670,7 @@ export const YEAST_TYPES = {
     shortName: 'Starter',
     shortNameFr: 'Levain',
     emoji: '🫙',
-    image: '/yeast_sourdough.webp',
+    image: '/images/approved/leavening-v2/starter.webp',
     also: 'Levain, Wild yeast',
     form: 'Thick paste or liquid',
     color: 'Off-white to grey',
@@ -989,13 +1002,13 @@ export function computePrefermentRecipe(
     const leaveningDoseIDY = nTargetGramsIDY / growth;
     prefYeastGramsIDY = Math.max(peakDoseIDY, leaveningDoseIDY);
   }
-  prefYeastGramsIDY = Math.round(prefYeastGramsIDY * 10) / 10;
+  // Preserve the model dose through conversion; round only for display.
 
   // Convert to baker's selected yeast type
   const yeastConversion = yeastType === 'active_dry' ? 1.33
     : yeastType === 'fresh' ? 3.00
     : 1.00;
-  const prefYeastGrams = Math.round(prefYeastGramsIDY * yeastConversion * 10) / 10;
+  const prefYeastGrams = prefYeastGramsIDY * yeastConversion;
 
   const finalWater = totalWaterGrams - prefWater;
 
@@ -1129,3 +1142,4 @@ export type MixerType = keyof typeof MIXER_TYPES;
 export type YeastType = keyof typeof YEAST_TYPES;
 
 export const ALL_STYLES = { ...PIZZA_STYLES, ...BREAD_STYLES };
+

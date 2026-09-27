@@ -1,27 +1,47 @@
 'use client';
+import JourneyCompletion, { type CompletionActions } from './JourneyCompletion';
+import {createPortal} from 'react-dom';
+import type { StarterEvent } from './SchedulePicker';
 import { useState, useRef, useEffect, createContext, useContext } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type ScheduleResult, formatTime, hoursLabel } from '../utils';
 import { MIXER_TYPES, AUTOLYSE_MIN, autolyseMinFor, type MixerType } from '../data';
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
+import { toggleStepCompletion } from '../utils/guideProgress';
+import { mixingBatchPlan } from '../utils/mixingBatches';
 import PhaseSummary from './PhaseSummary';
+import WaterPreparation, { type WaterSource, type WaterSettingsProps } from './WaterPreparation';
 import { type UnitSystem, displayTemp, tempC, tempRange } from '../utils/units';
 import { getPrefPeakH_RT, getStarterFridgeWarmupH } from './FermentChart';
 import { GUIDE_FAQ } from '../lib/guideFaq';
+import { WOOD_OVEN_FAQ } from '../lib/woodOvenFaq';
+import { formatPrefermentDose } from '../utils/prefermentDose';
+import { getBreadProtocol } from '../utils/breadProfiles';
+import { scheduledFoldMinutes } from '../utils/scheduleFolds';
 
-interface BakeGuideProps {
+interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
+  onBakedChange?: (done:boolean)=>void;
+  completionEnabled?: boolean;
+  progressTarget?: HTMLElement|null;
   schedule: ScheduleResult;
   mixerType: MixerType;
   styleKey: string;
   kitchenTemp: number;
+  mixingBatches?: number;
+  onMixingBatchesChange?: (count: number) => void;
+  fridgeTemp?: number;
+  waterSource?: WaterSource;
+  onWaterSourceChange?: (source: WaterSource) => void;
   numItems: number;
   prefermentType?: string;
   oil: number;
   hydration: number;
   ovenType?: string;
+  ovenConstruction?: 'tabletop' | 'masonry' | 'home' | 'micro';
   prefStartTime?: Date | null;
   feedTime?: Date | null;
+  starterEvents?: StarterEvent[];
   feed2Time?: Date | null;
   fridgeOutTime?: Date | null;
   starterState?: 'rt_fed' | 'fridge_unfed' | 'fridge_fed';
@@ -34,8 +54,16 @@ interface BakeGuideProps {
   units?: UnitSystem;
   locale?: string;
   onNavigateToPizzaParty?: () => void;
+  pizzaActionLabel?: string;
+  onNavigateToFillings?: () => void;
+  fillingsActionLabel?: string;
+  onPrepareFillings?: () => void;
   simpleMode?: boolean;
   addSeeds?: boolean;
+  phase?: 'preparation' | 'cooking';
+  active?: boolean;
+  onNavigateToCooking?: () => void;
+  onNavigateToPreparation?: () => void;
   recipe?: import('../utils').RecipeResult | null;
 }
 
@@ -53,14 +81,13 @@ function Section({ icon, title, children }: {
   return (
     <div style={{ marginTop: '16px' }}>
       <div style={{
-        fontSize: '11px', fontWeight: 600, color: D.smoke,
-        textTransform: 'uppercase', letterSpacing: '.07em',
+        fontSize: '18px', fontWeight: 700, color: D.char,
         fontFamily: 'var(--font-ui)', marginBottom: '8px',
         display: 'flex', alignItems: 'center', gap: '4px',
       }}>
         {icon && <span>{icon}</span>}{title}
       </div>
-      <div style={{ fontSize: '13px', color: D.ash, lineHeight: 1.65, fontFamily: 'var(--font-ui)' }}>
+      <div style={{ fontSize: '15px', color: D.ash, lineHeight: 1.6, fontFamily: 'var(--font-ui)' }}>
         {children}
       </div>
     </div>
@@ -126,9 +153,8 @@ function Steps({ items }: { items: { bold: string; note: string }[] }) {
       {items.map((item, i) => (
         <li key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
           <span style={{
-            width: '5px', height: '5px', borderRadius: '50%',
-            background: D.smoke, flexShrink: 0, marginTop: '8px',
-          }} />
+            minWidth: '18px', color: D.char, flexShrink: 0,
+          }}>{i + 1}.</span>
           <span>
             <strong style={{ color: D.char }}>{item.bold}</strong>
             {item.note && <em style={{ color: D.smoke }}>{' — '}{item.note}</em>}
@@ -175,97 +201,52 @@ function Pill({ label, color }: { label: string; color?: string }) {
 
 // ── Step card ────────────────────────────────────────
 function StepCard({
-  number, icon, title, time, duration, accent = D.terra,
-  open, done, onToggle, onDone, children, divRef,
+  number, displayNumber = number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext, hidden = false, stepPhase = 'preparation', previousLabel, nextLabel, externalProgress = false,
 }: {
-  number: number; icon: React.ReactNode; title: string;
-  time?: Date; duration?: number | null;
-  accent?: string; open: boolean; done: boolean;
-  onToggle: () => void; onDone: () => void;
-  children: React.ReactNode;
-  divRef?: React.RefCallback<HTMLDivElement>;
+  number: number; displayNumber?: number; icon: React.ReactNode; title: string; overview?: boolean; totalSteps?: number;
+  externalProgress?: boolean; hidden?: boolean; stepPhase?: 'preparation' | 'cooking'; previousLabel?: string; nextLabel?: string;
+  time?: Date; duration?: number | null; accent?: string;
+  onPrevious?: () => void; onNext?: () => void; preview?: boolean; onReturnCurrent?: () => void; completeLabel?: string; batchCompletion?: boolean; final?: boolean; open: boolean; done: boolean; onToggle: () => void; onDone: () => void;
+  children: React.ReactNode; divRef?: React.RefCallback<HTMLDivElement>;
 }) {
-  // Variant B (Flo): neutral steps — done stays sage, otherwise no per-step
-  // colour; no rail, no dot, no number.
-  const ea = done ? D.sage : D.ash;
-  const _fmtLocale = useLocale();
+  const locale = useLocale();
+  const fr = locale === 'fr';
+  const TitleContainer = overview ? 'button' : 'div';
   return (
-    <div style={{ display: 'flex', gap: '0px' }}>
-    <div ref={divRef} style={{
-      flex: 1, minWidth: 0,
-      background: D.warm, borderRadius: '12px',
-      border: `1px solid ${done ? D.sage + '60' : D.border}`,
-      overflow: 'hidden',
-      boxShadow: '0 2px 12px rgba(43, 36, 32,0.06)',
-    }}>
-      {/* Card header */}
-      <div
-        onClick={onToggle}
-        style={{
-          display: 'flex', alignItems: 'center', gap: '12px',
-          padding: '12px 16px', cursor: 'pointer',
-          borderLeft: `4px solid ${ea}`,
-        }}
-      >
-        {/* Circle toggle — tap to mark done/undo, independent of accordion */}
-        <div
-          onClick={e => { e.stopPropagation(); onDone(); }}
-          style={{
-            width: '24px', height: '24px', borderRadius: '50%',
-            flexShrink: 0, cursor: 'pointer',
-            border: done ? '2px solid #6B7A5A' : '2px solid #C8C0B8',
-            background: done ? '#6B7A5A' : 'transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          {done && (
-            <svg viewBox="0 0 12 12" width={12} height={12} fill="none"
-              stroke="white" strokeWidth="2.2"
-              strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 6l3 3 5-5"/>
-            </svg>
-          )}
-        </div>
-        <span style={{ width: '26px', height: '26px', flexShrink: 0, alignSelf: 'center',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: ea }}>{icon}</span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontFamily: 'var(--font-ui)', fontSize: '15px',
-            fontWeight: 700, color: done ? D.smoke : D.char,
-            textDecoration: done ? 'line-through' : 'none',
-          }}>{title}</div>
-          {time && (
-            <div style={{ marginTop: '.2rem' }}>
-              <span style={{
-                display: 'inline-block', fontSize: '11px',
-                fontFamily: 'var(--font-ui)', color: ea,
-                background: `${ea}14`, border: `1px solid ${ea}30`,
-                borderRadius: '16px', padding: '1px 8px',
-              }}>
-                {formatTime(time, _fmtLocale)}
-                {duration ? ` · ${hoursLabel(duration)}` : ''}
-              </span>
-            </div>
-          )}
-        </div>
-        <span style={{
-          color: D.smoke, fontSize: '13px', flexShrink: 0,
-          display: 'inline-block', transition: 'transform .2s',
-          transform: open ? 'rotate(180deg)' : 'none',
-        }}>
-          ▾
+    <section ref={divRef} data-guide-step={number} data-guide-phase={stepPhase} data-guide-title={title} hidden={hidden} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${displayNumber}`} style={{ display: !hidden && (open || overview) ? undefined : 'none', background: D.warm, borderRadius: overview ? 12 : 0,
+      border: overview ? `1px solid ${done ? D.sage + '60' : D.border}` : 'none', scrollMarginTop: 140 }}>
+      <TitleContainer type={overview ? "button" : undefined} onClick={overview ? onToggle : undefined} aria-expanded={overview ? open : undefined}
+        aria-controls={overview?`bake-step-${number}`:undefined} style={{ width: '100%', display: 'flex', gap: 12,
+          alignItems: 'center', padding: overview ? 16 : '0 0 16px', border: 0, background: 'transparent', textAlign: 'left', cursor: overview ? 'pointer' : 'default', color: D.char }}>
+        <span aria-hidden="true" style={{ display: overview ? undefined : 'none', color: done ? D.sage : D.terra, minWidth: 18, textAlign: 'center' }}>{done ? '✓' : displayNumber}</span>
+        <span aria-hidden="true" style={{ color: done ? D.sage : D.terra, width: 22, height: 22, display: overview ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</span>
+        <span style={{ flex: 1 }}>
+          <strong role={overview?undefined:'heading'} aria-level={overview?undefined:2} style={{ display: 'block', fontSize: overview ? 15 : 28, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}</strong>
+          {!overview && !externalProgress && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {displayNumber}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
+          {time && <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: D.smoke }}>
+            {formatTime(time, locale)}{duration ? ` · ${duration < 1 ? `${Math.round(duration * 60)} min` : hoursLabel(duration)}` : ''}
+          </span>}
+          {done && <span style={{ fontSize: 12, color: D.sage }}>{fr ? 'Terminé' : 'Completed'}</span>}
         </span>
-      </div>
-      {/* Card body */}
-      {open && (
-        <div style={{ padding: '0 20px 20px', borderTop: `1px solid ${D.border}` }}>
-          {children}
+        {overview && <span aria-hidden="true">{open ? '−' : '+'}</span>}
+      </TitleContainer>
+      {open && <div id={`bake-step-${number}`} style={{ padding: overview ? '0 20px 20px' : '0 0 20px' }}>
+        {preview && <p style={{color:D.smoke,fontSize:12}}>{fr ? 'Aperçu — votre progression ne change pas.' : 'Preview — your progress stays unchanged.'}</p>}
+        {children}
+        <div className="bh-guide-actions" style={{position:'relative',borderTop:`1px solid ${D.border}`,marginTop:24,background:D.warm,paddingTop:12,paddingBottom:'max(8px, env(safe-area-inset-bottom))'}}>
+        {preview ? <button type="button" onClick={onReturnCurrent} style={{minHeight:44}}>{fr ? 'Revenir à l’étape en cours' : 'Back to current step'}</button>
+          : batchCompletion && !done ? <button type="button" onClick={onDone} style={{minHeight:44,padding:'8px 12px',marginBottom:8,border:`1px solid ${D.terra}`,borderRadius:10,background:D.terra,color:'white',cursor:'pointer'}}>{completeLabel}</button>
+          : <label style={{display:'inline-flex',alignItems:'center',gap:8,fontSize:14,minHeight:44,margin:'0 0 4px',cursor:'pointer'}}>
+              <input type="checkbox" checked={done} onChange={onDone} title={done ? (fr ? 'Annuler cette étape' : 'Undo this step') : (fr ? 'Marquer comme terminée' : 'Mark as completed')} style={{width:18,height:18,margin:0,accentColor:D.terra}}/>
+              {fr ? 'Étape faite' : 'Step done'}
+            </label>}
+        <nav aria-label={fr ? 'Navigation entre les étapes' : 'Step navigation'} className="bh-guide-step-nav" style={{display:'flex',gap:8}}>
+          {onPrevious&&<button type="button" onClick={onPrevious} style={{flex:1,minHeight:44}}>{previousLabel ?? (fr ? 'Étape précédente' : 'Previous step')}</button>}
+          {!final && <button type="button" className="bh-guide-next" onClick={onNext} style={{flex:1,minHeight:48,border:0,borderRadius:10,padding:'10px 14px',background:D.terra,color:'white',fontWeight:600}}>{nextLabel ?? (fr ? 'Étape suivante' : 'Next step')} →</button>}
+        </nav>
         </div>
-      )}
-    </div>
-    </div>
+      </div>}
+    </section>
   );
 }
 
@@ -565,10 +546,10 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
         ctx.drawImage(img, 0, 0, c.width, c.height);
         resolve(c.toDataURL('image/jpeg', 0.85).split(',')[1]);
       };
-      img.onerror = () => resolve(null);
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
       img.src = url;
     });
-    if (b64) setPhotoB64(b64);
+    if (b64) { setPhotoB64(b64); setAnswer(null); } else setError(true);
   }
 
   async function ask() {
@@ -587,7 +568,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
         }),
       });
       const data = await res.json();
-      if (data.feedback) setAnswer(data.feedback); else setError(true);
+      if (res.ok && typeof data.feedback === 'string' && data.feedback.trim()) setAnswer(data.feedback); else setError(true);
     } catch { setError(true); } finally { setLoading(false); }
   }
 
@@ -625,6 +606,8 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           </svg>
         </button>
         <input
+          maxLength={500}
+          aria-label={l === 'fr' ? 'Votre question' : 'Your question'}
           value={q}
           onChange={e => setQ(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') ask(); }}
@@ -649,7 +632,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
         </button>
       </div>
       <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: D.smoke, fontStyle: 'italic', marginTop: '4px' }}>
-        {l === 'fr' ? 'Le Maestro lit vos questions et regarde vos photos — joignez-en une pour un avis visuel.' : 'Maestro reads questions and looks at photos — attach one for a visual read.'}
+        {l === 'fr' ? 'Une question sur cette étape ? Photo facultative.' : 'Ask about this step. Photo optional.'}
       </div>
       {answer && (
         <div style={{
@@ -683,10 +666,11 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
 
 // ── Step extras — Tips & tricks / FAQ / Maestro tabs ─────────────
 // Keeps the timeline clean: the step card shows only "what to do";
-// everything secondary lives behind these three pills, closed by default.
-function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext }: {
+// Secondary guidance is grouped under one help disclosure for every step.
+function StepExtras({ tips, faqKey, faqOverride, coachStepId, coachTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext }: {
   tips: React.ReactNode;
   faqKey?: string;
+  faqOverride?: (typeof GUIDE_FAQ)[string];
   coachStepId?: string;
   coachTitle: string;
   styleKey: string;
@@ -696,11 +680,11 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
   ovenType?: string;
   recipeContext?: string;
 }) {
-  const [tab, setTab] = useState<'tips' | 'faq' | 'coach' | null>(null);
+  const [tab, setTab] = useState<'tips' | 'faq' | 'coach' | null>('tips');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const l = locale === 'fr' ? 'fr' : 'en';
   const simpleFaq = useContext(SimpleModeCtx);
-  const faq = (faqKey ? (GUIDE_FAQ[faqKey] ?? []) : []).filter(e =>
+  const faq = (faqOverride ?? (faqKey ? (GUIDE_FAQ[faqKey] ?? []) : [])).filter(e =>
     !simpleFaq || !(JARGON_RE.test(e.q.en + ' ' + e.q.fr + ' ' + e.a.en + ' ' + e.a.fr)));
 
   const pills: Array<{ id: 'tips' | 'faq' | 'coach'; label: string }> = [
@@ -710,18 +694,20 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
   ];
 
   return (
-    <div style={{ marginTop: '16px', borderTop: `1px solid ${D.border}`, paddingTop: '12px' }}>
+    <details style={{ marginTop: '16px', borderTop: `1px solid ${D.border}`, paddingTop: '12px' }}>
+      <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:16}}>{l === 'fr' ? 'Aide pour cette étape' : 'Help with this step'}</summary>
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
         {pills.map(p => (
           <button
             key={p.id}
+            aria-expanded={tab === p.id}
             onClick={() => setTab(prev => prev === p.id ? null : p.id)}
             style={{
               border: tab === p.id ? `1.5px solid ${D.terra}` : `1px solid ${D.border}`,
               background: tab === p.id ? '#fff' : 'transparent',
               color: tab === p.id ? D.terra : D.smoke,
-              borderRadius: '20px', padding: '4px 12px',
-              fontSize: '12px', fontFamily: 'var(--font-ui)',
+              minHeight:44, borderRadius: '20px', padding: '8px 12px',
+              fontSize: '14px', fontFamily: 'var(--font-ui)',
               cursor: 'pointer', transition: 'all .15s',
             }}
           >
@@ -737,11 +723,12 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
           {faq.map((f, i) => (
             <div key={i} style={{ border: `1px solid ${D.border}`, borderRadius: '12px', overflow: 'hidden' }}>
               <button
+                aria-expanded={openFaq === i}
                 onClick={() => setOpenFaq(prev => prev === i ? null : i)}
                 style={{
-                  width: '100%', textAlign: 'left', background: openFaq === i ? '#fff' : 'transparent',
+                  minHeight:44, width: '100%', textAlign: 'left', background: openFaq === i ? '#fff' : 'transparent',
                   border: 'none', cursor: 'pointer', padding: '8px 12px',
-                  fontSize: '13px', fontWeight: 600, color: D.char,
+                  fontSize: '14px', fontWeight: 600, color: D.char,
                   fontFamily: 'var(--font-ui)',
                   display: 'flex', justifyContent: 'space-between', gap: '8px',
                 }}
@@ -750,7 +737,7 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
                 <span style={{ color: D.smoke, flexShrink: 0 }}>{openFaq === i ? '−' : '+'}</span>
               </button>
               {openFaq === i && (
-                <div style={{ padding: '0 12px 12px', fontSize: '12px', color: D.ash, lineHeight: 1.6, fontFamily: 'var(--font-ui)' }}>
+                <div style={{ padding: '0 12px 12px', fontSize: '14px', color: D.ash, lineHeight: 1.6, fontFamily: 'var(--font-ui)' }}>
                   {f.a[l]}
                 </div>
               )}
@@ -773,7 +760,7 @@ function StepExtras({ tips, faqKey, coachStepId, coachTitle, styleKey, kitchenTe
           />
         </div>
       )}
-    </div>
+    </details>
   );
 }
 
@@ -788,6 +775,25 @@ function ExtLink({ href, label }: { href: string; label: string }) {
   );
 }
 
+function StepVisual({ kind, includeSpiral = false, locale }: { includeSpiral?: boolean; kind: 'mix' | 'spiral' | 'fold' | 'poolish' | 'biga' | 'starter'; locale: string }) {
+  const fr = locale === 'fr';
+  const figures: Record<string, [string, string, string][]> = {
+    starter: [['/images/approved/leavening-v2/starter.webp', 'Look for a clear rise, bubbles and a rounded top before it collapses.', 'Observez une nette montée, des bulles et un dessus bombé avant qu’il ne retombe.']],
+    mix: [['/step-visuals/windowpane-v1.webp', 'Wheat dough: gently stretch a small piece. Look for a thin membrane rather than immediate tearing. Let tight dough rest before testing again.', 'Pâte de blé : étirez doucement un petit morceau. Il doit former une membrane fine plutôt que se déchirer aussitôt. Si la pâte résiste, laissez-la reposer avant de réessayer.']],
+    spiral: [['/step-visuals/spiral-pumpkin-wide-v1.webp', 'Spiral mixer: the dough gathers into a rounded “pumpkin” shape. This is a development cue, not a precise endpoint; also check stretch and temperature.', 'Pétrin à spirale : la pâte se rassemble en forme de « citrouille ». C’est un indice de développement ; vérifiez aussi son élasticité et sa température.']],
+    fold: [['/step-visuals/bowl-fold-v1.webp', 'Bowl fold: lift one edge gently, then fold it over the middle. Turn the bowl and repeat without tearing.', 'Rabat en cuve : étirez doucement un bord, puis repliez-le au centre. Tournez le bol et répétez sans déchirer.'], ['/step-visuals/coil-fold-v2.webp', 'Coil fold: support the middle from underneath with both hands. Lift gently, then lower so the ends tuck under. Turn the container for the next side.', 'Rabat en bobine : soutenez le milieu par dessous avec les deux mains. Soulevez doucement, puis reposez pour replier les extrémités dessous. Tournez le bac pour le côté suivant.']],
+    poolish: [['/preferment-photos/poolish-v1.webp', 'Poolish is loose and bubbly as it matures. Judge its rise and surface as well as the schedule.', 'La poolish est souple et bulleuse à maturité. Observez sa montée et sa surface, en complément du planning.']],
+    biga: [['/preferment-photos/biga-v1.webp', 'Biga starts rough, not smooth. When mature, break a piece open to check for aeration inside.', 'La biga commence en morceaux irréguliers. À maturité, ouvrez un morceau pour observer les alvéoles à l’intérieur.']],
+  };
+  return <details style={{ margin: '14px 0' }}><summary style={{minHeight:44,padding:'10px 0',fontSize:16,cursor:'pointer'}}>{fr ? 'Voir les signes à observer' : 'See what to look for'}</summary>
+    {[...figures[kind], ...(includeSpiral ? figures.spiral : [])].map(([src,en,french]) => <figure key={src} style={{margin:'12px 0'}}><img src={src} alt={fr ? french : en} loading="lazy" style={{display:'block',width:'100%',maxHeight:280,objectFit:'contain',borderRadius:12}}/><figcaption style={{fontSize:14,lineHeight:1.45,marginTop:8}}>{fr ? french : en}</figcaption></figure>)}
+  </details>;
+}
+
+export function breadCoolingRange(style: string, weight: number): string {
+  return style === 'pain_seigle' ? '12–24 h' : ['baguette','fougasse','pain_viennois'].includes(style) && weight <= 400 ? '30–60 min' : weight <= 400 ? '1–2 h' : weight <= 1000 ? '2–3 h' : '3–4 h';
+}
+
 // ── Main component ───────────────────────────────────
 const TERM_TO_STEPID: Record<string, string> = {
   windowpane:        'mix',
@@ -800,67 +806,133 @@ const TERM_TO_STEPID: Record<string, string> = {
 };
 
 export default function BakeGuide({
-  schedule, mixerType, styleKey, kitchenTemp, numItems,
-  prefermentType, oil, hydration, ovenType, prefStartTime, feedTime,
+  onSave,onShare,sessionSaved,onBakedChange,completionEnabled=true,
+  schedule, mixerType, styleKey, kitchenTemp, fridgeTemp = 4, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, onMixingBatchesChange, waterSource = 'room', onWaterSourceChange, numItems,
+  prefermentType, oil, hydration, ovenType, ovenConstruction, prefStartTime, feedTime, starterEvents,
   feed2Time = null, fridgeOutTime = null,
   starterState = 'rt_fed', starterMature = true, starterHasRye = false,
   usingPeak2 = false, planningMode = 'last_fed',
   feedRatio = 1, starterLocation = 'rt',
   units, locale,
-  onNavigateToPizzaParty, recipe, simpleMode, addSeeds,
+  onNavigateToPizzaParty, pizzaActionLabel, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
+  phase, active = true, onNavigateToCooking, onNavigateToPreparation, progressTarget,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
   const l = locale === 'fr' ? 'fr' : 'en';
+  const enriched = !!recipe?.enrichment;
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
+  const [totalSteps, setTotalSteps] = useState(0);
+  useEffect(() => { if (totalSteps > 0 && currentStep > totalSteps) setCurrentStep(totalSteps); }, [totalSteps, currentStep]);
+  const [loadedProgressKey,setLoadedProgressKey]=useState<string|null>(null);
   const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
+  const [activeBatch, setActiveBatch] = useState(0);
+  const batch = recipe ? mixingBatchPlan(recipe, mixerType, mixingBatches, activeBatch) : null;
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const focusRequestedStep = useRef<number | null>(null);
+  const previousGuideView = useRef({active:false,phase});
+  const viewedPhase = useRef<'preparation' | 'cooking' | undefined>(undefined);
+  const phasePositions = useRef<Partial<Record<'preparation' | 'cooking', number>>>({});
+  function navigateGuideStep(step: number) {
+    const targetPhase = stepRefs.current[step]?.dataset.guidePhase;
+    if (phase && targetPhase !== phase) {
+      if (targetPhase === 'cooking') onNavigateToCooking?.();
+      if (targetPhase === 'preparation') onNavigateToPreparation?.();
+    }
+    focusRequestedStep.current = step;
+    setCurrentStep(step);
+  }
+  useEffect(() => { setTotalSteps(stepRefs.current.filter(Boolean).length); });
   const t = useTranslations('bakeGuide');
+  const rootT = useTranslations();
   const _fmtLocale = useLocale();
   const _isFr = _fmtLocale === 'fr';
-  // Persist ticked steps so reopening the app mid-bake keeps progress
-  const doneHydrated = useRef(false);
+  // A changed recipe/schedule must never inherit another bake's completion.
+  const progressKey = 'bh_guide_done_v2:' + JSON.stringify({
+    styleKey, mixerType, numItems, prefermentType, oil, hydration, ovenType,
+    schedule, prefStartTime, feedTime, feed2Time, starterEvents: starterEvents?.map(event => ({kind:event.kind,time:event.time})), recipe, mixingBatches,
+  });
   useEffect(() => {
+    focusRequestedStep.current = null;
+    viewedPhase.current = undefined;
+    phasePositions.current = {};
     try {
-      const raw = localStorage.getItem('bh_guide_done_v1');
-      if (raw) {
-        const arr = JSON.parse(raw) as number[];
-        if (arr.length > 0) {
-          setDoneSteps(new Set(arr));
-        // Default view: the first not-yet-done step opens; everything else
-        // stays collapsed so the spine reads as the protocole at a glance.
-        let firstUndone = 1;
-        while (arr.includes(firstUndone)) firstUndone++;
-        setCurrentStep(firstUndone);
-          setCurrentStep(Math.max(...arr) + 1);
-        }
+      const saved=JSON.parse(localStorage.getItem(progressKey+':view')??'{}');
+      for(const key of ['preparation','cooking'] as const){
+        const index=saved[key];
+        if(Number.isInteger(index)&&index>=0&&(index===0||stepRefs.current[index]?.dataset.guidePhase===key))phasePositions.current[key]=index;
       }
     } catch {}
-    doneHydrated.current = true;
-  }, []);
-  useEffect(() => {
-    if (!doneHydrated.current) return;
-    try { localStorage.setItem('bh_guide_done_v1', JSON.stringify([...doneSteps])); } catch {}
-  }, [doneSteps]);
+    let completed: number[] = [];
+    try {
+      const stored: unknown = JSON.parse(localStorage.getItem(progressKey) ?? '[]');
+      if (Array.isArray(stored)) completed = stored.filter((value): value is number =>
+        typeof value === 'number' && Number.isInteger(value) && value > 0 && value <= 30);
+    } catch {}
+    setDoneSteps(new Set(completed));
+    try { setActiveBatch(Math.max(0, Number(localStorage.getItem(progressKey + ':batch')) || 0)); } catch { setActiveBatch(0); }
+    let firstUndone = 1;
+    while (completed.includes(firstUndone)) firstUndone++;
+    setCurrentStep(phase&&phasePositions.current[phase]!==undefined?phasePositions.current[phase]!:firstUndone);
+    setLoadedProgressKey(progressKey);
+  }, [progressKey]);
 
+
+
+  // Browsing and completion are independent. Each destination resumes its last
+  // viewed step (including overview=0); explicit Previous/Next takes precedence.
   useEffect(() => {
-    if (currentStep > 0) {
-      const el = stepRefs.current[currentStep];
-      if (el) {
-        const r = el.getBoundingClientRect();
-        const headerH = 120; // sticky header + journey bar
-        // Scroll only when the next step isn't comfortably visible —
-        // instant, landing just under the header (no smooth: targets
-        // must not move under fingers).
-        if (r.top < headerH || r.top > window.innerHeight * 0.6) {
-          window.scrollTo({ top: r.top + window.scrollY - headerH, behavior: 'smooth' });
-        }
+    if (!active || !phase) return;
+    const changedPhase = viewedPhase.current !== phase;
+    viewedPhase.current = phase;
+    const belongsToPhase = currentStep === 0 || stepRefs.current[currentStep]?.dataset.guidePhase === phase;
+    const explicitNavigation = focusRequestedStep.current === currentStep && currentStep > 0;
+    if (belongsToPhase && (!changedPhase || explicitNavigation)) {
+      phasePositions.current[phase] = currentStep;
+      if(loadedProgressKey===progressKey){
+        try {localStorage.setItem(progressKey+':view',JSON.stringify(phasePositions.current));} catch {}
       }
+      return;
     }
-  }, [currentStep]);
+    const candidates = stepRefs.current.flatMap((el, index) => el?.dataset.guidePhase === phase ? [index] : []);
+    const remembered = phasePositions.current[phase];
+    const target = remembered === 0 || (remembered !== undefined && candidates.includes(remembered))
+      ? remembered
+      : belongsToPhase ? currentStep : candidates.find(index => !doneSteps.has(index)) ?? candidates[0];
+    if (target !== undefined) {
+      phasePositions.current[phase] = target;
+      setCurrentStep(target);
+    }
+  }, [active, phase, currentStep, doneSteps, totalSteps, loadedProgressKey, progressKey]);
 
-  const isSourdough   = styleKey === 'sourdough' || styleKey === 'pain_levain';
-  const isBread       = ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois','sourdough'].includes(styleKey);
+  useEffect(() => {
+    const samePage=previousGuideView.current.active&&previousGuideView.current.phase===phase;
+    previousGuideView.current={active,phase};
+    const requested=focusRequestedStep.current===currentStep;
+    // Entering/reopening a section belongs to the page-level scroll reset.
+    // Only an explicit next/previous instruction within this section may
+    // bring its card into view; restoring remembered progress must not scroll.
+    if(!active||!samePage){focusRequestedStep.current=null;return;}
+    if(!requested||currentStep<=0)return;
+    focusRequestedStep.current=null;
+    const el=stepRefs.current[currentStep];
+    if(!el||el.hidden)return;
+    el.focus({preventScroll:true});
+    const r=el.getBoundingClientRect();
+    const headerBottom=Math.max(0,
+      document.querySelector('.bh-header-stack')?.getBoundingClientRect().bottom??0,
+      document.querySelector('.bh-bake-navigator')?.getBoundingClientRect().bottom??0)+12;
+    if(r.top<headerBottom||r.top>window.innerHeight*.6){
+      window.scrollTo({top:Math.max(0,r.top+window.scrollY-headerBottom),behavior:'instant'});
+    }
+  }, [currentStep,active,phase]);
+
+  const isSourdough = recipe ? !!recipe.sourdough : styleKey === 'sourdough' || styleKey === 'pain_levain';
+  const breadProtocol = getBreadProtocol(styleKey);
+  const hasPoachStep = breadProtocol?.cooking === 'boil-bake' && !!schedule.poachStart;
+  const profileSteps = (lines: readonly string[]) => lines.map(line => ({ bold: line.replace(/(\d+)\s?°C/g, (_, degrees) => displayTemp(Number(degrees), u)).replaceAll('{count}', String(numItems)).replaceAll('{weight}', String(Math.round((recipe?.totalDough ?? numItems * (breadProtocol?.portions.weight ?? 100)) / Math.max(1,numItems)))), note: '' }));
+  const fillingsAction = onNavigateToFillings && <button type="button" onClick={onNavigateToFillings} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{fillingsActionLabel ?? (l === 'fr' ? 'Sandwiches et garnitures' : 'Sandwiches & fillings')} →</button>;
+  const isBread       = !!breadProtocol || ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
   const isNeapolitan  = styleKey === 'neapolitan';
   const isFougasse    = styleKey === 'fougasse';
   const isBaguette    = styleKey === 'baguette';
@@ -871,6 +943,7 @@ export default function BakeGuide({
   // Shaping label: what we call the shaped piece
   const breadPieceLabel = isFougasse ? 'piece' : isBaguette ? 'baguette' : isLoafTin ? 'loaf' : 'loaf';
   const breadPiecePlural = numItems === 1 ? breadPieceLabel : (isBaguette ? 'baguettes' : isLoafTin ? 'loaves' : 'loaves');
+  const breadPiecePluralFr = isFougasse ? 'pâtons de fougasse' : isBaguette ? 'baguettes' : isLoafTin ? 'pains' : 'pâtons';
   const isSpiral      = mixerType === 'spiral';
   const hasPref       = !!prefermentType && prefermentType !== 'none';
   const isPoolish     = prefermentType === 'poolish';
@@ -885,8 +958,8 @@ export default function BakeGuide({
   // subtract so mixing amounts match the Recipe card's tallying totals.
   const bgSdMid  = recipe?.sourdough ? recipe.sourdough.starterGramsMid : 0;
   const bgSdHalf = recipe?.sourdough && !recipe?.preferment ? Math.round(bgSdMid / 2) : 0;
-  const bgMainFlour = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalFlour : recipe.flour) - bgSdHalf : null;
-  const bgMainWater = recipe ? Math.round(recipe.preferment ? recipe.preferment.finalWater : recipe.water) - bgSdHalf : null;
+  const bgMainFlour = batch?.portion.flour ?? null;
+  const bgMainWater = batch?.portion.water ?? null;
   // Feed-step amounts: at ratio 1:R:R, a seed of S grams yields S×(1+2R) of
   // ripe starter. Size the parts so the build covers the recipe's
   // recommended starter (bgSdMid) with ~10g to spare, rounded to 5g.
@@ -898,27 +971,25 @@ export default function BakeGuide({
   const feedTotal = feedSeed + 2 * feedPart;
   const bgWater90   = bgMainWater ? Math.round(bgMainWater * 0.9) : null;
   const bgWater10   = bgMainWater ? bgMainWater - (bgWater90 ?? 0) : null;
-  const bgSaltG     = recipe ? Math.round(recipe.salt) : null;
+  const bgSaltG = batch?.portion.salt ?? null;
   // convertedGrams, NOT grams — grams is the IDY-equivalent (see Timeline)
-  const bgYeastG    = recipe?.yeast?.convertedGrams ? String(parseFloat(recipe.yeast.convertedGrams.toFixed(1))) : null;
+  const bgYeastG = batch?.portion.yeast ? String(batch.portion.yeast) : null;
   // Mix STARTS before bulk fermentation — header and Mix step previously used
   // bulkFermStart, so the Guide disagreed with the Recipe timeline by the
   // mixing duration (16:15 vs 16:00 / 25h45 vs 26h).
   const bgMixStart  = (() => {
     const raw = new Date(schedule.bulkFermStart.getTime() - (schedule.mixingDurationH ?? 0.25) * 3600000);
-    // Snap down to the quarter-hour grid — 19:46 is engine precision, not baker time
-    raw.setMinutes(Math.floor(raw.getMinutes() / 15) * 15, 0, 0);
+    // Use the nearest quarter-hour for the displayed start — 19:46 is engine precision, not baker time
+    raw.setMinutes(Math.round(raw.getMinutes() / 15) * 15, 0, 0);
     return raw;
   })();
-  const bgPoolishG  = recipe?.preferment
-    ? Math.round((recipe.preferment.prefFlour ?? 0) + (recipe.preferment.prefWater ?? 0) + (recipe.preferment.prefYeastGrams ?? 0))
-    : null;
+  const bgPoolishG = batch?.portion.preferment || null;
   // Compact recipe facts for Maestro — so it explains the plan's own numbers
   // (e.g. "0.3g IDY is correct for a 31h cold ferment") instead of guessing
   // and contradicting the app. Only real, computed values.
   const maestroRecipeContext = (() => {
     if (!recipe) return undefined;
-    const totalFlour = Math.round(recipe.flour + (recipe.preferment?.prefFlour ?? 0));
+    const totalFlour = Math.round(recipe.flour);
     const coldH = Math.round(schedule.totalColdHours ?? 0);
     const rtH = Math.round((schedule.totalRTHours ?? 0));
 
@@ -931,6 +1002,7 @@ export default function BakeGuide({
     if (recipe.salt != null) dough.push(`salt ${Math.round(recipe.salt)}g (${(recipe.salt / totalFlour * 100).toFixed(1)}%)`);
     if (recipe.oil && recipe.oil > 0) dough.push(`oil ${Math.round(recipe.oil)}g`);
     if (recipe.sugar && recipe.sugar > 0) dough.push(`sugar ${Math.round(recipe.sugar)}g`);
+    if (recipe.enrichment) for (const key of ['milk','eggs','butter'] as const) if (recipe.enrichment[key] > 0) dough.push(`${key} ${recipe.enrichment[key]}g`);
     if (recipe.blendProfile?.displayName) dough.push(`flour: ${recipe.blendProfile.displayName}`);
 
     // ── The schedule ──
@@ -962,15 +1034,11 @@ export default function BakeGuide({
       leaven.push(`${prefermentType}: ${pf}% of the flour (${Math.round(p.prefFlour)}g flour + ${Math.round(p.prefWater)}g water), ${p.prefYeastGrams}g yeast, ferments ${p.fermentHoursMin}-${p.fermentHoursMax}h${p.cold ? ' in the fridge' : ' at room temp'}`);
     }
 
-    // ── The yeast guiding principle (so Maestro can explain, not just assert) ──
-    const principle = `YEAST GUIDING PRINCIPLE (the model behind these numbers): yeast dose is set by fermentation time and temperature, not by habit. Longer time or warmer temperature → LESS yeast; shorter or colder → more. A long cold retard (e.g. 24-48h at ~6°C) deliberately uses a very small dose (often 0.1-0.3% of flour, sometimes well under 0.5g) so the dough matures slowly and develops flavour without over-proofing. In a preferment (poolish/biga) the seed yeast is tiny because it multiplies as the preferment ripens; the grown population then leavens the whole dough, so the total flour — not just the preferment flour — determines the dose. Small numbers here are correct and intentional.`;
-
-    return `This baker's ACTUAL computed recipe and settings — trust every number, they come from a validated fermentation model (Modernist Pizza/Bread); never tell the baker a value is wrong.
+    return `Computed recipe estimates and settings, not measurements or proof of correctness.
 DOUGH: ${dough.join('; ')}.
 SCHEDULE: ${sched.join('; ')}.
 LEAVENING: ${leaven.join('; ')}.
-${principle}
-When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the number and explain WHY it fits THEIR specific time/temperature, then reassure.`;
+Actual dough condition and equipment may differ from these estimates.`;
   })();
 
   const bgFlour90Label = bgMainFlour && bgWater90 ? (l === 'fr' ? `${bgMainFlour}g de farine + ${bgWater90}g d’eau (90%)` : `${bgMainFlour}g flour + ${bgWater90}g water (90%)`) : (l === 'fr' ? 'Farine + 90% de votre eau' : 'Flour + 90% of your water');
@@ -982,37 +1050,103 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
   let stepNum = 0;
   let lastStep = 0;
+  let cookingStepNumber = 0;
+  const cookingStepTotal = breadProtocol?.method === 'unleavened' ? 2 : isBread ? 3 + (hasPoachStep ? 1 : 0) : 2;
   const n = () => { stepNum++; lastStep = stepNum; return stepNum; };
-  const sc = () => {
+  const sc = (mixing = false, stepPhase: 'preparation' | 'cooking' = 'preparation') => {
     const s = lastStep;
+    if (stepPhase === 'cooking') cookingStepNumber++;
     return {
+      externalProgress: !!progressTarget,
+      displayNumber: phase === 'cooking' && stepPhase === 'cooking' ? cookingStepNumber : s,
+      stepPhase,
+      hidden: !!phase && phase !== stepPhase,
+      previousLabel: phase && stepRefs.current[s - 1]?.dataset.guidePhase === 'preparation' && stepPhase === 'cooking' ? (l === 'fr' ? 'Retour à la préparation' : 'Back to preparation') : undefined,
+      nextLabel: phase && stepRefs.current[s + 1]?.dataset.guidePhase === 'cooking' && stepPhase === 'preparation' ? (onPrepareFillings?(l === 'fr' ? 'Préparer les garnitures' : 'Prepare toppings and fillings'):(l === 'fr' ? 'Cuisson & service' : 'Cooking & serving')) : stepRefs.current[s+1]?.dataset.guideTitle ? `${l==='fr'?'Suivante':'Next'} : ${stepRefs.current[s+1]?.dataset.guideTitle}` : undefined,
+      overview: currentStep === 0, totalSteps: phase === 'cooking' ? cookingStepTotal : phase === 'preparation' ? Math.max(0,totalSteps-cookingStepTotal) : totalSteps,
+      onPrevious: s > 1 ? () => navigateGuideStep(s - 1) : undefined,
+      onNext: () => { const next = stepRefs.current.findIndex((el, i) => i > s && el !== null); if (next > s) {if(phase==='preparation'&&stepRefs.current[next]?.dataset.guidePhase==='cooking'&&onPrepareFillings)onPrepareFillings();else navigateGuideStep(next);} },
+      batchCompletion: mixing && !!batch && batch.count > 1,
+      completeLabel: mixing && batch && batch.count > 1 ? (l === 'fr' ? `Terminer la pétrissée ${batch.active + 1} sur ${batch.count}` : `Complete batch ${batch.active + 1} of ${batch.count}`) : undefined,
       open: currentStep === s,
       done: doneSteps.has(s),
       onToggle: () => setCurrentStep(prev => prev === s ? 0 : s),
       onDone: () => {
-        setDoneSteps(prev => {
-          const next = new Set(prev);
-          if (next.has(s)) {
-            // Cascade: untick this step and all later steps
-            for (let i = s; i <= 20; i++) next.delete(i);
-            return next;
-          } else {
-            next.add(s);
-            setCurrentStep(s + 1);
-            return next;
-          }
-        });
+        if (mixing && batch && !doneSteps.has(s) && batch.active + 1 < batch.count) {
+          setActiveBatch(batch.active + 1);
+          try { localStorage.setItem(progressKey + ':batch', String(batch.active + 1)); } catch {}
+          return;
+        }
+        const next = toggleStepCompletion(s, doneSteps);
+        if (doneSteps.has(s) && mixing) {
+          setActiveBatch(0);
+          try { localStorage.setItem(progressKey + ':batch', '0'); } catch {}
+        }
+        if(s===totalSteps&&completionEnabled&&!onNavigateToFillings)onBakedChange?.(next.has(s));
+        setDoneSteps(next);
+        try { localStorage.setItem(progressKey, JSON.stringify([...next])); } catch {}
       },
       divRef: (el: HTMLDivElement | null) => { stepRefs.current[s] = el; },
     };
   };
 
+  const overviewLabel = phase === 'preparation'
+    ? (l === 'fr' ? 'Étapes de préparation' : 'Preparation steps')
+    : phase === 'cooking'
+      ? (l === 'fr' ? 'Étapes de cuisson' : 'Cooking steps')
+      : (l === 'fr' ? 'Toutes les étapes' : 'All steps');
+
+  const preparationTotal = Math.max(0,totalSteps-cookingStepTotal);
+  const resumeStep = () => {
+    const candidates=stepRefs.current.flatMap((el,index)=>el&&(!phase||el.dataset.guidePhase===phase)?[index]:[]);
+    navigateGuideStep(candidates.find(index=>!doneSteps.has(index))??candidates[0]??1);
+  };
+  const progressControl = active && progressTarget ? createPortal(
+    <button type="button" className="bh-step-trigger" aria-label={currentStep===0?(l==='fr'?'Reprendre l’étape en cours':'Resume current step'):overviewLabel} aria-expanded={currentStep===0} onClick={()=>{if(currentStep===0)resumeStep();else {setCurrentStep(0);window.scrollTo({top:0,behavior:'instant'});}}}>
+      <span>{currentStep===0?(l==='fr'?'Reprendre':'Resume'):`${l==='fr'?'Étape':'Step'} ${phase==='cooking'?Math.max(1,currentStep-preparationTotal):currentStep} / ${phase==='cooking'?cookingStepTotal:preparationTotal}`}</span>
+      <svg aria-hidden="true" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d={currentStep===0?'M2 8l4-4 4 4':'M2 4l4 4 4-4'}/></svg>
+    </button>,progressTarget) : null;
+
+  if (recipe?.protocolIssue) return <section role="alert"><h2>{l === 'fr' ? 'Ajustez ce pain avant de commencer' : 'Adjust this bread before starting'}</h2><p>{recipe.protocolIssue === 'equipment' ? (l === 'fr' ? 'Choisissez un matériel de cuisson compatible dans les réglages.' : 'Choose compatible cooking equipment in setup.') : recipe.protocolIssue === 'timing' ? (l === 'fr' ? 'Laissez assez de temps pour mélanger, reposer et abaisser la pâte avant cuisson.' : 'Allow enough time to mix, rest and roll the dough before cooking.') : (l === 'fr' ? 'Choisissez la méthode de levée prise en charge dans les réglages.' : 'Choose the supported leavening method in setup.')}</p></section>;
+
+  if (recipe?.enrichment?.unsupportedMethod) return <p role="alert">{l === 'fr' ? 'Modifiez le choix de levure dans les réglages et recalculez cette formule enrichie avant de suivre les étapes.' : 'Update the leavening choice in setup and recalculate this enriched formula before following the steps.'}</p>;
+
+  if (breadProtocol?.method === 'unleavened') return <SimpleModeCtx.Provider value={!!simpleMode}>
+    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+      {progressControl}
+      {!progressTarget&&<button type="button" onClick={() => setCurrentStep(0)} style={{minHeight:44,padding:'8px 16px',border:`1px solid ${D.border}`,borderRadius:10,background:D.warm}}>{overviewLabel}</button>}
+      <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={l === 'fr' ? 'Pétrir la pâte' : 'Mix the dough'} time={bgMixStart} duration={schedule.mixingDurationH}>
+        <Section icon="" title={l === 'fr' ? 'À mélanger' : 'Use now'}>
+          {batch && Object.entries(batch.portion).filter(([,grams]) => grams > 0).map(([key,grams]) => <p key={key}>{({flour:l === 'fr' ? 'Farine' : 'Flour',water:l === 'fr' ? 'Eau' : 'Water',salt:l === 'fr' ? 'Sel' : 'Salt',oil:l === 'fr' ? 'Huile' : 'Oil',sugar:l === 'fr' ? 'Sucre' : 'Sugar'} as Record<string,string>)[key] ?? key} · {Math.round(grams)} g</p>)}
+          <Steps items={[{bold:l === 'fr' ? 'Mélangez la farine, le sel, l’eau et la matière grasse mesurés. Pétrissez jusqu’à obtenir une pâte lisse et souple.' : 'Combine the measured flour, salt, water and fat. Knead until smooth and pliable.',note:''}]} />
+        </Section>
+      </StepCard>
+      <StepCard number={n()} {...sc()} icon={<IconProof />} title={l === 'fr' ? 'Laisser reposer, couvert' : 'Rest, covered'} time={schedule.bulkFermStart} duration={breadProtocol.restMinutes ? breadProtocol.restMinutes / 60 : undefined}>
+        <Steps items={profileSteps(breadProtocol.proof[l])} />
+        <p>{l === 'fr' ? 'Cette pâte sans levure se détend ; elle n’a pas besoin de lever.' : 'This unleavened dough relaxes; it does not need to rise.'}</p>
+      </StepCard>
+      <StepCard number={n()} {...sc()} icon={<IconDivide />} title={l === 'fr' ? 'Diviser et abaisser' : 'Divide and roll'} time={schedule.divideBallTime ?? undefined}>
+        <Steps items={profileSteps(breadProtocol.shaping[l])} />
+      </StepCard>
+<StepCard number={n()} {...sc(false, 'cooking')} icon={<IconPreheat />} title={l === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle'} time={schedule.preheatStart}>
+        <Steps items={profileSteps(breadProtocol.preheat[l])} />
+      </StepCard>
+      <StepCard final number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={l === 'fr' ? 'Cuire et garnir' : 'Cook and fill'} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined}>
+        <Steps items={profileSteps(breadProtocol.cookingSteps[l])} />
+        <Steps items={profileSteps(breadProtocol.cooling[l])} />
+        {fillingsAction}
+      </StepCard>
+      {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} sessionSaved={sessionSaved}/>}
+    </div>
+  </SimpleModeCtx.Provider>;
+
   return (
     <SimpleModeCtx.Provider value={!!simpleMode}>
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {progressControl}
 
       {/* ── Header ──────────────────────────────────── */}
-      <div style={{ marginBottom: '4px' }}>
+      <div style={{ marginBottom: '4px', display: currentStep === 0 && !phase ? undefined : 'none' }}>
         <div style={{ fontFamily: 'var(--font-ui)', fontSize: '20px', fontWeight: 700, color: D.char }}>
           {_isFr ? 'Guide de cuisson pas à pas' : 'Step-by-step bake guide'}
         </div>
@@ -1024,8 +1158,24 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
         </div>
       </div>
 
-      {/* Executive summary — phase strip from the old protocole */}
-      <PhaseSummary schedule={schedule} />
+      {!progressTarget&&<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button type="button" onClick={() => setCurrentStep(0)} style={{ minHeight: 44, padding: '8px 16px', border: `1px solid ${D.border}`, borderRadius: 10, background: D.warm }}>
+          {overviewLabel}
+        </button>
+        <button type="button" onClick={() => {
+          let next = 1;
+          while (doneSteps.has(next) && stepRefs.current[next + 1]) next++;
+          if (phase) {
+            const candidates = stepRefs.current.flatMap((el, index) => el?.dataset.guidePhase === phase ? [index] : []);
+            next = candidates.find(index => !doneSteps.has(index)) ?? candidates[0] ?? next;
+          }
+          setCurrentStep(next);
+        }} style={{ minHeight: 44, padding: '8px 16px', border: `1px solid ${D.border}`, borderRadius: 10, background: D.warm }}>
+          {_isFr ? 'Reprendre' : 'Current step'}
+        </button>
+      </div>}
+            {/* Executive summary — phase strip from the old protocole */}
+      {currentStep === 0 && !phase && <PhaseSummary schedule={schedule} numItems={numItems} />}
 
       {/* ── STEP: Make Poolish / Biga ───────────────── */}
       {hasPref && prefStartTime && (
@@ -1036,9 +1186,9 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           {recipe?.preferment && (() => {
             const { prefFlour, prefWater, prefYeastGrams } = recipe.preferment!;
             const parts = [
-              `${Math.round(prefFlour)}g flour`,
-              `${Math.round(prefWater)}g water`,
-              prefYeastGrams > 0 ? `${prefYeastGrams.toFixed(1)}g ${prefermentType ?? 'yeast'}` : null,
+              `${Math.round(prefFlour)}g ${l === 'fr' ? 'de farine' : 'flour'}`,
+              `${Math.round(prefWater)}g ${l === 'fr' ? 'd’eau' : 'water'}`,
+              prefYeastGrams > 0 ? `${formatPrefermentDose(prefYeastGrams)} ${l === 'fr' ? 'de levure' : 'yeast'}` : null,
             ].filter(Boolean).join(' · ');
             return (
               <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: D.smoke, marginBottom: '8px' }}>
@@ -1047,27 +1197,25 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             );
           })()}
 
-          <Section icon="" title={t('sectionTitles.whatToDo')}>
-            {isPoolish ? (
-              <Steps items={t.raw(kitchenTemp >= 26 ? 'poolish.stepsFridge' : 'poolish.stepsRT') as { bold: string; note: string }[]} />
-            ) : (
-              <Steps items={t.raw('biga.steps') as { bold: string; note: string }[]} />
-            )}
+        <Section icon="" title={t('sectionTitles.whatToDo')}>
+            <Steps items={[
+              {bold:l === 'fr' ? 'Pesez la farine, l’eau et la levure indiquées ci-dessus.' : 'Weigh the flour, water and yeast listed above.',
+                note:recipe?.preferment ? (l === 'fr' ? `Utilisez ${formatPrefermentDose(recipe.preferment.prefYeastGrams)} de ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)}.` : `Use ${formatPrefermentDose(recipe.preferment.prefYeastGrams)} ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)}.`) : ''},
+              {bold:isPoolish ? (l === 'fr' ? 'Mélangez jusqu’à disparition de la farine sèche.' : 'Stir until no dry flour remains.') : (l === 'fr' ? 'Mélangez pour humidifier toute la farine ; gardez une texture grumeleuse.' : 'Mix to moisten all the flour; keep a rough, lumpy texture.'),note:''},
+              {bold:l === 'fr' ? 'Couvrez le récipient et laissez de la place pour la levée.' : 'Cover the container and leave room for expansion.',note:''},
+              {bold:recipe?.preferment?.cold ? (l === 'fr' ? 'Placez au réfrigérateur selon ce planning.' : 'Refrigerate according to this plan.') : (l === 'fr' ? 'Laissez à température ambiante selon ce planning.' : 'Leave at room temperature according to this plan.'),
+                note:l === 'fr' ? `Pétrissage prévu : ${formatTime(bgMixStart, _fmtLocale)}. Vérifiez la maturité avant utilisation.` : `Main mix planned: ${formatTime(bgMixStart, _fmtLocale)}. Check maturity before use.`},
+            ]} />
           </Section>
 
+          <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{isPoolish ? (l==='fr'?'La surface est bulleuse et commence à s’aplanir après la levée.':'The surface is bubbly and beginning to flatten after rising.') : (l==='fr'?'La biga a gonflé ; un morceau ouvert montre des alvéoles à l’intérieur.':'The biga has expanded; a broken-open piece shows aeration inside.')}</p>
+          <StepVisual kind={isPoolish ? 'poolish' : 'biga'} locale={l} />
           <StepExtras
-            tips={<>
-              <Section icon="" title={t('sectionTitles.watchForReady')}>
-                <Bullets items={t.raw(isPoolish ? 'poolish.readyWhen' : 'biga.readyWhen') as string[]} />
-              </Section>
-              <Section icon={null} title={t('sectionTitles.pitfalls')}>
-                <Bullets items={t.raw(isPoolish ? 'poolish.pitfalls' : 'biga.pitfalls') as string[]} />
-              </Section>
-              <div style={{ marginTop: '8px' }}>
-                <LearnLink term="preferment_ready" label={l === 'fr' ? 'Est-il prêt ?' : 'Is it ready?'} onOpen={setLearnTerm} showSparkle={true} />
-              </div>
-            </>}
-            faqKey={isPoolish ? 'poolish' : 'biga'}
+            tips={<p>{l === 'fr' ? 'Fiez-vous aux quantités et à l’emplacement de cette recette. Si la maturité ne correspond pas au planning, revoyez le planning avant de poursuivre.' : 'Use this recipe’s quantities and planned location. If maturity does not match the schedule, review the plan before continuing.'}</p>}
+            faqOverride={[
+              {q:{en:'Should I change the yeast dose?',fr:'Faut-il changer la dose de levure ?'},a:{en:'Use the measured dose shown for this preferment and the selected yeast type. Do not replace it with a generic pinch or percentage.',fr:'Utilisez la dose indiquée pour ce préferment et le type de levure choisi. Ne la remplacez pas par une pincée ou un pourcentage générique.'}},
+              {q:{en:'What should I check before mixing?',fr:'Que vérifier avant le pétrissage ?'},a:{en:isPoolish?'Check for bubbles and a risen surface beginning to flatten; use the visual guide below.':'Break a piece open and look for internal aeration; use the visual guide below.',fr:isPoolish?'Observez les bulles et une surface levée qui commence à s’aplanir ; consultez les signes illustrés.':'Ouvrez un morceau et observez les alvéoles à l’intérieur ; consultez les signes illustrés.'}},
+            ]}
             coachStepId={isPoolish ? 'poolish' : 'biga'}
             coachTitle={isPoolish ? t('stepTitles.makePoolish') : t('stepTitles.makeBiga')}
             recipeContext={maestroRecipeContext}
@@ -1076,13 +1224,29 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
         </StepCard>
       )}
 
+      {isSourdough && starterEvents?.filter(event => !event.isPast && !['last_fed', 'known_peak'].includes(event.kind)).map((event, index) => {
+        const feeding = ['refresh', 'intermediate_refresh', 'pre_mix'].includes(event.kind);
+        const title = feeding ? (l === 'fr' ? 'Rafraîchir le levain' : 'Feed your starter') : event.kind === 'fridge_in' ? (l === 'fr' ? 'Réfrigérer le levain' : 'Refrigerate your starter') : (l === 'fr' ? 'Sortir le levain du réfrigérateur' : 'Take starter out of the fridge');
+        return <StepCard key={`${event.kind}-${index}`} number={n()} {...sc()} icon={<IconStarter />} title={title} time={new Date(Math.round(event.time.getTime() / 900000) * 900000)} accent="#6A7FA8">
+          <Section icon="" title={t('sectionTitles.whatToDo')}>
+            <Steps items={feeding ? [
+              {bold: l === 'fr' ? `Mélangez ${feedSeed} g de levain, ${feedPart} g de farine et ${feedPart} g d’eau.` : `Mix ${feedSeed} g starter, ${feedPart} g flour and ${feedPart} g water.`, note: `1:${feedR}:${feedR}`},
+              {bold: l === 'fr' ? 'Couvrez le récipient et marquez le niveau.' : 'Cover the container and mark the level.', note: l === 'fr' ? `Laissez à ${displayTemp(kitchenTemp, u)}.` : `Keep at ${displayTemp(kitchenTemp, u)}.`},
+              {bold: l === 'fr' ? 'Attendez une nette montée, des bulles et un dessus encore bombé avant utilisation.' : 'Wait for a clear rise, bubbles and a still-domed top before use.', note: l === 'fr' ? 'Le créneau suivant reste indicatif : vérifiez le levain.' : 'The next time is a guide: check the starter.'},
+            ] : [{bold: event.kind === 'fridge_in' ? (l === 'fr' ? 'Couvrez le récipient et placez le levain au réfrigérateur.' : 'Cover the container and put the starter in the fridge.') : (l === 'fr' ? 'Sortez le récipient et laissez-le couvert à température ambiante.' : 'Take the container out and leave covered at room temperature.'), note: event.kind === 'fridge_in' ? displayTemp(fridgeTemp, u) : displayTemp(kitchenTemp, u)}]} />
+          </Section>
+          {feeding && <StepVisual kind="starter" locale={l} />}
+          <StepExtras tips={<p>{l === 'fr' ? 'S’il s’est affaissé, rafraîchissez à nouveau et ajustez le planning.' : 'If it has collapsed, feed again and adjust the schedule.'}</p>} faqKey="starter" coachStepId="starter" coachTitle={title} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType} />
+        </StepCard>;
+      })}
+
       {/* ── STEP: Feed Starter (sourdough) ──────────── */}
-      {isSourdough && feedTime && (
+      {isSourdough && !starterEvents?.length && feedTime && (
         <>
           {/* Feed 1 */}
           <StepCard
             number={n()} {...sc()} icon={<IconStarter />}
-            title={usingPeak2 ? 'Feed your starter — first feed' : 'Feed your starter'}
+            title={l === 'fr' ? (usingPeak2 ? 'Rafraîchir le levain — premier rafraîchi' : 'Rafraîchir le levain') : (usingPeak2 ? 'Feed your starter — first feed' : 'Feed your starter')}
             time={feedTime}
             accent="#6A7FA8"
           >
@@ -1147,7 +1311,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           {starterState === 'fridge_fed' && (
             <StepCard
               number={n()} {...sc()} icon={<IconCold />}
-              title="Put starter in fridge"
+              title={l === 'fr' ? 'Mettre le levain au frigo' : 'Put starter in fridge'}
               time={feedTime}
               accent="#6A7FA8"
             >
@@ -1171,16 +1335,16 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           {starterState === 'fridge_fed' && fridgeOutTime && (
             <StepCard
               number={n()} {...sc()} icon={<IconStarter />}
-              title="Remove starter from fridge"
+              title={l === 'fr' ? 'Sortir le levain du frigo' : 'Remove starter from fridge'}
               time={fridgeOutTime}
               accent="#6A7FA8"
             >
               <Section icon={null} title={t('sectionTitles.whatToDo')}>
                 <Steps items={[
                   { bold: (l === 'fr' ? 'Sortez du frigo et laissez à température ambiante' : 'Take out of fridge and leave at room temperature'),
-                    note: `at ${displayTemp(kitchenTemp, u)} allow around ${
-                      Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60)
-                    } min to reach peak activity` },
+                    note: l === 'fr'
+                      ? `à ${displayTemp(kitchenTemp, u)}, comptez environ ${Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60)} min pour retrouver son activité maximale`
+                      : `at ${displayTemp(kitchenTemp, u)} allow around ${Math.round(getStarterFridgeWarmupH(kitchenTemp) * 60)} min to reach peak activity` },
                   { bold: (l === 'fr' ? 'Cherchez le dôme et des bulles actives sur les côtés' : 'Look for dome and active bubbles at the sides'),
                     note: (l === 'fr' ? 'pétrissez quand le levain est à son point le plus haut' : 'mix when the starter is at its highest point') },
                 ]} />
@@ -1192,7 +1356,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           {usingPeak2 && feed2Time && (
             <StepCard
               number={n()} {...sc()} icon={<IconStarter />}
-              title="Feed your starter — second feed"
+              title={l === 'fr' ? 'Rafraîchir le levain — deuxième rafraîchi' : 'Feed your starter — second feed'}
               time={feed2Time}
               accent="#6A7FA8"
             >
@@ -1212,9 +1376,9 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 tips={
                   <Section icon={null} title={t('sectionTitles.readyWhen')}>
                     <Bullets items={[
-                      'Same signs as the first feed — dome, doubled, bubbles at the sides',
-                      'Flavour will be slightly more sour than the first peak',
-                      'Mix at the dome — do not wait for it to collapse',
+                      l === 'fr' ? 'Mêmes signes qu’au premier rafraîchi : dôme, volume doublé, bulles sur les côtés' : 'Same signs as the first feed — dome, doubled, bubbles at the sides',
+                      l === 'fr' ? 'Le goût sera légèrement plus acide qu’au premier pic' : 'Flavour will be slightly more sour than the first peak',
+                      l === 'fr' ? 'Mélangez au dôme — n’attendez pas qu’il retombe' : 'Mix at the dome — do not wait for it to collapse',
                     ]} />
                   </Section>
                 }
@@ -1261,10 +1425,65 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
       )}
 
       {/* ── STEP: Mix Dough ─────────────────────────── */}
-      <StepCard number={n()} {...sc()} icon={<IconMix />} title={t('stepTitles.mixDough')}
+      <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={t('stepTitles.mixDough')}
         time={bgMixStart} duration={schedule.mixingDurationH} accent={D.ash}>
 
+        {batch && <Section icon="" title={batch.count > 1 ? (l === 'fr' ? `Pétrissée ${batch.active + 1} sur ${batch.count}` : `Batch ${batch.active + 1} of ${batch.count}`) : (l === 'fr' ? 'À mélanger' : 'Use now')}>
+          {Object.entries(batch.portion).filter(([key,grams]) => grams > 0 && !(key === 'flour' && recipe?.flourParts?.length)).map(([key,grams]) => <div key={key} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{({milk:l==='fr'?'Lait':'Milk',eggs:l==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:l==='fr'?'Beurre':'Butter',flour:l==='fr'?'Farine':'Flour',water:l==='fr'?'Eau':'Water',salt:l==='fr'?'Sel':'Salt',oil:l==='fr'?'Huile':'Oil',sugar:l==='fr'?'Sucre':'Sugar',yeast:l==='fr'?'Levure':'Yeast',starter:l==='fr'?'Levain':'Starter',preferment:prefermentType ?? 'Preferment'} as Record<string,string>)[key]}</span><strong>{grams} g</strong></div>)}
+          {!!recipe?.flourParts?.length && (() => {
+            let remainder = batch.portion.flour;
+            return recipe.flourParts.map((part,index) => {
+              const grams = index === recipe.flourParts!.length - 1 ? remainder : Math.round(batch.portion.flour * part.pct / 100);
+              remainder -= grams;
+              return <div key={part.key} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{l === 'fr' ? part.nameFr : part.name}</span><strong>{grams} g</strong></div>;
+            });
+          })()}
+          {batch.overCapacity && <p role="alert">{l === 'fr' ? 'Cette quantité dépasse la capacité indiquée du pétrin. Augmentez le nombre de pétrissées dans les réglages du matériel.' : 'This batch exceeds the stated mixer capacity. Increase batches in equipment settings.'}</p>}
+          {batch.count > 1 && <p>{l === 'fr' ? (hasPref ? 'Préparez le préferment une seule fois. Chaque pétrissée utilise sa part indiquée.' : 'Répétez ce mélange pour chaque pétrissée.') : hasPref ? 'Prepare the preferment once. Add only the portion listed for this batch.' : 'Repeat this mix for each batch.'}</p>}
+        </Section>}
+          {!enriched && !(simpleMode && recipe?.waterTemp == null) && (
+        <Section icon="" title={t('sectionTitles.waterTemp')}>
+          {recipe?.waterTemp != null && bgMainWater != null && <WaterPreparation readOnly
+            waterGrams={bgMainWater} targetTemp={recipe.waterTemp} kitchenTemp={kitchenTemp}
+            fridgeTemp={fridgeTemp} locale={l} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={recipe.thermal?.targetDoughTemp} achievedDoughTempC={recipe.thermal?.doughTempC} waterWasClamped={recipe.thermal?.waterWasClamped} idealWaterTemp={recipe.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && recipe.oil === 0 && recipe.sugar === 0 && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />}
+        </Section>
+        )}
+
+        <Section icon="" title={t('sectionTitles.whatToDo')}>
+          <Steps items={enriched ? [
+            {bold:l==='fr'?'Pesez tous les ingrédients indiqués.':'Weigh all the listed ingredients.',note:l==='fr'?'Pesez les œufs sans coquille.':'Weigh eggs without shells.'},
+            {bold:l==='fr'?'Mélangez sans le beurre jusqu’à ce que la pâte gagne en tenue.':'Mix without the butter until the dough begins to gain strength.',note:''},
+            {bold:l==='fr'?'Ajoutez le beurre souple progressivement ; laissez chaque ajout s’incorporer.':'Add softened butter gradually; let each addition incorporate.',note:''},
+          ] : [
+            {bold:l==='fr'?'Pesez les ingrédients de cette pétrissée indiqués ci-dessus.':'Weigh this batch’s ingredients shown above.',note:recipe?.yeast?.yeastType==='active_dry'?(l==='fr'?'Réactivez la levure selon le sachet avec une partie de l’eau mesurée.':'Activate the yeast as directed on its packet using part of the measured water.'):''},
+            {bold:hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'
+              ?(waterMethod==='direct'&&mixerType==='spiral'&&recipe?.oil===0&&recipe?.sugar===0&&!['brioche','pain_mie','pain_viennois'].includes(styleKey)?(l==='fr'?'Mélangez la farine avec 90 % de l’eau liquide prévue ; réservez le reste. Ajoutez la glace mesurée au pétrissage si elle est indiquée ci-dessus.':'Combine flour with 90% of the planned liquid water; reserve the rest. Add the measured ice during mixing if shown above.'):(l==='fr'?'Mélangez la farine avec 90 % de l’eau préparée ; réservez le reste.':'Combine flour with 90% of the prepared water; reserve the rest.'))
+              :(l==='fr'?'Mélangez la farine avec l’eau préparée ci-dessus.':'Combine flour with the water preparation shown above.'),note:''},
+            ...(!isSourdough && autolyseMinFor(mixerType, styleKey) > 0 ? [{bold:l==='fr'?`Couvrez et laissez reposer ${autolyseMinFor(mixerType, styleKey)} min, comme prévu au planning.`:`Cover and rest ${autolyseMinFor(mixerType, styleKey)} min, as scheduled.`,note:''}] : []),
+            {bold:isSourdough?(l==='fr'?'Incorporez le levain mûr et le sel.':'Incorporate the ripe starter and salt.'):hasPref?(l==='fr'?`Incorporez votre ${prefermentType} préparé, puis le sel.`:`Incorporate the prepared ${prefermentType}, then the salt.`):(l==='fr'?'Incorporez la levure et le sel.':'Incorporate the yeast and salt.'),note:''},
+            ...(hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'?[{bold:l==='fr'?'Quand la pâte se tient, ajoutez progressivement l’eau réservée ; laissez chaque ajout s’incorporer.':'Once the dough holds together, add the reserved water gradually; let each addition absorb.',note:''}]:[]),
+            {bold:mixerType==='no_knead'?(l==='fr'?'Arrêtez une fois homogène. Couvrez ; les repos et rabats prévus développeront la pâte.':'Stop once combined. Cover; scheduled rests and folds develop the dough.'):styleKey==='pain_seigle'?(l==='fr'?'Mélangez jusqu’à homogénéité ; le seigle reste collant.':'Mix until evenly combined; rye dough remains sticky.'):mixerType==='hand'?(l==='fr'?'Pétrissez à la main jusqu’à une pâte homogène et élastique.':'Knead by hand until cohesive and elastic.'):(l==='fr'?'Pétrissez jusqu’à une pâte homogène et élastique, aux vitesses autorisées par votre pétrin.':'Knead until cohesive and elastic, using only your mixer’s permitted dough speeds.'),note:''},
+            ...(recipe && recipe.sugar > 0 ? [{bold:l==='fr'?'Incorporez le sucre mesuré pendant le mélange.':'Incorporate the measured sugar during mixing.',note:''}] : []),
+            ...(oil>0?[{bold:l==='fr'?'Ajoutez l’huile mesurée en dernier et mélangez jusqu’à absorption.':'Add the measured oil last and mix until absorbed.',note:''}]:[]),
+          ]}/>
+        </Section>
+        <p style={{fontSize:16,lineHeight:1.5,margin:'16px 0'}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{mixerType==='no_knead'?(l==='fr'?'Il ne reste aucune farine sèche ; couvrez et poursuivez le repos prévu.':'No dry flour remains; cover and continue the planned rest.'):styleKey==='pain_seigle'?(l==='fr'?'La pâte est homogène, sans farine sèche ; elle peut rester collante.':'Evenly combined, without dry flour; it may stay sticky.'):(l==='fr'?'Il ne reste aucune farine sèche. Vérifiez le développement et la température de la pâte ; toute glace ajoutée doit avoir fondu.':'No dry flour remains. Check dough development and temperature; any added ice must have melted.')}</p>
+        {recipe?.blendProfile?.displayName?.includes(' + ') && <p style={{fontSize:15,lineHeight:1.5}}>{l === 'fr'
+          ? 'Pesez chaque farine selon les quantités indiquées et mélangez-les pour bien les répartir.'
+          : 'Weigh each flour according to the listed amounts, then mix them to distribute evenly.'}</p>}
+
+        <StepExtras
+          tips={<>
+        <details><summary style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{l==='fr'?'Technique de pétrissage · aide':'Mixing technique · help'}</summary>
         <Section icon="" title={t('sectionTitles.mixingOrder')}>
+          {enriched && <Steps items={[
+            {bold:l === 'fr' ? 'Pesez tous les ingrédients indiqués' : 'Weigh all the listed ingredients',note:l === 'fr' ? 'Pesez les œufs sans coquille. Le lait et les œufs sont des ingrédients distincts de l’eau.' : 'Weigh eggs without shells. Milk and eggs are separate ingredients from plain water.'},
+            {bold:l === 'fr' ? 'Mélangez sans le beurre' : 'Mix without the butter',note:l === 'fr' ? 'Incorporez la farine, les liquides, la levure ou le levain, le sel et le sucre. Pétrissez jusqu’à ce que la pâte gagne en tenue.' : 'Combine flour, liquids, yeast or starter, salt and sugar. Mix until the dough begins to gain strength.'},
+            {bold:l === 'fr' ? 'Ajoutez le beurre souple progressivement' : 'Add softened butter gradually',note:l === 'fr' ? 'Attendez l’incorporation de chaque ajout. Arrêtez quand la pâte est homogène et élastique ; surveillez son échauffement.' : 'Let each addition incorporate. Stop when the dough is smooth and elastic; monitor warming.'},
+          ]} />}
+          {!enriched && styleKey === 'pain_seigle' && <p>{l === 'fr' ? 'Mélangez tous les ingrédients indiqués jusqu’à homogénéité, sans farine sèche. Le seigle peut rester collant ; ne recherchez pas une membrane de gluten.' : 'Combine all listed ingredients until even, without dry flour. Rye may remain sticky; do not aim for a gluten windowpane.'}</p>}
+          {!enriched && styleKey !== 'pain_seigle' && <>
+
           {mixerType === 'hand' && !isSourdough && (
             <Steps items={hydration > 70 ? [
               // >70%: autolyse, then yeast+salt, brief knead, then bassinage, then full knead
@@ -1308,8 +1527,8 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               ...(!hasPref ? [{ bold: bgYeastLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min' : 'Speed 1, 2 min') }] : []),
               { bold: bgSaltLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min jusqu’à absorption' : 'Speed 1, 2 min until absorbed') },
               ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'Vitesse 1, mélangez jusqu’à incorporation' : 'Speed 1, mix until incorporated') }] : []),
-              { bold: bgWater10Label, note: 'Speed 1, mix until absorbed — ~1 min' },
-              { bold: 'Speed 2 — 6–10 min', note: (l === 'fr' ? 'jusqu’à ce que la pâte se décolle du bol — test de la membrane' : 'until dough clears the bowl — windowpane test') },
+              { bold: bgWater10Label, note: l === 'fr' ? 'Vitesse 1, jusqu’à absorption — environ 1 min' : 'Speed 1, mix until absorbed — about 1 min' },
+              { bold: l === 'fr' ? 'Vitesse 2 — 6–10 min' : 'Speed 2 — 6–10 min', note: (l === 'fr' ? 'jusqu’à ce que la pâte se décolle du bol — test de la membrane' : 'until dough clears the bowl — windowpane test') },
               ...(oil > 0 ? [{ bold: (l === 'fr' ? 'Ajoutez l’huile en dernier' : 'Add oil last'), note: (l === 'fr' ? 'Vitesse 1, 1 min' : 'Speed 1, 1 min') }] : []),
             ]} />
           )}
@@ -1330,25 +1549,18 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 ...(autolyseMinFor(mixerType, styleKey) > 0 ? [{ bold: (l === 'fr' ? `Couvrez et laissez reposer ${AUTOLYSE_MIN} min` : `Cover and rest ${AUTOLYSE_MIN} min`), note: AUTOLYSE_NOTE[l] }] : []),
                 ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'Vitesse 1, mélangez jusqu’à incorporation' : 'Speed 1, mix until incorporated') }] : []),
                 { bold: bgSaltLabel, note: (l === 'fr' ? 'Vitesse 1, 2 min' : 'Speed 1, 2 min') },
-                { bold: bgWater10Label, note: 'Speed 1, mix until absorbed — ~1 min' },
+                { bold: bgWater10Label, note: l === 'fr' ? 'Vitesse 1, jusqu’à absorption — environ 1 min' : 'Speed 1, mix until absorbed — about 1 min' },
                 { bold: (l === 'fr' ? 'Vitesse 2 jusqu’à la forme de citrouille' : 'Speed 2 until pumpkin shape forms'), note: l === 'fr' ? `en général 10–15 min — arrêtez si la FDT dépasse ${tempC(28, u)}` : `typically 10–15 min — stop if FDT exceeds ${tempC(28, u)}` },
                 ...(oil > 0 ? [{ bold: (l === 'fr' ? 'Ajoutez l’huile en dernier' : 'Add oil last'), note: (l === 'fr' ? 'Vitesse 1, 1 min' : 'Speed 1, 1 min') }] : []),
               ]} />
-              <div style={{ marginTop: '12px' }}>
-                <img
-                  src="/Pumpkin.jpeg"
-                  alt="Pumpkin shape — dough gathered into a smooth ball around the spiral"
-                  style={{ width: '100%', maxWidth: '340px', borderRadius: '16px', display: 'block', marginTop: '8px', border: '1px solid var(--border)' }}
-                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
-              </div>
+
             </>
           )}
           {mixerType === 'no_knead' && (
             <Steps items={[
               { bold: (l === 'fr' ? 'Mélangez tous les ingrédients, sel compris' : 'Combine all ingredients including salt'), note: (l === 'fr' ? 'mélangez juste jusqu’à absorption de la farine — ~2 min' : 'mix just until no dry flour remains — ~2 min') },
               ...(hasPref ? [{ bold: bgPoolishLabel, note: (l === 'fr' ? 'mélangez jusqu’à incorporation' : 'mix until incorporated') }] : []),
-              { bold: (l === 'fr' ? 'Couvrez et laissez reposer' : 'Cover and rest'), note: (l === 'fr' ? 'rabats toutes les 30 min pendant les 2 premières heures' : 'stretch & folds every 30 min for the first 2 hours') },
+              { bold: (l === 'fr' ? 'Couvrez et laissez reposer' : 'Cover and rest'), note: (l === 'fr' ? 'suivez les rabats indiqués dans le pointage ci-dessous' : 'follow the folds listed in the bulk step below') },
             ]} />
           )}
           {isSourdough && (
@@ -1382,60 +1594,23 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               </div>
             </>
           )}
+          </>}
         </Section>
 
-        {/* Blending advice — only when there is actually a blend. Two or three
-            flours behave as one dough only if they are combined dry first;
-            everything below follows from that. */}
-        {(() => {
-          const parts = recipe?.blendProfile?.displayName?.split(' + ') ?? [];
-          if (parts.length < 2) return null;
-          return (
-            <Section icon="" title={l === 'fr' ? 'Votre mélange de farines' : 'Your flour blend'}>
-              <Steps items={[
-                { bold: l === 'fr' ? 'Pesez chaque farine séparément' : 'Weigh each flour separately',
-                  note: l === 'fr'
-                    ? `${parts.join(' + ')} — les pourcentages portent sur la farine totale, pas les unes sur les autres`
-                    : `${parts.join(' + ')} — the percentages are of total flour, not of each other` },
-                { bold: l === 'fr' ? 'Fouettez-les à sec avant l\u2019eau' : 'Whisk them together dry, before the water',
-                  note: l === 'fr'
-                    ? 'chaque farine boit à sa vitesse ; versées séparément dans l\u2019eau elles laissent des traînées qui ne partent plus au pétrissage'
-                    : 'each flour drinks at its own rate; added separately to water they leave streaks that kneading will not remove' },
-                { bold: l === 'fr' ? 'Laissez l\u2019autolyse faire le travail' : 'Let the autolyse do the work',
-                  note: l === 'fr'
-                    ? 'la pâte paraîtra plus ferme au début — l\u2019eau supplémentaire est déjà dans la recette, n\u2019en rajoutez pas avant 20 minutes'
-                    : 'the dough will feel stiffer at first — the extra water is already in the recipe, do not add more before 20 minutes' },
-              ]} />
-            </Section>
-          );
-        })()}
+        </details>
 
-        {!(simpleMode && recipe?.waterTemp == null) && (
-        <Section icon="" title={t('sectionTitles.waterTemp')}>
-          <Bullets items={[
-            ...(recipe?.waterTemp != null ? [(l === 'fr' ? `Température de l’eau : ${Math.round(recipe.waterTemp)}°C` : `Water temperature: ${Math.round(recipe.waterTemp)}°C`)] : []),
-            (l === 'fr' ? `Température finale de pâte (FDT) visée : ${isNeapolitan ? tempC(23, u) : tempC(24, u)}` : `Target Final Dough Temperature (FDT): ${isNeapolitan ? tempC(23, u) : tempC(24, u)}`),
-          ]} />
-        </Section>
-        )}
 
-        <StepExtras
-          tips={<>
             {(() => {
               const parts = recipe?.blendProfile?.displayName?.split(' + ') ?? [];
               if (parts.length < 2) return null;
               return (
                 <Section icon={null} title={l === 'fr' ? 'Questions sur le mélange' : 'About blending'}>
                   <Bullets items={l === 'fr' ? [
-                    'La pâte colle plus ou se déchire ? Le son du complet et du seigle coupe le réseau de gluten — travaillez plus doucement et fiez-vous aux rabats plutôt qu\u2019au pétrissage.',
-                    'Ne prolongez pas le pointage parce qu\u2019il « paraît lent » : le plan tient déjà compte de la tolérance réduite de votre mélange.',
-                    'Le préferment utilise le même mélange que la pâte finale — pesez chaque farine selon la recette, pas la base seule.',
-                    'Changer une farine du mélange change sa force W, donc le plan : régénérez la recette plutôt que de substituer au moment du pétrissage.',
+                    'Suivez les quantités de chaque farine indiquées dans la recette, y compris pour le préferment.',
+                    'Si vous changez de farine, mettez à jour vos choix et recalculez la recette.',
                   ] : [
-                    'Dough sticking more, or tearing? The bran in wholemeal and rye cuts the gluten network — work more gently and trust the folds rather than the kneading.',
-                    'Do not extend the bulk because it "looks slow": the plan already accounts for your blend\u2019s reduced tolerance.',
-                    'The preferment uses the same blend as the final dough — weigh each flour as the recipe states, not the base alone.',
-                    'Swapping one flour changes the blend\u2019s W, and so the plan: regenerate the recipe rather than substituting at the mixing bowl.',
+                    'Follow the listed amounts for each flour, including in the preferment.',
+                    'If you change a flour, update your choices and recalculate the recipe.',
                   ]} />
                 </Section>
               );
@@ -1444,7 +1619,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             <Section icon="" title={t('sectionTitles.waterTemp')}>
               <Bullets items={[
                 ...(t.raw('mix.waterTempBullets') as string[]),
-                (l === 'fr' ? `FDT au-dessus de ${tempC(28, u)} : placez la pâte 15 min au frigo avant le pointage` : `FDT above ${tempC(28, u)}: refrigerate dough for 15 min before bulk fermentation`),
+                (l === 'fr' ? 'Comparez la température mesurée à la cible de cette recette et réévaluez le planning si la pâte est plus chaude ; un bref passage au froid ne refroidit pas immédiatement son centre.' : 'Compare measured dough temperature with this recipe’s target and reassess timing if warmer; a brief chill does not immediately cool its centre.'),
               ]} />
               <div style={{ marginTop: '8px' }}>
                 <LearnLink term="fdt" label={l === 'fr' ? 'Qu’est-ce que la FDT ?' : 'What is FDT?'} onOpen={setLearnTerm} />
@@ -1479,6 +1654,8 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
         />
+        {styleKey !== 'pain_seigle' && mixerType !== 'no_knead' && <StepVisual kind="mix" includeSpiral={mixerType === 'spiral'} locale={l} />}
+
       </StepCard>
 
       {/* ── STEP: Bulk Fermentation ──────────────────── */}
@@ -1486,26 +1663,23 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
         time={schedule.bulkFermStart} duration={schedule.bulkFermHours} accent={D.terra}>
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
-          <Steps items={[
+          {breadProtocol ? <Steps items={[
+            {bold:l === 'fr' ? 'Gardez la pâte couverte pendant le pointage prévu. Observez son gonflement : la chaleur accélère la pousse.' : 'Keep the dough covered during the planned bulk rise. Watch its expansion; a warmer kitchen speeds the rise.',note:''},
+            ...(['ciabatta','focaccia'].includes(styleKey) ? [{bold:l === 'fr' ? 'Si la pâte s’étale, effectuez des rabats doux au début du pointage pour lui donner de la tenue. Préservez les bulles qui se forment ensuite.' : 'If the dough spreads, give it gentle folds early in bulk to build strength. Preserve bubbles as they develop.',note:''}] : []),
+          ]} /> : <Steps items={[
             ...(t.raw('bulk.stepsBase') as { bold: string; note: string }[]),
-            ...(schedule.bulkFermHours >= 1.5 ? [
-              t.raw('bulk.set1') as { bold: string; note: string },
-              t.raw('bulk.set2') as { bold: string; note: string },
-              ...(schedule.bulkFermHours >= 2 ? [
-                t.raw('bulk.set3') as { bold: string; note: string },
-                t.raw('bulk.set4') as { bold: string; note: string },
-              ] : []),
-            ] : schedule.bulkFermHours >= 0.5 ? [
-              t.raw('bulk.setShort') as { bold: string; note: string },
-            ] : [
-              t.raw('bulk.setVeryShort') as { bold: string; note: string },
-            ]),
-          ]} />
+            ...(scheduledFoldMinutes(schedule.bulkFermHours, styleKey).length
+              ? scheduledFoldMinutes(schedule.bulkFermHours, styleKey).map(minutes =>
+                  t.raw(minutes === 15 ? 'bulk.setShort' : `bulk.set${minutes / 30}`) as { bold: string; note: string })
+              : [t.raw('bulk.setVeryShort') as { bold: string; note: string }]),
+          ]} />}
         </Section>
 
-        <StepExtras
+        <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'La pâte est aérée et a gagné en tenue ; jugez-la avec le planning.':'The dough is aerated and has gained strength; judge it alongside the schedule.'}</p>
+
+        {!breadProtocol && <StepExtras
           tips={<>
-            <Section icon="" title="Watch for — bulk is done when">
+            <Section icon="" title={l === 'fr' ? 'Le pointage est terminé quand' : 'Watch for — bulk is done when'}>
               <Bullets items={t.raw('bulk.watchFor') as string[]} />
               <div style={{ marginTop: '8px' }}>
                 <LearnLink term="bulk_fermentation" label={l === 'fr' ? 'Guide du pointage' : 'Bulk fermentation guide'} onOpen={setLearnTerm} showSparkle={true} />
@@ -1530,7 +1704,8 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           coachTitle={t('stepTitles.bulkFerm')}
           recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
-        />
+        />}
+        {styleKey !== 'pain_seigle' && (hydration > 70 || mixerType === 'no_knead') && <StepVisual kind="fold" locale={l} />}
       </StepCard>
 
       {/* ── STEP: Cold Retard 1 ──────────────────────── */}
@@ -1542,17 +1717,20 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           accent="#6A7FA8">
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
-            <Steps items={[
+            {breadProtocol ? <Steps items={[
+              {bold:l === 'fr' ? 'Couvrez le récipient en laissant de la place à la pâte pour gonfler, puis placez-le au réfrigérateur.' : 'Cover the container, leaving room for expansion, then refrigerate.',note:''},
+              {bold:l === 'fr' ? 'Suivez l’horaire prévu et vérifiez la pâte avant de la façonner.' : 'Follow the planned time and check the dough before shaping.',note:formatTime(schedule.divideBallTime ?? schedule.coldRetard1End, _fmtLocale)},
+            ]} /> : <Steps items={[
               ...(t.raw('coldRetard.steps') as { bold: string; note: string }[]).slice(0, 2),
               { bold: isBread
                   ? (_isFr ? 'Réglez une alarme pour la division & le façonnage' : 'Set your alarm for Divide & Shape time')
                   : (_isFr ? 'Réglez une alarme pour la division & le boulage' : 'Set your alarm for Divide & Ball time'),
                 note: formatTime(schedule.divideBallTime ?? schedule.coldRetard1End, _fmtLocale) },
               (t.raw('coldRetard.steps') as { bold: string; note: string }[])[2],
-            ]} />
+            ]} />}
           </Section>
 
-          <StepExtras
+          {!breadProtocol && <StepExtras
             tips={<>
               <Section icon="" title={t('sectionTitles.whatToExpect')}>
                 <Bullets items={t.raw('coldRetard.watchFor') as string[]} />
@@ -1560,7 +1738,9 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               <Section icon={null} title={t('sectionTitles.pitfalls')}>
                 <Bullets items={[
                   (t.raw('coldRetard.pitfalls') as string[])[0],
-                  `Fridge temperature above ${tempC(8, u)}: dough over-ferments during retard — check your fridge`,
+                  l === 'fr'
+                    ? `Frigo au-dessus de ${tempC(8, u)} : la pâte fermente trop pendant le repos — vérifiez sa température`
+                    : `Fridge temperature above ${tempC(8, u)}: dough over-ferments during retard — check your fridge`,
                   (t.raw('coldRetard.pitfalls') as string[])[1],
                 ]} />
               </Section>
@@ -1569,7 +1749,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             coachTitle={isTwoPhase ? t('stepTitles.coldRetardWhole') : t('stepTitles.coldRetard')}
             recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
-          />
+          />}
         </StepCard>
       )}
 
@@ -1580,28 +1760,28 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           time={schedule.divideBallTime} duration={divideMin / 60} accent="#8A6A4A">
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
-            {isBread ? (
+            {breadProtocol ? <Steps items={profileSteps(breadProtocol.shaping[l])} /> : isBread ? (
               <Steps items={isFougasse ? [
-                { bold: `Divide into ${numItems} equal ${breadPiecePlural}`, note: (t.raw('divide.fougasse.steps') as { bold: string; note: string }[])[0].note },
+                { bold: l === 'fr' ? `Divisez en ${numItems} ${breadPiecePluralFr} de même poids` : `Divide into ${numItems} equal ${breadPiecePlural}`, note: (t.raw('divide.fougasse.steps') as { bold: string; note: string }[])[0].note },
                 ...(t.raw('divide.fougasse.steps') as { bold: string; note: string }[]).slice(1),
               ] : isBaguette ? [
-                { bold: `Divide into ${numItems} equal pieces`, note: (t.raw('divide.baguette.steps') as { bold: string; note: string }[])[0].note },
+                { bold: l === 'fr' ? `Divisez en ${numItems} morceaux de même poids` : `Divide into ${numItems} equal pieces`, note: (t.raw('divide.baguette.steps') as { bold: string; note: string }[])[0].note },
                 ...(t.raw('divide.baguette.steps') as { bold: string; note: string }[]).slice(1),
                 ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
               ] : isLoafTin ? [
-                { bold: `Divide into ${numItems} equal pieces`, note: (t.raw('divide.loafTin.steps') as { bold: string; note: string }[])[0].note },
+                { bold: l === 'fr' ? `Divisez en ${numItems} morceaux de même poids` : `Divide into ${numItems} equal pieces`, note: (t.raw('divide.loafTin.steps') as { bold: string; note: string }[])[0].note },
                 ...(t.raw('divide.loafTin.steps') as { bold: string; note: string }[]).slice(1),
                 ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
               ] : [
                 // Boule / pain campagne / pain levain / sourdough
-                { bold: `Divide into ${numItems} equal pieces`, note: (t.raw('divide.boule.steps') as { bold: string; note: string }[])[0].note },
+                { bold: l === 'fr' ? `Divisez en ${numItems} ${breadPiecePluralFr} de même poids` : `Divide into ${numItems} equal pieces`, note: (t.raw('divide.boule.steps') as { bold: string; note: string }[])[0].note },
                 ...(t.raw('divide.boule.steps') as { bold: string; note: string }[]).slice(1),
                 ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
               ]} />
             ) : (
               <>
                 <Steps items={[
-                  { bold: `Weigh dough and divide into ${numItems} equal pieces`, note: (t.raw('divide.pizza.steps') as { bold: string; note: string }[])[0].note },
+                  { bold: l === 'fr' ? `Pesez la pâte puis divisez-la en ${numItems} pâtons de même poids` : `Weigh dough and divide into ${numItems} equal pieces`, note: (t.raw('divide.pizza.steps') as { bold: string; note: string }[])[0].note },
                   ...(t.raw('divide.pizza.steps') as { bold: string; note: string }[]).slice(1),
                   ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
                 ]} />
@@ -1610,15 +1790,16 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                     fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic',
                     fontFamily: 'var(--font-ui)', marginTop: '8px',
                   }}>
-                    Pan pizza: press dough directly into your oiled pan rather than
-                    forming a round ball. Let it relax 10 min then stretch to the edges.
+                    {l === 'fr'
+                      ? 'Pizza sur plaque : déposez la pâte directement dans le moule huilé au lieu de former une boule. Laissez-la détendre 10 min, puis étirez-la jusqu’aux bords.'
+                      : 'Pan pizza: press dough directly into your oiled pan rather than forming a round ball. Let it relax 10 min then stretch to the edges.'}
                   </div>
                 )}
               </>
             )}
           </Section>
 
-          <StepExtras
+          {!breadProtocol && <StepExtras
             tips={<>
               <Section icon="" title={isBread ? t('sectionTitles.watchFor') : t('sectionTitles.watchForBall')}>
                 <Bullets items={isFougasse
@@ -1631,7 +1812,9 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                   ? (t.raw('divide.boule.watchFor') as string[])
                   : [
                     ...(t.raw('divide.pizza.watchFor') as string[]),
-                    `At ${displayTemp(kitchenTemp, u)}, work within ${kitchenTemp >= 30 ? '15 min' : kitchenTemp >= 26 ? '20 min' : '30 min'} — warm kitchens make balls proof quickly`,
+                    l === 'fr'
+                      ? `À ${displayTemp(kitchenTemp, u)}, travaillez dans les ${kitchenTemp >= 30 ? '15 min' : kitchenTemp >= 26 ? '20 min' : '30 min'} : une cuisine chaude fait lever les pâtons rapidement`
+                      : `At ${displayTemp(kitchenTemp, u)}, work within ${kitchenTemp >= 30 ? '15 min' : kitchenTemp >= 26 ? '20 min' : '30 min'} — warm kitchens make balls proof quickly`,
                   ]
                 } />
               </Section>
@@ -1653,7 +1836,9 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                     ...(t.raw('divide.boule.pitfalls') as string[]),
                   ] : [
                     ...(t.raw('divide.pizza.pitfalls') as string[]),
-                    `Hot kitchen (${kitchenTemp >= 30 ? 'like yours at ' + displayTemp(kitchenTemp, u) : '≥' + tempC(30, u)}): get balls into their boxes fast — they proof very quickly at warm temps`,
+                    l === 'fr'
+                      ? `Cuisine chaude (${kitchenTemp >= 30 ? 'la vôtre est à ' + displayTemp(kitchenTemp, u) : '≥' + tempC(30, u)}) : mettez vite les pâtons en bac, ils lèvent très rapidement`
+                      : `Hot kitchen (${kitchenTemp >= 30 ? 'like yours at ' + displayTemp(kitchenTemp, u) : '≥' + tempC(30, u)}): get balls into their boxes fast — they proof very quickly at warm temps`,
                   ]
                 } />
               </Section>
@@ -1666,7 +1851,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             coachTitle={isBread ? t('stepTitles.divideShape') : t('stepTitles.divideBall')}
             recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
-          />
+          />}
         </StepCard>
       )}
 
@@ -1681,12 +1866,12 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
-              ...(t.raw('coldBalls.steps') as { bold: string; note: string }[]),
+              ...(breadProtocol ? [{bold:l === 'fr' ? 'Couvrez la pâte façonnée sans l’écraser et placez-la au réfrigérateur sur son support.' : 'Cover the shaped dough without pressing it down and refrigerate on its support.',note:''}] : t.raw('coldBalls.steps') as { bold: string; note: string }[]),
               { bold: _isFr ? 'Réglez une alarme pour la remise à température' : 'Set your alarm for warmup time', note: schedule.rtWarmupStart ? formatTime(schedule.rtWarmupStart, _fmtLocale) : (_isFr ? 'voir le planning' : 'see schedule') },
             ]} />
           </Section>
 
-          <StepExtras
+          {!breadProtocol && <StepExtras
             tips={<>
               <Section icon="" title={t('sectionTitles.whatToExpect')}>
                 <Bullets items={t.raw('coldBalls.watchFor') as string[]} />
@@ -1699,7 +1884,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             coachTitle={isBread ? t('stepTitles.coldProof') : t('stepTitles.coldRetardBalls')}
             recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
-          />
+          />}
         </StepCard>
       )}
 
@@ -1708,7 +1893,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
         <StepCard number={n()} {...sc()} icon={<IconProof />} title={t('stepTitles.finalProof')}
           time={schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? schedule.finalProofStart}
           duration={(() => {
-            const proofEnd = schedule.bakeStart;
+            const proofEnd = schedule.poachStart ?? schedule.bakeStart;
             const proofStart = schedule.rtWarmupStart ?? schedule.coldRetardEnd ?? schedule.finalProofStart;
             if (!proofStart || !proofEnd) return schedule.finalProofHours;
             return Math.max(0, (proofEnd.getTime() - proofStart.getTime()) / 3600000);
@@ -1716,21 +1901,16 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           accent="#7A8C6E">
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
-            <Steps items={[
-              ...(hasCold ? [
-                t.raw('finalProof.removeFridge') as { bold: string; note: string },
-                { bold: l === 'fr' ? `Repos ${kitchenTemp >= 30 ? '20–30' : kitchenTemp >= 26 ? '30–45' : '45–60'} min à température ambiante` : `Rest ${kitchenTemp >= 30 ? '20–30' : kitchenTemp >= 26 ? '30–45' : '45–60'} min at room temperature`, note: (l === 'fr' ? 'simple remise en température — l’apprêt reprend naturellement quand la pâte se détend' : 'warmup only — proofing begins naturally as dough relaxes') },
-              ] : [
-                ...(!isTwoPhase ? [t.raw('finalProof.shapeBalls') as { bold: string; note: string }] : [
-                  t.raw('finalProof.alreadyShaped') as { bold: string; note: string },
-                ]),
-              ]),
+            {breadProtocol ? <Steps items={profileSteps(breadProtocol.proof[l])} /> : <Steps items={[
+              ...(isTwoPhase ? [t.raw('finalProof.removeFridge') as { bold: string; note: string }] : []),
+              { bold: l === 'fr' ? 'Laissez les pâtons se détendre, couverts' : 'Let the shaped dough relax, covered',
+                note: l === 'fr' ? 'À température ambiante, jusqu’à ce que la pâte soit souple et aérée.' : 'At room temperature, until relaxed and airy.' },
               t.raw('finalProof.pokeTest') as { bold: string; note: string },
-              { bold: l === 'fr' ? `Lancez le préchauffage du four ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} avant la cuisson` : `Start preheating your oven ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} before bake time`, note: (l === 'fr' ? 'le four chauffe pendant que la pâte finit son apprêt — les deux sont prêts en même temps' : 'oven heats while dough finishes proofing — they finish together') },
-            ]} />
+              { bold: l === 'fr' ? `Lancez le préchauffage du four ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} avant la cuisson` : `Start preheating your oven ${hoursLabel(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75)} before bake time`, note: (l === 'fr' ? 'préchauffez pendant l’apprêt ; vérifiez que le four et la pâte sont prêts' : 'preheat overlaps proofing; check both are ready') },
+            ]} />}
           </Section>
 
-          <StepExtras
+          {!breadProtocol && <StepExtras
             tips={<>
               <Section icon="" title={t('sectionTitles.pokeTest')}>
                 <Bullets items={t.raw('finalProof.pokeResponses') as string[]} />
@@ -1742,7 +1922,9 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
                 <Bullets items={[
                   (t.raw('finalProof.pitfalls') as string[])[0],
                   (t.raw('finalProof.pitfalls') as string[])[1],
-                  `Warm kitchen (${displayTemp(kitchenTemp, u)}): proof can complete in ${kitchenTemp >= 30 ? '15–25 min' : kitchenTemp >= 26 ? '20–35 min' : '30–60 min'} after warmup — check early`,
+                  l === 'fr'
+                    ? `Cuisine à ${displayTemp(kitchenTemp, u)} : l’apprêt peut finir en ${kitchenTemp >= 30 ? '15–25 min' : kitchenTemp >= 26 ? '20–35 min' : '30–60 min'} après la remise à température — vérifiez tôt`
+                    : `Warm kitchen (${displayTemp(kitchenTemp, u)}): proof can complete in ${kitchenTemp >= 30 ? '15–25 min' : kitchenTemp >= 26 ? '20–35 min' : '30–60 min'} after warmup — check early`,
                   (t.raw('finalProof.pitfalls') as string[])[2],
                 ]} />
               </Section>
@@ -1752,12 +1934,12 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             coachTitle={t('stepTitles.finalProof')}
             recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
-          />
+          />}
         </StepCard>
       )}
 
       {/* ── STEP: Preheat Oven ───────────────────────── */}
-      <StepCard number={n()} {...sc()} icon={<IconPreheat />} title={t('stepTitles.preheatOven')}
+      <StepCard number={n()} {...sc(false, 'cooking')} icon={<IconPreheat />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle') : t('stepTitles.preheatOven')}
         time={schedule.preheatStart} accent={D.gold}>
 
         <div style={{ fontSize: '12px', color: D.smoke, fontStyle: 'italic',
@@ -1766,7 +1948,7 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
         </div>
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
-          {isBread ? (
+          {breadProtocol ? <Steps items={profileSteps(breadProtocol.preheat[l])} /> : isBread ? (
             <Steps items={(t.raw(
               ovenType === 'dutch_oven' ? 'preheat.dutch.steps' :
               ovenType === 'home_oven_stone_bread' ? 'preheat.stoneBread.steps' :
@@ -1775,7 +1957,10 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               'preheat.standardBread.steps'
             ) as { bold: string; note: string }[])} />
           ) : ovenType === 'pizza_oven' ? (
-            <Steps items={t.raw('preheat.pizzaOven.steps') as { bold: string; note: string }[]} />
+            <Steps items={ovenConstruction === 'masonry' ? [
+              { bold: l === 'fr' ? 'Chauffez la sole et la voûte à cœur.' : 'Heat the floor and dome thoroughly.', note: l === 'fr' ? 'Suivez le temps de chauffe de votre four maçonné.' : 'Follow your masonry oven’s heat-up instructions.' },
+              { bold: l === 'fr' ? 'Contrôlez la température de la sole avant d’enfourner.' : 'Check the floor temperature before launching.', note: l === 'fr' ? 'Laissez-la remonter entre deux pizzas.' : 'Let it recover between pizzas.' },
+            ] : t.raw('preheat.pizzaOven.steps') as { bold: string; note: string }[]} />
           ) : ovenType === 'electric_pizza' ? (
             <Steps items={t.raw('preheat.electricPizza.steps') as { bold: string; note: string }[]} />
           ) : ovenType === 'home_oven_steel' ? (
@@ -1785,7 +1970,9 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           )}
         </Section>
 
-        <StepExtras
+        {!breadProtocol && <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Le four et la surface de cuisson sont chauds, et la pâte est prête.':'The oven and baking surface are heated, and the dough is ready.'}</p>}
+
+        {!breadProtocol && <StepExtras
           tips={
             <Section icon={null} title={t('sectionTitles.pitfalls')}>
               <Bullets items={isBread
@@ -1806,15 +1993,20 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             </Section>
           }
           faqKey="preheat"
+          faqOverride={!isBread && ovenType==='pizza_oven' ? [GUIDE_FAQ.preheat[0], ...WOOD_OVEN_FAQ.preheat] : undefined}
           coachTitle={t('stepTitles.preheatOven')}
           recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
-        />
+        />}
       </StepCard>
 
-      {/* ── STEP: Bake & Eat ─────────────────────────── */}
-      <StepCard number={n()} {...sc()} icon={<IconBake />} title={t('stepTitles.bakeEat')} time={schedule.bakeStart} accent="#5A9A50">
+      {hasPoachStep && <StepCard number={n()} {...sc(false, 'cooking')} icon={<IconPreheat />} title={l === 'fr' ? 'Pocher les bagels' : 'Poach the bagels'} time={schedule.poachStart} duration={(schedule.poachMinutes ?? 0) / 60}>
+        <Steps items={profileSteps(breadProtocol!.cookingSteps[l].slice(0,1))} />
+        <p>{l === 'fr' ? 'Ce créneau comprend le pochage et la manipulation de toute la fournée. Gardez la plaque prête pour l’enfournement prévu.' : 'This window includes poaching and handling the whole batch. Have the tray ready for the planned oven time.'}</p>
+      </StepCard>}
 
+      {/* ── STEP: Bake & Eat ─────────────────────────── */}
+      <StepCard final={!isBread} number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'boil-bake' ? (hasPoachStep ? (l === 'fr' ? 'Cuire les bagels au four' : 'Bake the bagels') : (l === 'fr' ? 'Pocher puis cuire au four' : 'Poach, then bake')) : breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Cuire à la poêle' : 'Cook on the griddle') : isBread ? (l === 'fr' ? 'Cuire le pain' : 'Bake the bread') : (l === 'fr' ? 'Cuire les pizzas' : 'Bake the pizzas')} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined} accent="#5A9A50">
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           {isPan && (
             <div style={{
@@ -1823,15 +2015,10 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
               fontSize: '12px', fontFamily: 'var(--font-ui)', color: 'var(--char)',
               lineHeight: 1.5,
             }}>
-              <strong>Pan / Detroit / Deep Dish</strong> — dough bakes IN the oiled pan.
-              No launching needed.{' '}
-              <strong>Detroit style:</strong> push cheese all the way to the edges for
-              caramelised crusts. Add sauce after baking.{' '}
-              <strong>Deep Dish:</strong> press dough up the sides, add cheese directly
-              on the dough, then toppings, then sauce on top — reverse order.
+              {l === 'fr' ? 'Pan / Detroit / Deep Dish : la pâte cuit dans le moule huilé, sans enfournement à la pelle. Pour une Detroit, poussez le fromage jusqu’aux bords pour les caraméliser, puis ajoutez la sauce après cuisson. Pour une Deep Dish, faites remonter la pâte sur les parois et ajoutez le fromage, la garniture puis la sauce.' : 'Pan / Detroit / Deep Dish: dough bakes in the oiled pan; no launching needed. For Detroit, push cheese to the edges for caramelised crusts and add sauce after baking. For Deep Dish, press dough up the sides, then add cheese, toppings and sauce in that order.'}
             </div>
           )}
-          {isBread ? (
+          {breadProtocol ? <Steps items={profileSteps(hasPoachStep ? breadProtocol.cookingSteps[l].slice(1) : breadProtocol.cookingSteps[l])} /> : isBread ? (
             <Steps items={(t.raw(
               ovenType === 'dutch_oven' ? 'bake.dutch.steps' :
               ovenType === 'home_oven_stone_bread' ? 'bake.stoneBread.steps' :
@@ -1852,7 +2039,8 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
           )}
         </Section>
 
-        <StepExtras
+        {isBread && !breadProtocol && <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Le pain est cuit à cœur ; posez-le sur la grille de refroidissement.':'The bread is baked through; move it to the cooling rack.'}</p>}
+        {!breadProtocol && <StepExtras
           tips={<>
             <Section icon="" title={t('sectionTitles.watchFor')}>
               {isBread ? (
@@ -1899,12 +2087,28 @@ When the baker questions a value (e.g. "isn't 0.3g too small?"), affirm the numb
             )}
           </>}
           faqKey="bake"
+          faqOverride={!isBread && ovenType==='pizza_oven' ? WOOD_OVEN_FAQ.bake : undefined}
           coachStepId={isBread ? 'bake' : 'pizza_maestro'}
           coachTitle={t('stepTitles.bakeEat')}
           recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
-        />
+        />}
+        {!isBread && onNavigateToPizzaParty && <button type="button" onClick={onNavigateToPizzaParty} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{pizzaActionLabel ?? (l === 'fr' ? 'Commencer la cuisson des pizzas' : 'Start baking the pizzas')} →</button>}
       </StepCard>
+
+      {isBread && <StepCard final number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Garder les pains souples' : 'Keep the breads soft') : (l === 'fr' ? 'Laisser refroidir le pain' : 'Cool the bread')}>
+        {breadProtocol ? <Steps items={profileSteps(breadProtocol.cooling[l])} /> : (() => {
+          const weight = (recipe?.totalDough ?? numItems * 750) / Math.max(1,numItems);
+          const range = breadCoolingRange(styleKey, weight);
+          return <><Section icon="" title={t('sectionTitles.whatToDo')}><Steps items={[
+            {bold:l === 'fr' ? 'Sortez le pain du moule ou de la cocotte et posez-le à découvert sur une grille.' : 'Remove the bread from its tin or pot and place it uncovered on a rack.',note:''},
+            {bold:l === 'fr' ? `Comptez environ ${range} avant de trancher.` : `Allow about ${range} before slicing.`,note:''},
+          ]}/></Section><p style={{marginTop:16}}><strong>{l === 'fr' ? 'Prêt quand : ' : 'Ready when: '}</strong>{styleKey === 'pain_seigle' ? (l === 'fr' ? 'Attendez le lendemain pour trancher ; une fois refroidi, emballez-le pour éviter qu’il sèche.' : 'Wait until tomorrow to slice; once cool, wrap it to keep it from drying out.') : (l === 'fr' ? 'Le dessous du pain n’est plus chaud au toucher. Encore chaud ? Vérifiez dans 30 min.' : 'The loaf no longer feels warm underneath. Still warm? Check again in 30 min.')}</p></>;
+        })()}
+        {!breadProtocol && <StepExtras tips={<p>{l === 'fr' ? 'Laissez-le découvert pendant le refroidissement. Rangez-le une fois refroidi.' : 'Leave it uncovered while cooling. Store it once cool.'}</p>} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />}
+        {fillingsAction}
+      </StepCard>}
+      {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} sessionSaved={sessionSaved}/>}
 
       {learnTerm && (
         <LearnModal

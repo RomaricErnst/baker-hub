@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
 import { PIZZAS, DESSERT_PIZZAS, getCustomPizzaList } from '../../lib/toppingDatabase';
 import type { Ingredient, IngredientUnit } from '../../lib/toppingTypes';
 
@@ -16,29 +15,34 @@ function formatQty(amount: number, unit: IngredientUnit, locale: string): string
     pinch:  { en: 'pinches', fr: 'pincées' },
     drizzle:{ en: 'drizzles', fr: 'filets' },
   };
-  const label = unitLabels[unit]?.[locale as 'en' | 'fr'] ?? unit;
+  const singular: Record<string, {en:string;fr:string}> = { slices: {en:'slice',fr:'tranche'}, leaves: {en:'leaf',fr:'feuille'}, sprigs: {en:'sprig',fr:'brin'}, pinch: {en:'pinch',fr:'pincée'}, drizzle: {en:'drizzle',fr:'filet'} };
+  const label = (amount === 1 ? singular[unit]?.[locale as 'en'|'fr'] : undefined) ?? unitLabels[unit]?.[locale as 'en' | 'fr'] ?? unit;
   return `${Math.round(amount)} ${label}`;
 }
 
 interface Props {
+  continueLabel?:string;
+  onProgress?:(progress:{done:number;total:number})=>void;
+  storagePrefix?:string;
   bakeTime: Date;
   locale: string;
   selectedPizzas: Record<string, number>;
   onGoToBake: () => void;
+  onGoToShopping: () => void;
+  onGoToPizzas: () => void;
   styleKey?: string;
 }
 
 const STYLE_PREP_NOTES: Partial<Record<string, { en: string; fr: string }[]>> = {
   roman: [
-    { en: 'Oil your baking tray generously — the teglia base needs to fry slightly in the oil for the crispy bottom.', fr: "Huiler généreusement votre plaque — la base teglia doit légèrement frire dans l'huile pour le fond croustillant." },
-    { en: 'First bake: bake the dough plain at 250°C for 10 min until set. Then add toppings and bake a further 10–12 min.', fr: "Première cuisson : cuire la pâte seule à 250°C pendant 10 min. Puis ajouter les garnitures et cuire encore 10–12 min." },
-    { en: 'Dimple the surface with oiled fingers just before the first bake — this gives the teglia its characteristic texture.', fr: "Faire des empreintes dans la surface avec les doigts huilés juste avant la première cuisson." },
+    { en: 'Oil the tray to help release the dough and crisp the base.', fr: 'Huilez la plaque pour faciliter le démoulage et rendre le dessous croustillant.' },
+    { en: 'Follow the baking steps for your oven. Add each topping before or after baking as indicated for the selected pizza.', fr: 'Suivez les étapes de cuisson adaptées à votre four. Ajoutez chaque garniture avant ou après cuisson selon la pizza choisie.' },
+    { en: 'Dimple the dough gently with oiled fingers before baking.', fr: 'Marquez doucement la pâte du bout des doigts huilés avant la cuisson.' },
   ],
   pan: [
-    { en: 'Oil the pan heavily — the cheese at the edges will fry in the oil and create the frico crust. This is not optional.', fr: "Huiler généreusement le moule — le fromage sur les bords va frire dans l'huile et créer la croûte frico." },
-    { en: 'Press the cheese all the way to the edges and corners of the pan before baking — it must touch the pan walls.', fr: "Pousser le fromage jusqu'aux bords et coins du moule avant d'enfourner." },
-    { en: 'Sauce goes on TOP of the cheese, not underneath. Add it after placing cheese, in stripes across the surface.', fr: "La sauce va SUR le fromage, pas en dessous. L'ajouter après le fromage, en lignes sur la surface." },
-    { en: 'Bake at 230°C for 20–25 min. The crust is done when the edges are deep golden and pulling away from the pan.', fr: "Cuire à 230°C pendant 20–25 min. La croûte est prête quand les bords sont bien dorés et se décollent du moule." },
+    { en: 'Oil the pan, including the corners, to help release the pizza.', fr: 'Huilez le moule, y compris les coins, pour faciliter le démoulage.' },
+    { en: 'Follow the topping order for the selected pizza; not every pan pizza uses cheese or sauce.', fr: 'Suivez l’ordre des garnitures de la pizza choisie ; une pizza en moule ne contient pas toujours du fromage ou de la sauce.' },
+    { en: 'Use the baking steps for your oven. Check that the base is cooked as well as the edges.', fr: 'Suivez les étapes de cuisson adaptées à votre four. Vérifiez la cuisson du dessous, pas seulement celle des bords.' },
   ],
 };
 
@@ -56,7 +60,7 @@ interface PrepTask {
 
 const STATIONS = [
   { id: 'cool',    en: 'Needs to cool before topping',    fr: 'Doit refroidir avant de garnir' },
-  { id: 'time',    en: 'Needs time — marinade or pickle', fr: 'Nécessite du temps — marinade ou saumure' },
+  { id: 'time',    en: 'Allow time ahead', fr: 'À anticiper' },
   { id: 'board',   en: 'Board — slice & tear',            fr: 'Planche — trancher & déchirer' },
   { id: 'grate',   en: 'Grate & crush',                   fr: 'Râper & concasser' },
   { id: 'drain',   en: 'Open & drain',                    fr: 'Ouvrir & égoutter' },
@@ -73,8 +77,7 @@ function assignStation(task: PrepTask): string {
   return 'board';
 }
 
-export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }: Props) {
-  const t = useTranslations('prep');
+export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShopping, onGoToPizzas, styleKey, storagePrefix="bh", onProgress, continueLabel }: Props) {
   const l = locale as 'en' | 'fr';
   // Persisted so ticks survive leaving/reopening the app (cleared on Start Over)
   const [completed, setCompleted] = useState<Set<string>>(new Set());
@@ -82,7 +85,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('bh_prep_ticks_v1');
+      const raw = localStorage.getItem(`${storagePrefix}_prep_ticks_v1`);
       if (raw) setCompleted(new Set(JSON.parse(raw) as string[]));
     } catch {}
     ticksHydrated.done = true;
@@ -91,7 +94,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
 
   useEffect(() => {
     if (!ticksHydrated.done) return;
-    try { localStorage.setItem('bh_prep_ticks_v1', JSON.stringify([...completed])); } catch {}
+    try { localStorage.setItem(`${storagePrefix}_prep_ticks_v1`, JSON.stringify([...completed])); } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completed]);
 
@@ -112,14 +115,19 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
     const pizza = allPizzas.find(p => p.id === pizzaId);
     if (!pizza) return;
     pizza.ingredients.forEach((ing: Ingredient) => {
-      if (!ing.prepNote) return;
-      if (!taskMap[ing.id]) {
-        const styleNote = styleKey ? (ing as any).prepNoteByStyle?.[styleKey] : undefined;
-        const note = styleNote ?? ing.prepNote;
+      const styleNote = styleKey ? (ing as any).prepNoteByStyle?.[styleKey] : undefined;
+      const note = styleNote ?? ing.prepNote;
+      if (!note) return;
+      // A shared ingredient can require different preparations (e.g. laksa vs rendang).
+      // Aggregate only the same instruction and unit, never whichever recipe came first.
+      const taskKey = JSON.stringify([ing.id, note.en, note.fr, note.timing ?? 0, ing.qtyPerPizza?.unit]);
+      let signature = 2166136261;
+      for (let index = 0; index < taskKey.length; index++) signature = Math.imul(signature ^ taskKey.charCodeAt(index), 16777619);
+      if (!taskMap[taskKey]) {
         const timing = note.timing ?? 0;
         const mustCool = timing >= 15 && (ing.category === 'meat' || ing.category === 'sauce');
-        taskMap[ing.id] = {
-          id: `ing_${ing.id}`,
+        taskMap[taskKey] = {
+          id: `ing_${ing.id}_${signature >>> 0}`,
           ingredientName: ing.name[l] ?? ing.name.en,
           text: note.en,
           textFr: note.fr,
@@ -132,13 +140,16 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
       }
       if (ing.qtyPerPizza) {
         const multiplier = styleKey ? ((ing as any).qtyMultiplierByStyle?.[styleKey] ?? 1) : 1;
-        taskMap[ing.id].totalAmount = (taskMap[ing.id].totalAmount ?? 0) + ing.qtyPerPizza.amount * qty * multiplier;
-        taskMap[ing.id].unit = ing.qtyPerPizza.unit;
+        taskMap[taskKey].totalAmount = (taskMap[taskKey].totalAmount ?? 0) + ing.qtyPerPizza.amount * qty * multiplier;
+        taskMap[taskKey].unit = ing.qtyPerPizza.unit;
       }
     });
   });
 
-  const tasks = Object.values(taskMap);
+  const tasks = Object.values(taskMap).map(task => ({...task, id: `${task.id}:${task.totalAmount ?? 0}:${task.unit ?? ""}`}));
+  const taskTotal=tasks.length;
+  const taskDone=tasks.filter(task=>completed.has(task.id)).length;
+  useEffect(()=>{onProgress?.({done:taskDone,total:taskTotal});},[taskDone,taskTotal,onProgress]);
 
   // Split into early (get ahead) and flexible
   const earlyStations = ['cool', 'time'];
@@ -252,12 +263,16 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
 
   return (
     <div style={{ padding: '0 16px 24px' }}>
+      {allPizzas.filter(p => (selectedPizzas[p.id] ?? 0) > 0 && p.preparationSequence).map(p => <details key={p.id} style={{ marginBottom: 12 }}>
+        <summary>{p.name[l]} · {l === 'fr' ? 'Ordre de préparation' : 'Preparation order'}</summary>
+        <p style={{ fontSize: 13, lineHeight: 1.5 }}>{p.preparationSequence?.[l]}</p>
+      </details>)}
 
       {/* Style-specific notes */}
       {styleKey && STYLE_PREP_NOTES[styleKey] && (
         <div style={{ margin: '0 0 16px', border: '1px solid #E8E0D5', borderRadius: '16px', overflow: 'hidden' }}>
           <div style={{ background: '#2B2420', color: 'white', padding: '8px 16px', fontSize: '11px', fontFamily: 'var(--font-ui)', letterSpacing: '1px', textTransform: 'uppercase' }}>
-            {styleKey === 'pan' ? (l === 'fr' ? 'Style Detroit' : 'Detroit Style') : (l === 'fr' ? 'Style Teglia' : 'Teglia Style')}
+            {styleKey === 'pan' ? (l === 'fr' ? 'Pizza en moule' : 'Pan pizza') : (l === 'fr' ? 'Pizza sur plaque' : 'Tray pizza')}
           </div>
           {STYLE_PREP_NOTES[styleKey]!.map((note, i) => (
             <div key={i} style={{ padding: '12px 16px', borderBottom: i < STYLE_PREP_NOTES[styleKey]!.length - 1 ? '1px solid #E8E0D5' : 'none', fontSize: '13px', color: '#3D3530', fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}>
@@ -281,8 +296,8 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
               </div>
               <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: '#8A7F78', marginBottom: '12px' }}>
                 {l === 'fr'
-                  ? 'Ces ingrédients ont besoin de temps ou doivent refroidir — ils se gardent au frigo.'
-                  : 'These need time or must cool — they keep in the fridge until you\'re ready.'}
+                  ? 'Ces préparations demandent du temps. Gardez les ingrédients périssables au froid jusqu’à leur utilisation.'
+                  : 'These preparations need time. Keep perishable ingredients chilled until needed.'}
               </div>
               {earlyStations.map(s => renderStationBlock(s))}
             </div>
@@ -304,7 +319,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
             <div>
               {!hasEarly && (
                 <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: '#8A7F78', marginBottom: '12px' }}>
-                  {l === 'fr' ? 'Tout est flexible — pendant que le four chauffe ou juste avant.' : 'All flexible — while the oven heats or just before.'}
+                  {l === 'fr' ? 'Préparez ces ingrédients pendant le préchauffage ou juste avant de garnir.' : 'Prepare these ingredients during preheating or just before topping.'}
                 </div>
               )}
               {flexStations.map(s => renderStationBlock(s))}
@@ -324,8 +339,34 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, styleKey }
           cursor: 'pointer', border: 'none',
         }}
       >
-        {t('cta')}
+        {continueLabel ? `${continueLabel} →` : l === 'fr' ? 'Cuire les pizzas →' : 'Cook pizzas →'}
       </button>
+      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+        <button
+          type="button"
+          onClick={onGoToShopping}
+          style={{
+            flex: 1, minHeight: '44px', padding: '10px 12px',
+            border: '1px solid #E0D8CF', borderRadius: '12px',
+            background: '#FDFBF7', color: '#3D3530',
+            fontFamily: 'var(--font-ui)', fontSize: '13px', cursor: 'pointer',
+          }}
+        >
+          {l === 'fr' ? 'Liste de courses' : 'Shopping list'}
+        </button>
+        <button
+          type="button"
+          onClick={onGoToPizzas}
+          style={{
+            flex: 1, minHeight: '44px', padding: '10px 12px',
+            border: '1px solid #E0D8CF', borderRadius: '12px',
+            background: '#FDFBF7', color: '#3D3530',
+            fontFamily: 'var(--font-ui)', fontSize: '13px', cursor: 'pointer',
+          }}
+        >
+          {l === 'fr' ? 'Modifier les pizzas' : 'Change pizzas'}
+        </button>
+      </div>
     </div>
   );
 }

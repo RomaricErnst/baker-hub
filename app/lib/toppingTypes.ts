@@ -79,7 +79,7 @@ export type ShoppingContext =
 export type ShopEntry = {
   shops: string[]
   online?: string[]
-  note?: string
+  note?: string | Locale
 }
 
 export type WhereToFind = Partial<Record<ShoppingContext, ShopEntry>>
@@ -150,6 +150,7 @@ export type Ingredient = {
 }
 
 export type Pizza = {
+  preparationSequence?: Locale
   // Core identity
   id: string
   name: Locale
@@ -215,7 +216,8 @@ export type FilterState = {
   complexity: ComplexityTier | null
   flavour: FlavorChip[]
   ingredientSearch: string    // free text — matches pizza name + all ingredient names
-  ingredientChips?: string[]  // selected quick-chips — OR logic
+  ingredientChips?: string[]
+  ingredientMatchMode?: 'any' | 'all'
   styleKey?: StyleKey
 }
 
@@ -245,7 +247,7 @@ export const OCCASION_LABELS: Record<OccasionTag, Locale> = {
   kids:    { en: 'Kids',     fr: 'Enfants' },
   party:   { en: 'Party',    fr: 'Fête' },
   impress: { en: 'Impress',  fr: 'Impressionner' },
-  quick:   { en: 'Quick',    fr: 'Rapide' },
+  quick:   { en: 'Quick toppings · ≤10 min', fr: 'Garnitures rapides · ≤10 min' },
 }
 
 export const SEASON_LABELS: Record<Season, Locale> = {
@@ -356,6 +358,19 @@ export function getCurrentSeason(): Season {
   return 'winter'
 }
 
+// Quick concerns topping preparation, not dough fermentation or oven heating.
+export function pizzaHasQuickToppings(p: Pizza, styleKey?: StyleKey): boolean {
+  if (!p.occasion.includes('quick') || !Number.isFinite(p.prepMinutes) || p.prepMinutes > 10) return false;
+  const advance = new Set(['marinara_sauce', 'tomato_sauce_cooked', 'grilled_chicken', 'roasted_pepper', 'aubergine', 'halloumi', 'poached_egg', 'ground_beef']);
+  return !p.ingredients.some(ingredient => {
+    if (advance.has(ingredient.id)) return true;
+    const note = (styleKey && ingredient.prepNoteByStyle?.[styleKey]) || ingredient.prepNote;
+    if ((note?.timing ?? 0) > 10) return true;
+    return [...(note?.en ?? '').matchAll(/(\d+)\s*(?:–|-|to)?\s*(\d+)?\s*min/gi)]
+      .some(match => Math.max(Number(match[1]), Number(match[2] || 0)) > 10);
+  });
+}
+
 export function filterPizzas(pizzas: Pizza[], f: FilterState): Pizza[] {
   return pizzas.filter(p => {
     if (f.styleKey && p.compatibleStyles && p.compatibleStyles.length > 0 &&
@@ -363,7 +378,7 @@ export function filterPizzas(pizzas: Pizza[], f: FilterState): Pizza[] {
     if (f.base && p.base !== f.base) return false
     if (f.region) { if (p.region !== f.region) return false }
     else if (f.regions && f.regions.length > 0) { if (!p.region || !f.regions.includes(p.region)) return false }
-    if (f.occasion.length && !f.occasion.some(o => p.occasion.includes(o))) return false
+    if (f.occasion.length && !f.occasion.some(o => o === 'quick' ? pizzaHasQuickToppings(p, f.styleKey) : p.occasion.includes(o))) return false
     if (f.dietary.length && !f.dietary.every(d => p.dietary.includes(d))) return false
     if (f.season !== 'all' && !p.season.includes('all') && !p.season.includes(f.season)) return false
     if (f.wine.length && !f.wine.some(w => p.wine.includes(w))) return false
@@ -388,7 +403,8 @@ export function filterPizzas(pizzas: Pizza[], f: FilterState): Pizza[] {
           .filter(ing => !!ing && !!ing.name && typeof ing.name.en === 'string')
           .flatMap(ing => [ing.name.en, ing.name.fr ?? '']),
       ].join(' ').toLowerCase();
-      if (!activeChips.some(chip => allText.includes(chip.toLowerCase()))) return false;
+      const matches = (chip: string) => allText.includes(chip.toLowerCase());
+      if (!(f.ingredientMatchMode === 'all' ? activeChips.every(matches) : activeChips.some(matches))) return false;
     }
     if (f.flavour.length > 0) {
       const chipMatch = f.flavour.some(chip => {
@@ -431,4 +447,11 @@ export const DEFAULT_FILTER: FilterState = {
   flavour: [],
   ingredientSearch: '',
   ingredientChips: [],
+}
+
+/** Apply course before facets; savoury choices remain saved while browsing sweets. */
+export function filterPizzasByCourse(pizzas: Pizza[], course: 'savoury' | 'sweet', filters: FilterState, styleKey?: StyleKey): Pizza[] {
+  return filterPizzas(pizzas.filter(p => course === 'sweet' ? p.category === 'dessert' : p.category !== 'dessert'), {
+    ...(course === 'sweet' ? DEFAULT_FILTER : filters), styleKey,
+  });
 }

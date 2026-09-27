@@ -219,6 +219,7 @@ function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
 export default function Header({
   units = 'metric',
   onUnitsChange,
+  onBeforeLocaleChange,
   onLoadRecipe,
   recipeGenerated,
   sessionSaved,
@@ -229,6 +230,11 @@ export default function Header({
   sessionDoughSpec,
   onSaveSession,
   onNewSession,
+  onBack,
+  onReviewPlan,
+  onOpenPizzas,
+  onOpenSandwiches,
+  onSharePlan,
   onOpenProfile,
   onLoadBakeEvent,
   onResumeBakeEvent,
@@ -238,6 +244,7 @@ export default function Header({
 }: {
   units?: UnitSystem;
   onUnitsChange?: (u: UnitSystem) => void;
+  onBeforeLocaleChange?: () => void;
   onLoadRecipe?: (r: SavedRecipe) => void;
   recipeGenerated?: boolean;
   sessionSaved?: boolean;
@@ -249,6 +256,11 @@ export default function Header({
   sessionDoughSpec?: string;
   onSaveSession?: () => void;
   onNewSession?: () => void;
+  onBack?: () => void;
+  onReviewPlan?: () => void;
+  onOpenPizzas?: () => void;
+  onOpenSandwiches?: () => void;
+  onSharePlan?: () => void;
   onOpenProfile?: () => void;
   onLoadBakeEvent?: (event: BakeEvent) => void;
   onResumeBakeEvent?: (event: BakeEvent) => void;
@@ -266,12 +278,32 @@ export default function Header({
 
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  // Escape closes the drawer, as it does on every other sheet.
+  const [shoppingLocation, setShoppingLocation] = useState('international');
+  useEffect(() => { const sync = () => { try { setShoppingLocation(localStorage.getItem('bh_shopping_location') || 'international'); } catch {} }; sync(); window.addEventListener('bh-shopping-location',sync); return () => window.removeEventListener('bh-shopping-location',sync); }, []);
+  const [menuPage, setMenuPage] = useState<'main' | 'settings' | 'library' | 'account'>('main');
+  const menuButton: React.CSSProperties = { width: '100%', textAlign: 'left', minHeight: 44, padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, background: 'white', color: 'var(--char)', font: 'inherit', cursor: 'pointer', textDecoration: 'none', boxSizing: 'border-box' };
+  const menuGroup: React.CSSProperties = { fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--smoke)', margin: '12px 0 4px' };
+  useEffect(() => { if (!menuOpen) setMenuPage('main'); }, [menuOpen]);
+  useEffect(() => { drawerRef.current?.scrollTo(0, 0); drawerRef.current?.focus({preventScroll:true}); }, [menuPage]);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  // Keep keyboard navigation inside the open menu and restore the trigger.
   useEffect(() => {
     if (!menuOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    drawerRef.current?.focus({preventScroll:true});
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+      if (e.key !== 'Tab') return;
+      const items = Array.from(drawerRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), [tabindex="0"]') ?? []).filter(el => el.offsetParent !== null);
+      const first = items[0], last = items[items.length - 1];
+      if (!first) { e.preventDefault(); return; }
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === drawerRef.current)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || document.activeElement === drawerRef.current)) { e.preventDefault(); first.focus(); }
+    };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = previousOverflow; if (previousFocus?.isConnected) previousFocus.focus({preventScroll:true}); };
   }, [menuOpen]);
   // Share (and future actions) can request the sign-in home: anonymous
   // bakers tapping "Save & Share" get the drawer with the auth block
@@ -281,6 +313,7 @@ export default function Header({
     let timer: ReturnType<typeof setTimeout> | null = null;
     const open = () => {
       setMenuOpen(true);
+      setMenuPage('account');
       setAuthSpotlight(true);
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => setAuthSpotlight(false), 4000);
@@ -428,46 +461,28 @@ export default function Header({
 
   return (
     <>
-    <header style={{
-      background: 'var(--char)', color: 'var(--cream)',
+    <header className="bh-header" style={{
+      background: 'var(--warm)', color: 'var(--char)',
       padding: '0 12px', display: 'flex', alignItems: 'center',
-      justifyContent: 'space-between', height: '68px',
+      justifyContent: 'space-between', height: '64px', borderBottom: '1px solid var(--border)',
       position: 'sticky', top: 0, zIndex: 100,
       
     }}>
-      {/* Left: menu button + logo + tagline */}
-      <div ref={menuRef} style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: '1 1 auto' }}>
+      {onBack && (
         <button
-          onClick={() => setMenuOpen(v => !v)}
-          aria-label="Menu"
-          style={{
-            background: menuOpen ? 'rgba(255,255,255,0.1)' : 'transparent',
-            border: 'none',
-            borderRadius: '12px', cursor: 'pointer',
-            padding: '12px 8px', display: 'flex', flexDirection: 'column',
-            gap: '4px', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          {[0,1,2].map(i => (
-            <span key={i} style={{
-              display: 'block', width: '24px', height: '2.5px',
-              background: 'var(--cream)', borderRadius: '1.5px',
-            }} />
-          ))}
-        </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <img src="/logo-mark.webp" width={36} height={36}
-            style={{ objectFit: 'contain' }} alt="Baker Hub" />
-          <div className="bh-wordmark" style={{
-            fontFamily: 'var(--font-ui)',
-            // The wordmark carries the brand on a sans now, so it leans on
-            // weight and tightening rather than on a serif's contrast.
-            fontSize: '17px', fontWeight: 800, letterSpacing: '-0.025em',
-            color: 'var(--cream)', lineHeight: 1,
-            whiteSpace: 'nowrap',
-          }}>Baker Hub</div>
-        </div>
+          type="button"
+          onClick={onBack}
+          aria-label={locale === 'fr' ? 'Retour' : 'Back'}
+          style={{ border: 'none', background: 'transparent', color: 'var(--char)', width: '44px', minHeight: '44px', padding: 0, fontSize: '24px', lineHeight: 1, cursor: 'pointer', flexShrink: 0 }}
+        >‹</button>
+      )}
+      <div ref={menuRef} style={{ minWidth: 0, flex: '1 1 auto' }}>
+        <div className="bh-wordmark" style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: 700, letterSpacing: '-0.025em', whiteSpace: 'nowrap' }}>bakerhub.</div>
       </div>
+      <button className="bh-header-menu" onClick={() => setMenuOpen(v => !v)} aria-expanded={menuOpen} aria-controls="bakerhub-menu" aria-haspopup="dialog"
+        style={{ order: 3, border: 'none', background: 'transparent', color: 'var(--char)', minHeight: '44px', minWidth: '44px', flexShrink: 0, padding: '8px', fontFamily: 'var(--font-ui)', fontSize: '16px', fontWeight: 500, cursor: 'pointer' }}>
+        Menu
+      </button>
 
       {/* Back chip — pages outside the session flow (About) get a
           persistent way home in the sticky header instead of session
@@ -477,10 +492,10 @@ export default function Header({
           href={backHref}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: '8px',
-            padding: '8px 12px',
+            padding: '8px 12px', minHeight: '44px', minWidth: '44px',
             border: '1px solid rgba(240, 235, 224,0.25)',
             borderRadius: '20px',
-            color: 'var(--cream)',
+            color: 'var(--char)',
             fontSize: '12px',
             fontFamily: 'var(--font-ui)',
             textDecoration: 'none',
@@ -494,110 +509,18 @@ export default function Header({
         </a>
       )}
 
-      {/* Right: three round 44px targets. They used to be two labels sharing
-          one pill, which meant the destructive action sat a thumb-width from
-          the one bakers tap most, both at 11px.
-
-          Order and spacing are the mis-tap guard: Start over is set apart from
-          Save by 16px and rendered quietly (no fill, dim stroke), while the two
-          benign actions — Save and Profile — sit together at 8px. Nothing
-          destructive is ever adjacent to something frequent. */}
-      {!backHref && (() => {
-        // Save appears once there is something worth saving. Start over does
-        // NOT wait for that: it is also how a baker switches Pizza <-> Pain,
-        // so it has to be reachable from the first configuration screen.
-        // Gating both behind "has work" hid it for the whole setup flow.
-        const hasWork = (recipeGenerated || sessionSaved || sessionRestored) && !hideActionBar;
-        return (
-          <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-
-            {/* Start over — quiet, and the furthest of the three from Save */}
-            {onNewSession && (
-              <button
-                onClick={() => {
-                  if (!hasWork || window.confirm(tS('newSessionConfirm'))) onNewSession?.();
-                }}
-                aria-label={locale === 'fr' ? 'Recommencer' : 'Start over'}
-                title={locale === 'fr' ? 'Recommencer' : 'Start over'}
-                style={{
-                  width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
-                  border: '1px solid rgba(255,255,255,0.12)', background: 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', marginRight: '16px',
-                }}
-              >
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9A918A"
-                  strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M3 12a9 9 0 1 0 3-6.7" /><polyline points="3 4 3 9 8 9" />
-                </svg>
-              </button>
-            )}
-
-            {/* Save — the icon carries the state, since there is no label to
-                carry it: a floppy while unsaved, a tick once stored.
-                Signed out the save is real but local, so it wears gold, not
-                the sage tick. The menu said "Session saved" directly above
-                "Sign in to save your sessions"; a baker who cleared their
-                browser lost a session the app had twice called saved. */}
-            {hasWork && (
-              <button
-                onClick={() => { if (!sessionSaved) onSaveSession?.(); }}
-                aria-label={sessionSaved ? (user ? tS('saved') : tS('savedLocal')) : tS('saveSession')}
-                title={sessionSaved ? (user ? tS('saved') : tS('savedLocal')) : tS('saveSession')}
-                style={{
-                  width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
-                  border: sessionSaved && user
-                    ? '1px solid rgba(107,122,90,0.5)'
-                    : '1px solid rgba(200,138,82,0.45)',
-                  background: sessionSaved && user
-                    ? 'rgba(107,122,90,0.14)'
-                    : 'rgba(200,138,82,0.12)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: sessionSaved ? 'default' : 'pointer',
-                }}
-              >
-                {sessionSaved ? (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                    stroke={user ? '#93A683' : 'var(--terra-on-dark)'}
-                    strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M4 12.5l5 5 11-11" />
-                  </svg>
-                ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--terra-on-dark)"
-                    strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M4 4h12l4 4v12H4z" /><path d="M8 4v6h8V4" />
-                    <rect x="8" y="14" width="8" height="6" />
-                  </svg>
-                )}
-              </button>
-            )}
-          </div>
-        );
-      })()}
-      {/* Profile picto — far right, 44px tap target (Flo). */}
-      {!backHref && (
-        <button
-          onClick={() => window.dispatchEvent(new Event('bh-open-auth'))}
-          aria-label={user ? 'Profile' : 'Sign in'}
-          style={{
-            width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
-            border: '1px solid rgba(255,255,255,0.15)', background: 'transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', position: 'relative', marginLeft: '8px',
-          }}
-        >
-          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#C4BBAE" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-            <circle cx="12" cy="8.5" r="3.6" />
-            <path d="M4.5 20c1.6-3.4 4.3-5 7.5-5s5.9 1.6 7.5 5" />
-          </svg>
-          {user && (
-            <span style={{
-              position: 'absolute', top: '2px', right: '2px',
-              width: '10px', height: '10px', borderRadius: '50%',
-              background: 'var(--sage)', border: '1.5px solid #2B2420',
-            }} />
+      {!backHref && !hideActionBar && (
+        <div style={{ order: 2, display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+          {onSaveSession && (onNewSession || recipeGenerated || sessionRestored) && (
+            <button className="bh-header-save" onClick={() => { if (!sessionSaved) onSaveSession(); }}
+              aria-label={sessionSaved ? (user ? (locale === 'fr' ? 'Enregistré dans votre compte' : 'Saved to your account') : (locale === 'fr' ? 'Enregistré sur cet appareil' : 'Saved on this device')) : (locale === 'fr' ? 'Enregistrer' : 'Save')}
+              title={sessionSaved ? (user ? (locale === 'fr' ? 'Enregistré dans votre compte' : 'Saved to your account') : (locale === 'fr' ? 'Enregistré sur cet appareil' : 'Saved on this device')) : undefined}
+              aria-disabled={sessionSaved}
+              style={{ border: '1px solid var(--border)', borderRadius: '10px', background: 'transparent', color: 'var(--char)', minHeight: '44px', minWidth: '44px', padding: '8px 10px', fontFamily: 'var(--font-ui)', fontSize: '16px', fontWeight: 500, whiteSpace: 'nowrap', cursor: sessionSaved ? 'default' : 'pointer' }}>
+              {sessionSaved ? (locale === 'fr' ? 'Enregistré' : 'Saved') : (locale === 'fr' ? 'Enregistrer' : 'Save')}
+            </button>
           )}
-        </button>
+        </div>
       )}
 
     </header>
@@ -611,202 +534,64 @@ export default function Header({
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 199 }}
         />
         {/* Drawer panel */}
-        <div style={{
-          position: 'fixed', top: 0, left: 0, height: '100dvh', width: '300px',
-          background: '#2B2420', borderRight: '1px solid rgba(255,255,255,0.12)',
-          boxShadow: '4px 0 24px rgba(0,0,0,0.5)', zIndex: 200,
-          display: 'flex', flexDirection: 'column', overflow: 'hidden',
-          animation: 'slideInLeft 0.25s ease',
+        <div id="bakerhub-menu" ref={drawerRef} role="dialog" aria-modal="true" aria-label="Menu" tabIndex={-1} style={{
+          position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', maxHeight: '80dvh', width: 'min(390px, calc(100vw - 24px))', padding: 20, boxSizing: 'border-box', borderRadius: 20,
+          background: 'var(--warm)', border: '1px solid var(--border)',
+          boxShadow: '4px 0 32px rgba(43,36,32,0.18)', zIndex: 200,
+          display: 'flex', flexDirection: 'column', overflowY: 'auto', color: 'var(--char)',
+          fontFamily: 'var(--font-ui)', fontSize: 15, lineHeight: 1.5,
         }}>
           {/* Drawer header */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '16px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)',
+            padding: '0 0 14px',
+            position: 'sticky', top: 0, background: 'var(--warm)', zIndex: 2,
             flexShrink: 0,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <img src="/logo-mark.webp" alt="" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }}/>
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--cream)' }}>
-                Baker Hub
-              </span>
-            </div>
-            <button
-              onClick={() => setMenuOpen(false)}
-              aria-label={locale === 'fr' ? 'Fermer' : 'Close'}
-              style={{
-                background: 'transparent', border: 'none', color: 'var(--smoke)',
-                fontSize: '17px', lineHeight: 1, cursor: 'pointer',
-                width: '44px', height: '44px', margin: '-11px -11px -11px 0',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >✕</button>
+            <strong>{menuPage === 'main' ? 'Menu' : menuPage === 'settings' ? (locale === 'fr' ? 'Langue et unités' : 'Language & units') : menuPage === 'library' ? (locale === 'fr' ? 'Mes fournées enregistrées' : 'My saved bakes') : (locale === 'fr' ? 'Compte' : 'Account')}</strong>
+            <button onClick={() => setMenuOpen(false)} style={{ ...menuButton, width: 'auto' }}>{locale === 'fr' ? 'Fermer' : 'Close'}</button>
           </div>
+          {menuPage !== 'main' && <button onClick={() => setMenuPage('main')} style={{ ...menuButton, marginBottom: 14 }}>{locale === 'fr' ? '‹ Retour au menu' : '‹ Back to menu'}</button>}
+          {menuPage === 'main' && <nav aria-label="Menu" style={{ display: 'grid', gap: 8 }}>
+            {onNewSession && <>
+              <div style={menuGroup}>{locale === 'fr' ? 'Ce plan' : 'This plan'}</div>
+              {onReviewPlan && <button style={menuButton} onClick={() => { setMenuOpen(false); onReviewPlan(); }}>{locale === 'fr' ? 'Revoir mes choix' : 'Review choices'}</button>}
+              {onOpenPizzas && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenPizzas(); }}>{locale === 'fr' ? 'Choisir mes pizzas' : 'Choose pizzas'}</button>}
+              {onOpenSandwiches && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenSandwiches(); }}>{locale === 'fr' ? 'Sandwiches et garnitures' : 'Sandwiches & fillings'}</button>}
+              {onSaveSession && <button style={menuButton} onClick={() => { setMenuOpen(false); onSaveSession(); }}>{locale === 'fr' ? (recipeGenerated ? 'Enregistrer la recette' : 'Enregistrer mes choix') : (recipeGenerated ? 'Save recipe' : 'Save draft')}</button>}
+              {recipeGenerated && onSharePlan && <button style={menuButton} onClick={() => { setMenuOpen(false); onSharePlan(); }}>{locale === 'fr' ? 'Partager la recette' : 'Share recipe'}</button>}
+              <button style={menuButton} onClick={() => { setMenuOpen(false); onNewSession(); }}>{locale === 'fr' ? 'Commencer une nouvelle fournée' : 'Start a new bake'}</button>
+            </>}
+            <div style={menuGroup}>Bakerhub</div>
+            <button style={menuButton} onClick={() => setMenuPage('library')}>{locale === 'fr' ? 'Mes fournées enregistrées' : 'My saved bakes'}</button>
+            <button style={menuButton} onClick={() => setMenuPage('account')}>{locale === 'fr' ? 'Compte' : 'Account'}</button>
+            {onOpenProfile && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenProfile(); }}>{locale === 'fr' ? 'Préférences de cuisine' : 'Kitchen preferences'}</button>}
+            <button style={menuButton} onClick={() => setMenuPage('settings')}>{locale === 'fr' ? 'Langue et unités' : 'Language & units'}</button>
+            <Link style={menuButton} href={locale === 'fr' ? '/fr/about' : '/about'} onClick={() => setMenuOpen(false)}>{locale === 'fr' ? 'À propos de Bakerhub' : 'About Bakerhub'}</Link>
+          </nav>}
 
-          {/* ── Current session — always visible ── */}
-          {recipeGenerated && (
-            <div style={{
-              padding: '12px 16px',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
-              flexShrink: 0,
-            }}>
-              <div style={{ ...monoLabel, marginBottom: '8px' }}>
-                {locale === 'fr' ? 'Session en cours' : 'Current session'}
-              </div>
-
-              {/* Summary card */}
-              <div style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '16px',
-                padding: '12px 12px',
-              }}>
-                {sessionSummary && (
-                  <div style={{
-                    fontSize: '12px', fontFamily: 'var(--font-ui)',
-                    fontWeight: 600, color: 'var(--cream)',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>{sessionSummary}</div>
-                )}
-                {sessionDoughSpec && (
-                  <div style={{
-                    fontSize: '11px', fontFamily: 'var(--font-ui)',
-                    color: 'var(--smoke)', marginTop: '2px',
-                  }}>{sessionDoughSpec}</div>
-                )}
-              </div>
-
-              {/* Action row */}
-              <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
-                {sessionSaved ? (
-                  <span style={{
-                    fontSize: '11px', fontFamily: 'var(--font-ui)',
-                    color: user ? 'var(--sage)' : 'rgba(255,255,255,0.5)',
-                    cursor: 'default', lineHeight: 1.4,
-                  }}>
-                    {user ? tS('saved') : tS('savedLocalNote')}
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => { onSaveSession?.(); setMenuOpen(false); }}
-                    style={{
-                      fontSize: '11px', fontFamily: 'var(--font-ui)',
-                      color: 'var(--terra-on-dark)',
-                      border: '1px solid rgba(200, 138, 82,0.4)',
-                      borderRadius: '12px',
-                      background: 'rgba(200, 138, 82,0.1)',
-                      padding: '12px 16px', minHeight: '44px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {locale === 'fr' ? 'Enregistrer' : 'Save session'}
-                  </button>
-                )}
-                {onNewSession && <button
-                  // Same guard as the header icon. This copy called
-                  // onNewSession() straight through: the destructive action
-                  // was confirmed in one place and not the other.
-                  onClick={() => {
-                    if (window.confirm(tS('newSessionConfirm'))) {
-                      onNewSession();
-                      setMenuOpen(false);
-                    }
-                  }}
-                  style={{
-                    fontSize: '13px', fontFamily: 'var(--font-ui)',
-                    color: 'var(--smoke)',
-                    background: 'none', border: 'none',
-                    padding: '12px 8px', minHeight: '44px',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                  }}
-                >
-                  {locale === 'fr' ? 'Nouvelle session' : 'New session'}
-                </button>}
-              </div>
-            </div>
-          )}
-
-          {/* ── Mon profil ── */}
-          {onOpenProfile && (
-            <button
-              onClick={() => { setMenuOpen(false); onOpenProfile(); }}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '12px 16px', background: 'transparent', border: 'none',
-                borderTop: '1px solid rgba(255,255,255,0.08)',
-                cursor: 'pointer', width: '100%', textAlign: 'left', flexShrink: 0,
-              }}
-            >
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: 600, color: 'var(--cream)' }}>
-                {locale === 'fr' ? 'Mes préférences' : 'My preferences'}
-              </span>
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>→</span>
-            </button>
-          )}
-
-          {/* ── Language · Units — always visible ── */}
-          {([
-            {
-              label: locale === 'fr' ? 'Langue' : 'Language',
-              options: [
-                { key: 'en', display: 'EN', active: locale === 'en', onSelect: () => { router.replace(pathname, { locale: 'en' }); setMenuOpen(false); } },
-                { key: 'fr', display: 'FR', active: locale === 'fr', onSelect: () => { router.replace(pathname, { locale: 'fr' }); setMenuOpen(false); } },
-              ],
-            },
-            {
-              label: locale === 'fr' ? 'Unites' : 'Units',
-              options: [
-                { key: 'metric',   display: 'g/°C',   active: units === 'metric',   onSelect: () => onUnitsChange?.('metric') },
-                { key: 'imperial', display: 'oz/°F',  active: units === 'imperial', onSelect: () => onUnitsChange?.('imperial') },
-              ],
-            },
-          ] as const).map((row, idx) => (
-            <div key={row.label} style={{
-              padding: '12px 16px',
-              borderTop: idx === 0 ? '1px solid rgba(255,255,255,0.08)' : undefined,
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              flexShrink: 0,
-            }}>
-              <span style={monoLabel}>{row.label}</span>
-              <div style={{ display: 'flex', gap: '4px' }}>
-                {row.options.map(opt => (
-                  <button key={opt.key} onClick={opt.onSelect} style={{
-                    minWidth: '48px', padding: '.22rem 8px', minHeight: '44px', borderRadius: '12px',
-                    border: 'none', cursor: 'pointer', fontFamily: 'var(--font-ui)',
-                    fontSize: '12px', fontWeight: 600, textAlign: 'center',
-                    background: opt.active ? 'var(--terra)' : 'transparent',
-                    color: opt.active ? '#fff' : 'var(--smoke)',
-                  }}>{opt.display}</button>
-                ))}
-              </div>
-            </div>
-          ))}
-
-          {/* ── My Sessions label — always visible ── */}
-          <div style={{
-            padding: '12px 16px 8px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
-            flexShrink: 0,
-          }}>
-            <div style={{ ...monoLabel }}>
-              {locale === 'fr' ? 'Mes sessions' : 'My sessions'}
-            </div>
-          </div>
-
+          {menuPage === 'settings' && <div style={{display:'grid',gap:18}}>
+            <label>{locale === 'fr' ? 'Langue' : 'Language'}<select value={locale} onChange={e=>{onBeforeLocaleChange?.();router.replace(pathname,{locale:e.target.value});setMenuOpen(false);}} style={{...menuButton,width:'100%',marginTop:6}}><option value="en">English</option><option value="fr">Français</option></select></label>
+            <label>{locale === 'fr' ? 'Unités' : 'Units'}<select value={units} onChange={e=>onUnitsChange?.(e.target.value as 'metric'|'imperial')} style={{...menuButton,width:'100%',marginTop:6}}><option value="metric">{locale === 'fr' ? 'Métriques · g, °C' : 'Metric · g, °C'}</option><option value="imperial">{locale === 'fr' ? 'Impériales · oz, °F' : 'Imperial · oz, °F'}</option></select></label>
+            <label>{locale === 'fr' ? 'Pays des courses' : 'Shopping location'}<select value={shoppingLocation} onChange={e=>{const location=e.target.value;setShoppingLocation(location);try{localStorage.setItem('bh_shopping_location',location);}catch{}window.dispatchEvent(new CustomEvent('bh-shopping-location',{detail:location}));}} style={{...menuButton,width:'100%',marginTop:6}}>
+              {[['singapore',locale==='fr'?'Singapour':'Singapore'],['france','France'],['uk',locale==='fr'?'Royaume-Uni':'UK'],['us',locale==='fr'?'États-Unis':'US'],['australia',locale==='fr'?'Australie':'Australia'],['international','International']].map(([value,label])=><option key={value} value={value}>{label}</option>)}
+            </select></label>
+            <button type="button" onClick={() => setMenuOpen(false)} style={{ ...menuButton, background: 'var(--terra)', color: 'white', textAlign: 'center', minHeight: 44 }}>{locale === 'fr' ? 'Terminé' : 'Done'}</button>
+          </div>}
+          {menuPage === 'library' && <>
           {/* ── My Sessions cards — scrollable ── */}
-          <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, padding: '4px 16px 12px' }}>
+          <div style={{ flex: '0 0 auto', minHeight: 0, padding: '4px 16px 12px' }}>
             {!user ? (
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
-                {locale === 'fr' ? 'Connectez-vous pour sauvegarder vos sessions' : 'Sign in to save your sessions'}
+              <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
+                {locale === 'fr' ? 'Connectez-vous pour retrouver vos fournées enregistrées' : 'Sign in to view your saved bakes'}
               </div>
             ) : loadingRecipes ? (
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-ui)' }}>
+              <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
                 {locale === 'fr' ? 'Chargement...' : 'Loading...'}
               </div>
             ) : bakeEvents.length === 0 ? (
-              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
-                {locale === 'fr' ? 'Aucune session sauvegardee' : 'No saved sessions yet'}
+              <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
+                {locale === 'fr' ? 'Aucune fournée enregistrée' : 'No saved bakes yet'}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -816,25 +601,25 @@ export default function Header({
                   return (
                     <div key={event.id} style={{
                       borderRadius: '16px',
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'var(--cream)',
+                      border: '1px solid var(--border)',
                       position: 'relative',
                       minHeight: '96px',
                     }}>
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
-                          if (!window.confirm('Delete this session?')) return;
+                          if (!window.confirm(locale === 'fr' ? 'Supprimer cette fournée ?' : 'Delete this bake?')) return;
                           await deleteBakeEvent(event.id);
                           setBakeEvents(prev => prev.filter(ev => ev.id !== event.id));
                         }}
                         style={{
                           position: 'absolute', bottom: '8px', right: '10px',
                           background: 'none', border: 'none', cursor: 'pointer',
-                          color: 'rgba(255,255,255,0.25)',
-                          padding: '2px', lineHeight: 1, zIndex: 1,
+                          color: 'var(--smoke)',
+                          width: '44px', height: '44px', padding: '12px', lineHeight: 1, zIndex: 1,
                         }}
-                        title="Delete session"
+                        title={locale === 'fr' ? 'Supprimer cette fournée' : 'Delete this bake'} aria-label={locale === 'fr' ? 'Supprimer cette fournée' : 'Delete this bake'}
                       >
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -844,13 +629,13 @@ export default function Header({
                           <path d="M9 6V4h6v2"/>
                         </svg>
                       </button>
-                      <div
+                      <div role="button" tabIndex={0} onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setViewingEvent(event); setMenuOpen(false); } }}
                         onClick={() => { setViewingEvent(event); setMenuOpen(false); }}
-                        style={{ padding: '12px 12px 12px', cursor: 'pointer' }}
+                        style={{ padding: '12px 48px 12px 12px', cursor: 'pointer' }}
                       >
                         <div style={{
                           fontSize: '12px', fontFamily: 'var(--font-ui)',
-                          fontWeight: 600, color: 'var(--cream)',
+                          fontWeight: 600, color: 'var(--char)',
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         }}>{title}</div>
                         {spec && (
@@ -862,7 +647,7 @@ export default function Header({
                         {(eventSlots[event.id] ?? []).length > 0 && (
                           <div style={{
                             fontSize: '11px', fontFamily: 'var(--font-ui)',
-                            color: 'rgba(255,255,255,0.4)', marginTop: '2px',
+                            color: 'var(--smoke)', marginTop: '2px',
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           }}>
                             {(eventSlots[event.id] ?? []).map(s => {
@@ -879,7 +664,7 @@ export default function Header({
                             fontFamily: 'var(--font-ui)', fontSize: '11px',
                             padding: '2px 8px', borderRadius: '20px',
                             background: 'rgba(107,122,90,0.15)', color: 'var(--sage)',
-                          }}>Dough</span>
+                          }}>{locale === 'fr' ? 'Pâte' : 'Dough'}</span>
                           {event.pizza_party_id && (
                             <span style={{
                               fontFamily: 'var(--font-ui)', fontSize: '11px',
@@ -891,8 +676,8 @@ export default function Header({
                             <span style={{
                               fontFamily: 'var(--font-ui)', fontSize: '11px',
                               padding: '2px 8px', borderRadius: '20px',
-                              background: 'rgba(200, 138, 82,0.10)', color: 'var(--terra-on-dark)',
-                            }}>Baked</span>
+                              background: 'rgba(200, 138, 82,0.10)', color: 'var(--terra)',
+                            }}>{locale === 'fr' ? 'Cuit' : 'Baked'}</span>
                           )}
                           {/* Nav #5 — clone this session onto the next matching weekday/time */}
                           {onRebakeBakeEvent && event.dough_snapshot?.eatTime && (
@@ -904,10 +689,10 @@ export default function Header({
                               }}
                               style={{
                                 fontFamily: 'var(--font-ui)', fontSize: '11px',
-                                padding: '2px 8px', borderRadius: '20px',
-                                background: 'rgba(255,255,255,0.08)',
-                                border: '1px solid rgba(255,255,255,0.15)',
-                                color: 'var(--cream)', cursor: 'pointer',
+                                padding: '8px', minHeight: '44px', borderRadius: '12px',
+                                background: 'var(--cream)',
+                                border: '1px solid var(--border)',
+                                color: 'var(--char)', cursor: 'pointer',
                                 lineHeight: '1.6',
                               }}
                             >
@@ -963,30 +748,12 @@ export default function Header({
             )}
           </div>
 
-          {/* ── About link — pinned footer ── */}
-          <div style={{
-            padding: '4px 16px 8px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
-            flexShrink: 0,
-          }}>
-            <Link
-              href={locale === 'fr' ? '/fr/about' : '/about'}
-              onClick={() => setMenuOpen(false)}
-              style={{
-                fontFamily: 'var(--font-ui)', fontSize: '11px',
-                color: 'var(--smoke)', textDecoration: 'none',
-                padding: '4px 0', display: 'block',
-                letterSpacing: '.04em', marginTop: '4px',
-              }}
-            >
-              {locale === 'fr' ? 'À propos' : 'About'}
-            </Link>
-          </div>
-
+          </>}
+          {menuPage === 'account' && <>
           {/* ── Auth — pinned footer ── */}
           <div style={{
             padding: '12px 16px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
+            borderTop: '1px solid var(--border)',
             flexShrink: 0,
             ...(authSpotlight && !user ? {
               boxShadow: 'inset 0 0 0 1.5px var(--gold)',
@@ -1014,7 +781,7 @@ export default function Header({
                 }}>{user.email}</span>
                 <button onClick={signOut} style={{
                   padding: '4px 12px', minHeight: '44px', borderRadius: '8px', flexShrink: 0,
-                  border: '1.5px solid rgba(255,255,255,0.15)', background: 'transparent',
+                  border: '1.5px solid var(--border)', background: 'transparent',
                   color: 'var(--smoke)', fontSize: '11px', cursor: 'pointer',
                   fontFamily: 'var(--font-ui)',
                 }}>{tAuth('signOut')}</button>
@@ -1022,13 +789,14 @@ export default function Header({
             ) : emailSent ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{
-                  fontSize: '12px', color: 'rgba(255,255,255,0.6)',
+                  fontSize: '12px', color: 'var(--smoke)',
                   fontFamily: 'var(--font-ui)', fontStyle: 'italic',
                   textAlign: 'center', padding: '2px 0', lineHeight: 1.45,
                 }}>
                   {tAuth('codeSent', { email: emailInput.trim() })}
                 </div>
                 <input
+                  aria-label={tAuth('codePlaceholder')}
                   type="text"
                   inputMode="numeric"
                   autoComplete="one-time-code"
@@ -1040,8 +808,8 @@ export default function Header({
                   onKeyDown={e => e.key === 'Enter' && verifyEmailCode()}
                   style={{
                     width: '100%', padding: '8px', minHeight: '44px', borderRadius: '8px',
-                    border: '1px solid rgba(255,255,255,0.18)',
-                    background: 'rgba(255,255,255,0.08)', color: 'var(--cream)',
+                    border: '1px solid var(--border)',
+                    background: 'var(--cream)', color: 'var(--char)',
                     fontSize: '16px', fontFamily: 'var(--font-ui)', outline: 'none',
                     textAlign: 'center', letterSpacing: '0.3em',
                     fontVariantNumeric: 'tabular-nums', boxSizing: 'border-box',
@@ -1052,8 +820,8 @@ export default function Header({
                   disabled={authBusy || codeInput.length !== 6}
                   style={{
                     width: '100%', padding: '8px', minHeight: '44px', borderRadius: '8px',
-                    background: 'var(--terra-on-dark)', border: 'none',
-                    color: '#2B2420', fontSize: '13px',
+                    background: 'var(--terra)', border: 'none',
+                    color: '#fff', fontSize: '13px',
                     cursor: authBusy || codeInput.length !== 6 ? 'default' : 'pointer',
                     opacity: authBusy || codeInput.length !== 6 ? 0.45 : 1,
                     fontFamily: 'var(--font-ui)', fontWeight: 500,
@@ -1062,7 +830,7 @@ export default function Header({
                 >{tAuth('verify')}</button>
                 {authNote && (
                   <div style={{
-                    fontSize: '11px', color: 'rgba(255,255,255,0.55)',
+                    fontSize: '11px', color: 'var(--smoke)',
                     fontFamily: 'var(--font-ui)', fontStyle: 'italic',
                     textAlign: 'center', lineHeight: 1.45,
                   }}>{tAuth(authNote)}</div>
@@ -1070,7 +838,7 @@ export default function Header({
                 <button onClick={useAnotherEmail} style={{
                   width: '100%', padding: '4px', minHeight: '44px', borderRadius: '12px',
                   border: 'none', background: 'transparent',
-                  color: 'rgba(255,255,255,0.45)', fontSize: '12px',
+                  color: 'var(--smoke)', fontSize: '12px',
                   cursor: 'pointer', fontFamily: 'var(--font-ui)', textAlign: 'center',
                 }}>{tAuth('useAnotherEmail')}</button>
               </div>
@@ -1078,35 +846,35 @@ export default function Header({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <button onClick={signInWithGoogle} style={{
                   width: '100%', padding: '8px', minHeight: '44px', borderRadius: '12px',
-                  border: '1.5px solid rgba(255,255,255,0.15)',
-                  background: 'rgba(255,255,255,0.06)', color: 'var(--cream)',
+                  border: '1.5px solid var(--border)',
+                  background: 'var(--cream)', color: 'var(--char)',
                   fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)',
                   fontWeight: 500, textAlign: 'center',
                 }}>{tAuth('google')}</button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
-                  <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-ui)' }}>{tAuth('or')}</span>
-                  <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                  <div style={{ flex: 1, height: '1px', background: 'var(--cream)' }} />
+                  <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>{tAuth('or')}</span>
+                  <div style={{ flex: 1, height: '1px', background: 'var(--cream)' }} />
                 </div>
                 {showEmailForm ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <div style={{ display: 'flex', gap: '8px' }}>
                       <input
-                        type="email" placeholder={tAuth('emailPlaceholder')}
+                        type="email" aria-label={tAuth('emailPlaceholder')} placeholder={tAuth('emailPlaceholder')}
                         value={emailInput} onChange={e => setEmailInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && signInWithEmail()}
                         style={{
                           flex: 1, padding: '8px 8px', minHeight: '44px', borderRadius: '8px',
-                          border: '1px solid rgba(255,255,255,0.18)',
-                          background: 'rgba(255,255,255,0.08)', color: 'var(--cream)',
+                          border: '1px solid var(--border)',
+                          background: 'var(--cream)', color: 'var(--char)',
                           fontSize: '16px', fontFamily: 'var(--font-ui)', outline: 'none',
                           boxSizing: 'border-box', minWidth: 0,
                         }}
                       />
                       <button onClick={signInWithEmail} disabled={authBusy} style={{
                         padding: '8px 12px', minHeight: '44px', borderRadius: '8px', flexShrink: 0,
-                        background: 'var(--terra-on-dark)', border: 'none',
-                        color: '#2B2420', fontSize: '12px',
+                        background: 'var(--terra)', border: 'none',
+                        color: '#fff', fontSize: '12px',
                         cursor: authBusy ? 'default' : 'pointer',
                         opacity: authBusy ? 0.45 : 1,
                         fontFamily: 'var(--font-ui)', fontWeight: 500,
@@ -1115,7 +883,7 @@ export default function Header({
                       </div>
                     {authNote && (
                       <div style={{
-                        fontSize: '11px', color: 'rgba(255,255,255,0.55)',
+                        fontSize: '11px', color: 'var(--smoke)',
                         fontFamily: 'var(--font-ui)', fontStyle: 'italic',
                         textAlign: 'center', lineHeight: 1.45,
                       }}>{tAuth(authNote)}</div>
@@ -1124,8 +892,8 @@ export default function Header({
                 ) : (
                   <button onClick={() => setShowEmailForm(true)} style={{
                     width: '100%', padding: '8px', minHeight: '44px', borderRadius: '12px',
-                    border: '1.5px solid rgba(255,255,255,0.15)',
-                    background: 'transparent', color: 'rgba(255,255,255,0.55)',
+                    border: '1.5px solid var(--border)',
+                    background: 'transparent', color: 'var(--smoke)',
                     fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)',
                     textAlign: 'center',
                   }}>{tAuth('emailEntry')}</button>
@@ -1133,6 +901,8 @@ export default function Header({
               </div>
             )}
           </div>
+
+          </>}
 
         </div>
       </>,

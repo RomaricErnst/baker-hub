@@ -1,16 +1,27 @@
 'use client';
+import { mixingBatchPlan } from '../utils/mixingBatches';
 import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type RecipeResult, type YeastResult, type YeastWarningKey } from '../utils';
 import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, FLOUR_DATA, type PrefermentType, type FlourBlend } from '../data';
 import { type UnitSystem, displayWeight, displayTemp } from '../utils/units';
 import PlanNav from './PlanNav';
+import WaterPreparation, { type WaterSource, type WaterSettingsProps } from './WaterPreparation';
+import { formatPrefermentDose, prefermentDilution } from '../utils/prefermentDose';
+import { getBreadProtocol } from '../utils/breadProfiles';
 
-interface RecipeOutputProps {
+interface RecipeOutputProps extends WaterSettingsProps {
+  containerCapacityLitres?: number;
+  onContainerCapacityChange?: (litres: number | undefined) => void;
+  mixingBatches?: number;
+  onMixingBatchesChange?: (count: number) => void;
+  waterSource?: WaterSource;
+  onWaterSourceChange?: (source: WaterSource) => void;
   result: RecipeResult;
   numItems: number;
   itemWeight: number;
   styleName: string;
+  styleKey?: string;
   mixerType: string;
   kitchenTemp: number;
   fridgeTemp?: number;
@@ -64,8 +75,8 @@ function wStr(n: number): string {
 // ── Theme tokens for dark card ────────────────
 const D = {
   line:   'rgba(156, 130, 72,0.16)',   // gold-tinted dividers — warm, not cold
-  muted:  'rgba(240, 235, 224,0.60)',  // readable ingredient labels
-  sub:    'rgba(240, 235, 224,0.38)',  // secondary / column headers
+  muted:  'var(--char)',  // readable ingredient labels
+  sub:    'var(--char)',  // secondary / column headers
 };
 
 // The yeast and flour info dots lived here. Flour's guidance is actionable
@@ -90,17 +101,17 @@ function IngRow({
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: '1fr auto auto',
+      gridTemplateColumns: '1fr auto',
       gap: '0 24px',
       alignItems: 'center',
-      padding: '8px .1rem',
+      padding: '12px .1rem',
       borderBottom: `1px solid ${D.line}`,
     }}>
       <div>
         <div style={{
-          fontSize: '13px',
+          fontSize: '15px',
           fontWeight: highlight ? 600 : 400,
-          color: highlight ? 'var(--cream)' : D.muted,
+          color: highlight ? 'var(--char)' : D.muted,
           letterSpacing: '.02em',
         }}>
           {label}
@@ -108,7 +119,7 @@ function IngRow({
         {sub && (
           <div style={{
             fontSize: '12px',
-            color: 'rgba(255,255,255,.7)',
+            color: 'var(--smoke)',
             fontFamily: 'var(--font-ui)',
             marginTop: '.1rem',
             lineHeight: 1.5,
@@ -122,23 +133,15 @@ function IngRow({
         fontFamily: 'var(--font-ui)',
         fontSize: range ? '.82rem' : '1rem',
         fontWeight: 700,
-        color: highlight ? 'var(--cream)' : 'rgba(240, 235, 224,0.88)',
+        color: highlight ? 'var(--char)' : 'var(--char)',
         textAlign: 'right',
-        whiteSpace: 'nowrap',
+        whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 12,
       }}>
-        {grams}
+        {!noPct && advancedPct && <span style={{fontSize:14,fontWeight:400,color:"var(--smoke)"}}>{advancedPct}</span>}
+        <span>{grams}</span>
       </div>
 
-      <div style={{
-        fontFamily: 'var(--font-ui)',
-        fontSize: '12px',
-        color: 'var(--gold)',
-        textAlign: 'right',
-        minWidth: '4rem',
-        whiteSpace: 'nowrap',
-      }}>
-        {noPct ? (advancedPct ?? '') : (advancedPct ?? pct)}
-      </div>
+
     </div>
   );
 }
@@ -178,77 +181,7 @@ function InfoCard({
   );
 }
 
-// ── Water info ────────────────────────────────
-interface WaterInfo {
-  targetTemp: number;
-  needsIce: boolean;
-  iceGrams: number;
-  tapGrams: number;
-  iceGuidance: string;   // ice protocol text (only when needsIce)
-  tempGuidance: string;  // short guidance for the ingredient sub-line
-}
 
-function computeWaterInfo(
-  targetTemp: number,
-  waterGrams: number,
-  ambientTemp: number,
-  isSpiral: boolean,
-  isFr = false,
-): WaterInfo {
-  // Physics-based ice split.
-  //
-  //   ice·(L + c·T)            = (W − ice)·c·(amb − T)
-  //   ice·(L/c + T)            = (W − ice)·(amb − T)
-  //   ice·(L/c + T + amb − T)  = W·(amb − T)
-  //   ice                      = W·(amb − T) / (L/c + amb)
-  //
-  // The T cancels. The denominator is L/c + ambient, NOT 80 + target, which is
-  // what stood here and over-prescribed ice by ~20%, worsening with ambient:
-  // at 30 °C targeting 10 °C it asked for 111 g where 91 g is right and landed
-  // the water at 5.6 °C, and at 34 °C targeting 6 °C it asked for more ice than
-  // could melt — the baker strains out the remainder and gets both the wrong
-  // temperature and less water than the hydration calls for.
-  const ICE_LATENT_OVER_CP = 79.8;   // L/c = 334 J/g ÷ 4.186 J/g·K
-  const rawIce = waterGrams * (ambientTemp - targetTemp) / (ICE_LATENT_OVER_CP + ambientTemp);
-  const iceGrams = Math.max(0, Math.round(rawIce));
-  const tapGrams = waterGrams - iceGrams;
-  const tempDiff = ambientTemp - targetTemp;
-
-  // Ice protocol: full mixing instructions when ≥50g needed
-  const needsIce = iceGrams >= 50;
-
-  let iceGuidance = '';
-  let tempGuidance: string;
-
-  if (needsIce) {
-    // Full ice protocol
-    tempGuidance = isFr ? 'ajoutez de la glace — voir la ligne eau ci-dessous' : 'add ice — see water row below';
-    iceGuidance = isSpiral
-      ? (isFr ? `${iceGrams}g de glace + ${tapGrams}g d'eau — glace directement dans la cuve` : `${iceGrams}g ice + ${tapGrams}g water — add ice directly to bowl`)
-      : (isFr ? `mélangez ${iceGrams}g de glace + ${tapGrams}g d'eau, remuez 1 min, filtrez avant usage` : `mix ${iceGrams}g ice + ${tapGrams}g water, stir 1 min, strain before using`);
-  } else if (tempDiff <= -8) {
-    // Target ABOVE ambient. Only reachable with a cold preferment in the mix —
-    // it is 25–55% of the dough mass, so the water has to carry the difference.
-    // Every branch below assumes target < ambient and would have silently told
-    // the baker "at room temperature", which is the opposite of what is needed.
-    tempGuidance = isFr ? 'eau chaude — au-dessus de la température de la pièce' : 'warm water — above room temperature';
-  } else if (tempDiff <= -3) {
-    tempGuidance = isFr ? 'eau tiède — légèrement au-dessus de la température de la pièce' : 'lukewarm water — slightly above room temperature';
-  } else if (iceGrams >= 20 && tempDiff >= 3) {
-    // Ice helpful but not critical — suggest as an easy option
-    tempGuidance = isFr ? `eau bien froide, ou ${iceGrams}g de glace dans ${tapGrams}g d'eau` : `chilled water, or add ${iceGrams}g ice to ${tapGrams}g water`;
-  } else if (tempDiff >= 12) {
-    tempGuidance = isFr ? 'eau très froide' : 'very cold water';
-  } else if (tempDiff >= 5) {
-    tempGuidance = isFr ? 'eau bien froide' : 'chilled water';
-  } else if (tempDiff >= 2) {
-    tempGuidance = isFr ? 'légèrement plus fraîche que la pièce' : 'slightly below room temperature';
-  } else {
-    tempGuidance = isFr ? 'à température ambiante' : 'at room temperature';
-  }
-
-  return { targetTemp, needsIce, iceGrams, tapGrams, iceGuidance, tempGuidance };
-}
 
 // ── Starter prep card ─────────────────────────
 function StarterPrepCard({
@@ -414,7 +347,7 @@ function StarterPrepCard({
         lineHeight: 1.5,
       }}>
         {isFr
-          ? 'Après avoir prélevé votre levain, nourrissez le reste et remettez-le au frigo.'
+          ? 'Après avoir prélevé votre levain, rafraîchissez le reste et remettez-le au frigo.'
           : 'After taking your starter, feed what remains and return it to the fridge.'}
       </div>
     </div>
@@ -423,29 +356,33 @@ function StarterPrepCard({
 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
-  result, numItems, itemWeight, styleName, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
+  containerCapacityLitres, onContainerCapacityChange, result, numItems, itemWeight, styleName, styleKey, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, units,
   feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
-  onEditSetup, onOpenGuide, onShare,
+  onEditSetup, onOpenGuide, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
 }: RecipeOutputProps) {
   const t = useTranslations();
   const locale = useLocale();
   const u = units ?? 'metric';
   const wStr = (g: number) => displayWeight(g, u);
   const [showPriorityOverride, setShowPriorityOverride] = useState(false);
-  const [showTotals, setShowTotals] = useState(false);
+
   const [showDilution, setShowDilution] = useState(false);
 
   // Batch splitting — auto-triggered when total dough exceeds mixer default capacity
   const mixerMaxG   = (MIXER_TYPES as Record<string, { maxDoughG?: number }>)[mixerType]?.maxDoughG ?? 9999;
-  const totalDoughG = numItems * itemWeight;
+  const totalDoughG = result.totalDough;
   const minBatches  = Math.ceil(totalDoughG / mixerMaxG);
   const needsBatches = minBatches > 1;
-  const [numBatches, setNumBatches] = useState(minBatches);
+  const [batchIndex, setBatchIndex] = useState(0);
+  const batchPlan = mixingBatchPlan(result, mixerType, mixingBatches, batchIndex);
   // effectiveBatches can be 1 if baker overrides — no Math.max constraint
-  const effectiveBatches = numBatches >= 1 ? numBatches : minBatches;
+  const effectiveBatches = batchPlan.count;
 
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
+  const enrichment = result.enrichment;
+  const breadProtocol = getBreadProtocol(styleKey ?? '');
+  const enrichmentRows = enrichment ? (['milk','eggs','butter'] as const).filter(key => enrichment[key] > 0).map(key => <IngRow key={key} label={({milk:locale === 'fr' ? 'Lait' : 'Milk',eggs:locale === 'fr' ? 'Œufs sans coquille' : 'Eggs, without shells',butter:locale === 'fr' ? 'Beurre' : 'Butter'})[key]} grams={wStr(enrichment[key])} advancedPct={mode === 'custom' ? pctStr(enrichment[key] / flour * 100) : undefined} />) : null;
   // Sourdough starter accounting: half the starter is flour, half water
   // (100% hydration). Subtract from the main-dough amounts so the card's
   // total actually tallies. Preferment mode has its own accounting already.
@@ -465,16 +402,12 @@ export default function RecipeOutput({
     : 0;
   const batchFlour = hasPref ? (pf?.finalFlour ?? flour) : flour;
   const batchWater = hasPref ? (pf?.finalWater ?? water) : water;
-  const flourPerBatch   = Math.round(batchFlour / effectiveBatches);
-  const waterPerBatch   = Math.round(batchWater / effectiveBatches);
-  const saltPerBatch    = Math.round(salt / effectiveBatches);
-  const poolishPerBatch = hasPref ? Math.round(poolishTotalG / effectiveBatches) : null;
-  const yeastGramsTotal = (yeast as YeastResult | null)?.convertedGrams ?? 0;
-  const yeastPerBatch   = !hasPref && yeastGramsTotal > 0
-    ? Math.round(yeastGramsTotal / effectiveBatches * 10) / 10
-    : null;
-  const batchDoughG = batchFlour + batchWater + salt + poolishTotalG
-    + (!hasPref && yeastGramsTotal > 0 ? yeastGramsTotal : 0);
+  const flourPerBatch = batchPlan.portion.flour;
+  const waterPerBatch = batchPlan.portion.water;
+  const saltPerBatch = batchPlan.portion.salt;
+  const poolishPerBatch = hasPref ? batchPlan.portion.preferment : null;
+  const yeastPerBatch = batchPlan.portion.yeast || null;
+  const batchDoughG = result.totalDough;
 
   const yeastInfo = yeast as YeastResult | null;
   // Translated yeast name — data.ts names are English-only ("Fresh Yeast"
@@ -499,50 +432,13 @@ export default function RecipeOutput({
   // Computed ingredient total (excl. starter)
   const ingredientTotal = flour + water + salt
     + (yeastInfo ? yeastInfo.convertedGrams : 0)
-    + oil + sugar;
+    + oil + sugar + (enrichment ? enrichment.milk + enrichment.eggs + enrichment.butter : 0);
 
   const itemLabel = numItems === 1 ? 'ball / loaf' : numItems <= 4 ? 'balls' : 'pieces';
 
   const isSpiral = mixerType === 'spiral';
-  const waterInfo = computeWaterInfo(waterTemp, water, kitchenTemp, isSpiral, locale === 'fr');
-  // For preferment mode: ice protocol applies to final dough water only
-  // Preferment water is mixed by hand at RT — no DDT adjustment needed
-  const finalDoughWaterInfo = result.preferment
-    ? computeWaterInfo(waterTemp, result.preferment.finalWater, kitchenTemp, isSpiral, locale === 'fr')
-    : null;
-
-  // Water row sub-line: source-agnostic temperature guidance
-  function makeWaterSubNode(info: WaterInfo, kitchenT: number): React.ReactNode {
-    if (info.iceGrams >= 50) {
-      return (
-        <>
-          {t('recipeOutput.waterTarget') + ' '}
-          <span style={{ fontWeight: 700, fontFamily: 'var(--font-ui)', color: 'var(--terra)' }}>{displayTemp(info.targetTemp, u)}</span>
-          {' · '}
-          <span style={{ fontWeight: 700, fontFamily: 'var(--font-ui)' }}>{info.iceGrams}g</span>
-          {' ' + (locale === 'fr' ? 'glaçons + ' : 'ice + ')}
-          <span style={{ fontWeight: 700, fontFamily: 'var(--font-ui)' }}>{info.tapGrams}g</span>
-          {' ' + (locale === 'fr' ? 'eau froide' : 'cold water')}
-        </>
-      );
-    }
-    const tempDiff = kitchenT - info.targetTemp;
-    const tempColor = tempDiff >= 14 ? 'var(--terra)' : tempDiff >= 8 ? 'var(--gold)' : undefined;
-    // Instructions only. The temperature and the ice split are things the
-    // baker acts on; why the number is what it is belongs in Protocol, not
-    // on a card someone is reading with wet hands.
-    return (
-      <>
-        {t('recipeOutput.waterUseAt') + ' '}
-        <span style={{ fontWeight: 700, fontFamily: 'var(--font-ui)', fontSize: '14px', color: tempColor }}>{displayTemp(info.targetTemp, u)}</span>
-        {` · ${info.tempGuidance}`}
-      </>
-    );
-  }
-  const waterSubNode = makeWaterSubNode(waterInfo, kitchenTemp);
-  const finalDoughWaterSubNode = finalDoughWaterInfo
-    ? makeWaterSubNode(finalDoughWaterInfo, kitchenTemp)
-    : waterSubNode;
+  const waterSubNode = <WaterPreparation readOnly waterGrams={waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} achievedDoughTempC={result.thermal?.doughTempC} waterWasClamped={result.thermal?.waterWasClamped} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
+  const finalDoughWaterSubNode = <WaterPreparation readOnly waterGrams={result.preferment?.finalWater ?? waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} achievedDoughTempC={result.thermal?.doughTempC} waterWasClamped={result.thermal?.waterWasClamped} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
 
   // Yeast sub-line: IDY conversion only (precision scale moved to its own callout)
   const needsPrecision = yeastInfo ? yeastInfo.convertedGrams < 0.5 : false;
@@ -586,6 +482,10 @@ export default function RecipeOutput({
     ? !EXPLANATION_BLOCKLIST.some(term => yeastInfo.explanation.toLowerCase().includes(term))
     : false;
 
+  if (result.protocolIssue) return <section role="alert"><h2>{locale === 'fr' ? 'Réglages à ajuster' : 'Adjust these settings'}</h2><p>{result.protocolIssue === 'equipment' ? (locale === 'fr' ? 'Choisissez un matériel adapté à ce pain.' : 'Choose suitable equipment for this bread.') : result.protocolIssue === 'timing' ? (locale === 'fr' ? 'Prévoyez le temps de mélange, de repos et de façonnage avant cuisson.' : 'Allow time for mixing, resting and shaping before cooking.') : (locale === 'fr' ? 'Cette méthode de levée n’est pas prise en charge pour ce pain.' : 'This leavening method is not supported for this bread.')}</p>{onEditSetup && <button type="button" onClick={onEditSetup} style={{minHeight:44}}>{locale === 'fr' ? 'Modifier les réglages' : 'Edit setup'}</button>}</section>;
+
+  if (enrichment?.unsupportedMethod) return <section role="alert"><h2>{locale === 'fr' ? 'Méthode non prise en charge' : 'Unsupported method'}</h2><p>{locale === 'fr' ? 'Cette formule enrichie nécessite une levure commerciale, sans préferment. Modifiez le choix de levure dans les réglages puis recalculez.' : 'This enriched formula requires commercial yeast without preferment. Update the leavening choice in setup and recalculate.'}</p>{onEditSetup && <button type="button" onClick={onEditSetup}>{locale === 'fr' ? 'Modifier les réglages' : 'Edit setup'}</button>}</section>;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
@@ -596,10 +496,10 @@ export default function RecipeOutput({
       }}>
         <div>
           <div style={{
-            fontFamily: 'var(--font-ui)', fontSize: '20px',
+            fontFamily: 'Georgia, serif', fontSize: '30px',
             fontWeight: 700, color: 'var(--char)', marginBottom: '.2rem',
           }}>
-            {t('recipeOutput.recipeReady')}
+            {locale === 'fr' ? 'Ingrédients de la pâte' : 'Dough ingredients'}
           </div>
           <div style={{
             fontSize: '12px', color: 'var(--smoke)',
@@ -612,7 +512,7 @@ export default function RecipeOutput({
             </span>
             {' · '}
             <span style={{ color: 'var(--ash)', fontWeight: 600 }}>
-              {hydration}% {t('recipeOutput.hydrationLabel')}
+              {hydration}% {enrichment ? (locale === 'fr' ? 'eau équivalente estimée' : 'estimated water equivalent') : t('recipeOutput.hydrationLabel')}
             </span>
           </div>
           {wastePct !== undefined && wastePct > 0 && (
@@ -621,80 +521,26 @@ export default function RecipeOutput({
             </div>
           )}
         </div>
-        {onSave && (
-          <button
-            onClick={onSave}
-            disabled={saveStatus === 'saving' || saveStatus === 'saved'}
-            style={{
-              padding: '8px 16px', minHeight: '44px', borderRadius: '12px', flexShrink: 0, marginLeft: '1rem',
-              border: `1.5px solid ${saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--border)'}`,
-              background: 'transparent',
-              color: saveStatus === 'saved' ? 'var(--sage)' : saveStatus === 'error' ? 'var(--terra)' : 'var(--smoke)',
-              fontSize: '12px', cursor: saveStatus === 'saving' || saveStatus === 'saved' ? 'default' : 'pointer',
-              fontFamily: 'var(--font-ui)',
-            }}
-          >
-            {saveStatus === 'saving' ? t('recipeOutput.savingRecipe') : saveStatus === 'saved' ? t('recipeOutput.savedRecipe') : saveStatus === 'error' ? t('recipeOutput.saveError') : t('recipeOutput.saveRecipe')}
-          </button>
-        )}
-        {/* Total ingredients accordion now lives in the Final Dough card */}
-        {false && (
-          <div>
-            <button
-              onClick={() => setShowTotals(v => !v)}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                display: 'flex', alignItems: 'center', gap: '8px',
-                fontSize: '12px', color: 'rgba(156, 130, 72,0.7)',
-                fontFamily: 'var(--font-ui)',
-              }}
-            >
-              <span>{t('recipeOutput.totalIngredients')}</span>
-              <span style={{ fontSize: '11px', transition: 'transform .2s', transform: showTotals ? 'rotate(180deg)' : 'none' }}>▾</span>
-            </button>
-            {showTotals && (() => {
-              const pf = result.preferment!;
-              const totalFlour = flour;
-              const totalWater = water;
-              const totalSalt  = salt;
-              const totalYeast = pf.prefYeastGrams;
-              const yeastLabel = pf.prefYeastType
-                ? `Yeast (${(YEAST_TYPES as Record<string,{shortName:string}>)[pf.prefYeastType]?.shortName ?? 'IDY'})`
-                : 'Yeast (IDY)';
-              return (
-                <div style={{ marginTop: '8px' }}>
-                  {[
-                    { label: 'Flour', pct: '100%', value: u === 'imperial' ? wStr(totalFlour) : `${Math.round(totalFlour).toLocaleString()}g` },
-                    // The hydration the baker set, not a ratio recomputed from
-                    // grams that have already been rounded for weighing. 60% of
-                    // 639 g is 383.4 g, shown as 383 g to weigh, and 383/639
-                    // reads back as 59.9% — arithmetically honest and wrong to
-                    // print, because the baker chose 60 and the engine used 60.
-                    { label: 'Water', pct: `${hydration}%`, value: u === 'imperial' ? wStr(totalWater) : `${Math.round(totalWater).toLocaleString()}g` },
-                    { label: 'Salt',  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: u === 'imperial' ? wStr(totalSalt) : `${Math.round(totalSalt).toLocaleString()}g` },
-                    ...(totalYeast > 0 ? [{ label: yeastLabel, pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: `${totalYeast}g` }] : []),
-                  ].map((row, i) => (
-                    <div key={i} style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr auto auto',
-                      gap: '0 24px',
-                      alignItems: 'center',
-                      padding: '8px .1rem',
-                      borderBottom: `1px solid ${D.line}`,
-                      fontSize: '12px', fontFamily: 'var(--font-ui)',
-                    }}>
-                      <span style={{ color: D.muted }}>{row.label}</span>
-                      <span style={{ color: 'rgba(240, 235, 224,0.9)', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap' }}>{row.value}</span>
-                      <span style={{ color: 'var(--gold)', fontSize: '12px', textAlign: 'right', minWidth: '4rem', whiteSpace: 'nowrap' }}>{row.pct}</span>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
-          </div>
-        )}
       </div>
 
+      {breadProtocol && <p style={{fontSize:15,lineHeight:1.5,margin:0}}>{breadProtocol.method === 'unleavened'
+        ? (locale === 'fr' ? 'Sans levure : un repos couvert détend la pâte avant de l’abaisser.' : 'Unleavened: a covered rest relaxes the dough before rolling.')
+        : breadProtocol.cooking === 'boil-bake'
+          ? (locale === 'fr' ? 'Prévoyez une casserole pour le pochage, puis une plaque pour la cuisson au four.' : 'Have a pan ready for poaching, then a baking tray for the oven.')
+          : breadProtocol.cooking === 'griddle'
+            ? (locale === 'fr' ? 'Cuisson à la poêle ou sur une plaque : gardez les pains cuits couverts pour qu’ils restent souples.' : 'Cook on a skillet or griddle; keep cooked breads covered to stay soft.')
+            : (locale === 'fr' ? 'Suivez le façonnage et la cuisson propres à ce pain dans le guide.' : 'Follow this bread’s shaping and baking steps in the guide.')}</p>}
+
+      {(hasPref || (sdActive && mode === 'custom')) && <section aria-label={locale === 'fr' ? 'Quantités totales' : 'Total ingredients'}>
+        <h3 style={{fontSize:17}}>{locale === 'fr' ? 'Quantités totales de la recette' : 'Total recipe ingredients'}</h3>
+        <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={mode === 'custom' ? '100%' : undefined} />
+        <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
+        <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
+        {pf && pf.prefYeastGrams > 0 && <IngRow label={t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)} grams={formatPrefermentDose(pf.prefYeastGrams)} advancedPct={mode === 'custom' ? pctStr(pf.prefYeastGrams / flour * 100) : undefined} />}
+        {oil > 0 && <IngRow label={t('recipeOutput.ingredientOil')} grams={wStr(oil)} advancedPct={mode === 'custom' ? pctStr(oilPct) : undefined} />}
+        {sugar > 0 && <IngRow label={t('recipeOutput.ingredientSugar')} grams={wStr(sugar)} advancedPct={mode === 'custom' ? pctStr(sugarPct) : undefined} />}
+        {mode === 'custom' && <IngRow label={locale === 'fr' ? 'Dont farine préfermentée' : 'Of which prefermented flour'} grams={wStr(pf ? pf.prefFlour : sdHalf)} advancedPct={pctStr((pf ? pf.prefFlour : sdHalf) / flour * 100)} sub={locale === 'fr' ? 'Déjà comprise dans la farine totale.' : 'Already included in total flour.'} />}
+      </section>}
       {/* ── Ingredients / Preferment cards ──────── */}
       {result.preferment && prefermentType && prefermentType !== 'none' ? (() => {
         const pf = result.preferment!;
@@ -702,10 +548,11 @@ export default function RecipeOutput({
         const prefTotal = Math.round(pf.prefFlour + pf.prefWater + pf.prefYeastGrams);
 
         return (
-          <>
+          <details>
+            <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Ingrédients par étape' : 'Ingredients by stage'}</summary>
             {/* CARD 1: Make your preferment */}
-            <div style={{ background: 'var(--char)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
-              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)', marginBottom: '16px' }}>
+            <div style={{ background: 'var(--warm)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: 'none' }}>
+              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)', marginBottom: '16px' }}>
                 {t('recipeOutput.makeYourPref', { name: pd.name })}
               </div>
               <IngRow
@@ -721,9 +568,9 @@ export default function RecipeOutput({
                   const f1 = FLOUR_DATA[flourBlend.flour1];
                   const f1DisplayName = flourBlend.brandProduct ?? f1.name;
                   if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
-                    return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>{f1DisplayName}</span>;
+                    return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>{f1DisplayName}</span>;
                   }
-                  return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Use your primary flour ({f1DisplayName})</span>;
+                  return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>{locale === 'fr' ? `Utilisez votre farine principale (${f1DisplayName})` : `Use your primary flour (${f1DisplayName})`}</span>;
                 })() : undefined}
               />
               <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(pf.prefWater)} noPct
@@ -734,23 +581,23 @@ export default function RecipeOutput({
                   label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{t('recipeOutput.ingredientYeast', {
                     type: pf.prefYeastType ? ((YEAST_TYPES as Record<string, { shortName: string }>)[pf.prefYeastType]?.shortName ?? 'IDY') : 'IDY'
                   })}</span>}
-                  grams={wStr(pf.prefYeastGrams)} noPct
+                  grams={formatPrefermentDose(pf.prefYeastGrams)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
               )}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
                 <div style={{ fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>
                   {t('recipeOutput.prefTotalRow', { name: pd.name })}
                 </div>
                 <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   ~{wStr(prefTotal)}
                 </div>
-                <div style={{ minWidth: '4rem' }} />
+
               </div>
             </div>
 
             {/* CARD 2: Final dough */}
-            <div style={{ background: 'var(--char)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
-              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)', marginBottom: '4px' }}>
+            <div style={{ background: 'var(--warm)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: 'none' }}>
+              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)', marginBottom: '4px' }}>
                 {t('recipeOutput.finalDoughTitle')}
               </div>
               <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: D.muted, marginBottom: '16px' }}>
@@ -794,110 +641,51 @@ export default function RecipeOutput({
                   grams={wStr(pf.finalFlour)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
               )}
-              <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={finalDoughWaterSubNode}
+              <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={<details><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Préparer l’eau' : 'Prepare the water'}</summary>{finalDoughWaterSubNode}</details>}
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalWater / flour * 1000) / 10) : undefined} />
               <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} noPct
                 advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
               {oil > 0 && <IngRow label={t('recipeOutput.ingredientOil')} grams={wStr(oil)} noPct />}
               {sugar > 0 && <IngRow label={t('recipeOutput.ingredientSugar')} grams={wStr(sugar)} noPct />}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
                 <div style={{ fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>
                   {t('recipeOutput.totalDough')}
                 </div>
                 <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  {u === 'imperial' ? wStr(numItems * itemWeight) : `${(numItems * itemWeight).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
+                  {u === 'imperial' ? wStr(totalDough) : `${totalDough.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
                 </div>
-                <div style={{ minWidth: '4rem' }} />
-              </div>
-              {/* Total ingredients accordion — preferment mode */}
-              <div style={{ marginTop: '16px', borderTop: `1px solid ${D.line}`, paddingTop: '12px' }}>
-                <button
-                  onClick={() => setShowTotals(v => !v)}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    fontSize: '12px', color: 'rgba(156, 130, 72,0.7)',
-                    fontFamily: 'var(--font-ui)',
-                  }}
-                >
-                  <span>{t('recipeOutput.totalIngredients')}</span>
-                  <span style={{ fontSize: '11px', transition: 'transform .2s', transform: showTotals ? 'rotate(180deg)' : 'none' }}>▾</span>
-                </button>
-                {showTotals && (() => {
-                  const pf = result.preferment!;
-                  const totalFlour = flour;
-                  const totalWater = water;
-                  const totalSalt  = salt;
-                  const totalYeast = pf.prefYeastGrams;
-                  const yeastLabel = pf.prefYeastType
-                    ? `Yeast (${(YEAST_TYPES as Record<string,{shortName:string}>)[pf.prefYeastType]?.shortName ?? 'IDY'})`
-                    : t('recipeOutput.yeastIDY');
-                  return (
-                    <div style={{ marginTop: '8px' }}>
-                      {[
-                        { label: t('recipe.flour'), pct: '100%', value: u === 'imperial' ? wStr(totalFlour) : `${Math.round(totalFlour).toLocaleString()}g` },
-                        { label: t('recipe.water'), pct: `${hydration}%`, value: u === 'imperial' ? wStr(totalWater) : `${Math.round(totalWater).toLocaleString()}g` },
-                        { label: t('recipe.salt'),  pct: `${Math.round(totalSalt  / totalFlour * 1000) / 10}%`, value: u === 'imperial' ? wStr(totalSalt) : `${Math.round(totalSalt).toLocaleString()}g` },
-                        ...(totalYeast > 0 ? [{ label: yeastLabel, pct: (() => { const r = totalYeast / totalFlour * 100; return r < 0.1 ? '<0.1%' : `${Math.round(r * 10) / 10}%`; })(), value: `${totalYeast}g` }] : []),
-                      ].map((row, i) => (
-                        <div key={i} style={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr auto auto',
-                          gap: '0 24px',
-                          alignItems: 'center',
-                          padding: '8px .1rem',
-                          borderBottom: `1px solid ${D.line}`,
-                          fontSize: '12px', fontFamily: 'var(--font-ui)',
-                        }}>
-                          <span style={{ color: D.muted }}>{row.label}</span>
-                          <span style={{ color: 'rgba(240, 235, 224,0.9)', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap' }}>{row.value}</span>
-                          <span style={{ color: 'var(--gold)', fontSize: '12px', textAlign: 'right', minWidth: '4rem', whiteSpace: 'nowrap' }}>{row.pct}</span>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
+
               </div>
             </div>
-          </>
+          </details>
         );
       })() : (
-        /* SCENARIO A: Single ingredients card */
-        <div style={{ background: 'var(--char)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.14)' }}>
-          {/* Card header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '16px' }}>
-            <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--cream)' }}>
-              {t('recipe.ingredients')}
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 24px', width: '100%', maxWidth: '75%' }}>
-              <span />
-              <span style={{ fontSize: '11px', color: D.sub, fontFamily: 'var(--font-ui)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em' }}>{t('recipe.weight')}</span>
-              <span style={{ fontSize: '11px', color: D.sub, fontFamily: 'var(--font-ui)', textAlign: 'right', textTransform: 'uppercase', letterSpacing: '.06em', minWidth: '4rem' }}>{t('recipe.bakersPercent')}</span>
-            </div>
-          </div>
+        /* Direct dough additions */
+        <div>
 
-          <IngRow
+          {result.flourParts?.length ? result.flourParts.map(part => <IngRow key={part.key} label={locale === 'fr' ? part.nameFr : part.name} grams={wStr(part.grams)} pct={pctStr(part.pct)} highlight advancedPct={mode === 'custom' ? pctStr(part.pct) : undefined} />) : <IngRow
             label={t('recipeOutput.ingredientFlour')}
             grams={wStr(flourMain)}
+            noPct={sdActive}
             pct="100%"
             highlight
             advancedPct={mode === 'custom' ? '100%' : undefined}
             sub={mode === 'custom' && flourBlend ? (() => {
               const f1 = FLOUR_DATA[flourBlend.flour1];
               const f1DisplayName = flourBlend.brandProduct ?? f1.name;
-              const f1Weight = Math.round(flour * flourBlend.ratio1 / 100);
+              const f1Weight = Math.round(flourMain * flourBlend.ratio1 / 100);
               if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
-                return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>{f1DisplayName}</span>;
+                return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>{f1DisplayName}</span>;
               }
               const f2 = FLOUR_DATA[flourBlend.flour2];
               const hasF3 = !!flourBlend.flour3 && flourBlend.ratio2 !== undefined && (100 - flourBlend.ratio1 - flourBlend.ratio2) > 0;
               const p2 = hasF3 ? flourBlend.ratio2! : 100 - flourBlend.ratio1;
               const p3 = hasF3 ? 100 - flourBlend.ratio1 - p2 : 0;
-              const f2Weight = Math.round(flour * p2 / 100);
-              const f3Weight = hasF3 ? flour - f1Weight - f2Weight : 0;
+              const f2Weight = hasF3 ? Math.round(flourMain * p2 / 100) : flourMain - f1Weight;
+              const f3Weight = hasF3 ? flourMain - f1Weight - f2Weight : 0;
               const f3 = hasF3 ? FLOUR_DATA[flourBlend.flour3!] : null;
               return (
-                <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+                <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
                   {flourBlend.ratio1}% {f1DisplayName} ({f1Weight.toLocaleString('en')}g)
                   {' · '}
                   {p2}% {flourBlend.customFlour2Name ?? f2.name} ({f2Weight.toLocaleString('en')}g)
@@ -905,16 +693,18 @@ export default function RecipeOutput({
                 </span>
               );
             })() : sdActive ? (
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
                 {locale === 'fr' ? `+ ${sdHalf}g via le levain = ${flour}g au total` : `+ ${sdHalf}g via the starter = ${flour}g total`}
               </span>
             ) : undefined}
-          />
-          <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(waterMain)} pct={pctStr(waterPct)} sub={sdActive ? (
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
-                {locale === 'fr' ? `+ ${sdHalf}g via le levain = ${water}g au total` : `+ ${sdHalf}g via the starter = ${water}g total`}
-              </span>
-            ) : waterSubNode} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
+          />}
+          {water > 0 && <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(sdActive ? waterMain : water)} noPct={sdActive} pct={pctStr(waterPct)} sub={
+            !enrichment ? <details><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Préparer l’eau' : 'Prepare the water'}</summary>
+              {sdActive && <p>{locale === 'fr' ? `${wStr(sdHalf)} d’eau sont déjà dans le levain indiqué ci-dessous.` : `${wStr(sdHalf)} water is already in the starter shown below.`}</p>}
+              {waterSubNode}
+            </details> : undefined} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />}
+          {enrichmentRows}
+          {enrichment && <p style={{fontSize:12}}>{enrichment.note[locale === 'fr' ? 'fr' : 'en']} <a href={enrichment.sourceUrl} target="_blank" rel="noopener noreferrer">{locale === 'fr' ? 'Source de la formule' : 'Formula source'}</a></p>}
           <IngRow label={t('recipeOutput.ingredientSalt')}  grams={wStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
 
           {yeastInfo && (
@@ -948,7 +738,7 @@ export default function RecipeOutput({
                       onClick={() => setShowPriorityOverride(v => !v)}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
-                        color: 'rgba(240, 235, 224,0.45)', fontSize: '11px',
+                        color: 'var(--char)', fontSize: '11px',
                         fontFamily: 'var(--font-ui)', textDecoration: 'underline',
                         textUnderlineOffset: '2px', padding: 0,
                       }}
@@ -974,7 +764,7 @@ export default function RecipeOutput({
                             padding: '4px 12px', borderRadius: '20px', cursor: 'pointer',
                             border: `1.5px solid ${isActive ? 'var(--gold)' : 'rgba(156, 130, 72,0.2)'}`,
                             background: isActive ? 'rgba(156, 130, 72,0.15)' : 'transparent',
-                            color: isActive ? 'var(--gold)' : 'rgba(240, 235, 224,0.5)',
+                            color: isActive ? 'var(--gold)' : 'var(--char)',
                             fontSize: '11px', fontFamily: 'var(--font-ui)',
                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '.1rem',
                           }}
@@ -997,7 +787,7 @@ export default function RecipeOutput({
                 onClick={() => setShowDilution(v => !v)}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                  fontSize: '12px', color: 'rgba(240, 235, 224,0.40)',
+                  fontSize: '12px', color: 'var(--char)',
                   fontFamily: 'var(--font-ui)', textDecoration: 'underline',
                   textUnderlineOffset: '2px',
                 }}
@@ -1005,7 +795,7 @@ export default function RecipeOutput({
                 {showDilution ? t('recipeOutput.dilutionHide') : t('recipeOutput.dilutionShow')}
               </button>
               {showDilution && (
-                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'rgba(240, 235, 224,0.50)', marginTop: '4px', lineHeight: 1.55 }}>
+                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--char)', marginTop: '4px', lineHeight: 1.55 }}>
                   {sachetDilutionNote}
                 </div>
               )}
@@ -1016,7 +806,7 @@ export default function RecipeOutput({
             <IngRow
               label={t('recipeOutput.starterLabel')}
               sub={t('recipeOutput.starterSub')}
-              grams={`${sourdough.starterGramsMin}–${sourdough.starterGramsMax} g`}
+              grams={wStr(sdMid)}
               pct={`${sourdough.starterPctMin}–${sourdough.starterPctMax}%`}
               range
             />
@@ -1031,21 +821,33 @@ export default function RecipeOutput({
           )}
 
           {/* TOTAL DOUGH row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
             <div style={{ fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>
               {t('recipeOutput.totalDough')}
             </div>
             <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
-              {u === 'imperial' ? wStr(numItems * itemWeight) : `${(numItems * itemWeight).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
+              {u === 'imperial' ? wStr(totalDough) : `${totalDough.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
             </div>
-            <div style={{ minWidth: '4rem' }} />
+
           </div>
         </div>
       )}
 
 
+      {onContainerCapacityChange && <details className="bh-disclosure">
+        <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Récipient de fermentation' : 'Fermentation container'}</summary>
+        <label style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',fontSize:14}}>
+          {locale === 'fr' ? 'Capacité du récipient (litres)' : 'Container capacity (litres)'}
+          <input type="number" min={0.5} step={0.5} defaultValue={containerCapacityLitres ?? 3} key={containerCapacityLitres ?? 'default'}
+            onBlur={e => { const value = Number(e.target.value); if (e.target.value !== '' && Number.isFinite(value) && value >= 0.5) onContainerCapacityChange(value); else { e.target.value = String(containerCapacityLitres ?? 3); } }}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+            style={{width:90,minHeight:44,padding:8,border:'1px solid var(--border)',borderRadius:8}} />
+        </label>
+        <p style={{fontSize:13}}>{locale === 'fr' ? 'Prévoyez de la place pour que la pâte gonfle.' : 'Allow room for the dough to expand.'}</p>
+      </details>}
+
       {/* ── Batch splitting callout ──────────────────────────────── */}
-      {needsBatches && (
+      {(needsBatches || effectiveBatches > 1) && (
         <div style={{
           background: '#F0EBE0',
           border: '1.5px solid #9C8248',
@@ -1065,47 +867,9 @@ export default function RecipeOutput({
               : <>{t('recipeOutput.largeBatchTotal', { grams: totalDoughG, mixer: (MIXER_TYPES as Record<string, { name: string }>)[mixerType]?.name ?? 'mixer', n: effectiveBatches })}</>
             }
           </div>
-          {/* Batch count selector: ×1, ×2, ×3 pills + free input */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-            {[1, 2, 3].map(n => (
-              <button
-                key={n}
-                onClick={() => setNumBatches(n)}
-                style={{
-                  padding: '4px 12px',
-                  borderRadius: '20px',
-                  border: `1.5px solid ${effectiveBatches === n ? '#9C8248' : '#C4B898'}`,
-                  background: effectiveBatches === n ? '#9C824820' : 'white',
-                  color: effectiveBatches === n ? '#7A5A10' : '#8A7F78',
-                  fontSize: '13px',
-                  fontFamily: 'var(--font-ui)',
-                  fontWeight: effectiveBatches === n ? 700 : 400,
-                  cursor: 'pointer',
-                }}
-              >
-                {n}×
-              </button>
-            ))}
-            <input
-              type="number"
-              min={1}
-              placeholder="other"
-              value={effectiveBatches > 3 ? effectiveBatches : ''}
-              onChange={e => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1) setNumBatches(v); }}
-              style={{
-                width: '80px',
-                padding: '4px 8px',
-                borderRadius: '20px',
-                border: `1.5px solid ${effectiveBatches > 3 ? '#9C8248' : '#C4B898'}`,
-                background: effectiveBatches > 3 ? '#9C824820' : 'white',
-                color: effectiveBatches > 3 ? '#7A5A10' : '#8A7F78',
-                fontSize: '13px',
-                fontFamily: 'var(--font-ui)',
-                textAlign: 'center',
-                outline: 'none',
-              }}
-            />
-          </div>
+          <p>{locale === 'fr' ? `${effectiveBatches} pétrissée${effectiveBatches > 1 ? 's' : ''}` : `${effectiveBatches} mixing batch${effectiveBatches > 1 ? 'es' : ''}`}</p>
+          {batchPlan.overCapacity && <p role="alert">{locale === 'fr' ? 'Cette pétrissée dépasse la capacité indiquée du pétrin.' : 'This batch exceeds the stated mixer capacity.'}</p>}
+          {effectiveBatches > 1 && <label>{locale === 'fr' ? 'Afficher la pétrissée' : 'Show batch'} <select value={batchPlan.active} onChange={e=>setBatchIndex(Number(e.target.value))}>{Array.from({length:effectiveBatches},(_,i)=><option key={i} value={i}>{i+1} / {effectiveBatches}</option>)}</select></label>}
           {/* Per-batch breakdown */}
           <div style={{ background: 'white', borderRadius: '16px', padding: '12px 16px', border: '1px solid #E8D890', marginBottom: '12px' }}>
             <div style={{ fontSize: '11px', fontWeight: 600, color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '.07em', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
@@ -1122,12 +886,13 @@ export default function RecipeOutput({
               { label: hasPref ? t('recipeOutput.waterFinalDough') : t('recipe.water'), value: `${waterPerBatch.toLocaleString()}g`, highlight: false, isTotal: false },
               { label: t('recipe.salt'), value: `${saltPerBatch.toLocaleString()}g`, highlight: false, isTotal: false },
               ...(yeastPerBatch !== null ? [{
-                label: `Yeast (${(yeast as YeastResult | null)?.yeastType ?? 'IDY'})`,
+                label: yeastTypeName || (locale === 'fr' ? 'Levure' : 'Yeast'),
                 value: `${yeastPerBatch}g`,
                 highlight: false,
                 isTotal: false,
               }] : []),
-              { label: t('recipeOutput.batchTotal'), value: `${(flourPerBatch + waterPerBatch + saltPerBatch + (poolishPerBatch ?? 0) + (yeastPerBatch !== null ? Math.round(yeastPerBatch) : 0)).toLocaleString()}g`, highlight: true, isTotal: true },
+              ...(['starter','oil','sugar','milk','eggs','butter'] as const).filter(key=>batchPlan.portion[key]>0).map(key=>({label:({milk:locale==='fr'?'Lait':'Milk',eggs:locale==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:locale==='fr'?'Beurre':'Butter',starter:locale==='fr'?'Levain':'Starter',oil:locale==='fr'?'Huile':'Oil',sugar:locale==='fr'?'Sucre':'Sugar'})[key],value:`${batchPlan.portion[key]}g`,highlight:false,isTotal:false})),
+              { label: t('recipeOutput.batchTotal'), value: `${batchPlan.total.toLocaleString()}g`, highlight: true, isTotal: true },
             ].map((row, i) => (
               <div key={i} style={{
                 display: 'flex', justifyContent: 'space-between',
@@ -1145,7 +910,7 @@ export default function RecipeOutput({
           </div>
           {/* Footer note */}
           <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
-            Combine all batches into one container immediately after mixing. Bulk fermentation and schedule are unchanged.
+            {locale === 'fr' ? 'La dernière pétrissée reçoit les écarts d’arrondi. Vérifiez le planning si le pétrissage prend plus de temps.' : 'The last batch takes rounding remainders. Review the schedule if mixing takes longer.'}
           </div>
         </div>
       )}
@@ -1157,6 +922,8 @@ export default function RecipeOutput({
           poolish/biga there, so callouts based on the main-dough yeast
           amount would contradict the preferment card. */}
       {yeastInfo && hasPref && result.preferment && result.preferment.prefYeastGrams > 0 && result.preferment.prefYeastGrams < 0.5 && (
+        <details className="bh-disclosure">
+          <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Petite dose de levure' : 'Small yeast dose'}</summary>
         <div style={{
           background: '#FFFBEE',
           border: '1.5px solid #9C8248',
@@ -1169,15 +936,28 @@ export default function RecipeOutput({
             </span>
           </div>
           <div style={{ fontSize: '12px', color: '#5A4010', lineHeight: 1.6, paddingLeft: '24px' }}>
-            {t('recipeOutput.precisionScaleBody', { amount: wStr(result.preferment.prefYeastGrams) })}
+            {t('recipeOutput.precisionScaleBody', { amount: formatPrefermentDose(result.preferment.prefYeastGrams) })}
+            {(() => {
+              const pf = result.preferment!;
+              const dilution = prefermentDilution(pf.prefYeastGrams, pf.prefWater);
+              if (!dilution) return null;
+              const yeastName = (YEAST_TYPES as Record<string, { shortName: string }>)[pf.prefYeastType]?.shortName ?? 'IDY';
+              const f = formatPrefermentDose;
+              return <p style={{ margin: '8px 0 0' }}>{locale === 'fr'
+                ? `Ou mélangez 1 g de levure ${yeastName} avec 99 g d’eau. Remuez juste avant de prélever ${f(dilution.solutionGrams)} de ce mélange pour le préferment. Cette portion contient ${f(pf.prefYeastGrams)} de levure et ${f(dilution.waterInSolutionGrams)} d’eau : ajoutez seulement ${f(dilution.remainingWaterGrams)} d’eau supplémentaire au préferment. Jetez le reste du mélange. L’eau de la pâte finale ne change pas.`
+                : `Or mix 1 g of ${yeastName} yeast with 99 g water. Stir just before taking ${f(dilution.solutionGrams)} of this mixture for the preferment. This portion contains ${f(pf.prefYeastGrams)} yeast and ${f(dilution.waterInSolutionGrams)} water: add only ${f(dilution.remainingWaterGrams)} more water to the preferment. Discard the leftover mixture. Final-dough water stays unchanged.`}</p>;
+            })()}
           </div>
         </div>
+        </details>
       )}
       {yeastInfo && !hasPref && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
+          {(yeastInfo.hitMinFloor || needsPrecision || yeastInfo.dilutionTip) && <details className="bh-disclosure">
+            <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Petite dose de levure' : 'Small yeast dose'}</summary>
           {/* Min floor callout — shown when 0.5g IDY floor was applied */}
-          {yeastInfo.hitMinFloor && (
+          {yeastInfo.hitMinFloor && !needsPrecision && (
             <div style={{
               background: '#FFFBEE',
               border: '1.5px solid #9C8248',
@@ -1220,19 +1000,23 @@ export default function RecipeOutput({
               title={t('recipeOutput.dilutionTitle')}
               body={t('recipeOutput.dilutionBody', {
                 waterG: yeastInfo.dilutionTip.waterG,
-                solutionG: yeastInfo.dilutionTip.solutionG,
+                solutionG: Number(yeastInfo.dilutionTip.solutionG.toFixed(3)),
+                waterInSolutionG: Number((yeastInfo.dilutionTip.waterInSolutionGrams ?? yeastInfo.dilutionTip.solutionG * 100 / 101).toFixed(3)),
+                remainingWaterG: Number((yeastInfo.dilutionTip.remainingWaterGrams ?? waterMain - yeastInfo.dilutionTip.solutionG * 100 / 101).toFixed(3)),
               })}
             />
           )}
 
+          </details>}
+
           {/* Poolish recommendation */}
           {yeastInfo.recommendPoolish && (
-            <InfoCard
+            <details className="bh-disclosure"><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Autre méthode pour ce planning' : 'Alternative method for this schedule'}</summary><InfoCard
               icon=""
               level="poolish"
               title={t('recipeOutput.poolishTitle')}
               body={t('recipeOutput.poolishBody')}
-            />
+            /></details>
           )}
 
           {/* Not recommended warning */}
@@ -1255,11 +1039,11 @@ export default function RecipeOutput({
 
       {/* ── Sourdough guidance ────────────────────── */}
       {sourdough && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <details className="bh-disclosure"><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Préparer le levain' : 'Prepare the starter'}</summary>
 
           {/* Starter range */}
           <div style={{
-            background: 'var(--char)',
+            background: 'var(--warm)',
             borderRadius: '16px',
             padding: '20px 24px',
             border: '1px solid rgba(156, 130, 72,0.12)',
@@ -1272,7 +1056,7 @@ export default function RecipeOutput({
                 {sourdough.starterGramsMin}–{sourdough.starterGramsMax} g
               </span>
               <span style={{ fontSize: '13px', color: D.muted, fontFamily: 'var(--font-ui)' }}>
-                ({sourdough.starterPctMin}–{sourdough.starterPctMax}% of flour)
+                ({sourdough.starterPctMin}–{sourdough.starterPctMax}% {locale === 'fr' ? 'de la farine' : 'of flour'})
               </span>
             </div>
             <div style={{ fontSize: '12px', color: D.sub, marginTop: '8px', lineHeight: 1.5 }}>
@@ -1327,7 +1111,7 @@ export default function RecipeOutput({
             locale={locale}
           />
 
-        </div>
+        </details>
       )}
 
       {/* PlanNav used to render here (quiet variant, above the protocol

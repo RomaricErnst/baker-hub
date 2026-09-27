@@ -25,12 +25,22 @@ interface PizzaPartyProps {
   getQtysRef?: React.MutableRefObject<() => Record<string, number>>;
   onGoToMyDough?: () => void;
   ovenType?: string;
+  onSave?: () => unknown | Promise<unknown>;
   onEnsureBakeEvent?: () => Promise<string | null>;
   onShare?: () => Promise<void> | void;
   sessionSaved?: boolean;
   onBakedQtysChange?: (qtys: Record<string, number>) => void;
   bakedQtys?: Record<string, number>;
   recipeIngredients?: Array<{ name: string; amount: string }>;
+  onSelectionBack?:()=>void;
+  onSelectionDone?:()=>void;
+  selectionDoneLabel?:string;
+  directSelectionReturn?:boolean;
+  prepContinueLabel?:string;
+  onPrepProgress?:(progress:{done:number;total:number})=>void;
+  active?:boolean;
+  storagePrefix?:string;
+  baseReady?:boolean;
 }
 
 function tabToPill(tab: Tab): Pill {
@@ -44,7 +54,7 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients }: PizzaPartyProps) {
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,storagePrefix="bh",baseReady=false }: PizzaPartyProps) {
   // initialQtys ne sert qu'au tout premier montage : un useState ne relit pas
   // sa valeur initiale. A la reprise d'une session, les pizzas etaient bien
   // dans l'etat de la page — donc dans le resume — mais le selecteur gardait
@@ -126,6 +136,8 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
       {/* ToppingSelector stays mounted across pick/shop to preserve filter state */}
       <div style={{ display: showSelector ? 'block' : 'none' }}>
         <ToppingSelector
+          baseReady={baseReady}
+          storagePrefix={storagePrefix}
           locale={locale}
           numItems={numItems}
           activePill={tabToPill(activeTab)}
@@ -141,18 +153,29 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           doughConfigured={doughConfigured}
           onGoToMyDough={onGoToMyDough}
           recipeIngredients={recipeIngredients}
+          onSelectionBack={onSelectionBack}
+          onSelectionDone={onSelectionDone}
+          selectionDoneLabel={selectionDoneLabel}
+          directSelectionReturn={directSelectionReturn}
+          active={active}
         />
       </div>
 
-      {activeTab === 'prep' && (
+      <div hidden={activeTab !== 'prep'}>
         <PrepTab
+          key={`${storagePrefix}:${restoreToken??0}`}
+          onProgress={onPrepProgress}
+          continueLabel={prepContinueLabel}
+          storagePrefix={storagePrefix}
           bakeTime={bakeTime}
           locale={locale}
           selectedPizzas={qtys}
           onGoToBake={() => onTabChange('bake')}
+          onGoToShopping={() => onTabChange('shop')}
+          onGoToPizzas={() => onTabChange('pick')}
           styleKey={pickStyleKey}
         />
-      )}
+      </div>
 
       {activeTab === 'bake' && (
         <BakeTab
@@ -162,6 +185,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           bakeEventId={bakeEventId}
           ovenType={ovenType}
           onEnsureBakeEvent={onEnsureBakeEvent}
+          onSave={onSave}
           onShare={onShare}
           sessionSaved={sessionSaved}
           onBakedQtysChange={onBakedQtysChange}

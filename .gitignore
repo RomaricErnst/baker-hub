@@ -2,6 +2,9 @@
 
 # dependencies
 /node_modules
+/.ci-tools/
+/playwright-report/
+/test-results/
 /.pnp
 .pnp.*
 .yarn/*

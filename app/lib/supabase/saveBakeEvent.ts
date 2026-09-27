@@ -72,7 +72,7 @@ export async function saveNamedSession(
     const time = new Date().toLocaleTimeString('en-GB', {
       hour: '2-digit', minute: '2-digit',
     });
-    const name = `${style} · ${n} ${type} · ${date} ${time}`;
+    const name = session.bakeName?.trim() || `${style} · ${n} ${type} · ${date} ${time}`;
 
     const { data, error } = await supabase
       .from('bake_events')
@@ -144,11 +144,12 @@ export async function savePizzaPartySelections(
     if (quantity === 0) return null;
 
     // Select-first: get existing session or create new one
-    let { data: session } = await supabase
+    let { data: session, error: selectError } = await supabase
       .from('pizza_party_sessions')
       .select('id')
       .eq('bake_event_id', bakeEventId)
-      .single();
+      .maybeSingle();
+    if (selectError) return null;
 
     if (!session) {
       const { data: newSession, error: insertError } = await supabase
@@ -159,10 +160,11 @@ export async function savePizzaPartySelections(
       if (insertError || !newSession) return null;
       session = newSession;
     } else {
-      await supabase
+      const { error: updateError } = await supabase
         .from('pizza_party_sessions')
         .update({ quantity, style })
         .eq('id', session.id);
+      if (updateError) return null;
     }
 
     if (!session) return null;
@@ -178,14 +180,17 @@ export async function savePizzaPartySelections(
       }));
 
     if (slots.length > 0) {
-      await supabase.from('pizza_party_slots').delete().eq('session_id', session.id);
-      await supabase.from('pizza_party_slots').insert(slots);
+      const { error: deleteError } = await supabase.from('pizza_party_slots').delete().eq('session_id', session.id);
+      if (deleteError) return null;
+      const { error: slotsError } = await supabase.from('pizza_party_slots').insert(slots);
+      if (slotsError) return null;
     }
 
-    await supabase
+    const { error: linkError } = await supabase
       .from('bake_events')
       .update({ pizza_party_id: session.id, status: 'pizza_planned' })
       .eq('id', bakeEventId);
+    if (linkError) return null;
 
     return session.id;
   } catch (e) {
@@ -203,6 +208,7 @@ export async function updateBakeEvent(
     const { error } = await supabase
       .from('bake_events')
       .update({
+        ...(session.bakeName?.trim() ? { notes: session.bakeName.trim() } : {}),
         dough_snapshot: session,
         bake_date: session.eatTime
           ? new Date(session.eatTime).toISOString()

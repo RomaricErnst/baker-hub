@@ -1,16 +1,20 @@
 'use client';
 import { PREFERMENT_TYPES, type PrefermentType } from '../data';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import DecisionList from './DecisionList';
+import { useEffect, useState } from 'react';
 
 interface PrefermentPickerProps {
   // null means the step has not been settled yet — nothing is highlighted and
   // the follow-on pills stay hidden, because a code default that looks chosen
   // is exactly what the preset rule exists to stop.
   selected: PrefermentType | null;
+  directOnly?: boolean;
   onSelect: (type: PrefermentType) => void;
   flourPct?: number;
-  onFlourPctChange?: (pct: number) => void;
+  onFlourPctChange?: (pct: number | undefined) => void;
+  suggestedFlourPct?: number;
+  totalFlourGrams?: number;
   styleKey?: string;
   hideTypes?: PrefermentType[];
   kitchenTemp?: number;
@@ -18,16 +22,28 @@ interface PrefermentPickerProps {
 }
 
 export default function PrefermentPicker({
-  selected, onSelect, flourPct, onFlourPctChange,
+  selected, onSelect, flourPct, onFlourPctChange, suggestedFlourPct = 20, directOnly = false,
   styleKey, hideTypes = [], kitchenTemp, yeastType,
 }: PrefermentPickerProps) {
   const t = useTranslations('preferment');
+  const fr = useLocale() === 'fr';
+  const committedPct = flourPct ?? suggestedFlourPct;
+  const [pctDraft, setPctDraft] = useState(String(committedPct));
+  useEffect(() => { setPctDraft(String(committedPct)); }, [committedPct, selected]);
+  function commitPct() {
+    const value = Number(pctDraft);
+    if (pctDraft.trim() !== '' && Number.isFinite(value)) {
+      const bounded = Math.max(10, Math.min(60, Math.round(value)));
+      setPctDraft(String(bounded));
+      if (bounded !== committedPct) onFlourPctChange?.(bounded);
+    } else setPctDraft(String(committedPct));
+  }
 
   const ALL_OPTIONS = [
-    { id: 'none',    image: '/preferment-direct.webp',  title: t('none.title'),    tagline: t('none.tagline') },
-    { id: 'poolish', image: '/preferment-poolish.webp', title: t('poolish.title'), tagline: t('poolish.tagline') },
-    { id: 'biga',    image: '/preferment-biga.webp',    title: t('biga.title'),    tagline: t('biga.tagline') },
-    { id: 'levain',  image: '/yeast_sourdough.webp',    title: t('levain.title'),  tagline: t('levain.tagline') },
+    { id: 'none',    image: '/images/approved/preferment/direct.webp',  title: t('none.title'),    tagline: t('none.tagline') },
+    { id: 'poolish', image: '/images/approved/preferment/poolish.webp', title: t('poolish.title'), tagline: t('poolish.tagline') },
+    { id: 'biga',    image: '/images/approved/preferment/biga.webp',    title: t('biga.title'),    tagline: t('biga.tagline') },
+    { id: 'levain',  image: '/images/approved/leavening-v2/starter.webp',    title: t('levain.title'),  tagline: t('levain.tagline') },
   ];
 
   const options = ALL_OPTIONS
@@ -48,45 +64,37 @@ export default function PrefermentPicker({
       <div>
           {/* No heading here: the step page above already says "Preferment
               method". Two titles, one question. */}
-          <p style={{ fontSize: 13, color: 'var(--smoke)', margin: '0 0 14px', fontFamily: 'var(--font-ui)' }}>
-            {t('subtitle')}
-          </p>
-          <DecisionList
-            options={options}
-            selectedId={selected ?? ''}
-            onSelect={(id) => onSelect(id as PrefermentType)}
-          />
+          {directOnly && <p style={{ fontSize: 13, color: 'var(--smoke)' }}>{fr ? 'Cette recette enrichie est actuellement prévue sans préferment.' : 'This enriched recipe currently supports the direct method only.'}</p>}
+          <div style={{ display: 'grid', gap: 12 }}>
+            {options.map(option => <div key={option.id}>
+              <DecisionList layout="lateral" options={[option]} disabledIds={directOnly && option.id !== 'none' ? [option.id] : []} selectedId={selected ?? ''} onSelect={id => onSelect(id as PrefermentType)} />
+              {!directOnly && selected === option.id && selected !== 'none' && selected !== 'levain' && onFlourPctChange && (
+                <div style={{ padding: '12px 14px', border: '1px solid var(--border)', borderTop: 0, borderRadius: '0 0 12px 12px', background: 'var(--warm)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 13 }}>
+                    {fr ? 'Farine réservée au préferment' : 'Flour allocated to preferment'}
+                    <span><input type="number" min={10} max={60} step={1} value={pctDraft} onChange={e => setPctDraft(e.target.value)} onBlur={commitPct} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }} style={{ width: 72, minHeight: 44, border: '1px solid var(--border)', borderRadius: 8, padding: 8 }} /> %</span>
+                  </label>
+                  <input type="range" aria-label={fr ? 'Part de farine en préferment' : 'Prefermented flour share'} min={10} max={60} step={1} value={flourPct ?? suggestedFlourPct} onChange={e => { setPctDraft(e.target.value); onFlourPctChange(Number(e.target.value)); }} style={{ width: '100%', minHeight: 44, accentColor: 'var(--terra)' }} />
+                  <details style={{ marginTop: 8, fontSize: 13 }}>
+                    <summary style={{ minHeight: 44, cursor: 'pointer' }}>{fr ? 'M’aider à choisir' : 'Help me choose'}</summary>
+                    <ul>
+                      <li>{fr ? `${suggestedFlourPct} % : commencez ici pour un premier essai.` : `${suggestedFlourPct}%: start here for your first attempt.`}</li>
+                      <li>{selected === 'biga'
+                        ? (fr ? '10 % : moins de biga ferme à incorporer, pour vous familiariser avec cette méthode.' : '10%: less stiff biga to incorporate while you get familiar with the method.')
+                        : (fr ? '10 % : moins de poolish à préparer, pour apprendre à reconnaître sa maturité.' : '10%: less poolish to prepare while you learn to recognise its maturity.')}</li>
+                      <li>{selected === 'biga'
+                        ? (fr ? '30 % : essayez lorsque vous maîtrisez la maturité de la biga et son incorporation homogène.' : '30%: try once you can recognise ripe biga and incorporate it evenly.')
+                        : (fr ? '30 % : davantage de farine mûrit à l’avance ; essayez lorsque vous reconnaissez un poolish prêt.' : '30%: more flour matures ahead; try once you can recognise a ripe poolish.')}</li>
+                    </ul>
+                    <p>{fr ? 'Augmentez progressivement ; plus n’est pas forcément mieux.' : 'Increase gradually; more is not always better.'}</p>
+                  </details>
+                  {flourPct !== undefined && flourPct !== suggestedFlourPct && <button type="button" onClick={() => onFlourPctChange(undefined)} style={{ minHeight: 44, background: 'transparent', border: 0, color: 'var(--terra)', textDecoration: 'underline', cursor: 'pointer' }}>{fr ? 'Revenir à la suggestion' : 'Reset to suggestion'}</button>}
+                </div>
+              )}
+            </div>)}
+          </div>
       </div>
 
-      {/* Hydration / cold-ferment pills when a preferment is active */}
-      {selected !== null && selected !== 'none' && (() => {
-        const pData = PREFERMENT_TYPES[selected] as { hydration?: number; cold?: boolean };
-        if (!pData.hydration && !pData.cold) return null;
-        return (
-          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '8px' }}>
-            {pData.hydration && (
-              <span style={{
-                fontSize: '11px', fontFamily: 'var(--font-ui)',
-                background: 'var(--cream)', color: 'var(--ash)',
-                borderRadius: '20px', padding: '.1rem 8px',
-                border: '1px solid var(--border)',
-              }}>
-                {pData.hydration}% {t('hydration')}
-              </span>
-            )}
-            {pData.cold && (
-              <span style={{
-                fontSize: '11px', fontFamily: 'var(--font-ui)',
-                background: 'rgba(107,122,90,0.1)', color: 'var(--sage)',
-                borderRadius: '20px', padding: '.1rem 8px',
-                border: '1px solid rgba(107,122,90,0.25)',
-              }}>
-                {t('coldFerment')}
-              </span>
-            )}
-          </div>
-        );
-      })()}
     </div>
   );
 }

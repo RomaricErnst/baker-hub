@@ -11,6 +11,7 @@ interface Option {
 }
 
 interface DecisionListProps {
+  layout?: 'compact' | 'lateral' | 'photo' | 'illustrated';
   options: Option[];
   selectedId: string;
   onSelect: (id: string) => void;
@@ -22,43 +23,48 @@ interface DecisionListProps {
   infoLabel?: string;
 }
 
-export default function DecisionList({ options, selectedId, onSelect, disabledIds = [], onInfo, infoLabel }: DecisionListProps) {
+export default function DecisionList({ options, selectedId, onSelect, disabledIds = [], onInfo, infoLabel, layout = 'compact' }: DecisionListProps) {
   return (
-    <div style={{ border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
+    <div role="group" style={{ display: 'grid', gap: layout === 'compact' ? 0 : 10, border: layout === 'compact' ? '1px solid var(--border)' : undefined, borderRadius: '16px', overflow: 'hidden' }}>
       {options.map((option, idx) => {
         const isSelected = option.id === selectedId;
         const isDisabled = disabledIds.includes(option.id);
         return (
           <div
             key={option.id}
+            role="button" tabIndex={isDisabled ? -1 : 0} aria-pressed={isSelected} aria-disabled={isDisabled}
+            onKeyDown={e => { if(e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')){e.preventDefault();if(!isDisabled)onSelect(option.id);} }}
             onClick={() => !isDisabled && onSelect(option.id)}
             style={{
               display: 'flex',
+              flexWrap: layout === 'photo' ? 'wrap' : undefined,
+              border: layout === 'compact' ? undefined : `2px solid ${isSelected ? 'var(--terra)' : 'var(--border)'}`,
+              borderRadius: layout === 'compact' ? 0 : 12,
               alignItems: 'center',
               gap: '12px',
               padding: isSelected ? '10px 14px 10px 11px' : '10px 14px',
               minHeight: '62px',
               cursor: isDisabled ? 'default' : 'pointer',
-              borderBottom: idx < options.length - 1 ? '1px solid var(--border)' : 'none',
-              borderLeft: isSelected ? '3px solid var(--gold)' : 'none',
+              borderBottom: layout === 'compact' ? (idx < options.length - 1 ? '1px solid var(--border)' : 'none') : undefined,
+              borderLeft: layout === 'compact' ? (isSelected ? '3px solid var(--gold)' : 'none') : undefined,
               background: isSelected ? 'rgba(156, 130, 72,0.08)' : 'white',
               opacity: isDisabled ? 0.5 : 1,
               pointerEvents: isDisabled ? 'none' : undefined,
             }}
           >
-            <div style={{
-              width: '56px', height: '56px',
+            <div className={layout === 'illustrated' ? 'decision-illustration' : undefined} style={{
+              width: layout === 'illustrated' ? undefined : layout === 'photo' ? '100%' : layout === 'lateral' ? 72 : 56, height: layout === 'illustrated' ? undefined : layout === 'photo' ? 'auto' : layout === 'lateral' ? 72 : 56, aspectRatio: layout === 'photo' ? '2 / 1' : undefined,
               borderRadius: option.thumbnailBg ? '50%' : '8px',
               overflow: 'hidden', flexShrink: 0,
-              background: option.thumbnailBg ?? '#2B2420',
+              background: option.thumbnailBg ?? (layout === 'illustrated' ? '#f3ede3' : '#2B2420'),
             }}>
               {!option.thumbnailBg && option.image && (
-                <img src={option.image} alt={option.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={option.image} alt="" style={{ width: '100%', height: '100%', objectFit: layout === 'illustrated' ? 'contain' : 'cover' }} />
               )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', fontWeight: 600, color: 'var(--char)' }}>
+                <span style={{ fontFamily: 'var(--font-ui)', fontSize: '16px', fontWeight: 600, color: 'var(--char)' }}>
                   {option.title}
                 </span>
                 {option.badge && (
@@ -76,11 +82,11 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
               </div>
               <div style={{
                 fontFamily: 'var(--font-ui)',
-                fontSize: '11px',
+                fontSize: '14px',
                 color: 'var(--smoke)',
                 overflow: 'hidden',
                 display: '-webkit-box',
-                WebkitLineClamp: 2,
+                WebkitLineClamp: layout === 'compact' ? 2 : 4,
                 WebkitBoxOrient: 'vertical' as const,
                 lineHeight: 1.35,
               }}>

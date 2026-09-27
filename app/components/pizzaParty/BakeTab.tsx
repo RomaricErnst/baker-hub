@@ -1,6 +1,7 @@
 'use client';
+import JourneyCompletion from '../JourneyCompletion';
+import { approvedPizzaImage } from '../../lib/approvedPizzaImage';
 import { useState, useEffect } from 'react';
-import { NEXT_CTA, SECONDARY_CTA } from '@/app/lib/navButtons';
 import { useTranslations } from 'next-intl';
 import { PIZZAS, DESSERT_PIZZAS, getCustomPizzaList, type Pizza } from '../../lib/toppingDatabase';
 import type { StyleKey, IngredientCategory, Ingredient } from '../../lib/toppingTypes';
@@ -168,6 +169,7 @@ interface BakeTabProps {
   prefermentType?: string;
   bakeEventId?: string | null;
   ovenType?: string;
+  onSave?: () => unknown | Promise<unknown>;
   onEnsureBakeEvent?: () => Promise<string | null>;
   onShare?: () => void;
   sessionSaved?: boolean;
@@ -435,7 +437,7 @@ function CoachButton({
   );
 }
 
-export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp, prefermentType, bakeEventId, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange, initialDoneCounts }: BakeTabProps) {
+export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp, prefermentType, bakeEventId, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onBakedQtysChange, initialDoneCounts }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
@@ -565,27 +567,10 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
     return ing.bakeOrder;
   }
 
-  function getImageSrc(pizzaId: string): string {
-    const variantMap: Record<string, string> = {
-      pizza_romana: '_pizza_romana',
-      newyork: '_newyork',
-      pan: '_pan',
-      roman: '_roman',
-    };
-    const suffix = styleKey && variantMap[styleKey];
-    if (suffix) return `/pizzas/${pizzaId}${suffix}.webp`;
-    return `/pizzas/${pizzaId}.webp`;
-  }
+  const getImageSrc = approvedPizzaImage;
 
-  function handleImageError(e: React.SyntheticEvent<HTMLImageElement>, pizzaId: string) {
-    const img = e.target as HTMLImageElement;
-    if (img.src.endsWith(`${pizzaId}_pan.webp`)) { img.style.display = 'none'; return; }
-    if (img.src.endsWith(`${pizzaId}.webp`)) {
-      // Some pizzas only ship a _pan visual (Detroit, Chicago, cheeseburger)
-      img.src = `/pizzas/${pizzaId}_pan.webp`;
-      return;
-    }
-    img.src = `/pizzas/${pizzaId}.webp`;
+  function handleImageError(e: React.SyntheticEvent<HTMLImageElement>, _pizzaId: string) {
+    e.currentTarget.style.display = 'none';
   }
 
   function getBeforeLabel(): string {
@@ -663,6 +648,9 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
             return (
               <div
                 key={pizza.id}
+                role="button"
+                tabIndex={0}
+                onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSheetPizzaId(pizza.id); } }}
                 onClick={() => setSheetPizzaId(pizza.id)}
                 style={{
                   border: cardDone ? '1px solid rgba(107,122,90,0.45)' : '1px solid var(--border)',
@@ -750,35 +738,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
           takes the lead, because that is the only action left. Both are
           offered from the first baked pizza — real parties change plans, and a
           half-baked evening is still worth keeping. */}
-      {selectedEntries.length > 0 && totalDone > 0 && (onShare || onEnsureBakeEvent) && (
-        <div style={{ display: 'flex', gap: '10px', padding: '4px 16px 20px' }}>
-          {onEnsureBakeEvent && (
-            <button
-              onClick={() => { if (!sessionSaved) void onEnsureBakeEvent(); }}
-              disabled={sessionSaved}
-              style={{
-                ...(sessionSaved ? SECONDARY_CTA : NEXT_CTA),
-                flex: 1,
-                ...(sessionSaved ? { cursor: 'default', opacity: 0.6 } : {}),
-              }}
-            >
-              {sessionSaved
-                ? (l === 'fr' ? 'Sauvegardé' : 'Saved')
-                : (l === 'fr' ? 'Sauvegarder' : 'Save')}
-            </button>
-          )}
-          {onShare && (
-            <button
-              onClick={onShare}
-              style={{
-                ...(sessionSaved || !onEnsureBakeEvent ? NEXT_CTA : SECONDARY_CTA),
-                flex: 1,
-              }}
-            >
-              {l === 'fr' ? 'Partager' : 'Share'}
-            </button>
-          )}
-        </div>
+      {selectedEntries.length > 0 && totalDone > 0 && (onShare || onSave || onEnsureBakeEvent) && (
+        <JourneyCompletion isFr={l==='fr'} complete={false} onSave={onSave ?? onEnsureBakeEvent} onShare={onShare} sessionSaved={sessionSaved}/>
       )}
       {sheetPizzaId && sheetEntry && (() => {
         const { pizza, qty } = sheetEntry;
@@ -914,6 +875,10 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 </div>
               )}
 
+              {pizza.preparationSequence && <section style={{ margin: '12px 16px', padding: 12, background: 'var(--warm)', borderRadius: 12 }}>
+                <h3 style={{ fontSize: 14 }}>{l === 'fr' ? 'Ordre de préparation' : 'Preparation order'}</h3>
+                <p style={{ fontSize: 13, lineHeight: 1.5 }}>{pizza.preparationSequence[l]}</p>
+              </section>}
               {/* BEFORE section */}
               {beforeIngredients.length > 0 && (
                 <>
@@ -1485,8 +1450,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   lineHeight: 1.5,
                 }}>
                   {l === 'fr'
-                    ? 'Connectez-vous pour sauvegarder cette photo — retrouvez-la dans Mes sessions.'
-                    : 'Sign in to save this photo — find it in My Sessions.'}
+                    ? 'Connectez-vous pour sauvegarder cette photo — retrouvez-la dans Mes fournées enregistrées.'
+                    : 'Sign in to save this photo — find it in My saved bakes.'}
                 </div>
               )}
             </div>

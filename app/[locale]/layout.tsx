@@ -1,19 +1,18 @@
 import type { Metadata } from "next";
-import { DM_Mono, Figtree } from "next/font/google";
+import localFont from "next/font/local";
 import "../globals.css";
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 
-// One family for everything readable — logo, titles, body, labels. Figtree is
-// built for interface text: generous x-height and well-differentiated letters
-// at 11px, which is where most of this app lives.
-const figtree = Figtree({ subsets: ["latin"], variable: "--font-ui" });
+// Figtree for interface text; page titles use the explicit --font-display
+// serif stack in globals.css, preserving the approved prototype typography.
+const figtree = localFont({ src: "../fonts/figtree-latin.woff2", weight: "300 900", display: "swap", variable: "--font-ui" });
 
 // Kept for one job only: the yeast formula panel, where monospacing carries
 // meaning. Everywhere else, tabular figures on the UI face do the aligning.
-const dmMono = DM_Mono({ weight: ["400","500"], subsets: ["latin"], variable: "--font-dm-mono" });
+const dmMono = localFont({ src: [{path: "../fonts/dm-mono-400-latin.woff2", weight: "400"}, {path: "../fonts/dm-mono-500-latin.woff2", weight: "500"}], display: "swap", variable: "--font-dm-mono" });
 
 export const metadata: Metadata = {
   title: "Baker Hub",
@@ -25,8 +24,8 @@ export const metadata: Metadata = {
     title: 'Baker Hub',
   },
   icons: {
-    icon: '/logos/logo_icon_1024.png',
-    apple: '/logos/logo_icon_1024.png',
+    icon: [{ url: '/logos/bakerhub-b-incised.svg', type: 'image/svg+xml' }, { url: '/logos/bakerhub-b-32.png', sizes: '32x32', type: 'image/png' }],
+    apple: [{ url: '/logos/bakerhub-b-180.png', sizes: '180x180', type: 'image/png' }],
   },
 };
 
@@ -47,7 +46,7 @@ export default async function LocaleLayout({
   }
   const messages = await getMessages();
   return (
-    <html lang={locale}>
+    <html lang={locale} data-preview={process.env.VERCEL_ENV === 'preview' ? 'true' : undefined}>
       <body className={`${figtree.variable} ${dmMono.variable} antialiased`}>
         <NextIntlClientProvider messages={messages}>
           {children}

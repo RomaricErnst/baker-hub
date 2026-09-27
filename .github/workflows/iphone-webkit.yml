@@ -1,0 +1,68 @@
+name: iPhone WebKit audit
+
+on:
+  push:
+    branches: [main, codex/prototype-migration-20260920, codex/navigation-six-sections-20260922, codex/navigation-polish-20260923]
+    paths-ignore: ['docs/**', 'PROJECT-HANDOFF.md', '**/*.md']
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: iphone-webkit-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  iphone:
+    runs-on: macos-14
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      BAKER_NAV_V2: ${{ github.ref != 'refs/heads/codex/prototype-migration-20260920' && '1' || '0' }}
+      # Deliberately fake, isolated configuration. No production services or secrets.
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: mobile-audit-placeholder-not-a-secret
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Install pinned browser test tools separately
+        run: npm install --prefix .ci-tools --no-audit --no-fund @playwright/test@1.58.2 esbuild@0.28.2 jsdom@30.1.1
+      - name: Install WebKit on macOS
+        run: node .ci-tools/node_modules/playwright/cli.js install --with-deps webkit
+      - run: npm test
+      - name: Sourdough round trips with fixed clock and parent state
+        env:
+          TZ: Asia/Singapore
+          PAGE: '1'
+          SETTLE: '400'
+        run: |
+          node tests/roundtrip/build.mjs
+          node tests/roundtrip/run.mjs .ci-tools/starter-roundtrip.js "${{ github.sha }}"
+          NOW=2026-09-25T00:49:00Z FULL=1 OUTBOUND_WAIT=10 TOGGLES=nights node tests/roundtrip/run.mjs .ci-tools/starter-roundtrip.js "${{ github.sha }}-rapid"
+      - name: Verify every sandwich recipe image
+        run: node scripts/check-sandwich-images.cjs
+      - name: Build isolated app
+        run: npm run build
+      - name: Run iPhone rendering and interaction checks
+        timeout-minutes: 25
+        run: node .ci-tools/node_modules/@playwright/test/cli.js test --config=playwright.mobile.config.cjs
+      - name: Upload screenshots, traces and report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: iphone-webkit-${{ github.sha }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14

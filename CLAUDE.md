@@ -1,5 +1,7 @@
 # Baker Hub — CLAUDE.md
-Updated July 2026 · Live at bakerhub.app · Status: soft-launch ready
+Updated September 2026 · Prototype undergoing release validation; no production promotion without approval.
+
+Current navigation/design decisions in `PROJECT-HANDOFF.md` and dated audits supersede older examples below. Preserve the approved six-section journey and local progress indicators. CI and browser results must identify the tested commit; a successful build alone does not certify the journeys.
 
 ## NVM / Node Setup
 ```bash
@@ -14,8 +16,8 @@ npm run build      # must pass before every push (fails in remote sandboxes: Goo
 |---|---|
 | Framework | Next.js 16 (App Router, `'use client'` throughout) |
 | Language | TypeScript strict |
-| Styling | Inline `style` objects only — no Tailwind, no CSS modules |
-| Fonts | Playfair Display (headings), DM Sans (body), DM Mono (numbers) via `next/font` |
+| Styling | Existing inline styles, shared globals.css and scoped SandwichParty CSS; avoid unrelated styling migrations during stabilization |
+| Fonts | Figtree (`--font-ui`) for UI, explicit Georgia serif stack (`--font-display`) for page titles, DM Mono for formula panels |
 | i18n | next-intl — en at `/`, fr at `/fr`, cookie NEXT_LOCALE; build fails if fr.json misses keys |
 | Backend | Supabase (magic link + Google OAuth, bake_events + photos + pizza-party slots) |
 | Deploy | Vercel — auto on push to main (~90–120 s); a failed build never replaces the live deployment |

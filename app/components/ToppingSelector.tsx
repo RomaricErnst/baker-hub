@@ -1,7 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { NEXT_CTA, SECONDARY_CTA } from '../lib/navButtons';
-import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import { createClient } from '@/app/lib/supabase/client';
 import {
   PIZZAS, DESSERT_PIZZAS, getPizzaById, getCustomPizzaList,
@@ -14,10 +13,12 @@ import {
   type OccasionTag, type DietaryTag, type Season, type BudgetTier,
   type ComplexityTier, type RegionTag, type IngredientCategory,
 } from '../lib/toppingDatabase';
+import { approvedPizzaImage } from '../lib/approvedPizzaImage';
 import CreatePizzaSheet from './CreatePizzaSheet';
 import { loadCustomPizzas, type CustomPizzaDef } from '../lib/profile';
 import PizzaPlaceholder from './PizzaPlaceholder';
-import type { Locale, FlavorChip } from '../lib/toppingTypes';
+import { SHOPPING_NOTE_FR } from '../lib/shoppingNoteTranslations';
+import { filterPizzasByCourse, type Locale, type FlavorChip } from '../lib/toppingTypes';
 
 // ─── Ingredient chips ─────────────────────────────────────────
 
@@ -186,6 +187,13 @@ interface Props {
   /** Dough ingredients from the generated recipe — shown as a
       "For your dough" section so the baker shops once. */
   recipeIngredients?: Array<{ name: string; amount: string }>;
+  onSelectionBack?:()=>void;
+  onSelectionDone?:()=>void;
+  selectionDoneLabel?:string;
+  directSelectionReturn?:boolean;
+  active?:boolean;
+  baseReady?:boolean;
+  storagePrefix?:string;
 }
 
 // ─── Sub-region maps ─────────────────────────────────────────
@@ -317,7 +325,7 @@ const S = {
       :                      { background: '#F0EBE3', color: '#6B7A5A', border: '0.5px solid #E0D8CF' }),
   }),
   qtyBtn: {
-    width: '26px', height: '26px', borderRadius: '16px',
+    width: '44px', height: '44px', borderRadius: '10px',
     border: '1.5px solid #C8C0B8', background: '#F0EBE0',
     fontSize: '15px', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -375,29 +383,31 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
   const budget = '€'.repeat(pizza.budget);
 
   return (
-    <div style={S.card(qty > 0)} onClick={onTap}>
-      <div style={{ display: 'flex', gap: '8px', padding: '8px 12px 8px' }}>
+    <div
+      style={S.card(qty > 0)}
+      onClick={onTap}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => {
+        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onTap();
+        }
+      }}
+      aria-label={`${name}${qty > 0 ? ` · ${qty}` : ''}`}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 12px' }}>
         {/* Left: image spanning all rows */}
-        <div style={{ width: '80px', height: '80px', borderRadius: '16px', overflow: 'hidden', flexShrink: 0, background: '#2B2420' }}>
+        <div style={{ width: '100%', aspectRatio: '2 / 1', borderRadius: '12px', overflow: 'hidden', flexShrink: 0, background: '#2B2420' }}>
           {pizza.id.startsWith('custom_') ? (
             pizza.photoUrl
               ? <img src={pizza.photoUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               : <PizzaPlaceholder name={name} size="thumb" />
           ) : (
           <img
-            src={(() => {
-              const variantMap: Record<string, string> = {
-                pizza_romana: `_pizza_romana`,
-                newyork: `_newyork`,
-                pan: `_pan`,
-                roman: `_roman`,
-              };
-              const suffix = styleKey && variantMap[styleKey];
-              if (suffix) return `/pizzas/${pizza.id}${suffix}.webp`;
-              return `/pizzas/${pizza.id}.webp`;
-            })()}
+            src={approvedPizzaImage(pizza.id)}
             alt={name}
-            loading="lazy" decoding="async" width={80} height={80}
+            loading="lazy" decoding="async" width={640} height={320}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             onError={e => {
               const img = e.target as HTMLImageElement;
@@ -412,14 +422,14 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px' }}>
           {/* Row 1: name · budget */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 500, color: '#2B2420', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: '16px', fontWeight: 700, color: '#2B2420', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {name}
             </span>
             <span style={{ fontSize: '11px', color: '#8A7F78', flexShrink: 0 }}>{budget}</span>
           </div>
           {/* Row 2: story tagline — 2 line max */}
           {pizza.story && (
-            <div style={{ fontSize: '11px', color: '#8A7F78', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
+            <div style={{ fontSize: '14px', color: '#6b6058', lineHeight: 1.45, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
               {pizza.story[l] ?? pizza.story.en}
             </div>
           )}
@@ -466,30 +476,53 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
   );
 }
 
+export function PizzaIngredientDetails({pizza,locale,styleKey}: {pizza: Pizza; locale: string; styleKey?: string}) {
+  const l = locale === 'fr' ? 'fr' : 'en';
+  const style = styleKey as import('../lib/toppingTypes').StyleKey | undefined;
+  return <div>
+    <p style={{fontSize:13,color:'var(--smoke)'}}>{l === 'fr' ? 'Quantités pour une pizza' : 'Amounts for one pizza'}</p>
+    {(['before','after'] as const).map(order => {
+      const ingredients = pizza.ingredients.filter(ingredient => (style && ingredient.bakeOrderByStyle?.[style] || ingredient.bakeOrder) === order);
+      if (!ingredients.length) return null;
+      return <section key={order}>
+        <h3 style={{fontSize:16,margin:'16px 0 8px'}}>{order === 'before' ? (l === 'fr' ? 'Avant cuisson' : 'Before baking') : (l === 'fr' ? 'Après cuisson' : 'After baking')}</h3>
+        {ingredients.map(ingredient => {
+          const note = (style && ingredient.prepNoteByStyle?.[style]) || ingredient.prepNote;
+          const quantity = ingredient.qtyPerPizza;
+          const multiplier = style ? ingredient.qtyMultiplierByStyle?.[style] ?? 1 : 1;
+          return <div key={ingredient.id} style={{padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+            <div style={{display:'flex',justifyContent:'space-between',gap:12,fontSize:14}}><strong>{ingredient.name[l]}</strong><span>{quantity ? formatQty(quantity.amount * multiplier,quantity.unit,locale) : ''}</span></div>
+            {note && <p style={{fontSize:13,lineHeight:1.5,margin:'4px 0'}}>{note[l]}</p>}
+          </div>;
+        })}
+      </section>;
+    })}
+  </div>;
+}
+
 // ─── Pizza sheet ──────────────────────────────────────────────
 
-function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
+export function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
   pizza: Pizza; qty: number; locale: string; styleKey?: string;
   onQtyChange: (delta: number) => void;
   onClose: () => void;
 }) {
   const l = locale as 'en' | 'fr';
 
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+    dialogRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
   }, []);
 
-  const variantMap: Record<string, string> = {
-    pizza_romana: '_pizza_romana',
-    newyork: '_newyork',
-    pan: '_pan',
-    roman: '_roman',
-  };
-  const suffix = styleKey && variantMap[styleKey];
-  const imgSrc = suffix
-    ? `/pizzas/${pizza.id}${suffix}.webp`
-    : `/pizzas/${pizza.id}.webp`;
+  const hasCustomPhoto = pizza.id.startsWith('custom_') && !!pizza.photoUrl;
+  const imgSrc = hasCustomPhoto ? pizza.photoUrl! : approvedPizzaImage(pizza.id);
 
   // Drag-to-dismiss. A sheet that only closes via the ✕ reads as a page on a
   // phone; following the thumb and falling away past a threshold is what makes
@@ -525,9 +558,19 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
       }}
       onClick={onClose}
     >
-      <div
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={pizza.name[l] ?? pizza.name.en}
+        onKeyDown={e => {
+          if (e.key === 'Escape') { e.stopPropagation(); onClose(); }
+          if (e.key !== 'Tab') return;
+          const focusable = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter(element => element.getClientRects().length > 0);
+          const first = focusable[0], last = focusable[focusable.length - 1];
+          if (!first) { e.preventDefault(); e.currentTarget.focus(); }
+          else if (e.shiftKey && (document.activeElement === first || document.activeElement === e.currentTarget)) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }}
         style={{
           width: '100%',
+          maxHeight: 'calc(100dvh - 81px - env(safe-area-inset-bottom))',
           background: '#FDFBF7',
           borderRadius: '20px 20px 0 0',
           display: 'flex',
@@ -535,7 +578,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           overflow: 'hidden',
           transform: `translateY(${dragY}px)`,
           transition: dragFrom.current === null ? 'transform 0.22s ease' : 'none',
-          touchAction: 'none',
+          touchAction: 'pan-y',
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -545,46 +588,17 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           onPointerUp={onDragEnd}
           onPointerCancel={onDragEnd}
           style={{
-            padding: '10px 0 6px', display: 'flex', justifyContent: 'center',
+            minHeight: 44, touchAction: 'none', padding: '10px 0 6px', display: 'flex', justifyContent: 'center',
             cursor: 'grab', flexShrink: 0, background: '#FDFBF7',
             position: 'relative', zIndex: 2,
           }}
         >
           <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: '#D9D0C2' }} />
-        </div>
-
-        {/* Image — takes all remaining space, shrinks to zero if needed */}
-        <div style={{
-          position: 'relative',
-          width: '100%',
-          aspectRatio: '1 / 1',
-          maxHeight: 'calc(100dvh - 69px - 69px - 230px)',
-          flexShrink: 0,
-          background: '#2B2420',
-          borderRadius: '20px 20px 0 0',
-          overflow: 'hidden',
-        }}>
-          <img
-            src={imgSrc} loading="lazy" decoding="async"
-            alt={pizza.name[l] ?? pizza.name.en}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center center',
-              display: 'block',
-            }}
-            onError={e => {
-              const img = e.target as HTMLImageElement;
-              if (suffix && !img.src.endsWith(`${pizza.id}.webp`)) {
-                img.src = `/pizzas/${pizza.id}.webp`;
-              } else {
-                img.style.display = 'none';
-              }
-            }}
-          />
           <button
+            type="button"
+            onPointerDown={e => e.stopPropagation()}
             onClick={onClose}
+            aria-label={l === 'fr' ? 'Fermer les détails de la pizza' : 'Close pizza details'}
             style={{
               position: 'absolute', top: '2px', right: '2px',
               // 44px tap box, 28px painted disc: padding + content-box clip
@@ -598,6 +612,40 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >&#x2715;</button>
+        </div>
+
+        <div data-pizza-detail-scroll style={{flex:'1 1 auto',minHeight:0,overflowY:'auto',overscrollBehavior:'contain',touchAction:'pan-y'}}>
+        {/* Image and ingredient details share the scrollable body. */}
+        <div style={{
+          position: 'relative',
+          width: '100%',
+          aspectRatio: '1 / 1',
+          maxHeight: 'calc(100dvh - 69px - 69px - 230px)',
+          flexShrink: 0,
+          background: '#2B2420',
+          borderRadius: '20px 20px 0 0',
+          overflow: 'hidden',
+        }}>
+          {pizza.id.startsWith('custom_') && !pizza.photoUrl ? (
+            <PizzaPlaceholder name={pizza.name[l] ?? pizza.name.en} size="hero" />
+          ) : (
+            <img
+              src={imgSrc} loading="lazy" decoding="async"
+              alt={pizza.name[l] ?? pizza.name.en}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center center',
+                display: 'block',
+              }}
+              onError={e => {
+                const img = e.target as HTMLImageElement;
+                img.style.display = 'none';
+              }}
+            />
+          )}
+
         </div>
 
         {/* Info — title, ingredients, wine — fixed height, never compressed */}
@@ -614,23 +662,9 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
             {pizza.name[l] ?? pizza.name.en}
           </div>
 
-          {pizza.ingredients.length > 0 && (
-            <div style={{
-              display: 'flex', flexWrap: 'wrap',
-              gap: '4px', marginBottom: '8px',
-            }}>
-              {pizza.ingredients.map(ing => (
-                <span key={ing.id} style={{
-                  fontSize: '11px', color: '#3D3530',
-                  background: '#F0EBE0', borderRadius: '20px',
-                  padding: '2px 8px', border: '1px solid #E0D8CF',
-                }}>
-                  {ing.name[l] ?? ing.name.en}
-                </span>
-              ))}
-            </div>
-          )}
+          <PizzaIngredientDetails pizza={pizza} locale={locale} styleKey={styleKey} />
 
+          {pizza.preparationSequence && <p style={{ fontSize: 13, lineHeight: 1.5 }}>{pizza.preparationSequence[l]}</p>}
           {pizza.wineNote && (
             <div style={{
               fontSize: '11px', color: '#7A4A8A',
@@ -656,6 +690,8 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
           )}
         </div>
 
+        </div>
+
         {/* Footer — qty controls, always visible */}
         <div style={{
           flexShrink: 0,
@@ -678,7 +714,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
               <button
                 onClick={e => { e.stopPropagation(); onQtyChange(-1); }}
                 style={{
-                  width: '36px', height: '36px', borderRadius: '50%',
+                  width: '44px', height: '44px', borderRadius: '50%',
                   border: '1.5px solid #E0D8CF', background: '#FDFBF7',
                   cursor: 'pointer', fontSize: '20px', color: '#2B2420',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -695,7 +731,7 @@ function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose }: {
               <button
                 onClick={e => { e.stopPropagation(); onQtyChange(1); }}
                 style={{
-                  width: '36px', height: '36px', borderRadius: '50%',
+                  width: '44px', height: '44px', borderRadius: '50%',
                   border: 'none', background: '#6B4423',
                   cursor: 'pointer', fontSize: '20px', color: 'white',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -740,6 +776,12 @@ const SECTION_LABELS: Record<IngredientCategory, Locale> = {
 };
 
 
+export function shoppingNoteText(note: string | Locale | undefined, locale: string): string {
+  if (!note) return '';
+  const text = typeof note !== 'string' ? note[locale === 'fr' ? 'fr' : 'en'] || note.en || '' : locale === 'fr' ? (SHOPPING_NOTE_FR[note] ?? note) : note;
+  return /^(Product references; check your store for availability|Références produits)/i.test(text) ? '' : text;
+}
+
 function formatQty(total: number, unit: string, locale: string): string {
   const l = locale as 'en' | 'fr';
   const unitLabels: Record<string, Locale> = {
@@ -753,7 +795,8 @@ function formatQty(total: number, unit: string, locale: string): string {
     pinch:  { en: 'pinches', fr: 'pincées' },
     drizzle:{ en: 'drizzles', fr: 'filets' },
   };
-  const label = unitLabels[unit]?.[l] ?? unit;
+  const singular: Record<string, Locale> = { slices: {en:'slice',fr:'tranche'}, leaves: {en:'leaf',fr:'feuille'}, sprigs: {en:'sprig',fr:'brin'}, pinch: {en:'pinch',fr:'pincée'}, drizzle: {en:'drizzle',fr:'filet'} };
+  const label = (total === 1 ? singular[unit]?.[l] : undefined) ?? unitLabels[unit]?.[l] ?? unit;
   return `${total} ${label}`;
 }
 
@@ -766,13 +809,14 @@ interface ShoppingItem {
   qtyNote?: string;
   isCommonPantry?: boolean;
   hardToFind?: boolean;
-  goodEnough?: { name: Locale };
-  compromise?: { name: Locale };
-  localSwap?: Partial<Record<string, { name: Locale }>>;
+  goodEnough?: { name: Locale; note?: Locale };
+  compromise?: { name: Locale; note?: Locale };
+  localSwap?: Partial<Record<string, { name: Locale; note?: Locale }>>;
+  whereToFind?: import('../lib/toppingTypes').WhereToFind;
   forPizzas: string[];
 }
 
-function buildShoppingList(
+export function buildShoppingList(
   qtys: Record<string, number>,
   locale: string,
   styleKey?: string,
@@ -791,13 +835,14 @@ function buildShoppingList(
         ingredientMap[ing.id] = {
           id: ing.id,
           name: ing.name,
-          category: ing.category,
+          category: ['fresh_basil','dill','lemon_wedge','rocket','fresh_coriander','fresh_chives','spring_onion','cucumber_fresh','red_onion_raw','kaffir_lime_leaves','lime_fresh','jalapeno_sliced','black_truffle_shavings','mixed_berries'].includes(ing.id) ? 'veg' : ['egg','whole_egg','poached_egg','mascarpone','ricotta','cream_cheese','cream_35','creme_fraiche','fromage_blanc','vanilla_cream','dark_choc_cream'].includes(ing.id) ? 'cheese' : ing.category === 'base' ? 'sauce' : ing.category,
           totalAmount: undefined,
           unit: undefined,
           qtyNote: undefined,
           isCommonPantry: ing.isCommonPantry,
           hardToFind: ing.hardToFind,
           goodEnough: ing.goodEnough,
+          whereToFind: ing.whereToFind,
           compromise: ing.compromise,
           localSwap: ing.localSwap as Partial<Record<string, { name: Locale }>> | undefined,
           forPizzas: [],
@@ -854,27 +899,80 @@ function buildShoppingList(
 }
 
 const LOCATIONS = [
-  { key: 'singapore',    label: 'Singapore' },
-  { key: 'france',       label: 'France' },
-  { key: 'uk',           label: 'UK' },
-  { key: 'us',           label: 'US' },
-  { key: 'australia',    label: 'Australia' },
-  { key: 'international',label: 'International' },
+  { key: 'singapore',    label: 'Singapore', labelFr: 'Singapour' },
+  { key: 'france',       label: 'France', labelFr: 'France' },
+  { key: 'uk',           label: 'UK', labelFr: 'Royaume-Uni' },
+  { key: 'us',           label: 'US', labelFr: 'États-Unis' },
+  { key: 'australia',    label: 'Australia', labelFr: 'Australie' },
+  { key: 'international',label: 'International', labelFr: 'International' },
 ];
 
-function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onGoPrep }: {
+export function ingredientHelpData(item: Pick<ShoppingItem, 'goodEnough' | 'compromise' | 'localSwap' | 'whereToFind'>, location: string, locale: string) {
+  const l = locale === 'fr' ? 'fr' : 'en';
+  const seen = new Set<string>();
+  const alternatives = [item.goodEnough, item.compromise, item.localSwap?.[location]].flatMap(option => {
+    const name = (option?.name[l] || option?.name.en || '').trim();
+    if (!name || seen.has(name.toLowerCase())) return [];
+    seen.add(name.toLowerCase());
+    return [{name, note:option?.note?.[l] || option?.note?.en || ''}];
+  });
+  const where = item.whereToFind?.[location as import('../lib/toppingTypes').ShoppingContext];
+  const placeLabel = (value: string) => l === 'fr' ? value.replace(/\bItalian delis\b/gi, 'Épiceries italiennes') : value;
+  const shops = (where?.shops ?? []).filter(value => value.trim()).map(placeLabel);
+  const online = (where?.online ?? []).filter(value => value.trim()).map(placeLabel);
+  const links = ((where as (typeof where & {links?: Array<{label:string | Locale;url:string}>}))?.links ?? [])
+    .map(link => ({...link,label:typeof link.label === 'string' ? link.label : link.label?.[l] || link.label?.en || ''}))
+    .filter(link => link.label.trim() && /^https:\/\//.test(link.url));
+  const hasWhere = shops.length + online.length + links.length > 0;
+  return {alternatives, shops, online, links, note:shoppingNoteText(where?.note,l), hasWhere,
+    available:alternatives.length > 0 || hasWhere,
+    label:alternatives.length ? 'Alternatives' : l === 'fr' ? 'Où le trouver' : 'Where to find it'};
+}
+
+export function IngredientShoppingHelp({item,location,locale,onLocationChange,onBack}: {
+  item: ShoppingItem; location:string; locale:string; onLocationChange:(value:string)=>void; onBack:()=>void;
+}) {
+  const l = locale === 'fr' ? 'fr' : 'en';
+  const help = ingredientHelpData(item,location,l);
+  return <section aria-label={item.name[l] || item.name.en} style={{padding:'16px 12px',fontFamily:'var(--font-ui)'}}>
+    <button type="button" autoFocus onClick={onBack} style={SECONDARY_CTA}>{l === 'fr' ? 'Retour aux courses' : 'Back to shopping list'}</button>
+    <h1 style={{fontFamily:'Georgia,serif',fontSize:30}}>{item.name[l] || item.name.en}</h1>
+    <label style={{display:'grid',gap:8,marginBottom:24}}>{l === 'fr' ? 'Pays des courses' : 'Shopping location'}
+      <select value={location} onChange={event=>onLocationChange(event.target.value)} style={{minHeight:44,padding:10,border:'1px solid var(--border)',borderRadius:10,background:'var(--cream)'}}>
+        {LOCATIONS.map(loc=><option key={loc.key} value={loc.key}>{l === 'fr' ? loc.labelFr : loc.label}</option>)}
+      </select>
+    </label>
+    {help.alternatives.length > 0 && <><h2>Alternatives</h2>
+      <p style={{fontSize:13,color:'var(--smoke)'}}>{l === 'fr' ? 'Suggestions uniquement : votre liste de courses reste inchangée.' : 'Suggestions only — your shopping list stays unchanged.'}</p>
+      {help.alternatives.map(option=><div key={option.name} style={{padding:'14px 0',borderBottom:'1px solid var(--border)'}}><strong>{option.name}</strong>{option.note && <p>{option.note}</p>}</div>)}
+    </>}
+    {help.hasWhere && <><h2>{l === 'fr' ? 'Où chercher' : 'Where to look'}</h2>
+      {help.shops.length > 0 && <p>{help.shops.join(' · ')}</p>}
+      {help.online.length > 0 && <p>{help.online.join(' · ')}</p>}
+      {help.links.map(link=><p key={link.url}><a href={link.url} target="_blank" rel="noopener noreferrer">{link.label} ↗</a></p>)}
+      {help.note && <p>{help.note}</p>}
+    </>}
+    {!help.available && <p>{l === 'fr' ? 'Pas encore de suggestion pour ce pays.' : 'No suggestions for this location yet.'}</p>}
+  </section>;
+}
+
+function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onGoPrep, onGoPizzas, storagePrefix="bh", baseReady=false }: {
   qtys: Record<string, number>;
   locale: string;
   numItems: number;
   styleKey?: string;
   recipeIngredients?: Array<{ name: string; amount: string }>;
+  storagePrefix?:string;
+  baseReady?:boolean;
   onGoPrep?: () => void;
+  onGoPizzas?: () => void;
 }) {
   const l = locale as 'en' | 'fr';
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
-  const [expandedSubs, setExpandedSubs] = useState<Record<string, boolean>>({});
+  const [helpIngredientId, setHelpIngredientId] = useState<string | null>(null);
   const [shoppingLocation, setShoppingLocation] = useState<string>('international');
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+  useEffect(() => { const sync = (event: Event) => setShoppingLocation((event as CustomEvent<string>).detail); window.addEventListener('bh-shopping-location',sync); return () => window.removeEventListener('bh-shopping-location',sync); }, []);
   // Persisted so ticks survive leaving/reopening the app (cleared on Start Over)
   const shopTicksHydrated = useState(() => ({ done: false }))[0];
 
@@ -884,7 +982,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
       if (saved) setShoppingLocation(saved);
     } catch {}
     try {
-      const rawTicks = localStorage.getItem('bh_shop_ticks_v1');
+      const rawTicks = localStorage.getItem(`${storagePrefix}_shop_ticks_v1`);
       if (rawTicks) {
         const restored = JSON.parse(rawTicks) as Record<string, boolean>;
         setTicked(prev => ({ ...restored, ...prev }));
@@ -896,24 +994,21 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
   useEffect(() => {
     if (!shopTicksHydrated.done) return;
-    try { localStorage.setItem('bh_shop_ticks_v1', JSON.stringify(ticked)); } catch {}
+    try { localStorage.setItem(`${storagePrefix}_shop_ticks_v1`, JSON.stringify(ticked)); } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticked]);
 
   const { sections } = buildShoppingList(qtys, locale, styleKey);
-  const totalSelected = Object.values(qtys).filter(q => q > 0).length;
+  const totalSelected = Object.values(qtys).reduce((sum, qty) => sum + Math.max(0,qty), 0);
 
   function toggleTick(id: string) {
     setTicked(prev => ({ ...prev, [id]: !prev[id] }));
   }
 
-  function toggleSub(id: string) {
-    setExpandedSubs(prev => ({ ...prev, [id]: !prev[id] }));
-  }
-
   function setLocation(loc: string) {
     setShoppingLocation(loc);
     try { localStorage.setItem('bh_shopping_location', loc); } catch {}
+    window.dispatchEvent(new CustomEvent('bh-shopping-location',{detail:loc}));
     setShowLocationPicker(false);
   }
 
@@ -929,6 +1024,12 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
     let text = `Baker Hub — ${l === 'fr' ? 'Liste de courses Pizza Party' : 'Pizza Party Shopping List'}\n`;
     text += `${pizzaLines}\n\n`;
 
+    if (recipeIngredients?.length) {
+      text += `${l === 'fr' ? 'POUR VOTRE PÂTE' : 'FOR YOUR DOUGH'}\n`;
+      recipeIngredients.forEach(i => { text += `${i.name}  —  ${i.amount}\n`; });
+      text += '\n';
+    }
+
     sections.forEach(section => {
       text += `${section.label.toUpperCase()}\n`;
       section.items.forEach(item => {
@@ -940,11 +1041,6 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
       text += '\n';
     });
 
-    if (recipeIngredients?.length) {
-      text += `${l === 'fr' ? 'POUR VOTRE PÂTE' : 'FOR YOUR DOUGH'}\n`;
-      recipeIngredients.forEach(i => { text += `${i.name}  —  ${i.amount}\n`; });
-      text += '\n';
-    }
     text += `bakerhub.app`;
     return text;
   }
@@ -984,13 +1080,16 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           return p ? (p.name[l] ?? p.name.en) + (q > 1 ? ` ×${q}` : '') : null;
         }).filter(Boolean).join(', ');
 
+      // Keep one editable link per selected menu. A single global id caused a
+      // new party to silently overwrite the previous party's shared list.
+      const shareStorageKey = `bh_shopping_share_id:${title}`;
       let shareId: string | null = null;
-      try { shareId = localStorage.getItem('bh_shopping_share_id'); } catch {}
+      try { shareId = localStorage.getItem(shareStorageKey); } catch {}
 
       if (shareId) {
         const { error } = await supabase
           .from('shopping_list_shares')
-          .update({ title, items, dough_items: doughItems })
+          .update({ title, items, dough_items: doughItems, checked: ticked })
           .eq('id', shareId);
         if (error) shareId = null; // row may have been removed — fall through to create
       }
@@ -1008,7 +1107,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           return;
         }
         shareId = data.id;
-        if (shareId) { try { localStorage.setItem('bh_shopping_share_id', shareId); } catch {} }
+        if (shareId) { try { localStorage.setItem(shareStorageKey, shareId); } catch {} }
       }
 
       const url = `${window.location.origin}/${locale}/list/${shareId}`;
@@ -1028,40 +1127,36 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
   }
 
 
-  if (totalSelected === 0) {
-    return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px', color: '#8A7F78', fontSize: '13px', textAlign: 'center' }}>
-        {l === 'fr' ? 'Ajoutez des pizzas pour voir la liste de courses' : 'Add pizzas to see your shopping list'}
-      </div>
-    );
-  }
+  const helpIngredient = sections.flatMap(section => section.items).find(item => item.id === helpIngredientId);
+  if (helpIngredient) return <IngredientShoppingHelp item={helpIngredient} location={shoppingLocation} locale={l} onLocationChange={setLocation} onBack={() => setHelpIngredientId(null)} />;
 
-  const currentLocationLabel = LOCATIONS.find(loc => loc.key === shoppingLocation)?.label ?? 'International';
+  const currentLocation = LOCATIONS.find(loc => loc.key === shoppingLocation);
+  const currentLocationLabel = (l === 'fr' ? currentLocation?.labelFr : currentLocation?.label) ?? 'International';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <h1 className="bh-page-title" style={{margin:'16px 12px'}}>{l === 'fr' ? 'Liste de courses' : 'Shopping list'}</h1>
       {/* Header */}
       <div style={{ padding: '12px 12px 8px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{
             fontSize: '15px', fontWeight: 700, color: '#2B2420',
             fontFamily: 'var(--font-ui)',
           }}>
             {(() => {
-              const toBuy = sections.reduce((acc, s) => acc + s.items.filter(i => !ticked[i.id]).length, 0);
+              const toppingToBuy = sections.reduce((acc, s) => acc + s.items.filter(i => !ticked[i.id]).length, 0);
+              const doughToBuy = recipeIngredients?.filter((_, i) => !ticked['dough_' + i]).length ?? 0;
+              const toBuy = toppingToBuy + doughToBuy;
               return l === 'fr'
-                ? `${totalSelected} pizza${totalSelected > 1 ? 's' : ''} · ${toBuy} ingrédient${toBuy > 1 ? 's' : ''} à acheter`
-                : `${totalSelected} pizza${totalSelected > 1 ? 's' : ''} · ${toBuy} ingredient${toBuy > 1 ? 's' : ''} to buy`;
+                ? `${totalSelected>0?`${totalSelected} pizza${totalSelected > 1 ? 's' : ''} · `:''}${toBuy} ingrédient${toBuy > 1 ? 's' : ''} à acheter`
+                : `${totalSelected>0?`${totalSelected} pizza${totalSelected > 1 ? 's' : ''} · `:''}${toBuy} ingredient${toBuy > 1 ? 's' : ''} to buy`;
             })()}
           </span>
           <button
             onClick={() => setShowLocationPicker(v => !v)}
-            style={{ fontSize: '11px', color: '#8A7F78', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '4px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            style={{ fontSize: '12px', minHeight:44, color: '#8A7F78', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '4px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
-            {shoppingLocation === 'singapore'
-              ? (l === 'fr' ? `Où acheter : ${currentLocationLabel} ▾` : `Where to shop: ${currentLocationLabel} ▾`)
-              : (l === 'fr' ? `Ma région : ${currentLocationLabel} ▾` : `My region: ${currentLocationLabel} ▾`)
-            }
+            {l === 'fr' ? `Pays des courses : ${currentLocationLabel} ▾` : `Shopping location: ${currentLocationLabel} ▾`}
           </button>
         </div>
         {showLocationPicker && (
@@ -1077,7 +1172,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                   color: shoppingLocation === loc.key ? 'white' : '#3D3530',
                 }}
               >
-                {loc.label}
+                {l === 'fr' ? loc.labelFr : loc.label}
               </button>
             ))}
           </div>
@@ -1086,137 +1181,26 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
       {/* List */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
-        {sections.map(section => (
-          <div key={section.label} style={{ marginBottom: '20px' }}>
-            <div style={{ padding: '12px 12px 8px 12px', background: '#F0EBE0', borderLeft: '3px solid #6B4423', marginTop: '8px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-ui)' }}>
-                {section.label}
-              </span>
-            </div>
-
-            {section.items.map(item => {
-              const name = item.name[l] ?? item.name.en;
-              const isTicked = ticked[item.id] ?? false;
-              const isExpanded = expandedSubs[item.id] ?? false;
-              const hasSubInfo = !!(item.goodEnough || item.compromise);
-              const showSubProactively = !!item.hardToFind || !!item.goodEnough;
-              const localNote = item.localSwap?.[shoppingLocation]?.name;
-
-              return (
-                <div key={item.id} style={{ borderBottom: '0.5px solid #F0EBE3', background: isTicked ? '#FAFAF8' : '#FDFBF7' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', padding: '8px 12px', gap: '12px' }}>
-                    <button
-                      onClick={() => toggleTick(item.id)}
-                      style={{
-                        width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
-                        border: isTicked ? 'none' : '1.5px solid #C8C0B8',
-                        background: isTicked ? (item.isCommonPantry ? '#C8C0B8' : '#6B7A5A') : 'transparent',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        marginTop: '1px',
-                      }}
-                    >
-                      {isTicked && (
-                        <svg viewBox="0 0 12 12" width={10} height={10} fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
-                          <path d="M2 6l3 3 5-5"/>
-                        </svg>
-                      )}
-                    </button>
-
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px' }}>
-                        <span
-                          onClick={() => hasSubInfo && toggleSub(item.id)}
-                          style={{
-                            fontSize: '13px',
-                            color: isTicked ? '#B0A89E' : '#2B2420',
-                            textDecoration: 'none',
-                            cursor: hasSubInfo ? 'pointer' : 'default',
-                            fontFamily: 'var(--font-ui)',
-                          }}
-                        >
-                          {name}
-                          {item.isCommonPantry && (
-                            <span style={{ fontSize: '11px', color: '#8A7F78', marginLeft: '5px', fontStyle: 'italic' }}>pantry</span>
-                          )}
-                          {hasSubInfo && !showSubProactively && (
-                            <span style={{ fontSize: '11px', color: '#C8C0B8', marginLeft: '4px' }}>{isExpanded ? '▲' : '▼'}</span>
-                          )}
-                        </span>
-                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)', flexShrink: 0 }}>
-                          {item.totalAmount && item.unit ? formatQty(item.totalAmount, item.unit, locale) : ''}
-                        </span>
-                      </div>
-
-                      {item.qtyNote && (
-                        <div style={{ fontSize: '11px', color: '#A09890', marginTop: '1px' }}>{item.qtyNote}</div>
-                      )}
-
-                      {showSubProactively && (
-                        <div style={{ marginTop: '3px' }}>
-                          {item.goodEnough && (
-                            <div style={{ fontSize: '11px', color: '#6B7A5A' }}>
-                              <span style={{ fontWeight: 500 }}>{l === 'fr' ? 'Très proche :' : 'Also great:'}</span>
-                              {' '}{item.goodEnough.name[l] ?? item.goodEnough.name.en}
-                            </div>
-                          )}
-                          {item.compromise && (
-                            <div style={{ fontSize: '11px', color: '#8A7F78' }}>
-                              <span style={{ fontWeight: 500 }}>{l === 'fr' ? 'À défaut :' : 'If not available:'}</span>
-                              {' '}{item.compromise.name[l] ?? item.compromise.name.en}
-                            </div>
-                          )}
-                          {localNote && shoppingLocation !== 'international' && (
-                            <div style={{ fontSize: '11px', color: '#8A7F78', marginTop: '1px' }}>
-                              <span style={{ fontWeight: 500 }}>{LOCATIONS.find(loc => loc.key === shoppingLocation)?.label ?? ''}:</span>
-                              {' '}{localNote[l] ?? localNote.en}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {!showSubProactively && isExpanded && hasSubInfo && (
-                        <div style={{ marginTop: '3px', padding: '8px 8px', background: '#F0EBE0', borderRadius: '16px' }}>
-                          {item.goodEnough && (
-                            <div style={{ fontSize: '11px', color: '#6B7A5A', marginBottom: '2px' }}>
-                              <span style={{ fontWeight: 500 }}>{l === 'fr' ? 'Très proche :' : 'Also great:'}</span>
-                              {' '}{item.goodEnough.name[l] ?? item.goodEnough.name.en}
-                            </div>
-                          )}
-                          {item.compromise && (
-                            <div style={{ fontSize: '11px', color: '#8A7F78' }}>
-                              <span style={{ fontWeight: 500 }}>{l === 'fr' ? 'À défaut :' : 'If not available:'}</span>
-                              {' '}{item.compromise.name[l] ?? item.compromise.name.en}
-                            </div>
-                          )}
-                          {localNote && shoppingLocation !== 'international' && (
-                            <div style={{ fontSize: '11px', color: '#8A7F78', marginTop: '2px' }}>
-                              <span style={{ fontWeight: 500 }}>{LOCATIONS.find(loc => loc.key === shoppingLocation)?.label ?? ''}:</span>
-                              {' '}{localNote[l] ?? localNote.en}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ))}
-
+        {/* Dough is the first thing to buy. Keeping it above the toppings
+            mirrors the recipe and prevents the same flour/water being hidden
+            after a long topping catalogue. */}
         {recipeIngredients && recipeIngredients.length > 0 && (
-          <div>
-            <div style={{ padding: '8px 12px 4px 12px', background: '#F0EBE0', borderLeft: '3px solid #6B4423' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-ui)' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ padding: '12px 12px 8px', background: '#F0EBE0', borderLeft: '3px solid #6B4423' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-ui)' }}>
                 {l === 'fr' ? 'Pour votre pâte' : 'For your dough'}
               </span>
             </div>
             {recipeIngredients.map((ing, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px', borderBottom: '0.5px solid #F0EBE3' }}>
                 <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={!!ticked['dough_' + i]}
                   onClick={() => toggleTick('dough_' + i)}
+                  aria-label={ing.name}
                   style={{
-                    width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
+                    width: '44px', height: '44px', borderRadius: '4px', flexShrink: 0,
                     border: ticked['dough_' + i] ? 'none' : '1.5px solid #C8C0B8',
                     background: ticked['dough_' + i] ? '#6B7A5A' : 'transparent',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1236,6 +1220,79 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
             ))}
           </div>
         )}
+
+        {sections.map(section => (
+          <div key={section.label} style={{ marginBottom: '20px' }}>
+            <div style={{ padding: '12px 12px 8px 12px', background: '#F0EBE0', borderLeft: '3px solid #6B4423', marginTop: '8px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-ui)' }}>
+                {section.label}
+              </span>
+            </div>
+
+            {section.items.map(item => {
+              const name = item.name[l] ?? item.name.en;
+              const isTicked = ticked[item.id] ?? false;
+              const help = ingredientHelpData(item, shoppingLocation, l);
+
+              return (
+                <div key={item.id} style={{ borderBottom: '0.5px solid #F0EBE3', background: isTicked ? '#FAFAF8' : '#FDFBF7' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', padding: '8px 12px', gap: '12px' }}>
+                    <button
+                      onClick={() => toggleTick(item.id)}
+                      role="checkbox" aria-checked={isTicked} aria-label={name}
+                      style={{
+                        width: '24px', height: '24px', borderRadius: '4px', flexShrink: 0,
+                        border: isTicked ? 'none' : '1.5px solid #C8C0B8',
+                        background: isTicked ? (item.isCommonPantry ? '#C8C0B8' : '#6B7A5A') : 'transparent',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        marginTop: '1px',
+                      }}
+                    >
+                      {isTicked && (
+                        <svg viewBox="0 0 12 12" width={10} height={10} fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+                          <path d="M2 6l3 3 5-5"/>
+                        </svg>
+                      )}
+                    </button>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px' }}>
+                        <span
+                          style={{
+                            fontSize: '15px',
+                            color: isTicked ? '#B0A89E' : '#2B2420',
+                            textDecoration: 'none',
+                            fontFamily: 'var(--font-ui)',
+                          }}
+                        >
+                          {name}
+                          {item.isCommonPantry && (
+                            <span style={{ fontSize: '11px', color: '#8A7F78', marginLeft: '5px', fontStyle: 'italic' }}>{l === 'fr' ? 'placard' : 'pantry'}</span>
+                          )}
+
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)', flexShrink: 0 }}>
+                          {item.totalAmount && item.unit ? formatQty(item.totalAmount, item.unit, locale) : ''}
+                        </span>
+                      </div>
+
+                      {item.qtyNote && (
+                        <div style={{ fontSize: '11px', color: '#A09890', marginTop: '1px' }}>{item.qtyNote}</div>
+                      )}
+
+                      {help.available && <button type="button" onClick={() => setHelpIngredientId(item.id)}
+                        aria-label={`${help.label} · ${name}`}
+                        style={{ background: 'none', border: '1px solid #E0D8CF', borderRadius: 8, minHeight:44, padding: '7px 10px', marginTop: 6, cursor: 'pointer' }}>
+                        {help.label}
+                      </button>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+
       </div>
 
       {/* Footer: primary = onward journey (prep), share is secondary */}
@@ -1244,7 +1301,14 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           onClick={() => onGoPrep?.()}
           style={{ ...NEXT_CTA, marginBottom: '8px' }}
         >
-          {l === 'fr' ? 'Préparation →' : 'Prep →'}
+          {baseReady?(l==='fr'?'Préparer les garnitures →':'Prepare the toppings →'):(l==='fr'?'Commencer la préparation →':'Start the dough preparation →')}
+        </button>
+        <button
+          type="button"
+          onClick={() => onGoPizzas?.()}
+          style={{ ...SECONDARY_CTA, marginBottom: '8px' }}
+        >
+          {totalSelected>0?(l === 'fr' ? 'Modifier les pizzas' : 'Change pizzas'):(l==='fr'?'Choisir des garnitures':'Choose toppings')}
         </button>
         <button
           onClick={handleShare}
@@ -1290,7 +1354,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
 // ─── Main component ───────────────────────────────────────────
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,active=true,storagePrefix="bh",baseReady=false }: Props) {
   const l = locale as 'en' | 'fr';
 
   // On-screen keyboard detection — position:fixed bottom bars anchor to the
@@ -1298,7 +1362,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   // ingredient search), leaving the summary bar "stuck" mid-screen. Hide it
   // while the keyboard is up; the resize event on close restores it.
   const [keyboardOpen, setKeyboardOpen] = useState(false);
-  const bottomNavH = useBottomNavHeight();
   useEffect(() => {
     const vv = typeof window !== 'undefined' ? window.visualViewport : null;
     if (!vv) return;
@@ -1395,8 +1458,21 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   const [filterSheetKey, setFilterSheetKey] = useState<string | null>(null);
   const [ingTab, setIngTab] = useState<string>('Cheese & Dairy');
   const [ingSearch, setIngSearch] = useState('');
+  const [ingredientSections, setIngredientSections] = useState<Record<string, boolean>>({});
+  const [pizzaCourse, setPizzaCourse] = useState<'savoury' | 'sweet'>('savoury');
   const [summarySheetOpen, setSummarySheetOpen] = useState(false);
-  const [dessertSheetOpen, setDessertSheetOpen] = useState(false);
+  const summaryDialogRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!summarySheetOpen) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    summaryDialogRef.current?.focus({preventScroll:true});
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus?.isConnected) previousFocus.focus({preventScroll:true});
+    };
+  }, [summarySheetOpen]);
 
   // Style picker popup
   const [showStylePicker, setShowStylePicker] = useState(false);
@@ -1416,7 +1492,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
   const closeSummary = () => {
     setSummarySheetOpen(false);
-    setDessertSheetOpen(false);
     setDragY(d => ({ ...d, summary: 0 }));
   };
   const closeFilterSheet = () => {
@@ -1463,6 +1538,11 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
   // Name search across the pizza list
   const [nameSearch, setNameSearch] = useState('');
+  // Keep the catalogue scannable on a phone. The prototype presents twelve
+  // results at a time; without a page boundary a broad search rendered the
+  // whole catalogue and pushed the selected-pizza actions far below the fold.
+  const [pizzaPage, setPizzaPage] = useState(0);
+  const PIZZAS_PER_PAGE = 12;
 
   // Name-search predicate — shared by the curated list and Mes pizzas
   const matchesSearch = useMemo(() => {
@@ -1476,22 +1556,36 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
   // Filtered pizzas
   const filtered = useMemo(() => {
-    const base = filterPizzas(PIZZAS, { ...filter, styleKey: (styleKey as import('../lib/toppingTypes').StyleKey) ?? undefined });
+    const base = filterPizzas(pizzaCourse === 'sweet' ? DESSERT_PIZZAS : PIZZAS, { ...(pizzaCourse === 'sweet' ? DEFAULT_FILTER : filter), styleKey: (styleKey as import('../lib/toppingTypes').StyleKey) ?? undefined });
     return matchesSearch ? base.filter(matchesSearch) : base;
-  }, [filter, styleKey, matchesSearch]);
+  }, [filter, styleKey, matchesSearch, pizzaCourse]);
+
+  const pizzaPageCount = Math.max(1, Math.ceil(filtered.length / PIZZAS_PER_PAGE));
+  const visibleFiltered = filtered.slice(
+    pizzaPage * PIZZAS_PER_PAGE,
+    (pizzaPage + 1) * PIZZAS_PER_PAGE,
+  );
+
+  // A new search, filter, style, or savoury/dessert catalogue always starts
+  // at the first page. Clamp as a safety net when a filter removes the page
+  // that was visible before it changed.
+  useEffect(() => {
+    setPizzaPage(0);
+  }, [nameSearch, filter, styleKey, pizzaCourse]);
+  useEffect(() => {
+    setPizzaPage(page => Math.min(page, pizzaPageCount - 1));
+  }, [pizzaPageCount]);
 
   // Mes pizzas go through the exact same pipeline — a base or ingredient
   // filter (or the search) applies to the baker's creations too.
   const filteredCustom = useMemo(() => {
-    const base = filterPizzas(customPizzas, { ...filter, styleKey: (styleKey as import('../lib/toppingTypes').StyleKey) ?? undefined });
+    const base = filterPizzasByCourse(customPizzas, pizzaCourse, filter, (styleKey as import('../lib/toppingTypes').StyleKey) ?? undefined);
     return matchesSearch ? base.filter(matchesSearch) : base;
-  }, [customPizzas, filter, styleKey, matchesSearch]);
+  }, [customPizzas, filter, styleKey, matchesSearch, pizzaCourse]);
 
   // Perceived-speed: pre-warm the first screenful-and-a-half of card images
   // during idle time so scrolling meets a full cache, re-armed per filter.
   useEffect(() => {
-    const variantMap: Record<string, string> = { pizza_romana: '_pizza_romana', newyork: '_newyork', pan: '_pan', roman: '_roman' };
-    const suffix = (styleKey && variantMap[styleKey]) || '';
     const w = window as unknown as { requestIdleCallback?: (cb: () => void) => number; cancelIdleCallback?: (id: number) => void };
     let timer: ReturnType<typeof setTimeout> | null = null;
     let idleId: number | null = null;
@@ -1499,7 +1593,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       [...customPizzas.slice(0, 4), ...filtered.slice(0, 14)].forEach(pz => {
         if (pz.id.startsWith('custom_')) return;
         const img = new Image();
-        img.src = `/pizzas/${pz.id}${suffix}.webp`;
+        img.src = approvedPizzaImage(pz.id);
       });
     };
     if (w.requestIdleCallback) idleId = w.requestIdleCallback(warm);
@@ -1592,9 +1686,14 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   const setComplexity = (v: ComplexityTier | null) =>
     setFilter((p: FilterState) => ({ ...p, complexity: v }));
 
+  const hasActiveFilters = nameSearch.trim().length > 0 || pizzaCourse !== 'savoury' || Object.keys(DEFAULT_FILTER).some(key => JSON.stringify(filter[key as keyof FilterState]) !== JSON.stringify(DEFAULT_FILTER[key as keyof FilterState]));
+
   const clearAll = () => {
     setFilter({ ...DEFAULT_FILTER });
     setRegionParent('all');
+    setNameSearch('');
+    setIngSearch('');
+    setPizzaCourse('savoury');
   };
 
   // ── Render ──────────────────────────────────────────────────
@@ -1607,7 +1706,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       ══════════════════════════════════════ */}
       {/* Context line: style name + count */}
 
-      {activePill === 'pizzas' && (
+      {activePill === 'pizzas' && !baseReady && (
         <div style={{
           background: '#FDFBF7',
           borderBottom: '1px solid #E0D8CF',
@@ -1647,13 +1746,32 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
       {activePill === 'pizzas' && (
         <>
+          <h1 className="bh-page-title">{l === 'fr' ? 'Quelles garnitures ?' : 'Which toppings?'}</h1>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><span style={{fontSize:13,color:'var(--smoke)'}}>{totalQty} / {numItems} {l === 'fr' ? 'sélectionnées' : 'selected'}</span><button type="button" onClick={() => setCreateOpen(true)} style={{minHeight:44,border:0,background:'none',color:'var(--terra)',textDecoration:'underline',padding:'4px 0',fontSize:13,cursor:'pointer'}}>{l === 'fr' ? 'Créer ma pizza' : 'Create my pizza'}</button></div>
+          {/* ── Results strip ── */}
+          <div style={{ padding: '0 0 6px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
+            <input
+              type="search"
+              value={nameSearch}
+              onChange={e => setNameSearch(e.target.value)}
+              placeholder={l === 'fr' ? 'Rechercher une pizza ou un ingrédient…' : 'Search a pizza or ingredient…'}
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                padding: '8px 12px',
+                border: '1px solid #E0D8CF', borderRadius: '8px',
+                background: 'var(--cream)', color: '#2B2420',
+                fontSize: '16px', minHeight:44, fontFamily: 'var(--font-ui)',
+                outline: 'none',
+              }}
+            />
+          </div>
           {/* ── Chip row: 4 priority + More ── */}
           <style>{'.filter-scroll::-webkit-scrollbar { display: none; }'}</style>
           <div style={{ position: 'relative' }}>
           <div className="filter-scroll" onWheel={handleWheelScroll} style={{
             display: 'flex',
             flexWrap: 'nowrap',
-            gap: '8px',
+            gap: '6px',
             padding: '4px 0 8px',
             scrollPaddingInlineStart: '12px',
             background: '#FDFBF7',
@@ -1664,26 +1782,10 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             flexShrink: 0,
             alignItems: 'center',
           }}>
-            {/* Pinned to the left edge: as a plain scroller item the label
-                slid away with the chips and read as a truncated word
-                ("TERS"). It labels the row, so it stays with the row. */}
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: '4px',
-              padding: '4px 8px 4px 12px', color: '#8A7F78', fontSize: '11px',
-              fontFamily: 'var(--font-ui)', textTransform: 'uppercase',
-              letterSpacing: '.05em', flexShrink: 0, whiteSpace: 'nowrap',
-              position: 'sticky', left: 0, zIndex: 1, background: '#FDFBF7',
-            }}>
-              <svg viewBox="0 0 16 16" width={12} height={12} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
-                <path d="M2 3h12M4.5 8h7M7 13h2"/>
-              </svg>
-              {l === 'fr' ? 'Filtres' : 'Filters'}
-            </span>
             {([
-              { key: 'occasion',   label: l === 'fr' ? 'Occasion' : 'Occasion',    count: filter.occasion.length },
-              { key: 'diet',       label: l === 'fr' ? 'Régime'   : 'Diet',         count: filter.dietary.length },
-              { key: 'base',       label: 'Base',                                    count: filter.base !== null ? 1 : 0 },
-              { key: 'ingredient', label: l === 'fr' ? 'Ingrédient': 'Ingredient',  count: (filter.ingredientChips ?? []).length + (filter.ingredientSearch ? 1 : 0) },
+              { key: 'ingredient', label: l === 'fr' ? 'Ingrédients' : 'Ingredients', count: (filter.ingredientChips ?? []).length },
+              { key: 'base', label: 'Base', count: filter.base !== null ? 1 : 0 },
+              { key: 'occasion', label: 'Occasion', count: filter.occasion.length },
             ] as const).map(chip => (
               <button
                 key={chip.key}
@@ -1692,7 +1794,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '4px',
-                  padding: '4px 12px',
+                  padding: '4px 10px', minHeight:44,
                   borderRadius: '20px',
                   border: chip.count > 0 ? '1px solid #6B4423' : '1px solid #E0D8CF',
                   background: chip.count > 0 ? '#FBF0EB' : '#FDFBF7',
@@ -1723,7 +1825,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               onClick={() => setFilterSheetKey('more')}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '4px',
-                padding: '8px 12px', borderRadius: '20px',
+                padding: '4px 10px', minHeight:44, borderRadius: '20px',
                 border: (() => {
                   const moreCnt = (filter.complexity !== null ? 1 : 0)
                     + (filter.region !== null || (filter.regions ?? []).length > 0 ? 1 : 0)
@@ -1780,7 +1882,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               activeChips.push({ label: cLabels[filter.complexity] ?? String(filter.complexity), onRemove: () => setComplexity(null) });
             }
             (filter.ingredientChips ?? []).forEach(ic => activeChips.push({
-              label: ic,
+              label: INGREDIENT_CHIPS.flatMap(group => group.items).find(item => item.search === ic)?.[l] ?? ic,
               onRemove: () => setFilter((p: FilterState) => ({ ...p, ingredientChips: (p.ingredientChips ?? []).filter(c => c !== ic) })),
             }));
             if (filter.base !== null) activeChips.push({ label: BASE_LABELS[filter.base][l], onRemove: () => setBase(null) });
@@ -1962,76 +2064,41 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           }}
                         />
                       </div>
-                      {!ingSearch && (
-                        <div style={{ display: 'flex', borderBottom: '1px solid #E0D8CF' }}>
-                          {INGREDIENT_CHIPS.map(cat => {
-                            const tabLabel = l === 'fr' ? cat.category.fr : cat.category.en;
-                            const isActive = ingTab === tabLabel;
-                            return (
-                              <div
-                                key={cat.category.en}
-                                onClick={() => setIngTab(tabLabel)}
-                                style={{
-                                  flex: 1, padding: '8px 4px', textAlign: 'center',
-                                  fontSize: '11px', cursor: 'pointer',
-                                  color: isActive ? '#6B4423' : '#8A7F78',
-                                  borderBottom: isActive ? '2px solid #6B4423' : '2px solid transparent',
-                                  fontWeight: isActive ? 700 : 400,
-                                  fontFamily: 'var(--font-ui)',
-                                  whiteSpace: 'nowrap' as const, overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                }}
-                              >
-                                {tabLabel.split(' ')[0]}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px 16px' }}>
-                        {(ingSearch
-                          ? INGREDIENT_CHIPS.flatMap(c => c.items).filter(item => {
-                              const name = l === 'fr' ? item.fr : item.en;
-                              return name.toLowerCase().includes(ingSearch.toLowerCase());
-                            })
-                          : (INGREDIENT_CHIPS.find(c => {
-                              const label = l === 'fr' ? c.category.fr : c.category.en;
-                              return label === ingTab;
-                            })?.items ?? INGREDIENT_CHIPS[0].items)
-                        ).map(item => {
-                          const label = l === 'fr' ? item.fr : item.en;
-                          const active = (filter.ingredientChips ?? []).includes(item.search);
-                          return (
-                            <span
-                              key={item.search}
-                              onClick={() => setFilter((p: FilterState) => {
-                                const chips = p.ingredientChips ?? [];
-                                return {
-                                  ...p,
-                                  ingredientChips: active
-                                    ? chips.filter(c => c !== item.search)
-                                    : [...chips, item.search],
-                                };
-                              })}
-                              style={{
-                                padding: '8px 12px', borderRadius: '20px',
-                                border: active ? '1px solid #6B4423' : '1px solid #E0D8CF',
-                                background: active ? '#6B4423' : '#FDFBF7',
-                                color: active ? '#fff' : '#3D3530',
-                                fontSize: '12px', cursor: 'pointer',
-                                transition: 'all 0.12s', fontFamily: 'var(--font-ui)',
-                              }}
-                            >
-                              {label}
-                            </span>
-                          );
-                        })}
-                      </div>
+                      <fieldset style={{ margin: '8px 16px', border: 0, padding: 0 }}>
+                        <legend>{l === 'fr' ? 'Correspondance' : 'Match ingredients'}</legend>
+                        {(['any', 'all'] as const).map(mode => <label key={mode} style={{ marginRight: 16 }}>
+                          <input type="radio" name="ingredient-match" checked={(filter.ingredientMatchMode ?? 'any') === mode}
+                            onChange={() => setFilter(p => ({ ...p, ingredientMatchMode: mode }))} />
+                          {mode === 'any' ? (l === 'fr' ? 'Au moins un' : 'At least one') : (l === 'fr' ? 'Tous les ingrédients' : 'All selected')}
+                        </label>)}
+                      </fieldset>
+                      {INGREDIENT_CHIPS.map(group => {
+                        const items = group.items.filter(item => !ingSearch || `${item.en} ${item.fr}`.toLowerCase().includes(ingSearch.toLowerCase()));
+                        if (!items.length) return null;
+                        return <details key={group.category.en} open={!!ingSearch || !!ingredientSections[group.category.en]}
+                          onToggle={e => { const value=e.currentTarget.open; setIngredientSections(p => p[group.category.en] === value ? p : ({ ...p, [group.category.en]: value })); }}
+                          style={{ padding: '10px 16px', borderBottom: '1px solid #E0D8CF' }}>
+                          <summary>{group.category[l]}</summary>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 10 }}>
+                            {items.map(item => { const active=(filter.ingredientChips ?? []).includes(item.search); return <button type="button" key={item.search} aria-pressed={active}
+                              onClick={() => setFilter(p => ({ ...p, ingredientChips: active ? (p.ingredientChips ?? []).filter(x => x !== item.search) : [...(p.ingredientChips ?? []), item.search] }))}
+                              style={S.pill(active, 'terra')}>{item[l]}</button>; })}
+                          </div>
+                        </details>;
+                      })}
                     </>
                   )}
 
                   {filterSheetKey === 'more' && (
                     <>
+                      <fieldset style={{ margin: 16, border: 0, padding: 0 }}><legend>{l === 'fr' ? 'Salée ou sucrée' : 'Savoury or sweet'}</legend>
+                        {(['savoury','sweet'] as const).map(course => <label key={course} style={{ marginRight: 16 }}><input type="radio" name="pizza-course" checked={pizzaCourse === course} onChange={() => setPizzaCourse(course)} />{course === 'sweet' ? (l === 'fr' ? 'Pizzas dessert' : 'Dessert pizzas') : (l === 'fr' ? 'Pizzas salées' : 'Savoury pizzas')}</label>)}
+                        {pizzaCourse === 'sweet' && <p>{l === 'fr' ? 'Les filtres salés sont en pause.' : 'Savoury filters are paused.'}</p>}
+                      </fieldset>
+                      <FilterSection title={l === 'fr' ? 'Préférences alimentaires' : 'Dietary preferences'} open={open.diet} onToggle={() => togOpen('diet')}>
+                        {(['veg','vegan','no_pork','no_fish','no_nuts','dairy_free'] as DietaryTag[]).map(value => <button key={value} type="button" style={S.pill(filter.dietary.includes(value), 'terra')} onClick={() => toggleDietary(value)}>{({veg: l==='fr'?'Végétarien':'Vegetarian',vegan:l==='fr'?'Végétalien':'Vegan',no_pork:l==='fr'?'Sans porc':'No pork',no_fish:l==='fr'?'Sans poisson':'No fish',no_nuts:l==='fr'?'Sans fruits à coque':'No nuts',dairy_free:l==='fr'?'Sans produits laitiers':'Dairy free'} as Record<string,string>)[value]}</button>)}
+                      </FilterSection>
+
                       <FilterSection
                         title={l === 'fr' ? 'Complexité' : 'Complexity'}
                         badge={filter.complexity !== null ? '1' : undefined}
@@ -2237,23 +2304,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             </>
           )}
 
-          {/* ── Results strip ── */}
-          <div style={{ padding: '8px 12px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
-            <input
-              type="search"
-              value={nameSearch}
-              onChange={e => setNameSearch(e.target.value)}
-              placeholder={l === 'fr' ? 'Rechercher une pizza ou un ingrédient…' : 'Search a pizza or ingredient…'}
-              style={{
-                width: '100%', boxSizing: 'border-box',
-                padding: '8px 12px',
-                border: '1px solid #E0D8CF', borderRadius: '8px',
-                background: 'var(--cream)', color: '#2B2420',
-                fontSize: '13px', fontFamily: 'var(--font-ui)',
-                outline: 'none',
-              }}
-            />
-          </div>
           <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0EBE0', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
             <span style={{ fontSize: '11px', color: '#8A7F78' }}>
               {l === 'fr'
@@ -2261,9 +2311,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 : `Showing ${filtered.length} pizza${filtered.length !== 1 ? 's' : ''}`}
               {filter.season !== 'all' ? ` · ${SEASON_LABELS[filter.season][l]}` : ''}
             </span>
-            <button onClick={clearAll} style={{ fontSize: '13px', color: '#6B4423', background: 'none', border: 'none', cursor: 'pointer', padding: '12px 8px', minHeight: '44px', margin: '-12px -8px' }}>
+            {hasActiveFilters && <button onClick={clearAll} style={{ fontSize: '13px', color: '#6B4423', background: 'none', border: 'none', cursor: 'pointer', padding: '12px 8px', minHeight: '44px', margin: '-12px -8px' }}>
               {l === 'fr' ? 'Tout effacer' : 'Clear all'}
-            </button>
+            </button>}
           </div>
 
           {/* ── Cards + dessert + summary ── */}
@@ -2273,7 +2323,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
               {/* Mes pizzas — only once the baker has creations; the menu
                   always comes before the invitation to leave it */}
-              {customPizzas.length > 0 && (
+              {customPizzas.some(p => pizzaCourse === 'sweet' ? p.category === 'dessert' : p.category !== 'dessert') && (
               <div style={{ padding: '8px 12px 0', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 2px 0' }}>
                   <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
@@ -2321,8 +2371,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               )}
 
               {/* Pizza cards */}
-              <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {filtered.map(pizza => (
+              <div style={{ padding: '8px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {visibleFiltered.map(pizza => (
                   <PizzaCard
                     key={pizza.id}
                     pizza={pizza}
@@ -2340,23 +2390,43 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       : 'No pizzas match — try clearing some filters'}
                   </div>
                 )}
-                {/* Escape hatch — after the menu has made its impression */}
-                <button
-                  onClick={() => setCreateOpen(true)}
-                  style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-                    border: '1.5px dashed rgba(107, 68, 35,0.45)', borderRadius: '12px',
-                    background: 'rgba(107, 68, 35,0.04)', padding: '12px', cursor: 'pointer',
-                    marginTop: '4px',
-                  }}
-                >
-                  <span style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', fontWeight: 700, color: '#6B4423' }}>
-                    {l === 'fr' ? 'Vous ne la trouvez pas ?' : "Can't find yours?"}
-                  </span>
-                  <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: '#8A7F78' }}>
-                    {l === 'fr' ? '+ Créez la vôtre — elle rejoindra votre profil' : '+ Create your own — it joins your profile'}
-                  </span>
-                </button>
+                {pizzaPageCount > 1 && (
+                  <nav
+                    aria-label={l === 'fr' ? 'Pages de pizzas' : 'Pizza pages'}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      gap: '8px', padding: '12px 0 4px',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setPizzaPage(page => Math.max(0, page - 1))}
+                      disabled={pizzaPage === 0}
+                      style={{
+                        ...SECONDARY_CTA, flex: 1, minHeight: '44px', padding: '10px 12px',
+                        opacity: pizzaPage === 0 ? 0.45 : 1,
+                        cursor: pizzaPage === 0 ? 'default' : 'pointer',
+                      }}
+                    >
+                      {l === 'fr' ? '← Précédent' : '← Previous'}
+                    </button>
+                    <span style={{ minWidth: '76px', textAlign: 'center', fontSize: '12px', color: '#8A7F78' }}>
+                      {pizzaPage + 1} / {pizzaPageCount}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPizzaPage(page => Math.min(pizzaPageCount - 1, page + 1))}
+                      disabled={pizzaPage >= pizzaPageCount - 1}
+                      style={{
+                        ...SECONDARY_CTA, flex: 1, minHeight: '44px', padding: '10px 12px',
+                        opacity: pizzaPage >= pizzaPageCount - 1 ? 0.45 : 1,
+                        cursor: pizzaPage >= pizzaPageCount - 1 ? 'default' : 'pointer',
+                      }}
+                    >
+                      {l === 'fr' ? 'Suivant →' : 'Next →'}
+                    </button>
+                  </nav>
+                )}
               </div>
 
             </div>
@@ -2391,12 +2461,15 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {activePill === 'shopping' && (
         <>
         <ShoppingList
+          baseReady={baseReady}
+          storagePrefix={storagePrefix}
           qtys={qtys}
           locale={locale}
           numItems={numItems}
           styleKey={styleKey}
           recipeIngredients={recipeIngredients}
           onGoPrep={() => onPillChange('party')}
+          onGoPizzas={() => onPillChange('pizzas')}
         />
 
         </>
@@ -2419,6 +2492,17 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             style={{ position: 'fixed', inset: 0, background: 'rgba(43, 36, 32,0.52)', zIndex: 160 }}
           />
           <div
+            role="dialog" aria-modal="true" aria-label={l === 'fr' ? 'Mes pizzas' : 'My pizzas'}
+            ref={summaryDialogRef} tabIndex={-1}
+            onKeyDown={e => {
+              if (e.key === 'Escape') { e.stopPropagation(); closeSummary(); }
+              if (e.key !== 'Tab') return;
+              const items = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter(el=>el.getClientRects().length>0);
+              const first=items[0],last=items[items.length-1];
+              if (!first) { e.preventDefault(); e.currentTarget.focus(); }
+              else if (e.shiftKey&&(document.activeElement===first||document.activeElement===e.currentTarget)) { e.preventDefault(); last.focus(); }
+              else if (!e.shiftKey&&document.activeElement===last) { e.preventDefault(); first.focus(); }
+            }}
             onClick={e => e.stopPropagation()}
             style={{
               position: 'fixed', bottom: 0, left: 0, right: 0,
@@ -2430,16 +2514,14 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             {sheetHandle('summary', closeSummary)}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px 12px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
               <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'var(--font-ui)' }}>
-                {!dessertSheetOpen
-                  ? (l === 'fr' ? 'Votre pizza party' : 'Your Pizza Party')
-                  : (l === 'fr' ? 'Desserts' : 'Dessert pizzas')}
+                {l === 'fr' ? 'Mes pizzas' : 'My pizzas'}
               </span>
               <button onClick={closeSummary}
                 aria-label={l === 'fr' ? 'Fermer' : 'Close'}
                 style={{ width: '44px', height: '44px', padding: '8px', margin: '-8px', backgroundClip: 'content-box', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
             </div>
             <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
-              {!dessertSheetOpen ? (
+
                 <>
                   {Object.entries(qtys).filter(([, q]) => (q as number) > 0).map(([pizzaId, qty]) => {
                     const pizza = getPizzaById(pizzaId);
@@ -2450,37 +2532,19 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           {pizza.name[l] ?? pizza.name.en}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <button onClick={() => changeQty(pizzaId, -1)} style={{ width: '26px', height: '26px', borderRadius: '50%', border: '1px solid #E0D8CF', background: '#FDFBF7', cursor: 'pointer', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
+                          <button onClick={() => changeQty(pizzaId, -1)} style={{ width: '44px', height: '44px', flexShrink: 0, borderRadius: '50%', border: '1px solid #E0D8CF', background: '#FDFBF7', cursor: 'pointer', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
                           <span style={{ fontSize: '13px', fontWeight: 600, minWidth: '16px', textAlign: 'center', fontFamily: 'var(--font-ui)' }}>{qty as number}</span>
-                          <button onClick={() => changeQty(pizzaId, 1)} style={{ width: '26px', height: '26px', borderRadius: '50%', border: '1px solid #6B4423', background: '#6B4423', cursor: 'pointer', fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
+                          <button onClick={() => changeQty(pizzaId, 1)} style={{ width: '44px', height: '44px', flexShrink: 0, borderRadius: '50%', border: '1px solid #6B4423', background: '#6B4423', cursor: 'pointer', fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
                         </div>
                       </div>
                     );
                   })}
-                  <div
-                    onClick={() => setDessertSheetOpen(true)}
-                    style={{
-                      margin: '10px 14px', background: '#FBF5E8', border: '1px solid #E8D8A0',
-                      borderRadius: '16px', padding: '12px 16px', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: '12px',
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#2B2420', marginBottom: '2px' }}>
-                        {l === 'fr' ? 'Ajouter quelque chose de sucré ?' : 'Add something sweet?'}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#8A7F78' }}>
-                        {l === 'fr' ? 'Desserts — la touche finale parfaite' : 'Dessert pizzas — the perfect finale'}
-                      </div>
-                    </div>
-                    <span style={{ marginLeft: 'auto', color: '#B8903A', fontSize: '17px', fontWeight: 300 }}>›</span>
-                  </div>
                   {/* Dough awareness */}
                   {(() => {
-                    if (doughConfigured && totalQty <= numItems) return null;
+                    if (totalQty <= numItems) return null;
                     if (!doughConfigured) return (
                       <div
-                        onClick={onGoToMyDough}
+                        onClick={() => { closeSummary(); onGoToMyDough?.(); }}
                         style={{
                           margin: '8px 14px 0',
                           padding: '12px 12px',
@@ -2493,15 +2557,15 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       >
                         <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>
                           {l === 'fr'
-                            ? 'Définissez vos quantités dans Ma Pâte'
-                            : 'Set your dough quantities in My Dough'}
+                            ? 'Définissez vos quantités dans Ma fournée'
+                            : 'Set your dough quantities in My bake'}
                         </span>
                         <span style={{ fontSize: '12px', color: '#6B4423', fontFamily: 'var(--font-ui)' }}>→</span>
                       </div>
                     );
                     return (
                       <div
-                        onClick={onGoToMyDough}
+                        onClick={() => { closeSummary(); onGoToMyDough?.(); }}
                         style={{
                           margin: '8px 14px 0',
                           padding: '12px 12px',
@@ -2514,123 +2578,20 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       >
                         <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>
                           {l === 'fr'
-                            ? 'Vous aurez peut-être besoin de plus de pâte — ajustez dans Ma Pâte'
-                            : 'You may need more dough — adjust in My Dough'}
+                            ? (baseReady?'Prévoyez plus de pâte ou réduisez votre sélection.':'Vous aurez peut-être besoin de plus de pâte — ajustez dans Ma fournée')
+                            : (baseReady?'Allow more dough or reduce your selection.':'You may need more dough — adjust in My bake')}
                         </span>
                         <span style={{ fontSize: '12px', color: '#9C8248', fontFamily: 'var(--font-ui)' }}>→</span>
                       </div>
                     );
                   })()}
                 </>
-              ) : (
-                <>
-                  <div style={{ padding: '8px 16px 4px', fontSize: '11px', color: '#8A7F78' }}>
-                    {l === 'fr' ? 'Une finale sucrée pour votre soirée pizza' : 'A sweet finale for your pizza night'}
-                  </div>
-                  <div style={{ position: 'relative' }}>
-                  <div onWheel={handleWheelScroll} style={{
-                    display: 'flex',
-                    gap: '12px',
-                    overflowX: 'auto',
-                    padding: '8px 16px 12px',
-                    scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
-                    WebkitOverflowScrolling: 'touch',
-                  }}>
-                    {DESSERT_PIZZAS
-                      .filter(pizza =>
-                        !styleKey || (pizza.compatibleStyles ?? []).includes(styleKey as import('../lib/toppingTypes').StyleKey)
-                      )
-                      .map(pizza => {
-                        const name = pizza.name[l] ?? pizza.name.en;
-                        const qty = getQty(pizza.id);
-                        const keyIngs = pizza.ingredients
-                          .filter((i: import('../lib/toppingTypes').Ingredient) => i.category !== 'base' && i.category !== 'spice')
-                          .slice(0, 2)
-                          .map((i: import('../lib/toppingTypes').Ingredient) => (i.name as Record<string, string>)[l] ?? (i.name as Record<string, string>).en)
-                          .join(', ');
-                        const variantMap: Record<string, string> = {
-                          pizza_romana: '_pizza_romana',
-                          newyork: '_newyork', pan: '_pan', roman: '_roman',
-                        };
-                        const suffix = styleKey && variantMap[styleKey] ? variantMap[styleKey] : '';
-                        const imgSrc = `/pizzas/${pizza.id}${suffix}.webp`;
-                        const fallbackSrc = `/pizzas/${pizza.id}.webp`;
-                        return (
-                          <div
-                            key={pizza.id}
-                            onClick={() => setSheetId(pizza.id)}
-                            style={{
-                              flexShrink: 0,
-                              width: '140px',
-                              borderRadius: '16px',
-                              overflow: 'hidden',
-                              border: qty > 0 ? '2px solid #B8903A' : '1px solid #E0D8CF',
-                              background: '#FDFBF7',
-                              cursor: 'pointer',
-                              transition: 'border 0.15s ease',
-                            }}
-                          >
-                            <div style={{ position: 'relative', height: '100px', background: '#2B2420' }}>
-                              <img
-                                src={imgSrc} loading="lazy" decoding="async"
-                                onError={e => { (e.target as HTMLImageElement).src = fallbackSrc; }}
-                                alt=""
-                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                              />
-                              <div style={{
-                                position: 'absolute', bottom: 0, left: 0, right: 0,
-                                background: 'linear-gradient(transparent, rgba(43, 36, 32,0.82))',
-                                padding: '16px 8px 8px',
-                              }}>
-                                <div style={{
-                                  fontFamily: 'var(--font-ui)',
-                                  fontSize: '11px', fontWeight: 700,
-                                  color: '#FDFBF7', lineHeight: 1.2,
-                                }}>
-                                  {name}
-                                </div>
-                              </div>
-                              {qty > 0 && (
-                                <div style={{
-                                  position: 'absolute', top: '6px', right: '6px',
-                                  width: '20px', height: '20px', borderRadius: '50%',
-                                  background: '#B8903A',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                }}>
-                                  <svg viewBox="0 0 10 10" width={10} height={10} fill="none"
-                                    stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M2 5l2 2 4-4"/>
-                                  </svg>
-                                </div>
-                              )}
-                            </div>
-                            <div style={{
-                              padding: '8px 8px 8px',
-                              fontFamily: 'var(--font-ui)',
-                              fontSize: '11px', color: '#8A7F78',
-                              lineHeight: 1.3,
-                            }}>
-                              {keyIngs || '—'}
-                            </div>
-                          </div>
-                        );
-                      })
-                    }
-                  </div>
-                  <div style={{
-                    position: 'absolute', top: 0, right: 0, width: '32px', height: '100%',
-                    background: 'linear-gradient(to right, transparent, var(--warm))',
-                    pointerEvents: 'none',
-                  }} />
-                  </div>
-                  <button
-                    onClick={() => setDessertSheetOpen(false)}
-                    style={{ margin: '8px 14px', padding: '12px', border: 'none', borderRadius: '12px', background: '#6B4423', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', width: 'calc(100% - 28px)', fontFamily: 'var(--font-ui)' }}
-                  >
-                    {l === 'fr' ? 'Retour à la sélection' : 'Back to party'}
-                  </button>
-                </>
-              )}
+
+            </div>
+            <div style={{padding:'12px 16px',display:'grid',gap:8,borderTop:'1px solid var(--border)'}}>
+              <button type="button" onClick={()=>{closeSummary();if(directSelectionReturn&&onSelectionDone)onSelectionDone();else if(baseReady)onPillChange('party');else if(onSelectionDone)onSelectionDone();else onPillChange('shopping');}} style={NEXT_CTA}>{directSelectionReturn?selectionDoneLabel:baseReady?(l==='fr'?'Préparer les garnitures':'Prepare toppings'):selectionDoneLabel??(l==='fr'?'Voir les courses':'View shopping')}</button>
+              {(baseReady||!doughConfigured)&&<button type="button" onClick={()=>{closeSummary();onPillChange(baseReady?'shopping':'party');}} style={SECONDARY_CTA}>{baseReady?(l==='fr'?'Voir les courses':'View shopping'):(l==='fr'?'Préparer les garnitures':'Prepare toppings')}</button>}
+              <button type="button" onClick={closeSummary} className="bh-back-action">{l==='fr'?'← Modifier ma sélection':'← Edit my selection'}</button>
             </div>
           </div>
         </>
@@ -2760,8 +2721,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {/* ── Sticky bar — always visible when pizzas pill active ──
            Hidden while the mobile keyboard is open: fixed bars anchor to the
            visual viewport and would float mid-screen above the keyboard. */}
-      {activePill === 'pizzas' && !keyboardOpen && (
-        <div style={{
+      {active && activePill === 'pizzas' && (totalQty > 0 || !!onSelectionDone) && !keyboardOpen && (
+        <div data-companion-action style={{
           // The bar sits ON the home indicator, so it pins to bottom 0 and
           // carries the safe-area inset as padding instead. Offsetting by
           // bottomNavH AND padding by the inset counted the same gap twice,
@@ -2780,113 +2741,16 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           // additive constant against the bar's recast surface. Matched by the
           // three sheet bodies above, whose last row used to sit under the
           // home indicator with no inset at all.
-          padding: '14px 16px calc(24px + env(safe-area-inset-bottom, 0px))',
+          padding: '10px 16px calc(10px + env(safe-area-inset-bottom, 0px))',
           display: 'flex', alignItems: 'center', gap: '12px',
           justifyContent: 'space-between',
           zIndex: 90,
         }}>
-          {/* Left: progress + review. Review used to be a 13px text link
-              sitting beside a real button — two actions of different weight
-              in the same bar, one of them the review of every choice made. */}
-          <button
-            onClick={() => totalQty > 0 && setSummarySheetOpen(true)}
-            disabled={totalQty === 0}
-            style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px',
-              flex: 1, minWidth: 0, minHeight: '44px', justifyContent: 'center',
-              background: 'none', border: 'none', padding: '0 2px', textAlign: 'left',
-              cursor: totalQty > 0 ? 'pointer' : 'default',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ display: 'flex', gap: '4px' }}>
-              {Array.from({ length: Math.min(doughConfigured ? numItems : Math.max(totalQty, 3), 8) }, (_, i) => (
-                <div key={i} style={{
-                  width: '7px', height: '7px', borderRadius: '50%',
-                  background: i < totalQty
-                    ? (doughConfigured && totalQty >= numItems ? '#6B7A5A' : 'var(--terra)')
-                    : '#E0D8CC',
-                  transition: 'background 0.2s ease',
-                }} />
-              ))}
-            </div>
-            <span style={{
-              fontFamily: 'var(--font-ui)', fontSize: '12px', fontWeight: 600,
-              color: totalQty === 0 ? 'var(--smoke)'
-                : (doughConfigured && totalQty >= numItems ? '#6B7A5A' : 'var(--terra)'),
-            }}>
-              {totalQty === 0
-                ? (l === 'fr'
-                  ? `Choisissez ${doughConfigured ? numItems : 'vos'} pizzas`
-                  : `Select ${doughConfigured ? numItems : 'your'} pizzas`)
-                : (doughConfigured
-                  ? (totalQty > numItems
-                    ? <>{numItems}/{numItems} <span style={{ color: 'var(--terra)', fontWeight: 700 }}>+{totalQty - numItems}</span></>
-                    : `${totalQty}/${numItems}`)
-                  : `${totalQty}`)}
-            </span>
-
-            </div>
-            {totalQty > 0 && (
-              <span style={{
-                fontFamily: 'var(--font-ui)', fontSize: '14px', fontWeight: 600,
-                color: 'var(--ash)', textDecoration: 'underline',
-                textUnderlineOffset: '3px', textDecorationColor: '#C6BCA9',
-              }}>
-                {l === 'fr' ? 'Voir mes pizzas →' : 'Review my pizzas →'}
-              </span>
-            )}
+          {directSelectionReturn&&totalQty>0 ? <button type="button" className="bh-back-action" onClick={()=>setSummarySheetOpen(true)}>{l==='fr'?'Ma sélection':'My selection'} · {totalQty}</button> : onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{l==='fr'?'← Précédent':'← Back'}</button>}
+          <button type="button" disabled={totalQty === 0&&(!onSelectionDone||baseReady)} onClick={() => (totalQty===0||(directSelectionReturn&&totalQty<=numItems))?onSelectionDone?.():setSummarySheetOpen(true)} style={{...NEXT_CTA,width:'100%',minHeight:44,opacity:totalQty===0&&(!onSelectionDone||baseReady) ? .65 : 1}}>
+            {directSelectionReturn&&onSelectionDone ? (totalQty>numItems?(l==='fr'?'Vérifier la quantité de pâte':'Check dough quantity'):selectionDoneLabel) : totalQty === 0 ? (onSelectionDone&&!baseReady?(selectionDoneLabel??(l==='fr'?'Définir ma recette':'Set up my recipe')):(l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas')) : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`)}
           </button>
 
-          {/* Right CTA: shopping list once the party is complete (Flo);
-              dessert nudge only while still choosing */}
-          {(() => {
-            const partyComplete = doughConfigured ? totalQty >= numItems : totalQty >= 4;
-            if (partyComplete) {
-              return (
-                <button
-                  onClick={e => { e.stopPropagation(); onPillChange('shopping'); }}
-                  style={{
-                    ...NEXT_CTA,
-                    width: 'auto', flexShrink: 0, padding: '13px 18px', fontSize: '15px',
-                  }}
-                >
-                  {l === 'fr' ? 'Courses →' : 'Shopping →'}
-                </button>
-              );
-            }
-            const dessertSelected = Object.entries(qtys).some(([id, q]) =>
-              (q as number) > 0 && DESSERT_PIZZAS.some(dp => dp.id === id));
-            const showDessert = !dessertSelected && (doughConfigured
-              ? totalQty >= Math.min(numItems, Math.max(2, Math.ceil(numItems * 2 / 3)))
-              : totalQty >= 3);
-            if (!showDessert) return null;
-            return (
-              <button
-                onClick={e => { e.stopPropagation(); setSummarySheetOpen(true); setDessertSheetOpen(true); }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  background: 'rgba(184,144,58,0.15)',
-                  border: '1px solid rgba(184,144,58,0.4)',
-                  borderRadius: '20px', padding: '12px 16px', minHeight: '44px',
-                  cursor: 'pointer', flexShrink: 0,
-                }}
-              >
-                <svg viewBox="0 0 14 14" width={12} height={12} fill="none"
-                  stroke="#B8903A" strokeWidth="1.5"
-                  strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M7 1l1.5 4H13l-3.5 2.5L11 12 7 9.5 3 12l1.5-4.5L1 5h4.5L7 1z"/>
-                </svg>
-                <span style={{
-                  fontFamily: 'var(--font-ui)', fontSize: '12px',
-                  color: '#B8903A', fontWeight: 500,
-                  fontStyle: 'italic',
-                }}>
-                  {l === 'fr' ? 'Dessert ?' : 'Sweet finish?'}
-                </span>
-              </button>
-            );
-          })()}
         </div>
       )}
 
