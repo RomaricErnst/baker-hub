@@ -17,7 +17,7 @@ test('Simple starter setup exposes readiness and kitchen facts without requiring
  const start=new Date(Date.now()+3600000), eat=new Date(Date.now()+36*3600000);
  for(const locale of ['en','fr']) for(const mode of ['simple','custom']) {
   const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require('../messages/'+locale+'.json'),timeZone:'Asia/Singapore'},React.createElement(Picker,{startTime:start,eatTime:eat,blocks:[],preheatMin:45,styleKey:'pain_levain',kitchenTemp:30,bakeType:'bread',isSourdough:true,mode,onChange:()=>{}})));
-  const feedQuestion=locale==='en'?'Where has it been since last fed?':'Où était-il depuis son dernier repas ?';
+  const feedQuestion=locale==='en'?'Where has it been since last fed?':'Où était-il depuis son dernier rafraîchi ?';
   assert.equal(html.includes(feedQuestion),mode==='custom');
   if(mode==='simple') {
    assert.ok(html.includes(locale==='en'?'Yes, ready now':'Oui, il est prêt maintenant'));
@@ -57,4 +57,3 @@ test('Not sure keeps timing validity false until a replacement starter plan exis
  assert.equal(valid({simpleKnownPeakConflict:true,solverResult:{starterEvents:[{kind:'known_peak'}]}}),false);
  assert.equal(valid({mode:'custom'}),true);
 });
-

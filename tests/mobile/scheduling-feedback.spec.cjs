@@ -147,6 +147,44 @@ for(const storage of ['rt','fridge'])test(`levain ${storage}: blocker changes pr
  expect((await stored(page)).blocks).toEqual(blocks);expect((await stored(page)).eatTime).toBe(bake);
 });
 
+for(const ratioMode of ['recommend','keep'])for(const scenario of [
+ {style:'pain_levain',hours:46,temp:22},
+ {style:'pain_levain',hours:46,temp:30},
+ {style:'sourdough',hours:70,temp:22},
+])test(`starter nights round trip and reload: ${scenario.style} ${scenario.hours}h ${scenario.temp}C ${ratioMode}`,async({page})=>{
+ test.setTimeout(90000);
+ const bake=NOW+scenario.hours*3600000;
+ const {plan}=await seed(page,{extra:{styleKey:scenario.style,bakeType:scenario.style==='pain_levain'?'bread':'pizza',ovenType:scenario.style==='pain_levain'?'standard_bread':'pizza_oven',mixerType:'hand',kitchenTemp:scenario.temp,fridgeTemp:6,startTime:NOW+22*3600000,eatTime:bake,yeastType:'sourdough',prefermentType:'levain',planningMode:'last_fed',lastFedTime:NOW-60*3600000,lastFedAge:'days23',starterLocation:'rt',lastFeedRatio:1,nextFeedRatio:1,ratioMode,starterTimingValid:true}});
+ const nights=page.getByRole('button',{name:/^Nuits/});
+ const settle=async()=>{
+  let previous='',since=Date.now();
+  await expect.poll(async()=>{
+   const s=await stored(page),value=JSON.stringify([s.startTime,s.starterEvents,s.nextFeedRatio,s.blocks]);
+   if(value!==previous){previous=value;since=Date.now();}
+   return Date.now()-since;
+  },{timeout:20000,intervals:[150]}).toBeGreaterThanOrEqual(1200);
+ };
+ const snapshot=async()=>{const s=await stored(page);return {start:s.startTime,bake:s.eatTime,events:s.starterEvents,blocks:s.blocks,overrides:s.timingOverrides??{}};};
+ await settle();
+ // Establish an explicit night-constrained recommendation before testing the
+ // persisted-page path; fresh-mount equality is covered by the jsdom matrix.
+ if((await stored(page)).blocks.some(b=>b.label.endsWith(' night')))await nights.tap();
+ await nights.tap();await settle();
+ const before=await snapshot();
+ await nights.tap();
+ await expect.poll(async()=>(await stored(page)).blocks.some(b=>b.label.endsWith(' night'))).toBe(false);
+ await nights.tap();await settle();
+ expect(await snapshot()).toEqual(before);
+ await expect(row(plan,'mix')).toHaveAttribute('data-at',String(before.start));
+ const visibleEvents=await plan.locator('[data-key-timing^="starter:"]').evaluateAll(rows=>rows.map(el=>({id:el.getAttribute('data-key-timing'),at:Number(el.getAttribute('data-at'))})));
+ for(const event of visibleEvents.filter(e=>e.at>=NOW&&!e.id.includes('last_fed')&&!e.id.includes('known_peak'))){
+  expect(before.blocks.some(b=>event.at>=b.from&&event.at<b.to),event.id+' must respect nights').toBe(false);
+ }
+ await page.reload();await expect(plan).toBeVisible();await settle();
+ expect(await snapshot()).toEqual(before);
+ await expect(row(plan,'mix')).toHaveAttribute('data-at',String(before.start));
+});
+
 test('rapid time-step taps keep the last candidate authoritative for feedback and commit',async({page})=>{
  const {plan}=await seed(page,{preferment:'none'});
  await expand(plan,'mix');const mixRow=row(plan,'mix');

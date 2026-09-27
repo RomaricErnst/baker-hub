@@ -1110,7 +1110,7 @@ Actual dough condition and equipment may differ from these estimates.`;
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
       {progressControl}
       {!progressTarget&&<button type="button" onClick={() => setCurrentStep(0)} style={{minHeight:44,padding:'8px 16px',border:`1px solid ${D.border}`,borderRadius:10,background:D.warm}}>{overviewLabel}</button>}
-      <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={l === 'fr' ? 'Mélanger la pâte' : 'Mix the dough'} time={bgMixStart} duration={schedule.mixingDurationH}>
+      <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={l === 'fr' ? 'Pétrir la pâte' : 'Mix the dough'} time={bgMixStart} duration={schedule.mixingDurationH}>
         <Section icon="" title={l === 'fr' ? 'À mélanger' : 'Use now'}>
           {batch && Object.entries(batch.portion).filter(([,grams]) => grams > 0).map(([key,grams]) => <p key={key}>{({flour:l === 'fr' ? 'Farine' : 'Flour',water:l === 'fr' ? 'Eau' : 'Water',salt:l === 'fr' ? 'Sel' : 'Salt',oil:l === 'fr' ? 'Huile' : 'Oil',sugar:l === 'fr' ? 'Sucre' : 'Sugar'} as Record<string,string>)[key] ?? key} · {Math.round(grams)} g</p>)}
           <Steps items={[{bold:l === 'fr' ? 'Mélangez la farine, le sel, l’eau et la matière grasse mesurés. Pétrissez jusqu’à obtenir une pâte lisse et souple.' : 'Combine the measured flour, salt, water and fat. Knead until smooth and pliable.',note:''}]} />
@@ -1198,7 +1198,7 @@ Actual dough condition and equipment may differ from these estimates.`;
               {bold:isPoolish ? (l === 'fr' ? 'Mélangez jusqu’à disparition de la farine sèche.' : 'Stir until no dry flour remains.') : (l === 'fr' ? 'Mélangez pour humidifier toute la farine ; gardez une texture grumeleuse.' : 'Mix to moisten all the flour; keep a rough, lumpy texture.'),note:''},
               {bold:l === 'fr' ? 'Couvrez le récipient et laissez de la place pour la levée.' : 'Cover the container and leave room for expansion.',note:''},
               {bold:recipe?.preferment?.cold ? (l === 'fr' ? 'Placez au réfrigérateur selon ce planning.' : 'Refrigerate according to this plan.') : (l === 'fr' ? 'Laissez à température ambiante selon ce planning.' : 'Leave at room temperature according to this plan.'),
-                note:l === 'fr' ? `Mélange final prévu : ${formatTime(bgMixStart, _fmtLocale)}. Vérifiez la maturité avant utilisation.` : `Main mix planned: ${formatTime(bgMixStart, _fmtLocale)}. Check maturity before use.`},
+                note:l === 'fr' ? `Pétrissage prévu : ${formatTime(bgMixStart, _fmtLocale)}. Vérifiez la maturité avant utilisation.` : `Main mix planned: ${formatTime(bgMixStart, _fmtLocale)}. Check maturity before use.`},
             ]} />
           </Section>
 
@@ -1208,7 +1208,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             tips={<p>{l === 'fr' ? 'Fiez-vous aux quantités et à l’emplacement de cette recette. Si la maturité ne correspond pas au planning, revoyez le planning avant de poursuivre.' : 'Use this recipe’s quantities and planned location. If maturity does not match the schedule, review the plan before continuing.'}</p>}
             faqOverride={[
               {q:{en:'Should I change the yeast dose?',fr:'Faut-il changer la dose de levure ?'},a:{en:'Use the measured dose shown for this preferment and the selected yeast type. Do not replace it with a generic pinch or percentage.',fr:'Utilisez la dose indiquée pour ce préferment et le type de levure choisi. Ne la remplacez pas par une pincée ou un pourcentage générique.'}},
-              {q:{en:'What should I check before mixing?',fr:'Que vérifier avant le mélange final ?'},a:{en:isPoolish?'Check for bubbles and a risen surface beginning to flatten; use the visual guide below.':'Break a piece open and look for internal aeration; use the visual guide below.',fr:isPoolish?'Observez les bulles et une surface levée qui commence à s’aplanir ; consultez les signes illustrés.':'Ouvrez un morceau et observez les alvéoles à l’intérieur ; consultez les signes illustrés.'}},
+              {q:{en:'What should I check before mixing?',fr:'Que vérifier avant le pétrissage ?'},a:{en:isPoolish?'Check for bubbles and a risen surface beginning to flatten; use the visual guide below.':'Break a piece open and look for internal aeration; use the visual guide below.',fr:isPoolish?'Observez les bulles et une surface levée qui commence à s’aplanir ; consultez les signes illustrés.':'Ouvrez un morceau et observez les alvéoles à l’intérieur ; consultez les signes illustrés.'}},
             ]}
             coachStepId={isPoolish ? 'poolish' : 'biga'}
             coachTitle={isPoolish ? t('stepTitles.makePoolish') : t('stepTitles.makeBiga')}
@@ -1240,7 +1240,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           {/* Feed 1 */}
           <StepCard
             number={n()} {...sc()} icon={<IconStarter />}
-            title={l === 'fr' ? (usingPeak2 ? 'Rafraîchir le levain — premier repas' : 'Rafraîchir le levain') : (usingPeak2 ? 'Feed your starter — first feed' : 'Feed your starter')}
+            title={l === 'fr' ? (usingPeak2 ? 'Rafraîchir le levain — premier rafraîchi' : 'Rafraîchir le levain') : (usingPeak2 ? 'Feed your starter — first feed' : 'Feed your starter')}
             time={feedTime}
             accent="#6A7FA8"
           >
@@ -1350,7 +1350,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           {usingPeak2 && feed2Time && (
             <StepCard
               number={n()} {...sc()} icon={<IconStarter />}
-              title={l === 'fr' ? 'Rafraîchir le levain — deuxième repas' : 'Feed your starter — second feed'}
+              title={l === 'fr' ? 'Rafraîchir le levain — deuxième rafraîchi' : 'Feed your starter — second feed'}
               time={feed2Time}
               accent="#6A7FA8"
             >
@@ -1370,7 +1370,7 @@ Actual dough condition and equipment may differ from these estimates.`;
                 tips={
                   <Section icon={null} title={t('sectionTitles.readyWhen')}>
                     <Bullets items={[
-                      l === 'fr' ? 'Mêmes signes qu’au premier repas : dôme, volume doublé, bulles sur les côtés' : 'Same signs as the first feed — dome, doubled, bubbles at the sides',
+                      l === 'fr' ? 'Mêmes signes qu’au premier rafraîchi : dôme, volume doublé, bulles sur les côtés' : 'Same signs as the first feed — dome, doubled, bubbles at the sides',
                       l === 'fr' ? 'Le goût sera légèrement plus acide qu’au premier pic' : 'Flavour will be slightly more sour than the first peak',
                       l === 'fr' ? 'Mélangez au dôme — n’attendez pas qu’il retombe' : 'Mix at the dome — do not wait for it to collapse',
                     ]} />

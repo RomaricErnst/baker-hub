@@ -1118,7 +1118,7 @@ export default function FermentChart({
     const op = opacityFor(id);
     return (
       <g role="slider" onFocus={() => setSelectedMarker(which)} tabIndex={startTimeInPast || disabled ? -1 : 0}
-        aria-label={which==='mix'?(isFr?'Heure du mélange':'Mixing time'):(isFr?'Heure du préferment':'Preferment time')}
+        aria-label={which==='mix'?(isFr?'Heure du pétrissage':'Mixing time'):(isFr?'Heure du préferment':'Preferment time')}
         aria-valuemin={0} aria-valuemax={Math.max(1,nowHBF)} aria-valuenow={which==='mix'?effectiveMixHBF:prefStartAbsHBF}
         aria-valuetext={fmtDT(new Date(bakeMs-(which==='mix'?effectiveMixHBF:prefStartAbsHBF)*3600000),isFr)}
         onKeyDown={event=>{if(startTimeInPast||disabled||!['ArrowLeft','ArrowRight'].includes(event.key))return;event.preventDefault();const delta=event.key==='ArrowLeft'?.25:-.25;setSelectedMarker(which);if(which==='mix')onMixChange(Math.max(1,Math.min(nowHBF-.25,effectiveMixHBF+delta)));else onPrefChange(Math.max(.25,Math.min(nowHBF-effectiveMixHBF,prefOffsetH+delta)));}}
@@ -1203,7 +1203,7 @@ export default function FermentChart({
               ? `Sortir ${prefermentType==='biga'?'la biga':'le poolish'} du réfrigérateur`
               : `Take ${prefermentType==='biga'?'biga':'poolish'} out of the fridge`,hbf:(bakeMs-+prefermentFridgeOutTime)/3600000});
           }
-          actions.push({key:'mix',name:isFr?'Mélanger la pâte':'Mix the dough',hbf:effectiveMixHBF},{key:'bake',name:isFr?'Cuire':'Bake',hbf:0});
+          actions.push({key:'mix',name:isFr?'Pétrir la pâte':'Mix the dough',hbf:effectiveMixHBF},{key:'bake',name:isFr?'Cuire':'Bake',hbf:0});
           return actions.sort((a,b)=>b.hbf-a.hbf).map(action=><div key={action.key} style={{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:'2px 12px',padding:'8px 0',borderTop:'1px solid var(--border)',color:inBlocker(action.hbf)?'var(--terra)':'var(--char)'}}>
             <strong style={{fontWeight:action.key===dragging?700:500}}>{action.name}</strong><span>{fmtDT(new Date(bakeMs-action.hbf*3600000),isFr)}</span>
             {inBlocker(action.hbf)&&<span style={{width:'100%',fontSize:12}}>{isFr?'Créneau occupé':'Busy time'}</span>}

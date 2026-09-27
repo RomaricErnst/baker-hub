@@ -2599,6 +2599,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   useEffect(() => {
     if (!isSourdough || !eatTimeSet || resumeFrozenRef.current || startTimeInPast) return;
     if (planningMode==='last_fed'&&(!lastFedTime||lastFedAge===null) || planningMode==='know_peak'&&!knownPeakTime) return;
+    solverNotifyBudgetRef.current={t:Date.now(),n:0};
     if (Object.keys(manualTimesRef.current).length) {
       replanCurrentSchedule(solverBlocksRef.current,manualTimesRef.current);
       return;
@@ -5381,7 +5382,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           _windowTooShort = true;
         }
         if (_feed2Time) setRefeedSuggestion(_feed2Time);
-        notifyFromSolver(_newPendingStart, et, blocks);
+        notifyFromSolver(_newPendingStart, et, effectiveBlocks);
       }
       buildAndSetResult();
       return;
@@ -5488,7 +5489,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     // Solver still found best starter protocol for this position.
     const newMix = manualMixOverride ?? new Date(bakeMs - best.mixHBF * 3600000);
     _newPendingStart = newMix;
-    notifyFromSolver(newMix, et, blocks);
+    notifyFromSolver(newMix, et, effectiveBlocks);
 
     // Use the candidate's HONEST fridge-out time (mix = fridgeOut + rtToPeakH),
     // not mix − warmupH. The old recompute moved fridgeOut later than the
@@ -6143,6 +6144,9 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   }
 
   function applyAndUpdate(newBlocks: AvailabilityBlock[]) {
+    // A new user constraint starts a new solve, not a runaway notification
+    // loop from the previous one (also valid when the planning clock is frozen).
+    solverNotifyBudgetRef.current={t:Date.now(),n:0};
     setMovedNote(null);setBlockerNote(null);ratioApplyHistoryRef.current.length=0;
     setStarterPins(null);setEditingRow(null);setEditingEnabled(false);setEditBaseTimes(null);draftOverridesRef.current={};
     solverBlocksRef.current=newBlocks;setLocalBlocks(newBlocks);
@@ -6433,8 +6437,17 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     resumeFrozenRef.current=false;
     acceptedBakeRef.current=+pendingEatTime;
     if(isSourdough){
-      const checked=replanStarter(candidateBlocks,overrides);
-      setSearchFailed(!checked);
+      let checked=replanStarter(candidateBlocks,overrides);
+      const foundValid=!!checked;
+      // A failed full-agenda search must not leave the previous automatic
+      // starter events on screen under newly enabled blockers. Recompute the
+      // starter recommendation, but keep the complete-plan gate invalid.
+      // Explicit baker pins are never discarded by this fallback.
+      if(!checked&&Object.keys(overrides).length===0){
+        const fresh=evaluateStarterCandidate({mix:null,feed:null,refresh:null},candidateBlocks);
+        if(fresh.probe.result)checked=fresh;
+      }
+      setSearchFailed(!foundValid);
       if(checked){
         const result=checked.probe.result!;
         checked.probe.effects.forEach(effect=>effect());
@@ -6688,10 +6701,10 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           {mode === 'simple' && (
             <div style={{ display: 'grid', gap: '12px', fontSize: '15px', lineHeight: 1.5 }}>
               <p style={{ margin: 0 }}>{isFr
-                ? 'Cette recette utilise un levain nourri avec autant de farine que d’eau, en poids. Un levain ferme ou une proportion inconnue nécessite de vérifier la recette avant de continuer.'
+                ? 'Cette recette utilise un levain rafraîchi avec autant de farine que d’eau, en poids. Un levain ferme ou une proportion inconnue nécessite de vérifier la recette avant de continuer.'
                 : 'This recipe uses a starter fed with equal weights of flour and water. A stiff starter or an unknown proportion needs a recipe check before continuing.'}</p>
               <p style={{ margin: 0 }}>{isFr
-                ? 'Votre levain actif a-t-il bien monté depuis son repas, avec des bulles, sans être retombé ? Vérifiez-le à température ambiante.'
+                ? 'Votre levain actif a-t-il bien monté depuis son rafraîchi, avec des bulles, sans être retombé ? Vérifiez-le à température ambiante.'
                 : 'Has your active starter risen well since feeding, with bubbles, without collapsing? Check it at room temperature.'}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 <button type="button" style={{ ...starterPillButton(planningMode === 'know_peak'), minHeight: 44 }} onClick={() => {
@@ -6719,7 +6732,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
                 }}>{isFr ? 'Pas encore / Je ne sais pas' : 'Not yet / Not sure'}</button>
               </div>
               <p role="status" style={{ margin: 0 }}>{simpleStarterUncertain
-                ? (isFr ? 'Prochaine étape : indiquez ci-dessous son dernier repas. S’il ne monte pas encore, nourrissez-le selon votre routine et attendez une montée nette avant de confirmer qu’il est prêt. L’horaire reste à vérifier.' : 'Next: enter its last feed below. If it is not rising yet, feed it using your usual routine and wait for a clear rise before confirming readiness. Timing still needs checking.')
+                ? (isFr ? 'Prochaine étape : indiquez ci-dessous son dernier rafraîchi. S’il ne monte pas encore, rafraîchissez-le selon votre routine et attendez une montée nette avant de confirmer qu’il est prêt. L’horaire reste à vérifier.' : 'Next: enter its last feed below. If it is not rising yet, feed it using your usual routine and wait for a clear rise before confirming readiness. Timing still needs checking.')
                 : planningMode === 'know_peak' && knownPeakTime
                   ? (isFr ? `${simpleReadyObserved?'Levain déclaré prêt à':'Levain attendu prêt à'} ${fmtCardDT(knownPeakTime, true)}. Consultez le créneau de mélange ci-dessous ; prêt maintenant ne garantit pas du pain ce soir.` : `${simpleReadyObserved?'Starter reported ready at':'Starter expected ready at'} ${fmtCardDT(knownPeakTime)}. Check the mixing window below; ready now does not guarantee bread tonight.`)
                   : (isFr ? 'Prochaine étape : vérifiez votre levain, puis choisissez une réponse.' : 'Next: check your starter, then choose an answer.')}</p>
@@ -6735,7 +6748,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           {/* ── Q1: Where has it been since last fed? ── */}
           <div>
             <div style={STARTER_LABEL_STYLE}>
-              {isFr ? 'Où était-il depuis son dernier repas ?' : 'Where has it been since last fed?'}
+              {isFr ? 'Où était-il depuis son dernier rafraîchi ?' : 'Where has it been since last fed?'}
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               {(['rt', 'fridge'] as const).map(loc => (
@@ -6886,7 +6899,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
                         ? 'Le plan ci-dessous indiquera quand sortir votre levain.'
                         : 'The plan below will tell you when to take it out.')
                     : (isFr
-                        ? "Votre levain a besoin d'être nourri — le plan vous guidera."
+                        ? "Votre levain a besoin d'être rafraîchi — le plan vous guidera."
                         : 'Your starter needs feeding — the plan will guide you.')}
                 </div>
               )}
@@ -6919,7 +6932,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
                   <>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
                       <div style={{ ...STARTER_LABEL_STYLE, marginBottom: 0 }}>
-                        {isFr ? 'Ratio du dernier nourrissage' : 'Last feed ratio'}
+                        {isFr ? 'Ratio du dernier rafraîchi' : 'Last feed ratio'}
                       </div>
                     </div>
                     {/* Shown, not hidden behind a dot: it is one line, and it
@@ -7553,7 +7566,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           lineHeight: 1.6,
         }}>
           {isFr
-            ? 'Indiquez quand votre levain a été nourri pour voir votre plan.'
+            ? 'Indiquez quand votre levain a été rafraîchi pour voir votre plan.'
             : 'Tell us when your starter was last fed to see your plan.'}
         </div>
       )}

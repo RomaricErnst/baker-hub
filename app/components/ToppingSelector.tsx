@@ -1461,6 +1461,18 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   const [ingredientSections, setIngredientSections] = useState<Record<string, boolean>>({});
   const [pizzaCourse, setPizzaCourse] = useState<'savoury' | 'sweet'>('savoury');
   const [summarySheetOpen, setSummarySheetOpen] = useState(false);
+  const summaryDialogRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!summarySheetOpen) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    summaryDialogRef.current?.focus({preventScroll:true});
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus?.isConnected) previousFocus.focus({preventScroll:true});
+    };
+  }, [summarySheetOpen]);
 
   // Style picker popup
   const [showStylePicker, setShowStylePicker] = useState(false);
@@ -2480,6 +2492,17 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             style={{ position: 'fixed', inset: 0, background: 'rgba(43, 36, 32,0.52)', zIndex: 160 }}
           />
           <div
+            role="dialog" aria-modal="true" aria-label={l === 'fr' ? 'Mes pizzas' : 'My pizzas'}
+            ref={summaryDialogRef} tabIndex={-1}
+            onKeyDown={e => {
+              if (e.key === 'Escape') { e.stopPropagation(); closeSummary(); }
+              if (e.key !== 'Tab') return;
+              const items = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter(el=>el.getClientRects().length>0);
+              const first=items[0],last=items[items.length-1];
+              if (!first) { e.preventDefault(); e.currentTarget.focus(); }
+              else if (e.shiftKey&&(document.activeElement===first||document.activeElement===e.currentTarget)) { e.preventDefault(); last.focus(); }
+              else if (!e.shiftKey&&document.activeElement===last) { e.preventDefault(); first.focus(); }
+            }}
             onClick={e => e.stopPropagation()}
             style={{
               position: 'fixed', bottom: 0, left: 0, right: 0,

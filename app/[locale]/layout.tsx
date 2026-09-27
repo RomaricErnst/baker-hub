@@ -6,9 +6,8 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 
-// One family for everything readable — logo, titles, body, labels. Figtree is
-// built for interface text: generous x-height and well-differentiated letters
-// at 11px, which is where most of this app lives.
+// Figtree for interface text; page titles use the explicit --font-display
+// serif stack in globals.css, preserving the approved prototype typography.
 const figtree = localFont({ src: "../fonts/figtree-latin.woff2", weight: "300 900", display: "swap", variable: "--font-ui" });
 
 // Kept for one job only: the yeast formula panel, where monospacing carries

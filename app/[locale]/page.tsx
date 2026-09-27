@@ -3801,7 +3801,7 @@ export default function Home() {
             {/* ─── STEP 7: Yeast type ──────────────── */}
             <StepPage flow={simpleOrganisationFlow} id={6}>
               {yeastType === 'sourdough' && <div style={{padding:12,background:'var(--cream)',borderRadius:12,marginBottom:12,fontSize:15,lineHeight:1.5}}>
-                <p style={{margin:'0 0 8px'}}>{fr?'Cette recette suppose un levain nourri avec autant de farine que d’eau en poids. Vérifiez qu’il correspond au vôtre.':'This recipe assumes a starter fed with equal weights of flour and water. Check that this matches your starter.'}</p>
+                <p style={{margin:'0 0 8px'}}>{fr?'Cette recette suppose un levain rafraîchi avec autant de farine que d’eau en poids. Vérifiez qu’il correspond au vôtre.':'This recipe assumes a starter fed with equal weights of flour and water. Check that this matches your starter.'}</p>
                 <label style={{display:'flex',gap:10,alignItems:'center',minHeight:44}}><input type="checkbox" checked={starterEqualWeightsConfirmed} onChange={e=>setStarterEqualWeightsConfirmed(e.target.checked)}/>{fr?'Je confirme : autant de farine que d’eau, en poids.':'I confirm: equal weights of flour and water.'}</label>
                 <p>{fr?'Si sa proportion est différente ou inconnue, vérifiez-la avec la personne qui entretient le levain avant de continuer.':'If its proportions differ or are unknown, check with the person maintaining the starter before continuing.'}</p>
               </div>}

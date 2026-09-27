@@ -29,7 +29,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       },
       "a": {
         "en": "Refrigeration slows a ripe poolish. Check its condition before use and use its actual temperature in the main-mix water plan; warming it first is not always needed.",
-        "fr": "Le froid ralentit un poolish mûr. Vérifiez son état et utilisez sa température réelle pour préparer l’eau du mélange final ; le réchauffer n’est pas toujours nécessaire."
+        "fr": "Le froid ralentit un poolish mûr. Vérifiez son état et utilisez sa température réelle pour préparer l’eau du pétrissage ; le réchauffer n’est pas toujours nécessaire."
       }
     },
     {
@@ -149,7 +149,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
     {
       "q": {
         "en": "I missed the peak — feed again or use it?",
-        "fr": "J'ai raté le pic — nourrir à nouveau ou l'utiliser ?"
+        "fr": "J'ai raté le pic — rafraîchir à nouveau ou l'utiliser ?"
       },
       "a": {
         "en": "Within an hour or two past peak, use it — flavour is a touch tangier, power is fine. Much later, give it a quick 1:1 refresh and wait for the new rise.",

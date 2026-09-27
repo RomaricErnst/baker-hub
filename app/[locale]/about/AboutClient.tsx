@@ -627,7 +627,7 @@ const CONTENT: Record<string, LocaleContent> = {
         title: 'Le moteur de levain',
         body: (
           <>
-            <P>Le levain est ce qu'il y a de plus difficile à planifier, car un levain vivant ne suit pas d'horloge fixe — son rythme change selon la façon dont il est conservé, depuis combien de temps il a été nourri, sa maturité, et la chaleur de votre cuisine. La plupart des outils ignorent tout cela et vous donnent un planning générique. Baker Hub le modélise.</P>
+            <P>Le levain est ce qu'il y a de plus difficile à planifier, car un levain vivant ne suit pas d'horloge fixe — son rythme change selon la façon dont il est conservé, depuis combien de temps il a été rafraîchi, sa maturité, et la chaleur de votre cuisine. La plupart des outils ignorent tout cela et vous donnent un planning générique. Baker Hub le modélise.</P>
 
             <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Ce qu'il vous demande</p>
             <P>L’historique saisi aide à estimer les rafraîchis. Il ne prouve pas la vitalité du levain : observez sa montée et sa maturité avant de pétrir.</P>
@@ -638,7 +638,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>La décision qu'il déroule</p>
             <P>Chaque plan suit le même cheminement honnête, dans cet ordre :</P>
             <BulletList items={[
-              <><strong style={{color:CHAR}}>Votre levain est-il prêt, ou doit-il être réveillé ?</strong> Un levain nourri aujourd'hui à température ambiante peut déjà être proche de son pic. Un levain resté au frigo plusieurs jours doit d'abord être réactivé.</>,
+              <><strong style={{color:CHAR}}>Votre levain est-il prêt, ou doit-il être réveillé ?</strong> Un levain rafraîchi aujourd'hui à température ambiante peut déjà être proche de son pic. Un levain resté au frigo plusieurs jours doit d'abord être réactivé.</>,
               <><strong style={{color:CHAR}}>Combien de rafraîchis la réactivation demande-t-elle ?</strong> Cela dépend du temps de repos et de la maturité — une estimation à confirmer avec l’activité observée (section suivante).</>,
               <><strong style={{color:CHAR}}>Quand placer le rafraîchi final</strong> pour que le levain atteigne son pic exactement au moment du pétrissage ? Le moteur le calcule à rebours depuis votre heure de cuisson.</>,
               <><strong style={{color:CHAR}}>Ce moment tombe-t-il à une heure où vous êtes disponible ?</strong> Sinon, il tente de le déplacer — en décalant le rafraîchi, ou en suggérant un autre ratio de rafraîchi (ci-dessous).</>,
@@ -650,7 +650,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <P>Le nombre de rafraîchis proposé dépend de l’historique saisi. Adaptez ce planning à l’activité réellement observée du levain ; un délai écoulé ne garantit pas sa maturité.</P>
 
             <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Ratio et timing du rafraîchi</p>
-            <P>Le ratio auquel vous nourrissez (de 1:1:1 à 1:10:10) change la vitesse à laquelle votre levain atteint son pic — un rafraîchi plus important a plus de chemin à parcourir, il met donc plus de temps. C'est un levier discret mais puissant. Si votre moment de rafraîchi idéal tombe au milieu de la nuit ou de votre journée de travail, le moteur peut <strong style={{color:CHAR}}>recommander un autre ratio</strong> qui décale le pic vers une heure plus praticable, et vous explique en mots simples ce qu'il a changé et pourquoi — par exemple, faire passer un rafraîchi de 3h du matin à 7h en nourrissant à un ratio plus élevé. Vous gardez la main : conservez votre ratio habituel, ou suivez la suggestion.</P>
+            <P>Le ratio auquel vous rafraîchissez (de 1:1:1 à 1:10:10) change la vitesse à laquelle votre levain atteint son pic — un rafraîchi plus important a plus de chemin à parcourir, il met donc plus de temps. C'est un levier discret mais puissant. Si votre moment de rafraîchi idéal tombe au milieu de la nuit ou de votre journée de travail, le moteur peut <strong style={{color:CHAR}}>recommander un autre ratio</strong> qui décale le pic vers une heure plus praticable, et vous explique en mots simples ce qu'il a changé et pourquoi — par exemple, faire passer un rafraîchi de 3h du matin à 7h en rafraîchissant à un ratio plus élevé. Vous gardez la main : conservez votre ratio habituel, ou suivez la suggestion.</P>
 
             <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Planifié autour de votre vie</p>
             <P>Indiquez au moteur les heures où vous n'êtes pas disponible et il façonne tout le plan autour d'elles — les rafraîchis et le pétrissage lui-même sont déplacés hors de vos créneaux bloqués partout où la biologie le permet. Il ne prétendra pas qu'un rafraîchi à 3h du matin est idéal, mais il s'efforcera de ne pas vous le demander. Et il est honnête lorsqu'une heure de cuisson trop juste ne laisse tout simplement pas assez de marge : il vous le dit, et suggère la première heure de cuisson qui conviendrait.</P>

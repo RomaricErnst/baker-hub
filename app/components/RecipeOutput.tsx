@@ -347,7 +347,7 @@ function StarterPrepCard({
         lineHeight: 1.5,
       }}>
         {isFr
-          ? 'Après avoir prélevé votre levain, nourrissez le reste et remettez-le au frigo.'
+          ? 'Après avoir prélevé votre levain, rafraîchissez le reste et remettez-le au frigo.'
           : 'After taking your starter, feed what remains and return it to the fridge.'}
       </div>
     </div>
@@ -1121,4 +1121,3 @@ export default function RecipeOutput({
     </div>
   );
 }
-

@@ -2,20 +2,21 @@ name: iPhone WebKit audit
 
 on:
   push:
-    branches: [codex/prototype-migration-20260920, codex/navigation-six-sections-20260922, codex/navigation-polish-20260923]
+    branches: [main, codex/prototype-migration-20260920, codex/navigation-six-sections-20260922, codex/navigation-polish-20260923]
     paths-ignore: ['docs/**', 'PROJECT-HANDOFF.md', '**/*.md']
   workflow_dispatch:
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
 
 concurrency:
   group: iphone-webkit-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   iphone:
-    if: github.ref == 'refs/heads/codex/prototype-migration-20260920' || github.ref == 'refs/heads/codex/navigation-six-sections-20260922' || github.ref == 'refs/heads/codex/navigation-polish-20260923'
     runs-on: macos-14
     timeout-minutes: 30
     env:
@@ -35,10 +36,18 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Install pinned browser test tools separately
-        run: npm install --prefix .ci-tools --no-audit --no-fund @playwright/test@1.58.2
+        run: npm install --prefix .ci-tools --no-audit --no-fund @playwright/test@1.58.2 esbuild@0.28.2 jsdom@30.1.1
       - name: Install WebKit on macOS
         run: node .ci-tools/node_modules/playwright/cli.js install --with-deps webkit
       - run: npm test
+      - name: Sourdough round trips with fixed clock and parent state
+        env:
+          TZ: Asia/Singapore
+          PAGE: '1'
+          SETTLE: '400'
+        run: |
+          node tests/roundtrip/build.mjs
+          node tests/roundtrip/run.mjs .ci-tools/starter-roundtrip.js "${{ github.sha }}"
       - name: Verify every sandwich recipe image
         run: node scripts/check-sandwich-images.cjs
       - name: Build isolated app
@@ -48,7 +57,7 @@ jobs:
         run: node .ci-tools/node_modules/@playwright/test/cli.js test --config=playwright.mobile.config.cjs
       - name: Upload screenshots, traces and report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: iphone-webkit-${{ github.sha }}
           path: |
@@ -56,4 +65,3 @@ jobs:
             test-results/
           if-no-files-found: warn
           retention-days: 14
-

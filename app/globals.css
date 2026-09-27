@@ -9,6 +9,7 @@ html {
 }
 
 :root {
+  --font-display: Georgia, 'Times New Roman', serif;
   --cream: #F0EBE0;
   --warm: #FDFBF7;
   --char: #2B2420;
