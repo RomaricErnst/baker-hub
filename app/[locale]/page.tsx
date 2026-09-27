@@ -4374,7 +4374,6 @@ export default function Home() {
 
             {/* Prototype: one clear field per dough setting. */}
             <StepPage flow={customOrganisationFlow} id={10}>
-              {enrichedDirectOnly && <p style={{fontSize:14}}>{fr?'Cette formule enrichie fixe les proportions d’eau, de sel, de matière grasse et de sucre.':'This enriched formula fixes the water, salt, fat and sugar proportions.'}</p>}
               {(() => {
                 const style = styleKey ? ALL_STYLES[styleKey] : null;
                 const zone = STYLE_HYDRATION_ZONES[styleKey!] ?? (breadProtocol ? {...FALLBACK_ZONE,classicMin:ALL_STYLES[styleKey!].hydration,classicMax:ALL_STYLES[styleKey!].hydration,name:ALL_STYLES[styleKey!].name} : FALLBACK_ZONE);
