@@ -582,6 +582,14 @@ export const STYLE_STAND_MIX_MIN: Record<string, number> = {
 //  - No-knead, which develops by time already.
 export const AUTOLYSE_MIN = 30;
 
+/** Wheat sourdough: flour/water rest BEFORE the canonical starter/mixing time.
+ * Two minutes to combine, then 30 passive minutes. Do not move the levain peak.
+ * Reference: kingarthurbaking.com/blog/2017/09/29/autolyse-sourdough
+ * Rye bread and no-knead retain their own protocols. */
+export function preMixAutolyseMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: string): number {
+  return styleKey === 'pain_levain' && mixerType !== 'no_knead' ? AUTOLYSE_MIN : 0;
+}
+
 const AUTOLYSE_STYLES = new Set(['pain_campagne', 'pain_levain', 'baguette']);
 // Never, on any mixer. Rye degrades with a rest; the flour goes in after.
 const AUTOLYSE_NEVER = new Set(['pain_seigle']);
@@ -1142,4 +1150,3 @@ export type MixerType = keyof typeof MIXER_TYPES;
 export type YeastType = keyof typeof YEAST_TYPES;
 
 export const ALL_STYLES = { ...PIZZA_STYLES, ...BREAD_STYLES };
-

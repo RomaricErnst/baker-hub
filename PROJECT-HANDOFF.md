@@ -1,5 +1,17 @@
 # Bakerhub — continuation handoff
 
+## Blake feedback — 27 September 2026
+
+Base: production PR8 merge 5e8696f, identical tree to local 1d04b9e. User approved all recommended feedback changes and explicitly requested more French rye flours with pictures. Working branch codex/blake-feedback-20260927.
+
+From-scratch quantity no longer asks about fillings. Optional compact invitation is on generated Recipe and Shopping; existing-base entry and late preparation shortcuts remain. Mobile style catalogue has its own fixed confirmation with reserved clearance (not all setup actions). Recipe summary exposes Edit my preparation, including existing mode-change access. Masonry oven label is Traditional pizza oven, with construction/fuel distinction retained. Photos, mixer capacity and mode names retained.
+
+Bread quantity accepts total formula flour as the authoritative target, including preferment/levain flour. Snapshot field totalFlourTarget is optional for legacy data. Formula recalculates dough and equipment weight when settings change, including actual enriched ingredients and yeast; fixed-flour mode does not add waste flour. Rye shortcut clears restrictive filters. Added Celnat T130, Foricher T130/T170 with official local package photos, published protein only for Celnat; no invented product W/hydration. Photo/source provenance in flourPhotoProvenance.json. Manufacturer pages checked 27 September 2026; photo reuse licence not independently established.
+
+Wheat sourdough bread (pain_levain, except no-knead) has 2 minutes flour/water combining per batch then at least 30 minutes passive autolyse BEFORE the first canonical mixing/starter time. Multiple batches require separate covered containers prepared before mixing, avoiding overlapping manual work; later batches rest until their turn. Guide, timeline and availability use the earlier start; starter anchor unchanged. Source: https://www.kingarthurbaking.com/blog/2017/09/29/autolyse-sourdough . Rye bread and enriched dough do not inherit this step. Existing multi-batch limitations still apply. No physical baking validation.
+
+Local TypeScript/build and tests are being verified. Mobile tests adapted for deferred fillings, fixed visible confirmation and flour-target reload. Browser CLI installation failed due certificate trust; no insecure certificate bypass attempted. Preview/mobile CI/publication results remain pending until recorded. Production unchanged at this checkpoint.
+
 ## Production-audit five priorities — 27 September 2026
 
 User explicitly authorized fixing the five priorities from the independent production audit and publishing to production. Base verified public deployment: a1d88f42997bb7e9287f456d91a7b5c8d4f39cf5 (PR #7). Work branch: codex/production-audit-five-fixes-20260927.

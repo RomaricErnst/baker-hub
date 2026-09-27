@@ -45,7 +45,7 @@ import { createClient } from '../lib/supabase/client';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
 import { archivedBlendSelections } from '../lib/flourRecovery';
 import { flourShoppingName } from '../lib/flourGuidance';
-import { acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
+import { acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, normalizeFlourTarget, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
 import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
@@ -940,6 +940,7 @@ export default function Home() {
   const breadSupportsStarter = !breadProtocol || breadProtocol.supportedPreferments.includes('levain');
   const [numItems, setNumItems] = useState(2);
   const [itemWeight, setItemWeight] = useState(270);
+  const [totalFlourTarget, setTotalFlourTarget] = useState<number | undefined>();
   const [pizzaDiameter, setPizzaDiameter] = useState(30);
   const [pizzaCorn, setPizzaCorn] = useState(1);
 
@@ -1138,7 +1139,7 @@ export default function Home() {
     setSessionSaved(false);
   }, [
     styleKey, ovenType, mixerType, yeastType, resultNotes,
-    numItems, itemWeight, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, customMixerCapacityG, humidity,
+    numItems, itemWeight, totalFlourTarget, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, customMixerCapacityG, humidity,
     fridgeTemp, manualHydration, prefermentType,
     prefermentFlourPct, eatTime, pizzaPartyQtys, bakedPartyQtys, sandwichParty,
   ]);
@@ -1477,7 +1478,8 @@ export default function Home() {
     setStyleKey(session.styleKey as StyleKey | null);
     setNumItems(session.numItems);
     const wb = getWeightBounds(session.styleKey as string | null, session.bakeType as string | null);
-    setItemWeight(Math.max(wb.min, Math.min(wb.max, session.itemWeight)));
+    setItemWeight(session.bakeType==='bread'&&normalizeFlourTarget(session.totalFlourTarget)!==undefined ? session.itemWeight : Math.max(wb.min, Math.min(wb.max, session.itemWeight)));
+    setTotalFlourTarget(session.bakeType==='bread' ? normalizeFlourTarget(session.totalFlourTarget) : undefined);
     setPizzaDiameter(session.pizzaDiameter);
     setOvenType(session.ovenType as AnyOvenType | null);
     setOvenConstruction(session.ovenConstruction ?? 'tabletop');
@@ -1893,12 +1895,12 @@ export default function Home() {
         mixerType as MixerType,
         undefined, undefined, undefined, undefined, undefined, undefined, undefined,
         undefined, undefined, flourInFridge, undefined, undefined,
-        feedToMixH, undefined, measuredFlourTemp, measuredPrefermentTemp,
+        feedToMixH, undefined, measuredFlourTemp, measuredPrefermentTemp, totalFlourTarget,
       );
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, customMixerCapacityG, humidity, schedule, fridgeTemp, yeastType, mixerType, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, feedToMixH]);
+  }, [styleKey, ovenType, numItems, itemWeight, totalFlourTarget, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, customMixerCapacityG, humidity, schedule, fridgeTemp, yeastType, mixerType, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, feedToMixH]);
 
   // Recipe with yeast adjusted by appliedMultiplier (large-batch tuning)
   const displayRecipe = recipe;
@@ -1929,14 +1931,23 @@ export default function Home() {
         prefGoesInFridge,
         feedToMixH,
         prefermentType !== 'none' && prefermentType !== 'levain' && prefOffsetH > 0 ? prefOffsetH : undefined,
-        measuredFlourTemp, measuredPrefermentTemp,
+        measuredFlourTemp, measuredPrefermentTemp, totalFlourTarget,
       );
     } catch {
       return null;
     }
-  }, [styleKey, ovenType, numItems, itemWeight, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, customMixerCapacityG, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, prefGoesInFridge, feedToMixH]);
+  }, [styleKey, ovenType, numItems, itemWeight, totalFlourTarget, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, customMixerCapacityG, humidity, schedule, fridgeTemp, yeastType, priorityOverride, manualHydration, manualOil, manualSugar, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, prefGoesInFridge, feedToMixH]);
 
   const advancedDisplayRecipe = advancedRecipe;
+  // Flour is authoritative in this mode. Keep equipment and portion displays
+  // aligned with the canonical formula, including enriched ingredients/yeast.
+  const flourModeRecipe = tab==='custom' ? advancedRecipe : recipe;
+  useEffect(() => {
+    if (bakeType!=='bread'||totalFlourTarget===undefined||!flourModeRecipe||isRestoringRef.current) return;
+    const buffer=tab==='custom'&&wastePct&&wastePct>0?1+wastePct/100:1;
+    const weight=flourModeRecipe.totalDough/Math.max(1,numItems)/buffer;
+    if(Math.abs(weight-itemWeight)>0.01)setItemWeight(weight);
+  }, [bakeType,totalFlourTarget,flourModeRecipe?.totalDough,numItems,tab,wastePct,itemWeight]);
 
   // Dough ingredients for the Pizza Party shopping list — the host shops once.
   const doughShoppingItems = useMemo(() => {
@@ -2048,7 +2059,7 @@ export default function Home() {
   // when the baker resumes a session (localStorage or DB).
   function buildSessionPayload(overrides?: Partial<Omit<SessionData, 'version' | 'savedAt'>>): Omit<SessionData, 'version' | 'savedAt'> {
     return {
-      tab, bakeType, bakeName, styleKey, numItems, itemWeight, pizzaDiameter,
+      tab, bakeType, bakeName, styleKey, numItems, itemWeight, totalFlourTarget, pizzaDiameter,
       ovenType, ovenConstruction, mixerType, yeastType,
       kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, mixerCapacityG: customMixerCapacityG, resultNotes, containerCapacityLitres, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, timingOverrides,
@@ -2663,7 +2674,7 @@ export default function Home() {
     profileBlockersAppliedRef.current = false;
     setEquipmentPanel('oven'); setMixingBatches(undefined); setContainerCapacityLitres(3);
     setShowProductHome(false);setBakeType(null); setBakeName(''); setStyleKey(null); setProfileFields(new Set());
-    setNumItems(2); setItemWeight(270);
+    setNumItems(2); setItemWeight(270); setTotalFlourTarget(undefined);
     setOvenType(null); setOvenConstruction('tabletop'); setMixerType(null);
     const now = new Date(); now.setMinutes(0, 0, 0);
     setStartTime(now);
@@ -2806,6 +2817,7 @@ export default function Home() {
     setSandwichParty(createSandwichSnapshot(sandwichFamilyForStyle(r.style_key)));
     setNumItems(r.num_items);
     setItemWeight(r.item_weight);
+    setTotalFlourTarget(undefined);
     setOvenType(r.oven_type as AnyOvenType);
     setMixerType((r.mixer_type ?? 'hand') as MixerType);
     setWaterMethod(r.mixer_type==='spiral'?'direct':'premelt'); setSpiralIceConfirmed(false);
@@ -2896,6 +2908,7 @@ export default function Home() {
     setSandwichParty(normalizeSandwichSnapshot(snap.sandwichParty, rb));
     setNumItems(snap.numItems);
     setItemWeight(snap.itemWeight);
+    setTotalFlourTarget(snap.bakeType==='bread' ? normalizeFlourTarget(snap.totalFlourTarget) : undefined);
     setPizzaDiameter(snap.pizzaDiameter);
     setOvenType(snap.ovenType as AnyOvenType | null);
     setOvenConstruction(snap.ovenConstruction ?? 'tabletop');
@@ -3148,7 +3161,7 @@ export default function Home() {
       short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
     { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: fr ? 'Quelle quantité de pâte ?' : 'How much dough?',
-      value: qtyChosen ? `${numItems} × ${itemWeight} g` : null, prefilled: false,
+      value: qtyChosen ? (totalFlourTarget!==undefined&&bakeType==='bread'?`${totalFlourTarget} g ${fr?'de farine':'flour'} · ${numItems} ${fr?'pièces':'pieces'}`:`${numItems} × ${Math.round(itemWeight)} g`) : null, prefilled: false,
       gap: fr ? 'La quantité n\u2019est pas confirmée' : 'Quantity not confirmed' },
     // Oven and mixing are one page: same nature (your kitchen, not your
     // dough), both single-choice, both remembered by the profile.
@@ -3205,7 +3218,7 @@ export default function Home() {
       short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
     { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: fr ? 'Quelle quantité de pâte ?' : 'How much dough?',
-      value: qtyChosen ? `${numItems} × ${itemWeight} g` : null, prefilled: false,
+      value: qtyChosen ? (totalFlourTarget!==undefined&&bakeType==='bread'?`${totalFlourTarget} g ${fr?'de farine':'flour'} · ${numItems} ${fr?'pièces':'pieces'}`:`${numItems} × ${Math.round(itemWeight)} g`) : null, prefilled: false,
       gap: fr ? 'La quantité n\u2019est pas confirmée' : 'Quantity not confirmed' },
     // Oven and mixing are one page: same nature (your kitchen, not your
     // dough), both single-choice, both remembered by the profile.
@@ -3718,7 +3731,7 @@ export default function Home() {
         </div>
         )}
 
-{recipeGenerated && <div style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{bakeQuantityLabel(numItems,bakeType,styleKey,fr)} · {styleKey ? styleDisplayName(styleKey) : ''}</div></div>}
+{recipeGenerated && <div style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{bakeQuantityLabel(numItems,bakeType,styleKey,fr)} · {styleKey ? styleDisplayName(styleKey) : ''}</div>{destination==='recipe'&&<button type="button" className="bh-section-back" onClick={openSetupReview}>{fr?'Modifier ma préparation':'Edit my preparation'}</button>}</div>}
 
 {showBakeTypeChooser&&bakeType&&<BakeTypeChooser fr={fr} current={bakeType} onChoose={selectBakeType} onClose={()=>setShowBakeTypeChooser(false)}/>}
 {destination!=='organisation' && bakeNavigator}
@@ -3733,7 +3746,7 @@ export default function Home() {
               <a href={`/${locale}/with-my-base?family=${bakeType}`} style={{display:'inline-flex',alignItems:'center',minHeight:44,marginBottom:12,color:'var(--terra)',fontSize:16}}>{bakeType==='bread'?(fr?'J’ai déjà une pâte ou du pain →':'I already have dough or bread →'):(fr?'J’ai déjà ma pâte →':'I already have my dough →')}</a>
               <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
               <button type="button" className="bh-section-back" onClick={backToProducts}>{fr?'← Pizza ou pain':'← Pizza or bread'}</button>
-              <div className="bh-batch-actions">
+              <div className="bh-batch-actions bh-style-confirm">
                 {!styleKey&&<p id="bh-style-choice-hint" style={{margin:0,fontSize:14,color:'var(--ash)'}}>{fr?(bakeType==='bread'?'Choisissez un pain pour continuer.':'Choisissez un style de pizza pour continuer.'):(bakeType==='bread'?'Choose a bread to continue.':'Choose a pizza style to continue.')}</p>}
                 <button type="button" disabled={!styleKey} aria-describedby={!styleKey?'bh-style-choice-hint':undefined} style={{...NEXT_CTA,opacity:styleKey?1:0.5,cursor:styleKey?'pointer':'not-allowed'}} onClick={()=>{if(!styleKey)return;setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{styleKey?`${fr?'Continuer avec':'Continue with'} ${styleDisplayName(styleKey)} →`:(fr?'Continuer':'Continue')}</button>
               </div>
@@ -3743,6 +3756,8 @@ export default function Home() {
               {styleKey==='pain_levain'&&<div style={{marginTop:16}}><label><input type="checkbox" checked={addSeeds} onChange={event=>setAddSeeds(event.target.checked)} /> {fr?'Ajouter des graines':'Add seeds'}</label><p>{fr?'Les graines trempent à l’avance : 2 h minimum, idéalement la veille.':'Soak the seeds ahead: at least 2 hours, ideally overnight.'}</p></div>}
 
                             <PrototypeQuantityPicker bakeType={bakeType ?? 'pizza'} locale={locale} units={units}
+                totalFlourTarget={bakeType==='bread'?totalFlourTarget:undefined}
+                onFlourTargetChange={value=>{setTotalFlourTarget(value);setQtyChosen(true);if(value!==undefined){setWastePct(undefined);setItemWeight(value*1.8/Math.max(1,numItems));}else setItemWeight(Math.max(weightBounds.min,Math.min(weightBounds.max,Math.round(itemWeight))));}}
                 itemLabel={breadProtocol ? (styleKey==='focaccia' ? (fr?'plaque':'tray') : (fr?'pièce':'piece')) : undefined}
                 countLabel={breadProtocol ? (styleKey==='focaccia' ? (fr?'Nombre de plaques':'Number of trays') : (fr?'Nombre de pièces':'Number of pieces')) : undefined}
                 weightLabel={breadProtocol ? (styleKey==='focaccia' ? (fr?'Pâte par plaque':'Dough per tray') : (fr?'Pâte par pièce':'Dough per piece')) : undefined}
@@ -3761,14 +3776,14 @@ export default function Home() {
                 <label style={{display:'block'}}>{fr?'Quand commencer la cuisson ?':'When should cooking start?'}<input type="datetime-local" aria-label={fr?'Horaire de cuisson souhaité':'Preferred baking time'} value={eatTime?new Date(eatTime.getTime()-eatTime.getTimezoneOffset()*60000).toISOString().slice(0,16):''} onChange={event=>chooseEarlyBakeTime(event.target.value)} style={{display:'block',maxWidth:'100%',minHeight:44,marginTop:8,padding:10,font:'inherit',border:'1px solid var(--border)',borderRadius:8}}/></label>
                 <p style={{fontSize:14,color:'var(--smoke)'}}>{fr?'Le planning vérifiera cet horaire avec votre préparation et vos disponibilités.':'Your plan will check this time against preparation and availability.'}</p>
               </details>}
-              {(pizzaPartyEnabled||sandwichEnabled)&&<FillingsInvitation fr={fr} pizza={bakeType==='pizza'} styleKey={styleKey??''} count={numItems}
-                selectedCount={Object.values(bakeType==='pizza'?pizzaPartyQtys:sandwichParty.qtys).reduce((sum,qty)=>sum+qty,0)}
-                onChoose={()=>{setQtyChosen(true);setBatchView('fillings');scrollToStepTop();}} />}
               <div className="bh-batch-actions bh-batch-actions-navigation">
                 <button type="button" className="bh-back-action" onClick={()=>{setBatchView('style');scrollToStepTop();}}>{fr?'← Précédent':'← Back'}</button>
                 <button type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(fillingsReturn&&recipeGenerated){if(protocolStale)handleGenerate();else finishFillings();}else openDestination('organisation');}}>{fillingsReturn&&recipeGenerated?fillingsDoneLabel:(fr?'Définir ma recette':'Set up my recipe')}</button></div>
             </>}
           </section>}
+
+          {recipeGenerated&&(destination==='recipe'||destination==='shopping')&&(pizzaPartyEnabled||sandwichEnabled)&&<FillingsInvitation fr={fr} pizza={bakeType==='pizza'} styleKey={styleKey??''} count={numItems}
+            selectedCount={Object.values(bakeType==='pizza'?pizzaPartyQtys:sandwichParty.qtys).reduce((sum,qty)=>sum+qty,0)} onChoose={openLateFillings} />}
 
 
           {destination==='service'&&bakeType==='pizza'&&serviceView==='fillings'&&<button type="button" className="bh-section-back" onClick={()=>{setServiceView('dough');scrollToStepTop();}}>{fr?'← Four et conseils de cuisson':'← Oven and cooking advice'}</button>}
@@ -4093,7 +4108,6 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
-                          {lateFillingsHint}
                         </div>
                       )}
                     </>
@@ -4605,7 +4619,6 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
-                          {lateFillingsHint}
                         </div>
                       )}
                     </>

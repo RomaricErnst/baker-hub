@@ -31,7 +31,7 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect, con
   const locale = useLocale();
   const pizzaOptions = [
     { id: 'tabletop', image: '/images/approved/equipment-v2/portable-gas-oven.webp', title: locale === 'fr' ? 'Four à pizza compact' : 'Tabletop pizza oven', tagline: locale === 'fr' ? 'Modèle de table, à gaz ou à bois' : 'Tabletop model, gas or wood' },
-    { id: 'masonry', image: '/images/approved/equipment-v2/masonry-oven.webp', title: locale === 'fr' ? 'Four maçonné' : 'Brick / masonry oven', tagline: locale === 'fr' ? 'Four fixe avec sole et voûte épaisses' : 'Built-in oven with a heavy floor and dome' },
+    { id: 'masonry', image: '/images/approved/equipment-v2/masonry-oven.webp', title: locale === 'fr' ? 'Four à pizza traditionnel' : 'Traditional pizza oven', tagline: locale === 'fr' ? 'Four fixe en briques ou pierre, généralement à bois' : 'Built-in brick or stone oven, usually wood-fired' },
     { id: 'home_oven_steel',    image: '/images/approved/equipment-v2/home-oven-steel.webp',          title: t('homeSteel.title'),     tagline: t('homeSteel.tagline') },
     { id: 'home_oven_standard', image: '/images/approved/equipment-v2/home-oven-standard.webp',       title: t('homeStandard.title'),  tagline: t('homeStandard.tagline') },
     { id: 'electric_pizza',     image: '/images/approved/equipment-v2/electric-pizza-oven-v3.webp',       title: t('electricPizza.title'), tagline: t('electricPizza.tagline') },
@@ -66,4 +66,3 @@ export default function OvenPicker({ bakeType, styleKey, selected, onSelect, con
     } else onSelect(id as AnyOvenType);
   }} />;
 }
-

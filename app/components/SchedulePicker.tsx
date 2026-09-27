@@ -6402,6 +6402,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
       [`mix-batch-${i+2}`, [`Pétrissée ${i+2}`,`Mix batch ${i+2}`]],
       [`mix-finish-batch-${i+2}`, [`Fin de pétrissée ${i+2}`,`Finish batch ${i+2}`]],
     ]).flat()) as Record<string,[string,string]>,
+    autolyse: ['Autolyse · mélanger farine et eau', 'Autolyse · combine flour and water'],
     mix: ['Pétrissage', 'Mixing'], 'mix-finish': ['Fin du pétrissage', 'Finish mixing'],
     poach: ['Pochage', 'Poaching'], roll: ['Abaisse', 'Rolling'],
     'fold-1': ['Rabat 1', 'Fold 1'], 'fold-2': ['Rabat 2', 'Fold 2'],

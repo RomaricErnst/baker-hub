@@ -99,23 +99,19 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   const style=page.locator('.bh-batch-content').getByRole('button',{name:bread?'Baguette':'Napolitaine classique',exact:true});
   await style.tap();
   await expect(style).toHaveAttribute('aria-pressed','true');
+  const confirmation=page.locator('.bh-style-confirm').getByRole('button',{name:/^Continuer avec/});
+  await unobscured(confirmation);
+  const confirmationBounds=await confirmation.boundingBox();
+  expect(confirmationBounds.y).toBeGreaterThanOrEqual(0);
+  expect(confirmationBounds.y+confirmationBounds.height).toBeLessThanOrEqual(page.viewportSize().height);
   await expect(page.getByRole('heading',{name:bread?'Choisissez votre pain':'Quel style de pizza ?',exact:true})).toBeVisible();
  await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
   const quantity=page.getByLabel(bread?'Nombre de pains':'Nombre de pizzas',{exact:true});
   await quantity.fill('5');await quantity.blur();
   await expect.poll(async()=>({style:(await stored(page))?.styleKey,count:(await stored(page))?.numItems})).toEqual({style:bread?'baguette':'neapolitan',count:5});
   const chosenStyle=(await stored(page)).styleKey;
-  const choose=page.getByRole('button',{name:'Choisir mes garnitures',exact:true});
-  // Browser viewport visibility excludes neither sticky navigation nor the
-  // lifted action bar. Scroll the card to the middle, as a baker can, and
-  // retain the strict elementFromPoint check before the single tap.
-  await choose.evaluate(el=>el.scrollIntoView({block:'center',behavior:'instant'}));
-  await fits(page,choose);
-  await unobscured(choose);
-  expect((await choose.boundingBox()).height).toBeGreaterThanOrEqual(44);
-  await page.getByRole('button',{name:'Choisir mes garnitures',exact:true}).tap();
-  await expect(bread?page.getByRole('article').first():page.getByRole('button',{name:'Margherita',exact:true})).toBeVisible();
-  await page.locator('[data-companion-action]').getByRole('button',{name:'← Précédent',exact:true}).tap();
+  // From-scratch setup is dough-only. Optional meal planning follows recipe generation.
+  await expect(page.getByRole('button',{name:'Choisir mes garnitures',exact:true})).toHaveCount(0);
   await expect(quantity).toHaveValue('5');
   expect((await stored(page)).styleKey).toBe(chosenStyle);
   const organise=page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true});
@@ -169,26 +165,18 @@ test('plain bread has useful shopping without requiring any filling selection',a
  await testInfo.attach('plain-bread-shopping',{body:await page.screenshot(),contentType:'image/png'});
 });
 
-test('country bread offers illustrated tartines and keeps loaf quantities when returning',async({page},testInfo)=>{
- await anonymous(page);await page.goto('/fr');
- await page.getByRole('button',{name:'Pain',exact:true}).tap();
- await page.locator('.bh-batch-content').getByRole('button',{name:/^Pain de campagne/}).tap();
- await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
- const count=page.getByLabel('Nombre de pains',{exact:true});
- await count.fill('2');await count.blur();
+test('generated country bread offers optional tartines and preserves the recipe on return',async({page},testInfo)=>{
+ await seed(page,{bread:true,style:'pain_campagne'});
+ const before=await stored(page);
  await expect(page.getByRole('button',{name:'Choisir mes garnitures',exact:true})).toBeVisible();
- const images=page.locator('.bh-fillings-example img');
- await expect(images).toHaveCount(3);
- await images.first().scrollIntoViewIfNeeded();
- await expect.poll(()=>images.evaluateAll(items=>items.every(img=>img.complete&&img.naturalWidth>0))).toBe(true);
+ await expect(page.getByText('Et pour accompagner ?',{exact:true})).toBeVisible();
  await noOverflow(page);
  await testInfo.attach('tartine-invitation',{body:await page.screenshot(),contentType:'image/png'});
  await page.getByRole('button',{name:'Choisir mes garnitures',exact:true}).tap();
  await expect(page.getByRole('article').first()).toBeVisible();
  await page.locator('[data-companion-action]').getByRole('button',{name:'← Précédent',exact:true}).tap();
- await expect(count).toHaveValue('2');
- await page.locator('.bh-batch-context').getByRole('button',{name:'Modifier le pain choisi',exact:true}).tap();
- await expect(page.getByRole('heading',{name:'Choisissez votre pain',exact:true})).toBeVisible();
+ await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
+ expect((await stored(page)).numItems).toBe(before.numItems);
  await expect.poll(async()=>(await stored(page))?.styleKey).toBe('pain_campagne');
 });
 
