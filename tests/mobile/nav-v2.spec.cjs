@@ -246,7 +246,21 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  if(bread){await expect(choices.getByRole('button')).toHaveText(['Guide de cuisson','Assembler et servir']);await choices.getByRole('button',{name:'Assembler et servir',exact:true}).tap();}
  else{await expect(choices).toHaveCount(0);await page.locator('.bh-guide-next:visible').tap();await page.getByRole('button',{name:'Commencer la cuisson des pizzas →',exact:true}).tap();await expect(page.getByRole('button',{name:'← Four et conseils de cuisson',exact:true})).toBeVisible();}
  if(bread)await expect(page.getByRole('button',{name:'Un sandwich prêt',exact:true})).toBeVisible();
+ // A late preparation detour must return to the active cooking queue or assembly view.
+ await page.getByRole('button',{name:/^(?:Préparer les garnitures|Revoir la préparation des garnitures)$/}).tap();
+ await expect(choices.getByRole('button',{name:/^Garnitures ·/})).toHaveAttribute('aria-pressed','true');
+ await expect.poll(async()=>(await stored(page))?.navigation?.prepReturnToService).toBe('fillings');
+ if(!bread){
+  await page.getByRole('button',{name:'Liste de courses',exact:true}).tap();
+  await page.getByRole('button',{name:'Commencer la préparation →',exact:true}).tap();
+  await expect(choices.getByRole('button',{name:/^Garnitures ·/})).toHaveAttribute('aria-pressed','true');
+ }
+ await page.getByRole('button',{name:bread?'Revenir à l’assemblage →':'Revenir à la cuisson →',exact:true}).tap();
+ await expect(page.locator('.bh-navigator-current')).toContainText('Cuisson & service');
+ if(bread)await expect(page.getByRole('button',{name:'Un sandwich prêt',exact:true})).toBeVisible();
+ else await expect(page.getByRole('button',{name:'← Four et conseils de cuisson',exact:true})).toBeVisible();
  await navigate(page,'Préparation');
+ await choices.getByRole('button',{name:'Pâte',exact:true}).tap();
  await expect(current).toHaveAttribute('aria-label',stepLabel);
  expect(await page.evaluate(()=>Object.fromEntries(Object.entries(localStorage).filter(([key])=>key.startsWith('bh_guide_done_v2:'))))).toEqual(progress);
  await noOverflow(page);

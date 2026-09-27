@@ -1138,6 +1138,8 @@ export default function Home() {
   const [protocolView,setProtocolView]=useState<'dough'|'fillings'>('dough');
   const [serviceView,setServiceView]=useState<'dough'|'fillings'>('dough');
   const [fillingsProgress,setFillingsProgress]=useState({done:0,total:0});
+  const [shoppingReturnToFillings,setShoppingReturnToFillings]=useState(false);
+  const [prepReturnToService,setPrepReturnToService]=useState<BakeNavigationMemory['prepReturnToService']>(null);
   const [fillingsReturn,setFillingsReturn]=useState<BakeNavigationMemory['returnTo']>(null);
   // The summary bar used to pin at a hardcoded 97px (pizza) / 62px (bread),
   // which is the height the sticky header HAPPENED to be. The header is
@@ -1167,6 +1169,7 @@ export default function Home() {
   const readyTimeEstimate=getServingTimeEstimate({bakeType:bakeType??'pizza',styleKey:styleKey??'',numItems,itemWeight,ovenType:ovenType??'',hasFillings,pizzaOvenTemp:firstSelectedPizza?getPizzaById(firstSelectedPizza)?.ovenTemp:undefined});
   const companionVisible=browsingFillings||destination==='shopping'||destination==='protocol'&&protocolView==='fillings'||destination==='service'&&serviceView==='fillings';
   const companionPhase=destination==='shopping'?'shop':destination==='protocol'?'prep':destination==='service'?'bake':'pick';
+  const prepContinueLabel=prepReturnToService==null?undefined:prepReturnToService==='fillings'&&bakeType==='bread'?(locale==='fr'?'Revenir à l’assemblage':'Return to assembly'):(locale==='fr'?'Revenir à la cuisson':'Return to cooking');
   const fillingsDoneLabel=fillingsReturn?(fillingsReturn.destination==='recipe'?(locale==='fr'?'Valider et revenir à la recette':'Confirm and return to recipe'):fillingsReturn.destination==='shopping'?(locale==='fr'?'Valider et revenir aux courses':'Confirm and return to shopping'):fillingsReturn.destination==='service'?(locale==='fr'?'Valider et revenir à la cuisson':'Confirm and return to cooking'):(locale==='fr'?'Valider et revenir à la préparation':'Confirm and return to preparation')):(locale==='fr'?'Définir ma recette':'Set up my recipe');
   const [navHidden, setNavHidden] = useState(false);
   const bottomNavCollapsed = false;
@@ -1576,7 +1579,7 @@ export default function Home() {
         setActiveStep(resume.activeStep);
         setAdvancedStep(resume.advancedStep);
         setSetupOverview(!!resume.setupOverview);
-        if (resume.activeTab) {const route=restoredBakeRoute({...session,...resume},session.bakeType==='pizza'||!!session.styleKey&&!!sandwichFamilyForStyle(session.styleKey));setActiveTab(route.route);setBatchView(route.memory.batchView??'style');setProtocolView(route.memory.protocolView??'dough');setServiceView(route.memory.serviceView??'dough');setFillingsReturn(route.memory.returnTo??null);}
+        if (resume.activeTab) {const route=restoredBakeRoute({...session,...resume},session.bakeType==='pizza'||!!session.styleKey&&!!sandwichFamilyForStyle(session.styleKey));setActiveTab(route.route);setBatchView(route.memory.batchView??'style');setProtocolView(route.memory.protocolView??'dough');setServiceView(route.memory.serviceView??'dough');setFillingsReturn(route.memory.returnTo??null);setPrepReturnToService(route.memory.prepReturnToService??null);setShoppingReturnToFillings(route.memory.shoppingReturnToFillings??false);}
         if (resume.pizzaPartyTab) setPizzaPartyTab(resume.pizzaPartyTab);
         setReviewMode(!!resume.reviewMode);
         sessionStorage.removeItem('bh_locale_resume');
@@ -1991,7 +1994,7 @@ export default function Home() {
       eatTime: eatTime?.getTime() ?? null,
       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
       recipeGenerated, activeTab, pizzaPartyTab, modeChosen,
-      navigation:{batchView,protocolView,serviceView,returnTo:fillingsReturn},
+      navigation:{batchView,protocolView,serviceView,returnTo:fillingsReturn,prepReturnToService,shoppingReturnToFillings},
       // How far the baker got. Without it a resumed session reopened at
       // highestStep 1, so every step carrying a default read as unset —
       // "Quantity not confirmed" beside a finished recipe.
@@ -2073,7 +2076,7 @@ export default function Home() {
     if(bakeType===bt){setShowProductHome(false);setActiveTab('batch');setBatchView('style');return;}
     if(bakeType&&styleKey&&!window.confirm(fr?'Changer de famille réinitialise les choix de cette fournée. Continuer ?':'Changing product family resets this bake’s choices. Continue?'))return;
     setShowProductHome(false);
-    setActiveTab('batch');setBatchView('style');setFillingsReturn(null);
+    setActiveTab('batch');setBatchView('style');setFillingsReturn(null);setPrepReturnToService(null);setShoppingReturnToFillings(false);
     setSandwichParty(createSandwichSnapshot());
     // Switching to bread retires any Pizza Party selections + their persisted
     // ticks so a bread bake never carries stale pizza toppings (spec: hide +
@@ -2351,6 +2354,7 @@ export default function Home() {
 
   function openDestination(next:BakeDestination) {
     setFillingsReturn(null);
+    setPrepReturnToService(null);setShoppingReturnToFillings(false);
     if(next==='organisation'&&!styleKey){setActiveTab('batch');setBatchView('style');}
     else {
       if(next==='organisation'){
@@ -2376,13 +2380,18 @@ export default function Home() {
     if(bakeType==='pizza')setPizzaPartyTab(phase==='serve'?'bake':phase);
     else setSandwichParty(previous=>({...previous,tab:phase==='bake'?'serve':phase}));
     if(phase==='pick'){captureEditReturn();setBatchView('fillings');setActiveTab('batch');}
-    else if(phase==='shop')setActiveTab('shopping');
+    else if(phase==='shop'){setShoppingReturnToFillings(destination==='protocol'&&protocolView==='fillings');setActiveTab('shopping');}
     else if(phase==='prep'){
       if(destination==='shopping'&&!recipeGenerated){openDestination('organisation');return;}
-      setProtocolView(destination==='shopping'?'dough':hasFillings?'fillings':'dough');setActiveTab('guide');
+      setProtocolView(destination==='shopping'&&!shoppingReturnToFillings?'dough':hasFillings?'fillings':'dough');setShoppingReturnToFillings(false);setActiveTab('guide');
     }
-    else {setServiceView('dough');setActiveTab('service');}
+    else {setServiceView(prepReturnToService??'dough');setPrepReturnToService(null);setShoppingReturnToFillings(false);setActiveTab('service');}
     setNavHidden(false);scrollToStepTop();
+  }
+  function prepareFillingsFromService() {
+    openDestination('protocol');
+    setProtocolView('fillings');
+    setPrepReturnToService(serviceView);
   }
   function captureEditReturn() {
     if(destination==='protocol'||destination==='service'||destination==='recipe'||destination==='shopping')setFillingsReturn({destination,view:destination==='protocol'?protocolView:destination==='service'?serviceView:'dough'});
@@ -2407,13 +2416,14 @@ export default function Home() {
   }
   function finishFillings() {
     if(fillingsReturn){
-      if(fillingsReturn.destination==='protocol')setProtocolView(fillingsReturn.view);else if(fillingsReturn.destination==='service')setServiceView(fillingsReturn.view);
+      if(fillingsReturn.destination==='protocol')setProtocolView(hasFillings?fillingsReturn.view:'dough');else if(fillingsReturn.destination==='service')setServiceView(hasFillings?fillingsReturn.view:'dough');
+      if(!hasFillings){setPrepReturnToService(null);setShoppingReturnToFillings(false);}
       setActiveTab(routeForDestination(fillingsReturn.destination));setFillingsReturn(null);setNavHidden(false);scrollToStepTop();
     }else openDestination('organisation');
   }
   function restoreNavigation(source:SessionData) {
     const restored=restoredBakeRoute(source,source.bakeType==='pizza'||!!source.styleKey&&!!sandwichFamilyForStyle(source.styleKey));
-    setActiveTab(restored.route);setBatchView(restored.memory.batchView??'style');setProtocolView(restored.memory.protocolView??'dough');setServiceView(restored.memory.serviceView??'dough');setFillingsReturn(restored.memory.returnTo??null);
+    setActiveTab(restored.route);setBatchView(restored.memory.batchView??'style');setProtocolView(restored.memory.protocolView??'dough');setServiceView(restored.memory.serviceView??'dough');setFillingsReturn(restored.memory.returnTo??null);setPrepReturnToService(restored.memory.prepReturnToService??null);setShoppingReturnToFillings(restored.memory.shoppingReturnToFillings??false);
   }
 
   // Both advance functions walk the step model rather than raw numbers. That
@@ -2560,7 +2570,7 @@ export default function Home() {
 
   function startOver() {
     setScheduleCandidateValid(true);
-    setBatchView('style');setProtocolView('dough');setServiceView('dough');setFillingsReturn(null);
+    setBatchView('style');setProtocolView('dough');setServiceView('dough');setFillingsReturn(null);setPrepReturnToService(null);setShoppingReturnToFillings(false);
     setSandwichParty(createSandwichSnapshot());
     // Fresh session = fresh chance for profile blockers to apply — without
     // this reset, only the first session per page load ever received them.
@@ -2912,7 +2922,7 @@ export default function Home() {
       setTimeout(endRestore, 200);
     }
     if(!rb)restoreNavigation(snap);
-    else {setFillingsReturn(null);setProtocolView('dough');setServiceView('dough');setActiveTab(snap.styleKey?'setup':'batch');}
+    else {setFillingsReturn(null);setPrepReturnToService(null);setShoppingReturnToFillings(false);setProtocolView('dough');setServiceView('dough');setActiveTab(snap.styleKey?'setup':'batch');}
     // Modern snapshots are authoritative, including an intentionally empty pizza list.
     // Legacy relational slots must not resurrect removed toppings after a partial save.
     if (Object.prototype.hasOwnProperty.call(snap, 'pizzaParty')) {
@@ -3319,7 +3329,7 @@ export default function Home() {
           onBeforeLocaleChange={() => {
             if (!bakeType) return;
             saveSession(buildSessionPayload());
-            try { sessionStorage.setItem('bh_locale_resume', JSON.stringify({activeStep, advancedStep, setupOverview, activeTab, pizzaPartyTab, reviewMode,navigation:{batchView,protocolView,serviceView,returnTo:fillingsReturn}})); } catch {}
+            try { sessionStorage.setItem('bh_locale_resume', JSON.stringify({activeStep, advancedStep, setupOverview, activeTab, pizzaPartyTab, reviewMode,navigation:{batchView,protocolView,serviceView,returnTo:fillingsReturn,prepReturnToService,shoppingReturnToFillings}})); } catch {}
           }}
           onSaveSession={saveCurrentSession}
           onReviewPlan={bakeType && modeChosen ? openSetupReview : undefined}
@@ -3652,6 +3662,9 @@ export default function Home() {
                 <button type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(fillingsReturn&&recipeGenerated){if(protocolStale)handleGenerate();else finishFillings();}else openDestination('organisation');}}>{fillingsReturn&&recipeGenerated?fillingsDoneLabel:(fr?'Définir ma recette':'Set up my recipe')}</button></div>
             </>}
           </section>}
+
+          {destination==='service'&&hasFillings&&<button type="button" className="bh-section-back" onClick={prepareFillingsFromService}>{fillingsProgress.total>0&&fillingsProgress.done>=fillingsProgress.total?(fr?'Revoir la préparation des garnitures':'Review filling preparation'):(fr?'Préparer les garnitures':'Prepare toppings and fillings')}</button>}
+          {destination==='protocol'&&protocolView==='fillings'&&prepReturnToService!=null&&<button type="button" className="bh-section-back" onClick={()=>openCompanionPhase('bake')}>{fr?'← Revenir à la cuisson et au service':'← Return to cooking and serving'}</button>}
 
           {destination==='service'&&bakeType==='pizza'&&serviceView==='fillings'&&<button type="button" className="bh-section-back" onClick={()=>{setServiceView('dough');scrollToStepTop();}}>{fr?'← Four et conseils de cuisson':'← Oven and cooking advice'}</button>}
 
@@ -4104,7 +4117,7 @@ export default function Home() {
                   onSelectionBack={backFromFillings} onSelectionDone={finishFillings}
                   selectionDoneLabel={fillingsDoneLabel}
                   directSelectionReturn={!!fillingsReturn}
-                  onPrepProgress={setFillingsProgress}
+                  onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel}
                   active={companionVisible}
                   doughConfigured={recipeGenerated}
                   onHasSelection={setPizzasConfirmed}
@@ -4611,7 +4624,7 @@ export default function Home() {
                   onSelectionBack={backFromFillings} onSelectionDone={finishFillings}
                   selectionDoneLabel={fillingsDoneLabel}
                   directSelectionReturn={!!fillingsReturn}
-                  onPrepProgress={setFillingsProgress}
+                  onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel}
                   active={companionVisible}
                   doughConfigured={recipeGenerated}
                   onHasSelection={setPizzasConfirmed}
@@ -4645,7 +4658,7 @@ export default function Home() {
 
       {bakeType==='bread' && (sandwichEnabled||destination==='shopping') && <div style={{display:companionVisible?'block':'none',paddingBottom:24}}>
         <SandwichParty isFr={locale === 'fr'} styleKey={styleKey} snapshot={sandwichParty}
-          onChange={setSandwichParty} phase={companionPhase==='bake'?'serve':companionPhase} onPhaseChange={openCompanionPhase} onSelectionBack={backFromFillings} onSelectionDone={finishFillings} selectionDoneLabel={fillingsDoneLabel} directSelectionReturn={!!fillingsReturn} onPrepProgress={setFillingsProgress} active={companionVisible} onRevealNavigation={()=>setNavHidden(false)} hideNavigation doughConfigured={recipeGenerated} breadIngredients={recipeGenerated ? sandwichDoughIngredients : []}
+          onChange={setSandwichParty} phase={companionPhase==='bake'?'serve':companionPhase} onPhaseChange={openCompanionPhase} onSelectionBack={backFromFillings} onSelectionDone={finishFillings} selectionDoneLabel={fillingsDoneLabel} directSelectionReturn={!!fillingsReturn} onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel} active={companionVisible} onRevealNavigation={()=>setNavHidden(false)} hideNavigation doughConfigured={recipeGenerated} breadIngredients={recipeGenerated ? sandwichDoughIngredients : []}
           onAdjustBread={openQuantityEdit} onMatchBreadCount={count=>{setNumItems(count);setQtyChosen(true);if(recipeGenerated)openQuantityEdit();}}
           availableDoughWeight={recipeGenerated ? ((tab === 'custom' ? advancedRecipe : recipe)?.totalDough ?? numItems * itemWeight) : undefined}
           numItems={numItems} />

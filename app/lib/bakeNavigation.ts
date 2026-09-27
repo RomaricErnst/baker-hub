@@ -13,6 +13,8 @@ export interface BakeNavigationMemory {
   batchView?: BatchView;
   protocolView?: 'dough'|'fillings';
   serviceView?: 'dough'|'fillings';
+  shoppingReturnToFillings?: boolean;
+  prepReturnToService?: 'dough'|'fillings'|null;
   returnTo?: {destination:'protocol'|'service'|'recipe'|'shopping';view:'dough'|'fillings'}|null;
 }
 export function destinationForRoute(route:string,pizzaPhase='pick',sandwichPhase='pick'):BakeDestination {
@@ -36,6 +38,8 @@ export function normalizeNavigation(value:unknown):BakeNavigationMemory {
     batchView:['style','quantity','fillings'].includes(String(v.batchView))?v.batchView as BatchView:'style',
     protocolView:v.protocolView==='fillings'?'fillings':'dough',
     serviceView:v.serviceView==='fillings'?'fillings':'dough',
+    shoppingReturnToFillings:v.shoppingReturnToFillings===true,
+    prepReturnToService:v.prepReturnToService==='dough'||v.prepReturnToService==='fillings'?v.prepReturnToService:null,
     returnTo:(returnTo.destination==='protocol'||returnTo.destination==='service'||returnTo.destination==='recipe'||returnTo.destination==='shopping')&&(returnTo.view==='dough'||returnTo.view==='fillings')?{destination:returnTo.destination,view:returnTo.view}:null,
   };
 }
@@ -54,7 +58,7 @@ export function restoredBakeRoute(input:{activeTab?:string;navigation?:unknown;a
   if(!input.styleKey){destination='batch';memory.batchView='style';}
   if(!supportsFillings&&input.bakeType!=='pizza'){
     if(memory.batchView==='fillings')memory.batchView=input.styleKey?'quantity':'style';
-    memory.protocolView='dough';memory.serviceView='dough';memory.returnTo=null;
+    memory.protocolView='dough';memory.serviceView='dough';memory.returnTo=null;memory.prepReturnToService=null;memory.shoppingReturnToFillings=false;
   }
   return {route:routeForDestination(destination),memory};
 }

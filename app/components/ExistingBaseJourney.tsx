@@ -115,6 +115,7 @@ export default function ExistingBaseJourney(){
      <button style={control} onClick={()=>go('shopping')}>{tr('Voir les quantités et les courses','View quantities and shopping')}</button>
    </section>}
    {draft.section==='protocol'&&raw&&prep}
+   {draft.section==='service'&&<button type="button" className="bh-section-back" onClick={()=>go('protocol')}>{tr('Préparer les garnitures','Prepare toppings and fillings')}</button>}
    {draft.section==='service'&&needsBake&&<>{prep}<h2>{draft.base==='pizza'?tr('Préparer et cuire','Prepare and bake'):tr('Cuire avant de garnir','Bake before filling')}</h2><p>{tr('Vérifiez la cuisson du centre et du dessous. Pour du pain à garnir, laissez-le refroidir avant l’assemblage.','Check the centre and underside are baked. Let sandwich bread cool before assembly.')}</p>{draft.base!=='pizza'&&<button style={control} onClick={()=>updateDetail({baked:true})}>{tr('Mon pain est cuit et refroidi','My bread is baked and cooled')}</button>}</>}
    {draft.section==='service'&&raw&&detail.baked&&draft.base!=='pizza'&&<button style={control} onClick={()=>updateDetail({baked:false})}>{tr('Annuler « pain cuit »','Undo “bread baked”')}</button>}
    {!['organisation','recipe'].includes(draft.section)&&(draft.base==='pizza'?<>

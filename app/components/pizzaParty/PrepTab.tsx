@@ -21,6 +21,7 @@ function formatQty(amount: number, unit: IngredientUnit, locale: string): string
 }
 
 interface Props {
+  continueLabel?:string;
   onProgress?:(progress:{done:number;total:number})=>void;
   storagePrefix?:string;
   bakeTime: Date;
@@ -76,7 +77,7 @@ function assignStation(task: PrepTask): string {
   return 'board';
 }
 
-export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShopping, onGoToPizzas, styleKey, storagePrefix="bh", onProgress }: Props) {
+export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShopping, onGoToPizzas, styleKey, storagePrefix="bh", onProgress, continueLabel }: Props) {
   const l = locale as 'en' | 'fr';
   // Persisted so ticks survive leaving/reopening the app (cleared on Start Over)
   const [completed, setCompleted] = useState<Set<string>>(new Set());
@@ -333,7 +334,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
           cursor: 'pointer', border: 'none',
         }}
       >
-        {l === 'fr' ? 'Cuire les pizzas →' : 'Cook pizzas →'}
+        {continueLabel ? `${continueLabel} →` : l === 'fr' ? 'Cuire les pizzas →' : 'Cook pizzas →'}
       </button>
       <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
         <button

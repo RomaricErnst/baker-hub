@@ -31,6 +31,7 @@ export interface SandwichPartyProps {
   onSelectionDone?:()=>void;
   selectionDoneLabel?:string;
   directSelectionReturn?:boolean;
+  prepContinueLabel?:string;
   onPrepProgress?:(progress:{done:number;total:number})=>void;
   active?:boolean;
   baseReady?:boolean;
@@ -39,7 +40,7 @@ export interface SandwichPartyProps {
 
 const count = (value: number) => Number.isFinite(value) ? Math.max(0,Math.min(99,Math.floor(value))) : 0;
 
-export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,onPrepProgress,active=true,baseReady=false,deferBreadSteps=false}:SandwichPartyProps) {
+export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,baseReady=false,deferBreadSteps=false}:SandwichPartyProps) {
   const tr = (value:Translation) => value[isFr ? 'fr' : 'en'];
   const t = (fr:string,en:string) => isFr ? fr : en;
   const [search,setSearch] = useState('');
@@ -188,7 +189,7 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
           {stepsFor(recipe).filter(step=>step.phase!=='assemble'&&!(deferBreadSteps&&step.id==='bread')).map(step=>{const key=sandwichPrepKey(recipe,step.id,count(snapshot.qtys[recipe.id]),snapshot.ingredientOverrides?.[recipe.id]);return <label key={key} className={styles.check}><input type="checkbox" checked={!!snapshot.prepTicks[key]} onChange={event=>update({prepTicks:{...snapshot.prepTicks,[key]:event.target.checked}})}/><span className={snapshot.prepTicks[key]?styles.checked:''}><strong>{tr(step.title)}</strong>{step.minutes>0?` · ≈ ${step.minutes} min`:''}<br/>{tr(step.instruction)}</span></label>;})}
           <button className={`${styles.button} ${styles.wide}`} type="button" onClick={()=>setDetailId(recipe.id)}>{t('Voir la recette','View recipe')}</button>
         </section>)}
-        <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('serve')}>{hideNavigation&&!baseReady?t('Passer à la cuisson du pain','Go to bread cooking'):t('Passer à l’assemblage','Start assembly')} →</button>
+        <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('serve')}>{prepContinueLabel??(hideNavigation&&!baseReady?t('Passer à la cuisson du pain','Go to bread cooking'):t('Passer à l’assemblage','Start assembly'))} →</button>
       </>}
       {tab==='serve'&&total>0&&<>
         <div className={styles.panelHeading}><h3>{t('Assembler et servir','Assemble and serve')}</h3><span aria-live="polite">{completed}/{total}</span></div>
