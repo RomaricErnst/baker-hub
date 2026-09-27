@@ -47,7 +47,7 @@ test('existing pizza: late selection returns to service after reload and prepara
  await page.reload();
  // Optional summary must honor the same late-return destination as direct confirmation.
  await page.getByRole('button',{name:'Ma sélection · 2',exact:true}).tap();
- await page.getByRole('button',{name:'Valider et revenir à la cuisson et au service',exact:true}).tap();
+ await page.getByRole('dialog',{name:'Mes pizzas',exact:true}).getByRole('button',{name:'Valider et revenir à la cuisson et au service',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Cuisson & service');
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_existing_base_v1')).done.margherita)).toBe(1);
  await page.getByRole('button',{name:'Préparer les garnitures',exact:true}).tap();

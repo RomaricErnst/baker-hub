@@ -98,3 +98,34 @@ test('a new bread entry offers resume without silently selecting the previous ba
  await expect(page.getByRole('spinbutton').first()).toHaveValue('0');
  await intact(page);
 });
+
+for(const base of ['pizza','laffa'])test(`existing ${base}: finish, download and undo`,async({page})=>{
+ const id=base==='pizza'?'margherita':'laffa-shawarma-poulet';
+ const snapshot={familyId:'laffa',qtys:{[id]:1},completed:{},shopTicks:{},prepTicks:{},tab:'serve',ingredientOverrides:{}};
+ const draft={base,portions:1,pizza:base==='pizza'?{[id]:1}:{},done:{},section:'service',sandwiches:{laffa:snapshot},details:{[base]:{kind:'baked',origin:'purchased',stage:'ready',baked:true,notes:''}}};
+ await page.addInitScript(d=>{if(!sessionStorage.getItem('completion-seed')){sessionStorage.setItem('completion-seed','1');localStorage.setItem('bh_existing_base_v1',JSON.stringify(d));}},draft);
+ await page.goto(`/fr/with-my-base?active=1&family=${base==='pizza'?'pizza':'bread'}&section=service`);
+ const end=page.getByRole('region',{name:'Fin de la fournée',exact:true});
+ await expect(end).toHaveCount(0);
+ await page.getByRole('button',{name:base==='pizza'?'Une pizza cuite et servie':'Un sandwich prêt',exact:true}).tap();
+ await expect(end).toContainText('Tout est prêt. Bon appétit !');
+ await expect(end.getByRole('button',{name:'Partager',exact:true})).toBeVisible();
+ const download=page.waitForEvent('download');
+ await end.getByRole('button',{name:'Sauvegarder',exact:true}).tap();
+ expect((await download).suggestedFilename()).toBe('bakerhub-recettes.txt');
+ await page.reload();await expect(end).toBeVisible();
+ await page.getByRole('button',{name:base==='pizza'?'Annuler':'Annuler le dernier',exact:true}).tap();
+ await expect(end).toHaveCount(0);
+});
+
+for(const base of ['pizza','laffa'])test(`existing plain ${base} can finish without a filling recipe`,async({page})=>{
+ const draft={base,portions:1,pizza:{},done:{},section:'service',sandwiches:{},details:{[base]:{kind:'baked',origin:'purchased',stage:'ready',baked:true,notes:''}}};
+ await page.addInitScript(d=>{if(!sessionStorage.getItem('plain-completion')){sessionStorage.setItem('plain-completion','1');localStorage.setItem('bh_existing_base_v1',JSON.stringify(d));}},draft);
+ await page.goto(`/fr/with-my-base?active=1&family=${base==='pizza'?'pizza':'bread'}&section=service`);
+ await page.getByRole('button',{name:'Ma base est prête à servir',exact:true}).tap();
+ const end=page.getByRole('region',{name:'Fin de la fournée',exact:true});
+ await expect(end).toContainText('Tout est prêt. Bon appétit !');
+ await page.reload();await expect(end).toBeVisible();
+ await page.getByRole('button',{name:'Annuler « fournée terminée »',exact:true}).tap();
+ await expect(end).toHaveCount(0);
+});

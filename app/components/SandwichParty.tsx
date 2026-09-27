@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { SANDWICH_FAMILIES, SANDWICH_RECIPES, SANDWICH_INGREDIENTS, partitionSandwichSteps } from '../lib/sandwichCatalog';
 import { type SandwichSnapshot, sandwichFamilyForStyle, effectiveIngredients, estimatedSandwichKcal, aggregateSandwichShopping, sandwichPrepKey, updateSandwichRecipe, effectiveSandwichSteps, isLighterSandwich } from '../lib/sandwich';
 import styles from './sandwichParty/SandwichParty.module.css';
+import JourneyCompletion, { type CompletionActions } from './JourneyCompletion';
 import CompanionSteps from './CompanionSteps';
 import { breadCompanionLabel } from '../lib/companionLabels';
 import { BREAD_STYLES } from '../data';
@@ -11,7 +12,7 @@ import { BREAD_STYLES } from '../data';
 type Recipe = typeof SANDWICH_RECIPES[number];
 type Translation = {fr:string; en:string};
 type Filter = 'all' | 'classic' | 'light' | 'vegetarian';
-export interface SandwichPartyProps {
+export interface SandwichPartyProps extends CompletionActions {
   isFr: boolean;
   styleKey: string | null;
   snapshot: SandwichSnapshot;
@@ -40,7 +41,7 @@ export interface SandwichPartyProps {
 
 const count = (value: number) => Number.isFinite(value) ? Math.max(0,Math.min(99,Math.floor(value))) : 0;
 
-export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,baseReady=false,deferBreadSteps=!baseReady}:SandwichPartyProps) {
+export default function SandwichParty({onSave,onShare,sessionSaved,isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,baseReady=false,deferBreadSteps=!baseReady}:SandwichPartyProps) {
   const tr = (value:Translation) => value[isFr ? 'fr' : 'en'];
   const t = (fr:string,en:string) => isFr ? fr : en;
   const [search,setSearch] = useState('');
@@ -194,12 +195,12 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
       {tab==='serve'&&total>0&&<>
         <div className={styles.panelHeading}><h3>{t('Assembler et servir','Assemble and serve')}</h3><span aria-live="polite">{completed}/{total}</span></div>
         <p className={styles.muted}>{t('Laissez refroidir le pain avant de le garnir, sauf indication contraire de la recette.','Let bread cool before filling, unless the recipe says otherwise.')}</p>
-        {completed===total&&<p role="status">{t('Tout est prêt. Bon appétit !','Everything is ready. Enjoy!')}</p>}
         {selected.map(recipe=>{const done=Math.min(count(snapshot.completed[recipe.id]),count(snapshot.qtys[recipe.id]));const qty=count(snapshot.qtys[recipe.id]);return <section key={recipe.id} className={styles.card} style={{marginBottom:12}}>
           <div className={styles.cardTop}><h3>{tr(recipe.name)}</h3><span>{done}/{qty}</span></div>
           <ol className={styles.steps}>{partitionSandwichSteps(stepsFor(recipe),deferBreadSteps).serve.map(step=><li key={step.id}><strong>{tr(step.title)}</strong>{tr(step.instruction)}</li>)}</ol>
           <div className={styles.filters}><button type="button" className={button} disabled={done>=qty||stepsFor(recipe).some(step=>step.id.endsWith('-correct-before-serving'))} onClick={()=>update({completed:{...snapshot.completed,[recipe.id]:done+1}})}>{tartine ? t('Une tartine prête','One toast ready') : t('Un sandwich prêt','One sandwich ready')}</button><button type="button" className={styles.button} disabled={!done} onClick={()=>update({completed:{...snapshot.completed,[recipe.id]:done-1}})}>{t('Annuler le dernier','Undo last')}</button></div>
         </section>;})}
+        {completed>0&&<JourneyCompletion isFr={isFr} complete={completed===total} onSave={onSave} onShare={onShare} sessionSaved={sessionSaved}/>}
       </>}
     </>}
     {reviewOpen && total>0 && <div className={styles.backdrop} onClick={event=>{if(event.target===event.currentTarget)setReviewOpen(false);}}>

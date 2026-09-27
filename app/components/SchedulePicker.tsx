@@ -2149,9 +2149,6 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   }, []);
 
   const solverBlocksRef = useRef<AvailabilityBlock[]>(blocks);
-  useEffect(() => {
-    solverBlocksRef.current = localBlocks;
-  });
   // Keep localBlocks in sync with the parent's blocks prop. Without this, any
   // sourdough re-solve NOT triggered by a chip toggle (e.g. age/location/
   // taste/ratio change → useEffect re-solve) could read a STALE localBlocks
@@ -2159,6 +2156,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   // (applyAndUpdate) sets localBlocks synchronously; this useEffect catches
   // every other prop update.
   useEffect(() => {
+    solverBlocksRef.current = blocks;
     setLocalBlocks(blocks);
   }, [blocks]);
 
@@ -2647,12 +2645,10 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   useEffect(() => {
     if (!isSourdough || !eatTimeSet || resumeFrozenRef.current || startTimeInPast) return;
     if (planningMode==='last_fed'&&(!lastFedTime||lastFedAge===null) || planningMode==='know_peak'&&!knownPeakTime) return;
-    if (Object.keys(manualTimesRef.current).length) {
-      replanCurrentSchedule(solverBlocksRef.current,manualTimesRef.current);
-      return;
-    }
-    const mixOverride = hasManuallyDragged.current ? pendingStart : undefined;
-    findOptimalPositionSourdough(pendingEatTime, mixOverride, solverBlocksRef.current);
+    // A ratio is another solver input: use the same complete-plan search as
+    // the availability change. A raw solve here could overwrite its result
+    // after a fast OFF/ON cycle with a different, unvalidated recommendation.
+    replanCurrentSchedule(solverBlocksRef.current,manualTimesRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nextFeedRatio]);
 
@@ -2735,7 +2731,6 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   useEffect(() => {
     onPrefGoesInFridgeChange?.(prefGoesInFridge);
   }, [prefGoesInFridge, onPrefGoesInFridgeChange]);
-  useEffect(() => { setLocalBlocks(blocks); }, [blocks]);
   // "Remove poolish from fridge" time: the warm-up the dough TEMPERATURE needs,
   // not a fixed ladder. 0 for biga (goes into the mix cold by protocol) and 0
   // for any fridge poolish whose target dough temp is reachable on water alone.
@@ -5551,7 +5546,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
       // the validator did. Path B is handled by the block below.
       if (best.renderFridgeOutMs != null) {
         _newFridgeOut = new Date(best.renderFridgeOutMs);
-      } else if (!best.isFridgePath && starterLocation === 'fridge') {
+      } else if (!best.isFridgePath) {
         // No render fridge transition (degenerate <3h hold suppressed in
         // computeNonPathBFridgeTimes): this plan has NO fridge excursion.
         // Clear the fridge-out that line ~4142 derived as newMix−warmup so the
@@ -6175,8 +6170,9 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   }
 
   function toggleAllNights() {
-    const withoutNights = _effectiveBlocks.filter(b => !b.label.endsWith(' night'));
-    const newBlocks = isAnyNightActive()
+    const currentBlocks = solverBlocksRef.current;
+    const withoutNights = currentBlocks.filter(b => !b.label.endsWith(' night'));
+    const newBlocks = currentBlocks.some(b => b.label.endsWith(' night'))
       ? withoutNights
       : [...withoutNights, ...nights.map(n => ({ from: n.blockStart, to: n.blockEnd, label: n.label }))];
     applyAndUpdate(newBlocks);
@@ -6237,7 +6233,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   // the repair search horizon. Later candidates must not escape future nights.
   type StarterPins = {mix:number|null;feed:number|null;refresh:number|null};
   /** One read-only candidate check for the automatic search and slider probes. */
-  function evaluateStarterCandidate(pins:StarterPins,candidateBlocks:AvailabilityBlock[]=solverBlocksRef.current,expectedEvents?:StarterEvent[]) {
+  function evaluateStarterCandidate(pins:StarterPins,candidateBlocks:AvailabilityBlock[]=solverBlocksRef.current,expectedEvents?:StarterEvent[],preserveStorage=true) {
     const hour=3600000,now=Date.now();
     const probe:StarterProbe={...pins,result:null,start:new Date(pins.mix??+pendingStart),effects:[]};
     // Null means automatic: passing pendingStart here accidentally pins the
@@ -6250,7 +6246,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     const requestedRefresh=pins.refresh===null||actions.some(e=>e.kind==='refresh'&&+e.time===pins.refresh);
     const pinKept=(pins.mix===null||+probe.start===pins.mix)&&requestedFeed&&requestedRefresh;
     const coldPattern=(items:StarterEvent[])=>JSON.stringify(items.filter(e=>+e.time>=now&&(e.kind==='fridge_in'||e.kind==='fridge_out')).map(e=>e.kind));
-    const storageKept=!displayStarterEvents.length||coldPattern(displayStarterEvents)===coldPattern(events);
+    const storageKept=!preserveStorage||!displayStarterEvents.length||coldPattern(displayStarterEvents)===coldPattern(events);
     const eventSignature=(items:StarterEvent[])=>JSON.stringify(items.map(e=>[e.kind,+e.time]).sort((a,b)=>String(a).localeCompare(String(b))));
     // Current-plan feedback must validate precisely the events being displayed,
     // not a fresh hidden recommendation at the same mixing time.
@@ -6288,17 +6284,19 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   function replanStarter(candidateBlocks:AvailabilityBlock[],overrides:TimingOverrides) {
     if(startTimeInPast||resumeFrozenRef.current||+pendingEatTime<=Date.now())return null;
     const pins:StarterPins={mix:overrides.mix??null,feed:overrides.feed??null,refresh:overrides.refresh??null};
-    return searchStarterCandidate(pins,candidateBlocks);
+    return searchStarterCandidate(pins,candidateBlocks,Object.keys(overrides).length>0);
   }
 
-  function searchStarterCandidate(pins:StarterPins,candidateBlocks:AvailabilityBlock[]) {
-    const initial=evaluateStarterCandidate(pins,candidateBlocks);
-    // Availability must not silently replace a cold starter plan with an RT
-    // plan (or the reverse). Initial planning, without a saved plan, is free.
+  function searchStarterCandidate(pins:StarterPins,candidateBlocks:AvailabilityBlock[],preserveStorage=true) {
+    const initial=evaluateStarterCandidate(pins,candidateBlocks,undefined,preserveStorage);
+    // Explicit time edits retain their protocol. An automatic recommendation
+    // may adapt future fridge stages to availability; retaining the previous
+    // automatic cold pattern makes OFF/ON path-dependent. Starter location
+    // and all historical actions remain unchanged in either mode.
     const now=Date.now();
     const coldPattern=(events:StarterEvent[])=>JSON.stringify(events.filter(e=>+e.time>=now&&(e.kind==='fridge_in'||e.kind==='fridge_out')).map(e=>e.kind));
     const existingCold=coldPattern(displayStarterEvents);
-    const retainsStorage=(checked:ReturnType<typeof evaluateStarterCandidate>)=>!displayStarterEvents.length||existingCold===coldPattern(checked.probe.result?.starterEvents??[]);
+    const retainsStorage=(checked:ReturnType<typeof evaluateStarterCandidate>)=>!preserveStorage||!displayStarterEvents.length||existingCold===coldPattern(checked.probe.result?.starterEvents??[]);
     if(initial.valid&&retainsStorage(initial))return initial;
     if(pins.mix!==null)return null;
     const result=initial.probe.result;
@@ -6310,7 +6308,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     for(let at=Math.ceil(from/step)*step;at<=to&&candidates.length<384;at+=step)candidates.push(at);
     candidates.sort((a,b)=>Math.abs(a-+initial.probe.start)-Math.abs(b-+initial.probe.start));
     for(const mix of candidates){
-      const checked=evaluateStarterCandidate({...pins,mix},candidateBlocks);
+      const checked=evaluateStarterCandidate({...pins,mix},candidateBlocks,undefined,preserveStorage);
       if(checked.valid&&retainsStorage(checked))return checked;
     }
     return null;
@@ -6392,7 +6390,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     setHasDragged(true);
     setPendingStart(verifiedRepair.startTime);
     setPendingEatTime(verifiedRepair.eatTime);
-    setLocalBlocks(repairBlocks);
+    solverBlocksRef.current=repairBlocks;setLocalBlocks(repairBlocks);
     setStartComputed(true);
     setRecommendedHBF(null);
     setDismissedConflict(false);
@@ -6444,7 +6442,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
       // starter recommendation, but keep the complete-plan gate invalid.
       // Explicit baker pins are never discarded by this fallback.
       if(!checked&&Object.keys(overrides).length===0){
-        const fresh=evaluateStarterCandidate({mix:null,feed:null,refresh:null},candidateBlocks);
+        const fresh=evaluateStarterCandidate({mix:null,feed:null,refresh:null},candidateBlocks,undefined,false);
         if(fresh.probe.result)checked=fresh;
       }
       setSearchFailed(!foundValid);
@@ -8094,7 +8092,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           const target=new Date(+bake);
           setPickerDate(`${target.getFullYear()}-${String(target.getMonth()+1).padStart(2,'0')}-${String(target.getDate()).padStart(2,'0')}`);
           setPickerHour(target.getHours());setPickerMinute(target.getMinutes());
-          setLocalBlocks(appliedBlocks);
+          solverBlocksRef.current=appliedBlocks;setLocalBlocks(appliedBlocks);
           const overrides=normalizeTimingOverrides({...manualTimesRef.current,...draftOverridesRef.current});
           if(overrides.mix!==undefined)overrides.mix=+start;
           if(overrides.pref!==undefined)overrides.pref=+start-offset*3600000;

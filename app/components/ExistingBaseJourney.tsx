@@ -3,6 +3,10 @@ import {usePageTop} from '../hooks/usePageTop';
 import {useCallback,useEffect,useState} from 'react';
 import {useLocale,useTranslations} from 'next-intl';
 import SandwichParty from './SandwichParty';
+import JourneyCompletion from './JourneyCompletion';
+import {SANDWICH_RECIPES} from '../lib/sandwichCatalog';
+import {effectiveSandwichSteps, effectiveIngredients} from '../lib/sandwich';
+import {SANDWICH_INGREDIENTS} from '../lib/sandwichCatalog';
 import PizzaParty from './PizzaParty';
 import BakeNavigator from './BakeNavigator';
 import Header from './Header';
@@ -15,7 +19,7 @@ import {BREAD_STYLES} from '../data';
 const STORAGE='bh_existing_base_v1';
 const bases=[['pizza','Pizza','Pizza'],['pain_campagne','Pain de campagne · tartines','Country bread · tartines'],['pain_mie','Pain de mie · clubs & croques','Sandwich loaf · clubs & croques'],['pita','Pitas','Pitas'],['laffa','Wraps souples','Soft wraps'],['baguette','Baguette','Baguette'],['focaccia','Focaccia','Focaccia'],['ciabatta','Ciabatta','Ciabatta'],['bagel','Bagels','Bagels']];
 type Phase='pick'|'shop'|'prep'|'bake';
-type BaseDetails={kind:'dough'|'baked';origin:'purchased'|'homemade';stage:'bulk'|'shaped'|'ready';baked:boolean;notes:string};
+type BaseDetails={kind:'dough'|'baked';origin:'purchased'|'homemade';stage:'bulk'|'shaped'|'ready';baked:boolean;notes:string;served?:boolean};
 type Draft={selectionReturn?:BakeDestination|null;base:string;portions:number;pizza:Record<string,number>;done:Record<string,number>;section:BakeDestination;sandwiches:Record<string,SandwichSnapshot>;details:Record<string,BaseDetails>};
 const fresh=():Draft=>({base:'',portions:4,pizza:{},done:{},section:'batch',sandwiches:{},details:{}});
 const defaultDetails=(base:string):BaseDetails=>({kind:base==='pizza'?'dough':'baked',origin:'purchased',stage:'ready',baked:false,notes:''});
@@ -37,7 +41,7 @@ export default function ExistingBaseJourney(){
      const d=JSON.parse(localStorage.getItem(STORAGE)||'null');
      if(d&&bases.some(b=>b[0]===d.base)){
        const sandwiches=Object.fromEntries(bases.filter(b=>b[0]!=='pizza').map(b=>[b[0],normalizeSandwichSnapshot(d.sandwiches?.[b[0]])]));
-       const details=Object.fromEntries(bases.map(([base])=>{const value=d.details?.[base];return [base,{kind:value?.kind==='dough'?'dough':value?.kind==='baked'?'baked':defaultDetails(base).kind,origin:value?.origin==='homemade'?'homemade' as const:'purchased' as const,stage:['bulk','shaped','ready'].includes(value?.stage)?value.stage:'ready',baked:value?.baked===true,notes:typeof value?.notes==='string'?value.notes.slice(0,2000):''}];}));
+       const details=Object.fromEntries(bases.map(([base])=>{const value=d.details?.[base];return [base,{kind:value?.kind==='dough'?'dough':value?.kind==='baked'?'baked':defaultDetails(base).kind,origin:value?.origin==='homemade'?'homemade' as const:'purchased' as const,stage:['bulk','shaped','ready'].includes(value?.stage)?value.stage:'ready',baked:value?.baked===true,served:value?.served===true,notes:typeof value?.notes==='string'?value.notes.slice(0,2000):''}];}));
        const restored:Draft={selectionReturn:['organisation','recipe','shopping','protocol','service'].includes(d.selectionReturn)?d.selectionReturn:null,base:d.base,portions:Math.min(99,Math.max(1,Number(d.portions)||4)),pizza:quantities(d.pizza),done:quantities(d.done),section:BAKE_DESTINATIONS.some(s=>s.id===d.section)?d.section:sectionForPhase(d.base==='pizza'?d.phase:sandwiches[d.base]?.tab),sandwiches,details};
        setSaved(restored);
        if(params.get('active')==='1')setDraft(restored);
@@ -76,6 +80,36 @@ export default function ExistingBaseJourney(){
  const detail=draft.details[draft.base]??defaultDetails(draft.base);
  const updateDetail=(patch:Partial<BaseDetails>)=>setDraft(d=>({...d,details:{...d.details,[d.base]:{...(d.details[d.base]??defaultDetails(d.base)),...patch}}}));
  const raw=detail.kind==='dough',needsBake=raw&&!detail.baked;
+ const hasSelection=Object.values(draft.base==='pizza'?draft.pizza:snapshot.qtys).some(n=>n>0);
+ const [exported,setExported]=useState<string|null>(null);
+ const [sharedText,setSharedText]=useState<string|null>(null);
+ const exportText=()=>{
+   const lang=fr?'fr':'en';
+   const lines=['bakerhub.',bases.find(b=>b[0]===draft.base)?.[fr?1:2]??draft.base,detail.notes];
+   if(draft.base==='pizza')for(const [id,qty] of Object.entries(draft.pizza).filter(([,n])=>n>0)){
+     const recipe=getPizzaById(id);if(!recipe)continue;
+     lines.push(`${qty} × ${recipe.name[lang]}`,recipe.preparationSequence?.[lang]??'');
+     lines.push(...recipe.ingredients.map(i=>`${i.name[lang]}${i.qtyPerPizza?` · ${i.qtyPerPizza.amount*qty} ${i.qtyPerPizza.unit}`:''} · ${i.bakeOrder==='after'?tr('après cuisson','after baking'):tr('avant cuisson','before baking')}`));
+   }else for(const [id,qty] of Object.entries(snapshot.qtys).filter(([,n])=>n>0)){
+     const recipe=SANDWICH_RECIPES.find(r=>r.id===id);if(!recipe)continue;
+     lines.push(`${qty} × ${recipe.name[lang]}`);
+     lines.push(...effectiveIngredients(recipe,snapshot.ingredientOverrides?.[id]).map(i=>`${SANDWICH_INGREDIENTS[i.ingredientId]?.name[lang]??i.ingredientId} · ${Math.round(i.grams*qty)} g`));
+     lines.push(...effectiveSandwichSteps(recipe,snapshot.ingredientOverrides?.[id]).map(step=>`${step.title[lang]} : ${step.instruction[lang]}`));
+   }
+   return lines.filter(Boolean).join('\n\n');
+ };
+ const saveFinished=()=>{
+   const text=exportText(),url=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'}));
+   const link=document.createElement('a');link.href=url;link.download='bakerhub-recettes.txt';link.click();
+   setTimeout(()=>URL.revokeObjectURL(url),1000);setExported(JSON.stringify(draft));
+ };
+ const shareFinished=async()=>{
+   const text=exportText();
+   if(navigator.share)await navigator.share({title:'bakerhub.',text});
+   else setSharedText(text);
+ };
+ const completionProps={onSave:saveFinished,onShare:shareFinished,sessionSaved:exported===JSON.stringify(draft)};
+
  const selectionDoneLabel=draft.selectionReturn?tr('Valider et revenir à '+({recipe:'la recette',shopping:'mes courses',protocol:'la préparation',service:'la cuisson et au service',batch:'ma fournée',organisation:'l’organisation'}[draft.selectionReturn]),'Confirm and return to '+({recipe:'recipe',shopping:'shopping',protocol:'preparation',service:'cooking and serving',batch:'my bake',organisation:'setup'}[draft.selectionReturn])):tr('Voir les courses','View shopping');
  const phase:Phase=draft.section==='shopping'?'shop':draft.section==='protocol'?'prep':draft.section==='service'?'bake':'pick';
  const control={maxWidth:'100%',minHeight:44,padding:'12px 16px',border:'1px solid var(--border)',borderRadius:12,background:'var(--card)',color:'var(--char)',fontSize:16};
@@ -127,7 +161,14 @@ export default function ExistingBaseJourney(){
      <p>{instructions} {tr('Ajoutez les finitions fraîches après cuisson ou réchauffage.','Add fresh finishes after baking or reheating.')}</p>
      {Object.entries(draft.pizza).filter(([,n])=>n>0).map(([id,n])=><div key={id} style={{...control,marginTop:12}}><strong>{getPizzaById(id)?.name[fr?'fr':'en']||id}</strong>{getPizzaById(id)?.preparationSequence&&<p>{getPizzaById(id)?.preparationSequence?.[fr?'fr':'en']}</p>}{(['before','after'] as const).map(order=><p key={order}><strong>{order==='before'?tr('Avant cuisson : ','Before baking: '):tr('Après cuisson : ','After baking: ')}</strong>{getPizzaById(id)?.ingredients.filter(i=>i.bakeOrder===order).map(i=>i.name[fr?'fr':'en']).join(', ')||'—'}</p>)}<p>{Math.min(draft.done[id]||0,n)} / {n} {tr('servies','served')}</p><button style={control} disabled={(draft.done[id]||0)>=n} onClick={()=>setDraft(d=>({...d,done:{...d.done,[id]:Math.min(n,(d.done[id]||0)+1)}}))}>{tr('Une pizza cuite et servie','One pizza baked and served')}</button>{!!draft.done[id]&&<button style={{...control,marginLeft:8}} onClick={()=>setDraft(d=>({...d,done:{...d.done,[id]:Math.max(0,(d.done[id]||0)-1)}}))}>{tr('Annuler','Undo')}</button>}</div>)}
     </section>}
-   </>:draft.section==='service'&&needsBake?null:<SandwichParty key={draft.base} isFr={fr} styleKey={draft.base} snapshot={snapshot} onChange={s=>setDraft(d=>({...d,sandwiches:{...d.sandwiches,[d.base]:s}}))} hideNavigation baseReady prepContinueLabel={needsBake?tr('Passer à la cuisson du pain','Go to bread cooking'):undefined} deferBreadSteps={raw} doughConfigured phase={phase==='bake'?'serve':phase} onPhaseChange={setPhase} onSelectionBack={backFromSelection} onSelectionDone={finishSelection} selectionDoneLabel={selectionDoneLabel} directSelectionReturn={!!draft.selectionReturn}/> )}
+   </>:draft.section==='service'&&(needsBake||!hasSelection)?null:<SandwichParty {...completionProps} key={draft.base} isFr={fr} styleKey={draft.base} snapshot={snapshot} onChange={s=>setDraft(d=>({...d,sandwiches:{...d.sandwiches,[d.base]:s}}))} hideNavigation baseReady prepContinueLabel={needsBake?tr('Passer à la cuisson du pain','Go to bread cooking'):undefined} deferBreadSteps={raw} doughConfigured phase={phase==='bake'?'serve':phase} onPhaseChange={setPhase} onSelectionBack={backFromSelection} onSelectionDone={finishSelection} selectionDoneLabel={selectionDoneLabel} directSelectionReturn={!!draft.selectionReturn}/> )}
+   {draft.section==='service'&&!hasSelection&&<section>
+    <button type="button" style={control} onClick={()=>updateDetail({served:!detail.served,...(!detail.served?{baked:true}:{})})}>{detail.served?tr('Annuler « fournée terminée »','Undo “bake finished”'):raw?tr('Ma base est cuite et prête à servir','My base is baked and ready to serve'):tr('Ma base est prête à servir','My base is ready to serve')}</button>
+    {detail.served&&<JourneyCompletion isFr={fr} {...completionProps}/>}
+   </section>}
+   {draft.section==='service'&&draft.base==='pizza'&&Object.entries(draft.pizza).some(([id,n])=>n>0&&(draft.done[id]||0)>0)&&<JourneyCompletion isFr={fr} complete={Object.entries(draft.pizza).filter(([,n])=>n>0).every(([id,n])=>(draft.done[id]||0)>=n)} {...completionProps}/>}
+   {draft.section==='service'&&<p style={{fontSize:14,color:'var(--smoke)'}}>{tr('Sauvegarder télécharge vos recettes sur cet appareil.','Save downloads your recipes to this device.')}</p>}
+   {sharedText&&<section aria-label={tr('Recettes à partager','Recipes to share')}><p>{tr('Copiez ce texte pour partager vos recettes.','Copy this text to share your recipes.')}</p><textarea aria-label={tr('Texte à partager','Text to share')} readOnly value={sharedText} style={{width:'100%',minHeight:160}} onFocus={event=>event.target.select()}/><button type="button" style={control} onClick={()=>setSharedText(null)}>{tr('Fermer','Close')}</button></section>}
    {draft.section==='protocol'&&!Object.values(draft.base==='pizza'?draft.pizza:snapshot.qtys).some(n=>n>0)&&<button style={{...control,marginTop:16}} onClick={()=>go('service')}>{tr('Cuisson & service','Cooking & serving')} →</button>}
   </>}
  </main></>;

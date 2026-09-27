@@ -1105,7 +1105,7 @@ export default function Home() {
   const [bakePhotoUrl, setBakePhotoUrl] = useState<string | null>(null);
   const [bakedDone, setBakedDone] = useState(false);
   useEffect(() => {
-    if (bakedDone) setSessionSaved(false);
+    if (!isRestoringRef.current) setSessionSaved(false);
   }, [bakedDone]);
   const [shareSessionId, setShareSessionId] = useState<string | null>(null);
 
@@ -4059,6 +4059,7 @@ export default function Home() {
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && recipe && mixerType && (<>
                 <BakeGuide
+                  onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved} onBakedChange={setBakedDone} completionEnabled={!hasFillings}
                   progressTarget={(destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough')?guideProgressTarget:null}
                   phase={destination==='service'?'cooking':'preparation'}
                   active={destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough'}
@@ -4129,6 +4130,7 @@ export default function Home() {
                   onGoToMyDough={openQuantityEdit}
                   ovenType={ovenType ?? undefined}
                   recipeIngredients={doughShoppingItems}
+                  onSave={saveCurrentSession}
                   onEnsureBakeEvent={async () => {
                     if (bakeEventId) return bakeEventId;
                     if (!user) return null;
@@ -4566,6 +4568,7 @@ export default function Home() {
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && advancedRecipe && mixerType && (<>
                 <BakeGuide
+                  onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved} onBakedChange={setBakedDone} completionEnabled={!hasFillings}
                   progressTarget={(destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough')?guideProgressTarget:null}
                   phase={destination==='service'?'cooking':'preparation'}
                   active={destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough'}
@@ -4636,6 +4639,7 @@ export default function Home() {
                   onGoToMyDough={openQuantityEdit}
                   ovenType={ovenType ?? undefined}
                   recipeIngredients={doughShoppingItems}
+                  onSave={saveCurrentSession}
                   onEnsureBakeEvent={async () => {
                     if (bakeEventId) return bakeEventId;
                     if (!user) return null;
@@ -4658,7 +4662,7 @@ export default function Home() {
         )}
 
       {bakeType==='bread' && (sandwichEnabled||destination==='shopping') && <div style={{display:companionVisible?'block':'none',paddingBottom:24}}>
-        <SandwichParty isFr={locale === 'fr'} styleKey={styleKey} snapshot={sandwichParty}
+        <SandwichParty onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved} isFr={locale === 'fr'} styleKey={styleKey} snapshot={sandwichParty}
           onChange={setSandwichParty} phase={companionPhase==='bake'?'serve':companionPhase} onPhaseChange={openCompanionPhase} onSelectionBack={backFromFillings} onSelectionDone={finishFillings} selectionDoneLabel={fillingsDoneLabel} directSelectionReturn={!!fillingsReturn} onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel} active={companionVisible} onRevealNavigation={()=>setNavHidden(false)} hideNavigation doughConfigured={recipeGenerated} breadIngredients={recipeGenerated ? sandwichDoughIngredients : []}
           onAdjustBread={openQuantityEdit} onMatchBreadCount={count=>{setNumItems(count);setQtyChosen(true);if(recipeGenerated)openQuantityEdit();}}
           availableDoughWeight={recipeGenerated ? ((tab === 'custom' ? advancedRecipe : recipe)?.totalDough ?? numItems * itemWeight) : undefined}

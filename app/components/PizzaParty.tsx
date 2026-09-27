@@ -25,6 +25,7 @@ interface PizzaPartyProps {
   getQtysRef?: React.MutableRefObject<() => Record<string, number>>;
   onGoToMyDough?: () => void;
   ovenType?: string;
+  onSave?: () => unknown | Promise<unknown>;
   onEnsureBakeEvent?: () => Promise<string | null>;
   onShare?: () => Promise<void> | void;
   sessionSaved?: boolean;
@@ -53,7 +54,7 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,storagePrefix="bh",baseReady=false }: PizzaPartyProps) {
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,storagePrefix="bh",baseReady=false }: PizzaPartyProps) {
   // initialQtys ne sert qu'au tout premier montage : un useState ne relit pas
   // sa valeur initiale. A la reprise d'une session, les pizzas etaient bien
   // dans l'etat de la page — donc dans le resume — mais le selecteur gardait
@@ -184,6 +185,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           bakeEventId={bakeEventId}
           ovenType={ovenType}
           onEnsureBakeEvent={onEnsureBakeEvent}
+          onSave={onSave}
           onShare={onShare}
           sessionSaved={sessionSaved}
           onBakedQtysChange={onBakedQtysChange}

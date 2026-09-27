@@ -1,7 +1,7 @@
 'use client';
+import JourneyCompletion from '../JourneyCompletion';
 import { approvedPizzaImage } from '../../lib/approvedPizzaImage';
 import { useState, useEffect } from 'react';
-import { NEXT_CTA, SECONDARY_CTA } from '@/app/lib/navButtons';
 import { useTranslations } from 'next-intl';
 import { PIZZAS, DESSERT_PIZZAS, getCustomPizzaList, type Pizza } from '../../lib/toppingDatabase';
 import type { StyleKey, IngredientCategory, Ingredient } from '../../lib/toppingTypes';
@@ -169,6 +169,7 @@ interface BakeTabProps {
   prefermentType?: string;
   bakeEventId?: string | null;
   ovenType?: string;
+  onSave?: () => unknown | Promise<unknown>;
   onEnsureBakeEvent?: () => Promise<string | null>;
   onShare?: () => void;
   sessionSaved?: boolean;
@@ -436,7 +437,7 @@ function CoachButton({
   );
 }
 
-export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp, prefermentType, bakeEventId, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange, initialDoneCounts }: BakeTabProps) {
+export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp, prefermentType, bakeEventId, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onBakedQtysChange, initialDoneCounts }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
@@ -737,35 +738,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
           takes the lead, because that is the only action left. Both are
           offered from the first baked pizza — real parties change plans, and a
           half-baked evening is still worth keeping. */}
-      {selectedEntries.length > 0 && totalDone > 0 && (onShare || onEnsureBakeEvent) && (
-        <div style={{ display: 'flex', gap: '10px', padding: '4px 16px 20px' }}>
-          {onEnsureBakeEvent && (
-            <button
-              onClick={() => { if (!sessionSaved) void onEnsureBakeEvent(); }}
-              disabled={sessionSaved}
-              style={{
-                ...(sessionSaved ? SECONDARY_CTA : NEXT_CTA),
-                flex: 1,
-                ...(sessionSaved ? { cursor: 'default', opacity: 0.6 } : {}),
-              }}
-            >
-              {sessionSaved
-                ? (l === 'fr' ? 'Sauvegardé' : 'Saved')
-                : (l === 'fr' ? 'Sauvegarder' : 'Save')}
-            </button>
-          )}
-          {onShare && (
-            <button
-              onClick={onShare}
-              style={{
-                ...(sessionSaved || !onEnsureBakeEvent ? NEXT_CTA : SECONDARY_CTA),
-                flex: 1,
-              }}
-            >
-              {l === 'fr' ? 'Partager' : 'Share'}
-            </button>
-          )}
-        </div>
+      {selectedEntries.length > 0 && totalDone > 0 && (onShare || onSave || onEnsureBakeEvent) && (
+        <JourneyCompletion isFr={l==='fr'} complete={false} onSave={onSave ?? onEnsureBakeEvent} onShare={onShare} sessionSaved={sessionSaved}/>
       )}
       {sheetPizzaId && sheetEntry && (() => {
         const { pizza, qty } = sheetEntry;

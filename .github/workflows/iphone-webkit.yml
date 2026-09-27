@@ -48,6 +48,7 @@ jobs:
         run: |
           node tests/roundtrip/build.mjs
           node tests/roundtrip/run.mjs .ci-tools/starter-roundtrip.js "${{ github.sha }}"
+          NOW=2026-09-25T00:49:00Z FULL=1 OUTBOUND_WAIT=10 TOGGLES=nights node tests/roundtrip/run.mjs .ci-tools/starter-roundtrip.js "${{ github.sha }}-rapid"
       - name: Verify every sandwich recipe image
         run: node scripts/check-sandwich-images.cjs
       - name: Build isolated app

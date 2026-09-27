@@ -47,3 +47,16 @@ The user must rotate the two tokens reported in Claude project/conversation
 content. No credentials were read or changed, and no reported token is in these
 Git trees. Styling migration, broad i18n cleanup and Git-history size reduction
 are separate maintenance work, not prerequisites for these targeted fixes.
+
+
+## Consistent journey endings (follow-up)
+
+The user's wrap report revealed that SandwichParty ended with a status only. Added a shared completion section with save/share actions to sandwich assembly, bread cooling, and plain pizza cooking, in both guided and custom modes. Filled breads hand off to assembly before presenting completion. Undo hides the completion state; partial pizza/sandwich sessions can still be saved. Existing-base journeys export recipe text and use native sharing (copyable text fallback), explicitly distinguished from the authenticated homemade-session cloud flow. No existing-base data is written into a homemade dough session.
+
+Added mobile regressions for guided/custom bread, plain pizza, baguette sandwiches and chicken wraps, plus existing pizza/wrap downloads and completion restoration/undo. These new browser scenarios await CI; local TypeScript, 335 unit tests and production build pass. The preceding solver-fix preview 357b94e is READY (dpl_AcqVnxnijhwHRuvhzBjr7eWCu6DL); its CI has passed units, round trips, images and build, with WebKit still running. Cloud-browser preview access is blocked by Vercel authentication, so authenticated save/share is not yet verified.
+
+Rendered all 91 sandwich/toast recipes across 14 families in FR/EN with the real component: unserved, completed, undone and empty selections. Completion actions and status behaved correctly in all rendered states. Added this as a unit regression (336 tests total). Pizza completion now uses explicit saveCurrentSession rather than the photo/event helper, so anonymous Save requests authentication and an existing session is actually updated.
+
+Existing-base journeys with no chosen filling now have a final ready-to-serve confirmation too; its completion survives reload and can be undone. This avoids requiring a sandwich selection just to finish a plain base.
+
+CI36298131124 finished with274/288 WebKit passing. Twelve failures were selectors (Baguette accessible name; summary button scoped to its dialog). Two were a real fast-toggle sourdough70h/recommend divergence. Follow-up removes a render-lag overwrite of the authoritative blockers, uses that reference for the Nights handler, keeps automatic future cold patterns free to replan (explicit pins/history still protected), and routes ratio re-solves through full candidate validation. A stale fridge-out value is cleared for RT-only winners. The added full-schedule rapid test now passes all12 cases with identical visible and parent plans. Full original matrix and final WebKit rerun pending at this checkpoint.

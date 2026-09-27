@@ -4,6 +4,7 @@
 import React, { useState, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import SchedulePicker from '../../app/components/SchedulePicker';
+import {buildSchedule} from '../../app/utils';
 
 type Ratio = 1 | 2 | 4 | 5 | 10;
 const w = window as any;
@@ -45,7 +46,8 @@ function Harness({ sc }: { sc: any }) {
   return (
     <SchedulePicker
       startTime={startTime} eatTime={sc.eat} blocks={blocks} preheatMin={45}
-      styleKey={sc.style} kitchenTemp={sc.temp} bakeType="bread" isSourdough mode="custom"
+      styleKey={sc.style} kitchenTemp={sc.temp} bakeType={sc.full&&sc.style==='sourdough'?'pizza':'bread'} isSourdough mode="custom"
+      {...(sc.full?{schedule:buildSchedule(startTime,sc.eat,blocks,sc.temp,45,'hand',sc.style),mixerType:'hand' as const,numItems:4}:{})}
       onChange={onChange}
       starterLocation={starterLocation} onStarterLocationChange={(l) => { setStarterLocation(l); rec.loc = l; }}
       planningMode="last_fed"

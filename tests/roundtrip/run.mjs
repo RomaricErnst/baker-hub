@@ -126,7 +126,7 @@ for (const ratioMode of MODES) {
       let root;
       try {
         root = mount(el, { ...sc, start: new RealDate(FROZEN), loc: 'rt', age: 'days23',
-          lastFed: new RealDate(FROZEN - 60 * 3600000), ratioMode, page: process.env.PAGE === '1' });
+          lastFed: new RealDate(FROZEN - 60 * 3600000), ratioMode, page: process.env.PAGE === '1', full: process.env.FULL === '1' });
       } catch (e) { results.push({ m: ratioMode, s: sc.name, t, status: 'MOUNT FAILED ' + e.message }); continue; }
       await wait(SETTLE * 3);
       const mountChipOk = chipAgrees();
@@ -134,7 +134,7 @@ for (const ratioMode of MODES) {
       await wait(SETTLE * 2);
       const Anull = signature();
       const [go, back] = TOGGLES[t];
-      let ok = await go(); await wait(SETTLE);
+      let ok = await go(); await wait(+(process.env.OUTBOUND_WAIT || SETTLE));
       const B = signature();
       ok = ok && (await back()); await wait(SETTLE * 2);
       const C = signature();

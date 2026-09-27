@@ -45,10 +45,11 @@ async function navigate(page,label,locale='fr'){
  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
  await noOverflow(page);
 }
-async function seed(page,{mode='custom',bread=true,activeTab='plan',style,locale='fr'}={}){
+async function seed(page,{mode='custom',bread=true,activeTab='plan',style,locale='fr',fillings}={}){
  await anonymous(page);
  const bake=new Date();bake.setDate(bake.getDate()+4);bake.setHours(18,0,0,0);
  const data={version:1,savedAt:Date.now(),tab:mode,bakeType:bread?'bread':'pizza',bakeName:'Navigation audit',styleKey:style||(bread?'baguette':'neapolitan'),numItems:4,itemWeight:bread?250:260,pizzaDiameter:30,ovenType:bread?'standard_bread':'pizza_oven',mixerType:'hand',yeastType:'instant',kitchenTemp:22,humidity:'medium',fridgeTemp:5,flourBlend:{flour1:'bread',flour2:null,ratio1:100},prefermentType:'none',prefermentFlourPct:20,prefOffsetH:0,prefGoesInFridge:false,flourInFridge:false,startTime:+bake-24*3600000,eatTime:+bake,blocks:[],recipeGenerated:true,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,activeStep:99,advancedStep:99,highestStep:99,advancedHighestStep:99,setupOverview:false,activeTab,navigation:{batchView:'style',protocolView:'dough',serviceView:'dough',returnTo:null},sandwichParty:{familyId:style||'baguette',qtys:{},completed:{},shopTicks:{},prepTicks:{},tab:'pick',ingredientOverrides:{}}};
+ if(fillings)data.sandwichParty={...data.sandwichParty,qtys:fillings};
  await page.addInitScript(data=>{
   if(sessionStorage.getItem('nav-v2-seeded'))return;
   sessionStorage.setItem('nav-v2-seeded','1');
@@ -93,7 +94,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await continueBeforeChoice.scrollIntoViewIfNeeded();
   await expect(continueBeforeChoice).toBeVisible();
   await expect(continueBeforeChoice).toBeDisabled();
-  const style=page.locator('.bh-batch-content .dough-style-card').filter({hasText:bread?/^Baguette\b/:/Napolitaine/i}).first();
+  const style=page.locator('.bh-batch-content').getByRole('button',{name:bread?'Baguette':'Napolitaine classique',exact:true});
   await style.tap();
   await expect(style).toHaveAttribute('aria-pressed','true');
   await expect(page.getByRole('heading',{name:bread?'Choisissez votre pain':'Quel style de pizza ?',exact:true})).toBeVisible();
@@ -567,3 +568,33 @@ for(const bread of [false,true])test(`late ${bread?'bread':'pizza'} surplus keep
  await expect(page.locator('.bh-navigator-current')).toContainText('Préparation');
  expect((await stored(page)).numItems).toBe(4);
 });
+
+for(const mode of ['simple','custom']){
+ for(const bread of [true,false])test(`${mode}: ${bread?'bread':'plain pizza'} finishes with save and share`,async({page})=>{
+  await seed(page,{mode,bread,activeTab:'service'});
+  await page.getByRole('button',{name:'Étapes de cuisson',exact:true}).tap();
+  const cooling=page.locator('section[data-guide-phase="cooking"]:visible').last();
+  await cooling.getByRole('button').first().tap();
+  await cooling.getByRole('checkbox',{name:'Étape faite',exact:true}).check();
+  const end=page.getByRole('region',{name:'Fin de la fournée',exact:true});
+  await expect(end).toBeVisible();
+  await expect(end.getByRole('button',{name:'Sauvegarder',exact:true})).toBeVisible();
+  await expect(end.getByRole('button',{name:'Partager',exact:true})).toBeVisible();
+  await cooling.getByRole('checkbox',{name:'Étape faite',exact:true}).uncheck();
+  await expect(end).toHaveCount(0);
+ });
+ for(const recipe of [{style:'baguette',id:'baguette-jambon-beurre'},{style:'laffa',id:'laffa-shawarma-poulet'}])test(`${mode}: ${recipe.style} assembly finishes with save and share`,async({page})=>{
+  await seed(page,{mode,bread:true,style:recipe.style,activeTab:'service',fillings:{[recipe.id]:1}});
+  await page.getByRole('region',{name:'À préparer',exact:true}).getByRole('button',{name:'Assembler et servir',exact:true}).tap();
+  const end=page.getByRole('region',{name:'Fin de la fournée',exact:true});
+  await expect(end).toHaveCount(0);
+  await page.getByRole('button',{name:'Un sandwich prêt',exact:true}).tap();
+  await expect(end).toContainText('Tout est prêt. Bon appétit !');
+  await expect(end.getByRole('button',{name:'Sauvegarder',exact:true})).toBeVisible();
+  await expect(end.getByRole('button',{name:'Partager',exact:true})).toBeVisible();
+  await page.reload();
+  await expect(end).toBeVisible();
+  await page.getByRole('button',{name:'Annuler le dernier',exact:true}).tap();
+  await expect(end).toHaveCount(0);
+ });
+}

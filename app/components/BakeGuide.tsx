@@ -1,4 +1,5 @@
 'use client';
+import JourneyCompletion, { type CompletionActions } from './JourneyCompletion';
 import {createPortal} from 'react-dom';
 import type { StarterEvent } from './SchedulePicker';
 import { useState, useRef, useEffect, createContext, useContext } from 'react';
@@ -19,7 +20,9 @@ import { formatPrefermentDose } from '../utils/prefermentDose';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { scheduledFoldMinutes } from '../utils/scheduleFolds';
 
-interface BakeGuideProps extends WaterSettingsProps {
+interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
+  onBakedChange?: (done:boolean)=>void;
+  completionEnabled?: boolean;
   progressTarget?: HTMLElement|null;
   schedule: ScheduleResult;
   mixerType: MixerType;
@@ -803,6 +806,7 @@ const TERM_TO_STEPID: Record<string, string> = {
 };
 
 export default function BakeGuide({
+  onSave,onShare,sessionSaved,onBakedChange,completionEnabled=true,
   schedule, mixerType, styleKey, kitchenTemp, fridgeTemp = 4, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, onMixingBatchesChange, waterSource = 'room', onWaterSourceChange, numItems,
   prefermentType, oil, hydration, ovenType, ovenConstruction, prefStartTime, feedTime, starterEvents,
   feed2Time = null, fridgeOutTime = null,
@@ -1078,6 +1082,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           setActiveBatch(0);
           try { localStorage.setItem(progressKey + ':batch', '0'); } catch {}
         }
+        if(s===totalSteps&&completionEnabled&&!onNavigateToFillings)onBakedChange?.(next.has(s));
         setDoneSteps(next);
         try { localStorage.setItem(progressKey, JSON.stringify([...next])); } catch {}
       },
@@ -1131,6 +1136,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         <Steps items={profileSteps(breadProtocol.cooling[l])} />
         {fillingsAction}
       </StepCard>
+      {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} sessionSaved={sessionSaved}/>}
     </div>
   </SimpleModeCtx.Provider>;
 
@@ -2102,6 +2108,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         {!breadProtocol && <StepExtras tips={<p>{l === 'fr' ? 'Laissez-le découvert pendant le refroidissement. Rangez-le une fois refroidi.' : 'Leave it uncovered while cooling. Store it once cool.'}</p>} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />}
         {fillingsAction}
       </StepCard>}
+      {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} sessionSaved={sessionSaved}/>}
 
       {learnTerm && (
         <LearnModal
