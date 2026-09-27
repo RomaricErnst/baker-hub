@@ -902,6 +902,8 @@ export default function Home() {
   const [styleKey, setStyleKey] = useState<StyleKey | null>(null);
   const breadProtocol = styleKey ? getBreadProtocol(styleKey) : undefined;
   const isUnleavened = breadProtocol?.method === 'unleavened';
+  const enrichedDirectOnly = styleKey === 'brioche' || styleKey === 'pain_viennois';
+  const directMethodOnly = enrichedDirectOnly || !!(breadProtocol && breadProtocol.supportedPreferments.length === 1 && breadProtocol.supportedPreferments[0] === 'none');
   const breadSupportsStarter = !breadProtocol || breadProtocol.supportedPreferments.includes('levain');
   const [numItems, setNumItems] = useState(2);
   const [itemWeight, setItemWeight] = useState(270);
@@ -1735,6 +1737,17 @@ export default function Home() {
       if (advancedStep === 7 || advancedStep === 8) setAdvancedStep(9);
     }
   }, [styleKey, ovenType, mixerType, isUnleavened, yeastType, prefermentType, activeStep, advancedStep]);
+
+  // A fixed direct method is part of the formula, not a question for the baker.
+  // Also normalise restored sessions and upstream style changes so a hidden
+  // preferment cannot keep an old poolish/biga or block recipe generation.
+  useEffect(() => {
+    if (!directMethodOnly) return;
+    if (prefermentType !== 'none') setPrefermentType('none');
+    if (!prefermentChosen) setPrefermentChosen(true);
+    if (prefOffsetH !== 0) setPrefOffsetH(0);
+    if (advancedStep === 8) setAdvancedStep(9);
+  }, [directMethodOnly, prefermentType, prefermentChosen, prefOffsetH, advancedStep]);
 
   const weightBounds = getWeightBounds(styleKey, bakeType);
 
@@ -2963,12 +2976,12 @@ export default function Home() {
   // and 'none' are all truthy from the first render, so a walk-through that
   // never opened those pages still produced a recipe built on three guesses.
   // Preferment and Flour are Custom-only steps; Simple has no page for either.
-  const enrichedDirectOnly = styleKey === 'brioche' || styleKey === 'pain_viennois';
+  const showPrefermentChoice = yeastType !== 'sourdough' && !isUnleavened && !directMethodOnly;
   const unsupportedEnrichedMethod = (enrichedDirectOnly && (yeastType === 'sourdough' || prefermentType !== 'none')) || !!(breadProtocol && !isUnleavened && (!breadProtocol.supportedPreferments.includes(prefermentType) || (!breadSupportsStarter && yeastType === 'sourdough')));
   const archivedFlourNames = archivedBlendSelections(flourBlend);
   const simpleRequiredDone = (yeastType!=='sourdough'||starterEqualWeightsConfirmed) && !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && qtyChosen);
   const customRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && flourBlend
-    && qtyChosen && flourChosen && (yeastType === 'sourdough' || prefermentChosen));
+    && qtyChosen && flourChosen && (!showPrefermentChoice || prefermentChosen));
   const starterPlanReady = yeastType !== 'sourdough' || (starterTimingValid && (recipeGenerated || starterEvents.length > 0));
   const canGenerate = scheduleCandidateValid && !scheduleEditing && !(tab === 'custom' ? advancedRecipe : recipe)?.protocolIssue && commercialPrefermentPlanReady && starterPlanReady && !unsupportedEnrichedMethod && !(tab === 'custom' && archivedFlourNames.length) && (tab === 'simple' ? simpleRequiredDone : customRequiredDone);
   const missingRequiredStep = !bakeType || !styleKey ? 1
@@ -2976,7 +2989,7 @@ export default function Home() {
     : !ovenType || !mixerType ? 3
     : tab==='custom' && (!flourBlend || !flourChosen) ? 6
     : !yeastType || (tab==='simple' && yeastType==='sourdough' && !starterEqualWeightsConfirmed) ? (tab==='custom'?7:6)
-    : tab==='custom' && yeastType!=='sourdough' && !prefermentChosen ? 8
+    : tab==='custom' && showPrefermentChoice && !prefermentChosen ? 8
     : !eatTime ? (tab==='custom'?9:7) : undefined;
   const generationBlocker = !canGenerate ? getSetupBlocker({
     custom:tab==='custom',fr:locale==='fr',
@@ -3130,7 +3143,7 @@ export default function Home() {
         : null,
       prefilled: profileFields.has('yeast'),
       gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
-    ...(yeastType !== 'sourdough' ? [{
+    ...(showPrefermentChoice ? [{
       id: 8, group: 'dough', chip: fr ? 'Préferment' : 'Preferment', title: t('preferment.stepTitle'),
       value: prefermentChosen && !(enrichedDirectOnly && prefermentType !== 'none')
         ? (prefermentType !== 'none' ? localName(PREFERMENT_TYPES[prefermentType]) : t('preferment.direct'))
@@ -4268,7 +4281,7 @@ export default function Home() {
             </StepPage>
 
             {/* ─── ADV STEP 9: Preferment (hidden for sourdough) ── */}
-            {yeastType !== 'sourdough' && (
+            {showPrefermentChoice && (
               <StepPage flow={customOrganisationFlow} id={8}>
                 <PrefermentPicker
                   selected={prefermentChosen ? prefermentType : null}
