@@ -43,6 +43,13 @@ test('pre-mix autolyse reserves work before the levain anchor and respects unava
  a.equal(blocked.valid,false);a.equal(blocked.conflict.id,'autolyse');
  a.equal(assessScheduleDraft({...input,blocks:[],now:+start-15*60000}).valid,false);
 });
+test('multiple autolyse batches are prepared once before the first mixing anchor',()=>{
+ const schedule=utils.buildSchedule(start,bake,[],22,45,'hand','pain_levain',2,2);
+ const actions=schedule.availabilityActions.filter(x=>x.id==='autolyse');
+ a.equal(actions.length,1);a.equal(+actions[0].at,+start-34*60000);a.equal(+actions[0].end,+start-30*60000);
+ a.equal(+schedule.availabilityActions.find(x=>x.id==='mix').at,+start);
+ a.equal(schedule.batchMixWindows.length,2);
+});
 test('French rye references have actual local product pictures and no invented W',()=>{
  const catalogue=require('../lib/flourCatalogue.json'),provenance=require('../lib/flourPhotoProvenance.json');
  for(const id of ['celnat_seigle_t130','foricher_seigle_t130','foricher_seigle_t170']){

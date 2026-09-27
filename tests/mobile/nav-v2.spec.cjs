@@ -289,14 +289,14 @@ test('late fillings opened from Recipe return to Recipe without changing the dou
  await seed(page,{bread:true});
  await navigate(page,'Recette');
  const before=await stored(page);
- await page.getByRole('button',{name:'Ajouter des sandwichs',exact:true}).tap();
+ await page.getByRole('button',{name:'Choisir mes garnitures',exact:true}).tap();
  const article=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Jambon-beurre',exact:true})});
  await article.getByRole('spinbutton').fill('1');
  await article.getByRole('spinbutton').blur();
  await expect.poll(async()=>(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']).toBe(1);
  await page.getByRole('button',{name:/^Valider et revenir à la recette(?: →)?$/}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
- await expect(page.getByRole('button',{name:'Modifier mes sandwichs',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Modifier mes garnitures · 1',exact:true})).toBeVisible();
  const after=await stored(page);
  for(const key of ['styleKey','numItems','itemWeight','eatTime','recipeGenerated'])expect(after[key],key).toEqual(before[key]);
  await noOverflow(page);
