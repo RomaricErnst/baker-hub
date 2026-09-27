@@ -107,11 +107,11 @@ for(const base of ['pizza','laffa'])test(`existing ${base}: finish, download and
  await page.goto(`/fr/with-my-base?active=1&family=${base==='pizza'?'pizza':'bread'}&section=service`);
  const end=page.getByRole('region',{name:'Fin de la fournée',exact:true});
  await expect(end).toHaveCount(0);
- await page.getByRole('button',{name:base==='pizza'?'Une pizza cuite et servie':'Un sandwich prêt',exact:true}).tap();
+ await page.getByRole('button',{name:base==='pizza'?'Une pizza cuite et servie':'Un wrap prêt',exact:true}).tap();
  await expect(end).toContainText('Tout est prêt. Bon appétit !');
  await expect(end.getByRole('button',{name:'Partager',exact:true})).toBeVisible();
  const download=page.waitForEvent('download');
- await end.getByRole('button',{name:'Sauvegarder',exact:true}).tap();
+ await end.getByRole('button',{name:'Télécharger la recette',exact:true}).tap();
  expect((await download).suggestedFilename()).toBe('bakerhub-recettes.txt');
  await page.reload();await expect(end).toBeVisible();
  await page.getByRole('button',{name:base==='pizza'?'Annuler':'Annuler le dernier',exact:true}).tap();

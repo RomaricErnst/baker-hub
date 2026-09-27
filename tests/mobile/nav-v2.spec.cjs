@@ -579,7 +579,7 @@ for(const mode of ['simple','custom']){
   await cooling.getByRole('checkbox',{name:'Étape faite',exact:true}).check();
   const end=page.getByRole('region',{name:'Fin de la fournée',exact:true});
   await expect(end).toBeVisible();
-  await expect(end.getByRole('button',{name:'Sauvegarder',exact:true})).toBeVisible();
+  await expect(end.getByRole('button',{name:'Enregistrer',exact:true})).toBeVisible();
   await expect(end.getByRole('button',{name:'Partager',exact:true})).toBeVisible();
   await cooling.getByRole('checkbox',{name:'Étape faite',exact:true}).uncheck();
   await expect(end).toHaveCount(0);
@@ -589,9 +589,9 @@ for(const mode of ['simple','custom']){
   await page.getByRole('region',{name:'À préparer',exact:true}).getByRole('button',{name:'Assembler et servir',exact:true}).tap();
   const end=page.getByRole('region',{name:'Fin de la fournée',exact:true});
   await expect(end).toHaveCount(0);
-  await page.getByRole('button',{name:'Un sandwich prêt',exact:true}).tap();
+  await page.getByRole('button',{name:recipe.style==='laffa'?'Un wrap prêt':'Un sandwich prêt',exact:true}).tap();
   await expect(end).toContainText('Tout est prêt. Bon appétit !');
-  await expect(end.getByRole('button',{name:'Sauvegarder',exact:true})).toBeVisible();
+  await expect(end.getByRole('button',{name:'Enregistrer',exact:true})).toBeVisible();
   await expect(end.getByRole('button',{name:'Partager',exact:true})).toBeVisible();
   await page.reload();
   await page.getByRole('button',{name:'Reprendre →',exact:true}).tap();
