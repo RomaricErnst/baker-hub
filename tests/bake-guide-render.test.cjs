@@ -18,7 +18,7 @@ test('real schedule guide preserves room, single-cold and two-cold stages with n
   const schedule=utils.buildSchedule(new Date('2026-09-12T16:00Z'),new Date(+new Date('2026-09-12T16:00Z')+horizon*3600000),[],temp,60,'hand',style);
   const branch=schedule.coldRetard2Start?'two':schedule.coldRetardStart?'single':'rt'; seen.add(branch);
   const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'Asia/Singapore'},React.createElement(Guide,{schedule,mixerType:'hand',styleKey:style,kitchenTemp:32,numItems:4,oil:0,hydration:65,locale:'en'})));
-  assert.ok(html.includes('All steps'));assert.ok(html.includes('Current step'));assert.ok(html.includes('Mark as completed'));assert.ok(html.includes('Next step'));assert.ok(html.includes('Previous step'));assert.ok(html.includes('aria-expanded="true"'));
+  assert.ok(html.includes('All steps'));assert.ok(html.includes('Current step'));assert.ok(html.includes('Mark as completed'));assert.ok(html.includes('Next step'));assert.ok(!html.includes('Previous step'),'first step has no dead previous action');assert.ok(html.includes('role="heading"'),'current instruction is a heading');assert.ok(html.includes('class="bh-guide-actions" style="position:relative'),'actions follow the instructions');
   if(branch==='two')assert.ok(html.includes(messages.bakeGuide.stepTitles[style==='brioche'?'coldProof':'coldRetardBalls']));
   if(branch==='rt')assert.ok(!html.includes(messages.bakeGuide.stepTitles.coldRetardBalls));
  }
@@ -93,7 +93,7 @@ test('cooking phase shows local step numbers while pizza advice leads into one q
  assert.match(initial,/aria-label="Preheat Oven · Step 1"/);
  assert.match(initial,/aria-label="Bake the pizzas · Step 2"/);
  const finalSection=initial.split('data-guide-title="Bake the pizzas"')[1];
- const globalStep=Number(finalSection.match(/aria-controls="bake-step-(\d+)"/)[1]);
+ const globalStep=Number(initial.match(/data-guide-step="(\d+)" data-guide-phase="cooking" data-guide-title="Bake the pizzas"/)[1]);
  assert.ok(globalStep>2,'persisted global step identity is retained');
  const useState=React.useState;
  try {

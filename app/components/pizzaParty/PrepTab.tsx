@@ -21,6 +21,7 @@ function formatQty(amount: number, unit: IngredientUnit, locale: string): string
 }
 
 interface Props {
+  onProgress?:(progress:{done:number;total:number})=>void;
   storagePrefix?:string;
   bakeTime: Date;
   locale: string;
@@ -75,7 +76,7 @@ function assignStation(task: PrepTask): string {
   return 'board';
 }
 
-export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShopping, onGoToPizzas, styleKey, storagePrefix="bh" }: Props) {
+export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShopping, onGoToPizzas, styleKey, storagePrefix="bh", onProgress }: Props) {
   const l = locale as 'en' | 'fr';
   // Persisted so ticks survive leaving/reopening the app (cleared on Start Over)
   const [completed, setCompleted] = useState<Set<string>>(new Set());
@@ -140,6 +141,9 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
   });
 
   const tasks = Object.values(taskMap);
+  const taskTotal=tasks.length;
+  const taskDone=tasks.filter(task=>completed.has(task.id)).length;
+  useEffect(()=>{onProgress?.({done:taskDone,total:taskTotal});},[taskDone,taskTotal,onProgress]);
 
   // Split into early (get ahead) and flexible
   const earlyStations = ['cool', 'time'];

@@ -34,6 +34,8 @@ interface PizzaPartyProps {
   onSelectionBack?:()=>void;
   onSelectionDone?:()=>void;
   selectionDoneLabel?:string;
+  directSelectionReturn?:boolean;
+  onPrepProgress?:(progress:{done:number;total:number})=>void;
   active?:boolean;
   storagePrefix?:string;
   baseReady?:boolean;
@@ -50,7 +52,7 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients,onSelectionBack,onSelectionDone,selectionDoneLabel,active=true,storagePrefix="bh",baseReady=false }: PizzaPartyProps) {
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onShare, sessionSaved, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,onPrepProgress,active=true,storagePrefix="bh",baseReady=false }: PizzaPartyProps) {
   // initialQtys ne sert qu'au tout premier montage : un useState ne relit pas
   // sa valeur initiale. A la reprise d'une session, les pizzas etaient bien
   // dans l'etat de la page — donc dans le resume — mais le selecteur gardait
@@ -152,12 +154,15 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           onSelectionBack={onSelectionBack}
           onSelectionDone={onSelectionDone}
           selectionDoneLabel={selectionDoneLabel}
+          directSelectionReturn={directSelectionReturn}
           active={active}
         />
       </div>
 
-      {activeTab === 'prep' && (
+      <div hidden={activeTab !== 'prep'}>
         <PrepTab
+          key={`${storagePrefix}:${restoreToken??0}`}
+          onProgress={onPrepProgress}
           storagePrefix={storagePrefix}
           bakeTime={bakeTime}
           locale={locale}
@@ -167,7 +172,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           onGoToPizzas={() => onTabChange('pick')}
           styleKey={pickStyleKey}
         />
-      )}
+      </div>
 
       {activeTab === 'bake' && (
         <BakeTab

@@ -30,6 +30,8 @@ export interface SandwichPartyProps {
   onSelectionBack?:()=>void;
   onSelectionDone?:()=>void;
   selectionDoneLabel?:string;
+  directSelectionReturn?:boolean;
+  onPrepProgress?:(progress:{done:number;total:number})=>void;
   active?:boolean;
   baseReady?:boolean;
   deferBreadSteps?:boolean;
@@ -37,7 +39,7 @@ export interface SandwichPartyProps {
 
 const count = (value: number) => Number.isFinite(value) ? Math.max(0,Math.min(99,Math.floor(value))) : 0;
 
-export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onSelectionDone,selectionDoneLabel,active=true,baseReady=false,deferBreadSteps=false}:SandwichPartyProps) {
+export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,onPrepProgress,active=true,baseReady=false,deferBreadSteps=false}:SandwichPartyProps) {
   const tr = (value:Translation) => value[isFr ? 'fr' : 'en'];
   const t = (fr:string,en:string) => isFr ? fr : en;
   const [search,setSearch] = useState('');
@@ -113,8 +115,11 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
   const insufficientBread = Number.isFinite(availableDoughWeight) && availableDoughWeight! > 0 && breadGrams > availableDoughWeight!;
   const normalizeSearch = (value:string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   const filtered = familyRecipes.filter(recipe=>normalizeSearch(tr(recipe.name)+' '+ingredientsFor(recipe).map(item=>ingredientName(item.ingredientId)).join(' ')).includes(normalizeSearch(search))).filter(recipe=>filter==='classic'?recipe.kind==='classic':filter==='light'?lighter(recipe):filter==='vegetarian'?recipe.vegetarian:true);
+  const needsQuantityReview=insufficientBread||(individualBread&&numItems!==undefined&&total>numItems);
   const prepSteps = selected.flatMap(recipe=>stepsFor(recipe).filter(step=>step.phase!=='assemble'&&!(deferBreadSteps&&step.id==='bread')).map(step=>({recipe,step,key:sandwichPrepKey(recipe,step.id,count(snapshot.qtys[recipe.id]),snapshot.ingredientOverrides?.[recipe.id])})));
   const readySteps = prepSteps.filter(item=>snapshot.prepTicks[item.key]).length;
+  const prepTotal=prepSteps.length;
+  useEffect(()=>{onPrepProgress?.({done:readySteps,total:prepTotal});},[readySteps,prepTotal,onPrepProgress]);
   const amountText = (grams:number) => grams>=1000 ? `${(Math.round(grams/10)/100).toLocaleString(isFr?'fr-FR':'en-GB')} kg` : `${(grams<10?Math.round(grams*10)/10:Math.round(grams)).toLocaleString(isFr?'fr-FR':'en-GB')} g`;
   const button = `${styles.button} ${styles.primary}`;
 
@@ -159,7 +164,7 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
           <button className={`${styles.button} ${styles.wide}`} type="button" onClick={()=>setDetailId(recipe.id)}>{t('Recette et garnitures','Recipe and fillings')}</button>
         </article>)}</div>
         {!filtered.length&&<p className={styles.empty}>{t('Aucune recette dans ce filtre. Essayez « Tout ».','No recipes in this filter. Try “All”.')}</p>}
-        {active&&total>0&&!reviewOpen&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('← Précédent','← Back')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={()=>setReviewOpen(true)}>{t('Voir ma sélection','Review selection')} · {total}</button></div>}
+        {active&&total>0&&!reviewOpen&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{directSelectionReturn ? <button type="button" className="bh-back-action" onClick={()=>setReviewOpen(true)}>{t('Ma sélection','My selection')} · {total}</button> : onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('← Précédent','← Back')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={()=>{if(directSelectionReturn&&onSelectionDone&&!needsQuantityReview)onSelectionDone();else setReviewOpen(true);}}>{directSelectionReturn?(needsQuantityReview?t('Vérifier la quantité de pain','Check bread quantity'):selectionDoneLabel):`${t('Voir ma sélection','Review selection')} · ${total}`}</button></div>}
 
         {active&&baseReady&&total===0&&onSelectionBack&&<div data-companion-action className={styles.selectionBar}><button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('← Précédent','← Back')}</button></div>}
         {active&&!baseReady&&total===0&&onSelectionDone&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('← Précédent','← Back')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={onSelectionDone}>{selectionDoneLabel??t('Définir ma recette','Set up my recipe')}</button></div>}
@@ -199,7 +204,7 @@ export default function SandwichParty({isFr,styleKey,snapshot,onChange,breadIngr
     {reviewOpen && total>0 && <div className={styles.backdrop} onClick={event=>{if(event.target===event.currentTarget)setReviewOpen(false);}}>
       <div className={styles.sheet} role="dialog" aria-modal="true" aria-label={t('Ma sélection','My selection')} ref={dialogRef}>
         <div className={styles.sheetHeader}><h2>{t('Ma sélection','My selection')}</h2><button ref={closeRef} type="button" className={styles.button} aria-label={t('Fermer la sélection','Close selection')} onClick={()=>setReviewOpen(false)}>×</button></div>
-        <div className={styles.sheetBody}>{individualBread&&onMatchBreadCount&&numItems!==total&&<div className={styles.card}><p>{t(`${total} sandwichs sélectionnés ; ${numItems??0} pains prévus.`,`${total} sandwiches selected; ${numItems??0} breads planned.`)}</p><button type="button" className={styles.button} onClick={()=>onMatchBreadCount(total)}>{t(`Prévoir ${total} pains pour ces sandwichs`,`Make ${total} breads for these sandwiches`)}</button><p className={styles.muted}>{t('Gardez la fournée actuelle si vous voulez du pain en plus.','Keep your current batch if you want extra bread.')}</p></div>}{selected.map(recipe=><div key={recipe.id} className={styles.card}><strong>{tr(recipe.name)}</strong>{quantityControls(recipe)}</div>)}</div>
+        <div className={styles.sheetBody}>{insufficientBread&&!individualBread&&<div className={styles.card} role="status"><strong>{t('Prévoyez davantage de pain','You will need more bread')}</strong><p>{t(`Pain nécessaire : ${amountText(breadGrams)} ; pâte prévue avant cuisson : ${amountText(availableDoughWeight!)}.`,`Bread needed: ${amountText(breadGrams)}; planned dough before baking: ${amountText(availableDoughWeight!)}.`)}</p><p className={styles.muted}>{t('La cuisson fait aussi perdre de l’eau : augmentez la fournée ou réduisez les portions.','Baking also removes water: increase the batch or reduce the portion count.')}</p>{onAdjustBread&&<button type="button" className={styles.button} onClick={()=>{setReviewOpen(false);onAdjustBread();}}>{t('Ajuster ma fournée','Adjust my bread batch')}</button>}</div>}{individualBread&&onMatchBreadCount&&numItems!==total&&<div className={styles.card}><p>{t(`${total} sandwichs sélectionnés ; ${numItems??0} pains prévus.`,`${total} sandwiches selected; ${numItems??0} breads planned.`)}</p><button type="button" className={styles.button} onClick={()=>{setReviewOpen(false);onMatchBreadCount(total);}}>{t(`Prévoir ${total} pains pour ces sandwichs`,`Make ${total} breads for these sandwiches`)}</button><p className={styles.muted}>{t('Gardez la fournée actuelle si vous voulez du pain en plus.','Keep your current batch if you want extra bread.')}</p></div>}{selected.map(recipe=><div key={recipe.id} className={styles.card}><strong>{tr(recipe.name)}</strong>{quantityControls(recipe)}</div>)}</div>
         <div className={styles.sheetFooter}><button type="button" className={`${button} ${styles.wide}`} style={{marginTop:0}} onClick={()=>{setReviewOpen(false);if(baseReady)go('prep');else if(onSelectionDone)onSelectionDone();else go('shop');}}>{baseReady?t('Préparer les garnitures','Prepare fillings'):selectionDoneLabel??t('Voir les courses','View shopping')} →</button>{baseReady&&<button type="button" className={styles.button} onClick={()=>{setReviewOpen(false);go('shop');}}>{t('Voir les courses','View shopping')}</button>}<button type="button" className="bh-back-action" onClick={()=>setReviewOpen(false)}>{t('← Modifier ma sélection','← Edit my selection')}</button></div>
       </div>
     </div>}

@@ -210,7 +210,7 @@ function StepCard({
   const fr = locale === 'fr';
   const TitleContainer = overview ? 'button' : 'div';
   return (
-    <section ref={divRef} data-guide-phase={stepPhase} data-guide-title={title} hidden={hidden} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${displayNumber}`} style={{ display: !hidden && (open || overview) ? undefined : 'none', background: D.warm, borderRadius: overview ? 12 : 0,
+    <section ref={divRef} data-guide-step={number} data-guide-phase={stepPhase} data-guide-title={title} hidden={hidden} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${displayNumber}`} style={{ display: !hidden && (open || overview) ? undefined : 'none', background: D.warm, borderRadius: overview ? 12 : 0,
       border: overview ? `1px solid ${done ? D.sage + '60' : D.border}` : 'none', scrollMarginTop: 140 }}>
       <TitleContainer type={overview ? "button" : undefined} onClick={overview ? onToggle : undefined} aria-expanded={overview ? open : undefined}
         aria-controls={overview?`bake-step-${number}`:undefined} style={{ width: '100%', display: 'flex', gap: 12,
@@ -820,6 +820,7 @@ export default function BakeGuide({
   const [currentStep, setCurrentStep] = useState(1);
   const [totalSteps, setTotalSteps] = useState(0);
   useEffect(() => { if (totalSteps > 0 && currentStep > totalSteps) setCurrentStep(totalSteps); }, [totalSteps, currentStep]);
+  const [loadedProgressKey,setLoadedProgressKey]=useState<string|null>(null);
   const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
   const [activeBatch, setActiveBatch] = useState(0);
   const batch = recipe ? mixingBatchPlan(recipe, mixerType, mixingBatches, activeBatch) : null;
@@ -851,6 +852,13 @@ export default function BakeGuide({
     focusRequestedStep.current = null;
     viewedPhase.current = undefined;
     phasePositions.current = {};
+    try {
+      const saved=JSON.parse(localStorage.getItem(progressKey+':view')??'{}');
+      for(const key of ['preparation','cooking'] as const){
+        const index=saved[key];
+        if(Number.isInteger(index)&&index>=0&&(index===0||stepRefs.current[index]?.dataset.guidePhase===key))phasePositions.current[key]=index;
+      }
+    } catch {}
     let completed: number[] = [];
     try {
       const stored: unknown = JSON.parse(localStorage.getItem(progressKey) ?? '[]');
@@ -861,8 +869,11 @@ export default function BakeGuide({
     try { setActiveBatch(Math.max(0, Number(localStorage.getItem(progressKey + ':batch')) || 0)); } catch { setActiveBatch(0); }
     let firstUndone = 1;
     while (completed.includes(firstUndone)) firstUndone++;
-    setCurrentStep(firstUndone);
+    setCurrentStep(phase&&phasePositions.current[phase]!==undefined?phasePositions.current[phase]!:firstUndone);
+    setLoadedProgressKey(progressKey);
   }, [progressKey]);
+
+
 
   // Browsing and completion are independent. Each destination resumes its last
   // viewed step (including overview=0); explicit Previous/Next takes precedence.
@@ -874,6 +885,9 @@ export default function BakeGuide({
     const explicitNavigation = focusRequestedStep.current === currentStep && currentStep > 0;
     if (belongsToPhase && (!changedPhase || explicitNavigation)) {
       phasePositions.current[phase] = currentStep;
+      if(loadedProgressKey===progressKey){
+        try {localStorage.setItem(progressKey+':view',JSON.stringify(phasePositions.current));} catch {}
+      }
       return;
     }
     const candidates = stepRefs.current.flatMap((el, index) => el?.dataset.guidePhase === phase ? [index] : []);
@@ -885,7 +899,7 @@ export default function BakeGuide({
       phasePositions.current[phase] = target;
       setCurrentStep(target);
     }
-  }, [active, phase, currentStep, doneSteps, totalSteps]);
+  }, [active, phase, currentStep, doneSteps, totalSteps, loadedProgressKey, progressKey]);
 
   useEffect(() => {
     const samePage=previousGuideView.current.active&&previousGuideView.current.phase===phase;

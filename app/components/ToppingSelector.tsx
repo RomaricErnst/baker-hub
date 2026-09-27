@@ -190,6 +190,7 @@ interface Props {
   onSelectionBack?:()=>void;
   onSelectionDone?:()=>void;
   selectionDoneLabel?:string;
+  directSelectionReturn?:boolean;
   active?:boolean;
   baseReady?:boolean;
   storagePrefix?:string;
@@ -1353,7 +1354,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
 // ─── Main component ───────────────────────────────────────────
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionBack,onSelectionDone,selectionDoneLabel,active=true,storagePrefix="bh",baseReady=false }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,active=true,storagePrefix="bh",baseReady=false }: Props) {
   const l = locale as 'en' | 'fr';
 
   // On-screen keyboard detection — position:fixed bottom bars anchor to the
@@ -2520,7 +2521,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     if (totalQty <= numItems) return null;
                     if (!doughConfigured) return (
                       <div
-                        onClick={onGoToMyDough}
+                        onClick={() => { closeSummary(); onGoToMyDough?.(); }}
                         style={{
                           margin: '8px 14px 0',
                           padding: '12px 12px',
@@ -2541,7 +2542,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     );
                     return (
                       <div
-                        onClick={onGoToMyDough}
+                        onClick={() => { closeSummary(); onGoToMyDough?.(); }}
                         style={{
                           margin: '8px 14px 0',
                           padding: '12px 12px',
@@ -2722,9 +2723,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           justifyContent: 'space-between',
           zIndex: 90,
         }}>
-          {onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{l==='fr'?'← Précédent':'← Back'}</button>}
-          <button type="button" disabled={totalQty === 0&&(!onSelectionDone||baseReady)} onClick={() => totalQty===0?onSelectionDone?.():setSummarySheetOpen(true)} style={{...NEXT_CTA,width:'100%',minHeight:44,opacity:totalQty===0&&(!onSelectionDone||baseReady) ? .65 : 1}}>
-            {totalQty === 0 ? (onSelectionDone&&!baseReady?(selectionDoneLabel??(l==='fr'?'Définir ma recette':'Set up my recipe')):(l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas')) : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`)}
+          {directSelectionReturn&&totalQty>0 ? <button type="button" className="bh-back-action" onClick={()=>setSummarySheetOpen(true)}>{l==='fr'?'Ma sélection':'My selection'} · {totalQty}</button> : onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{l==='fr'?'← Précédent':'← Back'}</button>}
+          <button type="button" disabled={totalQty === 0&&(!onSelectionDone||baseReady)} onClick={() => (totalQty===0||(directSelectionReturn&&totalQty<=numItems))?onSelectionDone?.():setSummarySheetOpen(true)} style={{...NEXT_CTA,width:'100%',minHeight:44,opacity:totalQty===0&&(!onSelectionDone||baseReady) ? .65 : 1}}>
+            {directSelectionReturn&&onSelectionDone ? (totalQty>numItems?(l==='fr'?'Vérifier la quantité de pâte':'Check dough quantity'):selectionDoneLabel) : totalQty === 0 ? (onSelectionDone&&!baseReady?(selectionDoneLabel??(l==='fr'?'Définir ma recette':'Set up my recipe')):(l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas')) : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`)}
           </button>
 
         </div>

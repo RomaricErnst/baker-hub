@@ -212,8 +212,13 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
   await card.getByRole('button',{name:'+',exact:true}).tap();
  }
  await expect.poll(async()=>bread?(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']:Object.values((await stored(page))?.pizzaParty?.qtys||{}).reduce((sum,n)=>sum+n,0)).toBe(2);
- await page.getByRole('button',{name:bread?'Voir ma sélection · 2':'Voir ma sélection · 2 pizzas',exact:true}).tap();
- const back=page.getByRole('button',{name:/^Revenir à la préparation(?: →)?$/});
+ await expect.poll(async()=>(await stored(page))?.navigation?.returnTo?.destination).toBe('protocol');
+ // Resume a persisted catalogue detour, not only the in-memory return path.
+ await page.reload();
+ await page.getByRole('button',{name:'Reprendre →',exact:true}).tap();
+ await expect(page.getByRole('dialog',{name:'Ma sélection',exact:true})).toHaveCount(0);
+ await expect(page.locator('.bh-navigator-current')).toContainText('Préparation');
+ const back=page.getByRole('button',{name:/^Valider et revenir à la préparation(?: →)?$/});
  await back.scrollIntoViewIfNeeded();
  await fits(page,back);
  await unobscured(back);
@@ -225,11 +230,11 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await expect(page.locator('.bh-navigator-current')).toContainText('Préparation');
  await expect(current).toHaveAttribute('aria-label',stepLabel);
  const choices=page.getByRole('region',{name:'À préparer',exact:true});
- await expect(choices.getByRole('button')).toHaveText(['La pâte','Les garnitures']);
- await expect(choices.getByRole('button',{name:'La pâte',exact:true})).toHaveAttribute('aria-pressed','true');
- await choices.getByRole('button',{name:'Les garnitures',exact:true}).tap();
- await expect(choices.getByRole('button',{name:'Les garnitures',exact:true})).toHaveAttribute('aria-pressed','true');
- await choices.getByRole('button',{name:'La pâte',exact:true}).tap();
+ await expect(choices.getByRole('button')).toHaveText(['Pâte',/Garnitures · (?:\d+ à faire|prêtes)/]);
+ await expect(choices.getByRole('button',{name:'Pâte',exact:true})).toHaveAttribute('aria-pressed','true');
+ await choices.getByRole('button',{name:/^Garnitures ·/}).tap();
+ await expect(choices.getByRole('button',{name:/^Garnitures ·/})).toHaveAttribute('aria-pressed','true');
+ await choices.getByRole('button',{name:'Pâte',exact:true}).tap();
  await expect(current).toHaveAttribute('aria-label',stepLabel);
  expect(await page.evaluate(()=>Object.fromEntries(Object.entries(localStorage).filter(([key])=>key.startsWith('bh_guide_done_v2:'))))).toEqual(progress);
  await expect.poll(async()=>bread?(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']:Object.values((await stored(page))?.pizzaParty?.qtys||{}).reduce((sum,n)=>sum+n,0)).toBe(2);
@@ -249,13 +254,13 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  // directly from shopping through toppings to serving.
  await navigate(page,'Courses');
  await page.getByRole('button',{name:'Commencer la préparation →',exact:true}).tap();
- await expect(choices.getByRole('button',{name:'La pâte',exact:true})).toHaveAttribute('aria-pressed','true');
+ await expect(choices.getByRole('button',{name:'Pâte',exact:true})).toHaveAttribute('aria-pressed','true');
  for(let step=0;step<25;step++){
   if(await page.getByRole('button',{name:/^Préparer les garnitures(?: →)?$/}).isVisible())break;
   await page.getByRole('button',{name:/^(?:Étape suivante|Suivante :)/}).tap();
  }
  await page.getByRole('button',{name:/^Préparer les garnitures(?: →)?$/}).tap();
- await expect(choices.getByRole('button',{name:'Les garnitures',exact:true})).toHaveAttribute('aria-pressed','true');
+ await expect(choices.getByRole('button',{name:/^Garnitures ·/})).toHaveAttribute('aria-pressed','true');
  await page.getByRole('button',{name:bread?'Passer à la cuisson du pain →':'Cuire les pizzas →',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Cuisson & service');
  if(bread)await expect(choices.getByRole('button',{name:'Guide de cuisson',exact:true})).toHaveAttribute('aria-pressed','true');else await expect(choices).toHaveCount(0);
@@ -280,8 +285,7 @@ test('late fillings opened from Recipe return to Recipe without changing the dou
  await article.getByRole('spinbutton').fill('1');
  await article.getByRole('spinbutton').blur();
  await expect.poll(async()=>(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']).toBe(1);
- await page.getByRole('button',{name:'Voir ma sélection · 1',exact:true}).tap();
- await page.getByRole('button',{name:/^Revenir à la recette(?: →)?$/}).tap();
+ await page.getByRole('button',{name:/^Valider et revenir à la recette(?: →)?$/}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
  await expect(page.getByRole('button',{name:'Modifier mes sandwichs',exact:true})).toBeVisible();
  const after=await stored(page);
@@ -526,4 +530,24 @@ for(const bread of [false,true])test(`clean preparation ${bread?'bread':'pizza'}
  await current.locator('.bh-guide-next').tap();
  await expect(progress).toHaveText(/Étape 2 \/ \d+/);
  await noOverflow(page);
+});
+
+for(const bread of [false,true])test(`late ${bread?'bread':'pizza'} surplus keeps the quantity decision explicit`,async({page})=>{
+ await seed(page,{activeTab:'guide',bread,style:bread?'pita':'neapolitan'});
+ await navigate(page,'Préparation');
+ await page.getByRole('button',{name:bread?'Ajouter des sandwichs':'Choisir des garnitures',exact:true}).tap();
+ if(bread){
+  const input=page.getByRole('article').first().getByRole('spinbutton');
+  await input.fill('6');await input.blur();
+ }else{
+  const card=page.getByRole('button',{name:/^Margherita(?: · \d+)?$/});
+  for(let i=0;i<6;i++)await card.getByRole('button',{name:'+',exact:true}).tap();
+ }
+ await expect.poll(async()=>(await stored(page))?.numItems).toBe(4);
+ await page.getByRole('button',{name:bread?'Vérifier la quantité de pain':'Vérifier la quantité de pâte',exact:true}).tap();
+ await expect(page.getByRole('dialog')).toBeVisible();
+ await expect.poll(async()=>(await stored(page))?.numItems).toBe(4);
+ await page.getByRole('dialog').getByRole('button',{name:/^Valider et revenir à la préparation/}).tap();
+ await expect(page.locator('.bh-navigator-current')).toContainText('Préparation');
+ expect((await stored(page)).numItems).toBe(4);
 });
