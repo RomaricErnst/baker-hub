@@ -108,7 +108,7 @@ test('cooking phase shows local step numbers while pizza advice leads into one q
    assert.match(pizza,/Step 2 \/ 2/);
    assert.ok(pizza.indexOf('Bake 5–7 min')<pizza.indexOf('Start baking the pizzas'));
    assert.ok(pizza.includes('Stretch on a peel'));
-   assert.doesNotMatch(pizza,/Baking tips|Your dough is ready|bh-guide-next/);
+   assert.doesNotMatch(pizza,/Your dough is ready|bh-guide-next/);
    assert.equal((pizza.match(/Start baking the pizzas/g)||[]).length,1);
    props.pizzaActionLabel='Choose my pizzas';
    assert.ok(render().includes('Choose my pizzas'),'empty-selection handoff label is preserved');
@@ -118,4 +118,29 @@ test('cooking phase shows local step numbers while pizza advice leads into one q
    const preparation=render().split('data-guide-title="Mix your dough"')[1].split('</section>')[0];
    assert.ok(preparation.includes(`Step 1 / ${globalStep-2}`),'preparation count excludes cooking stages');
  } finally { React.useState=useState; }
+});
+
+
+test('pizza service help is one inline disclosure in both languages',()=>{
+ // Match TypeScript module resolution when a catalogue has both .ts and .json.
+ const previousResolve=Module._resolveFilename;
+ Module._resolveFilename=function(request,...args){return previousResolve.call(this,request.endsWith('/auditedPizzaRecipes')?`${request}.ts`:request,...args);};
+ // Catalogue JSON imports need the application's esModuleInterop setting.
+ require.extensions['.ts']=require.extensions['.tsx'];
+ const BakeTab=require('../app/components/pizzaParty/BakeTab.tsx').default;
+ const pizza=require('../app/lib/toppingDatabase.ts').PIZZAS[0];
+ const original=React.useState;
+ try {
+  for(const locale of ['en','fr']){
+   let first=true;
+   React.useState=(value)=>{if(first){first=false;return original(pizza.id);}return original(value);};
+   const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require(`../messages/${locale}.json`),timeZone:'UTC'},React.createElement(BakeTab,{selectedPizzas:{[pizza.id]:2},locale,styleKey:'neapolitan',ovenType:'home_oven_steel'})));
+   assert.match(html,locale==='fr'?/Conseils pour garnir et cuire/:/Topping and baking tips/);
+   assert.equal((html.match(/<details\b/g)||[]).length,1);
+   assert.match(html,locale==='fr'?/Questions fréquentes/:/Common questions/);
+   assert.match(html,/name=|Your question|Votre question/);
+   assert.doesNotMatch(html,/Tips &amp; tricks/);
+   assert.equal((html.match(/animation:slideUpSheet/g)||[]).length,1,'only the pizza card opens as a sheet');
+  }
+ } finally {React.useState=original;Module._resolveFilename=previousResolve;}
 });

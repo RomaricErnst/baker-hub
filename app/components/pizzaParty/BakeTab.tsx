@@ -441,9 +441,6 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
-  const [showTechSheet, setShowTechSheet] = useState(false);
-  const [techTab, setTechTab] = useState<'tips' | 'faq' | 'maestro'>('tips');
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const sheetScrollRef = useRef<HTMLDivElement>(null);
   // The handle was decorative — a grab bar that accepted no grab, which is a
   // sheet promising a gesture it does not honour. Same mechanic as the setup
@@ -452,7 +449,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
   const [sheetDragY, setSheetDragY] = useState(0);
   const [sheetDragging, setSheetDragging] = useState(false);
   const sheetDragFrom = useRef<number | null>(null);
-  const closeSheet = () => { setSheetPizzaId(null); setShowTechSheet(false); setSheetDragY(0); };
+  const closeSheet = () => { setSheetPizzaId(null); setSheetDragY(0); };
   const [photos, setPhotos] = useState<Record<string, string>>({});
   // Seeded from the parent, not from {}. BakeTab is mounted conditionally, so
   // tapping Shopping unmounts it and every baked pizza was lost on the way
@@ -1018,84 +1015,9 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 </>
               )}
 
-              {/* Technique chips — same language as the Guide's step extras */}
-              <div style={{ padding: '16px 16px 4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {([
-                  ['tips', l === 'fr' ? 'Conseils' : 'Tips & tricks'],
-                  ['faq', 'FAQ'],
-                  ['maestro', l === 'fr' ? 'Maestro' : 'Maestro'],
-                ] as const).map(([key, label]) => (
-                  <button
-                    key={key}
-                    onClick={() => { setTechTab(key); setShowTechSheet(true); }}
-                    style={{
-                      border: '1px solid var(--border)', borderRadius: '20px',
-                      background: 'var(--cream)', cursor: 'pointer',
-                      padding: '8px 12px', fontFamily: 'var(--font-ui)',
-                      fontSize: '11px', color: 'var(--ash)', whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Technique sheet */}
-              {showTechSheet && (
-                <>
-                  <div
-                    onClick={() => setShowTechSheet(false)}
-                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 210 }}
-                  />
-                  <div style={{
-                    position: 'fixed', bottom: 0, left: 0, right: 0,
-                    background: 'var(--warm)', borderRadius: '20px 20px 0 0',
-                    zIndex: 220, maxHeight: 'calc(100dvh - 60px)',
-                    display: 'flex', flexDirection: 'column',
-                    animation: 'slideUpSheet 0.3s ease',
-                  }}>
-                    <div style={{ overflowY: 'auto', flex: 1 }}>
-                      {/* Drag handle */}
-                      <div style={{ width: 36, height: 4, background: 'rgba(0,0,0,0.15)', borderRadius: 2, margin: '14px auto 10px' }} />
-
-                      {/* Title */}
-                      <div style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '0 16px 12px', borderBottom: '1px solid var(--border)',
-                      }}>
-                        <span style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)' }}>
-                          {l === 'fr' ? 'Étirement & Cuisson' : 'Stretch & Bake'}
-                        </span>
-                        <button onClick={() => setShowTechSheet(false)} style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--cream)', cursor: 'pointer', fontSize: 16, color: 'var(--smoke)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'content-box', padding: 6, margin: -6 }}>×</button>
-                      </div>
-
-                      {/* Tab chips — mirror of the entry chips on the card */}
-                      <div style={{ display: 'flex', gap: '8px', padding: '12px 16px 0' }}>
-                        {([
-                          ['tips', l === 'fr' ? 'Conseils' : 'Tips & tricks'],
-                          ['faq', 'FAQ'],
-                          ['maestro', 'Maestro'],
-                        ] as const).map(([key, label]) => (
-                          <button
-                            key={key}
-                            onClick={() => setTechTab(key)}
-                            style={{
-                              border: techTab === key ? '1.5px solid var(--terra)' : '1px solid var(--border)',
-                              borderRadius: '20px',
-                              background: techTab === key ? 'rgba(107, 68, 35,0.07)' : 'transparent',
-                              cursor: 'pointer', padding: '8px 12px',
-                              fontFamily: 'var(--font-ui)', fontSize: '11px',
-                              color: techTab === key ? 'var(--terra)' : 'var(--ash)',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Sections */}
-                      {techTab === 'tips' && ([
+              <details key={sheetPizzaId} style={{margin:'16px',borderTop:'1px solid var(--border)'}}>
+                <summary style={{minHeight:44,padding:'12px 0',cursor:'pointer',fontSize:16}}>{l === 'fr' ? 'Conseils pour garnir et cuire' : 'Topping and baking tips'}</summary>
+                      {([
                         {
                           key: 'STRETCH',
                           fr: 'ÉTIREMENT',
@@ -1139,45 +1061,14 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                         </div>
                       ))}
 
-                      {/* FAQ */}
-                      {techTab === 'faq' && (
-                      <div style={{ padding: '20px 16px 0' }}>
-                        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '8px' }}>
-                          FAQ
-                        </div>
-                        {BAKE_FAQ.map((f, i) => (
-                          <div key={i} style={{ borderBottom: i < BAKE_FAQ.length - 1 ? '1px solid var(--border)' : undefined }}>
-                            <button
-                              onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                              style={{
-                                width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px',
-                                background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0', textAlign: 'left',
-                              }}
-                            >
-                              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: 500, color: 'var(--char)' }}>
-                                {f.q[l]}
-                              </span>
-                              <span style={{ color: 'var(--smoke)', fontSize: '12px', flexShrink: 0 }}>{openFaq === i ? '−' : '+'}</span>
-                            </button>
-                            {openFaq === i && (
-                              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--ash)', lineHeight: 1.6, padding: '0 0 12px' }}>
-                                {f.a[l]}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      )}
-
-                      {/* Maestro — unified text + photo input */}
-                      {techTab === 'maestro' && (
-                      <div style={{ padding: '20px 16px 8px' }}>
-                        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: '2px' }}>
-                          Maestro 
-                        </div>
-                        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--char)', fontWeight: 500 }}>
-                          {l === 'fr' ? 'Comment va ma pizza ?' : 'How is my pizza looking?'}
-                        </div>
+                <div style={{padding:'20px 16px 0'}}>
+                  <h3 style={{fontSize:16,margin:'0 0 12px'}}>{l === 'fr' ? 'Questions fréquentes' : 'Common questions'}</h3>
+                  {BAKE_FAQ.map((f,i)=><div key={i} style={{marginBottom:16}}>
+                    <h4 style={{fontSize:14,margin:'0 0 4px'}}>{f.q[l]}</h4>
+                    <p style={{fontSize:14,lineHeight:1.6,margin:0,color:'var(--ash)'}}>{f.a[l]}</p>
+                  </div>)}
+                </div>
+                <div style={{padding:'12px 16px'}}>
                         <AskMaestro
                           stepId="pizza_maestro"
                           stepTitle={l === 'fr' ? 'Étirement & Cuisson' : 'Stretch & Bake'}
@@ -1187,22 +1078,8 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                           locale={l}
                           ovenType={ovenType}
                         />
-                      </div>
-                      )}
-                    </div>
-
-                    {/* Close bar */}
-                    <div style={{ borderTop: '1px solid var(--border)', padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}>
-                      <button
-                        onClick={() => setShowTechSheet(false)}
-                        style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)', textDecoration: 'underline' }}
-                      >
-                        {l === 'fr' ? 'Fermer' : 'Close'}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
+                </div>
+              </details>
 
               {/* Photo soft-warn banner */}
               {photoWarn && (
@@ -1255,7 +1132,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   <button
                     onClick={() => {
                       setSheetPizzaId(nextEntry.pizza.id);
-                      setShowTechSheet(false);
+
                       // Instant scroll only — smooth scrolling moves targets under fingers
                       if (sheetScrollRef.current) sheetScrollRef.current.scrollTop = 0;
                     }}
@@ -1277,7 +1154,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                 )}
                 {isComplete && !nextEntry && (
                   <button
-                    onClick={() => { setSheetPizzaId(null); setShowTechSheet(false); }}
+                    onClick={() => { setSheetPizzaId(null);  }}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       width: 'calc(100% - 32px)', margin: '10px 16px 0',
