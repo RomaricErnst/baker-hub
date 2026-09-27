@@ -1,4 +1,5 @@
 'use client';
+import {createPortal} from 'react-dom';
 import type { StarterEvent } from './SchedulePicker';
 import { useState, useRef, useEffect, createContext, useContext } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
@@ -9,7 +10,6 @@ import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, I
 import { toggleStepCompletion } from '../utils/guideProgress';
 import { mixingBatchPlan } from '../utils/mixingBatches';
 import PhaseSummary from './PhaseSummary';
-import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import WaterPreparation, { type WaterSource, type WaterSettingsProps } from './WaterPreparation';
 import { type UnitSystem, displayTemp, tempC, tempRange } from '../utils/units';
 import { getPrefPeakH_RT, getStarterFridgeWarmupH } from './FermentChart';
@@ -20,6 +20,7 @@ import { getBreadProtocol } from '../utils/breadProfiles';
 import { scheduledFoldMinutes } from '../utils/scheduleFolds';
 
 interface BakeGuideProps extends WaterSettingsProps {
+  progressTarget?: HTMLElement|null;
   schedule: ScheduleResult;
   mixerType: MixerType;
   styleKey: string;
@@ -197,39 +198,39 @@ function Pill({ label, color }: { label: string; color?: string }) {
 
 // ── Step card ────────────────────────────────────────
 function StepCard({
-  number, displayNumber = number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext, hidden = false, stepPhase = 'preparation', previousLabel, nextLabel,
+  number, displayNumber = number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext, hidden = false, stepPhase = 'preparation', previousLabel, nextLabel, externalProgress = false,
 }: {
   number: number; displayNumber?: number; icon: React.ReactNode; title: string; overview?: boolean; totalSteps?: number;
-  hidden?: boolean; stepPhase?: 'preparation' | 'cooking'; previousLabel?: string; nextLabel?: string;
+  externalProgress?: boolean; hidden?: boolean; stepPhase?: 'preparation' | 'cooking'; previousLabel?: string; nextLabel?: string;
   time?: Date; duration?: number | null; accent?: string;
   onPrevious?: () => void; onNext?: () => void; preview?: boolean; onReturnCurrent?: () => void; completeLabel?: string; batchCompletion?: boolean; final?: boolean; open: boolean; done: boolean; onToggle: () => void; onDone: () => void;
   children: React.ReactNode; divRef?: React.RefCallback<HTMLDivElement>;
 }) {
   const locale = useLocale();
   const fr = locale === 'fr';
-  const navigationHeight = useBottomNavHeight(64);
+  const TitleContainer = overview ? 'button' : 'div';
   return (
     <section ref={divRef} data-guide-phase={stepPhase} data-guide-title={title} hidden={hidden} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${displayNumber}`} style={{ display: !hidden && (open || overview) ? undefined : 'none', background: D.warm, borderRadius: overview ? 12 : 0,
       border: overview ? `1px solid ${done ? D.sage + '60' : D.border}` : 'none', scrollMarginTop: 140 }}>
-      <button type="button" onClick={overview ? onToggle : undefined} aria-expanded={open}
-        aria-controls={`bake-step-${number}`} style={{ width: '100%', display: 'flex', gap: 12,
-          alignItems: 'center', padding: overview ? 16 : '0 0 16px', border: 0, background: 'transparent', textAlign: 'left', cursor: 'pointer', color: D.char }}>
+      <TitleContainer type={overview ? "button" : undefined} onClick={overview ? onToggle : undefined} aria-expanded={overview ? open : undefined}
+        aria-controls={overview?`bake-step-${number}`:undefined} style={{ width: '100%', display: 'flex', gap: 12,
+          alignItems: 'center', padding: overview ? 16 : '0 0 16px', border: 0, background: 'transparent', textAlign: 'left', cursor: overview ? 'pointer' : 'default', color: D.char }}>
         <span aria-hidden="true" style={{ display: overview ? undefined : 'none', color: done ? D.sage : D.terra, minWidth: 18, textAlign: 'center' }}>{done ? '✓' : displayNumber}</span>
         <span aria-hidden="true" style={{ color: done ? D.sage : D.terra, width: 22, height: 22, display: overview ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</span>
         <span style={{ flex: 1 }}>
-          <strong style={{ display: 'block', fontSize: overview ? 15 : 30, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}</strong>
-          {!overview && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {displayNumber}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
+          <strong role={overview?undefined:'heading'} aria-level={overview?undefined:2} style={{ display: 'block', fontSize: overview ? 15 : 28, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}</strong>
+          {!overview && !externalProgress && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {displayNumber}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
           {time && <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: D.smoke }}>
             {formatTime(time, locale)}{duration ? ` · ${duration < 1 ? `${Math.round(duration * 60)} min` : hoursLabel(duration)}` : ''}
           </span>}
           {done && <span style={{ fontSize: 12, color: D.sage }}>{fr ? 'Terminé' : 'Completed'}</span>}
         </span>
         {overview && <span aria-hidden="true">{open ? '−' : '+'}</span>}
-      </button>
+      </TitleContainer>
       {open && <div id={`bake-step-${number}`} style={{ padding: overview ? '0 20px 20px' : '0 0 20px' }}>
         {preview && <p style={{color:D.smoke,fontSize:12}}>{fr ? 'Aperçu — votre progression ne change pas.' : 'Preview — your progress stays unchanged.'}</p>}
         {children}
-        <div style={{position:'sticky',bottom:navigationHeight,background:D.warm,paddingTop:12,paddingBottom:'max(8px, env(safe-area-inset-bottom))',zIndex:2}}>
+        <div className="bh-guide-actions" style={{position:'relative',borderTop:`1px solid ${D.border}`,marginTop:24,background:D.warm,paddingTop:12,paddingBottom:'max(8px, env(safe-area-inset-bottom))'}}>
         {preview ? <button type="button" onClick={onReturnCurrent} style={{minHeight:44}}>{fr ? 'Revenir à l’étape en cours' : 'Back to current step'}</button>
           : batchCompletion && !done ? <button type="button" onClick={onDone} style={{minHeight:44,padding:'8px 12px',marginBottom:8,border:`1px solid ${D.terra}`,borderRadius:10,background:D.terra,color:'white',cursor:'pointer'}}>{completeLabel}</button>
           : <label style={{display:'inline-flex',alignItems:'center',gap:8,fontSize:14,minHeight:44,margin:'0 0 4px',cursor:'pointer'}}>
@@ -237,7 +238,7 @@ function StepCard({
               {fr ? 'Étape faite' : 'Step done'}
             </label>}
         <nav aria-label={fr ? 'Navigation entre les étapes' : 'Step navigation'} className="bh-guide-step-nav" style={{display:'flex',gap:8}}>
-          <button type="button" onClick={onPrevious} disabled={!onPrevious} style={{flex:1,minHeight:44}}>{previousLabel ?? (fr ? 'Étape précédente' : 'Previous step')}</button>
+          {onPrevious&&<button type="button" onClick={onPrevious} style={{flex:1,minHeight:44}}>{previousLabel ?? (fr ? 'Étape précédente' : 'Previous step')}</button>}
           {!final && <button type="button" className="bh-guide-next" onClick={onNext} style={{flex:1,minHeight:48,border:0,borderRadius:10,padding:'10px 14px',background:D.terra,color:'white',fontWeight:600}}>{nextLabel ?? (fr ? 'Étape suivante' : 'Next step')} →</button>}
         </nav>
         </div>
@@ -810,7 +811,7 @@ export default function BakeGuide({
   feedRatio = 1, starterLocation = 'rt',
   units, locale,
   onNavigateToPizzaParty, pizzaActionLabel, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
-  phase, active = true, onNavigateToCooking, onNavigateToPreparation,
+  phase, active = true, onNavigateToCooking, onNavigateToPreparation, progressTarget,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
   const l = locale === 'fr' ? 'fr' : 'en';
@@ -1038,6 +1039,7 @@ Actual dough condition and equipment may differ from these estimates.`;
     const s = lastStep;
     if (stepPhase === 'cooking') cookingStepNumber++;
     return {
+      externalProgress: !!progressTarget,
       displayNumber: phase === 'cooking' && stepPhase === 'cooking' ? cookingStepNumber : s,
       stepPhase,
       hidden: !!phase && phase !== stepPhase,
@@ -1075,13 +1077,25 @@ Actual dough condition and equipment may differ from these estimates.`;
       ? (l === 'fr' ? 'Étapes de cuisson' : 'Cooking steps')
       : (l === 'fr' ? 'Toutes les étapes' : 'All steps');
 
+  const preparationTotal = Math.max(0,totalSteps-cookingStepTotal);
+  const resumeStep = () => {
+    const candidates=stepRefs.current.flatMap((el,index)=>el&&(!phase||el.dataset.guidePhase===phase)?[index]:[]);
+    navigateGuideStep(candidates.find(index=>!doneSteps.has(index))??candidates[0]??1);
+  };
+  const progressControl = active && progressTarget ? createPortal(
+    <button type="button" className="bh-step-trigger" aria-label={currentStep===0?(l==='fr'?'Reprendre la préparation':'Resume preparation'):overviewLabel} aria-expanded={currentStep===0} onClick={()=>{if(currentStep===0)resumeStep();else {setCurrentStep(0);window.scrollTo({top:0,behavior:'instant'});}}}>
+      <span>{currentStep===0?(l==='fr'?'Reprendre':'Resume'):`${l==='fr'?'Étape':'Step'} ${currentStep} / ${preparationTotal}`}</span>
+      <svg aria-hidden="true" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d={currentStep===0?'M2 8l4-4 4 4':'M2 4l4 4 4-4'}/></svg>
+    </button>,progressTarget) : null;
+
   if (recipe?.protocolIssue) return <section role="alert"><h2>{l === 'fr' ? 'Ajustez ce pain avant de commencer' : 'Adjust this bread before starting'}</h2><p>{recipe.protocolIssue === 'equipment' ? (l === 'fr' ? 'Choisissez un matériel de cuisson compatible dans les réglages.' : 'Choose compatible cooking equipment in setup.') : recipe.protocolIssue === 'timing' ? (l === 'fr' ? 'Laissez assez de temps pour mélanger, reposer et abaisser la pâte avant cuisson.' : 'Allow enough time to mix, rest and roll the dough before cooking.') : (l === 'fr' ? 'Choisissez la méthode de levée prise en charge dans les réglages.' : 'Choose the supported leavening method in setup.')}</p></section>;
 
   if (recipe?.enrichment?.unsupportedMethod) return <p role="alert">{l === 'fr' ? 'Modifiez le choix de levure dans les réglages et recalculez cette formule enrichie avant de suivre les étapes.' : 'Update the leavening choice in setup and recalculate this enriched formula before following the steps.'}</p>;
 
   if (breadProtocol?.method === 'unleavened') return <SimpleModeCtx.Provider value={!!simpleMode}>
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
-      <button type="button" onClick={() => setCurrentStep(0)} style={{minHeight:44,padding:'8px 16px',border:`1px solid ${D.border}`,borderRadius:10,background:D.warm}}>{overviewLabel}</button>
+      {progressControl}
+      {!progressTarget&&<button type="button" onClick={() => setCurrentStep(0)} style={{minHeight:44,padding:'8px 16px',border:`1px solid ${D.border}`,borderRadius:10,background:D.warm}}>{overviewLabel}</button>}
       <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={l === 'fr' ? 'Mélanger la pâte' : 'Mix the dough'} time={bgMixStart} duration={schedule.mixingDurationH}>
         <Section icon="" title={l === 'fr' ? 'À mélanger' : 'Use now'}>
           {batch && Object.entries(batch.portion).filter(([,grams]) => grams > 0).map(([key,grams]) => <p key={key}>{({flour:l === 'fr' ? 'Farine' : 'Flour',water:l === 'fr' ? 'Eau' : 'Water',salt:l === 'fr' ? 'Sel' : 'Salt',oil:l === 'fr' ? 'Huile' : 'Oil',sugar:l === 'fr' ? 'Sucre' : 'Sugar'} as Record<string,string>)[key] ?? key} · {Math.round(grams)} g</p>)}
@@ -1109,6 +1123,7 @@ Actual dough condition and equipment may differ from these estimates.`;
   return (
     <SimpleModeCtx.Provider value={!!simpleMode}>
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {progressControl}
 
       {/* ── Header ──────────────────────────────────── */}
       <div style={{ marginBottom: '4px', display: currentStep === 0 && !phase ? undefined : 'none' }}>
@@ -1123,7 +1138,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      {!progressTarget&&<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button type="button" onClick={() => setCurrentStep(0)} style={{ minHeight: 44, padding: '8px 16px', border: `1px solid ${D.border}`, borderRadius: 10, background: D.warm }}>
           {overviewLabel}
         </button>
@@ -1138,7 +1153,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         }} style={{ minHeight: 44, padding: '8px 16px', border: `1px solid ${D.border}`, borderRadius: 10, background: D.warm }}>
           {_isFr ? 'Reprendre' : 'Current step'}
         </button>
-      </div>
+      </div>}
             {/* Executive summary — phase strip from the old protocole */}
       {currentStep === 0 && !phase && <PhaseSummary schedule={schedule} numItems={numItems} />}
 

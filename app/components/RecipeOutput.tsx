@@ -533,7 +533,6 @@ export default function RecipeOutput({
 
       {(hasPref || (sdActive && mode === 'custom')) && <section aria-label={locale === 'fr' ? 'Quantités totales' : 'Total ingredients'}>
         <h3 style={{fontSize:17}}>{locale === 'fr' ? 'Quantités totales de la recette' : 'Total recipe ingredients'}</h3>
-        {mode === 'custom' && <p style={{fontSize:14}}>{locale === 'fr' ? 'Pourcentages sur toute la farine, préferment ou levain inclus.' : 'Percentages use all flour, including flour in preferment or starter.'}</p>}
         <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={mode === 'custom' ? '100%' : undefined} />
         <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
         <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />

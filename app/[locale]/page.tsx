@@ -1214,6 +1214,7 @@ export default function Home() {
   // Baker profile — Mon profil sheet + new-session prefill
   const bottomNavH = useBottomNavHeight();
   const keyboardOpen = useMobileKeyboard();
+  const [guideProgressTarget,setGuideProgressTarget] = useState<HTMLDivElement|null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   // Simple begins with a compact equipment confirmation.
   const [profilePrefilled, setProfilePrefilled] = useState(false);
@@ -3273,7 +3274,7 @@ export default function Home() {
   </>;
 
   const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={destination} fr={fr} onChange={openDestination} top={destination==='organisation'?0:stickTop}
-    progress={destination==='organisation' && modeChosen && !setupOverview ? <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>{setModeChosen(false);scrollToStepTop();}}} /> : undefined} /> : null;
+    progress={destination==='organisation' && modeChosen && !setupOverview ? <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>{setModeChosen(false);scrollToStepTop();}}} /> : destination==='protocol'&&protocolView==='dough'&&recipeGenerated ? <div className="bh-organisation-progress" ref={setGuideProgressTarget}/> : undefined} /> : null;
 
   // ── Render ────────────────────────────────
   return (
@@ -3604,7 +3605,7 @@ export default function Home() {
 {showBakeTypeChooser&&bakeType&&<BakeTypeChooser fr={fr} current={bakeType} onChoose={selectBakeType} onClose={()=>setShowBakeTypeChooser(false)}/>}
 {destination!=='organisation' && bakeNavigator}
 
-          {(['recipe','shopping','protocol','service'] as string[]).includes(destination)&&<button type="button" className="bh-section-back" onClick={()=>openDestination(destination==='recipe'?'organisation':destination==='shopping'?'recipe':destination==='protocol'?'shopping':'protocol')}>← {destination==='recipe'?(fr?'Organisation':'Setup'):destination==='shopping'?(fr?'Recette':'Recipe'):destination==='protocol'?(fr?'Courses':'Shopping'):(fr?'Préparation':'Preparation')}</button>}
+          {(['recipe','shopping','service'] as string[]).includes(destination)&&<button type="button" className="bh-section-back" onClick={()=>openDestination(destination==='recipe'?'organisation':destination==='shopping'?'recipe':destination==='protocol'?'shopping':'protocol')}>← {destination==='recipe'?(fr?'Organisation':'Setup'):destination==='shopping'?(fr?'Recette':'Recipe'):destination==='protocol'?(fr?'Courses':'Shopping'):(fr?'Préparation':'Preparation')}</button>}
 
 
 
@@ -3649,7 +3650,7 @@ export default function Home() {
 
           {destination==='service'&&bakeType==='pizza'&&serviceView==='fillings'&&<button type="button" className="bh-section-back" onClick={()=>{setServiceView('dough');scrollToStepTop();}}>{fr?'← Four et conseils de cuisson':'← Oven and cooking advice'}</button>}
 
-          {(destination==='protocol'||(destination==='service'&&bakeType!=='pizza'))&&<section className="bh-section-choices" aria-label={fr?'À préparer':'What to prepare'}>
+          {hasFillings&&(destination==='protocol'||(destination==='service'&&bakeType!=='pizza'))&&<section className="bh-section-choices" aria-label={fr?'À préparer':'What to prepare'}>
             <button type="button" aria-pressed={(destination==='protocol'?protocolView:serviceView)==='dough'} onClick={()=>{if(destination==='protocol')setProtocolView('dough');else setServiceView('dough');}}>{destination==='protocol'?(fr?'La pâte':'Dough'):(fr?'Guide de cuisson':'Cooking guide')}</button>
             {hasFillings&&<button type="button" aria-pressed={(destination==='protocol'?protocolView:serviceView)==='fillings'} onClick={()=>{if(destination==='protocol')setProtocolView('fillings');else setServiceView('fillings');}}>{destination==='protocol'?(fr?'Les garnitures':'Toppings and fillings'):(bakeType==='pizza'?(fr?'Cuire les pizzas':'Cook the pizzas'):(fr?'Assembler et servir':'Assemble and serve'))}</button>}
           </section>}
@@ -4039,6 +4040,7 @@ export default function Home() {
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && recipe && mixerType && (<>
                 <BakeGuide
+                  progressTarget={destination==='protocol'&&protocolView==='dough'?guideProgressTarget:null}
                   phase={destination==='service'?'cooking':'preparation'}
                   active={destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough'}
                   onNavigateToCooking={()=>{setServiceView('dough');openDestination('service');}}
@@ -4336,7 +4338,6 @@ export default function Home() {
 
             {/* Prototype: one clear field per dough setting. */}
             <StepPage flow={customOrganisationFlow} id={10}>
-              <p style={{fontSize:14,color:'var(--ash)',marginBottom:18}}>{fr?'Les valeurs conseillées sont déjà renseignées. Modifiez uniquement ce qui vous convient.':'Recommended values are filled in. Adjust only what you need.'}</p>
               {enrichedDirectOnly && <p style={{fontSize:14}}>{fr?'Cette formule enrichie fixe les proportions d’eau, de sel, de matière grasse et de sucre.':'This enriched formula fixes the water, salt, fat and sugar proportions.'}</p>}
               {(() => {
                 const style = styleKey ? ALL_STYLES[styleKey] : null;
@@ -4359,7 +4360,7 @@ export default function Home() {
                   {fields.map(field=><div key={field.label}><label style={{display:'block',fontSize:16,marginBottom:18}}>{field.label}
                     <input type="number" key={`${field.label}:${field.value}`} defaultValue={Math.round(field.value*100)/100} min={field.min} max={field.max} step={field.step} onBlur={e=>{const n=Number(e.target.value);if(e.target.value!==''&&Number.isFinite(n))field.set(Math.min(field.max,Math.max(field.min,n)));else e.target.value=String(field.value);}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}}} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white'}}/>
                   </label>
-                  {field.set===setManualHydration&&<div style={{marginBottom:16,fontSize:14}}><p>{fr?'Hydratation conseillée':'Suggested hydration'} : {recommendedHyd}%</p>{manualHydration!==undefined&&<button type="button" onClick={()=>setManualHydration(undefined)} style={{minHeight:44}}>{fr?'Rétablir l’hydratation conseillée':'Reset suggested hydration'}</button>}<details><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Pourquoi cette valeur ?':'Why this value?'}</summary><p>{fr?'Base du style':'Style starting point'} : {style?.hydration}%</p><p>{fr?'Four':'Oven'} : {['pan','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey??'')?Math.round((ovenData?.hydrationDelta??0)/2):(ovenData?.hydrationDelta??0)}%</p><p>{fr?'Conditions de stockage et cuisine':'Storage and kitchen conditions'} : {kitchenTemp>=28||humidity==='very-humid'?-2:kitchenTemp<=18?2:0}%</p><p>{fr?'Farine':'Flour'} : {flourBlend?Math.max(-5,Math.min(8,computeBlendProfile(flourBlend).hydrationDelta)):0}%</p></details></div>}
+                  {field.set===setManualHydration&&<div style={{marginBottom:16,fontSize:14}}>{manualHydration!==undefined&&Math.abs(manualHydration-recommendedHyd)>0.005&&<button type="button" onClick={()=>setManualHydration(undefined)} style={{minHeight:44}}>{fr?'Rétablir l’hydratation conseillée':'Reset suggested hydration'}</button>}<details><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Pourquoi cette valeur ?':'Why this value?'}</summary><p>{fr?'Base du style':'Style starting point'} : {style?.hydration}%</p><p>{fr?'Four':'Oven'} : {['pan','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey??'')?Math.round((ovenData?.hydrationDelta??0)/2):(ovenData?.hydrationDelta??0)}%</p><p>{fr?'Conditions de stockage et cuisine':'Storage and kitchen conditions'} : {kitchenTemp>=28||humidity==='very-humid'?-2:kitchenTemp<=18?2:0}%</p><p>{fr?'Farine':'Flour'} : {flourBlend?Math.max(-5,Math.min(8,computeBlendProfile(flourBlend).hydrationDelta)):0}%</p></details></div>}
                   </div>)}
                   <details style={{margin:'12px 0'}}><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Températures mesurées · facultatif':'Measured temperatures · optional'}</summary>
                     {[{label:fr?'Farine (°C)':'Flour (°C)',value:measuredFlourTemp,set:setMeasuredFlourTemp},...((prefermentType!=='none'||yeastType==='sourdough')?[{label:fr?'Préferment ou levain (°C)':'Preferment or starter (°C)',value:measuredPrefermentTemp,set:setMeasuredPrefermentTemp}]:[])].map(field=><label key={field.label} style={{display:'block',fontSize:16,margin:'12px 0'}}>{field.label}<input type="number" value={field.value??''} min={-5} max={45} step={0.5} placeholder={fr?'Estimation automatique':'Automatic estimate'} onChange={e=>field.set(e.target.value===''?undefined:Number(e.target.value))} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:10,border:'1px solid var(--border)',borderRadius:9}}/></label>)}
@@ -4544,6 +4545,7 @@ export default function Home() {
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && advancedRecipe && mixerType && (<>
                 <BakeGuide
+                  progressTarget={destination==='protocol'&&protocolView==='dough'?guideProgressTarget:null}
                   phase={destination==='service'?'cooking':'preparation'}
                   active={destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough'}
                   onNavigateToCooking={()=>{setServiceView('dough');openDestination('service');}}

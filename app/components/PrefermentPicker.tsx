@@ -75,7 +75,6 @@ export default function PrefermentPicker({
                     <span><input type="number" min={10} max={60} step={1} value={pctDraft} onChange={e => setPctDraft(e.target.value)} onBlur={commitPct} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }} style={{ width: 72, minHeight: 44, border: '1px solid var(--border)', borderRadius: 8, padding: 8 }} /> %</span>
                   </label>
                   <input type="range" aria-label={fr ? 'Part de farine en préferment' : 'Prefermented flour share'} min={10} max={60} step={1} value={flourPct ?? suggestedFlourPct} onChange={e => { setPctDraft(e.target.value); onFlourPctChange(Number(e.target.value)); }} style={{ width: '100%', minHeight: 44, accentColor: 'var(--terra)' }} />
-                  <p style={{ margin: '4px 0', fontSize: 12, color: 'var(--smoke)' }}>{fr ? 'Proportion suggérée' : 'Suggested proportion'} : {suggestedFlourPct}%</p>
                   <details style={{ marginTop: 8, fontSize: 13 }}>
                     <summary style={{ minHeight: 44, cursor: 'pointer' }}>{fr ? 'M’aider à choisir' : 'Help me choose'}</summary>
                     <ul>
