@@ -2250,9 +2250,9 @@ export default function Home() {
       // bouger, et croit devoir réappuyer sur Sauvegarder.
       setCloudSaveState('saving');
       try {
-        await saveCurrentSessionRef.current?.();
-        setCloudSaveState('idle');
+        // Sharing already saves once. Each handler owns its success/failure state.
         if (intent === 'share') await shareCurrentSessionRef.current?.();
+        else await saveCurrentSessionRef.current?.();
       } catch (e) {
         console.error('Replay after sign-in failed:', e);
         setCloudSaveState('failed');
@@ -2564,7 +2564,9 @@ export default function Home() {
         if (!id) { setSessionSaved(false); setCloudSaveState('failed'); return false; }
         else {
           savedCloudIdRef.current = id;
-          setSessionSaved(latestSessionPayloadRef.current === savingPayload); setCloudSaveState('idle');
+          const unchanged = latestSessionPayloadRef.current === savingPayload;
+          setSessionSaved(unchanged); setCloudSaveState('idle');
+          if (!unchanged) return false; // Do not share/repeat an older snapshot over newer edits.
           const label = sessionLabel();
           setSavedToCloudName(label);
           setTimeout(() => setSavedToCloudName(c => (c === label ? null : c)), 5000);
@@ -2861,14 +2863,16 @@ export default function Home() {
     setManualSugar(snap.manualSugar);
     setManualSalt(snap.manualSalt);
     setTargetDoughTemp(snap.targetDoughTemp);
-    setFlourInFridge(snap.flourInFridge);
+    setFlourInFridge(snap.flourInFridge ?? false);
+    setAddSeeds(snap.addSeeds ?? false);
+    setPrefGoesInFridgeState(snap.prefGoesInFridge ?? true);
     setMeasuredFlourTemp(snap.measuredFlourTemp); setMeasuredPrefermentTemp(snap.measuredPrefermentTemp);
     setWastePct(snap.wastePct);
     setPriorityOverride(snap.priorityOverride);
     if (snap.eatTime) setEatTime(shiftD(new Date(snap.eatTime)));
     if (snap.startTime) setStartTime(shiftD(new Date(snap.startTime)));
-    if (snap.blocks?.length) {
-      setBlocks((snap.blocks as unknown[]).map((b) => {
+    {
+      setBlocks(((snap.blocks ?? []) as unknown[]).map((b) => {
         const bl = b as { label: string; from: number; to: number };
         return { label: bl.label, from: shiftD(new Date(bl.from)), to: shiftD(new Date(bl.to)) };
       }));
@@ -2877,27 +2881,29 @@ export default function Home() {
     setRecipeGenerated(snap.recipeGenerated);
     setModeChosen(snap.modeChosen);
     // Sourdough starter state — snapshots saved after Jul 2026 include these
-    if (snap.starterState) setStarterState(snap.starterState as 'rt_fed' | 'fridge_unfed' | 'fridge_fed');
-    if (snap.starterLocation) setStarterLocation(snap.starterLocation as 'rt' | 'fridge');
+    setStarterState((snap.starterState ?? 'rt_fed') as 'rt_fed' | 'fridge_unfed' | 'fridge_fed');
+    setStarterLocation((snap.starterLocation ?? 'rt') as 'rt' | 'fridge');
     setStarterTimingValid(snap.starterTimingValid !== false);
-    if (snap.planningMode) setPlanningMode(snap.planningMode as 'last_fed' | 'know_peak');
-    if (snap.lastFedTime) setLastFedTime(new Date(snap.lastFedTime));
-    if (snap.knownPeakTime) setKnownPeakTime(new Date(snap.knownPeakTime));
-    if (snap.lastFedAge !== undefined) setLastFedAge((snap.lastFedAge as 'today'|'yesterday'|'days23'|'days45'|'week'|null) ?? null);
-    const _snapLfr = snap.lastFeedRatio ?? snap.feedRatio;
-    if (_snapLfr) setLastFeedRatio(_snapLfr as 1 | 2 | 4 | 5 | 10);
-    const _snapNfr = snap.nextFeedRatio ?? snap.lastFeedRatio ?? snap.feedRatio;
-    if (_snapNfr) setNextFeedRatio(_snapNfr as 1 | 2 | 4 | 5 | 10);
-    if (snap.nextFeedRatioOverride !== undefined) setNextFeedRatioOverride(snap.nextFeedRatioOverride as 1 | 2 | 4 | 5 | 10 | null);
-    if (snap.ratioMode === 'keep' || snap.ratioMode === 'recommend') setRatioMode(snap.ratioMode);
-    if (snap.starterMature !== undefined) setStarterMature(Boolean(snap.starterMature));
-    if (snap.starterHasRye !== undefined) setStarterHasRye(Boolean(snap.starterHasRye));
-    if (snap.tang) setTang(snap.tang as 'mild' | 'balanced' | 'tangy');
-    if (snap.fridgeOutTime) setFridgeOutTime(new Date(snap.fridgeOutTime));
-    if (snap.usingPeak2 !== undefined) setUsingPeak2(Boolean(snap.usingPeak2));
-    if (snap.feed2Time) setFeed2Time(new Date(snap.feed2Time));
-    if (snap.starterFridgeInTime) setStarterFridgeInTime(new Date(snap.starterFridgeInTime));
-    if (rb) setBakedDone(false); else if (snap.bakedDone) setBakedDone(true);
+    setPlanningMode((snap.planningMode ?? 'last_fed') as 'last_fed' | 'know_peak');
+    setLastFedTime(snap.lastFedTime ? new Date(snap.lastFedTime) : null);
+    setKnownPeakTime(snap.knownPeakTime ? new Date(snap.knownPeakTime) : null);
+    setLastFedAge((snap.lastFedAge as 'today'|'yesterday'|'days23'|'days45'|'week'|null) ?? null);
+    setHasNotFedYet(snap.hasNotFedYet ?? null);
+    setFeedTime(null);setStarterPeakTime(null);
+    const _snapLfr = snap.lastFeedRatio ?? snap.feedRatio ?? 1;
+    setLastFeedRatio(_snapLfr as 1 | 2 | 4 | 5 | 10);
+    const _snapNfr = snap.nextFeedRatio ?? snap.lastFeedRatio ?? snap.feedRatio ?? 1;
+    setNextFeedRatio(_snapNfr as 1 | 2 | 4 | 5 | 10);
+    setNextFeedRatioOverride((snap.nextFeedRatioOverride ?? null) as 1 | 2 | 4 | 5 | 10 | null);
+    setRatioMode(snap.ratioMode === 'keep' ? 'keep' : 'recommend');
+    setStarterMature(snap.starterMature !== false);
+    setStarterHasRye(!!snap.starterHasRye);
+    setTang((snap.tang ?? 'balanced') as 'mild' | 'balanced' | 'tangy');
+    setFridgeOutTime(snap.fridgeOutTime ? new Date(snap.fridgeOutTime) : null);
+    setUsingPeak2(!!snap.usingPeak2);
+    setFeed2Time(snap.feed2Time ? new Date(snap.feed2Time) : null);
+    setStarterFridgeInTime(snap.starterFridgeInTime ? new Date(snap.starterFridgeInTime) : null);
+    setBakedDone(!rb && !!snap.bakedDone);
     setBakeEventId(rb ? null : event.id);
     if (freshStarterPlan) {
       setStarterPlanResetKey(value => value + 1);
@@ -2981,11 +2987,11 @@ export default function Home() {
       endRestore();
     }
     // Ticks travel in the snapshot (manual saves) — hydrate before tabs read
-    if (rb || snap.pizzaParty?.shopTicks) {
-      try { localStorage.setItem('bh_shop_ticks_v1', JSON.stringify(rb ? {} : snap.pizzaParty?.shopTicks)); } catch {}
+    if (rb || Object.prototype.hasOwnProperty.call(snap, 'pizzaParty')) {
+      try { localStorage.setItem('bh_shop_ticks_v1', JSON.stringify(rb ? {} : snap.pizzaParty?.shopTicks ?? {})); } catch {}
     }
-    if (rb || snap.pizzaParty?.prepTicks) {
-      try { localStorage.setItem('bh_prep_ticks_v1', JSON.stringify(rb ? {} : snap.pizzaParty?.prepTicks)); } catch {}
+    if (rb || Object.prototype.hasOwnProperty.call(snap, 'pizzaParty')) {
+      try { localStorage.setItem('bh_prep_ticks_v1', JSON.stringify(rb ? [] : snap.pizzaParty?.prepTicks ?? [])); } catch {}
     }
     if (rb) {
       setRecipeGenerated(false);setShowResults(false);setScheduleCandidateValid(false);setScheduleReady(false);setSetupOverview(false);
