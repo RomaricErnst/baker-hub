@@ -686,9 +686,20 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
   const faq = (faqOverride ?? (faqKey ? (GUIDE_FAQ[faqKey] ?? []) : [])).filter(e =>
     !simpleFaq || !(JARGON_RE.test(e.q.en + ' ' + e.q.fr + ' ' + e.a.en + ' ' + e.a.fr)));
 
-  const helpTitle = faqKey === 'mix'
-    ? (l === 'fr' ? 'Conseils de pétrissage' : 'Kneading tips')
-    : (l === 'fr' ? 'Conseils pour cette étape' : 'Tips for this step');
+  const helpTitles: Record<string,[string,string]> = {
+    mix:['Conseils de pétrissage','Kneading tips'],
+    starter:['Conseils pour le levain','Starter tips'],
+    poolish:['Conseils pour la poolish','Poolish tips'],
+    biga:['Conseils pour la biga','Biga tips'],
+    bulk:['Conseils de pointage','Bulk fermentation tips'],
+    cold:['Conseils pour le repos au froid','Cold fermentation tips'],
+    divide:['Conseils de façonnage','Shaping tips'],
+    proof:['Conseils pour l’apprêt','Final proof tips'],
+    preheat:['Conseils de préchauffage','Preheating tips'],
+    bake:['Conseils de cuisson','Baking tips'],
+    cool:['Conseils de conservation','Storage tips'],
+  };
+  const helpTitle = (helpTitles[faqKey ?? coachStepId ?? ''] ?? ['Conseils pour cette étape','Tips for this step'])[l === 'fr' ? 0 : 1];
   return (
     <details style={{ marginTop:16, borderTop:`1px solid ${D.border}`, paddingTop:8 }}>
       <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:16}}>{helpTitle}</summary>
@@ -2048,7 +2059,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             {bold:l === 'fr' ? `Comptez environ ${range} avant de trancher.` : `Allow about ${range} before slicing.`,note:''},
           ]}/></Section><p style={{marginTop:16}}><strong>{l === 'fr' ? 'Prêt quand : ' : 'Ready when: '}</strong>{styleKey === 'pain_seigle' ? (l === 'fr' ? 'Attendez le lendemain pour trancher ; une fois refroidi, emballez-le pour éviter qu’il sèche.' : 'Wait until tomorrow to slice; once cool, wrap it to keep it from drying out.') : (l === 'fr' ? 'Le dessous du pain n’est plus chaud au toucher. Encore chaud ? Vérifiez dans 30 min.' : 'The loaf no longer feels warm underneath. Still warm? Check again in 30 min.')}</p></>;
         })()}
-        {!breadProtocol && <StepExtras tips={<p>{l === 'fr' ? 'Laissez-le découvert pendant le refroidissement. Rangez-le une fois refroidi.' : 'Leave it uncovered while cooling. Store it once cool.'}</p>} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />}
+        {!breadProtocol && <StepExtras tips={null} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />}
         {fillingsAction}
       </StepCard>}
       {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} sessionSaved={sessionSaved}/>}
