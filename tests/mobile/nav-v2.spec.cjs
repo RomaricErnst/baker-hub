@@ -533,19 +533,20 @@ for(const bread of [false,true])test(`clean preparation ${bread?'bread':'pizza'}
  await navigate(page,'Préparation');
  await expect(page.getByRole('region',{name:'À préparer',exact:true})).toHaveCount(0);
  const progress=page.locator('.bh-local-progress .bh-step-trigger');
- await expect(progress).toHaveText(/Étape 1 \/ \d+/);
+ await page.getByRole('button',{name:'Commencer la préparation →',exact:true}).tap();
+ await expect(page.locator('.bh-local-progress')).toContainText(/Étape 1 \/ \d+/);
  const current=page.locator('[data-guide-phase="preparation"]:visible');
  await expect(current).toHaveCount(1);
  await expect(current.getByRole('heading',{level:2})).toBeVisible();
  await expect(current.locator('.bh-guide-actions')).toHaveCSS('position','relative');
  await expect(page.getByRole('button',{name:'Reprendre',exact:true})).toHaveCount(0);
  await progress.tap();
- await expect(progress).toHaveAttribute('aria-expanded','true');
+ await expect(page.locator('.bh-local-progress')).toHaveText('Vue d’ensemble');
  expect(await page.locator('[data-guide-phase="preparation"]:visible').count()).toBeGreaterThan(1);
  await page.locator('[data-guide-phase="preparation"]:visible').first().getByRole('button').first().tap();
- await expect(progress).toHaveText(/Étape 1 \/ \d+/);
+ await expect(page.locator('.bh-local-progress')).toContainText(/Étape 1 \/ \d+/);
  await current.locator('.bh-guide-next').tap();
- await expect(progress).toHaveText(/Étape 2 \/ \d+/);
+ await expect(page.locator('.bh-local-progress')).toContainText(/Étape 2 \/ \d+/);
  await noOverflow(page);
 });
 
@@ -572,7 +573,7 @@ for(const bread of [false,true])test(`late ${bread?'bread':'pizza'} surplus keep
 for(const mode of ['simple','custom']){
  for(const bread of [true,false])test(`${mode}: ${bread?'bread':'plain pizza'} finishes with save and share`,async({page})=>{
   await seed(page,{mode,bread,activeTab:'service'});
-  await page.getByRole('button',{name:'Étapes de cuisson',exact:true}).tap();
+  await page.getByRole('button',{name:'Vue d’ensemble',exact:true}).tap();
   const cooling=page.locator('section[data-guide-phase="cooking"]:visible').last();
   await cooling.getByRole('button').first().tap();
   await cooling.getByRole('checkbox',{name:'Étape faite',exact:true}).check();

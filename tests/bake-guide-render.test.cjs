@@ -113,8 +113,8 @@ test('cooking phase shows local step numbers while pizza advice leads into one q
    props.pizzaActionLabel='Choose my pizzas';
    assert.ok(render().includes('Choose my pizzas'),'empty-selection handoff label is preserved');
    props.phase='preparation';
-   let suppliedTotal=false;
-   React.useState=(value)=>{ if(value===0&&!suppliedTotal){suppliedTotal=true;return useState(globalStep);} return useState(value); };
+   let zeroState=0;
+   React.useState=(value)=>{ if(value===0){zeroState++;if(zeroState===1)return useState(1);if(zeroState===2)return useState(globalStep);} return useState(value); };
    const preparation=render().split('data-guide-title="Mix your dough"')[1].split('</section>')[0];
    assert.ok(preparation.includes(`Step 1 / ${globalStep-2}`),'preparation count excludes cooking stages');
  } finally { React.useState=useState; }
