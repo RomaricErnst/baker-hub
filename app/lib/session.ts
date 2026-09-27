@@ -32,6 +32,7 @@ export interface SessionData {
   styleKey: string | null;
   numItems: number;
   itemWeight: number;
+  totalFlourTarget?: number;
   pizzaDiameter: number;
   ovenType: string | null;
   ovenConstruction?: 'tabletop' | 'masonry' | 'home' | 'micro';
@@ -135,6 +136,10 @@ export function normalizeMixingBatches(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 100 ? value : undefined;
 }
 
+export function normalizeFlourTarget(value: unknown): number | undefined {
+  return typeof value==='number'&&Number.isFinite(value)&&value>=50&&value<=25000 ? Math.round(value) : undefined;
+}
+
 export function normalizeMixerCapacity(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value >= 100 && value <= 1000000 ? Math.round(value) : undefined;
 }
@@ -192,4 +197,3 @@ export function serializeStarterEvents(events: StarterEvent[]): NonNullable<Sess
 export function restoreStarterEvents(events: SessionData['starterEvents'], offsetMs = 0): StarterEvent[] {
   return (events ?? []).filter(event => Number.isFinite(event.time)).map(event => ({...event, time:new Date(event.time + offsetMs), bellPeakTime:event.bellPeakTime == null ? undefined : new Date(event.bellPeakTime + offsetMs), bellStartTime:event.bellStartTime == null ? undefined : new Date(event.bellStartTime + offsetMs)}));
 }
-

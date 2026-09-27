@@ -1171,7 +1171,7 @@
         "steps": [
           {
             "bold": "Prévoyez le feu selon la masse du four",
-            "note": "four léger : ~45 min · four maçonné (brique/Panyol) : 2–3 h de chauffe avant que la sole tienne une chaleur stable"
+            "note": "four léger : ~45 min · four traditionnel en briques ou pierre : 2–3 h de chauffe avant que la sole tienne une chaleur stable"
           },
           {
             "bold": "Allumez le feu et laissez brûler jusqu'aux braises",
@@ -1227,7 +1227,7 @@
           },
           {
             "bold": "Respectez le préchauffage complet — flamme active tout au long",
-            "note": "four léger type Ooni : 30–45 min · four maçonné (brique/Panyol) : 2–3 h — la masse doit être saturée, pas seulement la surface"
+            "note": "four léger type Ooni : 30–45 min · four traditionnel en briques ou pierre : 2–3 h — la masse doit être saturée, pas seulement la surface"
           }
         ],
         "pitfalls": [

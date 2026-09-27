@@ -1,4 +1,25 @@
 {
+  "celnat_seigle_t130": {
+    "url": "/images/flours/celnat_seigle_t130.webp",
+    "source": "https://www.celnat.fr/ref/farine-de-seigle-t130-2",
+    "remoteUrl": "https://www.celnat.fr/wp-content/uploads/3273120011585-Farine-Seigle-T130-101x70-1kg.png",
+    "review": "Official product photo checked 2026-09-27. User requested catalogue illustration. No reuse licence independently established.",
+    "modifications": "Downloaded official packaging photo; converted/resized without altering packaging."
+  },
+  "foricher_seigle_t130": {
+    "url": "/images/flours/foricher_seigle_t130.webp",
+    "source": "https://www.foricher.com/nos-farines/seigle-t130",
+    "remoteUrl": "https://cdn.sanity.io/images/iyp3ccs9/production/d3cdc310219a559ebd7c457a22231c6b0ced8ae4-1200x1200.webp/seigle-t130.webp",
+    "review": "Official product photo checked 2026-09-27. User requested catalogue illustration. No reuse licence independently established.",
+    "modifications": "Downloaded official packaging photo; converted/resized without altering packaging."
+  },
+  "foricher_seigle_t170": {
+    "url": "/images/flours/foricher_seigle_t170.webp",
+    "source": "https://www.foricher.com/nos-farines/seigle-t170",
+    "remoteUrl": "https://cdn.sanity.io/images/iyp3ccs9/production/e3b700e6639dbada194a614227473db5d8d3ef73-1200x1200.webp/seigle-t170.webp",
+    "review": "Official product photo checked 2026-09-27. User requested catalogue illustration. No reuse licence independently established.",
+    "modifications": "Downloaded official packaging photo; converted/resized without altering packaging."
+  },
   "caputo_pizzeria": {
     "url": "/images/flours/caputo_pizzeria.webp",
     "source": "https://www.mulinocaputo.it/prodotti/pizzeria/",

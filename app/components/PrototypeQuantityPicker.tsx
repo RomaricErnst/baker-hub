@@ -45,6 +45,8 @@ export interface PrototypeQuantityPickerProps {
   itemLabel?: string;
   countLabel?: string;
   weightLabel?: string;
+  totalFlourTarget?: number;
+  onFlourTargetChange?: (grams: number | undefined) => void;
   calculateWeight?: (diameter: number, crust: QuantityCrust) => number;
   onCountChange: (value: number) => void;
   onItemWeightChange: (value: number) => void;
@@ -94,7 +96,7 @@ export default function PrototypeQuantityPicker({
   calculatedWeight,
   weightBounds = DEFAULT_WEIGHT_BOUNDS,
   countBounds = {},
-  itemLabel, countLabel, weightLabel,
+  itemLabel, countLabel, weightLabel, totalFlourTarget, onFlourTargetChange,
   calculateWeight,
   onCountChange,
   onItemWeightChange,
@@ -164,6 +166,9 @@ export default function PrototypeQuantityPicker({
 
   return (
     <div style={{ fontFamily: 'var(--font-ui)', color: 'var(--char)' }}>
+      {bakeType==='bread'&&onFlourTargetChange&&<div role="group" aria-label={fr?'Calculer la quantité':'Quantity basis'} style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
+        {[false,true].map(byFlour=><button key={String(byFlour)} type="button" aria-pressed={byFlour===(totalFlourTarget!==undefined)} onClick={()=>{if(byFlour!==(totalFlourTarget!==undefined))onFlourTargetChange(byFlour?500:undefined);}} style={{minHeight:44,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:8,background:byFlour===(totalFlourTarget!==undefined)?'var(--cream)':'white',color:'var(--char)'}}>{byFlour?(fr?'Par quantité de farine':'By flour weight'):(fr?'Par nombre de pains':'By loaf count')}</button>)}
+      </div>}
       <div style={{ marginBottom: '16px' }}>
         <label htmlFor="quantity-count" style={labelStyle}>
           {countLabel ?? (bakeType === 'bread' ? (fr ? 'Nombre de pains' : 'Number of loaves') : (fr ? 'Nombre de pizzas' : 'Number of pizzas'))}
@@ -238,7 +243,12 @@ export default function PrototypeQuantityPicker({
             </button>}
           </div>
         </section>
-      ) : (
+      ) : totalFlourTarget!==undefined&&onFlourTargetChange ? <section style={cardStyle}>
+        <label htmlFor="quantity-total-flour" style={labelStyle}>{fr?'Farine totale':'Total flour'} ({weightUnit})</label>
+        <DraftNumberInput id="quantity-total-flour" type="number" inputMode="decimal" min={shownWeight(50)} max={shownWeight(25000)} step={units==='imperial'?0.1:1} value={shownWeight(totalFlourTarget)} onCommit={value=>onFlourTargetChange(clamp(storedWeight(value),50,25000,1))} style={inputStyle}/>
+        <p style={{fontSize:14,lineHeight:1.5}}>{fr?'Inclut la farine du levain ou du préferment. Cette quantité reste fixe quand les réglages changent ; aucune farine supplémentaire n’est ajoutée pour les pertes.':'Includes flour in the starter or preferment. This amount stays fixed when settings change; no extra flour is added for losses.'}</p>
+        <p style={{fontSize:14}}>{fr?`Le poids de pâte sera calculé avec vos réglages, puis réparti en ${count} pièces.`:`Dough weight will be calculated from your settings, then divided into ${count} pieces.`}</p>
+      </section> : (
         <section style={cardStyle} aria-labelledby="quantity-each-item">
           <h2 id="quantity-each-item" style={{ fontSize: '18px', margin: '0 0 12px', fontWeight: 700 }}>
             {fr ? `Chaque ${piece}` : `Each ${piece}`}

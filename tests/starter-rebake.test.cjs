@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const ts=require('typescript');
 require('./load-production.cjs');
-const {restoreStarterEvents,normalizeMixingBatches}=require('../app/lib/session.ts');
+const {restoreStarterEvents,normalizeMixingBatches,normalizeFlourTarget}=require('../app/lib/session.ts');
 const {normalizeTimingOverrides}=require('../app/utils/timingOverrides.ts');
 const {normalizeSandwichSnapshot,sandwichFamilyForStyle}=require('../app/lib/sandwich.ts');
 const {restoredBakeRoute}=require('../app/lib/bakeNavigation.ts');
@@ -15,7 +15,7 @@ async function restore(yeastType,rebake,starterTimingValid,overrides={},acceptRe
  const state={};
  const storage={};
  const navigationHandler=source.slice(source.indexOf('  function restoreNavigation('),source.indexOf('  // Both advance functions'));
- const context={confirmLocalReplacement:()=>acceptReplacement,Date,Math,Boolean,Object,JSON,isRestoringRef:{current:false},restoreStarterEvents,normalizeMixingBatches,normalizeTimingOverrides,normalizeSandwichSnapshot,sandwichFamilyForStyle,restoredBakeRoute,endRestore(){},setTimeout(){},localStorage:{setItem(key,value){storage[key]=value;}}};
+ const context={confirmLocalReplacement:()=>acceptReplacement,Date,Math,Boolean,Object,JSON,isRestoringRef:{current:false},restoreStarterEvents,normalizeMixingBatches,normalizeFlourTarget,normalizeTimingOverrides,normalizeSandwichSnapshot,sandwichFamilyForStyle,restoredBakeRoute,endRestore(){},setTimeout(){},localStorage:{setItem(key,value){storage[key]=value;}}};
  for(const name of new Set((handler+navigationHandler).match(/\bset[A-Z]\w*/g))) context[name]=value=>{state[name]=typeof value==='function'?value(0):value;};
  const time=Date.now()-14*86400000;
  context.event={id:'saved-bake',dough_snapshot:{yeastType,tab:'custom',recipeGenerated:true,modeChosen:true,eatTime:time,startTime:time-86400000,timingOverrides:{mix:time-86400000,feed:time-90000000},starterEvents:[{kind:'pre_mix',time:time-90000000,isPast:false}],lastFedTime:time-100000000,knownPeakTime:time-86400000,feed2Time:time-90000000,fridgeOutTime:time-87000000,starterFridgeInTime:time-95000000,lastFedAge:'today',planningMode:'know_peak',ovenType:'dutch_oven',mixerType:'hand',itemWeight:800,containerCapacityLitres:5,pizzaParty:{qtys:{}},activeTab:'guide'}};

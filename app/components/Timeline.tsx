@@ -8,7 +8,7 @@ import {
   hoursLabel,
   finalProofWindow,
 } from '../utils';
-import { kneadMinFor, autolyseMinFor, type MixerType } from '../data';
+import { kneadMinFor, autolyseMinFor, preMixAutolyseMinFor, type MixerType } from '../data';
 import { StepIcon, IconProof } from './StepIcons';
 import { formatPrefermentDose } from '../utils/prefermentDose';
 import LearnModal from './LearnModal';
@@ -228,6 +228,8 @@ export function buildItems(
   }
 
   // 1 — Mix & Knead
+  const preRest=preMixAutolyseMinFor(mixerType,styleKey);
+  if(preRest>0) items.push({kind:'step',id:'pre-mix-autolyse',stepKind:'autolyse',time:new Date(+startTime-(preRest+2*(schedule.mixingBatches??1))*60000),label:lang==='fr'?'Autolyse · farine et eau':'Autolyse · flour and water',icon:'',iconKey:'mix',durationH:(preRest+2*(schedule.mixingBatches??1))/60,tip:lang==='fr'?'Mélanger chaque lot 2 min dans un récipient séparé, puis couvrir au moins 30 min. Ajouter la levure ou le levain et le sel à l’heure de pétrissage de chaque lot.':'Combine each batch for 2 minutes in a separate container, then cover for at least 30 minutes. Add yeast or starter and salt at each batch’s mixing time.'});
   items.push({
     kind: 'step', id: 'mixing', stepKind: 'mixing',
     time: startTime,
@@ -744,4 +746,3 @@ export default function Timeline({
     </div>
   );
 }
-

@@ -16,12 +16,14 @@ import { ENRICHED_FORMULAS, ENRICHMENT_WATER_FRACTIONS, type RecipeEnrichment } 
 
 import {
   ALL_STYLES,
+  BREAD_STYLES,
   FLOUR_DATA,
   OVEN_TYPES,
   BREAD_OVEN_TYPES,
   MIXER_TYPES,
   kneadMinFor,
   autolyseMinFor,
+  preMixAutolyseMinFor,
   YEAST_TYPES,
   computeBlendProfile,
   computePrefermentRecipe,
@@ -1246,6 +1248,8 @@ export function buildSchedule(
     // Keep first-lot canonical ids; later lots get unique keys so previews and
     // conflict explanations cannot accidentally point back to the first lot.
     const mixId = index === 0 ? 'mix' : `mix-batch-${index + 1}`;
+    const preRest=preMixAutolyseMinFor(mixerType,styleKey);
+    if(preRest>0&&index===0) actions.push({id:'autolyse',at:new Date(+startTime-(preRest+2*mixingBatches)*60000),end:new Date(+startTime-preRest*60000)});
     const finishId = index === 0 ? 'mix-finish' : `mix-finish-batch-${index + 1}`;
     if (activeMin > 0) {
       const initialMin = restMin > 0 ? Math.min(activeMin, mixerType === 'spiral' ? 3 : 2) : activeMin;
@@ -1457,6 +1461,7 @@ export function calculateRecipe(
   prefActualHours?: number,                // actual planned preferment window (prefOffsetH)
   measuredFlourTemp?: number,              // measured temperature at mixing, °C
   measuredPrefermentTemp?: number,         // measured poolish, biga or levain temperature, °C
+  totalFlourTarget?: number,               // bread: total formula flour, preferment included
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = (ovenType in OVEN_TYPES)
@@ -1543,10 +1548,11 @@ export function calculateRecipe(
   const wasteMult = mode === 'custom' && wastePct !== undefined && wastePct > 0
     ? 1 + wastePct / 100
     : 1;
-  const totalDough = Math.round(numItems * itemWeight * wasteMult);
+  let totalDough = Math.round(numItems * itemWeight * wasteMult);
   const hydPct = (enrichedFormula ? enrichedFormula.water : hydration) / 100;
   const ingredientRatio = 1 + hydPct + (enrichedFormula ? (enrichedFormula.milk + enrichedFormula.eggs + enrichedFormula.butter) / 100 : 0) + (saltPct + Math.max(0, oil) + Math.max(0, sugar)) / 100;
-  let flour = Math.round(totalDough / ingredientRatio);
+  const fixedFlour = styleKey in BREAD_STYLES && Number.isFinite(totalFlourTarget) && totalFlourTarget! >= 50 && totalFlourTarget! <= 25000 ? Math.round(totalFlourTarget!) : undefined;
+  let flour = fixedFlour ?? Math.round(totalDough / ingredientRatio);
   let water = 0;
   let salt = 0;
   let oilG = 0;
@@ -1675,6 +1681,7 @@ export function calculateRecipe(
     // remain part of the formula totals, not an additional yeast mass.
     const addedYeast = yeastType === 'sourdough' ? 0
       : preferment ? preferment.prefYeastGrams : yeast?.convertedGrams ?? 0;
+    if (fixedFlour !== undefined) { totalDough = Math.round(flour * ingredientRatio + addedYeast); break; }
     const nextFlour = Math.round((totalDough - addedYeast) / ingredientRatio);
     if (nextFlour === flour || pass === 3) break;
     flour = nextFlour;

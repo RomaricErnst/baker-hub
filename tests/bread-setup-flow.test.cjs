@@ -9,7 +9,7 @@ function visit(node){
  if(ts.isFunctionDeclaration(node)&&['nextUnanswered','stepAnswered'].includes(node.name?.text))pieces.push(node.getText(tree));
  ts.forEachChild(node,visit);
 }visit(tree);
-const compiled=ts.transpileModule(pieces.join('\n')+'\n({simple:SIMPLE_STEPS,custom:CUSTOM_STEPS,nextUnanswered})',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
+const compiled=ts.transpileModule('const totalFlourTarget=undefined;\n'+pieces.join('\n')+'\n({simple:SIMPLE_STEPS,custom:CUSTOM_STEPS,nextUnanswered})',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
 function model(isUnleavened,styleKey=isUnleavened?'piadina':'baguette'){ 
  return vm.runInNewContext(compiled,{isUnleavened,fr:false,styleKey,tab:'simple',breadProtocol:getBreadProtocol(styleKey),styleDisplayName:key=>key,qtyChosen:true,numItems:4,itemWeight:140,ovenType:isUnleavened?'griddle':'standard_bread',mixerType:'hand',ovenDisplayName:'Equipment',localName:o=>o?.name??null,MIXER_TYPES:data.MIXER_TYPES,profileFields:new Set(),kitchenTemp:22,HUMIDITY_LABEL:{normal:'normal'},humidity:'normal',yeastType:'instant',enrichedDirectOnly:false,YEAST_TYPES:data.YEAST_TYPES,t:key=>key,bakeType:'bread',eatTime:null,startTime:new Date(),formatTime:()=>'',locale:'en',blocks:[],flourChosen:false,archivedFlourNames:[],flourSummary:()=>'',prefermentChosen:true,prefermentType:'none',PREFERMENT_TYPES:data.PREFERMENT_TYPES,manualHydration:undefined,advancedRecipe:null,ALL_STYLES:data.ALL_STYLES});
 }

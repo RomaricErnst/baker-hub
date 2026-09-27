@@ -6,7 +6,7 @@ import { useState, useRef, useEffect, createContext, useContext } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { foldActionLabel } from '../utils/scheduleAvailability';
 import { type ScheduleResult, formatTime, hoursLabel, finalProofWindow } from '../utils';
-import { MIXER_TYPES, AUTOLYSE_MIN, autolyseMinFor, type MixerType } from '../data';
+import { MIXER_TYPES, AUTOLYSE_MIN, autolyseMinFor, preMixAutolyseMinFor, type MixerType } from '../data';
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
 import { toggleStepCompletion } from '../utils/guideProgress';
@@ -782,6 +782,8 @@ export default function BakeGuide({
   const u = units ?? 'metric';
   const l = locale === 'fr' ? 'fr' : 'en';
   const enriched = !!recipe?.enrichment;
+  const preMixAutolyse=preMixAutolyseMinFor(mixerType,styleKey);
+  const autolyseAction=schedule.availabilityActions?.find(action=>action.id==='autolyse');
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(phase === 'preparation' ? 0 : 1);
   const [totalSteps, setTotalSteps] = useState(0);
@@ -946,6 +948,8 @@ export default function BakeGuide({
   const currentMixWindow = batch && batch.count > 1 ? schedule.batchMixWindows?.[batch.active] : undefined;
   const displayedMixTime = currentStep !== 0 && currentMixWindow ? currentMixWindow.start : schedule.batchMixWindows?.[0]?.start ?? bgMixStart;
   const displayedMixDuration = currentStep !== 0 && currentMixWindow ? (+currentMixWindow.end - +currentMixWindow.start) / 3600000 : schedule.mixingDurationH;
+  const laterAutolysedBatch = preMixAutolyse > 0 && currentStep !== 0 && (batch?.active ?? 0) > 0;
+  const showAutolyseStart = preMixAutolyse > 0 && !laterAutolysedBatch;
   const mixingOverviewNote = batch && batch.count > 1 ? (l === 'fr' ? `${batch.count} pétrissées à la suite` : `${batch.count} consecutive batches`) : undefined;
   const serialMixNote = batch && batch.count > 1 ? <p>{l === 'fr' ? 'Pétrissez les lots à la suite. Les premiers fermentent pendant les suivants : surveillez chaque lot ; les horaires de repos sont communs.' : 'Mix the batches one after another. Earlier batches ferment while you mix the next ones: check each batch; the rest schedule is shared.'}</p> : null;
   const bgPoolishG = batch?.portion.preferment || null;
@@ -1397,10 +1401,11 @@ Actual dough condition and equipment may differ from these estimates.`;
       )}
 
       {/* ── STEP: Mix Dough ─────────────────────────── */}
-      <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={t('stepTitles.mixDough')}
-        time={displayedMixTime} duration={displayedMixDuration} overviewNote={mixingOverviewNote} accent={D.ash}>
+      <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={showAutolyseStart?(l==='fr'?'Autolyse puis pétrissage':'Autolyse, then mixing'):t('stepTitles.mixDough')}
+        time={showAutolyseStart?(autolyseAction?.at??new Date(+displayedMixTime-(preMixAutolyse+2*(schedule.mixingBatches??1))*60000)):displayedMixTime} duration={showAutolyseStart?(displayedMixDuration??0)+(preMixAutolyse+2*(schedule.mixingBatches??1))/60:displayedMixDuration} overviewNote={preMixAutolyse?<span>{l==='fr'?'Levure ou levain, et sel, au pétrissage à ':'Yeast or starter, and salt, at mixing time: '}{formatTime(displayedMixTime,_fmtLocale)}</span>:mixingOverviewNote} accent={D.ash}>
 
         {serialMixNote}
+        {preMixAutolyse>0&&(schedule.mixingBatches??1)>1&&<p>{l==='fr'?'Avant la première pétrissée, préparez la farine et l’eau de chaque lot dans un récipient séparé : comptez 2 min par lot, puis couvrez au moins 30 min. Les lots suivants restent couverts en attendant leur pétrissage. N’ajoutez leur levure ou levain et leur sel qu’à leur tour.':'Before the first mix, combine each batch’s flour and water in a separate container: allow 2 minutes per batch, then cover for at least 30 minutes. Later batches stay covered until their mixing turn. Add their yeast or starter and salt only at that turn.'}</p>}
         {batch && <Section icon="" title={batch.count > 1 ? (l === 'fr' ? `Pétrissée ${batch.active + 1} sur ${batch.count}` : `Batch ${batch.active + 1} of ${batch.count}`) : (l === 'fr' ? 'À mélanger' : 'Use now')}>
           {Object.entries(batch.portion).filter(([key,grams]) => grams > 0 && !(key === 'flour' && recipe?.flourParts?.length)).map(([key,grams]) => <div key={key} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{({milk:l==='fr'?'Lait':'Milk',eggs:l==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:l==='fr'?'Beurre':'Butter',flour:l==='fr'?'Farine':'Flour',water:l==='fr'?'Eau':'Water',salt:l==='fr'?'Sel':'Salt',oil:l==='fr'?'Huile':'Oil',sugar:l==='fr'?'Sucre':'Sugar',yeast:l==='fr'?'Levure':'Yeast',starter:l==='fr'?'Levain':'Starter',preferment:prefermentType ?? 'Preferment'} as Record<string,string>)[key]}</span><strong>{grams} g</strong></div>)}
           {!!recipe?.flourParts?.length && (() => {
@@ -1429,10 +1434,10 @@ Actual dough condition and equipment may differ from these estimates.`;
             {bold:l==='fr'?'Ajoutez le beurre souple progressivement ; laissez chaque ajout s’incorporer.':'Add softened butter gradually; let each addition incorporate.',note:l==='fr'?'Arrêtez quand la pâte est homogène et élastique. Si elle devient grasse ou trop chaude, faites une pause au frais.':'Stop when smooth and elastic. If the dough becomes greasy or too warm, pause and cool it.'},
           ] : [
             {bold:l==='fr'?'Pesez les ingrédients de cette pétrissée indiqués ci-dessus.':'Weigh this batch’s ingredients shown above.',note:recipe?.yeast?.yeastType==='active_dry'?(l==='fr'?'Réactivez la levure selon le sachet avec une partie de l’eau mesurée.':'Activate the yeast as directed on its packet using part of the measured water.'):''},
-            {bold:hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'
+            {bold:laterAutolysedBatch?(l==='fr'?'Reprenez le mélange farine-eau de ce lot, préparé avant la première pétrissée.':'Take this batch’s flour-water mixture, prepared before the first mix.'):hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'
               ?(waterMethod==='direct'&&mixerType==='spiral'&&recipe?.oil===0&&recipe?.sugar===0&&!['brioche','pain_mie','pain_viennois'].includes(styleKey)?(l==='fr'?'Mélangez la farine avec 90 % de l’eau liquide prévue ; réservez le reste. Ajoutez la glace mesurée au pétrissage si elle est indiquée ci-dessus.':'Combine flour with 90% of the planned liquid water; reserve the rest. Add the measured ice during mixing if shown above.'):(l==='fr'?'Mélangez la farine avec 90 % de l’eau préparée ; réservez le reste.':'Combine flour with 90% of the prepared water; reserve the rest.'))
               :(l==='fr'?'Mélangez la farine avec l’eau préparée ci-dessus.':'Combine flour with the water preparation shown above.'),note:''},
-            ...(!isSourdough && autolyseMinFor(mixerType, styleKey) > 0 ? [{bold:l==='fr'?`Couvrez et laissez reposer ${autolyseMinFor(mixerType, styleKey)} min, comme prévu au planning.`:`Cover and rest ${autolyseMinFor(mixerType, styleKey)} min, as scheduled.`,note:''}] : []),
+            ...(preMixAutolyse>0 ? [{bold:laterAutolysedBatch?(l==='fr'?'L’autolyse de ce lot est déjà faite : ne recommencez pas les 30 min de repos.':'This batch has already autolysed: do not repeat the 30-minute rest.'):(l==='fr'?`Autolyse : mélangez farine et eau 2 min par lot, puis couvrez au moins 30 min, sans levure, levain ni sel.`:`Autolyse: combine flour and water for 2 minutes per batch, then cover for at least 30 minutes, without yeast, starter or salt.`),note:l==='fr'?`Incorporez la levure ou le levain et le sel à ${formatTime(displayedMixTime,_fmtLocale)}. Le repos précède cet horaire et ne retarde pas l’ajout du ferment.`:`Add yeast or starter and salt at ${formatTime(displayedMixTime,_fmtLocale)}. The rest comes before that time and does not delay adding the yeast or starter.`}] : !isSourdough && autolyseMinFor(mixerType, styleKey)>0 ? [{bold:l==='fr'?`Couvrez et laissez reposer ${autolyseMinFor(mixerType, styleKey)} min, comme prévu au planning.`:`Cover and rest ${autolyseMinFor(mixerType, styleKey)} min, as scheduled.`,note:''}] : []),
             {bold:isSourdough?(l==='fr'?'Incorporez le levain mûr et le sel.':'Incorporate the ripe starter and salt.'):hasPref?(l==='fr'?`Incorporez votre ${prefermentType} préparé, puis le sel.`:`Incorporate the prepared ${prefermentType}, then the salt.`):(l==='fr'?'Incorporez la levure et le sel.':'Incorporate the yeast and salt.'),note:''},
             ...(hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'?[{bold:l==='fr'?'Quand la pâte se tient, ajoutez progressivement l’eau réservée ; laissez chaque ajout s’incorporer.':'Once the dough holds together, add the reserved water gradually; let each addition absorb.',note:''}]:[]),
             {bold:mixerType==='no_knead'?(l==='fr'?'Arrêtez une fois homogène. Couvrez ; les repos et rabats prévus développeront la pâte.':'Stop once combined. Cover; scheduled rests and folds develop the dough.'):styleKey==='pain_seigle'?(l==='fr'?'Mélangez jusqu’à homogénéité ; le seigle reste collant.':'Mix until evenly combined; rye dough remains sticky.'):mixerType==='hand'?(l==='fr'?'Pétrissez à la main jusqu’à une pâte homogène et élastique.':'Knead by hand until cohesive and elastic.'):(l==='fr'?'Pétrissez jusqu’à une pâte homogène et élastique, aux vitesses autorisées par votre pétrin.':'Knead until cohesive and elastic, using only your mixer’s permitted dough speeds.'),note:''},
@@ -1935,7 +1940,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             ) as { bold: string; note: string }[])} />
           ) : ovenType === 'pizza_oven' ? (
             <Steps items={ovenConstruction === 'masonry' ? [
-              { bold: l === 'fr' ? 'Chauffez la sole et la voûte à cœur.' : 'Heat the floor and dome thoroughly.', note: l === 'fr' ? 'Suivez le temps de chauffe de votre four maçonné.' : 'Follow your masonry oven’s heat-up instructions.' },
+              { bold: l === 'fr' ? 'Chauffez la sole et la voûte à cœur.' : 'Heat the floor and dome thoroughly.', note: l === 'fr' ? 'Suivez le temps de chauffe de votre four à pizza traditionnel.' : 'Follow your traditional pizza oven’s heat-up instructions.' },
               { bold: l === 'fr' ? 'Contrôlez la température de la sole avant d’enfourner.' : 'Check the floor temperature before launching.', note: l === 'fr' ? 'Laissez-la remonter entre deux pizzas.' : 'Let it recover between pizzas.' },
             ] : t.raw('preheat.pizzaOven.steps') as { bold: string; note: string }[]} />
           ) : ovenType === 'electric_pizza' ? (

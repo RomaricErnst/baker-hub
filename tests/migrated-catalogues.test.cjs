@@ -6,7 +6,7 @@ const flours=require('../lib/flourCatalogue.json');
 const recipes=require('../app/lib/auditedPizzaRecipes.json');
 test('selectable branded flour catalogue has unique IDs and local photos',()=>{
  a.equal(new Set(flours.map(f=>f.id)).size,flours.length);
- const branded=flours.filter(f=>f.brand!=='Generic');a.equal(branded.length,244);
+ const branded=flours.filter(f=>f.brand!=='Generic');a.equal(branded.length,247);
  for(const f of branded){a.notEqual(f.catalogStatus,'retired');a.ok(f.bagImage.startsWith('/images/flours/'),f.id);a.ok(fs.statSync(path.join(root,'public',f.bagImage)).size>1000,f.id);}
 });
 test('audited recipe ingredients retain bilingual names and valid amounts',()=>{

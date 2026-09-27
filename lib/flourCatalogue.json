@@ -1,5 +1,126 @@
 [
   {
+    "id": "celnat_seigle_t130",
+    "brand": "Celnat",
+    "name": "Farine de seigle T130 bio",
+    "protein": 7.2,
+    "manufacturerType": "Seigle T130",
+    "packSizesKg": [
+      1,
+      3
+    ],
+    "type": "rye",
+    "country": "fr",
+    "w": null,
+    "wPublished": false,
+    "proteinPublished": true,
+    "hydration": null,
+    "hydrationPublished": false,
+    "bestFor": [
+      "pain_seigle"
+    ],
+    "crowdFavourite": [],
+    "note": "French brand rye flour. Product identity and pack sizes verified with manufacturer; W and recipe hydration are not published.",
+    "bagImage": "/images/flours/celnat_seigle_t130.webp",
+    "logo": null,
+    "bagImageSource": "https://www.celnat.fr/ref/farine-de-seigle-t130-2",
+    "verification": {
+      "status": "partially-verified",
+      "fields": [
+        "identity",
+        "type",
+        "packSizesKg",
+        "protein"
+      ],
+      "source": "https://www.celnat.fr/ref/farine-de-seigle-t130-2",
+      "checked": "2026-09-27"
+    },
+    "specificationNote": {
+      "fr": "Farine de seigle. Force W et hydratation non publiées ; le calcul utilise les hypothèses du type seigle, pas des mesures de ce produit.",
+      "en": "Rye flour. W strength and hydration are unpublished; calculations use rye-type assumptions, not measurements of this product."
+    }
+  },
+  {
+    "id": "foricher_seigle_t130",
+    "brand": "Foricher",
+    "name": "Seigle T130",
+    "protein": null,
+    "manufacturerType": "Seigle T130",
+    "packSizesKg": [
+      1,
+      5,
+      25
+    ],
+    "type": "rye",
+    "country": "fr",
+    "w": null,
+    "wPublished": false,
+    "proteinPublished": false,
+    "hydration": null,
+    "hydrationPublished": false,
+    "bestFor": [
+      "pain_seigle"
+    ],
+    "crowdFavourite": [],
+    "note": "French brand rye flour. Product identity and pack sizes verified with manufacturer; W and recipe hydration are not published.",
+    "bagImage": "/images/flours/foricher_seigle_t130.webp",
+    "logo": null,
+    "bagImageSource": "https://www.foricher.com/nos-farines/seigle-t130",
+    "verification": {
+      "status": "partially-verified",
+      "fields": [
+        "identity",
+        "type",
+        "packSizesKg"
+      ],
+      "source": "https://www.foricher.com/nos-farines/seigle-t130",
+      "checked": "2026-09-27"
+    },
+    "specificationNote": {
+      "fr": "Farine de seigle. Force W et hydratation non publiées ; le calcul utilise les hypothèses du type seigle, pas des mesures de ce produit.",
+      "en": "Rye flour. W strength and hydration are unpublished; calculations use rye-type assumptions, not measurements of this product."
+    }
+  },
+  {
+    "id": "foricher_seigle_t170",
+    "brand": "Foricher",
+    "name": "Seigle T170",
+    "protein": null,
+    "manufacturerType": "Seigle T170",
+    "packSizesKg": [
+      25
+    ],
+    "type": "rye",
+    "country": "fr",
+    "w": null,
+    "wPublished": false,
+    "proteinPublished": false,
+    "hydration": null,
+    "hydrationPublished": false,
+    "bestFor": [
+      "pain_seigle"
+    ],
+    "crowdFavourite": [],
+    "note": "French brand rye flour. Product identity and pack sizes verified with manufacturer; W and recipe hydration are not published.",
+    "bagImage": "/images/flours/foricher_seigle_t170.webp",
+    "logo": null,
+    "bagImageSource": "https://www.foricher.com/nos-farines/seigle-t170",
+    "verification": {
+      "status": "partially-verified",
+      "fields": [
+        "identity",
+        "type",
+        "packSizesKg"
+      ],
+      "source": "https://www.foricher.com/nos-farines/seigle-t170",
+      "checked": "2026-09-27"
+    },
+    "specificationNote": {
+      "fr": "Farine de seigle. Force W et hydratation non publiées ; le calcul utilise les hypothèses du type seigle, pas des mesures de ce produit.",
+      "en": "Rye flour. W strength and hydration are unpublished; calculations use rye-type assumptions, not measurements of this product."
+    }
+  },
+  {
     "id": "caputo_pizzeria",
     "brand": "Caputo",
     "name": "Pizzeria",

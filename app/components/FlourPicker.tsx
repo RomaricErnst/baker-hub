@@ -42,7 +42,7 @@ const BREAD_FAV_BY_STYLE: Record<string, string[]> = {
   pain_levain: ['foricher_t65', 'ka_bread', 'celnat_t80_bio', 'francine_t65'],
   baguette: ['francine_t65', 'foricher_t65', 'gmp_t65', 'francine_bio_t55'],
   pain_complet: ['francine_complete', 'doves_wholemeal', 'bobs_whole_wheat', 'shipton_wholemeal'],
-  pain_seigle: ['doves_farm_rye', 'bobs_dark_rye', 'shipton_rye', 'ka_organic_medium_rye'],
+  pain_seigle: ['celnat_seigle_t130', 'foricher_seigle_t130', 'foricher_seigle_t170', 'shipton_rye'],
   brioche: ['gruau_dor_gruau_t45', 'gmp_t45_gruau', 'caputo_manitoba', 'ka_bread'],
   pain_mie: ['francine_bio_t55', 'ka_bread', 'francine_t65', 'gmp_t65'],
   pain_viennois: ['gruau_dor_gruau_t45', 'gmp_t45_gruau', 'ka_bread', 'francine_bio_t55'],
@@ -995,4 +995,3 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
     </div>
   );
 }
-
