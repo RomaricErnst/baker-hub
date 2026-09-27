@@ -530,10 +530,9 @@ html[data-preview="true"] vercel-live-feedback { display:none !important; }
 .bh-schedule-timeline button:focus-visible { outline:2px solid var(--terra); outline-offset:3px; }
 
 /* Preparation views are peers, with quiet navigation rather than two CTAs. */
-.bh-preparation-tabs { flex-wrap:nowrap; gap:20px; border-bottom:1px solid var(--border); margin:0 0 24px; }
+.bh-preparation-tabs { flex-wrap:nowrap; gap:20px; border-bottom:1px solid var(--border); margin:0 0 12px; }
 .bh-preparation-tabs button { flex:0 1 auto; min-width:0; padding:10px 0; border:0; border-bottom:2px solid transparent; border-radius:0; background:transparent; font-size:14px; }
 .bh-preparation-tabs button[aria-pressed="true"] { background:transparent; color:var(--terra); border-color:var(--terra); font-weight:600; }
-.bh-fillings-progress { font-size:12px; font-weight:400; white-space:nowrap; color:var(--terra); }
 
-.bh-local-progress { margin:0 0 16px; min-height:44px; display:flex; align-items:center; color:var(--terra); font-size:14px; }
+.bh-local-progress { margin:0 0 4px; min-height:44px; display:flex; align-items:center; color:var(--terra); font-size:14px; }
 .bh-local-progress .bh-step-trigger { font-size:14px; padding:0; }
