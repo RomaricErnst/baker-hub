@@ -30,7 +30,7 @@ test('blend separators expose named keyboard sliders and adjacent-pair bounds',(
  const React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
  const html=renderToStaticMarkup(React.createElement(m.exports.BlendBar,{parts:[{name:'Base',pct:70,w:270},{name:'Second',pct:20,w:280},{name:'Third',pct:10,w:310}],onChange:()=>{},locale:'en',approx:true}));
  assert.equal((html.match(/role="slider"/g)||[]).length,2);
- assert.match(html,/aria-label="Base · flour percentage" aria-valuemin="5" aria-valuemax="85" aria-valuenow="70"/);
- assert.match(html,/aria-label="Second · flour percentage" aria-valuemin="5" aria-valuemax="25" aria-valuenow="20"/);
+ assert.match(html,/aria-label="Base · flour percentage" aria-valuemin="1" aria-valuemax="89" aria-valuenow="70"/);
+ assert.match(html,/aria-label="Second · flour percentage" aria-valuemin="1" aria-valuemax="29" aria-valuenow="20"/);
  assert.equal((html.match(/tabindex="0"/g)||[]).length,2);
 });

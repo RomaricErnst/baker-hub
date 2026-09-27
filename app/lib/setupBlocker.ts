@@ -5,6 +5,7 @@ export interface SetupBlocker {
 }
 
 export interface SetupBlockerInput {
+  batchTimingConflict?: boolean;
   custom: boolean;
   fr: boolean;
   protocolIssue?: 'method' | 'equipment' | 'timing';
@@ -33,6 +34,7 @@ export function getSetupBlocker(input: SetupBlockerInput): SetupBlocker | undefi
     const preferment=custom&&!input.sourdough&&input.hasPreferment;
     return block(preferment?8:custom?7:6,'La méthode choisie ne convient pas à cette pâte.','The selected method is not supported for this dough.',preferment?'Revoir le préferment':'Revoir la levure',preferment?'Review preferment':'Review yeast');
   }
+  if(input.batchTimingConflict) return block(3,'Les premières pâtes demandent un rabat avant la fin des pétrissées. Réduisez la quantité ou prévoyez des fournées séparées.','The first dough needs a fold before all batches are mixed. Reduce the quantity or plan separate bakes.','Revoir les pétrissées','Review mixing batches');
   if(input.protocolIssue==='timing') return block(plan,'Le temps prévu ne permet pas de préparer ce pain.','The planned timing does not allow this bread to be prepared.','Ajuster le plan','Adjust the plan');
   if(input.schedulePlanReady===false) return block(plan,'Le planning reste à ajuster.','The schedule still needs adjusting.','Ajuster le plan','Adjust the plan');
   if(!input.prefermentPlanReady) return block(plan,'Le planning du préferment reste à compléter.','The preferment schedule still needs to be completed.','Compléter le plan','Complete the plan');

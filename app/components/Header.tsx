@@ -11,6 +11,7 @@ import type { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { type UnitSystem } from '../utils/units';
 import SessionViewer from './SessionViewer';
+import {readAuthIntent, type AuthIntent} from '../lib/session';
 import { PIZZAS, DESSERT_PIZZAS } from '@/app/lib/toppingDatabase';
 
 function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
@@ -223,6 +224,7 @@ export default function Header({
   onLoadRecipe,
   recipeGenerated,
   sessionSaved,
+  saving = false,
   sessionRestored,
   hideActionBar,
   backHref,
@@ -248,6 +250,7 @@ export default function Header({
   onLoadRecipe?: (r: SavedRecipe) => void;
   recipeGenerated?: boolean;
   sessionSaved?: boolean;
+  saving?: boolean;
   sessionRestored?: boolean;
   hideActionBar?: boolean;
   // Renders a persistent back chip instead of the action pill (About page)
@@ -309,11 +312,14 @@ export default function Header({
   // bakers tapping "Save & Share" get the drawer with the auth block
   // spotlighted and a contextual line — no hunting for where to sign in.
   const [authSpotlight, setAuthSpotlight] = useState(false);
+  const [authReason, setAuthReason] = useState<AuthIntent | null>(null);
+  useEffect(() => { if (!menuOpen) setAuthReason(null); }, [menuOpen]);
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const open = () => {
       setMenuOpen(true);
       setMenuPage('account');
+      setAuthReason(readAuthIntent());
       setAuthSpotlight(true);
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => setAuthSpotlight(false), 4000);
@@ -512,12 +518,12 @@ export default function Header({
       {!backHref && !hideActionBar && (
         <div style={{ order: 2, display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
           {onSaveSession && (onNewSession || recipeGenerated || sessionRestored) && (
-            <button className="bh-header-save" onClick={() => { if (!sessionSaved) onSaveSession(); }}
-              aria-label={sessionSaved ? (user ? (locale === 'fr' ? 'Enregistré dans votre compte' : 'Saved to your account') : (locale === 'fr' ? 'Enregistré sur cet appareil' : 'Saved on this device')) : (locale === 'fr' ? 'Enregistrer' : 'Save')}
-              title={sessionSaved ? (user ? (locale === 'fr' ? 'Enregistré dans votre compte' : 'Saved to your account') : (locale === 'fr' ? 'Enregistré sur cet appareil' : 'Saved on this device')) : undefined}
-              aria-disabled={sessionSaved}
-              style={{ border: '1px solid var(--border)', borderRadius: '10px', background: 'transparent', color: 'var(--char)', minHeight: '44px', minWidth: '44px', padding: '8px 10px', fontFamily: 'var(--font-ui)', fontSize: '16px', fontWeight: 500, whiteSpace: 'nowrap', cursor: sessionSaved ? 'default' : 'pointer' }}>
-              {sessionSaved ? (locale === 'fr' ? 'Enregistré' : 'Saved') : (locale === 'fr' ? 'Enregistrer' : 'Save')}
+            <button className="bh-header-save" onClick={() => { if ((!sessionSaved || !user) && !saving) onSaveSession(); }}
+              aria-label={saving ? (locale === 'fr' ? 'Enregistrement en cours' : 'Saving in progress') : sessionSaved ? (user ? (locale === 'fr' ? 'Enregistré dans votre compte' : 'Saved to your account') : (locale === 'fr' ? 'Enregistré sur cet appareil. Enregistrer dans mon compte' : 'Saved on this device. Save to my account')) : (locale === 'fr' ? 'Enregistrer' : 'Save')}
+              title={saving ? (locale === 'fr' ? 'Enregistrement en cours' : 'Saving in progress') : sessionSaved ? (user ? (locale === 'fr' ? 'Enregistré dans votre compte' : 'Saved to your account') : (locale === 'fr' ? 'Enregistré sur cet appareil' : 'Saved on this device')) : undefined}
+              disabled={saving} aria-busy={saving} aria-disabled={(sessionSaved && !!user) || saving}
+              style={{ border: '1px solid var(--border)', borderRadius: '10px', background: 'transparent', color: 'var(--char)', minHeight: '44px', minWidth: '44px', padding: '8px 10px', fontFamily: 'var(--font-ui)', fontSize: '16px', fontWeight: 500, whiteSpace: 'nowrap', cursor: (sessionSaved && user) || saving ? 'default' : 'pointer' }}>
+              {saving ? (locale === 'fr' ? 'Enregistrement…' : 'Saving…') : sessionSaved && user ? (locale === 'fr' ? 'Enregistré' : 'Saved') : (locale === 'fr' ? 'Enregistrer' : 'Save')}
             </button>
           )}
         </div>
@@ -762,15 +768,15 @@ export default function Header({
               transition: 'box-shadow .3s, background .3s',
             } : { transition: 'box-shadow .3s, background .3s' }),
           }}>
-            {authSpotlight && !user && (
+            {authReason && !user && (
               <div style={{
-                fontSize: '12px', color: 'var(--gold)',
+                fontSize: '14px', color: 'var(--char)',
                 fontFamily: 'var(--font-ui)', marginBottom: '8px',
                 lineHeight: 1.45,
               }}>
                 {locale === 'fr'
-                  ? 'Connectez-vous pour sauvegarder et partager vos fournées'
-                  : 'Sign in to save and share your bakes'}
+                  ? (authReason === 'share' ? 'Connectez-vous pour partager cette recette.' : 'Connectez-vous pour enregistrer cette recette dans votre compte et la retrouver sur vos autres appareils.')
+                  : (authReason === 'share' ? 'Sign in to share this recipe.' : 'Sign in to save this recipe to your account and access it on your other devices.')}
               </div>
             )}
             {user ? (

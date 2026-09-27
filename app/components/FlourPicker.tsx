@@ -200,8 +200,33 @@ interface FlourPickerProps {
 // The base flour never carries a control of its own: it is 100 minus the rest,
 // so an invalid blend cannot be expressed. Dragging a handle trades between the
 // two parts it separates; the others hold still. Three flours is the ceiling —
-// below about 14% a segment can no longer hold its own name, and two 5%
-// segments on a narrow phone are 18px wide.
+// Small segments remain adjustable through the exact percentage inputs below.
+export function adjustBlendPercentage(pcts: number[], index: number, requested: number): number[] {
+  if (index <= 0 || index >= pcts.length || !Number.isFinite(requested)) return pcts;
+  const next = [...pcts];
+  const pair = pcts[0] + pcts[index];
+  next[index] = Math.max(1, Math.min(pair - 1, Math.round(requested)));
+  next[0] = pair - next[index];
+  return next;
+}
+
+function BlendPercentageInput({name, value, max, locale, onCommit}: {name:string; value:number; max:number; locale:string; onCommit:(value:number)=>void}) {
+  const [text, setText] = useState(String(value));
+  function commit() {
+    const parsed = text.trim() === '' ? value : Number(text);
+    const next = Number.isFinite(parsed) ? Math.max(1, Math.min(max, Math.round(parsed))) : value;
+    setText(String(next)); onCommit(next);
+  }
+  return <label style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,fontSize:14}}>
+    <span>{name}</span><span style={{display:'flex',alignItems:'center',gap:6}}>
+      <input type="number" inputMode="numeric" min={1} max={max} step={1} value={text}
+        aria-label={`${name} · ${locale === 'fr' ? 'pourcentage de farine' : 'flour percentage'}`}
+        onChange={e=>setText(e.target.value)} onBlur={commit} onKeyDown={e=>{if(e.key==='Enter')e.currentTarget.blur();}}
+        style={{width:76,minHeight:44,fontSize:16,padding:8,border:'1px solid var(--border)',borderRadius:8}} />%
+    </span>
+  </label>;
+}
+
 export function BlendBar({ parts, onChange, locale, approx }: {
   parts: { name: string; pct: number; w: number }[];
   onChange: (pcts: number[]) => void;
@@ -223,7 +248,7 @@ export function BlendBar({ parts, onChange, locale, approx }: {
     const move = (ev: PointerEvent) => {
       const r = el.getBoundingClientRect();
       const pos = Math.max(0, Math.min(100, ((ev.clientX - r.left) / r.width) * 100));
-      const left = Math.max(5, Math.min(pair - 5, Math.round(pos - before)));
+      const left = Math.max(1, Math.min(pair - 1, Math.round(pos - before)));
       const next = parts.map(p => p.pct);
       next[i] = left; next[i + 1] = pair - left;
       onChange(next);
@@ -266,14 +291,14 @@ export function BlendBar({ parts, onChange, locale, approx }: {
           return (
             <div key={`g${i}`} role="slider" tabIndex={0}
               aria-label={`${p.name} · ${locale === 'fr' ? 'pourcentage de farine' : 'flour percentage'}`}
-              aria-valuemin={5} aria-valuemax={p.pct + parts[i + 1].pct - 5}
+              aria-valuemin={1} aria-valuemax={p.pct + parts[i + 1].pct - 1}
               aria-valuenow={p.pct} aria-valuetext={`${p.pct}% ${p.name} · ${parts[i + 1].pct}% ${parts[i + 1].name}`}
               onKeyDown={e => {
                 const pair = p.pct + parts[i + 1].pct;
                 const delta = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : 0;
                 if (!delta && e.key !== 'Home' && e.key !== 'End') return;
                 e.preventDefault();
-                const left = e.key === 'Home' ? 5 : e.key === 'End' ? pair - 5 : Math.max(5, Math.min(pair - 5, p.pct + delta));
+                const left = e.key === 'Home' ? 1 : e.key === 'End' ? pair - 1 : Math.max(1, Math.min(pair - 1, p.pct + delta));
                 const next = parts.map(part => part.pct); next[i] = left; next[i + 1] = pair - left;
                 onChange(next);
               }}
@@ -289,6 +314,11 @@ export function BlendBar({ parts, onChange, locale, approx }: {
             </div>
           );
         })}
+      </div>
+      <div style={{display:'grid',gap:8,marginBottom:12}}>
+        <div style={{display:'flex',justifyContent:'space-between',gap:12,fontSize:14}}><span>{parts[0].name}</span><span>{parts[0].pct}%</span></div>
+        {parts.slice(1).map((part,i)=><BlendPercentageInput key={`${i+1}:${part.pct}`} name={part.name} value={part.pct} max={parts[0].pct+part.pct-1} locale={locale}
+          onCommit={value=>onChange(adjustBlendPercentage(parts.map(p=>p.pct),i+1,value))} />)}
       </div>
       <div style={{
         display: 'flex', justifyContent: 'space-between', fontSize: '12px',

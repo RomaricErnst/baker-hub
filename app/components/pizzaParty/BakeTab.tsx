@@ -1,5 +1,5 @@
 'use client';
-import JourneyCompletion from '../JourneyCompletion';
+import JourneyCompletion, { type CompletionActions } from '../JourneyCompletion';
 import { approvedPizzaImage } from '../../lib/approvedPizzaImage';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
@@ -68,8 +68,8 @@ const STONE_GUIDE: OvenGuide = {
 
 const STANDARD_GUIDE: OvenGuide = {
   high: {
-    en: ['≈ 8–10 min, top rack — finish 60 s under the broiler if it looks pale.', 'An upside-down baking sheet, well preheated, gets close to a stone.'],
-    fr: ['≈ 8–10 min, grille haute — finir 60 s sous le gril si elle reste pâle.', "Une plaque retournée et bien préchauffée s'approche de l'effet pierre."],
+    en: ['≈ 8–10 min, upper-middle rack. If pale, finish briefly under the broiler, watching continuously.', 'An upside-down baking sheet, well preheated, gets close to a stone.'],
+    fr: ['≈ 8–10 min, grille médiane-haute. Si elle reste pâle, finir brièvement sous le gril en surveillant sans interruption.', "Une plaque retournée et bien préchauffée s'approche de l'effet pierre."],
   },
   mid: {
     en: ['≈ 9–11 min, upper-middle rack.', 'A short broil at the very end brings back colour if needed.'],
@@ -161,8 +161,9 @@ function getOvenGuidance(ovenType: string | undefined, ovenTemp: OvenTempKey, l:
 }
 
 
-interface BakeTabProps {
+interface BakeTabProps extends CompletionActions {
   selectedPizzas: Record<string, number>;
+  plannedPizzaCount?: number;
   locale: string;
   styleKey?: string;
   kitchenTemp?: number;
@@ -437,7 +438,7 @@ function CoachButton({
   );
 }
 
-export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp, prefermentType, bakeEventId, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onBakedQtysChange, initialDoneCounts }: BakeTabProps) {
+export default function BakeTab({ selectedPizzas, plannedPizzaCount, locale, styleKey, kitchenTemp, prefermentType, bakeEventId, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onRepeat, resultNotes, onResultNotesChange, saveKind, onBakedQtysChange, initialDoneCounts }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
@@ -496,7 +497,9 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
     .filter((e): e is { pizza: Pizza; qty: number } => e !== null);
 
   const totalOrdered = selectedEntries.reduce((acc, e) => acc + e.qty, 0);
-  const totalDone = Object.values(doneCounts).reduce((a, b) => a + b, 0);
+  const totalDone = selectedEntries.reduce((sum, {pizza, qty}) => sum + Math.min(qty, Math.max(0, doneCounts[pizza.id] ?? 0)), 0);
+  const extraDone = selectedEntries.reduce((sum, {pizza, qty}) => sum + Math.max(0, (doneCounts[pizza.id] ?? 0) - qty), 0);
+  const allSelectedDone = selectedEntries.length > 0 && selectedEntries.every(({pizza, qty}) => (doneCounts[pizza.id] ?? 0) >= qty);
 
   function changeDoneCount(pizzaId: string, delta: number) {
     setDoneCounts(prev => {
@@ -598,31 +601,33 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
           fontFamily: 'var(--font-ui)', fontSize: '26px',
           fontWeight: 700, color: 'var(--char)', margin: '0 0 2px',
         }}>
-          {t('header.title')}
+          {allSelectedDone ? (l === 'fr' ? 'Service terminé pour votre sélection' : 'Your selected pizzas are baked') : t('header.title')}
         </h2>
         <p style={{
           fontFamily: 'var(--font-ui)', fontSize: '13px',
           color: 'var(--smoke)', margin: '0 0 12px',
         }}>
-          {t('header.subtitle')}
+          {allSelectedDone ? (l === 'fr' ? 'Retrouvez les pizzas servies ci-dessous.' : 'Your baked pizzas are listed below.') : t('header.subtitle')}
         </p>
         {totalDone > 0 && (
           <div style={{ marginBottom: '16px' }}>
             <div style={{
               fontFamily: 'var(--font-ui)', fontSize: '11px',
-              color: totalDone >= totalOrdered ? '#6B7A5A' : 'var(--smoke)',
+              color: allSelectedDone ? '#6B7A5A' : 'var(--smoke)',
               marginBottom: '8px',
             }}>
-              {totalDone >= totalOrdered
-                ? (l === 'fr' ? 'Toutes les pizzas cuites !' : 'All pizzas baked!')
+              {allSelectedDone
+                ? (l === 'fr' ? 'Toutes les pizzas sélectionnées sont cuites !' : 'All selected pizzas baked!')
                 : (l === 'fr'
                   ? `${totalDone} / ${totalOrdered} cuites`
                   : `${totalDone} / ${totalOrdered} baked`)}
             </div>
+            {plannedPizzaCount != null && plannedPizzaCount > totalOrdered && <p style={{fontSize:13,color:'var(--smoke)',margin:'0 0 8px'}}>{l === 'fr' ? `Ce suivi couvre ${totalOrdered} pizza${totalOrdered > 1 ? 's' : ''} sur ${plannedPizzaCount} prévues. Les ${plannedPizzaCount - totalOrdered} autres ne sont pas suivies ici.` : `This tracks ${totalOrdered} of ${plannedPizzaCount} planned pizzas. The other ${plannedPizzaCount - totalOrdered} are not tracked here.`}</p>}
+            {extraDone > 0 && <p style={{fontSize:12,color:'var(--smoke)',margin:'0 0 8px'}}>{l === 'fr' ? `+ ${extraDone} hors quantité prévue` : `+ ${extraDone} beyond planned quantity`}</p>}
             <div style={{ height: '4px', borderRadius: '2px', background: 'var(--border)' }}>
               <div style={{
                 height: '100%', borderRadius: '2px',
-                background: totalDone >= totalOrdered ? '#6B7A5A' : 'var(--terra)',
+                background: allSelectedDone ? '#6B7A5A' : 'var(--terra)',
                 width: `${Math.min(100, (totalDone / totalOrdered) * 100)}%`,
                 transition: 'width 0.3s ease',
               }} />
@@ -736,7 +741,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
           offered from the first baked pizza — real parties change plans, and a
           half-baked evening is still worth keeping. */}
       {selectedEntries.length > 0 && totalDone > 0 && (onShare || onSave || onEnsureBakeEvent) && (
-        <JourneyCompletion isFr={l==='fr'} complete={false} onSave={onSave ?? onEnsureBakeEvent} onShare={onShare} sessionSaved={sessionSaved}/>
+        <JourneyCompletion isFr={l==='fr'} sectionLabel={l==='fr'?'Fin du service des pizzas sélectionnées':'Finish serving selected pizzas'} completionMessage={l==='fr'?'Votre sélection est cuite. Bon appétit !':'Your selected pizzas are baked. Enjoy!'} complete={allSelectedDone} onSave={onSave ?? onEnsureBakeEvent} onShare={onShare} sessionSaved={sessionSaved} onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange} saveKind={saveKind}/>
       )}
       {sheetPizzaId && sheetEntry && (() => {
         const { pizza, qty } = sheetEntry;
@@ -1167,7 +1172,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
                   >
                     <span style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
                       <span style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', fontWeight: 600, color: '#6B7A5A' }}>
-                        {l === 'fr' ? '✓ Toutes les pizzas cuites' : '✓ All pizzas baked'}
+                        {l === 'fr' ? '✓ Toutes les pizzas sélectionnées sont cuites' : '✓ All selected pizzas baked'}
                       </span>
                       <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', fontStyle: 'italic', color: 'var(--smoke)' }}>
                         {l === 'fr' ? 'Belle fournée.' : 'A beautiful bake.'}

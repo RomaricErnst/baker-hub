@@ -47,7 +47,7 @@ function Harness({ sc }: { sc: any }) {
     <SchedulePicker
       startTime={startTime} eatTime={sc.eat} blocks={blocks} preheatMin={45}
       styleKey={sc.style} kitchenTemp={sc.temp} bakeType={sc.full&&sc.style==='sourdough'?'pizza':'bread'} isSourdough mode="custom"
-      {...(sc.full?{schedule:buildSchedule(startTime,sc.eat,blocks,sc.temp,45,'hand',sc.style),mixerType:'hand' as const,numItems:4}:{})}
+      {...(sc.full?{schedule:buildSchedule(startTime,sc.eat,blocks,sc.temp,45,'hand',sc.style,4,sc.batches??1),mixerType:'hand' as const,numItems:4,mixingBatches:sc.batches??1}:{})}
       onChange={onChange}
       starterLocation={starterLocation} onStarterLocationChange={(l) => { setStarterLocation(l); rec.loc = l; }}
       planningMode="last_fed"

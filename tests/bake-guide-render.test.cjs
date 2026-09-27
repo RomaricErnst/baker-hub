@@ -61,6 +61,12 @@ test('spiral mixing groups both visual cues and keeps secondary guidance behind 
  for(const tag of html.match(/<\/?details\b[^>]*>/g)||[]){depth+=tag.startsWith('</')?-1:1;assert.ok(depth<=1,'help must never require opening a nested disclosure');}
  const help=html.indexOf('Kneading tips');
  assert.ok(html.indexOf('windowpane-v1.webp',help)>help,'visual cue is inside the shared help');
+ const helpEnd=html.indexOf('</details>',help);
+ assert.ok(html.indexOf('More questions',help)>helpEnd,'troubleshooting has a separate sibling entry');
+ assert.ok(html.indexOf('Common questions',help)>helpEnd,'opening practical tips does not expose the entire FAQ');
+ const membrane=[...html.matchAll(/<button([^>]*)>([\s\S]*?)<\/button>/g)].find(([,attributes,content])=>content.includes('Windowpane test'));
+ assert.ok(membrane,'technique link is retained');
+ assert.match(membrane[1],/min-height:44px/);
  assert.doesNotMatch(html,/streaks that kneading will not remove|do not add more before 20 minutes/);
 });
 
@@ -143,4 +149,61 @@ test('pizza service help is one inline disclosure in both languages',()=>{
    assert.equal((html.match(/animation:slideUpSheet/g)||[]).length,1,'only the pizza card opens as a sheet');
   }
  } finally {React.useState=original;Module._resolveFilename=previousResolve;}
+});
+
+
+test('preparation overview exposes readable timing in the native button name',()=>{
+ const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-24T18:00Z'),[],22,60,'hand','neapolitan');
+ const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,{schedule,mixerType:'hand',styleKey:'neapolitan',kitchenTemp:22,numItems:4,oil:0,hydration:65,locale:'en',phase:'preparation'})));
+ const rows=[...html.matchAll(/<button([^>]*)>([\s\S]*?)<\/button>/g)].filter(row=>row[2].includes('<strong')&&row[2].includes('font-size:14px'));
+ assert.ok(rows.length>0,'overview presents timed step buttons');
+ for(const [,attributes,content] of rows){
+  assert.doesNotMatch(attributes,/aria-label=/,'native title, time and completion content must remain the accessible name');
+  assert.match(content,/font-size:14px;color:#6D625C/);
+ }
+});
+
+function renderGuideDetails(props,locale='en') {
+ const original=React.useState;let result='';
+ try {for(let step=1;step<=12;step++){
+ let picked=false;
+ React.useState=(value)=>{if(!picked&&value===1){picked=true;return original(step);}return original(value);};
+ result+=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require('../messages/'+locale+'.json'),timeZone:'UTC'},React.createElement(Guide,props)));
+ }}finally{React.useState=original;}return result;
+}
+
+test('guide keeps canonical minute times and quantity-aware shaping duration',()=>{
+ const schedule=utils.buildSchedule(new Date('2026-09-24T08:07Z'),new Date('2026-09-25T18:00Z'),[],22,45,'stand','neapolitan');
+ schedule.bulkFermStart=new Date('2026-09-24T08:27Z');schedule.mixingDurationH=20/60;
+ schedule.divisionMinutes=47;
+ const recipe=utils.calculateRecipe('neapolitan','home_oven_standard',20,260,22,'normal',schedule,6,'instant','custom','stand');
+ recipe.sourdough={starterGramsMid:100};
+ const starterEvents=[{kind:'pre_mix',time:new Date('2026-09-24T06:07Z'),isPast:false,isActive:true,label:'Feed',isDraggable:false,cardTimeFormat:'absolute',bellStyle:'solid',bellSigmaScale:1}];
+ const html=renderGuideDetails({schedule,recipe,starterEvents,mixerType:'stand',styleKey:'neapolitan',kitchenTemp:22,numItems:20,oil:0,hydration:65,locale:'en'});
+ assert.ok(html.includes(utils.formatTime(new Date('2026-09-24T08:07Z'),'en')),'mix time must match canonical 08:07, not round to 08:00');
+ assert.ok(html.includes(utils.formatTime(starterEvents[0].time,'en')),'feed time must match canonical 06:07');
+ assert.match(html,/47 min/);assert.match(html,/260 g each/);
+});
+
+test('standard oven guide follows selected topping quantities and one rack position in both languages',()=>{
+ for(const locale of ['en','fr']){
+ const translated=require('../messages/'+locale+'.json');
+ const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-24T18:00Z'),[],22,30,'hand','neapolitan');
+ const html=renderGuideDetails({schedule,mixerType:'hand',styleKey:'neapolitan',ovenType:'home_oven_standard',kitchenTemp:22,numItems:4,oil:0,hydration:65,locale},locale);
+ assert.doesNotMatch(html,/Top generously|Garnissez généreusement|thicker styles work best|les styles épais fonctionnent mieux/);
+ assert.ok(html.includes(translated.bakeGuide.bake.homeStandard.steps[1].bold));
+ assert.ok(html.includes(locale==='fr'?'grille médiane-haute':'upper-middle rack'));
+ }
+});
+
+test('enriched help retains butter technique and excludes lean-dough autolyse FAQ',()=>{
+ const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-25T18:00Z'),[],22,45,'hand','brioche');
+ const recipe=utils.calculateRecipe('brioche','standard_bread',1,750,22,'normal',schedule,6,'instant','custom','hand');
+ const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,{schedule,recipe,mixerType:'hand',styleKey:'brioche',kitchenTemp:22,numItems:1,oil:0,hydration:65,locale:'en'})));
+ assert.match(html,/Why add butter after the dough gains strength/);
+ assert.match(html,/Add softened butter gradually/);
+ const main=html.split('Kneading tips')[0];
+ assert.match(main,/Combine flour, liquids, yeast, salt and sugar, without the butter/);
+ assert.match(main,/If the dough becomes greasy or too warm, pause and cool it/);
+ assert.doesNotMatch(html,/autolyse|autolysis/i);
 });

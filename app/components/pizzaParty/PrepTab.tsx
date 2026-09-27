@@ -71,9 +71,9 @@ function assignStation(task: PrepTask): string {
   const note = (task.text + ' ' + task.textFr).toLowerCase();
   if (task.mustCool) return 'cool';
   if (task.timing >= 20) return 'time';
+  if (task.category === 'finish' || task.category === 'spice' || note.includes('pick') || note.includes('chiffonade') || note.includes('zest')) return 'herbs';
   if (note.includes('grate') || note.includes('crush') || note.includes('crumble') || note.includes('blend') || note.includes('râper') || note.includes('concass')) return 'grate';
   if (note.includes('drain') || note.includes('égoutter') || note.includes('pat dry') || note.includes('éponger') || task.timing === 0 || task.timing <= 3) return 'drain';
-  if (task.category === 'finish' || task.category === 'spice' || note.includes('pick') || note.includes('chiffonade') || note.includes('zest')) return 'herbs';
   return 'board';
 }
 

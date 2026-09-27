@@ -14,6 +14,7 @@ interface RecipeOutputProps extends WaterSettingsProps {
   containerCapacityLitres?: number;
   onContainerCapacityChange?: (litres: number | undefined) => void;
   mixingBatches?: number;
+  mixerCapacityG?: number;
   onMixingBatchesChange?: (count: number) => void;
   waterSource?: WaterSource;
   onWaterSourceChange?: (source: WaterSource) => void;
@@ -359,7 +360,7 @@ export default function RecipeOutput({
   containerCapacityLitres, onContainerCapacityChange, result, numItems, itemWeight, styleName, styleKey, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, units,
   feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
-  onEditSetup, onOpenGuide, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
+  onEditSetup, onOpenGuide, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixerCapacityG, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
 }: RecipeOutputProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -375,7 +376,7 @@ export default function RecipeOutput({
   const minBatches  = Math.ceil(totalDoughG / mixerMaxG);
   const needsBatches = minBatches > 1;
   const [batchIndex, setBatchIndex] = useState(0);
-  const batchPlan = mixingBatchPlan(result, mixerType, mixingBatches, batchIndex);
+  const batchPlan = mixingBatchPlan(result, mixerType, mixingBatches, batchIndex, mixerCapacityG);
   // effectiveBatches can be 1 if baker overrides — no Math.max constraint
   const effectiveBatches = batchPlan.count;
 
@@ -530,6 +531,8 @@ export default function RecipeOutput({
           : breadProtocol.cooking === 'griddle'
             ? (locale === 'fr' ? 'Cuisson à la poêle ou sur une plaque : gardez les pains cuits couverts pour qu’ils restent souples.' : 'Cook on a skillet or griddle; keep cooked breads covered to stay soft.')
             : (locale === 'fr' ? 'Suivez le façonnage et la cuisson propres à ce pain dans le guide.' : 'Follow this bread’s shaping and baking steps in the guide.')}</p>}
+
+      {mode === 'custom' && <div style={{textAlign:'right',fontSize:12,color:'var(--smoke)'}}>{locale === 'fr' ? '% de farine · Poids' : '% of flour · Weight'}</div>}
 
       {(hasPref || (sdActive && mode === 'custom')) && <section aria-label={locale === 'fr' ? 'Quantités totales' : 'Total ingredients'}>
         <h3 style={{fontSize:17}}>{locale === 'fr' ? 'Quantités totales de la recette' : 'Total recipe ingredients'}</h3>
@@ -804,7 +807,7 @@ export default function RecipeOutput({
           {sourdough && (
             <IngRow
               label={t('recipeOutput.starterLabel')}
-              sub={t('recipeOutput.starterSub')}
+              sub={locale === 'fr' ? 'Levain liquide · 100 % d’hydratation' : 'Liquid starter · 100% hydration'}
               grams={wStr(sdMid)}
               pct={`${sourdough.starterPctMin}–${sourdough.starterPctMax}%`}
               range
@@ -833,7 +836,7 @@ export default function RecipeOutput({
       )}
 
 
-      {onContainerCapacityChange && <details className="bh-disclosure">
+      {onContainerCapacityChange && breadProtocol?.method !== 'unleavened' && <details className="bh-disclosure">
         <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Récipient de fermentation' : 'Fermentation container'}</summary>
         <label style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',fontSize:14}}>
           {locale === 'fr' ? 'Capacité du récipient (litres)' : 'Container capacity (litres)'}

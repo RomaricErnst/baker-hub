@@ -4,8 +4,14 @@ export function splitAmount(total: number, count: number, index: number, decimal
   const scale = 10 ** decimals, ticks = Math.round(total * scale), base = Math.floor(ticks / count);
   return (index === count - 1 ? ticks - base * (count - 1) : base) / scale;
 }
-export function mixingBatchPlan(recipe: RecipeResult, mixer: string, requested?: number, index = 0) {
-  const capacity = MIXER_TYPES[mixer as MixerType]?.maxDoughG ?? 9999;
+/** Optional equipment setting is a useful dough mass, not bowl volume. */
+export function mixerDoughCapacity(mixer: string, requestedCapacityG?: number) {
+  return Number.isFinite(requestedCapacityG) && requestedCapacityG! >= 100 && requestedCapacityG! <= 1000000
+    ? Math.round(requestedCapacityG!)
+    : MIXER_TYPES[mixer as MixerType]?.maxDoughG ?? 9999;
+}
+export function mixingBatchPlan(recipe: RecipeResult, mixer: string, requested?: number, index = 0, requestedCapacityG?: number) {
+  const capacity = mixerDoughCapacity(mixer, requestedCapacityG);
   const suggested = Math.max(1, Math.ceil(recipe.totalDough / capacity));
   const count = Number.isFinite(requested) && requested! >= 1 ? Math.min(100, Math.floor(requested!)) : suggested;
   const active = Math.max(0, Math.min(count - 1, index));

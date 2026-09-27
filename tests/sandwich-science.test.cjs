@@ -56,3 +56,41 @@ test('a richer customized filling cannot retain the original lighter classificat
   assert.equal(isLighterSandwich(recipe),true);
   assert.equal(isLighterSandwich(recipe,{olive_oil:100}),false);
 });
+
+test('raw chicken purchasing estimate is separate from cooked portion nutrition and removed chicken needs no purchase',()=>{
+ const {estimateRawChickenPurchase}=require('../app/lib/sandwichCatalog.ts');
+ assert.equal(estimateRawChickenPurchase(73),100);
+ assert.equal(estimateRawChickenPurchase(240),330);
+ assert.equal(estimateRawChickenPurchase(0),0);
+ assert.equal(estimateRawChickenPurchase(NaN),0);
+ const recipe=recipes.find(r=>r.id==='laffa-shawarma-poulet');
+ assert.equal(aggregateSandwichShopping({[recipe.id]:2},{},'laffa').find(i=>i.ingredientId==='chicken').grams,240);
+ assert.ok(!aggregateSandwichShopping({[recipe.id]:2},{[recipe.id]:{chicken:0}},'laffa').some(i=>i.ingredientId==='chicken'));
+});
+
+test('removed tahini disappears from preparation and assembly even when spices remain',()=>{
+  const {effectiveSandwichSteps}=require('../app/lib/sandwich.ts');
+  const recipe=recipes.find(r=>r.familyId==='laffa'&&r.ingredients.some(i=>i.ingredientId==='chicken'));
+  assert.ok(recipe);
+  const base=effectiveSandwichSteps(recipe);
+  assert.ok(base.some(s=>s.id.endsWith('-sauce')));
+  const edited=effectiveSandwichSteps(recipe,{tahini:0});
+  for(const lang of ['fr','en']) {
+    const instructions=edited.map(s=>s.instruction[lang]).join(' ');
+    assert.doesNotMatch(instructions,/tahini/i);
+    const assembly=edited.find(s=>s.phase==='assemble').instruction[lang];
+    assert.doesNotMatch(assembly,/sauce/i);
+  }
+  assert.ok(edited.some(s=>s.id.endsWith('-season')));
+  assert.ok(!edited.some(s=>s.id.endsWith('-sauce')));
+  assert.match(edited.find(s=>s.id.endsWith('-chicken-option')).instruction.en,/74°C/);
+});
+
+test('retained sauce instructions name only effective sauce ingredients',()=>{
+ const {effectiveSandwichSteps}=require('../app/lib/sandwich.ts');
+ const recipe=recipes.find(r=>r.familyId==='laffa'&&r.ingredients.some(i=>i.ingredientId==='chicken'));
+ const sauce=effectiveSandwichSteps(recipe,{cumin:0,paprika:0}).find(s=>s.id.endsWith('-sauce'));
+ assert.ok(sauce);
+ assert.match(sauce.instruction.en,/tahini/);
+ assert.doesNotMatch(sauce.instruction.en,/yogurt|mustard|honey|paprika|cumin/);
+});

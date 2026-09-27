@@ -26,3 +26,8 @@ pins, nights, visible event times, and reload persistence.
 The build and JSON results live under .ci-tools, outside application source.
 
 The additional rapid test uses `FULL=1` to supply a real `buildSchedule` result and the pizza/bread type, and `OUTBOUND_WAIT=10` to return immediately after the outbound toggle. CI runs its 12 Nights cases at `NOW=2026-09-25T00:49:00Z` as well as the original 24-case clock. This catches stale availability refs during ratio application. It supplements, rather than replaces, the actual-page reload and manual-pin WebKit tests.
+
+`BATCHES=2 FULL=1` also checks the same mounted picker with a real sequential
+multi-batch dough schedule. Batch counts default to 1, preserving the original
+24-case baseline. For example, add `BATCHES=2 FULL=1 TOGGLES=nights` to the command
+above. This tests state consistency, not independent per-lot biological maturity.

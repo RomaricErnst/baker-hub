@@ -222,6 +222,10 @@ export const BREAD_STYLE_DEFINITIONS = {
 } as const;
 
 export const BREAD_FERMENTATION_DEFAULTS = {
+  // Preserve the existing supported cold methods; not universal biological minima.
+  brioche: {coldH: 8, rtH: 2, minColdH: 4, coldHRequired: true},
+  pain_mie: {coldH: 8, rtH: 2, minColdH: 4, coldHRequired: true},
+  pain_viennois: {coldH: 6, rtH: 2, minColdH: 3, coldHRequired: true},
   "focaccia": {
     "coldH": 12,
     "rtH": 3,
@@ -293,7 +297,218 @@ export const BREAD_FERMENTATION_DEFAULTS = {
   }
 } as const;
 
-export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS, BreadProtocol> = {
+export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'brioche' | 'pain_mie' | 'pain_viennois', BreadProtocol> = {
+  "brioche": {
+    "method": "yeasted",
+    "cooking": "oven",
+    "supportedPreferments": [
+      "none"
+    ],
+    "equipment": [
+      "standard_bread",
+      "steam_oven"
+    ],
+    "supportedMixers": [
+      "hand",
+      "stand",
+      "spiral"
+    ],
+    "portions": {
+      "weight": 500,
+      "count": 2
+    },
+    "shaping": {
+      "en": [
+        "Divide into {count} pieces of {weight} g. Shape the chilled dough into logs; place seam-down in greased tins with room to rise."
+      ],
+      "fr": [
+        "Divisez en {count} pâtons de {weight} g. Façonnez la pâte froide en bûches ; posez-les clé dessous dans des moules graissés, avec de la place pour la pousse."
+      ]
+    },
+    "proof": {
+      "en": [
+        "Cover; wait until visibly puffy and a gentle indentation returns slowly. Follow the dough, not only the clock."
+      ],
+      "fr": [
+        "Couvrez ; attendez une pâte bien gonflée dont une légère empreinte revient lentement. Observez la pâte, pas seulement l’heure."
+      ]
+    },
+    "preheat": {
+      "en": [
+        "Preheat to 190°C conventional / 170°C fan, without steam."
+      ],
+      "fr": [
+        "Préchauffez à 190°C statique / 170°C ventilé, sans vapeur."
+      ]
+    },
+    "cookingSteps": {
+      "en": [
+        "Bake on the lower-middle rack. Guide: 30–45 min for a 500 g loaf; 20–30 min for 60–100 g buns. Size and tin change timing.",
+        "Check the centre reaches about 88°C and the crumb is set; shield with foil if browning early. No deep scoring or steam tray."
+      ],
+      "fr": [
+        "Cuisez à mi-hauteur basse. Repère : 30–45 min pour 500 g ; 20–30 min pour des petites brioches de 60–100 g. Taille et moule changent la durée.",
+        "Vérifiez environ 88°C au cœur et une mie prise ; protégez avec une feuille d’aluminium si la couleur vient trop vite. Ni grigne profonde ni bac à vapeur."
+      ]
+    },
+    "cooling": {
+      "en": [
+        "Rest 10 min, unmould carefully, then cool on a rack before slicing."
+      ],
+      "fr": [
+        "Attendez 10 min, démoulez délicatement puis laissez refroidir sur grille avant de trancher."
+      ]
+    },
+    "sourceUrls": [
+      "https://www.kingarthurbaking.com/pro/formulas/brioche",
+      "https://www.kingarthurbaking.com/recipes/classic-brioche-recipe"
+    ],
+    "ovenTempC": 190,
+    "cookMinutes": [
+      30,
+      45
+    ]
+  },
+  "pain_mie": {
+    "method": "yeasted",
+    "cooking": "oven",
+    "supportedPreferments": [
+      "none"
+    ],
+    "equipment": [
+      "standard_bread",
+      "steam_oven"
+    ],
+    "supportedMixers": [
+      "hand",
+      "stand",
+      "spiral"
+    ],
+    "portions": {
+      "weight": 600,
+      "count": 1
+    },
+    "shaping": {
+      "en": [
+        "Divide into {count} pieces of {weight} g. Roll into logs and place seam-down in greased loaf tins sized for the dough."
+      ],
+      "fr": [
+        "Divisez en {count} pâtons de {weight} g. Roulez en bûches et posez clé dessous dans des moules graissés adaptés à la quantité."
+      ]
+    },
+    "proof": {
+      "en": [
+        "Cover until puffy. For a lidded Pullman tin, leave space below the rim before closing; never force a lid over overflowing dough."
+      ],
+      "fr": [
+        "Couvrez jusqu’à une pâte bien gonflée. Dans un moule Pullman, gardez de l’espace sous le bord avant de fermer ; ne forcez jamais le couvercle sur une pâte qui déborde."
+      ]
+    },
+    "preheat": {
+      "en": [
+        "Preheat to 180°C conventional / 160°C fan, without steam."
+      ],
+      "fr": [
+        "Préchauffez à 180°C statique / 160°C ventilé, sans vapeur."
+      ]
+    },
+    "cookingSteps": {
+      "en": [
+        "For a 500–700 g loaf, start checking after 30 min; allow roughly 30–45 min. Larger loaves take longer.",
+        "With a Pullman lid, carefully remove it after 25 min and finish baking. Check about 88°C at the centre and a set crumb; shield an uncovered loaf if browning early."
+      ],
+      "fr": [
+        "Pour 500–700 g, contrôlez dès 30 min ; comptez environ 30–45 min. Les pains plus gros prennent davantage de temps.",
+        "Avec un couvercle Pullman, retirez-le prudemment après 25 min puis terminez la cuisson. Vérifiez environ 88°C au cœur et une mie prise ; protégez un pain découvert s’il colore trop vite."
+      ]
+    },
+    "cooling": {
+      "en": [
+        "Unmould and cool completely on a rack before cutting sandwich slices."
+      ],
+      "fr": [
+        "Démoulez et laissez refroidir complètement sur grille avant de couper les tranches."
+      ]
+    },
+    "sourceUrls": [
+      "https://www.kingarthurbaking.com/recipes/pain-de-mie-recipe"
+    ],
+    "ovenTempC": 180,
+    "cookMinutes": [
+      30,
+      45
+    ]
+  },
+  "pain_viennois": {
+    "method": "yeasted",
+    "cooking": "oven",
+    "supportedPreferments": [
+      "none"
+    ],
+    "equipment": [
+      "standard_bread",
+      "steam_oven"
+    ],
+    "supportedMixers": [
+      "hand",
+      "stand",
+      "spiral"
+    ],
+    "portions": {
+      "weight": 200,
+      "count": 4
+    },
+    "shaping": {
+      "en": [
+        "Divide into {count} pieces of {weight} g. Shape short baguettes on a lined tray, leaving room between them."
+      ],
+      "fr": [
+        "Divisez en {count} pâtons de {weight} g. Allongez en petites baguettes sur une plaque chemisée, en les espaçant."
+      ]
+    },
+    "proof": {
+      "en": [
+        "Cover until the rolls are puffy; a light indentation should return slowly."
+      ],
+      "fr": [
+        "Couvrez jusqu’à des pains bien gonflés ; une légère empreinte doit revenir lentement."
+      ]
+    },
+    "preheat": {
+      "en": [
+        "Preheat to 220°C conventional / 200°C fan, without added steam."
+      ],
+      "fr": [
+        "Préchauffez à 220°C statique / 200°C ventilé, sans ajout de vapeur."
+      ]
+    },
+    "cookingSteps": {
+      "en": [
+        "Make shallow diagonal cuts gently before baking. Bake 200 g baguettes for about 15–20 min. Smaller rolls need earlier checks; larger pieces need longer.",
+        "Look for an evenly golden surface and a fully set centre, not raw dough. If colour comes early, shield with foil and continue checking."
+      ],
+      "fr": [
+        "Incisez délicatement en biais avant d’enfourner. Cuisez les baguettes de 200 g environ 15–20 min. Contrôlez plus tôt les petits pains et prolongez pour les gros.",
+        "Recherchez une surface dorée et un cœur cuit, sans pâte crue. Si la couleur vient trop vite, protégez d’aluminium et poursuivez les contrôles."
+      ]
+    },
+    "cooling": {
+      "en": [
+        "Transfer to a rack; let the centre cool before slicing. Wrap only after cooling to retain a soft crust."
+      ],
+      "fr": [
+        "Posez sur grille ; laissez refroidir le cœur avant de trancher. Emballez seulement après refroidissement pour garder une croûte souple."
+      ]
+    },
+    "sourceUrls": [
+      "https://www.moulin-fritz.fr/wp-content/uploads/2016/05/recette-pain-viennois.pdf"
+    ],
+    "ovenTempC": 220,
+    "cookMinutes": [
+      15,
+      20
+    ]
+  },
   "focaccia": {
     "method": "yeasted",
     "cooking": "oven",

@@ -384,13 +384,13 @@
     "autoAdjusted": "Schedule auto-adjusted — a room temperature window was too long for your kitchen temperature. A cold retard phase was added automatically to prevent over-fermentation.",
     "steps": {
       "mixing": "Mix & Knead",
-      "bulkFerm": "Bulk Fermentation",
-      "coldBulk": "Cold Retard — Bulk",
+      "bulkFerm": "Let the dough rise",
+      "coldBulk": "Refrigerate the dough",
       "divideBall": "Divide & Ball",
-      "coldBalls": "Cold Retard — Balls",
+      "coldBalls": "Refrigerate the dough balls",
       "restRT": "Remove from fridge — rest at room temperature",
       "rtWarmup": "Rest at room temperature",
-      "finalProof": "Final Proof",
+      "finalProof": "Let the shaped dough rise",
       "preheat": "Preheat Oven",
       "eat": "Bake & Eat!",
       "divideShape": "Divide & Shape",
@@ -446,9 +446,9 @@
     "eatTipBread": "Check proofing, then score and bake.",
     "phaseLabels": {
       "mixing": "Mixing",
-      "bulkFerm": "Bulk Fermentation",
-      "coldRetard": "Cold Retard",
-      "finalProof": "Final Proof"
+      "bulkFerm": "Let the dough rise",
+      "coldRetard": "Refrigerate the dough",
+      "finalProof": "Let the shaped dough rise"
     },
     "blockLabels": {
       "bulkFerm": "Bulk fermentation · {dur}",
@@ -650,14 +650,14 @@
       "makeBiga": "Make your Biga",
       "feedStarter": "Feed your starter",
       "mixDough": "Mix your dough",
-      "bulkFerm": "Bulk Fermentation",
-      "coldRetardWhole": "Cold Retard — Whole Dough",
-      "coldRetard": "Cold Retard",
+      "bulkFerm": "Let the dough rise",
+      "coldRetardWhole": "Refrigerate the dough",
+      "coldRetard": "Refrigerate the dough",
       "divideShape": "Divide & Shape",
-      "divideBall": "Divide & Ball",
-      "coldProof": "Cold Proof",
-      "coldRetardBalls": "Cold Retard — Balls",
-      "finalProof": "Final Proof",
+      "divideBall": "Divide and shape dough balls",
+      "coldProof": "Refrigerate the shaped dough",
+      "coldRetardBalls": "Refrigerate the dough balls",
+      "finalProof": "Let the shaped dough rise",
       "preheatOven": "Preheat Oven",
       "bakeEat": "Bake & Eat!"
     },
@@ -810,7 +810,7 @@
         "Skin looks smooth and slightly shiny"
       ],
       "pitfalls": [
-        "Adding salt and yeast at the same time — salt kills yeast on contact, always add separately",
+        "Avoid leaving yeast in prolonged contact with concentrated salt before mixing; incorporate both into the dough promptly",
         "Over-kneading by hand is nearly impossible — but over-mixing in a stand mixer is not, stop when windowpane passes",
         "Adding oil before gluten develops — oil coats proteins and blocks gluten formation"
       ]
@@ -1289,7 +1289,7 @@
           },
           {
             "bold": "Preheat pizza tray or heavy baking sheet",
-            "note": "place directly on middle rack — must be hot"
+            "note": "use the upper-middle rack; keep the same position for baking"
           },
           {
             "bold": "Allow 30 min minimum",
@@ -1562,15 +1562,15 @@
         "steps": [
           {
             "bold": "Stretch dough on a floured surface",
-            "note": "thicker styles work best here — Detroit, pan, Roman"
+            "note": "keep the shape and thickness of your chosen pizza style"
           },
           {
-            "bold": "Top generously — standard ovens suit loaded styles",
-            "note": "toppings help retain moisture and colour evenly"
+            "bold": "Add the toppings in the listed amounts",
+            "note": "drain wet ingredients; spread sauce thinly without pooling"
           },
           {
             "bold": "Place on preheated tray — bake at max temperature",
-            "note": "8–15 min depending on thickness"
+            "note": "upper-middle rack; start checking at 8 min and follow the pizza’s specific timing"
           },
           {
             "bold": "Rotate halfway through",

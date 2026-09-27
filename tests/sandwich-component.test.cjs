@@ -86,3 +86,61 @@ test('all filling recipes have distinct dish-image paths rather than shared brea
  assert.ok(html.includes('src="/images/approved/bread/seigle-rustic.webp" alt="Pain de seigle"'));
  assert.ok(html.includes(`src="${recipe.image}" alt="Avocat, œuf poché et feta"`));
 });
+
+test('chicken shopping distinguishes estimated raw purchase from cooked recipe weight in both languages',()=>{
+ const recipe=SANDWICH_RECIPES.find(r=>r.id==='laffa-shawarma-poulet');
+ const snapshot={...createSandwichSnapshot('laffa'),qtys:{[recipe.id]:2},tab:'shop'};
+ for(const isFr of [false,true]) {
+   const html=render(snapshot,{styleKey:'laffa',isFr});
+   assert.match(html,/≈ 330 g/); // 240 g cooked / 0.73, rounded up for shopping.
+   assert.ok(html.includes(isFr?'240 g cuits':'240 g cooked'));
+   assert.ok(html.includes(isFr?'Le rendement varie':'Yield varies'));
+   assert.ok(html.includes(isFr?'déjà cuits':'already cooked'));
+ }
+ const raw=SANDWICH_RECIPES.find(r=>r.id==='pita-poulet-cru-citron');
+ const html=render({...createSandwichSnapshot('pita'),qtys:{[raw.id]:2},tab:'shop'},{styleKey:'pita'});
+ assert.match(html,/200 g/);
+ assert.doesNotMatch(html,/Estimated purchase|Yield varies/);
+});
+
+test('preparation has no redundant count and family-specific portions survive service',()=>{
+ for(const [family,label] of [['laffa','One wrap ready'],['pita','One pita ready'],['piadina','One piadina ready'],['bagel','One bagel ready']]) {
+   const recipe=SANDWICH_RECIPES.find(r=>r.familyId===family);
+   const snapshot={...createSandwichSnapshot(family),qtys:{[recipe.id]:2},tab:'prep'};
+   assert.doesNotMatch(render(snapshot,{styleKey:family}),/steps checked|étapes cochées/);
+   assert.ok(render({...snapshot,tab:'serve'},{styleKey:family}).includes(label));
+ }
+});
+
+test('multiple filling recipes show a shared order with cooking first but retain independent step checklists',()=>{
+ const cold=SANDWICH_RECIPES.find(r=>r.id==='baguette-jambon-beurre');
+ const chicken=SANDWICH_RECIPES.find(r=>r.id==='baguette-poulet-mayo');
+ const snapshot={...createSandwichSnapshot('baguette'),qtys:{[cold.id]:2,[chicken.id]:2},tab:'prep'};
+ const html=render(snapshot);
+ assert.match(html,/aria-label="Preparation order"/);
+ const overview=html.split('aria-label="Preparation order"')[1].split('</nav>')[0];
+ assert.ok(overview.indexOf('Chicken &amp; mayonnaise')<overview.indexOf('Ham &amp; butter'));
+ assert.match(html,/type="checkbox"/);
+ assert.doesNotMatch(render({...snapshot,qtys:{[chicken.id]:2}}),/aria-label="Preparation order"/);
+});
+
+test('sandwich completion forwards download, repeat and notes controls',()=>{
+ const recipe=SANDWICH_RECIPES.find(r=>r.familyId==='laffa');
+ const snapshot={...createSandwichSnapshot('laffa'),qtys:{[recipe.id]:1},completed:{[recipe.id]:1},tab:'serve'};
+ const html=render(snapshot,{styleKey:'laffa',onSave(){},saveKind:'download',onRepeat(){},resultNotes:'Less sauce next time',onResultNotesChange(){}});
+ assert.match(html,/Download recipe/);
+ assert.match(html,/Make this again/);
+ assert.match(html,/Less sauce next time/);
+});
+
+test('sandwich mozzarella courses explicitly use the declared drained weight without package conversion',()=>{
+ const recipe=SANDWICH_RECIPES.find(r=>r.familyId==='baguette'&&r.ingredients.some(i=>i.ingredientId==='mozzarella'));
+ const grams=recipe.ingredients.find(i=>i.ingredientId==='mozzarella').grams*3;
+ for(const isFr of [false,true]){
+  const snapshot={...createSandwichSnapshot('baguette'),qtys:{[recipe.id]:3},tab:'shop'};
+  const html=render(snapshot,{isFr});
+  assert.ok(html.includes(isFr?'poids égoutté':'drained weight'));
+  assert.ok(html.includes(isFr?'sans la saumure':'excluding brine'));
+  assert.ok(html.includes(`${grams} g`));
+ }
+});

@@ -86,7 +86,7 @@ for(const scenario of [
   const preparation=page.getByRole('checkbox').first();
   await expect(preparation).toBeVisible();await preparation.check();
   await page.getByRole('button',{name:fr?'Passer à l’assemblage →':'Start assembly →',exact:true}).tap();
-  const ready=page.getByRole('button',{name:fr?'Un sandwich prêt':'One sandwich ready',exact:true});
+  const ready=page.getByRole('button',{name:scenario.style==='piadina'?(fr?'Une piadina prête':'One piadina ready'):(fr?'Un bagel prêt':'One bagel ready'),exact:true});
   const undo=page.getByRole('button',{name:fr?'Annuler le dernier':'Undo last',exact:true});
   await expect(undo).toBeDisabled();
   await ready.tap();

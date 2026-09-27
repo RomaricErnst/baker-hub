@@ -14,6 +14,7 @@ test('each protocol-only blocker directs completed setup to the relevant correct
   for(const custom of [false,true]){
     const cases=[
       [{protocolIssue:'equipment'},3],
+      [{batchTimingConflict:true,protocolIssue:'timing'},3],
       [{protocolIssue:'method',unsupportedMixer:true},3],
       [{protocolIssue:'timing'},custom?9:7],
       [{protocolIssue:'method',sourdough:true},custom?7:6],

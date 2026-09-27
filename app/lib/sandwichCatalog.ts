@@ -24,6 +24,15 @@ export const SANDWICH_FAMILIES: SandwichFamilyInfo[] = [
   family('piadina','Piadina','Piadina',90,330,750), family('pan_bagnat','Pain à pan bagnat','Pan bagnat roll',100,275,700),
   family('ciabatta','Ciabatta','Ciabatta',100,270,700), family('panuozzo','Panuozzo','Panuozzo',110,270,800),
 ];
+/** Purchasing estimate only; recipe quantities and nutrition remain cooked weights.
+ * USDA Food Buying Guide, boneless skinless breast tenderloins: 0.73 lb cooked / lb raw.
+ * https://foodbuyingguide.fns.usda.gov/files/Reports/USDA_FBG_Section1_MeatsAndMeatAlternates_YieldTable.pdf
+ * Used as an approximate yield for breast strips; cut/cooking losses vary. Round up to 10 g.
+ */
+export function estimateRawChickenPurchase(cookedGrams:number):number {
+  return Number.isFinite(cookedGrams)&&cookedGrams>0 ? Math.ceil(cookedGrams / 0.73 / 10)*10 : 0;
+}
+
 const USDA = 'https://fdc.nal.usda.gov/';
 const CIQUAL = 'https://ciqual.anses.fr/';
 type IngredientRow = [string,string,string,number,SandwichIngredient['category'],SandwichAllergen[]?,boolean?,string?];
@@ -54,7 +63,7 @@ const ingredientRows: IngredientRow[] = [
  ['salt','Sel','Salt',0,'pantry'],['black_pepper','Poivre noir','Black pepper',251,'pantry'],
  ['white_bean','Haricots blancs cuits égouttés','Drained cooked white beans',114,'protein'],['falafel','Falafels déjà cuits','Cooked falafel',333,'protein',[],true],
  ['hummus','Houmous au tahini','Tahini hummus',237,'pantry',['sesame']],['tahini','Tahini','Tahini',595,'pantry',['sesame']],
- ['mozzarella','Mozzarella égouttée','Drained mozzarella',250,'dairy',['milk']],['burrata','Burrata égouttée','Drained burrata',300,'dairy',['milk']],
+ ['mozzarella','Mozzarella (poids égoutté)','Mozzarella (drained weight)',250,'dairy',['milk']],['burrata','Burrata égouttée','Drained burrata',300,'dairy',['milk']],
  ['cream_cheese','Fromage frais à tartiner','Cream cheese',240,'dairy',['milk']],['ricotta','Ricotta','Ricotta',174,'dairy',['milk']],
  ['feta','Feta','Feta',265,'dairy',['milk']],['goat_cheese','Fromage de chèvre','Goat cheese',280,'dairy',['milk']],
  ['emmental','Emmental','Emmental',380,'dairy',['milk']],['brie','Brie','Brie',334,'dairy',['milk']],
@@ -182,10 +191,13 @@ export function buildSandwichSteps(id: string, familyId: SandwichFamily, ingredi
     const names = (ids: string[], lang: 'fr' | 'en') => ids.filter(has).map(key=>SANDWICH_INGREDIENTS[key].name[lang].toLowerCase()).join(', ');
     if (id==='pain_mie-club-sandwich') {
       const vegetables=['lettuce','tomato'];
+      if (has('chicken')) add('cook-chicken','Cuire le poulet','Cook the chicken',
+        'Ne rincez pas le poulet cru. Sur une planche séparée, découpez-le en lanières, puis lavez mains, planche et ustensiles. Faites cuire à la poêle antiadhésive environ 6–10 min par fournée, en retournant ; ajoutez un peu d’eau si nécessaire. Vérifiez au thermomètre au moins 74 °C à cœur. Pesez la quantité cuite indiquée, puis réfrigérez rapidement dans un récipient peu profond à 4 °C ou moins pour la garniture froide. Si vous avez déjà du poulet cuit prêt à consommer, passez cette cuisson.',
+        'Do not rinse raw chicken. Cut into strips on a separate board, then wash hands, board and utensils. Cook in a non-stick pan for about 6–10 minutes per batch, turning; add a little water if needed. Check at least 74°C at the centre with a thermometer. Weigh the listed cooked amount, then refrigerate promptly in a shallow container at 4°C or below for the cold filling. If you have ready-to-eat cooked chicken, skip cooking.',10,'cook');
       const meats=['chicken','bacon_cooked'];
       add('prep','Préparer la garniture froide','Prepare the cold filling',
-        ['Pesez les garnitures pour toutes les portions.',vegetables.some(has)?`Lavez et séchez ${names(vegetables,'fr')}.`:'',has('tomato')?'Coupez la tomate en fines rondelles et épongez son jus.':'',meats.some(has)?`Utilisez uniquement les produits déjà cuits et prêts à consommer : ${names(meats,'fr')}. Les poids indiqués sont cuits ; émincez-les sur une planche propre.`:'','Gardez les garnitures périssables au réfrigérateur à 4 °C ou moins jusqu’au montage.'].filter(Boolean).join(' '),
-        ['Weigh the fillings for all portions.',vegetables.some(has)?`Wash and dry ${names(vegetables,'en')}.`:'',has('tomato')?'Thinly slice the tomato and blot away its juice.':'',meats.some(has)?`Use only the already cooked, ready-to-eat products: ${names(meats,'en')}. Listed weights are cooked; slice on a clean board.`:'','Refrigerate perishable fillings at 4°C or below until assembly.'].filter(Boolean).join(' '),6,'prep');
+        ['Pesez les garnitures pour toutes les portions.',vegetables.some(has)?`Lavez et séchez ${names(vegetables,'fr')}.`:'',has('tomato')?'Coupez la tomate en fines rondelles et épongez son jus.':'',meats.some(has)?`Utilisez les garnitures cuites et refroidies : ${names(meats,'fr')}. Les poids indiqués sont cuits ; émincez-les sur une planche propre.`:'','Gardez les garnitures périssables au réfrigérateur à 4 °C ou moins jusqu’au montage.'].filter(Boolean).join(' '),
+        ['Weigh the fillings for all portions.',vegetables.some(has)?`Wash and dry ${names(vegetables,'en')}.`:'',has('tomato')?'Thinly slice the tomato and blot away its juice.':'',meats.some(has)?`Use the cooked, cooled fillings: ${names(meats,'en')}. Listed weights are cooked; slice on a clean board.`:'','Refrigerate perishable fillings at 4°C or below until assembly.'].filter(Boolean).join(' '),6,'prep');
       // Every bread-dependent action belongs to serving; the preparation screen runs before the loaf is baked.
       add('toast','Trancher et toaster le pain refroidi','Slice and toast the cooled bread',
         'Attendez que le pain de mie soit cuit et complètement refroidi. Par club, prévoyez 3 tranches d’environ 30 g chacune, soit 90 g de pain cuit. Toastez-les légèrement des deux côtés, puis laissez retomber la chaleur sur une grille. Une portion est un club à deux étages, pas un pain entier.',
@@ -293,16 +305,45 @@ export function buildSandwichSteps(id: string, familyId: SandwichFamily, ingredi
     'The listed amount is cooked weight. Do not rinse raw chicken: slice on a separate board, then wash hands, board and utensils. Pan-cook the strips in a single layer for approximately 6–10 minutes per batch, turning. Use only the listed oil, if any. Check at least 74°C at the centre with a thermometer; continue if necessary. Weigh the listed amount after cooking: moisture loss varies, so the raw weight needed does too. If you already have cooked chicken, skip this cooking; reheat leftovers to 74°C throughout for a hot filling. If preparing ahead, refrigerate promptly at 4°C or below.',10,'cook');
   const reheat = ['porchetta','beef_kebab','lamb','sausage','pancetta','falafel'].some(has);
   if (reheat) add('heat','Réchauffer la garniture cuite','Heat the cooked filling','La viande et les falafels de la liste sont déjà cuits. Réchauffez seulement ces éléments selon l’emballage ; pour des restes cuits, atteignez 74 °C à cœur. Gardez les crudités et sauces froides à part.','The listed meat and falafel are already cooked. Reheat these items according to the package; cooked leftovers should reach 74°C throughout. Keep salad vegetables and cold sauces separate.',8,'cook');
-  if (['yogurt','tahini','lemon','mustard','honey','cumin','paprika','oregano'].some(has) && (familyId!=='tartine' || ['yogurt','tahini','mustard'].some(has))) add('sauce','Préparer la sauce','Mix the sauce','Mélangez les ingrédients de sauce prévus : yaourt ou tahini, citron, moutarde, miel et épices selon la liste. Détendez le tahini avec un peu d’eau. N’ajoutez pas d’huile ou de mayonnaise en plus des quantités indiquées.','Mix the listed sauce ingredients: yogurt or tahini, lemon, mustard, honey and spices as applicable. Loosen tahini with a little water. Use only the listed amounts of oil or mayonnaise.',3,'prep');
-  if (has('chickpea')||has('white_bean')) add('mash','Préparer les légumineuses','Prepare the beans','Rincez et égouttez les pois chiches ou haricots cuits. Écrasez-en légèrement la moitié à la fourchette pour que la garniture tienne, puis ajoutez les herbes et la sauce prévues.','Rinse and drain the cooked chickpeas or beans. Lightly crush half with a fork to help the filling hold together, then mix with the listed herbs and dressing.',3,'prep');
+  const sauceBases = ['yogurt','tahini','lemon','mustard','honey'];
+  const spiceIds = ['cumin','paprika','oregano'];
+  const hasSauce = sauceBases.some(has) && (familyId!=='tartine' || ['yogurt','tahini','mustard'].some(has));
+  const selectedNames = (ids:string[], lang:'fr'|'en') => ids.filter(has).map(key=>SANDWICH_INGREDIENTS[key].name[lang].toLowerCase()).join(', ');
+  if (hasSauce) add('sauce','Préparer la sauce ou l’assaisonnement','Mix the sauce or dressing',
+    `Mélangez uniquement les quantités prévues de ${selectedNames([...sauceBases,...spiceIds],'fr')}.${has('tahini')?' Détendez le tahini avec un peu d’eau.':''} Gardez au froid jusqu’au moment de garnir.`,
+    `Mix only the listed amounts of ${selectedNames([...sauceBases,...spiceIds],'en')}.${has('tahini')?' Loosen the tahini with a little water.':''} Keep chilled until filling.`,3,'prep');
+  else if (spiceIds.some(has)) add('season','Assaisonner la garniture','Season the filling',
+    `Répartissez ${selectedNames(spiceIds,'fr')} sur la garniture préparée, en utilisant uniquement les quantités prévues.`,
+    `Season the prepared filling with only the listed amounts of ${selectedNames(spiceIds,'en')}.`,1,'prep');
+  if (has('chickpea')||has('white_bean')) add('mash','Préparer les légumineuses','Prepare the beans','Rincez et égouttez les pois chiches ou haricots cuits. Écrasez-en légèrement la moitié à la fourchette pour que la garniture tienne, puis ajoutez les autres garnitures conservées.','Rinse and drain the cooked chickpeas or beans. Lightly crush half with a fork to help the filling hold together, then mix with the retained fillings.',3,'prep');
   if (familyId==='tartine') {
     add('bread','Trancher et toaster','Slice and toast','Pesez 60 g de pain déjà cuit et refroidi par portion : une grande tranche ou plusieurs petites. Toastez légèrement si souhaité, puis laissez tiédir avant de garnir. Une portion de tartine ne correspond pas à un pain entier.','Weigh 60 g of baked, cooled bread per portion: one large slice or several small ones. Toast lightly if desired, then let cool slightly before topping. One tartine portion is not one whole loaf.',3,'cook');
     if (has('avocado')) add('avocado','Écraser l’avocat','Mash the avocado','Écrasez l’avocat à la fourchette. Incorporez le jus de citron prévu, s’il est conservé dans la garniture.','Mash the avocado with a fork. Add the listed lemon juice if retained in the topping.',2,'prep');
   }
   if (familyId==='bagel') add('bread','Ouvrir et toaster','Split and toast','Coupez le bagel horizontalement. Toastez les faces coupées 2–3 min si souhaité, puis laissez tiédir avant d’ajouter les garnitures choisies.','Split the bagel horizontally. Toast the cut sides for 2–3 minutes if desired, then let cool slightly before adding the selected fillings.',3,'cook');
   if (['greek_pita','laffa','piadina'].includes(familyId)) add('bread','Assouplir le pain','Warm the flatbread','Réchauffez le pain déjà cuit dans une poêle sèche, environ 30–60 s par face, juste pour l’assouplir. Gardez-le sous un torchon propre pendant la préparation.','Warm the baked bread in a dry pan for about 30–60 seconds per side, just until flexible. Keep under a clean towel while preparing.',2,'cook');
-  const assembleFr = familyId==='tartine' ? 'Répartissez les garnitures prévues sur les tranches de pain : commencez par le beurre, la ricotta, la sauce ou l’avocat selon la recette, puis disposez les autres ingrédients. Terminez par les herbes, les noix ou un filet de miel prévus. Servez ouvert, sans seconde tranche par-dessus.' : familyId==='pita'||familyId==='batbout' ? 'Ouvrez délicatement une poche dans le pain. Répartissez la sauce, puis la garniture et les crudités sans trop tasser.' : ['greek_pita','laffa','piadina'].includes(familyId) ? 'Étalez la sauce sur le pain, répartissez la garniture et les crudités au centre, puis pliez ou roulez en retenant la base.' : familyId==='pan_bagnat' ? 'Ouvrez le pain. Pour la version niçoise, frottez l’ail prévu sur la mie et répartissez l’huile et le jus de tomate prévus. Disposez la garniture, refermez et pressez doucement.' : familyId==='panuozzo' ? 'Ouvrez le pain horizontalement. Pour une version chaude, placez la garniture cuite et le fromage, en réservant les crudités et sauces froides pour la sortie du four. Pour une version fraîche, répartissez tous les ingrédients dans le pain tiédi.' : 'Ouvrez le pain horizontalement. Étalez la sauce ou le beurre prévu ; répartissez la garniture, le fromage et les crudités en couches régulières, puis refermez.';
-  const assembleEn = familyId==='tartine' ? 'Spread the listed toppings over the bread slices: start with the butter, ricotta, sauce or avocado as applicable, then arrange the remaining ingredients. Finish with the listed herbs, walnuts or drizzle of honey. Serve open-faced, without another slice on top.' : familyId==='pita'||familyId==='batbout' ? 'Carefully open a pocket in the bread. Add the sauce, filling and salad without packing too tightly.' : ['greek_pita','laffa','piadina'].includes(familyId) ? 'Spread the sauce on the bread, place the filling and salad down the centre, then fold or roll, tucking in the base.' : familyId==='pan_bagnat' ? 'Split the bread. For the Niçois version, rub the listed garlic on the crumb and distribute the listed oil and tomato juices. Layer the filling, close and press gently.' : familyId==='panuozzo' ? 'Split the bread horizontally. For a hot version, add the cooked filling and cheese, reserving salad and cold sauces until after the oven. For a fresh version, arrange all the ingredients in the warmed bread.' : 'Split the bread horizontally. Spread the listed sauce or butter, arrange the filling, cheese and salad in even layers, then close.';
+  const spreadFr = hasSauce ? 'Répartissez la sauce ou l’assaisonnement préparé. ' : '';
+  const spreadEn = hasSauce ? 'Spread the prepared sauce or dressing. ' : '';
+  const fillFr = 'Répartissez les garnitures conservées, dans les quantités prévues.';
+  const fillEn = 'Arrange the retained fillings in the listed amounts.';
+  const assembleFr = familyId==='tartine'
+    ? `${spreadFr}${fillFr} Servez ouvert, sans seconde tranche par-dessus.`
+    : familyId==='pita'||familyId==='batbout'
+      ? `Ouvrez délicatement une poche dans le pain. ${spreadFr}${fillFr} Ne tassez pas trop.`
+      : ['greek_pita','laffa','piadina'].includes(familyId)
+        ? `${spreadFr}${fillFr} Placez-les au centre du pain, puis pliez ou roulez en retenant la base.`
+        : familyId==='pan_bagnat'
+          ? `Ouvrez le pain.${has('garlic')?' Frottez l’ail prévu sur la mie.':''}${has('olive_oil')?' Répartissez l’huile mesurée sur la mie.':''} ${spreadFr}${fillFr} Refermez et pressez doucement.`
+          : `Ouvrez le pain horizontalement. ${spreadFr}${fillFr} Refermez.${familyId==='panuozzo'?' Pour une version chaude, réservez les crudités et assaisonnements froids pour la sortie du four.':''}`;
+  const assembleEn = familyId==='tartine'
+    ? `${spreadEn}${fillEn} Serve open-faced, without another slice on top.`
+    : familyId==='pita'||familyId==='batbout'
+      ? `Carefully open a pocket in the bread. ${spreadEn}${fillEn} Do not pack too tightly.`
+      : ['greek_pita','laffa','piadina'].includes(familyId)
+        ? `${spreadEn}${fillEn} Place them down the centre of the bread, then fold or roll, tucking in the base.`
+        : familyId==='pan_bagnat'
+          ? `Split the bread.${has('garlic')?' Rub the listed garlic on the crumb.':''}${has('olive_oil')?' Drizzle the measured oil onto the crumb.':''} ${spreadEn}${fillEn} Close and press gently.`
+          : `Split the bread horizontally. ${spreadEn}${fillEn} Close.${familyId==='panuozzo'?' For a hot version, reserve salad and cold dressings until after the oven.':''}`;
   add('assemble','Garnir','Fill the bread',assembleFr,assembleEn,4,'assemble');
   if (familyId==='panuozzo') add('finish','Finir au four','Finish in the oven','Pour une garniture chaude, remettez le pain garni de viande cuite et de fromage 3–5 min au four à 220 °C, jusqu’au fromage fondu ; les restes de viande doivent atteindre 74 °C. Ajoutez ensuite la roquette, les crudités et les sauces froides. Pour une version fraîche, garnissez le pain simplement tiédi.','For a hot filling, return the bread with cooked meat and cheese to a 220°C oven for 3–5 minutes until the cheese melts; leftover meat must reach 74°C. Add rocket, salad and cold sauces afterwards. For a fresh version, fill bread that has only been warmed.',5,'cook');
   if (familyId==='pan_bagnat') add('rest','Laisser les saveurs se mêler','Let the flavours settle','Emballez le sandwich et laissez-le reposer 20 min au réfrigérateur à 4 °C ou moins. Gardez-le au frais jusqu’au repas.','Wrap the sandwich and rest for 20 minutes in the refrigerator at 4°C or below. Keep chilled until serving.',20,'chill');

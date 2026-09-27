@@ -4,7 +4,7 @@ import {useCallback,useEffect,useState} from 'react';
 import {useLocale,useTranslations} from 'next-intl';
 import SandwichParty from './SandwichParty';
 import JourneyCompletion from './JourneyCompletion';
-import {SANDWICH_RECIPES} from '../lib/sandwichCatalog';
+import {SANDWICH_RECIPES,estimateRawChickenPurchase} from '../lib/sandwichCatalog';
 import {effectiveSandwichSteps, effectiveIngredients} from '../lib/sandwich';
 import {SANDWICH_INGREDIENTS} from '../lib/sandwichCatalog';
 import PizzaParty from './PizzaParty';
@@ -13,6 +13,7 @@ import Header from './Header';
 import {BAKE_DESTINATIONS,type BakeDestination} from '../lib/bakeNavigation';
 import {aggregateSandwichShopping,createSandwichSnapshot,normalizeSandwichSnapshot,sandwichFamilyForStyle,type SandwichSnapshot} from '../lib/sandwich';
 import {getPizzaById} from '../lib/toppingDatabase';
+import {pizzaShoppingWeightNote} from '../lib/ingredientWeights';
 import Image from 'next/image';
 import {BREAD_STYLES} from '../data';
 
@@ -20,7 +21,7 @@ const STORAGE='bh_existing_base_v1';
 const bases=[['pizza','Pizza','Pizza'],['pain_campagne','Pain de campagne · tartines','Country bread · tartines'],['pain_mie','Pain de mie · clubs & croques','Sandwich loaf · clubs & croques'],['pita','Pitas','Pitas'],['laffa','Wraps souples','Soft wraps'],['baguette','Baguette','Baguette'],['focaccia','Focaccia','Focaccia'],['ciabatta','Ciabatta','Ciabatta'],['bagel','Bagels','Bagels']];
 type Phase='pick'|'shop'|'prep'|'bake';
 type BaseDetails={kind:'dough'|'baked';origin:'purchased'|'homemade';stage:'bulk'|'shaped'|'ready';baked:boolean;notes:string;served?:boolean};
-type Draft={selectionReturn?:BakeDestination|null;base:string;portions:number;pizza:Record<string,number>;done:Record<string,number>;section:BakeDestination;sandwiches:Record<string,SandwichSnapshot>;details:Record<string,BaseDetails>};
+type Draft={resultNotes?:string;selectionReturn?:BakeDestination|null;base:string;portions:number;pizza:Record<string,number>;done:Record<string,number>;section:BakeDestination;sandwiches:Record<string,SandwichSnapshot>;details:Record<string,BaseDetails>};
 const fresh=():Draft=>({base:'',portions:4,pizza:{},done:{},section:'batch',sandwiches:{},details:{}});
 const defaultDetails=(base:string):BaseDetails=>({kind:base==='pizza'?'dough':'baked',origin:'purchased',stage:'ready',baked:false,notes:''});
 const quantities=(value:unknown)=>Object.fromEntries(Object.entries(value&&typeof value==='object'?value:{}).filter(([id,n])=>!!getPizzaById(id)&&typeof n==='number'&&Number.isFinite(n)).map(([id,n])=>[id,Math.min(99,Math.max(0,Math.floor(Number(n))))]));
@@ -42,7 +43,7 @@ export default function ExistingBaseJourney(){
      if(d&&bases.some(b=>b[0]===d.base)){
        const sandwiches=Object.fromEntries(bases.filter(b=>b[0]!=='pizza').map(b=>[b[0],normalizeSandwichSnapshot(d.sandwiches?.[b[0]])]));
        const details=Object.fromEntries(bases.map(([base])=>{const value=d.details?.[base];return [base,{kind:value?.kind==='dough'?'dough':value?.kind==='baked'?'baked':defaultDetails(base).kind,origin:value?.origin==='homemade'?'homemade' as const:'purchased' as const,stage:['bulk','shaped','ready'].includes(value?.stage)?value.stage:'ready',baked:value?.baked===true,served:value?.served===true,notes:typeof value?.notes==='string'?value.notes.slice(0,2000):''}];}));
-       const restored:Draft={selectionReturn:['organisation','recipe','shopping','protocol','service'].includes(d.selectionReturn)?d.selectionReturn:null,base:d.base,portions:Math.min(99,Math.max(1,Number(d.portions)||4)),pizza:quantities(d.pizza),done:quantities(d.done),section:BAKE_DESTINATIONS.some(s=>s.id===d.section)?d.section:sectionForPhase(d.base==='pizza'?d.phase:sandwiches[d.base]?.tab),sandwiches,details};
+       const restored:Draft={resultNotes:typeof d.resultNotes==='string'?d.resultNotes.slice(0,2000):'',selectionReturn:['organisation','recipe','shopping','protocol','service'].includes(d.selectionReturn)?d.selectionReturn:null,base:d.base,portions:Math.min(99,Math.max(1,Number(d.portions)||4)),pizza:quantities(d.pizza),done:quantities(d.done),section:BAKE_DESTINATIONS.some(s=>s.id===d.section)?d.section:sectionForPhase(d.base==='pizza'?d.phase:sandwiches[d.base]?.tab),sandwiches,details};
        setSaved(restored);
        if(params.get('active')==='1')setDraft(restored);
      }
@@ -86,14 +87,22 @@ export default function ExistingBaseJourney(){
  const exportText=()=>{
    const lang=fr?'fr':'en';
    const lines=['bakerhub.',bases.find(b=>b[0]===draft.base)?.[fr?1:2]??draft.base,detail.notes];
+   if(draft.resultNotes)lines.push(tr('Mes notes : ','My notes: ')+draft.resultNotes);
    if(draft.base==='pizza')for(const [id,qty] of Object.entries(draft.pizza).filter(([,n])=>n>0)){
      const recipe=getPizzaById(id);if(!recipe)continue;
      lines.push(`${qty} × ${recipe.name[lang]}`,recipe.preparationSequence?.[lang]??'');
-     lines.push(...recipe.ingredients.map(i=>`${i.name[lang]}${i.qtyPerPizza?` · ${i.qtyPerPizza.amount*qty} ${i.qtyPerPizza.unit}`:''} · ${i.bakeOrder==='after'?tr('après cuisson','after baking'):tr('avant cuisson','before baking')}`));
+     lines.push(...recipe.ingredients.map(i=>{
+       const buying=pizzaShoppingWeightNote(i.id,i.qtyPerPizza?i.qtyPerPizza.amount*qty:undefined,i.qtyPerPizza?.unit,locale);
+       return `${i.name[lang]}${i.qtyPerPizza?` · ${i.qtyPerPizza.amount*qty} ${i.qtyPerPizza.unit}`:''} · ${i.bakeOrder==='after'?tr('après cuisson','after baking'):tr('avant cuisson','before baking')}${buying?` — ${buying}`:''}`;
+     }));
    }else for(const [id,qty] of Object.entries(snapshot.qtys).filter(([,n])=>n>0)){
      const recipe=SANDWICH_RECIPES.find(r=>r.id===id);if(!recipe)continue;
      lines.push(`${qty} × ${recipe.name[lang]}`);
-     lines.push(...effectiveIngredients(recipe,snapshot.ingredientOverrides?.[id]).map(i=>`${SANDWICH_INGREDIENTS[i.ingredientId]?.name[lang]??i.ingredientId} · ${Math.round(i.grams*qty)} g`));
+     lines.push(...effectiveIngredients(recipe,snapshot.ingredientOverrides?.[id]).map(i=>{
+       const grams=Math.round(i.grams*qty);
+       const amount=`${SANDWICH_INGREDIENTS[i.ingredientId]?.name[lang]??i.ingredientId} · ${grams} g`;
+       return i.ingredientId==='chicken'?`${amount} — ${tr(`à acheter : environ ${estimateRawChickenPurchase(i.grams*qty)} g crus sans peau ni os (rendement variable), ou ${grams} g déjà cuits`,`buy approximately ${estimateRawChickenPurchase(i.grams*qty)} g raw, boneless and skinless (yield varies), or ${grams} g already cooked`)}`:amount;
+     }));
      lines.push(...effectiveSandwichSteps(recipe,snapshot.ingredientOverrides?.[id]).map(step=>`${step.title[lang]} : ${step.instruction[lang]}`));
    }
    return lines.filter(Boolean).join('\n\n');
@@ -108,7 +117,15 @@ export default function ExistingBaseJourney(){
    if(navigator.share)await navigator.share({title:'bakerhub.',text});
    else setSharedText(text);
  };
- const completionProps={onSave:saveFinished,onShare:shareFinished,sessionSaved:exported===JSON.stringify(draft)};
+ const repeatRecipe=()=>{
+   // Preserve the selected recipes and edits, but start a genuinely new preparation.
+   try{for(const kind of ['shop','prep'])localStorage.removeItem(`bh_existing_base_${kind}_ticks_v1`);}catch{}
+   setExported(null);setSharedText(null);
+   activate({...draft,done:{},selectionReturn:null,section:'shopping',
+     sandwiches:Object.fromEntries(Object.entries(draft.sandwiches).map(([base,s])=>[base,normalizeSandwichSnapshot(s,true)])),
+     details:Object.fromEntries(Object.entries(draft.details).map(([base,d])=>[base,{...d,baked:false,served:false}]))});
+ };
+ const completionProps={onSave:saveFinished,onShare:shareFinished,saveKind:'download' as const,onRepeat:repeatRecipe,resultNotes:draft.resultNotes??'',onResultNotesChange:(resultNotes:string)=>{setDraft(d=>({...d,resultNotes}));setExported(null);},sessionSaved:exported===JSON.stringify(draft)};
 
  const selectionDoneLabel=draft.selectionReturn?tr('Valider et revenir à '+({recipe:'la recette',shopping:'mes courses',protocol:'la préparation',service:'la cuisson et au service',batch:'ma fournée',organisation:'l’organisation'}[draft.selectionReturn]),'Confirm and return to '+({recipe:'recipe',shopping:'shopping',protocol:'preparation',service:'cooking and serving',batch:'my bake',organisation:'setup'}[draft.selectionReturn])):tr('Voir les courses','View shopping');
  const phase:Phase=draft.section==='shopping'?'shop':draft.section==='protocol'?'prep':draft.section==='service'?'bake':'pick';
@@ -167,7 +184,6 @@ export default function ExistingBaseJourney(){
     {detail.served&&<JourneyCompletion isFr={fr} {...completionProps}/>}
    </section>}
    {draft.section==='service'&&draft.base==='pizza'&&Object.entries(draft.pizza).some(([id,n])=>n>0&&(draft.done[id]||0)>0)&&<JourneyCompletion isFr={fr} complete={Object.entries(draft.pizza).filter(([,n])=>n>0).every(([id,n])=>(draft.done[id]||0)>=n)} {...completionProps}/>}
-   {draft.section==='service'&&<p style={{fontSize:14,color:'var(--smoke)'}}>{tr('Sauvegarder télécharge vos recettes sur cet appareil.','Save downloads your recipes to this device.')}</p>}
    {sharedText&&<section aria-label={tr('Recettes à partager','Recipes to share')}><p>{tr('Copiez ce texte pour partager vos recettes.','Copy this text to share your recipes.')}</p><textarea aria-label={tr('Texte à partager','Text to share')} readOnly value={sharedText} style={{width:'100%',minHeight:160}} onFocus={event=>event.target.select()}/><button type="button" style={control} onClick={()=>setSharedText(null)}>{tr('Fermer','Close')}</button></section>}
    {draft.section==='protocol'&&!Object.values(draft.base==='pizza'?draft.pizza:snapshot.qtys).some(n=>n>0)&&<button style={{...control,marginTop:16}} onClick={()=>go('service')}>{tr('Cuisson & service','Cooking & serving')} →</button>}
   </>}

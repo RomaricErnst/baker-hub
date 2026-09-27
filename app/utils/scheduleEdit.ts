@@ -44,6 +44,12 @@ export function validateScheduleCandidate(input: EditInput, times: EditTimes = {
   const conflict=findAvailabilityConflicts([...actions,...(input.extraActions??[]),{id:'mix',at:start}],input.blocks,now)[0];
   if(conflict)return fail('busy',{conflict:conflict.action.id});
   if(!input.methodValid(times))return fail('preferment');
+  // Every portion uses the same preferment, prepared at the original anchor.
+  // Later mixer loads must also remain inside its existing maturity window.
+  if (hasPreferment && built.schedule?.batchMixWindows?.some(batch => {
+    const batchTimes = {...times, start:batch.start, prefHours:prefHours+(+batch.start-+start)/HOUR};
+    return (input.prefWindow && batchTimes.prefHours>input.prefWindow.max) || !input.methodValid(batchTimes);
+  })) return fail('preferment');
   return {times,schedule:built.schedule,valid:built.valid,
     issue:built.reason==='method'?'preferment':built.reason,conflict:built.conflict?.id};
 }

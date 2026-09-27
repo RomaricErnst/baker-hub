@@ -35,3 +35,11 @@ test('optional container capacity survives local storage without changing recipe
  for(const capacity of [undefined,3,5.5]) {saveSession({bakeType:'pizza',containerCapacityLitres:capacity,itemWeight:250});assert.equal(loadSession().containerCapacityLitres,capacity);assert.equal(loadSession().itemWeight,250);}
 });
 
+
+
+test('real mixer capacity and result notes survive local save and validate legacy input',()=>{
+ const store=new Map();global.localStorage={setItem:(k,v)=>store.set(k,v),getItem:k=>store.get(k)??null,removeItem:k=>store.delete(k)};
+ saveSession({mixerCapacityG:2800,resultNotes:'Next time: 1 minute less baking.'});
+ assert.equal(loadSession().mixerCapacityG,2800);assert.equal(loadSession().resultNotes,'Next time: 1 minute less baking.');
+ saveSession({mixerCapacityG:-1,resultNotes:42});assert.equal(loadSession().mixerCapacityG,undefined);assert.equal(loadSession().resultNotes,'');
+});
