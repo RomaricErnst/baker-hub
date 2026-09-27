@@ -28,6 +28,25 @@ export function useSessionSave(
   const dataRef = useRef(data);
   dataRef.current = data;
 
+  // Mobile reloads and tab switches can happen before the debounce expires.
+  // Flush the latest complete snapshot while the page can still write locally.
+  useEffect(() => {
+    const flush = () => {
+      if (skipRef?.current || !hasSessionWork(dataRef.current)) return;
+      if (timerRef.current) clearTimeout(timerRef.current);
+      saveSession(dataRef.current);
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [skipRef]);
+
   useEffect(() => {
     // Persist explicit dough or companion choices, never an untouched landing
     // page. Recipe browsing is available before dough setup now.
