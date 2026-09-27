@@ -593,6 +593,7 @@ for(const mode of ['simple','custom']){
   await expect(end.getByRole('button',{name:'Sauvegarder',exact:true})).toBeVisible();
   await expect(end.getByRole('button',{name:'Partager',exact:true})).toBeVisible();
   await page.reload();
+  await page.getByRole('button',{name:'Reprendre →',exact:true}).tap();
   await expect(end).toBeVisible();
   await page.getByRole('button',{name:'Annuler le dernier',exact:true}).tap();
   await expect(end).toHaveCount(0);
