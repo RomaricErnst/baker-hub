@@ -13,6 +13,7 @@ import Header from './Header';
 import {BAKE_DESTINATIONS,type BakeDestination} from '../lib/bakeNavigation';
 import {aggregateSandwichShopping,createSandwichSnapshot,normalizeSandwichSnapshot,sandwichFamilyForStyle,type SandwichSnapshot} from '../lib/sandwich';
 import {getPizzaById} from '../lib/toppingDatabase';
+import {pizzaShoppingWeightNote} from '../lib/ingredientWeights';
 import Image from 'next/image';
 import {BREAD_STYLES} from '../data';
 
@@ -90,7 +91,10 @@ export default function ExistingBaseJourney(){
    if(draft.base==='pizza')for(const [id,qty] of Object.entries(draft.pizza).filter(([,n])=>n>0)){
      const recipe=getPizzaById(id);if(!recipe)continue;
      lines.push(`${qty} × ${recipe.name[lang]}`,recipe.preparationSequence?.[lang]??'');
-     lines.push(...recipe.ingredients.map(i=>`${i.name[lang]}${i.qtyPerPizza?` · ${i.qtyPerPizza.amount*qty} ${i.qtyPerPizza.unit}`:''} · ${i.bakeOrder==='after'?tr('après cuisson','after baking'):tr('avant cuisson','before baking')}`));
+     lines.push(...recipe.ingredients.map(i=>{
+       const buying=pizzaShoppingWeightNote(i.id,i.qtyPerPizza?i.qtyPerPizza.amount*qty:undefined,i.qtyPerPizza?.unit,locale);
+       return `${i.name[lang]}${i.qtyPerPizza?` · ${i.qtyPerPizza.amount*qty} ${i.qtyPerPizza.unit}`:''} · ${i.bakeOrder==='after'?tr('après cuisson','after baking'):tr('avant cuisson','before baking')}${buying?` — ${buying}`:''}`;
+     }));
    }else for(const [id,qty] of Object.entries(snapshot.qtys).filter(([,n])=>n>0)){
      const recipe=SANDWICH_RECIPES.find(r=>r.id===id);if(!recipe)continue;
      lines.push(`${qty} × ${recipe.name[lang]}`);

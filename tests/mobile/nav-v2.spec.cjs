@@ -73,6 +73,8 @@ for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}
   if(label==='Preparation'){
    // A bake without fillings has only the dough guide, so no redundant tabs.
    await expect(page.getByRole('region',{name:'What to prepare',exact:true})).toHaveCount(0);
+   await expect(page.locator('.bh-local-progress')).toHaveText('Overview');
+   await page.getByRole('button',{name:'Start preparation →',exact:true}).tap();
    await expect(page.locator('section[aria-label*=" · Step "]:visible')).toHaveCount(1);
    const next=page.getByRole('button',{name:/^Next(?: step| :)/});
    await next.tap();
@@ -193,6 +195,8 @@ test('country bread offers illustrated tartines and keeps loaf quantities when r
 for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppings'} return to the exact dough step and keep completion and quantities`,async({page},testInfo)=>{
  await seed(page,{activeTab:'guide',bread});
  await navigate(page,'Préparation');
+ await expect(page.locator('.bh-local-progress')).toHaveText('Vue d’ensemble');
+ await page.getByRole('button',{name:'Commencer la préparation →',exact:true}).tap();
  const next=page.getByRole('button',{name:/^(?:Étape suivante|Suivante :)/});
  await expect(next).toBeVisible();
  const done=page.getByRole('checkbox',{name:'Étape faite',exact:true});
@@ -621,7 +625,7 @@ test.describe('guided piadina with an early cooking preference',()=>{
   await page.clock.setFixedTime(new Date('2030-05-10T10:00:00Z'));
   await anonymous(page);await page.goto('/fr');
   await page.getByRole('button',{name:'Pain',exact:true}).tap();
-  await page.locator('.bh-batch-content').getByRole('button',{name:'Piadina',exact:true}).tap();
+  await page.locator('.bh-batch-content').getByRole('button',{name:'Galette à garnir · Piadina',exact:true}).tap();
   await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
   await page.getByLabel('Nombre de pièces',{exact:true}).fill('5');
   await page.getByLabel('Nombre de pièces',{exact:true}).blur();

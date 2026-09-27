@@ -1,5 +1,5 @@
 'use client';
-import { DRAINED_MOZZARELLA_IDS, mozzarellaShoppingNote } from '../lib/ingredientWeights';
+import { pizzaShoppingWeightNote } from '../lib/ingredientWeights';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { NEXT_CTA, SECONDARY_CTA } from '../lib/navButtons';
 import { createClient } from '@/app/lib/supabase/client';
@@ -722,13 +722,14 @@ export function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose 
                   lineHeight: 1,
                 }}
               >&#x2212;</button>
-              <span style={{
-                fontSize: '20px', fontWeight: 700, color: '#2B2420',
-                fontFamily: 'var(--font-ui)',
-                minWidth: '28px', textAlign: 'center',
-              }}>
-                {qty}
-              </span>
+              <input type="number" min={0} max={999} step={1} inputMode="numeric"
+                aria-label={l === 'fr' ? `Quantité · ${pizza.name.fr}` : `Quantity · ${pizza.name.en}`}
+                value={qty} onChange={event => {
+                  const next = Number(event.target.value);
+                  if (Number.isFinite(next)) onQtyChange(Math.max(0, Math.min(999, Math.floor(next))) - qty);
+                }}
+                style={{fontSize:20,fontWeight:700,color:'#2B2420',fontFamily:'var(--font-ui)',width:70,minHeight:44,textAlign:'center',border:'1px solid #E0D8CF',borderRadius:8,background:'#FDFBF7'}}
+              />
               <button
                 onClick={e => { e.stopPropagation(); onQtyChange(1); }}
                 style={{
@@ -867,6 +868,7 @@ export function buildShoppingList(
   });
 
   Object.values(ingredientMap).forEach(item => {
+    item.qtyNote = pizzaShoppingWeightNote(item.id,item.totalAmount,item.unit,locale) || item.qtyNote;
     item.forPizzas = Object.entries(item.pizzaCount).map(([name, count]) =>
       count > 1 ? `${name} ×${count}` : name
     );
@@ -1037,7 +1039,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
         const tick = ticked[item.id] ? '✓' : '';
         const name = item.name[l] ?? item.name.en;
         const qty = item.totalAmount && item.unit ? formatQty(item.totalAmount, item.unit, locale) : '';
-        text += `${tick} ${name}${qty ? '  —  ' + qty : ''}${DRAINED_MOZZARELLA_IDS.has(item.id)?' · '+mozzarellaShoppingNote(item.unit)[l]:''}\n`;
+        text += `${tick} ${name}${qty ? '  —  ' + qty : ''}${item.qtyNote?' · '+item.qtyNote:''}\n`;
       });
       text += '\n';
     });
@@ -1277,8 +1279,8 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                         </span>
                       </div>
 
-                      {(item.qtyNote || DRAINED_MOZZARELLA_IDS.has(item.id)) && (
-                        <div style={{ fontSize: '14px', color: 'var(--smoke)', marginTop: '4px', lineHeight: 1.4 }}>{DRAINED_MOZZARELLA_IDS.has(item.id)?mozzarellaShoppingNote(item.unit)[l]:item.qtyNote}</div>
+                      {item.qtyNote && (
+                        <div style={{ fontSize: '14px', color: 'var(--smoke)', marginTop: '4px', lineHeight: 1.4 }}>{item.qtyNote}</div>
                       )}
 
                       {help.available && <button type="button" onClick={() => setHelpIngredientId(item.id)}

@@ -92,8 +92,9 @@ for (const locale of ['fr', 'en']) {
     await expect(menu).toBeFocused();
 
     await page.locator('.bh-header-save').tap();
-    await expect(page.locator('.bh-header-save')).toHaveText(fr ? 'Enregistré' : 'Saved');
-    await expect(page.locator('.bh-header-save')).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.locator('.bh-header-save')).toHaveText(fr ? 'Enregistrer' : 'Save');
+    await expect(page.locator('.bh-header-save')).toHaveAttribute('aria-disabled', 'false');
+    await expect(page.locator('.bh-header-save')).toHaveAttribute('aria-label', fr ? 'Enregistré sur cet appareil. Enregistrer dans mon compte' : 'Saved on this device. Save to my account');
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText(fr ? 'Compte' : 'Account', { exact: true })).toBeVisible();
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('bh_session_v1')));

@@ -93,6 +93,13 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
   const kcal = (recipe:Recipe) => estimatedSandwichKcal(recipe,snapshot.ingredientOverrides?.[recipe.id]);
   const lighter = (recipe:Recipe) => isLighterSandwich(recipe,snapshot.ingredientOverrides?.[recipe.id]);
   const stepsFor = (recipe:Recipe) => effectiveSandwichSteps(recipe,snapshot.ingredientOverrides?.[recipe.id]);
+  const stepTiming = (step:ReturnType<typeof effectiveSandwichSteps>[number]) => {
+    if (!step.minutes) return '';
+    const unit = /-(bread|toast|assemble)$/.test(step.id)
+      ? t('par portion','per portion')
+      : step.phase==='cook' ? t('par lot de cuisson','per cooking batch') : t('indicatif','estimate');
+    return ` · ≈ ${step.minutes} min · ${unit}`;
+  };
   const update = (patch:Partial<SandwichSnapshot>) => onChange({...snapshot,...patch,familyId:family?.id ?? snapshot.familyId});
   const go = (next:SandwichSnapshot['tab']) => { if(onPhaseChange)onPhaseChange(next);else {update({tab:next});headingRef.current?.scrollIntoView({block:'start'});} };
   const setQuantity = (recipe:Recipe,value:number) => {
@@ -213,7 +220,7 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
         </nav>}
         {preparationOrder.map(({recipe})=><section ref={element=>{preparationRef.current[recipe.id]=element;}} className={styles.card} key={recipe.id} style={{marginBottom:12,scrollMarginTop:'calc(var(--bh-header-height, 80px) + 100px)'}}><h3>{tr(recipe.name)} · {count(snapshot.qtys[recipe.id])}</h3>
           <p className={styles.muted}>{ingredientsFor(recipe).map(item=>`${ingredientName(item.ingredientId)} ${amountText(item.grams*count(snapshot.qtys[recipe.id]))}`).join(' · ')}</p>
-          {partitionSandwichSteps(stepsFor(recipe),deferBreadSteps).prep.map(step=>{const key=sandwichPrepKey(recipe,step.id,count(snapshot.qtys[recipe.id]),snapshot.ingredientOverrides?.[recipe.id]);return <label key={key} className={styles.check}><input type="checkbox" checked={!!snapshot.prepTicks[key]} onChange={event=>update({prepTicks:{...snapshot.prepTicks,[key]:event.target.checked}})}/><span className={snapshot.prepTicks[key]?styles.checked:''}><strong>{tr(step.title)}</strong>{step.minutes>0?` · ≈ ${step.minutes} min`:''}<br/>{tr(step.instruction)}</span></label>;})}
+          {partitionSandwichSteps(stepsFor(recipe),deferBreadSteps).prep.map(step=>{const key=sandwichPrepKey(recipe,step.id,count(snapshot.qtys[recipe.id]),snapshot.ingredientOverrides?.[recipe.id]);return <label key={key} className={styles.check}><input type="checkbox" checked={!!snapshot.prepTicks[key]} onChange={event=>update({prepTicks:{...snapshot.prepTicks,[key]:event.target.checked}})}/><span className={snapshot.prepTicks[key]?styles.checked:''}><strong>{tr(step.title)}</strong>{stepTiming(step)}<br/>{tr(step.instruction)}</span></label>;})}
           <button className={`${styles.button} ${styles.wide}`} type="button" onClick={()=>setDetailId(recipe.id)}>{t('Voir la recette','View recipe')}</button>
         </section>)}
         <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('serve')}>{prepContinueLabel??(hideNavigation&&!baseReady?t('Passer à la cuisson du pain','Go to bread cooking'):t('Passer à l’assemblage','Start assembly'))} →</button>
@@ -258,7 +265,7 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
           })}
           {snapshot.ingredientOverrides?.[detail.id]&&<button type="button" className={`${styles.button} ${styles.wide}`} onClick={()=>{onChange(updateSandwichRecipe({...snapshot,familyId:family.id},detail.id,count(snapshot.qtys[detail.id]),{}));}}>{t('Rétablir les garnitures','Reset fillings')}</button>}
           <p className={styles.muted}>{t('Allergènes de la recette de base','Base recipe allergens')} : {detail.allergens.map(allergen=>({gluten:t('gluten','gluten'),milk:t('lait','milk'),egg:t('œuf','egg'),fish:t('poisson','fish'),sesame:t('sésame','sesame'),nuts:t('fruits à coque','nuts'),mustard:t('moutarde','mustard'),soy:t('soja','soy')}[allergen])).join(', ')}. {t('Vérifiez les étiquettes de vos produits.','Check your product labels.')}</p>
-          <h3 style={{marginTop:22}}>{t('Préparation et cuisson','Preparation and cooking')}</h3><ol className={styles.steps}>{stepsFor(detail).map(step=><li key={step.id}><strong>{tr(step.title)}{step.minutes>0?` · ≈ ${step.minutes} min`:''}</strong>{tr(step.instruction)}</li>)}</ol>
+          <h3 style={{marginTop:22}}>{t('Préparation et cuisson','Preparation and cooking')}</h3><ol className={styles.steps}>{stepsFor(detail).map(step=><li key={step.id}><strong>{tr(step.title)}{stepTiming(step)}</strong>{tr(step.instruction)}</li>)}</ol>
           {quantityControls(detail)}
         </div>
         <div className={styles.sheetFooter}><button type="button" className={`${button} ${styles.wide}`} style={{marginTop:0}} onClick={()=>setDetailId(null)}>{t('Terminé','Done')}</button></div>

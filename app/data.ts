@@ -216,7 +216,7 @@ export const BREAD_STYLES = {
     pref: 'none',
     bulkH: 3,
     ballW: 500,
-    ovenNote: 'Egg wash for golden colour. 180°C fan.',
+    ovenNote: '190°C conventional / 170°C fan. Protect the top if it colours too quickly.',
     flourNote: 'Strong all-purpose flour suitable for enriched dough; weigh eggs without shells.',
   },
   pain_mie: {

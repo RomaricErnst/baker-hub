@@ -39,3 +39,19 @@ test('French shopping references translate generic Italian delis without changin
  assert.deepEqual(ingredientHelpData(item,'france','fr').shops,['Grand Frais','Épiceries italiennes','Monoprix']);
  assert.deepEqual(ingredientHelpData(item,'france','en').shops,['Grand Frais','Italian delis','Monoprix']);
 });
+
+test('large pizza quantities have a labelled numeric input in the detail sheet',()=>{
+ const {PizzaSheet}=require('../app/components/ToppingSelector.tsx');
+ const pizza={id:'margherita',name:{en:'Margherita',fr:'Margherita'},ingredients:[]};
+ const html=renderToStaticMarkup(React.createElement(PizzaSheet,{pizza,qty:24,locale:'en',onQtyChange(){},onClose(){}}));
+ assert.match(html,/<input[^>]*type="number"[^>]*aria-label="Quantity · Margherita"[^>]*value="24"/);
+});
+
+test('fresh finishing herbs are not sorted into the drain station merely for taking zero minutes',()=>{
+ const PrepTab=require('../app/components/pizzaParty/PrepTab.tsx').default;
+ for(const locale of ['en','fr']){
+  const html=renderToStaticMarkup(React.createElement(PrepTab,{locale,selectedPizzas:{margherita:1},styleKey:'neapolitan',onGoToBake(){},onGoToShopping(){},onGoToPizzas(){}}));
+  const herbs=html.indexOf(locale==='fr'?'Herbes &amp; finitions':'Herbs &amp; finish');
+  assert.ok(herbs>=0);assert.ok(html.slice(herbs).includes(locale==='fr'?'Basilic':'Fresh basil'));
+ }
+});

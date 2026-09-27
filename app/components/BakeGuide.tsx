@@ -912,7 +912,7 @@ export default function BakeGuide({
   const isTwoPhase    = schedule.coldRetard2Start !== null;
   const hasCold       = (schedule.coldRetardHours ?? 0) > 0;
   const extraBalls    = Math.max(0, numItems - 4);
-  const divideMin     = 15 + 2 * extraBalls;
+  const divideMin     = schedule.divisionMinutes ?? 15 + 2 * extraBalls;
 
   // Recipe quantity helpers — used in mixing order steps.
   // Sourdough (no preferment object): half the starter is flour, half water —
@@ -940,8 +940,6 @@ export default function BakeGuide({
   // mixing duration (16:15 vs 16:00 / 25h45 vs 26h).
   const bgMixStart  = (() => {
     const raw = new Date(schedule.bulkFermStart.getTime() - (schedule.mixingDurationH ?? 0.25) * 3600000);
-    // Use the nearest quarter-hour for the displayed start — 19:46 is engine precision, not baker time
-    raw.setMinutes(Math.round(raw.getMinutes() / 15) * 15, 0, 0);
     return raw;
   })();
   const currentMixWindow = batch && batch.count > 1 ? schedule.batchMixWindows?.[batch.active] : undefined;
@@ -1098,7 +1096,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         <Steps items={profileSteps(breadProtocol.proof[l])} />
         <p>{l === 'fr' ? 'Cette pâte sans levure se détend ; elle n’a pas besoin de lever.' : 'This unleavened dough relaxes; it does not need to rise.'}</p>
       </StepCard>
-      <StepCard number={n()} {...sc()} icon={<IconDivide />} title={l === 'fr' ? 'Diviser et abaisser' : 'Divide and roll'} time={schedule.divideBallTime ?? undefined}>
+      <StepCard number={n()} {...sc()} icon={<IconDivide />} title={l === 'fr' ? 'Diviser et abaisser' : 'Divide and roll'} time={schedule.rollStart ?? schedule.divideBallTime ?? undefined} duration={(schedule.divisionMinutes ?? 10) / 60}>
         <Steps items={profileSteps(breadProtocol.shaping[l])} />
       </StepCard>
 <StepCard number={n()} {...sc(false, 'cooking')} icon={<IconPreheat />} title={l === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle'} time={schedule.preheatStart}>
@@ -1200,7 +1198,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       {isSourdough && starterEvents?.filter(event => !event.isPast && !['last_fed', 'known_peak'].includes(event.kind)).map((event, index) => {
         const feeding = ['refresh', 'intermediate_refresh', 'pre_mix'].includes(event.kind);
         const title = feeding ? (l === 'fr' ? 'Rafraîchir le levain' : 'Feed your starter') : event.kind === 'fridge_in' ? (l === 'fr' ? 'Réfrigérer le levain' : 'Refrigerate your starter') : (l === 'fr' ? 'Sortir le levain du réfrigérateur' : 'Take starter out of the fridge');
-        return <StepCard key={`${event.kind}-${index}`} number={n()} {...sc()} icon={<IconStarter />} title={title} time={new Date(Math.round(event.time.getTime() / 900000) * 900000)} accent="#6A7FA8">
+        return <StepCard key={`${event.kind}-${index}`} number={n()} {...sc()} icon={<IconStarter />} title={title} time={event.time} accent="#6A7FA8">
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={feeding ? [
               {bold: l === 'fr' ? `Mélangez ${feedSeed} g de levain, ${feedPart} g de farine et ${feedPart} g d’eau.` : `Mix ${feedSeed} g starter, ${feedPart} g flour and ${feedPart} g water.`, note: `1:${feedR}:${feedR}`},
@@ -1426,8 +1424,8 @@ Actual dough condition and equipment may differ from these estimates.`;
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           <Steps items={enriched ? [
             {bold:l==='fr'?'Pesez tous les ingrédients indiqués.':'Weigh all the listed ingredients.',note:l==='fr'?'Pesez les œufs sans coquille.':'Weigh eggs without shells.'},
-            {bold:l==='fr'?'Mélangez sans le beurre jusqu’à ce que la pâte gagne en tenue.':'Mix without the butter until the dough begins to gain strength.',note:''},
-            {bold:l==='fr'?'Ajoutez le beurre souple progressivement ; laissez chaque ajout s’incorporer.':'Add softened butter gradually; let each addition incorporate.',note:''},
+            {bold:l==='fr'?'Mélangez farine, liquides, levure, sel et sucre, sans le beurre.':'Combine flour, liquids, yeast, salt and sugar, without the butter.',note:l==='fr'?'Pétrissez jusqu’à ce que la pâte gagne en tenue.':'Knead until the dough begins to gain strength.'},
+            {bold:l==='fr'?'Ajoutez le beurre souple progressivement ; laissez chaque ajout s’incorporer.':'Add softened butter gradually; let each addition incorporate.',note:l==='fr'?'Arrêtez quand la pâte est homogène et élastique. Si elle devient grasse ou trop chaude, faites une pause au frais.':'Stop when smooth and elastic. If the dough becomes greasy or too warm, pause and cool it.'},
           ] : [
             {bold:l==='fr'?'Pesez les ingrédients de cette pétrissée indiqués ci-dessus.':'Weigh this batch’s ingredients shown above.',note:recipe?.yeast?.yeastType==='active_dry'?(l==='fr'?'Réactivez la levure selon le sachet avec une partie de l’eau mesurée.':'Activate the yeast as directed on its packet using part of the measured water.'):''},
             {bold:hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'
@@ -1607,7 +1605,7 @@ Actual dough condition and equipment may differ from these estimates.`;
               ]} />
               <div style={{ marginTop: '8px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                 <LearnLink term="windowpane" label={l === 'fr' ? 'Test de la membrane' : 'Windowpane test'} onOpen={setLearnTerm} showSparkle={true} />
-                {mixerType === 'hand' && !isSourdough && <LearnLink term="autolyse" label="Autolyse" onOpen={setLearnTerm} />}
+                {!enriched && mixerType === 'hand' && !isSourdough && <LearnLink term="autolyse" label="Autolyse" onOpen={setLearnTerm} />}
                 {isSpiral && <LearnLink term="pumpkin" label={l === 'fr' ? 'Forme citrouille' : 'Pumpkin shape'} onOpen={setLearnTerm} />}
                 {hydration > 70 && <LearnLink term="bassinage" label="Bassinage" onOpen={setLearnTerm} />}
               </div>
@@ -1622,6 +1620,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           </>}
           visuals={styleKey !== 'pain_seigle' && mixerType !== 'no_knead' ? <StepVisual kind="mix" includeSpiral={mixerType === 'spiral'} locale={l} /> : undefined}
           faqKey="mix"
+          faqOverride={enriched ? [{ q:{en:"Why add butter after the dough gains strength?",fr:"Pourquoi ajouter le beurre après le début du pétrissage ?"}, a:{en:"First mix flour, liquids, yeast, salt and sugar until the dough gains strength. Then add softened butter gradually. If the dough becomes greasy or too warm, pause and cool it before continuing.",fr:"Mélangez d’abord farine, liquides, levure, sel et sucre jusqu’à donner de la tenue à la pâte. Ajoutez ensuite le beurre souple progressivement. Si la pâte devient grasse ou trop chaude, faites une pause au frais avant de reprendre."} }] : undefined}
           coachStepId="mix"
           coachTitle={t('stepTitles.mixDough')}
           recipeContext={maestroRecipeContext}
@@ -1755,7 +1754,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             ) : (
               <>
                 <Steps items={[
-                  { bold: l === 'fr' ? `Pesez la pâte puis divisez-la en ${numItems} pâtons de même poids` : `Weigh dough and divide into ${numItems} equal pieces`, note: (t.raw('divide.pizza.steps') as { bold: string; note: string }[])[0].note },
+                  { bold: l === 'fr' ? `Pesez la pâte puis divisez-la en ${numItems} pâtons de même poids${recipe?.totalDough ? ` (environ ${Math.round(recipe.totalDough / Math.max(1,numItems))} g chacun)` : ''}` : `Weigh dough and divide into ${numItems} equal pieces${recipe?.totalDough ? ` (about ${Math.round(recipe.totalDough / Math.max(1,numItems))} g each)` : ''}`, note: (t.raw('divide.pizza.steps') as { bold: string; note: string }[])[0].note },
                   ...(t.raw('divide.pizza.steps') as { bold: string; note: string }[]).slice(1),
                   ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
                 ]} />

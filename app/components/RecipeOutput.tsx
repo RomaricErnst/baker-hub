@@ -836,7 +836,7 @@ export default function RecipeOutput({
       )}
 
 
-      {onContainerCapacityChange && <details className="bh-disclosure">
+      {onContainerCapacityChange && breadProtocol?.method !== 'unleavened' && <details className="bh-disclosure">
         <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Récipient de fermentation' : 'Fermentation container'}</summary>
         <label style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',fontSize:14}}>
           {locale === 'fr' ? 'Capacité du récipient (litres)' : 'Container capacity (litres)'}

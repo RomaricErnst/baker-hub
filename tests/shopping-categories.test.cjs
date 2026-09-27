@@ -58,3 +58,19 @@ test('drained-weight metadata preserves user-defined quantities and never assume
  const low={...custom,id:'mozzarella_lm'};
  assert.equal(withDrainedCheeseWeight(low),low);
 });
+
+test('pizza poultry shopping keeps cooked targets and gives cut-specific purchasing guidance',()=>{
+ const {PIZZAS}=require('../app/lib/toppingDatabase.ts');
+ for(const locale of ['en','fr']){
+  const chicken=buildShoppingList({bbq_chicken:2,teriyaki_chicken:1},locale,'neapolitan').sections.flatMap(s=>s.items).find(i=>i.id==='grilled_chicken');
+  assert.equal(chicken.totalAmount,360); // recipe remains cooked meat, not purchase weight
+  assert.match(chicken.qtyNote,/500 g/);assert.match(chicken.qtyNote,/360 g/);assert.match(chicken.qtyNote,/73/);
+  assert.match(chicken.name[locale],locale==='fr'?/poids cuit/:/cooked weight/);
+  const thigh=buildShoppingList({satay_chicken:2},locale,'neapolitan').sections.flatMap(s=>s.items).find(i=>i.id==='chicken_thigh_grilled');
+  assert.equal(thigh.totalAmount,240);assert.match(thigh.qtyNote,/240 g/);assert.doesNotMatch(thigh.qtyNote,/73|330 g/);
+ }
+ for(const pizza of PIZZAS) for(const ingredient of pizza.ingredients) if(['grilled_chicken','chicken_thigh_grilled'].includes(ingredient.id)){
+  assert.match(ingredient.prepNote.en,/74°C/);assert.match(ingredient.prepNote.fr,/74 °C/);
+  assert.doesNotMatch(ingredient.qtyPerPizza.noteEN,/1 breast/);
+ }
+});

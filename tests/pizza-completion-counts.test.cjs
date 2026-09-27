@@ -20,3 +20,17 @@ test('actual pizza service exposes repeat and result notes only after all select
   const complete=render({[one.id]:4,[two.id]:2});a.ok(complete.includes(locale==='fr'?'Refaire cette recette':'Make this again'));a.ok(complete.includes('Less salt'));a.ok(complete.includes(locale==='fr'?'Télécharger la recette':'Download recipe'));
  }}finally{Module._resolveFilename=resolve;}
 });
+
+test('one selected pizza out of 24 never claims the whole bake is ready',()=>{
+ const React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{NextIntlClientProvider}=require('next-intl');
+ const BakeTab=require('../app/components/pizzaParty/BakeTab.tsx').default;
+ for(const locale of ['en','fr']){
+  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require(`../messages/${locale}.json`),timeZone:'UTC'},React.createElement(BakeTab,{selectedPizzas:{margherita:1},initialDoneCounts:{margherita:1},plannedPizzaCount:24,locale,onSave(){}})));
+  assertScoped(html,locale);
+ }
+ function assertScoped(html,locale){
+  a.match(html,locale==='fr'?/1 pizza sur 24 prévues/:/1 of 24 planned pizzas/);
+  a.match(html,locale==='fr'?/Votre sélection est cuite/:/Your selected pizzas are baked/);
+  a.doesNotMatch(html,/Everything is ready|Tout est prêt|Which pizza goes in next|Quelle pizza enfourner/);
+ }
+});

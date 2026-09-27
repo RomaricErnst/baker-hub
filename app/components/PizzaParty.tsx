@@ -180,6 +180,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
 
       {activeTab === 'bake' && (
         <BakeTab
+          plannedPizzaCount={numItems}
           selectedPizzas={qtys}
           locale={locale}
           styleKey={pickStyleKey}

@@ -11,7 +11,7 @@ test('new bread climate/fridge/mode matrix keeps recipe mass finite and conserve
       const end = new Date(+start + (protocol.method === 'unleavened' ? 2 : 24) * 3600000);
       const schedule = utils.buildSchedule(start,end,[],temp,oven === 'griddle' ? 5 : 30,'hand',style);
       const recipe = utils.calculateRecipe(style,oven,4,140,temp,'normal',schedule,fridge,'instant',mode,'hand');
-      const quantities = [recipe.flour,recipe.water,recipe.salt,recipe.oil,recipe.sugar,recipe.yeast?.convertedGrams ?? 0];
+      const quantities = [recipe.flour,recipe.water,recipe.salt,recipe.oil,recipe.sugar,recipe.yeast?.convertedGrams ?? 0,recipe.enrichment?.milk??0,recipe.enrichment?.eggs??0,recipe.enrichment?.butter??0];
       assert.ok(quantities.every(n=>Number.isFinite(n)&&n>=0), `${style}/${temp}/${fridge}/${mode}`);
       assert.ok(Math.abs(quantities.reduce((a,b)=>a+b,0)-560)<=3, `${style} batch mass`);
     }

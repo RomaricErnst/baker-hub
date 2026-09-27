@@ -2,7 +2,7 @@
 import { BREAD_FERMENTATION_DEFAULTS, getBreadProtocol, breadActiveCookMinutes } from '../utils/breadProfiles';
 import { useState, useMemo, useEffect, useRef, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH, findScheduleRepair, buildSchedule } from '../utils';
+import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS } from '../utils';
 import FermentChart, { scheduleColdIntervals, getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
 import FermentationReadiness from './FermentationReadiness';
 import ScheduleTimeline from './ScheduleTimeline';
@@ -381,9 +381,9 @@ export const STYLE_FERM_DEFAULTS: Record<string, {
   pain_complet:  { coldH: 12, rtH: 3, preferredColdH: 18, minColdH: 6,  minTotalFermH: 8  },
   pain_seigle:   { coldH: 0,  rtH: 5, minColdH: 0,        minTotalFermH: 4  },
   fougasse:      { coldH: 8,  rtH: 2, preferredColdH: 12, minColdH: 4,  minTotalFermH: 6  },
-  brioche:       { coldH: 8,  rtH: 2, preferredColdH: 12, minColdH: 4,  minTotalFermH: 4,  coldHRequired: true },
-  pain_mie:      { coldH: 8,  rtH: 2, preferredColdH: 12, minColdH: 4,  minTotalFermH: 4,  coldHRequired: true },
-  pain_viennois: { coldH: 6,  rtH: 2, preferredColdH: 8,  minColdH: 3,  minTotalFermH: 4,  coldHRequired: true },
+  brioche:       { coldH: 8,  rtH: 2, preferredColdH: 12, minColdH: REQUIRED_COLD_MIN_HOURS.brioche,  minTotalFermH: 4,  coldHRequired: true },
+  pain_mie:      { coldH: 8,  rtH: 2, preferredColdH: 12, minColdH: REQUIRED_COLD_MIN_HOURS.pain_mie,  minTotalFermH: 4,  coldHRequired: true },
+  pain_viennois: { coldH: 6,  rtH: 2, preferredColdH: 8,  minColdH: REQUIRED_COLD_MIN_HOURS.pain_viennois,  minTotalFermH: 4,  coldHRequired: true },
 };
 const FERM_FALLBACK: { coldH: number; rtH: number; minColdH?: number; minTotalFermH: number } = { coldH: 0, rtH: 4, minColdH: 0, minTotalFermH: 4 };
 
@@ -1695,6 +1695,31 @@ function PlanList({
   );
 }
 
+function StarterHydrationNotice({ isFr }: { isFr: boolean }) {
+  return <p style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--char)', margin: '0 0 16px' }}>
+    <strong>{isFr ? 'Levain liquide à 100 % d’hydratation' : 'Liquid starter at 100% hydration'}</strong>
+    {' — '}{isFr ? 'autant d’eau que de farine en poids. Le ratio de rafraîchi (1:1:1, 1:2:2…) ne change pas cette hydratation. Les autres hydratations de levain ne sont pas prises en charge.' : 'equal weights of water and flour. The feeding ratio (1:1:1, 1:2:2…) does not change this hydration. Other starter hydrations are not supported.'}
+  </p>;
+}
+
+function findRequiredColdStart(input: {
+  start: Date; bake: Date; from: Date; to: Date; now: number;
+  blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number;
+  mixerType: MixerType; styleKey: string; numItems?: number; mixingBatches: number;
+}) {
+  return findFixedBakeSchedule({ ...input, id: 'mix', at: input.start,
+    prefHours: 0, hasPreferment: false, prefWarmupHours: 0, supported: true,
+    window: () => ({ from: input.from, to: input.to }), methodValid: () => true,
+  });
+}
+
+function coldTimingMessage(conflict: { requiredHours: number; actualHours: number }, isFr: boolean): string {
+  const duration = (hours: number) => `${Math.round(hours * 60)} min`;
+  return isFr
+    ? `Repos au froid trop court : ${duration(conflict.actualHours)} prévus, au moins ${duration(conflict.requiredHours)} nécessaires pour cette recette. Avancez le pétrissage ou repoussez la cuisson.`
+    : `Fridge rest is too short: ${duration(conflict.actualHours)} planned, at least ${duration(conflict.requiredHours)} needed for this recipe. Start mixing earlier or bake later.`;
+}
+
 export function ScheduleViewTabs({ value, onChange, id, isFr }: {
   value: 'actions' | 'graph'; onChange: (value: 'actions' | 'graph') => void; id: string; isFr: boolean;
 }) {
@@ -2412,6 +2437,23 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     // Report which mode won — display reads this as single source of truth
     if (effectiveHasPref && prefermentType === 'poolish') {
       setAlgoChoseFridge(resultChoseFridge);
+    }
+
+    // Cold-required methods must fit the actual preparation chronology, not
+    // just nominal cold + room-temperature hours. Keep the target and search
+    // the existing window; an unrepairable plan stays visibly invalid.
+    if (defaults.coldHRequired && !effectiveHasPref) {
+      const verified = findRequiredColdStart({
+        start: new Date(+et - result.mixHBF * 3600000), bake: et,
+        from: new Date(+et - sweetFromRaw * 3600000), to: new Date(+et - sweetToRaw * 3600000),
+        now: nowMs, blocks: currentBlocks, kitchenTemp, preheatMin,
+        mixerType, styleKey, numItems, mixingBatches,
+      });
+      if (verified.found) {
+        const mixHBF = (+et - +verified.candidate.times.start) / 3600000;
+        result = { ...result, mixHBF, prefHBF: mixHBF, mixInZone: true,
+          mixInBlocker: false, fallback: false, score: 2 };
+      }
     }
 
     // Unified decision tree — single source of truth for all scheduler states.
@@ -6558,6 +6600,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   return (
     <div style={{ fontFamily: 'var(--font-ui)' }}>
 
+      {isSourdough && <StarterHydrationNotice isFr={isFr} />}
       {/* Bake time inputs — always visible */}
       <div style={{ marginBottom: '16px' }}>
         <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--char)', marginBottom: '4px' }}>
@@ -6659,6 +6702,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         {isSourdough&&<p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Choisissez votre horaire : sa faisabilité dépendra de votre levain.':'Choose your time: feasibility depends on your starter.'}</p>}
       </div>
 
+      {eatTimeSet && schedule?.coldTimingConflict && <p role="alert" style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--terra)' }}>{coldTimingMessage(schedule.coldTimingConflict,isFr)}</p>}
       {/* Phase 2 content — only once bake time is set */}
       {/* Past bake time — calm guidance, no plan (never a crash) */}
       {bakeInPast && (
@@ -8096,6 +8140,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           :preview?.issue==='preferment'&&mixingBatches>1?(isFr?'Le préferment doit rester dans sa fenêtre de maturité jusqu’à la dernière pétrissée. Ajustez ses horaires ou préparez moins de lots.':'The preferment must remain within its maturity window until the final mixer load. Adjust its timing or prepare fewer batches.')
           :preview?.issue==='preferment'&&draftPrefOffset<=0?(isFr?'Le préferment doit être préparé avant le pétrissage. Choisissez un créneau proposé.':'Prepare the preferment before mixing. Choose a suggested window.')
           :preview?.issue==='preferment'&&prefWindow?(isFr?`Maturation du préferment : ${duration(draftPrefOffset)} ; fenêtre conseillée : ${duration(prefWindow.min)}–${duration(prefWindow.max)}. Déplacez le préferment ou le pétrissage.`:`Preferment maturation: ${duration(draftPrefOffset)}; recommended window: ${duration(prefWindow.min)}–${duration(prefWindow.max)}. Move the preferment or mixing.`)
+          :preview?.schedule?.coldTimingConflict?coldTimingMessage(preview.schedule.coldTimingConflict,isFr)
           :preview?.schedule?.batchTimingConflict?(isFr?`Le premier lot nécessite un rabat à ${fmtCardHM(preview.schedule.batchTimingConflict.firstFoldAt,isFr)}, avant la fin des pétrissées à ${fmtCardHM(preview.schedule.batchTimingConflict.mixingEnd,isFr)}. Planifiez ces lots séparément ou réduisez leur nombre en respectant la capacité du pétrin.`:`The first batch needs a fold at ${fmtCardHM(preview.schedule.batchTimingConflict.firstFoldAt,isFr)}, before mixing finishes at ${fmtCardHM(preview.schedule.batchTimingConflict.mixingEnd,isFr)}. Plan these batches separately, or reduce their number within your mixer’s capacity.`)
           :preview?.schedule?.bulkConflict?(isFr?`Repos avant mise au froid trop court : il manque ${preview.schedule.bulkConflict.missingMin} min. Avancez le pétrissage.`:`Rest before refrigeration is short by ${preview.schedule.bulkConflict.missingMin} min. Start mixing earlier.`)
           :preview?.schedule?.coldExitConflict?(isFr?`La sortie du réfrigérateur tombe pendant ${preview.schedule.coldExitConflict.blockLabel}. Déplacez la cuisson ou cette indisponibilité.`:`Taking the dough out overlaps ${preview.schedule.coldExitConflict.blockLabel}. Move the bake or this unavailable period.`)

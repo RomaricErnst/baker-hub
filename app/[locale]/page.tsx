@@ -735,6 +735,30 @@ function NeedsStyleFirst({ fr, onChoose }: { fr: boolean; onChoose: () => void }
   );
 }
 
+function SessionReplacementNotice({ fr, localOnly }: { fr: boolean; localOnly: boolean }) {
+  return <>
+    <p style={{ margin: 0, fontSize: '17px', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
+      {localOnly ? (fr ? 'Cette fournée est conservée sur cet appareil' : 'This bake is saved on this device') : (fr ? 'Cette fournée n’est pas dans votre historique' : 'This bake is not in your history')}
+    </p>
+    <p style={{ margin: '0 0 6px', fontSize: '14px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}>
+      {fr ? 'Une nouvelle fournée remplacera la reprise sur cet appareil. Pour conserver celle-ci dans votre historique, enregistrez-la dans votre compte.' : 'A new bake will replace the resume saved on this device. Save this bake to your account to keep it in your history.'}
+    </p>
+  </>;
+}
+
+function eggShoppingLabel(grams: number, fr: boolean): string {
+  const count = Math.ceil(grams / 50);
+  return fr ? `Œufs sans coquille — environ ${count} œuf${count > 1 ? 's' : ''} de 50 g sans coquille ; peser, les tailles varient` : `Eggs without shells — about ${count} egg${count > 1 ? 's' : ''} at 50 g without shell each; weigh, sizes vary`;
+}
+
+function bakeQuantityLabel(count: number, bakeType: string | null, styleKey: string | null, fr: boolean): string {
+  const noun = bakeType === 'bread'
+    ? styleKey === 'piadina' ? (count === 1 ? 'piadina' : 'piadinas')
+      : (fr ? (count === 1 ? 'pain' : 'pains') : (count === 1 ? 'loaf' : 'loaves'))
+    : count === 1 ? 'pizza' : 'pizzas';
+  return `${count} ${noun}`;
+}
+
 function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: number; children: React.ReactNode; nextOverride?: React.ReactNode }) {
   if (flow.activeId !== id) return null;
   const idx  = flow.steps.findIndex(s => s.id === id);
@@ -784,7 +808,13 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
           {fr ? 'Terminer →' : 'Finish →'}
         </button>;
   } else if (isLast) {
-    if (gap) {
+    if (gap?.id === id) {
+      // The missing field is already on this page: never link back to itself.
+      next = <div style={{ width: '100%' }}>
+        <p style={{ fontSize: '14px', color: 'var(--smoke)', margin: '0 0 8px' }}>{step.group === 'plan' ? (fr ? 'Choisissez un horaire de cuisson ci-dessus.' : 'Choose a cooking time above.') : step.gap}</p>
+        <button disabled style={{ ...nextStyle, opacity: 0.5, cursor: 'not-allowed' }}>{fr ? 'Continuer' : 'Continue'}</button>
+      </div>;
+    } else if (gap) {
       // Outlined here, because on the final step an unfilled one really is
       // what stands between the baker and a recipe — but named, not accused.
       next = <button onClick={() => flow.onGapJump(gap.id)} style={missingStyle}>
@@ -1929,7 +1959,7 @@ export default function Home() {
       {id:'olive_oil', name:fr?'Huile':'Oil', grams:cr.oil},
       {id:'sugar', name:fr?'Sucre':'Sugar', grams:cr.sugar},
       {id:'yeast', name:fr?'Levure':'Yeast', grams:cr.preferment?.prefYeastGrams ?? cr.yeast?.convertedGrams ?? 0},
-      ...(['milk','eggs','butter'] as const).map(id=>({id,name:({milk:fr?'Lait':'Milk',eggs:fr?'Œufs sans coquille':'Eggs without shells',butter:fr?'Beurre':'Butter'})[id],grams:cr.enrichment?.[id] ?? 0})),
+      ...(['milk','eggs','butter'] as const).map(id=>({id,name:({milk:fr?'Lait':'Milk',eggs:eggShoppingLabel(cr.enrichment?.eggs ?? 0,fr),butter:fr?'Beurre':'Butter'})[id],grams:cr.enrichment?.[id] ?? 0})),
     ];
     return rows.filter(row=>Number.isFinite(row.grams)&&row.grams>0);
   }, [tab, advancedRecipe, recipe, locale]);
@@ -2594,10 +2624,7 @@ export default function Home() {
     const style = (ALL_STYLES as Record<string, { name: string }>)[styleKey ?? ''];
     const styleName = style?.name ?? styleKey ?? '';
     const n = numItems ?? 0;
-    const noun = bakeType === 'bread'
-      ? (locale === 'fr' ? (n === 1 ? 'pain' : 'pains') : (n === 1 ? 'loaf' : 'loaves'))
-      : (n === 1 ? 'pizza' : 'pizzas');
-    const parts = [styleName, n ? `${n} ${noun}` : ''].filter(Boolean);
+    const parts = [styleName, n ? bakeQuantityLabel(n,bakeType,styleKey,locale === 'fr') : ''].filter(Boolean);
     return parts.join(' · ') || (locale === 'fr' ? 'Votre fournée' : 'Your bake');
   }
 
@@ -3437,25 +3464,18 @@ export default function Home() {
                 display: 'flex', flexDirection: 'column', gap: '10px',
               }}
             >
-              <p style={{ margin: 0, fontSize: '17px', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-                {locale === 'fr' ? 'Ce plan n\u2019est pas enregistr\u00e9' : 'This plan is not saved'}
-              </p>
-              <p style={{ margin: '0 0 6px', fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
-                {locale === 'fr'
-                  ? 'Enregistrez-le dans votre historique avant d\u2019en commencer un nouveau.'
-                  : 'Save it to your history before starting a new one.'}
-              </p>
+              <SessionReplacementNotice fr={locale === 'fr'} localOnly={sessionSaved && !user} />
               <button
                 onClick={async () => { const preserved = await saveCurrentSession(); if (preserved) { setConfirmNewSession(false); startOver(); } }}
                 style={{ width: '100%', padding: '14px', minHeight: '44px', background: 'var(--terra)', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
               >
-                {locale === 'fr' ? 'Enregistrer, puis nouveau plan' : 'Save it, then start fresh'}
+                {user ? (locale === 'fr' ? 'Enregistrer, puis nouvelle fournée' : 'Save, then start a new bake') : (locale === 'fr' ? 'Enregistrer dans mon compte' : 'Save to my account')}
               </button>
               <button
                 onClick={() => { setConfirmNewSession(false); startOver(); }}
                 style={{ width: '100%', padding: '12px', minHeight: '44px', background: 'none', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '13px', color: 'var(--char)', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
               >
-                {locale === 'fr' ? 'Abandonner ce plan' : 'Discard this plan'}
+                {locale === 'fr' ? 'Remplacer par une nouvelle fournée' : 'Replace with a new bake'}
               </button>
               <button
                 onClick={() => setConfirmNewSession(false)}
@@ -3666,7 +3686,7 @@ export default function Home() {
         </div>
         )}
 
-{recipeGenerated && <div style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{numItems} {bakeType==='bread'?(fr?(numItems===1?'pain':'pains'):(numItems===1?'bread':'breads')):'pizzas'} · {styleKey ? styleDisplayName(styleKey) : ''}</div></div>}
+{recipeGenerated && <div style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{bakeQuantityLabel(numItems,bakeType,styleKey,fr)} · {styleKey ? styleDisplayName(styleKey) : ''}</div></div>}
 
 {showBakeTypeChooser&&bakeType&&<BakeTypeChooser fr={fr} current={bakeType} onChoose={selectBakeType} onClose={()=>setShowBakeTypeChooser(false)}/>}
 {destination!=='organisation' && bakeNavigator}

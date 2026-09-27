@@ -454,6 +454,10 @@ export interface ScheduleResult {
   doughMethod?: 'yeasted' | 'unleavened';
   preparationInvalid?: boolean;
   activeCookMinutes?: number;
+  divisionMinutes?: number;
+  rollStart?: Date;
+  requiredColdHours?: number;
+  coldTimingConflict?: { requiredHours: number; actualHours: number };
   poachStart?: Date;
   poachMinutes?: number;
   /** Known hands-on work; passive rests are deliberately absent. */
@@ -705,6 +709,9 @@ export function requiredPrefWarmupH(o: {
   return MAX_PREF_WARMUP_H;
 }
 
+/** Existing supported lower bounds, also used by setup readiness windows. */
+export const REQUIRED_COLD_MIN_HOURS: Readonly<Record<string, number>> = { brioche: 4, pain_mie: 4, pain_viennois: 3 };
+
 const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHRequired?: boolean }> = {
   ...BREAD_FERMENTATION_DEFAULTS,
   // Pizza — sweet spot = coldH + rtH (where dough peaks at bake)
@@ -757,6 +764,7 @@ function buildSchedulePhases(
   mixerType: MixerType = 'hand',
   styleKey: string = 'neapolitan',
   mixingBatches = 1,
+  numItems?: number,
 ): ScheduleResult {
   const bakeTime = new Date(eatTime.getTime() - preheatMin * 60000);
   // Elapsed mixing time is style-dependent (Modernist publishes it per style);
@@ -860,7 +868,7 @@ function buildSchedulePhases(
 
   const minCold1H = isTropical ? 2 : 4;
   const minCold2H = 2;
-  const divideH   = 15 / 60;
+  const divideH = divisionMinutesFor(numItems) / 60;
   const minTwoPhaseWindow = initialBulkH + minCold1H + divideH + minCold2H + minFinalRT + preheatH;
   const isTwoPhase = hasColdRetard && totalWindowH >= minTwoPhaseWindow;
 
@@ -950,12 +958,10 @@ function buildSchedulePhases(
     }
     const coldRetard1End = divideBallTime;
 
-    // Divide & ball duration
-    // numItems not available here; use a placeholder of 4 balls (15 min base)
-    const divideBallDurationH = 15 / 60;
+    const divideBallDurationH = divideH;
 
     // Phase 2 starts after divide & ball
-    const coldRetard2Start = new Date(divideBallTime.getTime() + divideBallDurationH * 3600000);
+    const coldRetard2Start = new Date(+r15(divideBallTime) + divideBallDurationH * 3600000);
 
     // Passive cold can overlap unavailable time. Only the joint action scan
     // above may move this exit; it preserves both cold phases and final proof.
@@ -1010,7 +1016,7 @@ function buildSchedulePhases(
       // Two-phase fields
       coldRetard1Start: r15(coldRetard1Start),
       coldRetard1End: r15n(coldRetard1End),
-      coldRetard2Start: r15n(coldRetard2Start),
+      coldRetard2Start,
       coldRetard2End: r15n(coldRetard2End),
       divideBallTime: r15(divideBallTime),
       rtWarmupStart: r15n(rtWarmupStart),
@@ -1137,6 +1143,11 @@ function buildSchedulePhases(
 // 4. RECIPE CALCULATOR
 // ══════════════════════════════════════════
 
+/** Existing guide budget, shared by the planner and all consumers. */
+export function divisionMinutesFor(numItems = 4): number {
+  return 15 + 2 * Math.max(0, (Number.isFinite(numItems) ? Math.floor(numItems) : 4) - 4);
+}
+
 /** Build canonical phases, then describe only work with an existing time budget. */
 export function buildSchedule(
   startTime: Date, eatTime: Date, availabilityBlocks: AvailabilityBlock[],
@@ -1148,7 +1159,33 @@ export function buildSchedule(
   const fermentationEnd = poachMinutes ? new Date(+eatTime - poachMinutes * 60000) : eatTime;
   // Poaching ends fermentation. For bagels only, derive the dough phases up
   // to that action; the selected oven time remains unchanged.
-  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches);
+  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches, numItems);
+  schedule.divisionMinutes = divisionMinutesFor(numItems);
+  const requiredCold = REQUIRED_COLD_MIN_HOURS[styleKey] ?? 0;
+  if (requiredCold) {
+    // This is the existing supported recipe's minimum cold budget, not a universal
+    // biological minimum for every enriched dough. Validate final timestamps.
+    schedule.requiredColdHours = requiredCold;
+    if (schedule.totalColdHours + 1e-9 < requiredCold) {
+      schedule.preparationInvalid = true;
+      schedule.coldTimingConflict = { requiredHours: requiredCold, actualHours: schedule.totalColdHours };
+      schedule.scheduleNote = `Not enough time: this recipe requires ${requiredCold}h of cold rest; the plan only provides ${formatHoursSchedule(schedule.totalColdHours)}. Start earlier or bake later.`;
+    }
+  }
+  if (!schedule.coldTimingConflict && schedule.scheduleNote?.startsWith('Cold retard shortened')) {
+    schedule.scheduleNote = schedule.totalColdHours > 0
+      ? `Cold retard shortened to ${formatHoursSchedule(schedule.totalColdHours)} to fit your window — flavour will still develop.`
+      : 'No cold rest fits this window; room-temperature timing shown.';
+  }
+  if (getBreadProtocol(styleKey)?.method !== 'unleavened' && !schedule.coldRetard2Start) {
+    const divisionEnd = new Date(+schedule.divideBallTime + schedule.divisionMinutes * 60000);
+    if (+schedule.finalProofStart < +divisionEnd) {
+      schedule.finalProofStart = new Date(Math.min(+divisionEnd, +schedule.bakeStart));
+      schedule.finalProofHours = Math.max(0, (+schedule.bakeStart - +schedule.finalProofStart) / 3600000);
+    }
+    if (+divisionEnd >= +fermentationEnd) schedule.preparationInvalid = true;
+    if (!schedule.coldRetardStart) schedule.bulkFermHours = Math.max(0, (+schedule.finalProofStart - +schedule.bulkFermStart) / 3600000);
+  }
   if (poachMinutes) {
     schedule.poachStart = fermentationEnd;
     schedule.poachMinutes = poachMinutes;
@@ -1156,7 +1193,7 @@ export function buildSchedule(
     schedule.preheatStart = new Date(Math.min(+eatTime - preheatMin * 60000, +fermentationEnd));
     schedule.finalProofHours = Math.max(0, (+fermentationEnd - +schedule.finalProofStart) / 3600000);
     schedule.totalRTHours = Math.max(0, (+fermentationEnd - +schedule.bulkFermStart) / 3600000 - schedule.totalColdHours);
-    schedule.preparationInvalid = +fermentationEnd - +startTime < BREAD_FERMENTATION_DEFAULTS.bagel.minTotalFermH * 3600000
+    schedule.preparationInvalid = schedule.preparationInvalid || +fermentationEnd - +startTime < BREAD_FERMENTATION_DEFAULTS.bagel.minTotalFermH * 3600000
       || +schedule.bulkFermStart >= +fermentationEnd || +schedule.divideBallTime >= +fermentationEnd
       || +schedule.divideBallTime > +schedule.finalProofStart;
   }
@@ -1168,7 +1205,8 @@ export function buildSchedule(
       doughMethod: 'unleavened', preparationInvalid: +eatTime - +startTime < (45 + (mixingBatches - 1) * kneadMinFor(mixerType, styleKey)) * 60000 || +eatTime - +startTime > 2 * 3600000 + (mixingBatches - 1) * kneadMinFor(mixerType, styleKey) * 60000, bulkFermStart: mixEnd, bulkFermHours: 0,
       finalProofStart: mixEnd, finalProofHours: 0,
       restRtHours: Math.max(0, (+eatTime - 10 * 60000 - +mixEnd) / 3600000),
-      totalRTHours: 0, totalColdHours: 0, divideBallTime: mixEnd,
+      totalRTHours: 0, totalColdHours: 0, divideBallTime: new Date(+eatTime - 10 * 60000),
+      rollStart: new Date(+eatTime - 10 * 60000), divisionMinutes: 10,
       preheatStart: new Date(+eatTime - preheatMin * 60000), bakeStart: new Date(eatTime),
       scheduleNote: 'Unleavened dough: covered rest before rolling and cooking.',
     });
@@ -1219,13 +1257,12 @@ export function buildSchedule(
   point('cold-in', schedule.coldRetard1Start);
   point('cold-out', schedule.coldRetard1End);
   actions.push({ id: 'divide', at: schedule.divideBallTime,
-    ...(schedule.coldRetard2Start && +schedule.coldRetard2Start > +schedule.divideBallTime
-      ? { end: schedule.coldRetard2Start } : {}),
+    end: new Date(+schedule.divideBallTime + schedule.divisionMinutes! * 60000),
   });
   point('cold-in-2', schedule.coldRetard2Start);
   point('cold-out-2', schedule.coldRetard2End);
   if (schedule.poachStart) actions.push({ id: 'poach', at: schedule.poachStart, end: schedule.bakeStart });
-  if (schedule.doughMethod === 'unleavened') actions.push({ id: 'roll', at: new Date(+eatTime - 10 * 60000), end: new Date(eatTime) });
+  if (schedule.doughMethod === 'unleavened') actions.push({ id: 'roll', at: schedule.rollStart!, end: new Date(eatTime) });
   point('preheat', schedule.preheatStart);
   const activeCookMinutes = breadActiveCookMinutes(styleKey, numItems);
   if (activeCookMinutes) {
@@ -1289,7 +1326,7 @@ export function findScheduleRepair(input: ScheduleRepairInput): ScheduleRepair |
       const first = (+s.coldRetard1End! - +s.coldRetard1Start!) / 3600000;
       const second = (+s.coldRetard2End! - +s.coldRetard2Start!) / 3600000;
       if (+s.coldRetard1Start! < +s.bulkFermStart || first < (kitchenTemp >= 28 ? 2 : 4) || second < 2
-        || +s.coldRetard2Start! - +s.coldRetard1End! !== 15 * 60000
+        || +s.coldRetard2Start! - +s.coldRetard1End! !== (s.divisionMinutes ?? divisionMinutesFor(input.numItems)) * 60000
         || +s.finalProofStart - +s.coldRetard2End! < (kitchenTemp >= 30 ? .5 : .75) * 3600000
         || +s.preheatStart - +s.finalProofStart < 3600000) return false;
     } else if (phaseCount === 1) {

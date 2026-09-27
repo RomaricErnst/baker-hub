@@ -6,8 +6,8 @@ const start=new Date('2026-10-01T08:00Z');
 const schedule=(key,temp,hours,mixer='hand')=>utils.buildSchedule(start,new Date(+start+hours*3600000),[],temp,key==='piadina'?5:20,mixer,key);
 const recipe=(key,s,temp,fridge=6,yeast='instant',pref='none',mixer='hand')=>utils.calculateRecipe(key,BREAD_PROTOCOLS[key].equipment[0],BREAD_PROTOCOLS[key].portions.count,BREAD_PROTOCOLS[key].portions.weight,temp,'normal',s,fridge,yeast,'simple',mixer,undefined,undefined,undefined,undefined,pref);
 
-test('all eleven bread profiles have independent protocols, schedule defaults, equipment and source anchors',()=>{
- assert.equal(Object.keys(BREAD_PROTOCOLS).length,11);
+test('all bread profiles have independent protocols, schedule defaults, equipment and source anchors',()=>{
+ assert.equal(Object.keys(BREAD_PROTOCOLS).length,14);
  assert.equal(getBreadProtocol('constructor'),undefined);
  for(const [key,p] of Object.entries(BREAD_PROTOCOLS)){
   assert.ok(data.BREAD_STYLES[key]);assert.ok(BREAD_FERMENTATION_DEFAULTS[key]);
@@ -27,8 +27,8 @@ test('new yeasted recipes remain finite across climate, fridge, duration and mix
   const label=`${key}/${temp}/${fridge}/${hours}/${mixer}`;
   for(const n of ['flour','water','salt','oil','sugar','waterTemp','hydration','totalDough'])assert.ok(Number.isFinite(r[n]),`${label}/${n}`);
   assert.ok(r.yeast&&Number.isFinite(r.yeast.convertedGrams),label);
-  assert.equal(r.sourdough,null);assert.equal(r.preferment,null);assert.equal(r.protocolIssue,key==='bagel'&&mixer==='no_knead'?'method':undefined);
-  assert.ok(Math.abs(r.flour+r.water+r.salt+r.oil+r.sugar+r.yeast.convertedGrams-r.totalDough)<5,label);
+  assert.equal(r.sourdough,null);assert.equal(r.preferment,null);assert.equal(r.protocolIssue,s.preparationInvalid?'timing':!BREAD_PROTOCOLS[key].supportedMixers.includes(mixer)?'method':undefined,label);
+  assert.ok(Math.abs(r.flour+r.water+r.salt+r.oil+r.sugar+r.yeast.convertedGrams+(r.enrichment?.milk??0)+(r.enrichment?.eggs??0)+(r.enrichment?.butter??0)-r.totalDough)<5,label);
  }
 });
 
