@@ -664,11 +664,12 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
   );
 }
 
-// ── Step extras — Tips & tricks / FAQ / Maestro tabs ─────────────
+// ── Step extras — one disclosure, no nested controls ─────────────
 // Keeps the timeline clean: the step card shows only "what to do";
 // Secondary guidance is grouped under one help disclosure for every step.
-function StepExtras({ tips, faqKey, faqOverride, coachStepId, coachTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext }: {
+function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext }: {
   tips: React.ReactNode;
+  visuals?: React.ReactNode;
   faqKey?: string;
   faqOverride?: (typeof GUIDE_FAQ)[string];
   coachStepId?: string;
@@ -680,86 +681,29 @@ function StepExtras({ tips, faqKey, faqOverride, coachStepId, coachTitle, styleK
   ovenType?: string;
   recipeContext?: string;
 }) {
-  const [tab, setTab] = useState<'tips' | 'faq' | 'coach' | null>('tips');
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const l = locale === 'fr' ? 'fr' : 'en';
   const simpleFaq = useContext(SimpleModeCtx);
   const faq = (faqOverride ?? (faqKey ? (GUIDE_FAQ[faqKey] ?? []) : [])).filter(e =>
     !simpleFaq || !(JARGON_RE.test(e.q.en + ' ' + e.q.fr + ' ' + e.a.en + ' ' + e.a.fr)));
 
-  const pills: Array<{ id: 'tips' | 'faq' | 'coach'; label: string }> = [
-    { id: 'tips', label: l === 'fr' ? 'Astuces' : 'Tips & tricks' },
-    ...(faq.length > 0 ? [{ id: 'faq' as const, label: 'FAQ' }] : []),
-    { id: 'coach', label: l === 'fr' ? 'Maestro' : 'Maestro' },
-  ];
-
+  const helpTitle = faqKey === 'mix'
+    ? (l === 'fr' ? 'Conseils de pétrissage' : 'Kneading tips')
+    : (l === 'fr' ? 'Conseils pour cette étape' : 'Tips for this step');
   return (
-    <details style={{ marginTop: '16px', borderTop: `1px solid ${D.border}`, paddingTop: '12px' }}>
-      <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:16}}>{l === 'fr' ? 'Aide pour cette étape' : 'Help with this step'}</summary>
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-        {pills.map(p => (
-          <button
-            key={p.id}
-            aria-expanded={tab === p.id}
-            onClick={() => setTab(prev => prev === p.id ? null : p.id)}
-            style={{
-              border: tab === p.id ? `1.5px solid ${D.terra}` : `1px solid ${D.border}`,
-              background: tab === p.id ? '#fff' : 'transparent',
-              color: tab === p.id ? D.terra : D.smoke,
-              minHeight:44, borderRadius: '20px', padding: '8px 12px',
-              fontSize: '14px', fontFamily: 'var(--font-ui)',
-              cursor: 'pointer', transition: 'all .15s',
-            }}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'tips' && <div style={{ marginTop: '4px' }}>{tips}</div>}
-
-      {tab === 'faq' && (
-        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {faq.map((f, i) => (
-            <div key={i} style={{ border: `1px solid ${D.border}`, borderRadius: '12px', overflow: 'hidden' }}>
-              <button
-                aria-expanded={openFaq === i}
-                onClick={() => setOpenFaq(prev => prev === i ? null : i)}
-                style={{
-                  minHeight:44, width: '100%', textAlign: 'left', background: openFaq === i ? '#fff' : 'transparent',
-                  border: 'none', cursor: 'pointer', padding: '8px 12px',
-                  fontSize: '14px', fontWeight: 600, color: D.char,
-                  fontFamily: 'var(--font-ui)',
-                  display: 'flex', justifyContent: 'space-between', gap: '8px',
-                }}
-              >
-                <span>{f.q[l]}</span>
-                <span style={{ color: D.smoke, flexShrink: 0 }}>{openFaq === i ? '−' : '+'}</span>
-              </button>
-              {openFaq === i && (
-                <div style={{ padding: '0 12px 12px', fontSize: '14px', color: D.ash, lineHeight: 1.6, fontFamily: 'var(--font-ui)' }}>
-                  {f.a[l]}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {tab === 'coach' && (
-        <div style={{ marginTop: '4px' }}>
-          <AskMaestro
-            stepId={coachStepId ?? faqKey ?? 'mix'}
-            stepTitle={coachTitle}
-            styleKey={styleKey}
-            kitchenTemp={kitchenTemp}
-            prefermentType={prefermentType}
-            locale={locale}
-            ovenType={ovenType}
-            recipeContext={recipeContext}
-          />
-        </div>
-      )}
+    <details style={{ marginTop:16, borderTop:`1px solid ${D.border}`, paddingTop:8 }}>
+      <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:16}}>{helpTitle}</summary>
+      {visuals}
+      <div>{tips}</div>
+      {faq.length > 0 && <div role="group" aria-label={l === 'fr' ? 'Questions fréquentes' : 'Common questions'} style={{marginTop:20}}>
+        <h3 style={{fontSize:16,margin:'0 0 12px'}}>{l === 'fr' ? 'Questions fréquentes' : 'Common questions'}</h3>
+        {faq.map((f,i)=><div key={i} style={{marginBottom:16}}>
+          <h4 style={{fontSize:14,margin:'0 0 4px'}}>{f.q[l]}</h4>
+          <p style={{fontSize:14,lineHeight:1.6,margin:0,color:D.ash}}>{f.a[l]}</p>
+        </div>)}
+      </div>}
+      <AskMaestro stepId={coachStepId ?? faqKey ?? 'mix'} stepTitle={coachTitle}
+        styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType}
+        locale={locale} ovenType={ovenType} recipeContext={recipeContext}/>
     </details>
   );
 }
@@ -785,9 +729,9 @@ function StepVisual({ kind, includeSpiral = false, locale }: { includeSpiral?: b
     poolish: [['/preferment-photos/poolish-v1.webp', 'Poolish is loose and bubbly as it matures. Judge its rise and surface as well as the schedule.', 'La poolish est souple et bulleuse à maturité. Observez sa montée et sa surface, en complément du planning.']],
     biga: [['/preferment-photos/biga-v1.webp', 'Biga starts rough, not smooth. When mature, break a piece open to check for aeration inside.', 'La biga commence en morceaux irréguliers. À maturité, ouvrez un morceau pour observer les alvéoles à l’intérieur.']],
   };
-  return <details style={{ margin: '14px 0' }}><summary style={{minHeight:44,padding:'10px 0',fontSize:16,cursor:'pointer'}}>{fr ? 'Voir les signes à observer' : 'See what to look for'}</summary>
+  return <div style={{ margin: '14px 0' }}><h3 style={{fontSize:16}}>{fr ? 'Les signes à observer' : 'What to look for'}</h3>
     {[...figures[kind], ...(includeSpiral ? figures.spiral : [])].map(([src,en,french]) => <figure key={src} style={{margin:'12px 0'}}><img src={src} alt={fr ? french : en} loading="lazy" style={{display:'block',width:'100%',maxHeight:280,objectFit:'contain',borderRadius:12}}/><figcaption style={{fontSize:14,lineHeight:1.45,marginTop:8}}>{fr ? french : en}</figcaption></figure>)}
-  </details>;
+  </div>;
 }
 
 export function breadCoolingRange(style: string, weight: number): string {
@@ -1209,8 +1153,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           </Section>
 
           <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{isPoolish ? (l==='fr'?'La surface est bulleuse et commence à s’aplanir après la levée.':'The surface is bubbly and beginning to flatten after rising.') : (l==='fr'?'La biga a gonflé ; un morceau ouvert montre des alvéoles à l’intérieur.':'The biga has expanded; a broken-open piece shows aeration inside.')}</p>
-          <StepVisual kind={isPoolish ? 'poolish' : 'biga'} locale={l} />
-          <StepExtras
+          <StepExtras visuals={<StepVisual kind={isPoolish ? 'poolish' : 'biga'} locale={l} />}
             tips={<p>{l === 'fr' ? 'Fiez-vous aux quantités et à l’emplacement de cette recette. Si la maturité ne correspond pas au planning, revoyez le planning avant de poursuivre.' : 'Use this recipe’s quantities and planned location. If maturity does not match the schedule, review the plan before continuing.'}</p>}
             faqOverride={[
               {q:{en:'Should I change the yeast dose?',fr:'Faut-il changer la dose de levure ?'},a:{en:'Use the measured dose shown for this preferment and the selected yeast type. Do not replace it with a generic pinch or percentage.',fr:'Utilisez la dose indiquée pour ce préferment et le type de levure choisi. Ne la remplacez pas par une pincée ou un pourcentage générique.'}},
@@ -1235,8 +1178,8 @@ Actual dough condition and equipment may differ from these estimates.`;
               {bold: l === 'fr' ? 'Attendez une nette montée, des bulles et un dessus encore bombé avant utilisation.' : 'Wait for a clear rise, bubbles and a still-domed top before use.', note: l === 'fr' ? 'Le créneau suivant reste indicatif : vérifiez le levain.' : 'The next time is a guide: check the starter.'},
             ] : [{bold: event.kind === 'fridge_in' ? (l === 'fr' ? 'Couvrez le récipient et placez le levain au réfrigérateur.' : 'Cover the container and put the starter in the fridge.') : (l === 'fr' ? 'Sortez le récipient et laissez-le couvert à température ambiante.' : 'Take the container out and leave covered at room temperature.'), note: event.kind === 'fridge_in' ? displayTemp(fridgeTemp, u) : displayTemp(kitchenTemp, u)}]} />
           </Section>
-          {feeding && <StepVisual kind="starter" locale={l} />}
-          <StepExtras tips={<p>{l === 'fr' ? 'S’il s’est affaissé, rafraîchissez à nouveau et ajustez le planning.' : 'If it has collapsed, feed again and adjust the schedule.'}</p>} faqKey="starter" coachStepId="starter" coachTitle={title} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType} />
+
+          <StepExtras visuals={feeding ? <StepVisual kind="starter" locale={l} /> : undefined} tips={<p>{l === 'fr' ? 'S’il s’est affaissé, rafraîchissez à nouveau et ajustez le planning.' : 'If it has collapsed, feed again and adjust the schedule.'}</p>} faqKey="starter" coachStepId="starter" coachTitle={title} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType} />
         </StepCard>;
       })}
 
@@ -1474,7 +1417,7 @@ Actual dough condition and equipment may differ from these estimates.`;
 
         <StepExtras
           tips={<>
-        <details><summary style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{l==='fr'?'Technique de pétrissage · aide':'Mixing technique · help'}</summary>
+
         <Section icon="" title={t('sectionTitles.mixingOrder')}>
           {enriched && <Steps items={[
             {bold:l === 'fr' ? 'Pesez tous les ingrédients indiqués' : 'Weigh all the listed ingredients',note:l === 'fr' ? 'Pesez les œufs sans coquille. Le lait et les œufs sont des ingrédients distincts de l’eau.' : 'Weigh eggs without shells. Milk and eggs are separate ingredients from plain water.'},
@@ -1597,8 +1540,6 @@ Actual dough condition and equipment may differ from these estimates.`;
           </>}
         </Section>
 
-        </details>
-
 
             {(() => {
               const parts = recipe?.blendProfile?.displayName?.split(' + ') ?? [];
@@ -1648,13 +1589,14 @@ Actual dough condition and equipment may differ from these estimates.`;
               ].filter(Boolean)} />
             </Section>
           </>}
+          visuals={styleKey !== 'pain_seigle' && mixerType !== 'no_knead' ? <StepVisual kind="mix" includeSpiral={mixerType === 'spiral'} locale={l} /> : undefined}
           faqKey="mix"
           coachStepId="mix"
           coachTitle={t('stepTitles.mixDough')}
           recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
         />
-        {styleKey !== 'pain_seigle' && mixerType !== 'no_knead' && <StepVisual kind="mix" includeSpiral={mixerType === 'spiral'} locale={l} />}
+
 
       </StepCard>
 
@@ -1699,13 +1641,14 @@ Actual dough condition and equipment may differ from these estimates.`;
               ]} />
             </Section>
           </>}
+          visuals={styleKey !== 'pain_seigle' && (hydration > 70 || mixerType === 'no_knead') ? <StepVisual kind="fold" locale={l} /> : undefined}
           faqKey="bulk"
           coachStepId="bulk"
           coachTitle={t('stepTitles.bulkFerm')}
           recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
         />}
-        {styleKey !== 'pain_seigle' && (hydration > 70 || mixerType === 'no_knead') && <StepVisual kind="fold" locale={l} />}
+        {breadProtocol && styleKey !== 'pain_seigle' && (hydration > 70 || mixerType === 'no_knead') && <StepExtras tips={null} visuals={<StepVisual kind="fold" locale={l} />} coachTitle={t('stepTitles.bulkFerm')} coachStepId="bulk" styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} recipeContext={maestroRecipeContext} />}
       </StepCard>
 
       {/* ── STEP: Cold Retard 1 ──────────────────────── */}

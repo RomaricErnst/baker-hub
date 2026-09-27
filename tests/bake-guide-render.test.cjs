@@ -53,9 +53,14 @@ test('cooling ranges distinguish small breads, loaves and rye',()=>{
 test('spiral mixing groups both visual cues and keeps secondary guidance behind help',()=>{
  const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-24T18:00Z'),[],22,60,'spiral','neapolitan');
  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,{schedule,mixerType:'spiral',styleKey:'neapolitan',kitchenTemp:22,numItems:4,oil:0,hydration:65,locale:'en'})));
- assert.ok(html.includes('Help with this step'));
- assert.equal((html.match(/See what to look for/g)||[]).length,1);
+ assert.ok(html.includes('Kneading tips'));
+ assert.doesNotMatch(html,/Mixing technique · help|See what to look for|Tips &amp; tricks/);
+ assert.equal((html.match(/What to look for/g)||[]).length,1);
  assert.ok(html.includes('windowpane-v1.webp'));assert.ok(html.includes('spiral-pumpkin-wide-v1.webp'));
+ let depth=0;
+ for(const tag of html.match(/<\/?details\b[^>]*>/g)||[]){depth+=tag.startsWith('</')?-1:1;assert.ok(depth<=1,'help must never require opening a nested disclosure');}
+ const help=html.indexOf('Kneading tips');
+ assert.ok(html.indexOf('windowpane-v1.webp',help)>help,'visual cue is inside the shared help');
  assert.doesNotMatch(html,/streaks that kneading will not remove|do not add more before 20 minutes/);
 });
 
