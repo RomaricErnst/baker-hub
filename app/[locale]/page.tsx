@@ -1814,7 +1814,7 @@ export default function Home() {
   );
 
   const mixerCapacityG = mixerDoughCapacity(mixerType ?? 'hand', customMixerCapacityG);
-  const plannedDoughG = Math.round(numItems * itemWeight * (tab === 'custom' && wastePct && wastePct > 0 ? 1 + wastePct / 100 : 1));
+  const plannedDoughG = Math.round(numItems * itemWeight * (totalFlourTarget === undefined && tab === 'custom' && wastePct && wastePct > 0 ? 1 + wastePct / 100 : 1));
   const suggestedMixingBatches = Math.max(1, Math.ceil(plannedDoughG / mixerCapacityG));
   const selectedMixingBatches = mixingBatches ?? suggestedMixingBatches;
 
@@ -1944,8 +1944,7 @@ export default function Home() {
   const flourModeRecipe = tab==='custom' ? advancedRecipe : recipe;
   useEffect(() => {
     if (bakeType!=='bread'||totalFlourTarget===undefined||!flourModeRecipe||isRestoringRef.current) return;
-    const buffer=tab==='custom'&&wastePct&&wastePct>0?1+wastePct/100:1;
-    const weight=flourModeRecipe.totalDough/Math.max(1,numItems)/buffer;
+    const weight=flourModeRecipe.totalDough/Math.max(1,numItems);
     if(Math.abs(weight-itemWeight)>0.01)setItemWeight(weight);
   }, [bakeType,totalFlourTarget,flourModeRecipe?.totalDough,numItems,tab,wastePct,itemWeight]);
 
@@ -4411,7 +4410,7 @@ export default function Home() {
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => customFlow.onJump(1)} />
               ) : (
               <SchedulePicker
-                mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={wastePct}
+                mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
                 mixingBatches={selectedMixingBatches}
                 onEditingChange={setScheduleEditing}
@@ -4498,7 +4497,7 @@ export default function Home() {
                     {label:fr?'Sucre (% de farine)':'Sugar (% of flour)',value:manualSugar ?? style?.sugar ?? 0,min:0,max:10,step:0.5,set:setManualSugar},
                   ] : []),
                   {label:fr?'Température de pâte après pétrissage (°C)':'Dough temperature after mixing (°C)',value:targetDoughTemp ?? defaultTemp,min:18,max:28,step:1,set:setTargetDoughTemp},
-                  {label:fr?'Marge de pâte supplémentaire (%)':'Extra dough allowance (%)',value:wastePct ?? 1.5,min:0,max:5,step:0.5,set:setWastePct},
+                  ...(totalFlourTarget===undefined?[{label:fr?'Marge de pâte supplémentaire (%)':'Extra dough allowance (%)',value:wastePct ?? 1.5,min:0,max:5,step:0.5,set:setWastePct}]:[]),
                 ];
                 return <>
 
@@ -4512,7 +4511,7 @@ export default function Home() {
                   </details>
                   <details style={{margin:'12px 0'}}><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Aide pour ajuster':'Help with adjustments'}</summary>
                     {!enrichedDirectOnly&&<><p>{fr?'Hydratation de référence pour ce style':'Reference hydration for this style'} : {zone.classicMin===zone.classicMax ? zone.classicMin : `${zone.classicMin}–${zone.classicMax}`} %. {fr?'Choisissez le bas de la plage pour une pâte plus facile à manipuler.':'Choose the lower end for easier handling.'}</p><p>{oilGuidance(manualOil ?? style?.oil ?? 0,ovenType ?? '',styleKey ?? '',t)}</p><p>{sugarGuidance(manualSugar ?? style?.sugar ?? 0,ovenType ?? '',t).note}</p></>}
-                    <p>{fr?'La marge compense la pâte restant dans le bol. 1,5 % convient généralement.':'The allowance covers dough left in the bowl. 1.5% is a practical starting point.'}</p>
+                    <p>{totalFlourTarget!==undefined?(fr?'Votre quantité de farine reste fixe : aucune marge de pâte supplémentaire n’est ajoutée.':'Your flour quantity stays fixed: no extra dough allowance is added.'):(fr?'La marge compense la pâte restant dans le bol. 1,5 % convient généralement.':'The allowance covers dough left in the bowl. 1.5% is a practical starting point.')}</p>
                   </details>
                   <button type="button" style={{minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:9}} onClick={()=>{setManualHydration(undefined);setManualSalt(undefined);setManualOil(undefined);setManualSugar(undefined);setTargetDoughTemp(undefined);setWastePct(undefined);}}>{fr?'Rétablir les valeurs conseillées':'Reset recommended values'}</button>
                 </>;
@@ -4609,7 +4608,7 @@ export default function Home() {
                             onPriorityOverride={v => setPriorityOverride(v)}
                             flourBlend={flourBlend}
                             units={units}
-                            wastePct={wastePct}
+                            wastePct={totalFlourTarget===undefined?wastePct:0}
                             feedTime={feedTime}
                             feed2Time={feed2Time}
                             fridgeOutTime={fridgeOutTime}
