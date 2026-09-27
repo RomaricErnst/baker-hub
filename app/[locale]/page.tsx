@@ -3280,10 +3280,10 @@ export default function Home() {
     <div data-navigation-page={visiblePageKey} data-reading={bottomNavCollapsed || undefined} data-keyboard-open={keyboardOpen || undefined} data-mobile-setup={(destination==='organisation'||destination==='batch')&&!recipeGenerated?'true':undefined} style={{ minHeight: '100vh', background: 'var(--warm)' }}>
       {/* ── Sticky header + journey bar (autohide on scroll down) ── */}
       <div ref={stickyHeadRef} className="bh-header-stack" onFocusCapture={() => setNavHidden(false)} style={{
-        position: 'sticky',
-        top: navHidden ? `-${HEADER_HIDE_PX}px` : '0',
+        position: destination==='organisation' ? 'relative' : 'sticky',
+        top: destination==='organisation' ? 0 : navHidden ? `-${HEADER_HIDE_PX}px` : '0',
         zIndex: 100,
-        transition: 'top 0.25s ease',
+        transition: destination==='organisation' ? 'none' : 'top 0.25s ease',
       }}>
         <Header
           units={units}

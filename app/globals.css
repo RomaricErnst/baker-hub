@@ -346,6 +346,7 @@ button,
 .bh-bake-navigator { position:sticky; z-index:95; margin:8px 0 16px; padding:4px 0; background:var(--warm); color:var(--char); transition:none; }
 .bh-organisation-nav-stack { max-width:680px; margin:0 auto; padding:8px clamp(1rem, 3vw, 1.5rem) 16px; background:var(--warm); }
 .bh-organisation-nav-stack .bh-bake-navigator { position:static; margin:0; }
+[data-navigation-page^="organisation:"] .bh-header { position:static !important; }
 .bh-navigator-band { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:52px; padding:2px 10px; border:1px solid var(--border); border-radius:12px; background:var(--cream); }
 .bh-navigator-context { display:flex; align-items:center; gap:8px; min-width:0; font-size:16px; font-weight:600; }
 .bh-bake-navigator-trigger { flex-shrink:0; display:flex; align-items:center; justify-content:center; min-height:44px; padding:0 4px; border:0; background:transparent; color:var(--char); font:inherit; text-align:right; cursor:pointer; }

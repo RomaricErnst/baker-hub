@@ -453,12 +453,14 @@ test('page landing survives delayed Safari viewport changes and history restore 
  await page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true}).tap();
  await expect(page.locator('.bh-header-stack .bh-bake-navigator')).toHaveCount(1);
  await expect(page.locator('.bh-bake-navigator')).toHaveCSS('position','static');
+ await expect(page.locator('.bh-header-stack')).toHaveCSS('position','relative');
+ await expect(page.locator('.bh-header')).toHaveCSS('position','static');
  // Keep enough document height to reproduce a retained scroll offset even
  // when this particular two-card page otherwise fits the test viewport.
  await page.addStyleTag({content:'[data-navigation-page]{min-height:calc(100dvh + 300px)!important}'});
  const heading=page.getByRole('heading',{name:'Comment définir votre recette ?',exact:true});
- const clearHeading=async()=>{
-  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
+ const clearHeading=async(atTop=true)=>{
+  if(atTop)await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
   await expect.poll(()=>heading.evaluate(el=>{
    const r=el.getBoundingClientRect(),bar=document.querySelector('.bh-bake-navigator').getBoundingClientRect();
    const hit=document.elementFromPoint(r.x+8,r.y+2);
@@ -469,10 +471,10 @@ test('page landing survives delayed Safari viewport changes and history restore 
  // Safari may retain an offset without a resize after the initial frames.
  await page.waitForTimeout(150);
  await page.evaluate(()=>window.scrollTo({top:85,behavior:'instant'}));
- await clearHeading();
+ await clearHeading(false);
  // A visual-viewport scroll can happen independently from window resize.
  await page.evaluate(()=>{window.scrollTo({top:85,behavior:'instant'});window.visualViewport?.dispatchEvent(new Event('scroll'));});
- await clearHeading();
+ await clearHeading(false);
  // Model a late browser viewport adjustment, after the initial two frames.
  await page.evaluate(()=>window.scrollTo({top:35,behavior:'instant'}));
  const size=page.viewportSize();await page.setViewportSize({...size,height:size.height+80});
@@ -481,6 +483,9 @@ test('page landing survives delayed Safari viewport changes and history restore 
  // A new deliberate reading gesture ends landing ownership.
  await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));window.scrollTo({top:65,behavior:'instant'});});
  const readingY=await page.evaluate(()=>scrollY);expect(readingY).toBeGreaterThan(0);
+ // Setup chrome travels with the document; no overlay can cover a heading.
+ await expect.poll(()=>page.locator('.bh-header-stack').evaluate(el=>Math.round(el.getBoundingClientRect().top+scrollY))).toBe(0);
+ await clearHeading(false);
  await page.setViewportSize(size);await page.waitForTimeout(100);
  expect(await page.evaluate(()=>scrollY)).toBe(readingY);
  // BFCache pageshow is a fresh arrival even when React does not remount.
