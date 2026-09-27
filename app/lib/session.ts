@@ -29,6 +29,8 @@ export interface SessionData {
   spiralIceConfirmed?: boolean;
   /** Undefined retains the automatic equipment recommendation. */
   mixingBatches?: number;
+  mixerCapacityG?: number;
+  resultNotes?: string;
   containerCapacityLitres?: number;
   flourBlend: unknown;
   prefermentType: string;
@@ -116,9 +118,16 @@ export function normalizeMixingBatches(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 100 ? value : undefined;
 }
 
+export function normalizeMixerCapacity(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 100 && value <= 1000000 ? Math.round(value) : undefined;
+}
+export function normalizeResultNotes(value: unknown): string {
+  return typeof value === 'string' ? value.slice(0, 2000) : '';
+}
+
 export function saveSession(data: Omit<SessionData, 'version' | 'savedAt'>): boolean {
   try {
-    const payload: SessionData = { ...data, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), version: 1, savedAt: Date.now() };
+    const payload: SessionData = { ...data, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), mixerCapacityG: normalizeMixerCapacity(data.mixerCapacityG), resultNotes: normalizeResultNotes(data.resultNotes), version: 1, savedAt: Date.now() };
     localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
     return true;
   } catch { return false; }
@@ -131,7 +140,7 @@ export function loadSession(): SessionData | null {
     const data = JSON.parse(raw) as SessionData;
     if (data.version !== 1) return null;
     if (Date.now() - data.savedAt > SESSION_TTL_MS) { clearSession(); return null; }
-    return { ...data, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches) };
+    return { ...data, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), mixerCapacityG: normalizeMixerCapacity(data.mixerCapacityG), resultNotes: normalizeResultNotes(data.resultNotes) };
   } catch { return null; }
 }
 

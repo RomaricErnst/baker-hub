@@ -460,6 +460,12 @@ export interface ScheduleResult {
   availabilityActions?: AvailabilityAction[];
   availabilityConflicts?: AvailabilityConflict[];
   mixingDurationH: number;
+  /** Sequential use of one mixer; fermentation of early lots continues while later ones mix. */
+  mixingBatches?: number;
+  firstBatchReadyAt?: Date;
+  batchMixWindows?: { start: Date; end: Date }[];
+  /** Shared batch protocol cannot defer the first lot's prescribed fold until all lots finish. */
+  batchTimingConflict?: { firstFoldAt: Date; mixingEnd: Date };
   bulkFermStart: Date;
   bulkFermHours: number;
   // Primary cold retard fields (backward compat for yeast engine)
@@ -750,6 +756,7 @@ function buildSchedulePhases(
   preheatMin: number,
   mixerType: MixerType = 'hand',
   styleKey: string = 'neapolitan',
+  mixingBatches = 1,
 ): ScheduleResult {
   const bakeTime = new Date(eatTime.getTime() - preheatMin * 60000);
   // Elapsed mixing time is style-dependent (Modernist publishes it per style);
@@ -771,7 +778,7 @@ function buildSchedulePhases(
   // mixingDurationH from bulkFermStart, so folding it in here keeps all three
   // agreed — they disagreed once before, see the note at BakeGuide ~896.
   const autolyseMin = autolyseMinFor(mixerType, styleKey);
-  const mixWindowMin = kneadMin + autolyseMin;
+  const mixWindowMin = (kneadMin + autolyseMin) * mixingBatches;
   // Preserve the exact preparation window; rounding bulk backwards silently
   // removes kneading and makes consumers infer a different mix start.
   const fermStart = new Date(startTime.getTime() + mixWindowMin * 60000);
@@ -1134,13 +1141,14 @@ function buildSchedulePhases(
 export function buildSchedule(
   startTime: Date, eatTime: Date, availabilityBlocks: AvailabilityBlock[],
   kitchenTemp: number, preheatMin: number, mixerType: MixerType = 'hand',
-  styleKey: string = 'neapolitan', numItems?: number,
+  styleKey: string = 'neapolitan', numItems?: number, requestedMixingBatches = 1,
 ): ScheduleResult {
+  const mixingBatches = Number.isFinite(requestedMixingBatches) ? Math.max(1, Math.min(100, Math.floor(requestedMixingBatches))) : 1;
   const poachMinutes = breadPoachMinutes(styleKey, numItems);
   const fermentationEnd = poachMinutes ? new Date(+eatTime - poachMinutes * 60000) : eatTime;
   // Poaching ends fermentation. For bagels only, derive the dough phases up
   // to that action; the selected oven time remains unchanged.
-  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey);
+  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches);
   if (poachMinutes) {
     schedule.poachStart = fermentationEnd;
     schedule.poachMinutes = poachMinutes;
@@ -1155,9 +1163,9 @@ export function buildSchedule(
   if (getBreadProtocol(styleKey)?.method === 'unleavened') {
     // Piadina relaxes; it does not ferment. Preserve the requested cooking
     // time and do not create a yeast dose or a fictional maturity window.
-    const mixEnd = new Date(+startTime + kneadMinFor(mixerType, styleKey) * 60000);
+    const mixEnd = new Date(+startTime + kneadMinFor(mixerType, styleKey) * mixingBatches * 60000);
     Object.assign(schedule, {
-      doughMethod: 'unleavened', preparationInvalid: +eatTime - +startTime < 45 * 60000 || +eatTime - +startTime > 2 * 3600000, bulkFermStart: mixEnd, bulkFermHours: 0,
+      doughMethod: 'unleavened', preparationInvalid: +eatTime - +startTime < (45 + (mixingBatches - 1) * kneadMinFor(mixerType, styleKey)) * 60000 || +eatTime - +startTime > 2 * 3600000 + (mixingBatches - 1) * kneadMinFor(mixerType, styleKey) * 60000, bulkFermStart: mixEnd, bulkFermHours: 0,
       finalProofStart: mixEnd, finalProofHours: 0,
       restRtHours: Math.max(0, (+eatTime - 10 * 60000 - +mixEnd) / 3600000),
       totalRTHours: 0, totalColdHours: 0, divideBallTime: mixEnd,
@@ -1168,17 +1176,43 @@ export function buildSchedule(
   const actions: AvailabilityAction[] = [];
   const activeMin = kneadMinFor(mixerType, styleKey);
   const restMin = autolyseMinFor(mixerType, styleKey);
-  if (activeMin > 0) {
-    // Existing guide: approximately 2 min combine (3 spiral), followed by
-    // passive autolyse. Split the existing budget; do not add mixing time.
-    const initialMin = restMin > 0 ? Math.min(activeMin, mixerType === 'spiral' ? 3 : 2) : activeMin;
-    actions.push({ id: 'mix', at: new Date(startTime), end: new Date(+startTime + initialMin * 60000) });
-    if (restMin > 0 && activeMin > initialMin) actions.push({
-      id: 'mix-finish', at: new Date(+startTime + (initialMin + restMin) * 60000),
-      end: new Date(+startTime + (activeMin + restMin) * 60000),
-    });
-  } else actions.push({ id: 'mix', at: new Date(startTime) });
-  scheduledFoldMinutes(schedule.bulkFermHours, styleKey).forEach((minutes, index) => {
+  const batchMinutes = activeMin + restMin;
+  schedule.mixingBatches = mixingBatches;
+  schedule.firstBatchReadyAt = new Date(+startTime + batchMinutes * 60000);
+  schedule.batchMixWindows = Array.from({length:mixingBatches}, (_,index) => ({
+    start:new Date(+startTime + index * batchMinutes * 60000),
+    end:new Date(+startTime + (index + 1) * batchMinutes * 60000),
+  }));
+  for (const [index, window] of schedule.batchMixWindows.entries()) {
+    // Keep first-lot canonical ids; later lots get unique keys so previews and
+    // conflict explanations cannot accidentally point back to the first lot.
+    const mixId = index === 0 ? 'mix' : `mix-batch-${index + 1}`;
+    const finishId = index === 0 ? 'mix-finish' : `mix-finish-batch-${index + 1}`;
+    if (activeMin > 0) {
+      const initialMin = restMin > 0 ? Math.min(activeMin, mixerType === 'spiral' ? 3 : 2) : activeMin;
+      actions.push({ id: mixId, at: window.start, end: new Date(+window.start + initialMin * 60000) });
+      if (restMin > 0 && activeMin > initialMin) actions.push({
+        id: finishId, at: new Date(+window.start + (initialMin + restMin) * 60000), end: window.end,
+      });
+    } else actions.push({id:mixId,at:window.start});
+  }
+  if (schedule.doughMethod !== 'unleavened' && mixingBatches > 1) {
+    // One shared formula: account for the earliest finished lot's full room
+    // exposure instead of pretending fermentation waits for the final mix.
+    // No model coefficients change; the guide discloses shared timing.
+    schedule.totalRTHours += (mixingBatches - 1) * batchMinutes / 60;
+  }
+  if (+schedule.bulkFermStart > +schedule.finalProofStart || +schedule.bulkFermStart >= +schedule.bakeStart)
+    schedule.preparationInvalid = true;
+  const foldMinutes = scheduledFoldMinutes(schedule.bulkFermHours, styleKey);
+  if (mixingBatches > 1 && foldMinutes.length && schedule.doughMethod !== 'unleavened') {
+    const firstFoldAt = new Date(+schedule.firstBatchReadyAt + foldMinutes[0] * 60000);
+    if (+firstFoldAt < +schedule.bulkFermStart) {
+      schedule.batchTimingConflict = {firstFoldAt, mixingEnd:schedule.bulkFermStart};
+      schedule.preparationInvalid = true;
+    }
+  }
+  foldMinutes.forEach((minutes, index) => {
     actions.push({ id: `fold-${index + 1}`, at: new Date(+schedule.bulkFermStart + minutes * 60000) });
   });
   const point = (id: string, at: Date | null) => { if (at) actions.push({ id, at }); };
@@ -1211,6 +1245,7 @@ export interface ScheduleRepairInput {
   preheatMin: number;
   mixerType?: MixerType;
   numItems?: number;
+  mixingBatches?: number;
   styleKey?: string;
   /** Supply the planning clock explicitly for reproducible candidate checks. */
   now?: Date;
@@ -1235,7 +1270,7 @@ export function findScheduleRepair(input: ScheduleRepairInput): ScheduleRepair |
   const now = +(input.now ?? new Date());
   if (![+startTime, +eatTime, now, kitchenTemp, preheatMin].every(Number.isFinite)
       || +startTime < now || +startTime >= +eatTime || preheatMin < 0) return null;
-  const build = (start: Date, bake: Date) => buildSchedule(start, bake, availabilityBlocks, kitchenTemp, preheatMin, mixer, style, input.numItems);
+  const build = (start: Date, bake: Date) => buildSchedule(start, bake, availabilityBlocks, kitchenTemp, preheatMin, mixer, style, input.numItems, input.mixingBatches);
   const original = build(startTime, eatTime);
   const phases = (s: ScheduleResult) => s.coldRetard2Start ? 2 : s.coldRetard1Start ? 1 : 0;
   const phaseCount = phases(original);

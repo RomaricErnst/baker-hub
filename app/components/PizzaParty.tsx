@@ -4,11 +4,12 @@ import { PizzaPartyTab } from './PizzaPartyTabBar';
 import ToppingSelector from './ToppingSelector';
 import PrepTab from './pizzaParty/PrepTab';
 import BakeTab from './pizzaParty/BakeTab';
+import type { CompletionActions } from './JourneyCompletion';
 
 type Tab = PizzaPartyTab;
 type Pill = 'pizzas' | 'shopping' | 'party';
 
-interface PizzaPartyProps {
+interface PizzaPartyProps extends CompletionActions {
   locale: string;
   bakeTime: Date;
   numItems: number;
@@ -54,7 +55,7 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,storagePrefix="bh",baseReady=false }: PizzaPartyProps) {
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onRepeat, resultNotes, onResultNotesChange, saveKind, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,storagePrefix="bh",baseReady=false }: PizzaPartyProps) {
   // initialQtys ne sert qu'au tout premier montage : un useState ne relit pas
   // sa valeur initiale. A la reprise d'une session, les pizzas etaient bien
   // dans l'etat de la page — donc dans le resume — mais le selecteur gardait
@@ -188,6 +189,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           onSave={onSave}
           onShare={onShare}
           sessionSaved={sessionSaved}
+          onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange} saveKind={saveKind}
           onBakedQtysChange={onBakedQtysChange}
           initialDoneCounts={bakedQtys}
         />

@@ -13,7 +13,7 @@ test('only current validated commercial preferment permits generation, direct an
 test('direct generate call returns to planner when commercial preferment is invalid',()=>{
  const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);let handler;
  function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='handleGenerate')handler=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);
- const calls=[],context={scheduleCandidateValid:true,scheduleEditing:false,tab:'custom',styleKey:'neapolitan',commercialPrefermentPlanReady:false,scrollToStepTop(){}};
+ const calls=[],context={schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,tab:'custom',styleKey:'neapolitan',commercialPrefermentPlanReady:false,scrollToStepTop(){}};
  for(const name of ['setActiveTab','setSetupOverview','setAdvancedStep'])context[name]=value=>calls.push([name,value]);
  vm.runInNewContext(ts.transpileModule(handler+'\nhandleGenerate()',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText,context);
  assert.deepEqual(calls,[['setActiveTab','setup'],['setSetupOverview',false],['setAdvancedStep',9]]);
@@ -21,7 +21,7 @@ test('direct generate call returns to planner when commercial preferment is inva
  // valid recipe must not bypass the current commercial-preferment check.
  const generateGate=source.match(/const canGenerate =[\s\S]*?;/)[0];
  for(const tab of ['simple','custom'])for(const commercialPrefermentPlanReady of [false,true])for(const protocolIssue of [undefined,'method','equipment','timing']){
-  const allowed=vm.runInNewContext(generateGate+'\ncanGenerate',{scheduleCandidateValid:true,scheduleEditing:false,tab,commercialPrefermentPlanReady,starterPlanReady:true,unsupportedEnrichedMethod:false,archivedFlourNames:[],simpleRequiredDone:true,customRequiredDone:true,recipe:{protocolIssue},advancedRecipe:{protocolIssue}});
+  const allowed=vm.runInNewContext(generateGate+'\ncanGenerate',{schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,tab,commercialPrefermentPlanReady,starterPlanReady:true,unsupportedEnrichedMethod:false,archivedFlourNames:[],simpleRequiredDone:true,customRequiredDone:true,recipe:{protocolIssue},advancedRecipe:{protocolIssue}});
   assert.equal(allowed,commercialPrefermentPlanReady && !protocolIssue,`${tab}: commercial=${commercialPrefermentPlanReady}, protocol=${protocolIssue}`);
  }
 });
@@ -52,7 +52,7 @@ test('direct generate call sends unsupported bread protocols back to the relevan
  function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='handleGenerate')handler=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);
  const code=ts.transpileModule(handler+'\nhandleGenerate()',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
  for(const tab of ['simple','custom'])for(const protocolIssue of ['equipment','method','timing']){
-  const calls=[],context={scheduleCandidateValid:true,scheduleEditing:false,tab,styleKey:'bagel',commercialPrefermentPlanReady:true,recipe:{protocolIssue},advancedRecipe:{protocolIssue},scrollToStepTop(){}};
+  const calls=[],context={schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,tab,styleKey:'bagel',commercialPrefermentPlanReady:true,recipe:{protocolIssue},advancedRecipe:{protocolIssue},scrollToStepTop(){}};
   for(const name of ['setActiveTab','setSetupOverview','setActiveStep','setAdvancedStep'])context[name]=value=>calls.push([name,value]);
   vm.runInNewContext(code,context);
   const next=protocolIssue==='equipment'?3:protocolIssue==='timing'?(tab==='custom'?9:7):(tab==='custom'?7:6);
@@ -69,7 +69,7 @@ test('known peak timing conflict blocks both new and previously generated sourdo
  function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='handleGenerate')handler=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);
  const code=ts.transpileModule(handler+'\nhandleGenerate()',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
  for(const recipeGenerated of [false,true]) {
-  const calls=[],context={scheduleCandidateValid:true,scheduleEditing:false,tab:'simple',styleKey:'pain_levain',commercialPrefermentPlanReady:true,recipe:{},yeastType:'sourdough',starterEqualWeightsConfirmed:true,starterTimingValid:false,recipeGenerated,starterEvents:[{kind:'known_peak'}],scrollToStepTop(){}};
+  const calls=[],context={schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,tab:'simple',styleKey:'pain_levain',commercialPrefermentPlanReady:true,recipe:{},yeastType:'sourdough',starterEqualWeightsConfirmed:true,starterTimingValid:false,recipeGenerated,starterEvents:[{kind:'known_peak'}],scrollToStepTop(){}};
   for(const name of ['setActiveTab','setSetupOverview','setActiveStep'])context[name]=value=>calls.push([name,value]);
   vm.runInNewContext(code,context);
   assert.deepEqual(calls,[['setActiveTab','setup'],['setSetupOverview',false],['setActiveStep',7]]);
@@ -82,7 +82,7 @@ test('whole-plan validation gates generation in both modes and directs invalid p
  function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='handleGenerate')handler=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);
  const code=ts.transpileModule(handler+'\nhandleGenerate()',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
  for(const tab of ['simple','custom'])for(const method of ['none','poolish','biga','levain'])for(const scheduleCandidateValid of [false,true])for(const scheduleEditing of [false,true]){
-  const context={tab,prefermentType:method,yeastType:method==='levain'?'sourdough':'instant',scheduleCandidateValid,scheduleEditing,commercialPrefermentPlanReady:true,starterPlanReady:true,unsupportedEnrichedMethod:false,archivedFlourNames:[],simpleRequiredDone:true,customRequiredDone:true,recipe:{},advancedRecipe:{}};
+  const context={schedule:undefined,tab,prefermentType:method,yeastType:method==='levain'?'sourdough':'instant',scheduleCandidateValid,scheduleEditing,commercialPrefermentPlanReady:true,starterPlanReady:true,unsupportedEnrichedMethod:false,archivedFlourNames:[],simpleRequiredDone:true,customRequiredDone:true,recipe:{},advancedRecipe:{}};
   const allowed=vm.runInNewContext(gate+'\ncanGenerate',context);
   assert.equal(allowed,scheduleCandidateValid&&!scheduleEditing,`${tab}/${method}: valid=${scheduleCandidateValid}, editing=${scheduleEditing}`);
   if(!allowed){
@@ -100,7 +100,7 @@ test('whole-plan validation gates generation in both modes and directs invalid p
  assert.equal(nextOverrides.length,2);
  for(const expression of nextOverrides)for(const scheduleCandidateValid of [false,true])for(const scheduleEditing of [false,true]){
   const code=ts.transpileModule('globalThis.result=('+expression+');',{compilerOptions:{target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.React}}).outputText;
-  const context={scheduleCandidateValid,scheduleEditing,fr:true,NEXT_CTA:{},React:{createElement:(type,props,...children)=>({type,props,children})}};
+  const context={schedule:undefined,scheduleCandidateValid,scheduleEditing,fr:true,NEXT_CTA:{},React:{createElement:(type,props,...children)=>({type,props,children})}};
   vm.runInNewContext(code,context);
   if(scheduleEditing)assert.equal(context.result,null);
   else if(scheduleCandidateValid)assert.equal(context.result,undefined);

@@ -63,3 +63,11 @@ test('total formula percentages accompany total weights, never remaining stage w
   a.doesNotMatch(html,/Baker’s percentages/);
  }
 });
+
+test('custom percentage basis and liquid starter assumption are explicit at ingredients',()=>{
+ for(const locale of ['fr','en']){
+  const text=render(make('sourdough','levain'),'levain',undefined,locale);
+  a.ok(text.includes(locale==='fr'?'% de farine':'% of flour'));
+  a.ok(text.includes(locale==='fr'?'Levain liquide · 100 % d’hydratation':'Liquid starter · 100% hydration'));
+ }
+});

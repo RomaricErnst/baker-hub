@@ -600,3 +600,79 @@ for(const mode of ['simple','custom']){
   await expect(end).toHaveCount(0);
  });
 }
+
+test('anonymous save can reopen account sign-in after local save',async({page})=>{
+ await seed(page,{bread:false,activeTab:'recipe'});
+ const save=page.locator('.bh-header-save');
+ await save.tap();
+ const menu=page.getByRole('dialog',{name:'Menu',exact:true});
+ await expect(menu).toContainText('Connectez-vous pour enregistrer cette recette dans votre compte');
+ await page.keyboard.press('Escape');
+ await expect(menu).toHaveCount(0);
+ await expect(save).toHaveAttribute('aria-disabled','false');
+ await save.tap();
+ await expect(menu).toContainText('Connectez-vous pour enregistrer cette recette dans votre compte');
+});
+
+test.describe('guided piadina with an early cooking preference',()=>{
+ test.use({timezoneId:'UTC'});
+ test('two setup steps lead to preparation, completion notes and a new bake',async({page},testInfo)=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.clock.setFixedTime(new Date('2030-05-10T10:00:00Z'));
+  await anonymous(page);await page.goto('/fr');
+  await page.getByRole('button',{name:'Pain',exact:true}).tap();
+  await page.locator('.bh-batch-content').getByRole('button',{name:'Piadina',exact:true}).tap();
+  await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
+  await page.getByLabel('Nombre de pièces',{exact:true}).fill('5');
+  await page.getByLabel('Nombre de pièces',{exact:true}).blur();
+  await page.locator('summary').filter({hasText:'Horaire de cuisson souhaité (facultatif)'}).tap();
+  const early=page.getByLabel('Horaire de cuisson souhaité',{exact:true});
+  await early.fill('2030-05-10T18:00');await early.blur();
+  await expect.poll(async()=>(await stored(page))?.eatTime).toBe(Date.parse('2030-05-10T18:00:00Z'));
+  // Safari's clear action must return to an empty preference, not Invalid Date.
+  await early.fill('');await early.blur();await expect(early).toHaveValue('');
+  await early.fill('2030-05-10T18:00');await early.blur();
+  await page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true}).tap();
+  await page.getByRole('button',{name:/^Me laisser guider/}).tap();
+  const setup=page.locator('.bh-step-page:visible');
+  await setup.getByRole('button',{name:/^Poêle ou plancha/}).tap();
+  await setup.getByRole('button',{name:/^À la main/}).tap();
+  await expect(page.locator('summary').filter({hasText:'Température de la cuisine'})).toBeVisible();
+  await setup.getByRole('button',{name:'Continuer',exact:true}).tap();
+  const plan=page.getByRole('region',{name:'Repos et cuisson',exact:true});
+  await expect(plan).toBeVisible();
+  await expect(page.getByLabel('Quand commencer la cuisson des piadinas ?',{exact:true})).toHaveValue('2030-05-10T18:00');
+  await plan.getByRole('button',{name:'Valider le planning',exact:true}).tap();
+  await expect(plan.getByRole('button',{name:'Planning confirmé',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Créer ma recette',exact:true}).tap();
+  await expect.poll(async()=>{const s=await stored(page);return {generated:s?.recipeGenerated,style:s?.styleKey,oven:s?.ovenType,count:s?.numItems};}).toEqual({generated:true,style:'piadina',oven:'griddle',count:5});
+  await navigate(page,'Préparation');
+  await expect(page.getByRole('button',{name:/^Commencer la préparation/})).toBeVisible();
+  await page.getByRole('button',{name:/^Commencer la préparation/}).tap();
+  for(let i=0;i<3;i++){
+   const step=page.locator('section[data-guide-phase="preparation"]:visible');
+   await expect(step).toHaveCount(1);
+   await step.getByRole('checkbox',{name:'Étape faite',exact:true}).check();
+   if(i<2)await step.locator('.bh-guide-next').tap();
+  }
+  await navigate(page,'Cuisson & service');
+  await page.getByRole('button',{name:'Vue d’ensemble',exact:true}).tap();
+  await page.locator('section[data-guide-phase="cooking"]:visible').first().getByRole('button').first().tap();
+  let cooking=page.locator('section[data-guide-phase="cooking"]:visible');
+  await cooking.getByRole('checkbox',{name:'Étape faite',exact:true}).check();
+  await cooking.locator('.bh-guide-next').tap();
+  cooking=page.locator('section[data-guide-phase="cooking"]:visible');
+  await cooking.getByRole('checkbox',{name:'Étape faite',exact:true}).check();
+  const end=page.getByRole('region',{name:'Fin de la fournée',exact:true});
+  await expect(end.getByRole('button',{name:'Enregistrer',exact:true})).toBeVisible();
+  await end.locator('summary').filter({hasText:'Mes notes pour la prochaine fois'}).tap();
+  await end.getByRole('textbox',{name:'Mes notes pour la prochaine fois',exact:true}).fill('Abaisser plus finement.');
+  await expect.poll(async()=>(await stored(page))?.resultNotes).toBe('Abaisser plus finement.');
+  await noOverflow(page);
+  await testInfo.attach('piadina-completion-notes',{body:await page.screenshot(),contentType:'image/png'});
+  await end.getByRole('button',{name:'Refaire cette recette',exact:true}).tap();
+  await expect(plan).toBeVisible();
+  await expect.poll(async()=>{const s=await stored(page);return {generated:s?.recipeGenerated,count:s?.numItems,style:s?.styleKey};}).toEqual({generated:false,count:5,style:'piadina'});
+  await expect(end).toHaveCount(0);expect(errors).toEqual([]);
+ });
+});

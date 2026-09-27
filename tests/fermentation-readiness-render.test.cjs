@@ -84,3 +84,11 @@ test('compact early mixing keeps its own explanation when another conflict exist
  assert.match(html,/Fermentation is longer than advised/);
  assert.doesNotMatch(html,/Preheat overlaps work/);
 });
+
+test('early piadina target is not a confirmed plan and multi-batch preparation keeps the rest',()=>{
+ const renderPicker=(confirmedPlan=false)=>renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages:require('../messages/en.json'),timeZone:'UTC'},React.createElement(Picker,{startTime:date(1),eatTime:bake,confirmedPlan,blocks:[],preheatMin:10,mixerType:'hand',styleKey:'piadina',numItems:12,mixingBatches:5,kitchenTemp:22,onChange(){}})));
+ const fresh=renderPicker();
+ assert.match(fresh,/Confirm plan/);assert.doesNotMatch(fresh,/Plan confirmed/);
+ assert.match(fresh,/Start 65 minutes before cooking/);
+ assert.match(renderPicker(true),/Plan confirmed/);
+});

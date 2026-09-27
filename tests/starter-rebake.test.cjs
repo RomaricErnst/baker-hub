@@ -39,10 +39,10 @@ test('normal sourdough resume preserves saved actions and generated guide',async
  assert.equal(state.setLastFedTime.getTime(),snap.lastFedTime);assert.equal(state.setKnownPeakTime.getTime(),snap.knownPeakTime);
  assert.equal(state.setContainerCapacityLitres,5);assert.equal(state.setRecipeGenerated,true);assert.equal(state.setSessionRestored,true);assert.equal(state.setActiveTab,'guide');
 });
-test('commercial yeast rebake retains existing generated recipe behaviour',async()=>{
+test('commercial yeast rebake retains settings and requires validation of its new planning',async()=>{
  const {state}=await restore('instant',true);
  assert.deepEqual(JSON.parse(JSON.stringify(state.setTimingOverrides)),{});
- assert.equal(state.setRecipeGenerated,true);assert.equal(state.setShowResults,true);assert.equal(state.setActiveTab,'setup');
+ assert.equal(state.setRecipeGenerated,false);assert.equal(state.setShowResults,false);assert.equal(state.setAdvancedStep,9);assert.equal(state.setScheduleCandidateValid,false);assert.equal(state.setActiveTab,'setup');
 });
 
 test('cloud snapshot preserves a known starter timing blocker; legacy snapshot defaults valid',async()=>{

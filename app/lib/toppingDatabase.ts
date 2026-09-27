@@ -4825,9 +4825,16 @@ export const DESSERT_PIZZAS: Pizza[] = [
 
 // Materialized, reviewed ingredient data; existing pizza IDs and callbacks remain stable.
 import { AUDITED_PIZZA_RECIPES } from './auditedPizzaRecipes';
+import { withDrainedCheeseWeight } from './ingredientWeights';
 for (const pizza of [...PIZZAS, ...DESSERT_PIZZAS]) {
  const reviewed = AUDITED_PIZZA_RECIPES[pizza.id];
  if (reviewed) Object.assign(pizza, reviewed);
+ // Authored NY bufala recipe previously said one ball without a defined size.
+ // Use the 100 g cheese target used by the catalogue’s NY cheese recipes; this is
+ // recipe cheese weight, NOT a conversion from a package or its brine weight.
+ if (pizza.id === 'ny_margherita_bufala') pizza.ingredients = pizza.ingredients.map(ingredient =>
+   ingredient.id === 'buffalo_mozzarella' ? {...ingredient, qtyPerPizza:{amount:100,unit:'g'}} : ingredient);
+ pizza.ingredients = pizza.ingredients.map(withDrainedCheeseWeight);
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -4857,6 +4864,9 @@ export function getCustomPizzaList(): Pizza[] {
           ...(['egg','whole_egg','poached_egg'].includes(refId) ? {bakeOrder: 'after' as const} : {}),
         };
       });
+      // Preserve the user's chosen amounts/units while retaining the reference
+      // ingredient's drained-weight meaning on recipe, shopping and export.
+      pizza.ingredients = pizza.ingredients.map(withDrainedCheeseWeight);
       return pizza;
     })
 }

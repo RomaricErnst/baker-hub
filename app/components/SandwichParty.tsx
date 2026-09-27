@@ -1,7 +1,8 @@
 'use client';
+import { drainedWeightShoppingNote } from '../lib/ingredientWeights';
 
 import { useEffect, useId, useRef, useState } from 'react';
-import { SANDWICH_FAMILIES, SANDWICH_RECIPES, SANDWICH_INGREDIENTS, partitionSandwichSteps } from '../lib/sandwichCatalog';
+import { SANDWICH_FAMILIES, SANDWICH_RECIPES, SANDWICH_INGREDIENTS, estimateRawChickenPurchase, partitionSandwichSteps } from '../lib/sandwichCatalog';
 import { type SandwichSnapshot, sandwichFamilyForStyle, effectiveIngredients, estimatedSandwichKcal, aggregateSandwichShopping, sandwichPrepKey, updateSandwichRecipe, effectiveSandwichSteps, isLighterSandwich } from '../lib/sandwich';
 import styles from './sandwichParty/SandwichParty.module.css';
 import JourneyCompletion, { type CompletionActions } from './JourneyCompletion';
@@ -41,7 +42,7 @@ export interface SandwichPartyProps extends CompletionActions {
 
 const count = (value: number) => Number.isFinite(value) ? Math.max(0,Math.min(99,Math.floor(value))) : 0;
 
-export default function SandwichParty({onSave,onShare,sessionSaved,isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,baseReady=false,deferBreadSteps=!baseReady}:SandwichPartyProps) {
+export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRepeat,resultNotes,onResultNotesChange,isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,baseReady=false,deferBreadSteps=!baseReady}:SandwichPartyProps) {
   const tr = (value:Translation) => value[isFr ? 'fr' : 'en'];
   const t = (fr:string,en:string) => isFr ? fr : en;
   const [search,setSearch] = useState('');
@@ -62,6 +63,18 @@ export default function SandwichParty({onSave,onShare,sessionSaved,isFr,styleKey
   const breadName = selectedBread ? (isFr ? selectedBread.nameFr : selectedBread.name) : family ? tr(family.name) : '';
   const breadImage = selectedBread?.image ?? family?.image;
   const destinationName = breadCompanionLabel(family?.id,isFr);
+  const portionNames: Record<string,[string,string,string,string]> = {
+    tartine:['tartine','tartines','toast','toasts'], pita:['pita','pitas','pita','pitas'],
+    greek_pita:['pita','pitas','pita','pitas'], laffa:['wrap','wraps','wrap','wraps'],
+    piadina:['piadina','piadinas','piadina','piadine'], bagel:['bagel','bagels','bagel','bagels'],
+    kebab_bread:['kebab','kebabs','kebab','kebabs'], batbout:['batbout','batbouts','batbout','batbouts'],
+    pan_bagnat:['pan bagnat','pans bagnats','pan bagnat','pans bagnats'], panuozzo:['panuozzo','panuozzi','panuozzo','panuozzi'],
+  };
+  const portionNamesForFamily=portionNames[familyId??'']??['sandwich','sandwichs','sandwich','sandwiches'];
+  const portionName=(quantity:number)=>portionNamesForFamily[(isFr?0:2)+(quantity===1?0:1)];
+  const portionPlural=portionName(2);
+  const portionHeading=portionPlural.charAt(0).toUpperCase()+portionPlural.slice(1);
+  const readyLabel=isFr ? `${tartine||familyId==='pita'||familyId==='greek_pita'||familyId==='piadina'?'Une':'Un'} ${portionName(1)} ${tartine||familyId==='pita'||familyId==='greek_pita'||familyId==='piadina'?'prête':'prêt'}` : `One ${portionName(1)} ready`;
   const heading = tabHeading();
   function tabHeading(){if((phase??snapshot.tab)==='shop')return t('Courses','Shopping');if(baseReady&&(phase??snapshot.tab)==='pick')return t('Que préparer avec ce pain ?','What would you like to make with this bread?');return family ? `${isFr?'Vos':'Your'} ${destinationName.toLocaleLowerCase(isFr?'fr':'en')}` : t('Garnitures','Fillings');}
   const familyRecipes = SANDWICH_RECIPES.filter(recipe => recipe.familyId === family?.id);
@@ -104,7 +117,7 @@ export default function SandwichParty({onSave,onShare,sessionSaved,isFr,styleKey
   },[detailId,reviewOpen]);
 
   const quantityControls = (recipe:Recipe) => <div className={styles.quantity}>
-    <span className={styles.quantityLabel}>{tartine ? t('Tartines','Toasts') : t('Sandwichs','Sandwiches')}</span>
+    <span className={styles.quantityLabel}>{portionHeading}</span>
     <button className={styles.button} type="button" aria-label={`${t('Retirer un','Remove one')} ${tr(recipe.name)}`} disabled={!count(snapshot.qtys[recipe.id])} onClick={()=>setQuantity(recipe,count(snapshot.qtys[recipe.id])-1)}>−</button>
     <input aria-label={`${t('Quantité','Quantity')} ${tr(recipe.name)}`} type="number" inputMode="numeric" min={0} max={99} value={count(snapshot.qtys[recipe.id])} onChange={event=>setQuantity(recipe,Number(event.target.value))}/>
     <button className={styles.button} type="button" aria-label={`${t('Ajouter un','Add one')} ${tr(recipe.name)}`} disabled={count(snapshot.qtys[recipe.id])>=99} onClick={()=>setQuantity(recipe,count(snapshot.qtys[recipe.id])+1)}>+</button>
@@ -121,6 +134,13 @@ export default function SandwichParty({onSave,onShare,sessionSaved,isFr,styleKey
   const prepSteps = selected.flatMap(recipe=>partitionSandwichSteps(stepsFor(recipe),deferBreadSteps).prep.map(step=>({recipe,step,key:sandwichPrepKey(recipe,step.id,count(snapshot.qtys[recipe.id]),snapshot.ingredientOverrides?.[recipe.id])})));
   const readySteps = prepSteps.filter(item=>snapshot.prepTicks[item.key]).length;
   const prepTotal=prepSteps.length;
+  // Order whole recipes, never reorder their dependent steps or merge unlike sauces.
+  // Start the recipes that still require cooking/chilling, then the cold preparations.
+  const preparationOrder=selected.map(recipe=>{
+    const pending=prepSteps.filter(item=>item.recipe.id===recipe.id&&!snapshot.prepTicks[item.key]);
+    return {recipe,next:pending[0]?.step,needsCooking:pending.some(item=>item.step.phase==='cook'||item.step.phase==='chill')};
+  }).sort((a,b)=>Number(!!b.next)-Number(!!a.next)||Number(b.needsCooking)-Number(a.needsCooking));
+  const preparationRef=useRef<Record<string,HTMLElement|null>>({});
   useEffect(()=>{onPrepProgress?.({done:readySteps,total:prepTotal});},[readySteps,prepTotal,onPrepProgress]);
   const amountText = (grams:number) => grams>=1000 ? `${(Math.round(grams/10)/100).toLocaleString(isFr?'fr-FR':'en-GB')} kg` : `${(grams<10?Math.round(grams*10)/10:Math.round(grams)).toLocaleString(isFr?'fr-FR':'en-GB')} g`;
   const button = `${styles.button} ${styles.primary}`;
@@ -134,11 +154,11 @@ export default function SandwichParty({onSave,onShare,sessionSaved,isFr,styleKey
     </div>
     {(family||tab==='shop') && <>
       {legacyMieTartines&&tab==='pick'&&<div className={styles.card}><p>{t('Cette fournée conserve vos tartines choisies précédemment.','This bake keeps your previously selected toasts.')}</p><button type="button" className={styles.button} onClick={()=>onChange({...snapshot,familyId:'pain_mie',qtys:{},completed:{},prepTicks:{},ingredientOverrides:{}})}>{t('Remplacer par des clubs ou croques','Replace with clubs or croques')}</button></div>}
-      {!hideNavigation && <CompanionSteps label={t('Étapes des sandwichs','Sandwich steps')} active={tab} onChange={go}
+      {!hideNavigation && <CompanionSteps label={t('Étapes des garnitures','Filling steps')} active={tab} onChange={go}
         steps={[{key:'pick',label:t('Choisir','Choose')},{key:'shop',label:t('Courses','Shopping')},{key:'prep',label:t('Préparer','Prepare')},{key:'serve',label:t('Servir','Serve')}]} />}
       {total>0 && <div className={styles.summary} aria-live="polite">
-        <strong>{total} {tartine ? (total===1?t('tartine','toast'):t('tartines','toasts')) : (total===1?t('sandwich','sandwich'):t('sandwichs','sandwiches'))}</strong> · {t('Pain à prévoir','Bread needed')} {breadSlices>0?`${breadSlices} ${t('tranches','slices')} · `:''}≈ {amountText(breadGrams)}
-        <div className={styles.muted}>{tartine ? t('Une portion de tartine = 60 g de pain, soit une grande tranche ou plusieurs petites.','One toast portion = 60 g of bread: one large slice or several small ones.') : individualBread?t('Un pain par sandwich.','One bread per sandwich.'):t('Les quantités comptent les sandwichs, pas les pains.','Quantities count sandwiches, not loaves.')}
+        <strong>{total} {portionName(total)}</strong> · {t('Pain à prévoir','Bread needed')} {breadSlices>0?`${breadSlices} ${t('tranches','slices')} · `:''}≈ {amountText(breadGrams)}
+        <div className={styles.muted}>{tartine ? t('Une portion de tartine = 60 g de pain, soit une grande tranche ou plusieurs petites.','One toast portion = 60 g of bread: one large slice or several small ones.') : individualBread?t('Un pain par portion.','One bread per portion.'):t('Les quantités comptent les sandwichs, pas les pains.','Quantities count sandwiches, not loaves.')}
           {numItems && availableDoughWeight ? ` ${t('Votre fournée','Your batch')} : ${numItems} ${t('pièce(s)','piece(s)')} · ${amountText(availableDoughWeight)} ${t('de pâte avant cuisson','dough before baking')}.` : ''}</div>
       </div>}
       {total>0 && insufficientBread && <div className={styles.card} role="status" style={{marginBottom:16}}>
@@ -158,9 +178,9 @@ export default function SandwichParty({onSave,onShare,sessionSaved,isFr,styleKey
             <img className={styles.recipePhoto} src={recipe.image} alt={tr(recipe.name)} width={640} height={480} loading="lazy" decoding="async"/>
           </button>
           <button type="button" className={styles.detailButton} onClick={()=>setDetailId(recipe.id)}><h3>{tr(recipe.name)}</h3></button>
-          <div className={styles.tags}><span className={styles.tag}>{Object.keys(snapshot.ingredientOverrides?.[recipe.id]??{}).length?t('Personnalisé','Customized'):recipe.kind==='classic'?t('Traditionnel','Traditional'):t('Création','Inspired')}</span>{lighter(recipe)&&<span className={styles.tag}>{t('Plus léger','Lighter')}</span>}{recipe.vegetarian&&<span className={styles.tag}>{t('Végétarien','Vegetarian')}</span>}</div>
+          <div className={styles.tags}><span className={styles.tag}>{Object.keys(snapshot.ingredientOverrides?.[recipe.id]??{}).length?t('Quantités ajustées','Adjusted quantities'):recipe.kind==='classic'?t('Traditionnel','Traditional'):t('Création','Inspired')}</span>{lighter(recipe)&&<span className={styles.tag}>{t('Plus léger','Lighter')}</span>}{recipe.vegetarian&&<span className={styles.tag}>{t('Végétarien','Vegetarian')}</span>}</div>
           <p className={styles.muted}>{ingredientsFor(recipe).map(item=>ingredientName(item.ingredientId)).join(' · ')}</p>
-          <div className={styles.muted}>≈ {kcal(recipe)} kcal / {tartine ? t('portion, pain inclus','portion, bread included') : t('sandwich, pain inclus','sandwich, bread included')}</div>
+          <div className={styles.muted}>≈ {kcal(recipe)} kcal / {tartine ? t('portion, pain inclus','portion, bread included') : t('portion, pain inclus','portion, bread included')}</div>
           <div className={styles.muted}>{recipe.breadSlices?`${recipe.breadSlices} ${t('tranches','slices')} · `:''}{recipe.breadGrams} g {t('de pain cuit + garnitures','baked bread + fillings')}</div>
           {quantityControls(recipe)}
           <button className={`${styles.button} ${styles.wide}`} type="button" onClick={()=>setDetailId(recipe.id)}>{t('Recette et garnitures','Recipe and fillings')}</button>
@@ -171,7 +191,7 @@ export default function SandwichParty({onSave,onShare,sessionSaved,isFr,styleKey
         {active&&baseReady&&total===0&&onSelectionBack&&<div data-companion-action className={styles.selectionBar}><button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('← Précédent','← Back')}</button></div>}
         {active&&!baseReady&&total===0&&onSelectionDone&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('← Précédent','← Back')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={onSelectionDone}>{selectionDoneLabel??t('Définir ma recette','Set up my recipe')}</button></div>}
       </>}
-      {tab!=='pick'&&tab!=='shop'&&!total&&<div className={styles.empty}><p>{tartine ? t('Choisissez vos tartines et leurs quantités pour commencer.','Choose your toasts and quantities to begin.') : t('Choisissez vos sandwichs et leurs quantités pour commencer.','Choose your sandwiches and quantities to begin.')}</p><button className={button} type="button" onClick={()=>go('pick')}>{tartine ? t('Choisir mes tartines','Choose toasts') : t('Choisir mes sandwichs','Choose sandwiches')}</button></div>}
+      {tab!=='pick'&&tab!=='shop'&&!total&&<div className={styles.empty}><p>{tartine ? t('Choisissez vos tartines et leurs quantités pour commencer.','Choose your toasts and quantities to begin.') : t(`Choisissez vos ${portionPlural} et leurs quantités pour commencer.`,`Choose your ${portionPlural} and quantities to begin.`)}</p><button className={button} type="button" onClick={()=>go('pick')}>{tartine ? t('Choisir mes tartines','Choose toasts') : t(`Choisir mes ${portionPlural}`,`Choose ${portionPlural}`)}</button></div>}
       {tab==='shop'&&<>
         {!doughConfigured && <div className={styles.card}><p>{t('Cette liste contient les garnitures. Complétez votre pâte pour ajouter les ingrédients du pain.','This list contains fillings. Finish your dough plan to include the bread ingredients.')}</p>{onAdjustBread&&<button className={styles.button} type="button" onClick={onAdjustBread}>{t('Compléter ma pâte','Finish my dough')}</button>}</div>}
         {total>0&&<><h3>{t('Pain pour cette sélection','Bread for this selection')}</h3>
@@ -180,12 +200,18 @@ export default function SandwichParty({onSave,onShare,sessionSaved,isFr,styleKey
           {breadIngredients.map(item=><label key={item.id} className={styles.check}><input type="checkbox" checked={!!snapshot.shopTicks[`dough:${item.id}:${item.grams}`]} onChange={event=>update({shopTicks:{...snapshot.shopTicks,[`dough:${item.id}:${item.grams}`]:event.target.checked}})}/><span className={snapshot.shopTicks[`dough:${item.id}:${item.grams}`]?styles.checked:''}>{item.name}</span><strong className={styles.checkAmount}>{amountText(item.grams)}</strong></label>)}
         </details>}
         {total>0&&<div className={styles.panelHeading}><h3>{t('Garnitures regroupées','Combined fillings')}</h3></div>}
-        {shopping.map(({ingredientId:id,grams,key})=><label key={id} className={styles.check}><input type="checkbox" checked={!!snapshot.shopTicks[key]} onChange={event=>update({shopTicks:{...snapshot.shopTicks,[key]:event.target.checked}})}/><span className={snapshot.shopTicks[key]?styles.checked:''}>{ingredientName(id)}</span><strong className={styles.checkAmount}>{amountText(grams)}</strong></label>)}
+        {shopping.map(({ingredientId:id,grams,key})=><label key={id} className={styles.check}><input type="checkbox" checked={!!snapshot.shopTicks[key]} onChange={event=>update({shopTicks:{...snapshot.shopTicks,[key]:event.target.checked}})}/><span className={snapshot.shopTicks[key]?styles.checked:''}>{id==='chicken'?ingredientName('chicken_raw'):ingredientName(id)}{id==='mozzarella'&&<small style={{display:'block',fontSize:13,lineHeight:1.4}}>{drainedWeightShoppingNote[isFr?'fr':'en']}</small>}{id==='chicken'&&<small style={{display:'block',fontSize:13,lineHeight:1.4}}>{t(`Achat estimé pour ${amountText(grams)} cuits. Le rendement varie. Ou achetez ${amountText(grams)} déjà cuits.`,`Estimated purchase for ${amountText(grams)} cooked. Yield varies. Or buy ${amountText(grams)} already cooked.`)}</small>}</span><strong className={styles.checkAmount}>{id==='chicken'?'≈ ':''}{amountText(id==='chicken'?estimateRawChickenPurchase(grams):grams)}</strong></label>)}
         <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('prep')}>{baseReady?t('Préparer les garnitures','Prepare the fillings'):doughConfigured?t('Commencer la préparation','Start the dough preparation'):t('Compléter l’organisation','Complete organisation')} →</button>
       </>}
       {tab==='prep'&&total>0&&<>
-        <h3>{t('Préparez les garnitures','Prepare the fillings')}</h3>{!onPrepProgress&&prepSteps.length>0&&<p className={styles.muted}>{readySteps}/{prepSteps.length} {t('étapes cochées','steps checked')}</p>}{prepSteps.length===0&&<p className={styles.muted}>{t('Aucune préparation à faire à l’avance. Vous pouvez passer à la suite.','No advance preparation is needed. You can continue.')}</p>}
-        {selected.map(recipe=><section className={styles.card} key={recipe.id} style={{marginBottom:12}}><h3>{tr(recipe.name)} · {count(snapshot.qtys[recipe.id])}</h3>
+        <h3>{t('Préparez les garnitures','Prepare the fillings')}</h3>{prepSteps.length===0&&<p className={styles.muted}>{t('Aucune préparation à faire à l’avance. Vous pouvez passer à la suite.','No advance preparation is needed. You can continue.')}</p>}
+        {selected.length>1&&prepTotal>0&&<nav aria-label={t('Ordre de préparation','Preparation order')} style={{margin:'12px 0 20px'}}>
+          <h3>{t('Ordre de préparation','Preparation order')}</h3>
+          <ol style={{paddingLeft:22,margin:'8px 0'}}>{preparationOrder.map(({recipe,next})=><li key={recipe.id}>
+            <button type="button" onClick={()=>preparationRef.current[recipe.id]?.scrollIntoView({block:'start',behavior:'smooth'})} style={{minHeight:44,padding:'8px 0',border:0,background:'transparent',color:'var(--terra)',font:'inherit',textAlign:'left',cursor:'pointer'}}>{tr(recipe.name)}<span style={{display:'block',fontSize:14,color:'var(--smoke)'}}>{next?tr(next.title):t('Préparation terminée','Preparation complete')}</span></button>
+          </li>)}</ol>
+        </nav>}
+        {preparationOrder.map(({recipe})=><section ref={element=>{preparationRef.current[recipe.id]=element;}} className={styles.card} key={recipe.id} style={{marginBottom:12,scrollMarginTop:'calc(var(--bh-header-height, 80px) + 100px)'}}><h3>{tr(recipe.name)} · {count(snapshot.qtys[recipe.id])}</h3>
           <p className={styles.muted}>{ingredientsFor(recipe).map(item=>`${ingredientName(item.ingredientId)} ${amountText(item.grams*count(snapshot.qtys[recipe.id]))}`).join(' · ')}</p>
           {partitionSandwichSteps(stepsFor(recipe),deferBreadSteps).prep.map(step=>{const key=sandwichPrepKey(recipe,step.id,count(snapshot.qtys[recipe.id]),snapshot.ingredientOverrides?.[recipe.id]);return <label key={key} className={styles.check}><input type="checkbox" checked={!!snapshot.prepTicks[key]} onChange={event=>update({prepTicks:{...snapshot.prepTicks,[key]:event.target.checked}})}/><span className={snapshot.prepTicks[key]?styles.checked:''}><strong>{tr(step.title)}</strong>{step.minutes>0?` · ≈ ${step.minutes} min`:''}<br/>{tr(step.instruction)}</span></label>;})}
           <button className={`${styles.button} ${styles.wide}`} type="button" onClick={()=>setDetailId(recipe.id)}>{t('Voir la recette','View recipe')}</button>
@@ -198,15 +224,15 @@ export default function SandwichParty({onSave,onShare,sessionSaved,isFr,styleKey
         {selected.map(recipe=>{const done=Math.min(count(snapshot.completed[recipe.id]),count(snapshot.qtys[recipe.id]));const qty=count(snapshot.qtys[recipe.id]);return <section key={recipe.id} className={styles.card} style={{marginBottom:12}}>
           <div className={styles.cardTop}><h3>{tr(recipe.name)}</h3><span>{done}/{qty}</span></div>
           <ol className={styles.steps}>{partitionSandwichSteps(stepsFor(recipe),deferBreadSteps).serve.map(step=><li key={step.id}><strong>{tr(step.title)}</strong>{tr(step.instruction)}</li>)}</ol>
-          <div className={styles.filters}><button type="button" className={button} disabled={done>=qty||stepsFor(recipe).some(step=>step.id.endsWith('-correct-before-serving'))} onClick={()=>update({completed:{...snapshot.completed,[recipe.id]:done+1}})}>{tartine ? t('Une tartine prête','One toast ready') : t('Un sandwich prêt','One sandwich ready')}</button><button type="button" className={styles.button} disabled={!done} onClick={()=>update({completed:{...snapshot.completed,[recipe.id]:done-1}})}>{t('Annuler le dernier','Undo last')}</button></div>
+          <div className={styles.filters}><button type="button" className={button} disabled={done>=qty||stepsFor(recipe).some(step=>step.id.endsWith('-correct-before-serving'))} onClick={()=>update({completed:{...snapshot.completed,[recipe.id]:done+1}})}>{readyLabel}</button><button type="button" className={styles.button} disabled={!done} onClick={()=>update({completed:{...snapshot.completed,[recipe.id]:done-1}})}>{t('Annuler le dernier','Undo last')}</button></div>
         </section>;})}
-        {completed>0&&<JourneyCompletion isFr={isFr} complete={completed===total} onSave={onSave} onShare={onShare} sessionSaved={sessionSaved}/>}
+        {completed>0&&<JourneyCompletion isFr={isFr} complete={completed===total} onSave={onSave} onShare={onShare} sessionSaved={sessionSaved} saveKind={saveKind} onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange}/>}
       </>}
     </>}
     {reviewOpen && total>0 && <div className={styles.backdrop} onClick={event=>{if(event.target===event.currentTarget)setReviewOpen(false);}}>
       <div className={styles.sheet} role="dialog" aria-modal="true" aria-label={t('Ma sélection','My selection')} ref={dialogRef}>
         <div className={styles.sheetHeader}><h2>{t('Ma sélection','My selection')}</h2><button ref={closeRef} type="button" className={styles.button} aria-label={t('Fermer la sélection','Close selection')} onClick={()=>setReviewOpen(false)}>×</button></div>
-        <div className={styles.sheetBody}>{insufficientBread&&!individualBread&&<div className={styles.card} role="status"><strong>{t('Prévoyez davantage de pain','You will need more bread')}</strong><p>{t(`Pain nécessaire : ${amountText(breadGrams)} ; pâte prévue avant cuisson : ${amountText(availableDoughWeight!)}.`,`Bread needed: ${amountText(breadGrams)}; planned dough before baking: ${amountText(availableDoughWeight!)}.`)}</p><p className={styles.muted}>{t('La cuisson fait aussi perdre de l’eau : augmentez la fournée ou réduisez les portions.','Baking also removes water: increase the batch or reduce the portion count.')}</p>{onAdjustBread&&<button type="button" className={styles.button} onClick={()=>{setReviewOpen(false);onAdjustBread();}}>{t('Ajuster ma fournée','Adjust my bread batch')}</button>}</div>}{individualBread&&onMatchBreadCount&&numItems!==total&&<div className={styles.card}><p>{t(`${total} sandwichs sélectionnés ; ${numItems??0} pains prévus.`,`${total} sandwiches selected; ${numItems??0} breads planned.`)}</p><button type="button" className={styles.button} onClick={()=>{setReviewOpen(false);onMatchBreadCount(total);}}>{t(`Prévoir ${total} pains pour ces sandwichs`,`Make ${total} breads for these sandwiches`)}</button><p className={styles.muted}>{t('Gardez la fournée actuelle si vous voulez du pain en plus.','Keep your current batch if you want extra bread.')}</p></div>}{selected.map(recipe=><div key={recipe.id} className={styles.card}><strong>{tr(recipe.name)}</strong>{quantityControls(recipe)}</div>)}</div>
+        <div className={styles.sheetBody}>{insufficientBread&&!individualBread&&<div className={styles.card} role="status"><strong>{t('Prévoyez davantage de pain','You will need more bread')}</strong><p>{t(`Pain nécessaire : ${amountText(breadGrams)} ; pâte prévue avant cuisson : ${amountText(availableDoughWeight!)}.`,`Bread needed: ${amountText(breadGrams)}; planned dough before baking: ${amountText(availableDoughWeight!)}.`)}</p><p className={styles.muted}>{t('La cuisson fait aussi perdre de l’eau : augmentez la fournée ou réduisez les portions.','Baking also removes water: increase the batch or reduce the portion count.')}</p>{onAdjustBread&&<button type="button" className={styles.button} onClick={()=>{setReviewOpen(false);onAdjustBread();}}>{t('Ajuster ma fournée','Adjust my bread batch')}</button>}</div>}{individualBread&&onMatchBreadCount&&numItems!==total&&<div className={styles.card}><p>{t(`${total} ${portionName(total)} sélectionnés ; ${numItems??0} pains prévus.`,`${total} ${portionName(total)} selected; ${numItems??0} breads planned.`)}</p><button type="button" className={styles.button} onClick={()=>{setReviewOpen(false);onMatchBreadCount(total);}}>{t(`Prévoir ${total} pains pour ces portions`,`Make ${total} breads for these portions`)}</button><p className={styles.muted}>{t('Gardez la fournée actuelle si vous voulez du pain en plus.','Keep your current batch if you want extra bread.')}</p></div>}{selected.map(recipe=><div key={recipe.id} className={styles.card}><strong>{tr(recipe.name)}</strong>{quantityControls(recipe)}</div>)}</div>
         <div className={styles.sheetFooter}><button type="button" className={`${button} ${styles.wide}`} style={{marginTop:0}} onClick={()=>{setReviewOpen(false);if(directSelectionReturn&&onSelectionDone)onSelectionDone();else if(baseReady)go('prep');else if(onSelectionDone)onSelectionDone();else go('shop');}}>{directSelectionReturn&&onSelectionDone?selectionDoneLabel??t('Valider ma sélection','Confirm selection'):baseReady?t('Préparer les garnitures','Prepare fillings'):selectionDoneLabel??t('Voir les courses','View shopping')} →</button>{baseReady&&<button type="button" className={styles.button} onClick={()=>{setReviewOpen(false);go('shop');}}>{t('Voir les courses','View shopping')}</button>}<button type="button" className="bh-back-action" onClick={()=>setReviewOpen(false)}>{t('← Modifier ma sélection','← Edit my selection')}</button></div>
       </div>
     </div>}
@@ -217,11 +243,11 @@ export default function SandwichParty({onSave,onShare,sessionSaved,isFr,styleKey
           <img className={styles.recipePhoto} src={detail.image} alt={tr(detail.name)} width={640} height={480} decoding="async"/>
           {Object.keys(snapshot.ingredientOverrides?.[detail.id]??{}).length>0&&<p className={styles.muted}>{t('Photo de la recette de base ; vos garnitures ont été personnalisées.','Photo shows the original recipe; you have customized the fillings.')}</p>}
           {detail.ingredients.some(item=>item.optionalGrams)&&<p className={styles.muted}>{t('Photo avec les garnitures facultatives proposées ci-dessous.','Photo includes the optional toppings offered below.')}</p>}
-          <p className={styles.muted}>{tartine ? t('Pour une portion de tartine','For one toast portion') : t('Pour un sandwich','For one sandwich')} · ≈ {kcal(detail)} kcal · {t('pain inclus','bread included')}</p>
+          <p className={styles.muted}>{tartine ? t('Pour une portion de tartine','For one toast portion') : t(`Pour une portion de ${portionName(1)}`,`For one ${portionName(1)}`)} · ≈ {kcal(detail)} kcal · {t('pain inclus','bread included')}</p>
           <h3>{t('Pain','Bread')}</h3><p>{breadName} · {detail.breadSlices?`${detail.breadSlices} ${t('tranches','slices')} · `:''}≈ {detail.breadGrams} g</p>
           <p className={styles.muted}>{t('Calories estimées avec des aliments génériques ; le pain et les marques peuvent modifier le résultat.','Calories use generic food estimates; bread and brands can change the result.')}</p>
-          <h3>{tartine ? t('Garnitures par portion','Toppings per portion') : t('Garnitures par sandwich','Fillings per sandwich')}</h3>
-          <p className={styles.muted}>{t('Ajustez les grammes ; 0 retire un ingrédient. Les courses et calories suivent vos changements.','Adjust grams; 0 removes an ingredient. Shopping quantities and calories follow your changes.')}</p>
+          <h3>{tartine ? t('Garnitures par portion','Toppings per portion') : t('Garnitures par portion','Fillings per portion')}</h3>
+          <p className={styles.muted}>{t('Ajustez les quantités ; 0 retire un ingrédient.','Adjust quantities; 0 removes an ingredient.')}</p>
           {detail.ingredients.map(item=>{
             const grams=snapshot.ingredientOverrides?.[detail.id]?.[item.ingredientId]??item.grams;
             const setGrams=(value:number)=>onChange(updateSandwichRecipe({...snapshot,familyId:family.id},detail.id,count(snapshot.qtys[detail.id]),{...snapshot.ingredientOverrides?.[detail.id],[item.ingredientId]:Number.isFinite(value)?Math.max(0,Math.min(500,value)):item.grams}));

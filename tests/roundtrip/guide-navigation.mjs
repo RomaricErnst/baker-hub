@@ -18,21 +18,26 @@ window.mountGuide=(style='neapolitan')=>{
 const dom=new JSDOM('<div id="progress"></div><div id="root"></div>',{url:'https://bakerhub.app',runScripts:'outside-only',pretendToBeVisual:true});
 const w=dom.window;w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.eval(bundle.outputFiles[0].text);
 const settle=()=>new Promise(r=>setTimeout(r,200));
+// Concurrent suites can delay React commits; wait for observable state, never weaken it.
+async function expectEventually(assertion){
+ const deadline=Date.now()+5000;
+ while(true){try{assertion();return;}catch(error){if(Date.now()>=deadline)throw error;await new Promise(r=>setTimeout(r,25));}}
+}
 const click=async(label)=>{const b=[...w.document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||b.textContent).includes(label));assert.ok(b,label);b.click();await settle();};
 const visible=()=>[...w.document.querySelectorAll('[data-guide-step]')].filter(e=>!e.hidden&&e.style.display!=='none');
 for(const style of ['neapolitan','pain_campagne','piadina']){
  w.localStorage.clear();let app=w.mountGuide(style);await settle();
- assert.ok(visible().length>1,'first visit is overview');
+ await expectEventually(()=>assert.ok(visible().length>1,'first visit is overview'));
  assert.match(w.document.body.textContent,/Start preparation/);
  if(style==='neapolitan')assert.match(w.document.body.textContent,/Fold 1/);
- await click('Start preparation');assert.equal(visible().length,1);
- await click('Overview');const target=visible()[1];const title=target.dataset.guideTitle;
- target.querySelector('button').click();await settle();assert.equal(visible()[0].dataset.guideTitle,title);
+ await click('Start preparation');await expectEventually(()=>assert.equal(visible().length,1));
+ await click('Overview');await expectEventually(()=>assert.ok(visible().length>1));const target=visible()[1];const title=target.dataset.guideTitle;
+ target.querySelector('button').click();await settle();await expectEventually(()=>assert.equal(visible()[0]?.dataset.guideTitle,title));
  assert.equal(w.document.querySelector('input[type=checkbox]')?.checked,false,'browsing does not complete');
- await click('Overview');await click('Resume preparation');assert.equal(visible()[0].dataset.guideTitle,title);
- app.render('preparation',false);await settle();app.render();await settle();assert.equal(visible()[0].dataset.guideTitle,title);
- app.render('cooking');await settle();app.render('preparation');await settle();assert.equal(visible()[0].dataset.guideTitle,title);
- app.unmount();await settle();app=w.mountGuide(style);await settle();assert.equal(visible().length,1);assert.equal(visible()[0].dataset.guideTitle,title,'reload resumes browsed step');
+ await click('Overview');await click('Resume preparation');await expectEventually(()=>assert.equal(visible()[0]?.dataset.guideTitle,title));
+ app.render('preparation',false);await settle();app.render();await settle();await expectEventually(()=>assert.equal(visible()[0]?.dataset.guideTitle,title));
+ app.render('cooking');await settle();app.render('preparation');await settle();await expectEventually(()=>assert.equal(visible()[0]?.dataset.guideTitle,title));
+ app.unmount();await settle();app=w.mountGuide(style);await settle();await expectEventually(()=>assert.equal(visible().length,1));assert.equal(visible()[0].dataset.guideTitle,title,'reload resumes browsed step');
  app.unmount();await settle();console.log('PASS overview and resume:',style);
 }
 w.close();

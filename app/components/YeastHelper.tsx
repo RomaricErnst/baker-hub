@@ -60,8 +60,8 @@ const IDENTIFY = (fr: boolean) => [
   },
   {
     id: 'sourdough' as YeastType,
-    name: fr ? 'Levain' : 'Sourdough', dose: '—',
-    look: fr ? 'Culture de farine et d’eau entretenue par des rafraîchis' : 'A flour-and-water culture maintained with feeds',
+    name: fr ? 'Levain liquide · 100 %' : 'Liquid starter · 100%' , dose: '—',
+    look: fr ? 'Autant d’eau que de farine, en poids (100 % d’hydratation)' : 'Equal weights of water and flour (100% hydration)',
     label: fr ? '« Levain actif », « Sourdough starter »' : '“Active starter”, “Sourdough starter”, “Levain”',
     pro: fr ? 'Prévoyez le rafraîchi pour que le levain soit prêt au mélange.' : 'Time the feed so your starter is ready for mixing.',
     con: fr ? 'Vérifiez sa montée et ses bulles ; le temps seul ne suffit pas.' : 'Check its rise and bubbles; time alone is not enough.',
@@ -167,7 +167,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
     { id: 'instant',    image: '/images/approved/leavening-v2/instant.webp',   title: t('idy.title'),       tagline: t('idy.tagline') },
     { id: 'active_dry', image: '/images/approved/leavening-v2/active-dry.webp',    title: t('ady.title'),       tagline: t('ady.tagline') },
     { id: 'fresh',      image: '/images/approved/leavening-v2/fresh.webp',     title: t('fresh.title'),     tagline: t('fresh.tagline') },
-    { id: 'sourdough',  image: '/images/approved/leavening-v2/starter.webp', title: t('sourdough.title'), tagline: t('sourdough.tagline') },
+    { id: 'sourdough',  image: '/images/approved/leavening-v2/starter.webp', title: locale === 'fr' ? 'Levain liquide · 100 %' : 'Liquid starter · 100%', tagline: locale === 'fr' ? 'Autant d’eau que de farine, en poids.' : 'Equal weights of water and flour.' },
   ];
 
   const sourdoughRecommended = ['pain_levain', 'pain_campagne', 'sourdough'].includes(styleKey ?? '');

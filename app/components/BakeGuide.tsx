@@ -29,6 +29,7 @@ interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   styleKey: string;
   kitchenTemp: number;
   mixingBatches?: number;
+  mixerCapacityG?: number;
   onMixingBatchesChange?: (count: number) => void;
   fridgeTemp?: number;
   waterSource?: WaterSource;
@@ -70,8 +71,8 @@ interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
 // ── Design tokens ────────────────────────────────────
 const D = {
   char: '#2B2420', ash: '#3D3530', cream: '#F0EBE0',
-  terra: '#6B4423', gold: '#9C8248', sage: '#6B7A5A',
-  smoke: '#8A7F78', border: '#E8E0D5', warm: '#FDFBF7',
+  terra: '#6B4423', gold: '#9C8248', sage: '#526446',
+  smoke: '#6D625C', border: '#E8E0D5', warm: '#FDFBF7',
 };
 
 // ── Section sub-component ────────────────────────────
@@ -215,7 +216,7 @@ function StepCard({
   return (
     <section ref={divRef} data-guide-step={number} data-guide-phase={stepPhase} data-guide-title={title} hidden={hidden} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${displayNumber}`} style={{ display: !hidden && (open || overview) ? undefined : 'none', background: D.warm, borderRadius: 0,
       border: 'none', borderBottom: overview ? `1px solid ${D.border}` : undefined, scrollMarginTop: 140 }}>
-      <TitleContainer type={overview ? "button" : undefined} onClick={overview ? onToggle : undefined} aria-label={overview ? `${fr ? 'Voir' : 'View'} : ${title}` : undefined}
+      <TitleContainer type={overview ? "button" : undefined} onClick={overview ? onToggle : undefined}
          style={{ width: '100%', display: 'flex', gap: 12,
           alignItems: 'center', minHeight:44, padding: overview ? '12px 0' : '0 0 16px', border: 0, background: 'transparent', textAlign: 'left', cursor: overview ? 'pointer' : 'default', color: D.char }}>
         <span aria-hidden="true" style={{ display: overview ? undefined : 'none', color: done ? D.sage : D.terra, minWidth: 18, textAlign: 'center' }}>{done ? '✓' : displayNumber}</span>
@@ -223,11 +224,11 @@ function StepCard({
         <span style={{ flex: 1 }}>
           <strong role={overview?undefined:'heading'} aria-level={overview?undefined:2} style={{ display: 'block', fontSize: overview ? 15 : 28, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}</strong>
           {!overview && !externalProgress && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {displayNumber}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
-          {time && <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: D.smoke }}>
+          {time && <span style={{ display: 'block', marginTop: 4, fontSize: 14, color: D.smoke }}>
             {formatTime(time, locale)}{duration ? ` · ${overview ? (passive ? (fr ? 'repos ' : 'rest ') : (fr ? 'durée ' : 'duration ')) : ''}${duration < 1 ? `${Math.round(duration * 60)} min` : hoursLabel(duration)}` : ''}
           </span>}
-          {overview && overviewNote && <span style={{display:'block',fontSize:12,lineHeight:1.5,color:D.terra,marginTop:4}}>{overviewNote}</span>}
-          {done && <span style={{ fontSize: 12, color: D.sage }}>{fr ? 'Terminé' : 'Completed'}</span>}
+          {overview && overviewNote && <span style={{display:'block',fontSize:14,lineHeight:1.5,color:D.terra,marginTop:4}}>{overviewNote}</span>}
+          {done && <span style={{ fontSize: 14, color: D.sage }}>{fr ? 'Terminé' : 'Completed'}</span>}
         </span>
         {overview && <span aria-hidden="true">{'›'}</span>}
       </TitleContainer>
@@ -262,10 +263,10 @@ function LearnLink({ term, label, onOpen, showSparkle = false }: {
       onClick={() => onOpen(term)}
       style={{
         background: 'none', border: 'none', cursor: 'pointer',
-        color: D.terra, fontSize: '12px',
+        color: D.terra, fontSize: '14px',
         fontFamily: 'var(--font-ui)',
         textDecoration: 'underline', textUnderlineOffset: '2px',
-        padding: 0, display: 'inline-flex', alignItems: 'center',
+        minHeight: 44, minWidth: 44, padding: '8px 0', display: 'inline-flex', alignItems: 'center',
       }}
     >
       {showSparkle && <SparkleSVG />}
@@ -665,9 +666,9 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
   );
 }
 
-// ── Step extras — one disclosure, no nested controls ─────────────
+// ── Step extras — practical tips and optional questions ─────────────
 // Keeps the timeline clean: the step card shows only "what to do";
-// Secondary guidance is grouped under one help disclosure for every step.
+// Practical advice and optional troubleshooting are sibling disclosures, never nested.
 function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext }: {
   tips: React.ReactNode;
   visuals?: React.ReactNode;
@@ -702,21 +703,25 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
   };
   const helpTitle = (helpTitles[faqKey ?? coachStepId ?? ''] ?? ['Conseils pour cette étape','Tips for this step'])[l === 'fr' ? 0 : 1];
   return (
-    <details style={{ marginTop:16, borderTop:`1px solid ${D.border}`, paddingTop:8 }}>
-      <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:16}}>{helpTitle}</summary>
-      {visuals}
-      <div>{tips}</div>
-      {faq.length > 0 && <div role="group" aria-label={l === 'fr' ? 'Questions fréquentes' : 'Common questions'} style={{marginTop:20}}>
-        <h3 style={{fontSize:16,margin:'0 0 12px'}}>{l === 'fr' ? 'Questions fréquentes' : 'Common questions'}</h3>
-        {faq.map((f,i)=><div key={i} style={{marginBottom:16}}>
-          <h4 style={{fontSize:14,margin:'0 0 4px'}}>{f.q[l]}</h4>
-          <p style={{fontSize:14,lineHeight:1.6,margin:0,color:D.ash}}>{f.a[l]}</p>
-        </div>)}
-      </div>}
-      <AskMaestro stepId={coachStepId ?? faqKey ?? 'mix'} stepTitle={coachTitle}
-        styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType}
-        locale={locale} ovenType={ovenType} recipeContext={recipeContext}/>
-    </details>
+    <div>
+      <details style={{ marginTop:16, borderTop:`1px solid ${D.border}`, paddingTop:8 }}>
+        <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:16}}>{helpTitle}</summary>
+        {visuals}
+        <div>{tips}</div>
+      </details>
+      <details style={{marginTop:8}}>
+        <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:14,color:D.terra}}>{l === 'fr' ? 'Autres questions' : 'More questions'}</summary>
+        {faq.length > 0 && <div role="group" aria-label={l === 'fr' ? 'Questions fréquentes' : 'Common questions'} style={{marginTop:12}}>
+          {faq.map((f,i)=><div key={i} style={{marginBottom:16}}>
+            <h3 style={{fontSize:14,margin:'0 0 4px'}}>{f.q[l]}</h3>
+            <p style={{fontSize:14,lineHeight:1.6,margin:0,color:D.ash}}>{f.a[l]}</p>
+          </div>)}
+        </div>}
+        <AskMaestro stepId={coachStepId ?? faqKey ?? 'mix'} stepTitle={coachTitle}
+          styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType}
+          locale={locale} ovenType={ovenType} recipeContext={recipeContext}/>
+      </details>
+    </div>
   );
 }
 
@@ -762,8 +767,8 @@ const TERM_TO_STEPID: Record<string, string> = {
 };
 
 export default function BakeGuide({
-  onSave,onShare,sessionSaved,onBakedChange,completionEnabled=true,
-  schedule, mixerType, styleKey, kitchenTemp, fridgeTemp = 4, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, onMixingBatchesChange, waterSource = 'room', onWaterSourceChange, numItems,
+  onSave,onShare,onRepeat,resultNotes,onResultNotesChange,sessionSaved,onBakedChange,completionEnabled=true,
+  schedule, mixerType, styleKey, kitchenTemp, fridgeTemp = 4, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, mixerCapacityG, onMixingBatchesChange, waterSource = 'room', onWaterSourceChange, numItems,
   prefermentType, oil, hydration, ovenType, ovenConstruction, prefStartTime, feedTime, starterEvents,
   feed2Time = null, fridgeOutTime = null,
   starterState = 'rt_fed', starterMature = true, starterHasRye = false,
@@ -783,7 +788,7 @@ export default function BakeGuide({
   const [loadedProgressKey,setLoadedProgressKey]=useState<string|null>(null);
   const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
   const [activeBatch, setActiveBatch] = useState(0);
-  const batch = recipe ? mixingBatchPlan(recipe, mixerType, mixingBatches, activeBatch) : null;
+  const batch = recipe ? mixingBatchPlan(recipe, mixerType, mixingBatches, activeBatch, mixerCapacityG) : null;
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const focusRequestedStep = useRef<number | null>(null);
   const previousGuideView = useRef({active:false,phase});
@@ -939,6 +944,11 @@ export default function BakeGuide({
     raw.setMinutes(Math.round(raw.getMinutes() / 15) * 15, 0, 0);
     return raw;
   })();
+  const currentMixWindow = batch && batch.count > 1 ? schedule.batchMixWindows?.[batch.active] : undefined;
+  const displayedMixTime = currentStep !== 0 && currentMixWindow ? currentMixWindow.start : schedule.batchMixWindows?.[0]?.start ?? bgMixStart;
+  const displayedMixDuration = currentStep !== 0 && currentMixWindow ? (+currentMixWindow.end - +currentMixWindow.start) / 3600000 : schedule.mixingDurationH;
+  const mixingOverviewNote = batch && batch.count > 1 ? (l === 'fr' ? `${batch.count} pétrissées à la suite` : `${batch.count} consecutive batches`) : undefined;
+  const serialMixNote = batch && batch.count > 1 ? <p>{l === 'fr' ? 'Pétrissez les lots à la suite. Les premiers fermentent pendant les suivants : surveillez chaque lot ; les horaires de repos sont communs.' : 'Mix the batches one after another. Earlier batches ferment while you mix the next ones: check each batch; the rest schedule is shared.'}</p> : null;
   const bgPoolishG = batch?.portion.preferment || null;
   // Compact recipe facts for Maestro — so it explains the plan's own numbers
   // (e.g. "0.3g IDY is correct for a 31h cold ferment") instead of guessing
@@ -1077,7 +1087,8 @@ Actual dough condition and equipment may differ from these estimates.`;
       {progressControl}
       {overviewAction}
       {!progressTarget&&<button type="button" onClick={() => setCurrentStep(0)} style={{minHeight:44,padding:'8px 16px',border:`1px solid ${D.border}`,borderRadius:10,background:D.warm}}>{overviewLabel}</button>}
-      <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={l === 'fr' ? 'Pétrir la pâte' : 'Mix the dough'} time={bgMixStart} duration={schedule.mixingDurationH}>
+      <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={l === 'fr' ? 'Pétrir la pâte' : 'Mix the dough'} time={displayedMixTime} duration={displayedMixDuration} overviewNote={mixingOverviewNote}>
+        {serialMixNote}
         <Section icon="" title={l === 'fr' ? 'À mélanger' : 'Use now'}>
           {batch && Object.entries(batch.portion).filter(([,grams]) => grams > 0).map(([key,grams]) => <p key={key}>{({flour:l === 'fr' ? 'Farine' : 'Flour',water:l === 'fr' ? 'Eau' : 'Water',salt:l === 'fr' ? 'Sel' : 'Salt',oil:l === 'fr' ? 'Huile' : 'Oil',sugar:l === 'fr' ? 'Sucre' : 'Sugar'} as Record<string,string>)[key] ?? key} · {Math.round(grams)} g</p>)}
           <Steps items={[{bold:l === 'fr' ? 'Mélangez la farine, le sel, l’eau et la matière grasse mesurés. Pétrissez jusqu’à obtenir une pâte lisse et souple.' : 'Combine the measured flour, salt, water and fat. Knead until smooth and pliable.',note:''}]} />
@@ -1098,7 +1109,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         <Steps items={profileSteps(breadProtocol.cooling[l])} />
         {fillingsAction}
       </StepCard>
-      {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} sessionSaved={sessionSaved}/>}
+      {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange} sessionSaved={sessionSaved}/>}
     </div>
   </SimpleModeCtx.Provider>;
 
@@ -1388,8 +1399,9 @@ Actual dough condition and equipment may differ from these estimates.`;
 
       {/* ── STEP: Mix Dough ─────────────────────────── */}
       <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={t('stepTitles.mixDough')}
-        time={bgMixStart} duration={schedule.mixingDurationH} accent={D.ash}>
+        time={displayedMixTime} duration={displayedMixDuration} overviewNote={mixingOverviewNote} accent={D.ash}>
 
+        {serialMixNote}
         {batch && <Section icon="" title={batch.count > 1 ? (l === 'fr' ? `Pétrissée ${batch.active + 1} sur ${batch.count}` : `Batch ${batch.active + 1} of ${batch.count}`) : (l === 'fr' ? 'À mélanger' : 'Use now')}>
           {Object.entries(batch.portion).filter(([key,grams]) => grams > 0 && !(key === 'flour' && recipe?.flourParts?.length)).map(([key,grams]) => <div key={key} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{({milk:l==='fr'?'Lait':'Milk',eggs:l==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:l==='fr'?'Beurre':'Butter',flour:l==='fr'?'Farine':'Flour',water:l==='fr'?'Eau':'Water',salt:l==='fr'?'Sel':'Salt',oil:l==='fr'?'Huile':'Oil',sugar:l==='fr'?'Sucre':'Sugar',yeast:l==='fr'?'Levure':'Yeast',starter:l==='fr'?'Levain':'Starter',preferment:prefermentType ?? 'Preferment'} as Record<string,string>)[key]}</span><strong>{grams} g</strong></div>)}
           {!!recipe?.flourParts?.length && (() => {
@@ -2070,7 +2082,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         {!breadProtocol && <StepExtras tips={null} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />}
         {fillingsAction}
       </StepCard>}
-      {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} sessionSaved={sessionSaved}/>}
+      {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange} sessionSaved={sessionSaved}/>}
 
       {learnTerm && (
         <LearnModal

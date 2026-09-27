@@ -1,5 +1,5 @@
 'use client';
-import JourneyCompletion from '../JourneyCompletion';
+import JourneyCompletion, { type CompletionActions } from '../JourneyCompletion';
 import { approvedPizzaImage } from '../../lib/approvedPizzaImage';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
@@ -161,7 +161,7 @@ function getOvenGuidance(ovenType: string | undefined, ovenTemp: OvenTempKey, l:
 }
 
 
-interface BakeTabProps {
+interface BakeTabProps extends CompletionActions {
   selectedPizzas: Record<string, number>;
   locale: string;
   styleKey?: string;
@@ -437,7 +437,7 @@ function CoachButton({
   );
 }
 
-export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp, prefermentType, bakeEventId, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onBakedQtysChange, initialDoneCounts }: BakeTabProps) {
+export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp, prefermentType, bakeEventId, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onRepeat, resultNotes, onResultNotesChange, saveKind, onBakedQtysChange, initialDoneCounts }: BakeTabProps) {
   const t = useTranslations('bake');
   const l = locale as 'en' | 'fr';
   const [sheetPizzaId, setSheetPizzaId] = useState<string | null>(null);
@@ -496,7 +496,9 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
     .filter((e): e is { pizza: Pizza; qty: number } => e !== null);
 
   const totalOrdered = selectedEntries.reduce((acc, e) => acc + e.qty, 0);
-  const totalDone = Object.values(doneCounts).reduce((a, b) => a + b, 0);
+  const totalDone = selectedEntries.reduce((sum, {pizza, qty}) => sum + Math.min(qty, Math.max(0, doneCounts[pizza.id] ?? 0)), 0);
+  const extraDone = selectedEntries.reduce((sum, {pizza, qty}) => sum + Math.max(0, (doneCounts[pizza.id] ?? 0) - qty), 0);
+  const allSelectedDone = selectedEntries.length > 0 && selectedEntries.every(({pizza, qty}) => (doneCounts[pizza.id] ?? 0) >= qty);
 
   function changeDoneCount(pizzaId: string, delta: number) {
     setDoneCounts(prev => {
@@ -610,19 +612,20 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
           <div style={{ marginBottom: '16px' }}>
             <div style={{
               fontFamily: 'var(--font-ui)', fontSize: '11px',
-              color: totalDone >= totalOrdered ? '#6B7A5A' : 'var(--smoke)',
+              color: allSelectedDone ? '#6B7A5A' : 'var(--smoke)',
               marginBottom: '8px',
             }}>
-              {totalDone >= totalOrdered
+              {allSelectedDone
                 ? (l === 'fr' ? 'Toutes les pizzas cuites !' : 'All pizzas baked!')
                 : (l === 'fr'
                   ? `${totalDone} / ${totalOrdered} cuites`
                   : `${totalDone} / ${totalOrdered} baked`)}
             </div>
+            {extraDone > 0 && <p style={{fontSize:12,color:'var(--smoke)',margin:'0 0 8px'}}>{l === 'fr' ? `+ ${extraDone} hors quantité prévue` : `+ ${extraDone} beyond planned quantity`}</p>}
             <div style={{ height: '4px', borderRadius: '2px', background: 'var(--border)' }}>
               <div style={{
                 height: '100%', borderRadius: '2px',
-                background: totalDone >= totalOrdered ? '#6B7A5A' : 'var(--terra)',
+                background: allSelectedDone ? '#6B7A5A' : 'var(--terra)',
                 width: `${Math.min(100, (totalDone / totalOrdered) * 100)}%`,
                 transition: 'width 0.3s ease',
               }} />
@@ -736,7 +739,7 @@ export default function BakeTab({ selectedPizzas, locale, styleKey, kitchenTemp,
           offered from the first baked pizza — real parties change plans, and a
           half-baked evening is still worth keeping. */}
       {selectedEntries.length > 0 && totalDone > 0 && (onShare || onSave || onEnsureBakeEvent) && (
-        <JourneyCompletion isFr={l==='fr'} complete={false} onSave={onSave ?? onEnsureBakeEvent} onShare={onShare} sessionSaved={sessionSaved}/>
+        <JourneyCompletion isFr={l==='fr'} complete={allSelectedDone} onSave={onSave ?? onEnsureBakeEvent} onShare={onShare} sessionSaved={sessionSaved} onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange} saveKind={saveKind}/>
       )}
       {sheetPizzaId && sheetEntry && (() => {
         const { pizza, qty } = sheetEntry;

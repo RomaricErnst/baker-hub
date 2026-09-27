@@ -61,6 +61,12 @@ test('spiral mixing groups both visual cues and keeps secondary guidance behind 
  for(const tag of html.match(/<\/?details\b[^>]*>/g)||[]){depth+=tag.startsWith('</')?-1:1;assert.ok(depth<=1,'help must never require opening a nested disclosure');}
  const help=html.indexOf('Kneading tips');
  assert.ok(html.indexOf('windowpane-v1.webp',help)>help,'visual cue is inside the shared help');
+ const helpEnd=html.indexOf('</details>',help);
+ assert.ok(html.indexOf('More questions',help)>helpEnd,'troubleshooting has a separate sibling entry');
+ assert.ok(html.indexOf('Common questions',help)>helpEnd,'opening practical tips does not expose the entire FAQ');
+ const membrane=[...html.matchAll(/<button([^>]*)>([\s\S]*?)<\/button>/g)].find(([,attributes,content])=>content.includes('Windowpane test'));
+ assert.ok(membrane,'technique link is retained');
+ assert.match(membrane[1],/min-height:44px/);
  assert.doesNotMatch(html,/streaks that kneading will not remove|do not add more before 20 minutes/);
 });
 
@@ -143,4 +149,16 @@ test('pizza service help is one inline disclosure in both languages',()=>{
    assert.equal((html.match(/animation:slideUpSheet/g)||[]).length,1,'only the pizza card opens as a sheet');
   }
  } finally {React.useState=original;Module._resolveFilename=previousResolve;}
+});
+
+
+test('preparation overview exposes readable timing in the native button name',()=>{
+ const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-24T18:00Z'),[],22,60,'hand','neapolitan');
+ const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,{schedule,mixerType:'hand',styleKey:'neapolitan',kitchenTemp:22,numItems:4,oil:0,hydration:65,locale:'en',phase:'preparation'})));
+ const rows=[...html.matchAll(/<button([^>]*)>([\s\S]*?)<\/button>/g)].filter(row=>row[2].includes('<strong')&&row[2].includes('font-size:14px'));
+ assert.ok(rows.length>0,'overview presents timed step buttons');
+ for(const [,attributes,content] of rows){
+  assert.doesNotMatch(attributes,/aria-label=/,'native title, time and completion content must remain the accessible name');
+  assert.match(content,/font-size:14px;color:#6D625C/);
+ }
 });

@@ -24,6 +24,15 @@ export const SANDWICH_FAMILIES: SandwichFamilyInfo[] = [
   family('piadina','Piadina','Piadina',90,330,750), family('pan_bagnat','Pain à pan bagnat','Pan bagnat roll',100,275,700),
   family('ciabatta','Ciabatta','Ciabatta',100,270,700), family('panuozzo','Panuozzo','Panuozzo',110,270,800),
 ];
+/** Purchasing estimate only; recipe quantities and nutrition remain cooked weights.
+ * USDA Food Buying Guide, boneless skinless breast tenderloins: 0.73 lb cooked / lb raw.
+ * https://foodbuyingguide.fns.usda.gov/files/Reports/USDA_FBG_Section1_MeatsAndMeatAlternates_YieldTable.pdf
+ * Used as an approximate yield for breast strips; cut/cooking losses vary. Round up to 10 g.
+ */
+export function estimateRawChickenPurchase(cookedGrams:number):number {
+  return Number.isFinite(cookedGrams)&&cookedGrams>0 ? Math.ceil(cookedGrams / 0.73 / 10)*10 : 0;
+}
+
 const USDA = 'https://fdc.nal.usda.gov/';
 const CIQUAL = 'https://ciqual.anses.fr/';
 type IngredientRow = [string,string,string,number,SandwichIngredient['category'],SandwichAllergen[]?,boolean?,string?];
@@ -54,7 +63,7 @@ const ingredientRows: IngredientRow[] = [
  ['salt','Sel','Salt',0,'pantry'],['black_pepper','Poivre noir','Black pepper',251,'pantry'],
  ['white_bean','Haricots blancs cuits égouttés','Drained cooked white beans',114,'protein'],['falafel','Falafels déjà cuits','Cooked falafel',333,'protein',[],true],
  ['hummus','Houmous au tahini','Tahini hummus',237,'pantry',['sesame']],['tahini','Tahini','Tahini',595,'pantry',['sesame']],
- ['mozzarella','Mozzarella égouttée','Drained mozzarella',250,'dairy',['milk']],['burrata','Burrata égouttée','Drained burrata',300,'dairy',['milk']],
+ ['mozzarella','Mozzarella (poids égoutté)','Mozzarella (drained weight)',250,'dairy',['milk']],['burrata','Burrata égouttée','Drained burrata',300,'dairy',['milk']],
  ['cream_cheese','Fromage frais à tartiner','Cream cheese',240,'dairy',['milk']],['ricotta','Ricotta','Ricotta',174,'dairy',['milk']],
  ['feta','Feta','Feta',265,'dairy',['milk']],['goat_cheese','Fromage de chèvre','Goat cheese',280,'dairy',['milk']],
  ['emmental','Emmental','Emmental',380,'dairy',['milk']],['brie','Brie','Brie',334,'dairy',['milk']],
@@ -182,10 +191,13 @@ export function buildSandwichSteps(id: string, familyId: SandwichFamily, ingredi
     const names = (ids: string[], lang: 'fr' | 'en') => ids.filter(has).map(key=>SANDWICH_INGREDIENTS[key].name[lang].toLowerCase()).join(', ');
     if (id==='pain_mie-club-sandwich') {
       const vegetables=['lettuce','tomato'];
+      if (has('chicken')) add('cook-chicken','Cuire le poulet','Cook the chicken',
+        'Ne rincez pas le poulet cru. Sur une planche séparée, découpez-le en lanières, puis lavez mains, planche et ustensiles. Faites cuire à la poêle antiadhésive environ 6–10 min par fournée, en retournant ; ajoutez un peu d’eau si nécessaire. Vérifiez au thermomètre au moins 74 °C à cœur. Pesez la quantité cuite indiquée, puis réfrigérez rapidement dans un récipient peu profond à 4 °C ou moins pour la garniture froide. Si vous avez déjà du poulet cuit prêt à consommer, passez cette cuisson.',
+        'Do not rinse raw chicken. Cut into strips on a separate board, then wash hands, board and utensils. Cook in a non-stick pan for about 6–10 minutes per batch, turning; add a little water if needed. Check at least 74°C at the centre with a thermometer. Weigh the listed cooked amount, then refrigerate promptly in a shallow container at 4°C or below for the cold filling. If you have ready-to-eat cooked chicken, skip cooking.',10,'cook');
       const meats=['chicken','bacon_cooked'];
       add('prep','Préparer la garniture froide','Prepare the cold filling',
-        ['Pesez les garnitures pour toutes les portions.',vegetables.some(has)?`Lavez et séchez ${names(vegetables,'fr')}.`:'',has('tomato')?'Coupez la tomate en fines rondelles et épongez son jus.':'',meats.some(has)?`Utilisez uniquement les produits déjà cuits et prêts à consommer : ${names(meats,'fr')}. Les poids indiqués sont cuits ; émincez-les sur une planche propre.`:'','Gardez les garnitures périssables au réfrigérateur à 4 °C ou moins jusqu’au montage.'].filter(Boolean).join(' '),
-        ['Weigh the fillings for all portions.',vegetables.some(has)?`Wash and dry ${names(vegetables,'en')}.`:'',has('tomato')?'Thinly slice the tomato and blot away its juice.':'',meats.some(has)?`Use only the already cooked, ready-to-eat products: ${names(meats,'en')}. Listed weights are cooked; slice on a clean board.`:'','Refrigerate perishable fillings at 4°C or below until assembly.'].filter(Boolean).join(' '),6,'prep');
+        ['Pesez les garnitures pour toutes les portions.',vegetables.some(has)?`Lavez et séchez ${names(vegetables,'fr')}.`:'',has('tomato')?'Coupez la tomate en fines rondelles et épongez son jus.':'',meats.some(has)?`Utilisez les garnitures cuites et refroidies : ${names(meats,'fr')}. Les poids indiqués sont cuits ; émincez-les sur une planche propre.`:'','Gardez les garnitures périssables au réfrigérateur à 4 °C ou moins jusqu’au montage.'].filter(Boolean).join(' '),
+        ['Weigh the fillings for all portions.',vegetables.some(has)?`Wash and dry ${names(vegetables,'en')}.`:'',has('tomato')?'Thinly slice the tomato and blot away its juice.':'',meats.some(has)?`Use the cooked, cooled fillings: ${names(meats,'en')}. Listed weights are cooked; slice on a clean board.`:'','Refrigerate perishable fillings at 4°C or below until assembly.'].filter(Boolean).join(' '),6,'prep');
       // Every bread-dependent action belongs to serving; the preparation screen runs before the loaf is baked.
       add('toast','Trancher et toaster le pain refroidi','Slice and toast the cooled bread',
         'Attendez que le pain de mie soit cuit et complètement refroidi. Par club, prévoyez 3 tranches d’environ 30 g chacune, soit 90 g de pain cuit. Toastez-les légèrement des deux côtés, puis laissez retomber la chaleur sur une grille. Une portion est un club à deux étages, pas un pain entier.',

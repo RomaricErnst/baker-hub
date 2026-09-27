@@ -2,11 +2,12 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript');
 const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
-const handler=source.slice(source.indexOf('  async function shareCurrentSession() {'),source.indexOf('  function firstIncompleteStep'));
+const saveHandler=source.slice(source.indexOf('  async function saveCurrentSession()'),source.indexOf('  // Nomme la fournée'));
+const handler=saveHandler+'\n'+source.slice(source.indexOf('  async function shareCurrentSession() {'),source.indexOf('  function firstIncompleteStep'));
 async function share({id=null,success=true,user={id:'baker'}}={}) {
  const calls=[],state={};
  const snapshot={recipeGenerated:true,startTime:123,starterEvents:[{kind:'pre_mix',time:100}],lastFedTime:80,planningMode:'last_fed',measuredFlourTemp:18,measuredPrefermentTemp:21,mixingBatches:2,pizzaParty:{qtys:{margherita:3}},sandwichParty:{familyId:'baguette',qtys:{'baguette-jambon-beurre':2},completed:{},shopTicks:{},prepTicks:{},tab:'prep'},activeTab:'guide'};
- const context={bakeEventId:id,user,buildSessionPayload:()=>snapshot,require:()=>({saveNamedSession:async data=>{calls.push(['insert',data]);return success?'new-id':null;},updateBakeEvent:async(key,data)=>{calls.push(['update',key,data]);return success;}}),stashAuthIntent:value=>calls.push(['auth',value]),window:{dispatchEvent:event=>calls.push(['event',event.type])},Event:class{constructor(type){this.type=type;}}};
+ const context={setTimeout(){},console:{error(){}},cloudSaveInFlight:{current:false},savedCloudIdRef:{current:null},latestSessionPayloadRef:{current:JSON.stringify(snapshot)},pizzaPartyGetQtysRef:{current:()=>({})},pizzaPartyQtys:{},saveSession:()=>true,sessionLabel:()=> 'test bake',styleKey:'neapolitan',bakeEventId:id,user,buildSessionPayload:()=>snapshot,require:()=>({saveNamedSession:async data=>{calls.push(['insert',data]);return success?'new-id':null;},updateBakeEvent:async(key,data)=>{calls.push(['update',key,data]);return success;}}),stashAuthIntent:value=>calls.push(['auth',value]),window:{dispatchEvent:event=>calls.push(['event',event.type])},Event:class{constructor(type){this.type=type;}}};
  for(const name of new Set(handler.match(/\bset[A-Z]\w*/g)))context[name]=value=>state[name]=value;
  const code=ts.transpileModule(handler+'\nshareCurrentSession()', {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
  await vm.runInNewContext(code,context);

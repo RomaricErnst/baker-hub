@@ -56,3 +56,14 @@ test('a richer customized filling cannot retain the original lighter classificat
   assert.equal(isLighterSandwich(recipe),true);
   assert.equal(isLighterSandwich(recipe,{olive_oil:100}),false);
 });
+
+test('raw chicken purchasing estimate is separate from cooked portion nutrition and removed chicken needs no purchase',()=>{
+ const {estimateRawChickenPurchase}=require('../app/lib/sandwichCatalog.ts');
+ assert.equal(estimateRawChickenPurchase(73),100);
+ assert.equal(estimateRawChickenPurchase(240),330);
+ assert.equal(estimateRawChickenPurchase(0),0);
+ assert.equal(estimateRawChickenPurchase(NaN),0);
+ const recipe=recipes.find(r=>r.id==='laffa-shawarma-poulet');
+ assert.equal(aggregateSandwichShopping({[recipe.id]:2},{},'laffa').find(i=>i.ingredientId==='chicken').grams,240);
+ assert.ok(!aggregateSandwichShopping({[recipe.id]:2},{[recipe.id]:{chicken:0}},'laffa').some(i=>i.ingredientId==='chicken'));
+});

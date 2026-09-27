@@ -26,3 +26,15 @@ test('first and additional flour routes use identical catalogue and selected pro
  assert.match(source,/<FlourProductButton entry=\{blendSelectedF3\} selected/);
  assert.ok(!source.includes('Popular with {styleKey'));
 });
+
+test('exact additions support 1–4 percent while preserving other additions and total',()=>{
+ const fn=tree.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='adjustBlendPercentage');
+ const mod={exports:{}};vm.runInNewContext(ts.transpileModule(fn.getText(tree),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{exports:mod.exports,module:mod});
+ const adjust=mod.exports.adjustBlendPercentage;
+ for(const target of [1,2,3,4]){
+  const next=adjust([80,15,5],1,target);
+  assert.equal(next[1],target);assert.equal(next[2],5);assert.equal(next.reduce((a,b)=>a+b,0),100);
+ }
+ assert.deepEqual(Array.from(adjust([80,15,5],2,999)),[1,15,84]);
+ assert.deepEqual(Array.from(adjust([80,15,5],2,NaN)),[80,15,5]);
+});

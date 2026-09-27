@@ -1,4 +1,5 @@
 'use client';
+import { DRAINED_MOZZARELLA_IDS, mozzarellaShoppingNote } from '../lib/ingredientWeights';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { NEXT_CTA, SECONDARY_CTA } from '../lib/navButtons';
 import { createClient } from '@/app/lib/supabase/client';
@@ -1036,7 +1037,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
         const tick = ticked[item.id] ? '✓' : '';
         const name = item.name[l] ?? item.name.en;
         const qty = item.totalAmount && item.unit ? formatQty(item.totalAmount, item.unit, locale) : '';
-        text += `${tick} ${name}${qty ? '  —  ' + qty : ''}\n`;
+        text += `${tick} ${name}${qty ? '  —  ' + qty : ''}${DRAINED_MOZZARELLA_IDS.has(item.id)?' · '+mozzarellaShoppingNote(item.unit)[l]:''}\n`;
       });
       text += '\n';
     });
@@ -1276,8 +1277,8 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                         </span>
                       </div>
 
-                      {item.qtyNote && (
-                        <div style={{ fontSize: '11px', color: '#A09890', marginTop: '1px' }}>{item.qtyNote}</div>
+                      {(item.qtyNote || DRAINED_MOZZARELLA_IDS.has(item.id)) && (
+                        <div style={{ fontSize: '14px', color: 'var(--smoke)', marginTop: '4px', lineHeight: 1.4 }}>{DRAINED_MOZZARELLA_IDS.has(item.id)?mozzarellaShoppingNote(item.unit)[l]:item.qtyNote}</div>
                       )}
 
                       {help.available && <button type="button" onClick={() => setHelpIngredientId(item.id)}
