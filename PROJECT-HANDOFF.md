@@ -2,6 +2,8 @@
 
 ## Blake feedback — 27 September 2026
 
+Final review follow-up: 417 local unit tests and build pass. Browser verified pizza toppings selection returns to Recipe preserving4x260g, sourdough recipe counts750g total flour including105g levain flour, and autolyse18:28 precedes19:00 mixing in both schedule and guide. Remaining copy cleanup makes traditional oven naming consistent beyond the picker and removes a duplicate toppings edit button. Initial mobile failures were test harness issues (null autosave read before first save, obsolete button labels); fixed with trace evidence. Full final WebKit result and merge/deployment outcome are recorded in PR9 checks/comments; do not infer success from these local results. No physical baking/iPhone validation.
+
 Base: production PR8 merge 5e8696f, identical tree to local 1d04b9e. User approved all recommended feedback changes and explicitly requested more French rye flours with pictures. Working branch codex/blake-feedback-20260927.
 
 From-scratch quantity no longer asks about fillings. Optional compact invitation is on generated Recipe and Shopping; existing-base entry and late preparation shortcuts remain. Mobile style catalogue has its own fixed confirmation with reserved clearance (not all setup actions). Recipe summary exposes Edit my preparation, including existing mode-change access. Masonry oven label is Traditional pizza oven, with construction/fuel distinction retained. Photos, mixer capacity and mode names retained.

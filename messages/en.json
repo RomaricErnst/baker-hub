@@ -1171,7 +1171,7 @@
         "steps": [
           {
             "bold": "Plan your fire around the oven's mass",
-            "note": "light oven: ~45 min · masonry oven (brick/Panyol): 2–3 h of firing before the floor holds steady heat"
+            "note": "light oven: ~45 min · traditional brick or stone oven: 2–3 h of firing before the floor holds steady heat"
           },
           {
             "bold": "Build fire and let it burn to embers",
@@ -1227,7 +1227,7 @@
           },
           {
             "bold": "Allow the full preheat — flame active throughout",
-            "note": "light portable oven (Ooni-class): 30–45 min · masonry oven (brick/Panyol): 2–3 h — the mass must saturate, not just the surface"
+            "note": "light portable oven (Ooni-class): 30–45 min · traditional brick or stone oven: 2–3 h — the mass must saturate, not just the surface"
           }
         ],
         "pitfalls": [

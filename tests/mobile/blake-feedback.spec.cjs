@@ -18,6 +18,20 @@ for(const lang of ['fr','en'])test(`${lang}: flour quantity survives setup and r
  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
 });
 
+test('traditional pizza oven label stays consistent after selection',async({page})=>{
+ await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,body:'{}'}));
+ await page.goto('/fr');
+ await page.getByRole('button',{name:'Pizza',exact:true}).tap();
+ await page.getByRole('button',{name:'Napolitaine classique',exact:true}).tap();
+ await page.locator('.bh-style-confirm button').tap();
+ await page.getByRole('button',{name:'Définir ma recette',exact:true}).tap();
+ await page.getByRole('button',{name:/^Me laisser guider/}).tap();
+ await page.getByRole('button',{name:/^Four à pizza traditionnel/}).tap();
+ await page.getByRole('button',{name:'Continuer',exact:true}).tap();
+ await expect(page.getByText('Four à pizza traditionnel',{exact:true})).toBeVisible();
+ await expect(page.getByText('Four maçonné',{exact:true})).toHaveCount(0);
+});
+
 test('flour-first recipe edits ignore a restored extra-dough allowance',async({page})=>{
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,body:'{}'}));
  const bake=new Date();bake.setDate(bake.getDate()+4);bake.setHours(18,0,0,0);

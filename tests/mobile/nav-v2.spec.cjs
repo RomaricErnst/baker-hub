@@ -297,6 +297,7 @@ test('late fillings opened from Recipe return to Recipe without changing the dou
  await page.getByRole('button',{name:/^Valider et revenir à la recette(?: →)?$/}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
  await expect(page.getByRole('button',{name:'Modifier mes garnitures · 1',exact:true})).toBeVisible();
+ await expect(page.locator('.bh-recipe-fillings-link')).toHaveCount(0);
  const after=await stored(page);
  for(const key of ['styleKey','numItems','itemWeight','eatTime','recipeGenerated'])expect(after[key],key).toEqual(before[key]);
  await noOverflow(page);

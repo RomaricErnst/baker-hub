@@ -1940,7 +1940,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             ) as { bold: string; note: string }[])} />
           ) : ovenType === 'pizza_oven' ? (
             <Steps items={ovenConstruction === 'masonry' ? [
-              { bold: l === 'fr' ? 'Chauffez la sole et la voûte à cœur.' : 'Heat the floor and dome thoroughly.', note: l === 'fr' ? 'Suivez le temps de chauffe de votre four maçonné.' : 'Follow your masonry oven’s heat-up instructions.' },
+              { bold: l === 'fr' ? 'Chauffez la sole et la voûte à cœur.' : 'Heat the floor and dome thoroughly.', note: l === 'fr' ? 'Suivez le temps de chauffe de votre four à pizza traditionnel.' : 'Follow your traditional pizza oven’s heat-up instructions.' },
               { bold: l === 'fr' ? 'Contrôlez la température de la sole avant d’enfourner.' : 'Check the floor temperature before launching.', note: l === 'fr' ? 'Laissez-la remonter entre deux pizzas.' : 'Let it recover between pizzas.' },
             ] : t.raw('preheat.pizzaOven.steps') as { bold: string; note: string }[]} />
           ) : ovenType === 'electric_pizza' ? (
