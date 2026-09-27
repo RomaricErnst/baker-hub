@@ -8075,6 +8075,14 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           ?(isFr?`Temps avant cuisson : ${duration(remaining)} ; ce protocole demande au moins ${duration(minNeeded)}. Il manque ${duration(minNeeded-remaining)}.`:`Time before baking: ${duration(remaining)}; this protocol needs at least ${duration(minNeeded)}. Short by ${duration(minNeeded-remaining)}.`)
           :preview&&!preview.valid&&maxAllowed!==null&&remaining>maxAllowed
           ?(isFr?`Fermentation trop longue : ${duration(remaining)} avant cuisson, au-delà de la limite conseillée de ${duration(maxAllowed)}.`:`Fermentation too long: ${duration(remaining)} before baking, beyond the recommended ${duration(maxAllowed)} limit.`):null;
+        const draftConflict = preview?.issue === 'busy' ? findAvailabilityConflicts([
+          ...(preview.schedule?.availabilityActions ?? []),
+          {id:'mix',at:draftMix},
+          ...(hasPrefActive ? [{id:'preferment',at:new Date(+draftMix-draftPrefOffset*3600000)},
+            ...(prefGoesInFridge && prefRTWarmupH > 0 ? [{id:'preferment-cold-out',at:new Date(+draftMix-prefRTWarmupH*3600000)}] : [])] : []),
+        ], repairBlocks, Date.now()).find(c=>c.action.id===preview.conflict) : undefined;
+        const blockedPeriod = draftConflict
+          ? `${fmtCardHM(draftConflict.block.from,isFr)}–${fmtCardHM(draftConflict.block.to,isFr)}` : null;
         const draftMessage=preview?.issue==='busy'?(isFr?'Vous êtes indisponible pendant ':'You are unavailable during ')+(conflictNames[preview.conflict??'']??['une étape','an action'])[isFr?0:1]+' · '+fmtCardDT(preview.conflict==='mix'?draftMix:preview.conflict==='preferment'?new Date(+draftMix-draftPrefOffset*3600000):preview.schedule?.availabilityActions?.find(a=>a.id===preview.conflict)?.at??draftMix,isFr)+'.'
           :preview?.issue==='past'?(isFr?'Ce changement placerait une préparation dans le passé. Choisissez un départ plus tardif.':'This change would put preparation in the past. Choose a later start.')
           :preview?.issue==='unsupported'?(isFr?'Fenêtre non calculée pour cette méthode. Revoyez les réglages.':'Window not calculated for this method. Review its settings.')
@@ -8224,7 +8232,8 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
               : (isFr?'Préferment recalé à ':'Preferment moved to ')}{fmtCardDT(new Date(+draftMix-draftPrefOffset*hour),isFr)}{+draftMix-draftPrefOffset*hour===+pendingStart-prefOffsetH*hour?(isFr?' — compatible avec ce pétrissage.':' — compatible with this mixing time.'):'.'}</>
           :dirty&&editingRow!=='mix'&&+times.start!==+pendingStart?<>{isFr?'Pétrissage recalé à ':'Mixing moved to '}{fmtCardDT(times.start,isFr)}.</>:null;
         const notice=!valid&&!keyDragging?<div className="bh-plan-notice" role="status">
-          <strong>{isFr?'Les horaires doivent être ajustés ensemble.':'These times need to be adjusted together.'}</strong>
+          <strong>{isSourdough ? (starterPreview?.message || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.')) : (rangeExplanation || draftMessage || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.'))}</strong>
+          {blockedPeriod&&<p>{isFr?`Cette intervention tombe dans votre indisponibilité de ${blockedPeriod}. Ajustez ce créneau ou l’heure de cuisson.`:`This hands-on step overlaps your unavailable period (${blockedPeriod}). Adjust that period or your baking time.`}</p>}
           {!dirty&&suggestedTargets.length>0&&<><p>{isFr?'Pour respecter vos indisponibilités et les durées de fermentation, choisissez un autre enfournement :':'To respect your availability and fermentation times, choose another baking time:'}</p>{targetChoices}</>}
           {!dirty&&hasTimingOverrides&&<p>{isFr?'Vos horaires choisis sont conservés. Le retour à la recommandation les libère pour chercher un autre planning.':'Your chosen times are kept. Return to the recommendation to release them and find another plan.'}</p>}
           <button type="button" className="bh-back-action" onClick={()=>{availabilityControlsRef.current?.scrollIntoView({block:'center',behavior:'auto'});availabilityControlsRef.current?.focus({preventScroll:true});}}>{isFr?'Modifier mes indisponibilités':'Change my availability'}</button>
