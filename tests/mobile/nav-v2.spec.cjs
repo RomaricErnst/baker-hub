@@ -674,7 +674,12 @@ test.describe('guided piadina with an early cooking preference',()=>{
   await expect.poll(async()=>(await stored(page))?.resultNotes).toBe('Abaisser plus finement.');
   await noOverflow(page);
   await testInfo.attach('piadina-completion-notes',{body:await page.screenshot(),contentType:'image/png'});
-  await end.getByRole('button',{name:'Refaire cette recette',exact:true}).tap();
+  const replacementDialog=page.waitForEvent('dialog');
+  const repeatBake=end.getByRole('button',{name:'Refaire cette recette',exact:true}).tap();
+  const confirmation=await replacementDialog;
+  expect(confirmation.type()).toBe('confirm');
+  expect(confirmation.message()).toBe('Cette action remplace la reprise automatique sur cet appareil. Les fournées enregistrées dans votre compte restent disponibles. Continuer ?');
+  await confirmation.accept();await repeatBake;
   await expect(plan).toBeVisible();
   await expect.poll(async()=>{const s=await stored(page);return {generated:s?.recipeGenerated,count:s?.numItems,style:s?.styleKey};}).toEqual({generated:false,count:5,style:'piadina'});
   await expect(end).toHaveCount(0);expect(errors).toEqual([]);

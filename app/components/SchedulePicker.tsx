@@ -5664,7 +5664,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     // If baker manually dragged, compute advisory next-feed time so starter
     // peaks at their chosen mix time. This updates the feed diamond
     // independently of which candidate won the scoring.
-    if (targetMixTime && !best.isFutureFeedPath && !best.usingPeak2) {
+    if (targetMixTime && !best.isFutureFeedPath && !best.isFridgeHoldPath && !best.usingPeak2) {
       const advisoryFeed = new Date(targetMixTime.getTime() - adjPeakH * 3600000);
       if (advisoryFeed.getTime() > Date.now()) {
         // Feed is in the future — show as recommended next feed

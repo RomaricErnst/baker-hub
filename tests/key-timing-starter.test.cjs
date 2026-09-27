@@ -134,3 +134,14 @@ test('yesterday ambient feed can reset its future plan without inventing complet
  assert.equal(second.controls.notice,undefined,'the committed delayed single feed validates itself without adding a new refresh');
  assert.ok(second.controls.check('mix',+committed.start));
 });
+
+test('week-old fridge Reset plan validates its exact refresh and final feed after reload',t=>{
+ t.mock.timers.enable({apis:['Date'],now:new Date('2026-09-25T00:49:00Z')});
+ const bake=new Date('2026-09-30T10:00:00Z'),start=new Date(+bake-26*3600000);
+ let committed;
+ const blocks=Array.from({length:6},(_,i)=>({from:new Date(Date.parse('2026-09-25T15:00:00Z')+i*86400000),to:new Date(Date.parse('2026-09-25T23:00:00Z')+i*86400000),label:'Night '+i+' night'}));
+ const args={styleKey:'neapolitan',mixerType:'spiral',numItems:4,kitchenTemp:22,fridgeTemp:5,recipeGenerated:false,sessionRestored:true,confirmedPlan:false,startTime:start,eatTime:bake,blocks,planningMode:'last_fed',knownPeakTime:null,lastFedAge:'week',lastFedTime:new Date(Date.now()-8*86400000),starterLocation:'fridge',lastFeedRatio:1,nextFeedRatio:1,ratioMode:'keep',timingOverrides:{mix:+start},onChange:(s,b,bs,o)=>{if(o?.starterPlan)committed={start:s,events:o.starterPlan.events};}};
+ const first=setup(args);first.controls.header.props.onClick();assert.ok(committed);
+ const second=setup({...args,startTime:committed.start,savedStarterEvents:committed.events,timingOverrides:{}});
+ assert.equal(second.controls.notice,undefined,second.controls.notice&&renderToStaticMarkup(second.controls.notice));
+});

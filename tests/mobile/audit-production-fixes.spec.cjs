@@ -22,9 +22,9 @@ for(const locale of ['fr','en']){
  test(`${locale}: guided flour is named in recipe and shopping`,async({page})=>{
   await seed(page,locale,false);
   const flour=locale==='fr'?'Farine à pizza 00':'00 pizza flour';
-  await expect(page.getByText(new RegExp(flour)).first()).toBeVisible();
+  await expect(page.getByText(new RegExp(flour)).filter({visible:true}).first()).toBeVisible();
   await navigate(page,locale==='fr'?'Courses':'Shopping',locale);
-  await expect(page.getByText(new RegExp(flour)).first()).toBeVisible();
+  await expect(page.getByText(new RegExp(flour)).filter({visible:true}).first()).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
  });
  test(`${locale}: partial toppings are disclosed before cooking and throughout preparation`,async({page})=>{
