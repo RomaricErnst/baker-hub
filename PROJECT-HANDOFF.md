@@ -1,3 +1,11 @@
+# Phone actions and recipe hierarchy — 28 September 2026
+
+User approved implementation, preview verification and production following expert review. Preparation overview now places Start/Resume with an explicit Recipe return after the overview in a measured mobile fixed bar; hidden guides cannot render it. Setup shares the same BottomActions component. Optional toppings move below generated dough ingredients as a compact row, retaining selected quantities, edit and preparation routes. Shopping and existing-base invitations retain their behavior. No calculations or persistence changes.
+
+Mobile fixed actions have 24px breathing room plus the bottom safe area. Viewport cover enables iPhone insets; headers and horizontal page/bar padding account for top and side insets. Independent source review caught the landscape style-bar inset and it was corrected. Physical iPhone Safari toolbar verification remains unavailable. Release validation and publication pending; see PR for final results.
+
+Prior PR11 is verified complete: main 307b730, 419 unit tests and 404/404 macOS WebKit cases passed in CI36384897925; production dpl_CbqKE6bAcKQDqiXsBMz8stMSt2Dk READY on bakerhub.app and www.bakerhub.app. This supersedes the pending status below.
+
 # Bakerhub — continuation handoff
 
 ## Production release approval — 28 September 2026

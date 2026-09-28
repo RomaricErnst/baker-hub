@@ -311,7 +311,7 @@ button,
 .bh-step-actions { display:grid; grid-template-columns:auto minmax(0,1fr); gap:12px; padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px)); position:sticky; bottom:0; z-index:100; background:var(--warm); }
 @media (max-width:767px) {
   .bh-step-action-slot { display:block; height:var(--bh-action-height,100px); margin-top:20px; }
-  .bh-step-actions { position:fixed; inset:auto 0 0; margin:0; padding:12px max(16px, calc((100vw - 680px) / 2 + 24px)) calc(16px + env(safe-area-inset-bottom,0px)); border-top:1px solid var(--border); box-shadow:0 -3px 12px #00000009; }
+  .bh-step-actions { position:fixed; inset:auto 0 0; margin:0; padding:12px max(16px, calc((100vw - 680px) / 2 + 24px)) calc(24px + env(safe-area-inset-bottom,0px)); border-top:1px solid var(--border); box-shadow:0 -3px 12px #00000009; }
   .bh-step-actions button { min-height:44px; white-space:normal; }
   .bh-step-page { animation:none; }
   .bh-step-page input,.bh-step-page select,.bh-step-page button { scroll-margin-bottom:160px; }
@@ -489,7 +489,7 @@ button,
 /* Reserve space for the mobile catalogue confirmation, not all setup actions. */
 @media (max-width:700px) {
  .bh-batch-content:has(.bh-style-confirm) { padding-bottom:160px; }
- .bh-batch-actions.bh-style-confirm { position:fixed; bottom:0; left:0; right:0; margin:0; padding:12px 16px calc(16px + env(safe-area-inset-bottom,0px)); border-top:1px solid var(--border); box-shadow:0 -3px 12px #00000009; }
+ .bh-batch-actions.bh-style-confirm { position:fixed; bottom:0; left:0; right:0; margin:0; padding:12px 16px calc(24px + env(safe-area-inset-bottom,0px)); border-top:1px solid var(--border); box-shadow:0 -3px 12px #00000009; }
  .bh-style-confirm button { white-space:normal; min-height:48px; }
 }
 .bh-key-lock { display:flex; align-items:center; gap:8px; min-height:44px; font-size:13px; color:var(--ash); }
@@ -547,3 +547,17 @@ html[data-preview="true"] vercel-live-feedback { display:none !important; }
 
 .bh-local-progress { margin:0 0 4px; min-height:44px; display:flex; align-items:center; color:var(--terra); font-size:14px; }
 .bh-local-progress .bh-step-trigger { font-size:14px; padding:0; }
+
+/* Keep every mobile action above the home gesture area. */
+.bh-header-stack { padding-top:env(safe-area-inset-top,0px); }
+body { padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-inset-right,0px); }
+.bh-fillings-invitation-compact { background:transparent; border:0; border-top:1px solid var(--border); border-radius:0; padding:16px 0; margin:24px 0 8px; }
+@media(max-width:767px) {
+  .bh-step-actions, .bh-batch-actions.bh-style-confirm { padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
+  .bh-fillings-invitation-compact { padding:16px 0; }
+}
+
+@media(max-width:767px) {
+  :has(> [data-companion-action]) { padding-bottom:calc(160px + env(safe-area-inset-bottom,0px)) !important; }
+  [data-companion-action] { padding-bottom:calc(24px + env(safe-area-inset-bottom,0px)) !important; padding-left:max(16px,env(safe-area-inset-left,0px)) !important; padding-right:max(16px,env(safe-area-inset-right,0px)) !important; }
+}

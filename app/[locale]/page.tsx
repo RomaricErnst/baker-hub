@@ -17,6 +17,7 @@ import BakeNavigator, {DestinationIcon} from '../components/BakeNavigator';
 import BakeTypeChooser from '../components/BakeTypeChooser';
 import {getServingTimeEstimate} from '../utils/servingTime';
 import {getPizzaById} from '../lib/toppingDatabase';
+import BottomActions from '../components/BottomActions';
 import FillingsInvitation from '../components/FillingsInvitation';
 import {destinationForRoute,routeForDestination,restoredBakeRoute,normalizeNavigation,type BakeRoute,type BakeDestination,type BatchView,type BakeNavigationMemory} from '../lib/bakeNavigation';
 import { useMobileKeyboard } from '../hooks/useMobileKeyboard';
@@ -762,23 +763,8 @@ function bakeQuantityLabel(count: number, bakeType: string | null, styleKey: str
   return `${count} ${noun}`;
 }
 
-// The slot reserves the actual bar height, including wrapped labels and safe area.
 function StepActions({ children }: { children: React.ReactNode }) {
-  const slot = useRef<HTMLDivElement>(null);
-  const bar = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const element = bar.current;
-    const space = slot.current;
-    if (!element || !space) return;
-    const sync = () => space.style.setProperty('--bh-action-height', `${Math.ceil(element.getBoundingClientRect().height)}px`);
-    sync();
-    const observer = new ResizeObserver(sync);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-  return <div ref={slot} className="bh-step-action-slot">
-    <div ref={bar} className="bh-step-actions">{children}</div>
-  </div>;
+  return <BottomActions>{children}</BottomActions>;
 }
 
 function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: number; children: React.ReactNode; nextOverride?: React.ReactNode }) {
@@ -3428,6 +3414,12 @@ export default function Home() {
     recipeMeal={styleKey&&(pizzaPartyEnabled||sandwichEnabled)?{label:mealNoun,selected:hasFillings,active:browsingFillings,onChoose:()=>{setFillingsReturn({destination:'recipe',view:'dough'});setBatchView('fillings');setActiveTab('batch');setNavHidden(false);scrollToStepTop();}}:undefined}
     progress={destination==='organisation' && modeChosen && !setupOverview ? <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>{setModeChosen(false);scrollToStepTop();}}} /> : undefined} /> : null;
 
+  const recipeFillings = (pizzaPartyEnabled||sandwichEnabled) ? <>
+    <FillingsInvitation compact fr={fr} pizza={bakeType==='pizza'} styleKey={styleKey??''} count={numItems}
+      selectedCount={Object.values(bakeType==='pizza'?pizzaPartyQtys:sandwichParty.qtys).reduce((sum,qty)=>sum+qty,0)} onChoose={openLateFillings} />
+    {hasFillings&&<button type="button" className="bh-section-back" onClick={()=>{openDestination('protocol');setProtocolView('fillings');}}>{fr?'Préparer les garnitures →':'Prepare toppings and fillings →'}</button>}
+  </> : null;
+
   // ── Render ────────────────────────────────
   return (
     <div data-navigation-page={visiblePageKey} data-reading={bottomNavCollapsed || undefined} data-keyboard-open={keyboardOpen || undefined} data-mobile-setup={(destination==='organisation'||destination==='batch')&&!recipeGenerated?'true':undefined} style={{ minHeight: '100vh', background: 'var(--warm)' }}>
@@ -3802,9 +3794,8 @@ export default function Home() {
             </>}
           </section>}
 
-          {(recipeGenerated||hasFillings)&&(destination==='recipe'||destination==='shopping')&&(pizzaPartyEnabled||sandwichEnabled)&&<FillingsInvitation fr={fr} pizza={bakeType==='pizza'} styleKey={styleKey??''} count={numItems}
+          {(recipeGenerated||hasFillings)&&(destination==='shopping'||destination==='recipe'&&!recipeGenerated)&&(pizzaPartyEnabled||sandwichEnabled)&&<FillingsInvitation fr={fr} pizza={bakeType==='pizza'} styleKey={styleKey??''} count={numItems}
             selectedCount={Object.values(bakeType==='pizza'?pizzaPartyQtys:sandwichParty.qtys).reduce((sum,qty)=>sum+qty,0)} onChoose={openLateFillings} />}
-          {recipeGenerated&&destination==='recipe'&&hasFillings&&<button type="button" className="bh-section-back" onClick={()=>{openDestination('protocol');setProtocolView('fillings');}}>{fr?'Préparer les garnitures →':'Prepare toppings and fillings →'}</button>}
 
 
           {destination==='service'&&bakeType==='pizza'&&serviceView==='fillings'&&<button type="button" className="bh-section-back" onClick={()=>{setServiceView('dough');scrollToStepTop();}}>{fr?'← Four et conseils de cuisson':'← Oven and cooking advice'}</button>}
@@ -4098,6 +4089,7 @@ export default function Home() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
 
                           <RecipeOutput
+                            afterIngredients={recipeFillings}
                             starterEvents={starterEvents} mixingTime={startTime}
                             containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
                             styleKey={styleKey ?? undefined}
@@ -4199,6 +4191,7 @@ export default function Home() {
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && recipe && mixerType && (<>
                 <BakeGuide
+                  onBackToRecipe={()=>openDestination('recipe')}
                   onRepeat={repeatCurrentRecipe} resultNotes={resultNotes} onResultNotesChange={setResultNotes} onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved && !!user} onBakedChange={setBakedDone} completionEnabled={!hasFillings}
                   progressTarget={(destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough')?guideProgressTarget:null}
                   phase={destination==='service'?'cooking':'preparation'}
@@ -4605,6 +4598,7 @@ export default function Home() {
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
                           <RecipeOutput
+                            afterIngredients={recipeFillings}
                             starterEvents={starterEvents} mixingTime={startTime}
                             containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
                             styleKey={styleKey ?? undefined}
@@ -4710,6 +4704,7 @@ export default function Home() {
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && advancedRecipe && mixerType && (<>
                 <BakeGuide
+                  onBackToRecipe={()=>openDestination('recipe')}
                   onRepeat={repeatCurrentRecipe} resultNotes={resultNotes} onResultNotesChange={setResultNotes} onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved && !!user} onBakedChange={setBakedDone} completionEnabled={!hasFillings}
                   progressTarget={(destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough')?guideProgressTarget:null}
                   phase={destination==='service'?'cooking':'preparation'}

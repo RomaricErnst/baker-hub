@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "../globals.css";
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
@@ -13,6 +13,8 @@ const figtree = localFont({ src: "../fonts/figtree-latin.woff2", weight: "300 90
 // Kept for one job only: the yeast formula panel, where monospacing carries
 // meaning. Everywhere else, tabular figures on the UI face do the aligning.
 const dmMono = localFont({ src: [{path: "../fonts/dm-mono-400-latin.woff2", weight: "400"}, {path: "../fonts/dm-mono-500-latin.woff2", weight: "500"}], display: "swap", variable: "--font-dm-mono" });
+
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover' };
 
 export const metadata: Metadata = {
   title: "Baker Hub",

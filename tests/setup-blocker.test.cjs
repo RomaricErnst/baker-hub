@@ -6,6 +6,8 @@ const ts=require('typescript');
 const React=require('react');
 const {renderToStaticMarkup}=require('react-dom/server');
 require('./load-production.cjs');
+const bottomSource=fs.readFileSync('app/components/BottomActions.tsx','utf8').replace(/^import .*$/mg,'').replace('export default function','function');
+const BottomActions=vm.runInNewContext(ts.transpileModule(bottomSource+';BottomActions',{compilerOptions:{jsx:ts.JsxEmit.React}}).outputText,{React,useRef:React.useRef,useLayoutEffect:React.useLayoutEffect});
 const {getSetupBlocker}=require('../app/lib/setupBlocker.ts');
 const valid={custom:true,fr:true,unsupportedMixer:false,unsupportedMethod:false,sourdough:false,hasPreferment:false,prefermentPlanReady:true,starterPlanReady:true,archivedFlour:false,requirementsComplete:true};
 
@@ -39,7 +41,7 @@ const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.
 const names=['SetupBlockerAction','StepActions','StepPage','SetupReview','stepAnswered'];
 const declarations=tree.statements.filter(node=>ts.isFunctionDeclaration(node)&&names.includes(node.name?.text)).map(node=>node.getText(tree));
 const compiled=ts.transpileModule(declarations.join('\n')+'\n({SetupBlockerAction,StepPage,SetupReview});',{compilerOptions:{target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.React}}).outputText;
-const components=vm.runInNewContext(compiled,{React,useRef:React.useRef,useLayoutEffect:React.useLayoutEffect,NEXT_CTA:{},useBottomNavHeight:()=>64});
+const components=vm.runInNewContext(compiled,{React,BottomActions,useRef:React.useRef,useLayoutEffect:React.useLayoutEffect,NEXT_CTA:{},useBottomNavHeight:()=>64});
 const steps=[{id:1,value:'Pain au levain',chip:'Style',gap:'Style requis'},{id:9,value:'Demain',chip:'Plan',group:'plan',gap:'Plan requis'},{id:10,value:'75%',chip:'Peaufiner',prefilled:true,gap:'Pâte requise'}];
 function flow(patch={}){return {steps,activeId:10,highestStep:99,locale:'fr',showGenerate:false,recipeGenerated:false,gapReturn:false,generationBlocker:getSetupBlocker({...valid,sourdough:true,starterPlanReady:false}),onJump(){},onGenerate(){throw Error('Must not generate');},...patch};}
 

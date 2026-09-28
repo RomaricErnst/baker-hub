@@ -1,4 +1,5 @@
 'use client';
+import BottomActions from './BottomActions';
 import JourneyCompletion, { type CompletionActions } from './JourneyCompletion';
 import {createPortal} from 'react-dom';
 import type { StarterEvent } from './SchedulePicker';
@@ -22,6 +23,7 @@ import { getBreadProtocol } from '../utils/breadProfiles';
 import { scheduledFoldMinutes } from '../utils/scheduleFolds';
 
 interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
+  onBackToRecipe?: () => void;
   onBakedChange?: (done:boolean)=>void;
   completionEnabled?: boolean;
   progressTarget?: HTMLElement|null;
@@ -776,7 +778,7 @@ export default function BakeGuide({
   usingPeak2 = false, planningMode = 'last_fed',
   feedRatio = 1, starterLocation = 'rt',
   units, locale,
-  onNavigateToPizzaParty, pizzaActionLabel, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
+  onBackToRecipe, onNavigateToPizzaParty, pizzaActionLabel, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
   phase, active = true, onNavigateToCooking, onNavigateToPreparation, progressTarget,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
@@ -1077,7 +1079,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       <span>{l==='fr'?'Étape':'Step'} {phase==='cooking'?Math.max(1,currentStep-preparationTotal):currentStep} / {phase==='cooking'?cookingStepTotal:preparationTotal}</span>
       <button type="button" className="bh-step-trigger" onClick={()=>{setCurrentStep(0);window.scrollTo({top:0,behavior:'instant'});}}>{l==='fr'?'Vue d’ensemble':'Overview'}</button>
     </div>, progressTarget) : null;
-  const overviewAction = currentStep===0 && phase ? <button type="button" onClick={resumeStep} style={{minHeight:48,padding:'12px 16px',border:0,borderRadius:10,background:D.terra,color:'white',fontSize:16,cursor:'pointer'}}>
+  const overviewAction = active && currentStep===0 && phase ? <button type="button" onClick={resumeStep} style={{minHeight:48,padding:'12px 16px',border:0,borderRadius:10,background:D.terra,color:'white',fontSize:16,cursor:'pointer'}}>
     {phase==='cooking' ? (l==='fr'?'Reprendre la cuisson':'Resume cooking') : phasePositions.current.preparation ? (l==='fr'?'Reprendre la préparation':'Resume preparation') : (l==='fr'?'Commencer la préparation':'Start preparation')} →
   </button> : null;
 
@@ -1088,7 +1090,7 @@ Actual dough condition and equipment may differ from these estimates.`;
   if (breadProtocol?.method === 'unleavened') return <SimpleModeCtx.Provider value={!!simpleMode}>
     <div style={{display:'flex',flexDirection:'column',gap:currentStep===0?4:16}}>
       {progressControl}
-      {overviewAction}
+      {phase!=='preparation'&&overviewAction}
       {!progressTarget&&<button type="button" onClick={() => setCurrentStep(0)} style={{minHeight:44,padding:'8px 16px',border:`1px solid ${D.border}`,borderRadius:10,background:D.warm}}>{overviewLabel}</button>}
       <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={l === 'fr' ? 'Pétrir la pâte' : 'Mix the dough'} time={displayedMixTime} duration={displayedMixDuration} overviewNote={mixingOverviewNote}>
         {serialMixNote}
@@ -1112,6 +1114,10 @@ Actual dough condition and equipment may differ from these estimates.`;
         <Steps items={profileSteps(breadProtocol.cooling[l])} />
         {fillingsAction}
       </StepCard>
+      {phase==='preparation'&&overviewAction&&<BottomActions>
+        {onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'← Recette':'← Recipe'}</button>}
+        {overviewAction}
+      </BottomActions>}
       {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange} sessionSaved={sessionSaved}/>}
     </div>
   </SimpleModeCtx.Provider>;
@@ -1120,7 +1126,7 @@ Actual dough condition and equipment may differ from these estimates.`;
     <SimpleModeCtx.Provider value={!!simpleMode}>
     <div style={{ display: 'flex', flexDirection: 'column', gap: currentStep === 0 ? '4px' : '16px' }}>
       {progressControl}
-      {overviewAction}
+      {phase!=='preparation'&&overviewAction}
 
       {/* ── Header ──────────────────────────────────── */}
       <div style={{ marginBottom: '4px', display: currentStep === 0 && !phase ? undefined : 'none' }}>
@@ -2093,6 +2099,10 @@ Actual dough condition and equipment may differ from these estimates.`;
         {!breadProtocol && <StepExtras tips={null} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />}
         {fillingsAction}
       </StepCard>}
+      {phase==='preparation'&&overviewAction&&<BottomActions>
+        {onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'← Recette':'← Recipe'}</button>}
+        {overviewAction}
+      </BottomActions>}
       {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange} sessionSaved={sessionSaved}/>}
 
       {learnTerm && (

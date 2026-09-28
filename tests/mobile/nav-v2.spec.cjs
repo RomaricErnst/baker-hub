@@ -106,6 +106,26 @@ for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}
    // A bake without fillings has only the dough guide, so no redundant tabs.
    await expect(page.getByRole('region',{name:'What to prepare',exact:true})).toHaveCount(0);
    await expect(page.locator('.bh-local-progress')).toHaveText('Overview');
+   const actions=page.locator('.bh-step-actions:visible');
+   await expect(actions).toHaveCount(1);
+   await expect(actions).toHaveCSS('position','fixed');
+   for(const fraction of [0,0.5,1]){
+    await page.evaluate(f=>window.scrollTo(0,(document.documentElement.scrollHeight-innerHeight)*f),fraction);
+    const start=actions.getByRole('button',{name:'Start preparation →',exact:true});
+    await unobscured(start);
+    const bounds=await start.boundingBox();
+    expect(page.viewportSize().height-bounds.y-bounds.height).toBeGreaterThanOrEqual(23);
+   }
+   await actions.getByRole('button',{name:'← Recipe',exact:true}).tap();
+   await expect(page.locator('.bh-navigator-current')).toHaveText('Recipe');
+   const invitation=page.locator('.bh-fillings-invitation-compact');
+   await expect(invitation).toHaveCount(1);
+   expect(await invitation.evaluate(el=>{
+    const total=[...document.querySelectorAll('div')].find(h=>h.textContent.trim()==='Total Dough');
+    return !!total&&!!(total.compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING);
+   })).toBe(true);
+   await expect(page.locator('.bh-step-actions:visible')).toHaveCount(0);
+   await navigate(page,'Preparation','en');
    await page.getByRole('button',{name:'Start preparation →',exact:true}).tap();
    await expect(page.locator('section[aria-label*=" · Step "]:visible')).toHaveCount(1);
    const next=page.getByRole('button',{name:/^Next(?: step| :)/});
