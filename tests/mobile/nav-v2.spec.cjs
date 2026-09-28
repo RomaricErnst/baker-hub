@@ -4,7 +4,7 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 // intact as the reference for functionality outside this navigation change.
 const destinations=['Ma fournée','Organisation','Recette','Courses','Préparation','Cuisson & service'];
 // English labels match BAKE_DESTINATIONS in app/lib/bakeNavigation.ts.
-const englishDestinations=['My bake','Setup','Recipe','Shopping','Preparation','Cooking & serving'];
+const englishDestinations=['My bake','Setup & timing','Recipe','Shopping list','Preparation','Baking & serving'];
 const navigator=page=>page.locator('.bh-bake-navigator-trigger');
 const stored=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null'));
 async function anonymous(page){
@@ -39,7 +39,7 @@ async function navigate(page,label,locale='fr'){
   await fits(page,button);
   expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
  }
- const dough=nav.getByRole('button',{name:locale==='fr'?'Ma pâte':'My dough',exact:true});
+ const dough=nav.getByRole('button',{name:locale==='fr'?'Pâte':'Dough',exact:true});
  if((label==='Recette'||label==='Recipe')&&await dough.count())await dough.tap();
  else await nav.getByRole('button').filter({has:page.getByText(label,{exact:true})}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText(label);
@@ -69,14 +69,14 @@ for(const locale of ['fr','en'])test(`${locale}: compact recipe menu opens filli
  await navigator(page).tap();
  const nav=page.getByRole('navigation',{name:locale==='fr'?'Votre fournée':'Your bake',exact:true});
  await expect(nav.locator('[data-destination-label]')).toHaveCount(6);
- const meal=nav.getByRole('button',{name:locale==='fr'?'Choisir les garnitures Facultatif':'Choose toppings Optional',exact:true});
+ const meal=nav.getByRole('button',{name:locale==='fr'?'Garnitures Facultatif':'Toppings Optional',exact:true});
  await fits(page,meal);await unobscured(meal);
  await testInfo.attach('compact-recipe-menu',{body:await page.screenshot(),contentType:'image/png'});
  await meal.tap();
  await expect(page.locator('.bh-navigator-current')).toContainText(locale==='fr'?'Recette':'Recipe');
  await expect(page.getByRole('heading',{name:locale==='fr'?'Quelles garnitures ?':'Which toppings?',exact:true})).toBeVisible();
  await navigator(page).tap();
- await nav.getByRole('button',{name:locale==='fr'?'Ma pâte':'My dough',exact:true}).tap();
+ await nav.getByRole('button',{name:locale==='fr'?'Pâte':'Dough',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText(locale==='fr'?'Recette':'Recipe');
  await expect(page.getByRole('heading',{name:locale==='fr'?'Quelles garnitures ?':'Which toppings?',exact:true})).toHaveCount(0);
  await expect.poll(async()=>(await stored(page))?.numItems).toBe(4);
@@ -95,9 +95,9 @@ test('compact menu keeps bread-only recipes unsplit',async({page})=>{
 
 for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}: all destinations, shopping and preparation are usable`,async({page},testInfo)=>{
  await seed(page,{bread,locale:'en'});
- for(const label of ['My bake','Setup','Recipe','Cooking & serving','Shopping','Preparation']){
+ for(const label of ['My bake','Setup & timing','Recipe','Baking & serving','Shopping list','Preparation']){
   await navigate(page,label,'en');
-  if(label==='Shopping'){
+  if(label==='Shopping list'){
    await expect(page.getByRole('checkbox').first()).toBeVisible();
    const checkbox=page.getByRole('checkbox').first();
    await checkbox.check();await expect(checkbox).toBeChecked();
@@ -425,6 +425,25 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
  await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
  const climate=page.locator('#step-4');await expect(climate).toBeVisible();
+ const actionBar=climate.locator('.bh-step-actions');
+ const forward=actionBar.getByRole('button',{name:'Continuer',exact:true});
+ async function fixedAction(){
+  await expect.poll(()=>actionBar.evaluate(el=>getComputedStyle(el).position)).toBe('fixed');
+  await fits(page,actionBar);await unobscured(forward);
+  const geometry=await actionBar.boundingBox();
+  expect(Math.abs(geometry.y+geometry.height-page.viewportSize().height)).toBeLessThanOrEqual(2);
+  const slot=await climate.locator('.bh-step-action-slot').boundingBox();
+  expect(slot.height).toBeGreaterThanOrEqual(geometry.height-1);
+ }
+ // Reproduce the report at the top, with expanded sections, and while scrolling.
+ await fixedAction();
+ await navigator(page).tap();await fixedAction();await noOverflow(page);
+ await navigator(page).tap();
+ await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));window.scrollTo(0,document.body.scrollHeight/2);});
+ await fixedAction();
+ await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));await fixedAction();
+ const lastField=climate.locator('input:visible,select:visible').last();
+ await unobscured(lastField);
  const back=climate.getByRole('button',{name:'Précédent',exact:true});
  await back.scrollIntoViewIfNeeded();await fits(page,back);await unobscured(back);
  await noOverflow(page);

@@ -762,6 +762,25 @@ function bakeQuantityLabel(count: number, bakeType: string | null, styleKey: str
   return `${count} ${noun}`;
 }
 
+// The slot reserves the actual bar height, including wrapped labels and safe area.
+function StepActions({ children }: { children: React.ReactNode }) {
+  const slot = useRef<HTMLDivElement>(null);
+  const bar = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const element = bar.current;
+    const space = slot.current;
+    if (!element || !space) return;
+    const sync = () => space.style.setProperty('--bh-action-height', `${Math.ceil(element.getBoundingClientRect().height)}px`);
+    sync();
+    const observer = new ResizeObserver(sync);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  return <div ref={slot} className="bh-step-action-slot">
+    <div ref={bar} className="bh-step-actions">{children}</div>
+  </div>;
+}
+
 function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: number; children: React.ReactNode; nextOverride?: React.ReactNode }) {
   if (flow.activeId !== id) return null;
   const idx  = flow.steps.findIndex(s => s.id === id);
@@ -849,15 +868,11 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
 
       {children}
 
-      <div className="bh-step-actions" style={{
-        display: nextOverride===null?'none':'grid', gridTemplateColumns: 'auto minmax(0,1fr)',
-        gap: '12px', padding: '8px 0 calc(8px + env(safe-area-inset-bottom, 0px))', position:'sticky', bottom:0, zIndex:90, background:'var(--warm)',
-      }}>
-
+      {nextOverride !== null && <StepActions>
         <button type="button" onClick={()=>flow.onPrev(id)} style={{minHeight:44,padding:'8px 4px',border:0,background:'transparent',color:'var(--terra)',fontSize:14,cursor:'pointer',textDecoration:'underline',textUnderlineOffset:4}}>{fr?'Précédent':'Back'}</button>
         {nextOverride !== undefined ? nextOverride : next}
         {isLast && nextOverride === undefined && flow.onReview && <button type="button" className="bh-back-action" onClick={flow.onReview} style={{gridColumn:2,justifySelf:'center',minHeight:44}}>{fr ? 'Revoir mes choix' : 'Review my choices'}</button>}
-      </div>
+      </StepActions>}
     </div>
   );
 }
@@ -3408,9 +3423,9 @@ export default function Home() {
     </>}
   </>;
 
-  const mealNoun=bakeType==='pizza'?(fr?'les garnitures':'toppings'):sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'mes tartines':'my toasts'):(fr?'mes sandwichs':'my sandwiches');
+  const mealNoun=bakeType==='pizza'?(fr?'Garnitures':'Toppings'):sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'Tartines':'Toasts'):(fr?'Sandwichs':'Sandwiches');
   const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings?'recipe':destination} fr={fr} onChange={openDestination} top={destination==='organisation'?0:stickTop}
-    recipeMeal={styleKey&&(pizzaPartyEnabled||sandwichEnabled)?{label:`${hasFillings?(fr?'Voir':'View'):(fr?'Choisir':'Choose')} ${mealNoun}`,selected:hasFillings,active:browsingFillings,onChoose:()=>{setFillingsReturn({destination:'recipe',view:'dough'});setBatchView('fillings');setActiveTab('batch');setNavHidden(false);scrollToStepTop();}}:undefined}
+    recipeMeal={styleKey&&(pizzaPartyEnabled||sandwichEnabled)?{label:mealNoun,selected:hasFillings,active:browsingFillings,onChoose:()=>{setFillingsReturn({destination:'recipe',view:'dough'});setBatchView('fillings');setActiveTab('batch');setNavHidden(false);scrollToStepTop();}}:undefined}
     progress={destination==='organisation' && modeChosen && !setupOverview ? <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>{setModeChosen(false);scrollToStepTop();}}} /> : undefined} /> : null;
 
   // ── Render ────────────────────────────────
@@ -3741,7 +3756,7 @@ export default function Home() {
 {showBakeTypeChooser&&bakeType&&<BakeTypeChooser fr={fr} current={bakeType} onChoose={selectBakeType} onClose={()=>setShowBakeTypeChooser(false)}/>}
 {destination!=='organisation' && bakeNavigator}
 
-          {((['recipe','shopping'] as string[]).includes(destination)||destination==='service'&&!hasFillings)&&<button type="button" className="bh-section-back" onClick={()=>openDestination(destination==='recipe'?'organisation':destination==='shopping'?'recipe':destination==='protocol'?'shopping':'protocol')}>← {destination==='recipe'?(fr?'Organisation':'Setup'):destination==='shopping'?(fr?'Recette':'Recipe'):destination==='protocol'?(fr?'Courses':'Shopping'):(fr?'Préparation':'Preparation')}</button>}
+          {((['recipe','shopping'] as string[]).includes(destination)||destination==='service'&&!hasFillings)&&<button type="button" className="bh-section-back" onClick={()=>openDestination(destination==='recipe'?'organisation':destination==='shopping'?'recipe':destination==='protocol'?'shopping':'protocol')}>← {destination==='recipe'?(fr?'Organisation':'Setup & timing'):destination==='shopping'?(fr?'Recette':'Recipe'):destination==='protocol'?(fr?'Courses':'Shopping list'):(fr?'Préparation':'Preparation')}</button>}
 
 
 

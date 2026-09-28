@@ -36,10 +36,10 @@ test('each protocol-only blocker directs completed setup to the relevant correct
 // Exercise the actual page components, isolating only unrelated page state.
 const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
 const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
-const names=['SetupBlockerAction','StepPage','SetupReview','stepAnswered'];
+const names=['SetupBlockerAction','StepActions','StepPage','SetupReview','stepAnswered'];
 const declarations=tree.statements.filter(node=>ts.isFunctionDeclaration(node)&&names.includes(node.name?.text)).map(node=>node.getText(tree));
 const compiled=ts.transpileModule(declarations.join('\n')+'\n({SetupBlockerAction,StepPage,SetupReview});',{compilerOptions:{target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.React}}).outputText;
-const components=vm.runInNewContext(compiled,{React,NEXT_CTA:{},useBottomNavHeight:()=>64});
+const components=vm.runInNewContext(compiled,{React,useRef:React.useRef,useLayoutEffect:React.useLayoutEffect,NEXT_CTA:{},useBottomNavHeight:()=>64});
 const steps=[{id:1,value:'Pain au levain',chip:'Style',gap:'Style requis'},{id:9,value:'Demain',chip:'Plan',group:'plan',gap:'Plan requis'},{id:10,value:'75%',chip:'Peaufiner',prefilled:true,gap:'Pâte requise'}];
 function flow(patch={}){return {steps,activeId:10,highestStep:99,locale:'fr',showGenerate:false,recipeGenerated:false,gapReturn:false,generationBlocker:getSetupBlocker({...valid,sourdough:true,starterPlanReady:false}),onJump(){},onGenerate(){throw Error('Must not generate');},...patch};}
 
@@ -75,4 +75,3 @@ test('valid setup offers direct creation and optional review',()=>{
   assert.match(html,/Revoir mes choix/);
   assert.doesNotMatch(html,/Compléter le plan|Revoir le plan/);
 });
-

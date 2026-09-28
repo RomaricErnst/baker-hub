@@ -23,7 +23,7 @@ for(const locale of ['fr','en']){
   await seed(page,locale,false);
   const flour=locale==='fr'?'Farine à pizza 00':'00 pizza flour';
   await expect(page.getByText(new RegExp(flour)).filter({visible:true}).first()).toBeVisible();
-  await navigate(page,locale==='fr'?'Courses':'Shopping',locale);
+  await navigate(page,locale==='fr'?'Courses':'Shopping list',locale);
   await expect(page.getByText(new RegExp(flour)).filter({visible:true}).first()).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
  });
@@ -33,7 +33,7 @@ for(const locale of ['fr','en']){
   await expect(visible()).toContainText('2 / 24');
   await expect(visible()).toContainText('22');
   await expect(page.getByText(locale==='fr'?'Tout est prêt. Bon appétit !':'Everything is ready. Enjoy!',{exact:true})).toHaveCount(0);
-  await navigate(page,locale==='fr'?'Courses':'Shopping',locale);
+  await navigate(page,locale==='fr'?'Courses':'Shopping list',locale);
   await expect(visible()).toContainText('2 / 24');
   await navigate(page,locale==='fr'?'Préparation':'Preparation',locale);
   await expect(visible()).toContainText('2 / 24');
