@@ -244,7 +244,8 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await page.reload();
  await page.getByRole('button',{name:'Reprendre →',exact:true}).tap();
  await expect(page.getByRole('dialog',{name:'Ma sélection',exact:true})).toHaveCount(0);
- await expect(page.locator('.bh-navigator-current')).toContainText('Préparation');
+ // The selection catalogue belongs to Recipe; its persisted return still resumes Preparation.
+ await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
  const back=page.getByRole('button',{name:/^Valider et revenir à la préparation(?: →)?$/});
  await back.scrollIntoViewIfNeeded();
  await fits(page,back);
