@@ -1,10 +1,10 @@
 export const BAKE_DESTINATIONS = [
   {id:'batch',fr:'Ma fournée',en:'My bake'},
-  {id:'organisation',fr:'Organisation',en:'Setup'},
+  {id:'organisation',fr:'Organisation',en:'Setup & timing'},
   {id:'recipe',fr:'Recette',en:'Recipe'},
-  {id:'shopping',fr:'Courses',en:'Shopping'},
+  {id:'shopping',fr:'Courses',en:'Shopping list'},
   {id:'protocol',fr:'Préparation',en:'Preparation'},
-  {id:'service',fr:'Cuisson & service',en:'Cooking & serving'},
+  {id:'service',fr:'Cuisson & service',en:'Baking & serving'},
 ] as const;
 export type BakeDestination = typeof BAKE_DESTINATIONS[number]['id'];
 export type BakeRoute = 'batch'|'setup'|'plan'|'shopping'|'guide'|'service'|'pizzaparty'|'sandwiches';

@@ -38,7 +38,7 @@ export default function BakeNavigator({active,fr,onChange,top=0,progress,recipeM
       {BAKE_DESTINATIONS.map(item=>item.id==='recipe'&&recipeMeal?<section key={item.id} className="bh-navigator-recipe" aria-label={fr?'Recette':'Recipe'}>
         <strong data-destination-label>{fr?'Recette':'Recipe'}</strong>
         <div className="bh-navigator-recipe-links">
-          <button type="button" aria-current={active==='recipe'&&!recipeMeal.active?'page':undefined} onClick={()=>choose(()=>onChange('recipe'))}>{fr?'Ma pâte':'My dough'}</button>
+          <button type="button" aria-current={active==='recipe'&&!recipeMeal.active?'page':undefined} onClick={()=>choose(()=>onChange('recipe'))}>{fr?'Pâte':'Dough'}</button>
           <button type="button" aria-current={recipeMeal.active?'page':undefined} onClick={()=>choose(recipeMeal.onChoose)}><span>{recipeMeal.label}</span>{!recipeMeal.selected&&<small>{fr?'Facultatif':'Optional'}</small>}</button>
         </div>
       </section>:<button key={item.id} type="button" aria-current={active===item.id?'page':undefined} className={`bh-bake-navigator-card${item.id==='service'?' bh-navigator-service':''}`} onClick={()=>choose(()=>onChange(item.id))}><DestinationIcon destination={item.id}/><strong data-destination-label>{fr?item.fr:item.en}</strong></button>)}
