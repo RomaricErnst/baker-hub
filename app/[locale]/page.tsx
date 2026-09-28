@@ -576,13 +576,15 @@ function SetupBlockerAction({flow,onJump}: {flow:StepFlow;onJump?:(id:number)=>v
   const fr=flow.locale==='fr';
   const gap=flow.steps.find(step=>!stepAnswered(step,flow.highestStep,flow.steps));
   const blocker=flow.generationBlocker;
-  const target=gap ?? flow.steps.find(step=>step.id===blocker?.stepId) ?? flow.steps.find(step=>step.group==='plan') ?? flow.steps[0];
-  if(!target) return null;
+  // Style and quantity live outside the compact Organisation step list.
+  // Keep the blocker's route even when its step is not displayed in this list.
+  const targetId=gap?.id ?? blocker?.stepId ?? flow.steps.find(step=>step.group==='plan')?.id ?? flow.steps[0]?.id;
+  if(targetId===undefined) return null;
   const reason=gap?.gap ?? blocker?.reason ?? (fr?'Vérifiez le planning avant de créer la recette.':'Review the schedule before creating the recipe.');
   const action=gap?.chip ?? blocker?.action ?? (fr?'Revoir le plan':'Review the plan');
   return <div style={{width:'100%'}}>
     <p role="status" style={{fontSize:13,color:'var(--ash)',margin:'0 0 8px'}}>{reason}</p>
-    <button type="button" onClick={()=> (onJump??flow.onJump)(target.id)} style={{...NEXT_CTA,background:'var(--warm)',color:'#6B4423',border:'1.5px solid #6B4423',boxShadow:'none'}}>{action} →</button>
+    <button type="button" onClick={()=> (onJump??flow.onJump)(targetId)} style={{...NEXT_CTA,background:'var(--warm)',color:'#6B4423',border:'1.5px solid #6B4423',boxShadow:'none'}}>{action} →</button>
   </div>;
 }
 
@@ -2426,6 +2428,7 @@ export default function Home() {
   function openDestination(next:BakeDestination) {
     setFillingsReturn(null);
     setPrepReturnToService(null);setShoppingReturnToFillings(false);
+    if(next==='batch'&&batchView==='fillings')setBatchView(styleKey?'quantity':'style');
     if(next==='organisation'&&!styleKey){setActiveTab('batch');setBatchView('style');}
     else {
       if(next==='organisation'){
@@ -3405,7 +3408,9 @@ export default function Home() {
     </>}
   </>;
 
-  const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings&&fillingsReturn?fillingsReturn.destination:destination} fr={fr} onChange={openDestination} top={destination==='organisation'?0:stickTop}
+  const mealNoun=bakeType==='pizza'?(fr?'les garnitures':'toppings'):sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'mes tartines':'my toasts'):(fr?'mes sandwichs':'my sandwiches');
+  const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings?'recipe':destination} fr={fr} onChange={openDestination} top={destination==='organisation'?0:stickTop}
+    recipeMeal={styleKey&&(pizzaPartyEnabled||sandwichEnabled)?{label:`${hasFillings?(fr?'Voir':'View'):(fr?'Choisir':'Choose')} ${mealNoun}`,selected:hasFillings,active:browsingFillings,onChoose:()=>{setFillingsReturn({destination:'recipe',view:'dough'});setBatchView('fillings');setActiveTab('batch');setNavHidden(false);scrollToStepTop();}}:undefined}
     progress={destination==='organisation' && modeChosen && !setupOverview ? <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>{setModeChosen(false);scrollToStepTop();}}} /> : undefined} /> : null;
 
   // ── Render ────────────────────────────────
@@ -3782,8 +3787,9 @@ export default function Home() {
             </>}
           </section>}
 
-          {recipeGenerated&&(destination==='recipe'||destination==='shopping')&&(pizzaPartyEnabled||sandwichEnabled)&&<FillingsInvitation fr={fr} pizza={bakeType==='pizza'} styleKey={styleKey??''} count={numItems}
+          {(recipeGenerated||hasFillings)&&(destination==='recipe'||destination==='shopping')&&(pizzaPartyEnabled||sandwichEnabled)&&<FillingsInvitation fr={fr} pizza={bakeType==='pizza'} styleKey={styleKey??''} count={numItems}
             selectedCount={Object.values(bakeType==='pizza'?pizzaPartyQtys:sandwichParty.qtys).reduce((sum,qty)=>sum+qty,0)} onChoose={openLateFillings} />}
+          {recipeGenerated&&destination==='recipe'&&hasFillings&&<button type="button" className="bh-section-back" onClick={()=>{openDestination('protocol');setProtocolView('fillings');}}>{fr?'Préparer les garnitures →':'Prepare toppings and fillings →'}</button>}
 
 
           {destination==='service'&&bakeType==='pizza'&&serviceView==='fillings'&&<button type="button" className="bh-section-back" onClick={()=>{setServiceView('dough');scrollToStepTop();}}>{fr?'← Four et conseils de cuisson':'← Oven and cooking advice'}</button>}

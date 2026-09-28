@@ -33,13 +33,15 @@ async function navigate(page,label,locale='fr'){
  await navigator(page).scrollIntoViewIfNeeded();
  if(await navigator(page).getAttribute('aria-expanded')!=='true')await navigator(page).tap();
  const nav=page.getByRole('navigation',{name:locale==='fr'?'Votre fournée':'Your bake',exact:true});
- await expect(nav.getByRole('button').locator('strong')).toHaveText(locale==='fr'?destinations:englishDestinations);
+ await expect(nav.locator('[data-destination-label]')).toHaveText(locale==='fr'?destinations:englishDestinations);
  await fits(page,nav);
  for(const button of await nav.getByRole('button').all()){
   await fits(page,button);
   expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
  }
- await nav.getByRole('button').filter({has:page.getByText(label,{exact:true})}).tap();
+ const dough=nav.getByRole('button',{name:locale==='fr'?'Ma pâte':'My dough',exact:true});
+ if((label==='Recette'||label==='Recipe')&&await dough.count())await dough.tap();
+ else await nav.getByRole('button').filter({has:page.getByText(label,{exact:true})}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText(label);
  await expect(navigator(page)).toHaveAttribute('aria-expanded','false');
  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
@@ -60,6 +62,36 @@ async function seed(page,{mode='custom',bread=true,activeTab='plan',style,locale
  await expect(navigator(page)).toBeVisible();
  return data;
 }
+
+for(const locale of ['fr','en'])test(`${locale}: compact recipe menu opens fillings, returns to dough and keeps preparation separate`,async({page},testInfo)=>{
+ await seed(page,{bread:false,locale});
+ await navigate(page,locale==='fr'?'Préparation':'Preparation',locale);
+ await navigator(page).tap();
+ const nav=page.getByRole('navigation',{name:locale==='fr'?'Votre fournée':'Your bake',exact:true});
+ await expect(nav.locator('[data-destination-label]')).toHaveCount(6);
+ const meal=nav.getByRole('button',{name:locale==='fr'?'Choisir les garnitures Facultatif':'Choose toppings Optional',exact:true});
+ await fits(page,meal);await unobscured(meal);
+ await testInfo.attach('compact-recipe-menu',{body:await page.screenshot(),contentType:'image/png'});
+ await meal.tap();
+ await expect(page.locator('.bh-navigator-current')).toContainText(locale==='fr'?'Recette':'Recipe');
+ await expect(page.getByRole('heading',{name:locale==='fr'?'Quelles garnitures ?':'Which toppings?',exact:true})).toBeVisible();
+ await navigator(page).tap();
+ await nav.getByRole('button',{name:locale==='fr'?'Ma pâte':'My dough',exact:true}).tap();
+ await expect(page.locator('.bh-navigator-current')).toContainText(locale==='fr'?'Recette':'Recipe');
+ await expect(page.getByRole('heading',{name:locale==='fr'?'Quelles garnitures ?':'Which toppings?',exact:true})).toHaveCount(0);
+ await expect.poll(async()=>(await stored(page))?.numItems).toBe(4);
+ await navigate(page,locale==='fr'?'Ma fournée':'My bake',locale);
+ await expect(page.getByRole('heading',{name:locale==='fr'?'Quelle quantité de pâte ?':'How much dough?',exact:true})).toBeVisible();
+ await noOverflow(page);
+});
+test('compact menu keeps bread-only recipes unsplit',async({page})=>{
+ await seed(page,{style:'brioche'});await navigator(page).tap();
+ const nav=page.getByRole('navigation',{name:'Votre fournée',exact:true});
+ await expect(nav.locator('[data-destination-label]')).toHaveCount(6);
+ await expect(nav.locator('.bh-navigator-recipe')).toHaveCount(0);
+ await nav.getByRole('button',{name:'Recette',exact:true}).tap();
+ await expect(page.locator('.bh-navigator-current')).toHaveText('Recette');
+});
 
 for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}: all destinations, shopping and preparation are usable`,async({page},testInfo)=>{
  await seed(page,{bread,locale:'en'});
@@ -212,7 +244,8 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await page.reload();
  await page.getByRole('button',{name:'Reprendre →',exact:true}).tap();
  await expect(page.getByRole('dialog',{name:'Ma sélection',exact:true})).toHaveCount(0);
- await expect(page.locator('.bh-navigator-current')).toContainText('Préparation');
+ // The selection catalogue belongs to Recipe; its persisted return still resumes Preparation.
+ await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
  const back=page.getByRole('button',{name:/^Valider et revenir à la préparation(?: →)?$/});
  await back.scrollIntoViewIfNeeded();
  await fits(page,back);

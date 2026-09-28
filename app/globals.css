@@ -361,18 +361,25 @@ button,
 @media(max-width:400px){ .bh-navigator-context { gap:4px; font-size:15px; } .bh-navigator-context:has(.bh-organisation-progress) .bh-navigator-current svg { display:none; } .bh-navigator-band { gap:4px; padding-inline:8px; } }
 .bh-bake-navigator-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:8px 3px 4px; max-height:calc(100dvh - var(--bh-navigator-top, 56px) - 92px); overflow-y:auto; overscroll-behavior:contain; }
 .bh-bake-navigator-card {
-  display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
-  gap:5px; min-height:64px; min-width:0; padding:12px; border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:flex-start;
+  gap:8px; min-height:52px; min-width:0; padding:10px; border:1px solid var(--border);
   border-radius:12px; background:var(--cream); color:var(--char); font:inherit;
   font-size:15px; text-align:left; overflow-wrap:break-word; cursor:pointer;
 }
-.bh-bake-navigator-card small { font-size:12px; font-weight:400; line-height:1.4; }
+.bh-bake-navigator-card strong { font-weight:500; }
+.bh-navigator-recipe { grid-column:1/-1; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--cream); }
+.bh-navigator-recipe>strong { display:block; margin-bottom:8px; font-size:14px; font-weight:500; }
+.bh-navigator-recipe-links { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.bh-navigator-recipe-links button { min-width:0; min-height:55px; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--warm); color:var(--char); font:inherit; font-size:14px; overflow-wrap:break-word; cursor:pointer; }
+.bh-navigator-recipe-links small { display:block; margin-top:3px; font-size:12px; color:var(--smoke); }
+.bh-navigator-recipe-links button[aria-current="page"] { border-color:var(--terra); box-shadow:inset 0 0 0 1px var(--terra); color:var(--terra); }
+.bh-navigator-with-meal .bh-navigator-service { grid-column:1/-1; }
 .bh-bake-navigator-card[aria-current="page"] { background:var(--terra); color:#fff; border-color:var(--terra); }
 .bh-bake-navigator button:focus-visible { outline:2px solid var(--terra); outline-offset:3px; }
 .bh-navigator-current { display:flex; align-items:center; gap:8px; min-width:0; }
 .bh-navigator-current svg { flex-shrink:0; }
 .bh-navigator-disclosure { font-size:12px; font-weight:500; text-align:right; max-width:120px; flex-shrink:0; }
-.bh-bake-navigator-card svg { margin-bottom:3px; }
+.bh-bake-navigator-card svg { flex-shrink:0; width:18px; height:18px; }
 .bh-batch-context { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-start; gap:0 4px; font-size:14px; color:var(--smoke); }
 .bh-batch-context button { display:inline-flex; align-items:center; gap:8px; min-width:44px; min-height:44px; padding:0 4px; border:0; background:none; color:var(--terra); font:inherit; cursor:pointer; }
 .bh-batch-context button span:last-child { text-decoration:underline; text-underline-offset:3px; }
