@@ -80,6 +80,8 @@ for(const locale of ['fr','en'])test(`${locale}: compact recipe menu opens filli
  await expect(page.locator('.bh-navigator-current')).toContainText(locale==='fr'?'Recette':'Recipe');
  await expect(page.getByRole('heading',{name:locale==='fr'?'Quelles garnitures ?':'Which toppings?',exact:true})).toHaveCount(0);
  await expect.poll(async()=>(await stored(page))?.numItems).toBe(4);
+ await navigate(page,locale==='fr'?'Ma fournée':'My bake',locale);
+ await expect(page.getByRole('heading',{name:locale==='fr'?'Quelle quantité de pâte ?':'How much dough?',exact:true})).toBeVisible();
  await noOverflow(page);
 });
 test('compact menu keeps bread-only recipes unsplit',async({page})=>{

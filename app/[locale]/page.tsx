@@ -2428,6 +2428,7 @@ export default function Home() {
   function openDestination(next:BakeDestination) {
     setFillingsReturn(null);
     setPrepReturnToService(null);setShoppingReturnToFillings(false);
+    if(next==='batch'&&batchView==='fillings')setBatchView(styleKey?'quantity':'style');
     if(next==='organisation'&&!styleKey){setActiveTab('batch');setBatchView('style');}
     else {
       if(next==='organisation'){
@@ -3408,7 +3409,7 @@ export default function Home() {
   </>;
 
   const mealNoun=bakeType==='pizza'?(fr?'les garnitures':'toppings'):sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'mes tartines':'my toasts'):(fr?'mes sandwichs':'my sandwiches');
-  const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings&&fillingsReturn?fillingsReturn.destination:destination} fr={fr} onChange={openDestination} top={destination==='organisation'?0:stickTop}
+  const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings?'recipe':destination} fr={fr} onChange={openDestination} top={destination==='organisation'?0:stickTop}
     recipeMeal={styleKey&&(pizzaPartyEnabled||sandwichEnabled)?{label:`${hasFillings?(fr?'Voir':'View'):(fr?'Choisir':'Choose')} ${mealNoun}`,selected:hasFillings,active:browsingFillings,onChoose:()=>{setFillingsReturn({destination:'recipe',view:'dough'});setBatchView('fillings');setActiveTab('batch');setNavHidden(false);scrollToStepTop();}}:undefined}
     progress={destination==='organisation' && modeChosen && !setupOverview ? <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>{setModeChosen(false);scrollToStepTop();}}} /> : undefined} /> : null;
 
