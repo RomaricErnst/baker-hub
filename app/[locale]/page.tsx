@@ -3787,7 +3787,6 @@ export default function Home() {
           {(recipeGenerated||hasFillings)&&(destination==='recipe'||destination==='shopping')&&(pizzaPartyEnabled||sandwichEnabled)&&<FillingsInvitation fr={fr} pizza={bakeType==='pizza'} styleKey={styleKey??''} count={numItems}
             selectedCount={Object.values(bakeType==='pizza'?pizzaPartyQtys:sandwichParty.qtys).reduce((sum,qty)=>sum+qty,0)} onChoose={openLateFillings} />}
           {recipeGenerated&&destination==='recipe'&&hasFillings&&<button type="button" className="bh-section-back" onClick={()=>{openDestination('protocol');setProtocolView('fillings');}}>{fr?'Préparer les garnitures →':'Prepare toppings and fillings →'}</button>}
-          {destination==='recipe'&&!recipeGenerated&&<div className="bh-section-empty"><p>{fr?'Complétez l’organisation pour calculer les ingrédients et les quantités de votre pâte.':'Complete setup to calculate your dough ingredients and quantities.'}</p><button type="button" style={NEXT_CTA} onClick={()=>openDestination('organisation')}>{fr?'Organiser ma pâte':'Set up my dough'}</button></div>}
 
 
           {destination==='service'&&bakeType==='pizza'&&serviceView==='fillings'&&<button type="button" className="bh-section-back" onClick={()=>{setServiceView('dough');scrollToStepTop();}}>{fr?'← Four et conseils de cuisson':'← Oven and cooking advice'}</button>}
