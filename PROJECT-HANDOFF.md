@@ -6,6 +6,8 @@ User approved the compact two-entry Recipe prototype and production publication.
 
 Base main ec9a334, local identical tree 0b5830c. Final test, PR and production verification will be recorded in the publication PR checks/comments; do not infer success from this implementation checkpoint. Physical iPhone validation remains unavailable.
 
+Preview verification caught a pre-existing recovery-route gap now reachable through early meal selection: missing quantity (step 2) was absent from the compact Organisation steps and its correction fell back to the current planning page. SetupBlockerAction now preserves the explicit blocker step ID; a handler regression covers style/quantity/equipment/planning. Reuses the existing incomplete-recipe CTA rather than adding a duplicate.
+
 ## Mat feedback — final validation and publication, 27 September 2026
 
 The user corrected the friend's name to Mat (earlier branch/PR labels say Blake). PR #9 merged as ff06e291cfe17f8cfe8b68990490b86420182ad8 after final head 141221a passed 418 unit/component tests and all 392 macOS iPhone-WebKit scenarios across 320/375/390/430px (CI 36330294041; 16.4 minutes mobile). Build, image checks and sourdough round trips passed. Final preview browser verified consistent traditional-oven summary naming and a single optional toppings edit action preserving 4x260g dough. Bread-only flour target resets on a confirmed family change.
