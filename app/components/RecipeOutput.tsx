@@ -2,7 +2,7 @@
 import type { StarterEvent } from './SchedulePicker';
 import { recommendedFlourName } from '../lib/flourGuidance';
 import { mixingBatchPlan } from '../utils/mixingBatches';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type RecipeResult, type YeastResult, type YeastWarningKey } from '../utils';
 import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, FLOUR_DATA, type PrefermentType, type FlourBlend } from '../data';
@@ -13,6 +13,7 @@ import { formatPrefermentDose, prefermentDilution } from '../utils/prefermentDos
 import { getBreadProtocol } from '../utils/breadProfiles';
 
 interface RecipeOutputProps extends WaterSettingsProps {
+  afterIngredients?: ReactNode;
   containerCapacityLitres?: number;
   onContainerCapacityChange?: (litres: number | undefined) => void;
   mixingBatches?: number;
@@ -376,7 +377,7 @@ export default function RecipeOutput({
   containerCapacityLitres, onContainerCapacityChange, result, numItems, itemWeight, styleName, styleKey, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, units,
   starterEvents, mixingTime, feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
-  onEditSetup, onOpenGuide, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixerCapacityG, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
+  afterIngredients, onEditSetup, onOpenGuide, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixerCapacityG, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
 }: RecipeOutputProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -851,6 +852,8 @@ export default function RecipeOutput({
         </div>
       )}
 
+
+      {afterIngredients}
 
       {onContainerCapacityChange && breadProtocol?.method !== 'unleavened' && <details className="bh-disclosure">
         <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Récipient de fermentation' : 'Fermentation container'}</summary>
