@@ -23,6 +23,7 @@ import { getBreadProtocol } from '../utils/breadProfiles';
 import { scheduledFoldMinutes } from '../utils/scheduleFolds';
 
 interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
+  afterSteps?: React.ReactNode;
   onBackToRecipe?: () => void;
   onBakedChange?: (done:boolean)=>void;
   completionEnabled?: boolean;
@@ -778,7 +779,7 @@ export default function BakeGuide({
   usingPeak2 = false, planningMode = 'last_fed',
   feedRatio = 1, starterLocation = 'rt',
   units, locale,
-  onBackToRecipe, onNavigateToPizzaParty, pizzaActionLabel, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
+  afterSteps, onBackToRecipe, onNavigateToPizzaParty, pizzaActionLabel, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
   phase, active = true, onNavigateToCooking, onNavigateToPreparation, progressTarget,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
@@ -1114,6 +1115,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         <Steps items={profileSteps(breadProtocol.cooling[l])} />
         {fillingsAction}
       </StepCard>
+      {active&&afterSteps}
       {phase==='preparation'&&overviewAction&&<BottomActions>
         {onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'← Recette':'← Recipe'}</button>}
         {overviewAction}
@@ -2099,6 +2101,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         {!breadProtocol && <StepExtras tips={null} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />}
         {fillingsAction}
       </StepCard>}
+      {active&&afterSteps}
       {phase==='preparation'&&overviewAction&&<BottomActions>
         {onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'← Recette':'← Recipe'}</button>}
         {overviewAction}

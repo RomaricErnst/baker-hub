@@ -221,7 +221,7 @@ test('generated country bread offers optional tartines and preserves the recipe 
  await seed(page,{bread:true,style:'pain_campagne'});
  const before=await stored(page);
  await expect(page.getByRole('button',{name:'Choisir mes garnitures',exact:true})).toBeVisible();
- await expect(page.getByText('Et pour accompagner ?',{exact:true})).toBeVisible();
+ await expect(page.getByRole('region',{name:'Garnitures facultatives'}).getByRole('heading',{name:'Garnitures',exact:true})).toBeVisible();
  await noOverflow(page);
  await testInfo.attach('tartine-invitation',{body:await page.screenshot(),contentType:'image/png'});
  await page.getByRole('button',{name:'Choisir mes garnitures',exact:true}).tap();

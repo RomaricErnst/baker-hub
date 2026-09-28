@@ -4192,6 +4192,7 @@ export default function Home() {
               {!recipeGenerated ? null : schedule && recipe && mixerType && (<>
                 <BakeGuide
                   onBackToRecipe={()=>openDestination('recipe')}
+                  afterSteps={destination==='protocol'?lateFillingsHint:null}
                   onRepeat={repeatCurrentRecipe} resultNotes={resultNotes} onResultNotesChange={setResultNotes} onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved && !!user} onBakedChange={setBakedDone} completionEnabled={!hasFillings}
                   progressTarget={(destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough')?guideProgressTarget:null}
                   phase={destination==='service'?'cooking':'preparation'}
@@ -4232,7 +4233,6 @@ export default function Home() {
                   simpleMode={tab === 'simple'}
                   addSeeds={addSeeds && styleKey === 'pain_levain'}
                 />
-                {destination==='protocol'&&lateFillingsHint}
                 </>
 
               )}
@@ -4705,6 +4705,7 @@ export default function Home() {
               {!recipeGenerated ? null : schedule && advancedRecipe && mixerType && (<>
                 <BakeGuide
                   onBackToRecipe={()=>openDestination('recipe')}
+                  afterSteps={destination==='protocol'?lateFillingsHint:null}
                   onRepeat={repeatCurrentRecipe} resultNotes={resultNotes} onResultNotesChange={setResultNotes} onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved && !!user} onBakedChange={setBakedDone} completionEnabled={!hasFillings}
                   progressTarget={(destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough')?guideProgressTarget:null}
                   phase={destination==='service'?'cooking':'preparation'}
@@ -4745,7 +4746,6 @@ export default function Home() {
                   simpleMode={false}
                   addSeeds={addSeeds && styleKey === 'pain_levain'}
                 />
-                {destination==='protocol'&&lateFillingsHint}
                 </>
 
               )}
