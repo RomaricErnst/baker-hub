@@ -1,5 +1,9 @@
 # Bakerhub — continuation handoff
 
+## Production release approval — 28 September 2026
+
+User authorized branch publication and PR11, then explicitly requested production. Preview 1a8ec479 is READY (dpl_GiSkLpBCWEZuLGd84c2NKCqgwNzS). CI36383028979 passed419 unit/component tests, build/i18n, sourdough round trips and400/404 mobile WebKit cases. The four failures are the added last-input hit test in guided climate: screenshots confirm all inputs are intentionally collapsed. Test now opens Advanced settings before checking the final field; strict fixed-bar, clearance and hit assertions remain. Application code is unchanged. Corrected rerun and final merge/domain verification pending. Browser preview access via temporary share URL was rejected by automatic approval review; no alternate access attempted. Physical iPhone verification remains unavailable. This supersedes the earlier publication-block note below.
+
 ## Mobile setup actions and menu clarity — 28 September 2026
 
 User approved the recommended refinements after reporting the missing bottom action on the climate step. Branch: codex/mobile-setup-actions-20260928, based on main 7d77455. Keep six destinations and existing toppings/preparation routes. English section labels are Setup & timing, Shopping list, Baking & serving; recipe entries use parallel Pâte/Dough and Garnitures/Toppings (or contextual sandwiches/toasts). Compact card padding preserves 44px targets, navigation remains collapsed by default and closes after selection. Climate has a short bilingual explanation.

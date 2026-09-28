@@ -441,6 +441,9 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  await navigator(page).tap();
  await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));window.scrollTo(0,document.body.scrollHeight/2);});
  await fixedAction();
+ // Guided mode intentionally keeps every input inside closed disclosures.
+ // Open the advanced fields before checking the final input's hit target.
+ if(mode==='simple')await climate.getByText('Réglages avancés · frigo et farine',{exact:true}).click();
  await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));await fixedAction();
  const lastField=climate.locator('input:visible,select:visible').last();
  await unobscured(lastField);
