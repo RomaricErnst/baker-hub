@@ -1,5 +1,11 @@
 # Bakerhub — continuation handoff
 
+## Compact Rubriques — 28 September 2026
+
+User approved the compact two-entry Recipe prototype and production publication. Preserve six destinations. Menu cards are compact icon/label rows; eligible styles expose My dough and Choose/View toppings, sandwiches or toasts inside Recipe. Unsupported styles such as brioche retain a single Recipe card. Preparation remains one destination with its existing Dough/Fillings tabs. The recipe card offers a direct preparation link after selections exist. Menu selection opens the existing catalogue and returns to Recipe; ungenerated dough has a clear Setup action. No fermentation, formula, account or schema changes. Existing-base journeys retain their original recipe meaning while adopting compact cards.
+
+Base main ec9a334, local identical tree 0b5830c. Final test, PR and production verification will be recorded in the publication PR checks/comments; do not infer success from this implementation checkpoint. Physical iPhone validation remains unavailable.
+
 ## Mat feedback — final validation and publication, 27 September 2026
 
 The user corrected the friend's name to Mat (earlier branch/PR labels say Blake). PR #9 merged as ff06e291cfe17f8cfe8b68990490b86420182ad8 after final head 141221a passed 418 unit/component tests and all 392 macOS iPhone-WebKit scenarios across 320/375/390/430px (CI 36330294041; 16.4 minutes mobile). Build, image checks and sourdough round trips passed. Final preview browser verified consistent traditional-oven summary naming and a single optional toppings edit action preserving 4x260g dough. Bread-only flour target resets on a confirmed family change.

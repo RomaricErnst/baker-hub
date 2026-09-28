@@ -3405,7 +3405,9 @@ export default function Home() {
     </>}
   </>;
 
+  const mealNoun=bakeType==='pizza'?(fr?'les garnitures':'toppings'):sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'mes tartines':'my toasts'):(fr?'mes sandwichs':'my sandwiches');
   const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings&&fillingsReturn?fillingsReturn.destination:destination} fr={fr} onChange={openDestination} top={destination==='organisation'?0:stickTop}
+    recipeMeal={styleKey&&(pizzaPartyEnabled||sandwichEnabled)?{label:`${hasFillings?(fr?'Voir':'View'):(fr?'Choisir':'Choose')} ${mealNoun}`,selected:hasFillings,active:browsingFillings,onChoose:()=>{setFillingsReturn({destination:'recipe',view:'dough'});setBatchView('fillings');setActiveTab('batch');setNavHidden(false);scrollToStepTop();}}:undefined}
     progress={destination==='organisation' && modeChosen && !setupOverview ? <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>{setModeChosen(false);scrollToStepTop();}}} /> : undefined} /> : null;
 
   // ── Render ────────────────────────────────
@@ -3782,8 +3784,10 @@ export default function Home() {
             </>}
           </section>}
 
-          {recipeGenerated&&(destination==='recipe'||destination==='shopping')&&(pizzaPartyEnabled||sandwichEnabled)&&<FillingsInvitation fr={fr} pizza={bakeType==='pizza'} styleKey={styleKey??''} count={numItems}
+          {(recipeGenerated||hasFillings)&&(destination==='recipe'||destination==='shopping')&&(pizzaPartyEnabled||sandwichEnabled)&&<FillingsInvitation fr={fr} pizza={bakeType==='pizza'} styleKey={styleKey??''} count={numItems}
             selectedCount={Object.values(bakeType==='pizza'?pizzaPartyQtys:sandwichParty.qtys).reduce((sum,qty)=>sum+qty,0)} onChoose={openLateFillings} />}
+          {recipeGenerated&&destination==='recipe'&&hasFillings&&<button type="button" className="bh-section-back" onClick={()=>{openDestination('protocol');setProtocolView('fillings');}}>{fr?'Préparer les garnitures →':'Prepare toppings and fillings →'}</button>}
+          {destination==='recipe'&&!recipeGenerated&&<div className="bh-section-empty"><p>{fr?'Complétez l’organisation pour calculer les ingrédients et les quantités de votre pâte.':'Complete setup to calculate your dough ingredients and quantities.'}</p><button type="button" style={NEXT_CTA} onClick={()=>openDestination('organisation')}>{fr?'Organiser ma pâte':'Set up my dough'}</button></div>}
 
 
           {destination==='service'&&bakeType==='pizza'&&serviceView==='fillings'&&<button type="button" className="bh-section-back" onClick={()=>{setServiceView('dough');scrollToStepTop();}}>{fr?'← Four et conseils de cuisson':'← Oven and cooking advice'}</button>}
