@@ -24,9 +24,42 @@ test('quantity backward action returns generated edits to choices, but first cre
 test('finishing changed setup delegates validation without returning early; unchanged setup restores its origin',()=>{
  for(const recipeGenerated of [false,true])for(const protocolStale of [false,true])for(const destination of [null,'recipe','shopping','protocol','service']){
   const calls=[];
-  evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{recipeGenerated,protocolStale,fillingsReturn:destination?{destination}:null,handleGenerate(){calls.push('validate');},setSetupOverview(value){calls.push(['overview',value]);},finishFillings(){calls.push(destination);},openDestination(value){calls.push(value);}});
+  evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{recipeGenerated,protocolStale,canGenerate:true,fillingsReturn:destination?{destination}:null,handleGenerate(){calls.push('validate');},setSetupOverview(value){calls.push(['overview',value]);},finishFillings(){calls.push(destination);},openDestination(value){calls.push(value);}});
   assert.deepEqual(calls,!recipeGenerated||protocolStale?['validate']:[['overview',false],destination||'recipe']);
  }
+});
+
+test('an explicitly returned clean but invalid generated edit remains pending and cannot bypass validation',()=>{
+ for(const destination of [null,'recipe','shopping','protocol','service']){
+  const calls=[];
+  evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{recipeGenerated:true,protocolStale:false,canGenerate:false,fillingsReturn:destination?{destination}:null,setProtocolStale(value){calls.push(['stale',value]);},handleGenerate(){calls.push('validate');},setSetupOverview(){throw Error('Invalid return cannot dismiss editing');},finishFillings(){throw Error('Invalid return cannot restore output');},openDestination(){throw Error('Invalid return cannot restore output');}});
+  assert.deepEqual(calls,[['stale',true],'validate']);
+ }
+});
+
+test('starter user choices change the recipe key, while planner outputs and readiness do not',()=>{
+ const node=all(n=>ts.isVariableDeclaration(n)&&n.name.getText(tree)==='recipeInputKey')[0];
+ const expression=node.initializer.getText(tree);
+ const names=new Set();
+ function visit(n){if(ts.isIdentifier(n))names.add(n.text);ts.forEachChild(n,visit);}visit(node.initializer);
+ const context=Object.fromEntries([...names].filter(n=>!['JSON','stringify','getTime'].includes(n)).map(n=>[n,null]));
+ const baseline=evaluate(expression,context);
+ for(const name of ['starterState','starterLocation','planningMode','lastFedTime','knownPeakTime','hasNotFedYet','lastFedAge','lastFeedRatio','nextFeedRatioOverride','ratioMode','tang']){
+  const changed={...context,[name]:name.endsWith('Time')?new Date('2026-10-01T08:00:00Z'):'user change'};
+  assert.notEqual(evaluate(expression,changed),baseline,`${name} must invalidate the recipe`);
+ }
+ for(const name of ['nextFeedRatio','starterEvents','starterPeakTime','starterTimingValid','scheduleCandidateValid']){
+  assert.equal(names.has(name),false,`${name} is a planner output, not a user input`);
+  assert.equal(evaluate(expression,{...context,[name]:'planner initialization'}),baseline);
+ }
+});
+
+test('the complete local resume handler never overwrites restored pending validation with false',()=>{
+ const restore=all(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='applySession')[0];
+ const assignments=[];
+ function visit(n){if(ts.isCallExpression(n)&&n.expression.getText(tree)==='setProtocolStale')assignments.push(n.arguments[0].getText(tree));ts.forEachChild(n,visit);}visit(restore);
+ assert.deepEqual(assignments,['session.protocolStale === true'],'Later generated-session or cleanup branches must not clear a saved pending edit');
+ for(const protocolStale of [true,false,undefined])assert.equal(evaluate(assignments[0],{session:{protocolStale}}),protocolStale===true);
 });
 
 test('the first input edit after generation marks the recipe stale; mounting and restoration do not',()=>{

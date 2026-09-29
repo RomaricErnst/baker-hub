@@ -1440,6 +1440,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   const qtys: Qty = controlledQtys ?? internalQtys;
   const getQty = (id: string) => qtys[id] ?? 0;
   const totalQty = Object.values(qtys).reduce((a, b) => a + b, 0);
+  // Removing the last optional topping must not trap an origin-aware edit.
+  // Initial existing-base selection still requires a pizza before proceeding.
+  const selectionActionDisabled = totalQty === 0 && (!onSelectionDone || (baseReady && !directSelectionReturn));
   const changeQty = (id: string, delta: number) => {
     const next = { ...qtys, [id]: Math.max(0, (qtys[id] ?? 0) + delta) };
     if (!next[id]) delete next[id];
@@ -2762,7 +2765,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           zIndex: 90,
         }}>
           {directSelectionReturn&&totalQty>0 ? <button type="button" className="bh-back-action" onClick={()=>setSummarySheetOpen(true)}>{l==='fr'?'Ma sélection':'My selection'} · {totalQty}</button> : !directSelectionReturn&&onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{l==='fr'?'Étape précédente':'Previous step'}</button>}
-          <button type="button" disabled={totalQty === 0&&(!onSelectionDone||baseReady)} onClick={() => (totalQty===0||(directSelectionReturn&&totalQty<=numItems))?onSelectionDone?.():setSummarySheetOpen(true)} style={{...NEXT_CTA,width:'100%',minHeight:44,opacity:totalQty===0&&(!onSelectionDone||baseReady) ? .65 : 1}}>
+          <button type="button" disabled={selectionActionDisabled} onClick={() => (totalQty===0||(directSelectionReturn&&totalQty<=numItems))?onSelectionDone?.():setSummarySheetOpen(true)} style={{...NEXT_CTA,width:'100%',minHeight:44,opacity:selectionActionDisabled ? .65 : 1}}>
             {directSelectionReturn&&onSelectionDone ? (totalQty>numItems?(l==='fr'?'Vérifier la quantité de pâte':'Check dough quantity'):selectionDoneLabel) : totalQty === 0 ? (onSelectionDone&&!baseReady?(selectionDoneLabel??(l==='fr'?'Définir ma recette':'Set up my recipe')):(l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas')) : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`)}
           </button>
 

@@ -572,7 +572,7 @@ export default function RecipeOutput({
       {(hasPref || (sdActive && mode === 'custom')) && <section aria-label={locale === 'fr' ? 'Quantités totales' : 'Total ingredients'}>
         <h3 style={{fontSize:17}}>{locale === 'fr' ? 'Quantités totales de la recette' : 'Total recipe ingredients'}</h3>
         <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={mode === 'custom' ? '100%' : undefined}
-          sub={mode === 'custom' && flourBlend ? flourShoppingName(styleKey ?? '', locale, mode, flourBlend) : guidedFlourGuidance} />
+          sub={mode === 'custom' && flourBlend ? flourShoppingName(styleKey ?? '', locale, mode, flourBlend, false) : guidedFlourGuidance} />
         <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
         <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
         {pf && pf.prefYeastGrams > 0 && <IngRow label={t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)} grams={formatPrefermentDose(pf.prefYeastGrams)} advancedPct={mode === 'custom' ? pctStr(pf.prefYeastGrams / flour * 100) : undefined} />}

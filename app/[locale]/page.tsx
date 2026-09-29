@@ -1558,7 +1558,6 @@ export default function Home() {
         setActiveStep(99);
       }
       setShowResults(true);
-      setProtocolStale(false);
     } else {
       const companionTab = session.bakeType === 'pizza' ? 'pizzaparty' : 'sandwiches';
       setActiveTab(session.activeTab === companionTab && (session.bakeType === 'pizza' || !!session.styleKey && !!sandwichFamilyForStyle(session.styleKey)) ? companionTab : 'setup');
@@ -1617,7 +1616,6 @@ export default function Home() {
     if (session.usingPeak2 !== undefined) setUsingPeak2(Boolean(session.usingPeak2));
     if (session.feed2Time) setFeed2Time(new Date(session.feed2Time));
     if (session.starterFridgeInTime) setStarterFridgeInTime(new Date(session.starterFridgeInTime));
-    setProtocolStale(false);
     setSessionRestored(true);
     setReviewMode(true);
     setActiveStep(session.activeStep ?? 99);
@@ -1660,7 +1658,10 @@ export default function Home() {
 
   // Set protocolStale when config changes after recipe generated.
   // Skip the first mount invocation — initial state is not a user change.
-  const recipeInputKey = JSON.stringify([tab,bakeType,styleKey,numItems,itemWeight,totalFlourTarget,ovenType,ovenConstruction,mixerType,customMixerCapacityG,mixingBatches,yeastType,kitchenTemp,humidity,fridgeTemp,manualHydration,manualOil,manualSugar,manualSalt,flourBlend,prefermentType,prefermentType!=='none'?(prefermentFlourPct??20):prefermentFlourPct,targetDoughTemp,flourInFridge,measuredFlourTemp,measuredPrefermentTemp,wastePct,addSeeds,priorityOverride]);
+  // Starter choices below come from user controls. Do not include solver outputs
+  // (nextFeedRatio, events, peak or validity): planner initialization can refresh
+  // those without changing a restored, already validated recipe.
+  const recipeInputKey = JSON.stringify([tab,bakeType,styleKey,numItems,itemWeight,totalFlourTarget,ovenType,ovenConstruction,mixerType,customMixerCapacityG,mixingBatches,yeastType,kitchenTemp,humidity,fridgeTemp,manualHydration,manualOil,manualSugar,manualSalt,flourBlend,prefermentType,prefermentType!=='none'?(prefermentFlourPct??20):prefermentFlourPct,targetDoughTemp,flourInFridge,measuredFlourTemp,measuredPrefermentTemp,wastePct,addSeeds,priorityOverride,starterState,starterLocation,planningMode,lastFedTime?.getTime()??null,knownPeakTime?.getTime()??null,hasNotFedYet,lastFedAge,lastFeedRatio,nextFeedRatioOverride,ratioMode,tang]);
   const previousRecipeInputKey = useRef(recipeInputKey);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -1962,7 +1963,7 @@ export default function Home() {
     const cr = tab === 'custom' ? advancedRecipe : recipe;
     if (!cr) return undefined;
     const items: Array<{ name: string; amount: string }> = [
-      { name: flourShoppingName(styleKey ?? '', locale, tab, flourBlend), amount: `${Math.round(cr.flour)}g` },
+      { name: flourShoppingName(styleKey ?? '', locale, tab, flourBlend, !cr.preferment && !cr.sourdough), amount: `${Math.round(cr.flour)}g` },
       { name: locale === 'fr' ? 'Sel' : 'Salt', amount: `${Math.round(cr.salt)}g` },
     ];
     const yg = cr.preferment != null ? cr.preferment.prefYeastGrams : cr.yeast?.convertedGrams;
@@ -1980,7 +1981,7 @@ export default function Home() {
     if (!cr) return undefined;
     const fr = locale === 'fr';
     const rows = [
-      ...(cr.flourParts?.length ? cr.flourParts.map(part=>({id:`flour_${part.key}`,name:fr?part.nameFr:part.name,grams:part.grams})) : [{id:'flour', name:flourShoppingName(styleKey ?? '', locale, tab, flourBlend), grams:cr.flour}]),
+      ...(cr.flourParts?.length ? cr.flourParts.map(part=>({id:`flour_${part.key}`,name:fr?part.nameFr:part.name,grams:part.grams})) : [{id:'flour', name:flourShoppingName(styleKey ?? '', locale, tab, flourBlend, !cr.preferment && !cr.sourdough), grams:cr.flour}]),
       {id:'water', name:fr?'Eau':'Water', grams:cr.water},
       {id:'salt', name:fr?'Sel':'Salt', grams:cr.salt},
       {id:'olive_oil', name:fr?'Huile':'Oil', grams:cr.oil},
@@ -2487,6 +2488,10 @@ export default function Home() {
     captureEditReturn();setBatchView('quantity');setActiveTab('batch');setNavHidden(false);scrollToStepTop();
   }
   function finishSetupEdit() {
+    // A clean flag is not proof of current validity. Only an explicit return
+    // attempt marks an invalid clean plan pending; never do this merely because
+    // a restored planner is still initializing its readiness callbacks.
+    if(recipeGenerated&&!canGenerate){setProtocolStale(true);handleGenerate();return;}
     if(!recipeGenerated||protocolStale){handleGenerate();return;}
     setSetupOverview(false);
     if(fillingsReturn)finishFillings();else openDestination('recipe');

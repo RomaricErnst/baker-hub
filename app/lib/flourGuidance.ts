@@ -24,12 +24,19 @@ export function recommendedFlourName(styleKey: string, locale: string): string {
   })[locale === 'fr' ? 'fr' : 'en'];
 }
 
-export function flourShoppingName(styleKey: string, locale: string, mode: 'simple'|'custom', blend?: FlourBlend): string {
+export function flourShoppingName(styleKey: string, locale: string, mode: 'simple'|'custom', blend?: FlourBlend, includeBlendPercentages = true): string {
   if (mode !== 'custom' || !blend) return recommendedFlourName(styleKey, locale);
   const name = (key: keyof typeof FLOUR_DATA, custom?: string) => custom || (locale === 'fr' ? FLOUR_DATA[key]?.nameFr : FLOUR_DATA[key]?.name) || key;
   const primary = name(blend.flour1, blend.brandProduct);
   if (!blend.flour2 || blend.ratio1 >= 100) return primary;
   const third = blend.flour3 && blend.ratio2 !== undefined && blend.ratio1 + blend.ratio2 < 100;
+  // A primary-flour preferment or starter changes total-flour proportions.
+  // Their aggregate buying label must not present final-dough ratios as totals.
+  if (!includeBlendPercentages) {
+    const names = [primary, name(blend.flour2, blend.customFlour2Name)];
+    if (third) names.push(name(blend.flour3!, blend.customFlour3Name));
+    return names.join(' + ');
+  }
   const parts = [`${blend.ratio1} % ${primary}`, `${third ? blend.ratio2 : 100-blend.ratio1} % ${name(blend.flour2, blend.customFlour2Name)}`];
   if (third) parts.push(`${100-blend.ratio1-blend.ratio2!} % ${name(blend.flour3!, blend.customFlour3Name)}`);
   return parts.join(' + ');

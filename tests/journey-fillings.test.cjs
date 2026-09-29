@@ -66,3 +66,24 @@ test('generated shopping uses active-only shared actions while existing bases re
   assert.match(label,/Return to /);
   assert.doesNotMatch(label,/Valider et|Confirm and/);
 });
+
+test('empty existing-base direct edits can return while initial selection remains required',()=>{
+  const source=fs.readFileSync('app/components/ToppingSelector.tsx','utf8');
+  const expression=source.match(/const selectionActionDisabled = ([^;]+);/)[1];
+  const disabled=new Function('totalQty','onSelectionDone','baseReady','directSelectionReturn',`return (${expression});`);
+  const done=()=>{};
+  assert.equal(disabled(0,done,true,true),false,'removing the last topping preserves origin return');
+  assert.equal(disabled(0,done,true,false),true,'initial existing-base selection still requires toppings');
+  assert.equal(disabled(0,undefined,true,true),true,'no return handler cannot become an enabled action');
+  assert.equal(disabled(0,done,false,true),false,'from-scratch optional selection remains skippable');
+  assert.equal(disabled(1,done,true,true),false);
+  const footer=source.slice(source.indexOf('{/* ── Sticky bar — always visible'));
+  assert.match(footer,/disabled=\{selectionActionDisabled\}/);
+  assert.match(footer,/opacity:selectionActionDisabled \? \.65 : 1/);
+  const handler=footer.match(/onClick=\{\(\) => (\(totalQty===0[^\n]+?)\} style=/)[1];
+  let returned=0,reviewed=0;
+  const click=new Function('totalQty','directSelectionReturn','numItems','onSelectionDone','setSummarySheetOpen',`return (${handler});`);
+  click(0,true,4,()=>returned++,()=>reviewed++);
+  assert.equal(returned,1,'zero goes straight back without restoring a selection or opening review');
+  assert.equal(reviewed,0);
+});

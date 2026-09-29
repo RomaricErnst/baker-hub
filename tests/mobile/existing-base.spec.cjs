@@ -47,6 +47,34 @@ test('purchased pizza skips dough setup and persists served count',async({page})
  await expect(page.getByText('0 / 1 servies',{exact:true})).toBeVisible();await intact(page);
 });
 
+test('existing pizza with no toppings can return to shopping from the catalogue after reload',async({page})=>{
+ await open(page);
+ await page.getByRole('button',{name:'Pizza',exact:true}).tap();
+ await navigate(page,'Courses');
+ await page.getByRole('button',{name:'Ajouter des garnitures — facultatif',exact:true}).tap();
+ const readDraft=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_existing_base_v1')));
+ await expect.poll(async()=>({section:(await readDraft()).section,origin:(await readDraft()).selectionReturn})).toEqual({section:'batch',origin:'shopping'});
+ await page.reload();
+ const back=page.locator('[data-companion-action]').getByRole('button',{name:'Retour à mes courses',exact:true});
+ await expect(back).toBeVisible();
+ await expect(back).toBeEnabled();
+ for(const fraction of [0,1]){
+  await page.evaluate(f=>window.scrollTo(0,(document.documentElement.scrollHeight-innerHeight)*f),fraction);
+  await expect.poll(()=>back.evaluate(el=>{
+   const r=el.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
+   return r.height>=44&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&el.contains(document.elementFromPoint(x,y));
+  })).toBe(true);
+ }
+ await back.tap();
+ await expect(page.getByRole('heading',{name:'Liste de courses',exact:true})).toBeVisible();
+ await expect.poll(async()=>(await readDraft()).section).toBe('shopping');
+ const after=await readDraft();
+ expect(after.base).toBe('pizza');
+ expect(Object.values(after.pizza).reduce((sum,n)=>sum+n,0)).toBe(0);
+ expect(after.selectionReturn).toBeNull();
+ await intact(page);
+});
+
 test('pain de mie clubs and croques use slices and cook after assembly',async({page})=>{
  await open(page);await page.getByRole('button',{name:'Pain de mie · clubs & croques',exact:true}).tap();
  await page.getByRole('spinbutton',{name:'Quantité Club sandwich au poulet et bacon',exact:true}).fill('2');
