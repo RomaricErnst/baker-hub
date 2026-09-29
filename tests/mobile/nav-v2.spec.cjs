@@ -2,7 +2,7 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 
 // These contracts cover the replacement journey. Legacy mobile specs remain
 // intact as the reference for functionality outside this navigation change.
-const destinations=['Ma fournée','Organisation','Recette','Courses','Préparation','Cuisson & service'];
+const destinations=['Ma fournée','Organisation & horaires','Recette','Courses','Préparation','Cuisson & service'];
 // English labels match BAKE_DESTINATIONS in app/lib/bakeNavigation.ts.
 const englishDestinations=['My bake','Setup & timing','Recipe','Shopping list','Preparation','Baking & serving'];
 const navigator=page=>page.locator('.bh-bake-navigator-trigger');
@@ -93,6 +93,23 @@ test('compact menu keeps bread-only recipes unsplit',async({page})=>{
  await expect(page.locator('.bh-navigator-current')).toHaveText('Recette');
 });
 
+for(const locale of ['fr','en'])test(`${locale}: generated task screens keep section navigation before compact bake context`,async({page})=>{
+ await seed(page,{bread:false,locale});
+ for(const label of locale==='fr'?['Recette','Courses','Préparation']:['Recipe','Shopping list','Preparation']){
+  await navigate(page,label,locale);
+  const context=page.locator('.bh-bake-context');
+  await expect(context).toHaveCount(1);
+  await expect(context).toContainText('Navigation audit');
+  expect(await context.evaluate(el=>{
+   const nav=document.querySelector('.bh-bake-navigator');
+   return !!nav&&!!(nav.compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING);
+  })).toBe(true);
+  const navBounds=await page.locator('.bh-bake-navigator').boundingBox();
+  const contextBounds=await context.boundingBox();
+  expect(contextBounds.y).toBeGreaterThanOrEqual(navBounds.y+navBounds.height);
+ }
+});
+
 for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}: all destinations, shopping and preparation are usable`,async({page},testInfo)=>{
  await seed(page,{bread,locale:'en'});
  for(const label of ['My bake','Setup & timing','Recipe','Baking & serving','Shopping list','Preparation']){
@@ -116,7 +133,7 @@ for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}
     const bounds=await start.boundingBox();
     expect(page.viewportSize().height-bounds.y-bounds.height).toBeGreaterThanOrEqual(23);
    }
-   await actions.getByRole('button',{name:'← Recipe',exact:true}).tap();
+   await actions.getByRole('button',{name:'Back to recipe',exact:true}).tap();
    await expect(page.locator('.bh-navigator-current')).toHaveText('Recipe');
    const invitation=page.locator('.bh-fillings-invitation-compact');
    await expect(invitation).toHaveCount(1);
@@ -124,7 +141,9 @@ for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}
     const total=[...document.querySelectorAll('div')].find(h=>h.textContent.trim()==='Total Dough');
     return !!total&&!!(total.compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING);
    })).toBe(true);
-   await expect(page.locator('.bh-step-actions:visible')).toHaveCount(0);
+   await expect(page.locator('.bh-step-actions:visible')).toHaveCount(1);
+   await expect(page.locator('.bh-step-actions:visible')).toHaveClass(/bh-recipe-next/);
+   await expect(page.locator('.bh-step-actions:visible')).toHaveCSS('position','fixed');
    await navigate(page,'Preparation','en');
    await page.getByRole('button',{name:'Start preparation →',exact:true}).tap();
    await expect(page.locator('section[aria-label*=" · Step "]:visible')).toHaveCount(1);
@@ -163,10 +182,24 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await expect.poll(async()=>({style:(await stored(page))?.styleKey,count:(await stored(page))?.numItems})).toEqual({style:bread?'baguette':'neapolitan',count:5});
   const chosenStyle=(await stored(page)).styleKey;
   // From-scratch setup is dough-only. Optional meal planning follows recipe generation.
-  await expect(page.getByRole('button',{name:'Choisir mes garnitures',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Ajouter des garnitures — facultatif',exact:true})).toHaveCount(0);
   await expect(quantity).toHaveValue('5');
   expect((await stored(page)).styleKey).toBe(chosenStyle);
   const organise=page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true});
+  const quantityActions=page.locator('.bh-batch-actions');
+  await expect(quantityActions).toHaveClass(/bh-step-actions/);
+  await expect(quantityActions).toHaveCSS('position','fixed');
+  await expect(page.getByText('Horaire de cuisson souhaité (facultatif)',{exact:true})).toHaveCount(0);
+  for(const fraction of [0,.5,1]){
+   await page.evaluate(f=>window.scrollTo(0,(document.documentElement.scrollHeight-innerHeight)*f),fraction);
+   await unobscured(organise);
+   const r=await organise.boundingBox();
+   expect(page.viewportSize().height-r.y-r.height).toBeGreaterThanOrEqual(23);
+  }
+  await expect.poll(()=>quantityActions.evaluate(el=>{
+   const slot=el.closest('.bh-step-action-slot');
+   return !!slot&&slot.getBoundingClientRect().height>=el.getBoundingClientRect().height;
+  })).toBe(true);
   await organise.scrollIntoViewIfNeeded();
   await fits(page,organise);
   await unobscured(organise);
@@ -192,7 +225,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
  test(`${mode} ${bread?'bread':'pizza'}: generated bake exposes six consistent destinations`,async({page},testInfo)=>{
   await seed(page,{mode,bread});
   const before=await stored(page);
-  for(const label of ['Courses','Préparation','Cuisson & service','Recette','Organisation','Ma fournée']){
+  for(const label of ['Courses','Préparation','Cuisson & service','Recette','Organisation & horaires','Ma fournée']){
    await navigate(page,label);
    await expect(page.locator('#bh-bottom-nav')).toHaveCount(0);
   }
@@ -220,13 +253,15 @@ test('plain bread has useful shopping without requiring any filling selection',a
 test('generated country bread offers optional tartines and preserves the recipe on return',async({page},testInfo)=>{
  await seed(page,{bread:true,style:'pain_campagne'});
  const before=await stored(page);
- await expect(page.getByRole('button',{name:'Choisir mes garnitures',exact:true})).toBeVisible();
- await expect(page.getByRole('region',{name:'Garnitures facultatives'}).getByRole('heading',{name:'Garnitures',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Ajouter des garnitures — facultatif',exact:true})).toBeVisible();
+ const invitation=page.getByRole('region',{name:'Garnitures facultatives'});
+ await expect(invitation.getByRole('heading')).toHaveCount(0);
+ await expect(invitation.getByRole('button')).toHaveCount(1);
  await noOverflow(page);
  await testInfo.attach('tartine-invitation',{body:await page.screenshot(),contentType:'image/png'});
- await page.getByRole('button',{name:'Choisir mes garnitures',exact:true}).tap();
+ await page.getByRole('button',{name:'Ajouter des garnitures — facultatif',exact:true}).tap();
  await expect(page.getByRole('article').first()).toBeVisible();
- await page.locator('[data-companion-action]').getByRole('button',{name:'← Précédent',exact:true}).tap();
+ await page.locator('[data-companion-action] .bh-back-action').filter({hasText:'Retour à la recette'}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
  expect((await stored(page)).numItems).toBe(before.numItems);
  await expect.poll(async()=>(await stored(page))?.styleKey).toBe('pain_campagne');
@@ -266,7 +301,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await expect(page.getByRole('dialog',{name:'Ma sélection',exact:true})).toHaveCount(0);
  // The selection catalogue belongs to Recipe; its persisted return still resumes Preparation.
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
- const back=page.getByRole('button',{name:/^Valider et revenir à la préparation(?: →)?$/});
+ const back=page.getByRole('button',{name:/^Retour à la préparation(?: →)?$/});
  await back.scrollIntoViewIfNeeded();
  await fits(page,back);
  await unobscured(back);
@@ -342,14 +377,14 @@ test('late fillings opened from Recipe return to Recipe without changing the dou
  await seed(page,{bread:true});
  await navigate(page,'Recette');
  const before=await stored(page);
- await page.getByRole('button',{name:'Choisir mes garnitures',exact:true}).tap();
+ await page.getByRole('button',{name:'Ajouter des garnitures — facultatif',exact:true}).tap();
  const article=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Jambon-beurre',exact:true})});
  await article.getByRole('spinbutton').fill('1');
  await article.getByRole('spinbutton').blur();
  await expect.poll(async()=>(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']).toBe(1);
- await page.getByRole('button',{name:/^Valider et revenir à la recette(?: →)?$/}).tap();
+ await page.getByRole('button',{name:/^Retour à la recette(?: →)?$/}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
- await expect(page.getByRole('button',{name:'Modifier mes garnitures · 1',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Modifier les garnitures · 1 portion',exact:true})).toBeVisible();
  await expect(page.locator('.bh-recipe-fillings-link')).toHaveCount(0);
  const after=await stored(page);
  for(const key of ['styleKey','numItems','itemWeight','eatTime','recipeGenerated'])expect(after[key],key).toEqual(before[key]);
@@ -439,7 +474,7 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
  await expect(step.getByRole('heading',{name:'Pétrissage',exact:true})).toBeVisible();
  await step.getByRole('button',{name:mode==='simple'?/KitchenAid \/ robot pâtissier/:/Robot pâtissier/}).tap();
- await step.locator('.bh-step-actions').getByRole('button',{name:'Précédent',exact:true}).tap();
+ await step.locator('.bh-step-actions').getByRole('button',{name:'Étape précédente',exact:true}).tap();
  await expect(step.getByRole('heading',{name:'Four',exact:true})).toBeVisible();
  await expect.poll(async()=>(await stored(page))?.mixerType).toBe('stand');
  await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
@@ -467,7 +502,7 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));await fixedAction();
  const lastField=climate.locator('input:visible,select:visible').last();
  await unobscured(lastField);
- const back=climate.getByRole('button',{name:'Précédent',exact:true});
+ const back=climate.getByRole('button',{name:'Étape précédente',exact:true});
  await back.scrollIntoViewIfNeeded();await fits(page,back);await unobscured(back);
  await noOverflow(page);
  await testInfo.attach('climate-back-and-continue',{body:await page.screenshot(),contentType:'image/png'});
@@ -485,7 +520,7 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
   await expect(cooling).toHaveValue('direct');
   await expect(climate.getByText('Vérifiez que votre pétrin accepte la glace.',{exact:true})).toBeVisible();
   await cooling.selectOption('premelt');
-  await climate.getByRole('button',{name:'Précédent',exact:true}).tap();
+  await climate.getByRole('button',{name:'Étape précédente',exact:true}).tap();
   await step.getByRole('button',{name:/Pétrin (?:à spirale|spiral)/}).tap();
   await expect.poll(async()=>(await stored(page))?.waterMethod).toBe('premelt');
  }
@@ -633,7 +668,7 @@ for(const bread of [false,true])test(`late ${bread?'bread':'pizza'} surplus keep
  await page.getByRole('button',{name:bread?'Vérifier la quantité de pain':'Vérifier la quantité de pâte',exact:true}).tap();
  await expect(page.getByRole('dialog')).toBeVisible();
  await expect.poll(async()=>(await stored(page))?.numItems).toBe(4);
- await page.getByRole('dialog').getByRole('button',{name:/^Valider et revenir à la préparation/}).tap();
+ await page.getByRole('dialog').getByRole('button',{name:/^Retour à la préparation/}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Préparation');
  expect((await stored(page)).numItems).toBe(4);
 });

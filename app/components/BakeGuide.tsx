@@ -1117,7 +1117,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       </StepCard>
       {active&&afterSteps}
       {phase==='preparation'&&overviewAction&&<BottomActions>
-        {onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'← Recette':'← Recipe'}</button>}
+        {onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'Retour à la recette':'Back to recipe'}</button>}
         {overviewAction}
       </BottomActions>}
       {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange} sessionSaved={sessionSaved}/>}
@@ -2103,7 +2103,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       </StepCard>}
       {active&&afterSteps}
       {phase==='preparation'&&overviewAction&&<BottomActions>
-        {onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'← Recette':'← Recipe'}</button>}
+        {onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'Retour à la recette':'Back to recipe'}</button>}
         {overviewAction}
       </BottomActions>}
       {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange} sessionSaved={sessionSaved}/>}

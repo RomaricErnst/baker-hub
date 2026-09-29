@@ -55,7 +55,7 @@ test('actual apply handler persists pins and preferment offset immediately; rese
   const start=source.indexOf('const handleScheduleChange =');
   const end=source.indexOf('const prefRemoveFromFridgeTime',start);
   const writes=[],state={};
-  const context={normalizeTimingOverrides,sessionRestored:false,eatTime:null,
+  const context={normalizeTimingOverrides,sessionRestored:false,eatTime:null,recipeGenerated:false,protocolStale:false,isRestoringRef:{current:false},
     repairKey:(st,et,bl,offset)=>JSON.stringify([+st,+et,bl,offset]),
     buildSessionPayload:overrides=>({timingOverrides:{mix:123},...overrides}),
     saveSession:value=>writes.push(value)};

@@ -245,13 +245,13 @@ test('previous/continue and browser back/forward reopen scheduling with confirme
  const {plan}=await seed(page,{preferment:'none'});
  await enter(plan,'mix','2026-09-25T20:15');await expect(confirm(plan)).toBeEnabled();await confirm(plan).tap();
  const before=await stored(page);
- await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:'Précédent',exact:true}).tap();
+ await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:'Étape précédente',exact:true}).tap();
  await expect(page.locator('#step-8')).toBeVisible();
  await page.locator('#step-8 .bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
  // Continue skips already answered steps via nextUnanswered. The saved valid
  // schedule is answered, so the existing flow lands on Fine-tune (step10).
  await expect(page.locator('#step-10')).toBeVisible();
- await page.locator('#step-10 .bh-step-actions').getByRole('button',{name:'Précédent',exact:true}).tap();
+ await page.locator('#step-10 .bh-step-actions').getByRole('button',{name:'Étape précédente',exact:true}).tap();
  await expect(plan).toBeVisible();await expect(reset(page)).toBeVisible();
  await page.goBack();await expect(page.locator('#step-10')).toBeVisible();
  await page.goForward();await expect(plan).toBeVisible();await expect(reset(page)).toBeVisible();
@@ -301,7 +301,7 @@ for(const locale of ['fr','en'])test(`${locale}: explicit oven target and sugges
  await page.getByRole('button',{name:locale==='fr'?/^Jours ouvrés/:/^Weekdays/}).tap();
  await expect.poll(async()=>(await stored(page)).blocks.length).toBeGreaterThan(0);
  expect((await stored(page)).eatTime).toBe(selected.eatTime);await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
- await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:locale==='fr'?'Précédent':'Back',exact:true}).tap();
+ await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:locale==='fr'?'Étape précédente':'Previous step',exact:true}).tap();
  await expect(page.locator('#step-8')).toBeVisible();await page.goBack();await expect(plan).toBeVisible();
  await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
  await page.reload();await expect(plan).toBeVisible();await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);

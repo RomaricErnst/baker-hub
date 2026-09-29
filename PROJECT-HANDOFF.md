@@ -1,3 +1,13 @@
+# Journey consistency — 29 September 2026
+
+User approved the independent five-perspective audit recommendations, publication to main/production, then re-review by the same five agents. Base verified production/main bf4ed5f (PR12). Branch codex/journey-consistency-20260929. Preserve six sections and all recipe calculations.
+
+Section navigation precedes compact bake context consistently. Quantity/style/setup/review/recipe/shopping use the measured BottomActions component, with opaque top safe-area chrome; Organisation remains static. Setup edit controls distinguish Previous step, Back to my choices, origin-specific return and Update recipe and return. Changed recipe inputs are marked stale, persisted across local/cloud resume and gated on Recipe/Shopping/Preparation/Service until existing full generation validation succeeds. First change after generation is no longer accidentally skipped. Topping selection keeps autosaved, origin-aware returns without fake Confirm wording. Physical iPhone Safari/keyboard/VoiceOver remains unverified.
+
+Quantity no longer has a separate preferred-time editor; Setup owns timing and quantity changes preserve it. Recipe has one compact optional Add/Edit toppings control after ingredients; selected pizza coverage remains explicit, bread servings are never divided by loaf count. Shopping has one selection action beside the heading and retains partial coverage; sharing remains outside the fixed action bar. Guided flour buying identity is visible beside Flour, with only rationale collapsed. Custom blend/starter/preferment accounting unchanged. Edit setup & timing replaces ambiguous Edit my preparation; guided mode and instant dry yeast names are clarified.
+
+Regression tests cover flour identity, quantity return, stale-state persistence and generation guards, shopping action hierarchy, opaque chrome and measured quantity footer. Integrated unit/build/CI/preview/publication and final independent feedback are pending at this checkpoint; do not infer production completion from this entry.
+
 # Phone actions and recipe hierarchy — 28 September 2026
 
 User approved implementation, preview verification and production following expert review. Preparation overview now places Start/Resume with an explicit Recipe return after the overview in a measured mobile fixed bar; hidden guides cannot render it. Setup shares the same BottomActions component. Optional toppings move below generated dough ingredients as a compact row, retaining selected quantities, edit and preparation routes. Shopping and existing-base invitations retain their behavior. No calculations or persistence changes.

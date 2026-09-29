@@ -1,6 +1,6 @@
 export const BAKE_DESTINATIONS = [
   {id:'batch',fr:'Ma fournée',en:'My bake'},
-  {id:'organisation',fr:'Organisation',en:'Setup & timing'},
+  {id:'organisation',fr:'Organisation & horaires',en:'Setup & timing'},
   {id:'recipe',fr:'Recette',en:'Recipe'},
   {id:'shopping',fr:'Courses',en:'Shopping list'},
   {id:'protocol',fr:'Préparation',en:'Preparation'},
