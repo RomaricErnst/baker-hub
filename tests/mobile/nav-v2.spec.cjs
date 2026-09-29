@@ -261,7 +261,7 @@ test('generated country bread offers optional tartines and preserves the recipe 
  await testInfo.attach('tartine-invitation',{body:await page.screenshot(),contentType:'image/png'});
  await page.getByRole('button',{name:'Ajouter des garnitures — facultatif',exact:true}).tap();
  await expect(page.getByRole('article').first()).toBeVisible();
- await page.locator('[data-companion-action] .bh-back-action').filter({hasText:'Retour à la recette'}).tap();
+ await page.locator('[data-companion-action]').getByRole('button',{name:'Retour à la recette',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
  expect((await stored(page)).numItems).toBe(before.numItems);
  await expect.poll(async()=>(await stored(page))?.styleKey).toBe('pain_campagne');
@@ -335,7 +335,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await expect.poll(async()=>(await stored(page))?.navigation?.prepReturnToService).toBe('fillings');
  if(!bread){
   await page.getByRole('button',{name:'Liste de courses',exact:true}).tap();
-  await page.getByRole('button',{name:'Commencer la préparation →',exact:true}).tap();
+  await page.getByRole('button',{name:'Passer à la préparation →',exact:true}).tap();
   await expect(choices.getByRole('button',{name:'Garnitures',exact:true})).toHaveAttribute('aria-pressed','true');
  }
  await page.getByRole('button',{name:bread?'Revenir à l’assemblage →':'Revenir à la cuisson →',exact:true}).tap();
@@ -350,7 +350,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  // The recommended forward path must include dough and baking, not jump
  // directly from shopping through toppings to serving.
  await navigate(page,'Courses');
- await page.getByRole('button',{name:'Commencer la préparation →',exact:true}).tap();
+ await page.getByRole('button',{name:'Passer à la préparation →',exact:true}).tap();
  await expect(choices.getByRole('button',{name:'Pâte',exact:true})).toHaveAttribute('aria-pressed','true');
  for(let step=0;step<25;step++){
   if(await page.getByRole('button',{name:/^Préparer les garnitures(?: →)?$/}).isVisible())break;
@@ -717,7 +717,7 @@ test('anonymous save can reopen account sign-in after local save',async({page})=
  await expect(menu).toContainText('Connectez-vous pour enregistrer cette recette dans votre compte');
 });
 
-test.describe('guided piadina with an early cooking preference',()=>{
+test.describe('guided piadina with cooking time set in planning',()=>{
  test.use({timezoneId:'UTC'});
  test('two setup steps lead to preparation, completion notes and a new bake',async({page},testInfo)=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
@@ -728,13 +728,7 @@ test.describe('guided piadina with an early cooking preference',()=>{
   await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
   await page.getByLabel('Nombre de pièces',{exact:true}).fill('5');
   await page.getByLabel('Nombre de pièces',{exact:true}).blur();
-  await page.locator('summary').filter({hasText:'Horaire de cuisson souhaité (facultatif)'}).tap();
-  const early=page.getByLabel('Horaire de cuisson souhaité',{exact:true});
-  await early.fill('2030-05-10T18:00');await early.blur();
-  await expect.poll(async()=>(await stored(page))?.eatTime).toBe(Date.parse('2030-05-10T18:00:00Z'));
-  // Safari's clear action must return to an empty preference, not Invalid Date.
-  await early.fill('');await early.blur();await expect(early).toHaveValue('');
-  await early.fill('2030-05-10T18:00');await early.blur();
+  await expect(page.getByLabel('Horaire de cuisson souhaité',{exact:true})).toHaveCount(0);
   await page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true}).tap();
   await page.getByRole('button',{name:/^Me laisser guider/}).tap();
   const setup=page.locator('.bh-step-page:visible');
@@ -744,9 +738,14 @@ test.describe('guided piadina with an early cooking preference',()=>{
   await setup.getByRole('button',{name:'Continuer',exact:true}).tap();
   const plan=page.getByRole('region',{name:'Repos et cuisson',exact:true});
   await expect(plan).toBeVisible();
-  await expect(page.getByLabel('Quand commencer la cuisson des piadinas ?',{exact:true})).toHaveValue('2030-05-10T18:00');
+  const cookingTime=page.getByLabel('Quand commencer la cuisson des piadinas ?',{exact:true});
+  await cookingTime.fill('');await cookingTime.blur();await expect(cookingTime).toHaveValue('');
+  await expect(plan.getByRole('button',{name:'Valider le planning',exact:true})).toBeDisabled();
+  await cookingTime.fill('2030-05-10T18:00');await cookingTime.blur();
+  await expect(cookingTime).toHaveValue('2030-05-10T18:00');
   await plan.getByRole('button',{name:'Valider le planning',exact:true}).tap();
   await expect(plan.getByRole('button',{name:'Planning confirmé',exact:true})).toBeVisible();
+  await expect.poll(async()=>(await stored(page))?.eatTime).toBe(Date.parse('2030-05-10T18:00:00Z'));
   await page.getByRole('button',{name:'Créer ma recette',exact:true}).tap();
   await expect.poll(async()=>{const s=await stored(page);return {generated:s?.recipeGenerated,style:s?.styleKey,oven:s?.ovenType,count:s?.numItems};}).toEqual({generated:true,style:'piadina',oven:'griddle',count:5});
   await navigate(page,'Préparation');
