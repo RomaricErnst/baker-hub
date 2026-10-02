@@ -35,6 +35,7 @@ interface PizzaPartyProps extends CompletionActions {
   bakedQtys?: Record<string, number>;
   recipeIngredients?: Array<{ name: string; amount: string }>;
   onSelectionBack?:()=>void;
+  onBackToRecipe?:()=>void;
   onSelectionDone?:()=>void;
   selectionDoneLabel?:string;
   directSelectionReturn?:boolean;
@@ -56,7 +57,7 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onRepeat, resultNotes, onResultNotesChange, saveKind, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,storagePrefix="bh",baseReady=false }: PizzaPartyProps) {
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onRepeat, resultNotes, onResultNotesChange, saveKind, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients,onSelectionBack,onBackToRecipe,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,storagePrefix="bh",baseReady=false }: PizzaPartyProps) {
   // initialQtys ne sert qu'au tout premier montage : un useState ne relit pas
   // sa valeur initiale. A la reprise d'une session, les pizzas etaient bien
   // dans l'etat de la page — donc dans le resume — mais le selecteur gardait
@@ -110,7 +111,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
 
   return (
     <div>
-      {(activeTab === 'shop' || activeTab === 'prep') && <SelectionCoverage selected={Object.values(qtys).reduce((sum,n)=>sum+Math.max(0,n),0)} planned={numItems} locale={locale} />}
+      {activeTab === 'prep' && <SelectionCoverage selected={Object.values(qtys).reduce((sum,n)=>sum+Math.max(0,n),0)} planned={numItems} locale={locale} />}
       {slotNote && (
         <div style={{
           background: 'rgba(156, 130, 72,0.12)',
@@ -157,6 +158,7 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           onGoToMyDough={onGoToMyDough}
           recipeIngredients={recipeIngredients}
           onSelectionBack={onSelectionBack}
+          onBackToRecipe={onBackToRecipe}
           onSelectionDone={onSelectionDone}
           selectionDoneLabel={selectionDoneLabel}
           directSelectionReturn={directSelectionReturn}

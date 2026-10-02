@@ -10,6 +10,11 @@ async function capture(page, testInfo, name) {
 async function verifyHeader(page, testInfo, state) {
   const header = page.locator('header.bh-header');
   await expect(header).toBeVisible();
+  // The whole inset wrapper must be opaque, not just its header child.
+  await expect.poll(()=>page.locator('.bh-header-stack').evaluate(el=>{
+    const color=getComputedStyle(el).backgroundColor;
+    return color!=='transparent'&&color!=='rgba(0, 0, 0, 0)';
+  })).toBe(true);
   await expect(header).toHaveCSS('height', '56px');
   await expect(header.locator('.bh-wordmark')).toHaveCSS('font-size', '24px');
   for (const className of ['.bh-header-menu', '.bh-header-save']) {

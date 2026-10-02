@@ -13,7 +13,7 @@ test('only current validated commercial preferment permits generation, direct an
 test('direct generate call returns to planner when commercial preferment is invalid',()=>{
  const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);let handler;
  function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='handleGenerate')handler=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);
- const calls=[],context={schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,tab:'custom',styleKey:'neapolitan',commercialPrefermentPlanReady:false,scrollToStepTop(){}};
+ const calls=[],context={canGenerate:true,schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,tab:'custom',styleKey:'neapolitan',commercialPrefermentPlanReady:false,scrollToStepTop(){}};
  for(const name of ['setActiveTab','setSetupOverview','setAdvancedStep'])context[name]=value=>calls.push([name,value]);
  vm.runInNewContext(ts.transpileModule(handler+'\nhandleGenerate()',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText,context);
  assert.deepEqual(calls,[['setActiveTab','setup'],['setSetupOverview',false],['setAdvancedStep',9]]);
@@ -33,7 +33,7 @@ test('accepted schedule edits persist immediately; changed dates revoke restore 
  const restoredDate=new Date('2030-04-03T18:00Z');
  for(const changed of [false,true])for(const preservePlan of [false,true]){
   const clears=[],markers=[],saved=[];
-  const context={sessionRestored:true,eatTime:restoredDate,et:new Date(+restoredDate+(changed?3600000:0)),st:new Date(),bl:[],options:{preservePlan},repairKey:()=> 'accepted-key',setAcceptedScheduleRepair:v=>markers.push(v),setSessionRestored:v=>clears.push(v),setStartTime:()=>{},setEatTime:()=>{},setBlocks:()=>{}};
+  const context={recipeGenerated:false,protocolStale:false,isRestoringRef:{current:false},sessionRestored:true,eatTime:restoredDate,et:new Date(+restoredDate+(changed?3600000:0)),st:new Date(),bl:[],options:{preservePlan},repairKey:()=> 'accepted-key',setAcceptedScheduleRepair:v=>markers.push(v),setSessionRestored:v=>clears.push(v),setStartTime:()=>{},setEatTime:()=>{},setBlocks:()=>{}};
   context.buildSessionPayload=overrides=>overrides;
   context.saveSession=value=>saved.push(value);
   vm.runInNewContext(compiled,context);
@@ -52,7 +52,7 @@ test('direct generate call sends unsupported bread protocols back to the relevan
  function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='handleGenerate')handler=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);
  const code=ts.transpileModule(handler+'\nhandleGenerate()',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
  for(const tab of ['simple','custom'])for(const protocolIssue of ['equipment','method','timing']){
-  const calls=[],context={schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,tab,styleKey:'bagel',commercialPrefermentPlanReady:true,recipe:{protocolIssue},advancedRecipe:{protocolIssue},scrollToStepTop(){}};
+  const calls=[],context={canGenerate:true,schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,tab,styleKey:'bagel',commercialPrefermentPlanReady:true,recipe:{protocolIssue},advancedRecipe:{protocolIssue},scrollToStepTop(){}};
   for(const name of ['setActiveTab','setSetupOverview','setActiveStep','setAdvancedStep'])context[name]=value=>calls.push([name,value]);
   vm.runInNewContext(code,context);
   const next=protocolIssue==='equipment'?3:protocolIssue==='timing'?(tab==='custom'?9:7):(tab==='custom'?7:6);
@@ -69,7 +69,7 @@ test('known peak timing conflict blocks both new and previously generated sourdo
  function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='handleGenerate')handler=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);
  const code=ts.transpileModule(handler+'\nhandleGenerate()',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
  for(const recipeGenerated of [false,true]) {
-  const calls=[],context={schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,tab:'simple',styleKey:'pain_levain',commercialPrefermentPlanReady:true,recipe:{},yeastType:'sourdough',starterEqualWeightsConfirmed:true,starterTimingValid:false,recipeGenerated,starterEvents:[{kind:'known_peak'}],scrollToStepTop(){}};
+  const calls=[],context={canGenerate:true,schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,tab:'simple',styleKey:'pain_levain',commercialPrefermentPlanReady:true,recipe:{},yeastType:'sourdough',starterEqualWeightsConfirmed:true,starterTimingValid:false,recipeGenerated,starterEvents:[{kind:'known_peak'}],scrollToStepTop(){}};
   for(const name of ['setActiveTab','setSetupOverview','setActiveStep'])context[name]=value=>calls.push([name,value]);
   vm.runInNewContext(code,context);
   assert.deepEqual(calls,[['setActiveTab','setup'],['setSetupOverview',false],['setActiveStep',7]]);
@@ -86,7 +86,7 @@ test('whole-plan validation gates generation in both modes and directs invalid p
   const allowed=vm.runInNewContext(gate+'\ncanGenerate',context);
   assert.equal(allowed,scheduleCandidateValid&&!scheduleEditing,`${tab}/${method}: valid=${scheduleCandidateValid}, editing=${scheduleEditing}`);
   if(!allowed){
-   const calls=[];Object.assign(context,{styleKey:'neapolitan',scrollToStepTop(){}});
+   const calls=[];Object.assign(context,{generationBlocker:undefined,styleKey:'neapolitan',scrollToStepTop(){},openSetupStep(step){calls.push(['setActiveTab','setup'],['setSetupOverview',false],[tab==='custom'?'setAdvancedStep':'setActiveStep',step]);}});
    for(const name of ['setActiveTab','setSetupOverview','setActiveStep','setAdvancedStep'])context[name]=value=>calls.push([name,value]);
    vm.runInNewContext(code,context);
    assert.deepEqual(calls,[['setActiveTab','setup'],['setSetupOverview',false],[tab==='custom'?'setAdvancedStep':'setActiveStep',tab==='custom'?9:7]]);

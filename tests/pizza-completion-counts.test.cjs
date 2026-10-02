@@ -29,7 +29,7 @@ test('one selected pizza out of 24 never claims the whole bake is ready',()=>{
   assertScoped(html,locale);
  }
  function assertScoped(html,locale){
-  a.match(html,locale==='fr'?/Garnitures suivies : 1 \/ 24 pizzas/:/Toppings tracked: 1 \/ 24 pizzas/);
+  a.match(html,locale==='fr'?/Garnitures pour 1 pizza sur 24/:/Toppings for 1 of 24 pizzas/);
   a.match(html,locale==='fr'?/Votre sélection est cuite/:/Your selected pizzas are baked/);
   a.doesNotMatch(html,/Everything is ready|Tout est prêt|Which pizza goes in next|Quelle pizza enfourner/);
  }

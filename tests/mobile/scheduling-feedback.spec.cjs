@@ -245,13 +245,13 @@ test('previous/continue and browser back/forward reopen scheduling with confirme
  const {plan}=await seed(page,{preferment:'none'});
  await enter(plan,'mix','2026-09-25T20:15');await expect(confirm(plan)).toBeEnabled();await confirm(plan).tap();
  const before=await stored(page);
- await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:'Précédent',exact:true}).tap();
+ await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:'Étape précédente',exact:true}).tap();
  await expect(page.locator('#step-8')).toBeVisible();
  await page.locator('#step-8 .bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
  // Continue skips already answered steps via nextUnanswered. The saved valid
  // schedule is answered, so the existing flow lands on Fine-tune (step10).
  await expect(page.locator('#step-10')).toBeVisible();
- await page.locator('#step-10 .bh-step-actions').getByRole('button',{name:'Précédent',exact:true}).tap();
+ await page.locator('#step-10 .bh-step-actions').getByRole('button',{name:'Étape précédente',exact:true}).tap();
  await expect(plan).toBeVisible();await expect(reset(page)).toBeVisible();
  await page.goBack();await expect(page.locator('#step-10')).toBeVisible();
  await page.goForward();await expect(plan).toBeVisible();await expect(reset(page)).toBeVisible();
@@ -264,12 +264,25 @@ test('previous/continue and browser back/forward reopen scheduling with confirme
 test('compact Organisation progress and one-tap timing editor stay usable on narrow screens',async({page},info)=>{
  const {plan}=await seed(page,{mode:'simple',preferment:'none'});
  const navigator=page.locator('.bh-bake-navigator');
- await expect(navigator).toContainText('Organisation');
+ await expect(navigator).toContainText('Organisation & horaires');
  const progress=navigator.getByRole('button',{name:/Étape \d+\/\d+/});
  await expect(progress).toBeVisible();
  const navBox=await navigator.boundingBox(),stepBox=await progress.boundingBox();
  expect(stepBox.y).toBeGreaterThanOrEqual(navBox.y);expect(stepBox.y+stepBox.height).toBeLessThanOrEqual(navBox.y+navBox.height+1);
- expect(navBox.height).toBeLessThanOrEqual(66);
+ // The explicit section name may put progress on a second row. The 320px
+ // WebKit failure screenshot shows an intact 84px band, not clipped controls.
+ // Bound that responsive layout while checking actual targets, not one row.
+ expect(navBox.height).toBeLessThanOrEqual(96);
+ const sections=navigator.getByRole('button',{name:'Voir les 6 rubriques',exact:true});
+ const sectionsBox=await sections.boundingBox();
+ for(const control of [progress,sections]){
+  const r=await control.boundingBox();
+  expect(r.height).toBeGreaterThanOrEqual(44);expect(r.width).toBeGreaterThanOrEqual(44);
+  expect(r.x).toBeGreaterThanOrEqual(navBox.x);expect(r.x+r.width).toBeLessThanOrEqual(navBox.x+navBox.width+1);
+  expect(r.y).toBeGreaterThanOrEqual(navBox.y);expect(r.y+r.height).toBeLessThanOrEqual(navBox.y+navBox.height+1);
+  expect(await control.evaluate(el=>{const r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));})).toBe(true);
+ }
+ expect(stepBox.x+stepBox.width<=sectionsBox.x||sectionsBox.x+sectionsBox.width<=stepBox.x||stepBox.y+stepBox.height<=sectionsBox.y||sectionsBox.y+sectionsBox.height<=stepBox.y).toBe(true);
  await progress.tap();await expect(page.getByRole('dialog',{name:'Votre plan',exact:true})).toBeVisible();
  await page.keyboard.press('Escape');await expect(page.getByRole('dialog',{name:'Votre plan',exact:true})).toBeHidden();
  const mix=row(plan,'mix');await expect(mix.getByRole('slider')).toHaveCount(0);
@@ -301,7 +314,7 @@ for(const locale of ['fr','en'])test(`${locale}: explicit oven target and sugges
  await page.getByRole('button',{name:locale==='fr'?/^Jours ouvrés/:/^Weekdays/}).tap();
  await expect.poll(async()=>(await stored(page)).blocks.length).toBeGreaterThan(0);
  expect((await stored(page)).eatTime).toBe(selected.eatTime);await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
- await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:locale==='fr'?'Précédent':'Back',exact:true}).tap();
+ await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:locale==='fr'?'Étape précédente':'Previous step',exact:true}).tap();
  await expect(page.locator('#step-8')).toBeVisible();await page.goBack();await expect(plan).toBeVisible();
  await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
  await page.reload();await expect(plan).toBeVisible();await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);

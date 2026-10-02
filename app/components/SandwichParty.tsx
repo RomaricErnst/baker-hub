@@ -7,6 +7,7 @@ import { type SandwichSnapshot, sandwichFamilyForStyle, effectiveIngredients, es
 import styles from './sandwichParty/SandwichParty.module.css';
 import JourneyCompletion, { type CompletionActions } from './JourneyCompletion';
 import CompanionSteps from './CompanionSteps';
+import BottomActions from './BottomActions';
 import { breadCompanionLabel } from '../lib/companionLabels';
 import { BREAD_STYLES } from '../data';
 
@@ -30,6 +31,7 @@ export interface SandwichPartyProps extends CompletionActions {
   phase?:SandwichSnapshot['tab'];
   onPhaseChange?:(phase:SandwichSnapshot['tab'])=>void;
   onSelectionBack?:()=>void;
+  onBackToRecipe?:()=>void;
   onSelectionDone?:()=>void;
   selectionDoneLabel?:string;
   directSelectionReturn?:boolean;
@@ -42,7 +44,7 @@ export interface SandwichPartyProps extends CompletionActions {
 
 const count = (value: number) => Number.isFinite(value) ? Math.max(0,Math.min(99,Math.floor(value))) : 0;
 
-export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRepeat,resultNotes,onResultNotesChange,isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,baseReady=false,deferBreadSteps=!baseReady}:SandwichPartyProps) {
+export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRepeat,resultNotes,onResultNotesChange,isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onBackToRecipe,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,baseReady=false,deferBreadSteps=!baseReady}:SandwichPartyProps) {
   const tr = (value:Translation) => value[isFr ? 'fr' : 'en'];
   const t = (fr:string,en:string) => isFr ? fr : en;
   const [search,setSearch] = useState('');
@@ -153,12 +155,13 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
   const button = `${styles.button} ${styles.primary}`;
 
   return <div className={styles.party}>
-    <div className={styles.hero}>
+    <div className={styles.hero} style={tab==='shop'?{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:8}:undefined}>
       <div><h2 className={styles.pageTitle} ref={headingRef} tabIndex={-1}>{heading}</h2>
         <div className={styles.muted}>{breadName}</div>
       </div>
-      {family && <img src={breadImage} alt={breadName}/>}
+      {tab==='shop' ? <button type="button" className={styles.button} onClick={()=>go('pick')}>{total>0?t('Modifier les garnitures','Edit fillings'):t('Ajouter des garnitures — facultatif','Add fillings — optional')}</button> : family && <img src={breadImage} alt={breadName}/>}
     </div>
+    {tab==='shop'&&total===0&&<p className={styles.muted}>{baseReady?t('Aucune garniture sélectionnée','No fillings selected'):t('Pâte uniquement','Dough ingredients only')}</p>}
     {(family||tab==='shop') && <>
       {legacyMieTartines&&tab==='pick'&&<div className={styles.card}><p>{t('Cette fournée conserve vos tartines choisies précédemment.','This bake keeps your previously selected toasts.')}</p><button type="button" className={styles.button} onClick={()=>onChange({...snapshot,familyId:'pain_mie',qtys:{},completed:{},prepTicks:{},ingredientOverrides:{}})}>{t('Remplacer par des clubs ou croques','Replace with clubs or croques')}</button></div>}
       {!hideNavigation && <CompanionSteps label={t('Étapes des garnitures','Filling steps')} active={tab} onChange={go}
@@ -193,10 +196,10 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
           <button className={`${styles.button} ${styles.wide}`} type="button" onClick={()=>setDetailId(recipe.id)}>{t('Recette et garnitures','Recipe and fillings')}</button>
         </article>)}</div>
         {!filtered.length&&<p className={styles.empty}>{t('Aucune recette dans ce filtre. Essayez « Tout ».','No recipes in this filter. Try “All”.')}</p>}
-        {active&&total>0&&!reviewOpen&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{directSelectionReturn ? <button type="button" className="bh-back-action" onClick={()=>setReviewOpen(true)}>{t('Ma sélection','My selection')} · {total}</button> : onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('← Précédent','← Back')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={()=>{if(directSelectionReturn&&onSelectionDone&&!needsQuantityReview)onSelectionDone();else setReviewOpen(true);}}>{directSelectionReturn?(needsQuantityReview?t('Vérifier la quantité de pain','Check bread quantity'):selectionDoneLabel):`${t('Voir ma sélection','Review selection')} · ${total}`}</button></div>}
+        {active&&total>0&&!reviewOpen&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{directSelectionReturn ? <button type="button" className="bh-back-action" onClick={()=>setReviewOpen(true)}>{t('Ma sélection','My selection')} · {total}</button> : onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('Étape précédente','Previous step')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={()=>{if(directSelectionReturn&&onSelectionDone&&!needsQuantityReview)onSelectionDone();else setReviewOpen(true);}}>{directSelectionReturn?(needsQuantityReview?t('Vérifier la quantité de pain','Check bread quantity'):selectionDoneLabel):`${t('Voir ma sélection','Review selection')} · ${total}`}</button></div>}
 
-        {active&&baseReady&&total===0&&onSelectionBack&&<div data-companion-action className={styles.selectionBar}><button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('← Précédent','← Back')}</button></div>}
-        {active&&!baseReady&&total===0&&onSelectionDone&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('← Précédent','← Back')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={onSelectionDone}>{selectionDoneLabel??t('Définir ma recette','Set up my recipe')}</button></div>}
+        {active&&baseReady&&total===0&&onSelectionBack&&<div data-companion-action className={styles.selectionBar}><button type="button" className="bh-back-action" onClick={onSelectionBack}>{directSelectionReturn?selectionDoneLabel:t('Étape précédente','Previous step')}</button></div>}
+        {active&&!baseReady&&total===0&&onSelectionDone&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{!directSelectionReturn&&onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('Étape précédente','Previous step')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={onSelectionDone}>{selectionDoneLabel??t('Définir ma recette','Set up my recipe')}</button></div>}
       </>}
       {tab!=='pick'&&tab!=='shop'&&!total&&<div className={styles.empty}><p>{tartine ? t('Choisissez vos tartines et leurs quantités pour commencer.','Choose your toasts and quantities to begin.') : t(`Choisissez vos ${portionPlural} et leurs quantités pour commencer.`,`Choose your ${portionPlural} and quantities to begin.`)}</p><button className={button} type="button" onClick={()=>go('pick')}>{tartine ? t('Choisir mes tartines','Choose toasts') : t(`Choisir mes ${portionPlural}`,`Choose ${portionPlural}`)}</button></div>}
       {tab==='shop'&&<>
@@ -208,7 +211,10 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
         </details>}
         {total>0&&<div className={styles.panelHeading}><h3>{t('Garnitures regroupées','Combined fillings')}</h3></div>}
         {shopping.map(({ingredientId:id,grams,key})=><label key={id} className={styles.check}><input type="checkbox" checked={!!snapshot.shopTicks[key]} onChange={event=>update({shopTicks:{...snapshot.shopTicks,[key]:event.target.checked}})}/><span className={snapshot.shopTicks[key]?styles.checked:''}>{id==='chicken'?ingredientName('chicken_raw'):ingredientName(id)}{id==='mozzarella'&&<small style={{display:'block',fontSize:13,lineHeight:1.4}}>{drainedWeightShoppingNote[isFr?'fr':'en']}</small>}{id==='chicken'&&<small style={{display:'block',fontSize:13,lineHeight:1.4}}>{t(`Achat estimé pour ${amountText(grams)} cuits. Le rendement varie. Ou achetez ${amountText(grams)} déjà cuits.`,`Estimated purchase for ${amountText(grams)} cooked. Yield varies. Or buy ${amountText(grams)} already cooked.`)}</small>}</span><strong className={styles.checkAmount}>{id==='chicken'?'≈ ':''}{amountText(id==='chicken'?estimateRawChickenPurchase(grams):grams)}</strong></label>)}
-        <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('prep')}>{baseReady?t('Préparer les garnitures','Prepare the fillings'):doughConfigured?t('Commencer la préparation','Start the dough preparation'):t('Compléter l’organisation','Complete organisation')} →</button>
+        {onBackToRecipe ? active&&<BottomActions>
+          <button type="button" className="bh-back-action" onClick={onBackToRecipe}>{t('Retour à la recette','Back to recipe')}</button>
+          <button type="button" className={`${button} ${styles.wide}`} style={{margin:0,width:'auto',flex:1}} onClick={()=>go('prep')}>{doughConfigured?t('Passer à la préparation','Go to preparation'):t('Compléter l’organisation','Complete organisation')} →</button>
+        </BottomActions> : <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('prep')}>{baseReady?t('Préparer les garnitures','Prepare the fillings'):doughConfigured?t('Commencer la préparation','Start the dough preparation'):t('Compléter l’organisation','Complete organisation')} →</button>}
       </>}
       {tab==='prep'&&total>0&&<>
         <h3>{t('Préparez les garnitures','Prepare the fillings')}</h3>{prepSteps.length===0&&<p className={styles.muted}>{t('Aucune préparation à faire à l’avance. Vous pouvez passer à la suite.','No advance preparation is needed. You can continue.')}</p>}

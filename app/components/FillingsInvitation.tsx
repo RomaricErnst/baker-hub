@@ -1,16 +1,17 @@
 'use client';
 
-export default function FillingsInvitation({ fr, pizza, styleKey, count, selectedCount, onChoose, compact = false }: {
+export default function FillingsInvitation({ fr, pizza, count, selectedCount, onChoose, compact = false }: {
   compact?: boolean; fr: boolean; pizza: boolean; styleKey: string; count: number; selectedCount: number; onChoose: () => void;
 }) {
   const unit = pizza ? (selectedCount===1?'pizza':'pizzas') : fr ? (selectedCount===1?'portion':'portions') : (selectedCount===1?'serving':'servings');
-  const actionLabel = selectedCount > 0 ? (fr ? `Modifier mes garnitures · ${selectedCount}` : `Edit my selection · ${selectedCount}`) : (fr ? 'Choisir mes garnitures' : pizza ? 'Choose my toppings' : 'Choose my fillings');
+  const actionLabel = selectedCount > 0
+    ? (fr ? `Modifier les garnitures · ${selectedCount} ${unit}` : `Edit ${pizza ? 'toppings' : 'fillings'} · ${selectedCount} ${unit}`)
+    : (fr ? 'Ajouter des garnitures — facultatif' : `Add ${pizza ? 'toppings' : 'fillings'} — optional`);
 
   return <section className={compact ? "bh-fillings-invitation bh-fillings-invitation-compact" : "bh-fillings-invitation"} aria-label={fr?'Garnitures facultatives':'Optional toppings and fillings'}>
-    <h2 style={{fontSize:18,margin:'0 0 6px'}}>{compact?(fr?'Garnitures':pizza?'Toppings':'Fillings'):selectedCount>0?(fr?'Mes garnitures':'My toppings and fillings'):(pizza?(fr?'Et dessus ?':'And on top?'):(fr?'Et pour accompagner ?':'Make it a meal?'))}</h2>
-    <p style={{fontSize:14,lineHeight:1.5,margin:'0 0 6px'}}>{selectedCount>0
-      ? (fr?`Garnitures prévues pour ${selectedCount} ${unit} sur ${count}.`:`Toppings or fillings planned: ${selectedCount} ${unit} out of ${count}.`)
-      : compact ? (fr?'Facultatif · ajouté aux courses et à la préparation.':'Optional · included in shopping and preparation.') : (fr?'Ajoutez vos garnitures pour compléter les courses et leur préparation. C’est facultatif.':'Add toppings or fillings to complete your shopping and preparation. This is optional.')}</p>
-    <button type="button" onClick={onChoose} style={{minHeight:44,border:0,background:'none',padding:'8px 0',color:'var(--terra)',font:'inherit',textDecoration:'underline'}}>{actionLabel}</button>
+    <button type="button" onClick={onChoose} style={{minHeight:44,border:'1px solid var(--border, #E0D8CF)',borderRadius:10,background:'var(--cream, #F3EEE4)',padding:'10px 14px',color:'var(--terra)',font:'inherit',textAlign:'left'}}>{actionLabel}</button>
+    {pizza && selectedCount > 0 && selectedCount !== count && <p style={{fontSize:14,lineHeight:1.5,margin:'6px 0 0'}}>{selectedCount < count
+      ? (fr ? `Garnitures pour ${selectedCount} pizzas sur ${count}. Prévoyez les autres séparément.` : `Toppings for ${selectedCount} of ${count} pizzas. Plan the others separately.`)
+      : (fr ? 'La sélection dépasse la quantité de pâte prévue.' : 'Your selection exceeds the planned dough quantity.')}</p>}
   </section>;
 }

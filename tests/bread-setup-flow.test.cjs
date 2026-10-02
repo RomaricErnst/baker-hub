@@ -37,15 +37,9 @@ test('fixed direct formulas remove the method from progress, review and both nav
  for(const style of ['baguette','focaccia','ciabatta','panuozzo','neapolitan'])assert.ok(model(false,style).custom.some(s=>s.id===8),style+' keeps real choice');
 });
 
-test('early baking preference invalidates acceptance without pretending a plan is ready',()=>{
- let handler;
- function find(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='chooseEarlyBakeTime')handler=node.getText(tree);ts.forEachChild(node,find);}find(tree);
- assert.ok(handler);const state={};
- const context=vm.createContext(Object.fromEntries(['EatTime','SessionRestored','ScheduleReady','ScheduleCandidateValid','AcceptedScheduleRepair'].map(name=>['set'+name,value=>{state[name]=value;}])));
- vm.runInContext(ts.transpileModule(handler,{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText,context);
- context.chooseEarlyBakeTime('2026-10-01T19:30');
- assert.equal(state.EatTime.getHours(),19);assert.equal(state.EatTime.getMinutes(),30);
- assert.equal(state.ScheduleReady,false);assert.equal(state.ScheduleCandidateValid,false);assert.equal(state.AcceptedScheduleRepair,null);
- const prior=state.EatTime;context.chooseEarlyBakeTime('not-a-date');assert.equal(state.EatTime,prior);
- context.chooseEarlyBakeTime('');assert.equal(state.EatTime,null);
+test('quantity has no separate timing editor; schedule remains the timing authority',()=>{
+ assert.doesNotMatch(source,/chooseEarlyBakeTime|Preferred baking time \(optional\)|Horaire de cuisson souhaité \(facultatif\)/);
+ assert.match(source,/const handleScheduleChange/);
+ const quantity=source.slice(source.indexOf('<PrototypeQuantityPicker'),source.indexOf('</BottomActions>',source.indexOf('<PrototypeQuantityPicker')));
+ assert.doesNotMatch(quantity,/setEatTime|setStartTime/);
 });

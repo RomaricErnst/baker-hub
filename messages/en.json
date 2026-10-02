@@ -36,7 +36,7 @@
     "generateFirst": "Generate your recipe first"
   },
   "tabs": {
-    "guided": "Simple",
+    "guided": "Guided",
     "advanced": "Custom",
     "setup": "Setup",
     "plan": "Recipe",
@@ -77,7 +77,7 @@
     "details": "+ details",
     "hide": "− hide",
     "simple": {
-      "title": "Simple",
+      "title": "Guided",
       "subtitle": "“I just want it to work”",
       "barStart": "Fri 6:30 PM",
       "barMid": "fridge",
@@ -620,7 +620,7 @@
     "weight": "Weight",
     "bakersPercent": "Baker's %",
     "yeastNames": {
-      "instant": "Instant Dry",
+      "instant": "Instant dry yeast",
       "active_dry": "Active Dry",
       "fresh": "Fresh Yeast",
       "sourdough": "Sourdough Starter"

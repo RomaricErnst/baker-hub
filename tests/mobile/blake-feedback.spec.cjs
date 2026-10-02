@@ -43,7 +43,7 @@ test('flour-first recipe edits ignore a restored extra-dough allowance',async({p
  await page.goto('/fr');
  await expect(page.getByText('750 g',{exact:true}).first()).toBeVisible();
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')).itemWeight)).toBeGreaterThan(830);
- await page.getByRole('button',{name:'Modifier ma préparation',exact:true}).tap();
+ await page.getByRole('button',{name:'Modifier l’organisation et les horaires',exact:true}).tap();
  await expect(page.getByText('750 g de farine · 2 pièces',{exact:true})).toBeVisible();
  await expect(page.getByRole('button',{name:'Modifier : Mode',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Modifier : Peaufiner',exact:true}).tap();

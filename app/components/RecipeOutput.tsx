@@ -1,6 +1,6 @@
 'use client';
 import type { StarterEvent } from './SchedulePicker';
-import { recommendedFlourName } from '../lib/flourGuidance';
+import { recommendedFlourName, flourShoppingName } from '../lib/flourGuidance';
 import { mixingBatchPlan } from '../utils/mixingBatches';
 import { useState, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
@@ -409,6 +409,24 @@ export default function RecipeOutput({
   const sdActive = !!sourdough && result.preferment == null;
   const flourMain = sdActive ? flour - sdHalf : flour;
   const waterMain = sdActive ? water - sdHalf : water;
+  // Keep the buying identity beside its ingredient, not in a distant footer.
+  // Only the optional explanation is collapsed; stage/starter quantities below
+  // retain their existing accounting and custom blends keep their own names.
+  const guidedFlourGuidance = mode === 'simple' && styleKey ? (
+    <>
+      <span>{recommendedFlourName(styleKey, locale)}</span>
+      <details>
+        <summary style={{ minHeight: 44, cursor: 'pointer', display: 'list-item', alignContent: 'center' }}>
+          {locale === 'fr' ? 'Bien choisir sa farine' : 'Choosing flour'}
+        </summary>
+        <p style={{ margin: '0 0 8px' }}>
+          {locale === 'fr'
+            ? 'Pour une autre farine ou un mélange, utilisez les réglages personnalisés afin d’adapter votre pâte.'
+            : 'For a different flour or a blend, use Custom setup to adapt your dough settings.'}
+        </p>
+      </details>
+    </>
+  ) : undefined;
 
 
   // Per-batch: final dough ingredients only.
@@ -553,7 +571,8 @@ export default function RecipeOutput({
 
       {(hasPref || (sdActive && mode === 'custom')) && <section aria-label={locale === 'fr' ? 'Quantités totales' : 'Total ingredients'}>
         <h3 style={{fontSize:17}}>{locale === 'fr' ? 'Quantités totales de la recette' : 'Total recipe ingredients'}</h3>
-        <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={mode === 'custom' ? '100%' : undefined} />
+        <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={mode === 'custom' ? '100%' : undefined}
+          sub={mode === 'custom' && flourBlend ? flourShoppingName(styleKey ?? '', locale, mode, flourBlend, false) : guidedFlourGuidance} />
         <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
         <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
         {pf && pf.prefYeastGrams > 0 && <IngRow label={t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)} grams={formatPrefermentDose(pf.prefYeastGrams)} advancedPct={mode === 'custom' ? pctStr(pf.prefYeastGrams / flour * 100) : undefined} />}
@@ -581,9 +600,7 @@ export default function RecipeOutput({
                 noPct
                 highlight
                 sub={mode === 'simple'
-              ? (bakeType === 'bread'
-                  ? t('recipeOutput.flourTooltipBread')
-                  : t('recipeOutput.flourTooltipPizza'))
+              ? (styleKey ? recommendedFlourName(styleKey, locale) : undefined)
               : mode === 'custom' && flourBlend ? (() => {
                   const f1 = FLOUR_DATA[flourBlend.flour1];
                   const f1DisplayName = flourBlend.brandProduct ?? f1.name;
@@ -712,11 +729,14 @@ export default function RecipeOutput({
                   {hasF3 && f3 && <>{' · '}{p3}% {flourBlend.customFlour3Name ?? f3.name} ({f3Weight.toLocaleString('en')}g)</>}
                 </span>
               );
-            })() : sdActive ? (
+            })() : <>
+              {guidedFlourGuidance}
+              {sdActive && (
               <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
                 {locale === 'fr' ? `+ ${sdHalf}g via le levain = ${flour}g au total` : `+ ${sdHalf}g via the starter = ${flour}g total`}
               </span>
-            ) : undefined}
+              )}
+            </>}
           />}
           {water > 0 && <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(sdActive ? waterMain : water)} noPct={sdActive} pct={pctStr(waterPct)} sub={
             !enrichment ? <details><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Préparer l’eau' : 'Prepare the water'}</summary>
@@ -1136,8 +1156,6 @@ export default function RecipeOutput({
 
         </details>
       )}
-
-      {mode === 'simple' && styleKey && <p style={{fontSize:14,color:'var(--smoke)'}}>{locale === 'fr' ? 'Farine conseillée : ' : 'Recommended flour: '}{recommendedFlourName(styleKey,locale)}</p>}
 
       {/* PlanNav used to render here (quiet variant, above the protocol
           timeline). Since the protocol moved to its own tab, page.tsx's
