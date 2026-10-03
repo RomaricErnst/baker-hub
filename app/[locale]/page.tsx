@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { useTranslations, useLocale } from 'next-intl';
 import type { User } from '@supabase/supabase-js';
 import Header from '../components/Header';
+import ReplaceBakeDialog from '../components/ReplaceBakeDialog';
 import dynamic from 'next/dynamic';
 const ProfileSheet = dynamic(() => import('../components/ProfileSheet'), { ssr: false });
 import { loadProfile, setProfileListener } from '../lib/profile';
@@ -2160,10 +2161,10 @@ export default function Home() {
     navigationHistory.current=encoded;replayingNavigation.current=false;
   },[showProductHome,bakeType,activeTab,batchView,activeStep,advancedStep,setupOverview,sessionRestored]);
   function backToProducts(){setShowProductHome(true);setActiveTab('batch');scrollToStepTop();}
-  function selectBakeType(bt: BakeType) {
+  async function selectBakeType(bt: BakeType) {
     // A dismissed resume banner is not consent to replace the local draft.
     if (!bakeType) {
-      if (!confirmLocalReplacement()) return;
+      if (!await confirmLocalReplacement()) return;
       setPendingSession(null); setShowWelcomeBack(false);
     }
     if(bakeType===bt){setShowProductHome(false);setActiveTab('batch');setBatchView('style');return;}
@@ -2595,11 +2596,32 @@ export default function Home() {
   // path out: keep it, drop it, or back out. A saved session just restarts.
   const [confirmNewSession, setConfirmNewSession] = useState(false);
 
-  function confirmLocalReplacement(): boolean {
+  const [replaceBakeOpen, setReplaceBakeOpen] = useState(false);
+  const replaceBakeAnswer = useRef<((replace: boolean) => void) | null>(null);
+  useEffect(() => () => { replaceBakeAnswer.current?.(false); }, []);
+
+  function answerReplaceBake(replace: boolean) {
+    const answer = replaceBakeAnswer.current;
+    replaceBakeAnswer.current = null;
+    setReplaceBakeOpen(false);
+    answer?.(replace);
+  }
+
+  async function confirmLocalReplacement(): Promise<boolean> {
+    if (replaceBakeAnswer.current) return false;
     const existing = loadSession();
-    if ((existing || bakeType) && !window.confirm(fr
-      ? 'Cette action remplace la reprise automatique sur cet appareil. Les fournées enregistrées dans votre compte restent disponibles. Continuer ?'
-      : 'This replaces the automatic resume draft on this device. Bakes saved to your account remain available. Continue?')) return false;
+    if (existing || bakeType) {
+      const accepted = await new Promise<boolean>(resolve => {
+        replaceBakeAnswer.current = resolve;
+        setReplaceBakeOpen(true);
+      });
+      if (!accepted) return false;
+      // A second tab may have replaced the draft while this dialog was open.
+      if (JSON.stringify(loadSession()) !== JSON.stringify(existing)) {
+        setLocalSaveConflict(true);
+        return false;
+      }
+    }
     acceptCurrentSessionStorage(); setLocalSaveConflict(false);
     setPendingSession(null); setShowWelcomeBack(false);
     return true;
@@ -2819,8 +2841,8 @@ export default function Home() {
     }
   }
 
-  function loadRecipe(r: SavedRecipe) {
-    if (!confirmLocalReplacement()) return;
+  async function loadRecipe(r: SavedRecipe) {
+    if (!await confirmLocalReplacement()) return;
     setMixingBatches(undefined); setContainerCapacityLitres(3); // Legacy recipes have no saved equipment capacity.
     const isCustom = r.mode === 'custom';
 
@@ -2897,7 +2919,7 @@ export default function Home() {
   async function restoreFromBakeEvent(event: Pick<BakeEvent, 'id' | 'dough_snapshot' | 'pizza_party_id'>, opts?: { rebake?: boolean }) {
 
     if (!event.dough_snapshot) return;
-    if (!confirmLocalReplacement()) return;
+    if (!await confirmLocalReplacement()) return;
     isRestoringRef.current = true;
     setScheduleCandidateValid(true);
     setShowWelcomeBack(false);
@@ -3515,6 +3537,8 @@ export default function Home() {
           <ProfileSheet locale={locale} onClose={() => setProfileOpen(false)} />
         )}
 
+        {replaceBakeOpen && <ReplaceBakeDialog fr={fr} onAnswer={answerReplaceBake} />}
+
         {confirmNewSession && (
           <div
             role="dialog"
@@ -3575,14 +3599,15 @@ export default function Home() {
             padding: '8px 8px 8px 14px',
             margin: '0 0 14px',
             minHeight: '56px',
-            display: 'flex',
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
             alignItems: 'center',
             gap: '10px',
             boxShadow: 'var(--card-shadow, 0 2px 12px rgba(43, 36, 32,0.06))',
           }}>
             <span style={{
               fontFamily: 'var(--font-ui)', fontSize: '13.5px',
-              color: 'var(--ash)', flex: '1 1 auto', minWidth: 0, lineHeight: 1.35,
+              color: 'var(--ash)', gridColumn: '1 / -1', gridRow: 1, paddingRight: 44, minWidth: 0, lineHeight: 1.35,
             }}>
               {/* Sentence case, not uppercase with letter-spacing: the tracked
                   caps made the label long enough that the two controls could not
@@ -3640,27 +3665,27 @@ export default function Home() {
                 background: 'var(--terra)', border: 'none',
                 color: 'white', cursor: 'pointer', fontSize: '13px',
                 fontFamily: 'var(--font-ui)', fontWeight: 600,
-                padding: '0 16px', height: '40px', minHeight: '40px',
-                borderRadius: '12px', whiteSpace: 'nowrap', flex: '0 0 auto',
+                padding: '10px 12px', minHeight: '44px',
+                borderRadius: '12px', gridRow: 2,
               }}
             >
               {pendingSession?.recipeGenerated && !pendingSession.navigation
                 ? (locale === 'fr' ? 'Voir les ingrédients →' : 'View ingredients →')
                 : (locale === 'fr' ? 'Reprendre →' : 'Resume →')}
             </button>
-            {/* Dismiss as an icon, not a worded button. "Start fresh" was the
-                wrong promise — answerWelcomeBack leaves the session on disk and
-                only silences the offer for this browser session, so a label
-                that sounds like a wipe describes something that does not
-                happen. The real wipe is the reset control in the header, and
-                two things called "start fresh" meaning two different things
-                would surprise someone. 44x44 reach on an 18px glyph. */}
+            <button
+              onClick={async () => { if (await confirmLocalReplacement()) startOver(); }}
+              style={{ gridRow: 2, background: 'none', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--char)', fontFamily: 'var(--font-ui)', fontSize: 13, padding: '10px 12px', minHeight: 44, cursor: 'pointer' }}
+            >
+              {fr ? 'Nouvelle fournée' : 'Start a new bake'}
+            </button>
+            {/* Closing only hides the offer; it never authorizes replacement. */}
             <button
               onClick={answerWelcomeBack}
               aria-label={locale === 'fr' ? 'Masquer' : 'Dismiss'}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--smoke)', width: '44px', height: '44px', flex: '0 0 auto',
+                color: 'var(--smoke)', width: '44px', height: '44px', gridColumn: 2, gridRow: 1, justifySelf: 'end',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '18px', lineHeight: 1, fontFamily: 'var(--font-ui)',
               }}

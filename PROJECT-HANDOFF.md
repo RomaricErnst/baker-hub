@@ -1,3 +1,9 @@
+# Resume choice — 3 October 2026
+
+User approved simplifying the replacement warning after closing Resume and choosing Pizza. The local draft would be overwritten, so retain one short bilingual confirmation at the destructive action, never on the dismiss cross. A native HTML dialog replaces window.confirm with named Keep current bake / Start new bake controls, focus containment and Escape cancellation. The resume card has an explicit new-bake action; confirming it clears the old draft once, so choosing a product needs no second warning. Cross only hides the card. A draft changed during the asynchronous confirmation is protected. Saved-recipe and cloud-resume replacement callers await the same decision.
+
+Validation: production build/i18n/TypeScript passed; all 93 test files passed; 32 targeted French/English WebKit cases passed at 320/375/390/430px, including dismissal, cancellation, explicit restart and cross-tab draft protection. This is Linux WebKit emulation, not a physical iPhone check. Publication/live verification follows this commit.
+
 # Journey consistency — 29 September 2026
 
 User approved the independent five-perspective audit recommendations, publication to main/production, then re-review by the same five agents. Base verified production/main bf4ed5f (PR12). Branch codex/journey-consistency-20260929. Preserve six sections and all recipe calculations.
