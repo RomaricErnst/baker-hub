@@ -3,7 +3,7 @@ import {useEffect,useId,useRef,useState,type ReactNode} from 'react';
 import type {AvailabilityBlock} from '../utils';
 import ScheduleClockInput from './ScheduleClockInput';
 import type {EditSlot} from '../utils/scheduleEdit';
-export type KeyTimingAnchor={id:string;name:string;at:number;from:number;to:number;editable:boolean;valid?:boolean;detail?:ReactNode;note?:ReactNode;control?:ReactNode;locked?:boolean};
+export type KeyTimingAnchor={id:string;name:string;at:number;from:number;to:number;editable:boolean;valid?:boolean;summary?:ReactNode;detail?:ReactNode;note?:ReactNode;control?:ReactNode;locked?:boolean};
 const STEP=900000;
 type SlotWindow={from:number;to:number};
 function compatibleWindows(slots:EditSlot[]):SlotWindow[]{
@@ -52,6 +52,7 @@ function TimingRow({anchor,isFr,onChange,check,cacheKey,open,onToggle}:{anchor:K
     {open&&<button type="button" className="bh-key-modify" aria-label={(isFr?'Fermer ':'Close ')+anchor.name} aria-expanded={open} aria-controls={editorId} onClick={onToggle}>{isFr?'Fermer':'Close'}</button>}
    </div>
    {open&&canEdit?<label className="bh-key-exact"><span className="bh-visually-hidden">{isFr?'Date et heure de ':'Date and time for '}{anchor.name}</span><ScheduleClockInput isFr={isFr} type="datetime-local" step={900} value={local} onChange={e=>{const next=+new Date(e.target.value);if(Number.isFinite(next))onChange(id,next);}}/></label>:canEdit?<button type="button" className="bh-key-time" aria-label={`${isFr?'Modifier':'Edit'} ${anchor.name}, ${fmt(at)}`} aria-expanded={false} aria-controls={editorId} onClick={onToggle}>{clock}{anchor.valid===true&&<span className="bh-key-valid-selection" role="img" aria-label={isFr?'Compatible avec le planning estimé':'Compatible with the estimated schedule'}>✓</span>}<span className="bh-time-edit" aria-hidden="true">{isFr?'Modifier':'Edit'}</span></button>:<strong className="bh-key-fixed">{clock}</strong>}
+   {anchor.summary&&<div className="bh-key-detail">{anchor.summary}</div>}
    {anchor.locked&&<span className="bh-kept-time">{isFr?'Heure conservée':'Time kept'}</span>}
    {open&&canEdit&&<div id={editorId} className="bh-key-editor">
     <div className="bh-time-steps"><button type="button" aria-label="- 30 min" disabled={at-2*STEP<from} onClick={()=>onChange(id,at-2*STEP)}>− 30 min</button><button type="button" aria-label="+ 30 min" disabled={at+2*STEP>to} onClick={()=>onChange(id,at+2*STEP)}>+ 30 min</button></div>

@@ -8,22 +8,22 @@ test.describe('fresh unleavened bread setup',()=>{
   await page.route('http://127.0.0.1:54321/**',route=>route.fulfill({status:401,contentType:'application/json',body:'{"message":"Anonymous test"}'}));
   await page.goto('/');
   await page.getByRole('button',{name:'Bread',exact:true}).tap();
-  await expect(page.getByRole('heading',{name:'How would you like to set up your recipe?',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:/^(Me laisser guider|Guide me)\b/}).tap();
-  await page.getByRole('button',{name:/^Piadina/}).tap();
+  await page.locator('.bh-batch-content').getByRole('button',{name:/Piadina/}).tap();
   const proceed=()=>page.locator('.bh-step-page:visible').getByRole('button',{name:'Continue',exact:true}).tap();
-  await proceed();
+  await page.locator('.bh-style-confirm button').tap();
   await expect(page.getByLabel('Number of pieces',{exact:true})).toHaveValue('4');
   await expect(page.getByLabel('Dough per piece (g)',{exact:true})).toHaveValue('140');
   // Change the actual batch count; the cooking span must follow it downstream.
   await page.getByLabel('Number of pieces',{exact:true}).fill('5');
   await page.getByLabel('Number of pieces',{exact:true}).press('Enter');
-  await proceed();
+  await page.locator('.bh-batch-actions').getByRole('button',{name:'Set up my recipe',exact:true}).tap();
+  await expect(page.getByRole('heading',{name:'How would you like to set up your recipe?',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:/^Simple\b/}).tap();
+  await page.locator('#step-3 summary').filter({hasText:/^Cooking ·/}).tap();
   await page.getByRole('button',{name:/^Skillet or griddle/}).tap();
-  await page.getByRole('button',{name:'Choose mixing method',exact:true}).tap();
-  await page.getByRole('button',{name:/^Hand knead/}).tap();
-  await proceed();
-  await expect(page.getByRole('heading',{name:'Preparation temperatures',exact:true})).toBeVisible();
+  await page.locator('#step-3 summary').filter({hasText:/^Mixing ·/}).tap();
+  await page.getByRole('button',{name:/^By hand/}).tap();
+  await expect(page.getByRole('button',{name:'Change kitchen temperature',exact:true})).toBeVisible();
   await proceed();
   // No yeast or preferment page may interrupt an unleavened dough journey.
   const rest=page.getByRole('region',{name:'Rest and cook',exact:true});

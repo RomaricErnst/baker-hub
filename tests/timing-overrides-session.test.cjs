@@ -59,7 +59,7 @@ test('actual apply handler persists pins and preferment offset immediately; rese
     repairKey:(st,et,bl,offset)=>JSON.stringify([+st,+et,bl,offset]),
     buildSessionPayload:overrides=>({timingOverrides:{mix:123},...overrides}),
     saveSession:value=>writes.push(value)};
-  for(const name of ['AcceptedScheduleRepair','SessionRestored','StartTime','EatTime','Blocks','PrefOffsetH','TimingOverrides','StarterEvents','FridgeOutTime','UsingPeak2','Feed2Time','StarterFridgeInTime'])context['set'+name]=value=>{state[name]=value};
+  for(const name of ['AcceptedScheduleRepair','SessionRestored','StartTime','EatTime','Blocks','PrefOffsetH','PrefGoesInFridgeState','TimingOverrides','StarterEvents','FridgeOutTime','UsingPeak2','Feed2Time','StarterFridgeInTime'])context['set'+name]=value=>{state[name]=value};
   const code=ts.transpileModule(source.slice(start,end)+'\nglobalThis.handler=handleScheduleChange;', {compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
   vm.runInNewContext(code,context);
   const mix=new Date('2026-09-26T05:15:00+08:00'),bake=new Date(+mix+14.25*3600000),pref=+mix-10*3600000;
@@ -72,6 +72,10 @@ test('actual apply handler persists pins and preferment offset immediately; rese
   assert.deepEqual(writes[1].timingOverrides,{});
   assert.equal(state.AcceptedScheduleRepair,null);
   assert.deepEqual(state.TimingOverrides,{});
+  context.handler(mix,bake,[],{preservePlan:true,prefOffsetHours:15,prefInFridge:true,timingOverrides:{}});
+  assert.equal(writes[2].prefGoesInFridge,true);
+  assert.equal(writes[2].prefOffsetH,15);
+  assert.equal(state.PrefGoesInFridgeState,true);
 });
 
 test('preferment locking is explicit and requires a valid preparation time',()=>{

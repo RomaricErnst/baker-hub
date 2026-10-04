@@ -3,12 +3,12 @@ const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
 const declaration=source.match(/const commercialPrefermentPlanReady =[\s\S]*?;/)[0];
 function ready(tab,yeastType,prefermentType,prefermentValidity){return vm.runInNewContext(declaration+'\ncommercialPrefermentPlanReady',{tab,yeastType,prefermentType,prefermentValidity});}
 test('only current validated commercial preferment permits generation, direct and levain remain available',()=>{
- for(const method of ['poolish','biga']){
-  assert.equal(ready('custom','instant',method,{type:method,valid:false}),false);
-  assert.equal(ready('custom','instant',method,{type:method,valid:true}),true);
-  assert.equal(ready('custom','instant',method,{type:'none',valid:true}),false);
+ for(const tab of ['simple','custom'])for(const method of ['poolish','biga']){
+  assert.equal(ready(tab,'instant',method,{type:method,valid:false}),false);
+  assert.equal(ready(tab,'instant',method,{type:method,valid:true}),true);
+  assert.equal(ready(tab,'instant',method,{type:'none',valid:true}),false);
  }
- for(const [tab,yeast,method] of [['custom','instant','none'],['custom','sourdough','levain'],['simple','instant','poolish']])assert.equal(ready(tab,yeast,method,{type:'none',valid:false}),true);
+ for(const [tab,yeast,method] of [['custom','instant','none'],['custom','sourdough','levain'],['simple','instant','none']])assert.equal(ready(tab,yeast,method,{type:'none',valid:false}),true);
 });
 test('direct generate call returns to planner when commercial preferment is invalid',()=>{
  const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);let handler;
@@ -21,7 +21,7 @@ test('direct generate call returns to planner when commercial preferment is inva
  // valid recipe must not bypass the current commercial-preferment check.
  const generateGate=source.match(/const canGenerate =[\s\S]*?;/)[0];
  for(const tab of ['simple','custom'])for(const commercialPrefermentPlanReady of [false,true])for(const protocolIssue of [undefined,'method','equipment','timing']){
-  const allowed=vm.runInNewContext(generateGate+'\ncanGenerate',{schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,tab,commercialPrefermentPlanReady,starterPlanReady:true,unsupportedEnrichedMethod:false,archivedFlourNames:[],simpleRequiredDone:true,customRequiredDone:true,recipe:{protocolIssue},advancedRecipe:{protocolIssue}});
+  const allowed=vm.runInNewContext(generateGate+'\ncanGenerate',{schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,tab,commercialPrefermentPlanReady,starterPlanReady:true,unsupportedEnrichedMethod:false,flourChosen:false,archivedFlourNames:[],simpleRequiredDone:true,customRequiredDone:true,recipe:{protocolIssue},advancedRecipe:{protocolIssue}});
   assert.equal(allowed,commercialPrefermentPlanReady && !protocolIssue,`${tab}: commercial=${commercialPrefermentPlanReady}, protocol=${protocolIssue}`);
  }
 });
@@ -69,7 +69,7 @@ test('known peak timing conflict blocks both new and previously generated sourdo
  function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='handleGenerate')handler=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);
  const code=ts.transpileModule(handler+'\nhandleGenerate()',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
  for(const recipeGenerated of [false,true]) {
-  const calls=[],context={canGenerate:true,schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,tab:'simple',styleKey:'pain_levain',commercialPrefermentPlanReady:true,recipe:{},yeastType:'sourdough',starterEqualWeightsConfirmed:true,starterTimingValid:false,recipeGenerated,starterEvents:[{kind:'known_peak'}],scrollToStepTop(){}};
+  const calls=[],context={canGenerate:true,schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,flourChosen:false,tab:'simple',styleKey:'pain_levain',commercialPrefermentPlanReady:true,recipe:{},yeastType:'sourdough',starterEqualWeightsConfirmed:true,starterTimingValid:false,recipeGenerated,starterEvents:[{kind:'known_peak'}],scrollToStepTop(){}};
   for(const name of ['setActiveTab','setSetupOverview','setActiveStep'])context[name]=value=>calls.push([name,value]);
   vm.runInNewContext(code,context);
   assert.deepEqual(calls,[['setActiveTab','setup'],['setSetupOverview',false],['setActiveStep',7]]);
@@ -82,7 +82,7 @@ test('whole-plan validation gates generation in both modes and directs invalid p
  function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='handleGenerate')handler=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);
  const code=ts.transpileModule(handler+'\nhandleGenerate()',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
  for(const tab of ['simple','custom'])for(const method of ['none','poolish','biga','levain'])for(const scheduleCandidateValid of [false,true])for(const scheduleEditing of [false,true]){
-  const context={schedule:undefined,tab,prefermentType:method,yeastType:method==='levain'?'sourdough':'instant',scheduleCandidateValid,scheduleEditing,commercialPrefermentPlanReady:true,starterPlanReady:true,unsupportedEnrichedMethod:false,archivedFlourNames:[],simpleRequiredDone:true,customRequiredDone:true,recipe:{},advancedRecipe:{}};
+  const context={schedule:undefined,tab,prefermentType:method,yeastType:method==='levain'?'sourdough':'instant',scheduleCandidateValid,scheduleEditing,commercialPrefermentPlanReady:true,starterPlanReady:true,unsupportedEnrichedMethod:false,flourChosen:false,archivedFlourNames:[],simpleRequiredDone:true,customRequiredDone:true,recipe:{},advancedRecipe:{}};
   const allowed=vm.runInNewContext(gate+'\ncanGenerate',context);
   assert.equal(allowed,scheduleCandidateValid&&!scheduleEditing,`${tab}/${method}: valid=${scheduleCandidateValid}, editing=${scheduleEditing}`);
   if(!allowed){
