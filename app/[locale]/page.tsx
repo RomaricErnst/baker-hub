@@ -3909,6 +3909,7 @@ export default function Home() {
                 <summary style={{minHeight:44,cursor:'pointer',padding:'10px 0'}}>{fr?'Pétrissage':'Mixing'} · {mixerType ? localName(MIXER_TYPES[mixerType]) : (fr?'Choisir':'Choose')} <span style={{color:'var(--terra)'}}>— {fr?'Modifier':'Change'}</span></summary>
                 <SimpleMixerPicker locale={locale} selected={mixerType} styleKey={styleKey ?? undefined} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);setCustomMixerCapacityG(undefined);}setMixerType(value);}}/>
                 {mixerType && !manualMixing && <label style={{display:'block',marginTop:12}}>{fr?'Capacité de pâte du pétrin (g)':'Mixer dough capacity (g)'}<input type="number" min={100} max={1000000} step={100} value={customMixerCapacityG ?? ''} placeholder={String(mixerCapacityG)} onChange={e=>{const value=Number(e.target.value);if(!e.target.value)setCustomMixerCapacityG(undefined);else if(Number.isFinite(value)&&value>=100&&value<=1000000)setCustomMixerCapacityG(value);}} style={{display:'block',width:140,minHeight:44}}/></label>}
+                {!showMixingBatches && mixingBatchControl}
               </details>
               {showMixingBatches && mixingBatchControl}
               <ClimatePicker

@@ -213,7 +213,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   const modeHeading = await page.getByRole('heading',{name:'Comment définir votre recette ?',exact:true}).boundingBox();
   const sectionBar = await page.locator('.bh-bake-navigator').boundingBox();
   expect(modeHeading.y).toBeGreaterThanOrEqual(sectionBar.y + sectionBar.height);
-  await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé\b/}).tap();
+  await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé(?:\s|$)/}).tap();
   await expect(page.getByRole('heading',{name:mode==='simple'?'Votre cuisine':'Votre équipement',exact:true})).toBeVisible();
   await expect.poll(async()=>(await stored(page)).tab).toBe(mode);
   expect((await stored(page)).numItems).toBe(5);
@@ -467,7 +467,7 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  const recommended=Number(await weight.inputValue());
  await expect.poll(async()=>(await stored(page))?.itemWeight).toBe(recommended);
  await page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true}).tap();
- await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé\b/}).tap();
+ await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé(?:\s|$)/}).tap();
  const step=page.locator('#step-3');
  if(mode==='simple')await step.locator('summary').filter({hasText:/^Cuisson ·/}).tap();
  else await expect(step.getByRole('heading',{name:'Four',exact:true})).toBeVisible();
@@ -507,6 +507,7 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  // Simple keeps temperatures compact; its cold-flour checkbox remains reachable.
  await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));await fixedAction();
  const lastField=climate.locator('input:visible,select:visible').last();
+ await lastField.scrollIntoViewIfNeeded();
  await unobscured(lastField);
  const back=climate.getByRole('button',{name:'Étape précédente',exact:true});
  await back.scrollIntoViewIfNeeded();await fits(page,back);await unobscured(back);
@@ -546,7 +547,7 @@ for(const mode of ['simple','custom'])test(`${mode}: batch details are condition
  await page.getByLabel('Pâte par pizza (g)',{exact:true}).fill('500');
  await page.getByLabel('Pâte par pizza (g)',{exact:true}).blur();
  await page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true}).tap();
- await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé\b/}).tap();
+ await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé(?:\s|$)/}).tap();
  const step=page.locator('#step-3');
  if(mode==='simple')await step.locator('summary').filter({hasText:/^Cuisson ·/}).tap();
  await step.getByRole('button',{name:/Four à pizza compact/}).tap();
@@ -565,6 +566,7 @@ for(const mode of ['simple','custom'])test(`${mode}: batch details are condition
  await expect(step.getByLabel('Nombre de pétrissées',{exact:true})).toHaveValue('2');
  await step.getByRole('button',{name:'Revenir à la recommandation',exact:true}).tap();
  await expect(step.getByLabel('Nombre de pétrissées',{exact:true})).toHaveCount(0);
+ if(mode==='simple')await step.getByRole('button',{name:/^Levure sèche instantanée/}).tap();
  await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
  await expect(page.locator(mode==='simple'?'#step-7':'#step-4')).toBeVisible();
  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
