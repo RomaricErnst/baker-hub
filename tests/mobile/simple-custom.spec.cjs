@@ -47,10 +47,13 @@ for(const locale of ['fr','en']){
   await expect(mixing).not.toHaveAttribute('open','');
   await expect(page.getByText(/Advanced settings · fridge and flour|Réglages avancés · frigo et farine/)).toHaveCount(0);
   await expect(page.getByText(/Usual flour-storage humidity|Humidité habituelle du stockage/)).toHaveCount(0);
-  await page.getByRole('button',{name:fr?'Levure sèche instantanée':'Instant dry yeast',exact:true}).tap();
+  // DecisionList's accessible name also includes its explanatory tagline.
+  await page.getByRole('button',{name:fr?/^Levure sèche instantanée/:/^Instant dry yeast/}).tap();
   await expect.poll(async()=>({oven:(await stored(page))?.ovenType,mixer:(await stored(page))?.mixerType,yeast:(await stored(page))?.yeastType})).toEqual({oven:'home_oven_standard',mixer:'hand',yeast:'instant'});
   await geometry(page);
   await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
+  const bakeDate=page.getByLabel(fr?'Date d’enfournement':'Baking date',{exact:true});
+  await bakeDate.fill('2026-10-04');await bakeDate.blur();
   await nextToRecipe(page,fr);
   expect(errors).toEqual([]);
  });
@@ -81,7 +84,7 @@ for(const locale of ['fr','en']){
   await expect(page.getByText(/Poolish/).first()).toBeVisible();
   await page.getByRole('button',{name:fr?'Modifier l’organisation et les horaires':'Edit setup & timing',exact:true}).tap();
   await page.getByRole('button',{name:fr?'Modifier : Mode':'Edit : Mode',exact:true}).tap();
-  await page.getByRole('button',{name:fr?/^Personnalisé\b/:/^Custom\b/}).tap();
+  await page.getByRole('button',{name:fr?/^Personnalisé(?:\s|$)/:/^Custom\b/}).tap();
   await expect.poll(formula).toEqual({tab:'custom',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
   expect(errors).toEqual([]);
  });
