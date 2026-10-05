@@ -51,6 +51,16 @@ test('Simple retains explicit flour identities and stage weights without advance
  }
 });
 
+test('selected unbranded flour names use the recipe language in both modes',()=>{
+ const blend={flour1:'pizza00',flour2:null,ratio1:100};
+ for(const locale of ['fr','en'])for(const mode of ['simple','custom'])for(const pref of ['none','poolish','biga']){
+  const {html}=render(locale,mode,pref,'instant',blend,true);
+  const expected=locale==='fr'?'Farine à pizza 00':'Pizza flour 00';
+  assert.ok(html.includes(expected),`${locale}/${mode}: localized selected flour`);
+  if(locale==='fr')assert.ok(!html.includes('Pizza flour 00'));
+ }
+});
+
 test('guided starter accounting remains visible alongside the flour recommendation',()=>{
  for(const locale of ['fr','en']){
   const {html,result}=render(locale,'simple','levain','sourdough');

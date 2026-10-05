@@ -1,3 +1,7 @@
+# CI corrections — 5 October 2026
+
+PR14 head065f5fc completed CI37200570239 with454 unit tests, build and sourdough checks passing; WebKit444 passed/20 failed. User authorized corrections and rerun. Failures repeat three groups across four widths: selected-flour fixture incorrectly expected recommended flour (and revealed an actual French selected-flour English fallback); repeat-bake test awaited retired window.confirm instead of the HTML dialog; mode-switch test restored an impossible legacy mode-unselected setup state that correctly migrated to My bake. Corrected locale fallbacks, distinguish recommended/selected flour cases, use the current confirmation with preserved outcome checks, and start switching from Custom review using its Mode action. Full CI rerun required; no merge or production claim.
+
 # Simple / Custom release — 4 October 2026
 
 User explicitly authorized deployment, then confirmed pushing a review branch to run iPhone checks in GitHub CI before production. Scope includes the unpublished availability/poolish recommendation changes below. Base main verified as 15ae276. Publication and production status remain pending until verified.

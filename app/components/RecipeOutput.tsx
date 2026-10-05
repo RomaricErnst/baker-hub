@@ -606,7 +606,7 @@ export default function RecipeOutput({
               ? (styleKey ? recommendedFlourName(styleKey, locale) : undefined)
               : showSelectedFlour && flourBlend ? (() => {
                   const f1 = FLOUR_DATA[flourBlend.flour1];
-                  const f1DisplayName = flourBlend.brandProduct ?? f1.name;
+                  const f1DisplayName = flourBlend.brandProduct ?? (locale === 'fr' ? f1.nameFr : f1.name);
                   if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
                     return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>{f1DisplayName}</span>;
                   }
@@ -666,17 +666,17 @@ export default function RecipeOutput({
                 const pctOf = (w: number) => mode === 'custom' ? pctStr(Math.round(w / flour * 1000) / 10) : undefined;
                 return (
                   <>
-                    <IngRow label={flourBlend.brandProduct ?? f1.name} grams={wStr(f1Weight)} noPct advancedPct={pctOf(f1Weight)} />
-                    <IngRow label={flourBlend.customFlour2Name ?? f2.name} grams={wStr(f2Weight)} noPct advancedPct={pctOf(f2Weight)} />
+                    <IngRow label={flourBlend.brandProduct ?? (locale === 'fr' ? f1.nameFr : f1.name)} grams={wStr(f1Weight)} noPct advancedPct={pctOf(f1Weight)} />
+                    <IngRow label={flourBlend.customFlour2Name ?? (locale === 'fr' ? f2.nameFr : f2.name)} grams={wStr(f2Weight)} noPct advancedPct={pctOf(f2Weight)} />
                     {hasF3 && f3 && (
-                      <IngRow label={flourBlend.customFlour3Name ?? f3.name} grams={wStr(f3Weight)} noPct advancedPct={pctOf(f3Weight)} />
+                      <IngRow label={flourBlend.customFlour3Name ?? (locale === 'fr' ? f3.nameFr : f3.name)} grams={wStr(f3Weight)} noPct advancedPct={pctOf(f3Weight)} />
                     )}
                   </>
                 );
               })() : (
                 <IngRow
                   label={showSelectedFlour && flourBlend && (!flourBlend.flour2 || flourBlend.ratio1 >= 100)
-                    ? (flourBlend.brandProduct ?? FLOUR_DATA[flourBlend.flour1].name)
+                    ? (flourBlend.brandProduct ?? (locale === 'fr' ? FLOUR_DATA[flourBlend.flour1].nameFr : FLOUR_DATA[flourBlend.flour1].name))
                     : t('recipeOutput.remainingFlour')}
                   grams={wStr(pf.finalFlour)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
@@ -712,7 +712,7 @@ export default function RecipeOutput({
             advancedPct={mode === 'custom' ? '100%' : undefined}
             sub={showSelectedFlour && flourBlend ? (() => {
               const f1 = FLOUR_DATA[flourBlend.flour1];
-              const f1DisplayName = flourBlend.brandProduct ?? f1.name;
+              const f1DisplayName = flourBlend.brandProduct ?? (locale === 'fr' ? f1.nameFr : f1.name);
               const f1Weight = Math.round(flourMain * flourBlend.ratio1 / 100);
               if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
                 return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>{f1DisplayName}</span>;
@@ -728,8 +728,8 @@ export default function RecipeOutput({
                 <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
                   {flourBlend.ratio1}% {f1DisplayName} ({f1Weight.toLocaleString('en')}g)
                   {' · '}
-                  {p2}% {flourBlend.customFlour2Name ?? f2.name} ({f2Weight.toLocaleString('en')}g)
-                  {hasF3 && f3 && <>{' · '}{p3}% {flourBlend.customFlour3Name ?? f3.name} ({f3Weight.toLocaleString('en')}g)</>}
+                  {p2}% {flourBlend.customFlour2Name ?? (locale === 'fr' ? f2.nameFr : f2.name)} ({f2Weight.toLocaleString('en')}g)
+                  {hasF3 && f3 && <>{' · '}{p3}% {flourBlend.customFlour3Name ?? (locale === 'fr' ? f3.nameFr : f3.name)} ({f3Weight.toLocaleString('en')}g)</>}
                 </span>
               );
             })() : <>

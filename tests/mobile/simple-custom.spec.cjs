@@ -62,13 +62,16 @@ for(const locale of ['fr','en']){
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await anonymous(page);
   const data={version:1,savedAt:NOW,tab:'custom',bakeType:'pizza',bakeName:'Simple Custom regression',styleKey:'neapolitan',numItems:4,itemWeight:260,pizzaDiameter:30,ovenType:'pizza_oven',mixerType:'spiral',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:5,flourBlend:{flour1:'bread',flour2:null,ratio1:100},manualHydration:64,manualSalt:2.7,manualOil:0,manualSugar:0,prefermentType:'poolish',prefermentFlourPct:20,prefOffsetH:11,prefGoesInFridge:true,flourInFridge:false,startTime:Date.parse('2026-10-03T23:40:00+08:00'),eatTime:BAKE,blocks:[],recipeGenerated:false,modeChosen:false,qtyChosen:true,flourChosen:true,prefermentChosen:true,activeStep:3,advancedStep:9,highestStep:7,advancedHighestStep:9,setupOverview:false,activeTab:'setup'};
+  // Start from a real saved Custom review, then use its visible Mode action.
+  data.modeChosen=true;data.setupOverview=true;
   await page.addInitScript(data=>{
    if(sessionStorage.getItem('simple-custom-seeded'))return;
    sessionStorage.setItem('simple-custom-seeded','1');
    localStorage.setItem('bh_session_v1',JSON.stringify(data));
-   sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:3,advancedStep:9,setupOverview:false,activeTab:'setup',reviewMode:true}));
+   sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:3,advancedStep:9,setupOverview:true,activeTab:'setup',reviewMode:true}));
   },data);
   await page.goto(fr?'/fr':'/');
+  await page.getByRole('button',{name:fr?'Modifier : Mode':'Edit : Mode',exact:true}).tap();
   await page.getByRole('button',{name:/^Simple\b/}).tap();
   await expect(page.getByText(fr?'Méthode conservée · poolish':'Retained method · poolish',{exact:true})).toBeVisible();
   const formula=async()=>{const s=await stored(page);return {tab:s?.tab,preferment:s?.prefermentType,hydration:s?.manualHydration,salt:s?.manualSalt,flour:s?.flourBlend};};
