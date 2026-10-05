@@ -22,9 +22,10 @@ test('unleavened Simple and Custom setup skip yeast/preferment without breaking 
  const flourConfirmed=custom.map(s=>s.id===6?{...s,value:'chosen wheat flour'}:s);
  assert.equal(nextUnanswered(flourConfirmed,6,7),9); // straight to rest/cook, no hidden method gap
 });
-test('yeasted bread retains yeast and preferment setup pages',()=>{
+test('Simple groups yeast into Kitchen while Custom retains yeast and preferment pages',()=>{
  const {simple,custom}=model(false);
- assert.ok(simple.some(s=>s.id===6));assert.ok(custom.some(s=>s.id===7));assert.ok(custom.some(s=>s.id===8));
+ assert.deepEqual(Array.from(simple,s=>s.id),[1,2,3,7]);assert.ok(custom.some(s=>s.id===7));assert.ok(custom.some(s=>s.id===8));
+ assert.match(simple.find(s=>s.id===3).value,/Instant/);
 });
 
 test('fixed direct formulas remove the method from progress, review and both navigation directions',()=>{

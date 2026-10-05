@@ -6,10 +6,10 @@ const React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),
 const Recipe=require('../app/components/RecipeOutput.tsx').default;
 const {recommendedFlourName,flourShoppingName}=require('../app/lib/flourGuidance.ts');
 
-function render(locale,mode,pref='none',yeast='instant',flourBlend){
+function render(locale,mode,pref='none',yeast='instant',flourBlend,explicitFlour=false){
  const schedule=utils.buildSchedule(new Date('2026-09-21T08:00Z'),new Date('2026-09-22T18:00Z'),[],24,60,'hand','neapolitan');
  const result=utils.calculateRecipe('neapolitan','home_oven_standard',1,1000,24,'normal',schedule,4,yeast,mode,'hand',undefined,undefined,undefined,flourBlend,pref,null,20);
- const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require(`../messages/${locale}.json`),timeZone:'UTC'},React.createElement(Recipe,{result,numItems:1,itemWeight:1000,styleName:'Neapolitan',styleKey:'neapolitan',mixerType:'hand',kitchenTemp:24,fermEquivHours:30,mode,prefermentType:pref,flourBlend})));
+ const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require(`../messages/${locale}.json`),timeZone:'UTC'},React.createElement(Recipe,{result,numItems:1,itemWeight:1000,styleName:'Neapolitan',styleKey:'neapolitan',mixerType:'hand',kitchenTemp:24,fermEquivHours:30,mode,prefermentType:pref,flourBlend,explicitFlour})));
  return {html,result};
 }
 
@@ -24,6 +24,40 @@ test('guided flour identity precedes water and stays outside optional explanatio
   assert.ok(!detail[3].includes(name),'Buying identity must not be hidden inside explanation');
   assert.equal((html.match(/Bien choisir sa farine|Choosing flour/g)||[]).length,1);
   assert.doesNotMatch(html,/Recommended flour:|Farine conseillée :/);
+ }
+});
+
+test('Simple retains explicit flour identities and stage weights without advanced percentage columns',()=>{
+ const blend={flour1:'bread',flour2:'rye',flour3:'wholemeal',ratio1:60,ratio2:25,brandProduct:'Selected wheat',customFlour2Name:'Selected rye',customFlour3Name:'Selected wholemeal'};
+ for(const locale of ['fr','en'])for(const [pref,yeast] of [['none','instant'],['poolish','instant'],['biga','instant'],['levain','sourdough']]){
+  const {html,result}=render(locale,'simple',pref,yeast,blend,true);
+  for(const name of ['Selected wheat','Selected rye','Selected wholemeal'])assert.ok(html.includes(name),`${locale}/${pref}: ${name}`);
+  assert.ok(!html.includes(recommendedFlourName('neapolitan',locale)));
+  assert.doesNotMatch(html,/% of flour · Weight|% de farine · Poids|Of which prefermented flour|Dont farine préfermentée|Choosing flour|Bien choisir sa farine/);
+  const plain=html.replace(/<[^>]+>/g,'');
+  if(result.preferment){
+   const pf=result.preferment;
+   const w1=Math.round(pf.finalFlour*.6),w2=Math.round(pf.finalFlour*.25),w3=pf.finalFlour-w1-w2;
+   assert.ok(plain.includes(`Selected wheat${w1} g`));
+   assert.ok(plain.includes(`Selected rye${w2} g`));
+   assert.ok(plain.includes(`Selected wholemeal${w3} g`));
+   assert.ok(html.includes(locale==='fr'?'Utilisez votre farine principale (Selected wheat)':'Use your primary flour (Selected wheat)'));
+  }
+  if(result.sourdough){
+   const breakdown=[...plain.matchAll(/\(([\d,]+)g\)/g)].map(m=>Number(m[1].replaceAll(',','')));
+   assert.equal(breakdown.reduce((sum,n)=>sum+n,0),result.flour-Math.round(result.sourdough.starterGramsMid/2));
+   assert.ok(html.includes(locale==='fr'?'Quantités totales':'Total ingredients'));
+  }
+ }
+});
+
+test('selected unbranded flour names use the recipe language in both modes',()=>{
+ const blend={flour1:'pizza00',flour2:null,ratio1:100};
+ for(const locale of ['fr','en'])for(const mode of ['simple','custom'])for(const pref of ['none','poolish','biga']){
+  const {html}=render(locale,mode,pref,'instant',blend,true);
+  const expected=locale==='fr'?'Farine à pizza 00':'Pizza flour 00';
+  assert.ok(html.includes(expected),`${locale}/${mode}: localized selected flour`);
+  if(locale==='fr')assert.ok(!html.includes('Pizza flour 00'));
  }
 });
 

@@ -18,7 +18,13 @@ test('Simple preserves saved equipment and declines unsupported defaults',()=>{
  result=choose({getBreadProtocol:()=>({equipment:['griddle'],supportedMixers:['hand'],cooking:'griddle'})}).writes;assert.equal(result.setOvenType,'griddle');
 });
 test('Custom gets no new equipment defaults and restores custom controls',()=>{
- const {writes}=choose({tab:'simple'},'custom');assert.equal(writes.setAdvancedStep,7);assert.ok(!('setOvenType' in writes));assert.ok(!('setMixerType' in writes));assert.equal(writes.setManualHydration,data.ALL_STYLES.pain_levain.hydration);
+ const {writes}=choose({tab:'simple'},'custom');assert.equal(writes.setAdvancedStep,7);assert.ok(!('setOvenType' in writes));assert.ok(!('setMixerType' in writes));assert.ok(!('setManualHydration' in writes));
+});
+test('switching view never changes persisted formula choices or invalidates the recipe',()=>{
+ for(const [tab,key] of [['custom','simple'],['simple','custom']]){
+  const {writes}=choose({tab,ovenType:'dutch_oven',mixerType:'spiral',prefermentType:'poolish',manualHydration:73},key);
+  for(const setter of ['setManualHydration','setManualOil','setManualSugar','setPrefermentType','setPrefermentFlourPct','setFlourBlend','setProtocolStale'])assert.ok(!(setter in writes),setter);
+ }
 });
 const React=require('react');
 const {renderToStaticMarkup}=require('react-dom/server');
@@ -26,11 +32,15 @@ function loadComponent(file,stubs={}){
  const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
  const exports={};vm.runInNewContext(code,{exports,require:id=>stubs[id]??require(id)});return exports.default;
 }
-test('Simple climate puts fridge and technical settings behind a closed disclosure while retaining saved temperatures',()=>{
+test('Simple climate keeps approximate temperature and contextual fridge without a humidity editor',()=>{
  const Climate=loadComponent('app/components/ClimatePicker.tsx',{'next-intl':{useLocale:()=> 'en'},'../utils/units':require('../app/utils/units.ts')});
  const props={kitchenTemp:31,fridgeTemp:5,humidity:'humid',onChange(){},onFlourInFridgeChange(){}};
  const simple=renderToStaticMarkup(React.createElement(Climate,{...props,mode:'simple'}));
  const custom=renderToStaticMarkup(React.createElement(Climate,{...props,mode:'custom'}));
- assert.match(simple,/31°C/);assert.match(simple,/aria-expanded="false"/);assert.match(simple,/id="climate-kitchen-editor" hidden=""/);assert.match(simple,/value="31"/);assert.match(simple,/<details><summary[^>]*>Advanced settings · fridge and flour<\/summary><section>/);assert.doesNotMatch(simple,/<details open/);
+ assert.match(simple,/31°C/);assert.match(simple,/aria-expanded="false"/);assert.match(simple,/id="climate-kitchen-editor" hidden=""/);assert.match(simple,/value="31"/);assert.match(simple,/<details><summary[^>]*>Fridge · 5°C — Change<\/summary><section>/);assert.doesNotMatch(simple,/<details open/);
+ assert.match(simple,/Retained humidity.*Humid/);assert.doesNotMatch(simple,/Usual flour-storage humidity|Advanced settings|aria-pressed/);
+ const noFridge=renderToStaticMarkup(React.createElement(Climate,{...props,mode:'simple',showFridge:false}));
+ assert.doesNotMatch(noFridge,/Fridge temperature|climate-fridge/);assert.match(noFridge,/Flour kept in the fridge/);
+ const normal=renderToStaticMarkup(React.createElement(Climate,{...props,mode:'simple',humidity:'normal'}));assert.doesNotMatch(normal,/Retained humidity/);
  assert.match(simple,/where the dough rests/);assert.doesNotMatch(custom,/Advanced settings · fridge and flour|Why this temperature/);assert.match(custom,/Fridge temperature/);assert.match(custom,/Usual flour-storage humidity/);
 });
