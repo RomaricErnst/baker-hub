@@ -10,7 +10,7 @@ import ScheduleTimeSlider from './ScheduleTimeSlider';
 import ScheduleClockInput from './ScheduleClockInput';
 import ScheduleKeyTimings, {type KeyTimingAnchor} from './ScheduleKeyTimings';
 import {assessScheduleDraft} from '../utils/scheduleDraft';
-import {proposeScheduleEdit, validateScheduleCandidate, findFixedBakeSchedule, laterBakeAlternative, scheduleEditSlots, type EditInput, type EditTimes} from '../utils/scheduleEdit';
+import {proposeScheduleEdit, validateScheduleCandidate, findFixedBakeSchedule, recommendPreferment, laterBakeAlternative, scheduleEditSlots, type EditInput, type EditTimes} from '../utils/scheduleEdit';
 import { foldActionLabel, isTimeBlocked, findAvailabilityConflicts, type AvailabilityAction } from '../utils/scheduleAvailability';
 import { kneadMinFor, type MixerType } from '../data';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
@@ -199,7 +199,7 @@ interface SchedulePickerProps {
   styleKey: string;
   kitchenTemp: number;
   schedule?: ScheduleResult | null;
-  onChange: (startTime: Date, eatTime: Date, blocks: AvailabilityBlock[], options?: { preservePlan: boolean; timingOverrides?: TimingOverrides; prefOffsetHours?: number; starterPlan?: {events:StarterEvent[];fridgeOutTime:Date|null;usingPeak2:boolean;feed2Time:Date|null;starterFridgeInTime:Date|null} }) => void;
+  onChange: (startTime: Date, eatTime: Date, blocks: AvailabilityBlock[], options?: { preservePlan: boolean; timingOverrides?: TimingOverrides; prefOffsetHours?: number; prefInFridge?: boolean; starterPlan?: {events:StarterEvent[];fridgeOutTime:Date|null;usingPeak2:boolean;feed2Time:Date|null;starterFridgeInTime:Date|null} }) => void;
   bakeType?: 'pizza' | 'bread';
   isSourdough?: boolean;
   onFeedTimeChange?: (t: Date | null) => void;
@@ -860,32 +860,6 @@ export function findOptimalPosition(
         prefZoneConstants(prefermentType, prefGoesInFridge, kitchenTemp);
       const scorePlateauH   = fridgePlateauH; // upper bound (over-fermented side)
 
-      // Comfort window: if fridge poolish start lands outside 18:00–21:00,
-      // scan for the EARLIEST slot whose clock time falls in 18:00–21:00.
-      // If no such slot exists, keep the original bestPrefOffset.
-      if (prefermentType === 'poolish' && prefGoesInFridge) {
-        const prefAbsMs = ms - (candidate + bestPrefOffset) * 3600000;
-        const prefHour = new Date(prefAbsMs).getHours();
-        if (prefHour < 18 || prefHour >= 21) {
-          let comfortOffset: number | null = null;
-          for (let p = prefZoneMin; p <= hardMax; p += STEP) {
-            if (isInBlocker(candidate + p)) continue;
-            const absMs = ms - (candidate + p) * 3600000;
-            const h = new Date(absMs).getHours();
-            if (h >= 18 && h < 21) {
-              comfortOffset = p;
-              break;
-            }
-          }
-          if (comfortOffset !== null) {
-            // Only apply comfort if the poolish stays in the green zone.
-            // Comfort is a preference, not a reason to leave green zone.
-            const comfortInZone = comfortOffset >= prefOptH - scorePlateauH_LOW
-                                && comfortOffset <= prefOptH + scorePlateauH;
-            if (comfortInZone) bestPrefOffset = comfortOffset;
-          }
-        }
-      }
       const prefInZone = prefGoesInFridge
         ? bestPrefOffset >= prefOptH - scorePlateauH_LOW && bestPrefOffset <= prefOptH + scorePlateauH
         : bestPrefOffset >= prefOptH - scoreRTPeakTol && bestPrefOffset <= prefOptH + scoreRTPeakTolUpper;
@@ -902,8 +876,8 @@ export function findOptimalPosition(
 
       const mixHour = new Date(ms - candidate * 3600000).getHours();
       const prefHour = new Date(ms - (candidate + bestPrefOffset) * 3600000).getHours();
-      const doughReasonable = mixHour >= 7 && mixHour <= 22 ? 1 : 0;
-      const poolishComfort = Math.max(0, 8 - Math.abs(prefHour - 19));
+      const doughReasonable = 0; // Explicit availability owns preferred hours.
+      const poolishComfort = 0;
       // Prefer longer cold retard — scientifically better flavour development.
       // Uses params already in scope: sweetFrom (max useful window), minTotalRT (RT floor).
       // Candidate further from bake = more cold retard time = better result.
@@ -2445,6 +2419,22 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         result = rtResult;
         resultChoseFridge = false;
       }
+    }
+
+    // Use the same full-plan comparison as subsequent availability edits.
+    // The legacy positioning above remains relevant to non-preferment dough.
+    if (effectiveHasPref) {
+      const chosen=commercialRecommendation(currentBlocks,manualTimesRef.current,et,new Date(+et-sweetCenterRaw*3600000));
+      if(chosen.result.found){
+        const times=chosen.result.candidate.times;
+        setAlgoChoseFridge(chosen.inFridge);setPendingStart(times.start);setPrefOffsetH(times.prefHours);
+        setStartComputed(true);setSearchFailed(false);setPrefAlgoRed(false);setWindowTooShort(false);
+        setShowFallbackPopup(false);setGuardNote(null);setBlockerNote(null);
+        onChange(times.start,et,currentBlocks,{preservePlan:true,prefOffsetHours:times.prefHours,prefInFridge:chosen.inFridge,timingOverrides:manualTimesRef.current});
+      }else{
+        setSearchFailed(true);setPrefAlgoRed(true);setStartComputed(false);
+      }
+      return;
     }
 
     // Report which mode won — display reads this as single source of truth
@@ -6202,8 +6192,10 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     setMovedNote(null);setBlockerNote(null);ratioApplyHistoryRef.current.length=0;
     setStarterPins(null);setEditingRow(null);setEditingEnabled(false);setEditBaseTimes(null);draftOverridesRef.current={};
     solverBlocksRef.current=newBlocks;setLocalBlocks(newBlocks);
-    // Availability changes invalidate the search, not the baker's constraints.
-    replanCurrentSchedule(newBlocks,manualTimesRef.current);
+    // Recompute automatic recommendations for the new availability, rather
+    // than retaining a valid repair from a blocker that has since been removed.
+    // Explicit baker choices still constrain the search; this is not Reset.
+    replanCurrentSchedule(newBlocks,manualTimesRef.current,true);
   }
 
   function toggleWork() {
@@ -6472,20 +6464,29 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     setFocusRow(row);
     beginRowEdit(row, +(row === 'mix' ? pendingStart : pendingEatTime));
   };
-  function commercialCandidateInput(candidateBlocks:AvailabilityBlock[]=solverBlocksRef.current):EditInput {
-    const opt=getPrefOptH(prefermentType,kitchenTemp,prefGoesInFridge,styleKey,fridgeTemp);
-    const zone=prefZoneConstants(prefermentType,prefGoesInFridge,kitchenTemp);
+  function commercialCandidateInput(candidateBlocks:AvailabilityBlock[]=solverBlocksRef.current,inFridge=prefGoesInFridge,start=pendingStart,bake=pendingEatTime):EditInput {
+    const opt=getPrefOptH(prefermentType,kitchenTemp,inFridge,styleKey,fridgeTemp);
+    const zone=prefZoneConstants(prefermentType,inFridge,kitchenTemp);
     const prefWindow=hasPrefActive?{
-      min:Math.max(prefermentType==='biga'?12:prefGoesInFridge?3:1,opt-(prefGoesInFridge?zone.plateauLowH:zone.rtTol)),
-      max:Math.min(prefermentType==='biga'?72:prefGoesInFridge?24:16,opt+(prefGoesInFridge?zone.plateauH:zone.rtTolUpper)),
+      min:Math.max(prefermentType==='biga'?12:inFridge?3:1,opt-(inFridge?zone.plateauLowH:zone.rtTol)),
+      max:Math.min(prefermentType==='biga'?72:inFridge?24:16,opt+(inFridge?zone.plateauH:zone.rtTolUpper)),
     }:undefined;
-    return {id:'mix',at:pendingStart,start:pendingStart,bake:pendingEatTime,now:Date.now(),
+    return {id:'mix',at:start,start,bake,now:Date.now(),
       blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,
-      prefHours:prefOffsetH,hasPreferment:hasPrefActive,prefWindow,prefWarmupHours:prefGoesInFridge?prefRTWarmupH:0,
+      prefHours:prefOffsetH,hasPreferment:hasPrefActive,prefWindow,prefWarmupHours:requiredPrefWarmupH({prefermentType,prefInFridge:inFridge,styleKey,kitchenTemp,fridgeTemp}),
       supported:!readinessUnsupported,
       window:bake=>{const bounds=commercialReadinessWindow({...(STYLE_FERM_DEFAULTS[styleKey]??FERM_FALLBACK),flourStrength,kitchenTemp,preheatMin,totalWindowH:(+bake-Date.now())/3600000});return {from:bounds.from!==null?new Date(+bake-bounds.from*3600000):null,to:bounds.to!==null?new Date(+bake-bounds.to*3600000):null};},
-      methodValid:times=>commercialPrefermentPlanValid({type:prefermentType,inFridge:prefGoesInFridge,mixTime:times.start,bakeTime:times.bake,offsetHours:times.prefHours,blocks:candidateBlocks}),
+      methodValid:times=>commercialPrefermentPlanValid({type:prefermentType,inFridge,mixTime:times.start,bakeTime:times.bake,offsetHours:times.prefHours,blocks:candidateBlocks}),
     };
+  }
+  function commercialRecommendation(candidateBlocks:AvailabilityBlock[],overrides:TimingOverrides,bake=pendingEatTime,start=new Date(+bake-_optimalMix*3600000)) {
+    // Preserve storage for explicitly chosen preparation; automatic poolish can
+    // compare both methods. Biga retains its existing refrigerated protocol.
+    const modes=prefermentType==='poolish'&&overrides.pref===undefined?[true,false]:[prefGoesInFridge];
+    return recommendPreferment(modes.map(inFridge=>({inFridge,input:{
+      ...commercialCandidateInput(candidateBlocks,inFridge,start,bake),
+      prefHours:getPrefOptH(prefermentType,kitchenTemp,inFridge,styleKey,fridgeTemp),
+    }})),{mix:overrides.mix===undefined?undefined:new Date(overrides.mix),preferment:overrides.pref===undefined?undefined:new Date(overrides.pref)});
   }
   const currentCandidate=isSourdough?validateCurrentStarterCandidate(repairBlocks):validateScheduleCandidate(commercialCandidateInput(repairBlocks));
   const currentCandidateValid=startTimeInPast?true:currentCandidate.valid;
@@ -6526,12 +6527,15 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         input.at=input.start;
         input.prefHours=hasPrefActive?getPrefOptH(prefermentType,kitchenTemp,prefGoesInFridge,styleKey,fridgeTemp):0;
       }
-      const result=findFixedBakeSchedule(input,{mix:overrides.mix===undefined?undefined:new Date(overrides.mix),preferment:overrides.pref===undefined?undefined:new Date(overrides.pref)});
+      const recommendation=resetRecommendation&&hasPrefActive?commercialRecommendation(candidateBlocks,overrides):null;
+      const result=recommendation?.result??findFixedBakeSchedule(input,{mix:overrides.mix===undefined?undefined:new Date(overrides.mix),preferment:overrides.pref===undefined?undefined:new Date(overrides.pref)});
+      const storage=result.found&&recommendation?recommendation.inFridge:prefGoesInFridge;
+      if(result.found&&recommendation)setAlgoChoseFridge(storage);
       setSearchFailed(!result.found);
       const times=result.found?result.candidate.times:{start:pendingStart,bake:pendingEatTime,prefHours:prefOffsetH};
       setPendingStart(times.start);setPrefOffsetH(times.prefHours);setStartComputed(true);
       setPrefAlgoRed(!result.found);setWindowTooShort(false);
-      onChange(times.start,pendingEatTime,candidateBlocks,{preservePlan:true,prefOffsetHours:times.prefHours,timingOverrides:overrides});
+      onChange(times.start,pendingEatTime,candidateBlocks,{preservePlan:true,prefOffsetHours:times.prefHours,prefInFridge:storage,timingOverrides:overrides});
     }
   }
   const readinessPanel = !(isSourdough && planningMode === 'last_fed' && lastFedAge === null) && (
@@ -8237,6 +8241,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
           anchors.push({id:'pref',name:prefLabel,at,valid:preview?.valid,editable:!startTimeInPast&&!readinessUnsupported,
             ...clampBounds(+(originalBounds.from??draftMix)-(prefWindow?.max??prefOffsetH+6)*hour,+(originalBounds.to??draftMix)-(prefWindow?.min??Math.max(.25,prefOffsetH-6))*hour,at),
             locked:!!activeOverrides.prefLocked,
+            summary:(prefGoesInFridge?(isFr?'Au réfrigérateur':'Refrigerated'):(isFr?'À température ambiante':'Room temperature'))+' · '+duration(draftPrefOffset),
             detail:draftPrefOffset<=0?undefined:(isFr?'Maturation : ':'Maturation: ')+duration(draftPrefOffset)+' · '+(prefGoesInFridge?(isFr?'au froid':'in the fridge'):(isFr?'à température ambiante':'at room temperature')),
             note:preview?.issue==='preferment'||preview?.conflict?.startsWith('preferment')?draftMessage:null});
         }

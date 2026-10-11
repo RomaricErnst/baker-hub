@@ -4,7 +4,7 @@ module.exports = defineConfig({
   testDir: './tests/mobile',
   // The replacement journey supersedes legacy bottom-tab/graph selectors.
   // Include the new preparation hierarchy checks, which use the current UI.
-  testMatch: process.env.BAKER_NAV_V2 === '1' ? ['**/header.spec.cjs', '**/nav-v2.spec.cjs', '**/existing-base.spec.cjs', '**/planning-calendar.spec.cjs', '**/scheduling-feedback.spec.cjs', '**/preparation-hierarchy.spec.cjs', '**/audit-production-fixes.spec.cjs', '**/resume-protection.spec.cjs', '**/blake-feedback.spec.cjs'] : '**/*.spec.cjs',
+  testMatch: process.env.BAKER_NAV_V2 === '1' ? ['**/header.spec.cjs', '**/nav-v2.spec.cjs', '**/simple-custom.spec.cjs', '**/existing-base.spec.cjs', '**/planning-calendar.spec.cjs', '**/scheduling-feedback.spec.cjs', '**/poolish-storage.spec.cjs', '**/preparation-hierarchy.spec.cjs', '**/audit-production-fixes.spec.cjs', '**/resume-protection.spec.cjs', '**/blake-feedback.spec.cjs'] : '**/*.spec.cjs',
   timeout: 60000,
   expect: { timeout: 10000 },
   workers: 2,

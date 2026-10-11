@@ -1,9 +1,10 @@
 const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 
-async function seed(page,locale,partial){
+async function seed(page,locale,partial,chosen=false){
  await page.route('http://127.0.0.1:54321/**',route=>route.fulfill({status:401,contentType:'application/json',body:'{"message":"Isolated audit fixture"}'}));
  const bake=new Date();bake.setDate(bake.getDate()+4);bake.setHours(19,30,0,0);
  const data={version:1,savedAt:Date.now(),bakeName:'AUDIT isolated coverage',tab:'simple',bakeType:'pizza',styleKey:'neapolitan',numItems:partial?24:2,itemWeight:260,pizzaDiameter:30,ovenType:'home_oven_standard',mixerType:'hand',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:5,flourBlend:{flour1:'pizza00',flour2:null,ratio1:100},prefermentType:'none',prefOffsetH:0,flourInFridge:false,startTime:+bake-24*3600000,eatTime:+bake,blocks:[],recipeGenerated:true,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,activeStep:99,advancedStep:99,highestStep:99,advancedHighestStep:99,setupOverview:false,activeTab:partial?'service':'plan',pizzaParty:{qtys:partial?{margherita:2}:{},bakedQtys:{},tab:partial?'bake':'pick'},navigation:{batchView:'style',protocolView:'fillings',serviceView:'fillings',returnTo:null}};
+ data.flourChosen=chosen;
  await page.addInitScript(data=>{
   if(sessionStorage.getItem('audit-production-fixture'))return;
   sessionStorage.setItem('audit-production-fixture','1');
@@ -19,9 +20,9 @@ async function navigate(page,name,locale){
 }
 
 for(const locale of ['fr','en']){
- test(`${locale}: guided flour is named in recipe and shopping`,async({page})=>{
-  await seed(page,locale,false);
-  const flour=locale==='fr'?'Farine à pizza 00':'00 pizza flour';
+ for(const chosen of [false,true])test(`${locale}: ${chosen?'selected':'recommended'} flour is named in recipe and shopping`,async({page})=>{
+  await seed(page,locale,false,chosen);
+  const flour=locale==='fr'?'Farine à pizza 00':chosen?'Pizza flour 00':'00 pizza flour';
   await expect(page.getByText(new RegExp(flour)).filter({visible:true}).first()).toBeVisible();
   await navigate(page,locale==='fr'?'Courses':'Shopping list',locale);
   await expect(page.getByText(new RegExp(flour)).filter({visible:true}).first()).toBeVisible();

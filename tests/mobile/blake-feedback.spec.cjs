@@ -25,10 +25,11 @@ test('traditional pizza oven label stays consistent after selection',async({page
  await page.getByRole('button',{name:'Napolitaine classique',exact:true}).tap();
  await page.locator('.bh-style-confirm button').tap();
  await page.getByRole('button',{name:'Définir ma recette',exact:true}).tap();
- await page.getByRole('button',{name:/^Me laisser guider/}).tap();
+ await page.getByRole('button',{name:/^Simple/}).tap();
+ await page.locator('#step-3 summary').filter({hasText:/^Cuisson ·/}).tap();
  await page.getByRole('button',{name:/^Four à pizza traditionnel/}).tap();
- await page.getByRole('button',{name:'Continuer',exact:true}).tap();
- await expect(page.getByText('Four à pizza traditionnel',{exact:true})).toBeVisible();
+ await page.locator('#step-3 summary').filter({hasText:/^Cuisson ·/}).tap();
+ await expect(page.locator('#step-3 summary').filter({hasText:/^Cuisson ·/})).toContainText('Four à pizza traditionnel');
  await expect(page.getByText('Four maçonné',{exact:true})).toHaveCount(0);
 });
 

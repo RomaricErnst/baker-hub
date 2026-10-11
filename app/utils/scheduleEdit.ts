@@ -63,6 +63,23 @@ function assessEdit(input: EditInput): EditResult {
 }
 
 export type FixedBakeSearchResult = {candidate:EditResult; found:boolean; searched:number; exhausted:boolean};
+
+/** Compare fully validated storage protocols using their existing maturity targets.
+ * A target-duration plan takes precedence over retaining yesterday's repair.
+ * Refrigeration only breaks otherwise equal ties; it is not a quality guarantee. */
+export function recommendPreferment(options: {inFridge:boolean; input:EditInput}[], pins:TimingPins={}) {
+  const results=options.map(option=>{
+    const input=option.input;
+    const target=findFixedBakeSchedule({...input,prefWindow:{min:input.prefHours,max:input.prefHours}},pins);
+    const result=target.found?target:findFixedBakeSchedule(input,pins);
+    return {...option,result};
+  });
+  results.sort((a,b)=>Number(b.result.found)-Number(a.result.found)
+    || Math.abs(a.result.candidate.times.prefHours-a.input.prefHours)/Math.max(1,a.input.prefHours)-Math.abs(b.result.candidate.times.prefHours-b.input.prefHours)/Math.max(1,b.input.prefHours)
+    || Math.abs(+a.result.candidate.times.start-+a.input.start)-Math.abs(+b.result.candidate.times.start-+b.input.start)
+    || Number(b.inFridge)-Number(a.inFridge));
+  return results[0];
+}
 /** Bounded supported-window search, not a proof of biological impossibility.
  * Retains baking time and storage/method. Explicit preparation pins are absolute.
  * Quarter-hour candidates are supplemented with exact availability boundaries. */

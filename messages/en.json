@@ -36,7 +36,7 @@
     "generateFirst": "Generate your recipe first"
   },
   "tabs": {
-    "guided": "Guided",
+    "guided": "Simple",
     "advanced": "Custom",
     "setup": "Setup",
     "plan": "Recipe",
@@ -77,7 +77,7 @@
     "details": "+ details",
     "hide": "− hide",
     "simple": {
-      "title": "Guided",
+      "title": "Simple",
       "subtitle": "“I just want it to work”",
       "barStart": "Fri 6:30 PM",
       "barMid": "fridge",

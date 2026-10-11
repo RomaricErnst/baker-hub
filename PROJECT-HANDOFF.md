@@ -1,3 +1,43 @@
+# Parallel mobile release checks — 11 October 2026
+
+CI38121257030 reached the25-minute mobile limit before completing all472 cases. Trace identified a strict locator matching both the ingredient-stage summary and its nested Prepare the water summary; scope the tap to the direct child summary. Unit456 passed. Split unchanged mobile scenarios into four parallel width jobs (320/375/390/430), with distinct artifacts and fail-fast disabled, to finish every width without the monolithic timeout. No test removal or application-code change. Deployment remains pending all four jobs.
+
+# Ingredient-stage assertion correction — 11 October 2026
+
+CI38119547286 passed464 cases. The8 preservation journeys now successfully generate Recipe, but a global first Poolish text locator matches a hidden Preparation heading. Scope this assertion to the opened Ingredients by stage disclosure and explicitly assert it is open. All formula/flour/return-to-Custom checks remain; application code is unchanged. Full rerun and live deployment remain pending.
+
+# Mobile fixture clock correction — 11 October 2026
+
+CI38117916729 passed464 mobile cases; all8 mode-preservation failures advanced past the fixed flour assertion and reached a legitimately blocked past preparation. Artifact error-context confirms saved poolish12:40 versus test clock15:25, with disabled Continue and an explicit past-preparation warning. Resume this fixture at10:25 instead; fresh-creation clock and all preservation/outcome assertions remain unchanged. No application change or scheduling guard removal. Release remains pending the corrected full rerun.
+
+# Flour restoration correction — 11 October 2026
+
+CI37249618962 passed464 mobile cases and failed8 copies of the same unbranded-flour preservation assertion. Root cause: the bake-type defaulting effect checked brandProduct but ignored flourChosen, replacing explicitly saved bread flour with pizza00 during pizza restoration. Guard now respects the saved selection flag while preserving the legacy named-product guard and untouched-default behavior. Added an actual-effect regression for both bake types. Mobile assertions remain unchanged. Production remains pending a successful rerun. Unrelated local stracciatella image modification is excluded.
+
+# CI corrections — 5 October 2026
+
+PR14 head065f5fc completed CI37200570239 with454 unit tests, build and sourdough checks passing; WebKit444 passed/20 failed. User authorized corrections and rerun. Failures repeat three groups across four widths: selected-flour fixture incorrectly expected recommended flour (and revealed an actual French selected-flour English fallback); repeat-bake test awaited retired window.confirm instead of the HTML dialog; mode-switch test restored an impossible legacy mode-unselected setup state that correctly migrated to My bake. Corrected locale fallbacks, distinguish recommended/selected flour cases, use the current confirmation with preserved outcome checks, and start switching from Custom review using its Mode action. Full CI rerun required; no merge or production claim.
+
+# Simple / Custom release — 4 October 2026
+
+User explicitly authorized deployment, then confirmed pushing a review branch to run iPhone checks in GitHub CI before production. Scope includes the unpublished availability/poolish recommendation changes below. Base main verified as 15ae276. Publication and production status remain pending until verified.
+
+Both modes offer guidance. Simple combines equipment summaries, approximate kitchen temperature and yeast into one Kitchen step, followed by Baking plan. Equipment stays editable; fridge temperature appears when refrigeration is involved. Humidity questions stay in Custom; deliberate retained values remain visible. Custom descriptions explicitly mention flour, preferment and dough percentages. Mode changes preserve selected flour, percentages, preferment method/storage/duration and use one shared calculation rather than changing the recipe silently. Flour buying identity and preferment stages remain visible in Simple. Existing climate and fermentation coefficients are unchanged.
+
+Validation: production build including TypeScript/i18n passed; all 454 automated tests passed. New French/English mobile cases cover fresh Simple creation and Custom poolish → Simple → reload → Custom preservation. Existing navigation tests were adapted to the combined Kitchen step. Local mobile execution is blocked by missing WebKit shared libraries; dependency installation failed under environment permissions. Run macOS WebKit CI before production. No physical iPhone verification claimed.
+
+# Availability recommendation refresh — 3 October 2026
+
+Publication authorized by user at21:11 Singapore on3October: push and deploy these verified scheduling changes to production. Base main15ae276. Release commit and actual deployment status must be checked; earlier pending statements below are historical checkpoints.
+
+User approved fixing automatic recommendation recalculation after availability changes and assessing earlier refrigerated poolish. applyAndUpdate now requests fresh recommendation seeding while retaining explicit timing overrides; it does not perform Reset or erase pins. Already-started preparation remains preserved. The actual handler regression covers Nights on/off/on/off, the reported 15:40 poolish anchor under a fixed-clock fixture, fixed bake, explicit mixing/locked poolish and past preparation. All 94 test files and TypeScript passed locally. No browser or physical-iPhone verification, push or deployment for this revision yet.
+
+Subsequent user approval extends this revision: initial commercial preferment planning and availability/Reset now share recommendPreferment, comparing fully validated cold and room-temperature poolish using existing maturity targets/windows. Exact target durations are tried before tolerated durations; candidates rank by normalized target deviation, distance to recommended mixing, then cold as a deterministic tie-break, not a claim of superior flavour. Explicit preparation choices preserve storage; already-started preparation is unchanged. Removed the hardcoded evening convenience preference. Timeline exposes localized storage and duration without opening Edit. Storage and duration are saved atomically and participate in recipe invalidation and the accepted-plan marker. No biological constants changed.
+
+95 test files pass, including actual availability-handler round trips, explicit pins, cold-out conflict rejection, cool/hot model fixtures and atomic storage persistence. Production build/i18n/TypeScript passed with isolated test Supabase configuration. Browser verification uses fixed 3 October 15:25 Singapore, 4 October 20:31 bake, Neapolitan/spiral/5C fridge assumptions; these are not recovered user inputs. At22C night blocking selects earlier refrigerated poolish. At32C a compatible room-temperature plan can mix before23:00, so refrigeration is not forced; initial browser expectations were corrected to reflect that valid distinction. Final narrow/standard WebKit results follow this checkpoint. No push, production deployment or physical-iPhone verification yet.
+
+Final local WebKit: all8 cases passed at320/390px, French/English and22/32C, covering visible storage, night on/off recommendation round trip and reload with retained method/times. New file is included in the navigation CI selection. No browser page errors in these scenarios. Initial first-creation UI is not separately browser-tested; shared recommendation logic is used in source and build-checked. Still not pushed/deployed; no physical-iPhone claim.
+
 # Resume choice — 3 October 2026
 
 User approved simplifying the replacement warning after closing Resume and choosing Pizza. The local draft would be overwritten, so retain one short bilingual confirmation at the destructive action, never on the dismiss cross. A native HTML dialog replaces window.confirm with named Keep current bake / Start new bake controls, focus containment and Escape cancellation. The resume card has an explicit new-bake action; confirming it clears the old draft once, so choosing a product needs no second warning. Cross only hides the card. A draft changed during the asynchronous confirmation is protected. Saved-recipe and cloud-resume replacement callers await the same decision.

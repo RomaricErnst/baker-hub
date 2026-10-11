@@ -124,7 +124,7 @@ test('failed schedule validation cannot clear stale state or return to executabl
 test('successful validation clears stale status and restores the captured edit origin',()=>{
  for(const destination of [null,'recipe','shopping','protocol','service']){
   const calls=[];
-  const context={canGenerate:true,styleKey:'neapolitan',scheduleCandidateValid:true,scheduleEditing:false,schedule:{},commercialPrefermentPlanReady:true,tab:'simple',recipe:{},yeastType:'instant',unsupportedEnrichedMethod:false,recipeGenerated:true,user:null,prefermentType:'none',previousRecipeInputKey:{current:'old'},recipeInputKey:'updated',fillingsReturn:destination?{destination,view:'dough'}:null,
+  const context={flourChosen:false,canGenerate:true,styleKey:'neapolitan',scheduleCandidateValid:true,scheduleEditing:false,schedule:{},commercialPrefermentPlanReady:true,tab:'simple',recipe:{},yeastType:'instant',unsupportedEnrichedMethod:false,recipeGenerated:true,user:null,prefermentType:'none',previousRecipeInputKey:{current:'old'},recipeInputKey:'updated',fillingsReturn:destination?{destination,view:'dough'}:null,
    setSessionSaved(){},setSetupOverview(){},setReviewMode(){},setShowResults(){},setRecipeGenerated(value){calls.push(['generated',value]);},setProtocolStale(value){calls.push(['stale',value]);},finishFillings(){calls.push(['return',destination]);},setActiveTab(value){calls.push(['route',value]);},scrollToStepTop(){}};
   evaluate(fn('handleGenerate')+';handleGenerate();',context);
   assert.deepEqual(calls,[['generated',true],['stale',false],destination?['return',destination]:['route','plan']]);
