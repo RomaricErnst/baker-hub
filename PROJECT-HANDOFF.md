@@ -1,3 +1,7 @@
+# Mobile fixture clock correction — 11 October 2026
+
+CI38117916729 passed464 mobile cases; all8 mode-preservation failures advanced past the fixed flour assertion and reached a legitimately blocked past preparation. Artifact error-context confirms saved poolish12:40 versus test clock15:25, with disabled Continue and an explicit past-preparation warning. Resume this fixture at10:25 instead; fresh-creation clock and all preservation/outcome assertions remain unchanged. No application change or scheduling guard removal. Release remains pending the corrected full rerun.
+
 # Flour restoration correction — 11 October 2026
 
 CI37249618962 passed464 mobile cases and failed8 copies of the same unbranded-flour preservation assertion. Root cause: the bake-type defaulting effect checked brandProduct but ignored flourChosen, replacing explicitly saved bread flour with pizza00 during pizza restoration. Guard now respects the saved selection flag while preserving the legacy named-product guard and untouched-default behavior. Added an actual-effect regression for both bake types. Mobile assertions remain unchanged. Production remains pending a successful rerun. Unrelated local stracciatella image modification is excluded.

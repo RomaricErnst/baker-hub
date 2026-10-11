@@ -5,8 +5,8 @@ const NOW=Date.parse('2026-10-03T15:25:00+08:00');
 const BAKE=Date.parse('2026-10-04T20:31:00+08:00');
 const stored=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null'));
 const actions=page=>page.locator('.bh-step-actions:visible');
-async function anonymous(page){
- await page.clock.setFixedTime(NOW);
+async function anonymous(page,now=NOW){
+ await page.clock.setFixedTime(now);
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
 }
 async function geometry(page){
@@ -60,8 +60,11 @@ for(const locale of ['fr','en']){
 
  test(`${locale}: Custom poolish and formula survive Simple, reload and return to Custom`,async({page})=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
-  await anonymous(page);
-  const data={version:1,savedAt:NOW,tab:'custom',bakeType:'pizza',bakeName:'Simple Custom regression',styleKey:'neapolitan',numItems:4,itemWeight:260,pizzaDiameter:30,ovenType:'pizza_oven',mixerType:'spiral',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:5,flourBlend:{flour1:'bread',flour2:null,ratio1:100},manualHydration:64,manualSalt:2.7,manualOil:0,manualSugar:0,prefermentType:'poolish',prefermentFlourPct:20,prefOffsetH:11,prefGoesInFridge:true,flourInFridge:false,startTime:Date.parse('2026-10-03T23:40:00+08:00'),eatTime:BAKE,blocks:[],recipeGenerated:false,modeChosen:false,qtyChosen:true,flourChosen:true,prefermentChosen:true,activeStep:3,advancedStep:9,highestStep:7,advancedHighestStep:9,setupOverview:false,activeTab:'setup'};
+  // This saved plan starts poolish at 12:40. Resume before that time;
+  // resuming at 15:25 correctly blocks a not-yet-started preparation in the past.
+  const resumeNow=Date.parse('2026-10-03T10:25:00+08:00');
+  await anonymous(page,resumeNow);
+  const data={version:1,savedAt:resumeNow,tab:'custom',bakeType:'pizza',bakeName:'Simple Custom regression',styleKey:'neapolitan',numItems:4,itemWeight:260,pizzaDiameter:30,ovenType:'pizza_oven',mixerType:'spiral',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:5,flourBlend:{flour1:'bread',flour2:null,ratio1:100},manualHydration:64,manualSalt:2.7,manualOil:0,manualSugar:0,prefermentType:'poolish',prefermentFlourPct:20,prefOffsetH:11,prefGoesInFridge:true,flourInFridge:false,startTime:Date.parse('2026-10-03T23:40:00+08:00'),eatTime:BAKE,blocks:[],recipeGenerated:false,modeChosen:false,qtyChosen:true,flourChosen:true,prefermentChosen:true,activeStep:3,advancedStep:9,highestStep:7,advancedHighestStep:9,setupOverview:false,activeTab:'setup'};
   // Start from a real saved Custom review, then use its visible Mode action.
   data.modeChosen=true;data.setupOverview=true;
   await page.addInitScript(data=>{
