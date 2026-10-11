@@ -1,3 +1,7 @@
+# Recoverable new bake — 11 October 2026
+
+User authorized removing the repeated new-bake confirmation and deploying. New bake (banner or menu) and choosing a family from the landing page preserve one previous local draft with shopping/preparation/guide progress before resetting. A persistent bilingual Undo new bake action restores the previous choices, including after reload. Dismiss only hides the welcome offer. Cross-tab compare-before-write remains enforced for backup/reset/undo; storage failure blocks replacement. Account recipe/rebake replacement dialogs remain unchanged. No calculations changed. Unrelated stracciatella image excluded. Validation and production status pending.
+
 # Live release verified — 11 October 2026
 
 PR14 merged into main as cc0a349a5fc7b5c3051217be7b6dc5eeac64eea1 after CI38123135381 passed all four width jobs:118 mobile cases each (472 total),456 unit/component tests, sourdough round trips, image checks and production build. Tested head d53f67b6cbfa5cc06694ed361c3235d4f08d5457. Vercel production dpl_AkCkELXL6TRD5SQUCqMkE2MJK9s4 is READY; www.bakerhub.app resolves to this exact merge commit. This supersedes all pending-release notes below. Simple/Custom setup, preserved choices and the scheduling corrections are live. Physical iPhone testing remains unavailable; mobile evidence is macOS WebKit at320/375/390/430px in FR/EN. Unrelated local stracciatella image modification remains excluded.

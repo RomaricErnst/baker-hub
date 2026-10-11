@@ -199,3 +199,38 @@ export function serializeStarterEvents(events: StarterEvent[]): NonNullable<Sess
 export function restoreStarterEvents(events: SessionData['starterEvents'], offsetMs = 0): StarterEvent[] {
   return (events ?? []).filter(event => Number.isFinite(event.time)).map(event => ({...event, time:new Date(event.time + offsetMs), bellPeakTime:event.bellPeakTime == null ? undefined : new Date(event.bellPeakTime + offsetMs), bellStartTime:event.bellStartTime == null ? undefined : new Date(event.bellStartTime + offsetMs)}));
 }
+
+// One recoverable previous bake, persisted across reloads on this device.
+const PREVIOUS_BAKE_KEY = 'bh_previous_bake_v1';
+const PROGRESS_KEYS = ['bh_shop_ticks_v1', 'bh_prep_ticks_v1', 'bh_guide_done_v1'];
+export function hasPreviousBake(): boolean {
+  try { return !!localStorage.getItem(PREVIOUS_BAKE_KEY); } catch { return false; }
+}
+export function preservePreviousBake(): boolean {
+  try {
+    const store = sessionStore();
+    if (!store.isCurrent()) return false;
+    const session = store.read();
+    if (!session) return true; // A second click must not erase the recovery copy.
+    const progress = Object.fromEntries(PROGRESS_KEYS.map(key => [key, localStorage.getItem(key)]));
+    localStorage.setItem(PREVIOUS_BAKE_KEY, JSON.stringify({session, progress}));
+    return true;
+  } catch { return false; }
+}
+export function restorePreviousBake(): SessionData | null {
+  try {
+    const raw = localStorage.getItem(PREVIOUS_BAKE_KEY);
+    if (!raw) return null;
+    const backup = JSON.parse(raw);
+    const data = JSON.parse(backup.session) as SessionData;
+    if (data.version !== 1 || !data.bakeType) return null;
+    if (!sessionStore().write(backup.session)) return null;
+    for (const key of PROGRESS_KEYS) {
+      const value = backup.progress?.[key];
+      if (typeof value === 'string') localStorage.setItem(key, value);
+      else localStorage.removeItem(key);
+    }
+    localStorage.removeItem(PREVIOUS_BAKE_KEY);
+    return data;
+  } catch { return null; }
+}
