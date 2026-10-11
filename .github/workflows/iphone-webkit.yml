@@ -18,7 +18,11 @@ concurrency:
 jobs:
   iphone:
     runs-on: macos-14
-    timeout-minutes: 30
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        width: [320, 375, 390, 430]
     env:
       CI: 'true'
       NEXT_TELEMETRY_DISABLED: '1'
@@ -54,13 +58,13 @@ jobs:
       - name: Build isolated app
         run: npm run build
       - name: Run iPhone rendering and interaction checks
-        timeout-minutes: 25
-        run: node .ci-tools/node_modules/@playwright/test/cli.js test --config=playwright.mobile.config.cjs
+        timeout-minutes: 20
+        run: node .ci-tools/node_modules/@playwright/test/cli.js test --config=playwright.mobile.config.cjs --project=iphone-webkit-${{ matrix.width }}
       - name: Upload screenshots, traces and report
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: iphone-webkit-${{ github.sha }}
+          name: iphone-webkit-${{ matrix.width }}-${{ github.sha }}
           path: |
             playwright-report/
             test-results/

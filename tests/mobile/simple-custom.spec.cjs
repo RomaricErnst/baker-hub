@@ -87,7 +87,7 @@ for(const locale of ['fr','en']){
   await nextToRecipe(page,fr);
   await expect(page.getByRole('region',{name:fr?'Quantités totales':'Total ingredients',exact:true})).toBeVisible();
   const stages=page.locator('details').filter({has:page.locator('summary').filter({hasText:fr?'Ingrédients par étape':'Ingredients by stage'})});
-  await stages.locator('summary').tap();
+  await stages.locator(':scope > summary').tap();
   await expect(stages).toHaveAttribute('open','');
   await expect(stages.getByText(/Poolish/).first()).toBeVisible();
   await page.getByRole('button',{name:fr?'Modifier l’organisation et les horaires':'Edit setup & timing',exact:true}).tap();

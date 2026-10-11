@@ -1,3 +1,7 @@
+# Parallel mobile release checks — 11 October 2026
+
+CI38121257030 reached the25-minute mobile limit before completing all472 cases. Trace identified a strict locator matching both the ingredient-stage summary and its nested Prepare the water summary; scope the tap to the direct child summary. Unit456 passed. Split unchanged mobile scenarios into four parallel width jobs (320/375/390/430), with distinct artifacts and fail-fast disabled, to finish every width without the monolithic timeout. No test removal or application-code change. Deployment remains pending all four jobs.
+
 # Ingredient-stage assertion correction — 11 October 2026
 
 CI38119547286 passed464 cases. The8 preservation journeys now successfully generate Recipe, but a global first Poolish text locator matches a hidden Preparation heading. Scope this assertion to the opened Ingredients by stage disclosure and explicitly assert it is open. All formula/flour/return-to-Custom checks remain; application code is unchanged. Full rerun and live deployment remain pending.
