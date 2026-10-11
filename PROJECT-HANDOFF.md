@@ -1,3 +1,7 @@
+# Live release verified — 11 October 2026
+
+PR14 merged into main as cc0a349a5fc7b5c3051217be7b6dc5eeac64eea1 after CI38123135381 passed all four width jobs:118 mobile cases each (472 total),456 unit/component tests, sourdough round trips, image checks and production build. Tested head d53f67b6cbfa5cc06694ed361c3235d4f08d5457. Vercel production dpl_AkCkELXL6TRD5SQUCqMkE2MJK9s4 is READY; www.bakerhub.app resolves to this exact merge commit. This supersedes all pending-release notes below. Simple/Custom setup, preserved choices and the scheduling corrections are live. Physical iPhone testing remains unavailable; mobile evidence is macOS WebKit at320/375/390/430px in FR/EN. Unrelated local stracciatella image modification remains excluded.
+
 # Parallel mobile release checks — 11 October 2026
 
 CI38121257030 reached the25-minute mobile limit before completing all472 cases. Trace identified a strict locator matching both the ingredient-stage summary and its nested Prepare the water summary; scope the tap to the direct child summary. Unit456 passed. Split unchanged mobile scenarios into four parallel width jobs (320/375/390/430), with distinct artifacts and fail-fast disabled, to finish every width without the monolithic timeout. No test removal or application-code change. Deployment remains pending all four jobs.
