@@ -43,3 +43,26 @@ test('real mixer capacity and result notes survive local save and validate legac
  assert.equal(loadSession().mixerCapacityG,2800);assert.equal(loadSession().resultNotes,'Next time: 1 minute less baking.');
  saveSession({mixerCapacityG:-1,resultNotes:42});assert.equal(loadSession().mixerCapacityG,undefined);assert.equal(loadSession().resultNotes,'');
 });
+
+ test('new bake backup restores the full draft and progress and refuses stale tabs',()=>{
+ const {preservePreviousBake,restorePreviousBake,hasPreviousBake}=require('../app/lib/session.ts');
+ const store=new Map();global.localStorage={setItem:(k,v)=>store.set(k,v),getItem:k=>store.get(k)??null,removeItem:k=>store.delete(k)};
+ saveSession({bakeType:'pizza',bakeName:'original',manualHydration:67,pizzaParty:{qtys:{margherita:4}}});
+ const original=store.get('bh_session_v1');store.set('bh_shop_ticks_v1','{"flour":true}');
+ assert.equal(preservePreviousBake(),true);assert.equal(hasPreviousBake(),true);
+ assert.equal(clearSession(),true);store.delete('bh_shop_ticks_v1');
+ assert.equal(preservePreviousBake(),true);
+ assert.equal(restorePreviousBake().manualHydration,67);
+ assert.equal(store.get('bh_session_v1'),original);assert.equal(store.get('bh_shop_ticks_v1'),' {"flour":true}'.trim());
+ assert.equal(hasPreviousBake(),false);
+ assert.equal(preservePreviousBake(),true);
+ store.set('bh_session_v1','{"version":1,"bakeType":"bread"}');
+ assert.equal(preservePreviousBake(),false);assert.equal(restorePreviousBake(),null);
+ assert.equal(store.get('bh_session_v1'),' {"version":1,"bakeType":"bread"}'.trim());
+ });
+ test('backup storage failure never clears the current bake',()=>{
+ const {preservePreviousBake}=require('../app/lib/session.ts');const store=new Map();
+ global.localStorage={setItem:(k,v)=>{if(k==='bh_previous_bake_v1')throw Error('quota');store.set(k,v)},getItem:k=>store.get(k)??null,removeItem:k=>store.delete(k)};
+ saveSession({bakeType:'pizza',numItems:8});const original=store.get('bh_session_v1');
+ assert.equal(preservePreviousBake(),false);assert.equal(store.get('bh_session_v1'),original);
+ });

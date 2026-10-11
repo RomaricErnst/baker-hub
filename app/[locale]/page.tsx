@@ -47,7 +47,7 @@ import { createClient } from '../lib/supabase/client';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
 import { archivedBlendSelections } from '../lib/flourRecovery';
 import { flourShoppingName } from '../lib/flourGuidance';
-import { acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, normalizeFlourTarget, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
+import { hasPreviousBake, preservePreviousBake, restorePreviousBake, acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, normalizeFlourTarget, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
 import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
@@ -2138,9 +2138,9 @@ export default function Home() {
   },[showProductHome,bakeType,activeTab,batchView,activeStep,advancedStep,setupOverview,sessionRestored]);
   function backToProducts(){setShowProductHome(true);setActiveTab('batch');scrollToStepTop();}
   async function selectBakeType(bt: BakeType) {
-    // A dismissed resume banner is not consent to replace the local draft.
+    // Choosing a family preserves the unapplied draft before starting fresh.
     if (!bakeType) {
-      if (!await confirmLocalReplacement()) return;
+      if (!startRecoverableBake()) return;
       setPendingSession(null); setShowWelcomeBack(false);
     }
     if(bakeType===bt){setShowProductHome(false);setActiveTab('batch');setBatchView('style');return;}
@@ -2551,10 +2551,30 @@ export default function Home() {
     scrollToStepTop();
   }
 
-  // Start fresh is the only destructive action in the app, so it is the only
-  // one that interrupts. An unsaved session gets one question with no silent
-  // path out: keep it, drop it, or back out. A saved session just restarts.
-  const [confirmNewSession, setConfirmNewSession] = useState(false);
+  // Starting a new bake is reversible without a second confirmation.
+  const [previousBakeAvailable, setPreviousBakeAvailable] = useState(false);
+  const [restartFailed, setRestartFailed] = useState(false);
+  useEffect(() => { setPreviousBakeAvailable(hasPreviousBake()); }, []);
+
+  function startRecoverableBake(): boolean {
+    // Flush live edits before snapshotting; never accept a conflicting tab's draft.
+    if ((bakeType && !saveSession(buildSessionPayload())) || !preservePreviousBake()) {
+      setRestartFailed(true); return false;
+    }
+    if (!startOver()) { setRestartFailed(true); return false; }
+    setPreviousBakeAvailable(hasPreviousBake()); setRestartFailed(false);
+    scrollToStepTop();
+    return true;
+  }
+
+  function undoNewBake() {
+    const previous = restorePreviousBake();
+    if (!previous) { setRestartFailed(true); return; }
+    setPreviousBakeAvailable(false); setRestartFailed(false);
+    setShowProductHome(false); setShowWelcomeBack(false); setPendingSession(null);
+    applySession(previous);
+    scrollToStepTop();
+  }
 
   const [replaceBakeOpen, setReplaceBakeOpen] = useState(false);
   const replaceBakeAnswer = useRef<((replace: boolean) => void) | null>(null);
@@ -2588,8 +2608,7 @@ export default function Home() {
   }
 
   function requestNewSession() {
-    if (bakeType && !(sessionSaved && bakeEventId && user)) { setConfirmNewSession(true); return; }
-    startOver();
+    startRecoverableBake();
   }
 
   async function saveCurrentSession(): Promise<boolean> {
@@ -2654,7 +2673,7 @@ export default function Home() {
 
   function startOver() {
     // Refuse to clear a draft another tab has changed since our last write.
-    if (!clearSession()) return;
+    if (!clearSession()) return false;
     setPendingSession(null);
     setScheduleCandidateValid(true);
     setBatchView('style');setProtocolView('dough');setServiceView('dough');setFillingsReturn(null);setPrepReturnToService(null);setShoppingReturnToFillings(false);
@@ -2732,6 +2751,7 @@ export default function Home() {
     setNextFeedRatioOverride(null);
     setRatioMode('recommend');
     setStarterPeakTime(null);
+    return true;
   }
 
   function handleGenerate() {
@@ -3490,49 +3510,11 @@ export default function Home() {
 
         {replaceBakeOpen && <ReplaceBakeDialog fr={fr} onAnswer={answerReplaceBake} />}
 
-        {confirmNewSession && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            style={{
-              position: 'fixed', inset: 0, zIndex: 200,
-              background: 'rgba(43,33,24,0.45)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: '20px',
-            }}
-            onClick={() => setConfirmNewSession(false)}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                background: 'var(--warm)', borderRadius: '16px', padding: '20px',
-                maxWidth: '360px', width: '100%',
-                display: 'flex', flexDirection: 'column', gap: '10px',
-              }}
-            >
-              <SessionReplacementNotice fr={locale === 'fr'} localOnly={sessionSaved && !user} />
-              <button
-                onClick={async () => { const preserved = await saveCurrentSession(); if (preserved) { setConfirmNewSession(false); startOver(); } }}
-                style={{ width: '100%', padding: '14px', minHeight: '44px', background: 'var(--terra)', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
-              >
-                {user ? (locale === 'fr' ? 'Enregistrer, puis nouvelle fournée' : 'Save, then start a new bake') : (locale === 'fr' ? 'Enregistrer dans mon compte' : 'Save to my account')}
-              </button>
-              <button
-                onClick={() => { setConfirmNewSession(false); startOver(); }}
-                style={{ width: '100%', padding: '12px', minHeight: '44px', background: 'none', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '13px', color: 'var(--char)', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
-              >
-                {locale === 'fr' ? 'Remplacer par une nouvelle fournée' : 'Replace with a new bake'}
-              </button>
-              <button
-                onClick={() => setConfirmNewSession(false)}
-                style={{ width: '100%', padding: '12px', minHeight: '44px', background: 'none', border: 'none', borderRadius: '12px', fontSize: '13px', color: 'var(--smoke)', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
-              >
-                {locale === 'fr' ? 'Annuler' : 'Cancel'}
-              </button>
-            </div>
-          </div>
-        )}
-
+        {restartFailed && <p role="alert">{fr ? 'Impossible de conserver ou reprendre la fournée. Vos choix restent protégés. Réessayez.' : 'Unable to preserve or restore the bake. Your choices remain protected. Please try again.'}</p>}
+        {previousBakeAvailable && <div role="status" style={{padding:'8px 16px',display:'flex',gap:12,alignItems:'center',flexWrap:'wrap',fontSize:14}}>
+          <span>{fr ? 'Fournée précédente conservée sur cet appareil.' : 'Previous bake kept on this device.'}</span>
+          <button type="button" onClick={undoNewBake} style={{minHeight:44,padding:'8px 12px',background:'none',border:'1px solid var(--border)',borderRadius:10,color:'var(--terra)',font:'inherit',cursor:'pointer'}}>{fr ? 'Annuler la nouvelle fournée' : 'Undo new bake'}</button>
+        </div>}
 
         {destination==='organisation' && <div className="bh-organisation-nav-stack">{bakeNavigator}</div>}
       </div>
@@ -3625,7 +3607,7 @@ export default function Home() {
                 : (locale === 'fr' ? 'Reprendre →' : 'Resume →')}
             </button>
             <button
-              onClick={async () => { if (await confirmLocalReplacement()) startOver(); }}
+              onClick={() => { startRecoverableBake(); }}
               style={{ gridRow: 2, background: 'none', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--char)', fontFamily: 'var(--font-ui)', fontSize: 13, padding: '10px 12px', minHeight: 44, cursor: 'pointer' }}
             >
               {fr ? 'Nouvelle fournée' : 'Start a new bake'}

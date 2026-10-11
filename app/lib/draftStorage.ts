@@ -13,6 +13,7 @@ export function createDraftStorage(storage: Pick<Storage, 'getItem' | 'setItem' 
   };
   return {
     read: () => storage.getItem(key),
+    isCurrent: matches,
     acceptCurrent: () => { expected = storage.getItem(key); conflicted = false; },
     write: (value: string) => {
       if (!matches()) return false;
