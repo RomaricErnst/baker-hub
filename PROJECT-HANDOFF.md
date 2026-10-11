@@ -1,3 +1,7 @@
+# Ingredient-stage assertion correction — 11 October 2026
+
+CI38119547286 passed464 cases. The8 preservation journeys now successfully generate Recipe, but a global first Poolish text locator matches a hidden Preparation heading. Scope this assertion to the opened Ingredients by stage disclosure and explicitly assert it is open. All formula/flour/return-to-Custom checks remain; application code is unchanged. Full rerun and live deployment remain pending.
+
 # Mobile fixture clock correction — 11 October 2026
 
 CI38117916729 passed464 mobile cases; all8 mode-preservation failures advanced past the fixed flour assertion and reached a legitimately blocked past preparation. Artifact error-context confirms saved poolish12:40 versus test clock15:25, with disabled Continue and an explicit past-preparation warning. Resume this fixture at10:25 instead; fresh-creation clock and all preservation/outcome assertions remain unchanged. No application change or scheduling guard removal. Release remains pending the corrected full rerun.
