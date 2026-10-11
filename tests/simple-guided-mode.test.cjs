@@ -4,6 +4,20 @@ const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
 const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 let modeFunction;function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='chooseMode')modeFunction=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);
 const compiled=ts.transpileModule(modeFunction,{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
+test('restored explicit unbranded flour survives bake-type initialization',()=>{
+ let effect;
+ function find(node){
+  if(ts.isCallExpression(node)&&node.expression.getText(tree)==='useEffect'&&node.arguments[0]?.getText(tree).includes('Only correct the untouched DEFAULT flour'))effect=node.arguments[0].getText(tree);
+  ts.forEachChild(node,find);
+ }
+ find(tree);assert.ok(effect);
+ for(const bakeType of ['pizza','bread'])for(const chosen of [false,true]){
+  const initial=bakeType==='pizza'?'bread':'pizza00';let value;
+  vm.runInNewContext('('+effect+')()',{bakeType,flourChosen:chosen,flourBlend:{flour1:initial,flour2:null,ratio1:100},setFlourBlend:v=>{value=v;}});
+  if(chosen)assert.equal(value,undefined,'Explicit flour must not be replaced');
+  else assert.equal(value.flour1,bakeType==='pizza'?'pizza00':'bread','Untouched defaults still follow the bake type');
+ }
+});
 function choose(overrides={},key='simple'){
  const writes={};const context={tab:'custom',styleKey:'pain_levain',yeastType:'sourdough',bakeType:'bread',ovenType:null,mixerType:null,flourBlend:{flour1:'bread'},manualHydration:70,manualOil:0,manualSugar:0,prefermentType:'none',prefermentFlourPct:20,customOnlyStateRef:{current:null},suppressNextScrollRef:{current:false},ALL_STYLES:data.ALL_STYLES,getBreadProtocol:()=>undefined,firstIncompleteStep:()=>7,...overrides};
  for(const name of [...modeFunction.matchAll(/\b(set\w+)\(/g)].map(m=>m[1]))context[name]=v=>{writes[name]=typeof v==='function'?v(3):v;};

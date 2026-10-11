@@ -1,3 +1,7 @@
+# Flour restoration correction — 11 October 2026
+
+CI37249618962 passed464 mobile cases and failed8 copies of the same unbranded-flour preservation assertion. Root cause: the bake-type defaulting effect checked brandProduct but ignored flourChosen, replacing explicitly saved bread flour with pizza00 during pizza restoration. Guard now respects the saved selection flag while preserving the legacy named-product guard and untouched-default behavior. Added an actual-effect regression for both bake types. Mobile assertions remain unchanged. Production remains pending a successful rerun. Unrelated local stracciatella image modification is excluded.
+
 # CI corrections — 5 October 2026
 
 PR14 head065f5fc completed CI37200570239 with454 unit tests, build and sourdough checks passing; WebKit444 passed/20 failed. User authorized corrections and rerun. Failures repeat three groups across four widths: selected-flour fixture incorrectly expected recommended flour (and revealed an actual French selected-flour English fallback); repeat-bake test awaited retired window.confirm instead of the HTML dialog; mode-switch test restored an impossible legacy mode-unselected setup state that correctly migrated to My bake. Corrected locale fallbacks, distinguish recommended/selected flour cases, use the current confirmation with preserved outcome checks, and start switching from Custom review using its Mode action. Full CI rerun required; no merge or production claim.
