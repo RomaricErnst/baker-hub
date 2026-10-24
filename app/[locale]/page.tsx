@@ -1022,6 +1022,7 @@ export default function Home() {
   const [equipmentPanel, setEquipmentPanel] = useState<'oven'|'mixer'>('oven');
   useEffect(() => { if (!isRestoringRef.current) setMixingBatches(undefined); }, [numItems, itemWeight, mixerType, styleKey]);
   const [kitchenTemp, setKitchenTemp] = useState(22);
+  const [customKitchenConfirmed, setCustomKitchenConfirmed] = useState(false);
   const [humidity, setHumidity] = useState('normal');
   const [fridgeTemp, setFridgeTemp] = useState(6);
   const [units, setUnits] = useState<UnitSystem>(() => {
@@ -1483,6 +1484,7 @@ export default function Home() {
     setMixerType(session.mixerType as MixerType | null);
     setYeastType(session.yeastType as YeastType | null);
     setKitchenTemp(session.kitchenTemp);
+    setCustomKitchenConfirmed(session.customKitchenConfirmed ?? true);
     setHumidity(session.humidity);
     setFridgeTemp(session.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(session.waterSource ?? '') ? session.waterSource! : 'room'); setMeasuredWaterTemp(session.measuredWaterTemp); setWaterMethod(session.waterMethod ?? (session.mixerType==='spiral'?'direct':'premelt')); setSpiralIceConfirmed(session.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(session.mixingBatches)); setCustomMixerCapacityG(session.mixerCapacityG); setResultNotes((session.resultNotes ?? '')); setContainerCapacityLitres(session.containerCapacityLitres);
     if (session.flourBlend) setFlourBlend(session.flourBlend as FlourBlend);
@@ -2049,7 +2051,7 @@ export default function Home() {
       ovenType, ovenConstruction, mixerType, yeastType,
       kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, mixerCapacityG: customMixerCapacityG, resultNotes, containerCapacityLitres, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, timingOverrides,
-      qtyChosen, flourChosen, prefermentChosen,
+      qtyChosen, flourChosen, prefermentChosen, customKitchenConfirmed,
       manualHydration, manualOil, manualSugar, manualSalt,
       targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
       prefGoesInFridge,
@@ -2312,6 +2314,7 @@ export default function Home() {
 
   function firstIncompleteStep(isCustom: boolean): number {
     if (!styleKey) return 1;
+    if (isCustom && !customKitchenConfirmed) return 3;
     // Oven and mixing share the equipment page (3) since A2.
     if (!ovenType || !mixerType) return 3;   // qty (2) + climate (4) have sane defaults
     if (isCustom) {
@@ -2541,10 +2544,11 @@ export default function Home() {
 
   function advanceAdv(from: number) {
     if (from === 1 && !styleKey) return;
+    if (from === 4) setCustomKitchenConfirmed(true);
     // Flour is settled only by choosing a product or entering a flour type.
     if (from === 6 && (!flourChosen || archivedFlourNames.length)) return;
     markStepSettled(from);
-    const next = nextUnanswered(CUSTOM_STEPS.filter(step=>step.id>=3), from, advancedHighestStep);
+    const next = from === 3 && !customKitchenConfirmed ? 4 : nextUnanswered(CUSTOM_STEPS.filter(step=>step.id>=3), from, advancedHighestStep);
     setAdvancedStep(next);
     setAdvancedHighestStep(p => Math.max(p, next));
     if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
@@ -2692,6 +2696,7 @@ export default function Home() {
     setBlocks([]); setYeastType(null);
     setStarterTimingValid(true);
     setResultNotes('');setCustomMixerCapacityG(undefined);setMixingBatches(undefined);
+    setCustomKitchenConfirmed(false);
     setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(6); setWaterSource('room'); setMeasuredWaterTemp(undefined); setWaterMethod('premelt'); setSpiralIceConfirmed(false);
     setShowResults(false); setActiveStep(1); setHighestStep(1);
     setAdvancedStep(1); setAdvancedHighestStep(1); setFlourBlend({ flour1: bakeType === 'bread' ? 'bread' : 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
@@ -2921,6 +2926,7 @@ export default function Home() {
     setMixerType(snap.mixerType as MixerType | null);
     setYeastType(snap.yeastType as YeastType | null);
     setKitchenTemp(snap.kitchenTemp);
+    setCustomKitchenConfirmed(snap.customKitchenConfirmed ?? true);
     setHumidity(snap.humidity);
     setFridgeTemp(snap.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(snap.waterSource ?? '') ? snap.waterSource! : 'room'); setMeasuredWaterTemp(snap.measuredWaterTemp); setWaterMethod(snap.waterMethod ?? (snap.mixerType==='spiral'?'direct':'premelt')); setSpiralIceConfirmed(snap.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(snap.mixingBatches)); setCustomMixerCapacityG(snap.mixerCapacityG); setResultNotes(snap.resultNotes ?? ''); setContainerCapacityLitres(snap.containerCapacityLitres);
     if (snap.flourBlend) setFlourBlend(snap.flourBlend as FlourBlend);
@@ -3299,7 +3305,7 @@ export default function Home() {
       openSetupStep(CUSTOM_STEPS[Math.max(0, i - 1)].id,true);
     },
     onNext: (id) => {if(fillingsReturn&&recipeGenerated){setSetupOverview(true);scrollToStepTop();}else advanceAdv(id);},
-    nextIdFor: (id) => nextUnanswered(CUSTOM_STEPS, id, advancedHighestStep),
+    nextIdFor: (id) => id === 3 && !customKitchenConfirmed ? 4 : nextUnanswered(CUSTOM_STEPS, id, advancedHighestStep),
     onGenerate: handleGenerate,
     onReview: () => { setSetupOverview(true); scrollToStepTop(); },
     showGenerate: canGenerate && !!eatTime && !(sessionRestored && recipeGenerated),
@@ -4309,11 +4315,13 @@ export default function Home() {
             {/* ─── ADV STEP 1: Style picker ────────── */}
             {/* ─── ADV STEP 4: Equipment (oven + mixing) ── */}
             <StepPage flow={customOrganisationFlow} id={3} nextOverride={equipmentPanel==='oven' || !mixerType ? <button type="button" disabled={equipmentPanel==='oven'?!ovenType:!mixerType} style={{...NEXT_CTA,opacity:(equipmentPanel==='oven'?!ovenType:!mixerType)?.5:1}} onClick={()=>{setEquipmentPanel('mixer');scrollToStepTop();}}>{fr?'Continuer':'Continue'}</button> : undefined}>
+              {profilePrefilled && <p>{fr?'Votre équipement habituel — vérifiez-le pour cette fournée.':'Your usual equipment — check it for this bake.'}</p>}
               {equipmentChoices}
             </StepPage>
 
             {/* ─── ADV STEP 5: Climate ─────────────── */}
             <StepPage flow={customOrganisationFlow} id={4}>
+              <p>{fr?'Votre cuisine aujourd’hui — vérifiez ces températures pour adapter le planning.':'Your kitchen today — check these temperatures to adapt the plan.'}</p>
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
                 fridgeTemp={fridgeTemp} mode="custom"

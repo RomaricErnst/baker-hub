@@ -582,7 +582,7 @@ for(const mode of ['simple','custom'])test(`${mode}: batch details are condition
   await flour.getByRole('button',{name:/^Caputo Nuvola W/}).tap();
   await expect(flour.getByRole('button',{name:/^Caputo Nuvola W/})).toHaveAttribute('aria-pressed','true');
   await expect(flour.getByText('✓ Farine sélectionnée',{exact:true})).toBeVisible();
-  await flour.getByRole('button',{name:'Changer de farine',exact:true}).tap();
+  await flour.getByRole('button',{name:'Changer la farine 1',exact:true}).tap();
   await expect(search).toBeVisible();
   await search.fill('Pizzeria');
   await flour.getByRole('button',{name:/^Caputo Pizzeria W/}).tap();

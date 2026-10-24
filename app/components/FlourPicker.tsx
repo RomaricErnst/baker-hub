@@ -4,6 +4,7 @@ import { useLocale } from 'next-intl';
 import { FLOUR_DATA, type FlourKey, type FlourBlend, type WSource, blendWIsApproximate } from '../data';
 import FlourScan, {matchScannedFlour} from './FlourScan';
 import FlourCatalogueBrowser, {FlourProductButton, flourBehaviour, flourEngineW} from './FlourCatalogueBrowser';
+import { blendSuggestions } from '../lib/blendSuggestions';
 import { archivedBlendSelections } from '../lib/flourRecovery';
 import { FLOUR_DB, type FlourEntry } from '@/lib/flourDatabase';
 
@@ -720,14 +721,22 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
     </div>
   );
 
+  const blendOptions = blendSuggestions(styleKey ?? '', blend).filter(option => {
+    const entry = FLOUR_DB.find(f => f.id === option.id);
+    const name = entry ? `${entry.brand} ${entry.name}`.trim() : '';
+    return entry && name !== blend.brandProduct && name !== blend.customFlour2Name && name !== blend.customFlour3Name;
+  });
+  const additionRatio = (id: string) => blend.flour2 ? blend.ratio1 : 100 - (blendOptions.find(option => option.id === id)?.percent ?? 15);
+
   return (
     <div ref={selectionRef}>
+      <h3>{isFr?'Farine 1':'Flour 1'} · {blend.ratio1}%</h3>
       {styleKey==='batbout' && <p style={{fontSize:14,lineHeight:1.5,marginBottom:12}}>{isFr?'Mélange de départ : 67 % de farine de blé et 33 % de semoule fine. Votre mélange personnalisé détermine les quantités de la recette.':'Starting blend: 67% wheat flour and 33% fine semolina. Your custom blend determines the recipe quantities.'}</p>}
       {unmatchedScan && <p role="status">{isFr ? `« ${unmatchedScan} » : aucun produit exact retrouvé. Choisissez le type correspondant au sachet, ou recherchez une autre farine. Votre sélection actuelle reste inchangée.` : `“${unmatchedScan}”: no exact product found. Choose the type shown on the bag, or search for another flour. Your current selection is unchanged.`}</p>}
 
       {archivedBlendSelections(blend).length > 0 && <p role="alert" style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 12 }}>{isFr ? 'Une farine enregistrée est archivée. Remplacez-la explicitement ; vos anciennes valeurs restent conservées en attendant.' : 'A saved flour is archived. Choose its replacement explicitly; your previous values are retained until then.'} {archivedBlendSelections(blend).join(' · ')}</p>}
       {/* ── Selected flour — hero card (rendering only; same state) ── */}
-      {chosenEntry&&<><FlourProductButton entry={chosenEntry} selected onChoose={()=>selectDBEntry(chosenEntry)}/><button type="button" onClick={()=>setPickerOpen(true)} style={{minHeight:44}}>{isFr?'Changer de farine':'Change flour'}</button></>}
+      {chosenEntry&&<><FlourProductButton entry={chosenEntry} selected onChoose={()=>selectDBEntry(chosenEntry)}/><button type="button" onClick={()=>setPickerOpen(true)} style={{minHeight:44}}>{isFr?'Changer la farine 1':'Change flour 1'}</button></>}
       {blend.brandProduct && !chosenEntry && (
         <div style={{ background:'#FDFBF7', border:'1.5px solid var(--bread)',
           borderRadius: '16px', padding: '12px 16px', marginBottom:'12px' }}>
@@ -746,7 +755,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               style={{ background:'none', border:'none', cursor:'pointer', flexShrink:0,
                 color:'#8A7F78', fontSize: '12px', fontFamily:'var(--font-ui)',
                 textDecoration:'underline', textUnderlineOffset:'2px', padding:'2px 0' }}>
-              {locale === 'fr' ? 'Changer' : 'Change'}
+              {locale === 'fr' ? 'Changer la farine 1' : 'Change flour 1'}
             </button>
           </div>
           {savedManual?.protein !== undefined && <p style={{fontSize:14,margin:'8px 0'}}>{isFr ? 'Protéines indiquées sur le sachet' : 'Protein entered from the bag'} : {savedManual.protein}%</p>}
@@ -772,6 +781,9 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
           type list and the W field all fold away — the page then holds the
           choice and the invitation to blend, nothing else. */}
       {pickerOpen && <>
+        <h3>{isFr?'Choisir la farine 1':'Choose flour 1'}</h3>
+        {blend.flour2 && <p>{isFr?'Farine 2 conservée':'Flour 2 retained'}: {blend.customFlour2Name ?? FLOUR_DATA[blend.flour2].name}</p>}
+        {blend.brandProduct && <button type="button" style={{minHeight:44}} onClick={()=>{setPickerOpen(false);setRoad(null);}}>{isFr?'Annuler':'Cancel'}</button>}
         <div ref={flourSearchRef} hidden={road === 'scan' || road === 'type'}>
         <FlourCatalogueBrowser styleKey={styleKey ?? undefined} onChoose={selectDBEntry} recommendedIds={bakeType === 'bread' ? (BREAD_FAV_BY_STYLE[styleKey ?? ''] ?? BREAD_FAV_BY_STYLE.pain_campagne) : (PIZZA_FAV_BY_STYLE[styleKey ?? ''] ?? CROWD_FAV_IDS)} onGeneric={openManualFlour} onScan={()=>setRoad(road==='scan'?null:'scan')}/>
         </div>
@@ -869,8 +881,9 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   reuses the same search UI below */}
               {blendSelectedF2 && !blendShowFullSearch ? (
                 <div>
+                  <h3>{isFr?'Farine 2':'Flour 2'} · {blend.flour3 ? blend.ratio2 : 100-blend.ratio1}%</h3>
                   <FlourProductButton entry={blendSelectedF2} selected onChoose={()=>{}} />
-                  <button type="button" onClick={()=>{setBlendSlot(2);setBlendShowFullSearch(true);setBlendRoad(null);}} style={{minHeight:44}}>{isFr?'Changer de farine':'Change flour'}</button>
+                  <button type="button" onClick={()=>{setBlendSlot(2);setBlendShowFullSearch(true);setBlendRoad(null);}} style={{minHeight:44}}>{isFr?'Changer la farine 2':'Change flour 2'}</button>
                   {blendSelectedF3 && <><FlourProductButton entry={blendSelectedF3} selected onChoose={()=>{}} />
                     <button type="button" onClick={()=>{setBlendSlot(3);setBlendShowFullSearch(true);setBlendRoad(null);}} style={{minHeight:44}}>{isFr?'Changer la 3e farine':'Change third flour'}</button></>}
                   {/* The bar replaces two ranges that each owned a raw ratio
@@ -942,10 +955,15 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               ) : (
                 <div>
                   {(blendSelectedF2 || blendSlot===3) && <button type="button" onClick={()=>{setBlendSlot(2);setBlendShowFullSearch(false);setBlendRoad(null);}} style={{minHeight:44}}>{isFr?'Annuler':'Cancel'}</button>}
+                  <h3>{isFr?`Choisir la farine ${blendSlot}`:`Choose flour ${blendSlot}`}</h3>
+                  <p>{isFr?'Farine 1 conservée':'Flour 1 retained'}: {blend.brandProduct ?? FLOUR_DATA[blend.flour1].name} · {blend.ratio1}%</p>
+                  <p>{blendOptions.length ? (isFr?'Variantes facultatives · proportions de départ ajustables.':'Optional variations · adjustable starting proportions.') : (isFr?'Aucun ajout particulier conseillé. Un mélange reste facultatif.':'No specific addition suggested. Blending remains optional.')}</p>
                   <div hidden={blendRoad==='scan'||blendRoad==='type'}>
                     <FlourCatalogueBrowser key={blendSlot} styleKey={styleKey ?? undefined}
-                      recommendedIds={styleKey==='batbout' && blendSlot===2 ? ['caputo_semola','generic_semolina'] : bakeType==='bread' ? (BREAD_FAV_BY_STYLE[styleKey ?? ''] ?? BREAD_FAV_BY_STYLE.pain_campagne) : (PIZZA_FAV_BY_STYLE[styleKey ?? ''] ?? CROWD_FAV_IDS)}
-                      onChoose={entry=>{const ratio=blend.flour2 ? blend.ratio1 : 85;if(blendSlot===2)setBlendRatio(ratio);assignBlendFlour(entry,flourBehaviour(entry),`${entry.brand} ${entry.name}`.trim(),ratio);}}
+                      recommendedIds={blendOptions.map(option=>option.id)}
+                      recommendationNotes={Object.fromEntries(blendOptions.map(option=>[option.id, `${isFr?option.fr:option.en} · ${option.percent}%`]))}
+                      blendMode
+                      onChoose={entry=>{const ratio=additionRatio(entry.id);if(blendSlot===2)setBlendRatio(ratio);assignBlendFlour(entry,flourBehaviour(entry),`${entry.brand} ${entry.name}`.trim(),ratio);}}
                       onGeneric={()=>{setManualName('');setManualType('bread');setManualProtein('');setManualQWText('');setBlendRoad('type');}}
                       onScan={()=>setBlendRoad('scan')} />
                   </div>

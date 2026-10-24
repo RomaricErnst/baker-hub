@@ -30,6 +30,38 @@ async function nextToRecipe(page,fr){
 
 for(const locale of ['fr','en']){
  const fr=locale==='fr';
+ test(`${locale}: fresh Custom confirms remembered kitchen and identifies each flour slot`,async({page})=>{
+  await anonymous(page);
+  await page.addInitScript(()=>{if(!localStorage.getItem('bh_profile_v1'))localStorage.setItem('bh_profile_v1',JSON.stringify({version:1,ovenTypePizza:'home_oven_standard',mixerType:'hand',yeastType:'instant',fridgeTemp:5,preferredMode:'custom'}));});
+  await page.goto(fr?'/fr':'/');
+  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
+  await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
+  await page.locator('.bh-style-confirm button').tap();
+  await actions(page).getByRole('button',{name:fr?'Définir ma recette':'Set up my recipe',exact:true}).tap();
+  await page.getByRole('button',{name:fr?/^Personnalisé/:/^Custom/}).tap();
+  await expect(page.locator('#step-3')).toBeVisible();
+  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
+  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
+  await expect(page.locator('#step-4')).toBeVisible();
+  await expect.poll(async()=>(await stored(page))?.customKitchenConfirmed).toBe(false);
+  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
+  await expect.poll(async()=>(await stored(page))?.customKitchenConfirmed).toBe(true);
+  const flour=page.locator('#step-6');
+  await flour.getByRole('button',{name:/^Caputo Pizzeria W/}).tap();
+  await flour.getByText(fr?'Ajouter une seconde farine':'Add a second flour',{exact:true}).tap();
+  await expect(flour.getByRole('heading',{name:fr?'Choisir la farine 2':'Choose flour 2',exact:true})).toBeVisible();
+  await flour.getByRole('button',{name:/^Caputo Manitoba/}).tap();
+  const before=(await stored(page)).flourBlend;
+  await flour.getByRole('button',{name:fr?'Changer la farine 1':'Change flour 1',exact:true}).tap();
+  await flour.getByRole('button',{name:fr?'Annuler':'Cancel',exact:true}).tap();
+  expect((await stored(page)).flourBlend).toEqual(before);
+  await flour.getByRole('button',{name:fr?'Changer la farine 2':'Change flour 2',exact:true}).tap();
+  await flour.getByRole('button',{name:/^Caputo Semola/}).tap();
+  await expect.poll(async()=>(await stored(page))?.flourBlend?.flour2).toBe('semolina');
+  const after=(await stored(page)).flourBlend;
+  expect(after.brandProduct).toBe(before.brandProduct);expect(after.ratio1).toBe(before.ratio1);
+  await geometry(page);
+ });
  test(`${locale}: fresh Simple pizza uses one kitchen confirmation before its plan and recipe`,async({page})=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await anonymous(page);await page.goto(fr?'/fr':'/');
