@@ -78,6 +78,7 @@ export interface SessionData {
   // time and re-asking would be the same lie in the other direction.
   qtyChosen?: boolean;
   flourChosen?: boolean;
+  customKitchenConfirmed?: boolean;
   prefermentChosen?: boolean;
   // How far the baker advanced, per flow. Optional: snapshots written before
   // this field existed restore fine, they just fall back.
