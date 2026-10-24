@@ -1378,7 +1378,7 @@ export default function Home() {
   // snapshot; hydrate only on tap (never surprise-restore mid-setup).
   useEffect(() => {
     if (!user) { setCloudResume(null); return; }
-    if (!freshDeviceRef.current || sessionRestored || modeChosen) return;
+    if (!freshDeviceRef.current || sessionRestored || modeChosen || bakeType) return;
     let wbDismissed = false;
     try { wbDismissed = sessionStorage.getItem('bh_wb_answered') === '1'; } catch {}
     if (wbDismissed) return;
@@ -1388,12 +1388,12 @@ export default function Home() {
         const { fetchBakeEvents } = await import('../lib/supabase/fetchBakeEvents');
         const events = await fetchBakeEvents();
         const latest = events.find(e => e.dough_snapshot?.recipeGenerated);
-        if (!cancelled && latest) setCloudResume(latest);
+        if (!cancelled && freshDeviceRef.current && latest) setCloudResume(latest);
       } catch { /* offline — no banner, observation only */ }
     })();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, bakeType, modeChosen, sessionRestored]);
 
   // A saved session is OFFERED on mount, never applied silently.
   //
@@ -1404,9 +1404,7 @@ export default function Home() {
   // you, and that is exactly how it was read on a device: a signed-out baker
   // finding an oven, a mixer and a ticked yeast they had never picked.
   //
-  // So the session is held until the baker says which they want. Dismissing
-  // without choosing leaves it unapplied, because a fresh start is the safe
-  // default and the session is still on disk if they change their mind.
+  // Hold the session until the baker resumes it or starts a recoverable new bake.
   const [pendingSession, setPendingSession] = useState<SessionData | null>(null);
   const [localSaveConflict, setLocalSaveConflict] = useState(false);
   useEffect(() => {
@@ -1638,14 +1636,10 @@ export default function Home() {
     setTimeout(endRestore, 200);
   }
 
-  // Any user answer to the welcome-back toast (resume, start fresh, dismiss)
-  // silences it for the rest of the browser session.
+  // Resume closes the offer and silences account suggestions for this visit.
   function answerWelcomeBack() {
     try { sessionStorage.setItem('bh_wb_answered', '1'); } catch {}
     setShowWelcomeBack(false);
-    // Dropping the offer without taking it leaves the session unapplied. A
-    // fresh start is the safe default, and the session is still on disk if the
-    // baker changes their mind on the next launch.
     setPendingSession(null);
   }
 
@@ -2557,16 +2551,27 @@ export default function Home() {
 
   // Starting a new bake is reversible without a second confirmation.
   const [previousBakeAvailable, setPreviousBakeAvailable] = useState(false);
+  const [showNewBakeNotice, setShowNewBakeNotice] = useState(false);
   const [restartFailed, setRestartFailed] = useState(false);
   useEffect(() => { setPreviousBakeAvailable(hasPreviousBake()); }, []);
+  useEffect(() => {
+    if (!showNewBakeNotice) return;
+    const timer = window.setTimeout(() => setShowNewBakeNotice(false), 8000);
+    return () => window.clearTimeout(timer);
+  }, [showNewBakeNotice]);
 
   function startRecoverableBake(): boolean {
+    const hadCurrentBake = Boolean(bakeType || loadSession());
     // Flush live edits before snapshotting; never accept a conflicting tab's draft.
     if ((bakeType && !saveSession(buildSessionPayload())) || !preservePreviousBake()) {
       setRestartFailed(true); return false;
     }
     if (!startOver()) { setRestartFailed(true); return false; }
+    // A late account lookup must not offer another bake after this decision.
+    freshDeviceRef.current = false;
+    try { sessionStorage.setItem('bh_wb_answered', '1'); } catch {}
     setPreviousBakeAvailable(hasPreviousBake()); setRestartFailed(false);
+    if (hadCurrentBake) setShowNewBakeNotice(hasPreviousBake());
     scrollToStepTop();
     return true;
   }
@@ -2575,6 +2580,7 @@ export default function Home() {
     const previous = restorePreviousBake();
     if (!previous) { setRestartFailed(true); return; }
     setPreviousBakeAvailable(false); setRestartFailed(false);
+    setShowNewBakeNotice(false);
     setShowProductHome(false); setShowWelcomeBack(false); setPendingSession(null);
     applySession(previous);
     scrollToStepTop();
@@ -3501,6 +3507,7 @@ export default function Home() {
           // which is also the moment it becomes useful: it is how they switch
           // Pizza <-> Pain.
           onNewSession={bakeType ? requestNewSession : undefined}
+          onRestorePreviousBake={previousBakeAvailable ? undoNewBake : undefined}
           onResumeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event); }}
           onRebakeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event, { rebake: true }); }}
           onOpenProfile={() => setProfileOpen(true)}
@@ -3517,7 +3524,7 @@ export default function Home() {
         {replaceBakeOpen && <ReplaceBakeDialog fr={fr} onAnswer={answerReplaceBake} />}
 
         {restartFailed && <p role="alert">{fr ? 'Impossible de conserver ou reprendre la fournée. Vos choix restent protégés. Réessayez.' : 'Unable to preserve or restore the bake. Your choices remain protected. Please try again.'}</p>}
-        {previousBakeAvailable && <div role="status" style={{padding:'8px 16px',display:'flex',gap:12,alignItems:'center',flexWrap:'wrap',fontSize:14}}>
+        {showNewBakeNotice && !showWelcomeBack && !cloudResume && <div role="status" style={{padding:'8px 16px',display:'flex',gap:12,alignItems:'center',flexWrap:'wrap',fontSize:14}}>
           <span>{fr ? 'Fournée précédente conservée sur cet appareil.' : 'Previous bake kept on this device.'}</span>
           <button type="button" onClick={undoNewBake} style={{minHeight:44,padding:'8px 12px',background:'none',border:'1px solid var(--border)',borderRadius:10,color:'var(--terra)',font:'inherit',cursor:'pointer'}}>{fr ? 'Annuler la nouvelle fournée' : 'Undo new bake'}</button>
         </div>}
@@ -3546,7 +3553,7 @@ export default function Home() {
           }}>
             <span style={{
               fontFamily: 'var(--font-ui)', fontSize: '13.5px',
-              color: 'var(--ash)', gridColumn: '1 / -1', gridRow: 1, paddingRight: 44, minWidth: 0, lineHeight: 1.35,
+              color: 'var(--ash)', gridColumn: '1 / -1', gridRow: 1, minWidth: 0, lineHeight: 1.35,
             }}>
               {/* Sentence case, not uppercase with letter-spacing: the tracked
                   caps made the label long enough that the two controls could not
@@ -3618,19 +3625,6 @@ export default function Home() {
             >
               {fr ? 'Nouvelle fournée' : 'Start a new bake'}
             </button>
-            {/* Closing only hides the offer; it never authorizes replacement. */}
-            <button
-              onClick={answerWelcomeBack}
-              aria-label={locale === 'fr' ? 'Masquer' : 'Dismiss'}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--smoke)', width: '44px', height: '44px', gridColumn: 2, gridRow: 1, justifySelf: 'end',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '18px', lineHeight: 1, fontFamily: 'var(--font-ui)',
-              }}
-            >
-              ✕
-            </button>
           </div>
         )}
 
@@ -3641,7 +3635,7 @@ export default function Home() {
             « Session trouvée sur votre compte » proposait une AUTRE fournée
             au moment précis où celle-ci venait de finir — et Reprendre
             l'aurait écrasée. */}
-        {!showWelcomeBack && cloudResume && !modeChosen && !sessionRestored
+        {!showWelcomeBack && cloudResume && !bakeType && !modeChosen && !sessionRestored
           && !recipeGenerated && !hasWorkInProgress && destination === 'batch' && (
           <div style={{
             background: 'var(--warm)',
@@ -3682,10 +3676,13 @@ export default function Home() {
                 background: 'var(--terra)', border: 'none',
                 color: 'white', cursor: 'pointer', fontSize: '13px',
                 fontFamily: 'var(--font-ui)', fontWeight: 600,
-                padding: '8px 16px', borderRadius: '12px', whiteSpace: 'nowrap',
+                padding: '8px 16px', minHeight: 44, borderRadius: '12px', whiteSpace: 'nowrap',
               }}
             >
               {locale === 'fr' ? 'Reprendre →' : 'Resume →'}
+            </button>
+            <button type="button" onClick={() => { startRecoverableBake(); }} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--char)', font: 'inherit', padding: '8px 16px', minHeight: 44, cursor: 'pointer' }}>
+              {fr ? 'Nouvelle fournée' : 'Start a new bake'}
             </button>
           </div>
         )}

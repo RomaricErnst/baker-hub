@@ -232,6 +232,7 @@ export default function Header({
   sessionDoughSpec,
   onSaveSession,
   onNewSession,
+  onRestorePreviousBake,
   onBack,
   onReviewPlan,
   onOpenPizzas,
@@ -259,6 +260,7 @@ export default function Header({
   sessionDoughSpec?: string;
   onSaveSession?: () => void;
   onNewSession?: () => void;
+  onRestorePreviousBake?: () => void;
   onBack?: () => void;
   onReviewPlan?: () => void;
   onOpenPizzas?: () => void;
@@ -569,6 +571,7 @@ export default function Header({
               <button style={menuButton} onClick={() => { setMenuOpen(false); onNewSession(); }}>{locale === 'fr' ? 'Commencer une nouvelle fournée' : 'Start a new bake'}</button>
             </>}
             <div style={menuGroup}>Bakerhub</div>
+            {onRestorePreviousBake && <button style={menuButton} onClick={() => { setMenuOpen(false); onRestorePreviousBake(); }}>{locale === 'fr' ? 'Rétablir la fournée précédente' : 'Restore previous bake'}</button>}
             <button style={menuButton} onClick={() => setMenuPage('library')}>{locale === 'fr' ? 'Mes fournées enregistrées' : 'My saved bakes'}</button>
             <button style={menuButton} onClick={() => setMenuPage('account')}>{locale === 'fr' ? 'Compte' : 'Account'}</button>
             {onOpenProfile && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenProfile(); }}>{locale === 'fr' ? 'Préférences de cuisine' : 'Kitchen preferences'}</button>}
