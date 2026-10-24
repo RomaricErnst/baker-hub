@@ -51,6 +51,7 @@ for(const locale of ['fr','en']){
   await flour.getByText(fr?'Ajouter une seconde farine':'Add a second flour',{exact:true}).tap();
   await expect(flour.getByRole('heading',{name:fr?'Choisir la farine 2':'Choose flour 2',exact:true})).toBeVisible();
   await flour.getByRole('button',{name:/^Caputo Manitoba/}).tap();
+  await expect.poll(async()=>(await stored(page))?.flourBlend?.customFlour2Name).toMatch(/Manitoba/);
   const before=(await stored(page)).flourBlend;
   await flour.getByRole('button',{name:fr?'Changer la farine 1':'Change flour 1',exact:true}).tap();
   await flour.getByRole('button',{name:fr?'Annuler':'Cancel',exact:true}).tap();
