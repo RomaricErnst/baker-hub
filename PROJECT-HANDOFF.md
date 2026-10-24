@@ -1,3 +1,9 @@
+# Single resume choice — 24 October 2026
+
+User approved one Resume / Start a new bake card without a dismiss cross. Recovery now appears briefly for eight seconds after a new-bake decision and remains available through Menu → Restore previous bake, including after reload. Empty new starts do not become competing saved drafts. Local and account offers cannot overlap; account lookup results are ignored after a fresh start or category selection. Existing backup, progress restoration and cross-tab write protection are preserved. No recipe calculations changed. Updated FR/EN mobile scenarios cover the reported start/leave/return sequence, notice expiry and recovery after reload. Local unit/component suite passed 462 tests; build and four-width macOS WebKit release checks pending. Physical iPhone testing remains unavailable. This supersedes the persistent recovery banner and dismiss behavior documented below.
+
+Local final verification: production build and all 462 tests passed. Mobile WebKit CI, push, merge and deployment remain pending. Automatic approval review rejected the GitHub source/handoff upload, requesting explicit current authorization to publish those files to the public repository. No retry or alternate upload route attempted after the explicit rejection. Current production remains unchanged.
+
 # Custom kitchen and flour blends — 24 October 2026
 
 Release verified: PR16 merged as13580e3404575beeb330a12e70894e9a7d6a53a8 after CI40062423613 passed462 unit/component tests, build, scheduling round trips, image checks and480 FR/EN mobile WebKit cases across320/375/390/430px (120 per width). Tested head5c8feae07e1b2d7ff43f783a16ca2736d15d122a. Production www.bakerhub.app verified READY on that exact merge commit, deployment dpl_Ex3GhWMHogAw8HGiegkQS3tn9SQt. This supersedes the pending notes below. No physical iPhone verification claimed.
