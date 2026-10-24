@@ -1,5 +1,7 @@
 # Custom kitchen and flour blends — 24 October 2026
 
+Release verified: PR16 merged as13580e3404575beeb330a12e70894e9a7d6a53a8 after CI40062423613 passed462 unit/component tests, build, scheduling round trips, image checks and480 FR/EN mobile WebKit cases across320/375/390/430px (120 per width). Tested head5c8feae07e1b2d7ff43f783a16ca2736d15d122a. Production www.bakerhub.app verified READY on that exact merge commit, deployment dpl_Ex3GhWMHogAw8HGiegkQS3tn9SQt. This supersedes the pending notes below. No physical iPhone verification claimed.
+
 User explicitly authorized production publication. Workspace maintenance removed the unpushed checkout; restored the approved changes from the recorded patches onto unchanged main a68f2af. New Custom bakes confirm remembered equipment then today's kitchen temperatures. Confirmation persists in the session; legacy resume stays settled. Flour editing names each slot, preserves other flour choices/ratios and allows cancellation. Additional-flour suggestions now use style and base flour strength/type with optional purpose labels and starting percentages, excluding selected products. Simple and calculation coefficients are unchanged. Previous local checks passed462 tests/build; rerunning before publication. Local WebKit is unavailable due to missing system libraries; use existing macOS CI. Release and live verification pending.
 
 # Recoverable new bake — 11 October 2026
