@@ -106,6 +106,27 @@ for(const locale of ['fr','en'])for(const mode of ['simple','custom'])test(`${lo
  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize().width);
 });
 
+for(const mode of ['simple','custom'])test(`fr ${mode}: arranged fridge removal from a stale saved plan cannot reactivate`,async({page})=>{
+ const oldBake=PARTY_BAKE-15*60000;
+ const block={...partyBlock('18:00'),fridgeRemoval:{at:Date.parse('2026-10-30T14:45:00+08:00'),bake:oldBake}};
+ const {plan}=await seed(page,{locale:'fr',mode,preferment:'none',now:PARTY_NOW,extra:{savedAt:PARTY_NOW,kitchenTemp:24,fridgeTemp:5,mixerType:'hand',startTime:PARTY_MIX,eatTime:PARTY_BAKE,blocks:[block]}});
+ const card=plan.locator('.bh-fridge-arrangement');
+ await expect(card).toHaveAttribute('data-fridge-removal','pending');
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','false');
+ await expect.poll(async()=>(await stored(page)).blocks).toEqual([partyBlock('18:00')]);
+ // Returning to the former time must not resurrect the obsolete commitment.
+ await page.locator('input[type="time"]').first().fill('18:45');
+ await expect.poll(async()=>(await stored(page)).eatTime).toBe(oldBake);
+ await expect(card).toHaveAttribute('data-fridge-removal','pending');
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','false');
+ await expect.poll(async()=>(await stored(page)).blocks).toEqual([partyBlock('18:00')]);
+ await page.locator('input[type="time"]').first().fill('19:00');
+ await expect.poll(async()=>(await stored(page)).eatTime).toBe(PARTY_BAKE);
+ await expect(card).toHaveAttribute('data-fridge-removal','pending');
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','false');
+ await expect.poll(async()=>(await stored(page)).blocks).toEqual([partyBlock('18:00')]);
+});
+
 for(const locale of ['fr','en'])for(const mode of ['simple','custom'])test(`${locale} ${mode}: arranged fridge removal never clears an overlapping preheat`,async({page})=>{
  const {plan}=await seedParty(page,locale,mode,'18:45');
  const card=plan.locator('.bh-fridge-arrangement');

@@ -1163,6 +1163,7 @@ export default function Home() {
   const modeSelectorRef      = useRef<HTMLDivElement>(null);
   const suppressNextScrollRef = useRef(false);
   const isRestoringRef = useRef(false);
+  const [scheduleRestoreRevision, setScheduleRestoreRevision] = useState(0);
   const pizzaPartyGetQtysRef = useRef<() => Record<string, number>>(() => ({}));
 
   // P5 — Stale protocol indicator
@@ -1450,7 +1451,9 @@ export default function Home() {
   // a moitie restaure et l'ecrire par-dessus la vraie session.
   function endRestore() {
     if (partyHydratingRef.current) return;
+    if (!isRestoringRef.current) return;
     isRestoringRef.current = false;
+    setScheduleRestoreRevision(value => value + 1);
   }
 
   function applySession(session: SessionData) {
@@ -1831,7 +1834,7 @@ export default function Home() {
   useEffect(() => {
     if (isRestoringRef.current) return;
     setBlocks(current => retainCurrentFridgeRemoval(current, schedule?.availabilityActions ?? []));
-  }, [schedule]);
+  }, [schedule, scheduleRestoreRevision]);
 
   // Preferment start time for Timeline step 0 (poolish/biga only)
   const prefStartTime = useMemo(() => {
