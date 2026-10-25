@@ -62,7 +62,7 @@ function assessEdit(input: EditInput): EditResult {
   return input.id==='pref'?{...result,earliestMix:start,availableHours:(+input.start-+input.at)/HOUR}:result;
 }
 
-export type FixedBakeSearchResult = {candidate:EditResult; found:boolean; searched:number; exhausted:boolean};
+export type FixedBakeSearchResult = {candidate:EditResult; found:boolean; searched:number; exhausted:boolean; preparationRepaired?:boolean};
 
 /** Compare fully validated storage protocols using their existing maturity targets.
  * A target-duration plan takes precedence over retaining yesterday's repair.
@@ -75,6 +75,7 @@ export function recommendPreferment(options: {inFridge:boolean; input:EditInput}
     return {...option,result};
   });
   results.sort((a,b)=>Number(b.result.found)-Number(a.result.found)
+    || Number(!!b.result.preparationRepaired)-Number(!!a.result.preparationRepaired)
     || Math.abs(a.result.candidate.times.prefHours-a.input.prefHours)/Math.max(1,a.input.prefHours)-Math.abs(b.result.candidate.times.prefHours-b.input.prefHours)/Math.max(1,b.input.prefHours)
     || Math.abs(+a.result.candidate.times.start-+a.input.start)-Math.abs(+b.result.candidate.times.start-+b.input.start)
     || Number(b.inFridge)-Number(a.inFridge));
@@ -116,6 +117,8 @@ export function findFixedBakeSchedule(input: EditInput, pins: TimingPins = input
     }
   }
   const ordered=[...starts].sort((a,b)=>Math.abs(a-+input.start)-Math.abs(b-+input.start)||a-b);
+  let repaired:EditResult|undefined;
+  let remainingConflicts=Infinity;
   for(const startAt of ordered){
     const offsets=new Set<number>();
     const win=input.prefWindow;
@@ -138,9 +141,22 @@ export function findFixedBakeSchedule(input: EditInput, pins: TimingPins = input
       if(!input.methodValid(times))continue;
       const candidate=validateScheduleCandidate(pinned,times);searched++;
       if(candidate.valid)return {candidate,found:true,searched,exhausted:false};
+      // Keep an available preparation even if a later intervention prevents
+      // the complete plan. Never turn a partial repair into a valid recipe.
+      if(input.hasPreferment&&candidate.issue==='busy'&&candidate.schedule
+        &&!candidate.schedule.preparationInvalid&&!candidate.schedule.bulkConflict){
+        const conflicts=findAvailabilityConflicts(candidate.schedule.availabilityActions??[],input.blocks,now);
+        const upstream=conflicts.some(c=>c.action.id==='mix'||c.action.id==='mix-finish'||c.action.id.startsWith('mix-batch')||c.action.id.startsWith('mix-finish-batch'));
+        if(!upstream&&!candidate.conflict?.startsWith('preferment')&&conflicts.length<remainingConflicts){
+          repaired=candidate;remainingConflicts=conflicts.length;
+          // With a fixed bake/preheat deadline no upstream candidate can be
+          // fully valid. Avoid rebuilding thousands of equivalent failures.
+          if(conflicts.some(c=>c.action.id==='preheat'))return {candidate,found:false,searched,exhausted:true,preparationRepaired:true};
+        }
+      }
     }
   }
-  return {candidate:retained,found:false,searched,exhausted:true};
+  return {candidate:repaired??retained,found:false,searched,exhausted:true,preparationRepaired:!!repaired};
 }
 
 /** Keep automatic anchors where feasible; move them jointly when necessary.
