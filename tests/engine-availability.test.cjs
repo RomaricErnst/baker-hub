@@ -40,7 +40,9 @@ test('split cold keeps both phases, scans shaping span, and only repairs affecte
  assert.equal(passive.availabilityConflicts.length,0);
  const shapeStart=plain.divideBallTime;
  const interrupted=build(input([{label:'Brief',from:new Date(+shapeStart+5*60000),to:new Date(+shapeStart+10*60000)}]));
- assert.ok(+interrupted.divideBallTime>+shapeStart);
+ assert.ok(+interrupted.divideBallTime<+shapeStart);
+ assert.equal(interrupted.totalColdHours,plain.totalColdHours);
+ assert.equal(interrupted.totalRTHours,plain.totalRTHours);
  assert.equal(interrupted.availabilityConflicts.length,0);
  const exit=plain.coldRetard2End;
  const repaired=build(input([{label:'Brief',from:new Date(+exit-5*60000),to:new Date(+exit+30*60000)}]));
@@ -86,15 +88,16 @@ test('overlapping periods and rounded timestamps never make a repair falsely cle
  assert.equal(findAvailabilityConflicts(s.availabilityActions,i.availabilityBlocks).length,0);
 });
 
-test('late shaping and exit are solved jointly without sacrificing the second cold',()=>{
+test('blocked late shaping moves earlier without sacrificing the second cold',()=>{
  const i=input([block('27T22:00','28T12:30')]);
  const s=build(i);
  assert.equal(s.availabilityConflicts.length,0);
- assert.equal(s.divideBallTime.toISOString(),'2026-09-28T12:30:00.000Z');
+ assert.ok(+s.coldRetard2Start<+date('27T22:00'));
+ assert.ok(+s.divideBallTime>=+s.coldRetard1Start);
  assert.ok(+s.coldRetard2End-+s.coldRetard2Start>=2*3600000);
  assert.ok(+s.preheatStart-+s.finalProofStart>=3600000);
  assert.equal(+s.bakeStart,+i.eatTime);
- const impossible=build(input([block('27T22:00','28T15:00')]));
+ const impossible=build(input([block('27T18:00','28T15:00')]));
  assert.ok(impossible.coldRetard1Start&&impossible.coldRetard2Start);
  assert.ok(impossible.availabilityConflicts.some(c=>c.action.id==='divide'));
 });
@@ -103,8 +106,9 @@ test('fridge return at a blocked boundary prevents accepting the preceding shapi
  const i=input([block('27T22:30','27T22:45')]);
  const s=build(i);
  assert.equal(s.availabilityConflicts.length,0);
- assert.equal(s.divideBallTime.toISOString(),'2026-09-27T22:45:00.000Z');
- assert.equal(s.coldRetard2Start.toISOString(),'2026-09-27T23:00:00.000Z');
+ assert.ok(+s.coldRetard2Start<+date('27T22:30'));
+ assert.equal(+s.coldRetard2Start-+s.divideBallTime,s.divisionMinutes*60000);
+ assert.equal(findAvailabilityConflicts(s.availabilityActions,i.availabilityBlocks).length,0);
 });
 
 test('an ongoing active span checks only its remaining work and clear plans need no repair',()=>{

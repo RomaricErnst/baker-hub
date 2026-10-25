@@ -6315,7 +6315,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     const message=valid?null:!historyKept||!noNewPastActions||validation.reason==='date'
       ?(isFr?'Ce changement déplacerait une préparation passée. Choisissez un autre horaire.':'This change would move a past preparation. Choose another time.')
       :validation.schedule?.batchTimingConflict?(isFr?'Le premier lot nécessite un rabat avant la fin des pétrissées. Réduisez la quantité de cette fournée.':'The first batch needs a fold before all mixing finishes. Reduce the quantity of this bake.')
-      :validation.reason==='busy'?(isFr?'Vous êtes indisponible pendant ':'You are unavailable during ')+(foldActionLabel(validation.conflict?.id??'',locale,mixingBatches) ?? (conflictNames[validation.conflict?.id??'']??['une étape','an action'])[isFr?0:1])+'.'
+      :validation.reason==='busy'?(isFr?'Étape pendant une indisponibilité : ':'Step during unavailable hours: ')+(foldActionLabel(validation.conflict?.id??'',locale,mixingBatches) ?? (conflictNames[validation.conflict?.id??'']??['une étape','an action'])[isFr?0:1])+'.'
       :!pinKept?(isFr?'Ce rafraîchi ne conserve pas les horaires choisis. Revenez aux horaires recommandés pour les libérer.':'This feed cannot keep your chosen times. Return to recommended times to release them.')
       :!storageKept?(isFr?'Ce changement nécessite un autre passage au froid. Conservez le protocole ou choisissez un autre horaire.':'This change requires a different fridge step. Keep the protocol or choose another time.')
       :(!peakOK||!allBatchPeaksUsable)?(isFr?'Ce créneau sort de la fenêtre de maturité estimée du levain.':'Outside the estimated starter maturity window.')
@@ -6401,7 +6401,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     'fold-3': ['Rabat 3', 'Fold 3'], 'fold-4': ['Rabat 4', 'Fold 4'],
     divide: ['Division et façonnage', 'Divide and shape'], preheat: ['Préchauffage', 'Preheat'], bake: ['Cuisson', 'Bake'],
     'cold-in': ['Mise au froid', 'Into the fridge'], 'cold-in-2': ['Deuxième mise au froid', 'Second fridge stage'],
-    'cold-out': ['Sortie du froid', 'Out of the fridge'], 'cold-out-2': ['Deuxième sortie du froid', 'Second fridge exit'],
+    'cold-out': ['Sortir la pâte du réfrigérateur', 'Take the dough out of the fridge'], 'cold-out-2': ['Sortir les pâtons du réfrigérateur', 'Take the shaped dough out of the fridge'],
     'starter-feed': ['Rafraîchi du levain', 'Feed starter'], 'starter-cold': ['Étape au froid du levain', 'Starter fridge step'],
     preferment: ['Préparation du préferment', 'Prepare preferment'], 'preferment-cold-out': ['Sortie du préferment', 'Preferment fridge exit'],
   };
@@ -6590,8 +6590,17 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     const now=Date.now();
     const overrides=normalizeTimingOverrides(manualTimes);
     const pins={mix:overrides.mix===undefined?undefined:new Date(overrides.mix),preferment:overrides.prefLocked&&overrides.pref!==undefined?new Date(overrides.pref):undefined};
-    for(let day=0;day<4&&found.length<3;day++)for(const hour of [11,19]) {
-      const bake=new Date(now);bake.setDate(bake.getDate()+day);bake.setHours(hour,30,0,0);
+    // A blocked selected bake needs alternatives relative to that bake, not
+    // today's presets (which may all precede a bake planned for next week).
+    const bakeChoices: Date[]=[];
+    if(eatTimeSet) {
+      for(let halfHour=1;halfHour<=12;halfHour++) bakeChoices.push(new Date(+pendingEatTime+halfHour*1800000));
+    } else {
+      for(let day=0;day<4;day++)for(const hour of [11,19]) {
+        const bake=new Date(now);bake.setDate(bake.getDate()+day);bake.setHours(hour,30,0,0);bakeChoices.push(bake);
+      }
+    }
+    for(const bake of bakeChoices) {
       if(+bake<=now||(eatTimeSet&&+bake===+pendingEatTime))continue;
       const candidateBlocks=[...localBlocks];
       const append=(entries:ReturnType<typeof getWorkdaysInWindow>)=>{for(const e of entries)if(!candidateBlocks.some(b=>+b.from===+e.blockStart&&+b.to===+e.blockEnd))candidateBlocks.push({from:e.blockStart,to:e.blockEnd,label:e.label});};
@@ -8154,7 +8163,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         ], repairBlocks, Date.now()).find(c=>c.action.id===preview.conflict) : undefined;
         const blockedPeriod = draftConflict
           ? `${fmtCardHM(draftConflict.block.from,isFr)}–${fmtCardHM(draftConflict.block.to,isFr)}` : null;
-        const draftMessage=preview?.issue==='busy'?(isFr?'Vous êtes indisponible pendant ':'You are unavailable during ')+(foldActionLabel(preview.conflict??'',locale,mixingBatches) ?? (conflictNames[preview.conflict??'']??['une étape','an action'])[isFr?0:1])+' · '+fmtCardDT(draftConflict?.action.at ?? (preview.conflict==='mix'?draftMix:preview.conflict==='preferment'?new Date(+draftMix-draftPrefOffset*3600000):preview.schedule?.availabilityActions?.find(a=>a.id===preview.conflict)?.at??draftMix),isFr)+'.'
+        const draftMessage=preview?.issue==='busy'?(isFr?'Étape pendant une indisponibilité : ':'Step during unavailable hours: ')+(foldActionLabel(preview.conflict??'',locale,mixingBatches) ?? (conflictNames[preview.conflict??'']??['une étape','an action'])[isFr?0:1])+' · '+fmtCardDT(draftConflict?.action.at ?? (preview.conflict==='mix'?draftMix:preview.conflict==='preferment'?new Date(+draftMix-draftPrefOffset*3600000):preview.schedule?.availabilityActions?.find(a=>a.id===preview.conflict)?.at??draftMix),isFr)+'.'
           :preview?.issue==='past'?(isFr?'Ce changement placerait une préparation dans le passé. Choisissez un départ plus tardif.':'This change would put preparation in the past. Choose a later start.')
           :preview?.issue==='unsupported'?(isFr?'Fenêtre non calculée pour cette méthode. Revoyez les réglages.':'Window not calculated for this method. Review its settings.')
           :preview?.issue==='date'?(isFr?'Indiquez une date et une heure complètes.':'Enter a complete date and time.')
@@ -8310,7 +8319,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         const batchConflict=(isSourdough?starterPreview?.validation.schedule:preview?.schedule)?.batchTimingConflict;
         const notice=!valid&&!keyDragging?<div className="bh-plan-notice" role="status">
           <strong>{isSourdough ? (starterPreview?.message || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.')) : (rangeExplanation || draftMessage || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.'))}</strong>
-          {blockedPeriod&&<p>{isFr?`Cette intervention tombe dans votre indisponibilité de ${blockedPeriod}. Ajustez ce créneau ou l’heure de cuisson.`:`This hands-on step overlaps your unavailable period (${blockedPeriod}). Adjust that period or your baking time.`}</p>}
+          {blockedPeriod&&['cold-out-2','preheat'].includes(preview?.conflict??'')&&<p>{isFr?`Cette intervention tombe dans votre indisponibilité de ${blockedPeriod}. Cette étape doit respecter la remise en température de la pâte ou le préchauffage du four. Choisissez une cuisson plus tardive, ou modifiez vos disponibilités si vous pouvez intervenir.`:`This hands-on step overlaps your unavailable period (${blockedPeriod}). The remaining step must fit the dough’s readiness window or oven preheating. Choose a later baking time, or change availability if you can do this step.`}</p>}
           {!dirty&&suggestedTargets.length>0&&<><p>{isFr?'Pour respecter vos indisponibilités et les durées de fermentation, choisissez un autre enfournement :':'To respect your availability and fermentation times, choose another baking time:'}</p>{targetChoices}</>}
           {!dirty&&hasTimingOverrides&&<p>{isFr?'Vos horaires choisis sont conservés. Le retour à la recommandation les libère pour chercher un autre planning.':'Your chosen times are kept. Return to the recommendation to release them and find another plan.'}</p>}
           {batchConflict ? <BatchRepairNotice isFr={isFr} numItems={numItems ?? 1} itemWeight={itemWeight} mixerCapacityG={mixerCapacityG} wastePct={wastePct} onEditQuantity={onEditQuantity} /> : <button type="button" className="bh-back-action" onClick={()=>{availabilityControlsRef.current?.scrollIntoView({block:'center',behavior:'auto'});availabilityControlsRef.current?.focus({preventScroll:true});}}>{isFr?'Modifier mes indisponibilités':'Change my availability'}</button>}
