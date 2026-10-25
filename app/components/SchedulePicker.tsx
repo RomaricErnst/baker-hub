@@ -2425,10 +2425,10 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     // The legacy positioning above remains relevant to non-preferment dough.
     if (effectiveHasPref) {
       const chosen=commercialRecommendation(currentBlocks,manualTimesRef.current,et,new Date(+et-sweetCenterRaw*3600000));
-      if(chosen.result.found){
+      if(chosen.result.found||chosen.result.preparationRepaired){
         const times=chosen.result.candidate.times;
         setAlgoChoseFridge(chosen.inFridge);setPendingStart(times.start);setPrefOffsetH(times.prefHours);
-        setStartComputed(true);setSearchFailed(false);setPrefAlgoRed(false);setWindowTooShort(false);
+        setStartComputed(true);setSearchFailed(!chosen.result.found);setPrefAlgoRed(!chosen.result.found);setWindowTooShort(false);
         setShowFallbackPopup(false);setGuardNote(null);setBlockerNote(null);
         onChange(times.start,et,currentBlocks,{preservePlan:true,prefOffsetHours:times.prefHours,prefInFridge:chosen.inFridge,timingOverrides:manualTimesRef.current});
       }else{
@@ -6529,10 +6529,11 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
       }
       const recommendation=resetRecommendation&&hasPrefActive?commercialRecommendation(candidateBlocks,overrides):null;
       const result=recommendation?.result??findFixedBakeSchedule(input,{mix:overrides.mix===undefined?undefined:new Date(overrides.mix),preferment:overrides.pref===undefined?undefined:new Date(overrides.pref)});
-      const storage=result.found&&recommendation?recommendation.inFridge:prefGoesInFridge;
-      if(result.found&&recommendation)setAlgoChoseFridge(storage);
+      const usable=result.found||result.preparationRepaired;
+      const storage=usable&&recommendation?recommendation.inFridge:prefGoesInFridge;
+      if(usable&&recommendation)setAlgoChoseFridge(storage);
       setSearchFailed(!result.found);
-      const times=result.found?result.candidate.times:{start:pendingStart,bake:pendingEatTime,prefHours:prefOffsetH};
+      const times=usable?result.candidate.times:{start:pendingStart,bake:pendingEatTime,prefHours:prefOffsetH};
       setPendingStart(times.start);setPrefOffsetH(times.prefHours);setStartComputed(true);
       setPrefAlgoRed(!result.found);setWindowTooShort(false);
       onChange(times.start,pendingEatTime,candidateBlocks,{preservePlan:true,prefOffsetHours:times.prefHours,prefInFridge:storage,timingOverrides:overrides});
