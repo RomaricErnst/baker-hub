@@ -1,3 +1,7 @@
+# Second-flour panel cleanup — 25 October 2026
+
+User requested a simpler second-flour picker from an iPhone screenshot. Change actions now sit inside selected product cards (including slots 2/3). The add-flour panel starts with a concise search and suggestions labelled by flour type; repeated choose/retained/optional/proportions copy is removed. Filters, scan and manual entry remain under More options below the suggestions. Existing selection, cancellation and blend percentages remain unchanged. Both French and English are updated. Local 507 unit/component tests passed; final build and four-width mobile checks are being verified before publication. This entry is not a deployment claim.
+
 # Release verified — arranged fridge removal — 25 October 2026
 
 PR20 merged as 08b4171d2b9bd3e20de6148bd6171f1634eb2704 after final CI40197450149 passed all four width jobs: 506 unit/component tests, levain round trips, production build, images and 524 mobile WebKit checks (131 each at320/375/390/430px). Tested head bf22f76cb3df542e6d91ba712d72fa10e144f6bd; source tree650d6351a921a1e54a4b8ea18aad251eeedbee9b exactly matched the locally verified tree. French390px screenshot reviewed: removal time, confirmation and later alternatives fit without obstruction; mobile hit-target/width tests passed all widths. Independent mounted tests additionally verified confirm/remount/Undo and non-resurrection in both modes. No physical iPhone or baking outcome validation claimed.

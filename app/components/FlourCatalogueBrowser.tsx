@@ -5,7 +5,7 @@ import {FLOUR_DB,FLOUR_PHOTO_PROVENANCE,type FlourEntry} from '@/lib/flourDataba
 import {FLOUR_DATA,ALL_STYLES,type FlourKey} from '../data';
 
 export function flourTypeLabel(type:string,fr:boolean){
- const labels:Record<string,[string,string]>={all_purpose:['All-purpose','Tout usage'],bread:['Bread flour','Farine de pain'],bread_flour:['Bread flour','Farine de pain'],french:['French wheat flour','Farine de blé française'],french_wheat_flour:['French wheat flour','Farine de blé française'],wheat:['Wheat','Blé'],whole_spelt:['Whole spelt','Épeautre complet'],whole_wheat:['Whole wheat','Blé complet'],wholemeal:['Whole wheat','Blé complet'],high_gluten:['High-gluten','Farine de force'],pastry:['Pastry','Pâtisserie'],rye:['Rye','Seigle'],semolina:['Semolina','Semoule'],spelt:['Spelt','Épeautre'],'t45_blend':['T45 blend','Mélange T45']};
+ const labels:Record<string,[string,string]>={'0':['Type 0','Type 0'],'00':['Type 00','Type 00'],all_purpose:['All-purpose','Tout usage'],bread:['Bread flour','Farine de pain'],bread_flour:['Bread flour','Farine de pain'],french:['French wheat flour','Farine de blé française'],french_wheat_flour:['French wheat flour','Farine de blé française'],wheat:['Wheat','Blé'],whole_spelt:['Whole spelt','Épeautre complet'],whole_wheat:['Whole wheat','Blé complet'],wholemeal:['Whole wheat','Blé complet'],high_gluten:['High-gluten','Farine de force'],pastry:['Pastry','Pâtisserie'],rye:['Rye','Seigle'],semolina:['Semolina','Semoule'],spelt:['Spelt','Épeautre'],'t45_blend':['T45 blend','Mélange T45']};
  const label=labels[type.toLowerCase().replace(/\s+/g,'_')];return label?label[fr?1:0]:/^t\d+$/i.test(type)?type.toUpperCase():type;
 }
 export function flourBehaviour(entry:FlourEntry):FlourKey {
@@ -27,14 +27,15 @@ export function flourNumbers(f:FlourEntry,fr:boolean){
  const strength=f.wRange?`W ${f.wRangePublished?'':'~'}${f.wRange[0]}–${f.wRange[1]}`:f.w==null?(fr?'Force non publiée':'Strength not published'):`W ${f.wPublished?'':'~'}${f.w}`;
  return `${strength} · ${fr?'Protéines':'Protein'} ${protein}`;
 }
-export function FlourProductButton({entry,onChoose,selected=false}:{entry:FlourEntry;onChoose:()=>void;selected?:boolean}){
+export function FlourProductButton({entry,onChoose,selected=false,onChange,changeLabel}:{entry:FlourEntry;onChoose:()=>void;selected?:boolean;onChange?:()=>void;changeLabel?:string}){
  const provenance=(FLOUR_PHOTO_PROVENANCE as Record<string,{source?:string;credit?:{author:string;license:string;licenseUrl:string;sourceUrl:string};modifications?:string}>)[entry.id];
  const fr=useLocale()==='fr',dialog=useRef<HTMLDialogElement>(null),trigger=useRef<HTMLButtonElement>(null),[open,setOpen]=useState(false);
  useEffect(()=>{if(open)dialog.current?.showModal();else if(dialog.current?.open)dialog.current.close();},[open]);
- return <><div style={{border:selected?'2px solid var(--terra)':'1px solid var(--border)',borderRadius:12,background:selected?'#f4ecdf':'var(--warm)',marginBottom:10,overflow:'hidden',display:'flex',alignItems:'center'}}>
+ return <><div style={{border:selected?'2px solid var(--terra)':'1px solid var(--border)',borderRadius:12,background:selected?'#f4ecdf':'var(--warm)',marginBottom:10,overflow:'hidden',display:'flex',flexWrap:'wrap',alignItems:'center'}}>
  <button type="button" aria-pressed={selected} onClick={onChoose} style={{flex:1,minWidth:0,display:'flex',alignItems:'center',gap:12,textAlign:'left',padding:12,minHeight:96,border:0,background:'transparent',color:'var(--char)',cursor:'pointer'}}>
  {entry.bagImage&&<img src={entry.bagImage} alt="" loading="lazy" width={56} height={76} style={{objectFit:'contain'}}/>}<span style={{flex:1,minWidth:0}}><strong style={{display:'block'}}>{entry.brand} {entry.name}</strong><small style={{display:'block',marginTop:6,color:'var(--smoke)'}}>{flourNumbers(entry,fr)}</small>{selected&&<span style={{display:'block',marginTop:6,fontSize:14,color:'var(--terra)'}}>{fr?'✓ Farine sélectionnée':'✓ Selected flour'}</span>}</span></button>
  <button ref={trigger} type="button" aria-haspopup="dialog" onClick={()=>setOpen(true)} style={{minHeight:44,minWidth:64,padding:'8px 10px',marginRight:4,border:0,background:'transparent',color:'var(--terra)',fontSize:14,cursor:'pointer',textDecoration:'underline'}} aria-label={`${fr?'Photo et détails':'Photo and details'} · ${entry.brand} ${entry.name}`}>{fr?'Détails':'Details'}</button>
+ {onChange&&<div style={{width:'100%',borderTop:'1px solid var(--border)',padding:'0 12px'}}><button type="button" onClick={onChange} style={{minHeight:44,padding:'8px 0',border:0,background:'transparent',color:'var(--terra)',fontSize:14,fontWeight:600,textDecoration:'underline',textUnderlineOffset:3,cursor:'pointer'}}>{changeLabel}</button></div>}
  </div>
  <dialog ref={dialog} onClose={()=>{setOpen(false);trigger.current?.focus({preventScroll:true});}} style={{margin:'auto',width:'min(92vw,460px)',maxHeight:'85dvh',padding:24,border:'1px solid var(--border)',borderRadius:18,background:'var(--warm)',color:'var(--char)'}} aria-label={`${entry.brand} ${entry.name}`}>
  <button type="button" onClick={()=>setOpen(false)} style={{float:'right',minHeight:44}}>{fr?'Fermer':'Close'}</button><h2>{entry.brand} {entry.name}</h2>
@@ -46,22 +47,29 @@ export function FlourProductButton({entry,onChoose,selected=false}:{entry:FlourE
  {provenance?.credit&&<p style={{fontSize:11,marginTop:12,color:'var(--smoke)'}}><a href={provenance.credit.sourceUrl} target="_blank" rel="noreferrer">{provenance.credit.author}</a> · <a href={provenance.credit.licenseUrl} target="_blank" rel="noreferrer">{provenance.credit.license}</a><br/>{fr?'Image redimensionnée et convertie en WebP.':'Image resized and converted to WebP.'}</p>}
  </dialog></>;
 }
-export default function FlourCatalogueBrowser({onChoose,recommendedIds,onGeneric,onScan,styleKey,blendMode=false,recommendationNotes={}}:{blendMode?:boolean;recommendationNotes?:Record<string,string>;onChoose:(f:FlourEntry)=>void;recommendedIds:string[];onGeneric:()=>void;onScan:()=>void;styleKey?:string}){
+export default function FlourCatalogueBrowser({onChoose,recommendedIds,onGeneric,onScan,styleKey,blendMode=false}:{blendMode?:boolean;onChoose:(f:FlourEntry)=>void;recommendedIds:string[];onGeneric:()=>void;onScan:()=>void;styleKey?:string}){
  const fr=useLocale()==='fr',[query,setQuery]=useState(''),[brand,setBrand]=useState(''),[type,setType]=useState(''),[country,setCountry]=useState(''),[limit,setLimit]=useState(()=>Math.min(4,recommendedIds.filter(id=>FLOUR_DB.some(f=>f.id===id&&f.brand!=='Generic'&&f.bagImage)).length)||4);
  const catalog=FLOUR_DB.filter(f=>f.brand!=='Generic'&&!!f.bagImage),active=!!(query||brand||type||country);
  const ordered=orderFlourCatalogue(catalog,recommendedIds);
  const filtered=ordered.filter(f=>matchesFlour(f,query)&&(!brand||brandOption(f.brand)===brand)&&(!type||flourTypeOption(f.type)===type)&&(!country||f.country===country));
- const visible = blendMode && !active && limit<=4 ? filtered.filter(f=>recommendedIds.includes(f.id)) : filtered;
+ const visible = blendMode && recommendedIds.length>0 && !active && limit<=4 ? filtered.filter(f=>recommendedIds.includes(f.id)) : filtered;
  const list=visible.slice(0,limit),style=ALL_STYLES[styleKey as keyof typeof ALL_STYLES],styleLabel=style?(fr?style.nameFr:style.name):'';
  const field={width:'100%',fontSize:16,minHeight:44,height:44,border:'1px solid var(--border)',borderRadius:8,background:'white',padding:8,color:'var(--char)'};
- return <div>
- <label style={{display:'block',marginBottom:12}}>{fr?'Rechercher une marque, un produit ou un type':'Search a brand, product or flour type'}<input type="search" value={query} onChange={e=>{setQuery(e.target.value);setLimit(15);}} onKeyDown={e=>{if(e.key==='Enter')e.currentTarget.blur();}} placeholder={fr?'Ex. Caputo, T65, complète':'e.g. Caputo, T65, wholemeal'} style={{...field,marginTop:6}}/></label>
+ const controls=<>
+
  <div aria-label={fr?'Filtres':'Filters'} style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:8}}>{[{label:fr?'Marque':'Brand',value:brand,set:setBrand,values:catalog.map(f=>brandOption(f.brand))},{label:'Type',value:type,set:setType,values:catalog.map(f=>flourTypeOption(f.type))},{label:fr?'Pays':'Country',value:country,set:setCountry,values:catalog.map(f=>f.country)}].map(d=><label key={d.label} style={{fontSize:14,fontWeight:d.value?600:400}}>{d.label}<select value={d.value} style={{...field,marginTop:4,borderColor:d.value?'var(--terra)':'var(--border)',background:d.value?'#f4ecdf':'white'}} onChange={e=>{d.set(e.target.value);setLimit(15);}}><option value="">{fr?'Tous':'All'}</option>{[...new Set(d.values)].sort().map(v=><option key={v} value={v}>{d.label===(fr?'Pays':'Country')?new Intl.DisplayNames([fr?'fr':'en'],{type:'region'}).of(v.toUpperCase())||v:d.label==='Type'?flourTypeLabel(v,fr):v}</option>)}</select></label>)}</div>
  {active&&<button type="button" onClick={()=>{setQuery('');setBrand('');setType('');setCountry('');setLimit(4);}} style={{minHeight:44}}>{fr?'Effacer la recherche et les filtres':'Clear search and filters'}</button>}
  <div style={{display:'flex',flexWrap:'wrap',gap:10,margin:'12px 0'}}><button type="button" onClick={()=>{setType('rye');setQuery('');setBrand('');setCountry('');setLimit(15);}} aria-pressed={type==='rye'} style={{minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:9,fontSize:14}}>{fr?'Seigle':'Rye'}</button><button type="button" onClick={onScan} style={{minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:9,fontSize:14}}>{fr?'Scanner mon sac':'Scan my bag'}</button><button type="button" onClick={onGeneric} style={{minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:9,fontSize:14}}>{fr?'Saisir ma farine':'Enter my flour'}</button></div>
- <h3 style={{fontSize:16,fontWeight:600,margin:'20px 0 10px'}}>{active?`${filtered.length} ${fr?'résultats':'results'}`:(blendMode?(fr?'Variantes de mélange':'Blend variations'):limit>4?(fr?'Catalogue':'Catalogue'):(fr?`Choix courants${styleLabel?' · '+styleLabel:' pour ce style'}`:`Common choices${styleLabel?' · '+styleLabel:' for this style'}`))}</h3>
- {list.map(f=><div key={f.id}>{blendMode && recommendationNotes[f.id] && <p style={{fontSize:14}}>{recommendationNotes[f.id]}</p>}<FlourProductButton entry={f} onChoose={()=>onChoose(f)}/></div>)}{!list.length&&(!blendMode||active)&&<p>{fr?'Aucune farine trouvée. Essayez moins de mots ou retirez un filtre.':'No matching flour. Try fewer words or clear a filter.'}</p>}
+ </>;
+ return <div>
+ <label style={{display:'block',marginBottom:12}}>{blendMode?(fr?'Rechercher une farine':'Search flours'):(fr?'Rechercher une marque, un produit ou un type':'Search a brand, product or flour type')}<input type="search" value={query} onChange={e=>{setQuery(e.target.value);setLimit(15);}} onKeyDown={e=>{if(e.key==='Enter')e.currentTarget.blur();}} placeholder={fr?'Ex. Caputo, T65, complète':'e.g. Caputo, T65, wholemeal'} style={{...field,marginTop:6}}/></label>
+ {!blendMode&&controls}
+ <h3 style={{fontSize:16,fontWeight:600,margin:'20px 0 10px'}}>{active?`${filtered.length} ${fr?'résultats':'results'}`:(blendMode&&recommendedIds.length>0&&limit<=4?'Suggestions':limit>4?(fr?'Catalogue':'Catalogue'):(fr?`Choix courants${styleLabel?' · '+styleLabel:' pour ce style'}`:`Common choices${styleLabel?' · '+styleLabel:' for this style'}`))}</h3>
+ {list.map(f=><div key={f.id}>{blendMode && !active && limit<=4 && recommendedIds.length>0 && <h4 style={{fontSize:14,fontWeight:600,margin:'16px 0 8px'}}>{flourTypeLabel(f.type,fr)}</h4>}<FlourProductButton entry={f} onChoose={()=>onChoose(f)}/></div>)}{!list.length&&(!blendMode||active)&&<p>{fr?'Aucune farine trouvée. Essayez moins de mots ou retirez un filtre.':'No matching flour. Try fewer words or clear a filter.'}</p>}
  {list.length<filtered.length&&<button type="button" onClick={()=>setLimit(limit+15)} style={{minHeight:44,width:'100%',border:'1px solid var(--border)',borderRadius:9}}>{fr?'Afficher plus de farines':'Show more flours'}</button>}
+ {blendMode&&<details style={{marginTop:12}}><summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',color:'var(--terra)'}}>{fr?'Plus d’options':'More options'}</summary>
+ {controls}
+ </details>}
  </div>;
 }
 export function orderFlourCatalogue(catalog:FlourEntry[],recommendedIds:string[]){

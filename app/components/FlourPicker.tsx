@@ -736,7 +736,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
       {archivedBlendSelections(blend).length > 0 && <p role="alert" style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 12 }}>{isFr ? 'Une farine enregistrée est archivée. Remplacez-la explicitement ; vos anciennes valeurs restent conservées en attendant.' : 'A saved flour is archived. Choose its replacement explicitly; your previous values are retained until then.'} {archivedBlendSelections(blend).join(' · ')}</p>}
       {/* ── Selected flour — hero card (rendering only; same state) ── */}
-      {chosenEntry&&<><FlourProductButton entry={chosenEntry} selected onChoose={()=>selectDBEntry(chosenEntry)}/><button type="button" onClick={()=>setPickerOpen(true)} style={{minHeight:44}}>{isFr?'Changer la farine 1':'Change flour 1'}</button></>}
+      {chosenEntry&&<FlourProductButton entry={chosenEntry} selected onChoose={()=>selectDBEntry(chosenEntry)} onChange={()=>setPickerOpen(true)} changeLabel={isFr?'Changer la farine 1':'Change flour 1'}/>}
       {blend.brandProduct && !chosenEntry && (
         <div style={{ background:'#FDFBF7', border:'1.5px solid var(--bread)',
           borderRadius: '16px', padding: '12px 16px', marginBottom:'12px' }}>
@@ -754,7 +754,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             <button onClick={() => setPickerOpen(true)}
               style={{ background:'none', border:'none', cursor:'pointer', flexShrink:0,
                 color:'#8A7F78', fontSize: '12px', fontFamily:'var(--font-ui)',
-                textDecoration:'underline', textUnderlineOffset:'2px', padding:'2px 0' }}>
+                textDecoration:'underline', textUnderlineOffset:'2px', padding:'2px 0', minHeight:44 }}>
               {locale === 'fr' ? 'Changer la farine 1' : 'Change flour 1'}
             </button>
           </div>
@@ -882,10 +882,8 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               {blendSelectedF2 && !blendShowFullSearch ? (
                 <div>
                   <h3>{isFr?'Farine 2':'Flour 2'} · {blend.flour3 ? blend.ratio2 : 100-blend.ratio1}%</h3>
-                  <FlourProductButton entry={blendSelectedF2} selected onChoose={()=>{}} />
-                  <button type="button" onClick={()=>{setBlendSlot(2);setBlendShowFullSearch(true);setBlendRoad(null);}} style={{minHeight:44}}>{isFr?'Changer la farine 2':'Change flour 2'}</button>
-                  {blendSelectedF3 && <><FlourProductButton entry={blendSelectedF3} selected onChoose={()=>{}} />
-                    <button type="button" onClick={()=>{setBlendSlot(3);setBlendShowFullSearch(true);setBlendRoad(null);}} style={{minHeight:44}}>{isFr?'Changer la 3e farine':'Change third flour'}</button></>}
+                  <FlourProductButton entry={blendSelectedF2} selected onChoose={()=>{}} onChange={()=>{setBlendSlot(2);setBlendShowFullSearch(true);setBlendRoad(null);}} changeLabel={isFr?'Changer la farine 2':'Change flour 2'}/>
+                  {blendSelectedF3 && <FlourProductButton entry={blendSelectedF3} selected onChoose={()=>{}} onChange={()=>{setBlendSlot(3);setBlendShowFullSearch(true);setBlendRoad(null);}} changeLabel={isFr?'Changer la 3e farine':'Change third flour'}/>}
                   {/* The bar replaces two ranges that each owned a raw ratio
                       field. Percentages live here as one list; the write-back
                       keeps the engine's contract untouched — ratio1 is the
@@ -955,13 +953,9 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               ) : (
                 <div>
                   {(blendSelectedF2 || blendSlot===3) && <button type="button" onClick={()=>{setBlendSlot(2);setBlendShowFullSearch(false);setBlendRoad(null);}} style={{minHeight:44}}>{isFr?'Annuler':'Cancel'}</button>}
-                  <h3>{isFr?`Choisir la farine ${blendSlot}`:`Choose flour ${blendSlot}`}</h3>
-                  <p>{isFr?'Farine 1 conservée':'Flour 1 retained'}: {blend.brandProduct ?? FLOUR_DATA[blend.flour1].name} · {blend.ratio1}%</p>
-                  <p>{blendOptions.length ? (isFr?'Variantes facultatives · proportions de départ ajustables.':'Optional variations · adjustable starting proportions.') : (isFr?'Aucun ajout particulier conseillé. Un mélange reste facultatif.':'No specific addition suggested. Blending remains optional.')}</p>
                   <div hidden={blendRoad==='scan'||blendRoad==='type'}>
                     <FlourCatalogueBrowser key={blendSlot} styleKey={styleKey ?? undefined}
                       recommendedIds={blendOptions.map(option=>option.id)}
-                      recommendationNotes={Object.fromEntries(blendOptions.map(option=>[option.id, `${isFr?option.fr:option.en} · ${option.percent}%`]))}
                       blendMode
                       onChoose={entry=>{const ratio=additionRatio(entry.id);if(blendSlot===2)setBlendRatio(ratio);assignBlendFlour(entry,flourBehaviour(entry),`${entry.brand} ${entry.name}`.trim(),ratio);}}
                       onGeneric={()=>{setManualName('');setManualType('bread');setManualProtein('');setManualQWText('');setBlendRoad('type');}}

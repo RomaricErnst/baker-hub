@@ -49,7 +49,11 @@ for(const locale of ['fr','en']){
   const flour=page.locator('#step-6');
   await flour.getByRole('button',{name:/^Caputo Pizzeria W/}).tap();
   await flour.getByText(fr?'Ajouter une seconde farine':'Add a second flour',{exact:true}).tap();
-  await expect(flour.getByRole('heading',{name:fr?'Choisir la farine 2':'Choose flour 2',exact:true})).toBeVisible();
+  await expect(flour.getByRole('searchbox',{name:fr?'Rechercher une farine':'Search flours',exact:true})).toBeVisible();
+  await expect(flour.getByText(/Flour 1 retained|Farine 1 conservée/)).toHaveCount(0);
+  await expect(flour.getByRole('heading',{name:'Suggestions',exact:true})).toBeVisible();
+  await geometry(page);
+  await page.screenshot({path:test.info().outputPath('second-flour.png'),fullPage:true});
   await flour.getByRole('button',{name:/^Caputo Manitoba/}).tap();
   await expect.poll(async()=>(await stored(page))?.flourBlend?.customFlour2Name).toMatch(/Manitoba/);
   const before=(await stored(page)).flourBlend;

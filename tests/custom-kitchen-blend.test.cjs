@@ -28,7 +28,7 @@ test('blend suggestions have a purpose, vary by style and do not strengthen alre
 });
 test('flour editing identifies the target and cancellation does not commit a blend',()=>{
  const picker=fs.readFileSync('app/components/FlourPicker.tsx','utf8');
- for(const label of ['Change flour 1','Change flour 2','Choose flour 1','Choose flour ${blendSlot}','Flour 1 retained','Flour 2 retained'])assert.ok(picker.includes(label),label);
+ for(const label of ['Change flour 1','Change flour 2','Choose flour 1','Flour 2 retained'])assert.ok(picker.includes(label),label);
  assert.ok(picker.includes('const additionRatio = (id: string) => blend.flour2 ? blend.ratio1'));
  assert.ok(picker.includes('setPickerOpen(false);setRoad(null);'));
  assert.ok(picker.includes('name !== blend.brandProduct && name !== blend.customFlour2Name'));
