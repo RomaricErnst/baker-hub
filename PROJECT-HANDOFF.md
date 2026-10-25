@@ -1,3 +1,9 @@
+# Release verified — arranged fridge removal — 25 October 2026
+
+PR20 merged as 08b4171d2b9bd3e20de6148bd6171f1634eb2704 after final CI40197450149 passed all four width jobs: 506 unit/component tests, levain round trips, production build, images and 524 mobile WebKit checks (131 each at320/375/390/430px). Tested head bf22f76cb3df542e6d91ba712d72fa10e144f6bd; source tree650d6351a921a1e54a4b8ea18aad251eeedbee9b exactly matched the locally verified tree. French390px screenshot reviewed: removal time, confirmation and later alternatives fit without obstruction; mobile hit-target/width tests passed all widths. Independent mounted tests additionally verified confirm/remount/Undo and non-resurrection in both modes. No physical iPhone or baking outcome validation claimed.
+
+Production deployment dpl_6W4GFypgwuCTjTJ37GVwRHHQT6rT is READY at this exact merge SHA and Vercel confirms www.bakerhub.app and bakerhub.app aliases. This supersedes pending-release/upload notes below. User explicitly authorized push and merge once ready. This handoff-only follow-up does not change application code.
+
 # Arranged final fridge removal — 25 October 2026
 
 User approved a minimal contextual acknowledgement for the evening-party/work-blocker scenario, with UI/UX agent review. Only canonical standalone final dough removal can be arranged by the baker or someone at home. Confirmation is tied to exact removal and bake timestamps, keeps blockers and every phase time intact, and never waives preheating, mixing, balling or fermentation constraints. Earlier bulk removal followed by shaping is ineligible. Remaining conflicts are shown together. Inline Undo restores the conflict. The arrangement survives same-bake local/cloud snapshots, appears in Planning/Preparation, is cleared by changed committed timings and is not transferred to a rebake/new bake.
