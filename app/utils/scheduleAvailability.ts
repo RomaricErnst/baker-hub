@@ -4,9 +4,32 @@ export interface AvailabilityAction {
   at: Date;
   /** Present only for a known active duration; the end is exclusive. */
   end?: Date;
+  /** Set by the canonical builder only for the final, standalone dough removal. */
+  fridgeRemovalBake?: number;
 }
-export interface AvailabilityPeriod { from: Date; to: Date; label?: string }
+export interface FridgeRemovalArrangement { at: number; bake: number }
+export interface AvailabilityPeriod { from: Date; to: Date; label?: string; fridgeRemoval?: FridgeRemovalArrangement }
 export interface AvailabilityConflict { action: AvailabilityAction; block: AvailabilityPeriod }
+
+/** Saved arrangements are a commitment to one exact action, never general availability. */
+export function normalizeFridgeRemoval(value: unknown): FridgeRemovalArrangement | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const {at, bake} = value as Record<string, unknown>;
+  if (typeof at !== 'number' || typeof bake !== 'number' || !Number.isFinite(at) || !Number.isFinite(bake)
+    || Math.abs(at) > 8.64e15 || Math.abs(bake) > 8.64e15 || at >= bake) return undefined;
+  return {at, bake};
+}
+
+export function getFinalFridgeRemoval(actions: AvailabilityAction[]): AvailabilityAction | undefined {
+  return actions.find(action => action.id === 'cold-out-2' && action.end === undefined
+    && Number.isFinite(action.fridgeRemovalBake) && +action.at < action.fridgeRemovalBake!);
+}
+
+export function isFridgeRemovalCovered(action: AvailabilityAction, block: AvailabilityPeriod): boolean {
+  const arrangement = normalizeFridgeRemoval(block.fridgeRemoval);
+  return !!arrangement && getFinalFridgeRemoval([action]) === action
+    && arrangement.at === +action.at && arrangement.bake === action.fridgeRemovalBake;
+}
 
 export function isTimeBlocked(time: Date | number, blocks: AvailabilityPeriod[]): boolean {
   const at = +time;
@@ -27,6 +50,7 @@ export function findAvailabilityConflicts(
     if (hasSpan ? +action.end! <= now : +action.at < now) continue;
     for (const block of blocks) {
       if (!(+block.from < +block.to)) continue;
+      if (isFridgeRemovalCovered(action, block)) continue;
       const hit = hasSpan
         ? Math.max(+action.at, now) < +block.to && +block.from < +action.end!
         : +block.from <= +action.at && +action.at < +block.to;

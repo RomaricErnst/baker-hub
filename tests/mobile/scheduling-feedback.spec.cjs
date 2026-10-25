@@ -11,8 +11,8 @@ const row=(plan,id)=>plan.locator(`[data-key-timing="${id}"]`);
 async function expand(plan,id){const r=row(plan,id);if(!await r.locator('.bh-key-exact').isVisible())await r.locator('.bh-key-time').tap();await expect(r.locator('.bh-key-exact')).toBeVisible();}
 const reset=page=>page.getByRole('button',{name:/^(Revenir aux horaires recommandés|Return to recommended times)$/});
 const confirm=plan=>plan.getByRole('button',{name:/^(Appliquer|Apply)$/});
-async function seed(page,{locale='fr',mode='custom',preferment='poolish',extra={}}={}){
- await page.clock.setFixedTime(NOW);
+async function seed(page,{locale='fr',mode='custom',preferment='poolish',extra={},now=NOW}={}){
+ await page.clock.setFixedTime(now);
  const data={version:1,savedAt:NOW,tab:mode,bakeType:'pizza',styleKey:'neapolitan',numItems:4,itemWeight:260,pizzaDiameter:30,ovenType:'pizza_oven',mixerType:'spiral',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:5,flourBlend:null,prefermentType:preferment,prefOffsetH:preferment==='none'?0:11,prefGoesInFridge:true,flourInFridge:false,startTime:Date.parse('2026-09-25T20:00:00+08:00'),eatTime:BAKE,blocks:[],recipeGenerated:false,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,activeStep:7,advancedStep:9,highestStep:7,advancedHighestStep:9,setupOverview:false,activeTab:'setup',...extra};
  await page.addInitScript(data=>{
   if(!sessionStorage.getItem('feedback-seeded')){localStorage.setItem('bh_session_v1',JSON.stringify(data));sessionStorage.setItem('feedback-seeded','1');}
@@ -53,6 +53,72 @@ for(const mode of ['simple','custom'])test(`${mode}: screenshot clock; adding wo
  await info.attach('poolish-after-work-block',{body:await page.screenshot(),contentType:'image/png'});
  await work.tap();await expect.poll(async()=>(await stored(page)).blocks.length).toBe(0);
  expect((await stored(page)).eatTime).toBe(BAKE);
+});
+
+// The baker is working until shortly before an evening party, but can arrange
+// the one final fridge removal. These are software fixtures, not bake trials.
+const PARTY_NOW=Date.parse('2026-10-25T12:00:00+08:00');
+const PARTY_MIX=Date.parse('2026-10-29T18:00:00+08:00');
+const PARTY_BAKE=Date.parse('2026-10-30T19:00:00+08:00');
+const partyBlock=end=>({label:'Work',from:Date.parse('2026-10-30T09:00:00+08:00'),to:Date.parse(`2026-10-30T${end}:00+08:00`)});
+const plainBlocks=blocks=>blocks.map(({fridgeRemoval,...block})=>block);
+const arrangeButton=(card,locale)=>card.getByRole('button',{name:locale==='fr'?'Oui, cette étape est prévue':'Yes, this step is covered',exact:true});
+async function seedParty(page,locale,mode,end='18:00'){
+ return seed(page,{locale,mode,preferment:'none',now:PARTY_NOW,extra:{savedAt:PARTY_NOW,kitchenTemp:24,fridgeTemp:5,mixerType:'hand',startTime:PARTY_MIX,eatTime:PARTY_BAKE,blocks:[partyBlock(end)]}});
+}
+for(const locale of ['fr','en'])for(const mode of ['simple','custom'])test(`${locale} ${mode}: arranged fridge removal keeps evening party, survives reload, undoes and reconfirms changed time`,async({page},info)=>{
+ const {plan}=await seedParty(page,locale,mode);
+ const card=plan.locator('.bh-fridge-arrangement');
+ await expect(card).toHaveAttribute('data-fridge-removal','pending');
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','false');
+ const before=await stored(page),labelBefore=await card.locator('strong').innerText();
+ const actionTimesBefore=await plan.locator('time[datetime]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('datetime')));
+ const button=arrangeButton(card,locale);await fits(page,button);
+ expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
+ await info.attach('fridge-removal-choice',{body:await page.screenshot(),contentType:'image/png'});
+ await button.tap();
+ await expect(card).toHaveAttribute('data-fridge-removal','arranged');
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','true');
+ await expect.poll(async()=>(await stored(page)).blocks.some(block=>!!block.fridgeRemoval)).toBe(true);
+ const accepted=await stored(page);
+ expect(accepted.startTime).toBe(before.startTime);expect(accepted.eatTime).toBe(before.eatTime);
+ expect(plainBlocks(accepted.blocks)).toEqual(before.blocks);
+ expect(await card.locator('strong').innerText()).toBe(labelBefore);
+ expect(await plan.locator('time[datetime]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('datetime')))).toEqual(actionTimesBefore);
+ expect(accepted.blocks[0].fridgeRemoval.bake).toBe(PARTY_BAKE);
+ expect(accepted.blocks[0].fridgeRemoval.at).toBeGreaterThan(accepted.blocks[0].from);
+ expect(accepted.blocks[0].fridgeRemoval.at).toBeLessThan(accepted.blocks[0].to);
+ await page.reload();await expect(plan).toBeVisible();
+ await expect(card).toHaveAttribute('data-fridge-removal','arranged');
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','true');
+ expect((await stored(page)).blocks).toEqual(accepted.blocks);
+ const undo=card.getByRole('button',{name:locale==='fr'?'Annuler':'Undo',exact:true});await fits(page,undo);await undo.tap();
+ await expect(card).toHaveAttribute('data-fridge-removal','pending');
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','false');
+ await expect.poll(async()=>(await stored(page)).blocks).toEqual(before.blocks);
+ await arrangeButton(card,locale).tap();await expect(card).toHaveAttribute('data-fridge-removal','arranged');
+ // A newly requested bake is not the appointment the baker confirmed.
+ await page.locator('input[type="time"]').first().fill('19:15');
+ await expect.poll(async()=>(await stored(page)).eatTime).toBe(PARTY_BAKE+15*60000);
+ await expect(card).toHaveAttribute('data-fridge-removal','pending');
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','false');
+ await expect.poll(async()=>(await stored(page)).blocks.every(block=>!block.fridgeRemoval)).toBe(true);
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize().width);
+});
+
+for(const locale of ['fr','en'])for(const mode of ['simple','custom'])test(`${locale} ${mode}: arranged fridge removal never clears an overlapping preheat`,async({page})=>{
+ const {plan}=await seedParty(page,locale,mode,'18:45');
+ const card=plan.locator('.bh-fridge-arrangement');
+ await expect(card).toHaveAttribute('data-fridge-removal','pending');
+ const preheat=plan.locator('.bh-plan-notice').getByText(locale==='fr'?/Préchauffage/:/Preheat/);
+ await expect(preheat).toBeVisible();
+ const before=await stored(page);await arrangeButton(card,locale).tap();
+ await expect(card).toHaveAttribute('data-fridge-removal','arranged');
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','false');
+ await expect(preheat).toBeVisible();
+ const after=await stored(page);expect(after.startTime).toBe(before.startTime);expect(after.eatTime).toBe(before.eatTime);
+ expect(plainBlocks(after.blocks)).toEqual(before.blocks);
+ await expect(plan.locator('.bh-plan-notice .bh-target-choices')).toBeVisible();
 });
 
 test('poolish live invalid-to-valid draft updates feedback, Cancel restores and Reset survives reload',async({page})=>{

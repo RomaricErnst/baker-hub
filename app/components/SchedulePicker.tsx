@@ -11,7 +11,7 @@ import ScheduleClockInput from './ScheduleClockInput';
 import ScheduleKeyTimings, {type KeyTimingAnchor} from './ScheduleKeyTimings';
 import {assessScheduleDraft} from '../utils/scheduleDraft';
 import {proposeScheduleEdit, validateScheduleCandidate, findFixedBakeSchedule, recommendPreferment, laterBakeAlternative, scheduleEditSlots, type EditInput, type EditTimes} from '../utils/scheduleEdit';
-import { foldActionLabel, isTimeBlocked, findAvailabilityConflicts, type AvailabilityAction } from '../utils/scheduleAvailability';
+import { foldActionLabel, isTimeBlocked, findAvailabilityConflicts, getFinalFridgeRemoval, isFridgeRemovalCovered, type AvailabilityAction } from '../utils/scheduleAvailability';
 import { kneadMinFor, type MixerType } from '../data';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 
@@ -2116,6 +2116,8 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
   const availabilityControlsRef = useRef<HTMLDivElement>(null);
   const pickerDateTimeRef = useRef<string>(pickerDateTime);
   const [localBlocks, setLocalBlocks] = useState<AvailabilityBlock[]>(blocks);
+  const lastFridgeArrangementRef=useRef(blocks.find(block=>block.fridgeRemoval)?.fridgeRemoval);
+  const [fridgeArrangementChanged,setFridgeArrangementChanged]=useState(false);
   // The blocks the solver must see, always current.
   //
   // Five call sites used to pass the `blocks` PROP straight into
@@ -6489,6 +6491,30 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     }})),{mix:overrides.mix===undefined?undefined:new Date(overrides.mix),preferment:overrides.pref===undefined?undefined:new Date(overrides.pref)});
   }
   const currentCandidate=isSourdough?validateCurrentStarterCandidate(repairBlocks):validateScheduleCandidate(commercialCandidateInput(repairBlocks));
+  const committedSchedule='validation' in currentCandidate?currentCandidate.validation.schedule:currentCandidate.schedule;
+  const finalFridgeRemoval=getFinalFridgeRemoval(committedSchedule?.availabilityActions??[]);
+  const fridgeBlocks=finalFridgeRemoval?repairBlocks.filter(block=>+block.from<=+finalFridgeRemoval.at&&+finalFridgeRemoval.at<+block.to):[];
+  const fridgeRemovalCovered=!!finalFridgeRemoval&&fridgeBlocks.length>0&&fridgeBlocks.every(block=>isFridgeRemovalCovered(finalFridgeRemoval,block));
+  const canArrangeFridgeRemoval=!!finalFridgeRemoval&&+finalFridgeRemoval.at>=Date.now()&&fridgeBlocks.length>0;
+  useEffect(()=>{
+    const previous=lastFridgeArrangementRef.current;
+    if(previous&&(!finalFridgeRemoval||previous.at!==+finalFridgeRemoval.at||previous.bake!==+pendingEatTime))setFridgeArrangementChanged(true);
+    lastFridgeArrangementRef.current=localBlocks.find(block=>block.fridgeRemoval)?.fridgeRemoval;
+  },[localBlocks,finalFridgeRemoval?.at.getTime(),+pendingEatTime]);
+  function setFridgeRemovalCovered(covered:boolean) {
+    if(!finalFridgeRemoval||!canArrangeFridgeRemoval)return;
+    // A commitment changes availability for this action only. Never invoke the
+    // recommendation solver: accepting/undoing must preserve all chosen times.
+    const nextBlocks=repairBlocks.map(block=>{
+      const {fridgeRemoval:_previous,...plain}=block;
+      return covered&&+block.from<=+finalFridgeRemoval.at&&+finalFridgeRemoval.at<+block.to
+        ?{...plain,fridgeRemoval:{at:+finalFridgeRemoval.at,bake:+pendingEatTime}}:plain;
+    });
+    lastFridgeArrangementRef.current=covered?{at:+finalFridgeRemoval.at,bake:+pendingEatTime}:undefined;
+    setFridgeArrangementChanged(false);
+    solverBlocksRef.current=nextBlocks;setLocalBlocks(nextBlocks);
+    onChange(pendingStart,pendingEatTime,nextBlocks,{preservePlan:true,prefOffsetHours:prefOffsetH,timingOverrides:manualTimesRef.current});
+  }
   const currentCandidateValid=startTimeInPast?true:currentCandidate.valid;
   useEffect(()=>{onScheduleValidityChange?.(currentCandidateValid);},[currentCandidateValid,onScheduleValidityChange]);
   useEffect(()=>{if(!isSourdough)onPrefermentValidityChange?.(currentCandidateValid);},[isSourdough,currentCandidateValid,onPrefermentValidityChange]);
@@ -8317,13 +8343,28 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
               : (isFr?'Préferment recalé à ':'Preferment moved to ')}{fmtCardDT(new Date(+draftMix-draftPrefOffset*hour),isFr)}{+draftMix-draftPrefOffset*hour===+pendingStart-prefOffsetH*hour?(isFr?' — compatible avec ce pétrissage.':' — compatible with this mixing time.'):'.'}</>
           :dirty&&editingRow!=='mix'&&+times.start!==+pendingStart?<>{isFr?'Pétrissage recalé à ':'Mixing moved to '}{fmtCardDT(times.start,isFr)}.</>:null;
         const batchConflict=(isSourdough?starterPreview?.validation.schedule:preview?.schedule)?.batchTimingConflict;
-        const notice=!valid&&!keyDragging?<div className="bh-plan-notice" role="status">
-          <strong>{isSourdough ? (starterPreview?.message || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.')) : (rangeExplanation || draftMessage || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.'))}</strong>
-          {blockedPeriod&&['cold-out-2','preheat'].includes(preview?.conflict??'')&&<p>{isFr?`Cette intervention tombe dans votre indisponibilité de ${blockedPeriod}. Cette étape doit respecter la remise en température de la pâte ou le préchauffage du four. Choisissez une cuisson plus tardive, ou modifiez vos disponibilités si vous pouvez intervenir.`:`This hands-on step overlaps your unavailable period (${blockedPeriod}). The remaining step must fit the dough’s readiness window or oven preheating. Choose a later baking time, or change availability if you can do this step.`}</p>}
+        const showFridgeArrangement=!dirty&&!keyDragging&&canArrangeFridgeRemoval;
+        const currentConflicts=findAvailabilityConflicts([
+          ...(committedSchedule?.availabilityActions??[]),...methodActions(pendingStart),
+        ],repairBlocks,Date.now()).filter((conflict,index,all)=>all.findIndex(other=>other.action.id===conflict.action.id&&+other.action.at===+conflict.action.at)===index);
+        const otherConflicts=currentConflicts.filter(conflict=>conflict.action.id!==finalFridgeRemoval?.id);
+        const busyWithFridge=showFridgeArrangement&&(isSourdough?('validation' in currentCandidate&&currentCandidate.validation.reason==='busy'):preview?.issue==='busy');
+        const fridgeArrangement=showFridgeArrangement?<div className="bh-fridge-arrangement" data-fridge-removal={fridgeRemovalCovered?'arranged':'pending'} style={{padding:'12px 14px',marginBottom:12,border:'1px solid var(--border)',borderRadius:12}}>
+          <strong>{isFr?'Sortie du réfrigérateur · ':'Take dough out · '}{fmtCardDT(finalFridgeRemoval!.at,isFr)}</strong>
+          {fridgeRemovalCovered?<div role="status"><span>{isFr?'Cette étape est prévue.':'This step is covered.'}</span>{' '}<button type="button" className="bh-back-action" style={{minHeight:44,minWidth:44}} onClick={()=>setFridgeRemovalCovered(false)}>{isFr?'Annuler':'Undo'}</button></div>:<>
+            <p style={{margin:'8px 0'}}>{isFr?'Pendant votre indisponibilité. Vous ou quelqu’un sur place pouvez sortir la pâte ?':'During your unavailable hours. Can you or someone at home take the dough out?'}</p>
+            <button type="button" className="bh-apply-plan" style={{minHeight:44,whiteSpace:'normal'}} onClick={()=>setFridgeRemovalCovered(true)}>{isFr?'Oui, cette étape est prévue':'Yes, this step is covered'}</button>
+          </>}
+        </div>:null;
+        const conflictNotice=!valid&&!keyDragging?<div className="bh-plan-notice" role="status">
+          {!busyWithFridge&&<strong>{isSourdough ? (starterPreview?.message || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.')) : (rangeExplanation || draftMessage || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.'))}</strong>}
+          {busyWithFridge&&otherConflicts.length>0&&<><strong>{isFr?'Autres étapes pendant votre indisponibilité :':'Other steps during your unavailable hours:'}</strong><ul>{otherConflicts.map(({action})=><li key={`${action.id}:${+action.at}`}>{foldActionLabel(action.id,locale,mixingBatches)??(conflictNames[action.id]??['Étape','Step'])[isFr?0:1]} · {fmtCardDT(action.at,isFr)}</li>)}</ul></>}
+          {!busyWithFridge&&blockedPeriod&&['cold-out-2','preheat'].includes(preview?.conflict??'')&&<p>{isFr?`Cette intervention tombe dans votre indisponibilité de ${blockedPeriod}. Cette étape doit respecter la remise en température de la pâte ou le préchauffage du four. Choisissez une cuisson plus tardive, ou modifiez vos disponibilités si vous pouvez intervenir.`:`This hands-on step overlaps your unavailable period (${blockedPeriod}). The remaining step must fit the dough’s readiness window or oven preheating. Choose a later baking time, or change availability if you can do this step.`}</p>}
           {!dirty&&suggestedTargets.length>0&&<><p>{isFr?'Pour respecter vos indisponibilités et les durées de fermentation, choisissez un autre enfournement :':'To respect your availability and fermentation times, choose another baking time:'}</p>{targetChoices}</>}
           {!dirty&&hasTimingOverrides&&<p>{isFr?'Vos horaires choisis sont conservés. Le retour à la recommandation les libère pour chercher un autre planning.':'Your chosen times are kept. Return to the recommendation to release them and find another plan.'}</p>}
           {batchConflict ? <BatchRepairNotice isFr={isFr} numItems={numItems ?? 1} itemWeight={itemWeight} mixerCapacityG={mixerCapacityG} wastePct={wastePct} onEditQuantity={onEditQuantity} /> : <button type="button" className="bh-back-action" onClick={()=>{availabilityControlsRef.current?.scrollIntoView({block:'center',behavior:'auto'});availabilityControlsRef.current?.focus({preventScroll:true});}}>{isFr?'Modifier mes indisponibilités':'Change my availability'}</button>}
         </div>:undefined;
+        const notice=(fridgeArrangement||conflictNotice||(!dirty&&fridgeArrangementChanged))?<>{!dirty&&fridgeArrangementChanged&&<p role="status" className="bh-key-detail">{isFr?'Le planning a changé. La sortie du réfrigérateur n’est plus confirmée.':'The plan changed. Fridge removal is no longer confirmed.'}</p>}{fridgeArrangement}{conflictNotice}</>:undefined;
         return <ScheduleKeyTimings anchors={anchors} blocks={repairBlocks} isFr={isFr} onChange={isSourdough?starterChange:commercialChange} check={check} cacheKey={cacheKey} hasDraft={dirty} onInteractionChange={setKeyDragging} onCancel={cancel} ovenAt={+times.bake} personalized={hasTimingOverrides} adjustment={adjustment} onApply={accept} canApply={dirty&&valid} onOpenChange={setKeyEditorOpen} notice={notice} header={(dirty||hasTimingOverrides||keyDragging||!valid)?<button type="button" className="bh-key-reset" disabled={keyDragging} onClick={resetToRecommendation}>{isFr?'Revenir aux horaires recommandés':'Return to recommended times'}</button>:undefined}>
           {interventionRows.length>0&&<details className="bh-key-detail" style={{marginTop:12}}><summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer'}}>{isFr?'Voir toutes les interventions':'See all hands-on steps'}</summary><ol style={{listStyle:'none',padding:0,margin:0}}>{interventionRows.map(row=><li key={row.id} style={{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:'4px 12px',padding:'8px 0',borderBottom:'1px solid var(--border)'}}><span>{row.name}</span><time dateTime={new Date(row.at).toISOString()} style={{fontWeight:600}}>{fmtCardDT(new Date(row.at),isFr)}</time></li>)}</ol></details>}
           {searchFailed&&hasTimingOverrides&&!editingRow&&!(isSourdough?starterPreview?.message:draftMessage)&&<p className="bh-key-detail">{isFr?'Aucun créneau trouvé avec vos horaires. Revenez aux horaires recommandés pour élargir la recherche.':'No slot found with your chosen times. Return to recommended times to widen the search.'}</p>}

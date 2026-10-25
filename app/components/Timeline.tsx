@@ -691,6 +691,8 @@ export default function Timeline({
                   );
                 })()}
 
+                {item.stepKind === 'final_proof' && schedule.fridgeRemovalArranged && schedule.coldRetard2End && <p style={{fontSize:14,color:'var(--smoke)'}}>{formatTime(schedule.coldRetard2End, _fmtLocale)} · {_fmtLocale === 'fr' ? 'Sortie du réfrigérateur prévue' : 'Fridge removal arranged'}</p>}
+
                 {/* Tip — hidden entirely for steps that carry none */}
                 {(item.tip || item.stepKind === 'rest_rt' || item.stepKind === 'final_proof') && (
                 <div style={{
