@@ -937,17 +937,28 @@ function buildSchedulePhases(
     const latestDivide   = new Date(bakeTime.getTime() - (minCold2H + minFinalRT + preheatH) * 3600000);
     const divideIsBlocked = (t: Date) => actionConflicts({ id: 'divide', at: t, end: new Date(+t + divideH * 3600000) }, relevantBlocks)
       || isTimeBlocked(+t + divideH * 3600000, relevantBlocks);
+    // Cold time may be spent in portions for these developed pizza doughs.
+    // Modernist Pizza Kitchen Manual pp.17,24,41 supports balling before cold
+    // proof. Keep the existing bulk/folds and total cold budget. The 15-minute
+    // floor separates the two fridge actions; it is not a maturation minimum.
+    const flexibleColdSplit = ['neapolitan', 'newyork', 'pizza_romana'].includes(styleKey);
+    const searchDivideFrom = relevantBlocks.length && flexibleColdSplit && divideIsBlocked(r15(earliestDivide))
+      ? new Date(+coldRetard1Start + 15 * 60000) : earliestDivide;
     let divideBallTime: Date = earliestDivide;
+    let availableDivide: Date | null = null;
     let constrainedExit: Date | null = null;
     const naturalExit = r15(new Date(+bakeTime - (rtWarmupH + maxFinalH) * 3600000));
     const maxExit = +bakeTime - (rtWarmupH + minFinalRT) * 3600000;
-    if (earliestDivide.getTime() <= latestDivide.getTime()) {
+    if (searchDivideFrom.getTime() <= latestDivide.getTime()) {
       // With constraints, scan the actual quarter-hour timestamps returned below.
       // Shape and the second cold exit are one choice: a clear shaping slot is
       // not useful if it removes the minimum second cold or final proof.
-      let scan = relevantBlocks.length ? new Date(Math.ceil(+earliestDivide / 900000) * 900000) : new Date(earliestDivide);
+      let scan = relevantBlocks.length ? new Date(Math.ceil(+searchDivideFrom / 900000) * 900000) : new Date(earliestDivide);
       while (scan.getTime() <= latestDivide.getTime()) {
         if (!divideIsBlocked(scan)) {
+          // Retain this repair even if the final warming exit cannot fit.
+          // A later conflict must not force shaping back into blocked hours.
+          if (+scan + (divideH + minCold2H) * 3600000 <= +naturalExit) availableDivide ??= new Date(scan);
           if (!relevantBlocks.length) { divideBallTime = scan; break; }
           const minExit = Math.max(+naturalExit, +scan + (divideH + minCold2H) * 3600000);
           for (let at = Math.ceil(minExit / 900000) * 900000; at <= maxExit; at += 900000) {
@@ -958,6 +969,7 @@ function buildSchedulePhases(
         scan = new Date(scan.getTime() + 15 * 60000);
       }
     }
+    if (!constrainedExit && availableDivide) divideBallTime = availableDivide;
     const coldRetard1End = divideBallTime;
 
     const divideBallDurationH = divideH;
@@ -968,7 +980,7 @@ function buildSchedulePhases(
     // Passive cold can overlap unavailable time. Only the joint action scan
     // above may move this exit; it preserves both cold phases and final proof.
     let coldRetard2End = constrainedExit ?? new Date(bakeTime.getTime() - rtWarmupH * 3600000 - maxFinalH * 3600000);
-    const wasAutoAdjusted = constrainedExit != null && (+constrainedExit !== +naturalExit || +divideBallTime !== +r15(earliestDivide));
+    const wasAutoAdjusted = +r15(divideBallTime) !== +r15(earliestDivide) || (constrainedExit != null && +constrainedExit !== +naturalExit);
 
     // Safety: phase 2 end must not precede start
     if (coldRetard2End.getTime() < coldRetard2Start.getTime()) {
@@ -1353,7 +1365,7 @@ export function findScheduleRepair(input: ScheduleRepairInput): ScheduleRepair |
     if (phaseCount === 2) {
       const first = (+s.coldRetard1End! - +s.coldRetard1Start!) / 3600000;
       const second = (+s.coldRetard2End! - +s.coldRetard2Start!) / 3600000;
-      if (+s.coldRetard1Start! < +s.bulkFermStart || first < (kitchenTemp >= 28 ? 2 : 4) || second < 2
+      if (+s.coldRetard1Start! < +s.bulkFermStart || first < (['neapolitan', 'newyork', 'pizza_romana'].includes(style) ? .25 : kitchenTemp >= 28 ? 2 : 4) || second < 2
         || +s.coldRetard2Start! - +s.coldRetard1End! !== (s.divisionMinutes ?? divisionMinutesFor(input.numItems)) * 60000
         || +s.finalProofStart - +s.coldRetard2End! < (kitchenTemp >= 30 ? .5 : .75) * 3600000
         || +s.preheatStart - +s.finalProofStart < 3600000) return false;
