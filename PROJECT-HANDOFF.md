@@ -1,3 +1,7 @@
+# Release verified — second-flour cleanup — 25 October 2026
+
+PR21 merged as cfb333e935cd17e859179ad7fd25c76e08c75266. CI40202142750 passed all four macOS WebKit jobs: 507 unit/component tests, production build, sourdough round trips and 524 mobile checks (131 each at320/375/390/430px). Tested head03f71766e85aaceaf4aa9677d72d602457bc742c; local/remote source tree05df4d92aadd33ac8e2347320266f739cf4a65af matched. French and English375px screenshots reviewed. Production deployment dpl_AqZ7DUMQgHnURKvzKEBHMyBJaKRW is READY at the merge SHA with www.bakerhub.app and bakerhub.app aliases. This supersedes pending verification below. No physical iPhone validation claimed. This documentation-only follow-up changes no application code.
+
 # Second-flour panel cleanup — 25 October 2026
 
 User requested a simpler second-flour picker from an iPhone screenshot. Change actions now sit inside selected product cards (including slots 2/3). The add-flour panel starts with a concise search and suggestions labelled by flour type; repeated choose/retained/optional/proportions copy is removed. Filters, scan and manual entry remain under More options below the suggestions. Existing selection, cancellation and blend percentages remain unchanged. Both French and English are updated. Local 507 unit/component tests passed; final build and four-width mobile checks are being verified before publication. This entry is not a deployment claim.
