@@ -1882,6 +1882,8 @@ Actual dough condition and equipment may differ from these estimates.`;
           duration={finalProofWindow(schedule, numItems).hours}
           accent="#7A8C6E">
 
+          {schedule.fridgeRemovalArranged && schedule.coldRetard2End && <p style={{fontSize:14,color:D.smoke}}>{formatTime(schedule.coldRetard2End, _fmtLocale)} · {l === 'fr' ? 'Sortie du réfrigérateur prévue' : 'Fridge removal arranged'}</p>}
+
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             {breadProtocol ? <Steps items={profileSteps(breadProtocol.proof[l])} /> : <Steps items={[
               ...(isTwoPhase ? [t.raw('finalProof.removeFridge') as { bold: string; note: string }] : []),

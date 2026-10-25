@@ -76,6 +76,11 @@ test('actual apply handler persists pins and preferment offset immediately; rese
   assert.equal(writes[2].prefGoesInFridge,true);
   assert.equal(writes[2].prefOffsetH,15);
   assert.equal(state.PrefGoesInFridgeState,true);
+  const arranged=[{label:'Work',from:new Date(+bake-10*3600000),to:new Date(+bake-3600000),fridgeRemoval:{at:+bake-4*3600000,bake:+bake}}];
+  context.handler(mix,bake,arranged,{preservePlan:true});
+  assert.deepEqual(JSON.parse(JSON.stringify(writes[3].blocks[0].fridgeRemoval)),arranged[0].fridgeRemoval);
+  assert.equal(writes[3].blocks[0].from,+arranged[0].from);
+  assert.equal(writes[3].eatTime,+bake);
 });
 
 test('preferment locking is explicit and requires a valid preparation time',()=>{

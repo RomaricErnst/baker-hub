@@ -31,6 +31,8 @@ const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { s
 import { starterFeedToMixHours } from '../lib/starterTiming';
 import { mixerDoughCapacity } from '../utils/mixingBatches';
 import type { StarterEvent } from '../components/SchedulePicker';
+import { normalizeFridgeRemoval } from '../utils/scheduleAvailability';
+import { retainCurrentFridgeRemoval } from '../utils/fridgeRemovalSession';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 import ClimatePicker from '../components/ClimatePicker';
 import SimpleMixerPicker from '../components/SimpleMixerPicker';
@@ -1161,6 +1163,7 @@ export default function Home() {
   const modeSelectorRef      = useRef<HTMLDivElement>(null);
   const suppressNextScrollRef = useRef(false);
   const isRestoringRef = useRef(false);
+  const [scheduleRestoreRevision, setScheduleRestoreRevision] = useState(0);
   const pizzaPartyGetQtysRef = useRef<() => Record<string, number>>(() => ({}));
 
   // P5 — Stale protocol indicator
@@ -1448,7 +1451,9 @@ export default function Home() {
   // a moitie restaure et l'ecrire par-dessus la vraie session.
   function endRestore() {
     if (partyHydratingRef.current) return;
+    if (!isRestoringRef.current) return;
     isRestoringRef.current = false;
+    setScheduleRestoreRevision(value => value + 1);
   }
 
   function applySession(session: SessionData) {
@@ -1520,8 +1525,8 @@ export default function Home() {
     if (session.startTime) setStartTime(new Date(session.startTime));
     if (session.blocks && session.blocks.length > 0) {
       setBlocks(session.blocks.map((b: unknown) => {
-        const block = b as { label: string; from: number; to: number };
-        return { label: block.label, from: new Date(block.from), to: new Date(block.to) };
+        const block = b as { label: string; from: number; to: number; fridgeRemoval?: unknown };
+        return { label: block.label, from: new Date(block.from), to: new Date(block.to), fridgeRemoval: normalizeFridgeRemoval(block.fridgeRemoval) };
       }));
     }
     setStarterEvents(restoreStarterEvents(session.starterEvents));
@@ -1825,6 +1830,12 @@ export default function Home() {
     return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches);
   }, [startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches]);
 
+  // Confirmation belongs to this exact committed action, never to a work preset.
+  useEffect(() => {
+    if (isRestoringRef.current) return;
+    setBlocks(current => retainCurrentFridgeRemoval(current, schedule?.availabilityActions ?? []));
+  }, [schedule, scheduleRestoreRevision]);
+
   // Preferment start time for Timeline step 0 (poolish/biga only)
   const prefStartTime = useMemo(() => {
     if (!prefermentType || prefermentType === 'none' || prefermentType === 'levain') return null;
@@ -1847,7 +1858,7 @@ export default function Home() {
   const repairKey = (st: Date, et: Date | null, bl: AvailabilityBlock[], offset = prefOffsetH, storage = prefGoesInFridge) =>
     JSON.stringify([[kitchenTemp, fridgeTemp, preheatMin, mixerType, styleKey,
       yeastType, prefermentType, offset, storage, tang, starterPlanResetKey],
-      +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label])]);
+      +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label, b.fridgeRemoval])]);
   const confirmedSchedulePlan = acceptedScheduleRepair === repairKey(startTime, eatTime, blocks);
   const handleScheduleChange = (st: Date, et: Date, bl: AvailabilityBlock[], options?: {preservePlan: boolean; timingOverrides?: TimingOverrides; prefOffsetHours?: number; prefInFridge?: boolean; starterPlan?: {events:StarterEvent[];fridgeOutTime:Date|null;usingPeak2:boolean;feed2Time:Date|null;starterFridgeInTime:Date|null}}) => {
     const changedPlan = recipeGenerated && destination==='organisation' && !isRestoringRef.current && (+st !== +startTime || +et !== (eatTime ? +eatTime : null) || JSON.stringify(bl) !== JSON.stringify(blocks) || (options?.prefInFridge !== undefined && options.prefInFridge !== prefGoesInFridge) || (options?.prefOffsetHours !== undefined && options.prefOffsetHours !== prefOffsetH));
@@ -1860,7 +1871,7 @@ export default function Home() {
     if (options?.timingOverrides !== undefined) setTimingOverrides(normalizeTimingOverrides(options.timingOverrides));
     if(options?.starterPlan){setStarterEvents(options.starterPlan.events);setFridgeOutTime(options.starterPlan.fridgeOutTime);setUsingPeak2(options.starterPlan.usingPeak2);setFeed2Time(options.starterPlan.feed2Time);setStarterFridgeInTime(options.starterPlan.starterFridgeInTime);}
     // Applying is durable immediately; the general autosave is deliberately debounced.
-    if(options?.preservePlan || options?.timingOverrides !== undefined)saveSession(buildSessionPayload({protocolStale:protocolStale||changedPlan,...(options?.prefInFridge!==undefined?{prefGoesInFridge:options.prefInFridge}:{}),...(options?.timingOverrides !== undefined ? {timingOverrides:normalizeTimingOverrides(options.timingOverrides)} : {}),...(options.starterPlan?{starterEvents:serializeStarterEvents(options.starterPlan.events),fridgeOutTime:options.starterPlan.fridgeOutTime?.getTime()??null,usingPeak2:options.starterPlan.usingPeak2,feed2Time:options.starterPlan.feed2Time?.getTime()??null,starterFridgeInTime:options.starterPlan.starterFridgeInTime?.getTime()??null}:{}),...(options.prefOffsetHours!==undefined?{prefOffsetH:options.prefOffsetHours}:{}),startTime:+st,eatTime:+et,blocks:bl.map(b=>({label:b.label,from:+b.from,to:+b.to}))}));
+    if(options?.preservePlan || options?.timingOverrides !== undefined)saveSession(buildSessionPayload({protocolStale:protocolStale||changedPlan,...(options?.prefInFridge!==undefined?{prefGoesInFridge:options.prefInFridge}:{}),...(options?.timingOverrides !== undefined ? {timingOverrides:normalizeTimingOverrides(options.timingOverrides)} : {}),...(options.starterPlan?{starterEvents:serializeStarterEvents(options.starterPlan.events),fridgeOutTime:options.starterPlan.fridgeOutTime?.getTime()??null,usingPeak2:options.starterPlan.usingPeak2,feed2Time:options.starterPlan.feed2Time?.getTime()??null,starterFridgeInTime:options.starterPlan.starterFridgeInTime?.getTime()??null}:{}),...(options.prefOffsetHours!==undefined?{prefOffsetH:options.prefOffsetHours}:{}),startTime:+st,eatTime:+et,blocks:bl.map(b=>({label:b.label,from:+b.from,to:+b.to,...(b.fridgeRemoval?{fridgeRemoval:b.fridgeRemoval}:{})}))}));
   };
 
   const prefRemoveFromFridgeTime = useMemo(() => {
@@ -2051,7 +2062,7 @@ export default function Home() {
       prefGoesInFridge,
       startTime: startTime?.getTime() ?? null,
       eatTime: eatTime?.getTime() ?? null,
-      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime() })),
+      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}) })),
       recipeGenerated, protocolStale, activeTab, pizzaPartyTab, modeChosen,
       navigation:{batchView,protocolView,serviceView,returnTo:fillingsReturn,prepReturnToService,shoppingReturnToFillings},
       // How far the baker got. Without it a resumed session reopened at
@@ -2958,8 +2969,8 @@ export default function Home() {
     if (snap.startTime) setStartTime(shiftD(new Date(snap.startTime)));
     {
       setBlocks(((snap.blocks ?? []) as unknown[]).map((b) => {
-        const bl = b as { label: string; from: number; to: number };
-        return { label: bl.label, from: shiftD(new Date(bl.from)), to: shiftD(new Date(bl.to)) };
+        const bl = b as { label: string; from: number; to: number; fridgeRemoval?: unknown };
+        return { label: bl.label, from: shiftD(new Date(bl.from)), to: shiftD(new Date(bl.to)), fridgeRemoval: rb ? undefined : normalizeFridgeRemoval(bl.fridgeRemoval) };
       }));
     }
     setStarterEvents(restoreStarterEvents(snap.starterEvents).map(event => ({...event, time:shiftD(event.time), bellPeakTime:event.bellPeakTime ? shiftD(event.bellPeakTime) : undefined, bellStartTime:event.bellStartTime ? shiftD(event.bellStartTime) : undefined})));

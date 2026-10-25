@@ -1,6 +1,6 @@
 import { BREAD_FERMENTATION_DEFAULTS, getBreadProtocol, breadActiveCookMinutes, breadPoachMinutes } from './utils/breadProfiles';
 import { scheduledFoldMinutes } from './utils/scheduleFolds';
-import { actionConflicts, findAvailabilityConflicts, isTimeBlocked, type AvailabilityAction, type AvailabilityConflict } from './utils/scheduleAvailability';
+import { actionConflicts, findAvailabilityConflicts, isTimeBlocked, isFridgeRemovalCovered, type AvailabilityAction, type AvailabilityConflict } from './utils/scheduleAvailability';
 import { ENRICHED_FORMULAS, ENRICHMENT_WATER_FRACTIONS, type RecipeEnrichment } from './utils/enrichedFormulas';
 // ══════════════════════════════════════════
 // BAKER HUB — Utils & Engine
@@ -450,6 +450,7 @@ export interface AvailabilityBlock {
   from: Date;
   to: Date;
   label: string;
+  fridgeRemoval?: import('./utils/scheduleAvailability').FridgeRemovalArrangement;
 }
 
 export interface ScheduleResult {
@@ -465,6 +466,8 @@ export interface ScheduleResult {
   /** Known hands-on work; passive rests are deliberately absent. */
   availabilityActions?: AvailabilityAction[];
   availabilityConflicts?: AvailabilityConflict[];
+  /** Planned assistance only; this never marks the preparation action completed. */
+  fridgeRemovalArranged?: boolean;
   mixingDurationH: number;
   /** Sequential use of one mixer; fermentation of early lots continues while later ones mix. */
   mixingBatches?: number;
@@ -1301,6 +1304,14 @@ export function buildSchedule(
   });
   point('cold-in-2', schedule.coldRetard2Start);
   point('cold-out-2', schedule.coldRetard2End);
+  // This acknowledgement changes availability only. Keep all phase timestamps
+  // and solver scans identical; bulk removal followed by balling is not eligible.
+  const finalRemoval = actions.find(action => action.id === 'cold-out-2');
+  if (finalRemoval && schedule.coldRetard2Start
+    && +schedule.divideBallTime + schedule.divisionMinutes! * 60000 <= +schedule.coldRetard2Start
+    && +schedule.coldRetard2Start < +finalRemoval.at && +finalRemoval.at < +schedule.bakeStart) {
+    finalRemoval.fridgeRemovalBake = +schedule.bakeStart;
+  }
   if (schedule.poachStart) actions.push({ id: 'poach', at: schedule.poachStart, end: schedule.bakeStart });
   if (schedule.rollStart) actions.push({ id: 'roll', at: schedule.rollStart!, end: new Date(eatTime) });
   point('preheat', schedule.preheatStart);
@@ -1311,6 +1322,10 @@ export function buildSchedule(
   } else point('bake', schedule.bakeStart);
   schedule.availabilityActions = actions;
   schedule.availabilityConflicts = findAvailabilityConflicts(actions, availabilityBlocks);
+  if (finalRemoval?.fridgeRemovalBake !== undefined) {
+    const overlapping = availabilityBlocks.filter(block => +block.from <= +finalRemoval.at && +finalRemoval.at < +block.to);
+    schedule.fridgeRemovalArranged = overlapping.length > 0 && overlapping.every(block => isFridgeRemovalCovered(finalRemoval, block));
+  }
   return schedule;
 }
 
