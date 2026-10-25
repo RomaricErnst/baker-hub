@@ -392,18 +392,36 @@ test('one selected editor keeps linked times visible and Cancel restores both',a
  expect((await stored(page)).prefOffsetH).toBe(before.prefOffsetH);
 });
 
-test('night conflict offers a verified later bake while preserving unavailable nights',async({page})=>{
- const {plan}=await seed(page,{extra:{fridgeTemp:6,startTime:Date.parse('2026-09-26T23:30:00+08:00'),eatTime:Date.parse('2026-09-27T11:30:00+08:00')}});
+test('flexible balling keeps the selected bake while respecting unavailable nights',async({page})=>{
+ const bake=Date.parse('2026-09-27T11:30:00+08:00');
+ const {plan}=await seed(page,{extra:{fridgeTemp:6,startTime:Date.parse('2026-09-26T23:30:00+08:00'),eatTime:bake}});
  await page.clock.setFixedTime(Date.parse('2026-09-26T12:00:00+08:00'));
+ await page.getByRole('button',{name:/^Nuits/}).tap();
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','true');
+ await expect(row(plan,'pref')).toHaveAttribute('data-candidate-valid','true');
+ const state=await stored(page);
+ expect(state.eatTime).toBe(bake);
+ expect(state.blocks.length).toBeGreaterThan(0);
+ expect(state.blocks.some(b=>state.startTime>=b.from&&state.startTime<b.to)).toBe(false);
+ expect(state.blocks.some(b=>state.startTime-state.prefOffsetH*3600000>=b.from&&state.startTime-state.prefOffsetH*3600000<b.to)).toBe(false);
+ await expect(plan.locator('.bh-plan-notice')).toHaveCount(0);
+});
+
+test('blocked Friday finishing offers a verified later bake without dropping availability',async({page})=>{
+ const bake=Date.parse('2026-10-30T18:00:00+08:00');
+ const {plan}=await seed(page,{preferment:'none',extra:{kitchenTemp:24,fridgeTemp:5,mixerType:'hand',startTime:Date.parse('2026-10-29T18:00:00+08:00'),eatTime:bake}});
+ await page.clock.setFixedTime(Date.parse('2026-10-25T12:00:00+08:00'));
+ await page.getByRole('button',{name:/^Jours ouvrés/}).tap();
  await page.getByRole('button',{name:/^Nuits/}).tap();
  await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','false');
  const alternatives=plan.locator('.bh-plan-notice .bh-target-choices');
  await expect(alternatives).toBeVisible();
- await alternatives.getByRole('button').filter({hasText:/27.*19h30/}).tap();
+ await alternatives.getByRole('button').first().tap();
  await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','true');
- await expect(row(plan,'pref')).toHaveAttribute('data-candidate-valid','true');
  const state=await stored(page);
- expect(state.eatTime).toBe(Date.parse('2026-09-27T19:30:00+08:00'));
- expect(state.blocks.length).toBeGreaterThan(0);
+ expect(state.eatTime).toBeGreaterThan(bake);
+ expect(state.eatTime).toBeLessThanOrEqual(bake+6*3600000);
+ expect(state.blocks.some(b=>b.label.startsWith('Work · '))).toBe(true);
+ expect(state.blocks.some(b=>b.label.endsWith(' night'))).toBe(true);
  expect(state.blocks.some(b=>state.startTime>=b.from&&state.startTime<b.to)).toBe(false);
 });
