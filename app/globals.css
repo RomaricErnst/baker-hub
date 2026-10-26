@@ -559,3 +559,15 @@ body { padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-i
   :has(> [data-companion-action]) { padding-bottom:calc(160px + env(safe-area-inset-bottom,0px)) !important; }
   [data-companion-action] { padding-bottom:calc(24px + env(safe-area-inset-bottom,0px)) !important; padding-left:max(16px,env(safe-area-inset-left,0px)) !important; padding-right:max(16px,env(safe-area-inset-right,0px)) !important; }
 }
+
+.bh-window-days { margin-top:8px; color:var(--char); }
+.bh-window-axis { display:flex; justify-content:space-between; font-size:11px; color:var(--smoke); }
+.bh-window-day { margin-top:10px; }
+.bh-window-day-label { font-size:13px; font-weight:600; }
+.bh-window-day-label span { color:var(--terra); }
+.bh-window-rail { position:relative; height:44px; background:linear-gradient(var(--border),var(--border)) center/100% 10px no-repeat; cursor:pointer; }
+.bh-window-segment { position:absolute; top:17px; height:10px; background:#397548; border-radius:3px; max-width:100%; }
+.bh-window-marker { position:absolute; top:10px; width:3px; height:24px; background:var(--terra); transform:translateX(-1px); }
+.bh-window-options { display:flex; flex-wrap:wrap; gap:6px; }
+.bh-window-options button { min-height:44px; padding:6px 10px; border:1px solid #769a78; border-radius:8px; color:#285b34; background:var(--warm); font:inherit; font-size:13px; cursor:pointer; }
+.bh-window-options button[aria-pressed="true"] { background:#e4eddf; border:2px solid #397548; font-weight:600; }

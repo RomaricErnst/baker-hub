@@ -27,6 +27,7 @@ function fixed(fn){const old=Date.now;Date.now=()=>Date.parse('2026-10-25T08:00Z
 test('fridge arrangement confirms and undoes one action while retaining the exact bake and blocker',()=>fixed(()=>{
  for(const mode of ['simple','custom'])for(const locale of ['fr','en']){
   const view=render({mode,locale,blocks:work()});
+  assert.equal(view.controls.header,undefined,'an automatic conflict does not offer reset');
   const html=renderToStaticMarkup(view.controls.notice);
   assert.match(html,/bh-resolution-or/);assert.match(html,/Keep this baking time|Garder cet enfournement/);
   assert.match(html,/Choose another baking time|Choisir un autre enfournement/);

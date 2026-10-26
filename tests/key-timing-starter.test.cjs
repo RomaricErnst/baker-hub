@@ -113,10 +113,11 @@ test('poolish keeping lives beside mixing and remains visible on the preparation
  assert.match(renderToStaticMarkup(kept.anchors.find(a=>a.id==='mix').control),/Time kept/);
 });
 
-test('blocked starter offers Reset even without manual pins and publishes the winning feed peak',()=>{
+test('blocked starter offers Find compatible times without manual pins and publishes the winning feed peak',()=>{
  const peaks=[],eventPlans=[];
  const {controls:c}=setup({planningMode:'last_fed',knownPeakTime:null,lastFedAge:'today',lastFedTime:new Date(Date.now()-3*3600000),starterLocation:'rt',lastFeedRatio:2,nextFeedRatio:2,onStarterPeakTimeChange:p=>peaks.push(p),onStarterEventsChange:e=>eventPlans.push(e),onChange:(s,b,blocks,options)=>{if(options?.starterPlan)eventPlans.push(options.starterPlan.events);}});
  assert.ok(c.header,'invalid restored mixing still offers a way to recompute');
+ assert.equal(c.header.props.children,'Find compatible times');
  c.header.props.onClick();
  const events=eventPlans.at(-1);assert.ok(events?.length,'Reset commits canonical events');
  const active=events.filter(e=>e.isActive&&e.bellPeakTime).sort((a,b)=>+b.time-+a.time)[0];
