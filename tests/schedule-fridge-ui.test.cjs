@@ -27,6 +27,10 @@ function fixed(fn){const old=Date.now;Date.now=()=>Date.parse('2026-10-25T08:00Z
 test('fridge arrangement confirms and undoes one action while retaining the exact bake and blocker',()=>fixed(()=>{
  for(const mode of ['simple','custom'])for(const locale of ['fr','en']){
   const view=render({mode,locale,blocks:work()});
+  const html=renderToStaticMarkup(view.controls.notice);
+  assert.match(html,/bh-resolution-or/);assert.match(html,/Keep this baking time|Garder cet enfournement/);
+  assert.match(html,/Choose another baking time|Choisir un autre enfournement/);
+  assert.doesNotMatch(html,/bh-plan-notice/);
   const confirm=control(view,locale==='fr'?'Oui, cette étape est prévue':'Yes, this step is covered');assert.ok(confirm,`${mode} ${locale}`);
   confirm.props.onClick();const [start,bake,blocks,options]=view.effects.at(-1);
   assert.equal(+start,+view.props.startTime);assert.equal(+bake,+view.props.eatTime);assert.equal(options.preservePlan,true);
@@ -35,6 +39,7 @@ test('fridge arrangement confirms and undoes one action while retaining the exac
   const resumed=render({mode,locale,startTime:start,eatTime:bake,blocks});
   assert.equal(resumed.controls.anchors.find(a=>a.id==='mix').valid,true);
   assert.equal(control(resumed,locale==='fr'?'Oui, cette étape est prévue':'Yes, this step is covered'),undefined);
+  assert.doesNotMatch(renderToStaticMarkup(resumed.controls.notice),/bh-resolution-or|bh-target-choices/);
   const undo=control(resumed,locale==='fr'?'Annuler':'Undo');assert.ok(undo);undo.props.onClick();
   const [undoStart,undoBake,undoBlocks]=resumed.effects.at(-1);assert.equal(+undoStart,+start);assert.equal(+undoBake,+bake);
   assert.ok(undoBlocks.every(b=>!b.fridgeRemoval));
@@ -43,7 +48,7 @@ test('fridge arrangement confirms and undoes one action while retaining the exac
 }));
 test('preheating conflict is visible before confirmation and remains blocking afterward',()=>fixed(()=>{
  const view=render({blocks:work('18:30')});
- const html=renderToStaticMarkup(view.controls.notice);assert.match(html,/Other steps during your unavailable hours/);assert.match(html,/Preheat/);
+ const html=renderToStaticMarkup(view.controls.notice);assert.match(html,/Other steps during your unavailable hours/);assert.match(html,/Preheat/);assert.doesNotMatch(html,/bh-resolution-or/);
  control(view,'Yes, this step is covered').props.onClick();
  const blocks=view.effects.at(-1)[2],resumed=render({blocks});
  assert.equal(resumed.controls.anchors.find(a=>a.id==='mix').valid,false);
@@ -62,5 +67,19 @@ test('levain uses the same confirmation and retains its known-peak plan',()=>fix
   const view=render(args);const confirm=control(view,'Yes, this step is covered');assert.ok(confirm);confirm.props.onClick();
   const [start,bake,blocks]=view.effects.at(-1);assert.equal(+start,+view.props.startTime);assert.equal(+bake,+view.props.eatTime);
   const resumed=render({...args,blocks});assert.ok(control(resumed,'Undo'));assert.equal(resumed.controls.anchors.find(a=>a.id==='mix').valid,true,renderToStaticMarkup(resumed.controls.notice));
+ }
+}));
+
+test('alternative bake resolves the same choice without confirming fridge removal',()=>fixed(()=>{
+ for(const mode of ['simple','custom'])for(const locale of ['fr','en']){
+  const view=render({mode,locale,blocks:work()});assert.ok(view.choices.length);
+  view.choices[0].props.onClick();
+  const [start,bake,blocks]=view.effects.at(-1);
+  assert.ok(+bake>+view.props.eatTime);
+  assert.ok(blocks.every(block=>!block.fridgeRemoval));
+  assert.equal(+blocks[0].from,+view.props.blocks[0].from);assert.equal(+blocks[0].to,+view.props.blocks[0].to);
+  const updated=render({mode,locale,startTime:start,eatTime:bake,blocks});
+  assert.equal(updated.controls.anchors.find(a=>a.id==='mix').valid,true);
+  assert.doesNotMatch(renderToStaticMarkup(updated.controls.notice),/bh-resolution-or|bh-fridge-arrangement/);
  }
 }));
