@@ -27,6 +27,7 @@ import { getSetupBlocker, type SetupBlocker } from '../lib/setupBlocker';
 import OvenPicker from '../components/OvenPicker';
 import PrototypeQuantityPicker from '../components/PrototypeQuantityPicker';
 import MixerPicker from '../components/MixerPicker';
+import MixingBatchControl from '../components/MixingBatchControl';
 const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { ssr: false });
 import { starterFeedToMixHours } from '../lib/starterTiming';
 import { mixerDoughCapacity } from '../utils/mixingBatches';
@@ -1814,8 +1815,44 @@ export default function Home() {
     b.label.toLowerCase().includes('night') || b.from.getHours() >= 22 || b.to.getHours() <= 7
   );
 
+  const feedToMixH = useMemo(() => {
+    if (yeastType !== 'sourdough' || !startTime) return undefined;
+    return starterFeedToMixHours(starterEvents, startTime, feedTime ?? lastFedTime);
+  }, [yeastType, feedTime, lastFedTime, startTime, starterEvents]);
+
+  const recipeForSchedule = (schedule: ReturnType<typeof buildSchedule>) => {
+    if(!styleKey || !yeastType)throw new Error("Recipe setup incomplete");
+    return calculateRecipe(
+        styleKey, ovenType as OvenType, numItems, itemWeight,
+        kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'custom',
+        mixerType as MixerType,
+        manualHydration, manualOil, manualSugar, flourChosen ? flourBlend : undefined, prefermentType, priorityOverride,
+        prefermentFlourPct ?? (
+          prefermentType === 'levain'
+            // Levain/sourdough has its own sane range (15-30%, data.ts) —
+            // the poolish/biga timing-based schedule below doesn't apply to
+            // it and was pushing short-window plans up to 45% starter.
+            ? undefined
+            : 20
+        ),
+        manualSalt,
+        targetDoughTemp,
+        flourInFridge,
+        wastePct,
+        prefGoesInFridge,
+        feedToMixH,
+        prefermentType !== 'none' && prefermentType !== 'levain' && prefOffsetH > 0 ? prefOffsetH : undefined,
+        measuredFlourTemp, measuredPrefermentTemp, totalFlourTarget,
+      );
+  };
   const mixerCapacityG = mixerDoughCapacity(mixerType ?? 'hand', customMixerCapacityG);
-  const plannedDoughG = Math.round(numItems * itemWeight * (totalFlourTarget === undefined && wastePct && wastePct > 0 ? 1 + wastePct / 100 : 1));
+  const plannedDoughG = (() => {
+    // Flour-target recipes need the same formula mass as the generated recipe.
+    if(totalFlourTarget!==undefined && styleKey && ovenType && yeastType && mixerType && eatTime && startTime<eatTime){
+      try { return recipeForSchedule(buildSchedule(startTime,eatTime,blocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,1)).totalDough; } catch { /* Quantity estimate until setup is complete. */ }
+    }
+    return Math.round(numItems * itemWeight * (totalFlourTarget === undefined && wastePct && wastePct > 0 ? 1 + wastePct / 100 : 1));
+  })();
   const suggestedMixingBatches = Math.max(1, Math.ceil(plannedDoughG / mixerCapacityG));
   const selectedMixingBatches = mixingBatches ?? suggestedMixingBatches;
 
@@ -1891,10 +1928,7 @@ export default function Home() {
     return new Date(startTime.getTime() - rtWarmupH * 3600000);
   }, [prefGoesInFridge, prefermentType, styleKey, kitchenTemp, fridgeTemp, mixerType, targetDoughTemp, eatTime, startTime]);
 
-  const feedToMixH = useMemo(() => {
-    if (yeastType !== 'sourdough' || !startTime) return undefined;
-    return starterFeedToMixHours(starterEvents, startTime, feedTime ?? lastFedTime);
-  }, [yeastType, feedTime, lastFedTime, startTime, starterEvents]);
+
 
   const effPref: PrefermentType = (prefermentType ?? 'none') as PrefermentType;
 
@@ -3136,23 +3170,7 @@ export default function Home() {
   }) : undefined;
   const manualMixing = mixerType === 'hand' || mixerType === 'no_knead';
   const showMixingBatches = suggestedMixingBatches > 1 || mixingBatches !== undefined;
-  const mixingBatchControl = mixerType ? (showMixingBatches ? (
-    <div style={{ marginTop: 16, padding: '14px', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--warm)' }}>
-      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 14, fontWeight: 600 }}>
-        {locale === 'fr' ? (manualMixing ? 'Nombre de lots' : 'Nombre de pétrissées') : 'Mixing batches'}
-        <input type="number" min={1} max={100} step={1} value={selectedMixingBatches} onChange={e => { const value = Number(e.target.value); if (e.target.value !== '' && Number.isInteger(value) && value >= 1 && value <= 100) setMixingBatches(value); }} style={{ width: 72, minHeight: 44, padding: 8, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--cream)', font: 'inherit' }} />
-      </label>
-      <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--smoke)' }}>{locale === 'fr'
-        ? `${Math.round(plannedDoughG / selectedMixingBatches)} g par ${manualMixing ? 'lot' : 'pétrissée'}. ${manualMixing ? 'Quantité indicative' : 'Capacité estimée'} : ${mixerCapacityG} g.${manualMixing ? '' : ' Vérifiez la limite de votre appareil.'}`
-        : `${Math.round(plannedDoughG / selectedMixingBatches)} g per batch. ${manualMixing ? 'Suggested batch size' : 'Estimated capacity'}: ${mixerCapacityG} g.${manualMixing ? '' : ' Check your equipment’s limit.'}`}</p>
-      {plannedDoughG / selectedMixingBatches > mixerCapacityG && <p role="alert" style={{ fontSize: 12 }}>{locale === 'fr' ? 'Cette quantité dépasse la capacité indicative. Augmentez le nombre de lots si nécessaire.' : 'This amount exceeds the estimated capacity. Increase the batch count if needed.'}</p>}
-      {mixingBatches !== undefined && <button type="button" onClick={() => setMixingBatches(undefined)} style={{ minHeight: 44, padding: '8px 0', border: 0, background: 'transparent', color: 'var(--terra)', cursor: 'pointer', textDecoration: 'underline' }}>{locale === 'fr' ? 'Revenir à la recommandation' : 'Reset to recommendation'}</button>}
-    </div>
-  ) : (
-    <button type="button" onClick={() => setMixingBatches(2)} style={{ marginTop: 8, minHeight: 44, padding: '8px 0', border: 0, background: 'transparent', color: 'var(--terra)', cursor: 'pointer', textDecoration: 'underline', font: 'inherit', fontSize: 13 }}>
-      {locale === 'fr' ? (manualMixing ? 'Préparer en plusieurs lots' : 'Diviser en plusieurs pétrissées') : 'Split into multiple batches'}
-    </button>
-  )) : null;
+  const mixingBatchControl = mixerType ? <MixingBatchControl total={plannedDoughG} capacity={mixerCapacityG} count={selectedMixingBatches} recommended={suggestedMixingBatches} manual={manualMixing} knownCapacity={customMixerCapacityG!==undefined} override={mixingBatches!==undefined} fr={locale==='fr'} onChange={setMixingBatches}/> : null;
 
 
   // ── Styles ────────────────────────────────

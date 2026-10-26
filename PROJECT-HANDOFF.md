@@ -1,3 +1,7 @@
+# Mixing-batch control correction — 26 October 2026
+
+User authorized implementation, push and merge. Opening Adjust now changes only disclosure state, never sets two batches. Multiple recommended batches expand automatically. +/- controls and a temporary text draft allow clearing/replacing the count; invalid entries revert on blur. Explicit overrides persist; Use recommended restores automatic capacity/quantity updates. Summary distinguishes entered and estimated capacity. Flour-target setup mass uses calculateRecipe with a provisional schedule rather than an unrelated piece-weight estimate. Final recipe calculation remains unchanged. Added FR/EN component interaction and mobile regression coverage. Verification/publication pending.
+
 # Release verified — second-flour cleanup — 25 October 2026
 
 PR21 merged as cfb333e935cd17e859179ad7fd25c76e08c75266. CI40202142750 passed all four macOS WebKit jobs: 507 unit/component tests, production build, sourdough round trips and 524 mobile checks (131 each at320/375/390/430px). Tested head03f71766e85aaceaf4aa9677d72d602457bc742c; local/remote source tree05df4d92aadd33ac8e2347320266f739cf4a65af matched. French and English375px screenshots reviewed. Production deployment dpl_AqZ7DUMQgHnURKvzKEBHMyBJaKRW is READY at the merge SHA with www.bakerhub.app and bakerhub.app aliases. This supersedes pending verification below. No physical iPhone validation claimed. This documentation-only follow-up changes no application code.

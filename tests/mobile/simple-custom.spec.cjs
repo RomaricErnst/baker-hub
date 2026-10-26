@@ -134,3 +134,29 @@ for(const locale of ['fr','en']){
   expect(errors).toEqual([]);
  });
 }
+
+for(const locale of ['fr','en'])test(`${locale}: mixer batches open without changing the recipe and allow replacing 2 with 1`,async({page})=>{
+ const fr=locale==='fr';await anonymous(page);
+ await page.addInitScript(()=>localStorage.setItem('bh_profile_v1',JSON.stringify({version:1,ovenTypePizza:'home_oven_standard',mixerType:'spiral',yeastType:'instant',fridgeTemp:5,preferredMode:'custom'})));
+ await page.goto(fr?'/fr':'/');
+ await page.getByRole('button',{name:'Pizza',exact:true}).tap();
+ await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
+ await page.locator('.bh-style-confirm button').tap();
+ await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).fill('12');
+ await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).blur();
+ await actions(page).getByRole('button',{name:fr?'Définir ma recette':'Set up my recipe',exact:true}).tap();
+ await page.getByRole('button',{name:fr?/^Personnalisé/:/^Custom/}).tap();
+ await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
+ const section=page.getByRole('region',{name:fr?'Nombre de pétrissées':'Mixing batches',exact:true});
+ await section.getByRole('button',{name:fr?'Modifier':'Adjust',exact:true}).tap();
+ const input=section.getByRole('textbox');await expect(input).toHaveValue('1');
+ await expect.poll(async()=>(await stored(page))?.mixingBatches).toBe(undefined);
+ await section.getByRole('button',{name:fr?'Une pétrissée de plus':'One more batch'}).tap();await expect(input).toHaveValue('2');
+ await input.fill('');await expect(input).toHaveValue('');await input.fill('1');await input.blur();await expect(input).toHaveValue('1');
+ await expect.poll(async()=>(await stored(page))?.mixingBatches).toBe(1);
+ await section.getByRole('button',{name:fr?'Utiliser la recommandation: 1':'Use recommended: 1',exact:true}).tap();
+ await page.locator('summary').filter({hasText:fr?'Capacité de mon pétrin':'My mixer capacity'}).tap();
+ const capacity=page.getByLabel(fr?'Poids de pâte maximal (g)':'Maximum dough weight (g)',{exact:true});await capacity.fill('1000');await capacity.blur();
+ await expect(input).toHaveValue('4');await geometry(page);
+ await page.screenshot({path:test.info().outputPath('mixing-batches.png'),fullPage:true});
+});
