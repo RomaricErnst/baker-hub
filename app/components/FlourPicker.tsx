@@ -730,7 +730,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
   return (
     <div ref={selectionRef}>
-      <h3>{isFr?'Farine 1':'Flour 1'} · {blend.ratio1}%</h3>
+      {blend.flour2 && <h3>{isFr?'Farine 1':'Flour 1'} · {blend.ratio1}%</h3>}
       {styleKey==='batbout' && <p style={{fontSize:14,lineHeight:1.5,marginBottom:12}}>{isFr?'Mélange de départ : 67 % de farine de blé et 33 % de semoule fine. Votre mélange personnalisé détermine les quantités de la recette.':'Starting blend: 67% wheat flour and 33% fine semolina. Your custom blend determines the recipe quantities.'}</p>}
       {unmatchedScan && <p role="status">{isFr ? `« ${unmatchedScan} » : aucun produit exact retrouvé. Choisissez le type correspondant au sachet, ou recherchez une autre farine. Votre sélection actuelle reste inchangée.` : `“${unmatchedScan}”: no exact product found. Choose the type shown on the bag, or search for another flour. Your current selection is unchanged.`}</p>}
 
@@ -781,7 +781,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
           type list and the W field all fold away — the page then holds the
           choice and the invitation to blend, nothing else. */}
       {pickerOpen && <>
-        <h3>{isFr?'Choisir la farine 1':'Choose flour 1'}</h3>
+        {blend.flour2 && <h3>{isFr?'Choisir la farine 1':'Choose flour 1'}</h3>}
         {blend.flour2 && <p>{isFr?'Farine 2 conservée':'Flour 2 retained'}: {blend.customFlour2Name ?? FLOUR_DATA[blend.flour2].name}</p>}
         {blend.brandProduct && <button type="button" style={{minHeight:44}} onClick={()=>{setPickerOpen(false);setRoad(null);}}>{isFr?'Annuler':'Cancel'}</button>}
         <div ref={flourSearchRef} hidden={road === 'scan' || road === 'type'}>
