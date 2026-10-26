@@ -54,7 +54,7 @@ for(const locale of ['fr','en']){
   await expect(flour.getByRole('heading',{name:'Suggestions',exact:true})).toBeVisible();
   const filters=flour.locator('details').filter({has:page.locator('summary').filter({hasText:fr?/^Filtres/:/^Filters/})});
   const summary=filters.locator('summary');
-  expect((await summary.boundingBox()).y).toBeLessThan((await flour.getByRole('heading',{name:'Suggestions',exact:true}).boundingBox()).y);
+  await expect.poll(()=>filters.evaluate(el=>el.getBoundingClientRect().bottom<=el.nextElementSibling.getBoundingClientRect().top)).toBe(true);
   await summary.tap();
   await filters.getByRole('combobox',{name:'Type',exact:true}).selectOption('bread_flour');
   await expect(flour.getByRole('heading',{name:/résultats|results/})).toBeVisible();
