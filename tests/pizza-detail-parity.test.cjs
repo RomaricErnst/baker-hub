@@ -27,7 +27,7 @@ test('pizza detail keeps close and quantity controls outside its bounded scrolli
  const pizza={id:'margherita',name:{en:'Margherita',fr:'Margherita'},ingredients:Array.from({length:30},(_,n)=>({id:String(n),name:{en:'Ingredient '+n,fr:'Ingrédient '+n},bakeOrder:'before',qtyPerPizza:{amount:10,unit:'g'}}))};
  const html=renderToStaticMarkup(React.createElement(PizzaSheet,{pizza,qty:1,locale:'en',onQtyChange:()=>{},onClose:()=>{}}));
  assert.match(html,/role="dialog" aria-modal="true"/);
- assert.match(html,/max-height:calc\(100dvh - 81px - env\(safe-area-inset-bottom\)\)/);
+ assert.match(html,/max-height:calc\(100dvh - 12px - env\(safe-area-inset-top, 0px\)\)/);
  assert.match(html,/data-pizza-detail-scroll="[^"]*" style="[^"]*min-height:0;overflow-y:auto/);
  assert.ok(html.indexOf('Close pizza details')<html.indexOf('data-pizza-detail-scroll'));
  assert.ok(html.indexOf('How many?')>html.indexOf('Ingredient 29'));

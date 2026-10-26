@@ -189,7 +189,7 @@ interface Props {
   onGoToMyDough?: () => void;
   /** Dough ingredients from the generated recipe — shown as a
       "For your dough" section so the baker shops once. */
-  recipeIngredients?: Array<{ name: string; amount: string }>;
+  recipeIngredients?: Array<{ name: string; amount: string; tickKey?: string }>;
   onSelectionBack?:()=>void;
   onBackToRecipe?:()=>void;
   onSelectionDone?:()=>void;
@@ -384,7 +384,6 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
 }) {
   const l = locale as 'en' | 'fr';
   const name = pizza.name[l] ?? pizza.name.en;
-  const budget = '€'.repeat(pizza.budget);
 
   return (
     <div
@@ -429,7 +428,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
             <span style={{ fontSize: '16px', fontWeight: 700, color: '#2B2420', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {name}
             </span>
-            <span style={{ fontSize: '11px', color: '#8A7F78', flexShrink: 0 }}>{budget}</span>
+
           </div>
           {/* Row 2: story tagline — 2 line max */}
           {pizza.story && (
@@ -441,29 +440,6 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             {/* left group shrinks + clips so the qty stepper always stays fully visible */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
-            {pizza.occasion.slice(0, 2).map(tag => {
-              const OCCASION_LABELS: Record<string, { en: string; fr: string }> = {
-                classic: { en: 'Classic', fr: 'Classique' },
-                spicy:   { en: 'Spicy',   fr: 'Épicé' },
-                kids:    { en: 'Kids',    fr: 'Enfants' },
-                party:   { en: 'Party',   fr: 'Fête' },
-                impress: { en: 'Impress', fr: 'Impressionner' },
-                quick:   { en: 'Quick',   fr: 'Rapide' },
-              };
-              return (
-                <span key={tag} style={{ fontSize: '11px', color: 'var(--smoke)', background: 'var(--cream)', borderRadius: '8px', padding: '2px 8px', flexShrink: 0, fontFamily: 'var(--font-ui)' }}>
-                  {OCCASION_LABELS[tag]?.[l] ?? OCCASION_LABELS[tag]?.en ?? tag}
-                </span>
-              );
-            })}
-            {pizza.winePairing?.[0] && (
-              <span style={{ fontSize: '11px', color: '#8A7F78', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80px', flexShrink: 1 }}>
-                {pizza.winePairing[0][l] ?? pizza.winePairing[0].en}
-              </span>
-            )}
-            {pizza.winePairing?.[0] && (
-              <span style={{ fontSize: '11px', color: '#C8C0B8' }}>·</span>
-            )}
             <span style={{ fontSize: '11px', color: '#8A7F78', flexShrink: 0 }}>
               {pizza.prepMinutes} min
             </span>
@@ -495,7 +471,7 @@ export function PizzaIngredientDetails({pizza,locale,styleKey}: {pizza: Pizza; l
           const quantity = ingredient.qtyPerPizza;
           const multiplier = style ? ingredient.qtyMultiplierByStyle?.[style] ?? 1 : 1;
           return <div key={ingredient.id} style={{padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
-            <div style={{display:'flex',justifyContent:'space-between',gap:12,fontSize:14}}><strong>{ingredient.name[l]}</strong><span>{quantity ? formatQty(quantity.amount * multiplier,quantity.unit,locale) : ''}</span></div>
+            <div style={{display:'flex',justifyContent:'space-between',gap:12,fontSize:14}}><strong>{ingredient.name[l]}</strong><span style={{whiteSpace:'nowrap',flexShrink:0}}>{quantity ? formatQty(quantity.amount * multiplier,quantity.unit,locale) : ''}</span></div>
             {note && <p style={{fontSize:13,lineHeight:1.5,margin:'4px 0'}}>{note[l]}</p>}
           </div>;
         })}
@@ -558,7 +534,7 @@ export function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose 
         display: 'flex',
         alignItems: 'flex-end',
         justifyContent: 'center',
-        paddingBottom: 'calc(69px + env(safe-area-inset-bottom))',
+        paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))',
       }}
       onClick={onClose}
     >
@@ -574,7 +550,7 @@ export function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose 
         }}
         style={{
           width: '100%',
-          maxHeight: 'calc(100dvh - 81px - env(safe-area-inset-bottom))',
+          maxHeight: 'calc(100dvh - 12px - env(safe-area-inset-top, 0px))',
           background: '#FDFBF7',
           borderRadius: '20px 20px 0 0',
           display: 'flex',
@@ -592,30 +568,28 @@ export function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose 
           onPointerUp={onDragEnd}
           onPointerCancel={onDragEnd}
           style={{
-            minHeight: 44, touchAction: 'none', padding: '10px 0 6px', display: 'flex', justifyContent: 'center',
+            minHeight: 64, touchAction: 'none', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid var(--border)',
             cursor: 'grab', flexShrink: 0, background: '#FDFBF7',
             position: 'relative', zIndex: 2,
           }}
         >
-          <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: '#D9D0C2' }} />
+          <strong style={{flex:1,minWidth:0,fontFamily:'var(--font-ui)',fontSize:16}}>{pizza.name[l] ?? pizza.name.en}</strong>
           <button
             type="button"
             onPointerDown={e => e.stopPropagation()}
             onClick={onClose}
             aria-label={l === 'fr' ? 'Fermer les détails de la pizza' : 'Close pizza details'}
             style={{
-              position: 'absolute', top: '2px', right: '2px',
-              // 44px tap box, 28px painted disc: padding + content-box clip
-              // keeps the visual unchanged while the finger gets a real target.
-              width: '44px', height: '44px', padding: '8px',
-              background: 'rgba(43, 36, 32,0.6)',
-              backgroundClip: 'content-box',
-              border: 'none', borderRadius: '50%',
-              color: 'white', fontSize: '13px',
+              flexShrink: 0, fontFamily: 'var(--font-ui)',
+              minWidth: '88px', height: '44px', padding: '8px 12px',
+              background: 'var(--cream)',
+              backgroundClip: 'border-box',
+              border: '1px solid var(--border)', borderRadius: '10px',
+              color: 'var(--terra)', fontSize: '14px',
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
-          >&#x2715;</button>
+          >{l === 'fr' ? 'Fermer' : 'Close'}</button>
         </div>
 
         <div data-pizza-detail-scroll style={{flex:'1 1 auto',minHeight:0,overflowY:'auto',overscrollBehavior:'contain',touchAction:'pan-y'}}>
@@ -624,7 +598,7 @@ export function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose 
           position: 'relative',
           width: '100%',
           aspectRatio: '1 / 1',
-          maxHeight: 'calc(100dvh - 69px - 69px - 230px)',
+          maxHeight: '28dvh',
           flexShrink: 0,
           background: '#2B2420',
           borderRadius: '20px 20px 0 0',
@@ -658,14 +632,7 @@ export function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose 
           padding: '12px 16px 8px',
           background: '#FDFBF7',
         }}>
-          <div style={{
-            fontSize: '17px', fontWeight: 700,
-            fontFamily: 'var(--font-ui)',
-            color: '#2B2420', marginBottom: '8px',
-          }}>
-            {pizza.name[l] ?? pizza.name.en}
-          </div>
-
+          <p style={{fontSize:13,color:'var(--smoke)',margin:'8px 0'}}>{(pizza.occasion ?? []).map(tag=>OCCASION_LABELS[tag]?.[l] ?? tag).join(' · ')}{pizza.budget?' · '+'€'.repeat(pizza.budget):''}</p>
           <PizzaIngredientDetails pizza={pizza} locale={locale} styleKey={styleKey} />
 
           {pizza.preparationSequence && <p style={{ fontSize: 13, lineHeight: 1.5 }}>{pizza.preparationSequence[l]}</p>}
@@ -967,7 +934,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
   locale: string;
   numItems: number;
   styleKey?: string;
-  recipeIngredients?: Array<{ name: string; amount: string }>;
+  recipeIngredients?: Array<{ name: string; amount: string; tickKey?: string }>;
   storagePrefix?:string;
   baseReady?:boolean;
   onGoPrep?: () => void;
@@ -1161,7 +1128,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           }}>
             {(() => {
               const toppingToBuy = sections.reduce((acc, s) => acc + s.items.filter(i => !ticked[i.id]).length, 0);
-              const doughToBuy = recipeIngredients?.filter((_, i) => !ticked['dough_' + i]).length ?? 0;
+              const doughToBuy = recipeIngredients?.filter((ing, i) => !ticked[ing.tickKey ?? ('dough_' + i)]).length ?? 0;
               const toBuy = toppingToBuy + doughToBuy;
               return l === 'fr'
                 ? `${toBuy} ingrédient${toBuy > 1 ? 's' : ''} à acheter`
@@ -1211,27 +1178,27 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
               <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '12px', borderBottom: '0.5px solid #F0EBE3' }}>
                 <button
                   type="button"
-                  role="checkbox"
-                  aria-checked={!!ticked['dough_' + i]}
-                  onClick={() => toggleTick('dough_' + i)}
+                  className="bh-shopping-check" role="checkbox"
+                  aria-checked={!!ticked[ing.tickKey ?? ('dough_' + i)]}
+                  onClick={() => toggleTick(ing.tickKey ?? ('dough_' + i))}
                   aria-label={ing.name}
                   style={{
                     width: '44px', height: '44px', borderRadius: '4px', flexShrink: 0,
-                    border: ticked['dough_' + i] ? 'none' : '1.5px solid #C8C0B8',
-                    background: ticked['dough_' + i] ? '#6B7A5A' : 'transparent',
+                    border: ticked[ing.tickKey ?? ('dough_' + i)] ? 'none' : '1.5px solid #C8C0B8',
+                    background: ticked[ing.tickKey ?? ('dough_' + i)] ? '#6B7A5A' : 'transparent',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
                 >
-                  {ticked['dough_' + i] && (
+                  {ticked[ing.tickKey ?? ('dough_' + i)] && (
                     <svg viewBox="0 0 12 12" width={10} height={10} fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
                       <path d="M2 6l3 3 5-5"/>
                     </svg>
                   )}
                 </button>
-                <span style={{ fontSize: '13px', color: ticked['dough_' + i] ? '#B0A89E' : '#2B2420', flex: 1, textDecoration: 'none' }}>
+                <span style={{ fontSize: '13px', color: ticked[ing.tickKey ?? ('dough_' + i)] ? '#B0A89E' : '#2B2420', flex: 1, textDecoration: 'none' }}>
                   {ing.name}
                 </span>
-                <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>{ing.amount}</span>
+                <span style={{ fontSize: '12px', color: '#62574e', fontFamily: 'var(--font-ui)' }}>{ing.amount}</span>
               </div>
             ))}
           </div>
@@ -1255,7 +1222,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                   <div style={{ display: 'flex', alignItems: 'flex-start', padding: '8px 12px', gap: '12px' }}>
                     <button
                       onClick={() => toggleTick(item.id)}
-                      role="checkbox" aria-checked={isTicked} aria-label={name}
+                      className="bh-shopping-check" role="checkbox" aria-checked={isTicked} aria-label={name}
                       style={{
                         width: '24px', height: '24px', borderRadius: '4px', flexShrink: 0,
                         border: isTicked ? 'none' : '1.5px solid #C8C0B8',
@@ -1298,7 +1265,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
                       {help.available && <button type="button" onClick={() => setHelpIngredientId(item.id)}
                         aria-label={`${help.label} · ${name}`}
-                        style={{ background: 'none', border: '1px solid #E0D8CF', borderRadius: 8, minHeight:44, padding: '7px 10px', marginTop: 6, cursor: 'pointer' }}>
+                        style={{ background: 'none', border: 0, color:'var(--terra)',textDecoration:'underline', minHeight:44, padding: '4px 0', marginTop: 0, cursor: 'pointer' }}>
                         {help.label}
                       </button>}
                     </div>
@@ -1801,6 +1768,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             {([
               { key: 'ingredient', label: l === 'fr' ? 'Ingrédients' : 'Ingredients', count: (filter.ingredientChips ?? []).length },
               { key: 'base', label: 'Base', count: filter.base !== null ? 1 : 0 },
+              { key: 'diet', label: l==='fr'?'Préférences':'Dietary', count: filter.dietary.length },
               { key: 'occasion', label: 'Occasion', count: filter.occasion.length },
             ] as const).map(chip => (
               <button
@@ -2107,10 +2075,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
                   {filterSheetKey === 'more' && (
                     <>
-                      <fieldset style={{ margin: 16, border: 0, padding: 0 }}><legend>{l === 'fr' ? 'Salée ou sucrée' : 'Savoury or sweet'}</legend>
-                        {(['savoury','sweet'] as const).map(course => <label key={course} style={{ marginRight: 16 }}><input type="radio" name="pizza-course" checked={pizzaCourse === course} onChange={() => setPizzaCourse(course)} />{course === 'sweet' ? (l === 'fr' ? 'Pizzas dessert' : 'Dessert pizzas') : (l === 'fr' ? 'Pizzas salées' : 'Savoury pizzas')}</label>)}
-                        {pizzaCourse === 'sweet' && <p>{l === 'fr' ? 'Les filtres salés sont en pause.' : 'Savoury filters are paused.'}</p>}
-                      </fieldset>
+          <fieldset className="bh-course-choice"><legend className="bh-visually-hidden">{l==='fr'?'Salée ou dessert':'Savoury or dessert'}</legend>{(['savoury','sweet'] as const).map(course=><label key={course} data-selected={pizzaCourse===course}><input type="radio" name="pizza-course" checked={pizzaCourse===course} onChange={()=>setPizzaCourse(course)}/>{course==='sweet'?(l==='fr'?'Dessert':'Dessert'):(l==='fr'?'Salée':'Savoury')}</label>)}</fieldset>
                       <FilterSection title={l === 'fr' ? 'Préférences alimentaires' : 'Dietary preferences'} open={open.diet} onToggle={() => togOpen('diet')}>
                         {(['veg','vegan','no_pork','no_fish','no_nuts','dairy_free'] as DietaryTag[]).map(value => <button key={value} type="button" style={S.pill(filter.dietary.includes(value), 'terra')} onClick={() => toggleDietary(value)}>{({veg: l==='fr'?'Végétarien':'Vegetarian',vegan:l==='fr'?'Végétalien':'Vegan',no_pork:l==='fr'?'Sans porc':'No pork',no_fish:l==='fr'?'Sans poisson':'No fish',no_nuts:l==='fr'?'Sans fruits à coque':'No nuts',dairy_free:l==='fr'?'Sans produits laitiers':'Dairy free'} as Record<string,string>)[value]}</button>)}
                       </FilterSection>
@@ -2536,7 +2501,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               </span>
               <button onClick={closeSummary}
                 aria-label={l === 'fr' ? 'Fermer' : 'Close'}
-                style={{ width: '44px', height: '44px', padding: '8px', margin: '-8px', backgroundClip: 'content-box', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
+                style={{ minWidth: '88px', height: '44px', padding: '8px 12px', margin: '-8px', backgroundClip: 'border-box', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
             </div>
             <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
 
@@ -2739,7 +2704,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {/* ── Sticky bar — always visible when pizzas pill active ──
            Hidden while the mobile keyboard is open: fixed bars anchor to the
            visual viewport and would float mid-screen above the keyboard. */}
-      {active && activePill === 'pizzas' && (totalQty > 0 || !!onSelectionDone) && !keyboardOpen && (
+      {active && activePill === 'pizzas' && (totalQty > 0 || !!onSelectionDone) && !keyboardOpen && !sheetId && !filterSheetKey && !summarySheetOpen && !createOpen && !showStylePicker && (
         <div data-companion-action style={{
           // The bar sits ON the home indicator, so it pins to bottom 0 and
           // carries the safe-area inset as padding instead. Offsetting by

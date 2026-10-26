@@ -18,7 +18,7 @@ test('quantity backward action returns generated edits to choices, but first cre
  }
  const calls=[];
  evaluate(fn('backToSetupChoices')+';backToSetupChoices();',{setSetupOverview(value){calls.push(['overview',value]);},setActiveTab(value){calls.push(['route',value]);},setNavHidden(value){calls.push(['navHidden',value]);},scrollToStepTop(){calls.push(['top']);}});
- assert.deepEqual(calls,[['overview',true],['route','setup'],['navHidden',false],['top']]);
+ assert.deepEqual(calls,[['overview',true],['route','setup'],['top']]);
 });
 
 test('finishing changed setup delegates validation without returning early; unchanged setup restores its origin',()=>{
@@ -137,5 +137,27 @@ test('the shared generation gate sends blocked edits to the exact correction wit
   const calls=[];
   evaluate(fn('handleGenerate')+';handleGenerate();',{styleKey:'neapolitan',canGenerate:false,tab,generationBlocker:stepId===undefined?undefined:{stepId},openSetupStep(value){calls.push(value);},setProtocolStale(){throw Error('Blocked edits must remain stale');},setRecipeGenerated(){throw Error('Blocked edits must not publish');},finishFillings(){throw Error('Blocked edits must not return');}});
   assert.deepEqual(calls,[stepId??(tab==='custom'?9:7)]);
+ }
+});
+
+test('opening a saved bake dismisses the product home only after replacement is accepted',async()=>{
+ for(const accepted of [false,true]){
+  const calls=[];const existing={bakeName:'Current bake'};
+  const context={replaceBakeAnswer:{current:null},loadSession:()=>existing,bakeType:'pizza',setReplacementIsRebake(v){calls.push(['rebake',v]);},setReplaceBakeOpen(){context.replaceBakeAnswer.current(accepted);},setLocalSaveConflict(){},acceptCurrentSessionStorage(){calls.push('accept');},setPendingSession(){},setShowWelcomeBack(){},setShowProductHome(v){calls.push(['home',v]);}};
+  const result=await evaluate(fn('confirmLocalReplacement')+';confirmLocalReplacement(false);',context);
+  assert.equal(result,accepted);
+  assert.equal(calls.some(c=>Array.isArray(c)&&c[0]==='home'&&c[1]===false),accepted);
+  assert.equal(calls.includes('accept'),accepted);
+ }
+});
+
+test('separating blend flours cannot move existing salt or yeast shopping checks',()=>{
+ const declaration=all(n=>ts.isVariableDeclaration(n)&&n.name.getText(tree)==='doughShoppingItems')[0];
+ const callback=declaration.initializer.arguments[0].getText(tree);
+ for(const locale of ['en','fr']){
+  const cr={flour:1000,salt:25,yeast:{convertedGrams:1},oil:10,flourParts:[{key:'nuvola',name:'Nuvola',nameFr:'Nuvola',grams:850},{key:'manitoba',name:'Manitoba',nameFr:'Manitoba',grams:150}]};
+  const rows=evaluate('('+callback+')()',{tab:'custom',advancedRecipe:cr,recipe:null,locale,yeastType:'instant',Math,Number,parseFloat});
+  assert.deepEqual(Array.from(rows,r=>r.tickKey),['dough_flour_nuvola','dough_flour_manitoba','dough_1','dough_2','dough_3']);
+  assert.deepEqual(Array.from(rows.slice(0,2),r=>r.amount),['850g','150g']);
  }
 });

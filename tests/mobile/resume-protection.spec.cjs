@@ -24,7 +24,7 @@ for(const locale of ['fr','en']) {
   await expect(page.getByRole('button',{name:locale==='fr'?'Reprendre →':'Resume →',exact:true})).toHaveCount(1);
   await expect(page.getByRole('button',{name:locale==='fr'?'Annuler la nouvelle fournée':'Undo new bake',exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:'Menu',exact:true}).tap();
-  await page.getByRole('button',{name:locale==='fr'?'Rétablir la fournée précédente':'Restore previous bake',exact:true}).tap();
+  await page.getByRole('button',{name:locale==='fr'?'Annuler le démarrage d’une nouvelle fournée':'Undo starting a new bake',exact:true}).tap();
   await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1'))?.bakeName)).toBe('AUDIT resume protection');
  });
  test(`${locale}: explicit new bake is immediate and recovery survives reload`,async({page})=>{
@@ -39,7 +39,7 @@ for(const locale of ['fr','en']) {
   await expect(page.getByRole('button',{name:locale==='fr'?'Reprendre →':'Resume →',exact:true})).toHaveCount(0);
   await expect(page.getByRole('button',{name:locale==='fr'?'Annuler la nouvelle fournée':'Undo new bake',exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:'Menu',exact:true}).tap();
-  await page.getByRole('button',{name:locale==='fr'?'Rétablir la fournée précédente':'Restore previous bake',exact:true}).tap();
+  await page.getByRole('button',{name:locale==='fr'?'Annuler le démarrage d’une nouvelle fournée':'Undo starting a new bake',exact:true}).tap();
   await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1'))?.numItems)).toBe(4);
   expect(await page.evaluate(()=>localStorage.getItem('bh_shop_ticks_v1'))).toBe('{"flour":true}');
   expect(await page.evaluate(()=>localStorage.getItem('bh_previous_bake_v1'))).toBeNull();
