@@ -56,7 +56,7 @@ for(const locale of ['fr','en']){
   const summary=filters.locator('summary');
   expect((await summary.boundingBox()).y).toBeLessThan((await flour.getByRole('heading',{name:'Suggestions',exact:true}).boundingBox()).y);
   await summary.tap();
-  await filters.getByLabel('Type',{exact:true}).selectOption('bread_flour');
+  await filters.getByRole('combobox',{name:'Type',exact:true}).selectOption('bread_flour');
   await expect(flour.getByRole('heading',{name:/résultats|results/})).toBeVisible();
   await summary.tap();
   await expect(summary).toContainText(fr?'Farine de pain':'Bread flour');
