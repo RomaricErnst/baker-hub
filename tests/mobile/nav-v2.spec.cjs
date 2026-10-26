@@ -558,14 +558,17 @@ for(const mode of ['simple','custom'])test(`${mode}: batch details are condition
   await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
  }
  await step.getByRole('button',{name:mode==='simple'?/KitchenAid \/ robot pâtissier/:/Robot pâtissier/}).tap();
- await expect(step.getByLabel('Nombre de pétrissées',{exact:true})).toHaveValue('2');
+ await expect(step.getByRole('textbox',{name:'Nombre de pétrissées',exact:true})).toHaveValue('2');
  if(mode==='simple')await step.getByText('Autre méthode',{exact:true}).tap();
  await step.getByRole('button',{name:/Pétrin (?:à spirale|spiral)/}).tap();
- await expect(step.getByLabel('Nombre de pétrissées',{exact:true})).toHaveCount(0);
- await step.getByRole('button',{name:'Diviser en plusieurs pétrissées',exact:true}).tap();
- await expect(step.getByLabel('Nombre de pétrissées',{exact:true})).toHaveValue('2');
- await step.getByRole('button',{name:'Revenir à la recommandation',exact:true}).tap();
- await expect(step.getByLabel('Nombre de pétrissées',{exact:true})).toHaveCount(0);
+ await expect(step.getByRole('textbox',{name:'Nombre de pétrissées',exact:true})).toHaveCount(0);
+ const batch=step.getByRole('region',{name:'Nombre de pétrissées',exact:true});
+ await batch.getByRole('button',{name:'Modifier',exact:true}).tap();
+ await expect(batch.getByRole('textbox')).toHaveValue('1');
+ await batch.getByRole('button',{name:'Une pétrissée de plus',exact:true}).tap();
+ await expect(batch.getByRole('textbox')).toHaveValue('2');
+ await batch.getByRole('button',{name:'Utiliser la recommandation: 1',exact:true}).tap();
+ await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1'))?.mixingBatches)).toBe(undefined);
  if(mode==='simple')await step.getByRole('button',{name:/^Levure sèche instantanée/}).tap();
  await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
  await expect(page.locator(mode==='simple'?'#step-7':'#step-4')).toBeVisible();
