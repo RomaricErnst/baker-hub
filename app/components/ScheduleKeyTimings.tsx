@@ -24,7 +24,7 @@ export function TimingWindows({slots,at,isFr,onSelect}:{slots:EditSlot[];at:numb
  return <div className="bh-window-days">
   <div className="bh-window-axis" aria-hidden="true"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
   {[...days.entries()].map(([key,points])=>{
-   const ranges=compatibleWindows(points),selected=points.some(p=>p.at===at);
+   const current=new Date(at),ranges=compatibleWindows(points),selected=key===[current.getFullYear(),current.getMonth(),current.getDate()].join('-');
    const choose=(range:SlotWindow)=>onSelect(points.filter(p=>p.valid&&p.at>=range.from&&p.at<=range.to).reduce((best,p)=>Math.abs(p.at-at)<Math.abs(best.at-at)?p:best).at);
    return <div className="bh-window-day" key={key}>
     <div className="bh-window-day-label">{new Date(points[0].at).toLocaleDateString(isFr?'fr-FR':'en-GB',{weekday:'short',day:'numeric',month:'short'})}{selected&&<span> · {hm(at)}</span>}</div>

@@ -66,12 +66,12 @@ test('visual windows split dates and gaps, and select only validated slots',()=>
  const base=+new Date(2026,9,27,7),step=900000;
  const slots=[{at:base,valid:true},{at:base+step,valid:false},{at:base+2*step,valid:true},{at:base+86400000,valid:true}];
  let chosen;
- const tree=TimingWindows({slots,at:base+step,isFr:false,onSelect:at=>chosen=at});
+ const tree=TimingWindows({slots,at:base+60000,isFr:false,onSelect:at=>chosen=at});
  const walk=node=>!node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(walk):[node,...walk(node.props?.children)];
  const buttons=walk(tree).filter(node=>node.type==='button');
  assert.equal(buttons.length,3);
  for(const button of buttons){button.props.onClick();assert.ok(slots.some(s=>s.valid&&s.at===chosen));}
  const html=renderToStaticMarkup(tree);
  assert.equal((html.match(/class="bh-window-rail"/g)||[]).length,2);
- assert.match(html,/07:00/);assert.match(html,/07:30/);
+ assert.match(html,/07:00/);assert.match(html,/07:30/);assert.match(html,/bh-window-marker/);assert.match(html,/07:01/);
 });
