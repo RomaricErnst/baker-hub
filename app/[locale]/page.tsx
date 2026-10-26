@@ -1213,41 +1213,8 @@ export default function Home() {
   const prepContinueLabel=prepReturnToService==null?undefined:prepReturnToService==='fillings'&&bakeType==='bread'?(locale==='fr'?'Revenir à l’assemblage':'Return to assembly'):(locale==='fr'?'Revenir à la cuisson':'Return to cooking');
   const fillingsDoneLabel=fillingsReturn?(fillingsReturn.destination==='recipe'?(locale==='fr'?'Retour à la recette':'Return to recipe'):fillingsReturn.destination==='shopping'?(locale==='fr'?'Retour aux courses':'Return to shopping'):fillingsReturn.destination==='service'?(locale==='fr'?'Retour à la cuisson':'Return to cooking'):(locale==='fr'?'Retour à la préparation':'Return to preparation')):(locale==='fr'?'Définir ma recette':'Set up my recipe');
   const setupReturnLabel=protocolStale?(locale==='fr'?'Mettre à jour la recette et revenir':'Update recipe and return'):fillingsReturn?fillingsDoneLabel:(locale==='fr'?'Retour à la recette':'Back to recipe');
-  const [navHidden, setNavHidden] = useState(false);
   const bottomNavCollapsed = false;
-  // Hide exactly the measured header height; keep the following bar aligned.
-  const HEADER_HIDE_PX = stickyHeadH;
-  const stickTop = Math.max(0, stickyHeadH - (navHidden ? HEADER_HIDE_PX : 0));
-  const lastScrollY = useRef(0);
-  useEffect(() => {
-    let travel = 0;
-    let direction = 0;
-    let touchingControl = false;
-    const holdTarget = (event:PointerEvent) => { touchingControl = !!(event.target as Element)?.closest?.('button, a, input, select, summary'); };
-    const releaseTarget = () => { touchingControl = false; };
-    window.addEventListener('pointerdown',holdTarget,{passive:true});
-    window.addEventListener('pointerup',releaseTarget,{passive:true});
-    window.addEventListener('pointercancel',releaseTarget,{passive:true});
-    const onScroll = () => {
-      const curr = Math.max(0, Math.min(window.scrollY, document.documentElement.scrollHeight - window.innerHeight));
-      const delta = curr - lastScrollY.current;
-      lastScrollY.current = curr;
-      // Setup has stable navigation: Safari toolbar movement must not trigger
-      // another application header movement at the same time.
-      if (document.querySelector('[data-mobile-setup="true"]')) { setNavHidden(false); return; }
-      if (touchingControl) return;
-      if (curr < 24 || curr >= document.documentElement.scrollHeight - window.innerHeight - 24) { setNavHidden(false); travel = 0; return; }
-      if (document.querySelector('[role="dialog"][aria-modal="true"]') || document.querySelector('.bh-header-stack :focus-visible, .bh-bake-navigator :focus-visible')) return;
-      if (Math.abs(delta) < 2) return;
-      const nextDirection = Math.sign(delta);
-      travel = nextDirection === direction ? travel + Math.abs(delta) : Math.abs(delta);
-      direction = nextDirection;
-      if (direction > 0 && curr > 96 && travel >= 32) setNavHidden(true);
-      if (direction < 0 && travel >= 12) setNavHidden(false);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('pointerdown',holdTarget); window.removeEventListener('pointerup',releaseTarget); window.removeEventListener('pointercancel',releaseTarget); };
-  }, []);
+  const stickTop = stickyHeadH;
   const pizzaPartyEnabled = bakeType === 'pizza';
   const sandwichEnabled = bakeType === 'bread' && !!styleKey && !!sandwichFamilyForStyle(styleKey);
   useEffect(() => { if (activeTab === 'sandwiches' && !sandwichEnabled) setActiveTab('setup'); }, [activeTab, sandwichEnabled]);
@@ -1980,17 +1947,17 @@ export default function Home() {
   const doughShoppingItems = useMemo(() => {
     const cr = tab === 'custom' ? advancedRecipe : recipe;
     if (!cr) return undefined;
-    const items: Array<{ name: string; amount: string }> = [
-      { name: flourShoppingName(styleKey ?? '', locale, flourChosen ? 'custom' : 'simple', flourBlend, !cr.preferment && !cr.sourdough), amount: `${Math.round(cr.flour)}g` },
-      { name: locale === 'fr' ? 'Sel' : 'Salt', amount: `${Math.round(cr.salt)}g` },
+    const items: Array<{ name: string; amount: string; tickKey?: string }> = [
+      ...(cr.flourParts?.length ? cr.flourParts.map(part=>({tickKey:`dough_flour_${part.key}`,name:locale==='fr'?part.nameFr:part.name,amount:`${Math.round(part.grams)}g`})) : [{ tickKey:'dough_0', name: flourShoppingName(styleKey ?? '', locale, flourChosen ? 'custom' : 'simple', flourBlend, !cr.preferment && !cr.sourdough), amount: `${Math.round(cr.flour)}g` }]),
+      { tickKey:'dough_1', name: locale === 'fr' ? 'Sel' : 'Salt', amount: `${Math.round(cr.salt)}g` },
     ];
     const yg = cr.preferment != null ? cr.preferment.prefYeastGrams : cr.yeast?.convertedGrams;
     if (yeastType === 'sourdough') {
-      items.push({ name: locale === 'fr' ? 'Levain actif' : 'Active starter', amount: '—' });
+      items.push({ tickKey:'dough_2', name: locale === 'fr' ? 'Levain actif' : 'Active starter', amount: '—' });
     } else if (yg && yg > 0) {
-      items.push({ name: locale === 'fr' ? 'Levure' : 'Yeast', amount: `${parseFloat(Number(yg).toFixed(1))}g` });
+      items.push({ tickKey:'dough_2', name: locale === 'fr' ? 'Levure' : 'Yeast', amount: `${parseFloat(Number(yg).toFixed(1))}g` });
     }
-    if ((cr.oil ?? 0) > 0) items.push({ name: locale === 'fr' ? 'Huile d’olive' : 'Olive oil', amount: `${Math.round(cr.oil ?? 0)}g` });
+    if ((cr.oil ?? 0) > 0) items.push({ tickKey:yeastType==='sourdough'||(yg&&yg>0)?'dough_3':'dough_2', name: locale === 'fr' ? 'Huile d’olive' : 'Olive oil', amount: `${Math.round(cr.oil ?? 0)}g` });
     return items;
   }, [tab, advancedRecipe, recipe, yeastType, locale, styleKey, flourChosen, flourBlend]);
 
@@ -2428,10 +2395,9 @@ export default function Home() {
       ? `organisation:${modeChosen}:${tab}:${setupOverview}:${tab === 'simple' ? activeStep : advancedStep}:${equipmentPanel}`
       : `${destination}:${destination === 'batch' ? batchView : destination === 'protocol' ? protocolView : destination === 'service' ? serviceView : ''}:${companionVisible ? companionPhase : ''}`;
   usePageTop(visiblePageKey);
-  useLayoutEffect(()=>{setNavHidden(false);lastScrollY.current=0;},[visiblePageKey]);
 
   function scrollToStepTop() {
-    setNavHidden(false);
+
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
@@ -2449,7 +2415,7 @@ export default function Home() {
       if(next==='service'&&!hasFillings)setServiceView('dough');
       setActiveTab(routeForDestination(next));
     }
-    setNavHidden(false);scrollToStepTop();
+    scrollToStepTop();
   }
   function openSetupStep(id:number,custom=tab==='custom') {
     if (!custom && (id === 4 || id === 6)) id = 3;
@@ -2459,7 +2425,7 @@ export default function Home() {
     else {setActiveStep(id);setHighestStep(value=>Math.max(value,id));}
     if(id<=2){setBatchView(id===1?'style':'quantity');setActiveTab('batch');}
     else setActiveTab('setup');
-    setNavHidden(false);scrollToStepTop();
+    scrollToStepTop();
   }
   function openCompanionPhase(phase:'pick'|'shop'|'prep'|'bake'|'serve') {
     if(bakeType==='pizza')setPizzaPartyTab(phase==='serve'?'bake':phase);
@@ -2471,7 +2437,7 @@ export default function Home() {
       setProtocolView(destination==='shopping'&&!shoppingReturnToFillings?'dough':hasFillings?'fillings':'dough');setShoppingReturnToFillings(false);setActiveTab('guide');
     }
     else {setServiceView(prepReturnToService??'dough');setPrepReturnToService(null);setShoppingReturnToFillings(false);setActiveTab('service');}
-    setNavHidden(false);scrollToStepTop();
+    scrollToStepTop();
   }
   function prepareFillingsFromService() {
     openDestination('protocol');
@@ -2482,13 +2448,13 @@ export default function Home() {
     if(destination==='protocol'||destination==='service'||destination==='recipe'||destination==='shopping')setFillingsReturn({destination,view:destination==='protocol'?protocolView:destination==='service'?serviceView:'dough'});
   }
   function openSetupReview() {
-    captureEditReturn();setActiveTab('setup');setReviewMode(true);setSetupOverview(true);setNavHidden(false);scrollToStepTop();
+    captureEditReturn();setActiveTab('setup');setReviewMode(true);setSetupOverview(true);scrollToStepTop();
   }
   function backToSetupChoices() {
-    setSetupOverview(true);setActiveTab('setup');setNavHidden(false);scrollToStepTop();
+    setSetupOverview(true);setActiveTab('setup');scrollToStepTop();
   }
   function openQuantityEdit() {
-    captureEditReturn();setBatchView('quantity');setActiveTab('batch');setNavHidden(false);scrollToStepTop();
+    captureEditReturn();setBatchView('quantity');setActiveTab('batch');scrollToStepTop();
   }
   function finishSetupEdit() {
     // A clean flag is not proof of current validity. Only an explicit return
@@ -2501,16 +2467,16 @@ export default function Home() {
   }
   function openLateFillings() {
     captureEditReturn();
-    setBatchView('fillings');setActiveTab('batch');setNavHidden(false);scrollToStepTop();
+    setBatchView('fillings');setActiveTab('batch');scrollToStepTop();
   }
   function backFromFillings() {
-    if(fillingsReturn)finishFillings();else {setBatchView('quantity');setActiveTab('batch');setNavHidden(false);scrollToStepTop();}
+    if(fillingsReturn)finishFillings();else {setBatchView('quantity');setActiveTab('batch');scrollToStepTop();}
   }
   function finishFillings() {
     if(fillingsReturn){
       if(fillingsReturn.destination==='protocol')setProtocolView(hasFillings?fillingsReturn.view:'dough');else if(fillingsReturn.destination==='service')setServiceView(hasFillings?fillingsReturn.view:'dough');
       if(!hasFillings){setPrepReturnToService(null);setShoppingReturnToFillings(false);}
-      setActiveTab(routeForDestination(fillingsReturn.destination));setFillingsReturn(null);setNavHidden(false);scrollToStepTop();
+      setActiveTab(routeForDestination(fillingsReturn.destination));setFillingsReturn(null);scrollToStepTop();
     }else openDestination('organisation');
   }
   function restoreNavigation(source:SessionData) {
@@ -2632,6 +2598,7 @@ export default function Home() {
   }
 
   const [replaceBakeOpen, setReplaceBakeOpen] = useState(false);
+  const [replacementIsRebake, setReplacementIsRebake] = useState(false);
   const replaceBakeAnswer = useRef<((replace: boolean) => void) | null>(null);
   useEffect(() => () => { replaceBakeAnswer.current?.(false); }, []);
 
@@ -2642,7 +2609,8 @@ export default function Home() {
     answer?.(replace);
   }
 
-  async function confirmLocalReplacement(): Promise<boolean> {
+  async function confirmLocalReplacement(rebake = false): Promise<boolean> {
+    setReplacementIsRebake(rebake);
     if (replaceBakeAnswer.current) return false;
     const existing = loadSession();
     if (existing || bakeType) {
@@ -2658,7 +2626,7 @@ export default function Home() {
       }
     }
     acceptCurrentSessionStorage(); setLocalSaveConflict(false);
-    setPendingSession(null); setShowWelcomeBack(false);
+    setPendingSession(null); setShowWelcomeBack(false); setShowProductHome(false);
     return true;
   }
 
@@ -2946,7 +2914,7 @@ export default function Home() {
   async function restoreFromBakeEvent(event: Pick<BakeEvent, 'id' | 'dough_snapshot' | 'pizza_party_id'>, opts?: { rebake?: boolean }) {
 
     if (!event.dough_snapshot) return;
-    if (!await confirmLocalReplacement()) return;
+    if (!await confirmLocalReplacement(!!opts?.rebake)) return;
     isRestoringRef.current = true;
     setScheduleCandidateValid(true);
     setShowWelcomeBack(false);
@@ -3457,7 +3425,7 @@ export default function Home() {
 
   const mealNoun=bakeType==='pizza'?(fr?'Garnitures':'Toppings'):sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'Tartines':'Toasts'):(fr?'Sandwichs':'Sandwiches');
   const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings?'recipe':destination} fr={fr} onChange={openDestination} top={destination==='organisation'?0:stickTop}
-    recipeMeal={styleKey&&(pizzaPartyEnabled||sandwichEnabled)?{label:mealNoun,selected:hasFillings,active:browsingFillings,onChoose:()=>{setFillingsReturn({destination:'recipe',view:'dough'});setBatchView('fillings');setActiveTab('batch');setNavHidden(false);scrollToStepTop();}}:undefined}
+    recipeMeal={styleKey&&(pizzaPartyEnabled||sandwichEnabled)?{label:mealNoun,selected:hasFillings,active:browsingFillings,onChoose:()=>{setFillingsReturn({destination:'recipe',view:'dough'});setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}}:undefined}
     progress={destination==='organisation' && modeChosen && !setupOverview ? <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>{setModeChosen(false);scrollToStepTop();}}} /> : undefined} /> : null;
 
   const recipeFillings = (pizzaPartyEnabled||sandwichEnabled) ? <>
@@ -3470,9 +3438,9 @@ export default function Home() {
   return (
     <div data-navigation-page={visiblePageKey} data-reading={bottomNavCollapsed || undefined} data-keyboard-open={keyboardOpen || undefined} data-mobile-setup={(destination==='organisation'||destination==='batch')&&!recipeGenerated?'true':undefined} style={{ minHeight: '100vh', background: 'var(--warm)' }}>
       {/* ── Sticky header + journey bar (autohide on scroll down) ── */}
-      <div ref={stickyHeadRef} className="bh-header-stack" onFocusCapture={() => setNavHidden(false)} style={{
+      <div ref={stickyHeadRef} className="bh-header-stack" style={{
         position: destination==='organisation' ? 'relative' : 'sticky',
-        top: destination==='organisation' ? 0 : navHidden ? `-${HEADER_HIDE_PX}px` : '0',
+        top: 0,
         zIndex: 100,
         transition: destination==='organisation' ? 'none' : 'top 0.25s ease',
       }}>
@@ -3550,7 +3518,7 @@ export default function Home() {
           <ProfileSheet locale={locale} onClose={() => setProfileOpen(false)} />
         )}
 
-        {replaceBakeOpen && <ReplaceBakeDialog fr={fr} onAnswer={answerReplaceBake} />}
+        {replaceBakeOpen && <ReplaceBakeDialog fr={fr} rebake={replacementIsRebake} onAnswer={answerReplaceBake} />}
 
         {restartFailed && <p role="alert">{fr ? 'Impossible de conserver ou reprendre la fournée. Vos choix restent protégés. Réessayez.' : 'Unable to preserve or restore the bake. Your choices remain protected. Please try again.'}</p>}
         {showNewBakeNotice && !showWelcomeBack && !cloudResume && <div role="status" style={{padding:'8px 16px',display:'flex',gap:12,alignItems:'center',flexWrap:'wrap',fontSize:14}}>
@@ -3951,7 +3919,7 @@ export default function Home() {
             </StepPage>
 
             {/* ─── STEP 8: Scheduler ───────────────── */}
-            <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={scheduleEditing ? null : !scheduleCandidateValid ? <button type="button" disabled style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{fr?'Continuer':'Continue'}</button> : undefined}>
+            <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={scheduleEditing ? null : !scheduleCandidateValid ? <button type="button" style={NEXT_CTA} onClick={()=>{const panel=document.getElementById('schedule-anchor-panel');panel?.scrollIntoView({block:'start'});panel?.focus();}}>{fr?'Résoudre le planning':'Resolve timing'}</button> : undefined}>
               {!isUnleavened && (!!schedule?.totalColdHours || prefGoesInFridge || yeastType==='sourdough') && <details style={{marginBottom:16}}>
                 <summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Frigo':'Fridge'} · {cToDisplay(fridgeTemp,units)}{tempUnit(units)} — {fr?'Modifier':'Change'}</summary>
                 <label style={{display:'flex',gap:12,alignItems:'center'}}>{fr?'Température du frigo':'Fridge temperature'}<input type="number" min={cToDisplay(1,units)} max={cToDisplay(15,units)} value={cToDisplay(fridgeTemp,units)} onChange={e=>{if(!e.target.value)return;const value=inputTempToC(Number(e.target.value),units);if(Number.isFinite(value)&&value>=1&&value<=15)setFridgeTemp(value);}} style={{minHeight:44,width:100,fontSize:16}}/>{tempUnit(units)}</label>
@@ -4437,7 +4405,7 @@ export default function Home() {
             )}
 
             {/* ─── ADV STEP 10: Scheduler ──────────── */}
-            <StepPage flow={customOrganisationFlow} id={9} nextOverride={scheduleEditing ? null : !scheduleCandidateValid ? <button type="button" disabled style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{fr?'Continuer':'Continue'}</button> : undefined}>
+            <StepPage flow={customOrganisationFlow} id={9} nextOverride={scheduleEditing ? null : !scheduleCandidateValid ? <button type="button" style={NEXT_CTA} onClick={()=>{const panel=document.getElementById('schedule-anchor-panel');panel?.scrollIntoView({block:'start'});panel?.focus();}}>{fr?'Résoudre le planning':'Resolve timing'}</button> : undefined}>
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => customFlow.onJump(1)} />
               ) : (
@@ -4821,7 +4789,7 @@ export default function Home() {
       {bakeType==='bread' && (sandwichEnabled||destination==='shopping') && <div style={{display:companionVisible?'block':'none',paddingBottom:24}}>
         <SandwichParty onRepeat={repeatCurrentRecipe} resultNotes={resultNotes} onResultNotesChange={setResultNotes} onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved && !!user} isFr={locale === 'fr'} styleKey={styleKey} snapshot={sandwichParty}
           onBackToRecipe={()=>openDestination('recipe')}
-          onChange={setSandwichParty} phase={companionPhase==='bake'?'serve':companionPhase} onPhaseChange={openCompanionPhase} onSelectionBack={backFromFillings} onSelectionDone={finishFillings} selectionDoneLabel={fillingsDoneLabel} directSelectionReturn={!!fillingsReturn} onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel} active={companionVisible} onRevealNavigation={()=>setNavHidden(false)} hideNavigation doughConfigured={recipeGenerated} breadIngredients={recipeGenerated ? sandwichDoughIngredients : []}
+          onChange={setSandwichParty} phase={companionPhase==='bake'?'serve':companionPhase} onPhaseChange={openCompanionPhase} onSelectionBack={backFromFillings} onSelectionDone={finishFillings} selectionDoneLabel={fillingsDoneLabel} directSelectionReturn={!!fillingsReturn} onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel} active={companionVisible} hideNavigation doughConfigured={recipeGenerated} breadIngredients={recipeGenerated ? sandwichDoughIngredients : []}
           onAdjustBread={openQuantityEdit} onMatchBreadCount={count=>{setNumItems(count);setQtyChosen(true);if(recipeGenerated)openQuantityEdit();}}
           availableDoughWeight={recipeGenerated ? ((tab === 'custom' ? advancedRecipe : recipe)?.totalDough ?? numItems * itemWeight) : undefined}
           numItems={numItems} />

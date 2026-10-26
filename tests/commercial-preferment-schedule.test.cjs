@@ -87,13 +87,13 @@ test('returning to a previous recommendation resynchronizes a parent changed by 
 
 test('action times preserve canonical minutes, including the end of a day',()=>{
  const nearMidnight=new Date(2026,8,23,23,56);
- assert.equal(fmtCardHM(nearMidnight,true),'23h56');
- assert.equal(fmtCardHM(nearMidnight,false),'11:56pm');
+ assert.equal(fmtCardHM(nearMidnight,true),'23:56');
+ assert.equal(fmtCardHM(nearMidnight,false),'23:56');
  assert.equal(formatTimeShort(nearMidnight,true),'23h56');
  assert.equal(formatTimeShort(nearMidnight,false),'11:56pm');
- assert.match(fmtCardDT(nearMidnight,true),/23 .*23h56$/);
- assert.match(fmtCardDT(nearMidnight,false),/23 .*11:56pm$/);
- assert.equal(fmtCardHM(new Date(2026,8,23,7,4),true),'7h04');
- assert.equal(fmtCardHM(new Date(2026,8,23,3,19),true),'3h19');
+ assert.match(fmtCardDT(nearMidnight,true),/23 .*23:56$/);
+ assert.match(fmtCardDT(nearMidnight,false),/23 .*23:56$/);
+ assert.equal(fmtCardHM(new Date(2026,8,23,7,4),true),'07:04');
+ assert.equal(fmtCardHM(new Date(2026,8,23,3,19),true),'03:19');
 });
 

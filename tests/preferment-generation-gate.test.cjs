@@ -104,7 +104,7 @@ test('whole-plan validation gates generation in both modes and directs invalid p
   vm.runInNewContext(code,context);
   if(scheduleEditing)assert.equal(context.result,null);
   else if(scheduleCandidateValid)assert.equal(context.result,undefined);
-  else {assert.equal(context.result.type,'button');assert.equal(context.result.props.disabled,true);assert.equal(context.result.children[0],'Continuer');}
+  else {assert.equal(context.result.type,'button');assert.notEqual(context.result.props.disabled,true);assert.equal(context.result.children[0],'Résoudre le planning');assert.equal(typeof context.result.props.onClick,'function');}
  }
 
 });

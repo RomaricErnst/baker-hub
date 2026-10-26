@@ -368,7 +368,7 @@ export default function SessionViewer({
       }} />
 
       {/* Sheet */}
-      <div style={{
+      <div role="dialog" aria-modal="true" aria-label={l === 'fr' ? 'Fournée enregistrée' : 'Saved bake'} style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         // dvh, not vh: in browser-mode Safari, vh includes the area behind
         // the collapsed toolbar, so a bottom-anchored 92vh sheet pushed its
@@ -381,14 +381,10 @@ export default function SessionViewer({
         maxWidth: '680px', margin: '0 auto',
       }}>
 
-        {/* X close button */}
-        <button onClick={onClose} aria-label="Close" style={{
-          position: 'absolute', top: '6px', right: '6px',
-          background: 'none', border: 'none', cursor: 'pointer',
-          color: 'var(--smoke)', fontSize: '17px', lineHeight: 1,
-          width: '44px', height: '44px', zIndex: 2,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>✕</button>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,padding:'10px 20px',flexShrink:0,borderBottom:'1px solid var(--border)'}}>
+          <strong style={{fontFamily:'var(--font-ui)',fontSize:14}}>{l === 'fr' ? 'Fournée enregistrée' : 'Saved bake'}</strong>
+          <button onClick={onClose} style={{minHeight:44,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:10,background:'var(--cream)',color:'var(--terra)',font:'inherit',cursor:'pointer'}}>{l === 'fr' ? 'Fermer' : 'Close'}</button>
+        </div>
 
         {/* Scrollable content */}
         <div style={{ overflowY: 'auto', flex: 1 }}>
@@ -445,13 +441,7 @@ export default function SessionViewer({
                 }}>
                   {sessionTitle || title}
                 </p>
-                <span style={{
-                  fontFamily: 'var(--font-ui)', fontSize: '12px',
-                  color: 'var(--terra)', marginTop: '2px', flexShrink: 0,
-                  border: '1px solid rgba(107, 68, 35,0.35)',
-                  background: 'rgba(107, 68, 35,0.06)',
-                  borderRadius: '16px', padding: '3px 8px', lineHeight: 1.2,
-                }}></span>
+
               </div>
             )}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -744,7 +734,7 @@ export default function SessionViewer({
               letterSpacing: '.01em',
             }}
           >
-            {l === 'fr' ? 'Reprendre la session' : 'Resume session'}
+            {l === 'fr' ? 'Ouvrir la fournée' : 'Open saved bake'}
           </button>
 
           {/* SECONDARY: Share */}
@@ -768,8 +758,8 @@ export default function SessionViewer({
             onClick={async () => {
               if (!window.confirm(
                 l === 'fr'
-                  ? 'Supprimer cette session ? Cette action est irréversible.'
-                  : 'Delete this session? This cannot be undone.'
+                  ? 'Supprimer cette fournée ? Cette action est irréversible.'
+                  : 'Delete this saved bake? This cannot be undone.'
               )) return;
               const { deleteBakeEvent } = await import('@/app/lib/supabase/fetchBakeEvents');
               await deleteBakeEvent(event.id);
@@ -784,7 +774,7 @@ export default function SessionViewer({
               textDecoration: 'underline', textUnderlineOffset: '2px',
             }}
           >
-            {l === 'fr' ? 'Supprimer la session' : 'Delete session'}
+            {l === 'fr' ? 'Supprimer la fournée' : 'Delete saved bake'}
           </button>
 
         </div>

@@ -571,3 +571,18 @@ body { padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-i
 .bh-window-options { display:flex; flex-wrap:wrap; gap:6px; }
 .bh-window-options button { min-height:44px; padding:6px 10px; border:1px solid #769a78; border-radius:8px; color:#285b34; background:var(--warm); font:inherit; font-size:13px; cursor:pointer; }
 .bh-window-options button[aria-pressed="true"] { background:#e4eddf; border:2px solid #397548; font-weight:600; }
+
+/* Consistent catalogue controls */
+.bh-course-choice { display:flex; gap:8px; border:0; padding:0; margin:12px 0; }
+.bh-course-choice label { flex:1; min-height:44px; display:flex; justify-content:center; align-items:center; gap:8px; border:1px solid var(--border); border-radius:10px; cursor:pointer; }
+.bh-course-choice label[data-selected="true"] { border:2px solid var(--terra); background:var(--cream); font-weight:600; }
+.bh-course-choice input { accent-color:var(--terra); }
+.bh-shopping-check { width:44px!important; height:44px!important; border:0!important; background:transparent!important; position:relative; }
+.bh-shopping-check::before { content:''; position:absolute; width:24px; height:24px; border:1.5px solid #9b9186; border-radius:4px; }
+.bh-shopping-check[aria-checked="true"]::before { background:#6B7A5A; border-color:#6B7A5A; }
+.bh-shopping-check svg { position:relative; z-index:1; }
+#schedule-anchor-panel { scroll-margin-top:150px; }
+
+.bh-schedule-timeline .bh-key-timing { padding-bottom:12px; }
+.bh-timeline-day { padding-top:12px; }
+body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="dialog"][aria-modal="true"]) [data-companion-action] { visibility:hidden; }

@@ -29,8 +29,8 @@ test('fridge arrangement confirms and undoes one action while retaining the exac
   const view=render({mode,locale,blocks:work()});
   assert.equal(view.controls.header,undefined,'an automatic conflict does not offer reset');
   const html=renderToStaticMarkup(view.controls.notice);
-  assert.match(html,/bh-resolution-or/);assert.match(html,/Keep this baking time|Garder cet enfournement/);
-  assert.match(html,/Choose another baking time|Choisir un autre enfournement/);
+  assert.match(html,/bh-resolution-or/);assert.match(html,/Keep baking at|Garder l’enfournement à/);
+  assert.match(html,/Bake later|Cuire plus tard/);
   assert.doesNotMatch(html,/bh-plan-notice/);
   const confirm=control(view,locale==='fr'?'Oui, cette étape est prévue':'Yes, this step is covered');assert.ok(confirm,`${mode} ${locale}`);
   confirm.props.onClick();const [start,bake,blocks,options]=view.effects.at(-1);
@@ -44,7 +44,7 @@ test('fridge arrangement confirms and undoes one action while retaining the exac
   const undo=control(resumed,locale==='fr'?'Annuler':'Undo');assert.ok(undo);undo.props.onClick();
   const [undoStart,undoBake,undoBlocks]=resumed.effects.at(-1);assert.equal(+undoStart,+start);assert.equal(+undoBake,+bake);
   assert.ok(undoBlocks.every(b=>!b.fridgeRemoval));
-  assert.equal(render({mode,locale,blocks:undoBlocks}).controls.anchors.find(a=>a.id==='mix').valid,false);
+  assert.equal(render({mode,locale,blocks:undoBlocks}).controls.anchors.find(a=>a.id==='fridge-removal').valid,false);
  }
 }));
 test('preheating conflict is visible before confirmation and remains blocking afterward',()=>fixed(()=>{

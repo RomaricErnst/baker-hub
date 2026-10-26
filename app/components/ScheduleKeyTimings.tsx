@@ -97,7 +97,7 @@ export default function ScheduleKeyTimings({anchors,isFr,onChange,check,cacheKey
  const valid=anchors.every(anchor=>anchor.valid);
  const day=(at:number)=>new Date(at).toLocaleDateString(isFr?'fr-FR':'en-GB',{weekday:'long',day:'numeric',month:'long'});
  const events=[...anchors,{id:'oven',name:isFr?'Enfournement':'Into the oven',at:ovenAt,from:ovenAt,to:ovenAt,editable:false,valid:true}].sort((a,b)=>a.at-b.at);
- return <section data-open={open||undefined} aria-label={isFr?'Vos moments clés':'Your key times'} id="schedule-anchor-panel">
+ return <section data-open={open||undefined} aria-label={isFr?'Vos moments clés':'Your key times'} id="schedule-anchor-panel" tabIndex={-1}>
   <div className="bh-plan-heading"><span className="bh-plan-state" data-valid={valid} role="status">{!valid?(isFr?'À corriger':'Needs attention'):hasDraft?(isFr?'Modifications à appliquer':'Changes to apply'):personalized?(isFr?'Planning personnalisé':'Your adjusted plan'):(isFr?'Planning recommandé':'Recommended plan')}</span>{header}</div>
   {notice}
   <div className="bh-linked-editor">

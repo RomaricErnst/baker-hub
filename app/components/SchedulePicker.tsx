@@ -263,11 +263,7 @@ type StarterState = 'rt_fed' | 'fridge_unfed' | 'fridge_fed';
 // ── Card date+time formatter ─────────────────
 // "Fri 28 Mar · 9pm" / "ven. 28 mars · 21h"
 export function fmtCardHM(d: Date, isFr = false): string {
-  const h = d.getHours(), m = d.getMinutes();
-  if (isFr) return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}`;
-  const ap = h < 12 ? 'am' : 'pm';
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return m === 0 ? `${h12}${ap}` : `${h12}:${String(m).padStart(2, '0')}${ap}`;
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 export function fmtCardDT(d: Date, isFr = false): string {
   const loc = isFr ? 'fr-FR' : 'en-US';
@@ -6652,7 +6648,7 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
     const target=candidate.bake;setPickerDate(`${target.getFullYear()}-${String(target.getMonth()+1).padStart(2,'0')}-${String(target.getDate()).padStart(2,'0')}`);setPickerHour(target.getHours());setPickerMinute(target.getMinutes());
     onChange(candidate.start,candidate.bake,candidate.blocks,{preservePlan:true,prefOffsetHours:candidate.prefHours,timingOverrides:overrides});onReady?.();
   };
-  const targetChoices=<div className="bh-target-choices">{suggestedTargets.map(candidate=><button type="button" key={+candidate.bake} onClick={()=>applySuggestedTarget(candidate)}>{fmtCardDT(candidate.bake,isFr)}</button>)}</div>;
+  const targetChoices=<div className="bh-target-choices">{suggestedTargets.map(candidate=><button type="button" key={+candidate.bake} onClick={()=>applySuggestedTarget(candidate)}>{candidate.bake.toDateString()===pendingEatTime.toDateString()?fmtCardHM(candidate.bake,isFr):fmtCardDT(candidate.bake,isFr)}</button>)}</div>;
 
   return (
     <div style={{ fontFamily: 'var(--font-ui)' }}>
@@ -8350,17 +8346,22 @@ function FermentedSchedulePicker({ startTime, eatTime, blocks, preheatMin, mixer
         const otherConflicts=currentConflicts.filter(conflict=>conflict.action.id!==finalFridgeRemoval?.id);
         const busyWithFridge=showFridgeArrangement&&(isSourdough?('validation' in currentCandidate&&currentCandidate.validation.reason==='busy'):preview?.issue==='busy');
         const showResolutionChoice=busyWithFridge&&!fridgeRemovalCovered&&!valid&&otherConflicts.length===0&&!batchConflict&&suggestedTargets.length>0;
+        if(showFridgeArrangement&&finalFridgeRemoval){
+          const mix=anchors.find(anchor=>anchor.id==='mix');
+          if(mix&&busyWithFridge&&otherConflicts.length===0){mix.note=null;mix.valid=true;}
+          anchors.push({id:'fridge-removal',name:isFr?'Sortir la pâte du réfrigérateur':'Take dough out',at:+finalFridgeRemoval.at,from:+finalFridgeRemoval.at,to:+finalFridgeRemoval.at,editable:false,valid:fridgeRemovalCovered,note:fridgeRemovalCovered?(isFr?'Cette étape est prévue.':'This step is covered.'):(isFr?'À confirmer ci-dessus.':'Confirm this step above.')});
+        }
         const editAvailability=<button type="button" className="bh-back-action" onClick={()=>{availabilityControlsRef.current?.scrollIntoView({block:'center',behavior:'auto'});availabilityControlsRef.current?.focus({preventScroll:true});}}>{isFr?'Modifier mes indisponibilités':'Change my availability'}</button>;
         const fridgeArrangement=showFridgeArrangement?<div className="bh-fridge-arrangement" data-fridge-removal={fridgeRemovalCovered?'arranged':'pending'} style={{padding:'12px 14px',marginBottom:12,border:'1px solid var(--border)',borderRadius:12}}>
           <strong>{isFr?'Sortie du réfrigérateur · ':'Take dough out · '}{fmtCardDT(finalFridgeRemoval!.at,isFr)}</strong>
           {fridgeRemovalCovered?<div role="status"><span>{isFr?'Cette étape est prévue.':'This step is covered.'}</span>{' '}<button type="button" className="bh-back-action" style={{minHeight:44,minWidth:44}} onClick={()=>setFridgeRemovalCovered(false)}>{isFr?'Annuler':'Undo'}</button></div>:<>
-            {showResolutionChoice&&<p style={{margin:'8px 0 16px',color:'var(--smoke)'}}>{isFr?'Pendant votre indisponibilité. Choisissez une option :':'During your unavailable hours. Choose one option:'}</p>}
-            {showResolutionChoice&&<h3 style={{fontSize:16,fontWeight:600,margin:'0 0 8px'}}>{isFr?'Garder cet enfournement':'Keep this baking time'} · {fmtCardDT(pendingEatTime,isFr)}</h3>}
+            {showResolutionChoice&&<p style={{margin:'8px 0 16px',color:'var(--smoke)'}}>{isFr?'Vous êtes indisponible à ce moment-là.':'You’re unavailable then.'}</p>}
+            {showResolutionChoice&&<h3 style={{fontSize:16,fontWeight:600,margin:'0 0 8px'}}>{isFr?'Garder l’enfournement à':'Keep baking at'} {fmtCardHM(pendingEatTime,isFr)}</h3>}
             <p style={{margin:'8px 0'}}>{showResolutionChoice?(isFr?`Vous ou quelqu’un sur place pouvez sortir la pâte à ${fmtCardHM(finalFridgeRemoval!.at,isFr)} ?`:`Can you or someone at home take the dough out at ${fmtCardHM(finalFridgeRemoval!.at,isFr)}?`):(isFr?'Pendant votre indisponibilité. Vous ou quelqu’un sur place pouvez sortir la pâte ?':'During your unavailable hours. Can you or someone at home take the dough out?')}</p>
             <button type="button" className="bh-apply-plan" style={{minHeight:44,whiteSpace:'normal'}} onClick={()=>setFridgeRemovalCovered(true)}>{isFr?'Oui, cette étape est prévue':'Yes, this step is covered'}</button>
             {showResolutionChoice&&<>
-              <div className="bh-resolution-or" style={{display:'flex',alignItems:'center',gap:12,margin:'18px 0',color:'var(--smoke)',fontSize:14}}><span aria-hidden="true" style={{flex:1,borderTop:'1px solid var(--border)'}}/>{isFr?'ou':'or'}<span aria-hidden="true" style={{flex:1,borderTop:'1px solid var(--border)'}}/></div>
-              <h3 style={{fontSize:16,fontWeight:600,margin:'0 0 10px'}}>{isFr?'Choisir un autre enfournement':'Choose another baking time'}</h3>
+              <div className="bh-resolution-or" style={{display:'flex',alignItems:'center',gap:12,margin:'12px 0',color:'var(--smoke)',fontSize:14}}><span aria-hidden="true" style={{flex:1,borderTop:'1px solid var(--border)'}}/>{isFr?'ou':'or'}<span aria-hidden="true" style={{flex:1,borderTop:'1px solid var(--border)'}}/></div>
+              <h3 style={{fontSize:16,fontWeight:600,margin:'0 0 10px'}}>{isFr?'Cuire plus tard':'Bake later'}</h3>
               {targetChoices}
             </>}
           </>}

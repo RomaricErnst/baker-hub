@@ -556,7 +556,7 @@ export default function Header({
             position: 'sticky', top: 0, background: 'var(--warm)', zIndex: 2,
             flexShrink: 0,
           }}>
-            <strong>{menuPage === 'main' ? 'Menu' : menuPage === 'settings' ? (locale === 'fr' ? 'Langue et unités' : 'Language & units') : menuPage === 'library' ? (locale === 'fr' ? 'Mes fournées enregistrées' : 'My saved bakes') : (locale === 'fr' ? 'Compte' : 'Account')}</strong>
+            <strong>{menuPage === 'main' ? 'Menu' : menuPage === 'settings' ? (locale === 'fr' ? 'Langue et unités' : 'Language & units') : menuPage === 'library' ? (locale === 'fr' ? 'Fournées enregistrées' : 'Saved bakes') : (locale === 'fr' ? 'Compte' : 'Account')}</strong>
             <button onClick={() => setMenuOpen(false)} style={{ ...menuButton, width: 'auto' }}>{locale === 'fr' ? 'Fermer' : 'Close'}</button>
           </div>
           {menuPage !== 'main' && <button onClick={() => setMenuPage('main')} style={{ ...menuButton, marginBottom: 14 }}>{locale === 'fr' ? '‹ Retour au menu' : '‹ Back to menu'}</button>}
@@ -571,8 +571,8 @@ export default function Header({
               <button style={menuButton} onClick={() => { setMenuOpen(false); onNewSession(); }}>{locale === 'fr' ? 'Commencer une nouvelle fournée' : 'Start a new bake'}</button>
             </>}
             <div style={menuGroup}>Bakerhub</div>
-            {onRestorePreviousBake && <button style={menuButton} onClick={() => { setMenuOpen(false); onRestorePreviousBake(); }}>{locale === 'fr' ? 'Rétablir la fournée précédente' : 'Restore previous bake'}</button>}
-            <button style={menuButton} onClick={() => setMenuPage('library')}>{locale === 'fr' ? 'Mes fournées enregistrées' : 'My saved bakes'}</button>
+            {onRestorePreviousBake && <button style={menuButton} onClick={() => { setMenuOpen(false); onRestorePreviousBake(); }}>{locale === 'fr' ? 'Annuler le démarrage d’une nouvelle fournée' : 'Undo starting a new bake'}</button>}
+            <button style={menuButton} onClick={() => setMenuPage('library')}>{locale === 'fr' ? 'Fournées enregistrées' : 'Saved bakes'}</button>
             <button style={menuButton} onClick={() => setMenuPage('account')}>{locale === 'fr' ? 'Compte' : 'Account'}</button>
             {onOpenProfile && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenProfile(); }}>{locale === 'fr' ? 'Préférences de cuisine' : 'Kitchen preferences'}</button>}
             <button style={menuButton} onClick={() => setMenuPage('settings')}>{locale === 'fr' ? 'Langue et unités' : 'Language & units'}</button>
