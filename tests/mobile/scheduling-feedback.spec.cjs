@@ -70,6 +70,11 @@ for(const locale of ['fr','en'])for(const mode of ['simple','custom'])test(`${lo
  const {plan}=await seedParty(page,locale,mode);
  const card=plan.locator('.bh-fridge-arrangement');
  await expect(card).toHaveAttribute('data-fridge-removal','pending');
+ await expect(card.getByRole('heading',{name:locale==='fr'?/^Garder cet enfournement/:/^Keep this baking time/})).toBeVisible();
+ await expect(card.locator('.bh-resolution-or')).toHaveText(locale==='fr'?'ou':'or');
+ await expect(card.getByRole('heading',{name:locale==='fr'?'Choisir un autre enfournement':'Choose another baking time',exact:true})).toBeVisible();
+ await expect(card.locator('.bh-target-choices button')).toHaveCount(3);
+ await expect(plan.locator('.bh-plan-notice')).toHaveCount(0);
  await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','false');
  const before=await stored(page),labelBefore=await card.locator('strong').innerText();
  const actionTimesBefore=await plan.locator('time[datetime]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('datetime')));
@@ -103,6 +108,11 @@ for(const locale of ['fr','en'])for(const mode of ['simple','custom'])test(`${lo
  await expect(card).toHaveAttribute('data-fridge-removal','pending');
  await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','false');
  await expect.poll(async()=>(await stored(page)).blocks.every(block=>!block.fridgeRemoval)).toBe(true);
+ await card.locator('.bh-target-choices button').first().tap();
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','true');
+ await expect(card).toHaveCount(0);
+ await expect.poll(async()=>(await stored(page)).eatTime).toBeGreaterThan(PARTY_BAKE+15*60000);
+ expect(plainBlocks((await stored(page)).blocks)).toEqual(before.blocks);
  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize().width);
 });
 
