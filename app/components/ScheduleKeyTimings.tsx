@@ -6,7 +6,7 @@ import type {EditSlot} from '../utils/scheduleEdit';
 export type KeyTimingAnchor={id:string;name:string;at:number;from:number;to:number;editable:boolean;valid?:boolean;summary?:ReactNode;detail?:ReactNode;note?:ReactNode;control?:ReactNode;locked?:boolean};
 const STEP=900000;
 type SlotWindow={from:number;to:number};
-function compatibleWindows(slots:EditSlot[]):SlotWindow[]{
+export function compatibleWindows(slots:EditSlot[]):SlotWindow[]{
  const windows:SlotWindow[]=[];
  for(const slot of slots){
   if(!slot.valid)continue;
@@ -15,6 +15,31 @@ function compatibleWindows(slots:EditSlot[]):SlotWindow[]{
   else windows.push({from:slot.at,to:slot.at});
  }
  return windows;
+}
+export function TimingWindows({slots,at,isFr,onSelect}:{slots:EditSlot[];at:number;isFr:boolean;onSelect:(at:number)=>void}){
+ const days=new Map<string,EditSlot[]>();
+ for(const slot of slots){const d=new Date(slot.at),key=[d.getFullYear(),d.getMonth(),d.getDate()].join('-');days.set(key,[...(days.get(key)??[]),slot]);}
+ const hm=(value:number)=>new Date(value).toLocaleTimeString(isFr?'fr-FR':'en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
+ const percent=(value:number)=>{const d=new Date(value);return (d.getHours()*60+d.getMinutes())/1440*100;};
+ return <div className="bh-window-days">
+  <div className="bh-window-axis" aria-hidden="true"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
+  {[...days.entries()].map(([key,points])=>{
+   const current=new Date(at),ranges=compatibleWindows(points),selected=key===[current.getFullYear(),current.getMonth(),current.getDate()].join('-');
+   const choose=(range:SlotWindow)=>onSelect(points.filter(p=>p.valid&&p.at>=range.from&&p.at<=range.to).reduce((best,p)=>Math.abs(p.at-at)<Math.abs(best.at-at)?p:best).at);
+   return <div className="bh-window-day" key={key}>
+    <div className="bh-window-day-label">{new Date(points[0].at).toLocaleDateString(isFr?'fr-FR':'en-GB',{weekday:'short',day:'numeric',month:'short'})}{selected&&<span> · {hm(at)}</span>}</div>
+    <div className="bh-window-rail" aria-hidden="true" onClick={event=>{
+     const box=event.currentTarget.getBoundingClientRect(),minutes=(event.clientX-box.left)/box.width*1440;
+     const point=points.filter(p=>p.valid).find(p=>Math.abs(percent(p.at)*14.4-minutes)<=7.5);
+     if(point)onSelect(point.at);
+    }}>
+     {ranges.map(range=><span key={range.from} className="bh-window-segment" style={{left:Math.max(0,percent(range.from)-.520834)+'%',width:(Math.min(100,percent(range.to)+.520834)-Math.max(0,percent(range.from)-.520834))+'%'}}/>)}
+     {selected&&<span className="bh-window-marker" style={{left:percent(at)+'%'}}/>}
+    </div>
+    <div className="bh-window-options">{ranges.map(range=><button type="button" key={range.from} aria-pressed={at>=range.from&&at<=range.to} onClick={()=>choose(range)}>{hm(range.from)}{range.to!==range.from?'–'+hm(range.to):''}</button>)}{!ranges.length&&<small>{isFr?'Aucun créneau':'No available window'}</small>}</div>
+   </div>;
+  })}
+ </div>;
 }
 function TimingRow({anchor,isFr,onChange,check,cacheKey,open,onToggle}:{anchor:KeyTimingAnchor;isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string;open:boolean;onToggle:()=>void}){
  const [result,setResult]=useState<{key:string;slots:EditSlot[]}|null>(null);
@@ -42,7 +67,6 @@ function TimingRow({anchor,isFr,onChange,check,cacheKey,open,onToggle}:{anchor:K
  const fmt=(value:number)=>new Date(value).toLocaleString(isFr?'fr-FR':'en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false});
  const clock=new Date(at).toLocaleTimeString(isFr?'fr-FR':'en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
  const windows=compatibleWindows(slots);
- const rangeLabel=(window:SlotWindow)=>window.from===window.to?fmt(window.from):`${fmt(window.from)} – ${fmt(window.to)}`;
  const nearest=slots.filter(s=>s.valid).reduce<EditSlot|undefined>((best,s)=>!best||Math.abs(s.at-at)<Math.abs(best.at-at)?s:best,undefined);
  const date=new Date(at),local=new Date(at-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
  return <li data-key-timing={id} data-at={at} data-selected={open||undefined} data-candidate-valid={anchor.valid===true?'true':'false'} className="bh-key-timing">
@@ -56,7 +80,7 @@ function TimingRow({anchor,isFr,onChange,check,cacheKey,open,onToggle}:{anchor:K
    {anchor.locked&&<span className="bh-kept-time">{isFr?'Heure conservée':'Time kept'}</span>}
    {open&&canEdit&&<div id={editorId} className="bh-key-editor">
     <div className="bh-time-steps"><button type="button" aria-label="- 30 min" disabled={at-2*STEP<from} onClick={()=>onChange(id,at-2*STEP)}>− 30 min</button><button type="button" aria-label="+ 30 min" disabled={at+2*STEP>to} onClick={()=>onChange(id,at+2*STEP)}>+ 30 min</button></div>
-    <div className="bh-key-window" data-has-windows={windows.length>0} aria-busy={checking}>{checking?(isFr?'Vérification des créneaux…':'Checking available slots…'):windows.length>0?<><span aria-hidden="true" className="bh-key-window-dot"/>{isFr?'Créneaux compatibles : ':'Compatible windows: '}{windows.map(rangeLabel).join(' · ')}</>:(anchor.valid?(isFr?'Horaire actuel compatible.':'Current time is compatible.'):(isFr?'Aucun créneau compatible avec ces contraintes.':'No compatible window with these constraints.'))}</div>
+    <div className="bh-key-window" data-has-windows={windows.length>0} aria-busy={checking}>{checking?(isFr?'Vérification des créneaux…':'Checking available slots…'):windows.length>0?<><span>{isFr?'Créneaux compatibles':'Compatible windows'}</span><TimingWindows slots={slots} at={at} isFr={isFr} onSelect={value=>onChange(id,value)}/></>:(anchor.valid?(isFr?'Horaire actuel compatible.':'Current time is compatible.'):(isFr?'Aucun créneau compatible avec ces contraintes.':'No compatible window with these constraints.'))}</div>
     {anchor.control}
     {anchor.detail&&<div className="bh-key-detail">{anchor.detail}</div>}
    </div>}

@@ -70,6 +70,7 @@ for(const locale of ['fr','en'])for(const mode of ['simple','custom'])test(`${lo
  const {plan}=await seedParty(page,locale,mode);
  const card=plan.locator('.bh-fridge-arrangement');
  await expect(card).toHaveAttribute('data-fridge-removal','pending');
+ await expect(reset(page)).toHaveCount(0);
  await expect(card.getByRole('heading',{name:locale==='fr'?/^Garder cet enfournement/:/^Keep this baking time/})).toBeVisible();
  await expect(card.locator('.bh-resolution-or')).toHaveText(locale==='fr'?'ou':'or');
  await expect(card.getByRole('heading',{name:locale==='fr'?'Choisir un autre enfournement':'Choose another baking time',exact:true})).toBeVisible();
@@ -165,7 +166,7 @@ test('poolish live invalid-to-valid draft updates feedback, Cancel restores and 
  await enter(plan,'pref','2026-09-25T09:15');
  await expect(confirm(plan)).toBeEnabled();
  await expect(row(plan,'pref')).toHaveAttribute('data-candidate-valid','true');
- await expect(reset(page)).toBeVisible();
+ await expect(reset(page)).toHaveCount(0); // unapplied changes use Cancel
  await expect(page.getByText(/Le créneau ne permet pas de préparer/)).toHaveCount(0);
  expect((await stored(page)).prefOffsetH).toBe(before.prefOffsetH);
  await plan.getByRole('button',{name:'Annuler',exact:true}).tap();
@@ -390,6 +391,8 @@ test('compact Organisation progress and one-tap timing editor stay usable on nar
  await expect(plan.getByRole('slider')).toHaveCount(0);
  await expect(confirm(plan)).toHaveCount(0);
  await expect(mix.locator('.bh-key-window')).toBeVisible();
+ await expect(mix.locator('.bh-window-rail').first()).toBeVisible({timeout:30000});
+ await expect(mix.locator('.bh-window-options button').first()).toBeVisible();
  await fits(page,mix.locator('.bh-key-modify'));await fits(page,exact);
  await fits(page,mix.getByRole('button',{name:'+ 30 min',exact:true}));
  await info.attach('compact-inline-editor',{body:await page.screenshot(),contentType:'image/png'});
