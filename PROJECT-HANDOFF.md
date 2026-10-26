@@ -1,3 +1,7 @@
+# Flour filters above results — 26 October 2026
+
+User authorized adjustment, push, merge and production deployment. Both primary and additional flour catalogues now place compact expandable Brand / Type / Country filters between search and results. Active values stay visible in the collapsed summary. Scan and manual entry are separate below the list. Selection and blend calculations are unchanged. Updated markup assertions and FR/EN mobile coverage exercise filter ordering, applying and clearing a type, visible active summaries and subsequent second-flour selection. Local 510 tests pass; build, mobile CI and production verification pending. This supersedes PR21’s below-results More options placement.
+
 # Release verified — simple first-flour selection — 26 October 2026
 
 PR23 removes redundant Flour 1 / Choose flour 1 headings while only one flour is selected; numbering remains for blends. User explicitly authorized publishing. Merged as ee7a8b1f9cbc185ee2941aaada0bfb02754a0cd9 after CI40253492152 passed all four width jobs: 510 unit/component tests, build, sourdough checks and 532 mobile WebKit checks (133 each at320/375/390/430px). Tested head58bff72f59413af147c140b1e386f58f903b47d4. Production deployment dpl_BxKdijqhSpHnH2CNkK31eHtNxeXc is READY at this exact merge SHA with www.bakerhub.app and bakerhub.app aliases. No selection/calculation changes and no physical iPhone validation claimed. This documentation-only follow-up changes no application code.

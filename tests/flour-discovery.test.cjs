@@ -16,15 +16,15 @@ test('selection does not require opening details',()=>{
  a.match(html,/aria-pressed="true"/);a.match(html,/Farine sélectionnée/);a.match(html,/Photo et détails/);a.match(html,/Changer la farine 1<\/button><\/div><\/div>/);
  const source=fs.readFileSync('app/components/FlourCatalogueBrowser.tsx','utf8');a.match(source,/aria-pressed=\{selected\} onClick=\{onChoose\}/);
 });
-test('initial catalogue has visible facets and inline expansion rather than a hidden catalogue mode',()=>{
+test('initial catalogue has filters above results and separate alternative entry actions',()=>{
  const html=renderToStaticMarkup(React.createElement(Catalogue,{recommendedIds:['caputo_pizzeria'],styleKey:'neapolitan',onChoose:()=>{},onGeneric:()=>{},onScan:()=>{}}));
- a.equal((html.match(/<select/g)||[]).length,3);a.doesNotMatch(html,/<details|Voir les 244|Pour votre style/);a.match(html,/Choix courants/);a.match(html,/Afficher plus de farines/);a.match(html,/Scanner mon sac/);
+ a.equal((html.match(/<select/g)||[]).length,3);a.doesNotMatch(html,/Voir les 244|Pour votre style/);a.ok(html.indexOf("<details")<html.indexOf("Choix courants"));a.ok(html.indexOf("Scanner mon sac")>html.indexOf("</details>"));a.match(html,/Choix courants/);a.match(html,/Afficher plus de farines/);a.match(html,/Scanner mon sac/);
 });
 
-test('blend search leads directly to typed suggestions with secondary tools collapsed',()=>{
+test('blend filters precede typed suggestions with alternative entry actions separate',()=>{
  const html=renderToStaticMarkup(React.createElement(Catalogue,{blendMode:true,recommendedIds:['caputo_manitoba','caputo_semola'],onChoose:()=>{},onGeneric:()=>{},onScan:()=>{}}));
  a.match(html,/Rechercher une farine/);a.match(html,/<h4[^>]*>Semoule<\/h4>/);
- a.ok(html.indexOf('Caputo Manitoba')<html.indexOf('<details'));
- a.match(html,/<details[^>]*><summary[^>]*>Plus d’options/);
+ a.ok(html.indexOf('<details')<html.indexOf('Caputo Manitoba'));a.ok(html.indexOf('Scanner mon sac')>html.indexOf('</details>'));
+ a.match(html,/<details[^>]*><summary[^>]*>Filtres/);
  a.doesNotMatch(html,/Variantes de mélange|conservée|proportions de départ/);
 });
