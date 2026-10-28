@@ -44,7 +44,8 @@ test('Simple retains explicit flour identities and stage weights without advance
    assert.ok(html.includes(locale==='fr'?'Utilisez votre farine principale (Selected wheat)':'Use your primary flour (Selected wheat)'));
   }
   if(result.sourdough){
-   const breakdown=[...plain.matchAll(/\(([\d,]+)g\)/g)].map(m=>Number(m[1].replaceAll(',','')));
+   const breakdown=result.flourParts.map((part,index)=>part.grams-(index===0?Math.round(result.sourdough.starterGramsMid/2):0));
+   for(const grams of breakdown)assert.ok(plain.includes(grams+' g'));
    assert.equal(breakdown.reduce((sum,n)=>sum+n,0),result.flour-Math.round(result.sourdough.starterGramsMid/2));
    assert.ok(html.includes(locale==='fr'?'Quantités totales':'Total ingredients'));
   }
@@ -86,7 +87,8 @@ test('preferment and starter total flour identities do not misstate final-dough 
   const {html,result}=render(locale,'custom',pref,yeast,blend);
   const totalSection=html.match(/<section aria-label="(?:Quantités totales|Total ingredients)">([\s\S]*?)<\/section>/)?.[1];
   assert.ok(totalSection,`${locale}/${pref}: total ingredients are retained`);
-  assert.ok(totalSection.includes('Selected wheat + Selected rye + Selected wholemeal'));
+  for(const name of ['Selected wheat','Selected rye','Selected wholemeal'])assert.ok(totalSection.includes(name));
+  assert.ok(!totalSection.includes('Selected wheat + Selected rye'));
   assert.doesNotMatch(totalSection,/(?:60|25|15)\s*%\s*Selected/);
   assert.equal(flourShoppingName('neapolitan',locale,'custom',blend,false),'Selected wheat + Selected rye + Selected wholemeal');
   if(result.preferment){

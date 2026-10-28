@@ -1,6 +1,6 @@
 'use client';
 import type { StarterEvent } from './SchedulePicker';
-import { recommendedFlourName, flourShoppingName } from '../lib/flourGuidance';
+import { recommendedFlourName } from '../lib/flourGuidance';
 import { mixingBatchPlan } from '../utils/mixingBatches';
 import { useState, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
@@ -574,8 +574,7 @@ export default function RecipeOutput({
 
       {(hasPref || (sdActive && showSelectedFlour)) && <section aria-label={locale === 'fr' ? 'Quantités totales' : 'Total ingredients'}>
         <h3 style={{fontSize:17}}>{locale === 'fr' ? 'Quantités totales de la recette' : 'Total recipe ingredients'}</h3>
-        <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={mode === 'custom' ? '100%' : undefined}
-          sub={showSelectedFlour && flourBlend ? flourShoppingName(styleKey ?? '', locale, 'custom', flourBlend, false) : guidedFlourGuidance} />
+        {showSelectedFlour && result.flourParts?.length ? result.flourParts.map(part => <IngRow key={part.key} label={locale === 'fr' ? part.nameFr : part.name} grams={wStr(part.grams)} advancedPct={mode === 'custom' ? pctStr(part.pct) : undefined} />) : <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={mode === 'custom' ? '100%' : undefined} sub={guidedFlourGuidance} />}
         <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
         <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
         {pf && pf.prefYeastGrams > 0 && <IngRow label={t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)} grams={formatPrefermentDose(pf.prefYeastGrams)} advancedPct={mode === 'custom' ? pctStr(pf.prefYeastGrams / flour * 100) : undefined} />}
@@ -703,7 +702,7 @@ export default function RecipeOutput({
         /* Direct dough additions */
         <div>
 
-          {result.flourParts?.length ? result.flourParts.map(part => <IngRow key={part.key} label={locale === 'fr' ? part.nameFr : part.name} grams={wStr(part.grams)} pct={pctStr(part.pct)} highlight advancedPct={mode === 'custom' ? pctStr(part.pct) : undefined} />) : <IngRow
+          {result.flourParts?.length ? result.flourParts.map((part, index) => { const grams = part.grams - (sdActive && index === 0 ? sdHalf : 0); return <IngRow key={part.key} label={locale === 'fr' ? part.nameFr : part.name} grams={wStr(grams)} pct={pctStr(grams / flour * 100)} highlight advancedPct={mode === 'custom' ? pctStr(grams / flour * 100) : undefined} />; }) : <IngRow
             label={t('recipeOutput.ingredientFlour')}
             grams={wStr(flourMain)}
             noPct={sdActive}

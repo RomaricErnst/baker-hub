@@ -1477,6 +1477,7 @@ export default function Home() {
     setPrefermentChosen(session.prefermentChosen ?? false);
     setPrefermentFlourPct(session.prefermentFlourPct);
     setPrefOffsetH(session.prefOffsetH);
+    setPrefGoesInFridgeState(session.prefGoesInFridge ?? true);
     setTimingOverrides(normalizeTimingOverrides(session.timingOverrides));
     setManualHydration(session.manualHydration);
     setManualOil(session.manualOil);

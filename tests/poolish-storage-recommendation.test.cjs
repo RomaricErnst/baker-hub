@@ -37,3 +37,18 @@ test('explicit preparation and mixing pins cannot be moved to achieve the prefer
  assert.equal(chosen.result.found,true);assert.equal(+chosen.result.candidate.times.start,+start);
  assert.equal(+chosen.result.candidate.times.start-chosen.result.candidate.times.prefHours*H,+pref);
 });
+
+test('hot evening planning can start refrigerated poolish now for Friday, preserving bake and pins',()=>{
+ const current=+new Date(2026,9,28,22,5),mix=new Date(2026,9,29,18),oven=new Date(2026,9,30,19,30);
+ const choices=options(27,6).map(option=>({...option,input:{...option.input,now:current,start:mix,at:mix,bake:oven,blocks:[],
+  prefWindow:option.inFridge?{min:8,max:24}:option.input.prefWindow,
+  window:()=>({from:new Date(2026,9,29,17,30),to:new Date(2026,9,29,20)}),methodValid:()=>true}}));
+ const chosen=recommendPreferment(choices,{}, {preferCold:true,startThisEvening:true});
+ assert.equal(chosen.result.found,true);assert.equal(chosen.inFridge,true);
+ const times=chosen.result.candidate.times;
+ assert.equal(+times.start-times.prefHours*H,+new Date(2026,9,28,22,15));
+ assert.equal(+times.bake,+oven);
+ const pinned=new Date(2026,9,29,7);
+ const kept=recommendPreferment(choices,{preferment:pinned},{preferCold:true,startThisEvening:true});
+ assert.equal(+kept.result.candidate.times.start-kept.result.candidate.times.prefHours*H,+pinned);
+});

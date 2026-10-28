@@ -1020,17 +1020,17 @@ export function computePrefermentRecipe(
 
   const finalWater = totalWaterGrams - prefWater;
 
-  const cold = p.cold;
-  const fermentHoursMin = p.fermentHoursMin;
-  const fermentHoursMax = p.fermentHoursMax;
+  const cold = isInFridge;
+  const fermentHoursMin = prefFermentH;
+  const fermentHoursMax = prefFermentH;
 
   const schedule = cold
-    ? `Mix preferment ${fermentHoursMax}h before baking. Ferment in fridge at ${p.fermentTemp}°C.`
-    : `Mix preferment ${fermentHoursMin}–${fermentHoursMax}h before baking. Ferment at room temperature.`;
+    ? `Ferment for ${prefFermentH}h in the fridge at ${effectiveFT}°C before mixing the final dough.`
+    : `Ferment for ${prefFermentH}h at room temperature before mixing the final dough.`;
 
   const scheduleFr = cold
-    ? `Préparez le pré-ferment ${fermentHoursMax}h avant la cuisson. Fermentez au frigo à ${p.fermentTemp}°C.`
-    : `Préparez le pré-ferment ${fermentHoursMin}–${fermentHoursMax}h avant la cuisson. Fermentez à température ambiante.`;
+    ? `Laissez fermenter ${prefFermentH}h au réfrigérateur à ${effectiveFT}°C avant de pétrir la pâte finale.`
+    : `Laissez fermenter ${prefFermentH}h à température ambiante avant de pétrir la pâte finale.`;
 
   return {
     prefFlour,

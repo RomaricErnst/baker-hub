@@ -56,7 +56,7 @@ for(const locale of ['fr','en']) {
   await page.evaluate(value=>localStorage.setItem('bh_session_v1',value),newer);
   await page.getByRole('button',{name:locale==='fr'?'Nouvelle fournée':'Start a new bake',exact:true}).tap();
   expect(await page.evaluate(()=>localStorage.getItem('bh_session_v1'))).toBe(newer);
-  await expect(page.getByRole('alert').filter({hasText:locale==='fr'?'Une autre fenêtre':'Another window'})).toBeVisible();
+  await expect(page.getByRole('alert').filter({hasText:locale==='fr'?'Cette fournée a été modifiée':'This bake was updated'})).toBeVisible();
  });
  test(`${locale}: stale pagehide cannot overwrite a draft from another tab`,async({page,context})=>{
   await page.route('http://127.0.0.1:54321/**',route=>route.fulfill({status:401,body:'{}'}));
@@ -72,6 +72,6 @@ for(const locale of ['fr','en']) {
   await other.evaluate(value=>localStorage.setItem('bh_session_v1',value),newer);
   await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));
   expect(await other.evaluate(()=>localStorage.getItem('bh_session_v1'))).toBe(newer);
-  await expect(page.getByRole('alert').filter({hasText:locale==='fr'?'Une autre fenêtre':'Another window'})).toBeVisible();
+  await expect(page.getByRole('alert').filter({hasText:locale==='fr'?'Cette fournée a été modifiée':'This bake was updated'})).toBeVisible();
  });
 }

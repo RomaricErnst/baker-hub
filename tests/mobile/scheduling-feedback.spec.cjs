@@ -391,7 +391,8 @@ test('compact Organisation progress and one-tap timing editor stay usable on nar
  await expect(plan.getByRole('slider')).toHaveCount(0);
  await expect(confirm(plan)).toHaveCount(0);
  await expect(mix.locator('.bh-key-window')).toBeVisible();
- await expect(mix.locator('.bh-window-rail').first()).toBeVisible({timeout:30000});
+ await expect(mix.locator('.bh-window-day').first()).toBeVisible({timeout:30000});
+ await expect(mix.locator('.bh-window-rail')).toHaveCount(0);
  await expect(mix.locator('.bh-window-options button').first()).toBeVisible();
  await fits(page,mix.locator('.bh-key-modify'));await fits(page,exact);
  await fits(page,mix.getByRole('button',{name:'+ 30 min',exact:true}));
