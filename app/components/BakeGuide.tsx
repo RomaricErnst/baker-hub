@@ -1417,11 +1417,14 @@ Actual dough condition and equipment may differ from these estimates.`;
         {batch && <Section icon="" title={batch.count > 1 ? (l === 'fr' ? `Pétrissée ${batch.active + 1} sur ${batch.count}` : `Batch ${batch.active + 1} of ${batch.count}`) : (l === 'fr' ? 'À mélanger' : 'Use now')}>
           {Object.entries(batch.portion).filter(([key,grams]) => grams > 0 && !(key === 'flour' && recipe?.flourParts?.length)).map(([key,grams]) => <div key={key} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{({milk:l==='fr'?'Lait':'Milk',eggs:l==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:l==='fr'?'Beurre':'Butter',flour:l==='fr'?'Farine':'Flour',water:l==='fr'?'Eau':'Water',salt:l==='fr'?'Sel':'Salt',oil:l==='fr'?'Huile':'Oil',sugar:l==='fr'?'Sucre':'Sugar',yeast:l==='fr'?'Levure':'Yeast',starter:l==='fr'?'Levain':'Starter',preferment:prefermentType ?? 'Preferment'} as Record<string,string>)[key]}</span><strong>{grams} g</strong></div>)}
           {!!recipe?.flourParts?.length && (() => {
+            const fermentedFlour = recipe.preferment?.prefFlour ?? bgSdHalf;
+            const addedFlour = recipe.flour - fermentedFlour;
             let remainder = batch.portion.flour;
             return recipe.flourParts.map((part,index) => {
-              const grams = index === recipe.flourParts!.length - 1 ? remainder : Math.round(batch.portion.flour * part.pct / 100);
+              const partAdded = part.grams - (index === 0 ? fermentedFlour : 0);
+              const grams = index === recipe.flourParts!.length - 1 ? remainder : Math.round(batch.portion.flour * partAdded / addedFlour);
               remainder -= grams;
-              return <div key={part.key} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{l === 'fr' ? part.nameFr : part.name}</span><strong>{grams} g</strong></div>;
+              return <div key={`${part.key}-${index}`} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{l === 'fr' ? part.nameFr : part.name}</span><strong>{grams} g</strong></div>;
             });
           })()}
           {batch.overCapacity && <p role="alert">{l === 'fr' ? 'Cette quantité dépasse la capacité indiquée du pétrin. Augmentez le nombre de pétrissées dans les réglages du matériel.' : 'This batch exceeds the stated mixer capacity. Increase batches in equipment settings.'}</p>}

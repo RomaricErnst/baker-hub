@@ -207,3 +207,19 @@ test('enriched help retains butter technique and excludes lean-dough autolyse FA
  assert.match(main,/If the dough becomes greasy or too warm, pause and cool it/);
  assert.doesNotMatch(html,/autolyse|autolysis/i);
 });
+
+test('mixing flour rows exclude prefermented flour and conserve each batch',()=>{
+ for(const [yeast,pref] of [['instant','none'],['instant','poolish'],['instant','biga'],['sourdough','levain']])for(const count of [1,2]){
+  const schedule=utils.buildSchedule(new Date('2026-10-28T14:00Z'),new Date('2026-10-30T11:30Z'),[],27,60,'spiral','neapolitan');
+  const blend={flour1:'bread',flour2:'rye',ratio1:85,brandProduct:'Primary flour',customFlour2Name:'Second flour'};
+  const recipe=utils.calculateRecipe('neapolitan','home_oven_standard',12,270,27,'normal',schedule,6,yeast,'custom','spiral',undefined,undefined,undefined,blend,pref,null,20,undefined,undefined,true,0,false,undefined,20);
+  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,{schedule,recipe,mixerType:'spiral',mixingBatches:count,styleKey:'neapolitan',prefermentType:pref,kitchenTemp:27,numItems:12,oil:0,hydration:62,locale:'en'})));
+  const used=recipe.preferment?.prefFlour??(recipe.sourdough?Math.round(recipe.sourdough.starterGramsMid/2):0);
+  const added=recipe.flour-used;
+  const {mixingBatchPlan}=require('../app/utils/mixingBatches.ts');
+  const portion=mixingBatchPlan(recipe,'spiral',count,0).portion.flour;
+  const first=Math.round(portion*(recipe.flourParts[0].grams-used)/added);
+  assert.ok(html.includes(`<span>Primary flour</span><strong>${first} g</strong>`),`${pref}, ${count}: primary added flour`);
+  assert.ok(html.includes(`<span>Second flour</span><strong>${portion-first} g</strong>`),`${pref}, ${count}: second added flour`);
+ }
+});
