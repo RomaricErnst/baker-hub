@@ -11,7 +11,7 @@ import type { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { type UnitSystem } from '../utils/units';
 import SessionViewer from './SessionViewer';
-import {readAuthIntent, type AuthIntent} from '../lib/session';
+import {localBakes, type LocalBake, type SessionData, readAuthIntent, type AuthIntent} from '../lib/session';
 import { PIZZAS, DESSERT_PIZZAS } from '@/app/lib/toppingDatabase';
 
 function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
@@ -233,6 +233,7 @@ export default function Header({
   onSaveSession,
   onNewSession,
   onRestorePreviousBake,
+  onOpenLocalBake, onContinueBake, hasCurrentBake,
   onBack,
   onReviewPlan,
   onOpenPizzas,
@@ -261,6 +262,9 @@ export default function Header({
   onSaveSession?: () => void;
   onNewSession?: () => void;
   onRestorePreviousBake?: () => void;
+  onOpenLocalBake?: (session: SessionData) => void;
+  onContinueBake?: () => void;
+  hasCurrentBake?: boolean;
   onBack?: () => void;
   onReviewPlan?: () => void;
   onOpenPizzas?: () => void;
@@ -281,6 +285,7 @@ export default function Header({
   const pathname = usePathname();
   const supabase = createClient();
 
+  const [deviceBakes, setDeviceBakes] = useState<LocalBake[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [shoppingLocation, setShoppingLocation] = useState('international');
@@ -353,6 +358,7 @@ export default function Header({
   }, []);
 
   useEffect(() => {
+    if(menuOpen) setDeviceBakes(localBakes());
     if (menuOpen && user) {
       setLoadingRecipes(true);
       Promise.all([fetchRecipes(), fetchBakeEvents()]).then(([recipeData, eventData]) => {
@@ -556,7 +562,7 @@ export default function Header({
             position: 'sticky', top: 0, background: 'var(--warm)', zIndex: 2,
             flexShrink: 0,
           }}>
-            <strong>{menuPage === 'main' ? 'Menu' : menuPage === 'settings' ? (locale === 'fr' ? 'Langue et unités' : 'Language & units') : menuPage === 'library' ? (locale === 'fr' ? 'Fournées enregistrées' : 'Saved bakes') : (locale === 'fr' ? 'Compte' : 'Account')}</strong>
+            <strong>{menuPage === 'main' ? 'Menu' : menuPage === 'settings' ? (locale === 'fr' ? 'Langue et unités' : 'Language & units') : menuPage === 'library' ? (locale === 'fr' ? 'Mes fournées' : 'My bakes') : (locale === 'fr' ? 'Compte' : 'Account')}</strong>
             <button onClick={() => setMenuOpen(false)} style={{ ...menuButton, width: 'auto' }}>{locale === 'fr' ? 'Fermer' : 'Close'}</button>
           </div>
           {menuPage !== 'main' && <button onClick={() => setMenuPage('main')} style={{ ...menuButton, marginBottom: 14 }}>{locale === 'fr' ? '‹ Retour au menu' : '‹ Back to menu'}</button>}
@@ -571,8 +577,8 @@ export default function Header({
               <button style={menuButton} onClick={() => { setMenuOpen(false); onNewSession(); }}>{locale === 'fr' ? 'Commencer une nouvelle fournée' : 'Start a new bake'}</button>
             </>}
             <div style={menuGroup}>Bakerhub</div>
-            {onRestorePreviousBake && <button style={menuButton} onClick={() => { setMenuOpen(false); onRestorePreviousBake(); }}>{locale === 'fr' ? 'Annuler le démarrage d’une nouvelle fournée' : 'Undo starting a new bake'}</button>}
-            <button style={menuButton} onClick={() => setMenuPage('library')}>{locale === 'fr' ? 'Fournées enregistrées' : 'Saved bakes'}</button>
+
+            <button style={menuButton} onClick={() => setMenuPage('library')}>{locale === 'fr' ? 'Mes fournées' : 'My bakes'}</button>
             <button style={menuButton} onClick={() => setMenuPage('account')}>{locale === 'fr' ? 'Compte' : 'Account'}</button>
             {onOpenProfile && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenProfile(); }}>{locale === 'fr' ? 'Préférences de cuisine' : 'Kitchen preferences'}</button>}
             <button style={menuButton} onClick={() => setMenuPage('settings')}>{locale === 'fr' ? 'Langue et unités' : 'Language & units'}</button>
@@ -588,6 +594,13 @@ export default function Header({
             <button type="button" onClick={() => setMenuOpen(false)} style={{ ...menuButton, background: 'var(--terra)', color: 'white', textAlign: 'center', minHeight: 44 }}>{locale === 'fr' ? 'Terminé' : 'Done'}</button>
           </div>}
           {menuPage === 'library' && <>
+            {hasCurrentBake && <button style={menuButton} onClick={()=>{setMenuOpen(false);onContinueBake?.();}}>{locale==='fr'?'Reprendre ma fournée':'Continue current bake'}</button>}
+            <div style={{padding:'12px 16px'}}>
+              <strong>{locale==='fr'?'Sur cet appareil':'On this device'}</strong>
+              {deviceBakes.length===0 && <p>{locale==='fr'?'Vos fournées précédentes apparaîtront ici.':'Your previous bakes will appear here.'}</p>}
+              {deviceBakes.map(row=><button key={row.id} style={{...menuButton,width:'100%',marginTop:8}} onClick={()=>{setMenuOpen(false);onOpenLocalBake?.(row.session);}}>{row.session.bakeName || row.session.styleKey || (locale==='fr'?'Fournée':'Bake')} · {row.session.numItems} × {row.session.itemWeight}g · {new Date(row.session.savedAt).toLocaleString(locale)}</button>)}
+            </div>
+
           {/* ── My Sessions cards — scrollable ── */}
           <div style={{ flex: '0 0 auto', minHeight: 0, padding: '4px 16px 12px' }}>
             {!user ? (

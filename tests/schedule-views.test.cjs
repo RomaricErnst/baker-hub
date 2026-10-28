@@ -72,6 +72,7 @@ test('visual windows split dates and gaps, and select only validated slots',()=>
  assert.equal(buttons.length,3);
  for(const button of buttons){button.props.onClick();assert.ok(slots.some(s=>s.valid&&s.at===chosen));}
  const html=renderToStaticMarkup(tree);
- assert.equal((html.match(/class="bh-window-rail"/g)||[]).length,2);
- assert.match(html,/07:00/);assert.match(html,/07:30/);assert.match(html,/bh-window-marker/);assert.match(html,/07:01/);
+ assert.equal((html.match(/class="bh-window-day"/g)||[]).length,2);
+ assert.doesNotMatch(html,/bh-window-rail|No available window/);
+ assert.match(html,/07:00/);assert.match(html,/07:30/);assert.doesNotMatch(html,/bh-window-marker/);
 });

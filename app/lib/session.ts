@@ -5,7 +5,7 @@ import type { StarterEvent } from '../components/SchedulePicker';
 import type { RecipeEnrichment } from '../utils/enrichedFormulas';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 const SESSION_KEY = 'bh_session_v1';
-const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
 const draftStores = new WeakMap<Storage, ReturnType<typeof createDraftStorage>>();
 function sessionStore() {
   let store = draftStores.get(localStorage);
@@ -163,7 +163,6 @@ export function loadSession(): SessionData | null {
     if (!raw) return null;
     const data = JSON.parse(raw) as SessionData;
     if (data.version !== 1) return null;
-    if (Date.now() - data.savedAt > SESSION_TTL_MS) { clearSession(); return null; }
     return { ...data, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), mixerCapacityG: normalizeMixerCapacity(data.mixerCapacityG), resultNotes: normalizeResultNotes(data.resultNotes) };
   } catch { return null; }
 }
@@ -213,6 +212,9 @@ export function preservePreviousBake(): boolean {
     if (!store.isCurrent()) return false;
     const session = store.read();
     if (!session) return true; // A second click must not erase the recovery copy.
+    const snapshot=JSON.parse(session) as SessionData;
+    snapshot.pizzaParty={...snapshot.pizzaParty,qtys:snapshot.pizzaParty?.qtys ?? {},shopTicks:JSON.parse(localStorage.getItem('bh_shop_ticks_v1') ?? '{}'),prepTicks:JSON.parse(localStorage.getItem('bh_prep_ticks_v1') ?? '[]')};
+    if (!archiveLocalBake(snapshot)) return false;
     const progress = Object.fromEntries(PROGRESS_KEYS.map(key => [key, localStorage.getItem(key)]));
     localStorage.setItem(PREVIOUS_BAKE_KEY, JSON.stringify({session, progress}));
     return true;
@@ -234,4 +236,25 @@ export function restorePreviousBake(): SessionData | null {
     localStorage.removeItem(PREVIOUS_BAKE_KEY);
     return data;
   } catch { return null; }
+}
+
+// Independent snapshots: switching bakes never evicts earlier recovery copies.
+export interface LocalBake { id: string; session: SessionData }
+const LOCAL_BAKES_KEY = 'bh_local_bakes_v1';
+export function localBakes(): LocalBake[] {
+  try { const value = JSON.parse(localStorage.getItem(LOCAL_BAKES_KEY) ?? '[]'); const rows: LocalBake[] = Array.isArray(value) ? value.filter(row=>row?.id && row.session?.version===1) : [];
+    const backup=localStorage.getItem(PREVIOUS_BAKE_KEY);
+    if(backup) { const session=JSON.parse(JSON.parse(backup).session); if(session?.version===1 && !rows.some(row=>JSON.stringify({...row.session,savedAt:0})===JSON.stringify({...session,savedAt:0}))) rows.push({id:'previous-bake',session}); }
+    return rows; } catch { return []; }
+}
+export function archiveLocalBake(data: SessionData): boolean {
+  if (!data.bakeType || (!data.styleKey && !Object.keys(data.pizzaParty?.qtys ?? {}).length && !data.sandwichParty?.familyId)) return true;
+  try {
+    const rows=localBakes();
+    const content=JSON.stringify({...data,savedAt:0});
+    if(rows.some(row=>JSON.stringify({...row.session,savedAt:0})===content)) return true;
+    rows.unshift({id:crypto.randomUUID(),session:data});
+    localStorage.setItem(LOCAL_BAKES_KEY,JSON.stringify(rows));
+    return true;
+  } catch { return false; }
 }

@@ -1796,7 +1796,7 @@ export function calculateRecipe(
   if (yeast) yeast = {...yeast, dilutionTip: commercialDilution(yeast.convertedGrams, water)};
 
   let flourParts: RecipeResult['flourParts'];
-  if (styleKey === 'batbout' && flourBlend) {
+  if (flourBlend) {
     const hasSecond = !!flourBlend.flour2 && flourBlend.ratio1 < 100;
     const hasThird = hasSecond && !!flourBlend.flour3 && flourBlend.ratio2 !== undefined
       && flourBlend.ratio1 + flourBlend.ratio2 < 100;
@@ -1805,12 +1805,14 @@ export function calculateRecipe(
       ...(hasSecond ? [{ key: flourBlend.flour2!, pct: hasThird ? flourBlend.ratio2! : 100 - flourBlend.ratio1, custom: flourBlend.customFlour2Name }] : []),
       ...(hasThird ? [{ key: flourBlend.flour3!, pct: 100 - flourBlend.ratio1 - flourBlend.ratio2!, custom: flourBlend.customFlour3Name }] : []),
     ];
-    let remaining = flour;
+    const primaryFlour = preferment?.prefFlour ?? (sourdough ? Math.round(sourdough.starterGramsMid / 2) : 0);
+    const addedFlour = flour - primaryFlour;
+    let remaining = addedFlour;
     flourParts = components.map((part, index) => {
-      const grams = index === components.length - 1 ? remaining : Math.round(flour * part.pct / 100);
+      const grams = index === components.length - 1 ? remaining : Math.round(addedFlour * part.pct / 100);
       remaining -= grams;
       const definition = FLOUR_DATA[part.key];
-      return { key: part.key, name: part.custom ?? definition.name, nameFr: part.custom ?? definition.nameFr, grams, pct: part.pct };
+      return { key: part.key, name: part.custom ?? definition.name, nameFr: part.custom ?? definition.nameFr, grams: grams + (index === 0 ? primaryFlour : 0), pct: primaryFlour ? (grams + (index === 0 ? primaryFlour : 0)) / flour * 100 : part.pct };
     });
   }
 

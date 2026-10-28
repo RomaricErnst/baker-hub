@@ -5,8 +5,13 @@
 export function createDraftStorage(storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>, key: string, onConflict: () => void = () => {}) {
   let expected = storage.getItem(key);
   let conflicted = false;
+  const equivalent = (a: string | null, b: string | null) => {
+    if(a===b) return true;
+    if(!a || !b) return false;
+    try { return JSON.stringify({...JSON.parse(a),savedAt:0})===JSON.stringify({...JSON.parse(b),savedAt:0}); } catch { return false; }
+  };
   const matches = () => {
-    if (storage.getItem(key) === expected) return true;
+    if (equivalent(storage.getItem(key), expected)) return true;
     if (!conflicted) onConflict();
     conflicted = true;
     return false;

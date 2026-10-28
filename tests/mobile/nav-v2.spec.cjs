@@ -794,11 +794,7 @@ test.describe('guided piadina with cooking time set in planning',()=>{
   await noOverflow(page);
   await testInfo.attach('piadina-completion-notes',{body:await page.screenshot(),contentType:'image/png'});
   await end.getByRole('button',{name:'Refaire cette recette',exact:true}).tap();
-  const confirmation=page.getByRole('dialog',{name:'Refaire cette recette ?',exact:true});
-  await expect(confirmation).toBeVisible();
-  await expect(confirmation).toContainText('Cela remplacera la fournée ouverte sur cet appareil.');
-  await confirmation.getByRole('button',{name:'Refaire cette recette',exact:true}).tap();
-  await expect(confirmation).not.toBeVisible();
+  await expect(page.getByRole('dialog',{name:'Refaire cette recette ?',exact:true})).toHaveCount(0);
   await expect(plan).toBeVisible();
   await expect.poll(async()=>{const s=await stored(page);return {generated:s?.recipeGenerated,count:s?.numItems,style:s?.styleKey};}).toEqual({generated:false,count:5,style:'piadina'});
   await expect(end).toHaveCount(0);expect(errors).toEqual([]);

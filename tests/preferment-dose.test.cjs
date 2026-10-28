@@ -28,3 +28,28 @@ test('dilution conserves selected yeast dose and preferment water', () => {
   assert.equal(prefermentDilution(0.5, 100), null);
   assert.equal(prefermentDilution(NaN, 100), null);
 });
+
+test('poolish and biga doses follow actual duration, storage temperature and yeast conversion',()=>{
+ for(const type of ['poolish','biga']){
+  const make=(hours,cold,temp=27,fridge=6)=>data.computePrefermentRecipe(type,1000,650,temp,fridge,cold,20,'instant',hours);
+  const short=make(12,true),long=make(24,true);
+  assert.ok(short.prefYeastGrams>long.prefYeastGrams);
+  assert.ok(make(18,true,27,4).prefYeastGrams>make(18,true,27,6).prefYeastGrams);
+  assert.equal(long.cold,true);assert.equal(long.fermentHoursMax,24);
+ }
+ const cold=data.computePrefermentRecipe('poolish',1000,650,27,6,true,20,'instant',19.5);
+ const room=data.computePrefermentRecipe('poolish',1000,650,27,6,false,20,'instant',7);
+ assert.notEqual(cold.prefYeastGrams,room.prefYeastGrams);
+ assert.equal(cold.cold,true);assert.equal(cold.fermentHoursMin,19.5);
+ assert.equal(room.cold,false);assert.equal(room.fermentHoursMin,7);
+});
+
+test('direct yeast responds to both warm and cold fermentation exposure',()=>{
+ const {utils}=require('./load-production.cjs');
+ const dose=(rt,cold,temp=27,fridge=6)=>utils.recommendYeast(rt,temp,cold,fridge,'instant',1000,null,'neapolitan').grams;
+ assert.ok(dose(4,18)<dose(4,8));
+ assert.ok(dose(6,8)<dose(4,8));
+ assert.ok(dose(6,18)<=dose(4,18));
+ assert.ok(dose(8,8,27)<dose(8,8,22));
+ assert.ok(dose(4,18,27,6)<dose(4,18,27,4));
+});

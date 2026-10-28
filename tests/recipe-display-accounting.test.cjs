@@ -21,9 +21,11 @@ test('direct, starter and preferment total rows include the mixing allowance',()
 test('starter flour blend breakdown sums to flour added after starter subtraction',()=>{
  for(const blend of [{flour1:'bread',flour2:'rye',ratio1:60},{flour1:'bread',flour2:'rye',flour3:'wholemeal',ratio1:60,ratio2:25}]){
   const r=make('sourdough','levain',blend),text=render(r,'levain',blend);
-  const breakdown=[...text.matchAll(/\(([\d,]+)g\)/g)].map(m=>Number(m[1].replaceAll(',','')));
-  a.equal(breakdown.length,blend.flour3?3:2);
-  a.equal(breakdown.reduce((s,n)=>s+n,0),r.flour-Math.round(r.sourdough.starterGramsMid/2));
+  const added=r.flourParts.map((part,i)=>part.grams-(i===0?Math.round(r.sourdough.starterGramsMid/2):0));
+  a.equal(added.length,blend.flour3?3:2);
+  a.equal(added.reduce((sum,n)=>sum+n,0),r.flour-Math.round(r.sourdough.starterGramsMid/2));
+  for(const grams of added)a.ok(text.includes(grams+' g'));
+
  }
 });
 test('preferment baker percentages describe the selected seed yeast actually weighed',()=>{
@@ -69,5 +71,16 @@ test('custom percentage basis and liquid starter assumption are explicit at ingr
   const text=render(make('sourdough','levain'),'levain',undefined,locale);
   a.ok(text.includes(locale==='fr'?'% de farine':'% of flour'));
   a.ok(text.includes(locale==='fr'?'Levain liquide · 100 % d’hydratation':'Liquid starter · 100% hydration'));
+ }
+});
+
+test('blend recipe totals show separate named flour weights and conserve stage allocation',()=>{
+ const blend={flour1:'bread',flour2:'rye',flour3:'wholemeal',ratio1:60,ratio2:25,brandProduct:'Wheat bag',customFlour2Name:'Rye bag',customFlour3Name:'Wholemeal bag'};
+ for(const pref of ['none','poolish','biga'])for(const locale of ['en','fr']){
+  const r=make('instant',pref,blend),html=render(r,pref,blend,locale,true);
+  a.equal(r.flourParts.reduce((sum,p)=>sum+p.grams,0),r.flour);
+  const content=(pref==='none'?html:html.match(/<section aria-label="(?:Total ingredients|Quantités totales)">([\s\S]*?)<\/section>/)[1]).replace(/<[^>]+>/g,'');
+  for(const part of r.flourParts){a.ok(content.includes(part.name));a.ok(content.includes(part.grams+' g'));}
+  if(r.preferment)a.equal(r.flourParts[0].grams,Math.round(r.preferment.finalFlour*.6)+r.preferment.prefFlour);
  }
 });

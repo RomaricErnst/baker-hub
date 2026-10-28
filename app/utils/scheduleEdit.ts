@@ -67,15 +67,27 @@ export type FixedBakeSearchResult = {candidate:EditResult; found:boolean; search
 /** Compare fully validated storage protocols using their existing maturity targets.
  * A target-duration plan takes precedence over retaining yesterday's repair.
  * Refrigeration only breaks otherwise equal ties; it is not a quality guarantee. */
-export function recommendPreferment(options: {inFridge:boolean; input:EditInput}[], pins:TimingPins={}) {
+export function recommendPreferment(options: {inFridge:boolean; input:EditInput}[], pins:TimingPins={}, preferences:{preferCold?:boolean;startThisEvening?:boolean}={}) {
   const results=options.map(option=>{
     const input=option.input;
     const target=findFixedBakeSchedule({...input,prefWindow:{min:input.prefHours,max:input.prefHours}},pins);
-    const result=target.found?target:findFixedBakeSchedule(input,pins);
+    let result=target.found?target:findFixedBakeSchedule(input,pins);
+    // Offer an actionable evening start when a refrigerated protocol supports
+    // it. Preserve explicit pins and validate every downstream intervention.
+    const now=input.now??Date.now(), hour=new Date(now).getHours();
+    if(preferences.startThisEvening&&option.inFridge&&!pins.preferment&&hour>=18&&hour<23){
+      const step=15*60000, first=(Math.floor(now/step)+1)*step;
+      for(let at=first;at<=now+3600000;at+=step){
+        if(new Date(at).getDate()!==new Date(now).getDate())break;
+        const early=findFixedBakeSchedule(input,{...pins,preferment:new Date(at)});
+        if(early.found||(early.preparationRepaired&&!result.found)){result=early;break;}
+      }
+    }
     return {...option,result};
   });
   results.sort((a,b)=>Number(b.result.found)-Number(a.result.found)
     || Number(!!b.result.preparationRepaired)-Number(!!a.result.preparationRepaired)
+    || (preferences.preferCold ? Number(b.inFridge)-Number(a.inFridge) : 0)
     || Math.abs(a.result.candidate.times.prefHours-a.input.prefHours)/Math.max(1,a.input.prefHours)-Math.abs(b.result.candidate.times.prefHours-b.input.prefHours)/Math.max(1,b.input.prefHours)
     || Math.abs(+a.result.candidate.times.start-+a.input.start)-Math.abs(+b.result.candidate.times.start-+b.input.start)
     || Number(b.inFridge)-Number(a.inFridge));

@@ -166,7 +166,7 @@ test('poolish live invalid-to-valid draft updates feedback, Cancel restores and 
  await enter(plan,'pref','2026-09-25T09:15');
  await expect(confirm(plan)).toBeEnabled();
  await expect(row(plan,'pref')).toHaveAttribute('data-candidate-valid','true');
- await expect(reset(page)).toHaveCount(0); // unapplied changes use Cancel
+ await expect(reset(page)).toBeVisible(); // changed drafts can return directly to recommendations
  await expect(page.getByText(/Le créneau ne permet pas de préparer/)).toHaveCount(0);
  expect((await stored(page)).prefOffsetH).toBe(before.prefOffsetH);
  await plan.getByRole('button',{name:'Annuler',exact:true}).tap();
@@ -391,7 +391,8 @@ test('compact Organisation progress and one-tap timing editor stay usable on nar
  await expect(plan.getByRole('slider')).toHaveCount(0);
  await expect(confirm(plan)).toHaveCount(0);
  await expect(mix.locator('.bh-key-window')).toBeVisible();
- await expect(mix.locator('.bh-window-rail').first()).toBeVisible({timeout:30000});
+ await expect(mix.locator('.bh-window-day').first()).toBeVisible({timeout:30000});
+ await expect(mix.locator('.bh-window-rail')).toHaveCount(0);
  await expect(mix.locator('.bh-window-options button').first()).toBeVisible();
  await fits(page,mix.locator('.bh-key-modify'));await fits(page,exact);
  await fits(page,mix.getByRole('button',{name:'+ 30 min',exact:true}));

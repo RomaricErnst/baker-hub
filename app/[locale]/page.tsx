@@ -6,7 +6,6 @@ import { createPortal } from 'react-dom';
 import { useTranslations, useLocale } from 'next-intl';
 import type { User } from '@supabase/supabase-js';
 import Header from '../components/Header';
-import ReplaceBakeDialog from '../components/ReplaceBakeDialog';
 import dynamic from 'next/dynamic';
 const ProfileSheet = dynamic(() => import('../components/ProfileSheet'), { ssr: false });
 import { loadProfile, setProfileListener } from '../lib/profile';
@@ -50,7 +49,7 @@ import { createClient } from '../lib/supabase/client';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
 import { archivedBlendSelections } from '../lib/flourRecovery';
 import { flourShoppingName } from '../lib/flourGuidance';
-import { hasPreviousBake, preservePreviousBake, restorePreviousBake, acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, normalizeFlourTarget, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
+import { archiveLocalBake, hasPreviousBake, preservePreviousBake, restorePreviousBake, acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, normalizeFlourTarget, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
 import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
@@ -1478,6 +1477,7 @@ export default function Home() {
     setPrefermentChosen(session.prefermentChosen ?? false);
     setPrefermentFlourPct(session.prefermentFlourPct);
     setPrefOffsetH(session.prefOffsetH);
+    setPrefGoesInFridgeState(session.prefGoesInFridge ?? true);
     setTimingOverrides(normalizeTimingOverrides(session.timingOverrides));
     setManualHydration(session.manualHydration);
     setManualOil(session.manualOil);
@@ -2597,37 +2597,25 @@ export default function Home() {
     scrollToStepTop();
   }
 
-  const [replaceBakeOpen, setReplaceBakeOpen] = useState(false);
-  const [replacementIsRebake, setReplacementIsRebake] = useState(false);
-  const replaceBakeAnswer = useRef<((replace: boolean) => void) | null>(null);
-  useEffect(() => () => { replaceBakeAnswer.current?.(false); }, []);
-
-  function answerReplaceBake(replace: boolean) {
-    const answer = replaceBakeAnswer.current;
-    replaceBakeAnswer.current = null;
-    setReplaceBakeOpen(false);
-    answer?.(replace);
-  }
-
-  async function confirmLocalReplacement(rebake = false): Promise<boolean> {
-    setReplacementIsRebake(rebake);
-    if (replaceBakeAnswer.current) return false;
-    const existing = loadSession();
-    if (existing || bakeType) {
-      const accepted = await new Promise<boolean>(resolve => {
-        replaceBakeAnswer.current = resolve;
-        setReplaceBakeOpen(true);
-      });
-      if (!accepted) return false;
-      // A second tab may have replaced the draft while this dialog was open.
-      if (JSON.stringify(loadSession()) !== JSON.stringify(existing)) {
-        setLocalSaveConflict(true);
-        return false;
-      }
-    }
+  async function confirmLocalReplacement(_rebake = false): Promise<boolean> {
+    // Preserve live edits before switching, including when another tab owns the draft.
+    const current = bakeType ? {...buildSessionPayload(),version:1 as const,savedAt:Date.now()} : loadSession();
+    if (current && !archiveLocalBake(current)) { setRestartFailed(true); return false; }
+    const stored = loadSession();
+    if (stored && !archiveLocalBake(stored)) { setRestartFailed(true); return false; }
     acceptCurrentSessionStorage(); setLocalSaveConflict(false);
     setPendingSession(null); setShowWelcomeBack(false); setShowProductHome(false);
     return true;
+  }
+
+  async function openLocalBake(session: SessionData) {
+    if (!await confirmLocalReplacement()) return;
+    try {
+      localStorage.setItem('bh_shop_ticks_v1',JSON.stringify(session.pizzaParty?.shopTicks ?? {}));
+      localStorage.setItem('bh_prep_ticks_v1',JSON.stringify(session.pizzaParty?.prepTicks ?? []));
+    } catch { setRestartFailed(true); return; }
+    applySession(session);
+    scrollToStepTop();
   }
 
   function requestNewSession() {
@@ -3504,21 +3492,22 @@ export default function Home() {
           // which is also the moment it becomes useful: it is how they switch
           // Pizza <-> Pain.
           onNewSession={bakeType ? requestNewSession : undefined}
-          onRestorePreviousBake={previousBakeAvailable ? undoNewBake : undefined}
+          onContinueBake={() => { setShowProductHome(false); setShowWelcomeBack(false); if(pendingSession) { applySession(pendingSession); setPendingSession(null); } }}
+          hasCurrentBake={!!bakeType || !!pendingSession}
+          onOpenLocalBake={openLocalBake}
           onResumeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event); }}
           onRebakeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event, { rebake: true }); }}
           onOpenProfile={() => setProfileOpen(true)}
         />
 
         {localSaveConflict && <div role="alert" style={{padding:16,background:'var(--warm)',color:'var(--char)'}}>
-          <p>{fr ? 'Une autre fenêtre a modifié la reprise locale. La sauvegarde de cette fenêtre est suspendue pour préserver cette fournée. Rechargez pour reprendre la version actuelle.' : 'Another window changed the local draft. Saving in this window is paused to protect that bake. Reload to resume the current version.'}</p>
-          <button type="button" style={{minHeight:44}} onClick={() => window.location.reload()}>{fr ? 'Recharger et reprendre' : 'Reload and resume'}</button>
+          <p>{fr ? 'Cette fournée a été modifiée dans un autre onglet.' : 'This bake was updated in another tab.'}</p>
+          <button type="button" style={{minHeight:44}} onClick={() => { if(archiveLocalBake({...buildSessionPayload(),version:1,savedAt:Date.now()})) window.location.reload(); else setRestartFailed(true); }}>{fr ? 'Ouvrir la dernière version' : 'Open latest version'}</button>
         </div>}
         {profileOpen && (
           <ProfileSheet locale={locale} onClose={() => setProfileOpen(false)} />
         )}
 
-        {replaceBakeOpen && <ReplaceBakeDialog fr={fr} rebake={replacementIsRebake} onAnswer={answerReplaceBake} />}
 
         {restartFailed && <p role="alert">{fr ? 'Impossible de conserver ou reprendre la fournée. Vos choix restent protégés. Réessayez.' : 'Unable to preserve or restore the bake. Your choices remain protected. Please try again.'}</p>}
         {showNewBakeNotice && !showWelcomeBack && !cloudResume && <div role="status" style={{padding:'8px 16px',display:'flex',gap:12,alignItems:'center',flexWrap:'wrap',fontSize:14}}>

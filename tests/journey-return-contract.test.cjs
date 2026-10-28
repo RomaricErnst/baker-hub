@@ -140,14 +140,11 @@ test('the shared generation gate sends blocked edits to the exact correction wit
  }
 });
 
-test('opening a saved bake dismisses the product home only after replacement is accepted',async()=>{
- for(const accepted of [false,true]){
-  const calls=[];const existing={bakeName:'Current bake'};
-  const context={replaceBakeAnswer:{current:null},loadSession:()=>existing,bakeType:'pizza',setReplacementIsRebake(v){calls.push(['rebake',v]);},setReplaceBakeOpen(){context.replaceBakeAnswer.current(accepted);},setLocalSaveConflict(){},acceptCurrentSessionStorage(){calls.push('accept');},setPendingSession(){},setShowWelcomeBack(){},setShowProductHome(v){calls.push(['home',v]);}};
-  const result=await evaluate(fn('confirmLocalReplacement')+';confirmLocalReplacement(false);',context);
-  assert.equal(result,accepted);
-  assert.equal(calls.some(c=>Array.isArray(c)&&c[0]==='home'&&c[1]===false),accepted);
-  assert.equal(calls.includes('accept'),accepted);
+test('switching bakes proceeds only after both current and stored snapshots are preserved',async()=>{
+ for(const saved of [false,true]){
+  const calls=[]; const context={Date,bakeType:'pizza',buildSessionPayload:()=>({bakeName:'Live'}),loadSession:()=>({bakeName:'Stored'}),archiveLocalBake(value){calls.push(value.bakeName);return saved;},setRestartFailed(){},acceptCurrentSessionStorage(){calls.push('accept');},setLocalSaveConflict(){},setPendingSession(){},setShowWelcomeBack(){},setShowProductHome(){calls.push('home');}};
+  assert.equal(await evaluate(fn('confirmLocalReplacement')+';confirmLocalReplacement();',context),saved);
+  assert.deepEqual(calls,saved?['Live','Stored','accept','home']:['Live']);
  }
 });
 
