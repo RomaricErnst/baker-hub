@@ -277,9 +277,10 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await page.getByRole('button',{name:'Commencer la préparation →',exact:true}).tap();
  const next=page.getByRole('button',{name:/^(?:Étape suivante|Suivante :)/});
  await expect(next).toBeVisible();
+ // Mixing records an actual time; this navigation test marks the next ordinary step.
+ await next.tap();
  const done=page.getByRole('checkbox',{name:'Étape faite',exact:true});
  await done.check();
- await next.tap();
  await next.tap();
  const current=page.locator('section[aria-label*=" · Étape "]:visible');
  const stepLabel=await current.getAttribute('aria-label');

@@ -23,6 +23,11 @@ import { getBreadProtocol } from '../utils/breadProfiles';
 import { scheduledFoldMinutes } from '../utils/scheduleFolds';
 
 interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
+  preparationMade?: boolean;
+  onStarterFed?:(event:StarterEvent)=>void;
+  mixingMade?:boolean;
+  onMixComplete?:(done:boolean)=>void;
+  onPreparationComplete?: (done:boolean)=>void;
   afterSteps?: React.ReactNode;
   onBackToRecipe?: () => void;
   onBakedChange?: (done:boolean)=>void;
@@ -770,7 +775,7 @@ const TERM_TO_STEPID: Record<string, string> = {
   stretch_bake:      'open',
 };
 
-export default function BakeGuide({
+export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,preparationMade, onPreparationComplete,
   onSave,onShare,onRepeat,resultNotes,onResultNotesChange,sessionSaved,onBakedChange,completionEnabled=true,
   schedule, mixerType, styleKey, kitchenTemp, fridgeTemp = 4, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, mixerCapacityG, onMixingBatchesChange, waterSource = 'room', onWaterSourceChange, numItems,
   prefermentType, oil, hydration, ovenType, ovenConstruction, prefStartTime, feedTime, starterEvents,
@@ -1025,7 +1030,9 @@ Actual dough condition and equipment may differ from these estimates.`;
   let cookingStepNumber = 0;
   const cookingStepTotal = breadProtocol?.method === 'unleavened' ? 2 : isBread ? 3 + (hasPoachStep ? 1 : 0) : 2;
   const n = () => { stepNum++; lastStep = stepNum; return stepNum; };
-  const sc = (mixing = false, stepPhase: 'preparation' | 'cooking' = 'preparation') => {
+  const sc = (mixing = false, stepPhase: 'preparation' | 'cooking' = 'preparation', preferment=false,starterFeed?:StarterEvent) => {
+    const firstAction=!!onPreparationComplete&&preferment;
+    const actionDone=mixing&&onMixComplete?!!mixingMade:firstAction?!!preparationMade:doneSteps.has(lastStep);
     const s = lastStep;
     if (stepPhase === 'cooking') cookingStepNumber++;
     return {
@@ -1041,7 +1048,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       batchCompletion: mixing && !!batch && batch.count > 1,
       completeLabel: mixing && batch && batch.count > 1 ? (l === 'fr' ? `Terminer la pétrissée ${batch.active + 1} sur ${batch.count}` : `Complete batch ${batch.active + 1} of ${batch.count}`) : undefined,
       open: currentStep === s,
-      done: doneSteps.has(s),
+      done: actionDone,
       onToggle: () => navigateGuideStep(s),
       onDone: () => {
         if (mixing && batch && !doneSteps.has(s) && batch.active + 1 < batch.count) {
@@ -1049,7 +1056,10 @@ Actual dough condition and equipment may differ from these estimates.`;
           try { localStorage.setItem(progressKey + ':batch', String(batch.active + 1)); } catch {}
           return;
         }
-        const next = toggleStepCompletion(s, doneSteps);
+        if(starterFeed&&!actionDone)onStarterFed?.(starterFeed);
+        if(firstAction)onPreparationComplete?.(!actionDone);
+        if(mixing&&onMixComplete)onMixComplete(!actionDone);
+        const next = mixing&&onMixComplete&&actionDone?new Set([...doneSteps].filter(step=>step!==s)):toggleStepCompletion(s, doneSteps);
         if (doneSteps.has(s) && mixing) {
           setActiveBatch(0);
           try { localStorage.setItem(progressKey + ':batch', '0'); } catch {}
@@ -1164,7 +1174,7 @@ Actual dough condition and equipment may differ from these estimates.`;
 
       {/* ── STEP: Make Poolish / Biga ───────────────── */}
       {hasPref && prefStartTime && (
-        <StepCard number={n()} {...sc()} icon={<IconPreferment />}
+        <StepCard number={n()} {...sc(false,'preparation',true)} icon={<IconPreferment />}
           title={isPoolish ? t('stepTitles.makePoolish') : t('stepTitles.makeBiga')}
           time={prefStartTime} accent={D.gold}>
 
@@ -1208,13 +1218,16 @@ Actual dough condition and equipment may differ from these estimates.`;
         </StepCard>
       )}
 
-      {isSourdough && starterEvents?.filter(event => !event.isPast && !['last_fed', 'known_peak'].includes(event.kind)).map((event, index) => {
+      {isSourdough && starterEvents?.filter(event => !['last_fed', 'known_peak'].includes(event.kind)&&(!event.isPast||['refresh','intermediate_refresh','pre_mix'].includes(event.kind))).map((event, index) => {
         const feeding = ['refresh', 'intermediate_refresh', 'pre_mix'].includes(event.kind);
+        const eventRatio=event.feedingRatio??feedR;
+        const eventSeed=bgSdMid>0?Math.max(5,Math.ceil((bgSdMid+10)/(1+2*eventRatio)/5)*5):50;
+        const eventPart=Math.max(5,Math.round(eventSeed*eventRatio/5)*5);
         const title = feeding ? (l === 'fr' ? 'Rafraîchir le levain' : 'Feed your starter') : event.kind === 'fridge_in' ? (l === 'fr' ? 'Réfrigérer le levain' : 'Refrigerate your starter') : (l === 'fr' ? 'Sortir le levain du réfrigérateur' : 'Take starter out of the fridge');
-        return <StepCard key={`${event.kind}-${index}`} number={n()} {...sc()} icon={<IconStarter />} title={title} time={event.time} accent="#6A7FA8">
+        return <StepCard key={`${event.kind}-${index}`} number={n()} {...sc(false,'preparation',false,feeding?event:undefined)} icon={<IconStarter />} title={title} time={event.time} accent="#6A7FA8">
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={feeding ? [
-              {bold: l === 'fr' ? `Mélangez ${feedSeed} g de levain, ${feedPart} g de farine et ${feedPart} g d’eau.` : `Mix ${feedSeed} g starter, ${feedPart} g flour and ${feedPart} g water.`, note: `1:${feedR}:${feedR}`},
+              {bold: l === 'fr' ? `Mélangez ${eventSeed} g de levain, ${eventPart} g de farine et ${eventPart} g d’eau.` : `Mix ${eventSeed} g starter, ${eventPart} g flour and ${eventPart} g water.`, note: `1:${eventRatio}:${eventRatio}`},
               {bold: l === 'fr' ? 'Couvrez le récipient et marquez le niveau.' : 'Cover the container and mark the level.', note: l === 'fr' ? `Laissez à ${displayTemp(kitchenTemp, u)}.` : `Keep at ${displayTemp(kitchenTemp, u)}.`},
               {bold: l === 'fr' ? 'Attendez une nette montée, des bulles et un dessus encore bombé avant utilisation.' : 'Wait for a clear rise, bubbles and a still-domed top before use.', note: l === 'fr' ? 'Le créneau suivant reste indicatif : vérifiez le levain.' : 'The next time is a guide: check the starter.'},
             ] : [{bold: event.kind === 'fridge_in' ? (l === 'fr' ? 'Couvrez le récipient et placez le levain au réfrigérateur.' : 'Cover the container and put the starter in the fridge.') : (l === 'fr' ? 'Sortez le récipient et laissez-le couvert à température ambiante.' : 'Take the container out and leave covered at room temperature.'), note: event.kind === 'fridge_in' ? displayTemp(fridgeTemp, u) : displayTemp(kitchenTemp, u)}]} />

@@ -69,11 +69,11 @@ test('starter slot validation checks complete mixing duration and half-open boun
  assert.deepEqual([...before.effects,...exact.effects,...crossing.effects],[]);
 });
 
-test('starter previews cannot discard or reschedule a historical preparation',()=>{
+test('an elapsed planned feed remains unresolved and does not freeze recovery',()=>{
  const past=new Date(Date.now()-3600000);
- const {controls:c,start,effects}=setup({savedStarterEvents:[{kind:'refresh',time:past,isPast:true,isActive:false,isDraggable:false,label:'Completed refresh',cardTimeFormat:'absolute',bellStyle:'none',bellSigmaScale:1}]});
+ const {controls:c,start,effects}=setup({savedStarterEvents:[{kind:'refresh',time:past,isPast:true,isActive:false,isDraggable:false,label:'Planned refresh',cardTimeFormat:'absolute',bellStyle:'none',bellSigmaScale:1}]});
  const historical=c.anchors.find(a=>a.id.startsWith('starter:refresh')&&a.at===+past);assert.ok(historical,'past work remains visible');assert.equal(historical.editable,false);
- assert.equal(c.check('mix',+start+900000),false,'a recomputed plan without the historical action must not be approved');
+ assert.equal(c.check('mix',+start+900000),true,'a missed planned feed must not be treated as completed work');
  assert.deepEqual(effects,[]);
 });
 
@@ -145,4 +145,33 @@ test('week-old fridge Reset plan validates its exact refresh and final feed afte
  const first=setup(args);first.controls.header.props.onClick();assert.ok(committed);
  const second=setup({...args,startTime:committed.start,savedStarterEvents:committed.events,timingOverrides:{}});
  assert.equal(second.controls.notice,undefined,second.controls.notice&&renderToStaticMarkup(second.controls.notice));
+});
+
+
+test('confirmed sourdough mixing keeps its actual start and validates future actions',()=>{
+ const start=new Date(Date.now()-60000),bake=new Date(+start+26*3600000);
+ const base={startTime:start,eatTime:bake,knownPeakTime:start,completedMixAt:+start,startTimeInPast:true};
+ const made=setup(base);
+ assert.equal(made.controls.check('mix',+start),true);
+ assert.equal(made.controls.check('mix',+start+900000),false,'actual mixing cannot move');
+ const plan=utils.buildSchedule(start,bake,[],22,45,'hand','neapolitan',2);
+ const future=plan.availabilityActions.find(action=>action.id==='bake');
+ assert.ok(future);
+ const blocked=setup({...base,blocks:[{from:future.at,to:new Date(+future.at+60000),label:'Busy'}]});
+ assert.equal(blocked.controls.check('mix',+start),false,'completed mixing does not excuse a later conflict');
+});
+
+test('missed-feed recovery commits an actionable future feed rather than another feed at now',()=>{
+ const bake=new Date(Math.ceil((Date.now()+36*3600000)/900000)*900000),start=new Date(+bake-26*3600000);
+ const {controls:c,effects}=setup({eatTime:bake,startTime:start,replanRequested:true,planningMode:'last_fed',knownPeakTime:null,lastFedAge:'days23',lastFedTime:new Date(Date.now()-48*3600000),starterLocation:'rt',lastFeedRatio:2,nextFeedRatio:2,timingOverrides:{mix:+start}});
+ assert.ok(c.header);
+ c.header.props.onClick();
+ const committed=effects.filter(args=>args[3]?.starterRecoveryResolved).at(-1);
+ assert.ok(committed,'only a validated replacement clears recovery');
+ const feeds=committed[3].starterPlan.events.filter(e=>['refresh','intermediate_refresh','pre_mix'].includes(e.kind));
+ assert.ok(feeds.length);assert.ok(feeds.every(e=>+e.time>Date.now()));
+ for(const feed of feeds.filter(e=>e.kind!=='intermediate_refresh'))assert.equal(committed[3].timingOverrides[feed.kind==='refresh'?'refresh':'feed'],+feed.time,'recovery anchor must persist with its plan');
+ const restored=setup({eatTime:bake,startTime:committed[0],replanRequested:false,planningMode:'last_fed',knownPeakTime:null,lastFedAge:'days23',lastFedTime:new Date(Date.now()-48*3600000),starterLocation:'rt',lastFeedRatio:2,nextFeedRatio:2,timingOverrides:committed[3].timingOverrides,savedStarterEvents:committed[3].starterPlan.events});
+ assert.ok(restored.controls.anchors.filter(a=>['starter:refresh','starter:pre_mix','starter:intermediate_refresh'].includes(a.id)).every(a=>a.at>Date.now()),'restored feed anchors stay in the future');
+ assert.equal(+committed[1],+bake);
 });

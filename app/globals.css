@@ -590,3 +590,14 @@ body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="d
 /* Section picker overlays the page without moving the baker's current step. */
 .bh-bake-navigator-grid { position:absolute; top:100%; left:0; right:0; grid-template-columns:1fr; padding:8px; background:var(--warm); border:1px solid var(--border); border-radius:12px; box-shadow:0 8px 24px #0002; }
 .bh-bake-navigator-card { min-height:44px; padding:10px 12px; }
+
+.bh-start-status { margin: 16px 0; padding: 16px; border: 1px solid var(--border); border-radius: 14px; font-family: var(--font-ui); }
+.bh-start-status p { margin: 0 0 12px; }
+.bh-start-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.bh-start-status button, .bh-start-status input { min-height: 44px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; font: inherit; background: var(--warm); color: var(--char); }
+.bh-start-status button { cursor: pointer; }
+.bh-start-status .bh-start-primary { background: var(--terra); color: white; border-color: var(--terra); }
+.bh-start-status .bh-start-link { border: none; color: var(--terra); text-decoration: underline; }
+.bh-start-status input { display: block; max-width: 100%; }
+.bh-start-status details { margin-top: 12px; }
+.bh-start-status summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; text-decoration: underline; }

@@ -3,7 +3,7 @@ import {findAvailabilityConflicts} from './scheduleAvailability';
 
 const HOUR = 3600000;
 export type EditTimes = {start: Date; bake: Date; prefHours: number};
-export type EditIssue = 'date'|'past'|'preferment'|'range'|'busy'|'timing'|'unsupported';
+export type EditIssue = 'date'|'past'|'preferment'|'range'|'busy'|'timing'|'unsupported'|'formula';
 export interface EditInput extends Omit<ScheduleDraftInput,'from'|'to'|'methodValid'|'extraActions'> {
   id: string; at: Date; prefHours: number; hasPreferment: boolean;
   prefWarmupHours: number; supported: boolean;
@@ -13,6 +13,9 @@ export interface EditInput extends Omit<ScheduleDraftInput,'from'|'to'|'methodVa
   extraActions?: ScheduleDraftInput['extraActions'];
   /** Explicit user constraints; automatic recommendations are not pins. */
   pins?: TimingPins;
+  /** Explicit recorded preparation, never inferred from the clock. */
+  completedPrefermentAt?: number;
+  formulaValid?: (schedule:NonNullable<EditResult['schedule']>,times:EditTimes)=>boolean;
 }
 export type TimingPins = {mix?: Date; preferment?: Date};
 export type EditResult = {
@@ -33,17 +36,21 @@ export function validateScheduleCandidate(input: EditInput, times: EditTimes = {
   if(!input.supported)return fail('unsupported');
   const pref=new Date(+start-prefHours*HOUR);
   const bounds=input.window(bake);
-  const actions=hasPreferment?[{id:'preferment',at:pref},...(input.prefWarmupHours>0?[{id:'preferment-cold-out',at:new Date(+start-input.prefWarmupHours*HOUR)}]:[])]:[];
+  const completed=input.completedPrefermentAt;
+  if(completed!==undefined&&(!Number.isFinite(completed)||Math.abs(+pref-completed)>1))return fail('preferment');
+  const actions=hasPreferment?[...(completed===undefined?[{id:'preferment',at:pref}]:[]),...(input.prefWarmupHours>0&&input.completedMixAt===undefined?[{id:'preferment-cold-out',at:new Date(+start-input.prefWarmupHours*HOUR)}]:[])]:[];
   // Always rebuild dependent actions, including for a buildable invalid preview.
   const built=assessScheduleDraft({...input,start,bake,...bounds,extraActions:[...actions,...(input.extraActions??[])],methodValid:true,now});
   candidateSchedule=built.schedule;
-  if(+start<=now||(hasPreferment&&+pref<now))return fail('past');
+  if(input.completedMixAt!==undefined&&+start!==input.completedMixAt)return fail('timing');
+  if((input.completedMixAt===undefined&&+start<=now)||(hasPreferment&&completed===undefined&&+pref<now))return fail('past');
   if(hasPreferment&&(prefHours<=0||(input.prefWindow&&(prefHours<input.prefWindow.min||prefHours>input.prefWindow.max))))return fail('preferment');
   if(input.pins?.mix&&+start!==+input.pins.mix)return fail('timing');
   if(hasPreferment&&input.pins?.preferment&&Math.abs(+pref-+input.pins.preferment)>1)return fail('preferment');
-  const conflict=findAvailabilityConflicts([...actions,...(input.extraActions??[]),{id:'mix',at:start}],input.blocks,now)[0];
+  const conflict=findAvailabilityConflicts([...actions,...(input.extraActions??[]),...(input.completedMixAt===undefined?[{id:'mix',at:start}]:[])],input.blocks,now)[0];
   if(conflict)return fail('busy',{conflict:conflict.action.id});
   if(!input.methodValid(times))return fail('preferment');
+  if(candidateSchedule&&input.formulaValid&&!input.formulaValid(candidateSchedule,times))return fail('formula');
   // Every portion uses the same preferment, prepared at the original anchor.
   // Later mixer loads must also remain inside its existing maturity window.
   if (hasPreferment && built.schedule?.batchMixWindows?.some(batch => {

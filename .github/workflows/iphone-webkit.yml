@@ -5,6 +5,11 @@ on:
     branches: [main, codex/prototype-migration-20260920, codex/navigation-six-sections-20260922, codex/navigation-polish-20260923]
     paths-ignore: ['docs/**', 'PROJECT-HANDOFF.md', '**/*.md']
   workflow_dispatch:
+    inputs:
+      full_matrix:
+        description: Run all four phone widths for a broad design/release review
+        type: boolean
+        default: false
   pull_request:
     branches: [main]
 
@@ -16,13 +21,28 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      widths: ${{ steps.widths.outputs.widths }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: widths
+        env:
+          FULL_MATRIX: ${{ inputs.full_matrix || 'false' }}
+          COMPARE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: node scripts/mobile-test-scope.cjs >> "$GITHUB_OUTPUT"
   iphone:
+    needs: scope
     runs-on: macos-14
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        width: [320, 375, 390, 430]
+        width: ${{ fromJSON(needs.scope.outputs.widths) }}
     env:
       CI: 'true'
       NEXT_TELEMETRY_DISABLED: '1'

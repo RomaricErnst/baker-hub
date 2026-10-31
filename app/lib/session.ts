@@ -1,3 +1,4 @@
+import {normalizeMixExecution, type MixExecution, normalizeBakeExecution, normalizeStarterFeedRecords, type StarterFeedRecord, type BakeExecution} from '../utils/bakeExecution';
 import { createDraftStorage } from './draftStorage';
 import type { BakeNavigationMemory } from './bakeNavigation';
 import { normalizeSandwichSnapshot, type SandwichSnapshot } from './sandwich';
@@ -67,6 +68,11 @@ export interface SessionData {
   priorityOverride: string | null | undefined;
   startTime?: number | null;
   timingOverrides?: TimingOverrides;
+  execution?: BakeExecution;
+  mixExecution?:MixExecution;
+  starterFeedRecords?:StarterFeedRecord[];
+  /** An overdue feed was answered; a validated replacement plan is still needed. */
+  starterRecoveryPending?:boolean;
   eatTime: number | null;
   blocks: unknown[];
   recipeGenerated: boolean;
@@ -152,7 +158,7 @@ export function normalizeResultNotes(value: unknown): string {
 
 export function saveSession(data: Omit<SessionData, 'version' | 'savedAt'>): boolean {
   try {
-    const payload: SessionData = { ...data, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), mixerCapacityG: normalizeMixerCapacity(data.mixerCapacityG), resultNotes: normalizeResultNotes(data.resultNotes), version: 1, savedAt: Date.now() };
+    const payload: SessionData = { ...data, execution: normalizeBakeExecution(data.execution), mixExecution:normalizeMixExecution(data.mixExecution), starterFeedRecords:normalizeStarterFeedRecords(data.starterFeedRecords), starterRecoveryPending:data.starterRecoveryPending===true, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), mixerCapacityG: normalizeMixerCapacity(data.mixerCapacityG), resultNotes: normalizeResultNotes(data.resultNotes), version: 1, savedAt: Date.now() };
     return sessionStore().write(JSON.stringify(payload));
   } catch { return false; }
 }
@@ -163,7 +169,7 @@ export function loadSession(): SessionData | null {
     if (!raw) return null;
     const data = JSON.parse(raw) as SessionData;
     if (data.version !== 1) return null;
-    return { ...data, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), mixerCapacityG: normalizeMixerCapacity(data.mixerCapacityG), resultNotes: normalizeResultNotes(data.resultNotes) };
+    return { ...data, execution: normalizeBakeExecution(data.execution), mixExecution:normalizeMixExecution(data.mixExecution), starterFeedRecords:normalizeStarterFeedRecords(data.starterFeedRecords), starterRecoveryPending:data.starterRecoveryPending===true, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), mixerCapacityG: normalizeMixerCapacity(data.mixerCapacityG), resultNotes: normalizeResultNotes(data.resultNotes) };
   } catch { return null; }
 }
 

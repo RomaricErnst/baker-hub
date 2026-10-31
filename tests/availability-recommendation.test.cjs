@@ -12,7 +12,7 @@ function visit(n){if(ts.isFunctionDeclaration(n)&&names.includes(n.name?.text))d
 function harness(overrides={}){
  const writes=[];
  class Clock extends Date{static now(){return now;}}
- const c={Date:Clock,isSourdough:false,eatTimeSet:true,startTimeInPast:false,hasPrefActive:true,
+ const c={Date:Clock,isSourdough:false,eatTimeSet:true,startTimeInPast:false,execution:undefined,mixExecution:undefined,completedMixAt:undefined,replanRequested:false,hasPrefActive:true,
   pendingStart:original,pendingEatTime:bake,prefOffsetH:8,_optimalMix:(+bake-original)/H,
   prefermentType:'poolish',kitchenTemp:22,prefGoesInFridge:false,styleKey:'neapolitan',fridgeTemp:5,
   manualTimesRef:{current:overrides},solverNotifyBudgetRef:{current:{}},ratioApplyHistoryRef:{current:[]},
