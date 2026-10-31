@@ -714,12 +714,9 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
   return (
     <div>
       <details style={{ marginTop:16, borderTop:`1px solid ${D.border}`, paddingTop:8 }}>
-        <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:16}}>{helpTitle}</summary>
+        <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:16}}>{l==='fr'?'Conseils avancés':'More guidance'} · {helpTitle}</summary>
         {visuals}
         <div>{tips}</div>
-      </details>
-      <details style={{marginTop:8}}>
-        <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:14,color:D.terra}}>{l === 'fr' ? 'Autres questions' : 'More questions'}</summary>
         {faq.length > 0 && <div role="group" aria-label={l === 'fr' ? 'Questions fréquentes' : 'Common questions'} style={{marginTop:12}}>
           {faq.map((f,i)=><div key={i} style={{marginBottom:16}}>
             <h3 style={{fontSize:14,margin:'0 0 4px'}}>{f.q[l]}</h3>
@@ -1025,6 +1022,7 @@ Actual dough condition and equipment may differ from these estimates.`;
   const bgPoolishLabel = bgPoolishG ? (l === 'fr' ? `Ajoutez votre ${prefermentType} (${bgPoolishG}g au total)` : `Add your ${prefermentType} (${bgPoolishG}g total)`) : (l === 'fr' ? `Ajoutez votre ${prefermentType} (en entier)` : `Add your ${prefermentType} (all of it)`);
 
 
+  let firstPendingPreparation = 0;
   let stepNum = 0;
   let lastStep = 0;
   let cookingStepNumber = 0;
@@ -1034,6 +1032,7 @@ Actual dough condition and equipment may differ from these estimates.`;
     const firstAction=!!onPreparationComplete&&preferment;
     const actionDone=mixing&&onMixComplete?!!mixingMade:firstAction?!!preparationMade:doneSteps.has(lastStep);
     const s = lastStep;
+    if (!firstPendingPreparation && stepPhase === 'preparation' && !actionDone) firstPendingPreparation = s;
     if (stepPhase === 'cooking') cookingStepNumber++;
     return {
       externalProgress: !!progressTarget,
@@ -1047,7 +1046,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       onNext: () => { const next = stepRefs.current.findIndex((el, i) => i > s && el !== null); if (next > s) {if(phase==='preparation'&&stepRefs.current[next]?.dataset.guidePhase==='cooking'&&onPrepareFillings)onPrepareFillings();else navigateGuideStep(next);} },
       batchCompletion: mixing && !!batch && batch.count > 1,
       completeLabel: mixing && batch && batch.count > 1 ? (l === 'fr' ? `Terminer la pétrissée ${batch.active + 1} sur ${batch.count}` : `Complete batch ${batch.active + 1} of ${batch.count}`) : undefined,
-      open: currentStep === s,
+      open: currentStep === s || (currentStep === 0 && phase === 'preparation' && !!simpleMode && firstPendingPreparation === s),
       done: actionDone,
       onToggle: () => navigateGuideStep(s),
       onDone: () => {

@@ -19,20 +19,20 @@ test('restored explicit unbranded flour survives bake-type initialization',()=>{
  }
 });
 function choose(overrides={},key='simple'){
- const writes={};const context={tab:'custom',styleKey:'pain_levain',yeastType:'sourdough',bakeType:'bread',ovenType:null,mixerType:null,flourBlend:{flour1:'bread'},manualHydration:70,manualOil:0,manualSugar:0,prefermentType:'none',prefermentFlourPct:20,customOnlyStateRef:{current:null},suppressNextScrollRef:{current:false},ALL_STYLES:data.ALL_STYLES,getBreadProtocol:()=>undefined,firstIncompleteStep:()=>7,...overrides};
+ const writes={};const context={customKitchenConfirmed:false,tab:'custom',styleKey:'pain_levain',yeastType:'sourdough',bakeType:'bread',ovenType:null,mixerType:null,flourBlend:{flour1:'bread'},manualHydration:70,manualOil:0,manualSugar:0,prefermentType:'none',prefermentFlourPct:20,customOnlyStateRef:{current:null},suppressNextScrollRef:{current:false},ALL_STYLES:data.ALL_STYLES,getBreadProtocol:()=>undefined,firstIncompleteStep:()=>7,...overrides};
  for(const name of [...modeFunction.matchAll(/\b(set\w+)\(/g)].map(m=>m[1]))context[name]=v=>{writes[name]=typeof v==='function'?v(3):v;};
  vm.runInNewContext(compiled+'\nchooseMode("'+key+'");',context);return {writes,context};
 }
 test('Simple keeps sourdough/style, confirms supported household defaults and preserves temperature',()=>{
- const {writes}=choose();assert.equal(writes.setTab,'simple');assert.equal(writes.setActiveStep,3);assert.equal(writes.setOvenType,'standard_bread');assert.equal(writes.setMixerType,'hand');assert.ok(!('setStyleKey' in writes));assert.ok(!('setYeastType' in writes));assert.ok(!('setKitchenTemp' in writes));
+ const {writes}=choose();assert.equal(writes.setTab,'simple');assert.equal(writes.setActiveStep,7);assert.equal(writes.setOvenType,'standard_bread');assert.equal(writes.setMixerType,'hand');assert.ok(!('setStyleKey' in writes));assert.ok(!('setYeastType' in writes));assert.ok(!('setKitchenTemp' in writes));
 });
 test('Simple preserves saved equipment and declines unsupported defaults',()=>{
  let result=choose({ovenType:'dutch_oven',mixerType:'spiral'}).writes;assert.ok(!('setOvenType' in result));assert.ok(!('setMixerType' in result));
- result=choose({getBreadProtocol:()=>({equipment:['wood_fired'],supportedMixers:['stand'],cooking:'oven'})}).writes;assert.ok(!('setOvenType' in result));assert.ok(!('setMixerType' in result));
+ result=choose({getBreadProtocol:()=>({equipment:['wood_fired'],supportedMixers:['stand'],cooking:'oven'})}).writes;assert.equal(result.setOvenType,'wood_fired');assert.equal(result.setMixerType,'stand');
  result=choose({getBreadProtocol:()=>({equipment:['griddle'],supportedMixers:['hand'],cooking:'griddle'})}).writes;assert.equal(result.setOvenType,'griddle');
 });
-test('Custom gets no new equipment defaults and restores custom controls',()=>{
- const {writes}=choose({tab:'simple'},'custom');assert.equal(writes.setAdvancedStep,7);assert.ok(!('setOvenType' in writes));assert.ok(!('setMixerType' in writes));assert.ok(!('setManualHydration' in writes));
+test('Custom opens climate with equipment defaults and preserves hydration',()=>{
+ const {writes}=choose({tab:'simple'},'custom');assert.equal(writes.setAdvancedStep,4);assert.equal(writes.setOvenType,'standard_bread');assert.equal(writes.setMixerType,'hand');assert.ok(!('setManualHydration' in writes));
 });
 test('switching view never changes persisted formula choices or invalidates the recipe',()=>{
  for(const [tab,key] of [['custom','simple'],['simple','custom']]){
