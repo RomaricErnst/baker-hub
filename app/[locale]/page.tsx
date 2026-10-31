@@ -3551,7 +3551,7 @@ export default function Home() {
     </>}
   </>;
 
-  const mealNoun=bakeType==='pizza'?(fr?'Garnitures':'Toppings'):sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'Tartines':'Toasts'):(fr?'Sandwichs':'Sandwiches');
+  const mealNoun=fr?'Garnitures':bakeType==='pizza'?'Toppings':'Fillings';
   const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings?'recipe':destination} fr={fr} onChange={next=>{if(next==='batch'){if(recipeGenerated)openSetupReview();else if(styleKey&&qtyChosen)openDestination('organisation');else openDestination('batch');}else openDestination(next);}} top={destination==='organisation'?0:stickTop}
     recipeMeal={pizzaPartyEnabled||(styleKey&&sandwichEnabled)?{label:mealNoun,selected:hasFillings,active:browsingFillings,onChoose:()=>{if(styleKey)setFillingsReturn({destination:'recipe',view:'dough'});setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}}:undefined}
     progress={!execution && !mixExecution && destination==='organisation' && modeChosen && !setupOverview ? <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>{setModeChosen(false);scrollToStepTop();}}} /> : undefined} /> : null;

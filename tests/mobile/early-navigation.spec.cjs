@@ -149,7 +149,7 @@ for(const style of ['Pain de campagne','Pain complet']) test(`${style}: chosen l
  await page.getByRole('button',{name:/^Simple\b/}).tap();
  await page.getByRole('button',{name:new RegExp('^'+style+'\\b')}).tap();
  await bottom(page).getByRole('button',{name:'Garnitures',exact:true}).tap();
- await expect(page.getByRole('heading',{name:'Vos tartines',exact:true})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Quelles tartines ?',exact:true})).toBeVisible();
  await expect(page.getByRole('heading',{name:/Quel pain/})).toHaveCount(0);
  const avocado=page.getByRole('article').filter({hasText:'Avocat'}).first();
  await expect(avocado).toContainText(/œuf/);
