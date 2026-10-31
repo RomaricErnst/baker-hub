@@ -601,3 +601,6 @@ body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="d
 .bh-start-status input { display: block; max-width: 100%; }
 .bh-start-status details { margin-top: 12px; }
 .bh-start-status summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; text-decoration: underline; }
+
+.bh-existing-header { position:sticky; top:0; z-index:100; padding-top:env(safe-area-inset-top,0px); background:var(--warm); }
+.bh-existing-header ~ main .bh-bake-navigator { top:calc(64px + env(safe-area-inset-top,0px)) !important; }

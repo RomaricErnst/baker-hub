@@ -39,7 +39,7 @@ test('purchased pizza skips dough setup and persists served count',async({page})
  await page.getByRole('button',{name:'Préparer les garnitures →',exact:true}).tap();
  await navigate(page,'Cuisson & service');
  await expect(page.getByRole('heading',{name:'Cuire et servir vos pizzas',exact:true})).toBeVisible();
- await expect(page.getByText(/Suivez l’emballage/).first()).toBeVisible();
+ await expect(page.getByText(/Suivez votre recette ou les indications/).first()).toBeVisible();
  await page.getByRole('button',{name:'Une pizza cuite et servie',exact:true}).tap();
  await expect.poll(()=>page.evaluate(()=>Object.values(JSON.parse(localStorage.getItem('bh_existing_base_v1')).done).reduce((s,n)=>s+n,0))).toBe(1);
  await page.reload();await expect(page.getByText('1 / 1 servies',{exact:true})).toBeVisible();
@@ -161,4 +161,15 @@ for(const base of ['pizza','laffa'])test(`existing plain ${base} can finish with
  await page.reload();await expect(end).toBeVisible();
  await page.getByRole('button',{name:'Annuler « fournée terminée »',exact:true}).tap();
  await expect(end).toHaveCount(0);
+});
+
+test('pizza shortcut opens the catalogue and lets the baker switch back to making dough',async({page})=>{
+ await page.goto('/fr/with-my-base?family=pizza');
+ await expect(page.getByLabel('Pizzas à garnir')).toBeVisible();
+ await expect(page.getByLabel('Origine')).toHaveCount(0);
+ await page.getByRole('link',{name:'Faire ma pâte',exact:true}).tap();
+ await expect(page.getByRole('heading',{name:'Quel style de pizza ?'})).toBeVisible();
+ await page.locator('.bh-bake-navigator-trigger').tap();
+ await page.getByRole('button',{name:'Garnitures Facultatif',exact:true}).tap();
+ await expect(page.getByRole('heading',{name:'Quelles garnitures ?'})).toBeVisible();
 });

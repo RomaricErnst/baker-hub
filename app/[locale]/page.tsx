@@ -1396,6 +1396,20 @@ export default function Home() {
 
   useEffect(() => {
     const session = loadSession();
+    const entryUrl = new URL(location.href);
+    if(entryUrl.searchParams.get('make')==='pizza'){
+      entryUrl.searchParams.delete('make');
+      history.replaceState(history.state,'',entryUrl);
+      if(session?.bakeType==='pizza'){
+        applySession(session);
+        setActiveTab('batch');setBatchView('style');
+      }else{
+        void selectBakeType('pizza');
+      }
+      restoreSettledRef.current=true;
+      setAuthTick(t=>t+1);
+      return;
+    }
     if (!session) {
       // Nothing local at mount — this is the one reliable "fresh device"
       // moment.
@@ -2593,14 +2607,14 @@ export default function Home() {
     setBatchView('fillings');setActiveTab('batch');scrollToStepTop();
   }
   function backFromFillings() {
-    if(fillingsReturn)finishFillings();else {setBatchView('quantity');setActiveTab('batch');scrollToStepTop();}
+    if(fillingsReturn)finishFillings();else {setBatchView(styleKey?'quantity':'style');setActiveTab('batch');scrollToStepTop();}
   }
   function finishFillings() {
     if(fillingsReturn){
       if(fillingsReturn.destination==='protocol')setProtocolView(hasFillings?fillingsReturn.view:'dough');else if(fillingsReturn.destination==='service')setServiceView(hasFillings?fillingsReturn.view:'dough');
       if(!hasFillings){setPrepReturnToService(null);setShoppingReturnToFillings(false);}
       setActiveTab(routeForDestination(fillingsReturn.destination));setFillingsReturn(null);scrollToStepTop();
-    }else openDestination('organisation');
+    }else if(!styleKey){setBatchView('style');setActiveTab('batch');scrollToStepTop();}else openDestination('organisation');
   }
   function restoreNavigation(source:SessionData) {
     const restored=restoredBakeRoute(source,source.bakeType==='pizza'||!!source.styleKey&&!!sandwichFamilyForStyle(source.styleKey));
@@ -3539,7 +3553,7 @@ export default function Home() {
 
   const mealNoun=bakeType==='pizza'?(fr?'Garnitures':'Toppings'):sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'Tartines':'Toasts'):(fr?'Sandwichs':'Sandwiches');
   const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings?'recipe':destination} fr={fr} onChange={next=>{if(next==='batch'){if(recipeGenerated)openSetupReview();else if(styleKey&&qtyChosen)openDestination('organisation');else openDestination('batch');}else openDestination(next);}} top={destination==='organisation'?0:stickTop}
-    recipeMeal={styleKey&&(pizzaPartyEnabled||sandwichEnabled)?{label:mealNoun,selected:hasFillings,active:browsingFillings,onChoose:()=>{setFillingsReturn({destination:'recipe',view:'dough'});setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}}:undefined}
+    recipeMeal={pizzaPartyEnabled||(styleKey&&sandwichEnabled)?{label:mealNoun,selected:hasFillings,active:browsingFillings,onChoose:()=>{if(styleKey)setFillingsReturn({destination:'recipe',view:'dough'});setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}}:undefined}
     progress={!execution && !mixExecution && destination==='organisation' && modeChosen && !setupOverview ? <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>{setModeChosen(false);scrollToStepTop();}}} /> : undefined} /> : null;
 
   const recipeFillings = (pizzaPartyEnabled||sandwichEnabled) ? <>

@@ -41,6 +41,7 @@ export default function ExistingBaseJourney(){
    const requestedFamily=params.get('family');
    setFamily(requestedFamily==='pizza'||requestedFamily==='bread'?requestedFamily:null);
    if(requestedFamily==='pizza')setStartingKind('dough');
+   let canOpenPizzaEntry=false;
    try{
      storageRef.current=createDraftStorage(localStorage,STORAGE,()=>setSaveConflict(true));
      const d=JSON.parse(storageRef.current.read()||'null');
@@ -48,10 +49,20 @@ export default function ExistingBaseJourney(){
        const sandwiches=Object.fromEntries(bases.filter(b=>b[0]!=='pizza').map(b=>[b[0],normalizeSandwichSnapshot(d.sandwiches?.[b[0]])]));
        const details=Object.fromEntries(bases.map(([base])=>{const value=d.details?.[base];return [base,{kind:value?.kind==='dough'?'dough':value?.kind==='baked'?'baked':defaultDetails(base).kind,origin:value?.origin==='homemade'?'homemade' as const:'purchased' as const,stage:['bulk','shaped','ready'].includes(value?.stage)?value.stage:'ready',baked:value?.baked===true,served:value?.served===true,notes:typeof value?.notes==='string'?value.notes.slice(0,2000):''}];}));
        const restored:Draft={resultNotes:typeof d.resultNotes==='string'?d.resultNotes.slice(0,2000):'',selectionReturn:['organisation','recipe','shopping','protocol','service'].includes(d.selectionReturn)?d.selectionReturn:null,base:d.base,portions:Math.min(99,Math.max(1,Number(d.portions)||4)),pizza:quantities(d.pizza),done:quantities(d.done),section:BAKE_DESTINATIONS.some(s=>s.id===d.section)?d.section:sectionForPhase(d.base==='pizza'?d.phase:sandwiches[d.base]?.tab),sandwiches,details};
+       canOpenPizzaEntry=restored.base==='pizza';
        setSaved(restored);
        if(params.get('active')==='1')setDraft(restored);
+       else if(requestedFamily==='pizza'&&restored.base==='pizza')setDraft({...restored,section:'batch',selectionReturn:null});
+     }else if(requestedFamily==='pizza'){
+       canOpenPizzaEntry=true;
+       setDraft({...fresh(),base:'pizza',details:{pizza:defaultDetails('pizza')}});
      }
    }catch{}
+   if(requestedFamily==='pizza' && params.get('active')!=='1' && canOpenPizzaEntry){
+     const url=new URL(location.href);
+     url.searchParams.set('active','1');
+     history.replaceState(history.state,'',url);
+   }
    const pop=()=>{const section=new URLSearchParams(location.search).get('section');if(BAKE_DESTINATIONS.some(s=>s.id===section))setDraft(d=>({...d,section:section as BakeDestination}));};
    pop();window.addEventListener('popstate',pop);setLoaded(true);
    return()=>window.removeEventListener('popstate',pop);
@@ -80,7 +91,7 @@ export default function ExistingBaseJourney(){
    url.searchParams.set('section',section);history.pushState(history.state,'',url);
    setDraft(d=>({...d,section,selectionReturn:section==='batch'&&d.section!=='batch'?d.section:section==='batch'?d.selectionReturn:null}));window.scrollTo({top:0,behavior:'instant'});
  };
- const backFromSelection=()=>{if(draft.selectionReturn)go(draft.selectionReturn);else setEditing(true);};
+ const backFromSelection=()=>{if(draft.selectionReturn)go(draft.selectionReturn);else if(draft.base==='pizza')location.assign('/'+locale+'?make=pizza');else setEditing(true);};
  const finishSelection=()=>go(draft.selectionReturn??'shopping');
  const goBack=()=>{if(editing||!draft.base)location.assign('/'+locale);else if(draft.section==='batch')backFromSelection();else go('batch');};
  const setPizza=useCallback((pizza:Record<string,number>)=>setDraft(d=>JSON.stringify(d.pizza)===JSON.stringify(pizza)?d:{...d,pizza}),[]);
@@ -139,18 +150,18 @@ export default function ExistingBaseJourney(){
  const selectionDoneLabel=draft.selectionReturn?tr('Retour à '+({recipe:'la recette',shopping:'mes courses',protocol:'la préparation',service:'la cuisson et au service',batch:'ma fournée',organisation:'l’organisation'}[draft.selectionReturn]),'Return to '+({recipe:'recipe',shopping:'shopping',protocol:'preparation',service:'cooking and serving',batch:'my bake',organisation:'setup'}[draft.selectionReturn])):tr('Voir les courses','View shopping');
  const phase:Phase=draft.section==='shopping'?'shop':draft.section==='protocol'?'prep':draft.section==='service'?'bake':'pick';
  const control={maxWidth:'100%',minHeight:44,padding:'12px 16px',border:'1px solid var(--border)',borderRadius:12,background:'var(--card)',color:'var(--char)',fontSize:16};
- const instructions=detail.origin==='purchased'?tr('Suivez l’emballage pour le repos, le préchauffage, la température et la durée.','Follow the package for resting, preheating, temperature and baking time.'):tr('Suivez votre recette d’origine pour le repos, la fermentation, la température et la durée de cuisson.','Follow your original recipe for resting, fermentation, baking temperature and duration.');
+ const instructions=draft.base==='pizza'?tr('Suivez votre recette ou les indications de l’emballage pour le repos et la cuisson.','Follow your recipe or package instructions for resting and baking.'):detail.origin==='purchased'?tr('Suivez l’emballage pour le repos, le préchauffage, la température et la durée.','Follow the package for resting, preheating, temperature and baking time.'):tr('Suivez votre recette d’origine pour le repos, la fermentation, la température et la durée de cuisson.','Follow your original recipe for resting, fermentation, baking temperature and duration.');
  const prep=<section><h2>{tr('Votre pâte existante','Your existing dough')}</h2><p>{instructions}</p><p>{tr('Son historique de fermentation est inconnu : Bakerhub ne calcule pas de nouveaux temps de levée pour cette pâte.','Its fermentation history is unknown: Bakerhub does not calculate new rising times for this dough.')}</p>
-   {detail.stage==='bulk'&&<p>{tr('Terminez la fermentation prévue, puis divisez et façonnez selon votre recette.','Finish the planned fermentation, then divide and shape according to your recipe.')}</p>}
-   {detail.stage!=='ready'&&<p>{tr('Attendez la fin de l’apprêt prévu avant de cuire.','Wait until the final proof in your recipe is complete before baking.')}</p>}
+   {draft.base!=='pizza'&&detail.stage==='bulk'&&<p>{tr('Terminez la fermentation prévue, puis divisez et façonnez selon votre recette.','Finish the planned fermentation, then divide and shape according to your recipe.')}</p>}
+   {draft.base!=='pizza'&&detail.stage!=='ready'&&<p>{tr('Attendez la fin de l’apprêt prévu avant de cuire.','Wait until the final proof in your recipe is complete before baking.')}</p>}
    {draft.base==='bagel'&&<p>{tr('Avant la cuisson au four, pochez les bagels selon votre recette, sauf si cette étape a déjà été faite.','Before oven baking, poach the bagels according to your recipe, unless already done.')}</p>}
    {detail.notes&&<p style={{whiteSpace:'pre-wrap'}}>{detail.notes}</p>}
  </section>;
  if(!loaded)return <main style={{padding:24}}>{tr('Chargement…','Loading…')}</main>;
- return <><Header hideActionBar onBack={goBack}/>
+ return <><div className="bh-existing-header"><Header hideActionBar onBack={goBack}/></div>
  {saveConflict&&<div role="alert" style={{padding:16}}><p>{tr('Une autre fenêtre a modifié cette préparation. La sauvegarde locale est suspendue. Rechargez pour reprendre la version actuelle.','Another window changed this preparation. Local saving is paused. Reload to resume the current version.')}</p><button style={{minHeight:44}} onClick={()=>location.reload()}>{tr('Recharger et reprendre','Reload and resume')}</button></div>}
  <main style={{maxWidth:850,margin:'0 auto',padding:'16px 16px 120px',fontFamily:'var(--font-ui)',color:'var(--char)'}}>
-  {draft.base&&!editing&&<BakeNavigator active={draft.section} fr={fr} onChange={go}/>}
+  {draft.base&&!editing&&<BakeNavigator active={draft.section} fr={fr} onChange={go} recipeMeal={draft.base==='pizza'?{label:tr('Choisir mes pizzas','Choose pizzas'),recipeLabel:tr('Ingrédients','Ingredients'),active:draft.section==='batch',selected:hasSelection,onChoose:()=>go('batch')}:undefined}/>}
   {(!draft.base||editing)?<section aria-label={tr('Votre base','Your base')}>
    {!editing&&saved&&(!family||(saved.base==='pizza'?'pizza':'bread')===family)&&<button style={{...control,marginBottom:20}} onClick={()=>activate(saved)}>{tr('Reprendre : ','Resume: ')}{bases.find(b=>b[0]===saved.base)?.[fr?1:2]}</button>}
    <h1>{family==='pizza'?tr('Avec ma pâte à pizza','With my pizza dough'):startingKind==='dough'?tr('Quelle pâte avez-vous ?','What dough do you have?'):tr('Quel pain avez-vous ?','What bread do you have?')}</h1>
@@ -162,7 +173,8 @@ export default function ExistingBaseJourney(){
    {editing&&<button style={{...control,marginTop:12}} onClick={()=>setEditing(false)}>{tr('Revenir à ma préparation','Return to my preparation')}</button>}
   </section>:<>
    <div style={{display:'flex',gap:12,alignItems:'center',justifyContent:'space-between',margin:'20px 0'}}><strong>{bases.find(b=>b[0]===draft.base)?.[fr?1:2]} · {raw?tr('Pâte existante','Existing dough'):tr('Déjà cuit','Already baked')}</strong>{draft.base!=='pizza'&&<button style={control} onClick={()=>setEditing(true)}>{tr('Changer de pain','Change bread')}</button>}</div>
-   {((draft.section==='batch'&&raw)||draft.section==='organisation')&&<section>
+   {draft.base==='pizza'&&draft.section==='batch'&&<a className="bh-section-back" href={'/'+locale+'?make=pizza'}>{tr('Faire ma pâte','Make my own dough')}</a>}
+   {draft.base!=='pizza'&&((draft.section==='batch'&&raw)||draft.section==='organisation')&&<section>
      <h2>{tr('Votre point de départ','Your starting point')}</h2>
      {draft.section==='organisation'&&
      <label>{tr('État de la base','Base state')} <select style={control} value={detail.kind} onChange={e=>updateDetail({kind:e.target.value as BaseDetails['kind'],baked:false})}><option value="dough">{tr('Pâte à préparer et cuire','Dough to prepare and bake')}</option><option value="baked">{tr('Pain / base déjà cuit','Already baked bread / base')}</option></select></label>
