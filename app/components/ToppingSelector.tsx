@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { NEXT_CTA, SECONDARY_CTA } from '../lib/navButtons';
 import { createClient } from '@/app/lib/supabase/client';
 import {
-  PIZZAS, DESSERT_PIZZAS, getPizzaById, getCustomPizzaList,
+  PIZZAS, CATALOGUE_PIZZAS, DESSERT_PIZZAS, getPizzaById, getCustomPizzaList,
   BASE_LABELS, OCCASION_LABELS, SEASON_LABELS,
   WINE_CATEGORY_LABELS, WINE_EXAMPLES,
   BUDGET_LABELS, COMPLEXITY_LABELS,
@@ -1539,7 +1539,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
   // Filtered pizzas
   const filtered = useMemo(() => {
-    const base = filterPizzas(pizzaCourse === 'sweet' ? DESSERT_PIZZAS : PIZZAS, { ...(pizzaCourse === 'sweet' ? DEFAULT_FILTER : filter), styleKey: (styleKey as import('../lib/toppingTypes').StyleKey) ?? undefined });
+    const base = filterPizzas(pizzaCourse === 'sweet' ? DESSERT_PIZZAS : CATALOGUE_PIZZAS, { ...(pizzaCourse === 'sweet' ? DEFAULT_FILTER : filter), styleKey: (styleKey as import('../lib/toppingTypes').StyleKey) ?? undefined });
     return matchesSearch ? base.filter(matchesSearch) : base;
   }, [filter, styleKey, matchesSearch, pizzaCourse]);
 
@@ -1595,7 +1595,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
   const filterCounts = useMemo(() => {
     const base = { ...filter, styleKey: styleKey ?? undefined } as import('../lib/toppingTypes').FilterState;
     const countFor = (overrides: Partial<import('../lib/toppingTypes').FilterState>) =>
-      filterPizzas(PIZZAS, { ...base, ...overrides }).length;
+      filterPizzas(CATALOGUE_PIZZAS, { ...base, ...overrides }).length;
     return {
       occasion: Object.fromEntries(
         (['classic','kids','party','impress','quick'] as const)

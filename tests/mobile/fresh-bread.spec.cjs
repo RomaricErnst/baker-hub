@@ -16,7 +16,7 @@ test.describe('fresh unleavened bread setup',()=>{
   // Change the actual batch count; the cooking span must follow it downstream.
   await page.getByLabel('Number of pieces',{exact:true}).fill('5');
   await page.getByLabel('Number of pieces',{exact:true}).press('Enter');
-  await page.locator('.bh-batch-actions').getByRole('button',{name:'Set up my recipe',exact:true}).tap();
+  await page.locator('.bh-batch-actions').getByRole('button',{name:'Continue',exact:true}).tap();
   await expect(page.getByRole('heading',{name:'How would you like to set up your recipe?',exact:true})).toBeVisible();
   await page.getByRole('button',{name:/^Simple\b/}).tap();
   await page.locator('#step-3 summary').filter({hasText:/^Cooking ·/}).tap();

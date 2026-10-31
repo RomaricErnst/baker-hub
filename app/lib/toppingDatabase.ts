@@ -4837,6 +4837,15 @@ for (const pizza of [...PIZZAS, ...DESSERT_PIZZAS]) {
  pizza.ingredients = pizza.ingredients.map(withDrainedCheeseWeight).map(withCookedChickenWeight);
 }
 
+// Keep retired variants resolvable for existing bakes, but offer one clear choice.
+export const CATALOGUE_PIZZAS = PIZZAS.filter(pizza => !['pistadella', 'teglia_mortadella_pistacchio'].includes(pizza.id));
+const mortadellaChoice = PIZZAS.find(pizza => pizza.id === 'pistacchio_mortadella')!;
+mortadellaChoice.name = {en:'Mortadella, pistachio & stracciatella',fr:'Mortadelle, pistache et stracciatella'};
+mortadellaChoice.compatibleStyles = [...new Set(PIZZAS.filter(pizza => ['pistadella','teglia_mortadella_pistacchio','pistacchio_mortadella'].includes(pizza.id)).flatMap(pizza => pizza.compatibleStyles ?? []))];
+const prosciuttoChoice = PIZZAS.find(pizza => pizza.id === 'prosciutto_stracciatella_romana')!;
+prosciuttoChoice.name = {en:'Prosciutto & stracciatella',fr:'Prosciutto et stracciatella'};
+prosciuttoChoice.story = {en:'Mozzarella, creamy stracciatella and prosciutto crudo added after baking, without tomato.',fr:'Mozzarella, stracciatella crémeuse et prosciutto crudo ajouté après cuisson, sans tomate.'};
+
 // ─── Helpers ─────────────────────────────────────────────────
 
 import { loadCustomPizzas, customPizzaToPizza } from './profile'
