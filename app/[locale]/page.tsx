@@ -1013,7 +1013,6 @@ export default function Home() {
   const [acceptedScheduleRepair, setAcceptedScheduleRepair] = useState<string | null>(null);
   const [starterFeedRecords,setStarterFeedRecords]=useState<StarterFeedRecord[]>([]);
   const [starterRecoveryPending,setStarterRecoveryPending]=useState(false);
-  const [mixTimeRequest,setMixTimeRequest]=useState(0);
   const [mixExecution,setMixExecution]=useState<MixExecution|undefined>();
   const [execution,setExecution]=useState<BakeExecution|undefined>();
   const [replanRequested,setReplanRequested]=useState(false);
@@ -2212,7 +2211,8 @@ export default function Home() {
       if(mixExecution){setMixExecution(undefined);saveSession(buildSessionPayload({mixExecution:undefined}));}
       else if(execution?.method==='none'){setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}
     }else if(!mixExecution&&execution?.method!=='none'){
-      setMixTimeRequest(v=>v+1);scrollToStepTop();
+      const at=Math.min(+startTime,Date.now());
+      if(yeastType==='sourdough'||execution)markMixMade(at);else markPreparationMade(at);
     }
   }
   function requestFreshPlan() {
@@ -3628,14 +3628,14 @@ export default function Home() {
         </section>}
         {missedStarterFeed&&!showProductHome&&!showWelcomeBack&&!bakedDone&&<StarterFeedStatus key={`${missedStarterFeed.kind}:${+missedStarterFeed.time}`} fr={fr} plannedAt={+missedStarterFeed.time} onFed={updateStarterAfterMissedFeed} onNotYet={()=>updateStarterAfterMissedFeed()}/>}
         {!bakedDone&&!needsMixCheck&&recipeGenerated&&commercialMethod&&yeastType!=='sourdough'&&!showProductHome&&!showWelcomeBack&&!isUnleavened&&!replanRequested&&<BakeStartStatus
-          fr={fr} method={commercialMethod} requestTime={mixTimeRequest} plannedAt={plannedPreparationAt} now={executionClock} execution={execution}
+          fr={fr} method={commercialMethod} plannedAt={plannedPreparationAt} now={executionClock} execution={execution}
           preparing={destination==='protocol'&&protocolView==='dough'} onMade={markPreparationMade} onNotYet={requestFreshPlan}
           onRecipe={()=>openDestination('recipe')} onNext={()=>{setProtocolView('dough');openDestination('protocol');}}
           onUndo={()=>{setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}}
         />}
 
         {!bakedDone&&recipeGenerated&&needsMixCheck&&!starterRecoveryPending&&!showProductHome&&!showWelcomeBack&&!isUnleavened&&!replanRequested&&<BakeStartStatus
-          key="mix" fr={fr} method="none" requestTime={mixTimeRequest} plannedAt={+startTime} now={executionClock}
+          key="mix" fr={fr} method="none" plannedAt={+startTime} now={executionClock}
           execution={mixExecution?{...mixExecution,method:'none',inFridge:false,prefHours:0}:undefined}
           preparing={destination==='protocol'&&protocolView==='dough'} onMade={markMixMade} onNotYet={requestRemainingMixPlan}
           onRecipe={()=>openDestination('recipe')} onNext={()=>{setProtocolView('dough');openDestination('protocol');}}

@@ -1,14 +1,13 @@
 'use client';
-import {useState,useEffect} from 'react';
+import {useState} from 'react';
 import type {BakeExecution} from '../utils/bakeExecution';
 import {preparationStatus} from '../utils/bakeExecution';
 
-export default function BakeStartStatus({fr,method,requestTime=0,plannedAt,now,execution,preparing,onMade,onNotYet,onRecipe,onNext,onUndo}:{
-  requestTime?:number;fr:boolean;method:'none'|'poolish'|'biga';plannedAt:number;now:number;execution?:BakeExecution;preparing:boolean;
+export default function BakeStartStatus({fr,method,plannedAt,now,execution,preparing,onMade,onNotYet,onRecipe,onNext,onUndo}:{
+  fr:boolean;method:'none'|'poolish'|'biga';plannedAt:number;now:number;execution?:BakeExecution;preparing:boolean;
   onMade:(at:number)=>void;onNotYet:()=>void;onRecipe:()=>void;onNext:()=>void;onUndo:()=>void;
 }) {
   const [different,setDifferent]=useState(false),[time,setTime]=useState('');
-  useEffect(()=>{if(!requestTime)return;const date=new Date(Math.min(plannedAt,Date.now()));date.setMinutes(date.getMinutes()-date.getTimezoneOffset());setTime(date.toISOString().slice(0,16));setDifferent(true);},[requestTime]);
   const status=preparationStatus(plannedAt,execution,now);
   if(status==='planned'&&!preparing)return null;
   const fmt=(at:number)=>new Date(at).toLocaleString(fr?'fr-FR':'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:false});

@@ -1058,8 +1058,8 @@ Actual dough condition and equipment may differ from these estimates.`;
         }
         if(starterFeed&&!actionDone)onStarterFed?.(starterFeed);
         if(firstAction)onPreparationComplete?.(!actionDone);
-        if(mixing)onMixComplete?.(!actionDone);
-        const next = toggleStepCompletion(s, doneSteps);
+        if(mixing&&onMixComplete)onMixComplete(!actionDone);
+        const next = mixing&&onMixComplete&&actionDone?new Set([...doneSteps].filter(step=>step!==s)):toggleStepCompletion(s, doneSteps);
         if (doneSteps.has(s) && mixing) {
           setActiveBatch(0);
           try { localStorage.setItem(progressKey + ':batch', '0'); } catch {}

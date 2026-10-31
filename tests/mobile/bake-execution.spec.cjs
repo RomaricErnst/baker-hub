@@ -169,3 +169,21 @@ test('reopening during starter recovery preserves history and never revives the 
  await expect(feed).toHaveCount(0);
  await expect.poll(validRecovery).toBe(true);
 });
+
+test('Guide Done records planned mixing immediately with optional time correction',async({page})=>{
+ const original=await seed(page,{method:'none',lead:23});
+ await page.locator('.bh-bake-navigator-trigger').tap();
+ await page.getByRole('navigation',{name:'Your bake',exact:true}).getByRole('button').filter({has:page.getByText('Preparation',{exact:true})}).tap();
+ await page.getByRole('button',{name:'Start preparation →',exact:true}).tap();
+ const step=page.locator('section[aria-label*=" · Step "]:visible');
+ await step.getByRole('checkbox',{name:'Step done',exact:true}).check();
+ await expect.poll(async()=>(await stored(page)).execution?.actualAt).toBe(original.startTime);
+ await expect(page.locator('.bh-navigator-current')).toContainText('Preparation');
+ await expect(step.getByRole('checkbox',{name:'Step done',exact:true})).toBeChecked();
+ const status=page.getByRole('region',{name:'Bake preparation'});
+ await expect(status.getByLabel('Mixing time',{exact:true})).toHaveCount(0);
+ await expect(status.getByRole('button',{name:'Change time',exact:true})).toBeVisible();
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+ await status.getByRole('button',{name:'Change time',exact:true}).tap();
+ await expect(status.getByLabel('Mixing time',{exact:true})).toBeVisible();
+});

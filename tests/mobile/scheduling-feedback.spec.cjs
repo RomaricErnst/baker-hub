@@ -416,7 +416,10 @@ for(const locale of ['fr','en'])test(`${locale}: explicit oven target and sugges
  await expect.poll(async()=>(await stored(page)).blocks.length).toBeGreaterThan(0);
  expect((await stored(page)).eatTime).toBe(selected.eatTime);await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
  await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:locale==='fr'?'Étape précédente':'Previous step',exact:true}).tap();
- await expect(page.locator('#step-8')).toBeVisible();await page.goBack();await expect(plan).toBeVisible();
+ await expect(page.locator('#step-8')).toBeVisible();
+ // React commits the visible step before its history effect runs.
+ await expect.poll(()=>page.evaluate(()=>history.state?.bakerNavigation?.customStep)).toBe(8);
+ await page.goBack();await expect(plan).toBeVisible();
  await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
  await page.reload();await expect(plan).toBeVisible();await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
  expect((await stored(page)).eatTime).toBe(selected.eatTime);
