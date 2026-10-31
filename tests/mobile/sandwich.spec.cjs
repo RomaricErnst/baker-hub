@@ -40,7 +40,7 @@ async function inspectGuideAndOpenFillings(page,fr,style){
   expect(guideText).toMatch(/Poach a few bagels/);
  }
  await page.getByRole('button',{name:fr?'Sandwiches et garnitures →':'Sandwiches & fillings →',exact:true}).tap();
- await expect(page.getByRole('heading',{name:fr?'Vos piadinas':'Your bagels',exact:true})).toBeVisible();
+ await expect(page.getByRole('heading',{name:fr?'Quelles piadinas ?':'Which bagels?',exact:true})).toBeVisible();
 }
 
 for(const scenario of [
@@ -122,7 +122,7 @@ for(const scenario of [
 test('French pocket pita: lighter filter, details dismissal and empty-stage recovery',async({page},testInfo)=>{
  const errors=[];page.on('pageerror',error=>errors.push(error.message));
  await seedBread(page,{style:'pita',locale:'fr',tab:'sandwiches'});
- await expect(page.getByRole('heading',{name:'Vos pitas',exact:true})).toBeVisible({timeout:20000});
+ await expect(page.getByRole('heading',{name:'Quelles pitas ?',exact:true})).toBeVisible({timeout:20000});
  const nav=page.getByRole('navigation',{name:'Étapes des sandwichs',exact:true});
  await nav.getByRole('button',{name:'Courses',exact:true}).tap();
  await page.getByRole('button',{name:'Choisir mes sandwichs',exact:true}).tap();
