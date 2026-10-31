@@ -604,3 +604,14 @@ body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="d
 
 .bh-existing-header { position:sticky; top:0; z-index:100; padding-top:env(safe-area-inset-top,0px); background:var(--warm); }
 .bh-existing-header ~ main .bh-bake-navigator { top:calc(64px + env(safe-area-inset-top,0px)) !important; }
+
+/* Keep the installed app's wordmark clear of the status area's lower edge. */
+@media (display-mode: standalone) and (pointer: coarse) {
+  :root { --bh-installed-header-gap: 10px; }
+  .bh-header-stack, .bh-existing-header {
+    padding-top: calc(env(safe-area-inset-top, 0px) + var(--bh-installed-header-gap));
+  }
+  .bh-existing-header ~ main .bh-bake-navigator {
+    top: calc(64px + env(safe-area-inset-top, 0px) + var(--bh-installed-header-gap)) !important;
+  }
+}
