@@ -78,7 +78,7 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
   const portionHeading=portionPlural.charAt(0).toUpperCase()+portionPlural.slice(1);
   const readyLabel=isFr ? `${tartine||familyId==='pita'||familyId==='greek_pita'||familyId==='piadina'?'Une':'Un'} ${portionName(1)} ${tartine||familyId==='pita'||familyId==='greek_pita'||familyId==='piadina'?'prête':'prêt'}` : `One ${portionName(1)} ready`;
   const heading = tabHeading();
-  function tabHeading(){if((phase??snapshot.tab)==='shop')return t('Courses','Shopping');if(baseReady&&(phase??snapshot.tab)==='pick')return t('Que préparer avec ce pain ?','What would you like to make with this bread?');return family ? `${isFr?'Vos':'Your'} ${destinationName.toLocaleLowerCase(isFr?'fr':'en')}` : t('Garnitures','Fillings');}
+  function tabHeading(){if((phase??snapshot.tab)==='shop')return t('Courses','Shopping');if(family&&(phase??snapshot.tab)==='pick'){const feminine=tartine||familyId==='pita'||familyId==='greek_pita'||familyId==='piadina';return isFr?`Quel${feminine?'les':'s'} ${portionPlural} ?`:`Which ${portionPlural}?`;}return family ? `${isFr?'Vos':'Your'} ${destinationName.toLocaleLowerCase(isFr?'fr':'en')}` : t('Garnitures','Fillings');}
   const familyRecipes = SANDWICH_RECIPES.filter(recipe => recipe.familyId === family?.id);
   const selected = familyRecipes.filter(recipe => count(snapshot.qtys[recipe.id]) > 0);
   const total = selected.reduce((sum,recipe) => sum+count(snapshot.qtys[recipe.id]),0);
