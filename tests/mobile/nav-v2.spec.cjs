@@ -210,17 +210,14 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   expect(action.y+action.height).toBeLessThanOrEqual(page.viewportSize().height+1);
   await noOverflow(page);
   await testInfo.attach('quantity-single-action-no-bottom-tabs',{body:await page.screenshot(),contentType:'image/png'});
-  await organise.tap();
-  await expect(page.getByRole('heading',{name:'Comment définir votre recette ?',exact:true})).toBeVisible();
-  const modeHeading = await page.getByRole('heading',{name:'Comment définir votre recette ?',exact:true}).boundingBox();
-  const sectionBar = await page.locator('.bh-bake-navigator').boundingBox();
-  expect(modeHeading.y).toBeGreaterThanOrEqual(sectionBar.y + sectionBar.height);
-  await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé(?:\s|$)/}).tap();
-  await expect(page.getByRole('heading',{name:mode==='simple'?'Votre cuisine':'Votre équipement',exact:true})).toBeVisible();
+  if(mode==='simple')await organise.tap();
+  else await page.getByRole('button',{name:'Personnaliser ma recette',exact:true}).tap();
+  const firstStep=page.locator(mode==='simple'?'#step-7':'#step-4');
+  await expect(firstStep).toBeVisible();
   await expect.poll(async()=>(await stored(page)).tab).toBe(mode);
   expect((await stored(page)).numItems).toBe(5);
   await navigate(page,'Ma fournée');
-  await expect(page.getByRole('heading',{name:mode==='simple'?'Votre cuisine':'Votre équipement',exact:true})).toBeVisible();
+  await expect(firstStep).toBeVisible();
   expect((await stored(page)).numItems).toBe(5);
   expect((await stored(page)).styleKey).toBe(chosenStyle);
  });
@@ -470,8 +467,9 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  await expect(weight).not.toHaveValue('280');
  const recommended=Number(await weight.inputValue());
  await expect.poll(async()=>(await stored(page))?.itemWeight).toBe(recommended);
- await page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
- await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé(?:\s|$)/}).tap();
+ if(mode==='simple')await page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+ else await page.getByRole('button',{name:'Personnaliser ma recette',exact:true}).tap();
+ await page.getByRole('button',{name:mode==='simple'?'Modifier les réglages du matériel et de la levure':'Modifier le matériel',exact:true}).tap();
  const step=page.locator('#step-3');
  if(mode==='simple')await step.locator('summary').filter({hasText:/^Cuisson ·/}).tap();
  else await expect(step.getByRole('heading',{name:'Four',exact:true})).toBeVisible();
@@ -517,9 +515,9 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  await back.scrollIntoViewIfNeeded();await fits(page,back);await unobscured(back);
  await noOverflow(page);
  await testInfo.attach('climate-back-and-continue',{body:await page.screenshot(),contentType:'image/png'});
- await back.tap();
+ if(mode==='simple')await back.tap();else {await climate.getByRole('button',{name:'Modifier le matériel',exact:true}).tap();await step.getByRole('button',{name:'Continuer',exact:true}).tap();}
  if(mode==='simple'){
-  await page.getByRole('button',{name:/^Simple\b/}).tap();
+  await page.getByRole('button',{name:'Modifier les réglages du matériel et de la levure',exact:true}).tap();
   const mixingSummary=step.locator('summary').filter({hasText:/^Pétrissage ·/});
   if(await mixingSummary.locator('..').getAttribute('open')===null)await mixingSummary.tap();
  } else await expect(step.getByRole('heading',{name:'Pétrissage',exact:true})).toBeVisible();
@@ -535,7 +533,7 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
   await expect(cooling).toHaveValue('direct');
   await expect(climate.getByText('Vérifiez que votre pétrin accepte la glace.',{exact:true})).toBeVisible();
   await cooling.selectOption('premelt');
-  await climate.getByRole('button',{name:'Étape précédente',exact:true}).tap();
+  await climate.getByRole('button',{name:'Modifier le matériel',exact:true}).tap();await step.getByRole('button',{name:'Continuer',exact:true}).tap();
   await step.getByRole('button',{name:/Pétrin (?:à spirale|spiral)/}).tap();
   await expect.poll(async()=>(await stored(page))?.waterMethod).toBe('premelt');
  }
@@ -550,8 +548,9 @@ for(const mode of ['simple','custom'])test(`${mode}: batch details are condition
  await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
  await page.getByLabel('Pâte par pizza (g)',{exact:true}).fill('500');
  await page.getByLabel('Pâte par pizza (g)',{exact:true}).blur();
- await page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
- await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé(?:\s|$)/}).tap();
+ if(mode==='simple')await page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+ else await page.getByRole('button',{name:'Personnaliser ma recette',exact:true}).tap();
+ await page.getByRole('button',{name:mode==='simple'?'Modifier les réglages du matériel et de la levure':'Modifier le matériel',exact:true}).tap();
  const step=page.locator('#step-3');
  if(mode==='simple')await step.locator('summary').filter({hasText:/^Cuisson ·/}).tap();
  await step.getByRole('button',{name:/Four à pizza compact/}).tap();
@@ -573,7 +572,7 @@ for(const mode of ['simple','custom'])test(`${mode}: batch details are condition
  await expect(batch.getByRole('textbox')).toHaveValue('2');
  await batch.getByRole('button',{name:'Utiliser la recommandation: 1',exact:true}).tap();
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1'))?.mixingBatches)).toBe(undefined);
- if(mode==='simple')await step.getByRole('button',{name:/^Levure sèche instantanée/}).tap();
+ 
  await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
  await expect(page.locator(mode==='simple'?'#step-7':'#step-4')).toBeVisible();
  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
@@ -618,7 +617,7 @@ test('page landing survives delayed Safari viewport changes and history restore 
  // Keep enough document height to reproduce a retained scroll offset even
  // when this particular two-card page otherwise fits the test viewport.
  await page.addStyleTag({content:'[data-navigation-page]{min-height:calc(100dvh + 300px)!important}'});
- const heading=page.getByRole('heading',{name:'Comment définir votre recette ?',exact:true});
+ const heading=page.locator('#step-7 h2').first();
  const clearHeading=async(atTop=true)=>{
   if(atTop)await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
   await expect.poll(()=>heading.evaluate(el=>{
@@ -753,7 +752,7 @@ test.describe('guided piadina with cooking time set in planning',()=>{
   await page.getByLabel('Nombre de pièces',{exact:true}).blur();
   await expect(page.getByLabel('Horaire de cuisson souhaité',{exact:true})).toHaveCount(0);
   await page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
-  await page.getByRole('button',{name:/^Simple/}).tap();
+  await page.getByRole('button',{name:'Modifier les réglages du matériel et de la levure',exact:true}).tap();
   const setup=page.locator('.bh-step-page:visible');
   await setup.locator('summary').filter({hasText:/^Cuisson ·/}).tap();
   await setup.getByRole('button',{name:/^Poêle ou plancha/}).tap();

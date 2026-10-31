@@ -615,3 +615,5 @@ body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="d
     top: calc(64px + env(safe-area-inset-top, 0px) + var(--bh-installed-header-gap)) !important;
   }
 }
+
+.bh-step-actions > .bh-back-action:only-child { grid-column:1; justify-self:start; text-align:left; }

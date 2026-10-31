@@ -25,7 +25,7 @@ test('traditional pizza oven label stays consistent after selection',async({page
  await page.getByRole('button',{name:'Napolitaine classique',exact:true}).tap();
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
  await page.getByRole('button',{name:'Continuer',exact:true}).tap();
- await page.getByRole('button',{name:/^Simple/}).tap();
+ await page.getByRole('button',{name:'Modifier les réglages du matériel et de la levure',exact:true}).tap();
  await page.locator('#step-3 summary').filter({hasText:/^Cuisson ·/}).tap();
  await page.getByRole('button',{name:/^Four à pizza traditionnel/}).tap();
  await page.locator('#step-3 summary').filter({hasText:/^Cuisson ·/}).tap();

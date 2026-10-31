@@ -363,7 +363,7 @@ test('compact Organisation progress and one-tap timing editor stay usable on nar
  const {plan}=await seed(page,{mode:'simple',preferment:'none'});
  const navigator=page.locator('.bh-bake-navigator');
  await expect(navigator).toContainText('Ma fournée');
- const progress=navigator.getByRole('button',{name:/Étape \d+\/\d+/});
+ const progress=navigator.getByRole('button',{name:'Horaires',exact:true});
  await expect(progress).toBeVisible();
  const navBox=await navigator.boundingBox(),stepBox=await progress.boundingBox();
  expect(stepBox.y).toBeGreaterThanOrEqual(navBox.y);expect(stepBox.y+stepBox.height).toBeLessThanOrEqual(navBox.y+navBox.height+1);

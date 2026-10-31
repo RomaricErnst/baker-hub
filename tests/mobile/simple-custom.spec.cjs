@@ -37,11 +37,7 @@ for(const locale of ['fr','en']){
   await page.getByRole('button',{name:'Pizza',exact:true}).tap();
   await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
   await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
-  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
-  await page.getByRole('button',{name:fr?/^Personnalisé/:/^Custom/}).tap();
-  await expect(page.locator('#step-3')).toBeVisible();
-  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
-  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
+  await page.getByRole('button',{name:fr?'Personnaliser ma recette':'Customize recipe',exact:true}).tap();
   await expect(page.locator('#step-4')).toBeVisible();
   await expect.poll(async()=>(await stored(page))?.customKitchenConfirmed).toBe(false);
   await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
@@ -80,7 +76,7 @@ for(const locale of ['fr','en']){
   expect(after.brandProduct).toBe(before.brandProduct);expect(after.ratio1).toBe(before.ratio1);
   await geometry(page);
  });
- test(`${locale}: fresh Simple pizza uses one kitchen confirmation before its plan and recipe`,async({page})=>{
+ test(`${locale}: fresh Simple pizza goes straight from quantity to timing and creates a recipe`,async({page})=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await anonymous(page);await page.goto(fr?'/fr':'/');
   await page.getByRole('button',{name:'Pizza',exact:true}).tap();
@@ -89,19 +85,8 @@ for(const locale of ['fr','en']){
   const quantity=page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true});
   await quantity.fill('4');await quantity.blur();
   await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
-  await page.getByRole('button',{name:/^Simple\b/}).tap();
-  await expect(page.getByRole('heading',{name:fr?'Votre cuisine':'Your kitchen',exact:true})).toBeVisible();
-  const cooking=page.locator('details').filter({has:page.locator('summary').filter({hasText:fr?/^Cuisson ·/:/^Cooking ·/})}).first();
-  const mixing=page.locator('details').filter({has:page.locator('summary').filter({hasText:fr?/^Pétrissage ·/:/^Mixing ·/})}).first();
-  await expect(cooking).not.toHaveAttribute('open','');
-  await expect(mixing).not.toHaveAttribute('open','');
-  await expect(page.getByText(/Advanced settings · fridge and flour|Réglages avancés · frigo et farine/)).toHaveCount(0);
-  await expect(page.getByText(/Usual flour-storage humidity|Humidité habituelle du stockage/)).toHaveCount(0);
-  // DecisionList's accessible name also includes its explanatory tagline.
-  await page.getByRole('button',{name:fr?/^Levure sèche instantanée/:/^Instant dry yeast/}).tap();
   await expect.poll(async()=>({oven:(await stored(page))?.ovenType,mixer:(await stored(page))?.mixerType,yeast:(await stored(page))?.yeastType})).toEqual({oven:'home_oven_standard',mixer:'hand',yeast:'instant'});
   await geometry(page);
-  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
   const bakeDate=page.getByLabel(fr?'Date d’enfournement':'Baking date',{exact:true});
   await bakeDate.fill('2026-10-04');await bakeDate.blur();
   await nextToRecipe(page,fr);
@@ -126,14 +111,12 @@ for(const locale of ['fr','en']){
   await page.goto(fr?'/fr':'/');
   await page.getByRole('button',{name:fr?'Modifier : Mode':'Edit : Mode',exact:true}).tap();
   await page.getByRole('button',{name:/^Simple\b/}).tap();
-  await expect(page.getByText(fr?'Méthode conservée · poolish':'Retained method · poolish',{exact:true})).toBeVisible();
   const formula=async()=>{const s=await stored(page);return {tab:s?.tab,preferment:s?.prefermentType,hydration:s?.manualHydration,salt:s?.manualSalt,flour:s?.flourBlend};};
   await expect.poll(formula).toEqual({tab:'simple',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
   await page.reload();
   const resume=page.getByRole('button',{name:fr?'Reprendre →':'Resume →',exact:true});
   await expect(resume).toBeVisible();await resume.tap();
   await expect.poll(formula).toEqual({tab:'simple',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
-  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
   await nextToRecipe(page,fr);
   await expect(page.getByRole('region',{name:fr?'Quantités totales':'Total ingredients',exact:true})).toBeVisible();
   const stages=page.locator('details').filter({has:page.locator('summary').filter({hasText:fr?'Ingrédients par étape':'Ingredients by stage'})});
@@ -157,8 +140,8 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).fill('12');
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).blur();
- await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
- await page.getByRole('button',{name:fr?/^Personnalisé/:/^Custom/}).tap();
+ await page.getByRole('button',{name:fr?'Personnaliser ma recette':'Customize recipe',exact:true}).tap();
+ await page.getByRole('button',{name:fr?'Modifier le matériel':'Edit equipment',exact:true}).tap();
  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
  const section=page.getByRole('region',{name:fr?'Nombre de pétrissées':'Mixing batches',exact:true});
  await section.getByRole('button',{name:fr?'Modifier':'Adjust',exact:true}).tap();
