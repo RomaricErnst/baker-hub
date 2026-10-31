@@ -1400,7 +1400,7 @@ export default function Home() {
     if(entryUrl.searchParams.get('make')==='pizza'){
       entryUrl.searchParams.delete('make');
       history.replaceState(history.state,'',entryUrl);
-      if(session?.bakeType==='pizza'){
+      if(session?.bakeType==='pizza' && !session.recipeGenerated && !session.execution && !session.mixExecution){
         applySession(session);
         setActiveTab('batch');setBatchView('style');
       }else{
