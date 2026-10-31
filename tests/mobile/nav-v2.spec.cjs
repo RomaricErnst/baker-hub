@@ -220,11 +220,12 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await expect.poll(async()=>(await stored(page)).tab).toBe(mode);
   expect((await stored(page)).numItems).toBe(5);
   await navigate(page,'Ma fournée');
-  await expect(quantity).toHaveValue('5');
+  await expect(page.getByRole('heading',{name:mode==='simple'?'Votre cuisine':'Votre équipement',exact:true})).toBeVisible();
+  expect((await stored(page)).numItems).toBe(5);
   expect((await stored(page)).styleKey).toBe(chosenStyle);
  });
 
- test(`${mode} ${bread?'bread':'pizza'}: generated bake exposes six consistent destinations`,async({page},testInfo)=>{
+ test(`${mode} ${bread?'bread':'pizza'}: generated bake exposes five consistent destinations`,async({page},testInfo)=>{
   await seed(page,{mode,bread});
   const before=await stored(page);
   for(const label of ['Courses','Préparation','Cuisson & service','Recette','Ma fournée']){
@@ -405,7 +406,7 @@ test('bread family return preserves choices; wraps and meal examples are discove
  await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
  const quantity=page.getByLabel('Nombre de pièces',{exact:true});await quantity.fill('5');await quantity.blur();
  await page.locator('.bh-batch-context').getByRole('button',{name:'Modifier le pain choisi',exact:true}).tap();
- await page.getByRole('button',{name:'← Pizza ou pain',exact:true}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:'Retour',exact:true}).tap();
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Que souhaitez-vous préparer ?',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Pain',exact:true}).tap();
