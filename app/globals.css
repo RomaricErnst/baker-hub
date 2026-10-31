@@ -345,7 +345,7 @@ button,
    changes bottom action offsets or covers the current page. */
 .bh-bake-navigator { position:sticky; z-index:95; margin:8px 0 16px; padding:4px 0; background:var(--warm); color:var(--char); transition:none; }
 .bh-organisation-nav-stack { max-width:680px; margin:0 auto; padding:8px clamp(1rem, 3vw, 1.5rem) 16px; background:var(--warm); }
-.bh-organisation-nav-stack .bh-bake-navigator { position:static; margin:0; }
+.bh-organisation-nav-stack .bh-bake-navigator { position:relative; margin:0; }
 [data-navigation-page^="organisation:"] .bh-header { position:static !important; }
 .bh-navigator-band { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:52px; padding:2px 10px; border:1px solid var(--border); border-radius:12px; background:var(--cream); }
 .bh-navigator-context { display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-width:0; font-size:16px; font-weight:600; }
@@ -586,3 +586,7 @@ body { padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-i
 .bh-schedule-timeline .bh-key-timing { padding-bottom:12px; }
 .bh-timeline-day { padding-top:12px; }
 body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="dialog"][aria-modal="true"]) [data-companion-action] { visibility:hidden; }
+
+/* Section picker overlays the page without moving the baker's current step. */
+.bh-bake-navigator-grid { position:absolute; top:100%; left:0; right:0; grid-template-columns:1fr; padding:8px; background:var(--warm); border:1px solid var(--border); border-radius:12px; box-shadow:0 8px 24px #0002; }
+.bh-bake-navigator-card { min-height:44px; padding:10px 12px; }

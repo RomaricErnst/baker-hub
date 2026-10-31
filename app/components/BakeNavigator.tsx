@@ -26,22 +26,24 @@ export default function BakeNavigator({active,fr,onChange,top=0,progress,recipeM
     return()=>{document.removeEventListener('pointerdown',outside);document.removeEventListener('keydown',escape);};
   },[open]);
   function choose(action:()=>void){setOpen(false);action();trigger.current?.focus({preventScroll:true});}
-  const current=BAKE_DESTINATIONS.find(item=>item.id===active)!;
+  const section = active === 'organisation' ? 'batch' : active;
+  const destinations = BAKE_DESTINATIONS.filter(item=>item.id!=='organisation');
+  const current=destinations.find(item=>item.id===section)!;
   return <div ref={root} className="bh-bake-navigator" style={{top,scrollMarginTop:top,'--bh-navigator-top':`${top}px`} as CSSProperties}>
     <div className="bh-navigator-band">
-      <div className="bh-navigator-context"><span className="bh-navigator-current"><DestinationIcon destination={active}/><span>{fr?current.fr:current.en}</span></span>{progress}</div>
-      <button ref={trigger} type="button" className="bh-bake-navigator-trigger" aria-label={fr?'Voir les 6 rubriques':'View all 6 sections'} aria-expanded={open} aria-controls={id} onClick={()=>setOpen(value=>!value)}>
+      <div className="bh-navigator-context"><span className="bh-navigator-current"><DestinationIcon destination={section}/><span>{fr?current.fr:current.en}</span></span>{progress}</div>
+      <button ref={trigger} type="button" className="bh-bake-navigator-trigger" aria-label={fr?'Voir les 5 rubriques':'View all 5 sections'} aria-expanded={open} aria-controls={id} onClick={()=>setOpen(value=>!value)}>
         <span className="bh-navigator-disclosure">{open?(fr?'Fermer':'Close'):(fr?'Rubriques':'Sections')} <span aria-hidden="true">{open?'⌃':'⌄'}</span></span>
       </button>
     </div>
     {open&&<nav id={id} className={`bh-bake-navigator-grid${recipeMeal?' bh-navigator-with-meal':''}`} aria-label={fr?'Votre fournée':'Your bake'}>
-      {BAKE_DESTINATIONS.map(item=>item.id==='recipe'&&recipeMeal?<section key={item.id} className="bh-navigator-recipe" aria-label={fr?'Recette':'Recipe'}>
+      {destinations.map(item=>item.id==='recipe'&&recipeMeal?<section key={item.id} className="bh-navigator-recipe" aria-label={fr?'Recette':'Recipe'}>
         <strong data-destination-label>{fr?'Recette':'Recipe'}</strong>
         <div className="bh-navigator-recipe-links">
           <button type="button" aria-current={active==='recipe'&&!recipeMeal.active?'page':undefined} onClick={()=>choose(()=>onChange('recipe'))}>{fr?'Pâte':'Dough'}</button>
           <button type="button" aria-current={recipeMeal.active?'page':undefined} onClick={()=>choose(recipeMeal.onChoose)}><span>{recipeMeal.label}</span>{!recipeMeal.selected&&<small>{fr?'Facultatif':'Optional'}</small>}</button>
         </div>
-      </section>:<button key={item.id} type="button" aria-current={active===item.id?'page':undefined} className={`bh-bake-navigator-card${item.id==='service'?' bh-navigator-service':''}`} onClick={()=>choose(()=>onChange(item.id))}><DestinationIcon destination={item.id}/><strong data-destination-label>{fr?item.fr:item.en}</strong></button>)}
+      </section>:<button key={item.id} type="button" aria-current={section===item.id?'page':undefined} className={`bh-bake-navigator-card${item.id==='service'?' bh-navigator-service':''}`} onClick={()=>choose(()=>onChange(item.id))}><DestinationIcon destination={item.id}/><strong data-destination-label>{fr?item.fr:item.en}</strong></button>)}
     </nav>}
   </div>;
 }

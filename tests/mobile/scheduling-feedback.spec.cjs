@@ -362,7 +362,7 @@ test('previous/continue and browser back/forward reopen scheduling with confirme
 test('compact Organisation progress and one-tap timing editor stay usable on narrow screens',async({page},info)=>{
  const {plan}=await seed(page,{mode:'simple',preferment:'none'});
  const navigator=page.locator('.bh-bake-navigator');
- await expect(navigator).toContainText('Organisation & horaires');
+ await expect(navigator).toContainText('Ma fournée');
  const progress=navigator.getByRole('button',{name:/Étape \d+\/\d+/});
  await expect(progress).toBeVisible();
  const navBox=await navigator.boundingBox(),stepBox=await progress.boundingBox();
@@ -371,7 +371,7 @@ test('compact Organisation progress and one-tap timing editor stay usable on nar
  // WebKit failure screenshot shows an intact 84px band, not clipped controls.
  // Bound that responsive layout while checking actual targets, not one row.
  expect(navBox.height).toBeLessThanOrEqual(96);
- const sections=navigator.getByRole('button',{name:'Voir les 6 rubriques',exact:true});
+ const sections=navigator.getByRole('button',{name:'Voir les 5 rubriques',exact:true});
  const sectionsBox=await sections.boundingBox();
  for(const control of [progress,sections]){
   const r=await control.boundingBox();

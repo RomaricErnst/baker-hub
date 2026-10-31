@@ -3412,7 +3412,7 @@ export default function Home() {
   </>;
 
   const mealNoun=bakeType==='pizza'?(fr?'Garnitures':'Toppings'):sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'Tartines':'Toasts'):(fr?'Sandwichs':'Sandwiches');
-  const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings?'recipe':destination} fr={fr} onChange={openDestination} top={destination==='organisation'?0:stickTop}
+  const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings?'recipe':destination} fr={fr} onChange={next=>{if(next==='batch'){if(recipeGenerated)openSetupReview();else if(styleKey&&qtyChosen)openDestination('organisation');else openDestination('batch');}else openDestination(next);}} top={destination==='organisation'?0:stickTop}
     recipeMeal={styleKey&&(pizzaPartyEnabled||sandwichEnabled)?{label:mealNoun,selected:hasFillings,active:browsingFillings,onChoose:()=>{setFillingsReturn({destination:'recipe',view:'dough'});setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}}:undefined}
     progress={destination==='organisation' && modeChosen && !setupOverview ? <SummaryBar flow={tab==='simple'?simpleOrganisationFlow:customOrganisationFlow} modeChip={{value:tab==='simple'?'Simple':fr?'Personnalisé':'Custom',onClick:()=>{setModeChosen(false);scrollToStepTop();}}} /> : undefined} /> : null;
 
@@ -3468,25 +3468,7 @@ export default function Home() {
           onOpenSandwiches={sandwichEnabled ? openLateFillings : undefined}
           onOpenPizzas={bakeType === 'pizza' ? openLateFillings : undefined}
           onSharePlan={shareCurrentSession}
-          onBack={bakeType && !showProductHome && !recipeGenerated && (destination==='batch'||destination==='organisation') ? () => {
-            if (destination === 'batch') {
-              if (batchView === 'fillings' && fillingsReturn) finishFillings();
-              else if (batchView === 'fillings') { setBatchView('quantity'); scrollToStepTop(); }
-              else if (recipeGenerated) backToSetupChoices();
-              else if (batchView === 'quantity') { setBatchView('style'); scrollToStepTop(); }
-              else backToProducts();
-            } else if (destination === 'organisation') {
-              if (recipeGenerated && setupOverview) finishSetupEdit();
-              else if (recipeGenerated) backToSetupChoices();
-              else if (setupOverview) { setSetupOverview(false); scrollToStepTop(); }
-              else if (!modeChosen) { setBatchView('quantity'); openDestination('batch'); }
-              else if (tab === 'simple') simpleFlow.onPrev(simpleFlow.activeId);
-              else customFlow.onPrev(customFlow.activeId);
-            } else {
-              const previous = destination === 'recipe' ? 'organisation' : destination === 'shopping' ? 'recipe' : destination === 'protocol' ? 'shopping' : 'protocol';
-              openDestination(previous);
-            }
-          } : undefined}
+          onBack={undefined}
           // Nothing to start over from on the landing page — the baker is
           // already at the start. It appears the moment they pick a bake type,
           // which is also the moment it becomes useful: it is how they switch
@@ -3718,10 +3700,10 @@ export default function Home() {
             {batchView==='style' ? <>
               <h2 className="bh-page-title">{bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Quel style de pizza ?':'Which pizza style?')}</h2>
               <a href={`/${locale}/with-my-base?family=${bakeType}`} style={{display:'inline-flex',alignItems:'center',minHeight:44,marginBottom:12,color:'var(--terra)',fontSize:16}}>{bakeType==='bread'?(fr?'J’ai déjà une pâte ou du pain →':'I already have dough or bread →'):(fr?'J’ai déjà ma pâte →':'I already have my dough →')}</a>
-              <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
-              <button type="button" className="bh-section-back" onClick={backToProducts}>{fr?'← Pizza ou pain':'← Pizza or bread'}</button>
-              <BottomActions className="bh-batch-actions bh-style-confirm">
                 {!styleKey&&<p id="bh-style-choice-hint" style={{margin:0,fontSize:14,color:'var(--ash)'}}>{fr?(bakeType==='bread'?'Choisissez un pain pour continuer.':'Choisissez un style de pizza pour continuer.'):(bakeType==='bread'?'Choose a bread to continue.':'Choose a pizza style to continue.')}</p>}
+              <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
+              <BottomActions className="bh-batch-actions bh-style-confirm">
+                <button type="button" className="bh-back-action" onClick={backToProducts}>{fr?'Retour':'Back'}</button>
                 <button type="button" disabled={!styleKey} aria-describedby={!styleKey?'bh-style-choice-hint':undefined} style={{...NEXT_CTA,opacity:styleKey?1:0.5,cursor:styleKey?'pointer':'not-allowed'}} onClick={()=>{if(!styleKey)return;setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{styleKey?`${fr?'Continuer avec':'Continue with'} ${styleDisplayName(styleKey)} →`:(fr?'Continuer':'Continue')}</button>
               </BottomActions>
             </> : <>
@@ -3748,7 +3730,7 @@ export default function Home() {
               />
               <BottomActions className="bh-batch-actions bh-batch-actions-navigation">
                 <button type="button" className="bh-back-action" onClick={()=>{if(recipeGenerated)backToSetupChoices();else {setBatchView('style');scrollToStepTop();}}}>{recipeGenerated?(fr?'Retour à mes choix':'Back to my choices'):(fr?'Étape précédente':'Previous step')}</button>
-                <button type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(recipeGenerated)finishSetupEdit();else openDestination('organisation');}}>{recipeGenerated?setupReturnLabel:(fr?'Définir ma recette':'Set up my recipe')}</button></BottomActions>
+                <button type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(recipeGenerated)finishSetupEdit();else openDestination('organisation');}}>{recipeGenerated?setupReturnLabel:(fr?'Continuer':'Continue')}</button></BottomActions>
             </>}
           </section>}
 
@@ -3781,6 +3763,7 @@ export default function Home() {
               {!modeChosen && destination === 'organisation' && (
                 <div style={{ padding: '4px 0 8px' }}>
                   <h2 className="bh-page-title">{locale === 'fr' ? 'Comment définir votre recette ?' : 'How would you like to set up your recipe?'}</h2>
+                  <BottomActions><button type="button" className="bh-back-action" onClick={()=>{setBatchView('quantity');openDestination('batch');}}>{fr?'Retour':'Back'}</button></BottomActions>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {([
                       { key: 'simple' as const, title: 'Simple',
@@ -4149,10 +4132,12 @@ export default function Home() {
 
               {!bakeTimeIsPast && (
                 <div style={{ marginTop: '12px' }}>
-                  <button type="button" className="bh-section-back" onClick={openSetupReview}>{fr?'Modifier l’organisation et les horaires':'Edit setup & timing'}</button>
+
+                                      <button type="button" className="bh-section-back" onClick={()=>{setProtocolView('dough');openDestination('protocol');}}><DestinationIcon destination="protocol"/> {fr?'J’ai les ingrédients · Préparation':'I have the ingredients · Preparation'} →</button>
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
+                    <button type="button" className="bh-back-action" onClick={openSetupReview}>{fr?'Modifier ma fournée':'Edit my bake'}</button>
                     <button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}><DestinationIcon destination="shopping"/> {fr?'Voir mes courses':'View my shopping list'} →</button>
-                    <button type="button" className="bh-section-back" onClick={()=>{setProtocolView('dough');openDestination('protocol');}}><DestinationIcon destination="protocol"/> {fr?'J’ai les ingrédients · Préparation':'I have the ingredients · Preparation'} →</button>
+
                   </BottomActions>}
                 </div>
               )}
@@ -4666,10 +4651,12 @@ export default function Home() {
 
               {!bakeTimeIsPast && (
                 <div style={{ marginTop: '12px' }}>
-                  <button type="button" className="bh-section-back" onClick={openSetupReview}>{fr?'Modifier l’organisation et les horaires':'Edit setup & timing'}</button>
+
+                                      <button type="button" className="bh-section-back" onClick={()=>{setProtocolView('dough');openDestination('protocol');}}><DestinationIcon destination="protocol"/> {fr?'J’ai les ingrédients · Préparation':'I have the ingredients · Preparation'} →</button>
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
+                    <button type="button" className="bh-back-action" onClick={openSetupReview}>{fr?'Modifier ma fournée':'Edit my bake'}</button>
                     <button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}><DestinationIcon destination="shopping"/> {fr?'Voir mes courses':'View my shopping list'} →</button>
-                    <button type="button" className="bh-section-back" onClick={()=>{setProtocolView('dough');openDestination('protocol');}}><DestinationIcon destination="protocol"/> {fr?'J’ai les ingrédients · Préparation':'I have the ingredients · Preparation'} →</button>
+
                   </BottomActions>}
                 </div>
               )}

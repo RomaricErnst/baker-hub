@@ -2,9 +2,9 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 
 // These contracts cover the replacement journey. Legacy mobile specs remain
 // intact as the reference for functionality outside this navigation change.
-const destinations=['Ma fournée','Organisation & horaires','Recette','Courses','Préparation','Cuisson & service'];
+const destinations=['Ma fournée','Recette','Courses','Préparation','Cuisson & service'];
 // English labels match BAKE_DESTINATIONS in app/lib/bakeNavigation.ts.
-const englishDestinations=['My bake','Setup & timing','Recipe','Shopping list','Preparation','Baking & serving'];
+const englishDestinations=['My bake','Recipe','Shopping list','Preparation','Baking & serving'];
 const navigator=page=>page.locator('.bh-bake-navigator-trigger');
 const stored=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null'));
 async function anonymous(page){
@@ -30,6 +30,8 @@ async function noOverflow(page){
  expect(geometry.htmlWidth,JSON.stringify(geometry)).toBeLessThanOrEqual(viewport);
 }
 async function navigate(page,label,locale='fr'){
+ if(label==='Organisation & horaires')label='Ma fournée';
+ if(label==='Setup & timing')label='My bake';
  await navigator(page).scrollIntoViewIfNeeded();
  if(await navigator(page).getAttribute('aria-expanded')!=='true')await navigator(page).tap();
  const nav=page.getByRole('navigation',{name:locale==='fr'?'Votre fournée':'Your bake',exact:true});
@@ -68,7 +70,7 @@ for(const locale of ['fr','en'])test(`${locale}: compact recipe menu opens filli
  await navigate(page,locale==='fr'?'Préparation':'Preparation',locale);
  await navigator(page).tap();
  const nav=page.getByRole('navigation',{name:locale==='fr'?'Votre fournée':'Your bake',exact:true});
- await expect(nav.locator('[data-destination-label]')).toHaveCount(6);
+ await expect(nav.locator('[data-destination-label]')).toHaveCount(5);
  const meal=nav.getByRole('button',{name:locale==='fr'?'Garnitures Facultatif':'Toppings Optional',exact:true});
  await fits(page,meal);await unobscured(meal);
  await testInfo.attach('compact-recipe-menu',{body:await page.screenshot(),contentType:'image/png'});
@@ -81,13 +83,13 @@ for(const locale of ['fr','en'])test(`${locale}: compact recipe menu opens filli
  await expect(page.getByRole('heading',{name:locale==='fr'?'Quelles garnitures ?':'Which toppings?',exact:true})).toHaveCount(0);
  await expect.poll(async()=>(await stored(page))?.numItems).toBe(4);
  await navigate(page,locale==='fr'?'Ma fournée':'My bake',locale);
- await expect(page.getByRole('heading',{name:locale==='fr'?'Quelle quantité de pâte ?':'How much dough?',exact:true})).toBeVisible();
+ await expect(page.getByRole('heading',{name:locale==='fr'?'Revoir mes choix':'Review my choices',exact:true})).toBeVisible();
  await noOverflow(page);
 });
 test('compact menu keeps bread-only recipes unsplit',async({page})=>{
  await seed(page,{style:'brioche'});await navigator(page).tap();
  const nav=page.getByRole('navigation',{name:'Votre fournée',exact:true});
- await expect(nav.locator('[data-destination-label]')).toHaveCount(6);
+ await expect(nav.locator('[data-destination-label]')).toHaveCount(5);
  await expect(nav.locator('.bh-navigator-recipe')).toHaveCount(0);
  await nav.getByRole('button',{name:'Recette',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toHaveText('Recette');
@@ -112,7 +114,7 @@ for(const locale of ['fr','en'])test(`${locale}: generated task screens keep sec
 
 for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}: all destinations, shopping and preparation are usable`,async({page},testInfo)=>{
  await seed(page,{bread,locale:'en'});
- for(const label of ['My bake','Setup & timing','Recipe','Baking & serving','Shopping list','Preparation']){
+ for(const label of ['My bake','Recipe','Baking & serving','Shopping list','Preparation']){
   await navigate(page,label,'en');
   if(label==='Shopping list'){
    await expect(page.getByRole('checkbox').first()).toBeVisible();
@@ -185,7 +187,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await expect(page.getByRole('button',{name:'Ajouter des garnitures — facultatif',exact:true})).toHaveCount(0);
   await expect(quantity).toHaveValue('5');
   expect((await stored(page)).styleKey).toBe(chosenStyle);
-  const organise=page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true});
+  const organise=page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true});
   const quantityActions=page.locator('.bh-batch-actions');
   await expect(quantityActions).toHaveClass(/bh-step-actions/);
   await expect(quantityActions).toHaveCSS('position','fixed');
@@ -218,14 +220,15 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await expect.poll(async()=>(await stored(page)).tab).toBe(mode);
   expect((await stored(page)).numItems).toBe(5);
   await navigate(page,'Ma fournée');
-  await expect(quantity).toHaveValue('5');
+  await expect(page.getByRole('heading',{name:mode==='simple'?'Votre cuisine':'Votre équipement',exact:true})).toBeVisible();
+  expect((await stored(page)).numItems).toBe(5);
   expect((await stored(page)).styleKey).toBe(chosenStyle);
  });
 
- test(`${mode} ${bread?'bread':'pizza'}: generated bake exposes six consistent destinations`,async({page},testInfo)=>{
+ test(`${mode} ${bread?'bread':'pizza'}: generated bake exposes five consistent destinations`,async({page},testInfo)=>{
   await seed(page,{mode,bread});
   const before=await stored(page);
-  for(const label of ['Courses','Préparation','Cuisson & service','Recette','Organisation & horaires','Ma fournée']){
+  for(const label of ['Courses','Préparation','Cuisson & service','Recette','Ma fournée']){
    await navigate(page,label);
    await expect(page.locator('#bh-bottom-nav')).toHaveCount(0);
   }
@@ -403,7 +406,7 @@ test('bread family return preserves choices; wraps and meal examples are discove
  await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
  const quantity=page.getByLabel('Nombre de pièces',{exact:true});await quantity.fill('5');await quantity.blur();
  await page.locator('.bh-batch-context').getByRole('button',{name:'Modifier le pain choisi',exact:true}).tap();
- await page.getByRole('button',{name:'← Pizza ou pain',exact:true}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:'Retour',exact:true}).tap();
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Que souhaitez-vous préparer ?',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Pain',exact:true}).tap();
@@ -466,7 +469,7 @@ for(const mode of ['simple','custom'])test(`${mode}: editable weight and sequent
  await expect(weight).not.toHaveValue('280');
  const recommended=Number(await weight.inputValue());
  await expect.poll(async()=>(await stored(page))?.itemWeight).toBe(recommended);
- await page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
  await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé(?:\s|$)/}).tap();
  const step=page.locator('#step-3');
  if(mode==='simple')await step.locator('summary').filter({hasText:/^Cuisson ·/}).tap();
@@ -546,7 +549,7 @@ for(const mode of ['simple','custom'])test(`${mode}: batch details are condition
  await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
  await page.getByLabel('Pâte par pizza (g)',{exact:true}).fill('500');
  await page.getByLabel('Pâte par pizza (g)',{exact:true}).blur();
- await page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
  await page.getByRole('button',{name:mode==='simple'?/^Simple\b/:/^Personnalisé(?:\s|$)/}).tap();
  const step=page.locator('#step-3');
  if(mode==='simple')await step.locator('summary').filter({hasText:/^Cuisson ·/}).tap();
@@ -606,9 +609,9 @@ test('page landing survives delayed Safari viewport changes and history restore 
  await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));window.scrollTo(0,document.documentElement.scrollHeight);});
  const originalSize=page.viewportSize();
  await page.setViewportSize({...originalSize,height:originalSize.height+70});
- await page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
  await expect(page.locator('.bh-header-stack .bh-bake-navigator')).toHaveCount(1);
- await expect(page.locator('.bh-bake-navigator')).toHaveCSS('position','static');
+ await expect(page.locator('.bh-bake-navigator')).toHaveCSS('position','relative');
  await expect(page.locator('.bh-header-stack')).toHaveCSS('position','relative');
  await expect(page.locator('.bh-header')).toHaveCSS('position','static');
  // Keep enough document height to reproduce a retained scroll offset even
@@ -748,7 +751,7 @@ test.describe('guided piadina with cooking time set in planning',()=>{
   await page.getByLabel('Nombre de pièces',{exact:true}).fill('5');
   await page.getByLabel('Nombre de pièces',{exact:true}).blur();
   await expect(page.getByLabel('Horaire de cuisson souhaité',{exact:true})).toHaveCount(0);
-  await page.locator('.bh-batch-actions').getByRole('button',{name:'Définir ma recette',exact:true}).tap();
+  await page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
   await page.getByRole('button',{name:/^Simple/}).tap();
   const setup=page.locator('.bh-step-page:visible');
   await setup.locator('summary').filter({hasText:/^Cuisson ·/}).tap();
@@ -799,4 +802,20 @@ test.describe('guided piadina with cooking time set in planning',()=>{
   await expect.poll(async()=>{const s=await stored(page);return {generated:s?.recipeGenerated,count:s?.numItems,style:s?.styleKey};}).toEqual({generated:false,count:5,style:'piadina'});
   await expect(end).toHaveCount(0);expect(errors).toEqual([]);
  });
+});
+
+for(const locale of ['fr','en'])test(`${locale}: My bake combines setup with choices and section menu does not move content`,async({page})=>{
+ await seed(page,{bread:false,locale});
+ const label=locale==='fr'?'Ma fournée':'My bake';
+ await navigate(page,label,locale);
+ await expect(page.getByRole('heading',{name:locale==='fr'?'Revoir mes choix':'Review my choices',exact:true})).toBeVisible();
+ const heading=page.getByRole('heading',{name:locale==='fr'?'Revoir mes choix':'Review my choices',exact:true});
+ const before=await heading.boundingBox();
+ await navigator(page).tap();
+ const after=await heading.boundingBox();
+ expect(after.y).toBe(before.y);
+ await expect(page.locator('[data-destination-label]')).toHaveCount(5);
+ await expect(page.locator('.bh-header').getByRole('button',{name:/^(Back|Retour)$/})).toHaveCount(0);
+ await page.keyboard.press('Escape');
+ await expect(navigator(page)).toHaveAttribute('aria-expanded','false');
 });

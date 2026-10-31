@@ -55,3 +55,13 @@ test('fresh finishing herbs are not sorted into the drain station merely for tak
   assert.ok(herbs>=0);assert.ok(html.slice(herbs).includes(locale==='fr'?'Basilic':'Fresh basil'));
  }
 });
+
+test('catalogue offers one mortadella choice and topping copy does not impose Roman dough',()=>{
+ const {CATALOGUE_PIZZAS,getPizzaById}=require('../app/lib/toppingDatabase.ts');
+ const choices=CATALOGUE_PIZZAS.filter(p=>p.ingredients.some(i=>i.id==='mortadella'));
+ assert.equal(choices.length,1);
+ assert.ok(choices[0].compatibleStyles.includes('neapolitan'));
+ assert.ok(choices[0].compatibleStyles.includes('roman'));
+ const pizza=getPizzaById('prosciutto_stracciatella_romana');
+ assert.doesNotMatch(JSON.stringify([pizza.name,pizza.story]),/Roman|romaine/);
+});

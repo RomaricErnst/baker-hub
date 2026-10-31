@@ -4,7 +4,7 @@ for(const lang of ['fr','en'])test(`${lang}: flour quantity survives setup and r
  await page.goto(lang==='fr'?'/fr':'/');
  await page.getByRole('button',{name:lang==='fr'?'Pain':'Bread',exact:true}).tap();
  await page.getByRole('button',{name:'Brioche',exact:true}).tap();
- await page.locator('.bh-style-confirm button').tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
  await expect(page.locator('.bh-fillings-invitation')).toHaveCount(0);
  await page.getByRole('button',{name:lang==='fr'?'Par quantité de farine':'By flour weight',exact:true}).tap();
  const flour=page.locator('#quantity-total-flour');
@@ -23,8 +23,8 @@ test('traditional pizza oven label stays consistent after selection',async({page
  await page.goto('/fr');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:'Napolitaine classique',exact:true}).tap();
- await page.locator('.bh-style-confirm button').tap();
- await page.getByRole('button',{name:'Définir ma recette',exact:true}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
+ await page.getByRole('button',{name:'Continuer',exact:true}).tap();
  await page.getByRole('button',{name:/^Simple/}).tap();
  await page.locator('#step-3 summary').filter({hasText:/^Cuisson ·/}).tap();
  await page.getByRole('button',{name:/^Four à pizza traditionnel/}).tap();
@@ -44,7 +44,7 @@ test('flour-first recipe edits ignore a restored extra-dough allowance',async({p
  await page.goto('/fr');
  await expect(page.getByText('750 g',{exact:true}).first()).toBeVisible();
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')).itemWeight)).toBeGreaterThan(830);
- await page.getByRole('button',{name:'Modifier l’organisation et les horaires',exact:true}).tap();
+ await page.getByRole('button',{name:'Modifier ma fournée',exact:true}).tap();
  await expect(page.getByText('750 g de farine · 2 pièces',{exact:true})).toBeVisible();
  await expect(page.getByRole('button',{name:'Modifier : Mode',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Modifier : Peaufiner',exact:true}).tap();

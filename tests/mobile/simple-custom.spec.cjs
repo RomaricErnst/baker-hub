@@ -36,8 +36,8 @@ for(const locale of ['fr','en']){
   await page.goto(fr?'/fr':'/');
   await page.getByRole('button',{name:'Pizza',exact:true}).tap();
   await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
-  await page.locator('.bh-style-confirm button').tap();
-  await actions(page).getByRole('button',{name:fr?'Définir ma recette':'Set up my recipe',exact:true}).tap();
+  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
+  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
   await page.getByRole('button',{name:fr?/^Personnalisé/:/^Custom/}).tap();
   await expect(page.locator('#step-3')).toBeVisible();
   await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
@@ -85,10 +85,10 @@ for(const locale of ['fr','en']){
   await anonymous(page);await page.goto(fr?'/fr':'/');
   await page.getByRole('button',{name:'Pizza',exact:true}).tap();
   await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
-  await page.locator('.bh-style-confirm button').tap();
+  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
   const quantity=page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true});
   await quantity.fill('4');await quantity.blur();
-  await actions(page).getByRole('button',{name:fr?'Définir ma recette':'Set up my recipe',exact:true}).tap();
+  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
   await page.getByRole('button',{name:/^Simple\b/}).tap();
   await expect(page.getByRole('heading',{name:fr?'Votre cuisine':'Your kitchen',exact:true})).toBeVisible();
   const cooking=page.locator('details').filter({has:page.locator('summary').filter({hasText:fr?/^Cuisson ·/:/^Cooking ·/})}).first();
@@ -140,7 +140,7 @@ for(const locale of ['fr','en']){
   await stages.locator(':scope > summary').tap();
   await expect(stages).toHaveAttribute('open','');
   await expect(stages.getByText(/Poolish/).first()).toBeVisible();
-  await page.getByRole('button',{name:fr?'Modifier l’organisation et les horaires':'Edit setup & timing',exact:true}).tap();
+  await page.getByRole('button',{name:fr?'Modifier ma fournée':'Edit my bake',exact:true}).tap();
   await page.getByRole('button',{name:fr?'Modifier : Mode':'Edit : Mode',exact:true}).tap();
   await page.getByRole('button',{name:fr?/^Personnalisé(?:\s|$)/:/^Custom\b/}).tap();
   await expect.poll(formula).toEqual({tab:'custom',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
@@ -154,10 +154,10 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
  await page.goto(fr?'/fr':'/');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
- await page.locator('.bh-style-confirm button').tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).fill('12');
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).blur();
- await actions(page).getByRole('button',{name:fr?'Définir ma recette':'Set up my recipe',exact:true}).tap();
+ await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
  await page.getByRole('button',{name:fr?/^Personnalisé/:/^Custom/}).tap();
  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
  const section=page.getByRole('region',{name:fr?'Nombre de pétrissées':'Mixing batches',exact:true});
