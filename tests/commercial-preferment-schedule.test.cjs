@@ -70,11 +70,11 @@ test('blocked interval includes its start and excludes its end',()=>{
  assert.equal(commercialPrefermentPlanValid({...args,blocks:[{from:prep,to:new Date(+prep+3600000)}]}),false);
  assert.equal(commercialPrefermentPlanValid({...args,blocks:[{from:new Date(+prep-3600000),to:prep}]}),true);
 });
-test('restore retains canonical offset and fridge, and only unchanged saved plans may have historical prep',()=>{
+test('restore retains canonical offset and fridge, and only confirmed preparation may have historical prep',()=>{
  const source=fs.readFileSync(path.join(__dirname,'../app/components/SchedulePicker.tsx'),'utf8');
  assert.match(source,/\(sessionRestored \|\| confirmedPlan\) && Number.isFinite\(savedPrefOffsetHours\)/);
  assert.match(source,/savedCommercial.fridge \?\? true/);
- assert.match(source,/alreadyStarted: unchangedRestoredCommercialPlan/);
+ assert.match(source,/alreadyStarted: !!execution/);
  assert.match(source,/If you have not prepared it, choose a new schedule/);
 });
 
