@@ -54,8 +54,19 @@ test('Guide Done uses the planned mixing time, or now if completed early, withou
  let handler;function visit(n){if(ts.isFunctionDeclaration(n)&&n.name?.text==='recordGuideMix')handler=n.getText(tree);ts.forEachChild(n,visit);}visit(tree);
  const code=ts.transpileModule(handler,{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
  for(const delta of [-H,H])for(const yeastType of ['instant','sourdough']){
-  const calls=[],context={Date:class extends Date{static now(){return now;}},startTime:new Date(now+delta),mixExecution:undefined,execution:undefined,yeastType,markMixMade:at=>calls.push(['mix',at]),markPreparationMade:at=>calls.push(['direct',at])};
+  const calls=[],context={Date:class extends Date{static now(){return now;}},startTime:new Date(now+delta),mixExecution:undefined,execution:undefined,commercialMethod:'none',yeastType,markMixMade:at=>calls.push(['mix',at]),markPreparationMade:at=>calls.push(['direct',at])};
   vm.createContext(context);vm.runInContext(code,context);context.recordGuideMix(true);
   assert.deepEqual(calls,[[yeastType==='sourdough'?'mix':'direct',Math.min(now+delta,now)]]);
  }
+ for(const method of ['poolish','biga']){
+  const calls=[],plannedPreparationAt=now-13*H,mix=now-H;
+  const context={Date:class extends Date{static now(){return now;}},startTime:new Date(mix),mixExecution:undefined,execution:undefined,commercialMethod:method,yeastType:'instant',recipe:fact.recipe,plannedPreparationAt,prefGoesInFridge:true,prefOffsetH:12,kitchenTemp:22,fridgeTemp:5,styleKey:'neapolitan',commercialPrefermentWindow:()=>({min:10,max:16}),markMixMade:(at,prepared)=>calls.push({at,prepared})};
+  vm.createContext(context);vm.runInContext(code,context);context.recordGuideMix(true);
+  assert.equal(calls.length,1);
+  assert.equal(calls[0].at,mix);
+  assert.equal(calls[0].prepared.actualAt,plannedPreparationAt);
+  assert.equal(calls[0].prepared.method,method);
+  assert.equal(calls[0].prepared.recipe,fact.recipe);
+ }
+
 });

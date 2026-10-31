@@ -2190,13 +2190,14 @@ export default function Home() {
     saveSession(buildSessionPayload({execution:actual,startTime:+mix,prefOffsetH:nextOffset,timingOverrides:{},protocolStale:!remainingValid}));
     if(destination!=='protocol'){if(remainingValid)openDestination('recipe');else{setSetupOverview(false);setActiveStep(7);setAdvancedStep(9);openDestination('organisation');}}
   }
-  function markMixMade(at:number) {
-    if(!recipe||!eatTime||!Number.isFinite(at)||at>Date.now()||execution&&at<execution.actualAt)return;
+  function markMixMade(at:number,prepared=execution) {
+    if(!recipe||!eatTime||!Number.isFinite(at)||at>Date.now()||prepared&&at<prepared.actualAt)return;
     const actual:MixExecution={actualAt:at,recordedAt:Date.now(),recipe:mixExecution?.recipe??recipe};
-    const mix=new Date(at),offset=execution?(at-execution.actualAt)/3600000:prefOffsetH;
-    const valid=execution?validateConfirmedBake({completedMixAt:at,execution,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength:flourChosen?(computeBlendProfile(flourBlend).fermToleranceMultiplier??1):1,preheatMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(execution,candidate,times,actual.recipe)}).valid:at===+startTime&&starterTimingValid&&scheduleCandidateValid;
+    const mix=new Date(at),offset=prepared?(at-prepared.actualAt)/3600000:prefOffsetH;
+    const valid=prepared?validateConfirmedBake({completedMixAt:at,execution:prepared,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength:flourChosen?(computeBlendProfile(flourBlend).fermToleranceMultiplier??1):1,preheatMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(prepared,candidate,times,actual.recipe)}).valid:at===+startTime&&starterTimingValid&&scheduleCandidateValid;
+    if(prepared)setExecution(prepared);
     setStarterRecoveryPending(false);setMixExecution(actual);setStartTime(mix);setPrefOffsetH(offset);setTimingOverrides({});setSessionRestored(true);setScheduleCandidateValid(valid);setProtocolStale(!valid);
-    saveSession(buildSessionPayload({starterRecoveryPending:false,mixExecution:actual,startTime:at,prefOffsetH:offset,timingOverrides:{},protocolStale:!valid}));
+    saveSession(buildSessionPayload({execution:prepared,starterRecoveryPending:false,mixExecution:actual,startTime:at,prefOffsetH:offset,timingOverrides:{},protocolStale:!valid}));
     if(!valid){setSetupOverview(false);setActiveStep(7);setAdvancedStep(9);openDestination('organisation');}
     else if(destination!=='protocol')openDestination('recipe');
   }
@@ -2212,7 +2213,13 @@ export default function Home() {
       else if(execution?.method==='none'){setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}
     }else if(!mixExecution&&execution?.method!=='none'){
       const at=Math.min(+startTime,Date.now());
-      if(yeastType==='sourdough'||execution)markMixMade(at);else markPreparationMade(at);
+      if(yeastType==='sourdough'||execution)markMixMade(at);
+      else if(commercialMethod&&commercialMethod!=='none'&&recipe){
+        // Done confirms the planned sequence when the preferment checkbox was
+        // skipped; never mistake the mixing time for preferment preparation.
+        if(plannedPreparationAt>at)return;
+        markMixMade(at,{method:commercialMethod,actualAt:plannedPreparationAt,recordedAt:Date.now(),inFridge:prefGoesInFridge,prefHours:prefOffsetH,prefWindow:commercialPrefermentWindow(commercialMethod,prefGoesInFridge,kitchenTemp,styleKey??'',fridgeTemp),recipe});
+      }else markPreparationMade(at);
     }
   }
   function requestFreshPlan() {
