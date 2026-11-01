@@ -108,6 +108,12 @@ for(const locale of ['fr','en']){
   await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:fr?'Créer ma recette simple':'Create my simple recipe',exact:true}).tap();
   await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
+  await page.getByRole('button',{name:fr?'Modifier la quantité':'Edit quantity',exact:true}).tap();
+  await quantity.fill('3');await quantity.blur();
+  await actions(page).locator('[data-bh-forward]:visible').tap();
+  await expect(page.locator('.bh-navigator-current')).toContainText(fr?'Recette':'Recipe');
+  await expect(page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true})).toBeVisible();
+  await expect.poll(async()=>(await stored(page))?.numItems).toBe(3);
   await page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true}).tap();
   await expect(page.locator('#step-7:visible')).toBeVisible();
   expect(errors).toEqual([]);
@@ -140,10 +146,12 @@ for(const locale of ['fr','en']){
   await nextToRecipe(page,fr);
   await expect(page.getByRole('region',{name:fr?'Quantités totales':'Total ingredients',exact:true})).toBeVisible();
   const stages=page.locator('details').filter({has:page.locator('summary').filter({hasText:fr?'Ingrédients par étape':'Ingredients by stage'})});
-  await stages.locator(':scope > summary').tap();
   await expect(stages).toHaveAttribute('open','');
+  await stages.locator(':scope > summary').tap();
+  await expect(stages).not.toHaveAttribute('open','');
+  await stages.locator(':scope > summary').tap();
   await expect(stages.getByText(/Poolish/).first()).toBeVisible();
-  await page.getByRole('button',{name:fr?'Modifier ma fournée':'Edit my bake',exact:true}).tap();
+  await page.getByRole('button',{name:fr?'Revoir mes choix':'Review my choices',exact:true}).tap();
   await page.getByRole('button',{name:fr?'Modifier : Mode':'Edit : Mode',exact:true}).tap();
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
   await expect.poll(formula).toEqual({tab:'custom',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
