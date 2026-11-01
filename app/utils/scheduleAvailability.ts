@@ -68,3 +68,11 @@ export function foldActionLabel(id: string, locale: string, mixingBatches = 1): 
   const fold = `${fr ? 'Rabat' : 'Fold'} ${match[1]}`;
   return mixingBatches > 1 ? `${fr ? 'Lot' : 'Batch'} ${match[2] ?? '1'} · ${fold}` : fold;
 }
+
+
+/** Recurring work and sleep count once each, regardless of the bake's horizon. */
+export function selectedAvailabilityCount(blocks:readonly {label?:string}[]):number {
+  const sleep = blocks.some(block=>block.label?.endsWith(' night'));
+  const work = blocks.some(block=>block.label?.startsWith('Work · '));
+  return Number(sleep) + Number(work) + blocks.filter(block=>!block.label?.endsWith(' night')&&!block.label?.startsWith('Work · ')).length;
+}
