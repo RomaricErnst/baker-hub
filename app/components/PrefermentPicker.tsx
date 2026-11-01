@@ -19,11 +19,12 @@ interface PrefermentPickerProps {
   hideTypes?: PrefermentType[];
   kitchenTemp?: number;
   yeastType?: string;
+  chooseMethod?: boolean;
 }
 
 export default function PrefermentPicker({
   selected, onSelect, flourPct, onFlourPctChange, suggestedFlourPct = 20, directOnly = false,
-  styleKey, hideTypes = [], kitchenTemp, yeastType,
+  styleKey, hideTypes = [], kitchenTemp, yeastType, chooseMethod = false,
 }: PrefermentPickerProps) {
   const t = useTranslations('preferment');
   const fr = useLocale() === 'fr';
@@ -48,7 +49,7 @@ export default function PrefermentPicker({
 
   const options = ALL_OPTIONS
     .filter(o => !hideTypes.includes(o.id as PrefermentType))
-    .filter(o => o.id !== 'levain' || yeastType === 'sourdough')
+    .filter(o => o.id !== 'levain' || chooseMethod || yeastType === 'sourdough')
     .map(o => {
       const pData = PREFERMENT_TYPES[o.id as PrefermentType] as { bestFor?: string[] };
       const isRecommended = o.id !== 'none' && styleKey && pData?.bestFor?.includes(styleKey);
