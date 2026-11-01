@@ -45,19 +45,20 @@ export function ozToG(oz: number): number {
   return Math.round(oz * 28.3495);
 }
 // Display a stored gram value in the baker's system
-export function displayWeight(g: number, units: UnitSystem): string {
-  if (units === 'imperial') {
-    // Yeast-scale amounts: 0.5g rounded to 0.1oz precision showed "0 oz".
-    // No kitchen oz-scale resolves these anyway — show grams (precision
-    // scales are metric) so the number stays usable.
-    if (g > 0 && g < 6) return `${parseFloat(g.toFixed(1))} g`;
-    return `${gToOz(g)} oz`;
-  }
-  if (g <= 0) return '0 g';
-  if (g < 1) return `${Math.max(0.1, parseFloat(g.toFixed(1)))} g`;
-  // One decimal below 10g — yeast-scale amounts lose meaningful precision
-  // when rounded to whole grams ("6 g" card vs "5.6g" mixing order).
-  if (g < 10) return `${parseFloat(g.toFixed(1))} g`;
-  const rounded = Math.round(g);
-  return `${rounded >= 1000 ? rounded.toLocaleString() : rounded} g`;
+export function formatClock(date: Date, locale: string): string {
+  if (!Number.isFinite(+date)) return '—';
+  const h = date.getHours(), m = String(date.getMinutes()).padStart(2,'0');
+  return locale.startsWith('fr') ? `${h}h${m}` : `${h % 12 || 12}:${m}${h < 12 ? 'am' : 'pm'}`;
+}
+
+export function formatPercent(value: number, locale: string): string {
+  const fr = locale.startsWith('fr');
+  return value.toLocaleString(fr ? 'fr-FR' : 'en-US', {maximumFractionDigits:1}) + (fr ? '\u202f%' : '%');
+}
+
+export function displayWeight(g: number, units: UnitSystem, locale='en'): string {
+  const oz = units === 'imperial' && (g <= 0 || g >= 6);
+  const value = oz ? gToOz(g) : g > 0 && g < 1 ? Math.max(0.1,g) : Math.max(0,g);
+  const fr = locale.startsWith('fr');
+  return value.toLocaleString(fr ? 'fr-FR' : 'en-US', {maximumFractionDigits:oz || g < 10 ? 1 : 0}) + (fr ? '\u202f' : ' ') + (oz ? 'oz' : 'g');
 }
