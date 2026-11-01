@@ -1,7 +1,7 @@
 # Baker Hub — CLAUDE.md
-Updated September 2026 · Prototype undergoing release validation; no production promotion without approval.
+Updated 1 November 2026. Verify the current production deployment against the GitHub merge commit.
 
-Current navigation/design decisions in `PROJECT-HANDOFF.md` and dated audits supersede older examples below. Preserve the approved six-section journey and local progress indicators. CI and browser results must identify the tested commit; a successful build alone does not certify the journeys.
+Current navigation/design decisions in `PROJECT-HANDOFF.md` and dated audits supersede older examples below. The five destinations are My bake, Recipe, Shopping, Preparation and Baking & service. Show setup details in the local step summary. CI and browser results must identify the tested commit; a successful build alone does not certify the journeys.
 
 ## NVM / Node Setup
 ```bash
@@ -31,14 +31,14 @@ Cards 18px radius, shadow 0 2px 12px rgba(26,22,18,0.06) · buttons 12px · inpu
 
 ## File Map
 app/
-  [locale]/page.tsx     — main flow: bake-type picker, Simple (7 steps) / Custom (10 steps), tabs, nav layer, session save/restore/rebake
+  [locale]/page.tsx     — main flow: family, style, quantity, bake time and optional availability, then Simple recipe or Custom settings; review, editing and session restoration
   api/flour-scan/route.ts — AI flour scanner (server-side, model via ANTHROPIC_VISION_MODEL env)
   auth/callback/route.ts
   data.ts               — styles (name/nameFr/descFr), ovens, mixers, yeasts, preferments
   utils.ts              — yeast engine, schedule engine, DDT, recipe calculator, formatTime(d, locale)
   utils/units.ts        — g/°C ↔ oz/°F (weights <6 g stay grams in imperial)
 components/
-  SchedulePicker.tsx    — schedulers: colour bar (Simple), FermentChart flow (Custom), sourdough solver (findOptimalPositionSourdough)
+  SchedulePicker.tsx    — shared timing inputs, validated preparation times, optional Custom curve, sourdough scheduling
   FermentChart.tsx      — event-driven bells/diamonds, premix/postmix fade, width-aware label stagger
   Timeline.tsx          — bake plan steps (single + two-phase)
   RecipeOutput.tsx      — ingredient cards, baker's %, batch splitting, water/ice guidance
@@ -50,19 +50,17 @@ components/
   ClimatePicker / StylePicker / OvenPicker / MixerPicker / PrefermentPicker / FlourPicker / FlourScan / YeastHelper / LearnModal
 messages/en.json + fr.json — i18n check script keeps them in sync
 
-## Engines (source of truth — see PROJECT-INSTRUCTIONS.md for full detail)
+## Calculation and display conventions
 
-### Yeast — Craig's Model v1.1
-RT: IDY% = 9.5 / (h^1.65 × 2.5^((T−25)/10)) · Cold: 7.5 / h^1.313 × 2^((Tfrigo−4)/10)
-Tropical ÷1.15 @30–32°C, ÷1.25 @33–35°C · IDY floor 0.5 g · ADY ×1.33, Fresh ×3.0
-ALWAYS display convertedGrams (never IDY-equivalent). Osmotic +20% only when sugar >2 **percent** of flour.
+### Commercial yeast
+Read the implemented room-temperature and cold-fermentation calculations and their numeric regression tests before changing a coefficient. Distinguish extending a bake with cold time from replacing room-temperature time at a fixed bake time. Display the converted amount for the selected yeast. ADY and fresh yeast have different conversions. The 0.5 g threshold flags measurement difficulty. The historic percentage floor was 0.05% IDY before adjustments.
 
 ### Schedule
 Single-phase, or two-phase tropical when window ≥16 h AND kitchen ≥28 °C.
 15-min rounding · blocker edges EXCLUSIVE (> and <, never >= <=) · default fridge 6 °C · default bake 18h.
 
 ### DDT
-waterTemp = FDT×3 − flourTemp − kitchenTemp − friction (stand 5 / hand 1 / no-knead 0 / spiral 8). Ice protocol only ≥50 g.
+The water-temperature balance includes flour, starter or preferment, thermal input from kneading, and the heat of melting ice. Use the calculated result for the specific formula. In Simple, keep kneading guidance method-neutral and identify the equipment assumption wherever it affects a water or batch calculation. Custom exposes equipment explicitly.
 
 ### Preferments
 Poolish RT 6–14 h, fridge ≤24 h · Biga fridge ≤72 h · Levain = sourdough only.
@@ -70,6 +68,7 @@ Poolish RT 6–14 h, fridge ≤24 h · Biga fridge ≤72 h · Levain = sourdough
 ### Sourdough solver (SchedulePicker)
 Isolated from non-sourdough engine (early return). Candidate pools Peak1/2A/2B/fridge-hold, blocker-aware,
 fridge revival biology, event-driven chart, traffic-light pills (no red in starter card).
+The starter ratio multiplier uses 1 + 0.5 × ln(feed ratio). Keep scoring, card and curve on the same peak estimate.
 Compute style defaults LOCALLY inside the solver (stale `_sfDef` closures caused real bugs).
 
 **Peak-model invariant (learned July 2026):** every candidate family must derive ONE peak.
