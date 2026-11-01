@@ -17,6 +17,10 @@ const recommendations: Record<string, {fr:string;en:string}> = {
   piadina: {fr:'Farine de blé T55, sans levure incorporée',en:'Plain white wheat flour (French T55), not self-raising'},
 };
 
+export function flourProductName(name:string, locale:string):string {
+  return locale==='fr' ? name.replace(/^King Arthur Bread Flour$/i, 'Farine à pain King Arthur') : name;
+}
+
 export function recommendedFlourName(styleKey: string, locale: string): string {
   return (recommendations[styleKey] ?? {
     fr:'Farine de blé panifiable (T65 ou équivalent)',
@@ -26,7 +30,7 @@ export function recommendedFlourName(styleKey: string, locale: string): string {
 
 export function flourShoppingName(styleKey: string, locale: string, mode: 'simple'|'custom', blend?: FlourBlend, includeBlendPercentages = true): string {
   if (mode !== 'custom' || !blend) return recommendedFlourName(styleKey, locale);
-  const name = (key: keyof typeof FLOUR_DATA, custom?: string) => custom || (locale === 'fr' ? FLOUR_DATA[key]?.nameFr : FLOUR_DATA[key]?.name) || key;
+  const name = (key: keyof typeof FLOUR_DATA, custom?: string) => (custom ? flourProductName(custom,locale) : undefined) || (locale === 'fr' ? FLOUR_DATA[key]?.nameFr : FLOUR_DATA[key]?.name) || key;
   const primary = name(blend.flour1, blend.brandProduct);
   if (!blend.flour2 || blend.ratio1 >= 100) return primary;
   const third = blend.flour3 && blend.ratio2 !== undefined && blend.ratio1 + blend.ratio2 < 100;

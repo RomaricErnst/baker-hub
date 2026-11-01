@@ -14,7 +14,7 @@ async function enterBakeTarget(page,fr=true){
  await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
 }
 async function startCustom(page){
- await page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+ await page.locator('.bh-batch-actions').locator('[data-bh-forward]:visible').tap();
  await enterBakeTarget(page);
  await page.getByRole('button',{name:/^Personnaliser ma fournée/}).tap();
 }
@@ -90,7 +90,7 @@ for(const locale of ['fr','en'])test(`${locale}: compact recipe menu opens filli
  await fits(page,meal);await unobscured(meal);
  await testInfo.attach('compact-recipe-menu',{body:await page.screenshot(),contentType:'image/png'});
  await meal.tap();
- await expect(page.locator('.bh-navigator-current')).toContainText(locale==='fr'?'Recette':'Recipe');
+ await expect(page.locator('.bh-navigator-current')).toContainText(locale==='fr'?'Garnitures':'Toppings');
  await expect(page.getByRole('heading',{name:locale==='fr'?'Quelles pizzas ?':'Which pizzas?',exact:true})).toBeVisible();
  await navigator(page).tap();
  await nav.getByRole('button',{name:locale==='fr'?'Pâte':'Dough',exact:true}).tap();
@@ -182,7 +182,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await page.getByRole('button',{name:bread?'Pain':'Pizza',exact:true}).tap();
   await expect(page.getByRole('heading',{name:bread?'Choisissez votre pain':'Quel style de pizza ?',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Comment définir votre recette ?',exact:true})).toHaveCount(0);
-  const continueBeforeChoice=page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true});
+  const continueBeforeChoice=page.locator('.bh-batch-actions').locator('[data-bh-forward]:visible');
   await continueBeforeChoice.scrollIntoViewIfNeeded();
   await expect(continueBeforeChoice).toBeVisible();
   await expect(continueBeforeChoice).toBeDisabled();
@@ -204,7 +204,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await expect(page.getByRole('button',{name:'Ajouter des garnitures — facultatif',exact:true})).toHaveCount(0);
   await expect(quantity).toHaveValue('5');
   expect((await stored(page)).styleKey).toBe(chosenStyle);
-  const organise=page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true});
+  const organise=page.locator('.bh-batch-actions').locator('[data-bh-forward]:visible');
   const quantityActions=page.locator('.bh-batch-actions');
   await expect(quantityActions).toHaveClass(/bh-step-actions/);
   await expect(quantityActions).toHaveCSS('position','fixed');
@@ -336,8 +336,8 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await page.reload();
  await page.getByRole('button',{name:'Reprendre →',exact:true}).tap();
  await expect(page.getByRole('dialog',{name:'Ma sélection',exact:true})).toHaveCount(0);
- // The selection catalogue belongs to Recipe; its persisted return still resumes Preparation.
- await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
+ // The catalogue has its own heading while the return still points to Preparation.
+ await expect(page.locator('.bh-navigator-current')).toContainText('Garnitures');
  const back=page.getByRole('button',{name:/^Retour à la préparation(?: →)?$/});
  await back.scrollIntoViewIfNeeded();
  await fits(page,back);
@@ -510,17 +510,17 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
  const step=page.locator('#step-3');
  await expect(step.getByRole('heading',{name:'Four',exact:true})).toBeVisible();
  await step.getByRole('button',{name:/Four à pizza compact/}).tap();
-  await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+  await step.locator('.bh-step-actions').locator('[data-bh-forward]:visible').tap();
   await expect(step.getByRole('heading',{name:'Pétrissage',exact:true})).toBeVisible();
  await step.getByRole('button',{name:/Robot pâtissier/}).tap();
   await step.locator('.bh-step-actions').getByRole('button',{name:'Étape précédente',exact:true}).tap();
   await expect(step.getByRole('heading',{name:'Four',exact:true})).toBeVisible();
  await expect.poll(async()=>(await stored(page))?.mixerType).toBe('stand');
-  await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
-  await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+  await step.locator('.bh-step-actions').locator('[data-bh-forward]:visible').tap();
+  await step.locator('.bh-step-actions').locator('[data-bh-forward]:visible').tap();
  const climate=page.locator('#step-4');await expect(climate).toBeVisible();
  const actionBar=climate.locator('.bh-step-actions');
- const forward=actionBar.getByRole('button',{name:'Continuer',exact:true});
+ const forward=actionBar.locator('[data-bh-forward]:visible');
  async function fixedAction(){
   await expect.poll(()=>actionBar.evaluate(el=>getComputedStyle(el).position)).toBe('fixed');
   await fits(page,actionBar);await unobscured(forward);
@@ -535,6 +535,11 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
  await navigator(page).tap();
  await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));window.scrollTo(0,document.body.scrollHeight/2);});
  await fixedAction();
+ await expect.poll(()=>page.evaluate(()=>{
+  const header=document.querySelector('.bh-header-stack').getBoundingClientRect();
+  const bar=document.querySelector('.bh-bake-navigator').getBoundingClientRect();
+  return Math.abs(header.top)<2 && Math.abs(bar.top-header.bottom)<2;
+ })).toBe(true);
  await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));await fixedAction();
  const lastField=climate.locator('input:visible,select:visible').last();
  await lastField.scrollIntoViewIfNeeded();
@@ -544,19 +549,19 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
  await noOverflow(page);
  await testInfo.attach('climate-back-and-continue',{body:await page.screenshot(),contentType:'image/png'});
  await climate.getByRole('button',{name:'Modifier le matériel',exact:true}).tap();
- await step.getByRole('button',{name:'Continuer',exact:true}).tap();
+ await step.locator('[data-bh-forward]:visible').tap();
  await expect(step.getByRole('heading',{name:'Pétrissage',exact:true})).toBeVisible();
  await expect.poll(async()=>(await stored(page))?.mixerType).toBe('stand');
  await expect.poll(async()=>(await stored(page))?.ovenType).toBe('pizza_oven');
  await step.getByRole('button',{name:/Pétrin (?:à spirale|spiral)/}).tap();
  await expect.poll(async()=>(await stored(page))?.waterMethod).toBe('direct');
-  await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+  await step.locator('.bh-step-actions').locator('[data-bh-forward]:visible').tap();
   await climate.getByText('Préparation de l’eau · facultatif',{exact:true}).tap();
   const cooling=climate.getByRole('combobox',{name:/Si un refroidissement est nécessaire/});
   await expect(cooling).toHaveValue('direct');
   await expect(climate.getByText('Vérifiez que votre pétrin accepte la glace.',{exact:true})).toBeVisible();
   await cooling.selectOption('premelt');
-  await climate.getByRole('button',{name:'Modifier le matériel',exact:true}).tap();await step.getByRole('button',{name:'Continuer',exact:true}).tap();
+  await climate.getByRole('button',{name:'Modifier le matériel',exact:true}).tap();await step.locator('[data-bh-forward]:visible').tap();
   await step.getByRole('button',{name:/Pétrin (?:à spirale|spiral)/}).tap();
   await expect.poll(async()=>(await stored(page))?.waterMethod).toBe('premelt');
  await step.getByRole('button',{name:/Robot pâtissier/}).tap();
@@ -575,7 +580,7 @@ test('Custom: batch details are conditional and setup headings reset above the f
  const step=page.locator('#step-3');
  await step.getByRole('button',{name:/Four à pizza compact/}).tap();
  await expect(step.getByRole('button',{name:/Four à pizza compact/})).toHaveAttribute('aria-pressed','true');
-  await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+  await step.locator('.bh-step-actions').locator('[data-bh-forward]:visible').tap();
   await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
  await step.getByRole('button',{name:/Robot pâtissier/}).tap();
  await expect(step.getByRole('textbox',{name:'Nombre de pétrissées',exact:true})).toHaveValue('2');
@@ -589,11 +594,11 @@ test('Custom: batch details are conditional and setup headings reset above the f
  await batch.getByRole('button',{name:'Utiliser la recommandation: 1',exact:true}).tap();
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1'))?.mixingBatches)).toBe(undefined);
  
- await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+ await step.locator('.bh-step-actions').locator('[data-bh-forward]:visible').tap();
  await expect(page.locator('#step-4')).toBeVisible();
  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
  await unobscured(page.locator('#step-4 h2'));
-  await page.locator('#step-4 .bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+  await page.locator('#step-4 .bh-step-actions').locator('[data-bh-forward]:visible').tap();
   const flour=page.locator('#step-6');
   await expect(flour).toBeVisible();await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
   await unobscured(flour.getByRole('heading',{name:'Quelle farine utilisez-vous ?',exact:true}));
@@ -608,7 +613,7 @@ test('Custom: batch details are conditional and setup headings reset above the f
   await search.fill('Pizzeria');
   await flour.getByRole('button',{name:/^Caputo Pizzeria W/}).tap();
   await expect(flour.getByRole('button',{name:/^Caputo Pizzeria W/})).toHaveAttribute('aria-pressed','true');
-  await flour.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+  await flour.locator('.bh-step-actions').locator('[data-bh-forward]:visible').tap();
   await expect(flour).toHaveCount(0);await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
 });
 
@@ -623,11 +628,10 @@ test('page landing survives delayed Safari viewport changes and history restore 
  await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));window.scrollTo(0,document.documentElement.scrollHeight);});
  const originalSize=page.viewportSize();
  await page.setViewportSize({...originalSize,height:originalSize.height+70});
- await page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
- await expect(page.locator('.bh-header-stack .bh-bake-navigator')).toHaveCount(1);
- await expect(page.locator('.bh-bake-navigator')).toHaveCSS('position','relative');
- await expect(page.locator('.bh-header-stack')).toHaveCSS('position','relative');
- await expect(page.locator('.bh-header')).toHaveCSS('position','static');
+ await page.locator('.bh-batch-actions').locator('[data-bh-forward]:visible').tap();
+ await expect(page.locator('.bh-header-stack .bh-bake-navigator')).toHaveCount(0);
+ await expect(page.locator('.bh-bake-navigator')).toHaveCSS('position','sticky');
+ await expect(page.locator('.bh-header-stack')).toHaveCSS('position','sticky');
  // Keep enough document height to reproduce a retained scroll offset even
  // when this particular two-card page otherwise fits the test viewport.
  await page.addStyleTag({content:'[data-navigation-page]{min-height:calc(100dvh + 300px)!important}'});
@@ -656,9 +660,12 @@ test('page landing survives delayed Safari viewport changes and history restore 
  // A new deliberate reading gesture ends landing ownership.
  await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));window.scrollTo({top:65,behavior:'instant'});});
  const readingY=await page.evaluate(()=>scrollY);expect(readingY).toBeGreaterThan(0);
- // Setup chrome travels with the document; no overlay can cover a heading.
- await expect.poll(()=>page.locator('.bh-header-stack').evaluate(el=>Math.round(el.getBoundingClientRect().top+scrollY))).toBe(0);
- await clearHeading(false);
+ // A deliberate scroll keeps both navigation controls in reach.
+ await expect.poll(()=>page.evaluate(()=>{
+  const header=document.querySelector('.bh-header-stack').getBoundingClientRect();
+  const bar=document.querySelector('.bh-bake-navigator').getBoundingClientRect();
+  return Math.abs(header.top)<2 && Math.abs(bar.top-header.bottom)<2;
+ })).toBe(true);
  await page.setViewportSize(size);await page.waitForTimeout(100);
  expect(await page.evaluate(()=>scrollY)).toBe(readingY);
  // BFCache pageshow is a fresh arrival even when React does not remount.
@@ -765,7 +772,7 @@ test.describe('guided piadina with cooking time set in planning',()=>{
   await page.getByLabel('Nombre de pièces',{exact:true}).fill('5');
   await page.getByLabel('Nombre de pièces',{exact:true}).blur();
   await expect(page.getByLabel('Horaire de cuisson souhaité',{exact:true})).toHaveCount(0);
-  await page.locator('.bh-batch-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+  await page.locator('.bh-batch-actions').locator('[data-bh-forward]:visible').tap();
   const plan=page.getByRole('region',{name:'Repos et cuisson',exact:true});
   await expect(plan).toBeVisible();
   const cookingTime=page.getByLabel('Quand commencer la cuisson des piadinas ?',{exact:true});

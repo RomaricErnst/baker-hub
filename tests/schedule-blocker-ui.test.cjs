@@ -48,7 +48,7 @@ test('levain pizza in both modes accepts repaired balling but rejects unavailabl
  try{
   for(const mode of ['simple','custom'])for(const styleKey of ['neapolitan','newyork','pizza_romana'])for(const kitchenTemp of [22,30]){
    const start=date('2026-10-29T18:00Z'),bake=date('2026-10-30T18:00Z');
-   const baseline=utils.buildSchedule(start,bake,[],kitchenTemp,45,'hand',styleKey,4);
+   const baseline=utils.buildSchedule(start,bake,[],kitchenTemp,45,'hand',styleKey,4,1,true);
    const blocks=[{from:new Date(+baseline.divideBallTime-5*60000),to:new Date(+baseline.divideBallTime+6*H),label:'Night'}];
    const args={mode,styleKey,kitchenTemp,isSourdough:true,planningMode:'know_peak',knownPeakTime:start,lastFeedRatio:1,ratioMode:'keep',blocks};
    const view=render(args);

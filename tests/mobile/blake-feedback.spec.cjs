@@ -25,7 +25,7 @@ test('compact navigation reaches every section above the footer and Custom keeps
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:'Napolitaine classique',exact:true}).tap();
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
- await page.getByRole('button',{name:'Continuer',exact:true}).tap();
+ await page.locator('[data-bh-forward]:visible').tap();
  const bakeDate=page.getByLabel('Date et heure de cuisson',{exact:true});
  await bakeDate.fill('2026-10-05T19:30');await bakeDate.blur();
  const customize=page.getByRole('button',{name:/^Personnaliser ma fournée/});
@@ -53,7 +53,7 @@ test('compact navigation reaches every section above the footer and Custom keeps
  await summary.getByRole('button',{name:'Terminé',exact:true}).tap();
  await page.getByRole('button',{name:'Modifier le matériel',exact:true}).tap();
  await page.getByRole('button',{name:/^Four à pizza traditionnel/}).tap();
- await actions.getByRole('button',{name:'Continuer',exact:true}).tap();
+ await actions.locator('[data-bh-forward]:visible').tap();
  await expect(page.locator('#step-3:visible')).toContainText('Four à pizza traditionnel');
  await expect(page.getByText('Four maçonné',{exact:true})).toHaveCount(0);
 });
@@ -69,7 +69,7 @@ test('flour-first recipe edits ignore a restored extra-dough allowance',async({p
  await page.goto('/fr');
  await expect(page.getByText('750 g',{exact:true}).first()).toBeVisible();
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')).itemWeight)).toBeGreaterThan(830);
- await page.getByRole('button',{name:'Modifier ma fournée',exact:true}).tap();
+ await page.getByRole('button',{name:'Revoir mes choix',exact:true}).tap();
  await expect(page.getByText('750 g de farine · 2 pièces',{exact:true})).toBeVisible();
  await expect(page.getByRole('button',{name:'Modifier : Mode',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Modifier : Peaufiner',exact:true}).tap();

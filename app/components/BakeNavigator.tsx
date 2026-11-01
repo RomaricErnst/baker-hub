@@ -44,7 +44,7 @@ export default function BakeNavigator({active,fr,onChange,top=0,progress,recipeM
   const current=destinations.find(item=>item.id===section)!;
   return <div ref={root} className="bh-bake-navigator" style={{top,scrollMarginTop:top,'--bh-navigator-top':`${top}px`} as CSSProperties}>
     <div className="bh-navigator-band">
-      <div className="bh-navigator-context"><span className="bh-navigator-current"><DestinationIcon destination={section}/><span>{fr?current.fr:current.en}</span></span>{progress}</div>
+      <div className="bh-navigator-context"><span className="bh-navigator-current"><DestinationIcon destination={section}/><span>{active==='recipe'&&recipeMeal?.active?recipeMeal.label:fr?current.fr:current.en}</span></span>{progress}</div>
       <button ref={trigger} type="button" className="bh-bake-navigator-trigger" aria-label={fr?'Voir les 5 rubriques':'View all 5 sections'} aria-expanded={open} aria-controls={id} onClick={()=>setOpen(value=>!value)}>
         <span className="bh-navigator-disclosure">{open?(fr?'Fermer':'Close'):(fr?'Rubriques':'Sections')} <span aria-hidden="true">{open?'⌃':'⌄'}</span></span>
       </button>

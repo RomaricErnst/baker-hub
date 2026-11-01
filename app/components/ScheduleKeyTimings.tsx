@@ -1,9 +1,10 @@
 'use client';
 import {useEffect,useId,useRef,useState,type ReactNode} from 'react';
 import type {AvailabilityBlock} from '../utils';
+import {formatClock,formatLongDay} from '../utils/units';
 import ScheduleClockInput from './ScheduleClockInput';
 import type {EditSlot} from '../utils/scheduleEdit';
-export type KeyTimingAnchor={id:string;name:string;at:number;from:number;to:number;editable:boolean;valid?:boolean;summary?:ReactNode;detail?:ReactNode;note?:ReactNode;control?:ReactNode;locked?:boolean};
+export type KeyTimingAnchor={id:string;name:string;at:number;from:number;to:number;editable:boolean;valid?:boolean;summary?:ReactNode;detail?:ReactNode;note?:ReactNode;control?:ReactNode;locked?:boolean;dayOnly?:boolean};
 const STEP=900000;
 type SlotWindow={from:number;to:number};
 export function compatibleWindows(slots:EditSlot[]):SlotWindow[]{
@@ -19,7 +20,7 @@ export function compatibleWindows(slots:EditSlot[]):SlotWindow[]{
 export function TimingWindows({slots,at,isFr,onSelect}:{slots:EditSlot[];at:number;isFr:boolean;onSelect:(at:number)=>void}){
  const days=new Map<string,EditSlot[]>();
  for(const slot of slots){const d=new Date(slot.at),key=[d.getFullYear(),d.getMonth(),d.getDate()].join('-');days.set(key,[...(days.get(key)??[]),slot]);}
- const hm=(value:number)=>new Date(value).toLocaleTimeString(isFr?'fr-FR':'en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
+ const hm=(value:number)=>formatClock(new Date(value),isFr?'fr':'en');
  return <div className="bh-window-days">
   {[...days.entries()].map(([key,points])=>{
    const ranges=compatibleWindows(points);
@@ -56,8 +57,8 @@ function TimingRow({anchor,isFr,onChange,check,cacheKey,open,onToggle}:{anchor:K
   };
   timer=setTimeout(batch,120);return()=>{cancelled=true;clearTimeout(timer);};
  },[id,from,to,canEdit,queryKey,open,result?.key]);
- const fmt=(value:number)=>new Date(value).toLocaleString(isFr?'fr-FR':'en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false});
- const clock=new Date(at).toLocaleTimeString(isFr?'fr-FR':'en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
+ const fmt=(value:number)=>`${new Date(value).toLocaleDateString(isFr?'fr-FR':'en-GB',{weekday:'short'})} ${formatClock(new Date(value),isFr?'fr':'en')}`;
+ const clock=formatClock(new Date(at),isFr?'fr':'en');
  const windows=compatibleWindows(slots);
  const nearest=slots.filter(s=>s.valid).reduce<EditSlot|undefined>((best,s)=>!best||Math.abs(s.at-at)<Math.abs(best.at-at)?s:best,undefined);
  const date=new Date(at),local=new Date(at-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
@@ -67,7 +68,7 @@ function TimingRow({anchor,isFr,onChange,check,cacheKey,open,onToggle}:{anchor:K
    <div className="bh-key-heading"><h3 className="bh-section-title">{anchor.name} {open&&anchor.valid===true&&<span className="bh-key-valid-selection" role="img" aria-label={isFr?'Compatible avec le planning estimé':'Compatible with the estimated schedule'}>✓</span>}</h3>
     {open&&<button type="button" className="bh-key-modify" aria-label={(isFr?'Fermer ':'Close ')+anchor.name} aria-expanded={open} aria-controls={editorId} onClick={onToggle}>{isFr?'Fermer':'Close'}</button>}
    </div>
-   {open&&canEdit?<label className="bh-key-exact"><span className="bh-visually-hidden">{isFr?'Date et heure de ':'Date and time for '}{anchor.name}</span><ScheduleClockInput isFr={isFr} type="datetime-local" step={900} value={local} onChange={e=>{const next=+new Date(e.target.value);if(Number.isFinite(next))onChange(id,next);}}/></label>:canEdit?<button type="button" className="bh-key-time" aria-label={`${isFr?'Modifier':'Edit'} ${anchor.name}, ${fmt(at)}`} aria-expanded={false} aria-controls={editorId} onClick={onToggle}>{clock}{anchor.valid===true&&<span className="bh-key-valid-selection" role="img" aria-label={isFr?'Compatible avec le planning estimé':'Compatible with the estimated schedule'}>✓</span>}<span className="bh-time-edit" aria-hidden="true">{isFr?'Modifier':'Edit'}</span></button>:<strong className="bh-key-fixed">{clock}</strong>}
+   {open&&canEdit?<label className="bh-key-exact"><span className="bh-visually-hidden">{isFr?'Date et heure de ':'Date and time for '}{anchor.name}</span><ScheduleClockInput isFr={isFr} type="datetime-local" step={900} value={local} onChange={e=>{const next=+new Date(e.target.value);if(Number.isFinite(next))onChange(id,next);}}/></label>:canEdit?<button type="button" className="bh-key-time" aria-label={`${isFr?'Modifier':'Edit'} ${anchor.name}, ${fmt(at)}`} aria-expanded={false} aria-controls={editorId} onClick={onToggle}>{clock}{anchor.valid===true&&<span className="bh-key-valid-selection" role="img" aria-label={isFr?'Compatible avec le planning estimé':'Compatible with the estimated schedule'}>✓</span>}<span className="bh-time-edit" aria-hidden="true">{isFr?'Modifier':'Edit'}</span></button>:!anchor.dayOnly?<strong className="bh-key-fixed">{clock}</strong>:null}
    {anchor.summary&&<div className="bh-key-detail">{anchor.summary}</div>}
    {anchor.locked&&<span className="bh-kept-time">{isFr?'Heure conservée':'Time kept'}</span>}
    {open&&canEdit&&<div id={editorId} className="bh-key-editor">
@@ -82,18 +83,24 @@ function TimingRow({anchor,isFr,onChange,check,cacheKey,open,onToggle}:{anchor:K
   </div>
  </li>;
 }
-export default function ScheduleKeyTimings({anchors,isFr,onChange,check,cacheKey,hasDraft,children,header,onCancel,onApply,canApply,onOpenChange,notice,ovenAt,personalized,adjustment}:{header?:ReactNode;notice?:ReactNode;adjustment?:ReactNode;onApply:()=>void;canApply:boolean;onOpenChange:(open:boolean)=>void;ovenAt:number;personalized:boolean;onCancel:()=>void;onInteractionChange:(value:boolean)=>void;anchors:KeyTimingAnchor[];blocks:AvailabilityBlock[];isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string;hasDraft?:boolean;children?:ReactNode}){
+export default function ScheduleKeyTimings({anchors,blocks,isFr,onChange,check,cacheKey,hasDraft,children,header,onCancel,onApply,canApply,onOpenChange,notice,ovenAt,personalized,adjustment}:{header?:ReactNode;notice?:ReactNode;adjustment?:ReactNode;onApply:()=>void;canApply:boolean;onOpenChange:(open:boolean)=>void;ovenAt:number;personalized:boolean;onCancel:()=>void;onInteractionChange:(value:boolean)=>void;anchors:KeyTimingAnchor[];blocks:AvailabilityBlock[];isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string;hasDraft?:boolean;children?:ReactNode}){
  const [selectedId,setSelectedId]=useState<string|null>(null);
  const open=selectedId!==null;
  useEffect(()=>{onOpenChange(open);return()=>onOpenChange(false);},[open,onOpenChange]);
- const valid=anchors.every(anchor=>anchor.valid);
- const day=(at:number)=>new Date(at).toLocaleDateString(isFr?'fr-FR':'en-GB',{weekday:'long',day:'numeric',month:'long'});
+ const gaps=anchors.filter(anchor=>!anchor.valid);
+ const valid=gaps.length===0;
+ const blocked=gaps.filter(anchor=>blocks.some(block=>+block.from<=anchor.at && anchor.at<+block.to));
+ const gapTitle=blocked.length
+   ? (isFr ? `${blocked.length} ${blocked.length===1?'étape pendant une indisponibilité':'étapes pendant vos indisponibilités'}` : `${blocked.length} ${blocked.length===1?'step falls':'steps fall'} during your unavailable hours`)
+   : (isFr ? `${gaps.length} horaire${gaps.length===1?'':'s'} à ajuster` : `${gaps.length} ${gaps.length===1?'time needs':'times need'} adjusting`);
+ const day=(at:number)=>formatLongDay(new Date(at),isFr?'fr':'en');
  const events=[...anchors,{id:'oven',name:isFr?'Enfournement':'Into the oven',at:ovenAt,from:ovenAt,to:ovenAt,editable:false,valid:true}].sort((a,b)=>a.at-b.at);
  return <section data-open={open||undefined} aria-label={isFr?'Vos moments clés':'Your key times'} id="schedule-anchor-panel" tabIndex={-1}>
-  <div className="bh-plan-heading"><span className="bh-plan-state" data-valid={valid} role="status">{!valid?(isFr?'À corriger':'Needs attention'):hasDraft?(isFr?'Modifications à appliquer':'Changes to apply'):personalized?(isFr?'Planning personnalisé':'Your adjusted plan'):(isFr?'Planning recommandé':'Recommended plan')}</span>{header}</div>
+  <div className="bh-plan-heading"><span className="bh-plan-state" data-valid={valid} role="status">{!valid?gapTitle:hasDraft?(isFr?'Modifications à appliquer':'Changes to apply'):personalized?(isFr?'Planning personnalisé':'Your adjusted plan'):(isFr?'Planning recommandé':'Recommended plan')}</span>{header}</div>
   {notice}
   <div className="bh-linked-editor">
    <ol className="bh-schedule-timeline">{events.map((anchor,index)=><TimelineEvent key={anchor.id} heading={index===0||day(events[index-1].at)!==day(anchor.at)?day(anchor.at):null}><TimingRow {...{anchor,isFr,onChange,check,cacheKey}} open={selectedId===anchor.id} onToggle={()=>setSelectedId(selectedId===anchor.id?null:anchor.id)}/></TimelineEvent>)}</ol>
+   {open&&!hasDraft&&<div className="bh-editor-exit"><button type="button" className="bh-apply-plan" onClick={()=>setSelectedId(null)}>{isFr?'Terminé':'Done'}</button></div>}
    {hasDraft&&<div className="bh-linked-actions"><div className="bh-linked-feedback" role="status">{adjustment}</div><button type="button" className="bh-apply-plan" disabled={!canApply} onClick={()=>{onApply();setSelectedId(null);}}>{isFr?'Appliquer':'Apply'}</button><button type="button" className="bh-back-action" onClick={()=>{onCancel();setSelectedId(null);}}>{isFr?'Annuler':'Cancel'}</button></div>}
   </div>
   {children}

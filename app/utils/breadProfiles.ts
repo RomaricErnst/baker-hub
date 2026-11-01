@@ -10,6 +10,7 @@ export interface BreadProtocol {
   supportedMixers: readonly ('hand' | 'stand' | 'spiral' | 'no_knead')[];
   portions: {weight: number; count: number};
   shaping: {en: string[]; fr: string[]};
+  singleShape?: {en: string; fr: string};
   proof: {en: string[]; fr: string[]};
   preheat: {en: string[]; fr: string[]};
   cookingSteps: {en: string[]; fr: string[]};
@@ -317,6 +318,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
       "weight": 500,
       "count": 2
     },
+    "singleShape": {"en":"Shape the chilled dough into a log and place it seam-down in a greased tin with room to rise.","fr":"Façonnez la pâte froide en boudin et posez-la clé dessous dans un moule graissé, en laissant de la place pour la pousse."},
     "shaping": {
       "en": [
         "Divide into {count} pieces of {weight} g. Shape the chilled dough into logs; place seam-down in greased tins with room to rise."
@@ -388,6 +390,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
       "weight": 600,
       "count": 1
     },
+    "singleShape": {"en":"Roll the dough into a log and place it seam-down in a greased loaf tin.","fr":"Roulez la pâte en boudin et posez-la clé dessous dans un moule graissé."},
     "shaping": {
       "en": [
         "Divide into {count} pieces of {weight} g. Roll into logs and place seam-down in greased loaf tins sized for the dough."
@@ -458,6 +461,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
       "weight": 200,
       "count": 4
     },
+    "singleShape": {"en":"Shape a short baguette and put it on a lined tray.","fr":"Façonnez une petite baguette et posez-la sur une plaque chemisée."},
     "shaping": {
       "en": [
         "Divide into {count} pieces of {weight} g. Shape short baguettes on a lined tray, leaving room between them."
@@ -599,6 +603,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
       "weight": 110,
       "count": 6
     },
+    "singleShape": {"en":"Form a tight ball, pierce the centre and widen the hole.","fr":"Boulez la pâte, percez le centre et élargissez le trou."},
     "shaping": {
       "en": [
         "Divide into {count} pieces of {weight} g. Form tight balls, pierce the centre and widen each hole."
@@ -671,6 +676,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
       "weight": 100,
       "count": 6
     },
+    "singleShape": {"en":"Rest the dough covered, then roll it evenly to 3–4 mm.","fr":"Laissez le pâton se détendre à couvert, puis abaissez-le uniformément à 3–4 mm."},
     "shaping": {
       "en": [
         "Divide into {count} pieces of {weight} g; rest covered, then roll evenly to 3–4 mm without tearing."
@@ -739,6 +745,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
       "weight": 140,
       "count": 6
     },
+    "singleShape": {"en":"Round the dough gently and keep it covered until rolling.","fr":"Boulez délicatement la pâte et gardez-la couverte jusqu’au moment de l’abaisser."},
     "shaping": {
       "en": [
         "Divide into {count} pieces of {weight} g and round them gently. Keep covered; do not roll them yet."
@@ -810,6 +817,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
       "weight": 180,
       "count": 4
     },
+    "singleShape": {"en":"Flatten the dough into a thick oval and mark a shallow grid with your fingertips.","fr":"Aplatissez la pâte en ovale épais et marquez un quadrillage du bout des doigts."},
     "shaping": {
       "en": [
         "Divide into {count} pieces of {weight} g and flatten into thick ovals. Mark a shallow grid with your fingertips."
@@ -878,6 +886,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
       "weight": 100,
       "count": 6
     },
+    "singleShape": {"en":"Dust the dough with fine semolina and roll into a disc about 5–6 mm thick.","fr":"Farinez le pâton de semoule fine et abaissez-le en disque de 5–6 mm d’épaisseur."},
     "shaping": {
       "en": [
         "Divide into {count} pieces of {weight} g. Dust with fine semolina and roll into discs about 5–6 mm thick."
@@ -948,6 +957,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
       "weight": 160,
       "count": 6
     },
+    "singleShape": {"en":"Cover the dough and leave it to relax.","fr":"Couvrez le pâton et laissez-le se détendre."},
     "shaping": {
       "en": [
         "Divide into {count} pieces of {weight} g and cover while they relax."
@@ -1016,6 +1026,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
       "weight": 140,
       "count": 4
     },
+    "singleShape": {"en":"After the covered rest, roll the dough to 2–3 mm.","fr":"Après le repos couvert, abaissez le pâton à 2–3 mm."},
     "shaping": {
       "en": [
         "Divide into {count} pieces of {weight} g. After the covered rest, roll each to 2–3 mm."
@@ -1088,6 +1099,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
       "weight": 220,
       "count": 4
     },
+    "singleShape": {"en":"Form a smooth roll and flatten it slightly for a sandwich.","fr":"Boulez le pâton puis aplatissez-le légèrement pour former un pain à sandwich."},
     "shaping": {
       "en": [
         "Divide into {count} pieces of {weight} g. Make smooth round rolls, slightly flattened for sandwiches."
@@ -1162,6 +1174,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
       "weight": 250,
       "count": 4
     },
+    "singleShape": {"en":"Tip the dough onto a well-floured bench and ease it into a rectangle without pressing out the gas.","fr":"Versez la pâte sur un plan bien fariné et donnez-lui une forme rectangulaire sans la dégazer."},
     "shaping": {
       "en": [
         "Tip onto a well-floured bench. Cut {count} rectangles of about {weight} g; do not roll into tight balls or press out the gas."
@@ -1235,6 +1248,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
       "weight": 280,
       "count": 4
     },
+    "singleShape": {"en":"Shape a loose ball, preserving the gas.","fr":"Boulez doucement le pâton en préservant les alvéoles."},
     "shaping": {
       "en": [
         "Divide into {count} pieces of {weight} g and make loose balls, preserving the gas."

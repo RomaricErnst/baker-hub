@@ -37,14 +37,14 @@ for(const locale of ['fr','en']){
   await page.getByRole('button',{name:'Pizza',exact:true}).tap();
   await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
   await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
-  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
+  await actions(page).locator('[data-bh-forward]:visible').tap();
   const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
   await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
   await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
   await expect(page.locator('#step-4')).toBeVisible();
   await expect.poll(async()=>(await stored(page))?.customKitchenConfirmed).toBe(false);
-  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
+  await actions(page).locator('[data-bh-forward]:visible').tap();
   await expect.poll(async()=>(await stored(page))?.customKitchenConfirmed).toBe(true);
   const flour=page.locator('#step-6');
   await flour.getByRole('button',{name:/^Caputo Pizzeria W/}).tap();
@@ -78,8 +78,9 @@ for(const locale of ['fr','en']){
   await expect.poll(async()=>(await stored(page))?.flourBlend?.flour2).toBe('semolina');
   const after=(await stored(page)).flourBlend;
   expect(after.brandProduct).toBe(before.brandProduct);expect(after.ratio1).toBe(before.ratio1);
-  const next = () => actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
+  const next = () => actions(page).locator('[data-bh-forward]:visible').tap();
   await next();
+  await expect(page.locator('#step-8 [data-bh-forward]')).toBeDisabled();
   await page.locator('#step-8').getByRole('button',{name:/poolish/i}).first().tap();
   await next();
   await expect(page.locator('#step-7:visible')).toBeVisible();
@@ -98,7 +99,7 @@ for(const locale of ['fr','en']){
   await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
   const quantity=page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true});
   await quantity.fill('4');await quantity.blur();
-  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
+  await actions(page).locator('[data-bh-forward]:visible').tap();
 
   await expect.poll(async()=>({oven:(await stored(page))?.ovenType,mixer:(await stored(page))?.mixerType,yeast:(await stored(page))?.yeastType})).toEqual({oven:'home_oven_standard',mixer:'stand',yeast:'instant'});
   await geometry(page);
@@ -107,6 +108,12 @@ for(const locale of ['fr','en']){
   await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:fr?'Créer ma recette simple':'Create my simple recipe',exact:true}).tap();
   await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
+  await page.getByRole('button',{name:fr?'Modifier la quantité':'Edit quantity',exact:true}).tap();
+  await quantity.fill('3');await quantity.blur();
+  await actions(page).locator('[data-bh-forward]:visible').tap();
+  await expect(page.locator('.bh-navigator-current')).toContainText(fr?'Recette':'Recipe');
+  await expect(page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true})).toBeVisible();
+  await expect.poll(async()=>(await stored(page))?.numItems).toBe(3);
   await page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true}).tap();
   await expect(page.locator('#step-7:visible')).toBeVisible();
   expect(errors).toEqual([]);
@@ -139,10 +146,12 @@ for(const locale of ['fr','en']){
   await nextToRecipe(page,fr);
   await expect(page.getByRole('region',{name:fr?'Quantités totales':'Total ingredients',exact:true})).toBeVisible();
   const stages=page.locator('details').filter({has:page.locator('summary').filter({hasText:fr?'Ingrédients par étape':'Ingredients by stage'})});
-  await stages.locator(':scope > summary').tap();
   await expect(stages).toHaveAttribute('open','');
+  await stages.locator(':scope > summary').tap();
+  await expect(stages).not.toHaveAttribute('open','');
+  await stages.locator(':scope > summary').tap();
   await expect(stages.getByText(/Poolish/).first()).toBeVisible();
-  await page.getByRole('button',{name:fr?'Modifier ma fournée':'Edit my bake',exact:true}).tap();
+  await page.getByRole('button',{name:fr?'Revoir mes choix':'Review my choices',exact:true}).tap();
   await page.getByRole('button',{name:fr?'Modifier : Mode':'Edit : Mode',exact:true}).tap();
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
   await expect.poll(formula).toEqual({tab:'custom',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
@@ -159,13 +168,13 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).fill('12');
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).blur();
- await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
+ await actions(page).locator('[data-bh-forward]:visible').tap();
   const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
   await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
   await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
  await page.getByRole('button',{name:fr?'Modifier le matériel':'Edit equipment',exact:true}).tap();
- await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
+ await actions(page).locator('[data-bh-forward]:visible').tap();
  const section=page.getByRole('region',{name:fr?'Nombre de pétrissées':'Mixing batches',exact:true});
  await section.getByRole('button',{name:fr?'Modifier':'Adjust',exact:true}).tap();
  const input=section.getByRole('textbox');await expect(input).toHaveValue('1');
@@ -178,4 +187,27 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
  const capacity=page.getByLabel(fr?'Poids de pâte maximal (g)':'Maximum dough weight (g)',{exact:true});await capacity.fill('1000');await capacity.blur();
  await expect(input).toHaveValue('4');await geometry(page);
  await page.screenshot({path:test.info().outputPath('mixing-batches.png'),fullPage:true});
+});
+
+test('an obsolete yeast step in a levain draft recovers to a visible Custom page',async({page})=>{
+ await anonymous(page);
+ await page.addInitScript(({now,bake})=>{
+  if(sessionStorage.getItem('recover-levain-once'))return;
+  sessionStorage.setItem('recover-levain-once','1');
+  const draft={version:1,savedAt:now,tab:'custom',bakeType:'bread',styleKey:'pain_levain',
+   numItems:1,itemWeight:800,ovenType:'standard_bread',mixerType:'hand',yeastType:'sourdough',
+   kitchenTemp:22,humidity:'normal',fridgeTemp:6,flourBlend:{flour1:'bread',flour2:null,ratio1:100},
+   prefermentType:'levain',startTime:bake-18*3600000,eatTime:bake,blocks:[],recipeGenerated:false,
+   qtyChosen:true,flourChosen:true,prefermentChosen:false,modeChosen:true,advancedStep:7,
+   advancedHighestStep:8,activeStep:7,highestStep:7,setupOverview:false,activeTab:'setup'};
+  localStorage.setItem('bh_session_v1',JSON.stringify(draft));
+  sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:7,advancedStep:7,setupOverview:false,activeTab:'setup'}));
+ },{now:NOW,bake:BAKE});
+ await page.goto('/');
+ const method=page.locator('#step-8:visible');
+ await expect(method.getByRole('heading')).toBeVisible();
+ await expect(method.locator('[data-bh-forward]')).toBeDisabled();
+ await method.getByRole('button',{name:/sourdough|levain/i}).first().tap();
+ await method.locator('[data-bh-forward]').tap();
+ await expect(page.locator('#step-10:visible')).toBeVisible();
 });

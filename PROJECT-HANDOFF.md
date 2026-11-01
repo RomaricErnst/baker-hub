@@ -1,3 +1,14 @@
+# 1 November 2026 — live journey review
+
+PR #37 (`codex/nov-live-review`) implements the review on top of production PR #36. See PR #37's exact-head checks for release status. Production previously verified at `1736d2ac827a6a73a5c05b3cab956534b08ec70a`.
+
+- My bake collects family, style, yield, oven time and availability before the baker chooses Simple or Custom. Show the preparation plan after that decision. Rubriques contains the five destinations; the step pill provides local navigation.
+- Simple uses method-neutral kneading cues. Equipment belongs in Custom. Disclose the assumed equipment beside water-temperature and capacity estimates. Distinguish confirmed choices from suggested settings.
+- Use Figtree for interface text and Georgia for display headings. French starter text uses *rafraîchir* and *pétrissage*. User-visible clocks, dates, durations and weights use the shared locale helpers; machine input values stay in native HTML formats.
+- Restore only steps supported by the chosen method. Recipe edits must return to a valid updated recipe or open the specific setting that needs attention. Preserve actual preparation history and the baker’s explicit timing overrides.
+- Test starter inputs and block toggles at 24, 36 and 48 hours, including no blocks. Keep hard unavailability separate from the preference for waking-hour actions. A later bake suggestion must explain which action becomes feasible.
+- Commercial-yeast dose, sourdough bulk, starter build and poolish temperature calculations have dedicated numeric checks. The comparison grid tests model consistency; calibration against physical bakes is separate.
+
 # Release verified — flour filters above results — 26 October 2026
 
 PR24 merged as 8fe56a8d0da06a0f4c40c4339f94652301b43ada. Final head 8a4ac56ff78a59236d20bb87c757f1401e7356e9 passed CI40260565246: 510 unit/component tests, production build, scheduling checks and 532 mobile WebKit checks (133 each at 320/375/390/430px). Initial runs exposed test lookup and scroll-timing measurement issues; both corrected. One existing poolish reload test failed once and passed in the final run. All four final jobs succeeded, including the delayed 430px runner. Mobile screenshot reviewed. Production dpl_37SKDHZ9d411QExnkLT6BvvA2a96 is READY at the exact merge SHA with www.bakerhub.app and bakerhub.app aliases. User explicitly authorized adjustment, push, merge and deployment. No physical iPhone validation claimed. This supersedes pending status below; documentation-only follow-up changes no application code.

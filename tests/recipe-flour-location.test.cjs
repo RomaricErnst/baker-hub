@@ -9,20 +9,19 @@ const {recommendedFlourName,flourShoppingName}=require('../app/lib/flourGuidance
 function render(locale,mode,pref='none',yeast='instant',flourBlend,explicitFlour=false){
  const schedule=utils.buildSchedule(new Date('2026-09-21T08:00Z'),new Date('2026-09-22T18:00Z'),[],24,60,'hand','neapolitan');
  const result=utils.calculateRecipe('neapolitan','home_oven_standard',1,1000,24,'normal',schedule,4,yeast,mode,'hand',undefined,undefined,undefined,flourBlend,pref,null,20);
- const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require(`../messages/${locale}.json`),timeZone:'UTC'},React.createElement(Recipe,{result,numItems:1,itemWeight:1000,styleName:'Neapolitan',styleKey:'neapolitan',mixerType:'hand',kitchenTemp:24,fermEquivHours:30,mode,prefermentType:pref,flourBlend,explicitFlour})));
+ const markup=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require(`../messages/${locale}.json`),timeZone:'UTC'},React.createElement(Recipe,{result,numItems:1,itemWeight:1000,styleName:'Neapolitan',styleKey:'neapolitan',mixerType:'hand',kitchenTemp:24,fermEquivHours:30,mode,prefermentType:pref,flourBlend,explicitFlour})));
+ const html=markup.replace(/[\u00a0\u202f]/g,' ');
  return {html,result};
 }
 
-test('guided flour identity precedes water and stays outside optional explanation in both languages',()=>{
+test('guided flour identity precedes water and has no dead-end flour hint in both languages',()=>{
  for(const locale of ['fr','en'])for(const pref of ['none','poolish','biga']){
   const {html}=render(locale,'simple',pref);
   const name=recommendedFlourName('neapolitan',locale);
   const water=require(`../messages/${locale}.json`).recipeOutput.ingredientWater;
   assert.ok(html.indexOf(name)<html.indexOf(`>${water}</div>`),`${locale}/${pref}: flour identity beside first flour ingredient`);
-  const detail=html.match(/<details([^>]*)><summary[^>]*>(Bien choisir sa farine|Choosing flour)<\/summary>([\s\S]*?)<\/details>/);
-  assert.ok(detail);assert.doesNotMatch(detail[1],/\bopen\b/);
-  assert.ok(!detail[3].includes(name),'Buying identity must not be hidden inside explanation');
-  assert.equal((html.match(/Bien choisir sa farine|Choosing flour/g)||[]).length,1);
+  assert.ok(html.includes(name));
+  assert.doesNotMatch(html,/Bien choisir sa farine|Choosing flour|use Custom setup/);
   assert.doesNotMatch(html,/Recommended flour:|Farine conseillée :/);
  }
 });

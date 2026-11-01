@@ -18,7 +18,7 @@ export default function StylePicker({bakeType,selected,onSelect,disabledIds=[],d
   const meal=bread?BREAD_MEAL_EXAMPLES[key]:undefined;
   const use=bread?(family==='tartine'?(fr?'Pain seul · tartines':'Bread on its own · tartines'):family==='laffa'||family==='piadina'?(fr?'Pain seul · wraps':'Bread on its own · wraps'):family?(fr?'Pain seul · sandwichs':'Bread on its own · sandwiches'):(fr?'Pain seul':'Bread on its own')):null;
   return <div key={key}><button className={`dough-style-card${bread?' bh-bread-style-card':''}`} type="button" aria-label={title} disabled={disabled} aria-pressed={active} onClick={()=>onSelect(key as StyleKey)}
-   style={{display:'grid',alignItems:'center',gap:12,width:'100%',height:'100%',textAlign:'left',padding:12,border:active?'2px solid var(--terra)':'1px solid var(--border)',borderRadius:12,background:active?'#f4ecdf':'var(--card)',color:'var(--char)',cursor:disabled?'not-allowed':'pointer',opacity:disabled?.55:1}}>
+   style={{display:'grid',alignItems:'center',gap:12,width:'100%',height:'100%',textAlign:'left',padding:12,border:active?'2px solid var(--terra)':'1px solid var(--border)',borderRadius:12,background:active?'var(--cream)':'var(--card)',color:'var(--char)',cursor:disabled?'not-allowed':'pointer',opacity:disabled?.55:1}}>
    {bread&&<strong className="bh-bread-card-title" style={{display:'block',fontSize:16}}>{title}</strong>}
    {bread?<span className={`bh-bread-photos${meal?' bh-bread-photos-pair':''}`}>
     <span className="bh-bread-photo"><span className="bh-bread-photo-frame"><Image src={s.image} alt="" fill sizes="(max-width:700px) 50vw, 220px" style={{objectFit:'cover',objectPosition:'center'}}/></span><span className="bh-bread-photo-caption">{fr?'Le pain':'The bread'}</span></span>

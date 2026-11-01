@@ -6,6 +6,7 @@
 // compares the solver outputs the parent receives (start, feeds, starter
 // events, blocks, validity) and checks the Nights chip agrees with the blocks.
 import fs from 'fs';
+import {MessageChannel} from 'node:worker_threads';
 import { createRequire } from 'node:module';
 const require = createRequire(new URL('../../.ci-tools/package.json', import.meta.url));
 const { JSDOM } = require('jsdom');
@@ -18,6 +19,7 @@ const FROZEN = process.env.FREEZE === '0' ? Math.ceil(Date.now()/3600000)*360000
 const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>',
   { pretendToBeVisual: true, runScripts: 'outside-only', url: 'https://www.bakerhub.app/' });
 const { window } = dom;
+window.MessageChannel ??= MessageChannel;
 
 // ── frozen clock ────────────────────────────────────────────────
 const RealDate = window.Date;
@@ -73,13 +75,12 @@ function signature() {
   const n = (v) => (v === undefined ? null : v);
   const data = JSON.stringify({ start: n(r.start), feed: n(r.feed), fridgeOut: n(r.fridgeOut), events: n(r.events),
     scheduleValid: n(r.scheduleValid), starterValid: n(r.starterValid), nextRatio: n(r.nextRatio) });
-  return { text, data, blocks: JSON.stringify(n(r.blocks)) };
+  return { text, data, blocks: JSON.stringify(r.blocks??[]), valid:r.scheduleValid===true };
 }
 // The parent only receives blocks on an explicit commit (true on main as well),
 // so chip-vs-parent-blocks is not a valid invariant here. The mount race is
 // caught by the round-trip itself: A (chip ON at mount) must equal C.
 function chipAgrees() {
-  return true;
   const chip = nightsChip();
   if (!chip) return true;
   const on = chip.getAttribute('aria-pressed') === 'true';
@@ -93,11 +94,11 @@ function firstDiff(a, b) {
 
 const at = (h) => new RealDate(FROZEN + h * 3600000);
 const SCENARIOS = [
-  { name: 'levain +46h 22C',    style: 'pain_levain', temp: 22, eat: at(46) },
-  { name: 'levain +30h 22C',    style: 'pain_levain', temp: 22, eat: at(30) },
-  { name: 'sourdough +46h 22C', style: 'sourdough',   temp: 22, eat: at(46) },
+  { name: 'levain +24h 22C',    style: 'pain_levain', temp: 22, eat: at(24) },
+  { name: 'levain +36h 22C',    style: 'pain_levain', temp: 22, eat: at(36) },
+  { name: 'sourdough +48h 22C', style: 'sourdough',   temp: 22, eat: at(48) },
   { name: 'sourdough +26h 28C', style: 'sourdough',   temp: 28, eat: at(26) },
-  { name: 'levain +46h 30C',    style: 'pain_levain', temp: 30, eat: at(46) },
+  { name: 'levain +48h 30C',    style: 'pain_levain', temp: 30, eat: at(48) },
   { name: 'sourdough +70h 22C', style: 'sourdough',   temp: 22, eat: at(70) },
 ];
 const AGE = /^2[–-]3 days ago$/;
@@ -111,21 +112,26 @@ const TOGGLES = {
   rye:       [() => clickBy(/^rye starter/i), () => clickBy(/^rye starter/i)],
   age:       [() => clickBy(/^4[–-]5 days ago$/), () => clickBy(AGE)],
   weekdays:  [() => clickBy(/^weekdays/i), () => clickBy(/^weekdays/i)],
+  tangTangy: [() => clickBy(/^tangier/i), () => clickBy(/^balanced/i)],
+  ratio:     [() => clickBy(activeMode==='recommend'?/^same as last feed/i:/^optimized/i), () => clickBy(activeMode==='recommend'?/^optimized/i:/^same as last feed/i)],
   tangMild:  [() => clickBy(/^milder/i), () => clickBy(/^balanced/i)],
 };
 const ONLY = process.env.TOGGLES ? process.env.TOGGLES.split(',') : ['nights', 'location'];
 const MODES = process.env.MODES ? process.env.MODES.split(',') : ['recommend', 'keep'];
 
+let activeMode;
 const results = [];
 for (const ratioMode of MODES) {
+  activeMode=ratioMode;
   for (const sc of SCENARIOS) {
     for (const t of ONLY) {
       console.log('BEGIN',ratioMode,sc.name,t);
       // fresh mount per trip: no cross-test contamination (lesson from run 1)
       const el = doc.getElementById('root'); el.innerHTML = '';
+      window.localStorage.clear();
       let root;
       try {
-        root = mount(el, { ...sc, start: new RealDate(FROZEN), loc: 'rt', age: 'days23',
+        root = await mount(el, { ...sc, start: new RealDate(FROZEN), loc: 'rt', age: 'days23',
           lastFed: new RealDate(FROZEN - 60 * 3600000), ratioMode, page: process.env.PAGE === '1', full: process.env.FULL === '1', batches: Number(process.env.BATCHES||1) });
       } catch (e) { results.push({ m: ratioMode, s: sc.name, t, status: 'MOUNT FAILED ' + e.message }); continue; }
       await wait(SETTLE * 3);
@@ -143,6 +149,9 @@ for (const ratioMode of MODES) {
       if (!ok) status = 'control not found';
       else if (A.text !== Anull.text || A.data !== Anull.data) status = 'UNSTABLE (null test)';
       // PRIMARY criterion (unchanged since 29 Aug): card text A === C.
+      else if (!mountChipOk || !endChipOk) status = 'CHIP MISMATCH';
+      else if (t==='nights' && A.valid && !B.valid && JSON.parse(B.blocks).length<JSON.parse(A.blocks).length) status='REMOVAL INVALID';
+      else if (A.blocks!==C.blocks) status='BLOCKS DIVERGED';
       else if (A.text === B.text) status = 'no-op';
       else if (A.text !== C.text) status = 'DIVERGED';
       else status = 'ok';
@@ -171,4 +180,5 @@ for (const r of results.filter((r) => r.status !== 'ok' || r.dataDiv))
 console.log('runtime errors captured:', errors.length, errors.slice(0, 2));
 fs.writeFileSync(process.argv[2] + '.results.json', JSON.stringify(results, null, 1));
 process.exit(errors.length || results.some(r => !['ok', 'no-op'].includes(r.status) || r.dataDiv) ? 1 : 0);
+
 

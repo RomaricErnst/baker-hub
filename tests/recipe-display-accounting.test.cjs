@@ -8,9 +8,9 @@ function make(yeast='instant',pref='none',blend){
  const schedule=utils.buildSchedule(new Date('2026-09-21T08:00Z'),new Date('2026-09-22T18:00Z'),[],24,60,'hand','neapolitan');
  return utils.calculateRecipe('neapolitan','home_oven_standard',1,1000,24,'normal',schedule,4,yeast,'custom','hand',undefined,undefined,undefined,blend,pref,null,20,undefined,undefined,false,1.5,false,undefined,12);
 }
-function render(result,pref='none',flourBlend,locale='en',raw=false){
- const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require(`../messages/${locale}.json`),timeZone:'UTC'},React.createElement(Recipe,{result,numItems:1,itemWeight:1000,styleName:'Neapolitan',styleKey:'neapolitan',mixerType:'hand',kitchenTemp:24,fermEquivHours:30,mode:'custom',prefermentType:pref,flourBlend,wastePct:1.5})));
- return raw?html:html.replace(/<[^>]+>/g,'');
+function render(result,pref='none',flourBlend,locale='en',raw=false,extra={}){
+ const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require(`../messages/${locale}.json`),timeZone:'UTC'},React.createElement(Recipe,{result,numItems:1,itemWeight:1000,styleName:'Neapolitan',styleKey:'neapolitan',mixerType:'hand',kitchenTemp:24,fermEquivHours:30,mode:'custom',prefermentType:pref,flourBlend,wastePct:1.5,...extra})));
+ return raw?html:html.replace(/<[^>]+>/g,'').replace(/[\u00a0\u202f]/g,' ');
 }
 test('direct, starter and preferment total rows include the mixing allowance',()=>{
  for(const [yeast,pref] of [['instant','none'],['sourdough','levain'],['instant','poolish'],['instant','biga']]){
@@ -79,8 +79,22 @@ test('blend recipe totals show separate named flour weights and conserve stage a
  for(const pref of ['none','poolish','biga'])for(const locale of ['en','fr']){
   const r=make('instant',pref,blend),html=render(r,pref,blend,locale,true);
   a.equal(r.flourParts.reduce((sum,p)=>sum+p.grams,0),r.flour);
-  const content=(pref==='none'?html:html.match(/<section aria-label="(?:Total ingredients|Quantités totales)">([\s\S]*?)<\/section>/)[1]).replace(/<[^>]+>/g,'');
+  const content=(pref==='none'?html:html.match(/<section aria-label="(?:Total ingredients|Quantités totales)">([\s\S]*?)<\/section>/)[1]).replace(/<[^>]+>/g,'').replace(/[\u00a0\u202f]/g,' ');
   for(const part of r.flourParts){a.ok(content.includes(part.name));a.ok(content.includes(part.grams+' g'));}
   if(r.preferment)a.equal(r.flourParts[0].grams,Math.round(r.preferment.finalFlour*.6)+r.preferment.prefFlour);
+ }
+});
+
+
+test('recipe opens on start and bake times and displays the selected salt percentage and weighed yeast',()=>{
+ for(const locale of ['en','fr']){
+  const result=make();result.saltPct=2.8;result.salt=Math.round(result.flour*.028);result.yeast.convertedGrams=.54;
+  const start=new Date(2030,6,5,17,30),bake=new Date(2030,6,6,19,30);
+  const html=render(result,'none',undefined,locale,true,{firstActionAt:start,bakeAt:bake,onAdjustTiming(){}});
+  const text=html.replace(/<[^>]+>/g,'').replace(/[\u00a0\u202f]/g,' ');
+  a.match(text,locale==='fr'?/Commencer .*17h30 · Cuire .*19h30/:/Start .*5:30pm · Bake .*7:30pm/);
+  a.ok(text.includes(locale==='fr'?'Ajuster les horaires':'Adjust timing'));
+  a.match(text,locale==='fr'?/Sel2,8 %/:/Salt2.8%/);
+  a.ok(text.includes(locale==='fr'?'0,54 g':'0.54 g'));
  }
 });

@@ -67,7 +67,7 @@ let profileListener: (() => void) | null = null;
 export function setProfileListener(fn: (() => void) | null): void { profileListener = fn; }
 
 export const DEFAULT_BLOCKERS = {
-  sleep: { enabled: false, from: '23:00', to: '07:00' },
+  sleep: { enabled: true, from: '23:00', to: '07:00' },
   work:  { enabled: false, from: '09:00', to: '18:00' },
 };
 
@@ -137,3 +137,4 @@ export function saveCustomPizza(def: CustomPizzaDef): void {
 export function deleteCustomPizza(id: string): void {
   updateProfile({ customPizzas: loadCustomPizzas().filter(p => p.id !== id) });
 }
+

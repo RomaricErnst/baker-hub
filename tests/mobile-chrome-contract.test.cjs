@@ -57,7 +57,9 @@ test('mobile chrome reserves safe areas without reviving conflicting catalogue p
   assert.match(css,/\.bh-step-action-slot\s*\{[^}]*height:var\(--bh-action-height,100px\)/);
   assert.match(css,/\.bh-step-actions\s*\{[^}]*position:fixed;[^}]*calc\(24px \+ env\(safe-area-inset-bottom,0px\)\)/);
   assert.match(css,/\[data-keyboard-open="true"\][\s\S]*?\.bh-step-actions,[\s\S]*?display:none !important/);
-  assert.match(css,/\[data-navigation-page\^="organisation:"\] \.bh-header \{ position:static !important/);
+  assert.match(css,/\.bh-bake-navigator\s*\{[^}]*position:sticky/);
+  assert.doesNotMatch(css,/\[data-navigation-page\^="organisation:"\] \.bh-header\s*\{[^}]*position:static/);
+  assert.doesNotMatch(css,/\.bh-organisation-nav-stack \.bh-bake-navigator\s*\{[^}]*position:relative/);
   assert.doesNotMatch(css,/\.bh-batch-actions\s*\{[^}]*position:/);
   assert.doesNotMatch(css,/\.bh-batch-content:has\(\.bh-style-confirm\)/);
   assert.doesNotMatch(css,/\.bh-batch-actions\.bh-style-confirm\s*\{/);

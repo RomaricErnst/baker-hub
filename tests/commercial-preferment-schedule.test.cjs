@@ -56,11 +56,13 @@ test('full blockers and reversed or under-minimum phases cannot be accepted',()=
 test('selected method is never suppressed from chart or action rows; help does not enable layers',()=>{
  const picker=fs.readFileSync('app/components/SchedulePicker.tsx','utf8'),chart=fs.readFileSync('app/components/FermentChart.tsx','utf8');
  assert.match(picker,/const effectiveHasPref = hasPrefActive;/);
- assert.match(picker,/prefermentType=\{isSourdough \? 'sourdough' : prefermentType\}/);
+ assert.match(picker,/prefermentType=\{isSourdough\s*\?\s*'sourdough'\s*:\s*prefermentType\}/);
  assert.match(picker,/if \(!isSourdough && cardPrefTime\)/);
  assert.match(chart,/const revealAll = dragging !== null;/);
  assert.doesNotMatch(chart,/L\.window \|\| focusId/);
- assert.match(chart,/onPointerCancel=\{onPointerUp\}/);
+ const cancel=chart.match(/onPointerCancel=\{\(\)=>\{([^}]+)\}\}/)?.[1]??'';
+ assert.match(cancel,/setDragging\(null\)/);assert.match(cancel,/onDragEnd\?\.\(\)/);
+ assert.doesNotMatch(cancel,/onMixChange|onPrefChange|onRefreshChange/);
  for(const lang of ['en','fr']){const guide=require(`../messages/${lang}.json`).fermentChart.guide;assert.doesNotMatch(guide.dragRest,/higher is riper|plus c’est haut/);}
 });
 
@@ -87,13 +89,14 @@ test('returning to a previous recommendation resynchronizes a parent changed by 
 
 test('action times preserve canonical minutes, including the end of a day',()=>{
  const nearMidnight=new Date(2026,8,23,23,56);
- assert.equal(fmtCardHM(nearMidnight,true),'23:56');
- assert.equal(fmtCardHM(nearMidnight,false),'23:56');
+ assert.equal(fmtCardHM(nearMidnight,true),'23h56');
+ assert.equal(fmtCardHM(nearMidnight,false),'11:56pm');
  assert.equal(formatTimeShort(nearMidnight,true),'23h56');
  assert.equal(formatTimeShort(nearMidnight,false),'11:56pm');
- assert.match(fmtCardDT(nearMidnight,true),/23 .*23:56$/);
- assert.match(fmtCardDT(nearMidnight,false),/23 .*23:56$/);
- assert.equal(fmtCardHM(new Date(2026,8,23,7,4),true),'07:04');
- assert.equal(fmtCardHM(new Date(2026,8,23,3,19),true),'03:19');
+ assert.match(fmtCardDT(nearMidnight,true),/23 .*23h56$/);
+ assert.match(fmtCardDT(nearMidnight,false),/23 .*11:56pm$/);
+ assert.equal(fmtCardHM(new Date(2026,8,23,7,4),true),'7h04');
+ assert.equal(fmtCardHM(new Date(2026,8,23,3,19),true),'3h19');
 });
+
 

@@ -70,9 +70,15 @@ function Harness({ sc }: { sc: any }) {
   );
 }
 
-w.__mount = (el: HTMLElement, sc: any) => {
+w.__mount = async (el: HTMLElement, sc: any) => {
   w.__h = { rec: {} };
   const root = createRoot(el);
-  root.render(<Harness sc={sc} />);
+  // Drain React's mount, parent feedback, and effects before the runner takes
+  // its first snapshot. Timers and the deliberately rapid user taps remain real.
+  const previous=w.IS_REACT_ACT_ENVIRONMENT;
+  w.IS_REACT_ACT_ENVIRONMENT=true;
+  try { await React.act(async()=>{root.render(<Harness sc={sc} />);}); }
+  finally {w.IS_REACT_ACT_ENVIRONMENT=previous;}
   return root;
 };
+

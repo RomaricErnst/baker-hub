@@ -61,3 +61,11 @@ test('commercial timeline lists fridge removal separately from final mixing',()=
  assert.ok(html.includes('Mix the dough'));
  assert.ok(!html.includes('vitality'));
 });
+
+test('the estimated starter curve uses the feed peak saved by the scheduler',()=>{
+ const feed=new Date('2026-09-24T08:00Z'),peak=new Date('2026-09-24T13:45Z'),bake=new Date('2026-09-25T18:00Z');
+ const event={kind:'pre_mix',label:'Pre-mix feed',time:feed,isPast:false,isActive:true,isDraggable:true,cardTimeFormat:'absolute',bellStyle:'solid',bellPeakTime:peak,bellSigmaScale:1};
+ const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(chart.default,{eatTime:bake,prefermentType:'levain',kitchenTemp:24,mixOffsetH:28,prefOffsetH:6,blocks:[],starterEvents:[event],onMixChange(){},onPrefChange(){}})));
+ assert.ok(html.includes('data-peak-at="'+peak.toISOString()+'"'));
+ assert.doesNotMatch(html,/NaN|Infinity/);
+});

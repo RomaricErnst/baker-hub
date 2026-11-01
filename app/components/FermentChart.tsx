@@ -51,6 +51,7 @@ export interface FermentChartProps {
   onDragStart?: () => void;
   onDragEnd?: () => void;
   windowH?: number;         // total window to display (default 96h)
+  prefEditable?: boolean;
   prefInFridge?: boolean;   // show fridge climate note in pref card
   hasColdRetard?: boolean;  // widens bell and sweet zone for cold schedules
   sweetCenterH?: number;    // actual sweet center HBF for this style+window — sets dough peak
@@ -143,24 +144,12 @@ export function getPrefPeakH_RT(type: string, temp: number, styleKey = 'neapolit
   // starter. maturity (matF), rye (ryeF) and feed ratio (ratioMultiplier) are
   // applied on top of this base by the caller.
   //
-  // Continuous Q10 (temperature-coefficient) model, replacing the old bucket
-  // ladder that went FLAT at 7.5h for every temp ≤20°C — which under-predicted
-  // cold kitchens badly (16°C is ~13h in reality, not 7.5h → the app told cold
-  // bakers to feed hours too late). Anchored at the one well-established point
-  // (24°C → 5.5h) with Q10 = 2.8, fit to a wide consensus of published data
-  // (King Arthur feeding-ratio trials, Brod & Taylor, The Sourdough Journey,
-  // Tartine, The Clever Carrot). One smooth curve is more robust than buckets:
-  // no edge discontinuities, and it also corrects the tropical end (a 34°C
-  // starter peaks in ~2h, not the flat 2.5h the ladder returned → over-early
-  // feed). Clamped [1.75h, 24h]: yeast activity maxes out near ~35°C so peak
-  // time floors ~1.75h; the ceiling guards absurd values at cellar temps (the
-  // fridge path handles genuine cold storage separately).
-  // Fit vs consensus (1:1:1, mature): 16°C 12.5h(12–14) · 18°C 10.2h(10) ·
-  // 20°C 8.3h(8–9) · 22°C 6.8h(6–8) · 24°C 5.5h(5–6) · 28°C 3.6h(3–4) ·
-  // 32°C 2.4h(2–3) · 34°C 2.0h(~2).
+  // The 24 °C reference is for a vigorous starter at 1:1:1. Above 30 °C
+  // hold the 30 °C estimate: this range is poorly calibrated, and extending
+  // Q10 into it otherwise keeps advancing the recommended mix. Actual peak
+  // and the baker's observed times take precedence over this extrapolation.
   if (type === 'sourdough' || type === 'levain') {
-    const raw = 5.5 * Math.pow(2.8, (24 - temp) / 10);
-    return Math.max(1.75, Math.min(24, raw));
+    return Math.min(24, 5.5 * Math.pow(2.8, (24 - Math.min(temp, 30)) / 10));
   }
 
   const isBread = ['pain_campagne','pain_levain','baguette','pain_complet',
@@ -523,7 +512,7 @@ export default function FermentChart({
   eatTime, prefermentType, kitchenTemp, fridgeTemp = 6, styleKey = 'neapolitan',
   mixOffsetH, prefOffsetH,
   blocks, onMixChange, onPrefChange, onRefreshChange, onDragStart, onDragEnd,
-  windowH, prefInFridge, hasColdRetard, sweetCenterH, sweetFromH, sweetToH,
+  windowH, prefEditable = true, prefInFridge, hasColdRetard, sweetCenterH, sweetFromH, sweetToH,
   nowHBF = 999, doughColdIntervals = [], prefermentFridgeOutTime, scheduleNote,
   recommendedMixHBF, focusId = null, showReset = false, onReset,
   starterFeedTime, starterFeed2Time, starterFridgeOutTime,
@@ -555,6 +544,7 @@ export default function FermentChart({
   const [dragging, setDragging] = useState<'mix' | 'pref' | 'refresh' | null>(null);
   // Local drag HBF for free visual movement during mix drag — no onMixChange until pointer up
   const [localMixHBF, setLocalMixHBF] = useState<number | null>(null);
+  const [localPrefHBF, setLocalPrefHBF] = useState<number | null>(null);
   // Refresh diamond mirrors the mix pattern: free local movement while
   // dragging, one solver commit on release (the solver sweep is too heavy
   // to run per pointermove).
@@ -699,7 +689,7 @@ export default function FermentChart({
   // During drag, use local position for all mix-derived values
   const effectiveMixHBF = localMixHBF !== null ? localMixHBF : mixOffsetH;
 
-  const prefStartAbsHBF = effectiveMixHBF + prefOffsetH;
+  const prefStartAbsHBF = localPrefHBF ?? (effectiveMixHBF + prefOffsetH);
   const doughPeakHBF = effectiveMixHBF - DOUGH_SWEET_CENTER;
   // Both fridge and RT: peak relative to prefStartAbsHBF so curve slides with diamond.
   // Fridge: peak is optH hours after start (at optimal → peaks at mix, earlier/later → shifts).
@@ -767,8 +757,8 @@ export default function FermentChart({
       if (hbf < 0 || hbf > WH) return null;
       // Live drag: the refresh diamond follows the pointer; bells and card
       // re-render after the solver commits on release.
-      const useLocal = ev.kind === 'refresh' && dragging === 'refresh' && localRefreshHBF !== null;
-      return { ev, idx, x: hToX(useLocal ? localRefreshHBF! : hbf, W, WH) };
+      const dragHBF = ev.kind === 'refresh' ? localRefreshHBF : ev.kind === 'pre_mix' ? localPrefHBF : null;
+      return { ev, idx, x: hToX(dragHBF ?? hbf, W, WH) };
     })
     .filter((v): v is { ev: StarterEvent; idx: number; x: number } => v !== null);
 
@@ -876,7 +866,7 @@ export default function FermentChart({
   const histPeakHBF: number | null = histFeedHBF !== null
     ? histFeedHBF - effectivePeakH : null;
 
-  const activePrefX = activeFeedHBF !== null ? hToX(activeFeedHBF, W, WH) : prefX;
+  const activePrefX = localPrefHBF !== null ? hToX(localPrefHBF,W,WH) : activeFeedHBF !== null ? hToX(activeFeedHBF, W, WH) : prefX;
   const starterLaneHBF = useEventDrivenStarter
     ? Math.max(...starterEvents.filter(e => e.kind !== 'known_peak').map(e =>
       e.kind === 'refresh' && localRefreshHBF !== null ? localRefreshHBF : (bakeMs - +e.time) / 3600000), effectiveMixHBF)
@@ -1029,7 +1019,7 @@ export default function FermentChart({
   }
 
   function onPointerDown(e: React.PointerEvent, which: 'mix' | 'pref' | 'refresh') {
-    if (startTimeInPast) return;
+    if (startTimeInPast || (which === 'pref' && !prefEditable)) return;
     if (which === 'refresh' && !onRefreshChange) return;
     // Allow dragging a feed pinned at/near "now" forward — only refuse
     // genuinely historical positions (>1h before now). A Peak-2B feed is
@@ -1056,7 +1046,7 @@ export default function FermentChart({
       setLocalRefreshHBF(h);
     } else {
       const abs = Math.max(effectiveMixHBF + 0.25, Math.min(nowHBF, WH - 0.05, snap15(xToHBF(x, W, WH))));
-      onPrefChange(abs - effectiveMixHBF);
+      setLocalPrefHBF(abs);
     }
   }
 
@@ -1065,8 +1055,9 @@ export default function FermentChart({
     if (dragging === 'mix' && localMixHBF !== null) {
       onMixChange(localMixHBF);
       setLocalMixHBF(null);
-    } else if (dragging === 'pref') {
-      /* committed live on move — nothing to flush on release */
+    } else if (dragging === 'pref' && localPrefHBF !== null) {
+      onPrefChange(localPrefHBF - effectiveMixHBF);
+      setLocalPrefHBF(null);
     } else if (dragging === 'refresh') {
       if (localRefreshHBF !== null) onRefreshChange?.(localRefreshHBF);
       setLocalRefreshHBF(null);
@@ -1149,6 +1140,20 @@ export default function FermentChart({
     );
   }
 
+  const activityPaths = isLevain && useEventDrivenStarter
+    ? starterEvents.flatMap(event=>{
+        if (!event.bellPeakTime || event.bellStyle==='none') return [];
+        const peak=(bakeMs-+event.bellPeakTime)/3600000;
+        const start=(bakeMs-+(event.bellStartTime ?? event.time))/3600000;
+        const sigma=starterSigmaH*(event.bellSigmaScale || 1);
+        const chilled=event.hasFridgePhase && fridgeInHBF!==null && fridgeOutHBF!==null && Math.abs(peak-fridgeInHBF)<0.5;
+        const path=chilled ? makeBellWithFridgePlateau(peak,sigma,fridgeInHBF!,fridgeOutHBF!,W,WH,start)
+          : event.hasFridgePhase ? makeFridgePhaseBellPath(start,peak,fridgePeakH,fridgeSigma,W,WH)
+          : makeBellPath(peak,sigma,W,WH,start>peak?start:undefined);
+        return [{path, dashed:event.bellStyle!=='solid',peak:event.bellPeakTime}];
+      })
+    : hasPref && !isLevain ? [{path:prefNeedsFridge ? makePlateauBellPath(prefPeakHBF,prefSig,plateauHalfW,W,WH,prefStartAbsHBF)
+         : makeBellPath(prefPeakHBF,prefSig,W,WH,prefStartAbsHBF),dashed:false,peak:null}] : [];
   // ── Render ───────────────────────────────────────────────
   return (
     <div
@@ -1156,7 +1161,7 @@ export default function FermentChart({
       style={{ width: '100%', userSelect: 'none', overflow: 'hidden', WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'] }}
     >
       <svg ref={svgRef} width={W} height={hasPref?CHART_H:CHART_H-60} aria-label={isFr ? 'Durées de préparation et de fermentation' : 'Preparation and fermentation timeline'}
-        style={{display:'block',touchAction:'pan-y'}} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
+        style={{display:'block',touchAction:'pan-y'}} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={()=>{setLocalMixHBF(null);setLocalPrefHBF(null);setLocalRefreshHBF(null);setDragging(null);onDragEnd?.();}}>
         <g transform={hasPref?undefined:"translate(0,-60)"}>
         {days.map((day,i)=><g key={i}>
           {day.dividerX !== null && <line x1={day.dividerX} x2={day.dividerX} y1={16} y2={148} stroke="var(--border)" strokeDasharray="3 4"/>}
@@ -1171,8 +1176,13 @@ export default function FermentChart({
         <text x={PAD} y={80} fontSize={13} fill="var(--ash)">{isFr?'Pâte':'Dough'}</text>
         <rect x={mixX} y={92} width={Math.max(2,bakeX-mixX)} height={18} rx={5} fill={SAGE}/>
         {doughColdRanges.map(([a,b],i)=><rect key={i} x={Math.max(mixX,Math.min(a,b))} y={92} width={Math.max(0,Math.min(bakeX,Math.max(a,b))-Math.max(mixX,Math.min(a,b)))} height={18} rx={4} fill="#4A7FA5"/>)}
+        {activityPaths.map(({path,dashed,peak},i)=>path && <path key={i} d={openBell(path)}
+          data-peak-at={peak?.toISOString()} transform="translate(0 53) scale(1 0.23) translate(0 -140)"
+          fill="none" stroke={prefColor} strokeWidth={2} vectorEffect="non-scaling-stroke" strokeDasharray={dashed?'4 3':undefined} />)}
+        <path d={openBell(makeBellPath(doughPeakHBF,DOUGH_SIG,W,WH,effectiveMixHBF))}
+          transform="translate(0 112) scale(1 0.23) translate(0 -140)" fill="none" stroke={DARK_SAGE} strokeWidth={2} vectorEffect="non-scaling-stroke" />
         <line x1={PAD} x2={W-PAD} y1={BL} y2={BL} stroke="var(--border)"/>
-        {hasPref && !isLevain && renderDiamond(activePrefX,prefColor,inBlocker(prefStartAbsHBF),'pref')}
+        {hasPref && !isLevain && renderDiamond(activePrefX,prefColor,inBlocker(prefStartAbsHBF),'pref',!prefEditable)}
         {useEventDrivenStarter && visibleStarterEvents.map(({ev,idx,x})=><g key={idx}>
           <line x1={x} x2={x} y1={54} y2={BL} stroke={prefColor} opacity={.25}/>
           <circle cx={x} cy={BL} r={ev.isDraggable?10:5} fill={prefColor} opacity={ev.isPast?.45:1}
@@ -1183,13 +1193,13 @@ export default function FermentChart({
             style={{touchAction:'none',cursor:ev.isDraggable?'grab':'default'}}
             onPointerDown={ev.isDraggable?e=>onPointerDown(e,ev.kind==='refresh'?'refresh':'pref'):undefined}/>
         </g>)}
-        {hasPref && isLevain && !useEventDrivenStarter && renderDiamond(activePrefX,prefColor,inBlocker(prefStartAbsHBF),'pref')}
+        {hasPref && isLevain && !useEventDrivenStarter && renderDiamond(activePrefX,prefColor,inBlocker(prefStartAbsHBF),'pref',!prefEditable)}
         {renderDiamond(mixX,DARK_SAGE,inBlocker(effectiveMixHBF),'mix')}
         <polygon points={`${bakeX-8},${BL-10} ${bakeX+8},${BL-10} ${bakeX},${BL+3}`} fill={TERRA}/>
         </g>
       </svg>
       <div style={{display:'flex',flexWrap:'wrap',gap:12,fontSize:12,color:'var(--ash)',margin:'0 0 8px'}}>
-        <span>{isFr?'Les barres montrent les durées, pas la maturité.':'Bars show duration, not readiness.'}</span>
+        <span>{isFr?'Barres : durées prévues. Courbes : évolution indicative, à vérifier sur la pâte.':'Bars show planned durations. Curves illustrate estimated activity. Check the dough for readiness.'}</span>
         {hasAnyCold && <span><span aria-hidden="true" style={{display:'inline-block',width:12,height:8,background:'#4A7FA5',marginRight:5}}/>{isFr?'Au réfrigérateur':'In the fridge'}</span>}
       </div>
       <div aria-live="polite" aria-atomic="true" style={{fontSize:14,lineHeight:1.4}}>

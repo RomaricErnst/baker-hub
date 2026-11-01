@@ -21,6 +21,9 @@ test('compact editor exposes one set of windows and accessible half-hour adjustm
  await expect(plan.locator('input[type="datetime-local"]')).toHaveCount(0);
  await expect(plan.locator('.bh-key-window:visible')).toHaveCount(0);
  await expand(plan,'mix');await expect(plan.locator('.bh-key-window:visible')).toHaveCount(1);
+ const done=plan.getByRole('button',{name:'Terminé',exact:true});
+ await done.tap();await expect(plan.locator('[data-selected]')).toHaveCount(0);
+ await expand(plan,'mix');
  await row(plan,'mix').getByRole('button',{name:'+ 30 min',exact:true}).click();await expectAt(plan,'mix',+start+1800000);
  await expect(confirm(plan)).toBeEnabled();expect((await stored(page)).startTime).toBe(+start);
  await row(plan,'mix').getByRole('button',{name:'- 30 min',exact:true}).click();await expectAt(plan,'mix',+start);
@@ -112,4 +115,23 @@ test('levain final-feed lock is a persistent edit, constrains mixing, releases a
  await reset(page).click();await expect.poll(async()=>Boolean((await stored(page)).timingOverrides?.feedLocked)).toBe(false);
  expect((await stored(page)).timingOverrides?.feed).toBeUndefined();expect((await stored(page)).eatTime).toBe(+bake);
  await page.reload();await expect(plan).toBeVisible();await expand(plan,'mix');await expect(keep).not.toBeChecked();expect((await stored(page)).eatTime).toBe(+bake);
+});
+
+test('Custom fermentation curve uses the card draft, Apply and reset',async({page})=>{
+ const {plan,start,bake}=await openPlan(page,'custom',[],true);
+ const toggle=plan.getByRole('button',{name:'Voir la courbe de fermentation',exact:true});
+ await toggle.tap();
+ const marker=plan.getByRole('slider',{name:'Heure du pétrissage',exact:true});
+ await expect(marker).toHaveAttribute('aria-valuenow',String((+bake-+start)/3600000));
+ await marker.press('ArrowRight');
+ await expectAt(plan,'mix',+start+900000);
+ await expect(marker).toHaveAttribute('aria-valuenow',String((+bake-+start)/3600000-.25));
+ expect((await stored(page)).startTime).toBe(+start);
+ await expect(confirm(plan)).toBeEnabled();await confirm(plan).tap();
+ await expect.poll(async()=>(await stored(page)).startTime).toBe(+start+900000);
+ await expect(reset(page)).toBeVisible();await reset(page).tap();
+ await expect(reset(page)).toHaveCount(0);
+ const restored=Number(await row(plan,'mix').getAttribute('data-at'));
+ await expect(marker).toHaveAttribute('aria-valuenow',String((+bake-restored)/3600000));
+ expect((await stored(page)).eatTime).toBe(+bake);
 });

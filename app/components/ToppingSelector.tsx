@@ -401,7 +401,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 12px' }}>
         {/* Left: image spanning all rows */}
-        <div style={{ width: '100%', aspectRatio: '2 / 1', borderRadius: '12px', overflow: 'hidden', flexShrink: 0, background: '#2B2420' }}>
+        <div style={{ width: '100%', aspectRatio: '2 / 1', maxHeight:120, borderRadius: '12px', overflow: 'hidden', flexShrink: 0, background: '#2B2420' }}>
           {pizza.id.startsWith('custom_') ? (
             pizza.photoUrl
               ? <img src={pizza.photoUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -1250,7 +1250,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                         >
                           {name}
                           {item.isCommonPantry && (
-                            <span style={{ fontSize: '11px', color: '#8A7F78', marginLeft: '5px', fontStyle: 'italic' }}>{l === 'fr' ? 'placard' : 'pantry'}</span>
+                            <> <small style={{display:'inline-block',padding:'1px 6px',marginInlineStart:4,borderRadius:6,background:'var(--cream)',color:'var(--ash)'}}>{l === 'fr' ? 'placard' : 'pantry'}</small></>
                           )}
 
                         </span>
