@@ -90,3 +90,33 @@ jobs:
             test-results/
           if-no-files-found: warn
           retention-days: 14
+
+
+  starter-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        controls: [nights, 'weekdays,rye', 'maturity,age', 'location,tangTangy', 'ratio,tangMild']
+    env:
+      TZ: Asia/Singapore
+      PAGE: '1'
+      FULL: '1'
+      NOW: '2026-11-01T08:00:00Z'
+      SETTLE: '200'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm install --prefix .ci-tools --no-audit --no-fund esbuild@0.28.2 jsdom@30.1.1
+      - run: node tests/roundtrip/build.mjs
+      - name: Check six starter scenarios and both ratio modes
+        env:
+          TOGGLES: ${{ matrix.controls }}
+        run: node tests/roundtrip/run.mjs .ci-tools/starter-roundtrip.js
