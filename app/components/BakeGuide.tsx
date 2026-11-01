@@ -1107,8 +1107,8 @@ Actual dough condition and equipment may differ from these estimates.`;
         <Steps items={profileSteps(breadProtocol.proof[l])} />
         <p>{l === 'fr' ? 'Cette pâte sans levure se détend ; elle n’a pas besoin de lever.' : 'This unleavened dough relaxes; it does not need to rise.'}</p>
       </StepCard>
-      <StepCard number={n()} {...sc()} icon={<IconDivide />} title={l === 'fr' ? 'Diviser et abaisser' : 'Divide and roll'} time={schedule.rollStart ?? schedule.divideBallTime ?? undefined} duration={(schedule.divisionMinutes ?? 10) / 60}>
-        <Steps items={profileSteps(breadProtocol.shaping[l])} />
+      <StepCard number={n()} {...sc()} icon={<IconDivide />} title={numItems===1?(l==='fr'?'Abaisser la pâte':'Roll out the dough'):(l === 'fr' ? 'Diviser et abaisser' : 'Divide and roll')} time={schedule.rollStart ?? schedule.divideBallTime ?? undefined} duration={(schedule.divisionMinutes ?? 10) / 60}>
+        <Steps items={profileSteps(numItems===1 && breadProtocol.singleShape ? [breadProtocol.singleShape[l]] : breadProtocol.shaping[l])} />
       </StepCard>
 <StepCard number={n()} {...sc(false, 'cooking')} icon={<IconPreheat />} title={l === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle'} time={schedule.preheatStart}>
         <Steps items={profileSteps(breadProtocol.preheat[l])} />
@@ -1749,7 +1749,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           time={schedule.divideBallTime} duration={divideMin / 60} accent="#8A6A4A">
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
-            {breadProtocol ? <Steps items={profileSteps(breadProtocol.shaping[l])} /> : isBread ? (
+            {breadProtocol ? <Steps items={profileSteps(numItems===1 && breadProtocol.singleShape ? [breadProtocol.singleShape[l]] : breadProtocol.shaping[l])} /> : isBread ? (
               <Steps items={isFougasse ? [
                 ...(numItems>1 ? [{ bold: l === 'fr' ? `Divisez la pâte en ${numItems} pâtons de même poids.` : `Divide the dough into ${numItems} equal pieces.`, note: (t.raw('divide.fougasse.steps') as { bold: string; note: string }[])[0].note }] : []),
                 ...(t.raw('divide.fougasse.steps') as { bold: string; note: string }[]).slice(1),
