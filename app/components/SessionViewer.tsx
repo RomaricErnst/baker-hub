@@ -126,6 +126,7 @@ export default function SessionViewer({
         snap.kitchenTemp ?? 22, 30,
         (snap.mixerType ?? 'hand') as MixerType,
         (snap.styleKey ?? 'neapolitan') as StyleKey,
+        snap.numItems, snap.mixingBatches ?? 1, snap.yeastType === 'sourdough',
       );
     } catch { return null; }
   }, [snap, cr]);
