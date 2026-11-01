@@ -7,6 +7,7 @@ export type EditIssue = 'date'|'past'|'preferment'|'range'|'busy'|'timing'|'unsu
 export interface EditInput extends Omit<ScheduleDraftInput,'from'|'to'|'methodValid'|'extraActions'> {
   id: string; at: Date; prefHours: number; hasPreferment: boolean;
   prefWarmupHours: number; supported: boolean;
+  preferDaytime?: boolean;
   prefWindow?: {min: number; max: number};
   window: (bake: Date) => {from: Date|null; to: Date|null};
   methodValid: (times: EditTimes) => boolean;
@@ -71,6 +72,18 @@ function assessEdit(input: EditInput): EditResult {
 
 export type FixedBakeSearchResult = {candidate:EditResult; found:boolean; searched:number; exhausted:boolean; preparationRepaired?:boolean};
 
+/** Sleep is a preference for automatic recommendations. Explicit blocks and
+ * all fermentation limits are still checked against the canonical plan. */
+function overnightSteps(input:EditInput, candidate:EditResult):number {
+  if(!input.preferDaytime)return 0;
+  const overnight=(at:Date)=>at.getHours()<7||at.getHours()>=23;
+  const {start,prefHours}=candidate.times;
+  let count=(candidate.schedule?.availabilityActions??[]).filter(a=>
+    a.id!=='bake' && (overnight(a.at)||(a.end&&overnight(new Date(+a.end-1))))).length;
+  if(input.hasPreferment && overnight(new Date(+start-prefHours*HOUR))) count++;
+  if(input.hasPreferment && input.prefWarmupHours && overnight(new Date(+start-input.prefWarmupHours*HOUR))) count++;
+  return count;
+}
 /** Compare fully validated storage protocols using their existing maturity targets.
  * A target-duration plan takes precedence over retaining yesterday's repair.
  * Refrigeration only breaks otherwise equal ties; it is not a quality guarantee. */
@@ -78,7 +91,11 @@ export function recommendPreferment(options: {inFridge:boolean; input:EditInput}
   const results=options.map(option=>{
     const input=option.input;
     const target=findFixedBakeSchedule({...input,prefWindow:{min:input.prefHours,max:input.prefHours}},pins);
-    let result=target.found?target:findFixedBakeSchedule(input,pins);
+    let result=target;
+    if(!target.found || overnightSteps(input,target.candidate)){
+      const flexible=findFixedBakeSchedule(input,pins);
+      if(!target.found || (flexible.found && overnightSteps(input,flexible.candidate)<overnightSteps(input,target.candidate)))result=flexible;
+    }
     // Offer an actionable evening start when a refrigerated protocol supports
     // it. Preserve explicit pins and validate every downstream intervention.
     const now=input.now??Date.now(), hour=new Date(now).getHours();
@@ -94,6 +111,7 @@ export function recommendPreferment(options: {inFridge:boolean; input:EditInput}
   });
   results.sort((a,b)=>Number(b.result.found)-Number(a.result.found)
     || Number(!!b.result.preparationRepaired)-Number(!!a.result.preparationRepaired)
+    || overnightSteps(a.input,a.result.candidate)-overnightSteps(b.input,b.result.candidate)
     || (preferences.preferCold ? Number(b.inFridge)-Number(a.inFridge) : 0)
     || Math.abs(a.result.candidate.times.prefHours-a.input.prefHours)/Math.max(1,a.input.prefHours)-Math.abs(b.result.candidate.times.prefHours-b.input.prefHours)/Math.max(1,b.input.prefHours)
     || Math.abs(+a.result.candidate.times.start-+a.input.start)-Math.abs(+b.result.candidate.times.start-+b.input.start)
@@ -109,7 +127,10 @@ export function findFixedBakeSchedule(input: EditInput, pins: TimingPins = input
   let searched=1;
   const lead=(Math.floor((input.now??Date.now())/(15*60000))+1)*(15*60000);
   const retainedPrep=+input.start-(input.hasPreferment?input.prefHours*HOUR:0);
-  if(retained.valid&&(input.hasPreferment?pins.preferment||retainedPrep>=lead:pins.mix||retainedPrep>=lead))return {candidate:retained,found:true,searched,exhausted:false};
+  const keepInitial=retained.valid&&(input.hasPreferment?pins.preferment||retainedPrep>=lead:pins.mix||retainedPrep>=lead);
+  let fallback:EditResult|undefined=keepInitial?retained:undefined;
+  let bestNightCount=fallback?overnightSteps(input,fallback):Infinity;
+  if(bestNightCount===0)return {candidate:retained,found:true,searched,exhausted:false};
   const bounds=input.window(input.bake), now=input.now??Date.now();
   if(!input.supported||!bounds.from||!bounds.to||!Number.isFinite(+bounds.from)||!Number.isFinite(+bounds.to))return {candidate:retained,found:false,searched,exhausted:false};
   const step=15*60000;
@@ -159,7 +180,15 @@ export function findFixedBakeSchedule(input: EditInput, pins: TimingPins = input
       if(input.hasPreferment&&(startAt-prefHours*HOUR<(pins.preferment?now:earliestPreparation)||findAvailabilityConflicts([{id:'preferment',at:new Date(startAt-prefHours*HOUR)}],input.blocks,now).length))continue;
       if(!input.methodValid(times))continue;
       const candidate=validateScheduleCandidate(pinned,times);searched++;
-      if(candidate.valid)return {candidate,found:true,searched,exhausted:false};
+      if(candidate.valid){
+        const cost=overnightSteps(input,candidate);
+        if(cost===0)return {candidate,found:true,searched,exhausted:false};
+        if(cost<bestNightCount){fallback=candidate;bestNightCount=cost;}
+        // Later offsets cannot change dough actions. Try another mix once the
+        // preference cost for this mix comes entirely from the dough itself.
+        if(!input.hasPreferment || cost===overnightSteps({...input,hasPreferment:false},candidate))break;
+        continue;
+      }
       // Keep an available preparation even if a later intervention prevents
       // the complete plan. Never turn a partial repair into a valid recipe.
       if(input.hasPreferment&&candidate.issue==='busy'&&candidate.schedule
@@ -170,11 +199,12 @@ export function findFixedBakeSchedule(input: EditInput, pins: TimingPins = input
           repaired=candidate;remainingConflicts=conflicts.length;
           // With a fixed bake/preheat deadline no upstream candidate can be
           // fully valid. Avoid rebuilding thousands of equivalent failures.
-          if(conflicts.some(c=>c.action.id==='preheat'))return {candidate,found:false,searched,exhausted:true,preparationRepaired:true};
+          if(!fallback && conflicts.some(c=>c.action.id==='preheat'))return {candidate,found:false,searched,exhausted:true,preparationRepaired:true};
         }
       }
     }
   }
+  if(fallback)return {candidate:fallback,found:true,searched,exhausted:false};
   return {candidate:repaired??retained,found:false,searched,exhausted:true,preparationRepaired:!!repaired};
 }
 
@@ -240,3 +270,4 @@ export function scheduleEditSlots(input:EditInput,id:string,from:number,to:numbe
   }
   return slots;
 }
+
