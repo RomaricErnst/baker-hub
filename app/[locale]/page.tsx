@@ -1797,7 +1797,7 @@ export default function Home() {
   const plannedDoughG = (() => {
     // Flour-target recipes need the same formula mass as the generated recipe.
     if(totalFlourTarget!==undefined && styleKey && ovenType && yeastType && mixerType && eatTime && startTime<eatTime){
-      try { return recipeForSchedule(buildSchedule(startTime,eatTime,blocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,1)).totalDough; } catch { /* Quantity estimate until setup is complete. */ }
+      try { return recipeForSchedule(buildSchedule(startTime,eatTime,blocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,1,yeastType==='sourdough')).totalDough; } catch { /* Quantity estimate until setup is complete. */ }
     }
     return Math.round(numItems * itemWeight * (totalFlourTarget === undefined && wastePct && wastePct > 0 ? 1 + wastePct / 100 : 1));
   })();
@@ -1812,8 +1812,8 @@ export default function Home() {
     // retard at all — two different doughs on one screen, neither of them the
     // baker's. The recipe already refused without a style; now everything does.
     if (!styleKey) return null;
-    return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches);
-  }, [startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches]);
+    return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches, yeastType==='sourdough');
+  }, [startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches, yeastType]);
 
   // Confirmation belongs to this exact committed action, never to a work preset.
   useEffect(() => {
@@ -1851,7 +1851,7 @@ export default function Home() {
       if(options?.prefInFridge!==undefined&&options.prefInFridge!==execution.inFridge)return;
       const offset=options?.prefOffsetHours??prefOffsetH;
       if(execution.method==='none'?+st!==execution.actualAt:Math.abs(+st-offset*3600000-execution.actualAt)>1)return;
-      if((+st!==+startTime||+et!==+(eatTime??0)||offset!==prefOffsetH)&&!madeFormulaMatches(execution,buildSchedule(st,et,bl,kitchenTemp,preheatMin,mixerType??'hand',styleKey??'',numItems,selectedMixingBatches),{prefHours:offset}))return;
+      if((+st!==+startTime||+et!==+(eatTime??0)||offset!==prefOffsetH)&&!madeFormulaMatches(execution,buildSchedule(st,et,bl,kitchenTemp,preheatMin,mixerType??'hand',styleKey??'',numItems,selectedMixingBatches,yeastType==='sourdough'),{prefHours:offset}))return;
     }
     const changedPlan = recipeGenerated && destination==='organisation' && !isRestoringRef.current && (+st !== +startTime || +et !== (eatTime ? +eatTime : null) || JSON.stringify(bl) !== JSON.stringify(blocks) || (options?.prefInFridge !== undefined && options.prefInFridge !== prefGoesInFridge) || (options?.prefOffsetHours !== undefined && options.prefOffsetHours !== prefOffsetH));
     if (changedPlan) setProtocolStale(true);
