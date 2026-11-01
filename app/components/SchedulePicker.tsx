@@ -655,7 +655,7 @@ function starterPillButton(active: boolean): React.CSSProperties {
     padding: '4px 12px',
     borderRadius: '20px',
     border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-    background: active ? '#FEF4EF' : 'transparent',
+    background: active ? 'var(--cream)' : 'transparent',
     color: active ? 'var(--terra)' : 'var(--char)',
     fontFamily: 'var(--font-ui)',
     fontSize: '13px',
@@ -6901,7 +6901,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
 
       {/* Sourdough starter section */}
       {isSourdough && (
-        <div style={{
+        <div className="bh-starter-controls" style={{
           background: 'var(--warm)',
           border: '1.5px solid var(--border)',
           borderRadius: '16px',
@@ -6929,7 +6929,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
                 ? 'Votre levain actif a-t-il bien monté depuis son rafraîchi, avec des bulles, sans être retombé ? Vérifiez-le à température ambiante.'
                 : 'Has your active starter risen well since feeding, with bubbles, without collapsing? Check it at room temperature.'}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                <button type="button" style={{ ...starterPillButton(planningMode === 'know_peak'), minHeight: 44 }} onClick={() => {
+                <button type="button" aria-pressed={planningMode === 'know_peak'} style={{ ...starterPillButton(planningMode === 'know_peak'), minHeight: 44 }} onClick={() => {
                   const observedPeak = new Date();
                   setPlanningMode('know_peak'); onPlanningModeChange?.('know_peak');
                   setKnownPeakTime(observedPeak); onKnownPeakTimeChange?.(observedPeak);
@@ -6942,7 +6942,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
                   onStarterStateChange?.('rt_fed');
                   setSimpleStarterUncertain(false); setSimpleReadyObserved(true); setShowStarterDetails(false);
                 }}>{isFr ? 'Oui, il est prêt maintenant' : 'Yes, ready now'}</button>
-                <button type="button" style={{ ...starterPillButton(simpleStarterUncertain), minHeight: 44 }} onClick={() => {
+                <button type="button" aria-pressed={simpleStarterUncertain} style={{ ...starterPillButton(simpleStarterUncertain), minHeight: 44 }} onClick={() => {
                   setPlanningMode('last_fed'); onPlanningModeChange?.('last_fed');
                   setKnownPeakTime(null); onKnownPeakTimeChange?.(null);
                   setLastFedTime(null); onLastFedTimeChange?.(null);
@@ -6975,7 +6975,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
             <div style={{ display: 'flex', gap: '8px' }}>
               {(['rt', 'fridge'] as const).map(loc => (
                 <button
-                  key={loc}
+                  key={loc} aria-pressed={starterLocation === loc}
                   onClick={() => {
                     setStarterLocation(loc);
                     onStarterLocationChange?.(loc);
@@ -7022,7 +7022,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
                   { id: 'week',      en: 'A week+',      fr: 'Une semaine+' },
                 ] as { id: 'today'|'yesterday'|'days23'|'days45'|'week'; en: string; fr: string }[]).map(chip => (
                   <button
-                    key={chip.id}
+                    key={chip.id} aria-pressed={lastFedAge === chip.id}
                     onClick={() => {
                       const now = new Date();
                       let prefill: Date;
@@ -7051,7 +7051,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
                       padding: '4px 12px',
                       borderRadius: '20px',
                       border: `1.5px solid ${lastFedAge === chip.id ? 'var(--terra)' : 'var(--border)'}`,
-                      background: lastFedAge === chip.id ? '#FEF4EF' : 'transparent',
+                      background: lastFedAge === chip.id ? 'var(--cream)' : 'transparent',
                       color: lastFedAge === chip.id ? 'var(--terra)' : 'var(--smoke)',
                       fontFamily: 'var(--font-ui)',
                       fontSize: '13px',
@@ -7167,7 +7167,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       {([1, 2, 4, 5, 10] as const).map(r => (
                         <button
-                          key={r}
+                          key={r} aria-pressed={lastFeedRatio === r}
                           onClick={() => {
                             setLastFeedRatio(r);
                             onLastFeedRatioChange?.(r);
@@ -7219,7 +7219,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
                     { id: 'keep',      en: 'Same as last feed',  fr: 'Comme le dernier rafraîchi' },
                   ] as { id: 'recommend' | 'keep'; en: string; fr: string }[]).map(opt => (
                     <button
-                      key={opt.id}
+                      key={opt.id} aria-pressed={ratioMode === opt.id}
                       onClick={() => {
                         setRatioMode(opt.id);
                         onRatioModeChange?.(opt.id);
@@ -7263,14 +7263,16 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
                 { value: false, label: isFr ? 'Jeune (<6 mois)' : 'Young (<6 months)' },
               ] as { value: boolean; label: string }[]).map(opt => (
                 <button
-                  key={String(opt.value)}
+                  key={String(opt.value)} aria-pressed={starterMature === opt.value}
                   onClick={() => { setStarterMature(opt.value); }}
                   style={starterPillButton(starterMature === opt.value)}
                 >
                   {opt.label}
                 </button>
               ))}
-              <button
+            </div>
+            <div>
+              <button aria-pressed={starterHasRye}
                 onClick={() => { setStarterHasRye(!starterHasRye); }}
                 style={{
                   padding: '4px 12px', borderRadius: '20px',
@@ -7401,7 +7403,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
                   {isFr ? 'GOÛT' : 'TASTE'}
                 </span>
                 <button
-                  onClick={() => setShowTasteInfo(v => !v)}
+                  aria-expanded={showTasteInfo} onClick={() => setShowTasteInfo(v => !v)}
                   aria-label={isFr ? 'En savoir plus' : 'Learn more'}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
@@ -7414,7 +7416,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {(['mild', 'balanced', 'tangy'] as const).map(t => (
                   <button
-                    key={t}
+                    key={t} aria-pressed={tang === t}
                     onClick={() => { onTangChange?.(t); }}
                     style={{
                       padding: '4px 12px', borderRadius: '20px',
@@ -7461,7 +7463,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
             style={{
               padding: '8px 12px', minHeight: '44px', borderRadius: '20px',
               border: `1.5px solid ${isWorkActive ? 'var(--terra)' : 'var(--border)'}`,
-              background: isWorkActive ? '#FEF4EF' : 'var(--warm)',
+              background: isWorkActive ? 'var(--cream)' : 'var(--warm)',
               color: isWorkActive ? 'var(--terra)' : 'var(--char)',
               fontSize: '12px', fontWeight: isWorkActive ? 500 : 400,
               cursor: 'pointer', fontFamily: 'var(--font-ui)',
@@ -7486,7 +7488,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
               style={{
                 padding: '8px 12px', minHeight: '44px', borderRadius: '20px',
                 border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
-                background: active ? '#FEF4EF' : 'var(--warm)',
+                background: active ? 'var(--cream)' : 'var(--warm)',
                 color: active ? 'var(--terra)' : 'var(--char)',
                 fontSize: '12px', fontWeight: active ? 500 : 400,
                 cursor: 'pointer', fontFamily: 'var(--font-ui)',
@@ -7505,11 +7507,12 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
         })()}
 
         <button
+          aria-expanded={showCustom}
           onClick={() => setShowCustom(v => !v)}
           style={{
-            padding: '8px 12px', borderRadius: '20px',
+            minHeight:44, minWidth:44, padding: '8px 12px', borderRadius: '20px',
             border: `1.5px solid ${showCustom ? 'var(--terra)' : 'var(--border)'}`,
-            background: showCustom ? '#FEF4EF' : 'var(--warm)',
+            background: showCustom ? 'var(--cream)' : 'var(--warm)',
             color: showCustom ? 'var(--terra)' : 'var(--char)',
             fontSize: '12px', cursor: 'pointer',
             fontFamily: 'var(--font-ui)', transition: 'all .15s',
@@ -7614,7 +7617,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
                 style={{
                   display: 'flex', alignItems: 'center', gap: '8px',
                   padding: '8px 12px',
-                  background: '#FEF4EF', border: '1.5px solid var(--terra)',
+                  background: 'var(--cream)', border: '1.5px solid var(--terra)',
                   borderRadius: '16px',
                 }}
               >
@@ -7695,7 +7698,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
                   padding: '4px 12px',
                   borderRadius: '20px',
                   border: '1.5px solid var(--terra)',
-                  background: '#FEF4EF',
+                  background: 'var(--cream)',
                   color: 'var(--terra)',
                   fontFamily: 'var(--font-ui)',
                   fontSize: '13px',
@@ -7724,7 +7727,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
                   padding: '4px 12px',
                   borderRadius: '20px',
                   border: '1.5px solid var(--terra)',
-                  background: '#FEF4EF',
+                  background: 'var(--cream)',
                   color: 'var(--terra)',
                   fontFamily: 'var(--font-ui)',
                   fontSize: '13px',
@@ -8531,7 +8534,7 @@ function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, 
       {startInvalid && (
         <div style={{
           fontSize: '12px', color: 'var(--terra)',
-          background: '#FEF4EF', border: '1px solid #F5C4B0',
+          background: 'var(--cream)', border: '1px solid #F5C4B0',
           borderRadius: '16px', padding: '8px 12px',
           marginBottom: '12px', marginTop: '8px',
         }}>
