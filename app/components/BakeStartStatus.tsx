@@ -9,7 +9,7 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
 }) {
   const [different,setDifferent]=useState(false),[time,setTime]=useState('');
   const status=preparationStatus(plannedAt,execution,now);
-  if(status==='planned'&&!preparing)return null;
+  if(status==='planned'&&(!preparing||(method==='none'&&plannedAt-now>30*60_000)))return null;
   const fmt=(at:number)=>new Date(at).toLocaleString(fr?'fr-FR':'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:false});
   const noun=method==='none'?(fr?'la pâte':'the dough'):method==='biga'?(fr?'la biga':'the biga'):(fr?'le poolish':'the poolish');
   const editTime=(at:number)=>{const date=new Date(at);date.setMinutes(date.getMinutes()-date.getTimezoneOffset());setTime(date.toISOString().slice(0,16));setDifferent(true);};
