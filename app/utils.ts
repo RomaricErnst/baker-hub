@@ -1383,32 +1383,40 @@ export function findScheduleRepair(input: ScheduleRepairInput): ScheduleRepair |
   return null;
 }
 
-/** Expected remaining warmth averaged over each cold interval. The existing
- * covered-dough heat-transfer estimate brackets warm and chilled biological
- * rates; it is not a measurement of the dough core. Preserve total hours,
- * including on a second cold phase where portioning changes thermal mass. */
+/** Estimate the exposure between room and fridge temperature. A covered bulk
+ * cools as one mass; each shaped piece cools/warms separately. Integrating the
+ * existing exponential thermal estimate avoids treating transfers as instant
+ * temperature changes. Interpolation of biological rates between the two
+ * calibrated endpoints is an estimate, not a measured temperature curve. */
 function doughCoolingExposure(schedule: ScheduleResult, count: number, weight: number, hydration: number) {
   const batches = Math.max(1, schedule.batchMixWindows?.length ?? 1);
   const stages = [
     {from:schedule.coldRetard1Start, to:schedule.coldRetard1End, mass:Math.ceil(count / batches) * weight},
     {from:schedule.coldRetard2Start, to:schedule.coldRetard2End, mass:weight},
   ];
-  let warmth = 1, warmEquivalent = 0, lastExit:Date | null = null;
+  let warmth = 1, correction = 0;
+  let cursor = +schedule.bulkFermStart;
+  const pieceTau = prefThermalTauMin(weight, hydration) / 60;
+  const warmTo = (to: number) => {
+    const dt = Math.max(0, (to - cursor) / 3600000);
+    const warmed = -Math.expm1(-dt / pieceTau);
+    correction -= (1 - warmth) * pieceTau * warmed;
+    warmth += (1 - warmth) * warmed;
+    cursor = to;
+  };
   for (const stage of stages) {
     if (!stage.from || !stage.to || +stage.to <= +stage.from) continue;
+    warmTo(+stage.from);
     const tau = prefThermalTauMin(stage.mass, hydration) / 60;
-    if (lastExit) {
-      const warmGap = Math.max(0, (+stage.from - +lastExit) / 3600000);
-      warmth = 1 - (1 - warmth) * Math.exp(-warmGap / tau);
-    }
-    const duration = (+stage.to - +stage.from) / 3600000;
+    const duration = (+stage.to - cursor) / 3600000;
     const cooled = -Math.expm1(-duration / tau);
-    warmEquivalent += warmth * tau * cooled;
+    correction += warmth * tau * cooled;
     warmth *= 1 - cooled;
-    lastExit = stage.to;
+    cursor = +stage.to;
   }
-  warmEquivalent = Math.min(schedule.totalColdHours, warmEquivalent);
-  return {warmHours:schedule.totalRTHours + warmEquivalent, coldHours:schedule.totalColdHours - warmEquivalent};
+  warmTo(+schedule.bakeStart);
+  correction = Math.min(schedule.totalColdHours, Math.max(-schedule.totalRTHours, correction));
+  return {warmHours:schedule.totalRTHours + correction, coldHours:schedule.totalColdHours - correction};
 }
 
 export interface RecipeResult {
