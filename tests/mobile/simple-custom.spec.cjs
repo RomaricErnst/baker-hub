@@ -38,8 +38,8 @@ for(const locale of ['fr','en']){
   await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
   await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
   await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
-  const bakeDate=page.getByLabel(fr?'Date d’enfournement':'Baking date',{exact:true});
-  await bakeDate.fill('2026-10-04');await bakeDate.blur();
+  const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
+  await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
   const chosenTime=(await stored(page))?.eatTime;
   await page.getByRole('button',{name:fr?'Personnaliser avant de créer la recette':'Customize before creating recipe',exact:true}).tap();
   await expect.poll(async()=>(await stored(page))?.eatTime).toBe(chosenTime);
@@ -93,8 +93,8 @@ for(const locale of ['fr','en']){
 
   await expect.poll(async()=>({oven:(await stored(page))?.ovenType,mixer:(await stored(page))?.mixerType,yeast:(await stored(page))?.yeastType})).toEqual({oven:'home_oven_standard',mixer:'stand',yeast:'instant'});
   await geometry(page);
-  const bakeDate=page.getByLabel(fr?'Date d’enfournement':'Baking date',{exact:true});
-  await bakeDate.fill('2026-10-04');await bakeDate.blur();
+  const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
+  await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
   await nextToRecipe(page,fr);
   await page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true}).tap();
   await expect(page.locator('#step-7:visible')).toBeVisible();
@@ -149,8 +149,8 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).fill('12');
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).blur();
  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
-  const bakeDate=page.getByLabel(fr?'Date d’enfournement':'Baking date',{exact:true});
-  await bakeDate.fill('2026-10-04');await bakeDate.blur();
+  const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
+  await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
   const chosenTime=(await stored(page))?.eatTime;
   await page.getByRole('button',{name:fr?'Personnaliser avant de créer la recette':'Customize before creating recipe',exact:true}).tap();
   await expect.poll(async()=>(await stored(page))?.eatTime).toBe(chosenTime);
