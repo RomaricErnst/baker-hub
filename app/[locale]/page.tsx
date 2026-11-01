@@ -1162,6 +1162,7 @@ export default function Home() {
 
   // M2 — Mode chosen: false on page load, true after baker selects a mode
   const [modeChosen, setModeChosen] = useState(false);
+  const [awaitingRecipeChoice, setAwaitingRecipeChoice] = useState(true);
 
   // Mode cards — per-card "+ details" expander (visual-first redesign)
   const [modeInfoOpen, setModeInfoOpen] = useState(false);
@@ -1457,6 +1458,7 @@ export default function Home() {
     setRecipeGenerated(session.recipeGenerated);
     setProtocolStale(session.protocolStale === true);
     setModeChosen(session.modeChosen);
+    setAwaitingRecipeChoice(session.awaitingRecipeChoice ?? !session.modeChosen);
 
     // Prefer what was stored; fall back to the end for older snapshots that
     // predate the field, because a generated recipe is itself proof that every
@@ -2036,7 +2038,7 @@ export default function Home() {
       startTime: startTime?.getTime() ?? null,
       eatTime: eatTime?.getTime() ?? null,
       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}) })),
-      recipeGenerated, protocolStale, activeTab, pizzaPartyTab, modeChosen,
+      recipeGenerated, protocolStale, activeTab, pizzaPartyTab, modeChosen, awaitingRecipeChoice,
       navigation:{batchView,protocolView,serviceView,returnTo:fillingsReturn,prepReturnToService,shoppingReturnToFillings},
       // How far the baker got. Without it a resumed session reopened at
       // highestStep 1, so every step carrying a default read as unset —
@@ -2400,7 +2402,6 @@ export default function Home() {
   }
 
   // Guidance level never changes the selected dough or leavening.
-  const [awaitingRecipeChoice,setAwaitingRecipeChoice]=useState(true);
   const collectingBakeTime=awaitingRecipeChoice && tab==='simple' && !recipeGenerated;
   function openBakeTimeInputs(){
     chooseMode('simple');setSetupOverview(false);setAwaitingRecipeChoice(true);scrollToStepTop();
@@ -3056,6 +3057,7 @@ export default function Home() {
     setRecipeGenerated(snap.recipeGenerated);
     setProtocolStale(!rb && snap.protocolStale === true);
     setModeChosen(snap.modeChosen);
+    setAwaitingRecipeChoice(snap.awaitingRecipeChoice ?? !snap.modeChosen);
     // Sourdough starter state — snapshots saved after Jul 2026 include these
     setStarterState((snap.starterState ?? 'rt_fed') as 'rt_fed' | 'fridge_unfed' | 'fridge_fed');
     setStarterLocation((snap.starterLocation ?? 'rt') as 'rt' | 'fridge');
