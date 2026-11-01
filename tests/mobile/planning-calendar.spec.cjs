@@ -116,3 +116,22 @@ test('levain final-feed lock is a persistent edit, constrains mixing, releases a
  expect((await stored(page)).timingOverrides?.feed).toBeUndefined();expect((await stored(page)).eatTime).toBe(+bake);
  await page.reload();await expect(plan).toBeVisible();await expand(plan,'mix');await expect(keep).not.toBeChecked();expect((await stored(page)).eatTime).toBe(+bake);
 });
+
+test('Custom fermentation curve uses the card draft, Apply and reset',async({page})=>{
+ const {plan,start,bake}=await openPlan(page,'custom',[],true);
+ const toggle=plan.getByRole('button',{name:'Voir la courbe de fermentation',exact:true});
+ await toggle.tap();
+ const marker=plan.getByRole('slider',{name:'Heure du pétrissage',exact:true});
+ await expect(marker).toHaveAttribute('aria-valuenow',String((+bake-+start)/3600000));
+ await marker.press('ArrowRight');
+ await expectAt(plan,'mix',+start+900000);
+ await expect(marker).toHaveAttribute('aria-valuenow',String((+bake-+start)/3600000-.25));
+ expect((await stored(page)).startTime).toBe(+start);
+ await expect(confirm(plan)).toBeEnabled();await confirm(plan).tap();
+ await expect.poll(async()=>(await stored(page)).startTime).toBe(+start+900000);
+ await expect(reset(page)).toBeVisible();await reset(page).tap();
+ await expect(reset(page)).toHaveCount(0);
+ const restored=Number(await row(plan,'mix').getAttribute('data-at'));
+ await expect(marker).toHaveAttribute('aria-valuenow',String((+bake-restored)/3600000));
+ expect((await stored(page)).eatTime).toBe(+bake);
+});
