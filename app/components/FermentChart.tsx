@@ -143,24 +143,12 @@ export function getPrefPeakH_RT(type: string, temp: number, styleKey = 'neapolit
   // starter. maturity (matF), rye (ryeF) and feed ratio (ratioMultiplier) are
   // applied on top of this base by the caller.
   //
-  // Continuous Q10 (temperature-coefficient) model, replacing the old bucket
-  // ladder that went FLAT at 7.5h for every temp ≤20°C — which under-predicted
-  // cold kitchens badly (16°C is ~13h in reality, not 7.5h → the app told cold
-  // bakers to feed hours too late). Anchored at the one well-established point
-  // (24°C → 5.5h) with Q10 = 2.8, fit to a wide consensus of published data
-  // (King Arthur feeding-ratio trials, Brod & Taylor, The Sourdough Journey,
-  // Tartine, The Clever Carrot). One smooth curve is more robust than buckets:
-  // no edge discontinuities, and it also corrects the tropical end (a 34°C
-  // starter peaks in ~2h, not the flat 2.5h the ladder returned → over-early
-  // feed). Clamped [1.75h, 24h]: yeast activity maxes out near ~35°C so peak
-  // time floors ~1.75h; the ceiling guards absurd values at cellar temps (the
-  // fridge path handles genuine cold storage separately).
-  // Fit vs consensus (1:1:1, mature): 16°C 12.5h(12–14) · 18°C 10.2h(10) ·
-  // 20°C 8.3h(8–9) · 22°C 6.8h(6–8) · 24°C 5.5h(5–6) · 28°C 3.6h(3–4) ·
-  // 32°C 2.4h(2–3) · 34°C 2.0h(~2).
+  // The 24 °C reference is for a vigorous starter at 1:1:1. Above 30 °C
+  // hold the 30 °C estimate: this range is poorly calibrated, and extending
+  // Q10 into it otherwise keeps advancing the recommended mix. Actual peak
+  // and the baker's observed times take precedence over this extrapolation.
   if (type === 'sourdough' || type === 'levain') {
-    const raw = 5.5 * Math.pow(2.8, (24 - temp) / 10);
-    return Math.max(1.75, Math.min(24, raw));
+    return Math.min(24, 5.5 * Math.pow(2.8, (24 - Math.min(temp, 30)) / 10));
   }
 
   const isBread = ['pain_campagne','pain_levain','baguette','pain_complet',
