@@ -2623,6 +2623,9 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
       onReady?.();
       return;
     }
+    // The starter constraint effect owns this calculation. A delayed raw
+    // starter solve here could overwrite a validated default-Nights agenda.
+    if(isSourdough)return;
     setTimeout(() => {
       computeAndApplyRecommendation(solverBlocksRef.current, pendingEatTime);
       setStartComputed(!isSourdough || !sourdoughPlanBlockedRef.current);
