@@ -1,7 +1,7 @@
 'use client';
 import { starterBuild, starterFeedRoleLabel } from '../utils/starterBuild';
 import type { StarterEvent } from './SchedulePicker';
-import { recommendedFlourName } from '../lib/flourGuidance';
+import { recommendedFlourName, flourProductName } from '../lib/flourGuidance';
 import { mixingBatchPlan } from '../utils/mixingBatches';
 import { useState, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
@@ -418,6 +418,8 @@ export default function RecipeOutput({
   // Keep the buying identity beside its ingredient, not in a distant footer.
   // Only the optional explanation is collapsed; stage/starter quantities below
   // retain their existing accounting and custom blends keep their own names.
+  const strength = result.blendProfile?.fermToleranceMultiplier ?? 1;
+  const cueGroup = strength < 0.85 ? 'weak' : strength > 1.15 ? 'strong' : 'standard';
   const showSelectedFlour = mode === 'custom' || explicitFlour;
   const guidedFlourGuidance = !showSelectedFlour && styleKey
     ? <span>{recommendedFlourName(styleKey, locale)}</span> : undefined;
@@ -577,7 +579,7 @@ export default function RecipeOutput({
               ? (styleKey ? recommendedFlourName(styleKey, locale) : undefined)
               : showSelectedFlour && flourBlend ? (() => {
                   const f1 = FLOUR_DATA[flourBlend.flour1];
-                  const f1DisplayName = flourBlend.brandProduct ?? (locale === 'fr' ? f1.nameFr : f1.name);
+                  const f1DisplayName = (flourBlend.brandProduct ? flourProductName(flourBlend.brandProduct,locale) : undefined) ?? (locale === 'fr' ? f1.nameFr : f1.name);
                   if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
                     return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>{f1DisplayName}</span>;
                   }
@@ -637,7 +639,7 @@ export default function RecipeOutput({
                 const pctOf = (w: number) => mode === 'custom' ? pctStr(Math.round(w / flour * 1000) / 10) : undefined;
                 return (
                   <>
-                    <IngRow label={flourBlend.brandProduct ?? (locale === 'fr' ? f1.nameFr : f1.name)} grams={wStr(f1Weight)} noPct advancedPct={pctOf(f1Weight)} />
+                    <IngRow label={(flourBlend.brandProduct ? flourProductName(flourBlend.brandProduct,locale) : undefined) ?? (locale === 'fr' ? f1.nameFr : f1.name)} grams={wStr(f1Weight)} noPct advancedPct={pctOf(f1Weight)} />
                     <IngRow label={flourBlend.customFlour2Name ?? (locale === 'fr' ? f2.nameFr : f2.name)} grams={wStr(f2Weight)} noPct advancedPct={pctOf(f2Weight)} />
                     {hasF3 && f3 && (
                       <IngRow label={flourBlend.customFlour3Name ?? (locale === 'fr' ? f3.nameFr : f3.name)} grams={wStr(f3Weight)} noPct advancedPct={pctOf(f3Weight)} />
@@ -647,7 +649,7 @@ export default function RecipeOutput({
               })() : (
                 <IngRow
                   label={showSelectedFlour && flourBlend && (!flourBlend.flour2 || flourBlend.ratio1 >= 100)
-                    ? (flourBlend.brandProduct ?? (locale === 'fr' ? FLOUR_DATA[flourBlend.flour1].nameFr : FLOUR_DATA[flourBlend.flour1].name))
+                    ? ((flourBlend.brandProduct ? flourProductName(flourBlend.brandProduct,locale) : undefined) ?? (locale === 'fr' ? FLOUR_DATA[flourBlend.flour1].nameFr : FLOUR_DATA[flourBlend.flour1].name))
                     : t('recipeOutput.remainingFlour')}
                   grams={wStr(pf.finalFlour)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
@@ -674,7 +676,7 @@ export default function RecipeOutput({
         /* Direct dough additions */
         <div>
 
-          {result.flourParts?.length ? result.flourParts.map((part, index) => { const grams = part.grams - (sdActive && index === 0 ? sdHalf : 0); return <IngRow key={`${part.key}-${index}`} label={locale === 'fr' ? part.nameFr : part.name} grams={wStr(grams)} pct={pctStr(grams / flour * 100)} highlight advancedPct={mode === 'custom' ? pctStr(grams / flour * 100) : undefined} />; }) : <IngRow
+          {result.flourParts?.length ? result.flourParts.map((part, index) => { const grams = part.grams - (sdActive && index === 0 ? sdHalf : 0); return <IngRow key={`${part.key}-${index}`} label={flourProductName(locale === 'fr' ? part.nameFr : part.name,locale)} grams={wStr(grams)} pct={pctStr(grams / flour * 100)} highlight advancedPct={mode === 'custom' ? pctStr(grams / flour * 100) : undefined} />; }) : <IngRow
             label={t('recipeOutput.ingredientFlour')}
             grams={wStr(flourMain)}
             noPct={sdActive}
@@ -683,7 +685,7 @@ export default function RecipeOutput({
             advancedPct={mode === 'custom' ? '100%' : undefined}
             sub={showSelectedFlour && flourBlend ? (() => {
               const f1 = FLOUR_DATA[flourBlend.flour1];
-              const f1DisplayName = flourBlend.brandProduct ?? (locale === 'fr' ? f1.nameFr : f1.name);
+              const f1DisplayName = (flourBlend.brandProduct ? flourProductName(flourBlend.brandProduct,locale) : undefined) ?? (locale === 'fr' ? f1.nameFr : f1.name);
               const f1Weight = Math.round(flourMain * flourBlend.ratio1 / 100);
               if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
                 return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>{f1DisplayName}</span>;
@@ -848,7 +850,7 @@ export default function RecipeOutput({
           <summary style={{minHeight:44,cursor:'pointer',alignContent:'center'}}>
             {locale==='fr'?'Farine totale':'Total flour'} {wStr(flour)}{mode==='custom' && <> · {pctStr(hydration)} {locale==='fr'?'d’hydratation':'hydration'}</>}
           </summary>
-        {showSelectedFlour && result.flourParts?.length ? result.flourParts.map((part, index) => <IngRow key={`${part.key}-${index}`} label={locale === 'fr' ? part.nameFr : part.name} grams={wStr(part.grams)} advancedPct={mode === 'custom' ? pctStr(part.pct) : undefined} />) : <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={mode === 'custom' ? '100%' : undefined} sub={guidedFlourGuidance} />}
+        {showSelectedFlour && result.flourParts?.length ? result.flourParts.map((part, index) => <IngRow key={`${part.key}-${index}`} label={flourProductName(locale === 'fr' ? part.nameFr : part.name,locale)} grams={wStr(part.grams)} advancedPct={mode === 'custom' ? pctStr(part.pct) : undefined} />) : <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={mode === 'custom' ? '100%' : undefined} sub={guidedFlourGuidance} />}
         <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
         <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
         {pf && pf.prefYeastGrams > 0 && <IngRow label={t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)} grams={formatPrefermentDose(pf.prefYeastGrams,locale)} advancedPct={mode === 'custom' ? pctStr(pf.prefYeastGrams / flour * 100) : undefined} />}
@@ -1106,7 +1108,7 @@ export default function RecipeOutput({
               {t('recipeOutput.bulkReadyWhen')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {sourdough.bulkCues.map((cue, i) => (
+              {(t.raw(`recipeOutput.bulkCues.${cueGroup}`) as string[]).map((cue, i) => (
                 <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                   <span style={{
                     width: '18px', height: '18px', borderRadius: '50%',
