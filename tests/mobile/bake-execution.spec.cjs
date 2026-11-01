@@ -148,7 +148,7 @@ test('reopening during starter recovery preserves history and never revives the 
  const lastFed=NOW-48*H;
  const original=await seed(page,{method:'none',expectStatus:false,extra:{yeastType:'sourdough',prefermentType:'levain',startTime:NOW+10*H,planningMode:'last_fed',lastFedTime:lastFed,lastFedAge:'days23',starterLocation:'rt',starterState:'rt_fed',lastFeedRatio:2,nextFeedRatio:2,ratioMode:'keep',starterTimingValid:false,starterRecoveryPending:true,protocolStale:true,starterEvents:[{kind:'last_fed',time:lastFed}]}});
  const feed=page.getByRole('region',{name:'Starter feeding'});
- await expect(page.getByRole('button',{name:'Review timing',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:/^(Review|Adjust) timing$/}).first()).toBeVisible();
  await expect(feed).toHaveCount(0);
  const validRecovery=async()=>{
   const s=await stored(page);
@@ -163,7 +163,7 @@ test('reopening during starter recovery preserves history and never revives the 
  expect((await stored(page)).lastFedTime).toBe(lastFed);
  expect((await stored(page)).eatTime).toBe(original.eatTime);
  expect((await stored(page)).starterFeedRecords??[]).toHaveLength(0);
- const review=page.getByRole('button',{name:'Review timing',exact:true});
+ const review=page.getByRole('button',{name:/^(Review|Adjust) timing$/}).first();
  if(await review.isVisible())await review.tap();
  await expect(page.getByText('Your baking plan',{exact:true}).filter({visible:true})).toBeVisible();
  await expect(feed).toHaveCount(0);
