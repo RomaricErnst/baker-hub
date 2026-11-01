@@ -1817,7 +1817,6 @@ function FermentedSchedulePicker({ completedMixAt, execution, validateMadeFormul
     : bakeType === 'pizza'
       ? (isFr ? 'Quand enfourner la première pizza ?' : 'When will the first pizza go into the oven?')
       : (isFr ? 'Quand enfourner le pain ?' : 'When will the bread go into the oven?');
-  const targetTimeLabel = panCook ? (isFr ? 'Heure de cuisson' : 'Cooking time') : (isFr ? 'Heure d’enfournement' : 'Oven time');
   // Skip phase 1 when a saved cooking target exists (return-to-edit case)
   const [phase, setPhase] = useState<PickerPhase>(() => alreadySet ? 'start_confirm' : 'bake_time');
   const [pendingEatTime, setPendingEatTime] = useState<Date>(eatTime ?? new Date());
@@ -1859,7 +1858,7 @@ function FermentedSchedulePicker({ completedMixAt, execution, validateMadeFormul
   // apply on blur (sheet closed), with a debounced fallback that waits until
   // the input is no longer focused.
   const applyDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const applyRetriesRef = useRef(0);
+  useEffect(()=>()=>{if(applyDebounceRef.current)clearTimeout(applyDebounceRef.current);},[]);
   // Solver-initiated parent notifications: guard against update loops.
   // Fallback/far-horizon solver paths call onChange mid-solve; if the parent
   // re-renders with fresh array/Date identities the sourdough effect re-runs
@@ -6795,7 +6794,7 @@ function FermentedSchedulePicker({ completedMixAt, execution, validateMadeFormul
                 const loc = isFr ? 'fr-FR' : 'en-US';
                 const wd = dt.toLocaleDateString(loc, { weekday: 'short' });
                 const mo = dt.toLocaleDateString(loc, { month: 'short' });
-                return `${wd} ${d} ${mo} · ${String(pickerHour).padStart(2,\'0\')}:${String(pickerMinute).padStart(2,\'0\')}`;
+                return `${wd} ${d} ${mo} · ${String(pickerHour).padStart(2,'0')}:${String(pickerMinute).padStart(2,'0')}`;
               })() : (isFr?'Choisir la date et l’heure':'Choose date and time')}
             </div>
             <input
