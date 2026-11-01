@@ -3531,6 +3531,7 @@ export default function Home() {
                 onDiameterChange={setPizzaDiameter} onCrustChange={crust => setPizzaCorn(['thin','classic','generous'].indexOf(crust))}
                 onUseCalculatedWeight={() => chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, pizzaCorn))}
               />);
+  const customizeBeforeRecipe = <button type="button" className="bh-section-back" onClick={()=>chooseMode('custom')}>{fr?'Personnaliser avant de créer la recette':'Customize before creating recipe'}</button>;
   const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings?'recipe':destination} fr={fr} onChange={next=>{if(next==='batch'){if(recipeGenerated)openSetupReview();else if(styleKey&&qtyChosen)openDestination('organisation');else openDestination('batch');}else openDestination(next);}} top={destination==='organisation'?0:stickTop}
     batchLinks={!recipeGenerated?bakeLinks:undefined}
     recipeMeal={pizzaPartyEnabled||(styleKey&&sandwichEnabled)?{label:mealNoun,selected:hasFillings,active:browsingFillings,onChoose:()=>{if(styleKey)setFillingsReturn({destination:'recipe',view:'dough'});setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}}:undefined}
@@ -4002,7 +4003,13 @@ export default function Home() {
             </StepPage>
 
             {/* ─── STEP 8: Scheduler ───────────────── */}
-            <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={scheduleEditing ? null : !scheduleCandidateValid ? <button type="button" style={NEXT_CTA} onClick={()=>{const panel=document.getElementById('schedule-anchor-panel');panel?.scrollIntoView({block:'start'});panel?.focus();}}>{fr?'Résoudre le planning':'Resolve timing'}</button> : undefined}>
+            <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={scheduleEditing ? null : !eatTime ?
+              <button type="button" disabled style={{...NEXT_CTA,opacity:0.5}}>{fr?'Choisissez une date de cuisson':'Choose a bake date'}</button>
+              : !scheduleCandidateValid ? <button type="button" style={NEXT_CTA} onClick={()=>{const panel=document.getElementById('schedule-anchor-panel');panel?.scrollIntoView({block:'start'});panel?.focus();}}>{fr?'Résoudre le planning':'Resolve timing'}</button>
+              : !recipeGenerated && canGenerate ? <div style={{display:'grid',gap:4,flex:1}}>
+                <button type="button" style={NEXT_CTA} onClick={handleGenerate}>{simpleFlow.generateLabel}</button>
+                {customizeBeforeRecipe}
+              </div> : undefined}>
               <details className="bh-disclosure"><summary>{fr?'Température de la cuisine':'Kitchen temperature'} · {cToDisplay(kitchenTemp,units)}{tempUnit(units)}</summary>
                 <ClimatePicker kitchenTemp={kitchenTemp} humidity={humidity} fridgeTemp={fridgeTemp} mode="custom" units={units} onChange={(t,h,f)=>{setKitchenTemp(t);setHumidity(h);setFridgeTemp(f);}}/>
               </details>
@@ -4079,7 +4086,8 @@ export default function Home() {
                 onTangChange={setTang}
               />
               )}
-              {!recipeGenerated && eatTime && !scheduleEditing && <button type="button" className="bh-section-back" onClick={()=>chooseMode('custom')}>{fr?'Personnaliser avant de créer la recette':'Customize before creating recipe'}</button>}
+
+            {!recipeGenerated && eatTime && !scheduleEditing && !canGenerate && customizeBeforeRecipe}
             </StepPage>
 
             {/* Generate now lives in the last page's nav bar (StepPage). */}
