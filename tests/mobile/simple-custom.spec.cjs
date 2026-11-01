@@ -78,6 +78,16 @@ for(const locale of ['fr','en']){
   await expect.poll(async()=>(await stored(page))?.flourBlend?.flour2).toBe('semolina');
   const after=(await stored(page)).flourBlend;
   expect(after.brandProduct).toBe(before.brandProduct);expect(after.ratio1).toBe(before.ratio1);
+  const next = () => actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
+  await next();
+  await page.locator('#step-8').getByRole('button',{name:/poolish/i}).first().tap();
+  await next();
+  await expect(page.locator('#step-7:visible')).toBeVisible();
+  await next();
+  await expect(page.locator('#step-10:visible')).toBeVisible();
+  await next();
+  await expect(page.locator('#step-9:visible')).toBeVisible();
+  await expect.poll(async()=>(await stored(page))?.prefermentType).toBe('poolish');
   await geometry(page);
  });
  test(`${locale}: fresh Simple pizza goes from quantity to timing before recipe generation and creates a recipe`,async({page})=>{
