@@ -3408,8 +3408,8 @@ export default function Home() {
       // step, so everything before it is already answered and raising the
       // ceiling to reach it cannot silently adopt a step nobody looked at.
       const settled = Math.max(advancedHighestStep, advancedStep + 1);
-      const found = CUSTOM_STEPS.find(
-        st => st.id > advancedStep && !stepAnswered(st, settled, CUSTOM_STEPS));
+      const found = CUSTOM_STEPS.slice(CUSTOM_STEPS.findIndex(step=>step.id===advancedStep)+1).find(
+        st => !stepAnswered(st, settled, CUSTOM_STEPS));
       // When the next gap IS the last step, that is just going back to the
       // plan — leaving gapReturnTo set there would strand a stale "back to
       // plan" button on any step the baker visits afterwards.
@@ -3522,7 +3522,7 @@ export default function Home() {
     {label:fr?'Fournée':'Bake',value:bakeType==='bread'?(fr?'Pain':'Bread'):'Pizza',onChoose:backToProducts},
     ...setupSteps.filter(step=>step.id<=2).map(stepLink),
     {label:'Mode',value:modeChosen&&!collectingBakeTime?(tab==='simple'?'Simple':fr?'Personnalisé':'Custom'):null,disabled:!styleKey||!qtyChosen,onChoose:recipeGenerated?openModeChoice:openBakeTimeInputs},
-    ...(modeChosen?setupSteps.filter(step=>step.id>2).map(stepLink):[]),
+    ...(collectingBakeTime ? [{label:fr?'Heure de cuisson':'Bake time',value:eatTime?formatTime(eatTime,locale):null,onChoose:openBakeTimeInputs}] : modeChosen?setupSteps.filter(step=>step.id>2).map(stepLink):[]),
   ];
   const currentSubsection = destination==='batch' ? (batchView==='quantity'?(fr?'Quantité':'Quantity'):'Style') : !modeChosen ? 'Mode' : (tab==='simple'&&activeStep===7 ? (fr?'Horaires':'Timing') : setupSteps.find(step=>step.id===(tab==='custom'?advancedStep:activeStep))?.chip ?? (fr?'Ma fournée':'My bake'));
   const renderQuantity = (roundView:'count'|'size') => (<PrototypeQuantityPicker roundView={roundView} bakeType={bakeType ?? 'pizza'} locale={locale} units={units}
