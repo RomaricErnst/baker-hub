@@ -2,6 +2,7 @@ import {buildSchedule,type AvailabilityBlock,type ScheduleResult} from '../utils
 import type {MixerType} from '../data';
 import {findAvailabilityConflicts,type AvailabilityAction} from './scheduleAvailability';
 export interface ScheduleDraftInput {
+  isSourdough?: boolean;
   start:Date; bake:Date; blocks:AvailabilityBlock[]; kitchenTemp:number; preheatMin:number;
   mixerType:MixerType; styleKey:string; numItems?:number; mixingBatches?:number; from:Date|null; to:Date|null;
   completedMixAt?:number;
@@ -11,7 +12,7 @@ export interface ScheduleDraftInput {
 export function assessScheduleDraft(input:ScheduleDraftInput):{schedule:ScheduleResult|null; valid:boolean; reason:'date'|'range'|'method'|'busy'|'timing'|null; conflict?:AvailabilityAction} {
   const {start,bake,from,to,extraActions=[],now=Date.now()}=input;
   if(![+start,+bake].every(Number.isFinite)||(input.completedMixAt===undefined&&+start<=now)||+bake<=+start)return {schedule:null,valid:false,reason:'date'};
-  const schedule=buildSchedule(start,bake,input.blocks,input.kitchenTemp,input.preheatMin,input.mixerType,input.styleKey,input.numItems,input.mixingBatches);
+  const schedule=buildSchedule(start,bake,input.blocks,input.kitchenTemp,input.preheatMin,input.mixerType,input.styleKey,input.numItems,input.mixingBatches,input.isSourdough);
   // The builder historically rounds bake anchors. Never approve a candidate
   // whose rendered agenda silently differs from the requested fixed time.
   if(+schedule.bakeStart!==+bake)return {schedule,valid:false,reason:'timing'};
