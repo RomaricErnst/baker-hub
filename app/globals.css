@@ -344,9 +344,6 @@ button,
 /* Six destinations share one compact, inline navigator. Its expansion never
    changes bottom action offsets or covers the current page. */
 .bh-bake-navigator { position:sticky; z-index:95; margin:8px 0 16px; padding:4px 0; background:var(--warm); color:var(--char); transition:none; }
-.bh-organisation-nav-stack { max-width:680px; margin:0 auto; padding:8px clamp(1rem, 3vw, 1.5rem) 16px; background:var(--warm); }
-.bh-organisation-nav-stack .bh-bake-navigator { position:relative; margin:0; }
-[data-navigation-page^="organisation:"] .bh-header { position:static !important; }
 .bh-navigator-band { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:52px; padding:2px 10px; border:1px solid var(--border); border-radius:12px; background:var(--cream); }
 .bh-navigator-context { display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-width:0; font-size:16px; font-weight:600; }
 .bh-bake-navigator-trigger { flex-shrink:0; display:flex; align-items:center; justify-content:center; min-height:44px; padding:0 4px; border:0; background:transparent; color:var(--char); font:inherit; text-align:right; cursor:pointer; }
@@ -469,7 +466,7 @@ button,
 .bh-key-time { display:flex; align-items:center; gap:8px; min-height:44px; padding:0; border:0; background:none; color:var(--char); font:inherit; font-size:20px; font-weight:600; text-align:left; cursor:pointer; }
 .bh-key-valid-selection { color:#2e673c; font-size:15px; }
 .bh-key-detail,.bh-key-legend { font-size:13px; color:var(--smoke); margin:4px 0; }
-.bh-key-window { font-size:13px; line-height:1.5; color:#32623d; margin-top:6px; overflow-wrap:break-word; }
+.bh-key-window { font-size:13px; line-height:1.5; color:var(--sage); margin-top:6px; overflow-wrap:break-word; }
 .bh-key-window[aria-busy="true"],.bh-key-window[data-has-windows="false"] { color:var(--smoke); }
 .bh-key-window-dot { display:inline-block; width:7px; height:7px; margin-right:6px; border-radius:50%; background:#477b4c; }
 .bh-key-note { font-size:14px; color:var(--terra); margin-top:8px; }
@@ -498,9 +495,9 @@ html[data-preview="true"] vercel-live-feedback { display:none !important; }
 
 [data-navigation-page] { overflow-anchor:none; }
 .bh-plan-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:4px 12px; min-height:44px; }
-.bh-plan-state { font-size:14px; font-weight:600; color:#32623d; }
-.bh-plan-state[data-valid="false"] { color:#93531c; }
-.bh-plan-notice { padding:12px; border:1px solid #d4ad82; border-radius:10px; background:#fff7e9; font-size:14px; line-height:1.5; }
+.bh-plan-state { font-size:14px; font-weight:600; color:var(--sage); }
+.bh-plan-state[data-valid="false"] { color:var(--char); border-left:3px solid var(--gold); padding-left:8px; }
+.bh-plan-notice { padding:12px; border:1px solid var(--gold); border-radius:10px; background:var(--warm); font-size:14px; line-height:1.5; }
 .bh-plan-notice p { margin:8px 0; }
 .bh-target-presets { margin-top:10px; font-size:14px; }
 .bh-target-choices { display:flex; flex-wrap:wrap; gap:8px; margin-block:8px; }
@@ -540,7 +537,7 @@ html[data-preview="true"] vercel-live-feedback { display:none !important; }
 
 /* Preparation views are peers, with quiet navigation rather than two CTAs. */
 .bh-preparation-tabs { flex-wrap:nowrap; gap:20px; border-bottom:1px solid var(--border); margin:0 0 12px; }
-.bh-preparation-tabs button { flex:0 1 auto; min-width:0; padding:10px 0; border:0; border-bottom:2px solid transparent; border-radius:0; background:transparent; font-size:14px; }
+.bh-preparation-tabs button { flex:0 1 auto; min-width:44px; padding:10px 0; border:0; border-bottom:2px solid transparent; border-radius:0; background:transparent; font-size:14px; }
 .bh-preparation-tabs button[aria-pressed="true"] { background:transparent; color:var(--terra); border-color:var(--terra); font-weight:600; }
 
 .bh-local-progress { margin:0 0 4px; min-height:44px; display:flex; align-items:center; color:var(--terra); font-size:14px; }
@@ -617,3 +614,9 @@ body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="d
 }
 
 .bh-step-actions > .bh-back-action:only-child { grid-column:1; justify-self:start; text-align:left; }
+
+.bh-starter-controls button { min-height:44px; min-width:44px; }
+.bh-seed-toggle { display:inline-flex; align-items:center; gap:8px; min-height:44px; cursor:pointer; }
+.bh-seed-toggle input { width:20px; height:20px; margin:0; accent-color:var(--terra); }
+.bh-editor-exit { display:flex; justify-content:flex-end; }
+#schedule-anchor-panel[data-open] :is(.bh-editor-exit,.bh-linked-actions) { position:sticky; bottom:0; z-index:2; padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px)); background:var(--warm); border-top:1px solid var(--border); }
