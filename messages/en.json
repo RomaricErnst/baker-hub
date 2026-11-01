@@ -220,7 +220,10 @@
     "adjustDoughVerb": "drag the green diamond to move mixing",
     "adjustPrefVerb": "drag the gold diamond to move preferment preparation",
     "summaryFridgeBlock": "busy window",
-    "summaryFridgeBlocks": "busy windows"
+    "summaryFridgeBlocks": "busy windows",
+    "taste": {
+      "info": "Tangier leans on a longer cold proof and fewer starter refreshes — more sour, more complex. Milder uses a shorter cold proof and an extra refresh — gentler, sweeter. Balanced keeps the standard timing. This adjusts the schedule the engine builds; it doesn't change your ingredients."
+    }
   },
   "dialIn": {
     "title": "Fine-tune your dough",
@@ -906,7 +909,7 @@
         "Cold dough is stiff straight from the fridge — this is correct, it makes divide & ball easier"
       ],
       "pitfalls": [
-        "Leaving uncovered: dough skin forms, tears during shaping and creates uneven balls",
+        "Leaving uncovered: dough skin forms, tears during shaping and creates uneven portions",
         "Rushing the cold phase: minimum cold time is important for flavour and gluten relaxation"
       ]
     },
@@ -1126,7 +1129,7 @@
       "pitfalls": [
         "Forcing a ball that keeps springing back — it needs more time, not more force",
         "Going by time instead of feel — always use the poke test",
-        "Over-proofed balls collapse in the oven and lose oven spring"
+        "Over-proofed dough collapses in the oven and lose oven spring"
       ]
     },
     "preheat": {
@@ -1864,8 +1867,9 @@
     "poolishSuggestion": "Beyond {hours}h at room temperature, check the dough regularly. A poolish needs its own preparation schedule.",
     "overFermentRT": "{hours}h at {temp}°C is longer than this dough will hold at room temperature — it will over-ferment. A cold phase would carry it.",
     "hotClimateRT": "At {temp}°C, more than 4h at room temperature moves fast. A cold retard or a poolish gives you more room.",
-    "fridgeWarm": "A fridge at {temp}°C is warmer than the 4°C reference — the yeast stays more active than the timings assume.",
-    "osmoticStress": "For a sweet dough, use the yeast recommended for this formula.",
-    "doseFloorRT": "At {temp}°C this batch is small enough that {hours}h at room temperature needs less yeast than a 0.1 g scale can weigh, so the amount is rounded up and the dough will run ahead of the plan. About {dosable}h is the longest window this quantity can be dosed for — or make a larger batch, or add a cold phase."
+    "fridgeWarm": "Your fridge is at {temp}°C. Fermentation continues in the fridge; check the dough’s rise before the next step.",
+    "osmoticStress": "Sugar and fat can slow this dough. This yeast estimate is not calibrated for enriched dough; allow more time if the dough has not risen enough.",
+    "doseFloorRT": "At {temp}°C this batch is small enough that {hours}h at room temperature needs less yeast than a 0.1 g scale can weigh, so the amount is rounded up and the dough will run ahead of the plan. About {dosable}h is the longest window this quantity can be dosed for — or make a larger batch, or add a cold phase.",
+    "fermentationBudget": "This yeast estimate reaches {percent}% of the fermentation target. Adjust the bake time and check the dough’s rise before baking."
   }
 }

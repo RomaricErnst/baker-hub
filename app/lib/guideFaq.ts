@@ -213,7 +213,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
     {
       "q": {
         "en": "How much should it rise during bulk?",
-        "fr": "De combien doit-elle lever pendant la pointe ?"
+        "fr": "De combien doit-elle lever pendant le pointage ?"
       },
       "a": {
         "en": "Use the readiness cues for this recipe and stage. Mark the starting level in a straight-sided container and check volume, bubbles and dough strength together; no single rise percentage fits every dough.",
@@ -223,7 +223,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
     {
       "q": {
         "en": "I have to leave before bulk is done",
-        "fr": "Je dois partir avant la fin de la pointe"
+        "fr": "Je dois partir avant la fin du pointage"
       },
       "a": {
         "en": "Cover and refrigerate the dough if you need to slow it down. Fermentation continues while the dough cools and depends on its temperature; refrigeration does not pause the clock. On return, check its rise and condition, then reassess the remaining schedule.",

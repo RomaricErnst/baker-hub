@@ -198,7 +198,7 @@ body {
 }
 @media (max-width: 359px) {
   /* WebKit's serif metrics need this space with Back + French Save. */
-  .bh-header { padding-inline: 0 !important; }
+  .bh-header { padding-inline: 16px !important; }
   .bh-header-menu, .bh-header-save { padding-inline: 6px !important; }
 }
 

@@ -1,7 +1,7 @@
 # Baker Hub — CLAUDE.md
 Updated 1 November 2026. Verify the current production deployment against the GitHub merge commit.
 
-Current navigation/design decisions in `PROJECT-HANDOFF.md` and dated audits supersede older examples below. The five destinations are My bake, Recipe, Shopping, Preparation and Baking & service. Show setup details in the local step summary. CI and browser results must identify the tested commit; a successful build alone does not certify the journeys.
+Current navigation/design decisions in `PROJECT-HANDOFF.md` and dated audits supersede older examples below. The five destinations are My bake, Recipe, Shopping, Preparation and Baking & service. The step pill opens local setup navigation, Sections switches destinations, Review my choices edits setup, and Adjust timing opens the timing editor. Show setup details in the local step summary. CI and browser results must identify the tested commit; a successful build alone does not certify the journeys.
 
 ## NVM / Node Setup
 ```bash
@@ -18,7 +18,7 @@ npm run build      # must pass before every push (fails in remote sandboxes: Goo
 | Language | TypeScript strict |
 | Styling | Existing inline styles, shared globals.css and scoped SandwichParty CSS; avoid unrelated styling migrations during stabilization |
 | Fonts | Figtree (`--font-ui`) for UI, explicit Georgia serif stack (`--font-display`) for page titles, DM Mono for formula panels |
-| i18n | next-intl — en at `/`, fr at `/fr`, cookie NEXT_LOCALE; build fails if fr.json misses keys |
+| i18n | next-intl — en at `/`, fr at `/fr`, cookie NEXT_LOCALE; build checks both locale key sets and literal translation calls in application code |
 | Backend | Supabase (magic link + Google OAuth, bake_events + photos + pizza-party slots) |
 | Deploy | Vercel — auto on push to main (~90–120 s); a failed build never replaces the live deployment |
 
@@ -53,7 +53,9 @@ messages/en.json + fr.json — i18n check script keeps them in sync
 ## Calculation and display conventions
 
 ### Commercial yeast
-Read the implemented room-temperature and cold-fermentation calculations and their numeric regression tests before changing a coefficient. Distinguish extending a bake with cold time from replacing room-temperature time at a fixed bake time. Display the converted amount for the selected yeast. ADY and fresh yeast have different conversions. The 0.5 g threshold flags measurement difficulty. The historic percentage floor was 0.05% IDY before adjustments.
+Room-temperature and cold phases share one fermentation budget. The thermal trajectory includes cooling and rewarming, so brief fridge spells do not immediately count as fully cold. Use regression evidence and published guidance before retuning. Kitchen trials remain necessary for calibration.
+
+Read the implemented room-temperature and cold-fermentation calculations and their numeric regression tests before changing a coefficient. Distinguish extending a bake with cold time from replacing room-temperature time at a fixed bake time. Display the converted amount for the selected yeast. ADY and fresh yeast have different conversions. The 0.5 g threshold flags measurement difficulty. The automatic minimum is 0.05% IDY before an explicit override. The 0.5 g figure flags weighing difficulty.
 
 ### Schedule
 Single-phase, or two-phase tropical when window ≥16 h AND kitchen ≥28 °C.
@@ -122,3 +124,7 @@ utils.ts STYLE_FERM_DEFAULTS · SchedulePicker.tsx STYLE_FERM_DEFAULTS · Fermen
 - [ ] Commit as Romaric Ernst <romaric.ernst@gmail.com> · push to main
 - [ ] Never commit: .env.local, .claude/settings.local.json, untracked QA .md reports
 - [ ] Update CLAUDE.md / PROJECT-INSTRUCTIONS.md if architecture or rules changed
+
+
+## Credentials
+Use authenticated connectors or environment-provided credentials. Keep tokens out of project instructions and committed files. The November follow-up found no GitHub token in the current Markdown files; this does not audit external instructions or Git history.

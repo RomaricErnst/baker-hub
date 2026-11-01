@@ -41,8 +41,10 @@ test('split cold keeps both phases, scans shaping span, and only repairs affecte
  const shapeStart=plain.divideBallTime;
  const interrupted=build(input([{label:'Brief',from:new Date(+shapeStart+5*60000),to:new Date(+shapeStart+10*60000)}]));
  assert.ok(+interrupted.divideBallTime<+shapeStart);
- assert.equal(interrupted.totalColdHours,plain.totalColdHours);
- assert.equal(interrupted.totalRTHours,plain.totalRTHours);
+ // Moving shaping earlier can remove a sub-hour cold leg. Its duration
+ // becomes warm exposure while the overall fermentation window is preserved.
+ assert.ok(plain.totalColdHours-interrupted.totalColdHours>=0 && plain.totalColdHours-interrupted.totalColdHours<1);
+ assert.equal(interrupted.totalColdHours+interrupted.totalRTHours,plain.totalColdHours+plain.totalRTHours);
  assert.equal(interrupted.availabilityConflicts.length,0);
  const exit=plain.coldRetard2End;
  const repaired=build(input([{label:'Brief',from:new Date(+exit-5*60000),to:new Date(+exit+30*60000)}]));

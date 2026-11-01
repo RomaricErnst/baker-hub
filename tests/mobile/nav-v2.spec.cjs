@@ -164,14 +164,24 @@ for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}
    await navigate(page,'Preparation','en');
    await page.getByRole('button',{name:'Start preparation →',exact:true}).tap();
    await expect(page.locator('section[aria-label*=" · Step "]:visible')).toHaveCount(1);
-   const next=page.getByRole('button',{name:/^Next(?: step| :)/});
-   await next.tap();
+   await advanceGuideStep(page);
    await expect(page.locator('section[aria-label*=" · Step "]:visible')).toHaveCount(1);
   }
  }
  await noOverflow(page);
  await testInfo.attach('english-preparation',{body:await page.screenshot(),contentType:'image/png'});
 });
+
+async function advanceGuideStep(page){
+ const current=page.locator('section[data-guide-title]:visible');
+ const forward=current.locator('.bh-guide-next');
+ const label=(await forward.innerText()).trim();
+ expect(label).toMatch(/ →$/);
+ const destination=label.slice(0,-2).trim();
+ expect(destination).not.toMatch(/^(Next step|Étape suivante)$/i);
+ await forward.tap();
+ await expect(current).toHaveAttribute('data-guide-title',destination);
+}
 
 for(const mode of ['simple','custom'])for(const bread of [false,true]){
  test(`${mode} ${bread?'bread':'pizza'}: style and quantity precede mode, optional fillings preserve the batch`,async({page},testInfo)=>{
@@ -308,13 +318,11 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await navigate(page,'Préparation');
  await expect(page.locator('.bh-local-progress')).toHaveText('Vue d’ensemble');
  await page.getByRole('button',{name:'Commencer la préparation →',exact:true}).tap();
- const next=page.getByRole('button',{name:/^(?:Étape suivante|Suivante :)/});
- await expect(next).toBeVisible();
  // Mixing records an actual time; this navigation test marks the next ordinary step.
- await next.tap();
+ await advanceGuideStep(page);
  const done=page.getByRole('checkbox',{name:'Étape faite',exact:true});
  await done.check();
- await next.tap();
+ await advanceGuideStep(page);
  const current=page.locator('section[aria-label*=" · Étape "]:visible');
  const stepLabel=await current.getAttribute('aria-label');
  const progress=await page.evaluate(()=>Object.fromEntries(Object.entries(localStorage).filter(([key])=>key.startsWith('bh_guide_done_v2:')&&!key.endsWith(':view'))));
@@ -391,7 +399,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await expect(choices.getByRole('button',{name:'Pâte',exact:true})).toHaveAttribute('aria-pressed','true');
  for(let step=0;step<25;step++){
   if(await page.getByRole('button',{name:/^Préparer les garnitures(?: →)?$/}).isVisible())break;
-  await page.getByRole('button',{name:/^(?:Étape suivante|Suivante :)/}).tap();
+  await advanceGuideStep(page);
  }
  await page.getByRole('button',{name:/^Préparer les garnitures(?: →)?$/}).tap();
  await expect(choices.getByRole('button',{name:'Garnitures',exact:true})).toHaveAttribute('aria-pressed','true');
@@ -401,7 +409,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  const serveLabel=bread?'Assembler mes sandwichs →':'Commencer la cuisson des pizzas →';
  for(let step=0;step<12;step++){
   if(await page.getByRole('button',{name:serveLabel,exact:true}).isVisible())break;
-  await page.getByRole('button',{name:/^(?:Étape suivante|Suivante :)/}).tap();
+  await advanceGuideStep(page);
  }
  await page.getByRole('button',{name:serveLabel,exact:true}).tap();
  if(bread)await expect(choices.getByRole('button',{name:'Assembler et servir',exact:true})).toHaveAttribute('aria-pressed','true');else await expect(page.getByRole('button',{name:'← Four et conseils de cuisson',exact:true})).toBeVisible();

@@ -98,6 +98,16 @@ function coldIDY(hours: number, fridgeTemp: number): number {
   return raw / coldActivityFactor(fridgeTemp);
 }
 
+/** Fraction of the model's fermentation target reached at the supplied dose.
+ * Call with cooling-adjusted exposure, as used by recommendYeast.
+ */
+export function fermentationBudget(dosePct: number, warmHours: number, kitchenTemp: number, coldHours: number, fridgeTemp: number): number {
+  const warmRate = Math.pow(2.5, (kitchenTemp - 25) / 10) * tropicalFactor(kitchenTemp) / 9.5;
+  const coldRate = coldActivityFactor(fridgeTemp) / 7.5;
+  return Math.max(0, warmHours) * Math.pow(Math.max(0, dosePct) * warmRate, 1 / 1.65)
+    + Math.max(0, coldHours) * Math.pow(Math.max(0, dosePct) * coldRate, 1 / 1.313);
+}
+
 // Warnings travel as keys, not sentences. They used to be English literals
 // built in this file, which meant a French baker read them in English — and
 // the parity check on fr.json could not catch it, because the strings never
@@ -110,6 +120,7 @@ export type YeastWarningKey =
   | 'hotClimateRT'        // >4h at room temperature in a hot kitchen
   | 'fridgeWarm'          // fridge warmer than the 4C reference
   | 'osmoticStress'       // sweet dough — check yeast suitability
+  | 'fermentationBudget' // dose limits leave the predicted fermentation outside its target
   | 'doseFloorRT';        // RT window longer than the dose can control at this batch size
 
 export interface YeastWarning {
@@ -203,6 +214,11 @@ export function recommendYeast(
   if (priority === 'speed') rec *= 1.8;
   rec = Math.min(1.5, rec);
   rec = Math.round(rec * 10000) / 10000;
+
+  const budget = fermentationBudget(rec, totalRTHours, kitchenTemp, totalColdHours, fridgeTemp);
+  if (budget > 1.1 || budget < 0.9) {
+    warnings.push({key: 'fermentationBudget', params: {percent: Math.round(budget * 100)}});
+  }
 
   // Hot climate warnings — suppressed for styles that are intentionally RT-only
   if (kitchenTemp >= 28 && totalColdHours === 0 && totalRTHours > 4 && !isRTOnlyStyle) {
@@ -544,13 +560,6 @@ export const WATER_TEMP_MIN = 2;
 export const WATER_TEMP_MAX = 40;
 
 /**
- * Warm-up ceiling. Deliberately equal to the OLD getPrefRTWarmupH maximum, so
- * the computed value can only ever be shorter than what shipped before — the
- * scheduler can get looser, never tighter.
- */
-export const MAX_PREF_WARMUP_H = 2;
-
-/**
  * Lumped-capacitance time constant (minutes) for a covered preferment mass
  * warming in still air. Bi correction accounts for the core lagging the skin.
  * ~400 g → 130 min · ~600 g → 152 min · ~1000 g → 185 min.
@@ -664,9 +673,13 @@ export function requiredPrefWarmupH(o: {
   const saltG = flourG * (saltPct / 100);
   const prefFlourG = flourG * prefPct;
   const prefWaterG = prefFlourG * (prefHydPct / 100);
-  if (waterG - prefWaterG <= 0) return MAX_PREF_WARMUP_H;      // no free water to steer with
+  // Three thermal time constants reach 95% of room temperature. Beyond
+  // that, extra waiting offers little temperature change. The final water
+  // balance must still show any target that is thermodynamically unreachable.
+  const thermalHorizon = Math.ceil(3 * prefThermalTauMin(prefFlourG + prefWaterG, prefHydPct) / 60 * 4) / 4;
+  if (waterG - prefWaterG <= 0) return thermalHorizon;
 
-  for (let w = 0; w <= MAX_PREF_WARMUP_H + 1e-9; w += 0.25) {
+  for (let w = 0; w <= thermalHorizon + 1e-9; w += 0.25) {
     const prefTempC = prefTempAfterWarmup(
       prefFlourG + prefWaterG, prefHydPct, o.fridgeTemp, o.kitchenTemp, w,
     );
@@ -676,7 +689,7 @@ export function requiredPrefWarmupH(o: {
     });
     if (idealWaterTemp <= WATER_TEMP_MAX) return w;
   }
-  return MAX_PREF_WARMUP_H;
+  return thermalHorizon;
 }
 
 /** Existing supported lower bounds, also used by setup readiness windows. */
@@ -708,13 +721,39 @@ const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHReq
 function accountScheduleTime(schedule: ScheduleResult): ScheduleResult {
   const hours = (from: Date | null, to: Date | null) => from && to
     ? Math.max(0, (to.getTime() - from.getTime()) / 3600000) : 0;
+  // A brief fridge visit cannot cool the dough meaningfully. Keep handling
+  // times fixed, remove the appliance trip, and count that interval as warm.
+  const shortFirst = schedule.coldRetard1Start && schedule.coldRetard1End
+    && hours(schedule.coldRetard1Start, schedule.coldRetard1End) < 1;
+  const shortSecond = schedule.coldRetard2Start && schedule.coldRetard2End
+    && hours(schedule.coldRetard2Start, schedule.coldRetard2End) < 1;
+  if (shortFirst || shortSecond) {
+    schedule = {...schedule};
+    if (shortFirst) {
+      schedule.coldRetard1Start = null;
+      schedule.coldRetard1End = null;
+    }
+    if (shortSecond) {
+      schedule.finalProofStart = schedule.coldRetard2Start!;
+      schedule.coldRetard2Start = null;
+      schedule.coldRetard2End = null;
+      schedule.rtWarmupStart = null;
+      schedule.rtWarmupEnd = null;
+    }
+    schedule.coldRetardStart = schedule.coldRetard1Start ?? schedule.coldRetard2Start;
+    schedule.coldRetardEnd = schedule.coldRetard2End ?? schedule.coldRetard1End;
+    if (!schedule.coldRetardStart) {
+      schedule.restRtHours = 0;
+      schedule.coldExitConflict = null;
+    }
+  }
   const coldHours = schedule.coldRetard2Start
     ? hours(schedule.coldRetard1Start, schedule.coldRetard1End)
       + hours(schedule.coldRetard2Start, schedule.coldRetard2End)
     : hours(schedule.coldRetardStart, schedule.coldRetardEnd);
   return {
     ...schedule,
-    bulkFermHours: hours(schedule.bulkFermStart, schedule.coldRetardStart ?? schedule.finalProofStart),
+    bulkFermHours: hours(schedule.bulkFermStart, schedule.coldRetard1Start ?? schedule.divideBallTime),
     finalProofHours: hours(schedule.finalProofStart, schedule.bakeStart),
     restRtHours: schedule.restRtHours > 0
       ? hours(schedule.coldRetardEnd, schedule.finalProofStart) : 0,

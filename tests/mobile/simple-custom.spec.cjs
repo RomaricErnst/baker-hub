@@ -101,7 +101,7 @@ for(const locale of ['fr','en']){
   await quantity.fill('4');await quantity.blur();
   await actions(page).locator('[data-bh-forward]:visible').tap();
 
-  await expect.poll(async()=>({oven:(await stored(page))?.ovenType,mixer:(await stored(page))?.mixerType,yeast:(await stored(page))?.yeastType})).toEqual({oven:'home_oven_standard',mixer:'stand',yeast:'instant'});
+  await expect.poll(async()=>({oven:(await stored(page))?.ovenType,mixer:(await stored(page))?.mixerType,yeast:(await stored(page))?.yeastType})).toEqual({oven:'home_oven_standard',mixer:'hand',yeast:'instant'});
   await geometry(page);
   const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
   await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
@@ -114,6 +114,13 @@ for(const locale of ['fr','en']){
   await expect(page.locator('.bh-navigator-current')).toContainText(fr?'Recette':'Recipe');
   await expect(page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true})).toBeVisible();
   await expect.poll(async()=>(await stored(page))?.numItems).toBe(3);
+  await page.getByRole('button',{name:fr?'Modifier la quantité':'Edit quantity',exact:true}).tap();
+  await quantity.fill('4');await quantity.blur();
+  await quantity.fill('3');await quantity.blur();
+  await actions(page).locator('[data-bh-forward]:visible').tap();
+  await expect(page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:fr?'Recette à mettre à jour':'Update your recipe',exact:true})).toHaveCount(0);
+
   await page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true}).tap();
   await expect(page.locator('#step-7:visible')).toBeVisible();
   expect(errors).toEqual([]);

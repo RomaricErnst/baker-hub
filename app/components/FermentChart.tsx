@@ -495,7 +495,7 @@ function formatHours(h: number): string {
 function fmtHM(d: Date, isFr = false): string {
   const h = d.getHours();
   const m = d.getMinutes();
-  if (isFr) return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}`;
+  if (isFr) return `${h} h ${String(m).padStart(2, '0')}`;
   const ap = h < 12 ? 'am' : 'pm';
   const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return m === 0 ? `${h12}${ap}` : `${h12}:${String(m).padStart(2, '0')}${ap}`;
@@ -1179,6 +1179,20 @@ export default function FermentChart({
         {activityPaths.map(({path,dashed,peak},i)=>path && <path key={i} d={openBell(path)}
           data-peak-at={peak?.toISOString()} transform="translate(0 53) scale(1 0.23) translate(0 -140)"
           fill="none" stroke={prefColor} strokeWidth={2} vectorEffect="non-scaling-stroke" strokeDasharray={dashed?'4 3':undefined} />)}
+        {isLevain && (() => {
+          const peak = [...activityPaths].reverse().find(activity => activity.peak)?.peak
+            ?? (effectiveStarterPeakHBF === null ? null : new Date(bakeMs-effectiveStarterPeakHBF*3600000));
+          if (!peak) return null;
+          const x = hToX((bakeMs-+peak)/3600000,W,WH);
+          if (x<PAD || x>W-PAD) return null;
+          return <g data-estimated-peak={peak.toISOString()}>
+            <line x1={x} x2={x} y1={26} y2={58} stroke={prefColor} strokeDasharray="2 3"/>
+            <circle cx={x} cy={26} r={3} fill={prefColor}/>
+            <text x={Math.max(PAD+66,Math.min(W-PAD-66,x))} y={12} textAnchor="middle" fontSize={10} fill="var(--ash)">
+              {isFr?'Pic estimé':'Estimated peak'} · {fmtHM(peak,isFr)}
+            </text>
+          </g>;
+        })()}
         <path d={openBell(makeBellPath(doughPeakHBF,DOUGH_SIG,W,WH,effectiveMixHBF))}
           transform="translate(0 112) scale(1 0.23) translate(0 -140)" fill="none" stroke={DARK_SAGE} strokeWidth={2} vectorEffect="non-scaling-stroke" />
         <line x1={PAD} x2={W-PAD} y1={BL} y2={BL} stroke="var(--border)"/>
