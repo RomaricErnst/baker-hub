@@ -24,7 +24,7 @@ function choose(overrides={},key='simple'){
  vm.runInNewContext(compiled+'\nchooseMode("'+key+'");',context);return {writes,context};
 }
 test('Simple keeps sourdough/style, confirms supported household defaults and preserves temperature',()=>{
- const {writes}=choose();assert.equal(writes.setTab,'simple');assert.equal(writes.setActiveStep,7);assert.equal(writes.setOvenType,'standard_bread');assert.equal(writes.setMixerType,'hand');assert.ok(!('setStyleKey' in writes));assert.ok(!('setYeastType' in writes));assert.ok(!('setKitchenTemp' in writes));
+ const {writes}=choose();assert.equal(writes.setTab,'simple');assert.equal(writes.setActiveStep,7);assert.equal(writes.setOvenType,'standard_bread');assert.equal(writes.setMixerType,'stand');assert.ok(!('setStyleKey' in writes));assert.ok(!('setYeastType' in writes));assert.ok(!('setKitchenTemp' in writes));
 });
 test('Simple preserves saved equipment and declines unsupported defaults',()=>{
  let result=choose({ovenType:'dutch_oven',mixerType:'spiral'}).writes;assert.ok(!('setOvenType' in result));assert.ok(!('setMixerType' in result));
