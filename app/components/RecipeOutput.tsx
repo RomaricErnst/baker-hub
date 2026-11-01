@@ -386,7 +386,9 @@ export default function RecipeOutput({
   const u = units ?? 'metric';
   const wStr = (g: number) => displayWeight(g, u, locale);
   const formatTimeLabel = (date: Date) => date.toLocaleDateString(locale==='fr'?'fr-FR':'en-GB',{weekday:'short',day:'numeric',month:'short'})+' '+formatClock(date,locale);
-  const pctStr = (n:number) => formatPercent(n,locale);
+  const pctStr = (n:number) => n>0&&n<1
+    ? n.toLocaleString(locale,{maximumSignificantDigits:2})+(locale==='fr'?' %':'%')
+    : formatPercent(n,locale);
   const [showPriorityOverride, setShowPriorityOverride] = useState(false);
 
   const [showDilution, setShowDilution] = useState(false);
@@ -731,10 +733,6 @@ export default function RecipeOutput({
           )}
 
           {yeastInfo && (() => {
-            const priorityLabel = ({
-              'flavor': { text: t('recipeOutput.priorityFlavourNote'), color: 'var(--sage)' },
-              'speed':  { text: t('recipeOutput.prioritySpeedNote'),   color: 'var(--gold)' },
-            } as Record<string, { text: string; color: string }>)[result.autoPriority ?? ''] ?? { text: 'Balanced yeast for your schedule', color: 'var(--smoke)' };
             return (
               <>
                 {mode === 'custom' && (
@@ -754,25 +752,25 @@ export default function RecipeOutput({
                         textUnderlineOffset: '2px', padding: 0,
                       }}
                     >
-                      {showPriorityOverride ? t('recipeOutput.priorityReset') : t('recipeOutput.priorityAdjust')}
+                      {showPriorityOverride ? (locale==='fr'?'Fermer':'Close') : (locale==='fr'?'Ajuster le dosage de levure':'Adjust yeast dose')}
                     </button>
                   </div>
                 )}
                 {showPriorityOverride && mode === 'custom' && (
                   <div style={{ display: 'flex', gap: '8px', padding: '4px .1rem 8px', borderBottom: `1px solid rgba(156, 130, 72,0.16)` }}>
                     {([
-                      { value: 'flavor', label: t('recipeOutput.priorityFlavour'), desc: t('recipeOutput.priorityFlavourDesc') },
-                      { value: null,     label: t('recipeOutput.priorityBalanced'), desc: t('recipeOutput.priorityBalancedDesc') },
-                      { value: 'speed',  label: t('recipeOutput.prioritySpeed'),   desc: t('recipeOutput.prioritySpeedDesc') },
+                      {value:null,label:locale==='fr'?'Automatique':'Automatic',desc:locale==='fr'?'Selon le planning':'From the schedule'},
+                      {value:'flavor',label:t('recipeOutput.priorityFlavour'),desc:locale==='fr'?'Réduire la dose':'Lower the dose'},
+                      {value:'speed',label:t('recipeOutput.prioritySpeed'),desc:locale==='fr'?'Augmenter la dose':'Increase the dose'},
                     ] as { value: string | null; label: string; desc: string }[]).map(opt => {
-                      const effective = priorityOverride !== undefined ? priorityOverride : result.autoPriority;
+                      const effective = priorityOverride ?? null;
                       const isActive = effective === opt.value;
                       return (
                         <button
                           key={String(opt.value)}
-                          onClick={() => onPriorityOverride?.(opt.value)}
+                          aria-pressed={isActive} onClick={() => onPriorityOverride?.(opt.value)}
                           style={{
-                            padding: '4px 12px', borderRadius: '20px', cursor: 'pointer',
+                            minHeight:44, padding: '4px 12px', borderRadius: '20px', cursor: 'pointer',
                             border: `1.5px solid ${isActive ? 'var(--gold)' : 'rgba(156, 130, 72,0.2)'}`,
                             background: isActive ? 'rgba(156, 130, 72,0.15)' : 'transparent',
                             color: isActive ? 'var(--gold)' : 'var(--char)',
@@ -845,10 +843,21 @@ export default function RecipeOutput({
       )}
 
 
-      {(hasPref || sdActive) && <p role="region" aria-label={locale==='fr'?'Quantités totales':'Total ingredients'} style={{fontSize:14,margin:0}}>
-        {locale==='fr'?'Farine totale':'Total flour'} {wStr(flour)}{mode==='custom' && <> · {pctStr(hydration)} {locale==='fr'?'d’hydratation':'hydration'}</>}
-        {mode==='custom' && flourBlend?.flour2 && <small style={{display:'block'}}>{locale==='fr'?'Le mélange choisi concerne la farine ajoutée au pétrissage. Pour les totaux, la farine du levain ou du préferment est comptée dans la première farine.':'The selected blend applies to flour added at mixing. The totals count starter or preferment flour with the first flour.'}</small>}
-      </p>}
+      {(hasPref || sdActive) && <section aria-label={locale==='fr'?'Quantités totales':'Total ingredients'}>
+        <details>
+          <summary style={{minHeight:44,cursor:'pointer',alignContent:'center'}}>
+            {locale==='fr'?'Farine totale':'Total flour'} {wStr(flour)}{mode==='custom' && <> · {pctStr(hydration)} {locale==='fr'?'d’hydratation':'hydration'}</>}
+          </summary>
+        {showSelectedFlour && result.flourParts?.length ? result.flourParts.map((part, index) => <IngRow key={`${part.key}-${index}`} label={locale === 'fr' ? part.nameFr : part.name} grams={wStr(part.grams)} advancedPct={mode === 'custom' ? pctStr(part.pct) : undefined} />) : <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={mode === 'custom' ? '100%' : undefined} sub={guidedFlourGuidance} />}
+        <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
+        <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
+        {pf && pf.prefYeastGrams > 0 && <IngRow label={t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)} grams={formatPrefermentDose(pf.prefYeastGrams,locale)} advancedPct={mode === 'custom' ? pctStr(pf.prefYeastGrams / flour * 100) : undefined} />}
+        {oil > 0 && <IngRow label={t('recipeOutput.ingredientOil')} grams={wStr(oil)} advancedPct={mode === 'custom' ? pctStr(oilPct) : undefined} />}
+        {sugar > 0 && <IngRow label={t('recipeOutput.ingredientSugar')} grams={wStr(sugar)} advancedPct={mode === 'custom' ? pctStr(sugarPct) : undefined} />}
+        {mode === 'custom' && <IngRow label={locale === 'fr' ? 'Dont farine préfermentée' : 'Of which prefermented flour'} grams={wStr(pf ? pf.prefFlour : sdHalf)} advancedPct={pctStr((pf ? pf.prefFlour : sdHalf) / flour * 100)} sub={locale === 'fr' ? 'Déjà comprise dans la farine totale.' : 'Already included in total flour.'} />}
+          {mode==='custom' && flourBlend?.flour2 && <p className="bh-key-detail">{locale==='fr'?'Le mélange choisi concerne la farine ajoutée au pétrissage. Pour les totaux, la farine du levain ou du préferment est comptée dans la première farine.':'The selected blend applies to flour added at mixing. The totals count starter or preferment flour with the first flour.'}</p>}
+        </details>
+      </section>}
       {afterIngredients}
 
       {onContainerCapacityChange && breadProtocol?.method !== 'unleavened' && <details className="bh-disclosure">
