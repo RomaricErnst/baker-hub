@@ -351,7 +351,7 @@ test('previous/continue and browser back/forward reopen scheduling with confirme
  const before=await stored(page);
  await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:'Étape précédente',exact:true}).tap();
  await expect(page.locator('#step-10')).toBeVisible();
- await page.locator('#step-10 .bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
+ await page.locator('#step-10 .bh-step-actions').getByRole('button',{name:'Plan →',exact:true}).tap();
  await expect(plan).toBeVisible();await expect(reset(page)).toBeVisible();
  await page.goBack();await expect(page.locator('#step-10')).toBeVisible();
  await page.goForward();await expect(plan).toBeVisible();await expect(reset(page)).toBeVisible();
@@ -530,3 +530,4 @@ test('blocked Friday finishing offers a verified later bake without dropping ava
  expect(state.blocks.some(b=>b.label.endsWith(' night'))).toBe(true);
  expect(state.blocks.some(b=>state.startTime>=b.from&&state.startTime<b.to)).toBe(false);
 });
+
