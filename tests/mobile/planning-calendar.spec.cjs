@@ -21,6 +21,9 @@ test('compact editor exposes one set of windows and accessible half-hour adjustm
  await expect(plan.locator('input[type="datetime-local"]')).toHaveCount(0);
  await expect(plan.locator('.bh-key-window:visible')).toHaveCount(0);
  await expand(plan,'mix');await expect(plan.locator('.bh-key-window:visible')).toHaveCount(1);
+ const done=plan.getByRole('button',{name:'Terminé',exact:true});
+ await done.tap();await expect(plan.locator('[data-selected]')).toHaveCount(0);
+ await expand(plan,'mix');
  await row(plan,'mix').getByRole('button',{name:'+ 30 min',exact:true}).click();await expectAt(plan,'mix',+start+1800000);
  await expect(confirm(plan)).toBeEnabled();expect((await stored(page)).startTime).toBe(+start);
  await row(plan,'mix').getByRole('button',{name:'- 30 min',exact:true}).click();await expectAt(plan,'mix',+start);
