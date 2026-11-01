@@ -160,9 +160,9 @@ function InfoCard({
 }) {
   const THEMES = {
     info:    { bg: '#EEF2FA', border: '#C4CDE0', titleColor: '#3A4A6A', bodyColor: 'var(--ash)' },
-    warn:    { bg: '#FFF8E8', border: '#E8D080', titleColor: '#7A5A10', bodyColor: '#5A4010' },
-    alert:   { bg: '#FEF4EF', border: '#F5C4B0', titleColor: 'var(--terra)', bodyColor: 'var(--ash)' },
-    good:    { bg: '#F2FAF0', border: '#B8D8B0', titleColor: '#3A6A30', bodyColor: '#2A4A22' },
+    warn:    { bg: 'var(--warm)', border: 'var(--gold)', titleColor: 'var(--char)', bodyColor: 'var(--ash)' },
+    alert:   { bg: 'var(--warm)', border: 'var(--gold)', titleColor: 'var(--terra)', bodyColor: 'var(--ash)' },
+    good:    { bg: 'var(--warm)', border: 'var(--sage)', titleColor: 'var(--sage)', bodyColor: 'var(--ash)' },
     poolish: { bg: '#FDFBF2', border: '#E8D890', titleColor: '#6A5A10', bodyColor: '#4A3A10' },
   };
   const th = THEMES[level];

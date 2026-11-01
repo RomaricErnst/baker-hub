@@ -1,6 +1,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript');
 require('./load-production.cjs');
+const {chronologicalBlocks}=require('../app/utils/scheduleAvailability.ts');
 const {findFixedBakeSchedule,recommendPreferment}=require('../app/utils/scheduleEdit.ts');
 const H=3600000,now=Date.parse('2026-10-03T15:25:00Z');
 const original=new Date('2026-10-03T23:40:00Z'),bake=new Date('2026-10-04T20:31:00Z');
@@ -12,7 +13,7 @@ function visit(n){if(ts.isFunctionDeclaration(n)&&names.includes(n.name?.text))d
 function harness(overrides={}){
  const writes=[];
  class Clock extends Date{static now(){return now;}}
- const c={Date:Clock,isSourdough:false,recipeGenerated:false,eatTimeSet:true,startTimeInPast:false,execution:undefined,mixExecution:undefined,completedMixAt:undefined,replanRequested:false,hasPrefActive:true,
+ const c={chronologicalBlocks,Date:Clock,isSourdough:false,recipeGenerated:false,eatTimeSet:true,startTimeInPast:false,execution:undefined,mixExecution:undefined,completedMixAt:undefined,replanRequested:false,hasPrefActive:true,
   pendingStart:original,pendingEatTime:bake,prefOffsetH:8,_optimalMix:(+bake-original)/H,
   prefermentType:'poolish',kitchenTemp:22,prefGoesInFridge:false,styleKey:'neapolitan',fridgeTemp:5,
   manualTimesRef:{current:overrides},solverNotifyBudgetRef:{current:{}},ratioApplyHistoryRef:{current:[]},

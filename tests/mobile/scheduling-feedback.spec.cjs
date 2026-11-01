@@ -148,7 +148,7 @@ for(const locale of ['fr','en'])for(const mode of ['simple','custom'])test(`${lo
  const {plan}=await seedParty(page,locale,mode,'18:45');
  const card=plan.locator('.bh-fridge-arrangement');
  await expect(card).toHaveAttribute('data-fridge-removal','pending');
- const preheat=plan.locator('.bh-plan-notice').getByText(locale==='fr'?/Préchauffage/:/Preheat/);
+ const preheat=plan.locator('.bh-plan-notice li').filter({hasText:locale==='fr'?/Préchauffage/:/Preheat/});
  await expect(preheat).toBeVisible();
  const before=await stored(page);await arrangeButton(card,locale).tap();
  await expect(card).toHaveAttribute('data-fridge-removal','arranged');

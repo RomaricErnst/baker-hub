@@ -34,7 +34,7 @@ const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { s
 import { starterFeedToMixHours } from '../lib/starterTiming';
 import { mixerDoughCapacity } from '../utils/mixingBatches';
 import {commercialPrefermentWindow, validateConfirmedBake, type StarterEvent } from '../components/SchedulePicker';
-import { normalizeFridgeRemoval, selectedAvailabilityCount } from '../utils/scheduleAvailability';
+import { normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake } from '../utils/scheduleAvailability';
 import { retainCurrentFridgeRemoval } from '../utils/fridgeRemovalSession';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 import ClimatePicker from '../components/ClimatePicker';
@@ -1657,32 +1657,7 @@ export default function Home() {
     const bl = loadProfile()?.blockers ?? DEFAULT_BLOCKERS;
     if (!bl || (!bl.sleep.enabled && !bl.work.enabled)) return;
     profileBlockersAppliedRef.current = true;
-    const parse = (s: string) => { const [h, m] = s.split(':').map(Number); return { h: h || 0, m: m || 0 }; };
-    const out: AvailabilityBlock[] = [];
-    const start = new Date(); start.setHours(0, 0, 0, 0);
-    const horizon = new Date(eatTime.getTime() + 24 * 3600 * 1000);
-    for (let d = new Date(start); d < horizon; d.setDate(d.getDate() + 1)) {
-      (['sleep', 'work'] as const).forEach(key => {
-        const b = bl[key];
-        if (!b.enabled) return;
-        if (key === 'work') { const dow = d.getDay(); if (dow === 0 || dow === 6) return; }
-        const f = parse(b.from), tt = parse(b.to);
-        const from = new Date(d); from.setHours(f.h, f.m, 0, 0);
-        const to = new Date(d); to.setHours(tt.h, tt.m, 0, 0);
-        if (to <= from) to.setDate(to.getDate() + 1); // overnight window (sleep)
-        if (to < new Date() || from > eatTime) return;
-        out.push({
-          // Preset-compatible labels — SchedulePicker identifies preset blocks
-          // by convention (`Work · <date>` prefix / `<Weekday> night` suffix).
-          // Matching them lights the Weekdays/Nights pills and keeps these
-          // blocks out of the custom-chip list (was: one chip row per day).
-          label: key === 'sleep'
-            ? `${from.toLocaleDateString('en-US', { weekday: 'long' })} night`
-            : `Work · ${from.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`,
-          from, to,
-        });
-      });
-    }
+    const out = profileBlocksForBake(new Date(),eatTime,bl);
     if (out.length) setBlocks(out);
   }, [eatTime]);
 
@@ -4218,7 +4193,7 @@ export default function Home() {
                       {/* Recipe null-guard */}
                       {!recipe ? (
                         <div style={{
-                          background: '#FEF4EF', border: '1.5px solid #F5C4B0',
+                          background: 'var(--warm)', border: '1.5px solid var(--gold)',
                           borderRadius: '16px', padding: '20px', textAlign: 'center',
                           color: 'var(--terra)', fontSize: '14px',
                         }}>
@@ -4752,7 +4727,7 @@ export default function Home() {
                   {(
                     <>
                       {!advancedRecipe ? (
-                        <div style={{ background: '#FEF4EF', border: '1.5px solid #F5C4B0', borderRadius: '16px', padding: '20px', textAlign: 'center', color: 'var(--terra)', fontSize: '14px' }}>
+                        <div style={{ background: 'var(--warm)', border: '1.5px solid var(--gold)', borderRadius: '16px', padding: '20px', textAlign: 'center', color: 'var(--terra)', fontSize: '14px' }}>
                           {t('results.computeError')}
                         </div>
                       ) : (

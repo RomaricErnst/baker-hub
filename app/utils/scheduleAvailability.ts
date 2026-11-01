@@ -76,3 +76,50 @@ export function selectedAvailabilityCount(blocks:readonly {label?:string}[]):num
   const work = blocks.some(block=>block.label?.startsWith('Work · '));
   return Number(sleep) + Number(work) + blocks.filter(block=>!block.label?.endsWith(' night')&&!block.label?.startsWith('Work · ')).length;
 }
+
+type RecurringPreset = { enabled:boolean; from:string; to:string };
+type PresetName = 'sleep'|'work';
+
+export function blockClock(day: Date, time: string): Date {
+  const value=new Date(day);
+  const [hour,minute]=time.split(':').map(Number);
+  value.setHours(hour,minute,0,0);
+  return value;
+}
+
+export function chronologicalBlocks<T extends AvailabilityPeriod>(blocks:T[]):T[] {
+  return [...blocks].sort((a,b)=>+a.from-+b.from || +a.to-+b.to || (a.label??'').localeCompare(b.label??''));
+}
+
+/** Expand recurring local-clock rules over the same six-day scheduling window
+ * for the initial bake, toggles and later-bake searches. The target is a
+ * hands-on instant, so a block beginning exactly then must be included. */
+export function recurringBlockEntries(kind:PresetName,preset:RecurringPreset,now:Date,target:Date) {
+  const entries:Array<{key:string;label:string;blockStart:Date;blockEnd:Date}>=[];
+  if(!Number.isFinite(+now)||!Number.isFinite(+target)||+target<+now)return entries;
+  const start=new Date(Math.max(+now,+target-6*86400000));
+  const cursor=new Date(start);cursor.setHours(0,0,0,0);
+  cursor.setDate(cursor.getDate()-1);
+  while(cursor<=target){
+    const weekday=cursor.getDay();
+    if(kind==='sleep'||(weekday>=1&&weekday<=5)){
+      const blockStart=blockClock(cursor,preset.from),blockEnd=blockClock(cursor,preset.to);
+      if(blockEnd<=blockStart)blockEnd.setDate(blockEnd.getDate()+1);
+      if(blockStart<=target&&blockEnd>start){
+        // Labels are persisted IDs; UI labels use the baker's locale.
+        const label=kind==='sleep'
+          ?blockStart.toLocaleDateString('en-US',{weekday:'long'})+' night'
+          :'Work · '+blockStart.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+        const key=[cursor.getFullYear(),cursor.getMonth()+1,cursor.getDate()].join('-');
+        entries.push({key,label,blockStart,blockEnd});
+      }
+    }
+    cursor.setDate(cursor.getDate()+1);
+  }
+  return entries;
+}
+
+export function profileBlocksForBake(now:Date,target:Date,presets:Record<PresetName,RecurringPreset>) {
+  return chronologicalBlocks((['sleep','work'] as const).flatMap(kind=>presets[kind].enabled?
+    recurringBlockEntries(kind,presets[kind],now,target).map(entry=>({from:entry.blockStart,to:entry.blockEnd,label:entry.label})):[]));
+}

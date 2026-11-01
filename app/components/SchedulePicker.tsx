@@ -14,7 +14,7 @@ import ScheduleClockInput from './ScheduleClockInput';
 import ScheduleKeyTimings, {type KeyTimingAnchor} from './ScheduleKeyTimings';
 import {assessScheduleDraft} from '../utils/scheduleDraft';
 import {proposeScheduleEdit, validateScheduleCandidate, findFixedBakeSchedule, recommendPreferment, laterBakeAlternative, scheduleEditSlots, type EditInput, type EditTimes} from '../utils/scheduleEdit';
-import { selectedAvailabilityCount, foldActionLabel, isTimeBlocked, findAvailabilityConflicts, getFinalFridgeRemoval, isFridgeRemovalCovered, type AvailabilityAction } from '../utils/scheduleAvailability';
+import { blockClock, chronologicalBlocks, recurringBlockEntries, selectedAvailabilityCount, foldActionLabel, isTimeBlocked, findAvailabilityConflicts, getFinalFridgeRemoval, isFridgeRemovalCovered, type AvailabilityAction } from '../utils/scheduleAvailability';
 import { kneadMinFor, type MixerType } from '../data';
 import type {BakeExecution} from '../utils/bakeExecution';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
@@ -548,78 +548,15 @@ function computeSuggestion(
 function presetHours(key:'sleep'|'work'):StandardBlocker {
   return loadProfile()?.blockers?.[key] ?? DEFAULT_BLOCKERS[key];
 }
-function blockClock(day: Date, time: string): Date {
-  const value=new Date(day);
-  const [hour,minute]=time.split(':').map(Number);
-  value.setHours(hour,minute,0,0);
-  return value;
-}
 function rememberPreset(key:'sleep'|'work',enabled:boolean) {
   const previous=loadProfile()?.blockers ?? DEFAULT_BLOCKERS;
   updateProfile({blockers:{...previous,[key]:{...previous[key],enabled}}});
 }
-function getWorkdaysInWindow(
-  start: Date,
-  end: Date,
-): Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> {
-  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return [];
-
-  const preset=presetHours('work');
-  const days: Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> = [];
-  const cursor = new Date(start);
-  cursor.setHours(0, 0, 0, 0);
-
-  for (let i = 0; i < 14; i++) {
-    const dow = cursor.getDay();
-    if (dow >= 1 && dow <= 5) {
-      const blockStart = blockClock(cursor,preset.from);
-      const blockEnd = blockClock(cursor,preset.to);
-      if (blockEnd<=blockStart) blockEnd.setDate(blockEnd.getDate()+1);
-      if (blockStart < end && blockEnd > start) {
-        const key = cursor.toISOString().slice(0, 10);
-        const dateLabel = cursor.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        days.push({ key, label: `Work · ${dateLabel}`, blockStart, blockEnd });
-      }
-    }
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return days;
+function getWorkdaysInWindow(start:Date,end:Date){
+  return recurringBlockEntries('work',presetHours('work'),start,end);
 }
-
-// ── Night window helper ───────────────────────
-function getNightsInWindow(
-  start: Date,
-  end: Date,
-): Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> {
-  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return [];
-
-  const preset=presetHours('sleep');
-  const nights: Array<{ key: string; label: string; blockStart: Date; blockEnd: Date }> = [];
-  // Start one day before blockerWindowStart to catch nights that began before
-  // midnight — at 1am, tonight's 11pm start was yesterday, so the cursor must
-  // go back one day.
-  const cursor = new Date(start); cursor.setHours(0, 0, 0, 0);
-  cursor.setDate(cursor.getDate() - 1);
-
-  // Cap at 10, not 7. A six-day window plus the day-before cursor yields at
-  // most 8, so the window test below is the only filter and the set depends on
-  // the window alone. At 7 the cap bit from the front: a window start that
-  // moved earlier pushed a night NEAR THE BAKE out of the array, so which
-  // nights existed depended on where the window began.
-  for (let i = 0; i < 14 && nights.length < 10; i++) {
-    // 23:00 — aligned with the profile's sleep blocker default (23:00–07:00)
-    const nightStart = blockClock(cursor,preset.from);
-    const nightEnd = blockClock(cursor,preset.to);
-    if(nightEnd<=nightStart)nightEnd.setDate(nightEnd.getDate()+1);
-
-    if (nightStart < end && nightEnd > start) {
-      const weekday = nightStart.toLocaleDateString('en-US', { weekday: 'long' });
-      const key = nightStart.toISOString().slice(0, 10);
-      nights.push({ key, label: `${weekday} night`, blockStart: nightStart, blockEnd: nightEnd });
-    }
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return nights;
+function getNightsInWindow(start:Date,end:Date){
+  return recurringBlockEntries('sleep',presetHours('sleep'),start,end);
 }
 
 // ── Shared styles ─────────────────────────────
@@ -2925,18 +2862,9 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
   // The old comment claimed the extension existed "to show hist feed bell". It
   // never reached the chart — FermentChart derives its own axis from bakeMs.
   //
-  // Floored to local midnight so the set is stable across a toggle round-trip:
-  // an unfloored `now` changes which nights qualify each time it crosses 07:00,
-  // the night end. Blocks that sit in the past cannot bind — every planned
-  // action is >= now.
-  const blockerWindowStart = useMemo(() => {
-    const sixDaysBefore = new Date(pendingEatTime.getTime() - 6 * 24 * 3600000);
-    const now = new Date();
-    const base = sixDaysBefore > now ? sixDaysBefore : now;
-    const floored = new Date(base);
-    floored.setHours(0, 0, 0, 0);
-    return floored;
-  }, [pendingEatTime]);
+  // Freeze the planning instant per selected bake date. Ended windows do not
+  // return when navigating or toggling, and currently active nights survive.
+  const blockerWindowStart = useMemo(() => new Date(), [pendingEatTime]);
 
   const nights   = useMemo(() => getNightsInWindow(blockerWindowStart, pendingEatTime), [blockerWindowStart, pendingEatTime]);
   const workdays = useMemo(() => getWorkdaysInWindow(blockerWindowStart, pendingEatTime), [blockerWindowStart, pendingEatTime]);
@@ -5781,7 +5709,11 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
     // sets nextFeedRatio and re-solves at that ratio (one extra solve,
     // converges stable on the same recommendation).
     // Skipped when ratio is irrelevant or the baker chose 'keep'.
-    if (
+    // When baking itself falls in a blocked period, moving feeds or mixing
+    // cannot make the target executable. Keep the baker’s usual ratio.
+    if (ratioMode==='recommend' && isTimeBlocked(et,effectiveBlocks)) {
+      _recommendedNextFeedRatio=lastFeedRatio;
+    } else if (
       ratioMode === 'recommend'
       && planningMode !== 'know_peak'
       && !_windowTooShort
@@ -6273,7 +6205,8 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
     onChange(d, pendingEatTime, blocks);
   }
 
-  function applyAndUpdate(newBlocks: AvailabilityBlock[]) {
+  function applyAndUpdate(proposedBlocks: AvailabilityBlock[]) {
+    const newBlocks=chronologicalBlocks(proposedBlocks);
     // A new user constraint starts a new solve, not a runaway notification
     // loop from the previous one (also valid when the planning clock is frozen).
     solverNotifyBudgetRef.current={t:Date.now(),n:0};
@@ -6424,7 +6357,9 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
       methodValid:!!result&&!result.windowTooShort&&pinKept&&peakOK&&historyKept&&noNewPastActions&&storageKept&&displayedPlanKept});
     const allBatchPeaksUsable=planningMode!=='know_peak'||!validation.schedule?.batchMixWindows||!!result?.peakTime&&validation.schedule.batchMixWindows.every(batch=>knownPeakMixUsable(batch.start,result.peakTime!,result.adjPeakHValue??getPrefPeakH_RT('sourdough',kitchenTemp,styleKey),flourStrength));
     const valid=validation.valid&&allBatchPeaksUsable;
-    const message=valid?null:!historyKept||!noNewPastActions||validation.reason==='date'
+    const message=valid?null:isTimeBlocked(pendingEatTime,candidateBlocks)
+      ?(isFr?'La cuisson tombe pendant une indisponibilité. Décalez la cuisson ou ajustez vos disponibilités.':'Your bake falls during an unavailable period. Change your baking time or availability.')
+      :!historyKept||!noNewPastActions||validation.reason==='date'
       ?(isFr?'Ce changement déplacerait une préparation passée. Choisissez un autre horaire.':'This change would move a past preparation. Choose another time.')
       :validation.schedule?.batchTimingConflict?(isFr?'Le premier lot nécessite un rabat avant la fin des pétrissées. Réduisez la quantité de cette fournée.':'The first batch needs a fold before all mixing finishes. Reduce the quantity of this bake.')
       :validation.reason==='busy'?(isFr?'Étape pendant une indisponibilité : ':'Step during unavailable hours: ')+(foldActionLabel(validation.conflict?.id??'',locale,mixingBatches) ?? (conflictNames[validation.conflict?.id??'']??['une étape','an action'])[isFr?0:1])+'.'
@@ -6449,7 +6384,7 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
 
   /** Bounded fixed-bake search; the caller alone commits a validated result. */
   function replanStarter(candidateBlocks:AvailabilityBlock[],overrides:TimingOverrides) {
-    if(startTimeInPast||resumeFrozenRef.current||+pendingEatTime<=Date.now())return null;
+    if(startTimeInPast||resumeFrozenRef.current||+pendingEatTime<=Date.now()||isTimeBlocked(pendingEatTime,candidateBlocks))return null;
     const pins:StarterPins={mix:overrides.mix??null,feed:overrides.feed??null,refresh:overrides.refresh??null};
     let checked=searchStarterCandidate(pins,candidateBlocks,Object.keys(overrides).length>0);
     if(replanRequested&&checked){
@@ -6812,13 +6747,13 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
       if(+bake<=now||(eatTimeSet&&+bake===+pendingEatTime))continue;
       const candidateBlocks=[...localBlocks];
       const append=(entries:ReturnType<typeof getWorkdaysInWindow>)=>{for(const e of entries)if(!candidateBlocks.some(b=>+b.from===+e.blockStart&&+b.to===+e.blockEnd))candidateBlocks.push({from:e.blockStart,to:e.blockEnd,label:e.label});};
-      if(localBlocks.some(b=>b.label.startsWith('Work · ')))append(getWorkdaysInWindow(new Date(now),new Date(+bake+60000)));
-      if(localBlocks.some(b=>b.label.endsWith(' night')))append(getNightsInWindow(new Date(now),new Date(+bake+60000)));
+      if(localBlocks.some(b=>b.label.startsWith('Work · ')))append(getWorkdaysInWindow(new Date(now),bake));
+      if(localBlocks.some(b=>b.label.endsWith(' night')))append(getNightsInWindow(new Date(now),bake));
       if(isTimeBlocked(bake,candidateBlocks))continue;
       const input=commercialCandidateInput(candidateBlocks);
       const start=new Date(+bake-_optimalMix*3600000);
       const result=findFixedBakeSchedule({...input,start,at:start,bake,prefHours:hasPrefActive?getPrefOptH(prefermentType,kitchenTemp,prefGoesInFridge,styleKey,fridgeTemp):0},pins);
-      if(result.found)found.push({...result.candidate.times,blocks:candidateBlocks,clearedAction:firstReadinessConflict && result.candidate.schedule?.availabilityActions?.find(a=>a.id===firstReadinessConflict.action.id)});
+      if(result.found)found.push({...result.candidate.times,blocks:chronologicalBlocks(candidateBlocks),clearedAction:firstReadinessConflict && result.candidate.schedule?.availabilityActions?.find(a=>a.id===firstReadinessConflict.action.id)});
       if(found.length===3)break;
     }
     return found;
@@ -8426,3 +8361,4 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
     </div>
   );
 }
+

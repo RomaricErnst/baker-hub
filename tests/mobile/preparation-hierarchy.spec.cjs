@@ -27,9 +27,9 @@ for(const scenario of [
  await expect(page.locator('.bh-bake-navigator .bh-step-trigger')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Vue d’ensemble',exact:true})).toHaveCount(1);
  await progress.tap();
- await expect(page.getByRole('button',{name:'Reprendre la cuisson →',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Commencer la cuisson →',exact:true})).toBeVisible();
  await expect(page.locator('section[data-guide-phase="cooking"]:visible')).toHaveCount(scenario.total);
- await page.getByRole('button',{name:'Reprendre la cuisson →',exact:true}).tap();
+ await page.getByRole('button',{name:'Commencer la cuisson →',exact:true}).tap();
  await expect(page.locator('.bh-local-progress')).toContainText(`Étape 1 / ${scenario.total}`);
  await expect(page.locator('section[data-guide-phase="cooking"]:visible')).toHaveCount(1);
 });

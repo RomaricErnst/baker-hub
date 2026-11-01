@@ -141,7 +141,7 @@ export default function ClimatePicker({
                   type="button"
                   aria-pressed={active}
                   onClick={() => onChange(kitchenTemp, option.value, fridgeTemp)}
-                  style={{ ...controlStyle(), minHeight: 44, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`, background: active ? '#FEF4EF' : 'var(--paper)', fontSize: 16, textAlign: 'left' }}
+                  style={{ ...controlStyle(), minHeight: 44, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`, background: active ? 'var(--warm)' : 'var(--paper)', fontSize: 16, textAlign: 'left' }}
                 >
                   <span>{fr ? option.fr : option.en}</span><span style={{ color: 'var(--smoke)' }}>{option.range}</span>
                 </button>

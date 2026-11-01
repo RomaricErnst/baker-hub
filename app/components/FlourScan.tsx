@@ -286,7 +286,7 @@ style={{ display: 'none' }}
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <span style={{
                   fontFamily: 'var(--font-ui)', fontSize: '12px',
-                  color: 'var(--terra)', background: '#FEF4EF',
+                  color: 'var(--terra)', background: 'var(--warm)',
                   borderRadius: '20px', padding: '.2rem 8px',
                   border: '1px solid rgba(107, 68, 35,0.2)',
                 }}>
@@ -403,7 +403,7 @@ style={{ display: 'none' }}
   // ── STATE 4: Error ───────────────────────────
   return (
     <div style={{
-      background: '#FEF4EF', border: '1.5px solid #F5C4B0',
+      background: 'var(--warm)', border: '1.5px solid var(--gold)',
       borderRadius: '16px', padding: '20px',
       textAlign: 'center',
     }}>

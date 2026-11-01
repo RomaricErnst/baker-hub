@@ -6,6 +6,7 @@
 // compares the solver outputs the parent receives (start, feeds, starter
 // events, blocks, validity) and checks the Nights chip agrees with the blocks.
 import fs from 'fs';
+import {MessageChannel} from 'node:worker_threads';
 import { createRequire } from 'node:module';
 const require = createRequire(new URL('../../.ci-tools/package.json', import.meta.url));
 const { JSDOM } = require('jsdom');
@@ -18,6 +19,7 @@ const FROZEN = process.env.FREEZE === '0' ? Math.ceil(Date.now()/3600000)*360000
 const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>',
   { pretendToBeVisual: true, runScripts: 'outside-only', url: 'https://www.bakerhub.app/' });
 const { window } = dom;
+window.MessageChannel ??= MessageChannel;
 
 // ── frozen clock ────────────────────────────────────────────────
 const RealDate = window.Date;
@@ -129,7 +131,7 @@ for (const ratioMode of MODES) {
       window.localStorage.clear();
       let root;
       try {
-        root = mount(el, { ...sc, start: new RealDate(FROZEN), loc: 'rt', age: 'days23',
+        root = await mount(el, { ...sc, start: new RealDate(FROZEN), loc: 'rt', age: 'days23',
           lastFed: new RealDate(FROZEN - 60 * 3600000), ratioMode, page: process.env.PAGE === '1', full: process.env.FULL === '1', batches: Number(process.env.BATCHES||1) });
       } catch (e) { results.push({ m: ratioMode, s: sc.name, t, status: 'MOUNT FAILED ' + e.message }); continue; }
       await wait(SETTLE * 3);
