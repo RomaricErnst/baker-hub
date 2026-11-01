@@ -11,6 +11,10 @@ const row=(plan,id)=>plan.locator(`[data-key-timing="${id}"]`);
 async function expand(plan,id){const r=row(plan,id);if(!await r.locator('.bh-key-exact').isVisible())await r.locator('.bh-key-time').tap();await expect(r.locator('.bh-key-exact')).toBeVisible();}
 const reset=page=>page.getByRole('button',{name:/^(Revenir aux horaires recommandés|Return to recommended times)$/});
 const confirm=plan=>plan.getByRole('button',{name:/^(Appliquer|Apply)$/});
+async function openAvailability(page,locale){
+ const summary=page.locator('summary:visible').filter({hasText:locale==='fr'?/^(Ajouter une indisponibilité|Mes indisponibilités)/:/^(Add unavailable time|My unavailable times)/});
+ if(await summary.locator('..').getAttribute('open')===null)await summary.tap();
+}
 async function seed(page,{locale='fr',mode='custom',preferment='poolish',extra={},now=NOW}={}){
  await page.clock.setFixedTime(now);
  const data={version:1,savedAt:NOW,tab:mode,bakeType:'pizza',styleKey:'neapolitan',numItems:4,itemWeight:260,pizzaDiameter:30,ovenType:'pizza_oven',mixerType:'spiral',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:5,flourBlend:null,prefermentType:preferment,prefOffsetH:preferment==='none'?0:11,prefGoesInFridge:true,flourInFridge:false,startTime:Date.parse('2026-10-03T23:40:00+08:00'),eatTime:BAKE,blocks:[],recipeGenerated:false,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,activeStep:7,advancedStep:9,highestStep:7,advancedHighestStep:9,setupOverview:false,activeTab:'setup',...extra};
@@ -31,6 +35,7 @@ for(const locale of ['fr','en'])for(const kitchenTemp of [22,32])test(`${locale}
  await expect.poll(async()=>Object.keys((await stored(page)).timingOverrides||{}).length).toBe(0);
  const baseline=await stored(page);
  const nights=page.getByRole('button',{name:locale==='fr'?/^Nuits/:/^Nights/});
+ await openAvailability(page,locale);
  await nights.tap();
  await expect.poll(async()=>(await stored(page)).blocks.length).toBeGreaterThan(0);
  await expect(row(plan,'pref')).toHaveAttribute('data-candidate-valid','true');
@@ -46,6 +51,7 @@ for(const locale of ['fr','en'])for(const kitchenTemp of [22,32])test(`${locale}
  await page.reload();await expect(plan).toBeVisible();
  await expect.poll(async()=>(await stored(page)).prefGoesInFridge).toBe(expectedCold);
  expect((await stored(page)).startTime).toBe(cold.startTime);
+ await openAvailability(page,locale);
  await nights.tap();await expect.poll(async()=>(await stored(page)).blocks.length).toBe(0);
  await expect.poll(async()=>(await stored(page)).startTime).toBe(baseline.startTime);
  expect((await stored(page)).prefGoesInFridge).toBe(baseline.prefGoesInFridge);
@@ -69,6 +75,7 @@ for(const locale of ['fr','en'])test(`${locale} 27C: Wednesday evening poolish f
  await reset(page).tap();
  await expect.poll(async()=>{const s=await stored(page);return s.startTime-s.prefOffsetH*3600000;}).toBe(Date.parse('2026-10-28T22:15:00+08:00'));
  expect((await stored(page)).eatTime).toBe(bake);
+ await openAvailability(page,locale);
  await page.getByRole('button',{name:locale==='fr'?/^Nuits/:/^Nights/}).tap();
  await page.getByRole('button',{name:locale==='fr'?/^Jours ouvrés/:/^Weekdays/}).tap();
  const covered=page.getByRole('button',{name:locale==='fr'?/Oui, cette étape est prévue/:/Yes, this step is covered/});

@@ -13,8 +13,8 @@ test('new Custom bake confirms kitchen even when profile supplies all equipment'
 test('equipment leads to climate even with old high-water progress; climate confirmation is explicit',()=>{
  let next,confirmed=false;
  const context={styleKey:'neapolitan',customKitchenConfirmed:false,advancedHighestStep:10,CUSTOM_STEPS:[],flourChosen:false,archivedFlourNames:[],markStepSettled:()=>{},nextUnanswered:()=>6,setAdvancedStep:v=>next=v,setAdvancedHighestStep:()=>{},setCustomKitchenConfirmed:v=>confirmed=v,suppressNextScrollRef:{current:false},scrollToStepTop:()=>{}};
- vm.runInNewContext(fn('advanceAdv')+'advanceAdv(3)',context);assert.equal(next,4);assert.equal(confirmed,false);
- vm.runInNewContext(fn('advanceAdv')+'advanceAdv(4)',context);assert.equal(next,6);assert.equal(confirmed,true);
+ vm.runInNewContext(fn('nextCustomStep')+fn('advanceAdv')+'advanceAdv(3)',context);assert.equal(next,4);assert.equal(confirmed,false);
+ vm.runInNewContext(fn('nextCustomStep')+fn('advanceAdv')+'advanceAdv(4)',context);assert.equal(next,6);assert.equal(confirmed,true);
 });
 test('blend suggestions have a purpose, vary by style and do not strengthen already strong flour',()=>{
  const base={flour1:'pizza00',flour2:null,ratio1:100,w1:260};

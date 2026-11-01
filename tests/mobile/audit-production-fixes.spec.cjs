@@ -42,3 +42,46 @@ for(const locale of ['fr','en']){
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
  });
 }
+
+for(const bread of [false,true])test(`Fresh ${bread?'baguette lunch':'pizza night'}: create, add a filling, shop, prepare and serve`,async({page})=>{
+ await page.route('http://127.0.0.1:54321/**',route=>route.fulfill({status:401,contentType:'application/json',body:'{}'}));
+ await page.goto('/fr');
+ await page.getByRole('button',{name:bread?'Pain':'Pizza',exact:true}).tap();
+ await page.getByRole('button',{name:bread?'Baguette':'Napolitaine classique',exact:true}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^Continuer avec/}).tap();
+ const quantity=page.getByLabel(bread?'Nombre de pains':'Nombre de pizzas',{exact:true});
+ await quantity.fill('4');await quantity.blur();
+ await page.locator('.bh-batch-actions:visible').getByRole('button',{name:'Continuer',exact:true}).tap();
+ const target=await page.evaluate(()=>{
+   const d=new Date();d.setDate(d.getDate()+2);d.setHours(19,30,0,0);
+   return new Date(+d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+ });
+ const time=page.getByLabel('Date et heure de cuisson',{exact:true});
+ await time.fill(target);await time.blur();
+ await expect(page.getByRole('region',{name:'Vos moments clés',exact:true})).toHaveCount(0);
+ await page.getByRole('button',{name:'Créer ma recette simple',exact:true}).tap();
+ await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
+ await page.getByRole('button',{name:'Ajouter des garnitures — facultatif',exact:true}).tap();
+ if(bread){
+   const item=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Jambon-beurre',exact:true})}).getByRole('spinbutton');
+   await item.fill('1');await item.blur();
+ }else{
+   await page.getByRole('button',{name:/^Margherita(?: · \d+)?$/}).getByRole('button',{name:'+',exact:true}).tap();
+ }
+ await page.getByRole('button',{name:/^Retour à la recette(?: →)?$/}).tap();
+ await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
+ await navigate(page,'Courses','fr');
+ const checkbox=page.getByRole('checkbox').first();
+ await checkbox.check();await expect(checkbox).toBeChecked();
+ await navigate(page,'Préparation','fr');
+ await expect(page.locator('.bh-navigator-current')).toContainText('Préparation');
+ await navigate(page,'Cuisson & service','fr');
+ await expect(page.locator('.bh-navigator-current')).toContainText('Cuisson & service');
+ await navigate(page,'Courses','fr');
+ await expect(page.getByRole('checkbox').first()).toBeChecked();
+ await expect(page.locator('.bh-bake-context')).toContainText(bread?'4 pains':'4 pizzas');
+ await expect.poll(()=>page.evaluate(isBread=>{
+   const draft=JSON.parse(localStorage.getItem('bh_session_v1')??'null');
+   return draft&&[draft.numItems,draft.recipeGenerated,isBread?draft.sandwichParty?.qtys?.['baguette-jambon-beurre']:draft.pizzaParty?.qtys?.margherita];
+ },bread)).toEqual([4,true,1]);
+});

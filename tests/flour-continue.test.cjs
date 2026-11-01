@@ -5,15 +5,15 @@ const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.
 function fn(name){let found;function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text===name)found=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);assert.ok(found,name);return found;}
 function run(name,chosen,archived=[]){
  const calls=[];
- const context={canGenerate:true,styleKey:'neapolitan',schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,commercialPrefermentPlanReady:true,advancedRecipe:null,recipe:null,tab:'custom',flourChosen:chosen,archivedFlourNames:archived,CUSTOM_STEPS:[],advancedHighestStep:6,suppressNextScrollRef:{current:false},nextUnanswered:()=>7,scrollToStepTop:()=>calls.push(['scroll'])};
+ const context={canGenerate:true,styleKey:'neapolitan',schedule:undefined,scheduleCandidateValid:true,scheduleEditing:false,commercialPrefermentPlanReady:true,advancedRecipe:null,recipe:null,tab:'custom',flourChosen:chosen,archivedFlourNames:archived,CUSTOM_STEPS:[{id:6},{id:8}],advancedHighestStep:6,suppressNextScrollRef:{current:false},nextUnanswered:()=>7,scrollToStepTop:()=>calls.push(['scroll'])};
  for(const setter of ['setTab','setFlourChosen','setQtyChosen','setPrefermentChosen','setAdvancedStep','setAdvancedHighestStep','setActiveTab','setSetupOverview'])context[setter]=v=>calls.push([setter,v]);
- const code=ts.transpileModule(fn('markStepSettled')+'\n'+fn(name)+`\n${name}(6)`,{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
+ const code=ts.transpileModule(fn('nextCustomStep')+'\n'+fn('markStepSettled')+'\n'+fn(name)+`\n${name}(6)`,{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
  vm.runInNewContext(code,context);return calls;
 }
 test('Continue never silently adopts the initial generic flour',()=>{
  assert.deepEqual(run('advanceAdv',false),[]);
  const accepted=run('advanceAdv',true);
- assert.ok(accepted.some(([name,value])=>name==='setAdvancedStep'&&value===7));
+ assert.ok(accepted.some(([name,value])=>name==='setAdvancedStep'&&value===8));
  assert.ok(!accepted.some(([name])=>name==='setFlourChosen'));
  assert.deepEqual(run('advanceAdv',true,['Archived flour']),[]);
 });

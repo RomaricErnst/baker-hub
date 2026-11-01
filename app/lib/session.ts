@@ -98,6 +98,7 @@ export interface SessionData {
   pizzaPartyTab?: string;
   sandwichParty?: SandwichSnapshot | null;
   modeChosen: boolean;
+  awaitingRecipeChoice?: boolean;
   pizzaParty?: { qtys: Record<string, number>; bakedQtys?: Record<string, number>; shopTicks?: Record<string, boolean>; prepTicks?: string[] } | null;
   bakedDone?: boolean;
   prefGoesInFridge?: boolean;

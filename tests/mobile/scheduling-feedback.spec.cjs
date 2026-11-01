@@ -11,6 +11,12 @@ const row=(plan,id)=>plan.locator(`[data-key-timing="${id}"]`);
 async function expand(plan,id){const r=row(plan,id);if(!await r.locator('.bh-key-exact').isVisible())await r.locator('.bh-key-time').tap();await expect(r.locator('.bh-key-exact')).toBeVisible();}
 const reset=page=>page.getByRole('button',{name:/^(Revenir aux horaires recommandés|Return to recommended times)$/});
 const confirm=plan=>plan.getByRole('button',{name:/^(Appliquer|Apply)$/});
+async function openAvailability(page){
+ const group=page.getByRole('group',{name:/^(Mes disponibilités|My availability)$/});
+ if(await group.getAttribute('open')===null)await group.locator('summary').tap();
+ return group;
+}
+const bakeTarget=page=>page.getByLabel(/^(Date et heure de cuisson|Bake date and time)$/);
 async function seed(page,{locale='fr',mode='custom',preferment='poolish',extra={},now=NOW}={}){
  await page.clock.setFixedTime(now);
  const data={version:1,savedAt:NOW,tab:mode,bakeType:'pizza',styleKey:'neapolitan',numItems:4,itemWeight:260,pizzaDiameter:30,ovenType:'pizza_oven',mixerType:'spiral',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:5,flourBlend:null,prefermentType:preferment,prefOffsetH:preferment==='none'?0:11,prefGoesInFridge:true,flourInFridge:false,startTime:Date.parse('2026-09-25T20:00:00+08:00'),eatTime:BAKE,blocks:[],recipeGenerated:false,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,activeStep:7,advancedStep:9,highestStep:7,advancedHighestStep:9,setupOverview:false,activeTab:'setup',...extra};
@@ -38,7 +44,7 @@ async function fits(page,locator){
 }
 for(const mode of ['simple','custom'])test(`${mode}: screenshot clock; adding work replans poolish at fixed bake, removing it clears constraints`,async({page},info)=>{
  const {plan}=await seed(page,{mode});
- const work=page.getByRole('button',{name:/^Jours ouvrés/});
+ const work=(await openAvailability(page)).getByRole('button',{name:/^Jours ouvrés/});
  await work.tap();
  await expect.poll(async()=>(await stored(page)).blocks.length).toBeGreaterThan(0);
  await expect.poll(async()=>{
@@ -104,7 +110,7 @@ for(const locale of ['fr','en'])for(const mode of ['simple','custom'])test(`${lo
  await expect.poll(async()=>(await stored(page)).blocks).toEqual(before.blocks);
  await arrangeButton(card,locale).tap();await expect(card).toHaveAttribute('data-fridge-removal','arranged');
  // A newly requested bake is not the appointment the baker confirmed.
- await page.locator('input[type="time"]').first().fill('19:15');
+ await bakeTarget(page).fill('2026-10-30T19:15');await bakeTarget(page).blur();
  await expect.poll(async()=>(await stored(page)).eatTime).toBe(PARTY_BAKE+15*60000);
  await expect(card).toHaveAttribute('data-fridge-removal','pending');
  await expect(row(plan,'fridge-removal')).toHaveAttribute('data-candidate-valid','false');
@@ -126,12 +132,12 @@ for(const mode of ['simple','custom'])test(`fr ${mode}: arranged fridge removal 
  await expect(row(plan,'fridge-removal')).toHaveAttribute('data-candidate-valid','false');
  await expect.poll(async()=>(await stored(page)).blocks).toEqual([partyBlock('18:00')]);
  // Returning to the former time must not resurrect the obsolete commitment.
- await page.locator('input[type="time"]').first().fill('18:45');
+ await bakeTarget(page).fill('2026-10-30T18:45');await bakeTarget(page).blur();
  await expect.poll(async()=>(await stored(page)).eatTime).toBe(oldBake);
  await expect(card).toHaveAttribute('data-fridge-removal','pending');
  await expect(row(plan,'fridge-removal')).toHaveAttribute('data-candidate-valid','false');
  await expect.poll(async()=>(await stored(page)).blocks).toEqual([partyBlock('18:00')]);
- await page.locator('input[type="time"]').first().fill('19:00');
+ await bakeTarget(page).fill('2026-10-30T19:00');await bakeTarget(page).blur();
  await expect.poll(async()=>(await stored(page)).eatTime).toBe(PARTY_BAKE);
  await expect(card).toHaveAttribute('data-fridge-removal','pending');
  await expect(row(plan,'fridge-removal')).toHaveAttribute('data-candidate-valid','false');
@@ -183,7 +189,7 @@ for(const locale of ['fr','en'])test(`${locale}: committed manual time is preser
  const {plan}=await seed(page,{locale,preferment:'none'});
  await enter(plan,'mix','2026-09-25T20:15');await expect(confirm(plan)).toBeEnabled();await confirm(plan).tap();
  const pinned=(await stored(page)).startTime;
- await page.getByRole('button',{name:locale==='fr'?/^Jours ouvrés/:/^Weekdays/}).tap();
+ await (await openAvailability(page)).getByRole('button',{name:locale==='fr'?/^Jours ouvrés/:/^Weekdays/}).tap();
  await expect.poll(async()=>(await stored(page)).blocks.length).toBeGreaterThan(0);
  expect((await stored(page)).startTime).toBe(pinned);
  await expect(reset(page)).toBeVisible();await page.reload();await expect(plan).toBeVisible();await expect(reset(page)).toBeVisible();
@@ -198,7 +204,7 @@ for(const locale of ['fr','en'])test(`${locale}: committed manual time is preser
 
 test('custom full blackout has no green slots; removing it preserves the preceding work preset',async({page})=>{
  const {plan}=await seed(page,{preferment:'none'});
- const availability=page.getByRole('group',{name:'Mes disponibilités',exact:true});
+ const availability=await openAvailability(page);
  await availability.getByRole('button',{name:/^Jours ouvrés/}).tap();
  const workBlocks=(await stored(page)).blocks;
  await availability.getByRole('button',{name:/Personnalisé/}).tap();
@@ -220,7 +226,7 @@ test('custom full blackout has no green slots; removing it preserves the precedi
 test('biga rapid overnight toggles keep the final blockers and fixed bake authoritative',async({page})=>{
  const {plan}=await seed(page,{preferment:'biga',extra:{startTime:Date.parse('2026-09-27T17:30:00+08:00'),eatTime:Date.parse('2026-09-28T19:30:00+08:00'),prefOffsetH:24}});
  const bake=(await stored(page)).eatTime;
- const nights=page.getByRole('button',{name:/^Nuits/});
+ const nights=(await openAvailability(page)).getByRole('button',{name:/^Nuits/});
  await nights.tap();await nights.tap();await nights.tap();
  await expect.poll(async()=>(await stored(page)).blocks.some(b=>b.label.endsWith(' night'))).toBe(true);
  await expect(plan.getByText('Vérification des créneaux…',{exact:true})).toHaveCount(0,{timeout:30000});
@@ -236,7 +242,7 @@ for(const storage of ['rt','fridge'])test(`levain ${storage}: blocker changes pr
  const {plan}=await seed(page,{preferment:'none',extra:{startTime:bake-26*3600000,eatTime:bake,yeastType:'sourdough',planningMode:'last_fed',lastFedTime:NOW-(storage==='rt'?3*3600000:8*86400000),lastFedAge:storage==='rt'?'today':'week',starterLocation:storage,lastFeedRatio:1,nextFeedRatio:1,ratioMode:'keep',starterTimingValid:true}});
  await expand(plan,'mix');await row(plan,'mix').getByRole('button',{name:'+ 30 min',exact:true}).tap();await expect(confirm(plan)).toBeEnabled();await confirm(plan).tap();
  const pinned=(await stored(page)).startTime;
- await page.getByRole('button',{name:/^Nuits/}).tap();
+ await (await openAvailability(page)).getByRole('button',{name:/^Nuits/}).tap();
  await expect.poll(async()=>(await stored(page)).blocks.length).toBeGreaterThan(0);
  expect((await stored(page)).startTime).toBe(pinned);expect((await stored(page)).eatTime).toBe(bake);
  await expect(reset(page)).toBeVisible();await page.reload();await expect(plan).toBeVisible();await expect(reset(page)).toBeVisible();
@@ -253,7 +259,7 @@ for(const ratioMode of ['recommend','keep'])for(const scenario of [
  test.setTimeout(90000);
  const bake=NOW+scenario.hours*3600000;
  const {plan}=await seed(page,{extra:{styleKey:scenario.style,bakeType:scenario.style==='pain_levain'?'bread':'pizza',ovenType:scenario.style==='pain_levain'?'standard_bread':'pizza_oven',mixerType:'hand',kitchenTemp:scenario.temp,fridgeTemp:6,startTime:NOW+22*3600000,eatTime:bake,yeastType:'sourdough',prefermentType:'levain',planningMode:'last_fed',lastFedTime:NOW-60*3600000,lastFedAge:'days23',starterLocation:'rt',lastFeedRatio:1,nextFeedRatio:1,ratioMode,starterTimingValid:true}});
- const nights=page.getByRole('button',{name:/^Nuits/});
+ const nights=(await openAvailability(page)).getByRole('button',{name:/^Nuits/});
  const settle=async()=>{
   let previous='',since=Date.now();
   await expect.poll(async()=>{
@@ -310,7 +316,7 @@ test('rapid time-step taps keep the last candidate authoritative for feedback an
 
 test('overlapping midnight blockers reject a free start whose mixing duration crosses a block; replace and exact end remain consistent',async({page})=>{
  const {plan}=await seed(page,{preferment:'none'});
- const availability=page.getByRole('group',{name:'Mes disponibilités',exact:true});
+ const availability=await openAvailability(page);
  const add=async(label,from,to)=>{
   await availability.getByRole('button',{name:/Personnalisé/}).tap();
   await availability.getByPlaceholder('Libellé — ex. Week-end en déplacement').fill(label);
@@ -344,12 +350,8 @@ test('previous/continue and browser back/forward reopen scheduling with confirme
  await enter(plan,'mix','2026-09-25T20:15');await expect(confirm(plan)).toBeEnabled();await confirm(plan).tap();
  const before=await stored(page);
  await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:'Étape précédente',exact:true}).tap();
- await expect(page.locator('#step-8')).toBeVisible();
- await page.locator('#step-8 .bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
- // Continue skips already answered steps via nextUnanswered. The saved valid
- // schedule is answered, so the existing flow lands on Fine-tune (step10).
  await expect(page.locator('#step-10')).toBeVisible();
- await page.locator('#step-10 .bh-step-actions').getByRole('button',{name:'Étape précédente',exact:true}).tap();
+ await page.locator('#step-10 .bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
  await expect(plan).toBeVisible();await expect(reset(page)).toBeVisible();
  await page.goBack();await expect(page.locator('#step-10')).toBeVisible();
  await page.goForward();await expect(plan).toBeVisible();await expect(reset(page)).toBeVisible();
@@ -404,24 +406,23 @@ test('compact Organisation progress and one-tap timing editor stay usable on nar
 
 for(const locale of ['fr','en'])test(`${locale}: explicit oven target and suggested times survive availability, back and reload`,async({page})=>{
  const {plan}=await seed(page,{locale,preferment:'none'});
- const time=page.getByLabel(locale==='fr'?'Heure d’enfournement':'Oven time',{exact:true});
- const date=page.getByLabel(locale==='fr'?'Date d’enfournement':'Baking date',{exact:true});
- await expect(time).toHaveValue('19:30');await expect(date).toHaveValue('2026-09-26');
+ const target=bakeTarget(page);
+ await expect(target).toHaveValue('2026-09-26T19:30');
  const suggestions=page.locator('details').filter({has:page.locator('summary').filter({hasText:locale==='fr'?'Autres horaires proposés':'Other suggested times'})});
  await expect(suggestions).toHaveCount(0);
- await time.fill('18:30');
+ await target.fill('2026-09-26T18:30');await target.blur();
  await expect.poll(async()=>(await stored(page)).eatTime).not.toBe(BAKE);
- const selected=await stored(page),selectedDate=await date.inputValue(),selectedTime=await time.inputValue();
- await page.getByRole('button',{name:locale==='fr'?/^Jours ouvrés/:/^Weekdays/}).tap();
+ const selected=await stored(page),selectedTarget=await target.inputValue();
+ await (await openAvailability(page)).getByRole('button',{name:locale==='fr'?/^Jours ouvrés/:/^Weekdays/}).tap();
  await expect.poll(async()=>(await stored(page)).blocks.length).toBeGreaterThan(0);
- expect((await stored(page)).eatTime).toBe(selected.eatTime);await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
+ expect((await stored(page)).eatTime).toBe(selected.eatTime);await expect(target).toHaveValue(selectedTarget);
  await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:locale==='fr'?'Étape précédente':'Previous step',exact:true}).tap();
- await expect(page.locator('#step-8')).toBeVisible();
+ await expect(page.locator('#step-10')).toBeVisible();
  // React commits the visible step before its history effect runs.
- await expect.poll(()=>page.evaluate(()=>history.state?.bakerNavigation?.customStep)).toBe(8);
+ await expect.poll(()=>page.evaluate(()=>history.state?.bakerNavigation?.customStep)).toBe(10);
  await page.goBack();await expect(plan).toBeVisible();
- await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
- await page.reload();await expect(plan).toBeVisible();await expect(time).toHaveValue(selectedTime);await expect(date).toHaveValue(selectedDate);
+ await expect(target).toHaveValue(selectedTarget);
+ await page.reload();await expect(plan).toBeVisible();await expect(target).toHaveValue(selectedTarget);
  expect((await stored(page)).eatTime).toBe(selected.eatTime);
 });
 
@@ -500,7 +501,7 @@ test('flexible balling keeps the selected bake while respecting unavailable nigh
  const bake=Date.parse('2026-09-27T11:30:00+08:00');
  const {plan}=await seed(page,{extra:{fridgeTemp:6,startTime:Date.parse('2026-09-26T23:30:00+08:00'),eatTime:bake}});
  await page.clock.setFixedTime(Date.parse('2026-09-26T12:00:00+08:00'));
- await page.getByRole('button',{name:/^Nuits/}).tap();
+ await (await openAvailability(page)).getByRole('button',{name:/^Nuits/}).tap();
  await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','true');
  await expect(row(plan,'pref')).toHaveAttribute('data-candidate-valid','true');
  const state=await stored(page);
@@ -515,8 +516,8 @@ test('blocked Friday finishing offers a verified later bake without dropping ava
  const bake=Date.parse('2026-10-30T18:00:00+08:00');
  const {plan}=await seed(page,{preferment:'none',extra:{kitchenTemp:24,fridgeTemp:5,mixerType:'hand',startTime:Date.parse('2026-10-29T18:00:00+08:00'),eatTime:bake}});
  await page.clock.setFixedTime(Date.parse('2026-10-25T12:00:00+08:00'));
- await page.getByRole('button',{name:/^Jours ouvrés/}).tap();
- await page.getByRole('button',{name:/^Nuits/}).tap();
+ await (await openAvailability(page)).getByRole('button',{name:/^Jours ouvrés/}).tap();
+ await (await openAvailability(page)).getByRole('button',{name:/^Nuits/}).tap();
  await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','false');
  const alternatives=plan.locator('.bh-plan-notice .bh-target-choices');
  await expect(alternatives).toBeVisible();

@@ -16,11 +16,11 @@ function model(isUnleavened,styleKey=isUnleavened?'piadina':'baguette'){
 test('unleavened Simple and Custom setup skip yeast/preferment without breaking forward navigation',()=>{
  const {simple,custom,nextUnanswered}=model(true);
  assert.deepEqual(Array.from(simple,s=>s.id),[1,2,3,7]);
- assert.deepEqual(Array.from(custom,s=>s.id),[1,2,3,4,6,9,10]);
+ assert.deepEqual(Array.from(custom,s=>s.id),[1,2,3,4,6,10,9]);
  assert.equal(nextUnanswered(simple,3,4),7);
  assert.equal(nextUnanswered(custom,4,5),6); // flour remains an explicit Custom choice
  const flourConfirmed=custom.map(s=>s.id===6?{...s,value:'chosen wheat flour'}:s);
- assert.equal(nextUnanswered(flourConfirmed,6,7),9); // straight to rest/cook, no hidden method gap
+ assert.equal(nextUnanswered(flourConfirmed,6,7),10); // fine-tune before rest/cook, no hidden method gap
 });
 test('Simple groups yeast into Kitchen while Custom retains yeast and preferment pages',()=>{
  const {simple,custom}=model(false);
@@ -31,9 +31,9 @@ test('Simple groups yeast into Kitchen while Custom retains yeast and preferment
 test('fixed direct formulas remove the method from progress, review and both navigation directions',()=>{
  for(const style of ['brioche','pain_viennois','bagel','pita','greek_pita','kebab_bread','batbout','laffa','pan_bagnat']){
   const {custom,nextUnanswered}=model(false,style);
-  assert.deepEqual(Array.from(custom,s=>s.id),[1,2,3,4,6,7,9,10],style);
-  assert.equal(nextUnanswered(custom,7,7),9,style+' forward');
-  assert.equal(custom[custom.findIndex(s=>s.id===9)-1].id,7,style+' back');
+  assert.deepEqual(Array.from(custom,s=>s.id),[1,2,3,4,6,7,10,9],style);
+  assert.equal(nextUnanswered(custom,7,7),10,style+' forward');
+  assert.equal(custom[custom.findIndex(s=>s.id===9)-1].id,10,style+' back');
  }
  for(const style of ['baguette','focaccia','ciabatta','panuozzo','neapolitan'])assert.ok(model(false,style).custom.some(s=>s.id===8),style+' keeps real choice');
 });

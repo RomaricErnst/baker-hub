@@ -17,6 +17,19 @@ export default function BakeNavigator({active,fr,onChange,top=0,progress,recipeM
   const trigger=useRef<HTMLButtonElement>(null);
   const root=useRef<HTMLDivElement>(null);
   const id=useId();
+  const [menuHeight,setMenuHeight]=useState<number>();
+  useEffect(()=>{
+    if(!open)return;
+    const fit=()=>{
+      const top=root.current?.getBoundingClientRect().bottom ?? 0;
+      const footer=Array.from(document.querySelectorAll<HTMLElement>('.bh-step-actions')).map(el=>el.getBoundingClientRect()).find(rect=>rect.height>0);
+      const viewport=window.visualViewport;
+      const bottom=(viewport?.height ?? window.innerHeight)+(viewport?.offsetTop ?? 0);
+      setMenuHeight(Math.max(60,Math.min(bottom,footer?.top ?? bottom)-top-12));
+    };
+    fit();window.addEventListener('resize',fit);window.visualViewport?.addEventListener('resize',fit);
+    return ()=>{window.removeEventListener('resize',fit);window.visualViewport?.removeEventListener('resize',fit);};
+  },[open]);
   useEffect(()=>setOpen(false),[active]);
   useEffect(()=>{
     if(!open)return;
@@ -36,7 +49,7 @@ export default function BakeNavigator({active,fr,onChange,top=0,progress,recipeM
         <span className="bh-navigator-disclosure">{open?(fr?'Fermer':'Close'):(fr?'Rubriques':'Sections')} <span aria-hidden="true">{open?'⌃':'⌄'}</span></span>
       </button>
     </div>
-    {open&&<nav id={id} className={`bh-bake-navigator-grid${recipeMeal?' bh-navigator-with-meal':''}`} aria-label={fr?'Votre fournée':'Your bake'}>
+    {open&&<nav id={id} style={{maxHeight:menuHeight,overflowY:'auto'}} className={`bh-bake-navigator-grid${recipeMeal?' bh-navigator-with-meal':''}`} aria-label={fr?'Votre fournée':'Your bake'}>
       {destinations.map(item=>item.id==='recipe'&&recipeMeal?<section key={item.id} className="bh-navigator-recipe" aria-label={fr?'Recette':'Recipe'}>
         <strong data-destination-label>{fr?'Recette':'Recipe'}</strong>
         <div className="bh-navigator-recipe-links">

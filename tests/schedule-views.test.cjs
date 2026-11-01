@@ -46,10 +46,10 @@ test('oven target keeps the saved cooking anchor rather than the later ready-to-
  for(const locale of ['fr','en'])for(const bakeType of ['pizza','bread'])for(const blocks of [[],[{from:new Date(+start+4*3600000),to:new Date(+start+5*3600000),label:'Busy'}]]){
   const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require('../messages/'+locale+'.json'),timeZone:'UTC'},React.createElement(Picker,{startTime:start,eatTime:bake,blocks,preheatMin:45,styleKey:'neapolitan',kitchenTemp:22,bakeType,sessionRestored:true,recipeGenerated:true,readyTimeOffsetMinutes:90,readyTimeLabel:'Ready to eat',onChange(){}})));
   const date=`${bake.getFullYear()}-${String(bake.getMonth()+1).padStart(2,'0')}-${String(bake.getDate()).padStart(2,'0')}`;
-  assert.match(html,/type="time"[^>]*value="23:45"/,'retains oven time across midnight with serving offset');
-  assert.ok(html.includes(`value="${date}"`),'retains oven date');
+  assert.match(html,/type="datetime-local"[^>]*value="[^"]+T23:45"/,'retains oven time across midnight with serving offset');
+  assert.ok(html.includes(`value="${date}T23:45"`),'retains oven date');
   assert.ok(html.includes(locale==='fr'?(bakeType==='pizza'?'Quand enfourner la première pizza ?':'Quand enfourner le pain ?'):(bakeType==='pizza'?'When will the first pizza go into the oven?':'When will the bread go into the oven?')));
-  assert.ok(html.indexOf('type="time"')<html.indexOf('aria-label="Your key times"')||locale==='fr','oven target precedes preparation controls');
+  assert.ok(html.indexOf('type="datetime-local"')<html.indexOf('aria-label="Your key times"')||locale==='fr','oven target precedes preparation controls');
  }
 });
 
