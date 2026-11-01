@@ -82,6 +82,6 @@ for(const bread of [false,true])test(`Fresh ${bread?'baguette lunch':'pizza nigh
  await expect(page.locator('.bh-bake-context')).toContainText(bread?'4 pains':'4 pizzas');
  await expect.poll(()=>page.evaluate(isBread=>{
    const draft=JSON.parse(localStorage.getItem('bh_session_v1')??'null');
-   return draft&&[draft.numItems,draft.recipeGenerated,isBread?draft.sandwichParty.qtys['baguette-jambon-beurre']:draft.pizzaParty.qtys.margherita];
+   return draft&&[draft.numItems,draft.recipeGenerated,isBread?draft.sandwichParty?.qtys?.['baguette-jambon-beurre']:draft.pizzaParty?.qtys?.margherita];
  },bread)).toEqual([4,true,1]);
 });
