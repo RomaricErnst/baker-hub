@@ -6790,6 +6790,9 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
     const bakeChoices: Date[]=[];
     if(eatTimeSet) {
       for(let halfHour=1;halfHour<=12;halfHour++) bakeChoices.push(new Date(+pendingEatTime+halfHour*1800000));
+      for(let day=1;day<=2;day++)for(const hour of [11,19,21]){
+        const later=new Date(pendingEatTime);later.setDate(later.getDate()+day);later.setHours(hour,30,0,0);bakeChoices.push(later);
+      }
     } else {
       for(let day=0;day<4;day++)for(const hour of [11,19]) {
         const bake=new Date(now);bake.setDate(bake.getDate()+day);bake.setHours(hour,30,0,0);bakeChoices.push(bake);
@@ -6799,8 +6802,9 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
       if(+bake<=now||(eatTimeSet&&+bake===+pendingEatTime))continue;
       const candidateBlocks=[...localBlocks];
       const append=(entries:ReturnType<typeof getWorkdaysInWindow>)=>{for(const e of entries)if(!candidateBlocks.some(b=>+b.from===+e.blockStart&&+b.to===+e.blockEnd))candidateBlocks.push({from:e.blockStart,to:e.blockEnd,label:e.label});};
-      if(localBlocks.some(b=>b.label.startsWith('Work · ')))append(getWorkdaysInWindow(new Date(now),bake));
-      if(localBlocks.some(b=>b.label.endsWith(' night')))append(getNightsInWindow(new Date(now),bake));
+      if(localBlocks.some(b=>b.label.startsWith('Work · ')))append(getWorkdaysInWindow(new Date(now),new Date(+bake+60000)));
+      if(localBlocks.some(b=>b.label.endsWith(' night')))append(getNightsInWindow(new Date(now),new Date(+bake+60000)));
+      if(isTimeBlocked(bake,candidateBlocks))continue;
       const input=commercialCandidateInput(candidateBlocks);
       const start=new Date(+bake-_optimalMix*3600000);
       const result=findFixedBakeSchedule({...input,start,at:start,bake,prefHours:hasPrefActive?getPrefOptH(prefermentType,kitchenTemp,prefGoesInFridge,styleKey,fridgeTemp):0},pins);
@@ -8230,7 +8234,7 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
             const at=requested??+event.time;
             // Keep the track stationary while its handle moves.
             const axisTime=+(displayStarterEvents.find(e=>e.kind===event.kind)?.time??event.time);
-            anchors.push({valid:starterPreview?.valid,id:id+(!editable?':'+anchors.length:''),name:event.label,at,editable,
+            anchors.push({dayOnly:event.isPast&&event.timeIsEstimate,valid:starterPreview?.valid,id:id+(!editable?':'+anchors.length:''),name:event.label,at,editable,
               ...clampBounds(axisTime-6*hour,Math.min(+pendingStart-step,axisTime+6*hour),at),
               locked:event.kind==='pre_mix'&&!!activeOverrides.feedLocked,
               detail:event.kind==='last_fed'||event.historicalStorage?(isFr?'Déjà effectué':'Already done'):event.isPast?(isFr?'Horaire passé':'Past time'):event.kind.startsWith('fridge')?(isFr?'Calculé avec les rafraîchis':'Calculated with the feeds'):event.cardNote,
