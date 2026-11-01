@@ -72,7 +72,17 @@ test('levain known peak uses maturity window; observation never becomes a dragga
  const {plan}=await openPlan(page,'custom',[],false,false,{yeastType:'sourdough',planningMode:'know_peak',knownPeakTime:+start,starterLocation:'rt',lastFeedRatio:1,ratioMode:'keep',starterTimingValid:true});
  await expand(plan,'mix');await expect(plan.locator('[data-key-timing^="starter:"] .bh-key-time')).toHaveCount(0);
  await enter(plan,'mix',new Date(+start+900000));await expect(confirm(plan)).toBeEnabled();await confirm(plan).click();await expect.poll(async()=>(await stored(page)).startTime).toBe(+start+900000);expect((await stored(page)).eatTime).toBe(+bake);
- await enter(plan,'mix',new Date(+bake-3600000));await expect(confirm(plan)).toBeDisabled();await plan.getByRole('button',{name:'Annuler',exact:true}).click();expect((await stored(page)).startTime).toBe(+start+900000);
+ const requested=+bake-3600000;
+ await enter(plan,'mix',new Date(requested));
+ await expect(row(plan,'mix')).toContainText('Limite compatible');
+ const bounded=Number(await row(plan,'mix').getAttribute('data-at'));
+ expect(bounded).toBeGreaterThan(+start+900000);
+ expect(bounded).toBeLessThan(requested);
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','true');
+ await expect(confirm(plan)).toBeEnabled();
+ await plan.getByRole('button',{name:'Annuler',exact:true}).click();
+ expect((await stored(page)).startTime).toBe(+start+900000);
+ expect((await stored(page)).knownPeakTime).toBe(+start);
  await page.reload();await expect(plan).toBeVisible();await expand(plan,'mix');await expectAt(plan,'mix',+start+900000);
 });
 for(const storage of ['rt','fridge'])test(`levain ${storage} future feeds use starter solver and cancel leaves saved plan intact`,async({page})=>{
