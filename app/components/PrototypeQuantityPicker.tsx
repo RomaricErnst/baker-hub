@@ -32,6 +32,7 @@ export interface PrototypeQuantityPickerProps {
   units?: UnitSystem;
   /** Style keys with diameter/edge presets, such as neapolitan or newyork. */
   roundPizza?: boolean;
+  roundView?: 'count' | 'size' | 'both';
   locale?: 'en' | 'fr' | string;
   count: number;
   itemWeight: number;
@@ -86,6 +87,7 @@ export default function PrototypeQuantityPicker({
   bakeType,
   units = 'metric',
   roundPizza = false,
+  roundView = 'both',
   locale = 'en',
   count,
   itemWeight,
@@ -169,7 +171,7 @@ export default function PrototypeQuantityPicker({
       {bakeType==='bread'&&onFlourTargetChange&&<div role="group" aria-label={fr?'Calculer la quantité':'Quantity basis'} style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
         {[false,true].map(byFlour=><button key={String(byFlour)} type="button" aria-pressed={byFlour===(totalFlourTarget!==undefined)} onClick={()=>{if(byFlour!==(totalFlourTarget!==undefined))onFlourTargetChange(byFlour?500:undefined);}} style={{minHeight:44,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:8,background:byFlour===(totalFlourTarget!==undefined)?'var(--cream)':'white',color:'var(--char)'}}>{byFlour?(fr?'Par quantité de farine':'By flour weight'):(fr?'Par nombre de pains':'By loaf count')}</button>)}
       </div>}
-      <div style={{ marginBottom: '16px' }}>
+      {(!roundPizza || roundView !== 'size') && <div style={{ marginBottom: '16px' }}>
         <label htmlFor="quantity-count" style={labelStyle}>
           {countLabel ?? (bakeType === 'bread' ? (fr ? 'Nombre de pains' : 'Number of loaves') : (fr ? 'Nombre de pizzas' : 'Number of pizzas'))}
         </label>
@@ -184,9 +186,9 @@ export default function PrototypeQuantityPicker({
           onCommit={value => onCountChange(clamp(value, countMin, countMax, countStep))}
           style={{ ...inputStyle, fontSize: '24px', fontWeight: 700 }}
         />
-      </div>
+      </div>}
 
-      {roundPizza ? (
+      {roundPizza && roundView === 'count' ? <p>{units === 'imperial' ? `${Math.round(diameter / 2.54 * 10) / 10} in` : `${diameter} cm`} · {grams(itemWeight)} {fr?'par pâton':'per dough ball'}</p> : roundPizza ? (
         <section style={cardStyle} aria-labelledby="quantity-each-pizza">
           <h2 id="quantity-each-pizza" style={{ fontSize: '18px', margin: '0 0 14px', fontWeight: 700 }}>
             {fr ? 'Chaque pizza' : 'Each pizza'}
