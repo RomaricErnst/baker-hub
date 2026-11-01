@@ -29,7 +29,7 @@ test('sourdough choice uses planned starter events for any bread style',()=>{
  const recipe=utils.calculateRecipe('pain_campagne','dutch_oven',1,800,22,'normal',schedule,6,'sourdough','custom','stand');
  const starterEvents=['refresh','intermediate_refresh','pre_mix'].map((kind,i)=>({kind,time:new Date(`2026-09-23T${['08','12','18'][i]}:00Z`),isPast:false,isActive:true,label:'Feed',isDraggable:false,cardTimeFormat:'absolute',bellStyle:'solid',bellSigmaScale:1}));
  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,{schedule,recipe,starterEvents,mixerType:'stand',styleKey:'pain_campagne',kitchenTemp:22,numItems:1,oil:0,hydration:75,locale:'en'})));
- assert.equal((html.match(/Feed your starter<\/strong>/g)||[]).length,3);
+ for(const label of ['Refresh feed','Intermediate feed','Pre-mix feed'])assert.ok(html.includes(label+'</strong>'),label);
  assert.ok(html.includes('starter.webp'));
 });
 test('sourdough pizza hands off to pizza journey, bread cooling uses loaf size',()=>{
@@ -219,8 +219,9 @@ test('mixing flour rows exclude prefermented flour and conserve each batch',()=>
   const {mixingBatchPlan}=require('../app/utils/mixingBatches.ts');
   const portion=mixingBatchPlan(recipe,'spiral',count,0).portion.flour;
   const first=Math.round(portion*(recipe.flourParts[0].grams-used)/added);
-  assert.ok(html.includes(`<span>Primary flour</span><strong>${first} g</strong>`),`${pref}, ${count}: primary added flour`);
-  assert.ok(html.includes(`<span>Second flour</span><strong>${portion-first} g</strong>`),`${pref}, ${count}: second added flour`);
+  const {displayWeight}=require('../app/utils/units.ts');
+  assert.ok(html.includes(`<span>Primary flour</span><strong>${displayWeight(first,'metric','en')}</strong>`),`${pref}, ${count}: primary added flour`);
+  assert.ok(html.includes(`<span>Second flour</span><strong>${displayWeight(portion-first,'metric','en')}</strong>`),`${pref}, ${count}: second added flour`);
  }
 });
 

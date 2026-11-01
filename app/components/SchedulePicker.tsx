@@ -3372,7 +3372,7 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
     let _suggestedBakeTime: Date | null = null;
     let _farHorizonPlan = false;
     let _newPendingStart: Date = pendingStart;
-    let _newFridgeOut: Date | null = fridgeOutTime;
+    let _newFridgeOut: Date | null = null;
     // Canonical fridge_in / fridge_out times for a non-Path-B fridge winner,
     // mirrored from best.renderFridgeInMs / best.renderFridgeOutMs once the
     // winner is selected. Read by the event builder's Block 2 to render
@@ -4104,6 +4104,10 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
         return events.map(event=>['refresh','intermediate_refresh','pre_mix'].includes(event.kind)?{...event,feedingRatio:nextFeedRatio}:event);
       })();
 
+      // The only actionable fridge-out time is the one in this agenda. A
+      // previous probe or discarded storage path cannot populate the parent.
+      _newFridgeOut = _starterEvents.filter(event=>event.kind==='fridge_out').at(-1)?.time ?? null;
+
       // Suppress fridge suggestion banner when the winning candidate doesn't
       // use the fridge path. deriveStarterPeakTime may suggest fridge based on
       // standalone state but if the solver chose a refresh+future-feed or
@@ -4283,10 +4287,8 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
       if (_newPendingStart.getTime() !== pendingStart.getTime()) {
         setPendingStart(_newPendingStart);
       }
-      if (_newFridgeOut !== fridgeOutTime) {
-        setFridgeOutTime(_newFridgeOut);
-        onFridgeOutTimeChange?.(_newFridgeOut);
-      }
+      if (_newFridgeOut?.getTime() !== fridgeOutTime?.getTime()) setFridgeOutTime(_newFridgeOut);
+      onFridgeOutTimeChange?.(_newFridgeOut);
     }
 
     if (!peakTime && starterLocation !== 'fridge') {
@@ -6277,11 +6279,14 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
     solverNotifyBudgetRef.current={t:Date.now(),n:0};
     setMovedNote(null);setBlockerNote(null);ratioApplyHistoryRef.current.length=0;
     setStarterPins(null);setEditingRow(null);setEditingEnabled(false);setEditBaseTimes(null);draftOverridesRef.current={};
+    const previousBlocks=solverBlocksRef.current;
+    const removingOnly=newBlocks.length<previousBlocks.length && newBlocks.every(next=>previousBlocks.some(old=>
+      +old.from===+next.from && +old.to===+next.to && old.label===next.label && old.fridgeRemoval===next.fridgeRemoval));
     solverBlocksRef.current=newBlocks;setLocalBlocks(newBlocks);
     // Recompute automatic recommendations for the new availability, rather
     // than retaining a valid repair from a blocker that has since been removed.
     // Explicit baker choices still constrain the search; this is not Reset.
-    replanCurrentSchedule(newBlocks,manualTimesRef.current,true);
+    replanCurrentSchedule(newBlocks,manualTimesRef.current,true,removingOnly);
   }
 
   function toggleWork() {
@@ -6405,7 +6410,9 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
     const displayedPlanKept=expectedEvents===undefined||eventSignature(expectedEvents)===eventSignature(events);
     // Only user observations are facts. A scheduled feed or fridge action
     // does not become immutable merely because its time passed.
-    const history=displayStarterEvents.filter(e=>+e.time<now&&(e.kind==='last_fed'||e.kind==='known_peak'));
+    const history=displayStarterEvents.filter(e=>+e.time<now&&(
+      (e.kind==='last_fed' && lastFedTime && +e.time===+lastFedTime) ||
+      (e.kind==='known_peak' && knownPeakTime && +e.time===+knownPeakTime)));
     const historyKept=history.every(old=>events.some(e=>e.kind===old.kind&&+e.time===+old.time));
     const noNewPastActions=actions.every(e=>+e.time>=now||history.some(old=>old.kind===e.kind&&+old.time===+e.time));
     const peakOK=planningMode==='know_peak'
@@ -6673,7 +6680,7 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
   useEffect(()=>{onScheduleValidityChange?.(currentCandidateValid);},[currentCandidateValid,onScheduleValidityChange]);
   useEffect(()=>{if(!isSourdough)onPrefermentValidityChange?.(currentCandidateValid);},[isSourdough,currentCandidateValid,onPrefermentValidityChange]);
   useEffect(()=>{if(isSourdough)onStarterTimingValidityChange?.((completedMixAt!==undefined||starterTimingValid)&&currentCandidateValid);},[isSourdough,completedMixAt,starterTimingValid,currentCandidateValid,onStarterTimingValidityChange]);
-  function replanCurrentSchedule(candidateBlocks:AvailabilityBlock[],overrides:TimingOverrides,resetRecommendation=false) {
+  function replanCurrentSchedule(candidateBlocks:AvailabilityBlock[],overrides:TimingOverrides,resetRecommendation=false,removingOnly=false) {
     // Historical preparation is immutable; changing availability cannot restart it.
     const pastPreparation=startTimeInPast||(recipeGenerated&&!execution&&!replanRequested&&(+pendingStart<=Date.now()||(!isSourdough&&hasPrefActive&&+pendingStart-prefOffsetH*3600000<Date.now())));
     if(!eatTimeSet||pastPreparation){onChange(pendingStart,pendingEatTime,candidateBlocks,{preservePlan:true,timingOverrides:overrides});return;}
@@ -6683,7 +6690,7 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
       let checked=replanStarter(candidateBlocks,overrides);
       // Relaxing constraints must never discard an agenda still feasible at its
       // exact original times. Recheck method, maturity, folds and every action.
-      if(!checked && solverResult && currentCandidateValid){
+      if(removingOnly && !checked && solverResult && currentCandidateValid){
         const retained=validateCurrentStarterCandidate(candidateBlocks);
         if(retained.valid)checked=retained;
       }

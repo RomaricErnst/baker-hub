@@ -21,12 +21,20 @@ test('crossing the unsupported threshold cannot increase the dose or stay recomm
  }
 });
 
-test('ordinary direct, mixed and cold-only dose results remain unchanged',()=>{
- for(const [warm,temp,cold,pct] of [[0,30,12,.2871],[4,22,0,1.2697],[2,22,24,.1156],[29.9,30,12,.05]]){
+test('single-phase doses and the practical floor remain stable',()=>{
+ for(const [warm,temp,cold,pct] of [[0,30,12,.2871],[4,22,0,1.2697],[29.9,30,12,.05]]){
   const r=dose(warm,temp,cold);
   assert.equal(r.pct,pct);assert.equal(r.notRecommended,false);
   assert.ok(!r.warnings.some(w=>w.key==='overFermentRT'));
  }
+});
+
+test('an ordinary mixed schedule spends one fermentation budget across its two phases',()=>{
+ const r=dose(2,22,24);
+ const roomHoursAtDose=(9.5/(r.pct*2.5**((22-25)/10)))**(1/1.65);
+ const coldHoursAtDose=(7.5/r.pct)**(1/1.313);
+ assert.ok(Math.abs(2/roomHoursAtDose+24/coldHoursAtDose-1)<.001);
+ assert.equal(r.notRecommended,false);
 });
 
 test('recipe construction retains the rejected-exposure flag rather than losing it during mass adjustment',()=>{

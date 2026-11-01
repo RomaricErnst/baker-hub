@@ -22,10 +22,10 @@ test('quantity backward action returns generated edits to choices, but first cre
 });
 
 test('finishing changed setup delegates validation without returning early; unchanged setup restores its origin',()=>{
- for(const recipeGenerated of [false,true])for(const protocolStale of [false,true])for(const destination of [null,'recipe','shopping','protocol','service']){
+ for(const recipeGenerated of [false,true])for(const protocolStale of [false,true])for(const keyChanged of [false,true])for(const destination of [null,'recipe','shopping','protocol','service']){
   const calls=[];
-  evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{recipeGenerated,protocolStale,canGenerate:true,fillingsReturn:destination?{destination}:null,handleGenerate(){calls.push('validate');},setSetupOverview(value){calls.push(['overview',value]);},finishFillings(){calls.push(destination);},openDestination(value){calls.push(value);}});
-  assert.deepEqual(calls,!recipeGenerated||protocolStale?['validate']:[['overview',false],destination||'recipe']);
+  evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{recipeGenerated,protocolStale,canGenerate:true,previousRecipeInputKey:{current:'saved'},recipeInputKey:keyChanged?'edited':'saved',fillingsReturn:destination?{destination}:null,handleGenerate(accepted){assert.equal(accepted,true,'Returning from the edit accepts this update once');calls.push('validate');},setSetupOverview(value){calls.push(['overview',value]);},finishFillings(){calls.push(destination);},openDestination(value){calls.push(value);}});
+  assert.deepEqual(calls,!recipeGenerated||protocolStale||keyChanged?['validate']:[['overview',false],destination||'recipe']);
  }
 });
 
@@ -111,8 +111,11 @@ test('stale generated output is hidden consistently across recipe, shopping, pre
   const hidden=evaluate(expression,{recipeGenerated,protocolStale,destination});
   assert.equal(hidden,recipeGenerated&&protocolStale&&['recipe','shopping','protocol','service'].includes(destination),`${destination}/${recipeGenerated}/${protocolStale}`);
  }
- assert.match(source,/Choices changed · recipe needs review/);
- assert.match(source,/Vos choix sont conservés/);
+ const prompt=all(n=>ts.isJsxElement(n)&&n.openingElement.tagName.getText(tree)==='section'&&n.openingElement.attributes.properties.some(p=>p.name?.getText(tree)==='role'&&p.initializer?.text==='status')&&n.getText(tree).includes('Update your recipe')).at(0);
+ assert.ok(prompt,'The guarded destinations need a visible update or repair action');
+ const update=prompt.children.find(n=>ts.isJsxElement(n)&&n.openingElement.tagName.getText(tree)==='button');
+ assert.equal(update?.openingElement.attributes.properties.find(p=>p.name?.getText(tree)==='onClick')?.initializer?.expression?.getText(tree),'finishSetupEdit');
+ assert.match(update.getText(tree),/canGenerate/);assert.match(update.getText(tree),/generationBlocker\?\.action/);
 });
 
 test('failed schedule validation cannot clear stale state or return to executable preparation',()=>{
@@ -152,9 +155,10 @@ test('separating blend flours cannot move existing salt or yeast shopping checks
  const declaration=all(n=>ts.isVariableDeclaration(n)&&n.name.getText(tree)==='doughShoppingItems')[0];
  const callback=declaration.initializer.arguments[0].getText(tree);
  for(const locale of ['en','fr']){
-  const cr={flour:1000,salt:25,yeast:{convertedGrams:1},oil:10,flourParts:[{key:'nuvola',name:'Nuvola',nameFr:'Nuvola',grams:850},{key:'manitoba',name:'Manitoba',nameFr:'Manitoba',grams:150}]};
-  const rows=evaluate('('+callback+')()',{tab:'custom',advancedRecipe:cr,recipe:null,locale,yeastType:'instant',Math,Number,parseFloat});
+  const cr={flour:1000,salt:25,yeast:{convertedGrams:.54},oil:10,flourParts:[{key:'nuvola',name:'Nuvola',nameFr:'Nuvola',grams:850},{key:'manitoba',name:'Manitoba',nameFr:'Manitoba',grams:150}]};
+  const rows=evaluate('('+callback+')()',{tab:'custom',advancedRecipe:cr,recipe:null,locale,yeastType:'instant',Math,Number,parseFloat,formatYeastDose:require('../app/utils/prefermentDose.ts').formatYeastDose});
   assert.deepEqual(Array.from(rows,r=>r.tickKey),['dough_flour_nuvola','dough_flour_manitoba','dough_1','dough_2','dough_3']);
   assert.deepEqual(Array.from(rows.slice(0,2),r=>r.amount),['850g','150g']);
+  assert.equal(rows.find(row=>row.tickKey==='dough_2').amount,locale==='fr'?'0,54 g':'0.54 g');
  }
 });

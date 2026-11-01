@@ -12,7 +12,7 @@ function visit(n){if(ts.isFunctionDeclaration(n)&&names.includes(n.name?.text))d
 function harness(overrides={}){
  const writes=[];
  class Clock extends Date{static now(){return now;}}
- const c={Date:Clock,isSourdough:false,eatTimeSet:true,startTimeInPast:false,execution:undefined,mixExecution:undefined,completedMixAt:undefined,replanRequested:false,hasPrefActive:true,
+ const c={Date:Clock,isSourdough:false,recipeGenerated:false,eatTimeSet:true,startTimeInPast:false,execution:undefined,mixExecution:undefined,completedMixAt:undefined,replanRequested:false,hasPrefActive:true,
   pendingStart:original,pendingEatTime:bake,prefOffsetH:8,_optimalMix:(+bake-original)/H,
   prefermentType:'poolish',kitchenTemp:22,prefGoesInFridge:false,styleKey:'neapolitan',fridgeTemp:5,
   manualTimesRef:{current:overrides},solverNotifyBudgetRef:{current:{}},ratioApplyHistoryRef:{current:[]},
@@ -45,6 +45,6 @@ test('availability recalculation preserves explicit mixing and locked poolish ch
  assert.deepEqual(writes.at(-1).options.timingOverrides,overrides);
 });
 test('availability edits preserve already-started preparation',()=>{
- const {c,writes}=harness();c.pendingStart=new Date(now+H);c.prefOffsetH=8;
+ const {c,writes}=harness();c.recipeGenerated=true;c.pendingStart=new Date(now+H);c.prefOffsetH=8;
  c.applyAndUpdate([]);assert.equal(+c.pendingStart,now+H);assert.equal(writes.at(-1).options.preservePlan,true);
 });

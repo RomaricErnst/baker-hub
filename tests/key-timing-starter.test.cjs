@@ -47,8 +47,11 @@ test('week-old refrigerated levain retains revival actions and validates the com
  const {controls:c,effects}=setup({planningMode:'last_fed',knownPeakTime:null,lastFedAge:'week',lastFedTime:new Date(Date.now()-8*86400000),starterLocation:'fridge',nextFeedRatio:1});
  assert.ok(c.anchors.some(a=>a.id.startsWith('starter:')));const mix=c.anchors.find(a=>a.id==='mix');assert.ok(c.check('mix',mix.at));assert.deepEqual(effects,[]);
 });
-test('optimized next-day levain slot probes complete without applying ratio changes',()=>{
- const bake=new Date(Math.ceil((Date.now()+29*3600000)/900000)*900000),start=new Date(+bake-26*3600000);const {controls:c,effects}=setup({eatTime:bake,startTime:start,planningMode:'last_fed',knownPeakTime:null,lastFedAge:'today',lastFedTime:new Date(Date.now()-2*3600000),starterLocation:'rt',nextFeedRatio:1,ratioMode:'recommend',blocks:[{from:new Date(+bake-20*3600000),to:new Date(+bake-12*3600000),label:'night'}]});
+test('optimized next-day levain slot probes complete without applying ratio changes',t=>{
+ // Tuesday 19:30 bake, overnight 23:30–07:30 unavailability. Keep enough
+ // daylight for the full starter-dough bulk and its fold interventions.
+ t.mock.timers.enable({apis:['Date'],now:Date.parse('2030-04-01T11:30:00Z')});
+ const bake=new Date(Date.now()+32*3600000),start=new Date(+bake-26*3600000);const {controls:c,effects}=setup({eatTime:bake,startTime:start,planningMode:'last_fed',knownPeakTime:null,lastFedAge:'today',lastFedTime:new Date(Date.now()-2*3600000),starterLocation:'rt',nextFeedRatio:1,ratioMode:'recommend',blocks:[{from:new Date(+bake-20*3600000),to:new Date(+bake-12*3600000),label:'night'}]});
  let valid=0;for(const a of c.anchors.filter(a=>a.editable))for(let t=Math.ceil(a.from/900000)*900000;t<=a.to;t+=900000)if(c.check(a.id,t))valid++;
  assert.ok(valid>0,'optimized fixture includes a valid candidate');assert.deepEqual(effects,[]);
 });

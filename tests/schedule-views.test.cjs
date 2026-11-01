@@ -75,5 +75,5 @@ test('visual windows split dates and gaps, and select only validated slots',()=>
  const html=renderToStaticMarkup(tree);
  assert.equal((html.match(/class="bh-window-day"/g)||[]).length,2);
  assert.doesNotMatch(html,/bh-window-rail|No available window/);
- assert.match(html,/07:00/);assert.match(html,/07:30/);assert.doesNotMatch(html,/bh-window-marker/);
+ assert.match(html,/7:00am/);assert.match(html,/7:30am/);assert.doesNotMatch(html,/bh-window-marker/);
 });
