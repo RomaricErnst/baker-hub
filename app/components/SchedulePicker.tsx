@@ -14,7 +14,7 @@ import ScheduleClockInput from './ScheduleClockInput';
 import ScheduleKeyTimings, {type KeyTimingAnchor} from './ScheduleKeyTimings';
 import {assessScheduleDraft} from '../utils/scheduleDraft';
 import {proposeScheduleEdit, validateScheduleCandidate, findFixedBakeSchedule, recommendPreferment, laterBakeAlternative, scheduleEditSlots, type EditInput, type EditTimes} from '../utils/scheduleEdit';
-import { blockClock, chronologicalBlocks, recurringBlockEntries, selectedAvailabilityCount, foldActionLabel, isTimeBlocked, findAvailabilityConflicts, getFinalFridgeRemoval, isFridgeRemovalCovered, type AvailabilityAction } from '../utils/scheduleAvailability';
+import { blockClock, chronologicalBlocks, profileBlocksForBake, recurringBlockEntries, selectedAvailabilityCount, foldActionLabel, isTimeBlocked, findAvailabilityConflicts, getFinalFridgeRemoval, isFridgeRemovalCovered, type AvailabilityAction } from '../utils/scheduleAvailability';
 import { kneadMinFor, type MixerType } from '../data';
 import type {BakeExecution} from '../utils/bakeExecution';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
@@ -2205,7 +2205,12 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
     const d = new Date(yyyy, mm - 1, dd, hh, mi, 0, 0);
     setPendingEatTime(d);
     setEatTimeSet(true);
-    onChange(pendingStart, d, blocks);
+    const firstBakeBlocks = !eatTimeSet && !sessionRestored && blocks.length===0
+      ? profileBlocksForBake(new Date(),d,loadProfile()?.blockers ?? DEFAULT_BLOCKERS)
+      : blocks;
+    solverBlocksRef.current = firstBakeBlocks;
+    setLocalBlocks(firstBakeBlocks);
+    onChange(pendingStart, d, firstBakeBlocks);
   }
 
   function computeAndApplyRecommendation(
@@ -2871,27 +2876,18 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
   const _effectiveBlocks = localBlocks;
   const isWorkActive = _effectiveBlocks.some(b => b.label.startsWith('Work · '));
 
-  // Default night block (sourdough). Multi-day levain plans otherwise schedule
-  // refresh/fridge-out actions overnight (1–4am) because nothing pulls feed
-  // times toward waking hours — the audit's dominant default-mode complaint.
-  // Night blockers are how the engine is designed to shape humane hours, so we
-  // enable them by default and surface them as a clearable toggle. Applied once,
-  // only when: sourdough, bake time set, not a restored session (which carries
-  // its own blocks), and the baker has no blockers yet. If the baker later
-  // clears nights, the ref keeps us from re-adding them.
-  const nightsDefaultApplied = useRef(false);
+  // The picker can also mount with a suggested date already selected. Apply
+  // both profile rules together before solving so a weekday block is never
+  // replaced by a second, nights-only initial recommendation.
+  const defaultAvailabilityApplied = useRef(false);
   useEffect(() => {
-    if (!eatTimeSet || sessionRestored || confirmedPlan) return;
-    if (nightsDefaultApplied.current) return;
-    if (nights.length === 0 || !presetHours('sleep').enabled) return;
-    // Already has any blocker (from session/parent or a prior manual toggle) →
-    // respect it, don't override.
-    if (_effectiveBlocks.length > 0) { nightsDefaultApplied.current = true; return; }
-    nightsDefaultApplied.current = true;
-    const nightBlocks = nights.map(n => ({ from: n.blockStart, to: n.blockEnd, label: n.label }));
-    applyAndUpdate(nightBlocks);
+    if (!eatTimeSet || sessionRestored || confirmedPlan || defaultAvailabilityApplied.current) return;
+    defaultAvailabilityApplied.current = true;
+    if (solverBlocksRef.current.length || blocks.length) return;
+    const presets = profileBlocksForBake(blockerWindowStart, pendingEatTime, loadProfile()?.blockers ?? DEFAULT_BLOCKERS);
+    if (presets.length) applyAndUpdate(presets);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSourdough, eatTimeSet, sessionRestored, nights]);
+  }, [eatTimeSet, sessionRestored, confirmedPlan, pendingEatTime]);
 
   // ── Phase transitions ────────────────────────
   function confirmBakeTime() {

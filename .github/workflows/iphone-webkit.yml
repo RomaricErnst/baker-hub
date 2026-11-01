@@ -37,7 +37,7 @@ jobs:
         run: node scripts/mobile-test-scope.cjs >> "$GITHUB_OUTPUT"
   iphone:
     needs: scope
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 25
     strategy:
       fail-fast: false
