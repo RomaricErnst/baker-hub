@@ -3560,7 +3560,7 @@ export default function Home() {
               {showMixingBatches && mixingBatchControl}
   </>;
   const mealNoun=fr?'Garnitures':bakeType==='pizza'?'Toppings':'Fillings';
-  const sourced = (value:string, picked:boolean) => picked ? value : value+' · '+(fr?'valeur proposée':'suggested');
+  const sourced = (value:string|null, picked:boolean) => !value || picked ? value : value+' · '+(fr?'valeur proposée':'suggested');
   const reviewEquipment = [ovenType && sourced(ovenDisplayName ?? '',confirmed('oven',ovenType)),mixerType && sourced(localName(MIXER_TYPES[mixerType]),confirmed('mixer',mixerType))].filter(Boolean).join(' · ');
   const reviewAmbient = sourced(reviewKitchen,confirmed('climate',kitchenTemp));
   const reviewLeavening = yeastType && !isUnleavened ? sourced(localName(YEAST_TYPES[yeastType]),confirmed('yeast',yeastType)) : null;
