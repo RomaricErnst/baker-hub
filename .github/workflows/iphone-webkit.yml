@@ -120,3 +120,28 @@ jobs:
         env:
           TOGGLES: ${{ matrix.controls }}
         run: node tests/roundtrip/run.mjs .ci-tools/starter-roundtrip.js
+
+  starter-feasibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TZ: Asia/Singapore
+      NOW: '2026-11-01T08:00:00Z'
+      SETTLE: '200'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm install --prefix .ci-tools --no-audit --no-fund esbuild@0.28.2 jsdom@30.1.1
+      - name: Validate full preparation order and availability across 900 schedules
+        run: node --test tests/followup-plan-invariants.test.cjs
+      - run: node tests/roundtrip/build-path.mjs
+      - name: Compare fresh plans with plans reached through date changes
+        run: node tests/roundtrip/path-independence.mjs .ci-tools/starter-path.js
+      - name: Accept later feasible bakes from constrained starter plans
+        run: node tests/roundtrip/feasible-fallback.mjs .ci-tools/starter-path.js

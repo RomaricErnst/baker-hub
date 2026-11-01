@@ -24,7 +24,7 @@ test('quantity backward action returns generated edits to choices, but first cre
 test('finishing changed setup delegates validation without returning early; unchanged setup restores its origin',()=>{
  for(const recipeGenerated of [false,true])for(const protocolStale of [false,true])for(const keyChanged of [false,true])for(const destination of [null,'recipe','shopping','protocol','service']){
   const calls=[];
-  evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{recipeGenerated,protocolStale,canGenerate:true,previousRecipeInputKey:{current:'saved'},recipeInputKey:keyChanged?'edited':'saved',fillingsReturn:destination?{destination}:null,handleGenerate(accepted){assert.equal(accepted,true,'Returning from the edit accepts this update once');calls.push('validate');},setSetupOverview(value){calls.push(['overview',value]);},finishFillings(){calls.push(destination);},openDestination(value){calls.push(value);}});
+  evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{recipeGenerated,protocolStale,canGenerate:true,generatedRecipeInputKey:{current:null},previousRecipeInputKey:{current:'saved'},recipeInputKey:keyChanged?'edited':'saved',fillingsReturn:destination?{destination}:null,handleGenerate(accepted){assert.equal(accepted,true,'Returning from the edit accepts this update once');calls.push('validate');},setSetupOverview(value){calls.push(['overview',value]);},finishFillings(){calls.push(destination);},openDestination(value){calls.push(value);}});
   assert.deepEqual(calls,!recipeGenerated||protocolStale||keyChanged?['validate']:[['overview',false],destination||'recipe']);
  }
 });
@@ -67,7 +67,7 @@ test('the first input edit after generation marks the recipe stale; mounting and
  assert.ok(effect,'Input comparison effect must exist');
  const callback=effect.arguments[0].getText(tree);
  const calls=[];
- const context={previousRecipeInputKey:{current:'generated'},recipeInputKey:'generated',recipeGenerated:true,isRestoringRef:{current:false},setProtocolStale(value){calls.push(value);}};
+ const context={generatedRecipeInputKey:{current:null},previousRecipeInputKey:{current:'generated'},recipeInputKey:'generated',recipeGenerated:true,isRestoringRef:{current:false},setProtocolStale(value){calls.push(value);}};
  evaluate(`(${callback})();`,context);assert.deepEqual(calls,[]);
  context.recipeInputKey='first quantity edit';
  evaluate(`(${callback})();`,context);assert.deepEqual(calls,[true]);
@@ -127,7 +127,7 @@ test('failed schedule validation cannot clear stale state or return to executabl
 test('successful validation clears stale status and restores the captured edit origin',()=>{
  for(const destination of [null,'recipe','shopping','protocol','service']){
   const calls=[];
-  const context={flourChosen:false,canGenerate:true,styleKey:'neapolitan',scheduleCandidateValid:true,scheduleEditing:false,schedule:{},commercialPrefermentPlanReady:true,tab:'simple',recipe:{},yeastType:'instant',unsupportedEnrichedMethod:false,recipeGenerated:true,user:null,prefermentType:'none',previousRecipeInputKey:{current:'old'},recipeInputKey:'updated',fillingsReturn:destination?{destination,view:'dough'}:null,
+  const context={flourChosen:false,canGenerate:true,styleKey:'neapolitan',scheduleCandidateValid:true,scheduleEditing:false,schedule:{},commercialPrefermentPlanReady:true,tab:'simple',recipe:{},yeastType:'instant',unsupportedEnrichedMethod:false,recipeGenerated:true,user:null,prefermentType:'none',generatedRecipeInputKey:{current:null},previousRecipeInputKey:{current:'old'},recipeInputKey:'updated',fillingsReturn:destination?{destination,view:'dough'}:null,
    setSessionSaved(){},setSetupOverview(){},setReviewMode(){},setShowResults(){},setRecipeGenerated(value){calls.push(['generated',value]);},setProtocolStale(value){calls.push(['stale',value]);},finishFillings(){calls.push(['return',destination]);},setActiveTab(value){calls.push(['route',value]);},scrollToStepTop(){}};
   evaluate(fn('handleGenerate')+';handleGenerate();',context);
   assert.deepEqual(calls,[['generated',true],['stale',false],destination?['return',destination]:['route','plan']]);

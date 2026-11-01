@@ -16,6 +16,8 @@ import { getBreadProtocol } from '../utils/breadProfiles';
 interface RecipeOutputProps extends WaterSettingsProps {
   afterIngredients?: ReactNode;
   firstActionAt?: Date;
+  firstActionLabel?: string;
+  onMixerChange?: (value: 'hand' | 'stand') => void;
   mixerConfirmed?: boolean;
   bakeAt?: Date | null;
   onAdjustTiming?: () => void;
@@ -379,7 +381,7 @@ export default function RecipeOutput({
   containerCapacityLitres, onContainerCapacityChange, result, numItems, itemWeight, styleName, styleKey, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, explicitFlour = false, units,
   starterEvents, mixingTime, feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
-  afterIngredients, firstActionAt, mixerConfirmed=false, bakeAt, onAdjustTiming, onEditSetup, onOpenGuide, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixerCapacityG, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
+  afterIngredients, firstActionAt, firstActionLabel, onMixerChange, mixerConfirmed=false, bakeAt, onAdjustTiming, onEditSetup, onOpenGuide, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixerCapacityG, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
 }: RecipeOutputProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -469,7 +471,9 @@ export default function RecipeOutput({
 
   const isSpiral = mixerType === 'spiral';
   const mixerName = MIXER_TYPES[mixerType as keyof typeof MIXER_TYPES]?.[locale==='fr'?'nameFr':'name'];
-  const waterAssumption = mode==='simple' && !mixerConfirmed && mixerName ? <p>{locale==='fr'?`Pour calculer la température de l’eau, la recette suppose ce mode de pétrissage : ${mixerName}.`:`The water temperature assumes this mixing method: ${mixerName}.`}</p>:null;
+  const waterAssumption = mode==='simple' && mixerName ? <p>{locale==='fr'?'Température de l’eau pour':'Water temperature for'} {mixerName}
+    {onMixerChange && <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={()=>onMixerChange(mixerType==='hand'?'stand':'hand')}>{mixerType==='hand'?(locale==='fr'?'Utiliser un robot':'Use a mixer'):(locale==='fr'?'Pétrir à la main':'Knead by hand')}</button>}
+  </p>:null;
   const waterSubNode = <WaterPreparation readOnly waterGrams={waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} achievedDoughTempC={result.thermal?.doughTempC} waterWasClamped={result.thermal?.waterWasClamped} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
   const finalDoughWaterSubNode = <WaterPreparation readOnly waterGrams={result.preferment?.finalWater ?? waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} achievedDoughTempC={result.thermal?.doughTempC} waterWasClamped={result.thermal?.waterWasClamped} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
 
@@ -479,7 +483,8 @@ export default function RecipeOutput({
     ? (() => {
         const isInstant = yeastInfo.yeastType === 'instant';
         const idyPart = !isInstant ? `= ${formatYeastDose(yeastInfo.grams, locale)} IDY` : null;
-        return [dryYeastSpoonHint(yeastInfo.convertedGrams, yeastInfo.yeastType, locale), idyPart].filter(Boolean).join(' · ') || undefined;
+        const alternatives = mode==='simple' && isInstant ? (locale==='fr' ? `Levure fraîche : ${formatYeastDose(yeastInfo.grams*3,locale)} · sèche active : ${formatYeastDose(yeastInfo.grams*1.33,locale)}` : `Fresh yeast: ${formatYeastDose(yeastInfo.grams*3,locale)} · active dry: ${formatYeastDose(yeastInfo.grams*1.33,locale)}`) : null;
+        return [alternatives, dryYeastSpoonHint(yeastInfo.convertedGrams, yeastInfo.yeastType, locale), idyPart].filter(Boolean).join(' · ') || undefined;
       })()
     : undefined;
 
@@ -499,7 +504,7 @@ export default function RecipeOutput({
   // above 8 C cold fermentation genuinely becomes unpredictable — the baker
   // typed that number themselves, so it is their data and it is actionable.
   const WARN_SHOWN: YeastWarningKey[] = [
-    'poolishSuggestion', 'hotClimateRT', 'doseFloorRT', 'fridgeWarm',
+    'poolishSuggestion', 'hotClimateRT', 'doseFloorRT', 'fridgeWarm', 'fermentationBudget', 'osmoticStress',
   ];
 
   const filteredWarnings = yeastInfo
@@ -535,7 +540,7 @@ export default function RecipeOutput({
             {locale === 'fr' ? 'Ingrédients de la pâte' : 'Dough ingredients'}
           </div>
           {firstActionAt && bakeAt && <div style={{fontSize:15,lineHeight:1.5,margin:'4px 0'}}>
-            {locale === 'fr' ? 'Commencer' : 'Start'} {formatTimeLabel(firstActionAt)} · {locale === 'fr' ? 'Cuire' : 'Bake'} {formatTimeLabel(bakeAt)}
+            {onOpenGuide ? <button type="button" className="bh-section-back" onClick={onOpenGuide}>{firstActionLabel ?? (locale==='fr'?'Commencer':'Start')} · {formatTimeLabel(firstActionAt)}</button> : <>{firstActionLabel ?? (locale==='fr'?'Commencer':'Start')} · {formatTimeLabel(firstActionAt)}</>} · {locale === 'fr' ? 'Cuire' : 'Bake'} {formatTimeLabel(bakeAt)}
             {onAdjustTiming && <button type="button" className="bh-section-back" onClick={onAdjustTiming}>{locale==='fr'?'Ajuster les horaires':'Adjust timing'}</button>}
           </div>}
           {wastePct !== undefined && wastePct > 0 && (
@@ -719,6 +724,11 @@ export default function RecipeOutput({
               {sdActive && <p>{locale === 'fr' ? `${wStr(sdHalf)} d’eau sont déjà dans le levain indiqué ci-dessous.` : `${wStr(sdHalf)} water is already in the starter shown below.`}</p>}
               {waterAssumption}{waterSubNode}
             </details> : undefined} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />}
+          {mode==='custom' && flourBlend?.flour2 && <p className="bh-key-detail">{[flourBlend.flour1,flourBlend.flour2,flourBlend.flour3].filter(Boolean).map((key,index)=>{
+            const ratio=index===0?flourBlend.ratio1:index===1?(flourBlend.flour3?flourBlend.ratio2??0:100-flourBlend.ratio1):100-flourBlend.ratio1-(flourBlend.ratio2??0);
+            const flourType=FLOUR_DATA[key as keyof typeof FLOUR_DATA];
+            return ratio>0 ? `${locale==='fr'?flourType.nameFr:flourType.name} ${formatPercent(ratio,locale)}` : null;
+          }).filter(Boolean).join(' · ')} ({locale==='fr'?'farine ajoutée au pétrissage':'flour added at mixing'})</p>}
           {enrichmentRows}
           <IngRow label={t('recipeOutput.ingredientSalt')}  grams={wStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
 
@@ -906,21 +916,21 @@ export default function RecipeOutput({
             {[
               ...(poolishPerBatch !== null ? [{
                 label: prefermentType === 'biga' ? t('recipeOutput.ingredientBiga') : t('recipeOutput.ingredientPoolish'),
-                value: `${poolishPerBatch}g`,
+                value: wStr(Math.round(poolishPerBatch)),
                 highlight: false,
                 isTotal: false,
               }] : []),
-              { label: hasPref ? t('recipeOutput.flourFinalDough') : t('recipe.flour'), value: `${flourPerBatch.toLocaleString()}g`, highlight: false, isTotal: false },
-              { label: hasPref ? t('recipeOutput.waterFinalDough') : t('recipe.water'), value: `${waterPerBatch.toLocaleString()}g`, highlight: false, isTotal: false },
-              { label: t('recipe.salt'), value: `${saltPerBatch.toLocaleString()}g`, highlight: false, isTotal: false },
+              { label: hasPref ? t('recipeOutput.flourFinalDough') : t('recipe.flour'), value: wStr(Math.round(flourPerBatch)), highlight: false, isTotal: false },
+              { label: hasPref ? t('recipeOutput.waterFinalDough') : t('recipe.water'), value: wStr(Math.round(waterPerBatch)), highlight: false, isTotal: false },
+              { label: t('recipe.salt'), value: wStr(Math.round(saltPerBatch)), highlight: false, isTotal: false },
               ...(yeastPerBatch !== null ? [{
                 label: yeastTypeName || (locale === 'fr' ? 'Levure' : 'Yeast'),
                 value: formatYeastDose(yeastPerBatch,locale),
                 highlight: false,
                 isTotal: false,
               }] : []),
-              ...(['starter','oil','sugar','milk','eggs','butter'] as const).filter(key=>batchPlan.portion[key]>0).map(key=>({label:({milk:locale==='fr'?'Lait':'Milk',eggs:locale==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:locale==='fr'?'Beurre':'Butter',starter:locale==='fr'?'Levain':'Starter',oil:locale==='fr'?'Huile':'Oil',sugar:locale==='fr'?'Sucre':'Sugar'})[key],value:`${batchPlan.portion[key]}g`,highlight:false,isTotal:false})),
-              { label: t('recipeOutput.batchTotal'), value: `${batchPlan.total.toLocaleString()}g`, highlight: true, isTotal: true },
+              ...(['starter','oil','sugar','milk','eggs','butter'] as const).filter(key=>batchPlan.portion[key]>0).map(key=>({label:({milk:locale==='fr'?'Lait':'Milk',eggs:locale==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:locale==='fr'?'Beurre':'Butter',starter:locale==='fr'?'Levain':'Starter',oil:locale==='fr'?'Huile':'Oil',sugar:locale==='fr'?'Sucre':'Sugar'})[key],value:wStr(Math.round(batchPlan.portion[key])),highlight:false,isTotal:false})),
+              { label: t('recipeOutput.batchTotal'), value: wStr(Math.round(batchPlan.total)), highlight: true, isTotal: true },
             ].map((row, i) => (
               <div key={i} style={{
                 display: 'flex', justifyContent: 'space-between',

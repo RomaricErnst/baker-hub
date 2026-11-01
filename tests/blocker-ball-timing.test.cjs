@@ -31,8 +31,10 @@ test('Thursday balling is repaired independently of genuinely blocked Friday fin
  assert.equal(validateScheduleCandidate(i).valid,false,'partial repair must not turn the whole schedule green');
  assert.equal(+s.bakeStart,+i.bake);
  assert.equal(+s.coldRetard2End,+baseline.coldRetard2End);
- near(s.totalColdHours,baseline.totalColdHours,'reallocate rather than delete cold maturation');
- near(s.totalRTHours,baseline.totalRTHours,'no added warm fermentation');
+ // A sub-hour first fridge leg is now kept warm; the exposure must move
+ // between phase totals rather than disappear.
+ assert.ok(baseline.totalColdHours-s.totalColdHours>=0 && baseline.totalColdHours-s.totalColdHours<1);
+ near(s.totalColdHours+s.totalRTHours,baseline.totalColdHours+baseline.totalRTHours,'total exposure is conserved');
  assert.deepEqual(s.availabilityActions.filter(a=>a.id.startsWith('fold-')),baseline.availabilityActions.filter(a=>a.id.startsWith('fold-')));
 });
 
@@ -97,8 +99,8 @@ test('earlier division checks the whole handling span and refrigeration against 
   assert.ok(!changed.availabilityConflicts.some(c=>['divide','cold-out','cold-in-2'].includes(c.action.id)),context);
   assert.equal(+changed.bakeStart,+baseline.bakeStart,context);
   assert.equal(+changed.coldRetard2End,+baseline.coldRetard2End,context);
-  near(changed.totalColdHours,baseline.totalColdHours,context);
-  near(changed.totalRTHours,baseline.totalRTHours,context);
+  assert.ok(baseline.totalColdHours-changed.totalColdHours>=-1e-8 && baseline.totalColdHours-changed.totalColdHours<1,context);
+  near(changed.totalColdHours+changed.totalRTHours,baseline.totalColdHours+baseline.totalRTHours,context);
  }
 });
 

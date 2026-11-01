@@ -19,12 +19,12 @@ test('restored explicit unbranded flour survives bake-type initialization',()=>{
  }
 });
 function choose(overrides={},key='simple'){
- const writes={};const context={customKitchenConfirmed:false,tab:'custom',styleKey:'pain_levain',yeastType:'sourdough',bakeType:'bread',ovenType:null,mixerType:null,flourBlend:{flour1:'bread'},manualHydration:70,manualOil:0,manualSugar:0,prefermentType:'none',prefermentFlourPct:20,customOnlyStateRef:{current:null},suppressNextScrollRef:{current:false},ALL_STYLES:data.ALL_STYLES,getBreadProtocol:()=>undefined,firstIncompleteStep:()=>7,...overrides};
+ const writes={};const context={loadProfile:()=>null,MIXER_TYPES:data.MIXER_TYPES,customKitchenConfirmed:false,tab:'custom',styleKey:'pain_levain',yeastType:'sourdough',bakeType:'bread',ovenType:null,mixerType:null,flourBlend:{flour1:'bread'},manualHydration:70,manualOil:0,manualSugar:0,prefermentType:'none',prefermentFlourPct:20,customOnlyStateRef:{current:null},suppressNextScrollRef:{current:false},ALL_STYLES:data.ALL_STYLES,getBreadProtocol:()=>undefined,firstIncompleteStep:()=>7,...overrides};
  for(const name of [...modeFunction.matchAll(/\b(set\w+)\(/g)].map(m=>m[1]))context[name]=v=>{writes[name]=typeof v==='function'?v(3):v;};
  vm.runInNewContext(compiled+'\nchooseMode("'+key+'");',context);return {writes,context};
 }
 test('Simple keeps sourdough/style, confirms supported household defaults and preserves temperature',()=>{
- const {writes}=choose();assert.equal(writes.setTab,'simple');assert.equal(writes.setActiveStep,7);assert.equal(writes.setOvenType,'standard_bread');assert.equal(writes.setMixerType,'stand');assert.ok(!('setStyleKey' in writes));assert.ok(!('setYeastType' in writes));assert.ok(!('setKitchenTemp' in writes));
+ const {writes}=choose();assert.equal(writes.setTab,'simple');assert.equal(writes.setActiveStep,7);assert.equal(writes.setOvenType,'standard_bread');assert.equal(writes.setMixerType,'hand');assert.ok(!('setStyleKey' in writes));assert.ok(!('setYeastType' in writes));assert.ok(!('setKitchenTemp' in writes));
 });
 test('Simple preserves saved equipment and declines unsupported defaults',()=>{
  let result=choose({ovenType:'dutch_oven',mixerType:'spiral'}).writes;assert.ok(!('setOvenType' in result));assert.ok(!('setMixerType' in result));
@@ -57,4 +57,31 @@ test('Simple climate keeps approximate temperature and contextual fridge without
  assert.doesNotMatch(noFridge,/Fridge temperature|climate-fridge/);assert.match(noFridge,/Flour kept in the fridge/);
  const normal=renderToStaticMarkup(React.createElement(Climate,{...props,mode:'simple',humidity:'normal'}));assert.doesNotMatch(normal,/Retained humidity/);
  assert.match(simple,/where the dough rests/);assert.doesNotMatch(custom,/Advanced settings · fridge and flour|Why this temperature/);assert.match(custom,/Fridge temperature/);assert.match(custom,/Usual flour-storage humidity/);
+});
+
+test('Simple respects an explicit mixer profile and falls back safely for obsolete equipment',()=>{
+ assert.equal(choose({loadProfile:()=>({mixerType:'stand'})}).writes.setMixerType,'stand');
+ assert.equal(choose({loadProfile:()=>({mixerType:'obsolete'})}).writes.setMixerType,'hand');
+});
+test('inline mixer change updates the profile and requests recipe recalculation without opening setup',()=>{
+ let fn;function find(n){if(ts.isFunctionDeclaration(n)&&n.name?.text==='changeRecipeMixer')fn=n.getText(tree);ts.forEachChild(n,find);}find(tree);
+ const writes={},pending={current:false};const context={pendingMixerRecipeUpdate:pending,confirmSetting:(k,v)=>writes.confirm=[k,v],updateProfile:p=>writes.profile=p};
+ for(const name of [...fn.matchAll(/\b(set\w+)\(/g)].map(m=>m[1]))context[name]=v=>writes[name]=v;
+ vm.runInNewContext(ts.transpileModule(fn+';changeRecipeMixer("stand");',{}).outputText,context);
+ assert.equal(writes.setMixerType,'stand');assert.equal(writes.profile.mixerType,'stand');assert.equal(pending.current,true);assert.equal(writes.setWaterMethod,'premelt');
+});
+test('returning edited inputs to generated values clears stale recipe status',()=>{
+ let effect;function find(n){if(ts.isCallExpression(n)&&n.expression.getText(tree)==='useEffect'&&n.arguments[0]?.getText(tree).includes('generatedRecipeInputKey.current'))effect=n.arguments[0].getText(tree);ts.forEachChild(n,find);}find(tree);
+ const generated={current:'original'},previous={current:'original'},writes=[];
+ const context={generatedRecipeInputKey:generated,previousRecipeInputKey:previous,recipeInputKey:'changed',recipeGenerated:true,isRestoringRef:{current:false},setProtocolStale:v=>writes.push(v)};
+ vm.runInNewContext(ts.transpileModule('('+effect+')()',{}).outputText,context);
+ context.recipeInputKey='original';
+ vm.runInNewContext(ts.transpileModule('('+effect+')()',{}).outputText,context);
+ assert.deepEqual(writes,[true,false]);
+});
+test('dry yeast spoon hints use useful tolerances without pretending an arbitrary small dose fits a spoon',()=>{
+ const {dryYeastSpoonHint}=require('../app/utils/prefermentDose.ts');
+ assert.match(dryYeastSpoonHint(1.73,'instant','en'),/½ tsp/);
+ assert.match(dryYeastSpoonHint(.8,'instant','fr'),/¼ c. à café/);
+ for(const [g,type] of [[.227,'instant'],[.51,'instant'],[1,'fresh'],[NaN,'instant']])assert.equal(dryYeastSpoonHint(g,type,'en'),'');
 });

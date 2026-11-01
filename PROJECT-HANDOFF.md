@@ -1,3 +1,17 @@
+# 1 November 2026 — PR 37 follow-up
+
+The follow-up review found additional plan-order, availability and editor failures on PR 37. Its runtime observations supersede the earlier response document's claims about night avoidance, carry-over, forward labels and French completeness. Record the final follow-up PR, tested commit and production deployment here after release.
+
+- Validate complete plans, including starter feeds, against event order and availability. Rejected recommendations need an actionable later bake suggestion. Physical starter readiness still requires observation.
+- Simple assumes hand kneading and offers an inline equipment change beside the water calculation. Changing to Custom preserves the current setup.
+- Recipe edits should return directly to a regenerated recipe when valid. Keep a no-op edit silent.
+- Custom's chart labels the estimated starter peak from the same event used to draw its curve. Manual timing controls must retain explicit baker intent.
+- Translation checks cover parity and literal useTranslations calls resolved by lexical scope. Dynamic keys still require runtime coverage.
+- Preparation contains one mixing sequence. Bread-specific guidance excludes pizza FAQs. The final cooking stage offers a return to the recipe without implicitly marking cooking complete.
+- The fermentation budget reports estimates outside 90–110% after dose bounds. Enriched-dough calibration and a physical comparison of cold-retard yeast doses remain open. Do not claim published calibration from the simulation.
+- Physical iPhone Safari, home-screen launch, safe-area and keyboard checks, authenticated account flows and kitchen trials remain unverified.
+- No GitHub token pattern was found in current checkout Markdown. External project instructions and historical commits were not included in that claim.
+
 # 1 November 2026 — live journey review
 
 PR #37 (`codex/nov-live-review`) implements the review on top of production PR #36. See PR #37's exact-head checks for release status. Production previously verified at `1736d2ac827a6a73a5c05b3cab956534b08ec70a`.

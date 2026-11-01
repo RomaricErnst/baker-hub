@@ -25,12 +25,12 @@ export function formatYeastDose(grams:number, locale='en') {
   return `${new Intl.NumberFormat(locale,{maximumFractionDigits:2}).format(grams)} g`;
 }
 
-// Show a spoon only when the target closely matches a real measuring spoon.
-// The approximation uses the dry-yeast packet convention (7 g = 2¼ tsp).
+// Approximate packet convention for dry yeast (7 g = 2¼ tsp).
+// Avoid "scant" and "heaped": those measures cannot reliably resolve small doses.
 export function dryYeastSpoonHint(grams:number, type:string, locale:string) {
-  if (!(grams > 0 && grams < 1) || (type!=='instant' && type!=='active_dry')) return '';
-  for (const [fraction,label] of [[1/8,'⅛'],[1/4,'¼']] as const) {
-    if (Math.abs(grams-fraction*7/2.25)<=grams*0.05) return `≈ ${label} ${locale==='fr'?'c. à café':'tsp'}`;
-  }
-  return '';
+  if (!Number.isFinite(grams) || grams < 0.35 || grams > 6 || (type!=='instant' && type!=='active_dry')) return '';
+  const spoons = [[1/8,'⅛'],[1/4,'¼'],[1/2,'½'],[3/4,'¾'],[1,'1'],[1.5,'1½'],[2,'2']] as const;
+  const nearest = spoons.reduce((best,spoon)=>Math.abs(grams-spoon[0]*7/2.25)<Math.abs(grams-best[0]*7/2.25)?spoon:best);
+  return Math.abs(grams-nearest[0]*7/2.25)<=grams*0.15
+    ? `≈ ${nearest[1]} ${locale==='fr'?'c. à café':'tsp'}` : '';
 }

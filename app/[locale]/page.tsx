@@ -11,7 +11,7 @@ import {normalizeMixExecution, type MixExecution, normalizeBakeExecution, normal
 import Header from '../components/Header';
 import dynamic from 'next/dynamic';
 const ProfileSheet = dynamic(() => import('../components/ProfileSheet'), { ssr: false });
-import { DEFAULT_BLOCKERS, loadProfile, setProfileListener } from '../lib/profile';
+import { DEFAULT_BLOCKERS, loadProfile, updateProfile, setProfileListener } from '../lib/profile';
 import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import { pushProfile, pullAndMergeProfile } from '../lib/supabase/profileSync';
 import OpeningChoices from '../components/OpeningChoices';
@@ -544,7 +544,7 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale 
   const steps = [...flow.steps.filter(s => s.group !== 'plan'), ...flow.steps.filter(s => s.group === 'plan')];
   const rows = [
     ...(modeChip ? [{ key: 'mode', label: 'Mode', value: modeChip.value, onClick: modeChip.onClick }] : []),
-    ...steps.map(step => ({ key: String(step.id), label: step.chip, value: reviewValues[step.id] ?? step.value ?? step.gap, onClick: () => onJump(step.id) })),
+    ...steps.map(step => ({ key: String(step.id), label: step.id===3 ? (fr?'Équipement et cuisine':'Equipment and kitchen') : step.chip, value: reviewValues[step.id] ?? step.value ?? step.gap, onClick: () => onJump(step.id) })),
   ];
   return (
     <div style={{ padding: '4px 0 8px' }}>
@@ -1604,13 +1604,16 @@ export default function Home() {
   // those without changing a restored, already validated recipe.
   const recipeInputKey = JSON.stringify([bakeType,styleKey,numItems,itemWeight,totalFlourTarget,ovenType,ovenConstruction,mixerType,customMixerCapacityG,mixingBatches,yeastType,kitchenTemp,humidity,fridgeTemp,manualHydration,manualOil,manualSugar,manualSalt,flourChosen?flourBlend:null,prefermentType,prefermentType!=='none'?(prefermentFlourPct??20):prefermentFlourPct,targetDoughTemp,flourInFridge,measuredFlourTemp,measuredPrefermentTemp,wastePct,addSeeds,priorityOverride,starterState,starterLocation,planningMode,lastFedTime?.getTime()??null,knownPeakTime?.getTime()??null,hasNotFedYet,lastFedAge,lastFeedRatio,nextFeedRatioOverride,ratioMode,tang]);
   const previousRecipeInputKey = useRef(recipeInputKey);
+  const generatedRecipeInputKey = useRef<string | null>(null);
+  const pendingMixerRecipeUpdate = useRef(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const changed = previousRecipeInputKey.current !== recipeInputKey;
     previousRecipeInputKey.current = recipeInputKey;
     if (isRestoringRef.current) return;
+    if (recipeGenerated && generatedRecipeInputKey.current === null) generatedRecipeInputKey.current = previousRecipeInputKey.current;
     if (changed && recipeGenerated) {
-      setProtocolStale(true);
+      setProtocolStale(generatedRecipeInputKey.current !== recipeInputKey);
     }
   }, [recipeInputKey, recipeGenerated]);
 
@@ -1787,8 +1790,8 @@ export default function Home() {
     // retard at all — two different doughs on one screen, neither of them the
     // baker's. The recipe already refused without a style; now everything does.
     if (!styleKey) return null;
-    return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches, yeastType==='sourdough');
-  }, [startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches, yeastType]);
+    return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches, (yeastType==='sourdough'||prefermentType==='levain'));
+  }, [startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches, yeastType, prefermentType]);
 
   // Confirmation belongs to this exact committed action, never to a work preset.
   useEffect(() => {
@@ -2418,7 +2421,8 @@ export default function Home() {
       setOvenType(profile && !profile.equipment.includes(ordinaryOven) ? profile.equipment[0] as AnyOvenType : ordinaryOven);
     }
     if (!mixerType || (profile && !profile.supportedMixers.includes(mixerType))) {
-      const preferredMixer = key === 'simple' ? 'stand' : 'hand';
+      const savedMixer = loadProfile()?.mixerType;
+      const preferredMixer: MixerType = savedMixer && savedMixer in MIXER_TYPES ? savedMixer as MixerType : 'hand';
       setMixerType(profile && !profile.supportedMixers.includes(preferredMixer) ? profile.supportedMixers[0] : preferredMixer);
     }
     if (key === 'simple' && !yeastType) {
@@ -2910,6 +2914,7 @@ export default function Home() {
       setPrefermentFlourPct(timeDefault);
     }
     previousRecipeInputKey.current = recipeInputKey;
+    generatedRecipeInputKey.current = recipeInputKey;
     setReviewMode(false);
     setRecipeGenerated(true);
     setProtocolStale(false);
@@ -3224,6 +3229,21 @@ export default function Home() {
     archivedFlour:flourChosen&&archivedFlourNames.length>0,
     requirementsComplete:tab==='simple'?simpleRequiredDone:customRequiredDone,missingRequiredStep,
   }) : undefined;
+  useEffect(() => {
+    if (!pendingMixerRecipeUpdate.current || !canGenerate) return;
+    pendingMixerRecipeUpdate.current = false;
+    handleGenerate(true);
+  }, [mixerType, canGenerate, recipeInputKey]);
+  function changeRecipeMixer(value: 'hand' | 'stand') {
+    pendingMixerRecipeUpdate.current = true;
+    setMixerType(value);
+    setWaterMethod('premelt');
+    setSpiralIceConfirmed(false);
+    setCustomMixerCapacityG(undefined);
+    setMixingBatches(undefined);
+    confirmSetting('mixer',value);
+    updateProfile({mixerType:value});
+  }
   const manualMixing = mixerType === 'hand' || mixerType === 'no_knead';
   const showMixingBatches = suggestedMixingBatches > 1 || mixingBatches !== undefined;
   const mixingBatchControl = mixerType ? <MixingBatchControl total={plannedDoughG} capacity={mixerCapacityG} count={selectedMixingBatches} recommended={suggestedMixingBatches} manual={manualMixing} knownCapacity={customMixerCapacityG!==undefined} override={mixingBatches!==undefined} fr={locale==='fr'} onChange={setMixingBatches}/> : null;
@@ -3269,7 +3289,7 @@ export default function Home() {
       gap: fr ? 'La quantité n\u2019est pas confirmée' : 'Quantity not confirmed' },
     // Oven and mixing are one page: same nature (your kitchen, not your
     // dough), both single-choice, both remembered by the profile.
-    { id: 3, group: 'kitchen', chip: fr ? 'Cuisine' : 'Kitchen', title: fr ? 'Votre cuisine' : 'Your kitchen',
+    { id: 3, group: 'kitchen', chip: fr ? 'Cuisine' : 'Kitchen', title: fr ? 'Équipement et cuisine' : 'Equipment and kitchen',
       value: (ovenType && mixerType && (isUnleavened || yeastType))
         ? `${ovenDisplayName} · ${localName(MIXER_TYPES[mixerType])} · ${kitchenTemp}°C${!isUnleavened && yeastType ? ` · ${localName(YEAST_TYPES[yeastType])}` : ''}`
         : null,
@@ -3548,8 +3568,12 @@ export default function Home() {
     +startTime,
     ...(schedule?.availabilityActions ?? []).map(action=>+action.at),
     ...(prefStartTime ? [+prefStartTime] : []),
-    ...(yeastType==='sourdough' ? starterEvents.filter(e=>e.kind!=='last_fed' && e.kind!=='known_peak').map(e=>+e.time) : []),
+    ...(yeastType==='sourdough' ? starterEvents.filter(e=>!e.isPast && e.kind!=='last_fed' && e.kind!=='known_peak').map(e=>+e.time) : []),
   ));
+  const firstStarterAction = yeastType==='sourdough' ? starterEvents.find(e=>!e.isPast && +e.time===+firstRecipeAction && e.kind!=='last_fed' && e.kind!=='known_peak') : undefined;
+  const firstRecipeActionLabel = firstStarterAction?.label ?? (prefStartTime && +prefStartTime===+firstRecipeAction
+    ? (fr?'Préparer le ':'Make the ')+prefermentType
+    : +firstRecipeAction < +startTime ? (fr?'Préparer le préferment':'Prepare the preferment') : (fr?'Pétrir la pâte':'Mix the dough'));
   const setupSteps = tab==='custom' ? CUSTOM_STEPS : SIMPLE_STEPS.filter(step=>step.id!==3);
   const stepLink = (step:StepDef):BakeLink => ({label:step.chip,value:step.id===2&&!qtyChosen?`${numItems} × ${Math.round(itemWeight)} g · ${fr?'proposé':'suggested'}`:step.id===10&&step.value?sourced(step.value,manualHydration!==undefined):step.id===8&&step.value?sourced(step.value,confirmed('method',prefermentType)):step.value,disabled:step.id>1&&!styleKey,onChoose:()=>openSetupStep(step.id)});
   const bakeLinks:BakeLink[] = [
@@ -3866,7 +3890,7 @@ export default function Home() {
         </div>
         )}
 
-{recipeGenerated && <div className="bh-bake-context" style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{destination==='recipe'&&!browsingFillings&&!execution&&!mixExecution?<button type="button" className="bh-section-back" onClick={openQuantityEdit} aria-label={fr?'Modifier la quantité':'Edit quantity'}>{bakeQuantityLabel(numItems,bakeType,styleKey,fr)} ✎</button>:bakeQuantityLabel(numItems,bakeType,styleKey,fr)} · {styleKey ? styleDisplayName(styleKey) : ''}</div></div>}
+{recipeGenerated && <div className="bh-bake-context" style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{destination==='recipe'&&!browsingFillings&&!execution&&!mixExecution?<button type="button" className="bh-section-back" onClick={openQuantityEdit} aria-label={fr?'Modifier la quantité':'Edit quantity'}>{bakeQuantityLabel(numItems,bakeType,styleKey,fr)}</button>:bakeQuantityLabel(numItems,bakeType,styleKey,fr)} <span style={{display:'inline-block'}}>{styleKey ? styleDisplayName(styleKey) : ''}</span></div></div>}
 
 
 
@@ -4204,7 +4228,7 @@ export default function Home() {
 
                           <RecipeOutput
                             afterIngredients={recipeFillings}
-                            firstActionAt={firstRecipeAction} bakeAt={eatTime} onAdjustTiming={editRecipeTiming}
+                            firstActionAt={firstRecipeAction} firstActionLabel={firstRecipeActionLabel} onMixerChange={execution||mixExecution?undefined:changeRecipeMixer} bakeAt={eatTime} onAdjustTiming={editRecipeTiming}
                             mixerConfirmed={confirmed('mixer',mixerType)}
                             starterEvents={starterEvents} mixingTime={startTime}
                             containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
@@ -4734,7 +4758,7 @@ export default function Home() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
                           <RecipeOutput
                             afterIngredients={recipeFillings}
-                            firstActionAt={firstRecipeAction} bakeAt={eatTime} onAdjustTiming={editRecipeTiming}
+                            firstActionAt={firstRecipeAction} firstActionLabel={firstRecipeActionLabel} onMixerChange={execution||mixExecution?undefined:changeRecipeMixer} bakeAt={eatTime} onAdjustTiming={editRecipeTiming}
                             mixerConfirmed={confirmed('mixer',mixerType)}
                             starterEvents={starterEvents} mixingTime={startTime}
                             containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
@@ -5024,4 +5048,3 @@ export default function Home() {
     </div>
   );
 }
-
