@@ -11,7 +11,7 @@ import {normalizeMixExecution, type MixExecution, normalizeBakeExecution, normal
 import Header from '../components/Header';
 import dynamic from 'next/dynamic';
 const ProfileSheet = dynamic(() => import('../components/ProfileSheet'), { ssr: false });
-import { loadProfile, setProfileListener } from '../lib/profile';
+import { DEFAULT_BLOCKERS, loadProfile, setProfileListener } from '../lib/profile';
 import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import { pushProfile, pullAndMergeProfile } from '../lib/supabase/profileSync';
 import OpeningChoices from '../components/OpeningChoices';
@@ -34,7 +34,7 @@ const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { s
 import { starterFeedToMixHours } from '../lib/starterTiming';
 import { mixerDoughCapacity } from '../utils/mixingBatches';
 import {commercialPrefermentWindow, validateConfirmedBake, type StarterEvent } from '../components/SchedulePicker';
-import { normalizeFridgeRemoval } from '../utils/scheduleAvailability';
+import { normalizeFridgeRemoval, selectedAvailabilityCount } from '../utils/scheduleAvailability';
 import { retainCurrentFridgeRemoval } from '../utils/fridgeRemovalSession';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 import ClimatePicker from '../components/ClimatePicker';
@@ -56,7 +56,8 @@ import { archiveLocalBake, hasPreviousBake, preservePreviousBake, restorePreviou
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
 import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
-import { type UnitSystem, cToDisplay, inputTempToC, tempUnit } from '../utils/units';
+import { formatYeastDose } from '../utils/prefermentDose';
+import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock } from '../utils/units';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
   PIZZA_STYLES, BREAD_STYLES, FLOUR_DATA,
@@ -556,7 +557,7 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale 
               <span style={{ display: 'block', fontSize: '12px', color: 'var(--smoke)', marginBottom: '5px' }}>{row.label}</span>
               <strong style={{ fontSize: '14px', lineHeight: 1.5, fontWeight: 600 }}>{row.value}</strong>
             </div>
-            <button onClick={row.onClick} aria-label={`${fr ? 'Modifier' : 'Edit'} : ${row.label}`} style={{ minHeight: '44px', border: 'none', background: 'none', color: 'var(--terra)', font: 'inherit', fontSize: '13px', cursor: 'pointer', padding: '8px 0 8px 8px' }}>{fr ? 'Modifier' : 'Edit'}</button>
+            <button onClick={row.onClick} aria-label={`${fr ? 'Modifier' : 'Edit'} : ${row.label}`} style={{ minWidth:44, minHeight: '44px', border: 'none', background: 'none', color: 'var(--terra)', font: 'inherit', fontSize: '13px', cursor: 'pointer', padding: '8px 0 8px 8px' }}>{fr ? 'Modifier' : 'Edit'}</button>
           </div>
         ))}
       </div>
@@ -582,7 +583,7 @@ function SetupRow({ step, ok, onClick, inset, last }: {
         padding: inset ? '13px 15px' : '14px 2px',
         background: 'none', border: 'none',
         borderBottom: last ? 'none' : '1px solid var(--border)',
-        borderBottomStyle: 'solid',
+
         cursor: 'pointer', fontFamily: 'var(--font-ui)', minHeight: '44px',
         textAlign: 'left',
       }}
@@ -611,8 +612,7 @@ function SetupRow({ step, ok, onClick, inset, last }: {
 
 const sheetRowStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
-  padding: '14px 2px', borderBottom: '1px solid var(--border)',
-  background: 'none', border: 'none', borderBottomStyle: 'solid',
+  padding: '14px 2px', background: 'none', border: 0, borderBottom: '1px solid var(--border)',
   cursor: 'pointer', fontFamily: 'var(--font-ui)', minHeight: '44px',
 };
 const sheetKeyStyle: React.CSSProperties = {
@@ -738,7 +738,7 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
     // for ever — Style → Yeast → Style. Only ever looking at steps after this
     // one makes the chain monotonic, so it has to end at the plan.
     const lastId = flow.steps[flow.steps.length - 1].id;
-    const found = flow.steps.find(s => s.id > id && !stepAnswered(s, flow.highestStep, flow.steps));
+    const found = flow.steps.slice(idx + 1).find(s => !stepAnswered(s, flow.highestStep, flow.steps));
     const nextGap = found && found.id !== lastId ? found : undefined;
     // Name where the button GOES, never what is absent. A step that is not
     // set yet is the normal state of almost every step for almost all of the
@@ -751,7 +751,7 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
           {nextGap.chip} →
         </button>
       : <button onClick={flow.onGapReturn} style={nextStyle}>
-          {fr ? 'Terminer →' : 'Finish →'}
+          {flow.steps.at(-1)?.chip} →
         </button>;
   } else if (isLast) {
     if (gap?.id === id) {
@@ -777,8 +777,9 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
     // Label the step Suivant actually reaches, not the one that happens to sit
     // next in the list: with profile-answered steps skipped, "Suivant :
     // Équipement" was landing on Climat.
-    next = <button onClick={() => flow.onNext(id)} style={nextStyle}>
-      {fr ? 'Continuer' : 'Continue'}
+    const destination = flow.steps.find(s => s.id === flow.nextIdFor(id));
+    next = <button data-bh-forward type="button" onClick={() => flow.onNext(id)} style={nextStyle}>
+      {destination?.chip ?? (fr ? 'Mes choix' : 'My choices')} →
     </button>;
   }
 
@@ -803,6 +804,21 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
 }
 
 // ── Mono label ────────────────────────────────
+function KitchenReading({value,units,fr,confirmed,onConfirm}:{value:number;units:UnitSystem;fr:boolean;confirmed:boolean;onConfirm:(v:number)=>void}){
+  const [draft,setDraft]=useState<string|null>(null);
+  const commit=()=>{
+    if(draft===null)return;
+    if(draft.trim()!==''&&Number.isFinite(Number(draft)))onConfirm(Math.min(38,Math.max(15,inputTempToC(Number(draft),units))));
+    setDraft(null);
+  };
+  return <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:14}}>
+    <label style={{display:'inline-flex',alignItems:'center',gap:8}}>{fr?'Température de la cuisine':'Kitchen temperature'}
+      <input aria-label={fr?'Température de la cuisine':'Kitchen temperature'} type="number" inputMode="decimal" min={cToDisplay(15,units)} max={cToDisplay(38,units)} step="any" style={{width:70,minHeight:44}} value={draft??cToDisplay(value,units)} onChange={e=>setDraft(e.target.value)} onBlur={commit} onKeyDown={e=>{if(e.key==='Enter')e.currentTarget.blur();}}/>{tempUnit(units)}
+    </label>
+    {!confirmed && <button type="button" className="bh-section-back" onClick={()=>onConfirm(value)}>{fr?'Confirmer cette valeur proposée':'Confirm this suggested value'}</button>}
+  </div>;
+}
+
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
@@ -1178,6 +1194,12 @@ export default function Home() {
   // chose in this session. They are marked `prefilled`, which means the page
   // still appears with the value already in place — the baker presses Suivant
   // and moves on — and the summary only fills in once they have passed it.
+  const [confirmedSettings,setConfirmedSettings]=useState<string[]>([]);
+  function confirmSetting(field:string,value:string|number){
+    const key=field+'='+value;
+    setConfirmedSettings(previous=>previous.includes(key)?previous:[...previous.filter(item=>!item.startsWith(field+'=')),key]);
+  }
+  function confirmed(field:string,value:string|number|null){return confirmedSettings.includes(field+'='+value);}
   const [profileFields, setProfileFields] = useState<Set<string>>(new Set());
   const markProfile = (k: string) => setProfileFields(p => p.has(k) ? p : new Set(p).add(k));
   // Bumped when a cloud profile pull settles — lets a late-arriving profile
@@ -1257,7 +1279,7 @@ export default function Home() {
     const ovenPool = bakeType === 'bread' ? BREAD_OVEN_TYPES : OVEN_TYPES;
     const prefOven = (bakeType === 'bread' ? prof.ovenTypeBread : prof.ovenTypePizza) ?? prof.ovenType;
     if (!ovenType && prefOven && prefOven in ovenPool) {
-      setOvenType(prefOven as AnyOvenType); applied = true;
+      setOvenType(prefOven as AnyOvenType); confirmSetting('oven',prefOven); applied = true;
     }
     const stylePool = bakeType === 'bread' ? BREAD_STYLES : PIZZA_STYLES;
     const prefStyle = (bakeType === 'bread' ? prof.styleKeyBread : prof.styleKeyPizza) ?? prof.styleKey;
@@ -1267,7 +1289,7 @@ export default function Home() {
       setStyleKey(prefStyle as StyleKey); applied = true;
     }
     if (!mixerType && prof.mixerType && prof.mixerType in MIXER_TYPES) {
-      setMixerType(prof.mixerType as MixerType); setWaterMethod(prof.mixerType==='spiral'?'direct':'premelt'); applied = true; markProfile('equip');
+      setMixerType(prof.mixerType as MixerType); setWaterMethod(prof.mixerType==='spiral'?'direct':'premelt'); applied = true; markProfile('equip'); confirmSetting('mixer',prof.mixerType);
     }
     // Sourdough-native styles override the yeast preference (same rule as
     // the tap-time prefill in selectBakeType).
@@ -1279,7 +1301,7 @@ export default function Home() {
       setYeastType('sourdough'); applied = true;
     } else if (!yeastType && prof.yeastType && prof.yeastType in YEAST_TYPES
         && (sdAllowed || prof.yeastType !== 'sourdough')) {
-      setYeastType(prof.yeastType as YeastType); applied = true; markProfile('yeast');
+      setYeastType(prof.yeastType as YeastType); applied = true; markProfile('yeast'); confirmSetting('yeast',prof.yeastType);
     }
     if (applied) setProfilePrefilled(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1395,6 +1417,7 @@ export default function Home() {
     }
     // Generated sessions with past bake times are kept as historical record
 
+    setConfirmedSettings((session.confirmedSettings ?? []).filter(item=>typeof item==='string'));
     setTab(session.tab as 'simple' | 'custom');
     setBakeType(session.bakeType as BakeType | null);
     setBakeName(session.bakeName ?? '');
@@ -1631,7 +1654,7 @@ export default function Home() {
     if (isRestoringRef.current || sessionRestored) return;
     if (!eatTime || profileBlockersAppliedRef.current) return;
     if (blocks.length > 0) { profileBlockersAppliedRef.current = true; return; }
-    const bl = loadProfile()?.blockers;
+    const bl = loadProfile()?.blockers ?? DEFAULT_BLOCKERS;
     if (!bl || (!bl.sleep.enabled && !bl.work.enabled)) return;
     profileBlockersAppliedRef.current = true;
     const parse = (s: string) => { const [h, m] = s.split(':').map(Number); return { h: h || 0, m: m || 0 }; };
@@ -1853,13 +1876,16 @@ export default function Home() {
     const rtWarmupH = requiredPrefWarmupH({
       prefermentType: prefermentType ?? 'none',
       prefInFridge: prefGoesInFridge,
+      prefermentFlourPct, doughMassG:numItems*itemWeight,
+      hydrationPct:manualHydration ?? (styleKey ? ALL_STYLES[styleKey].hydration : undefined),
+      flourTempC:measuredFlourTemp ?? (flourInFridge ? fridgeTemp : kitchenTemp),
       styleKey: styleKey ?? '',
       kitchenTemp, fridgeTemp,
       mixerType: (mixerType ?? 'hand') as MixerType,
       targetDoughTemp,
     });
     return new Date(startTime.getTime() - rtWarmupH * 3600000);
-  }, [prefGoesInFridge, prefermentType, styleKey, kitchenTemp, fridgeTemp, mixerType, targetDoughTemp, eatTime, startTime]);
+  }, [prefGoesInFridge, prefermentType, styleKey, kitchenTemp, fridgeTemp, mixerType, targetDoughTemp, eatTime, startTime, prefermentFlourPct, numItems, itemWeight, manualHydration, measuredFlourTemp, flourInFridge]);
 
 
 
@@ -1929,7 +1955,7 @@ export default function Home() {
     if (yeastType === 'sourdough') {
       items.push({ tickKey:'dough_2', name: locale === 'fr' ? 'Levain actif' : 'Active starter', amount: '—' });
     } else if (yg && yg > 0) {
-      items.push({ tickKey:'dough_2', name: locale === 'fr' ? 'Levure' : 'Yeast', amount: `${parseFloat(Number(yg).toFixed(1))}g` });
+      items.push({ tickKey:'dough_2', name: locale === 'fr' ? 'Levure' : 'Yeast', amount: formatYeastDose(yg,locale) });
     }
     if ((cr.oil ?? 0) > 0) items.push({ tickKey:yeastType==='sourdough'||(yg&&yg>0)?'dough_3':'dough_2', name: locale === 'fr' ? 'Huile d’olive' : 'Olive oil', amount: `${Math.round(cr.oil ?? 0)}g` });
     return items;
@@ -2031,7 +2057,7 @@ export default function Home() {
       ovenType, ovenConstruction, mixerType, yeastType,
       kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, mixerCapacityG: customMixerCapacityG, resultNotes, containerCapacityLitres, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, timingOverrides, execution, mixExecution, starterFeedRecords, starterRecoveryPending,
-      qtyChosen, flourChosen, prefermentChosen, customKitchenConfirmed,
+      qtyChosen, flourChosen, prefermentChosen, customKitchenConfirmed, confirmedSettings,
       manualHydration, manualOil, manualSugar, manualSalt,
       targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
       prefGoesInFridge,
@@ -2236,6 +2262,7 @@ export default function Home() {
         localStorage.removeItem('bh_prep_ticks_v1');
       } catch {}
     }
+    setConfirmedSettings([]);
     setBakeType(bt);
     setTotalFlourTarget(undefined);
     setStyleKey(null);
@@ -2259,7 +2286,7 @@ export default function Home() {
       const ovenPool = bt === 'bread' ? BREAD_OVEN_TYPES : OVEN_TYPES;
       const prefOven = (bt === 'bread' ? prof.ovenTypeBread : prof.ovenTypePizza) ?? prof.ovenType;
       if (prefOven && prefOven in ovenPool) {
-        setOvenType(prefOven as AnyOvenType); applied = true;
+        setOvenType(prefOven as AnyOvenType); confirmSetting('oven',prefOven); applied = true;
       }
       // Style is deliberately NOT prefilled. Oven, mixer and yeast describe the
       // baker's kitchen and are stable between bakes; the style is the one
@@ -2267,14 +2294,14 @@ export default function Home() {
       // was handed a Neapolitan they never picked — and once Suivant started
       // skipping answered steps, they never even saw the page to change it.
       if (prof.mixerType && prof.mixerType in MIXER_TYPES) {
-        setMixerType(prof.mixerType as MixerType); setWaterMethod(prof.mixerType==='spiral'?'direct':'premelt'); applied = true; markProfile('equip'); markProfile('equip');
+        setMixerType(prof.mixerType as MixerType); setWaterMethod(prof.mixerType==='spiral'?'direct':'premelt'); applied = true; markProfile('equip'); confirmSetting('mixer',prof.mixerType);
       }
       // The style-yields-to-sourdough rule went with the style prefill: with no
       // style applied there is nothing for the yeast preference to yield to.
       // The baker picks a sourdough-native style themselves, and selectStyle
       // already forces levain when they do.
       if (prof.yeastType && prof.yeastType in YEAST_TYPES) {
-        setYeastType(prof.yeastType as YeastType); applied = true; markProfile('yeast');
+        setYeastType(prof.yeastType as YeastType); applied = true; markProfile('yeast'); confirmSetting('yeast',prof.yeastType);
       }
       // Preferment — Custom-mode preference only (Simple has no preferment
       // step to change it in), and never on the sourdough path (levain).
@@ -2287,7 +2314,7 @@ export default function Home() {
         // session. That is the whole point of the rule: profile or baker,
         // never a code default.
         setPrefermentType(prof.prefermentType as PrefermentType); applied = true;
-        markProfile('preferment'); setPrefermentChosen(true);
+        markProfile('preferment'); confirmSetting('method',prof.prefermentType); setPrefermentChosen(true);
       }
       if (prof.fridgeTemp !== undefined) { setFridgeTemp(prof.fridgeTemp); applied = true; }
       if (prof.preferredMode) { setTab(prof.preferredMode); applied = true; }
@@ -2542,8 +2569,8 @@ export default function Home() {
     // A clean flag is not proof of current validity. Only an explicit return
     // attempt marks an invalid clean plan pending; never do this merely because
     // a restored planner is still initializing its readiness callbacks.
-    if(recipeGenerated&&!canGenerate){setProtocolStale(true);handleGenerate();return;}
-    if(!recipeGenerated||protocolStale){handleGenerate();return;}
+    if(recipeGenerated&&!canGenerate){setProtocolStale(true);handleGenerate(true);return;}
+    if(!recipeGenerated||protocolStale||previousRecipeInputKey.current!==recipeInputKey){handleGenerate(true);return;}
     setSetupOverview(false);
     if(fillingsReturn)finishFillings();else openDestination('recipe');
   }
@@ -2616,7 +2643,7 @@ export default function Home() {
 
   function markStepSettled(id: number) {
     if (id === 2) setQtyChosen(true);
-    if (id === 8) setPrefermentChosen(true);
+    // Method is confirmed only by a selection in PrefermentPicker.
   }
 
   function advance(from: number) {
@@ -2638,6 +2665,7 @@ export default function Home() {
   }
   function advanceAdv(from: number) {
     if (from === 1 && !styleKey) return;
+    if (from === 8 && !prefermentChosen) return;
     if (from === 4) setCustomKitchenConfirmed(true);
     // Flour is settled only by choosing a product or entering a flour type.
     if (from === 6 && (!flourChosen || archivedFlourNames.length)) return;
@@ -2782,7 +2810,7 @@ export default function Home() {
     // this reset, only the first session per page load ever received them.
     profileBlockersAppliedRef.current = false;
     setEquipmentPanel('oven'); setMixingBatches(undefined); setContainerCapacityLitres(3);
-    setShowProductHome(false);setBakeType(null); setBakeName(''); setStyleKey(null); setProfileFields(new Set());
+    setShowProductHome(false);setBakeType(null); setBakeName(''); setStyleKey(null); setProfileFields(new Set());setConfirmedSettings([]);
     setNumItems(2); setItemWeight(270); setTotalFlourTarget(undefined);
     setOvenType(null); setOvenConstruction('tabletop'); setMixerType(null);
     const now = new Date(); now.setMinutes(0, 0, 0);
@@ -2855,7 +2883,7 @@ export default function Home() {
     return true;
   }
 
-  function handleGenerate() {
+  function handleGenerate(acceptedUpdate = false) {
     if (!styleKey) {
       setActiveTab('batch');setBatchView('style'); setSetupOverview(false);
       if (tab === 'custom') setAdvancedStep(1); else setActiveStep(1);
@@ -2892,7 +2920,7 @@ export default function Home() {
       return;
     }
     if (unsupportedEnrichedMethod || (flourChosen && archivedFlourNames.length)) { setActiveTab('setup'); setSetupOverview(true); return; }
-    if (recipeGenerated && user) {
+    if (recipeGenerated && user && !acceptedUpdate) {
       const msg = t('generate.confirmOverwrite');
       if (!window.confirm(msg)) return;
     }
@@ -2933,6 +2961,7 @@ export default function Home() {
     setNumItems(r.num_items);
     setItemWeight(r.item_weight);
     setTotalFlourTarget(undefined);
+    setConfirmedSettings([]);
     setOvenType(r.oven_type as AnyOvenType);
     setMixerType((r.mixer_type ?? 'hand') as MixerType);
     setWaterMethod(r.mixer_type==='spiral'?'direct':'premelt'); setSpiralIceConfirmed(false);
@@ -3008,6 +3037,7 @@ export default function Home() {
       deltaMs = next.getTime() - oldEat.getTime();
     }
     const shiftD = (d: Date) => rb ? new Date(d.getTime() + deltaMs) : d;
+    setConfirmedSettings((snap.confirmedSettings ?? []).filter(item=>typeof item==='string'));
     setTab(snap.tab as 'simple' | 'custom');
     setBakeType(snap.bakeType as BakeType | null);
     setBakeName(snap.bakeName ?? '');
@@ -3281,7 +3311,7 @@ export default function Home() {
       gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
     { id: 7, group: 'plan', chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
       value: eatTime
-        ? `${formatTime(new Date(Math.round(startTime.getTime() / 900000) * 900000), locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
+        ? `${formatTime(new Date(Math.round(startTime.getTime() / 900000) * 900000), locale)} → ${formatTime(eatTime, locale)}${selectedAvailabilityCount(blocks) > 0 ? ` · ${selectedAvailabilityCount(blocks)} ${selectedAvailabilityCount(blocks) === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
         : null,
       // The chip gets the bake time alone. Start time and busy windows are
       // consequences of it — the baker picks when to eat, everything else is
@@ -3362,7 +3392,7 @@ export default function Home() {
       gap: fr ? 'La pâte n\u2019est pas confirmée' : 'Dough not confirmed' },
     { id: 9, group: 'plan', chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
       value: eatTime
-        ? `${formatTime(new Date(Math.round(startTime.getTime() / 900000) * 900000), locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
+        ? `${formatTime(new Date(Math.round(startTime.getTime() / 900000) * 900000), locale)} → ${formatTime(eatTime, locale)}${selectedAvailabilityCount(blocks) > 0 ? ` · ${selectedAvailabilityCount(blocks)} ${selectedAvailabilityCount(blocks) === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
         : null,
       // The chip gets the bake time alone. Start time and busy windows are
       // consequences of it — the baker picks when to eat, everything else is
@@ -3372,11 +3402,22 @@ export default function Home() {
       gap: fr ? 'L\u2019heure de cuisson n\u2019est pas choisie' : 'No bake time chosen yet' },
   ] as StepDef[]).filter(step=>step.id!==7 || (!isUnleavened && prefermentType!=='levain'));
   const CUSTOM_LAST = CUSTOM_STEPS[CUSTOM_STEPS.length - 1].id;
+  // Step IDs are stored in existing drafts. A change of method can remove a
+  // page (for example, commercial yeast after selecting levain).
+  const visibleCustomStep = CUSTOM_STEPS.some(step => step.id === advancedStep)
+    ? advancedStep
+    : advancedStep === 99 ? CUSTOM_LAST
+    : showPrefermentChoice && !prefermentChosen ? 8
+    : !flourChosen ? 6 : 10;
+  useEffect(() => {
+    if (tab === 'custom' && activeTab === 'setup' && modeChosen && advancedStep !== 99 && advancedStep !== visibleCustomStep)
+      setAdvancedStep(visibleCustomStep);
+  }, [tab, activeTab, modeChosen, advancedStep, visibleCustomStep]);
 
   const customFlow: StepFlow = {
     editReturn: recipeGenerated ? {label:setupReturnLabel,onReturn:finishSetupEdit} : undefined,
     steps: CUSTOM_STEPS,
-    activeId: advancedStep > 10 ? CUSTOM_LAST : advancedStep,
+    activeId: visibleCustomStep,
     highestStep: advancedHighestStep,
     locale,
     onJump: (id) => openSetupStep(id,true),
@@ -3405,6 +3446,7 @@ export default function Home() {
     onGapReturn: () => {
       if (advancedStep === 1 && !styleKey) return;
       if (advancedStep === 6 && (!flourChosen || archivedFlourNames.length)) return;
+      if (advancedStep === 8 && !prefermentChosen) return;
       // Leaving a gap step means the baker has seen it and settled it, so it
       // counts as answered from here on. `find` returns the FIRST unanswered
       // step, so everything before it is already answered and raising the
@@ -3438,7 +3480,7 @@ export default function Home() {
     steps: SIMPLE_STEPS,
     // A restored session parks activeStep on the 99 sentinel; in page mode
     // that would render nothing, so it lands on the last step instead.
-    activeId: activeStep > SIMPLE_LAST ? SIMPLE_LAST : (activeStep === 4 || activeStep === 6) ? 3 : activeStep,
+    activeId: SIMPLE_STEPS.some(step=>step.id===activeStep) ? activeStep : (activeStep===4 || activeStep===6) ? 3 : SIMPLE_LAST,
     highestStep,
     locale,
     onJump: (id) => openSetupStep(id,false),
@@ -3481,7 +3523,7 @@ export default function Home() {
   // and a 60px drag there must move a feed time, never the page.
   const lateFillingsHint=!hasFillings&&(pizzaPartyEnabled||sandwichEnabled)&&<button type="button" className="bh-late-fillings" onClick={openLateFillings}>{bakeType==='pizza'?(fr?'Choisir des garnitures':'Choose toppings'):sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'Ajouter des tartines':'Add open-faced toasts'):(fr?'Ajouter des sandwichs':'Add sandwiches')}</button>;
   const simpleOrganisationFlow:StepFlow={...simpleFlow,steps:SIMPLE_STEPS.filter(step=>step.id>=3),activeId:Math.max(3,simpleFlow.activeId)};
-  const customOrganisationFlow:StepFlow={...customFlow,steps:CUSTOM_STEPS.filter(step=>step.id>=4||step.id===3&&advancedStep===3),activeId:Math.max(3,customFlow.activeId)};
+  const customOrganisationFlow:StepFlow={...customFlow,steps:CUSTOM_STEPS.filter(step=>step.id>=4||step.id===3&&advancedStep===3),activeId:customFlow.activeId<=2 ? 4 : customFlow.activeId};
   const simpleSwipeRef = useStepSwipe(simpleOrganisationFlow,
     tab === 'simple' && activeTab === 'setup' && simpleFlow.activeId !== SIMPLE_LAST && simpleFlow.activeId !== 3);
   const customSwipeRef = useStepSwipe(customOrganisationFlow,
@@ -3495,10 +3537,10 @@ export default function Home() {
       <span>{ovenDisplayName}</span><button type="button" onClick={()=>{setEquipmentPanel('oven');scrollToStepTop();}} style={{minHeight:44,border:0,background:'transparent',color:'var(--terra)',textDecoration:'underline'}}>{fr?'Modifier le four':'Change oven'}</button>
     </div>}
     <h3 className="bh-section-title">{compactPiadina?(fr?'Cuisson à la poêle':'Pan cooking'):equipmentPanel==='oven'?(fr?'Four':'Oven'):(fr?'Pétrissage':'Mixing')}</h3>
-    {(equipmentPanel==='oven'||compactPiadina) && <OvenPicker bakeType={bakeType ?? 'pizza'} styleKey={styleKey} selected={ovenType} construction={ovenConstruction} onConstructionChange={setOvenConstruction} onSelect={setOvenType} />}
+    {(equipmentPanel==='oven'||compactPiadina) && <OvenPicker bakeType={bakeType ?? 'pizza'} styleKey={styleKey} selected={ovenType} construction={ovenConstruction} onConstructionChange={setOvenConstruction} onSelect={value=>{setOvenType(value);confirmSetting('oven',value);}} />}
     {(equipmentPanel==='mixer'||compactPiadina) && <>
       {compactPiadina&&<h3 className="bh-section-title">{fr?'Pétrissage':'Mixing'}</h3>}
-      {tab==='simple' ? <SimpleMixerPicker locale={locale} selected={mixerType} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);}setCustomMixerCapacityG(undefined);setMixerType(value);}} styleKey={styleKey ?? undefined} /> : <MixerPicker totalDoughG={numItems * itemWeight} locale={locale} selected={mixerType} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);}setCustomMixerCapacityG(undefined);setMixerType(value);}} styleKey={styleKey ?? undefined} bakeType={bakeType ?? undefined} kitchenTemp={kitchenTemp} />}
+      {tab==='simple' ? <SimpleMixerPicker locale={locale} selected={mixerType} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);}setCustomMixerCapacityG(undefined);setMixerType(value);confirmSetting('mixer',value);}} styleKey={styleKey ?? undefined} /> : <MixerPicker totalDoughG={numItems * itemWeight} locale={locale} selected={mixerType} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);}setCustomMixerCapacityG(undefined);setMixerType(value);confirmSetting('mixer',value);}} styleKey={styleKey ?? undefined} bakeType={bakeType ?? undefined} kitchenTemp={kitchenTemp} />}
       {mixerType && !manualMixing && <details style={{marginTop:12}}><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Capacité de mon pétrin':'My mixer capacity'}</summary><label style={{display:'flex',alignItems:'center',gap:12}}>{fr?'Poids de pâte maximal (g)':'Maximum dough weight (g)'}<input type="number" min={100} max={1000000} step={100} value={customMixerCapacityG ?? ''} placeholder={String(mixerCapacityG)} onChange={e=>{const value=Number(e.target.value);if(!e.target.value)setCustomMixerCapacityG(undefined);else if(Number.isFinite(value)&&value>=100&&value<=1000000)setCustomMixerCapacityG(value);}} style={{width:110,minHeight:44}}/></label><p style={{fontSize:14,color:'var(--smoke)'}}>{fr?'Utilisez la limite de pâte indiquée par le fabricant.':'Use the dough capacity stated by the manufacturer.'}</p></details>}
       {mixingBatchControl}
     </>}
@@ -3507,23 +3549,33 @@ export default function Home() {
   const optionalEquipment=<>
               <details className="bh-disclosure" style={{marginBottom:16}}>
                 <summary style={{minHeight:44,cursor:'pointer',padding:'10px 0'}}>{fr?'Cuisson':'Cooking'} · {ovenDisplayName ?? (fr?'Choisir':'Choose')} <span style={{color:'var(--terra)'}}>— {fr?'Modifier':'Change'}</span></summary>
-                <OvenPicker bakeType={bakeType ?? 'pizza'} styleKey={styleKey} selected={ovenType} construction={ovenConstruction} onConstructionChange={setOvenConstruction} onSelect={setOvenType}/>
+                <OvenPicker bakeType={bakeType ?? 'pizza'} styleKey={styleKey} selected={ovenType} construction={ovenConstruction} onConstructionChange={setOvenConstruction} onSelect={value=>{setOvenType(value);confirmSetting('oven',value);}}/>
               </details>
               <details className="bh-disclosure" style={{marginBottom:16}}>
                 <summary style={{minHeight:44,cursor:'pointer',padding:'10px 0'}}>{fr?'Pétrissage':'Mixing'} · {mixerType ? localName(MIXER_TYPES[mixerType]) : (fr?'Choisir':'Choose')} <span style={{color:'var(--terra)'}}>— {fr?'Modifier':'Change'}</span></summary>
-                <SimpleMixerPicker locale={locale} selected={mixerType} styleKey={styleKey ?? undefined} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);setCustomMixerCapacityG(undefined);}setMixerType(value);}}/>
+                <SimpleMixerPicker locale={locale} selected={mixerType} styleKey={styleKey ?? undefined} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);setCustomMixerCapacityG(undefined);}setMixerType(value);confirmSetting('mixer',value);}}/>
                 {mixerType && !manualMixing && <label style={{display:'block',marginTop:12}}>{fr?'Capacité de pâte du pétrin (g)':'Mixer dough capacity (g)'}<input type="number" min={100} max={1000000} step={100} value={customMixerCapacityG ?? ''} placeholder={String(mixerCapacityG)} onChange={e=>{const value=Number(e.target.value);if(!e.target.value)setCustomMixerCapacityG(undefined);else if(Number.isFinite(value)&&value>=100&&value<=1000000)setCustomMixerCapacityG(value);}} style={{display:'block',width:140,minHeight:44}}/></label>}
                 {!showMixingBatches && mixingBatchControl}
               </details>
               {showMixingBatches && mixingBatchControl}
   </>;
   const mealNoun=fr?'Garnitures':bakeType==='pizza'?'Toppings':'Fillings';
+  const sourced = (value:string, picked:boolean) => picked ? value : value+' · '+(fr?'valeur proposée':'suggested');
+  const reviewEquipment = [ovenType && sourced(ovenDisplayName ?? '',confirmed('oven',ovenType)),mixerType && sourced(localName(MIXER_TYPES[mixerType]),confirmed('mixer',mixerType))].filter(Boolean).join(' · ');
+  const reviewAmbient = sourced(reviewKitchen,confirmed('climate',kitchenTemp));
+  const reviewLeavening = yeastType && !isUnleavened ? sourced(localName(YEAST_TYPES[yeastType]),confirmed('yeast',yeastType)) : null;
+  const simpleKitchenSummary = [reviewEquipment,reviewAmbient,reviewLeavening].filter(Boolean).join(' · ');
+  const firstRecipeAction = new Date(Math.min(
+    +startTime,
+    ...(schedule?.availabilityActions ?? []).map(action=>+action.at),
+    ...(prefStartTime ? [+prefStartTime] : []),
+    ...(yeastType==='sourdough' ? starterEvents.filter(e=>e.kind!=='last_fed' && e.kind!=='known_peak').map(e=>+e.time) : []),
+  ));
   const setupSteps = tab==='custom' ? CUSTOM_STEPS : SIMPLE_STEPS.filter(step=>step.id!==3);
-  const stepLink = (step:StepDef):BakeLink => ({label:step.chip,value:step.value,disabled:step.id>1&&!styleKey,onChoose:()=>openSetupStep(step.id)});
+  const stepLink = (step:StepDef):BakeLink => ({label:step.chip,value:step.id===2&&!qtyChosen?`${numItems} × ${Math.round(itemWeight)} g · ${fr?'proposé':'suggested'}`:step.id===10&&step.value?sourced(step.value,manualHydration!==undefined):step.id===8&&step.value?sourced(step.value,confirmed('method',prefermentType)):step.value,disabled:step.id>1&&!styleKey,onChoose:()=>openSetupStep(step.id)});
   const bakeLinks:BakeLink[] = [
     {label:fr?'Fournée':'Bake',value:bakeType==='bread'?(fr?'Pain':'Bread'):'Pizza',onChoose:backToProducts},
     ...setupSteps.filter(step=>step.id<=2).map(stepLink),
-    {label:'Mode',value:modeChosen&&!collectingBakeTime?(tab==='simple'?'Simple':fr?'Personnalisé':'Custom'):null,disabled:!styleKey||!qtyChosen,onChoose:recipeGenerated?openModeChoice:openBakeTimeInputs},
     ...(collectingBakeTime ? [{label:fr?'Heure de cuisson':'Bake time',value:eatTime?formatTime(eatTime,locale):null,onChoose:openBakeTimeInputs}] : modeChosen?setupSteps.filter(step=>step.id>2).map(stepLink):[]),
   ];
   const currentSubsection = destination==='batch' ? (batchView==='quantity'?(fr?'Quantité':'Quantity'):'Style') : !modeChosen ? 'Mode' : (tab==='simple'&&activeStep===7 ? (fr?'Horaires':'Timing') : setupSteps.find(step=>step.id===(tab==='custom'?advancedStep:activeStep))?.chip ?? (fr?'Ma fournée':'My bake'));
@@ -3544,7 +3596,7 @@ export default function Home() {
                 onDiameterChange={setPizzaDiameter} onCrustChange={crust => setPizzaCorn(['thin','classic','generous'].indexOf(crust))}
                 onUseCalculatedWeight={() => chooseItemWeight(pizzaWeightFromTable(styleKey ?? 'neapolitan', pizzaDiameter, pizzaCorn))}
               />);
-  const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings?'recipe':destination} fr={fr} onChange={next=>{if(next==='batch'){if(recipeGenerated)openSetupReview();else if(styleKey&&qtyChosen)openDestination('organisation');else openDestination('batch');}else openDestination(next);}} top={destination==='organisation'?0:stickTop}
+  const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings?'recipe':destination} fr={fr} onChange={next=>{if(next==='batch'){if(recipeGenerated)openSetupReview();else if(styleKey&&qtyChosen)openDestination('organisation');else openDestination('batch');}else openDestination(next);}} top={stickTop}
     recipeMeal={pizzaPartyEnabled||(styleKey&&sandwichEnabled)?{label:mealNoun,selected:hasFillings,active:browsingFillings,onChoose:()=>{if(styleKey)setFillingsReturn({destination:'recipe',view:'dough'});setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}}:undefined}
     progress={!execution&&!mixExecution&&!browsingFillings&&!setupOverview&&['batch','organisation'].includes(destination)?<SummaryBar links={bakeLinks} current={currentSubsection} fr={fr}/>:undefined} /> : null;
 
@@ -3559,10 +3611,10 @@ export default function Home() {
     <div data-navigation-page={visiblePageKey} data-reading={bottomNavCollapsed || undefined} data-keyboard-open={keyboardOpen || undefined} data-mobile-setup={(destination==='organisation'||destination==='batch')&&!recipeGenerated?'true':undefined} style={{ minHeight: '100vh', background: 'var(--warm)' }}>
       {/* ── Sticky header + journey bar (autohide on scroll down) ── */}
       <div ref={stickyHeadRef} className="bh-header-stack" style={{
-        position: destination==='organisation' ? 'relative' : 'sticky',
+        position: 'sticky',
         top: 0,
         zIndex: 100,
-        transition: destination==='organisation' ? 'none' : 'top 0.25s ease',
+        transition: 'top 0.25s ease',
       }}>
         <Header
           units={units}
@@ -3581,7 +3633,7 @@ export default function Home() {
             const dateStr = eatTime.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
             // Time only — formatTime() prefixes the weekday, and dateStr
             // already has it ("Sat 18 Jul, Sat 19:00" duplication)
-            const timeStr = eatTime.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { hour: 'numeric', minute: '2-digit' });
+            const timeStr = formatClock(eatTime, locale);
             const itemLabel = bakeType === 'bread'
               ? (locale === 'fr' ? (numItems === 1 ? 'pain' : 'pains') : (numItems === 1 ? 'loaf' : 'loaves'))
               : (numItems === 1 ? 'pizza' : 'pizzas');
@@ -3629,12 +3681,13 @@ export default function Home() {
           <button type="button" onClick={undoNewBake} style={{minHeight:44,padding:'8px 12px',background:'none',border:'1px solid var(--border)',borderRadius:10,color:'var(--terra)',font:'inherit',cursor:'pointer'}}>{fr ? 'Annuler la nouvelle fournée' : 'Undo new bake'}</button>
         </div>}
 
-        {destination==='organisation' && <div className="bh-organisation-nav-stack">{bakeNavigator}</div>}
+
       </div>
 
       {/* ── Main content ───────────────────── */}
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: `${bakeType ? '0' : 'clamp(1rem, 3vw, 1.5rem)'} clamp(1rem, 3vw, 1.5rem) ${bakeType ? 'calc(80px + env(safe-area-inset-bottom, 0px))' : 'clamp(1rem, 3vw, 1.5rem)'}` }}>
 
+        {bakeNavigator}
         {starterRecoveryPending&&yeastType==='sourdough'&&!showProductHome&&!showWelcomeBack&&!bakedDone&&destination!=='organisation'&&<section className="bh-start-status" role="status">
           <p>{fr?'Votre plan de levain doit être actualisé.':'Your starter plan needs updating.'}</p>
           <button type="button" className="bh-start-primary" onClick={()=>{setSetupOverview(false);setActiveStep(7);setAdvancedStep(9);openDestination('organisation');}}>{fr?'Voir les horaires':'Review timing'}</button>
@@ -3834,13 +3887,12 @@ export default function Home() {
         </div>
         )}
 
-{destination!=='organisation' && bakeNavigator}
-{recipeGenerated && <div className="bh-bake-context" style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{bakeQuantityLabel(numItems,bakeType,styleKey,fr)} · {styleKey ? styleDisplayName(styleKey) : ''}</div></div>}
+{recipeGenerated && <div className="bh-bake-context" style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{destination==='recipe'&&!browsingFillings&&!execution&&!mixExecution?<button type="button" className="bh-section-back" onClick={openQuantityEdit} aria-label={fr?'Modifier la quantité':'Edit quantity'}>{bakeQuantityLabel(numItems,bakeType,styleKey,fr)} ✎</button>:bakeQuantityLabel(numItems,bakeType,styleKey,fr)} · {styleKey ? styleDisplayName(styleKey) : ''}</div></div>}
 
-{recipeGenerated && destination==='recipe' && !browsingFillings && <button type="button" className="bh-section-back" onClick={()=>{captureEditReturn();openSetupStep(tab==='custom'?9:7);}}>{fr?'Ajuster les horaires':'Adjust timing'}</button>}
+
 
 {showBakeTypeChooser&&bakeType&&<BakeTypeChooser fr={fr} current={bakeType} onChoose={selectBakeType} onClose={()=>setShowBakeTypeChooser(false)}/>}
-{recipeGenerated && protocolStale && ['recipe','shopping','protocol','service'].includes(destination) && <section role="status" className="bh-section-empty"><h2>{fr?'Choix modifiés · recette à vérifier':'Choices changed · recipe needs review'}</h2><p>{fr?'Vos choix sont conservés. Mettez la recette à jour avant de poursuivre.':'Your choices are kept. Update the recipe before continuing.'}</p><button type="button" style={NEXT_CTA} onClick={openSetupReview}>{fr?'Vérifier ma recette':'Review my recipe'}</button></section>}
+{recipeGenerated && protocolStale && ['recipe','shopping','protocol','service'].includes(destination) && <section role="status" className="bh-section-empty"><h2>{fr?'Recette à mettre à jour':'Update your recipe'}</h2><button type="button" style={NEXT_CTA} onClick={finishSetupEdit}>{canGenerate?(fr?'Mettre à jour ma recette':'Update my recipe'):(generationBlocker?.action??(fr?'Ajuster la recette':'Adjust recipe'))}</button></section>}
 <div hidden={recipeGenerated && protocolStale && ['recipe','shopping','protocol','service'].includes(destination)}>
 
 
@@ -3853,17 +3905,17 @@ export default function Home() {
               <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
               <BottomActions className="bh-batch-actions bh-style-confirm">
                 <button type="button" className="bh-back-action" onClick={backToProducts}>{fr?'Retour':'Back'}</button>
-                <button type="button" disabled={!styleKey} aria-describedby={!styleKey?'bh-style-choice-hint':undefined} style={{...NEXT_CTA,opacity:styleKey?1:0.5,cursor:styleKey?'pointer':'not-allowed'}} onClick={()=>{if(!styleKey)return;setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{styleKey?`${fr?'Continuer avec':'Continue with'} ${styleDisplayName(styleKey)} →`:(fr?'Continuer':'Continue')}</button>
+                <button data-bh-forward type="button" disabled={!styleKey} aria-describedby={!styleKey?'bh-style-choice-hint':undefined} style={{...NEXT_CTA,opacity:styleKey?1:0.5,cursor:styleKey?'pointer':'not-allowed'}} onClick={()=>{if(!styleKey)return;setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{styleKey?`${fr?'Continuer avec':'Continue with'} ${styleDisplayName(styleKey)} →`:(fr?'Continuer':'Continue')}</button>
               </BottomActions>
             </> : <>
               <div className="bh-batch-context"><span>{styleKey?styleDisplayName(styleKey):''}</span><button type="button" aria-label={bakeType==='bread'?(fr?'Modifier le pain choisi':'Edit selected bread'):(fr?'Modifier le style de pizza':'Edit pizza style')} onClick={()=>{setBatchView('style');scrollToStepTop();}}><span aria-hidden="true">·</span><span>{fr?'Modifier':'Edit'}</span></button></div>
               <h2 className="bh-page-title">{fr?'Quelle quantité de pâte ?':'How much dough?'}</h2>
-              {styleKey==='pain_levain'&&<div style={{marginTop:16}}><label><input type="checkbox" checked={addSeeds} onChange={event=>setAddSeeds(event.target.checked)} /> {fr?'Ajouter des graines':'Add seeds'}</label><p>{fr?'Les graines trempent à l’avance : 2 h minimum, idéalement la veille.':'Soak the seeds ahead: at least 2 hours, ideally overnight.'}</p></div>}
+              {styleKey==='pain_levain'&&<div style={{marginTop:16}}><label className="bh-seed-toggle"><input type="checkbox" checked={addSeeds} onChange={event=>setAddSeeds(event.target.checked)} /> {fr?'Ajouter des graines':'Add seeds'}</label>{addSeeds && <p>{fr?'Les graines trempent à l’avance : 2 h minimum, idéalement la veille.':'Soak the seeds ahead: at least 2 hours, ideally overnight.'}</p>}</div>}
 
                             {renderQuantity('count')}
               <BottomActions className="bh-batch-actions bh-batch-actions-navigation">
                 <button type="button" className="bh-back-action" onClick={()=>{if(recipeGenerated)backToSetupChoices();else {setBatchView('style');scrollToStepTop();}}}>{recipeGenerated?(fr?'Retour à mes choix':'Back to my choices'):(fr?'Étape précédente':'Previous step')}</button>
-                <button type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(recipeGenerated)finishSetupEdit();else openBakeTimeInputs();}}>{recipeGenerated?setupReturnLabel:(fr?'Continuer':'Continue')}</button></BottomActions>
+                <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(recipeGenerated)finishSetupEdit();else openBakeTimeInputs();}}>{recipeGenerated?setupReturnLabel:(fr?'Horaires →':'Bake time →')}</button></BottomActions>
             </>}
           </section>}
 
@@ -3975,7 +4027,7 @@ export default function Home() {
                 <input value={bakeName} placeholder={bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night')} maxLength={100} onChange={e=>setBakeName(e.target.value)} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',fontWeight:400}} />
               </label>}
                 flow={simpleFlow}
-                reviewValues={{ 4: reviewKitchen, 7: reviewTiming }}
+                reviewValues={{ 3: simpleKitchenSummary, 7: reviewTiming }}
                 modeChip={{ value: t('modeCards.simple.title'), onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
                 onJump={id => { setSetupOverview(false); simpleFlow.onJump(id); }}
                 returnLabel={recipeGenerated?setupReturnLabel:undefined}
@@ -3986,7 +4038,7 @@ export default function Home() {
 
             {/* Simple confirms practical context once; editors remain optional. */}
             <StepPage flow={simpleOrganisationFlow} id={3} nextOverride={
-              <button type="button" disabled={!ovenType || !mixerType || (!isUnleavened && !yeastType)} style={{...NEXT_CTA,opacity:(!ovenType || !mixerType || (!isUnleavened && !yeastType)) ? 0.5 : 1}} onClick={()=>simpleFlow.onNext(3)}>{fr?'Continuer':'Continue'}</button>
+              <button data-bh-forward type="button" disabled={!ovenType || !mixerType || (!isUnleavened && !yeastType)} style={{...NEXT_CTA,opacity:(!ovenType || !mixerType || (!isUnleavened && !yeastType)) ? 0.5 : 1}} onClick={()=>simpleFlow.onNext(3)}>{fr?'Horaires →':'Bake time →'}</button>
             }>
               {optionalEquipment}
               <ClimatePicker
@@ -3995,7 +4047,7 @@ export default function Home() {
                 showFridge={!isUnleavened && (!!schedule?.totalColdHours || prefGoesInFridge || yeastType==='sourdough')}
                 units={units}
                 flourInFridge={flourInFridge} onFlourInFridgeChange={setFlourInFridge}
-                onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
+                onChange={(t, h, f) => { if(t!==kitchenTemp)confirmSetting('climate',t); setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
 
 
@@ -4003,7 +4055,7 @@ export default function Home() {
                 <summary style={{minHeight:44,cursor:'pointer',padding:'10px 0'}}>{fr?'Ma levure':'My yeast'} · {yeastType ? localName(YEAST_TYPES[yeastType]) : (fr?'Choisir':'Choose')} <span style={{color:'var(--terra)'}}>— {fr?'Modifier':'Change'}</span></summary>
               <YeastHelper
                 selected={yeastType}
-                onSelect={chooseYeast}
+                onSelect={value=>{chooseYeast(value);confirmSetting('yeast',value);}}
                 onClose={() => {}}
                 disabledIds={enrichedDirectOnly || (breadProtocol && !breadProtocol.supportedPreferments.includes('levain')) ? ['sourdough'] : undefined}
                 disabledNote={fr ? 'Ce pain utilise de la levure classique.' : 'This bread uses regular yeast.'}
@@ -4016,15 +4068,16 @@ export default function Home() {
             {/* ─── STEP 8: Scheduler ───────────────── */}
             <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={collectingBakeTime ? <></> : scheduleEditing ? null : !eatTime ?
               <button type="button" disabled style={{...NEXT_CTA,opacity:0.5}}>{fr?'Choisissez une date de cuisson':'Choose a bake date'}</button>
-              : !scheduleCandidateValid ? <button type="button" style={NEXT_CTA} onClick={()=>{const panel=document.getElementById('schedule-anchor-panel');panel?.scrollIntoView({block:'start'});panel?.focus();}}>{fr?'Résoudre le planning':'Resolve timing'}</button>
+              : !scheduleCandidateValid ? <button type="button" style={NEXT_CTA} onClick={()=>{const panel=document.getElementById('schedule-anchor-panel');panel?.scrollIntoView({block:'start'});panel?.focus();}}>{fr?'Voir les horaires à ajuster →':'Review affected times →'}</button>
               : undefined}>
-              <details className="bh-disclosure"><summary>{fr?'Température de la cuisine':'Kitchen temperature'} · {cToDisplay(kitchenTemp,units)}{tempUnit(units)}</summary>
-                <ClimatePicker kitchenTemp={kitchenTemp} humidity={humidity} fridgeTemp={fridgeTemp} mode="custom" units={units} onChange={(t,h,f)=>{setKitchenTemp(t);setHumidity(h);setFridgeTemp(f);}}/>
-              </details>
+              <KitchenReading value={kitchenTemp} units={units} fr={fr} confirmed={confirmed('climate',kitchenTemp)} onConfirm={value=>{setKitchenTemp(value);confirmSetting('climate',value);}}/>
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => simpleFlow.onJump(1)} />
               ) : (
               <SchedulePicker inputsOnly={collectingBakeTime}
+                prefermentFlourPct={prefermentFlourPct} doughMassG={numItems * itemWeight}
+                hydrationPct={manualHydration ?? (styleKey ? ALL_STYLES[styleKey].hydration : undefined)}
+                flourTempC={measuredFlourTemp ?? (flourInFridge ? fridgeTemp : kitchenTemp)}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
                 mixingBatches={selectedMixingBatches}
@@ -4125,7 +4178,7 @@ export default function Home() {
                 }}>
                   <span>{t('generate.staleBanner')}</span>
                   <button
-                    onClick={handleGenerate}
+                    onClick={()=>handleGenerate()}
                     style={{
                       background: '#6B4423',
                       color: 'white',
@@ -4172,6 +4225,8 @@ export default function Home() {
 
                           <RecipeOutput
                             afterIngredients={recipeFillings}
+                            firstActionAt={firstRecipeAction} bakeAt={eatTime} onAdjustTiming={()=>{captureEditReturn();openSetupStep(tab==='custom'?9:7);}}
+                            mixerConfirmed={confirmed('mixer',mixerType)}
                             starterEvents={starterEvents} mixingTime={startTime}
                             containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
                             styleKey={styleKey ?? undefined}
@@ -4264,9 +4319,9 @@ export default function Home() {
               {!bakeTimeIsPast && (
                 <div style={{ marginTop: '12px' }}>
 
-                                      <button type="button" className="bh-section-back" onClick={()=>{setProtocolView('dough');openDestination('protocol');}}><DestinationIcon destination="protocol"/> {fr?'J’ai les ingrédients · Préparation':'I have the ingredients · Preparation'} →</button>
+                                      <button type="button" style={{...NEXT_CTA,width:'100%'}} onClick={()=>{setProtocolView('dough');openDestination('protocol');}}><DestinationIcon destination="protocol"/> {fr?'J’ai les ingrédients · Préparation':'I have the ingredients · Preparation'} →</button>
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
-                    <button type="button" className="bh-back-action" onClick={openSetupReview}>{fr?'Modifier ma fournée':'Edit my bake'}</button>
+                    <button type="button" className="bh-back-action" onClick={openSetupReview}>{fr?'Revoir mes choix':'Review my choices'}</button>
                     <button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}><DestinationIcon destination="shopping"/> {fr?'Voir mes courses':'View my shopping list'} →</button>
 
                   </BottomActions>}
@@ -4404,7 +4459,7 @@ export default function Home() {
                 <input value={bakeName} placeholder={bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night')} maxLength={100} onChange={e=>setBakeName(e.target.value)} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',fontWeight:400}} />
               </label>}
                 flow={customFlow}
-                reviewValues={{ 4: reviewKitchen, 8: prefermentChosen ? (prefermentType === 'none' ? t('preferment.direct') : `${localName(PREFERMENT_TYPES[prefermentType])} · ${prefermentFlourPct ?? 20}%`) : null, 9: reviewTiming }}
+                reviewValues={{3:reviewEquipment, 4:reviewAmbient, 7:reviewLeavening, 8: sourced(prefermentType==='none'?t('preferment.direct'):localName(PREFERMENT_TYPES[prefermentType]),confirmed('method',prefermentType)), 10:sourced(advancedRecipe ? advancedRecipe.hydration+'%' : (manualHydration ?? ALL_STYLES[styleKey!]?.hydration ?? 0)+'%',manualHydration!==undefined), 9:reviewTiming}}
                 modeChip={{ value: t('modeCards.custom.title'), onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
                 onJump={id => { setSetupOverview(false); customFlow.onJump(id); }}
                 returnLabel={recipeGenerated?setupReturnLabel:undefined}
@@ -4415,7 +4470,7 @@ export default function Home() {
 
             {/* ─── ADV STEP 1: Style picker ────────── */}
             {/* ─── ADV STEP 4: Equipment (oven + mixing) ── */}
-            <StepPage flow={customOrganisationFlow} id={3} nextOverride={equipmentPanel==='oven' || !mixerType ? <button type="button" disabled={equipmentPanel==='oven'?!ovenType:!mixerType} style={{...NEXT_CTA,opacity:(equipmentPanel==='oven'?!ovenType:!mixerType)?.5:1}} onClick={()=>{setEquipmentPanel('mixer');scrollToStepTop();}}>{fr?'Continuer':'Continue'}</button> : undefined}>
+            <StepPage flow={customOrganisationFlow} id={3} nextOverride={equipmentPanel==='oven' || !mixerType ? <button type="button" disabled={equipmentPanel==='oven'?!ovenType:!mixerType} style={{...NEXT_CTA,opacity:(equipmentPanel==='oven'?!ovenType:!mixerType)?.5:1}} onClick={()=>{setEquipmentPanel('mixer');scrollToStepTop();}} data-bh-forward>{fr?'Pétrissage →':'Mixing →'}</button> : undefined}>
               {profilePrefilled && <p>{fr?'Votre équipement habituel — vérifiez-le pour cette fournée.':'Your usual equipment — check it for this bake.'}</p>}
               {equipmentChoices}
             </StepPage>
@@ -4423,13 +4478,13 @@ export default function Home() {
             {/* ─── ADV STEP 5: Climate ─────────────── */}
             <StepPage flow={customOrganisationFlow} id={4}>
               <button type="button" className="bh-section-back" onClick={()=>openSetupStep(3,true)}>{fr?'Modifier le matériel':'Edit equipment'}</button>
-              <p>{fr?'Votre cuisine aujourd’hui — vérifiez ces températures pour adapter le planning.':'Your kitchen today — check these temperatures to adapt the plan.'}</p>
+              <details><summary style={{minHeight:44}}>{fr?'Température de la cuisine':'Kitchen temperature'} · {cToDisplay(kitchenTemp,units)}{tempUnit(units)}</summary><KitchenReading value={kitchenTemp} units={units} fr={fr} confirmed={confirmed('climate',kitchenTemp)} onConfirm={value=>{setKitchenTemp(value);confirmSetting('climate',value);}}/></details>
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
-                fridgeTemp={fridgeTemp} mode="custom"
+                fridgeTemp={fridgeTemp} mode="custom" hideKitchen
                 units={units}
                 flourInFridge={flourInFridge} onFlourInFridgeChange={setFlourInFridge}
-                onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
+                onChange={(t, h, f) => { if(t!==kitchenTemp)confirmSetting('climate',t); setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
               <details style={{marginTop:16}}>
                 <summary style={{minHeight:44,fontSize:16,cursor:'pointer'}}>{locale==='fr'?'Préparation de l’eau · facultatif':'Water preparation · optional'}</summary>
@@ -4455,7 +4510,7 @@ export default function Home() {
 
 
             {/* ─── ADV STEP 7: Flour ───────────────── */}
-            <StepPage flow={customOrganisationFlow} id={6} nextOverride={manualFlourEntry ? null : !flourChosen || archivedFlourNames.length ? <button type="button" disabled style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{fr ? 'Continuer' : 'Continue'}</button> : undefined}>
+            <StepPage flow={customOrganisationFlow} id={6} nextOverride={manualFlourEntry ? null : !flourChosen || archivedFlourNames.length ? <button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{fr ? 'Continuer' : 'Continue'}</button> : undefined}>
               <FlourPicker
                 onManualEntryChange={setManualFlourEntry}
                 blend={flourBlend}
@@ -4473,7 +4528,7 @@ export default function Home() {
               <YeastHelper
                 selected={yeastType}
                 onSelect={(yt) => {
-                  chooseYeast(yt);
+                  chooseYeast(yt);confirmSetting('yeast',yt);
                   if (yt === 'sourdough') {
                     setPrefermentType('levain');
                   } else {
@@ -4496,11 +4551,11 @@ export default function Home() {
 
             {/* ─── ADV STEP 9: Preferment (hidden for sourdough) ── */}
             {showPrefermentChoice && (
-              <StepPage flow={customOrganisationFlow} id={8}>
+              <StepPage flow={customOrganisationFlow} id={8} nextOverride={!prefermentChosen ? <button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:0.55}}>{fr?'Choisissez la méthode':'Choose a method'}</button> : undefined}>
                 <PrefermentPicker
                   selected={prefermentChosen ? prefermentType : null}
                   chooseMethod
-                  onSelect={method=>{choosePreferment(method);if(method==='levain')chooseYeast('sourdough');else if(yeastType==='sourdough'||!yeastType)chooseYeast('instant');}}
+                  onSelect={method=>{choosePreferment(method);confirmSetting('method',method);if(method==='levain')chooseYeast('sourdough');else if(yeastType==='sourdough'||!yeastType)chooseYeast('instant');}}
                   flourPct={prefermentFlourPct}
                   suggestedFlourPct={20}
                   totalFlourGrams={advancedRecipe?.flour ?? (styleKey ? numItems * itemWeight / (1 + (ALL_STYLES[styleKey].hydration + ALL_STYLES[styleKey].salt + ALL_STYLES[styleKey].oil + ALL_STYLES[styleKey].sugar) / 100) : undefined)}
@@ -4514,11 +4569,14 @@ export default function Home() {
             )}
 
             {/* ─── ADV STEP 10: Scheduler ──────────── */}
-            <StepPage flow={customOrganisationFlow} id={9} nextOverride={scheduleEditing ? null : !scheduleCandidateValid ? <button type="button" style={NEXT_CTA} onClick={()=>{const panel=document.getElementById('schedule-anchor-panel');panel?.scrollIntoView({block:'start'});panel?.focus();}}>{fr?'Résoudre le planning':'Resolve timing'}</button> : undefined}>
+            <StepPage flow={customOrganisationFlow} id={9} nextOverride={scheduleEditing ? null : !scheduleCandidateValid ? <button type="button" style={NEXT_CTA} onClick={()=>{const panel=document.getElementById('schedule-anchor-panel');panel?.scrollIntoView({block:'start'});panel?.focus();}}>{fr?'Voir les horaires à ajuster →':'Review affected times →'}</button> : undefined}>
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => customFlow.onJump(1)} />
               ) : (
               <SchedulePicker
+                prefermentFlourPct={prefermentFlourPct} doughMassG={numItems * itemWeight}
+                hydrationPct={manualHydration ?? (styleKey ? ALL_STYLES[styleKey].hydration : undefined)}
+                flourTempC={measuredFlourTemp ?? (flourInFridge ? fridgeTemp : kitchenTemp)}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
                 mixingBatches={selectedMixingBatches}
@@ -4656,7 +4714,7 @@ export default function Home() {
                 }}>
                   <span>{t('generate.staleBanner')}</span>
                   <button
-                    onClick={handleGenerate}
+                    onClick={()=>handleGenerate()}
                     style={{
                       background: '#6B4423',
                       color: 'white',
@@ -4697,6 +4755,8 @@ export default function Home() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
                           <RecipeOutput
                             afterIngredients={recipeFillings}
+                            firstActionAt={firstRecipeAction} bakeAt={eatTime} onAdjustTiming={()=>{captureEditReturn();openSetupStep(tab==='custom'?9:7);}}
+                            mixerConfirmed={confirmed('mixer',mixerType)}
                             starterEvents={starterEvents} mixingTime={startTime}
                             containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
                             styleKey={styleKey ?? undefined}
@@ -4790,9 +4850,9 @@ export default function Home() {
               {!bakeTimeIsPast && (
                 <div style={{ marginTop: '12px' }}>
 
-                                      <button type="button" className="bh-section-back" onClick={()=>{setProtocolView('dough');openDestination('protocol');}}><DestinationIcon destination="protocol"/> {fr?'J’ai les ingrédients · Préparation':'I have the ingredients · Preparation'} →</button>
+                                      <button type="button" style={{...NEXT_CTA,width:'100%'}} onClick={()=>{setProtocolView('dough');openDestination('protocol');}}><DestinationIcon destination="protocol"/> {fr?'J’ai les ingrédients · Préparation':'I have the ingredients · Preparation'} →</button>
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
-                    <button type="button" className="bh-back-action" onClick={openSetupReview}>{fr?'Modifier ma fournée':'Edit my bake'}</button>
+                    <button type="button" className="bh-back-action" onClick={openSetupReview}>{fr?'Revoir mes choix':'Review my choices'}</button>
                     <button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}><DestinationIcon destination="shopping"/> {fr?'Voir mes courses':'View my shopping list'} →</button>
 
                   </BottomActions>}
@@ -4985,3 +5045,4 @@ export default function Home() {
     </div>
   );
 }
+
