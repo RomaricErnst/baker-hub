@@ -82,18 +82,24 @@ function TimingRow({anchor,isFr,onChange,check,cacheKey,open,onToggle}:{anchor:K
   </div>
  </li>;
 }
-export default function ScheduleKeyTimings({anchors,isFr,onChange,check,cacheKey,hasDraft,children,header,onCancel,onApply,canApply,onOpenChange,notice,ovenAt,personalized,adjustment}:{header?:ReactNode;notice?:ReactNode;adjustment?:ReactNode;onApply:()=>void;canApply:boolean;onOpenChange:(open:boolean)=>void;ovenAt:number;personalized:boolean;onCancel:()=>void;onInteractionChange:(value:boolean)=>void;anchors:KeyTimingAnchor[];blocks:AvailabilityBlock[];isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string;hasDraft?:boolean;children?:ReactNode}){
+export default function ScheduleKeyTimings({anchors,blocks,isFr,onChange,check,cacheKey,hasDraft,children,header,onCancel,onApply,canApply,onOpenChange,notice,ovenAt,personalized,adjustment}:{header?:ReactNode;notice?:ReactNode;adjustment?:ReactNode;onApply:()=>void;canApply:boolean;onOpenChange:(open:boolean)=>void;ovenAt:number;personalized:boolean;onCancel:()=>void;onInteractionChange:(value:boolean)=>void;anchors:KeyTimingAnchor[];blocks:AvailabilityBlock[];isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string;hasDraft?:boolean;children?:ReactNode}){
  const [selectedId,setSelectedId]=useState<string|null>(null);
  const open=selectedId!==null;
  useEffect(()=>{onOpenChange(open);return()=>onOpenChange(false);},[open,onOpenChange]);
- const valid=anchors.every(anchor=>anchor.valid);
+ const gaps=anchors.filter(anchor=>!anchor.valid);
+ const valid=gaps.length===0;
+ const blocked=gaps.filter(anchor=>blocks.some(block=>+block.from<=anchor.at && anchor.at<+block.to));
+ const gapTitle=blocked.length
+   ? (isFr ? `${blocked.length} ${blocked.length===1?'étape pendant une indisponibilité':'étapes pendant vos indisponibilités'}` : `${blocked.length} ${blocked.length===1?'step falls':'steps fall'} during your unavailable hours`)
+   : (isFr ? `${gaps.length} horaire${gaps.length===1?'':'s'} à ajuster` : `${gaps.length} ${gaps.length===1?'time needs':'times need'} adjusting`);
  const day=(at:number)=>new Date(at).toLocaleDateString(isFr?'fr-FR':'en-GB',{weekday:'long',day:'numeric',month:'long'});
  const events=[...anchors,{id:'oven',name:isFr?'Enfournement':'Into the oven',at:ovenAt,from:ovenAt,to:ovenAt,editable:false,valid:true}].sort((a,b)=>a.at-b.at);
  return <section data-open={open||undefined} aria-label={isFr?'Vos moments clés':'Your key times'} id="schedule-anchor-panel" tabIndex={-1}>
-  <div className="bh-plan-heading"><span className="bh-plan-state" data-valid={valid} role="status">{!valid?(isFr?'À corriger':'Needs attention'):hasDraft?(isFr?'Modifications à appliquer':'Changes to apply'):personalized?(isFr?'Planning personnalisé':'Your adjusted plan'):(isFr?'Planning recommandé':'Recommended plan')}</span>{header}</div>
+  <div className="bh-plan-heading"><span className="bh-plan-state" data-valid={valid} role="status">{!valid?gapTitle:hasDraft?(isFr?'Modifications à appliquer':'Changes to apply'):personalized?(isFr?'Planning personnalisé':'Your adjusted plan'):(isFr?'Planning recommandé':'Recommended plan')}</span>{header}</div>
   {notice}
   <div className="bh-linked-editor">
    <ol className="bh-schedule-timeline">{events.map((anchor,index)=><TimelineEvent key={anchor.id} heading={index===0||day(events[index-1].at)!==day(anchor.at)?day(anchor.at):null}><TimingRow {...{anchor,isFr,onChange,check,cacheKey}} open={selectedId===anchor.id} onToggle={()=>setSelectedId(selectedId===anchor.id?null:anchor.id)}/></TimelineEvent>)}</ol>
+   {open&&!hasDraft&&<div className="bh-editor-exit"><button type="button" className="bh-apply-plan" onClick={()=>setSelectedId(null)}>{isFr?'Terminé':'Done'}</button></div>}
    {hasDraft&&<div className="bh-linked-actions"><div className="bh-linked-feedback" role="status">{adjustment}</div><button type="button" className="bh-apply-plan" disabled={!canApply} onClick={()=>{onApply();setSelectedId(null);}}>{isFr?'Appliquer':'Apply'}</button><button type="button" className="bh-back-action" onClick={()=>{onCancel();setSelectedId(null);}}>{isFr?'Annuler':'Cancel'}</button></div>}
   </div>
   {children}
