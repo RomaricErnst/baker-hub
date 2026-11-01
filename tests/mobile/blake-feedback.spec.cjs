@@ -18,18 +18,43 @@ for(const lang of ['fr','en'])test(`${lang}: flour quantity survives setup and r
  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
 });
 
-test('traditional pizza oven label stays consistent after selection',async({page})=>{
+test('compact navigation reaches every section above the footer and Custom keeps the selected oven label',async({page})=>{
+ await page.clock.setFixedTime(new Date('2026-10-03T09:00:00'));
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,body:'{}'}));
  await page.goto('/fr');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:'Napolitaine classique',exact:true}).tap();
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
  await page.getByRole('button',{name:'Continuer',exact:true}).tap();
- await page.getByRole('button',{name:'Modifier les réglages du matériel et de la levure',exact:true}).tap();
- await page.locator('#step-3 summary').filter({hasText:/^Cuisson ·/}).tap();
+ const bakeDate=page.getByLabel('Date et heure de cuisson',{exact:true});
+ await bakeDate.fill('2026-10-05T19:30');await bakeDate.blur();
+ const customize=page.getByRole('button',{name:/^Personnaliser ma fournée/});
+ await customize.tap();
+ const actions=page.locator('.bh-step-actions:visible');
+ await actions.getByRole('button',{name:'Étape précédente',exact:true}).tap();
+ await expect(bakeDate).toHaveValue('2026-10-05T19:30');
+ await customize.tap();
+ const sections=page.getByRole('button',{name:'Voir les 5 rubriques',exact:true});
+ await sections.tap();
+ const menu=page.locator('.bh-bake-navigator-grid:visible');
+ await expect(menu.locator('[data-destination-label]')).toHaveCount(5);
+ await expect(menu.getByRole('button',{name:'Farine',exact:true})).toHaveCount(0);
+ const last=menu.getByRole('button').last();
+ await last.scrollIntoViewIfNeeded();
+ await expect.poll(async()=>{
+  const [button,footer]=await Promise.all([last.boundingBox(),actions.boundingBox()]);
+  return !!button&&!!footer&&button.y+button.height<=footer.y+1;
+ }).toBe(true);
+ await sections.tap();
+ await page.locator('.bh-step-trigger:visible').tap();
+ const summary=page.getByRole('dialog');
+ await expect(summary.getByRole('button',{name:/Quantité/})).toBeVisible();
+ await expect(summary.getByRole('button',{name:/Farine/})).toBeVisible();
+ await summary.getByRole('button',{name:'Terminé',exact:true}).tap();
+ await page.getByRole('button',{name:'Modifier le matériel',exact:true}).tap();
  await page.getByRole('button',{name:/^Four à pizza traditionnel/}).tap();
- await page.locator('#step-3 summary').filter({hasText:/^Cuisson ·/}).tap();
- await expect(page.locator('#step-3 summary').filter({hasText:/^Cuisson ·/})).toContainText('Four à pizza traditionnel');
+ await actions.getByRole('button',{name:'Continuer',exact:true}).tap();
+ await expect(page.locator('#step-3:visible')).toContainText('Four à pizza traditionnel');
  await expect(page.getByText('Four maçonné',{exact:true})).toHaveCount(0);
 });
 
