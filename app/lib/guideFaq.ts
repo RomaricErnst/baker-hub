@@ -133,7 +133,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       },
       "a": {
         "en": "Feed it now. Your mix time shifts by roughly the same delay. If the dough window gets too tight, push the bake time back rather than mixing with a weak starter.",
-        "fr": "Nourrissez-le maintenant. Le pétrissage se décale d'environ le même retard. Si la fenêtre devient trop courte, repoussez la cuisson plutôt que de pétrir avec un levain faible."
+        "fr": "Rafraîchissez-le maintenant. Le pétrissage se décale d'environ le même retard. Si la fenêtre devient trop courte, repoussez la cuisson plutôt que de pétrir avec un levain faible."
       }
     },
     {
