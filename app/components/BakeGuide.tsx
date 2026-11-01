@@ -1,4 +1,5 @@
 'use client';
+import { starterBuild, starterFeedRoleLabel } from '../utils/starterBuild';
 import BottomActions from './BottomActions';
 import JourneyCompletion, { type CompletionActions } from './JourneyCompletion';
 import {createPortal} from 'react-dom';
@@ -929,15 +930,10 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   const bgSdHalf = recipe?.sourdough && !recipe?.preferment ? Math.round(bgSdMid / 2) : 0;
   const bgMainFlour = batch?.portion.flour ?? null;
   const bgMainWater = batch?.portion.water ?? null;
-  // Feed-step amounts: at ratio 1:R:R, a seed of S grams yields S×(1+2R) of
-  // ripe starter. Size the parts so the build covers the recipe's
-  // recommended starter (bgSdMid) with ~10g to spare, rounded to 5g.
   const feedR = feedRatio ?? 1;
-  const feedSeed = bgSdMid > 0
-    ? Math.max(5, Math.ceil((bgSdMid + 10) / (1 + 2 * feedR) / 5) * 5)
-    : 50;
-  const feedPart = Math.max(5, Math.round(feedSeed * feedR / 5) * 5);
-  const feedTotal = feedSeed + 2 * feedPart;
+  const feedMaximum = recipe?.sourdough?.starterGramsMax ?? bgSdMid;
+  const build = starterBuild(bgSdMid, feedMaximum, feedR);
+  const {seed:feedSeed, flour:feedPart, total:feedTotal} = build;
   const bgWater90   = bgMainWater ? Math.round(bgMainWater * 0.9) : null;
   const bgWater10   = bgMainWater ? bgMainWater - (bgWater90 ?? 0) : null;
   const bgSaltG = batch?.portion.salt ?? null;
@@ -1220,9 +1216,8 @@ Actual dough condition and equipment may differ from these estimates.`;
       {isSourdough && starterEvents?.filter(event => !['last_fed', 'known_peak'].includes(event.kind)&&(!event.isPast||['refresh','intermediate_refresh','pre_mix'].includes(event.kind))).map((event, index) => {
         const feeding = ['refresh', 'intermediate_refresh', 'pre_mix'].includes(event.kind);
         const eventRatio=event.feedingRatio??feedR;
-        const eventSeed=bgSdMid>0?Math.max(5,Math.ceil((bgSdMid+10)/(1+2*eventRatio)/5)*5):50;
-        const eventPart=Math.max(5,Math.round(eventSeed*eventRatio/5)*5);
-        const title = feeding ? (l === 'fr' ? 'Rafraîchir le levain' : 'Feed your starter') : event.kind === 'fridge_in' ? (l === 'fr' ? 'Réfrigérer le levain' : 'Refrigerate your starter') : (l === 'fr' ? 'Sortir le levain du réfrigérateur' : 'Take starter out of the fridge');
+        const {seed:eventSeed, flour:eventPart} = starterBuild(bgSdMid, feedMaximum, eventRatio);
+        const title = feeding ? starterFeedRoleLabel(event.kind, l === 'fr')! : event.kind === 'fridge_in' ? (l === 'fr' ? 'Réfrigérer le levain' : 'Refrigerate your starter') : (l === 'fr' ? 'Sortir le levain du réfrigérateur' : 'Take starter out of the fridge');
         return <StepCard key={`${event.kind}-${index}`} number={n()} {...sc(false,'preparation',false,feeding?event:undefined)} icon={<IconStarter />} title={title} time={event.time} accent="#6A7FA8">
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={feeding ? [
