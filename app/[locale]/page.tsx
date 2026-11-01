@@ -4040,7 +4040,7 @@ export default function Home() {
             <StepPage flow={simpleOrganisationFlow} id={3} nextOverride={
               <button data-bh-forward type="button" disabled={!ovenType || !mixerType || (!isUnleavened && !yeastType)} style={{...NEXT_CTA,opacity:(!ovenType || !mixerType || (!isUnleavened && !yeastType)) ? 0.5 : 1}} onClick={()=>simpleFlow.onNext(3)}>{fr?'Horaires →':'Bake time →'}</button>
             }>
-              {optionalEquipment}
+              <button type="button" className="bh-section-back" onClick={()=>{setAwaitingRecipeChoice(false);chooseMode('custom');openSetupStep(3,true);}}>{fr?'Personnaliser mon matériel →':'Customize my equipment →'}</button>
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
                 fridgeTemp={fridgeTemp} mode="simple"
