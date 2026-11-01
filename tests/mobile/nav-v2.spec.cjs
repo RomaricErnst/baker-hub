@@ -175,6 +175,8 @@ for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}
 
 for(const mode of ['simple','custom'])for(const bread of [false,true]){
  test(`${mode} ${bread?'bread':'pizza'}: style and quantity precede mode, optional fillings preserve the batch`,async({page},testInfo)=>{
+  // Freeze the clock so the two-batch baguette collision reproduces on any test day.
+  await page.clock.setFixedTime(Date.parse('2026-11-01T04:55:00Z'));
   await anonymous(page);await page.goto('/fr');
   await expect(navigator(page)).toHaveCount(0);
   await page.getByRole('button',{name:bread?'Pain':'Pizza',exact:true}).tap();
@@ -236,13 +238,23 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
    await page.getByRole('button',{name:/^Personnaliser ma fournée/}).tap();
    await expect(page.locator('#step-4:visible')).toBeVisible();
   }else{
-   await page.getByRole('button',{name:'Créer ma recette simple',exact:true}).tap();
+   const generate=page.getByRole('button',{name:'Créer ma recette simple',exact:true});
+   await generate.tap();
+   if(bread){
+    // Five 320g baguettes exceed the 1.5kg mixer. The first lot needs a fold before the second finishes.
+    const reduce=page.getByRole('button',{name:'Réduire ma quantité',exact:true});
+    await expect(reduce).toBeVisible();
+    const target=await page.getByLabel('Date et heure de cuisson',{exact:true}).inputValue();
+    await reduce.tap();await quantity.fill('4');await quantity.blur();await organise.tap();
+    await expect(page.getByLabel('Date et heure de cuisson',{exact:true})).toHaveValue(target);
+    await generate.tap();
+   }
    await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
    await page.getByRole('button',{name:'Ajuster les horaires',exact:true}).tap();
    await expect(timing).toBeVisible();
   }
   await expect.poll(async()=>(await stored(page)).tab).toBe(mode);
-  expect((await stored(page)).numItems).toBe(5);
+  await expect.poll(async()=>(await stored(page))?.numItems).toBe(bread&&mode==='simple'?4:5);
   expect((await stored(page)).styleKey).toBe(chosenStyle);
  });
 
@@ -535,7 +547,7 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
  await step.getByRole('button',{name:'Continuer',exact:true}).tap();
  await expect(step.getByRole('heading',{name:'Pétrissage',exact:true})).toBeVisible();
  await expect.poll(async()=>(await stored(page))?.mixerType).toBe('stand');
- expect((await stored(page)).ovenType).toBe('pizza_oven');
+ await expect.poll(async()=>(await stored(page))?.ovenType).toBe('pizza_oven');
  await step.getByRole('button',{name:/Pétrin (?:à spirale|spiral)/}).tap();
  await expect.poll(async()=>(await stored(page))?.waterMethod).toBe('direct');
   await step.locator('.bh-step-actions').getByRole('button',{name:'Continuer',exact:true}).tap();
