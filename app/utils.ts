@@ -1,4 +1,5 @@
 import { formatClock } from './utils/units';
+import { formatDuration } from './utils/duration';
 import { BREAD_FERMENTATION_DEFAULTS, getBreadProtocol, breadActiveCookMinutes, breadPoachMinutes } from './utils/breadProfiles';
 import { scheduledFoldMinutes } from './utils/scheduleFolds';
 import { actionConflicts, findAvailabilityConflicts, isTimeBlocked, isFridgeRemovalCovered, type AvailabilityAction, type AvailabilityConflict } from './utils/scheduleAvailability';
@@ -1906,10 +1907,6 @@ function formatHoursSchedule(h: number): string {
   return `${r}h`;
 }
 
-export function hoursLabel(h: number): string {
-  const totalMinutes = Math.max(0, Math.round(h * 60));
-  if (totalMinutes < 60) return `${totalMinutes} min`;
-  const hrs = Math.floor(totalMinutes / 60);
-  const mins = totalMinutes % 60;
-  return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
+export function hoursLabel(h: number, locale = 'en'): string {
+  return formatDuration(h, locale);
 }
