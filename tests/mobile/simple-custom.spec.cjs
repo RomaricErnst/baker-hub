@@ -38,7 +38,11 @@ for(const locale of ['fr','en']){
   await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
   await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
   await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
-  await page.getByRole('button',{name:fr?/^Personnalisé/:/^Custom\b/}).tap();
+  const bakeDate=page.getByLabel(fr?'Date d’enfournement':'Baking date',{exact:true});
+  await bakeDate.fill('2026-10-04');await bakeDate.blur();
+  const chosenTime=(await stored(page))?.eatTime;
+  await page.getByRole('button',{name:fr?'Personnaliser avant de créer la recette':'Customize before creating recipe',exact:true}).tap();
+  await expect.poll(async()=>(await stored(page))?.eatTime).toBe(chosenTime);
   await expect(page.locator('#step-4')).toBeVisible();
   await expect.poll(async()=>(await stored(page))?.customKitchenConfirmed).toBe(false);
   await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
@@ -77,7 +81,7 @@ for(const locale of ['fr','en']){
   expect(after.brandProduct).toBe(before.brandProduct);expect(after.ratio1).toBe(before.ratio1);
   await geometry(page);
  });
- test(`${locale}: fresh Simple pizza goes from quantity through explicit mode selection to timing and creates a recipe`,async({page})=>{
+ test(`${locale}: fresh Simple pizza goes from quantity to timing before recipe generation and creates a recipe`,async({page})=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await anonymous(page);await page.goto(fr?'/fr':'/');
   await page.getByRole('button',{name:'Pizza',exact:true}).tap();
@@ -86,13 +90,14 @@ for(const locale of ['fr','en']){
   const quantity=page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true});
   await quantity.fill('4');await quantity.blur();
   await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
-  await page.getByRole('button',{name:/^Simple\b/}).tap();
-  await expect.poll(async()=>(await stored(page))?.mixerType).toBe('stand');
-  await expect.poll(async()=>({oven:(await stored(page))?.ovenType,mixer:(await stored(page))?.mixerType,yeast:(await stored(page))?.yeastType})).toEqual({oven:'home_oven_standard',mixer:'hand',yeast:'instant'});
+
+  await expect.poll(async()=>({oven:(await stored(page))?.ovenType,mixer:(await stored(page))?.mixerType,yeast:(await stored(page))?.yeastType})).toEqual({oven:'home_oven_standard',mixer:'stand',yeast:'instant'});
   await geometry(page);
   const bakeDate=page.getByLabel(fr?'Date d’enfournement':'Baking date',{exact:true});
   await bakeDate.fill('2026-10-04');await bakeDate.blur();
   await nextToRecipe(page,fr);
+  await page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true}).tap();
+  await expect(page.locator('#step-7:visible')).toBeVisible();
   expect(errors).toEqual([]);
  });
 
@@ -144,7 +149,11 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).fill('12');
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).blur();
  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
-  await page.getByRole('button',{name:fr?/^Personnalisé/:/^Custom\b/}).tap();
+  const bakeDate=page.getByLabel(fr?'Date d’enfournement':'Baking date',{exact:true});
+  await bakeDate.fill('2026-10-04');await bakeDate.blur();
+  const chosenTime=(await stored(page))?.eatTime;
+  await page.getByRole('button',{name:fr?'Personnaliser avant de créer la recette':'Customize before creating recipe',exact:true}).tap();
+  await expect.poll(async()=>(await stored(page))?.eatTime).toBe(chosenTime);
  await page.getByRole('button',{name:fr?'Modifier le matériel':'Edit equipment',exact:true}).tap();
  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
  const section=page.getByRole('region',{name:fr?'Nombre de pétrissées':'Mixing batches',exact:true});
