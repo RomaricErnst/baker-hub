@@ -186,6 +186,7 @@ interface DerivedStarterState {
 }
 
 interface SchedulePickerProps {
+  inputsOnly?: boolean;
   startTime: Date;
   eatTime: Date | null;
   blocks: AvailabilityBlock[];
@@ -1777,10 +1778,11 @@ function UnleavenedSchedulePicker(props: SchedulePickerProps) {
   useEffect(() => { props.onScheduleValidityChange?.(props.startTimeInPast || ready); }, [props.startTimeInPast, ready, props.onScheduleValidityChange]);
   return <section aria-label={isFr ? 'Repos et cuisson' : 'Rest and cook'} style={{ padding: '8px 0' }}>
     <h3 style={{ fontSize: 22, margin: '0 0 12px' }}>{isFr ? 'Repos et cuisson' : 'Rest and cook'}</h3>
-    <p style={{ lineHeight: 1.5 }}>{isFr ? `Préparez la pâte ${preparationMinutes} min avant cuisson : mélange, 30 min de repos couvert, puis abaisse.` : `Start ${preparationMinutes} minutes before cooking: mix, rest covered for 30 minutes, then roll.`}</p>
+    {!props.inputsOnly && <p style={{ lineHeight: 1.5 }}>{isFr ? `Préparez la pâte ${preparationMinutes} min avant cuisson : mélange, 30 min de repos couvert, puis abaisse.` : `Start ${preparationMinutes} minutes before cooking: mix, rest covered for 30 minutes, then roll.`}</p>}
     <label style={{ display: 'block', margin: '20px 0 8px', fontWeight: 500 }} htmlFor="piadina-cook-time">{isFr ? 'Quand commencer la cuisson des piadinas ?' : 'When will you start cooking the piadinas?'}</label>
-    <input id="piadina-cook-time" type="datetime-local" value={value} onChange={event => { setValue(event.target.value); setConfirmed(false); }}
+    <input id="piadina-cook-time" type="datetime-local" value={value} onChange={event => { setValue(event.target.value); setConfirmed(false); if(props.inputsOnly && event.target.value){const target=new Date(event.target.value);if(Number.isFinite(+target)){props.onChange(new Date(+target-preparationMinutes*60000),target,props.blocks);setConfirmed(true);}} }}
       style={{ width: '100%', boxSizing: 'border-box', minHeight: 48, fontSize: 16, padding: 12, border: '1px solid var(--border)', borderRadius: 12, color: 'var(--char)', background: 'var(--cream)' }} />
+    {!props.inputsOnly && <>
     {validDate && <p>{isFr ? 'Commencer à ' : 'Start at '}{fmtCardDT(start, isFr)}</p>}
     {validDate && <p>{isFr ? 'Cuisson terminée vers ' : 'Cooking finished around '}{fmtCardDT(cookEnd, isFr)}{isFr ? ' · une galette à la fois' : ' · one flatbread at a time'}</p>}
     {!future && <p role="status">{isFr ? `Choisissez une cuisson laissant au moins ${preparationMinutes} min pour préparer la pâte.` : `Choose a cooking time at least ${preparationMinutes} minutes ahead to prepare the dough.`}</p>}
@@ -1791,7 +1793,7 @@ function UnleavenedSchedulePicker(props: SchedulePickerProps) {
     }} style={{ width: '100%', minHeight: 48, marginTop: 12, padding: 12, border: 'none', borderRadius: 12,
       background: ready ? 'var(--terra)' : 'var(--border)', color: ready ? 'white' : 'var(--smoke)', fontSize: 16, fontWeight: 600 }}>
       {confirmed ? (isFr ? 'Planning confirmé' : 'Plan confirmed') : (isFr ? 'Valider le planning' : 'Confirm plan')}
-    </button>
+    </button></>}
   </section>;
 }
 
@@ -1800,7 +1802,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   const readyOffset = Number.isFinite(readyTimeOffsetMinutes) && readyTimeOffsetMinutes! > 0 ? readyTimeOffsetMinutes! : 0;
   const [scheduleView, setScheduleView] = useState<'actions' | 'graph'>('actions');
   const scheduleViewId = useId();
@@ -6767,7 +6769,7 @@ function FermentedSchedulePicker({ completedMixAt, execution, validateMadeFormul
   return (
     <div style={{ fontFamily: 'var(--font-ui)' }}>
 
-      {isSourdough && <StarterHydrationNotice isFr={isFr} />}
+      {!inputsOnly && isSourdough && <StarterHydrationNotice isFr={isFr} />}
       {/* Bake time inputs — always visible */}
       <div style={{ marginBottom: '16px' }}>
         <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--char)', marginBottom: '4px' }}>
@@ -6843,7 +6845,7 @@ function FermentedSchedulePicker({ completedMixAt, execution, validateMadeFormul
         {isSourdough&&<p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Choisissez votre horaire : sa faisabilité dépendra de votre levain.':'Choose your time: feasibility depends on your starter.'}</p>}
       </div>
 
-      {eatTimeSet && schedule?.coldTimingConflict && <p role="alert" style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--terra)' }}>{coldTimingMessage(schedule.coldTimingConflict,isFr)}</p>}
+      {!inputsOnly && eatTimeSet && schedule?.coldTimingConflict && <p role="alert" style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--terra)' }}>{coldTimingMessage(schedule.coldTimingConflict,isFr)}</p>}
       {/* Phase 2 content — only once bake time is set */}
       {/* Past bake time — calm guidance, no plan (never a crash) */}
       {bakeInPast && (
@@ -6863,7 +6865,7 @@ function FermentedSchedulePicker({ completedMixAt, execution, validateMadeFormul
         </div>
       )}
 
-      {eatTimeSet && !bakeInPast && (<div>
+      {!inputsOnly && eatTimeSet && !bakeInPast && (<div>
 
       {/* Sourdough starter section */}
       {isSourdough && (
@@ -7623,6 +7625,7 @@ function FermentedSchedulePicker({ completedMixAt, execution, validateMadeFormul
         </div>
       </details>
 
+      {!inputsOnly && <>
       {windowTooShort && !startComputed && eatTimeSet && (
         <div style={{
           background: 'var(--cream)',
@@ -8504,6 +8507,7 @@ function FermentedSchedulePicker({ completedMixAt, execution, validateMadeFormul
         </div>
       )}
 
+      </>}
       </div>)} {/* end eatTimeSet */}
 
     </div>
