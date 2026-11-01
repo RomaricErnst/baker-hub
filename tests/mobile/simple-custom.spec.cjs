@@ -38,11 +38,8 @@ for(const locale of ['fr','en']){
   await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
   await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
   await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
-  const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
-  await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
-  const chosenTime=(await stored(page))?.eatTime;
-  await page.getByRole('button',{name:fr?'Personnaliser avant de créer la recette':'Customize before creating recipe',exact:true}).tap();
-  await expect.poll(async()=>(await stored(page))?.eatTime).toBe(chosenTime);
+  await expect(page.locator('input[type="datetime-local"]:visible')).toHaveCount(0);
+  await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
   await expect(page.locator('#step-4')).toBeVisible();
   await expect.poll(async()=>(await stored(page))?.customKitchenConfirmed).toBe(false);
   await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
@@ -91,6 +88,7 @@ for(const locale of ['fr','en']){
   await quantity.fill('4');await quantity.blur();
   await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
 
+  await page.getByRole('button',{name:fr?/^Créer une recette simple/:/^Create a simple recipe/}).tap();
   await expect.poll(async()=>({oven:(await stored(page))?.ovenType,mixer:(await stored(page))?.mixerType,yeast:(await stored(page))?.yeastType})).toEqual({oven:'home_oven_standard',mixer:'stand',yeast:'instant'});
   await geometry(page);
   const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
@@ -118,7 +116,7 @@ for(const locale of ['fr','en']){
   },data);
   await page.goto(fr?'/fr':'/');
   await page.getByRole('button',{name:fr?'Modifier : Mode':'Edit : Mode',exact:true}).tap();
-  await page.getByRole('button',{name:/^Simple\b/}).tap();
+  await page.getByRole('button',{name:fr?/^Créer une recette simple/:/^Create a simple recipe/}).tap();
   const formula=async()=>{const s=await stored(page);return {tab:s?.tab,preferment:s?.prefermentType,hydration:s?.manualHydration,salt:s?.manualSalt,flour:s?.flourBlend};};
   await expect.poll(formula).toEqual({tab:'simple',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
   await page.reload();
@@ -133,7 +131,7 @@ for(const locale of ['fr','en']){
   await expect(stages.getByText(/Poolish/).first()).toBeVisible();
   await page.getByRole('button',{name:fr?'Modifier ma fournée':'Edit my bake',exact:true}).tap();
   await page.getByRole('button',{name:fr?'Modifier : Mode':'Edit : Mode',exact:true}).tap();
-  await page.getByRole('button',{name:fr?/^Personnalisé(?:\s|$)/:/^Custom\b/}).tap();
+  await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
   await expect.poll(formula).toEqual({tab:'custom',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
   expect(errors).toEqual([]);
  });
@@ -149,11 +147,8 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).fill('12');
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).blur();
  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
-  const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
-  await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
-  const chosenTime=(await stored(page))?.eatTime;
-  await page.getByRole('button',{name:fr?'Personnaliser avant de créer la recette':'Customize before creating recipe',exact:true}).tap();
-  await expect.poll(async()=>(await stored(page))?.eatTime).toBe(chosenTime);
+  await expect(page.locator('input[type="datetime-local"]:visible')).toHaveCount(0);
+  await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
  await page.getByRole('button',{name:fr?'Modifier le matériel':'Edit equipment',exact:true}).tap();
  await actions(page).getByRole('button',{name:fr?'Continuer':'Continue',exact:true}).tap();
  const section=page.getByRole('region',{name:fr?'Nombre de pétrissées':'Mixing batches',exact:true});
