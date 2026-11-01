@@ -51,6 +51,12 @@ export function formatClock(date: Date, locale: string): string {
   return locale.startsWith('fr') ? `${h}h${m}` : `${h % 12 || 12}:${m}${h < 12 ? 'am' : 'pm'}`;
 }
 
+export function formatLongDay(date: Date, locale: string): string {
+  const fr=locale.startsWith('fr');
+  const formatter=new Intl.DateTimeFormat(fr?'fr-FR':'en-GB',{weekday:'long',day:'numeric',month:'long'});
+  return formatter.formatToParts(date).map(part=>fr&&part.type==='day'&&part.value==='1'?'1er':part.value).join('');
+}
+
 export function formatPercent(value: number, locale: string): string {
   const fr = locale.startsWith('fr');
   return value.toLocaleString(fr ? 'fr-FR' : 'en-US', {maximumFractionDigits:1}) + (fr ? '\u202f%' : '%');
