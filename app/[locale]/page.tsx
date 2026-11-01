@@ -3369,7 +3369,7 @@ export default function Home() {
     onJump: (id) => openSetupStep(id,true),
     onGapJump: (id) => {openSetupStep(id,true);setGapReturnTo(CUSTOM_LAST);},
     onPrev: (id) => {
-      if(id===4&&!recipeGenerated){openModeChoice();return;}
+      if(id===4&&!recipeGenerated){chooseMode('simple');return;}
       if(id===3){if(equipmentPanel==='mixer')setEquipmentPanel('oven');else setModeChosen(false);scrollToStepTop();return;}
       const i = CUSTOM_STEPS.findIndex(x => x.id === id);
       openSetupStep(CUSTOM_STEPS[Math.max(0, i - 1)].id,true);
@@ -3432,7 +3432,7 @@ export default function Home() {
     onGapJump: (id) => {openSetupStep(id,false);setGapReturnTo(SIMPLE_LAST);},
     onPrev: (id) => {
       if(id===3){openSetupStep(7,false);return;}
-      if(id===7&&!recipeGenerated){openModeChoice();return;}
+      if(id===7&&!recipeGenerated){openSetupStep(2,false);return;}
       const i = SIMPLE_STEPS.findIndex(x => x.id === id);
       openSetupStep(SIMPLE_STEPS[Math.max(0, i - 1)].id,false);
     },
@@ -3510,7 +3510,7 @@ export default function Home() {
   const bakeLinks:BakeLink[] = [
     {label:fr?'Fournée':'Bake',value:bakeType==='bread'?(fr?'Pain':'Bread'):'Pizza',onChoose:backToProducts},
     ...setupSteps.filter(step=>step.id<=2).map(stepLink),
-    {label:'Mode',value:modeChosen?(tab==='simple'?'Simple':fr?'Personnalisé':'Custom'):null,disabled:!styleKey||!qtyChosen,onChoose:openModeChoice},
+    ...(recipeGenerated||tab==='custom'?[{label:'Mode',value:modeChosen?(tab==='simple'?'Simple':fr?'Personnalisé':'Custom'):null,disabled:!styleKey||!qtyChosen,onChoose:openModeChoice}]:[]),
     ...(modeChosen?setupSteps.filter(step=>step.id>2).map(stepLink):[]),
   ];
   const currentSubsection = destination==='batch' ? (batchView==='quantity'?(fr?'Quantité':'Quantity'):'Style') : !modeChosen ? 'Mode' : (tab==='simple'&&activeStep===7 ? (fr?'Horaires':'Timing') : setupSteps.find(step=>step.id===(tab==='custom'?advancedStep:activeStep))?.chip ?? (fr?'Ma fournée':'My bake'));
@@ -3808,6 +3808,8 @@ export default function Home() {
 {destination!=='organisation' && bakeNavigator}
 {recipeGenerated && <div className="bh-bake-context" style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{bakeQuantityLabel(numItems,bakeType,styleKey,fr)} · {styleKey ? styleDisplayName(styleKey) : ''}</div></div>}
 
+{recipeGenerated && destination==='recipe' && !browsingFillings && <button type="button" className="bh-section-back" onClick={()=>{captureEditReturn();openSetupStep(tab==='custom'?9:7);}}>{fr?'Ajuster les horaires':'Adjust timing'}</button>}
+
 {showBakeTypeChooser&&bakeType&&<BakeTypeChooser fr={fr} current={bakeType} onChoose={selectBakeType} onClose={()=>setShowBakeTypeChooser(false)}/>}
 {recipeGenerated && protocolStale && ['recipe','shopping','protocol','service'].includes(destination) && <section role="status" className="bh-section-empty"><h2>{fr?'Choix modifiés · recette à vérifier':'Choices changed · recipe needs review'}</h2><p>{fr?'Vos choix sont conservés. Mettez la recette à jour avant de poursuivre.':'Your choices are kept. Update the recipe before continuing.'}</p><button type="button" style={NEXT_CTA} onClick={openSetupReview}>{fr?'Vérifier ma recette':'Review my recipe'}</button></section>}
 <div hidden={recipeGenerated && protocolStale && ['recipe','shopping','protocol','service'].includes(destination)}>
@@ -3848,7 +3850,7 @@ export default function Home() {
               />
               <BottomActions className="bh-batch-actions bh-batch-actions-navigation">
                 <button type="button" className="bh-back-action" onClick={()=>{if(recipeGenerated)backToSetupChoices();else {setBatchView('style');scrollToStepTop();}}}>{recipeGenerated?(fr?'Retour à mes choix':'Back to my choices'):(fr?'Étape précédente':'Previous step')}</button>
-                <button type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(recipeGenerated)finishSetupEdit();else openModeChoice();}}>{recipeGenerated?setupReturnLabel:(fr?'Continuer':'Continue')}</button></BottomActions>
+                <button type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(recipeGenerated)finishSetupEdit();else chooseMode('simple');}}>{recipeGenerated?setupReturnLabel:(fr?'Continuer':'Continue')}</button></BottomActions>
             </>}
           </section>}
 
@@ -4076,6 +4078,7 @@ export default function Home() {
                 onTangChange={setTang}
               />
               )}
+              {!recipeGenerated && eatTime && !scheduleEditing && <button type="button" className="bh-section-back" onClick={()=>chooseMode('custom')}>{fr?'Personnaliser avant de créer la recette':'Customize before creating recipe'}</button>}
             </StepPage>
 
             {/* Generate now lives in the last page's nav bar (StepPage). */}
