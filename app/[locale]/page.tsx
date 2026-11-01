@@ -2562,6 +2562,10 @@ export default function Home() {
   function backToSetupChoices() {
     setSetupOverview(true);setActiveTab('setup');scrollToStepTop();
   }
+  function editRecipeTiming() {
+    captureEditReturn();
+    openSetupStep(tab==='custom'?9:7);
+  }
   function openQuantityEdit() {
     captureEditReturn();setBatchView('quantity');setActiveTab('batch');scrollToStepTop();
   }
@@ -4225,7 +4229,7 @@ export default function Home() {
 
                           <RecipeOutput
                             afterIngredients={recipeFillings}
-                            firstActionAt={firstRecipeAction} bakeAt={eatTime} onAdjustTiming={()=>{captureEditReturn();openSetupStep(tab==='custom'?9:7);}}
+                            firstActionAt={firstRecipeAction} bakeAt={eatTime} onAdjustTiming={editRecipeTiming}
                             mixerConfirmed={confirmed('mixer',mixerType)}
                             starterEvents={starterEvents} mixingTime={startTime}
                             containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
@@ -4755,7 +4759,7 @@ export default function Home() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
                           <RecipeOutput
                             afterIngredients={recipeFillings}
-                            firstActionAt={firstRecipeAction} bakeAt={eatTime} onAdjustTiming={()=>{captureEditReturn();openSetupStep(tab==='custom'?9:7);}}
+                            firstActionAt={firstRecipeAction} bakeAt={eatTime} onAdjustTiming={editRecipeTiming}
                             mixerConfirmed={confirmed('mixer',mixerType)}
                             starterEvents={starterEvents} mixingTime={startTime}
                             containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
