@@ -70,3 +70,21 @@ test('native lean sourdough plans protect the style bulk before refrigerating',(
   a.ok(s.bulkFermHours>=4.75 && s.bulkFermHours<=5.25);
  }
 });
+
+test('whole-recipe climate and duration grid returns bounded doses and conserves ingredient mass',()=>{
+ const start=new Date('2026-11-04T12:00Z');
+ for(const style of ['neapolitan','newyork','baguette','pan','pain_campagne'])
+ for(const temp of [16,22,27,32,35])for(const fridge of [4,6,8])for(const hours of [4,5,6.5,7,8,10,18,24,25,36,48,72]){
+  const plan=utils.buildSchedule(start,new Date(+start+hours*3600000),[],temp,45,'stand',style,4);
+  const recipe=utils.calculateRecipe(style,'home_oven_standard',4,260,temp,'normal',plan,fridge,'instant','simple','stand');
+  a.ok(recipe.yeast.pct>=.05 && recipe.yeast.pct<=1.5,`${style}/${temp}/${fridge}/${hours}`);
+  const total=recipe.flour+recipe.water+recipe.salt+recipe.oil+recipe.sugar+recipe.yeast.grams;
+  a.ok(Math.abs(total-recipe.totalDough)<=2.6);
+ }
+});
+test('changing leavening without changing the style switches the bulk calculation',()=>{
+ const start=new Date('2026-09-21T08:00Z'), end=new Date('2026-09-22T16:00Z');
+ const plan=method=>utils.buildSchedule(start,end,[],22,45,'stand','neapolitan',4,1,method);
+ a.ok(plan(true).bulkFermHours>=4.75);
+ a.ok(plan(false).bulkFermHours<2);
+});
