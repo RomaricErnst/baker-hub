@@ -12,11 +12,24 @@ const icons:Record<BakeDestination,string>={
 export function DestinationIcon({destination}:{destination:BakeDestination}){
   return <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={icons[destination]} /></svg>;
 }
-export default function BakeNavigator({active,fr,onChange,top=0,progress,batchLinks,recipeMeal}:{active:BakeDestination;fr:boolean;onChange:(destination:BakeDestination)=>void;top?:number;progress?:ReactNode;batchLinks?:{label:string;disabled?:boolean;onChoose:()=>void}[];recipeMeal?:{label:string;recipeLabel?:string;active:boolean;selected:boolean;onChoose:()=>void}}){
+export default function BakeNavigator({active,fr,onChange,top=0,progress,recipeMeal}:{active:BakeDestination;fr:boolean;onChange:(destination:BakeDestination)=>void;top?:number;progress?:ReactNode;recipeMeal?:{label:string;recipeLabel?:string;active:boolean;selected:boolean;onChoose:()=>void}}){
   const [open,setOpen]=useState(false);
   const trigger=useRef<HTMLButtonElement>(null);
   const root=useRef<HTMLDivElement>(null);
   const id=useId();
+  const [menuHeight,setMenuHeight]=useState<number>();
+  useEffect(()=>{
+    if(!open)return;
+    const fit=()=>{
+      const top=root.current?.getBoundingClientRect().bottom ?? 0;
+      const footer=Array.from(document.querySelectorAll<HTMLElement>('.bh-step-actions')).map(el=>el.getBoundingClientRect()).find(rect=>rect.height>0);
+      const viewport=window.visualViewport;
+      const bottom=(viewport?.height ?? window.innerHeight)+(viewport?.offsetTop ?? 0);
+      setMenuHeight(Math.max(60,Math.min(bottom,footer?.top ?? bottom)-top-12));
+    };
+    fit();window.addEventListener('resize',fit);window.visualViewport?.addEventListener('resize',fit);
+    return ()=>{window.removeEventListener('resize',fit);window.visualViewport?.removeEventListener('resize',fit);};
+  },[open]);
   useEffect(()=>setOpen(false),[active]);
   useEffect(()=>{
     if(!open)return;
@@ -36,8 +49,8 @@ export default function BakeNavigator({active,fr,onChange,top=0,progress,batchLi
         <span className="bh-navigator-disclosure">{open?(fr?'Fermer':'Close'):(fr?'Rubriques':'Sections')} <span aria-hidden="true">{open?'⌃':'⌄'}</span></span>
       </button>
     </div>
-    {open&&<nav id={id} className={`bh-bake-navigator-grid${recipeMeal?' bh-navigator-with-meal':''}`} aria-label={fr?'Votre fournée':'Your bake'}>
-      {destinations.map(item=>item.id==='batch'&&batchLinks?<section key={item.id} className="bh-navigator-recipe"><strong data-destination-label>{fr?item.fr:item.en}</strong><div className="bh-navigator-recipe-links" style={{flexWrap:'wrap'}}>{batchLinks.map(link=><button key={link.label} type="button" disabled={link.disabled} onClick={()=>choose(link.onChoose)}>{link.label}</button>)}</div></section>:item.id==='recipe'&&recipeMeal?<section key={item.id} className="bh-navigator-recipe" aria-label={fr?'Recette':'Recipe'}>
+    {open&&<nav id={id} style={{maxHeight:menuHeight,overflowY:'auto'}} className={`bh-bake-navigator-grid${recipeMeal?' bh-navigator-with-meal':''}`} aria-label={fr?'Votre fournée':'Your bake'}>
+      {destinations.map(item=>item.id==='recipe'&&recipeMeal?<section key={item.id} className="bh-navigator-recipe" aria-label={fr?'Recette':'Recipe'}>
         <strong data-destination-label>{fr?'Recette':'Recipe'}</strong>
         <div className="bh-navigator-recipe-links">
           <button type="button" aria-current={active==='recipe'&&!recipeMeal.active?'page':undefined} onClick={()=>choose(()=>onChange('recipe'))}>{recipeMeal.recipeLabel??(fr?'Pâte':'Dough')}</button>
