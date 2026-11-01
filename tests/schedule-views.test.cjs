@@ -19,6 +19,7 @@ test('actions are the default in both modes and retain starter feeds and fridge 
  for(const mode of ['simple','custom']) {
   const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Picker,{mode,startTime:start,eatTime:eat,blocks:[],preheatMin:45,styleKey:'pain_levain',kitchenTemp:22,schedule,onChange(){},isSourdough:true,lastFedAge:'today',lastFedTime:new Date(+start-8*3600000),savedStarterEvents:events,sessionRestored:true,recipeGenerated:true})));
   assert.match(html,/aria-label="Your key times"/);
+  assert.equal(html.includes("See fermentation curve"),mode==="custom");
   assert.match(html,/aria-label="Edit Mix the dough, /);
   assert.doesNotMatch(html,/aria-orientation="horizontal"/); // editors open on demand
   assert.doesNotMatch(html,/bh-key-window/); // windows belong to the selected editor
