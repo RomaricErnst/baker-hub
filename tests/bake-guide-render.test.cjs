@@ -223,3 +223,13 @@ test('mixing flour rows exclude prefermented flour and conserve each batch',()=>
   assert.ok(html.includes(`<span>Second flour</span><strong>${portion-first} g</strong>`),`${pref}, ${count}: second added flour`);
  }
 });
+
+test('Simple gives either kneading method and one loaf needs no division',()=>{
+ for (const locale of ['fr','en']){
+  const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-25T18:00Z'),[],22,45,'stand','pain_campagne');
+  const recipe=utils.calculateRecipe('pain_campagne','dutch_oven',1,800,22,'normal',schedule,6,'instant','simple','stand');
+  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require('../messages/'+locale+'.json'),timeZone:'UTC'},React.createElement(Guide,{schedule,recipe,mixerType:'stand',styleKey:'pain_campagne',kitchenTemp:22,numItems:1,oil:0,hydration:70,locale,simpleMode:true})));
+  assert.ok(html.includes(locale==='fr'?'Pétrissez à la main ou au robot':'Knead by hand or with a mixer'));
+  assert.doesNotMatch(html,/Divide into 1 equal pieces|Divisez en 1 pâtons|Remove balls|Sortez les boules du frigo/);
+ }
+});
