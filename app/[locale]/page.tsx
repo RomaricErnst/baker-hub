@@ -2391,6 +2391,7 @@ export default function Home() {
     if (!ovenType || !mixerType) return 3;   // qty (2) + climate (4) have sane defaults
     if (isCustom) {
       if (!flourChosen || archivedFlourNames.length) return 6;
+      if (showPrefermentChoice && !prefermentChosen) return 8;
       if (!isUnleavened && !yeastType) return 7;       // flour (6) has a default blend
       return 9;                       // preferment (8) defaults to Direct — scheduler is the goal
     }
@@ -2629,15 +2630,20 @@ export default function Home() {
     scrollToStepTop();
   }
 
+  function nextCustomStep(from:number) {
+    if(from===3&&!customKitchenConfirmed)return 4;
+    if(from>=6){const index=CUSTOM_STEPS.findIndex(step=>step.id===from);return CUSTOM_STEPS[index+1]?.id ?? 9;}
+    return nextUnanswered(CUSTOM_STEPS.filter(step=>step.id>=3),from,advancedHighestStep);
+  }
   function advanceAdv(from: number) {
     if (from === 1 && !styleKey) return;
     if (from === 4) setCustomKitchenConfirmed(true);
     // Flour is settled only by choosing a product or entering a flour type.
     if (from === 6 && (!flourChosen || archivedFlourNames.length)) return;
     markStepSettled(from);
-    const next = from === 3 && !customKitchenConfirmed ? 4 : nextUnanswered(CUSTOM_STEPS.filter(step=>step.id>=3), from, advancedHighestStep);
+    const next = nextCustomStep(from);
     setAdvancedStep(next);
-    setAdvancedHighestStep(p => Math.max(p, next));
+    setAdvancedHighestStep(p => Math.max(p, next, from + 1));
     if (suppressNextScrollRef.current) { suppressNextScrollRef.current = false; return; }
     scrollToStepTop();
   }
@@ -3182,7 +3188,7 @@ export default function Home() {
   // and 'none' are all truthy from the first render, so a walk-through that
   // never opened those pages still produced a recipe built on three guesses.
   // Preferment and Flour are Custom-only steps; Simple has no page for either.
-  const showPrefermentChoice = yeastType !== 'sourdough' && !isUnleavened && !directMethodOnly;
+  const showPrefermentChoice = !isUnleavened && !directMethodOnly;
   const unsupportedEnrichedMethod = (enrichedDirectOnly && (yeastType === 'sourdough' || prefermentType !== 'none')) || !!(breadProtocol && !isUnleavened && (!breadProtocol.supportedPreferments.includes(prefermentType) || (!breadSupportsStarter && yeastType === 'sourdough')));
   const archivedFlourNames = archivedBlendSelections(flourBlend);
   const simpleRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && qtyChosen);
@@ -3323,6 +3329,14 @@ export default function Home() {
     { id: 6, group: 'dough', chip: fr ? 'Farine' : 'Flour', title: t('steps.flour.title'),
       value: flourChosen && !archivedFlourNames.length ? flourSummary() : null, prefilled: false,
       gap: fr ? 'La farine n\u2019est pas confirmée' : 'Flour not confirmed' },
+    ...(showPrefermentChoice ? [{
+      id: 8, group: 'dough', chip: fr ? 'Méthode' : 'Method', title: fr?'Comment faire lever votre pâte ?':'How will you leaven your dough?',
+      value: prefermentChosen && !(enrichedDirectOnly && prefermentType !== 'none')
+        ? (prefermentType !== 'none' ? localName(PREFERMENT_TYPES[prefermentType]) : t('preferment.direct'))
+        : null,
+      prefilled: profileFields.has('preferment'),
+      gap: fr ? 'Le préferment n\u2019est pas confirmé' : 'Preferment not confirmed',
+    } as StepDef] : []),
     { id: 7, group: 'dough', chip: fr ? 'Levure' : 'Yeast', title: t('steps.7.title'),
       value: yeastType && !(enrichedDirectOnly && yeastType === 'sourdough') ? localName(YEAST_TYPES[yeastType]) : null,
       short: yeastType
@@ -3331,24 +3345,6 @@ export default function Home() {
         : null,
       prefilled: profileFields.has('yeast'),
       gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
-    ...(showPrefermentChoice ? [{
-      id: 8, group: 'dough', chip: fr ? 'Préferment' : 'Preferment', title: t('preferment.stepTitle'),
-      value: prefermentChosen && !(enrichedDirectOnly && prefermentType !== 'none')
-        ? (prefermentType !== 'none' ? localName(PREFERMENT_TYPES[prefermentType]) : t('preferment.direct'))
-        : null,
-      prefilled: profileFields.has('preferment'),
-      gap: fr ? 'Le préferment n\u2019est pas confirmé' : 'Preferment not confirmed',
-    } as StepDef] : []),
-    { id: 9, group: 'plan', chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
-      value: eatTime
-        ? `${formatTime(new Date(Math.round(startTime.getTime() / 900000) * 900000), locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
-        : null,
-      // The chip gets the bake time alone. Start time and busy windows are
-      // consequences of it — the baker picks when to eat, everything else is
-      // derived — and at full length this one chip was wider than the four
-      // beside it put together.
-      short: eatTime ? formatTime(eatTime, locale) : null,
-      gap: fr ? 'L\u2019heure de cuisson n\u2019est pas choisie' : 'No bake time chosen yet' },
     { id: 10, group: 'making', chip: fr ? 'Peaufiner' : 'Fine-tune', title: t('dialIn.title'),
       value: manualHydration !== undefined
         ? `${manualHydration}% ${t('dialIn.hydrationSuffix')}`
@@ -3362,13 +3358,23 @@ export default function Home() {
         : styleKey ? `${ALL_STYLES[styleKey].hydration}% ${t('dialIn.hydrationSuffix')}` : null,
       prefilled: true,
       gap: fr ? 'La pâte n\u2019est pas confirmée' : 'Dough not confirmed' },
-  ] as StepDef[]).filter(step=>!isUnleavened || (step.id!==7 && step.id!==8));
+    { id: 9, group: 'plan', chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
+      value: eatTime
+        ? `${formatTime(new Date(Math.round(startTime.getTime() / 900000) * 900000), locale)} → ${formatTime(eatTime, locale)}${blocks.length > 0 ? ` · ${blocks.length} ${blocks.length === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
+        : null,
+      // The chip gets the bake time alone. Start time and busy windows are
+      // consequences of it — the baker picks when to eat, everything else is
+      // derived — and at full length this one chip was wider than the four
+      // beside it put together.
+      short: eatTime ? formatTime(eatTime, locale) : null,
+      gap: fr ? 'L\u2019heure de cuisson n\u2019est pas choisie' : 'No bake time chosen yet' },
+  ] as StepDef[]).filter(step=>step.id!==7 || (!isUnleavened && prefermentType!=='levain'));
   const CUSTOM_LAST = CUSTOM_STEPS[CUSTOM_STEPS.length - 1].id;
 
   const customFlow: StepFlow = {
     editReturn: recipeGenerated ? {label:setupReturnLabel,onReturn:finishSetupEdit} : undefined,
     steps: CUSTOM_STEPS,
-    activeId: advancedStep > CUSTOM_LAST ? CUSTOM_LAST : advancedStep,
+    activeId: advancedStep > 10 ? CUSTOM_LAST : advancedStep,
     highestStep: advancedHighestStep,
     locale,
     onJump: (id) => openSetupStep(id,true),
@@ -3380,7 +3386,7 @@ export default function Home() {
       openSetupStep(CUSTOM_STEPS[Math.max(0, i - 1)].id,true);
     },
     onNext: (id) => {if(fillingsReturn&&recipeGenerated){setSetupOverview(true);scrollToStepTop();}else advanceAdv(id);},
-    nextIdFor: (id) => id === 3 && !customKitchenConfirmed ? 4 : nextUnanswered(CUSTOM_STEPS, id, advancedHighestStep),
+    nextIdFor: nextCustomStep,
     onGenerate: handleGenerate,
     onReview: () => { setSetupOverview(true); scrollToStepTop(); },
     showGenerate: canGenerate && !!eatTime && !(sessionRestored && recipeGenerated),
@@ -4473,7 +4479,7 @@ export default function Home() {
                   }
                 }}
                 onClose={() => {}}
-                disabledIds={enrichedDirectOnly || !breadSupportsStarter ? ['sourdough'] : []}
+                disabledIds={['sourdough']}
                 disabledNote={enrichedDirectOnly || !breadSupportsStarter ? (locale === 'fr' ? 'Cette recette est actuellement prévue avec de la levure et sans préferment.' : 'This recipe currently supports commercial yeast and no preferment.') : undefined}
                 styleKey={styleKey}
               />
@@ -4491,13 +4497,14 @@ export default function Home() {
               <StepPage flow={customOrganisationFlow} id={8}>
                 <PrefermentPicker
                   selected={prefermentChosen ? prefermentType : null}
-                  onSelect={choosePreferment}
+                  chooseMethod
+                  onSelect={method=>{choosePreferment(method);if(method==='levain')chooseYeast('sourdough');else if(yeastType==='sourdough'||!yeastType)chooseYeast('instant');}}
                   flourPct={prefermentFlourPct}
                   suggestedFlourPct={20}
                   totalFlourGrams={advancedRecipe?.flour ?? (styleKey ? numItems * itemWeight / (1 + (ALL_STYLES[styleKey].hydration + ALL_STYLES[styleKey].salt + ALL_STYLES[styleKey].oil + ALL_STYLES[styleKey].sugar) / 100) : undefined)}
                   onFlourPctChange={setPrefermentFlourPct}
                   styleKey={styleKey ?? undefined}
-                  hideTypes={breadProtocol ? (['none','poolish','biga','levain'] as PrefermentType[]).filter(pt=>pt==='levain'||!breadProtocol.supportedPreferments.includes(pt)) : ['levain']}
+                  hideTypes={breadProtocol ? (['none','poolish','biga','levain'] as PrefermentType[]).filter(pt=>!breadProtocol.supportedPreferments.includes(pt)) : []}
                   directOnly={enrichedDirectOnly}
                   kitchenTemp={kitchenTemp}
                 />
