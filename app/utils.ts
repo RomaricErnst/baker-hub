@@ -1,3 +1,4 @@
+import { formatClock } from './utils/units';
 import { BREAD_FERMENTATION_DEFAULTS, getBreadProtocol, breadActiveCookMinutes, breadPoachMinutes } from './utils/breadProfiles';
 import { scheduledFoldMinutes } from './utils/scheduleFolds';
 import { actionConflicts, findAvailabilityConflicts, isTimeBlocked, isFridgeRemovalCovered, type AvailabilityAction, type AvailabilityConflict } from './utils/scheduleAvailability';
@@ -42,7 +43,7 @@ import {
 // ══════════════════════════════════════════
 // 1. YEAST ENGINE
 // ══════════════════════════════════════════
-// Craig's validated formula constants
+// Craig-style empirical single-temperature dose laws
 // All values = Instant Dry Yeast (IDY) % of flour
 //   RT:   IDY% = 9.5  / (hours^1.65 × 2.5^((temp−25)/10))
 //   Cold: IDY% = 7.5  / hours^1.313
@@ -50,21 +51,12 @@ import {
 //   Fridge correction: Q10 — 2^((fridgeTemp−4)/10)
 // ══════════════════════════════════════════
 
-// Practical limits
-// NOT a legacy safety number — checked against Modernist Pizza Vol. 4, which
-// gives 0.050% IDY for 2h at 21C plus a 48h cold retard. Craig's formula
-// returns 0.048% for the same schedule, so this floor sits essentially ON the
-// validated value rather than above it. Two more points from the same
-// comparison: 4h@21C + 18h cold, Craig 0.201% vs Modernist 0.200%; + 24h cold,
-// Craig 0.133% vs Modernist 0.150%.
-//
-// Community yeast tables will look 2-4x higher than this and they are not a
-// counter-example: they vary 3-5x among themselves for identical conditions
-// because "fermentation complete" means full rise in some and the optimal
-// window in others. Modernist is the benchmark here. Do not lower this
-// constant on the strength of recipe blogs — that check was run and it was
-// the blogs that were the wrong ruler.
-const YEAST_MIN_PCT   = 0.05;   // hard floor
+// Practical dose bounds. Modernist Pizza, Kitchen Manual pp.38 and 44,
+// illustrates the range with distinct Neapolitan formulas: 0.04% instant
+// yeast for the long room-temperature formula and 1% for the emergency
+// formula. These are recipe cross-checks, not validation of every mixed
+// temperature trajectory. The retained 0.05% floor is a product limit.
+const YEAST_MIN_PCT   = 0.05;   // automatic estimate before an explicit override
 const YEAST_MIN_GRAMS = 0.1;    // minimum weighable on 0.1g scale
 const YEAST_RT_MAX_H  = 8;      // max RT hours before poolish recommended
 
@@ -75,9 +67,9 @@ function tropicalFactor(temp: number): number {
   // more yeast while fermenting faster. The climate slider goes to 38, so
   // this was reachable, not theoretical.
   //
-  // Above 35 C we HOLD the last validated value rather than extrapolate.
-  // 1.25 is certainly too little up there, but it is the highest figure the
-  // sources support and inventing a slope would be guessing into the science.
+  // Product allowance for faster dough breakdown in the heat, not a microbial
+  // growth coefficient. Above 35 C we HOLD the last validated value rather than extrapolate.
+  // Do not extrapolate the allowance beyond the hottest supported band.
   // Open-ended lower bounds also fix fractional temperatures: 32.5 C used to
   // fall through to 1.0 between the two bands.
   if (temp >= 33) return 1.25;
@@ -116,7 +108,7 @@ export type YeastWarningKey =
   | 'overFermentRT'       // RT window longer than the dough will hold
   | 'hotClimateRT'        // >4h at room temperature in a hot kitchen
   | 'fridgeWarm'          // fridge warmer than the 4C reference
-  | 'osmoticStress'       // sugar above 2% of flour — dose raised 20%
+  | 'osmoticStress'       // sweet dough — check yeast suitability
   | 'doseFloorRT';        // RT window longer than the dose can control at this batch size
 
 export interface YeastWarning {
@@ -144,7 +136,7 @@ export interface YeastResult {
   notRecommended: boolean;
   explanation: string;
   warnings: YeastWarning[];
-  osmoticStress: boolean; // true when sugar > 2% — yeast amount increased 20%
+  osmoticStress: boolean; // true for sweet dough
 }
 
 // Existing UI instructs 1 g yeast + waterG water: stock mass is waterG + 1.
@@ -173,47 +165,41 @@ export function recommendYeast(
   const RT_ONLY_STYLES = new Set(['pan', 'roman', 'pain_seigle']);
   const isRTOnlyStyle = RT_ONLY_STYLES.has(styleKey ?? '');
 
-  if (totalColdHours > 0) {
-    const coldRec = coldIDY(totalColdHours, fridgeTemp);
-    const rtRec = totalRTHours > 0 ? rtIDY(totalRTHours, kitchenTemp) : null;
-    // Keep the existing empirical blend, but never increase the cold-only
-    // dose merely because warm exposure was added. This conservative bound
-    // removes the arbitrary four-hour switch; it is not new calibration or
-    // a simulation of dough-core cooling.
-    if (totalRTHours > 0 && rtRec === null) {
-      // Unsupported warm exposure does not disappear when a cold phase is
-      // added. Match the existing pure-RT rejection contract; this minimum
-      // is a finite placeholder, not a validated dose for the rejected plan.
-      notRecommended = true;
-      warnings.push({ key: 'overFermentRT', params: { hours: totalRTHours, temp: kitchenTemp } });
-      rec = YEAST_MIN_PCT;
-    } else if (totalRTHours <= 0 || rtRec === null) {
-      rec = Math.max(YEAST_MIN_PCT, coldRec);
-    } else {
-      const rtWeight = totalRTHours / Math.max(rtRec, YEAST_MIN_PCT);
-      const coldWeight = totalColdHours / coldRec;
-      const blended = (coldRec * coldWeight + rtRec * rtWeight) / (coldWeight + rtWeight);
-      rec = Math.max(YEAST_MIN_PCT, Math.min(coldRec, blended));
+  // Each term is the fraction of its isolated fermentation duration used at a
+  // candidate dose. Inverting the existing pure-temperature laws preserves their
+  // calibration while making contributions additive across successive phases.
+  // At a fixed bake time, replacing warm hours with cold can need MORE yeast;
+  // extending the same plan with extra cold exposure cannot.
+  const rtRec = totalRTHours > 0 ? rtIDY(totalRTHours, kitchenTemp) : undefined;
+  if (rtRec === null) {
+    notRecommended = true;
+    warnings.push({key: 'overFermentRT', params: {hours: totalRTHours, temp: kitchenTemp}});
+    rec = YEAST_MIN_PCT;
+  } else if (totalColdHours > 0 && totalRTHours > 0) {
+    const warmRate = Math.pow(2.5, (kitchenTemp - 25) / 10) * tropicalFactor(kitchenTemp) / 9.5;
+    const coldRate = coldActivityFactor(fridgeTemp) / 7.5;
+    let lo = 0, hi = 1.5;
+    for (let i = 0; i < 25; i++) {
+      const dose = (lo + hi) / 2;
+      const progress = totalRTHours * Math.pow(dose * warmRate, 1 / 1.65)
+        + totalColdHours * Math.pow(dose * coldRate, 1 / 1.313);
+      if (progress < 1) lo = dose; else hi = dose;
     }
+    rec = (lo + hi) / 2;
+  } else if (totalColdHours > 0) {
+    rec = coldIDY(totalColdHours, fridgeTemp);
   } else {
-    // Pure room temperature
+    rec = rtRec ?? 1.5;
     if (totalRTHours > YEAST_RT_MAX_H && !isRTOnlyStyle) {
       recommendPoolish = true;
-      warnings.push({ key: 'poolishSuggestion', params: { hours: YEAST_RT_MAX_H } });
-    }
-    const rtRec = rtIDY(totalRTHours, kitchenTemp);
-    if (rtRec === null) {
-      notRecommended = true;
-      warnings.push({ key: 'overFermentRT', params: { hours: totalRTHours, temp: kitchenTemp } });
-      rec = YEAST_MIN_PCT;
-    } else {
-      rec = Math.max(YEAST_MIN_PCT, rtRec);
+      warnings.push({key: 'poolishSuggestion', params:{hours:YEAST_RT_MAX_H}});
     }
   }
-
-  // Priority adjustments
+  rec = Math.max(YEAST_MIN_PCT, rec);
+  // Only explicit baker overrides alter the schedule-derived dose. Inferring
+  // these from duration double-counted the short/long fermentation window.
   if (priority === 'flavor') rec *= 0.7;
-  if (priority === 'speed')  rec *= 1.8;
+  if (priority === 'speed') rec *= 1.8;
   rec = Math.min(1.5, rec);
   rec = Math.round(rec * 10000) / 10000;
 
@@ -250,10 +236,8 @@ export function recommendYeast(
   // small enough to need a 0.1 g scale, which is what that card actually says.
   const hitMinFloor = rawGrams < 0.5;
 
-  // The floor is a hardware limit, not a recipe decision: below 0.5 g nothing
-  // is weighable on a 0.1 g scale, so the dose is rounded UP and the dough
-  // ferments faster than the plan. On a pure room-temperature schedule that is
-  // the point where "climate adjusts yeast, not timing" stops being true.
+  // Flag a room-temperature dose below scale resolution. Preserve the actual
+  // dose and offer dilution; do not round up the yeast to make it weighable.
   //
   // It binds at small batches in hot kitchens — 300 g of flour at 35-38 C — and
   // not at 500 g and above, which is why it has stayed invisible. We report the
@@ -298,23 +282,8 @@ export function recommendYeast(
   // top it would change the hydration.
   const dilutionTip = commercialDilution(convertedGrams);
 
-  // Explanation
-  let explanation = '';
-  if (kitchenTemp >= 30) {
-    explanation = `Very hot kitchen (${kitchenTemp}°C) — minimal yeast. Use ice-cold water.`;
-  } else if (kitchenTemp >= 28) {
-    explanation = `Hot kitchen (${kitchenTemp}°C) — reduced yeast. Use cold water from fridge.`;
-  } else if (kitchenTemp >= 25) {
-    explanation = `Warm kitchen (${kitchenTemp}°C) — slightly reduced yeast.`;
-  } else if (kitchenTemp <= 18) {
-    explanation = `Cool kitchen (${kitchenTemp}°C) — increased yeast to compensate.`;
-  } else {
-    explanation = `Ideal conditions (${kitchenTemp}°C) — standard yeast amount.`;
-  }
+  let explanation = `Yeast is estimated for this dough's warm and refrigerated fermentation time at ${kitchenTemp}°C and ${fridgeTemp}°C.`;
 
-  if (totalColdHours >= 48) {
-    explanation += ` Long cold retard (${totalColdHours}h) develops exceptional flavour.`;
-  }
 
   if (fridgeTemp > 8) {
     warnings.push({ key: 'fridgeWarm', params: { temp: fridgeTemp } });
@@ -662,14 +631,8 @@ export function solveWaterTempEnthalpy(p: {
  * Biga returns 0 by protocol: it goes straight from the fridge into the mix
  * (matches the shipped Bake Guide copy), and the water carries the temperature.
  *
- * ANTI-FEEDBACK RULE: this is a PURE PROTOCOL FUNCTION of climate + style. It
- * deliberately takes no preferment percentage and no batch size, because both
- * are derived from prefOffsetH upstream (the default-% ladder) and feeding
- * either one back in would make the solver depend on its own previous answer —
- * the POOLISH-BIGA-AUDIT §1 bug class. Batch size only moves the thermal time
- * constant between ~128 and ~195 min across every realistic home batch, which
- * cannot shift a 15-minute-quantised answer; flour % is absorbed by the water
- * temperature instead, which is where fine adjustment belongs.
+ * Use only explicit recipe inputs here. Never feed solver-derived percentages
+ * or durations back into the schedule that produced them.
  */
 export function requiredPrefWarmupH(o: {
   prefermentType: string;
@@ -679,21 +642,22 @@ export function requiredPrefWarmupH(o: {
   fridgeTemp: number;
   mixerType?: MixerType;
   targetDoughTemp?: number;
+  prefermentFlourPct?: number;
+  doughMassG?: number;
+  hydrationPct?: number;
+  flourTempC?: number;
 }): number {
   if (o.prefermentType !== 'poolish' || !o.prefInFridge) return 0;
 
   const style = ALL_STYLES[o.styleKey as StyleKey];
-  const hydPct = style?.hydration ?? 62;
+  const hydPct = o.hydrationPct ?? style?.hydration ?? 62;
   const saltPct = style?.salt ?? 2.8;
   const prefHydPct = PREFERMENT_TYPES.poolish.hydration;      // 100
-  // Canonical fridge-poolish fraction and batch size. Fridge windows are always
-  // ≥12h, where the shipped default ladder gives 20–30% — 25% is the honest
-  // midpoint, and a constant rather than a function of the current plan.
-  const prefPct = 0.25;
+  const prefPct = (o.prefermentFlourPct ?? 25) / 100;
   const targetFDT = o.targetDoughTemp ?? TARGET_FDT[o.styleKey] ?? 24;
   const friction = mixerFrictionRiseC(o.mixerType);
 
-  const doughTotal = 1000;
+  const doughTotal = o.doughMassG ?? 1000;
   const flourG = doughTotal / (1 + hydPct / 100 + saltPct / 100);
   const waterG = flourG * (hydPct / 100);
   const saltG = flourG * (saltPct / 100);
@@ -706,7 +670,7 @@ export function requiredPrefWarmupH(o: {
       prefFlourG + prefWaterG, prefHydPct, o.fridgeTemp, o.kitchenTemp, w,
     );
     const { idealWaterTemp } = solveWaterTempEnthalpy({
-      targetFDT, kitchenTemp: o.kitchenTemp, flourTemp: o.kitchenTemp, friction,
+      targetFDT, kitchenTemp: o.kitchenTemp, flourTemp: o.flourTempC ?? o.kitchenTemp, friction,
       flourG, waterG, saltG, prefFlourG, prefWaterG, prefTempC,
     });
     if (idealWaterTemp <= WATER_TEMP_MAX) return w;
@@ -770,6 +734,7 @@ function buildSchedulePhases(
   styleKey: string = 'neapolitan',
   mixingBatches = 1,
   numItems?: number,
+  isSourdough = false,
 ): ScheduleResult {
   const bakeTime = new Date(eatTime.getTime() - preheatMin * 60000);
   // Elapsed mixing time is style-dependent (Modernist publishes it per style);
@@ -869,7 +834,13 @@ function buildSchedulePhases(
   const rtWarmupH = isVeryHot ? 0.5 : 0.75; // 30min at ≥30°C, 45min at 28-29°C
 
   // Initial bulk at RT (temp-aware)
-  const initialBulkH = isVeryHot ? 0.5 : (isTropical ? 0.75 : 1.5);
+  // Native levain styles carry a five-hour reference bulk at 22 °C. Keep
+  // that independent of the commercial dough minimum. This temperature
+  // adjustment is a planning estimate; the protocol still uses rise cues.
+  const nativeSourdough = styleKey === 'pain_levain' || styleKey === 'sourdough';
+  const initialBulkH = isSourdough
+    ? (nativeSourdough ? ALL_STYLES[styleKey].bulkH : ALL_STYLES.pain_levain.bulkH) * Math.pow(2, (22 - Math.min(30, kitchenTemp)) / 10)
+    : isVeryHot ? 0.5 : isTropical ? 0.75 : 1.5;
 
   const minCold1H = isTropical ? 2 : 4;
   const minCold2H = 2;
@@ -1179,13 +1150,14 @@ export function buildSchedule(
   startTime: Date, eatTime: Date, availabilityBlocks: AvailabilityBlock[],
   kitchenTemp: number, preheatMin: number, mixerType: MixerType = 'hand',
   styleKey: string = 'neapolitan', numItems?: number, requestedMixingBatches = 1,
+  isSourdough = styleKey === 'pain_levain' || styleKey === 'sourdough',
 ): ScheduleResult {
   const mixingBatches = Number.isFinite(requestedMixingBatches) ? Math.max(1, Math.min(100, Math.floor(requestedMixingBatches))) : 1;
   const poachMinutes = breadPoachMinutes(styleKey, numItems);
   const fermentationEnd = poachMinutes ? new Date(+eatTime - poachMinutes * 60000) : eatTime;
   // Poaching ends fermentation. For bagels only, derive the dough phases up
   // to that action; the selected oven time remains unchanged.
-  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches, numItems);
+  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches, numItems, isSourdough);
   schedule.divisionMinutes = divisionMinutesFor(numItems);
   const requiredCold = REQUIRED_COLD_MIN_HOURS[styleKey] ?? 0;
   if (requiredCold) {
@@ -1330,6 +1302,7 @@ export function buildSchedule(
 }
 
 export interface ScheduleRepairInput {
+  isSourdough?: boolean;
   startTime: Date;
   eatTime: Date;
   availabilityBlocks: AvailabilityBlock[];
@@ -1362,7 +1335,7 @@ export function findScheduleRepair(input: ScheduleRepairInput): ScheduleRepair |
   const now = +(input.now ?? new Date());
   if (![+startTime, +eatTime, now, kitchenTemp, preheatMin].every(Number.isFinite)
       || +startTime < now || +startTime >= +eatTime || preheatMin < 0) return null;
-  const build = (start: Date, bake: Date) => buildSchedule(start, bake, availabilityBlocks, kitchenTemp, preheatMin, mixer, style, input.numItems, input.mixingBatches);
+  const build = (start: Date, bake: Date) => buildSchedule(start, bake, availabilityBlocks, kitchenTemp, preheatMin, mixer, style, input.numItems, input.mixingBatches, input.isSourdough);
   const original = build(startTime, eatTime);
   const phases = (s: ScheduleResult) => s.coldRetard2Start ? 2 : s.coldRetard1Start ? 1 : 0;
   const phaseCount = phases(original);
@@ -1409,14 +1382,36 @@ export function findScheduleRepair(input: ScheduleRepairInput): ScheduleRepair |
   return null;
 }
 
-function derivePriority(schedule: ScheduleResult): string | null {
-  const windowH = (schedule.bakeStart.getTime() - schedule.bulkFermStart.getTime()) / 3600000;
-  if (windowH < 6) return 'speed';
-  if (schedule.totalRTHours + schedule.totalColdHours >= 24) return 'flavor';
-  return null;
+/** Expected remaining warmth averaged over each cold interval. The existing
+ * covered-dough heat-transfer estimate brackets warm and chilled biological
+ * rates; it is not a measurement of the dough core. Preserve total hours,
+ * including on a second cold phase where portioning changes thermal mass. */
+function doughCoolingExposure(schedule: ScheduleResult, count: number, weight: number, hydration: number) {
+  const batches = Math.max(1, schedule.batchMixWindows?.length ?? 1);
+  const stages = [
+    {from:schedule.coldRetard1Start, to:schedule.coldRetard1End, mass:Math.ceil(count / batches) * weight},
+    {from:schedule.coldRetard2Start, to:schedule.coldRetard2End, mass:weight},
+  ];
+  let warmth = 1, warmEquivalent = 0, lastExit:Date | null = null;
+  for (const stage of stages) {
+    if (!stage.from || !stage.to || +stage.to <= +stage.from) continue;
+    const tau = prefThermalTauMin(stage.mass, hydration) / 60;
+    if (lastExit) {
+      const warmGap = Math.max(0, (+stage.from - +lastExit) / 3600000);
+      warmth = 1 - (1 - warmth) * Math.exp(-warmGap / tau);
+    }
+    const duration = (+stage.to - +stage.from) / 3600000;
+    const cooled = -Math.expm1(-duration / tau);
+    warmEquivalent += warmth * tau * cooled;
+    warmth *= 1 - cooled;
+    lastExit = stage.to;
+  }
+  warmEquivalent = Math.min(schedule.totalColdHours, warmEquivalent);
+  return {warmHours:schedule.totalRTHours + warmEquivalent, coldHours:schedule.totalColdHours - warmEquivalent};
 }
 
 export interface RecipeResult {
+  saltPct?: number;
   protocolIssue?: 'method' | 'equipment' | 'timing';
   flourParts?: { key: string; name: string; nameFr: string; grams: number; pct: number }[];
   enrichment?: RecipeEnrichment;
@@ -1604,8 +1599,8 @@ export function calculateRecipe(
   let sourdough: SourdoughResult | null = null;
   let directNeedIDY: number | undefined;   // whole-dough IDY need — feeds preferment dosing
 
-  const autoPriority = derivePriority(schedule);
-  const effectivePriority = manualPriorityOverride !== undefined ? manualPriorityOverride : autoPriority;
+  const autoPriority = null;
+  const effectivePriority = manualPriorityOverride ?? null;
 
   const prefInFridge = prefGoesInFridgeOverride !== undefined
     ? prefGoesInFridgeOverride
@@ -1627,10 +1622,11 @@ export function calculateRecipe(
     if (!unleavened && yeastType === 'sourdough') {
       sourdough = sourdoughGuidance(kitchenTemp, flour, feedToMixH, blendProfile?.fermToleranceMultiplier);
     } else if (!unleavened) {
+      const exposure = doughCoolingExposure(schedule, numItems, itemWeight, hydration);
       yeast = recommendYeast(
-        schedule.totalRTHours,
+        exposure.warmHours,
         kitchenTemp,
-        schedule.totalColdHours,
+        exposure.coldHours,
         fridgeTemp,
         yeastType,
         flour,
@@ -1653,19 +1649,10 @@ export function calculateRecipe(
         };
       }
 
-      // Osmotic stress correction — sugar above 2% OF FLOUR slows yeast.
-      // (Was `sugarG > 2` — grams, not percent — so any dough with more than
-      // 2g total sugar silently got +20% yeast.)
-      if (yeast && sugar > 2) {
-        yeast = {
-          ...yeast,
-          grams: Math.round(yeast.grams * 1.2 * 1000) / 1000,
-          convertedGrams: Math.round(yeast.convertedGrams * 1.2 * 1000) / 1000,
-          pct: Math.round(yeast.pct * 1.2 * 10000) / 10000,
-          convertedPct: Math.round(yeast.convertedPct * 1.2 * 10000) / 10000,
-          osmoticStress: true,
-          warnings: [...yeast.warnings, { key: 'osmoticStress' as const }],
-        };
+      // Sugar concentration, strain and water availability all affect leavening.
+      // A universal 20% dose increase at 2% flour-basis sugar isn't warranted.
+      if (yeast && sugar > 5) {
+        yeast = {...yeast, osmoticStress:true, warnings:[...yeast.warnings,{key:'osmoticStress'}]};
       }
       // Whole-dough leavening requirement (direct-engine IDY grams), captured
       // BEFORE any preferment reduction — this is what the preferment must
@@ -1740,7 +1727,8 @@ export function calculateRecipe(
     const prefWarmupH = requiredPrefWarmupH({
       prefermentType: prefermentType as string,
       prefInFridge, styleKey, kitchenTemp, fridgeTemp,
-      mixerType,
+      mixerType, prefermentFlourPct: flourPctOverride, doughMassG: numItems * itemWeight,
+      hydrationPct: manualHydration ?? s.hydration, flourTempC: flourTemp,
       targetDoughTemp: mode === 'custom' ? targetDoughTemp : undefined,
     });
     prefTempC = prefTempAfterWarmup(
@@ -1817,7 +1805,7 @@ export function calculateRecipe(
   }
 
   return {
-    flour, water, salt, yeast, sourdough, enrichment, protocolIssue, flourParts,
+    flour, water, salt, saltPct, yeast, sourdough, enrichment, protocolIssue, flourParts,
     oil: oilG, sugar: sugarG,
     waterTemp, thermal: enrichment ? undefined : {
       idealWaterTemp: thermal.idealWaterTemp,
@@ -1899,9 +1887,7 @@ export function formatTime(d: Date, locale?: string): string {
   const days = fr
     ? ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.']
     : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  return fr ? `${days[d.getDay()]} ${hh}h${mm}` : `${days[d.getDay()]} ${hh}:${mm}`;
+  return `${days[d.getDay()]} ${formatClock(d, locale ?? 'en')}`;
 }
 
 function toDateTimeLocal(d: Date): string {
