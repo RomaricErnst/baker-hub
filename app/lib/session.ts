@@ -25,6 +25,7 @@ export function acceptCurrentSessionStorage(): void {
 
 
 export interface SessionData {
+  confirmedSettings?: string[];
   version: 1;
   savedAt: number;
   tab: string;
