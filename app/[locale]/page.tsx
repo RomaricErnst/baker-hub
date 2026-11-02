@@ -1058,6 +1058,7 @@ export default function Home() {
   const [prefOffsetH, setPrefOffsetH] = useState<number>(0);
   // Driven by SchedulePicker algo result — single source of truth for fridge/RT decision
   const [prefGoesInFridgeState, setPrefGoesInFridgeState] = useState<boolean>(true);
+  const [poolishStorage, setPoolishStorage] = useState<'auto'|'fridge'|'room'>('auto');
 
   const [manualHydration, setManualHydration] = useState<number | undefined>(undefined);
   const [manualOil, setManualOil]             = useState<number | undefined>(undefined);
@@ -1475,6 +1476,7 @@ export default function Home() {
     setPrefermentFlourPct(session.prefermentFlourPct);
     setPrefOffsetH(session.prefOffsetH);
     setPrefGoesInFridgeState(session.prefGoesInFridge ?? true);
+    setPoolishStorage(session.poolishStorage ?? 'auto');
     setTimingOverrides(normalizeTimingOverrides(session.timingOverrides));
     setStarterRecoveryPending(session.starterRecoveryPending===true);setStarterFeedRecords(normalizeStarterFeedRecords(session.starterFeedRecords));setExecution(normalizeBakeExecution(session.execution));setMixExecution(normalizeMixExecution(session.mixExecution));setReplanRequested(false);
     setManualHydration(session.manualHydration);
@@ -1693,10 +1695,11 @@ export default function Home() {
   // through climate, oven, mixer, flour steps. The Max(s, 9) call fires
   // correctly in the YeastHelper onSelect handler after all steps are done.
   useEffect(() => {
-    if (tab === 'custom' && styleKey === 'pain_levain' && !yeastType) {
-      setYeastType('sourdough');
-      setPrefermentType('levain');
-    }
+    if (tab !== 'custom' || (styleKey !== 'pain_levain' && styleKey !== 'sourdough') || execution || mixExecution) return;
+    if (yeastType !== 'sourdough') setYeastType('sourdough');
+    if (prefermentType !== 'levain') setPrefermentType('levain');
+    if (!prefermentChosen) setPrefermentChosen(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [styleKey, tab]);
 
   useEffect(() => {
@@ -2075,7 +2078,7 @@ export default function Home() {
       qtyChosen, flourChosen, prefermentChosen, customKitchenConfirmed, confirmedSettings,
       manualHydration, manualOil, manualSugar, manualSalt,
       targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
-      prefGoesInFridge,
+      prefGoesInFridge, poolishStorage,
       startTime: startTime?.getTime() ?? null,
       eatTime: eatTime?.getTime() ?? null,
       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.coveredActions?.length?{coveredActions:b.coveredActions}:{}), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}) })),
@@ -2845,7 +2848,7 @@ export default function Home() {
     setShowResults(false); setActiveStep(1); setHighestStep(1);
     setAdvancedStep(1); setAdvancedHighestStep(1); setFlourBlend({ flour1: bakeType === 'bread' ? 'bread' : 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
-    setManualSalt(undefined); setTargetDoughTemp(undefined); setWastePct(undefined); setFlourInFridge(false); setMeasuredFlourTemp(undefined); setMeasuredPrefermentTemp(undefined); setPrefermentFlourPct(undefined);
+    setManualSalt(undefined); setTargetDoughTemp(undefined); setWastePct(undefined); setFlourInFridge(false); setPoolishStorage('auto'); setMeasuredFlourTemp(undefined); setMeasuredPrefermentTemp(undefined); setPrefermentFlourPct(undefined);
     setRecipeGenerated(false); setProtocolStale(false); setActiveTab('batch');
     setReviewMode(false); setSetupOverview(false);
     setModeChosen(false);
@@ -3093,6 +3096,7 @@ export default function Home() {
     setFlourInFridge(snap.flourInFridge ?? false);
     setAddSeeds(snap.addSeeds ?? false);
     setPrefGoesInFridgeState(snap.prefGoesInFridge ?? true);
+    setPoolishStorage(snap.poolishStorage ?? 'auto');
     setMeasuredFlourTemp(snap.measuredFlourTemp); setMeasuredPrefermentTemp(snap.measuredPrefermentTemp);
     setWastePct(snap.wastePct);
     setPriorityOverride(snap.priorityOverride);
@@ -3241,7 +3245,9 @@ export default function Home() {
   // and 'none' are all truthy from the first render, so a walk-through that
   // never opened those pages still produced a recipe built on three guesses.
   // Preferment and Flour are Custom-only steps; Simple has no page for either.
-  const showPrefermentChoice = !isUnleavened && !directMethodOnly;
+  // Levain styles have one leavening, so a one-option step would be a tap with
+  // no choice. Their starter questions live with the bake time, where the feed is timed.
+  const showPrefermentChoice = !isUnleavened && !directMethodOnly && styleKey !== 'pain_levain' && styleKey !== 'sourdough';
   const unsupportedEnrichedMethod = (enrichedDirectOnly && (yeastType === 'sourdough' || prefermentType !== 'none')) || !!(breadProtocol && !isUnleavened && (!breadProtocol.supportedPreferments.includes(prefermentType) || (!breadSupportsStarter && yeastType === 'sourdough')));
   const archivedFlourNames = archivedBlendSelections(flourBlend);
   const simpleRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && qtyChosen);
@@ -3428,7 +3434,7 @@ export default function Home() {
         : styleKey ? `${ALL_STYLES[styleKey].hydration}% ${t('dialIn.hydrationSuffix')}` : null,
       prefilled: true,
       gap: fr ? 'La pâte n\u2019est pas confirmée' : 'Dough not confirmed' },
-    { id: 9, group: 'plan', chip: fr ? 'Heure de cuisson' : 'Bake time', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
+    { id: 9, group: 'plan', chip: fr ? 'Heure de cuisson' : 'Bake time', title: levainStyle && tab === 'custom' ? (fr ? 'Cuisson et levain' : 'Bake time and starter') : bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
       value: eatTime
         ? `${formatTime(new Date(Math.round(Math.min(startTime.getTime(), prefStartTime?.getTime() ?? Infinity) / 900000) * 900000), locale)} → ${formatTime(eatTime, locale)}${selectedAvailabilityCount(blocks) > 0 ? ` · ${selectedAvailabilityCount(blocks)} ${selectedAvailabilityCount(blocks) === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
         : null,
@@ -4517,9 +4523,8 @@ export default function Home() {
               <KitchenReading value={kitchenTemp} units={units} fr={fr} confirmed={confirmed('climate',kitchenTemp)} onConfirm={value=>{setKitchenTemp(value);confirmSetting('climate',value);}}/>
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
-                fridgeTemp={fridgeTemp} mode="custom" hideKitchen
+                fridgeTemp={fridgeTemp} mode="custom" hideKitchen part="temperatures"
                 units={units}
-                flourInFridge={flourInFridge} onFlourInFridgeChange={setFlourInFridge}
                 onChange={(t, h, f) => { if(t!==kitchenTemp)confirmSetting('climate',t); setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
               />
               <details style={{marginTop:16}}>
@@ -4555,6 +4560,14 @@ export default function Home() {
                 mode={tab === 'custom' ? 'custom' : 'simple'}
                 styleKey={styleKey}
               />
+              {/* Storage belongs with the flour, not the kitchen temperatures. */}
+              {flourChosen && <div style={{marginTop:20}}><ClimatePicker
+                kitchenTemp={kitchenTemp} humidity={humidity}
+                fridgeTemp={fridgeTemp} mode="custom" part="flourStorage"
+                units={units}
+                flourInFridge={flourInFridge} onFlourInFridgeChange={setFlourInFridge}
+                onChange={(t, h, f) => { setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
+              /></div>}
               {/* The page's own Suivant carries this now — the flour step
                   kept a second Continue when the accordion was retired. */}
             </StepPage>
@@ -4601,6 +4614,15 @@ export default function Home() {
                   directOnly={enrichedDirectOnly}
                   kitchenTemp={kitchenTemp}
                 />
+                {prefermentChosen && prefermentType==='poolish' && <fieldset data-poolish-storage style={{border:0,padding:0,margin:'20px 0 0'}}>
+                  <legend style={{fontSize:16,fontWeight:650,marginBottom:8}}>{fr?'Où le poolish fermente':'Where the poolish ferments'}</legend>
+                  <div style={{display:'grid',gap:7}}>
+                    {([['auto',fr?'Choisir selon mon planning':'Choose to fit my timing',fr?'Le planning compare les deux.':'The plan compares both.'],['fridge',fr?'Au réfrigérateur':'In the fridge',fr?'Plus long et plus souple, 12 à 24 h.':'Longer and more forgiving, 12 to 24 h.'],['room',fr?'À température ambiante':'At room temperature',fr?'Plus court, à faire dans la journée.':'Shorter, made the same day.']] as const).map(([value,label,note])=>{
+                      const active=poolishStorage===value;
+                      return <button key={value} type="button" aria-pressed={active} onClick={()=>setPoolishStorage(value)} style={{minHeight:44,padding:'9px 12px',display:'flex',flexDirection:'column',alignItems:'flex-start',gap:2,textAlign:'left',border:`1.5px solid ${active?'var(--terra)':'var(--border)'}`,borderRadius:9,background:active?'var(--warm)':'var(--paper)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:16,cursor:'pointer'}}><span>{label}</span><span style={{fontSize:14,color:'var(--smoke)'}}>{note}</span></button>;
+                    })}
+                  </div>
+                </fieldset>}
               </StepPage>
             )}
 
@@ -4611,6 +4633,7 @@ export default function Home() {
               ) : (
               <SchedulePicker
                 {...poolishInputs}
+                poolishStorage={prefermentType==='poolish'?poolishStorage:'auto'}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
                 mixingBatches={selectedMixingBatches}

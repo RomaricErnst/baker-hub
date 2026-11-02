@@ -21,6 +21,8 @@ interface ClimatePickerProps {
   /** The planning owner decides whether refrigeration is relevant. */
   showFridge?: boolean;
   hideKitchen?: boolean;
+  /** Custom splits this picker: temperatures on the Kitchen step, flour storage on the Flour step. */
+  part?: 'all' | 'temperatures' | 'flourStorage';
   /** Optional because the parent owns this planning choice. */
   flourInFridge?: boolean;
   onFlourInFridgeChange?: (value: boolean) => void;
@@ -50,8 +52,10 @@ function controlStyle(): React.CSSProperties {
  */
 export default function ClimatePicker({
   kitchenTemp, humidity, fridgeTemp, mode, units = 'metric', showFridge = true, hideKitchen = false,
-  flourInFridge = false, onFlourInFridgeChange, onChange,
+  flourInFridge = false, onFlourInFridgeChange, onChange, part = 'all',
 }: ClimatePickerProps) {
+  const showTemperatures = part !== 'flourStorage';
+  const showFlourStorage = part !== 'temperatures';
   const fr = useLocale() === 'fr';
   const kitchenMax = 38;
   const [editingKitchen,setEditingKitchen] = useState(false);
@@ -113,18 +117,18 @@ export default function ClimatePicker({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, fontSize: 16, lineHeight: 1.5, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
-      <p style={{ margin: 0, fontSize: 14, color: 'var(--smoke)' }}>{fr ? 'Ces températures aident à calculer le temps de fermentation.' : 'These temperatures help calculate your fermentation time.'}</p>
-      {!hideKitchen && (mode === 'simple' ? <section>
+      {showTemperatures && <p style={{ margin: 0, fontSize: 14, color: 'var(--smoke)' }}>{fr ? 'Ces températures aident à calculer le temps de fermentation.' : 'These temperatures help calculate your fermentation time.'}</p>}
+      {showTemperatures && !hideKitchen && (mode === 'simple' ? <section>
         <p style={{margin:'0 0 8px',fontSize:16}}>{fr?`Il fait environ ${tempC(kitchenTemp,units)} là où la pâte repose ?`:`Is it about ${tempC(kitchenTemp,units)} where the dough rests?`}</p>
         <button type="button" aria-label={editingKitchen?(fr?'Fermer la température de la cuisine':'Close kitchen temperature'):(fr?'Modifier la température de la cuisine':'Change kitchen temperature')} aria-expanded={editingKitchen} aria-controls="climate-kitchen-editor" onClick={()=>setEditingKitchen(value=>!value)} style={{minHeight:44,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:9,background:'var(--paper)',color:'var(--char)',fontSize:16,cursor:'pointer'}}>{editingKitchen?(fr?'Fermer':'Close'):(fr?'Modifier':'Edit')}</button>
         <div id="climate-kitchen-editor" hidden={!editingKitchen} style={{marginTop:editingKitchen?16:0}}>{temperatureField('kitchen')}</div>
       </section> : temperatureField('kitchen'))}
-      {showFridge && (mode === 'simple' ? <details>
+      {showTemperatures && showFridge && (mode === 'simple' ? <details>
         <summary style={{minHeight:44,cursor:'pointer',fontSize:16}}>{fr?'Frigo':'Fridge'} · {tempC(fridgeTemp,units)} — {fr?'Modifier':'Change'}</summary>
         {temperatureField('fridge')}
       </details> : temperatureField('fridge'))}
 
-      {mode === 'custom' && (
+      {showFlourStorage && mode === 'custom' && (
         <details className="bh-disclosure">
           <summary style={{ cursor: 'pointer', fontWeight: 650, minHeight: 44, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 12px' }}>
             {fr ? 'Humidité habituelle du stockage' : 'Usual flour-storage humidity'}
@@ -153,11 +157,11 @@ export default function ClimatePicker({
           </p>
         </details>
       )}
-      {mode === 'simple' && humidity !== 'normal' && <p style={{margin:0,fontSize:14,color:'var(--smoke)'}}>
+      {showFlourStorage && mode === 'simple' && humidity !== 'normal' && <p style={{margin:0,fontSize:14,color:'var(--smoke)'}}>
         {fr?'Humidité conservée':'Retained humidity'} : {HUMIDITY_OPTIONS.find(option=>option.value===humidity)?.[fr?'fr':'en'] ?? humidity}. {fr?'Modifiable en mode Personnalisé.':'Change in Custom mode.'}
       </p>}
 
-      {onFlourInFridgeChange && (
+      {showFlourStorage && onFlourInFridgeChange && (
         <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minHeight: 44, cursor: 'pointer', fontSize: 16, lineHeight: 1.4 }}>
           <input type="checkbox" checked={flourInFridge} onChange={event => onFlourInFridgeChange(event.target.checked)} style={{ width: 20, height: 20, marginTop: 1, accentColor: 'var(--terra)' }} />
           <span><strong>{fr ? 'Farine conservée au réfrigérateur' : 'Flour kept in the fridge'}</strong><br /><span style={{ fontSize: 14, color: 'var(--smoke)' }}>{fr ? 'Cochez si la farine sera réellement froide au mélange.' : 'Check this only if the flour will be cold when you mix.'}</span></span>

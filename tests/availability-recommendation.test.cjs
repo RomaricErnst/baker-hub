@@ -15,7 +15,7 @@ function harness(overrides={}){
  class Clock extends Date{static now(){return now;}}
  const c={chronologicalBlocks,Date:Clock,isSourdough:false,recipeGenerated:false,eatTimeSet:true,startTimeInPast:false,execution:undefined,mixExecution:undefined,completedMixAt:undefined,replanRequested:false,hasPrefActive:true,
   pendingStart:original,pendingEatTime:bake,prefOffsetH:8,_optimalMix:(+bake-original)/H,
-  prefermentType:'poolish',kitchenTemp:22,prefGoesInFridge:false,styleKey:'neapolitan',fridgeTemp:5,
+  prefermentType:'poolish',poolishStorage:'auto',kitchenTemp:22,prefGoesInFridge:false,styleKey:'neapolitan',fridgeTemp:5,
   manualTimesRef:{current:overrides},solverNotifyBudgetRef:{current:{}},ratioApplyHistoryRef:{current:[]},
   draftOverridesRef:{current:{}},solverBlocksRef:{current:[]},resumeFrozenRef:{current:false},acceptedBakeRef:{current:0},
   findFixedBakeSchedule,recommendPreferment,getPrefOptH:()=>8,onChange:(start,bake,blocks,options)=>writes.push({start,bake,blocks,options})};
@@ -48,4 +48,12 @@ test('availability recalculation preserves explicit mixing and locked poolish ch
 test('availability edits preserve already-started preparation',()=>{
  const {c,writes}=harness();c.recipeGenerated=true;c.pendingStart=new Date(now+H);c.prefOffsetH=8;
  c.applyAndUpdate([]);assert.equal(+c.pendingStart,now+H);assert.equal(writes.at(-1).options.preservePlan,true);
+});
+test('a chosen poolish storage limits the planner to that storage',()=>{
+ for(const [storage,expected] of [['auto',[true,false]],['fridge',[true]],['room',[false]]]){
+  const {c}=harness();c.poolishStorage=storage;const seen=[];
+  c.recommendPreferment=(choices,...rest)=>{seen.push(...choices.map(choice=>choice.inFridge));return recommendPreferment(choices,...rest);};
+  c.commercialRecommendation([],{});
+  assert.deepEqual(seen,expected,storage);
+ }
 });

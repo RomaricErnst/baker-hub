@@ -103,6 +103,8 @@ export interface SessionData {
   pizzaParty?: { qtys: Record<string, number>; bakedQtys?: Record<string, number>; shopTicks?: Record<string, boolean>; prepTicks?: string[] } | null;
   bakedDone?: boolean;
   prefGoesInFridge?: boolean;
+  /** Custom poolish storage chosen by the baker; absent means the planner chooses. */
+  poolishStorage?: 'auto' | 'fridge' | 'room';
   starterEvents?: Array<Omit<StarterEvent, 'time'|'bellPeakTime'|'bellStartTime'> & {time:number;bellPeakTime?:number;bellStartTime?:number}>;
   starterState?: string;
   starterLocation?: string;

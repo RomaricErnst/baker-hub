@@ -226,6 +226,8 @@ interface SchedulePickerProps extends WarmupInputs {
   onSimpleDecisionChange?: (pending: boolean) => void;
   onPrefOffsetChange?: (h: number) => void;
   onPrefGoesInFridgeChange?: (inFridge: boolean) => void;
+  /** Custom only: the baker's poolish storage. 'auto' lets the planner compare both. */
+  poolishStorage?: 'auto' | 'fridge' | 'room';
   onFridgeOutTimeChange?: (t: Date | null) => void;
   onUsingPeak2Change?: (v: boolean) => void;
   onFeed2TimeChange?: (t: Date | null) => void;
@@ -1792,7 +1794,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   function thermalInputs(method:string,inFridge:boolean){
     return {prefermentType:method, prefInFridge:inFridge,
       styleKey, kitchenTemp, fridgeTemp, mixerType, targetDoughTemp,
@@ -2355,7 +2357,7 @@ function FermentedSchedulePicker({ onSimpleDecisionChange, prefermentFlourPct,do
     const localEnoughTimeForFridge = nowHBF >= (14 + minTotalRT_noPreheat);
     const localPrefGoesInFridge = hasPrefActive && (
       prefermentType === 'biga'
-      || (prefermentType === 'poolish' && (kitchenTemp >= 26 || localEnoughTimeForFridge))
+      || (prefermentType === 'poolish' && (poolishStorage === 'fridge' || (poolishStorage !== 'room' && (kitchenTemp >= 26 || localEnoughTimeForFridge))))
     );
     // Scale fridge poolish optimal time by flour strength — stronger flour benefits from longer poolish.
     // RT poolish is temp-driven (not gluten-driven), so only fridge poolish gets scaled.
@@ -2458,7 +2460,7 @@ function FermentedSchedulePicker({ onSimpleDecisionChange, prefermentFlourPct,do
     );
     let resultChoseFridge = localPrefGoesInFridge;
 
-    if (effectiveHasPref && prefermentType === 'poolish' && localPrefGoesInFridge) {
+    if (effectiveHasPref && prefermentType === 'poolish' && localPrefGoesInFridge && poolishStorage === 'auto') {
       // Also try RT mode — RT poolish peaks earlier and may score higher
       // when the window is too short for a full fridge poolish
       const rtPrefOptH = getPrefOptH(prefermentType, kitchenTemp, false, styleKey ?? 'neapolitan', fridgeTemp);
@@ -2683,6 +2685,16 @@ function FermentedSchedulePicker({ onSimpleDecisionChange, prefermentFlourPct,do
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEatTime]);
+
+  // Changing poolish storage is a new method choice: replan at the same bake time.
+  const poolishStorageMounted = useRef(false);
+  useEffect(() => {
+    if (!poolishStorageMounted.current) { poolishStorageMounted.current = true; return; }
+    if (isSourdough || prefermentType !== 'poolish' || isNaN(pendingEatTime.getTime())) return;
+    const t = setTimeout(() => computeAndApplyRecommendation(solverBlocksRef.current, pendingEatTime), 0);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [poolishStorage]);
 
   // Auto-regenerate preset blocks when bake date changes
   useEffect(() => {
@@ -6597,7 +6609,7 @@ function FermentedSchedulePicker({ onSimpleDecisionChange, prefermentFlourPct,do
   function commercialRecommendation(candidateBlocks:AvailabilityBlock[],overrides:TimingOverrides,bake=pendingEatTime,start=new Date(+bake-_optimalMix*3600000)) {
     // Preserve storage for explicitly chosen preparation; automatic poolish can
     // compare both methods. Biga retains its existing refrigerated protocol.
-    const modes=execution?[execution.inFridge]:prefermentType==='poolish'?[true,false]:[prefGoesInFridge];
+    const modes=execution?[execution.inFridge]:prefermentType==='poolish'?(poolishStorage==='fridge'?[true]:poolishStorage==='room'?[false]:[true,false]):[prefGoesInFridge];
     return recommendPreferment(modes.map(inFridge=>({inFridge,input:{
       ...commercialCandidateInput(candidateBlocks,inFridge,start,bake),
       prefHours:getPrefOptH(prefermentType,kitchenTemp,inFridge,styleKey,fridgeTemp),
@@ -8251,7 +8263,7 @@ function FermentedSchedulePicker({ onSimpleDecisionChange, prefermentFlourPct,do
           pins:{mix:activeOverrides.mix===undefined?undefined:new Date(activeOverrides.mix),preferment:execution&&execution.method!=='none'?new Date(execution.actualAt):activeOverrides.pref===undefined?undefined:new Date(activeOverrides.pref)},
         };
         const proposeCommercialEdit=(input:EditInput)=>{
-          const modes=execution?[execution.inFridge]:prefermentType==='poolish'?(kitchenTemp>=26?[true,false]:[prefGoesInFridge,!prefGoesInFridge]):[prefGoesInFridge];
+          const modes=execution?[execution.inFridge]:prefermentType==='poolish'?(poolishStorage==='fridge'?[true]:poolishStorage==='room'?[false]:kitchenTemp>=26?[true,false]:[prefGoesInFridge,!prefGoesInFridge]):[prefGoesInFridge];
           let fallback:ReturnType<typeof proposeScheduleEdit>&{inFridge:boolean;input:EditInput}|undefined;
           for(const inFridge of modes){
             const protocol=commercialCandidateInput(repairBlocks,inFridge,input.start,input.bake);
