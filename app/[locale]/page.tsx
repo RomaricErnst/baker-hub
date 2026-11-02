@@ -34,7 +34,8 @@ const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { s
 import { starterFeedToMixHours } from '../lib/starterTiming';
 import { mixerDoughCapacity } from '../utils/mixingBatches';
 import {commercialPrefermentWindow, validateConfirmedBake, type StarterEvent } from '../components/SchedulePicker';
-import { normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake } from '../utils/scheduleAvailability';
+import { prefermentConditioningAction } from '../utils/scheduleEdit';
+import { findAvailabilityConflicts, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake } from '../utils/scheduleAvailability';
 import { retainCurrentFridgeRemoval } from '../utils/fridgeRemovalSession';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 import ClimatePicker from '../components/ClimatePicker';
@@ -57,7 +58,8 @@ import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
 import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
 import { formatYeastDose } from '../utils/prefermentDose';
-import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock } from '../utils/units';
+import { starterActionLabel } from '../utils/starterBuild';
+import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock, formatBakeDateTime } from '../utils/units';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
   PIZZA_STYLES, BREAD_STYLES, FLOUR_DATA,
@@ -65,7 +67,7 @@ import {
   type BakeType, type StyleKey, type OvenType, type BreadOvenType, type AnyOvenType, type MixerType, type YeastType, type FlourBlend, type PrefermentType,
 } from '../data';
 import {
-  buildSchedule, calculateRecipe, formatTime, requiredPrefWarmupH,
+  buildSchedule, calculateRecipe, formatTime, requiredPrefWarmupH, requiredPrefCooldownH,
   type AvailabilityBlock, type ScheduleResult,
 } from '../utils';
 import { getBreadProtocol } from '../utils/breadProfiles';
@@ -1782,6 +1784,13 @@ export default function Home() {
   const suggestedMixingBatches = Math.max(1, Math.ceil(plannedDoughG / mixerCapacityG));
   const selectedMixingBatches = mixingBatches ?? suggestedMixingBatches;
 
+  const poolishInputs = {
+    prefermentFlourPct: prefermentFlourPct ?? 20,
+    doughMassG: numItems * itemWeight,
+    hydrationPct: manualHydration ?? (styleKey ? ALL_STYLES[styleKey].hydration : undefined),
+    flourTempC: measuredFlourTemp ?? (flourInFridge ? fridgeTemp : kitchenTemp),
+    targetDoughTemp,
+  };
   const schedule = useMemo(() => {
     if (!eatTime || startTime >= eatTime) return null;
     if (!mixerType) return null;
@@ -1790,8 +1799,16 @@ export default function Home() {
     // retard at all — two different doughs on one screen, neither of them the
     // baker's. The recipe already refused without a style; now everything does.
     if (!styleKey) return null;
-    return buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches, (yeastType==='sourdough'||prefermentType==='levain'));
-  }, [startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches, yeastType, prefermentType]);
+    const plan = buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches, (yeastType==='sourdough'||prefermentType==='levain'));
+    const cooldown = requiredPrefCooldownH({...poolishInputs, prefermentType:prefermentType ?? 'none',
+      prefInFridge:prefGoesInFridgeState, styleKey, kitchenTemp, fridgeTemp, mixerType});
+    const action = prefermentConditioningAction({prefWarmupHours:0, prefCooldownHours:cooldown},startTime);
+    if (action && cooldown <= prefOffsetH && +action.at >= Date.now() && !findAvailabilityConflicts([action],blocks).length) {
+      plan.prefermentCooldownHours = cooldown;
+      plan.availabilityActions = [...(plan.availabilityActions ?? []), action].sort((a,b)=>+a.at-+b.at);
+    }
+    return plan;
+  }, [startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches, yeastType, prefermentType, prefermentFlourPct, itemWeight, manualHydration, measuredFlourTemp, flourInFridge, targetDoughTemp, fridgeTemp, prefGoesInFridgeState, prefOffsetH]);
 
   // Confirmation belongs to this exact committed action, never to a work preset.
   useEffect(() => {
@@ -1848,13 +1865,7 @@ export default function Home() {
     if(options?.preservePlan || options?.timingOverrides !== undefined)saveSession(buildSessionPayload({...(options?.starterRecoveryResolved&&options.starterPlan?{starterRecoveryPending:false}:{}),protocolStale:protocolStale||changedPlan,...(options?.prefInFridge!==undefined?{prefGoesInFridge:options.prefInFridge}:{}),...(options?.timingOverrides !== undefined ? {timingOverrides:normalizeTimingOverrides(options.timingOverrides)} : {}),...(options.starterPlan?{starterEvents:serializeStarterEvents(options.starterPlan.events),fridgeOutTime:options.starterPlan.fridgeOutTime?.getTime()??null,usingPeak2:options.starterPlan.usingPeak2,feed2Time:options.starterPlan.feed2Time?.getTime()??null,starterFridgeInTime:options.starterPlan.starterFridgeInTime?.getTime()??null}:{}),...(options.prefOffsetHours!==undefined?{prefOffsetH:options.prefOffsetHours}:{}),startTime:+st,eatTime:+et,blocks:bl.map(b=>({label:b.label,from:+b.from,to:+b.to,...(b.coveredActions?.length?{coveredActions:b.coveredActions}:{}),...(b.fridgeRemoval?{fridgeRemoval:b.fridgeRemoval}:{})}))}));
   };
 
-  const poolishInputs = {
-    prefermentFlourPct: prefermentFlourPct ?? 20,
-    doughMassG: numItems * itemWeight,
-    hydrationPct: manualHydration ?? (styleKey ? ALL_STYLES[styleKey].hydration : undefined),
-    flourTempC: measuredFlourTemp ?? (flourInFridge ? fridgeTemp : kitchenTemp),
-    targetDoughTemp,
-  };
+
   const prefRemoveFromFridgeTime = useMemo(() => {
     if (!prefGoesInFridge || !eatTime) return null;
     // Same single source of truth the scheduler uses. Returns 0 for biga and for
@@ -3342,7 +3353,7 @@ export default function Home() {
     if (hasThird) parts.push(`${100 - flourBlend.ratio1 - secondRatio}% ${flourBlend.customFlour3Name ?? localName(FLOUR_DATA[flourBlend.flour3!])}`);
     return parts.join(' + ');
   };
-  const reviewTiming = eatTime ? eatTime.toLocaleString(fr ? 'fr-FR' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
+  const reviewTiming = eatTime ? formatBakeDateTime(eatTime,locale) : null;
   const reviewKitchen = `${kitchenTemp}°C · ${fr ? 'réfrigérateur' : 'fridge'} ${fridgeTemp}°C`;
   const CUSTOM_STEPS: StepDef[] = ([
     { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Quel style de pizza ?':'Which pizza style?'),
@@ -3581,7 +3592,7 @@ export default function Home() {
     ...(yeastType==='sourdough' ? starterEvents.filter(e=>!e.isPast && e.kind!=='last_fed' && e.kind!=='known_peak').map(e=>+e.time) : []),
   ));
   const firstStarterAction = yeastType==='sourdough' ? starterEvents.find(e=>!e.isPast && +e.time===+firstRecipeAction && e.kind!=='last_fed' && e.kind!=='known_peak') : undefined;
-  const firstRecipeActionLabel = firstStarterAction?.label ?? (prefStartTime && +prefStartTime===+firstRecipeAction
+  const firstRecipeActionLabel = (firstStarterAction ? starterActionLabel(firstStarterAction.kind,fr) : undefined) ?? (prefStartTime && +prefStartTime===+firstRecipeAction
     ? (fr?'Préparer le ':'Make the ')+prefermentType
     : +firstRecipeAction < +startTime ? (fr?'Préparer le préferment':'Prepare the preferment') : (fr?'Pétrir la pâte':'Mix the dough'));
   const setupSteps = tab==='custom' ? CUSTOM_STEPS : SIMPLE_STEPS.filter(step=>step.id!==3);

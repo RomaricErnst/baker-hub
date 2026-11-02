@@ -4,9 +4,9 @@ export function formatPrefermentDose(grams: number, locale='en'): string {
   return `${new Intl.NumberFormat(locale,{maximumSignificantDigits:3}).format(grams)} g`;
 }
 
-export function prefermentDilution(doseGrams: number, prefermentWaterGrams: number) {
+export function prefermentDilution(doseGrams: number, prefermentWaterGrams: number, limitGrams = 0.5) {
   if (!Number.isFinite(doseGrams) || !Number.isFinite(prefermentWaterGrams)
-    || doseGrams <= 0 || doseGrams >= 0.5) return null;
+    || doseGrams <= 0 || doseGrams >= limitGrams) return null;
   // 1 g of the selected yeast in 99 g water makes a 1% suspension by mass.
   // Only the water in the aliquot enters the dough, not the discarded stock.
   const solutionGrams = doseGrams * 100;

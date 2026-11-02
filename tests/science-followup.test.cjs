@@ -26,3 +26,14 @@ test('scheduled cold stages last at least an hour and exposure remains conserved
   assert.ok(Math.abs(schedule.totalRTHours+schedule.totalColdHours-(+bake-+schedule.bulkFermStart)/3600000)<1e-8);
  }
 });
+
+test('intentional flavour and speed choices suppress the generic budget warning and defaults explain timing direction',()=>{
+ for(const temp of [22,31])for(let hours=48;hours<=72;hours++){
+  const dose=priority=>utils.recommendYeast(4,temp,hours-4,6,'instant',600,priority,'neapolitan');
+  for(const priority of ['speed','flavor'])assert.equal(dose(priority).warnings.some(w=>w.key==='fermentationBudget'),false);
+  const plain=dose(null),fraction=utils.fermentationBudget(plain.pct,4,temp,hours-4,6);
+  const warning=plain.warnings.find(w=>w.key==='fermentationBudget');
+  if(fraction>1.1 || fraction<.9)assert.equal(warning?.params.direction,fraction>1?'earlier':'later');
+  else assert.equal(warning,undefined);
+ }
+});

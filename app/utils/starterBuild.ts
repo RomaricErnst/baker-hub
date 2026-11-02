@@ -8,6 +8,12 @@ export function starterBuild(requiredGrams: number, maximumGrams: number, ratio:
   return {seed, flour, water:flour, total:seed + 2 * flour, keep};
 }
 
+export function starterActionLabel(kind: string, isFr: boolean): string | undefined {
+  if (kind==='fridge_in') return isFr ? 'Mettre le levain au réfrigérateur' : 'Refrigerate starter';
+  if (kind==='fridge_out') return isFr ? 'Sortir le levain du réfrigérateur' : 'Take starter out of the fridge';
+  return starterFeedRoleLabel(kind,isFr);
+}
+
 export function starterFeedRoleLabel(kind: string, isFr: boolean): string | undefined {
   switch (kind) {
     case 'refresh': return isFr ? 'Rafraîchir le levain' : 'Refresh feed';

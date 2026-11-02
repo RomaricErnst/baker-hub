@@ -38,3 +38,21 @@ test('profile and picker materialize the same work and sleep periods at local bo
     assert.equal(selectedAvailabilityCount(initial),2);
   }
 });
+
+test('a hot room poolish chill is a timed and coverable part of the preferment',()=>{
+  const {validateScheduleCandidate}=require('../app/utils/scheduleEdit.ts');
+  const hour=3600000,bake=new Date(2030,3,4,19,30),start=new Date(+bake-26*hour);
+  const input={id:'mix',at:start,start,bake,prefHours:10,hasPreferment:true,prefWarmupHours:0,prefCooldownHours:1,
+    supported:true,window:()=>({from:new Date(+bake-40*hour),to:new Date(+bake-12*hour)}),
+    methodValid:()=>true,now:+start-20*hour,blocks:[],kitchenTemp:31,preheatMin:45,mixerType:'hand',styleKey:'neapolitan',numItems:4};
+  const free=validateScheduleCandidate(input);
+  assert.ok(free.valid);assert.equal(free.schedule.prefermentCooldownHours,1);
+  const chill=free.schedule.availabilityActions.find(action=>action.id==='preferment-cold-in');
+  assert.equal(+chill.at,+start-hour);
+  const block={from:chill.at,to:new Date(+chill.at+60000),label:'Out'};
+  const blocked=validateScheduleCandidate({...input,blocks:[block]});
+  assert.equal(blocked.conflict,'preferment-cold-in');assert.equal(blocked.schedule.prefermentCooldownHours,undefined);
+  const covered=validateScheduleCandidate({...input,blocks:[{...block,coveredActions:[{id:chill.id,at:+chill.at}]}]});
+  assert.ok(covered.valid);
+  assert.equal(validateScheduleCandidate({...input,prefHours:.5}).issue,'preferment');
+});

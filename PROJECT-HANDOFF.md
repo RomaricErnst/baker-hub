@@ -1,3 +1,9 @@
+# 2 November 2026 — Wave 2 follow-up
+
+Wave 2 revises overnight preparation guidance, small yeast measurement advice, French and English bread copy, timing notices and temperature warnings. Hot poolish requires a validated, scheduled chilling action before recipe water calculations credit cooling. Earlier snapshots without that action retain the actual warm-poolish estimate.
+
+The thermal model is a calculation, not a physical bake trial. Automatic rebalancing for yeast-floor-limited long schedules, real iPhone verification, a native-reader pass and kitchen trials remain open. See the PR and report for final verification and deployment status.
+
 # 2 November 2026 — closing review of PR 38
 
 The review on production commit a5ebe78 found dead ends with weekday and night blocks, inconsistent results after date edits, and a mismatch between poolish warm-up and recipe water temperature. The follow-up release uses the complete preparation schedule to assess conflicts and searches later oven times with a movable mix. Covering an action applies to that occurrence. The warm-up must use the baker’s mixer and target dough temperature.

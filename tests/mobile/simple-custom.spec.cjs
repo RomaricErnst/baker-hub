@@ -108,6 +108,9 @@ for(const locale of ['fr','en']){
   await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:fr?'Créer ma recette simple':'Create my simple recipe',exact:true}).tap();
   await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
+  const yeastMeasure=page.getByText(fr?/^Levure fraîche : .*sèche active : /:/^Fresh yeast: .*active dry: /);
+  await expect(yeastMeasure).toBeVisible();
+  await expect(yeastMeasure).toContainText(fr?/c. à café|balance/:/tsp|scale/);
   await page.getByRole('button',{name:fr?'Modifier la quantité':'Edit quantity',exact:true}).tap();
   await quantity.fill('3');await quantity.blur();
   await actions(page).locator('[data-bh-forward]:visible').tap();
