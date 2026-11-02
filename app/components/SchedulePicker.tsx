@@ -1920,6 +1920,9 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
   const [fridgeOutTime, setFridgeOutTime]       = useState<Date | null>(null);
   const [solverResult, setSolverResult]         = useState<SourdoughSolverResult | null>(null);
   const [lastFeedRatio, setLastFeedRatio]         = useState<1 | 2 | 4 | 5 | 10>(lastFeedRatioProp ?? 1);
+  const starterPeakGuidance=isFr
+    ?'Le levain risque de ne pas être à son pic au pétrissage. Décalez le rafraîchi ou ajustez les proportions.'
+    :'The starter may be outside its peak window at mixing time. Move the refresh or adjust its ratio.';
   const simpleKnownPeakConflict = mode === 'simple' && isSourdough && planningMode === 'know_peak'
     && !!knownPeakTime && !knownPeakMixUsable(pendingStart, knownPeakTime,
       getPrefPeakH_RT('sourdough', kitchenTemp, styleKey) * (starterHasRye ? 0.8 : 1) * (starterMature ? 1 : 1.2) * (1 + 0.5 * Math.log(lastFeedRatio)), flourStrength);
@@ -6398,7 +6401,7 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
       :validation.reason==='busy'?(isFr?'Étape pendant une indisponibilité : ':'Step during unavailable hours: ')+(foldActionLabel(validation.conflict?.id??'',locale,mixingBatches) ?? (conflictNames[validation.conflict?.id??'']??['une étape','an action'])[isFr?0:1])+'.'
       :!pinKept?(isFr?'Ce rafraîchi ne conserve pas les horaires choisis. Revenez aux horaires recommandés pour les libérer.':'This feed cannot keep your chosen times. Return to recommended times to release them.')
       :!storageKept?(isFr?'Ce changement nécessite un autre passage au froid. Conservez le protocole ou choisissez un autre horaire.':'This change requires a different fridge step. Keep the protocol or choose another time.')
-      :(!peakOK||!allBatchPeaksUsable)?(isFr?'Le levain risque de ne pas être à son pic au pétrissage. Décalez le rafraîchi ou ajustez les proportions.':'The starter may be outside its peak window at mixing time. Move the refresh or adjust its ratio.')
+      :(!peakOK||!allBatchPeaksUsable)?starterPeakGuidance
       :!displayedPlanKept?(isFr?'Ces horaires nécessitent un nouveau calcul du plan du levain.':'These times need a fresh starter plan calculation.')
       :validation.reason==='range'?(isFr?'Ce pétrissage ne laisse pas une fermentation adaptée avant la cuisson fixée.':'This mixing time does not fit the fermentation window before your fixed bake.')
       :(isFr?'Aucun plan complet trouvé pour ces horaires. Essayez un autre créneau.':'No complete plan found for these times. Try another slot.');
@@ -6903,9 +6906,11 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
     }else onChange(candidate.start,candidate.bake,candidate.blocks,{preservePlan:true,prefOffsetHours:candidate.prefHours,timingOverrides:overrides});
     if(!candidate.assistance)onReady?.();
   };
+  const previewStarter='probe' in currentCandidate?currentCandidate.probe.result:null;
+  const timelineStarterEvents=displayStarterEvents.length?displayStarterEvents:(previewStarter?.starterEvents??[]);
   const coherentTimes=+pendingStart<+pendingEatTime&&(!committedSchedule||(+committedSchedule.divideBallTime<=+pendingEatTime&&
     (committedSchedule.availabilityActions??[]).every(action=>+action.at<=+pendingEatTime)))&&(!isSourdough||
-    (!!displayStarterEvents.length&&!solverResult?.windowTooShort&&starterHandsOnActions(displayStarterEvents,Date.now()).every(action=>+action.at<=+pendingStart)));
+    (completedMixAt!==undefined||!previewStarter?.windowTooShort&&!!timelineStarterEvents.length&&starterHandsOnActions(timelineStarterEvents,Date.now()).every(action=>+action.at<=+pendingStart)));
   const targetChoices=<div className="bh-target-choices">{suggestedTargets.map(candidate=><button type="button" key={+candidate.bake} onClick={()=>applySuggestedTarget(candidate)}>{candidate.bake.toDateString()===pendingEatTime.toDateString()?fmtCardHM(candidate.bake,isFr):fmtCardDT(candidate.bake,isFr)}{candidate.assistance?<small style={{display:'block'}}>{isFr?`Vérifier ${candidate.assistance} interventions à assurer`:`Review ${candidate.assistance} steps needing cover`}</small>:null}{eatTimeSet&&candidate.clearedAction&&<small style={{display:'block'}}>{foldActionLabel(candidate.clearedAction.id,locale,mixingBatches)??conflictNames[candidate.clearedAction.id]?.[isFr?0:1]} · {fmtCardHM(candidate.clearedAction.at,isFr)}</small>}</button>)}</div>;
 
   return (
@@ -6981,6 +6986,7 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
           </div>
 
         </div>
+        {!inputsOnly&&eatTimeSet&&!coherentTimes&&simpleKnownPeakConflict&&<p className="bh-key-note">{starterPeakGuidance}</p>}
         {!inputsOnly&&eatTimeSet&&!coherentTimes&&!currentCandidateValid&&<p className="bh-plan-state" role="status">
           {isFr?'La préparation nécessite un autre créneau.':'Preparation needs another available time.'}</p>}
         {searchingTargets&&eatTimeSet&&!currentCandidateValid&&<p role="status" data-searching-bakes>{isFr?'Recherche du premier créneau compatible…':'Finding the first available baking time…'}</p>}
