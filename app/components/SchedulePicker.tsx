@@ -5,7 +5,7 @@ import { loadProfile, updateProfile, DEFAULT_BLOCKERS, type StandardBlocker } fr
 import { formatClock, formatBakeDateTime } from '../utils/units';
 import { useState, useMemo, useEffect, useRef, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS } from '../utils';
+import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationHoursForYeast } from '../utils';
 import FermentChart, { scheduleColdIntervals, getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
 import FermentationReadiness from './FermentationReadiness';
 import ScheduleTimeline from './ScheduleTimeline';
@@ -228,6 +228,8 @@ interface SchedulePickerProps extends WarmupInputs {
   onPrefGoesInFridgeChange?: (inFridge: boolean) => void;
   /** Custom only: the baker's poolish storage. 'auto' lets the planner compare both. */
   poolishStorage?: 'auto' | 'fridge' | 'room';
+  /** Custom, direct dough: the baker's IDY % of flour. The plan is timed to it. */
+  yeastPctOverride?: number;
   onFridgeOutTimeChange?: (t: Date | null) => void;
   onUsingPeak2Change?: (v: boolean) => void;
   onFeed2TimeChange?: (t: Date | null) => void;
@@ -1794,7 +1796,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   function thermalInputs(method:string,inFridge:boolean){
     return {prefermentType:method, prefInFridge:inFridge,
       styleKey, kitchenTemp, fridgeTemp, mixerType, targetDoughTemp,
@@ -2281,6 +2283,12 @@ function FermentedSchedulePicker({ poolishStorage = 'auto', onSimpleDecisionChan
       findOptimalPositionSourdough(et, undefined, currentBlocks);
       return;
     }
+    // A chosen yeast amount fixes the fermentation length; search availability
+    // around that length instead of the style's default.
+    if (yeastPctOverride !== undefined && !hasPrefActive && yeastTimingFor(et, currentBlocks)) {
+      replanCurrentSchedule(currentBlocks, manualTimesRef.current, true);
+      return;
+    }
 
     const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
     // Scale fermentation windows by flour strength (W value / fermToleranceMultiplier).
@@ -2686,11 +2694,24 @@ function FermentedSchedulePicker({ poolishStorage = 'auto', onSimpleDecisionChan
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEatTime]);
 
+  // A new yeast amount re-times the plan at the same bake time.
+  const yeastOverrideMounted = useRef(false);
+  useEffect(() => {
+    if (!yeastOverrideMounted.current) { yeastOverrideMounted.current = true; return; }
+    // An explicit method or amount change is a new plan, even on a resumed session.
+    resumeFrozenRef.current = false;
+    if (isSourdough || !eatTimeSet || isNaN(pendingEatTime.getTime())) return;
+    const t = setTimeout(() => computeAndApplyRecommendation(solverBlocksRef.current, pendingEatTime), 0);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [yeastPctOverride]);
+
   // Changing poolish storage is a new method choice: replan at the same bake time.
   const poolishStorageMounted = useRef(false);
   useEffect(() => {
     if (!poolishStorageMounted.current) { poolishStorageMounted.current = true; return; }
     if (isSourdough || prefermentType !== 'poolish' || isNaN(pendingEatTime.getTime())) return;
+    resumeFrozenRef.current = false;
     const t = setTimeout(() => computeAndApplyRecommendation(solverBlocksRef.current, pendingEatTime), 0);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2815,19 +2836,35 @@ function FermentedSchedulePicker({ poolishStorage = 'auto', onSimpleDecisionChan
   const _rtH_render = climateRtH(_sfDef.rtH, kitchenTemp, isSourdough);
   // Green zone: always shows full style window — NOT clipped to nowHBF.
   // Zone guides the baker on what's ideal. Diamond clamped to nowHBF separately.
-  const renderSweetFrom = _prefColdH + _rtH_render;
-  const renderSweetTo   = _sfDef.minTotalFermH ?? 4;
+  const yeastTiming=useMemo(()=>yeastTimingFor(pendingEatTime,localBlocks),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [yeastPctOverride,flourStrength,isSourdough,prefermentType,styleKey,+pendingEatTime,localBlocks,kitchenTemp,preheatMin,mixerType,numItems,itemWeight,mixingBatches,fridgeTemp,hydrationPct]);
+  const renderSweetFrom = yeastTiming?.from ?? (_prefColdH + _rtH_render);
+  const renderSweetTo   = yeastTiming?.to ?? (_sfDef.minTotalFermH ?? 4);
   // Yellow zone extends 2h past green right edge
   const renderYellowTo  = Math.max(0.5, renderSweetTo - 2);
+  // A baker-chosen yeast amount sets the fermentation length: invert the dose
+  // model through the schedule builder so timing and amount agree. The window
+  // spans the same ±10% budget band the recipe uses for its budget note.
+  function yeastTimingFor(bake:Date,candidateBlocks:AvailabilityBlock[],method:string=prefermentType){
+    if(yeastPctOverride===undefined||isSourdough||(method!=='none'&&method!=='')||!styleKey||isNaN(+bake))return null;
+    const model=yeastPctOverride*flourStrength;
+    const o={bake,blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems:numItems??1,itemWeight:itemWeight??250,mixingBatches,fridgeTemp,hydration:hydrationPct??65};
+    const center=fermentationHoursForYeast(model,o);
+    if(center===null)return null;
+    const from=fermentationHoursForYeast(model,{...o,budget:1.1})??center;
+    const to=fermentationHoursForYeast(model,{...o,budget:0.9})??center;
+    return {center,from:Math.max(from,center),to:Math.min(to,center)};
+  }
   // _optimalMix = style sweet spot where dough peaks at bake = coldH + rtH
   const _biasedColdRender = biasCold(
     _sfDef.coldH,
     _sfDef.minColdH ?? 0,
     _sfDef.preferredColdH ?? _sfDef.coldH
   );
-  const _optimalMix = _sfDef.coldH > 0
+  const _optimalMix = yeastTiming?.center ?? (_sfDef.coldH > 0
     ? _biasedColdRender + _rtH_render
-    : _rtH_render;
+    : _rtH_render);
   // Dough peaks at bake when mix is in sweet zone — cold retard duration
   // flexes to match mix position. Outside sweet zone, bell shifts to show
   // under/over fermentation honestly. RT-only styles use fixed _optimalMix.
@@ -6339,7 +6376,7 @@ function FermentedSchedulePicker({ poolishStorage = 'auto', onSimpleDecisionChan
   const bulkConflict = schedule?.bulkConflict ?? null;
   // These are planning windows supplied by the existing engine, not a new
   // maturity model. In particular, a missing sourdough solve is unknown.
-  const commercialReadinessBounds = commercialReadinessWindow({
+  const commercialReadinessBounds = yeastTiming ? {from:yeastTiming.from,to:yeastTiming.to} : commercialReadinessWindow({
     ...(STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK), flourStrength,
     kitchenTemp, preheatMin, totalWindowH: (pendingEatTime.getTime() - (completedMixAt??(execution?.method==='none'?execution.actualAt:Date.now()))) / 3600000,
   });
@@ -6602,7 +6639,7 @@ function FermentedSchedulePicker({ poolishStorage = 'auto', onSimpleDecisionChan
       blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,
       prefHours:hasPrefActive?prefOffsetH:0,hasPreferment:hasPrefActive,prefWindow:execution?.prefWindow??prefWindow,pins:execution&&execution.method!=='none'?{preferment:new Date(execution.actualAt)}:undefined,prefWarmupHours:warmupFor(method, inFridge),prefCooldownHours:cooldownFor(method,inFridge),
       preferDaytime:true,supported:!!STYLE_FERM_DEFAULTS[styleKey]&&(!getBreadProtocol(styleKey)||getBreadProtocol(styleKey)!.supportedPreferments.includes(method as 'none')),
-      window:bake=>{const bounds=commercialReadinessWindow({...(STYLE_FERM_DEFAULTS[styleKey]??FERM_FALLBACK),flourStrength,kitchenTemp,preheatMin,totalWindowH:(+bake-(completedMixAt??(execution?.method==='none'?execution.actualAt:Date.now())))/3600000});return {from:bounds.from!==null?new Date(+bake-bounds.from*3600000):null,to:bounds.to!==null?new Date(+bake-bounds.to*3600000):null};},
+      window:bake=>{const bounds=yeastTimingFor(bake,candidateBlocks,method)??commercialReadinessWindow({...(STYLE_FERM_DEFAULTS[styleKey]??FERM_FALLBACK),flourStrength,kitchenTemp,preheatMin,totalWindowH:(+bake-(completedMixAt??(execution?.method==='none'?execution.actualAt:Date.now())))/3600000});return {from:bounds.from!==null?new Date(+bake-bounds.from*3600000):null,to:bounds.to!==null?new Date(+bake-bounds.to*3600000):null};},
       methodValid:times=>commercialPrefermentPlanValid({type:method,inFridge,mixTime:times.start,bakeTime:times.bake,offsetHours:times.prefHours,blocks:candidateBlocks,alreadyStarted:!!execution,mixCompleted:completedMixAt!==undefined}),
     };
   }

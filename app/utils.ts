@@ -168,6 +168,7 @@ export function recommendYeast(
   flour: number,            // grams — for absolute calculation
   priority: string | null,
   styleKey?: string,        // used to suppress false warnings for RT-only styles
+  doseOverride?: number,    // Custom: the baker's IDY %; the plan is re-timed to it
 ): YeastResult {
   const warnings: YeastWarning[] = [];
   let notRecommended = false;
@@ -213,6 +214,10 @@ export function recommendYeast(
   if (priority === 'flavor') rec *= 0.7;
   if (priority === 'speed') rec *= 1.8;
   rec = Math.min(1.5, rec);
+  // A baker-entered amount replaces the derived one. The schedule is timed to
+  // it upstream (fermentationHoursForYeast); the budget check below reports
+  // any residual mismatch, e.g. when availability moved the mix.
+  if (doseOverride !== undefined && Number.isFinite(doseOverride) && doseOverride > 0) rec = doseOverride;
   rec = Math.round(rec * 10000) / 10000;
 
   const budget = fermentationBudget(rec, totalRTHours, kitchenTemp, totalColdHours, fridgeTemp);
@@ -1551,6 +1556,37 @@ export interface RecipeResult {
   } | null;
 }
 
+/** Mix-to-bake hours at which a chosen IDY dose meets the fermentation target.
+ * Inverts the same budget recommendYeast uses, through the real schedule
+ * builder and cooling exposure, so the planned timing and the dose agree by
+ * construction. `budget` 1 is the target; 1.1 / 0.9 bound the readiness window.
+ * Returns null when no window up to 96 h is long enough for so little yeast. */
+export function fermentationHoursForYeast(modelIdyPct: number, o: {
+  bake: Date; blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number;
+  mixerType: MixerType; styleKey: string; numItems: number; itemWeight: number;
+  mixingBatches: number; fridgeTemp: number; hydration: number; budget?: number;
+}): number | null {
+  const target = o.budget ?? 1;
+  const reached = (hours: number) => {
+    try {
+      const schedule = buildSchedule(new Date(+o.bake - hours * 3600000), o.bake, o.blocks, o.kitchenTemp, o.preheatMin, o.mixerType, o.styleKey, o.numItems, o.mixingBatches, false);
+      const exposure = doughCoolingExposure(schedule, o.numItems, o.itemWeight, o.hydration);
+      return fermentationBudget(modelIdyPct, exposure.warmHours, o.kitchenTemp, exposure.coldHours, o.fridgeTemp);
+    } catch { return NaN; }
+  };
+  const minimum = 2 + o.preheatMin / 60, maximum = 96;
+  if (!(modelIdyPct > 0)) return null;
+  const longest = reached(maximum);
+  if (!(longest >= target)) return null;
+  if (reached(minimum) >= target) return minimum;
+  let lo = minimum, hi = maximum;
+  for (let i = 0; i < 28; i++) {
+    const mid = (lo + hi) / 2;
+    if (reached(mid) >= target) hi = mid; else lo = mid;
+  }
+  return Math.round(hi * 4) / 4;
+}
+
 export function calculateRecipe(
   styleKey: StyleKey,
   ovenType: AnyOvenType,
@@ -1580,6 +1616,7 @@ export function calculateRecipe(
   measuredFlourTemp?: number,              // measured temperature at mixing, °C
   measuredPrefermentTemp?: number,         // measured poolish, biga or levain temperature, °C
   totalFlourTarget?: number,               // bread: total formula flour, preferment included
+  yeastPctOverride?: number,               // custom, direct dough: final IDY % chosen by the baker
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = (ovenType in OVEN_TYPES)
@@ -1728,6 +1765,10 @@ export function calculateRecipe(
         flour,
         effectivePriority,
         styleKey,
+        // The blend step below divides by the tolerance multiplier; multiply
+        // here so the recipe shows exactly the amount the baker entered.
+        yeastPctOverride !== undefined && (!prefermentType || prefermentType === 'none')
+          ? yeastPctOverride * (blendProfile?.fermToleranceMultiplier ?? 1) : undefined,
       );
 
       // STEP 4 — Apply fermentation tolerance from blend
