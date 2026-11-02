@@ -120,3 +120,6 @@ if(!process.env.CLOSING_SCENARIO){
  assert.ok(coveredKinds.has('starter-feed'),'Matrix did not exercise a blocked feed');
  assert.ok([...coveredKinds].some(id=>id.startsWith('fold-')),'Matrix did not exercise a blocked fold');
 }
+dom.window.close();
+// React's scheduler keeps a Node MessageChannel alive after jsdom unmounts.
+process.exit(0);

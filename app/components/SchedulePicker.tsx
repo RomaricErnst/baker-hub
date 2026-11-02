@@ -6691,7 +6691,9 @@ function FermentedSchedulePicker({ prefermentFlourPct,doughMassG,hydrationPct,fl
       if(!checked&&Object.keys(overrides).length===0){
         const fresh=evaluateStarterCandidate({mix:null,feed:null,refresh:null},candidateBlocks,undefined,false);
         if(fresh.probe.result && fresh.validation.reason!=='timing' && fresh.validation.reason!=='date')checked=fresh;
-        if(!fresh.valid && candidateBlocks.length){
+        // A biologically valid starter agenda can still have a blocked dough
+        // action (for example an early bake). Preserve its available feed times.
+        if(!fresh.valid && fresh.validation.reason!=='busy' && candidateBlocks.length){
           // Find a biologically feasible plan at the requested bake time. Keep
           // its conflicts visible so the baker can explicitly arrange each action.
           const open=searchStarterCandidate({mix:null,feed:null,refresh:null},[],false);
