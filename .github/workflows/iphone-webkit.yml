@@ -141,7 +141,50 @@ jobs:
       - name: Validate full preparation order and availability across 900 schedules
         run: node --test tests/followup-plan-invariants.test.cjs
       - run: node tests/roundtrip/build-path.mjs
-      - name: Compare fresh plans with plans reached through date changes
-        run: node tests/roundtrip/path-independence.mjs .ci-tools/starter-path.js
+      - name: Check eighteen starter and availability combinations
+        run: node tests/roundtrip/closing-levain.mjs .ci-tools/starter-path.js
       - name: Accept later feasible bakes from constrained starter plans
         run: node tests/roundtrip/feasible-fallback.mjs .ci-tools/starter-path.js
+
+  schedule-repair-grid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Report dough repairs and verify all offered schedules across 4608 cases
+        run: TZ=UTC node tests/closing-schedule-grid.cjs
+
+  starter-paths:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9]
+    env:
+      TZ: Asia/Singapore
+      NOW: '2026-11-01T08:00:00Z'
+      SETTLE: '150'
+      PATH_SHARDS: '10'
+      PATH_SHARD: ${{ matrix.shard }}
+      PATH_CASES: '200'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm install --prefix .ci-tools --no-audit --no-fund esbuild@0.28.2 jsdom@30.1.1
+      - run: node tests/roundtrip/build-path.mjs
+      - name: Compare fresh starter plans with plans reached through date changes
+        run: node tests/roundtrip/path-independence.mjs .ci-tools/starter-path.js

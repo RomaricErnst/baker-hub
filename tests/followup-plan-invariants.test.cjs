@@ -15,7 +15,13 @@ test('every accepted draft has ordered preparation, useful cold stages and avail
   const blocks=[{from:new Date(now+33*hour),to:new Date(now+42*hour),label:'Work'}];
   const request=input({start,bake,from:new Date(+start-hour),to:new Date(+bake-hour),styleKey,kitchenTemp,blocks,isSourdough:['pain_levain','sourdough'].includes(styleKey)});
   const result=assessScheduleDraft(request);
-  if(!result.valid){rejected++;continue;}
+  if(!result.valid){
+   rejected++;
+   const schedule=result.schedule;
+   assert.ok(schedule && (schedule.availabilityConflicts.length || schedule.preparationInvalid || schedule.bulkConflict || schedule.coldExitConflict),
+    'A clash-free schedule the builder supports must pass draft validation: '+JSON.stringify({styleKey,kitchenTemp,horizon,hourOfDay,reason:result.reason}));
+   continue;
+  }
   accepted++;const s=result.schedule;
   const ordered=[start,s.bulkFermStart,s.divideBallTime,s.finalProofStart,bake];
   for(let i=1;i<ordered.length;i++)assert.ok(+ordered[i]>=+ordered[i-1],JSON.stringify({styleKey,kitchenTemp,horizon,hourOfDay,ordered}));

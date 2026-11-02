@@ -102,6 +102,8 @@ for(const temp of [22,28])for(const style of ['pain_levain','sourdough'])for(con
  await wait(SETTLE*3);
  cases++;
  if(!window.__h.rec.scheduleValid){
+  const deadline=RealDate.now()+120000;
+  while(doc.querySelector('[data-searching-bakes]')&&RealDate.now()<deadline)await wait(25);
   const button=doc.querySelector('.bh-target-presets .bh-target-choices button') || buttons().find(e=>/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) .*→$/.test(e.textContent.trim()));
   if(!button){failures++;console.log('NO FALLBACK',{temp,style,loc,horizon},doc.body.textContent.slice(-1000));}
   else{

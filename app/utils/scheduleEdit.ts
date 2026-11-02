@@ -48,8 +48,10 @@ export function validateScheduleCandidate(input: EditInput, times: EditTimes = {
   if(hasPreferment&&(prefHours<=0||(input.prefWindow&&(prefHours<input.prefWindow.min||prefHours>input.prefWindow.max))))return fail('preferment');
   if(input.pins?.mix&&+start!==+input.pins.mix)return fail('timing');
   if(hasPreferment&&input.pins?.preferment&&Math.abs(+pref-+input.pins.preferment)>1)return fail('preferment');
-  const conflict=findAvailabilityConflicts([...actions,...(input.extraActions??[]),...(input.completedMixAt===undefined?[{id:'mix',at:start}]:[])],input.blocks,now)[0];
-  if(conflict)return fail('busy',{conflict:conflict.action.id});
+  // Use the actual mixing span (and its exact baker acknowledgement).
+  // A second, zero-duration event at the same start would discard that choice.
+  const conflict=built.conflict ?? findAvailabilityConflicts([...actions,...(input.extraActions??[])],input.blocks,now)[0]?.action;
+  if(conflict)return fail('busy',{conflict:conflict.id});
   if(!input.methodValid(times))return fail('preferment');
   if(candidateSchedule&&input.formulaValid&&!input.formulaValid(candidateSchedule,times))return fail('formula');
   // Every portion uses the same preferment, prepared at the original anchor.

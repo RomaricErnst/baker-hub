@@ -73,7 +73,8 @@ function signature() {
   // component simply has not emitted yet). Parent blocks are reported apart:
   // the parent only receives blocks on a commit, on main as on the branch.
   const n = (v) => (v === undefined ? null : v);
-  const data = JSON.stringify({ start: n(r.start), feed: n(r.feed), fridgeOut: n(r.fridgeOut), events: n(r.events),
+  const offer=doc.querySelector('.bh-target-presets .bh-target-choices button')?.textContent ?? null;
+  const data = JSON.stringify({ offer, start: n(r.start), feed: n(r.feed), fridgeOut: n(r.fridgeOut), events: n(r.events),
     scheduleValid: n(r.scheduleValid), starterValid: n(r.starterValid), nextRatio: n(r.nextRatio) });
   return { text, data, blocks: JSON.stringify(r.blocks??[]), valid:r.scheduleValid===true };
 }
@@ -96,27 +97,57 @@ function firstDiff(a, b) {
 const at=h=>new RealDate(FROZEN+h*3600000);
 let failures=0,cases=0;
 async function solve(sc,path=[]){
- window.localStorage.clear();const el=doc.getElementById('root');el.innerHTML='';
- const root=await mount(el,{...sc,start:at(0),lastFed:at(-168),page:true,full:true,ratioMode:'recommend'});
+ window.localStorage.clear();
+ if(sc.commercial)window.localStorage.setItem('bh_profile_v1',JSON.stringify({version:1,blockers:{sleep:{enabled:false,from:'23:00',to:'07:00'},work:{enabled:false,from:'09:00',to:'18:00'}}}));
+ const el=doc.getElementById('root');el.innerHTML='';
+ const root=await mount(el,{...sc,start:at(0),lastFed:at(-sc.ageHours),page:true,full:true});
  await wait(SETTLE*3);
  for(const horizon of path){
  const target=at(horizon),value=target.getFullYear()+'-'+String(target.getMonth()+1).padStart(2,'0')+'-'+String(target.getDate()).padStart(2,'0')+'T'+String(target.getHours()).padStart(2,'0')+':'+String(target.getMinutes()).padStart(2,'0');
  const input=doc.querySelector('input[type="datetime-local"]');
  Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set.call(input,value);
  input.dispatchEvent(new window.Event('input',{bubbles:true}));input.dispatchEvent(new window.Event('change',{bubbles:true}));
- await wait(450+SETTLE*2);
+ input.dispatchEvent(new window.FocusEvent('focusout',{bubbles:true}));
+ await wait(SETTLE*2+50);
+ if(window.__h.rec.bake!==+target) throw Error('Date edit failed to commit '+target.toISOString());
 }
+ const timeout=Date.now()+60000;
+ while(doc.querySelector('[data-searching-bakes]') && Date.now()<timeout) await wait(50);
+ if(doc.querySelector('[data-searching-bakes]'))throw Error('Repair search failed to settle');
  const result=signature();
  root.unmount();await wait(10);return result;
 }
-for(const temp of [22,28])for(const style of ['pain_levain','sourdough'])for(const loc of ['rt','fridge'])for(const horizon of [24,36,48]){
- const sc={temp,style,loc,age:'week',eat:at(horizon)};
+// Deterministic seed makes the failing case reproducible in any CI shard.
+let seed=139703;
+const random=n=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return Math.floor(seed/4294967296*n);};
+const count=Number(process.env.PATH_CASES??200);
+const shards=Number(process.env.PATH_SHARDS??1),shard=Number(process.env.PATH_SHARD??0);
+if(shard===0){
+ const tuesday=new RealDate(FROZEN);
+ tuesday.setDate(tuesday.getDate()+(2-tuesday.getDay()+7)%7);
+ tuesday.setHours(0,0,0,0);
+ const midnight=(+tuesday-FROZEN)/3600000;
+ const sc={temp:22,style:'neapolitan',loc:'rt',age:'today',ageHours:4,ratioMode:'keep',commercial:true,eat:at(midnight+45)};
+ const moved=await solve(sc,[midnight]),fresh=await solve({...sc,eat:at(midnight)});
+ if(!moved.valid || JSON.parse(moved.data).start>=tuesday.toISOString() || moved.data!==fresh.data) throw Error('Backward poolish edit '+moved.data+' fresh '+fresh.data+' '+moved.text.slice(-2400));
+}
+for(let index=0;index<count;index++){
+ const horizon=24+random(145)/4;
+ const ageHours=[6,26,168][random(3)];
+ const sc={temp:18+random(14),style:random(2)?'pain_levain':'sourdough',loc:random(2)?'rt':'fridge',
+   age:ageHours===168?'week':ageHours===26?'yesterday':'today',ageHours,ratioMode:random(2)?'keep':'recommend',eat:at(horizon)};
+ const path=[60+random(48)/4,18+random(24)/4];
+ const extra=random(3);
+ for(let edit=0;edit<extra;edit++)path.push(24+random(144)/4);
+ path.push(horizon);
+ if(index%shards!==shard || index<Number(process.env.PATH_FROM??0))continue;
  const direct=await solve(sc);
- const via=await solve({...sc,eat:at(48)},[36,60,horizon]);
- cases++; console.log("CHECKED",cases,style,temp,loc,horizon);
+ const via=await solve({...sc,eat:at(48)},path);
+ cases++;
  if(direct.data!==via.data||direct.blocks!==via.blocks){
-  failures++;console.log('PATH DIFFERENCE',JSON.stringify(sc),firstDiff(direct.data,via.data),firstDiff(direct.blocks,via.blocks));
+  failures++;origErr('PATH DIFFERENCE',index,sc,path,firstDiff(direct.data,via.data),firstDiff(direct.blocks,via.blocks));
+  break;
  }
 }
-console.log({cases,failures,runtimeErrors:errors.length});
+console.log({cases,failures,runtimeErrors:errors});
 process.exit(failures||errors.length?1:0);

@@ -53,7 +53,7 @@ test('actual apply handler persists pins and preferment offset immediately; rese
   const fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript');
   const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
   const start=source.indexOf('const handleScheduleChange =');
-  const end=source.indexOf('const prefRemoveFromFridgeTime',start);
+  const end=source.indexOf('\n  };',start)+5;
   const writes=[],state={};
   const context={execution:undefined,mixExecution:undefined,mixExecution:undefined,completedMixAt:undefined,normalizeTimingOverrides,sessionRestored:false,eatTime:null,recipeGenerated:false,protocolStale:false,isRestoringRef:{current:false},
     repairKey:(st,et,bl,offset)=>JSON.stringify([+st,+et,bl,offset]),
@@ -81,6 +81,13 @@ test('actual apply handler persists pins and preferment offset immediately; rese
   assert.deepEqual(JSON.parse(JSON.stringify(writes[3].blocks[0].fridgeRemoval)),arranged[0].fridgeRemoval);
   assert.equal(writes[3].blocks[0].from,+arranged[0].from);
   assert.equal(writes[3].eatTime,+bake);
+  context.eatTime=bake;
+  const coveredActions=[{id:'fold-1',at:+mix+3600000}];
+  const coveredBlocks=[{...arranged[0],coveredActions}];
+  context.handler(mix,bake,coveredBlocks,{preservePlan:true});
+  assert.deepEqual(writes[4].blocks[0].coveredActions,coveredActions);
+  context.handler(mix,new Date(+bake+900000),coveredBlocks,{preservePlan:true});
+  assert.equal(writes[5].blocks[0].coveredActions,undefined);
 });
 
 test('preferment locking is explicit and requires a valid preparation time',()=>{

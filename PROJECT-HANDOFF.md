@@ -1,3 +1,9 @@
+# 2 November 2026 — closing review of PR 38
+
+The review on production commit a5ebe78 found dead ends with weekday and night blocks, inconsistent results after date edits, and a mismatch between poolish warm-up and recipe water temperature. The follow-up release uses the complete preparation schedule to assess conflicts and searches later oven times with a movable mix. Covering an action applies to that occurrence. The warm-up must use the baker’s mixer and target dough temperature.
+
+The closing brief scopes this release to Wave 1. Its kitchen trials, physical iPhone checks, native French reading and Wave 2 changes remain separate. The exposed credential reported in external project instructions requires its owner to rotate it. Repository CI and branch protection are separate controls. See the pull request for the results of the 18 starter cases, the 4,608 dough schedules, the edit histories and the mixer comparison.
+
 # 1 November 2026 — PR 37 follow-up
 
 The follow-up review found additional plan-order, availability and editor failures on PR 37. Its runtime observations supersede the earlier response document's claims about night avoidance, carry-over, forward labels and French completeness. Record the final follow-up PR, tested commit and production deployment here after release.
