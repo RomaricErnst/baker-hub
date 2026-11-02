@@ -218,10 +218,10 @@ test('an obsolete yeast step in a levain draft recovers to a visible Custom page
   sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:7,advancedStep:7,setupOverview:false,activeTab:'setup'}));
  },{now:NOW,bake:BAKE});
  await page.goto('/');
- const method=page.locator('#step-8:visible');
- await expect(method.getByRole('heading')).toBeVisible();
- await expect(method.locator('[data-bh-forward]')).toBeDisabled();
- await method.getByRole('button',{name:/sourdough|levain/i}).first().tap();
- await method.locator('[data-bh-forward]').tap();
- await expect(page.locator('#step-10:visible')).toBeVisible();
+ // Levain styles have one leavening: no Starter step to answer, levain is adopted.
+ const fineTune=page.locator('#step-10:visible');
+ await expect(fineTune.getByRole('heading')).toBeVisible();
+ await expect(page.locator('#step-8:visible')).toHaveCount(0);
+ await expect.poll(async()=>JSON.parse(await page.evaluate(()=>localStorage.getItem('bh_session_v1'))||'{}').prefermentType).toBe('levain');
+ await expect(fineTune.locator('[data-bh-forward]')).toBeEnabled();
 });
