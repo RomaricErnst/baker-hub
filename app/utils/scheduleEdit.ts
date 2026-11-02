@@ -1,12 +1,12 @@
 import {assessScheduleDraft, type ScheduleDraftInput} from './scheduleDraft';
-import {findAvailabilityConflicts} from './scheduleAvailability';
+import {findAvailabilityConflicts,isOvernightPreparation,type AvailabilityAction} from './scheduleAvailability';
 
 const HOUR = 3600000;
 export type EditTimes = {start: Date; bake: Date; prefHours: number};
 export type EditIssue = 'date'|'past'|'preferment'|'range'|'busy'|'timing'|'unsupported'|'formula';
 export interface EditInput extends Omit<ScheduleDraftInput,'from'|'to'|'methodValid'|'extraActions'> {
   id: string; at: Date; prefHours: number; hasPreferment: boolean;
-  prefWarmupHours: number; supported: boolean;
+  prefWarmupHours: number; prefCooldownHours?:number; supported: boolean;
   preferDaytime?: boolean;
   prefWindow?: {min: number; max: number};
   window: (bake: Date) => {from: Date|null; to: Date|null};
@@ -39,7 +39,9 @@ export function validateScheduleCandidate(input: EditInput, times: EditTimes = {
   const bounds=input.window(bake);
   const completed=input.completedPrefermentAt;
   if(completed!==undefined&&(!Number.isFinite(completed)||Math.abs(+pref-completed)>1))return fail('preferment');
-  const actions=hasPreferment?[...(completed===undefined?[{id:'preferment',at:pref}]:[]),...(input.prefWarmupHours>0&&input.completedMixAt===undefined?[{id:'preferment-cold-out',at:new Date(+start-input.prefWarmupHours*HOUR)}]:[])]:[];
+  const conditioning=prefermentConditioningAction(input,start);
+  if(conditioning&&+conditioning.at<+pref)return fail('preferment');
+  const actions=hasPreferment?[...(completed===undefined?[{id:'preferment',at:pref}]:[]),...(conditioning&&input.completedMixAt===undefined?[conditioning]:[])]:[];
   // Always rebuild dependent actions, including for a buildable invalid preview.
   const built=assessScheduleDraft({...input,start,bake,...bounds,extraActions:[...actions,...(input.extraActions??[])],methodValid:true,now});
   candidateSchedule=built.schedule;
@@ -60,6 +62,10 @@ export function validateScheduleCandidate(input: EditInput, times: EditTimes = {
     const batchTimes = {...times, start:batch.start, prefHours:prefHours+(+batch.start-+start)/HOUR};
     return (input.prefWindow && batchTimes.prefHours>input.prefWindow.max) || !input.methodValid(batchTimes);
   })) return fail('preferment');
+  if(built.valid&&built.schedule&&conditioning?.id==='preferment-cold-in'&&input.completedMixAt===undefined){
+    built.schedule.prefermentCooldownHours=input.prefCooldownHours;
+    built.schedule.availabilityActions=[...(built.schedule.availabilityActions??[]),conditioning];
+  }
   return {times,schedule:built.schedule,valid:built.valid,
     issue:built.reason==='method'?'preferment':built.reason,conflict:built.conflict?.id};
 }
@@ -76,15 +82,21 @@ export type FixedBakeSearchResult = {candidate:EditResult; found:boolean; search
 
 /** Sleep is a preference for automatic recommendations. Explicit blocks and
  * all fermentation limits are still checked against the canonical plan. */
+export function prefermentConditioningAction(input:{prefWarmupHours:number;prefCooldownHours?:number},mix:Date):AvailabilityAction|undefined {
+  const hours=input.prefWarmupHours||input.prefCooldownHours;
+  if(!hours)return undefined;
+  return {id:input.prefWarmupHours?'preferment-cold-out':'preferment-cold-in',at:new Date(+mix-hours*HOUR)};
+}
 function overnightSteps(input:EditInput, candidate:EditResult):number {
   if(!input.preferDaytime)return 0;
-  const overnight=(at:Date)=>at.getHours()<7||at.getHours()>=23;
   const {start,prefHours}=candidate.times;
-  let count=(candidate.schedule?.availabilityActions??[]).filter(a=>
-    a.id!=='bake' && (overnight(a.at)||(a.end&&overnight(new Date(+a.end-1))))).length;
-  if(input.hasPreferment && overnight(new Date(+start-prefHours*HOUR))) count++;
-  if(input.hasPreferment && input.prefWarmupHours && overnight(new Date(+start-input.prefWarmupHours*HOUR))) count++;
-  return count;
+  const actions=[...(candidate.schedule?.availabilityActions??[])];
+  if(input.hasPreferment){
+    actions.push({id:'preferment',at:new Date(+start-prefHours*HOUR)});
+    const conditioning=prefermentConditioningAction(input,start);
+    if(conditioning&&!actions.some(action=>action.id===conditioning.id&&+action.at===+conditioning.at))actions.push(conditioning);
+  }
+  return actions.filter(isOvernightPreparation).length;
 }
 /** Compare fully validated storage protocols using their existing maturity targets.
  * A target-duration plan takes precedence over retaining yesterday's repair.
@@ -106,7 +118,7 @@ export function recommendPreferment(options: {inFridge:boolean; input:EditInput}
       for(let at=first;at<=now+3600000;at+=step){
         if(new Date(at).getDate()!==new Date(now).getDate())break;
         const early=findFixedBakeSchedule(input,{...pins,preferment:new Date(at)});
-        if(early.found||(early.preparationRepaired&&!result.found)){result=early;break;}
+        if((early.found&&(!result.found||overnightSteps(input,early.candidate)<=overnightSteps(input,result.candidate)))||(early.preparationRepaired&&!result.found)){result=early;break;}
       }
     }
     return {...option,result};
@@ -155,7 +167,8 @@ export function findFixedBakeSchedule(input: EditInput, pins: TimingPins = input
         add(+block.to-(+action.at-+input.start));
         if(action.end)add(+block.from-(+action.end-+input.start));
       }
-      if(input.prefWarmupHours>0)add(+block.to+input.prefWarmupHours*HOUR);
+      const conditioning=input.prefWarmupHours||input.prefCooldownHours;
+      if(conditioning)add(+block.to+conditioning*HOUR);
     }
   }
   const ordered=[...starts].sort((a,b)=>Math.abs(a-+input.start)-Math.abs(b-+input.start)||a-b);

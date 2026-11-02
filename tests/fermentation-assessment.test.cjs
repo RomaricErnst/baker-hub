@@ -184,3 +184,49 @@ test('availability uses half-open boundaries and scheduled actions, not passive 
  assert.equal(hasActionConflict([from],blocks,+to),false);
  assert.equal(hasActionConflict([new Date(+from+1)],blocks,now),true);
 });
+
+test('two days of direct bakes favor waking hours within each style’s fermentation window',()=>{
+ const {findFixedBakeSchedule}=require('../app/utils/scheduleEdit.ts');
+ const {isOvernightPreparation}=require('../app/utils/scheduleAvailability.ts');
+ const React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{NextIntlClientProvider}=require('next-intl');
+ const Picker=require('../app/components/SchedulePicker.tsx').default;
+ const messages=require('../messages/en.json');
+ const hour=3600000;
+ let checked=0,nightPlans=0,noonEvening=0,daytime=0,enrichedHard=0;
+ for(const styleKey of ['neapolitan','baguette','brioche'])for(const day of [2,3])for(let clock=0;clock<24;clock++){
+  const bake=new Date(2030,10,day,clock),now=+bake-48*hour;
+  const range=commercialReadinessWindow({...STYLE_FERM_DEFAULTS[styleKey],flourStrength:1,kitchenTemp:22,preheatMin:45,totalWindowH:48});
+  const start=new Date(+bake-(range.to+range.from)*hour/2);
+  const input={id:'mix',at:start,start,bake,prefHours:0,hasPreferment:false,prefWarmupHours:0,supported:true,
+   window:()=>({from:new Date(+bake-range.from*hour),to:new Date(+bake-range.to*hour)}),
+   methodValid:()=>true,now,blocks:[],kitchenTemp:22,preheatMin:45,mixerType:'hand',styleKey,numItems:4,preferDaytime:true};
+  const plan=findFixedBakeSchedule(input);
+  assert.ok(plan.found,styleKey+' '+bake);
+  const awake=t=>t.getHours()>=7&&t.getHours()<23;
+  const overnight=plan.candidate.schedule.availabilityActions.filter(a=>a.id!=='bake'&&(!awake(a.at)||(a.end&&!awake(new Date(+a.end-1)))));
+  assert.deepEqual(plan.candidate.schedule.availabilityActions.filter(isOvernightPreparation),overnight);
+  const markup=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',timeZone:'Asia/Singapore',messages},
+   React.createElement(Picker,{startTime:plan.candidate.times.start,eatTime:bake,blocks:[],preheatMin:45,styleKey,kitchenTemp:22,
+    bakeType:styleKey==='neapolitan'?'pizza':'bread',mode:'simple',prefermentType:'none',mixerType:'hand',numItems:4,
+    schedule:plan.candidate.schedule,recipeGenerated:true,confirmedPlan:true,sessionRestored:true,onChange:()=>{}})));
+  assert.equal(markup.includes('data-overnight-preparation'),overnight.length>0,styleKey+' '+clock);
+  if(overnight.length)nightPlans++;
+  if(clock===12||clock===19){noonEvening++;if(!overnight.length)daytime++;}
+  if(styleKey==='brioche' && (clock===12||clock===19)){
+   const blocks=[];
+   for(let offset=-3;offset<=0;offset++){
+    const from=new Date(2030,10,day+offset,23),to=new Date(2030,10,day+offset+1,7);
+    blocks.push({from,to,label:'Night'});
+   }
+   const hard=findFixedBakeSchedule({...input,blocks});
+   if(hard.found){
+    enrichedHard++;
+    for(const action of hard.candidate.schedule.availabilityActions)assert.ok(awake(action.at)&&(!action.end||awake(new Date(+action.end-1))));
+   }
+  }
+  checked++;
+ }
+ console.log({checked,nightPlans,noonEvening,daytime,enrichedHard});
+ assert.ok(enrichedHard>0,'The enforced night blocks must still permit an enriched bake');
+ assert.equal(checked,144);assert.ok(daytime>noonEvening/2,'Most noon and evening recipes should have entirely daytime preparation');
+});

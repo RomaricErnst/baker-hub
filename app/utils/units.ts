@@ -51,6 +51,14 @@ export function formatClock(date: Date, locale: string): string {
   return locale.startsWith('fr') ? `${h}h${m}` : `${h % 12 || 12}:${m}${h < 12 ? 'am' : 'pm'}`;
 }
 
+export function formatBakeDateTime(date: Date, locale: string): string {
+  if (!Number.isFinite(+date)) return '—';
+  const lang = locale.startsWith('fr') ? 'fr-FR' : 'en-GB';
+  const weekday = date.toLocaleDateString(lang, {weekday:'short'});
+  const month = date.toLocaleDateString(lang, {month:'short'});
+  return `${weekday} ${date.getDate()} ${month} · ${formatClock(date,locale)}`;
+}
+
 export function formatLongDay(date: Date, locale: string): string {
   const fr=locale.startsWith('fr');
   const formatter=new Intl.DateTimeFormat(fr?'fr-FR':'en-GB',{weekday:'long',day:'numeric',month:'long'});

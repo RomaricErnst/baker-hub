@@ -98,3 +98,29 @@ test('recipe opens on start and bake times and displays the selected salt percen
   a.ok(text.includes(locale==='fr'?'0,54 g':'0.54 g'));
  }
 });
+
+test('yeast rows offer a practical measure when a spoon would miss the dose',()=>{
+ for(const locale of ['en','fr'])for(const pref of ['none','poolish'])for(const dose of [.227,.54,.8]){
+  const r=make('instant',pref);
+  if(r.preferment)r.preferment.prefYeastGrams=dose;
+  else {r.yeast.convertedGrams=dose;r.yeast.grams=dose;r.yeast.dilutionTip=null;}
+  const html=render(r,pref,undefined,locale,false,{mode:'simple'});
+  if(dose===.8)a.match(html,locale==='fr'?/¼ c. à café/:/¼ tsp/);
+  else {
+   a.match(html,locale==='fr'?/méthode de dilution ci-dessous/:/dilution method below/);
+   a.match(html,locale==='fr'?/Petite dose de levure/:/Small yeast dose/);
+  }
+ }
+});
+
+test('poolish stage names the same chill time as the generated thermal schedule',()=>{
+ const r=make('instant','poolish');
+ const mixingTime=new Date(2026,10,3,17,15);
+ for(const locale of ['en','fr']){
+  r.thermal.prefermentCooldownHours=1.25;
+  const text=render(r,'poolish',undefined,locale,false,{mixingTime});
+  a.match(text,locale==='fr'?/Placez la poolish au réfrigérateur.*16\s*h\s*00/:/Refrigerate the poolish.*4:00pm/i);
+  r.thermal.prefermentCooldownHours=0;
+  a.doesNotMatch(render(r,'poolish',undefined,locale,false,{mixingTime}),/Placez la poolish au réfrigérateur|Refrigerate the poolish/i);
+ }
+});

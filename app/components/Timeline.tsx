@@ -12,6 +12,7 @@ import { kneadMinFor, autolyseMinFor, preMixAutolyseMinFor, type MixerType } fro
 import { StepIcon, IconProof } from './StepIcons';
 import { formatPrefermentDose } from '../utils/prefermentDose';
 import LearnModal from './LearnModal';
+import { poolishCoolingAt } from '../utils/poolishCoolingAt';
 import { getBreadProtocol } from '../utils/breadProfiles';
 
 interface TimelineProps {
@@ -105,6 +106,7 @@ export function buildItems(
   styleKey?: string,
   locale = 'en',
   itemWeight?: number,
+  chillPoolishAt?: Date | null,
 ): TimelineStep[] {
   const items: TimelineStep[] = [];
   const profile = getBreadProtocol(styleKey ?? '');
@@ -134,6 +136,11 @@ export function buildItems(
     });
   }
 
+  if (prefermentType==='poolish' && chillPoolishAt) {
+    items.push({kind:'step', id:'preferment-cold-in', stepKind:'cold', time:chillPoolishAt,
+      label:lang==='fr'?'Réfrigérer la poolish':'Chill the poolish', iconKey:'cold', durationH:null,
+      tip:lang==='fr'?'Couvrez la poolish et réfrigérez-la jusqu’au pétrissage.':'Cover and chill the poolish until mixing time.'});
+  }
   // 0a2 — Remove Poolish / Biga from Fridge (fridge protocol only)
   if (prefGoesInFridge && prefRemoveFromFridgeTime && prefStartTime &&
       (prefermentType === 'poolish' || prefermentType === 'biga')) {
@@ -206,7 +213,7 @@ export function buildItems(
   // Divide & ball tip
   function divideBallTip(): string {
     const _bread = bakeType === 'bread';
-    let tip = t(_bread ? 'timeline.divideTipBread' : 'timeline.divideTip', { n: numItems, plural: numItems !== 1 ? 's' : '' });
+    let tip = _bread && numItems===1 ? (lang==='fr'?'Façonnez le pâton et couvrez-le pour l’apprêt.':'Shape the loaf and cover it for the final proof.') : t(_bread ? 'timeline.divideTipBread' : 'timeline.divideTip', { n: numItems, plural: numItems !== 1 ? 's' : '' });
     if (schedule.coldRetard1Start) {
       tip += t(_bread ? 'timeline.divideTipColdBread' : 'timeline.divideTipCold');
     }
@@ -296,7 +303,7 @@ export function buildItems(
     items.push({
       kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
       time: schedule.divideBallTime,
-      label: styleKey === 'greek_pita' ? (lang === 'fr' ? 'Diviser et bouler' : 'Divide and round') : t(bakeType === 'bread' ? 'timeline.steps.divideShape' : 'timeline.steps.divideBall'),
+      label: styleKey === 'greek_pita' ? (lang === 'fr' ? 'Diviser et bouler' : 'Divide and round') : bakeType==='bread'&&numItems===1 ? (lang==='fr'?'Façonnage':'Shape the loaf') : t(bakeType === 'bread' ? 'timeline.steps.divideShape' : 'timeline.steps.divideBall'),
       icon: '',
       iconKey: 'divide',
       tip: divideBallTip(),
@@ -354,7 +361,7 @@ export function buildItems(
     items.push({
       kind: 'step', id: 'divide_ball', stepKind: 'divide_ball',
       time: schedule.divideBallTime,
-      label: styleKey === 'greek_pita' ? (lang === 'fr' ? 'Diviser et bouler' : 'Divide and round') : t(bakeType === 'bread' ? 'timeline.steps.divideShape' : 'timeline.steps.divideBall'),
+      label: styleKey === 'greek_pita' ? (lang === 'fr' ? 'Diviser et bouler' : 'Divide and round') : bakeType==='bread'&&numItems===1 ? (lang==='fr'?'Façonnage':'Shape the loaf') : t(bakeType === 'bread' ? 'timeline.steps.divideShape' : 'timeline.steps.divideBall'),
       icon: '',
       iconKey: 'divide',
       tip: divideBallTip(),
@@ -494,7 +501,7 @@ export default function Timeline({
   })();
 
   const items = useMemo(
-    () => buildItems(schedule, blocks, displayStartTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, t, bakeType, styleKey, _fmtLocale, recipe ? recipe.totalDough / Math.max(1,numItems) : undefined),
+    () => buildItems(schedule, blocks, displayStartTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, t, bakeType, styleKey, _fmtLocale, recipe ? recipe.totalDough / Math.max(1,numItems) : undefined,poolishCoolingAt(schedule,recipe)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [schedule, blocks, displayStartTime, eatTime, preheatMin, mixerType, numItems, feedTime, kitchenTemp, isSourdough, prefStartTime, prefermentType, prefGoesInFridge, prefRemoveFromFridgeTime, hydration, oil, bakeType, styleKey, _fmtLocale, recipe],
   );

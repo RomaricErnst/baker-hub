@@ -101,7 +101,7 @@ test('cooking phase shows local step numbers while pizza advice leads into one q
  const props={schedule,mixerType:'hand',styleKey:'neapolitan',ovenType:'home_oven_steel',kitchenTemp:22,numItems:4,oil:0,hydration:65,locale:'en',phase:'cooking',onNavigateToPizzaParty:()=>{}};
  const render=()=>renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,props)));
  const initial=render();
- assert.match(initial,/aria-label="Preheat Oven · Step 1"/);
+ assert.match(initial,/aria-label="Preheat the oven · Step 1"/);
  assert.match(initial,/aria-label="Bake the pizzas · Step 2"/);
  const finalSection=initial.split('data-guide-title="Bake the pizzas"')[1];
  const globalStep=Number(initial.match(/data-guide-step="(\d+)" data-guide-phase="cooking" data-guide-title="Bake the pizzas"/)[1]);
@@ -225,12 +225,33 @@ test('mixing flour rows exclude prefermented flour and conserve each batch',()=>
  }
 });
 
-test('Simple gives either kneading method and one loaf needs no division',()=>{
+test('Simple gives the selected kneading method and one loaf needs no division',()=>{
  for (const locale of ['fr','en']){
   const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-25T18:00Z'),[],22,45,'stand','pain_campagne');
   const recipe=utils.calculateRecipe('pain_campagne','dutch_oven',1,800,22,'normal',schedule,6,'instant','simple','stand');
   const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require('../messages/'+locale+'.json'),timeZone:'UTC'},React.createElement(Guide,{schedule,recipe,mixerType:'stand',styleKey:'pain_campagne',kitchenTemp:22,numItems:1,oil:0,hydration:70,locale,simpleMode:true})));
-  assert.ok(html.includes(locale==='fr'?'Pétrissez à la main ou au robot':'Knead by hand or with a mixer'));
+  assert.ok(html.includes(locale==='fr'?'aux vitesses autorisées par votre pétrin':'permitted dough speeds'));
   assert.doesNotMatch(html,/Divide into 1 equal pieces|Divisez en 1 pâtons|Remove balls|Sortez les boules du frigo/);
+ }
+});
+
+test('a hot poolish gets one timed cooling task in both the timeline and preparation',()=>{
+ const {buildItems}=require('../app/components/Timeline.tsx');
+ const {poolishCoolingAt}=require('../app/utils/poolishCoolingAt.ts');
+ const start=new Date('2030-04-01T12:00Z'),bake=new Date('2030-04-02T12:00Z');
+ const prefStartTime=new Date(+start-8*3600000);
+ const schedule=utils.buildSchedule(start,bake,[],33,45,'stand','neapolitan',4);
+ schedule.prefermentCooldownHours=utils.requiredPrefCooldownH({prefermentType:'poolish', prefInFridge:false,styleKey:'neapolitan', kitchenTemp:33,fridgeTemp:6,mixerType:'stand',prefermentFlourPct:50,doughMassG:1040,hydrationPct:62,targetDoughTemp:22});
+ const recipe=utils.calculateRecipe('neapolitan','home_oven_standard',4,260,33,'normal',schedule,6,'instant','custom','stand',62,undefined,undefined,undefined,'poolish',null,50,undefined,22,false,0,false);
+ const chillAt=poolishCoolingAt(schedule,recipe);
+ assert.ok(chillAt>prefStartTime && chillAt<start);
+ const items=buildItems(schedule,[],start,bake,45,'stand',4,null,33,false,prefStartTime,'poolish',false,null,62,0,k=>k,'pizza','neapolitan','en',260,chillAt);
+ const tasks=items.filter(item=>item.id==='preferment-cold-in');
+ assert.equal(tasks.length,1);
+ assert.equal(+tasks[0].time,+start-recipe.thermal.prefermentCooldownHours*3600000);
+ for(const locale of ['en','fr']){
+  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require('../messages/'+locale+'.json'),timeZone:'UTC'},React.createElement(Guide,{schedule,recipe,mixerType:'stand',styleKey:'neapolitan',kitchenTemp:33,numItems:4,oil:0,hydration:62,locale,prefermentType:'poolish',prefStartTime})));
+  assert.ok(html.includes(locale==='fr'?'Réfrigérer la poolish':'Chill the poolish'));
+  assert.ok(html.includes(utils.formatTime(chillAt,locale)));
  }
 });

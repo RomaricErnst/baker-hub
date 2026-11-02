@@ -47,6 +47,12 @@ export function actionConflicts(action: AvailabilityAction, blocks: Availability
   return findAvailabilityConflicts([action], blocks).length > 0;
 }
 
+export function isOvernightPreparation(action:AvailabilityAction):boolean {
+  if(action.id==='bake')return false;
+  const atNight=(stamp:Date)=>stamp.getHours()<7||stamp.getHours()>=23;
+  return atNight(action.at)||Boolean(action.end&&atNight(new Date(+action.end-1)));
+}
+
 export function planActions(dough:AvailabilityAction[],method:AvailabilityAction[],completedMixAt?:number):AvailabilityAction[] {
   const seen=new Set<string>();
   return [...dough,...method].filter(action=>{

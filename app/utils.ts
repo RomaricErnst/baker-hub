@@ -152,8 +152,8 @@ export interface YeastResult {
 }
 
 // Existing UI instructs 1 g yeast + waterG water: stock mass is waterG + 1.
-export function commercialDilution(doseGrams: number, availableWater = Infinity) {
-  if (!Number.isFinite(doseGrams) || doseGrams <= 0 || doseGrams >= 0.5) return null;
+export function commercialDilution(doseGrams: number, availableWater = Infinity, limitGrams = 0.5) {
+  if (!Number.isFinite(doseGrams) || doseGrams <= 0 || doseGrams >= limitGrams) return null;
   const waterG = 100;
   if (doseGrams * waterG > availableWater) return null;
   return {waterG, solutionG: doseGrams * (waterG + 1), waterInSolutionGrams: doseGrams * waterG, remainingWaterGrams: Number.isFinite(availableWater) ? availableWater - doseGrams * waterG : undefined};
@@ -216,12 +216,12 @@ export function recommendYeast(
   rec = Math.round(rec * 10000) / 10000;
 
   const budget = fermentationBudget(rec, totalRTHours, kitchenTemp, totalColdHours, fridgeTemp);
-  if (budget > 1.1 || budget < 0.9) {
-    warnings.push({key: 'fermentationBudget', params: {percent: Math.round(budget * 100)}});
+  if (priority !== 'speed' && priority !== 'flavor' && (budget > 1.1 || budget < 0.9)) {
+    warnings.push({key: 'fermentationBudget', params: {percent: Math.round(budget * 100), direction: budget > 1 ? 'earlier' : 'later'}});
   }
 
   // Hot climate warnings — suppressed for styles that are intentionally RT-only
-  if (kitchenTemp >= 28 && totalColdHours === 0 && totalRTHours > 4 && !isRTOnlyStyle) {
+  if (kitchenTemp >= 28 && totalRTHours > 4 && !isRTOnlyStyle) {
     warnings.push({ key: 'hotClimateRT', params: { temp: kitchenTemp } });
   }
 
@@ -452,6 +452,7 @@ export interface ScheduleResult {
   poachMinutes?: number;
   /** Known hands-on work; passive rests are deliberately absent. */
   availabilityActions?: AvailabilityAction[];
+  prefermentCooldownHours?: number;
   availabilityConflicts?: AvailabilityConflict[];
   /** Planned assistance only; this never marks the preparation action completed. */
   fridgeRemovalArranged?: boolean;
@@ -645,7 +646,7 @@ export function solveWaterTempEnthalpy(p: {
  * Use only explicit recipe inputs here. Never feed solver-derived percentages
  * or durations back into the schedule that produced them.
  */
-export function requiredPrefWarmupH(o: {
+interface PrefermentThermalInputs {
   prefermentType: string;
   prefInFridge: boolean;
   styleKey: string;
@@ -657,8 +658,20 @@ export function requiredPrefWarmupH(o: {
   doughMassG?: number;
   hydrationPct?: number;
   flourTempC?: number;
-}): number {
-  if (o.prefermentType !== 'poolish' || !o.prefInFridge) return 0;
+}
+
+export function requiredPrefWarmupH(o: PrefermentThermalInputs): number {
+  return o.prefInFridge ? prefermentConditioningHours(o) : 0;
+}
+
+export function requiredPrefCooldownH(o: PrefermentThermalInputs): number {
+  return o.prefInFridge ? 0 : prefermentConditioningHours(o);
+}
+
+function prefermentConditioningHours(o: PrefermentThermalInputs): number {
+  if (o.prefermentType !== 'poolish') return 0;
+  const fromTemp = o.prefInFridge ? o.fridgeTemp : o.kitchenTemp;
+  const toTemp = o.prefInFridge ? o.kitchenTemp : o.fridgeTemp;
 
   const style = ALL_STYLES[o.styleKey as StyleKey];
   const hydPct = o.hydrationPct ?? style?.hydration ?? 62;
@@ -682,13 +695,13 @@ export function requiredPrefWarmupH(o: {
 
   for (let w = 0; w <= thermalHorizon + 1e-9; w += 0.25) {
     const prefTempC = prefTempAfterWarmup(
-      prefFlourG + prefWaterG, prefHydPct, o.fridgeTemp, o.kitchenTemp, w,
+      prefFlourG + prefWaterG, prefHydPct, fromTemp, toTemp, w,
     );
     const { idealWaterTemp } = solveWaterTempEnthalpy({
       targetFDT, kitchenTemp: o.kitchenTemp, flourTemp: o.flourTempC ?? o.kitchenTemp, friction,
       flourG, waterG, saltG, prefFlourG, prefWaterG, prefTempC,
     });
-    if (idealWaterTemp <= WATER_TEMP_MAX) return w;
+    if (o.prefInFridge ? idealWaterTemp <= WATER_TEMP_MAX : idealWaterTemp >= WATER_TEMP_MIN) return w;
   }
   return thermalHorizon;
 }
@@ -1512,6 +1525,7 @@ export interface RecipeResult {
     targetDoughTemp: number;
     /** True when the ideal water temperature is outside the practical 2–40 °C range. */
     waterWasClamped: boolean;
+    prefermentCooldownHours?: number;
     /** Signed achieved dough temperature minus the requested target (°C). */
     doughTempResidualC: number;
   };
@@ -1802,20 +1816,21 @@ export function calculateRecipe(
   // A preferment is always declared, cold or at room temperature: its water
   // is locked inside it and is not free water to steer the dough with.
   const isFlourPref = prefermentType === 'poolish' || prefermentType === 'biga';
-  const prefIsCold = !!preferment && prefInFridge && isFlourPref;
   let prefTempC = kitchenTemp;
-  if (prefIsCold && preferment) {
+  let prefermentCooldownHours = 0;
+  if (isFlourPref && preferment) {
     const prefHydPct = PREFERMENT_TYPES[prefermentType as PrefermentType].hydration;
-    const prefWarmupH = requiredPrefWarmupH({
+    const conditioningHours = prefInFridge ? requiredPrefWarmupH({
       prefermentType: prefermentType as string,
       prefInFridge, styleKey, kitchenTemp, fridgeTemp,
       mixerType, prefermentFlourPct: flourPctOverride, doughMassG: numItems * itemWeight,
       hydrationPct: manualHydration ?? s.hydration, flourTempC: flourTemp,
       targetDoughTemp: mode === 'custom' ? targetDoughTemp : undefined,
-    });
+    }) : prefermentType === 'poolish' ? schedule.prefermentCooldownHours ?? 0 : 0;
+    if (!prefInFridge) prefermentCooldownHours = conditioningHours;
     prefTempC = prefTempAfterWarmup(
       preferment.prefFlour + preferment.prefWater, prefHydPct,
-      fridgeTemp, kitchenTemp, prefWarmupH,
+      prefInFridge ? fridgeTemp : kitchenTemp, prefInFridge ? kitchenTemp : fridgeTemp, conditioningHours,
     );
   }
   // The levain's flour and water are ALREADY inside `flour` and `water` — the
@@ -1894,6 +1909,7 @@ export function calculateRecipe(
       doughTempC: thermal.doughTempC,
       freeWaterG: thermal.freeWaterG,
       targetDoughTemp: targetFDT,
+      prefermentCooldownHours,
       waterWasClamped: Math.abs(thermal.idealWaterTemp - thermal.waterTemp) > 0.1,
       doughTempResidualC: thermal.doughTempC - targetFDT,
     }, hydration, totalDough,

@@ -1,5 +1,15 @@
 import type { RecipeResult } from '../utils';
 import { MIXER_TYPES, type MixerType } from '../data';
+export function mixingWaterCaption(mixer: string, locale: string): string {
+  const fr=locale==='fr';
+  switch (mixer) {
+    case 'hand': return fr?'Température de l’eau pour le pétrissage à la main':'Water temperature for hand kneading';
+    case 'stand': return fr?'Température de l’eau pour le pétrissage au robot':'Water temperature for mixing with a stand mixer';
+    case 'spiral': return fr?'Température de l’eau pour le pétrissage au pétrin à spirale':'Water temperature for mixing with a spiral mixer';
+    case 'no_knead': return fr?'Température de l’eau pour une pâte sans pétrissage':'Water temperature for no-knead dough';
+    default: return fr?'Température de l’eau':'Water temperature';
+  }
+}
 export function splitAmount(total: number, count: number, index: number, decimals = 0) {
   const scale = 10 ** decimals, ticks = Math.round(total * scale), base = Math.floor(ticks / count);
   return (index === count - 1 ? ticks - base * (count - 1) : base) / scale;

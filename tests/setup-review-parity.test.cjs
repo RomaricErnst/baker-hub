@@ -10,9 +10,14 @@ test('summary reports each chosen flour with its actual two or three slot ratio'
  context.flourBlend.flour3=null;vm.runInNewContext('{'+code+'}',context);assert.equal(context.result,'70% First brand + 30% Second brand');
 });
 test('review includes calendar date and fridge temperature without changing stored values',()=>{
- const context={eatTime:new Date(2030,2,4,18,30),fr:true,kitchenTemp:23,fridgeTemp:5};
- vm.runInNewContext(ts.transpileModule('const '+declaration('reviewTiming')+'; const '+declaration('reviewKitchen')+'; result=[reviewTiming,reviewKitchen];', {}).outputText,context);
- assert.match(context.result[0],/4 mars 2030/);assert.match(context.result[0],/18:30/);assert.equal(context.result[1],'23°C · réfrigérateur 5°C');
+ require('./load-production.cjs');
+ const {formatBakeDateTime}=require('../app/utils/units.ts');
+ for(const [locale,expected] of [['fr','lun. 4 mars · 18h30'],['en','Mon 4 Mar · 6:30pm']]){
+  const context={eatTime:new Date(2030,2,4,18,30),fr:locale==='fr',locale,formatBakeDateTime,kitchenTemp:23,fridgeTemp:5};
+  vm.runInNewContext(ts.transpileModule('const '+declaration('reviewTiming')+'; const '+declaration('reviewKitchen')+'; result=[reviewTiming,reviewKitchen];', {}).outputText,context);
+  assert.equal(context.result[0],expected);
+  assert.match(context.result[1],locale==='fr'?/réfrigérateur 5°C/:/fridge 5°C/i);
+ }
 });
 test('both review actions regenerate stale recipes and expose explicit edits; guide footer removed',()=>{
  assert.equal((source.match(/onBackToRecipe=\{finishSetupEdit\}/g)||[]).length,2);
@@ -28,4 +33,14 @@ test('both review actions regenerate stale recipes and expose explicit edits; gu
  assert.match(source,/Mettre à jour la recette/);assert.match(source,/aria-label=\{`\$\{fr \? 'Modifier' : 'Edit'\}/);
  assert.match(source,/prefermentFlourPct \?\? 20/);
  assert.doesNotMatch(source,/Share \+ party — end of the journey|← Recette|Voir ma recette/);
+});
+
+test('first recipe action uses the current locale when a restored starter event has an old label',()=>{
+ require('./load-production.cjs');
+ const {starterActionLabel}=require('../app/utils/starterBuild.ts');
+ for(const [fr,expected] of [[true,'Rafraîchi avant pétrissage'],[false,'Pre-mix feed']]){
+  const context={firstStarterAction:{kind:'pre_mix',label:'Pre-mix Feed'},fr,starterActionLabel};
+  vm.runInNewContext(ts.transpileModule('const '+declaration('firstRecipeActionLabel')+';result=firstRecipeActionLabel;',{}).outputText,context);
+  assert.equal(context.result,expected);
+ }
 });

@@ -1,13 +1,14 @@
 'use client';
+import { poolishCoolingAt } from '../utils/poolishCoolingAt';
 import { starterBuild, starterFeedRoleLabel } from '../utils/starterBuild';
 import type { StarterEvent } from './SchedulePicker';
 import { recommendedFlourName, flourProductName } from '../lib/flourGuidance';
-import { mixingBatchPlan } from '../utils/mixingBatches';
+import { mixingWaterCaption, mixingBatchPlan } from '../utils/mixingBatches';
 import { useState, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { type RecipeResult, type YeastResult, type YeastWarningKey } from '../utils';
+import { commercialDilution, type RecipeResult, type YeastResult, type YeastWarningKey } from '../utils';
 import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, FLOUR_DATA, type PrefermentType, type FlourBlend } from '../data';
-import { type UnitSystem, displayWeight, displayTemp, formatPercent, formatClock } from '../utils/units';
+import { type UnitSystem, displayWeight, displayTemp, formatPercent, formatBakeDateTime } from '../utils/units';
 import PlanNav from './PlanNav';
 import WaterPreparation, { type WaterSource, type WaterSettingsProps } from './WaterPreparation';
 import { formatPrefermentDose, formatYeastDose, dryYeastSpoonHint, prefermentDilution } from '../utils/prefermentDose';
@@ -387,7 +388,7 @@ export default function RecipeOutput({
   const locale = useLocale();
   const u = units ?? 'metric';
   const wStr = (g: number) => displayWeight(g, u, locale);
-  const formatTimeLabel = (date: Date) => date.toLocaleDateString(locale==='fr'?'fr-FR':'en-GB',{weekday:'short',day:'numeric',month:'short'})+' '+formatClock(date,locale);
+  const formatTimeLabel = (date: Date) => formatBakeDateTime(date,locale);
   const pctStr = (n:number) => n>0&&n<1
     ? n.toLocaleString(locale,{maximumSignificantDigits:2})+(locale==='fr'?' %':'%')
     : formatPercent(n,locale);
@@ -470,21 +471,28 @@ export default function RecipeOutput({
   const itemLabel = numItems === 1 ? 'ball / loaf' : numItems <= 4 ? 'balls' : 'pieces';
 
   const isSpiral = mixerType === 'spiral';
-  const mixerName = MIXER_TYPES[mixerType as keyof typeof MIXER_TYPES]?.[locale==='fr'?'nameFr':'name'];
-  const waterAssumption = mode==='simple' && mixerName ? <p>{locale==='fr'?'Température de l’eau pour':'Water temperature for'} {mixerName}
+  const waterAssumption = mode==='simple' ? <p>{mixingWaterCaption(mixerType,locale)}
     {onMixerChange && <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={()=>onMixerChange(mixerType==='hand'?'stand':'hand')}>{mixerType==='hand'?(locale==='fr'?'Utiliser un robot':'Use a mixer'):(locale==='fr'?'Pétrir à la main':'Knead by hand')}</button>}
   </p>:null;
   const waterSubNode = <WaterPreparation readOnly waterGrams={waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} achievedDoughTempC={result.thermal?.doughTempC} waterWasClamped={result.thermal?.waterWasClamped} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
   const finalDoughWaterSubNode = <WaterPreparation readOnly waterGrams={result.preferment?.finalWater ?? waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} achievedDoughTempC={result.thermal?.doughTempC} waterWasClamped={result.thermal?.waterWasClamped} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
 
-  // Yeast sub-line: IDY conversion only (precision scale moved to its own callout)
-  const needsPrecision = yeastInfo ? yeastInfo.convertedGrams < 0.5 : false;
+  const spoonFor = (dose:number,type:string) => dryYeastSpoonHint(dose,type,locale);
+  const yeastSpoon = yeastInfo && spoonFor(yeastInfo.convertedGrams,yeastInfo.yeastType);
+  const needsPrecision = !!yeastInfo && yeastInfo.convertedGrams<1 && !yeastSpoon;
+  const dilutionTip = yeastInfo && needsPrecision ? commercialDilution(yeastInfo.convertedGrams,waterMain,1) : yeastInfo?.dilutionTip;
+  const prefermentSpoon = pf && spoonFor(pf.prefYeastGrams,pf.prefYeastType ?? 'instant');
+  const prefermentDoseDilution = pf && !prefermentSpoon ? prefermentDilution(pf.prefYeastGrams,pf.prefWater,1) : null;
+  function measureHint(spoon:string|null|undefined,dilution:boolean) {
+    if (spoon) return spoon;
+    return dilution ? t('recipeOutput.weighOrDilute') : t('recipeOutput.weighDose');
+  }
   const yeastSub = yeastInfo
     ? (() => {
         const isInstant = yeastInfo.yeastType === 'instant';
         const idyPart = !isInstant ? `= ${formatYeastDose(yeastInfo.grams, locale)} IDY` : null;
         const alternatives = mode==='simple' && isInstant ? (locale==='fr' ? `Levure fraîche : ${formatYeastDose(yeastInfo.grams*3,locale)} · sèche active : ${formatYeastDose(yeastInfo.grams*1.33,locale)}` : `Fresh yeast: ${formatYeastDose(yeastInfo.grams*3,locale)} · active dry: ${formatYeastDose(yeastInfo.grams*1.33,locale)}`) : null;
-        return [alternatives, dryYeastSpoonHint(yeastInfo.convertedGrams, yeastInfo.yeastType, locale), idyPart].filter(Boolean).join(' · ') || undefined;
+        return [alternatives, measureHint(yeastSpoon,!!dilutionTip), idyPart].filter(Boolean).join(' · ') || undefined;
       })()
     : undefined;
 
@@ -566,6 +574,7 @@ export default function RecipeOutput({
         const pf = result.preferment!;
         const pd = PREFERMENT_TYPES[prefermentType];
         const prefTotal = Math.round(pf.prefFlour + pf.prefWater + pf.prefYeastGrams);
+        const chillAt = mixingTime ? poolishCoolingAt(mixingTime,result) : null;
 
         return (
           <details open>
@@ -594,12 +603,13 @@ export default function RecipeOutput({
               <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(pf.prefWater)} noPct
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefWater / pf.prefFlour * 1000) / 10) : undefined}
                 sub={t('recipeOutput.atRoomTemp')} />
+              {chillAt && <p>{t('recipeOutput.chillPoolishAt',{time:formatTimeLabel(chillAt)})}</p>}
               {pf.prefYeastGrams > 0 && (
                 <IngRow
                   label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{t('recipeOutput.ingredientYeast', {
                     type: pf.prefYeastType ? ((YEAST_TYPES as Record<string, { shortName: string }>)[pf.prefYeastType]?.shortName ?? 'IDY') : 'IDY'
                   })}</span>}
-                  grams={formatPrefermentDose(pf.prefYeastGrams,locale)} noPct
+                  grams={formatPrefermentDose(pf.prefYeastGrams,locale)} sub={measureHint(prefermentSpoon,!!prefermentDoseDilution)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
@@ -959,7 +969,7 @@ export default function RecipeOutput({
           Hidden in preferment mode: all commercial yeast lives in the
           poolish/biga there, so callouts based on the main-dough yeast
           amount would contradict the preferment card. */}
-      {yeastInfo && hasPref && result.preferment && result.preferment.prefYeastGrams > 0 && result.preferment.prefYeastGrams < 0.5 && (
+      {yeastInfo && hasPref && result.preferment && result.preferment.prefYeastGrams > 0 && result.preferment.prefYeastGrams < 1 && !prefermentSpoon && (
         <details className="bh-disclosure">
           <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Petite dose de levure' : 'Small yeast dose'}</summary>
         <div style={{
@@ -977,7 +987,7 @@ export default function RecipeOutput({
             {t('recipeOutput.precisionScaleBody', { amount: formatPrefermentDose(result.preferment.prefYeastGrams,locale) })}
             {(() => {
               const pf = result.preferment!;
-              const dilution = prefermentDilution(pf.prefYeastGrams, pf.prefWater);
+              const dilution = prefermentDoseDilution;
               if (!dilution) return null;
               const yeastName = (YEAST_TYPES as Record<string, { shortName: string }>)[pf.prefYeastType]?.shortName ?? 'IDY';
               const f = (g:number)=>formatPrefermentDose(g,locale);
@@ -992,7 +1002,7 @@ export default function RecipeOutput({
       {yeastInfo && !hasPref && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-          {(yeastInfo.hitMinFloor || needsPrecision || yeastInfo.dilutionTip) && <details className="bh-disclosure">
+          {(yeastInfo.hitMinFloor || needsPrecision || dilutionTip) && <details className="bh-disclosure">
             <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Petite dose de levure' : 'Small yeast dose'}</summary>
           {/* Min floor callout — shown when 0.5g IDY floor was applied */}
           {yeastInfo.hitMinFloor && !needsPrecision && (
@@ -1031,16 +1041,16 @@ export default function RecipeOutput({
 
 
           {/* Dilution tip */}
-          {yeastInfo.dilutionTip && (
+          {dilutionTip && (
             <InfoCard
               icon=""
               level="info"
               title={t('recipeOutput.dilutionTitle')}
               body={t('recipeOutput.dilutionBody', {
-                waterG: yeastInfo.dilutionTip.waterG,
-                solutionG: Number(yeastInfo.dilutionTip.solutionG.toFixed(3)),
-                waterInSolutionG: Number((yeastInfo.dilutionTip.waterInSolutionGrams ?? yeastInfo.dilutionTip.solutionG * 100 / 101).toFixed(3)),
-                remainingWaterG: Number((yeastInfo.dilutionTip.remainingWaterGrams ?? waterMain - yeastInfo.dilutionTip.solutionG * 100 / 101).toFixed(3)),
+                waterG: dilutionTip.waterG,
+                solutionG: Number(dilutionTip.solutionG.toFixed(3)),
+                waterInSolutionG: Number((dilutionTip.waterInSolutionGrams ?? dilutionTip.solutionG * 100 / 101).toFixed(3)),
+                remainingWaterG: Number((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101).toFixed(3)),
               })}
             />
           )}
