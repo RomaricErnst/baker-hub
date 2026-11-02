@@ -809,9 +809,10 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
 // Timing lives in Preparation, not on the recipe: the first action, the bake,
 // and — in Simple, where it was assumed rather than asked — the kitchen
 // temperature the times depend on.
-function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,assumedKitchen,onAdjustTiming}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;assumedKitchen?:React.ReactNode;onAdjustTiming:()=>void}){
+function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,assumedKitchen,onAdjustTiming}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;helperAt?:Date;assumedKitchen?:React.ReactNode;onAdjustTiming:()=>void}){
   return <section data-preparation-timing aria-label={fr?'Horaires':'Timing'} style={{border:'1px solid var(--border)',borderRadius:12,padding:'12px 14px',margin:'0 0 16px',background:'var(--warm)'}}>
     <p style={{margin:'0 0 4px',fontSize:15,fontWeight:600,color:'var(--char)'}}>{startLabel ?? (fr?'Commencer':'Start')} · {formatBakeDateTime(startAt,locale)}</p>
+    {helperAt&&<p data-helper-step style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'Quelqu’un sort la pâte du réfrigérateur':'Someone takes the dough out of the fridge'} · {formatBakeDateTime(helperAt,locale)}</p>}
     <p style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'Enfournement':'Into the oven'} · {formatBakeDateTime(bakeAt,locale)}</p>
     {assumedKitchen}
     <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={onAdjustTiming}>{fr?'Ajuster les horaires':'Adjust timing'}</button>
@@ -3281,7 +3282,6 @@ export default function Home() {
     updateProfile({mixerType:value});
   }
   const manualMixing = mixerType === 'hand' || mixerType === 'no_knead';
-  const showMixingBatches = suggestedMixingBatches > 1 || mixingBatches !== undefined;
   const mixingBatchControl = mixerType ? <MixingBatchControl total={plannedDoughG} capacity={mixerCapacityG} count={selectedMixingBatches} recommended={suggestedMixingBatches} manual={manualMixing} knownCapacity={customMixerCapacityG!==undefined} override={mixingBatches!==undefined} fr={locale==='fr'} onChange={setMixingBatches}/> : null;
 
 
@@ -3582,19 +3582,6 @@ export default function Home() {
     </>}
   </>;
 
-  const optionalEquipment=<>
-              <details className="bh-disclosure" style={{marginBottom:16}}>
-                <summary style={{minHeight:44,cursor:'pointer',padding:'10px 0'}}>{fr?'Cuisson':'Cooking'} · {ovenDisplayName ?? (fr?'Choisir':'Choose')} <span style={{color:'var(--terra)'}}>— {fr?'Modifier':'Change'}</span></summary>
-                <OvenPicker bakeType={bakeType ?? 'pizza'} styleKey={styleKey} selected={ovenType} construction={ovenConstruction} onConstructionChange={setOvenConstruction} onSelect={value=>{setOvenType(value);confirmSetting('oven',value);}}/>
-              </details>
-              <details className="bh-disclosure" style={{marginBottom:16}}>
-                <summary style={{minHeight:44,cursor:'pointer',padding:'10px 0'}}>{fr?'Pétrissage':'Mixing'} · {mixerType ? localName(MIXER_TYPES[mixerType]) : (fr?'Choisir':'Choose')} <span style={{color:'var(--terra)'}}>— {fr?'Modifier':'Change'}</span></summary>
-                <SimpleMixerPicker locale={locale} selected={mixerType} styleKey={styleKey ?? undefined} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);setCustomMixerCapacityG(undefined);}setMixerType(value);confirmSetting('mixer',value);}}/>
-                {mixerType && !manualMixing && <label style={{display:'block',marginTop:12}}>{fr?'Capacité de pâte du pétrin (g)':'Mixer dough capacity (g)'}<input type="number" min={100} max={1000000} step={100} value={customMixerCapacityG ?? ''} placeholder={String(mixerCapacityG)} onChange={e=>{const value=Number(e.target.value);if(!e.target.value)setCustomMixerCapacityG(undefined);else if(Number.isFinite(value)&&value>=100&&value<=1000000)setCustomMixerCapacityG(value);}} style={{display:'block',width:140,minHeight:44}}/></label>}
-                {!showMixingBatches && mixingBatchControl}
-              </details>
-              {showMixingBatches && mixingBatchControl}
-  </>;
   const mealNoun=fr?'Garnitures':bakeType==='pizza'?'Toppings':'Fillings';
   const sourced = (value:string|null, picked:boolean) => !value || picked ? value : value+' · '+(fr?'valeur proposée':'suggested');
   const reviewEquipment = [ovenType && sourced(ovenDisplayName ?? '',confirmed('oven',ovenType)),mixerType && sourced(localName(MIXER_TYPES[mixerType]),confirmed('mixer',mixerType))].filter(Boolean).join(' · ');
@@ -3611,6 +3598,8 @@ export default function Home() {
   const firstRecipeActionLabel = (firstStarterAction ? starterActionLabel(firstStarterAction.kind,fr) : undefined) ?? (prefStartTime && +prefStartTime===+firstRecipeAction
     ? (fr?'Préparer le ':'Make the ')+prefermentType
     : +firstRecipeAction < +startTime ? (fr?'Préparer le préferment':'Prepare the preferment') : (fr?'Pétrir la pâte':'Mix the dough'));
+  // A fridge removal the baker arranged for someone at home, for the Preparation summary.
+  const coveredFridgeRemovalAt = (()=>{const at=blocks.find(block=>block.fridgeRemoval&&eatTime&&block.fridgeRemoval.bake===+eatTime)?.fridgeRemoval?.at;return at?new Date(at):undefined;})();
   const setupSteps = tab==='custom' ? CUSTOM_STEPS : SIMPLE_STEPS.filter(step=>step.id!==3);
   const stepLink = (step:StepDef):BakeLink => ({label:step.chip,value:step.id===2&&!qtyChosen?`${numItems} × ${Math.round(itemWeight)} g · ${fr?'proposé':'suggested'}`:step.id===10&&step.value?sourced(step.value,manualHydration!==undefined):step.id===8&&step.value?sourced(step.value,confirmed('method',prefermentType)):step.value,disabled:step.id>1&&!styleKey,onChoose:()=>openSetupStep(step.id)});
   const bakeLinks:BakeLink[] = [
@@ -4110,7 +4099,7 @@ export default function Home() {
               <button type="button" disabled style={{...NEXT_CTA,opacity:0.5}}>{fr?'Choisissez une date de cuisson':'Choose a bake date'}</button>
               : !scheduleCandidateValid ? (simpleDecisionPending
                 ? <button type="button" style={NEXT_CTA} onClick={()=>{const card=document.querySelector<HTMLElement>('[data-simple-decision]');card?.scrollIntoView({block:'center'});card?.querySelector<HTMLElement>('[data-simple-accept],[data-simple-keep]')?.focus({preventScroll:true});}}>{fr?'Choisir un horaire qui convient':'Choose a time that fits'}</button>
-                : <button type="button" style={NEXT_CTA} onClick={()=>{const panel=document.getElementById('schedule-anchor-panel');panel?.scrollIntoView({block:'start'});panel?.focus();}}>{fr?'Voir les horaires à ajuster →':'Review affected times →'}</button>)
+                : <button type="button" style={NEXT_CTA} onClick={()=>{const target=[...document.querySelectorAll<HTMLElement>('.bh-fridge-arrangement,.bh-plan-notice')].find(el=>el.offsetParent)??document.getElementById('schedule-anchor-panel');target?.scrollIntoView({block:'center'});(target?.querySelector<HTMLElement>('button')??target)?.focus({preventScroll:true});}}>{fr?'Voir les horaires à ajuster →':'Review affected times →'}</button>)
               : undefined}>
               {/* Simple assumes the kitchen temperature (shown with the plan in
                   Preparation); Custom asks for it on its own Kitchen step. */}
@@ -4192,7 +4181,8 @@ export default function Home() {
 
               {collectingBakeTime && eatTime && +eatTime>Date.now() && <div style={{display:'grid',gap:10,marginTop:16}}>
                 <button type="button" disabled={simpleDecisionPending} style={{...NEXT_CTA,opacity:simpleDecisionPending?0.5:1}} onClick={()=>{if(simpleDecisionPending)return;setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>{fr?'Créer ma recette simple':'Create my simple recipe'}</button>
-                <button type="button" className="bh-bake-navigator-card" style={{display:'grid',textAlign:'left',padding:14}} onClick={()=>{setAwaitingRecipeChoice(false);chooseMode('custom');}}><strong>{fr?'Personnaliser ma fournée':'Customize my bake'}</strong><span>{directMethodOnly?(fr?'Farine, matériel et hydratation':'Flour, equipment and hydration'):(fr?'Préferment (poolish, biga ou levain), farine, matériel et hydratation':'Preferment (poolish, biga or sourdough), flour, equipment and hydration')}</span></button>
+                {simpleDecisionPending&&<p data-create-hint style={{margin:'-4px 0 0',fontSize:14,color:'var(--smoke)',textAlign:'center'}}>{fr?'Choisissez une option ci-dessus pour continuer.':'Choose an option above to continue.'}</p>}
+                <button type="button" className="bh-bake-navigator-card" style={{display:'grid',textAlign:'left',padding:14}} onClick={()=>{setAwaitingRecipeChoice(false);chooseMode('custom');}}><strong>{fr?'Personnaliser ma fournée':'Customize my bake'}</strong><span>{directMethodOnly?(fr?'Réglez vous-même matériel, farine et hydratation':'Set your own equipment, flour and hydration'):(fr?'Réglez vous-même matériel, farine, levain ou préferment et hydratation':'Set your own equipment, flour, leavening and hydration')}</span></button>
               </div>}
             </StepPage>
 
@@ -4375,7 +4365,7 @@ export default function Home() {
             {/* ── Bake guide tab content ── */}
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && recipe && mixerType && (<>
-                {destination==='protocol'&&eatTime&&<PreparationTimingSummary fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} assumedKitchen={<details style={{margin:'4px 0'}}><summary style={{minHeight:44,cursor:'pointer',fontSize:14,color:'var(--smoke)'}}>{fr?`Cuisine d’environ ${cToDisplay(kitchenTemp,units)}${tempUnit(units)} · modifier`:`Assumes a kitchen around ${cToDisplay(kitchenTemp,units)}${tempUnit(units)} · change`}</summary><KitchenReading value={kitchenTemp} units={units} fr={fr} confirmed={confirmed('climate',kitchenTemp)} onConfirm={value=>{setKitchenTemp(value);confirmSetting('climate',value);}}/></details>} onAdjustTiming={editRecipeTiming}/>}
+                {destination==='protocol'&&eatTime&&<PreparationTimingSummary fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} assumedKitchen={<details style={{margin:'4px 0'}}><summary style={{minHeight:44,cursor:'pointer',fontSize:14,color:'var(--smoke)'}}>{fr?`Cuisine d’environ ${cToDisplay(kitchenTemp,units)}${tempUnit(units)} · modifier`:`Assumes a kitchen around ${cToDisplay(kitchenTemp,units)}${tempUnit(units)} · change`}</summary><KitchenReading value={kitchenTemp} units={units} fr={fr} confirmed={confirmed('climate',kitchenTemp)} onConfirm={value=>{setKitchenTemp(value);confirmSetting('climate',value);}}/></details>} onAdjustTiming={editRecipeTiming}/>}
                 <BakeGuide
                   onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)}
                   preparationMade={!!execution} mixingMade={!!mixExecution||execution?.method==='none'} onMixComplete={!isUnleavened?recordGuideMix:undefined} onPreparationComplete={!isUnleavened&&yeastType!=='sourdough'&&prefermentType!=='none'?done=>{if(done)markPreparationMade(Date.now());else if(!mixExecution){setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}}:undefined}
@@ -4612,7 +4602,7 @@ export default function Home() {
             )}
 
             {/* ─── ADV STEP 10: Scheduler ──────────── */}
-            <StepPage flow={customOrganisationFlow} id={9} nextOverride={scheduleEditing ? null : !scheduleCandidateValid ? <button type="button" style={NEXT_CTA} onClick={()=>{const panel=document.getElementById('schedule-anchor-panel');panel?.scrollIntoView({block:'start'});panel?.focus();}}>{fr?'Voir les horaires à ajuster →':'Review affected times →'}</button> : undefined}>
+            <StepPage flow={customOrganisationFlow} id={9} nextOverride={scheduleEditing ? null : !scheduleCandidateValid ? <button type="button" style={NEXT_CTA} onClick={()=>{const target=[...document.querySelectorAll<HTMLElement>('.bh-fridge-arrangement,.bh-plan-notice')].find(el=>el.offsetParent)??document.getElementById('schedule-anchor-panel');target?.scrollIntoView({block:'center'});(target?.querySelector<HTMLElement>('button')??target)?.focus({preventScroll:true});}}>{fr?'Voir les horaires à ajuster →':'Review affected times →'}</button> : undefined}>
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => customFlow.onJump(1)} />
               ) : (
@@ -4693,7 +4683,7 @@ export default function Home() {
             {/* Prototype: one clear field per dough setting. */}
             <StepPage flow={customOrganisationFlow} id={10}>
               {bakeType==='pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '') && renderQuantity('size')}
-              {optionalEquipment}
+              {/* Oven and mixing are asked once, on Equipment. */}
               {(() => {
                 const style = styleKey ? ALL_STYLES[styleKey] : null;
                 const zone = STYLE_HYDRATION_ZONES[styleKey!] ?? (breadProtocol ? {...FALLBACK_ZONE,classicMin:ALL_STYLES[styleKey!].hydration,classicMax:ALL_STYLES[styleKey!].hydration,name:ALL_STYLES[styleKey!].name} : FALLBACK_ZONE);
@@ -4905,7 +4895,7 @@ export default function Home() {
             {/* ── Bake guide tab content ── */}
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && advancedRecipe && mixerType && (<>
-                {destination==='protocol'&&eatTime&&<PreparationTimingSummary fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime}  onAdjustTiming={editRecipeTiming}/>}
+                {destination==='protocol'&&eatTime&&<PreparationTimingSummary fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt}  onAdjustTiming={editRecipeTiming}/>}
                 <BakeGuide
                   onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)}
                   preparationMade={!!execution} mixingMade={!!mixExecution||execution?.method==='none'} onMixComplete={!isUnleavened?recordGuideMix:undefined} onPreparationComplete={!isUnleavened&&yeastType!=='sourdough'&&prefermentType!=='none'?done=>{if(done)markPreparationMade(Date.now());else if(!mixExecution){setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}}:undefined}

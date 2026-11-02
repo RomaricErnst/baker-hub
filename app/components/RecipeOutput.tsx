@@ -492,6 +492,7 @@ export default function RecipeOutput({
     : undefined;
 
   const sachetDilutionNote = null;
+  const kitchenGrams = (grams: number) => grams >= 10 ? Math.round(grams) : Math.round(grams * 10) / 10;
 
   // Allowlist approach: only keep warnings about structural issues, never temperature context
   // Which warnings earn a card here. This was a substring allowlist over the
@@ -1040,9 +1041,10 @@ export default function RecipeOutput({
               title={t('recipeOutput.dilutionTitle')}
               body={t('recipeOutput.dilutionBody', {
                 waterG: dilutionTip.waterG,
-                solutionG: Number(dilutionTip.solutionG.toFixed(3)),
-                waterInSolutionG: Number((dilutionTip.waterInSolutionGrams ?? dilutionTip.solutionG * 100 / 101).toFixed(3)),
-                remainingWaterG: Number((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101).toFixed(3)),
+                // Kitchen-scale precision: whole grams from 10 g, one decimal below.
+                solutionG: kitchenGrams(dilutionTip.solutionG),
+                waterInSolutionG: kitchenGrams(dilutionTip.waterInSolutionGrams ?? dilutionTip.solutionG * 100 / 101),
+                remainingWaterG: kitchenGrams(dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101),
               })}
             />
           )}

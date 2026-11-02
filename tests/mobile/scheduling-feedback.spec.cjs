@@ -165,7 +165,7 @@ for(const locale of ['fr','en'])test(`${locale} simple: one decision card keeps 
  const {plan}=await seedParty(page,locale,'simple');
  const decision=page.locator('[data-simple-decision]');
  await expect(decision).toBeVisible();
- await expect(decision).toContainText(locale==='fr'?/La pâte sortirait du réfrigérateur/:/The dough would come out of the fridge/);
+ await expect(decision).toContainText(locale==='fr'?/La pâte doit sortir du réfrigérateur à .*pendant vos heures de travail/:/Your dough needs to leave the fridge at .*during work hours/);
  await expect(page.locator('.bh-fridge-arrangement')).toHaveCount(0);
  await expect(page.locator('.bh-plan-notice')).toHaveCount(0);
  await expect(page.getByRole('button',{name:locale==='fr'?/^Je peux assurer cette étape/:/^I can cover this step/})).toHaveCount(0);

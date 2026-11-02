@@ -91,7 +91,7 @@ test('short mixing duration retains exact minutes and hand instructions exclude 
  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,{schedule,mixerType:'hand',styleKey:'pain_campagne',kitchenTemp:22,numItems:1,oil:0,hydration:65,locale:'en'})));
  assert.match(html,/ · 36 min/);
  assert.match(html,/Cover and rest 30 min, as scheduled/);
- assert.match(html,/Knead by hand until cohesive and elastic/);
+ assert.match(html,/Knead by hand until smooth and stretchy/);
  assert.doesNotMatch(html,/using only your mixer’s permitted dough speeds/);
 });
 
@@ -230,7 +230,7 @@ test('Simple gives the selected kneading method and one loaf needs no division',
   const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-25T18:00Z'),[],22,45,'stand','pain_campagne');
   const recipe=utils.calculateRecipe('pain_campagne','dutch_oven',1,800,22,'normal',schedule,6,'instant','simple','stand');
   const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require('../messages/'+locale+'.json'),timeZone:'UTC'},React.createElement(Guide,{schedule,recipe,mixerType:'stand',styleKey:'pain_campagne',kitchenTemp:22,numItems:1,oil:0,hydration:70,locale,simpleMode:true})));
-  assert.ok(html.includes(locale==='fr'?'aux vitesses autorisées par votre pétrin':'permitted dough speeds'));
+  assert.ok(html.includes(locale==='fr'?'à une vitesse « pâte » de votre pétrin':'at a dough speed your mixer allows'));
   assert.doesNotMatch(html,/Divide into 1 equal pieces|Divisez en 1 pâtons|Remove balls|Sortez les boules du frigo/);
  }
 });

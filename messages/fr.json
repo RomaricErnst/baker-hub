@@ -500,10 +500,10 @@
     "waterFinalDough": "Eau (pâte finale)",
     "batchTotal": "Total pétrissage",
     "chillPoolishAt": "Placez la poolish au réfrigérateur à partir de {time}. Gardez-la au froid jusqu’au pétrissage.",
-    "weighOrDilute": "Utilisez une balance de précision ou la méthode de dilution ci-dessous.",
+    "weighOrDilute": "Trop peu pour une balance de cuisine : voir comment la mesurer ci-dessous.",
     "weighDose": "Pesez cette dose à la balance.",
-    "precisionScaleTitle": "Balance de précision requise",
-    "precisionScaleBody": "Votre quantité de levure est de {amount} — trop petite pour une balance de cuisine standard. Utilisez une balance précise au 0,1g ou la méthode de dilution.",
+    "precisionScaleTitle": "Peser une très petite quantité de levure",
+    "precisionScaleBody": "{amount}, c’est trop peu pour la plupart des balances de cuisine. Utilisez une balance au 0,1 g, ou la méthode ci-dessous.",
     "dilutionShow": "Impossible de mesurer avec précision ? →",
     "dilutionHide": "Masquer le conseil →",
     "priorityAdjust": "Ajuster →",
@@ -514,7 +514,7 @@
     "priorityBalancedDesc": "Standard",
     "prioritySpeed": "Rapidité",
     "prioritySpeedDesc": "Plus de levure, plus vite",
-    "dilutionTitle": "Dilution requise — quantité trop petite à peser directement",
+    "dilutionTitle": "Pas de balance de précision ? Diluez-la",
     "poolishTitle": "Poolish recommandé",
     "poolishBody": "Pour un poolish, utilisez les quantités de farine, d’eau et de levure de la recette et suivez l’heure de préparation.",
     "notRecommendedTitle": "Ce planning de fermentation n'est pas recommandé",
@@ -582,7 +582,7 @@
     "discardNote1": "Jetez le reste avant de rafraîchir — ou utilisez-le pour des pancakes ou crackers",
     "discardNote2": "Ne jetez jamais tout votre levain — gardez toujours au moins 20–30g.",
     "starterReadyWhen": "Votre levain est prêt quand :",
-    "dilutionBody": "Mélangez 1 g de la levure choisie avec {waterG} g d’eau dans un récipient séparé. Remuez bien, puis pesez {solutionG} g de ce mélange pour la pâte. Cette portion contient {waterInSolutionG} g d’eau : ajoutez seulement {remainingWaterG} g d’eau supplémentaire à la pâte. Jetez le mélange inutilisé. Ne retirez pas les {waterG} g entiers de la recette."
+    "dilutionBody": "Délayez 1 g de levure dans {waterG} g d’eau. Utilisez {solutionG} g de ce mélange (il contient {waterInSolutionG} g d’eau), puis ajoutez seulement {remainingWaterG} g d’eau à la pâte. Jetez le mélange inutilisé."
   },
   "schedulePicker": {
     "startDough": "Commencer la pâte",
