@@ -393,7 +393,7 @@ test('previous/continue and browser back/forward reopen scheduling with confirme
  const before=await stored(page);
  await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:'Étape précédente',exact:true}).tap();
  await expect(page.locator('#step-10')).toBeVisible();
- await page.locator('#step-10 .bh-step-actions').getByRole('button',{name:'Plan →',exact:true}).tap();
+ await page.locator('#step-10 .bh-step-actions').getByRole('button',{name:'Heure de cuisson →',exact:true}).tap();
  await expect(plan).toBeVisible();await expect(reset(page)).toBeVisible();
  await page.goBack();await expect(page.locator('#step-10')).toBeVisible();
  await page.goForward();await expect(plan).toBeVisible();await expect(reset(page)).toBeVisible();
@@ -407,7 +407,7 @@ test('compact Organisation progress and one-tap timing editor stay usable on nar
  const {plan}=await seed(page,{mode:'simple',preferment:'none'});
  const navigator=page.locator('.bh-bake-navigator');
  await expect(navigator).toContainText('Ma fournée');
- const progress=navigator.getByRole('button',{name:'Horaires',exact:true});
+ const progress=navigator.getByRole('button',{name:'Heure de cuisson',exact:true});
  await expect(progress).toBeVisible();
  const navBox=await navigator.boundingBox(),stepBox=await progress.boundingBox();
  expect(stepBox.y).toBeGreaterThanOrEqual(navBox.y);expect(stepBox.y+stepBox.height).toBeLessThanOrEqual(navBox.y+navBox.height+1);

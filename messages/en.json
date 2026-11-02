@@ -219,8 +219,8 @@
     "adjustDoughLabel": "Dough:",
     "adjustDoughVerb": "drag the green diamond to move mixing",
     "adjustPrefVerb": "drag the gold diamond to move preferment preparation",
-    "summaryFridgeBlock": "busy window",
-    "summaryFridgeBlocks": "busy windows",
+    "summaryFridgeBlock": "unavailable time",
+    "summaryFridgeBlocks": "unavailable times",
     "taste": {
       "info": "Tangier leans on a longer cold proof and fewer starter refreshes — more sour, more complex. Milder uses a shorter cold proof and an extra refresh — gentler, sweeter. Balanced keeps the standard timing. This adjusts the schedule the engine builds; it doesn't change your ingredients."
     }
@@ -678,7 +678,7 @@
       "makePoolish": "Make your Poolish",
       "makeBiga": "Make your Biga",
       "feedStarter": "Feed your starter",
-      "mixDough": "Mix your dough",
+      "mixDough": "Start Dough",
       "bulkFerm": "Let the dough rise",
       "coldRetardWhole": "Refrigerate the dough",
       "coldRetard": "Refrigerate the dough",

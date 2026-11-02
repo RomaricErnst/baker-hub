@@ -1100,7 +1100,7 @@ Actual dough condition and equipment may differ from these estimates.`;
     <div style={{display:'flex',flexDirection:'column',gap:currentStep===0?4:16}}>
       {progressControl}
       {!progressTarget&&<button type="button" onClick={() => setCurrentStep(0)} style={{minHeight:44,padding:'8px 16px',border:`1px solid ${D.border}`,borderRadius:10,background:D.warm}}>{overviewLabel}</button>}
-      <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={l === 'fr' ? 'Pétrir la pâte' : 'Mix the dough'} time={displayedMixTime} duration={displayedMixDuration} overviewNote={mixingOverviewNote}>
+      <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={t('stepTitles.mixDough')} time={displayedMixTime} duration={displayedMixDuration} overviewNote={mixingOverviewNote}>
         {serialMixNote}
         <Section icon="" title={l === 'fr' ? 'À incorporer' : 'Use now'}>
           {batch && Object.entries(batch.portion).filter(([,grams]) => grams > 0).map(([key,grams]) => <p key={key}>{({flour:l === 'fr' ? 'Farine' : 'Flour',water:l === 'fr' ? 'Eau' : 'Water',salt:l === 'fr' ? 'Sel' : 'Salt',oil:l === 'fr' ? 'Huile' : 'Oil',sugar:l === 'fr' ? 'Sucre' : 'Sugar'} as Record<string,string>)[key] ?? key} · {Math.round(grams)} g</p>)}

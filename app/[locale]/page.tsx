@@ -813,7 +813,7 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
   return <section data-preparation-timing aria-label={fr?'Horaires':'Timing'} style={{border:'1px solid var(--border)',borderRadius:12,padding:'12px 14px',margin:'0 0 16px',background:'var(--warm)'}}>
     <p style={{margin:'0 0 4px',fontSize:15,fontWeight:600,color:'var(--char)'}}>{startLabel ?? (fr?'Commencer':'Start')} · {formatBakeDateTime(startAt,locale)}</p>
     {helperAt&&<p data-helper-step style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'Quelqu’un sort la pâte du réfrigérateur':'Someone takes the dough out of the fridge'} · {formatBakeDateTime(helperAt,locale)}</p>}
-    <p style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'Enfournement':'Into the oven'} · {formatBakeDateTime(bakeAt,locale)}</p>
+    <p style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'Enfourner':'Bake'} · {formatBakeDateTime(bakeAt,locale)}</p>
     {assumedKitchen}
     <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={onAdjustTiming}>{fr?'Ajuster les horaires':'Adjust timing'}</button>
   </section>;
@@ -3344,9 +3344,9 @@ export default function Home() {
         : null,
       prefilled: profileFields.has('yeast'),
       gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
-    { id: 7, group: 'plan', chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
+    { id: 7, group: 'plan', chip: fr ? 'Heure de cuisson' : 'Bake time', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
       value: eatTime
-        ? `${formatTime(new Date(Math.round(startTime.getTime() / 900000) * 900000), locale)} → ${formatTime(eatTime, locale)}${selectedAvailabilityCount(blocks) > 0 ? ` · ${selectedAvailabilityCount(blocks)} ${selectedAvailabilityCount(blocks) === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
+        ? `${formatTime(new Date(Math.round(Math.min(startTime.getTime(), prefStartTime?.getTime() ?? Infinity) / 900000) * 900000), locale)} → ${formatTime(eatTime, locale)}${selectedAvailabilityCount(blocks) > 0 ? ` · ${selectedAvailabilityCount(blocks)} ${selectedAvailabilityCount(blocks) === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
         : null,
       // The chip gets the bake time alone. Start time and busy windows are
       // consequences of it — the baker picks when to eat, everything else is
@@ -3370,6 +3370,7 @@ export default function Home() {
   };
   const reviewTiming = eatTime ? formatBakeDateTime(eatTime,locale) : null;
   const reviewKitchen = `${kitchenTemp}°C · ${fr ? 'réfrigérateur' : 'fridge'} ${fridgeTemp}°C`;
+  const levainStyle = styleKey === 'pain_levain' || styleKey === 'sourdough';
   const CUSTOM_STEPS: StepDef[] = ([
     { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Quel style de pizza ?':'Which pizza style?'),
       value: styleKey ? styleDisplayName(styleKey) : null,
@@ -3397,7 +3398,9 @@ export default function Home() {
       value: flourChosen && !archivedFlourNames.length ? flourSummary() : null, prefilled: false,
       gap: fr ? 'La farine n\u2019est pas confirmée' : 'Flour not confirmed' },
     ...(showPrefermentChoice ? [{
-      id: 8, group: 'dough', chip: fr ? 'Méthode' : 'Method', title: fr?'Comment faire lever votre pâte ?':'How will you leaven your dough?',
+      // Levain styles start from a starter; the others choose a preferment.
+      id: 8, group: 'dough', chip: levainStyle ? (fr ? 'Levain' : 'Starter') : (fr ? 'Préferment' : 'Preferment'),
+      title: levainStyle ? (fr?'Votre levain':'Your starter') : (fr?'Quel préferment ?':'Which preferment?'),
       value: prefermentChosen && !(enrichedDirectOnly && prefermentType !== 'none')
         ? (prefermentType !== 'none' ? localName(PREFERMENT_TYPES[prefermentType]) : t('preferment.direct'))
         : null,
@@ -3425,9 +3428,9 @@ export default function Home() {
         : styleKey ? `${ALL_STYLES[styleKey].hydration}% ${t('dialIn.hydrationSuffix')}` : null,
       prefilled: true,
       gap: fr ? 'La pâte n\u2019est pas confirmée' : 'Dough not confirmed' },
-    { id: 9, group: 'plan', chip: 'Plan', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
+    { id: 9, group: 'plan', chip: fr ? 'Heure de cuisson' : 'Bake time', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
       value: eatTime
-        ? `${formatTime(new Date(Math.round(startTime.getTime() / 900000) * 900000), locale)} → ${formatTime(eatTime, locale)}${selectedAvailabilityCount(blocks) > 0 ? ` · ${selectedAvailabilityCount(blocks)} ${selectedAvailabilityCount(blocks) === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
+        ? `${formatTime(new Date(Math.round(Math.min(startTime.getTime(), prefStartTime?.getTime() ?? Infinity) / 900000) * 900000), locale)} → ${formatTime(eatTime, locale)}${selectedAvailabilityCount(blocks) > 0 ? ` · ${selectedAvailabilityCount(blocks)} ${selectedAvailabilityCount(blocks) === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
         : null,
       // The chip gets the bake time alone. Start time and busy windows are
       // consequences of it — the baker picks when to eat, everything else is
@@ -3596,8 +3599,8 @@ export default function Home() {
   ));
   const firstStarterAction = yeastType==='sourdough' ? starterEvents.find(e=>!e.isPast && +e.time===+firstRecipeAction && e.kind!=='last_fed' && e.kind!=='known_peak') : undefined;
   const firstRecipeActionLabel = (firstStarterAction ? starterActionLabel(firstStarterAction.kind,fr) : undefined) ?? (prefStartTime && +prefStartTime===+firstRecipeAction
-    ? (fr?'Préparer le ':'Make the ')+prefermentType
-    : +firstRecipeAction < +startTime ? (fr?'Préparer le préferment':'Prepare the preferment') : (fr?'Pétrir la pâte':'Mix the dough'));
+    ? (prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):(fr?'Préparer le poolish':'Make Poolish'))
+    : +firstRecipeAction < +startTime ? (fr?'Préparer le préferment':'Make the preferment') : (fr?'Pétrir la pâte':'Start Dough'));
   // A fridge removal the baker arranged for someone at home, for the Preparation summary.
   const coveredFridgeRemovalAt = (()=>{const at=blocks.find(block=>block.fridgeRemoval&&eatTime&&block.fridgeRemoval.bake===+eatTime)?.fridgeRemoval?.at;return at?new Date(at):undefined;})();
   const setupSteps = tab==='custom' ? CUSTOM_STEPS : SIMPLE_STEPS.filter(step=>step.id!==3);
@@ -3607,7 +3610,7 @@ export default function Home() {
     ...setupSteps.filter(step=>step.id<=2).map(stepLink),
     ...(collectingBakeTime ? [{label:fr?'Heure de cuisson':'Bake time',value:eatTime?formatTime(eatTime,locale):null,onChoose:openBakeTimeInputs}] : modeChosen?setupSteps.filter(step=>step.id>2).map(stepLink):[]),
   ];
-  const currentSubsection = destination==='batch' ? (batchView==='quantity'?(fr?'Quantité':'Quantity'):'Style') : !modeChosen ? 'Mode' : (tab==='simple'&&activeStep===7 ? (fr?'Horaires':'Timing') : setupSteps.find(step=>step.id===(tab==='custom'?advancedStep:activeStep))?.chip ?? (fr?'Ma fournée':'My bake'));
+  const currentSubsection = destination==='batch' ? (batchView==='quantity'?(fr?'Quantité':'Quantity'):'Style') : !modeChosen ? 'Mode' : (tab==='simple'&&activeStep===7 ? (fr?'Heure de cuisson':'Bake time') : setupSteps.find(step=>step.id===(tab==='custom'?advancedStep:activeStep))?.chip ?? (fr?'Ma fournée':'My bake'));
   const renderQuantity = (roundView:'count'|'size') => (<PrototypeQuantityPicker roundView={roundView} bakeType={bakeType ?? 'pizza'} locale={locale} units={units}
                 totalFlourTarget={bakeType==='bread'?totalFlourTarget:undefined}
                 onFlourTargetChange={value=>{setTotalFlourTarget(value);setQtyChosen(true);if(value!==undefined){setWastePct(undefined);setItemWeight(value*1.8/Math.max(1,numItems));}else setItemWeight(Math.max(weightBounds.min,Math.min(weightBounds.max,Math.round(itemWeight))));}}
@@ -4543,7 +4546,7 @@ export default function Home() {
 
 
             {/* ─── ADV STEP 7: Flour ───────────────── */}
-            <StepPage flow={customOrganisationFlow} id={6} nextOverride={manualFlourEntry ? null : !flourChosen || archivedFlourNames.length ? <button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{fr ? 'Continuer' : 'Continue'}</button> : undefined}>
+            <StepPage flow={customOrganisationFlow} id={6} nextOverride={manualFlourEntry ? null : !flourChosen || archivedFlourNames.length ? <button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{(CUSTOM_STEPS.find(step=>step.id===nextCustomStep(6))?.chip ?? (fr ? 'Suivant' : 'Next'))} →</button> : undefined}>
               <FlourPicker
                 onManualEntryChange={setManualFlourEntry}
                 blend={flourBlend}
@@ -4584,7 +4587,7 @@ export default function Home() {
 
             {/* ─── ADV STEP 9: Preferment (hidden for sourdough) ── */}
             {showPrefermentChoice && (
-              <StepPage flow={customOrganisationFlow} id={8} nextOverride={!prefermentChosen ? <button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:0.55}}>{fr?'Choisissez la méthode':'Choose a method'}</button> : undefined}>
+              <StepPage flow={customOrganisationFlow} id={8} nextOverride={!prefermentChosen ? <button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:0.55}}>{(CUSTOM_STEPS.find(step=>step.id===nextCustomStep(8))?.chip ?? (fr?'Suivant':'Next'))} →</button> : undefined}>
                 <PrefermentPicker
                   selected={prefermentChosen ? prefermentType : null}
                   chooseMethod
@@ -4594,7 +4597,7 @@ export default function Home() {
                   totalFlourGrams={advancedRecipe?.flour ?? (styleKey ? numItems * itemWeight / (1 + (ALL_STYLES[styleKey].hydration + ALL_STYLES[styleKey].salt + ALL_STYLES[styleKey].oil + ALL_STYLES[styleKey].sugar) / 100) : undefined)}
                   onFlourPctChange={setPrefermentFlourPct}
                   styleKey={styleKey ?? undefined}
-                  hideTypes={breadProtocol ? (['none','poolish','biga','levain'] as PrefermentType[]).filter(pt=>!breadProtocol.supportedPreferments.includes(pt)) : []}
+                  hideTypes={levainStyle ? (['none','poolish','biga'] as PrefermentType[]) : breadProtocol ? (['none','poolish','biga','levain'] as PrefermentType[]).filter(pt=>!breadProtocol.supportedPreferments.includes(pt)) : []}
                   directOnly={enrichedDirectOnly}
                   kitchenTemp={kitchenTemp}
                 />
