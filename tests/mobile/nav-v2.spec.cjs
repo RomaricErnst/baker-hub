@@ -616,7 +616,8 @@ test('Custom: batch details are conditional and setup headings reset above the f
   await flour.getByRole('button',{name:/^Caputo Nuvola W/}).tap();
   await expect(flour.getByRole('button',{name:/^Caputo Nuvola W/})).toHaveAttribute('aria-pressed','true');
   await expect(flour.getByText('✓ Farine sélectionnée',{exact:true})).toBeVisible();
-  await flour.getByRole('button',{name:'Changer la farine 1',exact:true}).tap();
+  // A single flour reads "Changer la farine"; the number only appears with a blend.
+  await flour.getByRole('button',{name:'Changer la farine',exact:true}).tap();
   await expect(search).toBeVisible();
   await search.fill('Pizzeria');
   await flour.getByRole('button',{name:/^Caputo Pizzeria W/}).tap();

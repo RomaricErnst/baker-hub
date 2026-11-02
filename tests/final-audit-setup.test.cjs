@@ -36,7 +36,7 @@ test('incomplete current planning has no button looping back to itself; other ga
   const steps=[{id:3,value:'Four',chip:'Equipment',group:'kitchen'},{id:7,value:null,chip:'Plan',group:'plan',gap:'Missing time'}];
   const flow={steps,activeId:7,highestStep:99,locale,showGenerate:false,recipeGenerated:false,gapReturn:false,onGapJump(){throw Error('Self navigation forbidden');}};
   const html=render(page.StepPage,{flow,id:7,children:'Clock fields'});
-  assert.match(html,/disabled/);assert.doesNotMatch(html,/Plan →/);
+  assert.match(html,/disabled/);assert.doesNotMatch(html,/Plan →|Bake time →/);
   assert.match(html,locale==='fr'?/Choisissez un horaire de cuisson/:/Choose a cooking time/);
   let target;
   flow.steps=[{...steps[0],value:null},steps[1]];flow.onGapJump=id=>{target=id;};

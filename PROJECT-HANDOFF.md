@@ -1,3 +1,15 @@
+# 3 November 2026 — one name per step and event (Claude)
+
+- The timing step is "Bake time" everywhere (pill, step picker, review row, forward buttons); FR "Heure de cuisson". It was Timing / Plan / Your baking plan.
+- The Custom leavening step is "Preferment" ("Which preferment?"); for levain styles (pain_levain, sourdough pizza) it is "Starter" ("Your starter") and only offers levain.
+- Events: "Make Poolish", "Make Biga", "Start Dough" in the guide titles and the Preparation summary; the summary's last line is "Bake · <time>". FR keeps Préparer le poolish / Préparer la biga / Pétrir la pâte / Enfourner.
+- Disabled forward buttons name their destination ("Yeast →", "Preferment →") instead of "Choose a method" / "Continue".
+- A single flour shows "Change flour"; the number appears only with a blend.
+- The bake-time summary row starts at the preferment, not the mix ("Wed 10:45pm → Fri 7:30pm").
+- Availability is "unavailable time(s)" in the summary (was "busy window").
+
+Still open from the Custom review: starter questions live on Bake time for levain (kept there because the starter state drives the solver; moving them needs SchedulePicker split), poolish room/fridge choice, starter %, yeast % override, flour humidity and flour-in-fridge on the Flour step, water preparation on Fine-tune.
+
 # 2 November 2026 — journey polish after live review (Claude)
 
 A live perception review rated Simple 6/10 and Custom 5/10. This change addresses the 8pm Weekdays + Nights case and Simple's post-recipe clutter:

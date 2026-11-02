@@ -736,7 +736,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
       {archivedBlendSelections(blend).length > 0 && <p role="alert" style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 12 }}>{isFr ? 'Une farine enregistrée est archivée. Remplacez-la explicitement ; vos anciennes valeurs restent conservées en attendant.' : 'A saved flour is archived. Choose its replacement explicitly; your previous values are retained until then.'} {archivedBlendSelections(blend).join(' · ')}</p>}
       {/* ── Selected flour — hero card (rendering only; same state) ── */}
-      {chosenEntry&&<FlourProductButton entry={chosenEntry} selected onChoose={()=>selectDBEntry(chosenEntry)} onChange={()=>setPickerOpen(true)} changeLabel={isFr?'Changer la farine 1':'Change flour 1'}/>}
+      {chosenEntry&&<FlourProductButton entry={chosenEntry} selected onChoose={()=>selectDBEntry(chosenEntry)} onChange={()=>setPickerOpen(true)} changeLabel={blend.flour2?(isFr?'Changer la farine 1':'Change flour 1'):(isFr?'Changer la farine':'Change flour')}/>}
       {blend.brandProduct && !chosenEntry && (
         <div style={{ background:'#FDFBF7', border:'1.5px solid var(--bread)',
           borderRadius: '16px', padding: '12px 16px', marginBottom:'12px' }}>
@@ -755,7 +755,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               style={{ background:'none', border:'none', cursor:'pointer', flexShrink:0,
                 color:'#8A7F78', fontSize: '12px', fontFamily:'var(--font-ui)',
                 textDecoration:'underline', textUnderlineOffset:'2px', padding:'2px 0', minHeight:44 }}>
-              {locale === 'fr' ? 'Changer la farine 1' : 'Change flour 1'}
+              {blend.flour2 ? (locale === 'fr' ? 'Changer la farine 1' : 'Change flour 1') : (locale === 'fr' ? 'Changer la farine' : 'Change flour')}
             </button>
           </div>
           {savedManual?.protein !== undefined && <p style={{fontSize:14,margin:'8px 0'}}>{isFr ? 'Protéines indiquées sur le sachet' : 'Protein entered from the bag'} : {savedManual.protein}%</p>}
