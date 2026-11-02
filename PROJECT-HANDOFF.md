@@ -1,3 +1,16 @@
+# 2 November 2026 — journey polish after live review (Claude)
+
+A live perception review rated Simple 6/10 and Custom 5/10. This change addresses the 8pm Weekdays + Nights case and Simple's post-recipe clutter:
+
+- The Simple decision card names the busy time ("Your dough needs to leave the fridge at 4:15pm, during work hours."; "This plan needs you 5 times while you're at work."). Offers that move to another day say why ("A day later, so the steps fit your free time · start Tue 3 Nov · 6:15pm"); same-day offers name what moves, with its day when different. A hint explains the disabled Create. Accepting confirms "Moved to 8:15pm. Undo". The redundant "Change my unavailable times" link is gone (the chips sit just below).
+- Simple asks once when steps fall in weekday working hours and no work hours are set: "Your plan has steps during the day on Wednesday. Are you at work then?" (Yes adds work hours, No dismisses).
+- When the baker keeps a time with someone at home, the Preparation summary says "Someone takes the dough out of the fridge · <time>".
+- Custom shows a clash once: the suggested-times list above the plan only appears before a bake time is chosen; the final fridge removal is not repeated in the cover list; "Review affected times" scrolls to the conflict and focuses it.
+- Fine-tune no longer repeats oven and mixing (asked once, on Equipment).
+- Plainer copy: yeast measuring box and dilution (rounded to kitchen-scale grams, keeps the aliquot water instruction), mixing step ("Add the yeast and salt", "Knead by hand until smooth and stretchy"), ready-when, merged duplicate sticky-dough FAQ, plain warm-dough answer, Customize card ("Set your own equipment, flour, leavening and hydration").
+
+Next (agreed, not in this change): one name per event/step across pill, heading, summary, buttons and Preparation; Custom reorder (starter on the leavening step for levain, poolish room/fridge choice, starter %, yeast override, Kitchen holding temperatures only).
+
 # 2 November 2026 — Simple journey rework (Claude)
 
 User tested the live Simple journey on iPhone and found the timing step unusable: an 8pm bake with Weekdays + Nights showed "Your plan fits at this baking time" above alternatives (it did not fit), then after Create the same conflict appeared four times (offer buttons, fridge card, "Other steps" list, "I can cover this step" rows, timeline notes) and the recipe repeated the timing. User decisions recorded in this change:

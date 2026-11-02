@@ -160,8 +160,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
   "mix": [
     {
       "q": {
-        "en": "My dough is too sticky to handle",
-        "fr": "Ma pâte est trop collante"
+        "en": "My dough is too sticky — should I add flour?",
+        "fr": "Ma pâte colle trop — faut-il ajouter de la farine ?"
       },
       "a": {
         "en": "Try lightly damp hands and a scraper, then a covered rest. Avoid adding large amounts of flour or water: either changes the recipe.",
@@ -184,18 +184,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "Ma pâte est trop chaude après pétrissage"
       },
       "a": {
-        "en": "Check against your dough-temperature target. Cool it if needed and reassess fermentation timing; a brief fridge rest does not instantly cool the whole dough.",
-        "fr": "Comparez à la température cible. Refroidissez si nécessaire et réévaluez le temps de fermentation ; un bref passage au froid ne refroidit pas instantanément toute la pâte."
-      }
-    },
-    {
-      "q": {
-        "en": "The dough is sticky — should I add flour?",
-        "fr": "La pâte colle — dois-je ajouter de la farine ?"
-      },
-      "a": {
-        "en": "Try lightly damp hands and a scraper, then a covered rest. Avoid adding large amounts of flour or water: either changes the recipe.",
-        "fr": "Essayez des mains légèrement humides, une corne et un repos couvert. Évitez d’ajouter beaucoup de farine ou d’eau : les deux modifient la recette."
+        "en": "If it feels warm to the touch, cover it and rest it somewhere cooler. A warm dough rises faster than planned, so check it earlier.",
+        "fr": "Si elle est tiède au toucher, couvrez-la et laissez-la reposer dans un endroit plus frais. Une pâte chaude lève plus vite que prévu : vérifiez-la plus tôt."
       }
     },
     {

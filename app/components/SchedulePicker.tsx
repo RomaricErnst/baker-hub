@@ -2146,6 +2146,9 @@ function FermentedSchedulePicker({ onSimpleDecisionChange, prefermentFlourPct,do
   }
   const readinessEditorRef = useRef<HTMLInputElement>(null);
   const availabilityControlsRef = useRef<HTMLDetailsElement>(null);
+  // Simple: the bake the baker moved away from, so the move can be undone.
+  const [simpleMoved,setSimpleMoved]=useState<{from:Date;to:number}|null>(null);
+  const [simpleWorkDismissed,setSimpleWorkDismissed]=useState(false);
   const pickerDateTimeRef = useRef<string>(pickerDateTime);
   const [localBlocks, setLocalBlocks] = useState<AvailabilityBlock[]>(blocks);
   const lastFridgeArrangementRef=useRef(blocks.find(block=>block.fridgeRemoval)?.fridgeRemoval);
@@ -6934,30 +6937,51 @@ function FermentedSchedulePicker({ onSimpleDecisionChange, prefermentFlourPct,do
   const simpleTimeLabel=(at:Date)=>at.toDateString()===pendingEatTime.toDateString()?fmtCardHM(at,isFr):fmtCardDT(at,isFr);
   const firstSuggestedTarget=suggestedTargets[0];
   const isFridgeExit=(id:string)=>id===finalFridgeRemoval?.id;
+  // Name the busy time the baker chose, never a generic "unavailable".
+  const blockKind=(label:string)=>/^Work\b/.test(label)?'work':label.endsWith(' night')?'night':'other';
+  const clashKinds=new Set(simpleConflicts.map(conflict=>blockKind(conflict.block.label??'')));
+  const during=clashKinds.size===1&&clashKinds.has('work')?(isFr?'pendant vos heures de travail':'during work hours')
+    :clashKinds.size===1&&clashKinds.has('night')?(isFr?'pendant la nuit':'during the night')
+    :(isFr?'pendant vos indisponibilités':'during your busy times');
+  const whileBusy=clashKinds.size===1&&clashKinds.has('work')?(isFr?'pendant vos heures de travail':'while you’re at work')
+    :clashKinds.size===1&&clashKinds.has('night')?(isFr?'pendant votre sommeil':'while you’re asleep')
+    :clashKinds.has('work')&&clashKinds.has('night')&&clashKinds.size===2?(isFr?'au travail ou pendant la nuit':'while you’re at work or asleep')
+    :(isFr?'pendant vos indisponibilités':'during your busy times');
   const simpleDecisionSentence=simpleConflicts.length===1
     ? isFridgeExit(simpleConflicts[0].action.id)
-      ? (isFr?`La pâte sortirait du réfrigérateur ${fmtCardDT(simpleConflicts[0].action.at,isFr)}, pendant votre indisponibilité.`
-        :`The dough would come out of the fridge at ${fmtCardDT(simpleConflicts[0].action.at,isFr)}, while you’re unavailable.`)
-      : (isFr?`${simpleConflictName(simpleConflicts[0].action)} est prévu ${fmtCardDT(simpleConflicts[0].action.at,isFr)}, pendant votre indisponibilité.`
-        :`${simpleConflictName(simpleConflicts[0].action)} is planned at ${fmtCardDT(simpleConflicts[0].action.at,isFr)}, while you’re unavailable.`)
+      ? (isFr?`La pâte doit sortir du réfrigérateur à ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`
+        :`Your dough needs to leave the fridge at ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`)
+      : (isFr?`${simpleConflictName(simpleConflicts[0].action)} tombe à ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`
+        :`${simpleConflictName(simpleConflicts[0].action)} falls at ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`)
     : simpleConflicts.length>1
-      ? (isFr?`${simpleConflicts.length} étapes de préparation tomberaient pendant votre indisponibilité.`:`${simpleConflicts.length} preparation steps would fall while you’re unavailable.`)
+      ? (isFr?`Ce planning a besoin de vous ${simpleConflicts.length} fois ${whileBusy}.`:`This plan needs you ${simpleConflicts.length} times ${whileBusy}.`)
       : (isFr?'Cet horaire ne laisse pas le bon temps à la pâte.':'This baking time doesn’t leave the dough the time it needs.');
   const simpleSuggestion=!searchingTargets?firstSuggestedTarget:undefined;
   const simpleDecision=mode==='simple'&&eatTimeSet&&!currentCandidateValid&&(simpleSuggestion||simpleOnlyFridgeClash)
     ? <div className="bh-simple-decision" data-simple-decision role="status" style={{border:'1px solid var(--border)',borderRadius:12,padding:'14px 16px',margin:'12px 0',background:'var(--warm)'}}>
         <p style={{margin:'0 0 12px',fontSize:15,lineHeight:1.5,color:'var(--char)'}}>{simpleDecisionSentence}</p>
-        {simpleSuggestion&&<button type="button" className="bh-apply-plan" data-simple-accept style={{minHeight:44,width:'100%',whiteSpace:'normal'}} onClick={()=>applySuggestedTarget(simpleSuggestion)}>
+        {simpleSuggestion&&<button type="button" className="bh-apply-plan" data-simple-accept style={{minHeight:44,width:'100%',whiteSpace:'normal'}} onClick={()=>{setSimpleMoved({from:new Date(pendingEatTime),to:+simpleSuggestion.bake});applySuggestedTarget(simpleSuggestion);}}>
           {isFr?`Enfourner à ${simpleTimeLabel(simpleSuggestion.bake)}`:`Bake at ${simpleTimeLabel(simpleSuggestion.bake)} instead`}
-          {simpleSuggestion.clearedAction&&<small style={{display:'block',fontWeight:400}}>{/fridge|cold-out/.test(simpleSuggestion.clearedAction.id)
-            ? (isFr?`Sortie du réfrigérateur à ${fmtCardHM(simpleSuggestion.clearedAction.at,isFr)}`:`Dough out of the fridge at ${fmtCardHM(simpleSuggestion.clearedAction.at,isFr)}`)
-            : <>{foldActionLabel(simpleSuggestion.clearedAction.id,locale,mixingBatches)??conflictNames[simpleSuggestion.clearedAction.id]?.[isFr?0:1]} · {fmtCardHM(simpleSuggestion.clearedAction.at,isFr)}</>}</small>}
+          {(()=>{
+            // A different day needs its reason; otherwise say what the move frees.
+            const dayDiff=Math.round((new Date(simpleSuggestion.bake).setHours(0,0,0,0)-new Date(pendingEatTime).setHours(0,0,0,0))/86400000);
+            const at=(d:Date)=>d.toDateString()===simpleSuggestion.bake.toDateString()?fmtCardHM(d,isFr):fmtCardDT(d,isFr);
+            if(dayDiff>0)return <small style={{display:'block',fontWeight:400}}>{isFr
+              ?`${dayDiff===1?'Un jour plus tard':`${dayDiff} jours plus tard`}, pour que les étapes tombent sur votre temps libre · pétrissage ${at(simpleSuggestion.start)}`
+              :`${dayDiff===1?'A day later':`${dayDiff} days later`}, so the steps fit your free time · start ${at(simpleSuggestion.start)}`}</small>;
+            const cleared=simpleSuggestion.clearedAction;
+            if(!cleared)return null;
+            return <small style={{display:'block',fontWeight:400}}>{/cold-out/.test(cleared.id)
+              ? (isFr?`Sortie du réfrigérateur à ${at(cleared.at)}`:`Dough out of the fridge at ${at(cleared.at)}`)
+              : /^mix|start/.test(cleared.id)
+                ? (isFr?`Pétrissage ${at(cleared.at)}`:`Start mixing ${at(cleared.at)}`)
+                : <>{foldActionLabel(cleared.id,locale,mixingBatches)??conflictNames[cleared.id]?.[isFr?0:1]} · {at(cleared.at)}</>}</small>;
+          })()}
           {simpleSuggestion.assistance?<small style={{display:'block',fontWeight:400}}>{isFr?`${simpleSuggestion.assistance} étapes demandent quelqu’un sur place`:`${simpleSuggestion.assistance} steps need someone at home`}</small>:null}
         </button>}
         {simpleOnlyFridgeClash&&finalFridgeRemoval&&<button type="button" className={simpleSuggestion?'bh-back-action':'bh-apply-plan'} data-simple-keep style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={()=>setFridgeRemovalCovered(true)}>
           {isFr?`Garder ${fmtCardHM(pendingEatTime,isFr)} : quelqu’un sort la pâte à ${fmtCardHM(finalFridgeRemoval.at,isFr)}`:`Keep ${fmtCardHM(pendingEatTime,isFr)}: someone takes the dough out at ${fmtCardHM(finalFridgeRemoval.at,isFr)}`}
         </button>}
-        <button type="button" className="bh-back-action" style={{minHeight:44,display:'block'}} onClick={openAvailability}>{isFr?'Modifier mes indisponibilités':'Change my unavailable times'}</button>
       </div>
     : null;
   const simpleDecisionPending=!!simpleDecision;
@@ -6965,6 +6989,25 @@ function FermentedSchedulePicker({ onSimpleDecisionChange, prefermentFlourPct,do
   const simpleCoveredNote=mode==='simple'&&eatTimeSet&&fridgeRemovalCovered&&canArrangeFridgeRemoval&&finalFridgeRemoval
     ? <p className="bh-key-detail" role="status" data-simple-covered>{isFr?`Quelqu’un sort la pâte à ${fmtCardHM(finalFridgeRemoval.at,isFr)}.`:`Someone takes the dough out at ${fmtCardHM(finalFridgeRemoval.at,isFr)}.`}{' '}
         <button type="button" className="bh-back-action" data-simple-undo style={{minHeight:44,minWidth:44}} onClick={()=>setFridgeRemovalCovered(false)}>{isFr?'Annuler':'Undo'}</button></p>
+    : null;
+  const simpleMovedNote=mode==='simple'&&simpleMoved&&eatTimeSet&&+pendingEatTime===simpleMoved.to&&!simpleDecision
+    ? <p className="bh-key-detail" role="status" data-simple-moved>{isFr?`Enfournement déplacé à ${fmtCardHM(pendingEatTime,isFr)}.`:`Moved to ${fmtCardHM(pendingEatTime,isFr)}.`}{' '}
+        <button type="button" className="bh-back-action" data-simple-moved-undo style={{minHeight:44,minWidth:44}} onClick={()=>{const previous=simpleMoved.from;setSimpleMoved(null);
+          applyTimePick(`${previous.getFullYear()}-${String(previous.getMonth()+1).padStart(2,'0')}-${String(previous.getDate()).padStart(2,'0')}`,previous.getHours(),previous.getMinutes());}}>{isFr?'Annuler':'Undo'}</button></p>
+    : null;
+  // Simple: most bakers work. When steps would land in weekday working hours
+  // and no work hours are set, ask once instead of assuming they are home.
+  const workClashes=mode==='simple'&&eatTimeSet&&!isWorkActive&&!simpleDecision&&!simpleWorkDismissed
+    ? findAvailabilityConflicts(currentPlanActions(committedSchedule?.availabilityActions??[]),workdays.map(day=>({from:day.blockStart,to:day.blockEnd,label:day.label})),Date.now())
+    : [];
+  const workPrompt=workClashes.length>0
+    ? <div className="bh-key-detail" role="status" data-simple-work-prompt style={{margin:'8px 0 12px'}}>
+        <p style={{margin:'0 0 4px'}}>{isFr
+          ?`Votre planning prévoit des étapes ${workClashes[0].action.at.toLocaleDateString('fr-FR',{weekday:'long'})} en journée. Travaillez-vous ce jour-là ?`
+          :`Your plan has steps during the day on ${workClashes[0].action.at.toLocaleDateString('en-GB',{weekday:'long'})}. Are you at work then?`}</p>
+        <button type="button" className="bh-back-action" data-simple-work-yes style={{minHeight:44}} onClick={toggleWork}>{isFr?'Oui, ajouter mes heures de travail':'Yes, add my work hours'}</button>{' '}
+        <button type="button" className="bh-back-action" style={{minHeight:44}} onClick={()=>setSimpleWorkDismissed(true)}>{isFr?'Non, je suis là':'No, I’m home'}</button>
+      </div>
     : null;
   const targetChoices=<div className="bh-target-choices">{suggestedTargets.map(candidate=><button type="button" key={+candidate.bake} onClick={()=>applySuggestedTarget(candidate)}>{candidate.bake.toDateString()===pendingEatTime.toDateString()?fmtCardHM(candidate.bake,isFr):fmtCardDT(candidate.bake,isFr)}{candidate.assistance?<small style={{display:'block'}}>{isFr?`Vérifier ${candidate.assistance} interventions à assurer`:`Review ${candidate.assistance} steps needing cover`}</small>:null}{eatTimeSet&&candidate.clearedAction&&<small style={{display:'block'}}>{foldActionLabel(candidate.clearedAction.id,locale,mixingBatches)??conflictNames[candidate.clearedAction.id]?.[isFr?0:1]} · {fmtCardHM(candidate.clearedAction.at,isFr)}</small>}</button>)}</div>;
 
@@ -7050,8 +7093,9 @@ function FermentedSchedulePicker({ onSimpleDecisionChange, prefermentFlourPct,do
             ?(isFr?'Un geste de préparation est prévu entre 23 h et 7 h.':'A preparation step falls between 11pm and 7am.')
             :(isFr?'Aucun planning entièrement en journée ne convient à cet enfournement.':'No daytime plan fits this bake time.')}</p>}
         {searchingTargets&&eatTimeSet&&!currentCandidateValid&&<p role="status" data-searching-bakes>{isFr?'Recherche du premier créneau compatible…':'Finding the first available baking time…'}</p>}
-        {simpleDecision}{simpleCoveredNote}
-        {(!eatTimeSet||(!currentCandidateValid&&mode!=='simple'))&&suggestedTargets.length>0&&<div className="bh-target-presets"><p>{eatTimeSet?(suggestedTargets[0]?.assistance?(isFr?'Ce créneau laisse le temps au levain. Certaines interventions nécessitent de l’aide.':'This bake gives the starter time to mature. Some steps need someone available.'):(isFr?'Ces enfournements conviennent à votre planning :':'These baking times fit your plan:')):(isFr?'Enfournements proposés':'Suggested baking times')}</p>{targetChoices}</div>}
+        {simpleDecision}{simpleCoveredNote}{simpleMovedNote}{workPrompt}
+        {/* Once a time is chosen, alternatives live in the one conflict card below. */}
+        {!eatTimeSet&&suggestedTargets.length>0&&<div className="bh-target-presets"><p>{eatTimeSet?(suggestedTargets[0]?.assistance?(isFr?'Ce créneau laisse le temps au levain. Certaines interventions nécessitent de l’aide.':'This bake gives the starter time to mature. Some steps need someone available.'):(isFr?'Ces enfournements conviennent à votre planning :':'These baking times fit your plan:')):(isFr?'Enfournements proposés':'Suggested baking times')}</p>{targetChoices}</div>}
         {eatTimeSet&&!currentCandidateValid&&!recipeGenerated&&suggestedTargets.length===0&&!searchingTargets&&!readinessUnsupported&&(!isSourdough||lastFedAge||knownPeakTime)&&<p role="status">{repairBlocks.length
           ?(isFr?'Les durées de préparation et vos indisponibilités ne laissent aucun créneau vérifié. Modifiez vos disponibilités ou choisissez un autre jour.':'Preparation and your unavailable hours leave no verified baking time. Change your availability or choose a different day.')
           :(isFr?'La préparation nécessite plus de temps. Choisissez un autre jour de cuisson.':'Preparation needs more time. Choose a later baking day.')}</p>}
@@ -8477,7 +8521,7 @@ function FermentedSchedulePicker({ onSimpleDecisionChange, prefermentFlourPct,do
           if (!anchors.some(anchor=>anchor.id===id && anchor.editable)) return;
           if (isSourdough) starterChange(id,at); else commercialChange(id,at);
         };
-        const conflictRows=(mode==='simple'&&(simpleDecisionPending||fridgeRemovalCovered)?[]:currentConflicts).map(({action})=>({id:action.id,at:+action.at,
+        const conflictRows=(mode==='simple'&&(simpleDecisionPending||fridgeRemovalCovered)?[]:currentConflicts.filter(conflict=>!(showFridgeArrangement&&conflict.action.id===finalFridgeRemoval?.id))).map(({action})=>({id:action.id,at:+action.at,
           name:(action.id.startsWith('starter-')?displayStarterEvents.find(event=>+event.time===+action.at&&!event.historicalStorage)?.label:null)??foldActionLabel(action.id,locale,mixingBatches)??(conflictNames[action.id]??['Étape','Step'])[isFr?0:1],
           cover:()=>coverAction(action)}));
         return <ScheduleKeyTimings conflictRows={conflictRows} anchors={anchors} blocks={repairBlocks} isFr={isFr} onChange={isSourdough?starterChange:commercialChange} check={check} cacheKey={cacheKey} hasDraft={dirty} onInteractionChange={setKeyDragging} onCancel={cancel} ovenAt={+times.bake} personalized={hasTimingOverrides} adjustment={adjustment} onApply={accept} canApply={dirty&&valid} onOpenChange={setKeyEditorOpen} notice={notice} header={(dirty||hasTimingOverrides||(!dirty&&!valid&&(isSourdough||!!execution)))?<button type="button" className="bh-key-reset" disabled={keyDragging} onClick={resetToRecommendation}>{execution?(isFr?'Recalculer les étapes restantes':'Reset remaining times'):dirty||hasTimingOverrides?(isFr?'Revenir aux horaires recommandés':'Return to recommended times'):(isFr?'Trouver des horaires compatibles':'Find compatible times')}</button>:undefined}>

@@ -500,10 +500,10 @@
     "waterFinalDough": "Water (final dough)",
     "batchTotal": "Batch total",
     "chillPoolishAt": "Refrigerate the poolish at {time}. Keep it chilled until mixing.",
-    "weighOrDilute": "Use a precision scale or the dilution method below.",
+    "weighOrDilute": "Too little for a kitchen scale: see how to measure it below.",
     "weighDose": "Weigh this dose on a scale.",
-    "precisionScaleTitle": "Precision scale required",
-    "precisionScaleBody": "Your yeast amount is {amount} — too small for a standard kitchen scale. Use a precision scale accurate to 0.1g, or use the dilution method.",
+    "precisionScaleTitle": "Weighing a tiny amount of yeast",
+    "precisionScaleBody": "{amount} is too little for most kitchen scales. Use a scale that reads 0.1 g, or the method below.",
     "dilutionShow": "Can't measure this precisely? →",
     "dilutionHide": "Hide measuring tip →",
     "priorityAdjust": "Adjust →",
@@ -514,7 +514,7 @@
     "priorityBalancedDesc": "Standard",
     "prioritySpeed": "Speed",
     "prioritySpeedDesc": "More yeast, faster",
-    "dilutionTitle": "Dilution required — amount too small to weigh directly",
+    "dilutionTitle": "No precision scale? Dilute it",
     "poolishTitle": "Poolish preferment recommended",
     "poolishBody": "For a poolish, use the flour, water and yeast amounts shown in your recipe and follow its preparation time.",
     "notRecommendedTitle": "This fermentation schedule is not recommended",
@@ -582,7 +582,7 @@
     "discardNote1": "Discard the rest before feeding — or use it for pancakes, crackers or flatbread",
     "discardNote2": "Never throw all your starter away — always keep at least 20–30g.",
     "starterReadyWhen": "Your starter is ready when:",
-    "dilutionBody": "Mix 1 g of the selected yeast with {waterG} g water in a separate container. Stir well, then weigh {solutionG} g of this mixture into the dough. This portion contains {waterInSolutionG} g water: add only {remainingWaterG} g more water to the dough. Discard the unused mixture. Do not subtract the whole {waterG} g from the recipe."
+    "dilutionBody": "Stir 1 g of yeast into {waterG} g of water. Use {solutionG} g of this mix (it holds {waterInSolutionG} g of water), then add only {remainingWaterG} g more water to the dough. Discard the unused mixture."
   },
   "schedulePicker": {
     "startDough": "Start Dough",

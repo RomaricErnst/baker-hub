@@ -105,7 +105,7 @@ test('yeast rows offer a practical measure when a spoon would miss the dose',()=
   const html=render(r,pref,undefined,locale,false,{mode:'simple'});
   if(dose===.8)a.match(html,locale==='fr'?/¼ c. à café/:/¼ tsp/);
   else {
-   a.match(html,locale==='fr'?/méthode de dilution ci-dessous/:/dilution method below/);
+   a.match(html,locale==='fr'?/voir comment la mesurer ci-dessous/:/see how to measure it below/);
    a.match(html,locale==='fr'?/Petite dose de levure/:/Small yeast dose/);
   }
  }
