@@ -16,12 +16,8 @@ import { getBreadProtocol } from '../utils/breadProfiles';
 
 interface RecipeOutputProps extends WaterSettingsProps {
   afterIngredients?: ReactNode;
-  firstActionAt?: Date;
-  firstActionLabel?: string;
   onMixerChange?: (value: 'hand' | 'stand') => void;
   mixerConfirmed?: boolean;
-  bakeAt?: Date | null;
-  onAdjustTiming?: () => void;
   containerCapacityLitres?: number;
   onContainerCapacityChange?: (litres: number | undefined) => void;
   mixingBatches?: number;
@@ -63,7 +59,6 @@ interface RecipeOutputProps extends WaterSettingsProps {
   feedRatio?: 1 | 2 | 4 | 5 | 10;
   starterLocation?: 'rt' | 'fridge';
   onEditSetup?: () => void;
-  onOpenGuide?: () => void;
   onShare?: () => void;
 }
 
@@ -382,7 +377,7 @@ export default function RecipeOutput({
   containerCapacityLitres, onContainerCapacityChange, result, numItems, itemWeight, styleName, styleKey, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, explicitFlour = false, units,
   starterEvents, mixingTime, feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
-  afterIngredients, firstActionAt, firstActionLabel, onMixerChange, mixerConfirmed=false, bakeAt, onAdjustTiming, onEditSetup, onOpenGuide, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixerCapacityG, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
+  afterIngredients, onMixerChange, mixerConfirmed=false, onEditSetup, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixerCapacityG, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
 }: RecipeOutputProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -547,10 +542,7 @@ export default function RecipeOutput({
           }}>
             {locale === 'fr' ? 'Ingrédients de la pâte' : 'Dough ingredients'}
           </div>
-          {firstActionAt && bakeAt && <div style={{fontSize:15,lineHeight:1.5,margin:'4px 0'}}>
-            {onOpenGuide ? <button type="button" className="bh-section-back" onClick={onOpenGuide}>{firstActionLabel ?? (locale==='fr'?'Commencer':'Start')} · {formatTimeLabel(firstActionAt)}</button> : <>{firstActionLabel ?? (locale==='fr'?'Commencer':'Start')} · {formatTimeLabel(firstActionAt)}</>} · {locale === 'fr' ? 'Cuire' : 'Bake'} {formatTimeLabel(bakeAt)}
-            {onAdjustTiming && <button type="button" className="bh-section-back" onClick={onAdjustTiming}>{locale==='fr'?'Ajuster les horaires':'Adjust timing'}</button>}
-          </div>}
+          {/* The recipe is the recipe: timing lives in Preparation. */}
           {wastePct !== undefined && wastePct > 0 && (
             <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginTop: '.2rem' }}>
               {t('recipeOutput.mixingBuffer', { pct: wastePct })}
@@ -882,7 +874,7 @@ export default function RecipeOutput({
       </section>}
       {afterIngredients}
 
-      {onContainerCapacityChange && breadProtocol?.method !== 'unleavened' && <details className="bh-disclosure">
+      {mode !== 'simple' && onContainerCapacityChange && breadProtocol?.method !== 'unleavened' && <details className="bh-disclosure">
         <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Récipient de fermentation' : 'Fermentation container'}</summary>
         <label style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',fontSize:14}}>
           {locale === 'fr' ? 'Capacité du récipient (litres)' : 'Container capacity (litres)'}

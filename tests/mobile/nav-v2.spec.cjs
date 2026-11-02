@@ -246,7 +246,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await enterBakeTarget(page);
   if(mode==='custom'){
    await page.getByRole('button',{name:/^Personnaliser ma fournée/}).tap();
-   await expect(page.locator('#step-4:visible')).toBeVisible();
+   await expect(page.locator('#step-3:visible')).toBeVisible();
   }else{
    const generate=page.getByRole('button',{name:'Créer ma recette simple',exact:true});
    await generate.tap();
@@ -260,7 +260,8 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
     await generate.tap();
    }
    await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
-   await page.getByRole('button',{name:'Ajuster les horaires',exact:true}).tap();
+   await page.getByRole('button',{name:/^J’ai les ingrédients · Préparation/}).first().tap();
+   await page.locator('[data-preparation-timing]:visible').getByRole('button',{name:'Ajuster les horaires',exact:true}).tap();
    await expect(timing).toBeVisible();
   }
   await expect.poll(async()=>(await stored(page)).tab).toBe(mode);
@@ -556,7 +557,7 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
  await back.scrollIntoViewIfNeeded();await fits(page,back);await unobscured(back);
  await noOverflow(page);
  await testInfo.attach('climate-back-and-continue',{body:await page.screenshot(),contentType:'image/png'});
- await climate.getByRole('button',{name:'Modifier le matériel',exact:true}).tap();
+ await climate.getByRole('button',{name:'Étape précédente',exact:true}).tap();
  await step.locator('[data-bh-forward]:visible').tap();
  await expect(step.getByRole('heading',{name:'Pétrissage',exact:true})).toBeVisible();
  await expect.poll(async()=>(await stored(page))?.mixerType).toBe('stand');
@@ -569,7 +570,7 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
   await expect(cooling).toHaveValue('direct');
   await expect(climate.getByText('Vérifiez que votre pétrin accepte la glace.',{exact:true})).toBeVisible();
   await cooling.selectOption('premelt');
-  await climate.getByRole('button',{name:'Modifier le matériel',exact:true}).tap();await step.locator('[data-bh-forward]:visible').tap();
+  await climate.getByRole('button',{name:'Étape précédente',exact:true}).tap();await step.locator('[data-bh-forward]:visible').tap();
   await step.getByRole('button',{name:/Pétrin (?:à spirale|spiral)/}).tap();
   await expect.poll(async()=>(await stored(page))?.waterMethod).toBe('premelt');
  await step.getByRole('button',{name:/Robot pâtissier/}).tap();
@@ -584,7 +585,6 @@ test('Custom: batch details are conditional and setup headings reset above the f
  const count=page.getByLabel('Nombre de pizzas',{exact:true});
  await count.fill('7');await count.blur();
  await startCustom(page);
- await page.getByRole('button',{name:'Modifier le matériel',exact:true}).tap();
  const step=page.locator('#step-3');
  await step.getByRole('button',{name:/Four à pizza compact/}).tap();
  await expect(step.getByRole('button',{name:/Four à pizza compact/})).toHaveAttribute('aria-pressed','true');

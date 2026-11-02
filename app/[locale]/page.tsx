@@ -546,7 +546,7 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale 
   const steps = [...flow.steps.filter(s => s.group !== 'plan'), ...flow.steps.filter(s => s.group === 'plan')];
   const rows = [
     ...(modeChip ? [{ key: 'mode', label: 'Mode', value: modeChip.value, onClick: modeChip.onClick }] : []),
-    ...steps.map(step => ({ key: String(step.id), label: step.id===3 ? (fr?'Équipement et cuisine':'Equipment and kitchen') : step.chip, value: reviewValues[step.id] ?? step.value ?? step.gap, onClick: () => onJump(step.id) })),
+    ...steps.map(step => ({ key: String(step.id), label: step.id===3 ? step.title : step.chip, value: reviewValues[step.id] ?? step.value ?? step.gap, onClick: () => onJump(step.id) })),
   ];
   return (
     <div style={{ padding: '4px 0 8px' }}>
@@ -805,6 +805,19 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
   );
 }
 
+// ── Preparation timing summary ────────────────
+// Timing lives in Preparation, not on the recipe: the first action, the bake,
+// and — in Simple, where it was assumed rather than asked — the kitchen
+// temperature the times depend on.
+function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,assumedKitchen,onAdjustTiming}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;assumedKitchen?:React.ReactNode;onAdjustTiming:()=>void}){
+  return <section data-preparation-timing aria-label={fr?'Horaires':'Timing'} style={{border:'1px solid var(--border)',borderRadius:12,padding:'12px 14px',margin:'0 0 16px',background:'var(--warm)'}}>
+    <p style={{margin:'0 0 4px',fontSize:15,fontWeight:600,color:'var(--char)'}}>{startLabel ?? (fr?'Commencer':'Start')} · {formatBakeDateTime(startAt,locale)}</p>
+    <p style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'Enfournement':'Into the oven'} · {formatBakeDateTime(bakeAt,locale)}</p>
+    {assumedKitchen}
+    <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={onAdjustTiming}>{fr?'Ajuster les horaires':'Adjust timing'}</button>
+  </section>;
+}
+
 // ── Mono label ────────────────────────────────
 function KitchenReading({value,units,fr,confirmed,onConfirm}:{value:number;units:UnitSystem;fr:boolean;confirmed:boolean;onConfirm:(v:number)=>void}){
   const [draft,setDraft]=useState<string|null>(null);
@@ -1024,6 +1037,8 @@ export default function Home() {
   const [starterTimingValid, setStarterTimingValid] = useState(true);
   const [scheduleEditing, setScheduleEditing] = useState(false);
   const [scheduleCandidateValid, setScheduleCandidateValid] = useState(true);
+  // Simple's timing step: a single decision card is waiting for the baker.
+  const [simpleDecisionPending, setSimpleDecisionPending] = useState(false);
   const [starterMature, setStarterMature]   = useState(true);
   const [starterHasRye, setStarterHasRye]   = useState(false);
   const [tang, setTang] = useState<'mild' | 'balanced' | 'tangy'>('balanced');
@@ -2452,7 +2467,7 @@ export default function Home() {
     setTab(key); setModeChosen(true); setActiveTab('setup');
     // Land on the first step that actually needs input — completed
     // choices carry over, no re-clicking required.
-    const target = !styleKey ? 1 : key === 'simple' ? 7 : !customKitchenConfirmed ? 4 : firstIncompleteStep(true);
+    const target = !styleKey ? 1 : key === 'simple' ? 7 : !customKitchenConfirmed ? 3 : firstIncompleteStep(true);
     if(target<=2){setBatchView(target===1?'style':'quantity');setActiveTab('batch');}
     if (key === 'custom') {
       setAdvancedStep(target);
@@ -3397,7 +3412,7 @@ export default function Home() {
         : null,
       prefilled: profileFields.has('yeast'),
       gap: fr ? 'La levure n\u2019est pas choisie' : 'No yeast chosen yet' },
-    { id: 10, group: 'making', chip: fr ? 'Peaufiner' : 'Fine-tune', title: t('dialIn.title'),
+    { id: 10, group: 'dough', chip: fr ? 'Peaufiner' : 'Fine-tune', title: t('dialIn.title'),
       value: manualHydration !== undefined
         ? `${manualHydration}% ${t('dialIn.hydrationSuffix')}`
         // The style's BASE hydration is not what the dough is made at — the
@@ -3443,8 +3458,9 @@ export default function Home() {
     onJump: (id) => openSetupStep(id,true),
     onGapJump: (id) => {openSetupStep(id,true);setGapReturnTo(CUSTOM_LAST);},
     onPrev: (id) => {
-      if(id===4&&!recipeGenerated){openBakeTimeInputs();return;}
-      if(id===3){if(equipmentPanel==='mixer')setEquipmentPanel('oven');else setModeChosen(false);scrollToStepTop();return;}
+      // Equipment is Custom's first page: before a recipe exists, back returns
+      // to the bake time chosen before the Simple/Custom decision.
+      if(id===3){if(equipmentPanel==='mixer')setEquipmentPanel('oven');else if(!recipeGenerated){openBakeTimeInputs();return;}else setModeChosen(false);scrollToStepTop();return;}
       const i = CUSTOM_STEPS.findIndex(x => x.id === id);
       openSetupStep(CUSTOM_STEPS[Math.max(0, i - 1)].id,true);
     },
@@ -3543,7 +3559,7 @@ export default function Home() {
   // and a 60px drag there must move a feed time, never the page.
   const lateFillingsHint=!hasFillings&&(pizzaPartyEnabled||sandwichEnabled)&&<button type="button" className="bh-late-fillings" onClick={openLateFillings}>{bakeType==='pizza'?(fr?'Choisir des garnitures':'Choose toppings'):sandwichFamilyForStyle(styleKey??'')==='tartine'?(fr?'Ajouter des tartines':'Add open-faced toasts'):(fr?'Ajouter des sandwichs':'Add sandwiches')}</button>;
   const simpleOrganisationFlow:StepFlow={...simpleFlow,steps:SIMPLE_STEPS.filter(step=>step.id>=3),activeId:Math.max(3,simpleFlow.activeId)};
-  const customOrganisationFlow:StepFlow={...customFlow,steps:CUSTOM_STEPS.filter(step=>step.id>=4||step.id===3&&advancedStep===3),activeId:customFlow.activeId<=2 ? 4 : customFlow.activeId};
+  const customOrganisationFlow:StepFlow={...customFlow,steps:CUSTOM_STEPS.filter(step=>step.id>=3),activeId:customFlow.activeId<=2 ? 3 : customFlow.activeId};
   const simpleSwipeRef = useStepSwipe(simpleOrganisationFlow,
     tab === 'simple' && activeTab === 'setup' && simpleFlow.activeId !== SIMPLE_LAST && simpleFlow.activeId !== 3);
   const customSwipeRef = useStepSwipe(customOrganisationFlow,
@@ -4092,9 +4108,12 @@ export default function Home() {
             {/* ─── STEP 8: Scheduler ───────────────── */}
             <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={collectingBakeTime ? <></> : scheduleEditing ? null : !eatTime ?
               <button type="button" disabled style={{...NEXT_CTA,opacity:0.5}}>{fr?'Choisissez une date de cuisson':'Choose a bake date'}</button>
-              : !scheduleCandidateValid ? <button type="button" style={NEXT_CTA} onClick={()=>{const panel=document.getElementById('schedule-anchor-panel');panel?.scrollIntoView({block:'start'});panel?.focus();}}>{fr?'Voir les horaires à ajuster →':'Review affected times →'}</button>
+              : !scheduleCandidateValid ? (simpleDecisionPending
+                ? <button type="button" style={NEXT_CTA} onClick={()=>{const card=document.querySelector<HTMLElement>('[data-simple-decision]');card?.scrollIntoView({block:'center'});card?.querySelector<HTMLElement>('[data-simple-accept],[data-simple-keep]')?.focus({preventScroll:true});}}>{fr?'Choisir un horaire qui convient':'Choose a time that fits'}</button>
+                : <button type="button" style={NEXT_CTA} onClick={()=>{const panel=document.getElementById('schedule-anchor-panel');panel?.scrollIntoView({block:'start'});panel?.focus();}}>{fr?'Voir les horaires à ajuster →':'Review affected times →'}</button>)
               : undefined}>
-              <KitchenReading value={kitchenTemp} units={units} fr={fr} confirmed={confirmed('climate',kitchenTemp)} onConfirm={value=>{setKitchenTemp(value);confirmSetting('climate',value);}}/>
+              {/* Simple assumes the kitchen temperature (shown with the plan in
+                  Preparation); Custom asks for it on its own Kitchen step. */}
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => simpleFlow.onJump(1)} />
               ) : (
@@ -4110,6 +4129,7 @@ export default function Home() {
                 numItems={numItems}
                 key={starterPlanResetKey}
                 mode="simple"
+                onSimpleDecisionChange={setSimpleDecisionPending}
                 mixerType={mixerType ?? 'hand'}
                 confirmedPlan={confirmedSchedulePlan}
                 timingOverrides={timingOverrides}
@@ -4171,7 +4191,7 @@ export default function Home() {
               )}
 
               {collectingBakeTime && eatTime && +eatTime>Date.now() && <div style={{display:'grid',gap:10,marginTop:16}}>
-                <button type="button" style={NEXT_CTA} onClick={()=>{setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>{fr?'Créer ma recette simple':'Create my simple recipe'}</button>
+                <button type="button" disabled={simpleDecisionPending} style={{...NEXT_CTA,opacity:simpleDecisionPending?0.5:1}} onClick={()=>{if(simpleDecisionPending)return;setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>{fr?'Créer ma recette simple':'Create my simple recipe'}</button>
                 <button type="button" className="bh-bake-navigator-card" style={{display:'grid',textAlign:'left',padding:14}} onClick={()=>{setAwaitingRecipeChoice(false);chooseMode('custom');}}><strong>{fr?'Personnaliser ma fournée':'Customize my bake'}</strong><span>{directMethodOnly?(fr?'Farine, matériel et hydratation':'Flour, equipment and hydration'):(fr?'Préferment (poolish, biga ou levain), farine, matériel et hydratation':'Preferment (poolish, biga or sourdough), flour, equipment and hydration')}</span></button>
               </div>}
             </StepPage>
@@ -4247,7 +4267,7 @@ export default function Home() {
 
                           <RecipeOutput
                             afterIngredients={recipeFillings}
-                            firstActionAt={firstRecipeAction} firstActionLabel={firstRecipeActionLabel} onMixerChange={execution||mixExecution?undefined:changeRecipeMixer} bakeAt={eatTime} onAdjustTiming={editRecipeTiming}
+                            onMixerChange={execution||mixExecution?undefined:changeRecipeMixer}
                             mixerConfirmed={confirmed('mixer',mixerType)}
                             starterEvents={starterEvents} mixingTime={startTime}
                             containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
@@ -4255,7 +4275,7 @@ export default function Home() {
                             waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixerCapacityG={customMixerCapacityG} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches}
                             ovenType={ovenType}
                             onEditSetup={openSetupReview}
-                            onOpenGuide={() => {setProtocolView('dough');openDestination('protocol');}}
+                            
                             onShare={shareCurrentSession}
                             result={displayRecipe ?? recipe}
                             prefermentType={prefermentType}
@@ -4355,6 +4375,7 @@ export default function Home() {
             {/* ── Bake guide tab content ── */}
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && recipe && mixerType && (<>
+                {destination==='protocol'&&eatTime&&<PreparationTimingSummary fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} assumedKitchen={<details style={{margin:'4px 0'}}><summary style={{minHeight:44,cursor:'pointer',fontSize:14,color:'var(--smoke)'}}>{fr?`Cuisine d’environ ${cToDisplay(kitchenTemp,units)}${tempUnit(units)} · modifier`:`Assumes a kitchen around ${cToDisplay(kitchenTemp,units)}${tempUnit(units)} · change`}</summary><KitchenReading value={kitchenTemp} units={units} fr={fr} confirmed={confirmed('climate',kitchenTemp)} onConfirm={value=>{setKitchenTemp(value);confirmSetting('climate',value);}}/></details>} onAdjustTiming={editRecipeTiming}/>}
                 <BakeGuide
                   onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)}
                   preparationMade={!!execution} mixingMade={!!mixExecution||execution?.method==='none'} onMixComplete={!isUnleavened?recordGuideMix:undefined} onPreparationComplete={!isUnleavened&&yeastType!=='sourdough'&&prefermentType!=='none'?done=>{if(done)markPreparationMade(Date.now());else if(!mixExecution){setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}}:undefined}
@@ -4499,8 +4520,8 @@ export default function Home() {
 
             {/* ─── ADV STEP 5: Climate ─────────────── */}
             <StepPage flow={customOrganisationFlow} id={4}>
-              <button type="button" className="bh-section-back" onClick={()=>openSetupStep(3,true)}>{fr?'Modifier le matériel':'Edit equipment'}</button>
-              <details><summary style={{minHeight:44}}>{fr?'Température de la cuisine':'Kitchen temperature'} · {cToDisplay(kitchenTemp,units)}{tempUnit(units)}</summary><KitchenReading value={kitchenTemp} units={units} fr={fr} confirmed={confirmed('climate',kitchenTemp)} onConfirm={value=>{setKitchenTemp(value);confirmSetting('climate',value);}}/></details>
+              {/* Custom asks the kitchen temperature openly: Simple assumes it. */}
+              <KitchenReading value={kitchenTemp} units={units} fr={fr} confirmed={confirmed('climate',kitchenTemp)} onConfirm={value=>{setKitchenTemp(value);confirmSetting('climate',value);}}/>
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
                 fridgeTemp={fridgeTemp} mode="custom" hideKitchen
@@ -4775,7 +4796,7 @@ export default function Home() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
                           <RecipeOutput
                             afterIngredients={recipeFillings}
-                            firstActionAt={firstRecipeAction} firstActionLabel={firstRecipeActionLabel} onMixerChange={execution||mixExecution?undefined:changeRecipeMixer} bakeAt={eatTime} onAdjustTiming={editRecipeTiming}
+                            onMixerChange={execution||mixExecution?undefined:changeRecipeMixer}
                             mixerConfirmed={confirmed('mixer',mixerType)}
                             starterEvents={starterEvents} mixingTime={startTime}
                             containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
@@ -4783,7 +4804,7 @@ export default function Home() {
                             waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixerCapacityG={customMixerCapacityG} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches}
                             ovenType={ovenType}
                             onEditSetup={openSetupReview}
-                            onOpenGuide={() => {setProtocolView('dough');openDestination('protocol');}}
+                            
                             onShare={shareCurrentSession}
                             result={advancedDisplayRecipe ?? advancedRecipe}
                             numItems={numItems}
@@ -4884,6 +4905,7 @@ export default function Home() {
             {/* ── Bake guide tab content ── */}
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && advancedRecipe && mixerType && (<>
+                {destination==='protocol'&&eatTime&&<PreparationTimingSummary fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime}  onAdjustTiming={editRecipeTiming}/>}
                 <BakeGuide
                   onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)}
                   preparationMade={!!execution} mixingMade={!!mixExecution||execution?.method==='none'} onMixComplete={!isUnleavened?recordGuideMix:undefined} onPreparationComplete={!isUnleavened&&yeastType!=='sourdough'&&prefermentType!=='none'?done=>{if(done)markPreparationMade(Date.now());else if(!mixExecution){setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}}:undefined}

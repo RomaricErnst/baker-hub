@@ -1,3 +1,16 @@
+# 2 November 2026 — Simple journey rework (Claude)
+
+User tested the live Simple journey on iPhone and found the timing step unusable: an 8pm bake with Weekdays + Nights showed "Your plan fits at this baking time" above alternatives (it did not fit), then after Create the same conflict appeared four times (offer buttons, fridge card, "Other steps" list, "I can cover this step" rows, timeline notes) and the recipe repeated the timing. User decisions recorded in this change:
+
+- Simple asks what, how many, when and unavailable times only. The kitchen temperature field and its confirm button are gone from Simple; 22 °C (or the remembered value) is assumed and shown once, editable, in the Preparation timing summary. Custom asks it openly on its Kitchen step.
+- Simple never shows a repair workshop. When the requested bake clashes with availability it shows one decision card: what clashes, "Bake at <nearest verified time> instead" (primary) and, when the only clash is the final fridge removal, "Keep <time>: someone takes the dough out at <time>". Create stays disabled while that card waits. Other kinds of conflict (for example mixer batches) keep the existing explanation so Simple is never a dead end. Custom keeps the detailed panel.
+- The recipe page shows only the recipe: no start/bake line and no Adjust timing (both modes). The Fermentation container section is Custom-only.
+- Preparation opens with the timing summary (first action, into the oven, Simple's kitchen assumption, Adjust timing).
+- Custom now opens on Equipment (oven, then mixing), then Kitchen, Flour, Method, Yeast, Fine-tune, Plan, matching the review list. Fine-tune is grouped with the dough. Back from Equipment returns to the bake time before a recipe exists.
+- Fixed copy: the suggestions label reads "These baking times fit your plan:" (it previously claimed the current time fitted).
+
+Verification: tsc, i18n check, 594 unit tests; affected mobile specs updated and run locally in Chromium (not WebKit) at 390 px against the dev server. Pre-existing Chromium-only failures on unchanged code: nav-v2 "editable weight and sequential equipment", bake-execution "post-preferment overdue mixing". macOS WebKit CI and a physical iPhone check are still required.
+
 # 2 November 2026 — Wave 2 follow-up
 
 Wave 2 revises overnight preparation guidance, small yeast measurement advice, French and English bread copy, timing notices and temperature warnings. Hot poolish requires a validated, scheduled chilling action before recipe water calculations credit cooling. Earlier snapshots without that action retain the actual warm-poolish estimate.

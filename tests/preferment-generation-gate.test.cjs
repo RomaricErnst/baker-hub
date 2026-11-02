@@ -100,11 +100,11 @@ test('whole-plan validation gates generation in both modes and directs invalid p
  assert.equal(nextOverrides.length,2);
  for(const expression of nextOverrides)for(const scheduleCandidateValid of [false,true])for(const scheduleEditing of [false,true]){
   const code=ts.transpileModule('globalThis.result=('+expression+');',{compilerOptions:{target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.React}}).outputText;
-  const context={execution:undefined,mixExecution:undefined,completedMixAt:undefined,schedule:undefined,scheduleCandidateValid,scheduleEditing,collectingBakeTime:false,eatTime:new Date(),fr:true,NEXT_CTA:{},React:{createElement:(type,props,...children)=>({type,props,children})}};
+  const context={execution:undefined,mixExecution:undefined,completedMixAt:undefined,schedule:undefined,scheduleCandidateValid,scheduleEditing,simpleDecisionPending:false,collectingBakeTime:false,eatTime:new Date(),fr:true,NEXT_CTA:{},React:{createElement:(type,props,...children)=>({type,props,children})}};
   vm.runInNewContext(code,context);
   if(scheduleEditing)assert.equal(context.result,null);
   else if(scheduleCandidateValid)assert.equal(context.result,undefined);
-  else {assert.equal(context.result.type,'button');assert.notEqual(context.result.props.disabled,true);assert.equal(context.result.children[0],'Voir les horaires à ajuster →');assert.equal(typeof context.result.props.onClick,'function');}
+  else {assert.equal(context.result.type,'button');assert.notEqual(context.result.props.disabled,true);assert.ok(['Voir les horaires à ajuster →','Choisir un horaire qui convient'].includes(context.result.children[0]));assert.equal(typeof context.result.props.onClick,'function');}
  }
 
 });

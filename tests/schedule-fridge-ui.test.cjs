@@ -9,24 +9,41 @@ const {utils}=require('./load-production.cjs');
 const React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{NextIntlClientProvider}=require('next-intl');
 let choices=[],controls;
 const jsx=require('react/jsx-runtime');
-for(const name of ['jsx','jsxs']){const original=jsx[name];jsx[name]=function(type,props,...args){if(props?.className==='bh-target-choices')choices=props.children;return original(type,props,...args);};}
+let simple={};
+for(const name of ['jsx','jsxs']){const original=jsx[name];jsx[name]=function(type,props,...args){if(props?.className==='bh-target-choices')choices=props.children;for(const key of ['data-simple-keep','data-simple-undo','data-simple-decision'])if(props&&key in props)simple[key]=props;return original(type,props,...args);};}
 require('../app/components/ScheduleKeyTimings.tsx').default=props=>{controls=props;return null};
 const Picker=require('../app/components/SchedulePicker.tsx').default;
 const H=3600000,date=s=>new Date(s);
 function render(extra={}){
- choices=[];controls=null;const effects=[];
+ choices=[];controls=null;simple={};const effects=[];
  const start=date('2026-10-29T18:00Z'),bake=date('2026-10-30T19:00Z');
  const props={mode:'custom',startTime:start,eatTime:bake,blocks:[],preheatMin:45,styleKey:'neapolitan',kitchenTemp:24,fridgeTemp:5,numItems:4,bakeType:'pizza',sessionRestored:true,onChange:(...args)=>effects.push(args),...extra};
  renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:extra.locale??'en',messages:require(`../messages/${extra.locale??'en'}.json`),timeZone:'UTC'},React.createElement(Picker,props)));
- return {props,choices,controls,effects};
+ return {props,choices,controls,effects,simple};
 }
 
 function elements(node){if(!node||typeof node!=='object')return [];if(Array.isArray(node))return node.flatMap(elements);return [node,...elements(node.props?.children)];}
 function control(view,label){return elements(view.controls?.notice).find(node=>node.type==='button'&&node.props.children===label);}
 function work(end='18:00'){return [{from:date('2026-10-30T09:00Z'),to:date(`2026-10-30T${end}Z`),label:'Work'}];}
 function fixed(fn){const old=Date.now;Date.now=()=>Date.parse('2026-10-25T08:00Z');try{fn();}finally{Date.now=old;}}
+test('Simple shows one decision card: keep the bake with someone at home, then undo, never the step list',()=>fixed(()=>{
+ for(const locale of ['fr','en']){
+  const view=render({mode:'simple',locale,blocks:work()});
+  assert.equal(renderToStaticMarkup(view.controls.notice??null),'','Simple never renders the detailed conflict notice');
+  assert.deepEqual(view.controls.conflictRows,[],'Simple never lists steps to cover');
+  assert.ok(view.simple['data-simple-decision'],'the decision card is shown');
+  const keep=view.simple['data-simple-keep'];assert.ok(keep);keep.onClick();
+  const [start,bake,blocks,options]=view.effects.at(-1);
+  assert.equal(+start,+view.props.startTime);assert.equal(+bake,+view.props.eatTime);assert.equal(options.preservePlan,true);
+  assert.ok(blocks[0].fridgeRemoval);
+  const resumed=render({mode:'simple',locale,startTime:start,eatTime:bake,blocks});
+  assert.equal(resumed.simple['data-simple-decision'],undefined,'a covered plan needs no decision');
+  const undo=resumed.simple['data-simple-undo'];assert.ok(undo);undo.onClick();
+  assert.ok(resumed.effects.at(-1)[2].every(b=>!b.fridgeRemoval));
+ }
+}));
 test('fridge arrangement confirms and undoes one action while retaining the exact bake and blocker',()=>fixed(()=>{
- for(const mode of ['simple','custom'])for(const locale of ['fr','en']){
+ for(const mode of ['custom'])for(const locale of ['fr','en']){
   const view=render({mode,locale,blocks:work()});
   assert.equal(view.controls.header,undefined,'an automatic conflict does not offer reset');
   const html=renderToStaticMarkup(view.controls.notice);
@@ -65,9 +82,9 @@ test('no confirmation for a bulk fridge exit or a schedule without blocked final
 test('levain uses the same confirmation and retains its known-peak plan',()=>fixed(()=>{
  for(const mode of ['simple','custom']){
   const args={mode,isSourdough:true,planningMode:'know_peak',knownPeakTime:date('2026-10-29T18:00Z'),lastFeedRatio:1,ratioMode:'keep',savedStarterEvents:[{kind:'known_peak',time:date('2026-10-29T18:00Z'),label:'Known peak',isDraggable:false}],blocks:work()};
-  const view=render(args);const confirm=control(view,'Yes, this step is covered');assert.ok(confirm);confirm.props.onClick();
+  const view=render(args);const confirm=mode==='simple'?{props:view.simple['data-simple-keep']}:control(view,'Yes, this step is covered');assert.ok(confirm?.props);confirm.props.onClick();
   const [start,bake,blocks]=view.effects.at(-1);assert.equal(+start,+view.props.startTime);assert.equal(+bake,+view.props.eatTime);
-  const resumed=render({...args,blocks});assert.ok(control(resumed,'Undo'));assert.equal(resumed.controls.anchors.find(a=>a.id==='mix').valid,true,renderToStaticMarkup(resumed.controls.notice));
+  const resumed=render({...args,blocks});assert.ok(mode==='simple'?resumed.simple['data-simple-undo']:control(resumed,'Undo'));assert.equal(resumed.controls.anchors.find(a=>a.id==='mix').valid,true,renderToStaticMarkup(resumed.controls.notice));
  }
 }));
 

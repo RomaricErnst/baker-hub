@@ -86,14 +86,12 @@ test('blend recipe totals show separate named flour weights and conserve stage a
 });
 
 
-test('recipe opens on start and bake times and displays the selected salt percentage and weighed yeast',()=>{
+test('recipe shows only the recipe (timing lives in Preparation) with the selected salt percentage and weighed yeast',()=>{
  for(const locale of ['en','fr']){
   const result=make();result.saltPct=2.8;result.salt=Math.round(result.flour*.028);result.yeast.convertedGrams=.54;
-  const start=new Date(2030,6,5,17,30),bake=new Date(2030,6,6,19,30);
-  const html=render(result,'none',undefined,locale,true,{firstActionAt:start,bakeAt:bake,onAdjustTiming(){}});
+  const html=render(result,'none',undefined,locale,true);
   const text=html.replace(/<[^>]+>/g,'').replace(/[\u00a0\u202f]/g,' ');
-  a.match(text,locale==='fr'?/Commencer .*17h30 · Cuire .*19h30/:/Start .*5:30pm · Bake .*7:30pm/);
-  a.ok(text.includes(locale==='fr'?'Ajuster les horaires':'Adjust timing'));
+  a.doesNotMatch(text,locale==='fr'?/Ajuster les horaires|Cuire /:/Adjust timing|· Bake /);
   a.match(text,locale==='fr'?/Sel2,8 %/:/Salt2.8%/);
   a.ok(text.includes(locale==='fr'?'0,54 g':'0.54 g'));
  }
@@ -122,5 +120,15 @@ test('poolish stage names the same chill time as the generated thermal schedule'
   a.match(text,locale==='fr'?/Placez la poolish au réfrigérateur.*16\s*h\s*00/:/Refrigerate the poolish.*4:00pm/i);
   r.thermal.prefermentCooldownHours=0;
   a.doesNotMatch(render(r,'poolish',undefined,locale,false,{mixingTime}),/Placez la poolish au réfrigérateur|Refrigerate the poolish/i);
+ }
+});
+
+test('Simple recipe omits the fermentation container; Custom keeps it',()=>{
+ for(const locale of ['en','fr']){
+  const label=locale==='fr'?'Récipient de fermentation':'Fermentation container';
+  const simple=render(make(),'none',undefined,locale,false,{mode:'simple',onContainerCapacityChange(){}});
+  const custom=render(make(),'none',undefined,locale,false,{mode:'custom',onContainerCapacityChange(){}});
+  a.ok(!simple.includes(label),`${locale} simple`);
+  a.ok(custom.includes(label),`${locale} custom`);
  }
 });
