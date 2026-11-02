@@ -230,6 +230,9 @@ interface SchedulePickerProps extends WarmupInputs {
   poolishStorage?: 'auto' | 'fridge' | 'room';
   /** Custom, direct dough: the baker's IDY % of flour. The plan is timed to it. */
   yeastPctOverride?: number;
+  /** True after an explicit method/amount change; the picker replans, then calls onReplanHandled. */
+  replanPending?: boolean;
+  onReplanHandled?: () => void;
   onFridgeOutTimeChange?: (t: Date | null) => void;
   onUsingPeak2Change?: (v: boolean) => void;
   onFeed2TimeChange?: (t: Date | null) => void;
@@ -1796,7 +1799,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   function thermalInputs(method:string,inFridge:boolean){
     return {prefermentType:method, prefInFridge:inFridge,
       styleKey, kitchenTemp, fridgeTemp, mixerType, targetDoughTemp,
@@ -2694,28 +2697,17 @@ function FermentedSchedulePicker({ yeastPctOverride, poolishStorage = 'auto', on
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingEatTime]);
 
-  // A new yeast amount re-times the plan at the same bake time.
-  const yeastOverrideMounted = useRef(false);
+  // The page flags explicit method/amount changes (yeast amount, poolish
+  // storage). They are usually made on another step while this picker is
+  // unmounted, so the flag — not a change-only effect — carries them here, and
+  // they replan even a resumed session.
   useEffect(() => {
-    if (!yeastOverrideMounted.current) { yeastOverrideMounted.current = true; return; }
-    // An explicit method or amount change is a new plan, even on a resumed session.
+    if (!replanPending || isSourdough || !eatTimeSet || isNaN(pendingEatTime.getTime())) return;
     resumeFrozenRef.current = false;
-    if (isSourdough || !eatTimeSet || isNaN(pendingEatTime.getTime())) return;
-    const t = setTimeout(() => computeAndApplyRecommendation(solverBlocksRef.current, pendingEatTime), 0);
+    const t = setTimeout(() => { computeAndApplyRecommendation(solverBlocksRef.current, pendingEatTime); onReplanHandled?.(); }, 0);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yeastPctOverride]);
-
-  // Changing poolish storage is a new method choice: replan at the same bake time.
-  const poolishStorageMounted = useRef(false);
-  useEffect(() => {
-    if (!poolishStorageMounted.current) { poolishStorageMounted.current = true; return; }
-    if (isSourdough || prefermentType !== 'poolish' || isNaN(pendingEatTime.getTime())) return;
-    resumeFrozenRef.current = false;
-    const t = setTimeout(() => computeAndApplyRecommendation(solverBlocksRef.current, pendingEatTime), 0);
-    return () => clearTimeout(t);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [poolishStorage]);
+  }, [replanPending, eatTimeSet]);
 
   // Auto-regenerate preset blocks when bake date changes
   useEffect(() => {

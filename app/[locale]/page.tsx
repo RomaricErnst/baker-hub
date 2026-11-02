@@ -1066,6 +1066,8 @@ export default function Home() {
   const [manualSalt, setManualSalt]           = useState<number | undefined>(undefined);
   // Custom, direct dough: the baker's yeast amount as IDY % of flour. The plan is re-timed to it.
   const [yeastPctOverride, setYeastPctOverride] = useState<number | undefined>(undefined);
+  // Set by explicit plan-input edits (yeast amount, poolish storage); the scheduler clears it after replanning.
+  const [planReplanPending, setPlanReplanPending] = useState(false);
   const [targetDoughTemp, setTargetDoughTemp] = useState<number | undefined>(undefined);
   const [measuredFlourTemp, setMeasuredFlourTemp] = useState<number | undefined>(undefined);
   const [measuredPrefermentTemp, setMeasuredPrefermentTemp] = useState<number | undefined>(undefined);
@@ -4122,7 +4124,7 @@ export default function Home() {
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => simpleFlow.onJump(1)} />
               ) : (
-              <SchedulePicker inputsOnly={collectingBakeTime} yeastPctOverride={effectiveYeastOverride}
+              <SchedulePicker inputsOnly={collectingBakeTime} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)}
                 {...poolishInputs}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
@@ -4626,7 +4628,7 @@ export default function Home() {
                   <div style={{display:'grid',gap:7}}>
                     {([['auto',fr?'Choisir selon mon planning':'Choose to fit my timing',fr?'Le planning compare les deux.':'The plan compares both.'],['fridge',fr?'Au réfrigérateur':'In the fridge',fr?'Plus long et plus souple, 12 à 24 h.':'Longer and more forgiving, 12 to 24 h.'],['room',fr?'À température ambiante':'At room temperature',fr?'Plus court, à faire dans la journée.':'Shorter, made the same day.']] as const).map(([value,label,note])=>{
                       const active=poolishStorage===value;
-                      return <button key={value} type="button" aria-pressed={active} onClick={()=>setPoolishStorage(value)} style={{minHeight:44,padding:'9px 12px',display:'flex',flexDirection:'column',alignItems:'flex-start',gap:2,textAlign:'left',border:`1.5px solid ${active?'var(--terra)':'var(--border)'}`,borderRadius:9,background:active?'var(--warm)':'var(--paper)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:16,cursor:'pointer'}}><span>{label}</span><span style={{fontSize:14,color:'var(--smoke)'}}>{note}</span></button>;
+                      return <button key={value} type="button" aria-pressed={active} onClick={()=>{if(value!==poolishStorage){setPoolishStorage(value);setPlanReplanPending(true);}}} style={{minHeight:44,padding:'9px 12px',display:'flex',flexDirection:'column',alignItems:'flex-start',gap:2,textAlign:'left',border:`1.5px solid ${active?'var(--terra)':'var(--border)'}`,borderRadius:9,background:active?'var(--warm)':'var(--paper)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:16,cursor:'pointer'}}><span>{label}</span><span style={{fontSize:14,color:'var(--smoke)'}}>{note}</span></button>;
                     })}
                   </div>
                 </fieldset>}
@@ -4642,6 +4644,7 @@ export default function Home() {
                 {...poolishInputs}
                 poolishStorage={prefermentType==='poolish'?poolishStorage:'auto'}
                 yeastPctOverride={effectiveYeastOverride}
+                replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
                 mixingBatches={selectedMixingBatches}
@@ -4749,13 +4752,13 @@ export default function Home() {
                     return <div data-yeast-override style={{marginBottom:18}}>
                       <label style={{display:'block',fontSize:16}}>{fr?`Levure (% de farine, ${yeastName})`:`Yeast (% of flour, ${yeastName})`}
                         <input type="number" key={`yeast:${yeastPctOverride ?? 'auto'}:${shownPct ?? ''}`} defaultValue={shownPct!==undefined?Math.round(shownPct*1000)/1000:''} min={Math.round(0.02*conversion*1000)/1000} max={Math.round(2*conversion*100)/100} step={0.01}
-                          onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const idy=Math.min(2,Math.max(0.02,n/conversion));if(recipe?.yeast&&yeastPctOverride===undefined&&Math.abs(idy-recipe.yeast.pct)<0.0005)return;setYeastPctOverride(Math.round(idy*10000)/10000);}}
+                          onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const idy=Math.min(2,Math.max(0.02,n/conversion));if(recipe?.yeast&&yeastPctOverride===undefined&&Math.abs(idy-recipe.yeast.pct)<0.0005)return;setYeastPctOverride(Math.round(idy*10000)/10000);setPlanReplanPending(true);}}
                           style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
                       </label>
                       <p style={{margin:'6px 0 0',fontSize:14,color:'var(--smoke)',lineHeight:1.45}}>{yeastPctOverride!==undefined
                         ? (fr?'Le planning est recalé sur cette quantité : moins de levure, fermentation plus longue ; plus de levure, plus courte.':'Your plan is re-timed to this amount: less yeast means a longer fermentation, more yeast a shorter one.')
                         : (fr?'Calculée pour vos horaires. Si vous la changez, le planning s’adapte à la quantité.':'Calculated for your timing. Change it and the plan adapts to the amount.')}</p>
-                      {yeastPctOverride!==undefined&&<button type="button" onClick={()=>setYeastPctOverride(undefined)} style={{minHeight:44,marginTop:6,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:9,background:'var(--paper)',color:'var(--char)',fontSize:16,cursor:'pointer'}}>{fr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
+                      {yeastPctOverride!==undefined&&<button type="button" onClick={()=>{setYeastPctOverride(undefined);setPlanReplanPending(true);}} style={{minHeight:44,marginTop:6,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:9,background:'var(--paper)',color:'var(--char)',fontSize:16,cursor:'pointer'}}>{fr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
                     </div>;
                   })()}
                   <details style={{margin:'12px 0'}}><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Températures mesurées · facultatif':'Measured temperatures · optional'}</summary>
@@ -4765,7 +4768,7 @@ export default function Home() {
                     {!enrichedDirectOnly&&<><p>{fr?'Hydratation de référence pour ce style':'Reference hydration for this style'} : {zone.classicMin===zone.classicMax ? zone.classicMin : `${zone.classicMin}–${zone.classicMax}`} %. {fr?'Choisissez le bas de la plage pour une pâte plus facile à manipuler.':'Choose the lower end for easier handling.'}</p><p>{oilGuidance(manualOil ?? style?.oil ?? 0,ovenType ?? '',styleKey ?? '',t)}</p><p>{sugarGuidance(manualSugar ?? style?.sugar ?? 0,ovenType ?? '',t).note}</p></>}
                     <p>{totalFlourTarget!==undefined?(fr?'Votre quantité de farine reste fixe : aucune marge de pâte supplémentaire n’est ajoutée.':'Your flour quantity stays fixed: no extra dough allowance is added.'):(fr?'La marge compense la pâte restant dans le bol. 1,5 % convient généralement.':'The allowance covers dough left in the bowl. 1.5% is a practical starting point.')}</p>
                   </details>
-                  <button type="button" style={{minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:9}} onClick={()=>{setManualHydration(undefined);setYeastPctOverride(undefined);setManualSalt(undefined);setManualOil(undefined);setManualSugar(undefined);setTargetDoughTemp(undefined);setWastePct(undefined);}}>{fr?'Rétablir les valeurs conseillées':'Reset recommended values'}</button>
+                  <button type="button" style={{minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:9}} onClick={()=>{setManualHydration(undefined);if(yeastPctOverride!==undefined){setYeastPctOverride(undefined);setPlanReplanPending(true);}setManualSalt(undefined);setManualOil(undefined);setManualSugar(undefined);setTargetDoughTemp(undefined);setWastePct(undefined);}}>{fr?'Rétablir les valeurs conseillées':'Reset recommended values'}</button>
                 </>;
               })()}
             </StepPage>
