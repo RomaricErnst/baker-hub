@@ -42,6 +42,10 @@ for(const locale of ['fr','en']){
   await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
   await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
+  // Custom opens on equipment (oven, then mixing), then the kitchen.
+  await expect(page.locator('#step-3')).toBeVisible();
+  await actions(page).locator('[data-bh-forward]:visible').tap();
+  await actions(page).locator('[data-bh-forward]:visible').tap();
   await expect(page.locator('#step-4')).toBeVisible();
   await expect.poll(async()=>(await stored(page))?.customKitchenConfirmed).toBe(false);
   await actions(page).locator('[data-bh-forward]:visible').tap();
@@ -115,16 +119,17 @@ for(const locale of ['fr','en']){
   await quantity.fill('3');await quantity.blur();
   await actions(page).locator('[data-bh-forward]:visible').tap();
   await expect(page.locator('.bh-navigator-current')).toContainText(fr?'Recette':'Recipe');
-  await expect(page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true})).toBeVisible();
+  // The recipe is only the recipe: timing lives in Preparation.
+  await expect(page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true})).toHaveCount(0);
   await expect.poll(async()=>(await stored(page))?.numItems).toBe(3);
   await page.getByRole('button',{name:fr?'Modifier la quantité':'Edit quantity',exact:true}).tap();
   await quantity.fill('4');await quantity.blur();
   await quantity.fill('3');await quantity.blur();
   await actions(page).locator('[data-bh-forward]:visible').tap();
-  await expect(page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:fr?'Recette à mettre à jour':'Update your recipe',exact:true})).toHaveCount(0);
 
-  await page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true}).tap();
+  await page.getByRole('button',{name:fr?/^J’ai les ingrédients · Préparation/:/^I have the ingredients · Preparation/}).first().tap();
+  await page.locator('[data-preparation-timing]:visible').getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true}).tap();
   await expect(page.locator('#step-7:visible')).toBeVisible();
   expect(errors).toEqual([]);
  });
@@ -183,7 +188,6 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
   await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
   await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
- await page.getByRole('button',{name:fr?'Modifier le matériel':'Edit equipment',exact:true}).tap();
  await actions(page).locator('[data-bh-forward]:visible').tap();
  const section=page.getByRole('region',{name:fr?'Nombre de pétrissées':'Mixing batches',exact:true});
  await section.getByRole('button',{name:fr?'Modifier':'Adjust',exact:true}).tap();

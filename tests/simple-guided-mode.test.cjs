@@ -31,8 +31,8 @@ test('Simple preserves saved equipment and declines unsupported defaults',()=>{
  result=choose({getBreadProtocol:()=>({equipment:['wood_fired'],supportedMixers:['stand'],cooking:'oven'})}).writes;assert.equal(result.setOvenType,'wood_fired');assert.equal(result.setMixerType,'stand');
  result=choose({getBreadProtocol:()=>({equipment:['griddle'],supportedMixers:['hand'],cooking:'griddle'})}).writes;assert.equal(result.setOvenType,'griddle');
 });
-test('Custom opens climate with equipment defaults and preserves hydration',()=>{
- const {writes}=choose({tab:'simple'},'custom');assert.equal(writes.setAdvancedStep,4);assert.equal(writes.setOvenType,'standard_bread');assert.equal(writes.setMixerType,'hand');assert.ok(!('setManualHydration' in writes));
+test('Custom opens on equipment with defaults and preserves hydration',()=>{
+ const {writes}=choose({tab:'simple'},'custom');assert.equal(writes.setAdvancedStep,3);assert.equal(writes.setOvenType,'standard_bread');assert.equal(writes.setMixerType,'hand');assert.ok(!('setManualHydration' in writes));
 });
 test('switching view never changes persisted formula choices or invalidates the recipe',()=>{
  for(const [tab,key] of [['custom','simple'],['simple','custom']]){

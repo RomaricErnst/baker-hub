@@ -51,7 +51,7 @@ test('compact navigation reaches every section above the footer and Custom keeps
  await expect(summary.getByRole('button',{name:/Quantité/})).toBeVisible();
  await expect(summary.getByRole('button',{name:/Farine/})).toBeVisible();
  await summary.getByRole('button',{name:'Terminé',exact:true}).tap();
- await page.getByRole('button',{name:'Modifier le matériel',exact:true}).tap();
+ // Custom opens on its equipment page.
  await page.getByRole('button',{name:/^Four à pizza traditionnel/}).tap();
  await actions.locator('[data-bh-forward]:visible').tap();
  await expect(page.locator('#step-3:visible')).toContainText('Four à pizza traditionnel');
