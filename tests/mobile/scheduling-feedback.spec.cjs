@@ -78,9 +78,10 @@ for(const locale of ['fr','en'])for(const mode of ['custom'])test(`${locale} ${m
  await expect(card).toHaveAttribute('data-fridge-removal','pending');
  await expect(reset(page)).toHaveCount(0);
  await expect(card.getByRole('heading',{name:locale==='fr'?/^Garder l’enfournement à/:/^Keep baking at/})).toBeVisible();
- await expect(card.locator('.bh-resolution-or')).toHaveText(locale==='fr'?'ou':'or');
- await expect(card.getByRole('heading',{name:locale==='fr'?'Cuire plus tard':'Bake later',exact:true})).toBeVisible();
- await expect(card.locator('.bh-target-choices button')).toHaveCount(3);
+ // One list of later times, above the plan; the card points to it.
+ await expect(card).toContainText(locale==='fr'?'Ou choisissez un enfournement plus tard':'Or pick one of the later baking times above');
+ await expect(card.locator('.bh-target-choices')).toHaveCount(0);
+ await expect(page.locator('.bh-target-presets .bh-target-choices button')).toHaveCount(3);
  await expect(plan.locator('.bh-plan-notice')).toHaveCount(0);
  await expect(row(plan,'fridge-removal')).toHaveAttribute('data-candidate-valid','false');
  const before=await stored(page),labelBefore=await card.locator('strong').innerText();
@@ -115,7 +116,7 @@ for(const locale of ['fr','en'])for(const mode of ['custom'])test(`${locale} ${m
  await expect(card).toHaveAttribute('data-fridge-removal','pending');
  await expect(row(plan,'fridge-removal')).toHaveAttribute('data-candidate-valid','false');
  await expect.poll(async()=>(await stored(page)).blocks.every(block=>!block.fridgeRemoval)).toBe(true);
- await card.locator('.bh-target-choices button').first().tap();
+ await page.locator('.bh-target-presets .bh-target-choices button').first().tap();
  await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','true');
  await expect(card).toHaveCount(0);
  await expect.poll(async()=>(await stored(page)).eatTime).toBeGreaterThan(PARTY_BAKE+15*60000);
@@ -156,7 +157,7 @@ for(const locale of ['fr','en'])for(const mode of ['custom'])test(`${locale} ${m
  await expect(preheat).toBeVisible();
  const after=await stored(page);expect(after.startTime).toBe(before.startTime);expect(after.eatTime).toBe(before.eatTime);
  expect(plainBlocks(after.blocks)).toEqual(before.blocks);
- await expect(plan.locator('.bh-plan-notice .bh-target-choices')).toBeVisible();
+ await expect(page.locator('.bh-target-presets .bh-target-choices')).toBeVisible();
 });
 
 // Simple never hands the baker a list of steps to repair: one decision card
@@ -561,7 +562,7 @@ for(const mode of ['simple','custom'])test(mode+': blocked Friday finishing offe
  await (await openAvailability(page)).getByRole('button',{name:/^Nuits/}).tap();
  await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','false');
  // Simple offers one verified time in its decision card; Custom keeps the list.
- const alternatives=mode==='simple'?page.locator('[data-simple-accept]'):plan.locator('.bh-plan-notice .bh-target-choices');
+ const alternatives=mode==='simple'?page.locator('[data-simple-accept]'):page.locator('.bh-target-presets .bh-target-choices');
  await expect(alternatives).toBeVisible();
  if(mode==='simple')await alternatives.tap();else await alternatives.getByRole('button').first().tap();
  await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','true');
