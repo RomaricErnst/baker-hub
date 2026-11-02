@@ -1,7 +1,7 @@
 // Mounts the REAL SchedulePicker with parent-like state, one scenario per mount.
 // Every solver output the parent would receive is recorded on window.__h so the
 // runner can compare plans on data (times, feeds, validity), not only card text.
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import SchedulePicker from '../../app/components/SchedulePicker';
 import {buildSchedule} from '../../app/utils';
@@ -26,7 +26,7 @@ function Harness({ sc }: { sc: any }) {
   const rec = w.__h.rec;
   // Compare effective parent state, including the initial ratio. A callback
   // emitting the unchanged initial value is not a state divergence.
-  rec.nextRatio = nextFeedRatio;
+  rec.nextRatio = nextFeedRatio; rec.bake = +eatTime;
   // PAGE mode mirrors app/[locale]/page.tsx on the branch: the parent feeds
   // starter events, timing overrides, validity and the confirmed-plan key back
   // into the picker. The 29 Aug harness (component-only) did not.
@@ -37,7 +37,7 @@ function Harness({ sc }: { sc: any }) {
   const [starterTimingValid, setStarterTimingValid] = useState(true);
   const key = (st: Date, bl: any[]) => JSON.stringify([+st, +eatTime, bl.map((x: any) => [+x.from, +x.to, x.label])]);
   const onChange = useCallback((s: Date, _e: Date, b: any[], opts?: any) => {
-    setAccepted(opts?.preservePlan ? key(s, b) : null);
+    setAccepted(opts?.preservePlan ? JSON.stringify([+s,+_e,b.map((x:any)=>[+x.from,+x.to,x.label])]) : null);
     if (opts?.timingOverrides !== undefined) setTimingOverrides(opts.timingOverrides);
     if (opts?.starterPlan) setStarterEvents(opts.starterPlan.events);
     setStartTime(s); setEatTime(_e); setBlocks(b);
@@ -45,11 +45,12 @@ function Harness({ sc }: { sc: any }) {
     if (opts?.timingOverrides) rec.overrides = JSON.stringify(opts.timingOverrides);
   }, [rec]);
 
+  const schedule=useMemo(()=>sc.full?buildSchedule(startTime,eatTime,blocks,sc.temp,45,'hand',sc.style,4,sc.batches??1,!sc.commercial):undefined,[startTime,eatTime,blocks,sc]);
   return (
     <SchedulePicker
       startTime={startTime} eatTime={eatTime} blocks={blocks} preheatMin={45}
-      styleKey={sc.style} kitchenTemp={sc.temp} bakeType={sc.full&&sc.style==='sourdough'?'pizza':'bread'} isSourdough mode="custom"
-      {...(sc.full?{schedule:buildSchedule(startTime,eatTime,blocks,sc.temp,45,'hand',sc.style,4,sc.batches??1,true),mixerType:'hand' as const,numItems:4,mixingBatches:sc.batches??1}:{})}
+      styleKey={sc.style} kitchenTemp={sc.temp} bakeType={sc.commercial||sc.full&&sc.style==='sourdough'?'pizza':'bread'} isSourdough={!sc.commercial} prefermentType={sc.commercial?'poolish':'levain'} mode="custom"
+      {...(sc.full?{schedule,mixerType:'hand' as const,numItems:4,mixingBatches:sc.batches??1}:{})}
       onChange={onChange}
       starterLocation={starterLocation} onStarterLocationChange={(l) => { setStarterLocation(l); rec.loc = l; }}
       planningMode="last_fed"
@@ -77,6 +78,7 @@ w.__mount = async (el: HTMLElement, sc: any) => {
   const root = createRoot(el);
   // Drain React's mount, parent feedback, and effects before the runner takes
   // its first snapshot. Timers and the deliberately rapid user taps remain real.
+  if(sc.commercial){root.render(<Harness sc={sc}/>);return root;}
   const previous=w.IS_REACT_ACT_ENVIRONMENT;
   w.IS_REACT_ACT_ENVIRONMENT=true;
   try { await React.act(async()=>{root.render(<Harness sc={sc} />);}); }

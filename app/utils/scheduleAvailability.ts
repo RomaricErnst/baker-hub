@@ -8,7 +8,14 @@ export interface AvailabilityAction {
   fridgeRemovalBake?: number;
 }
 export interface FridgeRemovalArrangement { at: number; bake: number }
-export interface AvailabilityPeriod { from: Date; to: Date; label?: string; fridgeRemoval?: FridgeRemovalArrangement }
+export interface CoveredAction { id:string; at:number; end?:number }
+export function normalizeCoveredActions(value:unknown):CoveredAction[]|undefined {
+  if (!Array.isArray(value)) return undefined;
+  const entries=value.filter((action):action is CoveredAction=>action && typeof action.id==='string' && action.id.length>0
+    && Number.isFinite(action.at) && (action.end===undefined || Number.isFinite(action.end) && action.end>=action.at));
+  return entries.length?entries.map(({id,at,end})=>end===undefined?{id,at}:{id,at,end}):undefined;
+}
+export interface AvailabilityPeriod { coveredActions?:CoveredAction[]; from: Date; to: Date; label?: string; fridgeRemoval?: FridgeRemovalArrangement }
 export interface AvailabilityConflict { action: AvailabilityAction; block: AvailabilityPeriod }
 
 /** Saved arrangements are a commitment to one exact action, never general availability. */
@@ -40,6 +47,17 @@ export function actionConflicts(action: AvailabilityAction, blocks: Availability
   return findAvailabilityConflicts([action], blocks).length > 0;
 }
 
+export function planActions(dough:AvailabilityAction[],method:AvailabilityAction[],completedMixAt?:number):AvailabilityAction[] {
+  const seen=new Set<string>();
+  return [...dough,...method].filter(action=>{
+    if(completedMixAt!==undefined&&(action.id==='autolyse'||/^mix(?:-finish)?(?:-batch-\d+)?$/.test(action.id)
+      ||action.id==='preferment-cold-out'&&+action.at<=completedMixAt))return false;
+    const key=action.id+'@'+(+action.at);
+    if(seen.has(key))return false;
+    seen.add(key);return true;
+  }).sort((a,b)=>+a.at-+b.at);
+}
+
 export function findAvailabilityConflicts(
   actions: AvailabilityAction[], blocks: AvailabilityPeriod[], now = -Infinity,
 ): AvailabilityConflict[] {
@@ -51,6 +69,7 @@ export function findAvailabilityConflicts(
     for (const block of blocks) {
       if (!(+block.from < +block.to)) continue;
       if (isFridgeRemovalCovered(action, block)) continue;
+      if (block.coveredActions?.some(item=>item.id===action.id&&item.at===+action.at&&item.end===(action.end?+action.end:undefined))) continue;
       const hit = hasSpan
         ? Math.max(+action.at, now) < +block.to && +block.from < +action.end!
         : +block.from <= +action.at && +action.at < +block.to;

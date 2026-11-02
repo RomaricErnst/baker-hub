@@ -512,9 +512,9 @@ test('flexible balling keeps the selected bake while respecting unavailable nigh
  await expect(plan.locator('.bh-plan-notice')).toHaveCount(0);
 });
 
-test('blocked Friday finishing offers a verified later bake without dropping availability',async({page})=>{
+for(const mode of ['simple','custom'])test(mode+': blocked Friday finishing offers a verified later bake without dropping availability',async({page})=>{
  const bake=Date.parse('2026-10-30T18:00:00+08:00');
- const {plan}=await seed(page,{preferment:'none',extra:{kitchenTemp:24,fridgeTemp:5,mixerType:'hand',startTime:Date.parse('2026-10-29T18:00:00+08:00'),eatTime:bake}});
+ const {plan}=await seed(page,{mode,preferment:'none',extra:{kitchenTemp:24,fridgeTemp:5,mixerType:'hand',startTime:Date.parse('2026-10-29T18:00:00+08:00'),eatTime:bake}});
  await page.clock.setFixedTime(Date.parse('2026-10-25T12:00:00+08:00'));
  await (await openAvailability(page)).getByRole('button',{name:/^Jours ouvrés/}).tap();
  await (await openAvailability(page)).getByRole('button',{name:/^Nuits/}).tap();

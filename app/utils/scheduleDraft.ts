@@ -1,6 +1,6 @@
-import {buildSchedule,type AvailabilityBlock,type ScheduleResult} from '../utils';
+import {buildSchedule,hasCoherentScheduleShape,type AvailabilityBlock,type ScheduleResult} from '../utils';
 import type {MixerType} from '../data';
-import {findAvailabilityConflicts,type AvailabilityAction} from './scheduleAvailability';
+import {planActions,findAvailabilityConflicts,type AvailabilityAction} from './scheduleAvailability';
 export interface ScheduleDraftInput {
   isSourdough?: boolean;
   start:Date; bake:Date; blocks:AvailabilityBlock[]; kitchenTemp:number; preheatMin:number;
@@ -16,14 +16,10 @@ export function assessScheduleDraft(input:ScheduleDraftInput):{schedule:Schedule
   // The builder historically rounds bake anchors. Never approve a candidate
   // whose rendered agenda silently differs from the requested fixed time.
   if(+schedule.bakeStart!==+bake)return {schedule,valid:false,reason:'timing'};
-  const chronological=[start,schedule.bulkFermStart,schedule.divideBallTime,schedule.finalProofStart,bake];
-  const badOrder=chronological.some((at,index)=>!Number.isFinite(+at)||(index>0&&+at<+chronological[index-1]));
-  const coldStages=[[schedule.coldRetard1Start,schedule.coldRetard1End],[schedule.coldRetard2Start,schedule.coldRetard2End]];
-  const badCold=coldStages.some(([from,to])=>from&&to&&(+to-+from<3600000||+from<+start||+to>+bake));
-  if(badOrder||badCold||(schedule.availabilityActions??[]).some(action=>+action.at>+bake)||extraActions.some(action=>!Number.isFinite(+action.at)||+action.at>+start||(action.end!==undefined&&+action.end>+start)))return {schedule,valid:false,reason:'timing'};
+  if(!hasCoherentScheduleShape(schedule,start)||extraActions.some(action=>!Number.isFinite(+action.at)||+action.at>+start||(action.end!==undefined&&+action.end>+start)))return {schedule,valid:false,reason:'timing'};
   if(!input.methodValid)return {schedule,valid:false,reason:'method'};
   if(!from||!to||+from>=+to||+start<+from||+start>+to||(schedule.batchMixWindows?.some(batch=>+batch.start>+to)??false))return {schedule,valid:false,reason:'range'};
-  const actions=[...(schedule.availabilityActions??[]),...extraActions].filter(a=>input.completedMixAt===undefined||!(a.id==='autolyse'||/^mix(?:-finish)?(?:-batch-\d+)?$/.test(a.id)||a.id==='preferment-cold-out'&&+a.at<=input.completedMixAt));
+  const actions=planActions(schedule.availabilityActions??[],extraActions,input.completedMixAt);
   const conflict=findAvailabilityConflicts(actions,input.blocks,now)[0]?.action;
   if(conflict)return {schedule,valid:false,reason:'busy',conflict};
   if(schedule.preparationInvalid||schedule.bulkConflict||schedule.coldExitConflict||(input.completedMixAt===undefined&&actions.some(a=>+a.at<now)))return {schedule,valid:false,reason:'timing'};

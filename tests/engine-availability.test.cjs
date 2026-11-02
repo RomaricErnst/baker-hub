@@ -125,3 +125,18 @@ test('an ongoing active span checks only its remaining work and clear plans need
  assert.equal(+repair.startTime,+i.startTime);
  assert.ok(+repair.eatTime>=+date('28T21:00'));
 });
+
+test('the same validator accepts shaped dough storage without a bulk fridge stage and accepts a one-hour stage',()=>{
+ const base=input();
+ const regular=build(base);
+ const at=regular.divideBallTime;
+ const moved=build(input([{label:'Brief',from:new Date(+at+5*60000),to:new Date(+at+10*60000)}]));
+ assert.equal(moved.coldRetard1Start,null);
+ assert.ok(moved.coldRetard2Start);
+ assert.ok(utils.hasCoherentScheduleShape(moved,base.startTime));
+ const start=new Date('2030-04-02T10:00Z'),bake=new Date(+start+6.75*3600000);
+ const short=utils.buildSchedule(start,bake,[],32,45,'hand','neapolitan',4);
+ assert.equal(+short.coldRetard2End-+short.coldRetard2Start,3600000);
+ assert.ok(utils.hasCoherentScheduleShape(short,start));
+ assert.equal(utils.hasCoherentScheduleShape({...short,coldRetard2End:new Date(+short.coldRetard2Start+15*60000)},start),false);
+});

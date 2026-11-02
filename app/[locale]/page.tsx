@@ -34,7 +34,7 @@ const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { s
 import { starterFeedToMixHours } from '../lib/starterTiming';
 import { mixerDoughCapacity } from '../utils/mixingBatches';
 import {commercialPrefermentWindow, validateConfirmedBake, type StarterEvent } from '../components/SchedulePicker';
-import { normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake } from '../utils/scheduleAvailability';
+import { normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake } from '../utils/scheduleAvailability';
 import { retainCurrentFridgeRemoval } from '../utils/fridgeRemovalSession';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 import ClimatePicker from '../components/ClimatePicker';
@@ -1473,8 +1473,8 @@ export default function Home() {
     if (session.startTime) setStartTime(new Date(session.startTime));
     if (session.blocks && session.blocks.length > 0) {
       setBlocks(session.blocks.map((b: unknown) => {
-        const block = b as { label: string; from: number; to: number; fridgeRemoval?: unknown };
-        return { label: block.label, from: new Date(block.from), to: new Date(block.to), fridgeRemoval: normalizeFridgeRemoval(block.fridgeRemoval) };
+        const block = b as { label: string; from: number; to: number; fridgeRemoval?: unknown; coveredActions?: unknown };
+        return { label: block.label, from: new Date(block.from), to: new Date(block.to), coveredActions:normalizeCoveredActions(block.coveredActions), fridgeRemoval: normalizeFridgeRemoval(block.fridgeRemoval) };
       }));
     }
     setStarterEvents(restoreStarterEvents(session.starterEvents));
@@ -1821,7 +1821,7 @@ export default function Home() {
   const repairKey = (st: Date, et: Date | null, bl: AvailabilityBlock[], offset = prefOffsetH, storage = prefGoesInFridge) =>
     JSON.stringify([[kitchenTemp, fridgeTemp, preheatMin, mixerType, styleKey,
       yeastType, prefermentType, offset, storage, tang, starterPlanResetKey],
-      +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label, b.fridgeRemoval])]);
+      +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label, b.fridgeRemoval,b.coveredActions])]);
   const confirmedSchedulePlan = acceptedScheduleRepair === repairKey(startTime, eatTime, blocks);
   const handleScheduleChange = (st: Date, et: Date, bl: AvailabilityBlock[], options?: {preservePlan: boolean; timingOverrides?: TimingOverrides; prefOffsetHours?: number; prefInFridge?: boolean; starterRecoveryResolved?:boolean; starterPlan?: {events:StarterEvent[];fridgeOutTime:Date|null;usingPeak2:boolean;feed2Time:Date|null;starterFridgeInTime:Date|null}}) => {
     if(mixExecution&&+st!==mixExecution.actualAt)return;
@@ -1830,6 +1830,9 @@ export default function Home() {
       const offset=options?.prefOffsetHours??prefOffsetH;
       if(execution.method==='none'?+st!==execution.actualAt:Math.abs(+st-offset*3600000-execution.actualAt)>1)return;
       if((+st!==+startTime||+et!==+(eatTime??0)||offset!==prefOffsetH)&&!madeFormulaMatches(execution,buildSchedule(st,et,bl,kitchenTemp,preheatMin,mixerType??'hand',styleKey??'',numItems,selectedMixingBatches,yeastType==='sourdough'),{prefHours:offset}))return;
+    }
+    if (eatTime && +et!==+eatTime && bl.some(block=>block.coveredActions?.length)) {
+      bl=bl.map(({coveredActions,...block})=>block);
     }
     const changedPlan = recipeGenerated && destination==='organisation' && !isRestoringRef.current && (+st !== +startTime || +et !== (eatTime ? +eatTime : null) || JSON.stringify(bl) !== JSON.stringify(blocks) || (options?.prefInFridge !== undefined && options.prefInFridge !== prefGoesInFridge) || (options?.prefOffsetHours !== undefined && options.prefOffsetHours !== prefOffsetH));
     if (changedPlan) setProtocolStale(true);
@@ -1842,9 +1845,16 @@ export default function Home() {
     if(options?.starterRecoveryResolved&&options.starterPlan)setStarterRecoveryPending(false);
     if(options?.starterPlan){setStarterEvents(options.starterPlan.events);setFridgeOutTime(options.starterPlan.fridgeOutTime);setUsingPeak2(options.starterPlan.usingPeak2);setFeed2Time(options.starterPlan.feed2Time);setStarterFridgeInTime(options.starterPlan.starterFridgeInTime);}
     // Applying is durable immediately; the general autosave is deliberately debounced.
-    if(options?.preservePlan || options?.timingOverrides !== undefined)saveSession(buildSessionPayload({...(options?.starterRecoveryResolved&&options.starterPlan?{starterRecoveryPending:false}:{}),protocolStale:protocolStale||changedPlan,...(options?.prefInFridge!==undefined?{prefGoesInFridge:options.prefInFridge}:{}),...(options?.timingOverrides !== undefined ? {timingOverrides:normalizeTimingOverrides(options.timingOverrides)} : {}),...(options.starterPlan?{starterEvents:serializeStarterEvents(options.starterPlan.events),fridgeOutTime:options.starterPlan.fridgeOutTime?.getTime()??null,usingPeak2:options.starterPlan.usingPeak2,feed2Time:options.starterPlan.feed2Time?.getTime()??null,starterFridgeInTime:options.starterPlan.starterFridgeInTime?.getTime()??null}:{}),...(options.prefOffsetHours!==undefined?{prefOffsetH:options.prefOffsetHours}:{}),startTime:+st,eatTime:+et,blocks:bl.map(b=>({label:b.label,from:+b.from,to:+b.to,...(b.fridgeRemoval?{fridgeRemoval:b.fridgeRemoval}:{})}))}));
+    if(options?.preservePlan || options?.timingOverrides !== undefined)saveSession(buildSessionPayload({...(options?.starterRecoveryResolved&&options.starterPlan?{starterRecoveryPending:false}:{}),protocolStale:protocolStale||changedPlan,...(options?.prefInFridge!==undefined?{prefGoesInFridge:options.prefInFridge}:{}),...(options?.timingOverrides !== undefined ? {timingOverrides:normalizeTimingOverrides(options.timingOverrides)} : {}),...(options.starterPlan?{starterEvents:serializeStarterEvents(options.starterPlan.events),fridgeOutTime:options.starterPlan.fridgeOutTime?.getTime()??null,usingPeak2:options.starterPlan.usingPeak2,feed2Time:options.starterPlan.feed2Time?.getTime()??null,starterFridgeInTime:options.starterPlan.starterFridgeInTime?.getTime()??null}:{}),...(options.prefOffsetHours!==undefined?{prefOffsetH:options.prefOffsetHours}:{}),startTime:+st,eatTime:+et,blocks:bl.map(b=>({label:b.label,from:+b.from,to:+b.to,...(b.coveredActions?.length?{coveredActions:b.coveredActions}:{}),...(b.fridgeRemoval?{fridgeRemoval:b.fridgeRemoval}:{})}))}));
   };
 
+  const poolishInputs = {
+    prefermentFlourPct: prefermentFlourPct ?? 20,
+    doughMassG: numItems * itemWeight,
+    hydrationPct: manualHydration ?? (styleKey ? ALL_STYLES[styleKey].hydration : undefined),
+    flourTempC: measuredFlourTemp ?? (flourInFridge ? fridgeTemp : kitchenTemp),
+    targetDoughTemp,
+  };
   const prefRemoveFromFridgeTime = useMemo(() => {
     if (!prefGoesInFridge || !eatTime) return null;
     // Same single source of truth the scheduler uses. Returns 0 for biga and for
@@ -1854,7 +1864,7 @@ export default function Home() {
     const rtWarmupH = requiredPrefWarmupH({
       prefermentType: prefermentType ?? 'none',
       prefInFridge: prefGoesInFridge,
-      prefermentFlourPct, doughMassG:numItems*itemWeight,
+      prefermentFlourPct: prefermentFlourPct ?? 20, doughMassG:numItems*itemWeight,
       hydrationPct:manualHydration ?? (styleKey ? ALL_STYLES[styleKey].hydration : undefined),
       flourTempC:measuredFlourTemp ?? (flourInFridge ? fridgeTemp : kitchenTemp),
       styleKey: styleKey ?? '',
@@ -2041,7 +2051,7 @@ export default function Home() {
       prefGoesInFridge,
       startTime: startTime?.getTime() ?? null,
       eatTime: eatTime?.getTime() ?? null,
-      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}) })),
+      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.coveredActions?.length?{coveredActions:b.coveredActions}:{}), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}) })),
       recipeGenerated, protocolStale, activeTab, pizzaPartyTab, modeChosen, awaitingRecipeChoice,
       navigation:{batchView,protocolView,serviceView,returnTo:fillingsReturn,prepReturnToService,shoppingReturnToFillings},
       // How far the baker got. Without it a resumed session reopened at
@@ -2136,7 +2146,7 @@ export default function Home() {
     const actual:BakeExecution=execution?{...execution,actualAt:at,recordedAt:Date.now()}:{method:commercialMethod,actualAt:at,recordedAt:Date.now(),inFridge:prefGoesInFridge,prefHours:prefOffsetH,prefWindow:commercialPrefermentWindow(commercialMethod,prefGoesInFridge,kitchenTemp,styleKey??'',fridgeTemp),recipe};
     const mix=commercialMethod==='none'?new Date(at):startTime;
     const nextOffset=commercialMethod==='none'?0:(+mix-at)/3600000;
-    const remainingValid=!!eatTime&&validateConfirmedBake({execution:actual,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength:flourChosen?(computeBlendProfile(flourBlend).fermToleranceMultiplier??1):1,preheatMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(actual,candidate,times)}).valid;
+    const remainingValid=!!eatTime&&validateConfirmedBake({...poolishInputs,execution:actual,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength:flourChosen?(computeBlendProfile(flourBlend).fermToleranceMultiplier??1):1,preheatMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(actual,candidate,times)}).valid;
     setExecution(actual);setReplanRequested(false);setStartTime(mix);setPrefOffsetH(nextOffset);setTimingOverrides({});setSessionRestored(true);setProtocolStale(!remainingValid);setScheduleCandidateValid(remainingValid);
     saveSession(buildSessionPayload({execution:actual,startTime:+mix,prefOffsetH:nextOffset,timingOverrides:{},protocolStale:!remainingValid}));
     if(destination!=='protocol'){if(remainingValid)openDestination('recipe');else{setSetupOverview(false);setActiveStep(7);setAdvancedStep(9);openDestination('organisation');}}
@@ -2145,7 +2155,7 @@ export default function Home() {
     if(!recipe||!eatTime||!Number.isFinite(at)||at>Date.now()||prepared&&at<prepared.actualAt)return;
     const actual:MixExecution={actualAt:at,recordedAt:Date.now(),recipe:mixExecution?.recipe??recipe};
     const mix=new Date(at),offset=prepared?(at-prepared.actualAt)/3600000:prefOffsetH;
-    const valid=prepared?validateConfirmedBake({completedMixAt:at,execution:prepared,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength:flourChosen?(computeBlendProfile(flourBlend).fermToleranceMultiplier??1):1,preheatMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(prepared,candidate,times,actual.recipe)}).valid:at===+startTime&&starterTimingValid&&scheduleCandidateValid;
+    const valid=prepared?validateConfirmedBake({...poolishInputs,completedMixAt:at,execution:prepared,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength:flourChosen?(computeBlendProfile(flourBlend).fermToleranceMultiplier??1):1,preheatMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(prepared,candidate,times,actual.recipe)}).valid:at===+startTime&&starterTimingValid&&scheduleCandidateValid;
     if(prepared)setExecution(prepared);
     setStarterRecoveryPending(false);setMixExecution(actual);setStartTime(mix);setPrefOffsetH(offset);setTimingOverrides({});setSessionRestored(true);setScheduleCandidateValid(valid);setProtocolStale(!valid);
     saveSession(buildSessionPayload({execution:prepared,starterRecoveryPending:false,mixExecution:actual,startTime:at,prefOffsetH:offset,timingOverrides:{},protocolStale:!valid}));
@@ -3063,8 +3073,8 @@ export default function Home() {
     if (snap.startTime) setStartTime(shiftD(new Date(snap.startTime)));
     {
       setBlocks(((snap.blocks ?? []) as unknown[]).map((b) => {
-        const bl = b as { label: string; from: number; to: number; fridgeRemoval?: unknown };
-        return { label: bl.label, from: shiftD(new Date(bl.from)), to: shiftD(new Date(bl.to)), fridgeRemoval: rb ? undefined : normalizeFridgeRemoval(bl.fridgeRemoval) };
+        const bl = b as { label: string; from: number; to: number; fridgeRemoval?: unknown; coveredActions?: unknown };
+        return { label: bl.label, from: shiftD(new Date(bl.from)), to: shiftD(new Date(bl.to)), coveredActions:rb?undefined:normalizeCoveredActions(bl.coveredActions), fridgeRemoval: rb ? undefined : normalizeFridgeRemoval(bl.fridgeRemoval) };
       }));
     }
     setStarterEvents(restoreStarterEvents(snap.starterEvents).map(event => ({...event, time:shiftD(event.time), bellPeakTime:event.bellPeakTime ? shiftD(event.bellPeakTime) : undefined, bellStartTime:event.bellStartTime ? shiftD(event.bellStartTime) : undefined})));
@@ -4078,9 +4088,7 @@ export default function Home() {
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => simpleFlow.onJump(1)} />
               ) : (
               <SchedulePicker inputsOnly={collectingBakeTime}
-                prefermentFlourPct={prefermentFlourPct} doughMassG={numItems * itemWeight}
-                hydrationPct={manualHydration ?? (styleKey ? ALL_STYLES[styleKey].hydration : undefined)}
-                flourTempC={measuredFlourTemp ?? (flourInFridge ? fridgeTemp : kitchenTemp)}
+                {...poolishInputs}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
                 mixingBatches={selectedMixingBatches}
@@ -4577,9 +4585,7 @@ export default function Home() {
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => customFlow.onJump(1)} />
               ) : (
               <SchedulePicker
-                prefermentFlourPct={prefermentFlourPct} doughMassG={numItems * itemWeight}
-                hydrationPct={manualHydration ?? (styleKey ? ALL_STYLES[styleKey].hydration : undefined)}
-                flourTempC={measuredFlourTemp ?? (flourInFridge ? fridgeTemp : kitchenTemp)}
+                {...poolishInputs}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
                 mixingBatches={selectedMixingBatches}

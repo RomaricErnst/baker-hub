@@ -433,6 +433,7 @@ function sourdoughGuidance(
 // ══════════════════════════════════════════
 
 export interface AvailabilityBlock {
+  coveredActions?: import('./utils/scheduleAvailability').CoveredAction[];
   from: Date;
   to: Date;
   label: string;
@@ -1135,8 +1136,11 @@ function buildSchedulePhases(
     Math.max(0, (eatTime.getTime() - finalProofStart.getTime()) / 3600000)
   );
 
-  // Divide & Ball happens when dough comes out of fridge (pushed out of any blocker)
-  const divideBallTime = pushOutOfBlockers(coldRetardEnd, relevantBlocks);
+  // Moving shaping beyond the final proof cannot resolve a clash. Keep the
+  // viable shaping time so the baker can cover it or choose a later bake.
+  const nextAvailableDivision = pushOutOfBlockers(coldRetardEnd, relevantBlocks);
+  const divideBallTime = +nextAvailableDivision + divisionMinutesFor(numItems) * 60000 + minFinalRT * 3600000 <= +eatTime
+    ? nextAvailableDivision : coldRetardEnd;
 
   return accountScheduleTime({
     mixingDurationH,
@@ -1334,11 +1338,37 @@ export function buildSchedule(
   } else point('bake', schedule.bakeStart);
   schedule.availabilityActions = actions;
   schedule.availabilityConflicts = findAvailabilityConflicts(actions, availabilityBlocks);
+  if (schedule.coldExitConflict && !schedule.availabilityConflicts.some(conflict => conflict.action.id === 'cold-out')) {
+    schedule.coldExitConflict = null;
+  }
   if (finalRemoval?.fridgeRemovalBake !== undefined) {
     const overlapping = availabilityBlocks.filter(block => +block.from <= +finalRemoval.at && +finalRemoval.at < +block.to);
     schedule.fridgeRemovalArranged = overlapping.length > 0 && overlapping.every(block => isFridgeRemovalCovered(finalRemoval, block));
   }
   return schedule;
+}
+
+/** The two storage intervals describe bulk and shaped dough independently.
+ * Either interval can be absent when a short refrigerator visit was removed. */
+export function hasCoherentScheduleShape(schedule: ScheduleResult, start: Date): boolean {
+  const bake = +schedule.bakeStart;
+  const ordered = schedule.doughMethod === 'unleavened'
+    ? [start, schedule.bulkFermStart, schedule.divideBallTime, schedule.bakeStart]
+    : [start, schedule.bulkFermStart, schedule.divideBallTime, schedule.finalProofStart, schedule.bakeStart];
+  if (ordered.some((at,index) => !Number.isFinite(+at) || (index > 0 && +at < +ordered[index-1]))) return false;
+  if (schedule.poachStart && (+schedule.finalProofStart > +schedule.poachStart || +schedule.divideBallTime >= +schedule.poachStart)) return false;
+  const stages = [[schedule.coldRetard1Start,schedule.coldRetard1End],[schedule.coldRetard2Start,schedule.coldRetard2End]];
+  for (const [from,to] of stages) {
+    if (!from && !to) continue;
+    if (!from || !to || !Number.isFinite(+from) || !Number.isFinite(+to)
+      || +from < +schedule.bulkFermStart || +to > bake || +to - +from < 3600000) return false;
+  }
+  if (schedule.coldRetard1End && +schedule.coldRetard1End > +schedule.divideBallTime) return false;
+  if (schedule.coldRetard2Start && +schedule.coldRetard2Start < +schedule.divideBallTime) return false;
+  if (schedule.coldRetard2End && +schedule.coldRetard2End > +schedule.finalProofStart) return false;
+  return (schedule.availabilityActions ?? []).every(action =>
+    Number.isFinite(+action.at) && +action.at <= bake
+    && (!action.end || (+action.end >= +action.at && +action.end <= bake + (action.id === 'bake' ? schedule.activeCookMinutes ?? 0 : 0) * 60000)));
 }
 
 export interface ScheduleRepairInput {
@@ -1355,6 +1385,8 @@ export interface ScheduleRepairInput {
   /** Supply the planning clock explicitly for reproducible candidate checks. */
   now?: Date;
   allowStartShift?: boolean;
+  /** Candidate mix window for the selected method, expressed as absolute time. */
+  mixWindow?: (bake: Date) => {from: Date; to: Date};
   /** Method-specific constraints are checked for every candidate, not only the first. */
   acceptCandidate?: (candidate: { startTime: Date; eatTime: Date; schedule: ScheduleResult }) => boolean;
 }
@@ -1377,47 +1409,49 @@ export function findScheduleRepair(input: ScheduleRepairInput): ScheduleRepair |
       || +startTime < now || +startTime >= +eatTime || preheatMin < 0) return null;
   const build = (start: Date, bake: Date) => buildSchedule(start, bake, availabilityBlocks, kitchenTemp, preheatMin, mixer, style, input.numItems, input.mixingBatches, input.isSourdough);
   const original = build(startTime, eatTime);
-  const phases = (s: ScheduleResult) => s.coldRetard2Start ? 2 : s.coldRetard1Start ? 1 : 0;
-  const phaseCount = phases(original);
-  // A short-window room-only fallback is not a repair of a required-cold method.
-  if (STYLE_FERM_DEFAULTS[style]?.coldHRequired && phaseCount === 0) return null;
-  const valid = (s: ScheduleResult, start: Date, bake: Date) => {
-    if (phases(s) !== phaseCount || +start < now || +s.bulkFermStart < +start || +s.bulkFermStart > +s.preheatStart
-      || +s.preheatStart > +s.bakeStart || +s.finalProofStart > +s.bakeStart
-      || !s.availabilityActions?.every(a => Number.isFinite(+a.at) && +a.at >= +start && +a.at <= +s.bakeStart
-        && (!a.end || (+a.end >= +a.at && +a.end <= +s.bakeStart + (a.id === 'bake' ? s.activeCookMinutes ?? 0 : 0) * 60000)))
-      || s.availabilityConflicts?.length || s.bulkConflict || s.preparationInvalid
-      || (s.poachStart && (+s.finalProofStart > +s.poachStart || +s.divideBallTime >= +s.poachStart))) return false;
-    const preferredInitialBulkH = kitchenTemp >= 30 ? .5 : kitchenTemp >= 28 ? .75 : 1.5;
-    if (phaseCount > 0 && s.bulkFermHours < preferredInitialBulkH) return false;
-    if (phaseCount === 2) {
-      const first = (+s.coldRetard1End! - +s.coldRetard1Start!) / 3600000;
-      const second = (+s.coldRetard2End! - +s.coldRetard2Start!) / 3600000;
-      if (+s.coldRetard1Start! < +s.bulkFermStart || first < (['neapolitan', 'newyork', 'pizza_romana'].includes(style) ? .25 : kitchenTemp >= 28 ? 2 : 4) || second < 2
-        || +s.coldRetard2Start! - +s.coldRetard1End! !== (s.divisionMinutes ?? divisionMinutesFor(input.numItems)) * 60000
-        || +s.finalProofStart - +s.coldRetard2End! < (kitchenTemp >= 30 ? .5 : .75) * 3600000
-        || +s.preheatStart - +s.finalProofStart < 3600000) return false;
-    } else if (phaseCount === 1) {
-      if (+s.coldRetard1Start! < +s.bulkFermStart || +s.coldRetard1End! <= +s.coldRetard1Start!
-        || +s.finalProofStart < +s.coldRetard1End! || +s.preheatStart - +s.finalProofStart < 3600000) return false;
+  const valid = (schedule: ScheduleResult, start: Date, bake: Date) =>
+    +schedule.bakeStart === +bake && hasCoherentScheduleShape(schedule, start)
+    && !(STYLE_FERM_DEFAULTS[style]?.coldHRequired && !schedule.coldRetardStart)
+    && !schedule.availabilityConflicts?.length && !schedule.bulkConflict && !schedule.coldExitConflict
+    && !(schedule.availabilityActions ?? []).some(action => +action.at < now)
+    && !schedule.preparationInvalid && (input.acceptCandidate?.({startTime:start, eatTime:bake, schedule}) ?? true);
+  if (valid(original,startTime,eatTime)) return null;
+  const quarter = 15 * 60000;
+  const duration = +eatTime - +startTime;
+  const searchAtBake = (bake: Date): ScheduleRepair | null => {
+    const later = +bake !== +eatTime;
+    const preferredStart = +bake - duration;
+    const bounds = input.mixWindow?.(bake);
+    const earliest = Math.max(now + 1, bounds ? +bounds.from : preferredStart - 12 * 3600000);
+    const latest = Math.min(+bake - 1, bounds ? +bounds.to : preferredStart + 12 * 3600000);
+    if (earliest > latest) return null;
+    const availableStart = (start: Date) => +start > now && +start < +bake && !isTimeBlocked(start,availabilityBlocks)
+      && (!bounds || (+start >= +bounds.from && +start <= +bounds.to));
+    // Retain the baker's preparation time when a later bake alone clears the conflict.
+    if (later && availableStart(startTime)) {
+      const schedule = build(startTime,bake);
+      if (valid(schedule,startTime,bake)) return {startTime,eatTime:bake,schedule,kind:'bake'};
     }
-    // Canonical build rounds the bake display; do not offer a different bake
-    // than the one returned to the caller.
-    return +s.bakeStart === +bake && (input.acceptCandidate?.({ startTime: start, eatTime: bake, schedule: s }) ?? true);
+    if (input.allowStartShift === false) return null;
+    const first = Math.ceil(earliest / quarter) * quarter, last = Math.floor(latest / quarter) * quarter;
+    if (first > last) return null;
+    const center = Math.min(last, Math.max(first, Math.round(preferredStart / quarter) * quarter));
+    const maxShift = Math.max(center - first, last - center) / quarter;
+    for (let step = 0; step <= maxShift; step++) {
+      for (const direction of step === 0 ? [0] : [-1, 1]) {
+        const start = new Date(center + direction * step * quarter);
+        if (+start < first || +start > last || +start === +startTime || !availableStart(start)) continue;
+        const schedule = build(start, bake);
+        if (valid(schedule,start,bake)) return {startTime:start,eatTime:bake,schedule,kind:later?'bake':'start'};
+      }
+    }
+    return null;
   };
-  if (!original.availabilityConflicts?.length && !original.bulkConflict) return null;
-  // Try nearest start moves first, with the selected bake held fixed.
-  for (let step = 1; input.allowStartShift !== false && step <= 48; step++) for (const direction of [-1, 1]) {
-    const start = new Date(+startTime + direction * step * 900000);
-    if (+start < now || +start >= +eatTime) continue;
-    const schedule = build(start, eatTime);
-    if (valid(schedule, start, eatTime)) return { startTime: start, eatTime: new Date(eatTime), schedule, kind: 'start' };
-  }
-  // Later bake is a separate explicit choice, never a mutation of the plan.
-  for (let step = 1; step <= 192; step++) {
-    const bake = new Date(Math.ceil(+eatTime / 900000) * 900000 + step * 900000);
-    const schedule = build(startTime, bake);
-    if (valid(schedule, startTime, bake)) return { startTime: new Date(startTime), eatTime: bake, schedule, kind: 'bake' };
+  for (let step = 0; step <= 72 * 4; step++) {
+    const bake = new Date(+eatTime + step * quarter);
+    if (isTimeBlocked(bake,availabilityBlocks) || isTimeBlocked(new Date(+bake - preheatMin * 60000),availabilityBlocks)) continue;
+    const candidate = searchAtBake(bake);
+    if (candidate) return candidate;
   }
   return null;
 }

@@ -30,9 +30,8 @@ test('fridge arrangement confirms and undoes one action while retaining the exac
   const view=render({mode,locale,blocks:work()});
   assert.equal(view.controls.header,undefined,'an automatic conflict does not offer reset');
   const html=renderToStaticMarkup(view.controls.notice);
-  assert.match(html,/bh-resolution-or/);assert.match(html,/Keep baking at|Garder l’enfournement à/);
-  assert.match(html,/Bake later|Cuire plus tard/);
-  assert.doesNotMatch(html,/bh-plan-notice/);
+  assert.match(html,/take dough out|sortie du réfrigérateur/i);
+  assert.doesNotMatch(html,/bh-target-choices/,'The immediate cover action is available before the search resolves');
   const confirm=control(view,locale==='fr'?'Oui, cette étape est prévue':'Yes, this step is covered');assert.ok(confirm,`${mode} ${locale}`);
   confirm.props.onClick();const [start,bake,blocks,options]=view.effects.at(-1);
   assert.equal(+start,+view.props.startTime);assert.equal(+bake,+view.props.eatTime);assert.equal(options.preservePlan,true);
@@ -72,16 +71,6 @@ test('levain uses the same confirmation and retains its known-peak plan',()=>fix
  }
 }));
 
-test('alternative bake resolves the same choice without confirming fridge removal',()=>fixed(()=>{
- for(const mode of ['simple','custom'])for(const locale of ['fr','en']){
-  const view=render({mode,locale,blocks:work()});assert.ok(view.choices.length);
-  view.choices[0].props.onClick();
-  const [start,bake,blocks]=view.effects.at(-1);
-  assert.ok(+bake>+view.props.eatTime);
-  assert.ok(blocks.every(block=>!block.fridgeRemoval));
-  assert.equal(+blocks[0].from,+view.props.blocks[0].from);assert.equal(+blocks[0].to,+view.props.blocks[0].to);
-  const updated=render({mode,locale,startTime:start,eatTime:bake,blocks});
-  assert.equal(updated.controls.anchors.find(a=>a.id==='mix').valid,true);
-  assert.doesNotMatch(renderToStaticMarkup(updated.controls.notice),/bh-resolution-or|bh-fridge-arrangement/);
- }
-}));
+// Selecting a later bake requires the mounted asynchronous search. The
+// scheduling-feedback WebKit spec covers this interaction in both locales
+// and modes and checks the stored bake, blocks and cleared arrangement.
