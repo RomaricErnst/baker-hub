@@ -188,7 +188,8 @@ export default function PrototypeQuantityPicker({
         />
       </div>}
 
-      {roundPizza && roundView === 'count' ? <p>{units === 'imperial' ? `${Math.round(diameter / 2.54 * 10) / 10} in` : `${diameter} cm`} · {grams(itemWeight)} {fr?'par pâton':'per dough ball'}</p> : roundPizza ? (
+      {/* Round pizzas: the count screen asks only how many; size is set in Custom. */}
+      {roundPizza && roundView === 'count' ? null : roundPizza ? (
         <section style={cardStyle} aria-labelledby="quantity-each-pizza">
           <h2 id="quantity-each-pizza" style={{ fontSize: '18px', margin: '0 0 14px', fontWeight: 700 }}>
             {fr ? 'Chaque pizza' : 'Each pizza'}

@@ -821,6 +821,30 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
 }
 
 // ── Mono label ────────────────────────────────
+// Asked once per bake, on the bake-time screen, for Simple and Custom alike:
+// kitchens change with the season, so nothing is remembered or pre-selected.
+const KITCHEN_BANDS=[
+  {id:'cool',c:18,en:'Cool',fr:'Frais',metric:'under 20 °C',metricFr:'moins de 20 °C',imperial:'under 68 °F',imperialFr:'moins de 68 °F'},
+  {id:'mild',c:22,en:'Mild',fr:'Tempéré',metric:'20–24 °C',metricFr:'20–24 °C',imperial:'68–75 °F',imperialFr:'68–75 °F'},
+  {id:'warm',c:27,en:'Warm',fr:'Chaud',metric:'25–29 °C',metricFr:'25–29 °C',imperial:'77–84 °F',imperialFr:'77–84 °F'},
+  {id:'hot',c:31,en:'Hot',fr:'Très chaud',metric:'30 °C and above',metricFr:'30 °C et plus',imperial:'86 °F and above',imperialFr:'86 °F et plus'},
+] as const;
+function kitchenBand(t:number){return t<20?'cool':t<25?'mild':t<30?'warm':'hot';}
+function KitchenWarmth({value,answered,units,fr,onChoose}:{value:number;answered:boolean;units:UnitSystem;fr:boolean;onChoose:(c:number)=>void}){
+  const current=answered?kitchenBand(value):null;
+  return <fieldset data-kitchen-warmth style={{border:0,padding:0,margin:'0 0 16px'}}>
+    <legend style={{fontWeight:700,fontSize:14,color:'var(--char)',marginBottom:8,padding:0}}>{fr?'Quelle température là où la pâte repose ?':'How warm is it where the dough rests?'}</legend>
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+      {KITCHEN_BANDS.map(band=>{const active=current===band.id;return <button key={band.id} type="button" aria-pressed={active} data-kitchen-band={band.id}
+        onClick={()=>onChoose(band.c)}
+        style={{minHeight:44,padding:'8px 12px',display:'grid',gap:2,textAlign:'left',border:`1.5px solid ${active?'var(--terra)':'var(--border)'}`,borderRadius:12,background:active?'var(--warm)':'var(--card)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:16,cursor:'pointer'}}>
+        <span style={{fontWeight:active?700:500}}>{fr?band.fr:band.en}</span>
+        <span style={{fontSize:13,color:'var(--smoke)'}}>{units==='imperial'?(fr?band.imperialFr:band.imperial):(fr?band.metricFr:band.metric)}</span>
+      </button>;})}
+    </div>
+  </fieldset>;
+}
+
 function KitchenReading({value,units,fr,confirmed,onConfirm}:{value:number;units:UnitSystem;fr:boolean;confirmed:boolean;onConfirm:(v:number)=>void}){
   const [draft,setDraft]=useState<string|null>(null);
   const commit=()=>{
@@ -3392,8 +3416,11 @@ export default function Home() {
     if (hasThird) parts.push(`${100 - flourBlend.ratio1 - secondRatio}% ${flourBlend.customFlour3Name ?? localName(FLOUR_DATA[flourBlend.flour3!])}`);
     return parts.join(' + ');
   };
-  const reviewTiming = eatTime ? formatBakeDateTime(eatTime,locale) : null;
-  const reviewKitchen = `${kitchenTemp}°C · ${fr ? 'réfrigérateur' : 'fridge'} ${fridgeTemp}°C`;
+  const kitchenAnswered = confirmed('climate',kitchenTemp);
+  const kitchenPending = !isUnleavened && !kitchenAnswered;
+  const kitchenLabel = (()=>{const band=KITCHEN_BANDS.find(b=>b.id===kitchenBand(kitchenTemp))!;return fr?`Cuisine ${band.fr.toLowerCase()}`:`${band.en} kitchen`;})();
+  const reviewTiming = eatTime ? formatBakeDateTime(eatTime,locale)+(kitchenAnswered&&!isUnleavened?' · '+kitchenLabel:'') : null;
+  const reviewKitchen = `${fr ? 'Réfrigérateur' : 'Fridge'} ${cToDisplay(fridgeTemp,units)}${tempUnit(units)}`;
   const levainStyle = styleKey === 'pain_levain' || styleKey === 'sourdough';
   const levainCustom = levainStyle && tab === 'custom' && yeastType === 'sourdough';
   const CUSTOM_STEPS: StepDef[] = ([
@@ -3620,7 +3647,7 @@ export default function Home() {
   const mealNoun=fr?'Garnitures':bakeType==='pizza'?'Toppings':'Fillings';
   const sourced = (value:string|null, picked:boolean) => !value || picked ? value : value+' · '+(fr?'valeur proposée':'suggested');
   const reviewEquipment = [ovenType && sourced(ovenDisplayName ?? '',confirmed('oven',ovenType)),mixerType && sourced(localName(MIXER_TYPES[mixerType]),confirmed('mixer',mixerType))].filter(Boolean).join(' · ');
-  const reviewAmbient = sourced(reviewKitchen,confirmed('climate',kitchenTemp));
+  const reviewAmbient = reviewKitchen;
   const reviewLeavening = yeastType && !isUnleavened ? sourced(localName(YEAST_TYPES[yeastType]),confirmed('yeast',yeastType)) : null;
   const simpleKitchenSummary = [reviewEquipment,reviewAmbient,reviewLeavening].filter(Boolean).join(' · ');
   const firstRecipeAction = new Date(Math.min(
@@ -4187,7 +4214,7 @@ export default function Home() {
               <button type="button" className="bh-section-back" onClick={()=>{setAwaitingRecipeChoice(false);chooseMode('custom');openSetupStep(3,true);}}>{fr?'Personnaliser mon matériel →':'Customize my equipment →'}</button>
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
-                fridgeTemp={fridgeTemp} mode="simple"
+                fridgeTemp={fridgeTemp} mode="simple" hideKitchen
                 showFridge={!isUnleavened && (!!schedule?.totalColdHours || prefGoesInFridge || yeastType==='sourdough')}
                 units={units}
                 flourInFridge={flourInFridge} onFlourInFridgeChange={setFlourInFridge}
@@ -4221,7 +4248,9 @@ export default function Home() {
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => simpleFlow.onJump(1)} />
               ) : (
-              <SchedulePicker inputsOnly={collectingBakeTime} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor}
+              <SchedulePicker afterBakeInput={isUnleavened?undefined:<KitchenWarmth value={kitchenTemp} answered={kitchenAnswered} units={units} fr={fr}
+                  onChoose={c=>{if(c===kitchenTemp&&kitchenAnswered)return;setKitchenTemp(c);confirmSetting('climate',c);if(recipeGenerated||!collectingBakeTime)setPlanReplanPending(true);}}/>}
+                inputsOnly={collectingBakeTime} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor}
                 {...poolishInputs}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
@@ -4295,9 +4324,10 @@ export default function Home() {
               )}
 
               {collectingBakeTime && eatTime && +eatTime>Date.now() && <div style={{display:'grid',gap:10,marginTop:16}}>
-                <button type="button" disabled={simpleDecisionPending} style={{...NEXT_CTA,opacity:simpleDecisionPending?0.5:1}} onClick={()=>{if(simpleDecisionPending)return;setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>{fr?'Créer ma recette simple':'Create my simple recipe'}</button>
-                {simpleDecisionPending&&<p data-create-hint style={{margin:'-4px 0 0',fontSize:14,color:'var(--smoke)',textAlign:'center'}}>{fr?'Choisissez une option ci-dessus pour continuer.':'Choose an option above to continue.'}</p>}
-                <button type="button" className="bh-bake-navigator-card" style={{display:'grid',textAlign:'left',padding:14}} onClick={()=>{setAwaitingRecipeChoice(false);chooseMode('custom');}}><strong>{fr?'Personnaliser ma fournée':'Customize my bake'}</strong><span>{directMethodOnly?(fr?'Réglez vous-même matériel, farine et hydratation':'Set your own equipment, flour and hydration'):(fr?'Réglez vous-même matériel, farine, levain ou préferment et hydratation':'Set your own equipment, flour, leavening and hydration')}</span></button>
+                <button type="button" disabled={simpleDecisionPending||kitchenPending} style={{...NEXT_CTA,opacity:simpleDecisionPending||kitchenPending?0.5:1}} onClick={()=>{if(simpleDecisionPending||kitchenPending)return;setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>{fr?'Créer ma recette simple':'Create my simple recipe'}</button>
+                {kitchenPending?<p data-create-hint style={{margin:'-4px 0 0',fontSize:14,color:'var(--smoke)',textAlign:'center'}}>{fr?'Indiquez la température pour continuer.':'Choose how warm it is to continue.'}</p>
+                  :simpleDecisionPending&&<p data-create-hint style={{margin:'-4px 0 0',fontSize:14,color:'var(--smoke)',textAlign:'center'}}>{fr?'Choisissez une option ci-dessus pour continuer.':'Choose an option above to continue.'}</p>}
+                <button type="button" className="bh-bake-navigator-card" disabled={kitchenPending} style={{display:'grid',textAlign:'left',padding:14,opacity:kitchenPending?0.5:1}} onClick={()=>{if(kitchenPending)return;setAwaitingRecipeChoice(false);chooseMode('custom');}}><strong>{fr?'Personnaliser ma fournée':'Customize my bake'}</strong><span>{directMethodOnly?(fr?'Réglez vous-même matériel, farine et hydratation':'Set your own equipment, flour and hydration'):(fr?'Réglez vous-même matériel, farine, levain ou préferment et hydratation':'Set your own equipment, flour, leavening and hydration')}</span></button>
               </div>}
             </StepPage>
 
@@ -4480,7 +4510,7 @@ export default function Home() {
             {/* ── Bake guide tab content ── */}
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && recipe && mixerType && (<>
-                {destination==='protocol'&&eatTime&&<PreparationTimingSummary fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} assumedKitchen={<details style={{margin:'4px 0'}}><summary style={{minHeight:44,cursor:'pointer',fontSize:14,color:'var(--smoke)'}}>{fr?`Cuisine d’environ ${cToDisplay(kitchenTemp,units)}${tempUnit(units)} · modifier`:`Assumes a kitchen around ${cToDisplay(kitchenTemp,units)}${tempUnit(units)} · change`}</summary><KitchenReading value={kitchenTemp} units={units} fr={fr} confirmed={confirmed('climate',kitchenTemp)} onConfirm={value=>{setKitchenTemp(value);confirmSetting('climate',value);}}/></details>} onAdjustTiming={editRecipeTiming}/>}
+                {destination==='protocol'&&eatTime&&<PreparationTimingSummary fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming}/>}
                 <BakeGuide
                   onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)}
                   preparationMade={!!execution} mixingMade={!!mixExecution||execution?.method==='none'} onMixComplete={!isUnleavened?recordGuideMix:undefined} onPreparationComplete={!isUnleavened&&yeastType!=='sourdough'&&prefermentType!=='none'?done=>{if(done)markPreparationMade(Date.now());else if(!mixExecution){setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}}:undefined}
@@ -4625,8 +4655,9 @@ export default function Home() {
 
             {/* ─── ADV STEP 5: Climate ─────────────── */}
             <StepPage flow={customOrganisationFlow} id={4}>
-              {/* Custom asks the kitchen temperature openly: Simple assumes it. */}
-              <KitchenReading value={kitchenTemp} units={units} fr={fr} confirmed={confirmed('climate',kitchenTemp)} onConfirm={value=>{setKitchenTemp(value);confirmSetting('climate',value);}}/>
+              {/* The kitchen is asked once, with the bake time; only an older
+                  session without that answer asks it here. */}
+              {!kitchenAnswered && <KitchenWarmth value={kitchenTemp} answered={false} units={units} fr={fr} onChoose={c=>{setKitchenTemp(c);confirmSetting('climate',c);setPlanReplanPending(true);}}/>}
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
                 fridgeTemp={fridgeTemp} mode="custom" hideKitchen part="temperatures"

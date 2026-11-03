@@ -24,6 +24,7 @@ test('Adjust timing without a change keeps the recipe current',async({page})=>{
  await actions(page).locator('[data-bh-forward]:visible').tap();
  const bakeDate=page.getByLabel('Bake date and time',{exact:true});
  await bakeDate.fill('2026-10-04T19:00');await bakeDate.blur();
+ await (async()=>{const k=page.locator('[data-kitchen-warmth]:visible');if(await k.count()&&!(await k.locator('[aria-pressed="true"]').count()))await k.locator('[data-kitchen-band="mild"]').tap();})();
  await page.getByRole('button',{name:'Create my simple recipe',exact:true}).tap();
  await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
  const before=await stored(page);

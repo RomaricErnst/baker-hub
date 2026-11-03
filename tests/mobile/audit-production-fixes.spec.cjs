@@ -59,6 +59,7 @@ for(const bread of [false,true])test(`Fresh ${bread?'baguette lunch':'pizza nigh
  const time=page.getByLabel('Date et heure de cuisson',{exact:true});
  await time.fill(target);await time.blur();
  await expect(page.getByRole('region',{name:'Vos moments clés',exact:true})).toHaveCount(0);
+ await (async()=>{const k=page.locator('[data-kitchen-warmth]:visible');if(await k.count()&&!(await k.locator('[aria-pressed="true"]').count()))await k.locator('[data-kitchen-band="mild"]').tap();})();
  await page.getByRole('button',{name:'Créer ma recette simple',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
  await page.getByRole('button',{name:'Ajouter des garnitures — facultatif',exact:true}).tap();

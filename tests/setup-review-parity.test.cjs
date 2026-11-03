@@ -11,12 +11,12 @@ test('summary reports each chosen flour with its actual two or three slot ratio'
 });
 test('review includes calendar date and fridge temperature without changing stored values',()=>{
  require('./load-production.cjs');
- const {formatBakeDateTime}=require('../app/utils/units.ts');
+ const {formatBakeDateTime,cToDisplay,tempUnit}=require('../app/utils/units.ts');
  for(const [locale,expected] of [['fr','lun. 4 mars · 18h30'],['en','Mon 4 Mar · 6:30pm']]){
-  const context={eatTime:new Date(2030,2,4,18,30),fr:locale==='fr',locale,formatBakeDateTime,kitchenTemp:23,fridgeTemp:5};
+  const context={eatTime:new Date(2030,2,4,18,30),fr:locale==='fr',locale,formatBakeDateTime,cToDisplay,tempUnit,units:'metric',kitchenAnswered:false,isUnleavened:false,kitchenLabel:'',kitchenTemp:23,fridgeTemp:5};
   vm.runInNewContext(ts.transpileModule('const '+declaration('reviewTiming')+'; const '+declaration('reviewKitchen')+'; result=[reviewTiming,reviewKitchen];', {}).outputText,context);
   assert.equal(context.result[0],expected);
-  assert.match(context.result[1],locale==='fr'?/réfrigérateur 5°C/:/fridge 5°C/i);
+  assert.match(context.result[1],locale==='fr'?/réfrigérateur 5°C/i:/fridge 5°C/i);
  }
 });
 test('both review actions regenerate stale recipes and expose explicit edits; guide footer removed',()=>{

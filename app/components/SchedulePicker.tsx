@@ -233,6 +233,8 @@ interface SchedulePickerProps extends WarmupInputs {
   yeastPctOverride?: number;
   /** True after an explicit method/amount change; the picker replans, then calls onReplanHandled. */
   replanPending?: boolean;
+  /** Rendered right under the bake date and time (the kitchen question). */
+  afterBakeInput?: React.ReactNode;
   /** 'starter' renders only the starter questions; 'plan' everything else; 'all' both. */
   schedulerSection?: 'all' | 'starter' | 'plan';
   /** Levain: bulk multiplier for a baker-chosen starter % (starterBulkFactor); 1 by default. */
@@ -1804,7 +1806,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   // A baker-chosen starter % lengthens or shortens the levain room-temperature
   // bulk (starterBulkFactor). The solver windows add the same hours the
   // schedule builder does, so scoring, card and chart stay on one bulk.
@@ -2164,7 +2166,6 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
   const availabilityControlsRef = useRef<HTMLDetailsElement>(null);
   // Simple: the bake the baker moved away from, so the move can be undone.
   const [simpleMoved,setSimpleMoved]=useState<{from:Date;to:number}|null>(null);
-  const [simpleWorkDismissed,setSimpleWorkDismissed]=useState(false);
   const pickerDateTimeRef = useRef<string>(pickerDateTime);
   const [localBlocks, setLocalBlocks] = useState<AvailabilityBlock[]>(blocks);
   const lastFridgeArrangementRef=useRef(blocks.find(block=>block.fridgeRemoval)?.fridgeRemoval);
@@ -7122,6 +7123,8 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
     : null;
   const simpleDecisionPending=!!simpleDecision;
   useEffect(()=>{onSimpleDecisionChange?.(simpleDecisionPending);},[simpleDecisionPending,onSimpleDecisionChange]);
+  // A sourdough plan exists only once the starter is described; ask nothing about it before.
+  const starterDescribed=!isSourdough||(planningMode==='know_peak'?!!knownPeakTime:lastFedAge!==null&&!!lastFedTime);
   const simpleCoveredNote=mode==='simple'&&eatTimeSet&&fridgeRemovalCovered&&canArrangeFridgeRemoval&&finalFridgeRemoval
     ? <p className="bh-key-detail" role="status" data-simple-covered>{isFr?`Quelqu’un sort la pâte à ${fmtCardHM(finalFridgeRemoval.at,isFr)}.`:`Someone takes the dough out at ${fmtCardHM(finalFridgeRemoval.at,isFr)}.`}{' '}
         <button type="button" className="bh-back-action" data-simple-undo style={{minHeight:44,minWidth:44}} onClick={()=>setFridgeRemovalCovered(false)}>{isFr?'Annuler':'Undo'}</button></p>
@@ -7130,22 +7133,6 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
     ? <p className="bh-key-detail" role="status" data-simple-moved>{isFr?`Enfournement déplacé à ${fmtCardHM(pendingEatTime,isFr)}.`:`Moved to ${fmtCardHM(pendingEatTime,isFr)}.`}{' '}
         <button type="button" className="bh-back-action" data-simple-moved-undo style={{minHeight:44,minWidth:44}} onClick={()=>{const previous=simpleMoved.from;setSimpleMoved(null);
           applyTimePick(`${previous.getFullYear()}-${String(previous.getMonth()+1).padStart(2,'0')}-${String(previous.getDate()).padStart(2,'0')}`,previous.getHours(),previous.getMinutes());}}>{isFr?'Annuler':'Undo'}</button></p>
-    : null;
-  // Simple: most bakers work. When steps would land in weekday working hours
-  // and no work hours are set, ask once instead of assuming they are home.
-  // A sourdough plan exists only once the starter is described; ask nothing about it before.
-  const starterDescribed=!isSourdough||(planningMode==='know_peak'?!!knownPeakTime:lastFedAge!==null&&!!lastFedTime);
-  const workClashes=mode==='simple'&&eatTimeSet&&starterDescribed&&!isWorkActive&&!simpleDecision&&!simpleWorkDismissed
-    ? findAvailabilityConflicts(currentPlanActions(committedSchedule?.availabilityActions??[]),workdays.map(day=>({from:day.blockStart,to:day.blockEnd,label:day.label})),Date.now())
-    : [];
-  const workPrompt=workClashes.length>0
-    ? <div className="bh-key-detail" role="status" data-simple-work-prompt style={{margin:'8px 0 12px'}}>
-        <p style={{margin:'0 0 4px'}}>{isFr
-          ?`Votre planning prévoit des étapes ${workClashes[0].action.at.toLocaleDateString('fr-FR',{weekday:'long'})} en journée. Travaillez-vous ce jour-là ?`
-          :`Your plan has steps during the day on ${workClashes[0].action.at.toLocaleDateString('en-GB',{weekday:'long'})}. Are you at work then?`}</p>
-        <button type="button" className="bh-back-action" data-simple-work-yes style={{minHeight:44}} onClick={toggleWork}>{isFr?'Oui, ajouter mes heures de travail':'Yes, add my work hours'}</button>{' '}
-        <button type="button" className="bh-back-action" style={{minHeight:44}} onClick={()=>setSimpleWorkDismissed(true)}>{isFr?'Non, je suis chez moi':'No, I’m home'}</button>
-      </div>
     : null;
   const targetChoices=<div className="bh-target-choices">{suggestedTargets.map(candidate=><button type="button" key={+candidate.bake} onClick={()=>applySuggestedTarget(candidate)}>{candidate.bake.toDateString()===pendingEatTime.toDateString()&&suggestedTargets.every(other=>other.bake.toDateString()===pendingEatTime.toDateString())?fmtCardHM(candidate.bake,isFr):fmtCardDT(candidate.bake,isFr)}{candidate.assistance?<small style={{display:'block'}}>{isFr?`Vérifier ${candidate.assistance} interventions à assurer`:`Review ${candidate.assistance} steps needing cover`}</small>:null}{eatTimeSet&&candidate.clearedAction&&<small style={{display:'block'}}>{foldActionLabel(candidate.clearedAction.id,locale,mixingBatches)??conflictNames[candidate.clearedAction.id]?.[isFr?0:1]} · {fmtCardHM(candidate.clearedAction.at,isFr)}</small>}</button>)}</div>;
 
@@ -7766,6 +7753,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
           </div>
 
         </div>
+        {afterBakeInput&&<div style={{marginTop:16}}>{afterBakeInput}</div>}
         {!inputsOnly&&eatTimeSet&&starterDescribed&&!coherentTimes&&simpleKnownPeakConflict&&<p className="bh-key-note">{starterPeakGuidance}</p>}
         {!inputsOnly&&eatTimeSet&&starterDescribed&&!coherentTimes&&!currentCandidateValid&&<p className="bh-plan-state" role="status">
           {planStateReason}</p>}
@@ -7775,7 +7763,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
             ?(isFr?'Un geste de préparation est prévu entre 23 h et 7 h.':'A preparation step falls between 11pm and 7am.')
             :(isFr?'Aucun planning entièrement en journée ne convient à cet enfournement.':'No daytime plan fits this bake time.')}</p>}
         {searchingTargets&&eatTimeSet&&!currentCandidateValid&&<p role="status" data-searching-bakes>{isFr?'Recherche du premier créneau compatible…':'Finding the first available baking time…'}</p>}
-        {simpleDecision}{simpleCoveredNote}{simpleMovedNote}{workPrompt}
+        {simpleDecision}{simpleCoveredNote}{simpleMovedNote}
         {/* Custom's single list of alternatives; Simple uses its decision card. */}
         {(!eatTimeSet||(!currentCandidateValid&&mode!=='simple'))&&suggestedTargets.length>0&&<div className="bh-target-presets"><p>{eatTimeSet?(suggestedTargets[0]?.assistance?(isFr?'Ce créneau laisse le temps au levain. Certaines interventions nécessitent de l’aide.':'This bake gives the starter time to mature. Some steps need someone available.'):(isFr?'Ces enfournements conviennent à votre planning :':'These baking times fit your plan:')):(isFr?'Enfournements proposés':'Suggested baking times')}</p>{targetChoices}</div>}
         {eatTimeSet&&!currentCandidateValid&&!recipeGenerated&&suggestedTargets.length===0&&!searchingTargets&&!readinessUnsupported&&(!isSourdough||lastFedAge||knownPeakTime)&&<p role="status">{repairBlocks.length
