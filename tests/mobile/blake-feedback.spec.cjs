@@ -17,6 +17,8 @@ for(const lang of ['fr','en'])test(`${lang}: Simple asks only how many; flour qu
  await (async()=>{const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();})();
  const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
  await bakeDate.fill(value);await bakeDate.blur();
+ // On a 320 px screen the link starts under the bottom bar: scroll as a finger would.
+ await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));document.querySelector('[data-customize-link]').scrollIntoView({block:'center'});});
  await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
  await page.locator('.bh-step-trigger:visible').tap();
  await page.getByRole('dialog').getByRole('button',{name:fr?/^Peaufiner/:/^Fine-tune/}).tap();
