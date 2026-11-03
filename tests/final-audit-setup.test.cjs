@@ -45,12 +45,13 @@ test('incomplete current planning has no button looping back to itself; other ga
   const button=find(element);assert.ok(button);button.props.onClick();assert.equal(target,3);
  }
 });
-test('starter assumption is plain visible content before planning, in both languages',()=>{
+test('starter assumption is plain visible content in the starter card, in both languages',()=>{
  for(const isFr of [true,false]){
   const html=render(schedule.StarterHydrationNotice,{isFr});
   assert.match(html,isFr?/100 % d’hydratation/:/100% hydration/);
   assert.match(html,/1:1:1, 1:2:2/);
   assert.match(html,isFr?/ne sont pas prises en charge/:/are not supported/);
+  assert.match(html,/data-starter-hydration/);
   assert.doesNotMatch(html,/<details|<summary|hidden/);
  }
 });

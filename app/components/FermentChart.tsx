@@ -1221,13 +1221,13 @@ export default function FermentChart({
           const actions: Array<{key:string;name:string;hbf:number}> = [];
           if (hasPref && isLevain && starterEvents.length) {
             starterEvents.filter(event=>event.kind!=='known_peak').forEach((event,i)=>actions.push({key:`starter-${i}`,name:event.label,hbf:event.kind==='refresh' && localRefreshHBF!==null?localRefreshHBF:(bakeMs-+event.time)/3600000}));
-          } else if (hasPref) actions.push({key:'pref',name:isLevain?(isFr?'Préparer le levain':'Prepare starter'):prefermentType==='biga'?(isFr?'Préparer la biga':'Prepare biga'):(isFr?'Préparer le poolish':'Prepare poolish'),hbf:prefStartAbsHBF});
+          } else if (hasPref) actions.push({key:'pref',name:isLevain?(isFr?'Préparer le levain':'Prepare starter'):prefermentType==='biga'?(isFr?'Préparer la biga':'Make Biga'):(isFr?'Préparer le poolish':'Make Poolish'),hbf:prefStartAbsHBF});
           if (hasPref && !isLevain && prefNeedsFridge && prefermentFridgeOutTime) {
             actions.push({key:'pref-fridge-out',name:isFr
               ? `Sortir ${prefermentType==='biga'?'la biga':'le poolish'} du réfrigérateur`
               : `Take ${prefermentType==='biga'?'biga':'poolish'} out of the fridge`,hbf:(bakeMs-+prefermentFridgeOutTime)/3600000});
           }
-          actions.push({key:'mix',name:isFr?'Pétrir la pâte':'Mix the dough',hbf:effectiveMixHBF},{key:'bake',name:isFr?'Cuire':'Bake',hbf:0});
+          actions.push({key:'mix',name:isFr?'Pétrir la pâte':'Start Dough',hbf:effectiveMixHBF},{key:'bake',name:isFr?'Cuire':'Bake',hbf:0});
           return actions.sort((a,b)=>b.hbf-a.hbf).map(action=><div key={action.key} style={{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:'2px 12px',padding:'8px 0',borderTop:'1px solid var(--border)',color:inBlocker(action.hbf)?'var(--terra)':'var(--char)'}}>
             <strong style={{fontWeight:action.key===dragging?700:500}}>{action.name}</strong><span>{fmtDT(new Date(bakeMs-action.hbf*3600000),isFr)}</span>
             {inBlocker(action.hbf)&&<span style={{width:'100%',fontSize:12}}>{isFr?'Créneau occupé':'Busy time'}</span>}

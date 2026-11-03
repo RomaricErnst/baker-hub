@@ -3,7 +3,7 @@ const {data}=require('./load-production.cjs');
 const {getBreadProtocol}=require('../app/utils/breadProfiles.ts');
 const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
 const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
-const wanted=new Set(['compactPiadina','enrichedDirectOnly','directMethodOnly','showPrefermentChoice','levainStyle','SIMPLE_STEPS','CUSTOM_STEPS']),pieces=[];
+const wanted=new Set(['compactPiadina','enrichedDirectOnly','directMethodOnly','showPrefermentChoice','levainStyle','levainCustom','SIMPLE_STEPS','CUSTOM_STEPS']),pieces=[];
 function visit(node){
  if(ts.isVariableDeclaration(node)&&ts.isIdentifier(node.name)&&wanted.has(node.name.text))pieces.push('const '+node.getText(tree)+';');
  if(ts.isFunctionDeclaration(node)&&['nextUnanswered','stepAnswered'].includes(node.name?.text))pieces.push(node.getText(tree));

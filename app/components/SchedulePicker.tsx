@@ -232,6 +232,8 @@ interface SchedulePickerProps extends WarmupInputs {
   yeastPctOverride?: number;
   /** True after an explicit method/amount change; the picker replans, then calls onReplanHandled. */
   replanPending?: boolean;
+  /** 'starter' renders only the starter questions; 'plan' everything else; 'all' both. */
+  schedulerSection?: 'all' | 'starter' | 'plan';
   /** Levain: bulk multiplier for a baker-chosen starter % (starterBulkFactor); 1 by default. */
   starterBulkFactor?: number;
   onReplanHandled?: () => void;
@@ -1677,9 +1679,9 @@ function PlanList({
 }
 
 function StarterHydrationNotice({ isFr }: { isFr: boolean }) {
-  return <p style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--char)', margin: '0 0 16px' }}>
-    <strong>{isFr ? 'Levain liquide à 100 % d’hydratation' : 'Liquid starter at 100% hydration'}</strong>
-    {' — '}{isFr ? 'autant d’eau que de farine en poids. Le ratio de rafraîchi (1:1:1, 1:2:2…) ne change pas cette hydratation. Les autres hydratations de levain ne sont pas prises en charge.' : 'equal weights of water and flour. The feeding ratio (1:1:1, 1:2:2…) does not change this hydration. Other starter hydrations are not supported.'}
+  // An assumption, not a question: stated once, quietly, inside the starter card.
+  return <p data-starter-hydration style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--smoke)', margin: '16px 0 0' }}>
+    {isFr ? 'Le plan suppose un levain liquide à 100 % d’hydratation : autant de farine que d’eau, quel que soit le ratio (1:1:1, 1:2:2…). Les autres hydratations ne sont pas prises en charge.' : 'Plans assume a liquid starter at 100% hydration: equal weights of flour and water, whatever the ratio (1:1:1, 1:2:2…). Other hydrations are not supported.'}
   </p>;
 }
 
@@ -1801,7 +1803,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   // A baker-chosen starter % lengthens or shortens the levain room-temperature
   // bulk (starterBulkFactor). The solver windows add the same hours the
   // schedule builder does, so scoring, card and chart stay on one bulk.
@@ -3890,7 +3892,7 @@ function FermentedSchedulePicker({ starterBulkFactor = 1, replanPending = false,
               isPast: _fridgeHoldRefreshTime.getTime() < nowMs - 60 * 60 * 1000,
               isActive: _refreshUpcoming,
               isDraggable: false,
-              label: isFr ? 'Rafraîchi' : 'Refresh Feed',
+              label: isFr ? 'Rafraîchi' : 'Refresh feed',
               cardTimeFormat: Math.abs(_fridgeHoldRefreshTime.getTime() - nowMs) < 30 * 60000 ? 'relative' : 'absolute',
               cardNote: _meaningfulHold
                 ? (isFr
@@ -3918,7 +3920,7 @@ function FermentedSchedulePicker({ starterBulkFactor = 1, replanPending = false,
               isPast: _fridgeHoldInTime.getTime() < nowMs,
               isActive: false,
               isDraggable: false,
-              label: isFr ? 'Au frigo' : 'Into Fridge',
+              label: isFr ? 'Au frigo' : 'Into the fridge',
               cardTimeFormat: 'absolute',
               cardNote: isFr ? 'Au pic — ralentit la fermentation' : 'At peak — slows fermentation',
               bellStyle: 'none',
@@ -3981,7 +3983,7 @@ function FermentedSchedulePicker({ starterBulkFactor = 1, replanPending = false,
             // (one link of a chain can't move alone); intermediates recompute
             // from the pinned refresh at the next solve.
             isDraggable: !_bridgeRefreshMs,
-            label: isFr ? 'Rafraîchi' : 'Refresh Feed',
+            label: isFr ? 'Rafraîchi' : 'Refresh feed',
             // "Now · ..." only when it truly is now — a clamped/delayed
             // refresh (fridge warmup) shows its absolute time.
             cardTimeFormat: Math.abs(_starterRefeedTime.getTime() - nowMs) < 30 * 60000 ? 'relative' : 'absolute',
@@ -4070,7 +4072,7 @@ function FermentedSchedulePicker({ starterBulkFactor = 1, replanPending = false,
               isPast: _renderFridgeInMs < nowMs,
               isActive: false,
               isDraggable: false,
-              label: isFr ? 'Au frigo' : 'Into Fridge',
+              label: isFr ? 'Au frigo' : 'Into the fridge',
               cardTimeFormat: 'absolute',
               // Age-chip times are estimates — never fabricate minute
               // precision for "2–3 days ago".
@@ -4098,7 +4100,7 @@ function FermentedSchedulePicker({ starterBulkFactor = 1, replanPending = false,
             isPast: _foDisplayMs < nowMs,
             isActive: false,
             isDraggable: false,
-            label: isFr ? 'Sortie du frigo' : 'Remove from Fridge',
+            label: isFr ? 'Sortie du frigo' : 'Out of the fridge',
             cardTimeFormat: 'absolute',
             cardNote: _showExtendedNote
               ? (isFr
@@ -6726,6 +6728,24 @@ function FermentedSchedulePicker({ starterBulkFactor = 1, replanPending = false,
     onChange(pendingStart,pendingEatTime,next,{preservePlan:true,prefOffsetHours:prefOffsetH,timingOverrides:manualTimesRef.current});
   }
   const currentCandidateValid=currentCandidate.valid;
+  // Say why this bake time doesn't work, never just that it doesn't.
+  const planStateReason=(()=>{
+    if('message' in currentCandidate&&currentCandidate.message)return currentCandidate.message;
+    const issue='issue' in currentCandidate?currentCandidate.issue:null;
+    const conflictId='conflict' in currentCandidate&&typeof currentCandidate.conflict==='string'?currentCandidate.conflict:undefined;
+    const busy=readinessConflicts[0];
+    if((issue==='busy'||busy)&&(busy||conflictId)){
+      const id=busy?.action.id??conflictId!;
+      const name=foldActionLabel(id,locale,mixingBatches)??(conflictNames[id]??['Une étape','A step'])[isFr?0:1];
+      const label=busy?.block.label;
+      const when=label?.startsWith('Work · ')?(isFr?'pendant vos heures de travail':'during your work hours'):label?.endsWith(' night')?(isFr?'pendant la nuit':'during the night'):(isFr?'pendant une indisponibilité':'during your unavailable time');
+      return `${name}${busy?` ${isFr?'à':'at'} ${fmtCardDT(busy.action.at,isFr)}`:''} ${isFr?'tombe':'falls'} ${when}.`;
+    }
+    if(issue==='range')return isFr?'À cette heure, la pâte ne serait pas prête au bon moment.':'At this time, the dough would not be ready when you bake.';
+    if(issue==='past'||issue==='date'||issue==='timing')return isFr?'Il ne reste pas assez de temps pour préparer la pâte avant cette cuisson.':'There is not enough time left to prepare the dough before this bake.';
+    if(issue==='preferment')return isFr?'Le préferment ne peut pas être prêt pour cette cuisson.':'The preferment cannot be ready for this bake.';
+    return isFr?'Cette heure de cuisson ne permet pas un planning complet.':'This bake time does not allow a complete plan.';
+  })();
   useEffect(()=>{onScheduleValidityChange?.(currentCandidateValid);},[currentCandidateValid,onScheduleValidityChange]);
   useEffect(()=>{if(!isSourdough)onPrefermentValidityChange?.(currentCandidateValid);},[isSourdough,currentCandidateValid,onPrefermentValidityChange]);
   useEffect(()=>{if(isSourdough)onStarterTimingValidityChange?.((completedMixAt!==undefined||starterTimingValid)&&currentCandidateValid);},[isSourdough,completedMixAt,starterTimingValid,currentCandidateValid,onStarterTimingValidityChange]);
@@ -7059,126 +7079,14 @@ function FermentedSchedulePicker({ starterBulkFactor = 1, replanPending = false,
           ?`Votre planning prévoit des étapes ${workClashes[0].action.at.toLocaleDateString('fr-FR',{weekday:'long'})} en journée. Travaillez-vous ce jour-là ?`
           :`Your plan has steps during the day on ${workClashes[0].action.at.toLocaleDateString('en-GB',{weekday:'long'})}. Are you at work then?`}</p>
         <button type="button" className="bh-back-action" data-simple-work-yes style={{minHeight:44}} onClick={toggleWork}>{isFr?'Oui, ajouter mes heures de travail':'Yes, add my work hours'}</button>{' '}
-        <button type="button" className="bh-back-action" style={{minHeight:44}} onClick={()=>setSimpleWorkDismissed(true)}>{isFr?'Non, je suis là':'No, I’m home'}</button>
+        <button type="button" className="bh-back-action" style={{minHeight:44}} onClick={()=>setSimpleWorkDismissed(true)}>{isFr?'Non, je suis chez moi':'No, I’m home'}</button>
       </div>
     : null;
-  const targetChoices=<div className="bh-target-choices">{suggestedTargets.map(candidate=><button type="button" key={+candidate.bake} onClick={()=>applySuggestedTarget(candidate)}>{candidate.bake.toDateString()===pendingEatTime.toDateString()?fmtCardHM(candidate.bake,isFr):fmtCardDT(candidate.bake,isFr)}{candidate.assistance?<small style={{display:'block'}}>{isFr?`Vérifier ${candidate.assistance} interventions à assurer`:`Review ${candidate.assistance} steps needing cover`}</small>:null}{eatTimeSet&&candidate.clearedAction&&<small style={{display:'block'}}>{foldActionLabel(candidate.clearedAction.id,locale,mixingBatches)??conflictNames[candidate.clearedAction.id]?.[isFr?0:1]} · {fmtCardHM(candidate.clearedAction.at,isFr)}</small>}</button>)}</div>;
+  const targetChoices=<div className="bh-target-choices">{suggestedTargets.map(candidate=><button type="button" key={+candidate.bake} onClick={()=>applySuggestedTarget(candidate)}>{candidate.bake.toDateString()===pendingEatTime.toDateString()&&suggestedTargets.every(other=>other.bake.toDateString()===pendingEatTime.toDateString())?fmtCardHM(candidate.bake,isFr):fmtCardDT(candidate.bake,isFr)}{candidate.assistance?<small style={{display:'block'}}>{isFr?`Vérifier ${candidate.assistance} interventions à assurer`:`Review ${candidate.assistance} steps needing cover`}</small>:null}{eatTimeSet&&candidate.clearedAction&&<small style={{display:'block'}}>{foldActionLabel(candidate.clearedAction.id,locale,mixingBatches)??conflictNames[candidate.clearedAction.id]?.[isFr?0:1]} · {fmtCardHM(candidate.clearedAction.at,isFr)}</small>}</button>)}</div>;
 
-  return (
-    <div style={{ fontFamily: 'var(--font-ui)' }}>
-
-      {!inputsOnly && isSourdough && <StarterHydrationNotice isFr={isFr} />}
-      {/* Bake time inputs — always visible */}
-      <div style={{ marginBottom: '16px' }}>
-        <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--char)', marginBottom: '4px' }}>
-          {targetLabel}
-        </div>
-        <div style={{ fontSize: '12px', color: 'var(--smoke)', marginBottom: '12px', lineHeight: 1.5 }}>
-          {isFr ? 'Le planning s’adapte à cet horaire.' : 'Your plan works back from this time.'}
-        </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative' }}>
-          {/* Date — native picker styled as "Sat 4 Apr" */}
-          <div style={{ flex: 2, minWidth: 0, position: 'relative' }}>
-            <div style={{
-              ...INPUT_STYLE, width: '100%',
-              display: 'flex', alignItems: 'center',
-              color: pickerDate ? 'var(--char)' : 'var(--smoke)',
-              position: 'relative', zIndex: 1, cursor: 'pointer',
-              pointerEvents: 'none',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              minWidth: 0,
-            }}>
-              {pickerDate ? (() => {
-                const [y, m, d] = pickerDate.split('-').map(Number);
-                const dt = new Date(y, m - 1, d);
-                dt.setHours(pickerHour,pickerMinute);
-                return fmtCardDT(dt,isFr);
-              })() : (isFr?'Choisir la date et l’heure':'Choose date and time')}
-            </div>
-            <input
-              ref={dateInputRef}
-              type="datetime-local"
-              aria-label={isFr?'Date et heure de cuisson':'Bake date and time'}
-              value={pickerDate ? `${pickerDate}T${String(pickerHour ?? 18).padStart(2,'0')}:${String(pickerMinute).padStart(2,'0')}` : ''}
-              onChange={e=>{
-                const [date,clock]=e.currentTarget.value.split('T');
-                if(!date||!clock)return;
-                const [hour,minute]=clock.split(':').map(Number);
-                setPickerDate(date);setPickerHour(hour);setPickerMinute(minute);
-                if(applyDebounceRef.current)clearTimeout(applyDebounceRef.current);
-                applyDebounceRef.current=setTimeout(()=>{applyDebounceRef.current=null;applyTimePick(date,hour,minute);},350);
-              }}
-              onBlur={e=>{
-                if(!applyDebounceRef.current)return;
-                clearTimeout(applyDebounceRef.current);applyDebounceRef.current=null;
-                const [date,clock]=e.currentTarget.value.split('T');
-                if(date&&clock){const [hour,minute]=clock.split(':').map(Number);applyTimePick(date,hour,minute);}
-              }}
-              onClick={e => {
-                // Desktop browsers need showPicker() to open the calendar.
-                // On touch devices (iOS/Android) the tap ALREADY opens the native
-                // picker — calling showPicker() on top of it double-triggers and
-                // dismisses the sheet on first tap ("field collapses" bug).
-                // Only call it for fine pointers (mouse/trackpad).
-                if (typeof window !== 'undefined'
-                    && window.matchMedia?.('(pointer: coarse)').matches) return;
-                try {
-                  (e.currentTarget as HTMLInputElement).showPicker?.();
-                } catch {
-                  // Older browsers — native behavior already opens picker
-                }
-              }}
-              style={{
-                position: 'absolute', inset: 0, opacity: 0,
-                cursor: 'pointer', width: '100%', height: '100%',
-                zIndex: 2, fontSize: 16,
-              }}
-            />
-          </div>
-
-        </div>
-        {!inputsOnly&&eatTimeSet&&!coherentTimes&&simpleKnownPeakConflict&&<p className="bh-key-note">{starterPeakGuidance}</p>}
-        {!inputsOnly&&eatTimeSet&&!coherentTimes&&!currentCandidateValid&&<p className="bh-plan-state" role="status">
-          {isFr?'La préparation nécessite un autre créneau.':'Preparation needs another available time.'}</p>}
-        {!inputsOnly&&eatTimeSet&&currentCandidateValid&&!localBlocks.some(block=>block.label.endsWith(' night'))&&
-          currentPlanActions(committedSchedule?.availabilityActions??[]).some(isOvernightPreparation)&&
-          <p className="bh-key-detail" data-overnight-preparation>{Object.keys(manualTimes).length||isSourdough
-            ?(isFr?'Un geste de préparation est prévu entre 23 h et 7 h.':'A preparation step falls between 11pm and 7am.')
-            :(isFr?'Aucun planning entièrement en journée ne convient à cet enfournement.':'No daytime plan fits this bake time.')}</p>}
-        {searchingTargets&&eatTimeSet&&!currentCandidateValid&&<p role="status" data-searching-bakes>{isFr?'Recherche du premier créneau compatible…':'Finding the first available baking time…'}</p>}
-        {simpleDecision}{simpleCoveredNote}{simpleMovedNote}{workPrompt}
-        {/* Custom's single list of alternatives; Simple uses its decision card. */}
-        {(!eatTimeSet||(!currentCandidateValid&&mode!=='simple'))&&suggestedTargets.length>0&&<div className="bh-target-presets"><p>{eatTimeSet?(suggestedTargets[0]?.assistance?(isFr?'Ce créneau laisse le temps au levain. Certaines interventions nécessitent de l’aide.':'This bake gives the starter time to mature. Some steps need someone available.'):(isFr?'Ces enfournements conviennent à votre planning :':'These baking times fit your plan:')):(isFr?'Enfournements proposés':'Suggested baking times')}</p>{targetChoices}</div>}
-        {eatTimeSet&&!currentCandidateValid&&!recipeGenerated&&suggestedTargets.length===0&&!searchingTargets&&!readinessUnsupported&&(!isSourdough||lastFedAge||knownPeakTime)&&<p role="status">{repairBlocks.length
-          ?(isFr?'Les durées de préparation et vos indisponibilités ne laissent aucun créneau vérifié. Modifiez vos disponibilités ou choisissez un autre jour.':'Preparation and your unavailable hours leave no verified baking time. Change your availability or choose a different day.')
-          :(isFr?'La préparation nécessite plus de temps. Choisissez un autre jour de cuisson.':'Preparation needs more time. Choose a later baking day.')}</p>}
-        {isSourdough&&!inputsOnly&&<p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Choisissez votre horaire : sa faisabilité dépendra de votre levain.':'Choose your time: feasibility depends on your starter.'}</p>}
-      </div>
-
-      {!inputsOnly && eatTimeSet && schedule?.coldTimingConflict && <p role="alert" style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--terra)' }}>{coldTimingMessage(schedule.coldTimingConflict,isFr)}</p>}
-      {/* Phase 2 content — only once bake time is set */}
-      {/* Past bake time — calm guidance, no plan (never a crash) */}
-      {bakeInPast && (
-        <div style={{
-          background: 'var(--warm)', border: '1px solid var(--border)',
-          borderRadius: '16px', padding: '16px 20px', marginTop: '16px',
-          fontFamily: 'var(--font-ui)',
-        }}>
-          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-ui)', marginBottom: '4px' }}>
-            {isFr ? 'Cet horaire est déjà passé' : "That bake time has already passed"}
-          </div>
-          <div style={{ fontSize: '13px', color: 'var(--smoke)', lineHeight: 1.55 }}>
-            {isFr
-              ? 'Choisissez une date et une heure à venir — Baker Hub planifie à rebours depuis la cuisson.'
-              : 'Pick a date and time in the future — Baker Hub plans backwards from your bake.'}
-          </div>
-        </div>
-      )}
-
-      {!inputsOnly && eatTimeSet && !bakeInPast && (<div>
-
-      {/* Sourdough starter section */}
-      {isSourdough && (
+  // The starter's own questions. Custom levain shows them on the Starter step
+  // (schedulerSection 'starter') and leaves the bake-time step to the plan.
+  const starterCard = isSourdough ? (
         <div className="bh-starter-controls" style={{
           background: 'var(--warm)',
           border: '1.5px solid var(--border)',
@@ -7286,7 +7194,7 @@ function FermentedSchedulePicker({ starterBulkFactor = 1, replanPending = false,
                     bakers actually remember. Label only; `lastFedAge` is
                     unchanged, so the engine reads exactly the same value. */}
                 {starterLocation === 'fridge'
-                  ? (isFr ? 'DEPUIS QUAND EST-IL AU FRIGO ?' : 'HOW LONG HAS IT BEEN IN THE FRIDGE?')
+                  ? (isFr ? 'QUAND A-T-IL ÉTÉ RAFRAÎCHI AVANT D’ALLER AU FRIGO ?' : 'WHEN WAS IT LAST FED BEFORE GOING IN THE FRIDGE?')
                   : (isFr ? 'QUAND A-T-IL ÉTÉ RAFRAÎCHI ?' : 'WHEN WAS IT LAST FED?')}
               </div>
 
@@ -7726,8 +7634,125 @@ function FermentedSchedulePicker({ starterBulkFactor = 1, replanPending = false,
           )}
 
           </div>}
+          <StarterHydrationNotice isFr={isFr} />
+        </div>
+  ) : null;
+  if (schedulerSection === 'starter') return <div style={{ fontFamily: 'var(--font-ui)' }}>{starterCard}</div>;
+
+  return (
+    <div style={{ fontFamily: 'var(--font-ui)' }}>
+
+      {/* Bake time inputs — always visible */}
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--char)', marginBottom: '4px' }}>
+          {targetLabel}
+        </div>
+        <div style={{ fontSize: '12px', color: 'var(--smoke)', marginBottom: '12px', lineHeight: 1.5 }}>
+          {isFr ? 'Le planning s’adapte à cet horaire.' : 'Your plan works back from this time.'}
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative' }}>
+          {/* Date — native picker styled as "Sat 4 Apr" */}
+          <div style={{ flex: 2, minWidth: 0, position: 'relative' }}>
+            <div style={{
+              ...INPUT_STYLE, width: '100%',
+              display: 'flex', alignItems: 'center',
+              color: pickerDate ? 'var(--char)' : 'var(--smoke)',
+              position: 'relative', zIndex: 1, cursor: 'pointer',
+              pointerEvents: 'none',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              minWidth: 0,
+            }}>
+              {pickerDate ? (() => {
+                const [y, m, d] = pickerDate.split('-').map(Number);
+                const dt = new Date(y, m - 1, d);
+                dt.setHours(pickerHour,pickerMinute);
+                return fmtCardDT(dt,isFr);
+              })() : (isFr?'Choisir la date et l’heure':'Choose date and time')}
+            </div>
+            <input
+              ref={dateInputRef}
+              type="datetime-local"
+              aria-label={isFr?'Date et heure de cuisson':'Bake date and time'}
+              value={pickerDate ? `${pickerDate}T${String(pickerHour ?? 18).padStart(2,'0')}:${String(pickerMinute).padStart(2,'0')}` : ''}
+              onChange={e=>{
+                const [date,clock]=e.currentTarget.value.split('T');
+                if(!date||!clock)return;
+                const [hour,minute]=clock.split(':').map(Number);
+                setPickerDate(date);setPickerHour(hour);setPickerMinute(minute);
+                if(applyDebounceRef.current)clearTimeout(applyDebounceRef.current);
+                applyDebounceRef.current=setTimeout(()=>{applyDebounceRef.current=null;applyTimePick(date,hour,minute);},350);
+              }}
+              onBlur={e=>{
+                if(!applyDebounceRef.current)return;
+                clearTimeout(applyDebounceRef.current);applyDebounceRef.current=null;
+                const [date,clock]=e.currentTarget.value.split('T');
+                if(date&&clock){const [hour,minute]=clock.split(':').map(Number);applyTimePick(date,hour,minute);}
+              }}
+              onClick={e => {
+                // Desktop browsers need showPicker() to open the calendar.
+                // On touch devices (iOS/Android) the tap ALREADY opens the native
+                // picker — calling showPicker() on top of it double-triggers and
+                // dismisses the sheet on first tap ("field collapses" bug).
+                // Only call it for fine pointers (mouse/trackpad).
+                if (typeof window !== 'undefined'
+                    && window.matchMedia?.('(pointer: coarse)').matches) return;
+                try {
+                  (e.currentTarget as HTMLInputElement).showPicker?.();
+                } catch {
+                  // Older browsers — native behavior already opens picker
+                }
+              }}
+              style={{
+                position: 'absolute', inset: 0, opacity: 0,
+                cursor: 'pointer', width: '100%', height: '100%',
+                zIndex: 2, fontSize: 16,
+              }}
+            />
+          </div>
+
+        </div>
+        {!inputsOnly&&eatTimeSet&&!coherentTimes&&simpleKnownPeakConflict&&<p className="bh-key-note">{starterPeakGuidance}</p>}
+        {!inputsOnly&&eatTimeSet&&!coherentTimes&&!currentCandidateValid&&<p className="bh-plan-state" role="status">
+          {planStateReason}</p>}
+        {!inputsOnly&&eatTimeSet&&currentCandidateValid&&!localBlocks.some(block=>block.label.endsWith(' night'))&&
+          currentPlanActions(committedSchedule?.availabilityActions??[]).some(isOvernightPreparation)&&
+          <p className="bh-key-detail" data-overnight-preparation>{Object.keys(manualTimes).length||isSourdough
+            ?(isFr?'Un geste de préparation est prévu entre 23 h et 7 h.':'A preparation step falls between 11pm and 7am.')
+            :(isFr?'Aucun planning entièrement en journée ne convient à cet enfournement.':'No daytime plan fits this bake time.')}</p>}
+        {searchingTargets&&eatTimeSet&&!currentCandidateValid&&<p role="status" data-searching-bakes>{isFr?'Recherche du premier créneau compatible…':'Finding the first available baking time…'}</p>}
+        {simpleDecision}{simpleCoveredNote}{simpleMovedNote}{workPrompt}
+        {/* Custom's single list of alternatives; Simple uses its decision card. */}
+        {(!eatTimeSet||(!currentCandidateValid&&mode!=='simple'))&&suggestedTargets.length>0&&<div className="bh-target-presets"><p>{eatTimeSet?(suggestedTargets[0]?.assistance?(isFr?'Ce créneau laisse le temps au levain. Certaines interventions nécessitent de l’aide.':'This bake gives the starter time to mature. Some steps need someone available.'):(isFr?'Ces enfournements conviennent à votre planning :':'These baking times fit your plan:')):(isFr?'Enfournements proposés':'Suggested baking times')}</p>{targetChoices}</div>}
+        {eatTimeSet&&!currentCandidateValid&&!recipeGenerated&&suggestedTargets.length===0&&!searchingTargets&&!readinessUnsupported&&(!isSourdough||lastFedAge||knownPeakTime)&&<p role="status">{repairBlocks.length
+          ?(isFr?'Les durées de préparation et vos indisponibilités ne laissent aucun créneau vérifié. Modifiez vos disponibilités ou choisissez un autre jour.':'Preparation and your unavailable hours leave no verified baking time. Change your availability or choose a different day.')
+          :(isFr?'La préparation nécessite plus de temps. Choisissez un autre jour de cuisson.':'Preparation needs more time. Choose a later baking day.')}</p>}
+        {isSourdough&&!inputsOnly&&!eatTimeSet&&<p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Choisissez votre horaire : sa faisabilité dépendra de votre levain.':'Choose your time: feasibility depends on your starter.'}</p>}
+      </div>
+
+      {!inputsOnly && eatTimeSet && schedule?.coldTimingConflict && <p role="alert" style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--terra)' }}>{coldTimingMessage(schedule.coldTimingConflict,isFr)}</p>}
+      {/* Phase 2 content — only once bake time is set */}
+      {/* Past bake time — calm guidance, no plan (never a crash) */}
+      {bakeInPast && (
+        <div style={{
+          background: 'var(--warm)', border: '1px solid var(--border)',
+          borderRadius: '16px', padding: '16px 20px', marginTop: '16px',
+          fontFamily: 'var(--font-ui)',
+        }}>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-ui)', marginBottom: '4px' }}>
+            {isFr ? 'Cet horaire est déjà passé' : "That bake time has already passed"}
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--smoke)', lineHeight: 1.55 }}>
+            {isFr
+              ? 'Choisissez une date et une heure à venir — Baker Hub planifie à rebours depuis la cuisson.'
+              : 'Pick a date and time in the future — Baker Hub plans backwards from your bake.'}
+          </div>
         </div>
       )}
+
+      {!inputsOnly && eatTimeSet && !bakeInPast && (<div>
+
+      {/* Sourdough starter section (Custom levain asks it on its own step) */}
+      {schedulerSection!=='plan' && starterCard}
 
       </div>)}
 
@@ -8279,7 +8304,7 @@ function FermentedSchedulePicker({ starterBulkFactor = 1, replanPending = false,
         rows.push({
           id: 'bake',
           at: pendingEatTime.getTime(),
-          name: isFr ? 'Début de cuisson' : 'Start baking',
+          name: isFr ? 'Enfournement' : 'Bake',
           waitLabel: readyOffset ? (isFr ? 'Cuisson et repos avant dégustation' : 'Cooking and resting before serving') : undefined,
           timeText: fmtCardDT(pendingEatTime, isFr),
           marker: 'bake',
@@ -8490,7 +8515,7 @@ function FermentedSchedulePicker({ starterBulkFactor = 1, replanPending = false,
             }
           }}/>{(isFr?'Conserver l’heure ':'Keep the time ')+preparationName}</label>
         </>:undefined;
-        anchors.push({id:'mix',name:isFr?'Pétrir la pâte':'Mix the dough',at:+times.start,valid:isSourdough?starterPreview?.valid:preview?.valid,editable:!startTimeInPast&&!readinessUnsupported,
+        anchors.push({id:'mix',name:isFr?'Pétrir la pâte':'Start Dough',at:+times.start,valid:isSourdough?starterPreview?.valid:preview?.valid,editable:!startTimeInPast&&!readinessUnsupported,
           ...clampBounds(+(bounds.from??new Date(+times.start-6*hour)),+(bounds.to??new Date(+times.start+6*hour)),+times.start),
           control:keepPreparationControl,
           detail:duration((+times.bake-+times.start)/hour)+(isFr?' avant cuisson':' before baking'),

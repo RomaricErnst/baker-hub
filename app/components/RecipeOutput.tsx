@@ -10,7 +10,7 @@ import { commercialDilution, type RecipeResult, type YeastResult, type YeastWarn
 import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, FLOUR_DATA, type PrefermentType, type FlourBlend } from '../data';
 import { type UnitSystem, displayWeight, displayTemp, formatPercent, formatBakeDateTime } from '../utils/units';
 import PlanNav from './PlanNav';
-import WaterPreparation, { type WaterSource, type WaterSettingsProps } from './WaterPreparation';
+import WaterPreparation, { waterSplit, type WaterSource, type WaterSettingsProps } from './WaterPreparation';
 import { formatPrefermentDose, formatYeastDose, dryYeastSpoonHint, prefermentDilution } from '../utils/prefermentDose';
 import { getBreadProtocol } from '../utils/breadProfiles';
 
@@ -476,6 +476,9 @@ export default function RecipeOutput({
   const yeastSpoon = yeastInfo && spoonFor(yeastInfo.convertedGrams,yeastInfo.yeastType);
   const needsPrecision = !!yeastInfo && yeastInfo.convertedGrams<1 && !yeastSpoon;
   const dilutionTip = yeastInfo && needsPrecision ? commercialDilution(yeastInfo.convertedGrams,waterMain,1) : yeastInfo?.dilutionTip;
+  // The dilution water comes out of the LIQUID water; ice on the water line stays as it is.
+  const mainIceG = waterSplit({waterGrams:waterMain,targetTemp:waterTemp,kitchenTemp,fridgeTemp,source:waterSource,measuredWaterTemp,waterMethod,idealWaterTemp:result.thermal?.idealWaterTemp,
+    directIceSupported:mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)})?.ice ?? 0;
   const prefermentSpoon = pf && spoonFor(pf.prefYeastGrams,pf.prefYeastType ?? 'instant');
   const prefermentDoseDilution = pf && !prefermentSpoon ? prefermentDilution(pf.prefYeastGrams,pf.prefWater,1) : null;
   function measureHint(spoon:string|null|undefined,dilution:boolean) {
@@ -684,7 +687,7 @@ export default function RecipeOutput({
         /* Direct dough additions */
         <div>
 
-          {result.flourParts?.length ? result.flourParts.map((part, index) => { const grams = part.grams - (sdActive && index === 0 ? sdHalf : 0); return <IngRow key={`${part.key}-${index}`} label={flourProductName(locale === 'fr' ? part.nameFr : part.name,locale)} grams={wStr(grams)} pct={pctStr(grams / flour * 100)} highlight advancedPct={mode === 'custom' ? pctStr(grams / flour * 100) : undefined} />; }) : <IngRow
+          {result.flourParts?.length ? result.flourParts.map((part, index) => { const grams = part.grams - (sdActive && index === 0 ? sdHalf : 0); return <IngRow key={`${part.key}-${index}`} label={flourProductName(locale === 'fr' ? part.nameFr : part.name,locale)} grams={wStr(grams)} noPct={sdActive} pct={pctStr(grams / flour * 100)} highlight advancedPct={mode === 'custom' && !sdActive ? pctStr(grams / flour * 100) : undefined} />; }) : <IngRow
             label={t('recipeOutput.ingredientFlour')}
             grams={wStr(flourMain)}
             noPct={sdActive}
@@ -831,8 +834,8 @@ export default function RecipeOutput({
               label={t('recipeOutput.starterLabel')}
               sub={locale === 'fr' ? 'Levain liquide · 100 % d’hydratation' : 'Liquid starter · 100% hydration'}
               grams={wStr(sdMid)}
-              pct={`${sourdough.starterPctMin}–${sourdough.starterPctMax}%`}
-              range
+              // Same weight styling as every other ingredient; the % sits beside it in Custom.
+              advancedPct={mode === 'custom' ? (sourdough.starterPctMin === sourdough.starterPctMax ? `${sourdough.starterPctMin}%` : `${sourdough.starterPctMin}–${sourdough.starterPctMax}%`) : undefined}
             />
           )}
 
@@ -1044,8 +1047,8 @@ export default function RecipeOutput({
                 // Kitchen-scale precision: whole grams from 10 g, one decimal below.
                 solutionG: kitchenGrams(dilutionTip.solutionG),
                 waterInSolutionG: kitchenGrams(dilutionTip.waterInSolutionGrams ?? dilutionTip.solutionG * 100 / 101),
-                remainingWaterG: kitchenGrams(dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101),
-              })}
+                remainingWaterG: kitchenGrams((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG),
+              })+(mainIceG>0?' '+t('recipeOutput.dilutionIce',{iceG:mainIceG}):'')}
             />
           )}
 

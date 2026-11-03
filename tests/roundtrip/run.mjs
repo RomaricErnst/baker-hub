@@ -55,6 +55,12 @@ const mount = window.__mount;
 if (!mount) { origErr('bundle did not expose __mount'); process.exit(1); }
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+// The later-bake search is asynchronous. Compare finished cards only: a
+// snapshot taken mid-search ("Finding the first available baking time…")
+// against a finished one is a timing artefact, not a round-trip divergence.
+async function searchSettled() {
+  for (let i = 0; i < 40 && doc.querySelector('[data-searching-bakes]'); i++) await wait(SETTLE / 2);
+}
 const doc = window.document;
 
 function buttons() { return [...doc.querySelectorAll('button,[role=button]')]; }
@@ -134,15 +140,15 @@ for (const ratioMode of MODES) {
         root = await mount(el, { ...sc, start: new RealDate(FROZEN), loc: 'rt', age: 'days23',
           lastFed: new RealDate(FROZEN - 60 * 3600000), ratioMode, page: process.env.PAGE === '1', full: process.env.FULL === '1', batches: Number(process.env.BATCHES||1) });
       } catch (e) { results.push({ m: ratioMode, s: sc.name, t, status: 'MOUNT FAILED ' + e.message }); continue; }
-      await wait(SETTLE * 3);
+      await wait(SETTLE * 3); await searchSettled();
       const mountChipOk = chipAgrees();
       const A = signature();
-      await wait(SETTLE * 2);
+      await wait(SETTLE * 2); await searchSettled();
       const Anull = signature();
       const [go, back] = TOGGLES[t];
       let ok = await go(); await wait(+(process.env.OUTBOUND_WAIT || SETTLE));
       const B = signature();
-      ok = ok && (await back()); await wait(SETTLE * 2);
+      ok = ok && (await back()); await wait(SETTLE * 2); await searchSettled();
       const C = signature();
       const endChipOk = chipAgrees();
       let status;

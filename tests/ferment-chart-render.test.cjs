@@ -58,7 +58,7 @@ test('starter refrigeration follows paired events and leaves the refresh period 
 test('commercial timeline lists fridge removal separately from final mixing',()=>{
  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(chart.default,{eatTime:new Date('2026-09-25T18:00Z'),prefermentType:'poolish',kitchenTemp:24,mixOffsetH:24,prefOffsetH:12,blocks:[],onMixChange:()=>{},onPrefChange:()=>{},prefInFridge:true,prefermentFridgeOutTime:new Date('2026-09-24T16:00Z')})));
  assert.ok(html.includes('Take poolish out of the fridge'));
- assert.ok(html.includes('Mix the dough'));
+ assert.ok(html.includes('Start Dough'));
  assert.ok(!html.includes('vitality'));
 });
 

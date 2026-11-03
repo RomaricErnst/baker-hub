@@ -218,10 +218,9 @@ test('an obsolete yeast step in a levain draft recovers to a visible Custom page
   sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:7,advancedStep:7,setupOverview:false,activeTab:'setup'}));
  },{now:NOW,bake:BAKE});
  await page.goto('/');
- // Levain styles have one leavening: no Starter step to answer, levain is adopted.
+ // Levain styles have one leavening: levain is adopted and the draft lands on a visible page.
  const fineTune=page.locator('#step-10:visible');
- await expect(fineTune.getByRole('heading')).toBeVisible();
- await expect(page.locator('#step-8:visible')).toHaveCount(0);
+ await expect(fineTune.locator('.bh-page-title')).toBeVisible();
  await expect.poll(async()=>JSON.parse(await page.evaluate(()=>localStorage.getItem('bh_session_v1'))||'{}').prefermentType).toBe('levain');
  await expect(fineTune.locator('[data-bh-forward]')).toBeEnabled();
 });

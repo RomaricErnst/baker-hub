@@ -62,7 +62,7 @@ test('spiral mixing groups both visual cues and keeps secondary guidance behind 
  const help=html.indexOf('Kneading tips');
  assert.ok(html.indexOf('windowpane-v1.webp',help)>help,'visual cue is inside the shared help');
  const helpEnd=html.indexOf('</details>',help);
- assert.ok(html.includes('More guidance'));
+ assert.doesNotMatch(html,/More guidance · /,'the disclosure names its content once');
  assert.ok(html.indexOf('Common questions',help)>help && html.indexOf('Common questions',help)<helpEnd,'troubleshooting is inside optional guidance');
  const membrane=[...html.matchAll(/<button([^>]*)>([\s\S]*?)<\/button>/g)].find(([,attributes,content])=>content.includes('Windowpane test'));
  assert.ok(membrane,'technique link is retained');

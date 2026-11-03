@@ -70,6 +70,9 @@ Poolish RT 6–14 h, fridge ≤24 h · Biga fridge ≤72 h · Levain = sourdough
 ### Baker overrides (Custom)
 A baker-entered yeast amount (direct commercial dough) re-times the plan: `fermentationHoursForYeast` inverts `fermentationBudget` through `buildSchedule`, and the solver, readiness window and chart use that window. Never display an entered amount on a schedule timed for another. Poolish storage can be fixed to fridge or room; 'auto' compares both. Plan-input edits made on other steps reach the scheduler through the page's `planReplanPending` flag, not a change-only effect (the scheduler is unmounted on those steps). A baker-entered starter % (levain) scales the room-temperature bulk by `starterBulkFactor` (Craig's regression against the engine's reference % for the kitchen; exactly 1 without a choice). Every schedule build (`buildSchedule`, draft validation, repair search) and the sourdough solver windows (`starterBulkDeltaH`) must add the same hours. Cold phases are not scaled.
 
+### Custom levain Starter step
+The page renders ONE Custom scheduler element (`renderCustomScheduler(section)`): `schedulerSection='starter'` on step 8 shows only the starter card; `'plan'` on step 9 hides it; `'all'` elsewhere. Only one step is mounted at a time, so there is never a second solver instance. Keep starter state lifted in the page.
+
 ### Sourdough solver (SchedulePicker)
 Isolated from non-sourdough engine (early return). Candidate pools Peak1/2A/2B/fridge-hold, blocker-aware,
 fridge revival biology, event-driven chart, traffic-light pills (no red in starter card).
