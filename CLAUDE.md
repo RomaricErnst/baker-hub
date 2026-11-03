@@ -67,6 +67,9 @@ The water-temperature balance includes flour, starter or preferment, thermal inp
 ### Preferments
 Poolish RT 6–14 h, fridge ≤24 h · Biga fridge ≤72 h · Levain = sourdough only.
 
+### Baker overrides (Custom)
+A baker-entered yeast amount (direct commercial dough) re-times the plan: `fermentationHoursForYeast` inverts `fermentationBudget` through `buildSchedule`, and the solver, readiness window and chart use that window. Never display an entered amount on a schedule timed for another. Poolish storage can be fixed to fridge or room; 'auto' compares both. Plan-input edits made on other steps reach the scheduler through the page's `planReplanPending` flag, not a change-only effect (the scheduler is unmounted on those steps). Starter % does not yet feed the levain bulk; see the 3 Nov 2026 handoff for the sourced proposal.
+
 ### Sourdough solver (SchedulePicker)
 Isolated from non-sourdough engine (early return). Candidate pools Peak1/2A/2B/fridge-hold, blocker-aware,
 fridge revival biology, event-driven chart, traffic-light pills (no red in starter card).

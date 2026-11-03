@@ -1,3 +1,26 @@
+# 3 November 2026 — Custom expert controls and yeast re-timing (Claude, PR #45, #46)
+
+- **Poolish storage** (Preferment step, Custom): "Choose to fit my timing" (planner compares fridge and room, as before), "In the fridge", "At room temperature". An explicit choice limits the solver's comparison to that storage. Saved as `poolishStorage`.
+- **Flour storage** moved from Kitchen to Flour: "Usual flour-storage humidity" and "Flour kept in the fridge" appear on the Flour step once a flour is chosen. Kitchen holds temperatures and water only.
+- **Levain styles skip the one-option Starter step**: levain is adopted automatically; the bake-time step is titled "Bake time and starter", where the starter questions already sit next to the feed timing. (Moving those questions to their own step needs a SchedulePicker split; not done.)
+- **Yeast amount** (Fine-tune, Custom, direct commercial dough only): entered in the baker's own yeast, stored as IDY `yeastPctOverride`. The plan is re-timed at the same bake time: `fermentationHoursForYeast` (utils.ts) inverts `fermentationBudget` through the real `buildSchedule` and cooling exposure, so the dose recommended for a window times back to that window (round trip exact at 24 h/22 °C, 10 h/28 °C, 18 h/20 °C). The solver centre, readiness window, chart zones and availability search use the ±10 % budget band around that length. The recipe shows the entered amount; the existing budget note reports any residual drift (availability, "now"). "Use the calculated amount" undoes it. Preferments and levain keep their own models.
+- **Replan flag**: yeast amount and poolish storage are edited on steps where the bake-time scheduler is unmounted. A change-only effect never saw them in production (dev StrictMode's double effect hid it). The page holds `planReplanPending`; the scheduler replans on mount or change, unfreezes a resumed plan for that explicit edit, then clears the flag.
+- Tests: `tests/yeast-override.test.cjs` (round trip, direction, displayed amount, unreachable amount), `tests/mobile/yeast-override.spec.cjs` (more yeast → later start, undo restores, bake time unchanged; also run against the live site), storage-choice unit test, levain draft recovery spec updated.
+
+**Starter % — researched, not implemented.** It matters: two independent data sets agree that halving the starter adds about one microbial doubling time, roughly 3–4 h at 23–24 °C, which is comparable to the whole room-temperature bulk.
+
+| Starter % (of flour) | Craig, pizzamaking.com, 23.9 °C, ready to bake | Sourdough Journey, 23 °C, 100 % rise | Sourdough Journey, 21 °C, 75 % rise |
+|---|---|---|---|
+| 5 % | 15.5 h | 15.5 h | 17.5 h |
+| 10 % | 11.8 h | 14.0 h | 15.0 h |
+| 15 % | 9.6 h | 11.5 h | 13.0 h |
+| 20 % | 8.0 h | 9.5 h | 11.5 h |
+
+- Craig's regression (TXCraig1, pizzamaking.com, Jan 2013, real-world doughs at 75 °F, 65/70 °F held out as a test): `Hours = −5.368 × ln(starter fraction) − 0.6014`; temperature extended with the Gänzle et al. (1998) C. milleri growth curve and a LAB curve weighted 50 %. Same author lineage as the yeast engine (Craig's model v1.1).
+- The Sourdough Journey Bulk Fermentation Timetables V1.0 (2023): over 60 controlled 100 g batches, 90 % bread / 10 % whole wheat, 2 % salt, starter fed 1:2:2 and used near peak.
+- Today the engine's levain bulk depends on temperature only (`bulkH × 2^((22 − T)/10)`, 5 h reference at 22 °C); `sourdoughGuidance` picks the starter % from temperature (and feed-to-mix) but the schedule does not read it back.
+- Proposal for Romaric: scale the levain room-temperature bulk by Craig's ratio, keeping the engine's own calibrated 5 h endpoint and Q10: `bulk(p) = bulk(p₀) × (−5.368·ln p − 0.6014) / (−5.368·ln p₀ − 0.6014)`, p and p₀ as fractions, p₀ the recommended mid starter %, p clamped to the engine's 5–30 %. Example at 22 °C: 10 % instead of 22.5 % → 5 h × 11.76/7.40 ≈ 7.9 h. This is sourdough-solver engine work: follow the peak-model invariant and the matrix sweep in CLAUDE.md, and keep scoring, card and chart on the same bulk.
+
 # 3 November 2026 — one name per step and event (Claude)
 
 - The timing step is "Bake time" everywhere (pill, step picker, review row, forward buttons); FR "Heure de cuisson". It was Timing / Plan / Your baking plan.
@@ -8,7 +31,7 @@
 - The bake-time summary row starts at the preferment, not the mix ("Wed 10:45pm → Fri 7:30pm").
 - Availability is "unavailable time(s)" in the summary (was "busy window").
 
-Still open from the Custom review: starter questions live on Bake time for levain (kept there because the starter state drives the solver; moving them needs SchedulePicker split), poolish room/fridge choice, starter %, yeast % override, flour humidity and flour-in-fridge on the Flour step, water preparation on Fine-tune.
+Still open from the Custom review (updated in the entry above): starter questions live on Bake time for levain (moving them needs a SchedulePicker split), starter %, water preparation on Fine-tune.
 
 # 2 November 2026 — journey polish after live review (Claude)
 
