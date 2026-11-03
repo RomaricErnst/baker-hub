@@ -474,13 +474,14 @@ export default function RecipeOutput({
 
   const spoonFor = (dose:number,type:string) => dryYeastSpoonHint(dose,type,locale);
   const yeastSpoon = yeastInfo && spoonFor(yeastInfo.convertedGrams,yeastInfo.yeastType);
-  const needsPrecision = !!yeastInfo && yeastInfo.convertedGrams<1 && !yeastSpoon;
+  // Below 0.5 g a spoon is too coarse on its own: offer the weighing help too.
+  const needsPrecision = !!yeastInfo && yeastInfo.convertedGrams<1 && (!yeastSpoon || yeastInfo.convertedGrams<0.5);
   const dilutionTip = yeastInfo && needsPrecision ? commercialDilution(yeastInfo.convertedGrams,waterMain,1) : yeastInfo?.dilutionTip;
   // The dilution water comes out of the LIQUID water; ice on the water line stays as it is.
   const mainIceG = waterSplit({waterGrams:waterMain,targetTemp:waterTemp,kitchenTemp,fridgeTemp,source:waterSource,measuredWaterTemp,waterMethod,idealWaterTemp:result.thermal?.idealWaterTemp,
     directIceSupported:mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)})?.ice ?? 0;
   const prefermentSpoon = pf && spoonFor(pf.prefYeastGrams,pf.prefYeastType ?? 'instant');
-  const prefermentDoseDilution = pf && !prefermentSpoon ? prefermentDilution(pf.prefYeastGrams,pf.prefWater,1) : null;
+  const prefermentDoseDilution = pf && (!prefermentSpoon || pf.prefYeastGrams<0.5) ? prefermentDilution(pf.prefYeastGrams,pf.prefWater,1) : null;
   function measureHint(spoon:string|null|undefined,dilution:boolean) {
     if (spoon) return spoon;
     return dilution ? t('recipeOutput.weighOrDilute') : t('recipeOutput.weighDose');
@@ -965,7 +966,7 @@ export default function RecipeOutput({
           Hidden in preferment mode: all commercial yeast lives in the
           poolish/biga there, so callouts based on the main-dough yeast
           amount would contradict the preferment card. */}
-      {yeastInfo && hasPref && result.preferment && result.preferment.prefYeastGrams > 0 && result.preferment.prefYeastGrams < 1 && !prefermentSpoon && (
+      {yeastInfo && hasPref && result.preferment && result.preferment.prefYeastGrams > 0 && result.preferment.prefYeastGrams < 1 && (!prefermentSpoon || result.preferment.prefYeastGrams < 0.5) && (
         <details className="bh-disclosure">
           <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Petite dose de levure' : 'Small yeast dose'}</summary>
         <div style={{
