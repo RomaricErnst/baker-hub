@@ -550,7 +550,7 @@
     "precisionScaleMin": "Balance de précision recommandée — quantité trop petite pour une balance standard.",
     "priorityFlavourNote": "Levure saveur — vous avez tout le temps",
     "prioritySpeedNote": "Levure accélérée — votre fenêtre est courte",
-    "starterFeedNote": "Rafraîchissez votre levain 4–12h avant. Utilisez-le au pic — doublé en volume, surface bombée.",
+    "starterFeedNote": "Rafraîchissez votre levain 4 à 12 h avant le pétrissage. Utilisez-le près de son pic : environ doublé, surface bombée.",
     "bulkCues": {
       "weak": [
         "Le volume a augmenté de 50 à 75 %.",
@@ -1024,7 +1024,7 @@
           },
           {
             "bold": "Préfaçonnage : repliez les bords du pâton vers le centre",
-            "note": "clé en bas, reposez 15–20 min"
+            "note": "clé en bas, reposez 15 min"
           },
           {
             "bold": "Façonnage final : créez la tension de surface",
@@ -1353,7 +1353,7 @@
             "note": "la croûte bronze et croustille — température interne 95–98°C"
           },
           {
-            "bold": "Refroidissez sur une grille — minimum 30 min",
+            "bold": "Laissez refroidir sur une grille",
             "note": "la mie cuit encore à la chaleur résiduelle — couper chaud = mie gommeuse"
           }
         ],
@@ -1392,7 +1392,7 @@
             "note": "la croûte bronze — température interne 95–98°C"
           },
           {
-            "bold": "Refroidissez sur une grille — minimum 30 min",
+            "bold": "Laissez refroidir sur une grille",
             "note": "couper chaud rend la mie gommeuse"
           }
         ],
@@ -1423,7 +1423,7 @@
             "note": "cuisez 20–25 min de plus jusqu’à obtenir une croûte bien dorée et un pain qui sonne creux"
           },
           {
-            "bold": "Refroidissez sur une grille — minimum 30 min",
+            "bold": "Laissez refroidir sur une grille",
             "note": "couper chaud rend la mie gommeuse"
           }
         ],
@@ -1451,7 +1451,7 @@
             "note": "total 40–50 min — son creux au fond = cuit"
           },
           {
-            "bold": "Refroidissez sur une grille — minimum 30 min",
+            "bold": "Laissez refroidir sur une grille",
             "note": "couper chaud rend la mie gommeuse"
           }
         ],
@@ -1480,7 +1480,7 @@
             "note": "température interne 95–98°C — croûte brun foncé et pain qui sonne creux"
           },
           {
-            "bold": "Refroidissez sur une grille — minimum 30 min",
+            "bold": "Laissez refroidir sur une grille",
             "note": "couper chaud rend la mie gommeuse"
           }
         ],

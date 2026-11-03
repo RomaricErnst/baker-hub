@@ -315,9 +315,11 @@ function StarterPrepCard({
               <div style={valueStyle}>{fmtFull(starterPeakTime)}</div>
             </div>
           )}
-          {mixingTime && <div style={rowStyle}><div style={labelStyle}>{isFr ? 'Incorporer au pétrissage' : 'Use when mixing'}</div><div style={valueStyle}>{fmtFull(mixingTime)}</div><div style={noteStyle}>{peakGapMinutes !== null && Math.abs(peakGapMinutes)>1 && predictedPeak && <>{isFr
-            ? `Pétrissage ${Math.abs(peakGapMinutes)} min ${peakGapMinutes<0?'avant':'après'} le pic estimé (${fmtFull(predictedPeak)}). `
-            : `Mixing is ${Math.abs(peakGapMinutes)} min ${peakGapMinutes<0?'before':'after'} the estimated peak (${fmtFull(predictedPeak)}). `}</>}{isFr ? 'Le pic est estimé : vérifiez un levain actif, gonflé et non retombé avant de pétrir.'  : 'The peak is estimated: check for an active, risen starter that has not collapsed before mixing.'}</div></div>}
+          {mixingTime && <div style={rowStyle}><div style={labelStyle}>{isFr ? 'Incorporer au pétrissage' : 'Use when mixing'}</div><div style={valueStyle}>{fmtFull(mixingTime)}</div><div style={noteStyle}>{predictedPeak && peakGapMinutes !== null && (Math.abs(peakGapMinutes)<=30
+            ? (isFr ? `Au pic estimé (${fmtFull(predictedPeak)}) : doublé, bombé, pas retombé.` : `At its estimated peak (${fmtFull(predictedPeak)}): doubled, domed, not collapsed.`)
+            : peakGapMinutes<0
+            ? (isFr ? `Un peu avant le pic estimé (${fmtFull(predictedPeak)}) : presque doublé et encore en train de monter.` : `A little before its estimated peak (${fmtFull(predictedPeak)}): nearly doubled and still rising.`)
+            : (isFr ? `Un peu après le pic estimé (${fmtFull(predictedPeak)}) : bombé et pas encore retombé.` : `A little after its estimated peak (${fmtFull(predictedPeak)}): domed and not yet collapsed.`))}</div></div>}
         </div>
       )}
 
@@ -480,17 +482,17 @@ export default function RecipeOutput({
     directIceSupported:mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)})?.ice ?? 0;
   const prefermentSpoon = pf && spoonFor(pf.prefYeastGrams,pf.prefYeastType ?? 'instant');
   const prefermentDoseDilution = pf && (!prefermentSpoon || pf.prefYeastGrams<0.5) ? prefermentDilution(pf.prefYeastGrams,pf.prefWater,1) : null;
-  function measureHint(spoon:string|null|undefined,dilution:boolean) {
-    if (spoon) return spoon;
-    // Everything is weighed; only a dose too small to weigh needs a hint.
-    return dilution ? t('recipeOutput.weighOrDilute') : '';
+  // Everything is weighed; a dose too small to weigh says so on its own line
+  // too (with the spoon size when there is one), so line and card agree.
+  function measureHint(spoon:string|null|undefined,tooSmall:boolean) {
+    return [spoon, tooSmall ? t('recipeOutput.weighOrDilute') : ''].filter(Boolean).join(' · ');
   }
   const yeastSub = yeastInfo
     ? (() => {
         const isInstant = yeastInfo.yeastType === 'instant';
         const idyPart = !isInstant ? `= ${formatYeastDose(yeastInfo.grams, locale)} IDY` : null;
         const alternatives = mode==='simple' && isInstant ? (locale==='fr' ? `Levure fraîche : ${formatYeastDose(yeastInfo.grams*3,locale)} · sèche active : ${formatYeastDose(yeastInfo.grams*1.33,locale)}` : `Fresh yeast: ${formatYeastDose(yeastInfo.grams*3,locale)} · active dry: ${formatYeastDose(yeastInfo.grams*1.33,locale)}`) : null;
-        return [alternatives, measureHint(yeastSpoon,!!dilutionTip), idyPart].filter(Boolean).join(' · ') || undefined;
+        return [alternatives, measureHint(yeastSpoon,needsPrecision), idyPart].filter(Boolean).join(' · ') || undefined;
       })()
     : undefined;
 

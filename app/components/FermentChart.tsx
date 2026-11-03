@@ -495,7 +495,7 @@ function formatHours(h: number): string {
 function fmtHM(d: Date, isFr = false): string {
   const h = d.getHours();
   const m = d.getMinutes();
-  if (isFr) return `${h} h ${String(m).padStart(2, '0')}`;
+  if (isFr) return `${h}h${String(m).padStart(2, '0')}`;
   const ap = h < 12 ? 'am' : 'pm';
   const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return m === 0 ? `${h12}${ap}` : `${h12}:${String(m).padStart(2, '0')}${ap}`;
@@ -781,6 +781,9 @@ export default function FermentChart({
     if (prefStartAbsHBF > outHBF) {
       prefColdRanges.push([hToX(prefStartAbsHBF, W, WH), hToX(outHBF, W, WH)]);
     }
+  } else if (hasPref && !isLevain && prefNeedsFridge) {
+    // Used straight from the fridge (no warm-up): cold until mixing.
+    prefColdRanges.push([hToX(prefStartAbsHBF, W, WH), hToX(effectiveMixHBF, W, WH)]);
   }
 
   if (hasPref && isLevain) {

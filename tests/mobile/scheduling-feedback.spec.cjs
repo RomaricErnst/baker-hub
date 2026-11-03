@@ -201,6 +201,23 @@ for(const locale of ['fr','en'])test(`${locale} simple: two clashing steps offer
  expect(plainBlocks((await stored(page)).blocks)).toEqual(before.blocks);
 });
 
+for(const locale of ['fr','en'])test(`${locale} simple: two clashing steps can keep the chosen bake time in one tap`,async({page})=>{
+ await seedParty(page,locale,'simple','18:45');
+ const decision=page.locator('[data-simple-decision]');
+ await expect(decision).toBeVisible();
+ const keepAll=page.locator('[data-simple-keep-all]');
+ await expect(keepAll).toContainText(locale==='fr'?/^Garder .* : je m’occupe de ces \d étapes/:/^Keep .*: I’ll handle these \d steps/);
+ await fits(page,keepAll);
+ expect((await keepAll.boundingBox()).height).toBeGreaterThanOrEqual(44);
+ const before=await stored(page);
+ await keepAll.tap();
+ await expect(decision).toHaveCount(0);
+ const after=await stored(page);
+ expect(after.eatTime).toBe(before.eatTime);
+ expect(plainBlocks(after.blocks).map(({coveredActions,...block})=>block)).toEqual(before.blocks);
+ expect(after.blocks.some(block=>(block.coveredActions?.length??0)>0||!!block.fridgeRemoval)).toBe(true);
+});
+
 test('poolish live invalid-to-valid draft updates feedback, Cancel restores and Reset survives reload',async({page})=>{
  const {plan}=await seed(page);
  // Under these explicit assumptions the pre-block plan matures for 11 hours.

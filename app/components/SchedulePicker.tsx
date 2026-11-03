@@ -3346,6 +3346,8 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
     if (planningMode === 'know_peak' && !knownPeakTime) return;
     sourdoughPlanBlockedRef.current = false;
 
+    // Scoring peak of the winning candidate, traced so sweeps can check scoring ≡ bell ≡ card.
+    let _scoredPeakMs: number | null = null;
     // HOISTED — must be initialized before ANY buildAndSetResult() call.
     // inBlocker/inBlockerMs close over this const; the windowTooShort /
     // revival early-exit invokes buildAndSetResult (whose intermediate-feed
@@ -4191,13 +4193,15 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
               ? new Date(_starterFeedTime.getTime() + _adjPeakH * _preMixStretchFactor * 3600000)
               : null));
 
-      if (!probe && typeof window !== 'undefined' && Array.isArray((window as unknown as { __bhTrace?: unknown[] }).__bhTrace)) {
+      // Diagnostic trace of the committed plan. A probe-run winner is traced
+      // when its effects are applied, so sweeps see the plan the baker sees.
+      if (typeof window !== 'undefined' && Array.isArray((window as unknown as { __bhTrace?: unknown[] }).__bhTrace)) {
         const family = _isFridgeHoldPath ? 'pathB_fridge_hold'
           : _bridgeRefreshMs ? 'bridge_refresh'
           : _usingPeak2 ? (_hasFutureFeedPath ? 'peak2b_refeed_now' : 'peak2a_trough')
           : _hasFutureFeedPath ? 'future_feed'
           : 'peak1';
-        (window as unknown as { __bhTrace: unknown[] }).__bhTrace.push({
+        const _traceEntry = ({
           family,
           windowTooShort: _windowTooShort,
           planConstrained: _planConstrained,
@@ -4210,6 +4214,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
           // so sweeps can gate card ≡ note ≡ pill ≡ bell without fiber reads.
           mixMs: _newPendingStart.getTime(),
           peakMs: _committedPeakTime?.getTime() ?? null,
+          scoredPeakMs: _scoredPeakMs,
           refeedMs: _starterRefeedTime?.getTime() ?? null,
           feed2Ms: _feed2Time?.getTime() ?? null,
           fridgeOutMs: _newFridgeOut?.getTime() ?? null,
@@ -4223,6 +4228,8 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
             bellPeak: e.bellPeakTime?.getTime() ?? null, note: e.cardNote ?? null,
           })),
         });
+        const _pushTrace = () => (window as unknown as { __bhTrace: unknown[] }).__bhTrace.push(_traceEntry);
+        if (probe) probe.effects.push(_pushTrace); else _pushTrace();
       }
 
       if(probe)probe.effects.push(()=>onStarterPeakTimeChange?.(_committedPeakTime));
@@ -5684,6 +5691,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
     // at 1h, capped by TOL — ~1.4h at 30°C, unchanged (= TOL) in cool/cold
     // kitchens where adjPeakH is long. Mix-before-peak is unaffected.
     const _mixPastPeakH_best = best.peakHBF - best.mixHBF; // HBF: >0 → mix after peak
+    _scoredPeakMs = et.getTime() - best.peakHBF * 3600000;
     const _greenPastPeakCeilH = Math.min(TOL, Math.max(1.0, adjPeakH * 0.4));
     _starterPillState = (best.sscore === 2 && foundValid
       && _mixPastPeakH_best <= _greenPastPeakCeilH) ? 'green' : 'yellow';
@@ -6742,6 +6750,26 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
     solverBlocksRef.current=next;setLocalBlocks(next);
     onChange(pendingStart,pendingEatTime,next,{preservePlan:true,prefOffsetHours:prefOffsetH,timingOverrides:manualTimesRef.current});
   }
+  // Simple: keep the chosen bake time and take on every clashing step at once.
+  function coverAllActions(actions:AvailabilityAction[]) {
+    let next=repairBlocks.filter(block=>+block.from<=+pendingEatTime);
+    let fridge=false;
+    for(const action of actions){
+      if(action.id===finalFridgeRemoval?.id&&+action.at===+finalFridgeRemoval.at){fridge=true;continue;}
+      const entry={id:action.id,at:+action.at,end:action.end?+action.end:undefined};
+      next=next.map(block=>findAvailabilityConflicts([action],[block]).length&&!block.coveredActions?.some(c=>c.id===entry.id&&c.at===entry.at)
+        ? {...block,coveredActions:[...(block.coveredActions??[]),entry]}:block);
+    }
+    // Arrange the fridge removal in the same blocks (setFridgeRemovalCovered
+    // reads the pre-tap blocks and would drop the covers just added).
+    if(fridge&&finalFridgeRemoval&&canArrangeFridgeRemoval){
+      const removal={at:+finalFridgeRemoval.at,bake:+pendingEatTime};
+      next=next.map(block=>+block.from<=removal.at&&removal.at<+block.to?{...block,fridgeRemoval:removal}:block);
+      lastFridgeArrangementRef.current=removal;setFridgeArrangementChanged(false);
+    }
+    solverBlocksRef.current=next;setLocalBlocks(next);
+    onChange(pendingStart,pendingEatTime,next,{preservePlan:true,prefOffsetHours:prefOffsetH,timingOverrides:manualTimesRef.current});
+  }
   const currentCandidateValid=currentCandidate.valid;
   // Say why this bake time doesn't work, never just that it doesn't.
   const planStateReason=(()=>{
@@ -7062,10 +7090,14 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
           {(()=>{
             // A different day needs its reason; otherwise say what the move frees.
             const dayDiff=Math.round((new Date(simpleSuggestion.bake).setHours(0,0,0,0)-new Date(pendingEatTime).setHours(0,0,0,0))/86400000);
+            const laterH=(+simpleSuggestion.bake-+pendingEatTime)/3600000;
             const at=(d:Date)=>d.toDateString()===simpleSuggestion.bake.toDateString()?fmtCardHM(d,isFr):fmtCardDT(d,isFr);
+            // Say how much later in hours under a day: 20:30 → 2:00 is not "a day later".
+            const later=laterH<20?formatDuration(Math.round(laterH*4)/4,isFr?'fr':'en')+(isFr?' plus tard':' later')
+              :isFr?(Math.round(laterH/24)<=1?'Un jour plus tard':`${Math.round(laterH/24)} jours plus tard`):(Math.round(laterH/24)<=1?'A day later':`${Math.round(laterH/24)} days later`);
             if(dayDiff>0)return <small style={{display:'block',fontWeight:400}}>{isFr
-              ?`${dayDiff===1?'Un jour plus tard':`${dayDiff} jours plus tard`}, pour que les étapes tombent sur votre temps libre · pétrissage ${at(simpleSuggestion.start)}`
-              :`${dayDiff===1?'A day later':`${dayDiff} days later`}, so the steps fit your free time · start ${at(simpleSuggestion.start)}`}</small>;
+              ?`${later}, pour que les étapes tombent sur votre temps libre · pétrissage ${at(simpleSuggestion.start)}`
+              :`${later}, so the steps fit your free time · start ${at(simpleSuggestion.start)}`}</small>;
             const cleared=simpleSuggestion.clearedAction;
             if(!cleared)return null;
             return <small style={{display:'block',fontWeight:400}}>{/cold-out/.test(cleared.id)
@@ -7080,6 +7112,11 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
         </button>}
         {simpleOnlyFridgeClash&&finalFridgeRemoval&&<button type="button" className={simpleSuggestion?'bh-back-action':'bh-apply-plan'} data-simple-keep style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={()=>setFridgeRemovalCovered(true)}>
           {isFr?`Garder ${fmtCardHM(pendingEatTime,isFr)} : quelqu’un sort la pâte à ${fmtCardHM(finalFridgeRemoval.at,isFr)}`:`Keep ${fmtCardHM(pendingEatTime,isFr)}: someone takes the dough out at ${fmtCardHM(finalFridgeRemoval.at,isFr)}`}
+        </button>}
+        {!simpleOnlyFridgeClash&&simpleConflicts.length>0&&<button type="button" className="bh-back-action" data-simple-keep-all style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={()=>coverAllActions(simpleConflicts.map(conflict=>conflict.action))}>
+          {simpleConflicts.length===1
+            ?(isFr?`Garder ${simpleTimeLabel(pendingEatTime)} : je m’occupe de cette étape`:`Keep ${simpleTimeLabel(pendingEatTime)}: I’ll handle this step`)
+            :(isFr?`Garder ${simpleTimeLabel(pendingEatTime)} : je m’occupe de ces ${simpleConflicts.length} étapes`:`Keep ${simpleTimeLabel(pendingEatTime)}: I’ll handle these ${simpleConflicts.length} steps`)}
         </button>}
       </div>
     : null;
@@ -8538,7 +8575,10 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
         anchors.push({id:'mix',name:isFr?'Pétrir la pâte':'Start Dough',at:+times.start,valid:isSourdough?starterPreview?.valid:preview?.valid,editable:!startTimeInPast&&!readinessUnsupported,
           ...clampBounds(+(bounds.from??new Date(+times.start-6*hour)),+(bounds.to??new Date(+times.start+6*hour)),+times.start),
           control:keepPreparationControl,
-          detail:duration((+times.bake-+times.start)/hour)+(isFr?' avant cuisson':' before baking'),
+          // An autolyse starts before mixing: name it here so key times and guide agree.
+          detail:(()=>{const autolyse=committedSchedule?.availabilityActions?.find(a=>a.id==='autolyse');
+            const lead=autolyse&&+autolyse.at<+times.start&&+times.start-+autolyse.at<3*hour?(isFr?`Autolyse dès ${fmtCardHM(autolyse.at,isFr)} · `:`Autolyse from ${fmtCardHM(autolyse.at,isFr)} · `):'';
+            return lead+duration((+times.bake-+times.start)/hour)+(isFr?' avant cuisson':' before baking');})(),
           note:isSourdough?(editBoundaryMessage??starterPreview?.message):(preview?.issue==='preferment'||preview?.conflict?.startsWith('preferment'))?null:draftMessage});
         const cacheKey=JSON.stringify([originalSignature,mixingBatches,activeOverrides,manualTimes,starterPins,editingRow,draftRowTime,editBaseTimes,kitchenTemp,fridgeTemp,flourStrength,lastFeedRatio,nextFeedRatio,ratioMode,starterLocation,planningMode,lastFedAge,knownPeakTime,prefermentType,repairBlocks,mixerType,targetDoughTemp,prefermentFlourPct,doughMassG,hydrationPct,flourTempC]);
         const check=(id:string,at:number)=>isSourdough?evaluateStarter(pinsFor(id,at)).valid:proposeCommercialEdit({...slotInput,id,at:new Date(at),...(id==='mix'&&hasPrefActive&&!activeOverrides.prefLocked?{prefHours:getPrefOptH(prefermentType,kitchenTemp,prefGoesInFridge,styleKey,fridgeTemp),pins:{...slotInput.pins,preferment:undefined}}:{})}).valid;
