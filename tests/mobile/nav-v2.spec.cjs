@@ -548,7 +548,11 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
  await navigator(page).tap();
  await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));window.scrollTo(0,document.body.scrollHeight/2);});
  await fixedAction();
+ // Stuck geometry only means something once the page has scrolled; a step
+ // shorter than the screen (the kitchen step after the kitchen moved to the
+ // bake time) has nothing to scroll.
  await expect.poll(()=>page.evaluate(()=>{
+  if(window.scrollY===0)return true;
   const header=document.querySelector('.bh-header-stack').getBoundingClientRect();
   const bar=document.querySelector('.bh-bake-navigator').getBoundingClientRect();
   return Math.abs(header.top)<2 && Math.abs(bar.top-header.bottom)<2;
