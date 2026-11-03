@@ -2550,6 +2550,12 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
       if(candidate.found){
         const mixHBF=(+et-+candidate.candidate.times.start)/3600000;
         result={...result,mixHBF,prefHBF:mixHBF,fallback:false,mixInBlocker:false};
+      }else if(candidate.leastConflict){
+        // No plan avoids every busy time: start from the one that needs the
+        // baker least (e.g. mix tonight, only the fridge exit falls at work),
+        // never from a default that lands every step in the workday.
+        const mixHBF=(+et-+candidate.leastConflict.candidate.times.start)/3600000;
+        result={...result,mixHBF,prefHBF:mixHBF};
       }
     }
     // Unified decision tree — single source of truth for all scheduler states.
@@ -6882,7 +6888,11 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
       // A chosen yeast amount fixes the length even when no free slot fits it:
       // show that start (and its clash) rather than leaving the old one.
       const yeastStart=!usable&&!hasPrefActive?yeastTimingFor(pendingEatTime,candidateBlocks):null;
-      const times=usable?result.candidate.times:yeastStart?{start:new Date(Math.round((+pendingEatTime-yeastStart.center*3600000)/900000)*900000),bake:pendingEatTime,prefHours:0}:{start:pendingStart,bake:pendingEatTime,prefHours:prefOffsetH};
+      // No clash-free plan and no explicit mix time: use the plan that needs
+      // the baker during the fewest busy moments, not the previous start.
+      const least=!usable&&!yeastStart&&!hasPrefActive&&overrides.mix===undefined&&result.leastConflict
+        ?result.leastConflict.candidate.times:null;
+      const times=usable?result.candidate.times:yeastStart?{start:new Date(Math.round((+pendingEatTime-yeastStart.center*3600000)/900000)*900000),bake:pendingEatTime,prefHours:0}:least??{start:pendingStart,bake:pendingEatTime,prefHours:prefOffsetH};
       setPendingStart(times.start);setPrefOffsetH(times.prefHours);setStartComputed(true);
       setPrefAlgoRed(!result.found);setWindowTooShort(false);
       onChange(times.start,pendingEatTime,candidateBlocks,{preservePlan:true,prefOffsetHours:times.prefHours,prefInFridge:storage,timingOverrides:overrides});
@@ -7069,10 +7079,6 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
   const during=clashKinds.size===1&&clashKinds.has('work')?(isFr?'pendant vos heures de travail':'during work hours')
     :clashKinds.size===1&&clashKinds.has('night')?(isFr?'pendant la nuit':'during the night')
     :(isFr?'pendant vos indisponibilités':'during your busy times');
-  const whileBusy=clashKinds.size===1&&clashKinds.has('work')?(isFr?'pendant vos heures de travail':'while you’re at work')
-    :clashKinds.size===1&&clashKinds.has('night')?(isFr?'pendant votre sommeil':'while you’re asleep')
-    :clashKinds.has('work')&&clashKinds.has('night')&&clashKinds.size===2?(isFr?'au travail ou pendant la nuit':'while you’re at work or asleep')
-    :(isFr?'pendant vos indisponibilités':'during your busy times');
   const simpleDecisionSentence=simpleConflicts.length===1
     ? isFridgeExit(simpleConflicts[0].action.id)
       ? (isFr?`La pâte doit sortir du réfrigérateur à ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`
@@ -7080,7 +7086,20 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
       : (isFr?`${simpleConflictName(simpleConflicts[0].action)} tombe à ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`
         :`${simpleConflictName(simpleConflicts[0].action)} falls at ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`)
     : simpleConflicts.length>1
-      ? (isFr?`Ce planning a besoin de vous ${simpleConflicts.length} fois ${whileBusy}.`:`This plan needs you ${simpleConflicts.length} times ${whileBusy}.`)
+      ? (()=>{
+          // Name the steps, never a bare count: "Mixing, 3 folds and shaping fall during work hours."
+          const parts:string[]=[];const seen=new Set<string>();
+          const folds=simpleConflicts.filter(c=>/^fold-/.test(c.action.id)).length;
+          for(const conflict of [...simpleConflicts].sort((a,b)=>+a.action.at-+b.action.at)){
+            const id=conflict.action.id;
+            const name=/^fold-/.test(id)?(folds>1?(isFr?`${folds} rabats`:`${folds} folds`):(isFr?'un rabat':'a fold')):simpleConflictName(conflict.action);
+            if(seen.has(name))continue;seen.add(name);parts.push(name);
+          }
+          const lower=parts.map((p,i)=>i===0?p:p.charAt(0).toLowerCase()+p.slice(1));
+          const list=lower.length>1?`${lower.slice(0,-1).join(', ')} ${isFr?'et':'and'} ${lower.at(-1)}`:lower[0];
+          const sentence=list.charAt(0).toUpperCase()+list.slice(1);
+          return isFr?`${sentence} tombent ${during}.`:`${sentence} fall ${during}.`;
+        })()
       : (isFr?'Cet horaire ne laisse pas le bon temps à la pâte.':'This baking time doesn’t leave the dough the time it needs.');
   const simpleSuggestion=!searchingTargets?firstSuggestedTarget:undefined;
   const simpleDecision=mode==='simple'&&eatTimeSet&&!currentCandidateValid&&(simpleSuggestion||simpleOnlyFridgeClash)
@@ -7763,7 +7782,6 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
             ?(isFr?'Un geste de préparation est prévu entre 23 h et 7 h.':'A preparation step falls between 11pm and 7am.')
             :(isFr?'Aucun planning entièrement en journée ne convient à cet enfournement.':'No daytime plan fits this bake time.')}</p>}
         {searchingTargets&&eatTimeSet&&!currentCandidateValid&&<p role="status" data-searching-bakes>{isFr?'Recherche du premier créneau compatible…':'Finding the first available baking time…'}</p>}
-        {simpleDecision}{simpleCoveredNote}{simpleMovedNote}
         {/* Custom's single list of alternatives; Simple uses its decision card. */}
         {(!eatTimeSet||(!currentCandidateValid&&mode!=='simple'))&&suggestedTargets.length>0&&<div className="bh-target-presets"><p>{eatTimeSet?(suggestedTargets[0]?.assistance?(isFr?'Ce créneau laisse le temps au levain. Certaines interventions nécessitent de l’aide.':'This bake gives the starter time to mature. Some steps need someone available.'):(isFr?'Ces enfournements conviennent à votre planning :':'These baking times fit your plan:')):(isFr?'Enfournements proposés':'Suggested baking times')}</p>{targetChoices}</div>}
         {eatTimeSet&&!currentCandidateValid&&!recipeGenerated&&suggestedTargets.length===0&&!searchingTargets&&!readinessUnsupported&&(!isSourdough||lastFedAge||knownPeakTime)&&<p role="status">{repairBlocks.length
@@ -8010,6 +8028,8 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
       )}
         </div>
       </details>
+      {/* Simple: the decision comes after the busy times it depends on. */}
+      {simpleDecision}{simpleCoveredNote}{simpleMovedNote}
 
       {!inputsOnly && <>
       {(windowTooShort && !startComputed || !!solverResult?.windowTooShort) && eatTimeSet && (

@@ -38,10 +38,10 @@ for(const locale of ['fr','en']){
   await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
   await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
   await actions(page).locator('[data-bh-forward]:visible').tap();
+  await (async()=>{const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();})();
   const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
   await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
   await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
-  await (async()=>{const k=page.locator('[data-kitchen-warmth]:visible');if(await k.count()&&!(await k.locator('[aria-pressed="true"]').count()))await k.locator('[data-kitchen-band="mild"]').tap();})();
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
   // Custom opens on equipment (oven, then mixing), then the kitchen.
   await expect(page.locator('#step-3')).toBeVisible();
@@ -105,13 +105,13 @@ for(const locale of ['fr','en']){
   const quantity=page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true});
   await quantity.fill('4');await quantity.blur();
   await actions(page).locator('[data-bh-forward]:visible').tap();
+  await (async()=>{const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();})();
 
   await expect.poll(async()=>({oven:(await stored(page))?.ovenType,mixer:(await stored(page))?.mixerType,yeast:(await stored(page))?.yeastType})).toEqual({oven:'home_oven_standard',mixer:'hand',yeast:'instant'});
   await geometry(page);
   const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
   await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
   await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
-  await (async()=>{const k=page.locator('[data-kitchen-warmth]:visible');if(await k.count()&&!(await k.locator('[aria-pressed="true"]').count()))await k.locator('[data-kitchen-band="mild"]').tap();})();
   await page.getByRole('button',{name:fr?'Créer ma recette simple':'Create my simple recipe',exact:true}).tap();
   await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
   const yeastMeasure=page.getByText(fr?/^Levure fraîche : .*sèche active : /:/^Fresh yeast: .*active dry: /);
@@ -170,7 +170,6 @@ for(const locale of ['fr','en']){
   await expect(stages.getByText(/Poolish/).first()).toBeVisible();
   await page.getByRole('button',{name:fr?'Revoir mes choix':'Review my choices',exact:true}).tap();
   await page.getByRole('button',{name:fr?'Modifier : Mode':'Edit : Mode',exact:true}).tap();
-  await (async()=>{const k=page.locator('[data-kitchen-warmth]:visible');if(await k.count()&&!(await k.locator('[aria-pressed="true"]').count()))await k.locator('[data-kitchen-band="mild"]').tap();})();
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
   await expect.poll(formula).toEqual({tab:'custom',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
   expect(errors).toEqual([]);
@@ -187,10 +186,10 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).fill('12');
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).blur();
  await actions(page).locator('[data-bh-forward]:visible').tap();
+  await (async()=>{const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();})();
   const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
   await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
   await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
-  await (async()=>{const k=page.locator('[data-kitchen-warmth]:visible');if(await k.count()&&!(await k.locator('[aria-pressed="true"]').count()))await k.locator('[data-kitchen-band="mild"]').tap();})();
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
  await actions(page).locator('[data-bh-forward]:visible').tap();
  const section=page.getByRole('region',{name:fr?'Nombre de pétrissées':'Mixing batches',exact:true});

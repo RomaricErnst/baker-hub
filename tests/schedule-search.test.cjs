@@ -78,3 +78,22 @@ test('automatic preferment search provides future planning lead instead of exact
  assert.ok(+result.candidate.times.start-result.candidate.times.prefHours*H>=Date.parse('2026-09-25T01:00Z'));
  assert.equal(validateScheduleCandidate({...input,now:fixedNow+1000},result.candidate.times).valid,true);
 });
+test('direct dough with no clash-free plan offers the plan that needs the baker least',()=>{
+ // Bake tomorrow 8 pm at 27 °C, work 9–18: mixing tonight leaves only the
+ // fridge exit at work; the default morning mix would clash five times.
+ const {findAvailabilityConflicts}=require('../app/utils/scheduleAvailability.ts');
+ const tonight=Date.parse('2026-11-03T22:05:00+08:00'),bake=new Date('2026-11-04T20:00:00+08:00'),morning=new Date('2026-11-04T07:00:00+08:00');
+ const work={from:new Date('2026-11-04T09:00:00+08:00'),to:new Date('2026-11-04T18:00:00+08:00'),label:'Work · Wed, Nov 4'};
+ const input={id:'mix',at:morning,start:morning,bake,prefHours:0,hasPreferment:false,prefWarmupHours:0,supported:true,blocks:[work],
+  kitchenTemp:27,preheatMin:45,mixerType:'hand',styleKey:'neapolitan',numItems:4,window:b=>({from:new Date(+b-30*H),to:new Date(+b-8*H)}),methodValid:()=>true,now:tonight};
+ const retained=validateScheduleCandidate(input);
+ assert.equal(retained.valid,false);
+ assert.ok(findAvailabilityConflicts(retained.schedule.availabilityActions,[work],tonight).length>=4);
+ const result=findFixedBakeSchedule(input);
+ assert.equal(result.found,false);
+ assert.ok(result.leastConflict);
+ assert.equal(result.leastConflict.conflicts,1);
+ const left=findAvailabilityConflicts(result.leastConflict.candidate.schedule.availabilityActions,[work],tonight);
+ assert.match(left[0].action.id,/^cold-out/);
+ assert.equal(+result.leastConflict.candidate.times.bake,+bake);
+});
