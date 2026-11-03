@@ -29,6 +29,8 @@ for(const locale of ['en','fr'])test(`${locale}: kitchen asked with the bake tim
  await expect(page.locator('[data-create-hint]')).toHaveText(fr?'Indiquez la température pour continuer.':'Choose how warm it is to continue.');
  await expect(page.getByText(fr?/Travaillez-vous ce jour-là/:/Are you at work then/)).toHaveCount(0);
  for(const band of await kitchen.locator('[data-kitchen-band]').all())expect((await band.boundingBox()).height).toBeGreaterThanOrEqual(44);
+ await expect(kitchen.locator('[data-kitchen-band]')).toHaveCount(5);
+ await expect(kitchen.locator('[data-kitchen-band="veryhot"]')).toContainText(fr?'Cuisine tropicale sans climatisation':'A tropical kitchen without air conditioning');
  await kitchen.locator('[data-kitchen-band="warm"]').tap();
  await expect(kitchen.locator('[data-kitchen-band="warm"]')).toHaveAttribute('aria-pressed','true');
  await expect(create).toBeEnabled();
