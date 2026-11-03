@@ -6,13 +6,15 @@ export interface ScheduleDraftInput {
   start:Date; bake:Date; blocks:AvailabilityBlock[]; kitchenTemp:number; preheatMin:number;
   mixerType:MixerType; styleKey:string; numItems?:number; mixingBatches?:number; from:Date|null; to:Date|null;
   completedMixAt?:number;
+  /** Levain bulk multiplier for a baker-chosen starter % (starterBulkFactor). */
+  starterFactor?:number;
   extraActions?:AvailabilityAction[]; methodValid:boolean; now?:number;
 }
 /** Read-only preview using the production schedule builder and action-duration checks. */
 export function assessScheduleDraft(input:ScheduleDraftInput):{schedule:ScheduleResult|null; valid:boolean; reason:'date'|'range'|'method'|'busy'|'timing'|null; conflict?:AvailabilityAction} {
   const {start,bake,from,to,extraActions=[],now=Date.now()}=input;
   if(![+start,+bake].every(Number.isFinite)||(input.completedMixAt===undefined&&+start<=now)||+bake<=+start)return {schedule:null,valid:false,reason:'date'};
-  const schedule=buildSchedule(start,bake,input.blocks,input.kitchenTemp,input.preheatMin,input.mixerType,input.styleKey,input.numItems,input.mixingBatches,input.isSourdough);
+  const schedule=buildSchedule(start,bake,input.blocks,input.kitchenTemp,input.preheatMin,input.mixerType,input.styleKey,input.numItems,input.mixingBatches,input.isSourdough,input.starterFactor??1);
   // The builder historically rounds bake anchors. Never approve a candidate
   // whose rendered agenda silently differs from the requested fixed time.
   if(+schedule.bakeStart!==+bake)return {schedule,valid:false,reason:'timing'};

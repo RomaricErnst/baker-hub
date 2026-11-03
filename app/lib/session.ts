@@ -107,6 +107,8 @@ export interface SessionData {
   poolishStorage?: 'auto' | 'fridge' | 'room';
   /** Custom direct dough: baker's IDY % of flour; the plan is timed to it. */
   yeastPctOverride?: number;
+  /** Custom levain: baker's starter % of flour; the bulk is timed to it. */
+  starterPctOverride?: number;
   starterEvents?: Array<Omit<StarterEvent, 'time'|'bellPeakTime'|'bellStartTime'> & {time:number;bellPeakTime?:number;bellStartTime?:number}>;
   starterState?: string;
   starterLocation?: string;

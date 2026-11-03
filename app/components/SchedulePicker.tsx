@@ -5,7 +5,7 @@ import { loadProfile, updateProfile, DEFAULT_BLOCKERS, type StandardBlocker } fr
 import { formatClock, formatBakeDateTime } from '../utils/units';
 import { useState, useMemo, useEffect, useRef, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationHoursForYeast } from '../utils';
+import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationHoursForYeast, sourdoughBulkH } from '../utils';
 import FermentChart, { scheduleColdIntervals, getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
 import FermentationReadiness from './FermentationReadiness';
 import ScheduleTimeline from './ScheduleTimeline';
@@ -232,6 +232,8 @@ interface SchedulePickerProps extends WarmupInputs {
   yeastPctOverride?: number;
   /** True after an explicit method/amount change; the picker replans, then calls onReplanHandled. */
   replanPending?: boolean;
+  /** Levain: bulk multiplier for a baker-chosen starter % (starterBulkFactor); 1 by default. */
+  starterBulkFactor?: number;
   onReplanHandled?: () => void;
   onFridgeOutTimeChange?: (t: Date | null) => void;
   onUsingPeak2Change?: (v: boolean) => void;
@@ -1799,7 +1801,11 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+  // A baker-chosen starter % lengthens or shortens the levain room-temperature
+  // bulk (starterBulkFactor). The solver windows add the same hours the
+  // schedule builder does, so scoring, card and chart stay on one bulk.
+  const starterBulkDeltaH = isSourdough && styleKey ? sourdoughBulkH(styleKey, kitchenTemp) * (starterBulkFactor - 1) : 0;
   function thermalInputs(method:string,inFridge:boolean){
     return {prefermentType:method, prefInFridge:inFridge,
       styleKey, kitchenTemp, fridgeTemp, mixerType, targetDoughTemp,
@@ -2239,7 +2245,7 @@ function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeast
     let seedStart=pendingStart;
     if (+d!==+pendingEatTime && !execution && !completedMixAt) {
       const defaults=STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
-      const preferredHours=(defaults.preferredColdH ?? defaults.coldH ?? 0)+climateRtH(defaults.rtH,kitchenTemp,isSourdough);
+      const preferredHours=(defaults.preferredColdH ?? defaults.coldH ?? 0)+(climateRtH(defaults.rtH,kitchenTemp,isSourdough)+starterBulkDeltaH);
       seedStart=new Date(Math.max(Date.now(),+d-preferredHours*3600000));
       if(isSourdough && ratioMode==='recommend' && nextFeedRatioOverride===null) {
         setNextFeedRatio(lastFeedRatio);
@@ -2393,7 +2399,7 @@ function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeast
       scaledDefaults.minColdH ?? 0,
       scaledDefaults.preferredColdH ?? scaledDefaults.coldH
     );
-    const _rtH_solver = climateRtH(defaults.rtH, kitchenTemp, isSourdough);
+    const _rtH_solver = (climateRtH(defaults.rtH, kitchenTemp, isSourdough) + starterBulkDeltaH);
     const optimalColdH = hasColdLocal ? (_biasedColdSolver + _rtH_solver) : 0;
     const sweetCenterRaw = hasColdLocal
       ? _biasedColdSolver + _rtH_solver         // dough peaks at bake at this position
@@ -2671,7 +2677,7 @@ function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeast
     if (isSourdough) {
       const sfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
       const sweetCenter = ((sfDef.preferredColdH ?? sfDef.coldH ?? 0)
-        + climateRtH(sfDef.rtH, kitchenTemp, isSourdough) + (sfDef.minTotalFermH ?? 12)) / 2;
+        + (climateRtH(sfDef.rtH, kitchenTemp, isSourdough) + starterBulkDeltaH) + Math.max(1, (sfDef.minTotalFermH ?? 12) + starterBulkDeltaH)) / 2;
       setPendingStart(new Date(pendingEatTime.getTime() - sweetCenter * 3600000));
       // Sourdough re-arms itself in the constraint effect below, which owns
       // the solver for that path.
@@ -2702,9 +2708,15 @@ function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeast
   // unmounted, so the flag — not a change-only effect — carries them here, and
   // they replan even a resumed session.
   useEffect(() => {
-    if (!replanPending || isSourdough || !eatTimeSet || isNaN(pendingEatTime.getTime())) return;
+    if (!replanPending || !eatTimeSet || isNaN(pendingEatTime.getTime())) return;
     resumeFrozenRef.current = false;
-    const t = setTimeout(() => { computeAndApplyRecommendation(solverBlocksRef.current, pendingEatTime); onReplanHandled?.(); }, 0);
+    // Sourdough replans through the full starter search (it owns its pins).
+    const t = setTimeout(() => {
+      const starterIncomplete = planningMode==='last_fed'&&(!lastFedTime||lastFedAge===null) || planningMode==='know_peak'&&!knownPeakTime;
+      if (isSourdough) { if (!startTimeInPast && !starterIncomplete) replanCurrentSchedule(solverBlocksRef.current, manualTimesRef.current, true); }
+      else computeAndApplyRecommendation(solverBlocksRef.current, pendingEatTime);
+      onReplanHandled?.();
+    }, 0);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replanPending, eatTimeSet]);
@@ -2825,14 +2837,14 @@ function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeast
   // rendered sweet zone shifts cold-ward in sync with the solver (lines ~1519
   // above) — chart green zone == card sweet zone at 30°C / 35°C. Commercial
   // yeast unchanged (climateRtH returns baseRtH there).
-  const _rtH_render = climateRtH(_sfDef.rtH, kitchenTemp, isSourdough);
+  const _rtH_render = (climateRtH(_sfDef.rtH, kitchenTemp, isSourdough) + starterBulkDeltaH);
   // Green zone: always shows full style window — NOT clipped to nowHBF.
   // Zone guides the baker on what's ideal. Diamond clamped to nowHBF separately.
   const yeastTiming=useMemo(()=>yeastTimingFor(pendingEatTime,localBlocks),
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [yeastPctOverride,flourStrength,isSourdough,prefermentType,styleKey,+pendingEatTime,localBlocks,kitchenTemp,preheatMin,mixerType,numItems,itemWeight,mixingBatches,fridgeTemp,hydrationPct]);
   const renderSweetFrom = yeastTiming?.from ?? (_prefColdH + _rtH_render);
-  const renderSweetTo   = yeastTiming?.to ?? (_sfDef.minTotalFermH ?? 4);
+  const renderSweetTo   = yeastTiming?.to ?? Math.max(1, (_sfDef.minTotalFermH ?? 4) + starterBulkDeltaH);
   // Yellow zone extends 2h past green right edge
   const renderYellowTo  = Math.max(0.5, renderSweetTo - 2);
   // A baker-chosen yeast amount sets the fermentation length: invert the dose
@@ -3135,8 +3147,8 @@ function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeast
         // otherwise fall back to ideal mix from sweet center. Never use raw pendingStart (may be stale).
         const sfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
         const sweetCenterH = ((sfDef.preferredColdH ?? sfDef.coldH ?? 0)
-          + climateRtH(sfDef.rtH, kitchenTemp, isSourdough)
-          + (sfDef.minTotalFermH ?? 12)) / 2;
+          + (climateRtH(sfDef.rtH, kitchenTemp, isSourdough) + starterBulkDeltaH)
+          + Math.max(1, (sfDef.minTotalFermH ?? 12) + starterBulkDeltaH)) / 2;
         const referenceMixTime = targetMixTime
           ?? new Date(bakeTime.getTime() - sweetCenterH * 3600000);
         const hoursAfterPeak =
@@ -3164,10 +3176,10 @@ function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeast
           // (starter still rising at removal — best case)
           // Also check: RT path doesn't already give green-green at a reasonable hour
           // If rtPeakTime is already in the sweet zone, no need for fridge.
-          const _rtH_local = climateRtH(sfDef.rtH ?? 2, kitchenTemp, isSourdough);
+          const _rtH_local = (climateRtH(sfDef.rtH ?? 2, kitchenTemp, isSourdough) + starterBulkDeltaH);
           const localSweetFrom = (sfDef.preferredColdH ?? sfDef.coldH ?? 0) + _rtH_local
             + Math.round(((sfDef.coldH ?? 0) + _rtH_local) * 0.35);
-          const localSweetTo = sfDef.minTotalFermH ?? _rtH_local;
+          const localSweetTo = sfDef.minTotalFermH !== undefined ? Math.max(1, sfDef.minTotalFermH + starterBulkDeltaH) : _rtH_local;
           const rtPeakInZone = rtPeakTime !== null && (() => {
             const rtPeakHBF = (bakeTime.getTime() - rtPeakTime.getTime()) / 3600000;
             return rtPeakHBF >= localSweetTo && rtPeakHBF <= localSweetFrom;
@@ -4310,8 +4322,8 @@ function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeast
     const _localPrefColdH = localSfDef.preferredColdH ?? localSfDef.coldH;
     // localSweetFrom = full quality plateau edge (preferredCold + rtH) — unbiased.
     // Tang effect comes from directional retardBonus (not band edge shift).
-    const localSweetFrom  = _localPrefColdH + localSfDef.rtH;
-    const localSweetTo    = localSfDef.minTotalFermH ?? 4;
+    const localSweetFrom  = _localPrefColdH + localSfDef.rtH + starterBulkDeltaH;
+    const localSweetTo    = Math.max(1, (localSfDef.minTotalFermH ?? 4) + starterBulkDeltaH);
     _sourdoughSweetFrom = localSweetFrom;
     _sourdoughSweetTo   = localSweetTo;
 
@@ -4319,7 +4331,7 @@ function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeast
     const bakeMs    = et.getTime();
     const nowMs0    = Date.now();
     const windowHBF = (bakeMs - nowMs0) / 3600000;
-    const minFermH  = (localSfDef.minTotalFermH ?? 4) + 1.0;
+    const minFermH  = Math.max(1, (localSfDef.minTotalFermH ?? 4) + starterBulkDeltaH) + 1.0;
 
     // Compute starter peak params early — needed for suggestion if window too short
     const peakH   = getPrefPeakH_RT('sourdough', kitchenTemp, styleKey ?? 'neapolitan');
@@ -6398,7 +6410,7 @@ function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeast
       const start=new Date(completedMixAt);
       const probe:StarterProbe={...pins,result:solverResult,start,effects:[]};
       const anchorsKept=(pins.mix===null||pins.mix===completedMixAt)&&eatTime!==null&&+candidateBake===+eatTime;
-      const validation=assessScheduleDraft({isSourdough,start,bake:candidateBake,from:readinessWindowFrom??new Date(+candidateBake-renderSweetFrom*hour),to:readinessWindowTo??new Date(+candidateBake-renderSweetTo*hour),completedMixAt,
+      const validation=assessScheduleDraft({starterFactor:starterBulkFactor,isSourdough,start,bake:candidateBake,from:readinessWindowFrom??new Date(+candidateBake-renderSweetFrom*hour),to:readinessWindowTo??new Date(+candidateBake-renderSweetTo*hour),completedMixAt,
         blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,now,methodValid:anchorsKept});
       const valid=validation.valid;
       const message=valid?null:!anchorsKept?(isFr?'Le pétrissage a commencé. Conservez les horaires de cette pâte.':'Mixing has started. Keep this dough’s existing times.'):
@@ -6435,7 +6447,7 @@ function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeast
       ?!!result?.peakTime&&knownPeakMixUsable(probe.start,result.peakTime,result.adjPeakHValue??getPrefPeakH_RT('sourdough',kitchenTemp,styleKey),flourStrength)
       :result?.starterPillState==='green'&&!result.planConstrained;
     const bounds={from:result?.sourdoughSweetFrom!=null?new Date(+candidateBake-result.sourdoughSweetFrom*hour):null,to:result?.sourdoughSweetTo!=null?new Date(+candidateBake-result.sourdoughSweetTo*hour):null};
-    const validation=assessScheduleDraft({isSourdough,start:probe.start,bake:candidateBake,...bounds,blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,now,
+    const validation=assessScheduleDraft({starterFactor:starterBulkFactor,isSourdough,start:probe.start,bake:candidateBake,...bounds,blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,now,
       extraActions:starterHandsOnActions(events,now),
       methodValid:!!result&&!result.windowTooShort&&pinKept&&peakOK&&historyKept&&noNewPastActions&&orderedActions&&storageKept&&displayedPlanKept});
     const allBatchPeaksUsable=planningMode!=='know_peak'||!validation.schedule?.batchMixWindows||!!result?.peakTime&&validation.schedule.batchMixWindows.every(batch=>knownPeakMixUsable(batch.start,result.peakTime!,result.adjPeakHValue??getPrefPeakH_RT('sourdough',kitchenTemp,styleKey),flourStrength));
@@ -6511,7 +6523,7 @@ function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeast
       if(candidateBlocks.length){
         // Starter planning is much more expensive than constructing the dough
         // agenda. A feed cannot rescue a blocked preheat, fold or dough exit.
-        const dough=assessScheduleDraft({isSourdough:true,start:new Date(mix),bake:candidateBake,
+        const dough=assessScheduleDraft({starterFactor:starterBulkFactor,isSourdough:true,start:new Date(mix),bake:candidateBake,
           from:new Date(from),to:new Date(to),blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,now,methodValid:true});
         if(!dough.valid)continue;
       }
@@ -6586,7 +6598,7 @@ function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeast
   };
   const verifiedRepair = useMemo(() => !isSourdough && readinessBusy && readinessWindowValid && !restoredPrepOverdue && !startInvalid
     && !windowTooShort && !solverResult?.windowTooShort
-    ? findScheduleRepair({ isSourdough,startTime: pendingStart, eatTime: pendingEatTime, availabilityBlocks: repairBlocks, numItems, mixingBatches,
+    ? findScheduleRepair({ starterFactor: starterBulkFactor, isSourdough,startTime: pendingStart, eatTime: pendingEatTime, availabilityBlocks: repairBlocks, numItems, mixingBatches,
       kitchenTemp, preheatMin, mixerType, styleKey, now: new Date(readinessNow), allowStartShift: true,
       mixWindow: bake=>{
         const bounds=commercialReadinessWindow({...(STYLE_FERM_DEFAULTS[styleKey]??FERM_FALLBACK),flourStrength,
@@ -7253,7 +7265,7 @@ function FermentedSchedulePicker({ replanPending = false, onReplanHandled, yeast
                     if (isSourdough) {
                       const sfDef = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
                       const sweetCenter = ((sfDef.preferredColdH ?? sfDef.coldH ?? 0)
-                        + climateRtH(sfDef.rtH, kitchenTemp, isSourdough) + (sfDef.minTotalFermH ?? 12)) / 2;
+                        + (climateRtH(sfDef.rtH, kitchenTemp, isSourdough) + starterBulkDeltaH) + Math.max(1, (sfDef.minTotalFermH ?? 12) + starterBulkDeltaH)) / 2;
                       setPendingStart(new Date(pendingEatTime.getTime() - sweetCenter * 3600000));
                     }
                   }}
