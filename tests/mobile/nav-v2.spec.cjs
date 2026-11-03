@@ -452,7 +452,9 @@ test('bread family return preserves choices; wraps and meal examples are discove
  await page.getByRole('button',{name:/^Pita à poche/}).tap();
  await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
  const quantity=page.getByLabel('Nombre de pièces',{exact:true});await quantity.fill('5');await quantity.blur();
- await page.locator('.bh-batch-context').getByRole('button',{name:'Modifier le pain choisi',exact:true}).tap();
+ // The style is changed with Previous step (or the step summary); no recap line.
+ await expect(page.locator('.bh-batch-context')).toHaveCount(0);
+ await page.locator('.bh-batch-actions:visible').getByRole('button',{name:'Étape précédente',exact:true}).tap();
  await page.locator('.bh-style-confirm').getByRole('button',{name:'Retour',exact:true}).tap();
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Que souhaitez-vous préparer ?',exact:true})).toBeVisible();
