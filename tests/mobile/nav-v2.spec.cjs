@@ -239,9 +239,13 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await noOverflow(page);
   await testInfo.attach('quantity-single-action-no-bottom-tabs',{body:await page.screenshot(),contentType:'image/png'});
   await organise.tap();
+  await (async()=>{const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();})();
   const timing=page.locator('#step-7:visible');
   await expect(timing).toBeVisible();
   await timing.getByRole('button',{name:'Étape précédente',exact:true}).tap();
+  // Previous step from the bake time returns to the kitchen, then to quantity.
+  await expect(page.locator('[data-kitchen-slider]:visible')).toBeVisible();
+  await page.locator('.bh-batch-actions:visible').getByRole('button',{name:'Étape précédente',exact:true}).tap();
   await expect(quantity).toHaveValue('5');
   await organise.tap();
   await enterBakeTarget(page);
@@ -646,6 +650,7 @@ test('page landing survives delayed Safari viewport changes and history restore 
  const originalSize=page.viewportSize();
  await page.setViewportSize({...originalSize,height:originalSize.height+70});
  await page.locator('.bh-batch-actions').locator('[data-bh-forward]:visible').tap();
+ await (async()=>{const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();})();
  await expect(page.locator('.bh-header-stack .bh-bake-navigator')).toHaveCount(0);
  await expect(page.locator('.bh-bake-navigator')).toHaveCSS('position','sticky');
  await expect(page.locator('.bh-header-stack')).toHaveCSS('position','sticky');

@@ -22,6 +22,8 @@ for(const locale of ['en','fr'])test(`${locale}: kitchen on its own screen, then
  await expect(page.getByRole('heading',{name:fr?'Quelle température là où la pâte repose ?':'How warm is it where the dough rests?'})).toBeVisible();
  const slider=page.getByRole('slider',{name:fr?'Température là où la pâte repose':'Temperature where the dough rests'});
  expect((await slider.boundingBox()).height).toBeGreaterThanOrEqual(44);
+ // The zone track is drawn by the page, not the browser's default slider.
+ await expect.poll(()=>slider.evaluate(el=>getComputedStyle(el).webkitAppearance||getComputedStyle(el).appearance)).toBe('none');
  await slider.fill('34');
  await expect(page.locator('[data-kitchen-slider]')).toHaveAttribute('data-kitchen-zone','veryhot');
  await expect(page.locator('[data-kitchen-slider]')).toContainText(fr?'Cuisine tropicale sans climatisation':'A tropical kitchen without air conditioning');
