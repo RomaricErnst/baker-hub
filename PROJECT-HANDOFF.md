@@ -1,3 +1,12 @@
+# 3 November 2026 — starter % re-times the levain bulk (Claude)
+
+- Romaric's decision: a baker-entered starter % changes the timing, temperature-sensitive, correct when the starter lives in the fridge.
+- `starterBulkFactor(pct, kitchenTemp, flourStrength)` = Craig hours(p) / Craig hours(p₀), p₀ the engine's recommended mid % for that kitchen (20–25 / 15–20 / 10–15 % bands, flour-strength scaled), p clamped 5–30 %. Exactly 1 without a choice, so default plans are unchanged.
+- Temperature: through p₀ (the band) and the bulk it scales (`sourdoughBulkH`, 5 h at 22 °C, Q10 2). Craig's own temperature extension is a growth-rate ratio and cancels in the ratio.
+- Fridge: cold phases are not scaled — by the Gänzle et al. (1998) curves Craig uses, an hour at 5 °C does ~5 % of an hour at 24 °C — so the cold retard gives way and the bake time holds. A fridge-kept starter is refreshed to peak at room temperature before every mix (all candidate families end in a feed), so storage changes readiness, not the dough rate.
+- Wiring: `buildSchedule(…, starterFactor)` → `buildSchedulePhases`; `ScheduleDraftInput.starterFactor`, `ScheduleRepairInput.starterFactor`; the solver adds `starterBulkDeltaH` to every sourdough `rtH` and `minTotalFermH` window, so scoring, card and chart share one bulk. Fine-tune shows "Starter (% of flour)" for levain; the recipe uses it (`sourdoughGuidance` override). Explicit edits go through `planReplanPending`; sourdough replans through `replanCurrentSchedule` only when the starter inputs are complete.
+- Tests: `tests/starter-pct.test.cjs`, `tests/mobile/starter-pct.spec.cjs` (fridge and room starters).
+
 # 3 November 2026 — Custom expert controls and yeast re-timing (Claude, PR #45, #46)
 
 - **Poolish storage** (Preferment step, Custom): "Choose to fit my timing" (planner compares fridge and room, as before), "In the fridge", "At room temperature". An explicit choice limits the solver's comparison to that storage. Saved as `poolishStorage`.
@@ -7,7 +16,7 @@
 - **Replan flag**: yeast amount and poolish storage are edited on steps where the bake-time scheduler is unmounted. A change-only effect never saw them in production (dev StrictMode's double effect hid it). The page holds `planReplanPending`; the scheduler replans on mount or change, unfreezes a resumed plan for that explicit edit, then clears the flag.
 - Tests: `tests/yeast-override.test.cjs` (round trip, direction, displayed amount, unreachable amount), `tests/mobile/yeast-override.spec.cjs` (more yeast → later start, undo restores, bake time unchanged; also run against the live site), storage-choice unit test, levain draft recovery spec updated.
 
-**Starter % — researched, not implemented.** It matters: two independent data sets agree that halving the starter adds about one microbial doubling time, roughly 3–4 h at 23–24 °C, which is comparable to the whole room-temperature bulk.
+**Starter % — researched, then implemented the same day (see the entry above).** It matters: two independent data sets agree that halving the starter adds about one microbial doubling time, roughly 3–4 h at 23–24 °C, which is comparable to the whole room-temperature bulk.
 
 | Starter % (of flour) | Craig, pizzamaking.com, 23.9 °C, ready to bake | Sourdough Journey, 23 °C, 100 % rise | Sourdough Journey, 21 °C, 75 % rise |
 |---|---|---|---|

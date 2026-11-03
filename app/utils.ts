@@ -349,21 +349,60 @@ export interface SourdoughResult {
   warning: string | null;
 }
 
+/** The engine's recommended starter band (% of flour) for a kitchen temperature. */
+function starterBand(kitchenTemp: number): { min: number; max: number } {
+  return kitchenTemp >= 28 ? { min: 10, max: 15 } : kitchenTemp >= 24 ? { min: 15, max: 20 } : { min: 20, max: 25 };
+}
+
+/** Recommended mid starter % before feed-timing adjustment, with the same
+ * flour-strength scaling sourdoughGuidance applies. Reference for starterBulkFactor. */
+export function referenceStarterPct(kitchenTemp: number, flourStrength = 1): number {
+  let { min, max } = starterBand(kitchenTemp);
+  if (flourStrength && flourStrength !== 1.0) {
+    const ftm = Math.max(0.6, Math.min(1.5, flourStrength));
+    min = Math.max(5, Math.round(min * ftm));
+    max = Math.min(30, Math.round(max * ftm));
+  }
+  return (min + max) / 2;
+}
+
+// Craig (TXCraig1, pizzamaking.com, Jan 2013): hours from mix to ready at
+// 23.9 °C against starter as a fraction of flour, regressed on real doughs and
+// tested on held-out 65/70 °F data. The Sourdough Journey timetables (2023, 60+
+// controlled batches) agree within ~2 h across 5-20 %. Each halving of the
+// starter adds about one doubling time.
+function craigSourdoughHours(fraction: number): number {
+  return -5.368 * Math.log(fraction) - 0.6014;
+}
+
+/** Multiplier on the levain room-temperature bulk for a baker-chosen starter %.
+ * Exactly 1 without a choice. Craig extends his curve across temperature by a
+ * growth-rate ratio, which cancels in this ratio; temperature enters through
+ * the reference % (the engine's band for this kitchen) and the bulk it scales
+ * (Q10 in sourdoughBulkH). Cold phases are not scaled: by the Gänzle et al.
+ * (1998) growth curves Craig uses, an hour at 5 °C does about 5 % of an hour
+ * at 24 °C, so a fridge retard cannot absorb an inoculation change. */
+export function starterBulkFactor(starterPct: number | undefined, kitchenTemp: number, flourStrength = 1): number {
+  if (starterPct === undefined || !Number.isFinite(starterPct) || starterPct <= 0) return 1;
+  const p = Math.max(5, Math.min(30, starterPct)) / 100;
+  const p0 = referenceStarterPct(kitchenTemp, flourStrength) / 100;
+  return Math.round(craigSourdoughHours(p) / craigSourdoughHours(p0) * 1000) / 1000;
+}
+
+/** Levain room-temperature bulk at the reference starter: 5 h at 22 °C, Q10 2. */
+export function sourdoughBulkH(styleKey: string, kitchenTemp: number): number {
+  const nativeSourdough = styleKey === 'pain_levain' || styleKey === 'sourdough';
+  return (nativeSourdough ? ALL_STYLES[styleKey as StyleKey].bulkH : ALL_STYLES.pain_levain.bulkH) * Math.pow(2, (22 - Math.min(30, kitchenTemp)) / 10);
+}
+
 function sourdoughGuidance(
   kitchenTemp: number,
   flour: number,
   feedToMixH?: number,
   flourStrength?: number,
+  starterPctOverride?: number,
 ): SourdoughResult {
-  let min: number, max: number;
-
-  if (kitchenTemp >= 28) {
-    min = 10; max = 15;
-  } else if (kitchenTemp >= 24) {
-    min = 15; max = 20;
-  } else {
-    min = 20; max = 25;
-  }
+  let { min, max } = starterBand(kitchenTemp);
 
   if (feedToMixH && feedToMixH > 0) {
     const basePeakH = kitchenTemp >= 28 ? 5 : kitchenTemp >= 24 ? 7 : 9;
@@ -419,6 +458,11 @@ function sourdoughGuidance(
       `Use the lower end of the range and watch the dough, not the clock.`
     : null;
 
+  // A baker-chosen starter % replaces the range; the schedule's bulk is
+  // stretched or shortened to it by starterBulkFactor.
+  if (starterPctOverride !== undefined && Number.isFinite(starterPctOverride) && starterPctOverride > 0) {
+    min = max = Math.max(5, Math.min(30, starterPctOverride));
+  }
   const gramsMin = Math.round(flour * min / 100);
   const gramsMax = Math.round(flour * max / 100);
 
@@ -794,6 +838,7 @@ function buildSchedulePhases(
   mixingBatches = 1,
   numItems?: number,
   isSourdough = false,
+  starterFactor = 1,
 ): ScheduleResult {
   const bakeTime = new Date(eatTime.getTime() - preheatMin * 60000);
   // Elapsed mixing time is style-dependent (Modernist publishes it per style);
@@ -896,9 +941,9 @@ function buildSchedulePhases(
   // Native levain styles carry a five-hour reference bulk at 22 °C. Keep
   // that independent of the commercial dough minimum. This temperature
   // adjustment is a planning estimate; the protocol still uses rise cues.
-  const nativeSourdough = styleKey === 'pain_levain' || styleKey === 'sourdough';
+  // A baker-chosen starter % scales this bulk (starterBulkFactor, 1 by default).
   const initialBulkH = isSourdough
-    ? (nativeSourdough ? ALL_STYLES[styleKey].bulkH : ALL_STYLES.pain_levain.bulkH) * Math.pow(2, (22 - Math.min(30, kitchenTemp)) / 10)
+    ? sourdoughBulkH(styleKey, kitchenTemp) * starterFactor
     : isVeryHot ? 0.5 : isTropical ? 0.75 : 1.5;
 
   const minCold1H = isTropical ? 2 : 4;
@@ -1213,13 +1258,14 @@ export function buildSchedule(
   kitchenTemp: number, preheatMin: number, mixerType: MixerType = 'hand',
   styleKey: string = 'neapolitan', numItems?: number, requestedMixingBatches = 1,
   isSourdough = styleKey === 'pain_levain' || styleKey === 'sourdough',
+  starterFactor = 1,
 ): ScheduleResult {
   const mixingBatches = Number.isFinite(requestedMixingBatches) ? Math.max(1, Math.min(100, Math.floor(requestedMixingBatches))) : 1;
   const poachMinutes = breadPoachMinutes(styleKey, numItems);
   const fermentationEnd = poachMinutes ? new Date(+eatTime - poachMinutes * 60000) : eatTime;
   // Poaching ends fermentation. For bagels only, derive the dough phases up
   // to that action; the selected oven time remains unchanged.
-  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches, numItems, isSourdough);
+  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches, numItems, isSourdough, isSourdough ? starterFactor : 1);
   schedule.divisionMinutes = divisionMinutesFor(numItems);
   const requiredCold = REQUIRED_COLD_MIN_HOURS[styleKey] ?? 0;
   if (requiredCold) {
@@ -1400,6 +1446,8 @@ export interface ScheduleRepairInput {
   numItems?: number;
   mixingBatches?: number;
   styleKey?: string;
+  /** Levain bulk multiplier for a baker-chosen starter % (starterBulkFactor). */
+  starterFactor?: number;
   /** Supply the planning clock explicitly for reproducible candidate checks. */
   now?: Date;
   allowStartShift?: boolean;
@@ -1425,7 +1473,7 @@ export function findScheduleRepair(input: ScheduleRepairInput): ScheduleRepair |
   const now = +(input.now ?? new Date());
   if (![+startTime, +eatTime, now, kitchenTemp, preheatMin].every(Number.isFinite)
       || +startTime < now || +startTime >= +eatTime || preheatMin < 0) return null;
-  const build = (start: Date, bake: Date) => buildSchedule(start, bake, availabilityBlocks, kitchenTemp, preheatMin, mixer, style, input.numItems, input.mixingBatches, input.isSourdough);
+  const build = (start: Date, bake: Date) => buildSchedule(start, bake, availabilityBlocks, kitchenTemp, preheatMin, mixer, style, input.numItems, input.mixingBatches, input.isSourdough, input.starterFactor ?? 1);
   const original = build(startTime, eatTime);
   const valid = (schedule: ScheduleResult, start: Date, bake: Date) =>
     +schedule.bakeStart === +bake && hasCoherentScheduleShape(schedule, start)
@@ -1617,6 +1665,7 @@ export function calculateRecipe(
   measuredPrefermentTemp?: number,         // measured poolish, biga or levain temperature, °C
   totalFlourTarget?: number,               // bread: total formula flour, preferment included
   yeastPctOverride?: number,               // custom, direct dough: final IDY % chosen by the baker
+  starterPctOverride?: number,             // custom, levain: starter % of flour chosen by the baker
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = (ovenType in OVEN_TYPES)
@@ -1753,7 +1802,7 @@ export function calculateRecipe(
     directNeedIDY = undefined;
 
     if (!unleavened && yeastType === 'sourdough') {
-      sourdough = sourdoughGuidance(kitchenTemp, flour, feedToMixH, blendProfile?.fermToleranceMultiplier);
+      sourdough = sourdoughGuidance(kitchenTemp, flour, feedToMixH, blendProfile?.fermToleranceMultiplier, starterPctOverride);
     } else if (!unleavened) {
       const exposure = doughCoolingExposure(schedule, numItems, itemWeight, hydration);
       yeast = recommendYeast(
