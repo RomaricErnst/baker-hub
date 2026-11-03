@@ -168,10 +168,10 @@ export default function PrototypeQuantityPicker({
 
   return (
     <div style={{ fontFamily: 'var(--font-ui)', color: 'var(--char)' }}>
-      {bakeType==='bread'&&onFlourTargetChange&&<div role="group" aria-label={fr?'Calculer la quantité':'Quantity basis'} style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
+      {bakeType==='bread'&&onFlourTargetChange&&roundView!=='count'&&<div role="group" aria-label={fr?'Calculer la quantité':'Quantity basis'} style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
         {[false,true].map(byFlour=><button key={String(byFlour)} type="button" aria-pressed={byFlour===(totalFlourTarget!==undefined)} onClick={()=>{if(byFlour!==(totalFlourTarget!==undefined))onFlourTargetChange(byFlour?500:undefined);}} style={{minHeight:44,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:8,background:byFlour===(totalFlourTarget!==undefined)?'var(--cream)':'white',color:'var(--char)'}}>{byFlour?(fr?'Par quantité de farine':'By flour weight'):(fr?'Par nombre de pains':'By loaf count')}</button>)}
       </div>}
-      {(!roundPizza || roundView !== 'size') && <div style={{ marginBottom: '16px' }}>
+      {roundView !== 'size' && <div style={{ marginBottom: '16px' }}>
         <label htmlFor="quantity-count" style={labelStyle}>
           {countLabel ?? (bakeType === 'bread' ? (fr ? 'Nombre de pains' : 'Number of loaves') : (fr ? 'Nombre de pizzas' : 'Number of pizzas'))}
         </label>
@@ -188,8 +188,8 @@ export default function PrototypeQuantityPicker({
         />
       </div>}
 
-      {/* Round pizzas: the count screen asks only how many; size is set in Custom. */}
-      {roundPizza && roundView === 'count' ? null : roundPizza ? (
+      {/* The count screen asks only how many; size, weight and flour basis are set in Custom. */}
+      {roundView === 'count' ? null : roundPizza ? (
         <section style={cardStyle} aria-labelledby="quantity-each-pizza">
           <h2 id="quantity-each-pizza" style={{ fontSize: '18px', margin: '0 0 14px', fontWeight: 700 }}>
             {fr ? 'Chaque pizza' : 'Each pizza'}

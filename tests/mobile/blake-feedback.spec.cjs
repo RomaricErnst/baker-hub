@@ -1,20 +1,34 @@
 const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
-for(const lang of ['fr','en'])test(`${lang}: flour quantity survives setup and reload without early fillings`,async({page})=>{
+for(const lang of ['fr','en'])test(`${lang}: Simple asks only how many; flour quantity lives in Custom and survives reload`,async({page})=>{
+ const fr=lang==='fr';
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,body:'{}'}));
- await page.goto(lang==='fr'?'/fr':'/');
- await page.getByRole('button',{name:lang==='fr'?'Pain':'Bread',exact:true}).tap();
+ await page.goto(fr?'/fr':'/');
+ await page.getByRole('button',{name:fr?'Pain':'Bread',exact:true}).tap();
  await page.getByRole('button',{name:'Brioche',exact:true}).tap();
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
  await expect(page.locator('.bh-fillings-invitation')).toHaveCount(0);
- await page.getByRole('button',{name:lang==='fr'?'Par quantité de farine':'By flour weight',exact:true}).tap();
+ const byFlour=page.getByRole('button',{name:fr?'Par quantité de farine':'By flour weight',exact:true});
+ // The quantity screen asks one thing.
+ await expect(page.locator('#quantity-count')).toBeVisible();
+ await expect(byFlour).toHaveCount(0);
+ await expect(page.locator('#quantity-total-flour')).toHaveCount(0);
+ await page.locator('.bh-step-actions:visible').locator('[data-bh-forward]:visible').tap();
+ const value=await page.evaluate(()=>{const d=new Date();d.setDate(d.getDate()+2);d.setHours(19,30,0,0);return new Date(+d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);});
+ const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
+ await bakeDate.fill(value);await bakeDate.blur();
+ await page.locator('[data-kitchen-band="mild"]:visible').tap();
+ await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
+ await page.locator('.bh-step-trigger:visible').tap();
+ await page.getByRole('dialog').getByRole('button',{name:fr?/^Peaufiner/:/^Fine-tune/}).tap();
+ await byFlour.tap();
  const flour=page.locator('#quantity-total-flour');
  await flour.fill('750');await flour.blur();
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null')?.totalFlourTarget)).toBe(750);
  await page.reload();
- const resume=page.getByRole('button',{name:lang==='fr'?'Reprendre →':'Resume →',exact:true});
+ const resume=page.getByRole('button',{name:fr?'Reprendre →':'Resume →',exact:true});
  await expect(resume).toBeVisible();await resume.tap();
  await expect(flour).toHaveValue('750');
- await expect(page.getByRole('button',{name:lang==='fr'?'Par quantité de farine':'By flour weight',exact:true})).toHaveAttribute('aria-pressed','true');
+ await expect(byFlour).toHaveAttribute('aria-pressed','true');
  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
 });
 

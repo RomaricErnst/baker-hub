@@ -827,19 +827,21 @@ const KITCHEN_BANDS=[
   {id:'cool',c:18,en:'Cool',fr:'Frais',metric:'under 20 °C',metricFr:'moins de 20 °C',imperial:'under 68 °F',imperialFr:'moins de 68 °F'},
   {id:'mild',c:22,en:'Mild',fr:'Tempéré',metric:'20–24 °C',metricFr:'20–24 °C',imperial:'68–75 °F',imperialFr:'68–75 °F'},
   {id:'warm',c:27,en:'Warm',fr:'Chaud',metric:'25–29 °C',metricFr:'25–29 °C',imperial:'77–84 °F',imperialFr:'77–84 °F'},
-  {id:'hot',c:31,en:'Hot',fr:'Très chaud',metric:'30 °C and above',metricFr:'30 °C et plus',imperial:'86 °F and above',imperialFr:'86 °F et plus'},
+  {id:'hot',c:31,en:'Hot',fr:'Très chaud',metric:'30–32 °C',metricFr:'30–32 °C',imperial:'86–90 °F',imperialFr:'86–90 °F'},
+  {id:'veryhot',c:34,en:'Very hot',fr:'Caniculaire',metric:'33 °C and above',metricFr:'33 °C et plus',imperial:'91 °F and above',imperialFr:'91 °F et plus',
+    hint:'A tropical kitchen without air conditioning',hintFr:'Cuisine tropicale sans climatisation'},
 ] as const;
-function kitchenBand(t:number){return t<20?'cool':t<25?'mild':t<30?'warm':'hot';}
+function kitchenBand(t:number){return t<20?'cool':t<25?'mild':t<30?'warm':t<33?'hot':'veryhot';}
 function KitchenWarmth({value,answered,units,fr,onChoose}:{value:number;answered:boolean;units:UnitSystem;fr:boolean;onChoose:(c:number)=>void}){
   const current=answered?kitchenBand(value):null;
   return <fieldset data-kitchen-warmth style={{border:0,padding:0,margin:'0 0 16px'}}>
     <legend style={{fontWeight:700,fontSize:14,color:'var(--char)',marginBottom:8,padding:0}}>{fr?'Quelle température là où la pâte repose ?':'How warm is it where the dough rests?'}</legend>
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-      {KITCHEN_BANDS.map(band=>{const active=current===band.id;return <button key={band.id} type="button" aria-pressed={active} data-kitchen-band={band.id}
+      {KITCHEN_BANDS.map(band=>{const active=current===band.id;const hint='hint' in band?(fr?band.hintFr:band.hint):null;return <button key={band.id} type="button" aria-pressed={active} data-kitchen-band={band.id}
         onClick={()=>onChoose(band.c)}
-        style={{minHeight:44,padding:'8px 12px',display:'grid',gap:2,textAlign:'left',border:`1.5px solid ${active?'var(--terra)':'var(--border)'}`,borderRadius:12,background:active?'var(--warm)':'var(--card)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:16,cursor:'pointer'}}>
+        style={{gridColumn:hint?'1/-1':undefined,minHeight:44,padding:'8px 12px',display:'grid',gap:2,textAlign:'left',border:`1.5px solid ${active?'var(--terra)':'var(--border)'}`,borderRadius:12,background:active?'var(--warm)':'var(--card)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:16,cursor:'pointer'}}>
         <span style={{fontWeight:active?700:500}}>{fr?band.fr:band.en}</span>
-        <span style={{fontSize:13,color:'var(--smoke)'}}>{units==='imperial'?(fr?band.imperialFr:band.imperial):(fr?band.metricFr:band.metric)}</span>
+        <span style={{fontSize:13,color:'var(--smoke)'}}>{units==='imperial'?(fr?band.imperialFr:band.imperial):(fr?band.metricFr:band.metric)}{hint?` · ${hint}`:''}</span>
       </button>;})}
     </div>
   </fieldset>;
@@ -3418,7 +3420,7 @@ export default function Home() {
   };
   const kitchenAnswered = confirmed('climate',kitchenTemp);
   const kitchenPending = !isUnleavened && !kitchenAnswered;
-  const kitchenLabel = (()=>{const band=KITCHEN_BANDS.find(b=>b.id===kitchenBand(kitchenTemp))!;return fr?`Cuisine ${band.fr.toLowerCase()}`:`${band.en} kitchen`;})();
+  const kitchenLabel = (()=>{const band=KITCHEN_BANDS.find(b=>b.id===kitchenBand(kitchenTemp))!;return fr?`Cuisine : ${band.fr.toLowerCase()}`:`${band.en} kitchen`;})();
   const reviewTiming = eatTime ? formatBakeDateTime(eatTime,locale)+(kitchenAnswered&&!isUnleavened?' · '+kitchenLabel:'') : null;
   const reviewKitchen = `${fr ? 'Réfrigérateur' : 'Fridge'} ${cToDisplay(fridgeTemp,units)}${tempUnit(units)}`;
   const levainStyle = styleKey === 'pain_levain' || styleKey === 'sourdough';
@@ -4780,7 +4782,7 @@ export default function Home() {
 
             {/* Prototype: one clear field per dough setting. */}
             <StepPage flow={customOrganisationFlow} id={10}>
-              {bakeType==='pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '') && renderQuantity('size')}
+              {styleKey && renderQuantity('size')}
               {/* Oven and mixing are asked once, on Equipment. */}
               {(() => {
                 const style = styleKey ? ALL_STYLES[styleKey] : null;
