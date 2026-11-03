@@ -821,30 +821,41 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
 }
 
 // ── Mono label ────────────────────────────────
-// Asked once per bake, on the bake-time screen, for Simple and Custom alike:
-// kitchens change with the season, so nothing is remembered or pre-selected.
-const KITCHEN_BANDS=[
-  {id:'cool',c:18,en:'Cool',fr:'Frais',metric:'under 20 °C',metricFr:'moins de 20 °C',imperial:'under 68 °F',imperialFr:'moins de 68 °F'},
-  {id:'mild',c:22,en:'Mild',fr:'Tempéré',metric:'20–24 °C',metricFr:'20–24 °C',imperial:'68–75 °F',imperialFr:'68–75 °F'},
-  {id:'warm',c:27,en:'Warm',fr:'Assez chaud',metric:'25–29 °C',metricFr:'25–29 °C',imperial:'77–84 °F',imperialFr:'77–84 °F'},
-  {id:'hot',c:31,en:'Hot',fr:'Chaud',metric:'30–32 °C',metricFr:'30–32 °C',imperial:'86–90 °F',imperialFr:'86–90 °F'},
-  {id:'veryhot',c:34,en:'Very hot',fr:'Très chaud',metric:'33 °C and above',metricFr:'33 °C et plus',imperial:'91 °F and above',imperialFr:'91 °F et plus',
+// Asked once per bake, on its own screen before the bake time, for Simple and
+// Custom alike: kitchens change with the season, so nothing is remembered.
+// Zones follow the slider colour semantics (blue slow → coral challenging).
+const KITCHEN_ZONES=[
+  {id:'cool',from:15,to:19,en:'Cool',fr:'Frais',color:'#A8B8D0'},
+  {id:'mild',from:20,to:24,en:'Mild',fr:'Tempéré',color:'#8BA888'},
+  {id:'warm',from:25,to:29,en:'Warm',fr:'Assez chaud',color:'#D4A853'},
+  {id:'hot',from:30,to:32,en:'Hot',fr:'Chaud',color:'#E8A898'},
+  {id:'veryhot',from:33,to:38,en:'Very hot',fr:'Très chaud',color:'#D9897A',
     hint:'A tropical kitchen without air conditioning',hintFr:'Cuisine tropicale sans climatisation'},
 ] as const;
-function kitchenBand(t:number){return t<20?'cool':t<25?'mild':t<30?'warm':t<33?'hot':'veryhot';}
-function KitchenWarmth({value,answered,units,fr,onChoose}:{value:number;answered:boolean;units:UnitSystem;fr:boolean;onChoose:(c:number)=>void}){
-  const current=answered?kitchenBand(value):null;
-  return <fieldset data-kitchen-warmth style={{border:0,padding:0,margin:'0 0 16px'}}>
-    <legend style={{fontWeight:700,fontSize:14,color:'var(--char)',marginBottom:8,padding:0}}>{fr?'Quelle température là où la pâte repose ?':'How warm is it where the dough rests?'}</legend>
-    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-      {KITCHEN_BANDS.map(band=>{const active=current===band.id;const hint='hint' in band?(fr?band.hintFr:band.hint):null;return <button key={band.id} type="button" aria-pressed={active} data-kitchen-band={band.id}
-        onClick={()=>onChoose(band.c)}
-        style={{gridColumn:hint?'1/-1':undefined,minHeight:44,padding:'8px 12px',display:'grid',gap:2,textAlign:'left',border:`1.5px solid ${active?'var(--terra)':'var(--border)'}`,borderRadius:12,background:active?'var(--warm)':'var(--card)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:16,cursor:'pointer'}}>
-        <span style={{fontWeight:active?700:500}}>{fr?band.fr:band.en}</span>
-        <span style={{fontSize:13,color:'var(--smoke)'}}>{units==='imperial'?(fr?band.imperialFr:band.imperial):(fr?band.metricFr:band.metric)}{hint?` · ${hint}`:''}</span>
-      </button>;})}
+const KITCHEN_MIN=15,KITCHEN_MAX=38;
+function kitchenZone(t:number){return KITCHEN_ZONES.find(z=>t<=z.to)??KITCHEN_ZONES[KITCHEN_ZONES.length-1];}
+function KitchenSlider({value,units,fr,onChange}:{value:number;units:UnitSystem;fr:boolean;onChange:(c:number)=>void}){
+  const t=Math.round(Math.min(KITCHEN_MAX,Math.max(KITCHEN_MIN,value)));
+  const zone=kitchenZone(t);
+  const span=KITCHEN_MAX-KITCHEN_MIN;
+  const pct=(c:number)=>((c-KITCHEN_MIN)/span)*100;
+  const stops=KITCHEN_ZONES.map(z=>`${z.color} ${pct(z.from-0.5)}% ${pct(z.to+0.5)}%`).join(',');
+  const hint='hint' in zone?(fr?zone.hintFr:zone.hint):null;
+  return <div data-kitchen-slider data-kitchen-zone={zone.id}>
+    <p style={{margin:'0 0 4px',fontSize:40,fontWeight:700,lineHeight:1.1,color:'var(--char)'}} aria-hidden="true">{cToDisplay(t,units)}{tempUnit(units)}</p>
+    <p style={{margin:'0 0 16px',fontSize:16,color:'var(--ash)'}} aria-live="polite">{fr?zone.fr:zone.en}{hint?` · ${hint}`:''}</p>
+    <div style={{position:'relative',height:44,margin:'8px 0'}}>
+    <div aria-hidden="true" style={{position:'absolute',left:0,right:0,top:16,height:12,borderRadius:6,background:`linear-gradient(to right,${stops})`}}/>
+    <input type="range" min={KITCHEN_MIN} max={KITCHEN_MAX} step={1} value={t}
+      aria-label={fr?'Température là où la pâte repose':'Temperature where the dough rests'}
+      aria-valuetext={`${cToDisplay(t,units)}${tempUnit(units)} · ${fr?zone.fr:zone.en}`}
+      onChange={e=>onChange(Number(e.currentTarget.value))}
+      className="bh-kitchen-range" style={{position:'absolute',inset:0,width:'100%',height:44,margin:0,background:'transparent'}}/>
     </div>
-  </fieldset>;
+    <div aria-hidden="true" style={{position:'relative',height:20,fontSize:12,color:'var(--smoke)',marginTop:4}}>
+      {KITCHEN_ZONES.map(z=><span key={z.id} style={{position:'absolute',left:`${pct((z.from+z.to)/2)}%`,transform:'translateX(-50%)',whiteSpace:'nowrap',fontWeight:z.id===zone.id?700:400,color:z.id===zone.id?'var(--char)':undefined}}>{fr?z.fr:z.en}</span>)}
+    </div>
+  </div>;
 }
 
 function KitchenReading({value,units,fr,confirmed,onConfirm}:{value:number;units:UnitSystem;fr:boolean;confirmed:boolean;onConfirm:(v:number)=>void}){
@@ -3420,7 +3431,7 @@ export default function Home() {
   };
   const kitchenAnswered = confirmed('climate',kitchenTemp);
   const kitchenPending = !isUnleavened && !kitchenAnswered;
-  const kitchenLabel = (()=>{const band=KITCHEN_BANDS.find(b=>b.id===kitchenBand(kitchenTemp))!;return fr?`Cuisine : ${band.fr.toLowerCase()}`:`${band.en} kitchen`;})();
+  const kitchenLabel = `${fr?'Cuisine':'Kitchen'} ${cToDisplay(kitchenTemp,units)}${tempUnit(units)}`;
   const reviewTiming = eatTime ? formatBakeDateTime(eatTime,locale)+(kitchenAnswered&&!isUnleavened?' · '+kitchenLabel:'') : null;
   const reviewKitchen = `${fr ? 'Réfrigérateur' : 'Fridge'} ${cToDisplay(fridgeTemp,units)}${tempUnit(units)}`;
   const levainStyle = styleKey === 'pain_levain' || styleKey === 'sourdough';
@@ -3587,7 +3598,7 @@ export default function Home() {
     onGapJump: (id) => {openSetupStep(id,false);setGapReturnTo(SIMPLE_LAST);},
     onPrev: (id) => {
       if(id===3){openSetupStep(7,false);return;}
-      if(id===7&&!recipeGenerated){if(collectingBakeTime)openSetupStep(2,false);else openBakeTimeInputs();return;}
+      if(id===7&&!recipeGenerated){if(collectingBakeTime){openSetupStep(2,false);if(!isUnleavened)setBatchView('kitchen');}else openBakeTimeInputs();return;}
       const i = SIMPLE_STEPS.findIndex(x => x.id === id);
       openSetupStep(SIMPLE_STEPS[Math.max(0, i - 1)].id,false);
     },
@@ -3670,9 +3681,10 @@ export default function Home() {
   const bakeLinks:BakeLink[] = [
     {label:fr?'Fournée':'Bake',value:bakeType==='bread'?(fr?'Pain':'Bread'):'Pizza',onChoose:backToProducts},
     ...setupSteps.filter(step=>step.id<=2).map(stepLink),
+    ...(!isUnleavened&&styleKey?[{label:fr?'Cuisine':'Kitchen',value:kitchenAnswered?`${cToDisplay(kitchenTemp,units)}${tempUnit(units)}`:null,onChoose:()=>{openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}]:[]),
     ...(collectingBakeTime ? [{label:fr?'Heure de cuisson':'Bake time',value:eatTime?formatTime(eatTime,locale):null,onChoose:openBakeTimeInputs}] : modeChosen?setupSteps.filter(step=>step.id>2).map(stepLink):[]),
   ];
-  const currentSubsection = destination==='batch' ? (batchView==='quantity'?(fr?'Quantité':'Quantity'):'Style') : !modeChosen ? 'Mode' : (tab==='simple'&&activeStep===7 ? (fr?'Heure de cuisson':'Bake time') : setupSteps.find(step=>step.id===(tab==='custom'?advancedStep:activeStep))?.chip ?? (fr?'Ma fournée':'My bake'));
+  const currentSubsection = destination==='batch' ? (batchView==='quantity'?(fr?'Quantité':'Quantity'):batchView==='kitchen'?(fr?'Cuisine':'Kitchen'):'Style') : !modeChosen ? 'Mode' : (tab==='simple'&&activeStep===7 ? (fr?'Heure de cuisson':'Bake time') : setupSteps.find(step=>step.id===(tab==='custom'?advancedStep:activeStep))?.chip ?? (fr?'Ma fournée':'My bake'));
   const renderQuantity = (roundView:'count'|'size') => (<PrototypeQuantityPicker roundView={roundView} bakeType={bakeType ?? 'pizza'} locale={locale} units={units}
                 totalFlourTarget={bakeType==='bread'?totalFlourTarget:undefined}
                 onFlourTargetChange={value=>{setTotalFlourTarget(value);setQtyChosen(true);if(value!==undefined){setWastePct(undefined);setItemWeight(value*1.8/Math.max(1,numItems));}else setItemWeight(Math.max(weightBounds.min,Math.min(weightBounds.max,Math.round(itemWeight))));}}
@@ -4080,6 +4092,12 @@ export default function Home() {
                 <button type="button" className="bh-back-action" onClick={backToProducts}>{fr?'Retour':'Back'}</button>
                 <button data-bh-forward type="button" disabled={!styleKey} aria-describedby={!styleKey?'bh-style-choice-hint':undefined} style={{...NEXT_CTA,opacity:styleKey?1:0.5,cursor:styleKey?'pointer':'not-allowed'}} onClick={()=>{if(!styleKey)return;setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{styleKey?`${fr?'Continuer avec':'Continue with'} ${styleDisplayName(styleKey)} →`:(fr?'Continuer':'Continue')}</button>
               </BottomActions>
+            </> : batchView==='kitchen' ? <>
+              <h2 className="bh-page-title">{fr?'Quelle température là où la pâte repose ?':'How warm is it where the dough rests?'}</h2>
+              <KitchenSlider value={kitchenTemp} units={units} fr={fr} onChange={c=>{setKitchenTemp(c);if(kitchenAnswered||recipeGenerated)confirmSetting('climate',c);}}/>
+              <BottomActions className="bh-batch-actions bh-batch-actions-navigation">
+                <button type="button" className="bh-back-action" onClick={()=>{setBatchView('quantity');scrollToStepTop();}}>{fr?'Étape précédente':'Previous step'}</button>
+                <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>{const changed=!kitchenAnswered||recipeGenerated;confirmSetting('climate',kitchenTemp);if(recipeGenerated){setPlanReplanPending(true);finishSetupEdit();}else{if(changed)setPlanReplanPending(true);openBakeTimeInputs();}}}>{recipeGenerated?setupReturnLabel:(fr?'Heure de cuisson →':'Bake time →')}</button></BottomActions>
             </> : <>
               <h2 className="bh-page-title">{fr?'Quelle quantité de pâte ?':'How much dough?'}</h2>
               {styleKey==='pain_levain'&&<div style={{marginTop:16}}><label className="bh-seed-toggle"><input type="checkbox" checked={addSeeds} onChange={event=>setAddSeeds(event.target.checked)} /> {fr?'Ajouter des graines':'Add seeds'}</label>{addSeeds && <p>{fr?'Les graines trempent à l’avance : 2 h minimum, idéalement la veille.':'Soak the seeds ahead: at least 2 hours, ideally overnight.'}</p>}</div>}
@@ -4087,7 +4105,7 @@ export default function Home() {
                             {renderQuantity('count')}
               <BottomActions className="bh-batch-actions bh-batch-actions-navigation">
                 <button type="button" className="bh-back-action" onClick={()=>{if(recipeGenerated)backToSetupChoices();else {setBatchView('style');scrollToStepTop();}}}>{recipeGenerated?(fr?'Retour à mes choix':'Back to my choices'):(fr?'Étape précédente':'Previous step')}</button>
-                <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(recipeGenerated)finishSetupEdit();else openBakeTimeInputs();}}>{recipeGenerated?setupReturnLabel:(fr?'Heure de cuisson →':'Bake time →')}</button></BottomActions>
+                <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(recipeGenerated)finishSetupEdit();else if(isUnleavened)openBakeTimeInputs();else{setBatchView('kitchen');scrollToStepTop();}}}>{recipeGenerated?setupReturnLabel:isUnleavened?(fr?'Heure de cuisson →':'Bake time →'):(fr?'Cuisine →':'Kitchen →')}</button></BottomActions>
             </>}
           </section>}
 
@@ -4249,9 +4267,7 @@ export default function Home() {
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => simpleFlow.onJump(1)} />
               ) : (
-              <SchedulePicker afterBakeInput={isUnleavened?undefined:<KitchenWarmth value={kitchenTemp} answered={kitchenAnswered} units={units} fr={fr}
-                  onChoose={c=>{if(c===kitchenTemp&&kitchenAnswered)return;setKitchenTemp(c);confirmSetting('climate',c);if(recipeGenerated||!collectingBakeTime)setPlanReplanPending(true);}}/>}
-                inputsOnly={collectingBakeTime} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor}
+              <SchedulePicker inputsOnly={collectingBakeTime} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor}
                 {...poolishInputs}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
@@ -4324,11 +4340,17 @@ export default function Home() {
               />
               )}
 
-              {collectingBakeTime && eatTime && +eatTime>Date.now() && <div style={{display:'grid',gap:10,marginTop:16}}>
-                <button type="button" disabled={simpleDecisionPending||kitchenPending} style={{...NEXT_CTA,opacity:simpleDecisionPending||kitchenPending?0.5:1}} onClick={()=>{if(simpleDecisionPending||kitchenPending)return;setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>{fr?'Créer ma recette simple':'Create my simple recipe'}</button>
-                {kitchenPending?<p data-create-hint style={{margin:'-4px 0 0',fontSize:14,color:'var(--smoke)',textAlign:'center'}}>{fr?'Indiquez la température pour continuer.':'Choose how warm it is to continue.'}</p>
-                  :simpleDecisionPending&&<p data-create-hint style={{margin:'-4px 0 0',fontSize:14,color:'var(--smoke)',textAlign:'center'}}>{fr?'Choisissez une option ci-dessus pour continuer.':'Choose an option above to continue.'}</p>}
-                <button type="button" className="bh-bake-navigator-card" disabled={kitchenPending} style={{display:'grid',textAlign:'left',padding:14,opacity:kitchenPending?0.5:1}} onClick={()=>{if(kitchenPending)return;setAwaitingRecipeChoice(false);chooseMode('custom');}}><strong>{fr?'Personnaliser ma fournée':'Customize my bake'}</strong><span>{directMethodOnly?(fr?'Réglez vous-même matériel, farine et hydratation':'Set your own equipment, flour and hydration'):(fr?'Réglez vous-même matériel, farine, levain ou préferment et hydratation':'Set your own equipment, flour, leavening and hydration')}</span></button>
+              {/* One way forward. A pending decision carries its own buttons, so
+                  nothing is shown here until it is settled; Custom is an optional
+                  detour, not a second equal choice. */}
+              {collectingBakeTime && eatTime && +eatTime>Date.now() && !simpleDecisionPending && <div data-recipe-choice style={{display:'grid',gap:4,marginTop:16}}>
+                {kitchenPending
+                  ? <button type="button" style={NEXT_CTA} onClick={()=>{openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}>{fr?'Température de la cuisine →':'Kitchen temperature →'}</button>
+                  : <button type="button" style={NEXT_CTA} onClick={()=>{setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>{fr?'Créer ma recette simple':'Create my simple recipe'}</button>}
+                {!kitchenPending && <button type="button" className="bh-back-action" data-customize-link style={{minHeight:44,justifySelf:'center',textAlign:'center',whiteSpace:'normal'}} onClick={()=>{setAwaitingRecipeChoice(false);chooseMode('custom');}}>
+                  {fr?'Personnaliser ma fournée →':'Customize my bake →'}
+                  <span style={{display:'block',fontSize:13,color:'var(--smoke)',textDecoration:'none'}}>{directMethodOnly?(fr?'Matériel, farine et hydratation':'Equipment, flour and hydration'):(fr?'Matériel, farine, levain ou préferment, hydratation':'Equipment, flour, leavening, hydration')}</span>
+                </button>}
               </div>}
             </StepPage>
 
@@ -4658,7 +4680,7 @@ export default function Home() {
             <StepPage flow={customOrganisationFlow} id={4}>
               {/* The kitchen is asked once, with the bake time; only an older
                   session without that answer asks it here. */}
-              {!kitchenAnswered && <KitchenWarmth value={kitchenTemp} answered={false} units={units} fr={fr} onChoose={c=>{setKitchenTemp(c);confirmSetting('climate',c);setPlanReplanPending(true);}}/>}
+              {!kitchenAnswered && <KitchenSlider value={kitchenTemp} units={units} fr={fr} onChange={c=>{setKitchenTemp(c);confirmSetting('climate',c);setPlanReplanPending(true);}}/>}
               <ClimatePicker
                 kitchenTemp={kitchenTemp} humidity={humidity}
                 fridgeTemp={fridgeTemp} mode="custom" hideKitchen part="temperatures"

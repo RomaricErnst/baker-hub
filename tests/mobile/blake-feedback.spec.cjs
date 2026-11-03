@@ -14,9 +14,9 @@ for(const lang of ['fr','en'])test(`${lang}: Simple asks only how many; flour qu
  await expect(page.locator('#quantity-total-flour')).toHaveCount(0);
  await page.locator('.bh-step-actions:visible').locator('[data-bh-forward]:visible').tap();
  const value=await page.evaluate(()=>{const d=new Date();d.setDate(d.getDate()+2);d.setHours(19,30,0,0);return new Date(+d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);});
+ await (async()=>{const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();})();
  const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
  await bakeDate.fill(value);await bakeDate.blur();
- await page.locator('[data-kitchen-band="mild"]:visible').tap();
  await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
  await page.locator('.bh-step-trigger:visible').tap();
  await page.getByRole('dialog').getByRole('button',{name:fr?/^Peaufiner/:/^Fine-tune/}).tap();
@@ -40,15 +40,14 @@ test('compact navigation reaches every section above the footer and Custom keeps
  await page.getByRole('button',{name:'Napolitaine classique',exact:true}).tap();
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
  await page.locator('[data-bh-forward]:visible').tap();
+ await (async()=>{const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();})();
  const bakeDate=page.getByLabel('Date et heure de cuisson',{exact:true});
  await bakeDate.fill('2026-10-05T19:30');await bakeDate.blur();
  const customize=page.getByRole('button',{name:/^Personnaliser ma fournée/});
- await (async()=>{const k=page.locator('[data-kitchen-warmth]:visible');if(await k.count()&&!(await k.locator('[aria-pressed="true"]').count()))await k.locator('[data-kitchen-band="mild"]').tap();})();
  await customize.tap();
  const actions=page.locator('.bh-step-actions:visible');
  await actions.getByRole('button',{name:'Étape précédente',exact:true}).tap();
  await expect(bakeDate).toHaveValue('2026-10-05T19:30');
- await (async()=>{const k=page.locator('[data-kitchen-warmth]:visible');if(await k.count()&&!(await k.locator('[aria-pressed="true"]').count()))await k.locator('[data-kitchen-band="mild"]').tap();})();
  await customize.tap();
  const sections=page.getByRole('button',{name:'Voir les 5 rubriques',exact:true});
  await sections.tap();

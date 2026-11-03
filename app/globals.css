@@ -617,3 +617,11 @@ body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="d
 .bh-seed-toggle input { width:20px; height:20px; margin:0; accent-color:var(--terra); }
 .bh-editor-exit { display:flex; justify-content:flex-end; }
 #schedule-anchor-panel[data-open] :is(.bh-editor-exit,.bh-linked-actions) { position:sticky; bottom:0; z-index:2; padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px)); background:var(--warm); border-top:1px solid var(--border); }
+/* Kitchen temperature: a coloured zone track with a large thumb (44px reach). */
+.bh-kitchen-range { -webkit-appearance:none; appearance:none; background:transparent; outline:none; touch-action:pan-y; }
+.bh-kitchen-range::-webkit-slider-runnable-track { background:transparent; height:44px; }
+.bh-kitchen-range::-moz-range-track { background:transparent; }
+.bh-kitchen-range::-webkit-slider-thumb { margin-top:6px; }
+.bh-kitchen-range::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:32px; height:32px; border-radius:50%; background:var(--card); border:2px solid var(--char); box-shadow:0 1px 4px rgba(43,36,32,.25); cursor:pointer; }
+.bh-kitchen-range::-moz-range-thumb { width:32px; height:32px; border-radius:50%; background:var(--card); border:2px solid var(--char); box-shadow:0 1px 4px rgba(43,36,32,.25); cursor:pointer; }
+.bh-kitchen-range:focus-visible { outline:2px solid var(--terra); outline-offset:6px; }
