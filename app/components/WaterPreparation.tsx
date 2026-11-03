@@ -36,6 +36,18 @@ export function waterPreparation(waterGrams: number, targetTemp: number, sourceT
   if (![waterGrams,targetTemp,sourceTemp].every(Number.isFinite) || waterGrams<=0 || targetTemp<0 || sourceTemp<0) return null;
   return directIcePreparation(waterGrams,Math.min(targetTemp,sourceTemp),sourceTemp);
 }
+/** The water/ice split shown on the water line; shared so other instructions
+ * (the yeast dilution) count the same liquid water. */
+export function waterSplit({waterGrams,targetTemp,kitchenTemp,fridgeTemp,source='room',measuredWaterTemp,waterMethod='premelt',idealWaterTemp,directIceSupported=false}:{
+  waterGrams:number; targetTemp:number; kitchenTemp:number; fridgeTemp:number; source?:WaterSource;
+  measuredWaterTemp?:number; waterMethod?:WaterMethod; idealWaterTemp?:number; directIceSupported?:boolean;
+}){
+  const entered=source==='tap'||source==='measured';
+  const starting=entered ? measuredWaterTemp : source==='room'?kitchenTemp:fridgeTemp;
+  const direct=waterMethod==='direct'&&directIceSupported;
+  const target=direct?idealWaterTemp:targetTemp;
+  return starting!=null&&target!=null ? direct ? directIcePreparation(waterGrams,target,starting) : waterPreparation(waterGrams,target,starting) : null;
+}
 export default function WaterPreparation({waterGrams,targetTemp,kitchenTemp,fridgeTemp,locale,units='metric',source='room',onSourceChange,
   measuredWaterTemp,onMeasuredWaterTempChange,waterMethod='premelt',onWaterMethodChange,
   idealWaterTemp,targetDoughTemp,achievedDoughTempC,waterWasClamped=false,directIceSupported=false,readOnly=false}:Props) {
@@ -44,7 +56,7 @@ export default function WaterPreparation({waterGrams,targetTemp,kitchenTemp,frid
   const starting=entered ? measuredWaterTemp : source==='room'?kitchenTemp:fridgeTemp;
   const direct=waterMethod==='direct'&&directIceSupported;
   const target=direct?idealWaterTemp:targetTemp;
-  const split=starting!=null&&target!=null ? direct ? directIcePreparation(waterGrams,target,starting) : waterPreparation(waterGrams,target,starting) : null;
+  const split=waterSplit({waterGrams,targetTemp,kitchenTemp,fridgeTemp,source,measuredWaterTemp,waterMethod,idealWaterTemp,directIceSupported});
   const clamped=!direct&&idealWaterTemp!=null&&Math.abs(idealWaterTemp-targetTemp)>.1;
   // The solver's clipped-water result is useful only when this preparation
   // cannot use direct ice to hit the unconstrained target. Keep the residual
@@ -73,7 +85,7 @@ export default function WaterPreparation({waterGrams,targetTemp,kitchenTemp,frid
   const compatibilityNote=direct&&split&&split.ice>0?<small style={{display:'block',fontSize:14,color:'var(--smoke)'}}>{fr?'Vérifiez que votre pétrin accepte la glace.':'Check that your mixer allows ice.'}</small>:null;
   if (readOnly) return <div style={{...waterText, fontSize:14}}>
     {split ? <>
-      <div>{displayWeight(split.water,units)} {fr ? 'eau' : 'water'} · {displayTemp(split.ice > 0 || direct ? starting! : targetTemp,units)}</div>
+      <div>{displayWeight(split.water,units)} {fr ? 'd’eau' : 'water'} · {displayTemp(split.ice > 0 || direct ? starting! : targetTemp,units)}</div>
       {split.ice > 0 && <div>{displayWeight(split.ice,units)} {fr ? 'glace' : 'ice'}</div>}
       {!direct && split.ice > 0 && <div>{fr ? 'Après fonte complète' : 'After melting completely'} · {displayWeight(split.water + split.ice,units)} · {displayTemp(targetTemp,units)}</div>}
       {direct && split.ice > 0 && <div>{fr ? 'Glace ajoutée au pétrin' : 'Ice added in the mixer'}</div>}

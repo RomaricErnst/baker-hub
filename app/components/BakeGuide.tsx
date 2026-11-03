@@ -720,7 +720,7 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
   return (
     <div>
       <details style={{ marginTop:16, borderTop:`1px solid ${D.border}`, paddingTop:8 }}>
-        <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:16}}>{l==='fr'?'Conseils avancés':'More guidance'} · {helpTitle}</summary>
+        <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:16}}>{helpTitle}</summary>
         {visuals}
         <div>{tips}</div>
         {faq.length > 0 && <div role="group" aria-label={l === 'fr' ? 'Questions fréquentes' : 'Common questions'} style={{marginTop:12}}>

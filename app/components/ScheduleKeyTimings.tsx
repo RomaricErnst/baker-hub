@@ -94,7 +94,7 @@ export default function ScheduleKeyTimings({conflictRows,anchors,blocks,isFr,onC
    ? (isFr ? `${blocked.length} ${blocked.length===1?'étape pendant une indisponibilité':'étapes pendant vos indisponibilités'}` : `${blocked.length} ${blocked.length===1?'step falls':'steps fall'} during your unavailable hours`)
    : (isFr ? 'Le planning nécessite un autre créneau' : 'The plan needs another available time');
  const day=(at:number)=>formatLongDay(new Date(at),isFr?'fr':'en');
- const events=[...anchors,{id:'oven',name:isFr?'Enfournement':'Into the oven',at:ovenAt,from:ovenAt,to:ovenAt,editable:false,valid:true}].sort((a,b)=>a.at-b.at);
+ const events=[...anchors,{id:'oven',name:isFr?'Enfournement':'Bake',at:ovenAt,from:ovenAt,to:ovenAt,editable:false,valid:true}].sort((a,b)=>a.at-b.at);
  return <section data-open={open||undefined} aria-label={isFr?'Vos moments clés':'Your key times'} id="schedule-anchor-panel" tabIndex={-1}>
   <div className="bh-plan-heading"><span className="bh-plan-state" data-valid={valid} role="status">{!valid?gapTitle:hasDraft?(isFr?'Modifications à appliquer':'Changes to apply'):personalized?(isFr?'Planning personnalisé':'Your adjusted plan'):(isFr?'Planning recommandé':'Recommended plan')}</span>{header}</div>
   {notice}

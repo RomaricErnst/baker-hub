@@ -1,3 +1,23 @@
+# 3 November 2026 — sharper journey after live review (Claude)
+
+Live perception review (5 journeys, 390 px) plus the 8 open items. Done:
+- Setup sheet: Quantity reads "To choose" until the baker sets it (no "suggested" value at the start).
+- Bake time: the plan-state line says why a time fails (the step and time that clash with work/night/unavailable time, dough not ready, not enough time, preferment can't be ready; sourdough uses the starter candidate's own message) instead of "Preparation needs another available time". Suggested-time chips all carry a day when the list spans days.
+- Starter hydration assumption moved from the top of the bake-time step into the starter card, in quieter text.
+- Custom levain gets its Starter step back with the real questions: the page renders one scheduler element (`renderCustomScheduler`) with `schedulerSection` 'starter' on step 8 and 'plan' on step 9; only one step is mounted at a time. Simple and non-levain Custom keep 'all'. The fridge question now asks "When was it last fed before going in the fridge?".
+- Fine-tune grouped: Ingredients (hydration, salt, oil, sugar, starter or yeast amount) then Mixing and dough (dough temperature, allowance, measured temperatures).
+- Presets item: already resolved — Custom forward buttons require a tap, and the sheet marks unconfirmed values "suggested". Water 49/50 g item: no 50 g threshold exists any more (enthalpy water split).
+- Recipe: dilution instruction subtracts the ice shown on the water line (`waterSplit` shared); levain recipe shows flour without a misleading 90 %, starter % beside its weight in Custom, same font as other weights.
+- Fine-tune help: hydration explains when the calculation moves outside the style range; sugar note no longer starts with a stray "Classic.".
+- "Made now" appears only from 30 minutes before the planned preparation (all methods).
+- Levain is no longer badged "Recommended" on yeasted styles; poolish storage sits inside the poolish option with corrected copy (6–14 h).
+- One name per event: Start Dough, Make Poolish / Make Biga, Bake; starter events "Refresh feed", "Into the fridge", "Out of the fridge".
+- Hand kneading no longer shows a one-batch capacity card; sourdough's "feasibility depends on your starter" hint shows only before a time is chosen; Yeast step explains why sourdough is disabled.
+- French: "Heure de cuisson →", "Napolitaine classique", "d’eau", typographic apostrophes, "Boules au réfrigérateur", "Non, je suis chez moi", guide disclosures named once.
+- CI: the sourdough round-trip harness waits for the later-bake search to finish before comparing card text.
+
+Open (engine, needs the sourdough sweep): a starter kept in the fridge can show "Into the fridge" in the future (fridge_in derived from `_starterRefeedTime` in `computeNonPathBFridgeTimes` while the refresh itself is not in the agenda — repro: pain_levain, fridge, last fed 2–3 days ago, bake ~3 days out); a 15-minute later bake can move the fridge exit by 1h45 (warm-up math, explain or smooth); step durations off the quarter grid (autolyse 7:13–7:15, rest 5h 9m). Also open: small-dose help for preferment yeast under 0.5 g; oil/sugar fields for pain au levain; two stacked primary CTAs on Recipe.
+
 # 3 November 2026 — starter % re-times the levain bulk (Claude)
 
 - Romaric's decision: a baker-entered starter % changes the timing, temperature-sensitive, correct when the starter lives in the fridge.

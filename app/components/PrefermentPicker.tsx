@@ -2,7 +2,7 @@
 import { PREFERMENT_TYPES, type PrefermentType } from '../data';
 import { useTranslations, useLocale } from 'next-intl';
 import DecisionList from './DecisionList';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface PrefermentPickerProps {
   // null means the step has not been settled yet — nothing is highlighted and
@@ -20,11 +20,13 @@ interface PrefermentPickerProps {
   kitchenTemp?: number;
   yeastType?: string;
   chooseMethod?: boolean;
+  /** Extra controls shown inside the selected option's panel (e.g. poolish storage). */
+  selectedExtra?: Partial<Record<PrefermentType, React.ReactNode>>;
 }
 
 export default function PrefermentPicker({
   selected, onSelect, flourPct, onFlourPctChange, suggestedFlourPct = 20, directOnly = false,
-  styleKey, hideTypes = [], kitchenTemp, yeastType, chooseMethod = false,
+  styleKey, hideTypes = [], kitchenTemp, yeastType, chooseMethod = false, selectedExtra,
 }: PrefermentPickerProps) {
   const t = useTranslations('preferment');
   const fr = useLocale() === 'fr';
@@ -52,7 +54,8 @@ export default function PrefermentPicker({
     .filter(o => o.id !== 'levain' || chooseMethod || yeastType === 'sourdough')
     .map(o => {
       const pData = PREFERMENT_TYPES[o.id as PrefermentType] as { bestFor?: string[] };
-      const isRecommended = o.id !== 'none' && styleKey && pData?.bestFor?.includes(styleKey);
+      // A yeasted style chosen by the baker is not steered towards a starter.
+      const isRecommended = o.id !== 'none' && (o.id !== 'levain' || styleKey === 'pain_levain' || styleKey === 'sourdough') && styleKey && pData?.bestFor?.includes(styleKey);
       return { ...o, badge: isRecommended ? t('recommended') : undefined };
     });
 
@@ -90,6 +93,7 @@ export default function PrefermentPicker({
                     <p>{fr ? 'Augmentez progressivement ; plus n’est pas forcément mieux.' : 'Increase gradually; more is not always better.'}</p>
                   </details>
                   {flourPct !== undefined && flourPct !== suggestedFlourPct && <button type="button" onClick={() => onFlourPctChange(undefined)} style={{ minHeight: 44, background: 'transparent', border: 0, color: 'var(--terra)', textDecoration: 'underline', cursor: 'pointer' }}>{fr ? 'Revenir à la suggestion' : 'Reset to suggestion'}</button>}
+                  {selectedExtra?.[option.id as PrefermentType]}
                 </div>
               )}
             </div>)}

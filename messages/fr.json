@@ -259,7 +259,7 @@
     },
     "sugar": {
       "traditionalHighTemp": "Traditionnel — sans sucre. Parfait à haute température.",
-      "traditionalHome": "Classique. Ajoutez 0,5% pour favoriser la caramélisation dans un four domestique.",
+      "traditionalHome": "Aucun par défaut. Dans un four domestique sous 280 °C, 0,5 % de sucre peut aider la coloration de la croûte.",
       "subtle": "Légère coloration. Bon pour la cuisson domestique en dessous de 280°C.",
       "noticeable": "Douceur perceptible et bonne coloration. Adapté aux styles enrichis.",
       "osmotic": "Le sucre influe sur la fermentation ; utilisez la dose de levure calculée.",
@@ -390,7 +390,7 @@
       "bulkFerm": "Pointage",
       "coldBulk": "Pousse au froid — pâton",
       "divideBall": "Division et Boulage",
-      "coldBalls": "Pousse au froid — boules",
+      "coldBalls": "Boules au réfrigérateur",
       "restRT": "Sortir du froid — détente",
       "rtWarmup": "Détente à température ambiante",
       "finalProof": "Apprêt",
@@ -541,7 +541,7 @@
     "ingredientBiga": "Biga",
     "ingredientPoolish": "Poolish",
     "waterTarget": "Cible :",
-    "waterIce": "{ice}g glaçons + {tap}g eau froide",
+    "waterIce": "{ice} g de glaçons + {tap} g d’eau froide",
     "waterUseAt": "Utiliser à",
     "saveRecipe": "Sauvegarder",
     "savingRecipe": "Sauvegarde…",
@@ -582,7 +582,8 @@
     "discardNote1": "Jetez le reste avant de rafraîchir — ou utilisez-le pour des pancakes ou crackers",
     "discardNote2": "Ne jetez jamais tout votre levain — gardez toujours au moins 20–30g.",
     "starterReadyWhen": "Votre levain est prêt quand :",
-    "dilutionBody": "Délayez 1 g de levure dans {waterG} g d’eau. Utilisez {solutionG} g de ce mélange (il contient {waterInSolutionG} g d’eau), puis ajoutez seulement {remainingWaterG} g d’eau à la pâte. Jetez le mélange inutilisé."
+    "dilutionBody": "Délayez 1 g de levure dans {waterG} g d’eau. Utilisez {solutionG} g de ce mélange (il contient {waterInSolutionG} g d’eau), puis ajoutez seulement {remainingWaterG} g d’eau à la pâte. Jetez le mélange inutilisé.",
+    "dilutionIce": "Gardez les {iceG} g de glace de la ligne eau tels quels."
   },
   "schedulePicker": {
     "startDough": "Commencer la pâte",
@@ -685,7 +686,7 @@
       "divideShape": "Division et façonnage",
       "divideBall": "Division et boulage",
       "coldProof": "Apprêt froid",
-      "coldRetardBalls": "Pousse au froid — boules",
+      "coldRetardBalls": "Boules au réfrigérateur",
       "finalProof": "Apprêt",
       "preheatOven": "Préchauffage du four",
       "bakeEat": "Cuisson & dégustation"
@@ -698,7 +699,7 @@
       "pitfalls": "Erreurs à éviter",
       "readyWhen": "Prêt quand",
       "mixingOrder": "Ordre de pétrissage",
-      "waterTemp": "Température de l'eau",
+      "waterTemp": "Température de l’eau",
       "pokeTest": "Test du creux — les trois réponses",
       "learnMore": "En savoir plus",
       "whatToExpect": "À quoi s'attendre"

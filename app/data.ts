@@ -8,7 +8,7 @@ import { BREAD_STYLE_DEFINITIONS, getBreadProtocol } from './utils/breadProfiles
 export const PIZZA_STYLES = {
   neapolitan: {
     name: 'Classic Neapolitan',
-    nameFr: 'Napolitaine Classique',
+    nameFr: 'Napolitaine classique',
     emoji: '🔥',
     image: '/images/approved/pizza-style/margherita-fresh-basil-v2.webp',
     desc: 'Light, airy, charred cornicione.',

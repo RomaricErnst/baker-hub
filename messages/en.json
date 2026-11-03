@@ -259,7 +259,7 @@
     },
     "sugar": {
       "traditionalHighTemp": "Traditional — no sugar. Works beautifully at high-temp.",
-      "traditionalHome": "Classic. Add 0.5% to help caramelisation in a home oven below 280°C.",
+      "traditionalHome": "None by default. In a home oven below 280°C, 0.5% sugar can help the crust colour.",
       "subtle": "Subtle colour boost. Good for home oven baking below 280°C.",
       "noticeable": "Noticeable sweetness and good browning. Works well for enriched styles.",
       "osmotic": "Sugar affects fermentation; use the calculated yeast dose.",
@@ -582,7 +582,8 @@
     "discardNote1": "Discard the rest before feeding — or use it for pancakes, crackers or flatbread",
     "discardNote2": "Never throw all your starter away — always keep at least 20–30g.",
     "starterReadyWhen": "Your starter is ready when:",
-    "dilutionBody": "Stir 1 g of yeast into {waterG} g of water. Use {solutionG} g of this mix (it holds {waterInSolutionG} g of water), then add only {remainingWaterG} g more water to the dough. Discard the unused mixture."
+    "dilutionBody": "Stir 1 g of yeast into {waterG} g of water. Use {solutionG} g of this mix (it holds {waterInSolutionG} g of water), then add only {remainingWaterG} g more water to the dough. Discard the unused mixture.",
+    "dilutionIce": "Keep the {iceG} g of ice from the water line as it is."
   },
   "schedulePicker": {
     "startDough": "Start Dough",
