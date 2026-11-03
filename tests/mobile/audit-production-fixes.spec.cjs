@@ -51,7 +51,7 @@ for(const bread of [false,true])test(`Fresh ${bread?'baguette lunch':'pizza nigh
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^Continuer avec/}).tap();
  const quantity=page.getByLabel(bread?'Nombre de pains':'Nombre de pizzas',{exact:true});
  await quantity.fill('4');await quantity.blur();
- await page.locator('.bh-batch-actions:visible').getByRole('button',{name:'Horaires →',exact:true}).tap();
+ await page.locator('.bh-batch-actions:visible').getByRole('button',{name:'Heure de cuisson →',exact:true}).tap();
  const target=await page.evaluate(()=>{
    const d=new Date();d.setDate(d.getDate()+2);d.setHours(19,30,0,0);
    return new Date(+d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
