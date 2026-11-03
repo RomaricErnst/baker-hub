@@ -238,7 +238,7 @@ function StepCard({
           <strong role={overview?undefined:'heading'} aria-level={overview?undefined:2} style={{ display: 'block', fontSize: overview ? 15 : 28, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}</strong>
           {!overview && !externalProgress && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {displayNumber}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
           {time && <span style={{ display: 'block', marginTop: 4, fontSize: 14, color: D.smoke }}>
-            {formatTime(time, locale)}{duration ? ` · ${overview ? (passive ? (fr ? 'repos ' : 'rest ') : (fr ? 'durée ' : 'duration ')) : ''}${duration < 1 ? `${Math.round(duration * 60)} min` : formatDuration(duration, fr ? 'fr' : 'en')}` : ''}
+            {formatTime(time, locale)}{duration ? ` · ${overview ? (passive ? (fr ? 'repos ' : 'rest ') : (fr ? 'durée ' : 'duration ')) : ''}${duration < 1 ? `${Math.round(duration * 60)} min` : formatDuration(passive ? Math.round(duration * 4) / 4 : duration, fr ? 'fr' : 'en')}` : ''}
           </span>}
           {overview && overviewNote && <span style={{display:'block',fontSize:14,lineHeight:1.5,color:D.terra,marginTop:4}}>{overviewNote}</span>}
           {done && <span style={{ fontSize: 14, color: D.sage }}>{fr ? 'Terminé' : 'Completed'}</span>}

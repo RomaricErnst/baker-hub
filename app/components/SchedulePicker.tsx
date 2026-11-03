@@ -6,6 +6,7 @@ import { formatClock, formatBakeDateTime } from '../utils/units';
 import { useState, useMemo, useEffect, useRef, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationHoursForYeast, sourdoughBulkH } from '../utils';
+import { formatDuration } from '../utils/duration';
 import FermentChart, { scheduleColdIntervals, getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
 import FermentationReadiness from './FermentationReadiness';
 import ScheduleTimeline from './ScheduleTimeline';
@@ -7059,7 +7060,9 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
             const cleared=simpleSuggestion.clearedAction;
             if(!cleared)return null;
             return <small style={{display:'block',fontWeight:400}}>{/cold-out/.test(cleared.id)
-              ? (isFr?`Sortie du réfrigérateur à ${at(cleared.at)}`:`Dough out of the fridge at ${at(cleared.at)}`)
+              // Say why the exit moved: it now waits until you're free, so the warm-up is shorter.
+              ? (()=>{const warm=formatDuration(Math.round((+simpleSuggestion.bake-+cleared.at)/900000)/4,isFr?'fr':'en');
+                  return isFr?`Sortie du frigo à ${at(cleared.at)}, quand vous êtes libre · ${warm} pour se réchauffer`:`Out of the fridge at ${at(cleared.at)}, when you’re free · ${warm} to warm up`;})()
               : /^mix|start/.test(cleared.id)
                 ? (isFr?`Pétrissage ${at(cleared.at)}`:`Start mixing ${at(cleared.at)}`)
                 : <>{foldActionLabel(cleared.id,locale,mixingBatches)??conflictNames[cleared.id]?.[isFr?0:1]} · {at(cleared.at)}</>}</small>;

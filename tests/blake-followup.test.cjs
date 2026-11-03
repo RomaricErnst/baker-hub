@@ -36,7 +36,8 @@ test('pre-mix autolyse reserves work before the levain anchor and respects unava
  a.equal(data.preMixAutolyseMinFor('no_knead','pain_levain'),0);
  const schedule=utils.buildSchedule(start,bake,[],22,45,'hand','pain_levain',1);
  const action=schedule.availabilityActions.find(x=>x.id==='autolyse');
- a.equal(+action.at,+start-32*60000);a.equal(+action.end,+start-30*60000);
+ const q5=ms=>Math.floor(ms/300000)*300000;
+ a.equal(+action.at,q5(+start-32*60000));a.equal(+action.end,+action.at+2*60000);a.ok(+action.end<=+start-30*60000,'the full rest is kept');
  a.equal(+schedule.availabilityActions.find(x=>x.id==='mix').at,+start);
  const input={start,bake,from:new Date(+start-3600000),to:new Date(+start+3600000),kitchenTemp:22,preheatMin:45,mixerType:'hand',styleKey:'pain_levain',numItems:1,methodValid:true,now:+start-86400000};
  const blocked=assessScheduleDraft({...input,blocks:[{from:action.at,to:action.end,label:'Call'}]});
@@ -46,7 +47,7 @@ test('pre-mix autolyse reserves work before the levain anchor and respects unava
 test('multiple autolyse batches are prepared once before the first mixing anchor',()=>{
  const schedule=utils.buildSchedule(start,bake,[],22,45,'hand','pain_levain',2,2);
  const actions=schedule.availabilityActions.filter(x=>x.id==='autolyse');
- a.equal(actions.length,1);a.equal(+actions[0].at,+start-34*60000);a.equal(+actions[0].end,+start-30*60000);
+ a.equal(actions.length,1);a.equal(+actions[0].at,Math.floor((+start-34*60000)/300000)*300000);a.equal(+actions[0].end,+actions[0].at+4*60000);a.ok(+actions[0].end<=+start-30*60000);
  a.equal(+schedule.availabilityActions.find(x=>x.id==='mix').at,+start);
  a.equal(schedule.batchMixWindows.length,2);
 });

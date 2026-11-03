@@ -1344,7 +1344,12 @@ export function buildSchedule(
     // conflict explanations cannot accidentally point back to the first lot.
     const mixId = index === 0 ? 'mix' : `mix-batch-${index + 1}`;
     const preRest=preMixAutolyseMinFor(mixerType,styleKey);
-    if(preRest>0&&index===0) actions.push({id:'autolyse',at:new Date(+startTime-(preRest+2*mixingBatches)*60000),end:new Date(+startTime-preRest*60000)});
+    if(preRest>0&&index===0){
+      // Combining flour and water is a 2-minute job: start it on a 5-minute mark
+      // (never later than the full rest allows) instead of 7:13–7:15.
+      const autolyseAt=Math.floor((+startTime-(preRest+2*mixingBatches)*60000)/300000)*300000;
+      actions.push({id:'autolyse',at:new Date(autolyseAt),end:new Date(autolyseAt+2*mixingBatches*60000)});
+    }
     const finishId = index === 0 ? 'mix-finish' : `mix-finish-batch-${index + 1}`;
     if (activeMin > 0) {
       const initialMin = restMin > 0 ? Math.min(activeMin, mixerType === 'spiral' ? 3 : 2) : activeMin;
