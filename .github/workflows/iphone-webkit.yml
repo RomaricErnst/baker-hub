@@ -145,6 +145,8 @@ jobs:
         run: node tests/roundtrip/closing-levain.mjs .ci-tools/starter-path.js
       - name: Accept later feasible bakes from constrained starter plans
         run: node tests/roundtrip/feasible-fallback.mjs .ci-tools/starter-path.js
+      - name: Never send a fridge-kept starter into the fridge before it is fed
+        run: node tests/roundtrip/fridge-starter.mjs .ci-tools/starter-path.js
 
   schedule-repair-grid:
     runs-on: ubuntu-latest

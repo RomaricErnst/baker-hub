@@ -3400,6 +3400,8 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
     // the winner is RT-only or Path B (Path B uses its own _fridgeHold*
     // mirrors). Render == validation by construction.
     let _renderFridgeInMs:  number | null = null;
+    // The winner's scored intermediate refreshes (see renderIntermediatesMs).
+    let _renderIntermediatesMs: number[] | null = null;
     let _renderFridgeOutMs: number | null = null;
     let _adjPeakH: number | null = null;
     let _adjPeakH_last: number | null = null;
@@ -3491,6 +3493,13 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
         }
       } else if (_isFridgeHoldPath) {
         // Path B owns its own refresh visualisation — skip the multi-refresh array
+      } else if (_renderIntermediatesMs) {
+        // Render exactly the refreshes the winner was scored on. A separate
+        // recomputation here (current ratio state, its own guards) dropped
+        // feeds the candidate counted, leaving a fridge_in at the peak of a
+        // refresh the baker was never shown (starter already in the fridge
+        // told to go "Into the fridge").
+        for (const ms of _renderIntermediatesMs) _intermediateRefreshFeeds.push(new Date(ms));
       } else {
         // Long-horizon intermediates: if the gap from refresh (or last feed)
         // to the next major feed exceeds one full trough cycle, add additional
@@ -4647,6 +4656,8 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
       // Null when the plan does not involve a fridge transition.
       renderFridgeInMs?:  number;
       renderFridgeOutMs?: number;
+      /** Intermediate refreshes this candidate was scored on (and whose peaks set renderFridgeInMs). */
+      renderIntermediatesMs?: number[];
     }
 
     // CANONICAL fridge-hold action-time source. For a Path B (fridge-hold)
@@ -4844,6 +4855,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
         ...c,
         renderFridgeInMs:  fridgeTimes?.fridgeInMs,
         renderFridgeOutMs: fridgeTimes?.fridgeOutMs,
+        renderIntermediatesMs: c.bridgeRefreshMs || c.isFridgeHoldPath ? undefined : computeIntermediatesForCandidate(c as Candidate, adjPeakH, ratioMultiplier),
       };
       const _extraFeeds = Math.max(0, plannedFutureFeedCount(enriched, adjPeakH, ratioMultiplier) - 1);
       candidates.push({
@@ -5689,6 +5701,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
     // checked. Only meaningful for non-Path-B fridge winners; Path B uses the
     // _fridgeHold* mirrors below.
     if (!best.isFridgeHoldPath) {
+      if (best.renderIntermediatesMs) _renderIntermediatesMs = best.renderIntermediatesMs;
       if (best.renderFridgeInMs  != null) _renderFridgeInMs  = best.renderFridgeInMs;
       if (best.renderFridgeOutMs != null) _renderFridgeOutMs = best.renderFridgeOutMs;
       // Align _newFridgeOut (chart prop + non-event card paths) to the stored
@@ -5913,6 +5926,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
             ...c,
             renderFridgeInMs:  fridgeTimes?.fridgeInMs,
             renderFridgeOutMs: fridgeTimes?.fridgeOutMs,
+            renderIntermediatesMs: c.bridgeRefreshMs || c.isFridgeHoldPath ? undefined : computeIntermediatesForCandidate(c as Candidate, adjPeakH_r, ratioMult_r),
           };
           const _extraFeeds_r = Math.max(0, plannedFutureFeedCount(enriched, adjPeakH_r, ratioMult_r) - 1);
           candidates_r.push({
@@ -7070,7 +7084,9 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
     : null;
   // Simple: most bakers work. When steps would land in weekday working hours
   // and no work hours are set, ask once instead of assuming they are home.
-  const workClashes=mode==='simple'&&eatTimeSet&&!isWorkActive&&!simpleDecision&&!simpleWorkDismissed
+  // A sourdough plan exists only once the starter is described; ask nothing about it before.
+  const starterDescribed=!isSourdough||(planningMode==='know_peak'?!!knownPeakTime:lastFedAge!==null&&!!lastFedTime);
+  const workClashes=mode==='simple'&&eatTimeSet&&starterDescribed&&!isWorkActive&&!simpleDecision&&!simpleWorkDismissed
     ? findAvailabilityConflicts(currentPlanActions(committedSchedule?.availabilityActions??[]),workdays.map(day=>({from:day.blockStart,to:day.blockEnd,label:day.label})),Date.now())
     : [];
   const workPrompt=workClashes.length>0
@@ -7634,7 +7650,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
           )}
 
           </div>}
-          <StarterHydrationNotice isFr={isFr} />
+          {mode!=='simple'&&<StarterHydrationNotice isFr={isFr} />}
         </div>
   ) : null;
   if (schedulerSection === 'starter') return <div style={{ fontFamily: 'var(--font-ui)' }}>{starterCard}</div>;
@@ -7711,8 +7727,8 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
           </div>
 
         </div>
-        {!inputsOnly&&eatTimeSet&&!coherentTimes&&simpleKnownPeakConflict&&<p className="bh-key-note">{starterPeakGuidance}</p>}
-        {!inputsOnly&&eatTimeSet&&!coherentTimes&&!currentCandidateValid&&<p className="bh-plan-state" role="status">
+        {!inputsOnly&&eatTimeSet&&starterDescribed&&!coherentTimes&&simpleKnownPeakConflict&&<p className="bh-key-note">{starterPeakGuidance}</p>}
+        {!inputsOnly&&eatTimeSet&&starterDescribed&&!coherentTimes&&!currentCandidateValid&&<p className="bh-plan-state" role="status">
           {planStateReason}</p>}
         {!inputsOnly&&eatTimeSet&&currentCandidateValid&&!localBlocks.some(block=>block.label.endsWith(' night'))&&
           currentPlanActions(committedSchedule?.availabilityActions??[]).some(isOvernightPreparation)&&
