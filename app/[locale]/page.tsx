@@ -826,9 +826,9 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
 const KITCHEN_BANDS=[
   {id:'cool',c:18,en:'Cool',fr:'Frais',metric:'under 20 °C',metricFr:'moins de 20 °C',imperial:'under 68 °F',imperialFr:'moins de 68 °F'},
   {id:'mild',c:22,en:'Mild',fr:'Tempéré',metric:'20–24 °C',metricFr:'20–24 °C',imperial:'68–75 °F',imperialFr:'68–75 °F'},
-  {id:'warm',c:27,en:'Warm',fr:'Chaud',metric:'25–29 °C',metricFr:'25–29 °C',imperial:'77–84 °F',imperialFr:'77–84 °F'},
-  {id:'hot',c:31,en:'Hot',fr:'Très chaud',metric:'30–32 °C',metricFr:'30–32 °C',imperial:'86–90 °F',imperialFr:'86–90 °F'},
-  {id:'veryhot',c:34,en:'Very hot',fr:'Caniculaire',metric:'33 °C and above',metricFr:'33 °C et plus',imperial:'91 °F and above',imperialFr:'91 °F et plus',
+  {id:'warm',c:27,en:'Warm',fr:'Assez chaud',metric:'25–29 °C',metricFr:'25–29 °C',imperial:'77–84 °F',imperialFr:'77–84 °F'},
+  {id:'hot',c:31,en:'Hot',fr:'Chaud',metric:'30–32 °C',metricFr:'30–32 °C',imperial:'86–90 °F',imperialFr:'86–90 °F'},
+  {id:'veryhot',c:34,en:'Very hot',fr:'Très chaud',metric:'33 °C and above',metricFr:'33 °C et plus',imperial:'91 °F and above',imperialFr:'91 °F et plus',
     hint:'A tropical kitchen without air conditioning',hintFr:'Cuisine tropicale sans climatisation'},
 ] as const;
 function kitchenBand(t:number){return t<20?'cool':t<25?'mild':t<30?'warm':t<33?'hot':'veryhot';}
