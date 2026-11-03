@@ -21,9 +21,9 @@ test('Simple starter setup exposes readiness and kitchen facts without requiring
   assert.equal(html.includes(feedQuestion),mode==='custom');
   if(mode==='simple') {
    assert.ok(html.includes(locale==='en'?'Yes, ready now':'Oui, il est prêt maintenant'));
-   assert.ok(html.includes(locale==='en'?'Not yet / Not sure':'Pas encore / Je ne sais pas'));
+   assert.ok(html.includes(locale==='en'?'Not yet':'Pas encore'));
    assert.ok(html.includes(locale==='en'?'equal weights of flour and water':'autant de farine que d’eau'));
-   assert.ok(html.includes(locale==='en'?'Kitchen: 30':'Cuisine : 30'));
+   assert.ok(html.includes(locale==='en'?'kitchen: 30':'cuisine : 30'));
   }
  }
 });

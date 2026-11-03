@@ -29,7 +29,7 @@ test('more yeast plans a later start, and the calculated amount restores the pla
  expect(recommended).toBeGreaterThan(0);
  await yeast.fill(String(Math.round(recommended*2*1000)/1000));await yeast.blur();
  await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBeGreaterThan(0);
- await expect(fineTune.getByText(/re-timed to this amount/)).toBeVisible();
+ await expect(fineTune.getByText(/timing follows this amount/)).toBeVisible();
  await fineTune.locator('[data-yeast-override]').scrollIntoViewIfNeeded();
  await page.screenshot({path:test.info().outputPath('yeast-override.png')});
 

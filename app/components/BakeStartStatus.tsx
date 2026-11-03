@@ -1,4 +1,5 @@
 'use client';
+import {formatBakeDateTime} from '../utils/units';
 import {useState} from 'react';
 import type {BakeExecution} from '../utils/bakeExecution';
 import {preparationStatus} from '../utils/bakeExecution';
@@ -11,7 +12,7 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
   const status=preparationStatus(plannedAt,execution,now);
   // A "Made now" button hours ahead invites a mistaken tap: offer it from 30 minutes before.
   if(status==='planned'&&(!preparing||plannedAt-now>30*60_000))return null;
-  const fmt=(at:number)=>new Date(at).toLocaleString(fr?'fr-FR':'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:false});
+  const fmt=(at:number)=>formatBakeDateTime(new Date(at),fr?'fr':'en');
   const noun=method==='none'?(fr?'la pâte':'the dough'):method==='biga'?(fr?'la biga':'the biga'):(fr?'le poolish':'the poolish');
   const editTime=(at:number)=>{const date=new Date(at);date.setMinutes(date.getMinutes()-date.getTimezoneOffset());setTime(date.toISOString().slice(0,16));setDifferent(true);};
   const parsed=+new Date(time), valid=!!time&&Number.isFinite(parsed)&&parsed<=now;

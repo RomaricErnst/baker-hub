@@ -322,7 +322,7 @@ const MAESTRO_CONTENT: Record<string, {
   },
   score: {
     question: { en: 'Are my scores clean and deep enough?', fr: 'Mes grignes sont-elles nettes et assez profondes ?' },
-    instruction: { en: 'Photo top-down before loading the oven', fr: "Photo de dessus avant d'enfourner" },
+    instruction: { en: 'Photo top-down before loading the oven', fr: "Photo de dessus avant d’enfourner" },
   },
   bake: {
     question: { en: 'How did my bake turn out?', fr: 'Comment s\'est passée ma cuisson ?' },
@@ -706,7 +706,7 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
   const helpTitles: Record<string,[string,string]> = {
     mix:['Conseils de pétrissage','Kneading tips'],
     starter:['Conseils pour le levain','Starter tips'],
-    poolish:['Conseils pour la poolish','Poolish tips'],
+    poolish:['Conseils pour le poolish','Poolish tips'],
     biga:['Conseils pour la biga','Biga tips'],
     bulk:['Conseils de pointage','Bulk fermentation tips'],
     cold:['Conseils pour le repos au froid','Cold fermentation tips'],
@@ -1192,10 +1192,12 @@ Actual dough condition and equipment may differ from these estimates.`;
         <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
               {bold:l === 'fr' ? 'Pesez la farine, l’eau et la levure indiquées ci-dessus.' : 'Weigh the flour, water and yeast listed above.',
-                note:recipe?.preferment ? (l === 'fr' ? `Utilisez ${formatPrefermentDose(recipe.preferment.prefYeastGrams,l)} de ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)}.` : `Use ${formatPrefermentDose(recipe.preferment.prefYeastGrams,l)} ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)}.`) : ''},
+                note:recipe?.preferment ? (recipe.preferment.prefYeastGrams < 0.5
+                  ? (l === 'fr' ? `${formatPrefermentDose(recipe.preferment.prefYeastGrams,l)} de ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)} : trop peu pour une balance, utilisez la dilution de la recette.` : `${formatPrefermentDose(recipe.preferment.prefYeastGrams,l)} ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)}: too little to weigh, use the dilution in the Recipe.`)
+                  : l === 'fr' ? `Utilisez ${formatPrefermentDose(recipe.preferment.prefYeastGrams,l)} de ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)}.` : `Use ${formatPrefermentDose(recipe.preferment.prefYeastGrams,l)} ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)}.`) : ''},
               {bold:isPoolish ? (l === 'fr' ? 'Mélangez jusqu’à disparition de la farine sèche.' : 'Stir until no dry flour remains.') : (l === 'fr' ? 'Mélangez pour humidifier toute la farine ; gardez une texture grumeleuse.' : 'Mix to moisten all the flour; keep a rough, lumpy texture.'),note:''},
               {bold:l === 'fr' ? 'Couvrez le récipient et laissez de la place pour la levée.' : 'Cover the container and leave room for expansion.',note:''},
-              {bold:recipe?.preferment?.cold ? (l === 'fr' ? 'Placez au réfrigérateur selon ce planning.' : 'Refrigerate according to this plan.') : chillPoolishAt ? (l==='fr'?`Laissez mûrir à température ambiante jusqu’à ${formatTime(chillPoolishAt,l)}, puis placez la poolish au réfrigérateur.`:`Let the poolish ripen at room temperature until ${formatTime(chillPoolishAt,l)}, then refrigerate it.`) : (l === 'fr' ? 'Laissez à température ambiante selon ce planning.' : 'Leave at room temperature according to this plan.'),
+              {bold:recipe?.preferment?.cold ? (l === 'fr' ? 'Placez au réfrigérateur selon ce planning.' : 'Refrigerate according to this plan.') : chillPoolishAt ? (l==='fr'?`Laissez mûrir à température ambiante jusqu’à ${formatTime(chillPoolishAt,l)}, puis placez le poolish au réfrigérateur.`:`Let the poolish ripen at room temperature until ${formatTime(chillPoolishAt,l)}, then refrigerate it.`) : (l === 'fr' ? 'Laissez à température ambiante selon ce planning.' : 'Leave at room temperature according to this plan.'),
                 note:l === 'fr' ? `Pétrissage prévu : ${formatTime(bgMixStart, _fmtLocale)}. Vérifiez la maturité avant utilisation.` : `Main mix planned: ${formatTime(bgMixStart, _fmtLocale)}. Check maturity before use.`},
             ]} />
           </Section>
@@ -1215,8 +1217,8 @@ Actual dough condition and equipment may differ from these estimates.`;
         </StepCard>
       )}
       {isPoolish && chillPoolishAt && <StepCard number={n()} {...sc()} icon={<IconCold />}
-        time={chillPoolishAt} title={l==='fr'?'Réfrigérer la poolish':'Chill the poolish'}>
-        <p>{l==='fr'?'Couvrez la poolish mûre et placez-la au réfrigérateur. Utilisez-la froide au pétrissage pour atteindre la température de pâte prévue.':'Cover the ripe poolish and refrigerate it. Use it cold at mixing time to reach the planned dough temperature.'}</p>
+        time={chillPoolishAt} title={l==='fr'?'Réfrigérer le poolish':'Chill the poolish'}>
+        <p>{l==='fr'?'Couvrez le poolish mûr et placez-le au frigo. Utilisez-le froid au pétrissage.':'Cover the ripe poolish and refrigerate it. Use it cold at mixing.'}</p>
       </StepCard>}
 
 
@@ -1418,7 +1420,7 @@ Actual dough condition and equipment may differ from these estimates.`;
 
       {/* ── STEP: Mix Dough ─────────────────────────── */}
       <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={showAutolyseStart?(l==='fr'?'Autolyse puis pétrissage':'Autolyse, then mixing'):t('stepTitles.mixDough')}
-        time={showAutolyseStart?(autolyseAction?.at??new Date(+displayedMixTime-(preMixAutolyse+2*(schedule.mixingBatches??1))*60000)):displayedMixTime} duration={showAutolyseStart?(displayedMixDuration??0)+(preMixAutolyse+2*(schedule.mixingBatches??1))/60:displayedMixDuration} overviewNote={preMixAutolyse?<span>{l==='fr'?'Levure ou levain, et sel, au pétrissage à ':'Yeast or starter, and salt, at mixing time: '}{formatTime(displayedMixTime,_fmtLocale)}</span>:mixingOverviewNote} accent={D.ash}>
+        time={showAutolyseStart?(autolyseAction?.at??new Date(+displayedMixTime-(preMixAutolyse+2*(schedule.mixingBatches??1))*60000)):displayedMixTime} duration={showAutolyseStart?(displayedMixDuration??0)+(preMixAutolyse+2*(schedule.mixingBatches??1))/60:displayedMixDuration} overviewNote={preMixAutolyse?<span>{recipe?.sourdough?(l==='fr'?'Levain et sel à ':'Starter and salt at '):(l==='fr'?'Levure et sel à ':'Yeast and salt at ')}{formatTime(displayedMixTime,_fmtLocale)}</span>:mixingOverviewNote} accent={D.ash}>
 
         {serialMixNote}
         {preMixAutolyse>0&&(schedule.mixingBatches??1)>1&&<p>{l==='fr'?'Avant la première pétrissée, préparez la farine et l’eau de chaque lot dans un récipient séparé : comptez 2 min par lot, puis couvrez au moins 30 min. Les lots suivants restent couverts en attendant leur pétrissage. N’ajoutez leur levure ou levain et leur sel qu’à leur tour.':'Before the first mix, combine each batch’s flour and water in a separate container: allow 2 minutes per batch, then cover for at least 30 minutes. Later batches stay covered until their mixing turn. Add their yeast or starter and salt only at that turn.'}</p>}
@@ -1456,8 +1458,8 @@ Actual dough condition and equipment may differ from these estimates.`;
             {bold:batch&&batch.count>1?(l==='fr'?'Pesez les ingrédients indiqués pour ce lot.':'Weigh this batch’s ingredients shown above.'):(l==='fr'?'Pesez les ingrédients ci-dessus.':'Weigh the ingredients above.'),note:recipe?.yeast?.yeastType==='active_dry'?(l==='fr'?'Réactivez la levure selon le sachet avec une partie de l’eau mesurée.':'Activate the yeast as directed on its packet using part of the measured water.'):''},
             {bold:laterAutolysedBatch?(l==='fr'?'Reprenez le mélange farine-eau de ce lot, préparé avant la première pétrissée.':'Take this batch’s flour-water mixture, prepared before the first mix.'):hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'
               ?(waterMethod==='direct'&&mixerType==='spiral'&&recipe?.oil===0&&recipe?.sugar===0&&!['brioche','pain_mie','pain_viennois'].includes(styleKey)?(l==='fr'?'Incorporez la farine dans 90 % de l’eau liquide prévue ; réservez le reste. Ajoutez la glace mesurée au pétrissage si elle est indiquée ci-dessus.':'Combine flour with 90% of the planned liquid water; reserve the rest. Add the measured ice during mixing if shown above.'):(l==='fr'?'Incorporez la farine dans 90 % de l’eau préparée ; réservez le reste.':'Combine flour with 90% of the prepared water; reserve the rest.'))
-              :(l==='fr'?'Incorporez la farine dans l’eau préparée ci-dessus.':'Combine flour with the water preparation shown above.'),note:''},
-            ...(preMixAutolyse>0 ? [{bold:laterAutolysedBatch?(l==='fr'?'L’autolyse de ce lot est déjà faite : ne recommencez pas les 30 min de repos.':'This batch has already autolysed: do not repeat the 30-minute rest.'):(l==='fr'?`Autolyse : après 2 min de pétrissage, couvrez la pâte au moins 30 min, sans levure, levain ni sel.`:`Autolyse: after 2 minutes of mixing, cover and rest the dough for at least 30 minutes before adding the starter or yeast and salt.`),note:l==='fr'?`Incorporez la levure ou le levain et le sel à ${formatTime(displayedMixTime,_fmtLocale)}. Le repos précède cet horaire et ne retarde pas l’ajout du ferment.`:`Add yeast or starter and salt at ${formatTime(displayedMixTime,_fmtLocale)}. The rest comes before that time and does not delay adding the yeast or starter.`}] : !isSourdough && autolyseMinFor(mixerType, styleKey)>0 ? [{bold:l==='fr'?`Couvrez et laissez reposer ${autolyseMinFor(mixerType, styleKey)} min, comme prévu au planning.`:`Cover and rest ${autolyseMinFor(mixerType, styleKey)} min, as scheduled.`,note:''}] : []),
+              :(l==='fr'?'Mélangez la farine et l’eau.':'Mix the flour and water.'),note:''},
+            ...(preMixAutolyse>0 ? [{bold:laterAutolysedBatch?(l==='fr'?'L’autolyse de ce lot est déjà faite : ne recommencez pas les 30 min de repos.':'This batch has already autolysed: do not repeat the 30-minute rest.'):(l==='fr'?`Mélangez la farine et l’eau, couvrez et laissez reposer jusqu’à ${formatTime(displayedMixTime,_fmtLocale)}.`:`Mix the flour and water, cover and rest until ${formatTime(displayedMixTime,_fmtLocale)}.`),note:isSourdough?(l==='fr'?'Puis ajoutez le levain et le sel.':'Then add the starter and salt.'):(l==='fr'?'Puis ajoutez la levure et le sel.':'Then add the yeast and salt.')}] : !isSourdough && autolyseMinFor(mixerType, styleKey)>0 ? [{bold:l==='fr'?`Couvrez et laissez reposer ${autolyseMinFor(mixerType, styleKey)} min, comme prévu au planning.`:`Cover and rest ${autolyseMinFor(mixerType, styleKey)} min, as scheduled.`,note:''}] : []),
             {bold:isSourdough?(l==='fr'?'Ajoutez le levain mûr et le sel.':'Add the ripe starter and salt.'):hasPref?(l==='fr'?`Ajoutez votre ${prefermentType} préparé, puis le sel.`:`Add the prepared ${prefermentType}, then the salt.`):(l==='fr'?'Ajoutez la levure et le sel.':'Add the yeast and salt.'),note:''},
             ...(hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'?[{bold:l==='fr'?'Quand la pâte se tient, ajoutez progressivement l’eau réservée ; laissez chaque ajout s’incorporer.':'Once the dough holds together, add the reserved water gradually; let each addition absorb.',note:''}]:[]),
             {bold:mixerType==='no_knead'?(l==='fr'?'Arrêtez une fois homogène. Couvrez ; les repos et rabats prévus développeront la pâte.':'Stop once combined. Cover; scheduled rests and folds develop the dough.'):styleKey==='pain_seigle'?(l==='fr'?'Mélangez jusqu’à homogénéité ; le seigle reste collant.':'Mix until evenly combined; rye dough remains sticky.'):mixerType==='hand'?(l==='fr'?'Pétrissez à la main jusqu’à une pâte lisse et souple.':'Knead by hand until smooth and stretchy.'):(l==='fr'?'Pétrissez jusqu’à une pâte lisse et souple, à une vitesse « pâte » de votre pétrin.':'Knead until smooth and stretchy, at a dough speed your mixer allows.'),note:''},
@@ -1546,11 +1548,12 @@ Actual dough condition and equipment may differ from these estimates.`;
             ...(scheduledFoldMinutes(schedule.bulkFermHours, styleKey).length
               ? scheduledFoldMinutes(schedule.bulkFermHours, styleKey).map(minutes =>
                   t.raw(minutes === 15 ? 'bulk.setShort' : `bulk.set${minutes / 30}`) as { bold: string; note: string })
-              : [t.raw('bulk.setVeryShort') as { bold: string; note: string }]),
+              // "Straight into the fridge" only when the plan has a cold stage.
+              : schedule.coldRetardStart ? [t.raw('bulk.setVeryShort') as { bold: string; note: string }] : []),
           ]} />}
         </Section>
 
-        <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'La pâte est aérée et a gagné en tenue ; jugez-la avec le planning.':'The dough is aerated and has gained strength; judge it alongside the schedule.'}</p>
+        <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'La pâte est aérée et se tient.':'Airy and holding its shape.'}</p>
 
         {!breadProtocol && <StepExtras
           tips={<>
@@ -1778,7 +1781,7 @@ Actual dough condition and equipment may differ from these estimates.`;
               ...(isTwoPhase ? [isBread ? {bold:l==='fr'?'Sortez la pâte façonnée du réfrigérateur.':'Take the shaped dough out of the fridge.',note:''} : t.raw('finalProof.removeFridge') as { bold: string; note: string }] : []),
               { bold: l === 'fr' ? (isBread && numItems===1 ? 'Laissez le pâton se détendre, couvert' : 'Laissez les pâtons se détendre, couverts') : 'Let the shaped dough relax, covered',
                 note: l === 'fr' ? 'À température ambiante, jusqu’à ce que la pâte soit souple et aérée.' : 'At room temperature, until relaxed and airy.' },
-              t.raw('finalProof.pokeTest') as { bold: string; note: string },
+              schedule.coldRetardStart ? t.raw('finalProof.pokeTest') as { bold: string; note: string } : { bold: l === 'fr' ? 'Test du doigt toutes les 15–20 min' : 'Poke-test every 15–20 min', note: l === 'fr' ? 'le creux doit remonter lentement' : 'the dent should spring back slowly' },
               { bold: l === 'fr' ? `Lancez le préchauffage du four ${formatDuration(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75,l)} avant la cuisson` : `Start preheating your oven ${formatDuration(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75,l)} before bake time`, note: (l === 'fr' ? 'préchauffez pendant l’apprêt ; vérifiez que le four et la pâte sont prêts' : 'preheat overlaps proofing; check both are ready') },
             ]} />}
           </Section>

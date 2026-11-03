@@ -3615,7 +3615,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
         }
         if (_isFridgeHoldPath) {
           return isFr
-            ? "Rafraîchi, pic, puis frigo jusqu'au rafraîchi final — idéal pour les cuissons à 2+ jours."
+            ? "Rafraîchi, pic, puis frigo jusqu’au rafraîchi final — idéal pour les cuissons à 2+ jours."
             : 'Refresh, peak, then fridge holds your starter until pre-mix — best for 2+ day plans.';
         }
         if (_usingPeak2 && !_hasFutureFeedPath) {
@@ -3662,11 +3662,11 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
           }
           if (gapH < -1) {
             return isFr
-              ? "Rafraîchi final un peu avant le pic pour s'adapter à votre planning — résultat solide."
+              ? "Rafraîchi final un peu avant le pic pour s’adapter à votre planning — résultat solide."
               : 'Pre-mix lands a bit before peak to fit your schedule — still gives a solid result.';
           }
           return isFr
-            ? "Rafraîchi final plus tard qu'idéal à cause de votre planning — ça reste bon."
+            ? "Rafraîchi final plus tard qu’idéal à cause de votre planning — ça reste bon."
             : 'Pre-mix is later than ideal because of your schedule — still works.';
         }
         if (planningMode === 'know_peak') {
@@ -3930,7 +3930,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
               isPast: _fridgeHoldInTime.getTime() < nowMs,
               isActive: false,
               isDraggable: false,
-              label: isFr ? 'Au frigo' : 'Into the fridge',
+              label: isFr ? 'Levain au frigo' : 'Starter into the fridge',
               cardTimeFormat: 'absolute',
               cardNote: isFr ? 'Au pic — ralentit la fermentation' : 'At peak — slows fermentation',
               bellStyle: 'none',
@@ -4082,7 +4082,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
               isPast: _renderFridgeInMs < nowMs,
               isActive: false,
               isDraggable: false,
-              label: isFr ? 'Au frigo' : 'Into the fridge',
+              label: isFr ? 'Levain au frigo' : 'Starter into the fridge',
               cardTimeFormat: 'absolute',
               // Age-chip times are estimates — never fabricate minute
               // precision for "2–3 days ago".
@@ -4110,7 +4110,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
             isPast: _foDisplayMs < nowMs,
             isActive: false,
             isDraggable: false,
-            label: isFr ? 'Sortie du frigo' : 'Out of the fridge',
+            label: isFr ? 'Sortir le levain' : 'Starter out of the fridge',
             cardTimeFormat: 'absolute',
             cardNote: _showExtendedNote
               ? (isFr
@@ -6584,10 +6584,10 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
     'fold-1': ['Rabat 1', 'Fold 1'], 'fold-2': ['Rabat 2', 'Fold 2'],
     'fold-3': ['Rabat 3', 'Fold 3'], 'fold-4': ['Rabat 4', 'Fold 4'],
     divide: bakeType==='bread' && numItems===1 ? ['Façonnage', 'Shape the loaf'] : ['Division et façonnage', 'Divide and shape'], preheat: ['Préchauffage', 'Preheat'], bake: ['Cuisson', 'Bake'],
-    'cold-in': ['Mise au froid', 'Into the fridge'], 'cold-in-2': ['Deuxième mise au froid', 'Second fridge stage'],
+    'cold-in': ['Pâte au frigo', 'Dough into the fridge'], 'cold-in-2': [bakeType==='bread' && numItems===1?'Pâton au frigo':'Pâtons au frigo', bakeType==='bread' && numItems===1?'Shaped loaf into the fridge':'Shaped dough into the fridge'],
     'cold-out': ['Sortir la pâte du réfrigérateur', 'Take the dough out of the fridge'], 'cold-out-2': [bakeType==='bread' && numItems===1?'Sortir le pâton du réfrigérateur':'Sortir les pâtons du réfrigérateur', 'Take the shaped dough out of the fridge'],
     'starter-feed': ['Rafraîchi du levain', 'Feed starter'], 'starter-cold': ['Étape au froid du levain', 'Starter fridge step'],
-    'preferment-cold-in':['Réfrigérer la poolish','Chill the poolish'],
+    'preferment-cold-in':['Réfrigérer le poolish','Chill the poolish'],
     preferment: ['Préparation du préferment', 'Prepare preferment'], 'preferment-cold-out': ['Sortie du préferment', 'Preferment fridge exit'],
   };
   const firstReadinessConflict = readinessConflicts[0];
@@ -6746,6 +6746,12 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
   // Say why this bake time doesn't work, never just that it doesn't.
   const planStateReason=(()=>{
     if('message' in currentCandidate&&currentCandidate.message)return currentCandidate.message;
+    if(yeastTiming&&!isSourdough){
+      const h=formatDuration(Math.round(yeastTiming.center*4)/4,isFr?'fr':'en');
+      const clash=readinessConflicts[0];
+      return isFr?`Avec cette quantité de levure, la pâte a besoin d’environ ${h} : pétrissage ${fmtCardDT(pendingStart,isFr)}${clash?', pendant une indisponibilité':''}. Choisissez une heure de cuisson plus loin, ou moins de levure.`
+        :`With this yeast amount the dough needs about ${h}: mixing at ${fmtCardDT(pendingStart,isFr)}${clash?', during unavailable time':''}. Pick a later bake time, or use less yeast.`;
+    }
     const issue='issue' in currentCandidate?currentCandidate.issue:null;
     const conflictId='conflict' in currentCandidate&&typeof currentCandidate.conflict==='string'?currentCandidate.conflict:undefined;
     const busy=readinessConflicts[0];
@@ -6844,7 +6850,10 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
       const storage=usable&&recommendation?recommendation.inFridge:prefGoesInFridge;
       if(usable&&recommendation)setAlgoChoseFridge(storage);
       setSearchFailed(!result.found);
-      const times=usable?result.candidate.times:{start:pendingStart,bake:pendingEatTime,prefHours:prefOffsetH};
+      // A chosen yeast amount fixes the length even when no free slot fits it:
+      // show that start (and its clash) rather than leaving the old one.
+      const yeastStart=!usable&&!hasPrefActive?yeastTimingFor(pendingEatTime,candidateBlocks):null;
+      const times=usable?result.candidate.times:yeastStart?{start:new Date(Math.round((+pendingEatTime-yeastStart.center*3600000)/900000)*900000),bake:pendingEatTime,prefHours:0}:{start:pendingStart,bake:pendingEatTime,prefHours:prefOffsetH};
       setPendingStart(times.start);setPrefOffsetH(times.prefHours);setStartComputed(true);
       setPrefAlgoRed(!result.found);setWindowTooShort(false);
       onChange(times.start,pendingEatTime,candidateBlocks,{preservePlan:true,prefOffsetHours:times.prefHours,prefInFridge:storage,timingOverrides:overrides});
@@ -7128,11 +7137,11 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
           {mode === 'simple' && (
             <div style={{ display: 'grid', gap: '12px', fontSize: '15px', lineHeight: 1.5 }}>
               <p style={{ margin: 0 }}>{isFr
-                ? 'Cette recette utilise un levain rafraîchi avec autant de farine que d’eau, en poids. Un levain ferme ou une proportion inconnue nécessite de vérifier la recette avant de continuer.'
-                : 'This recipe uses a starter fed with equal weights of flour and water. A stiff starter or an unknown proportion needs a recipe check before continuing.'}</p>
-              <p style={{ margin: 0 }}>{isFr
-                ? 'Votre levain actif a-t-il bien monté depuis son rafraîchi, avec des bulles, sans être retombé ? Vérifiez-le à température ambiante.'
-                : 'Has your active starter risen well since feeding, with bubbles, without collapsing? Check it at room temperature.'}</p>
+                ? 'Votre levain est-il prêt maintenant : bien monté, bullé, pas retombé ?'
+                : 'Is your starter ready now: risen, bubbly, not collapsed?'}</p>
+              <p style={{ margin: 0, fontSize: 14, color: 'var(--smoke)' }}>{isFr
+                ? `Levain nourri avec autant de farine que d’eau · cuisine : ${kitchenTemp} °C.`
+                : `Starter fed equal weights of flour and water · kitchen: ${kitchenTemp}°C.`}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 <button type="button" aria-pressed={planningMode === 'know_peak'} style={{ ...starterPillButton(planningMode === 'know_peak'), minHeight: 44 }} onClick={() => {
                   const observedPeak = new Date();
@@ -7156,16 +7165,17 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
                   onFeedTimeChange?.(null); onStarterEventsChange?.([]);
                   setSolverResult(null); setStartComputed(false);
                   setSimpleStarterUncertain(true); setSimpleReadyObserved(false); setShowStarterDetails(true);
-                }}>{isFr ? 'Pas encore / Je ne sais pas' : 'Not yet / Not sure'}</button>
+                }}>{isFr ? 'Pas encore' : 'Not yet'}</button>
               </div>
-              <p role="status" style={{ margin: 0 }}>{simpleStarterUncertain
-                ? (isFr ? 'Prochaine étape : indiquez ci-dessous son dernier rafraîchi. S’il ne monte pas encore, rafraîchissez-le selon votre routine et attendez une montée nette avant de confirmer qu’il est prêt. L’horaire reste à vérifier.' : 'Next: enter its last feed below. If it is not rising yet, feed it using your usual routine and wait for a clear rise before confirming readiness. Timing still needs checking.')
-                : planningMode === 'know_peak' && knownPeakTime
-                  ? (isFr ? `${simpleReadyObserved?'Levain déclaré prêt à':'Levain attendu prêt à'} ${fmtCardDT(knownPeakTime, true)}. Consultez le créneau de mélange ci-dessous ; prêt maintenant ne garantit pas du pain ce soir.` : `${simpleReadyObserved?'Starter reported ready at':'Starter expected ready at'} ${fmtCardDT(knownPeakTime)}. Check the mixing window below; ready now does not guarantee bread tonight.`)
-                  : (isFr ? 'Prochaine étape : vérifiez votre levain, puis choisissez une réponse.' : 'Next: check your starter, then choose an answer.')}</p>
-              <p style={{ margin: 0, color: 'var(--smoke)' }}>{isFr
-                ? `Cuisine : ${kitchenTemp} °C. Vérifiez les signes de levée plus tôt s’il fait chaud ; les heures restent des estimations.`
-                : `Kitchen: ${kitchenTemp}°C. Check rising signs earlier in a warm kitchen; times remain estimates.`}</p>
+              {(() => {
+                const line = simpleStarterUncertain
+                  ? (lastFedAge ? null : (isFr ? 'Indiquez où il est et quand il a été rafraîchi.' : 'Tell us where it is and when you last fed it.'))
+                  : planningMode === 'know_peak' && knownPeakTime
+                    ? (isFr ? `Levain prêt à ${fmtCardDT(knownPeakTime, true)}.` : `Starter ready at ${fmtCardDT(knownPeakTime, false)}.`)
+                    : null;
+                return line ? <p role="status" style={{ margin: 0 }}>{line}</p> : null;
+              })()}
+              {/* Kitchen temperature is shown once, in Preparation. */}
               <button type="button" aria-expanded={showStarterDetails} onClick={() => {setShowStarterDetails(v => !v);setSimpleReadyObserved(false);}} style={{ ...starterPillButton(false), minHeight: 44 }}>
                 {showStarterDetails ? (isFr ? 'Masquer les détails du levain' : 'Hide starter details') : (isFr ? 'Autre horaire / détails du levain' : 'Other timing / starter details')}
               </button>
@@ -7220,7 +7230,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
               {/* Age chips — always visible */}
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {([
-                  { id: 'today',     en: 'Today',       fr: "Aujourd'hui" },
+                  { id: 'today',     en: 'Today',       fr: "Aujourd’hui" },
                   { id: 'yesterday', en: 'Yesterday',    fr: 'Hier' },
                   { id: 'days23',    en: '2–3 days ago', fr: 'Il y a 2–3 jours' },
                   { id: 'days45',    en: '4–5 days ago', fr: 'Il y a 4–5 jours' },
@@ -7323,18 +7333,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
                 </div>
               )}
 
-              {/* Approximate age note — 2+ days */}
-              {(lastFedAge === 'days23' || lastFedAge === 'days45' || lastFedAge === 'week') && (
-                <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}>
-                  {starterLocation === 'fridge'
-                    ? (isFr
-                        ? 'Le plan ci-dessous indiquera quand sortir votre levain.'
-                        : 'The plan below will tell you when to take it out.')
-                    : (isFr
-                        ? "Votre levain a besoin d'être rafraîchi — le plan vous guidera."
-                        : 'Your starter needs feeding — the plan will guide you.')}
-                </div>
-              )}
+              {/* No filler under the age chips: the plan itself shows the feeds. */}
 
               {/* ── Last feed ratio (belongs to the feed) ── */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -7549,7 +7548,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
                       dt.setDate(dt.getDate() + offset);
                       const val = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
                       const lbl = offset === 0
-                        ? (isFr ? "Aujourd'hui" : 'Today')
+                        ? (isFr ? "Aujourd’hui" : 'Today')
                         : offset === 1
                         ? (isFr ? 'Demain' : 'Tomorrow')
                         : dt.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -8292,7 +8291,7 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
 
         if(cardPrefTime&&prefCooldownHours>0){
           const at=new Date(+pendingStart-prefCooldownHours*3600000);
-          rows.push({id:'pref-in',at:+at,name:isFr?'Réfrigérer la poolish':'Chill the poolish',timeText:fmtCardDT(at,isFr),marker:'cold',color:'#5B87AD',editable:false});
+          rows.push({id:'pref-in',at:+at,name:isFr?'Réfrigérer le poolish':'Chill the poolish',timeText:fmtCardDT(at,isFr),marker:'cold',color:'#5B87AD',editable:false});
         }
 
         // 3 — Start Dough
@@ -8489,6 +8488,8 @@ function FermentedSchedulePicker({ schedulerSection = 'all', starterBulkFactor =
         if(isSourdough){
           for(const event of starterEvents){
             if(event.kind==='known_peak')continue;
+            // An age chip ("2–3 days ago") is not a date: don't print an invented one.
+            if(event.kind==='last_fed'&&event.timeIsEstimate)continue;
             const editable=!startTimeInPast&&!readinessUnsupported&&!event.isPast&&+event.time>Date.now()&&['refresh','pre_mix'].includes(event.kind);
             const id='starter:'+event.kind;
             const requested=editingRow===id?(event.kind==='pre_mix'?basePins.feed:basePins.refresh):null;

@@ -1,4 +1,5 @@
 'use client';
+import {formatTime} from '../utils';
 import type {AvailabilityBlock} from '../utils';
 import type {EditSlot} from '../utils/scheduleEdit';
 
@@ -8,7 +9,7 @@ export default function ScheduleAnchorControls({anchors,from,to,blocks,isFr,onCh
   anchors:Anchor[];from:number;to:number;blocks:AvailabilityBlock[];isFr:boolean;
   onChange:(id:string,at:number)=>void;onEdit:(id:string)=>void;
 }){
-  const fmt=(at:number)=>new Date(at).toLocaleString(isFr?'fr-FR':'en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false});
+  const fmt=(at:number)=>formatTime(new Date(at),isFr?'fr':'en');
   const pos=(at:number)=>Math.max(0,Math.min(100,(at-from)/(to-from)*100));
   return <section aria-label={isFr?'Ajuster les horaires':'Adjust times'} style={{margin:'16px 0',padding:14,border:'1px solid var(--border)',borderRadius:14}}>
     <div style={{display:'grid',gridTemplateColumns:`repeat(${anchors.length},minmax(0,1fr))`,gap:12}}>

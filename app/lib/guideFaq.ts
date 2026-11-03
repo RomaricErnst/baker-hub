@@ -9,7 +9,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       },
       "a": {
         "en": "No. A recently collapsed poolish still works — flavour is fine, you just lose a little rising power. Use it now rather than waiting longer. If it collapsed many hours ago and smells sharply alcoholic, reduce the fermentation of the final dough slightly.",
-        "fr": "Non. Un poolish qui vient de retomber fonctionne encore — la saveur est là, il perd juste un peu de force. Utilisez-le maintenant plutôt que d'attendre. S'il est retombé depuis des heures et sent fort l'alcool, raccourcissez légèrement la fermentation de la pâte finale."
+        "fr": "Non. Un poolish qui vient de retomber fonctionne encore — la saveur est là, il perd juste un peu de force. Utilisez-le maintenant plutôt que d’attendre. S’il est retombé depuis des heures et sent fort l’alcool, raccourcissez légèrement la fermentation de la pâte finale."
       }
     },
     {
@@ -19,7 +19,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       },
       "a": {
         "en": "It needs more time or more warmth. Move it somewhere warmer (25–27°C is ideal) and check every 30 min. If your yeast was old, a flat poolish after 12h+ means start a fresh one with new yeast.",
-        "fr": "Il lui faut plus de temps ou de chaleur. Placez-le dans un endroit plus chaud (25–27°C idéalement) et vérifiez toutes les 30 min. Si votre levure était vieille, un poolish plat après 12h+ signifie qu'il faut en relancer un avec de la levure neuve."
+        "fr": "Il lui faut plus de temps ou de chaleur. Placez-le dans un endroit plus chaud (25–27°C idéalement) et vérifiez toutes les 30 min. Si votre levure était vieille, un poolish plat après 12h+ signifie qu’il faut en relancer un avec de la levure neuve."
       }
     },
     {
@@ -35,17 +35,17 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
     {
       "q": {
         "en": "How do I know it's exactly at its peak?",
-        "fr": "Comment savoir qu'il est pile à son pic ?"
+        "fr": "Comment savoir qu’il est pile à son pic ?"
       },
       "a": {
         "en": "Domed surface, bubbles all through the mass, and the first faint wrinkles at the centre. The smell says it too: nutty and yogurt-like at peak, sharply alcoholic past it.",
-        "fr": "Surface bombée, bulles dans toute la masse, et les premières rides discrètes au centre. L'odeur le dit aussi : noisette et yaourt au pic, franchement alcoolisée au-delà."
+        "fr": "Surface bombée, bulles dans toute la masse, et les premières rides discrètes au centre. L’odeur le dit aussi : noisette et yaourt au pic, franchement alcoolisée au-delà."
       }
     },
     {
       "q": {
         "en": "Can I use cold water to slow it down?",
-        "fr": "Puis-je utiliser de l'eau froide pour le ralentir ?"
+        "fr": "Puis-je utiliser de l’eau froide pour le ralentir ?"
       },
       "a": {
         "en": "Cooler water can delay the rise. The effect depends on the starting temperature and how quickly the mixture warms; follow signs of ripeness.",
@@ -81,7 +81,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       },
       "a": {
         "en": "Break a piece open: you want visible bubbles inside, a slightly domed mass, and a sweet-alcoholic smell. Dense with no bubbles = give it more time somewhere slightly warmer.",
-        "fr": "Cassez un morceau : il faut des bulles visibles à l'intérieur, une masse légèrement bombée et une odeur douce-alcoolisée. Dense et sans bulles = laissez-lui plus de temps, un peu plus au chaud."
+        "fr": "Cassez un morceau : il faut des bulles visibles à l’intérieur, une masse légèrement bombée et une odeur douce-alcoolisée. Dense et sans bulles = laissez-lui plus de temps, un peu plus au chaud."
       }
     },
     {
@@ -97,7 +97,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
     {
       "q": {
         "en": "My biga smells like alcohol",
-        "fr": "Ma biga sent l'alcool"
+        "fr": "Ma biga sent l’alcool"
       },
       "a": {
         "en": "A mild alcoholic smell can occur. A sharp solvent smell suggests excessive fermentation; review the duration and temperature before your next batch.",
@@ -109,17 +109,17 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
     {
       "q": {
         "en": "My starter passed its peak — can I still use it?",
-        "fr": "Mon levain a dépassé son pic — puis-je l'utiliser ?"
+        "fr": "Mon levain a dépassé son pic — puis-je l’utiliser ?"
       },
       "a": {
         "en": "Within ~1–2h past peak, yes — expect slightly more tang. Much later than that, give it a quick refresh feed and mix at the next peak instead.",
-        "fr": "Dans l'heure ou les deux heures après le pic, oui — avec un peu plus d'acidité. Bien au-delà, refaites un rafraîchi rapide et pétrissez au pic suivant."
+        "fr": "Dans l’heure ou les deux heures après le pic, oui — avec un peu plus d’acidité. Bien au-delà, refaites un rafraîchi rapide et pétrissez au pic suivant."
       }
     },
     {
       "q": {
         "en": "How do I know it is at peak?",
-        "fr": "Comment savoir s'il est au pic ?"
+        "fr": "Comment savoir s’il est au pic ?"
       },
       "a": {
         "en": "Look for a clear rise and bubbles throughout, following your starter’s usual pattern. A float test alone cannot confirm readiness.",
@@ -129,11 +129,11 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
     {
       "q": {
         "en": "I missed the feed time — what now?",
-        "fr": "J'ai raté l'heure du rafraîchi — que faire ?"
+        "fr": "J’ai raté l’heure du rafraîchi — que faire ?"
       },
       "a": {
         "en": "Feed it now. Your mix time shifts by roughly the same delay. If the dough window gets too tight, push the bake time back rather than mixing with a weak starter.",
-        "fr": "Rafraîchissez-le maintenant. Le pétrissage se décale d'environ le même retard. Si la fenêtre devient trop courte, repoussez la cuisson plutôt que de pétrir avec un levain faible."
+        "fr": "Rafraîchissez-le maintenant. Le pétrissage se décale d’environ le même retard. Si la fenêtre devient trop courte, repoussez la cuisson plutôt que de pétrir avec un levain faible."
       }
     },
     {
@@ -149,7 +149,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
     {
       "q": {
         "en": "I missed the peak — feed again or use it?",
-        "fr": "J'ai raté le pic — rafraîchir à nouveau ou l'utiliser ?"
+        "fr": "J’ai raté le pic — rafraîchir à nouveau ou l’utiliser ?"
       },
       "a": {
         "en": "Within an hour or two past peak, use it — flavour is a touch tangier, power is fine. Much later, give it a quick 1:1 refresh and wait for the new rise.",
@@ -285,11 +285,11 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
     {
       "q": {
         "en": "A skin formed on the dough in the fridge",
-        "fr": "Une croûte s'est formée sur la pâte au frigo"
+        "fr": "Une croûte s’est formée sur la pâte au frigo"
       },
       "a": {
         "en": "A light skin folds back in during shaping. A thick, dry layer is better trimmed off. Next time: tighter cover or a film of oil on the surface.",
-        "fr": "Une fine pellicule se réincorpore au façonnage. Une couche épaisse et sèche se retire plutôt. La prochaine fois : couverture plus hermétique ou un voile d'huile en surface."
+        "fr": "Une fine pellicule se réincorpore au façonnage. Une couche épaisse et sèche se retire plutôt. La prochaine fois : couverture plus hermétique ou un voile d’huile en surface."
       }
     }
   ],
@@ -331,7 +331,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       },
       "a": {
         "en": "You are tightening past what the gluten allows right now. Let the pieces relax 10 minutes and reshape with a lighter hand — tension should build, not tear.",
-        "fr": "Vous serrez au-delà de ce que le gluten permet à cet instant. Laissez détendre 10 minutes et refaçonnez d'une main plus légère — la tension doit se construire, pas déchirer."
+        "fr": "Vous serrez au-delà de ce que le gluten permet à cet instant. Laissez détendre 10 minutes et refaçonnez d’une main plus légère — la tension doit se construire, pas déchirer."
       }
     }
   ],
@@ -385,13 +385,13 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       },
       "a": {
         "en": "Yes, for steel/stone: the surface needs the full time to store heat even if the air reaches temperature quickly. A cool surface = pale, dense base.",
-        "fr": "Oui, pour l'acier/la pierre : la surface a besoin de tout ce temps pour emmagasiner la chaleur, même si l'air est vite chaud. Surface tiède = base pâle et dense."
+        "fr": "Oui, pour l’acier/la pierre : la surface a besoin de tout ce temps pour emmagasiner la chaleur, même si l’air est vite chaud. Surface tiède = base pâle et dense."
       }
     },
     {
       "q": {
         "en": "My oven does not reach the target temperature",
-        "fr": "Mon four n'atteint pas la température cible"
+        "fr": "Mon four n’atteint pas la température cible"
       },
       "a": {
         "en": "Bake anyway at max — just expect a longer bake and check the base colour before pulling. Position the rack closer to the top element for better top colour.",
@@ -405,7 +405,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       },
       "a": {
         "en": "Trust time, not the oven beep — the thermostat reads air, the stone lags 45–60 minutes behind it. An infrared thermometer removes all doubt for a few euros.",
-        "fr": "Fiez-vous au temps, pas au bip du four — le thermostat lit l'air, la pierre a 45–60 minutes de retard sur lui. Un thermomètre infrarouge lève tout doute pour quelques euros."
+        "fr": "Fiez-vous au temps, pas au bip du four — le thermostat lit l’air, la pierre a 45–60 minutes de retard sur lui. Un thermomètre infrarouge lève tout doute pour quelques euros."
       }
     },
     {
@@ -427,7 +427,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       },
       "a": {
         "en": "Finish under the broiler/grill for 60–90 seconds, watching constantly. Next time, move the rack (and steel/stone) higher so the top element does more work.",
-        "fr": "Terminez sous le gril 60–90 secondes en surveillant constamment. La prochaine fois, montez la grille (et l'acier/la pierre) pour que la résistance du haut travaille plus."
+        "fr": "Terminez sous le gril 60–90 secondes en surveillant constamment. La prochaine fois, montez la grille (et l’acier/la pierre) pour que la résistance du haut travaille plus."
       }
     },
     {
@@ -437,7 +437,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       },
       "a": {
         "en": "Work faster and flour the peel more — top the pizza ON the peel and give it a small shake test before opening the oven. If it sticks mid-launch, slide it onto parchment and bake on that.",
-        "fr": "Travaillez plus vite et farinez mieux la pelle — garnissez la pizza SUR la pelle et faites un petit test de glisse avant d'ouvrir le four. Si ça colle au lancement, glissez-la sur du papier cuisson et enfournez avec."
+        "fr": "Travaillez plus vite et farinez mieux la pelle — garnissez la pizza SUR la pelle et faites un petit test de glisse avant d’ouvrir le four. Si ça colle au lancement, glissez-la sur du papier cuisson et enfournez avec."
       }
     },
     {
@@ -447,7 +447,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       },
       "a": {
         "en": "Yes — the crumb finishes setting as steam escapes. Cutting hot gives a gummy texture. One hour minimum for boules; 20–30 min for baguettes.",
-        "fr": "Oui — la mie finit de se structurer pendant que la vapeur s'échappe. Couper chaud donne une mie gommeuse. Une heure minimum pour les boules ; 20–30 min pour les baguettes."
+        "fr": "Oui — la mie finit de se structurer pendant que la vapeur s’échappe. Couper chaud donne une mie gommeuse. Une heure minimum pour les boules ; 20–30 min pour les baguettes."
       }
     },
     {
@@ -467,7 +467,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       },
       "a": {
         "en": "Floor running hotter than the air: turn more often, raise the pizza on a screen or higher rack, and finish under the dome or broiler for the top.",
-        "fr": "La sole est plus chaude que l'air : tournez plus souvent, surélevez la pizza (grille ou écran) et finissez sous la voûte ou le gril pour le dessus."
+        "fr": "La sole est plus chaude que l’air : tournez plus souvent, surélevez la pizza (grille ou écran) et finissez sous la voûte ou le gril pour le dessus."
       }
     }
   ],

@@ -4,7 +4,7 @@ const fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript'),React
 const {renderToStaticMarkup}=require('react-dom/server');
 require('./load-production.cjs');
 const {starterBuild,starterFeedRoleLabel}=require('../app/utils/starterBuild.ts');
-function component(file,name){const tree=ts.createSourceFile(file,fs.readFileSync(file,'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);const source=tree.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text===name).getText(tree).replace(/^export /,'');return vm.runInNewContext(ts.transpileModule(source+'\n'+name,{compilerOptions:{jsx:ts.JsxEmit.React,target:ts.ScriptTarget.ES2020}}).outputText,{React,starterBuild,starterFeedRoleLabel});}
+function component(file,name){const tree=ts.createSourceFile(file,fs.readFileSync(file,'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);const source=tree.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text===name).getText(tree).replace(/^export /,'');return vm.runInNewContext(ts.transpileModule(source+'\n'+name,{compilerOptions:{jsx:ts.JsxEmit.React,target:ts.ScriptTarget.ES2020}}).outputText,{React,starterBuild,starterFeedRoleLabel,formatBakeDateTime:require('../app/utils/units.ts').formatBakeDateTime});}
 const Starter=component('app/components/RecipeOutput.tsx','StarterPrepCard');
 const Repair=component('app/components/SchedulePicker.tsx','BatchRepairNotice');
 test('recipe pairs canonical feed with dated peak after reload, ignoring historical scalar peak',()=>{
