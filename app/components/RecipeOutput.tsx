@@ -205,18 +205,16 @@ function StarterPrepCard({
 }) {
   if (!sourdough) return null;
   const isFr = locale === 'fr';
-  const fmtFull = (d: Date) => d.toLocaleDateString(
-    isFr ? 'fr-FR' : 'en-US',
-    { weekday: 'short', month: 'short', day: 'numeric',
-      hour: 'numeric', minute: '2-digit', hour12: !isFr }
-  );
+  // The app's one date format (EN 12 h, FR 24 h), never the browser's US default.
+  const fmtFull = (d: Date) => formatBakeDateTime(d, locale);
   // Canonical saved solver events survive reload and pair each feed with its own peak.
   // Independent legacy scalar props are only a fallback for older sessions.
   const events = starterEvents.filter(event => event.kind !== 'last_fed' || event.isActive).slice().sort((a,b) => +a.time-+b.time);
   const hasSchedule = !!(events.length || feedTime || starterPeakTime);
   const finalCycle = events.filter(event=>event.kind==='pre_mix' || event.kind==='refresh' || event.kind==='known_peak' || event.kind==='last_fed').at(-1);
   const predictedPeak = finalCycle?.bellPeakTime ?? (finalCycle?.kind==='known_peak' ? finalCycle.time : starterPeakTime);
-  const peakGapMinutes = mixingTime && predictedPeak ? Math.round((+mixingTime - +predictedPeak) / 60000) : null;
+  // Compare the minutes the baker sees, so 7:45 vs 7:50 reads as 5 min.
+  const peakGapMinutes = mixingTime && predictedPeak ? Math.round(+mixingTime / 60000) - Math.round(+predictedPeak / 60000) : null;
   const build = starterBuild(sourdough.starterGramsMid, sourdough.starterGramsMax, feedRatio ?? 1);
   function describeFeed(ratio = feedRatio ?? 1) {
     const {seed, flour, water, total} = starterBuild(sourdough!.starterGramsMid, sourdough!.starterGramsMax, ratio);
@@ -329,7 +327,7 @@ function StarterPrepCard({
           {isFr ? 'Quantité' : 'Amount'}
         </div>
         <div style={valueStyle}>
-          {sourdough.starterGramsMin}–{sourdough.starterGramsMax} g
+          {sourdough.starterGramsMin === sourdough.starterGramsMax ? sourdough.starterGramsMin : `${sourdough.starterGramsMin}–${sourdough.starterGramsMax}`} g
         </div>
         <div style={noteStyle}>
           {isFr
@@ -484,7 +482,8 @@ export default function RecipeOutput({
   const prefermentDoseDilution = pf && (!prefermentSpoon || pf.prefYeastGrams<0.5) ? prefermentDilution(pf.prefYeastGrams,pf.prefWater,1) : null;
   function measureHint(spoon:string|null|undefined,dilution:boolean) {
     if (spoon) return spoon;
-    return dilution ? t('recipeOutput.weighOrDilute') : t('recipeOutput.weighDose');
+    // Everything is weighed; only a dose too small to weigh needs a hint.
+    return dilution ? t('recipeOutput.weighOrDilute') : '';
   }
   const yeastSub = yeastInfo
     ? (() => {
@@ -603,9 +602,7 @@ export default function RecipeOutput({
               {chillAt && <p>{t('recipeOutput.chillPoolishAt',{time:formatTimeLabel(chillAt)})}</p>}
               {pf.prefYeastGrams > 0 && (
                 <IngRow
-                  label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{t('recipeOutput.ingredientYeast', {
-                    type: pf.prefYeastType ? ((YEAST_TYPES as Record<string, { shortName: string }>)[pf.prefYeastType]?.shortName ?? 'IDY') : 'IDY'
-                  })}</span>}
+                  label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)}</span>}
                   grams={formatPrefermentDose(pf.prefYeastGrams,locale)} sub={measureHint(prefermentSpoon,!!prefermentDoseDilution)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
               )}
@@ -986,11 +983,11 @@ export default function RecipeOutput({
               const pf = result.preferment!;
               const dilution = prefermentDoseDilution;
               if (!dilution) return null;
-              const yeastName = (YEAST_TYPES as Record<string, { shortName: string }>)[pf.prefYeastType]?.shortName ?? 'IDY';
+              const yeastName = t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`).toLowerCase();
               const f = (g:number)=>formatPrefermentDose(g,locale);
               return <p style={{ margin: '8px 0 0' }}>{locale === 'fr'
-                ? `Ou mélangez 1 g de levure ${yeastName} avec 99 g d’eau. Remuez juste avant de prélever ${f(dilution.solutionGrams)} de ce mélange pour le préferment. Cette portion contient ${f(pf.prefYeastGrams)} de levure et ${f(dilution.waterInSolutionGrams)} d’eau : ajoutez seulement ${f(dilution.remainingWaterGrams)} d’eau supplémentaire au préferment. Jetez le reste du mélange. L’eau de la pâte finale ne change pas.`
-                : `Or mix 1 g of ${yeastName} yeast with 99 g water. Stir just before taking ${f(dilution.solutionGrams)} of this mixture for the preferment. This portion contains ${f(pf.prefYeastGrams)} yeast and ${f(dilution.waterInSolutionGrams)} water: add only ${f(dilution.remainingWaterGrams)} more water to the preferment. Discard the leftover mixture. Final-dough water stays unchanged.`}</p>;
+                ? `Ou mélangez 1 g de ${yeastName} avec 99 g d’eau. Remuez juste avant de prélever ${f(dilution.solutionGrams)} de ce mélange pour le préferment. Cette portion contient ${f(pf.prefYeastGrams)} de levure et ${f(dilution.waterInSolutionGrams)} d’eau : ajoutez seulement ${f(dilution.remainingWaterGrams)} d’eau supplémentaire au préferment. Jetez le reste du mélange. L’eau de la pâte finale ne change pas.`
+                : `Or mix 1 g of ${yeastName} with 99 g water. Stir just before taking ${f(dilution.solutionGrams)} of this mixture for the preferment. This portion contains ${f(pf.prefYeastGrams)} yeast and ${f(dilution.waterInSolutionGrams)} water: add only ${f(dilution.remainingWaterGrams)} more water to the preferment. Discard the leftover mixture. Final-dough water stays unchanged.`}</p>;
             })()}
           </div>
         </div>
@@ -1099,10 +1096,10 @@ export default function RecipeOutput({
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
               <span style={{ fontFamily: 'var(--font-ui)', fontSize: '24px', fontWeight: 700, color: 'var(--gold)' }}>
-                {sourdough.starterGramsMin}–{sourdough.starterGramsMax} g
+                {sourdough.starterGramsMin === sourdough.starterGramsMax ? sourdough.starterGramsMin : `${sourdough.starterGramsMin}–${sourdough.starterGramsMax}`} g
               </span>
               <span style={{ fontSize: '13px', color: D.muted, fontFamily: 'var(--font-ui)' }}>
-                ({sourdough.starterPctMin}–{sourdough.starterPctMax}% {locale === 'fr' ? 'de la farine' : 'of flour'})
+                ({sourdough.starterPctMin === sourdough.starterPctMax ? sourdough.starterPctMin : `${sourdough.starterPctMin}–${sourdough.starterPctMax}`}{locale === 'fr' ? ' % de la farine' : '% of flour'})
               </span>
             </div>
             <div style={{ fontSize: '12px', color: D.sub, marginTop: '8px', lineHeight: 1.5 }}>

@@ -117,7 +117,7 @@ test('poolish stage names the same chill time as the generated thermal schedule'
  for(const locale of ['en','fr']){
   r.thermal.prefermentCooldownHours=1.25;
   const text=render(r,'poolish',undefined,locale,false,{mixingTime});
-  a.match(text,locale==='fr'?/Placez la poolish au réfrigérateur.*16\s*h\s*00/:/Refrigerate the poolish.*4:00pm/i);
+  a.match(text,locale==='fr'?/Placez le poolish au frigo.*16\s*h\s*00/:/Refrigerate the poolish.*4:00pm/i);
   r.thermal.prefermentCooldownHours=0;
   a.doesNotMatch(render(r,'poolish',undefined,locale,false,{mixingTime}),/Placez la poolish au réfrigérateur|Refrigerate the poolish/i);
  }

@@ -14,8 +14,8 @@
     "codePlaceholder": "Code à 6 chiffres",
     "verify": "Se connecter",
     "useAnotherEmail": "Utiliser une autre adresse",
-    "codeRejected": "Ce code ne correspond pas. Les codes expirent au bout d'une heure.",
-    "sendFailed": "Le code n'est pas parti. À réessayer dans un instant."
+    "codeRejected": "Ce code ne correspond pas. Les codes expirent au bout d’une heure.",
+    "sendFailed": "Le code n’est pas parti. À réessayer dans un instant."
   },
   "common": {
     "continue": "Continuer →",
@@ -27,13 +27,13 @@
     "startOver": "↑ Nouvelle recette",
     "saving": "Enregistrement…",
     "saved": "✓ Enregistré !",
-    "saveFailed": "Échec de l'enregistrement",
+    "saveFailed": "Échec de l’enregistrement",
     "saveRecipe": "Sauvegarder la recette",
     "pickDate": "Choisir une date",
-    "selectDateFirst": "Sélectionnez d'abord une date",
+    "selectDateFirst": "Sélectionnez d’abord une date",
     "direct": "Direct",
     "continueBtn": "Continuer →",
-    "generateFirst": "Générez d'abord votre recette"
+    "generateFirst": "Générez d’abord votre recette"
   },
   "tabs": {
     "guided": "Simple",
@@ -71,7 +71,7 @@
     "headline": "La bonne pâte,",
     "headlineEm": "au bon moment.",
     "subtitle": "Pizza & pain — un plan de fermentation bâti autour de votre vie.",
-    "footerTagline": "Pétri d'envies."
+    "footerTagline": "Pétri d’envies."
   },
   "modeCards": {
     "details": "+ de détails",
@@ -103,7 +103,7 @@
   },
   "steps": {
     "1": {
-      "title": "Qu'est-ce que vous préparez ?"
+      "title": "Qu’est-ce que vous préparez ?"
     },
     "2": {
       "title": "Choisissez votre style de pâte"
@@ -162,13 +162,13 @@
     "startNew": "↑ Nouvelle recette",
     "computeError": "Impossible de calculer la recette — vérifiez votre style et vos horaires.",
     "recommended": "Recommandé",
-    "adjustmentMultiplier": "Multiplicateur d'ajustement",
+    "adjustmentMultiplier": "Multiplicateur d’ajustement",
     "largeBatchTitle": "Ajustement levure grande quantité",
     "largeBatchDesc": "Une grande masse de pâte retient plus la chaleur — la fermentation peut être plus rapide. Ajustez si nécessaire.",
     "saveRecipe": "Sauvegarder la recette",
     "saving": "Enregistrement…",
     "saved": "✓ Enregistré !",
-    "saveFailed": "Échec de l'enregistrement"
+    "saveFailed": "Échec de l’enregistrement"
   },
   "scheduler": {
     "schedulerTitle": {
@@ -183,7 +183,7 @@
     "bakeTime": "Heure de cuisson",
     "orPickDay": "Ou choisir un autre jour →",
     "setByPlan": "Défini par le plan ci-dessus",
-    "startBeforeBake": "L'heure de départ doit être avant la cuisson.",
+    "startBeforeBake": "L’heure de départ doit être avant la cuisson.",
     "totalWindow": "{hours} de fenêtre totale",
     "startMovedNote": "Départ déplacé à {time} pour éviter votre indisponibilité.",
     "scenario": {
@@ -239,7 +239,7 @@
       "classic": "✓ Plage classique",
       "extended": "◆ Plage étendue",
       "advanced": "Technique avancée",
-      "noteStiff": "La pâte sera assez ferme — un peu plus d'eau peut aider à l'étirer.",
+      "noteStiff": "La pâte sera assez ferme — un peu plus d’eau peut aider à l’étirer.",
       "noteBelowClassic": "En dessous de la plage classique pour {name}. La pâte sera plus ferme et un peu plus dense.",
       "noteClassic": "Une plage courante pour {name}, pour commencer sans ajustement.",
       "noteExtended": "La pâte sera plus souple et collante ; utilisez un coupe-pâte.",
@@ -251,8 +251,8 @@
     },
     "oil": {
       "traditionalHighTemp": "Traditionnel — sans huile. Parfait à haute température (450°C+).",
-      "traditionalHome": "Classique {style} sans huile. Garde la pâte extensible et légère.",
-      "highTempNote": "Pour un four à haute température, 0% d'huile est idéal — l'huile peut brûler à très haute température.",
+      "traditionalHome": "Sans huile, comme le veut la tradition : la pâte reste extensible et légère.",
+      "highTempNote": "Pour un four à haute température, 0% d’huile est idéal — l’huile peut brûler à très haute température.",
       "home1": "Aide le brunissement et la tendreté à basse température. Choix classique pour four domestique.",
       "home2": "Plage pizza pan — base croustillante, presque frite. Idéal pour Detroit et styles pan.",
       "high": "Pour une pâte enrichie ; incorporez l’huile après le début du pétrissage."
@@ -334,9 +334,9 @@
   },
   "avpn": {
     "atLimit": "À la limite AVPN",
-    "limitDesc": "280g max par pâton — le standard de l'Associazione Verace Pizza Napoletana pour la pizza napolitaine authentique.",
+    "limitDesc": "280g max par pâton — le standard de l’Associazione Verace Pizza Napoletana pour la pizza napolitaine authentique.",
     "learnMore": "En savoir plus",
-    "body": "L'AVPN définit le standard officiel de la pizza napolitaine authentique. Poids maximum par pâton : 280g. Diamètre : 22–35cm. Cela garantit le rapport idéal entre la garniture et la pâte, et le cornicione léger et aéré caractéristique."
+    "body": "L’AVPN définit le standard officiel de la pizza napolitaine authentique. Poids maximum par pâton : 280g. Diamètre : 22–35cm. Cela garantit le rapport idéal entre la garniture et la pâte, et le cornicione léger et aéré caractéristique."
   },
   "climate": {
     "getConditions": "Obtenir les conditions extérieures",
@@ -406,8 +406,8 @@
       "removePoolish": "Sortir le Poolish du frigo",
       "removeBiga": "Sortir la Biga du frigo",
       "feedStarter": "Rafraîchir le levain",
-      "tipPoolishFridge": "Incorporez la farine et la levure dans l’eau aux quantités indiquées pour la poolish. Remuez jusqu’à disparition de la farine sèche. Couvrez et réfrigérez.",
-      "tipPoolishRT": "Incorporez la farine et la levure dans l’eau aux quantités indiquées pour la poolish. Couvrez et laissez mûrir à température ambiante jusqu’à la prochaine intervention prévue.",
+      "tipPoolishFridge": "Incorporez la farine et la levure dans l’eau aux quantités indiquées pour le poolish. Remuez jusqu’à disparition de la farine sèche. Couvrez et réfrigérez.",
+      "tipPoolishRT": "Incorporez la farine et la levure dans l’eau aux quantités indiquées pour le poolish. Couvrez et laissez mûrir à température ambiante jusqu’à la prochaine intervention prévue.",
       "tipBiga": "Incorporez l’eau et la levure à la farine aux quantités indiquées pour la biga. Gardez une texture grumeleuse. Couvrez et suivez les horaires du planning.",
       "tipRemoveBiga": "Sortez la biga du frigo — pas besoin de réchauffage, la biga va directement dans le pétrin froide.",
       "tipFeedHot": "Rafraîchissez le levain avec farine et eau à parts égales. À {temp} il atteint son pic en 3–5h — surveillez le dôme + les bulles.",
@@ -417,29 +417,29 @@
     },
     "mixTips": {
       "sourdough": "Incorporez la farine dans l’eau, puis ajoutez le levain. Incorporez le sel avec l’eau restante et pétrissez jusqu’à absorption.",
-      "hand": "Farine + 90% de l'eau — couvrez et reposez 20 min (autolyse). Puis levure, sel, eau restante, et pétrissez 8–12 min.",
-      "spiral": "Farine + eau + levure Vitesse 1. Sel, puis Vitesse 2 jusqu'à la forme de citrouille et le test de la membrane.",
-      "noKnead": "Mélangez tous les ingrédients jusqu'à ce qu'il n'y ait plus de farine sèche — le temps et les rabats font le reste.",
-      "stand": "Farine + eau Vitesse 1. Levure, puis sel, puis eau restante. Vitesse 2 jusqu'à ce que la pâte se décolle du bol et passe le test de la membrane."
+      "hand": "Farine + 90% de l’eau — couvrez et reposez 20 min (autolyse). Puis levure, sel, eau restante, et pétrissez 8–12 min.",
+      "spiral": "Farine + eau + levure Vitesse 1. Sel, puis Vitesse 2 jusqu’à la forme de citrouille et le test de la membrane.",
+      "noKnead": "Mélangez tous les ingrédients jusqu’à ce qu’il n’y ait plus de farine sèche — le temps et les rabats font le reste.",
+      "stand": "Farine + eau Vitesse 1. Levure, puis sel, puis eau restante. Vitesse 2 jusqu’à ce que la pâte se décolle du bol et passe le test de la membrane."
     },
     "bulkTips": {
-      "long": "Couvrez bien et placez dans un endroit chaud à l'abri des courants d'air. Effectuez 4 séries de rabats dans les 2 premières heures.",
+      "long": "Couvrez bien et placez dans un endroit chaud à l’abri des courants d’air. Effectuez 4 séries de rabats dans les 2 premières heures.",
       "medium": "Couvrez bien. Effectuez 2–3 séries de rabats toutes les 20–30 minutes.",
       "short": "Couvrez bien. Effectuez une série de rabats après 15 minutes, puis couvrez et reposez.",
       "veryShort": "Couvrez bien et reposez — la pâte va directement au frigo après cette courte fenêtre."
     },
     "coldTips": {
       "bulk": "La masse de pâte entière va au frigo. La fermentation froide ralentit la levure et développe les arômes. Aucune action nécessaire.",
-      "balls": "Les pâtons reposent au frigo. Cela les raffermit et rend l'apprêt final plus maîtrisé.",
+      "balls": "Les pâtons reposent au frigo. Cela les raffermit et rend l’apprêt final plus maîtrisé.",
       "single": "Gardez la pâte couverte au frigo jusqu’à la prochaine étape prévue.",
       "shaped": "La pâte façonnée pousse au frigo. Le froid la raffermit, approfondit les arômes et facilite la grigne."
     },
     "divideTip": "Pesez et divisez la pâte en {n} pâton{plural}. Pincez le dessous pour créer une tension de surface.",
-    "divideTipCold": "La pâte froide est plus facile à bouler — travaillez vite avant qu'elle se réchauffe.",
+    "divideTipCold": "La pâte froide est plus facile à bouler — travaillez vite avant qu’elle se réchauffe.",
     "divideTipWarm": "Votre cuisine est chaude — remettez les pâtons au frigo dans les 20 minutes.",
     "finalProofTips": {
-      "withCold": "Sortez les pâtons du frigo et reposez jusqu'à ce qu'ils soient légèrement souples, puis faites l'apprêt couverts à température ambiante. Préchauffez votre four pendant l'apprêt.",
-      "withoutCold": "Boulez les pâtons et faites l'apprêt couverts à température ambiante. Préchauffez votre four pendant l'apprêt."
+      "withCold": "Sortez les pâtons du frigo et reposez jusqu’à ce qu’ils soient légèrement souples, puis faites l’apprêt couverts à température ambiante. Préchauffez votre four pendant l’apprêt.",
+      "withoutCold": "Boulez les pâtons et faites l’apprêt couverts à température ambiante. Préchauffez votre four pendant l’apprêt."
     },
     "preheatTips": {
       "long": "Commencez maintenant — pendant que la pâte finit son apprêt. Donnez-lui les {min} min complètes pour saturer votre surface de cuisson.",
@@ -455,23 +455,23 @@
     },
     "blockLabels": {
       "bulkFerm": "Pointage · {dur}",
-      "finalProof": "Fenêtre d'apprêt · {dur}",
+      "finalProof": "Fenêtre d’apprêt · {dur}",
       "roomTemp": "Température ambiante · {dur}",
       "warmup": "Réchauffage · {dur}",
       "rtWarmup": "Réchauffage ambiant · {dur}"
     },
-    "restRtTip": "Sortez les pâtons du frigo et laissez-les couverts à température ambiante. Le repos rend l'étirage plus facile — cela dit, une pâte longuement fermentée au froid (48h+) et bien hydratée peut s'étirer encore fraîche si elle est souple sous le doigt.",
-    "finalProofCovered": "Les pâtons sont déjà façonnés — couvrez et laissez à température ambiante jusqu'au test du doigt.",
-    "finalProofShape": "Façonnez vos pâtons si ce n'est pas fait. Couvrez et laissez à température ambiante jusqu'au test du doigt.",
+    "restRtTip": "Sortez les pâtons du frigo et laissez-les couverts à température ambiante. Le repos rend l’étirage plus facile — cela dit, une pâte longuement fermentée au froid (48h+) et bien hydratée peut s’étirer encore fraîche si elle est souple sous le doigt.",
+    "finalProofCovered": "Les pâtons sont déjà façonnés — couvrez et laissez à température ambiante jusqu’au test du doigt.",
+    "finalProofShape": "Façonnez vos pâtons si ce n’est pas fait. Couvrez et laissez à température ambiante jusqu’au test du doigt.",
     "divideTipBread": "Pesez et divisez la pâte en {n} pâton{plural}. Façonnez en gardant une surface tendue — soudure bien pincée dessous.",
-    "divideTipColdBread": "La pâte froide est plus facile à façonner — travaillez vite avant qu'elle se réchauffe.",
-    "restRtTipBread": "Sortez la pâte du frigo et laissez-la couverte à température ambiante jusqu'à ce qu'elle soit légèrement souple.",
+    "divideTipColdBread": "La pâte froide est plus facile à façonner — travaillez vite avant qu’elle se réchauffe.",
+    "restRtTipBread": "Sortez la pâte du frigo et laissez-la couverte à température ambiante jusqu’à ce qu’elle soit légèrement souple.",
     "finalProofTipsBread": {
-      "withCold": "Sortez la pâte du frigo et laissez-la se détendre, puis faites l'apprêt couverte à température ambiante. Préchauffez votre four pendant l'apprêt.",
-      "withoutCold": "Façonnez la pâte et faites l'apprêt couverte à température ambiante. Préchauffez votre four pendant l'apprêt."
+      "withCold": "Sortez la pâte du frigo et laissez-la se détendre, puis faites l’apprêt couverte à température ambiante. Préchauffez votre four pendant l’apprêt.",
+      "withoutCold": "Façonnez la pâte et faites l’apprêt couverte à température ambiante. Préchauffez votre four pendant l’apprêt."
     },
-    "finalProofCoveredBread": "La pâte est déjà façonnée — couvrez et laissez à température ambiante jusqu'au test du doigt.",
-    "finalProofShapeBread": "Façonnez votre pâte si ce n'est pas fait. Couvrez et laissez à température ambiante jusqu'au test du doigt.",
+    "finalProofCoveredBread": "La pâte est déjà façonnée — couvrez et laissez à température ambiante jusqu’au test du doigt.",
+    "finalProofShapeBread": "Façonnez votre pâte si ce n’est pas fait. Couvrez et laissez à température ambiante jusqu’au test du doigt.",
     "tips": {
       "autolyse": "Couvrez et laissez reposer — c’est l’autolyse. La farine s’hydrate et le gluten commence à s’organiser tout seul : le second pétrissage sera plus court et plus doux. Ni pétrissage, ni rabat."
     }
@@ -499,7 +499,7 @@
     "flourFinalDough": "Farine (pâte finale)",
     "waterFinalDough": "Eau (pâte finale)",
     "batchTotal": "Total pétrissage",
-    "chillPoolishAt": "Placez la poolish au réfrigérateur à partir de {time}. Gardez-la au froid jusqu’au pétrissage.",
+    "chillPoolishAt": "Placez le poolish au frigo à partir de {time}. Gardez-le au froid jusqu’au pétrissage.",
     "weighOrDilute": "Trop peu pour une balance de cuisine : voir comment la mesurer ci-dessous.",
     "weighDose": "Pesez cette dose à la balance.",
     "precisionScaleTitle": "Peser une très petite quantité de levure",
@@ -517,16 +517,16 @@
     "dilutionTitle": "Pas de balance de précision ? Diluez-la",
     "poolishTitle": "Poolish recommandé",
     "poolishBody": "Pour un poolish, utilisez les quantités de farine, d’eau et de levure de la recette et suivez l’heure de préparation.",
-    "notRecommendedTitle": "Ce planning de fermentation n'est pas recommandé",
+    "notRecommendedTitle": "Ce planning de fermentation n’est pas recommandé",
     "notRecommendedBody": "La combinaison de temps et de température risque de provoquer une surfermentation. Ajoutez une pousse au froid ou réduisez votre heure de démarrage.",
-    "watchOut": "Attention",
+    "watchOut": "À noter",
     "flourTooltipBread": "La farine à pain forte donne les meilleurs résultats — T65 ou W200+. La farine ordinaire convient pour les fermentations courtes.",
     "flourTooltipPizza": "La 00 italienne ou T45 forte donne les meilleurs résultats. Vous utilisez de la farine ordinaire ou T55 ? Passez en mode Avancé pour adapter votre recette.",
     "yeastIDY": "Levure (LSI)",
     "starterReady": {
       "doubled": "A doublé de volume ✓",
       "domed": "Surface bombée, légèrement bullée ✓",
-      "floatTest": "Test de flottaison : déposez un morceau dans l'eau — il flotte ✓",
+      "floatTest": "Test de flottaison : déposez un morceau dans l’eau — il flotte ✓",
       "smell": "Odeur acidulée, pas alcoolique ✓"
     },
     "recipeReady": "Votre recette est prête",
@@ -535,7 +535,7 @@
     "ingredientFlour": "Farine",
     "ingredientWater": "Eau",
     "ingredientSalt": "Sel",
-    "ingredientOil": "Huile d'olive",
+    "ingredientOil": "Huile d’olive",
     "ingredientSugar": "Sucre",
     "ingredientYeast": "Levure ({type})",
     "ingredientBiga": "Biga",
@@ -588,17 +588,17 @@
   "schedulePicker": {
     "startDough": "Commencer la pâte",
     "pickDate": "Choisir une date",
-    "selectDateFirst": "Sélectionnez d'abord une date",
+    "selectDateFirst": "Sélectionnez d’abord une date",
     "guardPast": "Cette heure de cuisson est déjà passée — choisissez une date ultérieure.",
     "guardNoFutureSlot": "Il ne reste aucun horaire de pétrissage possible avant la cuisson — choisissez une heure plus tardive.",
     "blockerNote": "Le pétrissage chevauche une indisponibilité. Modifiez le planning ou vérifiez que vous pourrez pétrir à cette heure.",
-    "bulkNote": "Votre pâte a besoin d'environ {dur} pour lever — soyez libre avant {time} pour la mettre au frigo, ou démarrez un peu plus tôt.",
+    "bulkNote": "Votre pâte a besoin d’environ {dur} pour lever — soyez libre avant {time} pour la mettre au frigo, ou démarrez un peu plus tôt.",
     "fallbackBtn1": "Démarrer juste avant ou après mon indisponibilité",
     "fallbackBtn1Sub": "Modifie la durée de fermentation.",
     "fallbackBtn2": "Mélanger pendant mon indisponibilité — ça ira",
     "fallbackBtn2Sub": "Vous devrez être disponible à cette heure.",
     "keepAsIs": "Garder comme ça",
-    "gotIt": "Compris, je m'adapte",
+    "gotIt": "Compris, je m’adapte",
     "fermentationGuide": "Guide de fermentation",
     "zoneLabels": {
       "tooEarly": "Trop tôt",
@@ -658,7 +658,7 @@
     "flour": "Farine",
     "water": "Eau",
     "salt": "Sel",
-    "oil": "Huile d'olive",
+    "oil": "Huile d’olive",
     "sugar": "Sucre",
     "total": "Total",
     "flourNote": {
@@ -672,7 +672,7 @@
     },
     "yeastReassurance": "La dose de levure dépend de la durée et des températures prévues.",
     "iceProtocol": "Protocole eau glacée",
-    "precisionScale": "Balance de précision recommandée — c'est une très petite quantité de levure."
+    "precisionScale": "Balance de précision recommandée — c’est une très petite quantité de levure."
   },
   "bakeGuide": {
     "stepTitles": {
@@ -702,7 +702,7 @@
       "waterTemp": "Température de l’eau",
       "pokeTest": "Test du creux — les trois réponses",
       "learnMore": "En savoir plus",
-      "whatToExpect": "À quoi s'attendre"
+      "whatToExpect": "À quoi s’attendre"
     },
     "preheatNote": "Commencez le préchauffage pendant que la pâte finit son apprêt — ils doivent être prêts en même temps.",
     "poolish": {
@@ -716,7 +716,7 @@
           "note": "très petite quantité — le poolish fermente lentement"
         },
         {
-          "bold": "Mélangez vigoureusement jusqu'à homogénéité",
+          "bold": "Mélangez vigoureusement jusqu’à homogénéité",
           "note": "~2 min — consistance de pâte à crêpe épaisse"
         },
         {
@@ -738,7 +738,7 @@
           "note": "utilisez la dose de la recette"
         },
         {
-          "bold": "Mélangez vigoureusement jusqu'à homogénéité",
+          "bold": "Mélangez vigoureusement jusqu’à homogénéité",
           "note": "~2 min — consistance de pâte à crêpe épaisse"
         },
         {
@@ -753,12 +753,12 @@
       "readyWhen": [
         "Surface bombée et bullée — ressemble à une lampe à lave qui bouillonne lentement",
         "Se décolle légèrement des parois du récipient",
-        "Commence juste à s'aplatir (utilisez-le maintenant — n'attendez pas l'effondrement total)"
+        "Commence juste à s’aplatir (utilisez-le maintenant — n’attendez pas l’effondrement total)"
       ],
       "pitfalls": [
-        "Sur-fermenté : forte odeur d'alcool, surface plate et liquide — jetez et recommencez",
-        "Poolish effondré perd sa force — vérifiez avant que le centre s'affaisse",
-        "Utiliser de l'eau tiède — utilisez de l'eau à température ambiante ou froide"
+        "Sur-fermenté : forte odeur d’alcool, surface plate et liquide — jetez et recommencez",
+        "Poolish effondré perd sa force — vérifiez avant que le centre s’affaisse",
+        "Utiliser de l’eau tiède — utilisez de l’eau à température ambiante ou froide"
       ]
     },
     "biga": {
@@ -806,7 +806,7 @@
           "note": "ajustez le ratio selon votre heure de pic souhaitée"
         },
         {
-          "bold": "Mélangez vigoureusement jusqu'à homogénéité",
+          "bold": "Mélangez vigoureusement jusqu’à homogénéité",
           "note": "sans grumeaux"
         },
         {
@@ -820,7 +820,7 @@
       ],
       "readyWhen": [
         "Surface bombée avec bulles visibles sur le dessus et les côtés",
-        "Test de flottaison : déposez un petit morceau dans l'eau — s'il flotte, c'est prêt",
+        "Test de flottaison : déposez un petit morceau dans l’eau — s’il flotte, c’est prêt",
         "Odeur acidulée et levurée — pas alcoolique"
       ],
       "pitfalls": [
@@ -830,19 +830,19 @@
     },
     "mix": {
       "waterTempBullets": [
-        "Utilisez la température d'eau indiquée dans votre recette — Baker Hub l'a calculée en tenant compte de votre cuisine et de votre pétrin",
+        "Utilisez la température d’eau indiquée dans votre recette — Baker Hub l’a calculée en tenant compte de votre cuisine et de votre pétrin",
         "Vérifiez la température finale de la pâte avec un thermomètre juste après le pétrissage — la pâte doit être fraîche au toucher"
       ],
       "watchForSmooth": "Boule lisse et élastique — légèrement collante mais pas qui colle",
-      "watchForPumpkin": "Forme de citrouille : la pâte s'enroule autour de la barre de rupture, se décolle proprement des parois",
+      "watchForPumpkin": "Forme de citrouille : la pâte s’enroule autour de la barre de rupture, se décolle proprement des parois",
       "watchForAll": [
-        "Test de la vitre : étirez un morceau jusqu'à voir la lumière à travers sans déchirer",
+        "Test de la vitre : étirez un morceau jusqu’à voir la lumière à travers sans déchirer",
         "Surface lisse et légèrement brillante"
       ],
       "pitfalls": [
         "Évitez le contact prolongé entre levure et sel concentré avant le mélange ; incorporez-les rapidement à la pâte",
         "Sur-pétrir à la main est quasi impossible — mais sur-mixer au robot est possible, arrêtez au test de la membrane",
-        "Ajouter l'huile avant que le gluten se développe — l'huile enrobe les protéines et bloque le gluten"
+        "Ajouter l’huile avant que le gluten se développe — l’huile enrobe les protéines et bloque le gluten"
       ]
     },
     "bulk": {
@@ -870,7 +870,7 @@
       },
       "set4": {
         "bold": "Série 4 — après 2h : pli final",
-        "note": "puis laissez reposer jusqu'à la fin du pointage"
+        "note": "puis laissez reposer jusqu’à la fin du pointage"
       },
       "setShort": {
         "bold": "Après 15 min : une série de rabats",
@@ -881,14 +881,14 @@
         "note": "pointage très court — la pâte va au froid tout de suite"
       },
       "watchFor": [
-        "La pâte a gonflé de 50-75% (pas doublé — le pointage pizza est plus court que pour le pain)",
+        "La pâte a gonflé de 50 à 75 % (pas doublé)",
         "Surface légèrement bombée et bullée",
-        "Frémit comme une gelée quand vous secouez le récipient",
-        "Paraît aérée et plus légère qu'au départ"
+        "Tremble comme une gelée quand vous secouez le récipient",
+        "Paraît aérée et plus légère qu’au départ"
       ],
       "pitfallsBase": [
-        "Sur-fermentation : plus de 75% de pousse signifie que le gluten commence à se dégrader — pâte molle et déchirures au façonnage",
-        "Sous-fermentation : moins de 30% de pousse — pas assez de gaz, pain dense",
+        "Surfermentation : plus de 75 % de pousse signifie que le gluten commence à se dégrader — pâte molle et déchirures au façonnage",
+        "Sous-fermentation : moins de 30 % de pousse — pas assez de gaz, pâte dense",
         "Négliger les rabats — ils construisent la force du gluten qui facilite le façonnage"
       ]
     },
@@ -899,7 +899,7 @@
           "note": "posez le film au contact pour éviter le croûtage"
         },
         {
-          "bold": "Placez sur l'étagère du milieu au fond du frigo",
+          "bold": "Placez sur l’étagère du milieu au fond du frigo",
           "note": "le fond est le plus froid et le plus régulier"
         },
         {
@@ -909,8 +909,8 @@
       ],
       "watchFor": [
         "La pâte gonflera lentement — 20-30% de pousse pendant la pousse au froid est normal",
-        "La surface peut paraître légèrement bombée avec petites bulles — c'est parfait",
-        "La pâte froide est rigide en sortant du frigo — c'est correct, facilite le boulage"
+        "La surface peut paraître légèrement bombée avec petites bulles — c’est parfait",
+        "La pâte froide est rigide en sortant du frigo — c’est correct, facilite le boulage"
       ],
       "pitfalls": [
         "Laisser découvert : croûte sur la pâte, déchirures lors du façonnage, pâtons irréguliers",
@@ -926,7 +926,7 @@
           },
           {
             "bold": "Aplatissez chaque morceau délicatement",
-            "note": "visez une forme ovale, 1,5–2cm d'épaisseur"
+            "note": "visez une forme ovale, 1,5–2cm d’épaisseur"
           },
           {
             "bold": "Découpez le motif feuille avec un couteau tranchant",
@@ -934,14 +934,14 @@
           },
           {
             "bold": "Ouvrez légèrement les entailles avec les doigts",
-            "note": "écartez-les pour qu'elles ne se referment pas à la cuisson"
+            "note": "écartez-les pour qu’elles ne se referment pas à la cuisson"
           },
           {
             "bold": "Transférez sur une plaque tapissée",
             "note": "farinez — la fougasse ne va pas au frigo"
           },
           {
-            "bold": "Couvrez et laissez à température ambiante pour l'apprêt",
+            "bold": "Couvrez et laissez à température ambiante pour l’apprêt",
             "note": "20–40 min à température ambiante"
           }
         ],
@@ -985,7 +985,7 @@
           "La pâte revient lentement quand on la pique — prête à grigner et cuire"
         ],
         "pitfalls": [
-          "Trop fariner : réduit la tension de surface, la baguette s'étale au lieu de tenir sa forme",
+          "Trop fariner : réduit la tension de surface, la baguette s’étale au lieu de tenir sa forme",
           "Appuyer trop fort : dégazage — travaillez délicatement pour garder les bulles",
           "Sauter le repos : le gluten se déchire lors du façonnage final"
         ]
@@ -1024,7 +1024,7 @@
           },
           {
             "bold": "Préfaçonnage : repliez les bords du pâton vers le centre",
-            "note": "repliez les bords vers le centre, retournez clé en bas, reposez 15–20 min"
+            "note": "clé en bas, reposez 15–20 min"
           },
           {
             "bold": "Façonnage final : créez la tension de surface",
@@ -1037,13 +1037,13 @@
         ],
         "watchFor": [
           "Surface lisse et tendue — sans déchirures ni rides visibles",
-          "Garde sa forme ronde sans s'étaler",
+          "Garde sa forme ronde sans s’étaler",
           "Si la pâte se déchire facilement, le gluten est encore chaud — reposez 5 min et réessayez"
         ],
         "pitfalls": [
           "Fariner le plan de travail : réduit la friction, la boule ne développera pas de tension de surface",
           "Sauter le repos : le gluten se déchire quand il est trop tendu",
-          "Sous-tension : une boule molle s'étale et ne tient pas la forme au four"
+          "Sous-tension : une boule molle s’étale et ne tient pas la forme au four"
         ]
       },
       "pizza": {
@@ -1054,7 +1054,7 @@
           },
           {
             "bold": "Préfaçonnage : repliez les bords du pâton vers le centre",
-            "note": "repliez les bords vers le centre, retournez clé en bas"
+            "note": "clé en bas"
           },
           {
             "bold": "Serrez et glissez : posez la main sur la boule",
@@ -1067,16 +1067,16 @@
         ],
         "watchFor": [
           "Peau lisse et tendue sans déchirures ni plis visibles sur le dessus",
-          "Garde sa forme ronde — ne s'étale pas immédiatement (si oui, gluten faible)"
+          "Garde sa forme ronde — ne s’étale pas immédiatement (si oui, gluten faible)"
         ],
         "pitfalls": [
-          "Fariner la surface : réduit la friction, la boule n'aura pas de tension de surface",
-          "Déchirer la peau lors du façonnage — pré-façonnez d'abord grossièrement, reposez 5 min, puis boule finale"
+          "Fariner la surface : réduit la friction, la boule n’aura pas de tension de surface",
+          "Déchirer la peau lors du façonnage — pré-façonnez d’abord grossièrement, reposez 5 min, puis boule finale"
         ]
       },
       "coverRT": {
         "bold": "Couvrez et laissez à température ambiante",
-        "note": "l'apprêt commence maintenant"
+        "note": "l’apprêt commence maintenant"
       },
       "coverCold": {
         "bold": "Couvrez et réfrigérez",
@@ -1096,22 +1096,22 @@
       ],
       "watchFor": [
         "Les boules gonfleront légèrement au frigo — 20-40% de pousse est normal",
-        "Les boules froides sont fermes et faciles à manipuler — c'est exactement ce qu'on veut",
+        "Les boules froides sont fermes et faciles à manipuler — c’est exactement ce qu’on veut",
         "Après 24h+ les boules auront un gluten détendu et seront très extensibles une fois réchauffées"
       ],
       "pitfalls": [
         "Sur-fermentation au froid : boules gonflées de plus de 100% au frigo — enfournez immédiatement",
-        "Un pâton qui se déchire à l'étirage est encore trop froid — laissez-le plus longtemps, ou ouvrez-le plus doucement"
+        "Un pâton qui se déchire à l’étirage est encore trop froid — laissez-le plus longtemps, ou ouvrez-le plus doucement"
       ]
     },
     "finalProof": {
       "removeFridge": {
         "bold": "Sortez les boules du frigo",
-        "note": "gardez couvert — le repos détend le gluten ; une pâte longuement fermentée et souple peut toutefois s'étirer encore fraîche"
+        "note": "gardez couvert — le repos détend le gluten ; une pâte longuement fermentée et souple peut toutefois s’étirer encore fraîche"
       },
       "alreadyShaped": {
         "bold": "Les boules sont déjà façonnées",
-        "note": "gardez couvert et surveillez juste l'apprêt"
+        "note": "gardez couvert et surveillez juste l’apprêt"
       },
       "shapeBalls": {
         "bold": "Façonnez les boules",
@@ -1132,8 +1132,8 @@
       ],
       "pitfalls": [
         "Forcer un pâton qui se rétracte — il lui faut du temps, pas de la force",
-        "Se fier au temps plutôt qu'au ressenti — utilisez toujours le test du doigt",
-        "Boules sur-fermentées s'effondrent au four et perdent le développement"
+        "Se fier au temps plutôt qu’au ressenti — utilisez toujours le test du doigt",
+        "Boules sur-fermentées s’effondrent au four et perdent le développement"
       ]
     },
     "preheat": {
@@ -1148,7 +1148,7 @@
             "note": "préchauffage complet — 45 min minimum"
           },
           {
-            "bold": "N'ouvrez pas le four pendant le préchauffage",
+            "bold": "N’ouvrez pas le four pendant le préchauffage",
             "note": "chaque ouverture fait perdre 20–30°C"
           }
         ],
@@ -1160,11 +1160,11 @@
       "stoneBread": {
         "steps": [
           {
-            "bold": "Placez la pierre ou l'acier sur l'étagère du milieu",
+            "bold": "Placez la pierre ou l’acier sur l’étagère du milieu",
             "note": "la pierre a besoin de 45–60 min pour absorber la chaleur"
           },
           {
-            "bold": "Placez un plateau métallique vide sur l'étagère du dessous",
+            "bold": "Placez un plateau métallique vide sur l’étagère du dessous",
             "note": "pour la vapeur — ajoutez des glaçons au chargement"
           },
           {
@@ -1172,7 +1172,7 @@
             "note": "aussi chaud que votre four le permet"
           },
           {
-            "bold": "N'ouvrez pas pendant le préchauffage",
+            "bold": "N’ouvrez pas pendant le préchauffage",
             "note": "chaque ouverture fait perdre 20–30°C"
           }
         ],
@@ -1193,7 +1193,7 @@
           }
         ],
         "pitfalls": [
-          "Cavité sous-saturée : préchauffez complètement avec vapeur avant d'enfourner",
+          "Cavité sous-saturée : préchauffez complètement avec vapeur avant d’enfourner",
           "Couper la vapeur trop tôt : gardez la vapeur les 20 premières minutes complètes"
         ]
       },
@@ -1204,15 +1204,15 @@
             "note": "four léger : ~45 min · four traditionnel en briques ou pierre : 2–3 h de chauffe avant que la sole tienne une chaleur stable"
           },
           {
-            "bold": "Allumez le feu et laissez brûler jusqu'aux braises",
+            "bold": "Allumez le feu et laissez brûler jusqu’aux braises",
             "note": "visez une température de sole de 280–320°C"
           },
           {
-            "bold": "Poussez les braises d'un côté — testez la sole avec la main",
+            "bold": "Poussez les braises d’un côté — testez la sole avec la main",
             "note": "3 secondes avant de retirer = prêt"
           },
           {
-            "bold": "Laissez la température se stabiliser avant d'enfourner",
+            "bold": "Laissez la température se stabiliser avant d’enfourner",
             "note": "une chaleur uniforme est plus importante que la chaleur maximale"
           }
         ],
@@ -1228,11 +1228,11 @@
             "note": "aussi chaud que votre four le permet"
           },
           {
-            "bold": "Placez un plateau métallique vide sur l'étagère du dessous",
+            "bold": "Placez un plateau métallique vide sur l’étagère du dessous",
             "note": "pour la vapeur — ajoutez glaçons ou eau bouillante au chargement"
           },
           {
-            "bold": "N'ouvrez pas pendant le préchauffage",
+            "bold": "N’ouvrez pas pendant le préchauffage",
             "note": "chaque ouverture fait perdre 20–30°C"
           }
         ],
@@ -1262,7 +1262,7 @@
         ],
         "pitfalls": [
           "Enfourner sur une sole froide : vérifiez toujours au thermomètre — chaud à l'œil ne suffit pas",
-          "Flamme trop proche : repoussez le feu avant d'enfourner sinon le dessus brûle avant la base",
+          "Flamme trop proche : repoussez le feu avant d’enfourner sinon le dessus brûle avant la base",
           "Les fours à flamme ont un côté chaud : tournez selon la coloration, une fois la base prise"
         ]
       },
@@ -1273,24 +1273,24 @@
             "note": "la plupart des modèles atteignent la température en 15–20 min"
           },
           {
-            "bold": "N'ouvrez pas le couvercle pendant le préchauffage",
+            "bold": "N’ouvrez pas le couvercle pendant le préchauffage",
             "note": "les fours électriques perdent rapidement la chaleur"
           },
           {
             "bold": "Vérifiez la température de la pierre au thermomètre",
-            "note": "la pierre doit afficher 380°C+ avant d'enfourner"
+            "note": "la pierre doit afficher 380°C+ avant d’enfourner"
           }
         ],
         "pitfalls": [
           "Ouvrir le couvercle en cours de cuisson : petite cavité, perd vite la chaleur",
-          "Préchauffage insuffisant : la pierre a besoin de 20–25 min — ne faites pas confiance à l'indicateur"
+          "Préchauffage insuffisant : la pierre a besoin de 20–25 min — ne faites pas confiance à l’indicateur"
         ]
       },
       "homeSteel": {
         "steps": [
           {
-            "bold": "Placez pierre ou acier sur l'étagère haute",
-            "note": "près de l'élément du haut — la chaleur du dessus crée le léopardage"
+            "bold": "Placez pierre ou acier sur l’étagère haute",
+            "note": "près de l’élément du haut — la chaleur du dessus crée le léopardage"
           },
           {
             "bold": "Réglez le four au maximum avec ventilation",
@@ -1298,17 +1298,17 @@
           },
           {
             "bold": "Passez en grill les 10 dernières minutes",
-            "note": "booste l'élément du haut pour un meilleur contraste"
+            "note": "booste l’élément du haut pour un meilleur contraste"
           },
           {
-            "bold": "N'ouvrez pas pendant le préchauffage",
+            "bold": "N’ouvrez pas pendant le préchauffage",
             "note": "chaque ouverture fait perdre 20–30°C"
           }
         ],
         "pitfalls": [
-          "Pierre trop basse : doit être sur l'étagère haute pour être proche de l'élément du haut",
+          "Pierre trop basse : doit être sur l’étagère haute pour être proche de l’élément du haut",
           "Sauter la phase grill : la chaleur du dessus crée le léopardage — sans ça la pizza paraît pâle",
-          "Préchauffage écourté : l'acier a besoin de 45–60 min pour absorber suffisamment de chaleur"
+          "Préchauffage écourté : l’acier a besoin de 45–60 min pour absorber suffisamment de chaleur"
         ]
       },
       "homeStandard": {
@@ -1359,14 +1359,14 @@
         ],
         "watchFor": [
           "Développement au four : le pain gonfle nettement les 10 premières minutes",
-          "Grigne : la ligne de scarification s'ouvre et crée un rebord — signe de bonne fermentation et vapeur",
+          "Grigne : la ligne de scarification s’ouvre et crée un rebord — signe de bonne fermentation et vapeur",
           "Couleur : brun acajou foncé — pain pâle = sous-cuit quel que soit le temps",
-          "Le pain sonne creux : tapotez le dessous — doit sonner creux quand c'est cuit"
+          "Le pain sonne creux : tapotez le dessous — doit sonner creux quand c’est cuit"
         ],
         "pitfalls": [
-          "Grigne trop superficielle : moins de 0,5cm — ne s'ouvrira pas, crée des éclats sur les côtés",
+          "Grigne trop superficielle : moins de 0,5cm — ne s’ouvrira pas, crée des éclats sur les côtés",
           "Retirer le couvercle trop tôt : la vapeur a besoin des 20 min complètes pour former la grigne",
-          "Couper le pain chaud : la vapeur est encore à l'intérieur — la mie sera gommeuse"
+          "Couper le pain chaud : la vapeur est encore à l’intérieur — la mie sera gommeuse"
         ]
       },
       "stoneBread": {
@@ -1377,7 +1377,7 @@
           },
           {
             "bold": "Ajoutez des glaçons dans le plateau vapeur",
-            "note": "juste avant ou juste après d'enfourner"
+            "note": "juste avant ou juste après d’enfourner"
           },
           {
             "bold": "Enfournez sur la pierre chaude — fermez vite",
@@ -1385,7 +1385,7 @@
           },
           {
             "bold": "Cuisez 20 min avec vapeur",
-            "note": "n'ouvrez pas — la vapeur doit rester"
+            "note": "n’ouvrez pas — la vapeur doit rester"
           },
           {
             "bold": "Retirez le plateau — cuisez 20–25 min de plus",
@@ -1398,13 +1398,13 @@
         ],
         "watchFor": [
           "Développement au four les 10 premières minutes",
-          "Grigne : ligne de scarification qui s'ouvre",
+          "Grigne : ligne de scarification qui s’ouvre",
           "Couleur : brun acajou foncé",
           "Le dessous du pain sonne creux"
         ],
         "pitfalls": [
           "Grigne trop superficielle : moins de 0,5cm",
-          "Ouvrir le four les 20 premières minutes : la vapeur s'échappe, la croûte se forme trop tôt",
+          "Ouvrir le four les 20 premières minutes : la vapeur s’échappe, la croûte se forme trop tôt",
           "Couper le pain chaud : la mie sera gommeuse"
         ]
       },
@@ -1440,14 +1440,14 @@
           },
           {
             "bold": "Enfournez avec une pelle longue",
-            "note": "geste unique vers l'avant — glissez, ne poussez pas"
+            "note": "geste unique vers l’avant — glissez, ne poussez pas"
           },
           {
             "bold": "Fermez le four ou le registre les 15 premières minutes",
             "note": "retenez la vapeur — crée la grigne"
           },
           {
-            "bold": "Tournez le pain à mi-cuisson — cuisez jusqu'à brun foncé",
+            "bold": "Tournez le pain à mi-cuisson — cuisez jusqu’à brun foncé",
             "note": "total 40–50 min — son creux au fond = cuit"
           },
           {
@@ -1472,7 +1472,7 @@
             "note": "fermez immédiatement pour garder la vapeur"
           },
           {
-            "bold": "Cuisez 20 min — n'ouvrez pas",
+            "bold": "Cuisez 20 min — n’ouvrez pas",
             "note": "la vapeur garde la croûte extensible pour le développement"
           },
           {
@@ -1486,7 +1486,7 @@
         ],
         "pitfalls": [
           "Grigne trop superficielle : moins de 0,5cm",
-          "Ouvrir le four les 20 premières minutes : la vapeur s'échappe",
+          "Ouvrir le four les 20 premières minutes : la vapeur s’échappe",
           "Couper le pain chaud : la mie sera gommeuse"
         ]
       },
@@ -1494,7 +1494,7 @@
         "steps": [
           {
             "bold": "Étalez la pâte à la taille souhaitée",
-            "note": "sur un plan fariné de semoule fine — elle roule comme des billes sous la pâte et facilite l'enfournement"
+            "note": "sur un plan fariné de semoule fine — elle roule comme des billes sous la pâte et facilite l’enfournement"
           },
           {
             "bold": "Garnissez vite — sauce, fromage, garnitures légères",
@@ -1505,8 +1505,8 @@
             "note": "enfournez seulement au-dessus de 400°C"
           },
           {
-            "bold": "Enfournez d'un geste assuré ; tournez une fois la base prise",
-            "note": "l'hésitation colle — un mouvement fluide ; ensuite le feu à bois a un côté chaud, rotation constante à la pelle"
+            "bold": "Enfournez d’un geste assuré ; tournez une fois la base prise",
+            "note": "l’hésitation colle — un mouvement fluide ; ensuite le feu à bois a un côté chaud, rotation constante à la pelle"
           },
           {
             "bold": "Cuisson totale : 60–90 sec",
@@ -1521,7 +1521,7 @@
         ],
         "pitfalls": [
           "Sole froide au lancement : vérifiez toujours au thermomètre",
-          "Flamme trop proche : repoussez le feu avant d'enfourner",
+          "Flamme trop proche : repoussez le feu avant d’enfourner",
           "Tournez selon la coloration, une fois la base assez ferme pour passer la pelle dessous"
         ]
       },
@@ -1537,7 +1537,7 @@
           },
           {
             "bold": "Fermez le couvercle immédiatement",
-            "note": "petite cavité — la chaleur s'échappe vite"
+            "note": "petite cavité — la chaleur s’échappe vite"
           },
           {
             "bold": "Tournez à mi-cuisson pour une couleur uniforme",
@@ -1558,11 +1558,11 @@
         "steps": [
           {
             "bold": "Étalez sur une pelle avec semoule fine",
-            "note": "la semoule roule sous la pâte — l'enfournement glisse au lieu de coller"
+            "note": "la semoule roule sous la pâte — l’enfournement glisse au lieu de coller"
           },
           {
             "bold": "Garnissez vite et enfournez sur la pierre",
-            "note": "geste unique assuré — l'hésitation colle"
+            "note": "geste unique assuré — l’hésitation colle"
           },
           {
             "bold": "Passez en grill immédiatement après",
@@ -1584,8 +1584,8 @@
         ],
         "pitfalls": [
           "Sauter la phase grill : la chaleur du dessus crée le léopardage — sans ça la pizza paraît pâle",
-          "Pierre trop basse : doit être sur l'étagère haute",
-          "Préchauffage écourté : l'acier a besoin de 45–60 min"
+          "Pierre trop basse : doit être sur l’étagère haute",
+          "Préchauffage écourté : l’acier a besoin de 45–60 min"
         ]
       },
       "homeStandard": {
@@ -1604,7 +1604,7 @@
           },
           {
             "bold": "Tournez à mi-cuisson",
-            "note": "tous les fours ont des points chauds près de l'élément"
+            "note": "tous les fours ont des points chauds près de l’élément"
           },
           {
             "bold": "Vérifiez la base : soulevez le bord avec une spatule",
@@ -1630,7 +1630,7 @@
           },
           {
             "bold": "Garnissez et cuisez au maximum",
-            "note": "le temps dépend du four et de l'épaisseur"
+            "note": "le temps dépend du four et de l’épaisseur"
           },
           {
             "bold": "Tournez à mi-cuisson pour une cuisson uniforme",
@@ -1704,7 +1704,7 @@
     }
   },
   "prefermentSlider": {
-    "longAhead": "16h+ à l'avance",
+    "longAhead": "16h+ à l’avance",
     "nightBefore": "La veille",
     "sameDay": "Jour même",
     "flourIn": "Farine dans le {name}"
@@ -1841,7 +1841,7 @@
       "subtitle": "Touchez-la pour voir ses garnitures."
     },
     "section": {
-      "before": "AVANT L'ENFOURNEMENT",
+      "before": "AVANT L’ENFOURNEMENT",
       "before_roman": "SUR LA TEGLIA",
       "before_pan": "DANS LE MOULE",
       "oven": "AU FOUR",
@@ -1850,7 +1850,7 @@
     },
     "assembly": {
       "roman": "Style Teglia — appuyer les doigts huilés dans la pâte avant la première cuisson. Ajouter les garnitures après que la base soit cuite.",
-      "pan": "Style Detroit — presser le fromage jusqu'aux bords du moule pour créer la croûte frico. La sauce va sur le fromage, pas en dessous."
+      "pan": "Style Detroit — presser le fromage jusqu’aux bords du moule pour créer la croûte frico. La sauce va sur le fromage, pas en dessous."
     },
     "photo": {
       "button": "Prendre une photo"
@@ -1874,6 +1874,6 @@
     "fridgeWarm": "Votre réfrigérateur est à {temp} °C. La fermentation se poursuit au froid ; vérifiez la pousse avant l’étape suivante.",
     "osmoticStress": "Le sucre et les matières grasses peuvent ralentir cette pâte. Cette estimation de levure n’est pas calibrée pour les pâtes enrichies ; prolongez le repos si la pâte n’a pas assez levé.",
     "doseFloorRT": "À {temp} °C, cette quantité est assez petite pour que {hours} h à température ambiante demandent moins de levure qu’une balance à 0,1 g ne peut peser : la dose est arrondie vers le haut et la pâte prendra de l’avance sur le plan. Environ {dosable} h est la fenêtre la plus longue dosable pour cette quantité — sinon augmentez la quantité, ou ajoutez une phase au froid.",
-    "fermentationBudget": "Cette dose de levure représente {percent} % de l’objectif de fermentation. {direction, select, earlier {Avancez la cuisson} other {Retardez la cuisson}} et vérifiez la pousse."
+    "fermentationBudget": "À cette heure de cuisson, la pâte sera {direction, select, earlier {un peu en avance ({percent} % de la pousse)} other {un peu en retard ({percent} % de la pousse)}}. Vérifiez sa pousse avant de cuire."
   }
 }

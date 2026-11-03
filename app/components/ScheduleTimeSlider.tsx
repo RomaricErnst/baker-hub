@@ -1,4 +1,5 @@
 'use client';
+import {formatTime} from '../utils';
 import type {EditSlot} from '../utils/scheduleEdit';
 import type {AvailabilityBlock} from '../utils';
 
@@ -8,7 +9,7 @@ export default function ScheduleTimeSlider({from,to,value,onChange,blocks,isFr,l
   blocks:AvailabilityBlock[];isFr:boolean;label:string;slots?:EditSlot[];
 }) {
   if(![from,to,value].every(Number.isFinite)||to<=from)return null;
-  const fmt=(at:number)=>new Date(at).toLocaleString(isFr?'fr-FR':'en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false});
+  const fmt=(at:number)=>formatTime(new Date(at),isFr?'fr':'en');
   const position=(at:number)=>Math.max(0,Math.min(100,(at-from)/(to-from)*100));
   return <div style={{display:'grid',gridTemplateColumns:'48px minmax(0,1fr)',gap:12,minHeight:220}}>
     <div style={{position:'relative',height:220,background:'#e4e1db',borderRadius:24}}>

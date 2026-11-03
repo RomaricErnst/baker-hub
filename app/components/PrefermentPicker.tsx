@@ -75,7 +75,7 @@ export default function PrefermentPicker({
               {!directOnly && selected === option.id && selected !== 'none' && selected !== 'levain' && onFlourPctChange && (
                 <div style={{ padding: '12px 14px', border: '1px solid var(--border)', borderTop: 0, borderRadius: '0 0 12px 12px', background: 'var(--warm)' }}>
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 13 }}>
-                    {fr ? 'Farine réservée au préferment' : 'Flour allocated to preferment'}
+                    {fr ? 'Farine du préferment' : 'Flour in the preferment'}
                     <span><input type="number" min={10} max={60} step={1} value={pctDraft} onChange={e => setPctDraft(e.target.value)} onBlur={commitPct} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }} style={{ width: 72, minHeight: 44, border: '1px solid var(--border)', borderRadius: 8, padding: 8 }} /> %</span>
                   </label>
                   <input type="range" aria-label={fr ? 'Part de farine en préferment' : 'Prefermented flour share'} min={10} max={60} step={1} value={flourPct ?? suggestedFlourPct} onChange={e => { setPctDraft(e.target.value); onFlourPctChange(Number(e.target.value)); }} style={{ width: '100%', minHeight: 44, accentColor: 'var(--terra)' }} />

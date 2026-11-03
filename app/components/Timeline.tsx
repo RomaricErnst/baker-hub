@@ -138,8 +138,8 @@ export function buildItems(
 
   if (prefermentType==='poolish' && chillPoolishAt) {
     items.push({kind:'step', id:'preferment-cold-in', stepKind:'cold', time:chillPoolishAt,
-      label:lang==='fr'?'Réfrigérer la poolish':'Chill the poolish', iconKey:'cold', durationH:null,
-      tip:lang==='fr'?'Couvrez la poolish et réfrigérez-la jusqu’au pétrissage.':'Cover and chill the poolish until mixing time.'});
+      label:lang==='fr'?'Réfrigérer le poolish':'Chill the poolish', iconKey:'cold', durationH:null,
+      tip:lang==='fr'?'Couvrez le poolish et réfrigérez-le jusqu’au pétrissage.':'Cover and chill the poolish until mixing time.'});
   }
   // 0a2 — Remove Poolish / Biga from Fridge (fridge protocol only)
   if (prefGoesInFridge && prefRemoveFromFridgeTime && prefStartTime &&

@@ -251,7 +251,7 @@ test('a hot poolish gets one timed cooling task in both the timeline and prepara
  assert.equal(+tasks[0].time,+start-recipe.thermal.prefermentCooldownHours*3600000);
  for(const locale of ['en','fr']){
   const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require('../messages/'+locale+'.json'),timeZone:'UTC'},React.createElement(Guide,{schedule,recipe,mixerType:'stand',styleKey:'neapolitan',kitchenTemp:33,numItems:4,oil:0,hydration:62,locale,prefermentType:'poolish',prefStartTime})));
-  assert.ok(html.includes(locale==='fr'?'Réfrigérer la poolish':'Chill the poolish'));
+  assert.ok(html.includes(locale==='fr'?'Réfrigérer le poolish':'Chill the poolish'));
   assert.ok(html.includes(utils.formatTime(chillAt,locale)));
  }
 });

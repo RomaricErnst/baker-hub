@@ -3,10 +3,10 @@ import { MIXER_TYPES, type MixerType } from '../data';
 export function mixingWaterCaption(mixer: string, locale: string): string {
   const fr=locale==='fr';
   switch (mixer) {
-    case 'hand': return fr?'Température de l’eau pour le pétrissage à la main':'Water temperature for hand kneading';
-    case 'stand': return fr?'Température de l’eau pour le pétrissage au robot':'Water temperature for mixing with a stand mixer';
-    case 'spiral': return fr?'Température de l’eau pour le pétrissage au pétrin à spirale':'Water temperature for mixing with a spiral mixer';
-    case 'no_knead': return fr?'Température de l’eau pour une pâte sans pétrissage':'Water temperature for no-knead dough';
+    case 'hand': return fr?'Eau · pétrissage à la main':'Water · hand kneading';
+    case 'stand': return fr?'Eau · robot':'Water · stand mixer';
+    case 'spiral': return fr?'Eau · pétrin à spirale':'Water · spiral mixer';
+    case 'no_knead': return fr?'Eau · sans pétrissage':'Water · no-knead';
     default: return fr?'Température de l’eau':'Water temperature';
   }
 }

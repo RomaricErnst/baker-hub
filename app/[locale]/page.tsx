@@ -4721,9 +4721,9 @@ export default function Home() {
                   selectedExtra={{poolish:<fieldset data-poolish-storage style={{border:0,padding:0,margin:'16px 0 0'}}>
                   <legend style={{fontSize:16,fontWeight:650,marginBottom:8}}>{fr?'Où le poolish fermente':'Where the poolish ferments'}</legend>
                   <div style={{display:'grid',gap:7}}>
-                    {([['auto',fr?'Choisir selon mon planning':'Choose to fit my timing',fr?'Le planning compare les deux.':'The plan compares both.'],['fridge',fr?'Au réfrigérateur':'In the fridge',fr?'Plus long et plus souple, 12 à 24 h.':'Longer and more forgiving, 12 to 24 h.'],['room',fr?'À température ambiante':'At room temperature',fr?'Plus court : 6 à 14 h à température ambiante.':'Shorter: 6 to 14 h at room temperature.']] as const).map(([value,label,note])=>{
+                    {([['auto',fr?'Au mieux pour mon planning':'Best for my timing',''],['fridge',fr?'Au réfrigérateur':'In the fridge',fr?'Plus long et plus souple, 12 à 24 h.':'Longer and more forgiving, 12 to 24 h.'],['room',fr?'À température ambiante':'At room temperature',fr?'Plus court, 6 à 14 h.':'Shorter, 6 to 14 h.']] as const).map(([value,label,note])=>{
                       const active=poolishStorage===value;
-                      return <button key={value} type="button" aria-pressed={active} onClick={()=>{if(value!==poolishStorage){setPoolishStorage(value);setPlanReplanPending(true);}}} style={{minHeight:44,padding:'9px 12px',display:'flex',flexDirection:'column',alignItems:'flex-start',gap:2,textAlign:'left',border:`1.5px solid ${active?'var(--terra)':'var(--border)'}`,borderRadius:9,background:active?'var(--warm)':'var(--paper)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:16,cursor:'pointer'}}><span>{label}</span><span style={{fontSize:14,color:'var(--smoke)'}}>{note}</span></button>;
+                      return <button key={value} type="button" aria-pressed={active} onClick={()=>{if(value!==poolishStorage){setPoolishStorage(value);setPlanReplanPending(true);}}} style={{minHeight:44,padding:'9px 12px',display:'flex',flexDirection:'column',alignItems:'flex-start',gap:2,textAlign:'left',border:`1.5px solid ${active?'var(--terra)':'var(--border)'}`,borderRadius:9,background:active?'var(--warm)':'var(--paper)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:16,cursor:'pointer'}}><span>{label}</span>{note&&<span style={{fontSize:14,color:'var(--smoke)'}}>{note}</span>}</button>;
                     })}
                   </div>
                 </fieldset>}}
@@ -4790,8 +4790,8 @@ export default function Home() {
                           style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
                       </label>
                       <p style={{margin:'6px 0 0',fontSize:14,color:'var(--smoke)',lineHeight:1.45}}>{starterPctOverride!==undefined
-                        ? (fr?'Le pointage à température ambiante est recalé sur cette quantité : moins de levain, pointage plus long ; plus de levain, plus court.':'The room-temperature rise is re-timed to this amount: less starter means a longer rise, more starter a shorter one.')
-                        : (fr?'Calculé pour votre cuisine. Si vous le changez, le pointage s’adapte.':'Calculated for your kitchen. Change it and the rise adapts.')}</p>
+                        ? (fr?'Le pointage suit cette quantité : moins de levain, pointage plus long.':'The rise follows this amount: less starter, longer rise.')
+                        : (fr?'Calculé pour votre cuisine. Modifiez-le, le pointage suit.':'Set for your kitchen. Change it and the rise follows.')}</p>
                       {starterPctOverride!==undefined&&<button type="button" onClick={()=>{setStarterPctOverride(undefined);setPlanReplanPending(true);}} style={{minHeight:44,marginTop:6,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:9,background:'var(--paper)',color:'var(--char)',fontSize:16,cursor:'pointer'}}>{fr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
                     </div>;
                   })()}
@@ -4807,8 +4807,8 @@ export default function Home() {
                           style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
                       </label>
                       <p style={{margin:'6px 0 0',fontSize:14,color:'var(--smoke)',lineHeight:1.45}}>{yeastPctOverride!==undefined
-                        ? (fr?'Le planning est recalé sur cette quantité : moins de levure, fermentation plus longue ; plus de levure, plus courte.':'Your plan is re-timed to this amount: less yeast means a longer fermentation, more yeast a shorter one.')
-                        : (fr?'Calculée pour vos horaires. Si vous la changez, le planning s’adapte à la quantité.':'Calculated for your timing. Change it and the plan adapts to the amount.')}</p>
+                        ? (fr?'Les horaires suivent cette quantité : moins de levure, pousse plus longue.':'Your timing follows this amount: less yeast, longer rise.')
+                        : (fr?'Calculée pour vos horaires. Modifiez-la, les horaires suivent.':'Set for your timing. Change it and the timing follows.')}</p>
                       {yeastPctOverride!==undefined&&<button type="button" onClick={()=>{setYeastPctOverride(undefined);setPlanReplanPending(true);}} style={{minHeight:44,marginTop:6,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:9,background:'var(--paper)',color:'var(--char)',fontSize:16,cursor:'pointer'}}>{fr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
                     </div>;
                   })()}
