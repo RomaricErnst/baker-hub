@@ -147,6 +147,8 @@ jobs:
         run: node tests/roundtrip/feasible-fallback.mjs .ci-tools/starter-path.js
       - name: Never send a fridge-kept starter into the fridge before it is fed
         run: node tests/roundtrip/fridge-starter.mjs .ci-tools/starter-path.js
+      - name: One starter peak on card, chart and pill across 384 cases
+        run: node tests/roundtrip/peak-consistency.mjs .ci-tools/starter-path.js
 
   schedule-repair-grid:
     runs-on: ubuntu-latest

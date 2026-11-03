@@ -446,8 +446,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "Le pain doit-il vraiment refroidir avant la coupe ?"
       },
       "a": {
-        "en": "Yes — the crumb finishes setting as steam escapes. Cutting hot gives a gummy texture. One hour minimum for boules; 20–30 min for baguettes.",
-        "fr": "Oui — la mie finit de se structurer pendant que la vapeur s’échappe. Couper chaud donne une mie gommeuse. Une heure minimum pour les boules ; 20–30 min pour les baguettes."
+        "en": "Yes — the crumb finishes setting as steam escapes. Cutting hot gives a gummy texture. The cooling step gives the time for your loaf.",
+        "fr": "Oui — la mie finit de se structurer pendant que la vapeur s’échappe. Couper chaud donne une mie gommeuse. L’étape de refroidissement donne le temps pour votre pain."
       }
     },
     {

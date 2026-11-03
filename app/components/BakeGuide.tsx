@@ -6,7 +6,7 @@ import BottomActions from './BottomActions';
 import JourneyCompletion, { type CompletionActions } from './JourneyCompletion';
 import {createPortal} from 'react-dom';
 import type { StarterEvent } from './SchedulePicker';
-import { useState, useRef, useEffect, createContext, useContext } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, createContext, useContext } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { poolishCoolingAt } from '../utils/poolishCoolingAt';
 import { foldActionLabel } from '../utils/scheduleAvailability';
@@ -213,6 +213,26 @@ function Pill({ label, color }: { label: string; color?: string }) {
   );
 }
 
+// Each step registers its start, so a step's shown duration can end where the
+// next step begins (rounding and handling time otherwise leave 5–15 min gaps).
+type StepTimes = { times: Map<number, number>; bump: () => void };
+const StepTimesCtx = createContext<StepTimes | null>(null);
+function useStepTimes(): StepTimes {
+  const [, setVersion] = useState(0);
+  const ref = useRef<StepTimes | null>(null);
+  if (!ref.current) ref.current = { times: new Map(), bump: () => setVersion(v => v + 1) };
+  return ref.current;
+}
+// Snap to the next step's start when the two are within 20 min; a larger gap is
+// a real break or a parallel step, so the step keeps its own duration.
+function shownDuration(number: number, time: Date | undefined, duration: number | null | undefined, ctx: StepTimes | null) {
+  if (!duration || !time || !ctx) return duration;
+  const next = ctx.times.get(number + 1);
+  if (next === undefined) return duration;
+  const gapH = (next - +time) / 3600000;
+  return gapH > 0 && Math.abs(gapH - duration) <= 20 / 60 ? gapH : duration;
+}
+
 // ── Step card ────────────────────────────────────────
 function StepCard({
   number, displayNumber = number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext, hidden = false, stepPhase = 'preparation', previousLabel, nextLabel, externalProgress = false, passive = false, overviewNote,
@@ -225,6 +245,14 @@ function StepCard({
 }) {
   const locale = useLocale();
   const fr = locale === 'fr';
+  const stepTimes = useContext(StepTimesCtx);
+  const at = time ? +time : undefined;
+  useLayoutEffect(() => {
+    if (!stepTimes) return;
+    if (at === undefined) { if (stepTimes.times.delete(number)) stepTimes.bump(); return; }
+    if (stepTimes.times.get(number) !== at) { stepTimes.times.set(number, at); stepTimes.bump(); }
+  });
+  duration = shownDuration(number, time, duration, stepTimes);
   const TitleContainer = overview ? 'button' : 'div';
   return (
     <section ref={divRef} data-guide-step={number} data-guide-phase={stepPhase} data-guide-title={title} hidden={hidden} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${displayNumber}`} style={{ display: !hidden && (open || overview) ? undefined : 'none', background: D.warm, borderRadius: 0,
@@ -238,7 +266,7 @@ function StepCard({
           <strong role={overview?undefined:'heading'} aria-level={overview?undefined:2} style={{ display: 'block', fontSize: overview ? 15 : 28, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}</strong>
           {!overview && !externalProgress && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {displayNumber}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
           {time && <span style={{ display: 'block', marginTop: 4, fontSize: 14, color: D.smoke }}>
-            {formatTime(time, locale)}{duration ? ` · ${overview ? (passive ? (fr ? 'repos ' : 'rest ') : (fr ? 'durée ' : 'duration ')) : ''}${duration < 1 ? `${Math.round(duration * 60)} min` : formatDuration(passive ? Math.round(duration * 4) / 4 : duration, fr ? 'fr' : 'en')}` : ''}
+            {formatTime(time, locale)}{duration ? ` · ${overview ? (passive ? (fr ? 'repos ' : 'rest ') : (fr ? 'durée ' : 'duration ')) : ''}${duration < 1 ? `${Math.round(duration * 60)} min` : formatDuration(Math.round(duration * 12) / 12, fr ? 'fr' : 'en')}` : ''}
           </span>}
           {overview && overviewNote && <span style={{display:'block',fontSize:14,lineHeight:1.5,color:D.terra,marginTop:4}}>{overviewNote}</span>}
           {done && <span style={{ fontSize: 14, color: D.sage }}>{fr ? 'Terminé' : 'Completed'}</span>}
@@ -1021,6 +1049,7 @@ Actual dough condition and equipment may differ from these estimates.`;
   const bgPoolishLabel = bgPoolishG ? (l === 'fr' ? `Ajoutez votre ${prefermentType} (${bgPoolishG}g au total)` : `Add your ${prefermentType} (${bgPoolishG}g total)`) : (l === 'fr' ? `Ajoutez votre ${prefermentType} (en entier)` : `Add your ${prefermentType} (all of it)`);
 
 
+  const stepTimesCtx = useStepTimes();
   let firstPendingPreparation = 0;
   let stepNum = 0;
   let lastStep = 0;
@@ -1096,7 +1125,7 @@ Actual dough condition and equipment may differ from these estimates.`;
 
   if (recipe?.enrichment?.unsupportedMethod) return <p role="alert">{l === 'fr' ? 'Modifiez le choix de levure dans les réglages et recalculez cette formule enrichie avant de suivre les étapes.' : 'Update the leavening choice in setup and recalculate this enriched formula before following the steps.'}</p>;
 
-  if (breadProtocol?.method === 'unleavened') return <SimpleModeCtx.Provider value={!!simpleMode}>
+  if (breadProtocol?.method === 'unleavened') return <StepTimesCtx.Provider value={stepTimesCtx}><SimpleModeCtx.Provider value={!!simpleMode}>
     <div style={{display:'flex',flexDirection:'column',gap:currentStep===0?4:16}}>
       {progressControl}
       {!progressTarget&&<button type="button" onClick={() => setCurrentStep(0)} style={{minHeight:44,padding:'8px 16px',border:`1px solid ${D.border}`,borderRadius:10,background:D.warm}}>{overviewLabel}</button>}
@@ -1130,9 +1159,10 @@ Actual dough condition and equipment may differ from these estimates.`;
       </BottomActions>}
       {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange} sessionSaved={sessionSaved}/>}
     </div>
-  </SimpleModeCtx.Provider>;
+  </SimpleModeCtx.Provider></StepTimesCtx.Provider>;
 
   return (
+    <StepTimesCtx.Provider value={stepTimesCtx}>
     <SimpleModeCtx.Provider value={!!simpleMode}>
     <div style={{ display: 'flex', flexDirection: 'column', gap: currentStep === 0 ? '4px' : '16px' }}>
       {progressControl}
@@ -1207,7 +1237,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             tips={<p>{l === 'fr' ? 'Fiez-vous aux quantités et à l’emplacement de cette recette. Si la maturité ne correspond pas au planning, revoyez le planning avant de poursuivre.' : 'Use this recipe’s quantities and planned location. If maturity does not match the schedule, review the plan before continuing.'}</p>}
             faqOverride={[
               {q:{en:'Should I change the yeast dose?',fr:'Faut-il changer la dose de levure ?'},a:{en:'Use the measured dose shown for this preferment and the selected yeast type. Do not replace it with a generic pinch or percentage.',fr:'Utilisez la dose indiquée pour ce préferment et le type de levure choisi. Ne la remplacez pas par une pincée ou un pourcentage générique.'}},
-              {q:{en:'What should I check before mixing?',fr:'Que vérifier avant le pétrissage ?'},a:{en:isPoolish?'Check for bubbles and a risen surface beginning to flatten; use the visual guide below.':'Break a piece open and look for internal aeration; use the visual guide below.',fr:isPoolish?'Observez les bulles et une surface levée qui commence à s’aplanir ; consultez les signes illustrés.':'Ouvrez un morceau et observez les alvéoles à l’intérieur ; consultez les signes illustrés.'}},
+              {q:{en:'What should I check before mixing?',fr:'Que vérifier avant le pétrissage ?'},a:{en:isPoolish?'Check for bubbles and a risen surface just beginning to flatten.':'Break a piece open and look for small bubbles throughout.',fr:isPoolish?'Observez les bulles et une surface levée qui commence tout juste à s’aplanir.':'Ouvrez un morceau et observez de petites alvéoles partout.'}},
             ]}
             coachStepId={isPoolish ? 'poolish' : 'biga'}
             coachTitle={isPoolish ? t('stepTitles.makePoolish') : t('stepTitles.makeBiga')}
@@ -2012,5 +2042,6 @@ Actual dough condition and equipment may differ from these estimates.`;
       )}
     </div>
     </SimpleModeCtx.Provider>
+    </StepTimesCtx.Provider>
   );
 }

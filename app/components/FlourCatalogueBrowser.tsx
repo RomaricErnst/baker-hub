@@ -20,10 +20,12 @@ export const flourTypeOption=(type:string)=>normal(flourTypeLabel(type,false)).r
 export function matchesFlour(entry:FlourEntry,query:string){const aliases:Record<string,string>={rye:'seigle',wholemeal:'whole wheat complete integrale',bread:'pain bread flour',all_purpose:'all purpose tout usage',spelt:'epeautre',semolina:'semoule semola'};const text=normal([entry.brand,entry.name,entry.type,aliases[entry.type]||''].join(' '));return normal(query).split(/\s+/).filter(Boolean).every(token=>text.includes(token));}
 export function flourNumbers(f:FlourEntry,fr:boolean){
  const p=f.proteinSpec;let protein:string;
- if(p?.operator==='range'&&p.min!=null&&p.max!=null)protein=`${p.min}–${p.max}%`;
- else if(p?.value!=null)protein=`${p.operator==='min'?'≥ ':p.operator==='max'?'≤ ':''}${p.value}%`;
- else if(f.proteinRange)protein=`${f.proteinRange[0]}–${f.proteinRange[1]}%`;
- else protein=f.protein==null?(fr?'non publiées':'not published'):`${f.proteinPublished?'':'~'}${f.protein}%`;
+ const num=(v:number)=>fr?String(v).replace('.',','):String(v);
+ const pc=(v:number)=>fr?`${num(v)} %`:`${v}%`;
+ if(p?.operator==='range'&&p.min!=null&&p.max!=null)protein=fr?`${num(p.min)}–${num(p.max)} %`:`${p.min}–${p.max}%`;
+ else if(p?.value!=null)protein=`${p.operator==='min'?'≥ ':p.operator==='max'?'≤ ':''}${pc(p.value)}`;
+ else if(f.proteinRange)protein=fr?`${num(f.proteinRange[0])}–${num(f.proteinRange[1])} %`:`${f.proteinRange[0]}–${f.proteinRange[1]}%`;
+ else protein=f.protein==null?(fr?'non publiées':'not published'):`${f.proteinPublished?'':'~'}${pc(f.protein)}`;
  const strength=f.wRange?`W ${f.wRangePublished?'':'~'}${f.wRange[0]}–${f.wRange[1]}`:f.w==null?(fr?'Force non publiée':'Strength not published'):`W ${f.wPublished?'':'~'}${f.w}`;
  return `${strength} · ${fr?'Protéines':'Protein'} ${protein}`;
 }

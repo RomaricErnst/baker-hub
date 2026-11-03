@@ -550,7 +550,7 @@
     "precisionScaleMin": "Precision scale recommended — this is a very small amount of yeast.",
     "priorityFlavourNote": "Flavour-first yeast — you have plenty of time",
     "prioritySpeedNote": "Speed-adjusted yeast — your window is tight",
-    "starterFeedNote": "Feed your starter 4–12h before mixing. Use it at peak activity — doubled in size, domed on top.",
+    "starterFeedNote": "Feed your starter 4–12 h before mixing. Use it near its peak: about doubled, domed on top.",
     "bulkCues": {
       "weak": [
         "Dough has grown 50–75% in volume",
@@ -1024,7 +1024,7 @@
           },
           {
             "bold": "Pre-shape: fold to a rough round",
-            "note": "fold edges to centre, flip seam-side down, rest 15–20 min"
+            "note": "fold edges to centre, flip seam-side down, rest 15 min"
           },
           {
             "bold": "Final shape: build surface tension",
@@ -1353,7 +1353,7 @@
             "note": "crust browns and crisps — internal temp 95–98°C"
           },
           {
-            "bold": "Cool on a wire rack — minimum 30 min",
+            "bold": "Move to a wire rack to cool",
             "note": "crumb is still cooking from residual heat — cutting hot makes it gummy"
           }
         ],
@@ -1392,7 +1392,7 @@
             "note": "crust browns and crisps — internal temp 95–98°C"
           },
           {
-            "bold": "Cool on a wire rack — minimum 30 min",
+            "bold": "Move to a wire rack to cool",
             "note": "cutting hot makes the crumb gummy"
           }
         ],
@@ -1423,7 +1423,7 @@
             "note": "bake 20–25 min more until deep brown and hollow-sounding"
           },
           {
-            "bold": "Cool on a wire rack — minimum 30 min",
+            "bold": "Move to a wire rack to cool",
             "note": "cutting hot makes the crumb gummy"
           }
         ],
@@ -1451,7 +1451,7 @@
             "note": "total 40–50 min — hollow sound at base = done"
           },
           {
-            "bold": "Cool on a wire rack — minimum 30 min",
+            "bold": "Move to a wire rack to cool",
             "note": "cutting hot makes the crumb gummy"
           }
         ],
@@ -1480,7 +1480,7 @@
             "note": "internal temp 95–98°C — deep brown and hollow-sounding"
           },
           {
-            "bold": "Cool on a wire rack — minimum 30 min",
+            "bold": "Move to a wire rack to cool",
             "note": "cutting hot makes the crumb gummy"
           }
         ],

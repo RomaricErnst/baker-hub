@@ -49,6 +49,13 @@ test('a poolish warm-up ends its cold interval before mixing',()=>{
  assert.match(source,/bakeMs - \+prefermentFridgeOutTime/);
  assert.ok(!source.includes('coldStartHBF = effectiveMixHBF - (phases.bulkFermH'));
 });
+test('a poolish used straight from the fridge is drawn cold until mixing',()=>{
+ const render=props=>renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(chart.default,{eatTime:new Date('2026-09-25T18:00Z'),prefermentType:'poolish',kitchenTemp:24,fridgeTemp:6,mixOffsetH:24,prefOffsetH:13,blocks:[],onMixChange:()=>{},onPrefChange:()=>{},...props})));
+ const laneCold=html=>(html.match(/<rect[^>]*y="34"[^>]*fill="#4A7FA5"/g)||[]).length;
+ assert.equal(laneCold(render({prefInFridge:true})),1);
+ assert.equal(laneCold(render({prefInFridge:false})),0);
+});
+
 test('starter refrigeration follows paired events and leaves the refresh period warm',()=>{
  const event=(kind,time)=>({kind,time:new Date(time),label:kind,isPast:false,isActive:false,isDraggable:false,bellStyle:'none',bellSigmaScale:1});
  const events=[event('refresh','2026-09-24T08:00Z'),event('fridge_in','2026-09-24T12:00Z'),event('fridge_out','2026-09-25T06:00Z'),event('pre_mix','2026-09-25T07:00Z')];

@@ -3632,6 +3632,7 @@ export default function Home() {
   const firstStarterAction = yeastType==='sourdough' ? starterEvents.find(e=>!e.isPast && +e.time===+firstRecipeAction && e.kind!=='last_fed' && e.kind!=='known_peak') : undefined;
   const firstRecipeActionLabel = (firstStarterAction ? starterActionLabel(firstStarterAction.kind,fr) : undefined) ?? (prefStartTime && +prefStartTime===+firstRecipeAction
     ? (prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):(fr?'Préparer le poolish':'Make Poolish'))
+    : (schedule?.availabilityActions ?? []).some(action=>action.id==='autolyse'&&+action.at===+firstRecipeAction) ? (fr?'Autolyse puis pétrissage':'Autolyse, then mixing')
     : +firstRecipeAction < +startTime ? (fr?'Préparer le préferment':'Make the preferment') : (fr?'Pétrir la pâte':'Start Dough'));
   // A fridge removal the baker arranged for someone at home, for the Preparation summary.
   const coveredFridgeRemovalAt = (()=>{const at=blocks.find(block=>block.fridgeRemoval&&eatTime&&block.fridgeRemoval.bake===+eatTime)?.fridgeRemoval?.at;return at?new Date(at):undefined;})();
@@ -4656,7 +4657,7 @@ export default function Home() {
 
 
             {/* ─── ADV STEP 7: Flour ───────────────── */}
-            <StepPage flow={customOrganisationFlow} id={6} nextOverride={manualFlourEntry ? null : !flourChosen || archivedFlourNames.length ? <button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{(CUSTOM_STEPS.find(step=>step.id===nextCustomStep(6))?.chip ?? (fr ? 'Suivant' : 'Next'))} →</button> : undefined}>
+            <StepPage flow={customOrganisationFlow} id={6} nextOverride={manualFlourEntry ? null : !flourChosen || archivedFlourNames.length ? <><p data-flour-hint style={{gridColumn:'1/-1',order:-1,margin:0,fontSize:14,color:'var(--smoke)',textAlign:'center'}}>{archivedFlourNames.length?(fr?'Remplacez la farine qui n’est plus proposée pour continuer.':'Replace the flour that is no longer listed to continue.'):(fr?'Choisissez une farine pour continuer.':'Choose a flour to continue.')}</p><button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{(CUSTOM_STEPS.find(step=>step.id===nextCustomStep(6))?.chip ?? (fr ? 'Suivant' : 'Next'))} →</button></> : undefined}>
               <FlourPicker
                 onManualEntryChange={setManualFlourEntry}
                 blend={flourBlend}

@@ -84,11 +84,12 @@ Each family produces a *scoring* peak (drives the green/yellow pill, in candidat
 and a *display* peak (chart bell `bellPeakTime` + card "Peak around…"/PEAK row). They MUST be
 equal. They drifted because paths applied different stretch to `adjPeakH` (bare vs
 `× _refreshStretchFactor` vs `× _preMixStretchFactor`) → scoring more optimistic than the bell
-→ FALSE GREEN (starter "ready at mix" while still rising). peak1 / fridge-revival / RT-depleted /
-peak2B are aligned; **peak2A (trough-feed) is the last un-unified one.**
-Next planned engine task → **`SOURDOUGH_PEAK_MODEL_HANDOFF.md`** (repo root): one
-`computeStarterPeak(feedMs, state)` helper, used by every candidate family AND the bell AND
-`deriveStarterPeakTime`, so scoring peak ≡ bell peak ≡ card peak by construction. Read that file first.
+→ FALSE GREEN (starter "ready at mix" while still rising). Every family, peak2A included, now
+scores through `computeStarterPeakMs(feedMs, refPeak, adjPeakH)`, the same helper and reference
+the pre-mix bell uses. `tests/roundtrip/peak-consistency.mjs` (CI) sweeps 384 temperature ×
+location × last-fed × horizon × Nights cases and asserts card PEAK ≡ active bell and that green
+means mix within the solver's tolerance of the shown peak. The trace's `scoredPeakMs` may differ
+from the shown peak when the render re-aligns a feed onto the mix; the pill is judged on the shown peak.
 
 **Intermediate refreshes (fixed 3 Nov 2026):** the winner's scored intermediates (`renderIntermediatesMs`) are rendered as-is; never recompute them in the event builder. `tests/roundtrip/fridge-starter.mjs` guards the fridge-kept starter case.
 
