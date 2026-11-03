@@ -29,10 +29,12 @@ test('compact navigation reaches every section above the footer and Custom keeps
  const bakeDate=page.getByLabel('Date et heure de cuisson',{exact:true});
  await bakeDate.fill('2026-10-05T19:30');await bakeDate.blur();
  const customize=page.getByRole('button',{name:/^Personnaliser ma fournée/});
+ await (async()=>{const k=page.locator('[data-kitchen-warmth]:visible');if(await k.count()&&!(await k.locator('[aria-pressed="true"]').count()))await k.locator('[data-kitchen-band="mild"]').tap();})();
  await customize.tap();
  const actions=page.locator('.bh-step-actions:visible');
  await actions.getByRole('button',{name:'Étape précédente',exact:true}).tap();
  await expect(bakeDate).toHaveValue('2026-10-05T19:30');
+ await (async()=>{const k=page.locator('[data-kitchen-warmth]:visible');if(await k.count()&&!(await k.locator('[aria-pressed="true"]').count()))await k.locator('[data-kitchen-band="mild"]').tap();})();
  await customize.tap();
  const sections=page.getByRole('button',{name:'Voir les 5 rubriques',exact:true});
  await sections.tap();

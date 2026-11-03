@@ -16,6 +16,7 @@ async function enterBakeTarget(page,fr=true){
 async function startCustom(page){
  await page.locator('.bh-batch-actions').locator('[data-bh-forward]:visible').tap();
  await enterBakeTarget(page);
+ await (async()=>{const k=page.locator('[data-kitchen-warmth]:visible');if(await k.count()&&!(await k.locator('[aria-pressed="true"]').count()))await k.locator('[data-kitchen-band="mild"]').tap();})();
  await page.getByRole('button',{name:/^Personnaliser ma fournée/}).tap();
 }
 async function openCustomSection(page,label){
@@ -245,10 +246,12 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await organise.tap();
   await enterBakeTarget(page);
   if(mode==='custom'){
+   await (async()=>{const k=page.locator('[data-kitchen-warmth]:visible');if(await k.count()&&!(await k.locator('[aria-pressed="true"]').count()))await k.locator('[data-kitchen-band="mild"]').tap();})();
    await page.getByRole('button',{name:/^Personnaliser ma fournée/}).tap();
    await expect(page.locator('#step-3:visible')).toBeVisible();
   }else{
    const generate=page.getByRole('button',{name:'Créer ma recette simple',exact:true});
+   await (async()=>{const k=page.locator('[data-kitchen-warmth]:visible');if(await k.count()&&!(await k.locator('[aria-pressed="true"]').count()))await k.locator('[data-kitchen-band="mild"]').tap();})();
    await generate.tap();
    if(bread){
     // Five 320g baguettes exceed the 1.5kg mixer. The first lot needs a fold before the second finishes.
@@ -257,6 +260,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
     const target=await page.getByLabel('Date et heure de cuisson',{exact:true}).inputValue();
     await reduce.tap();await quantity.fill('4');await quantity.blur();await organise.tap();
     await expect(page.getByLabel('Date et heure de cuisson',{exact:true})).toHaveValue(target);
+    await (async()=>{const k=page.locator('[data-kitchen-warmth]:visible');if(await k.count()&&!(await k.locator('[aria-pressed="true"]').count()))await k.locator('[data-kitchen-band="mild"]').tap();})();
     await generate.tap();
    }
    await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
@@ -789,6 +793,7 @@ test.describe('guided piadina with cooking time set in planning',()=>{
   await expect(plan.getByRole('button',{name:'Valider le planning',exact:true})).toHaveCount(0);
   await cookingTime.fill('2030-05-10T18:00');await cookingTime.blur();
   await expect(cookingTime).toHaveValue('2030-05-10T18:00');
+  await (async()=>{const k=page.locator('[data-kitchen-warmth]:visible');if(await k.count()&&!(await k.locator('[aria-pressed="true"]').count()))await k.locator('[data-kitchen-band="mild"]').tap();})();
   await page.getByRole('button',{name:'Créer ma recette simple',exact:true}).tap();
   await expect.poll(async()=>(await stored(page))?.eatTime).toBe(Date.parse('2030-05-10T18:00:00Z'));
   await expect.poll(async()=>{const s=await stored(page);return {generated:s?.recipeGenerated,style:s?.styleKey,oven:s?.ovenType,count:s?.numItems};}).toEqual({generated:true,style:'piadina',oven:'griddle',count:5});
