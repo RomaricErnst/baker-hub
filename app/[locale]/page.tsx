@@ -4341,12 +4341,12 @@ export default function Home() {
               )}
 
               {/* One way forward. A pending decision carries its own buttons, so
-                  nothing is shown here until it is settled; Custom is an optional
+                  Create waits for it; Custom stays reachable as an optional
                   detour, not a second equal choice. */}
-              {collectingBakeTime && eatTime && +eatTime>Date.now() && !simpleDecisionPending && <div data-recipe-choice style={{display:'grid',gap:4,marginTop:16}}>
+              {collectingBakeTime && eatTime && +eatTime>Date.now() && <div data-recipe-choice style={{display:'grid',gap:4,marginTop:16}}>
                 {kitchenPending
                   ? <button type="button" style={NEXT_CTA} onClick={()=>{openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}>{fr?'Température de la cuisine →':'Kitchen temperature →'}</button>
-                  : <button type="button" style={NEXT_CTA} onClick={()=>{setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>{fr?'Créer ma recette simple':'Create my simple recipe'}</button>}
+                  : !simpleDecisionPending && <button type="button" style={NEXT_CTA} onClick={()=>{setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>{fr?'Créer ma recette simple':'Create my simple recipe'}</button>}
                 {!kitchenPending && <button type="button" className="bh-back-action" data-customize-link style={{minHeight:44,justifySelf:'center',textAlign:'center',whiteSpace:'normal'}} onClick={()=>{setAwaitingRecipeChoice(false);chooseMode('custom');}}>
                   {fr?'Personnaliser ma fournée →':'Customize my bake →'}
                   <span style={{display:'block',fontSize:13,color:'var(--smoke)',textDecoration:'none'}}>{directMethodOnly?(fr?'Matériel, farine et hydratation':'Equipment, flour and hydration'):(fr?'Matériel, farine, levain ou préferment, hydratation':'Equipment, flour, leavening, hydration')}</span>

@@ -78,7 +78,11 @@ function assessEdit(input: EditInput): EditResult {
   return input.id==='pref'?{...result,earliestMix:start,availableHours:(+input.start-+input.at)/HOUR}:result;
 }
 
-export type FixedBakeSearchResult = {candidate:EditResult; found:boolean; searched:number; exhausted:boolean; preparationRepaired?:boolean};
+export type FixedBakeSearchResult = {candidate:EditResult; found:boolean; searched:number; exhausted:boolean; preparationRepaired?:boolean;
+  /** Direct dough with no clash-free plan: the complete plan that needs the
+   *  baker during the fewest busy moments (often only the fridge exit). It is
+   *  never valid by itself; the baker decides whether to cover those steps. */
+  leastConflict?:{candidate:EditResult; conflicts:number}};
 
 /** Sleep is a preference for automatic recommendations. Explicit blocks and
  * all fermentation limits are still checked against the canonical plan. */
@@ -174,6 +178,8 @@ export function findFixedBakeSchedule(input: EditInput, pins: TimingPins = input
   const ordered=[...starts].sort((a,b)=>Math.abs(a-+input.start)-Math.abs(b-+input.start)||a-b);
   let repaired:EditResult|undefined;
   let remainingConflicts=Infinity;
+  let leastConflict:EditResult|undefined;
+  let leastCount=Infinity;
   for(const startAt of ordered){
     const offsets=new Set<number>();
     const win=input.prefWindow;
@@ -204,6 +210,13 @@ export function findFixedBakeSchedule(input: EditInput, pins: TimingPins = input
         if(!input.hasPreferment || cost===overnightSteps({...input,hasPreferment:false},candidate))break;
         continue;
       }
+      // Direct dough: remember the complete plan that clashes least, so a
+      // bake time that cannot avoid busy times still gets the best plan.
+      if(!input.hasPreferment&&candidate.issue==='busy'&&candidate.schedule
+        &&!candidate.schedule.preparationInvalid&&!candidate.schedule.bulkConflict){
+        const count=findAvailabilityConflicts(candidate.schedule.availabilityActions??[],input.blocks,now).length;
+        if(count>0&&count<leastCount){leastConflict=candidate;leastCount=count;}
+      }
       // Keep an available preparation even if a later intervention prevents
       // the complete plan. Never turn a partial repair into a valid recipe.
       if(input.hasPreferment&&candidate.issue==='busy'&&candidate.schedule
@@ -220,7 +233,8 @@ export function findFixedBakeSchedule(input: EditInput, pins: TimingPins = input
     }
   }
   if(fallback)return {candidate:fallback,found:true,searched,exhausted:false};
-  return {candidate:repaired??retained,found:false,searched,exhausted:true,preparationRepaired:!!repaired};
+  return {candidate:repaired??retained,found:false,searched,exhausted:true,preparationRepaired:!!repaired,
+    ...(leastConflict?{leastConflict:{candidate:leastConflict,conflicts:leastCount}}:{})};
 }
 
 /** Keep automatic anchors where feasible; move them jointly when necessary.

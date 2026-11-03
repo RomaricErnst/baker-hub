@@ -2550,6 +2550,12 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
       if(candidate.found){
         const mixHBF=(+et-+candidate.candidate.times.start)/3600000;
         result={...result,mixHBF,prefHBF:mixHBF,fallback:false,mixInBlocker:false};
+      }else if(candidate.leastConflict){
+        // No plan avoids every busy time: start from the one that needs the
+        // baker least (e.g. mix tonight, only the fridge exit falls at work),
+        // never from a default that lands every step in the workday.
+        const mixHBF=(+et-+candidate.leastConflict.candidate.times.start)/3600000;
+        result={...result,mixHBF,prefHBF:mixHBF};
       }
     }
     // Unified decision tree — single source of truth for all scheduler states.
@@ -6882,7 +6888,11 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
       // A chosen yeast amount fixes the length even when no free slot fits it:
       // show that start (and its clash) rather than leaving the old one.
       const yeastStart=!usable&&!hasPrefActive?yeastTimingFor(pendingEatTime,candidateBlocks):null;
-      const times=usable?result.candidate.times:yeastStart?{start:new Date(Math.round((+pendingEatTime-yeastStart.center*3600000)/900000)*900000),bake:pendingEatTime,prefHours:0}:{start:pendingStart,bake:pendingEatTime,prefHours:prefOffsetH};
+      // No clash-free plan and no explicit mix time: use the plan that needs
+      // the baker during the fewest busy moments, not the previous start.
+      const least=!usable&&!yeastStart&&!hasPrefActive&&overrides.mix===undefined&&result.leastConflict
+        ?result.leastConflict.candidate.times:null;
+      const times=usable?result.candidate.times:yeastStart?{start:new Date(Math.round((+pendingEatTime-yeastStart.center*3600000)/900000)*900000),bake:pendingEatTime,prefHours:0}:least??{start:pendingStart,bake:pendingEatTime,prefHours:prefOffsetH};
       setPendingStart(times.start);setPrefOffsetH(times.prefHours);setStartComputed(true);
       setPrefAlgoRed(!result.found);setWindowTooShort(false);
       onChange(times.start,pendingEatTime,candidateBlocks,{preservePlan:true,prefOffsetHours:times.prefHours,prefInFridge:storage,timingOverrides:overrides});
