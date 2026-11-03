@@ -90,6 +90,8 @@ Next planned engine task → **`SOURDOUGH_PEAK_MODEL_HANDOFF.md`** (repo root): 
 `computeStarterPeak(feedMs, state)` helper, used by every candidate family AND the bell AND
 `deriveStarterPeakTime`, so scoring peak ≡ bell peak ≡ card peak by construction. Read that file first.
 
+**Intermediate refreshes (fixed 3 Nov 2026):** the winner's scored intermediates (`renderIntermediatesMs`) are rendered as-is; never recompute them in the event builder. `tests/roundtrip/fridge-starter.mjs` guards the fridge-kept starter case.
+
 **How to work it (methodology that connects to everything here):** this is engine code — obey the
 Multi-engine rule below, never sed, un-export only, gather sweep evidence per branch. Validate on the
 LIVE site via the matrix sweep (see Testing): drive Pain→Levain→scheduler with `window.__bhTrace = []`,

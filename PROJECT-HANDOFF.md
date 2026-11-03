@@ -1,3 +1,10 @@
+# 3 November 2026 — fridge-kept starter no longer sent "Into the fridge" (Claude)
+
+- Root cause: scoring and display computed the intermediate refreshes separately. `computeIntermediatesForCandidate` (scoring, `computeNonPathBFridgeTimes` → `renderFridgeInMs`) used the candidate's ratio; the event builder recomputed them with the current `nextFeedRatio` state and its own guards, so it could drop a refresh the winner was scored on. The fridge_in then sat at that unseen refresh's peak: a starter already in the fridge was told "Into the fridge Wed 4:05pm", with the chart showing it at room temperature.
+- Fix: candidates store `renderIntermediatesMs`; the winner's list is mirrored into `_renderIntermediatesMs` and rendered as-is (the same single-source pattern as `renderFridgeInMs`). Scoring ≡ display for intermediates by construction.
+- Regression: `tests/roundtrip/fridge-starter.mjs`, 160 cases (18/22/26/30 °C × fed yesterday…week × 24–96 h × Nights on/off) through the real picker; before the fix 9 violated (all +72 h with Nights), after 0. Added to the starter-feasibility CI job.
+- Simple sourdough: no plan-state, peak warning or "Are you at work?" prompt before the starter is described; the Simple card keeps its own hydration sentence (no duplicate notice).
+
 # 3 November 2026 — sharper journey after live review (Claude)
 
 Live perception review (5 journeys, 390 px) plus the 8 open items. Done:
@@ -16,7 +23,7 @@ Live perception review (5 journeys, 390 px) plus the 8 open items. Done:
 - French: "Heure de cuisson →", "Napolitaine classique", "d’eau", typographic apostrophes, "Boules au réfrigérateur", "Non, je suis chez moi", guide disclosures named once.
 - CI: the sourdough round-trip harness waits for the later-bake search to finish before comparing card text.
 
-Open (engine, needs the sourdough sweep): a starter kept in the fridge can show "Into the fridge" in the future (fridge_in derived from `_starterRefeedTime` in `computeNonPathBFridgeTimes` while the refresh itself is not in the agenda — repro: pain_levain, fridge, last fed 2–3 days ago, bake ~3 days out); a 15-minute later bake can move the fridge exit by 1h45 (warm-up math, explain or smooth); step durations off the quarter grid (autolyse 7:13–7:15, rest 5h 9m). Also open: small-dose help for preferment yeast under 0.5 g; oil/sugar fields for pain au levain; two stacked primary CTAs on Recipe.
+Open (engine, needs the sourdough sweep): [fridge_in item fixed — see entry above]; a 15-minute later bake can move the fridge exit by 1h45 (warm-up math, explain or smooth); step durations off the quarter grid (autolyse 7:13–7:15, rest 5h 9m). Also open: small-dose help for preferment yeast under 0.5 g; oil/sugar fields for pain au levain; two stacked primary CTAs on Recipe.
 
 # 3 November 2026 — starter % re-times the levain bulk (Claude)
 
