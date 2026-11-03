@@ -4081,7 +4081,6 @@ export default function Home() {
                 <button data-bh-forward type="button" disabled={!styleKey} aria-describedby={!styleKey?'bh-style-choice-hint':undefined} style={{...NEXT_CTA,opacity:styleKey?1:0.5,cursor:styleKey?'pointer':'not-allowed'}} onClick={()=>{if(!styleKey)return;setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{styleKey?`${fr?'Continuer avec':'Continue with'} ${styleDisplayName(styleKey)} →`:(fr?'Continuer':'Continue')}</button>
               </BottomActions>
             </> : <>
-              <div className="bh-batch-context"><span>{styleKey?styleDisplayName(styleKey):''}</span><button type="button" aria-label={bakeType==='bread'?(fr?'Modifier le pain choisi':'Edit selected bread'):(fr?'Modifier le style de pizza':'Edit pizza style')} onClick={()=>{setBatchView('style');scrollToStepTop();}}><span aria-hidden="true">·</span><span>{fr?'Modifier':'Edit'}</span></button></div>
               <h2 className="bh-page-title">{fr?'Quelle quantité de pâte ?':'How much dough?'}</h2>
               {styleKey==='pain_levain'&&<div style={{marginTop:16}}><label className="bh-seed-toggle"><input type="checkbox" checked={addSeeds} onChange={event=>setAddSeeds(event.target.checked)} /> {fr?'Ajouter des graines':'Add seeds'}</label>{addSeeds && <p>{fr?'Les graines trempent à l’avance : 2 h minimum, idéalement la veille.':'Soak the seeds ahead: at least 2 hours, ideally overnight.'}</p>}</div>}
 
