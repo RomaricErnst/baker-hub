@@ -821,22 +821,6 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
 }
 
 // ── Mono label ────────────────────────────────
-function ChoiceThenContinue({fr,simpleDesc,customDesc,simpleBlocked,onSimple,onCustom}:{fr:boolean;simpleDesc:string;customDesc:string;simpleBlocked:boolean;onSimple:()=>void;onCustom:()=>void}){
-  const [pick,setPick]=useState<'simple'|'custom'>(simpleBlocked?'custom':'simple');
-  const row=(id:'simple'|'custom',title:string,text:string,disabled=false)=><button type="button" role="radio" aria-checked={pick===id} disabled={disabled} onClick={()=>setPick(id)}
-    style={{display:'grid',gridTemplateColumns:'24px 1fr',gap:'2px 10px',textAlign:'left',padding:'14px 16px',minHeight:44,border:`1.5px solid ${pick===id?'var(--terra)':'var(--border)'}`,borderRadius:18,background:pick===id?'var(--warm)':'var(--card)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:17,cursor:'pointer',opacity:disabled?.5:1}}>
-    <span aria-hidden="true" style={{gridRow:'span 2',width:20,height:20,marginTop:2,borderRadius:'50%',border:`2px solid ${pick===id?'var(--terra)':'var(--smoke)'}`,boxShadow:pick===id?'inset 0 0 0 4px var(--card)':'none',background:pick===id?'var(--terra)':'transparent'}}/>
-    <span style={{fontWeight:700}}>{title}</span><span style={{fontSize:14,color:'var(--smoke)'}}>{text}</span></button>;
-  return <div data-recipe-choice style={{display:'grid',gap:10,marginTop:16}}>
-    <p style={{margin:'0 0 2px',fontWeight:700,fontSize:16,color:'var(--char)'}}>{fr?'Comment voulez-vous la préparer ?':'How do you want to set it up?'}</p>
-    <div role="radiogroup" style={{display:'grid',gap:10}}>
-      {row('simple',fr?'Simple · suggéré':'Simple · suggested',simpleDesc,simpleBlocked)}
-      {row('custom',fr?'Personnalisé':'Custom',customDesc)}
-    </div>
-    <button type="button" style={NEXT_CTA} onClick={()=>pick==='simple'?onSimple():onCustom()}>{fr?'Continuer →':'Continue →'}</button>
-  </div>;
-}
-
 // Asked once per bake, on its own screen before the bake time, for Simple and
 // Custom alike: kitchens change with the season, so nothing is remembered.
 // Zones follow the slider colour semantics (blue slow → coral challenging).
@@ -4359,24 +4343,23 @@ export default function Home() {
               {/* One way forward. A pending decision carries its own buttons, so
                   Create waits for it; Custom stays reachable as an optional
                   detour, not a second equal choice. */}
+              {/* Two equal ways forward: Simple generates the recipe from the
+                  style's defaults; Custom is a real choice, described by what the
+                  baker will set. A pending decision holds back Generate only. */}
               {collectingBakeTime && eatTime && +eatTime>Date.now() && (()=>{
-                const leaven=(yeastType==='sourdough'||styleKey==='pain_levain')?(fr?'levain':'starter'):(fr?'préferment':'preferment');
-                const simpleDesc=directMethodOnly?(fr?'Nous choisissons le matériel et la farine':'We choose the equipment and flour'):(fr?`Nous choisissons matériel, farine et ${leaven}`:`We choose the equipment, flour and ${leaven}`);
-                const customDesc=directMethodOnly?(fr?'Vous choisissez matériel, farine et hydratation':'You choose equipment, flour and hydration'):(fr?`Vous choisissez matériel, farine, ${leaven} et hydratation`:`You choose equipment, flour, ${leaven} and hydration`);
-                const create=()=>{setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();};
-                const custom=()=>{setAwaitingRecipeChoice(false);chooseMode('custom');};
                 if(kitchenPending)return <div data-recipe-choice style={{marginTop:16}}><button type="button" style={NEXT_CTA} onClick={()=>{openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}>{fr?'Température de la cuisine →':'Kitchen temperature →'}</button></div>;
-                const variant=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('choice')??'b':'b';
-                const card:React.CSSProperties={display:'grid',gap:4,textAlign:'left',padding:'16px 18px',minHeight:44,border:'1.5px solid var(--border)',borderRadius:18,background:'var(--card)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:17,cursor:'pointer',boxShadow:'0 2px 12px rgba(43,36,32,.06)'};
-                const desc:React.CSSProperties={fontSize:14,color:'var(--smoke)',fontWeight:400};
-                if(variant==='a')return <div data-recipe-choice style={{display:'grid',gap:12,marginTop:16}}>
-                  {!simpleDecisionPending&&<button type="button" style={card} onClick={create}><span style={{display:'flex',justifyContent:'space-between',fontWeight:700}}>{fr?'Recette simple':'Simple recipe'}<span aria-hidden="true">→</span></span><span style={desc}>{simpleDesc}</span></button>}
-                  <button type="button" data-customize-link style={card} onClick={custom}><span style={{display:'flex',justifyContent:'space-between',fontWeight:700}}>{fr?'Personnaliser ma fournée':'Customize my bake'}<span aria-hidden="true">→</span></span><span style={desc}>{customDesc}</span></button>
-                </div>;
-                if(variant==='c')return <ChoiceThenContinue fr={fr} simpleDesc={simpleDesc} customDesc={customDesc} simpleBlocked={simpleDecisionPending} onSimple={create} onCustom={custom}/>;
+                const leaven=(yeastType==='sourdough'||styleKey==='pain_levain')?(fr?'levain':'starter'):(fr?'préferment':'preferment');
+                const customDesc=directMethodOnly?(fr?'Vous choisissez matériel, farine et hydratation':'You choose equipment, flour and hydration'):(fr?`Vous choisissez matériel, farine, ${leaven} et hydratation`:`You choose equipment, flour, ${leaven} and hydration`);
+                const card:React.CSSProperties={display:'grid',gap:4,textAlign:'left',padding:'16px 18px',minHeight:56,border:'1.5px solid var(--border)',borderRadius:18,background:'var(--card)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:17,cursor:'pointer',boxShadow:'0 2px 12px rgba(43,36,32,.06)'};
+                const title:React.CSSProperties={display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,fontWeight:700};
                 return <div data-recipe-choice style={{display:'grid',gap:12,marginTop:16}}>
-                  {!simpleDecisionPending&&<button type="button" style={{...NEXT_CTA,display:'grid',gap:2,padding:'12px 16px'}} onClick={create}><span>{fr?'Créer ma recette simple':'Create my simple recipe'}</span><span style={{fontSize:13,fontWeight:400,opacity:.85}}>{simpleDesc}</span></button>}
-                  <button type="button" data-customize-link style={{...NEXT_CTA,display:'grid',gap:2,padding:'12px 16px',background:'var(--card)',color:'var(--terra)',border:'1.5px solid var(--terra)',boxShadow:'none'}} onClick={custom}><span>{fr?'Personnaliser ma fournée →':'Customize my bake →'}</span><span style={{fontSize:13,fontWeight:400,color:'var(--ash)'}}>{customDesc}</span></button>
+                  {!simpleDecisionPending&&<button type="button" data-generate-recipe style={card} onClick={()=>{setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>
+                    <span style={title}>{fr?'Générer ma recette':'Generate my recipe'}<span aria-hidden="true">→</span></span>
+                  </button>}
+                  <button type="button" data-customize-link style={card} onClick={()=>{setAwaitingRecipeChoice(false);chooseMode('custom');}}>
+                    <span style={title}>{fr?'Personnaliser ma fournée':'Customize my bake'}<span aria-hidden="true">→</span></span>
+                    <span style={{fontSize:14,color:'var(--smoke)',fontWeight:400}}>{customDesc}</span>
+                  </button>
                 </div>;
               })()}
             </StepPage>
