@@ -19,6 +19,7 @@ for(const lang of ['fr','en'])test(`${lang}: Simple asks only how many; flour qu
  await bakeDate.fill(value);await bakeDate.blur();
  // On a 320 px screen the link starts under the bottom bar: scroll as a finger would.
  await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));document.querySelector('[data-customize-link]').scrollIntoView({block:'center'});});
+ await page.evaluate(()=>{const el=document.querySelector('[data-customize-link]');if(el){document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));el.scrollIntoView({block:'center'});}});
  await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
  await page.locator('.bh-step-trigger:visible').tap();
  await page.getByRole('dialog').getByRole('button',{name:fr?/^Peaufiner/:/^Fine-tune/}).tap();
@@ -46,10 +47,12 @@ test('compact navigation reaches every section above the footer and Custom keeps
  const bakeDate=page.getByLabel('Date et heure de cuisson',{exact:true});
  await bakeDate.fill('2026-10-05T19:30');await bakeDate.blur();
  const customize=page.getByRole('button',{name:/^Personnaliser ma fournée/});
+ await page.evaluate(()=>{const el=document.querySelector('[data-customize-link]');if(el){document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));el.scrollIntoView({block:'center'});}});
  await customize.tap();
  const actions=page.locator('.bh-step-actions:visible');
  await actions.getByRole('button',{name:'Étape précédente',exact:true}).tap();
  await expect(bakeDate).toHaveValue('2026-10-05T19:30');
+ await page.evaluate(()=>{const el=document.querySelector('[data-customize-link]');if(el){document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));el.scrollIntoView({block:'center'});}});
  await customize.tap();
  const sections=page.getByRole('button',{name:'Voir les 5 rubriques',exact:true});
  await sections.tap();

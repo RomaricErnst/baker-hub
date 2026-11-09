@@ -4343,15 +4343,25 @@ export default function Home() {
               {/* One way forward. A pending decision carries its own buttons, so
                   Create waits for it; Custom stays reachable as an optional
                   detour, not a second equal choice. */}
-              {collectingBakeTime && eatTime && +eatTime>Date.now() && <div data-recipe-choice style={{display:'grid',gap:4,marginTop:16}}>
-                {kitchenPending
-                  ? <button type="button" style={NEXT_CTA} onClick={()=>{openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}>{fr?'Température de la cuisine →':'Kitchen temperature →'}</button>
-                  : !simpleDecisionPending && <button type="button" style={NEXT_CTA} onClick={()=>{setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>{fr?'Créer ma recette simple':'Create my simple recipe'}</button>}
-                {!kitchenPending && <button type="button" className="bh-back-action" data-customize-link style={{minHeight:44,justifySelf:'center',textAlign:'center',whiteSpace:'normal'}} onClick={()=>{setAwaitingRecipeChoice(false);chooseMode('custom');}}>
-                  {fr?'Personnaliser ma fournée →':'Customize my bake →'}
-                  <span style={{display:'block',fontSize:13,color:'var(--smoke)',textDecoration:'none'}}>{directMethodOnly?(fr?'Matériel, farine et hydratation':'Equipment, flour and hydration'):(fr?'Matériel, farine, levain ou préferment, hydratation':'Equipment, flour, leavening, hydration')}</span>
-                </button>}
-              </div>}
+              {/* Two equal ways forward: Simple generates the recipe from the
+                  style's defaults; Custom is a real choice, described by what the
+                  baker will set. A pending decision holds back Generate only. */}
+              {collectingBakeTime && eatTime && +eatTime>Date.now() && (()=>{
+                if(kitchenPending)return <div data-recipe-choice style={{marginTop:16}}><button type="button" style={NEXT_CTA} onClick={()=>{openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}>{fr?'Température de la cuisine →':'Kitchen temperature →'}</button></div>;
+                const leaven=(yeastType==='sourdough'||styleKey==='pain_levain')?(fr?'levain':'starter'):(fr?'préferment':'preferment');
+                const customDesc=directMethodOnly?(fr?'Vous choisissez matériel, farine et hydratation':'You choose equipment, flour and hydration'):(fr?`Vous choisissez matériel, farine, ${leaven} et hydratation`:`You choose equipment, flour, ${leaven} and hydration`);
+                const card:React.CSSProperties={display:'grid',gap:4,textAlign:'left',padding:'16px 18px',minHeight:56,border:'1.5px solid var(--border)',borderRadius:18,background:'var(--card)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:17,cursor:'pointer',boxShadow:'0 2px 12px rgba(43,36,32,.06)'};
+                const title:React.CSSProperties={display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,fontWeight:700};
+                return <div data-recipe-choice style={{display:'grid',gap:12,marginTop:16}}>
+                  {!simpleDecisionPending&&<button type="button" data-generate-recipe style={card} onClick={()=>{setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>
+                    <span style={title}>{fr?'Générer ma recette':'Generate my recipe'}<span aria-hidden="true">→</span></span>
+                  </button>}
+                  <button type="button" data-customize-link style={card} onClick={()=>{setAwaitingRecipeChoice(false);chooseMode('custom');}}>
+                    <span style={title}>{fr?'Personnaliser ma fournée':'Customize my bake'}<span aria-hidden="true">→</span></span>
+                    <span style={{fontSize:14,color:'var(--smoke)',fontWeight:400}}>{customDesc}</span>
+                  </button>
+                </div>;
+              })()}
             </StepPage>
 
             {/* Generate now lives in the last page's nav bar (StepPage). */}

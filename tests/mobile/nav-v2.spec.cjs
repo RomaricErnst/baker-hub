@@ -17,6 +17,7 @@ async function enterBakeTarget(page,fr=true){
 async function startCustom(page){
  await page.locator('.bh-batch-actions').locator('[data-bh-forward]:visible').tap();
  await enterBakeTarget(page);
+ await page.evaluate(()=>{const el=document.querySelector('[data-customize-link]');if(el){document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));el.scrollIntoView({block:'center'});}});
  await page.getByRole('button',{name:/^Personnaliser ma fournée/}).tap();
 }
 async function openCustomSection(page,label){
@@ -250,10 +251,11 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await organise.tap();
   await enterBakeTarget(page);
   if(mode==='custom'){
+   await page.evaluate(()=>{const el=document.querySelector('[data-customize-link]');if(el){document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));el.scrollIntoView({block:'center'});}});
    await page.getByRole('button',{name:/^Personnaliser ma fournée/}).tap();
    await expect(page.locator('#step-3:visible')).toBeVisible();
   }else{
-   const generate=page.getByRole('button',{name:'Créer ma recette simple',exact:true});
+   const generate=page.getByRole('button',{name:'Générer ma recette',exact:true});
    await generate.tap();
    if(bread){
     // Five 320g baguettes exceed the 1.5kg mixer. The first lot needs a fold before the second finishes.
@@ -802,7 +804,7 @@ test.describe('guided piadina with cooking time set in planning',()=>{
   await expect(plan.getByRole('button',{name:'Valider le planning',exact:true})).toHaveCount(0);
   await cookingTime.fill('2030-05-10T18:00');await cookingTime.blur();
   await expect(cookingTime).toHaveValue('2030-05-10T18:00');
-  await page.getByRole('button',{name:'Créer ma recette simple',exact:true}).tap();
+  await page.getByRole('button',{name:'Générer ma recette',exact:true}).tap();
   await expect.poll(async()=>(await stored(page))?.eatTime).toBe(Date.parse('2030-05-10T18:00:00Z'));
   await expect.poll(async()=>{const s=await stored(page);return {generated:s?.recipeGenerated,style:s?.styleKey,oven:s?.ovenType,count:s?.numItems};}).toEqual({generated:true,style:'piadina',oven:'griddle',count:5});
   await navigate(page,'Préparation');

@@ -42,6 +42,7 @@ for(const locale of ['fr','en']){
   const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
   await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
   await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
+  await page.evaluate(()=>{const el=document.querySelector('[data-customize-link]');if(el){document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));el.scrollIntoView({block:'center'});}});
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
   // Custom opens on equipment (oven, then mixing), then the kitchen.
   await expect(page.locator('#step-3')).toBeVisible();
@@ -112,7 +113,7 @@ for(const locale of ['fr','en']){
   const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
   await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
   await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
-  await page.getByRole('button',{name:fr?'Créer ma recette simple':'Create my simple recipe',exact:true}).tap();
+  await page.getByRole('button',{name:fr?'Générer ma recette':'Generate my recipe',exact:true}).tap();
   await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
   const yeastMeasure=page.getByText(fr?/^Levure fraîche : .*sèche active : /:/^Fresh yeast: .*active dry: /);
   await expect(yeastMeasure).toBeVisible();
@@ -170,6 +171,7 @@ for(const locale of ['fr','en']){
   await expect(stages.getByText(/Poolish/).first()).toBeVisible();
   await page.getByRole('button',{name:fr?'Revoir mes choix':'Review my choices',exact:true}).tap();
   await page.getByRole('button',{name:fr?'Modifier : Mode':'Edit : Mode',exact:true}).tap();
+  await page.evaluate(()=>{const el=document.querySelector('[data-customize-link]');if(el){document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));el.scrollIntoView({block:'center'});}});
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
   await expect.poll(formula).toEqual({tab:'custom',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
   expect(errors).toEqual([]);
@@ -190,6 +192,7 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
   const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
   await bakeDate.fill('2026-10-04T18:00');await bakeDate.blur();
   await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
+  await page.evaluate(()=>{const el=document.querySelector('[data-customize-link]');if(el){document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));el.scrollIntoView({block:'center'});}});
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
  await actions(page).locator('[data-bh-forward]:visible').tap();
  const section=page.getByRole('region',{name:fr?'Nombre de pétrissées':'Mixing batches',exact:true});

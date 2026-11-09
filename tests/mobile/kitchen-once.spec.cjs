@@ -36,7 +36,7 @@ for(const locale of ['en','fr'])test(`${locale}: kitchen on its own screen, then
  await expect(page.locator('[data-kitchen-slider]')).toHaveCount(0);
  await expect(page.getByText(fr?/Travaillez-vous ce jour-là/:/Are you at work then/)).toHaveCount(0);
  await expect(page.locator('[data-create-hint]')).toHaveCount(0);
- const create=page.getByRole('button',{name:fr?'Créer ma recette simple':'Create my simple recipe',exact:true});
+ const create=page.getByRole('button',{name:fr?'Générer ma recette':'Generate my recipe',exact:true});
  await expect(create).toBeEnabled();
  await expect(page.locator('[data-customize-link]')).toContainText(fr?'Personnaliser ma fournée':'Customize my bake');
  await create.tap();
