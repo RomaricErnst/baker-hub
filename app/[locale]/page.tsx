@@ -3429,7 +3429,9 @@ export default function Home() {
       setTimeout(endRestore, 200);
     }
     if(!rb)restoreNavigation(snap);
-    else {setFillingsReturn(null);setPrepReturnToService(null);setShoppingReturnToFillings(false);setProtocolView('dough');setServiceView('dough');setActiveTab(snap.styleKey?'setup':'batch');}
+    else {
+      setFillingsReturn(null);setPrepReturnToService(null);setShoppingReturnToFillings(false);setProtocolView('dough');setServiceView('dough');setActiveTab(snap.styleKey?'setup':'batch');
+    }
     // Modern snapshots are authoritative, including an intentionally empty pizza list.
     // Legacy relational slots must not resurrect removed toppings after a partial save.
     if (Object.prototype.hasOwnProperty.call(snap, 'pizzaParty')) {
@@ -3464,7 +3466,13 @@ export default function Home() {
     }
     if (rb) {
       setRecipeGenerated(false);setShowResults(false);setScheduleCandidateValid(false);setScheduleReady(false);setSetupOverview(false);
+      setReviewMode(false);setProtocolStale(false);
+      // Bake again is a new bake: the kitchen temperature is asked again (it
+      // changes with the day); its forward button leads on to the starter for
+      // sourdough, then the bake time, already a week later.
       setActiveStep(snap.tab==='simple'?7:1);setAdvancedStep(snap.tab==='custom'?9:1);
+      // An unleavened bread has no kitchen question (nothing ferments).
+      if (snap.styleKey && getBreadProtocol(snap.styleKey)?.method !== 'unleavened') { openDestination('batch'); setBatchView('kitchen'); }
     }
     return true;
   }

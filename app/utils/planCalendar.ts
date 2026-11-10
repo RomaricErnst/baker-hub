@@ -162,7 +162,8 @@ export function buildPlanCalendar({ title, events, bakeAt, bakeLabel, bakeId, pr
 }): string {
   const all = quietCloseAlerts([...events, { at: bakeAt, label: bakeLabel, key: 'bake' }]);
   const id = bakeId ?? stamp(bakeAt);
-  const sequence = Math.floor(+now / 60000) % 2000000000;
+  // Seconds, so two exports in the same minute still count as an update.
+  const sequence = Math.floor(+now / 1000) % 2000000000;
   const uidFor = (key: string) => `${id}-${key.replace(/[^A-Za-z0-9_-]/g, '')}@bakerhub.app`;
   const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Baker Hub//Bake plan//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', `X-WR-CALNAME:${text(title)}`];
   const used = new Set<string>();

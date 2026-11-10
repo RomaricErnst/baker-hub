@@ -83,3 +83,43 @@ test('simple starter screen: Previous goes back to the kitchen, and the review l
  await expect(page.getByRole('heading',{name:'Where is your starter now?'})).toBeVisible();
  await expect(page.getByRole('button',{name:'In the fridge',exact:true})).toHaveAttribute('aria-pressed','true');
 });
+
+// Bake again on a sourdough bake: kitchen, then the starter question again (the
+// starter is not where it was a week ago), then the bake time, then a recipe.
+test('simple sourdough: bake again asks the kitchen and the starter, then generates',async({page})=>{
+ test.setTimeout(120000);
+ const c=copy.en;
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ page.on('dialog',d=>d.accept());
+ await page.clock.setFixedTime(NOW);
+ await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
+ await page.goto(c.path);
+ await page.getByRole('button',{name:c.bread,exact:true}).tap();
+ await page.getByRole('button',{name:'Pain au levain',exact:true}).tap();
+ await page.getByRole('button',{name:c.cont}).tap();
+ await forward(page).tap();
+ await page.getByRole('slider').first().fill('22');
+ await forward(page).tap();
+ await page.getByRole('button',{name:c.fridge,exact:true}).tap();
+ await forward(page).tap();
+ const bakeDate=page.getByLabel(c.date,{exact:true});
+ await bakeDate.fill('2026-11-13T19:00');await bakeDate.blur();
+ await page.getByRole('button',{name:c.generate,exact:true}).tap();
+ await expect.poll(async()=>(await stored(page))?.recipeGenerated,{timeout:20000}).toBe(true);
+ const id=await page.evaluate(()=>JSON.parse(localStorage.getItem('bh_journal_v1')||'[]')[0]?.id);
+ await page.getByRole('button',{name:'Menu',exact:true}).tap();
+ await page.getByRole('button',{name:'My bakes',exact:true}).tap();
+ await page.locator(`#bakerhub-menu [data-journal-entry="${id}"]`).tap();
+ await page.getByRole('dialog',{name:'Bake journal entry'}).getByRole('button',{name:'Bake again',exact:true}).tap();
+ await expect(page.locator('[data-kitchen-slider]:visible')).toBeVisible();
+ await forward(page).tap();
+ await expect(page.getByRole('heading',{name:c.question})).toBeVisible();
+ await page.getByRole('button',{name:c.counter,exact:true}).tap();
+ await forward(page).tap();
+ await expect(page.getByLabel(c.date,{exact:true})).toHaveValue('2026-11-20T19:00');
+ const generate=page.getByRole('button',{name:c.generate,exact:true});
+ await expect(generate).toBeEnabled({timeout:20000});
+ await generate.tap();
+ await expect.poll(async()=>{const s=await stored(page);return s?.recipeGenerated&&s.simpleStarterAnswer;},{timeout:20000}).toBe('counter');
+ expect(errors).toEqual([]);
+});
