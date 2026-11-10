@@ -118,7 +118,7 @@ Never exceed 3 lines. No paragraphs, no greetings. Be honest — do not soften r
       const pizzaCtx = pizzaName ? `Pizza name: ${pizzaName}.` : '';
 
       const ovenCtx = (() => {
-        if (ovenType === 'pizza_oven') return 'Wood or gas pizza oven at 450–500°C. Bake time 60–90 seconds. At this temperature, leoparding (irregular dark spots) on the cornicione is expected and correct — it is not a fault.';
+        if (ovenType === 'pizza_oven') return 'Wood or gas pizza oven, floor around 400–450°C, dome hotter. Bake time 60–90 seconds. At this temperature, leoparding (irregular dark spots) on the cornicione is expected and correct — it is not a fault.';
         if (ovenType === 'electric_pizza') return 'Electric pizza oven at 350–420°C. Bake time 3–5 minutes. Some colour on the cornicione expected, light leoparding possible.';
         if (ovenType === 'home_oven_steel') return 'Home oven with steel or stone at 250–280°C. Bake time 5–8 minutes. Even golden-brown crust expected. No leoparding at this temperature — uniform golden colour is correct.';
         return 'Standard home oven at 220–260°C. Bake time 8–12 minutes. Even golden-brown crust expected.';
@@ -137,7 +137,7 @@ Never exceed 3 lines. No paragraphs, no greetings. Be honest — do not soften r
         if (styleKey === 'neapolitan') return `
 NEAPOLITAN STANDARDS:
 - Shape: Round ~28–32cm. Cornicione (crust edge) 1–2cm wide, clearly raised and puffy with visible air pockets. Centre thin ~3–4mm. Missing or flat cornicione, oval shape, uneven thickness, holes, tears = faults.
-- Cornicione cooking at 450–500°C: Leoparding = irregular dark brown/black spots on an otherwise golden/tan crust. This is CORRECT and desirable. Do NOT call it burnt. A pale completely white/cream cornicione with zero spots = undercooked. Uniformly black everywhere (not just spots) = overcooked.
+- Cornicione cooking in a pizza oven (floor 400–450°C): Leoparding = irregular dark brown/black spots on an otherwise golden/tan crust. This is CORRECT and desirable. Do NOT call it burnt. A pale completely white/cream cornicione with zero spots = undercooked. Uniformly black everywhere (not just spots) = overcooked.
 - Centre: Should be thin, lightly blistered, cooked through. Pale wet-looking heavy centre = undercooked.
 - Cheese (fior di latte/mozzarella): Melted with some golden patches = correct. Completely white and unmelted = undercooked. Uniformly dark brown everywhere = overcooked.
 - Undercooked signs (most important to catch): pale white cornicione with no spots, heavy unlifted centre, white unmelted cheese, dough looks raw and dense.`;
@@ -268,7 +268,7 @@ export async function POST(req: NextRequest) {
     // ── Text-only coach: baker asks a question about the current step ──
     if (!imageBase64 && question) {
       const q = String(question).slice(0, 500);
-      const ovenCtx = ovenType === 'pizza_oven' ? 'wood/gas pizza oven 450–500°C'
+      const ovenCtx = ovenType === 'pizza_oven' ? 'wood/gas pizza oven, floor 400–450°C'
         : ovenType === 'electric_pizza' ? 'electric pizza oven 350–420°C'
         : ovenType === 'home_oven_steel' ? 'home oven with steel/stone 250–280°C'
         : ovenType ? 'standard home oven 220–260°C' : '';

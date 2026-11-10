@@ -1,4 +1,5 @@
 import { breadActiveCookMinutes, getBreadProtocol } from './breadProfiles';
+import { leanBreadMinutes } from './leanBreadBake';
 
 export interface ServingTimeInput {
   bakeType: 'bread' | 'pizza';
@@ -23,13 +24,16 @@ export interface ServingTimeEstimate {
  */
 export function breadCoolingUpperMinutes(style: string, weight: number): number | null {
   if (!Number.isFinite(weight) || weight <= 0) return null;
-  return style === 'pain_seigle' ? 1440 : ['baguette','fougasse','pain_viennois'].includes(style) && weight <= 400 ? 60 : weight <= 400 ? 120 : weight <= 1000 ? 180 : 240;
+  return style === 'pain_seigle' ? 1440 : style === 'fougasse' && weight <= 500 ? 15 : style === 'baguette' && weight <= 400 ? 30 : style === 'pain_viennois' && weight <= 400 ? 60 : weight <= 400 ? 120 : weight <= 1000 ? 180 : 240;
 }
 
 // Numeric cooling instructions already present in BREAD_PROTOCOLS.
 const PROFILE_COOLING: Readonly<Record<string, number>> = {focaccia:15, bagel:20, ciabatta:30};
-// Existing messages/en.json bake.*Bread / bake.dutch / bake.steam steps.
-const LOAF_COOK: Readonly<Record<string, number>> = {standard_bread:45,home_oven_stone_bread:45,steam_oven:45,dutch_oven:45,wood_fired:50};
+// Ovens with a lean-bread bake card. Bake minutes come from leanBreadMinutes,
+// the same table the guide prints; round loaves in a wood-fired oven keep the
+// 40–50 min of messages bake.woodBread.
+const LOAF_OVENS: readonly string[] = ['standard_bread','home_oven_stone_bread','steam_oven','dutch_oven','wood_fired'];
+const WOOD_LOAF_COOK = 50;
 // Upper endpoints of the oven + topping heat bands in pizzaParty/BakeTab.
 // Narrowly applied to thin round styles; no pan/deep-dish timing is inferred.
 const PIZZA_COOK: Readonly<Record<string, readonly [number,number,number]>> = {
@@ -72,15 +76,16 @@ export function getServingTimeEstimate(input: ServingTimeInput): ServingTimeEsti
       minutes=profile.cookMinutes[1]+cooling;
     }
   } else {
-    // The generic loaf bake guidance does not establish timings for enriched
-    // loaves or thin baguettes. Multiple loads require oven-capacity information.
-    if (numItems !== 1 || !['pain_campagne','pain_levain','pain_complet','pain_seigle'].includes(styleKey)) return null;
-    const cook=LOAF_COOK[ovenType];
+    // Lean breads only: the guide's bake card gives each a time range for its
+    // piece weight. Multiple loads require oven-capacity information.
+    const range=leanBreadMinutes(styleKey,itemWeight);
+    if (numItems !== 1 || !range || !LOAF_OVENS.includes(ovenType)) return null;
+    const cook=ovenType==='wood_fired'&&['pain_campagne','pain_levain','pain_complet'].includes(styleKey)?WOOD_LOAF_COOK:range[1];
     const cooling=breadCoolingUpperMinutes(styleKey,itemWeight);
-    if (!cook || cooling === null) return null;
+    if (cooling === null) return null;
     minutes=cook+cooling;
-    batchFr='Une seule pièce au four ; haut des plages indicatives de cuisson et refroidissement du guide. Le poids modifie le refroidissement estimé, pas la durée de cuisson : vérifiez le pain avant de couper.';
-    batchEn='One item in the oven; upper ends of the guide’s indicative bake and cooling ranges. Weight changes the cooling allowance, not bake duration: check the bread before cutting.';
+    batchFr='Une seule pièce au four ; haut des plages indicatives de cuisson et refroidissement du guide. La durée de cuisson et le refroidissement suivent le poids de la pièce : vérifiez le pain avant de couper.';
+    batchEn='One item in the oven; upper ends of the guide’s indicative bake and cooling ranges. Bake time and cooling both follow the weight of the piece: check the bread before cutting.';
   }
   return {minutes,labelFr:hasFillings?'Pain prêt à garnir (estimation)':profile?.cooking==='griddle'?'Pains cuits, à servir tièdes (estimation)':'Pain prêt à trancher (estimation)',labelEn:hasFillings?'Bread ready to fill (estimate)':profile?.cooking==='griddle'?'Breads cooked, serve warm (estimate)':'Bread ready to slice (estimate)',
     noteFr:`${batchFr}${hasFillings?' Préparation des garnitures et assemblage non inclus ; ce n’est pas l’heure du repas.':''}`,

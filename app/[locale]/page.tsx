@@ -33,6 +33,7 @@ import MixingBatchControl from '../components/MixingBatchControl';
 const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { ssr: false });
 import { starterFeedToMixHours } from '../lib/starterTiming';
 import { mixerDoughCapacity, suggestedMixingBatchCount } from '../utils/mixingBatches';
+import { doughShoppingItems as buildDoughShoppingItems } from '../lib/doughShopping';
 import {commercialPrefermentWindow, validateConfirmedBake, type StarterEvent } from '../components/SchedulePicker';
 import { prefermentConditioningAction } from '../utils/scheduleEdit';
 import { findAvailabilityConflicts, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake } from '../utils/scheduleAvailability';
@@ -2022,19 +2023,9 @@ export default function Home() {
   const doughShoppingItems = useMemo(() => {
     const cr = tab === 'custom' ? advancedRecipe : recipe;
     if (!cr) return undefined;
-    const items: Array<{ name: string; amount: string; tickKey?: string }> = [
-      ...(cr.flourParts?.length ? cr.flourParts.map(part=>({tickKey:`dough_flour_${part.key}`,name:locale==='fr'?part.nameFr:part.name,amount:`${Math.round(part.grams)}g`})) : [{ tickKey:'dough_0', name: flourShoppingName(styleKey ?? '', locale, flourChosen ? 'custom' : 'simple', flourBlend, !cr.preferment && !cr.sourdough), amount: `${Math.round(cr.flour)}g` }]),
-      { tickKey:'dough_1', name: locale === 'fr' ? 'Sel' : 'Salt', amount: `${Math.round(cr.salt)}g` },
-    ];
-    const yg = cr.preferment != null ? cr.preferment.prefYeastGrams : cr.yeast?.convertedGrams;
-    if (yeastType === 'sourdough') {
-      items.push({ tickKey:'dough_2', name: locale === 'fr' ? 'Levain actif' : 'Active starter', amount: '—' });
-    } else if (yg && yg > 0) {
-      items.push({ tickKey:'dough_2', name: locale === 'fr' ? 'Levure' : 'Yeast', amount: formatYeastDose(yg,locale) });
-    }
-    if ((cr.oil ?? 0) > 0) items.push({ tickKey:yeastType==='sourdough'||(yg&&yg>0)?'dough_3':'dough_2', name: locale === 'fr' ? 'Huile d’olive' : 'Olive oil', amount: `${Math.round(cr.oil ?? 0)}g` });
-    return items;
-  }, [tab, advancedRecipe, recipe, yeastType, locale, styleKey, flourChosen, flourBlend]);
+    // Yeast named by type, sugar and oil listed, quantities in the selected units.
+    return buildDoughShoppingItems({ recipe: cr, yeastType: yeastType ?? 'instant', locale, units, flourName: flourShoppingName(styleKey ?? '', locale, flourChosen ? 'custom' : 'simple', flourBlend, !cr.preferment && !cr.sourdough) });
+  }, [tab, advancedRecipe, recipe, yeastType, locale, units, styleKey, flourChosen, flourBlend]);
 
   const sandwichDoughIngredients = useMemo(() => {
     const cr = tab === 'custom' ? advancedRecipe : recipe;
@@ -3492,7 +3483,7 @@ export default function Home() {
       // Levain breads: the starter's own questions, answered before the bake time.
       id: 8, group: 'dough', chip: fr ? 'Levain' : 'Starter', title: fr ? 'Votre levain' : 'Your starter',
       value: planningMode === 'know_peak' ? (knownPeakTime ? `${fr?'Pic':'Peak'} · ${formatTime(knownPeakTime,locale)}` : null)
-        : lastFedAge ? `${starterLocation === 'fridge' ? (fr?'Frigo':'Fridge') : (fr?'Ambiante':'Room temperature')} · ${({today:['nourri aujourd’hui','fed today'],yesterday:['nourri hier','fed yesterday'],days23:['il y a 2–3 jours','fed 2–3 days ago'],days45:['il y a 4–5 jours','fed 4–5 days ago'],week:['une semaine+','fed a week+ ago']} as Record<string,[string,string]>)[lastFedAge][fr?0:1]}` : null,
+        : lastFedAge ? `${starterLocation === 'fridge' ? (fr?'Frigo':'Fridge') : (fr?'Ambiante':'Room temperature')} · ${({today:['rafraîchi aujourd’hui','fed today'],yesterday:['rafraîchi hier','fed yesterday'],days23:['il y a 2–3 jours','fed 2–3 days ago'],days45:['il y a 4–5 jours','fed 4–5 days ago'],week:['une semaine+','fed a week+ ago']} as Record<string,[string,string]>)[lastFedAge][fr?0:1]}` : null,
       gap: fr ? 'Le levain n’est pas renseigné' : 'Starter not set',
     } as StepDef] : []),
     ...(showPrefermentChoice ? [{

@@ -36,8 +36,13 @@ export function waterPreparation(waterGrams: number, targetTemp: number, sourceT
   if (![waterGrams,targetTemp,sourceTemp].every(Number.isFinite) || waterGrams<=0 || targetTemp<0 || sourceTemp<0) return null;
   return directIcePreparation(waterGrams,Math.min(targetTemp,sourceTemp),sourceTemp);
 }
+/** Below this much ice the correction is a few grams of water: weighing ice for
+ * it is not worth the step. The line then reads as one amount of cool water at
+ * the target temperature; the ice method starts here. */
+export const ICE_METHOD_MIN_G = 50;
 /** The water/ice split shown on the water line; shared so other instructions
- * (the yeast dilution) count the same liquid water. */
+ * (the yeast dilution) count the same liquid water. `cool` marks a small ice
+ * correction folded into the water: all of it is liquid, cooled to the target. */
 export function waterSplit({waterGrams,targetTemp,kitchenTemp,fridgeTemp,source='room',measuredWaterTemp,waterMethod='premelt',idealWaterTemp,directIceSupported=false}:{
   waterGrams:number; targetTemp:number; kitchenTemp:number; fridgeTemp:number; source?:WaterSource;
   measuredWaterTemp?:number; waterMethod?:WaterMethod; idealWaterTemp?:number; directIceSupported?:boolean;
@@ -46,7 +51,15 @@ export function waterSplit({waterGrams,targetTemp,kitchenTemp,fridgeTemp,source=
   const starting=entered ? measuredWaterTemp : source==='room'?kitchenTemp:fridgeTemp;
   const direct=waterMethod==='direct'&&directIceSupported;
   const target=direct?idealWaterTemp:targetTemp;
-  return starting!=null&&target!=null ? direct ? directIcePreparation(waterGrams,target,starting) : waterPreparation(waterGrams,target,starting) : null;
+  const split=starting!=null&&target!=null ? direct ? directIcePreparation(waterGrams,target,starting) : waterPreparation(waterGrams,target,starting) : null;
+  if(!split) return null;
+  return split.ice>0&&split.ice<ICE_METHOD_MIN_G ? {water:split.water+split.ice,ice:0,cool:true} : {...split,cool:false};
+}
+/** "405 g of cool water, about 21°C" — one line for a small cooling correction. */
+export function coolWaterLine(grams: number, targetTemp: number, units: UnitSystem, fr: boolean): string {
+  return fr
+    ? `${displayWeight(grams,units,'fr')} d’eau fraîche, à environ ${displayTemp(targetTemp,units).replace('°','\u00a0°')}`
+    : `${displayWeight(grams,units)} of cool water, about ${displayTemp(targetTemp,units)}`;
 }
 export default function WaterPreparation({waterGrams,targetTemp,kitchenTemp,fridgeTemp,locale,units='metric',source='room',onSourceChange,
   measuredWaterTemp,onMeasuredWaterTempChange,waterMethod='premelt',onWaterMethodChange,
@@ -85,8 +98,10 @@ export default function WaterPreparation({waterGrams,targetTemp,kitchenTemp,frid
   const compatibilityNote=direct&&split&&split.ice>0?<small style={{display:'block',fontSize:14,color:'var(--smoke)'}}>{fr?'Vérifiez que votre pétrin accepte la glace.':'Check that your mixer allows ice.'}</small>:null;
   if (readOnly) return <div style={{...waterText, fontSize:14}}>
     {split ? <>
-      <div>{displayWeight(split.water,units)} {fr ? 'd’eau' : 'water'} · {displayTemp(split.ice > 0 || direct ? starting! : targetTemp,units)}</div>
-      {split.ice > 0 && <div>{displayWeight(split.ice,units)} {fr ? 'glace' : 'ice'}</div>}
+      {split.cool
+        ? <div>{coolWaterLine(split.water,target!,units,fr)}</div>
+        : <div>{displayWeight(split.water,units,locale)} {fr ? 'd’eau' : 'water'} · {displayTemp(split.ice > 0 || direct ? starting! : targetTemp,units)}</div>}
+      {split.ice > 0 && <div>{displayWeight(split.ice,units,locale)} {fr ? 'de glace' : 'ice'}</div>}
       {!direct && split.ice > 0 && <div>{fr ? 'Après fonte complète' : 'After melting completely'} · {displayWeight(split.water + split.ice,units)} · {displayTemp(targetTemp,units)}</div>}
       {direct && split.ice > 0 && <div>{fr ? 'Glace ajoutée au pétrin' : 'Ice added in the mixer'}</div>}
       {compatibilityNote}
@@ -106,8 +121,8 @@ export default function WaterPreparation({waterGrams,targetTemp,kitchenTemp,frid
       <label style={choiceLabelStyle}><input style={choiceInputStyle} type="radio" name={fieldId} checked={direct} onChange={()=>onWaterMethodChange('direct')} />{fr?'Glace dans le pétrin à spirale':'Ice in spiral mixer'}</label>
 
     </details>}
-    <strong style={{display:'block',margin:'12px 0 8px'}}>{starting==null ? (fr?'Saisissez la température pour calculer la glace.':'Enter the water temperature to calculate ice.') : !split ? (fr?'Cible inaccessible avec cette eau et cette méthode.':'Target cannot be reached with this water and method.') : split.ice>0 ? `${displayWeight(split.water,units)} ${fr?'eau':'water'} + ${displayWeight(split.ice,units)} ${fr?'glace':'ice'}` : `${displayWeight(split.water,units)} ${fr?'eau':'water'}${!direct?` · ${displayTemp(targetTemp,units)}`:''}`}</strong>
-    {split&&<div>{direct ? (fr?'Ajoutez l’eau et la glace, puis commencez à pétrir. La glace fond pendant le pétrissage.':'Add the water and ice, then start mixing. The ice melts during mixing.') : split.ice>0 ? (fr?'Remuez la glace dans l’eau jusqu’à fonte complète, puis utilisez cette eau pour la pâte.':'Stir the ice into the water until melted, then use this water in the dough.') : starting!=null&&starting<targetTemp ? (fr?'Réchauffez l’eau à la température indiquée.':'Warm the water to the temperature shown.') : null}</div>}
+    <strong style={{display:'block',margin:'12px 0 8px'}}>{starting==null ? (fr?'Saisissez la température pour calculer la glace.':'Enter the water temperature to calculate ice.') : !split ? (fr?'Cible inaccessible avec cette eau et cette méthode.':'Target cannot be reached with this water and method.') : split.cool ? coolWaterLine(split.water,target!,units,fr) : split.ice>0 ? (fr ? `${displayWeight(split.water,units,'fr')} d’eau + ${displayWeight(split.ice,units,'fr')} de glace` : `${displayWeight(split.water,units)} water + ${displayWeight(split.ice,units)} ice`) : `${displayWeight(split.water,units,locale)} ${fr?'d’eau':'water'}${!direct?` · ${displayTemp(targetTemp,units)}`:''}`}</strong>
+    {split&&<div>{split.cool ? (fr?'Refroidissez l’eau à la température indiquée, par exemple avec de l’eau du réfrigérateur.':'Cool the water to the temperature shown, for example with water from the fridge.') : direct ? (fr?'Ajoutez l’eau et la glace, puis commencez à pétrir. La glace fond pendant le pétrissage.':'Add the water and ice, then start mixing. The ice melts during mixing.') : split.ice>0 ? (fr?'Remuez la glace dans l’eau jusqu’à fonte complète, puis utilisez cette eau pour la pâte.':'Stir the ice into the water until melted, then use this water in the dough.') : starting!=null&&starting<targetTemp ? (fr?'Réchauffez l’eau à la température indiquée.':'Warm the water to the temperature shown.') : null}</div>}
     {compatibilityNote}
     {thermalGapText&&<div>{thermalGapText}</div>}
     {thermalAction&&<div>{thermalAction}</div>}

@@ -7478,7 +7478,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
                 </div>
                 <div style={{ fontSize: '11.5px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', lineHeight: 1.45 }}>
                   {isFr
-                    ? "Un rafraîchi plus fort ou plus léger peut décaler le pétrissage hors de vos heures bloquées — même levain, autre timing."
+                    ? "Un rafraîchi plus fort ou plus léger peut décaler le pétrissage hors de vos heures bloquées — même levain, autres horaires."
                     : 'A stronger or lighter feed can move your mix out of your blocked hours — same starter, different timing.'}
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>

@@ -19,6 +19,7 @@ import CreatePizzaSheet from './CreatePizzaSheet';
 import { loadCustomPizzas, type CustomPizzaDef } from '../lib/profile';
 import PizzaPlaceholder from './PizzaPlaceholder';
 import { SHOPPING_NOTE_FR } from '../lib/shoppingNoteTranslations';
+import { shoppingAmount } from '../lib/doughShopping';
 import { filterPizzasByCourse, type Locale, type FlavorChip } from '../lib/toppingTypes';
 import SelectionCoverage from './pizzaParty/SelectionCoverage';
 import BottomActions from './BottomActions';
@@ -759,7 +760,7 @@ function formatQty(total: number, unit: string, locale: string): string {
   const unitLabels: Record<string, Locale> = {
     g:      { en: 'g',       fr: 'g' },
     ml:     { en: 'ml',      fr: 'ml' },
-    pcs:    { en: 'pcs',     fr: 'pcs' },
+    pcs:    { en: 'pcs',     fr: 'pièces' },
     slices: { en: 'slices',  fr: 'tranches' },
     leaves: { en: 'leaves',  fr: 'feuilles' },
     sprigs: { en: 'sprigs',  fr: 'brins' },
@@ -767,7 +768,7 @@ function formatQty(total: number, unit: string, locale: string): string {
     pinch:  { en: 'pinches', fr: 'pincées' },
     drizzle:{ en: 'drizzles', fr: 'filets' },
   };
-  const singular: Record<string, Locale> = { slices: {en:'slice',fr:'tranche'}, leaves: {en:'leaf',fr:'feuille'}, sprigs: {en:'sprig',fr:'brin'}, pinch: {en:'pinch',fr:'pincée'}, drizzle: {en:'drizzle',fr:'filet'} };
+  const singular: Record<string, Locale> = { pcs: {en:'pc',fr:'pièce'}, slices: {en:'slice',fr:'tranche'}, leaves: {en:'leaf',fr:'feuille'}, sprigs: {en:'sprig',fr:'brin'}, pinch: {en:'pinch',fr:'pincée'}, drizzle: {en:'drizzle',fr:'filet'} };
   const label = (total === 1 ? singular[unit]?.[l] : undefined) ?? unitLabels[unit]?.[l] ?? unit;
   return `${total} ${label}`;
 }
@@ -1001,7 +1002,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
     if (recipeIngredients?.length) {
       text += `${l === 'fr' ? 'POUR VOTRE PÂTE' : 'FOR YOUR DOUGH'}\n`;
-      recipeIngredients.forEach(i => { text += `${i.name}  —  ${i.amount}\n`; });
+      recipeIngredients.forEach(i => { text += `${i.name}  —  ${shoppingAmount(i.amount)}\n`; });
       text += '\n';
     }
 
@@ -1046,7 +1047,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
         totalAmount: item.totalAmount,
         unit: item.unit,
       })));
-      const doughItems = recipeIngredients ?? [];
+      const doughItems = (recipeIngredients ?? []).map(item => ({ ...item, amount: shoppingAmount(item.amount) }));
       const title = Object.entries(qtys)
         .filter(([, q]) => q > 0)
         .map(([id, q]) => {
@@ -1198,7 +1199,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                 <span style={{ fontSize: '13px', color: ticked[ing.tickKey ?? ('dough_' + i)] ? '#B0A89E' : '#2B2420', flex: 1, textDecoration: 'none' }}>
                   {ing.name}
                 </span>
-                <span style={{ fontSize: '12px', color: '#62574e', fontFamily: 'var(--font-ui)' }}>{ing.amount}</span>
+                <span style={{ fontSize: '12px', color: '#62574e', fontFamily: 'var(--font-ui)' }}>{shoppingAmount(ing.amount)}</span>
               </div>
             ))}
           </div>

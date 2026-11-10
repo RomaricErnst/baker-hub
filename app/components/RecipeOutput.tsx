@@ -11,7 +11,8 @@ import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, FLOUR_DATA, type Preferment
 import { type UnitSystem, displayWeight, displayTemp, formatPercent, formatBakeDateTime } from '../utils/units';
 import PlanNav from './PlanNav';
 import WaterPreparation, { waterSplit, type WaterSource, type WaterSettingsProps } from './WaterPreparation';
-import { formatPrefermentDose, formatYeastDose, dryYeastSpoonHint, prefermentDilution } from '../utils/prefermentDose';
+import { formatPrefermentDose, formatYeastDose, prefermentDilution } from '../utils/prefermentDose';
+import { needsScaleHelp, yeastSpoonMeasure, setPercent, DILUTION_BASE_YEAST_G, SCALE_HELP_BELOW_G } from '../utils/yeastMeasure';
 import { getBreadProtocol } from '../utils/breadProfiles';
 
 interface RecipeOutputProps extends WaterSettingsProps {
@@ -455,8 +456,10 @@ export default function RecipeOutput({
   // Baker's percentages (relative to flour)
   const waterPct  = Math.round(water  / flour * 1000) / 10;
   const saltPct = result.saltPct ?? Math.round(salt / flour * 1000) / 10;
-  const oilPct    = oil   > 0 ? Math.round(oil   / flour * 1000) / 10 : 0;
-  const sugarPct  = sugar > 0 ? Math.round(sugar / flour * 1000) / 10 : 0;
+  // Oil and sugar grams are rounded for the scale; show the percentage that
+  // was set, not the one the rounded grams compute back to (3 %, not 3.1 %).
+  const oilPct    = setPercent(oil, flour, 0);
+  const sugarPct  = setPercent(sugar, flour, 1);
 
   // Computed ingredient total (excl. starter)
   const ingredientTotal = flour + water + salt
@@ -472,16 +475,17 @@ export default function RecipeOutput({
   const waterSubNode = <WaterPreparation readOnly waterGrams={waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} achievedDoughTempC={result.thermal?.doughTempC} waterWasClamped={result.thermal?.waterWasClamped} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
   const finalDoughWaterSubNode = <WaterPreparation readOnly waterGrams={result.preferment?.finalWater ?? waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} achievedDoughTempC={result.thermal?.doughTempC} waterWasClamped={result.thermal?.waterWasClamped} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
 
-  const spoonFor = (dose:number,type:string) => dryYeastSpoonHint(dose,type,locale);
+  // One rule (utils/yeastMeasure): every dry dose in spoon range gets a spoon
+  // measure, and every dose under 1 g gets the weighing help beside it.
+  const spoonFor = (dose:number,type:string) => yeastSpoonMeasure(dose,type,locale);
   const yeastSpoon = yeastInfo && spoonFor(yeastInfo.convertedGrams,yeastInfo.yeastType);
-  // Below 0.5 g a spoon is too coarse on its own: offer the weighing help too.
-  const needsPrecision = !!yeastInfo && yeastInfo.convertedGrams<1 && (!yeastSpoon || yeastInfo.convertedGrams<0.5);
-  const dilutionTip = yeastInfo && needsPrecision ? commercialDilution(yeastInfo.convertedGrams,waterMain,1) : yeastInfo?.dilutionTip;
+  const needsPrecision = !!yeastInfo && needsScaleHelp(yeastInfo.convertedGrams);
+  const dilutionTip = yeastInfo && needsPrecision ? commercialDilution(yeastInfo.convertedGrams,waterMain,SCALE_HELP_BELOW_G) : yeastInfo?.dilutionTip;
   // The dilution water comes out of the LIQUID water; ice on the water line stays as it is.
   const mainIceG = waterSplit({waterGrams:waterMain,targetTemp:waterTemp,kitchenTemp,fridgeTemp,source:waterSource,measuredWaterTemp,waterMethod,idealWaterTemp:result.thermal?.idealWaterTemp,
     directIceSupported:mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)})?.ice ?? 0;
   const prefermentSpoon = pf && spoonFor(pf.prefYeastGrams,pf.prefYeastType ?? 'instant');
-  const prefermentDoseDilution = pf && (!prefermentSpoon || pf.prefYeastGrams<0.5) ? prefermentDilution(pf.prefYeastGrams,pf.prefWater,1) : null;
+  const prefermentDoseDilution = pf && needsScaleHelp(pf.prefYeastGrams) ? prefermentDilution(pf.prefYeastGrams,pf.prefWater,SCALE_HELP_BELOW_G) : null;
   // Everything is weighed; a dose too small to weigh says so on its own line
   // too (with the spoon size when there is one), so line and card agree.
   function measureHint(spoon:string|null|undefined,tooSmall:boolean) {
@@ -490,7 +494,7 @@ export default function RecipeOutput({
   const yeastSub = yeastInfo
     ? (() => {
         const isInstant = yeastInfo.yeastType === 'instant';
-        const idyPart = !isInstant ? `= ${formatYeastDose(yeastInfo.grams, locale)} IDY` : null;
+        const idyPart = !isInstant ? (locale==='fr' ? `= ${formatYeastDose(yeastInfo.grams, locale)} de levure sèche instantanée` : `= ${formatYeastDose(yeastInfo.grams, locale)} instant dry yeast`) : null;
         const alternatives = mode==='simple' && isInstant ? (locale==='fr' ? `Levure fraîche : ${formatYeastDose(yeastInfo.grams*3,locale)} · sèche active : ${formatYeastDose(yeastInfo.grams*1.33,locale)}` : `Fresh yeast: ${formatYeastDose(yeastInfo.grams*3,locale)} · active dry: ${formatYeastDose(yeastInfo.grams*1.33,locale)}`) : null;
         return [alternatives, measureHint(yeastSpoon,needsPrecision), idyPart].filter(Boolean).join(' · ') || undefined;
       })()
@@ -605,7 +609,7 @@ export default function RecipeOutput({
               {pf.prefYeastGrams > 0 && (
                 <IngRow
                   label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)}</span>}
-                  grams={formatPrefermentDose(pf.prefYeastGrams,locale)} sub={measureHint(prefermentSpoon,!!prefermentDoseDilution)} noPct
+                  grams={formatPrefermentDose(pf.prefYeastGrams,locale)} sub={measureHint(prefermentSpoon,needsScaleHelp(pf.prefYeastGrams))} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
@@ -935,7 +939,7 @@ export default function RecipeOutput({
                 highlight: false,
                 isTotal: false,
               }] : []),
-              ...(['starter','oil','sugar','milk','eggs','butter'] as const).filter(key=>batchPlan.portion[key]>0).map(key=>({label:({milk:locale==='fr'?'Lait':'Milk',eggs:locale==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:locale==='fr'?'Beurre':'Butter',starter:locale==='fr'?'Levain':'Starter',oil:locale==='fr'?'Huile':'Oil',sugar:locale==='fr'?'Sucre':'Sugar'})[key],value:wStr(Math.round(batchPlan.portion[key])),highlight:false,isTotal:false})),
+              ...(['starter','oil','sugar','milk','eggs','butter'] as const).filter(key=>batchPlan.portion[key]>0).map(key=>({label:({milk:locale==='fr'?'Lait':'Milk',eggs:locale==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:locale==='fr'?'Beurre':'Butter',starter:locale==='fr'?'Levain':'Starter',oil:locale==='fr'?'Huile':'Oil',sugar:locale==='fr'?'Sucre':'Sugar'})[key],value:wStr(batchPlan.portion[key]),highlight:false,isTotal:false})),
               { label: t('recipeOutput.batchTotal'), value: wStr(Math.round(batchPlan.total)), highlight: true, isTotal: true },
             ].map((row, i) => (
               <div key={i} style={{
@@ -965,7 +969,7 @@ export default function RecipeOutput({
           Hidden in preferment mode: all commercial yeast lives in the
           poolish/biga there, so callouts based on the main-dough yeast
           amount would contradict the preferment card. */}
-      {yeastInfo && hasPref && result.preferment && result.preferment.prefYeastGrams > 0 && result.preferment.prefYeastGrams < 1 && (!prefermentSpoon || result.preferment.prefYeastGrams < 0.5) && (
+      {yeastInfo && hasPref && result.preferment && needsScaleHelp(result.preferment.prefYeastGrams) && (
         <details className="bh-disclosure">
           <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Petite dose de levure' : 'Small yeast dose'}</summary>
         <div style={{
@@ -988,8 +992,8 @@ export default function RecipeOutput({
               const yeastName = t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`).toLowerCase();
               const f = (g:number)=>formatPrefermentDose(g,locale);
               return <p style={{ margin: '8px 0 0' }}>{locale === 'fr'
-                ? `Ou mélangez 1 g de ${yeastName} avec 99 g d’eau. Remuez juste avant de prélever ${f(dilution.solutionGrams)} de ce mélange pour le préferment. Cette portion contient ${f(pf.prefYeastGrams)} de levure et ${f(dilution.waterInSolutionGrams)} d’eau : ajoutez seulement ${f(dilution.remainingWaterGrams)} d’eau supplémentaire au préferment. Jetez le reste du mélange. L’eau de la pâte finale ne change pas.`
-                : `Or mix 1 g of ${yeastName} with 99 g water. Stir just before taking ${f(dilution.solutionGrams)} of this mixture for the preferment. This portion contains ${f(pf.prefYeastGrams)} yeast and ${f(dilution.waterInSolutionGrams)} water: add only ${f(dilution.remainingWaterGrams)} more water to the preferment. Discard the leftover mixture. Final-dough water stays unchanged.`}</p>;
+                ? `Ou mélangez ${DILUTION_BASE_YEAST_G} g de ${yeastName} avec ${DILUTION_BASE_YEAST_G*99} g d’eau. Remuez juste avant de prélever ${f(dilution.solutionGrams)} de ce mélange pour le préferment. Cette portion contient ${f(pf.prefYeastGrams)} de levure et ${f(dilution.waterInSolutionGrams)} d’eau : ajoutez seulement ${f(dilution.remainingWaterGrams)} d’eau supplémentaire au préferment. Jetez le reste du mélange. L’eau de la pâte finale ne change pas.${u==='imperial'?' '+t('recipeOutput.dilutionInGrams'):''}`
+                : `Or mix ${DILUTION_BASE_YEAST_G} g of ${yeastName} with ${DILUTION_BASE_YEAST_G*99} g water. Stir just before taking ${f(dilution.solutionGrams)} of this mixture for the preferment. This portion contains ${f(pf.prefYeastGrams)} yeast and ${f(dilution.waterInSolutionGrams)} water: add only ${f(dilution.remainingWaterGrams)} more water to the preferment. Discard the leftover mixture. Final-dough water stays unchanged.${u==='imperial'?' '+t('recipeOutput.dilutionInGrams'):''}`}</p>;
             })()}
           </div>
         </div>
@@ -1043,12 +1047,15 @@ export default function RecipeOutput({
               level="info"
               title={t('recipeOutput.dilutionTitle')}
               body={t('recipeOutput.dilutionBody', {
-                waterG: dilutionTip.waterG,
+                yeastG: DILUTION_BASE_YEAST_G,
+                waterG: dilutionTip.waterG * DILUTION_BASE_YEAST_G,
                 // Kitchen-scale precision: whole grams from 10 g, one decimal below.
                 solutionG: kitchenGrams(dilutionTip.solutionG),
                 waterInSolutionG: kitchenGrams(dilutionTip.waterInSolutionGrams ?? dilutionTip.solutionG * 100 / 101),
                 remainingWaterG: kitchenGrams((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG),
-              })+(mainIceG>0?' '+t('recipeOutput.dilutionIce',{iceG:mainIceG}):'')}
+              })+(mainIceG>0?' '+t('recipeOutput.dilutionIce',{iceG:mainIceG}):'')
+                // Imperial bakers read the water line in ounces: say that this method stays in grams.
+                +(u==='imperial'?' '+t('recipeOutput.dilutionInGrams')+' '+t('recipeOutput.dilutionRemainingImperial',{grams:kitchenGrams((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG),ounces:displayWeight((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG,'imperial',locale)}):'')}
             />
           )}
 

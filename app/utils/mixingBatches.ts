@@ -48,7 +48,8 @@ export function mixingBatchPlan(recipe: RecipeResult, mixer: string, requested?:
     starter, yeast: pref || starter ? 0 : recipe.yeast?.convertedGrams ?? 0,
   };
   const portion = Object.fromEntries(Object.entries(totals).map(([key,value]) =>
-    [key, splitAmount(value, count, active, key === 'yeast' || key === 'preferment' ? 2 : 0)])) as typeof totals;
+    // Sugar is calculated to 0.1 g; keep that in the step so it reads as on the recipe card.
+    [key, splitAmount(value, count, active, key === 'yeast' || key === 'preferment' ? 2 : key === 'sugar' ? 1 : 0)])) as typeof totals;
   const total = Object.values(portion).reduce((a,b)=>a+b,0);
   return {count, active, suggested, capacity, portion, total, overCapacity: total > capacity && !(isManualMixer(mixer) && !statedCapacity(requestedCapacityG))};
 }
