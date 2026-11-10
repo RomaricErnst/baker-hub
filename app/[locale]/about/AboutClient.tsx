@@ -10,7 +10,6 @@ const ASH    = '#3D3530';
 const SMOKE  = '#6B635D';
 const TERRA  = '#6B4423';
 const GOLD   = '#9C8248';
-const SAGE   = '#6B7A5A';
 const BORDER = '#E8E0D5';
 
 const bodyText: React.CSSProperties = {
@@ -625,7 +624,7 @@ const CONTENT: Record<string, LocaleContent> = {
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
               {["Végétarien (64)", "Sans porc (75)", "Halal (73)", "Casher (62)", "Pescatarien (16)", "Sans fruits à coque (127)"].map(l => (
-                <Pill key={l} bg="rgba(107,122,90,0.12)" color={SAGE}>{l}</Pill>
+                <Pill key={l} bg="rgba(107,122,90,0.12)" color="var(--sage-text)">{l}</Pill>
               ))}
             </div>
             <P>Chaque pizza est associée aux styles de pâte compatibles — une Marinara n'apparaîtra pas pour une pizza pan, un Detroit ne s'affichera pas pour une napolitaine. Les suggestions correspondent toujours à ce que votre pâte peut réellement faire.</P>

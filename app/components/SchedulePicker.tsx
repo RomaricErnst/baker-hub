@@ -7926,7 +7926,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
             }}
           >
             {t('blockers.weekdays')}
-            <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', opacity: .65 }}>
+            <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
               {fmtCardHM(blockClock(pendingEatTime,presetHours('work').from),isFr)} – {fmtCardHM(blockClock(pendingEatTime,presetHours('work').to),isFr)}
             </span>
             {isWorkActive && <span style={{ opacity: .7 }}>✓</span>}
@@ -7951,7 +7951,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
               }}
             >
               {t('blockers.nights')}
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', opacity: .65 }}>
+              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
                 {fmtCardHM(blockClock(pendingEatTime,presetHours('sleep').from),isFr)} – {fmtCardHM(blockClock(pendingEatTime,presetHours('sleep').to),isFr)}
               </span>
               {active && <span style={{ opacity: .7 }}>✓</span>}
