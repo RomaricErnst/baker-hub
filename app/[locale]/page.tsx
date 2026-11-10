@@ -7,7 +7,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import type { User } from '@supabase/supabase-js';
 import StarterFeedStatus from '../components/StarterFeedStatus';
 import BakeStartStatus from '../components/BakeStartStatus';
-import {normalizeMixExecution, type MixExecution, normalizeBakeExecution, normalizeStarterFeedRecords, overdueStarterFeed, type StarterFeedRecord, type BakeExecution} from '../utils/bakeExecution';
+import {normalizeMixExecution, type MixExecution, normalizeAcceptedPlan, promptedPreparationAt, normalizeBakeExecution, normalizeStarterFeedRecords, overdueStarterFeed, type StarterFeedRecord, type BakeExecution} from '../utils/bakeExecution';
 import Header from '../components/Header';
 import dynamic from 'next/dynamic';
 const ProfileSheet = dynamic(() => import('../components/ProfileSheet'), { ssr: false });
@@ -60,6 +60,7 @@ import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
 import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
 import { formatYeastDose } from '../utils/prefermentDose';
+import { checkYeastEntry, entryHoursLabel, type YeastEntryCheck } from '../utils/yeastEntry';
 import { starterActionLabel } from '../utils/starterBuild';
 import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock, formatBakeDateTime } from '../utils/units';
 import {
@@ -1136,6 +1137,11 @@ export default function Home() {
   const [manualSalt, setManualSalt]           = useState<number | undefined>(undefined);
   // Custom, direct dough: the baker's yeast amount as IDY % of flour. The plan is re-timed to it.
   const [yeastPctOverride, setYeastPctOverride] = useState<number | undefined>(undefined);
+  // Fine-tune: a typed yeast amount too slow for the time before the bake. It is not applied.
+  // The plan in the last generated recipe: when its dough starts and its first preparation begins.
+  // "Have you mixed?" is asked about this plan, never about an unaccepted edit.
+  const [acceptedPlan, setAcceptedPlan] = useState<{startTime:number;preparationAt:number} | undefined>(undefined);
+  const [yeastEntryIssue, setYeastEntryIssue] = useState<{shownPct:number;bakeAt:number;check:YeastEntryCheck} | null>(null);
   // Custom, levain: the baker's starter % of flour; the levain bulk is re-timed to it.
   const [starterPctOverride, setStarterPctOverride] = useState<number | undefined>(undefined);
   // Set by explicit plan-input edits (yeast amount, starter %, poolish storage); the scheduler clears it after replanning.
@@ -1564,6 +1570,7 @@ export default function Home() {
     setManualSugar(session.manualSugar);
     setManualSalt(session.manualSalt);
     setYeastPctOverride(session.yeastPctOverride);
+    setAcceptedPlan(normalizeAcceptedPlan(session.acceptedStartTime, session.acceptedPreparationAt));
     setStarterPctOverride(session.starterPctOverride);
     setTargetDoughTemp(session.targetDoughTemp);
     setFlourInFridge(session.flourInFridge);
@@ -1852,6 +1859,8 @@ export default function Home() {
 
   // One recipe for both views: the override applies wherever the recipe is shown.
   const effectiveYeastOverride = !!yeastType && yeastType !== 'sourdough' && prefermentType === 'none' ? yeastPctOverride : undefined;
+  // A typed amount that was not applied keeps Fine-tune from moving on as if it had been.
+  const yeastEntryBlocked = !!yeastEntryIssue && !!eatTime && yeastEntryIssue.bakeAt === +eatTime && !!yeastType && yeastType !== 'sourdough' && prefermentType === 'none';
   const effectiveStarterOverride = yeastType === 'sourdough' ? starterPctOverride : undefined;
   // One multiplier, used by every schedule build and the sourdough solver alike.
   // The blend the recipe uses (a blend style's own flours until the baker chooses one).
@@ -2165,6 +2174,7 @@ export default function Home() {
       eatTime: eatTime?.getTime() ?? null,
       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.coveredActions?.length?{coveredActions:b.coveredActions}:{}), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}) })),
       recipeGenerated, protocolStale, activeTab, pizzaPartyTab, modeChosen, awaitingRecipeChoice,
+      acceptedStartTime: acceptedPlan?.startTime, acceptedPreparationAt: acceptedPlan?.preparationAt,
       navigation:{batchView,protocolView,serviceView,returnTo:fillingsReturn,prepReturnToService,shoppingReturnToFillings},
       // How far the baker got. Without it a resumed session reopened at
       // highestStep 1, so every step carrying a default read as unset —
@@ -2241,6 +2251,9 @@ export default function Home() {
   }
   const commercialMethod=prefermentType==='none'||prefermentType==='poolish'||prefermentType==='biga'?prefermentType:null;
   const plannedPreparationAt=+startTime-(commercialMethod&&commercialMethod!=='none'?prefOffsetH*3600000:0);
+  // What the "made?" questions ask about: the accepted plan while an edit is pending.
+  const promptedPrepAt=promptedPreparationAt(plannedPreparationAt,acceptedPlan?.preparationAt,protocolStale);
+  const promptedMixAt=promptedPreparationAt(+startTime,execution?undefined:acceptedPlan?.startTime,protocolStale);
   function madeFormulaMatches(fact:BakeExecution,candidateSchedule:ScheduleResult,times:{prefHours:number},mixedRecipe?:NonNullable<typeof recipe>) {
     if(!styleKey||!ovenType||!yeastType)return false;
     const calculated=calculateRecipe(styleKey,ovenType as OvenType,numItems,itemWeight,kitchenTemp,humidity,candidateSchedule,fridgeTemp,yeastType,'custom',mixerType??'hand',manualHydration,manualOil,manualSugar,flourChosen?flourBlend:undefined,fact.method,priorityOverride,prefermentFlourPct??20,manualSalt,targetDoughTemp,flourInFridge,wastePct,fact.inFridge,feedToMixH,fact.method!=='none'?times.prefHours:undefined,measuredFlourTemp,measuredPrefermentTemp,totalFlourTarget);
@@ -2280,7 +2293,7 @@ export default function Home() {
     if(yeastType==='sourdough'){requestSourdoughMixReplan();return;}
     setReplanRequested(true);setSetupOverview(false);setActiveStep(7);setAdvancedStep(9);openDestination('organisation');
   }
-  const needsMixCheck=!!mixExecution||((yeastType==='sourdough'||!!execution&&execution.method!=='none')&&!missedStarterFeed&&(+startTime<=executionClock||destination==='protocol'));
+  const needsMixCheck=!!mixExecution||((yeastType==='sourdough'||!!execution&&execution.method!=='none')&&!missedStarterFeed&&(promptedMixAt<=executionClock||destination==='protocol'));
   function recordGuideMix(done:boolean) {
     if(!done){
       if(mixExecution){setMixExecution(undefined);saveSession(buildSessionPayload({mixExecution:undefined}));}
@@ -2306,10 +2319,14 @@ export default function Home() {
   function acceptFreshPlan(method:'none'|'poolish'|'biga',mix:Date,bake:Date,hours:number,inFridge:boolean,newBlocks:AvailabilityBlock[]) {
     if(execution||mixExecution)return;
     setPrefermentType(method);setPrefermentChosen(true);setPrefOffsetH(hours);setPrefGoesInFridgeState(inFridge);
+    // A preferment plan replaces a direct-dough yeast amount; the offer said so before this tap.
+    const replacesYeast=method!=='none'&&yeastPctOverride!==undefined;
+    if(replacesYeast)setYeastPctOverride(undefined);
     setStartTime(mix);setEatTime(bake);setBlocks(newBlocks);setTimingOverrides({});setReplanRequested(false);
     setSessionRestored(true);setProtocolStale(false);setScheduleCandidateValid(true);setPrefermentValidity({type:method,valid:true});
     setAcceptedScheduleRepair(null);setStarterPlanResetKey(k=>k+1);
-    saveSession(buildSessionPayload({prefermentType:method,prefermentChosen:true,prefOffsetH:hours,prefGoesInFridge:inFridge,startTime:+mix,eatTime:+bake,timingOverrides:{},protocolStale:false,computedRecipe:null,blocks:newBlocks.map(b=>({...b,from:+b.from,to:+b.to}))}));
+    const accepted={startTime:+mix,preparationAt:+mix-(method!=='none'?hours*3600000:0)};setAcceptedPlan(accepted);
+    saveSession(buildSessionPayload({...(replacesYeast?{yeastPctOverride:undefined}:{}),acceptedStartTime:accepted.startTime,acceptedPreparationAt:accepted.preparationAt,prefermentType:method,prefermentChosen:true,prefOffsetH:hours,prefGoesInFridge:inFridge,startTime:+mix,eatTime:+bake,timingOverrides:{},protocolStale:false,computedRecipe:null,blocks:newBlocks.map(b=>({...b,from:+b.from,to:+b.to}))}));
     openDestination('recipe');
   }
 
@@ -2979,7 +2996,7 @@ export default function Home() {
     setAdvancedStep(1); setAdvancedHighestStep(1); setFlourBlend({ flour1: bakeType === 'bread' ? 'bread' : 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
     setManualSalt(undefined); setTargetDoughTemp(undefined); setWastePct(undefined); setFlourInFridge(false); setPoolishStorage('auto'); setYeastPctOverride(undefined); setStarterPctOverride(undefined); setMeasuredFlourTemp(undefined); setMeasuredPrefermentTemp(undefined); setPrefermentFlourPct(undefined);
-    setRecipeGenerated(false); setProtocolStale(false); setActiveTab('batch');
+    setRecipeGenerated(false); setProtocolStale(false); setActiveTab('batch'); setAcceptedPlan(undefined);
     setReviewMode(false); setSetupOverview(false);
     setModeChosen(false);
     // Restart means restart. Without these the three settled-flags survived the
@@ -3089,6 +3106,8 @@ export default function Home() {
     setReviewMode(false);
     setRecipeGenerated(true);
     setProtocolStale(false);
+    const accepted = {startTime:+startTime, preparationAt:plannedPreparationAt};
+    setAcceptedPlan(accepted);
     setShowResults(true);
     if(fillingsReturn)finishFillings();else setActiveTab('plan');
     scrollToStepTop();
@@ -3098,6 +3117,8 @@ export default function Home() {
         recipeGenerated: true,
         protocolStale: false,
         activeTab: 'plan',
+        acceptedStartTime: accepted.startTime,
+        acceptedPreparationAt: accepted.preparationAt,
       });
       upsertBakeEvent({ session: sessionPayload as SessionData })
         .then(id => { if (id) setBakeEventId(id); });
@@ -3241,6 +3262,7 @@ export default function Home() {
     setManualSugar(snap.manualSugar);
     setManualSalt(snap.manualSalt);
     setYeastPctOverride(snap.yeastPctOverride);
+    setAcceptedPlan(rb ? undefined : normalizeAcceptedPlan(snap.acceptedStartTime, snap.acceptedPreparationAt));
     setStarterPctOverride(snap.starterPctOverride);
     setTargetDoughTemp(snap.targetDoughTemp);
     setFlourInFridge(snap.flourInFridge ?? false);
@@ -3854,6 +3876,7 @@ export default function Home() {
                 {...poolishInputs}
                 schedulerSection={section}
                 onUseCalculatedYeast={()=>{setYeastPctOverride(undefined);setPlanReplanPending(true);}}
+                enteredYeastShownPct={effectiveYeastOverride!==undefined&&yeastType?Math.round(effectiveYeastOverride*(YEAST_TYPES[yeastType]?.conversion??1)*1000)/1000:undefined}
                 poolishStorage={prefermentType==='poolish'?poolishStorage:'auto'}
                 yeastPctOverride={effectiveYeastOverride}
                 replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor}
@@ -4015,14 +4038,14 @@ export default function Home() {
         </section>}
         {missedStarterFeed&&!showProductHome&&!showWelcomeBack&&!bakedDone&&<StarterFeedStatus key={`${missedStarterFeed.kind}:${+missedStarterFeed.time}`} fr={fr} plannedAt={+missedStarterFeed.time} onFed={updateStarterAfterMissedFeed} onNotYet={()=>updateStarterAfterMissedFeed()}/>}
         {!bakedDone&&!needsMixCheck&&recipeGenerated&&commercialMethod&&yeastType!=='sourdough'&&!showProductHome&&!showWelcomeBack&&!isUnleavened&&!replanRequested&&<BakeStartStatus
-          fr={fr} method={commercialMethod} plannedAt={plannedPreparationAt} now={executionClock} execution={execution}
+          fr={fr} method={commercialMethod} plannedAt={promptedPrepAt} now={executionClock} execution={execution}
           preparing={destination==='protocol'&&protocolView==='dough'} onMade={markPreparationMade} onNotYet={requestFreshPlan}
           onRecipe={()=>openDestination('recipe')} onNext={()=>{setProtocolView('dough');openDestination('protocol');}}
           onUndo={()=>{setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}}
         />}
 
         {!bakedDone&&recipeGenerated&&needsMixCheck&&!starterRecoveryPending&&!showProductHome&&!showWelcomeBack&&!isUnleavened&&!replanRequested&&<BakeStartStatus
-          key="mix" fr={fr} method="none" plannedAt={+startTime} now={executionClock}
+          key="mix" fr={fr} method="none" plannedAt={promptedMixAt} now={executionClock}
           execution={mixExecution?{...mixExecution,method:'none',inFridge:false,prefHours:0}:undefined}
           preparing={destination==='protocol'&&protocolView==='dough'} onMade={markMixMade} onNotYet={requestRemainingMixPlan}
           onRecipe={()=>openDestination('recipe')} onNext={()=>{setProtocolView('dough');openDestination('protocol');}}
@@ -4986,7 +5009,7 @@ export default function Home() {
             </StepPage>
 
             {/* Prototype: one clear field per dough setting. */}
-            <StepPage flow={customOrganisationFlow} id={10}>
+            <StepPage flow={customOrganisationFlow} id={10} nextOverride={yeastEntryBlocked ? <button data-bh-forward type="button" disabled aria-describedby="bh-yeast-entry-note" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated ? setupReturnLabel : `${CUSTOM_STEPS.find(step=>step.id===nextCustomStep(10))?.chip ?? (fr?'Suivant':'Next')} →`}</button> : undefined}>
               {styleKey && renderQuantity('size')}
               {/* Oven and mixing are asked once, on Equipment. */}
               {(() => {
@@ -5039,12 +5062,34 @@ export default function Home() {
                     const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
                     const shownPct = yeastPctOverride!==undefined ? yeastPctOverride*conversion : recipe?.yeast?.convertedPct;
                     const yeastName = (localName(YEAST_TYPES[yeastType]) ?? yeastType).toLowerCase();
+                    const entryIssue = yeastEntryIssue && eatTime && yeastEntryIssue.bakeAt===+eatTime ? yeastEntryIssue : null;
                     return <div data-yeast-override style={{marginBottom:18}}>
                       <label style={{display:'block',fontSize:16}}>{fr?`Levure (% de farine, ${yeastName})`:`Yeast (% of flour, ${yeastName})`}
                         <input type="number" key={`yeast:${yeastPctOverride ?? 'auto'}:${shownPct ?? ''}`} defaultValue={shownPct!==undefined?Math.round(shownPct*1000)/1000:''} min={Math.round(0.02*conversion*1000)/1000} max={Math.round(2*conversion*100)/100} step={0.01}
-                          onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const idy=Math.min(2,Math.max(0.02,n/conversion));if(recipe?.yeast&&yeastPctOverride===undefined&&Math.abs(idy-recipe.yeast.pct)<0.0005)return;setYeastPctOverride(Math.round(idy*10000)/10000);setPlanReplanPending(true);}}
+                          aria-describedby={entryIssue?'bh-yeast-entry-note':undefined}
+                          onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const idy=Math.min(2,Math.max(0.02,n/conversion));if(recipe?.yeast&&yeastPctOverride===undefined&&Math.abs(idy-recipe.yeast.pct)<0.0005){setYeastEntryIssue(null);return;}
+                            // An amount that cannot ferment before the bake is not applied: say so here, before any plan moves.
+                            const check=eatTime&&+eatTime>Date.now()&&styleKey&&mixerType?checkYeastEntry(Math.round(idy*10000)/10000,{bake:eatTime,now:Date.now(),blocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,itemWeight,mixingBatches:selectedMixingBatches,fridgeTemp,hydration:poolishInputs.hydrationPct??65,flourStrength,conversion}):null;
+                            if(check&&!check.fits){setYeastEntryIssue({shownPct:Math.round(idy*conversion*1000)/1000,bakeAt:+eatTime!,check});return;}
+                            setYeastEntryIssue(null);setYeastPctOverride(Math.round(idy*10000)/10000);setPlanReplanPending(true);}}
                           style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
                       </label>
+                      {entryIssue&&(()=>{
+                        const pct=(value:number)=>fr?`${String(value).replace('.',',')} %`:`${value}%`;
+                        const hours=(value:number)=>{const h=entryHoursLabel(value);return h>=1?`${String(h).replace('.',fr?',':'.')} h`:`${Math.round(h*60)} min`;};
+                        const {check}=entryIssue;
+                        const needs=check.neededH===null?(fr?'demande plus de 96 h':'needs more than 96 h'):(fr?`demande environ ${hours(check.neededH)}`:`needs about ${hours(check.neededH)}`);
+                        const minimum=check.minimumShownPct;
+                        return <div id="bh-yeast-entry-note" data-yeast-entry-issue role="status" className="bh-plan-notice" style={{margin:'8px 0 0'}}>
+                          <p style={{margin:'0 0 10px',fontSize:15,lineHeight:1.5}}>{fr
+                            ?`${pct(entryIssue.shownPct)} ${needs} ; votre cuisson est dans ${hours(check.availableH)}. ${minimum!==null?`Mettez au moins ${pct(minimum)}, ou enfournez plus tard.`:'Choisissez une heure de cuisson plus tardive.'}`
+                            :`${pct(entryIssue.shownPct)} ${needs}; your bake is in ${hours(check.availableH)}. ${minimum!==null?`Use at least ${pct(minimum)}, or bake later.`:'Choose a later bake time.'}`}</p>
+                          <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+                            {minimum!==null&&<button type="button" className="bh-apply-plan" data-use-minimum-yeast style={{minHeight:44}} onClick={()=>{setYeastEntryIssue(null);setYeastPctOverride(Math.round(minimum/conversion*10000)/10000);setPlanReplanPending(true);}}>{fr?`Utiliser ${pct(minimum)}`:`Use ${pct(minimum)}`}</button>}
+                            <button type="button" data-yeast-change-bake style={{minHeight:44,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:9,background:'var(--paper)',color:'var(--char)',fontSize:16,cursor:'pointer'}} onClick={()=>{setYeastEntryIssue(null);openSetupStep(9,true);}}>{fr?'Changer l’heure de cuisson':'Change bake time'}</button>
+                          </div>
+                        </div>;
+                      })()}
                       <p style={{margin:'6px 0 0',fontSize:14,color:'var(--smoke)',lineHeight:1.45}}>{yeastPctOverride!==undefined
                         ? (fr?'Les horaires suivent cette quantité : moins de levure, pousse plus longue.':'Your timing follows this amount: less yeast, longer rise.')
                         : (fr?'Calculée pour vos horaires. Modifiez-la, les horaires suivent.':'Set for your timing. Change it and the timing follows.')}</p>

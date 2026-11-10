@@ -68,3 +68,74 @@ test('a yeast amount too slow for the bake names the cause and offers the calcul
  await expect(page.locator('[data-use-calculated-yeast]')).toHaveCount(0);
  expect(errors).toEqual([]);
 });
+
+// Fine-tune checks a typed amount before applying it: an amount that cannot
+// ferment before the bake stays in the field, unapplied, with the smallest
+// amount that fits and a way to change the bake time.
+for(const locale of ['en','fr'])test(`${locale}: a yeast amount too slow for the bake is caught on Fine-tune`,async({page})=>{
+ const fr=locale==='fr';
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));
+ await page.clock.setFixedTime(NOW);
+ const bake=NOW+34*3600000;
+ const data={version:1,savedAt:NOW,tab:'custom',bakeType:'pizza',styleKey:'neapolitan',numItems:8,itemWeight:270,pizzaDiameter:30,ovenType:'pizza_oven',mixerType:'hand',yeastType:'instant',kitchenTemp:24,humidity:'normal',fridgeTemp:6,flourBlend:null,prefermentType:'none',prefOffsetH:0,prefGoesInFridge:false,flourInFridge:false,startTime:bake-24*3600000,eatTime:bake,blocks:[],recipeGenerated:true,acceptedStartTime:bake-24*3600000,acceptedPreparationAt:bake-24*3600000,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,customKitchenConfirmed:true,activeStep:7,advancedStep:10,highestStep:7,advancedHighestStep:10,setupOverview:false,activeTab:'setup'};
+ await page.addInitScript(data=>{
+  if(!sessionStorage.getItem('yeast-seeded')){localStorage.setItem('bh_session_v1',JSON.stringify(data));sessionStorage.setItem('yeast-seeded','1');}
+  sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:7,advancedStep:10,setupOverview:false,activeTab:'setup'}));
+ },data);
+ await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
+ await page.goto(fr?'/fr':'/');
+ const fineTune=page.locator('#step-10:visible');
+ await expect(fineTune.locator('[data-yeast-override] input')).toBeVisible({timeout:20000});
+ const yeast=fineTune.locator('[data-yeast-override] input');
+ await yeast.fill('0.02');await yeast.blur();
+ const note=fineTune.locator('[data-yeast-entry-issue]');
+ await expect(note).toHaveText(fr
+  ?/^0,02 % demande environ \d+ h ; votre cuisson est dans \d+ h\. Mettez au moins 0,\d+ %, ou enfournez plus tard\.Utiliser 0,\d+ %Changer l’heure de cuisson$/
+  :/^0\.02% needs about \d+ h; your bake is in \d+ h\. Use at least 0\.\d+%, or bake later\.Use 0\.\d+%Change bake time$/);
+ // Not applied: the typed text stays, the plan does not move, and nobody is asked whether the dough is mixed.
+ await expect(yeast).toHaveValue('0.02');
+ expect((await stored(page)).yeastPctOverride).toBeUndefined();
+ await expect(page.getByText(fr?'Avez-vous pétri la pâte ?':'Have you mixed the dough?',{exact:true})).toHaveCount(0);
+ await expect(fineTune.locator('[data-bh-forward]')).toBeDisabled();
+ await note.scrollIntoViewIfNeeded();
+ await page.screenshot({path:test.info().outputPath(`yeast-entry-${locale}.png`)});
+
+ const offer=note.locator('[data-use-minimum-yeast]');
+ const minimum=Number((await offer.textContent()).match(/[\d.,]+/)[0].replace(',','.'));
+ expect(minimum).toBeGreaterThan(0.02);
+ await offer.tap();
+ await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBe(minimum);
+ await expect(note).toHaveCount(0);
+ await fineTune.getByRole('button',{name:fr?'Retour à la recette':'Back to recipe',exact:true}).tap();
+ // The plan regenerates around the fitting amount, starting in the future.
+ await expect.poll(async()=>{const s=await stored(page);return s.recipeGenerated&&!s.protocolStale&&s.startTime>NOW&&s.acceptedStartTime===s.startTime;},{timeout:20000}).toBe(true);
+ expect((await stored(page)).eatTime).toBe(bake);
+ await expect(page.getByText(fr?'Avez-vous pétri la pâte ?':'Have you mixed the dough?',{exact:true})).toHaveCount(0);
+ expect(errors).toEqual([]);
+});
+
+// A missed start on a dough with the baker's own yeast amount: a preferment
+// plan brings its own yeast, and the offer says so before the switch.
+test('a preferment offer says it replaces the entered yeast amount',async({page})=>{
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));
+ await page.clock.setFixedTime(NOW);
+ const bake=NOW+40*3600000;
+ const data={version:1,savedAt:NOW-24*3600000,tab:'custom',bakeType:'pizza',styleKey:'neapolitan',numItems:4,itemWeight:260,ovenType:'pizza_oven',mixerType:'hand',yeastType:'instant',kitchenTemp:22,humidity:'medium',fridgeTemp:5,flourBlend:{flour1:'bread',flour2:null,ratio1:100},prefermentType:'none',prefermentFlourPct:20,prefOffsetH:0,prefGoesInFridge:true,flourInFridge:false,startTime:NOW-3600000,eatTime:bake,blocks:[],recipeGenerated:true,yeastPctOverride:0.05,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,activeStep:99,advancedStep:99,highestStep:99,advancedHighestStep:99,setupOverview:false,activeTab:'plan'};
+ await page.addInitScript(data=>{if(sessionStorage.getItem('yeast-seeded'))return;sessionStorage.setItem('yeast-seeded','1');localStorage.setItem('bh_session_v1',JSON.stringify(data));sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:99,advancedStep:99,setupOverview:false,activeTab:'plan',reviewMode:true}));},data);
+ await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
+ await page.goto('/');
+ const status=page.getByRole('region',{name:'Bake preparation'});
+ await status.getByRole('button',{name:'Not yet · Update plan',exact:true}).tap();
+ const proposal=page.getByRole('region',{name:'Updated plan'}).filter({visible:true});
+ await expect(proposal.locator('[data-replan-method]').first()).toBeVisible({timeout:20000});
+ const preferment=proposal.locator('[data-replan-method="biga"],[data-replan-method="poolish"]').first();
+ await expect(preferment).toHaveCount(1);
+ const option=preferment.locator('xpath=..');
+ if(await option.evaluate(el=>el.tagName==='DETAILS'))await option.locator('summary').tap();
+ await expect(option.locator('[data-replaces-yeast]')).toHaveText('This replaces your 0.05% yeast.');
+ await expect(proposal.locator('[data-replan-method="none"]').locator('xpath=..').locator('[data-replaces-yeast]')).toHaveCount(0);
+ await preferment.tap();
+ await expect.poll(async()=>(await stored(page)).prefermentType).not.toBe('none');
+ expect((await stored(page)).yeastPctOverride).toBeUndefined();
+ expect(errors).toEqual([]);
+});

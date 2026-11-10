@@ -19,6 +19,21 @@ export function normalizeBakeExecution(value: unknown): BakeExecution | undefine
     || !['flour','water','salt','totalDough'].every(key=>Number.isFinite(v.recipe[key as keyof RecipeResult]))) return undefined;
   return v;
 }
+/** The plan in the last generated recipe, as the baker accepted it. */
+export interface AcceptedPlan { startTime:number; preparationAt:number }
+export function normalizeAcceptedPlan(startTime:unknown, preparationAt:unknown): AcceptedPlan | undefined {
+  if (typeof startTime!=='number' || !Number.isFinite(startTime)) return undefined;
+  const prep=typeof preparationAt==='number'&&Number.isFinite(preparationAt)&&preparationAt<=startTime?preparationAt:startTime;
+  return {startTime,preparationAt:prep};
+}
+/** The time "Have you mixed / made …?" asks about. While the recipe matches the
+ * current plan, that plan is the accepted one. While an edit is waiting for the
+ * recipe to update, ask about the plan the baker last accepted, so an edit that
+ * merely moves the pending start into the past never asks about a plan they did
+ * not see. Sessions saved before acceptance was recorded keep the current plan. */
+export function promptedPreparationAt(current:number, accepted:number|undefined, recipeStale:boolean): number {
+  return recipeStale && accepted!==undefined ? accepted : current;
+}
 export function preparationStatus(plannedAt:number, execution:BakeExecution|undefined, now:number) {
   return execution ? 'made' : plannedAt<=now ? 'unconfirmed' : 'planned';
 }
