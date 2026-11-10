@@ -3,6 +3,31 @@
 import { useState, type CSSProperties, type InputHTMLAttributes } from 'react';
 
 import { displayWeight, gToOz, ozToG, type UnitSystem } from '../utils/units';
+import { isPanPizzaStyle, panSizeLabel } from '../utils/panPizza';
+
+/** One line saying what a single pizza is: dough weight and the pan or diameter it assumes.
+ * Pan styles use the estimated pan from panPizza.ts; round styles the diameter the ball weight is for.
+ * Returns null when the style carries no size. */
+export function eachPizzaNote({ styleKey, itemWeight, diameter, units, locale }: {
+  styleKey?: string | null; itemWeight: number; diameter?: number; units: UnitSystem; locale: string;
+}): string | null {
+  if (!styleKey || !Number.isFinite(itemWeight) || itemWeight <= 0) return null;
+  const fr = locale === 'fr';
+  const weight = displayWeight(Math.round(itemWeight), units, locale);
+  if (isPanPizzaStyle(styleKey)) {
+    const size = panSizeLabel(styleKey, itemWeight, units);
+    if (!size) return null;
+    const detroit = styleKey === 'pan';
+    return fr
+      ? `Chaque pizza : ${weight} ${detroit ? 'dans un moule' : 'sur une plaque'} d’environ ${size}`
+      : `Each pizza: ${weight} in a pan of about ${size}`;
+  }
+  if (diameter === undefined || !Number.isFinite(diameter) || diameter <= 0) return null;
+  const across = units === 'imperial' ? `${Math.round(diameter / 2.54)} in` : `${Math.round(diameter)} cm`;
+  return fr
+    ? `Chaque pizza : ${weight} pour environ ${across} de diamètre`
+    : `Each pizza: ${weight} for about ${across} across`;
+}
 
 /** Keep incomplete keystrokes local; normalize only when the baker commits. */
 function DraftNumberInput({ value, onCommit, ...props }: Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onBlur' | 'onKeyDown'> & { value: number; onCommit: (value: number) => void }) {
@@ -30,6 +55,8 @@ export interface QuantityWeightBounds {
 export interface PrototypeQuantityPickerProps {
   bakeType: 'pizza' | 'bread';
   units?: UnitSystem;
+  /** Style key, used to say what one pizza is (pan size or diameter). */
+  styleKey?: string;
   /** Style keys with diameter/edge presets, such as neapolitan or newyork. */
   roundPizza?: boolean;
   roundView?: 'count' | 'size' | 'both';
@@ -86,6 +113,7 @@ function clamp(value: number, min: number, max: number, step: number): number {
 export default function PrototypeQuantityPicker({
   bakeType,
   units = 'metric',
+  styleKey,
   roundPizza = false,
   roundView = 'both',
   locale = 'en',
@@ -127,6 +155,10 @@ export default function PrototypeQuantityPicker({
   const hasCalculatedWeight = roundPizza && calculatedWeight !== undefined;
   const matchesCalculated = hasCalculatedWeight && Math.round(itemWeight) === Math.round(calculatedWeight!);
   const usesManualWeight = manualEditing || weightIsManual || (hasCalculatedWeight && !matchesCalculated);
+  // Round pizzas already show their diameter on the size view; pans show their size on both views.
+  const pizzaNote = bakeType === 'pizza' && (roundView === 'count' || (styleKey !== undefined && isPanPizzaStyle(styleKey)))
+    ? eachPizzaNote({ styleKey, itemWeight, diameter: roundPizza && !usesManualWeight ? diameter : undefined, units, locale })
+    : null;
 
   function setDiameter(next: number) {
     const value = Math.max(diameterBounds.min, Math.min(diameterBounds.max, Math.round(next)));
@@ -186,6 +218,7 @@ export default function PrototypeQuantityPicker({
           onCommit={value => onCountChange(clamp(value, countMin, countMax, countStep))}
           style={{ ...inputStyle, fontSize: '24px', fontWeight: 700 }}
         />
+        {pizzaNote && roundView === 'count' && <p data-each-pizza style={{ margin: '8px 0 0', fontSize: '14px', lineHeight: 1.45, color: 'var(--ash)' }}>{pizzaNote}</p>}
       </div>}
 
       {/* The count screen asks only how many; size, weight and flour basis are set in Custom. */}
@@ -269,6 +302,7 @@ export default function PrototypeQuantityPicker({
             onCommit={value => onItemWeightChange(clamp(storedWeight(value), weightBounds.min, weightBounds.max, weightBounds.step))}
             style={inputStyle}
           />
+          {pizzaNote && <p data-each-pizza style={{ margin: '8px 0 0', fontSize: '14px', lineHeight: 1.45, color: 'var(--ash)' }}>{pizzaNote}</p>}
         </section>
       )}
 
