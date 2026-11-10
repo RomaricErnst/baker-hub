@@ -1078,6 +1078,25 @@ function buildSchedulePhases(
         scan = new Date(scan.getTime() + 15 * 60000);
       }
     }
+    // Shaping falls in unavailable time all the way to the latest useful moment
+    // (an evening mix for a breakfast bake): shape earlier instead, before the
+    // block, with a shorter first cold spell. Two hours chill the dough enough
+    // to shape (one in a tropical kitchen); the shaped loaves then spend the
+    // block in the fridge and the total cold time is unchanged or longer.
+    if (!availableDivide && relevantBlocks.length) {
+      const shortestCold1H = isTropical ? 1 : 2;
+      for (let scan = new Date(Math.floor((+earliestDivide - 900000) / 900000) * 900000);
+        +scan >= +coldRetard1Start + shortestCold1H * 3600000; scan = new Date(+scan - 900000)) {
+        if (divideIsBlocked(scan)) continue;
+        const minExit = Math.max(+naturalExit, +scan + (divideH + minCold2H) * 3600000);
+        for (let at = Math.ceil(minExit / 900000) * 900000; at <= maxExit; at += 900000) {
+          if (!isTimeBlocked(at, relevantBlocks)) { constrainedExit = new Date(at); break; }
+        }
+        availableDivide = new Date(scan);
+        divideBallTime = new Date(scan);
+        break;
+      }
+    }
     if (!constrainedExit && availableDivide) divideBallTime = availableDivide;
     const coldRetard1End = divideBallTime;
 

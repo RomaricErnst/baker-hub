@@ -48,8 +48,15 @@ test('the same budget, on the engine thermal trajectory, decides; recipe doses f
 test('not offered for pizza, enriched or tin rye, without a clash, or when other steps clash too',()=>{
  for(const styleKey of ['neapolitan','pain_mie','brioche','pain_seigle'])assert.equal(utils.bakeFromFridgeOption({...base,styleKey}),null,styleKey);
  assert.equal(utils.bakeFromFridgeOption({...base,blocks:[]}),null);
- // 14 h: shaping falls in the night as well; this card is only for the fridge exit.
- assert.equal(utils.bakeFromFridgeOption({...base,start:new Date(+bake-14*H)}),null);
+ // 14 h: shaping would fall in the night, so it moves before it (a shorter first
+ // cold spell); then only the fridge exit clashes and the card applies.
+ const late=utils.bakeFromFridgeOption({...base,start:new Date(+bake-14*H)});
+ assert.ok(late);
+ const lateVariant=build(late.blocks,'baguette',new Date(+bake-14*H));
+ assert.ok(+lateVariant.divideBallTime<+night[0].from,'shaped before the night');
+ assert.deepEqual(findAvailabilityConflicts(lateVariant.availabilityActions,night),[]);
+ // Without enough time even for a short first cold spell, nothing is offered.
+ assert.equal(utils.bakeFromFridgeOption({...base,start:new Date(+bake-11*H)}),null);
  // A flag on a pizza plan is ignored by the builder.
  const pizza=utils.buildSchedule(new Date(+bake-26*H),bake,night.map(b=>({...b,bakeFromFridge:+bake})),19,45,'hand','neapolitan',4,1);
  assert.ok(pizza.rtWarmupStart);
