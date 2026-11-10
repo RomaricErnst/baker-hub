@@ -25,6 +25,7 @@ import { WOOD_OVEN_FAQ } from '../lib/woodOvenFaq';
 import { formatPrefermentDose, formatYeastDose } from '../utils/prefermentDose';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { scheduledFoldMinutes } from '../utils/scheduleFolds';
+import { leanBreadBake, ovenTempText } from '../utils/leanBreadBake';
 
 interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   preparationMade?: boolean;
@@ -792,7 +793,7 @@ function StepVisual({ kind, includeSpiral = false, locale }: { includeSpiral?: b
 }
 
 export function breadCoolingRange(style: string, weight: number): string {
-  return style === 'pain_seigle' ? '12–24 h' : ['baguette','fougasse','pain_viennois'].includes(style) && weight <= 400 ? '30–60 min' : weight <= 400 ? '1–2 h' : weight <= 1000 ? '2–3 h' : '3–4 h';
+  return style === 'pain_seigle' ? '12–24 h' : style === 'fougasse' && weight <= 500 ? '10–15 min' : style === 'baguette' && weight <= 400 ? '20–30 min' : style === 'pain_viennois' && weight <= 400 ? '30–60 min' : weight <= 400 ? '1–2 h' : weight <= 1000 ? '2–3 h' : '3–4 h';
 }
 
 // ── Main component ───────────────────────────────────
@@ -933,7 +934,7 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   const isSourdough = recipe ? !!recipe.sourdough : styleKey === 'sourdough' || styleKey === 'pain_levain';
   const breadProtocol = getBreadProtocol(styleKey);
   const hasPoachStep = breadProtocol?.cooking === 'boil-bake' && !!schedule.poachStart;
-  const profileSteps = (lines: readonly string[]) => lines.map(line => ({ bold: line.replace(/(\d+)\s?°C/g, (_, degrees) => displayTemp(Number(degrees), u)).replaceAll('{count}', String(numItems)).replaceAll('{weight}', String(Math.round((recipe?.totalDough ?? numItems * (breadProtocol?.portions.weight ?? 100)) / Math.max(1,numItems)))), note: '' }));
+  const profileSteps = (lines: readonly string[]) => lines.map(line => ({ bold: ovenTempText(line, u).replaceAll('{count}', String(numItems)).replaceAll('{weight}', String(Math.round((recipe?.totalDough ?? numItems * (breadProtocol?.portions.weight ?? 100)) / Math.max(1,numItems)))), note: '' }));
   const fillingsAction = onNavigateToFillings && <button type="button" onClick={onNavigateToFillings} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{fillingsActionLabel ?? (l === 'fr' ? 'Sandwiches et garnitures' : 'Sandwiches & fillings')} →</button>;
   const isBread       = !!breadProtocol || ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
   const isNeapolitan  = styleKey === 'neapolitan';
@@ -942,6 +943,13 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   const isLoafTin     = ['brioche','pain_mie','pain_viennois','pain_seigle'].includes(styleKey);
   const isBoule       = ['pain_campagne','pain_levain','sourdough','pain_complet'].includes(styleKey);
   const isPan         = styleKey === 'pan';
+  const pieceWeight   = (recipe?.totalDough ?? numItems * 750) / Math.max(1, numItems);
+  // Lean breads without a protocol get style-specific oven cards (real
+  // temperatures and times); null keeps the oven-keyed message steps.
+  const leanBake      = !breadProtocol && isBread ? leanBreadBake(styleKey, pieceWeight, ovenType, numItems) : null;
+  // Oven settings in message steps follow the unit system; small values there
+  // are temperature differences ("loses 20–30°C") and stay as written.
+  const ovenSteps = (items: { bold: string; note: string }[]) => items.map(item => ({ bold: ovenTempText(item.bold, u, 120), note: ovenTempText(item.note, u, 120) }));
   const isRoman       = styleKey === 'roman';
   // Shaping label: what we call the shaped piece
   const isSpiral      = mixerType === 'spiral';
@@ -1865,8 +1873,8 @@ Actual dough condition and equipment may differ from these estimates.`;
         </div>
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
-          {breadProtocol ? <Steps items={profileSteps(breadProtocol.preheat[l])} /> : isBread ? (
-            <Steps items={(t.raw(
+          {breadProtocol ? <Steps items={profileSteps(breadProtocol.preheat[l])} /> : leanBake ? <Steps items={ovenSteps(leanBake.preheat[l])} /> : isBread ? (
+            <Steps items={ovenSteps(t.raw(
               ovenType === 'dutch_oven' ? 'preheat.dutch.steps' :
               ovenType === 'home_oven_stone_bread' ? 'preheat.stoneBread.steps' :
               ovenType === 'steam_oven' ? 'preheat.steam.steps' :
@@ -1890,7 +1898,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         {!breadProtocol && <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Le four et la surface de cuisson sont chauds, et la pâte est prête.':'The oven and baking surface are heated, and the dough is ready.'}</p>}
 
         {!breadProtocol && <StepExtras
-          tips={
+          tips={leanBake && (!leanBake.scored || (ovenType === 'dutch_oven' && isBaguette)) ? null :
             <Section icon={null} title={t('sectionTitles.pitfalls')}>
               <Bullets items={isBread
                 ? (t.raw(
@@ -1938,8 +1946,8 @@ Actual dough condition and equipment may differ from these estimates.`;
           {styleKey === 'pain_viennois' && recipe && recipe.totalDough / Math.max(1, numItems) < 200 && <p>{l === 'fr'
             ? `Vos pièces font environ ${Math.round(recipe.totalDough / Math.max(1, numItems))} g : elles sont plus petites que les baguettes de référence de 200 g. Contrôlez-les avant 15 min, puis régulièrement : croûte dorée et centre pris. Le poids seul ne détermine pas la cuisson ; la forme et le four comptent aussi.`
             : `Your pieces weigh about ${Math.round(recipe.totalDough / Math.max(1, numItems))} g: they are smaller than the reference 200 g baguettes. Check before 15 minutes, then regularly: golden crust and a set centre. Weight alone does not determine baking time; shape and oven matter too.`}</p>}
-          {breadProtocol ? <Steps items={profileSteps(hasPoachStep ? breadProtocol.cookingSteps[l].slice(1) : breadProtocol.cookingSteps[l])} /> : isBread ? (
-            <Steps items={(t.raw(
+          {breadProtocol ? <Steps items={profileSteps(hasPoachStep ? breadProtocol.cookingSteps[l].slice(1) : breadProtocol.cookingSteps[l])} /> : leanBake ? <Steps items={ovenSteps(leanBake.bake[l])} /> : isBread ? (
+            <Steps items={ovenSteps(t.raw(
               ovenType === 'dutch_oven' ? 'bake.dutch.steps' :
               ovenType === 'home_oven_stone_bread' ? 'bake.stoneBread.steps' :
               ovenType === 'steam_oven' ? 'bake.steam.steps' :
@@ -1963,7 +1971,9 @@ Actual dough condition and equipment may differ from these estimates.`;
         {!breadProtocol && <StepExtras
           tips={<>
             <Section icon="" title={t('sectionTitles.watchFor')}>
-              {isBread ? (
+              {leanBake?.watchFor[l].length ? (
+                <Bullets items={leanBake.watchFor[l].map(line => ovenTempText(line, u))} />
+              ) : isBread ? (
                 <Bullets items={t.raw('bake.dutch.watchFor') as string[]} />
               ) : ovenType === 'pizza_oven' ? (
                 <Bullets items={t.raw('bake.pizzaOven.watchFor') as string[]} />
@@ -1976,7 +1986,7 @@ Actual dough condition and equipment may differ from these estimates.`;
               )}
             </Section>
             <Section icon={null} title={t('sectionTitles.pitfalls')}>
-              <Bullets items={isBread
+              <Bullets items={leanBake?.pitfalls[l].length ? leanBake.pitfalls[l] : isBread
                 ? (t.raw(
                     ovenType === 'dutch_oven' ? 'bake.dutch.pitfalls' :
                     ovenType === 'home_oven_stone_bread' ? 'bake.stoneBread.pitfalls' :
@@ -1992,7 +2002,7 @@ Actual dough condition and equipment may differ from these estimates.`;
                   ) as string[])
               } />
             </Section>
-            {isBread && (
+            {isBread && leanBake?.scored !== false && (
               <Section icon="" title={t('sectionTitles.learnMore')}>
                 <ExtLink href="https://www.theperfectloaf.com/guides/how-to-score-bread-dough/" label={t('bake.learnMoreScoring')} />
                 <div style={{ marginTop: '8px' }}>
@@ -2019,11 +2029,16 @@ Actual dough condition and equipment may differ from these estimates.`;
 
       {isBread && <StepCard final number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Garder les pains souples' : 'Keep the breads soft') : (l === 'fr' ? 'Laisser refroidir le pain' : 'Cool the bread')}>
         {breadProtocol ? <Steps items={profileSteps(breadProtocol.cooling[l])} /> : (() => {
-          const weight = (recipe?.totalDough ?? numItems * 750) / Math.max(1,numItems);
-          const range = breadCoolingRange(styleKey, weight);
+          const range = breadCoolingRange(styleKey, pieceWeight);
           return <><Section icon="" title={t('sectionTitles.whatToDo')}><Steps items={[
-            {bold:l === 'fr' ? 'Sortez le pain du moule ou de la cocotte et posez-le à découvert sur une grille.' : 'Remove the bread from its tin or pot and place it uncovered on a rack.',note:''},
-            {bold:l === 'fr' ? `Comptez environ ${range} avant de trancher.` : `Allow about ${range} before slicing.`,note:''},
+            {bold:styleKey === 'pain_seigle'
+              ? (l === 'fr' ? 'Démoulez le pain s’il est encore dans son moule et posez-le à découvert sur une grille.' : 'Unmould the loaf if it is still in its tin and place it uncovered on a rack.')
+              : ovenType === 'dutch_oven' && isBoule
+              ? (l === 'fr' ? 'Sortez le pain de la cocotte et posez-le à découvert sur une grille.' : 'Lift the loaf out of the Dutch oven and place it uncovered on a rack.')
+              : (l === 'fr' ? 'Laissez refroidir à découvert sur une grille, sans rien poser dessus.' : 'Leave to cool uncovered on a rack, with nothing on top.'),note:''},
+            {bold:isFougasse
+              ? (l === 'fr' ? `Comptez environ ${range} avant de servir : la fougasse se mange tiède.` : `Allow about ${range} before serving: fougasse is best warm.`)
+              : (l === 'fr' ? `Comptez environ ${range} avant de trancher.` : `Allow about ${range} before slicing.`),note:''},
           ]}/></Section><p style={{marginTop:16}}><strong>{l === 'fr' ? 'Prêt quand : ' : 'Ready when: '}</strong>{styleKey === 'pain_seigle' ? (l === 'fr' ? 'Attendez le lendemain pour trancher ; une fois refroidi, emballez-le pour éviter qu’il sèche.' : 'Wait until tomorrow to slice; once cool, wrap it to keep it from drying out.') : (l === 'fr' ? 'Le dessous du pain n’est plus chaud au toucher. Encore chaud ? Vérifiez dans 30 min.' : 'The loaf no longer feels warm underneath. Still warm? Check again in 30 min.')}</p></>;
         })()}
         {!breadProtocol && <StepExtras tips={null} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />}

@@ -21,11 +21,15 @@ test('unknown capacity, untimed steam settling, changed profile weight and inval
   for(const change of [{numItems:2},{numItems:0},{numItems:1.5},{numItems:Infinity},{itemWeight:NaN},{itemWeight:800},{ovenType:'unknown'},{styleKey:'pita',itemWeight:100},{styleKey:'brioche'}])a.equal(estimate({...bread,...change}),null,JSON.stringify(change));
 });
 test('legacy cooling boundaries remain consistent with guide and include next-day rye',()=>{
-  a.equal(cool('baguette',400),60);a.equal(cool('baguette',401),180);
+  a.equal(cool('baguette',400),30);a.equal(cool('baguette',401),180);a.equal(cool('fougasse',400),15);
   a.equal(cool('pain_campagne',400),120);a.equal(cool('pain_campagne',401),180);
   a.equal(cool('pain_campagne',1000),180);a.equal(cool('pain_campagne',1001),240);
   a.equal(cool('pain_seigle',750),1440);
-  a.equal(estimate({...bread,styleKey:'pain_seigle',itemWeight:750}).minutes,1485);
+  a.equal(estimate({...bread,styleKey:'pain_seigle',itemWeight:750}).minutes,1495);
+  // Bake minutes follow the guide's weight table; a single baguette is now timed too.
+  a.equal(estimate({...bread,styleKey:'pain_campagne',itemWeight:1200}).minutes,60+240);
+  a.equal(estimate({...bread,styleKey:'baguette',itemWeight:320}).minutes,25+30);
+  a.equal(estimate({...bread,styleKey:'pain_campagne',itemWeight:750,ovenType:'wood_fired'}).minutes,50+180);
   const ready=new Date('2026-09-23T01:00:00Z');
   const start=new Date(+ready-estimate({...bread,styleKey:'pain_campagne',itemWeight:750}).minutes*60000);
   a.equal(start.toISOString(),'2026-09-22T21:15:00.000Z');

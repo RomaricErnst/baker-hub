@@ -44,7 +44,8 @@ test('sourdough pizza hands off to pizza journey, bread cooling uses loaf size',
 
 test('cooling ranges distinguish small breads, loaves and rye',()=>{
  const {breadCoolingRange}=require('../app/components/BakeGuide.tsx');
- assert.equal(breadCoolingRange('baguette',250),'30–60 min');
+ assert.equal(breadCoolingRange('baguette',250),'20–30 min');
+ assert.equal(breadCoolingRange('fougasse',400),'10–15 min');
  assert.equal(breadCoolingRange('pain_campagne',800),'2–3 h');
  assert.equal(breadCoolingRange('pain_campagne',1400),'3–4 h');
  assert.equal(breadCoolingRange('pain_seigle',800),'12–24 h');
