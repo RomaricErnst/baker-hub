@@ -96,9 +96,13 @@ test('en: photos stay on the device and a new bake adds a second entry',async({p
  await expect(sheet.locator('img')).toHaveCount(1);
  await sheet.getByRole('button',{name:'Close',exact:true}).tap();
  // Start a new bake: the earlier entry stays, the next generation adds one.
- // After the reload the bake waits to be resumed; start a new one from the page.
- await page.getByRole('button',{name:'Start a new bake',exact:true}).tap();
- await generate(page,false,2);
- expect((await journal(page)).some(row=>row.id===entry.id&&row.photoIds.length===1)).toBe(true);
+ // A reload now reopens the bake itself; a new visit shows the Resume card with "Start a new bake".
+ const visit=await page.context().newPage();
+ visit.on('pageerror',e=>errors.push(e.message));
+ await visit.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
+ await visit.goto('/');
+ await visit.getByRole('button',{name:'Start a new bake',exact:true}).tap();
+ await generate(visit,false,2);
+ expect((await journal(visit)).some(row=>row.id===entry.id&&row.photoIds.length===1)).toBe(true);
  expect(errors).toEqual([]);
 });

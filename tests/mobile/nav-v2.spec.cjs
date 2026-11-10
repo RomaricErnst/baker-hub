@@ -191,7 +191,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await page.clock.setFixedTime(Date.parse('2026-11-01T04:55:00Z'));
   await anonymous(page);await page.goto('/fr');
   await expect(navigator(page)).toHaveCount(0);
-  await page.getByRole('button',{name:bread?'Pain':'Pizza',exact:true}).tap();
+  await page.getByRole('button',{name:bread?'Pain & repas':'Pizza',exact:true}).tap();
   await expect(page.getByRole('heading',{name:bread?'Choisissez votre pain':'Quel style de pizza ?',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Comment définir votre recette ?',exact:true})).toHaveCount(0);
   const continueBeforeChoice=page.locator('.bh-batch-actions').locator('[data-bh-forward]:visible');
@@ -342,8 +342,9 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await expect.poll(async()=>bread?(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']:Object.values((await stored(page))?.pizzaParty?.qtys||{}).reduce((sum,n)=>sum+n,0)).toBe(2);
  await expect.poll(async()=>(await stored(page))?.navigation?.returnTo?.destination).toBe('protocol');
  // Resume a persisted catalogue detour, not only the in-memory return path.
+ // A reload mid-bake reopens it where it was, without a Resume card.
  await page.reload();
- await page.getByRole('button',{name:'Reprendre →',exact:true}).tap();
+ await expect(page.getByRole('button',{name:'Reprendre →',exact:true})).toHaveCount(0);
  await expect(page.getByRole('dialog',{name:'Ma sélection',exact:true})).toHaveCount(0);
  // The catalogue has its own heading while the return still points to Preparation.
  await expect(page.locator('.bh-navigator-current')).toContainText('Garnitures');
@@ -439,7 +440,7 @@ test('late fillings opened from Recipe return to Recipe without changing the dou
 
 test('bread family return preserves choices; wraps and meal examples are discoverable',async({page})=>{
  await anonymous(page);await page.goto('/fr');
- await page.getByRole('button',{name:'Pain',exact:true}).tap();
+ await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();
  await expect(page.getByRole('heading',{name:'Choisissez votre pain',exact:true})).toBeVisible();
  await expect(page.getByRole('link',{name:'Pitas & wraps',exact:true})).toBeVisible();
  const wrap=page.getByRole('button',{name:/^Pain à wrap · Laffa/});
@@ -454,7 +455,7 @@ test('bread family return preserves choices; wraps and meal examples are discove
  await page.locator('.bh-style-confirm').getByRole('button',{name:'Retour',exact:true}).tap();
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Que souhaitez-vous préparer ?',exact:true})).toBeVisible();
- await page.getByRole('button',{name:'Pain',exact:true}).tap();
+ await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();
  await page.getByRole('button',{name:/^Continuer avec/}).tap();
  await expect(quantity).toHaveValue('5');await noOverflow(page);
  await page.goBack();await expect(page.getByRole('heading',{name:'Choisissez votre pain',exact:true})).toBeVisible();
@@ -471,7 +472,7 @@ test('landing photos stay above text and bread meal examples are readable',async
    return copy.top>=media.bottom-1&&[...el.querySelectorAll('img')].every(img=>{const r=img.getBoundingClientRect();return r.top>=media.top-1&&r.bottom<=media.bottom+1&&r.right<=media.right+1;});
   })).toBe(true);
  }
- await page.getByRole('button',{name:'Pain',exact:true}).tap();
+ await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();
  const loaves=page.locator('#bread-group-loaves').locator('..').locator('.bh-bread-style-card');
  await expect(loaves).toHaveCount(6);
  const sources=[];
@@ -611,7 +612,7 @@ test('Custom: batch details are conditional and setup headings reset above the f
  await step.locator('.bh-step-actions').locator('[data-bh-forward]:visible').tap();
  await expect(page.locator('#step-4')).toBeVisible();
  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
- await unobscured(page.locator('#step-4 h2'));
+ await unobscured(page.locator('#step-4 h1.bh-page-title'));
   await page.locator('#step-4 .bh-step-actions').locator('[data-bh-forward]:visible').tap();
   const flour=page.locator('#step-6');
   await expect(flour).toBeVisible();await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
@@ -651,7 +652,7 @@ test('page landing survives delayed Safari viewport changes and history restore 
  // Keep enough document height to reproduce a retained scroll offset even
  // when this particular two-card page otherwise fits the test viewport.
  await page.addStyleTag({content:'[data-navigation-page]{min-height:calc(100dvh + 300px)!important}'});
- const heading=page.locator('#step-7 h2').first();
+ const heading=page.locator('#step-7 h1.bh-page-title').first();
  const clearHeading=async(atTop=true)=>{
   if(atTop)await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
   await expect.poll(()=>heading.evaluate(el=>{
@@ -756,7 +757,7 @@ for(const mode of ['simple','custom']){
   await expect(end.getByRole('button',{name:'Enregistrer',exact:true})).toBeVisible();
   await expect(end.getByRole('button',{name:'Partager',exact:true})).toBeVisible();
   await page.reload();
-  await page.getByRole('button',{name:'Reprendre →',exact:true}).tap();
+  await expect(page.getByRole('button',{name:'Reprendre →',exact:true})).toHaveCount(0);
   await expect(end).toBeVisible();
   await page.getByRole('button',{name:'Annuler le dernier',exact:true}).tap();
   await expect(end).toHaveCount(0);
@@ -782,7 +783,7 @@ test.describe('guided piadina with cooking time set in planning',()=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.clock.setFixedTime(new Date('2030-05-10T10:00:00Z'));
   await anonymous(page);await page.goto('/fr');
-  await page.getByRole('button',{name:'Pain',exact:true}).tap();
+  await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();
   await page.locator('.bh-batch-content').getByRole('button',{name:'Galette à garnir · Piadina',exact:true}).tap();
   await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
   await page.getByLabel('Nombre de pièces',{exact:true}).fill('5');

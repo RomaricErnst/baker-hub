@@ -160,7 +160,9 @@ test('reopening during starter recovery preserves history and never revives the 
  const resume=page.getByRole('button',{name:/^Resume/}).filter({visible:true}).first();
  const review=page.getByRole('button',{name:/^(Review|Adjust) timing$/}).filter({visible:true}).first();
  const heading=page.getByRole('heading',{name:'Your baking plan',exact:true}).filter({visible:true});
- await expect(resume.or(review).or(heading).first()).toBeVisible();
+ // A reload mid-bake reopens the recipe directly (its plan card); older builds offered Resume first.
+ const planCard=page.getByRole('region',{name:'Your plan',exact:true}).filter({visible:true});
+ await expect(resume.or(review).or(heading).or(planCard).first()).toBeVisible();
  if(await resume.isVisible())await resume.tap();
  await expect(feed).toHaveCount(0);
  await expect.poll(validRecovery).toBe(true);

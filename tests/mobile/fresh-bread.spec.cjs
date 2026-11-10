@@ -7,7 +7,7 @@ test.describe('fresh unleavened bread setup',()=>{
   await page.clock.setFixedTime(new Date('2030-05-10T10:00:00Z'));
   await page.route('http://127.0.0.1:54321/**',route=>route.fulfill({status:401,contentType:'application/json',body:'{"message":"Anonymous test"}'}));
   await page.goto('/');
-  await page.getByRole('button',{name:'Bread',exact:true}).tap();
+  await page.getByRole('button',{name:'Bread & meals',exact:true}).tap();
   await page.locator('.bh-batch-content').getByRole('button',{name:/Piadina/}).tap();
   const proceed=()=>page.locator('.bh-step-page:visible').getByRole('button',{name:'Continue',exact:true}).tap();
   await page.locator('.bh-style-confirm button').tap();

@@ -46,7 +46,7 @@ for(const locale of ['fr','en']){
 for(const bread of [false,true])test(`Fresh ${bread?'baguette lunch':'pizza night'}: create, add a filling, shop, prepare and serve`,async({page})=>{
  await page.route('http://127.0.0.1:54321/**',route=>route.fulfill({status:401,contentType:'application/json',body:'{}'}));
  await page.goto('/fr');
- await page.getByRole('button',{name:bread?'Pain':'Pizza',exact:true}).tap();
+ await page.getByRole('button',{name:bread?'Pain & repas':'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:bread?'Baguette':'Napolitaine classique',exact:true}).tap();
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^Continuer avec/}).tap();
  const quantity=page.getByLabel(bread?'Nombre de pains':'Nombre de pizzas',{exact:true});

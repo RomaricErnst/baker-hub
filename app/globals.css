@@ -23,6 +23,8 @@ html {
      uses this darker step: 5.5:1 on --warm, 4.8:1 on --cream, 5.7:1 on white. */
   --gold-text: #7A6332;
   --sage: #6B7A5A;
+  /* Sage for text on light or sage-tinted surfaces: 5.3:1 on a 12% sage chip, 6.1:1 on cream. */
+  --sage-text: #4F5B42;
   /* Secondary text. 5.7:1 on --warm, 4.9:1 on --cream, 5.9:1 on white —
      small labels sit on all three, so the margin over 4.5:1 is deliberate. */
   --smoke: #6B635D;
@@ -671,3 +673,5 @@ body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="d
 }
 /* Programmatic focus on arrival: no ring on a heading that is not a control. */
 .bh-page-title:focus{outline:none}
+/* The bake title heads the generated views but keeps the compact look of the context line. */
+.bh-page-title.bh-bake-title { font-family:var(--font-ui); font-size:14px; font-weight:700; line-height:1.4; letter-spacing:0; margin:0; }

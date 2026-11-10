@@ -3,7 +3,7 @@ for(const lang of ['fr','en'])test(`${lang}: Simple asks only how many; flour qu
  const fr=lang==='fr';
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,body:'{}'}));
  await page.goto(fr?'/fr':'/');
- await page.getByRole('button',{name:fr?'Pain':'Bread',exact:true}).tap();
+ await page.getByRole('button',{name:fr?'Pain & repas':'Bread & meals',exact:true}).tap();
  await page.getByRole('button',{name:'Brioche',exact:true}).tap();
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
  await expect(page.locator('.bh-fillings-invitation')).toHaveCount(0);
