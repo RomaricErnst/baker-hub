@@ -257,23 +257,15 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   }else{
    const generate=page.getByRole('button',{name:'Générer ma recette',exact:true});
    await generate.tap();
-   if(bread){
-    // Five 320g baguettes exceed the 1.5kg mixer. The first lot needs a fold before the second finishes.
-    const reduce=page.getByRole('button',{name:'Réduire ma quantité',exact:true});
-    await expect(reduce).toBeVisible();
-    await (async()=>{const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();})();
-    const target=await page.getByLabel('Date et heure de cuisson',{exact:true}).inputValue();
-    await reduce.tap();await quantity.fill('4');await quantity.blur();await organise.tap();
-    await expect(page.getByLabel('Date et heure de cuisson',{exact:true})).toHaveValue(target);
-    await generate.tap();
-   }
+   // Five 320 g baguettes are one hand-mixed dough: Simple never asks the baker to reduce the bake.
+   await expect(page.getByRole('button',{name:'Réduire ma quantité',exact:true})).toHaveCount(0);
    await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
    await page.getByRole('button',{name:/^J’ai les ingrédients · Préparation/}).first().tap();
    await page.locator('[data-preparation-timing]:visible').getByRole('button',{name:'Ajuster les horaires',exact:true}).tap();
    await expect(timing).toBeVisible();
   }
   await expect.poll(async()=>(await stored(page)).tab).toBe(mode);
-  await expect.poll(async()=>(await stored(page))?.numItems).toBe(bread&&mode==='simple'?4:5);
+  await expect.poll(async()=>(await stored(page))?.numItems).toBe(5);
   expect((await stored(page)).styleKey).toBe(chosenStyle);
  });
 
