@@ -227,6 +227,11 @@ export const BREAD_FERMENTATION_DEFAULTS = {
   brioche: {coldH: 8, rtH: 2, minColdH: 4, coldHRequired: true},
   pain_mie: {coldH: 8, rtH: 2, minColdH: 4, coldHRequired: true},
   pain_viennois: {coldH: 6, rtH: 2, minColdH: 3, coldHRequired: true},
+  // Pain au seigle (30 % rye, commercial yeast). Shared by utils.ts and
+  // SchedulePicker.tsx through this spread (Multi-engine rule); FermentChart
+  // lists it among the bread styles. Pain complet's window: rye shortens the
+  // useful fermentation, so less cold than pain de campagne's 18 h.
+  pain_au_seigle: {coldH: 12, rtH: 3, preferredColdH: 18, minColdH: 6, minTotalFermH: 8},
   "focaccia": {
     "coldH": 12,
     "rtH": 3,

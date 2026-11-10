@@ -153,7 +153,7 @@ export function getPrefPeakH_RT(type: string, temp: number, styleKey = 'neapolit
   }
 
   const isBread = ['pain_campagne','pain_levain','baguette','pain_complet',
-                   'pain_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
+                   'pain_seigle','pain_au_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
   // Poolish (commercial yeast) — bread styles: slightly slower RT peak
   if (isBread) {
     if (temp >= 32) return 3;

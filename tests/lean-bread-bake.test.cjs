@@ -37,7 +37,7 @@ test('oven settings convert to the nearest 5 °F; core temperatures keep the deg
 test('every lean bread has a real temperature and a weight-aware time on every oven',()=>{
  for(const style of LEAN_BREAD_STYLES)for(const oven of OVENS)for(const weight of [150,320,800,1300]){
   const card=leanBreadBake(style,weight,oven,2);
-  if(oven==='wood_fired'&&['pain_campagne','pain_levain','pain_complet'].includes(style)){assert.equal(card,null);continue;}
+  if(oven==='wood_fired'&&['pain_campagne','pain_levain','pain_complet','pain_au_seigle'].includes(style)){assert.equal(card,null);continue;}
   assert.ok(card,style+' '+oven);
   for(const lang of ['en','fr']){
    const text=[...card.preheat[lang],...card.bake[lang]].map(step=>step.bold+' '+step.note).join(' | ');

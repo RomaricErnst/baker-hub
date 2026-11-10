@@ -170,18 +170,37 @@ export const BREAD_STYLES = {
     nameFr: 'Pain de seigle',
     emoji: '🌑',
     image: '/images/approved/bread/seigle-rustic.webp',
-    desc: 'Dark rye bread. Dense, earthy, long-lasting.',
-    descFr: 'Pain de seigle. Dense, terreux, longue conservation.',
+    desc: 'Sourdough rye loaf, about two-thirds rye. Dense, earthy, long-lasting.',
+    descFr: 'Au levain, aux deux tiers de seigle. Dense, terreux, longue conservation.',
     hydration: 78,
     salt: 2.2,
-    yeast: 0.5,
+    yeast: 0,
     oil: 0,
     sugar: 0,
-    pref: 'none',
+    pref: 'levain',
     bulkH: 2,
     ballW: 700,
     ovenNote: 'Bake in a loaf tin. Rye spreads without support.',
-    flourNote: 'T130 or T170 rye flour, minimum 60% rye.',
+    flourNote: 'Blend: 70% T130/T170 rye + 30% T65 bread flour, raised with levain.',
+  },
+  pain_au_seigle: {
+    name: 'Pain au seigle',
+    nameFr: 'Pain au seigle',
+    emoji: '🍞',
+    // Closest approved photo: a floured, crackled rye-wheat bâtard.
+    image: '/images/approved/bread/seigle.webp',
+    desc: 'Rye and wheat, soft crumb. About 30% rye, shaped as a bâtard.',
+    descFr: 'Seigle et blé, mie souple. Environ 30 % de seigle, façonné en bâtard.',
+    hydration: 66,
+    salt: 2.0,
+    yeast: 0.2,
+    oil: 0,
+    sugar: 0,
+    pref: 'none',
+    bulkH: 3,
+    ballW: 800,
+    ovenNote: 'Bâtard or boule, baked like pain de campagne.',
+    flourNote: 'Blend: 70% T65 bread flour + 30% T130 rye.',
   },
   fougasse: {
     name: 'Fougasse',
@@ -592,7 +611,8 @@ export function preMixAutolyseMinFor(mixerType: keyof typeof MIXER_TYPES, styleK
 
 const AUTOLYSE_STYLES = new Set(['pain_campagne', 'pain_levain', 'baguette']);
 // Never, on any mixer. Rye degrades with a rest; the flour goes in after.
-const AUTOLYSE_NEVER = new Set(['pain_seigle']);
+// Pain au seigle (30 % rye) sits at the edge of that range: no rest either.
+const AUTOLYSE_NEVER = new Set(['pain_seigle', 'pain_au_seigle']);
 
 /** Minutes of autolyse between the initial and final mix. 0 when there is none. */
 export function autolyseMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: string): number {
@@ -877,7 +897,7 @@ export const PREFERMENT_TYPES = {
     yeastReduction: 1.0,
     flavourNote: 'Tangy, digestible, unique wild yeast character.',
     flavourNoteFr: 'Acidulé, digestible, caractère unique du levain naturel.',
-    bestFor: ['neapolitan', 'pain_levain', 'baguette'] as string[],
+    bestFor: ['neapolitan', 'pain_levain', 'pain_seigle', 'baguette'] as string[],
     flourPctMin: 15, flourPctMax: 30, flourPctStep: 5,
   },
 } as const;
@@ -1147,7 +1167,19 @@ export const STYLE_DEFAULT_BLENDS: Readonly<Record<string, Readonly<FlourBlend>>
   batbout: { flour1: 'bread', flour2: 'semolina', ratio1: 67 },
   // "Blé et seigle": 85 % T65 bread flour, 15 % rye.
   pain_campagne: { flour1: 'bread', flour2: 'rye', ratio1: 85 },
+  // Pain au seigle: 70 % T65, 30 % rye.
+  pain_au_seigle: { flour1: 'bread', flour2: 'rye', ratio1: 70 },
+  // Pain de seigle: French usage reserves the name for 65 % rye or more. Rye
+  // is 70 % of the flour added at the mix, so the loaf stays near two-thirds
+  // rye whether the starter was refreshed with rye or with wheat.
+  pain_seigle: { flour1: 'rye', flour2: 'bread', ratio1: 70 },
 };
+
+/** Styles raised with levain only: they follow the sourdough journey. */
+export const LEVAIN_STYLES: ReadonlySet<string> = new Set(['sourdough', 'pain_levain', 'pain_seigle']);
+export function isLevainStyle(styleKey: string | null | undefined): boolean {
+  return !!styleKey && LEVAIN_STYLES.has(styleKey);
+}
 
 /** The blend calculateRecipe works with: the style's own blend in Simple, and
  * in Custom until the baker chooses a flour. Use it wherever the same blend's

@@ -1,5 +1,5 @@
 'use client';
-import { PREFERMENT_TYPES, type PrefermentType } from '../data';
+import { PREFERMENT_TYPES, isLevainStyle, type PrefermentType } from '../data';
 import { useTranslations, useLocale } from 'next-intl';
 import DecisionList from './DecisionList';
 import React, { useEffect, useState } from 'react';
@@ -55,7 +55,7 @@ export default function PrefermentPicker({
     .map(o => {
       const pData = PREFERMENT_TYPES[o.id as PrefermentType] as { bestFor?: string[] };
       // A yeasted style chosen by the baker is not steered towards a starter.
-      const isRecommended = o.id !== 'none' && (o.id !== 'levain' || styleKey === 'pain_levain' || styleKey === 'sourdough') && styleKey && pData?.bestFor?.includes(styleKey);
+      const isRecommended = o.id !== 'none' && (o.id !== 'levain' || isLevainStyle(styleKey)) && styleKey && pData?.bestFor?.includes(styleKey);
       return { ...o, badge: isRecommended ? t('recommended') : undefined };
     });
 

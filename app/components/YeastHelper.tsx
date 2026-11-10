@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations, useLocale } from 'next-intl';
-import { type YeastType } from '../data';
+import { isLevainStyle, type YeastType } from '../data';
 import DecisionList from './DecisionList';
 import DecisionSummary from './DecisionSummary';
 
@@ -170,8 +170,8 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
     { id: 'sourdough',  image: '/images/approved/leavening-v2/starter.webp', title: locale === 'fr' ? 'Levain liquide · 100 %' : 'Liquid starter · 100%', tagline: locale === 'fr' ? 'Autant d’eau que de farine, en poids.' : 'Equal weights of water and flour.' },
   ];
 
-  const sourdoughRecommended = ['pain_levain', 'pain_campagne', 'sourdough'].includes(styleKey ?? '');
-  const sourdoughTraditional = styleKey === 'pain_levain';
+  const sourdoughRecommended = isLevainStyle(styleKey) || styleKey === 'pain_campagne';
+  const sourdoughTraditional = styleKey === 'pain_levain' || styleKey === 'pain_seigle';
 
   const orderedOptions = sourdoughRecommended
     ? [
@@ -201,8 +201,8 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
                     : `${opt.tagline} · Recommended for this style`)
                 : opt.id !== 'sourdough' && sourdoughTraditional
                 ? (locale === 'fr'
-                    ? `${opt.tagline} · Non traditionnel pour le pain au levain`
-                    : `${opt.tagline} · Non-traditional for pain au levain`)
+                    ? `${opt.tagline} · Non traditionnel pour ce pain`
+                    : `${opt.tagline} · Non-traditional for this bread`)
                 : opt.tagline,
             }))}
             selectedId={selected ?? ''}

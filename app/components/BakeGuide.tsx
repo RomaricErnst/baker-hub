@@ -11,7 +11,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { poolishCoolingAt } from '../utils/poolishCoolingAt';
 import { foldActionLabel } from '../utils/scheduleAvailability';
 import { type ScheduleResult, formatTime, finalProofWindow } from '../utils';
-import { MIXER_TYPES, AUTOLYSE_MIN, autolyseMinFor, preMixAutolyseMinFor, type MixerType } from '../data';
+import { MIXER_TYPES, isLevainStyle, AUTOLYSE_MIN, autolyseMinFor, preMixAutolyseMinFor, type MixerType } from '../data';
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
 import { toggleStepCompletion } from '../utils/guideProgress';
@@ -729,7 +729,7 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
 }) {
   const l = locale === 'fr' ? 'fr' : 'en';
   const simpleFaq = useContext(SimpleModeCtx);
-  const bread = !!getBreadProtocol(styleKey) || ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
+  const bread = !!getBreadProtocol(styleKey) || ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','pain_au_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
   const roundPizza = !bread && !isPanPizzaStyle(styleKey);
   const faq = (faqOverride ?? (faqKey ? (GUIDE_FAQ[faqKey] ?? []) : [])).filter(e =>
     // Each question appears only where it applies: bread or pizza, the oven in
@@ -738,6 +738,8 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
     (!e.ovens || (!!ovenType && e.ovens.includes(ovenType))) &&
     (!e.round || roundPizza) &&
     (!bread || !/pizza|\bballs?\b|boules?|stone|steel/i.test(e.q.en+' '+e.a.en+' '+e.q.fr+' '+e.a.fr)) &&
+    // Rye dough is never folded or poke-tested; those answers would contradict its steps.
+    (styleKey !== 'pain_seigle' || !/poke|test du doigt|\bfolds?\b|rabats?/i.test(e.q.en+' '+e.a.en+' '+e.q.fr+' '+e.a.fr)) &&
     (!simpleFaq || !(JARGON_RE.test(e.q.en + ' ' + e.q.fr + ' ' + e.a.en + ' ' + e.a.fr))));
 
   const helpTitles: Record<string,[string,string]> = {
@@ -939,17 +941,20 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
     }
   }, [currentStep,active,phase]);
 
-  const isSourdough = recipe ? !!recipe.sourdough : styleKey === 'sourdough' || styleKey === 'pain_levain';
+  const isSourdough = recipe ? !!recipe.sourdough : isLevainStyle(styleKey);
   const breadProtocol = getBreadProtocol(styleKey);
   const hasPoachStep = breadProtocol?.cooking === 'boil-bake' && !!schedule.poachStart;
   const profileSteps = (lines: readonly string[]) => lines.map(line => ({ bold: ovenTempText(line, u).replaceAll('{count}', String(numItems)).replaceAll('{weight}', String(Math.round((recipe?.totalDough ?? numItems * (breadProtocol?.portions.weight ?? 100)) / Math.max(1,numItems)))), note: '' }));
   const fillingsAction = onNavigateToFillings && <button type="button" onClick={onNavigateToFillings} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{fillingsActionLabel ?? (l === 'fr' ? 'Sandwiches et garnitures' : 'Sandwiches & fillings')} →</button>;
-  const isBread       = !!breadProtocol || ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
+  const isBread       = !!breadProtocol || ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','pain_au_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
   const isNeapolitan  = styleKey === 'neapolitan';
   const isFougasse    = styleKey === 'fougasse';
   const isBaguette    = styleKey === 'baguette';
   const isLoafTin     = ['brioche','pain_mie','pain_viennois','pain_seigle'].includes(styleKey);
-  const isBoule       = ['pain_campagne','pain_levain','sourdough','pain_complet'].includes(styleKey);
+  const isBoule       = ['pain_campagne','pain_levain','sourdough','pain_complet','pain_au_seigle'].includes(styleKey);
+  // Pain de seigle: a rye paste, not a gluten dough. No folds and no poke test;
+  // it is judged by the cracks on its surface.
+  const isRye         = styleKey === 'pain_seigle';
   const pieceWeight   = (recipe?.totalDough ?? numItems * 750) / Math.max(1, numItems);
   // Lean breads without a protocol get style-specific oven cards (real
   // temperatures and times); null keeps the oven-keyed message steps.
@@ -1604,6 +1609,12 @@ Actual dough condition and equipment may differ from these estimates.`;
           {breadProtocol ? <Steps items={[
             {bold:l === 'fr' ? 'Gardez la pâte couverte pendant le pointage prévu. Observez son gonflement : la chaleur accélère la pousse.' : 'Keep the dough covered during the planned bulk (first rise). Watch its expansion; a warmer kitchen speeds the rise.',note:''},
             ...(['ciabatta','focaccia'].includes(styleKey) ? [{bold:l === 'fr' ? 'Si la pâte s’étale, effectuez des rabats doux au début du pointage pour lui donner de la tenue. Préservez les bulles qui se forment ensuite.' : 'If the dough spreads, give it gentle folds early in bulk to build strength. Preserve bubbles as they develop.',note:''}] : []),
+          ]} /> : isRye ? <Steps items={l === 'fr' ? [
+            { bold: 'Laissez la pâte couverte dans son récipient, sans y toucher', note: 'pas de rabats : le seigle a peu de gluten à renforcer' },
+            { bold: 'Lissez la surface d’une main mouillée', note: 'de fines fissures y apparaîtront quand la pâte aura levé' },
+          ] : [
+            { bold: 'Leave the dough covered in its bowl and do not handle it', note: 'no folds: rye has little gluten to strengthen' },
+            { bold: 'Smooth the surface with a wet hand', note: 'fine cracks will show on it once the dough has risen' },
           ]} /> : <Steps items={[
             // Levain doughs follow the recipe card's own rise target; the generic percentage does not apply.
             ...(t.raw('bulk.stepsBase') as { bold: string; note: string }[]).map(step => isSourdough && /50[-–]75/.test(step.note) ? { ...step, note: l === 'fr' ? 'pour suivre la pousse' : 'to follow the rise' } : step),
@@ -1618,18 +1629,30 @@ Actual dough condition and equipment may differ from these estimates.`;
           ]} />}
         </Section>
 
-        <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'La pâte est aérée et se tient.':'Airy and holding its shape.'}</p>
+        <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{isRye ? (l==='fr'?'La pâte a un peu gonflé et de fines fissures apparaissent en surface.':'The dough has risen a little and fine cracks show on its surface.') : l==='fr'?'La pâte est aérée et se tient.':'Airy and holding its shape.'}</p>
 
         {!breadProtocol && <StepExtras
           tips={<>
             <Section icon="" title={l === 'fr' ? 'Le pointage est terminé quand' : 'Watch for — the bulk (first rise) is done when'}>
-              <Bullets items={t.raw('bulk.watchFor') as string[]} />
+              <Bullets items={isRye ? (l === 'fr' ? [
+                'De fines fissures se dessinent à la surface',
+                'La pâte a gonflé, sans doubler',
+                'Une odeur acidulée, légèrement fruitée',
+              ] : [
+                'Fine cracks form across the surface',
+                'The dough has risen, without doubling',
+                'A tangy, slightly fruity smell',
+              ]) : t.raw('bulk.watchFor') as string[]} />
               <div style={{ marginTop: '8px' }}>
                 <LearnLink term="bulk_fermentation" label={l === 'fr' ? 'Guide du pointage' : 'Bulk fermentation guide'} onOpen={setLearnTerm} showSparkle={true} />
               </div>
             </Section>
             <Section icon={null} title={t('sectionTitles.pitfalls')}>
-              <Bullets items={[
+              <Bullets items={isRye ? [
+                l === 'fr' ? 'Pétrir ou rabattre une pâte de seigle la rend plus collante, pas plus forte : laissez-la reposer.' : 'Kneading or folding rye dough makes it stickier, not stronger: leave it to rest.',
+                l === 'fr' ? 'Attendre qu’elle double : une pâte de seigle s’affaisse avant d’y arriver. Fiez-vous aux fissures.' : 'Waiting for it to double: rye dough sags before it gets there. Go by the cracks.',
+                ...(kitchenTemp < 26 ? [l === 'fr' ? `Au-dessus de ${tempC(26, u)}, le pointage accélère. Gardez la pâte à la température de la cuisine, loin d’une source de chaleur.` : `A spot warmer than ${tempC(26, u)} speeds the rise: keep the dough at kitchen temperature, away from heat`] : []),
+              ] : [
                 ...(hydration >= 70 ? [
                   oil > 0
                     ? (l === 'fr' ? `${hydFr}, huilez légèrement vos mains pour les rabats de cette pâte enrichie.` : `${oilEn}: use lightly oiled hands for stretch & folds — fat in the dough means oil is a better barrier than water`)
@@ -1714,6 +1737,15 @@ Actual dough condition and equipment may differ from these estimates.`;
                 ...(numItems>1 ? [{ bold: l === 'fr' ? `Divisez la pâte en ${numItems} pâtons de même poids.` : `Divide the dough into ${numItems} equal pieces.`, note: (t.raw('divide.baguette.steps') as { bold: string; note: string }[])[0].note }] : []),
                 ...(t.raw('divide.baguette.steps') as { bold: string; note: string }[]).slice(1),
                 ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
+              ] : isRye ? [
+                ...(numItems>1 ? [{ bold: l === 'fr' ? `Divisez la pâte en ${numItems} pâtons de même poids.` : `Divide the dough into ${numItems} equal pieces.`, note: (t.raw('divide.loafTin.steps') as { bold: string; note: string }[])[0].note }] : []),
+                l === 'fr'
+                  ? { bold: 'Mouillez vos mains et le plan de travail, puis formez un boudin', note: 'travaillez la pâte peu : le seigle n’a pas besoin de tension' }
+                  : { bold: 'Wet your hands and the bench, then form the dough into a log', note: 'handle it briefly: rye needs no surface tension' },
+                l === 'fr'
+                  ? { bold: 'Posez-le dans un moule graissé et lissez le dessus d’une main mouillée', note: 'le moule rempli aux deux tiers environ' }
+                  : { bold: 'Lay it in a greased tin and smooth the top with a wet hand', note: 'the tin about two-thirds full' },
+                t.raw('divide.coverRT') as { bold: string; note: string },
               ] : isLoafTin ? [
                 ...(numItems>1 ? [{ bold: l === 'fr' ? `Divisez la pâte en ${numItems} pâtons de même poids.` : `Divide the dough into ${numItems} equal pieces.`, note: (t.raw('divide.loafTin.steps') as { bold: string; note: string }[])[0].note }] : []),
                 ...(t.raw('divide.loafTin.steps') as { bold: string; note: string }[]).slice(1),
@@ -1742,6 +1774,8 @@ Actual dough condition and equipment may differ from these estimates.`;
                   ? (t.raw('divide.fougasse.watchFor') as string[])
                   : isBaguette
                   ? (t.raw('divide.baguette.watchFor') as string[])
+                  : isRye
+                  ? (l === 'fr' ? ['Une surface lisse et humide ; elle se fissurera pendant l’apprêt', 'La pâte remplit environ les deux tiers du moule'] : ['A smooth, damp surface; it will crack as the loaf proofs', 'The dough fills about two-thirds of the tin'])
                   : isLoafTin
                   ? (t.raw('divide.loafTin.watchFor') as string[])
                   : isBread
@@ -1759,6 +1793,8 @@ Actual dough condition and equipment may differ from these estimates.`;
                   ? (t.raw('divide.fougasse.pitfalls') as string[])
                   : isBaguette
                   ? (t.raw('divide.baguette.pitfalls') as string[])
+                  : isRye
+                  ? (l === 'fr' ? ['De la farine sur le plan de travail marque la mie de seigle : utilisez de l’eau', 'Graissez bien le moule : le seigle colle'] : ['Flour on the bench streaks a rye crumb: use water instead', 'Grease the tin well: rye sticks'])
                   : isLoafTin
                   ? (t.raw('divide.loafTin.pitfalls') as string[])
                   : isBread ? [
@@ -1834,7 +1870,12 @@ Actual dough condition and equipment may differ from these estimates.`;
           {schedule.fridgeRemovalArranged && schedule.coldRetard2End && <p style={{fontSize:14,color:D.smoke}}>{formatTime(schedule.coldRetard2End, _fmtLocale)} · {l === 'fr' ? 'Sortie du réfrigérateur prévue' : 'Fridge removal arranged'}</p>}
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
-            {breadProtocol ? <Steps items={profileSteps(breadProtocol.proof[l])} /> : <Steps items={[
+            {breadProtocol ? <Steps items={profileSteps(breadProtocol.proof[l])} /> : isRye ? <Steps items={[
+              l === 'fr'
+                ? { bold: 'Laissez le pain dans son moule, couvert, à température ambiante', note: 'prêt quand la surface se couvre de fines fissures et que la pâte approche du bord du moule' }
+                : { bold: 'Leave the loaf in its tin, covered, at room temperature', note: 'ready when fine cracks cover the surface and the dough nears the rim of the tin' },
+              { bold: l === 'fr' ? `Lancez le préchauffage du four ${formatDuration(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75,l)} avant la cuisson` : `Start preheating your oven ${formatDuration(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75,l)} before bake time`, note: (l === 'fr' ? 'préchauffez pendant l’apprêt ; vérifiez que le four et la pâte sont prêts' : 'preheat overlaps proofing; check both are ready') },
+            ]} /> : <Steps items={[
               ...(isTwoPhase ? [isBread ? {bold:l==='fr'?'Sortez la pâte façonnée du réfrigérateur.':'Take the shaped dough out of the fridge.',note:''} : t.raw('finalProof.removeFridge') as { bold: string; note: string }] : []),
               { bold: l === 'fr' ? (isBread && numItems===1 ? 'Laissez le pâton se détendre, couvert' : 'Laissez les pâtons se détendre, couverts') : 'Let the shaped dough relax, covered',
                 note: l === 'fr' ? 'À température ambiante, jusqu’à ce que la pâte soit souple et aérée.' : 'At room temperature, until relaxed and airy.' },
@@ -1844,7 +1885,36 @@ Actual dough condition and equipment may differ from these estimates.`;
             ]} />}
           </Section>
 
-          {!breadProtocol && <StepExtras
+          {!breadProtocol && isRye && <StepExtras
+            tips={<>
+              <Section icon="" title={l === 'fr' ? 'Juger l’apprêt d’un pain de seigle' : 'Judging a rye loaf’s proof'}>
+                <Bullets items={l === 'fr' ? [
+                  'Peu ou pas de fissures : laissez-lui encore du temps',
+                  'Un réseau de fines fissures : enfournez',
+                  'Des fissures larges et profondes, un dessus qui s’affaisse : enfournez sans attendre, l’apprêt est dépassé',
+                ] : [
+                  'Few or no cracks: give it more time',
+                  'A network of fine cracks: bake now',
+                  'Wide, deep cracks and a sinking top: bake at once, it is past its best',
+                ]} />
+              </Section>
+              <Section icon={null} title={t('sectionTitles.pitfalls')}>
+                <Bullets items={[
+                  l === 'fr' ? 'Le test du doigt trompe sur une pâte de seigle : elle ne revient pas, même à point. Regardez la surface.' : 'The poke test misleads on rye dough: it does not spring back, even when ready. Watch the surface.',
+                  ...(kitchenTemp >= 26 ? [l === 'fr'
+                    ? `Dans une cuisine à ${displayTemp(kitchenTemp, u)}, l’apprêt avance vite : vérifiez la pâte avant la fin de la durée prévue`
+                    : `In a kitchen at ${displayTemp(kitchenTemp, u)}, the proof moves quickly: check the dough before the planned time is up`] : []),
+                  (t.raw('finalProof.pitfalls') as string[])[2],
+                ]} />
+              </Section>
+            </>}
+            faqKey="proof"
+            coachStepId="proof"
+            coachTitle={t('stepTitles.finalProof')}
+            recipeContext={maestroRecipeContext}
+            styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
+          />}
+          {!breadProtocol && !isRye && <StepExtras
             tips={<>
               <Section icon="" title={t('sectionTitles.pokeTest')}>
                 <Bullets items={t.raw('finalProof.pokeResponses') as string[]} />

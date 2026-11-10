@@ -80,7 +80,7 @@ export function getServingTimeEstimate(input: ServingTimeInput): ServingTimeEsti
     // piece weight. Multiple loads require oven-capacity information.
     const range=leanBreadMinutes(styleKey,itemWeight);
     if (numItems !== 1 || !range || !LOAF_OVENS.includes(ovenType)) return null;
-    const cook=ovenType==='wood_fired'&&['pain_campagne','pain_levain','pain_complet'].includes(styleKey)?WOOD_LOAF_COOK:range[1];
+    const cook=ovenType==='wood_fired'&&['pain_campagne','pain_levain','pain_complet','pain_au_seigle'].includes(styleKey)?WOOD_LOAF_COOK:range[1];
     const cooling=breadCoolingUpperMinutes(styleKey,itemWeight);
     if (cooling === null) return null;
     minutes=cook+cooling;

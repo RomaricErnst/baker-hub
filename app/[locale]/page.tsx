@@ -65,7 +65,7 @@ import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock, forma
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
   PIZZA_STYLES, BREAD_STYLES, FLOUR_DATA,
-  computeBlendProfile, STYLE_DEFAULT_BLENDS, isStyleDefaultBlend, recipeFlourStrength,
+  computeBlendProfile, isLevainStyle, STYLE_DEFAULT_BLENDS, isStyleDefaultBlend, recipeFlourStrength,
   type BakeType, type StyleKey, type OvenType, type BreadOvenType, type AnyOvenType, type MixerType, type YeastType, type FlourBlend, type PrefermentType,
 } from '../data';
 import {
@@ -108,7 +108,7 @@ const STYLE_DEFAULT_DIAMETER: Record<string, number> = { neapolitan: 30, newyork
 const STYLE_BALL_DEFAULTS: Record<string, number> = {
   neapolitan: 4, newyork: 4, pizza_romana: 4, roman: 2, pan: 2, sourdough: 4,
   pain_campagne: 1, pain_levain: 1, baguette: 4, pain_complet: 1,
-  pain_seigle: 1, fougasse: 2, brioche: 6, pain_mie: 1, pain_viennois: 8,
+  pain_seigle: 1, pain_au_seigle: 1, fougasse: 2, brioche: 6, pain_mie: 1, pain_viennois: 8,
 };
 const CORN_LABELS = ['Thin', 'Classic', 'Generous'];
 const CORN_LABELS_FR = ['Fine', 'Classique', 'Généreuse'];
@@ -240,7 +240,8 @@ function getWeightBounds(sk: string | null, bt: string | null): { min: number; m
     case 'pain_levain':
     case 'pain_campagne':
     case 'pain_complet':
-    case 'pain_seigle':   return { min: 300, max: 1500, step: 25 };
+    case 'pain_seigle':
+    case 'pain_au_seigle': return { min: 300, max: 1500, step: 25 };
     default:              return { min: 200, max: 1200, step: 25 };
   }
 }
@@ -258,6 +259,7 @@ const STYLE_HYDRATION_ZONES: Record<string, {
   baguette:      { min: 58, classicMin: 65, classicMax: 70, advancedMax: 75, max: 80, name: 'Baguette' },
   pain_complet:  { min: 62, classicMin: 68, classicMax: 75, advancedMax: 80, max: 85, name: 'Pain Complet' },
   pain_seigle:   { min: 65, classicMin: 72, classicMax: 80, advancedMax: 85, max: 90, name: 'Pain de Seigle' },
+  pain_au_seigle: { min: 62, classicMin: 68, classicMax: 75, advancedMax: 80, max: 85, name: 'Pain au Seigle' },
   fougasse:      { min: 65, classicMin: 70, classicMax: 78, advancedMax: 83, max: 88, name: 'Fougasse' },
   brioche:       { min: 45, classicMin: 50, classicMax: 58, advancedMax: 65, max: 72, name: 'Brioche' },
   pain_mie:      { min: 55, classicMin: 60, classicMax: 65, advancedMax: 70, max: 75, name: 'Pain de Mie' },
@@ -1376,7 +1378,7 @@ export default function Home() {
     const prefStyle = (bakeType === 'bread' ? prof.styleKeyBread : prof.styleKeyPizza) ?? prof.styleKey;
     const sdAllowed = tab === 'custom';
     if (!styleKey && prefStyle && prefStyle in stylePool
-        && (sdAllowed || !['pain_levain', 'sourdough'].includes(prefStyle))) {
+        && (sdAllowed || !isLevainStyle(prefStyle))) {
       setStyleKey(prefStyle as StyleKey); applied = true;
     }
     if (!mixerType && prof.mixerType && prof.mixerType in MIXER_TYPES) {
@@ -1385,7 +1387,7 @@ export default function Home() {
     // Sourdough-native styles override the yeast preference (same rule as
     // the tap-time prefill in selectBakeType).
     const effStyle = styleKey ?? ((prefStyle && prefStyle in stylePool) ? prefStyle : null);
-    const lateWantsSourdough = ['pain_levain', 'sourdough'].includes(effStyle as string);
+    const lateWantsSourdough = isLevainStyle(effStyle as string | null);
     if (!yeastType && lateWantsSourdough && sdAllowed) {
       // A sourdough-native style IS its leavening — not a stored preference,
       // a consequence of the style just chosen. It counts as answered.
@@ -1715,7 +1717,7 @@ export default function Home() {
   // a beat instead of demanding a tap; the step summary's Edit is the undo.
   useEffect(() => {
     if (reviewMode || isRestoringRef.current) return;
-    if (styleKey === 'pain_levain' && yeastType === 'sourdough' && advancedStep === 7 && prefermentType !== 'levain') {
+    if ((styleKey === 'pain_levain' || styleKey === 'pain_seigle') && yeastType === 'sourdough' && advancedStep === 7 && prefermentType !== 'levain') {
       // Sourdough forces levain and hides the preferment step; advanceAdv now
       // skips it, so Suivant reaches the plan by itself. The page no longer
       // flips on its own — only the state it depends on is set.
@@ -1769,7 +1771,7 @@ export default function Home() {
   // through climate, oven, mixer, flour steps. The Max(s, 9) call fires
   // correctly in the YeastHelper onSelect handler after all steps are done.
   useEffect(() => {
-    if (tab !== 'custom' || (styleKey !== 'pain_levain' && styleKey !== 'sourdough') || execution || mixExecution) return;
+    if (tab !== 'custom' || !isLevainStyle(styleKey) || execution || mixExecution) return;
     if (yeastType !== 'sourdough') setYeastType('sourdough');
     if (prefermentType !== 'levain') setPrefermentType('levain');
     if (!prefermentChosen) setPrefermentChosen(true);
@@ -2547,7 +2549,7 @@ export default function Home() {
       setMixerType(profile && !profile.supportedMixers.includes(preferredMixer) ? profile.supportedMixers[0] : preferredMixer);
     }
     if (key === 'simple' && !yeastType) {
-      chooseYeast(styleKey==='pain_levain'||styleKey==='sourdough'?'sourdough':'instant');
+      chooseYeast(isLevainStyle(styleKey)?'sourdough':'instant');
     }
     setTab(key); setModeChosen(true); setActiveTab('setup');
     // Land on the first step that actually needs input — completed
@@ -3356,7 +3358,7 @@ export default function Home() {
   // Preferment and Flour are Custom-only steps; Simple has no page for either.
   // Levain styles have one leavening, so a one-option step would be a tap with
   // no choice. Their starter questions live with the bake time, where the feed is timed.
-  const showPrefermentChoice = !isUnleavened && !directMethodOnly && styleKey !== 'pain_levain' && styleKey !== 'sourdough';
+  const showPrefermentChoice = !isUnleavened && !directMethodOnly && !isLevainStyle(styleKey);
   const unsupportedEnrichedMethod = (enrichedDirectOnly && (yeastType === 'sourdough' || prefermentType !== 'none')) || !!(breadProtocol && !isUnleavened && (!breadProtocol.supportedPreferments.includes(prefermentType) || (!breadSupportsStarter && yeastType === 'sourdough')));
   const archivedFlourNames = archivedBlendSelections(flourBlend);
   const simpleRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && qtyChosen);
@@ -3487,7 +3489,7 @@ export default function Home() {
   const kitchenPending = !isUnleavened && !kitchenAnswered;
   const reviewTiming = eatTime ? formatBakeDateTime(eatTime,locale) : null;
   const reviewKitchen = `${fr ? 'Réfrigérateur' : 'Fridge'} ${cToDisplay(fridgeTemp,units)}${tempUnit(units)}`;
-  const levainStyle = styleKey === 'pain_levain' || styleKey === 'sourdough';
+  const levainStyle = isLevainStyle(styleKey);
   const levainCustom = levainStyle && tab === 'custom' && yeastType === 'sourdough';
   const CUSTOM_STEPS: StepDef[] = ([
     { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Quel style de pizza ?':'Which pizza style?'),
@@ -4434,7 +4436,7 @@ export default function Home() {
                   baker will set. A pending decision holds back Generate only. */}
               {collectingBakeTime && eatTime && +eatTime>Date.now() && (()=>{
                 if(kitchenPending)return <div data-recipe-choice style={{marginTop:16}}><button type="button" style={NEXT_CTA} onClick={()=>{openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}>{fr?'Température de la cuisine →':'Kitchen temperature →'}</button></div>;
-                const leaven=(yeastType==='sourdough'||styleKey==='pain_levain')?(fr?'levain':'starter'):(fr?'préferment':'preferment');
+                const leaven=(yeastType==='sourdough'||isLevainStyle(styleKey))?(fr?'levain':'starter'):(fr?'préferment':'preferment');
                 const customDesc=directMethodOnly?(fr?'Vous choisissez matériel, farine et hydratation':'You choose equipment, flour and hydration'):(fr?`Vous choisissez matériel, farine, ${leaven} et hydratation`:`You choose equipment, flour, ${leaven} and hydration`);
                 const card:React.CSSProperties={display:'grid',gap:4,textAlign:'left',padding:'16px 18px',minHeight:56,border:'1.5px solid var(--border)',borderRadius:18,background:'var(--card)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:17,cursor:'pointer',boxShadow:'0 2px 12px rgba(43,36,32,.06)'};
                 const title:React.CSSProperties={display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,fontWeight:700};
@@ -4846,7 +4848,7 @@ export default function Home() {
                 disabledNote={enrichedDirectOnly || !breadSupportsStarter ? (locale === 'fr' ? 'Cette recette est actuellement prévue avec de la levure et sans préferment.' : 'This recipe currently supports commercial yeast and no preferment.') : (locale === 'fr' ? 'Pour un levain, choisissez « Levain » à l’étape Préferment.' : 'To use a sourdough starter, choose Levain on the Preferment step.')}
                 styleKey={styleKey}
               />
-              {styleKey === 'pain_levain' && yeastType === 'sourdough' && advancedStep === 7 && (
+              {(styleKey === 'pain_levain' || styleKey === 'pain_seigle') && yeastType === 'sourdough' && advancedStep === 7 && (
                 <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginTop: '8px', textAlign: 'center' }}>
                   {locale === 'fr' ? 'Levain confirmé automatiquement…' : 'Sourdough confirmed automatically…'}
                 </div>

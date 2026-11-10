@@ -5,7 +5,7 @@ const {getBreadProtocol}=require('../app/utils/breadProfiles.ts');
 const start=new Date('2030-10-01T08:00:00Z');
 const styles=Object.keys({...data.PIZZA_STYLES,...data.BREAD_STYLES});
 // This matrix checks numerical/contract consistency, not experimentally measured maturity.
-test('all 26 styles retain finite balanced recipes and explicit method gates across climate and duration',()=>{
+test('all 27 styles retain finite balanced recipes and explicit method gates across climate and duration',()=>{
  let cases=0;
  for(const style of styles)for(const temperature of [16,22,30,38])for(const fridge of [2,5,8])for(const hours of [.75,4,26,72])for(const method of ['none','poolish','biga','levain']){
   const protocol=getBreadProtocol(style);
@@ -32,7 +32,7 @@ test('all 26 styles retain finite balanced recipes and explicit method gates acr
   }
   cases++;
  }
- assert.equal(cases,4992);
+ assert.equal(cases,5184);
 });
 
 test('all leavened styles account for real warm/cold elapsed time with and without overnight blocks',()=>{
@@ -47,5 +47,5 @@ test('all leavened styles account for real warm/cold elapsed time with and witho
   assert.ok(+s.finalProofStart<=+fermentationEnd,`${style}: proof after bake`);
   cases++;
  }
- assert.equal(cases,600);
+ assert.equal(cases,624);
 });

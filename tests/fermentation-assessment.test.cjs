@@ -102,7 +102,7 @@ const assessHours = ({from, to}, mixHours) => {
 };
 
 test('all actual commercial style windows remain finite across climate, flour and cold availability', () => {
-  assert.equal(Object.keys(STYLE_FERM_DEFAULTS).length, 26);
+  assert.equal(Object.keys(STYLE_FERM_DEFAULTS).length, 27);
   let valid = 0, unavailable = 0;
   for (const [style, defaults] of Object.entries(STYLE_FERM_DEFAULTS)) {
     if (getBreadProtocol(style)?.method === 'unleavened') continue;

@@ -44,6 +44,7 @@ const BREAD_FAV_BY_STYLE: Record<string, string[]> = {
   baguette: ['francine_t65', 'foricher_t65', 'gmp_t65', 'francine_bio_t55'],
   pain_complet: ['francine_complete', 'doves_wholemeal', 'bobs_whole_wheat', 'shipton_wholemeal'],
   pain_seigle: ['celnat_seigle_t130', 'foricher_seigle_t130', 'foricher_seigle_t170', 'shipton_rye'],
+  pain_au_seigle: ['francine_t65', 'foricher_t65', 'celnat_seigle_t130', 'foricher_seigle_t130'],
   brioche: ['gruau_dor_gruau_t45', 'gmp_t45_gruau', 'caputo_manitoba', 'ka_bread'],
   pain_mie: ['francine_bio_t55', 'ka_bread', 'francine_t65', 'gmp_t65'],
   pain_viennois: ['gruau_dor_gruau_t45', 'gmp_t45_gruau', 'ka_bread', 'francine_bio_t55'],
@@ -59,6 +60,7 @@ const BREAD_REC_BY_STYLE: Record<string, string[]> = {
   baguette:      ['T65', 'T55'],
   pain_complet:  ['T110 / T150', 'Wholemeal'],
   pain_seigle:   ['Rye', 'T80'],
+  pain_au_seigle: ['T65', 'Rye'],
   brioche:       ['T45 / Gruau', 'Manitoba'],
   pain_mie:      ['T55', 'Bread flour'],
   pain_viennois: ['T45 / Gruau', 'Bread flour'],
@@ -68,6 +70,8 @@ const BREAD_REC_BY_STYLE: Record<string, string[]> = {
 // Styles that start on their own blend (STYLE_DEFAULT_BLENDS in data.ts).
 const STARTING_BLEND_TEXT: Record<string, { en: string; fr: string }> = {
   batbout: { fr: 'Mélange de départ : 67 % de farine de blé et 33 % de semoule fine. Votre mélange personnalisé détermine les quantités de la recette.', en: 'Starting blend: 67% wheat flour and 33% fine semolina. Your custom blend determines the recipe quantities.' },
+  pain_au_seigle: { fr: 'Mélange de départ : 70 % de farine de blé T65 et 30 % de farine de seigle. Votre mélange personnalisé détermine les quantités de la recette.', en: 'Starting blend: 70% white bread flour (T65) and 30% rye flour. Your custom blend determines the recipe quantities.' },
+  pain_seigle: { fr: 'Mélange de départ : 70 % de farine de seigle et 30 % de farine de blé T65. Votre mélange personnalisé détermine les quantités de la recette.', en: 'Starting blend: 70% rye flour and 30% white bread flour (T65). Your custom blend determines the recipe quantities.' },
   pain_campagne: { fr: 'Mélange de départ : 85 % de farine de blé T65 et 15 % de farine de seigle. Votre mélange personnalisé détermine les quantités de la recette.', en: 'Starting blend: 85% white bread flour (T65) and 15% rye flour. Your custom blend determines the recipe quantities.' },
 };
 
@@ -83,6 +87,7 @@ const BLEND_PRESETS: Record<string, { label: string; type: FlourKey; ratio: numb
   baguette:      [{ label: '+ Rye 5%', type: 'rye', ratio: 95 }, { label: '+ Wholemeal 5%', type: 'wholemeal', ratio: 95 }],
   pain_complet:  [{ label: '+ Rye 15%', type: 'rye', ratio: 85 }],
   pain_seigle:   [{ label: '+ Wholemeal 20%', type: 'wholemeal', ratio: 80 }],
+  pain_au_seigle: [],
   brioche:       [],
   pain_mie:      [],
   pain_viennois: [],
