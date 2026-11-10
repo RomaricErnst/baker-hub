@@ -3537,6 +3537,12 @@ export default function Home() {
   const simpleStarterScreen = !isUnleavened && !!styleKey && (levainStyle || yeastType === 'sourdough') && !(tab === 'custom' && modeChosen);
   const starterStateDescribed = planningMode === 'know_peak' ? !!knownPeakTime : lastFedAge !== null && !!lastFedTime;
   const simpleStarterPending = simpleStarterScreen && !simpleStarterAnswer && !starterStateDescribed;
+  // Custom with a levain preferment (pizza, or a bread whose method is chosen):
+  // the same Starter step as the levain breads, just before Bake time.
+  const levainPrefCustom = !levainStyle && tab === 'custom' && yeastType === 'sourdough' && prefermentType === 'levain';
+  const customStarterStepId = levainCustom ? 8 : levainPrefCustom ? 11 : null;
+  const starterStepValue = planningMode === 'know_peak' ? (knownPeakTime ? `${fr?'Pic':'Peak'} · ${formatTime(knownPeakTime,locale)}` : null)
+        : lastFedAge ? `${starterLocation === 'fridge' ? (fr?'Frigo':'Fridge') : (fr?'Ambiante':'Room temperature')} · ${({today:['rafraîchi aujourd’hui','fed today'],yesterday:['rafraîchi hier','fed yesterday'],days23:['il y a 2–3 jours','fed 2–3 days ago'],days45:['il y a 4–5 jours','fed 4–5 days ago'],week:['une semaine+','fed a week+ ago']} as Record<string,[string,string]>)[lastFedAge][fr?0:1]}` : null;
   const simpleStarterLabel = simpleStarterAnswer === 'counter' ? (fr ? 'Sur le plan de travail' : 'On the counter')
     : simpleStarterAnswer === 'fridge' ? (fr ? 'Au réfrigérateur' : 'In the fridge')
     : simpleStarterAnswer === 'ready' ? (fr ? 'Bien monté et bullé' : 'Bubbly and risen') : null;
@@ -3570,8 +3576,7 @@ export default function Home() {
     ...(levainCustom ? [{
       // Levain breads: the starter's own questions, answered before the bake time.
       id: 8, group: 'dough', chip: fr ? 'Levain' : 'Starter', title: fr ? 'Votre levain' : 'Your starter',
-      value: planningMode === 'know_peak' ? (knownPeakTime ? `${fr?'Pic':'Peak'} · ${formatTime(knownPeakTime,locale)}` : null)
-        : lastFedAge ? `${starterLocation === 'fridge' ? (fr?'Frigo':'Fridge') : (fr?'Ambiante':'Room temperature')} · ${({today:['rafraîchi aujourd’hui','fed today'],yesterday:['rafraîchi hier','fed yesterday'],days23:['il y a 2–3 jours','fed 2–3 days ago'],days45:['il y a 4–5 jours','fed 4–5 days ago'],week:['une semaine+','fed a week+ ago']} as Record<string,[string,string]>)[lastFedAge][fr?0:1]}` : null,
+      value: starterStepValue,
       gap: fr ? 'Le levain n’est pas renseigné' : 'Starter not set',
     } as StepDef] : []),
     ...(showPrefermentChoice ? [{
@@ -3605,6 +3610,12 @@ export default function Home() {
         : styleKey ? `${ALL_STYLES[styleKey].hydration}% ${t('dialIn.hydrationSuffix')}` : null,
       prefilled: true,
       gap: fr ? 'La pâte n\u2019est pas confirmée' : 'Dough not confirmed' },
+    ...(levainPrefCustom ? [{
+      // Levain preferment: the starter's questions, answered before the bake time.
+      id: 11, group: 'dough', chip: fr ? 'Levain' : 'Starter', title: fr ? 'Votre levain' : 'Your starter',
+      value: starterStepValue,
+      gap: fr ? 'Le levain n’est pas renseigné' : 'Starter not set',
+    } as StepDef] : []),
     { id: 9, group: 'plan', chip: fr ? 'Heure de cuisson' : 'Bake time', title: bakeType === 'bread' ? t('steps.8bread.title') : t('steps.8pizza.title'),
       value: eatTime
         ? `${formatTime(new Date(Math.round(Math.min(startTime.getTime(), prefStartTime?.getTime() ?? Infinity) / 900000) * 900000), locale)} → ${formatTime(eatTime, locale)}${selectedAvailabilityCount(blocks) > 0 ? ` · ${selectedAvailabilityCount(blocks)} ${selectedAvailabilityCount(blocks) === 1 ? t('scheduler.summaryFridgeBlock') : t('scheduler.summaryFridgeBlocks')}` : ''}`
@@ -4952,18 +4963,24 @@ export default function Home() {
               </StepPage>
             )}
 
-            {levainCustom && (
-              <StepPage flow={customOrganisationFlow} id={8} nextOverride={!lastFedAge && !(planningMode==='know_peak'&&knownPeakTime) ? <button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:0.55}}>{(CUSTOM_STEPS.find(step=>step.id===nextCustomStep(8))?.chip ?? (fr?'Suivant':'Next'))} →</button> : undefined}>
+            {customStarterStepId !== null && (
+              <StepPage flow={customOrganisationFlow} id={customStarterStepId} nextOverride={!starterStateDescribed ? <div style={{width:'100%'}}>
+                <p id="bh-starter-fed-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Indiquez quand votre levain a été rafraîchi pour la dernière fois.':'Tell us when your starter was last fed.'}</p>
+                <button data-bh-forward type="button" disabled aria-describedby="bh-starter-fed-hint" style={{...NEXT_CTA,opacity:0.55}}>{(CUSTOM_STEPS.find(step=>step.id===nextCustomStep(customStarterStepId))?.chip ?? (fr?'Suivant':'Next'))} →</button>
+              </div> : undefined}>
                 {renderCustomScheduler('starter')}
               </StepPage>
             )}
 
             {/* ─── ADV STEP 10: Scheduler ──────────── */}
-            <StepPage flow={customOrganisationFlow} id={9} nextOverride={scheduleEditing ? null : !scheduleCandidateValid ? <button type="button" style={NEXT_CTA} onClick={()=>{const target=[...document.querySelectorAll<HTMLElement>('.bh-fridge-arrangement,.bh-plan-notice')].find(el=>el.offsetParent)??document.getElementById('schedule-anchor-panel');target?.scrollIntoView({block:'center'});(target?.querySelector<HTMLElement>('button')??target)?.focus({preventScroll:true});}}>{fr?'Voir les horaires à ajuster →':'Review affected times →'}</button> : undefined}>
+            <StepPage flow={customOrganisationFlow} id={9} nextOverride={customStarterStepId !== null && !starterStateDescribed ? <div style={{width:'100%'}}>
+                <p style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Indiquez quand votre levain a été rafraîchi pour la dernière fois.':'Tell us when your starter was last fed.'}</p>
+                <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>openSetupStep(customStarterStepId,true)}>{fr?'Votre levain →':'Your starter →'}</button>
+              </div> : scheduleEditing ? null : !scheduleCandidateValid ? <button type="button" style={NEXT_CTA} onClick={()=>{const target=[...document.querySelectorAll<HTMLElement>('.bh-fridge-arrangement,.bh-plan-notice')].find(el=>el.offsetParent)??document.getElementById('schedule-anchor-panel');target?.scrollIntoView({block:'center'});(target?.querySelector<HTMLElement>('button')??target)?.focus({preventScroll:true});}}>{fr?'Voir les horaires à ajuster →':'Review affected times →'}</button> : undefined}>
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => customFlow.onJump(1)} />
               ) : (
-              renderCustomScheduler(levainCustom?'plan':'all')
+              renderCustomScheduler(customStarterStepId !== null?'plan':'all')
               )}
             </StepPage>
 
