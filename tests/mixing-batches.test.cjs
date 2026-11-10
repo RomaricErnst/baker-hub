@@ -103,3 +103,13 @@ test('shared preferment must remain within its existing window for the final mix
  const result=validateScheduleCandidate(input);
  a.equal(result.valid,false);a.equal(result.issue,'preferment');
 });
+
+test('a room-temperature plan always keeps a first rise before shaping, even in a cool kitchen',()=>{
+ const {utils}=require('./load-production.cjs');
+ const bake=new Date('2026-11-12T11:00:00Z');
+ for(const style of ['pan','roman'])for(const kitchen of [17,21,24]){
+  const s=utils.buildSchedule(new Date(+bake-5.2*3600000),bake,[],kitchen,30,'hand',style,2,1);
+  a.ok(s.bulkFermHours>=1,`${style} at ${kitchen}°C keeps a first rise (${s.bulkFermHours})`);
+  a.ok(+s.divideBallTime>+s.bulkFermStart);
+ }
+});

@@ -964,7 +964,9 @@ function buildSchedulePhases(
     const displayFermStart = fermStart.getTime() > bakeTime.getTime() ? bakeTime : fermStart;
     const totalH = Math.max(0, (bakeTime.getTime() - displayFermStart.getTime()) / 3600000);
     const rtFinalMaxH = maxFinalProofHours(kitchenTemp, false);
-    const finalProofH = Math.min(rtFinalMaxH, totalH);
+    // The final proof never takes the whole window: in a cool kitchen its cap (5 h)
+    // exceeded a short plan and left the dough no first rise before shaping.
+    const finalProofH = Math.min(rtFinalMaxH, totalH > minTotalRT ? totalH - minBulkRT : totalH);
     const finalProofStart = new Date(Math.min(
       bakeTime.getTime(),
       displayFermStart.getTime() + Math.max(0, totalH - finalProofH) * 3600000,

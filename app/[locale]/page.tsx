@@ -33,7 +33,7 @@ import MixingBatchControl from '../components/MixingBatchControl';
 const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { ssr: false });
 import { starterFeedToMixHours } from '../lib/starterTiming';
 import { mixerDoughCapacity, suggestedMixingBatchCount } from '../utils/mixingBatches';
-import { doughShoppingItems as buildDoughShoppingItems } from '../lib/doughShopping';
+import { doughShoppingItems as buildDoughShoppingItems, yeastShoppingName } from '../lib/doughShopping';
 import { buildPlanCalendar, downloadPlanCalendar, planActionLabel, type PlanCalendarEvent } from '../utils/planCalendar';
 import {commercialPrefermentWindow, validateConfirmedBake, type StarterEvent } from '../components/SchedulePicker';
 import { prefermentConditioningAction } from '../utils/scheduleEdit';
@@ -2058,9 +2058,9 @@ export default function Home() {
       ...(cr.flourParts?.length ? cr.flourParts.map(part=>({id:`flour_${part.key}`,name:fr?part.nameFr:part.name,grams:part.grams})) : [{id:'flour', name:flourShoppingName(styleKey ?? '', locale, flourChosen ? 'custom' : 'simple', flourBlend, !cr.preferment && !cr.sourdough), grams:cr.flour}]),
       {id:'water', name:fr?'Eau':'Water', grams:cr.water},
       {id:'salt', name:fr?'Sel':'Salt', grams:cr.salt},
-      {id:'olive_oil', name:fr?'Huile':'Oil', grams:cr.oil},
+      {id:'olive_oil', name:fr?'Huile d’olive':'Olive oil', grams:cr.oil},
       {id:'sugar', name:fr?'Sucre':'Sugar', grams:cr.sugar},
-      {id:'yeast', name:fr?'Levure':'Yeast', grams:cr.preferment?.prefYeastGrams ?? cr.yeast?.convertedGrams ?? 0},
+      {id:'yeast', name:yeastShoppingName(yeastType ?? 'instant', locale), grams:cr.preferment?.prefYeastGrams ?? cr.yeast?.convertedGrams ?? 0},
       ...(['milk','eggs','butter'] as const).map(id=>({id,name:({milk:fr?'Lait':'Milk',eggs:eggShoppingLabel(cr.enrichment?.eggs ?? 0,fr),butter:fr?'Beurre':'Butter'})[id],grams:cr.enrichment?.[id] ?? 0})),
     ];
     return rows.filter(row=>Number.isFinite(row.grams)&&row.grams>0);
@@ -4143,12 +4143,12 @@ export default function Home() {
 
 {recipeGenerated && <div className="bh-bake-context" style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{destination==='recipe'&&!browsingFillings&&!execution&&!mixExecution?<button type="button" className="bh-section-back" onClick={openQuantityEdit} aria-label={fr?'Modifier la quantité':'Edit quantity'}>{bakeQuantityLabel(numItems,bakeType,styleKey,fr)}</button>:bakeQuantityLabel(numItems,bakeType,styleKey,fr)} <span style={{display:'inline-block'}}>{styleKey ? styleDisplayName(styleKey) : ''}</span></div></div>}
 {recipeGenerated && destination==='recipe' && eatTime && schedule && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} onSeeSteps={()=>openDestination('protocol')} onAddToCalendar={addPlanToCalendar}/>}
-{recipeGenerated && planMoved && destination==='recipe' && eatTime && <div data-plan-moved role="status" style={{margin:'12px 0 0',padding:'12px 14px',border:'1px solid var(--gold)',borderRadius:14,fontSize:14,lineHeight:1.5,background:'var(--warm)'}}>
+{recipeGenerated && planMoved && destination!=='batch' && destination!=='organisation' && eatTime && <div data-plan-moved role="status" style={{margin:'12px 0 0',padding:'12px 14px',border:'1px solid var(--gold)',borderRadius:14,fontSize:14,lineHeight:1.5,background:'var(--warm)'}}>
   <strong>{fr?'Plan mis à jour.':'Plan updated.'}</strong>{' '}
-  {fr?`Le pétrissage passe de ${formatBakeDateTime(new Date(planMoved.from),locale)} à ${formatBakeDateTime(new Date(planMoved.to),locale)}. La cuisson reste ${formatBakeDateTime(eatTime,locale)}.`
-     :`Start Dough moves from ${formatBakeDateTime(new Date(planMoved.from),locale)} to ${formatBakeDateTime(new Date(planMoved.to),locale)}. Bake stays ${formatBakeDateTime(eatTime,locale)}.`}
+  {fr?`Le pétrissage passe de ${formatBakeDateTime(new Date(planMoved.from),locale)} à ${formatBakeDateTime(new Date(planMoved.to),locale)}. La cuisson reste ${formatBakeDateTime(eatTime,locale)}. Si vous aviez ajouté le plan à votre agenda, ajoutez-le de nouveau.`
+     :`Start Dough moves from ${formatBakeDateTime(new Date(planMoved.from),locale)} to ${formatBakeDateTime(new Date(planMoved.to),locale)}. Bake stays ${formatBakeDateTime(eatTime,locale)}. If you had added the plan to your calendar, add it again.`}
   <span style={{display:'flex',gap:16,marginTop:6}}>
-    <button type="button" className="bh-back-action" style={{minHeight:44}} onClick={()=>{setPlanMoved(null);openDestination('protocol');}}>{fr?'Voir les étapes':'See the steps'}</button>
+    {destination!=='protocol'&&<button type="button" className="bh-back-action" style={{minHeight:44}} onClick={()=>{setPlanMoved(null);openDestination('protocol');}}>{fr?'Voir les étapes':'See the steps'}</button>}
     <button type="button" className="bh-back-action" style={{minHeight:44}} onClick={()=>setPlanMoved(null)}>OK</button>
   </span>
 </div>}
@@ -4913,7 +4913,7 @@ export default function Home() {
                     ...(leanBread && manualSugar===undefined ? [] : [{group:'ingredient',label:fr?'Sucre (% de farine)':'Sugar (% of flour)',value:manualSugar ?? style?.sugar ?? 0,min:0,max:10,step:0.5,set:setManualSugar}]),
                   ] : []),
                   {group:'process',label:fr?'Température de pâte après pétrissage (°C)':'Dough temperature after mixing (°C)',value:targetDoughTemp ?? defaultTemp,min:18,max:28,step:1,set:setTargetDoughTemp},
-                  ...(totalFlourTarget===undefined?[{group:'process',label:fr?'Marge de pâte supplémentaire (%)':'Extra dough allowance (%)',value:wastePct ?? 1.5,min:0,max:5,step:0.5,set:setWastePct}]:[]),
+                  ...(totalFlourTarget===undefined?[{group:'process',label:fr?'Marge de pâte supplémentaire (%)':'Extra dough allowance (%)',value:wastePct ?? 0,min:0,max:5,step:0.5,set:setWastePct}]:[]),
                 ];
                 const renderField = (field:typeof fields[number])=><div key={field.label}><label style={{display:'block',fontSize:16,marginBottom:18}}>{field.label}
                     <input type="number" key={`${field.label}:${field.value}`} defaultValue={Math.round(field.value*100)/100} min={field.min} max={field.max} step={field.step} onBlur={e=>{const n=Number(e.target.value);if(e.target.value!==''&&Number.isFinite(n))field.set(Math.min(field.max,Math.max(field.min,n)));else e.target.value=String(field.value);}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}}} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white'}}/>

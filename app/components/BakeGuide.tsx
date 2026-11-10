@@ -1605,10 +1605,14 @@ Actual dough condition and equipment may differ from these estimates.`;
             {bold:l === 'fr' ? 'Gardez la pâte couverte pendant le pointage prévu. Observez son gonflement : la chaleur accélère la pousse.' : 'Keep the dough covered during the planned bulk (first rise). Watch its expansion; a warmer kitchen speeds the rise.',note:''},
             ...(['ciabatta','focaccia'].includes(styleKey) ? [{bold:l === 'fr' ? 'Si la pâte s’étale, effectuez des rabats doux au début du pointage pour lui donner de la tenue. Préservez les bulles qui se forment ensuite.' : 'If the dough spreads, give it gentle folds early in bulk to build strength. Preserve bubbles as they develop.',note:''}] : []),
           ]} /> : <Steps items={[
-            ...(t.raw('bulk.stepsBase') as { bold: string; note: string }[]),
+            // Levain doughs follow the recipe card's own rise target; the generic percentage does not apply.
+            ...(t.raw('bulk.stepsBase') as { bold: string; note: string }[]).map(step => isSourdough && /50[-–]75/.test(step.note) ? { ...step, note: l === 'fr' ? 'pour suivre la pousse' : 'to follow the rise' } : step),
             ...(scheduledFoldMinutes(schedule.bulkFermHours, styleKey).length
               ? scheduledFoldMinutes(schedule.bulkFermHours, styleKey).map(minutes =>
-                  t.raw(minutes === 15 ? 'bulk.setShort' : `bulk.set${minutes / 30}`) as { bold: string; note: string })
+                  (minutes === 15 && !schedule.coldRetardStart
+                    // No fridge in this plan: the short first rise leads to shaping, not to the cold.
+                    ? { ...(t.raw('bulk.setShort') as { bold: string; note: string }), note: l === 'fr' ? 'puis couvrez et laissez reposer jusqu’au façonnage' : 'then cover and rest until shaping' }
+                    : t.raw(minutes === 15 ? 'bulk.setShort' : `bulk.set${minutes / 30}`) as { bold: string; note: string }))
               // "Straight into the fridge" only when the plan has a cold stage.
               : schedule.coldRetardStart ? [t.raw('bulk.setVeryShort') as { bold: string; note: string }] : []),
           ]} />}
@@ -1635,7 +1639,7 @@ Actual dough condition and equipment may differ from these estimates.`;
                 ] : []),
                 // Advice to find a cooler spot only helps when the kitchen itself is cooler.
                 ...(kitchenTemp < 26 ? [l === 'fr' ? `Au-dessus de ${tempC(26, u)}, le pointage accélère. Gardez la pâte à la température de la cuisine, loin d’une source de chaleur.` : `A spot warmer than ${tempC(26, u)} speeds the rise and flattens the flavour: keep the dough at kitchen temperature, away from heat`] : []),
-                ...(t.raw('bulk.pitfallsBase') as string[]),
+                ...(t.raw('bulk.pitfallsBase') as string[]).filter(text => !(isSourdough && /75\s?%/.test(text))),
               ]} />
             </Section>
           </>}
