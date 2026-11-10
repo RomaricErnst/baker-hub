@@ -1874,7 +1874,7 @@
     "overFermentRT": "{hours} h à {temp} °C dépasse ce que cette pâte supporte à température ambiante — elle sur-fermentera. Une phase au froid la porterait.",
     "hotClimateRT": "Ce planning prévoit plus de 4 h à température ambiante dans une cuisine à {temp} °C. Observez la levée de la pâte vers la fin de chaque phase à température ambiante.",
     "fridgeWarm": "Votre réfrigérateur est à {temp} °C. La fermentation se poursuit au froid ; vérifiez la pousse avant l’étape suivante.",
-    "osmoticStress": "Le sucre et les matières grasses peuvent ralentir cette pâte. Cette estimation de levure n’est pas calibrée pour les pâtes enrichies ; prolongez le repos si la pâte n’a pas assez levé.",
+    "osmoticStress": "Le sucre et les matières grasses ralentissent un peu cette pâte : laissez-lui plus de temps si elle n’a pas assez levé.",
     "doseFloorRT": "À {temp} °C, cette quantité est assez petite pour que {hours} h à température ambiante demandent moins de levure qu’une balance à 0,1 g ne peut peser : la dose est arrondie vers le haut et la pâte prendra de l’avance sur le plan. Environ {dosable} h est la fenêtre la plus longue dosable pour cette quantité — sinon augmentez la quantité, ou ajoutez une phase au froid.",
     "fermentationBudget": "À cette heure de cuisson, la pâte sera {direction, select, earlier {un peu en avance ({percent} % de la pousse)} other {un peu en retard ({percent} % de la pousse)}}. Vérifiez sa pousse avant de cuire."
   }

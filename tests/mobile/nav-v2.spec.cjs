@@ -473,7 +473,7 @@ test('landing photos stay above text and bread meal examples are readable',async
  }
  await page.getByRole('button',{name:'Pain',exact:true}).tap();
  const loaves=page.locator('#bread-group-loaves').locator('..').locator('.bh-bread-style-card');
- await expect(loaves).toHaveCount(5);
+ await expect(loaves).toHaveCount(6);
  const sources=[];
  for(const card of await loaves.all()){
   await card.scrollIntoViewIfNeeded();
@@ -489,7 +489,7 @@ test('landing photos stay above text and bread meal examples are readable',async
   expect((await card.locator('.bh-bread-card-copy').boundingBox()).y).toBeGreaterThanOrEqual(box.y+box.height);
   sources.push(await meal.locator('img').getAttribute('src'));
  }
- expect(new Set(sources).size).toBe(5);await noOverflow(page);
+ expect(new Set(sources).size).toBe(6);await noOverflow(page);
  await page.getByRole('button',{name:'Pain à wrap · Laffa',exact:true}).tap();
  await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
  await expect(page.getByLabel('Nombre de pièces',{exact:true})).toBeVisible();

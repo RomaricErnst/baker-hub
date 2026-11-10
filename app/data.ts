@@ -109,7 +109,7 @@ export const BREAD_STYLES = {
     bulkH: 4,
     ballW: 800,
     ovenNote: 'Dutch oven: 240°C lid on 20min, lid off 20min.',
-    flourNote: 'T65 or blend T65 + 10% T130 rye.',
+    flourNote: 'Blend: 85% T65 bread flour + 15% T130 rye.',
   },
   pain_levain: {
     name: 'Pain au levain',
@@ -170,18 +170,37 @@ export const BREAD_STYLES = {
     nameFr: 'Pain de seigle',
     emoji: '🌑',
     image: '/images/approved/bread/seigle-rustic.webp',
-    desc: 'Dark rye bread. Dense, earthy, long-lasting.',
-    descFr: 'Pain de seigle. Dense, terreux, longue conservation.',
+    desc: 'Sourdough rye loaf, about two-thirds rye. Dense, earthy, long-lasting.',
+    descFr: 'Au levain, aux deux tiers de seigle. Dense, terreux, longue conservation.',
     hydration: 78,
     salt: 2.2,
-    yeast: 0.5,
+    yeast: 0,
     oil: 0,
     sugar: 0,
-    pref: 'none',
+    pref: 'levain',
     bulkH: 2,
     ballW: 700,
     ovenNote: 'Bake in a loaf tin. Rye spreads without support.',
-    flourNote: 'T130 or T170 rye flour, minimum 60% rye.',
+    flourNote: 'Blend: 70% T130/T170 rye + 30% T65 bread flour, raised with levain.',
+  },
+  pain_au_seigle: {
+    name: 'Pain au seigle',
+    nameFr: 'Pain au seigle',
+    emoji: '🍞',
+    // Closest approved photo: a floured, crackled rye-wheat bâtard.
+    image: '/images/approved/bread/seigle.webp',
+    desc: 'Rye and wheat, soft crumb. About 30% rye, shaped as a bâtard.',
+    descFr: 'Seigle et blé, mie souple. Environ 30 % de seigle, façonné en bâtard.',
+    hydration: 66,
+    salt: 2.0,
+    yeast: 0.2,
+    oil: 0,
+    sugar: 0,
+    pref: 'none',
+    bulkH: 3,
+    ballW: 800,
+    ovenNote: 'Bâtard or boule, baked like pain de campagne.',
+    flourNote: 'Blend: 70% T65 bread flour + 30% T130 rye.',
   },
   fougasse: {
     name: 'Fougasse',
@@ -224,13 +243,13 @@ export const BREAD_STYLES = {
     nameFr: 'Pain de mie',
     emoji: '🍞',
     image: '/images/approved/bread/mie-rustic.webp',
-    desc: 'Soft sandwich loaf. Fine crumb, thin crust.',
-    descFr: 'Pain de mie moelleux. Mie fine, croûte fine.',
-    hydration: 62,
+    desc: 'Soft sandwich loaf with milk and butter. Fine crumb, thin crust.',
+    descFr: 'Pain de mie au lait et au beurre. Mie fine, croûte fine.',
+    hydration: 63,
     salt: 1.8,
     yeast: 0.6,
-    oil: 3,
-    sugar: 2,
+    oil: 0,
+    sugar: 5,
     pref: 'none',
     bulkH: 2,
     ballW: 600,
@@ -251,7 +270,8 @@ export const BREAD_STYLES = {
     sugar: 4,
     pref: 'none',
     bulkH: 2,
-    ballW: 80,
+    // Four short baguettes of 200 g, as the protocol's portions and shaping say.
+    ballW: 200,
     ovenNote: 'Egg wash. Score with scissors for classic look.',
     flourNote: 'T45 or T55.',
   },
@@ -592,7 +612,8 @@ export function preMixAutolyseMinFor(mixerType: keyof typeof MIXER_TYPES, styleK
 
 const AUTOLYSE_STYLES = new Set(['pain_campagne', 'pain_levain', 'baguette']);
 // Never, on any mixer. Rye degrades with a rest; the flour goes in after.
-const AUTOLYSE_NEVER = new Set(['pain_seigle']);
+// Pain au seigle (30 % rye) sits at the edge of that range: no rest either.
+const AUTOLYSE_NEVER = new Set(['pain_seigle', 'pain_au_seigle']);
 
 /** Minutes of autolyse between the initial and final mix. 0 when there is none. */
 export function autolyseMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: string): number {
@@ -604,6 +625,10 @@ export function autolyseMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: s
   if (styleKey && AUTOLYSE_STYLES.has(styleKey)) return AUTOLYSE_MIN;
   return mixerType === 'hand' ? AUTOLYSE_MIN : 0;
 }
+
+/** Hand kneading for butter-enriched doughs: brioche (50 % butter, added in
+ * stages) about 25 min, pain de mie (8 % butter) about 15 min. */
+const HAND_KNEAD_ENRICHED_MIN: Record<string, number> = { brioche: 25, pain_mie: 15 };
 
 /**
  * Elapsed mixing minutes for a style on a given mixer.
@@ -617,6 +642,9 @@ export function autolyseMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: s
  */
 export function kneadMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: string): number {
   if (styleKey === 'piadina') return mixerType === 'hand' ? 5 : 3;
+  // Butter goes into these doughs in stages, after the dough has gained
+  // strength: by hand that takes far longer than a lean dough's 10 minutes.
+  if (mixerType === 'hand' && styleKey && HAND_KNEAD_ENRICHED_MIN[styleKey]) return HAND_KNEAD_ENRICHED_MIN[styleKey];
   const base = MIXER_TYPES[mixerType]?.kneadMin ?? 10;
   if (base === 0) return 0;                       // no-knead stays no-knead
   const published = styleKey ? STYLE_STAND_MIX_MIN[styleKey] : undefined;
@@ -877,7 +905,7 @@ export const PREFERMENT_TYPES = {
     yeastReduction: 1.0,
     flavourNote: 'Tangy, digestible, unique wild yeast character.',
     flavourNoteFr: 'Acidulé, digestible, caractère unique du levain naturel.',
-    bestFor: ['neapolitan', 'pain_levain', 'baguette'] as string[],
+    bestFor: ['neapolitan', 'pain_levain', 'pain_seigle', 'baguette'] as string[],
     flourPctMin: 15, flourPctMax: 30, flourPctStep: 5,
   },
 } as const;
@@ -1136,6 +1164,51 @@ export function computeBlendProfile(blend: FlourBlend): BlendProfile {
     displayName: parts.join(' + '),
     displayNameFr: partsFr.join(' + '),
   };
+}
+
+// ── STYLE FLOUR BLENDS ────────────────────
+// Styles whose name is a blend: the recipe lists each flour with its grams
+// until the baker chooses another flour in Custom. The engine's existing
+// per-flour hydration and fermentation-tolerance values then apply as they
+// would to the same blend chosen by hand; no new coefficient is involved.
+export const STYLE_DEFAULT_BLENDS: Readonly<Record<string, Readonly<FlourBlend>>> = {
+  batbout: { flour1: 'bread', flour2: 'semolina', ratio1: 67 },
+  // "Blé et seigle": 85 % T65 bread flour, 15 % rye.
+  pain_campagne: { flour1: 'bread', flour2: 'rye', ratio1: 85 },
+  // Pain au seigle: 70 % T65, 30 % rye.
+  pain_au_seigle: { flour1: 'bread', flour2: 'rye', ratio1: 70 },
+  // Pain de seigle: French usage reserves the name for 65 % rye or more. Rye
+  // is 70 % of the flour added at the mix, so the loaf stays near two-thirds
+  // rye whether the starter was refreshed with rye or with wheat.
+  pain_seigle: { flour1: 'rye', flour2: 'bread', ratio1: 70 },
+};
+
+/** Styles raised with levain only: they follow the sourdough journey. */
+export const LEVAIN_STYLES: ReadonlySet<string> = new Set(['sourdough', 'pain_levain', 'pain_seigle']);
+export function isLevainStyle(styleKey: string | null | undefined): boolean {
+  return !!styleKey && LEVAIN_STYLES.has(styleKey);
+}
+
+/** The blend calculateRecipe works with: the style's own blend in Simple, and
+ * in Custom until the baker chooses a flour. Use it wherever the same blend's
+ * strength has to agree with the recipe (schedule readiness, starter factor). */
+export function recipeFlourBlend(styleKey: string, mode: 'simple' | 'custom', chosen?: FlourBlend): FlourBlend | undefined {
+  const preset = STYLE_DEFAULT_BLENDS[styleKey];
+  if (preset && (mode !== 'custom' || !chosen)) return { ...preset };
+  return chosen;
+}
+
+/** Fermentation-tolerance multiplier of the blend the recipe uses (1 without one). */
+export function recipeFlourStrength(styleKey: string, mode: 'simple' | 'custom', chosen?: FlourBlend): number {
+  const blend = recipeFlourBlend(styleKey, mode, chosen);
+  return blend ? computeBlendProfile(blend).fermToleranceMultiplier ?? 1 : 1;
+}
+
+/** True when the starting blend is still a style's own, untouched. */
+export function isStyleDefaultBlend(blend: FlourBlend | undefined): boolean {
+  if (!blend || blend.brandProduct || blend.flour3) return false;
+  return Object.values(STYLE_DEFAULT_BLENDS).some(preset =>
+    preset.flour1 === blend.flour1 && preset.flour2 === blend.flour2 && preset.ratio1 === blend.ratio1);
 }
 
 // ── TYPE EXPORTS ──────────────────────────

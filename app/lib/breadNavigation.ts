@@ -1,6 +1,6 @@
 /** Each bread appears once; grouping describes its shape/use, not a required meal. */
 export const BREAD_GROUPS = [
- {id:'loaves',fr:'Pains à trancher',en:'Loaves & sliced bread',keys:['pain_campagne','pain_levain','pain_complet','pain_seigle','pain_mie']},
+ {id:'loaves',fr:'Pains à trancher',en:'Loaves & sliced bread',keys:['pain_campagne','pain_levain','pain_complet','pain_seigle','pain_au_seigle','pain_mie']},
  {id:'sandwich',fr:'Baguettes & pains à garnir',en:'Baguettes & sandwich breads',keys:['baguette','focaccia','ciabatta','bagel','pan_bagnat','panuozzo']},
  {id:'flat',fr:'Pitas & wraps',en:'Pitas & wraps',keys:['pita','greek_pita','kebab_bread','batbout','laffa','piadina']},
  {id:'sharing',fr:'Brioches & pains à partager',en:'Brioches & sharing breads',keys:['brioche','pain_viennois','fougasse']},
@@ -12,6 +12,7 @@ export const BREAD_MEAL_EXAMPLES: Record<string, {recipeId:string; kind:'tartine
   pain_levain:{recipeId:'tartine-champignons-ricotta',kind:'tartine'},
   pain_complet:{recipeId:'tartine-thon-yaourt',kind:'tartine'},
   pain_seigle:{recipeId:'tartine-chevre-miel-noix',kind:'tartine',image:'/images/approved/sandwich/tartine-seigle-chevre-v2.webp'},
+  pain_au_seigle:{recipeId:'tartine-jambon-emmental',kind:'tartine'},
   pain_mie:{recipeId:'pain_mie-club-sandwich',kind:'sandwich'},
   baguette:{recipeId:'baguette-jambon-beurre',kind:'sandwich'},
   focaccia:{recipeId:'focaccia-caprese',kind:'sandwich'},

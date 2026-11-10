@@ -8,7 +8,7 @@ import {
   hoursLabel,
   finalProofWindow,
 } from '../utils';
-import { kneadMinFor, autolyseMinFor, preMixAutolyseMinFor, type MixerType } from '../data';
+import { kneadMinFor, isLevainStyle, autolyseMinFor, preMixAutolyseMinFor, type MixerType } from '../data';
 import { StepIcon, IconProof } from './StepIcons';
 import { formatPrefermentDose } from '../utils/prefermentDose';
 import LearnModal from './LearnModal';
@@ -488,7 +488,7 @@ export default function Timeline({
   const t = useTranslations();
   const _fmtLocale = useLocale();
 
-  const isSourdough = styleKey === 'sourdough' || styleKey === 'pain_levain';
+  const isSourdough = isLevainStyle(styleKey);
 
   // Memoized — rebuilding every render made rapid state changes janky
   // (one observed full renderer freeze during fast scroll + re-render)

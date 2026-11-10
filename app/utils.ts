@@ -28,6 +28,8 @@ import {
   preMixAutolyseMinFor,
   YEAST_TYPES,
   computeBlendProfile,
+  recipeFlourBlend,
+  isLevainStyle,
   computePrefermentRecipe,
   PREFERMENT_TYPES,
   type OvenType,
@@ -58,7 +60,11 @@ import {
 // formula. These are recipe cross-checks, not validation of every mixed
 // temperature trajectory. The retained 0.05% floor is a product limit.
 const YEAST_MIN_PCT   = 0.05;   // automatic estimate before an explicit override
-const YEAST_MIN_GRAMS = 0.1;    // minimum weighable on 0.1g scale
+const YEAST_MIN_GRAMS = 0.1;
+/** Sugar (% of flour) from which a dough takes the fixed enriched yeast dose. */
+export const ENRICHED_FIXED_SUGAR_PCT = 10;
+/** Fixed enriched dose, instant yeast % of flour (3 % fresh, 1.33 % active dry). */
+export const ENRICHED_FIXED_IDY_PCT = 1;    // minimum weighable on 0.1g scale
 const YEAST_RT_MAX_H  = 8;      // max RT hours before poolish recommended
 
 // Tropical correction divisor (RT phases only)
@@ -149,6 +155,8 @@ export interface YeastResult {
   explanation: string;
   warnings: YeastWarning[];
   osmoticStress: boolean; // true for sweet dough
+  /** Enriched dough (sugar >= 10 % of flour): fixed 1 % instant-yeast dose, not the model. */
+  fixedEnrichedDose?: boolean;
 }
 
 // Existing UI instructs 1 g yeast + waterG water: stock mass is waterG + 1.
@@ -390,6 +398,7 @@ export function starterBulkFactor(starterPct: number | undefined, kitchenTemp: n
 }
 
 /** Levain room-temperature bulk at the reference starter: 5 h at 22 °C, Q10 2. */
+// Other levain styles (pain de seigle among them) use pain au levain's reference.
 export function sourdoughBulkH(styleKey: string, kitchenTemp: number): number {
   const nativeSourdough = styleKey === 'pain_levain' || styleKey === 'sourdough';
   return (nativeSourdough ? ALL_STYLES[styleKey as StyleKey].bulkH : ALL_STYLES.pain_levain.bulkH) * Math.pow(2, (22 - Math.min(30, kitchenTemp)) / 10);
@@ -603,7 +612,7 @@ export const TARGET_FDT: Record<string, number> = {
   batbout: 24, laffa: 24, piadina: 24, pan_bagnat: 24, ciabatta: 24, panuozzo: 23,
   neapolitan: 23, newyork: 24, roman: 25, pan: 25,
   sourdough: 24, pain_campagne: 24, pain_levain: 24,
-  baguette: 24, pain_complet: 24, pain_seigle: 24,
+  baguette: 24, pain_complet: 24, pain_seigle: 24, pain_au_seigle: 24,
   fougasse: 25, brioche: 22, pain_mie: 24, pain_viennois: 23,
 };
 
@@ -1259,7 +1268,7 @@ export function buildSchedule(
   startTime: Date, eatTime: Date, availabilityBlocks: AvailabilityBlock[],
   kitchenTemp: number, preheatMin: number, mixerType: MixerType = 'hand',
   styleKey: string = 'neapolitan', numItems?: number, requestedMixingBatches = 1,
-  isSourdough = styleKey === 'pain_levain' || styleKey === 'sourdough',
+  isSourdough = isLevainStyle(styleKey),
   starterFactor = 1,
 ): ScheduleResult {
   const mixingBatches = Number.isFinite(requestedMixingBatches) ? Math.max(1, Math.min(100, Math.floor(requestedMixingBatches))) : 1;
@@ -1689,9 +1698,9 @@ export function calculateRecipe(
     : BREAD_OVEN_TYPES[ovenType as BreadOvenType];
   if (!s || !oven) throw new Error('Unknown style or oven');
 
-  if (styleKey === 'batbout' && (mode !== 'custom' || !flourBlend)) {
-    flourBlend = { flour1: 'bread', flour2: 'semolina', ratio1: 67 };
-  }
+  // Blend styles (batbout, pain de campagne…) carry their own flours until the
+  // baker chooses another in Custom.
+  flourBlend = recipeFlourBlend(styleKey, mode, flourBlend);
   const blendProfile: BlendProfile | null = flourBlend
     ? computeBlendProfile(flourBlend)
     : null;
@@ -1717,7 +1726,7 @@ export function calculateRecipe(
     batbout: 60, laffa: 62, piadina: 48, pan_bagnat: 58, ciabatta: 72, panuozzo: 60,
     neapolitan: 56, newyork: 58, roman: 70, pan: 68,
     sourdough: 58, pain_campagne: 68, pain_levain: 70,
-    baguette: 65, pain_complet: 68, pain_seigle: 70,
+    baguette: 65, pain_complet: 68, pain_seigle: 70, pain_au_seigle: 64,
     fougasse: 68, brioche: 52, pain_mie: 55, pain_viennois: 52,
   };
   // Enriched or high-oil styles: fat retains moisture, so oven environment
@@ -1851,9 +1860,37 @@ export function calculateRecipe(
         };
       }
 
+      // Enriched doughs (sugar >= 10 % of flour, brioche): a fixed dose of
+      // 1 % instant yeast of flour replaces the temperature model, which gives
+      // about 0.3 % and has no calibration for sugar. French brioche recipes use
+      // 15-20 g fresh yeast per 500 g flour (3-4 %, i.e. 1-1.3 % instant), sugar
+      // above ~5-6 % measurably slows yeast, and no published curve gives a
+      // correction factor, so the classic dose is used as it stands. Only the
+      // amount changes; the schedule stays the engine's. A baker-entered amount
+      // in Custom still wins. The budget comparison measures the model dose,
+      // so its "ready early" note does not apply here.
+      if (yeast && sugar >= ENRICHED_FIXED_SUGAR_PCT && yeastPctOverride === undefined) {
+        const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
+        const pct = ENRICHED_FIXED_IDY_PCT;
+        const convertedPct = Math.round(pct * conversion * 10000) / 10000;
+        const convertedGrams = Math.round(flour * convertedPct / 100 * 1000) / 1000;
+        yeast = {
+          ...yeast,
+          pct,
+          grams: Math.round(flour * pct / 100 * 1000) / 1000,
+          convertedPct,
+          convertedGrams,
+          hitMinFloor: flour * pct / 100 < 0.5,
+          maxDosableRTH: null,
+          scaleNeeded: convertedGrams < 0.5 ? 'Precision scale (0.1g accuracy) required' : 'Standard kitchen scale is fine',
+          warnings: yeast.warnings.filter(w => w.key !== 'fermentationBudget' && w.key !== 'doseFloorRT'),
+          fixedEnrichedDose: true,
+        };
+      }
       // Sugar concentration, strain and water availability all affect leavening.
       // A universal 20% dose increase at 2% flour-basis sugar isn't warranted.
-      if (yeast && sugar > 5) {
+      // The fixed enriched dose above already accounts for its sugar.
+      if (yeast && sugar > 5 && !yeast.fixedEnrichedDose) {
         yeast = {...yeast, osmoticStress:true, warnings:[...yeast.warnings,{key:'osmoticStress'}]};
       }
       // Whole-dough leavening requirement (direct-engine IDY grams), captured
@@ -1977,10 +2014,7 @@ export function calculateRecipe(
     waterFractions: ENRICHMENT_WATER_FRACTIONS,
     sourceUrl: enrichedFormula.sourceUrl, formulaVersion: enrichedFormula.formulaVersion,
     unsupportedMethod: unsupportedEnrichedMethod,
-    note: {
-      en: 'Published ingredient ratios; direct commercial-yeast version. Yeast and timing are app estimates, not the source schedule. Hydration includes estimated water in milk, eggs and butter. Ingredient temperatures are not modelled. Weigh eggs without shells; egg wash is separate.',
-      fr: 'Proportions publiées ; version directe à levure boulangère. Levure et durées estimées par l’application, différentes du planning source. Hydratation incluant l’eau estimée du lait, des œufs et du beurre. Températures de ces ingrédients non modélisées. Pesez les œufs sans coquille ; dorure à part.',
-    },
+    note: enrichmentNote(styleKey, !!yeast?.fixedEnrichedDose, enrichedFormula.eggs > 0),
   } : undefined;
   if (enrichment) enrichment.waterEquivalent = water + enrichment.milk * .87 + enrichment.eggs * .75 + enrichment.butter * .16;
   // All flour-strength, preferment and sugar modifiers have now settled.
@@ -2025,6 +2059,26 @@ export function calculateRecipe(
     blendProfile: blendProfile ?? undefined,
     preferment,
   };
+}
+
+/** Short provenance note for an enriched formula, in both languages. */
+function enrichmentNote(styleKey: string, fixedDose: boolean, eggs: boolean): { en: string; fr: string } {
+  const ownRatios = styleKey === 'pain_mie';
+  const en = [
+    ownRatios ? 'Sandwich-loaf ratios: half water, half milk, butter and a little sugar; direct commercial-yeast version.' : 'Published ingredient ratios; direct commercial-yeast version.',
+    fixedDose ? 'Yeast is the usual enriched-dough amount; timing is the app’s estimate, not the source schedule.' : 'Yeast and timing are app estimates, not the source schedule.',
+    `Hydration includes estimated water in ${eggs ? 'milk, eggs and butter' : 'milk and butter'}.`,
+    'Ingredient temperatures are not modelled.',
+    ...(eggs ? ['Weigh eggs without shells; egg wash is separate.'] : []),
+  ];
+  const fr = [
+    ownRatios ? 'Proportions du pain de mie : moitié eau, moitié lait, beurre et un peu de sucre ; version directe à levure boulangère.' : 'Proportions publiées ; version directe à levure boulangère.',
+    fixedDose ? 'Levure à la dose habituelle des pâtes enrichies ; durées estimées par l’application, différentes du planning source.' : 'Levure et durées estimées par l’application, différentes du planning source.',
+    `Hydratation incluant l’eau estimée ${eggs ? 'du lait, des œufs et du beurre' : 'du lait et du beurre'}.`,
+    'Températures de ces ingrédients non modélisées.',
+    ...(eggs ? ['Pesez les œufs sans coquille ; dorure à part.'] : []),
+  ];
+  return { en: en.join(' '), fr: fr.join(' ') };
 }
 
 function prefermentLeadHours(prefermentType: PrefermentType): number {

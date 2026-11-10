@@ -1,5 +1,6 @@
 /** Preheat and bake cards for the lean breads that have no BREAD_PROTOCOLS entry:
- * baguette, fougasse, pain de campagne, pain au levain, pain complet, pain de seigle.
+ * baguette, fougasse, pain de campagne, pain au levain, pain complet, pain de seigle,
+ * pain au seigle.
  *
  * These are baking instructions only. They do not feed the fermentation or
  * schedule engines. Temperatures are written in °C here and converted for the
@@ -26,7 +27,7 @@ export interface LeanBreadBake {
   pitfalls: Both<string[]>;
 }
 
-export const LEAN_BREAD_STYLES = ['baguette', 'fougasse', 'pain_campagne', 'pain_levain', 'pain_complet', 'pain_seigle'] as const;
+export const LEAN_BREAD_STYLES = ['baguette', 'fougasse', 'pain_campagne', 'pain_levain', 'pain_complet', 'pain_seigle', 'pain_au_seigle'] as const;
 
 /** Oven settings are dialled in 5 °F steps: 250 °C is 480 °F, never 482. */
 export function ovenTempF(celsius: number): number {
@@ -51,7 +52,7 @@ export function leanBreadMinutes(styleKey: string, weight: number): [number, num
     case 'baguette': return w < 200 ? [15, 20] : w <= 400 ? [20, 25] : [25, 30];
     case 'fougasse': return w <= 250 ? [12, 15] : w <= 500 ? [15, 20] : [18, 25];
     case 'pain_seigle': return w <= 500 ? [35, 45] : w <= 900 ? [45, 55] : [55, 70];
-    case 'pain_campagne': case 'pain_levain': case 'pain_complet':
+    case 'pain_campagne': case 'pain_levain': case 'pain_complet': case 'pain_au_seigle':
       return w <= 500 ? [30, 35] : w <= 800 ? [40, 45] : w <= 1100 ? [45, 50] : [50, 60];
     default: return null;
   }
@@ -285,7 +286,7 @@ export function leanBreadBake(styleKey: string, pieceWeightG: number, ovenType: 
     };
   }
 
-  // Round and oval loaves: pain de campagne, pain au levain, pain complet.
+  // Round and oval loaves: pain de campagne, pain au levain, pain complet, pain au seigle.
   // Their wood-fired card already gives floor temperature and total time.
   if (wood) return null;
   const steam = 20;
