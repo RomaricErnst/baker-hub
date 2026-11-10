@@ -495,10 +495,12 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
     },
     "cookingSteps": {
       "en": [
+        "Egg wash: just before baking, brush the loaves with one beaten egg, a thin even coat.",
         "Make shallow diagonal cuts gently before baking. Bake 200 g baguettes for about 15–20 min. Smaller rolls need earlier checks; larger pieces need longer.",
         "Look for an evenly golden surface and a fully set centre, not raw dough. If colour comes early, shield with foil and continue checking."
       ],
       "fr": [
+        "Dorure : juste avant d’enfourner, badigeonnez les pains d’un œuf battu, en couche fine et régulière.",
         "Incisez délicatement en biais avant d’enfourner. Cuisez les baguettes de 200 g environ 15–20 min. Contrôlez plus tôt les petits pains et prolongez pour les gros.",
         "Recherchez une surface dorée et un cœur cuit, sans pâte crue. Si la couleur vient trop vite, protégez d’aluminium et poursuivez les contrôles."
       ]

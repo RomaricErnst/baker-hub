@@ -38,7 +38,7 @@ export function yeastBuyingHint(grams: number, yeastType: string | undefined, lo
 
 /** What the bread steps ask for besides the dough: the fougasse's olive oil and
  * fleur de sel, the rice flour for a banneton, semolina for batbout, the egg of
- * a brioche's optional egg wash. Only styles whose steps use them. */
+ * a brioche's optional egg wash, a pain viennois's egg wash. Only styles whose steps use them. */
 export interface FinishShoppingRow { id: string; name: string; grams: number }
 export function breadFinishShopping(styleKey: string, count: number, locale: string): FinishShoppingRow[] {
   const fr = locale === 'fr', n = Math.max(1, Math.round(count || 1));
@@ -53,6 +53,8 @@ export function breadFinishShopping(styleKey: string, count: number, locale: str
       return [{ id: 'finish_semolina', name: fr ? 'Semoule fine, pour fleurer' : 'Fine semolina, for dusting', grams: 20 + 5 * n }];
     case 'brioche':
       return [{ id: 'finish_egg_wash', name: fr ? 'Œuf pour la dorure (facultatif)' : 'Egg for the egg wash (optional)', grams: 50 * Math.ceil(n / 3) }];
+    case 'pain_viennois':
+      return [{ id: 'finish_egg_wash', name: fr ? 'Œuf pour la dorure' : 'Egg for the egg wash', grams: 50 * Math.ceil(n / 4) }];
     default: return [];
   }
 }

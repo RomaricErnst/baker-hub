@@ -470,7 +470,7 @@ button,
 .bh-key-time { display:flex; align-items:center; gap:8px; min-height:44px; padding:0; border:0; background:none; color:var(--char); font:inherit; font-size:20px; font-weight:600; text-align:left; cursor:pointer; }
 .bh-key-valid-selection { color:#2e673c; font-size:15px; }
 .bh-key-detail,.bh-key-legend { font-size:13px; color:var(--smoke); margin:4px 0; }
-.bh-key-window { font-size:13px; line-height:1.5; color:var(--sage); margin-top:6px; overflow-wrap:break-word; }
+.bh-key-window { font-size:13px; line-height:1.5; color:var(--sage-text); margin-top:6px; overflow-wrap:break-word; }
 .bh-key-window[aria-busy="true"],.bh-key-window[data-has-windows="false"] { color:var(--smoke); }
 .bh-key-window-dot { display:inline-block; width:7px; height:7px; margin-right:6px; border-radius:50%; background:#477b4c; }
 .bh-key-note { font-size:14px; color:var(--terra); margin-top:8px; }
@@ -499,7 +499,7 @@ html[data-preview="true"] vercel-live-feedback { display:none !important; }
 
 [data-navigation-page] { overflow-anchor:none; }
 .bh-plan-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:4px 12px; min-height:44px; }
-.bh-plan-state { font-size:14px; font-weight:600; color:var(--sage); }
+.bh-plan-state { font-size:14px; font-weight:600; color:var(--sage-text); }
 .bh-plan-state[data-valid="false"] { color:var(--char); border-left:3px solid var(--gold); padding-left:8px; }
 .bh-plan-notice { padding:12px; border:1px solid var(--gold); border-radius:10px; background:var(--warm); font-size:14px; line-height:1.5; }
 .bh-plan-notice p { margin:8px 0; }
