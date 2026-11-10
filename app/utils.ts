@@ -1368,17 +1368,26 @@ export function buildSchedule(
   if (+schedule.bulkFermStart > +schedule.finalProofStart || +schedule.bulkFermStart >= +schedule.bakeStart)
     schedule.preparationInvalid = true;
   const foldMinutes = scheduledFoldMinutes(schedule.bulkFermHours, styleKey);
+  let foldDelayMs = 0;
   if (mixingBatches > 1 && foldMinutes.length && schedule.doughMethod !== 'unleavened') {
     const firstFoldAt = new Date(+schedule.firstBatchReadyAt + foldMinutes[0] * 60000);
     if (+firstFoldAt < +schedule.bulkFermStart) {
-      schedule.batchTimingConflict = {firstFoldAt, mixingEnd:schedule.bulkFermStart};
-      schedule.preparationInvalid = true;
+      // The baker cannot fold the first lot while still mixing a later one:
+      // every fold waits until the last mix is done, keeping the same spacing.
+      foldDelayMs = +schedule.bulkFermStart - +firstFoldAt;
+      const lastFoldAt = +schedule.batchMixWindows[mixingBatches - 1].end + foldMinutes[foldMinutes.length - 1] * 60000 + foldDelayMs;
+      const bulkEnd = +(schedule.coldRetard1Start ?? schedule.divideBallTime);
+      if (lastFoldAt >= bulkEnd) {
+        foldDelayMs = 0;
+        schedule.batchTimingConflict = {firstFoldAt, mixingEnd:schedule.bulkFermStart};
+        schedule.preparationInvalid = true;
+      }
     }
   }
   for (const [batchIndex, window] of schedule.batchMixWindows.entries()) {
     foldMinutes.forEach((minutes, index) => {
       actions.push({ id: `fold-${index + 1}${batchIndex ? `-batch-${batchIndex + 1}` : ''}`,
-        at: new Date(+window.end + minutes * 60000) });
+        at: new Date(+window.end + minutes * 60000 + foldDelayMs) });
     });
   }
   const point = (id: string, at: Date | null) => { if (at) actions.push({ id, at }); };

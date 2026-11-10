@@ -24,7 +24,7 @@ test('quantity backward action returns generated edits to choices, but first cre
 test('finishing changed setup delegates validation without returning early; unchanged setup restores its origin',()=>{
  for(const recipeGenerated of [false,true])for(const protocolStale of [false,true])for(const keyChanged of [false,true])for(const destination of [null,'recipe','shopping','protocol','service']){
   const calls=[];
-  evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{recipeGenerated,protocolStale,canGenerate:true,generatedRecipeInputKey:{current:null},previousRecipeInputKey:{current:'saved'},recipeInputKey:keyChanged?'edited':'saved',fillingsReturn:destination?{destination}:null,handleGenerate(accepted){assert.equal(accepted,true,'Returning from the edit accepts this update once');calls.push('validate');},setSetupOverview(value){calls.push(['overview',value]);},finishFillings(){calls.push(destination);},openDestination(value){calls.push(value);}});
+  evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{planReplanPending:false,replanReturn:null,tab:'simple',recipeGenerated,protocolStale,canGenerate:true,generatedRecipeInputKey:{current:null},previousRecipeInputKey:{current:'saved'},recipeInputKey:keyChanged?'edited':'saved',fillingsReturn:destination?{destination}:null,handleGenerate(accepted){assert.equal(accepted,true,'Returning from the edit accepts this update once');calls.push('validate');},setSetupOverview(value){calls.push(['overview',value]);},finishFillings(){calls.push(destination);},openDestination(value){calls.push(value);}});
   assert.deepEqual(calls,!recipeGenerated||protocolStale||keyChanged?['validate']:[['overview',false],destination||'recipe']);
  }
 });
@@ -32,7 +32,7 @@ test('finishing changed setup delegates validation without returning early; unch
 test('an explicitly returned clean but invalid generated edit remains pending and cannot bypass validation',()=>{
  for(const destination of [null,'recipe','shopping','protocol','service']){
   const calls=[];
-  evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{recipeGenerated:true,protocolStale:false,canGenerate:false,fillingsReturn:destination?{destination}:null,setProtocolStale(value){calls.push(['stale',value]);},handleGenerate(){calls.push('validate');},setSetupOverview(){throw Error('Invalid return cannot dismiss editing');},finishFillings(){throw Error('Invalid return cannot restore output');},openDestination(){throw Error('Invalid return cannot restore output');}});
+  evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{planReplanPending:false,replanReturn:null,tab:'simple',recipeGenerated:true,protocolStale:false,canGenerate:false,fillingsReturn:destination?{destination}:null,setProtocolStale(value){calls.push(['stale',value]);},handleGenerate(){calls.push('validate');},setSetupOverview(){throw Error('Invalid return cannot dismiss editing');},finishFillings(){throw Error('Invalid return cannot restore output');},openDestination(){throw Error('Invalid return cannot restore output');}});
   assert.deepEqual(calls,[['stale',true],'validate']);
  }
 });
@@ -161,4 +161,12 @@ test('separating blend flours cannot move existing salt or yeast shopping checks
   assert.deepEqual(Array.from(rows.slice(0,2),r=>r.amount),['850g','150g']);
   assert.equal(rows.find(row=>row.tickKey==='dough_2').amount,locale==='fr'?'0,54 g':'0.54 g');
  }
+});
+
+test('a pending plan edit in Custom opens the plan step so the scheduler replans before the recipe returns',()=>{
+ const calls=[];
+ evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{planReplanPending:true,replanReturn:null,tab:'custom',startTime:new Date(1000),recipeGenerated:true,protocolStale:false,canGenerate:true,previousRecipeInputKey:{current:'saved'},recipeInputKey:'edited',fillingsReturn:null,
+  setReplanReturn(value){calls.push(['replan',value.from,value.settled]);},setActiveTab(tab){calls.push(['tab',tab]);},setSetupOverview(value){calls.push(['overview',value]);},setAdvancedStep(step){calls.push(['step',step]);},scrollToStepTop(){},
+  handleGenerate(){throw Error('The stale schedule must not be regenerated before the replan');},setProtocolStale(){throw Error('unexpected');},openDestination(){throw Error('unexpected');}});
+ assert.deepEqual(calls,[['replan',1000,false],['tab','setup'],['overview',false],['step',9]]);
 });
