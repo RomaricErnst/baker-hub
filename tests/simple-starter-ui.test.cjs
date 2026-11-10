@@ -13,18 +13,35 @@ const {NextIntlClientProvider}=require('next-intl');
 const Picker=require('../app/components/SchedulePicker.tsx').default;
 const messages=require('../messages/en.json');
 
-test('Simple starter setup exposes readiness and kitchen facts without requiring feed controls; Custom retains them',()=>{
+test('Simple asks about the starter on its own screen, so the bake-time picker asks nothing; Custom retains its questions',()=>{
  const start=new Date(Date.now()+3600000), eat=new Date(Date.now()+36*3600000);
  for(const locale of ['en','fr']) for(const mode of ['simple','custom']) {
   const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale,messages:require('../messages/'+locale+'.json'),timeZone:'Asia/Singapore'},React.createElement(Picker,{startTime:start,eatTime:eat,blocks:[],preheatMin:45,styleKey:'pain_levain',kitchenTemp:30,bakeType:'bread',isSourdough:true,mode,onChange:()=>{}})));
   const feedQuestion=locale==='en'?'Where has it been since last fed?':'Où était-il depuis son dernier rafraîchi ?';
   assert.equal(html.includes(feedQuestion),mode==='custom');
-  if(mode==='simple') {
-   assert.ok(html.includes(locale==='en'?'Yes, ready now':'Oui, il est prêt maintenant'));
-   assert.ok(html.includes(locale==='en'?'Not yet':'Pas encore'));
-   assert.ok(html.includes(locale==='en'?'equal weights of flour and water':'autant de farine que d’eau'));
-   assert.ok(html.includes(locale==='en'?'kitchen: 30':'cuisine : 30'));
-  }
+  for(const old of locale==='en'?['Yes, ready now','Not yet','Other timing / starter details']:['Oui, il est prêt maintenant','Pas encore','Autre horaire / détails du levain'])
+   assert.ok(!html.includes(old),old);
+ }
+});
+
+test('the Simple screen and its answer: one question, nothing pre-selected, safe assumptions for the solver',()=>{
+ const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
+ for(const text of ['Where is your starter now?','Où est votre levain en ce moment ?','On the counter','Sur le plan de travail','In the fridge','Au réfrigérateur','It’s bubbly and risen right now','Il est bien monté et bullé en ce moment','Your starter →','Votre levain →'])
+  assert.ok(source.includes(text),text);
+ assert.match(source,/useState<'counter'\|'fridge'\|'ready'\|null>\(null\)/,'no answer is pre-selected');
+ const apply=source.match(/function applySimpleStarterAnswer[\s\S]*?\n  \}/)[0];
+ assert.match(apply,/answer==='counter'\?24:196/,'counter is a day old, fridge about a week');
+ assert.match(apply,/setLastFedAge\(answer==='counter'\?'yesterday':'week'\)/);
+ assert.match(apply,/setPlanningMode\('know_peak'\)/,'bubbly now is the ready-now path');
+});
+
+test('an assumed last feed is never shown as something the baker said',()=>{
+ const start=new Date(Date.now()+8*3600000), eat=new Date(+start+20*3600000);
+ const fed=new Date(Date.now()-196*3600000);
+ for(const answer of [null,'fridge']){
+  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'Asia/Singapore'},React.createElement(Picker,{startTime:start,eatTime:eat,blocks:[],preheatMin:45,styleKey:'pain_levain',kitchenTemp:22,bakeType:'bread',isSourdough:true,mode:'simple',simpleStarterAnswer:answer,starterLocation:'fridge',planningMode:'last_fed',lastFedAge:'week',lastFedTime:fed,
+   savedStarterEvents:[{kind:'last_fed',time:fed,isPast:true,isActive:false,isDraggable:false,label:'Last fed',cardTimeFormat:'absolute',bellStyle:'none',bellSigmaScale:1,assumed:answer?true:undefined}],onChange:()=>{}})));
+  if(answer)assert.ok(!html.includes('Last fed'),'assumed feed hidden');
  }
 });
 

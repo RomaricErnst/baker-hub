@@ -48,3 +48,23 @@ test('more yeast plans a later start, and the calculated amount restores the pla
  expect((await stored(page)).eatTime).toBe(BAKE);
  expect(errors).toEqual([]);
 });
+
+// Too little yeast for the time left: the cause in words, and a way back to
+// the calculated amount.
+test('a yeast amount too slow for the bake names the cause and offers the calculated amount',async({page})=>{
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));
+ await page.clock.setFixedTime(NOW);
+ const bake=NOW+58*3600000;
+ const data={version:1,savedAt:NOW,tab:'custom',bakeType:'pizza',styleKey:'neapolitan',numItems:8,itemWeight:270,pizzaDiameter:30,ovenType:'pizza_oven',mixerType:'hand',yeastType:'instant',kitchenTemp:24,humidity:'normal',fridgeTemp:6,flourBlend:null,prefermentType:'none',prefOffsetH:0,prefGoesInFridge:false,flourInFridge:false,startTime:bake-24*3600000,eatTime:bake,blocks:[],recipeGenerated:true,protocolStale:true,yeastPctOverride:0.02,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,customKitchenConfirmed:true,activeStep:7,advancedStep:9,highestStep:7,advancedHighestStep:10,setupOverview:false,activeTab:'setup'};
+ await page.addInitScript(data=>{
+  if(!sessionStorage.getItem('yeast-seeded')){localStorage.setItem('bh_session_v1',JSON.stringify(data));sessionStorage.setItem('yeast-seeded','1');}
+  sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:7,advancedStep:9,setupOverview:false,activeTab:'setup'}));
+ },data);
+ await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
+ await page.goto('/');
+ await expect(page.getByText(/^0\.02% yeast needs about .*: bake later or use more yeast\.$/)).toBeVisible({timeout:20000});
+ await page.locator('[data-use-calculated-yeast]').tap();
+ await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBeUndefined();
+ await expect(page.locator('[data-use-calculated-yeast]')).toHaveCount(0);
+ expect(errors).toEqual([]);
+});

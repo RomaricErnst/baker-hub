@@ -48,17 +48,17 @@ test('sourdough: a starter ready now with a bake tomorrow evening gets one more 
  await forward(page).tap();
  await page.getByRole('slider').first().fill('22');
  await forward(page).tap();
+ // "Your starter": bubbly and risen right now.
+ await page.getByRole('button',{name:'It’s bubbly and risen right now',exact:true}).tap();
+ await forward(page).tap();
  const bakeDate=page.getByLabel('Bake date and time',{exact:true});
  await bakeDate.fill('2026-11-11T18:00');await bakeDate.blur();
- await page.getByRole('button',{name:/^Generate my recipe/}).tap();
- await page.getByRole('button',{name:'Yes, ready now',exact:true}).tap();
  await expect(page.getByText('the plan refreshes it once more so it peaks when you mix')).toBeVisible({timeout:20000});
  await expect(page.getByText(/cannot keep your chosen times/)).toHaveCount(0);
  await expect(page.getByText('Last fed')).toHaveCount(0);
- await expect(page.getByRole('button',{name:'Yes, ready now',exact:true})).toHaveAttribute('aria-pressed','true');
- const create=page.getByRole('button',{name:'Create my recipe',exact:true});
- await expect(create).toBeEnabled({timeout:20000});
- await create.tap();
+ const generate=page.getByRole('button',{name:'Generate my recipe',exact:true});
+ await expect(generate).toBeEnabled({timeout:20000});
+ await generate.tap();
  await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
  expect(errors).toEqual([]);
 });

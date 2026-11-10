@@ -12,6 +12,10 @@ const w = window as any;
 function Harness({ sc }: { sc: any }) {
   const [eatTime,setEatTime]=useState<Date>(sc.eat);
   w.__changeBake=setEatTime;
+  // A starter-% edit made on another step: new bulk factor + the page's replan flag.
+  const [bulkFactor,setBulkFactor]=useState<number>(sc.starterBulkFactor ?? 1);
+  const [replanPending,setReplanPending]=useState(false);
+  w.__changeStarterFactor=(factor:number)=>{setBulkFactor(factor);setReplanPending(true);};
   const [startTime, setStartTime] = useState<Date>(sc.start);
   const [blocks, setBlocks] = useState<any[]>([]);
   const [starterLocation, setStarterLocation] = useState<'rt' | 'fridge'>(sc.loc);
@@ -49,7 +53,7 @@ function Harness({ sc }: { sc: any }) {
   return (
     <SchedulePicker
       startTime={startTime} eatTime={eatTime} blocks={blocks} preheatMin={45}
-      styleKey={sc.style} kitchenTemp={sc.temp} bakeType={sc.commercial||sc.full&&sc.style==='sourdough'?'pizza':'bread'} isSourdough={!sc.commercial} prefermentType={sc.commercial?'poolish':'levain'} mode="custom"
+      styleKey={sc.style} kitchenTemp={sc.temp} starterBulkFactor={bulkFactor} replanPending={replanPending} onReplanHandled={()=>setReplanPending(false)} bakeType={sc.commercial||sc.full&&sc.style==='sourdough'?'pizza':'bread'} isSourdough={!sc.commercial} prefermentType={sc.commercial?'poolish':'levain'} mode="custom"
       {...(sc.full?{schedule,mixerType:'hand' as const,numItems:4,mixingBatches:sc.batches??1}:{})}
       onChange={onChange}
       starterLocation={starterLocation} onStarterLocationChange={(l) => { setStarterLocation(l); rec.loc = l; }}

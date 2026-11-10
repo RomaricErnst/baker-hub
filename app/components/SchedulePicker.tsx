@@ -57,6 +57,8 @@ export interface StarterEvent {
   hasFridgePhase?: boolean;
   /** Time was derived from a vague chip ("2–3 days ago") — card shows ≈ */
   timeIsEstimate?: boolean;
+  /** Simple "Your starter" answer: the last feed is our assumption, never shown as a fact. */
+  assumed?: boolean;
   historicalStorage?: boolean;
 }
 
@@ -233,12 +235,18 @@ interface SchedulePickerProps extends WarmupInputs {
   yeastPctOverride?: number;
   /** True after an explicit method/amount change; the picker replans, then calls onReplanHandled. */
   replanPending?: boolean;
+  /** Custom, direct dough: drop the baker's yeast amount and plan with the calculated one. */
+  onUseCalculatedYeast?: () => void;
   /** Rendered right under the bake date and time (the kitchen question). */
   afterBakeInput?: React.ReactNode;
   /** 'starter' renders only the starter questions; 'plan' everything else; 'all' both. */
   schedulerSection?: 'all' | 'starter' | 'plan';
   /** Levain: bulk multiplier for a baker-chosen starter % (starterBulkFactor); 1 by default. */
   starterBulkFactor?: number;
+  /** Simple sourdough: the answer from the "Your starter" screen. The page turns it
+   *  into starter state (location, last feed, ready now); the picker only hides the
+   *  inferred last feed, which the baker never told us. */
+  simpleStarterAnswer?: 'counter' | 'fridge' | 'ready' | null;
   onReplanHandled?: () => void;
   onFridgeOutTimeChange?: (t: Date | null) => void;
   onUsingPeak2Change?: (v: boolean) => void;
@@ -344,6 +352,19 @@ function computePreMixStretchFactor(preMixMs: number, refreshPeakMs: number | nu
 // so the same call is correct at every ratio.
 function computeStarterPeakMs(feedMs: number, refPeakMs: number | null, adjPeakHEff: number): number {
   return feedMs + adjPeakHEff * computePreMixStretchFactor(feedMs, refPeakMs) * 3600000;
+}
+
+// Every hands-on starter action sits on a 15-minute mark, like every dough step.
+const STARTER_QUARTER_MS = 15 * 60000;
+const ceilQuarterMs = (ms: number) => Math.ceil(ms / STARTER_QUARTER_MS) * STARTER_QUARTER_MS;
+const floorQuarterMs = (ms: number) => Math.floor(ms / STARTER_QUARTER_MS) * STARTER_QUARTER_MS;
+
+/** Latest 15-minute feed whose peak (shared peak model) is not after mixMs. */
+export function latestFeedPeakingByMs(mixMs: number, refPeakMs: number | null, adjPeakHEff: number): number {
+  let feedMs = floorQuarterMs(mixMs - adjPeakHEff * 3600000);
+  // The stretch only lengthens the rise, so stepping earlier converges.
+  for (let guard = 0; guard < 96 && computeStarterPeakMs(feedMs, refPeakMs, adjPeakHEff) > mixMs; guard++) feedMs -= STARTER_QUARTER_MS;
+  return feedMs;
 }
 
 // ── Time formatter ────────────────────────────
@@ -1811,7 +1832,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   // A baker-chosen starter % lengthens or shortens the levain room-temperature
   // bulk (starterBulkFactor). The solver windows add the same hours the
   // schedule builder does, so scoring, card and chart stay on one bulk.
@@ -1936,14 +1957,15 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
   const [lastFedTime, setLastFedTime]           = useState<Date | null>(lastFedTimeProp ?? null);
   const [knownPeakTime, setKnownPeakTime]       = useState<Date | null>(knownPeakTimeProp ?? null);
   // Derived for BakeGuide backward compat
-  const [showStarterDetails, setShowStarterDetails] = useState(false);
   const [simpleStarterUncertain, setSimpleStarterUncertain] = useState(!starterTimingValidProp);
   useEffect(() => { if (!starterTimingValidProp) setSimpleStarterUncertain(true); }, [starterTimingValidProp]);
   // Planning around the baker's day is the point of the app: the busy-times question starts open.
   const [availabilityOpen,setAvailabilityOpen] = useState(true);
-  const [simpleReadyObserved,setSimpleReadyObserved] = useState(false);
   // "Yes, ready now" with a far-off bake: the plan refreshes the starter once more.
   const [simpleReadyRefresh,setSimpleReadyRefresh] = useState(false);
+  // Simple asks one question ("Where is your starter now?"); the last feed behind
+  // the plan is our assumption, so it is never printed as something the baker said.
+  const lastFedAssumed = mode === 'simple' && isSourdough && (simpleReadyRefresh || simpleStarterAnswer !== null);
   const [starterMature, setStarterMature]       = useState(starterMatureProp ?? true);
   const [starterHasRye, setStarterHasRye]       = useState(starterHasRyeProp ?? false);
   const [fridgeOutTime, setFridgeOutTime]       = useState<Date | null>(null);
@@ -3583,7 +3605,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
             const minFeedGapH_build = Math.max(6, adjPeakH_eff * 0.75);
             let prevAcceptedMs_build = startMs;
             for (let i = 1; i < numIntermediate; i++) {
-              const ft = new Date(startMs + i * refreshSpacingH * 3600000);
+              const ft = new Date(ceilQuarterMs(startMs + i * refreshSpacingH * 3600000));
               // Snap to 7am-10pm sleeping hours
               const h = ft.getHours();
               if (h < 7) { ft.setHours(7, 0, 0, 0); }
@@ -3593,6 +3615,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
               if (
                 ft.getTime() > Date.now() &&
                 ft.getTime() < nextMajorFeedMs - minFeedGapH_build * 3600000 &&
+                ft.getTime() + adjPeakH_eff * 3600000 <= nextMajorFeedMs + STARTER_QUARTER_MS &&
                 ft.getTime() - prevAcceptedMs_build >= minFeedGapH_build * 3600000 &&
                 !inBlockerMs(ft.getTime())
               ) {
@@ -3851,7 +3874,8 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
               // Age chips ("2–3 days ago") derive a precise-looking time —
               // flag it so the card shows ≈ instead of implying we know
               // it was exactly 8:15am.
-              timeIsEstimate: lastFedAge === 'days23' || lastFedAge === 'days45' || lastFedAge === 'week',
+              timeIsEstimate: lastFedAssumed || lastFedAge === 'days23' || lastFedAge === 'days45' || lastFedAge === 'week',
+              assumed: lastFedAssumed || undefined,
               cardNote: isLastFedActiveInFridge
                 ? (isFr
                     ? `Au frigo — pic vers ${fmtCardHM(lastFedBellPeakTime, isFr)}`
@@ -5072,7 +5096,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
         bakeMs - (mixHBFMax + adjPeakH) * 3600000
       );
       const fridgeOutMaxMs = bakeMs - (mixHBFMin + _warmupH) * 3600000;
-      for (let foMs = fridgeOutMinMs; foMs <= fridgeOutMaxMs; foMs += 15 * 60000) {
+      for (let foMs = ceilQuarterMs(fridgeOutMinMs); foMs <= fridgeOutMaxMs; foMs += 15 * 60000) {
         const dwellH = (foMs - lastFedMs) / 3600000;
         // peakUnflooredH: when biology truly peaks after removal (can be < warmupH
         // when starter already accumulated most of its rise while in fridge).
@@ -5128,7 +5152,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
         ? _starterRefeedTime.getTime() + _adjPeakH_refresh * 3600000
         : null;
 
-      for (let t2 = searchStart2.getTime(); t2 <= searchEnd2.getTime(); t2 += 15 * 60000) {
+      for (let t2 = ceilQuarterMs(searchStart2.getTime()); t2 <= searchEnd2.getTime(); t2 += 15 * 60000) {
         if (t2 <= nowMs2) continue;
         // Unified peak: score against the SAME helper + reference the pre_mix
         // bell uses (_refPeakForPreMix, bare adjPeakH) so scoring ≡ bell. Was
@@ -5237,20 +5261,25 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
       // single-refresh behaviour (no regression). nBridge≥1 closes the
       // 6–24h dead zone between a single refresh peak and the pre-mix.
       // Cap at 2 → total feeds incl. pre-mix ≤ 3 (matches MAX_INTERMEDIATES).
+      // The chain starts from the primary refresh the plan actually shows
+      // (a fridge starter's refresh waits for its warm-up), and the first
+      // bridge waits for that refresh's own peak. Anchoring at "now" put a
+      // bridge hours before the refresh had peaked, off the 15-minute grid.
+      const primaryRefreshMs = ceilQuarterMs(Math.max(nowMs3, _starterRefeedTime?.getTime() ?? nowMs3));
+      const firstBridgeGapH = Math.max(refreshSpacingH_bridge, _adjPeakH_refresh);
       for (let nBridge = 0; nBridge <= 2; nBridge++) {
-        const refreshMs = nowMs3;
+        const refreshMs = primaryRefreshMs;
         if (isBlockedActionMs(refreshMs)) break;  // primary @now blocked → no chain possible
 
-        const finalRefreshMs     = nowMs3 + nBridge * refreshSpacingH_bridge * 3600000;
-        const finalRefreshPeakMs = finalRefreshMs + _adjPeakH_refresh * 3600000;
-
-        // Bridge refresh times — additional to the primary @now. The LAST
+        // Bridge refresh times — additional to the primary refresh. The LAST
         // entry is the "final" refresh whose peak the pre-mix is timed
         // against. Empty when nBridge=0.
         const bridges: number[] = [];
         for (let i = 1; i <= nBridge; i++) {
-          bridges.push(nowMs3 + i * refreshSpacingH_bridge * 3600000);
+          bridges.push(ceilQuarterMs(primaryRefreshMs + (firstBridgeGapH + (i - 1) * refreshSpacingH_bridge) * 3600000));
         }
+        const finalRefreshMs     = bridges.length ? bridges[bridges.length - 1] : primaryRefreshMs;
+        const finalRefreshPeakMs = finalRefreshMs + _adjPeakH_refresh * 3600000;
 
         // Reject the whole chain early if any bridge falls in a blocker.
         let bridgesOk = true;
@@ -5276,7 +5305,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
         // prior one in less time than this — that would mean feeding before
         // the earlier cycle had a chance to wake the starter.
         const minFeedGapH = Math.max(6, adjPeakH * 0.75);
-        for (let t3 = Math.max(searchStart3.getTime(), earliestPreMixMs); t3 <= searchEnd3.getTime(); t3 += 15 * 60000) {
+        for (let t3 = ceilQuarterMs(Math.max(searchStart3.getTime(), earliestPreMixMs)); t3 <= searchEnd3.getTime(); t3 += 15 * 60000) {
           if (t3 <= nowMs3) continue;
           // Pre-mix must follow the FINAL refresh by ≥ minFeedGapH. If this
           // can't be satisfied for current nBridge, the inner loop emits no
@@ -5394,7 +5423,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
       const minGapFromRefreshPeakH = Math.max(minHoldH, Math.min(10, adjPeakH * 1.5));
 
       if (!inBlockerMs(refreshMs_pathB)) {
-        for (let t = searchStart_pathB.getTime(); t <= searchEnd_pathB.getTime(); t += 15 * 60000) {
+        for (let t = ceilQuarterMs(searchStart_pathB.getTime()); t <= searchEnd_pathB.getTime(); t += 15 * 60000) {
           if (t <= nowMs_pathB) continue;
           // Pre-mix peak = mix
           const peakT = new Date(t + adjPeakH * 3600000);
@@ -5523,13 +5552,18 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
           else if (h > 22) { d.setHours(7, 0, 0, 0); d.setDate(d.getDate() + 1); }
           return d;
         };
+        // The build feed waits for the shown refresh to peak, sits on a
+        // 15-minute mark, and its peak (shared model) sets the mix.
+        const _refreshPeakMs_fb = _starterRefeedTime
+          ? _starterRefeedTime.getTime() + adjPeakH * _refreshStretchFactor * 3600000 : null;
+        buildFeed = new Date(ceilQuarterMs(Math.max(buildFeed.getTime(), _refreshPeakMs_fb ?? 0)));
         buildFeed = snapHumane(buildFeed);
         // Nudge out of blockers (bounded).
         let guard = 0;
         while (inBlockerMs(buildFeed.getTime()) && guard++ < 48) {
           buildFeed = snapHumane(new Date(buildFeed.getTime() + 60 * 60000));
         }
-        const buildPeak = new Date(buildFeed.getTime() + adjPeakH * 3600000);
+        const buildPeak = new Date(ceilQuarterMs(computeStarterPeakMs(buildFeed.getTime(), _refPeakForPreMix, adjPeakH)));
         const mix = new Date(buildPeak.getTime());
         _newPendingStart = mix.getTime() > Date.now() ? mix : idealMix;
         // Never commit a past, blocked, or biologically-void mix. This fallback
@@ -5622,12 +5656,14 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
       const out: number[] = [];
       let prevAcceptedMs = startMs;
       for (let i = 1; i < numIntermediate; i++) {
-        const ft = new Date(startMs + i * refreshSpacingH * 3600000);
+        const ft = new Date(ceilQuarterMs(startMs + i * refreshSpacingH * 3600000));
         const h = ft.getHours();
         if (h < 7) ft.setHours(7, 0, 0, 0);
         else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
         if (ft.getTime() <= Date.now()) continue;
         if (ft.getTime() >= nextMajorFeedMs - minFeedGapH * 3600000) continue;
+        // The next feed waits for this one's peak (the bell drawn for it).
+        if (ft.getTime() + adjPeakH_for * 3600000 > nextMajorFeedMs + STARTER_QUARTER_MS) continue;
         // Drop intermediates that would land <minFeedGapH after the previous
         // accepted feed (primary refresh or prior intermediate).
         if (ft.getTime() - prevAcceptedMs < minFeedGapH * 3600000) continue;
@@ -5801,9 +5837,17 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
     // If baker manually dragged, compute advisory next-feed time so starter
     // peaks at their chosen mix time. This updates the feed diamond
     // independently of which candidate won the scoring.
-    if (targetMixTime && !best.isFutureFeedPath && !best.isFridgeHoldPath && !best.usingPeak2) {
-      const advisoryFeed = new Date(targetMixTime.getTime() - adjPeakH * 3600000);
-      if (advisoryFeed.getTime() > Date.now()) {
+    // Only when the plan's own last feed does NOT already peak at that mix:
+    // the repair search pins mixes too, and a green winner (its refresh peaks
+    // at the pinned mix) used to gain a second feed an hour after the first.
+    // The advisory feed is timed with the shared peak model on a 15-minute
+    // mark, and never before the previous feed in the plan has peaked.
+    if (targetMixTime && !best.isFutureFeedPath && !best.isFridgeHoldPath && !best.usingPeak2 && best.sscore < 2) {
+      const advisoryFeed = new Date(latestFeedPeakingByMs(targetMixTime.getTime(), _refPeakForPreMix, adjPeakH));
+      const previousFeedPeakMs = _starterRefeedTime
+        ? _starterRefeedTime.getTime() + adjPeakH * _refreshStretchFactor * 3600000
+        : planningMode === 'last_fed' && lastFedTime ? lastFedTime.getTime() + adjPeakH * 3600000 : null;
+      if (advisoryFeed.getTime() > Date.now() && (previousFeedPeakMs === null || advisoryFeed.getTime() >= previousFeedPeakMs - STARTER_QUARTER_MS)) {
         // Feed is in the future — show as recommended next feed
         _hasFutureFeedPath = true;
         _feed2Time = advisoryFeed;
@@ -6066,7 +6110,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
           const refreshPeakMsForStretch_r = _starterRefeedTime
             ? _starterRefeedTime.getTime() + _adjPeakH_refresh_r * 3600000
             : null;
-          for (let t2 = searchStart2.getTime(); t2 <= searchEnd2.getTime(); t2 += 15 * 60000) {
+          for (let t2 = ceilQuarterMs(searchStart2.getTime()); t2 <= searchEnd2.getTime(); t2 += 15 * 60000) {
             if (t2 <= nowMs_r) continue;
             const peakT2 = new Date(computeStarterPeakMs(t2, _refPeakForPreMix_r, adjPeakH_r));
             const mHBF2  = (bakeMs - peakT2.getTime()) / 3600000;
@@ -6110,15 +6154,19 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
         ) {
           const nowMs3 = Date.now();
           const refreshSpacingH_bridge_r = Math.max(6, adjPeakH_r * 1.25);
+          // Same anchoring as the main solver: the shown primary refresh, and
+          // a first bridge no earlier than that refresh's peak.
+          const primaryRefreshMs_r = ceilQuarterMs(Math.max(nowMs3, _starterRefeedTime?.getTime() ?? nowMs3));
+          const firstBridgeGapH_r = Math.max(refreshSpacingH_bridge_r, _adjPeakH_refresh_r);
           for (let nBridge = 0; nBridge <= 2; nBridge++) {
-            const refreshMs = nowMs3;
+            const refreshMs = primaryRefreshMs_r;
             if (isBlockedActionMs(refreshMs)) break;
-            const finalRefreshMs_r     = nowMs3 + nBridge * refreshSpacingH_bridge_r * 3600000;
-            const finalRefreshPeakMs_r = finalRefreshMs_r + _adjPeakH_refresh_r * 3600000;
             const bridges_r: number[] = [];
             for (let i = 1; i <= nBridge; i++) {
-              bridges_r.push(nowMs3 + i * refreshSpacingH_bridge_r * 3600000);
+              bridges_r.push(ceilQuarterMs(primaryRefreshMs_r + (firstBridgeGapH_r + (i - 1) * refreshSpacingH_bridge_r) * 3600000));
             }
+            const finalRefreshMs_r     = bridges_r.length ? bridges_r[bridges_r.length - 1] : primaryRefreshMs_r;
+            const finalRefreshPeakMs_r = finalRefreshMs_r + _adjPeakH_refresh_r * 3600000;
             let bridgesOk = true;
             for (const br of bridges_r) {
               if (inBlockerMs(br)) { bridgesOk = false; break; }
@@ -6135,7 +6183,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
               ? new Date(baseFeed3.getTime() + 15 * 60000)
               : new Date(finalRefreshPeakMs_r + 12 * 3600000);
             const minFeedGapH_r = Math.max(6, adjPeakH_r * 0.75);
-            for (let t3 = Math.max(searchStart3.getTime(), earliestPreMixMs); t3 <= searchEnd3.getTime(); t3 += 15 * 60000) {
+            for (let t3 = ceilQuarterMs(Math.max(searchStart3.getTime(), earliestPreMixMs)); t3 <= searchEnd3.getTime(); t3 += 15 * 60000) {
               if (t3 <= nowMs_r) continue;
               // Pre-mix must be ≥ minFeedGapH after the final bridge — mirrors
               // the main solver's spacing rule.
@@ -6793,6 +6841,8 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
     onChange(pendingStart,pendingEatTime,next,{preservePlan:true,prefOffsetHours:prefOffsetH,timingOverrides:manualTimesRef.current});
   }
   const currentCandidateValid=currentCandidate.valid;
+  // A chosen yeast amount whose fermentation is longer than the time left before the bake.
+  const yeastTooSlow=!isSourdough&&yeastPctOverride!==undefined&&!!yeastTiming&&yeastTiming.center>(+pendingEatTime-Date.now())/3600000;
   // Say why this bake time doesn't work, never just that it doesn't.
   const planStateReason=(()=>{
     if('message' in currentCandidate&&currentCandidate.message)return currentCandidate.message;
@@ -7182,7 +7232,14 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
 
   // The starter's own questions. Custom levain shows them on the Starter step
   // (schedulerSection 'starter') and leaves the bake-time step to the plan.
-  const starterCard = isSourdough ? (
+  // Simple asks about the starter on its own screen before the bake time; here it
+  // only says why the plan adds a refresh to a starter that was ready earlier.
+  const simpleRefreshNote = mode === 'simple' && isSourdough && (simpleReadyRefresh || (simpleStarterAnswer === 'ready' && planningMode === 'last_fed'))
+    ? <p role="status" data-simple-starter-note className="bh-key-detail" style={{ margin: '12px 0 0', fontSize: 15, lineHeight: 1.5 }}>{isFr
+        ? 'Votre levain est prêt maintenant, mais la cuisson est encore loin : le plan prévoit un rafraîchi de plus, pour qu’il soit à son pic au pétrissage.'
+        : 'Your starter is ready now, and the bake is still far off: the plan refreshes it once more so it peaks when you mix.'}</p>
+    : null;
+  const starterCard = isSourdough && mode === 'simple' ? simpleRefreshNote : isSourdough ? (
         <div className="bh-starter-controls" style={{
           background: 'var(--warm)',
           border: '1.5px solid var(--border)',
@@ -7202,57 +7259,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
             </div>
           </div>
 
-          {mode === 'simple' && (
-            <div style={{ display: 'grid', gap: '12px', fontSize: '15px', lineHeight: 1.5 }}>
-              <p style={{ margin: 0 }}>{isFr
-                ? 'Votre levain est-il prêt maintenant : bien monté, bullé, pas retombé ?'
-                : 'Is your starter ready now: risen, bubbly, not collapsed?'}</p>
-              <p style={{ margin: 0, fontSize: 14, color: 'var(--smoke)' }}>{isFr
-                ? `Levain rafraîchi avec autant de farine que d’eau · cuisine : ${kitchenTemp} °C.`
-                : `Starter fed equal weights of flour and water · kitchen: ${kitchenTemp}°C.`}</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                <button type="button" aria-pressed={planningMode === 'know_peak' || simpleReadyRefresh} style={{ ...starterPillButton(planningMode === 'know_peak' || simpleReadyRefresh), minHeight: 44 }} onClick={() => {
-                  setSimpleReadyRefresh(false);
-                  const observedPeak = new Date();
-                  setPlanningMode('know_peak'); onPlanningModeChange?.('know_peak');
-                  setKnownPeakTime(observedPeak); onKnownPeakTimeChange?.(observedPeak);
-                  setStarterLocation('rt'); onStarterLocationChange?.('rt');
-                  setLastFedTime(null); onLastFedTimeChange?.(null);
-                  setLastFedAge(null); onLastFedAgeChange?.(null);
-                  setFridgeOutTime(null); onFridgeOutTimeChange?.(null);
-                  setHasNotFedYet(false); onHasNotFedYetChange?.(false);
-                  onFeedTimeChange?.(null);
-                  onStarterStateChange?.('rt_fed');
-                  setSimpleStarterUncertain(false); setSimpleReadyObserved(true); setShowStarterDetails(false);
-                }}>{isFr ? 'Oui, il est prêt maintenant' : 'Yes, ready now'}</button>
-                <button type="button" aria-pressed={simpleStarterUncertain} style={{ ...starterPillButton(simpleStarterUncertain), minHeight: 44 }} onClick={() => {
-                  setPlanningMode('last_fed'); onPlanningModeChange?.('last_fed');
-                  setKnownPeakTime(null); onKnownPeakTimeChange?.(null);
-                  setLastFedTime(null); onLastFedTimeChange?.(null);
-                  setLastFedAge(null); onLastFedAgeChange?.(null);
-                  onStarterPeakTimeChange?.(null);
-                  onFeedTimeChange?.(null); onStarterEventsChange?.([]);
-                  setSolverResult(null); setStartComputed(false);
-                  setSimpleStarterUncertain(true); setSimpleReadyObserved(false); setShowStarterDetails(true); setSimpleReadyRefresh(false);
-                }}>{isFr ? 'Pas encore' : 'Not yet'}</button>
-              </div>
-              {(() => {
-                const line = simpleReadyRefresh
-                  ? (isFr ? 'Votre levain est prêt maintenant, mais la cuisson est encore loin : le plan prévoit un rafraîchi de plus, pour qu’il soit à son pic au pétrissage.' : 'Your starter is ready now, and the bake is still far off: the plan refreshes it once more so it peaks when you mix.')
-                  : simpleStarterUncertain
-                  ? (lastFedAge ? null : (isFr ? 'Indiquez où il est et quand il a été rafraîchi.' : 'Tell us where it is and when you last fed it.'))
-                  : planningMode === 'know_peak' && knownPeakTime
-                    ? (isFr ? `Levain prêt à ${fmtCardDT(knownPeakTime, true)}.` : `Starter ready at ${fmtCardDT(knownPeakTime, false)}.`)
-                    : null;
-                return line ? <p role="status" style={{ margin: 0 }}>{line}</p> : null;
-              })()}
-              {/* Kitchen temperature is shown once, in Preparation. */}
-              <button type="button" aria-expanded={showStarterDetails} onClick={() => {setShowStarterDetails(v => !v);setSimpleReadyObserved(false);setSimpleReadyRefresh(false);}} style={{ ...starterPillButton(false), minHeight: 44 }}>
-                {showStarterDetails ? (isFr ? 'Masquer les détails du levain' : 'Hide starter details') : (isFr ? 'Autre horaire / détails du levain' : 'Other timing / starter details')}
-              </button>
-            </div>
-          )}
-          {(mode !== 'simple' || showStarterDetails) && <div style={{ display: 'grid', gap: '16px' }}>
+          {<div style={{ display: 'grid', gap: '16px' }}>
           {/* ── Q1: Where has it been since last fed? ── */}
           <div>
             <div style={STARTER_LABEL_STYLE}>
@@ -7801,8 +7808,16 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
 
         </div>
         {afterBakeInput&&<div style={{marginTop:16}}>{afterBakeInput}</div>}
+        {inputsOnly&&eatTimeSet&&!bakeInPast&&simpleRefreshNote}
+        {/* A chosen yeast amount too slow for the time left: say why, and offer the way out. */}
+        {!inputsOnly&&eatTimeSet&&!bakeInPast&&yeastTooSlow&&yeastTiming&&<div className="bh-plan-notice" data-yeast-too-slow role="status" style={{margin:'8px 0 12px'}}>
+          <p style={{margin:'0 0 10px',fontSize:15,lineHeight:1.5}}>{isFr
+            ?`${String(yeastPctOverride).replace('.',',')} % de levure demande environ ${formatDuration(Math.round(yeastTiming.center*4)/4,'fr')} : enfournez plus tard ou mettez plus de levure.`
+            :`${yeastPctOverride}% yeast needs about ${formatDuration(Math.round(yeastTiming.center*4)/4,'en')}: bake later or use more yeast.`}</p>
+          {onUseCalculatedYeast&&<button type="button" className="bh-apply-plan" data-use-calculated-yeast style={{minHeight:44,width:'100%'}} onClick={onUseCalculatedYeast}>{isFr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
+        </div>}
         {!inputsOnly&&eatTimeSet&&starterDescribed&&!coherentTimes&&simpleKnownPeakConflict&&<p className="bh-key-note">{starterPeakGuidance}</p>}
-        {!inputsOnly&&eatTimeSet&&starterDescribed&&!coherentTimes&&!currentCandidateValid&&<p className="bh-plan-state" role="status">
+        {!inputsOnly&&eatTimeSet&&starterDescribed&&!coherentTimes&&!currentCandidateValid&&!yeastTooSlow&&<p className="bh-plan-state" role="status">
           {planStateReason}</p>}
         {!inputsOnly&&eatTimeSet&&currentCandidateValid&&!localBlocks.some(block=>block.label.endsWith(' night'))&&
           currentPlanActions(committedSchedule?.availabilityActions??[]).some(isOvernightPreparation)&&
@@ -8317,6 +8332,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
         // 1 — sourdough starter events (history + feeds + fridge consequences)
         if (isSourdough && displayStarterEvents.length) {
           for (const ev of displayStarterEvents) {
+            if (ev.kind === 'last_fed' && (lastFedAssumed || ev.assumed)) continue;
             const isHist = ev.isPast && !ev.isActive;
             const timeText = ev.kind === 'fridge_out'
               ? fmtCardDT(ev.time, isFr)
@@ -8564,8 +8580,8 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
             if(event.kind==='known_peak')continue;
             // An age chip ("2–3 days ago") is not a date: don't print an invented one.
             if(event.kind==='last_fed'&&event.timeIsEstimate)continue;
-            // Inferred from "ready now": not something the baker told us, so not shown as a fact.
-            if(event.kind==='last_fed'&&simpleReadyRefresh)continue;
+            // Inferred from the Simple starter answer: not something the baker told us, so not shown as a fact.
+            if(event.kind==='last_fed'&&(lastFedAssumed||event.assumed))continue;
             const editable=!startTimeInPast&&!readinessUnsupported&&!event.isPast&&+event.time>Date.now()&&['refresh','pre_mix'].includes(event.kind);
             const id='starter:'+event.kind;
             const requested=editingRow===id?(event.kind==='pre_mix'?basePins.feed:basePins.refresh):null;
