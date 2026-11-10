@@ -973,7 +973,8 @@ export default function Home() {
   const breadProtocol = styleKey ? getBreadProtocol(styleKey) : undefined;
   const isUnleavened = breadProtocol?.method === 'unleavened';
   const compactPiadina = styleKey === 'piadina' && tab === 'simple';
-  const enrichedDirectOnly = styleKey === 'brioche' || styleKey === 'pain_viennois';
+  // Published (or owner-set) enriched formulas: milk, eggs and butter are fixed.
+  const enrichedDirectOnly = styleKey === 'brioche' || styleKey === 'pain_viennois' || styleKey === 'pain_mie';
   const directMethodOnly = enrichedDirectOnly || !!(breadProtocol && breadProtocol.supportedPreferments.length === 1 && breadProtocol.supportedPreferments[0] === 'none');
   const breadSupportsStarter = !breadProtocol || breadProtocol.supportedPreferments.includes('levain');
   const [numItems, setNumItems] = useState(2);

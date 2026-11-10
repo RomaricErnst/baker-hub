@@ -192,3 +192,34 @@ test('enriched doughs knead longer by hand', () => {
   assert.equal(data.kneadMinFor('stand', 'brioche'), data.kneadMinFor('stand', 'pain_complet'));
   assert.equal(data.kneadMinFor('hand', 'pain_complet'), data.MIXER_TYPES.hand.kneadMin);
 });
+
+// ── Pain de mie: milk and butter ──
+test('pain de mie: half water, half milk, about 8 % butter and 5 % sugar', () => {
+  for (const mode of ['simple', 'custom']) for (const temp of [18, 24, 30]) {
+    const r = recipe('pain_mie', { mode, temp });
+    const e = r.enrichment;
+    assert.ok(e, `${mode} ${temp}`);
+    assert.equal(r.oil, 0);
+    assert.ok(Math.abs(e.milk - r.water) <= 1, 'equal parts water and milk');
+    assert.ok(Math.abs(e.butter / r.flour * 100 - 8) < 0.6);
+    assert.ok(Math.abs(r.sugar / r.flour * 100 - 5) < 0.3);
+    assert.ok(!r.yeast.fixedEnrichedDose, 'below the 10 % sugar threshold: model dose');
+    assert.ok(r.yeast.pct < 1);
+    assert.ok(r.hydration > 61 && r.hydration < 65, `effective hydration ${r.hydration}`);
+  }
+  const { doughShoppingItems } = require('../app/lib/doughShopping.ts');
+  const items = doughShoppingItems({ recipe: recipe('pain_mie'), yeastType: 'instant', locale: 'fr', units: 'metric', flourName: 'Farine' });
+  assert.ok(items.some(item => item.name === 'Lait'));
+  assert.ok(items.some(item => item.name === 'Beurre'));
+  assert.ok(!items.some(item => /Huile/.test(item.name)));
+});
+
+test('the pain de mie guide adds the butter once the dough is smooth', () => {
+  const r = recipe('pain_mie');
+  for (const lang of ['fr', 'en']) {
+    const html = guide('pain_mie', lang, { weight: 600, hydration: r.hydration, recipeResult: r });
+    assert.match(html, lang === 'fr' ? /sans le beurre/ : /without the butter/, lang);
+    assert.match(html, lang === 'fr' ? /beurre souple progressivement/ : /softened butter gradually/, lang);
+    assert.doesNotMatch(html, lang === 'fr' ? /Pesez les œufs/ : /Weigh eggs/, lang);
+  }
+});

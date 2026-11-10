@@ -11,4 +11,4 @@ test('published enrichment ratios scale with requested mass and preserve actual 
  }
 });
 test('unsupported saved methods are explicitly flagged, not represented as sourced variants',()=>{for(const style of ['brioche','pain_viennois']){a.equal(make(style,1000,'sourdough').enrichment.unsupportedMethod,true);a.equal(make(style,1000,'instant','poolish').enrichment.unsupportedMethod,true);}});
-test('oil-based sandwich loaf remains unchanged and has no new enrichment',()=>{const r=make('pain_mie');a.equal(r.enrichment,undefined);a.ok(r.oil>0);});
+test('pain de mie is half water, half milk, with butter and no oil',()=>{const r=make('pain_mie'),e=r.enrichment;a.ok(e);a.equal(r.oil,0);a.equal(e.eggs,0);a.ok(Math.abs(e.milk-r.water)<=1);a.ok(Math.abs(e.butter/r.flour-.08)<.006);a.ok(Math.abs(r.sugar/r.flour-.05)<.006);a.doesNotMatch(e.note.en,/eggs/);});

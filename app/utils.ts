@@ -2014,13 +2014,7 @@ export function calculateRecipe(
     waterFractions: ENRICHMENT_WATER_FRACTIONS,
     sourceUrl: enrichedFormula.sourceUrl, formulaVersion: enrichedFormula.formulaVersion,
     unsupportedMethod: unsupportedEnrichedMethod,
-    note: yeast?.fixedEnrichedDose ? {
-      en: 'Published ingredient ratios; direct commercial-yeast version. Yeast is the usual enriched-dough amount; timing is the app’s estimate, not the source schedule. Hydration includes estimated water in milk, eggs and butter. Ingredient temperatures are not modelled. Weigh eggs without shells; egg wash is separate.',
-      fr: 'Proportions publiées ; version directe à levure boulangère. Levure à la dose habituelle des pâtes enrichies ; durées estimées par l’application, différentes du planning source. Hydratation incluant l’eau estimée du lait, des œufs et du beurre. Températures de ces ingrédients non modélisées. Pesez les œufs sans coquille ; dorure à part.',
-    } : {
-      en: 'Published ingredient ratios; direct commercial-yeast version. Yeast and timing are app estimates, not the source schedule. Hydration includes estimated water in milk, eggs and butter. Ingredient temperatures are not modelled. Weigh eggs without shells; egg wash is separate.',
-      fr: 'Proportions publiées ; version directe à levure boulangère. Levure et durées estimées par l’application, différentes du planning source. Hydratation incluant l’eau estimée du lait, des œufs et du beurre. Températures de ces ingrédients non modélisées. Pesez les œufs sans coquille ; dorure à part.',
-    },
+    note: enrichmentNote(styleKey, !!yeast?.fixedEnrichedDose, enrichedFormula.eggs > 0),
   } : undefined;
   if (enrichment) enrichment.waterEquivalent = water + enrichment.milk * .87 + enrichment.eggs * .75 + enrichment.butter * .16;
   // All flour-strength, preferment and sugar modifiers have now settled.
@@ -2065,6 +2059,26 @@ export function calculateRecipe(
     blendProfile: blendProfile ?? undefined,
     preferment,
   };
+}
+
+/** Short provenance note for an enriched formula, in both languages. */
+function enrichmentNote(styleKey: string, fixedDose: boolean, eggs: boolean): { en: string; fr: string } {
+  const ownRatios = styleKey === 'pain_mie';
+  const en = [
+    ownRatios ? 'Sandwich-loaf ratios: half water, half milk, butter and a little sugar; direct commercial-yeast version.' : 'Published ingredient ratios; direct commercial-yeast version.',
+    fixedDose ? 'Yeast is the usual enriched-dough amount; timing is the app’s estimate, not the source schedule.' : 'Yeast and timing are app estimates, not the source schedule.',
+    `Hydration includes estimated water in ${eggs ? 'milk, eggs and butter' : 'milk and butter'}.`,
+    'Ingredient temperatures are not modelled.',
+    ...(eggs ? ['Weigh eggs without shells; egg wash is separate.'] : []),
+  ];
+  const fr = [
+    ownRatios ? 'Proportions du pain de mie : moitié eau, moitié lait, beurre et un peu de sucre ; version directe à levure boulangère.' : 'Proportions publiées ; version directe à levure boulangère.',
+    fixedDose ? 'Levure à la dose habituelle des pâtes enrichies ; durées estimées par l’application, différentes du planning source.' : 'Levure et durées estimées par l’application, différentes du planning source.',
+    `Hydratation incluant l’eau estimée ${eggs ? 'du lait, des œufs et du beurre' : 'du lait et du beurre'}.`,
+    'Températures de ces ingrédients non modélisées.',
+    ...(eggs ? ['Pesez les œufs sans coquille ; dorure à part.'] : []),
+  ];
+  return { en: en.join(' '), fr: fr.join(' ') };
 }
 
 function prefermentLeadHours(prefermentType: PrefermentType): number {

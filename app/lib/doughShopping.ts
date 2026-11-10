@@ -13,6 +13,7 @@ interface DoughShoppingRecipe {
   yeast?: { convertedGrams: number; yeastType?: string } | null;
   sourdough?: unknown | null;
   preferment?: { prefYeastGrams: number; prefYeastType?: string } | null;
+  enrichment?: { milk: number; eggs: number; butter: number } | null;
 }
 
 /** The name on the packet, so the baker buys the yeast the amount was computed for. */
@@ -59,6 +60,13 @@ export function doughShoppingItems(input: {
   }
   if ((recipe.oil ?? 0) > 0) {
     items.push({ tickKey: leavened ? 'dough_3' : 'dough_2', name: fr ? 'Huile d’olive' : 'Olive oil', amount: weight(recipe.oil ?? 0) });
+  }
+  // Milk, eggs and butter of an enriched dough (brioche, pain de mie, pain viennois).
+  const enrichment = recipe.enrichment;
+  if (enrichment) {
+    if (enrichment.milk > 0) items.push({ tickKey: 'dough_milk', name: fr ? 'Lait' : 'Milk', amount: weight(enrichment.milk) });
+    if (enrichment.eggs > 0) items.push({ tickKey: 'dough_eggs', name: fr ? 'Œufs, pesés sans coquille' : 'Eggs, weighed without shells', amount: weight(enrichment.eggs) });
+    if (enrichment.butter > 0) items.push({ tickKey: 'dough_butter', name: fr ? 'Beurre' : 'Butter', amount: weight(enrichment.butter) });
   }
   return items;
 }
