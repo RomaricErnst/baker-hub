@@ -1245,7 +1245,7 @@
         "steps": [
           {
             "bold": "Allumez le feu et montez à haute flamme",
-            "note": "visez une température de sole de 450–500°C"
+            "note": "visez une température de sole de 400–450 °C"
           },
           {
             "bold": "Poussez le feu en arrière ou sur le côté — laissez la sole récupérer",
@@ -1502,7 +1502,7 @@
           },
           {
             "bold": "Vérifiez une dernière fois la température de sole",
-            "note": "enfournez seulement au-dessus de 400°C"
+            "note": "enfournez quand la sole affiche 400–450 °C"
           },
           {
             "bold": "Enfournez d’un geste assuré ; tournez une fois la base prise",

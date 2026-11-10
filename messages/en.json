@@ -1245,7 +1245,7 @@
         "steps": [
           {
             "bold": "Light the fire and build to a high flame",
-            "note": "target 450–500°C floor temperature"
+            "note": "target 400–450°C floor temperature"
           },
           {
             "bold": "Push fire to back or side — let floor recover",
@@ -1502,7 +1502,7 @@
           },
           {
             "bold": "Check floor temp one last time",
-            "note": "launch only above 400°C floor"
+            "note": "launch when the floor reads 400–450°C"
           },
           {
             "bold": "Launch confidently; start turning once the base has set",
