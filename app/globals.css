@@ -669,3 +669,5 @@ body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="d
     border-color: var(--terra-l);
   }
 }
+/* Programmatic focus on arrival: no ring on a heading that is not a control. */
+.bh-page-title:focus{outline:none}

@@ -71,7 +71,7 @@ for(const scenario of cases){
    await expect(card.getByText(/Horaire à ajuster/)).toBeVisible();
    await expect(card.getByText(/Dans le créneau/)).toHaveCount(0);
    await card.getByRole('button',{name:'Vérifier mes disponibilités',exact:true}).tap();
-   await expect(page.getByRole('group',{name:'Mes disponibilités',exact:true})).toBeFocused();
+   await expect(page.getByRole('group',{name:'Mes indisponibilités',exact:true})).toBeFocused();
 
   }
   expect(errors).toEqual([]);

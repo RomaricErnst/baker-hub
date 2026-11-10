@@ -12,7 +12,7 @@ async function expand(plan,id){const r=row(plan,id);if(!await r.locator('.bh-key
 const reset=page=>page.getByRole('button',{name:/^(Revenir aux horaires recommandés|Return to recommended times)$/});
 const confirm=plan=>plan.getByRole('button',{name:/^(Appliquer|Apply)$/});
 async function openAvailability(page){
- const group=page.getByRole('group',{name:/^(Mes disponibilités|My availability)$/});
+ const group=page.getByRole('group',{name:/^(Mes indisponibilités|My unavailable times)$/});
  if(await group.getAttribute('open')===null)await group.locator('summary').tap();
  return group;
 }
