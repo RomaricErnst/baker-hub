@@ -2273,6 +2273,9 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
     const dt = `${date}T${hh}:${mi}`;
     pickerDateTimeRef.current = dt;
     setPickerDateTime(dt);
+    // The field shows these: a programmatic pick (Undo after a suggested bake)
+    // must move it too, not only the plan.
+    setPickerDate(date);setPickerHour(hour);setPickerMinute(minute);
     updateEatTime(dt);
     if (date) { confirmBakeTime(); }
   }
