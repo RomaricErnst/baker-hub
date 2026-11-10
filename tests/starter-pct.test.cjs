@@ -33,5 +33,16 @@ test('the recipe uses the chosen starter amount',()=>{
  const r=utils.calculateRecipe('pain_levain','standard_bread',1,800,22,'normal',s,6,'sourdough','custom','hand',
   undefined,undefined,undefined,undefined,'levain',undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,12);
  assert.equal(r.sourdough.starterPctMin,12);assert.equal(r.sourdough.starterPctMax,12);
- assert.ok(Math.abs(r.sourdough.starterGramsMid-Math.round(r.flour*0.12/5)*5)<=5);
+ // The amount shown is the amount used: no rounding to 5 g for a single chosen amount.
+ assert.equal(r.sourdough.starterGramsMin,r.sourdough.starterGramsMax);
+ assert.equal(r.sourdough.starterGramsMid,r.sourdough.starterGramsMin);
+ assert.equal(r.sourdough.starterGramsMid,Math.round(r.flour*0.12));
+});
+test('any chosen starter % shows and uses the same grams',()=>{
+ for(const pct of [5,10,20,26.9,30]){
+  const s=plan(24,utils.starterBulkFactor(pct,24));
+  const r=utils.calculateRecipe('pain_levain','standard_bread',1,800,24,'normal',s,6,'sourdough','custom','hand',
+   undefined,undefined,undefined,undefined,'levain',undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,pct);
+  assert.equal(r.sourdough.starterGramsMid,r.sourdough.starterGramsMin,`${pct}%`);
+ }
 });

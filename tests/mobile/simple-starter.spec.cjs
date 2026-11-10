@@ -47,6 +47,7 @@ for(const locale of ['en','fr'])for(const answer of ['counter','fridge','ready']
  expect(session.simpleStarterAnswer).toBe(answer);
  const feeds=(session.starterEvents||[]).filter(e=>['refresh','intermediate_refresh','pre_mix'].includes(e.kind));
  if(answer!=='ready')expect(feeds.length).toBeGreaterThan(0);
+ for(const feed of feeds)expect(feed.time%(15*60000)).toBe(0);
  // An assumed last feed is never printed as a fact.
  await expect(page.getByText(c.lastFed)).toHaveCount(0);
  // Reload keeps the answer with this bake.

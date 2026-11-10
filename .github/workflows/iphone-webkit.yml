@@ -123,7 +123,7 @@ jobs:
 
   starter-feasibility:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
       TZ: Asia/Singapore
       NOW: '2026-11-01T08:00:00Z'
@@ -149,6 +149,8 @@ jobs:
         run: node tests/roundtrip/fridge-starter.mjs .ci-tools/starter-path.js
       - name: One starter peak on card, chart and pill across 384 cases
         run: node tests/roundtrip/peak-consistency.mjs .ci-tools/starter-path.js
+      - name: After a starter % edit, every feed waits for the previous peak on a 15-minute mark
+        run: node tests/roundtrip/starter-pct.mjs .ci-tools/starter-path.js
 
   schedule-repair-grid:
     runs-on: ubuntu-latest

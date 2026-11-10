@@ -352,6 +352,19 @@ function computeStarterPeakMs(feedMs: number, refPeakMs: number | null, adjPeakH
   return feedMs + adjPeakHEff * computePreMixStretchFactor(feedMs, refPeakMs) * 3600000;
 }
 
+// Every hands-on starter action sits on a 15-minute mark, like every dough step.
+const STARTER_QUARTER_MS = 15 * 60000;
+const ceilQuarterMs = (ms: number) => Math.ceil(ms / STARTER_QUARTER_MS) * STARTER_QUARTER_MS;
+const floorQuarterMs = (ms: number) => Math.floor(ms / STARTER_QUARTER_MS) * STARTER_QUARTER_MS;
+
+/** Latest 15-minute feed whose peak (shared peak model) is not after mixMs. */
+export function latestFeedPeakingByMs(mixMs: number, refPeakMs: number | null, adjPeakHEff: number): number {
+  let feedMs = floorQuarterMs(mixMs - adjPeakHEff * 3600000);
+  // The stretch only lengthens the rise, so stepping earlier converges.
+  for (let guard = 0; guard < 96 && computeStarterPeakMs(feedMs, refPeakMs, adjPeakHEff) > mixMs; guard++) feedMs -= STARTER_QUARTER_MS;
+  return feedMs;
+}
+
 // ── Time formatter ────────────────────────────
 // "4pm" / "4:30pm" — minutes omitted when zero
 export function formatTimeShort(d: Date, isFr = false): string {
@@ -3590,7 +3603,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sim
             const minFeedGapH_build = Math.max(6, adjPeakH_eff * 0.75);
             let prevAcceptedMs_build = startMs;
             for (let i = 1; i < numIntermediate; i++) {
-              const ft = new Date(startMs + i * refreshSpacingH * 3600000);
+              const ft = new Date(ceilQuarterMs(startMs + i * refreshSpacingH * 3600000));
               // Snap to 7am-10pm sleeping hours
               const h = ft.getHours();
               if (h < 7) { ft.setHours(7, 0, 0, 0); }
@@ -3600,6 +3613,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sim
               if (
                 ft.getTime() > Date.now() &&
                 ft.getTime() < nextMajorFeedMs - minFeedGapH_build * 3600000 &&
+                ft.getTime() + adjPeakH_eff * 3600000 <= nextMajorFeedMs + STARTER_QUARTER_MS &&
                 ft.getTime() - prevAcceptedMs_build >= minFeedGapH_build * 3600000 &&
                 !inBlockerMs(ft.getTime())
               ) {
@@ -5080,7 +5094,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sim
         bakeMs - (mixHBFMax + adjPeakH) * 3600000
       );
       const fridgeOutMaxMs = bakeMs - (mixHBFMin + _warmupH) * 3600000;
-      for (let foMs = fridgeOutMinMs; foMs <= fridgeOutMaxMs; foMs += 15 * 60000) {
+      for (let foMs = ceilQuarterMs(fridgeOutMinMs); foMs <= fridgeOutMaxMs; foMs += 15 * 60000) {
         const dwellH = (foMs - lastFedMs) / 3600000;
         // peakUnflooredH: when biology truly peaks after removal (can be < warmupH
         // when starter already accumulated most of its rise while in fridge).
@@ -5136,7 +5150,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sim
         ? _starterRefeedTime.getTime() + _adjPeakH_refresh * 3600000
         : null;
 
-      for (let t2 = searchStart2.getTime(); t2 <= searchEnd2.getTime(); t2 += 15 * 60000) {
+      for (let t2 = ceilQuarterMs(searchStart2.getTime()); t2 <= searchEnd2.getTime(); t2 += 15 * 60000) {
         if (t2 <= nowMs2) continue;
         // Unified peak: score against the SAME helper + reference the pre_mix
         // bell uses (_refPeakForPreMix, bare adjPeakH) so scoring ≡ bell. Was
@@ -5245,20 +5259,25 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sim
       // single-refresh behaviour (no regression). nBridge≥1 closes the
       // 6–24h dead zone between a single refresh peak and the pre-mix.
       // Cap at 2 → total feeds incl. pre-mix ≤ 3 (matches MAX_INTERMEDIATES).
+      // The chain starts from the primary refresh the plan actually shows
+      // (a fridge starter's refresh waits for its warm-up), and the first
+      // bridge waits for that refresh's own peak. Anchoring at "now" put a
+      // bridge hours before the refresh had peaked, off the 15-minute grid.
+      const primaryRefreshMs = ceilQuarterMs(Math.max(nowMs3, _starterRefeedTime?.getTime() ?? nowMs3));
+      const firstBridgeGapH = Math.max(refreshSpacingH_bridge, _adjPeakH_refresh);
       for (let nBridge = 0; nBridge <= 2; nBridge++) {
-        const refreshMs = nowMs3;
+        const refreshMs = primaryRefreshMs;
         if (isBlockedActionMs(refreshMs)) break;  // primary @now blocked → no chain possible
 
-        const finalRefreshMs     = nowMs3 + nBridge * refreshSpacingH_bridge * 3600000;
-        const finalRefreshPeakMs = finalRefreshMs + _adjPeakH_refresh * 3600000;
-
-        // Bridge refresh times — additional to the primary @now. The LAST
+        // Bridge refresh times — additional to the primary refresh. The LAST
         // entry is the "final" refresh whose peak the pre-mix is timed
         // against. Empty when nBridge=0.
         const bridges: number[] = [];
         for (let i = 1; i <= nBridge; i++) {
-          bridges.push(nowMs3 + i * refreshSpacingH_bridge * 3600000);
+          bridges.push(ceilQuarterMs(primaryRefreshMs + (firstBridgeGapH + (i - 1) * refreshSpacingH_bridge) * 3600000));
         }
+        const finalRefreshMs     = bridges.length ? bridges[bridges.length - 1] : primaryRefreshMs;
+        const finalRefreshPeakMs = finalRefreshMs + _adjPeakH_refresh * 3600000;
 
         // Reject the whole chain early if any bridge falls in a blocker.
         let bridgesOk = true;
@@ -5284,7 +5303,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sim
         // prior one in less time than this — that would mean feeding before
         // the earlier cycle had a chance to wake the starter.
         const minFeedGapH = Math.max(6, adjPeakH * 0.75);
-        for (let t3 = Math.max(searchStart3.getTime(), earliestPreMixMs); t3 <= searchEnd3.getTime(); t3 += 15 * 60000) {
+        for (let t3 = ceilQuarterMs(Math.max(searchStart3.getTime(), earliestPreMixMs)); t3 <= searchEnd3.getTime(); t3 += 15 * 60000) {
           if (t3 <= nowMs3) continue;
           // Pre-mix must follow the FINAL refresh by ≥ minFeedGapH. If this
           // can't be satisfied for current nBridge, the inner loop emits no
@@ -5402,7 +5421,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sim
       const minGapFromRefreshPeakH = Math.max(minHoldH, Math.min(10, adjPeakH * 1.5));
 
       if (!inBlockerMs(refreshMs_pathB)) {
-        for (let t = searchStart_pathB.getTime(); t <= searchEnd_pathB.getTime(); t += 15 * 60000) {
+        for (let t = ceilQuarterMs(searchStart_pathB.getTime()); t <= searchEnd_pathB.getTime(); t += 15 * 60000) {
           if (t <= nowMs_pathB) continue;
           // Pre-mix peak = mix
           const peakT = new Date(t + adjPeakH * 3600000);
@@ -5531,13 +5550,18 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sim
           else if (h > 22) { d.setHours(7, 0, 0, 0); d.setDate(d.getDate() + 1); }
           return d;
         };
+        // The build feed waits for the shown refresh to peak, sits on a
+        // 15-minute mark, and its peak (shared model) sets the mix.
+        const _refreshPeakMs_fb = _starterRefeedTime
+          ? _starterRefeedTime.getTime() + adjPeakH * _refreshStretchFactor * 3600000 : null;
+        buildFeed = new Date(ceilQuarterMs(Math.max(buildFeed.getTime(), _refreshPeakMs_fb ?? 0)));
         buildFeed = snapHumane(buildFeed);
         // Nudge out of blockers (bounded).
         let guard = 0;
         while (inBlockerMs(buildFeed.getTime()) && guard++ < 48) {
           buildFeed = snapHumane(new Date(buildFeed.getTime() + 60 * 60000));
         }
-        const buildPeak = new Date(buildFeed.getTime() + adjPeakH * 3600000);
+        const buildPeak = new Date(ceilQuarterMs(computeStarterPeakMs(buildFeed.getTime(), _refPeakForPreMix, adjPeakH)));
         const mix = new Date(buildPeak.getTime());
         _newPendingStart = mix.getTime() > Date.now() ? mix : idealMix;
         // Never commit a past, blocked, or biologically-void mix. This fallback
@@ -5630,12 +5654,14 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sim
       const out: number[] = [];
       let prevAcceptedMs = startMs;
       for (let i = 1; i < numIntermediate; i++) {
-        const ft = new Date(startMs + i * refreshSpacingH * 3600000);
+        const ft = new Date(ceilQuarterMs(startMs + i * refreshSpacingH * 3600000));
         const h = ft.getHours();
         if (h < 7) ft.setHours(7, 0, 0, 0);
         else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
         if (ft.getTime() <= Date.now()) continue;
         if (ft.getTime() >= nextMajorFeedMs - minFeedGapH * 3600000) continue;
+        // The next feed waits for this one's peak (the bell drawn for it).
+        if (ft.getTime() + adjPeakH_for * 3600000 > nextMajorFeedMs + STARTER_QUARTER_MS) continue;
         // Drop intermediates that would land <minFeedGapH after the previous
         // accepted feed (primary refresh or prior intermediate).
         if (ft.getTime() - prevAcceptedMs < minFeedGapH * 3600000) continue;
@@ -5809,9 +5835,17 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sim
     // If baker manually dragged, compute advisory next-feed time so starter
     // peaks at their chosen mix time. This updates the feed diamond
     // independently of which candidate won the scoring.
-    if (targetMixTime && !best.isFutureFeedPath && !best.isFridgeHoldPath && !best.usingPeak2) {
-      const advisoryFeed = new Date(targetMixTime.getTime() - adjPeakH * 3600000);
-      if (advisoryFeed.getTime() > Date.now()) {
+    // Only when the plan's own last feed does NOT already peak at that mix:
+    // the repair search pins mixes too, and a green winner (its refresh peaks
+    // at the pinned mix) used to gain a second feed an hour after the first.
+    // The advisory feed is timed with the shared peak model on a 15-minute
+    // mark, and never before the previous feed in the plan has peaked.
+    if (targetMixTime && !best.isFutureFeedPath && !best.isFridgeHoldPath && !best.usingPeak2 && best.sscore < 2) {
+      const advisoryFeed = new Date(latestFeedPeakingByMs(targetMixTime.getTime(), _refPeakForPreMix, adjPeakH));
+      const previousFeedPeakMs = _starterRefeedTime
+        ? _starterRefeedTime.getTime() + adjPeakH * _refreshStretchFactor * 3600000
+        : planningMode === 'last_fed' && lastFedTime ? lastFedTime.getTime() + adjPeakH * 3600000 : null;
+      if (advisoryFeed.getTime() > Date.now() && (previousFeedPeakMs === null || advisoryFeed.getTime() >= previousFeedPeakMs - STARTER_QUARTER_MS)) {
         // Feed is in the future — show as recommended next feed
         _hasFutureFeedPath = true;
         _feed2Time = advisoryFeed;
@@ -6074,7 +6108,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sim
           const refreshPeakMsForStretch_r = _starterRefeedTime
             ? _starterRefeedTime.getTime() + _adjPeakH_refresh_r * 3600000
             : null;
-          for (let t2 = searchStart2.getTime(); t2 <= searchEnd2.getTime(); t2 += 15 * 60000) {
+          for (let t2 = ceilQuarterMs(searchStart2.getTime()); t2 <= searchEnd2.getTime(); t2 += 15 * 60000) {
             if (t2 <= nowMs_r) continue;
             const peakT2 = new Date(computeStarterPeakMs(t2, _refPeakForPreMix_r, adjPeakH_r));
             const mHBF2  = (bakeMs - peakT2.getTime()) / 3600000;
@@ -6118,15 +6152,19 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sim
         ) {
           const nowMs3 = Date.now();
           const refreshSpacingH_bridge_r = Math.max(6, adjPeakH_r * 1.25);
+          // Same anchoring as the main solver: the shown primary refresh, and
+          // a first bridge no earlier than that refresh's peak.
+          const primaryRefreshMs_r = ceilQuarterMs(Math.max(nowMs3, _starterRefeedTime?.getTime() ?? nowMs3));
+          const firstBridgeGapH_r = Math.max(refreshSpacingH_bridge_r, _adjPeakH_refresh_r);
           for (let nBridge = 0; nBridge <= 2; nBridge++) {
-            const refreshMs = nowMs3;
+            const refreshMs = primaryRefreshMs_r;
             if (isBlockedActionMs(refreshMs)) break;
-            const finalRefreshMs_r     = nowMs3 + nBridge * refreshSpacingH_bridge_r * 3600000;
-            const finalRefreshPeakMs_r = finalRefreshMs_r + _adjPeakH_refresh_r * 3600000;
             const bridges_r: number[] = [];
             for (let i = 1; i <= nBridge; i++) {
-              bridges_r.push(nowMs3 + i * refreshSpacingH_bridge_r * 3600000);
+              bridges_r.push(ceilQuarterMs(primaryRefreshMs_r + (firstBridgeGapH_r + (i - 1) * refreshSpacingH_bridge_r) * 3600000));
             }
+            const finalRefreshMs_r     = bridges_r.length ? bridges_r[bridges_r.length - 1] : primaryRefreshMs_r;
+            const finalRefreshPeakMs_r = finalRefreshMs_r + _adjPeakH_refresh_r * 3600000;
             let bridgesOk = true;
             for (const br of bridges_r) {
               if (inBlockerMs(br)) { bridgesOk = false; break; }
@@ -6143,7 +6181,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sim
               ? new Date(baseFeed3.getTime() + 15 * 60000)
               : new Date(finalRefreshPeakMs_r + 12 * 3600000);
             const minFeedGapH_r = Math.max(6, adjPeakH_r * 0.75);
-            for (let t3 = Math.max(searchStart3.getTime(), earliestPreMixMs); t3 <= searchEnd3.getTime(); t3 += 15 * 60000) {
+            for (let t3 = ceilQuarterMs(Math.max(searchStart3.getTime(), earliestPreMixMs)); t3 <= searchEnd3.getTime(); t3 += 15 * 60000) {
               if (t3 <= nowMs_r) continue;
               // Pre-mix must be ≥ minFeedGapH after the final bridge — mirrors
               // the main solver's spacing rule.
