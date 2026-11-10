@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 // Branded route-level error boundary. Catches render/runtime errors in the
 // locale segment so bakers see a calm recovery screen, not a blank page.
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  // The locale provider may be the part that failed: read the language from the address.
+  const fr = typeof window !== 'undefined' && /^\/fr(\/|$)/.test(window.location.pathname);
   useEffect(() => {
     // Surface to the console for Vercel logs; no PII.
     console.error('Baker Hub route error:', error?.message);
@@ -22,14 +24,14 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
           fontSize: '24px', fontWeight: 700, color: 'var(--char, #2B2420)',
           margin: '0 0 0.5rem',
         }}>
-          Something didn&rsquo;t rise as planned
+          {fr ? 'Quelque chose n’a pas levé comme prévu' : 'Something didn’t rise as planned'}
         </h1>
         <p style={{
           fontFamily: 'var(--font-ui), sans-serif',
           fontSize: '15px', color: 'var(--smoke, #8A7F78)', lineHeight: 1.6,
           margin: '0 0 1.5rem',
         }}>
-          An unexpected error interrupted the app. Your saved plan is safe — try again.
+          {fr ? 'Une erreur inattendue a interrompu l’application. Votre plan enregistré est intact : réessayez.' : 'An unexpected error interrupted the app. Your saved plan is safe — try again.'}
         </p>
         <button
           onClick={reset}
@@ -41,7 +43,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
             boxShadow: '0 2px 8px rgba(107, 68, 35,0.25)',
           }}
         >
-          Try again
+          {fr ? 'Réessayer' : 'Try again'}
         </button>
       </div>
     </div>
