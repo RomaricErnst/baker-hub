@@ -3,8 +3,10 @@
 // Last-resort boundary: catches errors in the root layout itself (where the
 // locale error.tsx can't reach). Must render its own <html>/<body>.
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  // The locale provider may be the part that failed: read the language from the address.
+  const fr = typeof window !== 'undefined' && /^\/fr(\/|$)/.test(window.location.pathname);
   return (
-    <html lang="en">
+    <html lang={fr ? 'fr' : 'en'}>
       <body style={{ margin: 0 }}>
         <div style={{
           minHeight: '100vh', background: '#F0EBE0',
@@ -14,10 +16,10 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           <div style={{ maxWidth: 420 }}>
             <div style={{ fontSize: '40px', marginBottom: '12px' }}></div>
             <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#2B2420', margin: '0 0 0.5rem' }}>
-              Something didn&rsquo;t rise as planned
+              {fr ? 'Quelque chose n’a pas levé comme prévu' : 'Something didn’t rise as planned'}
             </h1>
             <p style={{ fontSize: '15px', color: 'var(--smoke)', lineHeight: 1.6, margin: '0 0 1.5rem' }}>
-              An unexpected error interrupted the app. Please try again.
+              {fr ? 'Une erreur inattendue a interrompu l’application. Veuillez réessayer.' : 'An unexpected error interrupted the app. Please try again.'}
             </p>
             <button
               onClick={reset}
@@ -27,7 +29,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
                 fontWeight: 600, cursor: 'pointer',
               }}
             >
-              Try again
+              {fr ? 'Réessayer' : 'Try again'}
             </button>
           </div>
         </div>
