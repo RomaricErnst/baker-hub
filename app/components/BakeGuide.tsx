@@ -753,6 +753,7 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
   const roundPizza = !bread && !isPanPizzaStyle(styleKey);
   const faq = (faqOverride ?? (faqKey ? (GUIDE_FAQ[faqKey] ?? []) : [])).map(e => panPizza && e.pan ? { ...e, a: e.pan } : e).filter(e =>
     (!e.fridge || planHasFridge) &&
+    (!e.except || !e.except.includes(styleKey)) &&
     // Each question appears only where it applies: bread or pizza, the oven in
     // use, and round-pizza handling (balls, peel) only for round pizzas.
     (!e.only || e.only === (bread ? 'bread' : 'pizza')) &&
@@ -2213,7 +2214,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             {bold:isFougasse
               ? (l === 'fr' ? `Comptez environ ${range} avant de servir : la fougasse se mange tiède.` : `Allow about ${range} before serving: fougasse is best warm.`)
               : (l === 'fr' ? `Comptez environ ${range} avant de trancher.` : `Allow about ${range} before slicing.`),note:''},
-          ]}/></Section><p style={{marginTop:16}}><strong>{l === 'fr' ? 'Prêt quand : ' : 'Ready when: '}</strong>{styleKey === 'pain_seigle' ? (l === 'fr' ? 'Attendez le lendemain pour trancher ; une fois refroidi, emballez-le pour éviter qu’il sèche.' : 'Wait until tomorrow to slice; once cool, wrap it to keep it from drying out.') : (l === 'fr' ? 'Le dessous du pain n’est plus chaud au toucher. Encore chaud ? Vérifiez dans 30 min.' : 'The loaf no longer feels warm underneath. Still warm? Check again in 30 min.')}</p></>;
+          ]}/></Section><p style={{marginTop:16}}><strong>{l === 'fr' ? 'Prêt quand : ' : 'Ready when: '}</strong>{styleKey === 'pain_seigle' ? (l === 'fr' ? 'Attendez le lendemain pour trancher ; une fois refroidi, emballez-le pour éviter qu’il sèche.' : 'Wait until tomorrow to slice; once cool, wrap it to keep it from drying out.') : isFougasse ? (l === 'fr' ? 'Elle est encore tiède et se détache facilement à la main ; servez-la le jour même.' : 'Still warm and easy to tear by hand; serve it the same day.') : (l === 'fr' ? 'Le dessous du pain n’est plus chaud au toucher. Encore chaud ? Vérifiez dans 30 min.' : 'The loaf no longer feels warm underneath. Still warm? Check again in 30 min.')}</p></>;
         })()}
         {!breadProtocol && <StepExtras tips={null} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />}
         {fillingsAction}

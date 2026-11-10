@@ -158,4 +158,16 @@ test('one name per style, the picker’s, and guide wording details',()=>{
  assert.doesNotMatch(poolish,/\bpoolish \d/);
 });
 
+test('French details: one oven-setting wording, spaced units, fougasse eaten warm',()=>{
+ const brioche=guide('brioche','fr',{numItems:2,weight:500,oven:'standard_bread'}).text;
+ assert.match(brioche,/190 °C en chaleur statique \/ 170 °C en chaleur tournante/);
+ assert.doesNotMatch(brioche,/°C statique|ventilé|\d°C/);
+ const fougasse=guide('fougasse','fr',{numItems:2,weight:400,oven:'standard_bread'}).text;
+ assert.doesNotMatch(fougasse,/Encore chaud \? Vérifiez dans 30 min|Le pain doit-il vraiment refroidir|Puis-je déjà trancher/);
+ assert.match(fougasse,/servez-la le jour même/);
+ const en=guide('fougasse','en',{numItems:2,weight:400,oven:'standard_bread'}).text;
+ assert.doesNotMatch(en,/Still warm\? Check again|Should bread really cool before cutting|Can I slice it now/);
+ assert.match(guide('pain_campagne','fr',{numItems:1,weight:800,oven:'standard_bread'}).text,/Encore chaud \? Vérifiez dans 30 min/);
+});
+
 module.exports={guide};

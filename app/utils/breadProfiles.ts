@@ -345,7 +345,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
         "Preheat to 190°C conventional / 170°C fan, without steam."
       ],
       "fr": [
-        "Préchauffez à 190°C statique / 170°C ventilé, sans vapeur."
+        "Préchauffez à 190 °C en chaleur statique / 170 °C en chaleur tournante, sans vapeur."
       ]
     },
     "cookingSteps": {
@@ -357,7 +357,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
       "fr": [
         "Dorure facultative : juste avant d’enfourner, badigeonnez délicatement le dessus d’un œuf battu, sans laisser couler dans le moule.",
         "Cuisez à mi-hauteur basse. Repère : 30–45 min pour 500 g ; 20–30 min pour des petites brioches de 60–100 g. Taille et moule changent la durée.",
-        "Vérifiez environ 88°C au cœur et une mie prise ; protégez avec une feuille d’aluminium si la couleur vient trop vite. Ni grigne profonde ni bac à vapeur."
+        "Vérifiez environ 88 °C au cœur et une mie prise ; protégez avec une feuille d’aluminium si la couleur vient trop vite. Ni grigne profonde ni bac à vapeur."
       ]
     },
     "cooling": {
@@ -419,7 +419,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
         "Preheat to 180°C conventional / 160°C fan, without steam."
       ],
       "fr": [
-        "Préchauffez à 180°C statique / 160°C ventilé, sans vapeur."
+        "Préchauffez à 180 °C en chaleur statique / 160 °C en chaleur tournante, sans vapeur."
       ]
     },
     "cookingSteps": {
@@ -429,7 +429,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
       ],
       "fr": [
         "Pour 500–700 g, contrôlez dès 30 min ; comptez environ 30–45 min. Les pains plus gros prennent davantage de temps.",
-        "Avec un couvercle Pullman, retirez-le prudemment après 25 min puis terminez la cuisson. Vérifiez environ 88°C au cœur et une mie prise ; protégez un pain découvert s’il colore trop vite."
+        "Avec un couvercle Pullman, retirez-le prudemment après 25 min puis terminez la cuisson. Vérifiez environ 88 °C au cœur et une mie prise ; protégez un pain découvert s’il colore trop vite."
       ]
     },
     "cooling": {
@@ -490,7 +490,7 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
         "Preheat to 220°C conventional / 200°C fan, without added steam."
       ],
       "fr": [
-        "Préchauffez à 220°C statique / 200°C ventilé, sans ajout de vapeur."
+        "Préchauffez à 220 °C en chaleur statique / 200 °C en chaleur tournante, sans ajout de vapeur."
       ]
     },
     "cookingSteps": {

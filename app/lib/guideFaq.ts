@@ -4,9 +4,10 @@
  * answer talks about (stone, steel, peel, dome); `round` — round-pizza handling
  * (balls, peel), not shown for pizzas that bake in their pan; `fridge` — only
  * when the plan has a cold stage. `pan` replaces the answer for pizzas that bake
- * in their pan (pan / Detroit, Roman teglia).
+ * in their pan (pan / Detroit, Roman teglia). `except` lists styles the
+ * question does not fit (a fougasse is eaten warm: no "let it cool first").
  */
-export interface FaqEntry { q: {en:string;fr:string}; a: {en:string;fr:string}; only?: 'bread' | 'pizza'; ovens?: readonly string[]; round?: boolean; fridge?: boolean; pan?: {en:string;fr:string}; }
+export interface FaqEntry { q: {en:string;fr:string}; a: {en:string;fr:string}; only?: 'bread' | 'pizza'; ovens?: readonly string[]; round?: boolean; fridge?: boolean; pan?: {en:string;fr:string}; except?: readonly string[]; }
 export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
   "poolish": [
     {
@@ -472,6 +473,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       }
     },
     {
+      "except": ["fougasse"],
       "only": "bread",
       "q": {
         "en": "Should bread really cool before cutting?",
@@ -539,6 +541,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
   ],
   "cool": [
     {
+      "except": ["fougasse"],
       "q": {
         "en": "Can I slice it now?",
         "fr": "Puis-je déjà trancher ?"
