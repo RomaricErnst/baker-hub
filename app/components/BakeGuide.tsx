@@ -26,6 +26,7 @@ import { formatPrefermentDose, formatYeastDose } from '../utils/prefermentDose';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { scheduledFoldMinutes } from '../utils/scheduleFolds';
 import { leanBreadBake, ovenTempText } from '../utils/leanBreadBake';
+import { panPizzaGuide } from '../utils/panPizza';
 
 interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   preparationMade?: boolean;
@@ -942,7 +943,6 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   const isBaguette    = styleKey === 'baguette';
   const isLoafTin     = ['brioche','pain_mie','pain_viennois','pain_seigle'].includes(styleKey);
   const isBoule       = ['pain_campagne','pain_levain','sourdough','pain_complet'].includes(styleKey);
-  const isPan         = styleKey === 'pan';
   const pieceWeight   = (recipe?.totalDough ?? numItems * 750) / Math.max(1, numItems);
   // Lean breads without a protocol get style-specific oven cards (real
   // temperatures and times); null keeps the oven-keyed message steps.
@@ -950,7 +950,6 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   // Oven settings in message steps follow the unit system; small values there
   // are temperature differences ("loses 20–30°C") and stay as written.
   const ovenSteps = (items: { bold: string; note: string }[]) => items.map(item => ({ bold: ovenTempText(item.bold, u, 120), note: ovenTempText(item.note, u, 120) }));
-  const isRoman       = styleKey === 'roman';
   // Shaping label: what we call the shaped piece
   const isSpiral      = mixerType === 'spiral';
   const hasPref       = !!prefermentType && prefermentType !== 'none';
@@ -958,6 +957,9 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   const isBiga        = prefermentType === 'biga';
   const isTwoPhase    = schedule.coldRetard2Start !== null;
   const hasCold       = (schedule.coldRetardHours ?? 0) > 0;
+  // Pan / Detroit and Roman teglia bake in their pan: own shaping, preheat and
+  // bake cards on every oven, and no round-ball instructions.
+  const panGuide      = isBread ? null : panPizzaGuide({ styleKey, pieceWeightG: recipe?.totalDough ? recipe.totalDough / Math.max(1, numItems) : NaN, count: numItems, ovenType, units: u, chilledAfterShaping: isTwoPhase });
   const extraBalls    = Math.max(0, numItems - 4);
   const divideMin     = schedule.divisionMinutes ?? 15 + 2 * extraBalls;
 
@@ -1676,7 +1678,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       {/* ── STEP: Divide & Shape (bread) / Divide & Ball (pizza) ── */}
       {schedule.divideBallTime && (
         <StepCard number={n()} {...sc()} icon={<IconDivide />}
-          title={styleKey === 'greek_pita' ? (l === 'fr' ? 'Diviser et bouler' : 'Divide and round') : isBread ? (numItems===1 ? (l==='fr'?'Façonner le pain':'Shape the loaf') : t('stepTitles.divideShape')) : t('stepTitles.divideBall')}
+          title={panGuide ? panGuide.title[l] : styleKey === 'greek_pita' ? (l === 'fr' ? 'Diviser et bouler' : 'Divide and round') : isBread ? (numItems===1 ? (l==='fr'?'Façonner le pain':'Shape the loaf') : t('stepTitles.divideShape')) : t('stepTitles.divideBall')}
           time={schedule.divideBallTime} duration={divideMin / 60} accent="#8A6A4A">
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
@@ -1698,31 +1700,21 @@ Actual dough condition and equipment may differ from these estimates.`;
                 ...(t.raw('divide.boule.steps') as { bold: string; note: string }[]).slice(1),
                 ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
               ]} />
-            ) : (
+            ) : panGuide ? <Steps items={panGuide.shaping[l]} /> : (
               <>
                 <Steps items={[
                   { bold: l === 'fr' ? `Pesez la pâte puis divisez-la en ${numItems} pâtons de même poids${recipe?.totalDough ? ` (environ ${Math.round(recipe.totalDough / Math.max(1,numItems))} g chacun)` : ''}` : `Weigh dough and divide into ${numItems} equal pieces${recipe?.totalDough ? ` (about ${Math.round(recipe.totalDough / Math.max(1,numItems))} g each)` : ''}`, note: (t.raw('divide.pizza.steps') as { bold: string; note: string }[])[0].note },
                   ...(t.raw('divide.pizza.steps') as { bold: string; note: string }[]).slice(1),
                   ...(isTwoPhase ? [t.raw('divide.coverCold') as { bold: string; note: string }] : [t.raw('divide.coverRT') as { bold: string; note: string }]),
                 ]} />
-                {isPan && (
-                  <div style={{
-                    fontSize: '12px', color: 'var(--smoke)', fontStyle: 'italic',
-                    fontFamily: 'var(--font-ui)', marginTop: '8px',
-                  }}>
-                    {l === 'fr'
-                      ? 'Pizza sur plaque : déposez la pâte directement dans le moule huilé au lieu de former une boule. Laissez-la détendre 10 min, puis étirez-la jusqu’aux bords.'
-                      : 'Pan pizza: press dough directly into your oiled pan rather than forming a round ball. Let it relax 10 min then stretch to the edges.'}
-                  </div>
-                )}
               </>
             )}
           </Section>
 
           {!breadProtocol && <StepExtras
             tips={<>
-              <Section icon="" title={isBread ? t('sectionTitles.watchFor') : t('sectionTitles.watchForBall')}>
-                <Bullets items={isFougasse
+              <Section icon="" title={isBread || panGuide ? t('sectionTitles.watchFor') : t('sectionTitles.watchForBall')}>
+                <Bullets items={panGuide ? panGuide.shapingWatchFor[l] : isFougasse
                   ? (t.raw('divide.fougasse.watchFor') as string[])
                   : isBaguette
                   ? (t.raw('divide.baguette.watchFor') as string[])
@@ -1739,7 +1731,7 @@ Actual dough condition and equipment may differ from these estimates.`;
                 } />
               </Section>
               <Section icon={null} title={t('sectionTitles.pitfalls')}>
-                <Bullets items={isFougasse
+                <Bullets items={panGuide ? panGuide.shapingPitfalls[l] : isFougasse
                   ? (t.raw('divide.fougasse.pitfalls') as string[])
                   : isBaguette
                   ? (t.raw('divide.baguette.pitfalls') as string[])
@@ -1768,7 +1760,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             </>}
             faqKey="divide"
             coachStepId="shape"
-            coachTitle={isBread ? (numItems===1 ? (l==='fr'?'Façonner le pain':'Shape the loaf') : t('stepTitles.divideShape')) : t('stepTitles.divideBall')}
+            coachTitle={panGuide ? panGuide.title[l] : isBread ? (numItems===1 ? (l==='fr'?'Façonner le pain':'Shape the loaf') : t('stepTitles.divideShape')) : t('stepTitles.divideBall')}
             recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
           />}
@@ -1881,13 +1873,13 @@ Actual dough condition and equipment may differ from these estimates.`;
               ovenType === 'wood_fired' ? 'preheat.woodBread.steps' :
               'preheat.standardBread.steps'
             ) as { bold: string; note: string }[])} />
-          ) : ovenType === 'pizza_oven' ? (
+          ) : panGuide ? <Steps items={ovenSteps(panGuide.preheat[l])} /> : ovenType === 'pizza_oven' ? (
             <Steps items={ovenConstruction === 'masonry' ? [
               { bold: l === 'fr' ? 'Chauffez la sole et la voûte à cœur.' : 'Heat the floor and dome thoroughly.', note: l === 'fr' ? 'Suivez le temps de chauffe de votre four à pizza traditionnel.' : 'Follow your traditional pizza oven’s heat-up instructions.' },
               { bold: l === 'fr' ? 'Contrôlez la température de la sole avant d’enfourner.' : 'Check the floor temperature before launching.', note: l === 'fr' ? 'Laissez-la remonter entre deux pizzas.' : 'Let it recover between pizzas.' },
-            ] : t.raw('preheat.pizzaOven.steps') as { bold: string; note: string }[]} />
+            ] : ovenSteps(t.raw('preheat.pizzaOven.steps') as { bold: string; note: string }[])} />
           ) : ovenType === 'electric_pizza' ? (
-            <Steps items={t.raw('preheat.electricPizza.steps') as { bold: string; note: string }[]} />
+            <Steps items={ovenSteps(t.raw('preheat.electricPizza.steps') as { bold: string; note: string }[])} />
           ) : ovenType === 'home_oven_steel' ? (
             <Steps items={t.raw('preheat.homeSteel.steps') as { bold: string; note: string }[]} />
           ) : (
@@ -1898,7 +1890,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         {!breadProtocol && <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Le four et la surface de cuisson sont chauds, et la pâte est prête.':'The oven and baking surface are heated, and the dough is ready.'}</p>}
 
         {!breadProtocol && <StepExtras
-          tips={leanBake && (!leanBake.scored || (ovenType === 'dutch_oven' && isBaguette)) ? null :
+          tips={panGuide || (leanBake && (!leanBake.scored || (ovenType === 'dutch_oven' && isBaguette))) ? null :
             <Section icon={null} title={t('sectionTitles.pitfalls')}>
               <Bullets items={isBread
                 ? (t.raw(
@@ -1933,16 +1925,6 @@ Actual dough condition and equipment may differ from these estimates.`;
       {/* ── STEP: Bake & Eat ─────────────────────────── */}
       <StepCard final={!isBread} number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'boil-bake' ? (hasPoachStep ? (l === 'fr' ? 'Cuire les bagels au four' : 'Bake the bagels') : (l === 'fr' ? 'Pocher puis cuire au four' : 'Poach, then bake')) : breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Cuire à la poêle' : 'Cook on the griddle') : isBread ? (l === 'fr' ? 'Cuire le pain' : 'Bake the bread') : (l === 'fr' ? 'Cuire les pizzas' : 'Bake the pizzas')} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined} accent="#5A9A50">
         <Section icon="" title={t('sectionTitles.whatToDo')}>
-          {isPan && (
-            <div style={{
-              background: 'rgba(156, 130, 72,0.08)', border: '1px solid rgba(156, 130, 72,0.2)',
-              borderRadius: '16px', padding: '12px 12px', marginBottom: '12px',
-              fontSize: '12px', fontFamily: 'var(--font-ui)', color: 'var(--char)',
-              lineHeight: 1.5,
-            }}>
-              {l === 'fr' ? 'Pan / Detroit / Deep Dish : la pâte cuit dans le moule huilé, sans enfournement à la pelle. Pour une Detroit, poussez le fromage jusqu’aux bords pour les caraméliser, puis ajoutez la sauce après cuisson. Pour une Deep Dish, faites remonter la pâte sur les parois et ajoutez le fromage, la garniture puis la sauce.' : 'Pan / Detroit / Deep Dish: dough bakes in the oiled pan; no launching needed. For Detroit, push cheese to the edges for caramelised crusts and add sauce after baking. For Deep Dish, press dough up the sides, then add cheese, toppings and sauce in that order.'}
-            </div>
-          )}
           {styleKey === 'pain_viennois' && recipe && recipe.totalDough / Math.max(1, numItems) < 200 && <p>{l === 'fr'
             ? `Vos pièces font environ ${Math.round(recipe.totalDough / Math.max(1, numItems))} g : elles sont plus petites que les baguettes de référence de 200 g. Contrôlez-les avant 15 min, puis régulièrement : croûte dorée et centre pris. Le poids seul ne détermine pas la cuisson ; la forme et le four comptent aussi.`
             : `Your pieces weigh about ${Math.round(recipe.totalDough / Math.max(1, numItems))} g: they are smaller than the reference 200 g baguettes. Check before 15 minutes, then regularly: golden crust and a set centre. Weight alone does not determine baking time; shape and oven matter too.`}</p>}
@@ -1954,8 +1936,8 @@ Actual dough condition and equipment may differ from these estimates.`;
               ovenType === 'wood_fired' ? 'bake.woodBread.steps' :
               'bake.standardBread.steps'
             ) as { bold: string; note: string }[])} />
-          ) : ovenType === 'pizza_oven' ? (
-            <Steps items={t.raw('bake.pizzaOven.steps') as { bold: string; note: string }[]} />
+          ) : panGuide ? <Steps items={ovenSteps(panGuide.bake[l])} /> : ovenType === 'pizza_oven' ? (
+            <Steps items={ovenSteps(t.raw('bake.pizzaOven.steps') as { bold: string; note: string }[])} />
           ) : ovenType === 'electric_pizza' ? (
             <Steps items={t.raw('bake.electricPizza.steps') as { bold: string; note: string }[]} />
           ) : ovenType === 'home_oven_steel' ? (
@@ -1975,6 +1957,8 @@ Actual dough condition and equipment may differ from these estimates.`;
                 <Bullets items={leanBake.watchFor[l].map(line => ovenTempText(line, u))} />
               ) : isBread ? (
                 <Bullets items={t.raw('bake.dutch.watchFor') as string[]} />
+              ) : panGuide ? (
+                <Bullets items={panGuide.bakeWatchFor[l]} />
               ) : ovenType === 'pizza_oven' ? (
                 <Bullets items={t.raw('bake.pizzaOven.watchFor') as string[]} />
               ) : ovenType === 'electric_pizza' ? (
@@ -1986,7 +1970,7 @@ Actual dough condition and equipment may differ from these estimates.`;
               )}
             </Section>
             <Section icon={null} title={t('sectionTitles.pitfalls')}>
-              <Bullets items={leanBake?.pitfalls[l].length ? leanBake.pitfalls[l] : isBread
+              <Bullets items={panGuide ? panGuide.bakePitfalls[l] : leanBake?.pitfalls[l].length ? leanBake.pitfalls[l] : isBread
                 ? (t.raw(
                     ovenType === 'dutch_oven' ? 'bake.dutch.pitfalls' :
                     ovenType === 'home_oven_stone_bread' ? 'bake.stoneBread.pitfalls' :
