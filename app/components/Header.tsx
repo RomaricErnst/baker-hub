@@ -13,6 +13,8 @@ import { type UnitSystem } from '../utils/units';
 import SessionViewer from './SessionViewer';
 import {localBakes, type LocalBake, type SessionData, readAuthIntent, type AuthIntent} from '../lib/session';
 import { PIZZAS, DESSERT_PIZZAS } from '@/app/lib/toppingDatabase';
+import { JournalCard, JournalEntrySheet } from './BakeJournal';
+import { listJournal, currentJournalId, type JournalEntry } from '../lib/localJournal';
 
 function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
   r: SavedRecipe;
@@ -245,6 +247,9 @@ export default function Header({
   onRebakeBakeEvent,
   openSessionId,
   onShareSessionClose,
+  onResumeJournalEntry,
+  onRebakeJournalEntry,
+  currentBakeActive = false,
 }: {
   units?: UnitSystem;
   onUnitsChange?: (u: UnitSystem) => void;
@@ -276,16 +281,25 @@ export default function Header({
   onRebakeBakeEvent?: (event: BakeEvent) => void;
   openSessionId?: string | null;
   onShareSessionClose?: () => void;
+  onResumeJournalEntry?: (entry: JournalEntry) => void;
+  onRebakeJournalEntry?: (entry: JournalEntry) => void;
+  /** A bake is open in the page (not only waiting to be resumed). */
+  currentBakeActive?: boolean;
 }) {
   const t = useTranslations('header');
   const tS = useTranslations('session');
   const tAuth = useTranslations('auth');
+  const tJ = useTranslations('journal');
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
 
   const [deviceBakes, setDeviceBakes] = useState<LocalBake[]>([]);
+  const [journal, setJournal] = useState<JournalEntry[]>([]);
+  const [journalCurrent, setJournalCurrent] = useState<string | null>(null);
+  const [viewingJournal, setViewingJournal] = useState<JournalEntry | null>(null);
+  const [confirmDeleteEventId, setConfirmDeleteEventId] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [shoppingLocation, setShoppingLocation] = useState('international');
@@ -358,7 +372,7 @@ export default function Header({
   }, []);
 
   useEffect(() => {
-    if(menuOpen) setDeviceBakes(localBakes());
+    if(menuOpen) { setDeviceBakes(localBakes()); setJournal(listJournal()); setJournalCurrent(currentJournalId()); setConfirmDeleteEventId(null); }
     if (menuOpen && user) {
       setLoadingRecipes(true);
       Promise.all([fetchRecipes(), fetchBakeEvents()]).then(([recipeData, eventData]) => {
@@ -466,6 +480,20 @@ export default function Header({
   function handleDeleteRecipe(id: string) {
     setRecipes(prev => prev.filter(r => r.id !== id));
     deleteRecipe(id);
+  }
+
+  // Existing account flow only: the session snapshot becomes a bake_event, the
+  // note its comment, the photos its photos. The rating has no account column.
+  async function saveJournalEntryToAccount(entry: JournalEntry, photos: Blob[]): Promise<string | null> {
+    try {
+      const { saveNamedSession, saveComment, uploadBakePhoto } = await import('@/app/lib/supabase/saveBakeEvent');
+      const id = await saveNamedSession(entry.session);
+      if (!id) return null;
+      if (entry.note.trim()) await saveComment(id, entry.note.trim());
+      if (user) for (const [index, blob] of photos.entries()) await uploadBakePhoto(id, user.id, new File([blob], `journal-${index + 1}.jpg`, { type: 'image/jpeg' }));
+      fetchBakeEvents().then(events => setBakeEvents(events.filter(e => e.notes !== '__autosave__'))).catch(() => {});
+      return id;
+    } catch { return null; }
   }
 
   const monoLabel: React.CSSProperties = {
@@ -597,17 +625,32 @@ export default function Header({
           </div>}
           {menuPage === 'library' && <>
             {hasCurrentBake && <button style={menuButton} onClick={()=>{setMenuOpen(false);onContinueBake?.();}}>{locale==='fr'?'Reprendre ma fournée':'Continue current bake'}</button>}
-            <div style={{padding:'12px 16px'}}>
-              <strong>{locale==='fr'?'Sur cet appareil':'On this device'}</strong>
-              {deviceBakes.length===0 && <p>{locale==='fr'?'Vos fournées précédentes apparaîtront ici.':'Your previous bakes will appear here.'}</p>}
-              {deviceBakes.map(row=><button key={row.id} style={{...menuButton,width:'100%',marginTop:8}} onClick={()=>{setMenuOpen(false);onOpenLocalBake?.(row.session);}}>{row.session.bakeName || row.session.styleKey || (locale==='fr'?'Fournée':'Bake')} · {row.session.numItems} × {row.session.itemWeight}g · {new Date(row.session.savedAt).toLocaleString(locale)}</button>)}
-            </div>
+            <section aria-label={tJ('onDevice')} style={{padding:'12px 16px 4px'}}>
+              <h3 style={{margin:0,fontSize:15}}>{tJ('onDevice')}</h3>
+              <p style={{margin:'2px 0 0',fontSize:12,color:'var(--smoke)'}}>{tJ('deviceOnly')}</p>
+              {journal.length===0 && <p style={{margin:'8px 0 0',fontSize:14,color:'var(--ash)'}}>{tJ('empty')}</p>}
+              {journal.map(entry=><JournalCard key={entry.id} entry={entry} units={units} current={currentBakeActive && entry.id===journalCurrent} onOpen={row=>{setMenuOpen(false);setViewingJournal(row);}} />)}
+              {(()=>{
+                // Recovery copies kept when switching bakes. A generated bake that
+                // already has a journal entry is not listed twice.
+                const key=(s:{bakeType:string|null;styleKey:string|null;numItems:number;itemWeight:number;eatTime:number|null})=>[s.bakeType,s.styleKey,s.numItems,s.itemWeight,s.eatTime].join('|');
+                const inJournal=new Set(journal.map(entry=>key(entry.session)));
+                const plans=deviceBakes.filter(row=>!(row.session.recipeGenerated && inJournal.has(key(row.session))));
+                if(!plans.length) return null;
+                return <>
+                  <div style={{...menuGroup,marginTop:16}}>{tJ('earlierPlans')}</div>
+                  {plans.map(row=><button key={row.id} style={{...menuButton,width:'100%',marginTop:8}} onClick={()=>{setMenuOpen(false);onOpenLocalBake?.(row.session);}}>{row.session.bakeName || row.session.styleKey || (locale==='fr'?'Fournée':'Bake')} · {row.session.numItems} × {row.session.itemWeight}g · {new Date(row.session.savedAt).toLocaleString(locale)}</button>)}
+                </>;
+              })()}
+            </section>
 
           {/* ── My Sessions cards — scrollable ── */}
           <div style={{ flex: '0 0 auto', minHeight: 0, padding: '4px 16px 12px' }}>
+            {user && <h3 style={{ margin: '12px 0 8px', fontSize: 15 }}>{tJ('inAccount')}</h3>}
             {!user ? (
-              <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
-                {locale === 'fr' ? 'Connectez-vous pour retrouver vos fournées enregistrées' : 'Sign in to view your saved bakes'}
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                <p style={{ margin: '0 0 8px', fontSize: 14, color: 'var(--ash)' }}>{tJ('signInLine')}</p>
+                <button type="button" style={menuButton} onClick={() => setMenuPage('account')}>{tJ('signIn')}</button>
               </div>
             ) : loadingRecipes ? (
               <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
@@ -630,12 +673,19 @@ export default function Header({
                       position: 'relative',
                       minHeight: '96px',
                     }}>
+                      {confirmDeleteEventId === event.id && (
+                        <div role="group" aria-label={locale === 'fr' ? 'Supprimer cette fournée ?' : 'Delete this bake?'} style={{ position: 'absolute', inset: 0, zIndex: 2, borderRadius: 16, background: 'var(--warm)', border: '1px solid var(--border)', padding: 12, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 14 }}>{locale === 'fr' ? 'Supprimer cette fournée de votre compte ?' : 'Delete this bake from your account?'}</span>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button type="button" style={{ ...menuButton, flex: 1, textAlign: 'center', background: 'var(--char)', color: 'white', borderColor: 'var(--char)' }} onClick={async () => { setConfirmDeleteEventId(null); await deleteBakeEvent(event.id); setBakeEvents(prev => prev.filter(ev => ev.id !== event.id)); }}>{tJ('deleteConfirm')}</button>
+                            <button type="button" autoFocus style={{ ...menuButton, flex: 1, textAlign: 'center' }} onClick={() => setConfirmDeleteEventId(null)}>{tJ('deleteKeep')}</button>
+                          </div>
+                        </div>
+                      )}
                       <button
-                        onClick={async (e) => {
+                        onClick={(e) => {
                           e.stopPropagation();
-                          if (!window.confirm(locale === 'fr' ? 'Supprimer cette fournée ?' : 'Delete this bake?')) return;
-                          await deleteBakeEvent(event.id);
-                          setBakeEvents(prev => prev.filter(ev => ev.id !== event.id));
+                          setConfirmDeleteEventId(event.id);
                         }}
                         style={{
                           position: 'absolute', bottom: '8px', right: '10px',
@@ -937,6 +987,18 @@ export default function Header({
       </>,
       document.body
     )}
+
+    <JournalEntrySheet
+      key={viewingJournal?.id ?? 'none'}
+      entry={viewingJournal}
+      units={units}
+      signedIn={!!user}
+      onClose={() => setViewingJournal(null)}
+      onChange={(id, next) => setJournal(prev => next ? prev.map(row => row.id === id ? next : row) : prev.filter(row => row.id !== id))}
+      onResume={entry => onResumeJournalEntry?.(entry)}
+      onRebake={entry => onRebakeJournalEntry?.(entry)}
+      onSaveToAccount={user ? saveJournalEntryToAccount : undefined}
+    />
 
     <SessionViewer
       event={viewingEvent}

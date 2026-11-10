@@ -20,7 +20,7 @@ const CONTENT: Record<string, LegalContent> = {
         bullets: [
           'Your account. If you sign in by email, that is your email address and nothing else. If you sign in with Google, Google shares your email address and basic profile information with Baker Hub. Baker Hub never receives your Google password and asks for no access to your Google account beyond identifying you.',
           'What you make. Recipes you save, dough settings, bake sessions and their snapshots, notes you write, pizza party plans and quantities, and photos you attach to a bake.',
-          'Settings kept on your device. Your unit preference, shopping location, and the ticks on your prep and shopping checklists live in your browser and are never sent anywhere. Clearing your browser data removes them.',
+          'Settings kept on your device. Your unit preference, shopping location, and the ticks on your prep and shopping checklists live in your browser and are never sent anywhere. Your bake journal, with its notes, ratings and photos, is stored in the browser on this device and is not sent anywhere unless you sign in and save a bake to your account. Clearing your browser data removes them.',
         ],
       },
       {
@@ -111,7 +111,7 @@ const CONTENT: Record<string, LegalContent> = {
         bullets: [
           'Votre compte. Si vous vous connectez par e-mail, il s\u2019agit de votre adresse e-mail et de rien d\u2019autre. Si vous vous connectez avec Google, Google transmet à Baker Hub votre adresse e-mail et vos informations de profil de base. Baker Hub ne reçoit jamais votre mot de passe Google et ne demande aucun accès à votre compte Google au-delà de votre identification.',
           'Ce que vous créez. Les recettes que vous enregistrez, vos réglages de pâte, vos fournées et leurs instantanés, les notes que vous écrivez, vos soirées pizza et leurs quantités, ainsi que les photos que vous attachez à une fournée.',
-          'Les préférences gardées sur votre appareil. Votre choix d\u2019unités, votre lieu de courses et les cases cochées de vos listes de préparation et de courses restent dans votre navigateur et ne sont envoyés nulle part. Effacer les données de votre navigateur les supprime.',
+          'Les préférences gardées sur votre appareil. Votre choix d\u2019unités, votre lieu de courses et les cases cochées de vos listes de préparation et de courses restent dans votre navigateur et ne sont envoyés nulle part. Votre journal de fournées, avec ses notes, appréciations et photos, est conservé dans le navigateur de cet appareil et n\u2019est envoyé nulle part, sauf si vous vous connectez et enregistrez une fournée dans votre compte. Effacer les données de votre navigateur les supprime.',
         ],
       },
       {

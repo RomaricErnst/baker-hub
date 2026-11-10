@@ -56,6 +56,8 @@ import { createClient } from '../lib/supabase/client';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
 import { archivedBlendSelections } from '../lib/flourRecovery';
 import { flourShoppingName } from '../lib/flourGuidance';
+import { recordGeneratedBake, refreshCurrentJournalSnapshot, forgetCurrentJournalBake, setCurrentJournalId, currentJournalId, type JournalEntry } from '../lib/localJournal';
+import { deleteJournalPhotos } from '../lib/journalPhotos';
 import { archiveLocalBake, hasPreviousBake, preservePreviousBake, restorePreviousBake, acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, normalizeFlourTarget, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
 import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
@@ -2220,6 +2222,13 @@ export default function Home() {
     isRestoringRef,
   );
 
+  // Keep the journal entry of the current bake in step with its progress.
+  useEffect(() => {
+    if (!recipeGenerated || isRestoringRef.current) return;
+    const timer = window.setTimeout(() => { try { refreshCurrentJournalSnapshot(buildSessionPayload()); } catch {} }, 1500);
+    return () => window.clearTimeout(timer);
+  });
+
   const bakeTimeIsPast = useMemo(() => {
     if (!eatTime) return false;
     return new Date(eatTime) < new Date();
@@ -2861,13 +2870,16 @@ export default function Home() {
     return () => window.clearTimeout(timer);
   }, [showNewBakeNotice]);
 
+  const previousJournalIdRef = useRef<string | null>(null);
   function startRecoverableBake(): boolean {
     const hadCurrentBake = Boolean(bakeType || loadSession());
     // Flush live edits before snapshotting; never accept a conflicting tab's draft.
+    try { if (bakeType) refreshCurrentJournalSnapshot(buildSessionPayload()); } catch {}
     if ((bakeType && !saveSession(buildSessionPayload())) || !preservePreviousBake()) {
       setRestartFailed(true); return false;
     }
     if (!startOver()) { setRestartFailed(true); return false; }
+    try { previousJournalIdRef.current = forgetCurrentJournalBake(); } catch {}
     // A late account lookup must not offer another bake after this decision.
     freshDeviceRef.current = false;
     try { sessionStorage.setItem('bh_wb_answered', '1'); } catch {}
@@ -2881,6 +2893,7 @@ export default function Home() {
     const previous = restorePreviousBake();
     if (!previous) { setRestartFailed(true); return; }
     setPreviousBakeAvailable(false); setRestartFailed(false);
+    try { if (previousJournalIdRef.current) setCurrentJournalId(previousJournalIdRef.current); previousJournalIdRef.current = null; } catch {}
     setShowNewBakeNotice(false);
     setShowProductHome(false); setShowWelcomeBack(false); setPendingSession(null);
     applySession(previous);
@@ -2904,6 +2917,7 @@ export default function Home() {
       localStorage.setItem('bh_shop_ticks_v1',JSON.stringify(session.pizzaParty?.shopTicks ?? {}));
       localStorage.setItem('bh_prep_ticks_v1',JSON.stringify(session.pizzaParty?.prepTicks ?? []));
     } catch { setRestartFailed(true); return; }
+    try { forgetCurrentJournalBake(); } catch {}
     applySession(session);
     scrollToStepTop();
   }
@@ -3113,6 +3127,8 @@ export default function Home() {
     // Regenerating after an edit says what moved since the plan the baker had.
     if (recipeGenerated) { const moved = acceptedPlanMove(acceptedPlan, +startTime, eatTime ? +eatTime : undefined); if (moved) setPlanMoved(moved); }
     setAcceptedPlan(accepted);
+    // Bake journal on this device: same entry across regenerations. Never blocks generation.
+    try { const {dropped}=recordGeneratedBake(buildSessionPayload({bakeType:bakeType ?? '',recipeGenerated:true,protocolStale:false,activeTab:'plan',acceptedStartTime:accepted.startTime,acceptedPreparationAt:accepted.preparationAt,acceptedEatTime:accepted.bakeAt})); if(dropped.length) void deleteJournalPhotos(dropped.flatMap(entry=>entry.photoIds)); } catch {}
     setShowResults(true);
     if(fillingsReturn)finishFillings();else setActiveTab('plan');
     scrollToStepTop();
@@ -3218,8 +3234,8 @@ export default function Home() {
   // to the next matching weekday/time. Sourdough needs a fresh starter plan.
   async function restoreFromBakeEvent(event: Pick<BakeEvent, 'id' | 'dough_snapshot' | 'pizza_party_id'>, opts?: { rebake?: boolean }) {
 
-    if (!event.dough_snapshot) return;
-    if (!await confirmLocalReplacement(!!opts?.rebake)) return;
+    if (!event.dough_snapshot) return false;
+    if (!await confirmLocalReplacement(!!opts?.rebake)) return false;
     isRestoringRef.current = true;
     setScheduleCandidateValid(true);
     setShowWelcomeBack(false);
@@ -3410,13 +3426,25 @@ export default function Home() {
       setRecipeGenerated(false);setShowResults(false);setScheduleCandidateValid(false);setScheduleReady(false);setSetupOverview(false);
       setActiveStep(snap.tab==='simple'?7:1);setAdvancedStep(snap.tab==='custom'?9:1);
     }
+    return true;
+  }
+
+  // Journal entries kept on this device: resume reopens that bake (and keeps
+  // its entry), bake again is the existing rebake path with a new entry.
+  async function openJournalEntry(entry: JournalEntry, rebake: boolean) {
+    if (!rebake && bakeType && currentJournalId() === entry.id) { setShowProductHome(false); setShowWelcomeBack(false); return; }
+    const restored = await restoreFromBakeEvent({id:rebake ? '' : entry.accountEventId ?? '',dough_snapshot:entry.session,pizza_party_id:null},{rebake});
+    if (!restored) return;
+    try { setCurrentJournalId(rebake ? null : entry.id); } catch {}
+    scrollToStepTop();
   }
 
   async function repeatCurrentRecipe() {
     // Save the finished bake first for account users; a failure keeps it open.
     if (user && !await saveCurrentSession()) return;
     const snapshot = {...buildSessionPayload(),version:1 as const,savedAt:Date.now()};
-    await restoreFromBakeEvent({id:bakeEventId ?? '',dough_snapshot:snapshot,pizza_party_id:null},{rebake:true});
+    try { refreshCurrentJournalSnapshot(buildSessionPayload()); } catch {}
+    if (await restoreFromBakeEvent({id:bakeEventId ?? '',dough_snapshot:snapshot,pizza_party_id:null},{rebake:true})) { try { forgetCurrentJournalBake(); } catch {} }
   }
 
   // ── Computed: Generate button / progress ──
@@ -4016,8 +4044,11 @@ export default function Home() {
           onContinueBake={() => { setShowProductHome(false); setShowWelcomeBack(false); if(pendingSession) { applySession(pendingSession); setPendingSession(null); } }}
           hasCurrentBake={!!bakeType || !!pendingSession}
           onOpenLocalBake={openLocalBake}
-          onResumeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event); }}
-          onRebakeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event, { rebake: true }); }}
+          onResumeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event).then(ok => { if (ok) forgetCurrentJournalBake(); }); }}
+          onRebakeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event, { rebake: true }).then(ok => { if (ok) forgetCurrentJournalBake(); }); }}
+          onResumeJournalEntry={entry => { void openJournalEntry(entry, false); }}
+          onRebakeJournalEntry={entry => { void openJournalEntry(entry, true); }}
+          currentBakeActive={!!bakeType}
           onOpenProfile={() => setProfileOpen(true)}
         />
 

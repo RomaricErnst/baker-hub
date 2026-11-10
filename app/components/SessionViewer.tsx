@@ -74,6 +74,7 @@ export default function SessionViewer({
   const [bakedQtys, setBakedQtys] = useState<Record<string, number> | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [sessionTitle, setSessionTitle] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -94,6 +95,7 @@ export default function SessionViewer({
 
   useEffect(() => {
     setComment(event?.comment ?? '');
+    setConfirmDelete(false);
   }, [event?.id]);
 
   useEffect(() => {
@@ -754,19 +756,30 @@ export default function SessionViewer({
             {l === 'fr' ? 'Partager' : 'Share this bake'}
           </button>
 
-          {/* DESTRUCTIVE: Delete — low prominence */}
-          <button
-            onClick={async () => {
-              if (!window.confirm(
-                l === 'fr'
-                  ? 'Supprimer cette fournée ? Cette action est irréversible.'
-                  : 'Delete this saved bake? This cannot be undone.'
-              )) return;
-              const { deleteBakeEvent } = await import('@/app/lib/supabase/fetchBakeEvents');
-              await deleteBakeEvent(event.id);
-              onDelete?.(event.id);
-              onClose();
-            }}
+          {/* DESTRUCTIVE: Delete — low prominence, confirmed in the page (window.confirm blocks automation and reads as a frozen app). */}
+          {confirmDelete && (
+            <div role="group" aria-label={l === 'fr' ? 'Supprimer cette fournée ?' : 'Delete this saved bake?'}>
+              <p style={{ margin: '0 0 8px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--char)' }}>
+                {l === 'fr' ? 'Supprimer cette fournée de votre compte ? Elle ne pourra pas être récupérée.' : 'Delete this saved bake from your account? It cannot be recovered.'}
+              </p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button type="button" onClick={async () => {
+                  setConfirmDelete(false);
+                  const { deleteBakeEvent } = await import('@/app/lib/supabase/fetchBakeEvents');
+                  await deleteBakeEvent(event.id);
+                  onDelete?.(event.id);
+                  onClose();
+                }} style={{ flex: 1, minHeight: '44px', borderRadius: '12px', border: '1px solid var(--char)', background: 'var(--char)', color: 'white', fontFamily: 'var(--font-ui)', fontSize: '14px', cursor: 'pointer' }}>
+                  {l === 'fr' ? 'Supprimer' : 'Delete'}
+                </button>
+                <button type="button" autoFocus onClick={() => setConfirmDelete(false)} style={{ flex: 1, minHeight: '44px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', fontFamily: 'var(--font-ui)', fontSize: '14px', cursor: 'pointer' }}>
+                  {l === 'fr' ? 'La garder' : 'Keep it'}
+                </button>
+              </div>
+            </div>
+          )}
+          {!confirmDelete && <button
+            onClick={() => setConfirmDelete(true)}
             style={{
               width: '100%', padding: '8px',
               background: 'none', border: 'none', cursor: 'pointer',
@@ -776,7 +789,7 @@ export default function SessionViewer({
             }}
           >
             {l === 'fr' ? 'Supprimer la fournée' : 'Delete saved bake'}
-          </button>
+          </button>}
 
         </div>
 
