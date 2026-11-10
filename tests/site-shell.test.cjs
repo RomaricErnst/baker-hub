@@ -68,3 +68,13 @@ test('locale pages take their metadata from the shared table',()=>{
     assert.ok(src.includes(`pageMetadata(locale, '/${page}')`));
   }
 });
+
+test('the 404 page speaks French under /fr and leads back to /fr',()=>{
+  const copy=meta.NOT_FOUND_COPY;
+  assert.notEqual(copy.fr.title,copy.en.title);
+  assert.equal(copy.fr.back,'Retour à Baker Hub');
+  const src=fs.readFileSync(path.join(__dirname,'../app/[locale]/not-found.tsx'),'utf8');
+  assert.match(src,/NOT_FOUND_COPY\[fr \? 'fr' : 'en'\]/);
+  assert.match(src,/href=\{fr \? '\/fr' : '\/'\}/);
+  assert.doesNotMatch(src,/out of the oven/);
+});
