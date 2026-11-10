@@ -3853,6 +3853,7 @@ export default function Home() {
               <SchedulePicker
                 {...poolishInputs}
                 schedulerSection={section}
+                onUseCalculatedYeast={()=>{setYeastPctOverride(undefined);setPlanReplanPending(true);}}
                 poolishStorage={prefermentType==='poolish'?poolishStorage:'auto'}
                 yeastPctOverride={effectiveYeastOverride}
                 replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor}
