@@ -248,7 +248,7 @@ export default function Header({
   openSessionId,
   onShareSessionClose,
   onResumeJournalEntry,
-  onRebakeJournalEntry,
+  onRebakeJournalEntry, openCurrentJournalRequest,
   currentBakeActive = false,
 }: {
   units?: UnitSystem;
@@ -283,6 +283,8 @@ export default function Header({
   onShareSessionClose?: () => void;
   onResumeJournalEntry?: (entry: JournalEntry) => void;
   onRebakeJournalEntry?: (entry: JournalEntry) => void;
+  /** Increments to open the current bake's journal entry from elsewhere in the page. */
+  openCurrentJournalRequest?: number;
   /** A bake is open in the page (not only waiting to be resumed). */
   currentBakeActive?: boolean;
 }) {
@@ -388,6 +390,13 @@ export default function Header({
       });
     }
   }, [menuOpen, user]);
+  // "How did it turn out?" at the end of the guide opens this bake's entry.
+  useEffect(() => {
+    if (!openCurrentJournalRequest) return;
+    const id = currentJournalId();
+    const entry = id ? listJournal().find(row => row.id === id) : undefined;
+    if (entry) { setJournal(listJournal()); setViewingJournal(entry); }
+  }, [openCurrentJournalRequest]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!sessionSaved || !user) return;
