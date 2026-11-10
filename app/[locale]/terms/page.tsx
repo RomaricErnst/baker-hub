@@ -1,11 +1,11 @@
+import type { Metadata } from 'next';
 import TermsClient from './TermsClient';
+import { pageMetadata } from '../../lib/siteMeta';
 
-export const metadata = {
-  title: 'Terms of Service — Baker Hub',
-  description:
-    'The terms for using Baker Hub: your content stays yours, schedules are ' +
-    'estimates, and baking judgement remains with the baker.',
-};
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  return pageMetadata(locale, '/terms');
+}
 
 export default function TermsPage() {
   return <TermsClient />;

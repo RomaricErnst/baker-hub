@@ -1,13 +1,11 @@
+import type { Metadata } from 'next';
 import AboutClient from './AboutClient';
+import { pageMetadata } from '../../lib/siteMeta';
 
-export const metadata = {
-  title: 'About Baker Hub — Dough planning built around your life',
-  description:
-    "How Baker Hub works: fermentation science, yeast engine, " +
-    "tropical climate correction, flour database, and schedule planning " +
-    "for serious home bakers. Built on Craig's formula and " +
-    "Modernist Pizza empirical data.",
-};
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  return pageMetadata(locale, '/about');
+}
 
 export default function AboutPage() {
   return <AboutClient />;
