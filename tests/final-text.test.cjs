@@ -104,4 +104,21 @@ test('round pizza bake: target diameter for the style, one pizza at a time in a 
  assert.doesNotMatch(guide('pan','en',{numItems:2,weight:600,extra:{pizzaDiameterCm:30}}).text,/cm across|one pizza at a time/);
 });
 
+test('pan pizza: no fridge question without a fridge, pan answers, sugar with the flour, oil last',()=>{
+ const roomOnly=guide('neapolitan','en',{numItems:4,weight:260,hours:6});
+ assert.equal(roomOnly.schedule.coldRetardHours>0,false);
+ assert.doesNotMatch(roomOnly.text,/still cold from the fridge/);
+ assert.match(guide('neapolitan','en',{numItems:4,weight:260,hours:26}).text,/still cold from the fridge/);
+ const pan=guide('pan','en',{numItems:2,weight:600,hours:8}).text;
+ assert.doesNotMatch(pan,/stretch a little thinner|move the rack \(and steel\/stone\) higher|Position the rack closer to the top|Stretch &amp; bake tips|Stretch & bake tips/);
+ assert.match(pan,/A pan pizza bakes on the lowest rack for its base/);
+ const mix=pan.slice(pan.indexOf('What to do'),pan.indexOf('Ready when'));
+ assert.match(mix,/Mix the flour and sugar with \d+ g of the prepared water/);
+ assert.ok(mix.indexOf('Knead by hand')<mix.indexOf('Add the measured oil last'));
+ assert.doesNotMatch(mix,/Incorporate the measured sugar/);
+ const fr=guide('pan','fr',{numItems:2,weight:600,hours:8}).text;
+ assert.match(fr,/Mélangez la farine et le sucre avec/);
+ assert.doesNotMatch(fr,/Incorporez le sucre mesuré/);
+});
+
 module.exports={guide};

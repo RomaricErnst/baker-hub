@@ -144,6 +144,8 @@ const SimpleModeCtx = createContext(false);
 // The baker's unit system, so every weight a step or tip writes in grams reads
 // in ounces for imperial bakers (weights under 6 g stay in grams).
 const UnitsCtx = createContext<UnitSystem>('metric');
+// Whether the plan has a cold stage: fridge questions stay out of plans without one.
+const PlanHasFridgeCtx = createContext(true);
 function useWeightText() {
   const units = useContext(UnitsCtx);
   const locale = useLocale();
@@ -743,9 +745,12 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
   const l = locale === 'fr' ? 'fr' : 'en';
   const simpleFaq = useContext(SimpleModeCtx);
   const units = useContext(UnitsCtx);
+  const planHasFridge = useContext(PlanHasFridgeCtx);
+  const panPizza = isPanPizzaStyle(styleKey);
   const bread = !!getBreadProtocol(styleKey) || ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','pain_au_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
   const roundPizza = !bread && !isPanPizzaStyle(styleKey);
-  const faq = (faqOverride ?? (faqKey ? (GUIDE_FAQ[faqKey] ?? []) : [])).filter(e =>
+  const faq = (faqOverride ?? (faqKey ? (GUIDE_FAQ[faqKey] ?? []) : [])).map(e => panPizza && e.pan ? { ...e, a: e.pan } : e).filter(e =>
+    (!e.fridge || planHasFridge) &&
     // Each question appears only where it applies: bread or pizza, the oven in
     // use, and round-pizza handling (balls, peel) only for round pizzas.
     (!e.only || e.only === (bread ? 'bread' : 'pizza')) &&
@@ -1138,12 +1143,15 @@ Actual dough condition and equipment may differ from these estimates.`;
   })();
   const firstWater = liquidWater != null ? Math.round(liquidWater * 0.9) : null;
   const keptWater = liquidWater != null && firstWater != null ? liquidWater - firstWater : null;
+  // Sugar goes in with the flour and water; oil comes last.
+  const withSugar = !!recipe && recipe.sugar > 0;
   const flourWaterLine = (rest: string) => {
-    if (!reserveWater) return l === 'fr' ? `Mélangez la farine et l’eau${rest}.` : `Mix the flour and water${rest}.`;
-    if (firstWater == null || keptWater == null) return l === 'fr' ? `Mélangez la farine avec 90 % de l’eau${directIceMix ? ' liquide' : ' préparée'} et réservez le reste${rest}.` : `Mix the flour with 90% of the ${directIceMix ? 'liquid' : 'prepared'} water and keep the rest back${rest}.`;
+    const flourFr = withSugar ? 'la farine et le sucre' : 'la farine', flourEn = withSugar ? 'the flour and sugar' : 'the flour';
+    if (!reserveWater) return l === 'fr' ? `Mélangez ${withSugar ? 'la farine, le sucre' : 'la farine'} et l’eau${rest}.` : `Mix ${withSugar ? 'the flour, sugar' : 'the flour'} and water${rest}.`;
+    if (firstWater == null || keptWater == null) return l === 'fr' ? `Mélangez ${flourFr} avec 90 % de l’eau${directIceMix ? ' liquide' : ' préparée'} et réservez le reste${rest}.` : `Mix ${flourEn} with 90% of the ${directIceMix ? 'liquid' : 'prepared'} water and keep the rest back${rest}.`;
     return l === 'fr'
-      ? `Mélangez la farine avec ${displayWeight(firstWater,u,l)} de l’eau${directIceMix ? ' liquide' : ' préparée'} ; réservez les ${displayWeight(keptWater,u,l)} restants${rest}.`
-      : `Mix the flour with ${displayWeight(firstWater,u,l)} of the ${directIceMix ? 'liquid' : 'prepared'} water; keep the other ${displayWeight(keptWater,u,l)} back${rest}.`;
+      ? `Mélangez ${flourFr} avec ${displayWeight(firstWater,u,l)} de l’eau${directIceMix ? ' liquide' : ' préparée'} ; réservez les ${displayWeight(keptWater,u,l)} restants${rest}.`
+      : `Mix ${flourEn} with ${displayWeight(firstWater,u,l)} of the ${directIceMix ? 'liquid' : 'prepared'} water; keep the other ${displayWeight(keptWater,u,l)} back${rest}.`;
   };
   const mixCardStart = showAutolyseStart ? (autolyseAction?.at ?? displayedMixTime) : displayedMixTime;
   const leavenLine = isSourdough ? (l === 'fr' ? 'le levain mûr et le sel' : 'the ripe starter and salt')
@@ -1245,7 +1253,7 @@ Actual dough condition and equipment may differ from these estimates.`;
 
   if (recipe?.enrichment?.unsupportedMethod) return <p role="alert">{l === 'fr' ? 'Modifiez le choix de levure dans les réglages et recalculez cette formule enrichie avant de suivre les étapes.' : 'Update the leavening choice in setup and recalculate this enriched formula before following the steps.'}</p>;
 
-  if (breadProtocol?.method === 'unleavened') return <StepTimesCtx.Provider value={stepTimesCtx}><UnitsCtx.Provider value={u}><SimpleModeCtx.Provider value={!!simpleMode}>
+  if (breadProtocol?.method === 'unleavened') return <StepTimesCtx.Provider value={stepTimesCtx}><UnitsCtx.Provider value={u}><PlanHasFridgeCtx.Provider value={hasCold}><SimpleModeCtx.Provider value={!!simpleMode}>
     <div style={{display:'flex',flexDirection:'column',gap:currentStep===0?4:16}}>
       {progressControl}
       {!progressTarget&&<button type="button" onClick={() => setCurrentStep(0)} style={{minHeight:44,padding:'8px 16px',border:`1px solid ${D.border}`,borderRadius:10,background:D.warm}}>{overviewLabel}</button>}
@@ -1279,11 +1287,12 @@ Actual dough condition and equipment may differ from these estimates.`;
       </BottomActions>}
       {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange} sessionSaved={sessionSaved}/>}
     </div>
-  </SimpleModeCtx.Provider></UnitsCtx.Provider></StepTimesCtx.Provider>;
+  </SimpleModeCtx.Provider></PlanHasFridgeCtx.Provider></UnitsCtx.Provider></StepTimesCtx.Provider>;
 
   return (
     <StepTimesCtx.Provider value={stepTimesCtx}>
     <UnitsCtx.Provider value={u}>
+    <PlanHasFridgeCtx.Provider value={hasCold}>
     <SimpleModeCtx.Provider value={!!simpleMode}>
     <div style={{ display: 'flex', flexDirection: 'column', gap: currentStep === 0 ? '4px' : '16px' }}>
       {progressControl}
@@ -1613,7 +1622,6 @@ Actual dough condition and equipment may differ from these estimates.`;
             ...mixSequence,
             ...(hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'?[{bold:l==='fr'?'Quand la pâte se tient, ajoutez progressivement l’eau réservée ; laissez chaque ajout s’incorporer.':'Once the dough holds together, add the reserved water gradually; let each addition absorb.',note:''}]:[]),
             {bold:mixerType==='no_knead'?(l==='fr'?'Arrêtez une fois homogène. Couvrez ; les repos et rabats prévus développeront la pâte.':'Stop once combined. Cover; scheduled rests and folds develop the dough.'):styleKey==='pain_seigle'?(l==='fr'?'Mélangez jusqu’à homogénéité ; le seigle reste collant.':'Mix until evenly combined; rye dough remains sticky.'):mixerType==='hand'?(l==='fr'?'Pétrissez à la main jusqu’à une pâte lisse et souple.':'Knead by hand until smooth and stretchy.'):(l==='fr'?'Pétrissez jusqu’à une pâte lisse et souple, à une vitesse « pâte » de votre pétrin.':'Knead until smooth and stretchy, at a dough speed your mixer allows.'),note:''},
-            ...(recipe && recipe.sugar > 0 ? [{bold:l==='fr'?'Incorporez le sucre mesuré pendant le pétrissage.':'Incorporate the measured sugar during mixing.',note:''}] : []),
             ...(oil>0?[{bold:l==='fr'?'Ajoutez l’huile mesurée en dernier et pétrissez jusqu’à absorption.':'Add the measured oil last and mix until absorbed.',note:''}]:[]),
           ]}/>
         </Section>
@@ -2174,7 +2182,7 @@ Actual dough condition and equipment may differ from these estimates.`;
                 </div>
               </Section>
             )}
-            {!isBread && (
+            {!isBread && !panGuide && (
               <div style={{ marginTop: '8px' }}>
                 <LearnLink term="stretch_bake" label={l === 'fr' ? 'Étirer et cuire' : 'Stretch & bake tips'} onOpen={setLearnTerm} showSparkle={true} />
               </div>
@@ -2224,6 +2232,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       )}
     </div>
     </SimpleModeCtx.Provider>
+    </PlanHasFridgeCtx.Provider>
     </UnitsCtx.Provider>
     </StepTimesCtx.Provider>
   );
