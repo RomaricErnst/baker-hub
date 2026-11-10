@@ -191,7 +191,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   await page.clock.setFixedTime(Date.parse('2026-11-01T04:55:00Z'));
   await anonymous(page);await page.goto('/fr');
   await expect(navigator(page)).toHaveCount(0);
-  await page.getByRole('button',{name:bread?'Pain':'Pizza',exact:true}).tap();
+  await page.getByRole('button',{name:bread?'Pain & repas':'Pizza',exact:true}).tap();
   await expect(page.getByRole('heading',{name:bread?'Choisissez votre pain':'Quel style de pizza ?',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Comment définir votre recette ?',exact:true})).toHaveCount(0);
   const continueBeforeChoice=page.locator('.bh-batch-actions').locator('[data-bh-forward]:visible');
@@ -439,7 +439,7 @@ test('late fillings opened from Recipe return to Recipe without changing the dou
 
 test('bread family return preserves choices; wraps and meal examples are discoverable',async({page})=>{
  await anonymous(page);await page.goto('/fr');
- await page.getByRole('button',{name:'Pain',exact:true}).tap();
+ await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();
  await expect(page.getByRole('heading',{name:'Choisissez votre pain',exact:true})).toBeVisible();
  await expect(page.getByRole('link',{name:'Pitas & wraps',exact:true})).toBeVisible();
  const wrap=page.getByRole('button',{name:/^Pain à wrap · Laffa/});
@@ -454,7 +454,7 @@ test('bread family return preserves choices; wraps and meal examples are discove
  await page.locator('.bh-style-confirm').getByRole('button',{name:'Retour',exact:true}).tap();
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Que souhaitez-vous préparer ?',exact:true})).toBeVisible();
- await page.getByRole('button',{name:'Pain',exact:true}).tap();
+ await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();
  await page.getByRole('button',{name:/^Continuer avec/}).tap();
  await expect(quantity).toHaveValue('5');await noOverflow(page);
  await page.goBack();await expect(page.getByRole('heading',{name:'Choisissez votre pain',exact:true})).toBeVisible();
@@ -471,7 +471,7 @@ test('landing photos stay above text and bread meal examples are readable',async
    return copy.top>=media.bottom-1&&[...el.querySelectorAll('img')].every(img=>{const r=img.getBoundingClientRect();return r.top>=media.top-1&&r.bottom<=media.bottom+1&&r.right<=media.right+1;});
   })).toBe(true);
  }
- await page.getByRole('button',{name:'Pain',exact:true}).tap();
+ await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();
  const loaves=page.locator('#bread-group-loaves').locator('..').locator('.bh-bread-style-card');
  await expect(loaves).toHaveCount(6);
  const sources=[];
@@ -782,7 +782,7 @@ test.describe('guided piadina with cooking time set in planning',()=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.clock.setFixedTime(new Date('2030-05-10T10:00:00Z'));
   await anonymous(page);await page.goto('/fr');
-  await page.getByRole('button',{name:'Pain',exact:true}).tap();
+  await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();
   await page.locator('.bh-batch-content').getByRole('button',{name:'Galette à garnir · Piadina',exact:true}).tap();
   await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
   await page.getByLabel('Nombre de pièces',{exact:true}).fill('5');

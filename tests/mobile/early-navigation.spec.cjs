@@ -44,7 +44,7 @@ for(const fr of [false,true]){
 
 test('early bread selections survive mode choice, matching bread style and later setup navigation',async({page},testInfo)=>{
  await anonymous(page);await page.goto('/');
- await page.getByRole('button',{name:'Bread',exact:true}).tap();
+ await page.getByRole('button',{name:'Bread & meals',exact:true}).tap();
  await expect(bottom(page)).toBeHidden();
  await page.getByRole('button',{name:/^Simple\b/}).tap();
  await expect(bottom(page)).toBeHidden();
@@ -103,7 +103,7 @@ test('generated dough uses local phases and returns to Recipe after browsing fil
 
 test('Safari companion scrolling hides chrome, preserves phase access and reveals navigation',async({page},testInfo)=>{
  await anonymous(page);await page.goto('/fr');
- await page.getByRole('button',{name:'Pain',exact:true}).tap();
+ await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();
  await expect(bottom(page)).toBeHidden();
  await page.getByRole('button',{name:/^Simple\b/}).tap();
  await page.getByRole('button',{name:/^Baguette\b/}).tap();
@@ -144,7 +144,7 @@ test('Safari companion scrolling hides chrome, preserves phase access and reveal
 
 for(const style of ['Pain de campagne','Pain complet']) test(`${style}: chosen loaf opens tartines without a second bread choice`,async({page},testInfo)=>{
  await anonymous(page); await page.goto('/fr');
- await page.getByRole('button',{name:'Pain',exact:true}).tap();
+ await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();
  await expect(bottom(page)).toBeHidden();
  await page.getByRole('button',{name:/^Simple\b/}).tap();
  await page.getByRole('button',{name:new RegExp('^'+style+'\\b')}).tap();

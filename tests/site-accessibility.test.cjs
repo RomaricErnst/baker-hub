@@ -54,3 +54,11 @@ test('busy-time chip hours and About diet chips are readable',()=>{
   const about=fs.readFileSync(path.join(__dirname,'../app/[locale]/about/AboutClient.tsx'),'utf8');
   assert.match(about,/bg="rgba\(107,122,90,0\.12\)" color="var\(--sage-text\)"/);
 });
+
+test('landing cards are named by their visible titles',()=>{
+  const opening=fs.readFileSync(path.join(__dirname,'../app/components/OpeningChoices.tsx'),'utf8');
+  assert.doesNotMatch(opening,/aria-label=/);
+  assert.match(opening,/aria-labelledby=\{`opening-title-\$\{choice\.type\}`\}/);
+  assert.match(opening,/<span id=\{`opening-title-\$\{choice\.type\}`\}>\{choice\.title\}<\/span>/);
+  assert.match(opening,/title:fr\?'Pain & repas':'Bread & meals'/);
+});

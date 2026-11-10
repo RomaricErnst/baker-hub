@@ -61,7 +61,7 @@ test('simple starter screen: Previous goes back to the kitchen, and the review l
  await page.clock.setFixedTime(NOW);
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
  await page.goto('/');
- await page.getByRole('button',{name:'Bread',exact:true}).tap();
+ await page.getByRole('button',{name:'Bread & meals',exact:true}).tap();
  await page.getByRole('button',{name:'Pain au levain',exact:true}).tap();
  await page.getByRole('button',{name:/^Continue with/}).tap();
  await forward(page).tap();
