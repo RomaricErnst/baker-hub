@@ -24,7 +24,7 @@ import { GUIDE_FAQ } from '../lib/guideFaq';
 import { WOOD_OVEN_FAQ } from '../lib/woodOvenFaq';
 import { formatPrefermentDose, formatYeastDose } from '../utils/prefermentDose';
 import { getBreadProtocol } from '../utils/breadProfiles';
-import { scheduledFoldMinutes } from '../utils/scheduleFolds';
+import { firstBatchFoldMinutes, scheduledFoldMinutes } from '../utils/scheduleFolds';
 import { leanBreadBake, guideUnitText, guideWeightText } from '../utils/leanBreadBake';
 import { panPizzaGuide, isPanPizzaStyle } from '../utils/panPizza';
 import { needsScaleHelp } from '../utils/yeastMeasure';
@@ -990,6 +990,8 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   // Lean breads without a protocol get style-specific oven cards (real
   // temperatures and times); null keeps the oven-keyed message steps.
   const leanBake      = !breadProtocol && isBread ? leanBreadBake(styleKey, pieceWeight, ovenType, numItems) : null;
+  // "Bake straight from the fridge" chosen: the cold proof runs up to the bake.
+  const bakesFromFridge = !!leanBake && !!schedule.coldRetard2Start && !schedule.rtWarmupStart && !!schedule.coldRetard2End && +schedule.coldRetard2End >= +schedule.bakeStart - 60000;
   // Oven settings in message steps follow the unit system; small values there
   // are temperature differences ("loses 20–30°C") and stay as written.
   // Simple bakers never set a hydration: tips name the dough, not a percentage.
@@ -1058,8 +1060,10 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
     return raw;
   })();
   const currentMixWindow = batch && batch.count > 1 ? schedule.batchMixWindows?.[batch.active] : undefined;
-  const displayedMixTime = currentStep !== 0 && currentMixWindow ? currentMixWindow.start : schedule.batchMixWindows?.[0]?.start ?? bgMixStart;
-  const displayedMixDuration = currentStep !== 0 && currentMixWindow ? (+currentMixWindow.end - +currentMixWindow.start) / 3600000 : schedule.mixingDurationH;
+  // The step header shows the whole mixing window (all batches), as the overview does;
+  // the active batch's own times are in the step body.
+  const displayedMixTime = schedule.batchMixWindows?.[0]?.start ?? bgMixStart;
+  const displayedMixDuration = schedule.mixingDurationH;
   const laterAutolysedBatch = preMixAutolyse > 0 && currentStep !== 0 && (batch?.active ?? 0) > 0;
   const showAutolyseStart = preMixAutolyse > 0 && !laterAutolysedBatch;
   const mixingOverviewNote = batch && batch.count > 1 ? (l === 'fr' ? `${batch.count} pétrissées à la suite` : `${batch.count} consecutive batches`) : undefined;
@@ -1721,6 +1725,10 @@ Actual dough condition and equipment may differ from these estimates.`;
           ]} /> : <Steps items={[
             // Levain doughs follow the recipe card's own rise target; the generic percentage does not apply.
             ...(t.raw('bulk.stepsBase') as { bold: string; note: string }[]).map(step => isSourdough && /50[-–]75/.test(step.note) ? { ...step, note: l === 'fr' ? 'pour suivre la pousse' : 'to follow the rise' } : step),
+            // Several batches: the first fold waits until the last batch is mixed.
+            ...((schedule.batchMixWindows?.length ?? 0) > 1 && firstBatchFoldMinutes(schedule).length && firstBatchFoldMinutes(schedule)[0] !== scheduledFoldMinutes(schedule.bulkFermHours, styleKey)[0]
+              ? [{ bold: l === 'fr' ? `Premier rabat ${firstBatchFoldMinutes(schedule)[0]} min après la fin du premier lot` : `First fold ${firstBatchFoldMinutes(schedule)[0]} min after the first batch is mixed`, note: l === 'fr' ? 'une fois tous les lots pétris ; suivez les horaires du planning' : 'once every batch is mixed; follow the times in the plan' }]
+              : []),
             ...(scheduledFoldMinutes(schedule.bulkFermHours, styleKey).length
               ? scheduledFoldMinutes(schedule.bulkFermHours, styleKey).map(minutes =>
                   (minutes === 15 && !schedule.coldRetardStart
@@ -2128,7 +2136,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           {styleKey === 'pain_viennois' && recipe && recipe.totalDough / Math.max(1, numItems) < 180 && <p>{l === 'fr'
             ? `Vos pièces font environ ${displayWeight(Math.round(recipe.totalDough / Math.max(1, numItems)),u,l)} : elles sont plus petites que les baguettes de référence de ${displayWeight(200,u,l)}. Contrôlez-les avant 15 min, puis régulièrement : croûte dorée et centre pris. Le poids seul ne détermine pas la cuisson ; la forme et le four comptent aussi.`
             : `Your pieces weigh about ${displayWeight(Math.round(recipe.totalDough / Math.max(1, numItems)),u,l)}: they are smaller than the reference ${displayWeight(200,u,l)} baguettes. Check before 15 minutes, then regularly: golden crust and a set centre. Weight alone does not determine baking time; shape and oven matter too.`}</p>}
-          {breadProtocol ? <Steps items={profileSteps(hasPoachStep ? breadProtocol.cookingSteps[l].slice(1) : breadProtocol.cookingSteps[l])} /> : leanBake ? <Steps items={ovenSteps(leanBake.bake[l])} /> : isBread ? (
+          {breadProtocol ? <Steps items={profileSteps(hasPoachStep ? breadProtocol.cookingSteps[l].slice(1) : breadProtocol.cookingSteps[l])} /> : leanBake ? <Steps items={[...(bakesFromFridge ? [{ bold: l === 'fr' ? 'Enfournez les pâtons à la sortie du frigo' : 'Bake the loaves straight from the fridge', note: l === 'fr' ? 'sans les remettre à température : la cuisson est la même' : 'no warming up needed: the bake is the same' }] : []), ...ovenSteps(leanBake.bake[l])]} /> : isBread ? (
             <Steps items={ovenSteps(t.raw(
               ovenType === 'dutch_oven' ? 'bake.dutch.steps' :
               ovenType === 'home_oven_stone_bread' ? 'bake.stoneBread.steps' :
