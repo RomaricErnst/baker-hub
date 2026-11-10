@@ -6,6 +6,7 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { SITE_URL, pageMetadata } from '../lib/siteMeta';
+import ServiceWorkerRegistration from '../components/ServiceWorkerRegistration';
 
 // Figtree for interface text; page titles use the explicit --font-display
 // serif stack in globals.css, preserving the approved prototype typography.
@@ -60,6 +61,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );
