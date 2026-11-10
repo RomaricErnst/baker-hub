@@ -1149,6 +1149,47 @@ function buildSchedulePhases(
       return pureRoomTemperatureFallback('Working within your window — pure room temperature fermentation.');
     }
 
+    // A short shaped cold spell in free time only adds two fridge trips (shape,
+    // fridge, out again two hours later). Keep the bulk in the fridge until it
+    // would have come out and shape then; the proof that follows is the same.
+    // Tropical kitchens keep the shaped cold spell: it holds the dough in range.
+    if (!straightFromFridge && !isTropical && coldRetard2Hours > 0 && coldRetard2Hours < SHORT_COLD_SPELL_MAX_H
+      && !bridgesUnavailable(coldRetard2Start, coldRetard2End)) {
+      const exit = r15(new Date(Math.max(+coldRetard2End, +eatTime - (restH + maxFinalH) * 3600000)));
+      const proofFrom = new Date(+exit + restH * 3600000);
+      if (+exit > +coldRetard1Start && !isTimeBlocked(exit, relevantBlocks) && !divideIsBlocked(exit) && +proofFrom < +bakeTime) {
+        const coldHours = (+exit - +r15(coldRetard1Start)) / 3600000;
+        const proofH = Math.min(maxFinalH, Math.max(0, (+eatTime - +proofFrom) / 3600000));
+        return accountScheduleTime({
+          mixingDurationH,
+          bulkFermStart: fermStart,
+          bulkFermHours: actualBulkH,
+          coldRetardStart: r15(coldRetard1Start),
+          coldRetardEnd: exit,
+          coldRetardHours: coldHours,
+          finalProofStart: r15(proofFrom),
+          finalProofHours: proofH,
+          restRtHours: restH,
+          preheatStart: new Date(bakeTime),
+          bakeStart: new Date(eatTime),
+          totalRTHours: actualBulkH + proofH,
+          totalColdHours: coldHours,
+          wasAutoAdjusted,
+          kitchenTemp,
+          coldRetard1Start: r15(coldRetard1Start),
+          coldRetard1End: exit,
+          coldRetard2Start: null,
+          coldRetard2End: null,
+          divideBallTime: exit,
+          rtWarmupStart: null,
+          rtWarmupEnd: null,
+          bulkConflict,
+          coldExitConflict: null,
+          scheduleNote,
+        });
+      }
+    }
+
     return accountScheduleTime({
       mixingDurationH,
       bulkFermStart: fermStart,
