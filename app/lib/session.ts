@@ -75,6 +75,8 @@ export interface SessionData {
   acceptedStartTime?: number;
   /** First preparation (preferment, or the dough itself) of that accepted plan (ms). */
   acceptedPreparationAt?: number;
+  /** Bake time of that accepted plan (ms). */
+  acceptedEatTime?: number;
   starterFeedRecords?:StarterFeedRecord[];
   /** An overdue feed was answered; a validated replacement plan is still needed. */
   starterRecoveryPending?:boolean;

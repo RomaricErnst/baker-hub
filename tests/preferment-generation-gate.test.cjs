@@ -100,10 +100,17 @@ test('whole-plan validation gates generation in both modes and directs invalid p
  assert.equal(nextOverrides.length,2);
  for(const expression of nextOverrides)for(const scheduleCandidateValid of [false,true])for(const scheduleEditing of [false,true]){
   const code=ts.transpileModule('globalThis.result=('+expression+');',{compilerOptions:{target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.React}}).outputText;
-  const context={execution:undefined,mixExecution:undefined,completedMixAt:undefined,schedule:undefined,scheduleCandidateValid,scheduleEditing,simpleDecisionPending:false,collectingBakeTime:false,customStarterStepId:null,starterStateDescribed:true,eatTime:new Date(),fr:true,NEXT_CTA:{},React:{createElement:(type,props,...children)=>({type,props,children})}};
+  const context={execution:undefined,mixExecution:undefined,completedMixAt:undefined,schedule:undefined,scheduleCandidateValid,scheduleEditing,simpleDecisionPending:false,customDecisionPending:false,recipeGenerated:false,setupReturnLabel:'Retour à la recette',customOrganisationFlow:{steps:[{id:9,chip:'Heure de cuisson'}],generateLabel:'Créer ma recette'},nextCustomStep:()=>9,collectingBakeTime:false,customStarterStepId:null,starterStateDescribed:true,eatTime:new Date(),fr:true,NEXT_CTA:{},React:{createElement:(type,props,...children)=>({type,props,children})}};
   vm.runInNewContext(code,context);
   if(scheduleEditing)assert.equal(context.result,null);
   else if(scheduleCandidateValid)assert.equal(context.result,undefined);
+  else if(expression.includes('customDecisionPending')){
+   // Custom: never a button that only scrolls; the next step waits, with the reason.
+   assert.equal(context.result.type,'div');
+   const [hint,button]=context.result.children.filter(child=>child&&typeof child==='object');
+   assert.equal(hint.type,'p');assert.equal(hint.children[0],'Ajustez le planning ci-dessus pour continuer.');
+   assert.equal(button.type,'button');assert.equal(button.props.disabled,true);assert.equal(button.children[0],'Créer ma recette');
+  }
   else {assert.equal(context.result.type,'button');assert.notEqual(context.result.props.disabled,true);assert.ok(['Voir les horaires à ajuster →','Choisir un horaire qui convient'].includes(context.result.children[0]));assert.equal(typeof context.result.props.onClick,'function');}
  }
 

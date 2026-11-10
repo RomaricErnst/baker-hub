@@ -7,7 +7,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import type { User } from '@supabase/supabase-js';
 import StarterFeedStatus from '../components/StarterFeedStatus';
 import BakeStartStatus from '../components/BakeStartStatus';
-import {normalizeMixExecution, type MixExecution, normalizeAcceptedPlan, promptedPreparationAt, normalizeBakeExecution, normalizeStarterFeedRecords, overdueStarterFeed, type StarterFeedRecord, type BakeExecution} from '../utils/bakeExecution';
+import {normalizeMixExecution, type MixExecution, type AcceptedPlan, normalizeAcceptedPlan, acceptedPlanMove, promptedPreparationAt, normalizeBakeExecution, normalizeStarterFeedRecords, overdueStarterFeed, type StarterFeedRecord, type BakeExecution} from '../utils/bakeExecution';
 import Header from '../components/Header';
 import dynamic from 'next/dynamic';
 const ProfileSheet = dynamic(() => import('../components/ProfileSheet'), { ssr: false });
@@ -1111,6 +1111,8 @@ export default function Home() {
   const [scheduleCandidateValid, setScheduleCandidateValid] = useState(true);
   // Simple's timing step: a single decision card is waiting for the baker.
   const [simpleDecisionPending, setSimpleDecisionPending] = useState(false);
+  // Custom: the clash card is waiting for a choice (same card as Simple's).
+  const [customDecisionPending, setCustomDecisionPending] = useState(false);
   const [starterMature, setStarterMature]   = useState(true);
   const [starterHasRye, setStarterHasRye]   = useState(false);
   const [tang, setTang] = useState<'mild' | 'balanced' | 'tangy'>('balanced');
@@ -1140,7 +1142,7 @@ export default function Home() {
   // Fine-tune: a typed yeast amount too slow for the time before the bake. It is not applied.
   // The plan in the last generated recipe: when its dough starts and its first preparation begins.
   // "Have you mixed?" is asked about this plan, never about an unaccepted edit.
-  const [acceptedPlan, setAcceptedPlan] = useState<{startTime:number;preparationAt:number} | undefined>(undefined);
+  const [acceptedPlan, setAcceptedPlan] = useState<AcceptedPlan | undefined>(undefined);
   const [yeastEntryIssue, setYeastEntryIssue] = useState<{shownPct:number;bakeAt:number;check:YeastEntryCheck} | null>(null);
   // Custom, levain: the baker's starter % of flour; the levain bulk is re-timed to it.
   const [starterPctOverride, setStarterPctOverride] = useState<number | undefined>(undefined);
@@ -1149,7 +1151,7 @@ export default function Home() {
   // A plan-input edit made after generation: the plan step mounts the scheduler, it replans,
   // then the recipe is regenerated and the baker is told what moved.
   const [replanReturn, setReplanReturn] = useState<{from:number;settled:boolean}|null>(null);
-  const [planMoved, setPlanMoved] = useState<{from:number;to:number}|null>(null);
+  const [planMoved, setPlanMoved] = useState<{from:number;to:number;bakeFrom?:number}|null>(null);
   const [targetDoughTemp, setTargetDoughTemp] = useState<number | undefined>(undefined);
   const [measuredFlourTemp, setMeasuredFlourTemp] = useState<number | undefined>(undefined);
   const [measuredPrefermentTemp, setMeasuredPrefermentTemp] = useState<number | undefined>(undefined);
@@ -1570,7 +1572,7 @@ export default function Home() {
     setManualSugar(session.manualSugar);
     setManualSalt(session.manualSalt);
     setYeastPctOverride(session.yeastPctOverride);
-    setAcceptedPlan(normalizeAcceptedPlan(session.acceptedStartTime, session.acceptedPreparationAt));
+    setAcceptedPlan(normalizeAcceptedPlan(session.acceptedStartTime, session.acceptedPreparationAt, session.acceptedEatTime));
     setStarterPctOverride(session.starterPctOverride);
     setTargetDoughTemp(session.targetDoughTemp);
     setFlourInFridge(session.flourInFridge);
@@ -2174,7 +2176,7 @@ export default function Home() {
       eatTime: eatTime?.getTime() ?? null,
       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.coveredActions?.length?{coveredActions:b.coveredActions}:{}), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}) })),
       recipeGenerated, protocolStale, activeTab, pizzaPartyTab, modeChosen, awaitingRecipeChoice,
-      acceptedStartTime: acceptedPlan?.startTime, acceptedPreparationAt: acceptedPlan?.preparationAt,
+      acceptedStartTime: acceptedPlan?.startTime, acceptedPreparationAt: acceptedPlan?.preparationAt, acceptedEatTime: acceptedPlan?.bakeAt,
       navigation:{batchView,protocolView,serviceView,returnTo:fillingsReturn,prepReturnToService,shoppingReturnToFillings},
       // How far the baker got. Without it a resumed session reopened at
       // highestStep 1, so every step carrying a default read as unset —
@@ -2325,8 +2327,8 @@ export default function Home() {
     setStartTime(mix);setEatTime(bake);setBlocks(newBlocks);setTimingOverrides({});setReplanRequested(false);
     setSessionRestored(true);setProtocolStale(false);setScheduleCandidateValid(true);setPrefermentValidity({type:method,valid:true});
     setAcceptedScheduleRepair(null);setStarterPlanResetKey(k=>k+1);
-    const accepted={startTime:+mix,preparationAt:+mix-(method!=='none'?hours*3600000:0)};setAcceptedPlan(accepted);
-    saveSession(buildSessionPayload({...(replacesYeast?{yeastPctOverride:undefined}:{}),acceptedStartTime:accepted.startTime,acceptedPreparationAt:accepted.preparationAt,prefermentType:method,prefermentChosen:true,prefOffsetH:hours,prefGoesInFridge:inFridge,startTime:+mix,eatTime:+bake,timingOverrides:{},protocolStale:false,computedRecipe:null,blocks:newBlocks.map(b=>({...b,from:+b.from,to:+b.to}))}));
+    const accepted={startTime:+mix,preparationAt:+mix-(method!=='none'?hours*3600000:0),bakeAt:+bake};setAcceptedPlan(accepted);
+    saveSession(buildSessionPayload({...(replacesYeast?{yeastPctOverride:undefined}:{}),acceptedStartTime:accepted.startTime,acceptedPreparationAt:accepted.preparationAt,acceptedEatTime:accepted.bakeAt,prefermentType:method,prefermentChosen:true,prefOffsetH:hours,prefGoesInFridge:inFridge,startTime:+mix,eatTime:+bake,timingOverrides:{},protocolStale:false,computedRecipe:null,blocks:newBlocks.map(b=>({...b,from:+b.from,to:+b.to}))}));
     openDestination('recipe');
   }
 
@@ -3106,7 +3108,9 @@ export default function Home() {
     setReviewMode(false);
     setRecipeGenerated(true);
     setProtocolStale(false);
-    const accepted = {startTime:+startTime, preparationAt:plannedPreparationAt};
+    const accepted:AcceptedPlan = {startTime:+startTime, preparationAt:plannedPreparationAt, ...(eatTime?{bakeAt:+eatTime}:{})};
+    // Regenerating after an edit says what moved since the plan the baker had.
+    if (recipeGenerated) { const moved = acceptedPlanMove(acceptedPlan, +startTime, eatTime ? +eatTime : undefined); if (moved) setPlanMoved(moved); }
     setAcceptedPlan(accepted);
     setShowResults(true);
     if(fillingsReturn)finishFillings();else setActiveTab('plan');
@@ -3119,6 +3123,7 @@ export default function Home() {
         activeTab: 'plan',
         acceptedStartTime: accepted.startTime,
         acceptedPreparationAt: accepted.preparationAt,
+        acceptedEatTime: accepted.bakeAt,
       });
       upsertBakeEvent({ session: sessionPayload as SessionData })
         .then(id => { if (id) setBakeEventId(id); });
@@ -3262,7 +3267,7 @@ export default function Home() {
     setManualSugar(snap.manualSugar);
     setManualSalt(snap.manualSalt);
     setYeastPctOverride(snap.yeastPctOverride);
-    setAcceptedPlan(rb ? undefined : normalizeAcceptedPlan(snap.acceptedStartTime, snap.acceptedPreparationAt));
+    setAcceptedPlan(rb ? undefined : normalizeAcceptedPlan(snap.acceptedStartTime, snap.acceptedPreparationAt, snap.acceptedEatTime));
     setStarterPctOverride(snap.starterPctOverride);
     setTargetDoughTemp(snap.targetDoughTemp);
     setFlourInFridge(snap.flourInFridge ?? false);
@@ -3876,6 +3881,7 @@ export default function Home() {
                 {...poolishInputs}
                 schedulerSection={section}
                 onUseCalculatedYeast={()=>{setYeastPctOverride(undefined);setPlanReplanPending(true);}}
+                onSimpleDecisionChange={setCustomDecisionPending}
                 enteredYeastShownPct={effectiveYeastOverride!==undefined&&yeastType?Math.round(effectiveYeastOverride*(YEAST_TYPES[yeastType]?.conversion??1)*1000)/1000:undefined}
                 poolishStorage={prefermentType==='poolish'?poolishStorage:'auto'}
                 yeastPctOverride={effectiveYeastOverride}
@@ -4238,8 +4244,8 @@ export default function Home() {
 {recipeGenerated && destination==='recipe' && eatTime && schedule && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} onSeeSteps={()=>openDestination('protocol')} onAddToCalendar={addPlanToCalendar}/>}
 {recipeGenerated && planMoved && destination!=='batch' && destination!=='organisation' && eatTime && <div data-plan-moved role="status" style={{margin:'12px 0 0',padding:'12px 14px',border:'1px solid var(--gold)',borderRadius:14,fontSize:14,lineHeight:1.5,background:'var(--warm)'}}>
   <strong>{fr?'Plan mis à jour.':'Plan updated.'}</strong>{' '}
-  {fr?`Le pétrissage passe de ${formatBakeDateTime(new Date(planMoved.from),locale)} à ${formatBakeDateTime(new Date(planMoved.to),locale)}. La cuisson reste ${formatBakeDateTime(eatTime,locale)}. Si vous aviez ajouté le plan à votre agenda, ajoutez-le de nouveau.`
-     :`Start Dough moves from ${formatBakeDateTime(new Date(planMoved.from),locale)} to ${formatBakeDateTime(new Date(planMoved.to),locale)}. Bake stays ${formatBakeDateTime(eatTime,locale)}. If you had added the plan to your calendar, add it again.`}
+  {fr?`Le pétrissage passe de ${formatBakeDateTime(new Date(planMoved.from),locale)} à ${formatBakeDateTime(new Date(planMoved.to),locale)}. ${planMoved.bakeFrom!==undefined?`La cuisson passe de ${formatBakeDateTime(new Date(planMoved.bakeFrom),locale)} à ${formatBakeDateTime(eatTime,locale)}.`:`La cuisson reste ${formatBakeDateTime(eatTime,locale)}.`} Si vous aviez ajouté le plan à votre agenda, ajoutez-le de nouveau.`
+     :`Start Dough moves from ${formatBakeDateTime(new Date(planMoved.from),locale)} to ${formatBakeDateTime(new Date(planMoved.to),locale)}. ${planMoved.bakeFrom!==undefined?`Bake moves from ${formatBakeDateTime(new Date(planMoved.bakeFrom),locale)} to ${formatBakeDateTime(eatTime,locale)}.`:`Bake stays ${formatBakeDateTime(eatTime,locale)}.`} If you had added the plan to your calendar, add it again.`}
   <span style={{display:'flex',gap:16,marginTop:6}}>
     {destination!=='protocol'&&<button type="button" className="bh-back-action" style={{minHeight:44}} onClick={()=>{setPlanMoved(null);openDestination('protocol');}}>{fr?'Voir les étapes':'See the steps'}</button>}
     <button type="button" className="bh-back-action" style={{minHeight:44}} onClick={()=>setPlanMoved(null)}>OK</button>
@@ -5000,7 +5006,11 @@ export default function Home() {
             <StepPage flow={customOrganisationFlow} id={9} nextOverride={customStarterStepId !== null && !starterStateDescribed ? <div style={{width:'100%'}}>
                 <p style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Indiquez quand votre levain a été rafraîchi pour la dernière fois.':'Tell us when your starter was last fed.'}</p>
                 <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>openSetupStep(customStarterStepId,true)}>{fr?'Votre levain →':'Your starter →'}</button>
-              </div> : scheduleEditing ? null : !scheduleCandidateValid ? <button type="button" style={NEXT_CTA} onClick={()=>{const target=[...document.querySelectorAll<HTMLElement>('.bh-fridge-arrangement,.bh-plan-notice')].find(el=>el.offsetParent)??document.getElementById('schedule-anchor-panel');target?.scrollIntoView({block:'center'});(target?.querySelector<HTMLElement>('button')??target)?.focus({preventScroll:true});}}>{fr?'Voir les horaires à ajuster →':'Review affected times →'}</button> : undefined}>
+              </div> : scheduleEditing ? null : !scheduleCandidateValid ? <div style={{width:'100%'}}>
+                {/* The way forward is never a button that only scrolls: the next step waits for a choice above. */}
+                <p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{customDecisionPending?(fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'):(fr?'Ajustez le planning ci-dessus pour continuer.':'Adjust the plan above to continue.')}</p>
+                <button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated?setupReturnLabel:customOrganisationFlow.steps.at(-1)?.id===9?customOrganisationFlow.generateLabel:`${customOrganisationFlow.steps.find(step=>step.id===nextCustomStep(9))?.chip ?? (fr?'Suivant':'Next')} →`}</button>
+              </div> : undefined}>
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => customFlow.onJump(1)} />
               ) : (

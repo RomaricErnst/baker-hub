@@ -20,11 +20,16 @@ export function normalizeBakeExecution(value: unknown): BakeExecution | undefine
   return v;
 }
 /** The plan in the last generated recipe, as the baker accepted it. */
-export interface AcceptedPlan { startTime:number; preparationAt:number }
-export function normalizeAcceptedPlan(startTime:unknown, preparationAt:unknown): AcceptedPlan | undefined {
+export interface AcceptedPlan { startTime:number; preparationAt:number; bakeAt?:number }
+export function normalizeAcceptedPlan(startTime:unknown, preparationAt:unknown, bakeAt?:unknown): AcceptedPlan | undefined {
   if (typeof startTime!=='number' || !Number.isFinite(startTime)) return undefined;
   const prep=typeof preparationAt==='number'&&Number.isFinite(preparationAt)&&preparationAt<=startTime?preparationAt:startTime;
-  return {startTime,preparationAt:prep};
+  return {startTime,preparationAt:prep,...(typeof bakeAt==='number'&&Number.isFinite(bakeAt)&&bakeAt>startTime?{bakeAt}:{})};
+}
+/** "Plan updated" after a regenerated recipe: what moved since the accepted plan. */
+export function acceptedPlanMove(accepted:AcceptedPlan|undefined, startTime:number, bakeAt:number|undefined): {from:number;to:number;bakeFrom?:number} | null {
+  if (!accepted || accepted.startTime===startTime) return null;
+  return {from:accepted.startTime,to:startTime,...(accepted.bakeAt!==undefined&&bakeAt!==undefined&&accepted.bakeAt!==bakeAt?{bakeFrom:accepted.bakeAt}:{})};
 }
 /** The time "Have you mixed / made …?" asks about. While the recipe matches the
  * current plan, that plan is the accepted one. While an edit is waiting for the

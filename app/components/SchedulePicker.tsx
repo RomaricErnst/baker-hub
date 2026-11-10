@@ -6659,7 +6659,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
       [`mix-finish-batch-${i+2}`, [`Reprendre le pétrissage du lot ${i+2}`,`Resume kneading batch ${i+2}`]],
     ]).flat()) as Record<string,[string,string]>,
     autolyse: ['Autolyse · farine et eau', 'Autolyse · combine flour and water'],
-    mix: ['Pétrissage', 'Mixing'], 'mix-finish': ['Reprendre le pétrissage', 'Resume kneading'],
+    mix: ['Pétrir la pâte', 'Start Dough'], 'mix-finish': ['Reprendre le pétrissage', 'Resume kneading'],
     poach: ['Pochage', 'Poaching'], roll: ['Abaisse', 'Rolling'],
     'fold-1': ['Rabat 1', 'Fold 1'], 'fold-2': ['Rabat 2', 'Fold 2'],
     'fold-3': ['Rabat 3', 'Fold 3'], 'fold-4': ['Rabat 4', 'Fold 4'],
@@ -7125,12 +7125,14 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
   const coherentTimes=+pendingStart<+pendingEatTime&&(!committedSchedule||(+committedSchedule.divideBallTime<=+pendingEatTime&&
     (committedSchedule.availabilityActions??[]).every(action=>+action.at<=+pendingEatTime)))&&(!isSourdough||
     (completedMixAt!==undefined||!previewStarter?.windowTooShort&&!!timelineStarterEvents.length&&starterHandsOnActions(timelineStarterEvents,Date.now()).every(action=>+action.at<=+pendingStart)));
-  // ── Simple mode: one decision, never a repair workshop ──
+  // ── One decision, never a repair workshop ──
   // Simple never asks the baker to inspect or cover individual steps. When the
   // requested bake does not fit, it shows one card: what clashes, the nearest
   // verified time as the primary action and, when the only clash is the final
   // fridge removal, the option to keep the time with someone at home.
-  const simpleConflicts=mode==='simple'&&eatTimeSet&&!currentCandidateValid
+  // Custom shows the same card when steps fall during busy times, and keeps the
+  // per-step list below it for bakers who cover only some steps.
+  const simpleConflicts=eatTimeSet&&!currentCandidateValid&&schedulerSection!=='starter'
     ? findAvailabilityConflicts(currentPlanActions(committedSchedule?.availabilityActions??[]),repairBlocks,Date.now())
         .filter((conflict,index,all)=>all.findIndex(other=>other.action.id===conflict.action.id&&+other.action.at===+conflict.action.at)===index)
     : [];
@@ -7164,7 +7166,8 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
             const name=/^fold-/.test(id)?(folds>1?(isFr?`${folds} rabats`:`${folds} folds`):(isFr?'un rabat':'a fold')):simpleConflictName(conflict.action);
             if(seen.has(name))continue;seen.add(name);parts.push(name);
           }
-          const lower=parts.map((p,i)=>i===0?p:p.charAt(0).toLowerCase()+p.slice(1));
+          // "Start Dough" is the step's name in English; keep its capitals mid-sentence.
+          const lower=parts.map((p,i)=>i===0||(!isFr&&p===conflictNames.mix[1])?p:p.charAt(0).toLowerCase()+p.slice(1));
           const list=lower.length>1?`${lower.slice(0,-1).join(', ')} ${isFr?'et':'and'} ${lower.at(-1)}`:lower[0];
           const sentence=list.charAt(0).toUpperCase()+list.slice(1);
           return isFr?`${sentence} tombent ${during}.`:`${sentence} fall ${during}.`;
@@ -7181,7 +7184,9 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
             :`This dough needs about ${formatDuration(neededH,lang)} from mixing to baking. ${fmtCardHM(pendingEatTime,false)} is ${formatDuration(awayH,lang)} away.`;
         })();
   const simpleSuggestion=!searchingTargets?firstSuggestedTarget:undefined;
-  const simpleDecision=mode==='simple'&&eatTimeSet&&!currentCandidateValid&&(simpleSuggestion||simpleOnlyFridgeClash)
+  // Custom: only for busy-time clashes; a fridge exit alone keeps its own arrangement card.
+  const customDecision=mode==='custom'&&!inputsOnly&&simpleConflicts.length>0&&!simpleOnlyFridgeClash;
+  const simpleDecision=eatTimeSet&&!currentCandidateValid&&(mode==='simple'?(simpleSuggestion||simpleOnlyFridgeClash):customDecision)
     ? <div className="bh-simple-decision" data-simple-decision role="status" style={{border:'1px solid var(--border)',borderRadius:12,padding:'14px 16px',margin:'12px 0',background:'var(--warm)'}}>
         <p style={{margin:'0 0 12px',fontSize:15,lineHeight:1.5,color:'var(--char)'}}>{simpleDecisionSentence}</p>
         {simpleSuggestion&&<button type="button" className="bh-apply-plan" data-simple-accept style={{minHeight:44,width:'100%',whiteSpace:'normal'}} onClick={()=>{setSimpleMoved({from:new Date(pendingEatTime),to:+simpleSuggestion.bake});applySuggestedTarget(simpleSuggestion);}}>
@@ -7217,6 +7222,9 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
             ?(isFr?`Garder ${simpleTimeLabel(pendingEatTime)} : je m’occupe de cette étape`:`Keep ${simpleTimeLabel(pendingEatTime)}: I’ll handle this step`)
             :(isFr?`Garder ${simpleTimeLabel(pendingEatTime)} : je m’occupe de ces ${simpleConflicts.length} étapes`:`Keep ${simpleTimeLabel(pendingEatTime)}: I’ll handle these ${simpleConflicts.length} steps`)}
         </button>}
+        {mode==='custom'&&<button type="button" className="bh-back-action" data-decision-availability style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={openAvailability}>
+          {isFr?'Modifier mes indisponibilités':'Change my unavailable times'}
+        </button>}
       </div>
     : null;
   const simpleDecisionPending=!!simpleDecision;
@@ -7227,7 +7235,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
     ? <p className="bh-key-detail" role="status" data-simple-covered>{isFr?`Quelqu’un sort la pâte à ${fmtCardHM(finalFridgeRemoval.at,isFr)}.`:`Someone takes the dough out at ${fmtCardHM(finalFridgeRemoval.at,isFr)}.`}{' '}
         <button type="button" className="bh-back-action" data-simple-undo style={{minHeight:44,minWidth:44}} onClick={()=>setFridgeRemovalCovered(false)}>{isFr?'Annuler':'Undo'}</button></p>
     : null;
-  const simpleMovedNote=mode==='simple'&&simpleMoved&&eatTimeSet&&+pendingEatTime===simpleMoved.to&&!simpleDecision
+  const simpleMovedNote=simpleMoved&&eatTimeSet&&+pendingEatTime===simpleMoved.to&&!simpleDecision
     ? <p className="bh-key-detail" role="status" data-simple-moved>{isFr?`Enfournement déplacé à ${fmtCardHM(pendingEatTime,isFr)}.`:`Moved to ${fmtCardHM(pendingEatTime,isFr)}.`}{' '}
         <button type="button" className="bh-back-action" data-simple-moved-undo style={{minHeight:44,minWidth:44}} onClick={()=>{const previous=simpleMoved.from;setSimpleMoved(null);
           applyTimePick(`${previous.getFullYear()}-${String(previous.getMonth()+1).padStart(2,'0')}-${String(previous.getDate()).padStart(2,'0')}`,previous.getHours(),previous.getMinutes());}}>{isFr?'Annuler':'Undo'}</button></p>
@@ -8703,7 +8711,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
           {busyWithFridge&&otherConflicts.length>0&&<><strong>{isFr?'Autres étapes pendant votre indisponibilité :':'Other steps during your unavailable hours:'}</strong><ul>{otherConflicts.map(({action})=><li key={`${action.id}:${+action.at}`}>{foldActionLabel(action.id,locale,mixingBatches)??(conflictNames[action.id]??['Étape','Step'])[isFr?0:1]} · {fmtCardDT(action.at,isFr)}</li>)}</ul></>}
           {!busyWithFridge&&blockedPeriod&&['cold-out-2','preheat'].includes(preview?.conflict??'')&&<p>{isFr?`Cette intervention tombe dans votre indisponibilité de ${blockedPeriod}. Cette étape doit respecter la remise en température de la pâte ou le préchauffage du four. Choisissez une cuisson plus tardive, ou modifiez vos disponibilités si vous pouvez intervenir.`:`This hands-on step overlaps your unavailable period (${blockedPeriod}). The remaining step must fit the dough’s readiness window or oven preheating. Choose a later baking time, or change availability if you can do this step.`}</p>}
           {!dirty&&hasTimingOverrides&&<p>{isFr?'Vos horaires choisis sont conservés. Le retour à la recommandation les libère pour chercher un autre planning.':'Your chosen times are kept. Return to the recommendation to release them and find another plan.'}</p>}
-          {batchConflict ? <BatchRepairNotice isFr={isFr} numItems={numItems ?? 1} itemWeight={itemWeight} mixerCapacityG={mixerCapacityG} wastePct={wastePct} onEditQuantity={onEditQuantity} /> : editAvailability}
+          {batchConflict ? <BatchRepairNotice isFr={isFr} numItems={numItems ?? 1} itemWeight={itemWeight} mixerCapacityG={mixerCapacityG} wastePct={wastePct} onEditQuantity={onEditQuantity} /> : simpleDecisionPending ? null : editAvailability}
         </div>:undefined;
         const notice=(fridgeArrangement||conflictNotice||(!dirty&&fridgeArrangementChanged))?<>{!dirty&&fridgeArrangementChanged&&<p role="status" className="bh-key-detail">{isFr?'Le planning a changé. La sortie du réfrigérateur n’est plus confirmée.':'The plan changed. Fridge removal is no longer confirmed.'}</p>}{fridgeArrangement}{showResolutionChoice&&<div style={{marginBottom:12}}>{editAvailability}</div>}{conflictNotice}</>:undefined;
         const chartSchedule = isSourdough ? starterPreview?.validation.schedule : preview?.schedule;

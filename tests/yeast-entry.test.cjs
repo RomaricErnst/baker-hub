@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { utils } = require('./load-production.cjs');
 const { checkYeastEntry, roundYeastPctUp, entryHoursLabel } = require('../app/utils/yeastEntry.ts');
-const { promptedPreparationAt, normalizeAcceptedPlan } = require('../app/utils/bakeExecution.ts');
+const { promptedPreparationAt, normalizeAcceptedPlan, acceptedPlanMove } = require('../app/utils/bakeExecution.ts');
 
 const H = 3600000;
 const NOW = Date.parse('2026-11-10T09:00:00+08:00');
@@ -79,4 +79,13 @@ test('accepted plans restore only from finite times', () => {
   assert.deepEqual(normalizeAcceptedPlan(NOW, NOW + H), { startTime: NOW, preparationAt: NOW });
   assert.equal(normalizeAcceptedPlan(undefined, NOW), undefined);
   assert.equal(normalizeAcceptedPlan('x', NOW), undefined);
+});
+
+test('a regenerated recipe reports what moved since the accepted plan', () => {
+  const accepted = { startTime: NOW, preparationAt: NOW, bakeAt: NOW + 24 * H };
+  assert.equal(acceptedPlanMove(accepted, NOW, NOW + 24 * H), null);
+  assert.equal(acceptedPlanMove(undefined, NOW + H, NOW + 24 * H), null);
+  assert.deepEqual(acceptedPlanMove(accepted, NOW + 2 * H, NOW + 24 * H), { from: NOW, to: NOW + 2 * H });
+  assert.deepEqual(acceptedPlanMove(accepted, NOW + 2 * H, NOW + 26 * H), { from: NOW, to: NOW + 2 * H, bakeFrom: NOW + 24 * H });
+  assert.deepEqual(normalizeAcceptedPlan(NOW, NOW, NOW + H), { startTime: NOW, preparationAt: NOW, bakeAt: NOW + H });
 });
