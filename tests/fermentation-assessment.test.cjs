@@ -230,3 +230,12 @@ test('two days of direct bakes favor waking hours within each style’s fermenta
  assert.ok(enrichedHard>0,'The enforced night blocks must still permit an enriched bake');
  assert.equal(checked,144);assert.ok(daytime>noonEvening/2,'Most noon and evening recipes should have entirely daytime preparation');
 });
+
+test('enriched doughs may run overnight: their window reaches 16 h', () => {
+  for (const style of ['brioche', 'pain_mie', 'pain_viennois']) {
+    const bounds = commercialReadinessWindow({...STYLE_FERM_DEFAULTS[style], kitchenTemp: 22, flourStrength: 1, totalWindowH: 40, preheatMin: 30});
+    assert.equal(bounds.from, 16, style);
+  }
+  const baguette = commercialReadinessWindow({...STYLE_FERM_DEFAULTS.baguette, kitchenTemp: 22, flourStrength: 1, totalWindowH: 40, preheatMin: 30});
+  assert.notEqual(baguette.from, 16, 'lean doughs keep their own window');
+});

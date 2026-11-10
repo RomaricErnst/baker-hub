@@ -66,9 +66,12 @@ export interface StarterEvent {
 /** Raw commercial start-window bounds, before the solver clips to now.
  * Shared by solving and display so restored plans retain identical guidance.
  */
-export function commercialReadinessWindow({ coldH, preferredColdH, rtH, minTotalFermH,
+/** Longest plan for an enriched dough with its required cold rest (hours). */
+export const ENRICHED_OVERNIGHT_MAX_H = 16;
+
+export function commercialReadinessWindow({ coldH, preferredColdH, rtH, minTotalFermH, coldHRequired,
   flourStrength, kitchenTemp, preheatMin, totalWindowH,
-}: { coldH: number; preferredColdH?: number; rtH: number; minTotalFermH?: number;
+}: { coldH: number; preferredColdH?: number; rtH: number; minTotalFermH?: number; coldHRequired?: boolean;
   flourStrength: number; kitchenTemp: number; preheatMin: number; totalWindowH: number;
 }): { from: number; to: number } {
   const ftm = Math.max(0.5, Math.min(2.0, flourStrength));
@@ -82,7 +85,10 @@ export function commercialReadinessWindow({ coldH, preferredColdH, rtH, minTotal
   const hasCold = expectedColdH > 0;
   const plateau = hasCold ? Math.round(coldH * .35 * flourStrength) : Math.round(rtH * .75);
   return {
-    from: hasCold ? Math.min(72, coldH + rtH + plateau) : rtH + plateau,
+    // Enriched doughs retard overnight: mixed in the evening, shaped before bed and
+    // baked in the morning is the usual home schedule, so their plans may run to
+    // ENRICHED_OVERNIGHT_MAX_H instead of stopping at the short sweet spot.
+    from: hasCold ? Math.min(72, Math.max(coldH + rtH + plateau, coldHRequired ? ENRICHED_OVERNIGHT_MAX_H : 0)) : rtH + plateau,
     to: minTotalFermH ?? minimumRT + 1,
   };
 }
