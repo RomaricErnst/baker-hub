@@ -72,10 +72,18 @@ export function doughShoppingItems(input: {
   const fr = locale === 'fr';
   // Whole grams on a shopping list; the selected unit system like the recipe.
   const weight = (grams: number) => displayWeight(Math.round(grams), units, locale).replace(' ', ' ');
-  const items: DoughShoppingItem[] = [
-    ...(recipe.flourParts?.length
+  // The recipe card lists the dough's flour without the starter's; the list buys
+  // both, so the first flour line says how much of it is in the starter.
+  const starterGrams = yeastType === 'sourdough' && !recipe.preferment && recipe.sourdough && typeof recipe.sourdough === 'object'
+    ? Number((recipe.sourdough as { starterGramsMid?: number }).starterGramsMid) || 0 : 0;
+  const starterFlour = Math.round(starterGrams / 2);
+  const starterHint = starterFlour > 0 ? (fr ? `dont ${weight(starterFlour)} dans le levain` : `includes ${weight(starterFlour)} in the starter`) : undefined;
+  const flourRows: DoughShoppingItem[] = recipe.flourParts?.length
       ? recipe.flourParts.map(part => ({ tickKey: `dough_flour_${part.key}`, name: fr ? part.nameFr : part.name, amount: weight(part.grams) }))
-      : [{ tickKey: 'dough_0', name: flourName, amount: weight(recipe.flour) }]),
+      : [{ tickKey: 'dough_0', name: flourName, amount: weight(recipe.flour) }];
+  if (starterHint && flourRows[0]) flourRows[0] = { ...flourRows[0], hint: starterHint };
+  const items: DoughShoppingItem[] = [
+    ...flourRows,
     { tickKey: 'dough_1', name: fr ? 'Sel' : 'Salt', amount: weight(recipe.salt) },
   ];
   const yeastGrams = recipe.preferment != null ? recipe.preferment.prefYeastGrams : recipe.yeast?.convertedGrams;

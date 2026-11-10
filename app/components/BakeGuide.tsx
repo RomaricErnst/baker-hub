@@ -996,6 +996,8 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   // temperatures and times); null keeps the oven-keyed message steps.
   const leanBake      = !breadProtocol && isBread ? leanBreadBake(styleKey, pieceWeight, ovenType, numItems) : null;
   // "Bake straight from the fridge" chosen: the cold proof runs up to the bake.
+  // Several batches whose first fold waits for the last batch: one line says when.
+  const batchFirstFoldShown = (schedule.batchMixWindows?.length ?? 0) > 1 && firstBatchFoldMinutes(schedule).length > 0 && firstBatchFoldMinutes(schedule)[0] !== scheduledFoldMinutes(schedule.bulkFermHours, styleKey)[0];
   const bakesFromFridge = !!leanBake && !!schedule.coldRetard2Start && !schedule.rtWarmupStart && !!schedule.coldRetard2End && +schedule.coldRetard2End >= +schedule.bakeStart - 60000;
   // Oven settings in message steps follow the unit system; small values there
   // are temperature differences ("loses 20–30°C") and stay as written.
@@ -1722,7 +1724,7 @@ Actual dough condition and equipment may differ from these estimates.`;
 
       {/* ── STEP: Bulk Fermentation ──────────────────── */}
       <StepCard number={n()} {...sc()} icon={<IconBulk />} title={simpleMode ? (l==='fr'?'Laisser lever la pâte':'Let the dough rise') : t('stepTitles.bulkFerm')}
-        passive time={schedule.bulkFermStart} duration={schedule.bulkFermHours} overviewNote={schedule.availabilityActions?.filter(a=>a.id.startsWith('fold-')).map(a=><span key={a.id} style={{display:'block'}}>{foldActionLabel(a.id, l, schedule.mixingBatches)} · {formatTime(a.at,_fmtLocale)}</span>)} accent={D.terra}>
+        passive time={schedule.bulkFermStart} duration={schedule.bulkFermHours} overviewNote={schedule.availabilityActions?.filter(a=>a.id.startsWith('fold-')).slice().sort((a,b)=>+a.at-+b.at).map(a=><span key={a.id} style={{display:'block'}}>{foldActionLabel(a.id, l, schedule.mixingBatches)} · {formatTime(a.at,_fmtLocale)}</span>)} accent={D.terra}>
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           {breadProtocol ? <Steps items={[
@@ -1738,11 +1740,12 @@ Actual dough condition and equipment may differ from these estimates.`;
             // Levain doughs follow the recipe card's own rise target; the generic percentage does not apply.
             ...(t.raw('bulk.stepsBase') as { bold: string; note: string }[]).map(step => isSourdough && /50[-–]75/.test(step.note) ? { ...step, note: l === 'fr' ? 'pour suivre la pousse' : 'to follow the rise' } : step),
             // Several batches: the first fold waits until the last batch is mixed.
-            ...((schedule.batchMixWindows?.length ?? 0) > 1 && firstBatchFoldMinutes(schedule).length && firstBatchFoldMinutes(schedule)[0] !== scheduledFoldMinutes(schedule.bulkFermHours, styleKey)[0]
+            ...(batchFirstFoldShown
               ? [{ bold: l === 'fr' ? `Premier rabat ${firstBatchFoldMinutes(schedule)[0]} min après la fin du premier lot` : `First fold ${firstBatchFoldMinutes(schedule)[0]} min after the first batch is mixed`, note: l === 'fr' ? 'une fois tous les lots pétris ; suivez les horaires du planning' : 'once every batch is mixed; follow the times in the plan' }]
               : []),
+            // With the batch line above, its first fold replaces the generic first set.
             ...(scheduledFoldMinutes(schedule.bulkFermHours, styleKey).length
-              ? scheduledFoldMinutes(schedule.bulkFermHours, styleKey).map(minutes =>
+              ? scheduledFoldMinutes(schedule.bulkFermHours, styleKey).filter((_, index) => !(index === 0 && batchFirstFoldShown)).map(minutes =>
                   (minutes === 15 && !schedule.coldRetardStart
                     // No fridge in this plan: the short first rise leads to shaping, not to the cold.
                     ? { ...(t.raw('bulk.setShort') as { bold: string; note: string }), note: l === 'fr' ? 'puis couvrez et laissez reposer jusqu’au façonnage' : 'then cover and rest until shaping' }
@@ -1998,6 +2001,12 @@ Actual dough condition and equipment may differ from these estimates.`;
                 ? { bold: 'Laissez le pain dans son moule, couvert, à température ambiante', note: 'prêt quand la surface se couvre de fines fissures et que la pâte approche du bord du moule' }
                 : { bold: 'Leave the loaf in its tin, covered, at room temperature', note: 'ready when fine cracks cover the surface and the dough nears the rim of the tin' },
               { bold: l === 'fr' ? `Lancez le préchauffage du four ${formatDuration(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75,l)} avant la cuisson` : `Start preheating your oven ${formatDuration(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75,l)} before bake time`, note: (l === 'fr' ? 'préchauffez pendant l’apprêt ; vérifiez que le four et la pâte sont prêts' : 'preheat overlaps proofing; check both are ready') },
+            ]} /> : bakesFromFridge ? <Steps items={l === 'fr' ? [
+              { bold: numItems === 1 ? 'Sortez le pâton du réfrigérateur quand le four commence à chauffer' : 'Sortez les pâtons du réfrigérateur quand le four commence à chauffer', note: 'ils restent froids : pas d’apprêt à température ambiante' },
+              { bold: 'Gardez-les couverts pendant la chauffe', note: 'pas de test du doigt : l’apprêt s’est fait au froid. Grignez-les froids, juste avant d’enfourner' },
+            ] : [
+              { bold: numItems === 1 ? 'Take the loaf out of the fridge as the oven starts heating' : 'Take the loaves out of the fridge as the oven starts heating', note: 'they stay cold: no proof at room temperature' },
+              { bold: 'Keep them covered while the oven heats', note: 'no poke test: the cold proof did the work. Score them cold, just before baking' },
             ]} /> : <Steps items={[
               ...(isTwoPhase ? [isBread ? {bold:l==='fr'?'Sortez la pâte façonnée du réfrigérateur.':'Take the shaped dough out of the fridge.',note:''} : t.raw('finalProof.removeFridge') as { bold: string; note: string }] : []),
               { bold: l === 'fr' ? (isBread && numItems===1 ? 'Laissez le pâton se détendre, couvert' : 'Laissez les pâtons se détendre, couverts') : 'Let the shaped dough relax, covered',
