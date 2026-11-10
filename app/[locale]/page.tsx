@@ -64,6 +64,7 @@ import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
 import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
 import { formatYeastDose } from '../utils/prefermentDose';
+import { soonStartLabel } from '../utils/startNotice';
 import { checkYeastEntry, entryHoursLabel, type YeastEntryCheck } from '../utils/yeastEntry';
 import { starterActionLabel } from '../utils/starterBuild';
 import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock, formatBakeDateTime } from '../utils/units';
@@ -830,7 +831,7 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
 function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,assumedKitchen,onAdjustTiming,onAddToCalendar}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;helperAt?:Date;assumedKitchen?:React.ReactNode;onAdjustTiming:()=>void;onAddToCalendar?:()=>void}){
   return <section data-preparation-timing aria-label={fr?'Horaires':'Timing'} style={{border:'1px solid var(--border)',borderRadius:12,padding:'12px 14px',margin:'0 0 16px',background:'var(--warm)'}}>
     <p style={{margin:'0 0 4px',fontSize:15,fontWeight:600,color:'var(--char)'}}>{startLabel ?? (fr?'Commencer':'Start')} · {formatBakeDateTime(startAt,locale)}</p>
-    {helperAt&&<p data-helper-step style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'Quelqu’un sort la pâte du réfrigérateur':'Someone takes the dough out of the fridge'} · {formatBakeDateTime(helperAt,locale)}</p>}
+    {helperAt&&<p data-helper-step style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'Vous, ou quelqu’un d’autre, sortez la pâte du réfrigérateur':'You or someone else takes the dough out of the fridge'} · {formatBakeDateTime(helperAt,locale)}</p>}
     <p style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'Enfourner':'Bake'} · {formatBakeDateTime(bakeAt,locale)}</p>
     {assumedKitchen}
     <span style={{display:'flex',flexWrap:'wrap',gap:'0 18px'}}>
@@ -845,7 +846,7 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
 function RecipePlanCard({fr,locale,startAt,startLabel,bakeAt,onSeeSteps,onAddToCalendar}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;onSeeSteps:()=>void;onAddToCalendar:()=>void}){
   return <section data-recipe-plan aria-label={fr?'Votre plan':'Your plan'} style={{border:'1px solid var(--border)',borderRadius:16,padding:'12px 14px 4px',margin:'12px 0 4px',background:'var(--card)',boxShadow:'var(--card-shadow)'}}>
     <p style={{margin:'0 0 2px',fontSize:13,color:'var(--smoke)'}}>{fr?'Votre plan':'Your plan'}</p>
-    <p style={{margin:'0 0 2px',fontSize:16,fontWeight:700,color:'var(--char)'}}>{startLabel ?? (fr?'Commencer':'Start')} · {formatBakeDateTime(startAt,locale)}</p>
+    <p style={{margin:'0 0 2px',fontSize:16,fontWeight:700,color:'var(--char)'}}>{startLabel ?? (fr?'Commencer':'Start')} · {soonStartLabel(startAt,Date.now(),locale) ?? formatBakeDateTime(startAt,locale)}</p>
     <p style={{margin:0,fontSize:15,color:'var(--char)'}}>{fr?'Enfourner':'Bake'} · {formatBakeDateTime(bakeAt,locale)}</p>
     <span style={{display:'flex',flexWrap:'wrap',gap:'0 18px'}}>
       <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={onSeeSteps}>{fr?'Voir les étapes':'See the steps'}</button>
@@ -1588,8 +1589,8 @@ export default function Home() {
     if (session.startTime) setStartTime(new Date(session.startTime));
     if (session.blocks && session.blocks.length > 0) {
       setBlocks(session.blocks.map((b: unknown) => {
-        const block = b as { label: string; from: number; to: number; fridgeRemoval?: unknown; coveredActions?: unknown };
-        return { label: block.label, from: new Date(block.from), to: new Date(block.to), coveredActions:normalizeCoveredActions(block.coveredActions), fridgeRemoval: normalizeFridgeRemoval(block.fridgeRemoval) };
+        const block = b as { label: string; from: number; to: number; fridgeRemoval?: unknown; coveredActions?: unknown; bakeFromFridge?: unknown };
+        return { label: block.label, from: new Date(block.from), to: new Date(block.to), coveredActions:normalizeCoveredActions(block.coveredActions), fridgeRemoval: normalizeFridgeRemoval(block.fridgeRemoval), ...(typeof block.bakeFromFridge==='number'&&Number.isFinite(block.bakeFromFridge)?{bakeFromFridge:block.bakeFromFridge}:{}) };
       }));
     }
     setStarterEvents(restoreStarterEvents(session.starterEvents));
@@ -1962,7 +1963,7 @@ export default function Home() {
   const repairKey = (st: Date, et: Date | null, bl: AvailabilityBlock[], offset = prefOffsetH, storage = prefGoesInFridge) =>
     JSON.stringify([[kitchenTemp, fridgeTemp, preheatMin, mixerType, styleKey,
       yeastType, prefermentType, offset, storage, tang, starterPlanResetKey],
-      +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label, b.fridgeRemoval,b.coveredActions])]);
+      +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label, b.fridgeRemoval,b.coveredActions,b.bakeFromFridge])]);
   const confirmedSchedulePlan = acceptedScheduleRepair === repairKey(startTime, eatTime, blocks);
   const handleScheduleChange = (st: Date, et: Date, bl: AvailabilityBlock[], options?: {preservePlan: boolean; timingOverrides?: TimingOverrides; prefOffsetHours?: number; prefInFridge?: boolean; starterRecoveryResolved?:boolean; starterPlan?: {events:StarterEvent[];fridgeOutTime:Date|null;usingPeak2:boolean;feed2Time:Date|null;starterFridgeInTime:Date|null}}) => {
     if(mixExecution&&+st!==mixExecution.actualAt)return;
@@ -2180,7 +2181,7 @@ export default function Home() {
       prefGoesInFridge, poolishStorage,
       startTime: startTime?.getTime() ?? null,
       eatTime: eatTime?.getTime() ?? null,
-      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.coveredActions?.length?{coveredActions:b.coveredActions}:{}), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}) })),
+      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.coveredActions?.length?{coveredActions:b.coveredActions}:{}), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}), ...(b.bakeFromFridge ? {bakeFromFridge:b.bakeFromFridge} : {}) })),
       recipeGenerated, protocolStale, activeTab, pizzaPartyTab, modeChosen, awaitingRecipeChoice,
       acceptedStartTime: acceptedPlan?.startTime, acceptedPreparationAt: acceptedPlan?.preparationAt, acceptedEatTime: acceptedPlan?.bakeAt,
       navigation:{batchView,protocolView,serviceView,returnTo:fillingsReturn,prepReturnToService,shoppingReturnToFillings},
@@ -3016,7 +3017,7 @@ export default function Home() {
     setAdvancedStep(1); setAdvancedHighestStep(1); setFlourBlend({ flour1: bakeType === 'bread' ? 'bread' : 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
     setManualSalt(undefined); setTargetDoughTemp(undefined); setWastePct(undefined); setFlourInFridge(false); setPoolishStorage('auto'); setYeastPctOverride(undefined); setStarterPctOverride(undefined); setMeasuredFlourTemp(undefined); setMeasuredPrefermentTemp(undefined); setPrefermentFlourPct(undefined);
-    setRecipeGenerated(false); setProtocolStale(false); setActiveTab('batch'); setAcceptedPlan(undefined);
+    setRecipeGenerated(false); setProtocolStale(false); setActiveTab('batch'); setAcceptedPlan(undefined); setCustomPlanSeen(false);
     setReviewMode(false); setSetupOverview(false);
     setModeChosen(false);
     // Restart means restart. Without these the three settled-flags survived the
@@ -3301,8 +3302,8 @@ export default function Home() {
     if (snap.startTime) setStartTime(shiftD(new Date(snap.startTime)));
     {
       setBlocks(((snap.blocks ?? []) as unknown[]).map((b) => {
-        const bl = b as { label: string; from: number; to: number; fridgeRemoval?: unknown; coveredActions?: unknown };
-        return { label: bl.label, from: shiftD(new Date(bl.from)), to: shiftD(new Date(bl.to)), coveredActions:rb?undefined:normalizeCoveredActions(bl.coveredActions), fridgeRemoval: rb ? undefined : normalizeFridgeRemoval(bl.fridgeRemoval) };
+        const bl = b as { label: string; from: number; to: number; fridgeRemoval?: unknown; coveredActions?: unknown; bakeFromFridge?: unknown };
+        return { label: bl.label, from: shiftD(new Date(bl.from)), to: shiftD(new Date(bl.to)), coveredActions:rb?undefined:normalizeCoveredActions(bl.coveredActions), fridgeRemoval: rb ? undefined : normalizeFridgeRemoval(bl.fridgeRemoval), ...(!rb&&typeof bl.bakeFromFridge==='number'&&Number.isFinite(bl.bakeFromFridge)?{bakeFromFridge:bl.bakeFromFridge}:{}) };
       }));
     }
     setStarterEvents(restoreStarterEvents(snap.starterEvents).map(event => ({...event, time:shiftD(event.time), bellPeakTime:event.bellPeakTime ? shiftD(event.bellPeakTime) : undefined, bellStartTime:event.bellStartTime ? shiftD(event.bellStartTime) : undefined})));
@@ -3698,6 +3699,10 @@ export default function Home() {
     if (tab === 'custom' && activeTab === 'setup' && modeChosen && advancedStep !== 99 && advancedStep !== visibleCustomStep)
       setAdvancedStep(visibleCustomStep);
   }, [tab, activeTab, modeChosen, advancedStep, visibleCustomStep]);
+  // Fine-tune comes before Custom's bake-time step: until that step has planned
+  // the dough, the yeast amount there would be read from another plan.
+  const [customPlanSeen, setCustomPlanSeen] = useState(false);
+  useEffect(() => { if (tab === 'custom' && activeTab === 'setup' && visibleCustomStep === 9) setCustomPlanSeen(true); }, [tab, activeTab, visibleCustomStep]);
 
   const customFlow: StepFlow = {
     editReturn: recipeGenerated ? {label:setupReturnLabel,onReturn:finishSetupEdit} : undefined,
@@ -4492,7 +4497,11 @@ export default function Home() {
             <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={collectingBakeTime ? <></> : scheduleEditing ? null : !eatTime ?
               <button type="button" disabled style={{...NEXT_CTA,opacity:0.5}}>{fr?'Choisissez une date de cuisson':'Choose a bake date'}</button>
               : !scheduleCandidateValid ? (simpleDecisionPending
-                ? <button type="button" style={NEXT_CTA} onClick={()=>{const card=document.querySelector<HTMLElement>('[data-simple-decision]');card?.scrollIntoView({block:'center'});card?.querySelector<HTMLElement>('[data-simple-accept],[data-simple-keep]')?.focus({preventScroll:true});}}>{fr?'Choisir un horaire qui convient':'Choose a time that fits'}</button>
+                // As in Custom: the normal next step waits for a choice in the card above; it never only scrolls.
+                ? <div style={{width:'100%'}}>
+                    <p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'}</p>
+                    <button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated?setupReturnLabel:simpleOrganisationFlow.generateLabel}</button>
+                  </div>
                 : <button type="button" style={NEXT_CTA} onClick={()=>{const target=[...document.querySelectorAll<HTMLElement>('.bh-fridge-arrangement,.bh-plan-notice')].find(el=>el.offsetParent)??document.getElementById('schedule-anchor-panel');target?.scrollIntoView({block:'center'});(target?.querySelector<HTMLElement>('button')??target)?.focus({preventScroll:true});}}>{fr?'Voir les horaires à ajuster →':'Review affected times →'}</button>)
               : undefined}>
               {/* Simple assumes the kitchen temperature (shown with the plan in
@@ -4587,10 +4596,15 @@ export default function Home() {
                 const customDesc=directMethodOnly?(fr?'Vous choisissez matériel, farine et hydratation':'You choose equipment, flour and hydration'):(fr?`Vous choisissez matériel, farine, ${leaven} et hydratation`:`You choose equipment, flour, ${leaven} and hydration`);
                 const card:React.CSSProperties={display:'grid',gap:4,textAlign:'left',padding:'16px 18px',minHeight:56,border:'1.5px solid var(--border)',borderRadius:18,background:'var(--card)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:17,cursor:'pointer',boxShadow:'0 2px 12px rgba(43,36,32,.06)'};
                 const title:React.CSSProperties={display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,fontWeight:700};
+                // A start within the next two hours is said on this screen, before the recipe exists.
+                const soon=!simpleDecisionPending&&scheduleCandidateValid&&!isUnleavened?soonStartLabel(firstRecipeAction,Date.now(),locale):null;
                 return <div data-recipe-choice style={{display:'grid',gap:12,marginTop:16}}>
-                  {!simpleDecisionPending&&<button type="button" data-generate-recipe style={card} onClick={()=>{setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>
+                  {soon&&<p data-start-soon role="status" style={{margin:0,fontSize:15,fontWeight:600,color:'var(--char)'}}>{firstRecipeActionLabel} · {soon}</p>}
+                  {simpleDecisionPending&&<p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:0}}>{fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'}</p>}
+                  {/* A pending decision holds Generate back, shown and disabled, with the reason above it. */}
+                  <button type="button" data-generate-recipe disabled={simpleDecisionPending} aria-describedby={simpleDecisionPending?'bh-plan-choice-hint':undefined} style={simpleDecisionPending?{...card,opacity:0.55,cursor:'not-allowed'}:card} onClick={()=>{if(simpleDecisionPending)return;setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>
                     <span style={title}>{fr?'Générer ma recette':'Generate my recipe'}<span aria-hidden="true">→</span></span>
-                  </button>}
+                  </button>
                   <button type="button" data-customize-link style={card} onClick={()=>{setAwaitingRecipeChoice(false);chooseMode('custom');}}>
                     <span style={title}>{fr?'Personnaliser ma fournée':'Customize my bake'}<span aria-hidden="true">→</span></span>
                     <span style={{fontSize:14,color:'var(--smoke)',fontWeight:400}}>{customDesc}</span>
@@ -5110,12 +5124,14 @@ export default function Home() {
                   {yeastType && yeastType!=='sourdough' && prefermentType==='none' && (()=>{
                     // Entered in the baker's own yeast; stored as IDY so a yeast change keeps the timing.
                     const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
-                    const shownPct = yeastPctOverride!==undefined ? yeastPctOverride*conversion : recipe?.yeast?.convertedPct;
+                    // Until the Custom plan exists the amount is "Set after timing", never another plan's.
+                    const planReady = recipeGenerated || customPlanSeen;
+                    const shownPct = yeastPctOverride!==undefined ? yeastPctOverride*conversion : planReady ? recipe?.yeast?.convertedPct : undefined;
                     const yeastName = (localName(YEAST_TYPES[yeastType]) ?? yeastType).toLowerCase();
                     const entryIssue = yeastEntryIssue && eatTime && yeastEntryIssue.bakeAt===+eatTime ? yeastEntryIssue : null;
                     return <div data-yeast-override style={{marginBottom:18}}>
                       <label style={{display:'block',fontSize:16}}>{fr?`Levure (% de farine, ${yeastName})`:`Yeast (% of flour, ${yeastName})`}
-                        <input type="number" key={`yeast:${yeastPctOverride ?? 'auto'}:${shownPct ?? ''}`} defaultValue={shownPct!==undefined?Math.round(shownPct*1000)/1000:''} min={Math.round(0.02*conversion*1000)/1000} max={Math.round(2*conversion*100)/100} step={0.01}
+                        <input type="number" key={`yeast:${yeastPctOverride ?? 'auto'}:${shownPct ?? ''}`} placeholder={shownPct===undefined?(fr?'Fixée après le planning':'Set after timing'):undefined} defaultValue={shownPct!==undefined?Math.round(shownPct*1000)/1000:''} min={Math.round(0.02*conversion*1000)/1000} max={Math.round(2*conversion*100)/100} step={0.01}
                           aria-describedby={entryIssue?'bh-yeast-entry-note':undefined}
                           onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const idy=Math.min(2,Math.max(0.02,n/conversion));if(recipe?.yeast&&yeastPctOverride===undefined&&Math.abs(idy-recipe.yeast.pct)<0.0005){setYeastEntryIssue(null);return;}
                             // An amount that cannot ferment before the bake is not applied: say so here, before any plan moves.
@@ -5142,7 +5158,8 @@ export default function Home() {
                       })()}
                       <p style={{margin:'6px 0 0',fontSize:14,color:'var(--smoke)',lineHeight:1.45}}>{yeastPctOverride!==undefined
                         ? (fr?'Les horaires suivent cette quantité : moins de levure, pousse plus longue.':'Your timing follows this amount: less yeast, longer rise.')
-                        : (fr?'Calculée pour vos horaires. Modifiez-la, les horaires suivent.':'Set for your timing. Change it and the timing follows.')}</p>
+                        : planReady ? (fr?'Calculée pour vos horaires. Modifiez-la, les horaires suivent.':'Set for your timing. Change it and the timing follows.')
+                        : (fr?'Fixée après le planning. Vous pouvez aussi saisir votre quantité : les horaires suivront.':'Set after timing. You can also enter your own amount: the timing will follow.')}</p>
                       {yeastPctOverride!==undefined&&<button type="button" onClick={()=>{setYeastPctOverride(undefined);setPlanReplanPending(true);}} style={{minHeight:44,marginTop:6,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:9,background:'var(--paper)',color:'var(--char)',fontSize:16,cursor:'pointer'}}>{fr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
                     </div>;
                   })()}

@@ -139,3 +139,29 @@ test('a preferment offer says it replaces the entered yeast amount',async({page}
  expect((await stored(page)).yeastPctOverride).toBeUndefined();
  expect(errors).toEqual([]);
 });
+
+// Fine-tune comes before Custom's bake-time step: until that step has planned
+// the dough, the yeast field says so instead of showing another plan's amount.
+for(const locale of ['en','fr'])test(`${locale}: the yeast amount is "Set after timing" until the Custom plan exists`,async({page})=>{
+ const fr=locale==='fr';
+ await page.clock.setFixedTime(NOW);
+ const data={version:1,savedAt:NOW,tab:'custom',bakeType:'pizza',styleKey:'neapolitan',numItems:4,itemWeight:260,pizzaDiameter:30,ovenType:'pizza_oven',mixerType:'hand',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:5,flourBlend:null,prefermentType:'none',prefOffsetH:0,prefGoesInFridge:false,flourInFridge:false,startTime:BAKE-24*3600000,eatTime:BAKE,blocks:[],recipeGenerated:false,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,customKitchenConfirmed:true,activeStep:7,advancedStep:10,highestStep:7,advancedHighestStep:10,setupOverview:false,activeTab:'setup'};
+ await page.addInitScript(data=>{
+  if(!sessionStorage.getItem('yeast-seeded')){localStorage.setItem('bh_session_v1',JSON.stringify(data));sessionStorage.setItem('yeast-seeded','1');}
+  sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:7,advancedStep:10,setupOverview:false,activeTab:'setup'}));
+ },data);
+ await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
+ await page.goto(fr?'/fr':'/');
+ const fineTune=page.locator('#step-10:visible');
+ const yeast=fineTune.locator('[data-yeast-override] input');
+ await expect(yeast).toBeVisible({timeout:20000});
+ await expect(yeast).toHaveValue('');
+ await expect(yeast).toHaveAttribute('placeholder',fr?'Fixée après le planning':'Set after timing');
+ await expect(fineTune.locator('[data-yeast-override]')).toContainText(fr?'Fixée après le planning. Vous pouvez aussi saisir votre quantité':'Set after timing. You can also enter your own amount');
+ // After the bake-time step has planned the dough, the field shows that plan's amount.
+ await fineTune.locator('[data-bh-forward]').tap();
+ await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toBeVisible();
+ await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:fr?'Étape précédente':'Previous step',exact:true}).tap();
+ await expect(yeast).toBeVisible();
+ expect(Number((await yeast.inputValue()).replace(',','.'))).toBeGreaterThan(0);
+});

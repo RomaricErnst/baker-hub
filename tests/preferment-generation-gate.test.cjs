@@ -111,7 +111,20 @@ test('whole-plan validation gates generation in both modes and directs invalid p
    assert.equal(hint.type,'p');assert.equal(hint.children[0],'Ajustez le planning ci-dessus pour continuer.');
    assert.equal(button.type,'button');assert.equal(button.props.disabled,true);assert.equal(button.children[0],'Créer ma recette');
   }
-  else {assert.equal(context.result.type,'button');assert.notEqual(context.result.props.disabled,true);assert.ok(['Voir les horaires à ajuster →','Choisir un horaire qui convient'].includes(context.result.children[0]));assert.equal(typeof context.result.props.onClick,'function');}
+  else {
+   assert.equal(context.result.type,'button');assert.notEqual(context.result.props.disabled,true);assert.equal(context.result.children[0],'Voir les horaires à ajuster →');assert.equal(typeof context.result.props.onClick,'function');
+   // Simple with its decision card shown: like Custom, the next step waits, disabled, with the reason.
+   for(const recipeGenerated of [false,true]){
+    Object.assign(context,{simpleDecisionPending:true,recipeGenerated,simpleOrganisationFlow:{generateLabel:'Créer ma recette'}});
+    vm.runInNewContext(code,context);
+    assert.equal(context.result.type,'div');
+    const [hint,button]=context.result.children.filter(child=>child&&typeof child==='object');
+    assert.equal(hint.children[0],'Choisissez une des options ci-dessus.');
+    assert.equal(button.props.disabled,true);assert.equal(button.props.onClick,undefined);
+    assert.equal(button.children[0],recipeGenerated?'Retour à la recette':'Créer ma recette');
+    Object.assign(context,{simpleDecisionPending:false,recipeGenerated:false});
+   }
+  }
  }
 
 });

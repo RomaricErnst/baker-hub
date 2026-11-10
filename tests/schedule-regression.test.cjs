@@ -45,8 +45,9 @@ test('short cold windows never place proof or cold exit after bake',()=>{
 });
 
 test('bulk starts after every minute of mixing and autolyse, preserving canonical mix start',()=>{
+ // 8 h: room temperature only (a near-minimum window plans no short fridge spell); 12 h: one cold phase.
  const branches=new Set();
- for(const style of ['pain_campagne','pain_levain','neapolitan','pan'])for(const mixer of ['hand','stand','spiral'])for(const horizon of [8,26]){
+ for(const style of ['pain_campagne','pain_levain','neapolitan','pan'])for(const mixer of ['hand','stand','spiral'])for(const horizon of [8,12,26]){
   const start=new Date('2026-09-21T23:00:00Z'),bake=new Date(+start+horizon*3600000);
   const s=utils.buildSchedule(start,bake,[],22,45,mixer,style);
   branches.add(s.coldRetard2Start?'two':s.coldRetardStart?'single':'rt');

@@ -46,7 +46,8 @@ test('hot evening planning can start refrigerated poolish now for Friday, preser
  const chosen=recommendPreferment(choices,{}, {preferCold:true,startThisEvening:true});
  assert.equal(chosen.result.found,true);assert.equal(chosen.inFridge,true);
  const times=chosen.result.candidate.times;
- assert.equal(+times.start-times.prefHours*H,+new Date(2026,9,28,22,15));
+ // The first quarter hour at least 15 minutes from 22:05.
+ assert.equal(+times.start-times.prefHours*H,+new Date(2026,9,28,22,30));
  assert.equal(+times.bake,+oven);
  const pinned=new Date(2026,9,29,7);
  const kept=recommendPreferment(choices,{preferment:pinned},{preferCold:true,startThisEvening:true});

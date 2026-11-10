@@ -1,7 +1,7 @@
 const{test}=require('node:test'),a=require('node:assert/strict');require('./load-production.cjs');const{mixingBatchPlan}=require('../app/utils/mixingBatches.ts');
 const base={flour:1001,water:651,salt:21,oil:15,sugar:9,totalDough:1697.17,yeast:{convertedGrams:.17}};
-test('batch quantities conserve ingredients including small yeast and final remainder',()=>{const plans=[0,1,2].map(i=>mixingBatchPlan(base,'stand',3,i));for(const key of ['flour','water','salt','oil','sugar','yeast'])a.ok(Math.abs(plans.reduce((s,p)=>s+p.portion[key],0)-(key==='yeast'?.17:base[key]))<1e-9);a.equal(plans[0].portion.flour,333);a.equal(plans[2].portion.flour,335)});
-test('starter and preferment are counted once in final mix',()=>{const sd={...base,sourdough:{starterGramsMid:200}};let p=mixingBatchPlan(sd,'stand',2);a.equal(p.portion.flour,450);a.equal(p.portion.water,275);a.equal(p.portion.starter,100);a.equal(p.portion.yeast,0);p=mixingBatchPlan({...base,preferment:{finalFlour:801,finalWater:451,prefFlour:200,prefWater:200,prefYeastGrams:.2}},'stand',2);a.equal(p.portion.preferment,200.1);a.equal(p.portion.yeast,0)});
+test('batch quantities conserve ingredients including small yeast and final remainder',()=>{const plans=[0,1,2].map(i=>mixingBatchPlan(base,'stand',3,i));for(const key of ['flour','water','salt','oil','sugar','yeast'])a.ok(Math.abs(plans.reduce((s,p)=>s+p.portion[key],0)-(key==='yeast'?.17:base[key]))<1e-9);a.equal(plans[0].portion.flour,334);a.equal(plans[2].portion.flour,333)});
+test('starter and preferment are counted once in final mix',()=>{const sd={...base,sourdough:{starterGramsMid:200}};let p=mixingBatchPlan(sd,'stand',2);a.equal(p.portion.flour,451);a.equal(p.portion.water,276);a.equal(p.portion.starter,100);a.equal(p.portion.yeast,0);p=mixingBatchPlan({...base,preferment:{finalFlour:801,finalWater:451,prefFlour:200,prefWater:200,prefYeastGrams:.2}},'stand',2);a.equal(p.portion.preferment,200.1);a.equal(p.portion.yeast,0)});
 test('small dough stays one batch; capacity warning survives override',()=>{a.equal(mixingBatchPlan({...base,totalDough:500},'stand').count,1);const p=mixingBatchPlan({...base,flour:10000,totalDough:11000},'stand',1);a.ok(p.suggested>1);a.ok(p.overCapacity)});
 
 
@@ -111,5 +111,33 @@ test('a room-temperature plan always keeps a first rise before shaping, even in 
   const s=utils.buildSchedule(new Date(+bake-5.2*3600000),bake,[],kitchen,30,'hand',style,2,1);
   a.ok(s.bulkFermHours>=1,`${style} at ${kitchen}°C keeps a first rise (${s.bulkFermHours})`);
   a.ok(+s.divideBallTime>+s.bulkFermStart);
+ }
+});
+
+test('batches split evenly: they differ by one unit at most and the last absorbs the rounding',()=>{
+ // Stand mixer, 12 × 270 g in 3 batches: never salt 17 / 17 / 19 g or water 429 / 429 / 431 g.
+ const recipe={flour:1932,water:1289,salt:53,oil:0,sugar:0,totalDough:3274,yeast:{convertedGrams:1.2}};
+ const plans=[0,1,2].map(i=>mixingBatchPlan(recipe,'stand',3,i).portion);
+ a.deepEqual(plans.map(p=>p.salt),[18,18,17]);
+ a.deepEqual(plans.map(p=>p.water),[430,430,429]);
+ a.deepEqual(plans.map(p=>p.flour),[644,644,644]);
+ // Small amounts keep one decimal per batch.
+ const small=[0,1,2].map(i=>mixingBatchPlan({...recipe,salt:16,oil:20},'stand',3,i).portion);
+ a.deepEqual(small.map(p=>p.salt),[5.4,5.3,5.3]);
+ a.deepEqual(small.map(p=>p.oil),[6.7,6.7,6.6]);
+ for(const key of ['flour','water','salt'])a.equal(Math.round(plans.reduce((sum,p)=>sum+p[key],0)*10)/10,recipe[key]);
+});
+test('the first batch fold times come from the plan, including the wait for later batches',()=>{
+ const {utils}=require('./load-production.cjs');
+ const {firstBatchFoldMinutes,scheduledFoldMinutes}=require('../app/utils/scheduleFolds.ts');
+ const bake=new Date('2026-11-11T11:00:00Z');
+ for(const count of [1,3]){
+  const s=utils.buildSchedule(new Date(+bake-6*3600000),bake,[],26,45,'stand','neapolitan',12,count);
+  const planned=firstBatchFoldMinutes(s),nominal=scheduledFoldMinutes(s.bulkFermHours,'neapolitan');
+  a.equal(planned.length,nominal.length);
+  const fold1=s.availabilityActions.find(x=>x.id==='fold-1');
+  if(fold1)a.equal(+s.batchMixWindows[0].end+planned[0]*60000,+fold1.at);
+  if(count===1)a.deepEqual(planned,nominal);
+  else a.ok(planned[0]>=nominal[0]);
  }
 });

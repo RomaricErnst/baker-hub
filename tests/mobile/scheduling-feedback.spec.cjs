@@ -194,11 +194,28 @@ for(const locale of ['fr','en'])test(`${locale} simple: two clashing steps offer
  await expect(decision).toBeVisible();
  await expect(page.locator('[data-simple-keep]')).toHaveCount(0);
  await expect(page.locator('.bh-plan-notice')).toHaveCount(0);
+ // Like Custom: the way forward is the normal next step, disabled, with the reason; never a scroll-only button.
+ await expect(page.locator('#bh-plan-choice-hint:visible')).toHaveText(locale==='fr'?'Choisissez une des options ci-dessus.':'Choose one of the options above.');
+ await expect(page.locator('[aria-describedby="bh-plan-choice-hint"]:visible')).toBeDisabled();
+ await expect(page.getByRole('button',{name:/^(Choose a time that fits|Choisir un horaire qui convient)/})).toHaveCount(0);
  const before=await stored(page);
  await page.locator('[data-simple-accept]').tap();
  await expect(decision).toHaveCount(0);
+ await expect(page.locator('#bh-plan-choice-hint:visible')).toHaveCount(0);
  await expect.poll(async()=>(await stored(page)).eatTime).toBeGreaterThan(before.eatTime);
  expect(plainBlocks((await stored(page)).blocks)).toEqual(before.blocks);
+ // Suggested bakes sit on the quarter-hour grid.
+ expect((await stored(page)).eatTime%(15*60000)).toBe(0);
+ const moved=(await stored(page)).eatTime,field=bakeTarget(page);
+ await expect(field).not.toHaveValue('2026-10-30T19:00');
+ // Undo puts back the bake time the baker chose, in the field and the plan alike.
+ await expect(page.locator('[data-simple-moved]')).toBeVisible();
+ await page.locator('[data-simple-moved-undo]').tap();
+ await expect.poll(async()=>(await stored(page)).eatTime).toBe(before.eatTime);
+ await expect(field).toHaveValue('2026-10-30T19:00');
+ await expect(page.locator('[data-simple-moved]')).toHaveCount(0);
+ await expect(decision).toBeVisible();
+ expect(moved).toBeGreaterThan(before.eatTime);
 });
 
 for(const locale of ['fr','en'])test(`${locale} simple: two clashing steps can keep the chosen bake time in one tap`,async({page})=>{
