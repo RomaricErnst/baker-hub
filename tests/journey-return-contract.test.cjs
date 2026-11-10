@@ -152,14 +152,16 @@ test('switching bakes proceeds only after both current and stored snapshots are 
 });
 
 test('separating blend flours cannot move existing salt or yeast shopping checks',()=>{
- const declaration=all(n=>ts.isVariableDeclaration(n)&&n.name.getText(tree)==='doughShoppingItems')[0];
- const callback=declaration.initializer.arguments[0].getText(tree);
+ require('./load-production.cjs');
+ const {doughShoppingItems}=require('../app/lib/doughShopping.ts');
+ assert.match(source,/buildDoughShoppingItems\(\{ recipe: cr, yeastType: yeastType \?\? 'instant', locale, units,/,'the page builds its dough list with the shared helper, in the selected units');
  for(const locale of ['en','fr']){
   const cr={flour:1000,salt:25,yeast:{convertedGrams:.54},oil:10,flourParts:[{key:'nuvola',name:'Nuvola',nameFr:'Nuvola',grams:850},{key:'manitoba',name:'Manitoba',nameFr:'Manitoba',grams:150}]};
-  const rows=evaluate('('+callback+')()',{tab:'custom',advancedRecipe:cr,recipe:null,locale,yeastType:'instant',Math,Number,parseFloat,formatYeastDose:require('../app/utils/prefermentDose.ts').formatYeastDose});
+  const rows=doughShoppingItems({recipe:cr,yeastType:'instant',locale,flourName:'unused'});
   assert.deepEqual(Array.from(rows,r=>r.tickKey),['dough_flour_nuvola','dough_flour_manitoba','dough_1','dough_2','dough_3']);
-  assert.deepEqual(Array.from(rows.slice(0,2),r=>r.amount),['850g','150g']);
-  assert.equal(rows.find(row=>row.tickKey==='dough_2').amount,locale==='fr'?'0,54 g':'0.54 g');
+  assert.deepEqual(Array.from(rows.slice(0,2),r=>r.amount.replace(/\s/g,' ')),['850 g','150 g']);
+  assert.equal(rows.find(row=>row.tickKey==='dough_2').amount.replace(/\s/g,' '),locale==='fr'?'0,54 g':'0.54 g');
+  assert.equal(rows.find(row=>row.tickKey==='dough_2').name,locale==='fr'?'Levure de boulanger sèche instantanée':'Instant dry yeast');
  }
 });
 

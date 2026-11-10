@@ -163,7 +163,7 @@ export default function ClimatePicker({
       {showFlourStorage && onFlourInFridgeChange && (
         <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minHeight: 44, cursor: 'pointer', fontSize: 16, lineHeight: 1.4 }}>
           <input type="checkbox" checked={flourInFridge} onChange={event => onFlourInFridgeChange(event.target.checked)} style={{ width: 20, height: 20, marginTop: 1, accentColor: 'var(--terra)' }} />
-          <span><strong>{fr ? 'Farine conservée au réfrigérateur' : 'Flour kept in the fridge'}</strong><br /><span style={{ fontSize: 14, color: 'var(--smoke)' }}>{fr ? 'Cochez si la farine sera réellement froide au mélange.' : 'Check this only if the flour will be cold when you mix.'}</span></span>
+          <span><strong>{fr ? 'Farine conservée au réfrigérateur' : 'Flour kept in the fridge'}</strong><br /><span style={{ fontSize: 14, color: 'var(--smoke)' }}>{fr ? 'Cochez si la farine sera réellement froide au pétrissage.' : 'Check this only if the flour will be cold when you mix.'}</span></span>
         </label>
       )}
     </div>
