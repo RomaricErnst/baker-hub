@@ -7,6 +7,9 @@ const DB_NAME = 'bh_journal';
 const STORE = 'photos';
 
 export interface JournalPhoto { id: string; entryId: string; blob: Blob; createdAt: number }
+// Stored as bytes, not as a Blob: WebKit (Safari) can refuse Blobs in IndexedDB in
+// some contexts, while an ArrayBuffer is stored everywhere.
+interface StoredPhoto { id: string; entryId: string; bytes?: ArrayBuffer; type?: string; blob?: Blob; createdAt: number }
 
 function openDb(): Promise<IDBDatabase | null> {
   return new Promise(resolve => {
@@ -44,7 +47,7 @@ export async function addJournalPhoto(entryId: string, file: File): Promise<stri
     let blob: Blob;
     try { blob = await compressImage(file); } catch { return null; }
     const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `p-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const photo: JournalPhoto = { id, entryId, blob, createdAt: Date.now() };
+    const photo: StoredPhoto = { id, entryId, bytes: await blob.arrayBuffer(), type: blob.type || 'image/jpeg', createdAt: Date.now() };
     const ok = await run('readwrite', store => { store.put(photo); });
     return ok ? id : null;
   } catch { return null; }
@@ -52,9 +55,16 @@ export async function addJournalPhoto(entryId: string, file: File): Promise<stri
 
 export async function readJournalPhotos(ids: string[]): Promise<JournalPhoto[]> {
   if (!ids.length) return [];
-  const rows = await run('readonly', store => store.getAll(), request => request.result as JournalPhoto[]);
+  const rows = await run('readonly', store => store.getAll(), request => request.result as StoredPhoto[]);
   if (!rows) return [];
-  return ids.map(id => rows.find(row => row.id === id)).filter((row): row is JournalPhoto => !!row && row.blob instanceof Blob);
+  const photos: JournalPhoto[] = [];
+  for (const id of ids) {
+    const row = rows.find(candidate => candidate.id === id);
+    if (!row) continue;
+    const blob = row.bytes ? new Blob([row.bytes], { type: row.type || 'image/jpeg' }) : row.blob instanceof Blob ? row.blob : null;
+    if (blob) photos.push({ id: row.id, entryId: row.entryId, blob, createdAt: row.createdAt });
+  }
+  return photos;
 }
 
 export async function deleteJournalPhotos(ids: string[]): Promise<void> {

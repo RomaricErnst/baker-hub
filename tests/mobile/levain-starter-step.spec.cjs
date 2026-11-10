@@ -62,7 +62,8 @@ for(const locale of ['en','fr'])test(`pizza levain preferment: Starter step befo
  await expect(page.locator('#step-9:visible')).toHaveCount(1);
  await expect(page.locator('#step-9:visible .bh-starter-controls')).toHaveCount(0);
  const feeds=async()=>((await stored(page)).starterEvents||[]).filter(e=>['refresh','intermediate_refresh','pre_mix'].includes(e.kind));
- await expect.poll(async()=>(await feeds()).length,{timeout:20000}).toBeGreaterThan(0);
+ // The planner runs after the step mounts; on a slow CI WebKit it can take longer than 20 s.
+ await expect.poll(async()=>(await feeds()).length,{timeout:45000}).toBeGreaterThan(0);
  for(const feed of await feeds())expect(feed.time%(15*60000)).toBe(0);
  expect(errors).toEqual([]);
 });
