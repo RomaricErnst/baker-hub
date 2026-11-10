@@ -5,7 +5,7 @@ import { loadProfile, updateProfile, DEFAULT_BLOCKERS, type StandardBlocker } fr
 import { formatClock, formatBakeDateTime } from '../utils/units';
 import { useState, useMemo, useEffect, useRef, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationHoursForYeast, sourdoughBulkH } from '../utils';
+import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationHoursForYeast, sourdoughBulkH, bakeFromFridgeOption, BAKE_FROM_FRIDGE_STYLES } from '../utils';
 import { formatDuration } from '../utils/duration';
 import { earliestQuarterStart, quarterStartNoEarlier } from '../utils/startNotice';
 import FermentChart, { scheduleColdIntervals, getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
@@ -7147,6 +7147,21 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
     ??foldActionLabel(action.id,locale,mixingBatches)??(conflictNames[action.id]??['Étape','Step'])[isFr?0:1];
   const simpleOnlyFridgeClash=canArrangeFridgeRemoval&&!fridgeRemovalCovered&&simpleConflicts.length>0
     &&simpleConflicts.every(conflict=>conflict.action.id===finalFridgeRemoval?.id);
+  // Lean shaped loaves whose only clash is the final fridge exit can bake
+  // straight from the fridge, when the dough still meets its fermentation target.
+  const fromFridgeOption=useMemo(()=>mode==='simple'&&simpleOnlyFridgeClash&&finalFridgeRemoval
+    ? bakeFromFridgeOption({start:pendingStart,bake:pendingEatTime,blocks:repairBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems:numItems??4,itemWeight:itemWeight??250,mixingBatches,fridgeTemp,hydration:hydrationPct??65,isSourdough,starterFactor:starterBulkFactor})
+    : null,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [mode,simpleOnlyFridgeClash,finalFridgeRemoval?.at.getTime(),+pendingStart,+pendingEatTime,JSON.stringify(repairBlocks.map(b=>[+b.from,+b.to,b.label,b.bakeFromFridge])),kitchenTemp,preheatMin,mixerType,styleKey,numItems,itemWeight,mixingBatches,fridgeTemp,hydrationPct,isSourdough,starterBulkFactor]);
+  const bakingFromFridge=mode==='simple'&&eatTimeSet&&BAKE_FROM_FRIDGE_STYLES.has(styleKey)&&localBlocks.some(block=>block.bakeFromFridge===+pendingEatTime)&&!!committedSchedule?.coldRetard2End&&!committedSchedule.rtWarmupStart;
+  function setBakeFromFridge(on:boolean,nextBlocks?:AvailabilityBlock[]) {
+    // Like the fridge-removal arrangement, this changes the plan's last step only:
+    // the mixing and bake times stay exactly as they are.
+    const next=on&&nextBlocks?nextBlocks:localBlocks.map(({bakeFromFridge:_removed,...block})=>block);
+    solverBlocksRef.current=next;setLocalBlocks(next);
+    onChange(pendingStart,pendingEatTime,next,{preservePlan:true,prefOffsetHours:prefOffsetH,timingOverrides:manualTimesRef.current});
+  }
   const openAvailability=()=>{if(availabilityControlsRef.current)availabilityControlsRef.current.open=true;availabilityControlsRef.current?.scrollIntoView({block:'center',behavior:'auto'});availabilityControlsRef.current?.focus({preventScroll:true});};
   const simpleTimeLabel=(at:Date)=>at.toDateString()===pendingEatTime.toDateString()?fmtCardHM(at,isFr):fmtCardDT(at,isFr);
   const firstSuggestedTarget=suggestedTargets[0];
@@ -7222,7 +7237,10 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
           {simpleSuggestion.assistance?<small style={{display:'block',fontWeight:400}}>{isFr?`${simpleSuggestion.assistance} étapes demandent quelqu’un sur place`:`${simpleSuggestion.assistance} steps need someone at home`}</small>:null}
         </button>}
         {simpleOnlyFridgeClash&&finalFridgeRemoval&&<button type="button" className={simpleSuggestion?'bh-back-action':'bh-apply-plan'} data-simple-keep style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={()=>setFridgeRemovalCovered(true)}>
-          {isFr?`Garder ${fmtCardHM(pendingEatTime,isFr)} : quelqu’un sort la pâte à ${fmtCardHM(finalFridgeRemoval.at,isFr)}`:`Keep ${fmtCardHM(pendingEatTime,isFr)}: someone takes the dough out at ${fmtCardHM(finalFridgeRemoval.at,isFr)}`}
+          {isFr?`Garder ${fmtCardHM(pendingEatTime,isFr)} : vous, ou quelqu’un d’autre, sortez la pâte à ${fmtCardHM(finalFridgeRemoval.at,isFr)}`:`Keep ${fmtCardHM(pendingEatTime,isFr)}: you or someone else takes the dough out at ${fmtCardHM(finalFridgeRemoval.at,isFr)}`}
+        </button>}
+        {fromFridgeOption&&<button type="button" className="bh-back-action" data-simple-from-fridge style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={()=>setBakeFromFridge(true,fromFridgeOption.blocks)}>
+          {isFr?`Cuire à la sortie du frigo — sortez les pâtons à ${fmtCardHM(fromFridgeOption.exitAt,isFr)}, pendant que le four chauffe`:`Bake straight from the fridge — take the loaves out at ${fmtCardHM(fromFridgeOption.exitAt,isFr)} while the oven heats`}
         </button>}
         {!simpleOnlyFridgeClash&&simpleConflicts.length>0&&<button type="button" className="bh-back-action" data-simple-keep-all style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={()=>coverAllActions(simpleConflicts.map(conflict=>conflict.action))}>
           {simpleConflicts.length===1
@@ -7239,7 +7257,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
   // A sourdough plan exists only once the starter is described; ask nothing about it before.
   const starterDescribed=!isSourdough||(planningMode==='know_peak'?!!knownPeakTime:lastFedAge!==null&&!!lastFedTime);
   const simpleCoveredNote=mode==='simple'&&eatTimeSet&&fridgeRemovalCovered&&canArrangeFridgeRemoval&&finalFridgeRemoval
-    ? <p className="bh-key-detail" role="status" data-simple-covered>{isFr?`Quelqu’un sort la pâte à ${fmtCardHM(finalFridgeRemoval.at,isFr)}.`:`Someone takes the dough out at ${fmtCardHM(finalFridgeRemoval.at,isFr)}.`}{' '}
+    ? <p className="bh-key-detail" role="status" data-simple-covered>{isFr?`Vous, ou quelqu’un d’autre, sortez la pâte à ${fmtCardHM(finalFridgeRemoval.at,isFr)}.`:`You or someone else takes the dough out at ${fmtCardHM(finalFridgeRemoval.at,isFr)}.`}{' '}
         <button type="button" className="bh-back-action" data-simple-undo style={{minHeight:44,minWidth:44}} onClick={()=>setFridgeRemovalCovered(false)}>{isFr?'Annuler':'Undo'}</button></p>
     : null;
   const simpleMovedNote=simpleMoved&&eatTimeSet&&+pendingEatTime===simpleMoved.to&&!simpleDecision
@@ -8093,6 +8111,10 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
       </details>
       {/* Simple: the decision comes after the busy times it depends on. */}
       {simpleDecision}{simpleCoveredNote}{simpleMovedNote}
+      {bakingFromFridge&&committedSchedule?.coldRetard2End&&<p className="bh-key-detail" role="status" data-simple-from-fridge-note>{isFr
+        ?`Cuisson à la sortie du frigo : sortez les pâtons à ${fmtCardHM(committedSchedule.coldRetard2End,isFr)}, pendant que le four chauffe.`
+        :`Baking straight from the fridge: take the loaves out at ${fmtCardHM(committedSchedule.coldRetard2End,isFr)} while the oven heats.`}{' '}
+        <button type="button" className="bh-back-action" data-simple-from-fridge-undo style={{minHeight:44,minWidth:44}} onClick={()=>setBakeFromFridge(false)}>{isFr?'Annuler':'Undo'}</button></p>}
 
       {!inputsOnly && <>
       {(windowTooShort && !startComputed || !!solverResult?.windowTooShort) && eatTimeSet && (

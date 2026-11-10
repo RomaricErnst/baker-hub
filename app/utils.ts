@@ -498,6 +498,9 @@ export interface AvailabilityBlock {
   to: Date;
   label: string;
   fridgeRemoval?: import('./utils/scheduleAvailability').FridgeRemovalArrangement;
+  /** Bake straight from the fridge for this bake (ms): the shaped loaves stay
+   *  in their cold proof until the oven heats. Read by buildSchedule only. */
+  bakeFromFridge?: number;
 }
 
 export interface ScheduleResult {
@@ -790,6 +793,10 @@ const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHReq
   pain_viennois: { coldH: 6,  rtH: 2, coldHRequired: true },     // sweet: 8h
 };
 
+/** Lean shaped loaves that proof in the fridge and can bake straight from it
+ *  (not pizza, not enriched doughs, not tin-baked rye). */
+export const BAKE_FROM_FRIDGE_STYLES: ReadonlySet<string> = new Set(['baguette', 'pain_campagne', 'pain_levain', 'pain_complet', 'pain_au_seigle']);
+
 /** Longest single fridge spell a near-minimum window is planned without (hours). */
 export const SHORT_COLD_SPELL_MAX_H = 4;
 
@@ -853,6 +860,7 @@ function buildSchedulePhases(
   numItems?: number,
   isSourdough = false,
   starterFactor = 1,
+  fromFridge = false,
 ): ScheduleResult {
   const bakeTime = new Date(eatTime.getTime() - preheatMin * 60000);
   // Elapsed mixing time is style-dependent (Modernist publishes it per style);
@@ -1084,16 +1092,21 @@ function buildSchedulePhases(
       coldRetard2End = new Date(coldRetard2Start.getTime());
     }
 
-    const rtWarmupStart = coldRetard2End;
-    const rtWarmupEnd = new Date(rtWarmupStart.getTime() + rtWarmupH * 3600000);
+    // Bake straight from the fridge (lean shaped loaves): the cold proof runs
+    // until the oven heats, and the preheat is the loaves' only warm time.
+    const straightFromFridge = fromFridge && +bakeTime - +coldRetard2Start >= minCold2H * 3600000;
+    if (straightFromFridge) coldRetard2End = new Date(bakeTime);
 
-    if (rtWarmupEnd.getTime() > bakeTime.getTime()) {
+    const rtWarmupStart = straightFromFridge ? null : coldRetard2End;
+    const rtWarmupEnd = straightFromFridge ? null : new Date(coldRetard2End.getTime() + rtWarmupH * 3600000);
+
+    if (rtWarmupEnd && rtWarmupEnd.getTime() > bakeTime.getTime()) {
       return pureRoomTemperatureFallback(
         'Not enough time for the planned cold phases — room-temperature timing shown; bake later for the full plan.',
       );
     }
 
-    const finalProofStart = rtWarmupEnd;
+    const finalProofStart = rtWarmupEnd ?? coldRetard2End;
     const actualFinalProofH = Math.min(
       maxFinalH,
       Math.max(0, (eatTime.getTime() - finalProofStart.getTime()) / 3600000)
@@ -1121,12 +1134,12 @@ function buildSchedulePhases(
       coldRetardStart: r15(coldRetard1Start),
       coldRetardEnd: r15(coldRetard2End),
       coldRetardHours: totalColdHours,
-      finalProofStart: r15(finalProofStart),
+      finalProofStart: straightFromFridge ? new Date(bakeTime) : r15(finalProofStart),
       finalProofHours: actualFinalProofH,
       restRtHours: 0,
       preheatStart: new Date(bakeTime),
       bakeStart: new Date(eatTime),
-      totalRTHours: actualBulkH + rtWarmupH + actualFinalProofH,
+      totalRTHours: actualBulkH + (straightFromFridge ? 0 : rtWarmupH) + actualFinalProofH,
       totalColdHours,
       wasAutoAdjusted,
       kitchenTemp,
@@ -1134,7 +1147,7 @@ function buildSchedulePhases(
       coldRetard1Start: r15(coldRetard1Start),
       coldRetard1End: r15n(coldRetard1End),
       coldRetard2Start,
-      coldRetard2End: r15n(coldRetard2End),
+      coldRetard2End: straightFromFridge ? new Date(bakeTime) : r15n(coldRetard2End),
       divideBallTime: r15(divideBallTime),
       rtWarmupStart: r15n(rtWarmupStart),
       rtWarmupEnd: r15n(rtWarmupEnd),
@@ -1301,7 +1314,9 @@ export function buildSchedule(
   const fermentationEnd = poachMinutes ? new Date(+eatTime - poachMinutes * 60000) : eatTime;
   // Poaching ends fermentation. For bagels only, derive the dough phases up
   // to that action; the selected oven time remains unchanged.
-  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches, numItems, isSourdough, isSourdough ? starterFactor : 1);
+  const fromFridge = !poachMinutes && BAKE_FROM_FRIDGE_STYLES.has(styleKey)
+    && availabilityBlocks.some(block => block.bakeFromFridge === +eatTime);
+  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches, numItems, isSourdough, isSourdough ? starterFactor : 1, fromFridge);
   schedule.divisionMinutes = divisionMinutesFor(numItems);
   const requiredCold = REQUIRED_COLD_MIN_HOURS[styleKey] ?? 0;
   if (requiredCold) {
@@ -1683,6 +1698,40 @@ export function fermentationHoursForYeast(modelIdyPct: number, o: {
     if (reached(mid) >= target) hi = mid; else lo = mid;
   }
   return Math.round(hi * 4) / 4;
+}
+
+/** The "bake straight from the fridge" variant of a plan whose final fridge exit
+ * falls in unavailable time, when it applies: the final room-temperature proof
+ * after the cold proof is replaced by the oven's preheat. Offered only when the
+ * dough still meets its fermentation target: the dose that times the usual plan
+ * (budget 1 on the engine's thermal trajectory) must reach at least 0.9 — the
+ * readiness window's lower bound — when the loaves stay cold until the preheat.
+ * Returns null when the style, the plan shape or the budget rules it out. */
+export function bakeFromFridgeOption(o: {
+  start: Date; bake: Date; blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number;
+  mixerType: MixerType; styleKey: string; numItems: number; itemWeight: number; mixingBatches: number;
+  fridgeTemp: number; hydration: number; isSourdough?: boolean; starterFactor?: number;
+}): { exitAt: Date; budget: number; blocks: AvailabilityBlock[] } | null {
+  if (!BAKE_FROM_FRIDGE_STYLES.has(o.styleKey) || !o.blocks.length || +o.bake <= +o.start) return null;
+  const plain = o.blocks.map(({ bakeFromFridge: _ignored, ...block }) => block);
+  const build = (blocks: AvailabilityBlock[]) => buildSchedule(o.start, o.bake, blocks, o.kitchenTemp, o.preheatMin, o.mixerType, o.styleKey, o.numItems, o.mixingBatches, o.isSourdough ?? isLevainStyle(o.styleKey), o.starterFactor ?? 1);
+  const base = build(plain);
+  if (!base.coldRetard2Start || !base.coldRetard2End || !base.rtWarmupStart) return null;
+  const exit = base.coldRetard2End;
+  const holder = Math.max(0, plain.findIndex(block => +block.from <= +exit && +exit < +block.to));
+  const marked = plain.map((block, index) => index === holder ? { ...block, bakeFromFridge: +o.bake } : block);
+  const variant = build(marked);
+  if (!variant.coldRetard2End || +variant.coldRetard2End !== +variant.preheatStart || variant.rtWarmupStart || variant.preparationInvalid) return null;
+  if (findAvailabilityConflicts(variant.availabilityActions ?? [], plain).length) return null;
+  const baseExposure = doughCoolingExposure(base, o.numItems, o.itemWeight, o.hydration);
+  const variantExposure = doughCoolingExposure(variant, o.numItems, o.itemWeight, o.hydration);
+  let lo = 0, hi = 1.5;
+  for (let i = 0; i < 40; i++) {
+    const dose = (lo + hi) / 2;
+    if (fermentationBudget(dose, baseExposure.warmHours, o.kitchenTemp, baseExposure.coldHours, o.fridgeTemp) < 1) lo = dose; else hi = dose;
+  }
+  const budget = fermentationBudget((lo + hi) / 2, variantExposure.warmHours, o.kitchenTemp, variantExposure.coldHours, o.fridgeTemp);
+  return budget >= 0.9 ? { exitAt: new Date(variant.coldRetard2End), budget, blocks: marked } : null;
 }
 
 export function calculateRecipe(

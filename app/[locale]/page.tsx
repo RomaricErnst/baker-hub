@@ -831,7 +831,7 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
 function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,assumedKitchen,onAdjustTiming,onAddToCalendar}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;helperAt?:Date;assumedKitchen?:React.ReactNode;onAdjustTiming:()=>void;onAddToCalendar?:()=>void}){
   return <section data-preparation-timing aria-label={fr?'Horaires':'Timing'} style={{border:'1px solid var(--border)',borderRadius:12,padding:'12px 14px',margin:'0 0 16px',background:'var(--warm)'}}>
     <p style={{margin:'0 0 4px',fontSize:15,fontWeight:600,color:'var(--char)'}}>{startLabel ?? (fr?'Commencer':'Start')} · {formatBakeDateTime(startAt,locale)}</p>
-    {helperAt&&<p data-helper-step style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'Quelqu’un sort la pâte du réfrigérateur':'Someone takes the dough out of the fridge'} · {formatBakeDateTime(helperAt,locale)}</p>}
+    {helperAt&&<p data-helper-step style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'Vous, ou quelqu’un d’autre, sortez la pâte du réfrigérateur':'You or someone else takes the dough out of the fridge'} · {formatBakeDateTime(helperAt,locale)}</p>}
     <p style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'Enfourner':'Bake'} · {formatBakeDateTime(bakeAt,locale)}</p>
     {assumedKitchen}
     <span style={{display:'flex',flexWrap:'wrap',gap:'0 18px'}}>
@@ -1589,8 +1589,8 @@ export default function Home() {
     if (session.startTime) setStartTime(new Date(session.startTime));
     if (session.blocks && session.blocks.length > 0) {
       setBlocks(session.blocks.map((b: unknown) => {
-        const block = b as { label: string; from: number; to: number; fridgeRemoval?: unknown; coveredActions?: unknown };
-        return { label: block.label, from: new Date(block.from), to: new Date(block.to), coveredActions:normalizeCoveredActions(block.coveredActions), fridgeRemoval: normalizeFridgeRemoval(block.fridgeRemoval) };
+        const block = b as { label: string; from: number; to: number; fridgeRemoval?: unknown; coveredActions?: unknown; bakeFromFridge?: unknown };
+        return { label: block.label, from: new Date(block.from), to: new Date(block.to), coveredActions:normalizeCoveredActions(block.coveredActions), fridgeRemoval: normalizeFridgeRemoval(block.fridgeRemoval), ...(typeof block.bakeFromFridge==='number'&&Number.isFinite(block.bakeFromFridge)?{bakeFromFridge:block.bakeFromFridge}:{}) };
       }));
     }
     setStarterEvents(restoreStarterEvents(session.starterEvents));
@@ -1963,7 +1963,7 @@ export default function Home() {
   const repairKey = (st: Date, et: Date | null, bl: AvailabilityBlock[], offset = prefOffsetH, storage = prefGoesInFridge) =>
     JSON.stringify([[kitchenTemp, fridgeTemp, preheatMin, mixerType, styleKey,
       yeastType, prefermentType, offset, storage, tang, starterPlanResetKey],
-      +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label, b.fridgeRemoval,b.coveredActions])]);
+      +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label, b.fridgeRemoval,b.coveredActions,b.bakeFromFridge])]);
   const confirmedSchedulePlan = acceptedScheduleRepair === repairKey(startTime, eatTime, blocks);
   const handleScheduleChange = (st: Date, et: Date, bl: AvailabilityBlock[], options?: {preservePlan: boolean; timingOverrides?: TimingOverrides; prefOffsetHours?: number; prefInFridge?: boolean; starterRecoveryResolved?:boolean; starterPlan?: {events:StarterEvent[];fridgeOutTime:Date|null;usingPeak2:boolean;feed2Time:Date|null;starterFridgeInTime:Date|null}}) => {
     if(mixExecution&&+st!==mixExecution.actualAt)return;
@@ -2181,7 +2181,7 @@ export default function Home() {
       prefGoesInFridge, poolishStorage,
       startTime: startTime?.getTime() ?? null,
       eatTime: eatTime?.getTime() ?? null,
-      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.coveredActions?.length?{coveredActions:b.coveredActions}:{}), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}) })),
+      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.coveredActions?.length?{coveredActions:b.coveredActions}:{}), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}), ...(b.bakeFromFridge ? {bakeFromFridge:b.bakeFromFridge} : {}) })),
       recipeGenerated, protocolStale, activeTab, pizzaPartyTab, modeChosen, awaitingRecipeChoice,
       acceptedStartTime: acceptedPlan?.startTime, acceptedPreparationAt: acceptedPlan?.preparationAt, acceptedEatTime: acceptedPlan?.bakeAt,
       navigation:{batchView,protocolView,serviceView,returnTo:fillingsReturn,prepReturnToService,shoppingReturnToFillings},
@@ -3302,8 +3302,8 @@ export default function Home() {
     if (snap.startTime) setStartTime(shiftD(new Date(snap.startTime)));
     {
       setBlocks(((snap.blocks ?? []) as unknown[]).map((b) => {
-        const bl = b as { label: string; from: number; to: number; fridgeRemoval?: unknown; coveredActions?: unknown };
-        return { label: bl.label, from: shiftD(new Date(bl.from)), to: shiftD(new Date(bl.to)), coveredActions:rb?undefined:normalizeCoveredActions(bl.coveredActions), fridgeRemoval: rb ? undefined : normalizeFridgeRemoval(bl.fridgeRemoval) };
+        const bl = b as { label: string; from: number; to: number; fridgeRemoval?: unknown; coveredActions?: unknown; bakeFromFridge?: unknown };
+        return { label: bl.label, from: shiftD(new Date(bl.from)), to: shiftD(new Date(bl.to)), coveredActions:rb?undefined:normalizeCoveredActions(bl.coveredActions), fridgeRemoval: rb ? undefined : normalizeFridgeRemoval(bl.fridgeRemoval), ...(!rb&&typeof bl.bakeFromFridge==='number'&&Number.isFinite(bl.bakeFromFridge)?{bakeFromFridge:bl.bakeFromFridge}:{}) };
       }));
     }
     setStarterEvents(restoreStarterEvents(snap.starterEvents).map(event => ({...event, time:shiftD(event.time), bellPeakTime:event.bellPeakTime ? shiftD(event.bellPeakTime) : undefined, bellStartTime:event.bellStartTime ? shiftD(event.bellStartTime) : undefined})));
