@@ -1,5 +1,6 @@
 import {assessScheduleDraft, type ScheduleDraftInput} from './scheduleDraft';
 import {findAvailabilityConflicts,isOvernightPreparation,type AvailabilityAction} from './scheduleAvailability';
+import {earliestQuarterStart} from './startNotice';
 
 const HOUR = 3600000;
 export type EditTimes = {start: Date; bake: Date; prefHours: number};
@@ -118,7 +119,7 @@ export function recommendPreferment(options: {inFridge:boolean; input:EditInput}
     // it. Preserve explicit pins and validate every downstream intervention.
     const now=input.now??Date.now(), hour=new Date(now).getHours();
     if(preferences.startThisEvening&&option.inFridge&&!pins.preferment&&hour>=18&&hour<23){
-      const step=15*60000, first=(Math.floor(now/step)+1)*step;
+      const step=15*60000, first=earliestQuarterStart(now);
       for(let at=first;at<=now+3600000;at+=step){
         if(new Date(at).getDate()!==new Date(now).getDate())break;
         const early=findFixedBakeSchedule(input,{...pins,preferment:new Date(at)});
@@ -143,9 +144,25 @@ export function findFixedBakeSchedule(input: EditInput, pins: TimingPins = input
   const pinned={...input,pins};
   const retained=validateScheduleCandidate(pinned);
   let searched=1;
+  // Proposed times speak in quarter hours, at least 15 minutes from now; an
+  // automatic direct-dough start off that grid (e.g. "now + 30 min") is searched
+  // again. A preferment's own start already follows its quarter-hour offsets.
+  // A plan already on screen is kept from the next quarter hour on (re-proposing
+  // it would only move it by minutes); new candidates start at earliestPreparation.
   const lead=(Math.floor((input.now??Date.now())/(15*60000))+1)*(15*60000);
+  const onGrid=(at:number)=>at%(15*60000)===0;
   const retainedPrep=+input.start-(input.hasPreferment?input.prefHours*HOUR:0);
-  const keepInitial=retained.valid&&(input.hasPreferment?pins.preferment||retainedPrep>=lead:pins.mix||retainedPrep>=lead);
+  // Short notice, direct dough: a recommendation never asks the baker to start
+  // within the next two hours when a start two hours out still fits the bake
+  // (the readiness window's latest start). An explicit mixing time is kept.
+  const soonTarget=(()=>{
+    if(pins.mix||input.hasPreferment||input.completedMixAt!==undefined||!input.supported)return null;
+    const later=Math.ceil(((input.now??Date.now())+2*HOUR)/(15*60000))*(15*60000);
+    const latest=input.window(input.bake).to;
+    return +input.start<later&&latest&&Number.isFinite(+latest)&&later<=+latest?later:null;
+  })();
+  const target=soonTarget??+input.start;
+  const keepInitial=soonTarget===null&&retained.valid&&(input.hasPreferment?pins.preferment||retainedPrep>=lead:pins.mix||(retainedPrep>=lead&&onGrid(+input.start)));
   let fallback:EditResult|undefined=keepInitial?retained:undefined;
   let bestNightCount=fallback?overnightSteps(input,fallback):Infinity;
   if(bestNightCount===0)return {candidate:retained,found:true,searched,exhausted:false};
@@ -154,13 +171,15 @@ export function findFixedBakeSchedule(input: EditInput, pins: TimingPins = input
   const step=15*60000;
   // Automatic recommendations need an actionable future slot. This is a
   // planning margin, not a change to fermentation or manual-edit validation.
-  const earliestPreparation=(Math.floor(now/step)+1)*step;
+  // At least 15 minutes from now on the quarter-hour grid. With the baker's
+  // own mixing time, keep the next quarter hour: that plan is theirs to keep.
+  const earliestPreparation=pins.mix?(Math.floor(now/step)+1)*step:earliestQuarterStart(now);
   const low=Math.max(+bounds.from,pins.mix?now+1:earliestPreparation),high=+bounds.to;
   const starts=new Set<number>();
   const add=(at:number)=>{if(Number.isFinite(at)&&at>=low&&at<=high)starts.add(at);};
   if(pins.mix)add(+pins.mix);
   else {
-    add(+input.start);add(low);add(high);
+    add(+input.start);add(target);add(low);add(high);
     for(let at=Math.ceil(low/step)*step;at<=high;at+=step)add(at);
     // Include boundaries of modeled active durations. Each candidate is rebuilt:
     // these translations only generate possibilities, never declare validity.
@@ -175,7 +194,9 @@ export function findFixedBakeSchedule(input: EditInput, pins: TimingPins = input
       if(conditioning)add(+block.to+conditioning*HOUR);
     }
   }
-  const ordered=[...starts].sort((a,b)=>Math.abs(a-+input.start)-Math.abs(b-+input.start)||a-b);
+  // Quarter-hour starts first; exact availability edges off the grid only when
+  // no quarter hour gives a plan (they are still searched, never dropped).
+  const ordered=[...starts].sort((a,b)=>(pins.mix||input.hasPreferment?0:Number(!onGrid(a))-Number(!onGrid(b)))||Math.abs(a-target)-Math.abs(b-target)||a-b);
   let repaired:EditResult|undefined;
   let remainingConflicts=Infinity;
   let leastConflict:EditResult|undefined;

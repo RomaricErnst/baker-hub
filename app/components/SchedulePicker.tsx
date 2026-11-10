@@ -7,6 +7,7 @@ import { useState, useMemo, useEffect, useRef, useId } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationHoursForYeast, sourdoughBulkH } from '../utils';
 import { formatDuration } from '../utils/duration';
+import { earliestQuarterStart, quarterStartNoEarlier } from '../utils/startNotice';
 import FermentChart, { scheduleColdIntervals, getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
 import FermentationReadiness from './FermentationReadiness';
 import ScheduleTimeline from './ScheduleTimeline';
@@ -2457,7 +2458,10 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
     const sweetToRaw = rawWindow.to;
 
     // Clip all to nowHBF — cannot start in the past
-    const sweetCenter = Math.min(sweetCenterRaw, nowHBF - 0.5);
+    // An ideal start already past is clipped to the first quarter hour at
+    // least 15 minutes away, never "now + 30 min". findFixedBakeSchedule then
+    // prefers a start two hours out when that still fits the bake.
+    const sweetCenter = Math.min(sweetCenterRaw, (et.getTime() - earliestQuarterStart(nowMs)) / 3600000);
     const sweetFrom   = Math.min(sweetFromRaw,   nowHBF - 0.25);
     const sweetTo     = Math.min(sweetToRaw,     sweetFrom - 0.5);
 
@@ -2628,7 +2632,8 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
       if (hasPrefActive) setPrefAlgoRed(true);
     } else {
       // Valid slot found (score 1–4) or score 0 with sweetCenter free
-      const newStart = new Date(et.getTime() - result.mixHBF * 3600000);
+      // A proposed start speaks in quarter hours, at least 15 minutes from now.
+      const newStart = new Date(quarterStartNoEarlier(et.getTime() - result.mixHBF * 3600000, nowMs));
       setRecommendedHBF(result.mixHBF);
       setShowFallbackPopup(false);
       setPendingStart(newStart);
@@ -7027,7 +7032,9 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
     // today's presets (which may all precede a bake planned for next week).
     const bakeChoices: Date[]=[];
     if(eatTimeSet) {
-      for(let quarter=1;quarter<=288;quarter++) bakeChoices.push(new Date(+pendingEatTime+quarter*900000));
+      // Suggested bakes sit on the quarter-hour grid even when the chosen bake does not.
+      const gridBake=Math.floor(+pendingEatTime/900000)*900000;
+      for(let quarter=1;quarter<=288;quarter++) bakeChoices.push(new Date(gridBake+quarter*900000));
       const weekend=new Date(+pendingEatTime+72*3600000);
       while(weekend.getDay()!==6)weekend.setDate(weekend.getDate()+1);
       weekend.setHours(7,0,0,0);

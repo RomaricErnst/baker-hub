@@ -64,6 +64,7 @@ import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
 import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
 import { formatYeastDose } from '../utils/prefermentDose';
+import { soonStartLabel } from '../utils/startNotice';
 import { checkYeastEntry, entryHoursLabel, type YeastEntryCheck } from '../utils/yeastEntry';
 import { starterActionLabel } from '../utils/starterBuild';
 import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock, formatBakeDateTime } from '../utils/units';
@@ -845,7 +846,7 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
 function RecipePlanCard({fr,locale,startAt,startLabel,bakeAt,onSeeSteps,onAddToCalendar}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;onSeeSteps:()=>void;onAddToCalendar:()=>void}){
   return <section data-recipe-plan aria-label={fr?'Votre plan':'Your plan'} style={{border:'1px solid var(--border)',borderRadius:16,padding:'12px 14px 4px',margin:'12px 0 4px',background:'var(--card)',boxShadow:'var(--card-shadow)'}}>
     <p style={{margin:'0 0 2px',fontSize:13,color:'var(--smoke)'}}>{fr?'Votre plan':'Your plan'}</p>
-    <p style={{margin:'0 0 2px',fontSize:16,fontWeight:700,color:'var(--char)'}}>{startLabel ?? (fr?'Commencer':'Start')} · {formatBakeDateTime(startAt,locale)}</p>
+    <p style={{margin:'0 0 2px',fontSize:16,fontWeight:700,color:'var(--char)'}}>{startLabel ?? (fr?'Commencer':'Start')} · {soonStartLabel(startAt,Date.now(),locale) ?? formatBakeDateTime(startAt,locale)}</p>
     <p style={{margin:0,fontSize:15,color:'var(--char)'}}>{fr?'Enfourner':'Bake'} · {formatBakeDateTime(bakeAt,locale)}</p>
     <span style={{display:'flex',flexWrap:'wrap',gap:'0 18px'}}>
       <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={onSeeSteps}>{fr?'Voir les étapes':'See the steps'}</button>
@@ -4591,7 +4592,10 @@ export default function Home() {
                 const customDesc=directMethodOnly?(fr?'Vous choisissez matériel, farine et hydratation':'You choose equipment, flour and hydration'):(fr?`Vous choisissez matériel, farine, ${leaven} et hydratation`:`You choose equipment, flour, ${leaven} and hydration`);
                 const card:React.CSSProperties={display:'grid',gap:4,textAlign:'left',padding:'16px 18px',minHeight:56,border:'1.5px solid var(--border)',borderRadius:18,background:'var(--card)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:17,cursor:'pointer',boxShadow:'0 2px 12px rgba(43,36,32,.06)'};
                 const title:React.CSSProperties={display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,fontWeight:700};
+                // A start within the next two hours is said on this screen, before the recipe exists.
+                const soon=!simpleDecisionPending&&scheduleCandidateValid&&!isUnleavened?soonStartLabel(firstRecipeAction,Date.now(),locale):null;
                 return <div data-recipe-choice style={{display:'grid',gap:12,marginTop:16}}>
+                  {soon&&<p data-start-soon role="status" style={{margin:0,fontSize:15,fontWeight:600,color:'var(--char)'}}>{firstRecipeActionLabel} · {soon}</p>}
                   {simpleDecisionPending&&<p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:0}}>{fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'}</p>}
                   {/* A pending decision holds Generate back, shown and disabled, with the reason above it. */}
                   <button type="button" data-generate-recipe disabled={simpleDecisionPending} aria-describedby={simpleDecisionPending?'bh-plan-choice-hint':undefined} style={simpleDecisionPending?{...card,opacity:0.55,cursor:'not-allowed'}:card} onClick={()=>{if(simpleDecisionPending)return;setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>
