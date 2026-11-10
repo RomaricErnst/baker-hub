@@ -177,6 +177,7 @@ export function recommendYeast(
   priority: string | null,
   styleKey?: string,        // used to suppress false warnings for RT-only styles
   doseOverride?: number,    // Custom: the baker's IDY %; the plan is re-timed to it
+  scheduledRTHours?: number, // room-temperature hours as the plan's steps show them
 ): YeastResult {
   const warnings: YeastWarning[] = [];
   let notRecommended = false;
@@ -233,8 +234,11 @@ export function recommendYeast(
     warnings.push({key: 'fermentationBudget', params: {percent: Math.round(budget * 100), direction: budget > 1 ? 'earlier' : 'later'}});
   }
 
-  // Hot climate warnings — suppressed for styles that are intentionally RT-only
-  if (kitchenTemp >= 28 && totalRTHours > 4 && !isRTOnlyStyle) {
+  // Hot climate warnings — suppressed for styles that are intentionally RT-only.
+  // Judged on the room-temperature time the plan's steps show, not on the
+  // dose's cooling-adjusted warm exposure (which counts the dough's cooling
+  // in the fridge as warm, and read "over 4 hours" beside steps of 3h35).
+  if (kitchenTemp >= 28 && (scheduledRTHours ?? totalRTHours) > 4 && !isRTOnlyStyle) {
     warnings.push({ key: 'hotClimateRT', params: { temp: kitchenTemp } });
   }
 
@@ -1917,6 +1921,7 @@ export function calculateRecipe(
         // here so the recipe shows exactly the amount the baker entered.
         yeastPctOverride !== undefined && (!prefermentType || prefermentType === 'none')
           ? yeastPctOverride * (blendProfile?.fermToleranceMultiplier ?? 1) : undefined,
+        schedule.totalRTHours,
       );
 
       // STEP 4 — Apply fermentation tolerance from blend
