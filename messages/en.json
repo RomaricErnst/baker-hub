@@ -582,7 +582,9 @@
     "discardNote1": "Discard the rest before feeding — or use it for pancakes, crackers or flatbread",
     "discardNote2": "Never throw all your starter away — always keep at least 20–30g.",
     "starterReadyWhen": "Your starter is ready when:",
-    "dilutionBody": "Stir 1 g of yeast into {waterG} g of water. Use {solutionG} g of this mix (it holds {waterInSolutionG} g of water), then add only {remainingWaterG} g more water to the dough. Discard the unused mixture.",
+    "dilutionBody": "Stir {yeastG} g of yeast into {waterG} g of water. Use {solutionG} g of this mix (it holds {waterInSolutionG} g of water), then add only {remainingWaterG} g more water to the dough. Discard the unused mixture.",
+    "dilutionInGrams": "This dilution is measured in grams, whatever your unit setting.",
+    "dilutionRemainingImperial": "{grams} g of water is {ounces}.",
     "dilutionIce": "Keep the {iceG} g of ice from the water line as it is."
   },
   "schedulePicker": {

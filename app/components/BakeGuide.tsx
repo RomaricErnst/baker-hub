@@ -27,6 +27,7 @@ import { getBreadProtocol } from '../utils/breadProfiles';
 import { scheduledFoldMinutes } from '../utils/scheduleFolds';
 import { leanBreadBake, ovenTempText } from '../utils/leanBreadBake';
 import { panPizzaGuide, isPanPizzaStyle } from '../utils/panPizza';
+import { needsScaleHelp } from '../utils/yeastMeasure';
 
 interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   preparationMade?: boolean;
@@ -1148,7 +1149,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={t('stepTitles.mixDough')} time={displayedMixTime} duration={displayedMixDuration} overviewNote={mixingOverviewNote}>
         {serialMixNote}
         <Section icon="" title={l === 'fr' ? 'À incorporer' : 'Use now'}>
-          {batch && Object.entries(batch.portion).filter(([,grams]) => grams > 0).map(([key,grams]) => <p key={key}>{({flour:l === 'fr' ? 'Farine' : 'Flour',water:l === 'fr' ? 'Eau' : 'Water',salt:l === 'fr' ? 'Sel' : 'Salt',oil:l === 'fr' ? 'Huile' : 'Oil',sugar:l === 'fr' ? 'Sucre' : 'Sugar'} as Record<string,string>)[key] ?? key} · {Math.round(grams)} g</p>)}
+          {batch && Object.entries(batch.portion).filter(([,grams]) => grams > 0).map(([key,grams]) => <p key={key}>{({flour:l === 'fr' ? 'Farine' : 'Flour',water:l === 'fr' ? 'Eau' : 'Water',salt:l === 'fr' ? 'Sel' : 'Salt',oil:l === 'fr' ? 'Huile' : 'Oil',sugar:l === 'fr' ? 'Sucre' : 'Sugar'} as Record<string,string>)[key] ?? key} · {displayWeight(grams,u,l)}</p>)}
           <Steps items={[{bold:l === 'fr' ? 'Réunissez la farine, le sel, l’eau et la matière grasse pesés. Pétrissez jusqu’à obtenir une pâte lisse et souple.' : 'Combine the measured flour, salt, water and fat. Knead until smooth and pliable.',note:''}]} />
         </Section>
       </StepCard>
@@ -1238,7 +1239,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
               {bold:l === 'fr' ? 'Pesez la farine, l’eau et la levure indiquées ci-dessus.' : 'Weigh the flour, water and yeast listed above.',
-                note:recipe?.preferment ? (recipe.preferment.prefYeastGrams < 0.5
+                note:recipe?.preferment ? (needsScaleHelp(recipe.preferment.prefYeastGrams)
                   ? (l === 'fr' ? `${formatPrefermentDose(recipe.preferment.prefYeastGrams,l)} de ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)} : trop peu pour une balance, utilisez la dilution de la recette.` : `${formatPrefermentDose(recipe.preferment.prefYeastGrams,l)} ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)}: too little to weigh, use the dilution in the Recipe.`)
                   : l === 'fr' ? `Utilisez ${formatPrefermentDose(recipe.preferment.prefYeastGrams,l)} de ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)}.` : `Use ${formatPrefermentDose(recipe.preferment.prefYeastGrams,l)} ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)}.`) : ''},
               {bold:isPoolish ? (l === 'fr' ? 'Mélangez jusqu’à disparition de la farine sèche.' : 'Stir until no dry flour remains.') : (l === 'fr' ? 'Mélangez pour humidifier toute la farine ; gardez une texture grumeleuse.' : 'Mix to moisten all the flour; keep a rough, lumpy texture.'),note:''},

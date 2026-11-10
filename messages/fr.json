@@ -582,7 +582,9 @@
     "discardNote1": "Jetez le reste avant de rafraîchir — ou utilisez-le pour des pancakes ou crackers",
     "discardNote2": "Ne jetez jamais tout votre levain — gardez toujours au moins 20–30g.",
     "starterReadyWhen": "Votre levain est prêt quand :",
-    "dilutionBody": "Délayez 1 g de levure dans {waterG} g d’eau. Utilisez {solutionG} g de ce mélange (il contient {waterInSolutionG} g d’eau), puis ajoutez seulement {remainingWaterG} g d’eau à la pâte. Jetez le mélange inutilisé.",
+    "dilutionBody": "Délayez {yeastG} g de levure dans {waterG} g d’eau. Utilisez {solutionG} g de ce mélange (il contient {waterInSolutionG} g d’eau), puis ajoutez seulement {remainingWaterG} g d’eau à la pâte. Jetez le mélange inutilisé.",
+    "dilutionInGrams": "Cette dilution se mesure en grammes, quelles que soient vos unités.",
+    "dilutionRemainingImperial": "{grams} g d’eau correspondent à {ounces}.",
     "dilutionIce": "Gardez les {iceG} g de glace de la ligne eau tels quels."
   },
   "schedulePicker": {
