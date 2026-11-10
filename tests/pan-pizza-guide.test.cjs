@@ -67,13 +67,17 @@ test('pan guide renders pan shaping and pan baking instead of round-ball steps',
  assert.match(render('pan','en'),/lowest rack and bake 12–15 min/);
  assert.match(render('pan','en',{units:'imperial'}),/about 480°F/);
  assert.match(render('pan','en',{units:'imperial'}),/10 × 14 in/);
+ // Imperial bakers read every weight in ounces, including the piece weight.
+ assert.match(render('pan','en',{units:'imperial'}),/about 21\.2 oz each\)/);
+ assert.match(render('pan','en',{units:'imperial'}),/for 21\.2 oz of dough/);
+ assert.doesNotMatch(render('pan','en',{units:'imperial'}),/\b600 g\b/);
  assert.match(render('pan','en',{numItems:1}),/Press the dough into the pan/);
 });
 
 test('Roman teglia uses the same in-pan flow, with French tray wording',()=>{
  const fr=render('roman','fr',{weight:700,numItems:1});
  assert.match(fr,/Étaler la pâte sur la plaque/);
- assert.match(fr,/une plaque d’environ 30 × 40 cm pour 700 g de pâte/);
+ assert.match(fr,/une plaque d’environ 30 × 40 cm pour 700\u202fg de pâte/);
  assert.match(fr,/Préchauffez le four à environ 250 °C/);
  assert.match(fr,/12 à 15 min/);
  const steps=fr.replace(/<details[\s\S]*?<\/details>/g,'');

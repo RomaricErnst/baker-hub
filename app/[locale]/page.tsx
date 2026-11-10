@@ -36,6 +36,7 @@ import { mixerDoughCapacity, suggestedMixingBatchCount } from '../utils/mixingBa
 import { doughShoppingItems as buildDoughShoppingItems, yeastShoppingName } from '../lib/doughShopping';
 import { isPanPizzaStyle } from '../utils/panPizza';
 import { buildPlanCalendar, calendarBakeId, downloadPlanCalendar, keyPlanEvents, type PlanCalendarEvent } from '../utils/planCalendar';
+import { leanBreadPreheatMin } from '../utils/leanBreadBake';
 import {commercialPrefermentWindow, validateConfirmedBake, type StarterEvent } from '../components/SchedulePicker';
 import { prefermentConditioningAction } from '../utils/scheduleEdit';
 import { findAvailabilityConflicts, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake } from '../utils/scheduleAvailability';
@@ -1849,7 +1850,7 @@ export default function Home() {
       ? BREAD_OVEN_TYPES[ovenType as BreadOvenType]
       : OVEN_TYPES[ovenType as OvenType]
     : undefined;
-  const preheatMin = ovenData?.preheatMin ?? 30;
+  const preheatMin = bakeType === 'bread' ? leanBreadPreheatMin(styleKey ?? undefined, ovenType ?? undefined, ovenData?.preheatMin ?? 30) : ovenData?.preheatMin ?? 30;
 
   const hasNightBlocker = blocks.some(b =>
     b.label.toLowerCase().includes('night') || b.from.getHours() >= 22 || b.to.getHours() <= 7

@@ -6,7 +6,7 @@
  * schedule engines. Temperatures are written in °C here and converted for the
  * baker's unit system by ovenTempText.
  */
-import type { UnitSystem } from './units';
+import { gToOz, type UnitSystem } from './units';
 
 export type GuideStep = { bold: string; note: string };
 type Lang = 'en' | 'fr';
@@ -44,6 +44,44 @@ export function ovenTempText(text: string, units: UnitSystem, fromC = 0): string
   const f = (c: number) => c >= 120 ? ovenTempF(c) : Math.round(c * 9 / 5 + 32);
   return text.replace(/(\d+)(?:–(\d+))?([\s  ]?)°C/g, (whole, a, b, gap) =>
     Number(b ?? a) < fromC ? whole : `${b ? `${f(Number(a))}–${f(Number(b))}` : f(Number(a))}${gap}°F`);
+}
+
+/** Converts every gram weight written in a guide line ("600 g", "60–100 g",
+ * "±10g") for imperial bakers. Weights under 6 g stay in grams (they are
+ * weighed on a fine scale); a ± tolerance is always converted, since it
+ * describes a larger piece. Metric text keeps its numbers, gains a space
+ * before the unit when it had none ("10g" → "10 g") and groups thousands. */
+export function guideWeightText(text: string, units: UnitSystem, locale = 'en'): string {
+  const fr = locale.startsWith('fr');
+  // Same separator as displayWeight: a space in English, a narrow no-break space in French.
+  const unitGap = fr ? ' ' : ' ';
+  const num = (value: string) => Number(value.replace(',', '.'));
+  const oz = (grams: number) => gToOz(grams).toLocaleString(fr ? 'fr-FR' : 'en-US', { maximumFractionDigits: 1 });
+  const grams = (value: string) => num(value) >= 1000 && Number.isInteger(num(value)) ? num(value).toLocaleString(fr ? 'fr-FR' : 'en-US') : value;
+  return text.replace(/(^|[^\w.,])(±\s?)?(\d+(?:[.,]\d+)?)(?:–(\d+(?:[.,]\d+)?))?([   ]?)g\b/g,
+    (whole, pre: string, plusMinus: string | undefined, a: string, b: string | undefined, gap: string) => {
+      const pm = plusMinus ? '±' : '';
+      if (units !== 'imperial' || (!plusMinus && num(b ?? a) < 6)) return `${pre}${pm}${b ? `${grams(a)}–${grams(b)}` : grams(a)}${gap || unitGap}g`;
+      return `${pre}${pm}${b ? `${oz(num(a))}–${oz(num(b))}` : oz(num(a))}${unitGap}oz`;
+    });
+}
+
+/** Temperatures and weights of one guide line, in the baker's unit system. */
+export function guideUnitText(text: string, units: UnitSystem, locale = 'en', fromC = 0): string {
+  return guideWeightText(ovenTempText(text, units, fromC), units, locale);
+}
+
+/** Preheat for the lean breads: a heavy tray needs 30 min at 230–250 °C; a stone,
+ * steel or cast-iron pot needs 45 min to heat through. Other breads keep the
+ * oven's own figure. */
+export function leanBreadPreheatMin(styleKey: string | undefined, ovenType: string | undefined, ovenPreheatMin: number): number {
+  if (!styleKey || !(LEAN_BREAD_STYLES as readonly string[]).includes(styleKey)) return ovenPreheatMin;
+  // Baguette, fougasse and rye bake on a tray or in a tin even when a Dutch oven
+  // is chosen: the pot stays out, so the tray's 30 min applies.
+  const potLoaf = !['baguette', 'fougasse', 'pain_seigle'].includes(styleKey);
+  if (ovenType === 'home_oven_stone_bread' || (ovenType === 'dutch_oven' && potLoaf)) return 45;
+  if (ovenType === 'standard_bread' || ovenType === 'dutch_oven') return 30;
+  return ovenPreheatMin;
 }
 
 export function leanBreadMinutes(styleKey: string, weight: number): [number, number] | null {
@@ -87,8 +125,8 @@ export function leanBreadBake(styleKey: string, pieceWeightG: number, ovenType: 
       ? s('Placez la pierre ou l’acier à mi-hauteur avant d’allumer le four', 'comptez au moins 45 min pour une chauffe à cœur')
       : s('Place the baking stone or steel on the middle rack before switching the oven on', 'it needs at least 45 min to heat through'))
     : (lang === 'fr'
-      ? s('Laissez une plaque épaisse à mi-hauteur pendant la chauffe', '20 à 30 min ; la plaque chaude colore le dessous')
-      : s('Leave a heavy baking tray on the middle rack while the oven heats', '20–30 min; the hot tray colours the base'));
+      ? s('Laissez une plaque épaisse à mi-hauteur pendant la chauffe', 'comptez 30 min ; la plaque chaude colore le dessous')
+      : s('Leave a heavy baking tray on the middle rack while the oven heats', 'allow 30 min; the hot tray colours the base'));
   const surface = (lang: Lang) => stone ? (lang === 'fr' ? 'la pierre chaude' : 'the hot stone') : (lang === 'fr' ? 'la plaque chaude' : 'the hot tray');
   const steamTray = (lang: Lang) => lang === 'fr'
     ? s('Glissez une lèchefrite vide tout en bas du four', 'elle servira à produire la buée à l’enfournement')
@@ -127,8 +165,8 @@ export function leanBreadBake(styleKey: string, pieceWeightG: number, ovenType: 
       preheat: both(lang => wood ? woodFire(lang, 250, 270) : steamOven ? steamOvenPreheat(lang, 240, true) : [
         s(lang === 'fr' ? `Préchauffez le four à ${setting(lang, 250, 230)}` : `Heat the oven to ${setting(lang, 250, 230)}`, maxNote(lang)),
         ...(dutch ? [lang === 'fr'
-          ? s('Une baguette est trop longue pour une cocotte : cuisez-la sur une plaque épaisse', 'laissez la plaque à mi-hauteur pendant la chauffe, 20 à 30 min')
-          : s('A baguette is too long for a Dutch oven: bake it on a heavy tray', 'leave the tray on the middle rack while the oven heats, 20–30 min')] : [surfaceStep(lang)]),
+          ? s('Une baguette est trop longue pour une cocotte : cuisez-la sur une plaque épaisse', 'laissez la plaque à mi-hauteur pendant les 30 min de chauffe')
+          : s('A baguette is too long for a Dutch oven: bake it on a heavy tray', 'leave the tray on the middle rack for the 30 min of preheating')] : [surfaceStep(lang)]),
         steamTray(lang),
       ]),
       bake: both(lang => wood ? [
@@ -195,8 +233,8 @@ export function leanBreadBake(styleKey: string, pieceWeightG: number, ovenType: 
       preheat: both(lang => wood ? woodFire(lang, 230, 250) : steamOven ? steamOvenPreheat(lang, 230, false) : [
         s(lang === 'fr' ? `Préchauffez le four à ${setting(lang, 230, 210)}` : `Heat the oven to ${setting(lang, 230, 210)}`, maxNote(lang)),
         stone ? surfaceStep(lang) : lang === 'fr'
-          ? s(dutch ? 'La fougasse cuit à plat sur sa plaque : la cocotte ne sert pas ici' : 'Gardez la fougasse sur sa plaque garnie de papier cuisson', 'comptez 20 à 30 min de préchauffage ; pas besoin de buée')
-          : s(dutch ? 'Fougasse bakes flat on its tray: the Dutch oven is not needed here' : 'Keep the fougasse on its lined tray', 'allow 20–30 min of preheating; no steam needed'),
+          ? s(dutch ? 'La fougasse cuit à plat sur sa plaque : la cocotte ne sert pas ici' : 'Gardez la fougasse sur sa plaque garnie de papier cuisson', 'comptez 30 min de préchauffage ; pas besoin de buée')
+          : s(dutch ? 'Fougasse bakes flat on its tray: the Dutch oven is not needed here' : 'Keep the fougasse on its lined tray', 'allow 30 min of preheating; no steam needed'),
       ]),
       bake: both(lang => [
         reopen(lang),
@@ -246,8 +284,8 @@ export function leanBreadBake(styleKey: string, pieceWeightG: number, ovenType: 
       preheat: both(lang => steamOven ? steamOvenPreheat(lang, 230, true) : wood ? woodFire(lang, 230, 250) : [
         s(lang === 'fr' ? `Préchauffez le four à ${setting(lang, 240, 220)}` : `Heat the oven to ${setting(lang, 240, 220)}`, maxNote(lang)),
         ...(dutch ? [lang === 'fr'
-          ? s('Le pain de seigle cuit dans son moule : la cocotte ne sert pas ici', 'comptez 20 à 30 min de préchauffage')
-          : s('Rye bread bakes in its tin: the Dutch oven is not needed here', 'allow 20–30 min of preheating')] : stone ? [surfaceStep(lang)] : []),
+          ? s('Le pain de seigle cuit dans son moule : la cocotte ne sert pas ici', 'comptez 30 min de préchauffage')
+          : s('Rye bread bakes in its tin: the Dutch oven is not needed here', 'allow 30 min of preheating')] : stone ? [surfaceStep(lang)] : []),
         steamTray(lang),
       ]),
       bake: both(lang => steamOven ? [
