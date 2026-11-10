@@ -35,7 +35,7 @@ import { starterFeedToMixHours } from '../lib/starterTiming';
 import { mixerDoughCapacity, suggestedMixingBatchCount } from '../utils/mixingBatches';
 import { doughShoppingItems as buildDoughShoppingItems, yeastShoppingName, yeastBuyingHint, breadFinishShopping } from '../lib/doughShopping';
 import { isPanPizzaStyle } from '../utils/panPizza';
-import { buildPlanCalendar, calendarBakeId, downloadPlanCalendar, keyPlanEvents, type PlanCalendarEvent } from '../utils/planCalendar';
+import { buildPlanCalendar, calendarBakeId, downloadPlanCalendar, exportedSteps, hasExportedPlan, keyPlanEvents, readExportedSteps, writeExportedSteps, type PlanCalendarEvent } from '../utils/planCalendar';
 import { leanBreadPreheatMin } from '../utils/leanBreadBake';
 import {commercialPrefermentWindow, validateConfirmedBake, type StarterEvent } from '../components/SchedulePicker';
 import { prefermentConditioningAction } from '../utils/scheduleEdit';
@@ -831,7 +831,7 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
 // Timing lives in Preparation, not on the recipe: the first action, the bake,
 // and — in Simple, where it was assumed rather than asked — the kitchen
 // temperature the times depend on.
-function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,assumedKitchen,onAdjustTiming,onAddToCalendar}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;helperAt?:Date;assumedKitchen?:React.ReactNode;onAdjustTiming:()=>void;onAddToCalendar?:()=>void}){
+function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,assumedKitchen,calendarOutdated,onAdjustTiming,onAddToCalendar}:{calendarOutdated?:boolean;fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;helperAt?:Date;assumedKitchen?:React.ReactNode;onAdjustTiming:()=>void;onAddToCalendar?:()=>void}){
   return <section data-preparation-timing aria-label={fr?'Horaires':'Timing'} style={{border:'1px solid var(--border)',borderRadius:12,padding:'12px 14px',margin:'0 0 16px',background:'var(--warm)'}}>
     <p style={{margin:'0 0 4px',fontSize:15,fontWeight:600,color:'var(--char)'}}>{startLabel ?? (fr?'Commencer':'Start')} · {formatBakeDateTime(startAt,locale)}</p>
     {helperAt&&<p data-helper-step style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'Vous, ou quelqu’un d’autre, sortez la pâte du réfrigérateur':'You or someone else takes the dough out of the fridge'} · {formatBakeDateTime(helperAt,locale)}</p>}
@@ -839,21 +839,22 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
     {assumedKitchen}
     <span style={{display:'flex',flexWrap:'wrap',gap:'0 18px'}}>
       <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={onAdjustTiming}>{fr?'Ajuster les horaires':'Adjust timing'}</button>
-      {onAddToCalendar&&<button type="button" data-add-calendar className="bh-section-back" style={{minHeight:44}} onClick={onAddToCalendar}>{fr?'Ajouter à mon agenda':'Add to my calendar'}</button>}
+      {onAddToCalendar&&<button type="button" data-add-calendar className="bh-section-back" style={{minHeight:44}} onClick={onAddToCalendar}>{calendarOutdated?(fr?'Mettre à jour mon agenda':'Update my calendar'):(fr?'Ajouter à mon agenda':'Add to my calendar')}</button>}
     </span>
   </section>;
 }
 
 // The recipe opens on the answer to "when do I start?"; the steps and the
 // calendar file are one tap away.
-function RecipePlanCard({fr,locale,startAt,startLabel,bakeAt,onSeeSteps,onAddToCalendar}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;onSeeSteps:()=>void;onAddToCalendar:()=>void}){
+function RecipePlanCard({fr,locale,startAt,startLabel,bakeAt,calendarOutdated,onSeeSteps,onAddToCalendar}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;calendarOutdated?:boolean;onSeeSteps:()=>void;onAddToCalendar:()=>void}){
   return <section data-recipe-plan aria-label={fr?'Votre plan':'Your plan'} style={{border:'1px solid var(--border)',borderRadius:16,padding:'12px 14px 4px',margin:'12px 0 4px',background:'var(--card)',boxShadow:'var(--card-shadow)'}}>
     <p style={{margin:'0 0 2px',fontSize:13,color:'var(--smoke)'}}>{fr?'Votre plan':'Your plan'}</p>
     <p style={{margin:'0 0 2px',fontSize:16,fontWeight:700,color:'var(--char)'}}>{startLabel ?? (fr?'Commencer':'Start')} · {soonStartLabel(startAt,Date.now(),locale) ?? formatBakeDateTime(startAt,locale)}</p>
     <p style={{margin:0,fontSize:15,color:'var(--char)'}}>{fr?'Enfourner':'Bake'} · {formatBakeDateTime(bakeAt,locale)}</p>
+    {calendarOutdated && <p data-calendar-outdated style={{margin:'8px 0 0',fontSize:14,lineHeight:1.45,color:'var(--ash)'}}>{fr?'Les étapes ont changé depuis votre ajout à l’agenda. Ajoutez le plan à nouveau pour le mettre à jour.':'The steps have changed since you added this plan to your calendar. Add it again to update it.'}</p>}
     <span style={{display:'flex',flexWrap:'wrap',gap:'0 18px'}}>
       <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={onSeeSteps}>{fr?'Voir les étapes':'See the steps'}</button>
-      <button type="button" data-add-calendar className="bh-section-back" style={{minHeight:44}} onClick={onAddToCalendar}>{fr?'Ajouter à mon agenda':'Add to my calendar'}</button>
+      <button type="button" data-add-calendar className="bh-section-back" style={{minHeight:44}} onClick={onAddToCalendar}>{calendarOutdated?(fr?'Mettre à jour mon agenda':'Update my calendar'):(fr?'Ajouter à mon agenda':'Add to my calendar')}</button>
     </span>
   </section>;
 }
@@ -1161,6 +1162,8 @@ export default function Home() {
   const [replanReturn, setReplanReturn] = useState<{from:number;settled:boolean}|null>(null);
   const [planMoved, setPlanMoved] = useState<{from:number;to:number;bakeFrom?:number}|null>(null);
   const [journalRequest, setJournalRequest] = useState(0);
+  // Bumped after a calendar export so the plan card re-reads what was exported.
+  const [calendarExports, setCalendarExports] = useState(0);
   const [targetDoughTemp, setTargetDoughTemp] = useState<number | undefined>(undefined);
   const [measuredFlourTemp, setMeasuredFlourTemp] = useState<number | undefined>(undefined);
   const [measuredPrefermentTemp, setMeasuredPrefermentTemp] = useState<number | undefined>(undefined);
@@ -3896,9 +3899,8 @@ export default function Home() {
   // A fridge removal the baker arranged for someone at home, for the Preparation summary.
   const coveredFridgeRemovalAt = (()=>{const at=blocks.find(block=>block.fridgeRemoval&&eatTime&&block.fridgeRemoval.bake===+eatTime)?.fridgeRemoval?.at;return at?new Date(at):undefined;})();
   // Every remaining hands-on step, as calendar events with an alert at their time.
-  function addPlanToCalendar() {
-    if(!eatTime)return;
-    const singleLoaf=bakeType==='bread'&&numItems===1, from=Date.now()-60000;
+  function planCalendarEvents(from:number):PlanCalendarEvent[] {
+    const singleLoaf=bakeType==='bread'&&numItems===1;
     const panStyle=!!styleKey&&isPanPizzaStyle(styleKey);
     // Only key steps, one alert each (see planCalendar.ts).
     const events:PlanCalendarEvent[]=keyPlanEvents(schedule?.availabilityActions??[],fr,{singleLoaf,panStyle,from});
@@ -3913,9 +3915,32 @@ export default function Home() {
         events.push({key:`starter-${event.kind}-${counts[event.kind]}`,at:new Date(event.time),label,alertBeforeMin:event.kind==='fridge_out'?10:0});
       }
     }
-    const title=bakeName||(styleKey?styleDisplayName(styleKey):'Baker Hub');
-    downloadPlanCalendar(buildPlanCalendar({title,events,bakeAt:eatTime,bakeLabel:fr?'Enfourner':'Bake',bakeId:calendarBakeId(styleKey,eatTime)}),'baker-hub-plan.ics');
+    return events;
   }
+  // The journal entry is the bake's identity; it survives the bake time moving.
+  const planCalendarId = eatTime ? (currentJournalId() ?? calendarBakeId(styleKey,eatTime)) : null;
+  const bakeCalendarLabel = fr?'Enfourner':'Bake';
+  function addPlanToCalendar() {
+    if(!eatTime||!planCalendarId)return;
+    const events=planCalendarEvents(Date.now()-60000);
+    const title=bakeName||(styleKey?styleDisplayName(styleKey):'Baker Hub');
+    const previous=readExportedSteps(planCalendarId);
+    downloadPlanCalendar(buildPlanCalendar({title,events,bakeAt:eatTime,bakeLabel:bakeCalendarLabel,bakeId:planCalendarId,previous}),'baker-hub-plan.ics');
+    writeExportedSteps(planCalendarId,exportedSteps(events,eatTime,bakeCalendarLabel));
+    setCalendarExports(v=>v+1);
+  }
+  // A plan already in the calendar whose steps have since moved (any step, not only
+  // Start Dough or the bake): the card says so once, where the button is.
+  const calendarOutdated = (()=>{
+    void calendarExports;
+    if(!recipeGenerated||!eatTime||!planCalendarId||!hasExportedPlan(planCalendarId))return false;
+    const now=Date.now();
+    const sent=readExportedSteps(planCalendarId);
+    const current=exportedSteps(planCalendarEvents(now-60000),eatTime,bakeCalendarLabel);
+    for(const [key,step] of Object.entries(current)) if(sent[key]?.at!==step.at) return true;
+    for(const [key,step] of Object.entries(sent)) if(!current[key]&&step.at>now) return true;
+    return false;
+  })();
   const setupSteps = tab==='custom' ? CUSTOM_STEPS : SIMPLE_STEPS.filter(step=>step.id!==3);
   const stepLink = (step:StepDef):BakeLink => ({label:step.chip,value:step.id===2&&!qtyChosen?null:step.value,disabled:step.id>1&&!styleKey,onChoose:()=>openSetupStep(step.id)});
   const bakeLinks:BakeLink[] = [
@@ -4331,7 +4356,7 @@ export default function Home() {
   const isPageTitle=!browsingFillings&&['recipe','protocol','service'].includes(destination)||(destination==='shopping'&&bakeType!=='pizza');
   return isPageTitle?<h1 className="bh-page-title bh-bake-title">{title}</h1>:<strong style={{fontSize:14}}>{title}</strong>;
 })()}{destination==='service'&&!browsingFillings&&<h2 className="bh-visually-hidden">{fr?'Cuisson & service':'Baking & serving'}</h2>}<div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{destination==='recipe'&&!browsingFillings&&!execution&&!mixExecution?<button type="button" className="bh-section-back" onClick={openQuantityEdit} aria-label={fr?'Modifier la quantité':'Edit quantity'}>{bakeQuantityLabel(numItems,bakeType,styleKey,fr)}</button>:bakeQuantityLabel(numItems,bakeType,styleKey,fr)} <span style={{display:'inline-block'}}>{styleKey ? styleDisplayName(styleKey) : ''}</span></div>{destination==='recipe'&&bakeType==='pizza'&&(()=>{const note=eachPizzaNote({styleKey,itemWeight,diameter:STYLE_HAS_DIAMETER.includes(styleKey??'')&&crustActive>=0?pizzaDiameter:undefined,units,locale});return note?<p data-each-pizza style={{margin:'4px 0 0',fontSize:13,color:'var(--ash)'}}>{note}</p>:null;})()}</div>}
-{recipeGenerated && destination==='recipe' && eatTime && schedule && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} onSeeSteps={()=>openDestination('protocol')} onAddToCalendar={addPlanToCalendar}/>}
+{recipeGenerated && destination==='recipe' && eatTime && schedule && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} calendarOutdated={calendarOutdated} onSeeSteps={()=>openDestination('protocol')} onAddToCalendar={addPlanToCalendar}/>}
 {recipeGenerated && planMoved && destination!=='batch' && destination!=='organisation' && eatTime && <div data-plan-moved role="status" style={{margin:'12px 0 0',padding:'12px 14px',border:'1px solid var(--gold)',borderRadius:14,fontSize:14,lineHeight:1.5,background:'var(--warm)'}}>
   <strong>{fr?'Plan mis à jour.':'Plan updated.'}</strong>{' '}
   {fr?`Le pétrissage passe de ${formatBakeDateTime(new Date(planMoved.from),locale)} à ${formatBakeDateTime(new Date(planMoved.to),locale)}. ${planMoved.bakeFrom!==undefined?`La cuisson passe de ${formatBakeDateTime(new Date(planMoved.bakeFrom),locale)} à ${formatBakeDateTime(eatTime,locale)}.`:`La cuisson reste ${formatBakeDateTime(eatTime,locale)}.`} Si vous aviez ajouté le plan à votre agenda, ajoutez-le de nouveau.`
@@ -4839,7 +4864,7 @@ export default function Home() {
             {/* ── Bake guide tab content ── */}
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && recipe && mixerType && (<>
-                {destination==='protocol'&&eatTime&&<PreparationTimingSummary fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
+                {destination==='protocol'&&eatTime&&<PreparationTimingSummary calendarOutdated={calendarOutdated} fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
                 <BakeGuide
                   pizzaDiameterCm={bakeType==='pizza'?pizzaDiameter:undefined}
                   onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)}
@@ -5408,7 +5433,7 @@ export default function Home() {
             {/* ── Bake guide tab content ── */}
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && advancedRecipe && mixerType && (<>
-                {destination==='protocol'&&eatTime&&<PreparationTimingSummary fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
+                {destination==='protocol'&&eatTime&&<PreparationTimingSummary calendarOutdated={calendarOutdated} fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
                 <BakeGuide
                   pizzaDiameterCm={bakeType==='pizza'?pizzaDiameter:undefined}
                   onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)}

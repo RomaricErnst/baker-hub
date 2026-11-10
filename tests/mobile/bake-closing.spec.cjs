@@ -32,11 +32,19 @@ for(const locale of ['en','fr'])test(`${locale}: the bake ends with the journal 
  await generate(page,fr);
  const [entry]=await journal(page);
  await go(page,fr?'Cuisson & service':'Baking & serving');
- // Open the last step of the section.
+ // Open the last step of the section (its title is a button while the section shows
+ // the overview of steps; once open, the closing block is inside it).
  const steps=page.locator('[data-guide-step]:visible');
- // The step's own header button (photo controls inside it can be hidden at 320 px).
- await steps.last().locator('button:visible').first().tap();
  const closing=page.locator('[data-bake-closing]:visible');
+ await expect.poll(async()=>{
+  if(await closing.count())return true;
+  // The section may open on one step: go to its overview of steps first.
+  const overview=page.locator('button.bh-step-trigger:visible',{hasText:fr?'Vue d’ensemble':'Overview'});
+  if(await overview.count())await overview.first().tap();
+  const title=steps.last().locator(':scope > button').first();
+  if(await title.count()){await title.tap();await closing.first().waitFor({timeout:4000}).catch(()=>{});}
+  return (await closing.count())>0;
+ },{timeout:20000}).toBe(true);
  await expect(closing).toBeVisible();
  await expect(closing.getByText(fr?'Cette fournée reste dans Mes fournées.':'This bake stays in My bakes.',{exact:true})).toBeVisible();
  await closing.getByRole('button',{name:fr?'Comment s’est passée cette fournée ?':'How did it turn out?',exact:true}).tap();
