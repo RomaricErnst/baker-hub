@@ -4,7 +4,7 @@ import LegalPage, { type LegalContent } from '../../components/LegalPage';
 const CONTENT: Record<string, LegalContent> = {
   en: {
     pageTitle: 'Privacy Policy',
-    pageSubtitle: 'Last updated 3 September 2026',
+    pageSubtitle: 'Last updated 10 November 2026',
     footer: 'Baker Hub Beta',
     sections: [
       {
@@ -26,7 +26,7 @@ const CONTENT: Record<string, LegalContent> = {
       {
         title: 'What Baker Hub does not do',
         paragraphs: [
-          'There is no analytics, no advertising, no tracking pixels, and no third-party marketing tools. Nobody pays to appear in your recipes or your shopping list. The only cookie Baker Hub sets is the one that keeps you signed in.',
+          'There is no analytics, no advertising, no tracking pixels, and no third-party marketing tools. Nobody pays to appear in your recipes or your shopping list. Baker Hub sets two cookies, both functional: one remembers the language you chose (NEXT_LOCALE), and one keeps you signed in if you have an account.',
           'Your baking data is never sold, rented, or shared for anyone else\u2019s commercial purposes.',
         ],
       },
@@ -54,6 +54,7 @@ const CONTENT: Record<string, LegalContent> = {
         title: 'Where your data lives, and who processes it',
         paragraphs: [
           'Baker Hub relies on a small number of services. Each one only receives what it needs to do its job.',
+          'Account data is stored with Supabase on servers in Singapore. If you create an account from the European Union, or from anywhere else outside Singapore, your data is transferred to Singapore and stored there.',
         ],
         bullets: [
           'Supabase — the database, sign-in, and photo storage. Your data is held on servers in Singapore.',
@@ -87,13 +88,14 @@ const CONTENT: Record<string, LegalContent> = {
         title: 'Changes to this policy',
         paragraphs: [
           'If this policy changes in a way that affects you, the date at the top changes with it and the change is described here rather than quietly applied.',
+          '10 November 2026: the policy now mentions the cookie that remembers your language, and states plainly that account data is transferred to and stored in Singapore.',
         ],
       },
     ],
   },
   fr: {
     pageTitle: 'Politique de confidentialité',
-    pageSubtitle: 'Dernière mise à jour le 3 septembre 2026',
+    pageSubtitle: 'Dernière mise à jour le 10 novembre 2026',
     footer: 'Baker Hub Bêta',
     sections: [
       {
@@ -115,7 +117,7 @@ const CONTENT: Record<string, LegalContent> = {
       {
         title: 'Ce que Baker Hub ne fait pas',
         paragraphs: [
-          'Il n\u2019y a ni mesure d\u2019audience, ni publicité, ni pixel de suivi, ni outil marketing tiers. Personne ne paie pour apparaître dans vos recettes ou dans votre liste de courses. Le seul cookie déposé par Baker Hub est celui qui vous garde connecté.',
+          'Il n\u2019y a ni mesure d\u2019audience, ni publicité, ni pixel de suivi, ni outil marketing tiers. Personne ne paie pour apparaître dans vos recettes ou dans votre liste de courses. Baker Hub dépose deux cookies, tous deux fonctionnels : l\u2019un retient la langue choisie (NEXT_LOCALE), l\u2019autre vous garde connecté si vous avez un compte.',
           'Vos données de boulangerie ne sont jamais vendues, louées, ni partagées à des fins commerciales pour le compte de tiers.',
         ],
       },
@@ -143,6 +145,7 @@ const CONTENT: Record<string, LegalContent> = {
         title: 'Où vivent vos données, et qui les traite',
         paragraphs: [
           'Baker Hub s\u2019appuie sur un petit nombre de services. Chacun ne reçoit que ce qui lui est nécessaire.',
+          'Les données de compte sont conservées chez Supabase, sur des serveurs situés à Singapour. Si vous créez un compte depuis l\u2019Union européenne, ou depuis tout autre pays que Singapour, vos données sont transférées à Singapour et y sont conservées.',
         ],
         bullets: [
           'Supabase — la base de données, la connexion et le stockage des photos. Vos données sont hébergées sur des serveurs à Singapour.',
@@ -176,6 +179,7 @@ const CONTENT: Record<string, LegalContent> = {
         title: 'Modifications de cette politique',
         paragraphs: [
           'Si cette politique évolue d\u2019une manière qui vous concerne, la date en haut de page change avec elle et la modification est décrite ici plutôt qu\u2019appliquée en silence.',
+          '10 novembre 2026 : la politique mentionne désormais le cookie qui retient votre langue, et indique clairement que les données de compte sont transférées et conservées à Singapour.',
         ],
       },
     ],

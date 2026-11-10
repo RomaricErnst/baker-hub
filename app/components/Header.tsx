@@ -583,6 +583,8 @@ export default function Header({
             {onOpenProfile && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenProfile(); }}>{locale === 'fr' ? 'Préférences de cuisine' : 'Kitchen preferences'}</button>}
             <button style={menuButton} onClick={() => setMenuPage('settings')}>{locale === 'fr' ? 'Langue et unités' : 'Language & units'}</button>
             <Link style={menuButton} href={locale === 'fr' ? '/fr/about' : '/about'} onClick={() => setMenuOpen(false)}>{locale === 'fr' ? 'À propos de Bakerhub' : 'About Bakerhub'}</Link>
+            <Link style={menuButton} href={locale === 'fr' ? '/fr/privacy' : '/privacy'} onClick={() => setMenuOpen(false)}>{locale === 'fr' ? 'Confidentialité' : 'Privacy'}</Link>
+            <Link style={menuButton} href={locale === 'fr' ? '/fr/terms' : '/terms'} onClick={() => setMenuOpen(false)}>{locale === 'fr' ? 'Conditions d’utilisation' : 'Terms of service'}</Link>
           </nav>}
 
           {menuPage === 'settings' && <div style={{display:'grid',gap:18}}>
@@ -922,6 +924,11 @@ export default function Header({
                 )}
               </div>
             )}
+          </div>
+          {/* The policies sit next to the place where an account is created. */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, paddingTop: 4, fontSize: 13 }}>
+            <Link href={locale === 'fr' ? '/fr/privacy' : '/privacy'} onClick={() => setMenuOpen(false)} style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 8px', color: 'var(--ash)', textDecoration: 'underline' }}>{locale === 'fr' ? 'Confidentialité' : 'Privacy'}</Link>
+            <Link href={locale === 'fr' ? '/fr/terms' : '/terms'} onClick={() => setMenuOpen(false)} style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 8px', color: 'var(--ash)', textDecoration: 'underline' }}>{locale === 'fr' ? 'Conditions d’utilisation' : 'Terms of service'}</Link>
           </div>
 
           </>}

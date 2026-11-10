@@ -149,7 +149,7 @@ function P({ children }: { children: React.ReactNode }) {
 // ── Bilingual content ────────────────────────────────────────────────────────
 
 type SectionDef = { title: string; defaultOpen?: boolean; body: React.ReactNode };
-type LocaleContent = { pageTitle: string; pageSubtitle: string; footer: string; sections: SectionDef[] };
+type LocaleContent = { pageTitle: string; pageSubtitle: string; promise: string; footer: string; sections: SectionDef[] };
 
 const PREF_TABLE_ROWS: [string, string, string][] = [
   ['RT poolish',     '÷3.1',  'Model adjustment for a liquid, unsalted preferment; not a measured activity multiplier'],
@@ -161,6 +161,7 @@ const CONTENT: Record<string, LocaleContent> = {
   en: {
     pageTitle: 'About Baker Hub',
     pageSubtitle: 'How it works · Why it exists',
+    promise: 'Tell Baker Hub when you want to eat and when you are busy; it tells you when to start your dough.',
     footer: 'Baker Hub Beta',
     sections: [
         {
@@ -170,7 +171,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <>
               <P>Most baking recipes assume you have a free afternoon, a 20°C kitchen, and nothing else to do. Most of us don't.</P>
               <P>Baker Hub was built for the serious home baker who bakes around real life — a day job, a family dinner, a pizza night that needs to happen Saturday at 7pm, not whenever the dough feels ready. You set the bake time. Baker Hub works backwards from there: when to start, how much yeast to use, what to do at each step.</P>
-              <P>Baker Hub combines empirical fermentation estimates with recipe and scheduling rules. Simple mode assumes a kitchen around 22°C (you can change it from Preparation); Custom asks for your kitchen and fridge temperatures. Either way, check the actual dough as it develops.</P>
+              <P>Baker Hub combines empirical fermentation estimates with recipe and scheduling rules. Every bake asks for your kitchen temperature on its own screen, because it sets the pace of the whole plan; Custom also asks for your fridge temperature. Either way, check the actual dough as it develops.</P>
               <P>Status indicators compare your plan with the app’s estimated windows. They do not measure the dough or guarantee readiness.</P>
             </>
           ),
@@ -180,7 +181,7 @@ const CONTENT: Record<string, LocaleContent> = {
           body: (
             <>
               <P>Baker Hub has two modes. You choose after saying what you're making, how much and when.</P>
-              <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Simple mode</strong> — as few questions as possible: what you're baking, how many, when it goes in the oven, and when you're unavailable. Baker Hub assumes the rest with sensible defaults: a kitchen around 22°C, a standard flour for the style, style hydration, direct dough. If your bake time clashes with your unavailable hours, one card names the clash and offers the nearest time that fits (or, when only the last fridge step clashes, lets you keep your time with someone taking the dough out). The recipe page shows the recipe; all timing lives in Preparation, which opens with when to start and when to bake.</p>
+              <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Simple mode</strong> — as few questions as possible: what you're baking, how many, how warm your kitchen is, when it goes in the oven, and when you're unavailable. Baker Hub assumes the rest with sensible defaults: a standard flour for the style, style hydration, direct dough. If your bake time clashes with your unavailable hours, one card names the clash and offers the nearest time that fits (or, when only the last fridge step clashes, lets you keep your time with someone taking the dough out). The recipe page shows the recipe; all timing lives in Preparation, which opens with when to start and when to bake.</p>
               <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Custom mode</strong> — full control, in the same order as the setup summary: equipment (oven, then mixing), kitchen (kitchen and fridge temperatures, water), flour (product or blend, plus how it's stored), preferment (poolish, biga or direct, and for poolish whether it ferments in the fridge, at room temperature, or wherever the timing works best), yeast, fine-tune (hydration, salt, oil, sugar, dough temperature, and your own yeast or starter amount), then bake time. Levain breads have a Starter step instead of the preferment choice: where your starter is, when it was last fed and how it was fed — the bake time then times its feed. The same engines run in both modes; Custom exposes their inputs.</p>
             </>
           ),
@@ -199,7 +200,7 @@ const CONTENT: Record<string, LocaleContent> = {
           title: 'Your preferences & your own pizzas',
           body: (
             <>
-              <P>Open → <strong style={{ color: CHAR }}>My preferences</strong> to set your defaults once: pizza oven and bread oven (independently), mixer, yeast, preferred preferment, fridge temperature, favourite style per bake type, default mode, your sourdough starter's traits, and your usual busy hours. Everything saves automatically as you tap — no save button — and prefills every new session, always changeable per step. Signed in, preferences sync to your account and follow you across devices.</P>
+              <P>Open the menu → <strong style={{ color: CHAR }}>Kitchen preferences</strong> to set your defaults once: pizza oven and bread oven (independently), mixer, yeast, preferred preferment, fridge temperature, favourite style per bake type, default mode, your sourdough starter's traits, and your usual busy hours. Everything saves automatically as you tap — no save button — and prefills every new session, always changeable per step. Signed in, preferences sync to your account and follow you across devices.</P>
               <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Create your own pizza</strong> from the Pizza Party list: pick ingredients from the catalogue or add your own in free text, group by group (base, cheese, meat & sea, vegetables, finishing). Add a photo and reframe it by dragging. Your creations live in your preferences, reappear at every party, and flow into the shopping list, the prep timeline and the bake sheet — including oven guidance inferred from their ingredients.</p>
             </>
           ),
@@ -453,7 +454,7 @@ const CONTENT: Record<string, LocaleContent> = {
           title: 'Sessions — save, resume, rebake, share',
           body: (
             <>
-              <P>Sign in (magic link or Google) and every bake becomes a <strong style={{ color: CHAR }}>session</strong> you can return to. Your full setup is saved — dough, schedule, starter state, pizza selections, and photos of the result.</P>
+              <P>Sign in (a code sent by email, or Google) and every bake becomes a <strong style={{ color: CHAR }}>session</strong> you can return to. Your full setup is saved — dough, schedule, starter state, pizza selections, and photos of the result.</P>
               <BulletList items={[
                 <><strong style={{color:CHAR}}>Resume</strong> — reopen a session exactly where you left it, on the tab you were using. Not signed in? Your current session is still kept on this device.</>,
                 <><strong style={{color:CHAR}}>Rebake</strong> — one tap clones a past success onto the next matching weekday and time, with your whole schedule and blocked hours shifted along. Bakers repeat their wins.</>,
@@ -500,6 +501,7 @@ const CONTENT: Record<string, LocaleContent> = {
   fr: {
     pageTitle: 'À propos de Baker Hub',
     pageSubtitle: 'Comment ça marche · Pourquoi ça existe',
+    promise: 'Dites à Baker Hub quand vous voulez manger et quand vous n’êtes pas disponible ; il vous dit quand commencer votre pâte.',
     footer: 'Baker Hub Bêta',
     sections: [
       {
@@ -509,7 +511,7 @@ const CONTENT: Record<string, LocaleContent> = {
           <>
             <P>La plupart des recettes de boulangerie supposent que vous avez un après-midi libre, une cuisine à 20 °C, et rien d'autre à faire. La plupart d'entre nous n'ont rien de tout cela.</P>
             <P>Baker Hub a été conçu pour le boulanger amateur sérieux qui fait de la boulangerie autour de sa vie réelle — un emploi, un dîner en famille, une soirée pizza qui doit avoir lieu samedi à 19 h, pas quand la pâte sera enfin prête. Vous dites à Baker Hub quand vous voulez manger. Il calcule quand commencer, quelle quantité de levure utiliser, et ce qu'il faut faire à chaque étape.</P>
-            <P>Baker Hub combine des estimations empiriques et des règles de recette. Le mode Simple suppose une cuisine autour de 22 °C (modifiable depuis la Préparation) ; le mode Avancé demande vos températures de cuisine et de frigo. Dans les deux cas, vérifiez le développement réel de la pâte.</P>
+            <P>Baker Hub combine des estimations empiriques et des règles de recette. Chaque fournée vous demande la température de votre cuisine sur son propre écran, car elle donne le rythme de tout le planning ; le mode Avancé demande aussi celle du frigo. Dans les deux cas, vérifiez le développement réel de la pâte.</P>
             <P>Et il est conçu pour la soirée pizza complète — pas seulement la pâte, mais toute la soirée. Choisir ce qu'on prépare, adapter les garnitures pour un groupe, construire une liste de courses, suivre ce qui est cuit. La fonction Pizza Party transforme une soirée multi-pizza complexe en quelque chose qu'on peut vraiment planifier — et partager.</P>
             <p style={{ margin: 0, ...bodyText }}>Une note honnête : Baker Hub est un projet personnel, construit par quelqu'un qui code avec l'aide de l'IA et teste les recettes dans une vraie cuisine. L'IA écrit le code. La science, les décisions produit et la boulangerie se passent dans le monde réel. Cela signifie que l'application avance vite, tombe parfois en panne, et s'améliore à chaque fournée.</p>
           </>
@@ -520,7 +522,7 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Baker Hub propose deux modes. Vous choisissez après avoir indiqué ce que vous préparez, en quelle quantité et pour quand.</P>
-            <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Mode Simple</strong> — le moins de questions possible : ce que vous cuisez, combien, l’heure d’enfournement et vos indisponibilités. Baker Hub suppose le reste avec des valeurs raisonnables : cuisine autour de 22 °C, farine standard pour le style, hydratation du style, pâte directe. Si l’heure de cuisson tombe pendant vos indisponibilités, une seule carte nomme le conflit et propose l’heure la plus proche qui convient (ou, si seule la dernière sortie du frigo pose problème, vous laisse garder votre heure avec quelqu’un qui sort la pâte). La page recette ne montre que la recette ; tous les horaires sont dans la Préparation, qui commence par l’heure de départ et l’heure de cuisson.</p>
+            <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Mode Simple</strong> — le moins de questions possible : ce que vous cuisez, combien, la température de votre cuisine, l’heure d’enfournement et vos indisponibilités. Baker Hub suppose le reste avec des valeurs raisonnables : farine standard pour le style, hydratation du style, pâte directe. Si l’heure de cuisson tombe pendant vos indisponibilités, une seule carte nomme le conflit et propose l’heure la plus proche qui convient (ou, si seule la dernière sortie du frigo pose problème, vous laisse garder votre heure avec quelqu’un qui sort la pâte). La page recette ne montre que la recette ; tous les horaires sont dans la Préparation, qui commence par l’heure de départ et l’heure de cuisson.</p>
             <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Mode Avancé</strong> — tout le contrôle, dans l’ordre du récapitulatif : matériel (four, puis pétrissage), cuisine (températures de la cuisine et du frigo, eau), farine (produit ou mélange, et sa conservation), préferment (poolish, biga ou direct ; pour le poolish, au frigo, à température ambiante ou là où le planning convient le mieux), levure, réglages fins (hydratation, sel, huile, sucre, température de pâte, et votre propre quantité de levure ou de levain), puis heure de cuisson. Les pains au levain ont une étape Levain à la place du choix de préferment : où il est, quand il a été rafraîchi et comment — l’heure de cuisson cale ensuite son rafraîchi. Les mêmes moteurs tournent dans les deux modes ; l’Avancé expose leurs entrées.</p>
           </>
         ),
@@ -539,7 +541,7 @@ const CONTENT: Record<string, LocaleContent> = {
         title: 'Vos préférences & vos propres pizzas',
         body: (
           <>
-            <P>Ouvrez → <strong style={{ color: CHAR }}>Mes préférences</strong> pour régler vos valeurs par défaut une fois pour toutes : four à pizza et four à pain (indépendamment), pétrin, levure, préferment préféré, température du frigo, style favori par type de cuisson, mode par défaut, les traits de votre levain, et vos indisponibilités habituelles. Tout s'enregistre automatiquement au fil des touches — pas de bouton — et préremplit chaque nouvelle session, toujours modifiable à chaque étape. Connecté·e, vos préférences se synchronisent avec votre compte et vous suivent d'un appareil à l'autre.</P>
+            <P>Ouvrez le menu → <strong style={{ color: CHAR }}>Préférences de cuisine</strong> pour régler vos valeurs par défaut une fois pour toutes : four à pizza et four à pain (indépendamment), pétrin, levure, préferment préféré, température du frigo, style favori par type de cuisson, mode par défaut, les traits de votre levain, et vos indisponibilités habituelles. Tout s'enregistre automatiquement au fil des touches — pas de bouton — et préremplit chaque nouvelle session, toujours modifiable à chaque étape. Connecté·e, vos préférences se synchronisent avec votre compte et vous suivent d'un appareil à l'autre.</P>
             <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Créez votre propre pizza</strong> depuis la liste Pizza Party : ingrédients du catalogue ou en texte libre, groupe par groupe (base, fromages, viandes & mer, légumes, finitions). Ajoutez une photo et recadrez-la en la glissant. Vos créations vivent dans vos préférences, reviennent à chaque soirée, et alimentent la liste de courses, la préparation et la fiche de cuisson — avec des conseils de four déduits de leurs ingrédients.</p>
           </>
         ),
@@ -846,7 +848,7 @@ const CONTENT: Record<string, LocaleContent> = {
         title: 'Sessions — sauvegarder, reprendre, refaire, partager',
         body: (
           <>
-            <P>Connectez-vous (lien magique ou Google) et chaque fournée devient une <strong style={{ color: CHAR }}>session</strong> à laquelle vous pouvez revenir. Toute votre configuration est sauvegardée — pâte, planning, état du levain, sélections de pizzas, et photos du résultat.</P>
+            <P>Connectez-vous (code reçu par e-mail, ou Google) et chaque fournée devient une <strong style={{ color: CHAR }}>session</strong> à laquelle vous pouvez revenir. Toute votre configuration est sauvegardée — pâte, planning, état du levain, sélections de pizzas, et photos du résultat.</P>
             <BulletList items={[
               <><strong style={{color:CHAR}}>Reprendre</strong> — rouvrez une session exactement là où vous l'aviez laissée, sur l'onglet que vous utilisiez. Pas connecté ? Votre session en cours reste conservée sur cet appareil.</>,
               <><strong style={{color:CHAR}}>Refaire</strong> — un tap clone une fournée réussie sur le prochain jour et horaire équivalents, avec tout le planning et vos créneaux bloqués décalés d'autant. Les boulangers refont leurs succès.</>,
@@ -893,6 +895,10 @@ export default function AboutClient() {
           color: CHAR, marginBottom: '4px', marginTop: '0',
         }}>{c.pageTitle}</h1>
         <p style={{ ...monoSm, marginBottom: '12px' }}>{c.pageSubtitle}</p>
+        <p style={{
+          fontFamily: 'var(--font-ui)', fontSize: '17px', lineHeight: 1.5,
+          color: CHAR, margin: '0 0 20px',
+        }}>{c.promise}</p>
 
         {c.sections.map((s, i) => (
           <Accordion key={i} title={s.title} defaultOpen={s.defaultOpen}>
