@@ -612,7 +612,7 @@ test('Custom: batch details are conditional and setup headings reset above the f
  await step.locator('.bh-step-actions').locator('[data-bh-forward]:visible').tap();
  await expect(page.locator('#step-4')).toBeVisible();
  await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
- await unobscured(page.locator('#step-4 h2'));
+ await unobscured(page.locator('#step-4 h1.bh-page-title'));
   await page.locator('#step-4 .bh-step-actions').locator('[data-bh-forward]:visible').tap();
   const flour=page.locator('#step-6');
   await expect(flour).toBeVisible();await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
@@ -652,7 +652,7 @@ test('page landing survives delayed Safari viewport changes and history restore 
  // Keep enough document height to reproduce a retained scroll offset even
  // when this particular two-card page otherwise fits the test viewport.
  await page.addStyleTag({content:'[data-navigation-page]{min-height:calc(100dvh + 300px)!important}'});
- const heading=page.locator('#step-7 h2').first();
+ const heading=page.locator('#step-7 h1.bh-page-title').first();
  const clearHeading=async(atTop=true)=>{
   if(atTop)await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
   await expect.poll(()=>heading.evaluate(el=>{

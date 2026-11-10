@@ -3863,7 +3863,6 @@ export default function Home() {
   const mealNoun=fr?'Garnitures':bakeType==='pizza'?'Toppings':'Fillings';
   // Values the baker has not chosen are named once, in a note under the summary
   // title, instead of a "suggested" tag repeated on every row.
-  const sourced = (value:string|null, _picked:boolean) => value;
   // Catalogue names are title-cased ("Levure Sèche Instantanée"); summaries read in sentence case.
   const sentenceCase = (value:string|null) => value ? value.replace(/(\s)(\p{Lu})(?=\p{Ll})/gu,(_m,space:string,letter:string)=>space+letter.toLowerCase()) : value;
   const reviewEquipment = [ovenType && sentenceCase(ovenDisplayName ?? ''),mixerType && sentenceCase(localName(MIXER_TYPES[mixerType]))].filter(Boolean).join(' · ');
@@ -3917,7 +3916,7 @@ export default function Home() {
     downloadPlanCalendar(buildPlanCalendar({title,events,bakeAt:eatTime,bakeLabel:fr?'Enfourner':'Bake',bakeId:calendarBakeId(styleKey,eatTime)}),'baker-hub-plan.ics');
   }
   const setupSteps = tab==='custom' ? CUSTOM_STEPS : SIMPLE_STEPS.filter(step=>step.id!==3);
-  const stepLink = (step:StepDef):BakeLink => ({label:step.chip,value:step.id===2&&!qtyChosen?null:step.id===10&&step.value?sourced(step.value,manualHydration!==undefined):step.id===8&&step.value?sourced(step.value,confirmed('method',prefermentType)):step.value,disabled:step.id>1&&!styleKey,onChoose:()=>openSetupStep(step.id)});
+  const stepLink = (step:StepDef):BakeLink => ({label:step.chip,value:step.id===2&&!qtyChosen?null:step.value,disabled:step.id>1&&!styleKey,onChoose:()=>openSetupStep(step.id)});
   const bakeLinks:BakeLink[] = [
     {label:fr?'Fournée':'Bake',value:bakeType==='bread'?(fr?'Pain':'Bread'):'Pizza',onChoose:backToProducts},
     ...setupSteps.filter(step=>step.id<=2).map(stepLink),

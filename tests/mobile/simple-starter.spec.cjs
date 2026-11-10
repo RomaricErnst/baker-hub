@@ -8,8 +8,8 @@ const NOW=Date.parse('2026-11-10T09:00:00+08:00');
 const stored=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null'));
 const forward=page=>page.locator('.bh-step-actions:visible [data-bh-forward]:visible');
 const copy={
- en:{path:'/',bread:'Bread',cont:/^Continue with/,question:'Where is your starter now?',counter:'On the counter',fridge:'In the fridge',ready:'It’s bubbly and risen right now',toStarter:'Your starter →',toBake:'Bake time →',date:'Bake date and time',generate:'Generate my recipe',oldYes:'Yes, ready now',oldNo:'Not yet',review:'Review affected times →',lastFed:/Last fed|Last feed/},
- fr:{path:'/fr',bread:'Pain',cont:/^Continuer avec/,question:'Où est votre levain en ce moment ?',counter:'Sur le plan de travail',fridge:'Au réfrigérateur',ready:'Il est bien monté et bullé en ce moment',toStarter:'Votre levain →',toBake:'Heure de cuisson →',date:'Date et heure de cuisson',generate:'Générer ma recette',oldYes:'Oui, il est prêt maintenant',oldNo:'Pas encore',review:'Voir les horaires à ajuster →',lastFed:/Dernier rafraîchi/},
+ en:{path:'/',bread:'Bread & meals',cont:/^Continue with/,question:'Where is your starter now?',counter:'On the counter',fridge:'In the fridge',ready:'It’s bubbly and risen right now',toStarter:'Your starter →',toBake:'Bake time →',date:'Bake date and time',generate:'Generate my recipe',oldYes:'Yes, ready now',oldNo:'Not yet',review:'Review affected times →',lastFed:/Last fed|Last feed/},
+ fr:{path:'/fr',bread:'Pain & repas',cont:/^Continuer avec/,question:'Où est votre levain en ce moment ?',counter:'Sur le plan de travail',fridge:'Au réfrigérateur',ready:'Il est bien monté et bullé en ce moment',toStarter:'Votre levain →',toBake:'Heure de cuisson →',date:'Date et heure de cuisson',generate:'Générer ma recette',oldYes:'Oui, il est prêt maintenant',oldNo:'Pas encore',review:'Voir les horaires à ajuster →',lastFed:/Dernier rafraîchi/},
 };
 for(const locale of ['en','fr'])for(const answer of ['counter','fridge','ready'])test(`simple starter screen ${locale}: ${answer} generates a recipe`,async({page})=>{
  test.setTimeout(90000);

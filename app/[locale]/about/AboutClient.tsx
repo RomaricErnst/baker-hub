@@ -73,7 +73,7 @@ function Pill({ children, bg, color }: { children: React.ReactNode; bg: string; 
   );
 }
 
-function DataTable({ rows, headers = ['Preferment', 'Correction', 'Why'] }: { rows: [string, string, string][]; headers?: [string, string, string] }) {
+function DataTable({ rows, headers }: { rows: [string, string, string][]; headers: [string, string, string] }) {
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px' }}>
       <thead>
@@ -149,12 +149,6 @@ function P({ children }: { children: React.ReactNode }) {
 
 type SectionDef = { title: string; defaultOpen?: boolean; body: React.ReactNode };
 type LocaleContent = { pageTitle: string; pageSubtitle: string; promise: string; footer: string; sections: SectionDef[] };
-
-const PREF_TABLE_ROWS: [string, string, string][] = [
-  ['RT poolish',     '÷3.1',  'Model adjustment for a liquid, unsalted preferment; not a measured activity multiplier'],
-  ['Fridge poolish', '×1.65', 'Liquid medium → CO₂ escapes freely'],
-  ['Biga',           '×2.2',  'Stiff dough (50–55%) + cold → yeast constrained'],
-];
 
 const PREF_TABLE_ROWS_FR: [string, string, string][] = [
   ['Poolish à température ambiante', '÷3,1', 'Ajustement du modèle pour un préferment liquide et sans sel ; pas un multiplicateur d’activité mesuré'],
