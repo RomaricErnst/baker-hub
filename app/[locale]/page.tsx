@@ -3471,7 +3471,8 @@ export default function Home() {
       // changes with the day); its forward button leads on to the starter for
       // sourdough, then the bake time, already a week later.
       setActiveStep(snap.tab==='simple'?7:1);setAdvancedStep(snap.tab==='custom'?9:1);
-      if (snap.styleKey) { openDestination('batch'); setBatchView('kitchen'); }
+      // An unleavened bread has no kitchen question (nothing ferments).
+      if (snap.styleKey && getBreadProtocol(snap.styleKey)?.method !== 'unleavened') { openDestination('batch'); setBatchView('kitchen'); }
     }
     return true;
   }

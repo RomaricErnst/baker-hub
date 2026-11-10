@@ -22,6 +22,7 @@ async function restore(yeastType,rebake,starterTimingValid,overrides={},acceptRe
  Object.assign(context.event.dough_snapshot,{starterTimingValid,bakeType:'bread',styleKey:yeastType==='sourdough'?'pain_levain':'baguette'});
  Object.assign(context.event.dough_snapshot,overrides);
  context.openDestination=value=>{state.openDestination=value;};
+ context.getBreadProtocol=require('../app/utils/breadProfiles.ts').getBreadProtocol;
  context.opts={rebake};
  const js=ts.transpileModule(navigationHandler+handler+'\nrestoreFromBakeEvent(event,opts)',{compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.CommonJS}}).outputText;
  await vm.runInNewContext(js,context);
