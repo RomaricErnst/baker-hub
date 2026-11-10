@@ -1495,11 +1495,29 @@ export default function Home() {
       return;
     }
     setPendingSession(session);
+    // A reload in the middle of a generated bake is not "coming back later"
+    // either. The offer-on-mount rule (above) exists so values never appear
+    // that the baker did not see being chosen; here they were on screen a
+    // second ago. The history entry still carries the destination the reload
+    // happened on (it survives a reload; a new visit or a tap on the home
+    // screen has none, or marks it as home), so the bake reopens there and
+    // Back keeps replaying the earlier entries. Arrivals at the landing keep
+    // the Resume card.
+    const reloadedOn = (history.state as {bakerNavigation?: {home?: boolean; family?: string | null; route?: string; view?: string; simpleStep?: number; customStep?: number; overview?: boolean}} | null)?.bakerNavigation;
+    const reloadedMidBake = !!session.recipeGenerated && !!reloadedOn && !reloadedOn.home && reloadedOn.family === session.bakeType;
     // Revenir d'une connexion n'est pas « revenir plus tard ». Le baker était
     // au milieu de quelque chose il y a dix secondes : on le remet où il
     // était au lieu de lui proposer de reprendre ce qu'il n'a jamais quitté.
-    if (readAuthIntent() || sessionStorage.getItem('bh_locale_resume')) {
+    if (readAuthIntent() || sessionStorage.getItem('bh_locale_resume') || reloadedMidBake) {
+      if (reloadedMidBake) { acceptCurrentSessionStorage(); answerWelcomeBack(); }
       applySession(session);
+      if (reloadedMidBake && reloadedOn) {
+        if (reloadedOn.route) setActiveTab(reloadedOn.route as typeof activeTab);
+        if (reloadedOn.view) setBatchView(reloadedOn.view as typeof batchView);
+        if (typeof reloadedOn.simpleStep === 'number') setActiveStep(reloadedOn.simpleStep);
+        if (typeof reloadedOn.customStep === 'number') setAdvancedStep(reloadedOn.customStep);
+        setSetupOverview(!!reloadedOn.overview);
+      }
       restoreSettledRef.current = true;
       setAuthTick(t => t + 1);
     }
@@ -2382,7 +2400,9 @@ export default function Home() {
       history.replaceState({...history.state,bakerNavigation:value},'');
     }else history.pushState({...history.state,bakerNavigation:value},'');
     navigationHistory.current=encoded;replayingNavigation.current=false;
-  },[showProductHome,bakeType,activeTab,batchView,activeStep,advancedStep,setupOverview,sessionRestored]);
+  // scheduleRestoreRevision: a restored bake records its entry once restoring ends,
+  // so a reload before any further navigation still knows which destination it was on.
+  },[showProductHome,bakeType,activeTab,batchView,activeStep,advancedStep,setupOverview,sessionRestored,scheduleRestoreRevision]);
   function backToProducts(){setShowProductHome(true);setActiveTab('batch');scrollToStepTop();}
   async function selectBakeType(bt: BakeType) {
     // Choosing a family preserves the unapplied draft before starting fresh.

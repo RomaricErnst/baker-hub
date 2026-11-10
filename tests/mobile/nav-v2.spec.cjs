@@ -342,8 +342,9 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await expect.poll(async()=>bread?(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']:Object.values((await stored(page))?.pizzaParty?.qtys||{}).reduce((sum,n)=>sum+n,0)).toBe(2);
  await expect.poll(async()=>(await stored(page))?.navigation?.returnTo?.destination).toBe('protocol');
  // Resume a persisted catalogue detour, not only the in-memory return path.
+ // A reload mid-bake reopens it where it was, without a Resume card.
  await page.reload();
- await page.getByRole('button',{name:'Reprendre →',exact:true}).tap();
+ await expect(page.getByRole('button',{name:'Reprendre →',exact:true})).toHaveCount(0);
  await expect(page.getByRole('dialog',{name:'Ma sélection',exact:true})).toHaveCount(0);
  // The catalogue has its own heading while the return still points to Preparation.
  await expect(page.locator('.bh-navigator-current')).toContainText('Garnitures');
@@ -756,7 +757,7 @@ for(const mode of ['simple','custom']){
   await expect(end.getByRole('button',{name:'Enregistrer',exact:true})).toBeVisible();
   await expect(end.getByRole('button',{name:'Partager',exact:true})).toBeVisible();
   await page.reload();
-  await page.getByRole('button',{name:'Reprendre →',exact:true}).tap();
+  await expect(page.getByRole('button',{name:'Reprendre →',exact:true})).toHaveCount(0);
   await expect(end).toBeVisible();
   await page.getByRole('button',{name:'Annuler le dernier',exact:true}).tap();
   await expect(end).toHaveCount(0);
