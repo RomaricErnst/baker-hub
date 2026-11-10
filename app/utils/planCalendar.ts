@@ -72,8 +72,8 @@ export function planActionLabel(id: string, fr: boolean, opts: LabelOpts = {}): 
 // Steps whose alert comes early: the baker needs a few minutes to be there.
 const EARLY_ALERT = new Set(['cold-out', 'cold-out-2', 'preferment-cold-out', 'preheat', 'starter-fridge_out']);
 const EARLY_ALERT_MIN = 10;
-// Steps closer than this share one event and one alert.
-const MERGE_WINDOW_MS = 15 * 60000;
+// Steps closer than this share one alert (the first one's).
+const MERGE_WINDOW_MS = 30 * 60000;
 
 /**
  * Reduces the scheduler's hands-on actions to the key steps a baker needs a
@@ -117,55 +117,96 @@ export function keyPlanEvents(actions: PlanAction[], fr: boolean, opts: LabelOpt
   return events;
 }
 
-/** Steps a few minutes apart become one event with one alert. */
-export function mergeCloseEvents(events: PlanCalendarEvent[]): PlanCalendarEvent[] {
+/**
+ * Steps close together keep their own event (so each has a stable id), but only
+ * the first of them alerts: one reminder per moment the baker has to be there.
+ */
+export function quietCloseAlerts(events: PlanCalendarEvent[]): (PlanCalendarEvent & { silent?: boolean })[] {
   const sorted = [...events].filter(e => Number.isFinite(+e.at)).sort((a, b) => +a.at - +b.at);
-  const out: PlanCalendarEvent[] = [];
-  for (const event of sorted) {
-    const last = out[out.length - 1];
-    if (last && +event.at - +last.at < MERGE_WINDOW_MS) {
-      last.label = `${last.label} · ${event.label}`;
-      last.key = `${last.key ?? ''}+${event.key ?? ''}`;
-      const lastEnd = +(last.end ?? last.at), eventEnd = +(event.end ?? event.at);
-      if (eventEnd > lastEnd) last.end = new Date(eventEnd);
-      last.alertBeforeMin = Math.max(last.alertBeforeMin ?? 0, event.alertBeforeMin ?? 0);
-      continue;
-    }
-    out.push({ ...event });
-  }
-  return out;
+  let lastAlert = -Infinity;
+  return sorted.map(event => {
+    const alertAt = +event.at - (event.alertBeforeMin ?? 0) * 60000;
+    if (alertAt - lastAlert < MERGE_WINDOW_MS) return { ...event, silent: true };
+    lastAlert = alertAt;
+    return { ...event };
+  });
 }
 
-export function buildPlanCalendar({ title, events, bakeAt, bakeLabel, bakeId, now = new Date(), url = 'https://www.bakerhub.app' }: {
+/** What was last exported for a bake, so a re-export can cancel steps that left the plan. */
+export type ExportedSteps = Record<string, { at: number; label: string }>;
+const EXPORTS_KEY = 'bh_calendar_exports_v1';
+export function readExportedSteps(bakeId: string): ExportedSteps {
+  try { return (JSON.parse(localStorage.getItem(EXPORTS_KEY) || '{}') as Record<string, ExportedSteps>)[bakeId] ?? {}; } catch { return {}; }
+}
+export function hasExportedPlan(bakeId: string | null | undefined): boolean {
+  return !!bakeId && Object.keys(readExportedSteps(bakeId)).length > 0;
+}
+export function writeExportedSteps(bakeId: string, steps: ExportedSteps) {
+  try {
+    const all = JSON.parse(localStorage.getItem(EXPORTS_KEY) || '{}') as Record<string, ExportedSteps>;
+    all[bakeId] = steps;
+    // Keep the last 30 bakes.
+    const keys = Object.keys(all);
+    for (const old of keys.slice(0, Math.max(0, keys.length - 30))) delete all[old];
+    localStorage.setItem(EXPORTS_KEY, JSON.stringify(all));
+  } catch { /* storage unavailable: re-exports then simply cannot cancel */ }
+}
+
+export function buildPlanCalendar({ title, events, bakeAt, bakeLabel, bakeId, previous = {}, now = new Date(), url = 'https://www.bakerhub.app' }: {
   title: string; events: PlanCalendarEvent[]; bakeAt: Date; bakeLabel: string;
   /** Stable for this bake, so a second export updates rather than duplicates. */
-  bakeId?: string; now?: Date; url?: string;
+  bakeId?: string;
+  /** Steps exported last time for this bake: those no longer in the plan are cancelled. */
+  previous?: ExportedSteps;
+  now?: Date; url?: string;
 }): string {
-  const all = mergeCloseEvents([...events, { at: bakeAt, label: bakeLabel, key: 'bake' }]);
+  const all = quietCloseAlerts([...events, { at: bakeAt, label: bakeLabel, key: 'bake' }]);
   const id = bakeId ?? stamp(bakeAt);
+  const sequence = Math.floor(+now / 60000) % 2000000000;
+  const uidFor = (key: string) => `${id}-${key.replace(/[^A-Za-z0-9_-]/g, '')}@bakerhub.app`;
   const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Baker Hub//Bake plan//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', `X-WR-CALNAME:${text(title)}`];
-  const usedUids = new Set<string>();
+  const used = new Set<string>();
   all.forEach((event, index) => {
     const end = event.end && +event.end > +event.at ? event.end : new Date(+event.at + 10 * 60000);
-    let uid = `${id}-${(event.key || String(index)).replace(/[^A-Za-z0-9+_-]/g, '')}@bakerhub.app`;
-    if (usedUids.has(uid)) uid = uid.replace('@', `-${index}@`);
-    usedUids.add(uid);
+    let key = event.key || `step-${index}`;
+    if (used.has(key)) key = `${key}-${index}`;
+    used.add(key);
     const before = Math.max(0, Math.round(event.alertBeforeMin ?? 0));
     lines.push('BEGIN:VEVENT',
-      `UID:${uid}`,
+      `UID:${uidFor(key)}`,
       // A later export of the same bake carries a higher sequence, so calendars that
       // support updates replace the earlier event.
-      `SEQUENCE:${Math.floor(+now / 60000) % 2000000000}`,
+      `SEQUENCE:${sequence}`,
       `DTSTAMP:${stamp(now)}`,
       `DTSTART:${stamp(event.at)}`,
       `DTEND:${stamp(end)}`,
       `SUMMARY:${text(`${event.label} · ${title}`)}`,
       `URL:${url}`,
-      'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${text(event.label)}`, `TRIGGER:${before ? `-PT${before}M` : 'PT0M'}`, 'END:VALARM',
+      ...(event.silent ? [] : ['BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${text(event.label)}`, `TRIGGER:${before ? `-PT${before}M` : 'PT0M'}`, 'END:VALARM']),
       'END:VEVENT');
   });
+  // Steps that left the plan since the last export are cancelled, not left behind.
+  for (const [key, step] of Object.entries(previous)) {
+    if (used.has(key)) continue;
+    lines.push('BEGIN:VEVENT', `UID:${uidFor(key)}`, `SEQUENCE:${sequence}`, `DTSTAMP:${stamp(now)}`,
+      `DTSTART:${stamp(new Date(step.at))}`, `DTEND:${stamp(new Date(step.at + 10 * 60000))}`,
+      `SUMMARY:${text(`${step.label} · ${title}`)}`, 'STATUS:CANCELLED', 'END:VEVENT');
+  }
   lines.push('END:VCALENDAR');
   return lines.map(fold).join('\r\n') + '\r\n';
+}
+
+/** The steps a file exports, keyed as in the file, for the next export's cancellations. */
+export function exportedSteps(events: PlanCalendarEvent[], bakeAt: Date, bakeLabel: string): ExportedSteps {
+  const out: ExportedSteps = {};
+  const used = new Set<string>();
+  quietCloseAlerts([...events, { at: bakeAt, label: bakeLabel, key: 'bake' }]).forEach((event, index) => {
+    let key = event.key || `step-${index}`;
+    if (used.has(key)) key = `${key}-${index}`;
+    used.add(key);
+    out[key] = { at: +event.at, label: event.label };
+  });
+  return out;
 }
 
 /** One id per bake in this browser, kept while the same bake is re-exported. */
