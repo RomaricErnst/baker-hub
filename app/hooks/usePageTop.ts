@@ -28,6 +28,9 @@ export function usePageTop(pageKey:string){
   const restore=()=>{interacted=false;if(document.activeElement instanceof HTMLElement)document.activeElement.blur();viewportChanged();};
   const previous=history.scrollRestoration;history.scrollRestoration='manual';
   if(document.activeElement instanceof HTMLElement)document.activeElement.blur();
+  // Keyboard and screen-reader users continue from the new page's heading, not from the top of the document.
+  const arrival=Array.from(document.querySelectorAll<HTMLElement>('.bh-page-title')).find(el=>el.getClientRects().length>0);
+  if(arrival){arrival.tabIndex=-1;arrival.focus({preventScroll:true});}
   reset();
   frame=requestAnimationFrame(()=>{if(settling)reset();secondFrame=requestAnimationFrame(()=>{if(settling)reset();});});
   window.addEventListener('pointerdown',stop,{passive:true});

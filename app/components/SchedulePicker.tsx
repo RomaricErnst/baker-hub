@@ -1939,6 +1939,8 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
   const [showStarterDetails, setShowStarterDetails] = useState(false);
   const [simpleStarterUncertain, setSimpleStarterUncertain] = useState(!starterTimingValidProp);
   useEffect(() => { if (!starterTimingValidProp) setSimpleStarterUncertain(true); }, [starterTimingValidProp]);
+  // Planning around the baker's day is the point of the app: the busy-times question starts open.
+  const [availabilityOpen,setAvailabilityOpen] = useState(true);
   const [simpleReadyObserved,setSimpleReadyObserved] = useState(false);
   // "Yes, ready now" with a far-off bake: the plan refreshes the starter once more.
   const [simpleReadyRefresh,setSimpleReadyRefresh] = useState(false);
@@ -7113,7 +7115,17 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
           const sentence=list.charAt(0).toUpperCase()+list.slice(1);
           return isFr?`${sentence} tombent ${during}.`:`${sentence} fall ${during}.`;
         })()
-      : (isFr?'Cet horaire ne laisse pas le bon temps à la pâte.':'This baking time doesn’t leave the dough the time it needs.');
+      : (()=>{
+          // Say how long the dough needs and how far away the bake is, not just that it does not fit.
+          const target=!searchingTargets?firstSuggestedTarget:undefined;
+          const neededH=target?Math.round((+target.bake-+target.start)/900000)/4:0;
+          const awayH=Math.round((+pendingEatTime-Date.now())/900000)/4;
+          if(!target||neededH<=0||awayH<=0||awayH>=neededH)return isFr?'Cet horaire ne laisse pas le bon temps à la pâte.':'This baking time doesn’t leave the dough the time it needs.';
+          const lang=isFr?'fr':'en';
+          return isFr
+            ?`Cette pâte demande environ ${formatDuration(neededH,lang)} entre le pétrissage et la cuisson. ${fmtCardHM(pendingEatTime,true)}, c’est dans ${formatDuration(awayH,lang)}.`
+            :`This dough needs about ${formatDuration(neededH,lang)} from mixing to baking. ${fmtCardHM(pendingEatTime,false)} is ${formatDuration(awayH,lang)} away.`;
+        })();
   const simpleSuggestion=!searchingTargets?firstSuggestedTarget:undefined;
   const simpleDecision=mode==='simple'&&eatTimeSet&&!currentCandidateValid&&(simpleSuggestion||simpleOnlyFridgeClash)
     ? <div className="bh-simple-decision" data-simple-decision role="status" style={{border:'1px solid var(--border)',borderRadius:12,padding:'14px 16px',margin:'12px 0',background:'var(--warm)'}}>
@@ -7836,8 +7848,9 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
       {eatTimeSet && (<div>
 
       {/* Blocker section — always visible */}
-      <details ref={availabilityControlsRef} tabIndex={-1} aria-label={isFr?'Mes disponibilités':'My availability'} style={{marginBottom:16}}><summary style={{minHeight:44,cursor:'pointer'}}>{blocks.length ? (isFr?'Mes indisponibilités':'My unavailable times')+' · '+selectedAvailabilityCount(localBlocks) : (isFr?'Ajouter une indisponibilité (facultatif)':'Add unavailable time (optional)')}</summary>
+      <details ref={availabilityControlsRef} open={availabilityOpen} onToggle={e=>setAvailabilityOpen((e.currentTarget as HTMLDetailsElement).open)} tabIndex={-1} aria-label={isFr?'Mes indisponibilités':'My unavailable times'} style={{marginBottom:16}}><summary data-busy-question style={{minHeight:44,cursor:'pointer',fontWeight:600,fontSize:16}}>{(isFr?'Quelque chose de prévu d’ici là ?':'Anything in the way before then?')+(blocks.length?' · '+selectedAvailabilityCount(localBlocks):'')}</summary>
         <div>
+        <p style={{margin:'0 0 10px',fontSize:14,color:'var(--smoke)'}}>{isFr?'Les gestes à faire sont placés en dehors de ces horaires.':'We keep the hands-on steps out of these times.'}</p>
 
       {/* Quick presets — all toggles on one row */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px', width: '100%', overflow: 'visible', paddingLeft: 0 }}>
