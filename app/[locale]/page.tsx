@@ -4492,7 +4492,11 @@ export default function Home() {
             <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={collectingBakeTime ? <></> : scheduleEditing ? null : !eatTime ?
               <button type="button" disabled style={{...NEXT_CTA,opacity:0.5}}>{fr?'Choisissez une date de cuisson':'Choose a bake date'}</button>
               : !scheduleCandidateValid ? (simpleDecisionPending
-                ? <button type="button" style={NEXT_CTA} onClick={()=>{const card=document.querySelector<HTMLElement>('[data-simple-decision]');card?.scrollIntoView({block:'center'});card?.querySelector<HTMLElement>('[data-simple-accept],[data-simple-keep]')?.focus({preventScroll:true});}}>{fr?'Choisir un horaire qui convient':'Choose a time that fits'}</button>
+                // As in Custom: the normal next step waits for a choice in the card above; it never only scrolls.
+                ? <div style={{width:'100%'}}>
+                    <p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'}</p>
+                    <button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated?setupReturnLabel:simpleOrganisationFlow.generateLabel}</button>
+                  </div>
                 : <button type="button" style={NEXT_CTA} onClick={()=>{const target=[...document.querySelectorAll<HTMLElement>('.bh-fridge-arrangement,.bh-plan-notice')].find(el=>el.offsetParent)??document.getElementById('schedule-anchor-panel');target?.scrollIntoView({block:'center'});(target?.querySelector<HTMLElement>('button')??target)?.focus({preventScroll:true});}}>{fr?'Voir les horaires à ajuster →':'Review affected times →'}</button>)
               : undefined}>
               {/* Simple assumes the kitchen temperature (shown with the plan in
@@ -4588,9 +4592,11 @@ export default function Home() {
                 const card:React.CSSProperties={display:'grid',gap:4,textAlign:'left',padding:'16px 18px',minHeight:56,border:'1.5px solid var(--border)',borderRadius:18,background:'var(--card)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:17,cursor:'pointer',boxShadow:'0 2px 12px rgba(43,36,32,.06)'};
                 const title:React.CSSProperties={display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,fontWeight:700};
                 return <div data-recipe-choice style={{display:'grid',gap:12,marginTop:16}}>
-                  {!simpleDecisionPending&&<button type="button" data-generate-recipe style={card} onClick={()=>{setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>
+                  {simpleDecisionPending&&<p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:0}}>{fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'}</p>}
+                  {/* A pending decision holds Generate back, shown and disabled, with the reason above it. */}
+                  <button type="button" data-generate-recipe disabled={simpleDecisionPending} aria-describedby={simpleDecisionPending?'bh-plan-choice-hint':undefined} style={simpleDecisionPending?{...card,opacity:0.55,cursor:'not-allowed'}:card} onClick={()=>{if(simpleDecisionPending)return;setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>
                     <span style={title}>{fr?'Générer ma recette':'Generate my recipe'}<span aria-hidden="true">→</span></span>
-                  </button>}
+                  </button>
                   <button type="button" data-customize-link style={card} onClick={()=>{setAwaitingRecipeChoice(false);chooseMode('custom');}}>
                     <span style={title}>{fr?'Personnaliser ma fournée':'Customize my bake'}<span aria-hidden="true">→</span></span>
                     <span style={{fontSize:14,color:'var(--smoke)',fontWeight:400}}>{customDesc}</span>
