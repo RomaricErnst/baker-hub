@@ -7256,6 +7256,9 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
             ?(isFr?`Garder ${simpleTimeLabel(pendingEatTime)} : je m’occupe de cette étape`:`Keep ${simpleTimeLabel(pendingEatTime)}: I’ll handle this step`)
             :(isFr?`Garder ${simpleTimeLabel(pendingEatTime)} : je m’occupe de ces ${simpleConflicts.length} étapes`:`Keep ${simpleTimeLabel(pendingEatTime)}: I’ll handle these ${simpleConflicts.length} steps`)}
         </button>}
+        {mode==='custom'&&yeastPctOverride!==undefined&&!isSourdough&&onUseCalculatedYeast&&<button type="button" className="bh-back-action" data-clash-use-calculated style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={onUseCalculatedYeast}>
+          {isFr?`Utiliser la quantité de levure calculée — le planning s’adapte à vos disponibilités`:`Use the calculated yeast amount — the plan fits around your free time`}
+        </button>}
         {mode==='custom'&&<button type="button" className="bh-back-action" data-decision-availability style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={openAvailability}>
           {isFr?'Modifier mes indisponibilités':'Change my unavailable times'}
         </button>}

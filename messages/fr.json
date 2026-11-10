@@ -250,9 +250,9 @@
       "veryLow": "Très faible — peut manquer de goût."
     },
     "oil": {
-      "traditionalHighTemp": "Traditionnel — sans huile. Parfait à haute température (450°C+).",
+      "traditionalHighTemp": "Traditionnel — sans huile. Parfait à haute température (450 °C+).",
       "traditionalHome": "Sans huile, comme le veut la tradition : la pâte reste extensible et légère.",
-      "highTempNote": "Pour un four à haute température, 0% d’huile est idéal — l’huile peut brûler à très haute température.",
+      "highTempNote": "Pour un four à haute température, 0 % d’huile est idéal — l’huile peut brûler à très haute température.",
       "home1": "Aide le brunissement et la tendreté à basse température. Choix classique pour four domestique.",
       "home2": "Plage pizza pan — base croustillante, presque frite. Idéal pour Detroit et styles pan.",
       "high": "Pour une pâte enrichie ; incorporez l’huile après le début du pétrissage."
@@ -260,7 +260,7 @@
     "sugar": {
       "traditionalHighTemp": "Traditionnel — sans sucre. Parfait à haute température.",
       "traditionalHome": "Aucun par défaut. Dans un four domestique sous 280 °C, 0,5 % de sucre peut aider la coloration de la croûte.",
-      "subtle": "Légère coloration. Bon pour la cuisson domestique en dessous de 280°C.",
+      "subtle": "Légère coloration. Bon pour la cuisson domestique en dessous de 280 °C.",
       "noticeable": "Douceur perceptible et bonne coloration. Adapté aux styles enrichis.",
       "osmotic": "Le sucre influe sur la fermentation ; utilisez la dose de levure calculée.",
       "high": "Taux élevé (niveau brioche) — la levure standard peut peiner. SAF Gold recommandée."
@@ -336,7 +336,7 @@
     "atLimit": "À la limite AVPN",
     "limitDesc": "280g max par pâton — le standard de l’Associazione Verace Pizza Napoletana pour la pizza napolitaine authentique.",
     "learnMore": "En savoir plus",
-    "body": "L’AVPN définit le standard officiel de la pizza napolitaine authentique. Poids maximum par pâton : 280g. Diamètre : 22–35cm. Cela garantit le rapport idéal entre la garniture et la pâte, et le cornicione léger et aéré caractéristique."
+    "body": "L’AVPN définit le standard officiel de la pizza napolitaine authentique. Poids maximum par pâton : 280g. Diamètre : 22–35 cm. Cela garantit le rapport idéal entre la garniture et la pâte, et le cornicione léger et aéré caractéristique."
   },
   "climate": {
     "getConditions": "Obtenir les conditions extérieures",
@@ -362,22 +362,22 @@
     "cool": {
       "title": "Cuisine fraîche",
       "tagline": "La fermentation prend généralement plus de temps.",
-      "badge": "moins de 20°C"
+      "badge": "moins de 20 °C"
     },
     "normal": {
       "title": "Tempérée",
       "tagline": "Utilisez la température ambiante mesurée.",
-      "badge": "20–26°C"
+      "badge": "20–26 °C"
     },
     "warm": {
       "title": "Cuisine chaude",
       "tagline": "Surveillez la pâte au fil de la fermentation.",
-      "badge": "26–30°C"
+      "badge": "26–30 °C"
     },
     "tropical": {
       "title": "Cuisine très chaude",
       "tagline": "Surveillez régulièrement la pâte et suivez les phases au froid prévues.",
-      "badge": "30°C+"
+      "badge": "30 °C+"
     }
   },
   "timeline": {
@@ -410,14 +410,14 @@
       "tipPoolishRT": "Incorporez la farine et la levure dans l’eau aux quantités indiquées pour le poolish. Couvrez et laissez mûrir à température ambiante jusqu’à la prochaine intervention prévue.",
       "tipBiga": "Incorporez l’eau et la levure à la farine aux quantités indiquées pour la biga. Gardez une texture grumeleuse. Couvrez et suivez les horaires du planning.",
       "tipRemoveBiga": "Sortez la biga du frigo — pas besoin de réchauffage, la biga va directement dans le pétrin froide.",
-      "tipFeedHot": "Rafraîchissez le levain avec farine et eau à parts égales. À {temp} il atteint son pic en 3–5h — surveillez le dôme + les bulles.",
-      "tipFeedWarm": "Rafraîchissez le levain avec farine et eau à parts égales. Pic en 4–6h à {temp}.",
-      "tipFeedRT": "Rafraîchissez le levain avec farine et eau à parts égales. Pic en 6–10h à température ambiante.",
+      "tipFeedHot": "Rafraîchissez le levain avec farine et eau à parts égales. À {temp} il atteint son pic en 3–5 h — surveillez le dôme + les bulles.",
+      "tipFeedWarm": "Rafraîchissez le levain avec farine et eau à parts égales. Pic en 4–6 h à {temp}.",
+      "tipFeedRT": "Rafraîchissez le levain avec farine et eau à parts égales. Pic en 6–10 h à température ambiante.",
       "tipRemovePoolish": "Sortez votre poolish du frigo — il lui faut environ {dur} à {temp} avant le pétrissage."
     },
     "mixTips": {
       "sourdough": "Incorporez la farine dans l’eau, puis ajoutez le levain. Incorporez le sel avec l’eau restante et pétrissez jusqu’à absorption.",
-      "hand": "Farine + 90% de l’eau — couvrez et reposez 20 min (autolyse). Puis levure, sel, eau restante, et pétrissez 8–12 min.",
+      "hand": "Farine + 90 % de l’eau — couvrez et reposez 20 min (autolyse). Puis levure, sel, eau restante, et pétrissez 8–12 min.",
       "spiral": "Farine + eau + levure Vitesse 1. Sel, puis Vitesse 2 jusqu’à la forme de citrouille et le test de la membrane.",
       "noKnead": "Mélangez tous les ingrédients jusqu’à ce qu’il n’y ait plus de farine sèche — le temps et les rabats font le reste.",
       "stand": "Farine + eau Vitesse 1. Levure, puis sel, puis eau restante. Vitesse 2 jusqu’à ce que la pâte se décolle du bol et passe le test de la membrane."
@@ -460,7 +460,7 @@
       "warmup": "Réchauffage · {dur}",
       "rtWarmup": "Réchauffage ambiant · {dur}"
     },
-    "restRtTip": "Sortez les pâtons du frigo et laissez-les couverts à température ambiante. Le repos rend l’étirage plus facile — cela dit, une pâte longuement fermentée au froid (48h+) et bien hydratée peut s’étirer encore fraîche si elle est souple sous le doigt.",
+    "restRtTip": "Sortez les pâtons du frigo et laissez-les couverts à température ambiante. Le repos rend l’étirage plus facile — cela dit, une pâte longuement fermentée au froid (48 h+) et bien hydratée peut s’étirer encore fraîche si elle est souple sous le doigt.",
     "finalProofCovered": "Les pâtons sont déjà façonnés — couvrez et laissez à température ambiante jusqu’au test du doigt.",
     "finalProofShape": "Façonnez vos pâtons si ce n’est pas fait. Couvrez et laissez à température ambiante jusqu’au test du doigt.",
     "divideTipBread": "Pesez et divisez la pâte en {n} pâton{plural}. Façonnez en gardant une surface tendue — soudure bien pincée dessous.",
@@ -637,7 +637,7 @@
     "prefInFridgeReady": "Au frigo — prêt au démarrage",
     "prefReadyWhenDoughStarts": "Prêt au démarrage de la pâte",
     "bakeRow": "Cuisson",
-    "outOfFridge": "Sortie du frigo · après {hours}h au froid",
+    "outOfFridge": "Sortie du frigo · après {hours} h au froid",
     "nowPrefix": "Maintenant",
     "completedSteps": "{count} étapes déjà faites",
     "busyEngine": "Vous êtes occupé à ce moment — rien de libre ne convient au plan, on garde.",
@@ -711,7 +711,7 @@
       "stepsFridge": [
         {
           "bold": "Pesez farine et eau à parts égales",
-          "note": "voir recette pour les quantités exactes — 100% hydratation"
+          "note": "voir recette pour les quantités exactes — 100 % hydratation"
         },
         {
           "bold": "Ajoutez une pincée de levure sèche instantanée",
@@ -733,7 +733,7 @@
       "stepsRT": [
         {
           "bold": "Pesez farine et eau à parts égales",
-          "note": "voir recette pour les quantités exactes — 100% hydratation"
+          "note": "voir recette pour les quantités exactes — 100 % hydratation"
         },
         {
           "bold": "Ajoutez la levure pesée",
@@ -767,7 +767,7 @@
       "steps": [
         {
           "bold": "Pesez la farine et l’eau",
-          "note": "utilisez les quantités de la recette, à 45% d’hydratation"
+          "note": "utilisez les quantités de la recette, à 45 % d’hydratation"
         },
         {
           "bold": "Ajoutez la levure pesée",
@@ -789,7 +789,7 @@
       "readyWhen": [
         "Surface avec petites fissures et bulles — odeur levurée légèrement alcoolique",
         "Se décolle légèrement des parois",
-        "Volume augmenté de 50-70%"
+        "Volume augmenté de 50-70 %"
       ],
       "pitfalls": [
         "Une biga dense et sans bulles n’est pas prête : vérifiez avant de mélanger.",
@@ -855,7 +855,7 @@
         },
         {
           "bold": "Marquez le niveau avec un élastique",
-          "note": "suivi de la cible 50-75% de pousse"
+          "note": "suivi de la cible 50-75 % de pousse"
         }
       ],
       "set1": {
@@ -863,7 +863,7 @@
         "note": "main mouillée, saisissez un côté, étirez vers le haut puis repliez au centre. Répétez 4 côtés"
       },
       "set2": {
-        "bold": "Série 2 — après 1h : rabat",
+        "bold": "Série 2 — après 1 h : rabat",
         "note": "la pâte doit sembler plus cohésive et résister à la déchirure"
       },
       "set3": {
@@ -871,7 +871,7 @@
         "note": "la pâte sera lisse et forte"
       },
       "set4": {
-        "bold": "Série 4 — après 2h : pli final",
+        "bold": "Série 4 — après 2 h : pli final",
         "note": "puis laissez reposer jusqu’à la fin du pointage"
       },
       "setShort": {
@@ -910,7 +910,7 @@
         }
       ],
       "watchFor": [
-        "La pâte gonflera lentement — 20-30% de pousse pendant la pousse au froid est normal",
+        "La pâte gonflera lentement — 20-30 % de pousse pendant la pousse au froid est normal",
         "La surface peut paraître légèrement bombée avec petites bulles — c’est parfait",
         "La pâte froide est ferme en sortant du frigo — c’est normal, cela facilite la division et le façonnage"
       ],
@@ -928,7 +928,7 @@
           },
           {
             "bold": "Aplatissez chaque morceau délicatement",
-            "note": "visez une forme ovale, 1,5–2cm d’épaisseur"
+            "note": "visez une forme ovale, 1,5–2 cm d’épaisseur"
           },
           {
             "bold": "Découpez le motif feuille avec un couteau tranchant",
@@ -974,7 +974,7 @@
           },
           {
             "bold": "Façonnage final : roulez doucement en baguette",
-            "note": "utilisez le bout des doigts, pas la paume — longueur ~30–40cm"
+            "note": "utilisez le bout des doigts, pas la paume — longueur ~30–40 cm"
           },
           {
             "bold": "Placez dans une couche farinée ou sur plaque baguette",
@@ -1097,12 +1097,12 @@
         }
       ],
       "watchFor": [
-        "Les boules gonfleront légèrement au frigo — 20-40% de pousse est normal",
+        "Les boules gonfleront légèrement au frigo — 20-40 % de pousse est normal",
         "Les boules froides sont fermes et faciles à manipuler — c’est exactement ce qu’on veut",
-        "Après 24h+ les boules auront un gluten détendu et seront très extensibles une fois réchauffées"
+        "Après 24 h+ les boules auront un gluten détendu et seront très extensibles une fois réchauffées"
       ],
       "pitfalls": [
-        "Sur-fermentation au froid : boules gonflées de plus de 100% au frigo — enfournez immédiatement",
+        "Sur-fermentation au froid : boules gonflées de plus de 100 % au frigo — enfournez immédiatement",
         "Un pâton qui se déchire à l’étirage est encore trop froid — laissez-le plus longtemps, ou ouvrez-le plus doucement"
       ]
     },
@@ -1151,7 +1151,7 @@
           },
           {
             "bold": "N’ouvrez pas le four pendant le préchauffage",
-            "note": "chaque ouverture fait perdre 20–30°C"
+            "note": "chaque ouverture fait perdre 20–30 °C"
           }
         ],
         "pitfalls": [
@@ -1175,7 +1175,7 @@
           },
           {
             "bold": "N’ouvrez pas pendant le préchauffage",
-            "note": "chaque ouverture fait perdre 20–30°C"
+            "note": "chaque ouverture fait perdre 20–30 °C"
           }
         ],
         "pitfalls": [
@@ -1186,7 +1186,7 @@
       "steam": {
         "steps": [
           {
-            "bold": "Réglez le four vapeur avec 100% de vapeur",
+            "bold": "Réglez le four vapeur avec 100 % de vapeur",
             "note": "programme vapeur pour la première phase"
           },
           {
@@ -1207,7 +1207,7 @@
           },
           {
             "bold": "Allumez le feu et laissez brûler jusqu’aux braises",
-            "note": "visez une température de sole de 280–320°C"
+            "note": "visez une température de sole de 280–320 °C"
           },
           {
             "bold": "Poussez les braises d’un côté — testez la sole avec la main",
@@ -1235,7 +1235,7 @@
           },
           {
             "bold": "N’ouvrez pas pendant le préchauffage",
-            "note": "chaque ouverture fait perdre 20–30°C"
+            "note": "chaque ouverture fait perdre 20–30 °C"
           }
         ],
         "pitfalls": [
@@ -1280,7 +1280,7 @@
           },
           {
             "bold": "Vérifiez la température de la pierre au thermomètre",
-            "note": "la pierre doit afficher 380°C+ avant d’enfourner"
+            "note": "la pierre doit afficher 380 °C+ avant d’enfourner"
           }
         ],
         "pitfalls": [
@@ -1304,7 +1304,7 @@
           },
           {
             "bold": "N’ouvrez pas pendant le préchauffage",
-            "note": "chaque ouverture fait perdre 20–30°C"
+            "note": "chaque ouverture fait perdre 20–30 °C"
           }
         ],
         "pitfalls": [
@@ -1347,12 +1347,12 @@
             "note": "travaillez vite — chaque seconde compte"
           },
           {
-            "bold": "Cuisez couvert à 240°C — 20 min",
+            "bold": "Cuisez couvert à 240 °C — 20 min",
             "note": "la vapeur emprisonnée crée la grigne et le développement"
           },
           {
             "bold": "Retirez le couvercle — cuisez 20–25 min de plus",
-            "note": "la croûte bronze et croustille — température interne 95–98°C"
+            "note": "la croûte bronze et croustille — température interne 95–98 °C"
           },
           {
             "bold": "Laissez refroidir sur une grille",
@@ -1366,7 +1366,7 @@
           "Le pain sonne creux : tapotez le dessous — doit sonner creux quand c’est cuit"
         ],
         "pitfalls": [
-          "Grigne trop superficielle : moins de 0,5cm — ne s’ouvrira pas, crée des éclats sur les côtés",
+          "Grigne trop superficielle : moins de 0,5 cm — ne s’ouvrira pas, crée des éclats sur les côtés",
           "Retirer le couvercle trop tôt : la vapeur a besoin des 20 min complètes pour former la grigne",
           "Couper le pain chaud : la vapeur est encore à l’intérieur — la mie sera gommeuse"
         ]
@@ -1391,7 +1391,7 @@
           },
           {
             "bold": "Retirez le plateau — cuisez 20–25 min de plus",
-            "note": "la croûte bronze — température interne 95–98°C"
+            "note": "la croûte bronze — température interne 95–98 °C"
           },
           {
             "bold": "Laissez refroidir sur une grille",
@@ -1405,7 +1405,7 @@
           "Le dessous du pain sonne creux"
         ],
         "pitfalls": [
-          "Grigne trop superficielle : moins de 0,5cm",
+          "Grigne trop superficielle : moins de 0,5 cm",
           "Ouvrir le four les 20 premières minutes : la vapeur s’échappe, la croûte se forme trop tôt",
           "Couper le pain chaud : la mie sera gommeuse"
         ]
@@ -1417,11 +1417,11 @@
             "note": "lame tranchante, 30–45°"
           },
           {
-            "bold": "Enfournez au four vapeur — 240°C, 100% vapeur",
+            "bold": "Enfournez au four vapeur — 240 °C, 100 % vapeur",
             "note": "cuisez 20 min"
           },
           {
-            "bold": "Passez en chaleur sèche — 220°C",
+            "bold": "Passez en chaleur sèche — 220 °C",
             "note": "cuisez 20–25 min de plus jusqu’à obtenir une croûte bien dorée et un pain qui sonne creux"
           },
           {
@@ -1458,7 +1458,7 @@
           }
         ],
         "pitfalls": [
-          "Grigne trop superficielle : moins de 0,5cm",
+          "Grigne trop superficielle : moins de 0,5 cm",
           "Enfourner sur une sole froide : vérifiez toujours au thermomètre",
           "Ne pas tourner : les fours à bois ont un côté chaud — tournez à mi-cuisson"
         ]
@@ -1479,7 +1479,7 @@
           },
           {
             "bold": "Retirez le plateau — cuisez 20–25 min de plus",
-            "note": "température interne 95–98°C — croûte brun foncé et pain qui sonne creux"
+            "note": "température interne 95–98 °C — croûte brun foncé et pain qui sonne creux"
           },
           {
             "bold": "Laissez refroidir sur une grille",
@@ -1487,7 +1487,7 @@
           }
         ],
         "pitfalls": [
-          "Grigne trop superficielle : moins de 0,5cm",
+          "Grigne trop superficielle : moins de 0,5 cm",
           "Ouvrir le four les 20 premières minutes : la vapeur s’échappe",
           "Couper le pain chaud : la mie sera gommeuse"
         ]
@@ -1706,7 +1706,7 @@
     }
   },
   "prefermentSlider": {
-    "longAhead": "16h+ à l’avance",
+    "longAhead": "16 h+ à l’avance",
     "nightBefore": "La veille",
     "sameDay": "Jour même",
     "flourIn": "Farine dans le {name}"
@@ -1870,7 +1870,7 @@
     "shareBaked": "Partager cette fournée"
   },
   "yeastWarnings": {
-    "poolishSuggestion": "Au-delà de {hours}h à température ambiante, surveillez régulièrement la pâte. Un poolish nécessite son propre planning de préparation.",
+    "poolishSuggestion": "Au-delà de {hours} h à température ambiante, surveillez régulièrement la pâte. Un poolish nécessite son propre planning de préparation.",
     "overFermentRT": "{hours} h à {temp} °C dépasse ce que cette pâte supporte à température ambiante — elle sur-fermentera. Une phase au froid la porterait.",
     "hotClimateRT": "Ce planning prévoit plus de 4 h à température ambiante dans une cuisine à {temp} °C. Observez la levée de la pâte vers la fin de chaque phase à température ambiante.",
     "fridgeWarm": "Votre réfrigérateur est à {temp} °C. La fermentation se poursuit au froid ; vérifiez la pousse avant l’étape suivante.",

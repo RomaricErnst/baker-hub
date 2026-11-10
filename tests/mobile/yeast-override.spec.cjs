@@ -165,3 +165,24 @@ for(const locale of ['en','fr'])test(`${locale}: the yeast amount is "Set after 
  await expect(yeast).toBeVisible();
  expect(Number((await yeast.inputValue()).replace(',','.'))).toBeGreaterThan(0);
 });
+
+// An entered amount whose re-timed plan falls in busy time: the clash card offers
+// the calculated amount, which plans around the busy time.
+test('a clash caused by the entered yeast amount offers the calculated amount',async({page})=>{
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));
+ await page.clock.setFixedTime(NOW);
+ const night=[{label:'Saturday night',from:Date.parse('2026-10-03T23:00:00+08:00'),to:Date.parse('2026-10-04T07:00:00+08:00')}];
+ const data={version:1,savedAt:NOW,tab:'custom',bakeType:'pizza',styleKey:'neapolitan',numItems:8,itemWeight:270,pizzaDiameter:30,ovenType:'pizza_oven',mixerType:'stand',yeastType:'instant',kitchenTemp:24,humidity:'normal',fridgeTemp:5,flourBlend:null,prefermentType:'none',prefOffsetH:0,prefGoesInFridge:false,flourInFridge:false,startTime:BAKE-18.25*3600000,eatTime:BAKE,blocks:night,yeastPctOverride:0.1,recipeGenerated:false,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,customKitchenConfirmed:true,activeStep:7,advancedStep:9,highestStep:7,advancedHighestStep:10,setupOverview:false,activeTab:'setup'};
+ await page.addInitScript(data=>{
+  if(!sessionStorage.getItem('yeast-seeded')){localStorage.setItem('bh_session_v1',JSON.stringify(data));sessionStorage.setItem('yeast-seeded','1');}
+  sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:7,advancedStep:9,setupOverview:false,activeTab:'setup'}));
+ },data);
+ await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
+ await page.goto('/');
+ const use=page.locator('[data-clash-use-calculated]:visible');
+ await expect(use).toHaveText('Use the calculated yeast amount — the plan fits around your free time');
+ await use.tap();
+ await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBeUndefined();
+ await expect(page.locator('[data-clash-use-calculated]:visible')).toHaveCount(0);
+ expect(errors).toEqual([]);
+});
