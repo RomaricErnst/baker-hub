@@ -1225,7 +1225,8 @@ Actual dough condition and equipment may differ from these estimates.`;
       onNext: () => { const next = stepRefs.current.findIndex((el, i) => i > s && el !== null); if (next > s) {if(phase==='preparation'&&stepRefs.current[next]?.dataset.guidePhase==='cooking'&&onPrepareFillings)onPrepareFillings();else navigateGuideStep(next);} },
       batchCompletion: mixing && !!batch && batch.count > 1,
       completeLabel: mixing && batch && batch.count > 1 ? (l === 'fr' ? `Terminer la pétrissée ${batch.active + 1} sur ${batch.count}` : `Complete batch ${batch.active + 1} of ${batch.count}`) : undefined,
-      open: currentStep === s || (currentStep === 0 && phase === 'preparation' && !!simpleMode && firstPendingPreparation === s),
+      // The overview is a summary: every step closed until the baker starts or opens one.
+      open: currentStep === s,
       done: actionDone,
       onToggle: () => navigateGuideStep(s),
       onDone: () => {
