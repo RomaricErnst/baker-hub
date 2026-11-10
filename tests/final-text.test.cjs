@@ -70,4 +70,23 @@ test('pan pizza calendar shaping event uses the guide step name',()=>{
  assert.equal(planActionLabel('divide',false,{styleKey:'neapolitan',count:4}),'Divide and shape');
 });
 
+test('sourdough mixing reads as one sequence with each rest at its clock time and water in grams',()=>{
+ const {text,schedule}=guide('pain_levain','fr',{mixer:'stand',oven:'dutch_oven',numItems:1,weight:800,yeast:'sourdough',hours:30});
+ const finish=schedule.availabilityActions.find(a=>a.id==='mix-finish');
+ assert.ok(finish,'the schedule reserves a rest after the first mix');
+ const mix=text.slice(text.indexOf('Que faire'),text.indexOf('Prêt quand'));
+ assert.match(mix,/Mélangez la farine avec \d+ g de l’eau préparée ; réservez les \d+ g restants\. Couvrez et laissez reposer jusqu’à \d+h\d{2}\./);
+ assert.match(mix,/À \d+h\d{2}, ajoutez le levain mûr et le sel/);
+ assert.match(mix,new RegExp(`Couvrez et laissez reposer 30 min ; reprenez le pétrissage à ${utils.formatTime(finish.at,'fr').split(' ').pop()}`));
+ assert.equal((mix.match(/levain mûr et le sel/g)||[]).length,1,'starter and salt are added once');
+ assert.doesNotMatch(mix,/90 ?%|Puis ajoutez/);
+ const en=guide('pain_levain','en',{mixer:'stand',oven:'dutch_oven',numItems:1,weight:800,yeast:'sourdough',hours:30}).text;
+ assert.match(en,/Mix the flour with \d+ g of the prepared water; keep the other \d+ g back\. Cover and rest until/);
+ assert.match(en,/Cover and rest 30 min; resume kneading at \d/);
+ // A yeasted autolyse states its end time too.
+ const yeasted=guide('pain_campagne','en',{mixer:'hand',oven:'dutch_oven',numItems:1,weight:800,hours:20}).text;
+ assert.match(yeasted,/Cover and rest 30 min, until \d{1,2}:\d{2}(am|pm)\./);
+ assert.ok(yeasted.indexOf('Cover and rest 30 min')<yeasted.indexOf('Add the yeast and salt'));
+});
+
 module.exports={guide};

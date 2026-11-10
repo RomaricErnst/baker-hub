@@ -17,7 +17,7 @@ import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, I
 import { toggleStepCompletion } from '../utils/guideProgress';
 import { mixingWaterCaption, mixingBatchPlan, largeManualDough } from '../utils/mixingBatches';
 import PhaseSummary from './PhaseSummary';
-import WaterPreparation, { type WaterSource, type WaterSettingsProps } from './WaterPreparation';
+import WaterPreparation, { waterSplit, type WaterSource, type WaterSettingsProps } from './WaterPreparation';
 import { type UnitSystem, displayTemp, displayWeight, formatClock, tempC, tempRange } from '../utils/units';
 import { getPrefPeakH_RT, getStarterFridgeWarmupH } from './FermentChart';
 import { GUIDE_FAQ } from '../lib/guideFaq';
@@ -1095,6 +1095,57 @@ Actual dough condition and equipment may differ from these estimates.`;
   const bgPoolishLabel = bgPoolishG ? (l === 'fr' ? `Ajoutez votre ${prefermentType} (${bgPoolishG}g au total)` : `Add your ${prefermentType} (${bgPoolishG}g total)`) : (l === 'fr' ? `Ajoutez votre ${prefermentType} (en entier)` : `Add your ${prefermentType} (all of it)`);
 
 
+  // ── Mixing sequence: one ordered list, each rest stated with its clock time ──
+  // The schedule's own actions give the times: `autolyse` (flour and water before
+  // the mix), `mix` (the first minutes of mixing) and `mix-finish` (kneading
+  // resumes after the rest that autolyseMinFor reserves).
+  const batchSuffix = batch && batch.active > 0 ? `-batch-${batch.active + 1}` : '';
+  const mixAction = schedule.availabilityActions?.find(action => action.id === 'mix' + batchSuffix);
+  const mixFinishAction = schedule.availabilityActions?.find(action => action.id === 'mix-finish' + batchSuffix);
+  const mixRestMin = autolyseMinFor(mixerType, styleKey);
+  const mixFirstMin = mixAction?.end ? Math.round((+mixAction.end - +mixAction.at) / 60000) : 0;
+  const clockFor = (date: Date, sameDayAs: Date) => date.toDateString() === sameDayAs.toDateString() ? formatClock(date, _fmtLocale) : formatTime(date, _fmtLocale);
+  const reserveWater = hydration > 70 && mixerType !== 'no_knead' && styleKey !== 'pain_seigle';
+  const directIceMix = waterMethod === 'direct' && mixerType === 'spiral' && recipe?.oil === 0 && recipe?.sugar === 0 && !['brioche','pain_mie','pain_viennois'].includes(styleKey);
+  // Liquid water actually poured: with ice in the mixer, the ice is not part of it.
+  const liquidWater = (() => {
+    if (bgMainWater == null) return null;
+    if (!directIceMix || recipe?.waterTemp == null) return bgMainWater;
+    return waterSplit({waterGrams:bgMainWater,targetTemp:recipe.waterTemp,kitchenTemp,fridgeTemp,source:waterSource,measuredWaterTemp,waterMethod,idealWaterTemp:recipe.thermal?.idealWaterTemp,directIceSupported:true})?.water ?? bgMainWater;
+  })();
+  const firstWater = liquidWater != null ? Math.round(liquidWater * 0.9) : null;
+  const keptWater = liquidWater != null && firstWater != null ? liquidWater - firstWater : null;
+  const flourWaterLine = (rest: string) => {
+    if (!reserveWater) return l === 'fr' ? `Mélangez la farine et l’eau${rest}.` : `Mix the flour and water${rest}.`;
+    if (firstWater == null || keptWater == null) return l === 'fr' ? `Mélangez la farine avec 90 % de l’eau${directIceMix ? ' liquide' : ' préparée'} et réservez le reste${rest}.` : `Mix the flour with 90% of the ${directIceMix ? 'liquid' : 'prepared'} water and keep the rest back${rest}.`;
+    return l === 'fr'
+      ? `Mélangez la farine avec ${displayWeight(firstWater,u,l)} de l’eau${directIceMix ? ' liquide' : ' préparée'} ; réservez les ${displayWeight(keptWater,u,l)} restants${rest}.`
+      : `Mix the flour with ${displayWeight(firstWater,u,l)} of the ${directIceMix ? 'liquid' : 'prepared'} water; keep the other ${displayWeight(keptWater,u,l)} back${rest}.`;
+  };
+  const mixCardStart = showAutolyseStart ? (autolyseAction?.at ?? displayedMixTime) : displayedMixTime;
+  const leavenLine = isSourdough ? (l === 'fr' ? 'le levain mûr et le sel' : 'the ripe starter and salt')
+    : hasPref ? (l === 'fr' ? `${isBiga ? 'la biga préparée' : 'le poolish préparé'}, puis le sel` : `the prepared ${isBiga ? 'biga' : 'poolish'}, then the salt`)
+    : (l === 'fr' ? 'la levure et le sel' : 'the yeast and salt');
+  const kneadResumes = mixFinishAction ? clockFor(mixFinishAction.at, mixCardStart) : null;
+  const mixSequence: { bold: string; note: string }[] = preMixAutolyse > 0 ? [
+    // Wheat sourdough: autolyse before the mix, then starter and salt, then the planned rest.
+    laterAutolysedBatch
+      ? {bold:l==='fr'?'Reprenez le mélange farine-eau de ce lot, préparé avant la première pétrissée : son autolyse est faite.':'Take this batch’s flour-water mixture, prepared before the first mix: it has already autolysed.',note:''}
+      : {bold:`${flourWaterLine('')} ${l === 'fr' ? `Couvrez et laissez reposer jusqu’à ${clockFor(displayedMixTime, mixCardStart)}.` : `Cover and rest until ${clockFor(displayedMixTime, mixCardStart)}.`}`,note:l==='fr'?AUTOLYSE_NOTE.fr:AUTOLYSE_NOTE.en},
+    {bold:l==='fr'?`À ${clockFor(displayedMixTime, mixCardStart)}, ajoutez ${leavenLine}${mixFirstMin ? ` et pétrissez ${mixFirstMin} min pour les incorporer` : ''}.`:`At ${clockFor(displayedMixTime, mixCardStart)}, add ${leavenLine}${mixFirstMin ? ` and mix ${mixFirstMin} min to combine` : ''}.`,note:''},
+    ...(mixRestMin > 0 && kneadResumes ? [{bold:l==='fr'?`Couvrez et laissez reposer ${mixRestMin} min ; reprenez le pétrissage à ${kneadResumes}.`:`Cover and rest ${mixRestMin} min; resume kneading at ${kneadResumes}.`,note:''}] : []),
+  ] : mixRestMin > 0 ? [
+    // Autolyse inside the mixing window: flour and water, the planned rest, then leavening and salt.
+    {bold:flourWaterLine(''),note:''},
+    {bold:kneadResumes?(l==='fr'?`Couvrez et laissez reposer ${mixRestMin} min, jusqu’à ${kneadResumes}.`:`Cover and rest ${mixRestMin} min, until ${kneadResumes}.`):(l==='fr'?`Couvrez et laissez reposer ${mixRestMin} min, comme prévu au planning.`:`Cover and rest ${mixRestMin} min, as scheduled.`),note:l==='fr'?AUTOLYSE_NOTE.fr:AUTOLYSE_NOTE.en},
+    {bold:l==='fr'?`Ajoutez ${leavenLine}.`:`Add ${leavenLine}.`,note:''},
+  ] : [
+    {bold:flourWaterLine(''),note:''},
+    {bold:l==='fr'?`Ajoutez ${leavenLine}.`:`Add ${leavenLine}.`,note:''},
+  ];
+  // Ice in the mixer is added during mixing, when the water line asks for it.
+  if (directIceMix && reserveWater) mixSequence.push({bold:l==='fr'?'Ajoutez la glace mesurée au pétrissage si elle est indiquée ci-dessus.':'Add the measured ice during mixing if shown above.',note:''});
+
   const stepTimesCtx = useStepTimes();
   let firstPendingPreparation = 0;
   let stepNum = 0;
@@ -1536,11 +1587,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             {bold:l==='fr'?'Ajoutez le beurre souple progressivement ; laissez chaque ajout s’incorporer.':'Add softened butter gradually; let each addition incorporate.',note:l==='fr'?'Arrêtez quand la pâte est homogène et élastique. Si elle devient grasse ou trop chaude, faites une pause au frais.':'Stop when smooth and elastic. If the dough becomes greasy or too warm, pause and cool it.'},
           ] : [
             {bold:batch&&batch.count>1?(l==='fr'?'Pesez les ingrédients indiqués pour ce lot.':'Weigh this batch’s ingredients shown above.'):(l==='fr'?'Pesez les ingrédients ci-dessus.':'Weigh the ingredients above.'),note:recipe?.yeast?.yeastType==='active_dry'?(l==='fr'?'Réactivez la levure selon le sachet avec une partie de l’eau mesurée.':'Activate the yeast as directed on its packet using part of the measured water.'):''},
-            {bold:laterAutolysedBatch?(l==='fr'?'Reprenez le mélange farine-eau de ce lot, préparé avant la première pétrissée.':'Take this batch’s flour-water mixture, prepared before the first mix.'):hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'
-              ?(waterMethod==='direct'&&mixerType==='spiral'&&recipe?.oil===0&&recipe?.sugar===0&&!['brioche','pain_mie','pain_viennois'].includes(styleKey)?(l==='fr'?'Incorporez la farine dans 90 % de l’eau liquide prévue ; réservez le reste. Ajoutez la glace mesurée au pétrissage si elle est indiquée ci-dessus.':'Combine flour with 90% of the planned liquid water; reserve the rest. Add the measured ice during mixing if shown above.'):(l==='fr'?'Incorporez la farine dans 90 % de l’eau préparée ; réservez le reste.':'Combine flour with 90% of the prepared water; reserve the rest.'))
-              :(l==='fr'?'Mélangez la farine et l’eau.':'Mix the flour and water.'),note:''},
-            ...(preMixAutolyse>0 ? [{bold:laterAutolysedBatch?(l==='fr'?'L’autolyse de ce lot est déjà faite : ne recommencez pas les 30 min de repos.':'This batch has already autolysed: do not repeat the 30-minute rest.'):(l==='fr'?`Mélangez la farine et l’eau, couvrez et laissez reposer jusqu’à ${formatTime(displayedMixTime,_fmtLocale)}.`:`Mix the flour and water, cover and rest until ${formatTime(displayedMixTime,_fmtLocale)}.`),note:isSourdough?(l==='fr'?'Puis ajoutez le levain et le sel.':'Then add the starter and salt.'):(l==='fr'?'Puis ajoutez la levure et le sel.':'Then add the yeast and salt.')}] : !isSourdough && autolyseMinFor(mixerType, styleKey)>0 ? [{bold:l==='fr'?`Couvrez et laissez reposer ${autolyseMinFor(mixerType, styleKey)} min, comme prévu au planning.`:`Cover and rest ${autolyseMinFor(mixerType, styleKey)} min, as scheduled.`,note:''}] : []),
-            {bold:isSourdough?(l==='fr'?'Ajoutez le levain mûr et le sel.':'Add the ripe starter and salt.'):hasPref?(l==='fr'?`Ajoutez votre ${prefermentType} préparé, puis le sel.`:`Add the prepared ${prefermentType}, then the salt.`):(l==='fr'?'Ajoutez la levure et le sel.':'Add the yeast and salt.'),note:''},
+            ...mixSequence,
             ...(hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'?[{bold:l==='fr'?'Quand la pâte se tient, ajoutez progressivement l’eau réservée ; laissez chaque ajout s’incorporer.':'Once the dough holds together, add the reserved water gradually; let each addition absorb.',note:''}]:[]),
             {bold:mixerType==='no_knead'?(l==='fr'?'Arrêtez une fois homogène. Couvrez ; les repos et rabats prévus développeront la pâte.':'Stop once combined. Cover; scheduled rests and folds develop the dough.'):styleKey==='pain_seigle'?(l==='fr'?'Mélangez jusqu’à homogénéité ; le seigle reste collant.':'Mix until evenly combined; rye dough remains sticky.'):mixerType==='hand'?(l==='fr'?'Pétrissez à la main jusqu’à une pâte lisse et souple.':'Knead by hand until smooth and stretchy.'):(l==='fr'?'Pétrissez jusqu’à une pâte lisse et souple, à une vitesse « pâte » de votre pétrin.':'Knead until smooth and stretchy, at a dough speed your mixer allows.'),note:''},
             ...(recipe && recipe.sugar > 0 ? [{bold:l==='fr'?'Incorporez le sucre mesuré pendant le pétrissage.':'Incorporate the measured sugar during mixing.',note:''}] : []),

@@ -91,7 +91,7 @@ test('short mixing duration retains exact minutes and hand instructions exclude 
  schedule.mixingDurationH=.6;
  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,{schedule,mixerType:'hand',styleKey:'pain_campagne',kitchenTemp:22,numItems:1,oil:0,hydration:65,locale:'en'})));
  assert.match(html,/ · 36 min/);
- assert.match(html,/Cover and rest 30 min, as scheduled/);
+ assert.match(html,/Cover and rest 30 min, until \d{1,2}:\d{2}(am|pm)\./,"the rest is stated with its clock time");
  assert.match(html,/Knead by hand until smooth and stretchy/);
  assert.doesNotMatch(html,/using only your mixer’s permitted dough speeds/);
 });
