@@ -34,7 +34,8 @@ const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { s
 import { starterFeedToMixHours } from '../lib/starterTiming';
 import { mixerDoughCapacity, suggestedMixingBatchCount } from '../utils/mixingBatches';
 import { doughShoppingItems as buildDoughShoppingItems, yeastShoppingName } from '../lib/doughShopping';
-import { buildPlanCalendar, downloadPlanCalendar, planActionLabel, type PlanCalendarEvent } from '../utils/planCalendar';
+import { isPanPizzaStyle } from '../utils/panPizza';
+import { buildPlanCalendar, calendarBakeId, downloadPlanCalendar, keyPlanEvents, type PlanCalendarEvent } from '../utils/planCalendar';
 import {commercialPrefermentWindow, validateConfirmedBake, type StarterEvent } from '../components/SchedulePicker';
 import { prefermentConditioningAction } from '../utils/scheduleEdit';
 import { findAvailabilityConflicts, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake } from '../utils/scheduleAvailability';
@@ -3823,18 +3824,22 @@ export default function Home() {
   function addPlanToCalendar() {
     if(!eatTime)return;
     const singleLoaf=bakeType==='bread'&&numItems===1, from=Date.now()-60000;
-    const events:PlanCalendarEvent[]=[];
-    for(const action of schedule?.availabilityActions??[]){
-      const label=planActionLabel(action.id,fr,{singleLoaf});
-      if(label&&+action.at>=from)events.push({at:action.at,end:action.end,label});
-    }
-    if(prefStartTime&&+prefStartTime>=from&&yeastType!=='sourdough')events.push({at:prefStartTime,label:prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):(fr?'Préparer le poolish':'Make Poolish')});
-    if(yeastType==='sourdough')for(const event of starterEvents){
-      if(event.isPast||event.kind==='last_fed'||event.kind==='known_peak'||+event.time<from)continue;
-      events.push({at:new Date(event.time),label:starterActionLabel(event.kind,fr)??event.label});
+    const panStyle=!!styleKey&&isPanPizzaStyle(styleKey);
+    // Only key steps, one alert each (see planCalendar.ts).
+    const events:PlanCalendarEvent[]=keyPlanEvents(schedule?.availabilityActions??[],fr,{singleLoaf,panStyle,from});
+    if(prefStartTime&&+prefStartTime>=from&&yeastType!=='sourdough')events.push({key:'preferment',at:prefStartTime,label:prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):(fr?'Préparer le poolish':'Make Poolish')});
+    if(yeastType==='sourdough'){
+      const counts:Record<string,number>={};
+      for(const event of starterEvents){
+        if(event.isPast||event.kind==='last_fed'||event.kind==='known_peak'||+event.time<from)continue;
+        const label=starterActionLabel(event.kind,fr);
+        if(!label)continue;
+        counts[event.kind]=(counts[event.kind]??0)+1;
+        events.push({key:`starter-${event.kind}-${counts[event.kind]}`,at:new Date(event.time),label,alertBeforeMin:event.kind==='fridge_out'?10:0});
+      }
     }
     const title=bakeName||(styleKey?styleDisplayName(styleKey):'Baker Hub');
-    downloadPlanCalendar(buildPlanCalendar({title,events,bakeAt:eatTime,bakeLabel:fr?'Enfourner':'Bake'}),'baker-hub-plan.ics');
+    downloadPlanCalendar(buildPlanCalendar({title,events,bakeAt:eatTime,bakeLabel:fr?'Enfourner':'Bake',bakeId:calendarBakeId(styleKey,eatTime)}),'baker-hub-plan.ics');
   }
   const setupSteps = tab==='custom' ? CUSTOM_STEPS : SIMPLE_STEPS.filter(step=>step.id!==3);
   const stepLink = (step:StepDef):BakeLink => ({label:step.chip,value:step.id===2&&!qtyChosen?null:step.id===10&&step.value?sourced(step.value,manualHydration!==undefined):step.id===8&&step.value?sourced(step.value,confirmed('method',prefermentType)):step.value,disabled:step.id>1&&!styleKey,onChoose:()=>openSetupStep(step.id)});
