@@ -3017,7 +3017,7 @@ export default function Home() {
     setAdvancedStep(1); setAdvancedHighestStep(1); setFlourBlend({ flour1: bakeType === 'bread' ? 'bread' : 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
     setManualSalt(undefined); setTargetDoughTemp(undefined); setWastePct(undefined); setFlourInFridge(false); setPoolishStorage('auto'); setYeastPctOverride(undefined); setStarterPctOverride(undefined); setMeasuredFlourTemp(undefined); setMeasuredPrefermentTemp(undefined); setPrefermentFlourPct(undefined);
-    setRecipeGenerated(false); setProtocolStale(false); setActiveTab('batch'); setAcceptedPlan(undefined);
+    setRecipeGenerated(false); setProtocolStale(false); setActiveTab('batch'); setAcceptedPlan(undefined); setCustomPlanSeen(false);
     setReviewMode(false); setSetupOverview(false);
     setModeChosen(false);
     // Restart means restart. Without these the three settled-flags survived the
@@ -3699,6 +3699,10 @@ export default function Home() {
     if (tab === 'custom' && activeTab === 'setup' && modeChosen && advancedStep !== 99 && advancedStep !== visibleCustomStep)
       setAdvancedStep(visibleCustomStep);
   }, [tab, activeTab, modeChosen, advancedStep, visibleCustomStep]);
+  // Fine-tune comes before Custom's bake-time step: until that step has planned
+  // the dough, the yeast amount there would be read from another plan.
+  const [customPlanSeen, setCustomPlanSeen] = useState(false);
+  useEffect(() => { if (tab === 'custom' && activeTab === 'setup' && visibleCustomStep === 9) setCustomPlanSeen(true); }, [tab, activeTab, visibleCustomStep]);
 
   const customFlow: StepFlow = {
     editReturn: recipeGenerated ? {label:setupReturnLabel,onReturn:finishSetupEdit} : undefined,
@@ -5120,12 +5124,14 @@ export default function Home() {
                   {yeastType && yeastType!=='sourdough' && prefermentType==='none' && (()=>{
                     // Entered in the baker's own yeast; stored as IDY so a yeast change keeps the timing.
                     const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
-                    const shownPct = yeastPctOverride!==undefined ? yeastPctOverride*conversion : recipe?.yeast?.convertedPct;
+                    // Until the Custom plan exists the amount is "Set after timing", never another plan's.
+                    const planReady = recipeGenerated || customPlanSeen;
+                    const shownPct = yeastPctOverride!==undefined ? yeastPctOverride*conversion : planReady ? recipe?.yeast?.convertedPct : undefined;
                     const yeastName = (localName(YEAST_TYPES[yeastType]) ?? yeastType).toLowerCase();
                     const entryIssue = yeastEntryIssue && eatTime && yeastEntryIssue.bakeAt===+eatTime ? yeastEntryIssue : null;
                     return <div data-yeast-override style={{marginBottom:18}}>
                       <label style={{display:'block',fontSize:16}}>{fr?`Levure (% de farine, ${yeastName})`:`Yeast (% of flour, ${yeastName})`}
-                        <input type="number" key={`yeast:${yeastPctOverride ?? 'auto'}:${shownPct ?? ''}`} defaultValue={shownPct!==undefined?Math.round(shownPct*1000)/1000:''} min={Math.round(0.02*conversion*1000)/1000} max={Math.round(2*conversion*100)/100} step={0.01}
+                        <input type="number" key={`yeast:${yeastPctOverride ?? 'auto'}:${shownPct ?? ''}`} placeholder={shownPct===undefined?(fr?'Fixée après le planning':'Set after timing'):undefined} defaultValue={shownPct!==undefined?Math.round(shownPct*1000)/1000:''} min={Math.round(0.02*conversion*1000)/1000} max={Math.round(2*conversion*100)/100} step={0.01}
                           aria-describedby={entryIssue?'bh-yeast-entry-note':undefined}
                           onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const idy=Math.min(2,Math.max(0.02,n/conversion));if(recipe?.yeast&&yeastPctOverride===undefined&&Math.abs(idy-recipe.yeast.pct)<0.0005){setYeastEntryIssue(null);return;}
                             // An amount that cannot ferment before the bake is not applied: say so here, before any plan moves.
@@ -5152,7 +5158,8 @@ export default function Home() {
                       })()}
                       <p style={{margin:'6px 0 0',fontSize:14,color:'var(--smoke)',lineHeight:1.45}}>{yeastPctOverride!==undefined
                         ? (fr?'Les horaires suivent cette quantité : moins de levure, pousse plus longue.':'Your timing follows this amount: less yeast, longer rise.')
-                        : (fr?'Calculée pour vos horaires. Modifiez-la, les horaires suivent.':'Set for your timing. Change it and the timing follows.')}</p>
+                        : planReady ? (fr?'Calculée pour vos horaires. Modifiez-la, les horaires suivent.':'Set for your timing. Change it and the timing follows.')
+                        : (fr?'Fixée après le planning. Vous pouvez aussi saisir votre quantité : les horaires suivront.':'Set after timing. You can also enter your own amount: the timing will follow.')}</p>
                       {yeastPctOverride!==undefined&&<button type="button" onClick={()=>{setYeastPctOverride(undefined);setPlanReplanPending(true);}} style={{minHeight:44,marginTop:6,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:9,background:'var(--paper)',color:'var(--char)',fontSize:16,cursor:'pointer'}}>{fr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
                     </div>;
                   })()}
