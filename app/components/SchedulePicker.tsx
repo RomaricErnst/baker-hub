@@ -237,6 +237,8 @@ interface SchedulePickerProps extends WarmupInputs {
   replanPending?: boolean;
   /** Custom, direct dough: drop the baker's yeast amount and plan with the calculated one. */
   onUseCalculatedYeast?: () => void;
+  /** The baker's entered yeast amount in their own yeast (% of flour), for copy; absent without one. */
+  enteredYeastShownPct?: number;
   /** Rendered right under the bake date and time (the kitchen question). */
   afterBakeInput?: React.ReactNode;
   /** 'starter' renders only the starter questions; 'plan' everything else; 'all' both. */
@@ -1832,7 +1834,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, enteredYeastShownPct, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   // A baker-chosen starter % lengthens or shortens the levain room-temperature
   // bulk (starterBulkFactor). The solver windows add the same hours the
   // schedule builder does, so scoring, card and chart stay on one bulk.
@@ -6657,7 +6659,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, schedul
       [`mix-finish-batch-${i+2}`, [`Reprendre le pétrissage du lot ${i+2}`,`Resume kneading batch ${i+2}`]],
     ]).flat()) as Record<string,[string,string]>,
     autolyse: ['Autolyse · farine et eau', 'Autolyse · combine flour and water'],
-    mix: ['Pétrissage', 'Mixing'], 'mix-finish': ['Reprendre le pétrissage', 'Resume kneading'],
+    mix: ['Pétrir la pâte', 'Start Dough'], 'mix-finish': ['Reprendre le pétrissage', 'Resume kneading'],
     poach: ['Pochage', 'Poaching'], roll: ['Abaisse', 'Rolling'],
     'fold-1': ['Rabat 1', 'Fold 1'], 'fold-2': ['Rabat 2', 'Fold 2'],
     'fold-3': ['Rabat 3', 'Fold 3'], 'fold-4': ['Rabat 4', 'Fold 4'],
@@ -6781,7 +6783,9 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, schedul
         const button=<button type="button" data-replan-method={option.method} className={index===0?'bh-start-primary':undefined} onClick={()=>{if(!validateScheduleCandidate({...option.input,now:Date.now()},times).valid){setRestartRevision(v=>v+1);return;}onAcceptReplan?.(option.method,times.start,times.bake,times.prefHours,option.inFridge,repairBlocks);}}>{isFr?'Utiliser ce plan':'Use this plan'} · {name}</button>;
         const summary=<p>{isFr?'Commencer':'Start'} · {fmtCardDT(new Date(+times.start-times.prefHours*3600000),isFr)}{option.method!=='none'?(option.inFridge?(isFr?' · Au réfrigérateur':' · Refrigerated'):(isFr?' · À température ambiante':' · Room temperature')):''}</p>;
         const mixSummary=option.method!=='none'?<p>{isFr?'Pétrir':'Mix dough'} · {fmtCardDT(times.start,isFr)}</p>:null;
-        return index===0?<div key={option.method}>{summary}{mixSummary}{button}</div>:<details key={option.method}><summary>{name}</summary>{summary}{mixSummary}{button}</details>;
+        // A preferment brings its own yeast: say the entered amount goes before the baker switches.
+        const replacesYeast=option.method!=='none'&&enteredYeastShownPct!==undefined?<p data-replaces-yeast>{isFr?`Cela remplace vos ${String(enteredYeastShownPct).replace('.',',')} % de levure.`:`This replaces your ${enteredYeastShownPct}% yeast.`}</p>:null;
+        return index===0?<div key={option.method}>{summary}{mixSummary}{replacesYeast}{button}</div>:<details key={option.method}><summary>{name}</summary>{summary}{mixSummary}{replacesYeast}{button}</details>;
       })}
     </>:<p>{isFr?'Aucun plan complet trouvé pour cette cuisson. Choisissez une autre heure ou modifiez vos disponibilités ci-dessus.':'No complete plan found for this bake time. Choose another time or edit your availability above.'}</p>}
     <button type="button" className="bh-start-link" onClick={onCancelReplan}>{isFr?'Retour':'Back'}</button>
@@ -7121,12 +7125,14 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, schedul
   const coherentTimes=+pendingStart<+pendingEatTime&&(!committedSchedule||(+committedSchedule.divideBallTime<=+pendingEatTime&&
     (committedSchedule.availabilityActions??[]).every(action=>+action.at<=+pendingEatTime)))&&(!isSourdough||
     (completedMixAt!==undefined||!previewStarter?.windowTooShort&&!!timelineStarterEvents.length&&starterHandsOnActions(timelineStarterEvents,Date.now()).every(action=>+action.at<=+pendingStart)));
-  // ── Simple mode: one decision, never a repair workshop ──
+  // ── One decision, never a repair workshop ──
   // Simple never asks the baker to inspect or cover individual steps. When the
   // requested bake does not fit, it shows one card: what clashes, the nearest
   // verified time as the primary action and, when the only clash is the final
   // fridge removal, the option to keep the time with someone at home.
-  const simpleConflicts=mode==='simple'&&eatTimeSet&&!currentCandidateValid
+  // Custom shows the same card when steps fall during busy times, and keeps the
+  // per-step list below it for bakers who cover only some steps.
+  const simpleConflicts=eatTimeSet&&!currentCandidateValid&&schedulerSection!=='starter'
     ? findAvailabilityConflicts(currentPlanActions(committedSchedule?.availabilityActions??[]),repairBlocks,Date.now())
         .filter((conflict,index,all)=>all.findIndex(other=>other.action.id===conflict.action.id&&+other.action.at===+conflict.action.at)===index)
     : [];
@@ -7160,7 +7166,8 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, schedul
             const name=/^fold-/.test(id)?(folds>1?(isFr?`${folds} rabats`:`${folds} folds`):(isFr?'un rabat':'a fold')):simpleConflictName(conflict.action);
             if(seen.has(name))continue;seen.add(name);parts.push(name);
           }
-          const lower=parts.map((p,i)=>i===0?p:p.charAt(0).toLowerCase()+p.slice(1));
+          // "Start Dough" is the step's name in English; keep its capitals mid-sentence.
+          const lower=parts.map((p,i)=>i===0||(!isFr&&p===conflictNames.mix[1])?p:p.charAt(0).toLowerCase()+p.slice(1));
           const list=lower.length>1?`${lower.slice(0,-1).join(', ')} ${isFr?'et':'and'} ${lower.at(-1)}`:lower[0];
           const sentence=list.charAt(0).toUpperCase()+list.slice(1);
           return isFr?`${sentence} tombent ${during}.`:`${sentence} fall ${during}.`;
@@ -7177,7 +7184,9 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, schedul
             :`This dough needs about ${formatDuration(neededH,lang)} from mixing to baking. ${fmtCardHM(pendingEatTime,false)} is ${formatDuration(awayH,lang)} away.`;
         })();
   const simpleSuggestion=!searchingTargets?firstSuggestedTarget:undefined;
-  const simpleDecision=mode==='simple'&&eatTimeSet&&!currentCandidateValid&&(simpleSuggestion||simpleOnlyFridgeClash)
+  // Custom: only for busy-time clashes; a fridge exit alone keeps its own arrangement card.
+  const customDecision=mode==='custom'&&!inputsOnly&&simpleConflicts.length>0&&!simpleOnlyFridgeClash;
+  const simpleDecision=eatTimeSet&&!currentCandidateValid&&(mode==='simple'?(simpleSuggestion||simpleOnlyFridgeClash):customDecision)
     ? <div className="bh-simple-decision" data-simple-decision role="status" style={{border:'1px solid var(--border)',borderRadius:12,padding:'14px 16px',margin:'12px 0',background:'var(--warm)'}}>
         <p style={{margin:'0 0 12px',fontSize:15,lineHeight:1.5,color:'var(--char)'}}>{simpleDecisionSentence}</p>
         {simpleSuggestion&&<button type="button" className="bh-apply-plan" data-simple-accept style={{minHeight:44,width:'100%',whiteSpace:'normal'}} onClick={()=>{setSimpleMoved({from:new Date(pendingEatTime),to:+simpleSuggestion.bake});applySuggestedTarget(simpleSuggestion);}}>
@@ -7213,6 +7222,9 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, schedul
             ?(isFr?`Garder ${simpleTimeLabel(pendingEatTime)} : je m’occupe de cette étape`:`Keep ${simpleTimeLabel(pendingEatTime)}: I’ll handle this step`)
             :(isFr?`Garder ${simpleTimeLabel(pendingEatTime)} : je m’occupe de ces ${simpleConflicts.length} étapes`:`Keep ${simpleTimeLabel(pendingEatTime)}: I’ll handle these ${simpleConflicts.length} steps`)}
         </button>}
+        {mode==='custom'&&<button type="button" className="bh-back-action" data-decision-availability style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={openAvailability}>
+          {isFr?'Modifier mes indisponibilités':'Change my unavailable times'}
+        </button>}
       </div>
     : null;
   const simpleDecisionPending=!!simpleDecision;
@@ -7223,7 +7235,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, schedul
     ? <p className="bh-key-detail" role="status" data-simple-covered>{isFr?`Quelqu’un sort la pâte à ${fmtCardHM(finalFridgeRemoval.at,isFr)}.`:`Someone takes the dough out at ${fmtCardHM(finalFridgeRemoval.at,isFr)}.`}{' '}
         <button type="button" className="bh-back-action" data-simple-undo style={{minHeight:44,minWidth:44}} onClick={()=>setFridgeRemovalCovered(false)}>{isFr?'Annuler':'Undo'}</button></p>
     : null;
-  const simpleMovedNote=mode==='simple'&&simpleMoved&&eatTimeSet&&+pendingEatTime===simpleMoved.to&&!simpleDecision
+  const simpleMovedNote=simpleMoved&&eatTimeSet&&+pendingEatTime===simpleMoved.to&&!simpleDecision
     ? <p className="bh-key-detail" role="status" data-simple-moved>{isFr?`Enfournement déplacé à ${fmtCardHM(pendingEatTime,isFr)}.`:`Moved to ${fmtCardHM(pendingEatTime,isFr)}.`}{' '}
         <button type="button" className="bh-back-action" data-simple-moved-undo style={{minHeight:44,minWidth:44}} onClick={()=>{const previous=simpleMoved.from;setSimpleMoved(null);
           applyTimePick(`${previous.getFullYear()}-${String(previous.getMonth()+1).padStart(2,'0')}-${String(previous.getDate()).padStart(2,'0')}`,previous.getHours(),previous.getMinutes());}}>{isFr?'Annuler':'Undo'}</button></p>
@@ -7812,8 +7824,8 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, schedul
         {/* A chosen yeast amount too slow for the time left: say why, and offer the way out. */}
         {!inputsOnly&&eatTimeSet&&!bakeInPast&&yeastTooSlow&&yeastTiming&&<div className="bh-plan-notice" data-yeast-too-slow role="status" style={{margin:'8px 0 12px'}}>
           <p style={{margin:'0 0 10px',fontSize:15,lineHeight:1.5}}>{isFr
-            ?`${String(yeastPctOverride).replace('.',',')} % de levure demande environ ${formatDuration(Math.round(yeastTiming.center*4)/4,'fr')} : enfournez plus tard ou mettez plus de levure.`
-            :`${yeastPctOverride}% yeast needs about ${formatDuration(Math.round(yeastTiming.center*4)/4,'en')}: bake later or use more yeast.`}</p>
+            ?`${String(enteredYeastShownPct??yeastPctOverride).replace('.',',')} % de levure demande environ ${formatDuration(Math.round(yeastTiming.center*4)/4,'fr')} : enfournez plus tard ou mettez plus de levure.`
+            :`${enteredYeastShownPct??yeastPctOverride}% yeast needs about ${formatDuration(Math.round(yeastTiming.center*4)/4,'en')}: bake later or use more yeast.`}</p>
           {onUseCalculatedYeast&&<button type="button" className="bh-apply-plan" data-use-calculated-yeast style={{minHeight:44,width:'100%'}} onClick={onUseCalculatedYeast}>{isFr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
         </div>}
         {!inputsOnly&&eatTimeSet&&starterDescribed&&!coherentTimes&&simpleKnownPeakConflict&&<p className="bh-key-note">{starterPeakGuidance}</p>}
@@ -8699,7 +8711,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, schedul
           {busyWithFridge&&otherConflicts.length>0&&<><strong>{isFr?'Autres étapes pendant votre indisponibilité :':'Other steps during your unavailable hours:'}</strong><ul>{otherConflicts.map(({action})=><li key={`${action.id}:${+action.at}`}>{foldActionLabel(action.id,locale,mixingBatches)??(conflictNames[action.id]??['Étape','Step'])[isFr?0:1]} · {fmtCardDT(action.at,isFr)}</li>)}</ul></>}
           {!busyWithFridge&&blockedPeriod&&['cold-out-2','preheat'].includes(preview?.conflict??'')&&<p>{isFr?`Cette intervention tombe dans votre indisponibilité de ${blockedPeriod}. Cette étape doit respecter la remise en température de la pâte ou le préchauffage du four. Choisissez une cuisson plus tardive, ou modifiez vos disponibilités si vous pouvez intervenir.`:`This hands-on step overlaps your unavailable period (${blockedPeriod}). The remaining step must fit the dough’s readiness window or oven preheating. Choose a later baking time, or change availability if you can do this step.`}</p>}
           {!dirty&&hasTimingOverrides&&<p>{isFr?'Vos horaires choisis sont conservés. Le retour à la recommandation les libère pour chercher un autre planning.':'Your chosen times are kept. Return to the recommendation to release them and find another plan.'}</p>}
-          {batchConflict ? <BatchRepairNotice isFr={isFr} numItems={numItems ?? 1} itemWeight={itemWeight} mixerCapacityG={mixerCapacityG} wastePct={wastePct} onEditQuantity={onEditQuantity} /> : editAvailability}
+          {batchConflict ? <BatchRepairNotice isFr={isFr} numItems={numItems ?? 1} itemWeight={itemWeight} mixerCapacityG={mixerCapacityG} wastePct={wastePct} onEditQuantity={onEditQuantity} /> : simpleDecisionPending ? null : editAvailability}
         </div>:undefined;
         const notice=(fridgeArrangement||conflictNotice||(!dirty&&fridgeArrangementChanged))?<>{!dirty&&fridgeArrangementChanged&&<p role="status" className="bh-key-detail">{isFr?'Le planning a changé. La sortie du réfrigérateur n’est plus confirmée.':'The plan changed. Fridge removal is no longer confirmed.'}</p>}{fridgeArrangement}{showResolutionChoice&&<div style={{marginBottom:12}}>{editAvailability}</div>}{conflictNotice}</>:undefined;
         const chartSchedule = isSourdough ? starterPreview?.validation.schedule : preview?.schedule;

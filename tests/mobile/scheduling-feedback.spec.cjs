@@ -591,3 +591,85 @@ for(const mode of ['simple','custom'])test(mode+': blocked Friday finishing offe
  expect(state.blocks.some(b=>state.startTime>=b.from&&state.startTime<b.to)).toBe(false);
 });
 
+
+// Custom shows Simple's decision card for busy-time clashes, keeps the per-step
+// list below it, and its forward button waits for a choice instead of scrolling.
+async function customClash(page,locale){
+ const {plan}=await seedParty(page,locale,'custom','18:45');
+ const fr=locale==='fr';
+ const decision=page.locator('#step-9 [data-simple-decision]');
+ await expect(decision).toBeVisible();
+ await expect(decision.locator('[data-decision-availability]')).toHaveText(fr?'Modifier mes indisponibilités':'Change my unavailable times');
+ await expect(plan.locator('[data-availability-conflicts]')).toBeVisible();
+ await expect(plan.locator('[data-availability-conflicts]')).not.toContainText(/Mixing|Pétrissage ·/);
+ // The last action of the step is its way forward.
+ const forward=page.locator('#step-9 .bh-step-actions button').last();
+ await expect(forward).toBeDisabled();
+ await expect(page.locator('#bh-plan-choice-hint')).toHaveText(fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.');
+ await expect(page.getByRole('button',{name:/^(Review affected times|Voir les horaires à ajuster)/})).toHaveCount(0);
+ return {plan,decision,forward,fr};
+}
+for(const locale of ['fr','en'])test(`${locale} custom: the clash card keeps the bake time in one tap, then the recipe can be created`,async({page},info)=>{
+ const {plan,decision,forward,fr}=await customClash(page,locale);
+ const keepAll=decision.locator('[data-simple-keep-all]');
+ await expect(keepAll).toContainText(fr?/^Garder .* : je m’occupe de ces \d étapes/:/^Keep .*: I’ll handle these \d steps/);
+ await fits(page,keepAll);
+ await info.attach('custom-clash-card',{body:await page.screenshot(),contentType:'image/png'});
+ const before=await stored(page);
+ await keepAll.tap();
+ await expect(decision).toHaveCount(0);
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','true');
+ const after=await stored(page);
+ expect(after.eatTime).toBe(before.eatTime);
+ expect(after.blocks.some(block=>(block.coveredActions?.length??0)>0||!!block.fridgeRemoval)).toBe(true);
+ // The next step opens; the plan stays valid there and the recipe can be created.
+ await expect(forward).toBeEnabled();
+ await expect(forward).toHaveText(fr?'Peaufiner →':'Fine-tune →');
+ await forward.tap();
+ await expect(page.locator('#step-10:visible')).toBeVisible();
+ await page.locator('#step-10:visible .bh-step-actions button').last().tap();
+ const create=page.locator('#step-9 .bh-step-actions').getByRole('button',{name:fr?'Créer ma recette':'Create my recipe',exact:true});
+ await expect(create).toBeEnabled();
+ await create.tap();
+ await expect.poll(async()=>(await stored(page)).recipeGenerated).toBe(true);
+ expect((await stored(page)).eatTime).toBe(before.eatTime);
+});
+for(const locale of ['fr','en'])test(`${locale} custom: the clash card moves the bake to a verified time`,async({page})=>{
+ const {plan,decision,forward}=await customClash(page,locale);
+ const before=await stored(page);
+ await decision.locator('[data-simple-accept]').tap();
+ await expect(decision).toHaveCount(0);
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','true');
+ await expect.poll(async()=>(await stored(page)).eatTime).toBeGreaterThan(before.eatTime);
+ expect(plainBlocks((await stored(page)).blocks)).toEqual(before.blocks);
+ await expect(page.locator('#step-9 [data-simple-moved]')).toBeVisible();
+ await expect(forward).toBeEnabled();
+});
+// After a recipe exists the card offers no other bake time (the plan keeps the
+// baker's bake); resolving returns to the recipe, and "Plan updated" says what moved.
+for(const locale of ['fr','en'])for(const way of ['keep','availability'])test(`${locale} custom: resolving a clash on an existing recipe (${way}) returns to an updated recipe`,async({page})=>{
+ const fr=locale==='fr';
+ await seed(page,{locale,mode:'custom',preferment:'none',now:PARTY_NOW,extra:{savedAt:PARTY_NOW,kitchenTemp:24,fridgeTemp:5,mixerType:'hand',startTime:PARTY_MIX,eatTime:PARTY_BAKE,blocks:[partyBlock('18:45')],recipeGenerated:true,acceptedStartTime:PARTY_MIX,acceptedPreparationAt:PARTY_MIX,acceptedEatTime:PARTY_BAKE}});
+ const decision=page.locator('#step-9 [data-simple-decision]');
+ await expect(decision).toBeVisible();
+ if(way==='keep')await decision.locator('[data-simple-keep-all]').tap();
+ else{
+  await decision.locator('[data-decision-availability]').tap();
+  const group=page.getByRole('group',{name:fr?'Mes indisponibilités':'My unavailable times'});
+  await expect(group).toHaveAttribute('open','');
+  await group.getByRole('button',{name:fr?/^Supprimer/:/^Remove/}).first().tap();
+  await expect.poll(async()=>(await stored(page)).blocks.length).toBe(0);
+ }
+ await expect(decision).toHaveCount(0);
+ const forward=page.locator('#step-9 .bh-step-actions button').last();
+ await expect(forward).toBeEnabled();
+ await forward.tap();
+ await expect.poll(async()=>{const s=await stored(page);return s.recipeGenerated&&!s.protocolStale&&s.acceptedStartTime===s.startTime;},{timeout:20000}).toBe(true);
+ const after=await stored(page);
+ expect(after.eatTime).toBe(PARTY_BAKE);
+ const moved=page.locator('[data-plan-moved]');
+ if(after.startTime!==PARTY_MIX){
+  await expect(moved).toBeVisible();
+  await expect(moved).toContainText(fr?'Le pétrissage passe de':'Start Dough moves from');
+ }else await expect(moved).toHaveCount(0);
+});
