@@ -536,10 +536,12 @@ function SetupBlockerAction({flow,onJump}: {flow:StepFlow;onJump?:(id:number)=>v
 }
 
 // ── Setup review ──────────────────────────────
-function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale = false, reviewValues = {}, returnLabel, kitchenRow }: {
+function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale = false, reviewValues = {}, returnLabel, kitchenRow, starterRow }: {
   returnLabel?: string;
   /** The kitchen temperature has its own screen; the review lists it as its own row. */
   kitchenRow?: { value: string; onClick: () => void };
+  /** Simple sourdough: the "Your starter" answer, listed after the kitchen. */
+  starterRow?: { value: string; onClick: () => void };
   nameField?: React.ReactNode;
   flow: StepFlow;
   modeChip?: { value: string; onClick: () => void };
@@ -555,6 +557,7 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale 
     ...(modeChip ? [{ key: 'mode', label: 'Mode', value: modeChip.value, onClick: modeChip.onClick }] : []),
     ...steps.flatMap(step => [
       ...(kitchenRow && step.group === 'plan' ? [{ key: 'kitchen-temperature', label: fr ? 'Température de la cuisine' : 'Kitchen temperature', value: kitchenRow.value, onClick: kitchenRow.onClick }] : []),
+      ...(starterRow && step.group === 'plan' ? [{ key: 'starter', label: fr ? 'Votre levain' : 'Your starter', value: starterRow.value, onClick: starterRow.onClick }] : []),
       { key: String(step.id), label: step.id===3 ? step.title : step.chip, value: reviewValues[step.id] ?? step.value ?? step.gap, onClick: () => onJump(step.id) },
     ]),
   ];
@@ -1095,6 +1098,8 @@ export default function Home() {
   const [knownPeakTime, setKnownPeakTime]   = useState<Date | null>(null);
   const [hasNotFedYet, setHasNotFedYet]     = useState<boolean | null>(null);
   const [lastFedAge, setLastFedAge]         = useState<'today'|'yesterday'|'days23'|'days45'|'week'|null>(null);
+  // Simple sourdough asks one question on its own screen; the answer belongs to this bake.
+  const [simpleStarterAnswer, setSimpleStarterAnswer] = useState<'counter'|'fridge'|'ready'|null>(null);
   const [lastFeedRatio, setLastFeedRatio]   = useState<1 | 2 | 4 | 5 | 10>(1);
   const [nextFeedRatio, setNextFeedRatio]   = useState<1 | 2 | 4 | 5 | 10>(1);
   const [nextFeedRatioOverride, setNextFeedRatioOverride] = useState<1 | 2 | 4 | 5 | 10 | null>(null);
@@ -1639,6 +1644,7 @@ export default function Home() {
     if (session.lastFedTime) setLastFedTime(new Date(session.lastFedTime));
     if (session.knownPeakTime) setKnownPeakTime(new Date(session.knownPeakTime));
     if (session.hasNotFedYet !== undefined) setHasNotFedYet(session.hasNotFedYet ?? null);
+    if (session.simpleStarterAnswer !== undefined) setSimpleStarterAnswer(session.simpleStarterAnswer ?? null);
     if (session.lastFedAge !== undefined) setLastFedAge((session.lastFedAge as 'today'|'yesterday'|'days23'|'days45'|'week'|null) ?? null);
     // Stage 1: support both new and legacy key names
     const _lfr = session.lastFeedRatio ?? session.feedRatio;
@@ -2174,6 +2180,7 @@ export default function Home() {
       knownPeakTime: knownPeakTime?.getTime() ?? null,
       hasNotFedYet: hasNotFedYet ?? undefined,
       lastFedAge: lastFedAge ?? null,
+      simpleStarterAnswer,
       lastFeedRatio,
       nextFeedRatio,
       nextFeedRatioOverride,
@@ -2226,7 +2233,7 @@ export default function Home() {
     // observed feed is the active solver anchor after a new feeding.
     const history=actualAt===undefined?observations:[];
     setStarterRecoveryPending(true);setStarterFeedRecords(records);setStarterEvents(history);setTimingOverrides({});
-    if(actualAt!==undefined){setLastFedTime(new Date(actualAt));setLastFeedRatio(usedRatio);setPlanningMode('last_fed');setLastFedAge('today');setKnownPeakTime(null);setHasNotFedYet(false);setStarterLocation('rt');setStarterState('rt_fed');}
+    if(actualAt!==undefined){setSimpleStarterAnswer(null);setLastFedTime(new Date(actualAt));setLastFeedRatio(usedRatio);setPlanningMode('last_fed');setLastFedAge('today');setKnownPeakTime(null);setHasNotFedYet(false);setStarterLocation('rt');setStarterState('rt_fed');}
     setFeedTime(null);setFeed2Time(null);setUsingPeak2(false);setFridgeOutTime(null);setStarterFridgeInTime(null);
     setAcceptedScheduleRepair(null);setSessionRestored(false);setProtocolStale(true);setStarterTimingValid(false);setStarterPlanResetKey(k=>k+1);
     setSetupOverview(false);setActiveStep(7);setAdvancedStep(9);openDestination('organisation');
@@ -2535,6 +2542,31 @@ export default function Home() {
   function openBakeTimeInputs(){
     chooseMode('simple');setSetupOverview(false);setAwaitingRecipeChoice(true);scrollToStepTop();
   }
+  // Simple sourdough: "Where is your starter now?" becomes the starter state the
+  // solver already plans from. The feed times are safe assumptions, not facts:
+  //  · counter — fed within the last day. We assume a full day ago (the oldest
+  //    case), so it is past its peak and the plan always opens with a refresh
+  //    feed; assuming a fresher feed could time the mix on a peak already gone.
+  //  · fridge — about a week since the last feed, the "A week+" age Custom uses
+  //    (196 h), so the plan includes the revival refreshes the solver models.
+  //  · bubbly now — an observed peak, exactly as Custom's "ready now" path; a far
+  //    bake turns it into one more refresh inside the solver.
+  function applySimpleStarterAnswer(answer:'counter'|'fridge'|'ready'){
+    const now=Date.now(), quarter=15*60000;
+    setSimpleStarterAnswer(answer);
+    setHasNotFedYet(false);setFridgeOutTime(null);setFeedTime(null);setFeed2Time(null);setUsingPeak2(false);
+    setStarterFridgeInTime(null);setStarterPeakTime(null);setStarterEvents([]);setStarterTimingValid(false);
+    if(answer==='ready'){
+      setPlanningMode('know_peak');setKnownPeakTime(new Date(now));setStarterLocation('rt');
+      setLastFedTime(null);setLastFedAge(null);setStarterState('rt_fed');
+    }else{
+      const fedAt=new Date(Math.floor((now-(answer==='counter'?24:196)*3600000)/quarter)*quarter);
+      setPlanningMode('last_fed');setKnownPeakTime(null);setLastFedTime(fedAt);
+      setLastFedAge(answer==='counter'?'yesterday':'week');
+      setStarterLocation(answer==='counter'?'rt':'fridge');setStarterState(answer==='counter'?'rt_fed':'fridge_unfed');
+    }
+    setStarterPlanResetKey(k=>k+1);
+  }
   function openModeChoice() {
     setModeChosen(false); setSetupOverview(false); setActiveTab('setup'); scrollToStepTop();
   }
@@ -2548,6 +2580,11 @@ export default function Home() {
       const savedMixer = loadProfile()?.mixerType;
       const preferredMixer: MixerType = savedMixer && savedMixer in MIXER_TYPES ? savedMixer as MixerType : 'hand';
       setMixerType(profile && !profile.supportedMixers.includes(preferredMixer) ? profile.supportedMixers[0] : preferredMixer);
+    }
+    if (key === 'custom' && simpleStarterAnswer) {
+      // The Simple answer only implied a last feed; Custom's Starter step asks for the real one.
+      setSimpleStarterAnswer(null);setPlanningMode('last_fed');setKnownPeakTime(null);setLastFedTime(null);setLastFedAge(null);
+      setStarterEvents([]);setStarterPlanResetKey(k=>k+1);
     }
     if (key === 'simple' && !yeastType) {
       chooseYeast(isLevainStyle(styleKey)?'sourdough':'instant');
@@ -2982,6 +3019,7 @@ export default function Home() {
     setKnownPeakTime(null);
     setHasNotFedYet(null);
     setLastFedAge(null);
+    setSimpleStarterAnswer(null);
     setFeed2Time(null);
     setFridgeOutTime(null);
     setStarterFridgeInTime(null);
@@ -3233,6 +3271,7 @@ export default function Home() {
     setLastFedTime(snap.lastFedTime ? new Date(snap.lastFedTime) : null);
     setKnownPeakTime(snap.knownPeakTime ? new Date(snap.knownPeakTime) : null);
     setLastFedAge((snap.lastFedAge as 'today'|'yesterday'|'days23'|'days45'|'week'|null) ?? null);
+    setSimpleStarterAnswer(snap.simpleStarterAnswer ?? null);
     setHasNotFedYet(snap.hasNotFedYet ?? null);
     setFeedTime(null);setStarterPeakTime(null);
     const _snapLfr = snap.lastFeedRatio ?? snap.feedRatio ?? 1;
@@ -3259,6 +3298,7 @@ export default function Home() {
       setKnownPeakTime(null);
       setHasNotFedYet(null);
       setLastFedAge(null);
+      setSimpleStarterAnswer(null);
       setFeedTime(null);
       setFeed2Time(null);
       setFridgeOutTime(null);
@@ -3492,6 +3532,15 @@ export default function Home() {
   const reviewKitchen = `${fr ? 'Réfrigérateur' : 'Fridge'} ${cToDisplay(fridgeTemp,units)}${tempUnit(units)}`;
   const levainStyle = isLevainStyle(styleKey);
   const levainCustom = levainStyle && tab === 'custom' && yeastType === 'sourdough';
+  // Simple sourdough: one "Your starter" screen between Kitchen and Bake time.
+  // Custom keeps its detailed Starter step instead.
+  const simpleStarterScreen = !isUnleavened && !!styleKey && (levainStyle || yeastType === 'sourdough') && !(tab === 'custom' && modeChosen);
+  const starterStateDescribed = planningMode === 'know_peak' ? !!knownPeakTime : lastFedAge !== null && !!lastFedTime;
+  const simpleStarterPending = simpleStarterScreen && !simpleStarterAnswer && !starterStateDescribed;
+  const simpleStarterLabel = simpleStarterAnswer === 'counter' ? (fr ? 'Sur le plan de travail' : 'On the counter')
+    : simpleStarterAnswer === 'fridge' ? (fr ? 'Au réfrigérateur' : 'In the fridge')
+    : simpleStarterAnswer === 'ready' ? (fr ? 'Bien monté et bullé' : 'Bubbly and risen') : null;
+  const openSimpleStarter = () => { openDestination('batch'); setBatchView('starter'); scrollToStepTop(); };
   const CUSTOM_STEPS: StepDef[] = ([
     { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Quel style de pizza ?':'Which pizza style?'),
       value: styleKey ? styleDisplayName(styleKey) : null,
@@ -3654,7 +3703,7 @@ export default function Home() {
     onGapJump: (id) => {openSetupStep(id,false);setGapReturnTo(SIMPLE_LAST);},
     onPrev: (id) => {
       if(id===3){openSetupStep(7,false);return;}
-      if(id===7&&!recipeGenerated){if(collectingBakeTime){openSetupStep(2,false);if(!isUnleavened)setBatchView('kitchen');}else openBakeTimeInputs();return;}
+      if(id===7&&!recipeGenerated){if(collectingBakeTime){openSetupStep(2,false);if(!isUnleavened)setBatchView(simpleStarterScreen?'starter':'kitchen');}else openBakeTimeInputs();return;}
       const i = SIMPLE_STEPS.findIndex(x => x.id === id);
       openSetupStep(SIMPLE_STEPS[Math.max(0, i - 1)].id,false);
     },
@@ -3755,9 +3804,10 @@ export default function Home() {
     {label:fr?'Fournée':'Bake',value:bakeType==='bread'?(fr?'Pain':'Bread'):'Pizza',onChoose:backToProducts},
     ...setupSteps.filter(step=>step.id<=2).map(stepLink),
     ...(!isUnleavened&&styleKey?[{label:fr?'Cuisine':'Kitchen',value:kitchenAnswered?`${cToDisplay(kitchenTemp,units)}${tempUnit(units)}`:null,onChoose:()=>{openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}]:[]),
+    ...(simpleStarterScreen?[{label:fr?'Levain':'Starter',value:simpleStarterLabel,onChoose:openSimpleStarter}]:[]),
     ...(collectingBakeTime ? [{label:fr?'Heure de cuisson':'Bake time',value:eatTime?formatTime(eatTime,locale):null,onChoose:openBakeTimeInputs}] : modeChosen?setupSteps.filter(step=>step.id>2).map(stepLink):[]),
   ];
-  const currentSubsection = destination==='batch' ? (batchView==='quantity'?(fr?'Quantité':'Quantity'):batchView==='kitchen'?(fr?'Cuisine':'Kitchen'):'Style') : !modeChosen ? 'Mode' : (tab==='simple'&&activeStep===7 ? (fr?'Heure de cuisson':'Bake time') : setupSteps.find(step=>step.id===(tab==='custom'?advancedStep:activeStep))?.chip ?? (fr?'Ma fournée':'My bake'));
+  const currentSubsection = destination==='batch' ? (batchView==='quantity'?(fr?'Quantité':'Quantity'):batchView==='kitchen'?(fr?'Cuisine':'Kitchen'):batchView==='starter'?(fr?'Levain':'Starter'):'Style') : !modeChosen ? 'Mode' : (tab==='simple'&&activeStep===7 ? (fr?'Heure de cuisson':'Bake time') : setupSteps.find(step=>step.id===(tab==='custom'?advancedStep:activeStep))?.chip ?? (fr?'Ma fournée':'My bake'));
   const renderQuantity = (roundView:'count'|'size') => (<PrototypeQuantityPicker roundView={roundView} bakeType={bakeType ?? 'pizza'} locale={locale} units={units}
                 totalFlourTarget={bakeType==='bread'?totalFlourTarget:undefined}
                 onFlourTargetChange={value=>{setTotalFlourTarget(value);setQtyChosen(true);if(value!==undefined){setWastePct(undefined);setItemWeight(value*1.8/Math.max(1,numItems));}else setItemWeight(Math.max(weightBounds.min,Math.min(weightBounds.max,Math.round(itemWeight))));}}
@@ -4184,7 +4234,21 @@ export default function Home() {
               <KitchenSlider value={kitchenTemp} units={units} fr={fr} onChange={c=>{setKitchenTemp(c);if(kitchenAnswered||recipeGenerated)confirmSetting('climate',c);}}/>
               <BottomActions className="bh-batch-actions bh-batch-actions-navigation">
                 <button type="button" className="bh-back-action" onClick={()=>{setBatchView('quantity');scrollToStepTop();}}>{fr?'Étape précédente':'Previous step'}</button>
-                <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>{const changed=!kitchenAnswered||recipeGenerated;confirmSetting('climate',kitchenTemp);if(recipeGenerated){setPlanReplanPending(true);finishSetupEdit();}else{if(changed)setPlanReplanPending(true);openBakeTimeInputs();}}}>{recipeGenerated?setupReturnLabel:(fr?'Heure de cuisson →':'Bake time →')}</button></BottomActions>
+                <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>{const changed=!kitchenAnswered||recipeGenerated;confirmSetting('climate',kitchenTemp);if(recipeGenerated){setPlanReplanPending(true);finishSetupEdit();}else{if(changed)setPlanReplanPending(true);if(simpleStarterScreen){setBatchView('starter');scrollToStepTop();}else openBakeTimeInputs();}}}>{recipeGenerated?setupReturnLabel:simpleStarterScreen?(fr?'Votre levain →':'Your starter →'):(fr?'Heure de cuisson →':'Bake time →')}</button></BottomActions>
+            </> : batchView==='starter' ? <>
+              <h2 className="bh-page-title">{fr?'Où est votre levain en ce moment ?':'Where is your starter now?'}</h2>
+              <div role="group" aria-label={fr?'Où est votre levain en ce moment ?':'Where is your starter now?'} data-simple-starter style={{display:'grid',gap:12,marginTop:8}}>
+                {([['counter',fr?'Sur le plan de travail':'On the counter'],['fridge',fr?'Au réfrigérateur':'In the fridge']] as const).map(([answer,label])=>(
+                  <button key={answer} type="button" aria-pressed={simpleStarterAnswer===answer} onClick={()=>applySimpleStarterAnswer(answer)}
+                    style={{textAlign:'left',padding:'18px 20px',minHeight:64,border:`1.5px solid ${simpleStarterAnswer===answer?'var(--terra)':'var(--border)'}`,borderRadius:18,background:simpleStarterAnswer===answer?'var(--cream)':'var(--card)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:17,fontWeight:700,cursor:'pointer',boxShadow:'0 2px 12px rgba(43,36,32,.06)'}}>{label}</button>
+                ))}
+                <button type="button" className="bh-back-action" aria-pressed={simpleStarterAnswer==='ready'} onClick={()=>applySimpleStarterAnswer('ready')}
+                  style={{justifySelf:'start',minHeight:44,fontWeight:simpleStarterAnswer==='ready'?700:undefined,textAlign:'left'}}>{fr?'Il est bien monté et bullé en ce moment':'It’s bubbly and risen right now'}</button>
+              </div>
+              {!simpleStarterAnswer&&<p id="bh-starter-choice-hint" style={{margin:'12px 0 0',fontSize:14,color:'var(--ash)'}}>{fr?'Choisissez une réponse pour continuer.':'Choose an answer to continue.'}</p>}
+              <BottomActions className="bh-batch-actions bh-batch-actions-navigation">
+                <button type="button" className="bh-back-action" onClick={()=>{setBatchView('kitchen');scrollToStepTop();}}>{fr?'Étape précédente':'Previous step'}</button>
+                <button data-bh-forward type="button" disabled={!simpleStarterAnswer} aria-describedby={!simpleStarterAnswer?'bh-starter-choice-hint':undefined} style={{...NEXT_CTA,opacity:simpleStarterAnswer?1:0.5,cursor:simpleStarterAnswer?'pointer':'not-allowed'}} onClick={()=>{if(!simpleStarterAnswer)return;if(recipeGenerated){setPlanReplanPending(true);finishSetupEdit();}else{setPlanReplanPending(true);openBakeTimeInputs();}}}>{recipeGenerated?setupReturnLabel:(fr?'Heure de cuisson →':'Bake time →')}</button></BottomActions>
             </> : <>
               <h2 className="bh-page-title">{fr?'Quelle quantité de pâte ?':'How much dough?'}</h2>
               {styleKey==='pain_levain'&&<div style={{marginTop:16}}><label className="bh-seed-toggle"><input type="checkbox" checked={addSeeds} onChange={event=>setAddSeeds(event.target.checked)} /> {fr?'Ajouter des graines':'Add seeds'}</label>{addSeeds && <p>{fr?'Les graines trempent à l’avance : 2 h minimum, idéalement la veille.':'Soak the seeds ahead: at least 2 hours, ideally overnight.'}</p>}</div>}
@@ -4192,7 +4256,7 @@ export default function Home() {
                             {renderQuantity('count')}
               <BottomActions className="bh-batch-actions bh-batch-actions-navigation">
                 <button type="button" className="bh-back-action" onClick={()=>{if(recipeGenerated)backToSetupChoices();else {setBatchView('style');scrollToStepTop();}}}>{recipeGenerated?(fr?'Retour à mes choix':'Back to my choices'):(fr?'Étape précédente':'Previous step')}</button>
-                <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(recipeGenerated)finishSetupEdit();else if(isUnleavened||kitchenAnswered)openBakeTimeInputs();else{setBatchView('kitchen');scrollToStepTop();}}}>{recipeGenerated?setupReturnLabel:isUnleavened||kitchenAnswered?(fr?'Heure de cuisson →':'Bake time →'):(fr?'Cuisine →':'Kitchen →')}</button></BottomActions>
+                <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(recipeGenerated)finishSetupEdit();else if(kitchenAnswered&&simpleStarterPending){setBatchView('starter');scrollToStepTop();}else if(isUnleavened||kitchenAnswered)openBakeTimeInputs();else{setBatchView('kitchen');scrollToStepTop();}}}>{recipeGenerated?setupReturnLabel:kitchenAnswered&&simpleStarterPending?(fr?'Votre levain →':'Your starter →'):isUnleavened||kitchenAnswered?(fr?'Heure de cuisson →':'Bake time →'):(fr?'Cuisine →':'Kitchen →')}</button></BottomActions>
             </>}
           </section>}
 
@@ -4300,6 +4364,7 @@ export default function Home() {
             {setupOverview && (
               <SetupReview
                 kitchenRow={!isUnleavened&&kitchenAnswered?{value:`${cToDisplay(kitchenTemp,units)}${tempUnit(units)}`,onClick:()=>{captureEditReturn();openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}:undefined}
+                starterRow={simpleStarterScreen&&simpleStarterLabel?{value:simpleStarterLabel,onClick:()=>{captureEditReturn();openSimpleStarter();}}:undefined}
                 stale={protocolStale}
                 nameField={<label style={{display:'block',fontSize:16,fontWeight:600,marginBottom:16}}>{fr?'Nom de la préparation':'Bake name'}
                 <input value={bakeName} placeholder={bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night')} maxLength={100} onChange={e=>setBakeName(e.target.value)} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',fontWeight:400}} />
@@ -4355,7 +4420,7 @@ export default function Home() {
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => simpleFlow.onJump(1)} />
               ) : (
-              <SchedulePicker inputsOnly={collectingBakeTime} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor}
+              <SchedulePicker inputsOnly={collectingBakeTime} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor}
                 {...poolishInputs}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
@@ -4437,6 +4502,7 @@ export default function Home() {
                   baker will set. A pending decision holds back Generate only. */}
               {collectingBakeTime && eatTime && +eatTime>Date.now() && (()=>{
                 if(kitchenPending)return <div data-recipe-choice style={{marginTop:16}}><button type="button" style={NEXT_CTA} onClick={()=>{openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}>{fr?'Température de la cuisine →':'Kitchen temperature →'}</button></div>;
+                if(simpleStarterPending)return <div data-recipe-choice style={{marginTop:16}}><button type="button" style={NEXT_CTA} onClick={openSimpleStarter}>{fr?'Votre levain →':'Your starter →'}</button></div>;
                 const leaven=(yeastType==='sourdough'||isLevainStyle(styleKey))?(fr?'levain':'starter'):(fr?'préferment':'preferment');
                 const customDesc=directMethodOnly?(fr?'Vous choisissez matériel, farine et hydratation':'You choose equipment, flour and hydration'):(fr?`Vous choisissez matériel, farine, ${leaven} et hydratation`:`You choose equipment, flour, ${leaven} and hydration`);
                 const card:React.CSSProperties={display:'grid',gap:4,textAlign:'left',padding:'16px 18px',minHeight:56,border:'1.5px solid var(--border)',borderRadius:18,background:'var(--card)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:17,cursor:'pointer',boxShadow:'0 2px 12px rgba(43,36,32,.06)'};

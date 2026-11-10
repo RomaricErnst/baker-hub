@@ -57,6 +57,8 @@ export interface StarterEvent {
   hasFridgePhase?: boolean;
   /** Time was derived from a vague chip ("2–3 days ago") — card shows ≈ */
   timeIsEstimate?: boolean;
+  /** Simple "Your starter" answer: the last feed is our assumption, never shown as a fact. */
+  assumed?: boolean;
   historicalStorage?: boolean;
 }
 
@@ -239,6 +241,10 @@ interface SchedulePickerProps extends WarmupInputs {
   schedulerSection?: 'all' | 'starter' | 'plan';
   /** Levain: bulk multiplier for a baker-chosen starter % (starterBulkFactor); 1 by default. */
   starterBulkFactor?: number;
+  /** Simple sourdough: the answer from the "Your starter" screen. The page turns it
+   *  into starter state (location, last feed, ready now); the picker only hides the
+   *  inferred last feed, which the baker never told us. */
+  simpleStarterAnswer?: 'counter' | 'fridge' | 'ready' | null;
   onReplanHandled?: () => void;
   onFridgeOutTimeChange?: (t: Date | null) => void;
   onUsingPeak2Change?: (v: boolean) => void;
@@ -1811,7 +1817,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   // A baker-chosen starter % lengthens or shortens the levain room-temperature
   // bulk (starterBulkFactor). The solver windows add the same hours the
   // schedule builder does, so scoring, card and chart stay on one bulk.
@@ -1936,14 +1942,15 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
   const [lastFedTime, setLastFedTime]           = useState<Date | null>(lastFedTimeProp ?? null);
   const [knownPeakTime, setKnownPeakTime]       = useState<Date | null>(knownPeakTimeProp ?? null);
   // Derived for BakeGuide backward compat
-  const [showStarterDetails, setShowStarterDetails] = useState(false);
   const [simpleStarterUncertain, setSimpleStarterUncertain] = useState(!starterTimingValidProp);
   useEffect(() => { if (!starterTimingValidProp) setSimpleStarterUncertain(true); }, [starterTimingValidProp]);
   // Planning around the baker's day is the point of the app: the busy-times question starts open.
   const [availabilityOpen,setAvailabilityOpen] = useState(true);
-  const [simpleReadyObserved,setSimpleReadyObserved] = useState(false);
   // "Yes, ready now" with a far-off bake: the plan refreshes the starter once more.
   const [simpleReadyRefresh,setSimpleReadyRefresh] = useState(false);
+  // Simple asks one question ("Where is your starter now?"); the last feed behind
+  // the plan is our assumption, so it is never printed as something the baker said.
+  const lastFedAssumed = mode === 'simple' && isSourdough && (simpleReadyRefresh || simpleStarterAnswer !== null);
   const [starterMature, setStarterMature]       = useState(starterMatureProp ?? true);
   const [starterHasRye, setStarterHasRye]       = useState(starterHasRyeProp ?? false);
   const [fridgeOutTime, setFridgeOutTime]       = useState<Date | null>(null);
@@ -3851,7 +3858,8 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
               // Age chips ("2–3 days ago") derive a precise-looking time —
               // flag it so the card shows ≈ instead of implying we know
               // it was exactly 8:15am.
-              timeIsEstimate: lastFedAge === 'days23' || lastFedAge === 'days45' || lastFedAge === 'week',
+              timeIsEstimate: lastFedAssumed || lastFedAge === 'days23' || lastFedAge === 'days45' || lastFedAge === 'week',
+              assumed: lastFedAssumed || undefined,
               cardNote: isLastFedActiveInFridge
                 ? (isFr
                     ? `Au frigo — pic vers ${fmtCardHM(lastFedBellPeakTime, isFr)}`
@@ -7182,7 +7190,14 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
 
   // The starter's own questions. Custom levain shows them on the Starter step
   // (schedulerSection 'starter') and leaves the bake-time step to the plan.
-  const starterCard = isSourdough ? (
+  // Simple asks about the starter on its own screen before the bake time; here it
+  // only says why the plan adds a refresh to a starter that was ready earlier.
+  const simpleRefreshNote = mode === 'simple' && isSourdough && (simpleReadyRefresh || (simpleStarterAnswer === 'ready' && planningMode === 'last_fed'))
+    ? <p role="status" data-simple-starter-note className="bh-key-detail" style={{ margin: '12px 0 0', fontSize: 15, lineHeight: 1.5 }}>{isFr
+        ? 'Votre levain est prêt maintenant, mais la cuisson est encore loin : le plan prévoit un rafraîchi de plus, pour qu’il soit à son pic au pétrissage.'
+        : 'Your starter is ready now, and the bake is still far off: the plan refreshes it once more so it peaks when you mix.'}</p>
+    : null;
+  const starterCard = isSourdough && mode === 'simple' ? simpleRefreshNote : isSourdough ? (
         <div className="bh-starter-controls" style={{
           background: 'var(--warm)',
           border: '1.5px solid var(--border)',
@@ -7202,57 +7217,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
             </div>
           </div>
 
-          {mode === 'simple' && (
-            <div style={{ display: 'grid', gap: '12px', fontSize: '15px', lineHeight: 1.5 }}>
-              <p style={{ margin: 0 }}>{isFr
-                ? 'Votre levain est-il prêt maintenant : bien monté, bullé, pas retombé ?'
-                : 'Is your starter ready now: risen, bubbly, not collapsed?'}</p>
-              <p style={{ margin: 0, fontSize: 14, color: 'var(--smoke)' }}>{isFr
-                ? `Levain rafraîchi avec autant de farine que d’eau · cuisine : ${kitchenTemp} °C.`
-                : `Starter fed equal weights of flour and water · kitchen: ${kitchenTemp}°C.`}</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                <button type="button" aria-pressed={planningMode === 'know_peak' || simpleReadyRefresh} style={{ ...starterPillButton(planningMode === 'know_peak' || simpleReadyRefresh), minHeight: 44 }} onClick={() => {
-                  setSimpleReadyRefresh(false);
-                  const observedPeak = new Date();
-                  setPlanningMode('know_peak'); onPlanningModeChange?.('know_peak');
-                  setKnownPeakTime(observedPeak); onKnownPeakTimeChange?.(observedPeak);
-                  setStarterLocation('rt'); onStarterLocationChange?.('rt');
-                  setLastFedTime(null); onLastFedTimeChange?.(null);
-                  setLastFedAge(null); onLastFedAgeChange?.(null);
-                  setFridgeOutTime(null); onFridgeOutTimeChange?.(null);
-                  setHasNotFedYet(false); onHasNotFedYetChange?.(false);
-                  onFeedTimeChange?.(null);
-                  onStarterStateChange?.('rt_fed');
-                  setSimpleStarterUncertain(false); setSimpleReadyObserved(true); setShowStarterDetails(false);
-                }}>{isFr ? 'Oui, il est prêt maintenant' : 'Yes, ready now'}</button>
-                <button type="button" aria-pressed={simpleStarterUncertain} style={{ ...starterPillButton(simpleStarterUncertain), minHeight: 44 }} onClick={() => {
-                  setPlanningMode('last_fed'); onPlanningModeChange?.('last_fed');
-                  setKnownPeakTime(null); onKnownPeakTimeChange?.(null);
-                  setLastFedTime(null); onLastFedTimeChange?.(null);
-                  setLastFedAge(null); onLastFedAgeChange?.(null);
-                  onStarterPeakTimeChange?.(null);
-                  onFeedTimeChange?.(null); onStarterEventsChange?.([]);
-                  setSolverResult(null); setStartComputed(false);
-                  setSimpleStarterUncertain(true); setSimpleReadyObserved(false); setShowStarterDetails(true); setSimpleReadyRefresh(false);
-                }}>{isFr ? 'Pas encore' : 'Not yet'}</button>
-              </div>
-              {(() => {
-                const line = simpleReadyRefresh
-                  ? (isFr ? 'Votre levain est prêt maintenant, mais la cuisson est encore loin : le plan prévoit un rafraîchi de plus, pour qu’il soit à son pic au pétrissage.' : 'Your starter is ready now, and the bake is still far off: the plan refreshes it once more so it peaks when you mix.')
-                  : simpleStarterUncertain
-                  ? (lastFedAge ? null : (isFr ? 'Indiquez où il est et quand il a été rafraîchi.' : 'Tell us where it is and when you last fed it.'))
-                  : planningMode === 'know_peak' && knownPeakTime
-                    ? (isFr ? `Levain prêt à ${fmtCardDT(knownPeakTime, true)}.` : `Starter ready at ${fmtCardDT(knownPeakTime, false)}.`)
-                    : null;
-                return line ? <p role="status" style={{ margin: 0 }}>{line}</p> : null;
-              })()}
-              {/* Kitchen temperature is shown once, in Preparation. */}
-              <button type="button" aria-expanded={showStarterDetails} onClick={() => {setShowStarterDetails(v => !v);setSimpleReadyObserved(false);setSimpleReadyRefresh(false);}} style={{ ...starterPillButton(false), minHeight: 44 }}>
-                {showStarterDetails ? (isFr ? 'Masquer les détails du levain' : 'Hide starter details') : (isFr ? 'Autre horaire / détails du levain' : 'Other timing / starter details')}
-              </button>
-            </div>
-          )}
-          {(mode !== 'simple' || showStarterDetails) && <div style={{ display: 'grid', gap: '16px' }}>
+          {<div style={{ display: 'grid', gap: '16px' }}>
           {/* ── Q1: Where has it been since last fed? ── */}
           <div>
             <div style={STARTER_LABEL_STYLE}>
@@ -7801,6 +7766,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
 
         </div>
         {afterBakeInput&&<div style={{marginTop:16}}>{afterBakeInput}</div>}
+        {inputsOnly&&eatTimeSet&&!bakeInPast&&simpleRefreshNote}
         {!inputsOnly&&eatTimeSet&&starterDescribed&&!coherentTimes&&simpleKnownPeakConflict&&<p className="bh-key-note">{starterPeakGuidance}</p>}
         {!inputsOnly&&eatTimeSet&&starterDescribed&&!coherentTimes&&!currentCandidateValid&&<p className="bh-plan-state" role="status">
           {planStateReason}</p>}
@@ -8317,6 +8283,7 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
         // 1 — sourdough starter events (history + feeds + fridge consequences)
         if (isSourdough && displayStarterEvents.length) {
           for (const ev of displayStarterEvents) {
+            if (ev.kind === 'last_fed' && (lastFedAssumed || ev.assumed)) continue;
             const isHist = ev.isPast && !ev.isActive;
             const timeText = ev.kind === 'fridge_out'
               ? fmtCardDT(ev.time, isFr)
@@ -8564,8 +8531,8 @@ function FermentedSchedulePicker({ afterBakeInput, schedulerSection = 'all', sta
             if(event.kind==='known_peak')continue;
             // An age chip ("2–3 days ago") is not a date: don't print an invented one.
             if(event.kind==='last_fed'&&event.timeIsEstimate)continue;
-            // Inferred from "ready now": not something the baker told us, so not shown as a fact.
-            if(event.kind==='last_fed'&&simpleReadyRefresh)continue;
+            // Inferred from the Simple starter answer: not something the baker told us, so not shown as a fact.
+            if(event.kind==='last_fed'&&(lastFedAssumed||event.assumed))continue;
             const editable=!startTimeInPast&&!readinessUnsupported&&!event.isPast&&+event.time>Date.now()&&['refresh','pre_mix'].includes(event.kind);
             const id='starter:'+event.kind;
             const requested=editingRow===id?(event.kind==='pre_mix'?basePins.feed:basePins.refresh):null;
