@@ -26,7 +26,7 @@ test('both review actions regenerate stale recipes and expose explicit edits; gu
  assert.ok(handler);
  for(const [recipeGenerated,protocolStale,fillingsReturn,expected] of [[false,false,null,'generate'],[true,true,null,'generate'],[true,false,{destination:'protocol'},'return'],[true,false,null,'recipe']]){
   const calls=[];
-  const context={recipeGenerated,protocolStale,canGenerate:true,previousRecipeInputKey:{current:'current'},recipeInputKey:'current',fillingsReturn,handleGenerate(accepted){assert.equal(accepted,true);calls.push('generate');},setSetupOverview(value){assert.equal(value,false);},finishFillings(){calls.push('return');},openDestination(value){calls.push(value);}};
+  const context={planReplanPending:false,replanReturn:null,tab:'simple',recipeGenerated,protocolStale,canGenerate:true,previousRecipeInputKey:{current:'current'},recipeInputKey:'current',fillingsReturn,handleGenerate(accepted){assert.equal(accepted,true);calls.push('generate');},setSetupOverview(value){assert.equal(value,false);},finishFillings(){calls.push('return');},openDestination(value){calls.push(value);}};
   vm.runInNewContext(ts.transpileModule(handler+';finishSetupEdit();',{}).outputText,context);
   assert.deepEqual(calls,[expected]);
  }

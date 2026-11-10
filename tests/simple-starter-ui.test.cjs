@@ -39,11 +39,13 @@ test('observed starter peak cannot be reused eleven hours later, including warm 
  assert.equal(knownPeakMixUsable(new Date(+peak+3600000),peak,0),false);
 });
 
-test('restored Simple known peak outside mix window renders a blocker instead of readiness',()=>{
+test('restored Simple known peak outside mix window plans one more refresh instead of a dead end',()=>{
  const peak=new Date(Date.now()+15*60000), start=new Date(+peak+11*3600000), eat=new Date(+start+24*3600000);
  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'Asia/Singapore'},React.createElement(Picker,{startTime:start,eatTime:eat,blocks:[],preheatMin:45,styleKey:'pain_levain',kitchenTemp:22,bakeType:'bread',isSourdough:true,mode:'simple',planningMode:'know_peak',knownPeakTime:peak,sessionRestored:true,onChange:()=>{}})));
- assert.ok(html.includes('The starter may be outside its peak window at mixing time. Move the refresh or adjust its ratio.'));
- assert.equal((html.match(/class="bh-key-note"/g)||[]).length,1,'one canonical warning instead of stale repeated messages');
+ // A ready starter cannot wait eleven hours: the plan is rebuilt from the feed behind that peak.
+ assert.ok(html.includes('the plan refreshes it once more so it peaks when you mix'));
+ assert.ok(!html.includes('peaks naturally around mix time'),'never reports the stale peak as ready');
+ assert.ok(!html.includes('cannot keep your chosen times'));
 });
 
 test('Not sure keeps timing validity false until a replacement starter plan exists',()=>{

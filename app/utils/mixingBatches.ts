@@ -20,9 +20,21 @@ export function mixerDoughCapacity(mixer: string, requestedCapacityG?: number) {
     ? Math.round(requestedCapacityG!)
     : MIXER_TYPES[mixer as MixerType]?.maxDoughG ?? 9999;
 }
+export const isManualMixer = (mixer: string) => mixer === 'hand' || mixer === 'no_knead';
+const statedCapacity = (g?: number) => Number.isFinite(g) && g! >= 100 && g! <= 1000000;
+/** Hands and bowls have no fixed load: 1,500 g is a comfort note, never a reason to split the plan. */
+export function suggestedMixingBatchCount(totalDoughG: number, mixer: string, requestedCapacityG?: number) {
+  if (isManualMixer(mixer) && !statedCapacity(requestedCapacityG)) return 1;
+  return Math.max(1, Math.ceil(totalDoughG / mixerDoughCapacity(mixer, requestedCapacityG)));
+}
+/** One hand-mixed dough above the comfortable load: the guide suggests two halves, the plan stays one dough. */
+export function largeManualDough(totalDoughG: number, mixer: string, batches: number, requestedCapacityG?: number) {
+  return isManualMixer(mixer) && !statedCapacity(requestedCapacityG) && batches <= 1
+    && totalDoughG > (MIXER_TYPES[mixer as MixerType]?.maxDoughG ?? 9999);
+}
 export function mixingBatchPlan(recipe: RecipeResult, mixer: string, requested?: number, index = 0, requestedCapacityG?: number) {
   const capacity = mixerDoughCapacity(mixer, requestedCapacityG);
-  const suggested = Math.max(1, Math.ceil(recipe.totalDough / capacity));
+  const suggested = suggestedMixingBatchCount(recipe.totalDough, mixer, requestedCapacityG);
   const count = Number.isFinite(requested) && requested! >= 1 ? Math.min(100, Math.floor(requested!)) : suggested;
   const active = Math.max(0, Math.min(count - 1, index));
   const pref = recipe.preferment;
@@ -38,5 +50,5 @@ export function mixingBatchPlan(recipe: RecipeResult, mixer: string, requested?:
   const portion = Object.fromEntries(Object.entries(totals).map(([key,value]) =>
     [key, splitAmount(value, count, active, key === 'yeast' || key === 'preferment' ? 2 : 0)])) as typeof totals;
   const total = Object.values(portion).reduce((a,b)=>a+b,0);
-  return {count, active, suggested, capacity, portion, total, overCapacity: total > capacity};
+  return {count, active, suggested, capacity, portion, total, overCapacity: total > capacity && !(isManualMixer(mixer) && !statedCapacity(requestedCapacityG))};
 }

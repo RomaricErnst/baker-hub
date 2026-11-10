@@ -394,10 +394,10 @@ export default function RecipeOutput({
   // Batch splitting — auto-triggered when total dough exceeds mixer default capacity
   const mixerMaxG   = (MIXER_TYPES as Record<string, { maxDoughG?: number }>)[mixerType]?.maxDoughG ?? 9999;
   const totalDoughG = result.totalDough;
-  const minBatches  = Math.ceil(totalDoughG / mixerMaxG);
-  const needsBatches = minBatches > 1;
   const [batchIndex, setBatchIndex] = useState(0);
   const batchPlan = mixingBatchPlan(result, mixerType, mixingBatches, batchIndex, mixerCapacityG);
+  // Hand mixing has no fixed load: the plan stays one dough and the guide carries the advice.
+  const needsBatches = batchPlan.suggested > 1;
   // effectiveBatches can be 1 if baker overrides — no Math.max constraint
   const effectiveBatches = batchPlan.count;
 

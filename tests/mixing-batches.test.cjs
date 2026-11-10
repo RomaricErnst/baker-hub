@@ -27,9 +27,11 @@ test('one, three and five sequential batches reserve their full mixing window an
   const offsets=require('../app/utils/scheduleFolds.ts').scheduledFoldMinutes(s.bulkFermHours,'neapolitan');
   for (const fold of s.availabilityActions.filter(x=>x.id.startsWith('fold'))) {
    const [,number,lot='1']=/^fold-(\d+)(?:-batch-(\d+))?$/.exec(fold.id);
-   a.equal(+fold.at,+s.batchMixWindows[Number(lot)-1].end+offsets[Number(number)-1]*60000);
+   // Folds wait for the last mix: the whole fold series shifts by the same delay.
+   const delay=Math.max(0,+s.bulkFermStart-(+s.firstBatchReadyAt+offsets[0]*60000));
+   a.equal(+fold.at,+s.batchMixWindows[Number(lot)-1].end+offsets[Number(number)-1]*60000+delay);
   }
-  if(s.batchTimingConflict) a.equal(+s.availabilityActions.find(x=>x.id==='fold-1').at,+s.batchTimingConflict.firstFoldAt);
+  a.equal(s.batchTimingConflict,undefined);
  }
 });
 test('later-batch work conflicts cannot be hidden by a clear first batch',()=>{
@@ -65,15 +67,27 @@ test('unleavened multi-batch plan preserves the covered rest rather than squeezi
  a.equal(s.batchMixWindows.length,5);
 });
 
-test('shared batch plan never approves a first-lot fold missed while later lots mix',()=>{
+test('a first-lot fold never lands while later lots are still mixing: it waits for the last mix',()=>{
  const {utils}=require('./load-production.cjs');
  const start=new Date('2026-09-28T07:00:00Z'),bake=new Date('2026-09-28T19:30:00Z');
  const two=utils.buildSchedule(start,bake,[],22,45,'stand','neapolitan',8,2);
  a.equal(two.batchTimingConflict,undefined);
  const five=utils.buildSchedule(start,bake,[],22,45,'stand','neapolitan',24,5);
- a.equal(five.preparationInvalid,true);
- a.equal(+five.batchTimingConflict.firstFoldAt,+start+41*60000);
- a.equal(+five.batchTimingConflict.mixingEnd,+start+55*60000);
+ a.equal(five.batchTimingConflict,undefined);
+ a.notEqual(five.preparationInvalid,true);
+ // Without the wait the first fold would fall at +41 min, 14 min before mixing ends at +55 min.
+ a.equal(+five.availabilityActions.find(x=>x.id==='fold-1').at,+start+55*60000);
+});
+test('hand mixing is one load whatever the weight; a stated capacity or a machine still splits',()=>{
+ const {suggestedMixingBatchCount,largeManualDough}=require('../app/utils/mixingBatches.ts');
+ a.equal(suggestedMixingBatchCount(1560,'hand'),1);
+ a.equal(suggestedMixingBatchCount(3120,'no_knead'),1);
+ a.equal(suggestedMixingBatchCount(1560,'hand',1000),2);
+ a.equal(suggestedMixingBatchCount(1560,'stand'),2);
+ a.equal(largeManualDough(1560,'hand',1),true);
+ a.equal(largeManualDough(1300,'hand',1),false);
+ a.equal(largeManualDough(1560,'hand',2),false);
+ a.equal(largeManualDough(1560,'stand',1),false);
 });
 
 test('last batch must still start inside the supported method window',()=>{

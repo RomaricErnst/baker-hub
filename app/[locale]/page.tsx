@@ -32,7 +32,7 @@ import MixerPicker from '../components/MixerPicker';
 import MixingBatchControl from '../components/MixingBatchControl';
 const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { ssr: false });
 import { starterFeedToMixHours } from '../lib/starterTiming';
-import { mixerDoughCapacity } from '../utils/mixingBatches';
+import { mixerDoughCapacity, suggestedMixingBatchCount } from '../utils/mixingBatches';
 import {commercialPrefermentWindow, validateConfirmedBake, type StarterEvent } from '../components/SchedulePicker';
 import { prefermentConditioningAction } from '../utils/scheduleEdit';
 import { findAvailabilityConflicts, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake } from '../utils/scheduleAvailability';
@@ -1108,6 +1108,10 @@ export default function Home() {
   const [starterPctOverride, setStarterPctOverride] = useState<number | undefined>(undefined);
   // Set by explicit plan-input edits (yeast amount, starter %, poolish storage); the scheduler clears it after replanning.
   const [planReplanPending, setPlanReplanPending] = useState(false);
+  // A plan-input edit made after generation: the plan step mounts the scheduler, it replans,
+  // then the recipe is regenerated and the baker is told what moved.
+  const [replanReturn, setReplanReturn] = useState<{from:number;settled:boolean}|null>(null);
+  const [planMoved, setPlanMoved] = useState<{from:number;to:number}|null>(null);
   const [targetDoughTemp, setTargetDoughTemp] = useState<number | undefined>(undefined);
   const [measuredFlourTemp, setMeasuredFlourTemp] = useState<number | undefined>(undefined);
   const [measuredPrefermentTemp, setMeasuredPrefermentTemp] = useState<number | undefined>(undefined);
@@ -1851,7 +1855,7 @@ export default function Home() {
     }
     return Math.round(numItems * itemWeight * (totalFlourTarget === undefined && wastePct && wastePct > 0 ? 1 + wastePct / 100 : 1));
   })();
-  const suggestedMixingBatches = Math.max(1, Math.ceil(plannedDoughG / mixerCapacityG));
+  const suggestedMixingBatches = suggestedMixingBatchCount(plannedDoughG, mixerType ?? 'hand', customMixerCapacityG);
   const selectedMixingBatches = mixingBatches ?? suggestedMixingBatches;
 
   const poolishInputs = {
@@ -2645,6 +2649,11 @@ export default function Home() {
     // A clean flag is not proof of current validity. Only an explicit return
     // attempt marks an invalid clean plan pending; never do this merely because
     // a restored planner is still initializing its readiness callbacks.
+    if(recipeGenerated&&planReplanPending&&tab==='custom'&&!replanReturn){
+      setReplanReturn({from:+startTime,settled:false});
+      setActiveTab('setup');setSetupOverview(false);setAdvancedStep(9);scrollToStepTop();
+      return;
+    }
     if(recipeGenerated&&!canGenerate){setProtocolStale(true);handleGenerate(true);return;}
     if(!recipeGenerated||protocolStale||previousRecipeInputKey.current!==recipeInputKey){handleGenerate(true);return;}
     setSetupOverview(false);
@@ -3025,6 +3034,23 @@ export default function Home() {
         .then(id => { if (id) setBakeEventId(id); });
     }
   }
+
+  // Wait for the scheduler's replan to land in page state before regenerating.
+  useEffect(()=>{
+    if(!replanReturn||replanReturn.settled||planReplanPending)return;
+    const timer=setTimeout(()=>setReplanReturn(current=>current&&{...current,settled:true}),350);
+    return()=>clearTimeout(timer);
+  },[replanReturn,planReplanPending]);
+  useEffect(()=>{
+    if(!replanReturn?.settled)return;
+    const from=replanReturn.from;
+    setReplanReturn(null);
+    // An invalid plan stays on the plan step, where the baker can see and resolve it.
+    if(!canGenerate)return;
+    if(+startTime!==from)setPlanMoved({from,to:+startTime});
+    handleGenerate(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[replanReturn?.settled]);
 
   async function loadRecipe(r: SavedRecipe) {
     if (!await confirmLocalReplacement()) return;
@@ -3768,6 +3794,7 @@ export default function Home() {
                 onHasNotFedYetChange={setHasNotFedYet}
                 lastFedAge={lastFedAge}
                 onLastFedAgeChange={setLastFedAge}
+                starterMature={starterMature} starterHasRye={starterHasRye} onStarterMatureChange={setStarterMature} onStarterHasRyeChange={setStarterHasRye}
                 lastFeedRatio={lastFeedRatio}
                 onLastFeedRatioChange={setLastFeedRatio}
                 nextFeedRatio={nextFeedRatio}
@@ -4073,6 +4100,15 @@ export default function Home() {
         )}
 
 {recipeGenerated && <div className="bh-bake-context" style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}><strong style={{fontSize:14}}>{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</strong><div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{destination==='recipe'&&!browsingFillings&&!execution&&!mixExecution?<button type="button" className="bh-section-back" onClick={openQuantityEdit} aria-label={fr?'Modifier la quantité':'Edit quantity'}>{bakeQuantityLabel(numItems,bakeType,styleKey,fr)}</button>:bakeQuantityLabel(numItems,bakeType,styleKey,fr)} <span style={{display:'inline-block'}}>{styleKey ? styleDisplayName(styleKey) : ''}</span></div></div>}
+{recipeGenerated && planMoved && destination==='recipe' && eatTime && <div data-plan-moved role="status" style={{margin:'12px 0 0',padding:'12px 14px',border:'1px solid var(--gold)',borderRadius:14,fontSize:14,lineHeight:1.5,background:'var(--warm)'}}>
+  <strong>{fr?'Plan mis à jour.':'Plan updated.'}</strong>{' '}
+  {fr?`Le pétrissage passe de ${formatBakeDateTime(new Date(planMoved.from),locale)} à ${formatBakeDateTime(new Date(planMoved.to),locale)}. La cuisson reste ${formatBakeDateTime(eatTime,locale)}.`
+     :`Start Dough moves from ${formatBakeDateTime(new Date(planMoved.from),locale)} to ${formatBakeDateTime(new Date(planMoved.to),locale)}. Bake stays ${formatBakeDateTime(eatTime,locale)}.`}
+  <span style={{display:'flex',gap:16,marginTop:6}}>
+    <button type="button" className="bh-back-action" style={{minHeight:44}} onClick={()=>{setPlanMoved(null);openDestination('protocol');}}>{fr?'Voir les étapes':'See the steps'}</button>
+    <button type="button" className="bh-back-action" style={{minHeight:44}} onClick={()=>setPlanMoved(null)}>OK</button>
+  </span>
+</div>}
 
 
 
@@ -4316,6 +4352,7 @@ export default function Home() {
                 onHasNotFedYetChange={setHasNotFedYet}
                 lastFedAge={lastFedAge}
                 onLastFedAgeChange={setLastFedAge}
+                starterMature={starterMature} starterHasRye={starterHasRye} onStarterMatureChange={setStarterMature} onStarterHasRyeChange={setStarterHasRye}
                 lastFeedRatio={lastFeedRatio}
                 onLastFeedRatioChange={setLastFeedRatio}
                 nextFeedRatio={nextFeedRatio}
