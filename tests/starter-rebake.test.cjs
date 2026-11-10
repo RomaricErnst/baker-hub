@@ -21,6 +21,7 @@ async function restore(yeastType,rebake,starterTimingValid,overrides={},acceptRe
  context.event={id:'saved-bake',dough_snapshot:{yeastType,tab:'custom',recipeGenerated:true,modeChosen:true,eatTime:time,startTime:time-86400000,timingOverrides:{mix:time-86400000,feed:time-90000000},starterEvents:[{kind:'pre_mix',time:time-90000000,isPast:false}],lastFedTime:time-100000000,knownPeakTime:time-86400000,feed2Time:time-90000000,fridgeOutTime:time-87000000,starterFridgeInTime:time-95000000,lastFedAge:'today',planningMode:'know_peak',ovenType:'dutch_oven',mixerType:'hand',itemWeight:800,containerCapacityLitres:5,pizzaParty:{qtys:{}},activeTab:'guide'}};
  Object.assign(context.event.dough_snapshot,{starterTimingValid,bakeType:'bread',styleKey:yeastType==='sourdough'?'pain_levain':'baguette'});
  Object.assign(context.event.dough_snapshot,overrides);
+ context.openDestination=value=>{state.openDestination=value;};
  context.opts={rebake};
  const js=ts.transpileModule(navigationHandler+handler+'\nrestoreFromBakeEvent(event,opts)',{compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.CommonJS}}).outputText;
  await vm.runInNewContext(js,context);
@@ -32,7 +33,7 @@ test('sourdough rebake retains recipe and future bake date but requires fresh st
  assert.ok(state.setEatTime.getTime()>Date.now());
  for(const name of ['LastFedTime','KnownPeakTime','HasNotFedYet','LastFedAge','FeedTime','Feed2Time','FridgeOutTime','StarterFridgeInTime','StarterPeakTime']) assert.equal(state['set'+name],null,name);
  assert.deepEqual(JSON.parse(JSON.stringify(state.setTimingOverrides)),{});
- assert.equal(state.setStarterEvents.length,0);assert.equal(state.setRecipeGenerated,false);assert.equal(state.setSessionRestored,false);assert.equal(state.setShowResults,false);assert.equal(state.setAdvancedStep,9);assert.equal(state.setActiveTab,'setup');
+ assert.equal(state.setStarterEvents.length,0);assert.equal(state.setRecipeGenerated,false);assert.equal(state.setSessionRestored,false);assert.equal(state.setShowResults,false);assert.equal(state.setAdvancedStep,9);assert.equal(state.openDestination,'batch');assert.equal(state.setBatchView,'kitchen');
 });
 test('normal sourdough resume preserves saved actions and generated guide',async()=>{
  const {state,snap}=await restore('sourdough',false);
@@ -44,7 +45,7 @@ test('normal sourdough resume preserves saved actions and generated guide',async
 test('commercial yeast rebake retains settings and requires validation of its new planning',async()=>{
  const {state}=await restore('instant',true);
  assert.deepEqual(JSON.parse(JSON.stringify(state.setTimingOverrides)),{});
- assert.equal(state.setRecipeGenerated,false);assert.equal(state.setShowResults,false);assert.equal(state.setAdvancedStep,9);assert.equal(state.setScheduleCandidateValid,false);assert.equal(state.setActiveTab,'setup');
+ assert.equal(state.setRecipeGenerated,false);assert.equal(state.setShowResults,false);assert.equal(state.setAdvancedStep,9);assert.equal(state.setScheduleCandidateValid,false);assert.equal(state.openDestination,'batch');assert.equal(state.setBatchView,'kitchen');
 });
 
 test('cloud snapshot preserves a known starter timing blocker; legacy snapshot defaults valid',async()=>{

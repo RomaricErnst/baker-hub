@@ -2284,6 +2284,14 @@ export function formatTime(d: Date, locale?: string): string {
   const days = fr
     ? ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.']
     : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  // A weekday alone is ambiguous once a plan spans more than a week (a
+  // fridge-kept starter): from six days away the date is added.
+  if (Math.abs(+d - Date.now()) >= 6 * 86400000) {
+    const months = fr
+      ? ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
+      : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${formatClock(d, locale ?? 'en')}`;
+  }
   return `${days[d.getDay()]} ${formatClock(d, locale ?? 'en')}`;
 }
 
