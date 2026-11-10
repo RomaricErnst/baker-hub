@@ -34,7 +34,8 @@ for(const locale of ['en','fr'])test(`${locale}: the bake ends with the journal 
  await go(page,fr?'Cuisson & service':'Baking & serving');
  // Open the last step of the section.
  const steps=page.locator('[data-guide-step]:visible');
- await steps.last().locator('button').first().tap();
+ // The step's own header button (photo controls inside it can be hidden at 320 px).
+ await steps.last().locator('button:visible').first().tap();
  const closing=page.locator('[data-bake-closing]:visible');
  await expect(closing).toBeVisible();
  await expect(closing.getByText(fr?'Cette fournée reste dans Mes fournées.':'This bake stays in My bakes.',{exact:true})).toBeVisible();
