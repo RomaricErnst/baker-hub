@@ -94,7 +94,7 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
               </div>
             </div>
             {isSelected && (
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--gold)', flexShrink: 0 }}>
+              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--gold-text)', flexShrink: 0 }}>
                 ✓
               </span>
             )}

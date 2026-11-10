@@ -305,7 +305,7 @@ const S = {
     background: '#F0EBE0', borderRadius: '8px', padding: '8px 8px',
   } as React.CSSProperties,
   subLbl: {
-    fontSize: '11px', color: '#8A7F78', textTransform: 'uppercase' as const,
+    fontSize: '11px', color: 'var(--smoke)', textTransform: 'uppercase' as const,
     letterSpacing: '0.06em', marginBottom: '4px', fontWeight: 500, display: 'block',
   } as React.CSSProperties,
   pillRow: {
@@ -346,7 +346,7 @@ const S = {
   } as React.CSSProperties,
   ingBadge: {
     fontSize: '11px', padding: '1px 8px', borderRadius: '16px',
-    background: '#F0EBE3', color: '#8A7F78',
+    background: '#F0EBE3', color: 'var(--smoke)',
     marginLeft: '6px', whiteSpace: 'nowrap' as const,
     flexShrink: 0, marginTop: '2px',
   } as React.CSSProperties,
@@ -366,7 +366,7 @@ function FilterSection({ title, badge, open, onToggle, children }: {
           {badge && <span style={S.secBadge(true)}>{badge}</span>}
         </span>
         <span style={{
-          fontSize: '11px', color: '#8A7F78',
+          fontSize: '11px', color: 'var(--smoke)',
           transform: open ? 'rotate(180deg)' : 'none',
           transition: 'transform 0.15s', display: 'inline-block',
         }}>▾</span>
@@ -441,14 +441,14 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             {/* left group shrinks + clips so the qty stepper always stays fully visible */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
-            <span style={{ fontSize: '11px', color: '#8A7F78', flexShrink: 0 }}>
+            <span style={{ fontSize: '11px', color: 'var(--smoke)', flexShrink: 0 }}>
               {pizza.prepMinutes} min
             </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, marginLeft: 'auto' }} onClick={e => e.stopPropagation()}>
-              <button style={{ ...S.qtyBtn, visibility: qty > 0 ? 'visible' : 'hidden' }} onClick={e => onQtyChange(-1, e)}>−</button>
+              <button aria-label={`− ${name}`} style={{ ...S.qtyBtn, visibility: qty > 0 ? 'visible' : 'hidden' }} onClick={e => onQtyChange(-1, e)}>−</button>
               <span style={{ fontSize: '12px', fontWeight: 600, color: '#6B4423', minWidth: '14px', textAlign: 'center', visibility: qty > 0 ? 'visible' : 'hidden' }}>{qty}</span>
-              <button style={S.qtyBtn} onClick={e => onQtyChange(1, e)}>+</button>
+              <button aria-label={`+ ${name}`} style={S.qtyBtn} onClick={e => onQtyChange(1, e)}>+</button>
             </div>
           </div>
         </div>
@@ -677,7 +677,7 @@ export function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose 
             justifyContent: 'space-between',
           }}>
             <span style={{
-              fontSize: '13px', color: '#8A7F78',
+              fontSize: '13px', color: 'var(--smoke)',
               fontFamily: 'var(--font-ui)',
             }}>
               {l === 'fr' ? 'Combien ?' : 'How many?'}
@@ -1138,7 +1138,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
           </span>
           <button
             onClick={() => setShowLocationPicker(v => !v)}
-            style={{ fontSize: '12px', minHeight:44, color: '#8A7F78', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '4px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            style={{ fontSize: '12px', minHeight:44, color: 'var(--smoke)', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '4px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
             {l === 'fr' ? `Pays des courses : ${currentLocationLabel} ▾` : `Shopping location: ${currentLocationLabel} ▾`}
           </button>
@@ -1255,7 +1255,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                           )}
 
                         </span>
-                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)', flexShrink: 0 }}>
+                        <span style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', flexShrink: 0 }}>
                           {item.totalAmount && item.unit ? formatQty(item.totalAmount, item.unit, locale) : ''}
                         </span>
                       </div>
@@ -1819,7 +1819,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     + (filter.budget !== null ? 1 : 0);
                   return moreCnt > 0 ? '1px solid #3D3530' : '1px solid #8A7F78';
                 })(),
-                background: '#FDFBF7', color: '#8A7F78',
+                background: '#FDFBF7', color: 'var(--smoke)',
                 fontSize: '12px', cursor: 'pointer',
                 whiteSpace: 'nowrap' as const, flexShrink: 0,
                 fontFamily: 'var(--font-ui)',
@@ -1944,7 +1944,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   </span>
                   <button
                     onClick={closeFilterSheet}
-                    style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'content-box', padding: '6px', margin: '-6px' }}
+                    style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: 'var(--smoke)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'content-box', padding: '6px', margin: '-6px' }}
                   >✕</button>
                 </div>
                 <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
@@ -2261,7 +2261,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       style={{
                         flex: 1, padding: '12px', border: '1px solid #E0D8CF',
                         borderRadius: '12px', background: '#FDFBF7',
-                        fontSize: '12px', color: '#8A7F78', cursor: 'pointer',
+                        fontSize: '12px', color: 'var(--smoke)', cursor: 'pointer',
                         fontFamily: 'var(--font-ui)',
                       }}
                     >
@@ -2287,7 +2287,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           )}
 
           <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0EBE0', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
-            <span style={{ fontSize: '11px', color: '#8A7F78' }}>
+            <span style={{ fontSize: '11px', color: 'var(--smoke)' }}>
               {l === 'fr'
                 ? `${filtered.length} pizza${filtered.length !== 1 ? 's' : ''}`
                 : `Showing ${filtered.length} pizza${filtered.length !== 1 ? 's' : ''}`}
@@ -2308,7 +2308,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               {customPizzas.some(p => pizzaCourse === 'sweet' ? p.category === 'dessert' : p.category !== 'dessert') && (
               <div style={{ padding: '8px 12px 0', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 2px 0' }}>
-                  <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
+                  <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
                     {l === 'fr' ? 'Mes pizzas' : 'My pizzas'}
                   </span>
                   <button
@@ -2323,7 +2323,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   </button>
                 </div>
                 {filteredCustom.length === 0 && (
-                  <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', padding: '2px 2px 4px' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', padding: '2px 2px 4px' }}>
                     {l === 'fr' ? 'Aucune de vos pizzas ne correspond aux filtres actifs.' : 'None of your pizzas match the active filters.'}
                   </div>
                 )}
@@ -2366,7 +2366,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   />
                 ))}
                 {filtered.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '24px 16px 8px', color: '#8A7F78', fontSize: '13px' }}>
+                  <div style={{ textAlign: 'center', padding: '24px 16px 8px', color: 'var(--smoke)', fontSize: '13px' }}>
                     {l === 'fr'
                       ? 'Aucune pizza ne correspond — essayez d\'effacer les filtres'
                       : 'No pizzas match — try clearing some filters'}
@@ -2392,7 +2392,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     >
                       {l === 'fr' ? '← Précédent' : '← Previous'}
                     </button>
-                    <span style={{ minWidth: '76px', textAlign: 'center', fontSize: '12px', color: '#8A7F78' }}>
+                    <span style={{ minWidth: '76px', textAlign: 'center', fontSize: '12px', color: 'var(--smoke)' }}>
                       {pizzaPage + 1} / {pizzaPageCount}
                     </span>
                     <button
@@ -2463,7 +2463,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           PARTY TIME pill — placeholder for Prompt 9
       ══════════════════════════════════════ */}
       {activePill === 'party' && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px', color: '#8A7F78', fontSize: '13px', textAlign: 'center' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px', color: 'var(--smoke)', fontSize: '13px', textAlign: 'center' }}>
           {l === 'fr' ? 'Au four ! — bientôt disponible' : 'Let\'s cook — coming soon'}
         </div>
       )}
@@ -2502,7 +2502,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               </span>
               <button onClick={closeSummary}
                 aria-label={l === 'fr' ? 'Fermer' : 'Close'}
-                style={{ minWidth: '88px', height: '44px', padding: '8px 12px', margin: '-8px', backgroundClip: 'border-box', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
+                style={{ minWidth: '88px', height: '44px', padding: '8px 12px', margin: '-8px', backgroundClip: 'border-box', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: 'var(--smoke)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
             </div>
             <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
 
@@ -2516,9 +2516,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           {pizza.name[l] ?? pizza.name.en}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <button onClick={() => changeQty(pizzaId, -1)} style={{ width: '44px', height: '44px', flexShrink: 0, borderRadius: '50%', border: '1px solid #E0D8CF', background: '#FDFBF7', cursor: 'pointer', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
+                          <button aria-label={`− ${pizza.name[l] ?? pizza.name.en}`} onClick={() => changeQty(pizzaId, -1)} style={{ width: '44px', height: '44px', flexShrink: 0, borderRadius: '50%', border: '1px solid #E0D8CF', background: '#FDFBF7', cursor: 'pointer', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
                           <span style={{ fontSize: '13px', fontWeight: 600, minWidth: '16px', textAlign: 'center', fontFamily: 'var(--font-ui)' }}>{qty as number}</span>
-                          <button onClick={() => changeQty(pizzaId, 1)} style={{ width: '44px', height: '44px', flexShrink: 0, borderRadius: '50%', border: '1px solid #6B4423', background: '#6B4423', cursor: 'pointer', fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
+                          <button aria-label={`+ ${pizza.name[l] ?? pizza.name.en}`} onClick={() => changeQty(pizzaId, 1)} style={{ width: '44px', height: '44px', flexShrink: 0, borderRadius: '50%', border: '1px solid #6B4423', background: '#6B4423', cursor: 'pointer', fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
                         </div>
                       </div>
                     );
@@ -2539,7 +2539,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         }}
                       >
-                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>
+                        <span style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
                           {l === 'fr'
                             ? 'Définissez vos quantités dans Ma fournée'
                             : 'Set your dough quantities in My bake'}
@@ -2560,12 +2560,12 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         }}
                       >
-                        <span style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)' }}>
+                        <span style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
                           {l === 'fr'
                             ? (baseReady?'Prévoyez plus de pâte ou réduisez votre sélection.':'Vous aurez peut-être besoin de plus de pâte — ajustez dans Ma fournée')
                             : (baseReady?'Allow more dough or reduce your selection.':'You may need more dough — adjust in My bake')}
                         </span>
-                        <span style={{ fontSize: '12px', color: '#9C8248', fontFamily: 'var(--font-ui)' }}>→</span>
+                        <span style={{ fontSize: '12px', color: 'var(--gold-text)', fontFamily: 'var(--font-ui)' }}>→</span>
                       </div>
                     );
                   })()}
@@ -2661,7 +2661,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       <span style={{
                         fontFamily: 'var(--font-ui)',
                         fontSize: '11px',
-                        color: 'var(--gold)',
+                        color: 'var(--gold-text)',
                         background: 'rgba(156, 130, 72,0.15)',
                         borderRadius: '8px',
                         padding: '2px 8px',

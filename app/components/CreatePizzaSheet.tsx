@@ -174,7 +174,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
           <span style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: '#2B2420' }}>
             {initial ? (fr ? 'Modifier ma pizza' : 'Edit my pizza') : (fr ? 'Créer ma pizza' : 'Create my pizza')}
           </span>
-          <button onClick={onClose} style={{ width: 44, height: 44, padding: 8, backgroundClip: 'content-box', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: 14, color: '#8A7F78', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '-8px' }}>✕</button>
+          <button onClick={onClose} style={{ width: 44, height: 44, padding: 8, backgroundClip: 'content-box', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: 14, color: 'var(--smoke)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '-8px' }}>✕</button>
         </div>
 
         <div style={{ overflowY: 'auto', flex: 1, padding: '12px 16px' }}>
@@ -219,13 +219,13 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
                   style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${pos.fx * 100}% ${pos.fy * 100}%`, pointerEvents: 'none', userSelect: 'none' }}
                 />
               </div>
-              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', fontStyle: 'italic', color: '#8A7F78', marginTop: '4px' }}>
+              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', fontStyle: 'italic', color: 'var(--smoke)', marginTop: '4px' }}>
                 {fr ? 'Glissez pour recadrer' : 'Drag to reframe'}
               </div>
             </div>
           )}
           {(photo || photoSrc) && (
-            <button onClick={() => { setPhoto(undefined); setPhotoSrc(null); setPhotoDims(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-ui)', textDecoration: 'underline', padding: '4px 0 0' }}>
+            <button onClick={() => { setPhoto(undefined); setPhotoSrc(null); setPhotoDims(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '11px', fontFamily: 'var(--font-ui)', textDecoration: 'underline', padding: '4px 0 0' }}>
               {fr ? 'Retirer la photo' : 'Remove photo'}
             </button>
           )}
@@ -246,7 +246,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
                     }}
                     style={{ width: '50px', border: '1px solid #E0D8CF', borderRadius: '8px', padding: '4px 8px', fontFamily: 'var(--font-ui)', fontSize: '12px', textAlign: 'right', background: '#FDFBF7' }}
                   />
-                  <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: '#8A7F78', width: '34px' }}>{p.unit}</span>
+                  <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', width: '34px' }}>{p.unit}</span>
                   <button
                     onClick={() => setPicked(prev => prev.map((x, j) => j === i ? { ...x, bakeOrder: x.bakeOrder === 'before' ? 'after' : 'before' } : x))}
                     style={{
@@ -259,7 +259,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
                     {p.bakeOrder === 'before' ? (fr ? 'avant' : 'before') : (fr ? 'après' : 'after')}
                   </button>
                   <button onClick={() => setPicked(prev => prev.filter((_, j) => j !== i))}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '13px', padding: '0 2px' }}>✕</button>
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '13px', padding: '0 2px' }}>✕</button>
                 </div>
               ))}
             </div>
@@ -280,7 +280,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
                   <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: '#6B4423', textTransform: 'uppercase', letterSpacing: '1.2px', fontWeight: 700 }}>
                     {fr ? g.fr : g.en}{nPicked > 0 ? ` · ${nPicked} ✓` : ''}
                   </span>
-                  <span style={{ color: '#8A7F78', fontSize: '12px' }}>{isOpen ? '−' : '+'}</span>
+                  <span style={{ color: 'var(--smoke)', fontSize: '12px' }}>{isOpen ? '−' : '+'}</span>
                 </button>
                 {isOpen && (
                   <div style={{ padding: '12px 12px' }}>
@@ -339,7 +339,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
           }}>
             {initial ? (fr ? 'Enregistrer les modifications' : 'Save changes') : (fr ? 'Enregistrer ma pizza' : 'Save my pizza')}
           </button>
-          <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: '#8A7F78', textAlign: 'center', marginTop: '8px' }}>
+          <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', textAlign: 'center', marginTop: '8px' }}>
             {fr ? 'Sauvegardée dans votre profil — modifiable à tout moment.' : 'Saved to your profile — editable any time.'}
           </div>
         </div>

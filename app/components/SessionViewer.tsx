@@ -455,7 +455,7 @@ export default function SessionViewer({
                 <span style={{
                   fontFamily: 'var(--font-ui)', fontSize: '11px',
                   padding: '3px 12px', borderRadius: '20px',
-                  background: 'rgba(156, 130, 72,0.15)', color: 'var(--gold)',
+                  background: 'rgba(156, 130, 72,0.15)', color: 'var(--gold-text)',
                 }}>Pizza</span>
               )}
               {event.status === 'baked' && (
@@ -745,7 +745,7 @@ export default function SessionViewer({
               width: '100%', padding: '12px',
               background: 'transparent',
               border: '1px solid rgba(156, 130, 72,0.5)',
-              color: 'var(--gold)',
+              color: 'var(--gold-text)',
               fontFamily: 'var(--font-ui)', fontSize: '13px',
               borderRadius: '12px', cursor: 'pointer',
               letterSpacing: '.06em',

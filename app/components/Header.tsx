@@ -693,7 +693,7 @@ export default function Header({
                             <span style={{
                               fontFamily: 'var(--font-ui)', fontSize: '11px',
                               padding: '2px 8px', borderRadius: '20px',
-                              background: 'rgba(156, 130, 72,0.15)', color: 'var(--gold)',
+                              background: 'rgba(156, 130, 72,0.15)', color: 'var(--gold-text)',
                             }}>Pizza</span>
                           )}
                           {event.status === 'baked' && (

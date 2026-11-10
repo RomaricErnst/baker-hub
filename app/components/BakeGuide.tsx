@@ -500,7 +500,7 @@ function CoachButton({
             style={{
               position: 'absolute', bottom: '8px', right: '12px',
               background: 'none', border: 'none', cursor: 'pointer',
-              color: '#8A7F78', fontSize: '11px',
+              color: 'var(--smoke)', fontSize: '11px',
               fontFamily: 'var(--font-ui)',
               textDecoration: 'underline', padding: 0,
             }}
@@ -511,7 +511,7 @@ function CoachButton({
       )}
 
       {error && !feedback && (
-        <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)', fontStyle: 'italic', marginBottom: '8px' }}>
+        <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontStyle: 'italic', marginBottom: '8px' }}>
           {l === 'fr' ? 'Maestro indisponible. Réessayez.' : 'Maestro unavailable. Please try again.'}
         </div>
       )}
@@ -692,7 +692,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
               onClick={() => { setAnswer(null); setQ(''); setPhotoB64(null); }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-ui)',
+                color: 'var(--smoke)', fontSize: '11px', fontFamily: 'var(--font-ui)',
                 textDecoration: 'underline', padding: 0, marginTop: '8px',
               }}
             >

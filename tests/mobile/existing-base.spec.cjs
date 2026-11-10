@@ -34,7 +34,7 @@ test('existing bread keeps optional garnishes and shopping through reload withou
 });
 test('purchased pizza skips dough setup and persists served count',async({page})=>{
  await open(page);await page.getByRole('button',{name:'Pizza',exact:true}).tap();
- const pizza=page.getByRole('button',{name:'Margherita',exact:true});await pizza.getByRole('button',{name:'+',exact:true}).tap();
+ const pizza=page.getByRole('button',{name:'Margherita',exact:true});await pizza.getByRole('button',{name:/^\+/}).tap();
  await navigate(page,'Courses');
  await page.getByRole('button',{name:'Préparer les garnitures →',exact:true}).tap();
  await navigate(page,'Cuisson & service');

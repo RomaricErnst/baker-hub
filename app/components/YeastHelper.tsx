@@ -106,7 +106,7 @@ function YeastInfoSheet({ id, onPick, onClose, fr }: {
         </button>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '2px' }}>
           <h3 style={{ fontFamily: 'var(--font-ui)', fontSize: '18px', fontWeight: 700, margin: 0 }}>{y.name}</h3>
-          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: '#9C8248' }}>{y.dose}</span>
+          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--gold-text)' }}>{y.dose}</span>
           {/* This sheet is reached from the info dot, so most bakers who open
               it are reading, not choosing. Without a visible way out, the only
               exit was to pick the yeast they came to read about. */}

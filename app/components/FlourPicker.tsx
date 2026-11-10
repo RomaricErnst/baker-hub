@@ -182,7 +182,7 @@ function wStrength(w: number): { label: string; color: string } {
   if (w < 200) return { label: 'Weak — short ferments only', color: 'var(--smoke)' };
   if (w < 250) return { label: 'Medium — 8-24h',             color: 'var(--smoke)' };
   if (w < 300) return { label: 'Strong — 24-48h',            color: 'var(--sage)'  };
-  if (w < 350) return { label: 'Very strong — 48-72h',       color: 'var(--gold)'  };
+  if (w < 350) return { label: 'Very strong — 48-72h',       color: 'var(--gold-text)'  };
   return           { label: 'Professional — 72h+',           color: 'var(--terra)' };
 }
 
@@ -326,7 +326,7 @@ export function BlendBar({ parts, onChange, locale, approx }: {
         color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
       }}>
         <span>{locale === 'fr' ? 'Glissez ou utilisez les flèches du clavier' : 'Drag or use the keyboard arrows'}</span>
-        <span style={{ color: '#9C8248' }}>{locale === 'fr' ? 'Force du mélange' : 'Blend strength'} W{approx ? ' ~' : ' '}{blendW}</span>
+        <span style={{ color: 'var(--gold-text)' }}>{locale === 'fr' ? 'Force du mélange' : 'Blend strength'} W{approx ? ' ~' : ' '}{blendW}</span>
       </div>
     </div>
   );
@@ -442,7 +442,7 @@ function WQualityTag({ kind, locale }: { kind: WSource; locale: string }) {
   return (
     <span style={{
       fontFamily: 'var(--font-ui)', fontSize: '9px', letterSpacing: '.06em',
-      textTransform: 'uppercase', color: '#9C8248', whiteSpace: 'nowrap', flexShrink: 0,
+      textTransform: 'uppercase', color: 'var(--gold-text)', whiteSpace: 'nowrap', flexShrink: 0,
       border: '1px solid rgba(156,130,72,0.3)', borderRadius: '20px', padding: '3px 8px',
     }}>{label}</span>
   );
@@ -717,7 +717,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
       }}
     >
       <span>{label}</span>
-      <span style={{ fontSize: '12px', color: '#8A7F78' }}>{openSection === key ? '▾' : '▸'}</span>
+      <span style={{ fontSize: '12px', color: 'var(--smoke)' }}>{openSection === key ? '▾' : '▸'}</span>
     </div>
   );
 
@@ -753,7 +753,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                 the baker can back out of changing their mind. */}
             <button onClick={() => setPickerOpen(true)}
               style={{ background:'none', border:'none', cursor:'pointer', flexShrink:0,
-                color:'#8A7F78', fontSize: '12px', fontFamily:'var(--font-ui)',
+                color:'var(--smoke)', fontSize: '12px', fontFamily:'var(--font-ui)',
                 textDecoration:'underline', textUnderlineOffset:'2px', padding:'2px 0', minHeight:44 }}>
               {blend.flour2 ? (locale === 'fr' ? 'Changer la farine 1' : 'Change flour 1') : (locale === 'fr' ? 'Changer la farine' : 'Change flour')}
             </button>
@@ -768,7 +768,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               W{blend.w1Source === 'typical' ? '~' : ''}{blend.wOverride ?? '—'}
             </span>
             {blend.w1Source && (
-              <span style={{ fontFamily:'var(--font-ui)', fontSize: '11px', color:'#8A7F78' }}>
+              <span style={{ fontFamily:'var(--font-ui)', fontSize: '11px', color:'var(--smoke)' }}>
                 {W_SOURCE_LABEL(locale)[blend.w1Source]}
               </span>
             )}
@@ -865,13 +865,13 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
               {!blend.flour2 && blendSlot !== 3 && (
                 <span style={{
                   fontSize: '11px', fontFamily: 'var(--font-ui)',
-                  background: '#EDE8E0', color: '#8A7F78',
+                  background: '#EDE8E0', color: 'var(--smoke)',
                   borderRadius: '20px', padding: '1px 8px',
                   border: '1px solid #DDD8D0',
                 }}>{locale === 'fr' ? 'facultatif' : 'optional'}</span>
               )}
             </span>
-            <span style={{ fontSize: '12px', color: '#8A7F78' }}>{openSection === 'blend' ? '▾' : '›'}</span>
+            <span style={{ fontSize: '12px', color: 'var(--smoke)' }}>{openSection === 'blend' ? '▾' : '›'}</span>
           </button>
           {openSection === 'blend' && (
             <div style={{ paddingTop: '12px', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px', scrollMarginTop: '80px' }}>
@@ -923,7 +923,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                         {blendSelectedF3 ? (
                           <button
                             onClick={() => { setBlendSelectedF3(null); onBlendChange({ ...blend, flour3: null, ratio2: undefined, w3: undefined, customFlour3Name: undefined }); }}
-                            style={{ marginTop: '6px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '12px', textDecoration: 'underline', padding: '10px 0', minHeight: '44px' }}
+                            style={{ marginTop: '6px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '12px', textDecoration: 'underline', padding: '10px 0', minHeight: '44px' }}
                           >
                             {locale === 'fr' ? 'Retirer la 3e farine' : 'Remove third flour'}
                           </button>
@@ -945,7 +945,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   })()}
                   <button
                     onClick={() => { setBlendSelectedF2(null); setBlendSelectedF3(null); setBlendSlot(2); onBlendChange({ ...blend, flour2: null, ratio1: 100, customFlour2Name: undefined, w2: undefined, flour3: null, ratio2: undefined, w3: undefined, customFlour3Name: undefined }); }}
-                    style={{ minHeight:44, background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '12px', textDecoration: 'underline', padding: 0 }}
+                    style={{ minHeight:44, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '12px', textDecoration: 'underline', padding: 0 }}
                   >
                     {locale === 'fr' ? 'Retirer le mélange' : 'Remove blend'}
                   </button>
