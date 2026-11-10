@@ -65,6 +65,12 @@ const BREAD_REC_BY_STYLE: Record<string, string[]> = {
   contemporary:  ['Bread flour', 'T80'],
 };
 
+// Styles that start on their own blend (STYLE_DEFAULT_BLENDS in data.ts).
+const STARTING_BLEND_TEXT: Record<string, { en: string; fr: string }> = {
+  batbout: { fr: 'Mélange de départ : 67 % de farine de blé et 33 % de semoule fine. Votre mélange personnalisé détermine les quantités de la recette.', en: 'Starting blend: 67% wheat flour and 33% fine semolina. Your custom blend determines the recipe quantities.' },
+  pain_campagne: { fr: 'Mélange de départ : 85 % de farine de blé T65 et 15 % de farine de seigle. Votre mélange personnalisé détermine les quantités de la recette.', en: 'Starting blend: 85% white bread flour (T65) and 15% rye flour. Your custom blend determines the recipe quantities.' },
+};
+
 // ── Blend presets ─────────────────────────────────
 const BLEND_PRESETS: Record<string, { label: string; type: FlourKey; ratio: number }[]> = {
   neapolitan:    [{ label: '+ Semolina 15%', type: 'semolina', ratio: 85 }, { label: '+ Manitoba 10%', type: 'manitoba', ratio: 90 }, { label: '+ Wholemeal 10%', type: 'wholemeal', ratio: 90 }],
@@ -731,7 +737,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
   return (
     <div ref={selectionRef}>
       {blend.flour2 && <h3>{isFr?'Farine 1':'Flour 1'} · {blend.ratio1}%</h3>}
-      {styleKey==='batbout' && <p style={{fontSize:14,lineHeight:1.5,marginBottom:12}}>{isFr?'Mélange de départ : 67 % de farine de blé et 33 % de semoule fine. Votre mélange personnalisé détermine les quantités de la recette.':'Starting blend: 67% wheat flour and 33% fine semolina. Your custom blend determines the recipe quantities.'}</p>}
+      {styleKey && STARTING_BLEND_TEXT[styleKey] && <p style={{fontSize:14,lineHeight:1.5,marginBottom:12}}>{STARTING_BLEND_TEXT[styleKey][isFr?'fr':'en']}</p>}
       {unmatchedScan && <p role="status">{isFr ? `« ${unmatchedScan} » : aucun produit exact retrouvé. Choisissez le type correspondant au sachet, ou recherchez une autre farine. Votre sélection actuelle reste inchangée.` : `“${unmatchedScan}”: no exact product found. Choose the type shown on the bag, or search for another flour. Your current selection is unchanged.`}</p>}
 
       {archivedBlendSelections(blend).length > 0 && <p role="alert" style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 12 }}>{isFr ? 'Une farine enregistrée est archivée. Remplacez-la explicitement ; vos anciennes valeurs restent conservées en attendant.' : 'A saved flour is archived. Choose its replacement explicitly; your previous values are retained until then.'} {archivedBlendSelections(blend).join(' · ')}</p>}

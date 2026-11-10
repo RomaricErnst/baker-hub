@@ -7,7 +7,7 @@ const recommendations: Record<string, {fr:string;en:string}> = {
   pizza_romana: {fr:'Farine à pizza mi-forte (W250–280)',en:'Medium-strong pizza flour (W250–280)'},
   roman: {fr:'Farine de blé forte pour pizza (W300 ou plus)',en:'Strong pizza flour (W300 or higher)'},
   sourdough: {fr:'Farine de blé panifiable forte (T65 ou 00 forte)',en:'Strong bread flour or strong 00 flour'},
-  pain_campagne: {fr:'Farine de blé panifiable T65 ou équivalent',en:'White bread flour (French T65 or equivalent)'},
+  pain_campagne: {fr:'Farine de blé panifiable T65 (85 %) et farine de seigle T130 (15 %)',en:'White bread flour, French T65 (85%), and rye flour, French T130 (15%)'},
   pain_levain: {fr:'Farine de blé panifiable forte T65 ou équivalent',en:'Strong white bread flour (French T65 or equivalent)'},
   pain_complet: {fr:'Farine de blé complète T110 ou T150',en:'Wholemeal wheat flour (French T110 or T150)'},
   pain_seigle: {fr:'Farine panifiable de seigle T130/T170 ou mélange contenant au moins 60 % de seigle',en:'Rye bread flour (French T130/T170), or a bread blend with at least 60% rye'},

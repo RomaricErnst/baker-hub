@@ -65,7 +65,7 @@ import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock, forma
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
   PIZZA_STYLES, BREAD_STYLES, FLOUR_DATA,
-  computeBlendProfile,
+  computeBlendProfile, STYLE_DEFAULT_BLENDS, isStyleDefaultBlend, recipeFlourStrength,
   type BakeType, type StyleKey, type OvenType, type BreadOvenType, type AnyOvenType, type MixerType, type YeastType, type FlourBlend, type PrefermentType,
 } from '../data';
 import {
@@ -1845,7 +1845,9 @@ export default function Home() {
   const effectiveYeastOverride = !!yeastType && yeastType !== 'sourdough' && prefermentType === 'none' ? yeastPctOverride : undefined;
   const effectiveStarterOverride = yeastType === 'sourdough' ? starterPctOverride : undefined;
   // One multiplier, used by every schedule build and the sourdough solver alike.
-  const levainBulkFactor = starterBulkFactor(effectiveStarterOverride, kitchenTemp, flourChosen && flourBlend ? (computeBlendProfile(flourBlend).fermToleranceMultiplier ?? 1.0) : 1.0);
+  // The blend the recipe uses (a blend style's own flours until the baker chooses one).
+  const flourStrength = recipeFlourStrength(styleKey ?? '', 'custom', flourChosen ? flourBlend : undefined);
+  const levainBulkFactor = starterBulkFactor(effectiveStarterOverride, kitchenTemp, flourStrength);
   const recipeForSchedule = (schedule: ReturnType<typeof buildSchedule>) => {
     if(!styleKey || !yeastType)throw new Error("Recipe setup incomplete");
     return calculateRecipe(
@@ -2247,7 +2249,7 @@ export default function Home() {
     const actual:BakeExecution=execution?{...execution,actualAt:at,recordedAt:Date.now()}:{method:commercialMethod,actualAt:at,recordedAt:Date.now(),inFridge:prefGoesInFridge,prefHours:prefOffsetH,prefWindow:commercialPrefermentWindow(commercialMethod,prefGoesInFridge,kitchenTemp,styleKey??'',fridgeTemp),recipe};
     const mix=commercialMethod==='none'?new Date(at):startTime;
     const nextOffset=commercialMethod==='none'?0:(+mix-at)/3600000;
-    const remainingValid=!!eatTime&&validateConfirmedBake({...poolishInputs,execution:actual,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength:flourChosen?(computeBlendProfile(flourBlend).fermToleranceMultiplier??1):1,preheatMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(actual,candidate,times)}).valid;
+    const remainingValid=!!eatTime&&validateConfirmedBake({...poolishInputs,execution:actual,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength,preheatMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(actual,candidate,times)}).valid;
     setExecution(actual);setReplanRequested(false);setStartTime(mix);setPrefOffsetH(nextOffset);setTimingOverrides({});setSessionRestored(true);setProtocolStale(!remainingValid);setScheduleCandidateValid(remainingValid);
     saveSession(buildSessionPayload({execution:actual,startTime:+mix,prefOffsetH:nextOffset,timingOverrides:{},protocolStale:!remainingValid}));
     if(destination!=='protocol'){if(remainingValid)openDestination('recipe');else{setSetupOverview(false);setActiveStep(7);setAdvancedStep(9);openDestination('organisation');}}
@@ -2256,7 +2258,7 @@ export default function Home() {
     if(!recipe||!eatTime||!Number.isFinite(at)||at>Date.now()||prepared&&at<prepared.actualAt)return;
     const actual:MixExecution={actualAt:at,recordedAt:Date.now(),recipe:mixExecution?.recipe??recipe};
     const mix=new Date(at),offset=prepared?(at-prepared.actualAt)/3600000:prefOffsetH;
-    const valid=prepared?validateConfirmedBake({...poolishInputs,completedMixAt:at,execution:prepared,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength:flourChosen?(computeBlendProfile(flourBlend).fermToleranceMultiplier??1):1,preheatMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(prepared,candidate,times,actual.recipe)}).valid:at===+startTime&&starterTimingValid&&scheduleCandidateValid;
+    const valid=prepared?validateConfirmedBake({...poolishInputs,completedMixAt:at,execution:prepared,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength,preheatMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(prepared,candidate,times,actual.recipe)}).valid:at===+startTime&&starterTimingValid&&scheduleCandidateValid;
     if(prepared)setExecution(prepared);
     setStarterRecoveryPending(false);setMixExecution(actual);setStartTime(mix);setPrefOffsetH(offset);setTimingOverrides({});setSessionRestored(true);setScheduleCandidateValid(valid);setProtocolStale(!valid);
     saveSession(buildSessionPayload({execution:prepared,starterRecoveryPending:false,mixExecution:actual,startTime:at,prefOffsetH:offset,timingOverrides:{},protocolStale:!valid}));
@@ -2568,7 +2570,10 @@ export default function Home() {
       && !window.confirm(fr ? 'Changer de pain remplace vos garnitures sélectionnées. Continuer ?' : 'Changing bread replaces your selected fillings. Continue?')) return;
     setStyleKey(sk);
     setSandwichParty(previous => switchSandwichFamily(previous, sandwichFamilyForStyle(sk)));
-    if (sk === 'batbout') { setFlourBlend({flour1:'bread',flour2:'semolina',ratio1:67}); setFlourChosen(false); }
+    // A blend style starts on its own flours; leaving one drops its untouched blend.
+    const styleBlend = STYLE_DEFAULT_BLENDS[sk];
+    if (styleBlend) { setFlourBlend({...styleBlend}); setFlourChosen(false); }
+    else if (!flourChosen && isStyleDefaultBlend(flourBlend)) setFlourBlend({ flour1: bakeType === 'pizza' ? 'pizza00' : 'bread', flour2: null, ratio1: 100 });
     const profile = getBreadProtocol(sk);
     if (isUnleavened && profile?.method !== 'unleavened') { setYeastType(null); setPrefermentChosen(false); }
     if (!profile && ovenType === 'griddle') setOvenType(null);
@@ -3851,7 +3856,7 @@ export default function Home() {
                 onReady={() => {}}
                 sessionRestored={sessionRestored}
                 recipeGenerated={recipeGenerated}
-                flourStrength={flourChosen && flourBlend ? (computeBlendProfile(flourBlend).fermToleranceMultiplier ?? 1.0) : 1.0}
+                flourStrength={flourStrength}
                 completedMixAt={mixExecution?.actualAt} execution={execution} validateMadeFormula={(candidate,times)=>!execution||madeFormulaMatches(execution,candidate,times)} replanRequested={replanRequested||(yeastType==='sourdough'&&starterRecoveryPending)} onCancelReplan={()=>{setReplanRequested(false);openDestination('recipe');}} onAcceptReplan={acceptFreshPlan}
                 startTimeInPast={startTimeInPast}
                 tang={tang}
@@ -4413,7 +4418,7 @@ export default function Home() {
                 onChange={handleScheduleChange}
                 sessionRestored={sessionRestored}
                 recipeGenerated={recipeGenerated}
-                flourStrength={flourChosen && flourBlend ? (computeBlendProfile(flourBlend).fermToleranceMultiplier ?? 1.0) : 1.0}
+                flourStrength={flourStrength}
                 completedMixAt={mixExecution?.actualAt} execution={execution} validateMadeFormula={(candidate,times)=>!execution||madeFormulaMatches(execution,candidate,times)} replanRequested={replanRequested||(yeastType==='sourdough'&&starterRecoveryPending)} onCancelReplan={()=>{setReplanRequested(false);openDestination('recipe');}} onAcceptReplan={acceptFreshPlan}
                 startTimeInPast={startTimeInPast}
                 tang={tang}

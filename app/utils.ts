@@ -28,6 +28,7 @@ import {
   preMixAutolyseMinFor,
   YEAST_TYPES,
   computeBlendProfile,
+  recipeFlourBlend,
   computePrefermentRecipe,
   PREFERMENT_TYPES,
   type OvenType,
@@ -1689,9 +1690,9 @@ export function calculateRecipe(
     : BREAD_OVEN_TYPES[ovenType as BreadOvenType];
   if (!s || !oven) throw new Error('Unknown style or oven');
 
-  if (styleKey === 'batbout' && (mode !== 'custom' || !flourBlend)) {
-    flourBlend = { flour1: 'bread', flour2: 'semolina', ratio1: 67 };
-  }
+  // Blend styles (batbout, pain de campagne…) carry their own flours until the
+  // baker chooses another in Custom.
+  flourBlend = recipeFlourBlend(styleKey, mode, flourBlend);
   const blendProfile: BlendProfile | null = flourBlend
     ? computeBlendProfile(flourBlend)
     : null;

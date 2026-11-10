@@ -109,7 +109,7 @@ export const BREAD_STYLES = {
     bulkH: 4,
     ballW: 800,
     ovenNote: 'Dutch oven: 240°C lid on 20min, lid off 20min.',
-    flourNote: 'T65 or blend T65 + 10% T130 rye.',
+    flourNote: 'Blend: 85% T65 bread flour + 15% T130 rye.',
   },
   pain_levain: {
     name: 'Pain au levain',
@@ -1136,6 +1136,39 @@ export function computeBlendProfile(blend: FlourBlend): BlendProfile {
     displayName: parts.join(' + '),
     displayNameFr: partsFr.join(' + '),
   };
+}
+
+// ── STYLE FLOUR BLENDS ────────────────────
+// Styles whose name is a blend: the recipe lists each flour with its grams
+// until the baker chooses another flour in Custom. The engine's existing
+// per-flour hydration and fermentation-tolerance values then apply as they
+// would to the same blend chosen by hand; no new coefficient is involved.
+export const STYLE_DEFAULT_BLENDS: Readonly<Record<string, Readonly<FlourBlend>>> = {
+  batbout: { flour1: 'bread', flour2: 'semolina', ratio1: 67 },
+  // "Blé et seigle": 85 % T65 bread flour, 15 % rye.
+  pain_campagne: { flour1: 'bread', flour2: 'rye', ratio1: 85 },
+};
+
+/** The blend calculateRecipe works with: the style's own blend in Simple, and
+ * in Custom until the baker chooses a flour. Use it wherever the same blend's
+ * strength has to agree with the recipe (schedule readiness, starter factor). */
+export function recipeFlourBlend(styleKey: string, mode: 'simple' | 'custom', chosen?: FlourBlend): FlourBlend | undefined {
+  const preset = STYLE_DEFAULT_BLENDS[styleKey];
+  if (preset && (mode !== 'custom' || !chosen)) return { ...preset };
+  return chosen;
+}
+
+/** Fermentation-tolerance multiplier of the blend the recipe uses (1 without one). */
+export function recipeFlourStrength(styleKey: string, mode: 'simple' | 'custom', chosen?: FlourBlend): number {
+  const blend = recipeFlourBlend(styleKey, mode, chosen);
+  return blend ? computeBlendProfile(blend).fermToleranceMultiplier ?? 1 : 1;
+}
+
+/** True when the starting blend is still a style's own, untouched. */
+export function isStyleDefaultBlend(blend: FlourBlend | undefined): boolean {
+  if (!blend || blend.brandProduct || blend.flour3) return false;
+  return Object.values(STYLE_DEFAULT_BLENDS).some(preset =>
+    preset.flour1 === blend.flour1 && preset.flour2 === blend.flour2 && preset.ratio1 === blend.ratio1);
 }
 
 // ── TYPE EXPORTS ──────────────────────────
