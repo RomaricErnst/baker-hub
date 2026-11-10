@@ -19,8 +19,13 @@ html {
   --terra-l: #8B5A32;
   --terra-on-dark: #C88A52;
   --gold: #9C8248;
+  /* --gold is for borders, fills and marks (3.6:1 on --warm). Text in gold
+     uses this darker step: 5.5:1 on --warm, 4.8:1 on --cream, 5.7:1 on white. */
+  --gold-text: #7A6332;
   --sage: #6B7A5A;
-  --smoke: #716963;
+  /* Secondary text. 5.7:1 on --warm, 4.9:1 on --cream, 5.9:1 on white —
+     small labels sit on all three, so the margin over 4.5:1 is deliberate. */
+  --smoke: #6B635D;
   --border: #E0D8CC;
   --card: #FFFFFF;
   --bread: #8B6914;
@@ -141,7 +146,7 @@ body {
    24  page titles
    26+ display (share cards, big numbers) — composed per surface */
 :root {
-  --text-3xs: 11px;
+  --text-3xs: 12px; /* nothing readable goes below 12px */
   --text-2xs: 12px;
   --text-xs:  13px;
   --text-s:   14px;
@@ -555,7 +560,7 @@ body { padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-i
 }
 
 .bh-window-days { margin-top:8px; color:var(--char); }
-.bh-window-axis { display:flex; justify-content:space-between; font-size:11px; color:var(--smoke); }
+.bh-window-axis { display:flex; justify-content:space-between; font-size:12px; color:var(--smoke); }
 .bh-window-day { margin-top:10px; }
 .bh-window-day-label { font-size:13px; font-weight:600; }
 .bh-window-day-label span { color:var(--terra); }
@@ -625,3 +630,42 @@ body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="d
 .bh-kitchen-range::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:32px; height:32px; border-radius:50%; background:var(--card); border:2px solid var(--char); box-shadow:0 1px 4px rgba(43,36,32,.25); cursor:pointer; }
 .bh-kitchen-range::-moz-range-thumb { width:32px; height:32px; border-radius:50%; background:var(--card); border:2px solid var(--char); box-shadow:0 1px 4px rgba(43,36,32,.25); cursor:pointer; }
 .bh-kitchen-range:focus-visible { outline:2px solid var(--terra); outline-offset:6px; }
+
+/* ── Keyboard focus ───────────────────────────
+   One visible ring for every control reached by keyboard. :where() keeps the
+   specificity at zero, so the component rules above (different offsets,
+   rounded corners) still win where they exist. */
+:where(a, button, [role="button"], summary, select, input, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--terra);
+  outline-offset: 2px;
+}
+/* Many fields switch the outline off inline; a typed field still has to show
+   where the keyboard is. */
+:where(input, select, textarea):not(.bh-kitchen-range, .bh-clock-input > input):focus-visible {
+  outline: 2px solid var(--terra) !important;
+  outline-offset: 2px;
+}
+/* A native date or time field laid invisibly over its own display (the bake
+   date and time): the ring goes on the visible wrapper instead. */
+:where(div, label, span):has(> input[style*="opacity: 0"]:focus-visible),
+:where(div, label, span):has(> input[style*="opacity:0"]:focus-visible) {
+  outline: 2px solid var(--terra);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ── Primary button hover (mouse and trackpad only) ──
+   One step lighter in the same brown; white text stays at 5.8:1. Inline-styled
+   primaries are matched on their background, in the two spellings React and
+   the browser write it. */
+@media (hover: hover) and (pointer: fine) {
+  .bh-primary:hover,
+  .bh-apply-plan:not(:disabled):hover,
+  .manual-flour-submit:not(:disabled):hover,
+  .bh-start-status .bh-start-primary:not(:disabled):hover,
+  :is(button, a)[style*="background: var(--terra)"]:not(:disabled):hover,
+  :is(button, a)[style*="background:var(--terra)"]:not(:disabled):hover {
+    background-color: var(--terra-l) !important;
+    border-color: var(--terra-l);
+  }
+}

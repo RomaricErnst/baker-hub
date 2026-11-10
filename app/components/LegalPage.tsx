@@ -6,7 +6,7 @@ import Header from './Header';
 // Tokens mirror AboutClient — the legal pages are the same reading surface.
 const CHAR = '#2B2420';
 const ASH = '#3D3530';
-const SMOKE = '#8A7F78';
+const SMOKE = '#6B635D';
 const TERRA = '#6B4423';
 const BORDER = '#E8E0D5';
 
@@ -42,7 +42,7 @@ export default function LegalPage({
           color: CHAR, marginBottom: '4px', marginTop: 0,
         }}>{c.pageTitle}</h1>
         <p style={{
-          fontFamily: 'var(--font-ui)', fontSize: '11px', color: SMOKE,
+          fontFamily: 'var(--font-ui)', fontSize: '12px', color: SMOKE,
           letterSpacing: '.04em', marginBottom: '24px',
         }}>{c.pageSubtitle}</p>
 
@@ -75,6 +75,7 @@ export default function LegalPage({
         ))}
 
         <Link
+          className="bh-primary"
           href={home}
           style={{
             marginTop: '20px',
@@ -90,7 +91,7 @@ export default function LegalPage({
 
         <div style={{ borderTop: `1px solid ${BORDER}`, marginTop: '24px' }} />
         <p style={{
-          fontFamily: 'var(--font-ui)', fontSize: '11px', color: SMOKE,
+          fontFamily: 'var(--font-ui)', fontSize: '12px', color: SMOKE,
           letterSpacing: '.04em', textAlign: 'center', marginTop: '24px', marginBottom: 0,
         }}>{c.footer}</p>
 

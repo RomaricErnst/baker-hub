@@ -35,6 +35,7 @@ export default function NotFound() {
           {copy.body}
         </p>
         <Link
+          className="bh-primary"
           href={fr ? '/fr' : '/'}
           style={{
             display: 'inline-flex', alignItems: 'center', minHeight: 44, boxSizing: 'border-box',

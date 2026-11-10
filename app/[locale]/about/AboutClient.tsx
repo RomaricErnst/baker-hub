@@ -7,7 +7,7 @@ import Header from '../../components/Header';
 // ── Shared style tokens ──────────────────────────
 const CHAR   = '#2B2420';
 const ASH    = '#3D3530';
-const SMOKE  = '#8A7F78';
+const SMOKE  = '#6B635D';
 const TERRA  = '#6B4423';
 const GOLD   = '#9C8248';
 const SAGE   = '#6B7A5A';
@@ -22,7 +22,7 @@ const bodyText: React.CSSProperties = {
 
 const monoSm: React.CSSProperties = {
   fontFamily: 'var(--font-ui)',
-  fontSize: '11px',
+  fontSize: '12px',
   color: SMOKE,
   letterSpacing: '.04em',
 };
@@ -67,7 +67,7 @@ function NumberedList({ items }: { items: React.ReactNode[] }) {
 function Pill({ children, bg, color }: { children: React.ReactNode; bg: string; color: string }) {
   return (
     <span style={{
-      display: 'inline-flex', fontFamily: 'var(--font-ui)', fontSize: '11px',
+      display: 'inline-flex', fontFamily: 'var(--font-ui)', fontSize: '12px',
       padding: '3px 12px', borderRadius: '20px', margin: '3px',
       background: bg, color,
     }}>{children}</span>
@@ -81,7 +81,7 @@ function DataTable({ rows }: { rows: [string, string, string][] }) {
         <tr>
           {(['Preferment', 'Correction', 'Why'] as const).map(h => (
             <th key={h} style={{
-              fontFamily: 'var(--font-ui)', fontSize: '11px', color: SMOKE,
+              fontFamily: 'var(--font-ui)', fontSize: '12px', color: SMOKE,
               textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 500,
               padding: '8px 12px', textAlign: 'left',
             }}>{h}</th>
@@ -282,21 +282,21 @@ const CONTENT: Record<string, LocaleContent> = {
                 <svg viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: 'auto' }}>
                   {/* RT poolish bell - narrow */}
                   <path d="M 30 120 Q 50 120 60 115 Q 70 108 75 85 Q 80 55 85 30 Q 90 55 95 85 Q 100 108 110 115 Q 120 120 140 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
-                  <text x="85" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">RT poolish</text>
-                  <text x="85" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">narrow peak</text>
+                  <text x="85" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#6B635D">RT poolish</text>
+                  <text x="85" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#6B635D">narrow peak</text>
                   {/* Fridge poolish bell - wide plateau */}
                   <path d="M 155 120 Q 175 120 185 114 Q 195 105 198 90 Q 200 70 202 55 L 218 55 Q 220 70 222 90 Q 225 105 235 114 Q 245 120 265 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
                   <line x1="202" y1="55" x2="218" y2="55" stroke="#9C8248" strokeWidth="1.5" />
-                  <text x="210" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Fridge poolish</text>
-                  <text x="210" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">wide plateau</text>
+                  <text x="210" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#6B635D">Fridge poolish</text>
+                  <text x="210" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#6B635D">wide plateau</text>
                   {/* Plateau annotation */}
                   <line x1="202" y1="48" x2="218" y2="48" stroke="#9C8248" strokeWidth="1" strokeDasharray="2,2" />
                   <text x="210" y="46" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="7" fill="#9C8248">plateau</text>
                   {/* Dough bell - wide plateau, right side */}
                   <path d="M 285 120 Q 295 120 300 115 Q 305 108 308 95 Q 310 80 312 65 L 330 65 Q 332 80 334 95 Q 337 108 342 115 Q 350 120 390 120 Z" fill="rgba(107,122,90,0.2)" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
                   <line x1="312" y1="65" x2="330" y2="65" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
-                  <text x="335" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Dough</text>
-                  <text x="335" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">peaks at bake</text>
+                  <text x="335" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#6B635D">Dough</text>
+                  <text x="335" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#6B635D">peaks at bake</text>
                   {/* Mix diamond */}
                   <rect x="279" y="113" width="8" height="8" transform="rotate(45 283 117)" fill="#9C8248" />
                   <text x="283" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#9C8248">mix ◆</text>
@@ -305,7 +305,7 @@ const CONTENT: Record<string, LocaleContent> = {
                   <text x="390" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#6B4423">bake ▲</text>
                   {/* Time axis */}
                   <line x1="30" y1="120" x2="400" y2="120" stroke="#E8E0D5" strokeWidth="1" />
-                  <text x="215" y="138" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#8A7F78">← earlier ——————————— time ——————————— bake →</text>
+                  <text x="215" y="138" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#6B635D">← earlier ——————————— time ——————————— bake →</text>
                 </svg>
               </div>
 
@@ -602,7 +602,7 @@ const CONTENT: Record<string, LocaleContent> = {
                 ].map(({ cat, detail }) => (
                   <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px', fontFamily: 'var(--font-ui)', fontSize: '12px' }}>
                     <span style={{ color: CHAR, fontWeight: 500, flexShrink: 0 }}>{cat}</span>
-                    <span style={{ color: SMOKE, textAlign: 'right', fontSize: '11px', lineHeight: 1.4 }}>{detail}</span>
+                    <span style={{ color: SMOKE, textAlign: 'right', fontSize: '12px', lineHeight: 1.4 }}>{detail}</span>
                   </div>
                 ))}
               </div>
@@ -777,24 +777,24 @@ const CONTENT: Record<string, LocaleContent> = {
             <div style={{ margin: '16px 0', borderRadius: '16px', background: 'rgba(43, 36, 32,0.03)', padding: '16px' }}>
               <svg viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: 'auto' }}>
                 <path d="M 30 120 Q 50 120 60 115 Q 70 108 75 85 Q 80 55 85 30 Q 90 55 95 85 Q 100 108 110 115 Q 120 120 140 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
-                <text x="85" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Poolish TA</text>
-                <text x="85" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">pic étroit</text>
+                <text x="85" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#6B635D">Poolish TA</text>
+                <text x="85" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#6B635D">pic étroit</text>
                 <path d="M 155 120 Q 175 120 185 114 Q 195 105 198 90 Q 200 70 202 55 L 218 55 Q 220 70 222 90 Q 225 105 235 114 Q 245 120 265 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
                 <line x1="202" y1="55" x2="218" y2="55" stroke="#9C8248" strokeWidth="1.5" />
-                <text x="210" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Poolish frigo</text>
-                <text x="210" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">large plateau</text>
+                <text x="210" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#6B635D">Poolish frigo</text>
+                <text x="210" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#6B635D">large plateau</text>
                 <line x1="202" y1="48" x2="218" y2="48" stroke="#9C8248" strokeWidth="1" strokeDasharray="2,2" />
                 <text x="210" y="46" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="7" fill="#9C8248">plateau</text>
                 <path d="M 285 120 Q 295 120 300 115 Q 305 108 308 95 Q 310 80 312 65 L 330 65 Q 332 80 334 95 Q 337 108 342 115 Q 350 120 390 120 Z" fill="rgba(107,122,90,0.2)" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
                 <line x1="312" y1="65" x2="330" y2="65" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
-                <text x="335" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#8A7F78">Pâte</text>
-                <text x="335" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#8A7F78">pic à la cuisson</text>
+                <text x="335" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#6B635D">Pâte</text>
+                <text x="335" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#6B635D">pic à la cuisson</text>
                 <rect x="279" y="113" width="8" height="8" transform="rotate(45 283 117)" fill="#9C8248" />
                 <text x="283" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#9C8248">pétrissage ◆</text>
                 <polygon points="390,120 386,108 394,108" fill="#6B4423" />
                 <text x="388" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#6B4423">cuisson ▲</text>
                 <line x1="30" y1="120" x2="400" y2="120" stroke="#E8E0D5" strokeWidth="1" />
-                <text x="215" y="138" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#8A7F78">← plus tôt ——————— temps ——————— cuisson →</text>
+                <text x="215" y="138" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#6B635D">← plus tôt ——————— temps ——————— cuisson →</text>
               </svg>
             </div>
             <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Deux courbes, deux histoires.</strong> La courbe dorée est le préferment (poolish ou biga) — elle doit culminer au pétrissage (◆ doré). La courbe vert-gris est la pâte finale — elle doit culminer à la cuisson (▲ rouge). Quand les deux s’alignent, vous obtenez le meilleur résultat possible de votre planning.</p>
@@ -908,11 +908,12 @@ export default function AboutClient() {
 
         {/* Way home at the end of the read — the header chip covers mid-scroll */}
         <Link
+          className="bh-primary"
           href={locale === 'fr' ? '/fr' : '/'}
           style={{
             marginTop: '20px',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            padding: '12px 0', borderRadius: '16px',
+            padding: '12px 0', minHeight: '44px', borderRadius: '16px',
             background: TERRA, color: '#fff',
             fontSize: '13px', fontWeight: 500,
             fontFamily: 'var(--font-ui)', textDecoration: 'none',
