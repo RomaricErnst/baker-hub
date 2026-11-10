@@ -241,6 +241,6 @@ test('pain viennois defaults to 4 × 200 g everywhere and warns only for smaller
     assert.doesNotMatch(html, /baguettes de référence de 200 g|reference 200 g baguettes/, lang);
     assert.doesNotMatch(html, lang === 'fr' ? /Pesez les œufs/ : /Weigh (the )?eggs/, lang);
     const small = recipe('pain_viennois', { count: 8, weight: 100 });
-    assert.match(guide('pain_viennois', lang, { weight: 100, numItems: 8, hydration: small.hydration, recipeResult: small }), /baguettes de référence de 200 g|reference 200 g baguettes/, lang);
+    assert.match(guide('pain_viennois', lang, { weight: 100, numItems: 8, hydration: small.hydration, recipeResult: small }), /baguettes de référence de 200[\s\u202f]g|reference 200 g baguettes/, lang);
   }
 });

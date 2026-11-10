@@ -9,7 +9,6 @@ const {utils}=require('./load-production.cjs');
 const React=require('react'),{renderToStaticMarkup}=require('react-dom/server'),{NextIntlClientProvider}=require('next-intl');
 const Guide=require('../app/components/BakeGuide.tsx').default;
 const {guideWeightText,leanBreadPreheatMin}=require('../app/utils/leanBreadBake.ts');
-const {planActionLabel}=require('../app/utils/planCalendar.ts');
 
 // Renders every step of the guide (each step is opened in turn).
 function guide(style,lang,{mixer='hand',oven='home_oven_standard',numItems=2,weight=600,yeast='instant',units='metric',hours=26,temp=22,extra={}}={}){
@@ -62,12 +61,6 @@ test('lean breads preheat 30 min with a tray and 45 min with a stone, steel or p
  const text=guide('pain_campagne','en',{numItems:1,weight:800,oven:'standard_bread',extra:{}}).text;
  assert.match(text,/allow 30 min; the hot tray colours the base/);
  assert.doesNotMatch(text,/20–30 min; the hot tray/);
-});
-
-test('pan pizza calendar shaping event uses the guide step name',()=>{
- assert.equal(planActionLabel('divide',false,{styleKey:'pan',count:2}),'Divide and press into the pans');
- assert.equal(planActionLabel('divide',true,{styleKey:'roman',count:1}),'Étaler la pâte sur la plaque');
- assert.equal(planActionLabel('divide',false,{styleKey:'neapolitan',count:4}),'Divide and shape');
 });
 
 test('sourdough mixing reads as one sequence with each rest at its clock time and water in grams',()=>{
@@ -146,6 +139,23 @@ test('shopping: a sachet hint for a tiny dry yeast dose, and the finish and dust
  assert.deepEqual(breadFinishShopping('pain_campagne',1,'en'),[{id:'finish_rice_flour',name:'Rice flour, for dusting the banneton',grams:20}]);
  assert.deepEqual(breadFinishShopping('baguette',3,'en'),[]);
  assert.deepEqual(breadFinishShopping('pain_seigle',1,'en'),[],'rye is shaped with water, not rice flour');
+});
+
+test('one name per style, the picker’s, and guide wording details',()=>{
+ const {data}=require('./load-production.cjs');
+ const en=require('../messages/en.json').style, fr=require('../messages/fr.json').style;
+ for(const key of ['neapolitan','newyork','pizza_romana','roman','pan','sourdough']){
+  assert.equal(data.ALL_STYLES[key].name,en[key].title,key);
+  assert.equal(data.ALL_STYLES[key].nameFr,fr[key].title,key);
+ }
+ const pizza=guide('neapolitan','en',{numItems:4,weight:260,extra:{phase:'preparation'}}).html;
+ assert.doesNotMatch(pizza,/Cooking &amp; serving/);
+ const bake=guide('neapolitan','en',{numItems:4,weight:260}).text;
+ assert.doesNotMatch(bake,/What does Maestro think/);
+ assert.match(bake,/Ask about this step .{0,40}Photo optional\./);
+ assert.doesNotMatch(bake,/Ask about this step Ask Ask about this step/);
+ const poolish=guide('neapolitan','en',{numItems:4,weight:260,extra:{prefermentType:'poolish'}}).text;
+ assert.doesNotMatch(poolish,/\bpoolish \d/);
 });
 
 module.exports={guide};

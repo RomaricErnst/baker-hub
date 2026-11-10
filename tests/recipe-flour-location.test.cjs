@@ -66,7 +66,8 @@ test('guided starter accounting remains visible alongside the flour recommendati
   const {html,result}=render(locale,'simple','levain','sourdough');
   assert.ok(html.includes(recommendedFlourName('neapolitan',locale)));
   const half=Math.round(result.sourdough.starterGramsMid/2);
-  assert.ok(html.includes(locale==='fr'?`+ ${half}g via le levain = ${result.flour}g au total`:`+ ${half}g via the starter = ${result.flour}g total`));
+  const sp='[\\s\\u202f]';
+  assert.match(html,new RegExp(locale==='fr'?`\\+ ${half}${sp}g de farine apportés par le levain, soit ${result.flour}${sp}g au total`:`\\+ ${half} g flour from the starter, ${result.flour} g in total`));
  }
 });
 

@@ -20,8 +20,8 @@ export const PIZZA_STYLES = {
     flourNote: 'Caputo 00 Pizzeria or equivalent.',
   },
   newyork: {
-    name: 'New York Style',
-    nameFr: 'New York Style',
+    name: 'New York pizza',
+    nameFr: 'Pizza new-yorkaise',
     emoji: '🗽',
     // The journey prototype uses the foldable slice to communicate the
     // defining New York cue. Keep the same asset in the migrated app rather
@@ -36,8 +36,8 @@ export const PIZZA_STYLES = {
     flourNote: 'High-gluten bread flour (13%+ protein).',
   },
   pizza_romana: {
-    name: 'Pizza Romana',
-    nameFr: 'Pizza Romaine',
+    name: 'Thin Roman pizza',
+    nameFr: 'Romaine fine',
     emoji: '🫓',
     image: '/images/approved/pizza-style/carciofi-romana.webp',
     desc: 'Ultra-thin, cracker-crisp, rolled with a pin.',
@@ -51,8 +51,8 @@ export const PIZZA_STYLES = {
     flourNoteFr: 'Farine mi-forte W250-280. Faible hydratation = facile à étaler.',
   },
   roman: {
-    name: 'Roman Teglia',
-    nameFr: 'Teglia Romaine',
+    name: 'Roman tray pizza',
+    nameFr: 'Romaine sur plaque',
     emoji: '🏛️',
     image: '/images/approved/pizza-style/roman-teglia-potato.webp',
     desc: 'High-hydration, ultra-crispy rectangular.',
@@ -64,8 +64,8 @@ export const PIZZA_STYLES = {
     flourNote: 'Strong flour W300+ for high hydration.',
   },
   pan: {
-    name: 'Pan / Detroit',
-    nameFr: 'Pan / Detroit',
+    name: 'Pan pizza',
+    nameFr: 'Pizza en moule',
     emoji: '🍞',
     image: '/images/approved/pizza-style/detroit-red-top.webp',
     desc: 'Thick, fluffy, crispy-bottomed.',
@@ -77,7 +77,7 @@ export const PIZZA_STYLES = {
     flourNote: 'Bread flour for strong gluten structure.',
   },
   sourdough: {
-    name: 'Sourdough Pizza',
+    name: 'Sourdough pizza',
     nameFr: 'Pizza au levain',
     emoji: '🌾',
     image: '/images/approved/pizza-style/margherita-fresh-basil-v2.webp',

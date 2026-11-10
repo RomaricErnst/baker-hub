@@ -3505,9 +3505,9 @@ export default function Home() {
   const SIMPLE_STEPS: StepDef[] = ([
     { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Quel style de pizza ?':'Which pizza style?'),
       value: styleKey ? styleDisplayName(styleKey) : null,
-      // "Classic Neapolitan" and "New York Style" carry a qualifier the baker
+      // "Classic Neapolitan" and "New York pizza" carry a qualifier the baker
       // does not need re-read on a summary line.
-      short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
+      short: styleKey ? styleDisplayName(styleKey).replace(/^Classic | pizza$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
     { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: fr ? 'Quelle quantité de pâte ?' : 'How much dough?',
       value: qtyChosen ? (totalFlourTarget!==undefined&&bakeType==='bread'?`${totalFlourTarget} g ${fr?'de farine':'flour'} · ${numItems} ${fr?'pièces':'pieces'}`:`${numItems} × ${Math.round(itemWeight)} g`) : null, prefilled: false,
@@ -3581,9 +3581,9 @@ export default function Home() {
   const CUSTOM_STEPS: StepDef[] = ([
     { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Quel style de pizza ?':'Which pizza style?'),
       value: styleKey ? styleDisplayName(styleKey) : null,
-      // "Classic Neapolitan" and "New York Style" carry a qualifier the baker
+      // "Classic Neapolitan" and "New York pizza" carry a qualifier the baker
       // does not need re-read on a summary line.
-      short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
+      short: styleKey ? styleDisplayName(styleKey).replace(/^Classic | pizza$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
     { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: fr ? 'Quelle quantité de pâte ?' : 'How much dough?',
       value: qtyChosen ? (totalFlourTarget!==undefined&&bakeType==='bread'?`${totalFlourTarget} g ${fr?'de farine':'flour'} · ${numItems} ${fr?'pièces':'pieces'}`:`${numItems} × ${Math.round(itemWeight)} g`) : null, prefilled: false,
