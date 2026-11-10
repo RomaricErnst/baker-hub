@@ -522,7 +522,7 @@
     "watchOut": "À noter",
     "flourTooltipBread": "La farine à pain forte donne les meilleurs résultats — T65 ou W200+. La farine ordinaire convient pour les fermentations courtes.",
     "flourTooltipPizza": "La 00 italienne ou T45 forte donne les meilleurs résultats. Vous utilisez de la farine ordinaire ou T55 ? Passez en mode Avancé pour adapter votre recette.",
-    "yeastIDY": "Levure (LSI)",
+    "yeastIDY": "Levure (sèche instantanée)",
     "starterReady": {
       "doubled": "A doublé de volume ✓",
       "domed": "Surface bombée, légèrement bullée ✓",
@@ -574,7 +574,7 @@
         "L’odeur est légèrement acidulée, sans odeur d’alcool."
       ]
     },
-    "bulkReadyWhen": "La pousse est prête quand…",
+    "bulkReadyWhen": "Le pointage est terminé quand…",
     "starterPrepKeep": "Gardez <b>{keep}g</b> de votre levain actuel",
     "starterPrepAdd": "Ajoutez <b>{flour}g</b> farine + <b>{water}g</b> eau",
     "starterPrepReady": "Vous aurez ~<b>{total}g</b> prêt à utiliser",
@@ -683,7 +683,7 @@
       "feedStarter": "Rafraîchir le levain",
       "mixDough": "Pétrir la pâte",
       "bulkFerm": "Pointage",
-      "coldRetardWhole": "Pousse au froid — pâton entier",
+      "coldRetardWhole": "Pousse au froid — en masse",
       "coldRetard": "Pousse au froid",
       "divideShape": "Division et façonnage",
       "divideBall": "Division et boulage",
@@ -714,7 +714,7 @@
           "note": "voir recette pour les quantités exactes — 100% hydratation"
         },
         {
-          "bold": "Ajoutez une pincée de LSI",
+          "bold": "Ajoutez une pincée de levure sèche instantanée",
           "note": "très petite quantité — le poolish fermente lentement"
         },
         {
@@ -837,7 +837,7 @@
       "watchForSmooth": "Boule lisse et élastique — légèrement collante mais pas qui colle",
       "watchForPumpkin": "Forme de citrouille : la pâte s’enroule autour de la barre de rupture, se décolle proprement des parois",
       "watchForAll": [
-        "Test de la vitre : étirez un morceau jusqu’à voir la lumière à travers sans déchirer",
+        "Test de la membrane : étirez un morceau jusqu’à voir la lumière à travers sans déchirer",
         "Surface lisse et légèrement brillante"
       ],
       "pitfalls": [
@@ -912,7 +912,7 @@
       "watchFor": [
         "La pâte gonflera lentement — 20-30% de pousse pendant la pousse au froid est normal",
         "La surface peut paraître légèrement bombée avec petites bulles — c’est parfait",
-        "La pâte froide est rigide en sortant du frigo — c’est correct, facilite le boulage"
+        "La pâte froide est ferme en sortant du frigo — c’est normal, cela facilite la division et le façonnage"
       ],
       "pitfalls": [
         "Laisser découvert : croûte sur la pâte, déchirures lors du façonnage, pâtons irréguliers",
@@ -954,7 +954,7 @@
         ],
         "pitfalls": [
           "Entailles qui se referment — ouvrez-les plus larges et farinez davantage",
-          "Sur-manipulation : la fougasse est une focaccia plate, pas un pain structuré — douceur",
+          "Trop de manipulation : la fougasse est un pain plat, pas un pain façonné serré — travaillez-la en douceur",
           "Trop mince sur les bords — ils brûleront avant que le centre soit cuit"
         ]
       },
@@ -1135,7 +1135,7 @@
       "pitfalls": [
         "Forcer un pâton qui se rétracte — il lui faut du temps, pas de la force",
         "Se fier au temps plutôt qu’au ressenti — utilisez toujours le test du doigt",
-        "Boules sur-fermentées s’effondrent au four et perdent le développement"
+        "Une pâte sur-fermentée s’affaisse au four et perd son développement"
       ]
     },
     "preheat": {

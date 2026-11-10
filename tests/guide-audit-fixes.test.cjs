@@ -122,3 +122,25 @@ test('egg weighing note needs eggs; final dough temperature is spelled out with 
  assert.doesNotMatch(en+fr,/\bFDT\b|\bTFP\b|\bDDT\b/);
  assert.match(render('neapolitan','en',{...thermal,units:'imperial'}),/aims for 75°F/);
 });
+
+test('French house vocabulary and plain English glosses in the guide',()=>{
+ const text=m=>JSON.stringify(m.bakeGuide)+JSON.stringify(m.recipeOutput);
+ assert.doesNotMatch(text(fr),/pâton entier|Boules sur-fermentées|facilite le boulage|\bLSI\b|\bIDY\b|La pousse est prête|Test de la vitre|nourri/);
+ assert.match(fr.bakeGuide.stepTitles.coldRetardWhole,/en masse/);
+ assert.match(fr.recipeOutput.bulkReadyWhen,/pointage/);
+ assert.doesNotMatch(text(en),/\bIDY\b|\bFDT\b/);
+ assert.match(en.bakeGuide.bulk.set4.note,/bulk \(first rise\)/);
+ assert.match(en.bakeGuide.coldRetard.watchFor[0],/cold retard \(fridge rest\)/);
+ // A baguette's proof and cold tips use dough wording, not pizza balls.
+ const baguette=render('baguette','fr',{weight:320,numItems:3,horizonH:30,kitchen:20});
+ assert.doesNotMatch(baguette,/Boules|boulage|pâton entier/);
+ // A brioche is not called "pain".
+ const brioche=render('brioche','fr',{weight:500,numItems:1,recipe:{totalDough:500,flour:280,water:0,salt:7,oil:0,sugar:34,hydration:55,yeast:null,waterTemp:null,enrichment:{milk:60,eggs:90,butter:80}}});
+ assert.match(brioche,/Cuire la brioche/);assert.match(brioche,/Laisser refroidir la brioche/);
+ assert.doesNotMatch(brioche,/Cuire le pain|Laisser refroidir le pain|Façonner le pain/);
+ // Simple bakers see no hydration percentage in tips.
+ const simple=render('neapolitan','en',{hydration:76,simpleMode:true});
+ assert.doesNotMatch(simple,/76% hydration|≤60%/);
+ assert.match(render('neapolitan','en',{hydration:76}),/At 76% hydration, sticky is expected/);
+ assert.match(render('neapolitan','fr',{hydration:76}),/À 76 % d’hydratation/);
+});

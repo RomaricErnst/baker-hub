@@ -522,7 +522,7 @@
     "watchOut": "Note",
     "flourTooltipBread": "Strong bread flour works best — T65 or W200+. Plain flour works for short ferments.",
     "flourTooltipPizza": "Italian 00 or T45 forte gives the best results. Using plain flour or T55? Switch to Custom mode to adapt your recipe.",
-    "yeastIDY": "Yeast (IDY)",
+    "yeastIDY": "Yeast (instant dry)",
     "starterReady": {
       "doubled": "Doubled in size ✓",
       "domed": "Domed top, slightly bubbly ✓",
@@ -714,7 +714,7 @@
           "note": "see recipe for exact amounts — 100% hydration"
         },
         {
-          "bold": "Add a pinch of IDY",
+          "bold": "Add a pinch of instant dry yeast",
           "note": "very small amount — poolish ferments slowly"
         },
         {
@@ -872,15 +872,15 @@
       },
       "set4": {
         "bold": "Set 4 — after 2h: final fold",
-        "note": "then leave undisturbed until bulk is done"
+        "note": "then leave undisturbed until the bulk (first rise) is done"
       },
       "setShort": {
         "bold": "After 15 min: one set of stretch & folds",
-        "note": "then cover and rest — short bulk goes straight to cold"
+        "note": "then cover and rest — a short bulk (first rise) goes straight to the fridge"
       },
       "setVeryShort": {
         "bold": "Cover immediately and place in fridge",
-        "note": "bulk is very short — dough goes cold right away"
+        "note": "the bulk (first rise) is very short — dough goes cold right away"
       },
       "watchFor": [
         "Dough has grown 50–75% (not doubled)",
@@ -910,9 +910,9 @@
         }
       ],
       "watchFor": [
-        "Dough will grow slowly — 20-30% rise during cold retard is normal",
+        "Dough will grow slowly — 20-30% rise during the cold retard (fridge rest) is normal",
         "Surface may look slightly domed and have small bubbles — this is perfect",
-        "Cold dough is stiff straight from the fridge — this is correct, it makes divide & ball easier"
+        "Cold dough is stiff straight from the fridge — this is correct, it makes dividing and shaping easier"
       ],
       "pitfalls": [
         "Leaving uncovered: dough skin forms, tears during shaping and creates uneven portions",
@@ -1089,7 +1089,7 @@
       "steps": [
         {
           "bold": "Cover each dough box tightly",
-          "note": "balls must not dry out during cold retard"
+          "note": "balls must not dry out during the cold retard (fridge rest)"
         },
         {
           "bold": "Stack in the fridge — back shelf",
@@ -1133,9 +1133,9 @@
         "Does not spring back, feels slack — over-proofed, bake immediately"
       ],
       "pitfalls": [
-        "Forcing a ball that keeps springing back — it needs more time, not more force",
+        "Forcing dough that keeps springing back — it needs more time, not more force",
         "Going by time instead of feel — always use the poke test",
-        "Over-proofed dough collapses in the oven and lose oven spring"
+        "Over-proofed dough collapses in the oven and loses its oven spring"
       ]
     },
     "preheat": {

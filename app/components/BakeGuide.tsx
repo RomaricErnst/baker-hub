@@ -745,7 +745,7 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
     starter:['Conseils pour le levain','Starter tips'],
     poolish:['Conseils pour le poolish','Poolish tips'],
     biga:['Conseils pour la biga','Biga tips'],
-    bulk:['Conseils de pointage','Bulk fermentation tips'],
+    bulk:['Conseils de pointage','Bulk (first rise) tips'],
     cold:['Conseils pour le repos au froid','Cold fermentation tips'],
     divide:['Conseils de façonnage','Shaping tips'],
     proof:['Conseils pour l’apprêt','Final proof tips'],
@@ -956,6 +956,12 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   const leanBake      = !breadProtocol && isBread ? leanBreadBake(styleKey, pieceWeight, ovenType, numItems) : null;
   // Oven settings in message steps follow the unit system; small values there
   // are temperature differences ("loses 20–30°C") and stay as written.
+  // Simple bakers never set a hydration: tips name the dough, not a percentage.
+  const hydEn = simpleMode ? 'With a dough this wet' : `At ${hydration}% hydration`;
+  const hydFr = simpleMode ? 'Avec autant d’eau dans la pâte' : `À ${hydration}\u00a0% d’hydratation`;
+  const oilEn = simpleMode ? 'This dough contains oil' : `Enriched dough at ${hydration}%`;
+  // A brioche is not called "pain" in French, nor "bread" on its own card.
+  const breadNoun = styleKey === 'brioche' ? (l === 'fr' ? 'la brioche' : 'the brioche') : (l === 'fr' ? 'le pain' : 'the bread');
   const ovenSteps = (items: { bold: string; note: string }[]) => items.map(item => ({ bold: ovenTempText(item.bold, u, 120), note: ovenTempText(item.note, u, 120) }));
   // Shaping label: what we call the shaped piece
   const isSpiral      = mixerType === 'spiral';
@@ -1596,7 +1602,7 @@ Actual dough condition and equipment may differ from these estimates.`;
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           {breadProtocol ? <Steps items={[
-            {bold:l === 'fr' ? 'Gardez la pâte couverte pendant le pointage prévu. Observez son gonflement : la chaleur accélère la pousse.' : 'Keep the dough covered during the planned bulk rise. Watch its expansion; a warmer kitchen speeds the rise.',note:''},
+            {bold:l === 'fr' ? 'Gardez la pâte couverte pendant le pointage prévu. Observez son gonflement : la chaleur accélère la pousse.' : 'Keep the dough covered during the planned bulk (first rise). Watch its expansion; a warmer kitchen speeds the rise.',note:''},
             ...(['ciabatta','focaccia'].includes(styleKey) ? [{bold:l === 'fr' ? 'Si la pâte s’étale, effectuez des rabats doux au début du pointage pour lui donner de la tenue. Préservez les bulles qui se forment ensuite.' : 'If the dough spreads, give it gentle folds early in bulk to build strength. Preserve bubbles as they develop.',note:''}] : []),
           ]} /> : <Steps items={[
             ...(t.raw('bulk.stepsBase') as { bold: string; note: string }[]),
@@ -1612,7 +1618,7 @@ Actual dough condition and equipment may differ from these estimates.`;
 
         {!breadProtocol && <StepExtras
           tips={<>
-            <Section icon="" title={l === 'fr' ? 'Le pointage est terminé quand' : 'Watch for — bulk is done when'}>
+            <Section icon="" title={l === 'fr' ? 'Le pointage est terminé quand' : 'Watch for — the bulk (first rise) is done when'}>
               <Bullets items={t.raw('bulk.watchFor') as string[]} />
               <div style={{ marginTop: '8px' }}>
                 <LearnLink term="bulk_fermentation" label={l === 'fr' ? 'Guide du pointage' : 'Bulk fermentation guide'} onOpen={setLearnTerm} showSparkle={true} />
@@ -1622,9 +1628,9 @@ Actual dough condition and equipment may differ from these estimates.`;
               <Bullets items={[
                 ...(hydration >= 70 ? [
                   oil > 0
-                    ? (l === 'fr' ? `À ${hydration} % d’hydratation, huilez légèrement vos mains pour les rabats de cette pâte enrichie.` : `Enriched dough at ${hydration}%: use lightly oiled hands for stretch & folds — fat in the dough means oil is a better barrier than water`)
+                    ? (l === 'fr' ? `${hydFr}, huilez légèrement vos mains pour les rabats de cette pâte enrichie.` : `${oilEn}: use lightly oiled hands for stretch & folds — fat in the dough means oil is a better barrier than water`)
                     : hydration >= 75
-                    ? (l === 'fr' ? `À ${hydration} % d’hydratation, une pâte collante est normale. Mouillez vos mains avant chaque rabat et travaillez rapidement, sans ajouter de farine.` : `At ${hydration}% hydration, sticky is expected — keep a bowl of water nearby and wet your hands before every fold. Never add flour to the bench. Quick, confident movements stick less than slow hesitant ones.`)
+                    ? (l === 'fr' ? `${hydFr}, une pâte collante est normale. Mouillez vos mains avant chaque rabat et travaillez rapidement, sans ajouter de farine.` : `${hydEn}, sticky is expected — keep a bowl of water nearby and wet your hands before every fold. Never add flour to the bench. Quick, confident movements stick less than slow hesitant ones.`)
                     : (l === 'fr' ? `Mouillez vos mains avant chaque série de rabats pour limiter l’adhérence sans modifier l’hydratation.` : `Wet hands for stretch & folds — dip your hands in water before each set. Avoids sticking without altering hydration like bench flour would.`),
                 ] : []),
                 // Advice to find a cooler spot only helps when the kitchen itself is cooler.
@@ -1675,7 +1681,7 @@ Actual dough condition and equipment may differ from these estimates.`;
                   (t.raw('coldRetard.pitfalls') as string[])[0],
                   l === 'fr'
                     ? `Frigo au-dessus de ${tempC(8, u)} : la pâte fermente trop pendant le repos — vérifiez sa température`
-                    : `Fridge temperature above ${tempC(8, u)}: dough over-ferments during retard — check your fridge`,
+                    : `Fridge temperature above ${tempC(8, u)}: dough over-ferments during the fridge rest — check your fridge`,
                   // "Do not rush the cold phase" only means something for a long cold rest.
                   ...((schedule.totalColdHours ?? schedule.coldRetardHours ?? 0) >= 8 ? [(t.raw('coldRetard.pitfalls') as string[])[1]] : []),
                 ]} />
@@ -1692,7 +1698,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       {/* ── STEP: Divide & Shape (bread) / Divide & Ball (pizza) ── */}
       {schedule.divideBallTime && (
         <StepCard number={n()} {...sc()} icon={<IconDivide />}
-          title={panGuide ? panGuide.title[l] : styleKey === 'greek_pita' ? (l === 'fr' ? 'Diviser et bouler' : 'Divide and round') : isBread ? (numItems===1 ? (l==='fr'?'Façonner le pain':'Shape the loaf') : t('stepTitles.divideShape')) : t('stepTitles.divideBall')}
+          title={panGuide ? panGuide.title[l] : styleKey === 'greek_pita' ? (l === 'fr' ? 'Diviser et bouler' : 'Divide and round') : isBread ? (numItems===1 ? (l==='fr'?`Façonner ${breadNoun}`:(styleKey === 'brioche' ? 'Shape the brioche' : 'Shape the loaf')) : t('stepTitles.divideShape')) : t('stepTitles.divideBall')}
           time={schedule.divideBallTime} duration={divideMin / 60} accent="#8A6A4A">
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
@@ -1754,9 +1760,9 @@ Actual dough condition and equipment may differ from these estimates.`;
                   : isBread ? [
                     ...(hydration >= 70 ? [
                       oil > 0
-                        ? (l === 'fr' ? `À ${hydration} % d’hydratation, huilez légèrement vos mains pour façonner cette pâte enrichie.` : `Enriched dough at ${hydration}%: use lightly oiled hands for shaping — fat in the dough means oil is a better barrier than water`)
+                        ? (l === 'fr' ? `${hydFr}, huilez légèrement vos mains pour façonner cette pâte enrichie.` : `${oilEn}: use lightly oiled hands for shaping — fat in the dough means oil is a better barrier than water`)
                         : hydration >= 75
-                        ? (l === 'fr' ? `À ${hydration} % d’hydratation, une pâte collante est normale. Mouillez vos mains et utilisez une corne pour soulever les pâtons. Travaillez rapidement sans ajouter de farine.` : `At ${hydration}% hydration, sticky is normal. Keep a bowl of water nearby and wet your hands before handling — never use bench flour. Use a bench scraper to lift pieces. Move quickly and with confidence.`)
+                        ? (l === 'fr' ? `${hydFr}, une pâte collante est normale. Mouillez vos mains et utilisez une corne pour soulever les pâtons. Travaillez rapidement sans ajouter de farine.` : `${hydEn}, sticky is normal. Keep a bowl of water nearby and wet your hands before handling — never use bench flour. Use a bench scraper to lift pieces. Move quickly and with confidence.`)
                         : (l === 'fr' ? `À cette hydratation, mouillez vos mains avant de toucher la pâte pour limiter l’adhérence. Évitez d’ajouter de la farine.` : `Wet hands prevent sticking at this hydration. Keep a small bowl of water nearby and dip your hands before each touch. Avoid bench flour — it hydrates instantly and makes things worse.`),
                     ] : []),
                     ...(t.raw('divide.boule.pitfalls') as string[]),
@@ -1774,7 +1780,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             </>}
             faqKey="divide"
             coachStepId="shape"
-            coachTitle={panGuide ? panGuide.title[l] : isBread ? (numItems===1 ? (l==='fr'?'Façonner le pain':'Shape the loaf') : t('stepTitles.divideShape')) : t('stepTitles.divideBall')}
+            coachTitle={panGuide ? panGuide.title[l] : isBread ? (numItems===1 ? (l==='fr'?`Façonner ${breadNoun}`:(styleKey === 'brioche' ? 'Shape the brioche' : 'Shape the loaf')) : t('stepTitles.divideShape')) : t('stepTitles.divideBall')}
             recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
           />}
@@ -1939,7 +1945,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       </StepCard>}
 
       {/* ── STEP: Bake & Eat ─────────────────────────── */}
-      <StepCard final={!isBread} number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'boil-bake' ? (hasPoachStep ? (l === 'fr' ? 'Cuire les bagels au four' : 'Bake the bagels') : (l === 'fr' ? 'Pocher puis cuire au four' : 'Poach, then bake')) : breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Cuire à la poêle' : 'Cook on the griddle') : isBread ? (l === 'fr' ? 'Cuire le pain' : 'Bake the bread') : (l === 'fr' ? 'Cuire les pizzas' : 'Bake the pizzas')} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined} accent="#5A9A50">
+      <StepCard final={!isBread} number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'boil-bake' ? (hasPoachStep ? (l === 'fr' ? 'Cuire les bagels au four' : 'Bake the bagels') : (l === 'fr' ? 'Pocher puis cuire au four' : 'Poach, then bake')) : breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Cuire à la poêle' : 'Cook on the griddle') : isBread ? (l === 'fr' ? `Cuire ${breadNoun}` : `Bake ${breadNoun}`) : (l === 'fr' ? 'Cuire les pizzas' : 'Bake the pizzas')} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined} accent="#5A9A50">
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           {styleKey === 'pain_viennois' && recipe && recipe.totalDough / Math.max(1, numItems) < 200 && <p>{l === 'fr'
             ? `Vos pièces font environ ${Math.round(recipe.totalDough / Math.max(1, numItems))} g : elles sont plus petites que les baguettes de référence de 200 g. Contrôlez-les avant 15 min, puis régulièrement : croûte dorée et centre pris. Le poids seul ne détermine pas la cuisson ; la forme et le four comptent aussi.`
@@ -2027,7 +2033,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         {!isBread && onNavigateToPizzaParty && <button type="button" onClick={onNavigateToPizzaParty} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{pizzaActionLabel ?? (l === 'fr' ? 'Commencer la cuisson des pizzas' : 'Start baking the pizzas')} →</button>}
       </StepCard>
 
-      {isBread && <StepCard final number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Garder les pains souples' : 'Keep the breads soft') : (l === 'fr' ? 'Laisser refroidir le pain' : 'Cool the bread')}>
+      {isBread && <StepCard final number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Garder les pains souples' : 'Keep the breads soft') : (l === 'fr' ? `Laisser refroidir ${breadNoun}` : `Cool ${breadNoun}`)}>
         {breadProtocol ? <Steps items={profileSteps(breadProtocol.cooling[l])} /> : (() => {
           const range = breadCoolingRange(styleKey, pieceWeight);
           return <><Section icon="" title={t('sectionTitles.whatToDo')}><Steps items={[
