@@ -846,15 +846,22 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
 
 // The recipe opens on the answer to "when do I start?"; the steps and the
 // calendar file are one tap away.
-function RecipePlanCard({fr,locale,startAt,startLabel,bakeAt,calendarOutdated,onSeeSteps,onAddToCalendar}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;calendarOutdated?:boolean;onSeeSteps:()=>void;onAddToCalendar:()=>void}){
-  return <section data-recipe-plan aria-label={fr?'Votre plan':'Your plan'} style={{border:'1px solid var(--border)',borderRadius:16,padding:'12px 14px 4px',margin:'12px 0 4px',background:'var(--card)',boxShadow:'var(--card-shadow)'}}>
-    <p style={{margin:'0 0 2px',fontSize:13,color:'var(--smoke)'}}>{fr?'Votre plan':'Your plan'}</p>
-    <p style={{margin:'0 0 2px',fontSize:16,fontWeight:700,color:'var(--char)'}}>{startLabel ?? (fr?'Commencer':'Start')} · {soonStartLabel(startAt,Date.now(),locale) ?? formatBakeDateTime(startAt,locale)}</p>
-    <p style={{margin:0,fontSize:15,color:'var(--char)'}}>{fr?'Enfourner':'Bake'} · {formatBakeDateTime(bakeAt,locale)}</p>
+// The recipe says what goes in; below it, the plan says when: the key steps with
+// their times only. How to do each step lives in Preparation.
+function RecipePlanCard({fr,locale,startAt,startLabel,bakeAt,steps,calendarOutdated,onSeeSteps,onAddToCalendar}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;steps:{key:string;at:Date;label:string}[];calendarOutdated?:boolean;onSeeSteps:()=>void;onAddToCalendar:()=>void}){
+  const row={display:'flex',gap:12,padding:'7px 0',borderTop:'1px solid var(--border)',fontSize:15,lineHeight:1.4,color:'var(--char)'} as const;
+  const time={flex:'0 0 auto',minWidth:'7.5em',color:'var(--ash)',fontVariantNumeric:'tabular-nums'} as const;
+  return <section data-recipe-plan aria-labelledby="bh-recipe-plan-title" style={{margin:'0 0 4px'}}>
+    <h2 id="bh-recipe-plan-title" style={{margin:'0 0 6px',fontFamily:'var(--font-display)',fontSize:30,fontWeight:700,lineHeight:1.15,color:'var(--char)'}}>{fr?'Votre plan':'Your plan'}</h2>
+    <p style={{margin:'0 0 8px',fontSize:16,fontWeight:700,color:'var(--char)'}}>{startLabel ?? (fr?'Commencer':'Start')} · {soonStartLabel(startAt,Date.now(),locale) ?? formatBakeDateTime(startAt,locale)}</p>
+    {steps.length>0&&<ol data-recipe-plan-steps style={{listStyle:'none',margin:0,padding:0}}>
+      {steps.map(step=><li key={step.key} style={row}><span style={time}>{formatTime(step.at,locale)}</span><span>{step.label}</span></li>)}
+    </ol>}
+    <p style={{...row,margin:0,fontWeight:600}}><span style={{...time,color:'var(--char)'}}>{formatTime(bakeAt,locale)}</span><span>{fr?'Enfourner':'Bake'}</span></p>
     {calendarOutdated && <p data-calendar-outdated style={{margin:'8px 0 0',fontSize:14,lineHeight:1.45,color:'var(--ash)'}}>{fr?'Les étapes ont changé depuis votre ajout à l’agenda. Ajoutez le plan à nouveau pour le mettre à jour.':'The steps have changed since you added this plan to your calendar. Add it again to update it.'}</p>}
     <span style={{display:'flex',flexWrap:'wrap',gap:'0 18px'}}>
-      <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={onSeeSteps}>{fr?'Voir les étapes':'See the steps'}</button>
       <button type="button" data-add-calendar className="bh-section-back" style={{minHeight:44}} onClick={onAddToCalendar}>{calendarOutdated?(fr?'Mettre à jour mon agenda':'Update my calendar'):(fr?'Ajouter à mon agenda':'Add to my calendar')}</button>
+      <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={onSeeSteps}>{fr?'Voir le détail des étapes':'See each step in detail'}</button>
     </span>
   </section>;
 }
@@ -3931,6 +3938,12 @@ export default function Home() {
     writeExportedSteps(planCalendarId,exportedSteps(events,eatTime,bakeCalendarLabel));
     setCalendarExports(v=>v+1);
   }
+  // Key steps after the first one, for the recipe's plan (the calendar's list).
+  const recipePlanSteps = (()=>{
+    if(!recipeGenerated||!eatTime||!schedule)return [];
+    const from=Date.now()-60000;
+    return planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label}));
+  })();
   // A plan already in the calendar whose steps have since moved (any step, not only
   // Start Dough or the bake): the card says so once, where the button is.
   const calendarOutdated = (()=>{
@@ -4358,7 +4371,6 @@ export default function Home() {
   const isPageTitle=!browsingFillings&&['recipe','protocol','service'].includes(destination)||(destination==='shopping'&&bakeType!=='pizza');
   return isPageTitle?<h1 className="bh-page-title bh-bake-title">{title}</h1>:<strong style={{fontSize:14}}>{title}</strong>;
 })()}{destination==='service'&&!browsingFillings&&<h2 className="bh-visually-hidden">{fr?'Cuisson & service':'Baking & serving'}</h2>}<div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{destination==='recipe'&&!browsingFillings&&!execution&&!mixExecution?<button type="button" className="bh-section-back" onClick={openQuantityEdit} aria-label={fr?'Modifier la quantité':'Edit quantity'}>{bakeQuantityLabel(numItems,bakeType,styleKey,fr)}</button>:bakeQuantityLabel(numItems,bakeType,styleKey,fr)} <span style={{display:'inline-block'}}>{styleKey ? styleDisplayName(styleKey) : ''}</span></div>{destination==='recipe'&&bakeType==='pizza'&&(()=>{const note=eachPizzaNote({styleKey,itemWeight,diameter:STYLE_HAS_DIAMETER.includes(styleKey??'')&&crustActive>=0?pizzaDiameter:undefined,units,locale});return note?<p data-each-pizza style={{margin:'4px 0 0',fontSize:13,color:'var(--ash)'}}>{note}</p>:null;})()}</div>}
-{recipeGenerated && destination==='recipe' && eatTime && schedule && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} calendarOutdated={calendarOutdated} onSeeSteps={()=>openDestination('protocol')} onAddToCalendar={addPlanToCalendar}/>}
 {recipeGenerated && planMoved && destination!=='batch' && destination!=='organisation' && eatTime && <div data-plan-moved role="status" style={{margin:'12px 0 0',padding:'12px 14px',border:'1px solid var(--gold)',borderRadius:14,fontSize:14,lineHeight:1.5,background:'var(--warm)'}}>
   <strong>{fr?'Plan mis à jour.':'Plan updated.'}</strong>{' '}
   {fr?`Le pétrissage passe de ${formatBakeDateTime(new Date(planMoved.from),locale)} à ${formatBakeDateTime(new Date(planMoved.to),locale)}. ${planMoved.bakeFrom!==undefined?`La cuisson passe de ${formatBakeDateTime(new Date(planMoved.bakeFrom),locale)} à ${formatBakeDateTime(eatTime,locale)}.`:`La cuisson reste ${formatBakeDateTime(eatTime,locale)}.`} Si vous aviez ajouté le plan à votre agenda, ajoutez-le de nouveau.`
@@ -4793,6 +4805,7 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
+                          {eatTime && schedule && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} calendarOutdated={calendarOutdated} onSeeSteps={()=>openDestination('protocol')} onAddToCalendar={addPlanToCalendar}/>}
                         </div>
                       )}
                     </>
@@ -5362,6 +5375,7 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
+                          {eatTime && schedule && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} calendarOutdated={calendarOutdated} onSeeSteps={()=>openDestination('protocol')} onAddToCalendar={addPlanToCalendar}/>}
                         </div>
                       )}
                     </>
