@@ -22,6 +22,9 @@ export function prefermentDilution(doseGrams: number, prefermentWaterGrams: numb
 export function formatYeastDose(grams:number, locale='en') {
   if (!(grams > 0) || !Number.isFinite(grams)) return '0 g';
   if (grams < 0.01) return formatPrefermentDose(grams,locale);
+  // Under a gram, three significant figures (0.998 g, not "1 g" next to a
+  // "too little for a kitchen scale" note); the same as the preferment dose.
+  if (grams < 1) return formatPrefermentDose(grams,locale);
   return `${new Intl.NumberFormat(locale,{maximumFractionDigits:2}).format(grams)} g`;
 }
 

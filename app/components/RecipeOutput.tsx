@@ -524,8 +524,9 @@ export default function RecipeOutput({
     'poolishSuggestion', 'hotClimateRT', 'doseFloorRT', 'fridgeWarm', 'fermentationBudget', 'osmoticStress',
   ];
 
+  // Simple has no preferment choice, so the poolish suggestion would lead nowhere.
   const filteredWarnings = yeastInfo
-    ? yeastInfo.warnings.filter(w => WARN_SHOWN.includes(w.key))
+    ? yeastInfo.warnings.filter(w => WARN_SHOWN.includes(w.key) && !(mode === 'simple' && w.key === 'poolishSuggestion'))
     : [];
 
   // Suppress explanation if it's purely temperature context
@@ -843,7 +844,8 @@ export default function RecipeOutput({
               sub={locale === 'fr' ? 'Levain liquide · 100 % d’hydratation' : 'Liquid starter · 100% hydration'}
               grams={wStr(sdMid)}
               // Same weight styling as every other ingredient; the % sits beside it in Custom.
-              advancedPct={mode === 'custom' ? (sourdough.starterPctMin === sourdough.starterPctMax ? `${sourdough.starterPctMin}%` : `${sourdough.starterPctMin}–${sourdough.starterPctMax}%`) : undefined}
+              // The % of the weight shown, not the range it was chosen from.
+              advancedPct={mode === 'custom' ? pctStr(Math.round(sdMid / flour * 1000) / 10) : undefined}
             />
           )}
 
