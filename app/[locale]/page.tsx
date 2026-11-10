@@ -4404,8 +4404,8 @@ export default function Home() {
                     {([
                       { key: 'simple' as const, title: fr?'Créer une recette simple':'Create a simple recipe',
                         desc: locale === 'fr'
-                          ? 'BakerHub choisit la farine et les réglages de pâte. Indiquez ensuite quand vous voulez cuire.'
-                          : 'BakerHub chooses the flour and dough settings. Next, tell us when you want to bake.' },
+                          ? 'Baker Hub choisit la farine et les réglages de pâte. Indiquez ensuite quand vous voulez cuire.'
+                          : 'Baker Hub chooses the flour and dough settings. Next, tell us when you want to bake.' },
                       { key: 'custom' as const, title: fr?'Personnaliser ma fournée':'Customize my bake',
                         desc: locale === 'fr'
                           ? (directMethodOnly ? 'Choisissez votre farine et ajustez les réglages de votre pâte.' : 'Choisissez votre farine, votre préferment (poolish, biga ou levain), votre matériel et votre hydratation.')

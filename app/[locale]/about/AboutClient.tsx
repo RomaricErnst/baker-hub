@@ -74,12 +74,12 @@ function Pill({ children, bg, color }: { children: React.ReactNode; bg: string; 
   );
 }
 
-function DataTable({ rows }: { rows: [string, string, string][] }) {
+function DataTable({ rows, headers = ['Preferment', 'Correction', 'Why'] }: { rows: [string, string, string][]; headers?: [string, string, string] }) {
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px' }}>
       <thead>
         <tr>
-          {(['Preferment', 'Correction', 'Why'] as const).map(h => (
+          {headers.map(h => (
             <th key={h} style={{
               fontFamily: 'var(--font-ui)', fontSize: '12px', color: SMOKE,
               textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 500,
@@ -157,6 +157,12 @@ const PREF_TABLE_ROWS: [string, string, string][] = [
   ['Biga',           '×2.2',  'Stiff dough (50–55%) + cold → yeast constrained'],
 ];
 
+const PREF_TABLE_ROWS_FR: [string, string, string][] = [
+  ['Poolish à température ambiante', '÷3,1', 'Ajustement du modèle pour un préferment liquide et sans sel ; pas un multiplicateur d’activité mesuré'],
+  ['Poolish au frigo',               '×1,65', 'Milieu liquide → le CO₂ s’échappe librement'],
+  ['Biga',                           '×2,2', 'Pâte ferme (50–55 %) + froid → levure freinée'],
+];
+
 const CONTENT: Record<string, LocaleContent> = {
   en: {
     pageTitle: 'About Baker Hub',
@@ -177,12 +183,12 @@ const CONTENT: Record<string, LocaleContent> = {
           ),
         },
         {
-          title: 'Simple mode vs Custom mode',
+          title: 'Simple recipe or Customize my bake',
           body: (
             <>
               <P>Baker Hub has two modes. You choose after saying what you're making, how much and when.</P>
-              <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Simple mode</strong> — as few questions as possible: what you're baking, how many, how warm your kitchen is, when it goes in the oven, and when you're unavailable. Baker Hub assumes the rest with sensible defaults: a standard flour for the style, style hydration, direct dough. If your bake time clashes with your unavailable hours, one card names the clash and offers the nearest time that fits (or, when only the last fridge step clashes, lets you keep your time with someone taking the dough out). The recipe page shows the recipe; all timing lives in Preparation, which opens with when to start and when to bake.</p>
-              <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Custom mode</strong> — full control, in the same order as the setup summary: equipment (oven, then mixing), kitchen (kitchen and fridge temperatures, water), flour (product or blend, plus how it's stored), preferment (poolish, biga or direct, and for poolish whether it ferments in the fridge, at room temperature, or wherever the timing works best), yeast, fine-tune (hydration, salt, oil, sugar, dough temperature, and your own yeast or starter amount), then bake time. Levain breads have a Starter step instead of the preferment choice: where your starter is, when it was last fed and how it was fed — the bake time then times its feed. The same engines run in both modes; Custom exposes their inputs.</p>
+              <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Simple mode</strong> — as few questions as possible: what you're baking, how many, how warm your kitchen is, when it goes in the oven, and when you're unavailable. Baker Hub assumes the rest with sensible defaults: a standard flour for the style, style hydration, direct dough. If your bake time clashes with your unavailable hours, one card names the clash and offers the nearest time that fits (or, when only the last fridge step clashes, lets you keep your time with someone taking the dough out). For a sourdough bake, Simple asks one more question on its own screen, <strong style={{ color: CHAR }}>Your starter</strong>: is it on the counter, in the fridge, or bubbly and risen right now? Its feeds are planned from that answer. The recipe opens with <strong style={{ color: CHAR }}>Your plan</strong> — when to start and when to bake — with <em>See the steps</em> and <em>Add to my calendar</em>, which saves each hands-on step to your calendar with a reminder. Preparation then walks you through the steps.</p>
+              <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Customize my bake</strong> (Custom) — full control, in the same order as the setup summary: equipment (oven, then mixing), kitchen (kitchen and fridge temperatures, water), flour (product or blend, plus how it's stored), preferment (poolish, biga or direct, and for poolish whether it ferments in the fridge, at room temperature, or wherever the timing works best), yeast, fine-tune (hydration, salt, oil, sugar, dough temperature, and your own yeast or starter amount), then bake time. Levain breads have a Starter step instead of the preferment choice: where your starter is, when it was last fed and how it was fed — the bake time then times its feed. The same engines run in both modes; Custom exposes their inputs.</p>
             </>
           ),
         },
@@ -368,7 +374,7 @@ const CONTENT: Record<string, LocaleContent> = {
               <P>A <strong style={{color:CHAR}}>Milder / Balanced / Tangier</strong> choice nudges two levers at once: how long the dough cold-proofs, and how the starter is refreshed. Tangier leans on a longer cold proof and fewer refreshes — more acid, more depth. Milder uses a shorter cold proof and an extra refresh — gentler, sweeter. Balanced keeps the standard timing. It adjusts the schedule the engine builds; it never changes your ingredients.</P>
 
               <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>How much starter</p>
-              <P>The recommended starter amount follows your kitchen: about 20–25% of the flour below 24°C, 15–20% up to 28°C, 10–15% above. In Custom you can set your own. Less starter takes longer — roughly one extra doubling time for each halving — so the room-temperature rise is re-timed to your amount using a published regression of real doughs (Craig, pizzamaking.com), which agrees with The Sourdough Journey's controlled timetables. Example at 22°C: 10% instead of about 22% stretches a 5h rise to about 8h. The fridge retard isn't used to make up the difference: an hour at fridge temperature does only a few percent of the work of an hour at 24°C. A starter kept in the fridge is always refreshed to its peak at room temperature before mixing, so its storage changes when it's ready, not how fast it raises the dough.</P>
+              <P>The recommended starter amount follows your kitchen — less in a warm kitchen, more in a cool one — and the time between the last feed and the mix; the recipe shows the amount for your bake. In Custom you can set your own. Less starter takes longer — roughly one extra doubling time for each halving — so the room-temperature rise is re-timed to your amount using a published regression of real doughs (Craig, pizzamaking.com), which agrees with The Sourdough Journey's controlled timetables. Example at 22°C: about half the recommended amount stretches a 5h rise to about 8h. The fridge retard isn't used to make up the difference: an hour at fridge temperature does only a few percent of the work of an hour at 24°C. A starter kept in the fridge is always refreshed to its peak at room temperature before mixing, so its storage changes when it's ready, not how fast it raises the dough.</P>
 
               <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>If you already track your starter</p>
               <p style={{ margin: 0, ...bodyText }}>Prefer to watch your jar yourself? Switch to <strong style={{color:CHAR}}>"I know when my starter will peak"</strong> and give the engine the time directly — it builds the entire plan backwards from there, skipping the estimation.</p>
@@ -380,11 +386,11 @@ const CONTENT: Record<string, LocaleContent> = {
           body: (
             <>
               <P>The yeast model uses empirical equations attributed to Craig’s community formula and internal recipe assumptions. These calculations are not a universal validation across flours, starters or temperatures.</P>
-              <P>The formulas compute <strong style={{color:CHAR}}>IDY%</strong> — Instant Dry Yeast (IDY) as a percentage of flour weight. Baker Hub supports IDY, fresh yeast, and active dry yeast (ADY); each is converted from IDY using recipe conversion ratios (fresh yeast = IDY × 3, ADY = IDY × 1.33).</P>
+              <P>The formulas compute the <strong style={{color:CHAR}}>instant yeast percentage</strong> — instant dry yeast as a percentage of flour weight. Baker Hub supports instant, fresh and active dry yeast; each is converted from instant yeast using recipe conversion ratios (fresh yeast = instant × 3, active dry = instant × 1.33).</P>
               <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Room-temperature (RT) fermentation</strong></p>
-              <p style={{ marginBottom: '16px' }}><Code>IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))</Code></p>
+              <p style={{ marginBottom: '16px' }}><Code>yeast % = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))</Code></p>
               <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Cold retard fermentation</strong></p>
-              <p style={{ marginBottom: '8px' }}><Code>IDY% = (7.5 / hours^1.313) ÷ Q10</Code></p>
+              <p style={{ marginBottom: '8px' }}><Code>yeast % = (7.5 / hours^1.313) ÷ Q10</Code></p>
             <P>The cold estimate uses Q10 = 2^((fridge temperature − 4)/10). This empirical adjustment does not model cooling of the dough’s centre or establish validity at every temperature.</P>
               <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Mixed RT + cold</strong></p>
               <P>Room and cold stages share one fermentation budget: each hour uses up a fraction of the total, at the rate its temperature allows, including the time the dough takes to cool in the fridge and warm up again. The dose is the one that completes the budget at bake time.</P>
@@ -421,7 +427,7 @@ const CONTENT: Record<string, LocaleContent> = {
                 ))}
               </div>
               <P>FDT (Final Dough Temperature) is the temperature of your dough immediately after mixing — it directly controls how fast fermentation begins. Target FDT varies by style (Neapolitan 23°C, enriched doughs 22°C). In hot kitchens the formula often calls for water below 10°C — which is why Baker Hub sometimes recommends ice.</P>
-              <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Technique and timing:</strong> each mixer type has its own kneading time, fold count, and maximum dough weight. Baker Hub's step-by-step Bake Guide is calibrated per mixer — a spiral mixer user and a hand-kneader get different instructions for the same recipe.</p>
+              <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Technique and timing:</strong> each mixer type has its own kneading time, fold count, and maximum dough weight. Baker Hub's step-by-step Preparation guide is calibrated per mixer — a spiral mixer user and a hand-kneader get different instructions for the same recipe.</p>
             </>
           ),
         },
@@ -511,19 +517,19 @@ const CONTENT: Record<string, LocaleContent> = {
           <>
             <P>La plupart des recettes de boulangerie supposent que vous avez un après-midi libre, une cuisine à 20 °C, et rien d'autre à faire. La plupart d'entre nous n'ont rien de tout cela.</P>
             <P>Baker Hub a été conçu pour le boulanger amateur sérieux qui fait de la boulangerie autour de sa vie réelle — un emploi, un dîner en famille, une soirée pizza qui doit avoir lieu samedi à 19 h, pas quand la pâte sera enfin prête. Vous dites à Baker Hub quand vous voulez manger. Il calcule quand commencer, quelle quantité de levure utiliser, et ce qu'il faut faire à chaque étape.</P>
-            <P>Baker Hub combine des estimations empiriques et des règles de recette. Chaque fournée vous demande la température de votre cuisine sur son propre écran, car elle donne le rythme de tout le planning ; le mode Avancé demande aussi celle du frigo. Dans les deux cas, vérifiez le développement réel de la pâte.</P>
-            <P>Et il est conçu pour la soirée pizza complète — pas seulement la pâte, mais toute la soirée. Choisir ce qu'on prépare, adapter les garnitures pour un groupe, construire une liste de courses, suivre ce qui est cuit. La fonction Pizza Party transforme une soirée multi-pizza complexe en quelque chose qu'on peut vraiment planifier — et partager.</P>
+            <P>Baker Hub combine des estimations empiriques et des règles de recette. Chaque fournée vous demande la température de votre cuisine sur son propre écran, car elle donne le rythme de tout le planning ; Personnaliser ma fournée demande aussi celle du frigo. Dans les deux cas, vérifiez le développement réel de la pâte.</P>
+            <P>Et il est conçu pour la soirée pizza complète — pas seulement la pâte, mais toute la soirée. Choisir ce qu'on prépare, adapter les garnitures pour un groupe, construire une liste de courses, suivre ce qui est cuit. La partie Garnitures transforme une soirée à plusieurs pizzas en quelque chose qu'on peut vraiment planifier — et partager.</P>
             <p style={{ margin: 0, ...bodyText }}>Une note honnête : Baker Hub est un projet personnel, construit par quelqu'un qui code avec l'aide de l'IA et teste les recettes dans une vraie cuisine. L'IA écrit le code. La science, les décisions produit et la boulangerie se passent dans le monde réel. Cela signifie que l'application avance vite, tombe parfois en panne, et s'améliore à chaque fournée.</p>
           </>
         ),
       },
       {
-        title: 'Mode Simple ou mode Avancé',
+        title: 'Recette simple ou Personnaliser ma fournée',
         body: (
           <>
             <P>Baker Hub propose deux modes. Vous choisissez après avoir indiqué ce que vous préparez, en quelle quantité et pour quand.</P>
-            <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Mode Simple</strong> — le moins de questions possible : ce que vous cuisez, combien, la température de votre cuisine, l’heure d’enfournement et vos indisponibilités. Baker Hub suppose le reste avec des valeurs raisonnables : farine standard pour le style, hydratation du style, pâte directe. Si l’heure de cuisson tombe pendant vos indisponibilités, une seule carte nomme le conflit et propose l’heure la plus proche qui convient (ou, si seule la dernière sortie du frigo pose problème, vous laisse garder votre heure avec quelqu’un qui sort la pâte). La page recette ne montre que la recette ; tous les horaires sont dans la Préparation, qui commence par l’heure de départ et l’heure de cuisson.</p>
-            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Mode Avancé</strong> — tout le contrôle, dans l’ordre du récapitulatif : matériel (four, puis pétrissage), cuisine (températures de la cuisine et du frigo, eau), farine (produit ou mélange, et sa conservation), préferment (poolish, biga ou direct ; pour le poolish, au frigo, à température ambiante ou là où le planning convient le mieux), levure, réglages fins (hydratation, sel, huile, sucre, température de pâte, et votre propre quantité de levure ou de levain), puis heure de cuisson. Les pains au levain ont une étape Levain à la place du choix de préferment : où il est, quand il a été rafraîchi et comment — l’heure de cuisson cale ensuite son rafraîchi. Les mêmes moteurs tournent dans les deux modes ; l’Avancé expose leurs entrées.</p>
+            <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Mode Simple</strong> — le moins de questions possible : ce que vous cuisez, combien, la température de votre cuisine, l’heure d’enfournement et vos indisponibilités. Baker Hub suppose le reste avec des valeurs raisonnables : farine standard pour le style, hydratation du style, pâte directe. Si l’heure de cuisson tombe pendant vos indisponibilités, une seule carte nomme le conflit et propose l’heure la plus proche qui convient (ou, si seule la dernière sortie du frigo pose problème, vous laisse garder votre heure avec quelqu’un qui sort la pâte). Pour une fournée au levain, Simple pose une question de plus, sur son propre écran, <strong style={{ color: CHAR }}>Votre levain</strong> : est-il sur le plan de travail, au réfrigérateur, ou bien monté et bullé en ce moment ? Ses rafraîchis sont planifiés à partir de cette réponse. La recette s’ouvre sur <strong style={{ color: CHAR }}>Votre plan</strong> — quand commencer et quand enfourner — avec <em>Voir les étapes</em> et <em>Ajouter à mon agenda</em>, qui enregistre chaque étape manuelle dans votre agenda avec un rappel. La Préparation vous guide ensuite pas à pas.</p>
+            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Personnaliser ma fournée</strong> (mode Personnalisé) — tout le contrôle, dans l’ordre du récapitulatif : matériel (four, puis pétrissage), cuisine (températures de la cuisine et du frigo, eau), farine (produit ou mélange, et sa conservation), préferment (poolish, biga ou direct ; pour le poolish, au frigo, à température ambiante ou là où le planning convient le mieux), levure, réglages fins (hydratation, sel, huile, sucre, température de pâte, et votre propre quantité de levure ou de levain), puis heure de cuisson. Les pains au levain ont une étape Levain à la place du choix de préferment : où il est, quand il a été rafraîchi et comment — l’heure de cuisson cale ensuite son rafraîchi. Les mêmes moteurs tournent dans les deux modes ; le mode Personnalisé expose leurs entrées.</p>
           </>
         ),
       },
@@ -533,7 +539,7 @@ const CONTENT: Record<string, LocaleContent> = {
           <>
             <P>Les deux modes planifient autour de vos indisponibilités : heures de travail, nuits, ou toute période ajoutée. <strong style={{ color: CHAR }}>Les nuits sont cochées par défaut</strong> — décochez-les si vous acceptez de vous lever — et même alors, le planning évite les étapes entre 23 h et 7 h sauf si elles servent vraiment la fournée.</P>
             <P>Seules les étapes manuelles demandent votre présence : pétrissage, rabats, façonnage, mise au frigo ou sortie du frigo, cuisson. La pousse se fait sans vous, pendant votre journée de travail ou votre nuit.</P>
-            <p style={{ margin: 0, ...bodyText }}>Quand une heure de cuisson ne convient pas, le mode Simple propose une seule décision — l’heure la plus proche qui convient, avec la raison. Le mode Avancé montre chaque étape concernée, permet d’indiquer une étape que quelqu’un d’autre peut faire, et liste les heures de cuisson possibles.</p>
+            <p style={{ margin: 0, ...bodyText }}>Quand une heure de cuisson ne convient pas, le mode Simple propose une seule décision — l’heure la plus proche qui convient, avec la raison. Le mode Personnalisé montre chaque étape concernée, permet d’indiquer une étape que quelqu’un d’autre peut faire, et liste les heures de cuisson possibles.</p>
           </>
         ),
       },
@@ -542,7 +548,7 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Ouvrez le menu → <strong style={{ color: CHAR }}>Préférences de cuisine</strong> pour régler vos valeurs par défaut une fois pour toutes : four à pizza et four à pain (indépendamment), pétrin, levure, préferment préféré, température du frigo, style favori par type de cuisson, mode par défaut, les traits de votre levain, et vos indisponibilités habituelles. Tout s'enregistre automatiquement au fil des touches — pas de bouton — et préremplit chaque nouvelle session, toujours modifiable à chaque étape. Connecté·e, vos préférences se synchronisent avec votre compte et vous suivent d'un appareil à l'autre.</P>
-            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Créez votre propre pizza</strong> depuis la liste Pizza Party : ingrédients du catalogue ou en texte libre, groupe par groupe (base, fromages, viandes & mer, légumes, finitions). Ajoutez une photo et recadrez-la en la glissant. Vos créations vivent dans vos préférences, reviennent à chaque soirée, et alimentent la liste de courses, la préparation et la fiche de cuisson — avec des conseils de four déduits de leurs ingrédients.</p>
+            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Créez votre propre pizza</strong> depuis la liste des pizzas, dans Garnitures : ingrédients du catalogue ou en texte libre, groupe par groupe (base, fromages, viandes & mer, légumes, finitions). Ajoutez une photo et recadrez-la en la glissant. Vos créations vivent dans vos préférences, reviennent à chaque soirée, et alimentent la liste de courses, la préparation et la fiche de cuisson — avec des conseils de four déduits de leurs ingrédients.</p>
           </>
         ),
       },
@@ -552,7 +558,7 @@ const CONTENT: Record<string, LocaleContent> = {
           <>
             <P>Les moteurs de Baker Hub forment une chaîne où chaque sortie alimente la suivante.</P>
             <P><strong style={{ color: CHAR }}>Le style et le four</strong> définissent le plan de fermentation — durée cible de pousse froide, fenêtre à température ambiante, hydratation de base. <strong style={{ color: CHAR }}>La force de la farine</strong> (valeur W) ajuste ce plan — une farine plus forte tolère une fermentation plus longue et profite de plus de froid. <strong style={{ color: CHAR }}>La température de la cuisine</strong> détermine la vitesse de fermentation et comprime ou étend la fenêtre utilisable.</P>
-            <P>Ces contraintes posées, le <strong style={{ color: CHAR }}>planificateur</strong> trouve la meilleure heure de pétrissage compte tenu de votre disponibilité réelle, avec les heures exactes de fermentation ambiante et froide. Le <strong style={{ color: CHAR }}>moteur de levure</strong> reçoit ces heures et calcule la quantité précise. En mode Avancé, vous pouvez fixer vous-même la quantité de levure (ou de levain) ; le planning est alors recalé sur cette quantité. Enfin, l’<strong style={{ color: CHAR }}>hydratation</strong> se superpose : base du style, type de four, climat, absorption de la farine — chaque facteur indépendant et vérifiable.</P>
+            <P>Ces contraintes posées, le <strong style={{ color: CHAR }}>planificateur</strong> trouve la meilleure heure de pétrissage compte tenu de votre disponibilité réelle, avec les heures exactes de fermentation ambiante et froide. Le <strong style={{ color: CHAR }}>moteur de levure</strong> reçoit ces heures et calcule la quantité précise. En mode Personnalisé, vous pouvez fixer vous-même la quantité de levure (ou de levain) ; le planning est alors recalé sur cette quantité. Enfin, l’<strong style={{ color: CHAR }}>hydratation</strong> se superpose : base du style, type de four, climat, absorption de la farine — chaque facteur indépendant et vérifiable.</P>
             <p style={{ margin: 0, ...bodyText }}>Modifiez n’importe quelle entrée et tout ce qui suit se recalcule automatiquement.</p>
           </>
         ),
@@ -561,8 +567,8 @@ const CONTENT: Record<string, LocaleContent> = {
         title: 'Style & four',
         body: (
           <>
-            <P>Chaque style porte un plan de fermentation. La napolitaine vise 24 h de pousse froide + 2 h à température ambiante avant cuisson. La baguette vise 12 h de froid + 2 h TA. Les styles romain et pan sont purement TA — pas de pousse froide. Ces cibles reflètent le développement du gluten, les composés aromatiques et la texture que chaque style exige.</P>
-            <P>Le four façonne la recette indépendamment. Un four à pizza à 400–500 °C préfère une pâte un peu plus sèche (−2 % d’hydratation), sans huile ni sucre — la chaleur intense caramélise naturellement. Un four domestique avec pierre profite de +3 % ; un four domestique standard de +4 % ; une poêle en fonte de +6 %. Baker Hub applique ces corrections automatiquement ; chacune est modifiable en mode Avancé.</P>
+            <P>Chaque style porte un plan de fermentation. La napolitaine vise 24 h de pousse froide + 2 h à température ambiante avant cuisson. La baguette vise 12 h de froid + 2 h à température ambiante. Les pizzas romaine sur plaque et en moule lèvent uniquement à température ambiante — pas de pousse froide. Ces cibles reflètent le développement du gluten, les composés aromatiques et la texture que chaque style exige.</P>
+            <P>Le four façonne la recette indépendamment. Un four à pizza à 400–500 °C préfère une pâte un peu plus sèche (−2 % d’hydratation), sans huile ni sucre — la chaleur intense caramélise naturellement. Un four domestique avec pierre profite de +3 % ; un four domestique standard de +4 % ; une poêle en fonte de +6 %. Baker Hub applique ces corrections automatiquement ; chacune est modifiable en mode Personnalisé.</P>
             <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Le préchauffage</strong> compte aussi pour le planning. Un four à bois demande 45–60 minutes de préchauffe en fin de planning — le planificateur l’exclut de la fenêtre de fermentation disponible.</p>
           </>
         ),
@@ -573,8 +579,8 @@ const CONTENT: Record<string, LocaleContent> = {
           <>
             <P>Une pâte plus chaude fermente généralement plus vite. L’application utilise des ajustements empiriques distincts pour les phases ambiantes et froides ; il n’existe pas de règle universelle de doublement tous les cinq degrés.</P>
             <BulletList items={[
-              <>Dans une <strong style={{color:CHAR}}>cuisine tropicale</strong> (≥28 °C), le moteur applique une recalibration complète : pointage minimum raccourci (30 min contre 90 min en climat tempéré), fenêtres TA compressées, correction de levure renforcée. Au-delà de 30 °C, un facteur tropical supplémentaire s’applique.</>,
-              <>Le pic du <strong style={{color:CHAR}}>poolish TA</strong> passe de ~13 h à 18 °C à ~5 h à 30 °C — la fenêtre utilisable se réduit fortement en cuisine chaude.</>,
+              <>Dans une <strong style={{color:CHAR}}>cuisine tropicale</strong> (≥28 °C), le moteur applique une recalibration complète : pointage minimum raccourci (30 min contre 90 min en climat tempéré), fenêtres à température ambiante raccourcies, correction de levure renforcée. Au-delà de 30 °C, un facteur tropical supplémentaire s’applique.</>,
+              <>Le pic du <strong style={{color:CHAR}}>poolish à température ambiante</strong> passe de ~13 h à 18 °C à ~5 h à 30 °C — la fenêtre utilisable se réduit fortement en cuisine chaude.</>,
               <>La <strong style={{color:CHAR}}>température du frigo</strong> compte aussi. La formule de pousse froide inclut une correction Q10 : <Code>Q10 = 2^((tempFrigo − 4) / 10)</Code>. Un frigo à 6 °C (typique) est légèrement plus actif qu’à 4 °C — un peu moins de levure. À 2 °C, un peu plus. Toute température de frigo est gérée correctement.</>,
               <>Pour l’<strong style={{color:CHAR}}>hydratation</strong> : cuisine chaude (≥28 °C) ou très humide : −2 % — une correction de manipulation, pas de fermentation. Cuisine froide (≤18 °C) : +2 %.</>,
             ]} />
@@ -582,10 +588,10 @@ const CONTENT: Record<string, LocaleContent> = {
         ),
       },
       {
-        title: 'Pizza Party — de la pâte à la table',
+        title: 'La soirée pizza — de la pâte à la table',
         body: (
           <>
-            <P>La fonction Pizza Party est construite autour d'une idée simple : une fois que vous avez planifié votre pâte, le reste de la soirée devrait s'organiser tout seul.</P>
+            <P>La partie Garnitures est construite autour d'une idée simple : une fois que vous avez planifié votre pâte, le reste de la soirée devrait s'organiser tout seul.</P>
             <P><strong style={{ color: CHAR }}>156 recettes sélectionnées.</strong> La base de données pizzas de Baker Hub couvre 144 pizzas salées et 12 desserts — chacun choisi à la main, pas généré. Organisés par tradition, occasion, goût et régime alimentaire pour trouver la bonne pizza au bon moment.</P>
             <div style={{
               background: 'rgba(156, 130, 72,0.06)', borderLeft: `2px solid ${GOLD}`,
@@ -623,7 +629,7 @@ const CONTENT: Record<string, LocaleContent> = {
               ))}
             </div>
             <P>Chaque pizza est associée aux styles de pâte compatibles — une Marinara n'apparaîtra pas pour une pizza pan, un Detroit ne s'affichera pas pour une napolitaine. Les suggestions correspondent toujours à ce que votre pâte peut réellement faire.</P>
-            <P><strong style={{ color: CHAR }}>Guide de préparation, adapté à votre groupe.</strong> L'onglet Prép génère un planning complet de préparation des ingrédients en remontant depuis l'heure de cuisson — égoutter la mozzarella 30 minutes avant, couper la charcuterie 15 minutes avant, déchirer le basilic juste avant de servir. Les quantités s'adaptent automatiquement au nombre de pizzas.</P>
+            <P><strong style={{ color: CHAR }}>Guide de préparation, adapté à votre groupe.</strong> La préparation des garnitures propose un planning complet de préparation des ingrédients en remontant depuis l'heure de cuisson — égoutter la mozzarella 30 minutes avant, couper la charcuterie 15 minutes avant, déchirer le basilic juste avant de servir. Les quantités s'adaptent automatiquement au nombre de pizzas.</P>
             <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Liste de courses.</strong> Ingrédients de la pâte et garnitures combinés en une seule liste. Cochez au fur et à mesure.</p>
           </>
         ),
@@ -664,7 +670,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <P>Un choix <strong style={{color:CHAR}}>Plus doux / Équilibré / Plus acidulé</strong> ajuste deux leviers à la fois : la durée de la pousse au froid de la pâte, et la façon dont le levain est rafraîchi. Plus acidulé s'appuie sur une pousse au froid plus longue et moins de rafraîchis — plus d'acidité, plus de profondeur. Plus doux utilise une pousse au froid plus courte et un rafraîchi supplémentaire — plus tendre, plus doux. Équilibré conserve le timing standard. Cela ajuste le planning que le moteur construit ; jamais vos ingrédients.</P>
 
             <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Quelle quantité de levain</p>
-            <P>La quantité recommandée suit votre cuisine : environ 20–25 % de la farine sous 24 °C, 15–20 % jusqu’à 28 °C, 10–15 % au-delà. En mode Avancé, vous pouvez fixer la vôtre. Moins de levain met plus de temps — environ un temps de doublement de plus à chaque fois qu’on divise la quantité par deux — donc le pointage à température ambiante est recalé sur votre quantité, d’après une régression publiée sur des pâtes réelles (Craig, pizzamaking.com), cohérente avec les tableaux contrôlés de The Sourdough Journey. Exemple à 22 °C : 10 % au lieu d’environ 22 % allonge un pointage de 5 h à environ 8 h. La pousse au froid ne sert pas à compenser : une heure au frigo ne fait que quelques pour cent du travail d’une heure à 24 °C. Un levain conservé au frigo est toujours rafraîchi jusqu’à son pic à température ambiante avant le pétrissage : sa conservation change le moment où il est prêt, pas la vitesse à laquelle il fait lever la pâte.</P>
+            <P>La quantité recommandée suit votre cuisine — moins dans une cuisine chaude, plus dans une cuisine fraîche — et le temps entre le dernier rafraîchi et le pétrissage ; la recette indique la quantité pour votre fournée. En mode Personnalisé, vous pouvez fixer la vôtre. Moins de levain met plus de temps — environ un temps de doublement de plus à chaque fois qu’on divise la quantité par deux — donc le pointage à température ambiante est recalé sur votre quantité, d’après une régression publiée sur des pâtes réelles (Craig, pizzamaking.com), cohérente avec les tableaux contrôlés de The Sourdough Journey. Exemple à 22 °C : environ la moitié de la quantité recommandée allonge un pointage de 5 h à environ 8 h. La pousse au froid ne sert pas à compenser : une heure au frigo ne fait que quelques pour cent du travail d’une heure à 24 °C. Un levain conservé au frigo est toujours rafraîchi jusqu’à son pic à température ambiante avant le pétrissage : sa conservation change le moment où il est prêt, pas la vitesse à laquelle il fait lever la pâte.</P>
 
             <p style={{ margin: '14px 0 10px', ...monoSm, color: TERRA, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>Si vous suivez déjà votre levain</p>
             <p style={{ margin: 0, ...bodyText }}>Vous préférez surveiller votre pot vous-même ? Passez en mode <strong style={{color:CHAR}}>« Je sais quand mon levain sera à son pic »</strong> et donnez l'heure directement au moteur — il construit tout le plan à rebours à partir de là, sans passer par l'estimation.</p>
@@ -677,22 +683,23 @@ const CONTENT: Record<string, LocaleContent> = {
           <>
             <P>Le modèle de levure utilise des équations empiriques attribuées à la formule communautaire de Craig et des hypothèses de recette internes. Ces calculs ne constituent pas une validation universelle pour toutes les farines, cultures ou températures.</P>
             <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation à température ambiante</strong></p>
-            <p style={{ marginBottom: '16px' }}><Code>IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))</Code></p>
+            <p style={{ marginBottom: '16px' }}><Code>% levure = 9,5 / (heures^1,65 × 2,5^((temp−25)/10))</Code></p>
             <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation en pousse froide</strong></p>
-            <p style={{ marginBottom: '8px' }}><Code>IDY% = 7.5 / hours^1.313 ÷ Q10(fridgeTemp)</Code></p>
-            <P>où Q10 = 2^((tempFrigo−4)/10). Un réfrigérateur plus chaud est plus actif — le moteur tient compte de votre température réelle de réfrigérateur en mode Custom. Par défaut : 6 °C (frigo domestique typique).</P>
-            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Mixte TA + froid</strong></p>
-            <P>Les phases ambiante et froide partagent un même budget de fermentation : chaque heure en consomme une part, au rythme permis par sa température, y compris le temps que met la pâte à refroidir au frigo puis à se réchauffer. La dose est celle qui termine le budget à l’heure de cuisson. Par défaut la levure est une sortie ; en mode Avancé, vous pouvez saisir votre quantité, dans la levure que vous utilisez, et le planning est recalé pour que la pâte soit prête à votre heure de cuisson. Si vos indisponibilités décalent le départ, la recette indique si la pâte sera prête plus tôt ou plus tard.</P>
+            <p style={{ marginBottom: '8px' }}><Code>% levure = 7,5 / heures^1,313 ÷ Q10(tempFrigo)</Code></p>
+            <P>où Q10 = 2^((tempFrigo−4)/10). Un réfrigérateur plus chaud est plus actif — le moteur tient compte de votre température réelle de réfrigérateur en mode Personnalisé. Par défaut : 6 °C (frigo domestique typique).</P>
+            <P>Ces formules donnent un pourcentage de levure sèche instantanée par rapport au poids de farine.</P>
+            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Température ambiante puis froid</strong></p>
+            <P>Les phases ambiante et froide partagent un même budget de fermentation : chaque heure en consomme une part, au rythme permis par sa température, y compris le temps que met la pâte à refroidir au frigo puis à se réchauffer. La dose est celle qui termine le budget à l’heure de cuisson. Par défaut la levure est calculée ; en mode Personnalisé, vous pouvez saisir votre quantité, dans la levure que vous utilisez, et le planning est recalé pour que la pâte soit prête à votre heure de cuisson. Si vos indisponibilités décalent le départ, la recette indique si la pâte sera prête plus tôt ou plus tard.</P>
             <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Conversion du type de levure</strong></p>
-            <P>Tous les calculs utilisent l'IDY comme référence interne. Levure sèche active = IDY × 1,33 · Levure fraîche = IDY × 3,0.</P>
+            <P>Tous les calculs partent de la levure sèche instantanée. Levure sèche active = levure instantanée × 1,33 · levure fraîche = levure instantanée × 3,0.</P>
             <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Correction climatique tropicale</strong></p>
-            <P>30–32 °C : ÷1,15 · 33–35 °C : ÷1,25. S'applique aux phases TA de la pâte principale et à la fermentation du poolish TA.</P>
-            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Calibration du pré-ferment</strong></p>
-            <P>La formule de Craig a été calibrée pour la pâte en vrac — 65 % d'hydratation, avec sel. Les pré-ferments nécessitent une correction :</P>
-            <DataTable rows={PREF_TABLE_ROWS} />
+            <P>30–32 °C : ÷1,15 · 33–35 °C : ÷1,25. S'applique aux phases à température ambiante de la pâte et au poolish à température ambiante.</P>
+            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Calibration du préferment</strong></p>
+            <P>La formule de Craig a été calibrée pour la pâte en vrac — 65 % d'hydratation, avec sel. Les préferments nécessitent une correction :</P>
+            <DataTable rows={PREF_TABLE_ROWS_FR} headers={['Préferment', 'Correction', 'Pourquoi']} />
             <P>Les coefficients sont des hypothèses de calcul. Leur précision doit être évaluée avec vos ingrédients et vos conditions ; les essais logiciels ne remplacent pas des fournées de calibration.</P>
             <p style={{ marginTop: '16px', marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Levain</strong></p>
-            <p style={{ margin: 0, ...bodyText }}>Baker Hub recommande une quantité de levain adaptée au climat (10–25 % de la farine) avec des repères visuels de maturité. En mode Avancé, une quantité choisie recale le pointage (voir Le moteur de levain).</p>
+            <p style={{ margin: 0, ...bodyText }}>Baker Hub recommande une quantité de levain adaptée à votre cuisine, avec des repères visuels de maturité. En mode Personnalisé, une quantité choisie recale le pointage (voir Le moteur de levain).</p>
           </>
         ),
       },
@@ -700,11 +707,11 @@ const CONTENT: Record<string, LocaleContent> = {
         title: 'Le moteur de farine',
         body: (
           <>
-            <P>La base de données farines de Baker Hub contient une sélection vérifiée de farines de marque et génériques. Chaque farine porte trois propriétés qui se cascadent à travers la recette et le planning :</P>
+            <P>La base de données farines de Baker Hub contient une sélection vérifiée de farines de marque et génériques. Chaque farine porte des propriétés qui se répercutent sur la recette et le planning :</P>
             <P>W décrit la force mesurée de la farine, pas une durée de fermentation unique. Les valeurs publiées sont distinguées des estimations. La force des mélanges et leur hydratation restent des repères de recette à ajuster selon la pâte.</P>
-            <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Delta d'hydratation</strong> — de combien décaler l'hydratation de base. Les farines fortes et riches en protéines absorbent plus d'eau ; les farines faibles en nécessitent moins. Pour les mélanges, les deltas sont pondérés par le ratio. Note : l'hydratation est définie après le planning — le modèle de durée ne corrige pas explicitement l’hydratation. Celle-ci peut néanmoins modifier la fermentation et le comportement réel de la pâte.</p>
-            <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Tolérance de fermentation (ftm)</strong> — un multiplicateur appliqué à la zone idéale du planificateur. ftm = 1,0 pour W250 (référence), 1,2 pour W300+, 0,85 pour W220. Cela scale la durée de pousse froide optimale, la zone idéale du poolish et la fenêtre de fermentation maximale utile. Deux boulangers utilisant le même style mais des farines différentes obtiennent des plannings recommandés différents — le boulanger W370 est orienté vers une pousse froide plus longue, le boulanger W220 vers une plus courte.</p>
-            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Par défaut, la levure est une sortie.</strong> Baker Hub la calcule à partir de vos heures de fermentation réelles et de la température avec la formule IDY% = 9,5 / (heures^1,65 × 2,5^((temp−25)/10)) en TA, et IDY% = 7,5 / heures^1,313 au froid. Modifiez votre planning et la levure se met à jour automatiquement. La tolérance de fermentation de la farine scale la zone idéale mais n'affecte pas directement la levure — la formule de levure s'ajuste déjà via le timing. Si vous fixez votre quantité en mode Avancé, c’est le timing qui suit.</p>
+            <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Écart d'hydratation</strong> — de combien décaler l'hydratation de base. Les farines fortes et riches en protéines absorbent plus d'eau ; les farines faibles en nécessitent moins. Pour les mélanges, les écarts sont pondérés par la proportion de chaque farine. Note : l'hydratation est définie après le planning — le modèle de durée ne corrige pas explicitement l’hydratation. Celle-ci peut néanmoins modifier la fermentation et le comportement réel de la pâte.</p>
+            <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Tolérance de fermentation (ftm)</strong> — un multiplicateur appliqué à la zone idéale du planificateur. ftm = 1,0 pour W250 (référence), 1,2 pour W300+, 0,85 pour W220. Elle module la durée de pousse froide optimale, la zone idéale du poolish et la fenêtre de fermentation maximale utile. Deux boulangers utilisant le même style mais des farines différentes obtiennent des plannings recommandés différents — le boulanger W370 est orienté vers une pousse froide plus longue, le boulanger W220 vers une plus courte.</p>
+            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Par défaut, la levure est calculée.</strong> Baker Hub la calcule à partir de vos heures de fermentation réelles et de la température, avec les formules du moteur de levure (à température ambiante et au froid). Modifiez votre planning et la levure se met à jour automatiquement. La tolérance de fermentation de la farine module la zone idéale mais n'affecte pas directement la levure — la formule de levure s'ajuste déjà par les durées. Si vous fixez votre quantité en mode Personnalisé, ce sont les horaires qui suivent.</p>
           </>
         ),
       },
@@ -716,12 +723,12 @@ const CONTENT: Record<string, LocaleContent> = {
             <NumberedList items={[
               <><strong style={{ color: CHAR }}>Base du style</strong> — chaque style a une cible (napolitaine 62 %, baguette 72 %, brioche 52 %, pan 70 %)</>,
               <><strong style={{ color: CHAR }}>Correction four</strong> — les fours à haute chaleur supportent une pâte plus sèche (−1 à −3 %) ; un four domestique standard bénéficie de plus d'humidité (+5 %)</>,
-              <><strong style={{ color: CHAR }}>Ajustements de recette four</strong> — le type de four affecte aussi l'huile et le sucre. Un four à bois ou un four à pizza électrique à haute température n'a besoin ni d'huile ni de sucre. Un four domestique bénéficie de l'huile (brunissage, extensibilité) et d'une touche de sucre (coloration). Défini automatiquement, remplaçable en mode Custom.</>,
+              <><strong style={{ color: CHAR }}>Ajustements de recette four</strong> — le type de four affecte aussi l'huile et le sucre. Un four à bois ou un four à pizza électrique à haute température n'a besoin ni d'huile ni de sucre. Un four domestique bénéficie de l'huile (brunissage, extensibilité) et d'une touche de sucre (coloration). Défini automatiquement, modifiable en mode Personnalisé.</>,
               <><strong style={{ color: CHAR }}>Correction climatique</strong> — chaud ou très humide : −2 % · Cuisine froide : +2 %</>,
-              <><strong style={{ color: CHAR }}>Correction farine</strong> — delta d'hydratation de la farine appliqué (−5 % à +8 %)</>,
+              <><strong style={{ color: CHAR }}>Correction farine</strong> — écart d'hydratation de la farine appliqué (−5 % à +8 %)</>,
               <><strong style={{ color: CHAR }}>Plancher du style</strong> — minimum imposé quelles que soient les conditions (napolitaine : 56 %)</>,
             ]} />
-            <p style={{ marginTop: '12px', margin: '12px 0 0', ...bodyText }}>En mode Custom, vous pouvez remplacer entièrement l'hydratation.</p>
+            <p style={{ marginTop: '12px', margin: '12px 0 0', ...bodyText }}>En mode Personnalisé, vous pouvez choisir vous-même l'hydratation.</p>
           </>
         ),
       },
@@ -730,15 +737,15 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Votre pétrin modifie la recette de deux manières.</P>
-            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Température de l’eau — méthode DDT</strong></p>
+            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Température de l’eau — bilan thermique</strong></p>
             <P>La température d’eau vient d’un bilan énergétique de ce qui est réellement dans le bol — farine, eau, préferment, glace si besoin — plus la chaleur du pétrissage, comptée par minute. Mesurez la pâte après pétrissage.</P>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
               {['Robot ≈0,6 °C/min', 'Spirale ≈0,55 °C/min', 'À la main ≈0,16 °C/min', 'Sans pétrissage 0'].map(l => (
                 <span key={l} style={{ ...monoSm, padding: '3px 12px', borderRadius: '20px', background: 'rgba(43, 36, 32,0.06)' }}>{l}</span>
               ))}
             </div>
-            <P>La FDT cible varie selon le style (napolitaine 23 °C, pâtes enrichies 22 °C). Dans les cuisines chaudes, la formule nécessite souvent de l'eau en dessous de 10 °C — c'est pourquoi Baker Hub recommande parfois de la glace.</P>
-            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Technique et timing :</strong> chaque pétrin a ses propres temps de pétrissage, nombre de rabats et poids maximum de pâte. Le guide étape par étape Bake Guide de Baker Hub est calibré à votre pétrin spécifique — y compris la technique professionnelle d'ajouter de la glace directement dans le bol d'un pétrin spiral pour les sessions en cuisine chaude.</p>
+            <P>La température de pâte visée en fin de pétrissage varie selon le style (napolitaine 23 °C, pâtes enrichies 22 °C). Dans les cuisines chaudes, la formule nécessite souvent de l'eau en dessous de 10 °C — c'est pourquoi Baker Hub recommande parfois de la glace.</P>
+            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Technique et timing :</strong> chaque pétrin a ses propres temps de pétrissage, nombre de rabats et poids maximum de pâte. Le guide de préparation, étape par étape, est adapté à votre pétrin — y compris la technique professionnelle d'ajouter de la glace directement dans le bol d'un pétrin spiral pour les sessions en cuisine chaude.</p>
           </>
         ),
       },
@@ -752,14 +759,14 @@ const CONTENT: Record<string, LocaleContent> = {
               <><strong style={{color:CHAR}}>{'< 5,5h'}</strong> — fenêtre trop courte pour un préferment. Pâte directe uniquement, cuisson le jour même.</>,
               <><strong style={{color:CHAR}}>5,5h – 9h</strong> — pâte directe. Pas de place pour une fermentation de poolish significative.</>,
               <><strong style={{color:CHAR}}>9h – 15,5h</strong> — poolish à température ambiante (jaune). En développement, utilisable, saveurs qui se construisent.</>,
-              <><strong style={{color:CHAR}}>15,5h – 16,5h</strong> — poolish TA double vert. Zone de fermentation TA optimale.</>,
+              <><strong style={{color:CHAR}}>15,5h – 16,5h</strong> — poolish à température ambiante double vert. Zone optimale à température ambiante.</>,
               <><strong style={{color:CHAR}}>16,5h – 26,5h</strong> — poolish au frigo double vert. Pousse froide pour des saveurs complexes.</>,
               <><strong style={{color:CHAR}}>{'> 26,5h'}</strong> — poolish au frigo + pousse froide complète 24h. Meilleure qualité possible.</>,
             ]} />
-            <p style={{ marginTop: '16px', ...bodyText }}>Ces limites évoluent avec la température de la cuisine (plus chaud = fermentation plus rapide, fenêtres plus courtes) et le type de four (un préchauffage plus long décale la fenêtre minimale). La force de votre farine scale également la zone idéale — une farine W370 bénéficie d'une pousse froide plus longue qu'une W250.</p>
+            <p style={{ marginTop: '16px', ...bodyText }}>Ces limites évoluent avec la température de la cuisine (plus chaud = fermentation plus rapide, fenêtres plus courtes) et le type de four (un préchauffage plus long décale la fenêtre minimale). La force de votre farine module également la zone idéale — une farine W370 bénéficie d'une pousse froide plus longue qu'une W250.</p>
             <p style={{ margin: '14px 0 10px', fontFamily: 'var(--font-ui)', fontSize: '12px', color: TERRA, letterSpacing: '.04em' }}>COMMENT L'HEURE DE PÉTRISSAGE EST CHOISIE</p>
             <BulletList items={[
-              "Le moteur essaie poolish au frigo et poolish TA, choisit le mode avec le meilleur score — sauf si vous avez choisi la conservation en mode Avancé. Le frigo gagne à égalité — la fermentation froide développe des saveurs plus complexes.",
+              "Le moteur essaie le poolish au frigo et le poolish à température ambiante, et retient celui qui obtient la meilleure note — sauf si vous avez choisi la conservation en mode Personnalisé. Le frigo gagne à égalité — la fermentation froide développe des saveurs plus complexes.",
               "Dans chaque mode, il cherche l'heure de pétrissage qui maximise la durée de pousse froide (meilleure saveur) tout en respectant vos heures bloquées.",
               "Si aucun créneau n'atteint le double vert, le meilleur jaune+vert disponible est retourné avec des cartes de statut honnêtes.",
               "Si aucun planning ne tient dans vos disponibilités à l’heure choisie, le moteur indique les étapes en conflit et propose des heures de cuisson qui conviennent.",
@@ -777,7 +784,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <div style={{ margin: '16px 0', borderRadius: '16px', background: 'rgba(43, 36, 32,0.03)', padding: '16px' }}>
               <svg viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: 'auto' }}>
                 <path d="M 30 120 Q 50 120 60 115 Q 70 108 75 85 Q 80 55 85 30 Q 90 55 95 85 Q 100 108 110 115 Q 120 120 140 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
-                <text x="85" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#6B635D">Poolish TA</text>
+                <text x="85" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#6B635D">Poolish ambiant</text>
                 <text x="85" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#6B635D">pic étroit</text>
                 <path d="M 155 120 Q 175 120 185 114 Q 195 105 198 90 Q 200 70 202 55 L 218 55 Q 220 70 222 90 Q 225 105 235 114 Q 245 120 265 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
                 <line x1="202" y1="55" x2="218" y2="55" stroke="#9C8248" strokeWidth="1.5" />
@@ -798,7 +805,7 @@ const CONTENT: Record<string, LocaleContent> = {
               </svg>
             </div>
             <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Deux courbes, deux histoires.</strong> La courbe dorée est le préferment (poolish ou biga) — elle doit culminer au pétrissage (◆ doré). La courbe vert-gris est la pâte finale — elle doit culminer à la cuisson (▲ rouge). Quand les deux s’alignent, vous obtenez le meilleur résultat possible de votre planning.</p>
-            <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Les formes reflètent la biologie.</strong> La fermentation TA produit une cloche haute et étroite — la levure culmine vite et décline vite ; une petite erreur de timing a un grand effet. La pousse froide produit un large plateau — biologie plus lente, fenêtre bien plus large. C’est pourquoi le froid est préféré : il pardonne.</p>
+            <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Les formes reflètent la biologie.</strong> La fermentation à température ambiante produit une cloche haute et étroite — la levure culmine vite et décline vite ; une petite erreur de timing a un grand effet. La pousse froide produit un large plateau — biologie plus lente, fenêtre bien plus large. C’est pourquoi le froid est préféré : il pardonne.</p>
             <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Les pastilles de statut.</strong> Verte &laquo;&nbsp;Prêt&nbsp;&raquo; = sur le plateau. Ambre &laquo;&nbsp;En développement&nbsp;&raquo; = proche du pic, utilisable mais pas optimal. Quand aucune fenêtre de préferment viable n’existe, la courbe dorée disparaît — la carte recommande la pâte directe.</p>
             <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Interagissez avec le graphique.</strong> Glissez le losange doré pour ajuster le départ du préferment, le losange vert pour l’heure de pétrissage. Les deux courbes se mettent à jour en temps réel. <em>Revenir à la recommandation</em> replace tout à l’optimum calculé.</p>
           </>
@@ -812,13 +819,13 @@ const CONTENT: Record<string, LocaleContent> = {
             <P>Le graphique de fermentation affiche deux courbes en cloche. La courbe du préferment culmine au moment du pétrissage ; la courbe de la pâte culmine au moment de la cuisson. Les pastilles vertes signifient que les deux sont sur cible. Jaune signifie en développement mais utilisable. Le graphique disparaît quand aucune fenêtre de préferment viable n'existe — le boulanger est clairement invité à passer en pâte directe.</P>
             <P>Chaque type de préferment a sa propre fenêtre idéale, façonnée par la température et la force de la farine :</P>
             <BulletList items={[
-              <><strong style={{color:CHAR}}>Poolish au frigo</strong> — optimal vers 13h au froid à 6°C (plateau ±5h). Nécessite au moins 16,5h de fenêtre de planification totale. Pousse froide plus longue = saveurs plus complexes. Le W de la farine scale cela : une farine W370 bénéficie d'un poolish plus long qu'une W250.</>,
-              <><strong style={{color:CHAR}}>Poolish à température ambiante</strong> — pic en ~9h à 22°C, plus rapide en cuisine chaude, plus lent en cuisine froide. Fenêtre plus étroite (±1,5h). Le moteur essaie le poolish TA en fallback quand la fenêtre frigo est trop courte — si le TA score plus haut, le TA gagne. En mode Avancé, vous pouvez imposer le frigo ou la température ambiante.</>,
+              <><strong style={{color:CHAR}}>Poolish au frigo</strong> — optimal vers 13h au froid à 6°C (plateau ±5h). Nécessite au moins 16,5h de fenêtre de planification totale. Pousse froide plus longue = saveurs plus complexes. Le W de la farine module cette durée : une farine W370 bénéficie d'un poolish plus long qu'une W250.</>,
+              <><strong style={{color:CHAR}}>Poolish à température ambiante</strong> — pic en ~9h à 22°C, plus rapide en cuisine chaude, plus lent en cuisine froide. Fenêtre plus étroite (±1,5h). Le moteur se replie sur le poolish à température ambiante quand la fenêtre au frigo est trop courte — et le retient aussi s’il obtient une meilleure note. En mode Personnalisé, vous pouvez imposer le frigo ou la température ambiante.</>,
               <><strong style={{color:CHAR}}>Biga</strong> — toujours au froid. Pâte rigide (50% d'hydratation) qui fermente lentement sur 38–58h. Large plateau, le plus indulgent. Cette version propose un protocole de biga réfrigéré ; les méthodes à température ambiante ne font pas partie de ce préréglage.</>,
             ]} />
-            <P>Le scoring est transparent : score 4 = double vert (optimal), score 3 = un vert + un jaune (bien), score 2 ou moins = pâte directe recommandée. Le moteur choisit toujours le score le plus élevé disponible, puis utilise la durée de pousse froide comme critère de départage — le temps au froid sert de préférence de classement, pas de garantie de meilleur goût.</P>
+            <P>La notation est transparente : note 4 = double vert (optimal), note 3 = un vert + un jaune (bien), note 2 ou moins = pâte directe recommandée. Le moteur choisit toujours la meilleure note disponible, puis utilise la durée de pousse froide comme critère de départage — le temps au froid sert de préférence de classement, pas de garantie de meilleur goût.</P>
             <p style={{ margin: '14px 0 0', ...bodyText }}>
-              <strong style={{ color: CHAR }}>Conscience des blockers.</strong> Le moteur respecte vos heures bloquées pour placer le début du poolish et l'heure de pétrissage. Les nuits sont cochées par défaut ; seules les étapes manuelles doivent éviter vos indisponibilités, la pousse peut se faire pendant votre absence.
+              <strong style={{ color: CHAR }}>Vos indisponibilités.</strong> Le moteur respecte vos heures bloquées pour placer le début du poolish et l'heure de pétrissage. Les nuits sont cochées par défaut ; seules les étapes manuelles doivent éviter vos indisponibilités, la pousse peut se faire pendant votre absence.
             </p>
           </>
         ),
@@ -826,7 +833,7 @@ const CONTENT: Record<string, LocaleContent> = {
       {
         title: "Maestro — l'aide en chemin",
         body: (
-          <p style={{ margin: 0, ...bodyText }}>À des étapes clés du Bake Guide, vous pouvez photographier votre pâte ou votre pizza et demander à Maestro un retour. Maestro connaît votre type de four, votre style et l'étape où vous en êtes — les conseils sont donc contextuels, pas génériques. Léopardage, structure de la mie, couleur de la croûte, signes de fermentation. Un ami connaisseur qui regarde par-dessus votre épaule.</p>
+          <p style={{ margin: 0, ...bodyText }}>À des étapes clés du guide de préparation, vous pouvez photographier votre pâte ou votre pizza et demander à Maestro un retour. Maestro connaît votre type de four, votre style et l'étape où vous en êtes — les conseils sont donc contextuels, pas génériques. Taches brunes sur la couronne, alvéolage de la mie, couleur de la croûte, signes de fermentation. Un ami connaisseur qui regarde par-dessus votre épaule.</p>
         ),
       },
       {
@@ -851,7 +858,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <P>Connectez-vous (code reçu par e-mail, ou Google) et chaque fournée devient une <strong style={{ color: CHAR }}>session</strong> à laquelle vous pouvez revenir. Toute votre configuration est sauvegardée — pâte, planning, état du levain, sélections de pizzas, et photos du résultat.</P>
             <BulletList items={[
               <><strong style={{color:CHAR}}>Reprendre</strong> — rouvrez une session exactement là où vous l'aviez laissée, sur l'onglet que vous utilisiez. Pas connecté ? Votre session en cours reste conservée sur cet appareil.</>,
-              <><strong style={{color:CHAR}}>Refaire</strong> — un tap clone une fournée réussie sur le prochain jour et horaire équivalents, avec tout le planning et vos créneaux bloqués décalés d'autant. Les boulangers refont leurs succès.</>,
+              <><strong style={{color:CHAR}}>Refaire</strong> — une touche copie une fournée réussie sur le prochain jour et horaire équivalents, avec tout le planning et vos créneaux bloqués décalés d'autant. Les boulangers refont leurs succès.</>,
               <><strong style={{color:CHAR}}>Photos</strong> — ajoutez des photos de chaque fournée et construisez votre journal de boulange au fil du temps.</>,
               <><strong style={{color:CHAR}}>Partager</strong> — exportez une session en carte (format post, carré ou story) avec recette, planning et photos. Taguez <strong style={{color:CHAR}}>@bakerhub</strong> et <strong style={{color:CHAR}}>#BakerHub</strong> — si vous faites quelque chose dont vous êtes fier, nous serions ravis de le voir.</>,
             ]} />

@@ -604,13 +604,13 @@ export default function Header({
               {recipeGenerated && onSharePlan && <button style={menuButton} onClick={() => { setMenuOpen(false); onSharePlan(); }}>{locale === 'fr' ? 'Partager la recette' : 'Share recipe'}</button>}
               <button style={menuButton} onClick={() => { setMenuOpen(false); onNewSession(); }}>{locale === 'fr' ? 'Commencer une nouvelle fournée' : 'Start a new bake'}</button>
             </>}
-            <div style={menuGroup}>Bakerhub</div>
+            <div style={menuGroup}>Baker Hub</div>
 
             <button style={menuButton} onClick={() => setMenuPage('library')}>{locale === 'fr' ? 'Mes fournées' : 'My bakes'}</button>
             <button style={menuButton} onClick={() => setMenuPage('account')}>{locale === 'fr' ? 'Compte' : 'Account'}</button>
             {onOpenProfile && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenProfile(); }}>{locale === 'fr' ? 'Préférences de cuisine' : 'Kitchen preferences'}</button>}
             <button style={menuButton} onClick={() => setMenuPage('settings')}>{locale === 'fr' ? 'Langue et unités' : 'Language & units'}</button>
-            <Link style={menuButton} href={locale === 'fr' ? '/fr/about' : '/about'} onClick={() => setMenuOpen(false)}>{locale === 'fr' ? 'À propos de Bakerhub' : 'About Bakerhub'}</Link>
+            <Link style={menuButton} href={locale === 'fr' ? '/fr/about' : '/about'} onClick={() => setMenuOpen(false)}>{locale === 'fr' ? 'À propos de Baker Hub' : 'About Baker Hub'}</Link>
             <Link style={menuButton} href={locale === 'fr' ? '/fr/privacy' : '/privacy'} onClick={() => setMenuOpen(false)}>{locale === 'fr' ? 'Confidentialité' : 'Privacy'}</Link>
             <Link style={menuButton} href={locale === 'fr' ? '/fr/terms' : '/terms'} onClick={() => setMenuOpen(false)}>{locale === 'fr' ? 'Conditions d’utilisation' : 'Terms of service'}</Link>
           </nav>}
