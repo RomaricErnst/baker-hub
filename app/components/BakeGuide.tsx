@@ -2096,7 +2096,17 @@ Actual dough condition and equipment may differ from these estimates.`;
             <Steps items={ovenConstruction === 'masonry' ? [
               { bold: l === 'fr' ? 'Chauffez la sole et la voûte à cœur.' : 'Heat the floor and dome thoroughly.', note: l === 'fr' ? 'Suivez le temps de chauffe de votre four à pizza traditionnel.' : 'Follow your traditional pizza oven’s heat-up instructions.' },
               { bold: l === 'fr' ? 'Contrôlez la température de la sole avant d’enfourner.' : 'Check the floor temperature before launching.', note: l === 'fr' ? 'Laissez-la remonter entre deux pizzas.' : 'Let it recover between pizzas.' },
-            ] : ovenSteps(t.raw('preheat.pizzaOven.steps') as { bold: string; note: string }[])} />
+            ] : ovenConstruction === 'tabletop' ? ovenSteps(l === 'fr' ? [
+              { bold: 'Allumez le four à fond', note: 'gaz ou bois : flamme haute, sole visée 400–450°C' },
+              { bold: 'Comptez 30–45 min de chauffe', note: 'la pierre doit chauffer à cœur, pas seulement en surface' },
+              { bold: 'Contrôlez la sole au thermomètre infrarouge', note: 'enfournez seulement quand elle est à température' },
+              { bold: 'Baissez la flamme juste avant d’enfourner', note: 'sinon le dessus brûle avant que le dessous soit cuit' },
+            ] : [
+              { bold: 'Light the oven on full', note: 'gas or wood: high flame, floor target 400–450°C' },
+              { bold: 'Allow 30–45 min to preheat', note: 'the stone must heat through, not just its surface' },
+              { bold: 'Check the floor with an infrared thermometer', note: 'launch only when it is at temperature' },
+              { bold: 'Turn the flame down just before launching', note: 'otherwise the top burns before the base is cooked' },
+            ]) : ovenSteps(t.raw('preheat.pizzaOven.steps') as { bold: string; note: string }[])} />
           ) : ovenType === 'electric_pizza' ? (
             <Steps items={ovenSteps(t.raw('preheat.electricPizza.steps') as { bold: string; note: string }[])} />
           ) : ovenType === 'home_oven_steel' ? (

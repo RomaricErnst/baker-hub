@@ -34,6 +34,7 @@ const CONTENT: Record<string, LegalContent> = {
         title: 'Photos, and the AI that reads them',
         paragraphs: [
           'Two features send a photo away from your device for analysis. When you scan a flour bag label, and when you ask for feedback on a bake, the image is sent to Anthropic\u2019s Claude API, analysed, and returned to you as text. Anthropic processes these images to produce that response.',
+          'The same applies to a question you ask at a step of the guide (\u201cAsk\u201d): the question, any photo you add, and the recipe and plan details it needs to answer are sent to Anthropic\u2019s Claude API, and the answer comes back as text.',
           'Only photographs you deliberately capture for these features are sent. Baker Hub has no access to your camera roll and reads no other images.',
         ],
       },
@@ -125,6 +126,7 @@ const CONTENT: Record<string, LegalContent> = {
         title: 'Les photos, et l\u2019IA qui les lit',
         paragraphs: [
           'Deux fonctions envoient une photo hors de votre appareil pour analyse. Lorsque vous scannez l\u2019étiquette d\u2019un sac de farine, et lorsque vous demandez un retour sur une fournée, l\u2019image est envoyée à l\u2019API Claude d\u2019Anthropic, analysée, puis vous revient sous forme de texte. Anthropic traite ces images pour produire cette réponse.',
+          'Il en va de même pour une question posée à une étape du guide (\u00ab Demander \u00bb) : la question, la photo éventuelle, ainsi que les détails de la recette et du planning nécessaires à la réponse sont envoyés à l\u2019API Claude d\u2019Anthropic, et la réponse vous revient sous forme de texte.',
           'Seules les photos que vous prenez délibérément pour ces fonctions sont envoyées. Baker Hub n\u2019a aucun accès à votre pellicule et ne lit aucune autre image.',
         ],
       },

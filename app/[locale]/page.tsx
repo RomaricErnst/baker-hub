@@ -3283,6 +3283,9 @@ export default function Home() {
       deltaMs = next.getTime() - oldEat.getTime();
     }
     const shiftD = (d: Date) => rb ? new Date(d.getTime() + deltaMs) : d;
+    // The scheduler keeps its own draft of the times; remount it so it starts from
+    // the restored (for a rebake, shifted) bake rather than the previous one.
+    setStarterPlanResetKey(value => value + 1);
     setConfirmedSettings((snap.confirmedSettings ?? []).filter(item=>typeof item==='string'));
     setTab(snap.tab as 'simple' | 'custom');
     setBakeType(snap.bakeType as BakeType | null);
@@ -3365,7 +3368,6 @@ export default function Home() {
     setBakedDone(!rb && !!snap.bakedDone);
     setBakeEventId(rb ? null : event.id);
     if (freshStarterPlan) {
-      setStarterPlanResetKey(value => value + 1);
       // Feeding history describes the original bake, not the starter today.
       // Discard both observations and derived actions before solving again.
       setStarterEvents([]);
