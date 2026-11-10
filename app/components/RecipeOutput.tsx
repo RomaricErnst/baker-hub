@@ -616,7 +616,7 @@ export default function RecipeOutput({
                 <div style={{ fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>
                   {t('recipeOutput.prefTotalRow', { name: pd.name })}
                 </div>
-                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold-text)', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   ~{wStr(prefTotal)}
                 </div>
 
@@ -679,7 +679,7 @@ export default function RecipeOutput({
                 <div style={{ fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>
                   {t('recipeOutput.totalDough')}
                 </div>
-                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold-text)', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   {u === 'imperial' ? wStr(totalDough) : `${totalDough.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
                 </div>
 
@@ -856,7 +856,7 @@ export default function RecipeOutput({
             <div style={{ fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>
               {t('recipeOutput.totalDough')}
             </div>
-            <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold)', textAlign: 'right', whiteSpace: 'nowrap' }}>
+            <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold-text)', textAlign: 'right', whiteSpace: 'nowrap' }}>
               {u === 'imperial' ? wStr(totalDough) : `${totalDough.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
             </div>
 
@@ -920,7 +920,7 @@ export default function RecipeOutput({
           {effectiveBatches > 1 && <label>{locale === 'fr' ? 'Afficher la pétrissée' : 'Show batch'} <select value={batchPlan.active} onChange={e=>setBatchIndex(Number(e.target.value))}>{Array.from({length:effectiveBatches},(_,i)=><option key={i} value={i}>{i+1} / {effectiveBatches}</option>)}</select></label>}
           {/* Per-batch breakdown */}
           <div style={{ background: 'white', borderRadius: '16px', padding: '12px 16px', border: '1px solid #E8D890', marginBottom: '12px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#8A7F78', textTransform: 'uppercase', letterSpacing: '.07em', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.07em', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
               {hasPref ? t('recipeOutput.batchHeader', { n: effectiveBatches, grams: Math.round(batchDoughG / effectiveBatches) }) : t('recipeOutput.batchHeaderSimple', { n: effectiveBatches, grams: Math.round(totalDoughG / effectiveBatches) })}
             </div>
             {[
@@ -957,7 +957,7 @@ export default function RecipeOutput({
             ))}
           </div>
           {/* Footer note */}
-          <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
+          <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontStyle: 'italic' }}>
             {locale === 'fr' ? 'Vérifiez le planning si le pétrissage prend plus de temps.' : 'Review the schedule if mixing takes longer.'}
           </div>
         </div>
@@ -1104,7 +1104,7 @@ export default function RecipeOutput({
               {t('recipeOutput.starterLabel')}
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '24px', fontWeight: 700, color: 'var(--gold)' }}>
+              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '24px', fontWeight: 700, color: 'var(--gold-text)' }}>
                 {sourdough.starterGramsMin === sourdough.starterGramsMax ? sourdough.starterGramsMin : `${sourdough.starterGramsMin}–${sourdough.starterGramsMax}`} g
               </span>
               <span style={{ fontSize: '13px', color: D.muted, fontFamily: 'var(--font-ui)' }}>

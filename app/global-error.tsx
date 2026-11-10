@@ -16,7 +16,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
             <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#2B2420', margin: '0 0 0.5rem' }}>
               Something didn&rsquo;t rise as planned
             </h1>
-            <p style={{ fontSize: '15px', color: '#8A7F78', lineHeight: 1.6, margin: '0 0 1.5rem' }}>
+            <p style={{ fontSize: '15px', color: 'var(--smoke)', lineHeight: 1.6, margin: '0 0 1.5rem' }}>
               An unexpected error interrupted the app. Please try again.
             </p>
             <button

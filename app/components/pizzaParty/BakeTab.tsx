@@ -373,13 +373,13 @@ function CoachButton({
           <div style={{ background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '12px', padding: '12px 16px', margin: '0 16px 10px', position: 'relative' }}>
             <div style={{ color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-ui)', lineHeight: 1.6 }}>{feedback}</div>
             <button onClick={() => { setFeedback(null); setError(false); }}
-              style={{ position: 'absolute', bottom: '8px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-ui)', textDecoration: 'underline', padding: 0 }}>
+              style={{ position: 'absolute', bottom: '8px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '11px', fontFamily: 'var(--font-ui)', textDecoration: 'underline', padding: 0 }}>
               {l === 'fr' ? 'Reprendre' : 'Retake'}
             </button>
           </div>
         )}
         {error && !feedback && (
-          <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)', fontStyle: 'italic', padding: '8px 16px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontStyle: 'italic', padding: '8px 16px' }}>
             {l === 'fr' ? 'Maestro indisponible. Réessayez.' : 'Maestro unavailable. Please try again.'}
           </div>
         )}
@@ -408,13 +408,13 @@ function CoachButton({
         <div style={{ background: '#2B2420', borderLeft: '3px solid #6B4423', borderRadius: '12px', padding: '12px 16px', marginBottom: '12px', position: 'relative' }}>
           <div style={{ color: '#F0EBE0', fontSize: '13px', fontFamily: 'var(--font-ui)', lineHeight: 1.6 }}>{feedback}</div>
           <button onClick={() => { setFeedback(null); setError(false); }}
-            style={{ position: 'absolute', bottom: '8px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: '#8A7F78', fontSize: '11px', fontFamily: 'var(--font-ui)', textDecoration: 'underline', padding: 0 }}>
+            style={{ position: 'absolute', bottom: '8px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--smoke)', fontSize: '11px', fontFamily: 'var(--font-ui)', textDecoration: 'underline', padding: 0 }}>
             {l === 'fr' ? 'Reprendre' : 'Retake'}
           </button>
         </div>
       )}
       {error && !feedback && (
-        <div style={{ fontSize: '12px', color: '#8A7F78', fontFamily: 'var(--font-ui)', fontStyle: 'italic', marginBottom: '8px' }}>
+        <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontStyle: 'italic', marginBottom: '8px' }}>
           {l === 'fr' ? 'Maestro indisponible. Réessayez.' : 'Maestro unavailable. Please try again.'}
         </div>
       )}
@@ -969,7 +969,7 @@ export default function BakeTab({ selectedPizzas, plannedPizzaCount, locale, sty
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '16px 16px 4px' }}>
                     <div style={{ width: '3px', height: '16px', borderRadius: '2px', background: 'var(--gold)', flexShrink: 0 }} />
-                    <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700 }}>
+                    <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--gold-text)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700 }}>
                       {getAfterLabel()}
                     </span>
                   </div>

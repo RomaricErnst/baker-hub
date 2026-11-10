@@ -217,7 +217,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
             {task.timing > 5 && (
               <span style={{
                 fontFamily: 'var(--font-ui)', fontSize: '11px',
-                color: '#8A7F78', flexShrink: 0,
+                color: 'var(--smoke)', flexShrink: 0,
               }}>
                 {task.timing} {l === 'fr' ? 'min' : 'min'}
               </span>
@@ -225,7 +225,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
           </div>
           <span style={{
             fontFamily: 'var(--font-ui)', fontSize: '12px', lineHeight: 1.4,
-            color: '#8A7F78',
+            color: 'var(--smoke)',
             textDecoration: done ? 'line-through' : undefined,
             opacity: done ? 0.6 : 1,
           }}>
@@ -283,7 +283,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
       )}
 
       {!hasAny ? (
-        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', color: '#8A7F78', textAlign: 'center', padding: '32px 0' }}>
+        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--smoke)', textAlign: 'center', padding: '32px 0' }}>
           {l === 'fr' ? 'Aucune préparation nécessaire — vous êtes prêt.' : 'No prep needed — you\'re good to go.'}
         </div>
       ) : (
@@ -294,7 +294,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
               <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 600, color: '#2B2420', marginBottom: '2px' }}>
                 {l === 'fr' ? 'Commencez par là' : 'Get ahead'}
               </div>
-              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: '#8A7F78', marginBottom: '12px' }}>
+              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', marginBottom: '12px' }}>
                 {l === 'fr'
                   ? 'Ces préparations demandent du temps. Gardez les ingrédients périssables au froid jusqu’à leur utilisation.'
                   : 'These preparations need time. Keep perishable ingredients chilled until needed.'}
@@ -307,7 +307,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
           {hasEarly && hasFlex && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '4px 0 16px' }}>
               <div style={{ flex: 1, height: '1px', background: '#E8E0D5' }} />
-              <div style={{ fontSize: '11px', color: '#8A7F78', fontFamily: 'var(--font-ui)', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
                 {l === 'fr' ? 'quand vous voulez' : 'whenever you\'re ready'}
               </div>
               <div style={{ flex: 1, height: '1px', background: '#E8E0D5' }} />
@@ -318,7 +318,7 @@ export default function PrepTab({ locale, selectedPizzas, onGoToBake, onGoToShop
           {hasFlex && (
             <div>
               {!hasEarly && (
-                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: '#8A7F78', marginBottom: '12px' }}>
+                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', marginBottom: '12px' }}>
                   {l === 'fr' ? 'Préparez ces ingrédients pendant le préchauffage ou juste avant de garnir.' : 'Prepare these ingredients during preheating or just before topping.'}
                 </div>
               )}
