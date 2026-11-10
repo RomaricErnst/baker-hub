@@ -132,3 +132,13 @@ test('Simple recipe omits the fermentation container; Custom keeps it',()=>{
   a.ok(custom.includes(label),`${locale} custom`);
  }
 });
+test('water percentage is the hydration set, and the starter flour line reads as a sentence',()=>{
+ const r=make('sourdough','levain');
+ const set=Math.round(r.water/r.flour*100);
+ const text=render(r,'levain');
+ a.doesNotMatch(text,/\d+\.\d%\s*hydration/);
+ const fr=render(r,'levain',undefined,'fr');
+ a.match(fr,/\+ \d+ g de farine apportés par le levain, soit [\d ]+ g au total/);
+ a.doesNotMatch(fr,/équivalent\+|g via le levain/);
+ a.ok(set>0);
+});

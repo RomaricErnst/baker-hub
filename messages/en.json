@@ -136,7 +136,7 @@
   "bakeType": {
     "pizza": {
       "label": "Pizza",
-      "desc": "Neapolitan, New York, Pizza Romana, Roman Teglia, Detroit & Sourdough"
+      "desc": "Neapolitan, New York, thin Roman, Roman tray, pan & sourdough"
     },
     "bread": {
       "label": "Bread",
@@ -486,16 +486,16 @@
     "starterLabel": "Sourdough Starter",
     "starterSub": "add to flour + water",
     "largeBatchTitle": "Large batch — mix in stages",
-    "largeBatchFinalDough": "Your final dough is ~{grams}g — more than your {mixer} can handle at once. Split into {n} batches.",
-    "largeBatchTotal": "Your total dough is {grams}g — more than your {mixer} can handle at once. Split into {n} batches.",
+    "largeBatchFinalDough": "Your final dough is ~{weight} — more than your {mixer} can handle at once. Split into {n} batches.",
+    "largeBatchTotal": "Your total dough is {weight} — more than your {mixer} can handle at once. Split into {n} batches.",
     "ovenCapacityNote": "{n} pizzas, one at a time in your oven — plan for about {mins} min of baking. Launching in waves keeps every pizza hot; guests rarely mind eating in rounds.",
     "makeYourPref": "Make your {name}",
     "finalDoughTitle": "Final dough",
     "addPrefToRest": "Add your {name} to the remaining ingredients",
     "yourPrefAll": "Your {name} (all of it)",
     "prefTotalRow": "{name} total",
-    "batchHeader": "Final dough per batch ({n} × ~{grams}g)",
-    "batchHeaderSimple": "Per batch ({n} × ~{grams}g)",
+    "batchHeader": "Final dough per batch ({n} × ~{weight})",
+    "batchHeaderSimple": "Per batch ({n} × ~{weight})",
     "flourFinalDough": "Flour (final dough)",
     "waterFinalDough": "Water (final dough)",
     "batchTotal": "Batch total",

@@ -402,6 +402,8 @@ export default function RecipeOutput({
   const needsBatches = batchPlan.suggested > 1;
   // effectiveBatches can be 1 if baker overrides — no Math.max constraint
   const effectiveBatches = batchPlan.count;
+  // The mixer as a sentence names it: "your stand mixer", « votre robot pâtissier ».
+  const mixerInSentence = ({stand:['stand mixer','robot pâtissier'],spiral:['spiral mixer','pétrin à spirale']} as Record<string,[string,string]>)[mixerType]?.[locale === 'fr' ? 1 : 0] ?? (locale === 'fr' ? 'pétrin' : 'mixer');
 
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
   const enrichment = result.enrichment;
@@ -455,7 +457,8 @@ export default function RecipeOutput({
     : '';
 
   // Baker's percentages (relative to flour)
-  const waterPct  = Math.round(water  / flour * 1000) / 10;
+  // The hydration the baker set (76 %), not the one rounded grams compute back to (75.9 %).
+  const waterPct  = setPercent(water, flour, 0) || Math.round(water / flour * 1000) / 10;
   const saltPct = result.saltPct ?? Math.round(salt / flour * 1000) / 10;
   // Oil and sugar grams are rounded for the scale; show the percentage that
   // was set, not the one the rounded grams compute back to (3 %, not 3.1 %).
@@ -715,17 +718,17 @@ export default function RecipeOutput({
               const f3 = hasF3 ? FLOUR_DATA[flourBlend.flour3!] : null;
               return (
                 <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
-                  {flourBlend.ratio1}% {f1DisplayName} ({f1Weight.toLocaleString('en')}g)
+                  {flourBlend.ratio1}% {f1DisplayName} ({wStr(f1Weight)})
                   {' · '}
-                  {p2}% {flourBlend.customFlour2Name ?? (locale === 'fr' ? f2.nameFr : f2.name)} ({f2Weight.toLocaleString('en')}g)
-                  {hasF3 && f3 && <>{' · '}{p3}% {flourBlend.customFlour3Name ?? (locale === 'fr' ? f3.nameFr : f3.name)} ({f3Weight.toLocaleString('en')}g)</>}
+                  {p2}% {flourBlend.customFlour2Name ?? (locale === 'fr' ? f2.nameFr : f2.name)} ({wStr(f2Weight)})
+                  {hasF3 && f3 && <>{' · '}{p3}% {flourBlend.customFlour3Name ?? (locale === 'fr' ? f3.nameFr : f3.name)} ({wStr(f3Weight)})</>}
                 </span>
               );
             })() : <>
               {guidedFlourGuidance}
               {sdActive && (
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
-                {locale === 'fr' ? `+ ${sdHalf}g via le levain = ${flour}g au total` : `+ ${sdHalf}g via the starter = ${flour}g total`}
+              <span style={{ display: 'block', fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
+                {locale === 'fr' ? `+ ${wStr(sdHalf)} de farine apportés par le levain, soit ${wStr(flour)} au total` : `+ ${wStr(sdHalf)} flour from the starter, ${wStr(flour)} in total`}
               </span>
               )}
             </>}
@@ -912,8 +915,8 @@ export default function RecipeOutput({
           {/* Explanation */}
           <div style={{ fontSize: '12px', color: '#5A4A10', lineHeight: 1.65, fontFamily: 'var(--font-ui)', marginBottom: '16px' }}>
             {hasPref
-              ? <>{t('recipeOutput.largeBatchFinalDough', { grams: Math.round(batchDoughG), mixer: (MIXER_TYPES as Record<string, { name: string }>)[mixerType]?.name ?? 'mixer', n: effectiveBatches })}</>
-              : <>{t('recipeOutput.largeBatchTotal', { grams: totalDoughG, mixer: (MIXER_TYPES as Record<string, { name: string }>)[mixerType]?.name ?? 'mixer', n: effectiveBatches })}</>
+              ? <>{t('recipeOutput.largeBatchFinalDough', { weight: wStr(Math.round(batchDoughG)), mixer: mixerInSentence, n: effectiveBatches })}</>
+              : <>{t('recipeOutput.largeBatchTotal', { weight: wStr(totalDoughG), mixer: mixerInSentence, n: effectiveBatches })}</>
             }
           </div>
           <p>{locale === 'fr' ? `${effectiveBatches} pétrissée${effectiveBatches > 1 ? 's' : ''}` : `${effectiveBatches} mixing batch${effectiveBatches > 1 ? 'es' : ''}`}</p>
@@ -922,7 +925,7 @@ export default function RecipeOutput({
           {/* Per-batch breakdown */}
           <div style={{ background: 'white', borderRadius: '16px', padding: '12px 16px', border: '1px solid #E8D890', marginBottom: '12px' }}>
             <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.07em', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
-              {hasPref ? t('recipeOutput.batchHeader', { n: effectiveBatches, grams: Math.round(batchDoughG / effectiveBatches) }) : t('recipeOutput.batchHeaderSimple', { n: effectiveBatches, grams: Math.round(totalDoughG / effectiveBatches) })}
+              {hasPref ? t('recipeOutput.batchHeader', { n: effectiveBatches, weight: wStr(Math.round(batchDoughG / effectiveBatches)) }) : t('recipeOutput.batchHeaderSimple', { n: effectiveBatches, weight: wStr(Math.round(totalDoughG / effectiveBatches)) })}
             </div>
             {[
               ...(poolishPerBatch !== null ? [{

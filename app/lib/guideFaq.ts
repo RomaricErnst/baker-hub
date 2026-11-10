@@ -2,9 +2,12 @@
 /** Optional tags keep a question out of bakes it does not apply to:
  * `only` — bread or pizza; `ovens` — oven types that have the equipment the
  * answer talks about (stone, steel, peel, dome); `round` — round-pizza handling
- * (balls, peel), not shown for pizzas that bake in their pan.
+ * (balls, peel), not shown for pizzas that bake in their pan; `fridge` — only
+ * when the plan has a cold stage. `pan` replaces the answer for pizzas that bake
+ * in their pan (pan / Detroit, Roman teglia). `except` lists styles the
+ * question does not fit (a fougasse is eaten warm: no "let it cool first").
  */
-export interface FaqEntry { q: {en:string;fr:string}; a: {en:string;fr:string}; only?: 'bread' | 'pizza'; ovens?: readonly string[]; round?: boolean; }
+export interface FaqEntry { q: {en:string;fr:string}; a: {en:string;fr:string}; only?: 'bread' | 'pizza'; ovens?: readonly string[]; round?: boolean; fridge?: boolean; pan?: {en:string;fr:string}; except?: readonly string[]; }
 export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
   "poolish": [
     {
@@ -296,8 +299,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "Les pâtons ne font pas le même poids — grave ?"
       },
       "a": {
-        "en": "Within ±10g nobody will notice. Bigger gaps mean uneven bake times — steal a bit of dough from the heavy ones and press it into the seam of the light ones.",
-        "fr": "À ±10g près, personne ne verra rien. Au-delà, la cuisson devient inégale — prélevez un peu des gros et soudez-le sous les petits."
+        "en": "Within ±10 g nobody will notice. Bigger gaps mean uneven bake times — steal a bit of dough from the heavy ones and press it into the seam of the light ones.",
+        "fr": "À ±10 g près, personne ne verra rien. Au-delà, la cuisson devient inégale — prélevez un peu des gros et soudez-le sous les petits."
       }
     },
     {
@@ -308,7 +311,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       },
       "a": {
         "en": "The scale beats the eye — a few seconds per ball buys even bakes. That said, ±5 g is invisible once baked.",
-        "fr": "La balance bat l'œil — quelques secondes par pâton garantissent des cuissons régulières. Cela dit, ±5 g est invisible une fois cuit."
+        "fr": "La balance bat l’œil — quelques secondes par pâton garantissent des cuissons régulières. Cela dit, ±5 g est invisible une fois cuit."
       }
     },
     {
@@ -332,9 +335,14 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       "a": {
         "en": "For pizza: handle gently, stretch a little thinner and bake — expect less puffing. For bread: reshape gently, proof 20–30 min and bake; expect a denser crumb.",
         "fr": "Pour la pizza : manipulez doucement, étalez un peu plus fin et cuisez — elle gonflera moins. Pour le pain : refaçonnez délicatement, laissez 20–30 min et cuisez ; la mie sera plus dense."
+      },
+      "pan": {
+        "en": "Leave it in its pan, top it lightly and bake now — expect a flatter, denser crumb.",
+        "fr": "Laissez-la dans son moule, garnissez légèrement et cuisez sans attendre ; la mie sera plus plate et plus dense."
       }
     },
     {
+      "fridge": true,
       "q": {
         "en": "Dough is still cold from the fridge — bake anyway?",
         "fr": "La pâte est encore froide du frigo — cuire quand même ?"
@@ -342,6 +350,10 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       "a": {
         "en": "For pizza, check that the dough can be stretched without forcing or tearing and follow the planned warm-up. Bread may be baked cold if the recipe calls for it and proofing is complete; temperature alone does not establish readiness.",
         "fr": "Pour la pizza, vérifiez que la pâte s’étire sans forcer ni se déchirer et suivez le réchauffage prévu. Le pain peut être cuit froid si la recette le prévoit et si l’apprêt est terminé ; la température seule ne suffit pas à juger la maturité."
+      },
+      "pan": {
+        "en": "Let it finish rising in its pan until puffy, as planned; a pan pizza baked cold rises less in the oven and has a denser crumb.",
+        "fr": "Laissez-la finir de lever dans son moule jusqu’à ce qu’elle soit bien gonflée, comme prévu ; cuite froide, une pizza en moule gonfle moins au four et sa mie est plus dense."
       }
     },
     {
@@ -391,6 +403,10 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       "a": {
         "en": "Bake anyway at max — just expect a longer bake and check the base colour before pulling. Position the rack closer to the top element for better top colour.",
         "fr": "Cuisez quand même à fond — comptez juste plus long et vérifiez la couleur du dessous avant de sortir. Rapprochez la grille de la résistance du haut pour mieux colorer le dessus."
+      },
+      "pan": {
+        "en": "Bake anyway at max — just expect a longer bake and lift a corner to check the base before pulling. Keep the pan on the lowest rack; if the top stays pale, finish 1–2 minutes under the grill.",
+        "fr": "Cuisez quand même à fond — comptez juste plus long et soulevez un coin pour vérifier le dessous avant de sortir. Gardez le moule sur la grille du bas ; si le dessus reste pâle, finissez 1 à 2 minutes sous le gril."
       }
     },
     {
@@ -433,6 +449,10 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       "a": {
         "en": "Finish under the broiler/grill for 60–90 seconds, watching constantly. Next time, move the rack (and steel/stone) higher so the top element does more work.",
         "fr": "Terminez sous le gril 60–90 secondes en surveillant constamment. La prochaine fois, montez la grille (et l’acier/la pierre) pour que la résistance du haut travaille plus."
+      },
+      "pan": {
+        "en": "Finish under the broiler/grill for 1–2 minutes, watching constantly. A pan pizza bakes on the lowest rack for its base: move it up only for this last browning.",
+        "fr": "Terminez sous le gril 1 à 2 minutes en surveillant constamment. Une pizza en moule cuit en bas du four pour son dessous : montez-la seulement pour cette dernière coloration."
       }
     },
     {
@@ -453,6 +473,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       }
     },
     {
+      "except": ["fougasse"],
       "only": "bread",
       "q": {
         "en": "Should bread really cool before cutting?",
@@ -520,6 +541,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
   ],
   "cool": [
     {
+      "except": ["fougasse"],
       "q": {
         "en": "Can I slice it now?",
         "fr": "Puis-je déjà trancher ?"

@@ -2,7 +2,7 @@
  * Pan / Detroit (`pan`) and Roman teglia (`roman`). No round-ball steps.
  * Instructions only; nothing here feeds the schedule or fermentation engines.
  */
-import type { UnitSystem } from './units';
+import { displayWeight, type UnitSystem } from './units';
 
 export type GuideStep = { bold: string; note: string };
 type Lang = 'en' | 'fr';
@@ -38,6 +38,14 @@ export function panSizeLabel(styleKey: string, pieceWeightG: number, units: Unit
     : `${size[0]} × ${size[1]} cm`;
 }
 
+/** The shaping step's name, shared by the guide card and the calendar event. */
+export function panShapingTitle(styleKey: string, count: number, lang: Lang): string {
+  const detroit = styleKey === 'pan';
+  return count > 1
+    ? (lang === 'fr' ? (detroit ? 'Diviser et étaler en moule' : 'Diviser et étaler sur plaque') : 'Divide and press into the pans')
+    : (lang === 'fr' ? (detroit ? 'Étaler la pâte dans le moule' : 'Étaler la pâte sur la plaque') : 'Press the dough into the pan');
+}
+
 export interface PanPizzaGuide {
   title: Both<string>;
   shaping: Both<GuideStep[]>;
@@ -61,7 +69,7 @@ export function panPizzaGuide(input: {
   const detroit = styleKey === 'pan';
   const many = count > 1;
   const known = Number.isFinite(pieceWeightG) && pieceWeightG > 0;
-  const grams = Math.round(pieceWeightG);
+  const weight = (lang: Lang) => displayWeight(Math.round(pieceWeightG), units, lang);
   const size = panSizeLabel(styleKey, pieceWeightG, units);
   // French names the two vessels differently: a deep "moule" for pan / Detroit,
   // a flat "plaque" for teglia. English says "pan" for both.
@@ -72,11 +80,11 @@ export function panPizzaGuide(input: {
 
   const shaping = both(lang => [
     ...(many ? [lang === 'fr'
-      ? s(`Pesez la pâte et divisez-la en ${count} pâtons de même poids${known ? ` (environ ${grams} g chacun)` : ''}`, detroit ? 'un pâton par moule' : 'un pâton par plaque')
-      : s(`Weigh the dough and divide it into ${count} equal pieces${known ? ` (about ${grams} g each)` : ''}`, 'one piece per pan')] : []),
+      ? s(`Pesez la pâte et divisez-la en ${count} pâtons de même poids${known ? ` (environ ${weight(lang)} chacun)` : ''}`, detroit ? 'un pâton par moule' : 'un pâton par plaque')
+      : s(`Weigh the dough and divide it into ${count} equal pieces${known ? ` (about ${weight(lang)} each)` : ''}`, 'one piece per pan')] : []),
     lang === 'fr'
-      ? s(`Huilez généreusement ${pan(lang)}, jusque dans les coins`, size ? `cette recette prévoit ${detroit ? 'un moule' : 'une plaque'} d’environ ${size} pour ${grams} g de pâte` : '')
-      : s(`Oil ${pan(lang)} generously, corners included`, size ? `this recipe assumes a pan of about ${size} for ${grams} g of dough` : ''),
+      ? s(`Huilez généreusement ${pan(lang)}, jusque dans les coins`, size ? `cette recette prévoit ${detroit ? 'un moule' : 'une plaque'} d’environ ${size} pour ${weight(lang)} de pâte` : '')
+      : s(`Oil ${pan(lang)} generously, corners included`, size ? `this recipe assumes a pan of about ${size} for ${weight(lang)} of dough` : ''),
     lang === 'fr'
       ? s(`Déposez la pâte ${inPan(lang)} et étalez-la vers les bords du bout des doigts huilés`, 'sans la forcer ni la déchirer')
       : s(`Place the dough ${inPan(lang)} and press it out towards the edges with oiled fingertips`, 'without forcing or tearing it'),
@@ -140,9 +148,7 @@ export function panPizzaGuide(input: {
   ]);
 
   return {
-    title: both(lang => many
-      ? (lang === 'fr' ? (detroit ? 'Diviser et étaler en moule' : 'Diviser et étaler sur plaque') : 'Divide and press into the pans')
-      : (lang === 'fr' ? (detroit ? 'Étaler la pâte dans le moule' : 'Étaler la pâte sur la plaque') : 'Press the dough into the pan')),
+    title: both(lang => panShapingTitle(styleKey, count, lang)),
     shaping,
     shapingWatchFor: both(lang => lang === 'fr' ? [
       'La pâte atteint les coins sans se déchirer',

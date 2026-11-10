@@ -190,7 +190,7 @@ interface Props {
   onGoToMyDough?: () => void;
   /** Dough ingredients from the generated recipe — shown as a
       "For your dough" section so the baker shops once. */
-  recipeIngredients?: Array<{ name: string; amount: string; tickKey?: string }>;
+  recipeIngredients?: Array<{ name: string; amount: string; tickKey?: string; hint?: string }>;
   onSelectionBack?:()=>void;
   onBackToRecipe?:()=>void;
   onSelectionDone?:()=>void;
@@ -935,7 +935,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
   locale: string;
   numItems: number;
   styleKey?: string;
-  recipeIngredients?: Array<{ name: string; amount: string; tickKey?: string }>;
+  recipeIngredients?: Array<{ name: string; amount: string; tickKey?: string; hint?: string }>;
   storagePrefix?:string;
   baseReady?:boolean;
   onGoPrep?: () => void;
@@ -1002,7 +1002,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
     if (recipeIngredients?.length) {
       text += `${l === 'fr' ? 'POUR VOTRE PÂTE' : 'FOR YOUR DOUGH'}\n`;
-      recipeIngredients.forEach(i => { text += `${i.name}  —  ${shoppingAmount(i.amount)}\n`; });
+      recipeIngredients.forEach(i => { text += `${i.name}  —  ${shoppingAmount(i.amount)}${i.hint ? ` (${i.hint})` : ''}\n`; });
       text += '\n';
     }
 
@@ -1198,6 +1198,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                 </button>
                 <span style={{ fontSize: '13px', color: ticked[ing.tickKey ?? ('dough_' + i)] ? '#B0A89E' : '#2B2420', flex: 1, textDecoration: 'none' }}>
                   {ing.name}
+                  {ing.hint && <span style={{ display: 'block', fontSize: '12px', color: '#6D625C' }}>{ing.hint}</span>}
                 </span>
                 <span style={{ fontSize: '12px', color: '#62574e', fontFamily: 'var(--font-ui)' }}>{shoppingAmount(ing.amount)}</span>
               </div>

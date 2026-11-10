@@ -136,7 +136,7 @@
   "bakeType": {
     "pizza": {
       "label": "Pizza",
-      "desc": "Napolitaine, New York, Pizza Romaine, Teglia Romaine, Detroit & Levain"
+      "desc": "Napolitaine, new-yorkaise, romaine fine, romaine sur plaque, en moule et au levain"
     },
     "bread": {
       "label": "Pain",
@@ -486,16 +486,16 @@
     "starterLabel": "Levain",
     "starterSub": "ajouter à la farine + eau",
     "largeBatchTitle": "Grande quantité — pétrir en plusieurs fois",
-    "largeBatchFinalDough": "Votre pâte finale fait ~{grams}g — trop pour votre {mixer} en une fois. Divisez en {n} pétrissages.",
-    "largeBatchTotal": "Votre pâte totale fait {grams}g — trop pour votre {mixer} en une fois. Divisez en {n} pétrissages.",
+    "largeBatchFinalDough": "Votre pâte finale fait ~{weight} — trop pour votre {mixer} en une fois. Divisez en {n} pétrissages.",
+    "largeBatchTotal": "Votre pâte totale fait {weight} — trop pour votre {mixer} en une fois. Divisez en {n} pétrissages.",
     "ovenCapacityNote": "{n} pizzas, une à la fois dans votre four — prévoyez environ {mins} min de cuisson. Enfourner par vagues garde chaque pizza bien chaude ; vos invités mangeront par tournées.",
     "makeYourPref": "Préparez votre {name}",
     "finalDoughTitle": "Pâte finale",
     "addPrefToRest": "Ajoutez votre {name} aux ingrédients restants",
     "yourPrefAll": "Votre {name} (en entier)",
     "prefTotalRow": "Total {name}",
-    "batchHeader": "Pâte finale par pétrissage ({n} × ~{grams}g)",
-    "batchHeaderSimple": "Par pétrissage ({n} × ~{grams}g)",
+    "batchHeader": "Pâte finale par pétrissage ({n} × ~{weight})",
+    "batchHeaderSimple": "Par pétrissage ({n} × ~{weight})",
     "flourFinalDough": "Farine (pâte finale)",
     "waterFinalDough": "Eau (pâte finale)",
     "batchTotal": "Total pétrissage",

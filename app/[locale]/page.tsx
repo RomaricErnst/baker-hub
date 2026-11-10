@@ -33,9 +33,10 @@ import MixingBatchControl from '../components/MixingBatchControl';
 const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { ssr: false });
 import { starterFeedToMixHours } from '../lib/starterTiming';
 import { mixerDoughCapacity, suggestedMixingBatchCount } from '../utils/mixingBatches';
-import { doughShoppingItems as buildDoughShoppingItems, yeastShoppingName } from '../lib/doughShopping';
+import { doughShoppingItems as buildDoughShoppingItems, yeastShoppingName, yeastBuyingHint, breadFinishShopping } from '../lib/doughShopping';
 import { isPanPizzaStyle } from '../utils/panPizza';
 import { buildPlanCalendar, calendarBakeId, downloadPlanCalendar, keyPlanEvents, type PlanCalendarEvent } from '../utils/planCalendar';
+import { leanBreadPreheatMin } from '../utils/leanBreadBake';
 import {commercialPrefermentWindow, validateConfirmedBake, type StarterEvent } from '../components/SchedulePicker';
 import { prefermentConditioningAction } from '../utils/scheduleEdit';
 import { findAvailabilityConflicts, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake } from '../utils/scheduleAvailability';
@@ -1849,7 +1850,7 @@ export default function Home() {
       ? BREAD_OVEN_TYPES[ovenType as BreadOvenType]
       : OVEN_TYPES[ovenType as OvenType]
     : undefined;
-  const preheatMin = ovenData?.preheatMin ?? 30;
+  const preheatMin = bakeType === 'bread' ? leanBreadPreheatMin(styleKey ?? undefined, ovenType ?? undefined, ovenData?.preheatMin ?? 30) : ovenData?.preheatMin ?? 30;
 
   const hasNightBlocker = blocks.some(b =>
     b.label.toLowerCase().includes('night') || b.from.getHours() >= 22 || b.to.getHours() <= 7
@@ -2083,11 +2084,13 @@ export default function Home() {
       {id:'salt', name:fr?'Sel':'Salt', grams:cr.salt},
       {id:'olive_oil', name:fr?'Huile d’olive':'Olive oil', grams:cr.oil},
       {id:'sugar', name:fr?'Sucre':'Sugar', grams:cr.sugar},
-      {id:'yeast', name:yeastShoppingName(yeastType ?? 'instant', locale), grams:cr.preferment?.prefYeastGrams ?? cr.yeast?.convertedGrams ?? 0},
+      {id:'yeast', name:(()=>{const grams=cr.preferment?.prefYeastGrams ?? cr.yeast?.convertedGrams ?? 0, hint=yeastBuyingHint(grams, yeastType ?? 'instant', locale, units);return yeastShoppingName(yeastType ?? 'instant', locale)+(hint?` · ${hint}`:'');})(), grams:cr.preferment?.prefYeastGrams ?? cr.yeast?.convertedGrams ?? 0},
       ...(['milk','eggs','butter'] as const).map(id=>({id,name:({milk:fr?'Lait':'Milk',eggs:eggShoppingLabel(cr.enrichment?.eggs ?? 0,fr),butter:fr?'Beurre':'Butter'})[id],grams:cr.enrichment?.[id] ?? 0})),
     ];
+    // What the steps ask for besides the dough (finish, dusting, egg wash).
+    rows.push(...breadFinishShopping(styleKey ?? '', numItems, locale));
     return rows.filter(row=>Number.isFinite(row.grams)&&row.grams>0);
-  }, [tab, advancedRecipe, recipe, locale, styleKey, flourChosen, flourBlend]);
+  }, [tab, advancedRecipe, recipe, locale, styleKey, flourChosen, flourBlend, numItems, units, yeastType]);
 
   // Builds the computedRecipe payload from the live recipe object — single source of truth
   function buildComputedRecipe(): SessionData['computedRecipe'] {
@@ -3502,9 +3505,9 @@ export default function Home() {
   const SIMPLE_STEPS: StepDef[] = ([
     { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Quel style de pizza ?':'Which pizza style?'),
       value: styleKey ? styleDisplayName(styleKey) : null,
-      // "Classic Neapolitan" and "New York Style" carry a qualifier the baker
+      // "Classic Neapolitan" and "New York pizza" carry a qualifier the baker
       // does not need re-read on a summary line.
-      short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
+      short: styleKey ? styleDisplayName(styleKey).replace(/^Classic | pizza$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
     { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: fr ? 'Quelle quantité de pâte ?' : 'How much dough?',
       value: qtyChosen ? (totalFlourTarget!==undefined&&bakeType==='bread'?`${totalFlourTarget} g ${fr?'de farine':'flour'} · ${numItems} ${fr?'pièces':'pieces'}`:`${numItems} × ${Math.round(itemWeight)} g`) : null, prefilled: false,
@@ -3578,9 +3581,9 @@ export default function Home() {
   const CUSTOM_STEPS: StepDef[] = ([
     { id: 1, group: 'making', chip: fr ? 'Style' : 'Style', title: bakeType==='bread'?(fr?'Choisissez votre pain':'Choose your bread'):(fr?'Quel style de pizza ?':'Which pizza style?'),
       value: styleKey ? styleDisplayName(styleKey) : null,
-      // "Classic Neapolitan" and "New York Style" carry a qualifier the baker
+      // "Classic Neapolitan" and "New York pizza" carry a qualifier the baker
       // does not need re-read on a summary line.
-      short: styleKey ? styleDisplayName(styleKey).replace(/^Classic |^Pizza | Style$/g, '') : null,
+      short: styleKey ? styleDisplayName(styleKey).replace(/^Classic | pizza$/g, '') : null,
       gap: fr ? 'Le style n\u2019est pas choisi' : 'No style chosen yet' },
     { id: 2, group: 'making', chip: fr ? 'Quantité' : 'Quantity', title: fr ? 'Quelle quantité de pâte ?' : 'How much dough?',
       value: qtyChosen ? (totalFlourTarget!==undefined&&bakeType==='bread'?`${totalFlourTarget} g ${fr?'de farine':'flour'} · ${numItems} ${fr?'pièces':'pieces'}`:`${numItems} × ${Math.round(itemWeight)} g`) : null, prefilled: false,
@@ -4746,6 +4749,7 @@ export default function Home() {
               {!recipeGenerated ? null : schedule && recipe && mixerType && (<>
                 {destination==='protocol'&&eatTime&&<PreparationTimingSummary fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
                 <BakeGuide
+                  pizzaDiameterCm={bakeType==='pizza'?pizzaDiameter:undefined}
                   onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)}
                   preparationMade={!!execution} mixingMade={!!mixExecution||execution?.method==='none'} onMixComplete={!isUnleavened?recordGuideMix:undefined} onPreparationComplete={!isUnleavened&&yeastType!=='sourdough'&&prefermentType!=='none'?done=>{if(done)markPreparationMade(Date.now());else if(!mixExecution){setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}}:undefined}
                   onBackToRecipe={()=>openDestination('recipe')}
@@ -5303,6 +5307,7 @@ export default function Home() {
               {!recipeGenerated ? null : schedule && advancedRecipe && mixerType && (<>
                 {destination==='protocol'&&eatTime&&<PreparationTimingSummary fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
                 <BakeGuide
+                  pizzaDiameterCm={bakeType==='pizza'?pizzaDiameter:undefined}
                   onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)}
                   preparationMade={!!execution} mixingMade={!!mixExecution||execution?.method==='none'} onMixComplete={!isUnleavened?recordGuideMix:undefined} onPreparationComplete={!isUnleavened&&yeastType!=='sourdough'&&prefermentType!=='none'?done=>{if(done)markPreparationMade(Date.now());else if(!mixExecution){setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}}:undefined}
                   onBackToRecipe={()=>openDestination('recipe')}
