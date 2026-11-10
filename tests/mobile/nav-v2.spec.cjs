@@ -336,8 +336,8 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
   await article.getByRole('spinbutton').blur();
  }else{
   const card=page.getByRole('button',{name:/^Margherita(?: · \d+)?$/});
-  await card.getByRole('button',{name:'+',exact:true}).tap();
-  await card.getByRole('button',{name:'+',exact:true}).tap();
+  await card.getByRole('button',{name:/^\+/}).tap();
+  await card.getByRole('button',{name:/^\+/}).tap();
  }
  await expect.poll(async()=>bread?(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']:Object.values((await stored(page))?.pizzaParty?.qtys||{}).reduce((sum,n)=>sum+n,0)).toBe(2);
  await expect.poll(async()=>(await stored(page))?.navigation?.returnTo?.destination).toBe('protocol');
@@ -721,7 +721,7 @@ for(const bread of [false,true])test(`late ${bread?'bread':'pizza'} surplus keep
   await input.fill('6');await input.blur();
  }else{
   const card=page.getByRole('button',{name:/^Margherita(?: · \d+)?$/});
-  for(let i=0;i<6;i++)await card.getByRole('button',{name:'+',exact:true}).tap();
+  for(let i=0;i<6;i++)await card.getByRole('button',{name:/^\+/}).tap();
  }
  await expect.poll(async()=>(await stored(page))?.numItems).toBe(4);
  await page.getByRole('button',{name:bread?'Vérifier la quantité de pain':'Vérifier la quantité de pâte',exact:true}).tap();
