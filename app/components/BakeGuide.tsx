@@ -82,6 +82,8 @@ interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   onNavigateToCooking?: () => void;
   onNavigateToPreparation?: () => void;
   recipe?: import('../utils').RecipeResult | null;
+  /** Round pizzas: the diameter the baker chose with the quantity, in cm. */
+  pizzaDiameterCm?: number;
 }
 
 // ── Design tokens ────────────────────────────────────
@@ -839,7 +841,7 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   feedRatio = 1, starterLocation = 'rt',
   units, locale,
   afterSteps, onBackToRecipe, onNavigateToPizzaParty, pizzaActionLabel, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
-  phase, active = true, onNavigateToCooking, onNavigateToPreparation, progressTarget,
+  phase, active = true, onNavigateToCooking, onNavigateToPreparation, progressTarget, pizzaDiameterCm,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
   const l = locale === 'fr' ? 'fr' : 'en';
@@ -986,6 +988,27 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   // A brioche is not called "pain" in French, nor "bread" on its own card.
   const breadNoun = styleKey === 'brioche' ? (l === 'fr' ? 'la brioche' : 'the brioche') : (l === 'fr' ? 'le pain' : 'the bread');
   const ovenSteps = (items: { bold: string; note: string }[]) => items.map(item => ({ bold: guideUnitText(item.bold, u, l, 120), note: guideUnitText(item.note, u, l, 120) }));
+  // Round pizzas: the size to open each ball to, and in a home oven one pizza
+  // at a time with its bake time, so the baker can pace the whole batch.
+  const roundPizzaBake = (items: { bold: string; note: string }[]) => {
+    if (!items.length) return items;
+    const out = [...items];
+    if (pizzaDiameterCm && pizzaDiameterCm > 0) {
+      const size = u === 'imperial' ? `${Math.round(pizzaDiameterCm / 2.54)} in` : `${Math.round(pizzaDiameterCm)}\u00a0cm`;
+      const styleTitle = rootT.has(`style.${styleKey}.title`) ? rootT(`style.${styleKey}.title`) : '';
+      // "pour une napolitaine classique", "for a classic Neapolitan", "for a New York pizza".
+      const styleInSentence = l === 'fr' ? styleTitle.toLowerCase() : /^New /.test(styleTitle) ? styleTitle : styleTitle.charAt(0).toLowerCase() + styleTitle.slice(1);
+      const target = l === 'fr'
+        ? `environ ${size} de diamètre${styleTitle ? ` pour une ${styleInSentence}` : ''}`
+        : `about ${size} across${styleTitle ? ` for a ${styleInSentence}` : ''}`;
+      out[0] = { bold: out[0].bold, note: out[0].note ? `${target} ; ${out[0].note}`.replace(' ; ', l === 'fr' ? ' ; ' : '; ') : target };
+    }
+    const homeMinutes = ovenType === 'home_oven_steel' ? '5–7' : ovenType === 'home_oven_standard' || !ovenType ? '8–12' : null;
+    if (numItems > 1 && homeMinutes) out.push(l === 'fr'
+      ? { bold: `Cuisez une pizza à la fois, environ ${homeMinutes.replace('–', ' à ')} min chacune`, note: 'étalez et garnissez la suivante pendant la cuisson ; laissez la surface de cuisson se réchauffer quelques minutes entre deux' }
+      : { bold: `Bake one pizza at a time, about ${homeMinutes} min each`, note: 'stretch and top the next one while it bakes; give the baking surface a few minutes to reheat in between' });
+    return out;
+  };
   // Shaping label: what we call the shaped piece
   const isSpiral      = mixerType === 'spiral';
   const hasPref       = !!prefermentType && prefermentType !== 'none';
@@ -2099,16 +2122,10 @@ Actual dough condition and equipment may differ from these estimates.`;
               ovenType === 'wood_fired' ? 'bake.woodBread.steps' :
               'bake.standardBread.steps'
             ) as { bold: string; note: string }[])} />
-          ) : panGuide ? <Steps items={ovenSteps(panGuide.bake[l])} /> : ovenType === 'pizza_oven' ? (
-            <Steps items={ovenSteps(t.raw('bake.pizzaOven.steps') as { bold: string; note: string }[])} />
-          ) : ovenType === 'electric_pizza' ? (
-            <Steps items={t.raw('bake.electricPizza.steps') as { bold: string; note: string }[]} />
-          ) : ovenType === 'home_oven_steel' ? (
-            <Steps items={t.raw('bake.homeSteel.steps') as { bold: string; note: string }[]} />
-          ) : ovenType === 'home_oven_standard' ? (
-            <Steps items={t.raw('bake.homeStandard.steps') as { bold: string; note: string }[]} />
-          ) : (
-            <Steps items={t.raw('bake.default.steps') as { bold: string; note: string }[]} />
+          ) : panGuide ? <Steps items={ovenSteps(panGuide.bake[l])} /> : (
+            <Steps items={roundPizzaBake(ovenType === 'pizza_oven'
+              ? ovenSteps(t.raw('bake.pizzaOven.steps') as { bold: string; note: string }[])
+              : t.raw(ovenType === 'electric_pizza' ? 'bake.electricPizza.steps' : ovenType === 'home_oven_steel' ? 'bake.homeSteel.steps' : ovenType === 'home_oven_standard' ? 'bake.homeStandard.steps' : 'bake.default.steps') as { bold: string; note: string }[])} />
           )}
         </Section>
 

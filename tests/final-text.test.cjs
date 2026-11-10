@@ -89,4 +89,19 @@ test('sourdough mixing reads as one sequence with each rest at its clock time an
  assert.ok(yeasted.indexOf('Cover and rest 30 min')<yeasted.indexOf('Add the yeast and salt'));
 });
 
+test('round pizza bake: target diameter for the style, one pizza at a time in a home oven',()=>{
+ const en=guide('neapolitan','en',{numItems:4,weight:260,extra:{pizzaDiameterCm:30}}).text;
+ assert.match(en,/about 30 cm across for a classic Neapolitan; keep the shape/);
+ assert.match(en,/Bake one pizza at a time, about 8–12 min each/);
+ const fr=guide('newyork','fr',{numItems:3,weight:320,oven:'home_oven_steel',extra:{pizzaDiameterCm:40}}).text;
+ assert.match(fr,/environ 40 cm de diamètre pour une pizza new-yorkaise/);
+ assert.match(fr,/Cuisez une pizza à la fois, environ 5 à 7 min chacune/);
+ const imperial=guide('neapolitan','en',{numItems:4,weight:260,oven:'pizza_oven',units:'imperial',extra:{pizzaDiameterCm:30}}).text;
+ assert.match(imperial,/about 12 in across/);
+ assert.doesNotMatch(imperial,/one pizza at a time/,'a wood-fired oven already bakes one at a time in 60–90 s');
+ assert.doesNotMatch(guide('neapolitan','en',{numItems:1,weight:260,extra:{pizzaDiameterCm:30}}).text,/one pizza at a time/);
+ // Pan styles keep their own bake steps.
+ assert.doesNotMatch(guide('pan','en',{numItems:2,weight:600,extra:{pizzaDiameterCm:30}}).text,/cm across|one pizza at a time/);
+});
+
 module.exports={guide};
