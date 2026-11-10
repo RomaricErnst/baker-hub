@@ -12,7 +12,7 @@ export const BREAD_MEAL_EXAMPLES: Record<string, {recipeId:string; kind:'tartine
   pain_levain:{recipeId:'tartine-champignons-ricotta',kind:'tartine'},
   pain_complet:{recipeId:'tartine-thon-yaourt',kind:'tartine'},
   pain_seigle:{recipeId:'tartine-chevre-miel-noix',kind:'tartine',image:'/images/approved/sandwich/tartine-seigle-chevre-v2.webp'},
-  pain_au_seigle:{recipeId:'tartine-chevre-miel-noix',kind:'tartine'},
+  pain_au_seigle:{recipeId:'tartine-jambon-emmental',kind:'tartine'},
   pain_mie:{recipeId:'pain_mie-club-sandwich',kind:'sandwich'},
   baguette:{recipeId:'baguette-jambon-beurre',kind:'sandwich'},
   focaccia:{recipeId:'focaccia-caprese',kind:'sandwich'},
