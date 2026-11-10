@@ -10,9 +10,19 @@ export function mixingWaterCaption(mixer: string, locale: string): string {
     default: return fr?'Température de l’eau':'Water temperature';
   }
 }
+/** Even split at the given precision: the batches differ by at most one unit
+ * (1 g, or 0.1 g with one decimal), and the last absorbs the rounding — never
+ * 17 / 17 / 19 g for 53 g. The portions always add up to the total. */
 export function splitAmount(total: number, count: number, index: number, decimals = 0) {
   const scale = 10 ** decimals, ticks = Math.round(total * scale), base = Math.floor(ticks / count);
-  return (index === count - 1 ? ticks - base * (count - 1) : base) / scale;
+  const extra = ticks - base * count;
+  return (base + (index < extra ? 1 : 0)) / scale;
+}
+/** Precision for one batch's share: yeast and preferment to 0.01 g; amounts
+ * under 10 g per batch to 0.1 g (shown with a decimal); the rest to the gram. */
+export function batchDecimals(key: string, total: number, count: number) {
+  if (key === 'yeast' || key === 'preferment') return 2;
+  return count > 1 && total / count < 10 || key === 'sugar' ? 1 : 0;
 }
 /** Optional equipment setting is a useful dough mass, not bowl volume. */
 export function mixerDoughCapacity(mixer: string, requestedCapacityG?: number) {
@@ -49,7 +59,7 @@ export function mixingBatchPlan(recipe: RecipeResult, mixer: string, requested?:
   };
   const portion = Object.fromEntries(Object.entries(totals).map(([key,value]) =>
     // Sugar is calculated to 0.1 g; keep that in the step so it reads as on the recipe card.
-    [key, splitAmount(value, count, active, key === 'yeast' || key === 'preferment' ? 2 : key === 'sugar' ? 1 : 0)])) as typeof totals;
+    [key, splitAmount(value, count, active, batchDecimals(key, value, count))])) as typeof totals;
   const total = Object.values(portion).reduce((a,b)=>a+b,0);
   return {count, active, suggested, capacity, portion, total, overCapacity: total > capacity && !(isManualMixer(mixer) && !statedCapacity(requestedCapacityG))};
 }
