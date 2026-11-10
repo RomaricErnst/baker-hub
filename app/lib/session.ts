@@ -117,6 +117,8 @@ export interface SessionData {
   knownPeakTime?: number | null;
   hasNotFedYet?: boolean;
   lastFedAge?: string | null;
+  /** Simple sourdough: "Where is your starter now?" — part of this bake only. */
+  simpleStarterAnswer?: 'counter' | 'fridge' | 'ready' | null;
   feedRatio?: number;
   lastFeedRatio?: number;
   nextFeedRatio?: number;

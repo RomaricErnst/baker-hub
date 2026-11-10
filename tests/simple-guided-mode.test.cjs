@@ -19,7 +19,7 @@ test('restored explicit unbranded flour survives bake-type initialization',()=>{
  }
 });
 function choose(overrides={},key='simple'){
- const writes={};const context={loadProfile:()=>null,MIXER_TYPES:data.MIXER_TYPES,customKitchenConfirmed:false,tab:'custom',styleKey:'pain_levain',yeastType:'sourdough',bakeType:'bread',ovenType:null,mixerType:null,flourBlend:{flour1:'bread'},manualHydration:70,manualOil:0,manualSugar:0,prefermentType:'none',prefermentFlourPct:20,customOnlyStateRef:{current:null},suppressNextScrollRef:{current:false},ALL_STYLES:data.ALL_STYLES,getBreadProtocol:()=>undefined,firstIncompleteStep:()=>7,...overrides};
+ const writes={};const context={loadProfile:()=>null,MIXER_TYPES:data.MIXER_TYPES,customKitchenConfirmed:false,tab:'custom',styleKey:'pain_levain',yeastType:'sourdough',bakeType:'bread',ovenType:null,mixerType:null,flourBlend:{flour1:'bread'},manualHydration:70,manualOil:0,manualSugar:0,prefermentType:'none',prefermentFlourPct:20,customOnlyStateRef:{current:null},suppressNextScrollRef:{current:false},ALL_STYLES:data.ALL_STYLES,getBreadProtocol:()=>undefined,firstIncompleteStep:()=>7,simpleStarterAnswer:null,...overrides};
  for(const name of [...modeFunction.matchAll(/\b(set\w+)\(/g)].map(m=>m[1]))context[name]=v=>{writes[name]=typeof v==='function'?v(3):v;};
  vm.runInNewContext(compiled+'\nchooseMode("'+key+'");',context);return {writes,context};
 }
@@ -84,4 +84,10 @@ test('dry yeast spoon hints use useful tolerances without pretending an arbitrar
  assert.match(dryYeastSpoonHint(1.73,'instant','en'),/½ tsp/);
  assert.match(dryYeastSpoonHint(.8,'instant','fr'),/¼ c. à café/);
  for(const [g,type] of [[.227,'instant'],[.51,'instant'],[1,'fresh'],[NaN,'instant']])assert.equal(dryYeastSpoonHint(g,type,'en'),'');
+});
+test('Customize after the Simple starter answer asks Custom’s own starter questions',()=>{
+ const {writes}=choose({tab:'simple',simpleStarterAnswer:'fridge'},'custom');
+ assert.equal(writes.setSimpleStarterAnswer,null);assert.equal(writes.setLastFedAge,null);assert.equal(writes.setLastFedTime,null);assert.equal(writes.setPlanningMode,'last_fed');
+ assert.ok(!('setStarterLocation' in writes),'where the starter is stays a fact');
+ const kept=choose({tab:'simple',simpleStarterAnswer:null},'custom').writes;assert.ok(!('setLastFedAge' in kept),'real answers are kept');
 });

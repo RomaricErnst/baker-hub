@@ -210,7 +210,8 @@ function StarterPrepCard({
   const fmtFull = (d: Date) => formatBakeDateTime(d, locale);
   // Canonical saved solver events survive reload and pair each feed with its own peak.
   // Independent legacy scalar props are only a fallback for older sessions.
-  const events = starterEvents.filter(event => event.kind !== 'last_fed' || event.isActive).slice().sort((a,b) => +a.time-+b.time);
+  // An assumed last feed (Simple starter answer) is not a fact the baker gave.
+  const events = starterEvents.filter(event => event.kind !== 'last_fed' || (event.isActive && !event.assumed)).slice().sort((a,b) => +a.time-+b.time);
   const hasSchedule = !!(events.length || feedTime || starterPeakTime);
   const finalCycle = events.filter(event=>event.kind==='pre_mix' || event.kind==='refresh' || event.kind==='known_peak' || event.kind==='last_fed').at(-1);
   const predictedPeak = finalCycle?.bellPeakTime ?? (finalCycle?.kind==='known_peak' ? finalCycle.time : starterPeakTime);

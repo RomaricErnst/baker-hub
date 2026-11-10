@@ -480,7 +480,9 @@ function sourdoughGuidance(
     starterPctMax: max,
     starterGramsMin: gramsMin,
     starterGramsMax: gramsMax,
-    starterGramsMid: Math.round((gramsMin + gramsMax) / 2 / 5) * 5,
+    // A single amount (baker-chosen %) is used as is: rounding it to 5 g
+    // printed "Amount 63 g" beside "Use 65 g in the dough".
+    starterGramsMid: gramsMin === gramsMax ? gramsMin : Math.round((gramsMin + gramsMax) / 2 / 5) * 5,
     bulkCues,
     warning,
   };

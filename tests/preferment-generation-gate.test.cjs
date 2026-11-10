@@ -100,7 +100,7 @@ test('whole-plan validation gates generation in both modes and directs invalid p
  assert.equal(nextOverrides.length,2);
  for(const expression of nextOverrides)for(const scheduleCandidateValid of [false,true])for(const scheduleEditing of [false,true]){
   const code=ts.transpileModule('globalThis.result=('+expression+');',{compilerOptions:{target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.React}}).outputText;
-  const context={execution:undefined,mixExecution:undefined,completedMixAt:undefined,schedule:undefined,scheduleCandidateValid,scheduleEditing,simpleDecisionPending:false,collectingBakeTime:false,eatTime:new Date(),fr:true,NEXT_CTA:{},React:{createElement:(type,props,...children)=>({type,props,children})}};
+  const context={execution:undefined,mixExecution:undefined,completedMixAt:undefined,schedule:undefined,scheduleCandidateValid,scheduleEditing,simpleDecisionPending:false,collectingBakeTime:false,customStarterStepId:null,starterStateDescribed:true,eatTime:new Date(),fr:true,NEXT_CTA:{},React:{createElement:(type,props,...children)=>({type,props,children})}};
   vm.runInNewContext(code,context);
   if(scheduleEditing)assert.equal(context.result,null);
   else if(scheduleCandidateValid)assert.equal(context.result,undefined);

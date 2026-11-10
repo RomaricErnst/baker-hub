@@ -8,7 +8,7 @@ export const BAKE_DESTINATIONS = [
 ] as const;
 export type BakeDestination = typeof BAKE_DESTINATIONS[number]['id'];
 export type BakeRoute = 'batch'|'setup'|'plan'|'shopping'|'guide'|'service'|'pizzaparty'|'sandwiches';
-export type BatchView = 'style'|'quantity'|'kitchen'|'fillings';
+export type BatchView = 'style'|'quantity'|'kitchen'|'starter'|'fillings';
 export interface BakeNavigationMemory {
   batchView?: BatchView;
   protocolView?: 'dough'|'fillings';
@@ -35,7 +35,7 @@ export function normalizeNavigation(value:unknown):BakeNavigationMemory {
   const v=value&&typeof value==='object'?value as Record<string,unknown>:{};
   const returnTo=v.returnTo&&typeof v.returnTo==='object'?v.returnTo as Record<string,unknown>:{};
   return {
-    batchView:['style','quantity','kitchen','fillings'].includes(String(v.batchView))?v.batchView as BatchView:'style',
+    batchView:['style','quantity','kitchen','starter','fillings'].includes(String(v.batchView))?v.batchView as BatchView:'style',
     protocolView:v.protocolView==='fillings'?'fillings':'dough',
     serviceView:v.serviceView==='fillings'?'fillings':'dough',
     shoppingReturnToFillings:v.shoppingReturnToFillings===true,
