@@ -170,4 +170,13 @@ test('French details: one oven-setting wording, spaced units, fougasse eaten war
  assert.match(guide('pain_campagne','fr',{numItems:1,weight:800,oven:'standard_bread'}).text,/Encore chaud \? Vérifiez dans 30 min/);
 });
 
+test('Preparation renders no empty or collapsed-only headings',()=>{
+ for(const [style,opts] of [['neapolitan',{numItems:4,weight:260}],['pain_levain',{mixer:'stand',oven:'dutch_oven',numItems:1,weight:800,yeast:'sourdough',hours:30}]]){
+  const {html}=guide(style,'fr',opts);
+  assert.doesNotMatch(html,/<h3[^>]*>\s*<\/h3>/,style);
+  assert.doesNotMatch(html,/<details[^>]*>(?:(?!<\/details>)[\s\S])*<h3/,style);
+  assert.match(html,/role="group" aria-label="Questions fréquentes"/);
+ }
+});
+
 module.exports={guide};

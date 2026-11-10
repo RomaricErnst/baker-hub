@@ -730,6 +730,9 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
 // ── Step extras — practical tips and optional questions ─────────────
 // Keeps the timeline clean: the step card shows only "what to do";
 // Practical advice and optional troubleshooting are sibling disclosures, never nested.
+// Inside the closed disclosure the questions and figure titles are bold
+// paragraphs, not headings: a heading in collapsed content was read out as an
+// empty heading in the Preparation outline.
 function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitle, styleKey, kitchenTemp, prefermentType, locale, ovenType, recipeContext }: {
   tips: React.ReactNode;
   visuals?: React.ReactNode;
@@ -786,7 +789,7 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
         <div>{tips}</div>
         {faq.length > 0 && <div role="group" aria-label={l === 'fr' ? 'Questions fréquentes' : 'Common questions'} style={{marginTop:12}}>
           {faq.map((f,i)=><div key={i} style={{marginBottom:16}}>
-            <h3 style={{fontSize:14,margin:'0 0 4px'}}>{guideUnitText(f.q[l], units, l)}</h3>
+            <p style={{fontSize:14,fontWeight:600,margin:'0 0 4px',color:D.char}}>{guideUnitText(f.q[l], units, l)}</p>
             <p style={{fontSize:14,lineHeight:1.6,margin:0,color:D.ash}}>{guideUnitText(f.a[l], units, l)}</p>
           </div>)}
         </div>}
@@ -819,7 +822,7 @@ function StepVisual({ kind, includeSpiral = false, locale }: { includeSpiral?: b
     poolish: [['/preferment-photos/poolish-v1.webp', 'Poolish is loose and bubbly as it matures. Judge its rise and surface as well as the schedule.', 'La poolish est souple et bulleuse à maturité. Observez sa montée et sa surface, en complément du planning.']],
     biga: [['/preferment-photos/biga-v1.webp', 'Biga starts rough, not smooth. When mature, break a piece open to check for aeration inside.', 'La biga commence en morceaux irréguliers. À maturité, ouvrez un morceau pour observer les alvéoles à l’intérieur.']],
   };
-  return <div style={{ margin: '14px 0' }}><h3 style={{fontSize:16}}>{fr ? 'Les signes à observer' : 'What to look for'}</h3>
+  return <div style={{ margin: '14px 0' }}><p style={{fontSize:16,fontWeight:600,margin:0,color:D.char}}>{fr ? 'Les signes à observer' : 'What to look for'}</p>
     {[...figures[kind], ...(includeSpiral ? figures.spiral : [])].map(([src,en,french]) => <figure key={src} style={{margin:'12px 0'}}><img src={src} alt={fr ? french : en} loading="lazy" style={{display:'block',width:'100%',maxHeight:280,objectFit:'contain',borderRadius:12}}/><figcaption style={{fontSize:14,lineHeight:1.45,marginTop:8}}>{fr ? french : en}</figcaption></figure>)}
   </div>;
 }
