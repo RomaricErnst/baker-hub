@@ -1160,6 +1160,7 @@ export default function Home() {
   // then the recipe is regenerated and the baker is told what moved.
   const [replanReturn, setReplanReturn] = useState<{from:number;settled:boolean}|null>(null);
   const [planMoved, setPlanMoved] = useState<{from:number;to:number;bakeFrom?:number}|null>(null);
+  const [journalRequest, setJournalRequest] = useState(0);
   const [targetDoughTemp, setTargetDoughTemp] = useState<number | undefined>(undefined);
   const [measuredFlourTemp, setMeasuredFlourTemp] = useState<number | undefined>(undefined);
   const [measuredPrefermentTemp, setMeasuredPrefermentTemp] = useState<number | undefined>(undefined);
@@ -4094,6 +4095,7 @@ export default function Home() {
           onRebakeBakeEvent={(event: BakeEvent) => { void restoreFromBakeEvent(event, { rebake: true }).then(ok => { if (ok) forgetCurrentJournalBake(); }); }}
           onResumeJournalEntry={entry => { void openJournalEntry(entry, false); }}
           onRebakeJournalEntry={entry => { void openJournalEntry(entry, true); }}
+          openCurrentJournalRequest={journalRequest}
           currentBakeActive={!!bakeType}
           onOpenProfile={() => setProfileOpen(true)}
         />
@@ -4845,6 +4847,7 @@ export default function Home() {
                   onBackToRecipe={()=>openDestination('recipe')}
                   afterSteps={destination==='protocol'?lateFillingsHint:null}
                   onRepeat={repeatCurrentRecipe} resultNotes={resultNotes} onResultNotesChange={setResultNotes} onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved && !!user} onBakedChange={setBakedDone} completionEnabled={!hasFillings}
+                  onRateBake={currentJournalId()?()=>setJournalRequest(v=>v+1):undefined} onNextBake={requestNewSession}
                   progressTarget={(destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough')?guideProgressTarget:null}
                   phase={destination==='service'?'cooking':'preparation'}
                   active={destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough'}
@@ -5413,6 +5416,7 @@ export default function Home() {
                   onBackToRecipe={()=>openDestination('recipe')}
                   afterSteps={destination==='protocol'?lateFillingsHint:null}
                   onRepeat={repeatCurrentRecipe} resultNotes={resultNotes} onResultNotesChange={setResultNotes} onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved && !!user} onBakedChange={setBakedDone} completionEnabled={!hasFillings}
+                  onRateBake={currentJournalId()?()=>setJournalRequest(v=>v+1):undefined} onNextBake={requestNewSession}
                   progressTarget={(destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough')?guideProgressTarget:null}
                   phase={destination==='service'?'cooking':'preparation'}
                   active={destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough'}

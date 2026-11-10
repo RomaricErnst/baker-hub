@@ -4,6 +4,7 @@ import { formatDuration } from '../utils/duration';
 import { starterBuild, starterFeedRoleLabel } from '../utils/starterBuild';
 import BottomActions from './BottomActions';
 import JourneyCompletion, { type CompletionActions } from './JourneyCompletion';
+import { SECONDARY_CTA } from '../lib/navButtons';
 import {createPortal} from 'react-dom';
 import type { StarterEvent } from './SchedulePicker';
 import { useState, useRef, useEffect, useLayoutEffect, createContext, useContext } from 'react';
@@ -39,6 +40,10 @@ interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   onBackToRecipe?: () => void;
   onBakedChange?: (done:boolean)=>void;
   completionEnabled?: boolean;
+  /** End of the bake: open this bake's journal entry (rating, note, photos). */
+  onRateBake?: () => void;
+  /** End of the bake: start the next one; this bake stays in My bakes. */
+  onNextBake?: () => void;
   progressTarget?: HTMLElement|null;
   schedule: ScheduleResult;
   mixerType: MixerType;
@@ -843,7 +848,7 @@ const TERM_TO_STEPID: Record<string, string> = {
 };
 
 export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,preparationMade, onPreparationComplete,
-  onSave,onShare,onRepeat,resultNotes,onResultNotesChange,sessionSaved,onBakedChange,completionEnabled=true,
+  onSave,onShare,onRepeat,resultNotes,onResultNotesChange,sessionSaved,onBakedChange,completionEnabled=true,onRateBake,onNextBake,
   schedule, mixerType, styleKey, kitchenTemp, fridgeTemp = 4, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, mixerCapacityG, onMixingBatchesChange, waterSource = 'room', onWaterSourceChange, numItems,
   prefermentType, oil, hydration, ovenType, ovenConstruction, prefStartTime, feedTime, starterEvents,
   feed2Time = null, fridgeOutTime = null,
@@ -1059,6 +1064,12 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
     const raw = new Date(schedule.bulkFermStart.getTime() - (schedule.mixingDurationH ?? 0.25) * 3600000);
     return raw;
   })();
+  // Closes the last step, where the bake is finished: record how it went, then the next bake.
+  const bakeClosing = onRateBake || onNextBake ? <div data-bake-closing style={{marginTop:20,paddingTop:16,borderTop:`1px solid ${D.border}`,display:'flex',flexDirection:'column',gap:10}}>
+    {onRateBake && <button type="button" data-rate-bake onClick={onRateBake} style={{...SECONDARY_CTA,minHeight:48}}>{l === 'fr' ? 'Comment s’est passée cette fournée ?' : 'How did it turn out?'}</button>}
+    {onNextBake && <button type="button" data-next-bake onClick={onNextBake} style={{...SECONDARY_CTA,minHeight:48}}>{l === 'fr' ? 'Préparer ma prochaine fournée' : 'Start your next bake'}</button>}
+    {onNextBake && <p style={{margin:0,fontSize:14,color:D.smoke}}>{l === 'fr' ? 'Cette fournée reste dans Mes fournées.' : 'This bake stays in My bakes.'}</p>}
+  </div> : null;
   const currentMixWindow = batch && batch.count > 1 ? schedule.batchMixWindows?.[batch.active] : undefined;
   // The step header shows the whole mixing window (all batches), as the overview does;
   // the active batch's own times are in the step body.
@@ -1288,6 +1299,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         <Steps items={profileSteps(breadProtocol.cookingSteps[l])} />
         <Steps items={profileSteps(breadProtocol.cooling[l])} />
         {fillingsAction}
+        {bakeClosing}
         {onBackToRecipe && <button type="button" onClick={onBackToRecipe} style={{minHeight:48}}>{l==='fr'?'Retour à la recette':'Back to recipe'} →</button>}
       </StepCard>
       {active&&afterSteps}
@@ -2211,6 +2223,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         />}
         {!isBread && !onNavigateToPizzaParty && onBackToRecipe && <button type="button" onClick={onBackToRecipe} style={{minHeight:48}}>{l==='fr'?'Retour à la recette':'Back to recipe'} →</button>}
         {!isBread && onNavigateToPizzaParty && <button type="button" onClick={onNavigateToPizzaParty} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{pizzaActionLabel ?? (l === 'fr' ? 'Commencer la cuisson des pizzas' : 'Start baking the pizzas')} →</button>}
+        {!isBread && bakeClosing}
       </StepCard>
 
       {isBread && <StepCard final number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Garder les pains souples' : 'Keep the breads soft') : (l === 'fr' ? `Laisser refroidir ${breadNoun}` : `Cool ${breadNoun}`)}>
@@ -2229,6 +2242,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         })()}
         {!breadProtocol && <StepExtras tips={null} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />}
         {fillingsAction}
+        {bakeClosing}
         {onBackToRecipe && <button type="button" onClick={onBackToRecipe} style={{minHeight:48}}>{l==='fr'?'Retour à la recette':'Back to recipe'} →</button>}
       </StepCard>}
       {active&&afterSteps}
