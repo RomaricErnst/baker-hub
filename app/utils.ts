@@ -790,6 +790,9 @@ const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHReq
   pain_viennois: { coldH: 6,  rtH: 2, coldHRequired: true },     // sweet: 8h
 };
 
+/** Longest single fridge spell a near-minimum window is planned without (hours). */
+export const SHORT_COLD_SPELL_MAX_H = 4;
+
 /** Durations describe the returned event times, including proof during preheat.
  * Keep planning limits separate: a cap must never erase elapsed fermentation. */
 function accountScheduleTime(schedule: ScheduleResult): ScheduleResult {
@@ -968,6 +971,9 @@ function buildSchedulePhases(
     .filter(b => b.from < bakeTime && b.to > fermStart)
     .sort((a, b) => a.from.getTime() - b.from.getTime());
 
+  // A fridge spell that covers unavailable time is how the plan bridges it.
+  const bridgesUnavailable = (from: Date, to: Date) => relevantBlocks.some(b => b.from < to && b.to > from);
+
   // Keep a physically ordered fallback when a short window cannot fit a cold
   // phase plus the required room-temperature proof. A duration clamp alone
   // would leave the proof timestamp after bake while reporting zero hours.
@@ -1100,6 +1106,12 @@ function buildSchedulePhases(
       (coldRetard2End.getTime() - coldRetard2Start.getTime()) / 3600000
     );
     const totalColdHours = coldRetard1Hours + coldRetard2Hours;
+    // Same rule as the single fridge spell below: two short spells near the
+    // minimum window add handling, not cold.
+    if (!coldHRequired && !isTropical && !isSourdough && coldH < preferredColdH
+      && !bridgesUnavailable(coldRetard1Start, coldRetard2End) && totalColdHours < SHORT_COLD_SPELL_MAX_H + 0.25) {
+      return pureRoomTemperatureFallback('Working within your window — pure room temperature fermentation.');
+    }
 
     return accountScheduleTime({
       mixingDurationH,
@@ -1177,6 +1189,17 @@ function buildSchedulePhases(
     return pureRoomTemperatureFallback(
       'Not enough time for the planned cold phase — room-temperature timing shown; bake later for the full plan.',
     );
+  }
+
+  // A window near the minimum leaves only a short fridge spell between bulk and
+  // shaping (2–4 h). On the engine's thermal trajectory the dough barely cools
+  // in that time, so it adds handling and nothing else: ferment at room
+  // temperature instead. Kept for tropical kitchens (cold keeps the dough
+  // within limits there), required-cold doughs, sourdough (its own solver) and
+  // a fridge spell that bridges unavailable time; long windows keep their full cold.
+  if (!coldHRequired && !isTropical && !isSourdough && coldH < preferredColdH && !bridgesUnavailable(coldRetardStart, coldRetardEnd)
+    && (coldRetardEnd.getTime() - coldRetardStart.getTime()) / 3600000 < SHORT_COLD_SPELL_MAX_H + 0.25) {
+    return pureRoomTemperatureFallback('Working within your window — pure room temperature fermentation.');
   }
 
   // Did the clamp leave the exit inside a block anyway? With work until 18:00
