@@ -108,7 +108,7 @@ const STYLE_DEFAULT_DIAMETER: Record<string, number> = { neapolitan: 30, newyork
 const STYLE_BALL_DEFAULTS: Record<string, number> = {
   neapolitan: 4, newyork: 4, pizza_romana: 4, roman: 2, pan: 2, sourdough: 4,
   pain_campagne: 1, pain_levain: 1, baguette: 4, pain_complet: 1,
-  pain_seigle: 1, pain_au_seigle: 1, fougasse: 2, brioche: 6, pain_mie: 1, pain_viennois: 8,
+  pain_seigle: 1, pain_au_seigle: 1, fougasse: 2, brioche: 6, pain_mie: 1, pain_viennois: 4,
 };
 const CORN_LABELS = ['Thin', 'Classic', 'Generous'];
 const CORN_LABELS_FR = ['Fine', 'Classique', 'Généreuse'];

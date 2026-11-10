@@ -223,3 +223,24 @@ test('the pain de mie guide adds the butter once the dough is smooth', () => {
     assert.doesNotMatch(html, lang === 'fr' ? /Pesez les œufs/ : /Weigh eggs/, lang);
   }
 });
+
+// ── Pain viennois: four short baguettes of 200 g ──
+test('pain viennois defaults to 4 × 200 g everywhere and warns only for smaller pieces', () => {
+  const { getBreadProtocol } = require('../app/utils/breadProfiles.ts');
+  assert.equal(data.BREAD_STYLES.pain_viennois.ballW, 200);
+  assert.deepEqual({ ...getBreadProtocol('pain_viennois').portions }, { weight: 200, count: 4 });
+  const page = fs.readFileSync(path.join(__dirname, '..', 'app/[locale]/page.tsx'), 'utf8');
+  assert.match(page, /pain_viennois: 4,/);
+  for (const mode of ['simple', 'custom']) {
+    const r = recipe('pain_viennois', { mode, count: 4 });
+    assert.ok(Math.abs(r.totalDough - 800) <= 1, `${mode}: ${r.totalDough}`);
+  }
+  const r = recipe('pain_viennois', { count: 4 });
+  for (const lang of ['fr', 'en']) {
+    const html = guide('pain_viennois', lang, { weight: 200, numItems: 4, hydration: r.hydration, recipeResult: r });
+    assert.doesNotMatch(html, /baguettes de référence de 200 g|reference 200 g baguettes/, lang);
+    assert.doesNotMatch(html, lang === 'fr' ? /Pesez les œufs/ : /Weigh (the )?eggs/, lang);
+    const small = recipe('pain_viennois', { count: 8, weight: 100 });
+    assert.match(guide('pain_viennois', lang, { weight: 100, numItems: 8, hydration: small.hydration, recipeResult: small }), /baguettes de référence de 200 g|reference 200 g baguettes/, lang);
+  }
+});

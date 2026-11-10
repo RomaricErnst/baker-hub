@@ -270,7 +270,8 @@ export const BREAD_STYLES = {
     sugar: 4,
     pref: 'none',
     bulkH: 2,
-    ballW: 80,
+    // Four short baguettes of 200 g, as the protocol's portions and shaping say.
+    ballW: 200,
     ovenNote: 'Egg wash. Score with scissors for classic look.',
     flourNote: 'T45 or T55.',
   },
