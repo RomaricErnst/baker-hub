@@ -625,6 +625,10 @@ export function autolyseMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: s
   return mixerType === 'hand' ? AUTOLYSE_MIN : 0;
 }
 
+/** Hand kneading for butter-enriched doughs: brioche (50 % butter, added in
+ * stages) about 25 min, pain de mie (8 % butter) about 15 min. */
+const HAND_KNEAD_ENRICHED_MIN: Record<string, number> = { brioche: 25, pain_mie: 15 };
+
 /**
  * Elapsed mixing minutes for a style on a given mixer.
  *
@@ -637,6 +641,9 @@ export function autolyseMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: s
  */
 export function kneadMinFor(mixerType: keyof typeof MIXER_TYPES, styleKey?: string): number {
   if (styleKey === 'piadina') return mixerType === 'hand' ? 5 : 3;
+  // Butter goes into these doughs in stages, after the dough has gained
+  // strength: by hand that takes far longer than a lean dough's 10 minutes.
+  if (mixerType === 'hand' && styleKey && HAND_KNEAD_ENRICHED_MIN[styleKey]) return HAND_KNEAD_ENRICHED_MIN[styleKey];
   const base = MIXER_TYPES[mixerType]?.kneadMin ?? 10;
   if (base === 0) return 0;                       // no-knead stays no-knead
   const published = styleKey ? STYLE_STAND_MIX_MIN[styleKey] : undefined;

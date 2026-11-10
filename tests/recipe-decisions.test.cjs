@@ -153,3 +153,42 @@ test('pain au seigle follows the multi-engine fermentation defaults', () => {
   for (const temp of [18, 24, 30]) assert.ok(Math.abs(schedule('pain_au_seigle', temp).totalColdHours - schedule('pain_complet', temp).totalColdHours) <= 0.5, `${temp}`);
   assert.equal(data.autolyseMinFor('hand', 'pain_au_seigle'), 0);
 });
+
+// ── Enriched doughs: fixed yeast ──
+test('brioche takes about 1 % instant yeast of flour at every temperature', () => {
+  for (const temp of [16, 22, 28, 32]) for (const [yeast, factor] of [['instant', 1], ['active_dry', 1.33], ['fresh', 3]]) {
+    const r = recipe('brioche', { temp, yeast, mode: 'custom' });
+    assert.equal(r.yeast.pct, 1, `${temp} ${yeast}`);
+    assert.ok(Math.abs(r.yeast.convertedGrams - r.flour * factor / 100) < 0.01, `${temp} ${yeast}: ${r.yeast.convertedGrams}`);
+    assert.equal(r.yeast.fixedEnrichedDose, true);
+    assert.ok(!r.yeast.warnings.some(w => w.key === 'fermentationBudget' || w.key === 'osmoticStress'), `${temp} ${yeast}`);
+  }
+  // Same schedule as before: only the amount changes.
+  assert.equal(+schedule('brioche').bakeStart, +BAKE);
+});
+
+test('any dough with sugar at 10 % of flour takes the fixed dose; a baker’s amount still wins', () => {
+  const plan = schedule('pain_campagne');
+  const sweet = utils.calculateRecipe('pain_campagne', 'standard_bread', 1, 800, 22, 'normal', plan, 6, 'instant', 'custom', 'hand', undefined, undefined, 10);
+  assert.equal(sweet.yeast.pct, 1);
+  const lightlySweet = utils.calculateRecipe('pain_campagne', 'standard_bread', 1, 800, 22, 'normal', plan, 6, 'instant', 'custom', 'hand', undefined, undefined, 6);
+  assert.ok(lightlySweet.yeast.pct < 1);
+  const args = ['brioche', 'standard_bread', 1, 500, 22, 'normal', schedule('brioche'), 6, 'instant', 'custom', 'hand'];
+  const chosen = utils.calculateRecipe(...args, ...Array(17).fill(undefined), 0.6);
+  assert.equal(chosen.yeast.pct, 0.6);
+  assert.ok(!chosen.yeast.fixedEnrichedDose);
+});
+
+test('no "not calibrated for enriched doughs" note remains', () => {
+  for (const locale of ['en', 'fr']) {
+    const text = fs.readFileSync(path.join(__dirname, '..', 'messages', locale + '.json'), 'utf8');
+    assert.doesNotMatch(text, /not calibrated for enriched|pas calibrée pour les pâtes enrichies/);
+  }
+});
+
+test('enriched doughs knead longer by hand', () => {
+  assert.equal(data.kneadMinFor('hand', 'brioche'), 25);
+  assert.equal(data.kneadMinFor('hand', 'pain_mie'), 15);
+  assert.equal(data.kneadMinFor('stand', 'brioche'), data.kneadMinFor('stand', 'pain_complet'));
+  assert.equal(data.kneadMinFor('hand', 'pain_complet'), data.MIXER_TYPES.hand.kneadMin);
+});

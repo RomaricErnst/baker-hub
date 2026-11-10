@@ -60,7 +60,11 @@ import {
 // formula. These are recipe cross-checks, not validation of every mixed
 // temperature trajectory. The retained 0.05% floor is a product limit.
 const YEAST_MIN_PCT   = 0.05;   // automatic estimate before an explicit override
-const YEAST_MIN_GRAMS = 0.1;    // minimum weighable on 0.1g scale
+const YEAST_MIN_GRAMS = 0.1;
+/** Sugar (% of flour) from which a dough takes the fixed enriched yeast dose. */
+export const ENRICHED_FIXED_SUGAR_PCT = 10;
+/** Fixed enriched dose, instant yeast % of flour (3 % fresh, 1.33 % active dry). */
+export const ENRICHED_FIXED_IDY_PCT = 1;    // minimum weighable on 0.1g scale
 const YEAST_RT_MAX_H  = 8;      // max RT hours before poolish recommended
 
 // Tropical correction divisor (RT phases only)
@@ -151,6 +155,8 @@ export interface YeastResult {
   explanation: string;
   warnings: YeastWarning[];
   osmoticStress: boolean; // true for sweet dough
+  /** Enriched dough (sugar >= 10 % of flour): fixed 1 % instant-yeast dose, not the model. */
+  fixedEnrichedDose?: boolean;
 }
 
 // Existing UI instructs 1 g yeast + waterG water: stock mass is waterG + 1.
@@ -1854,9 +1860,37 @@ export function calculateRecipe(
         };
       }
 
+      // Enriched doughs (sugar >= 10 % of flour, brioche): a fixed dose of
+      // 1 % instant yeast of flour replaces the temperature model, which gives
+      // about 0.3 % and has no calibration for sugar. French brioche recipes use
+      // 15-20 g fresh yeast per 500 g flour (3-4 %, i.e. 1-1.3 % instant), sugar
+      // above ~5-6 % measurably slows yeast, and no published curve gives a
+      // correction factor, so the classic dose is used as it stands. Only the
+      // amount changes; the schedule stays the engine's. A baker-entered amount
+      // in Custom still wins. The budget comparison measures the model dose,
+      // so its "ready early" note does not apply here.
+      if (yeast && sugar >= ENRICHED_FIXED_SUGAR_PCT && yeastPctOverride === undefined) {
+        const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
+        const pct = ENRICHED_FIXED_IDY_PCT;
+        const convertedPct = Math.round(pct * conversion * 10000) / 10000;
+        const convertedGrams = Math.round(flour * convertedPct / 100 * 1000) / 1000;
+        yeast = {
+          ...yeast,
+          pct,
+          grams: Math.round(flour * pct / 100 * 1000) / 1000,
+          convertedPct,
+          convertedGrams,
+          hitMinFloor: flour * pct / 100 < 0.5,
+          maxDosableRTH: null,
+          scaleNeeded: convertedGrams < 0.5 ? 'Precision scale (0.1g accuracy) required' : 'Standard kitchen scale is fine',
+          warnings: yeast.warnings.filter(w => w.key !== 'fermentationBudget' && w.key !== 'doseFloorRT'),
+          fixedEnrichedDose: true,
+        };
+      }
       // Sugar concentration, strain and water availability all affect leavening.
       // A universal 20% dose increase at 2% flour-basis sugar isn't warranted.
-      if (yeast && sugar > 5) {
+      // The fixed enriched dose above already accounts for its sugar.
+      if (yeast && sugar > 5 && !yeast.fixedEnrichedDose) {
         yeast = {...yeast, osmoticStress:true, warnings:[...yeast.warnings,{key:'osmoticStress'}]};
       }
       // Whole-dough leavening requirement (direct-engine IDY grams), captured
@@ -1980,7 +2014,10 @@ export function calculateRecipe(
     waterFractions: ENRICHMENT_WATER_FRACTIONS,
     sourceUrl: enrichedFormula.sourceUrl, formulaVersion: enrichedFormula.formulaVersion,
     unsupportedMethod: unsupportedEnrichedMethod,
-    note: {
+    note: yeast?.fixedEnrichedDose ? {
+      en: 'Published ingredient ratios; direct commercial-yeast version. Yeast is the usual enriched-dough amount; timing is the app’s estimate, not the source schedule. Hydration includes estimated water in milk, eggs and butter. Ingredient temperatures are not modelled. Weigh eggs without shells; egg wash is separate.',
+      fr: 'Proportions publiées ; version directe à levure boulangère. Levure à la dose habituelle des pâtes enrichies ; durées estimées par l’application, différentes du planning source. Hydratation incluant l’eau estimée du lait, des œufs et du beurre. Températures de ces ingrédients non modélisées. Pesez les œufs sans coquille ; dorure à part.',
+    } : {
       en: 'Published ingredient ratios; direct commercial-yeast version. Yeast and timing are app estimates, not the source schedule. Hydration includes estimated water in milk, eggs and butter. Ingredient temperatures are not modelled. Weigh eggs without shells; egg wash is separate.',
       fr: 'Proportions publiées ; version directe à levure boulangère. Levure et durées estimées par l’application, différentes du planning source. Hydratation incluant l’eau estimée du lait, des œufs et du beurre. Températures de ces ingrédients non modélisées. Pesez les œufs sans coquille ; dorure à part.',
     },

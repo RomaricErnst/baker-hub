@@ -1874,7 +1874,7 @@
     "overFermentRT": "{hours}h at {temp}°C is longer than this dough will hold at room temperature — it will over-ferment. A cold phase would carry it.",
     "hotClimateRT": "Your plan includes over 4 hours at room temperature in a {temp}°C kitchen. Check the dough’s rise towards the end of each warm stage.",
     "fridgeWarm": "Your fridge is at {temp}°C. Fermentation continues in the fridge; check the dough’s rise before the next step.",
-    "osmoticStress": "Sugar and fat can slow this dough. This yeast estimate is not calibrated for enriched dough; allow more time if the dough has not risen enough.",
+    "osmoticStress": "Sugar and fat slow this dough a little: allow more time if it has not risen enough.",
     "doseFloorRT": "At {temp}°C this batch is small enough that {hours}h at room temperature needs less yeast than a 0.1 g scale can weigh, so the amount is rounded up and the dough will run ahead of the plan. About {dosable}h is the longest window this quantity can be dosed for — or make a larger batch, or add a cold phase.",
     "fermentationBudget": "At this bake time the dough will be {direction, select, earlier {ready a little early ({percent}% risen)} other {a little behind ({percent}% risen)}}. Check its rise before baking."
   }
