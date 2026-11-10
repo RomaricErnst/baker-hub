@@ -121,4 +121,31 @@ test('pan pizza: no fridge question without a fridge, pan answers, sugar with th
  assert.doesNotMatch(fr,/Incorporez le sucre mesuré/);
 });
 
+test('brioche has an optional egg wash before baking and its egg on the shopping list; pain de mie has neither',()=>{
+ const {breadFinishShopping}=require('../app/lib/doughShopping.ts');
+ const brioche=guide('brioche','fr',{numItems:2,weight:500,oven:'standard_bread'}).text;
+ assert.match(brioche,/Dorure facultative : juste avant d’enfourner, badigeonnez délicatement le dessus d’un œuf battu/);
+ assert.ok(brioche.indexOf('Dorure facultative')<brioche.indexOf('Cuisez à mi-hauteur basse'));
+ assert.match(guide('brioche','en',{numItems:2,weight:500,oven:'standard_bread'}).text,/Optional egg wash: just before baking/);
+ assert.doesNotMatch(guide('pain_mie','fr',{numItems:1,weight:600,oven:'standard_bread'}).text,/[Dd]orure|egg wash/);
+ assert.deepEqual(breadFinishShopping('brioche',2,'fr').map(r=>r.name),['Œuf pour la dorure (facultatif)']);
+ assert.deepEqual(breadFinishShopping('pain_mie',1,'fr'),[]);
+});
+
+test('shopping: a sachet hint for a tiny dry yeast dose, and the finish and dusting the steps ask for',()=>{
+ const {yeastBuyingHint,breadFinishShopping,doughShoppingItems}=require('../app/lib/doughShopping.ts');
+ assert.equal(yeastBuyingHint(0.75,'instant','en'),'one 7 g sachet is plenty');
+ assert.equal(yeastBuyingHint(0.75,'instant','fr'),'un sachet suffit');
+ assert.equal(yeastBuyingHint(0.75,'instant','en','imperial'),'one ¼ oz packet is plenty');
+ assert.equal(yeastBuyingHint(12,'instant','en'),undefined);
+ assert.equal(yeastBuyingHint(6,'active_dry','fr'),undefined,'more than a French 5.5 g sachet');
+ assert.equal(yeastBuyingHint(3,'fresh','fr'),undefined,'fresh yeast is sold by the cube');
+ const items=doughShoppingItems({recipe:{flour:600,salt:17,yeast:{convertedGrams:0.75,yeastType:'instant'}},yeastType:'instant',locale:'en',flourName:'Flour'});
+ assert.equal(items.find(i=>i.tickKey==='dough_2').hint,'one 7 g sachet is plenty');
+ assert.deepEqual(breadFinishShopping('fougasse',2,'fr').map(r=>r.name),['Huile d’olive, pour badigeonner à la sortie du four','Fleur de sel (facultatif)']);
+ assert.deepEqual(breadFinishShopping('pain_campagne',1,'en'),[{id:'finish_rice_flour',name:'Rice flour, for dusting the banneton',grams:20}]);
+ assert.deepEqual(breadFinishShopping('baguette',3,'en'),[]);
+ assert.deepEqual(breadFinishShopping('pain_seigle',1,'en'),[],'rye is shaped with water, not rice flour');
+});
+
 module.exports={guide};

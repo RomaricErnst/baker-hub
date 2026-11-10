@@ -33,7 +33,7 @@ import MixingBatchControl from '../components/MixingBatchControl';
 const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { ssr: false });
 import { starterFeedToMixHours } from '../lib/starterTiming';
 import { mixerDoughCapacity, suggestedMixingBatchCount } from '../utils/mixingBatches';
-import { doughShoppingItems as buildDoughShoppingItems, yeastShoppingName } from '../lib/doughShopping';
+import { doughShoppingItems as buildDoughShoppingItems, yeastShoppingName, yeastBuyingHint, breadFinishShopping } from '../lib/doughShopping';
 import { isPanPizzaStyle } from '../utils/panPizza';
 import { buildPlanCalendar, calendarBakeId, downloadPlanCalendar, keyPlanEvents, type PlanCalendarEvent } from '../utils/planCalendar';
 import { leanBreadPreheatMin } from '../utils/leanBreadBake';
@@ -2084,11 +2084,13 @@ export default function Home() {
       {id:'salt', name:fr?'Sel':'Salt', grams:cr.salt},
       {id:'olive_oil', name:fr?'Huile d’olive':'Olive oil', grams:cr.oil},
       {id:'sugar', name:fr?'Sucre':'Sugar', grams:cr.sugar},
-      {id:'yeast', name:yeastShoppingName(yeastType ?? 'instant', locale), grams:cr.preferment?.prefYeastGrams ?? cr.yeast?.convertedGrams ?? 0},
+      {id:'yeast', name:(()=>{const grams=cr.preferment?.prefYeastGrams ?? cr.yeast?.convertedGrams ?? 0, hint=yeastBuyingHint(grams, yeastType ?? 'instant', locale, units);return yeastShoppingName(yeastType ?? 'instant', locale)+(hint?` · ${hint}`:'');})(), grams:cr.preferment?.prefYeastGrams ?? cr.yeast?.convertedGrams ?? 0},
       ...(['milk','eggs','butter'] as const).map(id=>({id,name:({milk:fr?'Lait':'Milk',eggs:eggShoppingLabel(cr.enrichment?.eggs ?? 0,fr),butter:fr?'Beurre':'Butter'})[id],grams:cr.enrichment?.[id] ?? 0})),
     ];
+    // What the steps ask for besides the dough (finish, dusting, egg wash).
+    rows.push(...breadFinishShopping(styleKey ?? '', numItems, locale));
     return rows.filter(row=>Number.isFinite(row.grams)&&row.grams>0);
-  }, [tab, advancedRecipe, recipe, locale, styleKey, flourChosen, flourBlend]);
+  }, [tab, advancedRecipe, recipe, locale, styleKey, flourChosen, flourBlend, numItems, units, yeastType]);
 
   // Builds the computedRecipe payload from the live recipe object — single source of truth
   function buildComputedRecipe(): SessionData['computedRecipe'] {

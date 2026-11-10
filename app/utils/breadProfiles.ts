@@ -350,10 +350,12 @@ export const BREAD_PROTOCOLS: Record<keyof typeof BREAD_STYLE_DEFINITIONS | 'bri
     },
     "cookingSteps": {
       "en": [
+        "Optional egg wash: just before baking, brush the top gently with one beaten egg, without letting it run into the tin.",
         "Bake on the lower-middle rack. Guide: 30–45 min for a 500 g loaf; 20–30 min for 60–100 g buns. Size and tin change timing.",
         "Check the centre reaches about 88°C and the crumb is set; shield with foil if browning early. No deep scoring or steam tray."
       ],
       "fr": [
+        "Dorure facultative : juste avant d’enfourner, badigeonnez délicatement le dessus d’un œuf battu, sans laisser couler dans le moule.",
         "Cuisez à mi-hauteur basse. Repère : 30–45 min pour 500 g ; 20–30 min pour des petites brioches de 60–100 g. Taille et moule changent la durée.",
         "Vérifiez environ 88°C au cœur et une mie prise ; protégez avec une feuille d’aluminium si la couleur vient trop vite. Ni grigne profonde ni bac à vapeur."
       ]

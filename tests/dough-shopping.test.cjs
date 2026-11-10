@@ -6,14 +6,14 @@ const list=(recipe,extra={})=>doughShoppingItems({recipe,yeastType:'instant',loc
 
 test('the list names the yeast the amount was computed for',()=>{
  const yeast=list(base).find(item=>item.tickKey==='dough_2');
- a.deepEqual(yeast,{tickKey:'dough_2',name:'Instant dry yeast',amount:'2.88 g'});
+ a.deepEqual(yeast,{tickKey:'dough_2',name:'Instant dry yeast',amount:'2.88 g',hint:'one 7 g sachet is plenty'});
  a.equal(list(base,{locale:'fr'}).find(item=>item.tickKey==='dough_2').name,'Levure de boulanger sèche instantanée');
  const fresh=list({...base,yeast:{convertedGrams:8.64,yeastType:'fresh'}},{yeastType:'fresh',locale:'fr'}).find(item=>item.tickKey==='dough_2');
  a.equal(fresh.name,'Levure de boulanger fraîche');a.equal(fresh.amount,'8,64 g');
  a.equal(yeastShoppingName('active_dry','en'),'Active dry yeast');
  // A preferment carries the yeast: its dose and its type are the ones to buy.
  const pref=list({...base,yeast:null,preferment:{prefYeastGrams:0.4,prefYeastType:'active_dry'}}).find(item=>item.tickKey==='dough_2');
- a.deepEqual(pref,{tickKey:'dough_2',name:'Active dry yeast',amount:'0.4 g'});
+ a.deepEqual(pref,{tickKey:'dough_2',name:'Active dry yeast',amount:'0.4 g',hint:'one 7 g sachet is plenty'});
  a.equal(list({...base,yeast:null,sourdough:{}},{yeastType:'sourdough'}).find(item=>item.tickKey==='dough_2').name,'Active starter');
  for(const item of list(base))a.doesNotMatch(item.name,/^Yeast$|^Levure$|IDY/);
 });

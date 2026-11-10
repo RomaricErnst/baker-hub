@@ -5,7 +5,7 @@
 import { displayWeight, type UnitSystem } from '../utils/units';
 import { formatYeastDose } from '../utils/prefermentDose';
 
-export interface DoughShoppingItem { name: string; amount: string; tickKey?: string }
+export interface DoughShoppingItem { name: string; amount: string; tickKey?: string; hint?: string }
 
 interface DoughShoppingRecipe {
   flour: number; salt: number; oil?: number; sugar?: number;
@@ -23,6 +23,37 @@ export function yeastShoppingName(yeastType: string | undefined, locale: string)
     case 'fresh': return fr ? 'Levure de boulanger fraîche' : 'Fresh yeast';
     case 'active_dry': return fr ? 'Levure de boulanger sèche active' : 'Active dry yeast';
     default: return fr ? 'Levure de boulanger sèche instantanée' : 'Instant dry yeast';
+  }
+}
+
+/** A buying hint for a dry yeast dose far below one sachet, so the baker does
+ * not buy a jar for 0.75 g. French shops sell levure sèche de boulanger in
+ * 5.5 g sachets; English-language packs are 7 g (¼ oz). Fresh yeast is sold
+ * by the cube and gets no hint. */
+export function yeastBuyingHint(grams: number, yeastType: string | undefined, locale: string, units: UnitSystem = 'metric'): string | undefined {
+  if (!(grams > 0) || yeastType === 'fresh' || yeastType === 'sourdough') return undefined;
+  if (locale === 'fr') return grams <= 5 ? 'un sachet suffit' : undefined;
+  return grams <= 7 ? (units === 'imperial' ? 'one ¼ oz packet is plenty' : 'one 7 g sachet is plenty') : undefined;
+}
+
+/** What the bread steps ask for besides the dough: the fougasse's olive oil and
+ * fleur de sel, the rice flour for a banneton, semolina for batbout, the egg of
+ * a brioche's optional egg wash. Only styles whose steps use them. */
+export interface FinishShoppingRow { id: string; name: string; grams: number }
+export function breadFinishShopping(styleKey: string, count: number, locale: string): FinishShoppingRow[] {
+  const fr = locale === 'fr', n = Math.max(1, Math.round(count || 1));
+  switch (styleKey) {
+    case 'fougasse': return [
+      { id: 'finish_olive_oil', name: fr ? 'Huile d’olive, pour badigeonner à la sortie du four' : 'Olive oil, to brush on after baking', grams: 10 * n },
+      { id: 'finish_fleur_de_sel', name: fr ? 'Fleur de sel (facultatif)' : 'Flaky salt (optional)', grams: n },
+    ];
+    case 'pain_campagne': case 'pain_levain': case 'pain_complet': case 'pain_au_seigle':
+      return [{ id: 'finish_rice_flour', name: fr ? 'Farine de riz, pour fleurer le banneton' : 'Rice flour, for dusting the banneton', grams: Math.max(20, 15 * n) }];
+    case 'batbout':
+      return [{ id: 'finish_semolina', name: fr ? 'Semoule fine, pour fleurer' : 'Fine semolina, for dusting', grams: 20 + 5 * n }];
+    case 'brioche':
+      return [{ id: 'finish_egg_wash', name: fr ? 'Œuf pour la dorure (facultatif)' : 'Egg for the egg wash (optional)', grams: 50 * Math.ceil(n / 3) }];
+    default: return [];
   }
 }
 
@@ -52,7 +83,7 @@ export function doughShoppingItems(input: {
   } else if (yeastGrams && yeastGrams > 0) {
     // The amount is the one for this yeast type, so the name must say which.
     const type = recipe.preferment?.prefYeastType ?? recipe.yeast?.yeastType ?? yeastType;
-    items.push({ tickKey: 'dough_2', name: yeastShoppingName(type, locale), amount: formatYeastDose(yeastGrams, locale).replace(' ', ' ') });
+    items.push({ tickKey: 'dough_2', name: yeastShoppingName(type, locale), amount: formatYeastDose(yeastGrams, locale).replace(' ', ' '), ...(yeastBuyingHint(yeastGrams, type, locale, units) ? { hint: yeastBuyingHint(yeastGrams, type, locale, units) } : {}) });
   }
   if ((recipe.sugar ?? 0) > 0) {
     const sugar = recipe.sugar ?? 0;
