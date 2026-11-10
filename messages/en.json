@@ -830,8 +830,7 @@
     },
     "mix": {
       "waterTempBullets": [
-        "Use the water temperature from your recipe — Baker Hub calculated this accounting for your kitchen and mixer",
-        "Check FDT with a thermometer right after mixing — dough should feel cool to the touch"
+        "Use the water temperature from your recipe — Baker Hub calculated this accounting for your kitchen and mixer"
       ],
       "watchForSmooth": "Smooth, elastic ball — slightly tacky but not sticky",
       "watchForPumpkin": "Pumpkin shape: dough wraps around the breaker bar, pulls cleanly from bowl walls",
@@ -841,9 +840,10 @@
       ],
       "pitfalls": [
         "Avoid leaving yeast in prolonged contact with concentrated salt before mixing; incorporate both into the dough promptly",
-        "Over-kneading by hand is nearly impossible — but over-mixing in a stand mixer is not, stop when windowpane passes",
         "Adding oil before gluten develops — oil coats proteins and blocks gluten formation"
-      ]
+      ],
+      "pitfallHand": "Over-kneading by hand is nearly impossible: keep going until the dough is smooth and stretchy",
+      "pitfallMixer": "A mixer can over-mix: stop as soon as the dough is smooth and passes the windowpane test"
     },
     "bulk": {
       "stepsBase": [
@@ -967,7 +967,7 @@
             "note": "do not degas — just gently fold sides in"
           },
           {
-            "bold": "Cover and bench rest 20 min",
+            "bold": "Cover and let the pieces relax until they no longer spring back",
             "note": "gluten relaxes, makes final shaping easier"
           },
           {
@@ -1024,7 +1024,7 @@
           },
           {
             "bold": "Pre-shape: fold to a rough round",
-            "note": "fold edges to centre, flip seam-side down, rest 15 min"
+            "note": "fold edges to centre, flip seam-side down, then let it relax, covered, until it stops resisting"
           },
           {
             "bold": "Final shape: build surface tension",

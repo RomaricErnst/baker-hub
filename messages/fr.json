@@ -830,8 +830,7 @@
     },
     "mix": {
       "waterTempBullets": [
-        "Utilisez la température d’eau indiquée dans votre recette — Baker Hub l’a calculée en tenant compte de votre cuisine et de votre pétrin",
-        "Vérifiez la température finale de la pâte avec un thermomètre juste après le pétrissage — la pâte doit être fraîche au toucher"
+        "Utilisez la température d’eau indiquée dans votre recette — Baker Hub l’a calculée en tenant compte de votre cuisine et de votre pétrin"
       ],
       "watchForSmooth": "Boule lisse et élastique — légèrement collante mais pas qui colle",
       "watchForPumpkin": "Forme de citrouille : la pâte s’enroule autour de la barre de rupture, se décolle proprement des parois",
@@ -841,9 +840,10 @@
       ],
       "pitfalls": [
         "Évitez le contact prolongé entre levure et sel concentré avant le mélange ; incorporez-les rapidement à la pâte",
-        "Sur-pétrir à la main est quasi impossible — mais sur-mixer au robot est possible, arrêtez au test de la membrane",
         "Ajouter l’huile avant que le gluten se développe — l’huile enrobe les protéines et bloque le gluten"
-      ]
+      ],
+      "pitfallHand": "Sur-pétrir à la main est presque impossible : poursuivez jusqu’à une pâte lisse et souple",
+      "pitfallMixer": "Un pétrin peut sur-pétrir : arrêtez dès que la pâte est lisse et passe le test de la membrane"
     },
     "bulk": {
       "stepsBase": [
@@ -967,7 +967,7 @@
             "note": "ne dégazez pas — repliez doucement les côtés"
           },
           {
-            "bold": "Couvrez et repos de 20 min",
+            "bold": "Couvrez et laissez les pâtons se détendre, jusqu’à ce qu’ils ne se rétractent plus",
             "note": "le gluten se détend, facilite le façonnage final"
           },
           {
@@ -1024,7 +1024,7 @@
           },
           {
             "bold": "Préfaçonnage : repliez les bords du pâton vers le centre",
-            "note": "clé en bas, reposez 15 min"
+            "note": "clé en bas, puis laissez détendre à couvert, jusqu’à ce que la pâte ne résiste plus"
           },
           {
             "bold": "Façonnage final : créez la tension de surface",

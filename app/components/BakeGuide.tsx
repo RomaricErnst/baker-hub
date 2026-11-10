@@ -26,7 +26,7 @@ import { formatPrefermentDose, formatYeastDose } from '../utils/prefermentDose';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { scheduledFoldMinutes } from '../utils/scheduleFolds';
 import { leanBreadBake, ovenTempText } from '../utils/leanBreadBake';
-import { panPizzaGuide } from '../utils/panPizza';
+import { panPizzaGuide, isPanPizzaStyle } from '../utils/panPizza';
 
 interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   preparationMade?: boolean;
@@ -729,7 +729,13 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
   const l = locale === 'fr' ? 'fr' : 'en';
   const simpleFaq = useContext(SimpleModeCtx);
   const bread = !!getBreadProtocol(styleKey) || ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
+  const roundPizza = !bread && !isPanPizzaStyle(styleKey);
   const faq = (faqOverride ?? (faqKey ? (GUIDE_FAQ[faqKey] ?? []) : [])).filter(e =>
+    // Each question appears only where it applies: bread or pizza, the oven in
+    // use, and round-pizza handling (balls, peel) only for round pizzas.
+    (!e.only || e.only === (bread ? 'bread' : 'pizza')) &&
+    (!e.ovens || (!!ovenType && e.ovens.includes(ovenType))) &&
+    (!e.round || roundPizza) &&
     (!bread || !/pizza|\bballs?\b|boules?|stone|steel/i.test(e.q.en+' '+e.a.en+' '+e.q.fr+' '+e.a.fr)) &&
     (!simpleFaq || !(JARGON_RE.test(e.q.en + ' ' + e.q.fr + ' ' + e.a.en + ' ' + e.a.fr))));
 
@@ -1494,7 +1500,7 @@ Actual dough condition and equipment may differ from these estimates.`;
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           <Steps items={enriched ? [
-            {bold:l==='fr'?'Pesez tous les ingrédients indiqués.':'Weigh all the listed ingredients.',note:l==='fr'?'Pesez les œufs sans coquille.':'Weigh eggs without shells.'},
+            {bold:l==='fr'?'Pesez tous les ingrédients indiqués.':'Weigh all the listed ingredients.',note:(recipe?.enrichment?.eggs ?? 0) > 0 ? (l==='fr'?'Pesez les œufs sans coquille.':'Weigh eggs without shells.') : ''},
             {bold:l==='fr'?'Réunissez la farine, les liquides, la levure, le sel et le sucre, sans le beurre.':'Combine flour, liquids, yeast, salt and sugar, without the butter.',note:l==='fr'?'Pétrissez jusqu’à ce que la pâte gagne en tenue.':'Knead until the dough begins to gain strength.'},
             {bold:l==='fr'?'Ajoutez le beurre souple progressivement ; laissez chaque ajout s’incorporer.':'Add softened butter gradually; let each addition incorporate.',note:l==='fr'?'Arrêtez quand la pâte est homogène et élastique. Si elle devient grasse ou trop chaude, faites une pause au frais.':'Stop when smooth and elastic. If the dough becomes greasy or too warm, pause and cool it.'},
           ] : [
@@ -1537,10 +1543,13 @@ Actual dough condition and equipment may differ from these estimates.`;
             <Section icon="" title={t('sectionTitles.waterTemp')}>
               <Bullets items={[
                 ...(t.raw('mix.waterTempBullets') as string[]),
+                recipe?.thermal?.targetDoughTemp != null
+                  ? (l === 'fr' ? `Vérifiez la température de pâte en fin de pétrissage avec un thermomètre : cette recette vise ${displayTemp(recipe.thermal.targetDoughTemp, u)}` : `Check the final dough temperature with a thermometer right after mixing: this recipe aims for ${displayTemp(recipe.thermal.targetDoughTemp, u)}`)
+                  : (l === 'fr' ? 'Vérifiez la température de pâte en fin de pétrissage avec un thermomètre' : 'Check the final dough temperature with a thermometer right after mixing'),
                 (l === 'fr' ? 'Comparez la température mesurée à la cible de cette recette et réévaluez le planning si la pâte est plus chaude ; un bref passage au froid ne refroidit pas immédiatement son centre.' : 'Compare measured dough temperature with this recipe’s target and reassess timing if warmer; a brief chill does not immediately cool its centre.'),
               ]} />
               <div style={{ marginTop: '8px' }}>
-                <LearnLink term="fdt" label={l === 'fr' ? 'Qu’est-ce que la température finale de la pâte ?' : 'What is FDT?'} onOpen={setLearnTerm} />
+                <LearnLink term="fdt" label={l === 'fr' ? 'Qu’est-ce que la température de pâte en fin de pétrissage ?' : 'What is final dough temperature?'} onOpen={setLearnTerm} />
               </div>
             </Section>
             )}
@@ -1560,9 +1569,11 @@ Actual dough condition and equipment may differ from these estimates.`;
             </Section>
             <Section icon={null} title={t('sectionTitles.pitfalls')}>
               <Bullets items={[
-                ...(t.raw('mix.pitfalls') as string[]).slice(0, 2),
-                isSpiral ? (l === 'fr' ? `Température finale de la pâte ignorée — les pétrins à spirale chauffent, la pâte peut dépasser ${tempC(28, u)} sans qu’on s’en aperçoive` : `Ignoring FDT — spiral mixers generate heat, dough can exceed ${tempC(28, u)} without noticing`) : '',
-                (t.raw('mix.pitfalls') as string[])[2],
+                (t.raw('mix.pitfalls') as string[])[0],
+                // Kneading advice follows the method in use; oil advice needs oil in the formula.
+                mixerType === 'hand' ? t('mix.pitfallHand') : mixerType === 'no_knead' ? '' : t('mix.pitfallMixer'),
+                isSpiral ? (l === 'fr' ? `Température de pâte en fin de pétrissage ignorée — les pétrins à spirale chauffent, la pâte peut dépasser ${tempC(28, u)} sans qu’on s’en aperçoive` : `Ignoring the final dough temperature — spiral mixers generate heat, dough can exceed ${tempC(28, u)} without noticing`) : '',
+                oil > 0 ? (t.raw('mix.pitfalls') as string[])[1] : '',
               ].filter(Boolean)} />
             </Section>
           </>}
@@ -1615,7 +1626,8 @@ Actual dough condition and equipment may differ from these estimates.`;
                     ? (l === 'fr' ? `À ${hydration} % d’hydratation, une pâte collante est normale. Mouillez vos mains avant chaque rabat et travaillez rapidement, sans ajouter de farine.` : `At ${hydration}% hydration, sticky is expected — keep a bowl of water nearby and wet your hands before every fold. Never add flour to the bench. Quick, confident movements stick less than slow hesitant ones.`)
                     : (l === 'fr' ? `Mouillez vos mains avant chaque série de rabats pour limiter l’adhérence sans modifier l’hydratation.` : `Wet hands for stretch & folds — dip your hands in water before each set. Avoids sticking without altering hydration like bench flour would.`),
                 ] : []),
-                (l === 'fr' ? `Au-dessus de ${tempC(26, u)}, le pointage accélère. Surveillez la pousse et choisissez un endroit plus frais si nécessaire.` : `Bulk in a warm spot above ${tempC(26, u)} — dough ferments too fast, less flavour`),
+                // Advice to find a cooler spot only helps when the kitchen itself is cooler.
+                ...(kitchenTemp < 26 ? [l === 'fr' ? `Au-dessus de ${tempC(26, u)}, le pointage accélère. Gardez la pâte à la température de la cuisine, loin d’une source de chaleur.` : `A spot warmer than ${tempC(26, u)} speeds the rise and flattens the flavour: keep the dough at kitchen temperature, away from heat`] : []),
                 ...(t.raw('bulk.pitfallsBase') as string[]),
               ]} />
             </Section>
@@ -1663,7 +1675,8 @@ Actual dough condition and equipment may differ from these estimates.`;
                   l === 'fr'
                     ? `Frigo au-dessus de ${tempC(8, u)} : la pâte fermente trop pendant le repos — vérifiez sa température`
                     : `Fridge temperature above ${tempC(8, u)}: dough over-ferments during retard — check your fridge`,
-                  (t.raw('coldRetard.pitfalls') as string[])[1],
+                  // "Do not rush the cold phase" only means something for a long cold rest.
+                  ...((schedule.totalColdHours ?? schedule.coldRetardHours ?? 0) >= 8 ? [(t.raw('coldRetard.pitfalls') as string[])[1]] : []),
                 ]} />
               </Section>
             </>}
@@ -1724,9 +1737,9 @@ Actual dough condition and equipment may differ from these estimates.`;
                   ? (t.raw('divide.boule.watchFor') as string[])
                   : [
                     ...(t.raw('divide.pizza.watchFor') as string[]),
-                    l === 'fr'
-                      ? `À ${displayTemp(kitchenTemp, u)}, travaillez dans les ${kitchenTemp >= 30 ? '15 min' : kitchenTemp >= 26 ? '20 min' : '30 min'} : une cuisine chaude fait lever les pâtons rapidement`
-                      : `At ${displayTemp(kitchenTemp, u)}, work within ${kitchenTemp >= 30 ? '15 min' : kitchenTemp >= 26 ? '20 min' : '30 min'} — warm kitchens make balls proof quickly`,
+                    ...(kitchenTemp >= 26 ? [l === 'fr'
+                      ? `À ${displayTemp(kitchenTemp, u)}, façonnez sans attendre : la pâte continue de lever pendant que vous travaillez`
+                      : `At ${displayTemp(kitchenTemp, u)}, shape without pausing: the dough keeps rising while you work`] : []),
                   ]
                 } />
               </Section>
@@ -1748,9 +1761,9 @@ Actual dough condition and equipment may differ from these estimates.`;
                     ...(t.raw('divide.boule.pitfalls') as string[]),
                   ] : [
                     ...(t.raw('divide.pizza.pitfalls') as string[]),
-                    l === 'fr'
-                      ? `Cuisine chaude (${kitchenTemp >= 30 ? 'la vôtre est à ' + displayTemp(kitchenTemp, u) : '≥' + tempC(30, u)}) : mettez vite les pâtons en bac, ils lèvent très rapidement`
-                      : `Hot kitchen (${kitchenTemp >= 30 ? 'like yours at ' + displayTemp(kitchenTemp, u) : '≥' + tempC(30, u)}): get balls into their boxes fast — they proof very quickly at warm temps`,
+                    ...(kitchenTemp >= 30 ? [l === 'fr'
+                      ? `Dans une cuisine à ${displayTemp(kitchenTemp, u)}, mettez vite les pâtons en bac : ils lèvent très rapidement`
+                      : `In a kitchen at ${displayTemp(kitchenTemp, u)}, get the balls into their boxes quickly: they rise very fast`] : []),
                   ]
                 } />
               </Section>
@@ -1814,7 +1827,8 @@ Actual dough condition and equipment may differ from these estimates.`;
               ...(isTwoPhase ? [isBread ? {bold:l==='fr'?'Sortez la pâte façonnée du réfrigérateur.':'Take the shaped dough out of the fridge.',note:''} : t.raw('finalProof.removeFridge') as { bold: string; note: string }] : []),
               { bold: l === 'fr' ? (isBread && numItems===1 ? 'Laissez le pâton se détendre, couvert' : 'Laissez les pâtons se détendre, couverts') : 'Let the shaped dough relax, covered',
                 note: l === 'fr' ? 'À température ambiante, jusqu’à ce que la pâte soit souple et aérée.' : 'At room temperature, until relaxed and airy.' },
-              schedule.coldRetardStart ? t.raw('finalProof.pokeTest') as { bold: string; note: string } : { bold: l === 'fr' ? 'Test du doigt toutes les 15–20 min' : 'Poke-test every 15–20 min', note: l === 'fr' ? 'le creux doit remonter lentement' : 'the dent should spring back slowly' },
+              // "After warmup" only when this step really follows a fridge exit.
+              isTwoPhase ? t.raw('finalProof.pokeTest') as { bold: string; note: string } : { bold: l === 'fr' ? 'Test du doigt toutes les 15–20 min' : 'Poke-test every 15–20 min', note: l === 'fr' ? 'le creux doit remonter lentement' : 'the dent should spring back slowly' },
               { bold: l === 'fr' ? `Lancez le préchauffage du four ${formatDuration(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75,l)} avant la cuisson` : `Start preheating your oven ${formatDuration(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75,l)} before bake time`, note: (l === 'fr' ? 'préchauffez pendant l’apprêt ; vérifiez que le four et la pâte sont prêts' : 'preheat overlaps proofing; check both are ready') },
             ]} />}
           </Section>
@@ -1831,9 +1845,10 @@ Actual dough condition and equipment may differ from these estimates.`;
                 <Bullets items={[
                   (t.raw('finalProof.pitfalls') as string[])[0],
                   (t.raw('finalProof.pitfalls') as string[])[1],
-                  l === 'fr'
-                    ? `Cuisine à ${displayTemp(kitchenTemp, u)} : l’apprêt peut finir en ${kitchenTemp >= 30 ? '15–25 min' : kitchenTemp >= 26 ? '20–35 min' : '30–60 min'} après la remise à température — vérifiez tôt`
-                    : `Warm kitchen (${displayTemp(kitchenTemp, u)}): proof can complete in ${kitchenTemp >= 30 ? '15–25 min' : kitchenTemp >= 26 ? '20–35 min' : '30–60 min'} after warmup — check early`,
+                  // No minute figures here: the only proof duration shown is the planned one.
+                  ...(kitchenTemp >= 26 ? [l === 'fr'
+                    ? `Dans une cuisine à ${displayTemp(kitchenTemp, u)}, l’apprêt avance vite : vérifiez la pâte avant la fin de la durée prévue`
+                    : `In a kitchen at ${displayTemp(kitchenTemp, u)}, the proof moves quickly: check the dough before the planned time is up`] : []),
                   (t.raw('finalProof.pitfalls') as string[])[2],
                 ]} />
               </Section>

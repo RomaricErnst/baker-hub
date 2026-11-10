@@ -1,5 +1,10 @@
 // Approved bilingual step guidance, materialized from prototype review.
-export interface FaqEntry { q: {en:string;fr:string}; a: {en:string;fr:string}; }
+/** Optional tags keep a question out of bakes it does not apply to:
+ * `only` — bread or pizza; `ovens` — oven types that have the equipment the
+ * answer talks about (stone, steel, peel, dome); `round` — round-pizza handling
+ * (balls, peel), not shown for pizzas that bake in their pan.
+ */
+export interface FaqEntry { q: {en:string;fr:string}; a: {en:string;fr:string}; only?: 'bread' | 'pizza'; ovens?: readonly string[]; round?: boolean; }
 export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
   "poolish": [
     {
@@ -187,16 +192,6 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "en": "If it feels warm to the touch, cover it and rest it somewhere cooler. A warm dough rises faster than planned, so check it earlier.",
         "fr": "Si elle est tiède au toucher, couvrez-la et laissez-la reposer dans un endroit plus frais. Une pâte chaude lève plus vite que prévu : vérifiez-la plus tôt."
       }
-    },
-    {
-      "q": {
-        "en": "The windowpane test fails after kneading",
-        "fr": "Le test de la membrane échoue après pétrissage"
-      },
-      "a": {
-        "en": "Rest covered, then reassess. Dough development depends on the flour and style; not every dough forms a thin, transparent membrane.",
-        "fr": "Laissez reposer à couvert, puis réévaluez. Le développement dépend de la farine et du style ; toutes les pâtes ne forment pas une membrane fine et transparente."
-      }
     }
   ],
   "bulk": [
@@ -206,8 +201,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "De combien doit-elle lever pendant le pointage ?"
       },
       "a": {
-        "en": "Use the readiness cues for this recipe and stage. Mark the starting level in a straight-sided container and check volume, bubbles and dough strength together; no single rise percentage fits every dough.",
-        "fr": "Suivez les repères de cette recette et de cette étape. Marquez le niveau initial dans un récipient à bords droits et observez ensemble volume, bulles et tenue ; aucun pourcentage de levée ne convient à toutes les pâtes."
+        "en": "Aim for the rise this step describes, not automatically for a doubling. Mark the starting level in a straight-sided container and judge volume, bubbles and dough strength together.",
+        "fr": "Visez la pousse décrite à cette étape, pas systématiquement un doublement. Marquez le niveau initial dans un récipient à bords droits et jugez ensemble le volume, les bulles et la tenue de la pâte."
       }
     },
     {
@@ -226,18 +221,8 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
         "fr": "Les rabats sont-ils vraiment nécessaires ?"
       },
       "a": {
-        "en": "For higher-hydration doughs, yes — they build strength without kneading. For stiff doughs (≤60%) they matter less. Skipping one set is fine; skipping all of them gives a flatter result.",
-        "fr": "Pour les pâtes très hydratées, oui — ils donnent de la force sans pétrir. Pour les pâtes fermes (≤60%), moins. Sauter une série passe ; tout sauter donne un résultat plus plat."
-      }
-    },
-    {
-      "q": {
-        "en": "How much should it actually rise?",
-        "fr": "De combien doit-elle vraiment monter ?"
-      },
-      "a": {
-        "en": "Follow this step’s readiness cues rather than aiming automatically for doubling. A straight-sided container with the starting level marked makes the change in volume easier to judge.",
-        "fr": "Suivez les repères de cette étape plutôt que de viser systématiquement un doublement. Un récipient à bords droits avec le niveau initial marqué permet de mieux juger la montée."
+        "en": "For higher-hydration doughs, yes — they build strength without kneading. For stiff doughs they matter less. Skipping one set is fine; skipping all of them gives a flatter result.",
+        "fr": "Pour les pâtes très hydratées, oui — ils donnent de la force sans pétrir. Pour les pâtes fermes, ils comptent moins. Sauter une série passe ; tout sauter donne un résultat plus plat."
       }
     },
     {
@@ -295,6 +280,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
   ],
   "divide": [
     {
+      "round": true,
       "q": {
         "en": "My balls will not hold their shape",
         "fr": "Mes pâtons ne tiennent pas leur forme"
@@ -315,6 +301,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       }
     },
     {
+      "round": true,
       "q": {
         "en": "My balls come out different sizes",
         "fr": "Mes pâtons sortent de tailles différentes"
@@ -325,6 +312,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       }
     },
     {
+      "round": true,
       "q": {
         "en": "The surface tears when I shape the balls",
         "fr": "La surface se déchire quand je boule"
@@ -367,6 +355,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       }
     },
     {
+      "round": true,
       "q": {
         "en": "My balls flattened and spread",
         "fr": "Mes pâtons se sont aplatis et étalés"
@@ -379,6 +368,12 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
   ],
   "preheat": [
     {
+      "only": "pizza",
+      "ovens": [
+        "pizza_oven",
+        "home_oven_steel",
+        "electric_pizza"
+      ],
       "q": {
         "en": "Is a shorter preheat really a problem?",
         "fr": "Un préchauffage plus court, vraiment un problème ?"
@@ -399,6 +394,12 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       }
     },
     {
+      "only": "pizza",
+      "ovens": [
+        "pizza_oven",
+        "home_oven_steel",
+        "electric_pizza"
+      ],
       "q": {
         "en": "How do I know the stone is truly hot?",
         "fr": "Comment savoir si la pierre est vraiment chaude ?"
@@ -409,6 +410,10 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       }
     },
     {
+      "only": "pizza",
+      "ovens": [
+        "home_oven_steel"
+      ],
       "q": {
         "en": "Should I run the broiler during preheat?",
         "fr": "Dois-je lancer le gril pendant le préchauffage ?"
@@ -431,6 +436,13 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       }
     },
     {
+      "only": "pizza",
+      "ovens": [
+        "pizza_oven",
+        "home_oven_steel",
+        "electric_pizza"
+      ],
+      "round": true,
       "q": {
         "en": "The pizza stuck to the peel",
         "fr": "La pizza a collé à la pelle"
@@ -441,6 +453,7 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       }
     },
     {
+      "only": "bread",
       "q": {
         "en": "Should bread really cool before cutting?",
         "fr": "Le pain doit-il vraiment refroidir avant la coupe ?"
@@ -451,6 +464,12 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       }
     },
     {
+      "only": "pizza",
+      "ovens": [
+        "pizza_oven",
+        "home_oven_steel",
+        "electric_pizza"
+      ],
       "q": {
         "en": "Why is my first pizza always the worst?",
         "fr": "Pourquoi ma première pizza est-elle toujours la moins réussie ?"
@@ -461,6 +480,12 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
       }
     },
     {
+      "only": "pizza",
+      "ovens": [
+        "pizza_oven",
+        "home_oven_steel",
+        "electric_pizza"
+      ],
       "q": {
         "en": "The base chars before the top colours",
         "fr": "La base noircit avant que le dessus colore"
