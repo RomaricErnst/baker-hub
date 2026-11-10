@@ -5,6 +5,8 @@ import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
+import { SITE_URL, pageMetadata } from '../lib/siteMeta';
+import ServiceWorkerRegistration from '../components/ServiceWorkerRegistration';
 
 // Figtree for interface text; page titles use the explicit --font-display
 // serif stack in globals.css, preserving the approved prototype typography.
@@ -16,20 +18,26 @@ const dmMono = localFont({ src: [{path: "../fonts/dm-mono-400-latin.woff2", weig
 
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover' };
 
-export const metadata: Metadata = {
-  title: "Baker Hub",
-  description: "Smart dough planner for pizza and bread",
-  manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'Baker Hub',
-  },
-  icons: {
-    icon: [{ url: '/logos/bakerhub-b-incised.svg', type: 'image/svg+xml' }, { url: '/logos/bakerhub-b-32.png', sizes: '32x32', type: 'image/png' }],
-    apple: [{ url: '/logos/bakerhub-b-180.png', sizes: '180x180', type: 'image/png' }],
-  },
-};
+// Titles, descriptions, canonical URLs and the share card are localized in
+// app/lib/siteMeta.ts. This is the home page's metadata; About, Privacy and
+// Terms override it with their own.
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    metadataBase: new URL(SITE_URL),
+    ...pageMetadata(locale, ''),
+    manifest: '/manifest.json',
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'default',
+      title: 'Baker Hub',
+    },
+    icons: {
+      icon: [{ url: '/logos/bakerhub-b-incised.svg', type: 'image/svg+xml' }, { url: '/logos/bakerhub-b-32.png', sizes: '32x32', type: 'image/png' }],
+      apple: [{ url: '/logos/bakerhub-b-180.png', sizes: '180x180', type: 'image/png' }],
+    },
+  };
+}
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -53,6 +61,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

@@ -15,7 +15,6 @@ export default function RootNotFound() {
           padding: '24px', textAlign: 'center',
         }}>
           <div style={{ maxWidth: 420 }}>
-            <div style={{ fontSize: '40px', marginBottom: '12px' }}></div>
             <h1 style={{
               fontFamily: 'Georgia, serif',
               fontSize: '24px', fontWeight: 700, color: '#2B2420',
@@ -25,7 +24,7 @@ export default function RootNotFound() {
             </h1>
             <p style={{
               fontFamily: 'system-ui, sans-serif',
-              fontSize: '15px', color: '#8A7F78', lineHeight: 1.6,
+              fontSize: '15px', color: '#3D3530', lineHeight: 1.6,
               margin: '0 0 1.5rem',
             }}>
               We couldn&rsquo;t find what you were looking for.
