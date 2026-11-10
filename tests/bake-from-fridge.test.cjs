@@ -54,3 +54,10 @@ test('not offered for pizza, enriched or tin rye, without a clash, or when other
  const pizza=utils.buildSchedule(new Date(+bake-26*H),bake,night.map(b=>({...b,bakeFromFridge:+bake})),19,45,'hand','neapolitan',4,1);
  assert.ok(pizza.rtWarmupStart);
 });
+
+test('the guide bake step tells the baker to bake straight from the fridge when that plan was chosen',()=>{
+ const src=require('node:fs').readFileSync(require('node:path').join(__dirname,'../app/components/BakeGuide.tsx'),'utf8');
+ assert.match(src,/const bakesFromFridge = !!leanBake && !!schedule\.coldRetard2Start && !schedule\.rtWarmupStart/);
+ assert.match(src,/Bake the loaves straight from the fridge/);
+ assert.match(src,/Enfournez les pâtons à la sortie du frigo/);
+});
