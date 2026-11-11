@@ -36,7 +36,9 @@ for(const mode of ['simple','custom'])test(`${mode}: inline draft, cancel, inval
  await expect(reset(page)).toHaveCount(0);
  await expect(confirm(plan)).toHaveCount(0);await expect(plan.getByRole('button',{name:'Annuler',exact:true})).toHaveCount(0);
  await expand(plan,'mix');await expect(confirm(plan)).toHaveCount(0);await expect(row(plan,'mix').getByRole('button',{name:'- 30 min',exact:true})).toBeVisible();await expect(row(plan,'mix').getByRole('button',{name:'+ 30 min',exact:true})).toBeVisible();
- const interventions=plan.locator('details').filter({has:page.locator('summary').filter({hasText:'Voir toutes les interventions'})});
+ const interventions=plan.locator('details:not([data-about-plan])').filter({has:page.locator('summary').filter({hasText:'Voir toutes les interventions'})});
+ // In Custom the hands-on steps sit under « À propos de ce planning »; tap it open first.
+ if(mode==='custom')await plan.locator('[data-about-plan] > summary').tap();
  await expect(interventions).not.toHaveAttribute('open','');
  await expect(plan.getByText('Préchauffage',{exact:true})).toBeHidden();
  await interventions.locator('summary').tap();
@@ -129,6 +131,8 @@ test('levain final-feed lock is a persistent edit, constrains mixing, releases a
 
 test('Custom fermentation curve uses the card draft, Apply and reset',async({page})=>{
  const {plan,start,bake}=await openPlan(page,'custom',[],true);
+ // The curve sits under « À propos de ce planning ».
+ await plan.locator('[data-about-plan] > summary').tap();
  const toggle=plan.getByRole('button',{name:'Voir la courbe de fermentation',exact:true});
  await toggle.tap();
  const marker=plan.getByRole('slider',{name:'Heure du pétrissage',exact:true});
