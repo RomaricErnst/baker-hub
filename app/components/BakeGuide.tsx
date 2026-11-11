@@ -95,6 +95,9 @@ interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
 }
 
 // ── Design tokens ────────────────────────────────────
+// Ingredient order in the bowl for a batch (unknown keys last).
+const BATCH_ORDER = ['flour','water','milk','eggs','preferment','starter','yeast','salt','sugar','oil','butter'];
+
 const D = {
   char: '#2B2420', ash: '#3D3530', cream: '#F0EBE0',
   terra: '#6B4423', gold: '#9C8248', sage: '#526446',
@@ -209,7 +212,7 @@ function Steps({ items }: { items: { bold: string; note: string }[] }) {
     {whys.length > 0 && <details data-step-why style={{ marginTop: 8 }}>
       <summary style={{ cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center', color: D.terra, fontSize: 14 }}>{fr ? 'Pourquoi ?' : 'Why?'}</summary>
       <ul style={{ margin: '4px 0 0', paddingLeft: 18, display: 'grid', gap: 4, fontSize: 14, color: D.smoke }}>
-        {whys.map((w, k) => <li key={k}><span style={{ color: D.char }}>{w.bold}</span>: {w.why}</li>)}
+        {whys.map((w, k) => <li key={k}>{w.why.charAt(0).toUpperCase() + w.why.slice(1)}.</li>)}
       </ul>
     </details>}
   </>);
@@ -1095,7 +1098,7 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   const laterAutolysedBatch = preMixAutolyse > 0 && currentStep !== 0 && (batch?.active ?? 0) > 0;
   const showAutolyseStart = preMixAutolyse > 0 && !laterAutolysedBatch;
   const mixingOverviewNote = batch && batch.count > 1 ? (l === 'fr' ? `${batch.count} pétrissées à la suite` : `${batch.count} consecutive batches`) : undefined;
-  const serialMixNote = batch && batch.count > 1 ? <p>{l === 'fr' ? 'Pétrissez les lots à la suite. Les premiers fermentent pendant les suivants : surveillez chaque lot ; les horaires de repos sont communs.' : 'Mix the batches one after another. Earlier batches ferment while you mix the next ones: check each batch; the rest schedule is shared.'}</p> : null;
+  const serialMixNote = batch && batch.count > 1 ? <p>{l === 'fr' ? 'Pétrissez les lots l’un après l’autre. Le premier commence à lever pendant que vous pétrissez le suivant ; les horaires comptent à partir du premier.' : 'Mix the batches one after the other. The first starts rising while you mix the next; the times count from the first.'}</p> : null;
   const bgPoolishG = batch?.portion.preferment || null;
   // Compact recipe facts for Maestro — so it explains the plan's own numbers
   // (e.g. "0.3g IDY is correct for a 31h cold ferment") instead of guessing
@@ -1624,7 +1627,6 @@ Actual dough condition and equipment may differ from these estimates.`;
         {serialMixNote}
         {preMixAutolyse>0&&(schedule.mixingBatches??1)>1&&<p>{l==='fr'?'Avant la première pétrissée, préparez la farine et l’eau de chaque lot dans un récipient séparé : comptez 2 min par lot, puis couvrez au moins 30 min. Les lots suivants restent couverts en attendant leur pétrissage. N’ajoutez leur levure ou levain et leur sel qu’à leur tour.':'Before the first mix, combine each batch’s flour and water in a separate container: allow 2 minutes per batch, then cover for at least 30 minutes. Later batches stay covered until their mixing turn. Add their yeast or starter and salt only at that turn.'}</p>}
         {batch && <Section icon="" title={batch.count > 1 ? (l === 'fr' ? `Pétrissée ${batch.active + 1} sur ${batch.count}` : `Batch ${batch.active + 1} of ${batch.count}`) : (l === 'fr' ? 'À incorporer' : 'Use now')}>
-          {Object.entries(batch.portion).filter(([key,grams]) => grams > 0 && !(key === 'flour' && recipe?.flourParts?.length)).map(([key,grams]) => <div key={key} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{({milk:l==='fr'?'Lait':'Milk',eggs:l==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:l==='fr'?'Beurre':'Butter',flour:l==='fr'?'Farine':'Flour',water:l==='fr'?'Eau':'Water',salt:l==='fr'?'Sel':'Salt',oil:l==='fr'?'Huile':'Oil',sugar:l==='fr'?'Sucre':'Sugar',yeast:l==='fr'?'Levure':'Yeast',starter:l==='fr'?'Levain':'Starter',preferment:isBiga?'Biga':isPoolish?'Poolish':(l==='fr'?'Préferment':'Preferment')} as Record<string,string>)[key]}</span><strong>{key==='yeast'?formatYeastDose(grams,l):displayWeight(grams,u,l)}</strong></div>)}
           {!!recipe?.flourParts?.length && (() => {
             const fermentedFlour = recipe.preferment?.prefFlour ?? bgSdHalf;
             const addedFlour = recipe.flour - fermentedFlour;
@@ -1636,6 +1638,7 @@ Actual dough condition and equipment may differ from these estimates.`;
               return <div key={`${part.key}-${index}`} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{flourProductName(l === 'fr' ? part.nameFr : part.name,l)}</span><strong>{displayWeight(grams,u,l)}</strong></div>;
             });
           })()}
+          {/* In the order they go into the bowl. */}{Object.entries(batch.portion).filter(([key,grams]) => grams > 0 && !(key === 'flour' && recipe?.flourParts?.length)).sort(([a],[b]) => BATCH_ORDER.indexOf(a) - BATCH_ORDER.indexOf(b)).map(([key,grams]) => <div key={key} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{({milk:l==='fr'?'Lait':'Milk',eggs:l==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:l==='fr'?'Beurre':'Butter',flour:l==='fr'?'Farine':'Flour',water:l==='fr'?'Eau':'Water',salt:l==='fr'?'Sel':'Salt',oil:l==='fr'?'Huile':'Oil',sugar:l==='fr'?'Sucre':'Sugar',yeast:l==='fr'?'Levure':'Yeast',starter:l==='fr'?'Levain':'Starter',preferment:isBiga?'Biga':isPoolish?'Poolish':(l==='fr'?'Préferment':'Preferment')} as Record<string,string>)[key]}</span><strong>{key==='yeast'?formatYeastDose(grams,l):displayWeight(grams,u,l)}</strong></div>)}
           {recipe && largeManualDough(recipe.totalDough, mixerType, batch.count, mixerCapacityG) && <p data-large-dough-note>{l === 'fr'
             ? `${displayWeight(recipe.totalDough,u,l)}, c’est une grosse pâte. Si elle est trop volumineuse pour votre saladier ou votre robot, pétrissez-la en deux moitiés, l’une juste après l’autre, puis traitez-les comme une seule pâte.`
             : `${displayWeight(recipe.totalDough,u,l)} is a large dough. If it is too much for your bowl or mixer, mix it in two halves, one straight after the other, then treat them as one dough.`}</p>}

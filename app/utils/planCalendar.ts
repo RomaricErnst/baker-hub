@@ -98,9 +98,13 @@ export function keyPlanEvents(actions: PlanAction[], fr: boolean, opts: LabelOpt
   const futureFolds = folds.filter(a => +a.at >= from);
   if (futureFolds.length) {
     const sets = new Set(futureFolds.map(a => base(a.id))).size;
-    const gaps = futureFolds.slice(1).map((a, i) => Math.round((+a.at - +futureFolds[i].at) / 60000)).filter(m => m > 0);
+    // The spacing between sets of one batch, not between batches folding one after another.
+    const firstBatch = futureFolds.filter(a => base(a.id) === a.id);
+    const spaced = firstBatch.length > 1 ? firstBatch : futureFolds;
+    const gaps = spaced.slice(1).map((a, i) => Math.round((+a.at - +spaced[i].at) / 60000)).filter(m => m > 0);
+    const batched = firstBatch.length > 0 && firstBatch.length < futureFolds.length;
     const every = gaps.length ? Math.min(...gaps) : 0;
-    const count = fr ? `Rabats (${sets})` : `Stretch and folds (${sets})`;
+    const count = batched ? (fr ? `Rabats (${sets} par fournée)` : `Stretch and folds (${sets} per batch)`) : fr ? `Rabats (${sets})` : `Stretch and folds (${sets})`;
     const spacing = every && sets > 1 ? (fr ? `, toutes les ${every} min` : `, every ${every} min`) : '';
     events.push({ key: 'folds', at: futureFolds[0].at, end: new Date(+futureFolds[futureFolds.length - 1].at + 5 * 60000), label: count + spacing });
   }

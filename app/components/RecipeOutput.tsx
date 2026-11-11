@@ -575,7 +575,7 @@ export default function RecipeOutput({
           ? (locale === 'fr' ? 'Prévoyez une casserole pour le pochage, puis une plaque pour la cuisson au four.' : 'Have a pan ready for poaching, then a baking tray for the oven.')
           : breadProtocol.cooking === 'griddle'
             ? (locale === 'fr' ? 'Cuisson à la poêle ou sur une plaque : gardez les pains cuits couverts pour qu’ils restent souples.' : 'Cook on a skillet or griddle; keep cooked breads covered to stay soft.')
-            : (locale === 'fr' ? 'Suivez le façonnage et la cuisson propres à ce pain dans le guide.' : 'Follow this bread’s shaping and baking steps in the guide.')}</p>}
+            : (locale === 'fr' ? 'Le façonnage et la cuisson de ce pain sont dans Préparation et Cuisson & service.' : 'This bread’s shaping and baking are in Preparation and Baking & serving.')}</p>}
 
       {mode === 'custom' && <div style={{textAlign:'right',fontSize:12,color:'var(--smoke)'}}>{locale === 'fr' ? '% de farine · Poids' : '% of flour · Weight'}</div>}
 

@@ -212,7 +212,7 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
             infoLabel={locale === 'fr' ? 'En savoir plus' : 'Learn more'}
           />
           {disabledNote && disabledIds && disabledIds.length > 0 && (
-            <p style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-dm-mono)', margin: '8px 0 0' }}>
+            <p style={{ fontSize: '14px', color: 'var(--ash)', fontFamily: 'var(--font-ui)', margin: '8px 0 0' }}>
               {disabledNote}
             </p>
           )}
