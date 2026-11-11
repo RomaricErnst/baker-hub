@@ -500,7 +500,7 @@
     "waterFinalDough": "Water (final dough)",
     "batchTotal": "Batch total",
     "chillPoolishAt": "Refrigerate the poolish at {time}. Keep it chilled until mixing.",
-    "weighOrDilute": "how to weigh it ↓",
+    "weighOrDilute": "how to weigh it ▾",
     "weighDose": "Weigh this dose on a scale.",
     "precisionScaleTitle": "Weighing a tiny amount of yeast",
     "precisionScaleBody": "{amount} is too little for most kitchen scales. Use a scale that reads 0.1 g, or the method below.",

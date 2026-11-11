@@ -476,6 +476,14 @@ export default function RecipeOutput({
   const waterAssumption = mode==='simple' ? <p>{mixingWaterCaption(mixerType,locale)}
     {onMixerChange && <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={()=>onMixerChange(mixerType==='hand'?'stand':'hand')}>{mixerType==='hand'?(locale==='fr'?'Utiliser un robot':'Use a mixer'):(locale==='fr'?'Pétrir à la main':'Knead by hand')}</button>}
   </p>:null;
+  // One visible line for the water: its temperature, with ice named when the recipe needs it.
+  const waterTempLine = (() => {
+    const split = waterSplit({waterGrams:waterMain,targetTemp:waterTemp,kitchenTemp,fridgeTemp,source:waterSource,measuredWaterTemp,waterMethod,idealWaterTemp:result.thermal?.idealWaterTemp,directIceSupported:mixerType==='spiral'});
+    const fr = locale === 'fr';
+    const temp = displayTemp(waterTemp,u);
+    if (split && split.ice > 0) return fr ? `à ${temp}, avec ${displayWeight(split.ice,u,locale)} de glace` : `at ${temp}, with ${displayWeight(split.ice,u,locale)} ice`;
+    return fr ? `environ ${temp}` : `about ${temp}`;
+  })();
   const waterSubNode = <WaterPreparation readOnly waterGrams={waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} achievedDoughTempC={result.thermal?.doughTempC} waterWasClamped={result.thermal?.waterWasClamped} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
   const finalDoughWaterSubNode = <WaterPreparation readOnly waterGrams={result.preferment?.finalWater ?? waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} achievedDoughTempC={result.thermal?.doughTempC} waterWasClamped={result.thermal?.waterWasClamped} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
 
@@ -503,7 +511,7 @@ export default function RecipeOutput({
         const idyPart = !isInstant ? (locale==='fr' ? `= ${formatYeastDose(yeastInfo.grams, locale)} de levure sèche instantanée` : `= ${formatYeastDose(yeastInfo.grams, locale)} instant dry yeast`) : null;
         const alternatives = mode==='simple' && isInstant ? (locale==='fr' ? `Levure fraîche : ${formatYeastDose(yeastInfo.grams*3,locale)} · sèche active : ${formatYeastDose(yeastInfo.grams*1.33,locale)}` : `Fresh yeast: ${formatYeastDose(yeastInfo.grams*3,locale)} · active dry: ${formatYeastDose(yeastInfo.grams*1.33,locale)}`) : null;
         // With a small-dose section below, the other yeasts are listed there.
-        return [smallDoseShown ? null : alternatives, measureHint(yeastSpoon,needsPrecision), idyPart].filter(Boolean).join(' · ') || undefined;
+        return [smallDoseShown ? null : alternatives, smallDoseShown ? yeastSpoon : measureHint(yeastSpoon,needsPrecision), idyPart].filter(Boolean).join(' · ') || undefined;
       })()
     : undefined;
 
@@ -544,6 +552,66 @@ export default function RecipeOutput({
   if (result.protocolIssue) return <section role="alert"><h2>{locale === 'fr' ? 'Réglages à ajuster' : 'Adjust these settings'}</h2><p>{result.protocolIssue === 'equipment' ? (locale === 'fr' ? 'Choisissez un matériel adapté à ce pain.' : 'Choose suitable equipment for this bread.') : result.protocolIssue === 'timing' ? (locale === 'fr' ? 'Prévoyez le temps de mélange, de repos et de façonnage avant cuisson.' : 'Allow time for mixing, resting and shaping before cooking.') : (locale === 'fr' ? 'Cette méthode de levée n’est pas prise en charge pour ce pain.' : 'This leavening method is not supported for this bread.')}</p>{onEditSetup && <button type="button" onClick={onEditSetup} style={{minHeight:44}}>{locale === 'fr' ? 'Modifier les réglages' : 'Edit setup'}</button>}</section>;
 
   if (enrichment?.unsupportedMethod) return <section role="alert"><h2>{locale === 'fr' ? 'Méthode non prise en charge' : 'Unsupported method'}</h2><p>{locale === 'fr' ? 'Cette formule enrichie nécessite une levure commerciale, sans préferment. Modifiez le choix de levure dans les réglages puis recalculez.' : 'This enriched formula requires commercial yeast without preferment. Update the leavening choice in setup and recalculate.'}</p>{onEditSetup && <button type="button" onClick={onEditSetup}>{locale === 'fr' ? 'Modifier les réglages' : 'Edit setup'}</button>}</section>;
+
+  // How to measure a small yeast dose: opens under the yeast row ("how to weigh it").
+  const smallDoseBody = yeastInfo ? (<div data-small-dose style={{display:'flex',flexDirection:'column',gap:10,marginTop:6}}>
+          {yeastAlternatives && <p data-yeast-alternatives style={{margin:'0 0 10px',fontSize:14,color:'var(--ash)'}}>{yeastAlternatives}</p>}
+          {/* Min floor callout — shown when 0.5g IDY floor was applied */}
+          {yeastInfo.hitMinFloor && !needsPrecision && (
+            <div style={{
+              background: '#FFFBEE',
+              border: '1.5px solid #9C8248',
+              borderRadius: '16px',
+              padding: '12px 16px',
+            }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#7A5A10' }}>
+                  {t('recipeOutput.precisionScaleMin')}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Precision scale callout */}
+          {needsPrecision && (
+            <div style={{
+              background: '#FFFBEE',
+              border: '1.5px solid #9C8248',
+              borderRadius: '16px',
+              padding: '12px 16px',
+            }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#7A5A10' }}>
+                  {t('recipeOutput.precisionScaleTitle')}
+                </span>
+              </div>
+              <div style={{ fontSize: '12px', color: '#5A4010', lineHeight: 1.6, paddingLeft: '24px' }}>
+                {t('recipeOutput.precisionScaleBody', { amount: formatYeastDose(yeastInfo.convertedGrams, locale) })}
+              </div>
+            </div>
+          )}
+
+
+          {/* Dilution tip */}
+          {dilutionTip && (
+            <InfoCard
+              icon=""
+              level="info"
+              title={t('recipeOutput.dilutionTitle')}
+              body={t('recipeOutput.dilutionBody', {
+                yeastG: DILUTION_BASE_YEAST_G,
+                waterG: dilutionTip.waterG * DILUTION_BASE_YEAST_G,
+                // Kitchen-scale precision: whole grams from 10 g, one decimal below.
+                solutionG: kitchenGrams(dilutionTip.solutionG),
+                waterInSolutionG: kitchenGrams(dilutionTip.waterInSolutionGrams ?? dilutionTip.solutionG * 100 / 101),
+                remainingWaterG: kitchenGrams((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG),
+              })+(mainIceG>0?' '+t('recipeOutput.dilutionIce',{iceG:mainIceG}):'')
+                // Imperial bakers read the water line in ounces: say that this method stays in grams.
+                +(u==='imperial'?' '+t('recipeOutput.dilutionInGrams')+' '+t('recipeOutput.dilutionRemainingImperial',{grams:kitchenGrams((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG),ounces:displayWeight((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG,'imperial',locale)}):'')}
+            />
+          )}
+
+  </div>) : null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -677,7 +745,7 @@ export default function RecipeOutput({
                   grams={wStr(pf.finalFlour)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
               )}
-              <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={<details><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Préparer l’eau' : 'Prepare the water'}</summary>{waterAssumption}{finalDoughWaterSubNode}</details>}
+              <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={<><span data-water-temp>{waterTempLine}</span> · <details data-water-help style={{display:'inline'}}><summary style={{display:'inline-flex',alignItems:'center',minHeight:44,cursor:'pointer',color:'var(--terra)'}}>{locale === 'fr' ? 'comment l’obtenir ▾' : 'how to get it ▾'}</summary>{waterAssumption}{finalDoughWaterSubNode}</details></>}
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalWater / flour * 1000) / 10) : undefined} />
               <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} noPct
                 advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
@@ -738,10 +806,10 @@ export default function RecipeOutput({
             </>}
           />}
           {water > 0 && <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(sdActive ? waterMain : water)} noPct={sdActive} pct={pctStr(waterPct)} sub={
-            !enrichment ? <details><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Préparer l’eau' : 'Prepare the water'}</summary>
+            !enrichment ? <><span data-water-temp>{waterTempLine}</span> · <details data-water-help style={{display:'inline'}}><summary style={{display:'inline-flex',alignItems:'center',minHeight:44,cursor:'pointer',color:'var(--terra)'}}>{locale === 'fr' ? 'comment l’obtenir ▾' : 'how to get it ▾'}</summary>
               {sdActive && <p>{locale === 'fr' ? `${wStr(sdHalf)} d’eau sont déjà dans le levain indiqué ci-dessous.` : `${wStr(sdHalf)} water is already in the starter shown below.`}</p>}
               {waterAssumption}{waterSubNode}
-            </details> : undefined} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />}
+            </details></> : undefined} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />}
           {mode==='custom' && flourBlend?.flour2 && <p className="bh-key-detail">{[flourBlend.flour1,flourBlend.flour2,flourBlend.flour3].filter(Boolean).map((key,index)=>{
             const ratio=index===0?flourBlend.ratio1:index===1?(flourBlend.flour3?flourBlend.ratio2??0:100-flourBlend.ratio1):100-flourBlend.ratio1-(flourBlend.ratio2??0);
             const flourType=FLOUR_DATA[key as keyof typeof FLOUR_DATA];
@@ -755,7 +823,7 @@ export default function RecipeOutput({
               label={
                 yeastTypeName
               }
-              sub={yeastSub}
+              sub={smallDoseShown ? <>{yeastSub && <span>{yeastSub} · </span>}<details data-yeast-help style={{display:'inline'}}><summary style={{display:'inline-flex',alignItems:'center',minHeight:44,cursor:'pointer',color:'var(--terra)'}}>{t('recipeOutput.weighOrDilute')}</summary>{smallDoseBody}</details></> : yeastSub}
               grams={formatYeastDose(yeastInfo.convertedGrams, locale)}
               pct={pctStr(yeastInfo.convertedPct)}
               advancedPct={mode === 'custom' ? pctStr(yeastInfo.convertedPct) : undefined}
@@ -1011,65 +1079,7 @@ export default function RecipeOutput({
       {yeastInfo && !hasPref && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-          {(yeastInfo.hitMinFloor || needsPrecision || dilutionTip) && <details className="bh-disclosure">
-            <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Petite dose de levure' : 'Small yeast dose'}</summary>
-          {yeastAlternatives && <p data-yeast-alternatives style={{margin:'0 0 10px',fontSize:14,color:'var(--ash)'}}>{yeastAlternatives}</p>}
-          {/* Min floor callout — shown when 0.5g IDY floor was applied */}
-          {yeastInfo.hitMinFloor && !needsPrecision && (
-            <div style={{
-              background: '#FFFBEE',
-              border: '1.5px solid #9C8248',
-              borderRadius: '16px',
-              padding: '12px 16px',
-            }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#7A5A10' }}>
-                  {t('recipeOutput.precisionScaleMin')}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Precision scale callout */}
-          {needsPrecision && (
-            <div style={{
-              background: '#FFFBEE',
-              border: '1.5px solid #9C8248',
-              borderRadius: '16px',
-              padding: '12px 16px',
-            }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#7A5A10' }}>
-                  {t('recipeOutput.precisionScaleTitle')}
-                </span>
-              </div>
-              <div style={{ fontSize: '12px', color: '#5A4010', lineHeight: 1.6, paddingLeft: '24px' }}>
-                {t('recipeOutput.precisionScaleBody', { amount: formatYeastDose(yeastInfo.convertedGrams, locale) })}
-              </div>
-            </div>
-          )}
-
-
-          {/* Dilution tip */}
-          {dilutionTip && (
-            <InfoCard
-              icon=""
-              level="info"
-              title={t('recipeOutput.dilutionTitle')}
-              body={t('recipeOutput.dilutionBody', {
-                yeastG: DILUTION_BASE_YEAST_G,
-                waterG: dilutionTip.waterG * DILUTION_BASE_YEAST_G,
-                // Kitchen-scale precision: whole grams from 10 g, one decimal below.
-                solutionG: kitchenGrams(dilutionTip.solutionG),
-                waterInSolutionG: kitchenGrams(dilutionTip.waterInSolutionGrams ?? dilutionTip.solutionG * 100 / 101),
-                remainingWaterG: kitchenGrams((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG),
-              })+(mainIceG>0?' '+t('recipeOutput.dilutionIce',{iceG:mainIceG}):'')
-                // Imperial bakers read the water line in ounces: say that this method stays in grams.
-                +(u==='imperial'?' '+t('recipeOutput.dilutionInGrams')+' '+t('recipeOutput.dilutionRemainingImperial',{grams:kitchenGrams((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG),ounces:displayWeight((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG,'imperial',locale)}):'')}
-            />
-          )}
-
-          </details>}
+          {/* The small-dose help now opens under the yeast row itself. */}
 
           {/* Poolish recommendation */}
           {yeastInfo.recommendPoolish && (

@@ -80,6 +80,8 @@ interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   locale?: string;
   onNavigateToPizzaParty?: () => void;
   pizzaActionLabel?: string;
+  /** Pizzas are already chosen for this bake. */
+  pizzasChosen?: boolean;
   onNavigateToFillings?: () => void;
   fillingsActionLabel?: string;
   onPrepareFillings?: () => void;
@@ -873,7 +875,7 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   usingPeak2 = false, planningMode = 'last_fed',
   feedRatio = 1, starterLocation = 'rt',
   units, locale,
-  afterSteps, onBackToRecipe, onOverviewChange, onNavigateToPizzaParty, pizzaActionLabel, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
+  afterSteps, onBackToRecipe, onOverviewChange, onNavigateToPizzaParty, pizzaActionLabel, pizzasChosen, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
   phase, active = true, onNavigateToCooking, onNavigateToPreparation, progressTarget, pizzaDiameterCm,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
@@ -1086,6 +1088,8 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   })();
   // Closes the last step, where the bake is finished: record how it went, then the next bake.
   const bakeClosing = onRateBake || onNextBake ? <div data-bake-closing style={{marginTop:20,paddingTop:16,borderTop:`1px solid ${D.border}`,display:'flex',flexDirection:'column',gap:10}}>
+    <p style={{margin:0,fontSize:15,color:D.char}}>{isBread ? (l === 'fr' ? 'Bon appétit. Après la cuisson, dites-nous comment c’était.' : 'Enjoy. When you’re done, tell us how it turned out.') : (l === 'fr' ? 'Buon appetito. Après la cuisson, dites-nous comment c’était.' : 'Buon appetito. When you’re done, tell us how it turned out.')}</p>
+    <strong style={{fontSize:14,color:D.smoke,fontWeight:600}}>{l === 'fr' ? 'Après la cuisson' : 'After the bake'}</strong>
     {onRateBake && <button type="button" data-rate-bake onClick={onRateBake} style={{...SECONDARY_CTA,minHeight:48}}>{l === 'fr' ? 'Comment s’est passée cette fournée ?' : 'How did it turn out?'}</button>}
     {onNextBake && <button type="button" data-next-bake onClick={onNextBake} style={{...SECONDARY_CTA,minHeight:48}}>{l === 'fr' ? 'Préparer ma prochaine fournée' : 'Start your next bake'}</button>}
     {onNextBake && <p style={{margin:0,fontSize:14,color:D.smoke}}>{l === 'fr' ? 'Cette fournée reste dans Mes fournées.' : 'This bake stays in My bakes.'}</p>}
@@ -2262,7 +2266,11 @@ Actual dough condition and equipment may differ from these estimates.`;
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
         />}
         {!isBread && !onNavigateToPizzaParty && onBackToRecipe && <button type="button" onClick={onBackToRecipe} style={{minHeight:48}}>{l==='fr'?'Retour à la recette':'Back to recipe'} →</button>}
-        {!isBread && onNavigateToPizzaParty && <button type="button" onClick={onNavigateToPizzaParty} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{pizzaActionLabel ?? (l === 'fr' ? 'Commencer la cuisson des pizzas' : 'Start baking the pizzas')} →</button>}
+        {/* With pizzas chosen, cooking them one by one is the next step; without, picking
+            pizzas is only an option at the oven, so it is a quiet link. */}
+        {!isBread && onNavigateToPizzaParty && (pizzasChosen
+          ? <button type="button" onClick={onNavigateToPizzaParty} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{pizzaActionLabel ?? (l === 'fr' ? 'Commencer la cuisson des pizzas' : 'Start cooking the pizzas')} →</button>
+          : <button type="button" className="bh-back-action" data-pizza-link onClick={onNavigateToPizzaParty} style={{minHeight:44,marginTop:12,textAlign:'left'}}>{l === 'fr' ? 'Pas de garnitures prévues ? Choisir des pizzas' : 'No toppings planned? Pick pizzas'}</button>)}
         {!isBread && bakeClosing}
       </StepCard>
 

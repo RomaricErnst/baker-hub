@@ -500,7 +500,7 @@
     "waterFinalDough": "Eau (pâte finale)",
     "batchTotal": "Total pétrissage",
     "chillPoolishAt": "Placez le poolish au frigo à partir de {time}. Gardez-le au froid jusqu’au pétrissage.",
-    "weighOrDilute": "comment la peser ↓",
+    "weighOrDilute": "comment la peser ▾",
     "weighDose": "Pesez cette dose à la balance.",
     "precisionScaleTitle": "Peser une très petite quantité de levure",
     "precisionScaleBody": "{amount}, c’est trop peu pour la plupart des balances de cuisine. Utilisez une balance au 0,1 g, ou la méthode ci-dessous.",
