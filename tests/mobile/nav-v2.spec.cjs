@@ -112,20 +112,19 @@ test('compact menu keeps bread-only recipes unsplit',async({page})=>{
  await expect(page.locator('.bh-navigator-current')).toHaveText('Recette');
 });
 
-for(const locale of ['fr','en'])test(`${locale}: generated task screens keep section navigation before compact bake context`,async({page})=>{
+for(const locale of ['fr','en'])test(`${locale}: the recipe names the bake under the section bar; task screens carry it in the bar`,async({page})=>{
  await seed(page,{bread:false,locale});
  for(const label of locale==='fr'?['Recette','Courses','Préparation']:['Recipe','Shopping list','Preparation']){
   await navigate(page,label,locale);
+  const recipe=label==='Recette'||label==='Recipe';
   const context=page.locator('.bh-bake-context');
-  await expect(context).toHaveCount(1);
-  await expect(context).toContainText('Navigation audit');
-  expect(await context.evaluate(el=>{
-   const nav=document.querySelector('.bh-bake-navigator');
-   return !!nav&&!!(nav.compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING);
-  })).toBe(true);
-  const navBounds=await page.locator('.bh-bake-navigator').boundingBox();
-  const contextBounds=await context.boundingBox();
-  expect(contextBounds.y).toBeGreaterThanOrEqual(navBounds.y+navBounds.height);
+  await expect(context).toHaveCount(recipe?1:0);
+  await expect(page.locator('[data-navigator-bake]')).toHaveCount(recipe?0:1);
+  if(recipe){
+   await expect(context).toContainText('Navigation audit');
+   const navBounds=await page.locator('.bh-bake-navigator').boundingBox();
+   expect((await context.boundingBox()).y).toBeGreaterThanOrEqual(navBounds.y+navBounds.height);
+  }else await expect(page.locator('[data-navigator-bake]')).toContainText(locale==='fr'?'pizzas':'pizzas');
  }
 });
 
@@ -329,6 +328,8 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  const progress=await page.evaluate(()=>Object.fromEntries(Object.entries(localStorage).filter(([key])=>key.startsWith('bh_guide_done_v2:')&&!key.endsWith(':view'))));
  expect(Object.keys(progress).length).toBeGreaterThan(0);
  const before=await stored(page);
+ // The fillings button sits on the Preparation summary, not inside each step.
+ await page.locator('.bh-local-progress').getByRole('button',{name:'Vue d’ensemble',exact:true}).tap();
  await page.getByRole('button',{name:bread?'Ajouter des sandwichs':'Choisir des garnitures',exact:true}).tap();
  if(bread){
   const article=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Jambon-beurre',exact:true})});
@@ -444,7 +445,9 @@ test('bread family return preserves choices; wraps and meal examples are discove
  await expect(page.getByRole('heading',{name:'Choisissez votre pain',exact:true})).toBeVisible();
  await expect(page.getByRole('link',{name:'Pitas & wraps',exact:true})).toBeVisible();
  const wrap=page.getByRole('button',{name:/^Pain à wrap · Laffa/});
- await expect(wrap.locator('img')).toHaveCount(2);
+ // One photo while browsing; the meal idea joins it once the bread is chosen.
+ await expect(wrap.locator('img')).toHaveCount(1);
+ await expect(wrap).toHaveAttribute('data-meal-src',/\.webp$/);
  const brioche=page.getByRole('button',{name:/^Brioche\b/});await expect(brioche.locator('img')).toHaveCount(1);
  await page.getByRole('button',{name:/^Pita à poche/}).tap();
  await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
