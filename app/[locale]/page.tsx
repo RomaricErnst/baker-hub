@@ -3598,7 +3598,8 @@ export default function Home() {
       prefilled: profileFields.has('equip'),
       gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
     { id: 4, group: 'kitchen', chip: fr ? 'Frigo et eau' : 'Fridge & water', title: fr ? 'Dans votre cuisine' : 'In your kitchen',
-      value: `${kitchenTemp}°C`, prefilled: true,
+      // This step sets the fridge; the kitchen temperature has its own screen.
+      value: `${fr ? 'Frigo' : 'Fridge'} ${cToDisplay(fridgeTemp,units)}${tempUnit(units)}`, prefilled: true,
       gap: fr ? 'Le climat n\u2019est pas renseigné' : 'Climate not set' },
     { id: 6, group: 'dough', chip: fr ? 'Levure' : 'Yeast', title: t('steps.7.title'),
       value: yeastType && !(enrichedDirectOnly && yeastType === 'sourdough') ? localName(YEAST_TYPES[yeastType]) : null,
@@ -3674,7 +3675,8 @@ export default function Home() {
       prefilled: profileFields.has('equip'),
       gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
     { id: 4, group: 'kitchen', chip: fr ? 'Frigo et eau' : 'Fridge & water', title: fr ? 'Dans votre cuisine' : 'In your kitchen',
-      value: `${kitchenTemp}°C`, prefilled: true,
+      // This step sets the fridge; the kitchen temperature has its own screen.
+      value: `${fr ? 'Frigo' : 'Fridge'} ${cToDisplay(fridgeTemp,units)}${tempUnit(units)}`, prefilled: true,
       gap: fr ? 'Le climat n\u2019est pas renseigné' : 'Climate not set' },
     { id: 6, group: 'dough', chip: fr ? 'Farine' : 'Flour', title: t('steps.flour.title'),
       value: flourChosen && !archivedFlourNames.length ? flourSummary() : null, prefilled: false,
@@ -5105,7 +5107,7 @@ export default function Home() {
                 }}
                 onClose={() => {}}
                 disabledIds={['sourdough']}
-                disabledNote={enrichedDirectOnly || !breadSupportsStarter ? (locale === 'fr' ? 'Cette recette est actuellement prévue avec de la levure et sans préferment.' : 'This recipe currently supports commercial yeast and no preferment.') : (locale === 'fr' ? 'Pour un levain, choisissez « Levain » à l’étape Préferment.' : 'To use a sourdough starter, choose Levain on the Preferment step.')}
+                disabledNote={enrichedDirectOnly || !breadSupportsStarter ? (locale === 'fr' ? 'Cette recette est actuellement prévue avec de la levure et sans préferment.' : 'This recipe currently supports commercial yeast and no preferment.') : (locale === 'fr' ? 'Vous utilisez un levain ? Choisissez « Levain » à l’étape Préferment.' : 'Using a starter? Choose Levain on the Preferment step.')}
                 styleKey={styleKey}
               />
               {(styleKey === 'pain_levain' || styleKey === 'pain_seigle') && yeastType === 'sourdough' && advancedStep === 7 && (

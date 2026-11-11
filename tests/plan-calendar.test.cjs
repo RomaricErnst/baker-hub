@@ -86,3 +86,11 @@ test('scheduler action ids are named in the guide’s words, in both languages',
  assert.equal(planActionLabel('cold-out-2',true),'Sortir les pâtons du réfrigérateur');
  assert.equal(planActionLabel('starter-feed',false),null);
 });
+
+test('batched folds say "per batch" and give the spacing within a batch',()=>{
+ const actions=[{id:'mix',at:at(9),end:at(9,11)},{id:'mix-batch-2',at:at(9,11),end:at(9,22)},
+  {id:'fold-1',at:at(9,52)},{id:'fold-1-batch-2',at:at(10,3)},{id:'fold-2',at:at(10,22)},{id:'fold-2-batch-2',at:at(10,33)}];
+ const folds=keyPlanEvents(actions,false).find(e=>e.key==='folds');
+ assert.equal(folds.label,'Stretch and folds (2 per batch), every 30 min');
+ assert.equal(keyPlanEvents(actions,true).find(e=>e.key==='folds').label,'Rabats (2 par fournée), toutes les 30 min');
+});
