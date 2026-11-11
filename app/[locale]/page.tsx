@@ -591,8 +591,8 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale 
           </div>
         ))}
       </div>
-      {/* The mode is not a choice to review; switching stays one quiet link away. */}
-      {modeChip && <button type="button" data-mode-switch className="bh-back-action" style={{ minHeight: 44, marginTop: 12 }} onClick={modeChip.onClick}>{modeChip.value === 'simple' ? (fr ? 'Passer en mode Avancé' : 'Switch to Custom') : (fr ? 'Passer en mode Simple' : 'Switch to Simple')}</button>}
+      {/* Customizing is the optional next step, not a mode to review: one quiet link. */}
+      {modeChip && <button type="button" data-mode-switch className="bh-back-action" style={{ minHeight: 44, marginTop: 12 }} onClick={modeChip.onClick}>{modeChip.value === 'simple' ? (fr ? 'Personnaliser ma fournée' : 'Customize my bake') : (fr ? 'Revenir aux réglages conseillés' : 'Use the recommended settings')}</button>}
       <BottomActions>{(flow.recipeGenerated || flow.showGenerate) ? (
         <button onClick={onBackToRecipe} style={{ ...NEXT_CTA, marginTop: '22px' }}>
           {returnLabel && flow.recipeGenerated ? returnLabel : !flow.recipeGenerated ? (fr ? 'Créer ma recette' : 'Create my recipe') : stale ? (fr ? 'Mettre à jour et revenir à Recette' : 'Update and back to Recipe') : (fr ? 'Retour à Recette' : 'Back to Recipe')}
@@ -4215,7 +4215,7 @@ export default function Home() {
             return `${styleName} · ${numItems} ${itemLabel} · ${dateStr}, ${timeStr}`;
           })()}
           sessionDoughSpec={tab === 'custom' && manualHydration !== undefined
-            ? `${manualHydration}% · ${prefermentType !== 'none' ? prefermentType.charAt(0).toUpperCase() + prefermentType.slice(1) + ' · ' : ''}${locale === 'fr' ? 'Personnalisé' : 'Custom'}`
+            ? `${manualHydration}% ${locale === 'fr' ? 'd’hydratation' : 'hydration'}${prefermentType !== 'none' ? ' · ' + prefermentType.charAt(0).toUpperCase() + prefermentType.slice(1) : ''}`
             : ''}
           onBeforeLocaleChange={() => {
             if (!bakeType) return;
