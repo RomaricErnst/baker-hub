@@ -39,12 +39,13 @@ test('Privacy and Terms are reachable from the menu and beside sign-in',()=>{
 test('About uses the app’s own names, the plan card and the starter screen, and no leftover English in French',()=>{
   const about=read('app/[locale]/about/AboutClient.tsx');
   const fr=about.slice(about.indexOf('  fr: {'));
-  assert.doesNotMatch(about,/Mode Avancé|mode Avancé|l’Avancé|mode Custom/);
+  // One path: customizing is optional, never a "mode".
+  assert.doesNotMatch(about,/Mode Avancé|mode Avancé|l’Avancé|mode Custom|Simple mode|Custom mode|In Custom|Mode Simple|mode Simple|mode Personnalisé|two modes|deux modes|both modes/);
   assert.match(about,/Customize my bake/);assert.match(fr,/Personnaliser ma fournée/);
   // The recipe opens with the plan card; timing is no longer said to live only in Preparation.
   assert.doesNotMatch(about,/La page recette ne montre que la recette|The recipe page shows the recipe; all timing/);
-  assert.match(about,/Add to my calendar/);assert.match(fr,/Ajouter à mon agenda/);
-  assert.match(about,/Your starter<\/strong>/);assert.match(fr,/Votre levain<\/strong>/);
+  assert.match(about,/add the plan to your calendar/);assert.match(fr,/ajouter le plan à votre agenda/);
+  assert.match(about,/your starter<\/strong>/);assert.match(fr,/votre levain<\/strong>/);
   // No starter percentages that could disagree with the recipe.
   assert.doesNotMatch(about,/20–25 ?%|10–25 ?%|15–20 ?%/);
   // French reads as French.

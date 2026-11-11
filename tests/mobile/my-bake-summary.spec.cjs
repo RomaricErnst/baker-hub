@@ -27,7 +27,7 @@ test('fr Simple: My bake opens on the plan; assumed values and the mode are not 
  await expect(page.locator('[data-my-bake-plan]')).toContainText('Enfourner');
  await expect(page.locator('[data-suggested-tag]')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Modifier : Mode',exact:true})).toHaveCount(0);
- await expect(page.locator('[data-mode-switch]')).toHaveText('Passer en mode Avancé');
+ await expect(page.locator('[data-mode-switch]')).toHaveText('Personnaliser ma fournée');
  await expect(main).not.toContainText('Four domestique standard · À la main');
  await expect(main).toContainText('2 × 260 g');
 });

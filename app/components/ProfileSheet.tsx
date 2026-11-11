@@ -152,9 +152,9 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
           }}>×</button>
         </div>
 
-        <span style={S.label}>{fr ? 'Mode par défaut' : 'Default mode'}</span>
+        <span style={S.label}>{fr ? 'Pour une nouvelle fournée' : 'For a new bake'}</span>
         <div style={{ display: 'flex', gap: '8px', padding: '0 16px' }}>
-          {([['simple', 'Simple'], ['custom', fr ? 'Personnalisé' : 'Custom']] as const).map(([key, label]) => (
+          {([['simple', fr ? 'Réglages conseillés' : 'Recommended settings'], ['custom', fr ? 'Personnaliser' : 'Customize']] as const).map(([key, label]) => (
             <button key={key} onClick={() => patch({ preferredMode: profile.preferredMode === key ? null : key })} style={S.pill(profile.preferredMode === key)}>
               {label}
             </button>
@@ -213,7 +213,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
           profile.yeastType, key => patch({ yeastType: key }),
         )}
 
-        <span style={S.label}>{fr ? 'Préferment — mode personnalisé' : 'Preferment — Custom mode'}</span>
+        <span style={S.label}>{fr ? 'Préferment quand je personnalise' : 'Preferment when I customize'}</span>
         {pillRow(
           [
             { key: 'none', label: fr ? 'Sans préferment' : 'No preferment' },

@@ -31,7 +31,7 @@ Cards 18px radius, shadow 0 2px 12px rgba(26,22,18,0.06) · buttons 12px · inpu
 
 ## File Map
 app/
-  [locale]/page.tsx     — main flow: family, style, quantity, bake time and optional availability, then Simple recipe or Custom settings; review, editing and session restoration
+  [locale]/page.tsx     — main flow: family, style, quantity, kitchen, bake time and optional availability, then Generate my recipe, with Customize my bake as the optional deeper path (internal 'simple' | 'custom'; never shown to bakers as modes); review, editing and session restoration
   api/flour-scan/route.ts — AI flour scanner (server-side, model via ANTHROPIC_VISION_MODEL env)
   auth/callback/route.ts
   data.ts               — styles (name/nameFr/descFr), ovens, mixers, yeasts, preferments

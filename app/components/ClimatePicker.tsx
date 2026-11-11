@@ -157,7 +157,7 @@ export default function ClimatePicker({
         </details>
       )}
       {showFlourStorage && mode === 'simple' && humidity !== 'normal' && <p style={{margin:0,fontSize:14,color:'var(--smoke)'}}>
-        {fr?'Humidité conservée':'Retained humidity'} : {HUMIDITY_OPTIONS.find(option=>option.value===humidity)?.[fr?'fr':'en'] ?? humidity}. {fr?'Modifiable en mode Personnalisé.':'Change in Custom mode.'}
+        {fr?'Humidité conservée':'Retained humidity'} : {HUMIDITY_OPTIONS.find(option=>option.value===humidity)?.[fr?'fr':'en'] ?? humidity}. {fr?'Modifiable en personnalisant votre fournée.':'You can change it when you customize your bake.'}
       </p>}
 
       {showFlourStorage && onFlourInFridgeChange && (
