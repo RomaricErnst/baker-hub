@@ -1856,7 +1856,6 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
   function cooldownFor(method:string,inFridge:boolean){return requiredPrefCooldownH(thermalInputs(method,inFridge));}
 
   const readyOffset = Number.isFinite(readyTimeOffsetMinutes) && readyTimeOffsetMinutes! > 0 ? readyTimeOffsetMinutes! : 0;
-  const [curveOpen, setCurveOpen] = useState(false);
   const scheduleViewId = useId();
   const [editBoundaryMessage,setEditBoundaryMessage]=useState<string|null>(null);
   const t = useTranslations('scheduler');
@@ -8530,7 +8529,8 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
           previewRows.push({id:`dough:${action.id}`,at:+action.at,endAt:action.id==='preheat'?+action.at+preheatMin*60000:action.end?+action.end:undefined,name:(foldActionLabel(action.id,locale,mixingBatches) ?? (conflictNames[action.id]??['Étape','Step'])[isFr?0:1]),timeText:fmtCardDT(action.at,isFr),marker:action.id.startsWith('cold')?'cold':'step',color:action.id.startsWith('cold')?'#5B87AD':'#3D5A30',editable:false,waitLabel:action.id==='cold-in'||action.id==='cold-in-2'?(isFr?'Fermentation au réfrigérateur':'Fermentation in the fridge'):undefined});
         }
         previewRows.sort((a,b)=>a.at-b.at);
-        const duration=(hours:number)=>Math.max(0,hours).toLocaleString(isFr?'fr-FR':'en-GB',{maximumFractionDigits:1})+' h';
+        // "14 h 20", not "14.3 h".
+        const duration=(hours:number)=>formatDuration(Math.round(Math.max(0,hours)*12)/12,isFr?'fr':'en');
         const remaining=(+draftBake-+draftMix)/3600000;
         const minNeeded=draftTo?(+draftBake-+draftTo)/3600000:null;
         const maxAllowed=draftFrom?(+draftBake-+draftFrom)/3600000:null;
@@ -8771,10 +8771,11 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
           {mode==='custom' ? <details className="bh-key-detail" data-about-plan style={{marginTop:12}}>
             <summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer',color:'var(--terra)'}}>{isFr?'À propos de ce planning':'About this plan'}</summary>
             <div>
-            <button type="button" className="bh-back-action" style={{minHeight:44}} aria-expanded={curveOpen} aria-controls={scheduleViewId} onClick={()=>setCurveOpen(open=>!open)}>
-              {curveOpen ? (isFr?'Masquer la courbe de fermentation':'Hide fermentation curve') : (isFr?'Voir la courbe de fermentation':'See fermentation curve')}
-            </button>
-            {curveOpen && <div id={scheduleViewId}>
+            {/* Inside "About this plan" the curve shows at once; dragging a step moves it. */}
+
+
+            {<div id={scheduleViewId}>
+              <p style={{margin:'0 0 6px',fontSize:13,color:'var(--smoke)'}}>{isFr?'Faites glisser un losange pour déplacer une étape.':'Drag a diamond to move a step.'}</p>
               {coldHours>0 && <p>{isFr
                 ? `La pâte passe ${duration(coldHours)} au réfrigérateur pour ralentir sa fermentation et conserver l’heure de cuisson choisie.`
                 : `The dough spends ${duration(coldHours)} in the fridge to slow fermentation and meet your bake time.`}</p>}
@@ -8797,8 +8798,8 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
                 onRefreshChange={h=>chartChange('starter:refresh',+times.bake-h*hour)} />
             </div>}
             </div>
-          {interventionRows.length>0&&<details className="bh-key-detail" style={{marginTop:12}}><summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer'}}>{isFr?'Voir toutes les interventions':'See all hands-on steps'}</summary><ol style={{listStyle:'none',padding:0,margin:0}}>{interventionRows.map(row=><li key={row.id} style={{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:'4px 12px',padding:'8px 0',borderBottom:'1px solid var(--border)'}}><span>{row.name}</span><time dateTime={new Date(row.at).toISOString()} style={{fontWeight:600}}>{fmtCardDT(new Date(row.at),isFr)}{row.endAt&&row.endAt>row.at?`–${fmtCardHM(new Date(row.endAt),isFr)}`:null}</time></li>)}</ol></details>}
-          <details className="bh-key-detail" style={{marginTop:12}}><summary style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{isFr?'Comment fonctionne votre planning':'How your plan works'}</summary><p>{isFr?'Nous partons de votre heure de cuisson pour prévoir le temps de levée et organiser la préparation selon vos disponibilités. Si une étape tombe pendant une période où vous êtes indisponible, nous vous aidons à ajuster le planning.':'We work backwards from your baking time, allowing time for the dough to rise and fitting preparation around your availability. If a step clashes, we help you adjust the plan.'}</p></details>
+          {interventionRows.length>0&&<div data-hands-on style={{marginTop:12}}><strong style={{display:'block',fontSize:15,marginBottom:4}}>{isFr?'Interventions':'Hands-on steps'}</strong><ol style={{listStyle:'none',padding:0,margin:0}}>{interventionRows.map(row=><li key={row.id} style={{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:'4px 12px',padding:'8px 0',borderBottom:'1px solid var(--border)'}}><span>{row.name}</span><time dateTime={new Date(row.at).toISOString()} style={{fontWeight:600}}>{fmtCardDT(new Date(row.at),isFr)}{row.endAt&&row.endAt>row.at?`–${fmtCardHM(new Date(row.endAt),isFr)}`:null}</time></li>)}</ol></div>}
+          <p className="bh-key-detail" style={{marginTop:12,fontSize:14,color:'var(--ash)'}}>{isFr?'Nous partons de votre heure de cuisson et plaçons chaque étape hors de vos indisponibilités.':'We work back from your bake time and keep every step out of your busy times.'}</p>
           </details> : <>
           {interventionRows.length>0&&<details className="bh-key-detail" style={{marginTop:12}}><summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer'}}>{isFr?'Voir toutes les interventions':'See all hands-on steps'}</summary><ol style={{listStyle:'none',padding:0,margin:0}}>{interventionRows.map(row=><li key={row.id} style={{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:'4px 12px',padding:'8px 0',borderBottom:'1px solid var(--border)'}}><span>{row.name}</span><time dateTime={new Date(row.at).toISOString()} style={{fontWeight:600}}>{fmtCardDT(new Date(row.at),isFr)}{row.endAt&&row.endAt>row.at?`–${fmtCardHM(new Date(row.endAt),isFr)}`:null}</time></li>)}</ol></details>}
           <details className="bh-key-detail" style={{marginTop:12}}><summary style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{isFr?'Comment fonctionne votre planning':'How your plan works'}</summary><p>{isFr?'Nous partons de votre heure de cuisson pour prévoir le temps de levée et organiser la préparation selon vos disponibilités. Si une étape tombe pendant une période où vous êtes indisponible, nous vous aidons à ajuster le planning.':'We work backwards from your baking time, allowing time for the dough to rise and fitting preparation around your availability. If a step clashes, we help you adjust the plan.'}</p></details>
