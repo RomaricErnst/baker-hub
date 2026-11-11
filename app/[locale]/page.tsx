@@ -3987,10 +3987,11 @@ export default function Home() {
                 totalFlourTarget={bakeType==='bread'?totalFlourTarget:undefined}
                 onFlourTargetChange={value=>{setTotalFlourTarget(value);setQtyChosen(true);if(value!==undefined){setWastePct(undefined);setItemWeight(value*1.8/Math.max(1,numItems));}else setItemWeight(Math.max(weightBounds.min,Math.min(weightBounds.max,Math.round(itemWeight))));}}
                 itemLabel={breadProtocol ? (styleKey==='focaccia' ? (fr?'plaque':'tray') : (fr?'pièce':'piece')) : undefined}
-                countLabel={breadProtocol ? (styleKey==='focaccia' ? (fr?'Nombre de plaques':'Number of trays') : (fr?'Nombre de pièces':'Number of pieces')) : undefined}
+                countLabel={breadProtocol ? (styleKey==='focaccia' ? (fr?'Nombre de plaques':'Number of trays') : (fr?'Nombre de pièces':'Number of pieces')) : bakeType==='bread' ? `${fr?'Nombre de':'Number of'} ${breadNoun(styleKey,2,fr)}` : undefined}
                 weightLabel={breadProtocol ? (styleKey==='focaccia' ? (fr?'Pâte par plaque':'Dough per tray') : (fr?'Pâte par pièce':'Dough per piece')) : undefined}
                 roundPizza={bakeType === 'pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '')}
                 count={numItems} itemWeight={itemWeight} diameter={pizzaDiameter}
+                sizeNote={bakeType==='bread'&&totalFlourTarget===undefined?`${bakeQuantityLabel(numItems,bakeType,styleKey,fr)} ${fr?'de':'of'} ${displayWeight(Math.round(itemWeight),units,locale)}`:undefined}
                 diameterBounds={{ min: PIZZA_WEIGHT_TABLE[styleKey ?? '']?.[0][0] ?? 22, max: PIZZA_WEIGHT_TABLE[styleKey ?? '']?.at(-1)?.[0] ?? 35 }}
                 crust={(['thin','classic','generous'] as const)[pizzaCorn] ?? 'classic'}
                 weightIsManual={crustActive < 0} weightBounds={weightBounds}
@@ -4443,9 +4444,9 @@ export default function Home() {
                 <button data-bh-forward type="button" disabled={!simpleStarterAnswer} aria-describedby={!simpleStarterAnswer?'bh-starter-choice-hint':undefined} style={{...NEXT_CTA,opacity:simpleStarterAnswer?1:0.5,cursor:simpleStarterAnswer?'pointer':'not-allowed'}} onClick={()=>{if(!simpleStarterAnswer)return;if(recipeGenerated){setPlanReplanPending(true);finishSetupEdit();}else{setPlanReplanPending(true);openBakeTimeInputs();}}}>{recipeGenerated?setupReturnLabel:(fr?'Heure de cuisson →':'Bake time →')}</button></BottomActions>
             </> : <>
               <h1 className="bh-page-title">{fr?'Quelle quantité de pâte ?':'How much dough?'}</h1>
-              {styleKey==='pain_levain'&&<div style={{marginTop:16}}><label className="bh-seed-toggle"><input type="checkbox" checked={addSeeds} onChange={event=>setAddSeeds(event.target.checked)} /> {fr?'Ajouter des graines':'Add seeds'}</label>{addSeeds && <p>{fr?'Les graines trempent à l’avance : 2 h minimum, idéalement la veille.':'Soak the seeds ahead: at least 2 hours, ideally overnight.'}</p>}</div>}
 
                             {renderQuantity('count')}
+              {styleKey==='pain_levain'&&<div style={{marginTop:16}}><label className="bh-seed-toggle"><input type="checkbox" checked={addSeeds} onChange={event=>setAddSeeds(event.target.checked)} /> {fr?'Ajouter des graines':'Add seeds'}</label>{addSeeds && <p>{fr?'Les graines trempent à l’avance : 2 h minimum, idéalement la veille.':'Soak the seeds ahead: at least 2 hours, ideally overnight.'}</p>}</div>}
               <BottomActions className="bh-batch-actions bh-batch-actions-navigation">
                 <button type="button" className="bh-back-action" onClick={()=>{if(recipeGenerated)backToSetupChoices();else {setBatchView('style');scrollToStepTop();}}}>{recipeGenerated?(fr?'Retour à mes choix':'Back to my choices'):(fr?'Étape précédente':'Previous step')}</button>
                 <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>{setQtyChosen(true);setHighestStep(value=>Math.max(value,3));setAdvancedHighestStep(value=>Math.max(value,3));if(recipeGenerated)finishSetupEdit();else if(kitchenAnswered&&simpleStarterPending){setBatchView('starter');scrollToStepTop();}else if(isUnleavened||kitchenAnswered)openBakeTimeInputs();else{setBatchView('kitchen');scrollToStepTop();}}}>{recipeGenerated?setupReturnLabel:kitchenAnswered&&simpleStarterPending?(fr?'Votre levain →':'Your starter →'):isUnleavened||kitchenAnswered?(fr?'Heure de cuisson →':'Bake time →'):(fr?'Cuisine →':'Kitchen →')}</button></BottomActions>

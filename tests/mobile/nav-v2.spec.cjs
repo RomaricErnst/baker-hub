@@ -207,7 +207,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   expect(confirmationBounds.y+confirmationBounds.height).toBeLessThanOrEqual(page.viewportSize().height);
   await expect(page.getByRole('heading',{name:bread?'Choisissez votre pain':'Quel style de pizza ?',exact:true})).toBeVisible();
  await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
-  const quantity=page.getByLabel(bread?'Nombre de pains':'Nombre de pizzas',{exact:true});
+  const quantity=page.getByLabel(bread?'Nombre de baguettes':'Nombre de pizzas',{exact:true});
   await quantity.fill('5');await quantity.blur();
   await expect.poll(async()=>({style:(await stored(page))?.styleKey,count:(await stored(page))?.numItems})).toEqual({style:bread?'baguette':'neapolitan',count:5});
   const chosenStyle=(await stored(page)).styleKey;
