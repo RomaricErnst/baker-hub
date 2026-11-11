@@ -442,7 +442,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
             {/* left group shrinks + clips so the qty stepper always stays fully visible */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
             <span style={{ fontSize: '11px', color: 'var(--smoke)', flexShrink: 0 }}>
-              {pizza.prepMinutes} min
+              {l === 'fr' ? `${pizza.prepMinutes} min de préparation` : `${pizza.prepMinutes} min prep`}
             </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, marginLeft: 'auto' }} onClick={e => e.stopPropagation()}>
@@ -1711,9 +1711,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             color: '#3D3530',
           }}>
             {styleKey
-              ? (l === 'fr'
+              ? `${l === 'fr' ? 'Pizzas adaptées à : ' : 'Pizzas suited to: '}${l === 'fr'
                   ? (STYLE_NAMES_FR[styleKey] ?? styleKey)
-                  : (STYLE_NAMES[styleKey] ?? styleKey))
+                  : (STYLE_NAMES[styleKey] ?? styleKey)}`
               : (l === 'fr' ? 'Tous les styles' : 'All styles')}
             {/* Count lives in the "Showing N" filter row below — next to the
                 style name it briefly read as "you're making 112 pizzas".
@@ -1738,7 +1738,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {activePill === 'pizzas' && (
         <>
           <h1 className="bh-page-title">{l === 'fr' ? 'Quelles pizzas ?' : 'Which pizzas?'}</h1>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><span style={{fontSize:13,color:'var(--smoke)'}}>{totalQty} / {numItems} {l === 'fr' ? 'sélectionnées' : 'selected'}</span><button type="button" onClick={() => setCreateOpen(true)} style={{minHeight:44,border:0,background:'none',color:'var(--terra)',textDecoration:'underline',padding:'4px 0',fontSize:13,cursor:'pointer'}}>{l === 'fr' ? 'Créer ma pizza' : 'Create my pizza'}</button></div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><span data-pizza-count style={{fontSize:13,color:'var(--smoke)'}}>{l === 'fr' ? `${totalQty} pizza${totalQty > 1 ? 's' : ''} choisie${totalQty > 1 ? 's' : ''} pour ${numItems} pâton${numItems > 1 ? 's' : ''}` : `${totalQty} pizza${totalQty === 1 ? '' : 's'} chosen for ${numItems} dough ball${numItems === 1 ? '' : 's'}`}</span><button type="button" onClick={() => setCreateOpen(true)} style={{minHeight:44,border:0,background:'none',color:'var(--terra)',textDecoration:'underline',padding:'4px 0',fontSize:13,cursor:'pointer'}}>{l === 'fr' ? 'Créer ma pizza' : 'Create my pizza'}</button></div>
           {/* ── Results strip ── */}
           <div style={{ padding: '0 0 6px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
             <input

@@ -126,7 +126,7 @@ test('egg weighing note needs eggs; final dough temperature is spelled out with 
 test('French house vocabulary and plain English glosses in the guide',()=>{
  const text=m=>JSON.stringify(m.bakeGuide)+JSON.stringify(m.recipeOutput);
  assert.doesNotMatch(text(fr),/pâton entier|Boules sur-fermentées|facilite le boulage|\bLSI\b|\bIDY\b|La pousse est prête|Test de la vitre|nourri/);
- assert.match(fr.bakeGuide.stepTitles.coldRetardWhole,/en masse/);
+ assert.equal(fr.bakeGuide.stepTitles.coldRetardWhole,'Pointage au froid'); // the bulk, whole, in the fridge
  assert.match(fr.recipeOutput.bulkReadyWhen,/pointage/);
  assert.doesNotMatch(text(en),/\bIDY\b|\bFDT\b/);
  assert.match(en.bakeGuide.bulk.set4.note,/bulk \(first rise\)/);

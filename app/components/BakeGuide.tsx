@@ -1,5 +1,5 @@
 'use client';
-import { splitStepWhy } from '../utils/stepWhy';
+import { splitStepWhy, splitLineWhy } from '../utils/stepWhy';
 import { flourProductName } from '../lib/flourGuidance';
 import { formatDuration } from '../utils/duration';
 import { starterBuild, starterFeedRoleLabel } from '../utils/starterBuild';
@@ -1004,7 +1004,7 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
     .replace('Divisez en {count} pâtons de {weight} g', 'Gardez la pâte en un seul pâton de {weight} g')
     .replace('Cut {count} rectangles of about', 'Cut one rectangle of about')
     .replace('Découpez {count} rectangles d’environ', 'Découpez un rectangle d’environ');
-  const profileSteps = (lines: readonly string[]) => lines.map(line => ({ bold: guideUnitText(singlePiece(line).replaceAll('{count}', String(numItems)).replaceAll('{weight}', String(Math.round((recipe?.totalDough ?? numItems * (breadProtocol?.portions.weight ?? 100)) / Math.max(1,numItems)))), u, l), note: '' }));
+  const profileSteps = (lines: readonly string[]) => lines.map(line => splitLineWhy(guideUnitText(singlePiece(line).replaceAll('{count}', String(numItems)).replaceAll('{weight}', String(Math.round((recipe?.totalDough ?? numItems * (breadProtocol?.portions.weight ?? 100)) / Math.max(1,numItems)))), u, l)));
   const fillingsAction = onNavigateToFillings && <button type="button" onClick={onNavigateToFillings} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{fillingsActionLabel ?? (l === 'fr' ? 'Sandwiches et garnitures' : 'Sandwiches & fillings')} →</button>;
   const isBread       = !!breadProtocol || ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','pain_au_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
   const isNeapolitan  = styleKey === 'neapolitan';
@@ -1785,7 +1785,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       </StepCard>
 
       {/* ── STEP: Bulk Fermentation ──────────────────── */}
-      <StepCard number={n()} {...sc()} icon={<IconBulk />} title={simpleMode ? (l==='fr'?'Laisser lever la pâte':'Let the dough rise') : t('stepTitles.bulkFerm')}
+      <StepCard number={n()} {...sc()} icon={<IconBulk />} title={simpleMode ? (l==='fr'?'Pointage':'Let the dough rise') : t('stepTitles.bulkFerm')}
         passive time={schedule.bulkFermStart} duration={schedule.bulkFermHours} overviewNote={schedule.availabilityActions?.filter(a=>a.id.startsWith('fold-')).slice().sort((a,b)=>+a.at-+b.at).map(a=><span key={a.id} style={{display:'block'}}>{foldActionLabel(a.id, l, schedule.mixingBatches)} · {formatTime(a.at,_fmtLocale)}</span>)} accent={D.terra}>
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
