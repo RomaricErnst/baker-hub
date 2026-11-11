@@ -12,7 +12,7 @@ async function expand(plan,id){const r=row(plan,id);if(!await r.locator('.bh-key
 const reset=page=>page.getByRole('button',{name:/^(Revenir aux horaires recommandés|Return to recommended times)$/});
 const confirm=plan=>plan.getByRole('button',{name:/^(Appliquer|Apply)$/});
 async function openAvailability(page,locale){
- const summary=page.locator('summary:visible').filter({hasText:locale==='fr'?/^Quelque chose de prévu/:/^Anything in the way/});
+ const summary=page.locator('summary:visible').filter({hasText:locale==='fr'?/^Quand êtes-vous occupé/:/^When are you busy/});
  if(await summary.locator('..').getAttribute('open')===null)await summary.tap();
 }
 async function seed(page,{locale='fr',mode='custom',preferment='poolish',extra={},now=NOW}={}){

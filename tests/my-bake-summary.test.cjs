@@ -3,10 +3,10 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const page=fs.readFileSync(path.join(__dirname,'../app/[locale]/page.tsx'),'utf8');
 
-test('rows the baker has not chosen carry a small "suggested" tag instead of a sentence',()=>{
+test('rows the baker has not chosen are left out of the Simple summary, without a tag',()=>{
   assert.doesNotMatch(page,/Suggested values: |Valeurs proposées : /);
-  assert.match(page,/data-suggested-tag/);
-  assert.match(page,/fr \? 'proposé' : 'suggested'/);
+  assert.doesNotMatch(page,/data-suggested-tag/);
+  assert.match(page,/hideSuggested && flow\.recipeGenerated && suggestedRows\[row\.key\]/);
 });
 
 test('catalogue names read in sentence case in the summary',()=>{

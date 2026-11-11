@@ -24,7 +24,7 @@ test('alternatives deduplicate and dedicated help explicitly leaves shopping lis
  assert.equal(ingredientHelpData(item,'france','en').label,'Alternatives');
  const html=renderToStaticMarkup(React.createElement(IngredientShoppingHelp,{item,location:'france',locale:'en',onLocationChange(){},onBack(){}}));
  assert.ok(html.includes('Suggestions only — your shopping list stays unchanged.'));
- assert.ok(html.includes('Where to look'));assert.ok(html.includes('Back to shopping list'));assert.ok(html.includes('https://example.com'));
+ assert.ok(html.includes('Where to look'));assert.ok(html.includes('Back to Shopping list'));assert.ok(html.includes('https://example.com'));
  assert.equal(JSON.stringify(item),original);
  const before=buildShoppingList({margherita:2},'en');
  for(const {items} of before.sections)for(const item of items)ingredientHelpData(item,'france','en');

@@ -36,17 +36,17 @@ for(const mode of ['simple','custom'])test(`${mode}: inline draft, cancel, inval
  await expect(reset(page)).toHaveCount(0);
  await expect(confirm(plan)).toHaveCount(0);await expect(plan.getByRole('button',{name:'Annuler',exact:true})).toHaveCount(0);
  await expand(plan,'mix');await expect(confirm(plan)).toHaveCount(0);await expect(row(plan,'mix').getByRole('button',{name:'- 30 min',exact:true})).toBeVisible();await expect(row(plan,'mix').getByRole('button',{name:'+ 30 min',exact:true})).toBeVisible();
- const interventions=plan.locator('details:not([data-about-plan])').filter({has:page.locator('summary').filter({hasText:'Voir toutes les interventions'})});
- // In Custom the hands-on steps sit under « À propos de ce planning »; tap it open first.
- if(mode==='custom')await plan.locator('[data-about-plan] > summary').tap();
- await expect(interventions).not.toHaveAttribute('open','');
+ // Simple: a closed list of hands-on steps. Custom: the list sits open under « À propos de ce planning ».
+ const interventions=mode==='custom'?plan.locator('[data-hands-on]'):plan.locator('details:not([data-about-plan])').filter({has:page.locator('summary').filter({hasText:'Voir toutes les interventions'})});
  await expect(plan.getByText('Préchauffage',{exact:true})).toBeHidden();
- await interventions.locator('summary').tap();
- await expect(plan.getByText('Préchauffage',{exact:true})).toBeVisible();
+ if(mode==='custom')await plan.locator('[data-about-plan] > summary').tap();
+ else {await expect(interventions).not.toHaveAttribute('open','');await interventions.locator('summary').tap();}
+ await expect(interventions.getByText('Préchauffage',{exact:true})).toBeVisible();
  const preheat=interventions.locator('li').filter({has:page.getByText('Préchauffage',{exact:true})});
  const preheatAt=Date.parse(await preheat.locator('time').getAttribute('datetime'));
  expect(preheatAt).toBeGreaterThan(+start);expect(preheatAt).toBeLessThan(+bake);
- await interventions.locator('summary').tap();
+ if(mode==='custom')await plan.locator('[data-about-plan] > summary').tap();
+ else await interventions.locator('summary').tap();
  const proposed=new Date(+start+900000);await enter(plan,'mix',proposed);await expect(confirm(plan)).toBeEnabled();
  expect((await stored(page)).startTime).toBe(+start);await plan.getByRole('button',{name:'Annuler',exact:true}).click();await expect(reset(page)).toHaveCount(0);
  await enter(plan,'mix',new Date(+bake-3600000));await expect(confirm(plan)).toBeDisabled();
@@ -133,8 +133,6 @@ test('Custom fermentation curve uses the card draft, Apply and reset',async({pag
  const {plan,start,bake}=await openPlan(page,'custom',[],true);
  // The curve sits under « À propos de ce planning ».
  await plan.locator('[data-about-plan] > summary').tap();
- const toggle=plan.getByRole('button',{name:'Voir la courbe de fermentation',exact:true});
- await toggle.tap();
  const marker=plan.getByRole('slider',{name:'Heure du pétrissage',exact:true});
  await expect(marker).toHaveAttribute('aria-valuenow',String((+bake-+start)/3600000));
  await marker.press('ArrowRight');

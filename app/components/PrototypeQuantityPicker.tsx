@@ -63,6 +63,8 @@ export interface PrototypeQuantityPickerProps {
   locale?: 'en' | 'fr' | string;
   count: number;
   itemWeight: number;
+  /** Breads: "2 brioches of 500 g", shown under the count. */
+  sizeNote?: string;
   diameter?: number;
   diameterBounds?: { min: number; max: number };
   crust?: QuantityCrust;
@@ -139,6 +141,7 @@ export default function PrototypeQuantityPicker({
   limitNote,
   onLimitMore,
   limitMoreLabel,
+  sizeNote,
 }: PrototypeQuantityPickerProps) {
   const fr = locale === 'fr';
   const grams = (g: number) => displayWeight(g, units);
@@ -146,6 +149,7 @@ export default function PrototypeQuantityPicker({
   const storedWeight = (w: number) => units === 'imperial' ? ozToG(w) : w;
   const weightUnit = units === 'imperial' ? 'oz' : 'g';
   const [manualEditing, setManualEditing] = useState(false);
+  const [adjustOpen, setAdjustOpen] = useState(false);
   const countMin = countBounds.min ?? 1;
   const countMax = countBounds.max ?? 24;
   const countStep = countBounds.step ?? 1;
@@ -218,7 +222,19 @@ export default function PrototypeQuantityPicker({
           onCommit={value => onCountChange(clamp(value, countMin, countMax, countStep))}
           style={{ ...inputStyle, fontSize: '24px', fontWeight: 700 }}
         />
-        {pizzaNote && roundView === 'count' && <p data-each-pizza style={{ margin: '8px 0 0', fontSize: '14px', lineHeight: 1.45, color: 'var(--ash)' }}>{pizzaNote}</p>}
+        {/* The size sits under the count, with its own way to change it, in Simple too. */}
+        {roundView === 'count' && (pizzaNote || sizeNote) && <p data-each-pizza style={{ margin: '8px 0 0', fontSize: '14px', lineHeight: 1.45, color: 'var(--ash)' }}>{pizzaNote ?? sizeNote}{' · '}<button type="button" data-adjust-weight aria-expanded={adjustOpen} onClick={() => setAdjustOpen(open => !open)} style={{ minHeight: 44, padding: 0, border: 0, background: 'transparent', color: 'var(--terra)', textDecoration: 'underline', font: 'inherit', cursor: 'pointer' }}>{fr ? 'Ajuster' : 'Adjust'}</button></p>}
+        {roundView === 'count' && adjustOpen && <div data-adjust-weight-field style={{ marginTop: 8 }}>
+          <label htmlFor="quantity-count-weight" style={{ ...labelStyle, fontSize: 15 }}>{weightLabel ?? (bakeType === 'bread' ? (fr ? 'Poids de pâte par pièce' : 'Dough per piece') : (fr ? 'Pâte par pizza' : 'Dough per pizza'))} ({weightUnit})</label>
+          <DraftNumberInput id="quantity-count-weight" type="number" inputMode="decimal"
+            min={shownWeight(weightBounds.min)} max={shownWeight(weightBounds.max)}
+            step={units === 'imperial' ? 0.1 : weightBounds.step} value={shownWeight(itemWeight)}
+            onCommit={value => { if (roundPizza) { setManualEditing(true); onWeightModeChange?.(true); } onItemWeightChange(clamp(storedWeight(value), weightBounds.min, weightBounds.max, weightBounds.step)); }}
+            style={{ ...inputStyle, maxWidth: 160, boxSizing: 'border-box' }} />
+          {usesManualWeight && hasCalculatedWeight && <button type="button" onClick={() => { setManualEditing(false); onWeightModeChange?.(false); onUseCalculatedWeight?.(); }} style={{ display: 'block', minHeight: 44, padding: '8px 0', border: 0, background: 'transparent', color: 'var(--terra)', textDecoration: 'underline', font: 'inherit', cursor: 'pointer' }}>
+            {fr ? 'Revenir au poids conseillé' : 'Use suggested weight'}{calculatedWeight !== undefined ? ` · ${grams(calculatedWeight)}` : ''}
+          </button>}
+        </div>}
       </div>}
 
       {/* The count screen asks only how many; size, weight and flour basis are set in Custom. */}

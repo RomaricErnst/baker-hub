@@ -166,7 +166,7 @@ for(const locale of ['fr','en'])test(`${locale} simple: one decision card keeps 
  const {plan}=await seedParty(page,locale,'simple');
  const decision=page.locator('[data-simple-decision]');
  await expect(decision).toBeVisible();
- await expect(decision).toContainText(locale==='fr'?/La pâte doit sortir du réfrigérateur à .*pendant vos heures de travail/:/Your dough needs to leave the fridge at .*during work hours/);
+ await expect(decision).toContainText(locale==='fr'?/la pâte doit sortir du réfrigérateur à .*pendant vos heures de travail/:/your dough needs to leave the fridge at .*during work hours/);
  await expect(page.locator('.bh-fridge-arrangement')).toHaveCount(0);
  await expect(page.locator('.bh-plan-notice')).toHaveCount(0);
  await expect(page.getByRole('button',{name:locale==='fr'?/^Je peux assurer cette étape/:/^I can cover this step/})).toHaveCount(0);
@@ -223,7 +223,7 @@ for(const locale of ['fr','en'])test(`${locale} simple: two clashing steps can k
  const decision=page.locator('[data-simple-decision]');
  await expect(decision).toBeVisible();
  const keepAll=page.locator('[data-simple-keep-all]');
- await expect(keepAll).toContainText(locale==='fr'?/^Garder .* : je m’occupe de ces \d étapes/:/^Keep .*: I’ll handle these \d steps/);
+ await expect(keepAll).toContainText(locale==='fr'?/^Garder .* Je m’occupe de ces \d étapes/:/^Keep .* I’ll handle these \d steps/);
  await fits(page,keepAll);
  expect((await keepAll.boundingBox()).height).toBeGreaterThanOrEqual(44);
  const before=await stored(page);
@@ -629,7 +629,7 @@ async function customClash(page,locale){
 for(const locale of ['fr','en'])test(`${locale} custom: the clash card keeps the bake time in one tap, then the recipe can be created`,async({page},info)=>{
  const {plan,decision,forward,fr}=await customClash(page,locale);
  const keepAll=decision.locator('[data-simple-keep-all]');
- await expect(keepAll).toContainText(fr?/^Garder .* : je m’occupe de ces \d étapes/:/^Keep .*: I’ll handle these \d steps/);
+ await expect(keepAll).toContainText(fr?/^Garder .* Je m’occupe de ces \d étapes/:/^Keep .* I’ll handle these \d steps/);
  await fits(page,keepAll);
  await info.attach('custom-clash-card',{body:await page.screenshot(),contentType:'image/png'});
  const before=await stored(page);
@@ -687,6 +687,6 @@ for(const locale of ['fr','en'])for(const way of ['keep','availability'])test(`$
  const moved=page.locator('[data-plan-moved]');
  if(after.startTime!==PARTY_MIX){
   await expect(moved).toBeVisible();
-  await expect(moved).toContainText(fr?'Le pétrissage passe de':'Start Dough moves from');
+  await expect(moved).toContainText(fr?/Pétrir la pâte : .* \(au lieu de /:/Start Dough .* \(was /);
  }else await expect(moved).toHaveCount(0);
 });

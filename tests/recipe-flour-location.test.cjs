@@ -96,7 +96,7 @@ test('preferment and starter total flour identities do not misstate final-dough 
    const primaryFinal=Math.round(pf.finalFlour*blend.ratio1/100);
    assert.ok(pf.prefFlour+primaryFinal>result.flour*blend.ratio1/100,'Primary-flour preferment makes whole-recipe proportions differ');
    assert.ok(html.includes(locale==='fr'?'Utilisez votre farine principale (Selected wheat)':'Use your primary flour (Selected wheat)'));
-   assert.ok(html.includes(locale==='fr'?'Ingrédients par étape':'Ingredients by stage'));
+   assert.ok(html.includes('data-recipe-stages'));
   }
  }
  for(const locale of ['fr','en']){

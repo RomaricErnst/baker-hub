@@ -30,7 +30,7 @@ test('both review actions regenerate stale recipes and expose explicit edits; gu
   vm.runInNewContext(ts.transpileModule(handler+';finishSetupEdit();',{}).outputText,context);
   assert.deepEqual(calls,[expected]);
  }
- assert.match(source,/Mettre à jour la recette/);assert.match(source,/aria-label=\{`\$\{fr \? 'Modifier' : 'Edit'\}/);
+ assert.match(source,/Mettre à jour ma recette/);assert.match(source,/aria-label=\{`\$\{fr \? 'Modifier' : 'Edit'\}/);
  assert.match(source,/prefermentFlourPct \?\? 20/);
  assert.doesNotMatch(source,/Share \+ party — end of the journey|← Recette|Voir ma recette/);
 });

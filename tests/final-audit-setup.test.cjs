@@ -9,12 +9,13 @@ require('./load-production.cjs');
 const bottomSource=fs.readFileSync('app/components/BottomActions.tsx','utf8').replace(/^import .*$/mg,'').replace('export default function','function');
 const BottomActions=vm.runInNewContext(ts.transpileModule(bottomSource+';BottomActions',{compilerOptions:{jsx:ts.JsxEmit.React}}).outputText,{React,useRef:React.useRef,useLayoutEffect:React.useLayoutEffect});
 const {findFixedBakeSchedule}=require('../app/utils/scheduleEdit.ts');
+const {breadNoun,breadBakeTitle}=require('../app/utils/breadNames.ts');
 function functions(file,names){
  const source=fs.readFileSync(file,'utf8');
  const tree=ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  const declarations=tree.statements.filter(n=>ts.isFunctionDeclaration(n)&&names.includes(n.name?.text)).map(n=>n.getText(tree).replace(/^export /,''));
  const code=ts.transpileModule(declarations.join('\n')+'\n({'+names.join(',')+'});',{compilerOptions:{target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.React}}).outputText;
- return vm.runInNewContext(code,{React,BottomActions,useRef:React.useRef,useLayoutEffect:React.useLayoutEffect,NEXT_CTA:{},useBottomNavHeight:()=>0,findFixedBakeSchedule});
+ return vm.runInNewContext(code,{React,BottomActions,useRef:React.useRef,useLayoutEffect:React.useLayoutEffect,NEXT_CTA:{},useBottomNavHeight:()=>0,findFixedBakeSchedule,breadNoun,breadBakeTitle});
 }
 const page=functions('app/[locale]/page.tsx',['SessionReplacementNotice','bakeQuantityLabel','eggShoppingLabel','StepActions','StepPage','stepAnswered']);
 const schedule=functions('app/components/SchedulePicker.tsx',['StarterHydrationNotice','coldTimingMessage','findRequiredColdStart']);
@@ -65,7 +66,9 @@ test('cold timing reason quantifies missing fridge time and offers useful change
 test('piadina quantity stays contextual and egg purchases round up without altering weighed formula',()=>{
  assert.equal(page.bakeQuantityLabel(6,'bread','piadina',true),'6 piadinas');
  assert.equal(page.bakeQuantityLabel(1,'bread','piadina',false),'1 piadina');
- assert.equal(page.bakeQuantityLabel(1,'bread','baguette',false),'1 loaf');
+ assert.equal(page.bakeQuantityLabel(1,'bread','baguette',false),'1 baguette');
+ assert.equal(page.bakeQuantityLabel(2,'bread','brioche',true),'2 brioches');
+ assert.equal(page.bakeQuantityLabel(1,'bread','pain_campagne',false),'1 loaf');
  assert.match(page.eggShoppingLabel(151,true),/4 œufs/);
  assert.match(page.eggShoppingLabel(50,false),/1 egg at/);
  assert.match(page.eggShoppingLabel(151,false),/weigh, sizes vary/);

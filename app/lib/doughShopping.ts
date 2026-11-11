@@ -36,6 +36,14 @@ export function yeastBuyingHint(grams: number, yeastType: string | undefined, lo
   return grams <= 7 ? (units === 'imperial' ? 'one ¼ oz packet is plenty' : 'one 7 g sachet is plenty') : undefined;
 }
 
+/** "1 sachet (7 g)" when a dry-yeast dose fits in one sachet (FR packs: 5.5 g). */
+export function yeastSachet(grams: number, yeastType: string | undefined, locale: string, units: UnitSystem = 'metric'): string | undefined {
+  if (!(grams > 0) || yeastType === 'fresh' || yeastType === 'sourdough') return undefined;
+  if (locale === 'fr') return grams <= 5.5 ? '1 sachet (5,5 g)' : undefined;
+  if (grams > 7) return undefined;
+  return units === 'imperial' ? '1 packet (¼ oz)' : '1 sachet (7 g)';
+}
+
 /** What the bread steps ask for besides the dough: the fougasse's olive oil and
  * fleur de sel, the rice flour for a banneton, semolina for batbout, the egg of
  * a brioche's optional egg wash, a pain viennois's egg wash. Only styles whose steps use them. */
@@ -93,7 +101,12 @@ export function doughShoppingItems(input: {
   } else if (yeastGrams && yeastGrams > 0) {
     // The amount is the one for this yeast type, so the name must say which.
     const type = recipe.preferment?.prefYeastType ?? recipe.yeast?.yeastType ?? yeastType;
-    items.push({ tickKey: 'dough_2', name: yeastShoppingName(type, locale), amount: formatYeastDose(yeastGrams, locale).replace(' ', ' '), ...(yeastBuyingHint(yeastGrams, type, locale, units) ? { hint: yeastBuyingHint(yeastGrams, type, locale, units) } : {}) });
+    // What is bought: one sachet when the dose fits in it; the dose itself stays beside it.
+    const sachet = yeastSachet(yeastGrams, type, locale, units);
+    const dose = formatYeastDose(yeastGrams, locale).replace(' ', ' ');
+    items.push(sachet
+      ? { tickKey: 'dough_2', name: yeastShoppingName(type, locale), amount: sachet, hint: fr ? `vous en utiliserez ${dose}` : `you’ll use ${dose}` }
+      : { tickKey: 'dough_2', name: yeastShoppingName(type, locale), amount: dose, ...(yeastBuyingHint(yeastGrams, type, locale, units) ? { hint: yeastBuyingHint(yeastGrams, type, locale, units) } : {}) });
   }
   if ((recipe.sugar ?? 0) > 0) {
     const sugar = recipe.sugar ?? 0;

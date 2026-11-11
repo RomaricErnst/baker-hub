@@ -14,6 +14,7 @@ import WaterPreparation, { waterSplit, type WaterSource, type WaterSettingsProps
 import { formatPrefermentDose, formatYeastDose, prefermentDilution } from '../utils/prefermentDose';
 import { needsScaleHelp, yeastSpoonMeasure, setPercent, DILUTION_BASE_YEAST_G, SCALE_HELP_BELOW_G } from '../utils/yeastMeasure';
 import { getBreadProtocol } from '../utils/breadProfiles';
+import { eggCountLabel } from '../utils/breadNames';
 
 interface RecipeOutputProps extends WaterSettingsProps {
   afterIngredients?: ReactNode;
@@ -261,8 +262,8 @@ function StarterPrepCard({
       flexDirection: 'column',
       gap: '12px',
     }}>
-      <div style={labelStyle}>
-        {isFr ? 'Préparer votre levain' : 'Preparing your starter'}
+      <div data-starter-amount style={{fontSize:16,fontWeight:600,color:'var(--char)'}}>
+        {isFr ? `${sourdough.starterGramsMid} g de levain pour la pâte · gardez ${build.keep} g pour la prochaine fois` : `${sourdough.starterGramsMid} g of starter for the dough · keep ${build.keep} g for next time`}
       </div>
 
       {/* Scheduled timeline */}
@@ -318,45 +319,16 @@ function StarterPrepCard({
             </div>
           )}
           {mixingTime && <div style={rowStyle}><div style={labelStyle}>{isFr ? 'Incorporer au pétrissage' : 'Use when mixing'}</div><div style={valueStyle}>{fmtFull(mixingTime)}</div><div style={noteStyle}>{predictedPeak && peakGapMinutes !== null && (Math.abs(peakGapMinutes)<=30
-            ? (isFr ? `Au pic estimé (${fmtFull(predictedPeak)}) : doublé, bombé, pas retombé.` : `At its estimated peak (${fmtFull(predictedPeak)}): doubled, domed, not collapsed.`)
+            ? (isFr ? `Au pic estimé (${fmtFull(predictedPeak)}).` : `At its estimated peak (${fmtFull(predictedPeak)}).`)
             : peakGapMinutes<0
-            ? (isFr ? `Un peu avant le pic estimé (${fmtFull(predictedPeak)}) : presque doublé et encore en train de monter.` : `A little before its estimated peak (${fmtFull(predictedPeak)}): nearly doubled and still rising.`)
-            : (isFr ? `Un peu après le pic estimé (${fmtFull(predictedPeak)}) : bombé et pas encore retombé.` : `A little after its estimated peak (${fmtFull(predictedPeak)}): domed and not yet collapsed.`))}</div></div>}
+            ? (isFr ? `Un peu avant le pic estimé (${fmtFull(predictedPeak)}) : encore en train de monter.` : `A little before its estimated peak (${fmtFull(predictedPeak)}): still rising.`)
+            : (isFr ? `Un peu après le pic estimé (${fmtFull(predictedPeak)}) : pas encore retombé.` : `A little after its estimated peak (${fmtFull(predictedPeak)}): not yet collapsed.`))}</div></div>}
         </div>
       )}
 
-      {/* Amount */}
-      <div style={rowStyle}>
-        <div style={labelStyle}>
-          {isFr ? 'Quantité' : 'Amount'}
-        </div>
-        <div style={valueStyle}>
-          {sourdough.starterGramsMin === sourdough.starterGramsMax ? sourdough.starterGramsMin : `${sourdough.starterGramsMin}–${sourdough.starterGramsMax}`} g
-        </div>
-        <div style={noteStyle}>
-          {isFr
-            ? `Utilisez ${sourdough.starterGramsMid} g pour la pâte et conservez ${build.keep} g pour votre prochaine fournée. Le rafraîchi inclut une marge pour les pertes dans le bocal.`
-            : `Use ${sourdough.starterGramsMid} g in the dough and keep ${build.keep} g for your next bake. Feed quantities include an allowance for jar losses.`}
-        </div>
-      </div>
-
-      {/* Readiness cues */}
-      <div style={rowStyle}>
-        <div style={labelStyle}>
-          {isFr ? 'Prêt quand' : 'Ready when'}
-        </div>
-        {[
-          isFr ? 'Doublé ou plus en volume'
-               : 'Doubled or more in volume',
-          isFr ? 'Surface en dôme, pas encore effondrée'
-               : 'Dome-shaped, not yet collapsed',
-          isFr ? 'Bulles visibles sur les côtés du bocal'
-               : 'Bubbles visible through the sides of the jar',
-          isFr ? 'Odeur acidulée, pas alcoolisée'
-               : 'Smells pleasantly sour, not alcoholic',
-        ].map((cue, i) => (
-          <div key={i} style={noteStyle}>{cue}</div>
-        ))}
+      {/* One ready list */}
+      <div data-starter-ready style={{fontSize:14,color:'var(--ash)'}}>
+        <strong>{isFr ? 'Prêt quand : ' : 'Ready when: '}</strong>{isFr ? 'doublé, bombé, plein de bulles, odeur doucement acidulée.' : 'doubled, domed, full of bubbles, smelling mildly sour.'}
       </div>
 
       {/* Post-mix maintenance */}
@@ -408,7 +380,7 @@ export default function RecipeOutput({
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
   const enrichment = result.enrichment;
   const breadProtocol = getBreadProtocol(styleKey ?? '');
-  const enrichmentRows = enrichment ? (['milk','eggs','butter'] as const).filter(key => enrichment[key] > 0).map(key => <IngRow key={key} label={({milk:locale === 'fr' ? 'Lait' : 'Milk',eggs:locale === 'fr' ? 'Œufs sans coquille' : 'Eggs, without shells',butter:locale === 'fr' ? 'Beurre' : 'Butter'})[key]} grams={wStr(enrichment[key])} advancedPct={mode === 'custom' ? pctStr(enrichment[key] / flour * 100) : undefined} />) : null;
+  const enrichmentRows = enrichment ? (['milk','eggs','butter'] as const).filter(key => enrichment[key] > 0).map(key => <IngRow key={key} label={({milk:locale === 'fr' ? 'Lait' : 'Milk',eggs:locale === 'fr' ? 'Œufs sans coquille' : 'Eggs, without shells',butter:locale === 'fr' ? 'Beurre' : 'Butter'})[key]} grams={wStr(enrichment[key])} sub={key === 'eggs' ? eggCountLabel(enrichment[key], locale === 'fr') : undefined} advancedPct={mode === 'custom' ? pctStr(enrichment[key] / flour * 100) : undefined} />) : null;
   // Sourdough starter accounting: half the starter is flour, half water
   // (100% hydration). Subtract from the main-dough amounts so the card's
   // total actually tallies. Preferment mode has its own accounting already.
@@ -420,8 +392,6 @@ export default function RecipeOutput({
   // Keep the buying identity beside its ingredient, not in a distant footer.
   // Only the optional explanation is collapsed; stage/starter quantities below
   // retain their existing accounting and custom blends keep their own names.
-  const strength = result.blendProfile?.fermToleranceMultiplier ?? 1;
-  const cueGroup = strength < 0.85 ? 'weak' : strength > 1.15 ? 'strong' : 'standard';
   const showSelectedFlour = mode === 'custom' || explicitFlour;
   const guidedFlourGuidance = !showSelectedFlour && styleKey
     ? <span>{recommendedFlourName(styleKey, locale)}</span> : undefined;
@@ -476,6 +446,14 @@ export default function RecipeOutput({
   const waterAssumption = mode==='simple' ? <p>{mixingWaterCaption(mixerType,locale)}
     {onMixerChange && <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={()=>onMixerChange(mixerType==='hand'?'stand':'hand')}>{mixerType==='hand'?(locale==='fr'?'Utiliser un robot':'Use a mixer'):(locale==='fr'?'Pétrir à la main':'Knead by hand')}</button>}
   </p>:null;
+  // One visible line for the water: its temperature, with ice named when the recipe needs it.
+  const waterTempLine = (() => {
+    const split = waterSplit({waterGrams:waterMain,targetTemp:waterTemp,kitchenTemp,fridgeTemp,source:waterSource,measuredWaterTemp,waterMethod,idealWaterTemp:result.thermal?.idealWaterTemp,directIceSupported:mixerType==='spiral'});
+    const fr = locale === 'fr';
+    const temp = displayTemp(waterTemp,u);
+    if (split && split.ice > 0) return fr ? `à ${temp}, avec ${displayWeight(split.ice,u,locale)} de glace` : `at ${temp}, with ${displayWeight(split.ice,u,locale)} ice`;
+    return fr ? `environ ${temp}` : `about ${temp}`;
+  })();
   const waterSubNode = <WaterPreparation readOnly waterGrams={waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} achievedDoughTempC={result.thermal?.doughTempC} waterWasClamped={result.thermal?.waterWasClamped} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
   const finalDoughWaterSubNode = <WaterPreparation readOnly waterGrams={result.preferment?.finalWater ?? waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} achievedDoughTempC={result.thermal?.doughTempC} waterWasClamped={result.thermal?.waterWasClamped} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
 
@@ -496,14 +474,16 @@ export default function RecipeOutput({
     return [spoon, tooSmall ? t('recipeOutput.weighOrDilute') : ''].filter(Boolean).join(' · ');
   }
   const smallDoseShown = !!yeastInfo && !hasPref && !!(yeastInfo.hitMinFloor || needsPrecision || dilutionTip);
-  const yeastAlternatives = yeastInfo && mode==='simple' && yeastInfo.yeastType==='instant' ? (locale==='fr' ? `Levure fraîche : ${formatYeastDose(yeastInfo.grams*3,locale)} · sèche active : ${formatYeastDose(yeastInfo.grams*1.33,locale)}` : `Fresh yeast: ${formatYeastDose(yeastInfo.grams*3,locale)} · active dry: ${formatYeastDose(yeastInfo.grams*1.33,locale)}`) : null;
+  // Fresh yeast is weighed on a kitchen scale: whole grams from 10 g.
+  const freshEquivalent = (grams:number) => grams >= 10 ? `${Math.round(grams)} g` : formatYeastDose(grams,locale);
+  const yeastAlternatives = yeastInfo && mode==='simple' && yeastInfo.yeastType==='instant' ? (locale==='fr' ? `ou ${freshEquivalent(yeastInfo.grams*3)} de levure fraîche` : `or ${freshEquivalent(yeastInfo.grams*3)} fresh yeast`) : null;
   const yeastSub = yeastInfo
     ? (() => {
         const isInstant = yeastInfo.yeastType === 'instant';
         const idyPart = !isInstant ? (locale==='fr' ? `= ${formatYeastDose(yeastInfo.grams, locale)} de levure sèche instantanée` : `= ${formatYeastDose(yeastInfo.grams, locale)} instant dry yeast`) : null;
-        const alternatives = mode==='simple' && isInstant ? (locale==='fr' ? `Levure fraîche : ${formatYeastDose(yeastInfo.grams*3,locale)} · sèche active : ${formatYeastDose(yeastInfo.grams*1.33,locale)}` : `Fresh yeast: ${formatYeastDose(yeastInfo.grams*3,locale)} · active dry: ${formatYeastDose(yeastInfo.grams*1.33,locale)}`) : null;
+        const alternatives = mode==='simple' && isInstant ? (locale==='fr' ? `ou ${freshEquivalent(yeastInfo.grams*3)} de levure fraîche` : `or ${freshEquivalent(yeastInfo.grams*3)} fresh yeast`) : null;
         // With a small-dose section below, the other yeasts are listed there.
-        return [smallDoseShown ? null : alternatives, measureHint(yeastSpoon,needsPrecision), idyPart].filter(Boolean).join(' · ') || undefined;
+        return [smallDoseShown ? null : alternatives, smallDoseShown ? yeastSpoon : measureHint(yeastSpoon,needsPrecision), idyPart].filter(Boolean).join(' · ') || undefined;
       })()
     : undefined;
 
@@ -545,6 +525,66 @@ export default function RecipeOutput({
 
   if (enrichment?.unsupportedMethod) return <section role="alert"><h2>{locale === 'fr' ? 'Méthode non prise en charge' : 'Unsupported method'}</h2><p>{locale === 'fr' ? 'Cette formule enrichie nécessite une levure commerciale, sans préferment. Modifiez le choix de levure dans les réglages puis recalculez.' : 'This enriched formula requires commercial yeast without preferment. Update the leavening choice in setup and recalculate.'}</p>{onEditSetup && <button type="button" onClick={onEditSetup}>{locale === 'fr' ? 'Modifier les réglages' : 'Edit setup'}</button>}</section>;
 
+  // How to measure a small yeast dose: opens under the yeast row ("how to weigh it").
+  const smallDoseBody = yeastInfo ? (<div data-small-dose style={{display:'flex',flexDirection:'column',gap:10,marginTop:6}}>
+          {yeastAlternatives && <p data-yeast-alternatives style={{margin:'0 0 10px',fontSize:14,color:'var(--ash)'}}>{yeastAlternatives}</p>}
+          {/* Min floor callout — shown when 0.5g IDY floor was applied */}
+          {yeastInfo.hitMinFloor && !needsPrecision && (
+            <div style={{
+              background: '#FFFBEE',
+              border: '1.5px solid #9C8248',
+              borderRadius: '16px',
+              padding: '12px 16px',
+            }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#7A5A10' }}>
+                  {t('recipeOutput.precisionScaleMin')}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Precision scale callout */}
+          {needsPrecision && (
+            <div style={{
+              background: '#FFFBEE',
+              border: '1.5px solid #9C8248',
+              borderRadius: '16px',
+              padding: '12px 16px',
+            }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#7A5A10' }}>
+                  {t('recipeOutput.precisionScaleTitle')}
+                </span>
+              </div>
+              <div style={{ fontSize: '12px', color: '#5A4010', lineHeight: 1.6, paddingLeft: '24px' }}>
+                {t('recipeOutput.precisionScaleBody', { amount: formatYeastDose(yeastInfo.convertedGrams, locale) })}
+              </div>
+            </div>
+          )}
+
+
+          {/* Dilution tip */}
+          {dilutionTip && (
+            <InfoCard
+              icon=""
+              level="info"
+              title={t('recipeOutput.dilutionTitle')}
+              body={t('recipeOutput.dilutionBody', {
+                yeastG: DILUTION_BASE_YEAST_G,
+                waterG: dilutionTip.waterG * DILUTION_BASE_YEAST_G,
+                // Kitchen-scale precision: whole grams from 10 g, one decimal below.
+                solutionG: kitchenGrams(dilutionTip.solutionG),
+                waterInSolutionG: kitchenGrams(dilutionTip.waterInSolutionGrams ?? dilutionTip.solutionG * 100 / 101),
+                remainingWaterG: kitchenGrams((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG),
+              })+(mainIceG>0?' '+t('recipeOutput.dilutionIce',{iceG:mainIceG}):'')
+                // Imperial bakers read the water line in ounces: say that this method stays in grams.
+                +(u==='imperial'?' '+t('recipeOutput.dilutionInGrams')+' '+t('recipeOutput.dilutionRemainingImperial',{grams:kitchenGrams((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG),ounces:displayWeight((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG,'imperial',locale)}):'')}
+            />
+          )}
+
+  </div>) : null;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
@@ -577,7 +617,8 @@ export default function RecipeOutput({
             ? (locale === 'fr' ? 'Cuisson à la poêle ou sur une plaque : gardez les pains cuits couverts pour qu’ils restent souples.' : 'Cook on a skillet or griddle; keep cooked breads covered to stay soft.')
             : (locale === 'fr' ? 'Le façonnage et la cuisson de ce pain sont dans Préparation et Cuisson & service.' : 'This bread’s shaping and baking are in Preparation and Baking & serving.')}</p>}
 
-      {mode === 'custom' && <div style={{textAlign:'right',fontSize:12,color:'var(--smoke)'}}>{locale === 'fr' ? '% de farine · Poids' : '% of flour · Weight'}</div>}
+      {/* The % column header only where the rows carry percentages. */}
+      {mode === 'custom' && !hasPref && !sdActive && <div style={{textAlign:'right',fontSize:12,color:'var(--smoke)'}}>{locale === 'fr' ? '% de farine · Poids' : '% of flour · Weight'}</div>}
 
       {/* ── Ingredients / Preferment cards ──────── */}
       {result.preferment && prefermentType && prefermentType !== 'none' ? (() => {
@@ -587,8 +628,8 @@ export default function RecipeOutput({
         const chillAt = mixingTime ? poolishCoolingAt(mixingTime,result) : null;
 
         return (
-          <details open>
-            <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Ingrédients par étape' : 'Ingredients by stage'}</summary>
+          // The stages are the recipe: shown as they are made, not behind a toggle.
+          <div data-recipe-stages style={{display:'flex',flexDirection:'column',gap:16}}>
             {/* CARD 1: Make your preferment */}
             <div style={{ background: 'var(--warm)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: 'none' }}>
               <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)', marginBottom: '16px' }}>
@@ -677,7 +718,7 @@ export default function RecipeOutput({
                   grams={wStr(pf.finalFlour)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
               )}
-              <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={<details><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Préparer l’eau' : 'Prepare the water'}</summary>{waterAssumption}{finalDoughWaterSubNode}</details>}
+              <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={<><span data-water-temp>{waterTempLine}</span> · <details data-water-help style={{display:'inline'}}><summary style={{display:'inline-flex',alignItems:'center',minHeight:44,cursor:'pointer',color:'var(--terra)'}}>{locale === 'fr' ? 'comment l’obtenir ▾' : 'how to get it ▾'}</summary>{waterAssumption}{finalDoughWaterSubNode}</details></>}
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalWater / flour * 1000) / 10) : undefined} />
               <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} noPct
                 advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
@@ -693,7 +734,7 @@ export default function RecipeOutput({
 
               </div>
             </div>
-          </details>
+          </div>
         );
       })() : (
         /* Direct dough additions */
@@ -738,16 +779,17 @@ export default function RecipeOutput({
             </>}
           />}
           {water > 0 && <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(sdActive ? waterMain : water)} noPct={sdActive} pct={pctStr(waterPct)} sub={
-            !enrichment ? <details><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Préparer l’eau' : 'Prepare the water'}</summary>
+            !enrichment ? <><span data-water-temp>{waterTempLine}</span> · <details data-water-help style={{display:'inline'}}><summary style={{display:'inline-flex',alignItems:'center',minHeight:44,cursor:'pointer',color:'var(--terra)'}}>{locale === 'fr' ? 'comment l’obtenir ▾' : 'how to get it ▾'}</summary>
               {sdActive && <p>{locale === 'fr' ? `${wStr(sdHalf)} d’eau sont déjà dans le levain indiqué ci-dessous.` : `${wStr(sdHalf)} water is already in the starter shown below.`}</p>}
               {waterAssumption}{waterSubNode}
-            </details> : undefined} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />}
+            </details></> : undefined} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />}
           {mode==='custom' && flourBlend?.flour2 && <p className="bh-key-detail">{[flourBlend.flour1,flourBlend.flour2,flourBlend.flour3].filter(Boolean).map((key,index)=>{
             const ratio=index===0?flourBlend.ratio1:index===1?(flourBlend.flour3?flourBlend.ratio2??0:100-flourBlend.ratio1):100-flourBlend.ratio1-(flourBlend.ratio2??0);
             const flourType=FLOUR_DATA[key as keyof typeof FLOUR_DATA];
             return ratio>0 ? `${locale==='fr'?flourType.nameFr:flourType.name} ${formatPercent(ratio,locale)}` : null;
           }).filter(Boolean).join(' · ')} ({locale==='fr'?'farine ajoutée au pétrissage':'flour added at mixing'})</p>}
           {enrichmentRows}
+          {enrichment && (styleKey === 'brioche' || styleKey === 'pain_viennois') && <p data-egg-wash style={{margin:'8px 0 0',fontSize:14,color:'var(--smoke)'}}>{locale === 'fr' ? 'Pour la dorure (facultatif) : 1 œuf battu' : 'For the egg wash (optional): 1 beaten egg'}</p>}
           <IngRow label={t('recipeOutput.ingredientSalt')}  grams={wStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
 
           {yeastInfo && (
@@ -755,7 +797,7 @@ export default function RecipeOutput({
               label={
                 yeastTypeName
               }
-              sub={yeastSub}
+              sub={smallDoseShown ? <>{yeastSub && <span>{yeastSub} · </span>}<details data-yeast-help style={{display:'inline'}}><summary style={{display:'inline-flex',alignItems:'center',minHeight:44,cursor:'pointer',color:'var(--terra)'}}>{t('recipeOutput.weighOrDilute')}</summary>{smallDoseBody}</details></> : yeastSub}
               grams={formatYeastDose(yeastInfo.convertedGrams, locale)}
               pct={pctStr(yeastInfo.convertedPct)}
               advancedPct={mode === 'custom' ? pctStr(yeastInfo.convertedPct) : undefined}
@@ -877,8 +919,9 @@ export default function RecipeOutput({
       {(hasPref || sdActive) && <section aria-label={locale==='fr'?'Quantités totales':'Total ingredients'}>
         <details>
           <summary style={{minHeight:44,cursor:'pointer',alignContent:'center'}}>
-            {locale==='fr'?'Farine totale':'Total flour'} {wStr(flour)}{mode==='custom' && <> · {pctStr(hydration)} {locale==='fr'?'d’hydratation':'hydration'}</>}
+            {locale==='fr'?'Totaux de la pâte':'Whole-dough totals'} · {wStr(flour)} {locale==='fr'?'de farine':'flour'}{mode==='custom' && <> · {pctStr(hydration)} {locale==='fr'?'d’hydratation':'hydration'}</>}
           </summary>
+          {mode === 'custom' && <div style={{textAlign:'right',fontSize:12,color:'var(--smoke)'}}>{locale === 'fr' ? '% de farine · Poids' : '% of flour · Weight'}</div>}
         {showSelectedFlour && result.flourParts?.length ? result.flourParts.map((part, index) => <IngRow key={`${part.key}-${index}`} label={flourProductName(locale === 'fr' ? part.nameFr : part.name,locale)} grams={wStr(part.grams)} advancedPct={mode === 'custom' ? pctStr(part.pct) : undefined} />) : <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={mode === 'custom' ? '100%' : undefined} sub={guidedFlourGuidance} />}
         <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
         <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
@@ -1011,65 +1054,7 @@ export default function RecipeOutput({
       {yeastInfo && !hasPref && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-          {(yeastInfo.hitMinFloor || needsPrecision || dilutionTip) && <details className="bh-disclosure">
-            <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Petite dose de levure' : 'Small yeast dose'}</summary>
-          {yeastAlternatives && <p data-yeast-alternatives style={{margin:'0 0 10px',fontSize:14,color:'var(--ash)'}}>{yeastAlternatives}</p>}
-          {/* Min floor callout — shown when 0.5g IDY floor was applied */}
-          {yeastInfo.hitMinFloor && !needsPrecision && (
-            <div style={{
-              background: '#FFFBEE',
-              border: '1.5px solid #9C8248',
-              borderRadius: '16px',
-              padding: '12px 16px',
-            }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#7A5A10' }}>
-                  {t('recipeOutput.precisionScaleMin')}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Precision scale callout */}
-          {needsPrecision && (
-            <div style={{
-              background: '#FFFBEE',
-              border: '1.5px solid #9C8248',
-              borderRadius: '16px',
-              padding: '12px 16px',
-            }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#7A5A10' }}>
-                  {t('recipeOutput.precisionScaleTitle')}
-                </span>
-              </div>
-              <div style={{ fontSize: '12px', color: '#5A4010', lineHeight: 1.6, paddingLeft: '24px' }}>
-                {t('recipeOutput.precisionScaleBody', { amount: formatYeastDose(yeastInfo.convertedGrams, locale) })}
-              </div>
-            </div>
-          )}
-
-
-          {/* Dilution tip */}
-          {dilutionTip && (
-            <InfoCard
-              icon=""
-              level="info"
-              title={t('recipeOutput.dilutionTitle')}
-              body={t('recipeOutput.dilutionBody', {
-                yeastG: DILUTION_BASE_YEAST_G,
-                waterG: dilutionTip.waterG * DILUTION_BASE_YEAST_G,
-                // Kitchen-scale precision: whole grams from 10 g, one decimal below.
-                solutionG: kitchenGrams(dilutionTip.solutionG),
-                waterInSolutionG: kitchenGrams(dilutionTip.waterInSolutionGrams ?? dilutionTip.solutionG * 100 / 101),
-                remainingWaterG: kitchenGrams((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG),
-              })+(mainIceG>0?' '+t('recipeOutput.dilutionIce',{iceG:mainIceG}):'')
-                // Imperial bakers read the water line in ounces: say that this method stays in grams.
-                +(u==='imperial'?' '+t('recipeOutput.dilutionInGrams')+' '+t('recipeOutput.dilutionRemainingImperial',{grams:kitchenGrams((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG),ounces:displayWeight((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG,'imperial',locale)}):'')}
-            />
-          )}
-
-          </details>}
+          {/* The small-dose help now opens under the yeast row itself. */}
 
           {/* Poolish recommendation */}
           {yeastInfo.recommendPoolish && (
@@ -1103,62 +1088,8 @@ export default function RecipeOutput({
       {sourdough && (
         <details className="bh-disclosure"><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Préparer le levain' : 'Prepare the starter'}</summary>
 
-          {/* Starter range */}
-          <div style={{
-            background: 'var(--warm)',
-            borderRadius: '16px',
-            padding: '20px 24px',
-            border: '1px solid rgba(156, 130, 72,0.12)',
-          }}>
-            <div style={{ fontSize: '11px', color: D.sub, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
-              {t('recipeOutput.starterLabel')}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '24px', fontWeight: 700, color: 'var(--gold-text)' }}>
-                {sourdough.starterGramsMin === sourdough.starterGramsMax ? sourdough.starterGramsMin : `${sourdough.starterGramsMin}–${sourdough.starterGramsMax}`} g
-              </span>
-              <span style={{ fontSize: '13px', color: D.muted, fontFamily: 'var(--font-ui)' }}>
-                ({sourdough.starterPctMin === sourdough.starterPctMax ? sourdough.starterPctMin : `${sourdough.starterPctMin}–${sourdough.starterPctMax}`}{locale === 'fr' ? ' % de la farine' : '% of flour'})
-              </span>
-            </div>
-            <div style={{ fontSize: '12px', color: D.sub, marginTop: '8px', lineHeight: 1.5 }}>
-              {t('recipeOutput.starterFeedNote')}
-            </div>
-          </div>
-
-
-          {/* Bulk fermentation cues */}
-          <div style={{
-            border: '1.5px solid var(--border)',
-            borderRadius: '16px',
-            padding: '16px 20px',
-            background: 'var(--warm)',
-          }}>
-            <div style={{
-              fontSize: '12px', color: 'var(--smoke)',
-              textTransform: 'uppercase', letterSpacing: '.06em',
-              fontFamily: 'var(--font-ui)', marginBottom: '12px',
-            }}>
-              {t('recipeOutput.bulkReadyWhen')}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {(t.raw(`recipeOutput.bulkCues.${cueGroup}`) as string[]).map((cue, i) => (
-                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                  <span style={{
-                    width: '18px', height: '18px', borderRadius: '50%',
-                    border: '1.5px solid var(--border)',
-                    flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
-                    marginTop: '.05rem',
-                  }}>
-                    {i + 1}
-                  </span>
-                  <span style={{ fontSize: '13px', color: 'var(--ash)', lineHeight: 1.55 }}>{cue}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
+          {/* One amount line and one ready list, in the card below. The pointage
+              signs live in the Pointage step of Preparation. */}
           {/* ── Starter preparation card ──────────── */}
           <StarterPrepCard
             sourdough={sourdough}

@@ -18,10 +18,11 @@ export function splitAmount(total: number, count: number, index: number, decimal
   const extra = ticks - base * count;
   return (base + (index < extra ? 1 : 0)) / scale;
 }
-/** Precision for one batch's share: yeast and preferment to 0.01 g; amounts
+/** Precision for one batch's share: yeast and preferment to 0.001 g; amounts
  * under 10 g per batch to 0.1 g (shown with a decimal); the rest to the gram. */
 export function batchDecimals(key: string, total: number, count: number) {
-  if (key === 'yeast' || key === 'preferment') return 2;
+  // Three decimals: the guide shows the same yeast figure as the recipe (0.524 g).
+  if (key === 'yeast' || key === 'preferment') return 3;
   return count > 1 && total / count < 10 || key === 'sugar' ? 1 : 0;
 }
 /** Optional equipment setting is a useful dough mass, not bowl volume. */

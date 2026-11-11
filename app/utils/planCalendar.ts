@@ -5,7 +5,7 @@
 // - the stretch-and-folds as one event with one alert,
 // - fridge in/out, dividing and shaping, preheating, the bake,
 // - starter feeds and preferment steps.
-// Steps a few minutes apart share one event. Taking dough out of the fridge and
+// Steps within 20 minutes of each other share one event and one alert. Taking dough out of the fridge and
 // preheating alert ten minutes early, since they need the baker to be ready.
 // Event ids are stable for a bake, so re-adding the plan after a change updates
 // the events in calendars that support it instead of adding a second set.
@@ -136,6 +136,30 @@ export function quietCloseAlerts(events: PlanCalendarEvent[]): (PlanCalendarEven
   });
 }
 
+/**
+ * Steps within a few minutes of each other become one event with one alert
+ * ("Take the dough out of the fridge · Divide and shape"), so the calendar holds
+ * one reminder per moment the baker has to be there. The group keeps its first
+ * step's key, so its id stays stable; a step folded into a group is cancelled
+ * from the previous export like any step that left the plan. The bake stays its own event.
+ */
+const GROUP_WINDOW_MS = 20 * 60000;
+export function mergeCloseEvents(events: PlanCalendarEvent[]): PlanCalendarEvent[] {
+  const sorted = [...events].filter(e => Number.isFinite(+e.at)).sort((a, b) => +a.at - +b.at);
+  const groups: PlanCalendarEvent[][] = [];
+  for (const event of sorted) {
+    const last = groups[groups.length - 1];
+    if (last && event.key !== 'bake' && last[0].key !== 'bake' && +event.at - +last[0].at <= GROUP_WINDOW_MS) last.push(event);
+    else groups.push([event]);
+  }
+  return groups.map(group => {
+    if (group.length === 1) return group[0];
+    const alertAt = Math.min(...group.map(e => +e.at - (e.alertBeforeMin ?? 0) * 60000));
+    const end = Math.max(...group.map(e => +(e.end ?? e.at)), +group[group.length - 1].at + 10 * 60000);
+    return { key: group[0].key, at: group[0].at, end: new Date(end), label: group.map(e => e.label).join(' · '), alertBeforeMin: Math.round((+group[0].at - alertAt) / 60000) };
+  });
+}
+
 /** What was last exported for a bake, so a re-export can cancel steps that left the plan. */
 export type ExportedSteps = Record<string, { at: number; label: string }>;
 const EXPORTS_KEY = 'bh_calendar_exports_v1';
@@ -164,7 +188,7 @@ export function buildPlanCalendar({ title, events, bakeAt, bakeLabel, bakeId, pr
   previous?: ExportedSteps;
   now?: Date; url?: string;
 }): string {
-  const all = quietCloseAlerts([...events, { at: bakeAt, label: bakeLabel, key: 'bake' }]);
+  const all = quietCloseAlerts(mergeCloseEvents([...events, { at: bakeAt, label: bakeLabel, key: 'bake' }]));
   const id = bakeId ?? stamp(bakeAt);
   // Seconds, so two exports in the same minute still count as an update.
   const sequence = Math.floor(+now / 1000) % 2000000000;
@@ -205,7 +229,7 @@ export function buildPlanCalendar({ title, events, bakeAt, bakeLabel, bakeId, pr
 export function exportedSteps(events: PlanCalendarEvent[], bakeAt: Date, bakeLabel: string): ExportedSteps {
   const out: ExportedSteps = {};
   const used = new Set<string>();
-  quietCloseAlerts([...events, { at: bakeAt, label: bakeLabel, key: 'bake' }]).forEach((event, index) => {
+  quietCloseAlerts(mergeCloseEvents([...events, { at: bakeAt, label: bakeLabel, key: 'bake' }])).forEach((event, index) => {
     let key = event.key || `step-${index}`;
     if (used.has(key)) key = `${key}-${index}`;
     used.add(key);

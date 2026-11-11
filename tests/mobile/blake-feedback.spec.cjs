@@ -89,9 +89,9 @@ test('flour-first recipe edits ignore a restored extra-dough allowance',async({p
  await page.goto('/fr');
  await expect(page.getByText('750 g',{exact:true}).first()).toBeVisible();
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')).itemWeight)).toBeGreaterThan(830);
- await page.getByRole('button',{name:'Revoir mes choix',exact:true}).tap();
+ await page.getByRole('button',{name:'Mes choix',exact:true}).tap();
  await expect(page.getByText('750 g de farine · 2 pièces',{exact:true})).toBeVisible();
- await expect(page.getByRole('button',{name:'Modifier : Mode',exact:true})).toBeVisible();
+ await expect(page.locator('[data-mode-switch]')).toBeVisible();
  await page.getByRole('button',{name:'Modifier : Peaufiner',exact:true}).tap();
  await expect(page.getByRole('heading',{name:'Peaufinez votre pâte',exact:true})).toBeVisible();
  await expect(page.getByLabel('Marge de pâte supplémentaire (%)',{exact:true})).toHaveCount(0);

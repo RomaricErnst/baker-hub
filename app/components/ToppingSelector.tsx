@@ -442,7 +442,7 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
             {/* left group shrinks + clips so the qty stepper always stays fully visible */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
             <span style={{ fontSize: '11px', color: 'var(--smoke)', flexShrink: 0 }}>
-              {pizza.prepMinutes} min
+              {l === 'fr' ? `${pizza.prepMinutes} min de préparation` : `${pizza.prepMinutes} min prep`}
             </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, marginLeft: 'auto' }} onClick={e => e.stopPropagation()}>
@@ -830,7 +830,7 @@ export function buildShoppingList(
         const prev = item.totalAmount ?? 0;
         item.totalAmount = prev + ing.qtyPerPizza.amount * qty * multiplier;
         item.unit = ing.qtyPerPizza.unit;
-        item.qtyNote = l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN;
+        item.qtyNote = shoppingSpoonNote(l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN, l === 'fr');
       }
       const pizzaName = pizza.name[l] ?? pizza.name.en;
       if (!item.pizzaCount[pizzaName]) item.pizzaCount[pizzaName] = 0;
@@ -909,9 +909,9 @@ export function IngredientShoppingHelp({item,location,locale,onLocationChange,on
   const l = locale === 'fr' ? 'fr' : 'en';
   const help = ingredientHelpData(item,location,l);
   return <section aria-label={item.name[l] || item.name.en} style={{padding:'16px 12px',fontFamily:'var(--font-ui)'}}>
-    <button type="button" autoFocus onClick={onBack} style={SECONDARY_CTA}>{l === 'fr' ? 'Retour aux courses' : 'Back to shopping list'}</button>
+    <button type="button" autoFocus onClick={onBack} style={SECONDARY_CTA}>{l === 'fr' ? 'Retour à Courses' : 'Back to Shopping list'}</button>
     <h1 style={{fontFamily:'Georgia,serif',fontSize:30}}>{item.name[l] || item.name.en}</h1>
-    <label style={{display:'grid',gap:8,marginBottom:24}}>{l === 'fr' ? 'Pays des courses' : 'Shopping location'}
+    <label style={{display:'grid',gap:8,marginBottom:24}}>{l === 'fr' ? 'Noms des ingrédients pour :' : 'Ingredient names for:'}
       <select value={location} onChange={event=>onLocationChange(event.target.value)} style={{minHeight:44,padding:10,border:'1px solid var(--border)',borderRadius:10,background:'var(--cream)'}}>
         {LOCATIONS.map(loc=><option key={loc.key} value={loc.key}>{l === 'fr' ? loc.labelFr : loc.label}</option>)}
       </select>
@@ -1140,7 +1140,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
             onClick={() => setShowLocationPicker(v => !v)}
             style={{ fontSize: '12px', minHeight:44, color: 'var(--smoke)', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '4px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
-            {l === 'fr' ? `Pays des courses : ${currentLocationLabel} ▾` : `Shopping location: ${currentLocationLabel} ▾`}
+            {l === 'fr' ? `Noms des ingrédients pour : ${currentLocationLabel} ▾` : `Ingredient names for: ${currentLocationLabel} ▾`}
           </button>
         </div>
         {showLocationPicker && (
@@ -1252,7 +1252,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                         >
                           {name}
                           {item.isCommonPantry && (
-                            <> <small style={{display:'inline-block',padding:'1px 6px',marginInlineStart:4,borderRadius:6,background:'var(--cream)',color:'var(--ash)'}}>{l === 'fr' ? 'placard' : 'pantry'}</small></>
+                            <> <small style={{display:'inline-block',padding:'1px 6px',marginInlineStart:4,borderRadius:6,background:'var(--cream)',color:'var(--ash)'}}>{l === 'fr' ? 'vous l’avez peut-être' : 'you may have it'}</small></>
                           )}
 
                         </span>
@@ -1327,7 +1327,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
         )}
       </div>
       {active && onBackToRecipe && <BottomActions>
-        <button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'Retour à la recette':'Back to recipe'}</button>
+        <button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'Retour à Recette':'Back to Recipe'}</button>
         <button type="button" onClick={()=>onGoPrep?.()} style={{...NEXT_CTA,flex:1,width:'auto',margin:0}}>{l==='fr'?'Passer à la préparation':'Go to preparation'} →</button>
       </BottomActions>}
     </div>
@@ -1335,6 +1335,12 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 }
 
 // ─── Main component ───────────────────────────────────────────
+
+// On a shopping list a spoon measure is per pizza; the spreading advice belongs to the prep.
+export function shoppingSpoonNote(note: string | undefined, fr: boolean): string | undefined {
+  const spoon = note?.match(/^(\d+(?:[–-]\d+)?\s*(?:tbsp|c\.à\.s\.))/);
+  return spoon ? `${spoon[1]} ${fr ? 'par pizza' : 'per pizza'}` : note;
+}
 
 export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionBack,onBackToRecipe,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,active=true,storagePrefix="bh",baseReady=false }: Props) {
   const l = locale as 'en' | 'fr';
@@ -1705,9 +1711,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             color: '#3D3530',
           }}>
             {styleKey
-              ? (l === 'fr'
+              ? `${l === 'fr' ? 'Pizzas adaptées à : ' : 'Pizzas suited to: '}${l === 'fr'
                   ? (STYLE_NAMES_FR[styleKey] ?? styleKey)
-                  : (STYLE_NAMES[styleKey] ?? styleKey))
+                  : (STYLE_NAMES[styleKey] ?? styleKey)}`
               : (l === 'fr' ? 'Tous les styles' : 'All styles')}
             {/* Count lives in the "Showing N" filter row below — next to the
                 style name it briefly read as "you're making 112 pizzas".
@@ -1732,7 +1738,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       {activePill === 'pizzas' && (
         <>
           <h1 className="bh-page-title">{l === 'fr' ? 'Quelles pizzas ?' : 'Which pizzas?'}</h1>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><span style={{fontSize:13,color:'var(--smoke)'}}>{totalQty} / {numItems} {l === 'fr' ? 'sélectionnées' : 'selected'}</span><button type="button" onClick={() => setCreateOpen(true)} style={{minHeight:44,border:0,background:'none',color:'var(--terra)',textDecoration:'underline',padding:'4px 0',fontSize:13,cursor:'pointer'}}>{l === 'fr' ? 'Créer ma pizza' : 'Create my pizza'}</button></div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><span data-pizza-count style={{fontSize:13,color:'var(--smoke)'}}>{l === 'fr' ? `${totalQty} pizza${totalQty > 1 ? 's' : ''} choisie${totalQty > 1 ? 's' : ''} pour ${numItems} pâton${numItems > 1 ? 's' : ''}` : `${totalQty} pizza${totalQty === 1 ? '' : 's'} chosen for ${numItems} dough ball${numItems === 1 ? '' : 's'}`}</span><button type="button" onClick={() => setCreateOpen(true)} style={{minHeight:44,border:0,background:'none',color:'var(--terra)',textDecoration:'underline',padding:'4px 0',fontSize:13,cursor:'pointer'}}>{l === 'fr' ? 'Créer ma pizza' : 'Create my pizza'}</button></div>
           {/* ── Results strip ── */}
           <div style={{ padding: '0 0 6px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
             <input

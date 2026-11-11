@@ -500,7 +500,7 @@
     "waterFinalDough": "Eau (pâte finale)",
     "batchTotal": "Total pétrissage",
     "chillPoolishAt": "Placez le poolish au frigo à partir de {time}. Gardez-le au froid jusqu’au pétrissage.",
-    "weighOrDilute": "comment la peser ↓",
+    "weighOrDilute": "comment la peser ▾",
     "weighDose": "Pesez cette dose à la balance.",
     "precisionScaleTitle": "Peser une très petite quantité de levure",
     "precisionScaleBody": "{amount}, c’est trop peu pour la plupart des balances de cuisine. Utilisez une balance au 0,1 g, ou la méthode ci-dessous.",
@@ -683,8 +683,8 @@
       "feedStarter": "Rafraîchir le levain",
       "mixDough": "Pétrir la pâte",
       "bulkFerm": "Pointage",
-      "coldRetardWhole": "Pousse au froid — en masse",
-      "coldRetard": "Pousse au froid",
+      "coldRetardWhole": "Pointage au froid",
+      "coldRetard": "Pointage au froid",
       "divideShape": "Division et façonnage",
       "divideBall": "Division et boulage",
       "coldProof": "Apprêt froid",
@@ -1908,8 +1908,8 @@
     "removePhoto": "Retirer cette photo",
     "photoFailed": "Cette photo n’a pas pu être conservée sur cet appareil.",
     "storageFailed": "Ce navigateur ne conserve pas les modifications pour le moment : rien n’a été enregistré.",
-    "resume": "Reprendre",
-    "rebake": "Refaire cette fournée",
+    "resume": "Ouvrir ma fournée",
+    "rebake": "Refaire la semaine suivante ({date})",
     "delete": "Supprimer",
     "deleteQuestion": "Supprimer cette fournée de cet appareil ? Ses notes et ses photos seront supprimées aussi.",
     "deleteConfirm": "Supprimer",
@@ -1918,6 +1918,9 @@
     "savingToAccount": "Enregistrement…",
     "savedToAccount": "Enregistré dans votre compte",
     "saveToAccountNote": "Le plan, la note et les photos rejoignent votre compte. L’appréciation reste sur cet appareil.",
-    "saveToAccountFailed": "Cette fournée n’a pas été enregistrée dans votre compte. Elle reste sur cet appareil."
+    "saveToAccountFailed": "Cette fournée n’a pas été enregistrée dans votre compte. Elle reste sur cet appareil.",
+    "beforeBakeNote": "Après la cuisson, notez-la et ajoutez vos photos ici.",
+    "startAt": "Début {date}",
+    "rateNow": "Déjà cuite ? Notez-la maintenant"
   }
 }

@@ -99,7 +99,7 @@ test('short mixing duration retains exact minutes and hand instructions exclude 
 
 test('cooking phase shows local step numbers while pizza advice leads into one queue action',()=>{
  const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-24T18:00Z'),[],22,60,'hand','neapolitan');
- const props={schedule,mixerType:'hand',styleKey:'neapolitan',ovenType:'home_oven_steel',kitchenTemp:22,numItems:4,oil:0,hydration:65,locale:'en',phase:'cooking',onNavigateToPizzaParty:()=>{}};
+ const props={schedule,mixerType:'hand',styleKey:'neapolitan',ovenType:'home_oven_steel',kitchenTemp:22,numItems:4,oil:0,hydration:65,locale:'en',phase:'cooking',onNavigateToPizzaParty:()=>{},pizzasChosen:true};
  const render=()=>renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,props)));
  const initial=render();
  assert.match(initial,/aria-label="Preheat the oven · Step 1"/);
@@ -117,8 +117,11 @@ test('cooking phase shows local step numbers while pizza advice leads into one q
    assert.ok(pizza.includes('Stretch on a peel'));
    assert.doesNotMatch(pizza,/Your dough is ready|bh-guide-next/);
    assert.equal((pizza.match(/Start baking the pizzas/g)||[]).length,1);
-   props.pizzaActionLabel='Choose my pizzas';
-   assert.ok(render().includes('Choose my pizzas'),'empty-selection handoff label is preserved');
+   props.pizzaActionLabel='Choose my pizzas';props.pizzasChosen=true;
+   assert.ok(render().includes('Choose my pizzas'),'the handoff label is preserved');
+   // Nothing chosen yet: a quiet link instead of the full-width action.
+   props.pizzasChosen=false;
+   assert.ok(render().includes('No toppings planned? Pick pizzas'));
    props.phase='preparation';
    let zeroState=0;
    React.useState=(value)=>{ if(value===0){zeroState++;if(zeroState===1)return useState(1);if(zeroState===2)return useState(globalStep);} return useState(value); };
@@ -221,8 +224,10 @@ test('mixing flour rows exclude prefermented flour and conserve each batch',()=>
   const portion=mixingBatchPlan(recipe,'spiral',count,0).portion.flour;
   const first=Math.round(portion*(recipe.flourParts[0].grams-used)/added);
   const {displayWeight}=require('../app/utils/units.ts');
-  assert.ok(html.includes(`<span>Primary flour</span><strong>${displayWeight(first,'metric','en')}</strong>`),`${pref}, ${count}: primary added flour`);
-  assert.ok(html.includes(`<span>Second flour</span><strong>${displayWeight(portion-first,'metric','en')}</strong>`),`${pref}, ${count}: second added flour`);
+  const esc=t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  // Batch 1's amount, as a single value (even batches) or the first column of the table.
+  assert.match(html,new RegExp(`<span>Primary flour</span>(<span[^>]*>)?<strong[^>]*>${esc(displayWeight(first,'metric','en'))}</strong>`),`${pref}, ${count}: primary added flour`);
+  assert.match(html,new RegExp(`<span>Second flour</span>(<span[^>]*>)?<strong[^>]*>${esc(displayWeight(portion-first,'metric','en'))}</strong>`),`${pref}, ${count}: second added flour`);
  }
 });
 

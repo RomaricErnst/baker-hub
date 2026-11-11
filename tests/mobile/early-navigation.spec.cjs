@@ -62,14 +62,14 @@ test('early bread selections survive mode choice, matching bread style and later
  await expect(page.getByRole('button',{name:/^Baguette\b/})).toBeVisible();
  await actionAboveNavigation(page);
  await page.locator('.bh-step-page:visible').getByRole('button',{name:'Continue',exact:true}).tap();
- await expect(page.getByLabel('Number of loaves',{exact:true})).toBeVisible();
- await page.getByLabel('Number of loaves',{exact:true}).fill('5');
- await page.getByLabel('Number of loaves',{exact:true}).blur();
+ await expect(page.getByLabel('Number of baguettes',{exact:true})).toBeVisible();
+ await page.getByLabel('Number of baguettes',{exact:true}).fill('5');
+ await page.getByLabel('Number of baguettes',{exact:true}).blur();
  await bottom(page).getByRole('button',{name:'Fillings',exact:true}).tap();
  await expect(page.getByRole('spinbutton',{name:quantityName,exact:true})).toHaveValue('2');
  await revealNavigation(page);
  await bottom(page).getByRole('button',{name:'My dough',exact:true}).tap();
- await expect(page.getByLabel('Number of loaves',{exact:true})).toHaveValue('5');
+ await expect(page.getByLabel('Number of baguettes',{exact:true})).toHaveValue('5');
  await actionAboveNavigation(page);
  await twoDestinations(page,false,'Fillings');
  await testInfo.attach('setup-actions-above-two-tabs',{body:await page.screenshot(),contentType:'image/png'});

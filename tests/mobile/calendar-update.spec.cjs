@@ -17,7 +17,7 @@ async function generate(page){
  await page.getByRole('button',{name:'Generate my recipe',exact:true}).tap();
 }
 async function download(page,name){
- const [file]=await Promise.all([page.waitForEvent('download'),page.locator('[data-recipe-plan] [data-add-calendar]').tap()]);
+ const [file]=await Promise.all([page.waitForEvent('download'),page.locator('[data-preparation-timing] [data-add-calendar]').tap()]);
  return fs.readFileSync(await file.path(),'utf8');
 }
 
@@ -26,7 +26,9 @@ test('a moved plan asks to update the calendar; the update cancels a step that l
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
  await page.goto('/');
  await generate(page);
- const card=page.locator('[data-recipe-plan]');
+ // The calendar lives on the Preparation summary; the recipe's plan leads there.
+ await page.locator('[data-recipe-plan] [data-go-preparation]').tap();
+ const card=page.locator('[data-preparation-timing]');
  await expect(card).toBeVisible();
  await expect(card.locator('[data-calendar-outdated]')).toHaveCount(0);
  const first=await download(page,'Add to my calendar');
@@ -42,6 +44,7 @@ test('a moved plan asks to update the calendar; the update cancels a step that l
   localStorage.setItem('bh_calendar_exports_v1',JSON.stringify(all));
  });
  await page.reload();
+ await (async()=>{if(!(await card.isVisible()))await page.locator('[data-recipe-plan] [data-go-preparation]').tap();})();
  await expect(card.locator('[data-calendar-outdated]')).toHaveText('The steps have changed since you added this plan to your calendar. Add it again to update it.');
  await expect(card.locator('[data-add-calendar]')).toHaveText('Update my calendar');
  const second=await download(page,'Update my calendar');

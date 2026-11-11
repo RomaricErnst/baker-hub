@@ -49,7 +49,7 @@ for(const bread of [false,true])test(`Fresh ${bread?'baguette lunch':'pizza nigh
  await page.getByRole('button',{name:bread?'Pain & repas':'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:bread?'Baguette':'Napolitaine classique',exact:true}).tap();
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^Continuer avec/}).tap();
- const quantity=page.getByLabel(bread?'Nombre de pains':'Nombre de pizzas',{exact:true});
+ const quantity=page.getByLabel(bread?'Nombre de baguettes':'Nombre de pizzas',{exact:true});
  await quantity.fill('4');await quantity.blur();
  await (async()=>{const b=page.locator('.bh-batch-actions:visible').getByRole('button',{name:/^(Cuisine|Kitchen) →$/});if(await b.count())await b.tap();})();
  await page.locator('.bh-batch-actions:visible').getByRole('button',{name:'Heure de cuisson →',exact:true}).tap();
@@ -70,7 +70,7 @@ for(const bread of [false,true])test(`Fresh ${bread?'baguette lunch':'pizza nigh
  }else{
    await page.getByRole('button',{name:/^Margherita(?: · \d+)?$/}).getByRole('button',{name:/^\+/}).tap();
  }
- await page.getByRole('button',{name:/^Retour à la recette(?: →)?$/}).tap();
+ await page.getByRole('button',{name:/^Retour à Recette(?: →)?$/}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
  await navigate(page,'Courses','fr');
  const checkbox=page.getByRole('checkbox').first();
@@ -82,7 +82,7 @@ for(const bread of [false,true])test(`Fresh ${bread?'baguette lunch':'pizza nigh
  await navigate(page,'Courses','fr');
  await expect(page.getByRole('checkbox').first()).toBeChecked();
  // Task screens carry the bake in the section bar.
- await expect(page.locator('[data-navigator-bake]')).toContainText(bread?'4 pains':'4 pizzas');
+ await expect(page.locator('[data-navigator-bake]')).toContainText(bread?'4 baguettes':'4 pizzas');
  await expect.poll(()=>page.evaluate(isBread=>{
    const draft=JSON.parse(localStorage.getItem('bh_session_v1')??'null');
    return draft&&[draft.numItems,draft.recipeGenerated,isBread?draft.sandwichParty?.qtys?.['baguette-jambon-beurre']:draft.pizzaParty?.qtys?.margherita];

@@ -500,7 +500,7 @@
     "waterFinalDough": "Water (final dough)",
     "batchTotal": "Batch total",
     "chillPoolishAt": "Refrigerate the poolish at {time}. Keep it chilled until mixing.",
-    "weighOrDilute": "how to weigh it ↓",
+    "weighOrDilute": "how to weigh it ▾",
     "weighDose": "Weigh this dose on a scale.",
     "precisionScaleTitle": "Weighing a tiny amount of yeast",
     "precisionScaleBody": "{amount} is too little for most kitchen scales. Use a scale that reads 0.1 g, or the method below.",
@@ -1908,8 +1908,8 @@
     "removePhoto": "Remove this photo",
     "photoFailed": "This photo could not be kept on this device.",
     "storageFailed": "This browser is not keeping changes right now, so this was not saved.",
-    "resume": "Resume",
-    "rebake": "Bake again",
+    "resume": "Open my bake",
+    "rebake": "Bake again next week ({date})",
     "delete": "Delete",
     "deleteQuestion": "Delete this bake from this device? Its notes and photos go with it.",
     "deleteConfirm": "Delete",
@@ -1918,6 +1918,9 @@
     "savingToAccount": "Saving…",
     "savedToAccount": "Saved to your account",
     "saveToAccountNote": "The plan, note and photos go to your account. The rating stays on this device.",
-    "saveToAccountFailed": "This bake was not saved to your account. It is still on this device."
+    "saveToAccountFailed": "This bake was not saved to your account. It is still on this device.",
+    "beforeBakeNote": "After the bake, rate it and add photos here.",
+    "startAt": "Start {date}",
+    "rateNow": "Already baked? Rate it now"
   }
 }

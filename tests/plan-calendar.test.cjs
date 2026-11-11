@@ -41,7 +41,7 @@ test('steps close together keep their own event, but only the first alerts',()=>
  assert.deepEqual(quiet.map(e=>[e.key,!!e.silent]),[['cold-out',false],['divide',true],['preheat',false]]);
 });
 
-test('a re-export cancels steps that left the plan and keeps ids when grouping changes',()=>{
+test('a re-export cancels steps that left the plan, and close steps become one event',()=>{
  const bake=at(23);
  const first=[{key:'mix',at:at(9),label:'Start Dough'},{key:'cold-in',at:at(13),label:'Into the fridge'},{key:'divide',at:at(20,20),label:'Divide'}];
  const sent=exportedSteps(first,bake,'Bake');
@@ -49,10 +49,13 @@ test('a re-export cancels steps that left the plan and keeps ids when grouping c
  const second=[{key:'mix',at:at(10),label:'Start Dough'},{key:'cold-out',at:at(20),label:'Out of the fridge',alertBeforeMin:10},{key:'divide',at:at(20,5),label:'Divide'}];
  const ics=buildPlanCalendar({title:'T',bakeAt:bake,bakeLabel:'Bake',bakeId:'b1',previous:sent,events:second,now:new Date('2026-11-10T00:00:00Z')});
  const uids=[...ics.matchAll(/UID:(\S+)/g)].map(m=>m[1]);
- assert.ok(uids.includes('b1-divide@bakerhub.app'),'divide keeps its id even when it is now next to the fridge exit');
- assert.equal((ics.match(/STATUS:CANCELLED/g)||[]).length,1);
+ // Divide, five minutes after the fridge exit, joins its event: one reminder for both.
+ assert.ok(ics.includes('SUMMARY:Out of the fridge · Divide · T'));
+ assert.ok(uids.includes('b1-cold-out@bakerhub.app'));
+ assert.equal((ics.match(/STATUS:CANCELLED/g)||[]).length,2,'cold-in left the plan; divide is now part of the fridge-exit event');
  assert.ok(/UID:b1-cold-in@bakerhub.app\r\nSEQUENCE:\d+\r\nDTSTAMP:\S+\r\nDTSTART:\S+\r\nDTEND:\S+\r\nSUMMARY:[^\r]+\r\nSTATUS:CANCELLED/.test(ics));
- assert.equal((ics.match(/BEGIN:VALARM/g)||[]).length,3,'divide five minutes after the fridge exit does not ring again');
+ assert.equal((ics.match(/BEGIN:VALARM/g)||[]).length,3,'mix, fridge exit with divide, bake');
+ assert.equal((ics.match(/BEGIN:VEVENT/g)||[]).length,5,'three events and two cancellations');
 });
 
 test('the file has one alerted event per key step, stable ids for the bake, and early alerts where needed',()=>{
@@ -93,4 +96,18 @@ test('batched folds say "per batch" and give the spacing within a batch',()=>{
  const folds=keyPlanEvents(actions,false).find(e=>e.key==='folds');
  assert.equal(folds.label,'Stretch and folds (2 per batch), every 30 min');
  assert.equal(keyPlanEvents(actions,true).find(e=>e.key==='folds').label,'Rabats (2 par fournée), toutes les 30 min');
+});
+
+test('three steps between 7:00 and 7:15 are one event with one alert',()=>{
+ const {mergeCloseEvents}=require('../app/utils/planCalendar.ts');
+ const merged=mergeCloseEvents([
+  {key:'cold-out',at:at(7),label:'Take the dough out of the fridge',alertBeforeMin:10},
+  {key:'divide',at:at(7,5),label:'Divide'},
+  {key:'shape',at:at(7,15),label:'Shape'},
+  {key:'preheat',at:at(8),label:'Preheat the oven',alertBeforeMin:10},
+  {key:'bake',at:at(8,15),label:'Bake'},
+ ]);
+ assert.deepEqual(merged.map(e=>e.key),['cold-out','preheat','bake']);
+ assert.equal(merged[0].label,'Take the dough out of the fridge · Divide · Shape');
+ assert.equal(merged[0].alertBeforeMin,10);
 });

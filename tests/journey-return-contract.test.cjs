@@ -102,8 +102,8 @@ test('stale status is serialized and restored locally and from saved snapshots, 
  }
 });
 
-test('stale generated output is hidden consistently across recipe, shopping, preparation and service',()=>{
- const gates=all(n=>ts.isJsxAttribute(n)&&n.name.getText(tree)==='hidden'&&n.initializer?.getText(tree).includes('protocolStale'));
+test('stale generated output is dimmed and inactive consistently across recipe, shopping, preparation and service',()=>{
+ const gates=all(n=>ts.isJsxAttribute(n)&&n.name.getText(tree)==='inert'&&n.initializer?.getText(tree).includes('protocolStale'));
  const gate=gates.find(n=>n.initializer.getText(tree).includes("'service'"));
  assert.ok(gate,'A common downstream-output gate is required');
  const expression=gate.initializer.expression.getText(tree);
@@ -111,10 +111,10 @@ test('stale generated output is hidden consistently across recipe, shopping, pre
   const hidden=evaluate(expression,{recipeGenerated,protocolStale,destination});
   assert.equal(hidden,recipeGenerated&&protocolStale&&['recipe','shopping','protocol','service'].includes(destination),`${destination}/${recipeGenerated}/${protocolStale}`);
  }
- const prompt=all(n=>ts.isJsxElement(n)&&n.openingElement.tagName.getText(tree)==='section'&&n.openingElement.attributes.properties.some(p=>p.name?.getText(tree)==='role'&&p.initializer?.text==='status')&&n.getText(tree).includes('Update your recipe')).at(0);
+ const prompt=all(n=>ts.isJsxElement(n)&&n.openingElement.tagName.getText(tree)==='section'&&n.openingElement.attributes.properties.some(p=>p.name?.getText(tree)==='role'&&p.initializer?.text==='status')&&n.getText(tree).includes('data-stale-card')).at(0);
  assert.ok(prompt,'The guarded destinations need a visible update or repair action');
- const update=prompt.children.find(n=>ts.isJsxElement(n)&&n.openingElement.tagName.getText(tree)==='button');
- assert.equal(update?.openingElement.attributes.properties.find(p=>p.name?.getText(tree)==='onClick')?.initializer?.expression?.getText(tree),'finishSetupEdit');
+ const update=all(n=>ts.isJsxElement(n)&&n.openingElement.tagName.getText(tree)==='button'&&n.pos>=prompt.pos&&n.end<=prompt.end).at(0);
+ assert.match(update?.openingElement.attributes.properties.find(p=>p.name?.getText(tree)==='onClick')?.initializer?.expression?.getText(tree)??'',/finishSetupEdit\(\)/);
  assert.match(update.getText(tree),/canGenerate/);assert.match(update.getText(tree),/generationBlocker\?\.action/);
 });
 
@@ -128,7 +128,7 @@ test('successful validation clears stale status and restores the captured edit o
  for(const destination of [null,'recipe','shopping','protocol','service']){
   const calls=[];
   const context={flourChosen:false,canGenerate:true,styleKey:'neapolitan',scheduleCandidateValid:true,scheduleEditing:false,schedule:{},commercialPrefermentPlanReady:true,tab:'simple',recipe:{},yeastType:'instant',unsupportedEnrichedMethod:false,recipeGenerated:true,user:null,prefermentType:'none',generatedRecipeInputKey:{current:null},previousRecipeInputKey:{current:'old'},recipeInputKey:'updated',fillingsReturn:destination?{destination,view:'dough'}:null,
-   startTime:new Date(0),plannedPreparationAt:0,eatTime:null,acceptedPlan:undefined,acceptedPlanMove:()=>null,setPlanMoved(){},setAcceptedPlan(){},setSessionSaved(){},setSetupOverview(){},setReviewMode(){},setShowResults(){},setRecipeGenerated(value){calls.push(['generated',value]);},setProtocolStale(value){calls.push(['stale',value]);},finishFillings(){calls.push(['return',destination]);},setActiveTab(value){calls.push(['route',value]);},scrollToStepTop(){}};
+   startTime:new Date(0),plannedPreparationAt:0,eatTime:null,acceptedPlan:undefined,acceptedPlanMove:()=>null,setPlanMoved(){},acceptedAmountsRef:{current:null},stayAfterUpdateRef:{current:null},openDestination(){},setAcceptedPlan(){},setSessionSaved(){},setSetupOverview(){},setReviewMode(){},setShowResults(){},setRecipeGenerated(value){calls.push(['generated',value]);},setProtocolStale(value){calls.push(['stale',value]);},finishFillings(){calls.push(['return',destination]);},setActiveTab(value){calls.push(['route',value]);},scrollToStepTop(){}};
   evaluate(fn('handleGenerate')+';handleGenerate();',context);
   assert.deepEqual(calls,[['generated',true],['stale',false],destination?['return',destination]:['route','plan']]);
   assert.equal(context.previousRecipeInputKey.current,'updated');
@@ -160,7 +160,7 @@ test('separating blend flours cannot move existing salt or yeast shopping checks
   const rows=doughShoppingItems({recipe:cr,yeastType:'instant',locale,flourName:'unused'});
   assert.deepEqual(Array.from(rows,r=>r.tickKey),['dough_flour_nuvola','dough_flour_manitoba','dough_1','dough_2','dough_3']);
   assert.deepEqual(Array.from(rows.slice(0,2),r=>r.amount.replace(/\s/g,' ')),['850 g','150 g']);
-  assert.equal(rows.find(row=>row.tickKey==='dough_2').amount.replace(/\s/g,' '),locale==='fr'?'0,54 g':'0.54 g');
+  assert.equal(rows.find(row=>row.tickKey==='dough_2').amount,locale==='fr'?'1 sachet (5,5 g)':'1 sachet (7 g)');
   assert.equal(rows.find(row=>row.tickKey==='dough_2').name,locale==='fr'?'Levure de boulanger sèche instantanée':'Instant dry yeast');
  }
 });

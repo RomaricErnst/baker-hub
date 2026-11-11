@@ -100,7 +100,7 @@ test('whole-plan validation gates generation in both modes and directs invalid p
  assert.equal(nextOverrides.length,2);
  for(const expression of nextOverrides)for(const scheduleCandidateValid of [false,true])for(const scheduleEditing of [false,true]){
   const code=ts.transpileModule('globalThis.result=('+expression+');',{compilerOptions:{target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.React}}).outputText;
-  const context={execution:undefined,mixExecution:undefined,completedMixAt:undefined,schedule:undefined,scheduleCandidateValid,scheduleEditing,simpleDecisionPending:false,customDecisionPending:false,recipeGenerated:false,setupReturnLabel:'Retour à la recette',customOrganisationFlow:{steps:[{id:9,chip:'Heure de cuisson'}],generateLabel:'Créer ma recette'},nextCustomStep:()=>9,collectingBakeTime:false,customStarterStepId:null,starterStateDescribed:true,eatTime:new Date(),fr:true,NEXT_CTA:{},React:{createElement:(type,props,...children)=>({type,props,children})}};
+  const context={execution:undefined,mixExecution:undefined,completedMixAt:undefined,schedule:undefined,scheduleCandidateValid,scheduleEditing,simpleDecisionPending:false,customDecisionPending:false,recipeGenerated:false,setupReturnLabel:'Retour à Recette',customOrganisationFlow:{steps:[{id:9,chip:'Heure de cuisson'}],generateLabel:'Créer ma recette'},nextCustomStep:()=>9,collectingBakeTime:false,customStarterStepId:null,starterStateDescribed:true,eatTime:new Date(),fr:true,NEXT_CTA:{},React:{createElement:(type,props,...children)=>({type,props,children})}};
   vm.runInNewContext(code,context);
   if(scheduleEditing)assert.equal(context.result,null);
   else if(scheduleCandidateValid)assert.equal(context.result,undefined);
@@ -121,7 +121,7 @@ test('whole-plan validation gates generation in both modes and directs invalid p
     const [hint,button]=context.result.children.filter(child=>child&&typeof child==='object');
     assert.equal(hint.children[0],'Choisissez une des options ci-dessus.');
     assert.equal(button.props.disabled,true);assert.equal(button.props.onClick,undefined);
-    assert.equal(button.children[0],recipeGenerated?'Retour à la recette':'Créer ma recette');
+    assert.equal(button.children[0],recipeGenerated?'Retour à Recette':'Créer ma recette');
     Object.assign(context,{simpleDecisionPending:false,recipeGenerated:false});
    }
   }

@@ -115,10 +115,11 @@ for(const locale of ['fr','en']){
   await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:fr?'Générer ma recette':'Generate my recipe',exact:true}).tap();
   await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
-  // The yeast row keeps a spoon measure and a pointer; the other yeasts are in the small-dose section.
-  await expect(page.getByText(fr?/c\. à café.*comment la peser ↓|^comment la peser ↓/:/tsp.*how to weigh it ↓|^how to weigh it ↓/).first()).toBeVisible();
-  await page.locator('summary').filter({hasText:fr?'Petite dose de levure':'Small yeast dose'}).tap();
-  await expect(page.locator('[data-yeast-alternatives]')).toContainText(fr?/^Levure fraîche : .*sèche active : /:/^Fresh yeast: .*active dry: /);
+  // The yeast row keeps a spoon measure and its own help toggle, which holds the fresh-yeast equivalent.
+  const help=page.locator('[data-yeast-help]:visible').first();
+  await expect(help.locator('summary')).toHaveText(fr?/^comment la peser ▾/:/^how to weigh it ▾/);
+  await help.locator('summary').tap();
+  await expect(help.locator('[data-yeast-alternatives]')).toContainText(fr?/^ou .* de levure fraîche$/:/^or .* fresh yeast$/);
   await page.getByRole('button',{name:fr?'Modifier la quantité':'Edit quantity',exact:true}).tap();
   await quantity.fill('3');await quantity.blur();
   await actions(page).locator('[data-bh-forward]:visible').tap();
@@ -132,7 +133,7 @@ for(const locale of ['fr','en']){
   await actions(page).locator('[data-bh-forward]:visible').tap();
   await expect(page.getByRole('heading',{name:fr?'Recette à mettre à jour':'Update your recipe',exact:true})).toHaveCount(0);
 
-  await page.getByRole('button',{name:fr?/^J’ai les ingrédients · Préparation/:/^I have the ingredients · Preparation/}).first().tap();
+  await page.getByRole('button',{name:fr?/^Tout est prêt \? Aller à la Préparation/:/^Have everything\? Go to Preparation/}).first().tap();
   await page.locator('[data-preparation-timing]:visible').getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true}).tap();
   await expect(page.locator('#step-7:visible')).toBeVisible();
   expect(errors).toEqual([]);
@@ -154,7 +155,7 @@ for(const locale of ['fr','en']){
    sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:3,advancedStep:9,setupOverview:true,activeTab:'setup',reviewMode:true}));
   },data);
   await page.goto(fr?'/fr':'/');
-  await page.getByRole('button',{name:fr?'Modifier : Mode':'Edit : Mode',exact:true}).tap();
+  await page.locator('[data-mode-switch]').tap();
   await page.getByRole('button',{name:fr?/^Créer une recette simple/:/^Create a simple recipe/}).tap();
   const formula=async()=>{const s=await stored(page);return {tab:s?.tab,preferment:s?.prefermentType,hydration:s?.manualHydration,salt:s?.manualSalt,flour:s?.flourBlend};};
   await expect.poll(formula).toEqual({tab:'simple',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
@@ -164,14 +165,11 @@ for(const locale of ['fr','en']){
   await expect.poll(formula).toEqual({tab:'simple',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
   await nextToRecipe(page,fr);
   await expect(page.getByRole('region',{name:fr?'Quantités totales':'Total ingredients',exact:true})).toBeVisible();
-  const stages=page.locator('details').filter({has:page.locator('summary').filter({hasText:fr?'Ingrédients par étape':'Ingredients by stage'})});
-  await expect(stages).toHaveAttribute('open','');
-  await stages.locator(':scope > summary').tap();
-  await expect(stages).not.toHaveAttribute('open','');
-  await stages.locator(':scope > summary').tap();
+  // The stages show directly, as they are made.
+  const stages=page.locator('[data-recipe-stages]:visible');
   await expect(stages.getByText(/Poolish/).first()).toBeVisible();
-  await page.getByRole('button',{name:fr?'Revoir mes choix':'Review my choices',exact:true}).tap();
-  await page.getByRole('button',{name:fr?'Modifier : Mode':'Edit : Mode',exact:true}).tap();
+  await page.getByRole('button',{name:fr?'Mes choix':'My choices',exact:true}).tap();
+  await page.locator('[data-mode-switch]').tap();
   await page.evaluate(()=>{const el=document.querySelector('[data-customize-link]');if(el){document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));el.scrollIntoView({block:'center'});}});
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
   await expect.poll(formula).toEqual({tab:'custom',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});

@@ -2,6 +2,10 @@
 // out of the instruction line into one "Why?" under the list, so the line reads
 // as what to do. Generated from the paired EN/FR step notes (same key paths).
 const WHY_FULL = new Set<string>([
+ "Follow the dough, not only the clock.",
+ "Observez la pâte, pas seulement l’heure.",
+ "Size and tin change timing.",
+ "Taille et moule changent la durée.",
  "all home ovens have hot spots near the element",
  "all ovens have hot spots",
  "as hot as it goes",
@@ -96,4 +100,19 @@ export function splitStepWhy(note: string): { note: string; why: string } {
     if (WHY_SUFFIX.has(tail)) return { note: note.slice(0, at), why: tail };
   }
   return { note, why: '' };
+}
+
+/** Closing sentences of a bread protocol line that give the reason, not the action. */
+const WHY_SENTENCES = [
+ 'Follow the dough, not only the clock.',
+ 'Observez la pâte, pas seulement l’heure.',
+ 'Size and tin change timing.',
+ 'Taille et moule changent la durée.',
+];
+/** Moves a trailing reason sentence of a protocol line to the step's note, where "Why?" collects it. */
+export function splitLineWhy(line: string): { bold: string; note: string } {
+  for (const sentence of WHY_SENTENCES) {
+    if (line.endsWith(' ' + sentence)) return { bold: line.slice(0, -sentence.length - 1), note: sentence };
+  }
+  return { bold: line, note: '' };
 }

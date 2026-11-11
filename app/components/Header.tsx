@@ -562,7 +562,7 @@ export default function Header({
 
       {!backHref && !hideActionBar && (
         <div style={{ order: 2, display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-          {onSaveSession && (onNewSession || recipeGenerated || sessionRestored) && (
+          {onSaveSession && recipeGenerated && (
             <button className="bh-header-save" onClick={() => { if ((!sessionSaved || !user) && !saving) onSaveSession(); }}
               aria-label={saving ? (locale === 'fr' ? 'Enregistrement en cours' : 'Saving in progress') : sessionSaved ? (user ? (locale === 'fr' ? 'Enregistré dans votre compte' : 'Saved to your account') : (locale === 'fr' ? 'Enregistré sur cet appareil. Enregistrer dans mon compte' : 'Saved on this device. Save to my account')) : (locale === 'fr' ? 'Enregistrer' : 'Save')}
               title={saving ? (locale === 'fr' ? 'Enregistrement en cours' : 'Saving in progress') : sessionSaved ? (user ? (locale === 'fr' ? 'Enregistré dans votre compte' : 'Saved to your account') : (locale === 'fr' ? 'Enregistré sur cet appareil' : 'Saved on this device')) : undefined}
@@ -627,7 +627,7 @@ export default function Header({
           {menuPage === 'settings' && <div style={{display:'grid',gap:18}}>
             <label>{locale === 'fr' ? 'Langue' : 'Language'}<select value={locale} onChange={e=>{onBeforeLocaleChange?.();router.replace(pathname,{locale:e.target.value});setMenuOpen(false);}} style={{...menuButton,width:'100%',marginTop:6}}><option value="en">English</option><option value="fr">Français</option></select></label>
             <label>{locale === 'fr' ? 'Unités' : 'Units'}<select value={units} onChange={e=>onUnitsChange?.(e.target.value as 'metric'|'imperial')} style={{...menuButton,width:'100%',marginTop:6}}><option value="metric">{locale === 'fr' ? 'Métriques · g, °C' : 'Metric · g, °C'}</option><option value="imperial">{locale === 'fr' ? 'Impériales · oz, °F' : 'Imperial · oz, °F'}</option></select></label>
-            <label>{locale === 'fr' ? 'Pays des courses' : 'Shopping location'}<select value={shoppingLocation} onChange={e=>{const location=e.target.value;setShoppingLocation(location);try{localStorage.setItem('bh_shopping_location',location);}catch{}window.dispatchEvent(new CustomEvent('bh-shopping-location',{detail:location}));}} style={{...menuButton,width:'100%',marginTop:6}}>
+            <label>{locale === 'fr' ? 'Noms des ingrédients pour :' : 'Ingredient names for:'}<select value={shoppingLocation} onChange={e=>{const location=e.target.value;setShoppingLocation(location);try{localStorage.setItem('bh_shopping_location',location);}catch{}window.dispatchEvent(new CustomEvent('bh-shopping-location',{detail:location}));}} style={{...menuButton,width:'100%',marginTop:6}}>
               {[['singapore',locale==='fr'?'Singapour':'Singapore'],['france','France'],['uk',locale==='fr'?'Royaume-Uni':'UK'],['us',locale==='fr'?'États-Unis':'US'],['australia',locale==='fr'?'Australie':'Australia'],['international','International']].map(([value,label])=><option key={value} value={value}>{label}</option>)}
             </select></label>
             <button type="button" onClick={() => setMenuOpen(false)} style={{ ...menuButton, background: 'var(--terra)', color: 'white', textAlign: 'center', minHeight: 44 }}>{locale === 'fr' ? 'Terminé' : 'Done'}</button>

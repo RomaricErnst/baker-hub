@@ -42,14 +42,18 @@ for(const lang of ['en','fr'])test(`${lang}: journal entry without signing in �
 
  const sheet=page.getByRole('dialog',{name:fr?'Fournée du journal':'Bake journal entry'});
  await expect(sheet.getByText(fr?'Enregistré sur cet appareil uniquement.':'Saved on this device only.',{exact:true})).toBeVisible();
+ // Before the bake the entry shows the plan; rating is one tap away.
+ await expect(sheet.locator('[data-journal-plan]')).toBeVisible();
+ await expect(sheet.getByText(fr?'Comment s’est passée votre cuisson ?':'How did it turn out?',{exact:true})).toHaveCount(0);
+ await sheet.locator('[data-rate-now]').tap();
  await expect(sheet.getByText(fr?'Comment s’est passée votre cuisson ?':'How did it turn out?',{exact:true})).toBeVisible();
  await sheet.getByRole('button',{name:fr?'4 sur 5':'4 out of 5',exact:true}).tap();
  await expect(sheet.getByRole('button',{name:fr?'4 sur 5':'4 out of 5',exact:true})).toHaveAttribute('aria-pressed','true');
  await sheet.getByLabel('Notes',{exact:true}).fill('Leopard spots, a little pale underneath');
  await sheet.getByRole('button',{name:fr?'Enregistrer la note':'Save note',exact:true}).tap();
  await expect(sheet.getByRole('status')).toHaveText(fr?'Note enregistrée.':'Note saved.');
- await expect(sheet.getByRole('button',{name:fr?'Reprendre':'Resume',exact:true})).toBeVisible();
- await expect(sheet.getByRole('button',{name:fr?'Refaire cette fournée':'Bake again',exact:true})).toBeVisible();
+ await expect(sheet.getByRole('button',{name:fr?'Ouvrir ma fournée':'Open my bake',exact:true})).toBeVisible();
+ await expect(sheet.getByRole('button',{name:fr?/^Refaire la semaine suivante \(/:/^Bake again next week \(/})).toBeVisible();
  await expect(sheet.getByRole('button',{name:fr?'Enregistrer dans mon compte':'Save to my account'})).toHaveCount(0);
 
  await page.reload();
@@ -83,6 +87,8 @@ test('en: photos stay on the device and a new bake adds a second entry',async({p
  await openMyBakes(page,false);
  await page.locator(`[data-journal-entry="${entry.id}"]`).tap();
  const sheet=page.getByRole('dialog',{name:'Bake journal entry'});
+ // Before the bake the entry shows the plan; photos are one tap away.
+ await sheet.locator('[data-rate-now]').tap();
  // A small PNG chosen from the device: downscaled to JPEG and kept in IndexedDB.
  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQI12P8z8DAwMDAxMDAwMDAAAANHQEDasKb6QAAAABJRU5ErkJggg==','base64');
  await sheet.locator('input[type=file]').setInputFiles({name:'crumb.png',mimeType:'image/png',buffer:png});

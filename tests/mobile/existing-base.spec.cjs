@@ -55,7 +55,7 @@ test('existing pizza with no toppings can return to shopping from the catalogue 
  const readDraft=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_existing_base_v1')));
  await expect.poll(async()=>({section:(await readDraft()).section,origin:(await readDraft()).selectionReturn})).toEqual({section:'batch',origin:'shopping'});
  await page.reload();
- const back=page.locator('[data-companion-action]').getByRole('button',{name:'Retour à mes courses',exact:true});
+ const back=page.locator('[data-companion-action]').getByRole('button',{name:'Retour à Courses',exact:true});
  await expect(back).toBeVisible();
  await expect(back).toBeEnabled();
  for(const fraction of [0,1]){
