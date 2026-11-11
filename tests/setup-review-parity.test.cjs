@@ -37,9 +37,10 @@ test('both review actions regenerate stale recipes and expose explicit edits; gu
 
 test('first recipe action uses the current locale when a restored starter event has an old label',()=>{
  require('./load-production.cjs');
- const {starterActionLabel}=require('../app/utils/starterBuild.ts');
+ const {starterActionLabelFor}=require('../app/utils/starterBuild.ts');
  for(const [fr,expected] of [[true,'Rafraîchi avant pétrissage'],[false,'Pre-mix feed']]){
-  const context={firstStarterAction:{kind:'pre_mix',label:'Pre-mix Feed'},fr,starterActionLabel};
+  const firstStarterAction={kind:'pre_mix',label:'Pre-mix Feed',time:new Date(0)};
+  const context={firstStarterAction,starterEvents:[firstStarterAction],fr,starterActionLabelFor};
   vm.runInNewContext(ts.transpileModule('const '+declaration('firstRecipeActionLabel')+';result=firstRecipeActionLabel;',{}).outputText,context);
   assert.equal(context.result,expected);
  }

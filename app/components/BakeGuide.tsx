@@ -2,7 +2,7 @@
 import { splitStepWhy, splitLineWhy } from '../utils/stepWhy';
 import { flourProductName } from '../lib/flourGuidance';
 import { formatDuration } from '../utils/duration';
-import { starterBuild, starterFeedRoleLabel } from '../utils/starterBuild';
+import { starterBuild, starterFeedLabelFor } from '../utils/starterBuild';
 import BottomActions from './BottomActions';
 import JourneyCompletion, { type CompletionActions } from './JourneyCompletion';
 import { SECONDARY_CTA } from '../lib/navButtons';
@@ -1459,7 +1459,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         const feeding = ['refresh', 'intermediate_refresh', 'pre_mix'].includes(event.kind);
         const eventRatio=event.feedingRatio??feedR;
         const {seed:eventSeed, flour:eventPart} = starterBuild(bgSdMid, feedMaximum, eventRatio);
-        const title = feeding ? starterFeedRoleLabel(event.kind, l === 'fr')! : event.kind === 'fridge_in' ? (l === 'fr' ? 'Réfrigérer le levain' : 'Refrigerate your starter') : (l === 'fr' ? 'Sortir le levain du réfrigérateur' : 'Take starter out of the fridge');
+        const title = feeding ? starterFeedLabelFor(event, starterEvents ?? [], l === 'fr')! : event.kind === 'fridge_in' ? (l === 'fr' ? 'Réfrigérer le levain' : 'Refrigerate your starter') : (l === 'fr' ? 'Sortir le levain du réfrigérateur' : 'Take starter out of the fridge');
         return <StepCard key={`${event.kind}-${index}`} number={n()} {...sc(false,'preparation',false,feeding?event:undefined)} icon={<IconStarter />} title={title} time={event.time} accent="#6A7FA8">
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={feeding ? [

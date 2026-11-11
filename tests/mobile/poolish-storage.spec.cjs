@@ -91,3 +91,21 @@ for(const locale of ['fr','en'])test(`${locale} 27C: Wednesday evening poolish f
  await info.attach('evening-poolish',{body:await page.screenshot({path:info.outputPath('evening-poolish.png')}),contentType:'image/png'});
  await page.reload();await expect(plan).toBeVisible();expect((await stored(page)).prefGoesInFridge).toBe(true);
 });
+
+// Nights on, off, on, off: each state returns to the same automatic poolish plan.
+for(const kitchenTemp of [22,28])test(`en ${kitchenTemp}C: Nights on-off-on-off returns to the same poolish plan`,async({page})=>{
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));
+ const bake=NOW+46*3600000-25*60000;
+ await seed(page,{locale:'en',extra:{kitchenTemp,eatTime:bake,startTime:bake-20*3600000,prefOffsetH:8,prefGoesInFridge:false,recipeGenerated:true}});
+ if(await reset(page).count())await reset(page).tap();
+ const snap=s=>({start:s.startTime,offset:s.prefOffsetH,fridge:s.prefGoesInFridge,blocks:(s.blocks||[]).length});
+ const settle=async()=>{let last='';for(let i=0;i<25;i++){await page.waitForTimeout(400);const s=JSON.stringify(snap(await stored(page)));if(s===last)return JSON.parse(s);last=s;}return JSON.parse(last);};
+ const nights=page.getByRole('button',{name:/^Nights/});
+ await openAvailability(page,'en');
+ if((await nights.getAttribute('aria-pressed'))!=='true')await nights.tap();
+ const on1=await settle();await nights.tap();const off1=await settle();
+ await nights.tap();const on2=await settle();await nights.tap();const off2=await settle();
+ expect(on1.blocks).toBeGreaterThan(0);expect(off1.blocks).toBe(0);
+ expect(on2).toEqual(on1);expect(off2).toEqual(off1);
+ expect(errors).toEqual([]);
+});

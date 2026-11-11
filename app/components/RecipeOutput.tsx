@@ -1,6 +1,6 @@
 'use client';
 import { poolishCoolingAt } from '../utils/poolishCoolingAt';
-import { starterBuild, starterFeedRoleLabel } from '../utils/starterBuild';
+import { starterBuild, starterFeedLabelFor } from '../utils/starterBuild';
 import type { StarterEvent } from './SchedulePicker';
 import { recommendedFlourName, flourProductName } from '../lib/flourGuidance';
 import { mixingWaterCaption, mixingBatchPlan } from '../utils/mixingBatches';
@@ -225,8 +225,8 @@ function StarterPrepCard({
       : `1:${ratio}:${ratio} · ${seed} g starter + ${flour} g flour + ${water} g water = ${total} g`;
   }
   const eventLabels: Record<string,string> = isFr
-    ? {last_fed:'Dernier rafraîchi',refresh:'Rafraîchir',intermediate_refresh:'Rafraîchi intermédiaire',pre_mix:'Rafraîchi final',fridge_in:'Mettre au frigo',fridge_out:'Sortir du frigo',known_peak:'Pic observé / renseigné'}
-    : {last_fed:'Last feed',refresh:'Feed',intermediate_refresh:'Intermediate feed',pre_mix:'Final feed',fridge_in:'Refrigerate',fridge_out:'Remove from fridge',known_peak:'Observed / stated peak'};
+    ? {last_fed:'Dernier rafraîchi',refresh:'Rafraîchir',intermediate_refresh:'Rafraîchir',pre_mix:'Rafraîchi final',fridge_in:'Mettre au frigo',fridge_out:'Sortir du frigo',known_peak:'Pic observé / renseigné'}
+    : {last_fed:'Last feed',refresh:'Feed',intermediate_refresh:'Feed',pre_mix:'Final feed',fridge_in:'Refrigerate',fridge_out:'Remove from fridge',known_peak:'Observed / stated peak'};
   const rowStyle = {
     display: 'flex' as const,
     flexDirection: 'column' as const,
@@ -270,7 +270,7 @@ function StarterPrepCard({
       {hasSchedule && (
         <div style={{ display:'flex', flexDirection:'column', gap: '8px' }}>
           {events.length > 0 && events.map((event,index) => <div style={rowStyle} key={`${event.kind}:${index}`}>
-            <div style={labelStyle}>{starterFeedRoleLabel(event.kind, isFr) ?? eventLabels[event.kind]}</div>
+            <div style={labelStyle}>{starterFeedLabelFor(event, events, isFr) ?? eventLabels[event.kind]}</div>
             <div style={valueStyle}>{fmtFull(event.time)}</div>
             {['refresh','intermediate_refresh','pre_mix'].includes(event.kind) && <div style={noteStyle}>{describeFeed(event.feedingRatio)}</div>}
             {event.bellPeakTime && event.kind !== 'known_peak' && <div style={noteStyle}>{isFr ? 'Pic estimé de ce rafraîchi : ' : 'Estimated peak of this feed: '}{fmtFull(event.bellPeakTime)}</div>}
