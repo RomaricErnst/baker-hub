@@ -261,8 +261,8 @@ function StarterPrepCard({
       flexDirection: 'column',
       gap: '12px',
     }}>
-      <div style={labelStyle}>
-        {isFr ? 'Préparer votre levain' : 'Preparing your starter'}
+      <div data-starter-amount style={{fontSize:16,fontWeight:600,color:'var(--char)'}}>
+        {isFr ? `${sourdough.starterGramsMid} g de levain pour la pâte · gardez ${build.keep} g pour la prochaine fois` : `${sourdough.starterGramsMid} g of starter for the dough · keep ${build.keep} g for next time`}
       </div>
 
       {/* Scheduled timeline */}
@@ -318,45 +318,16 @@ function StarterPrepCard({
             </div>
           )}
           {mixingTime && <div style={rowStyle}><div style={labelStyle}>{isFr ? 'Incorporer au pétrissage' : 'Use when mixing'}</div><div style={valueStyle}>{fmtFull(mixingTime)}</div><div style={noteStyle}>{predictedPeak && peakGapMinutes !== null && (Math.abs(peakGapMinutes)<=30
-            ? (isFr ? `Au pic estimé (${fmtFull(predictedPeak)}) : doublé, bombé, pas retombé.` : `At its estimated peak (${fmtFull(predictedPeak)}): doubled, domed, not collapsed.`)
+            ? (isFr ? `Au pic estimé (${fmtFull(predictedPeak)}).` : `At its estimated peak (${fmtFull(predictedPeak)}).`)
             : peakGapMinutes<0
-            ? (isFr ? `Un peu avant le pic estimé (${fmtFull(predictedPeak)}) : presque doublé et encore en train de monter.` : `A little before its estimated peak (${fmtFull(predictedPeak)}): nearly doubled and still rising.`)
-            : (isFr ? `Un peu après le pic estimé (${fmtFull(predictedPeak)}) : bombé et pas encore retombé.` : `A little after its estimated peak (${fmtFull(predictedPeak)}): domed and not yet collapsed.`))}</div></div>}
+            ? (isFr ? `Un peu avant le pic estimé (${fmtFull(predictedPeak)}) : encore en train de monter.` : `A little before its estimated peak (${fmtFull(predictedPeak)}): still rising.`)
+            : (isFr ? `Un peu après le pic estimé (${fmtFull(predictedPeak)}) : pas encore retombé.` : `A little after its estimated peak (${fmtFull(predictedPeak)}): not yet collapsed.`))}</div></div>}
         </div>
       )}
 
-      {/* Amount */}
-      <div style={rowStyle}>
-        <div style={labelStyle}>
-          {isFr ? 'Quantité' : 'Amount'}
-        </div>
-        <div style={valueStyle}>
-          {sourdough.starterGramsMin === sourdough.starterGramsMax ? sourdough.starterGramsMin : `${sourdough.starterGramsMin}–${sourdough.starterGramsMax}`} g
-        </div>
-        <div style={noteStyle}>
-          {isFr
-            ? `Utilisez ${sourdough.starterGramsMid} g pour la pâte et conservez ${build.keep} g pour votre prochaine fournée. Le rafraîchi inclut une marge pour les pertes dans le bocal.`
-            : `Use ${sourdough.starterGramsMid} g in the dough and keep ${build.keep} g for your next bake. Feed quantities include an allowance for jar losses.`}
-        </div>
-      </div>
-
-      {/* Readiness cues */}
-      <div style={rowStyle}>
-        <div style={labelStyle}>
-          {isFr ? 'Prêt quand' : 'Ready when'}
-        </div>
-        {[
-          isFr ? 'Doublé ou plus en volume'
-               : 'Doubled or more in volume',
-          isFr ? 'Surface en dôme, pas encore effondrée'
-               : 'Dome-shaped, not yet collapsed',
-          isFr ? 'Bulles visibles sur les côtés du bocal'
-               : 'Bubbles visible through the sides of the jar',
-          isFr ? 'Odeur acidulée, pas alcoolisée'
-               : 'Smells pleasantly sour, not alcoholic',
-        ].map((cue, i) => (
-          <div key={i} style={noteStyle}>{cue}</div>
-        ))}
+      {/* One ready list */}
+      <div data-starter-ready style={{fontSize:14,color:'var(--ash)'}}>
+        <strong>{isFr ? 'Prêt quand : ' : 'Ready when: '}</strong>{isFr ? 'doublé, bombé, plein de bulles, odeur doucement acidulée.' : 'doubled, domed, full of bubbles, smelling mildly sour.'}
       </div>
 
       {/* Post-mix maintenance */}
@@ -420,8 +391,6 @@ export default function RecipeOutput({
   // Keep the buying identity beside its ingredient, not in a distant footer.
   // Only the optional explanation is collapsed; stage/starter quantities below
   // retain their existing accounting and custom blends keep their own names.
-  const strength = result.blendProfile?.fermToleranceMultiplier ?? 1;
-  const cueGroup = strength < 0.85 ? 'weak' : strength > 1.15 ? 'strong' : 'standard';
   const showSelectedFlour = mode === 'custom' || explicitFlour;
   const guidedFlourGuidance = !showSelectedFlour && styleKey
     ? <span>{recommendedFlourName(styleKey, locale)}</span> : undefined;
@@ -1113,62 +1082,8 @@ export default function RecipeOutput({
       {sourdough && (
         <details className="bh-disclosure"><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Préparer le levain' : 'Prepare the starter'}</summary>
 
-          {/* Starter range */}
-          <div style={{
-            background: 'var(--warm)',
-            borderRadius: '16px',
-            padding: '20px 24px',
-            border: '1px solid rgba(156, 130, 72,0.12)',
-          }}>
-            <div style={{ fontSize: '11px', color: D.sub, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>
-              {t('recipeOutput.starterLabel')}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '24px', fontWeight: 700, color: 'var(--gold-text)' }}>
-                {sourdough.starterGramsMin === sourdough.starterGramsMax ? sourdough.starterGramsMin : `${sourdough.starterGramsMin}–${sourdough.starterGramsMax}`} g
-              </span>
-              <span style={{ fontSize: '13px', color: D.muted, fontFamily: 'var(--font-ui)' }}>
-                ({sourdough.starterPctMin === sourdough.starterPctMax ? sourdough.starterPctMin : `${sourdough.starterPctMin}–${sourdough.starterPctMax}`}{locale === 'fr' ? ' % de la farine' : '% of flour'})
-              </span>
-            </div>
-            <div style={{ fontSize: '12px', color: D.sub, marginTop: '8px', lineHeight: 1.5 }}>
-              {t('recipeOutput.starterFeedNote')}
-            </div>
-          </div>
-
-
-          {/* Bulk fermentation cues */}
-          <div style={{
-            border: '1.5px solid var(--border)',
-            borderRadius: '16px',
-            padding: '16px 20px',
-            background: 'var(--warm)',
-          }}>
-            <div style={{
-              fontSize: '12px', color: 'var(--smoke)',
-              textTransform: 'uppercase', letterSpacing: '.06em',
-              fontFamily: 'var(--font-ui)', marginBottom: '12px',
-            }}>
-              {t('recipeOutput.bulkReadyWhen')}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {(t.raw(`recipeOutput.bulkCues.${cueGroup}`) as string[]).map((cue, i) => (
-                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                  <span style={{
-                    width: '18px', height: '18px', borderRadius: '50%',
-                    border: '1.5px solid var(--border)',
-                    flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
-                    marginTop: '.05rem',
-                  }}>
-                    {i + 1}
-                  </span>
-                  <span style={{ fontSize: '13px', color: 'var(--ash)', lineHeight: 1.55 }}>{cue}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
+          {/* One amount line and one ready list, in the card below. The pointage
+              signs live in the Pointage step of Preparation. */}
           {/* ── Starter preparation card ──────────── */}
           <StarterPrepCard
             sourdough={sourdough}

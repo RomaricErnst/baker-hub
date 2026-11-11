@@ -8,7 +8,7 @@ import JourneyCompletion, { type CompletionActions } from './JourneyCompletion';
 import { SECONDARY_CTA } from '../lib/navButtons';
 import {createPortal} from 'react-dom';
 import type { StarterEvent } from './SchedulePicker';
-import { useState, useRef, useEffect, useLayoutEffect, createContext, useContext } from 'react';
+import { Fragment, useState, useRef, useEffect, useLayoutEffect, createContext, useContext } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { poolishCoolingAt } from '../utils/poolishCoolingAt';
 import { foldActionLabel } from '../utils/scheduleAvailability';
@@ -29,7 +29,8 @@ import { getBreadProtocol } from '../utils/breadProfiles';
 import { firstBatchFoldMinutes, scheduledFoldMinutes } from '../utils/scheduleFolds';
 import { leanBreadBake, guideUnitText, guideWeightText } from '../utils/leanBreadBake';
 import { panPizzaGuide, isPanPizzaStyle } from '../utils/panPizza';
-import { needsScaleHelp } from '../utils/yeastMeasure';
+import { needsScaleHelp, yeastSpoonMeasure, DILUTION_BASE_YEAST_G } from '../utils/yeastMeasure';
+import { commercialDilution } from '../utils';
 
 interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   preparationMade?: boolean;
@@ -799,7 +800,7 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
     bulk:['Conseils de pointage','Bulk (first rise) tips'],
     cold:['Conseils pour le repos au froid','Cold fermentation tips'],
     divide:['Conseils de façonnage','Shaping tips'],
-    proof:['Conseils pour l’apprêt','Final proof tips'],
+    proof:['Conseils pour l’apprêt','Final rise tips'],
     preheat:['Conseils de préchauffage','Preheating tips'],
     bake:['Conseils de cuisson','Baking tips'],
     cool:['Conseils de conservation','Storage tips'],
@@ -1186,6 +1187,34 @@ Actual dough condition and equipment may differ from these estimates.`;
     if (!directIceMix || recipe?.waterTemp == null) return bgMainWater;
     return waterSplit({waterGrams:bgMainWater,targetTemp:recipe.waterTemp,kitchenTemp,fridgeTemp,source:waterSource,measuredWaterTemp,waterMethod,idealWaterTemp:recipe.thermal?.idealWaterTemp,directIceSupported:true})?.water ?? bgMainWater;
   })();
+  // Same pattern as the recipe: the temperature on the line, the method behind a toggle.
+  const helpSummary = {display:'inline-flex',alignItems:'center',minHeight:44,cursor:'pointer',color:'var(--terra)'} as const;
+  const waterHelp = (() => {
+    if (enriched || recipe?.waterTemp == null || bgMainWater == null) return null;
+    const split = waterSplit({waterGrams:bgMainWater,targetTemp:recipe.waterTemp,kitchenTemp,fridgeTemp,source:waterSource,measuredWaterTemp,waterMethod,idealWaterTemp:recipe.thermal?.idealWaterTemp,directIceSupported:mixerType==='spiral'});
+    const temp = displayTemp(recipe.waterTemp,u);
+    const line = split && split.ice > 0 ? (l==='fr' ? `à ${temp}, avec ${displayWeight(split.ice,u,l)} de glace` : `at ${temp}, with ${displayWeight(split.ice,u,l)} ice`) : (l==='fr' ? `environ ${temp}` : `about ${temp}`);
+    return <div data-guide-water style={{fontSize:14,color:D.ash,marginTop:-4,marginBottom:6}}><span data-water-temp>{line}</span> · <details data-water-help style={{display:'inline'}}><summary style={helpSummary}>{l==='fr'?'comment l’obtenir ▾':'how to get it ▾'}</summary><div style={{padding:'4px 0 8px'}}>{simpleMode && <p style={{margin:'4px 0'}}>{mixingWaterCaption(mixerType,l)}.</p>}<WaterPreparation readOnly
+            waterGrams={bgMainWater} targetTemp={recipe.waterTemp} kitchenTemp={kitchenTemp}
+            fridgeTemp={fridgeTemp} locale={l} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={recipe.thermal?.targetDoughTemp} achievedDoughTempC={recipe.thermal?.doughTempC} waterWasClamped={recipe.thermal?.waterWasClamped} idealWaterTemp={recipe.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && recipe.oil === 0 && recipe.sugar === 0 && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} /></div></details></div>;
+  })();
+  const yeastHelp = (grams:number) => {
+    const type = recipe?.yeast?.yeastType ?? 'instant';
+    const spoon = yeastSpoonMeasure(grams,type,l);
+    const small = !hasPref && needsScaleHelp(grams);
+    if (!spoon && !small) return null;
+    const tip = small && bgMainWater != null ? commercialDilution(grams,bgMainWater) : null;
+    const kg = (g:number) => g >= 10 ? Math.round(g) : Math.round(g*10)/10;
+    return <div data-guide-yeast style={{fontSize:14,color:D.ash,marginTop:-4,marginBottom:6}}>{spoon && <span>{spoon}</span>}{spoon && small && ' · '}{small && <details data-yeast-help style={{display:'inline'}}><summary style={helpSummary}>{l==='fr'?'comment la peser ▾':'how to weigh it ▾'}</summary><p>{rootT('recipeOutput.precisionScaleBody',{amount:formatYeastDose(grams,l)})}</p>{tip && <p>{rootT('recipeOutput.dilutionBody',{yeastG:DILUTION_BASE_YEAST_G,waterG:tip.waterG*DILUTION_BASE_YEAST_G,solutionG:kg(tip.solutionG),waterInSolutionG:kg(tip.waterInSolutionGrams),remainingWaterG:kg(tip.remainingWaterGrams ?? 0)})}</p>}</details>}</div>;
+  };
+  // Final rise: the poke test in plain words, and the preheat as a time that leads to the next section.
+  const finalRisePoke = {bold: isTwoPhase
+    ? (l === 'fr' ? `Après environ une heure, enfoncez un doigt fariné dans ${isBread ? 'la pâte' : 'un pâton'} toutes les 15–20 min — c’est prêt quand le creux remonte lentement.` : `After about an hour, press a floured fingertip into ${isBread ? 'the dough' : 'one ball'} every 15–20 min — it’s ready when the dent fills back slowly.`)
+    : (l === 'fr' ? `Enfoncez un doigt fariné dans ${isBread ? 'la pâte' : 'un pâton'} toutes les 15–20 min — c’est prêt quand le creux remonte lentement.` : `Press a floured fingertip into ${isBread ? 'the dough' : 'one ball'} every 15–20 min — it’s ready when the dent fills back slowly.`), note: ''};
+  const finalRisePreheat = {bold: schedule?.preheatStart
+    ? (l === 'fr' ? `${formatClock(schedule.preheatStart,_fmtLocale)} — préchauffez le four` : `${formatClock(schedule.preheatStart,_fmtLocale)} — preheat the oven`)
+    : (l === 'fr' ? 'Préchauffez le four pendant l’apprêt' : 'Preheat the oven during the final rise'),
+    note: l === 'fr' ? 'étape suivante : Cuisson & service' : 'next: Baking & serving'};
   const firstWater = liquidWater != null ? Math.round(liquidWater * 0.9) : null;
   const keptWater = liquidWater != null && firstWater != null ? liquidWater - firstWater : null;
   // Sugar goes in with the flour and water; oil comes last.
@@ -1642,21 +1671,13 @@ Actual dough condition and equipment may differ from these estimates.`;
               return <div key={`${part.key}-${index}`} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{flourProductName(l === 'fr' ? part.nameFr : part.name,l)}</span><strong>{displayWeight(grams,u,l)}</strong></div>;
             });
           })()}
-          {/* In the order they go into the bowl. */}{Object.entries(batch.portion).filter(([key,grams]) => grams > 0 && !(key === 'flour' && recipe?.flourParts?.length)).sort(([a],[b]) => BATCH_ORDER.indexOf(a) - BATCH_ORDER.indexOf(b)).map(([key,grams]) => <div key={key} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{({milk:l==='fr'?'Lait':'Milk',eggs:l==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:l==='fr'?'Beurre':'Butter',flour:l==='fr'?'Farine':'Flour',water:l==='fr'?'Eau':'Water',salt:l==='fr'?'Sel':'Salt',oil:l==='fr'?'Huile':'Oil',sugar:l==='fr'?'Sucre':'Sugar',yeast:l==='fr'?'Levure':'Yeast',starter:l==='fr'?'Levain':'Starter',preferment:isBiga?'Biga':isPoolish?'Poolish':(l==='fr'?'Préferment':'Preferment')} as Record<string,string>)[key]}</span><strong>{key==='yeast'?formatYeastDose(grams,l):displayWeight(grams,u,l)}</strong></div>)}
+          {/* In the order they go into the bowl. */}{Object.entries(batch.portion).filter(([key,grams]) => grams > 0 && !(key === 'flour' && recipe?.flourParts?.length)).sort(([a],[b]) => BATCH_ORDER.indexOf(a) - BATCH_ORDER.indexOf(b)).map(([key,grams]) => <Fragment key={key}><div style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{({milk:l==='fr'?'Lait':'Milk',eggs:l==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:l==='fr'?'Beurre':'Butter',flour:l==='fr'?'Farine':'Flour',water:l==='fr'?'Eau':'Water',salt:l==='fr'?'Sel':'Salt',oil:l==='fr'?'Huile':'Oil',sugar:l==='fr'?'Sucre':'Sugar',yeast:l==='fr'?'Levure':'Yeast',starter:l==='fr'?'Levain':'Starter',preferment:isBiga?'Biga':isPoolish?'Poolish':(l==='fr'?'Préferment':'Preferment')} as Record<string,string>)[key]}</span><strong>{key==='yeast'?formatYeastDose(grams,l):displayWeight(grams,u,l)}</strong></div>{key==='water' && waterHelp}{key==='yeast' && yeastHelp(grams)}</Fragment>)}
           {recipe && largeManualDough(recipe.totalDough, mixerType, batch.count, mixerCapacityG) && <p data-large-dough-note>{l === 'fr'
             ? `${displayWeight(recipe.totalDough,u,l)}, c’est une grosse pâte. Si elle est trop volumineuse pour votre saladier ou votre robot, pétrissez-la en deux moitiés, l’une juste après l’autre, puis traitez-les comme une seule pâte.`
             : `${displayWeight(recipe.totalDough,u,l)} is a large dough. If it is too much for your bowl or mixer, mix it in two halves, one straight after the other, then treat them as one dough.`}</p>}
           {batch.overCapacity && <p role="alert">{l === 'fr' ? 'Cette quantité dépasse la capacité indiquée du pétrin. Augmentez le nombre de pétrissées dans les réglages du matériel.' : 'This batch exceeds the stated mixer capacity. Increase batches in equipment settings.'}</p>}
           {batch.count > 1 && <p>{l === 'fr' ? (hasPref ? 'Préparez le préferment une seule fois. Chaque pétrissée utilise sa part indiquée.' : 'Répétez ce pétrissage pour chaque lot.') : hasPref ? 'Prepare the preferment once. Add only the portion listed for this batch.' : 'Repeat this mix for each batch.'}</p>}
         </Section>}
-          {!enriched && !(simpleMode && recipe?.waterTemp == null) && (
-        <Section icon="" title={t('sectionTitles.waterTemp')}>
-          {simpleMode && recipe?.waterTemp != null && <p>{mixingWaterCaption(mixerType,l)}.</p>}
-          {recipe?.waterTemp != null && bgMainWater != null && <WaterPreparation readOnly
-            waterGrams={bgMainWater} targetTemp={recipe.waterTemp} kitchenTemp={kitchenTemp}
-            fridgeTemp={fridgeTemp} locale={l} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={recipe.thermal?.targetDoughTemp} achievedDoughTempC={recipe.thermal?.doughTempC} waterWasClamped={recipe.thermal?.waterWasClamped} idealWaterTemp={recipe.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && recipe.oil === 0 && recipe.sugar === 0 && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />}
-        </Section>
-        )}
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           <Steps items={enriched ? [
@@ -1797,7 +1818,10 @@ Actual dough condition and equipment may differ from these estimates.`;
                 'Fine cracks form across the surface',
                 'The dough has risen, without doubling',
                 'A tangy, slightly fruity smell',
-              ]) : t.raw('bulk.watchFor') as string[]} />
+              ]) : isSourdough
+                // Sourdough: the flour-strength signs that used to sit in the recipe's starter panel.
+                ? rootT.raw(`recipeOutput.bulkCues.${(recipe?.blendProfile?.fermToleranceMultiplier ?? 1) < 0.85 ? 'weak' : (recipe?.blendProfile?.fermToleranceMultiplier ?? 1) > 1.15 ? 'strong' : 'standard'}`) as string[]
+                : t.raw('bulk.watchFor') as string[]} />
               <div style={{ marginTop: '8px' }}>
                 <LearnLink term="bulk_fermentation" label={l === 'fr' ? 'Guide du pointage' : 'Bulk fermentation guide'} onOpen={setLearnTerm} showSparkle={true} />
               </div>
@@ -2029,7 +2053,7 @@ Actual dough condition and equipment may differ from these estimates.`;
               l === 'fr'
                 ? { bold: 'Laissez le pain dans son moule, couvert, à température ambiante', note: 'prêt quand la surface se couvre de fines fissures et que la pâte approche du bord du moule' }
                 : { bold: 'Leave the loaf in its tin, covered, at room temperature', note: 'ready when fine cracks cover the surface and the dough nears the rim of the tin' },
-              { bold: l === 'fr' ? `Lancez le préchauffage du four ${formatDuration(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75,l)} avant la cuisson` : `Start preheating your oven ${formatDuration(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75,l)} before bake time`, note: (l === 'fr' ? 'préchauffez pendant l’apprêt ; vérifiez que le four et la pâte sont prêts' : 'preheat overlaps proofing; check both are ready') },
+              finalRisePreheat,
             ]} /> : bakesFromFridge ? <Steps items={l === 'fr' ? [
               { bold: numItems === 1 ? 'Sortez le pâton du réfrigérateur quand le four commence à chauffer' : 'Sortez les pâtons du réfrigérateur quand le four commence à chauffer', note: 'ils restent froids : pas d’apprêt à température ambiante' },
               { bold: 'Gardez-les couverts pendant la chauffe', note: 'pas de test du doigt : l’apprêt s’est fait au froid. Grignez-les froids, juste avant d’enfourner' },
@@ -2041,8 +2065,8 @@ Actual dough condition and equipment may differ from these estimates.`;
               { bold: l === 'fr' ? (isBread && numItems===1 ? 'Laissez le pâton se détendre, couvert' : 'Laissez les pâtons se détendre, couverts') : 'Let the shaped dough relax, covered',
                 note: l === 'fr' ? 'À température ambiante, jusqu’à ce que la pâte soit souple et aérée.' : 'At room temperature, until relaxed and airy.' },
               // "After warmup" only when this step really follows a fridge exit.
-              isTwoPhase ? t.raw('finalProof.pokeTest') as { bold: string; note: string } : { bold: l === 'fr' ? 'Test du doigt toutes les 15–20 min' : 'Poke-test every 15–20 min', note: l === 'fr' ? 'le creux doit remonter lentement' : 'the dent should spring back slowly' },
-              { bold: l === 'fr' ? `Lancez le préchauffage du four ${formatDuration(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75,l)} avant la cuisson` : `Start preheating your oven ${formatDuration(schedule.preheatStart ? (schedule.bakeStart.getTime() - schedule.preheatStart.getTime()) / 3600000 : 0.75,l)} before bake time`, note: (l === 'fr' ? 'préchauffez pendant l’apprêt ; vérifiez que le four et la pâte sont prêts' : 'preheat overlaps proofing; check both are ready') },
+              finalRisePoke,
+              finalRisePreheat,
             ]} />}
           </Section>
 
@@ -2269,7 +2293,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         {/* With pizzas chosen, cooking them one by one is the next step; without, picking
             pizzas is only an option at the oven, so it is a quiet link. */}
         {!isBread && onNavigateToPizzaParty && (pizzasChosen
-          ? <button type="button" onClick={onNavigateToPizzaParty} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{pizzaActionLabel ?? (l === 'fr' ? 'Commencer la cuisson des pizzas' : 'Start cooking the pizzas')} →</button>
+          ? <button type="button" onClick={onNavigateToPizzaParty} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{pizzaActionLabel ?? (l === 'fr' ? 'Commencer la cuisson des pizzas' : 'Start baking the pizzas')} →</button>
           : <button type="button" className="bh-back-action" data-pizza-link onClick={onNavigateToPizzaParty} style={{minHeight:44,marginTop:12,textAlign:'left'}}>{l === 'fr' ? 'Pas de garnitures prévues ? Choisir des pizzas' : 'No toppings planned? Pick pizzas'}</button>)}
         {!isBread && bakeClosing}
       </StepCard>
