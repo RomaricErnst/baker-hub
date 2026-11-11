@@ -154,7 +154,7 @@ for(const locale of ['fr','en']){
    sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:3,advancedStep:9,setupOverview:true,activeTab:'setup',reviewMode:true}));
   },data);
   await page.goto(fr?'/fr':'/');
-  await page.getByRole('button',{name:fr?'Modifier : Mode':'Edit : Mode',exact:true}).tap();
+  await page.locator('[data-mode-switch]').tap();
   await page.getByRole('button',{name:fr?/^Créer une recette simple/:/^Create a simple recipe/}).tap();
   const formula=async()=>{const s=await stored(page);return {tab:s?.tab,preferment:s?.prefermentType,hydration:s?.manualHydration,salt:s?.manualSalt,flour:s?.flourBlend};};
   await expect.poll(formula).toEqual({tab:'simple',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
@@ -168,7 +168,7 @@ for(const locale of ['fr','en']){
   const stages=page.locator('[data-recipe-stages]:visible');
   await expect(stages.getByText(/Poolish/).first()).toBeVisible();
   await page.getByRole('button',{name:fr?'Mes choix':'My choices',exact:true}).tap();
-  await page.getByRole('button',{name:fr?'Modifier : Mode':'Edit : Mode',exact:true}).tap();
+  await page.locator('[data-mode-switch]').tap();
   await page.evaluate(()=>{const el=document.querySelector('[data-customize-link]');if(el){document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));el.scrollIntoView({block:'center'});}});
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
   await expect.poll(formula).toEqual({tab:'custom',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});

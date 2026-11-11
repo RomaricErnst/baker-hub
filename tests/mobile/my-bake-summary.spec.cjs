@@ -21,19 +21,20 @@ async function seed(page,{locale='fr',mode='simple',bread=false,style,extra={},u
  await expect(page.getByRole('heading',{level:1,name:locale==='fr'?'Revoir mes choix':'Review my choices',exact:true})).toBeVisible();
 }
 
-test('fr Simple: a proposed tag on the row with unchosen values, sentence-case names',async({page})=>{
+test('fr Simple: My bake opens on the plan; assumed values and the mode are not listed',async({page})=>{
  await seed(page);
  const main=page.locator('body');
- await expect(page.locator('[data-suggested-tag]')).toHaveCount(1);
- await expect(page.locator('[data-suggested-tag]')).toHaveText('proposé');
- await expect(main).not.toContainText('· valeur proposée');
- await expect(main).toContainText('Four domestique standard · À la main · Réfrigérateur 6°C · Levure sèche instantanée');
- await expect(main).toContainText('2 × 260 g');
+ await expect(page.locator('[data-my-bake-plan]')).toContainText('Enfourner');
+ await expect(page.locator('[data-suggested-tag]')).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Modifier : Mode',exact:true})).toHaveCount(0);
+ await expect(page.locator('[data-mode-switch]')).toHaveText('Passer en mode Avancé');
+ await expect(main).not.toContainText('Four domestique standard · À la main');
+ await expect(main).toContainText('2 × 260 g');
 });
 
-test('en Simple: the tag stays while one value is unchosen; imperial quantity',async({page})=>{
- await seed(page,{locale:'en',units:'imperial',extra:{confirmedSettings:['climate=22','oven=home_oven_standard','mixer=hand']}});
- await expect(page.locator('[data-suggested-tag]')).toHaveText('suggested');
+test('en Simple: chosen equipment is listed, without a tag; imperial quantity',async({page})=>{
+ await seed(page,{locale:'en',units:'imperial',extra:{confirmedSettings:['climate=22','oven=home_oven_standard','mixer=hand','yeast=instant','fridge=6']}});
+ await expect(page.locator('[data-suggested-tag]')).toHaveCount(0);
  await expect(page.locator('body')).toContainText('2 × 9.2 oz');
  await expect(page.locator('body')).not.toContainText('× 260 g');
 });

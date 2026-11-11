@@ -543,7 +543,11 @@ function SetupBlockerAction({flow,onJump}: {flow:StepFlow;onJump?:(id:number)=>v
 }
 
 // ── Setup review ──────────────────────────────
-function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale = false, reviewValues = {}, returnLabel, kitchenRow, starterRow, suggestedRows = {} }: {
+function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale = false, reviewValues = {}, returnLabel, kitchenRow, starterRow, suggestedRows = {}, hideSuggested = false, planCard }: {
+  /** Simple: rows the baker never chose stay out of the summary. */
+  hideSuggested?: boolean;
+  /** Once there is a recipe, My bake opens on the plan. */
+  planCard?: React.ReactNode;
   returnLabel?: string;
   /** One sentence naming the values Baker Hub proposed and the baker has not chosen. */
   /** Rows whose value the baker has not chosen yet: a small "suggested" tag on the row. */
@@ -564,15 +568,16 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale 
   // Timing closes the review; the guided step order remains unchanged.
   const steps = [...flow.steps.filter(s => s.group !== 'plan'), ...flow.steps.filter(s => s.group === 'plan')];
   const rows = [
-    ...(modeChip ? [{ key: 'mode', label: 'Mode', value: modeChip.value, onClick: modeChip.onClick }] : []),
     ...steps.flatMap(step => [
       ...(kitchenRow && step.group === 'plan' ? [{ key: 'kitchen-temperature', label: fr ? 'Température de la cuisine' : 'Kitchen temperature', value: kitchenRow.value, onClick: kitchenRow.onClick }] : []),
       ...(starterRow && step.group === 'plan' ? [{ key: 'starter', label: fr ? 'Votre levain' : 'Your starter', value: starterRow.value, onClick: starterRow.onClick }] : []),
       { key: String(step.id), label: step.id===3 ? step.title : step.chip, value: reviewValues[step.id] ?? step.value ?? step.gap, onClick: () => onJump(step.id) },
     ]),
-  ];
+  // Only what the baker chose: assumed values are not listed in Simple.
+  ].filter(row => !(hideSuggested && flow.recipeGenerated && suggestedRows[row.key]));
   return (
     <div style={{ padding: '4px 0 8px' }}>
+      {planCard}
       <h1 className="bh-page-title" style={{ fontSize: '26px', margin: '2px 0 6px', letterSpacing: '-.4px' }}>{fr ? 'Revoir mes choix' : 'Review my choices'}</h1>
       {nameField}
       <div>
@@ -580,12 +585,14 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale 
           <div key={row.key} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 0', borderBottom: '1px solid var(--border)' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'block', fontSize: '12px', color: 'var(--smoke)', marginBottom: '5px' }}>{row.label}</span>
-              <strong style={{ fontSize: '14px', lineHeight: 1.5, fontWeight: 600 }}>{row.value}</strong>{suggestedRows[row.key] && <span data-suggested-tag style={{ marginLeft: 8, fontSize: '12px', color: 'var(--ash)', border: '1px solid var(--border)', borderRadius: 20, padding: '1px 8px', whiteSpace: 'nowrap' }}>{fr ? 'proposé' : 'suggested'}</span>}
+              <strong style={{ fontSize: '14px', lineHeight: 1.5, fontWeight: 600 }}>{row.value}</strong>
             </div>
             <button onClick={row.onClick} aria-label={`${fr ? 'Modifier' : 'Edit'} : ${row.label}`} style={{ minWidth:44, minHeight: '44px', border: 'none', background: 'none', color: 'var(--terra)', font: 'inherit', fontSize: '13px', cursor: 'pointer', padding: '8px 0 8px 8px' }}>{fr ? 'Modifier' : 'Edit'}</button>
           </div>
         ))}
       </div>
+      {/* The mode is not a choice to review; switching stays one quiet link away. */}
+      {modeChip && <button type="button" data-mode-switch className="bh-back-action" style={{ minHeight: 44, marginTop: 12 }} onClick={modeChip.onClick}>{modeChip.value === 'simple' ? (fr ? 'Passer en mode Avancé' : 'Switch to Custom') : (fr ? 'Passer en mode Simple' : 'Switch to Simple')}</button>}
       <BottomActions>{(flow.recipeGenerated || flow.showGenerate) ? (
         <button onClick={onBackToRecipe} style={{ ...NEXT_CTA, marginTop: '22px' }}>
           {returnLabel && flow.recipeGenerated ? returnLabel : !flow.recipeGenerated ? (fr ? 'Créer ma recette' : 'Create my recipe') : stale ? (fr ? 'Mettre à jour la recette et revenir' : 'Update recipe and return') : (fr ? 'Retour à la recette' : 'Back to recipe')}
@@ -3909,6 +3916,12 @@ export default function Home() {
     ? (prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):(fr?'Préparer le poolish':'Make Poolish'))
     : (schedule?.availabilityActions ?? []).some(action=>action.id==='autolyse'&&+action.at===+firstRecipeAction) ? (fr?'Autolyse puis pétrissage':'Autolyse, then mixing')
     : +firstRecipeAction < +startTime ? (fr?'Préparer le préferment':'Make the preferment') : (fr?'Pétrir la pâte':'Start Dough'));
+  // My bake opens on the plan: what is next, the bake, and the way into Preparation.
+  const myBakePlanCard = recipeGenerated && eatTime && schedule && !isUnleavened ? <section data-my-bake-plan aria-label={fr?'Mon plan':'My plan'} style={{border:'1px solid var(--border)',borderRadius:14,padding:'14px 16px',margin:'4px 0 20px',background:'var(--warm)'}}>
+    <p style={{margin:'0 0 4px',fontSize:16,fontWeight:700,color:'var(--char)'}}>{fr?'Ensuite : ':'Next: '}{firstRecipeActionLabel ?? (fr?'Commencer':'Start')} · {formatBakeDateTime(firstRecipeAction,locale)}</p>
+    <p style={{margin:'0 0 6px',fontSize:15,color:'var(--char)'}}>{fr?'Enfourner':'Bake'} · {formatBakeDateTime(eatTime,locale)}</p>
+    <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={()=>{setSetupOverview(false);setProtocolView('dough');openDestination('protocol');}}>{fr?'Ouvrir la Préparation':'Open preparation'} →</button>
+  </section> : null;
   // A fridge removal the baker arranged for someone at home, for the Preparation summary.
   const coveredFridgeRemovalAt = (()=>{const at=blocks.find(block=>block.fridgeRemoval&&eatTime&&block.fridgeRemoval.bake===+eatTime)?.fridgeRemoval?.at;return at?new Date(at):undefined;})();
   // Every remaining hands-on step, as calendar events with an alert at their time.
@@ -4551,7 +4564,9 @@ export default function Home() {
                 flow={simpleFlow}
                 reviewValues={{ 3: simpleKitchenSummary, 7: reviewTiming }}
                 suggestedRows={simpleSuggestedRows}
-                modeChip={{ value: t('modeCards.simple.title'), onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
+                modeChip={{ value: 'simple', onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
+                hideSuggested
+                planCard={myBakePlanCard}
                 onJump={id => { setSetupOverview(false); simpleFlow.onJump(id); }}
                 returnLabel={recipeGenerated?setupReturnLabel:undefined}
                 onBackToRecipe={finishSetupEdit}
@@ -5023,7 +5038,8 @@ export default function Home() {
                 flow={customFlow}
                 reviewValues={{3:reviewEquipment, 4:reviewAmbient, 7:reviewLeavening, ...(levainCustom ? {} : {8: prefermentType==='none'?t('preferment.direct'):localName(PREFERMENT_TYPES[prefermentType])}), 10:(advancedRecipe ? advancedRecipe.hydration+'%' : (manualHydration ?? ALL_STYLES[styleKey!]?.hydration ?? 0)+'%'), 9:reviewTiming}}
                 suggestedRows={{ '3': equipmentOpen, '7': yeastOpen, '8': showPrefermentChoice && !levainCustom && !methodPicked, '10': manualHydration===undefined }}
-                modeChip={{ value: t('modeCards.custom.title'), onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
+                modeChip={{ value: 'custom', onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
+                planCard={myBakePlanCard}
                 onJump={id => { setSetupOverview(false); customFlow.onJump(id); }}
                 returnLabel={recipeGenerated?setupReturnLabel:undefined}
                 onBackToRecipe={finishSetupEdit}
