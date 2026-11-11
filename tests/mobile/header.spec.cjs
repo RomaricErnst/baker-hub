@@ -17,11 +17,13 @@ async function verifyHeader(page, testInfo, state) {
   })).toBe(true);
   await expect(header).toHaveCSS('height', '56px');
   await expect(header.locator('.bh-wordmark')).toHaveCSS('font-size', '24px');
-  for (const className of ['.bh-header-menu', '.bh-header-save']) {
+  // Save appears once there is a recipe; before that the header carries Menu only.
+  const withSave = await header.locator('.bh-header-save').count() > 0;
+  for (const className of withSave ? ['.bh-header-menu', '.bh-header-save'] : ['.bh-header-menu']) {
     await expect(header.locator(className)).toHaveCSS('font-size', '16px');
     await expect(header.locator(className)).toHaveCSS('font-weight', '500');
   }
-  await expect(header.locator('.bh-header-save')).toHaveCSS('border-top-width', '1px');
+  if (withSave) await expect(header.locator('.bh-header-save')).toHaveCSS('border-top-width', '1px');
   const geometry = await header.evaluate(el => {
     const rect = node => {
       const r = node.getBoundingClientRect();
@@ -96,6 +98,19 @@ for (const locale of ['fr', 'en']) {
     await expect(dialog).toBeHidden();
     await expect(menu).toBeFocused();
 
+    await expect(page.locator('.bh-header-save')).toHaveCount(0);
+    // Create a recipe: Save then appears in the header.
+    await page.getByRole('button', { name: fr ? 'Napolitaine classique' : 'Classic Neapolitan', exact: true }).tap();
+    await page.locator('.bh-style-confirm').getByRole('button', { name: /^(Continue with|Continuer avec)/ }).tap();
+    const quantity = page.getByLabel(fr ? 'Nombre de pizzas' : 'Number of pizzas', { exact: true });
+    await quantity.fill('4'); await quantity.blur();
+    await page.locator('.bh-step-actions:visible').locator('[data-bh-forward]:visible').tap();
+    if (await page.locator('[data-kitchen-slider]:visible').count()) await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();
+    const value = await page.evaluate(() => { const d = new Date(); d.setDate(d.getDate() + 2); d.setHours(19, 0, 0, 0); return new Date(+d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); });
+    const bakeDate = page.getByLabel(fr ? 'Date et heure de cuisson' : 'Bake date and time', { exact: true });
+    await bakeDate.fill(value); await bakeDate.blur();
+    await page.getByRole('button', { name: fr ? 'Générer ma recette' : 'Generate my recipe', exact: true }).tap();
+    await expect(page.locator('.bh-header-save')).toBeVisible();
     await page.locator('.bh-header-save').tap();
     await expect(page.locator('.bh-header-save')).toHaveText(fr ? 'Enregistrer' : 'Save');
     await expect(page.locator('.bh-header-save')).toHaveAttribute('aria-disabled', 'false');

@@ -430,7 +430,7 @@ test('late fillings opened from Recipe return to Recipe without changing the dou
  await article.getByRole('spinbutton').fill('1');
  await article.getByRole('spinbutton').blur();
  await expect.poll(async()=>(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']).toBe(1);
- await page.getByRole('button',{name:/^Retour à la recette(?: →)?$/}).tap();
+ await page.getByRole('button',{name:/^Retour à Recette(?: →)?$/}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
  await expect(page.getByRole('button',{name:'Modifier les garnitures · 1 portion',exact:true})).toBeVisible();
  await expect(page.locator('.bh-recipe-fillings-link')).toHaveCount(0);

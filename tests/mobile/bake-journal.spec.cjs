@@ -87,6 +87,8 @@ test('en: photos stay on the device and a new bake adds a second entry',async({p
  await openMyBakes(page,false);
  await page.locator(`[data-journal-entry="${entry.id}"]`).tap();
  const sheet=page.getByRole('dialog',{name:'Bake journal entry'});
+ // Before the bake the entry shows the plan; photos are one tap away.
+ await sheet.locator('[data-rate-now]').tap();
  // A small PNG chosen from the device: downscaled to JPEG and kept in IndexedDB.
  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVQI12P8z8DAwMDAxMDAwMDAAAANHQEDasKb6QAAAABJRU5ErkJggg==','base64');
  await sheet.locator('input[type=file]').setInputFiles({name:'crumb.png',mimeType:'image/png',buffer:png});

@@ -70,7 +70,7 @@ for(const bread of [false,true])test(`Fresh ${bread?'baguette lunch':'pizza nigh
  }else{
    await page.getByRole('button',{name:/^Margherita(?: · \d+)?$/}).getByRole('button',{name:/^\+/}).tap();
  }
- await page.getByRole('button',{name:/^Retour à la recette(?: →)?$/}).tap();
+ await page.getByRole('button',{name:/^Retour à Recette(?: →)?$/}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
  await navigate(page,'Courses','fr');
  const checkbox=page.getByRole('checkbox').first();
