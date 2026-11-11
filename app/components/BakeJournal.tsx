@@ -77,6 +77,7 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
   const [photos, setPhotos] = useState<Array<{ id: string; url: string; blob: Blob }>>([]);
   const [adding, setAdding] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [rateNow, setRateNow] = useState(false);
   const [savingAccount, setSavingAccount] = useState(false);
   const [status, setStatus] = useState<Status>(null);
   const urlsRef = useRef<string[]>([]);
@@ -151,6 +152,11 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
   const secondary: React.CSSProperties = { width: '100%', minHeight: 44, padding: '10px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', font: 'inherit', cursor: 'pointer' };
   const divider = { height: 1, background: 'var(--border)', margin: '16px 20px 0' };
   const inProgress = journalBakeInProgress(current);
+  // Before the bake there is nothing to rate: the entry shows the plan instead.
+  const beforeBake = !rateNow && current.eatTime != null && current.eatTime > Date.now() && current.rating == null && !current.note && current.photoIds.length === 0;
+  const startAt = typeof current.session?.startTime === 'number' ? current.session.startTime : null;
+  const nextWeek = current.eatTime != null ? new Date(current.eatTime + 7 * 86400000) : null;
+  const nextWeekLabel = nextWeek ? nextWeek.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
   const noteChanged = note !== current.note;
 
   return createPortal(
@@ -170,10 +176,19 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
           <div style={{ padding: '16px 20px 0' }}>
             <p style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>{journalTitle(current, locale)}</p>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--ash)' }}>{journalFacts(current, locale, units, t)}</p>
-            {current.eatTime != null && <p style={{ margin: 0, fontSize: 13, color: 'var(--ash)' }}>{t('bakeAt', { date: formatBakeDateTime(new Date(current.eatTime), locale) })}</p>}
+            {current.eatTime != null && !beforeBake && <p style={{ margin: 0, fontSize: 13, color: 'var(--ash)' }}>{t('bakeAt', { date: formatBakeDateTime(new Date(current.eatTime), locale) })}</p>}
             <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--smoke)' }}>{current.accountEventId ? t('savedToAccount') : t('deviceOnly')}</p>
           </div>
 
+          {beforeBake ? <>
+          <div style={divider} />
+          <div data-journal-plan style={{ padding: '16px 20px 0' }}>
+            {startAt != null && <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600 }}>{t('startAt', { date: formatBakeDateTime(new Date(startAt), locale) })}</p>}
+            {current.eatTime != null && <p style={{ margin: '0 0 8px', fontSize: 15 }}>{t('bakeAt', { date: formatBakeDateTime(new Date(current.eatTime), locale) })}</p>}
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--ash)' }}>{t('beforeBakeNote')}</p>
+            <button type="button" data-rate-now onClick={() => setRateNow(true)} style={{ minHeight: 44, padding: 0, border: 'none', background: 'transparent', color: 'var(--terra)', font: 'inherit', fontSize: 14, textDecoration: 'underline', cursor: 'pointer' }}>{t('rateNow')}</button>
+          </div>
+          </> : <>
           <div style={divider} />
           <fieldset style={{ border: 'none', margin: 0, padding: '16px 20px 0' }}>
             <legend style={{ ...sectionLabel, padding: 0, float: 'left', width: '100%' }}>{t('ratingQuestion')}</legend>
@@ -229,6 +244,7 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
             </div>
             <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--smoke)' }}>{t('photoLimit', { count: current.photoIds.length })}</p>
           </div>
+          </>}
 
           {(status === 'photoFailed' || status === 'storageFailed' || status === 'saveToAccountFailed') && (
             <p role="status" style={{ margin: '12px 20px 0', fontSize: 13, color: 'var(--ash)' }}>{t(status)}</p>
@@ -247,7 +263,7 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
             </div>
           ) : <>
             {inProgress && <button type="button" onClick={() => { onResume(current); onClose(); }} style={{ ...secondary, background: 'var(--terra)', color: 'white', borderColor: 'var(--terra)', fontWeight: 600 }}>{t('resume')}</button>}
-            <button type="button" onClick={() => { onRebake(current); onClose(); }} style={inProgress ? secondary : { ...secondary, background: 'var(--terra)', color: 'white', borderColor: 'var(--terra)', fontWeight: 600 }}>{t('rebake')}</button>
+            <button type="button" onClick={() => { onRebake(current); onClose(); }} style={inProgress ? secondary : { ...secondary, background: 'var(--terra)', color: 'white', borderColor: 'var(--terra)', fontWeight: 600 }}>{t('rebake', { date: nextWeekLabel }).replace(/ \(\)$/, '')}</button>
             {signedIn && onSaveToAccount && !current.accountEventId && <>
               <button type="button" disabled={savingAccount} aria-busy={savingAccount} onClick={() => void saveToAccount()} style={secondary}>{savingAccount ? t('savingToAccount') : t('saveToAccount')}</button>
               <p style={{ margin: 0, fontSize: 12, color: 'var(--smoke)' }}>{t('saveToAccountNote')}</p>

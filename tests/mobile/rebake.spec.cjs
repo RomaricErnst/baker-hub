@@ -30,7 +30,7 @@ for(const mode of ['simple','custom'])test(`${mode}: bake again opens the next w
  await page.getByRole('button',{name:'Menu',exact:true}).tap();
  await page.getByRole('button',{name:'My bakes',exact:true}).tap();
  await page.locator(`#bakerhub-menu [data-journal-entry="${first.id}"]`).tap();
- await page.getByRole('dialog',{name:'Bake journal entry'}).getByRole('button',{name:'Bake again',exact:true}).tap();
+ await page.getByRole('dialog',{name:'Bake journal entry'}).getByRole('button',{name:/^Bake again next week/}).tap();
  const nextWeek=await local(page,9,19);
  // A new bake asks the kitchen again first.
  await expect(page.locator('[data-kitchen-slider]:visible')).toBeVisible();

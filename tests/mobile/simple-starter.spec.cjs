@@ -110,7 +110,7 @@ test('simple sourdough: bake again asks the kitchen and the starter, then genera
  await page.getByRole('button',{name:'Menu',exact:true}).tap();
  await page.getByRole('button',{name:'My bakes',exact:true}).tap();
  await page.locator(`#bakerhub-menu [data-journal-entry="${id}"]`).tap();
- await page.getByRole('dialog',{name:'Bake journal entry'}).getByRole('button',{name:'Bake again',exact:true}).tap();
+ await page.getByRole('dialog',{name:'Bake journal entry'}).getByRole('button',{name:/^Bake again next week/}).tap();
  await expect(page.locator('[data-kitchen-slider]:visible')).toBeVisible();
  await forward(page).tap();
  await expect(page.getByRole('heading',{name:c.question})).toBeVisible();
