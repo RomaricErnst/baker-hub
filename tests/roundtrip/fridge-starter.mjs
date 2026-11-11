@@ -68,6 +68,25 @@ for(const temp of T)for(const age of A)for(const horizon of HZ)for(const nights 
  }catch(err){bad.push('ERR '+temp+' '+age[0]+' '+horizon+': '+err.message);}
  finally{m?.unmount();await settle();}
 }
+// A bake nine or ten days away keeps the fridge starter in the fridge until the
+// run-up: the first feed comes at least two days after now, not "feed now" (ux-25).
+const early=[];let longCases=0;
+for(const temp of [18,22,26])for(const age of [['days23',-60],['week',-170]])for(const horizon of [216,240]){
+ w.localStorage.clear();
+ w.localStorage.setItem('bh_profile_v1',JSON.stringify({version:1,blockers:{sleep:{enabled:true,from:'23:00',to:'07:00'},work:{enabled:false,from:'09:00',to:'18:00'}}}));
+ let m;
+ try{
+  m=await w.__mount(query('#root'),{temp,style:'pain_levain',loc:'fridge',age:age[0],eat:new w.Date(clock+horizon*hour),start:new w.Date(clock),lastFed:new w.Date(clock+age[1]*hour),page:true,full:true,ratioMode:'recommend'});
+  await settle();await settle();
+  const ev=(w.__h.rec.events||'').split(',').filter(Boolean).map(e=>{const [k,t]=e.split('@');return {k,t:Number(t)};});
+  const firstFeed=Math.min(...ev.filter(e=>['refresh','intermediate_refresh','pre_mix'].includes(e.k)&&e.t>clock).map(e=>e.t));
+  longCases++;
+  if(Number.isFinite(firstFeed)&&firstFeed<clock+48*hour)early.push(`${temp}C ${age[0]} +${horizon}h: first feed ${fmt(firstFeed)} · ${ev.map(x=>x.k+'@'+fmt(x.t)).join(' ')}`);
+ }catch(err){early.push('ERR '+temp+' '+age[0]+' '+horizon+': '+err.message);}
+ finally{m?.unmount();await settle();}
+}
+console.log('long-horizon cases',longCases,'early feeds',early.length);
+assert.equal(early.length,0,early.join('\n'));
 console.log('cases',n,'violations',bad.length);console.log(bad.slice(0,15).join('\n'));
 assert.deepEqual(errors,[],'Runtime errors');
 assert.equal(n,160);

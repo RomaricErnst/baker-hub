@@ -3111,7 +3111,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
   }
 
   // ── Sourdough: derive peak time from inputs (returns values, no setState) ──
-  function deriveStarterPeakTime(bakeTime: Date, targetMixTime?: Date | null): DerivedStarterState {
+  function deriveStarterPeakTime(bakeTime: Date, targetMixTime?: Date | null, revivalBlocks?: AvailabilityBlock[]): DerivedStarterState {
     const NULL_RESULT: DerivedStarterState = {
       peakTime: null, feedTime: null, fridgeOut: null,
       suggestedFridgeOut: null, suggestedFridgePeak: null,
@@ -3151,7 +3151,24 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
           // it warms up — the planned revival feed starts at now + warmup, so
           // "remove from fridge" lands at NOW instead of warmup-minutes in the
           // past (live bug: feed "Now · 8:45am" with removal 7:30am at 8:32).
-          const refeedNow = new Date((Math.floor(Date.now()/900000)+1)*900000 + warmupH * 3600000);
+          const earliestRefeed = (Math.floor(Date.now()/900000)+1)*900000 + warmupH * 3600000;
+          // A starter kept in the fridge stays there until the run-up to this bake:
+          // the revival starts in time for its cycles, the dough and a margin, not
+          // days ahead (ux-25: no "feed now" ten days before a bake). Its removal
+          // and first feed avoid the baker's busy times.
+          const refeedNow = (() => {
+            const dough = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
+            const cycleH = adjPeakH * 1.5;
+            const leadH = (dough.rtH ?? 0) + (dough.coldH ?? 0) + (_cycles + 1) * cycleH + warmupH + 12;
+            const ideal = Math.floor((bakeTime.getTime() - leadH * 3600000) / 900000) * 900000;
+            // Only a bake several days away moves the revival; nearer bakes keep it now.
+            if (ideal < earliestRefeed + 96 * 3600000) return new Date(earliestRefeed);
+            // The removal, the first feed and each revival feed after it stay out of busy times.
+            const clear = (at: number) => !revivalBlocks?.length || [at - warmupH * 3600000, at, ...Array.from({length: _cycles}, (_, k) => at + (k + 1) * cycleH * 3600000)]
+              .every(ms => !isTimeBlocked(ms, revivalBlocks));
+            for (let at = ideal, i = 0; i < 192 && at > earliestRefeed + 24 * 3600000; i++, at -= 900000) if (clear(at)) return new Date(at);
+            return new Date(earliestRefeed);
+          })();
           // A refresh from a long-dormant starter peaks LATER than a healthy
           // one — the same refresh stretch the chart bell applies. Scoring
           // must use it too, or it thinks the starter peaks ~adjPeakH after
@@ -3473,7 +3490,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
     let _recommendedNextFeedRatio: 1 | 2 | 4 | 5 | 10 | null = null;
 
     // Get derived starter state (no setState calls inside)
-    const derived = deriveStarterPeakTime(et, targetMixTime);
+    const derived = deriveStarterPeakTime(et, targetMixTime, blocksOverride ?? (isSourdough ? localBlocks : blocks));
     // Publish only the winning plan peak below, not the historical starter peak.
     const _feedTime = derived.feedTime;
     let _starterRefeedTime = derived.starterRefeedTime;
