@@ -65,7 +65,7 @@ Single-phase, or two-phase tropical when window ≥16 h AND kitchen ≥28 °C.
 15-min rounding · blocker edges EXCLUSIVE (> and <, never >= <=) · default fridge 6 °C · default bake 18h.
 
 ### DDT
-The water-temperature balance includes flour, starter or preferment, thermal input from kneading, and the heat of melting ice. Use the calculated result for the specific formula. In Simple, keep kneading guidance method-neutral and identify the equipment assumption wherever it affects a water or batch calculation. Custom exposes equipment explicitly.
+The water-temperature balance includes flour, starter or preferment, thermal input from kneading, and the heat of melting ice. A levain's flour and water are already inside the dough's totals; in the balance they sit at the starter's temperature: room temperature after a feed, the warmed temperature (`prefTempAfterWarmup` from fridge to kitchen over the time out) when a fridge starter goes into the dough without another feed, or the baker's measured temperature (Fine-tune), which always wins (`prefTempForBalance` in page.tsx). Use the calculated result for the specific formula. In Simple, keep kneading guidance method-neutral and identify the equipment assumption wherever it affects a water or batch calculation. Custom exposes equipment explicitly.
 
 ### Preferments
 Poolish RT 6–14 h, fridge ≤24 h · Biga fridge ≤72 h · Levain = sourdough only.
