@@ -29,7 +29,7 @@ for(const locale of ['en','fr'])test(`${locale} simple: a bake tonight starts on
  await expect(page.locator('[data-recipe-plan]')).toContainText(fr?'aujourd’hui 11h30 · dans 15 min':'today 11:30am · in 15 min');
  await expect.poll(async()=>(await stored(page))?.startTime).toBe(Date.parse('2026-11-10T11:30:00+08:00'));
  // Due within 30 minutes: Preparation opens on the summary with step 1's instructions open.
- await page.locator('[data-recipe-plan]').getByRole('button',{name:fr?'Voir le détail des étapes':'See each step in detail',exact:true}).tap();
+ await page.locator('[data-recipe-plan]').locator('[data-go-preparation]').tap();
  await expect(page.locator('#bake-step-1')).toBeVisible();
  await expect(page.locator('#bake-step-2')).toHaveCount(0);
 });

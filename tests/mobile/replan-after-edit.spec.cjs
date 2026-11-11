@@ -26,7 +26,7 @@ test('editing the yeast after generation updates the plan and says what moved',a
  const automatic=(await stored(page)).startTime;
 
  // Review my choices → Fine-tune → Edit.
- await page.getByRole('button',{name:'Review my choices',exact:true}).first().tap();
+ await page.getByRole('button',{name:'My choices',exact:true}).first().tap();
  await page.getByRole('button',{name:'Edit : Fine-tune',exact:true}).tap();
  const yeast=page.locator('[data-yeast-override] input:visible');
  const recommended=Number(await yeast.inputValue());

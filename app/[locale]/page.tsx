@@ -838,6 +838,7 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
     {helperAt&&<p data-helper-step style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'Vous, ou quelqu’un d’autre, sortez la pâte du réfrigérateur':'You or someone else takes the dough out of the fridge'} · {formatBakeDateTime(helperAt,locale)}</p>}
     <p style={{margin:'0 0 4px',fontSize:15,color:'var(--char)'}}>{fr?'Enfourner':'Bake'} · {formatBakeDateTime(bakeAt,locale)}</p>
     {assumedKitchen}
+    {calendarOutdated && <p data-calendar-outdated style={{margin:'8px 0 0',fontSize:14,lineHeight:1.45,color:'var(--ash)'}}>{fr?'Les étapes ont changé depuis votre ajout à l’agenda. Ajoutez le plan à nouveau pour le mettre à jour.':'The steps have changed since you added this plan to your calendar. Add it again to update it.'}</p>}
     <span style={{display:'flex',flexWrap:'wrap',gap:'0 18px'}}>
       <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={onAdjustTiming}>{fr?'Ajuster les horaires':'Adjust timing'}</button>
       {onAddToCalendar&&<button type="button" data-add-calendar className="bh-section-back" style={{minHeight:44}} onClick={onAddToCalendar}>{calendarOutdated?(fr?'Mettre à jour mon agenda':'Update my calendar'):(fr?'Ajouter à mon agenda':'Add to my calendar')}</button>}
@@ -849,7 +850,7 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
 // calendar file are one tap away.
 // The recipe says what goes in; below it, the plan says when: the key steps with
 // their times only. How to do each step lives in Preparation.
-function RecipePlanCard({fr,locale,startAt,startLabel,bakeAt,steps,calendarOutdated,onSeeSteps,onAddToCalendar}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;steps:{key:string;at:Date;label:string}[];calendarOutdated?:boolean;onSeeSteps:()=>void;onAddToCalendar:()=>void}){
+function RecipePlanCard({fr,locale,startAt,startLabel,bakeAt,steps,onSeeSteps}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;steps:{key:string;at:Date;label:string}[];onSeeSteps:()=>void}){
   const row={display:'flex',gap:12,padding:'7px 0',borderTop:'1px solid var(--border)',fontSize:15,lineHeight:1.4,color:'var(--char)'} as const;
   const time={flex:'0 0 auto',minWidth:'7.5em',color:'var(--ash)',fontVariantNumeric:'tabular-nums'} as const;
   return <section data-recipe-plan aria-labelledby="bh-recipe-plan-title" style={{margin:'0 0 4px'}}>
@@ -859,11 +860,8 @@ function RecipePlanCard({fr,locale,startAt,startLabel,bakeAt,steps,calendarOutda
       {steps.map(step=><li key={step.key} style={row}><span style={time}>{formatTime(step.at,locale)}</span><span>{step.label}</span></li>)}
     </ol>}
     <p style={{...row,margin:0,fontWeight:600}}><span style={{...time,color:'var(--char)'}}>{formatTime(bakeAt,locale)}</span><span>{fr?'Enfourner':'Bake'}</span></p>
-    {calendarOutdated && <p data-calendar-outdated style={{margin:'8px 0 0',fontSize:14,lineHeight:1.45,color:'var(--ash)'}}>{fr?'Les étapes ont changé depuis votre ajout à l’agenda. Ajoutez le plan à nouveau pour le mettre à jour.':'The steps have changed since you added this plan to your calendar. Add it again to update it.'}</p>}
-    <span style={{display:'flex',flexWrap:'wrap',gap:'0 18px'}}>
-      <button type="button" data-add-calendar className="bh-section-back" style={{minHeight:44}} onClick={onAddToCalendar}>{calendarOutdated?(fr?'Mettre à jour mon agenda':'Update my calendar'):(fr?'Ajouter à mon agenda':'Add to my calendar')}</button>
-      <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={onSeeSteps}>{fr?'Voir le détail des étapes':'See each step in detail'}</button>
-    </span>
+    {/* One way on: the calendar lives on the Preparation summary. */}
+    <button type="button" data-go-preparation style={{...SECONDARY_CTA,width:'100%',marginTop:14}} onClick={onSeeSteps}>{fr?'Tout est prêt ? Aller à la Préparation':'Have everything? Go to Preparation'} →</button>
   </section>;
 }
 
@@ -4816,7 +4814,7 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
-                          {eatTime && schedule && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} calendarOutdated={calendarOutdated} onSeeSteps={()=>openDestination('protocol')} onAddToCalendar={addPlanToCalendar}/>}
+                          {eatTime && schedule && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} onSeeSteps={()=>{setProtocolView('dough');openDestination('protocol');}}/>}
                         </div>
                       )}
                     </>
@@ -4876,10 +4874,11 @@ export default function Home() {
               {!bakeTimeIsPast && (
                 <div style={{ marginTop: '12px' }}>
 
-                                      <button type="button" style={{...SECONDARY_CTA,width:'100%'}} onClick={()=>{setProtocolView('dough');openDestination('protocol');}}><DestinationIcon destination="protocol"/> {fr?'J’ai les ingrédients · Préparation':'I have the ingredients · Preparation'} →</button>
+                  {/* With a plan, "Have everything? Go to Preparation" ends it; otherwise the way on sits here. */}
+                  {!(eatTime && schedule && !isUnleavened) && <button type="button" style={{...SECONDARY_CTA,width:'100%'}} onClick={()=>{setProtocolView('dough');openDestination('protocol');}}><DestinationIcon destination="protocol"/> {fr?'Tout est prêt ? Aller à la Préparation':'Have everything? Go to Preparation'} →</button>}
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
-                    <button type="button" className="bh-back-action" onClick={openSetupReview}>{fr?'Revoir mes choix':'Review my choices'}</button>
-                    <button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}><DestinationIcon destination="shopping"/> {fr?'Voir mes courses':'View my shopping list'} →</button>
+                    <button type="button" className="bh-back-action" onClick={openSetupReview}>{fr?'Mes choix':'My choices'}</button>
+                    <button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}><DestinationIcon destination="shopping"/> {fr?'Liste de courses':'Shopping list'} →</button>
 
                   </BottomActions>}
                 </div>
@@ -5382,7 +5381,7 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
-                          {eatTime && schedule && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} calendarOutdated={calendarOutdated} onSeeSteps={()=>openDestination('protocol')} onAddToCalendar={addPlanToCalendar}/>}
+                          {eatTime && schedule && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} onSeeSteps={()=>{setProtocolView('dough');openDestination('protocol');}}/>}
                         </div>
                       )}
                     </>
@@ -5442,10 +5441,11 @@ export default function Home() {
               {!bakeTimeIsPast && (
                 <div style={{ marginTop: '12px' }}>
 
-                                      <button type="button" style={{...SECONDARY_CTA,width:'100%'}} onClick={()=>{setProtocolView('dough');openDestination('protocol');}}><DestinationIcon destination="protocol"/> {fr?'J’ai les ingrédients · Préparation':'I have the ingredients · Preparation'} →</button>
+                  {/* With a plan, "Have everything? Go to Preparation" ends it; otherwise the way on sits here. */}
+                  {!(eatTime && schedule && !isUnleavened) && <button type="button" style={{...SECONDARY_CTA,width:'100%'}} onClick={()=>{setProtocolView('dough');openDestination('protocol');}}><DestinationIcon destination="protocol"/> {fr?'Tout est prêt ? Aller à la Préparation':'Have everything? Go to Preparation'} →</button>}
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
-                    <button type="button" className="bh-back-action" onClick={openSetupReview}>{fr?'Revoir mes choix':'Review my choices'}</button>
-                    <button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}><DestinationIcon destination="shopping"/> {fr?'Voir mes courses':'View my shopping list'} →</button>
+                    <button type="button" className="bh-back-action" onClick={openSetupReview}>{fr?'Mes choix':'My choices'}</button>
+                    <button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}><DestinationIcon destination="shopping"/> {fr?'Liste de courses':'Shopping list'} →</button>
 
                   </BottomActions>}
                 </div>

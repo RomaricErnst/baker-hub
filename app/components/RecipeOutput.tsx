@@ -617,7 +617,8 @@ export default function RecipeOutput({
             ? (locale === 'fr' ? 'Cuisson à la poêle ou sur une plaque : gardez les pains cuits couverts pour qu’ils restent souples.' : 'Cook on a skillet or griddle; keep cooked breads covered to stay soft.')
             : (locale === 'fr' ? 'Le façonnage et la cuisson de ce pain sont dans Préparation et Cuisson & service.' : 'This bread’s shaping and baking are in Preparation and Baking & serving.')}</p>}
 
-      {mode === 'custom' && <div style={{textAlign:'right',fontSize:12,color:'var(--smoke)'}}>{locale === 'fr' ? '% de farine · Poids' : '% of flour · Weight'}</div>}
+      {/* The % column header only where the rows carry percentages. */}
+      {mode === 'custom' && !hasPref && !sdActive && <div style={{textAlign:'right',fontSize:12,color:'var(--smoke)'}}>{locale === 'fr' ? '% de farine · Poids' : '% of flour · Weight'}</div>}
 
       {/* ── Ingredients / Preferment cards ──────── */}
       {result.preferment && prefermentType && prefermentType !== 'none' ? (() => {
@@ -627,8 +628,8 @@ export default function RecipeOutput({
         const chillAt = mixingTime ? poolishCoolingAt(mixingTime,result) : null;
 
         return (
-          <details open>
-            <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Ingrédients par étape' : 'Ingredients by stage'}</summary>
+          // The stages are the recipe: shown as they are made, not behind a toggle.
+          <div data-recipe-stages style={{display:'flex',flexDirection:'column',gap:16}}>
             {/* CARD 1: Make your preferment */}
             <div style={{ background: 'var(--warm)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: 'none' }}>
               <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)', marginBottom: '16px' }}>
@@ -733,7 +734,7 @@ export default function RecipeOutput({
 
               </div>
             </div>
-          </details>
+          </div>
         );
       })() : (
         /* Direct dough additions */
@@ -918,8 +919,9 @@ export default function RecipeOutput({
       {(hasPref || sdActive) && <section aria-label={locale==='fr'?'Quantités totales':'Total ingredients'}>
         <details>
           <summary style={{minHeight:44,cursor:'pointer',alignContent:'center'}}>
-            {locale==='fr'?'Farine totale':'Total flour'} {wStr(flour)}{mode==='custom' && <> · {pctStr(hydration)} {locale==='fr'?'d’hydratation':'hydration'}</>}
+            {locale==='fr'?'Totaux de la pâte':'Whole-dough totals'} · {wStr(flour)} {locale==='fr'?'de farine':'flour'}{mode==='custom' && <> · {pctStr(hydration)} {locale==='fr'?'d’hydratation':'hydration'}</>}
           </summary>
+          {mode === 'custom' && <div style={{textAlign:'right',fontSize:12,color:'var(--smoke)'}}>{locale === 'fr' ? '% de farine · Poids' : '% of flour · Weight'}</div>}
         {showSelectedFlour && result.flourParts?.length ? result.flourParts.map((part, index) => <IngRow key={`${part.key}-${index}`} label={flourProductName(locale === 'fr' ? part.nameFr : part.name,locale)} grams={wStr(part.grams)} advancedPct={mode === 'custom' ? pctStr(part.pct) : undefined} />) : <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={mode === 'custom' ? '100%' : undefined} sub={guidedFlourGuidance} />}
         <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
         <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />

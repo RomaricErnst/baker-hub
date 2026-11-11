@@ -259,7 +259,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
    // Five 320 g baguettes are one hand-mixed dough: Simple never asks the baker to reduce the bake.
    await expect(page.getByRole('button',{name:'Réduire ma quantité',exact:true})).toHaveCount(0);
    await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
-   await page.getByRole('button',{name:/^J’ai les ingrédients · Préparation/}).first().tap();
+   await page.getByRole('button',{name:/^Tout est prêt \? Aller à la Préparation/}).first().tap();
    await page.locator('[data-preparation-timing]:visible').getByRole('button',{name:'Ajuster les horaires',exact:true}).tap();
    await expect(timing).toBeVisible();
   }
