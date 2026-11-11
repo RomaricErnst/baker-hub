@@ -1,5 +1,5 @@
 'use client';
-import {starterFeedRoleLabel} from '../utils/starterBuild';
+import {starterFeedLabelFor} from '../utils/starterBuild';
 import { BREAD_FERMENTATION_DEFAULTS, getBreadProtocol, breadActiveCookMinutes } from '../utils/breadProfiles';
 import { breadOvenQuestion } from '../utils/breadNames';
 import { loadProfile, updateProfile, DEFAULT_BLOCKERS, type StandardBlocker } from '../lib/profile';
@@ -1994,7 +1994,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
     last_fed:['Last fed','Dernier rafraîchi'], refresh:['Refresh feed','Rafraîchir le levain'], intermediate_refresh:['Refresh feed','Rafraîchir le levain'], pre_mix:['Pre-mix feed','Rafraîchi avant pétrissage'], fridge_in:['Refrigerate starter','Réfrigérer le levain'], fridge_out:['Take starter out','Sortir le levain'], known_peak:['Starter peak','Levain à son pic'],
   };
   const suggestedBakeTime=solverResult?.suggestedBakeTime;
-  const labelEvent = (event:StarterEvent) => ({...event, label:starterFeedRoleLabel(event.kind, isFr) ?? event.label});
+  const labelEvent = (event:StarterEvent, _index:number, all:readonly StarterEvent[]) => ({...event, label:starterFeedLabelFor(event, all, isFr) ?? event.label});
   const displayStarterEvents = simpleKnownPeakConflict ? [] : (solverResult?.starterEvents ?? savedStarterEvents.map(event => ({...event, label:savedEventLabels[event.kind][locale === 'fr' ? 1 : 0], isDraggable:false}))).map(labelEvent);
 
   const eventsCallback=useRef(onStarterEventsChange);

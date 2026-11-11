@@ -21,3 +21,16 @@ export function starterFeedRoleLabel(kind: string, isFr: boolean): string | unde
     case 'pre_mix': return isFr ? 'Rafraîchi avant pétrissage' : 'Pre-mix feed';
   }
 }
+
+type TimedFeed = { kind: string; time: Date | number };
+const isFeed = (kind: string) => kind === 'refresh' || kind === 'intermediate_refresh';
+/** A feed is "intermediate" only between two feeds of this plan; the first one is simply a feed. */
+function asPlanned(event: TimedFeed, events: readonly TimedFeed[]): string {
+  return event.kind === 'intermediate_refresh' && !events.some(e => isFeed(e.kind) && +e.time < +event.time) ? 'refresh' : event.kind;
+}
+export function starterFeedLabelFor(event: TimedFeed, events: readonly TimedFeed[], isFr: boolean): string | undefined {
+  return starterFeedRoleLabel(asPlanned(event, events), isFr);
+}
+export function starterActionLabelFor(event: TimedFeed, events: readonly TimedFeed[], isFr: boolean): string | undefined {
+  return starterActionLabel(asPlanned(event, events), isFr);
+}

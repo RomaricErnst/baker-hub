@@ -66,7 +66,7 @@ import { useSessionSave } from '../hooks/useSessionSave';
 import { formatYeastDose } from '../utils/prefermentDose';
 import { soonStartLabel } from '../utils/startNotice';
 import { checkYeastEntry, entryHoursLabel, type YeastEntryCheck } from '../utils/yeastEntry';
-import { starterActionLabel } from '../utils/starterBuild';
+import { starterActionLabelFor } from '../utils/starterBuild';
 import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock, formatBakeDateTime, displayWeight } from '../utils/units';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
@@ -3976,7 +3976,7 @@ export default function Home() {
     ...(yeastType==='sourdough' ? starterEvents.filter(e=>!e.isPast && e.kind!=='last_fed' && e.kind!=='known_peak').map(e=>+e.time) : []),
   ));
   const firstStarterAction = yeastType==='sourdough' ? starterEvents.find(e=>!e.isPast && +e.time===+firstRecipeAction && e.kind!=='last_fed' && e.kind!=='known_peak') : undefined;
-  const firstRecipeActionLabel = (firstStarterAction ? starterActionLabel(firstStarterAction.kind,fr) : undefined) ?? (prefStartTime && +prefStartTime===+firstRecipeAction
+  const firstRecipeActionLabel = (firstStarterAction ? starterActionLabelFor(firstStarterAction,starterEvents,fr) : undefined) ?? (prefStartTime && +prefStartTime===+firstRecipeAction
     ? (prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):(fr?'Préparer le poolish':'Make Poolish'))
     : (schedule?.availabilityActions ?? []).some(action=>action.id==='autolyse'&&+action.at===+firstRecipeAction) ? (fr?'Autolyse puis pétrissage':'Autolyse, then mixing')
     : +firstRecipeAction < +startTime ? (fr?'Préparer le préferment':'Make the preferment') : (fr?'Pétrir la pâte':'Start Dough'));
@@ -3999,7 +3999,7 @@ export default function Home() {
       const counts:Record<string,number>={};
       for(const event of starterEvents){
         if(event.isPast||event.kind==='last_fed'||event.kind==='known_peak'||+event.time<from)continue;
-        const label=starterActionLabel(event.kind,fr);
+        const label=starterActionLabelFor(event,starterEvents,fr);
         if(!label)continue;
         counts[event.kind]=(counts[event.kind]??0)+1;
         events.push({key:`starter-${event.kind}-${counts[event.kind]}`,at:new Date(event.time),label,alertBeforeMin:event.kind==='fridge_out'?10:0});
@@ -4038,7 +4038,9 @@ export default function Home() {
     return false;
   })();
   const setupSteps = tab==='custom' ? CUSTOM_STEPS : SIMPLE_STEPS.filter(step=>step.id!==3);
-  const stepLink = (step:StepDef):BakeLink => ({label:step.chip,value:step.id===2&&!qtyChosen?null:step.value,disabled:step.id>1&&!styleKey,onChoose:()=>openSetupStep(step.id)});
+  // Equipment and yeast read in sentence case, as the summary does ("By hand", "Levure sèche
+  // instantanée"), and French style names too; English style and flour brand names keep their capitals.
+  const stepLink = (step:StepDef):BakeLink => ({label:step.chip,value:step.id===2&&!qtyChosen?null:((step.id===1&&fr)||step.id===3||step.id===(tab==='custom'?7:6)?(step.value ? step.value.split(' · ').map(part=>sentenceCase(part)).join(' · ') : step.value):step.value),disabled:step.id>1&&!styleKey,onChoose:()=>openSetupStep(step.id)});
   const bakeLinks:BakeLink[] = [
     {label:fr?'Fournée':'Bake',value:bakeType==='bread'?(fr?'Pain':'Bread'):'Pizza',onChoose:backToProducts},
     ...setupSteps.filter(step=>step.id<=2).map(stepLink),

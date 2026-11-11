@@ -261,3 +261,13 @@ test('a hot poolish gets one timed cooling task in both the timeline and prepara
   assert.ok(html.includes(utils.formatTime(chillAt,locale)));
  }
 });
+
+test('the first planned feed is a feed, not an intermediate one',()=>{
+ const {starterFeedLabelFor,starterActionLabelFor}=require('../app/utils/starterBuild.ts');
+ const t=h=>new Date(Date.UTC(2026,10,20,h));
+ const plan=[{kind:'fridge_out',time:t(7)},{kind:'intermediate_refresh',time:t(9)},{kind:'intermediate_refresh',time:t(15)},{kind:'pre_mix',time:t(21)}];
+ assert.equal(starterFeedLabelFor(plan[1],plan,false),'Refresh feed');
+ assert.equal(starterFeedLabelFor(plan[1],plan,true),'Rafraîchir le levain');
+ assert.equal(starterFeedLabelFor(plan[2],plan,false),'Intermediate feed');
+ assert.equal(starterActionLabelFor(plan[1],plan,true),'Rafraîchir le levain');
+});
