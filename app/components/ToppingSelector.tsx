@@ -574,6 +574,8 @@ export function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose 
             position: 'relative', zIndex: 2,
           }}
         >
+          {/* The visible handle says the header drags down to close, as on Bake's sheet. */}
+          <span data-sheet-handle aria-hidden="true" style={{position:'absolute',top:6,left:'50%',transform:'translateX(-50%)',width:38,height:4,borderRadius:2,background:'#E0D8CC'}} />
           <strong style={{flex:1,minWidth:0,fontFamily:'var(--font-ui)',fontSize:16}}>{pizza.name[l] ?? pizza.name.en}</strong>
           <button
             type="button"
