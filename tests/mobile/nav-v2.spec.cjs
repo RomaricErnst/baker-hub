@@ -349,7 +349,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await expect(page.getByRole('dialog',{name:'Ma sélection',exact:true})).toHaveCount(0);
  // The catalogue has its own heading while the return still points to Preparation.
  await expect(page.locator('.bh-navigator-current')).toContainText('Garnitures');
- const back=page.getByRole('button',{name:/^Retour à la préparation(?: →)?$/});
+ const back=page.getByRole('button',{name:/^Retour à Préparation(?: →)?$/});
  await back.scrollIntoViewIfNeeded();
  await fits(page,back);
  await unobscured(back);
@@ -386,7 +386,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
   await page.getByRole('button',{name:'Passer à la préparation →',exact:true}).tap();
   await expect(choices.getByRole('button',{name:'Garnitures',exact:true})).toHaveAttribute('aria-pressed','true');
  }
- await page.getByRole('button',{name:bread?'Revenir à l’assemblage →':'Revenir à la cuisson →',exact:true}).tap();
+ await page.getByRole('button',{name:bread?'Revenir à l’assemblage →':'Retour à Cuisson & service →',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Cuisson & service');
  if(bread)await expect(page.getByRole('button',{name:'Un sandwich prêt',exact:true})).toBeVisible();
  else await expect(page.getByRole('button',{name:'← Four et conseils de cuisson',exact:true})).toBeVisible();
@@ -737,7 +737,7 @@ for(const bread of [false,true])test(`late ${bread?'bread':'pizza'} surplus keep
  await page.getByRole('button',{name:bread?'Vérifier la quantité de pain':'Vérifier la quantité de pâte',exact:true}).tap();
  await expect(page.getByRole('dialog')).toBeVisible();
  await expect.poll(async()=>(await stored(page))?.numItems).toBe(4);
- await page.getByRole('dialog').getByRole('button',{name:/^Retour à la préparation/}).tap();
+ await page.getByRole('dialog').getByRole('button',{name:/^Retour à Préparation/}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Préparation');
  expect((await stored(page)).numItems).toBe(4);
 });
