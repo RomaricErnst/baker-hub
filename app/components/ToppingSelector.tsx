@@ -830,7 +830,7 @@ export function buildShoppingList(
         const prev = item.totalAmount ?? 0;
         item.totalAmount = prev + ing.qtyPerPizza.amount * qty * multiplier;
         item.unit = ing.qtyPerPizza.unit;
-        item.qtyNote = l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN;
+        item.qtyNote = shoppingSpoonNote(l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN, l === 'fr');
       }
       const pizzaName = pizza.name[l] ?? pizza.name.en;
       if (!item.pizzaCount[pizzaName]) item.pizzaCount[pizzaName] = 0;
@@ -911,7 +911,7 @@ export function IngredientShoppingHelp({item,location,locale,onLocationChange,on
   return <section aria-label={item.name[l] || item.name.en} style={{padding:'16px 12px',fontFamily:'var(--font-ui)'}}>
     <button type="button" autoFocus onClick={onBack} style={SECONDARY_CTA}>{l === 'fr' ? 'Retour aux courses' : 'Back to shopping list'}</button>
     <h1 style={{fontFamily:'Georgia,serif',fontSize:30}}>{item.name[l] || item.name.en}</h1>
-    <label style={{display:'grid',gap:8,marginBottom:24}}>{l === 'fr' ? 'Pays des courses' : 'Shopping location'}
+    <label style={{display:'grid',gap:8,marginBottom:24}}>{l === 'fr' ? 'Noms des ingrédients pour :' : 'Ingredient names for:'}
       <select value={location} onChange={event=>onLocationChange(event.target.value)} style={{minHeight:44,padding:10,border:'1px solid var(--border)',borderRadius:10,background:'var(--cream)'}}>
         {LOCATIONS.map(loc=><option key={loc.key} value={loc.key}>{l === 'fr' ? loc.labelFr : loc.label}</option>)}
       </select>
@@ -1140,7 +1140,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
             onClick={() => setShowLocationPicker(v => !v)}
             style={{ fontSize: '12px', minHeight:44, color: 'var(--smoke)', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '4px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
-            {l === 'fr' ? `Pays des courses : ${currentLocationLabel} ▾` : `Shopping location: ${currentLocationLabel} ▾`}
+            {l === 'fr' ? `Noms des ingrédients pour : ${currentLocationLabel} ▾` : `Ingredient names for: ${currentLocationLabel} ▾`}
           </button>
         </div>
         {showLocationPicker && (
@@ -1252,7 +1252,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                         >
                           {name}
                           {item.isCommonPantry && (
-                            <> <small style={{display:'inline-block',padding:'1px 6px',marginInlineStart:4,borderRadius:6,background:'var(--cream)',color:'var(--ash)'}}>{l === 'fr' ? 'placard' : 'pantry'}</small></>
+                            <> <small style={{display:'inline-block',padding:'1px 6px',marginInlineStart:4,borderRadius:6,background:'var(--cream)',color:'var(--ash)'}}>{l === 'fr' ? 'vous l’avez peut-être' : 'you may have it'}</small></>
                           )}
 
                         </span>
@@ -1335,6 +1335,12 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 }
 
 // ─── Main component ───────────────────────────────────────────
+
+// On a shopping list a spoon measure is per pizza; the spreading advice belongs to the prep.
+export function shoppingSpoonNote(note: string | undefined, fr: boolean): string | undefined {
+  const spoon = note?.match(/^(\d+(?:[–-]\d+)?\s*(?:tbsp|c\.à\.s\.))/);
+  return spoon ? `${spoon[1]} ${fr ? 'par pizza' : 'per pizza'}` : note;
+}
 
 export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionBack,onBackToRecipe,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,active=true,storagePrefix="bh",baseReady=false }: Props) {
   const l = locale as 'en' | 'fr';

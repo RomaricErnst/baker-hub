@@ -892,7 +892,10 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   const [loadedProgressKey,setLoadedProgressKey]=useState<string|null>(null);
   const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
   const [activeBatch, setActiveBatch] = useState(0);
-  const batch = recipe ? mixingBatchPlan(recipe, mixerType, mixingBatches, activeBatch, mixerCapacityG) : null;
+  // Batches are listed together ("for each batch"); there is no per-batch tap to move on.
+  void activeBatch;
+  const batch = recipe ? mixingBatchPlan(recipe, mixerType, mixingBatches, 0, mixerCapacityG) : null;
+  const batchPortions = recipe && batch && batch.count > 1 ? Array.from({length: batch.count}, (_, i) => mixingBatchPlan(recipe, mixerType, mixingBatches, i, mixerCapacityG).portion) : null;
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const focusRequestedStep = useRef<number | null>(null);
   const previousGuideView = useRef({active:false,phase});
@@ -1274,19 +1277,14 @@ Actual dough condition and equipment may differ from these estimates.`;
       overview: currentStep === 0, totalSteps: phase === 'cooking' ? cookingStepTotal : phase === 'preparation' ? Math.max(0,totalSteps-cookingStepTotal) : totalSteps,
       onPrevious: s > 1 ? () => navigateGuideStep(s - 1) : undefined,
       onNext: () => { const next = stepRefs.current.findIndex((el, i) => i > s && el !== null); if (next > s) {if(phase==='preparation'&&stepRefs.current[next]?.dataset.guidePhase==='cooking'&&onPrepareFillings)onPrepareFillings();else navigateGuideStep(next);} },
-      batchCompletion: mixing && !!batch && batch.count > 1,
-      completeLabel: mixing && batch && batch.count > 1 ? (l === 'fr' ? `Terminer la pétrissée ${batch.active + 1} sur ${batch.count}` : `Complete batch ${batch.active + 1} of ${batch.count}`) : undefined,
+      batchCompletion: false,
+      completeLabel: undefined,
       // The overview is a summary: every step closed until the baker starts or opens
       // one, except a first step due within 30 minutes, whose instructions are needed now.
       open: currentStep === s || (currentStep === 0 && phase === 'preparation' && stepPhase === 'preparation' && firstPendingPreparation === s && (()=>{ const at = stepTimesCtx?.times.get(s); return at !== undefined && at - Date.now() <= 30 * 60000; })()),
       done: actionDone,
       onToggle: () => navigateGuideStep(s),
       onDone: () => {
-        if (mixing && batch && !doneSteps.has(s) && batch.active + 1 < batch.count) {
-          setActiveBatch(batch.active + 1);
-          try { localStorage.setItem(progressKey + ':batch', String(batch.active + 1)); } catch {}
-          return;
-        }
         if(starterFeed&&!actionDone)onStarterFed?.(starterFeed);
         if(firstAction)onPreparationComplete?.(!actionDone);
         if(mixing&&onMixComplete)onMixComplete(!actionDone);
@@ -1659,25 +1657,46 @@ Actual dough condition and equipment may differ from these estimates.`;
 
         {serialMixNote}
         {preMixAutolyse>0&&(schedule.mixingBatches??1)>1&&<p>{l==='fr'?'Avant la première pétrissée, préparez la farine et l’eau de chaque lot dans un récipient séparé : comptez 2 min par lot, puis couvrez au moins 30 min. Les lots suivants restent couverts en attendant leur pétrissage. N’ajoutez leur levure ou levain et leur sel qu’à leur tour.':'Before the first mix, combine each batch’s flour and water in a separate container: allow 2 minutes per batch, then cover for at least 30 minutes. Later batches stay covered until their mixing turn. Add their yeast or starter and salt only at that turn.'}</p>}
-        {batch && <Section icon="" title={batch.count > 1 ? (l === 'fr' ? `Pétrissée ${batch.active + 1} sur ${batch.count}` : `Batch ${batch.active + 1} of ${batch.count}`) : (l === 'fr' ? 'À incorporer' : 'Use now')}>
-          {!!recipe?.flourParts?.length && (() => {
-            const fermentedFlour = recipe.preferment?.prefFlour ?? bgSdHalf;
+        {batch && (() => {
+          const portions = batchPortions ?? [batch.portion];
+          const fermentedFlour = recipe?.preferment?.prefFlour ?? bgSdHalf;
+          const flourSplit = (flour:number) => {
+            if (!recipe?.flourParts?.length) return [];
             const addedFlour = recipe.flour - fermentedFlour;
-            let remainder = batch.portion.flour;
+            let remainder = flour;
             return recipe.flourParts.map((part,index) => {
               const partAdded = part.grams - (index === 0 ? fermentedFlour : 0);
-              const grams = index === recipe.flourParts!.length - 1 ? remainder : Math.round(batch.portion.flour * partAdded / addedFlour);
+              const grams = index === recipe.flourParts!.length - 1 ? remainder : Math.round(flour * partAdded / addedFlour);
               remainder -= grams;
-              return <div key={`${part.key}-${index}`} style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{flourProductName(l === 'fr' ? part.nameFr : part.name,l)}</span><strong>{displayWeight(grams,u,l)}</strong></div>;
+              return grams;
             });
-          })()}
-          {/* In the order they go into the bowl. */}{Object.entries(batch.portion).filter(([key,grams]) => grams > 0 && !(key === 'flour' && recipe?.flourParts?.length)).sort(([a],[b]) => BATCH_ORDER.indexOf(a) - BATCH_ORDER.indexOf(b)).map(([key,grams]) => <Fragment key={key}><div style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{({milk:l==='fr'?'Lait':'Milk',eggs:l==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:l==='fr'?'Beurre':'Butter',flour:l==='fr'?'Farine':'Flour',water:l==='fr'?'Eau':'Water',salt:l==='fr'?'Sel':'Salt',oil:l==='fr'?'Huile':'Oil',sugar:l==='fr'?'Sucre':'Sugar',yeast:l==='fr'?'Levure':'Yeast',starter:l==='fr'?'Levain':'Starter',preferment:isBiga?'Biga':isPoolish?'Poolish':(l==='fr'?'Préferment':'Preferment')} as Record<string,string>)[key]}</span><strong>{key==='yeast'?formatYeastDose(grams,l):displayWeight(grams,u,l)}</strong></div>{key==='water' && waterHelp}{key==='yeast' && yeastHelp(grams)}</Fragment>)}
+          };
+          const names = {milk:l==='fr'?'Lait':'Milk',eggs:l==='fr'?'Œufs sans coquille':'Eggs, without shells',butter:l==='fr'?'Beurre':'Butter',flour:l==='fr'?'Farine':'Flour',water:l==='fr'?'Eau':'Water',salt:l==='fr'?'Sel':'Salt',oil:l==='fr'?'Huile':'Oil',sugar:l==='fr'?'Sucre':'Sugar',yeast:l==='fr'?'Levure':'Yeast',starter:l==='fr'?'Levain':'Starter',preferment:isBiga?'Biga':isPoolish?'Poolish':(l==='fr'?'Préferment':'Preferment')} as Record<string,string>;
+          const fmt = (key:string, grams:number) => key==='yeast' ? formatYeastDose(grams,l) : displayWeight(grams,u,l);
+          // In the order they go into the bowl.
+          const keys = Object.keys(batch.portion).filter(key => portions.some(p => (p as Record<string,number>)[key] > 0) && !(key === 'flour' && recipe?.flourParts?.length)).sort((a,b) => BATCH_ORDER.indexOf(a) - BATCH_ORDER.indexOf(b));
+          const rows: {key:string; label:string; values:string[]; grams:number}[] = [
+            ...(recipe?.flourParts ?? []).map((part,index) => ({key:`${part.key}-${index}`, label:flourProductName(l === 'fr' ? part.nameFr : part.name,l), values:portions.map(p => displayWeight(flourSplit(p.flour)[index],u,l)), grams:0})),
+            ...keys.map(key => ({key, label:names[key], values:portions.map(p => fmt(key,(p as Record<string,number>)[key] ?? 0)), grams:(batch.portion as Record<string,number>)[key] ?? 0})),
+          ];
+          // Equal portions read as one list; uneven ones as a small table, one column per batch.
+          const table = portions.length > 1 && rows.some(row => row.values.some(v => v !== row.values[0]));
+          const title = portions.length < 2 ? (l === 'fr' ? 'À incorporer' : 'Use now')
+            : table ? (l === 'fr' ? `Par pétrissée · ${portions.length} pétrissées` : `Per batch · ${portions.length} batches`)
+            : (l === 'fr' ? `Pour chaque pétrissée · ${portions.length} pétrissées` : `For each batch · ${portions.length} batches`);
+          const cell = {minWidth:'4.6em',textAlign:'right' as const,fontVariantNumeric:'tabular-nums' as const};
+          return <Section icon="" title={title}>
+          <div data-batch-amounts={table ? 'table' : 'list'} style={{overflowX:'auto'}}>
+          {table && <div style={{display:'flex',justifyContent:'space-between',gap:12,fontSize:13,color:D.smoke}}><span>{l === 'fr' ? 'Pétrissée' : 'Batch'}</span><span style={{display:'flex',gap:8}}>{portions.map((_,i) => <span key={i} style={cell}>{i + 1}</span>)}</span></div>}
+          {rows.map(row => <Fragment key={row.key}><div style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{row.label}</span>{table ? <span style={{display:'flex',gap:8}}>{row.values.map((v,i) => <strong key={i} style={cell}>{v}</strong>)}</span> : <strong>{row.values[0]}</strong>}</div>{row.key==='water' && waterHelp}{row.key==='yeast' && yeastHelp(row.grams)}</Fragment>)}
+          </div>
           {recipe && largeManualDough(recipe.totalDough, mixerType, batch.count, mixerCapacityG) && <p data-large-dough-note>{l === 'fr'
             ? `${displayWeight(recipe.totalDough,u,l)}, c’est une grosse pâte. Si elle est trop volumineuse pour votre saladier ou votre robot, pétrissez-la en deux moitiés, l’une juste après l’autre, puis traitez-les comme une seule pâte.`
             : `${displayWeight(recipe.totalDough,u,l)} is a large dough. If it is too much for your bowl or mixer, mix it in two halves, one straight after the other, then treat them as one dough.`}</p>}
           {batch.overCapacity && <p role="alert">{l === 'fr' ? 'Cette quantité dépasse la capacité indiquée du pétrin. Augmentez le nombre de pétrissées dans les réglages du matériel.' : 'This batch exceeds the stated mixer capacity. Increase batches in equipment settings.'}</p>}
-          {batch.count > 1 && <p>{l === 'fr' ? (hasPref ? 'Préparez le préferment une seule fois. Chaque pétrissée utilise sa part indiquée.' : 'Répétez ce pétrissage pour chaque lot.') : hasPref ? 'Prepare the preferment once. Add only the portion listed for this batch.' : 'Repeat this mix for each batch.'}</p>}
-        </Section>}
+          {batch.count > 1 && hasPref && <p>{l === 'fr' ? 'Préparez le préferment une seule fois ; chaque pétrissée en prend sa part.' : 'Make the preferment once; each batch takes its share.'}</p>}
+        </Section>;
+        })()}
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           <Steps items={enriched ? [
@@ -1685,7 +1704,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             {bold:l==='fr'?'Réunissez la farine, les liquides, la levure, le sel et le sucre, sans le beurre.':'Combine flour, liquids, yeast, salt and sugar, without the butter.',note:l==='fr'?'Pétrissez jusqu’à ce que la pâte gagne en tenue.':'Knead until the dough begins to gain strength.'},
             {bold:l==='fr'?'Ajoutez le beurre souple progressivement ; laissez chaque ajout s’incorporer.':'Add softened butter gradually; let each addition incorporate.',note:l==='fr'?'Arrêtez quand la pâte est homogène et élastique. Si elle devient grasse ou trop chaude, faites une pause au frais.':'Stop when smooth and elastic. If the dough becomes greasy or too warm, pause and cool it.'},
           ] : [
-            {bold:batch&&batch.count>1?(l==='fr'?'Pesez les ingrédients indiqués pour ce lot.':'Weigh this batch’s ingredients shown above.'):(l==='fr'?'Pesez les ingrédients ci-dessus.':'Weigh the ingredients above.'),note:recipe?.yeast?.yeastType==='active_dry'?(l==='fr'?'Réactivez la levure selon le sachet avec une partie de l’eau mesurée.':'Activate the yeast as directed on its packet using part of the measured water.'):''},
+            {bold:batch&&batch.count>1?(l==='fr'?'Pesez les ingrédients de chaque pétrissée ci-dessus.':'Weigh each batch’s ingredients shown above.'):(l==='fr'?'Pesez les ingrédients ci-dessus.':'Weigh the ingredients above.'),note:recipe?.yeast?.yeastType==='active_dry'?(l==='fr'?'Réactivez la levure selon le sachet avec une partie de l’eau mesurée.':'Activate the yeast as directed on its packet using part of the measured water.'):''},
             ...mixSequence,
             ...(hydration>70&&mixerType!=='no_knead'&&styleKey!=='pain_seigle'?[{bold:l==='fr'?'Quand la pâte se tient, ajoutez progressivement l’eau réservée ; laissez chaque ajout s’incorporer.':'Once the dough holds together, add the reserved water gradually; let each addition absorb.',note:''}]:[]),
             {bold:mixerType==='no_knead'?(l==='fr'?'Arrêtez une fois homogène. Couvrez ; les repos et rabats prévus développeront la pâte.':'Stop once combined. Cover; scheduled rests and folds develop the dough.'):styleKey==='pain_seigle'?(l==='fr'?'Mélangez jusqu’à homogénéité ; le seigle reste collant.':'Mix until evenly combined; rye dough remains sticky.'):mixerType==='hand'?(l==='fr'?'Pétrissez à la main jusqu’à une pâte lisse et souple.':'Knead by hand until smooth and stretchy.'):(l==='fr'?'Pétrissez jusqu’à une pâte lisse et souple, à une vitesse « pâte » de votre pétrin.':'Knead until smooth and stretchy, at a dough speed your mixer allows.'),note:''},

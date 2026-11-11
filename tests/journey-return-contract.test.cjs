@@ -160,7 +160,7 @@ test('separating blend flours cannot move existing salt or yeast shopping checks
   const rows=doughShoppingItems({recipe:cr,yeastType:'instant',locale,flourName:'unused'});
   assert.deepEqual(Array.from(rows,r=>r.tickKey),['dough_flour_nuvola','dough_flour_manitoba','dough_1','dough_2','dough_3']);
   assert.deepEqual(Array.from(rows.slice(0,2),r=>r.amount.replace(/\s/g,' ')),['850 g','150 g']);
-  assert.equal(rows.find(row=>row.tickKey==='dough_2').amount.replace(/\s/g,' '),locale==='fr'?'0,54 g':'0.54 g');
+  assert.equal(rows.find(row=>row.tickKey==='dough_2').amount,locale==='fr'?'1 sachet (5,5 g)':'1 sachet (7 g)');
   assert.equal(rows.find(row=>row.tickKey==='dough_2').name,locale==='fr'?'Levure de boulanger sèche instantanée':'Instant dry yeast');
  }
 });

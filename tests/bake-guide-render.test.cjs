@@ -224,8 +224,10 @@ test('mixing flour rows exclude prefermented flour and conserve each batch',()=>
   const portion=mixingBatchPlan(recipe,'spiral',count,0).portion.flour;
   const first=Math.round(portion*(recipe.flourParts[0].grams-used)/added);
   const {displayWeight}=require('../app/utils/units.ts');
-  assert.ok(html.includes(`<span>Primary flour</span><strong>${displayWeight(first,'metric','en')}</strong>`),`${pref}, ${count}: primary added flour`);
-  assert.ok(html.includes(`<span>Second flour</span><strong>${displayWeight(portion-first,'metric','en')}</strong>`),`${pref}, ${count}: second added flour`);
+  const esc=t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  // Batch 1's amount, as a single value (even batches) or the first column of the table.
+  assert.match(html,new RegExp(`<span>Primary flour</span>(<span[^>]*>)?<strong[^>]*>${esc(displayWeight(first,'metric','en'))}</strong>`),`${pref}, ${count}: primary added flour`);
+  assert.match(html,new RegExp(`<span>Second flour</span>(<span[^>]*>)?<strong[^>]*>${esc(displayWeight(portion-first,'metric','en'))}</strong>`),`${pref}, ${count}: second added flour`);
  }
 });
 
