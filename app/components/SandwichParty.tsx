@@ -156,12 +156,13 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
 
   return <div className={styles.party}>
     <div className={styles.hero} style={tab==='shop'?{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:8}:undefined}>
-      <div><h2 className={styles.pageTitle} ref={headingRef} tabIndex={-1}>{heading}</h2>
-        <div className={styles.muted}>{breadName}</div>
+      {/* With no fillings the shopping list is the bread batch alone: one heading with the item count. */}
+      <div><h2 className={styles.pageTitle} ref={headingRef} tabIndex={-1}>{tab==='shop'&&total===0&&breadIngredients.length>0?`${t('Liste de courses','Shopping list')} · ${breadIngredients.length} ${breadIngredients.length===1?t('article','item'):t('articles','items')}`:heading}</h2>
+        {!(tab==='shop'&&total===0)&&<div className={styles.muted}>{breadName}</div>}
       </div>
       {tab==='shop' ? <button type="button" className={styles.button} onClick={()=>go('pick')}>{total>0?t('Modifier les garnitures','Edit fillings'):t('Ajouter des garnitures — facultatif','Add fillings — optional')}</button> : family && <img src={breadImage} alt={breadName}/>}
     </div>
-    {tab==='shop'&&total===0&&<p className={styles.muted}>{baseReady?t('Aucune garniture sélectionnée','No fillings selected'):t('Pâte uniquement','Dough ingredients only')}</p>}
+
     {(family||tab==='shop') && <>
       {legacyMieTartines&&tab==='pick'&&<div className={styles.card}><p>{t('Cette fournée conserve vos tartines choisies précédemment.','This bake keeps your previously selected toasts.')}</p><button type="button" className={styles.button} onClick={()=>onChange({...snapshot,familyId:'pain_mie',qtys:{},completed:{},prepTicks:{},ingredientOverrides:{}})}>{t('Remplacer par des clubs ou croques','Replace with clubs or croques')}</button></div>}
       {!hideNavigation && <CompanionSteps label={t('Étapes des garnitures','Filling steps')} active={tab} onChange={go}
@@ -206,7 +207,10 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
         {!doughConfigured && <div className={styles.card}><p>{t('Cette liste contient les garnitures. Complétez votre pâte pour ajouter les ingrédients du pain.','This list contains fillings. Finish your dough plan to include the bread ingredients.')}</p>{onAdjustBread&&<button className={styles.button} type="button" onClick={onAdjustBread}>{t('Compléter ma pâte','Finish my dough')}</button>}</div>}
         {total>0&&<><h3>{t('Pain pour cette sélection','Bread for this selection')}</h3>
         <p>{t('Prévoyez','Allow')} ≈ {amountText(breadGrams)} {t('de pain cuit pour votre sélection.','of baked bread for your selection.')}</p></>}
-        {breadIngredients.length>0&&<details open><summary className={styles.button}>{t('Ingrédients de ma fournée de pain','My bread batch ingredients')}</summary><p className={styles.muted}>{t('Fournée complète ; les quantités ne sont pas multipliées par le nombre de portions.','Whole batch; amounts are not multiplied by the portion count.')}</p>
+        {breadIngredients.length>0&&total===0&&<div>
+          {breadIngredients.map(item=><label key={item.id} className={styles.check}><input type="checkbox" checked={!!snapshot.shopTicks[`dough:${item.id}:${item.grams}`]} onChange={event=>update({shopTicks:{...snapshot.shopTicks,[`dough:${item.id}:${item.grams}`]:event.target.checked}})}/><span className={snapshot.shopTicks[`dough:${item.id}:${item.grams}`]?styles.checked:''}>{item.name}</span><strong className={styles.checkAmount}>{amountText(item.grams)}</strong></label>)}
+        </div>}
+        {breadIngredients.length>0&&total>0&&<details open><summary className={styles.button}>{t('Ingrédients de ma fournée de pain','My bread batch ingredients')}</summary><p className={styles.muted}>{t('Fournée complète ; les quantités ne sont pas multipliées par le nombre de portions.','Whole batch; amounts are not multiplied by the portion count.')}</p>
           {breadIngredients.map(item=><label key={item.id} className={styles.check}><input type="checkbox" checked={!!snapshot.shopTicks[`dough:${item.id}:${item.grams}`]} onChange={event=>update({shopTicks:{...snapshot.shopTicks,[`dough:${item.id}:${item.grams}`]:event.target.checked}})}/><span className={snapshot.shopTicks[`dough:${item.id}:${item.grams}`]?styles.checked:''}>{item.name}</span><strong className={styles.checkAmount}>{amountText(item.grams)}</strong></label>)}
         </details>}
         {total>0&&<div className={styles.panelHeading}><h3>{t('Garnitures regroupées','Combined fillings')}</h3></div>}

@@ -3,11 +3,10 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const page=fs.readFileSync(path.join(__dirname,'../app/[locale]/page.tsx'),'utf8');
 
-test('the summary names proposed values once instead of tagging each row',()=>{
-  assert.doesNotMatch(page,/'valeur proposée'|'suggested'\)/);
-  assert.match(page,/Valeurs proposées : \$\{open\.join\(', '\)\}\. Touchez Modifier pour choisir les vôtres\./);
-  assert.match(page,/Suggested values: \$\{open\.join\(', '\)\}\. Tap Edit to choose your own\./);
-  assert.match(page,/<p data-suggested-note /);
+test('rows the baker has not chosen carry a small "suggested" tag instead of a sentence',()=>{
+  assert.doesNotMatch(page,/Suggested values: |Valeurs proposées : /);
+  assert.match(page,/data-suggested-tag/);
+  assert.match(page,/fr \? 'proposé' : 'suggested'/);
 });
 
 test('catalogue names read in sentence case in the summary',()=>{

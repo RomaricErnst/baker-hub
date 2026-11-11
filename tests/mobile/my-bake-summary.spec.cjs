@@ -21,18 +21,19 @@ async function seed(page,{locale='fr',mode='simple',bread=false,style,extra={},u
  await expect(page.getByRole('heading',{level:1,name:locale==='fr'?'Revoir mes choix':'Review my choices',exact:true})).toBeVisible();
 }
 
-test('fr Simple: one note for proposed values, sentence-case names',async({page})=>{
+test('fr Simple: a proposed tag on the row with unchosen values, sentence-case names',async({page})=>{
  await seed(page);
  const main=page.locator('body');
- await expect(page.locator('[data-suggested-note]')).toHaveText('Valeurs proposées : four, pétrissage, levure. Touchez Modifier pour choisir les vôtres.');
+ await expect(page.locator('[data-suggested-tag]')).toHaveCount(1);
+ await expect(page.locator('[data-suggested-tag]')).toHaveText('proposé');
  await expect(main).not.toContainText('· valeur proposée');
  await expect(main).toContainText('Four domestique standard · À la main · Réfrigérateur 6°C · Levure sèche instantanée');
  await expect(main).toContainText('2 × 260 g');
 });
 
-test('en Simple: chosen values drop out of the note; imperial quantity',async({page})=>{
+test('en Simple: the tag stays while one value is unchosen; imperial quantity',async({page})=>{
  await seed(page,{locale:'en',units:'imperial',extra:{confirmedSettings:['climate=22','oven=home_oven_standard','mixer=hand']}});
- await expect(page.locator('[data-suggested-note]')).toHaveText('Suggested values: yeast. Tap Edit to choose your own.');
+ await expect(page.locator('[data-suggested-tag]')).toHaveText('suggested');
  await expect(page.locator('body')).toContainText('2 × 9.2 oz');
  await expect(page.locator('body')).not.toContainText('× 260 g');
 });
@@ -43,5 +44,5 @@ test('fr Custom levain bread: the Levain row shows the starter answer',async({pa
  const row=page.locator('body div').filter({has:page.getByRole('button',{name:'Modifier : Levain',exact:true})}).last();
  await expect(row).not.toContainText('valeur proposée');
  await expect(row).toContainText('rafraîchi hier');
- await expect(page.locator('[data-suggested-note]')).not.toContainText('levain');
+ await expect(row.locator('[data-suggested-tag]')).toHaveCount(0);
 });

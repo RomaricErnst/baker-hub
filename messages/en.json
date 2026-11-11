@@ -500,7 +500,7 @@
     "waterFinalDough": "Water (final dough)",
     "batchTotal": "Batch total",
     "chillPoolishAt": "Refrigerate the poolish at {time}. Keep it chilled until mixing.",
-    "weighOrDilute": "Too little for a kitchen scale: see how to measure it below.",
+    "weighOrDilute": "how to weigh it ↓",
     "weighDose": "Weigh this dose on a scale.",
     "precisionScaleTitle": "Weighing a tiny amount of yeast",
     "precisionScaleBody": "{amount} is too little for most kitchen scales. Use a scale that reads 0.1 g, or the method below.",
@@ -706,7 +706,6 @@
       "learnMore": "Learn more",
       "whatToExpect": "What to expect"
     },
-    "preheatNote": "Start preheating while dough finishes its final proof — they should be ready at the same time.",
     "poolish": {
       "stepsFridge": [
         {

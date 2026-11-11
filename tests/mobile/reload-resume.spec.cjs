@@ -33,7 +33,7 @@ for(const locale of ['fr','en'])test(`${locale}: reload on a bake destination re
  await expect(navigator(page)).toBeVisible();
  await expect(page.locator('.bh-navigator-current')).toContainText(preparation);
  await expect(resumeCard(page,fr)).toHaveCount(0);
- await expect(page.locator('.bh-bake-context')).toContainText('Reload audit');
+ await expect(page.getByRole('heading',{level:1,name:'Reload audit',exact:true})).toHaveCount(1);
  // Back replays the entry before the reload.
  await page.goBack();
  await expect(page.locator('.bh-navigator-current')).toContainText(shopping);

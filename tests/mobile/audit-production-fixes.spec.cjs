@@ -81,7 +81,8 @@ for(const bread of [false,true])test(`Fresh ${bread?'baguette lunch':'pizza nigh
  await expect(page.locator('.bh-navigator-current')).toContainText('Cuisson & service');
  await navigate(page,'Courses','fr');
  await expect(page.getByRole('checkbox').first()).toBeChecked();
- await expect(page.locator('.bh-bake-context')).toContainText(bread?'4 pains':'4 pizzas');
+ // Task screens carry the bake in the section bar.
+ await expect(page.locator('[data-navigator-bake]')).toContainText(bread?'4 pains':'4 pizzas');
  await expect.poll(()=>page.evaluate(isBread=>{
    const draft=JSON.parse(localStorage.getItem('bh_session_v1')??'null');
    return draft&&[draft.numItems,draft.recipeGenerated,isBread?draft.sandwichParty?.qtys?.['baguette-jambon-beurre']:draft.pizzaParty?.qtys?.margherita];

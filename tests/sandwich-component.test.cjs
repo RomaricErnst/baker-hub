@@ -45,7 +45,8 @@ test('empty shopping never invents bread or filling purchases',()=>{
 });
 test('plain bread shopping exposes real dough purchases without a sandwich selection',()=>{
  const html=render({...createSandwichSnapshot('baguette'),tab:'shop'},{breadIngredients:[{id:'flour',name:'Actual bread flour',grams:520}]});
- assert.match(html,/<details open="">/);
+ // Without fillings the list is the bread batch under one heading.
+ assert.match(html,/Shopping list · 1 item/);
  assert.match(html,/Actual bread flour/);assert.match(html,/520 g/);
  assert.equal((html.match(/type="checkbox"/g)||[]).length,1);
  assert.doesNotMatch(html,/Combined fillings|Choose your sandwiches and quantities/);

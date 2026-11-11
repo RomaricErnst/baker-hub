@@ -112,20 +112,19 @@ test('compact menu keeps bread-only recipes unsplit',async({page})=>{
  await expect(page.locator('.bh-navigator-current')).toHaveText('Recette');
 });
 
-for(const locale of ['fr','en'])test(`${locale}: generated task screens keep section navigation before compact bake context`,async({page})=>{
+for(const locale of ['fr','en'])test(`${locale}: the recipe names the bake under the section bar; task screens carry it in the bar`,async({page})=>{
  await seed(page,{bread:false,locale});
  for(const label of locale==='fr'?['Recette','Courses','Préparation']:['Recipe','Shopping list','Preparation']){
   await navigate(page,label,locale);
+  const recipe=label==='Recette'||label==='Recipe';
   const context=page.locator('.bh-bake-context');
-  await expect(context).toHaveCount(1);
-  await expect(context).toContainText('Navigation audit');
-  expect(await context.evaluate(el=>{
-   const nav=document.querySelector('.bh-bake-navigator');
-   return !!nav&&!!(nav.compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING);
-  })).toBe(true);
-  const navBounds=await page.locator('.bh-bake-navigator').boundingBox();
-  const contextBounds=await context.boundingBox();
-  expect(contextBounds.y).toBeGreaterThanOrEqual(navBounds.y+navBounds.height);
+  await expect(context).toHaveCount(recipe?1:0);
+  await expect(page.locator('[data-navigator-bake]')).toHaveCount(recipe?0:1);
+  if(recipe){
+   await expect(context).toContainText('Navigation audit');
+   const navBounds=await page.locator('.bh-bake-navigator').boundingBox();
+   expect((await context.boundingBox()).y).toBeGreaterThanOrEqual(navBounds.y+navBounds.height);
+  }else await expect(page.locator('[data-navigator-bake]')).toContainText(locale==='fr'?'pizzas':'pizzas');
  }
 });
 
@@ -329,6 +328,8 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  const progress=await page.evaluate(()=>Object.fromEntries(Object.entries(localStorage).filter(([key])=>key.startsWith('bh_guide_done_v2:')&&!key.endsWith(':view'))));
  expect(Object.keys(progress).length).toBeGreaterThan(0);
  const before=await stored(page);
+ // The fillings button sits on the Preparation summary, not inside each step.
+ await page.locator('.bh-local-progress').getByRole('button',{name:'Vue d’ensemble',exact:true}).tap();
  await page.getByRole('button',{name:bread?'Ajouter des sandwichs':'Choisir des garnitures',exact:true}).tap();
  if(bread){
   const article=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Jambon-beurre',exact:true})});
@@ -444,7 +445,9 @@ test('bread family return preserves choices; wraps and meal examples are discove
  await expect(page.getByRole('heading',{name:'Choisissez votre pain',exact:true})).toBeVisible();
  await expect(page.getByRole('link',{name:'Pitas & wraps',exact:true})).toBeVisible();
  const wrap=page.getByRole('button',{name:/^Pain à wrap · Laffa/});
- await expect(wrap.locator('img')).toHaveCount(2);
+ // One photo while browsing; the meal idea joins it once the bread is chosen.
+ await expect(wrap.locator('img')).toHaveCount(1);
+ await expect(wrap).toHaveAttribute('data-meal-src',/\.webp$/);
  const brioche=page.getByRole('button',{name:/^Brioche\b/});await expect(brioche.locator('img')).toHaveCount(1);
  await page.getByRole('button',{name:/^Pita à poche/}).tap();
  await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
@@ -476,20 +479,26 @@ test('landing photos stay above text and bread meal examples are readable',async
  const loaves=page.locator('#bread-group-loaves').locator('..').locator('.bh-bread-style-card');
  await expect(loaves).toHaveCount(6);
  const sources=[];
+ // Browsing: one photo per bread, no captions; the meal idea is on the card as data.
  for(const card of await loaves.all()){
   await card.scrollIntoViewIfNeeded();
-  const photos=card.locator('.bh-bread-photo');await expect(photos).toHaveCount(2);
+  const photos=card.locator('.bh-bread-photo');await expect(photos).toHaveCount(1);
+  await expect(card.locator('.bh-bread-photo-caption')).toHaveCount(0);
   const title=await card.locator('.bh-bread-card-title').boundingBox();
   expect(title.y+title.height).toBeLessThanOrEqual((await photos.first().boundingBox()).y);
   await expect.poll(()=>photos.locator('img').evaluateAll(images=>images.every(img=>img.complete&&img.naturalWidth>0))).toBe(true);
-  for(const photo of await photos.all()){
-   const frame=await photo.locator('.bh-bread-photo-frame').boundingBox();
-   expect((await photo.locator('.bh-bread-photo-caption').boundingBox()).y).toBeGreaterThanOrEqual(frame.y+frame.height);
-  }
-  const meal=photos.nth(1);const box=await meal.boundingBox();expect(box.width).toBeGreaterThanOrEqual(100);expect(box.height).toBeGreaterThanOrEqual(120);
-  expect((await card.locator('.bh-bread-card-copy').boundingBox()).y).toBeGreaterThanOrEqual(box.y+box.height);
-  sources.push(await meal.locator('img').getAttribute('src'));
+  sources.push(await card.getAttribute('data-meal-src'));
  }
+ // Choosing a bread shows its meal idea under its own caption.
+ const chosen=loaves.first();await chosen.tap();
+ const pair=chosen.locator('.bh-bread-photo');await expect(pair).toHaveCount(2);
+ for(const photo of await pair.all()){
+  const frame=await photo.locator('.bh-bread-photo-frame').boundingBox();
+  expect((await photo.locator('.bh-bread-photo-caption').boundingBox()).y).toBeGreaterThanOrEqual(frame.y+frame.height);
+ }
+ const meal=pair.nth(1);const box=await meal.boundingBox();expect(box.width).toBeGreaterThanOrEqual(100);expect(box.height).toBeGreaterThanOrEqual(120);
+ expect((await chosen.locator('.bh-bread-card-copy').boundingBox()).y).toBeGreaterThanOrEqual(box.y+box.height);
+ expect(await meal.locator('img').getAttribute('src')).toContain(sources[0].replace(/^\//,'').split('/').pop().replace('.webp',''));
  expect(new Set(sources).size).toBe(6);await noOverflow(page);
  await page.getByRole('button',{name:'Pain à wrap · Laffa',exact:true}).tap();
  await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
