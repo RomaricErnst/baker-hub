@@ -1,3 +1,7 @@
+# 11 November 2026 — starter temperature in the water calculation (Claude)
+
+Romaric's decision: consider the starter's temperature. Its flour and water were already counted (inside the dough totals, at room temperature). Now a fridge starter that goes into the dough without another feed counts at its warmed temperature: 41 of 192 fridge-starter plans in the sweep do this, 0.5–1.5 h after removal. Water rises about 1–2 °C (e.g. 22 °C kitchen, 1.5 h out: starter about 17 °C, water 16.9 → 18.0 °C). A measured temperature in Fine-tune still wins. Test: `tests/starter-temperature.test.cjs`.
+
 # 11 November 2026 — final UX audit decisions shipped (Claude)
 
 Main `0a6ab53` (#88) and #89. Decision page 2 (25 items, Romaric's picks and comments) implemented. What changed, by area:

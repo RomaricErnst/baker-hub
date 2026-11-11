@@ -77,7 +77,7 @@ import {
 import {
   buildSchedule, calculateRecipe, formatTime, requiredPrefWarmupH, requiredPrefCooldownH,
   type AvailabilityBlock, type ScheduleResult,
-  starterBulkFactor, referenceStarterPct,
+  starterBulkFactor, referenceStarterPct, prefTempAfterWarmup,
 } from '../utils';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { breadNoun, breadBakeTitle } from '../utils/breadNames';
@@ -1918,6 +1918,24 @@ export default function Home() {
     return starterFeedToMixHours(starterEvents, startTime, feedTime ?? lastFedTime);
   }, [yeastType, feedTime, lastFedTime, startTime, starterEvents]);
 
+  // Starter temperature at mixing, for the water calculation. A starter that comes out of
+  // the fridge and goes into the dough without another feed has only warmed for the time
+  // between its removal and mixing; a fed starter is at room temperature. A temperature
+  // the baker measured always wins (Fine-tune).
+  const prefTempForBalance = useMemo(() => {
+    if (typeof measuredPrefermentTemp === 'number' && Number.isFinite(measuredPrefermentTemp)) return measuredPrefermentTemp;
+    if (yeastType !== 'sourdough' || starterLocation !== 'fridge') return undefined;
+    const mix = +startTime;
+    const last = [...starterEvents].filter(e => +new Date(e.time) <= mix + 60000)
+      .sort((a, b) => +new Date(a.time) - +new Date(b.time))
+      .filter(e => ['fridge_out','fridge_in','refresh','intermediate_refresh','pre_mix','last_fed'].includes(e.kind)).at(-1);
+    if (last?.kind !== 'fridge_out') return undefined;
+    const outH = Math.max(0, (mix - +new Date(last.time)) / 3600000);
+    // About a fifth of the dough's flour as starter; the warm-up curve is not sensitive to the exact mass.
+    const starterMassG = Math.max(50, numItems * itemWeight * 0.11);
+    return Math.round(prefTempAfterWarmup(starterMassG, 100, fridgeTemp, kitchenTemp, outH) * 10) / 10;
+  }, [measuredPrefermentTemp, yeastType, starterLocation, startTime, starterEvents, numItems, itemWeight, fridgeTemp, kitchenTemp]);
+
   // One recipe for both views: the override applies wherever the recipe is shown.
   const effectiveYeastOverride = !!yeastType && yeastType !== 'sourdough' && prefermentType === 'none' ? yeastPctOverride : undefined;
   // A typed amount that was not applied keeps Fine-tune from moving on as if it had been.
@@ -1949,7 +1967,7 @@ export default function Home() {
         prefGoesInFridge,
         feedToMixH,
         prefermentType !== 'none' && prefermentType !== 'levain' && prefOffsetH > 0 ? prefOffsetH : undefined,
-        measuredFlourTemp, measuredPrefermentTemp, totalFlourTarget, effectiveYeastOverride, effectiveStarterOverride,
+        measuredFlourTemp, prefTempForBalance, totalFlourTarget, effectiveYeastOverride, effectiveStarterOverride,
       );
   };
   const mixerCapacityG = mixerDoughCapacity(mixerType ?? 'hand', customMixerCapacityG);
@@ -2096,7 +2114,7 @@ export default function Home() {
         prefGoesInFridge,
         feedToMixH,
         prefermentType !== 'none' && prefermentType !== 'levain' && prefOffsetH > 0 ? prefOffsetH : undefined,
-        measuredFlourTemp, measuredPrefermentTemp, totalFlourTarget,
+        measuredFlourTemp, prefTempForBalance, totalFlourTarget,
         yeastType !== 'sourdough' && prefermentType === 'none' ? yeastPctOverride : undefined,
         yeastType === 'sourdough' ? starterPctOverride : undefined,
       );
@@ -2109,7 +2127,7 @@ export default function Home() {
     } catch {
       return null;
     }
-  }, [mixExecution, execution, styleKey, ovenType, numItems, itemWeight, totalFlourTarget, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, customMixerCapacityG, humidity, schedule, fridgeTemp, yeastType, mixerType, priorityOverride, manualHydration, manualOil, manualSugar, flourChosen, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, prefGoesInFridge, feedToMixH, yeastPctOverride, starterPctOverride]);
+  }, [mixExecution, execution, styleKey, ovenType, numItems, itemWeight, totalFlourTarget, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, customMixerCapacityG, humidity, schedule, fridgeTemp, yeastType, mixerType, priorityOverride, manualHydration, manualOil, manualSugar, flourChosen, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, measuredFlourTemp, prefTempForBalance, wastePct, addSeeds, prefGoesInFridge, feedToMixH, yeastPctOverride, starterPctOverride]);
 
   // A restored, up-to-date recipe is the baseline the next update compares amounts with.
   useEffect(() => {
@@ -2333,7 +2351,7 @@ export default function Home() {
   const promptedMixAt=promptedPreparationAt(+startTime,execution?undefined:acceptedPlan?.startTime,protocolStale);
   function madeFormulaMatches(fact:BakeExecution,candidateSchedule:ScheduleResult,times:{prefHours:number},mixedRecipe?:NonNullable<typeof recipe>) {
     if(!styleKey||!ovenType||!yeastType)return false;
-    const calculated=calculateRecipe(styleKey,ovenType as OvenType,numItems,itemWeight,kitchenTemp,humidity,candidateSchedule,fridgeTemp,yeastType,'custom',mixerType??'hand',manualHydration,manualOil,manualSugar,flourChosen?flourBlend:undefined,fact.method,priorityOverride,prefermentFlourPct??20,manualSalt,targetDoughTemp,flourInFridge,wastePct,fact.inFridge,feedToMixH,fact.method!=='none'?times.prefHours:undefined,measuredFlourTemp,measuredPrefermentTemp,totalFlourTarget);
+    const calculated=calculateRecipe(styleKey,ovenType as OvenType,numItems,itemWeight,kitchenTemp,humidity,candidateSchedule,fridgeTemp,yeastType,'custom',mixerType??'hand',manualHydration,manualOil,manualSugar,flourChosen?flourBlend:undefined,fact.method,priorityOverride,prefermentFlourPct??20,manualSalt,targetDoughTemp,flourInFridge,wastePct,fact.inFridge,feedToMixH,fact.method!=='none'?times.prefHours:undefined,measuredFlourTemp,prefTempForBalance,totalFlourTarget);
     if(calculated.protocolIssue)return false;
     const same=(a:number|undefined,b:number|undefined)=>a!==undefined&&b!==undefined&&Math.abs(a-b)<0.0005;
     if(fact.method!=='none'&&!mixExecution&&!mixedRecipe)return !!calculated.preferment&&!!fact.recipe.preferment
@@ -5281,7 +5299,7 @@ export default function Home() {
               {(() => {
                 const style = styleKey ? ALL_STYLES[styleKey] : null;
                 const zone = STYLE_HYDRATION_ZONES[styleKey!] ?? (breadProtocol ? {...FALLBACK_ZONE,classicMin:ALL_STYLES[styleKey!].hydration,classicMax:ALL_STYLES[styleKey!].hydration,name:ALL_STYLES[styleKey!].name} : FALLBACK_ZONE);
-                const recommendation = styleKey && schedule && ovenType && yeastType ? calculateRecipe(styleKey, ovenType as OvenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'custom', mixerType as MixerType, undefined, manualOil, manualSugar, flourBlend, prefermentType, priorityOverride, prefermentFlourPct ?? 20, manualSalt, targetDoughTemp, flourInFridge, wastePct, prefGoesInFridge, feedToMixH, prefOffsetH || undefined, measuredFlourTemp, measuredPrefermentTemp) : null;
+                const recommendation = styleKey && schedule && ovenType && yeastType ? calculateRecipe(styleKey, ovenType as OvenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'custom', mixerType as MixerType, undefined, manualOil, manualSugar, flourBlend, prefermentType, priorityOverride, prefermentFlourPct ?? 20, manualSalt, targetDoughTemp, flourInFridge, wastePct, prefGoesInFridge, feedToMixH, prefOffsetH || undefined, measuredFlourTemp, prefTempForBalance) : null;
                 const recommendedHyd = recommendation?.hydration ?? style?.hydration ?? 64;
                 const defaultTemp = styleKey ? ({neapolitan:23,newyork:24,roman:25,pan:25,sourdough:24,brioche:22,pain_viennois:23,fougasse:25} as Record<string,number>)[styleKey] ?? 24 : 24;
                 // Lean breads (no oil or sugar in the formula) don't offer them unless already set.
