@@ -859,14 +859,24 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
 // their times only. How to do each step lives in Preparation.
 function RecipePlanCard({fr,locale,startAt,startLabel,bakeAt,steps,onSeeSteps}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;steps:{key:string;at:Date;label:string}[];onSeeSteps:()=>void}){
   const row={display:'flex',gap:12,padding:'7px 0',borderTop:'1px solid var(--border)',fontSize:15,lineHeight:1.4,color:'var(--char)'} as const;
-  const time={flex:'0 0 auto',minWidth:'7.5em',color:'var(--ash)',fontVariantNumeric:'tabular-nums'} as const;
   return <section data-recipe-plan aria-labelledby="bh-recipe-plan-title" style={{margin:'0 0 4px'}}>
     <h2 id="bh-recipe-plan-title" style={{margin:'0 0 6px',fontFamily:'var(--font-display)',fontSize:30,fontWeight:700,lineHeight:1.15,color:'var(--char)'}}>{fr?'Votre plan':'Your plan'}</h2>
     <p style={{margin:'0 0 8px',fontSize:16,fontWeight:700,color:'var(--char)'}}>{startLabel ?? (fr?'Commencer':'Start')} · {soonStartLabel(startAt,Date.now(),locale) ?? formatBakeDateTime(startAt,locale)}</p>
-    {steps.length>0&&<ol data-recipe-plan-steps style={{listStyle:'none',margin:0,padding:0}}>
-      {steps.map(step=><li key={step.key} style={row}><span style={time}>{formatTime(step.at,locale)}</span><span>{step.label}</span></li>)}
-    </ol>}
-    <p style={{...row,margin:0,fontWeight:600}}><span style={{...time,color:'var(--char)'}}>{formatTime(bakeAt,locale)}</span><span>{fr?'Enfourner':'Bake'}</span></p>
+    {/* Grouped by day; steps at the same shown time share a row; times read to 5 min
+        (the calendar keeps the exact ones). */}
+    {(()=>{
+      const round5=(d:Date)=>new Date(Math.round(+d/300000)*300000);
+      const all=[...steps.map(step=>({key:step.key,at:round5(step.at),label:step.label,bake:false})),{key:'bake',at:round5(bakeAt),label:fr?'Enfourner':'Bake',bake:true}].sort((a,b)=>+a.at-+b.at);
+      const rows:{key:string;at:Date;labels:string[];bake:boolean}[]=[];
+      for(const item of all){const last=rows[rows.length-1];if(last&&+last.at===+item.at&&!item.bake&&!last.bake)last.labels.push(item.label);else rows.push({key:item.key,at:item.at,labels:[item.label],bake:item.bake});}
+      const days:{day:string;rows:typeof rows}[]=[];
+      for(const r of rows){const day=r.at.toLocaleDateString(fr?'fr-FR':'en-GB',{weekday:'long',day:'numeric',month:'short'});const last=days[days.length-1];if(last&&last.day===day)last.rows.push(r);else days.push({day,rows:[r]});}
+      const time={flex:'0 0 auto',minWidth:'4.5em',color:'var(--ash)',fontVariantNumeric:'tabular-nums'} as const;
+      return <div data-recipe-plan-steps>{days.map(d=><div key={d.day} style={{marginTop:10}}>
+        <p style={{margin:'0 0 2px',fontSize:14,fontWeight:700,color:'var(--char)'}}>{d.day.charAt(0).toUpperCase()+d.day.slice(1)}</p>
+        <ol style={{listStyle:'none',margin:0,padding:0}}>{d.rows.map(r=><li key={r.key} data-plan-bake={r.bake||undefined} style={{...row,fontWeight:r.bake?600:400}}><span style={{...time,...(r.bake?{color:'var(--char)'}:{})}}>{formatClock(r.at,locale)}</span><span>{r.labels.join(' · ')}</span></li>)}</ol>
+      </div>)}</div>;
+    })()}
     {/* One way on: the calendar lives on the Preparation summary. */}
     <button type="button" data-go-preparation style={{...SECONDARY_CTA,width:'100%',marginTop:14}} onClick={onSeeSteps}>{fr?'Tout est prêt ? Aller à la Préparation':'Have everything? Go to Preparation'} →</button>
   </section>;
