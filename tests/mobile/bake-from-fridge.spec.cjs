@@ -24,10 +24,10 @@ for(const locale of ['en','fr'])test(`${locale} simple: breakfast baguettes can 
  await seed(page,locale);
  const decision=page.locator('[data-simple-decision]');
  await expect(decision).toBeVisible({timeout:30000});
- await expect(decision).toContainText(fr?/La pâte doit sortir du réfrigérateur à .*pendant la nuit/:/Your dough needs to leave the fridge at .*during the night/);
- await expect(decision.locator('[data-simple-keep]')).toContainText(fr?/^Garder .* : vous, ou quelqu’un d’autre, sortez la pâte à /:/^Keep .*: you or someone else takes the dough out at /);
+ await expect(decision).toContainText(fr?/la pâte doit sortir du réfrigérateur à .*pendant la nuit/:/your dough needs to leave the fridge at .*during the night/);
+ await expect(decision.locator('[data-simple-keep]')).toContainText(fr?/^Garder .* Vous, ou quelqu’un d’autre, sortez la pâte à /:/^Keep .* You or someone else takes the dough out at /);
  const straight=decision.locator('[data-simple-from-fridge]');
- await expect(straight).toHaveText(fr?/^Cuire à la sortie du frigo — sortez les pâtons à \d+h\d\d, pendant que le four chauffe$/:/^Bake straight from the fridge — take the loaves out at \d+:\d\d(am|pm) while the oven heats$/);
+ await expect(straight).toHaveText(fr?/^Cuire à la sortie du frigo Sortez les pâtons à \d+h\d\d, pendant que le four chauffe$/:/^Bake straight from the fridge Take the loaves out at \d+:\d\d(am|pm) while the oven heats$/);
  expect((await straight.boundingBox()).height).toBeGreaterThanOrEqual(44);
  const before=await stored(page);
  await straight.tap();

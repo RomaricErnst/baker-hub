@@ -562,7 +562,7 @@ export default function Header({
 
       {!backHref && !hideActionBar && (
         <div style={{ order: 2, display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-          {onSaveSession && (onNewSession || recipeGenerated || sessionRestored) && (
+          {onSaveSession && recipeGenerated && (
             <button className="bh-header-save" onClick={() => { if ((!sessionSaved || !user) && !saving) onSaveSession(); }}
               aria-label={saving ? (locale === 'fr' ? 'Enregistrement en cours' : 'Saving in progress') : sessionSaved ? (user ? (locale === 'fr' ? 'Enregistré dans votre compte' : 'Saved to your account') : (locale === 'fr' ? 'Enregistré sur cet appareil. Enregistrer dans mon compte' : 'Saved on this device. Save to my account')) : (locale === 'fr' ? 'Enregistrer' : 'Save')}
               title={saving ? (locale === 'fr' ? 'Enregistrement en cours' : 'Saving in progress') : sessionSaved ? (user ? (locale === 'fr' ? 'Enregistré dans votre compte' : 'Saved to your account') : (locale === 'fr' ? 'Enregistré sur cet appareil' : 'Saved on this device')) : undefined}

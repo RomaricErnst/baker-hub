@@ -7184,8 +7184,9 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
     :(isFr?'pendant vos indisponibilités':'during your busy times');
   const simpleDecisionSentence=simpleConflicts.length===1
     ? isFridgeExit(simpleConflicts[0].action.id)
-      ? (isFr?`La pâte doit sortir du réfrigérateur à ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`
-        :`Your dough needs to leave the fridge at ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`)
+      // Lead with the baker's own time, so both options read as answers to it.
+      ? (isFr?`Pour enfourner à ${simpleTimeLabel(pendingEatTime)}, la pâte doit sortir du réfrigérateur à ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`
+        :`To bake at ${simpleTimeLabel(pendingEatTime)}, your dough needs to leave the fridge at ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`)
       : (isFr?`${simpleConflictName(simpleConflicts[0].action)} tombe à ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`
         :`${simpleConflictName(simpleConflicts[0].action)} falls at ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`)
     : simpleConflicts.length>1
@@ -7215,14 +7216,16 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
             ?`Cette pâte demande environ ${formatDuration(neededH,lang)} entre le pétrissage et la cuisson. ${fmtCardHM(pendingEatTime,true)}, c’est dans ${formatDuration(awayH,lang)}.`
             :`This dough needs about ${formatDuration(neededH,lang)} from mixing to baking. ${fmtCardHM(pendingEatTime,false)} is ${formatDuration(awayH,lang)} away.`;
         })();
+  // Every way out of a clash is an equal choice: same card, title and one line under it.
+  const optionCard:React.CSSProperties={display:'block',width:'100%',minHeight:56,marginTop:8,padding:'12px 14px',border:'1.5px solid var(--border)',borderRadius:12,background:'var(--card, #fff)',color:'var(--char)',textAlign:'left',whiteSpace:'normal',fontSize:15,lineHeight:1.4,cursor:'pointer'};
   const simpleSuggestion=!searchingTargets?firstSuggestedTarget:undefined;
   // Custom: only for busy-time clashes; a fridge exit alone keeps its own arrangement card.
   const customDecision=mode==='custom'&&!inputsOnly&&simpleConflicts.length>0&&!simpleOnlyFridgeClash;
   const simpleDecision=eatTimeSet&&!currentCandidateValid&&(mode==='simple'?(simpleSuggestion||simpleOnlyFridgeClash):customDecision)
     ? <div className="bh-simple-decision" data-simple-decision role="status" style={{border:'1px solid var(--border)',borderRadius:12,padding:'14px 16px',margin:'12px 0',background:'var(--warm)'}}>
         <p style={{margin:'0 0 12px',fontSize:15,lineHeight:1.5,color:'var(--char)'}}>{simpleDecisionSentence}</p>
-        {simpleSuggestion&&<button type="button" className="bh-apply-plan" data-simple-accept style={{minHeight:44,width:'100%',whiteSpace:'normal'}} onClick={()=>{setSimpleMoved({from:new Date(pendingEatTime),to:+simpleSuggestion.bake});applySuggestedTarget(simpleSuggestion);}}>
-          {isFr?`Enfourner à ${simpleTimeLabel(simpleSuggestion.bake)}`:`Bake at ${simpleTimeLabel(simpleSuggestion.bake)} instead`}
+        {simpleSuggestion&&<button type="button" className="bh-plan-option" data-simple-accept style={optionCard} onClick={()=>{setSimpleMoved({from:new Date(pendingEatTime),to:+simpleSuggestion.bake});applySuggestedTarget(simpleSuggestion);}}>
+          <strong style={{display:'block'}}>{isFr?`Enfourner à ${simpleTimeLabel(simpleSuggestion.bake)}`:`Bake at ${simpleTimeLabel(simpleSuggestion.bake)}`}</strong>{' '}
           {(()=>{
             // A different day needs its reason; otherwise say what the move frees.
             const dayDiff=Math.round((new Date(simpleSuggestion.bake).setHours(0,0,0,0)-new Date(pendingEatTime).setHours(0,0,0,0))/86400000);
@@ -7246,19 +7249,19 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
           })()}
           {simpleSuggestion.assistance?<small style={{display:'block',fontWeight:400}}>{isFr?`${simpleSuggestion.assistance} étapes demandent quelqu’un sur place`:`${simpleSuggestion.assistance} steps need someone at home`}</small>:null}
         </button>}
-        {simpleOnlyFridgeClash&&finalFridgeRemoval&&<button type="button" className={simpleSuggestion?'bh-back-action':'bh-apply-plan'} data-simple-keep style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={()=>setFridgeRemovalCovered(true)}>
-          {isFr?`Garder ${fmtCardHM(pendingEatTime,isFr)} : vous, ou quelqu’un d’autre, sortez la pâte à ${fmtCardHM(finalFridgeRemoval.at,isFr)}`:`Keep ${fmtCardHM(pendingEatTime,isFr)}: you or someone else takes the dough out at ${fmtCardHM(finalFridgeRemoval.at,isFr)}`}
+        {simpleOnlyFridgeClash&&finalFridgeRemoval&&<button type="button" className="bh-plan-option" data-simple-keep style={optionCard} onClick={()=>setFridgeRemovalCovered(true)}>
+          <strong style={{display:'block'}}>{isFr?`Garder ${fmtCardHM(pendingEatTime,isFr)}`:`Keep ${fmtCardHM(pendingEatTime,isFr)}`}</strong>{' '}<small style={{display:'block',fontWeight:400}}>{isFr?`Vous, ou quelqu’un d’autre, sortez la pâte à ${fmtCardHM(finalFridgeRemoval.at,isFr)}`:`You or someone else takes the dough out at ${fmtCardHM(finalFridgeRemoval.at,isFr)}`}</small>
         </button>}
-        {fromFridgeOption&&<button type="button" className="bh-back-action" data-simple-from-fridge style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={()=>setBakeFromFridge(true,fromFridgeOption.blocks)}>
-          {isFr?`Cuire à la sortie du frigo — sortez les pâtons à ${fmtCardHM(fromFridgeOption.exitAt,isFr)}, pendant que le four chauffe`:`Bake straight from the fridge — take the loaves out at ${fmtCardHM(fromFridgeOption.exitAt,isFr)} while the oven heats`}
+        {fromFridgeOption&&<button type="button" className="bh-plan-option" data-simple-from-fridge style={optionCard} onClick={()=>setBakeFromFridge(true,fromFridgeOption.blocks)}>
+          <strong style={{display:'block'}}>{isFr?'Cuire à la sortie du frigo':'Bake straight from the fridge'}</strong>{' '}<small style={{display:'block',fontWeight:400}}>{isFr?`Sortez les pâtons à ${fmtCardHM(fromFridgeOption.exitAt,isFr)}, pendant que le four chauffe`:`Take the loaves out at ${fmtCardHM(fromFridgeOption.exitAt,isFr)} while the oven heats`}</small>
         </button>}
-        {!simpleOnlyFridgeClash&&simpleConflicts.length>0&&<button type="button" className="bh-back-action" data-simple-keep-all style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={()=>coverAllActions(simpleConflicts.map(conflict=>conflict.action))}>
-          {simpleConflicts.length===1
-            ?(isFr?`Garder ${simpleTimeLabel(pendingEatTime)} : je m’occupe de cette étape`:`Keep ${simpleTimeLabel(pendingEatTime)}: I’ll handle this step`)
-            :(isFr?`Garder ${simpleTimeLabel(pendingEatTime)} : je m’occupe de ces ${simpleConflicts.length} étapes`:`Keep ${simpleTimeLabel(pendingEatTime)}: I’ll handle these ${simpleConflicts.length} steps`)}
+        {!simpleOnlyFridgeClash&&simpleConflicts.length>0&&<button type="button" className="bh-plan-option" data-simple-keep-all style={optionCard} onClick={()=>coverAllActions(simpleConflicts.map(conflict=>conflict.action))}>
+          <strong style={{display:'block'}}>{isFr?`Garder ${simpleTimeLabel(pendingEatTime)}`:`Keep ${simpleTimeLabel(pendingEatTime)}`}</strong>{' '}<small style={{display:'block',fontWeight:400}}>{simpleConflicts.length===1
+            ?(isFr?'Je m’occupe de cette étape':'I’ll handle this step')
+            :(isFr?`Je m’occupe de ces ${simpleConflicts.length} étapes`:`I’ll handle these ${simpleConflicts.length} steps`)}</small>
         </button>}
-        {mode==='custom'&&yeastPctOverride!==undefined&&!isSourdough&&onUseCalculatedYeast&&<button type="button" className="bh-back-action" data-clash-use-calculated style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={onUseCalculatedYeast}>
-          {isFr?`Utiliser la quantité de levure calculée — le planning s’adapte à vos disponibilités`:`Use the calculated yeast amount — the plan fits around your free time`}
+        {mode==='custom'&&yeastPctOverride!==undefined&&!isSourdough&&onUseCalculatedYeast&&<button type="button" className="bh-plan-option" data-clash-use-calculated style={optionCard} onClick={onUseCalculatedYeast}>
+          <strong style={{display:'block'}}>{isFr?'Utiliser la quantité de levure calculée':'Use the calculated yeast amount'}</strong>{' '}<small style={{display:'block',fontWeight:400}}>{isFr?'Le planning s’adapte à vos disponibilités':'The plan fits around your free time'}</small>
         </button>}
         {mode==='custom'&&<button type="button" className="bh-back-action" data-decision-availability style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={openAvailability}>
           {isFr?'Modifier mes indisponibilités':'Change my unavailable times'}
@@ -7911,7 +7914,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
       {eatTimeSet && (<div>
 
       {/* Blocker section — always visible */}
-      <details ref={availabilityControlsRef} open={availabilityOpen} onToggle={e=>setAvailabilityOpen((e.currentTarget as HTMLDetailsElement).open)} tabIndex={-1} aria-label={isFr?'Mes indisponibilités':'My unavailable times'} style={{marginBottom:16}}><summary data-busy-question style={{minHeight:44,cursor:'pointer',fontWeight:600,fontSize:16}}>{(isFr?'Quelque chose de prévu d’ici là ?':'Anything in the way before then?')+(blocks.length?' · '+selectedAvailabilityCount(localBlocks):'')}</summary>
+      <details ref={availabilityControlsRef} open={availabilityOpen} onToggle={e=>setAvailabilityOpen((e.currentTarget as HTMLDetailsElement).open)} tabIndex={-1} aria-label={isFr?'Mes indisponibilités':'My unavailable times'} style={{marginBottom:16}}><summary data-busy-question style={{minHeight:44,cursor:'pointer',fontWeight:600,fontSize:16}}>{isFr?'Quand êtes-vous occupé ?':'When are you busy?'}<span style={{display:'block',fontSize:13,fontWeight:400,color:'var(--smoke)'}}>{isFr?'Aucune étape à ces heures.':'No steps then.'}</span></summary>
         <div>
 
 
