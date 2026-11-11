@@ -1,7 +1,7 @@
 # Baker Hub — CLAUDE.md
-Updated 1 November 2026. Verify the current production deployment against the GitHub merge commit.
+Updated 11 November 2026. Verify the current production deployment against the GitHub merge commit.
 
-Current navigation/design decisions in `PROJECT-HANDOFF.md` and dated audits supersede older examples below. The five destinations are My bake, Recipe, Shopping, Preparation and Baking & service. The step pill opens local setup navigation, Sections switches destinations, Review my choices edits setup, and Adjust timing opens the timing editor. Show setup details in the local step summary. CI and browser results must identify the tested commit; a successful build alone does not certify the journeys.
+Current navigation/design decisions in `PROJECT-HANDOFF.md` and dated audits supersede older examples below. The five destinations are My bake, Recipe, Shopping, Preparation and Baking & service. The step pill opens local setup navigation ("Where you are"), Sections switches destinations, My bake opens on the plan card above "Review my choices" (the recipe bar's "My choices" link goes there), and Adjust timing opens the timing editor. Back controls name their destination: "Previous step" in setup, "Back to my choices" when editing, "Back to Recipe / Shopping list / Preparation / Baking & serving" (FR "Retour à Recette / Courses / Préparation / Cuisson & service") between sections. The calendar export lives on the Preparation summary. Show setup details in the local step summary. CI and browser results must identify the tested commit; a successful build alone does not certify the journeys.
 
 ## NVM / Node Setup
 ```bash
@@ -37,6 +37,9 @@ app/
   data.ts               — styles (name/nameFr/descFr), ovens, mixers, yeasts, preferments
   utils.ts              — yeast engine, schedule engine, DDT, recipe calculator, formatTime(d, locale)
   utils/units.ts        — g/°C ↔ oz/°F (weights <6 g stay grams in imperial)
+  utils/breadNames.ts   — what is being made (Ma brioche, 2 baguettes), oven question, egg count
+  utils/planCalendar.ts — .ics export: key steps, close steps merged into one event, cancellations on re-export
+  utils/stepWhy.ts      — reasons moved out of step lines into one "Why?"
 components/
   SchedulePicker.tsx    — shared timing inputs, validated preparation times, optional Custom curve, sourdough scheduling
   FermentChart.tsx      — event-driven bells/diamonds, premix/postmix fade, width-aware label stagger
@@ -90,6 +93,8 @@ the pre-mix bell uses. `tests/roundtrip/peak-consistency.mjs` (CI) sweeps 384 te
 location × last-fed × horizon × Nights cases and asserts card PEAK ≡ active bell and that green
 means mix within the solver's tolerance of the shown peak. The trace's `scoredPeakMs` may differ
 from the shown peak when the render re-aligns a feed onto the mix; the pill is judged on the shown peak.
+
+**Fridge-kept starter, distant bake (11 Nov 2026):** `deriveStarterPeakTime` starts the revival in the run-up (cycles + dough + 12 h) when the bake is more than 96 h past the earliest feed, at a time clear of busy periods; `fridge-starter.mjs` asserts no feed in the first 48 h for 216–240 h bakes. Feed labels: the first planned feed is never "intermediate" (`starterFeedLabelFor`).
 
 **Intermediate refreshes (fixed 3 Nov 2026):** the winner's scored intermediates (`renderIntermediatesMs`) are rendered as-is; never recompute them in the event builder. `tests/roundtrip/fridge-starter.mjs` guards the fridge-kept starter case.
 
