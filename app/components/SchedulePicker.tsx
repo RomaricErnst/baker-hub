@@ -1,6 +1,7 @@
 'use client';
 import {starterFeedRoleLabel} from '../utils/starterBuild';
 import { BREAD_FERMENTATION_DEFAULTS, getBreadProtocol, breadActiveCookMinutes } from '../utils/breadProfiles';
+import { breadOvenQuestion } from '../utils/breadNames';
 import { loadProfile, updateProfile, DEFAULT_BLOCKERS, type StandardBlocker } from '../lib/profile';
 import { formatClock, formatBakeDateTime } from '../utils/units';
 import { useState, useMemo, useEffect, useRef, useId } from 'react';
@@ -1870,7 +1871,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
     ? (isFr ? 'Quand commencer la cuisson des pains ?' : 'When will you start cooking the breads?')
     : bakeType === 'pizza'
       ? (isFr ? 'Quand enfourner la première pizza ?' : 'When will the first pizza go into the oven?')
-      : (isFr ? 'Quand enfourner le pain ?' : 'When will the bread go into the oven?');
+      : breadOvenQuestion(styleKey, numItems ?? 1, isFr);
   // Skip phase 1 when a saved cooking target exists (return-to-edit case)
   const [phase, setPhase] = useState<PickerPhase>(() => alreadySet ? 'start_confirm' : 'bake_time');
   const [pendingEatTime, setPendingEatTime] = useState<Date>(eatTime ?? new Date());

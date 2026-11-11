@@ -80,6 +80,7 @@ import {
   starterBulkFactor, referenceStarterPct,
 } from '../utils';
 import { getBreadProtocol } from '../utils/breadProfiles';
+import { breadNoun, breadBakeTitle } from '../utils/breadNames';
 import { buildItems } from '@/app/components/Timeline';
 
 
@@ -720,7 +721,7 @@ function eggShoppingLabel(grams: number, fr: boolean): string {
 function bakeQuantityLabel(count: number, bakeType: string | null, styleKey: string | null, fr: boolean): string {
   const noun = bakeType === 'bread'
     ? styleKey === 'piadina' ? (count === 1 ? 'piadina' : 'piadinas')
-      : (fr ? (count === 1 ? 'pain' : 'pains') : (count === 1 ? 'loaf' : 'loaves'))
+      : breadNoun(styleKey, count, fr)
     : count === 1 ? 'pizza' : 'pizzas';
   return `${count} ${noun}`;
 }
@@ -4113,7 +4114,7 @@ export default function Home() {
             // already has it ("Sat 18 Jul, Sat 19:00" duplication)
             const timeStr = formatClock(eatTime, locale);
             const itemLabel = bakeType === 'bread'
-              ? (locale === 'fr' ? (numItems === 1 ? 'pain' : 'pains') : (numItems === 1 ? 'loaf' : 'loaves'))
+              ? breadNoun(styleKey, numItems, locale === 'fr')
               : (numItems === 1 ? 'pizza' : 'pizzas');
             return `${styleName} · ${numItems} ${itemLabel} · ${dateStr}, ${timeStr}`;
           })()}
@@ -4372,10 +4373,10 @@ export default function Home() {
         </div>
         )}
 
-{recipeGenerated && compactBakeContext && !(destination==='shopping'&&bakeType==='pizza') && <h1 className="bh-page-title bh-bake-title bh-visually-hidden">{bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'))}</h1>}
+{recipeGenerated && compactBakeContext && !(destination==='shopping'&&bakeType==='pizza') && <h1 className="bh-page-title bh-bake-title bh-visually-hidden">{bakeName || (bakeType==='bread'?breadBakeTitle(styleKey,fr):(fr?'Ma soirée pizza':'My pizza night'))}</h1>}
 {recipeGenerated && compactBakeContext && destination==='service' && <h2 className="bh-visually-hidden">{fr?'Cuisson & service':'Baking & serving'}</h2>}
 {recipeGenerated && !compactBakeContext && <div className="bh-bake-context" style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}>{(()=>{
-  const title=bakeName || (bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night'));
+  const title=bakeName || (bakeType==='bread'?breadBakeTitle(styleKey,fr):(fr?'Ma soirée pizza':'My pizza night'));
   // The bake title is the page heading wherever the view has none of its own:
   // setup steps, the pizza lists and the pizza shopping list carry their own H1.
   const isPageTitle=!browsingFillings&&['recipe','protocol','service'].includes(destination)||(destination==='shopping'&&bakeType!=='pizza');
@@ -4547,7 +4548,7 @@ export default function Home() {
                 starterRow={simpleStarterScreen&&simpleStarterLabel?{value:simpleStarterLabel,onClick:()=>{captureEditReturn();openSimpleStarter();}}:undefined}
                 stale={protocolStale}
                 nameField={<label style={{display:'block',fontSize:16,fontWeight:600,marginBottom:16}}>{fr?'Nom de la préparation':'Bake name'}
-                <input value={bakeName} placeholder={bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night')} maxLength={100} onChange={e=>setBakeName(e.target.value)} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',fontWeight:400}} />
+                <input value={bakeName} placeholder={bakeType==='bread'?breadBakeTitle(styleKey,fr):(fr?'Ma soirée pizza':'My pizza night')} maxLength={100} onChange={e=>setBakeName(e.target.value)} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',fontWeight:400}} />
               </label>}
                 flow={simpleFlow}
                 reviewValues={{ 3: simpleKitchenSummary, 7: reviewTiming }}
@@ -5018,7 +5019,7 @@ export default function Home() {
                 kitchenRow={!isUnleavened&&kitchenAnswered?{value:`${cToDisplay(kitchenTemp,units)}${tempUnit(units)}`,onClick:()=>{captureEditReturn();openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}:undefined}
                 stale={protocolStale}
                 nameField={<label style={{display:'block',fontSize:16,fontWeight:600,marginBottom:16}}>{fr?'Nom de la préparation':'Bake name'}
-                <input value={bakeName} placeholder={bakeType==='bread'?(fr?'Ma fournée de pain':'My bread bake'):(fr?'Ma soirée pizza':'My pizza night')} maxLength={100} onChange={e=>setBakeName(e.target.value)} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',fontWeight:400}} />
+                <input value={bakeName} placeholder={bakeType==='bread'?breadBakeTitle(styleKey,fr):(fr?'Ma soirée pizza':'My pizza night')} maxLength={100} onChange={e=>setBakeName(e.target.value)} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',fontWeight:400}} />
               </label>}
                 flow={customFlow}
                 reviewValues={{3:reviewEquipment, 4:reviewAmbient, 7:reviewLeavening, ...(levainCustom ? {} : {8: prefermentType==='none'?t('preferment.direct'):localName(PREFERMENT_TYPES[prefermentType])}), 10:(advancedRecipe ? advancedRecipe.hydration+'%' : (manualHydration ?? ALL_STYLES[styleKey!]?.hydration ?? 0)+'%'), 9:reviewTiming}}

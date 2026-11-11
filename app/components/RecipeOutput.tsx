@@ -14,6 +14,7 @@ import WaterPreparation, { waterSplit, type WaterSource, type WaterSettingsProps
 import { formatPrefermentDose, formatYeastDose, prefermentDilution } from '../utils/prefermentDose';
 import { needsScaleHelp, yeastSpoonMeasure, setPercent, DILUTION_BASE_YEAST_G, SCALE_HELP_BELOW_G } from '../utils/yeastMeasure';
 import { getBreadProtocol } from '../utils/breadProfiles';
+import { eggCountLabel } from '../utils/breadNames';
 
 interface RecipeOutputProps extends WaterSettingsProps {
   afterIngredients?: ReactNode;
@@ -379,7 +380,7 @@ export default function RecipeOutput({
   const { flour, water, salt, yeast, sourdough, oil, sugar, waterTemp, hydration, totalDough } = result;
   const enrichment = result.enrichment;
   const breadProtocol = getBreadProtocol(styleKey ?? '');
-  const enrichmentRows = enrichment ? (['milk','eggs','butter'] as const).filter(key => enrichment[key] > 0).map(key => <IngRow key={key} label={({milk:locale === 'fr' ? 'Lait' : 'Milk',eggs:locale === 'fr' ? 'Œufs sans coquille' : 'Eggs, without shells',butter:locale === 'fr' ? 'Beurre' : 'Butter'})[key]} grams={wStr(enrichment[key])} advancedPct={mode === 'custom' ? pctStr(enrichment[key] / flour * 100) : undefined} />) : null;
+  const enrichmentRows = enrichment ? (['milk','eggs','butter'] as const).filter(key => enrichment[key] > 0).map(key => <IngRow key={key} label={({milk:locale === 'fr' ? 'Lait' : 'Milk',eggs:locale === 'fr' ? 'Œufs sans coquille' : 'Eggs, without shells',butter:locale === 'fr' ? 'Beurre' : 'Butter'})[key]} grams={wStr(enrichment[key])} sub={key === 'eggs' ? eggCountLabel(enrichment[key], locale === 'fr') : undefined} advancedPct={mode === 'custom' ? pctStr(enrichment[key] / flour * 100) : undefined} />) : null;
   // Sourdough starter accounting: half the starter is flour, half water
   // (100% hydration). Subtract from the main-dough amounts so the card's
   // total actually tallies. Preferment mode has its own accounting already.
@@ -473,12 +474,14 @@ export default function RecipeOutput({
     return [spoon, tooSmall ? t('recipeOutput.weighOrDilute') : ''].filter(Boolean).join(' · ');
   }
   const smallDoseShown = !!yeastInfo && !hasPref && !!(yeastInfo.hitMinFloor || needsPrecision || dilutionTip);
-  const yeastAlternatives = yeastInfo && mode==='simple' && yeastInfo.yeastType==='instant' ? (locale==='fr' ? `Levure fraîche : ${formatYeastDose(yeastInfo.grams*3,locale)} · sèche active : ${formatYeastDose(yeastInfo.grams*1.33,locale)}` : `Fresh yeast: ${formatYeastDose(yeastInfo.grams*3,locale)} · active dry: ${formatYeastDose(yeastInfo.grams*1.33,locale)}`) : null;
+  // Fresh yeast is weighed on a kitchen scale: whole grams from 10 g.
+  const freshEquivalent = (grams:number) => grams >= 10 ? `${Math.round(grams)} g` : formatYeastDose(grams,locale);
+  const yeastAlternatives = yeastInfo && mode==='simple' && yeastInfo.yeastType==='instant' ? (locale==='fr' ? `ou ${freshEquivalent(yeastInfo.grams*3)} de levure fraîche` : `or ${freshEquivalent(yeastInfo.grams*3)} fresh yeast`) : null;
   const yeastSub = yeastInfo
     ? (() => {
         const isInstant = yeastInfo.yeastType === 'instant';
         const idyPart = !isInstant ? (locale==='fr' ? `= ${formatYeastDose(yeastInfo.grams, locale)} de levure sèche instantanée` : `= ${formatYeastDose(yeastInfo.grams, locale)} instant dry yeast`) : null;
-        const alternatives = mode==='simple' && isInstant ? (locale==='fr' ? `Levure fraîche : ${formatYeastDose(yeastInfo.grams*3,locale)} · sèche active : ${formatYeastDose(yeastInfo.grams*1.33,locale)}` : `Fresh yeast: ${formatYeastDose(yeastInfo.grams*3,locale)} · active dry: ${formatYeastDose(yeastInfo.grams*1.33,locale)}`) : null;
+        const alternatives = mode==='simple' && isInstant ? (locale==='fr' ? `ou ${freshEquivalent(yeastInfo.grams*3)} de levure fraîche` : `or ${freshEquivalent(yeastInfo.grams*3)} fresh yeast`) : null;
         // With a small-dose section below, the other yeasts are listed there.
         return [smallDoseShown ? null : alternatives, smallDoseShown ? yeastSpoon : measureHint(yeastSpoon,needsPrecision), idyPart].filter(Boolean).join(' · ') || undefined;
       })()
@@ -785,6 +788,7 @@ export default function RecipeOutput({
             return ratio>0 ? `${locale==='fr'?flourType.nameFr:flourType.name} ${formatPercent(ratio,locale)}` : null;
           }).filter(Boolean).join(' · ')} ({locale==='fr'?'farine ajoutée au pétrissage':'flour added at mixing'})</p>}
           {enrichmentRows}
+          {enrichment && (styleKey === 'brioche' || styleKey === 'pain_viennois') && <p data-egg-wash style={{margin:'8px 0 0',fontSize:14,color:'var(--smoke)'}}>{locale === 'fr' ? 'Pour la dorure (facultatif) : 1 œuf battu' : 'For the egg wash (optional): 1 beaten egg'}</p>}
           <IngRow label={t('recipeOutput.ingredientSalt')}  grams={wStr(salt)}  pct={pctStr(saltPct)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
 
           {yeastInfo && (

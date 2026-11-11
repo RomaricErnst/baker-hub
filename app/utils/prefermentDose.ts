@@ -25,7 +25,8 @@ export function formatYeastDose(grams:number, locale='en') {
   // Under a gram, three significant figures (0.998 g, not "1 g" next to a
   // "too little for a kitchen scale" note); the same as the preferment dose.
   if (grams < 1) return formatPrefermentDose(grams,locale);
-  return `${new Intl.NumberFormat(locale,{maximumFractionDigits:2}).format(grams)} g`;
+  // From a gram, kitchen-scale precision: 4.5 g, not 4.45 g.
+  return `${new Intl.NumberFormat(locale,{maximumFractionDigits:1}).format(grams)} g`;
 }
 
 // Approximate packet convention for dry yeast (7 g = 2¼ tsp).
