@@ -1,4 +1,5 @@
 'use client';
+import { splitStepWhy } from '../utils/stepWhy';
 import { flourProductName } from '../lib/flourGuidance';
 import { formatDuration } from '../utils/duration';
 import { starterBuild, starterFeedRoleLabel } from '../utils/starterBuild';
@@ -38,6 +39,8 @@ interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   onPreparationComplete?: (done:boolean)=>void;
   afterSteps?: React.ReactNode;
   onBackToRecipe?: () => void;
+  /** Preparation: true while the summary of steps is shown (no step open). */
+  onOverviewChange?: (overview: boolean) => void;
   onBakedChange?: (done:boolean)=>void;
   completionEnabled?: boolean;
   /** End of the bake: open this bake's journal entry (rating, note, photos). */
@@ -178,6 +181,7 @@ function easyBold(s: string): string {
 function Steps({ items }: { items: { bold: string; note: string }[] }) {
   const simple = useContext(SimpleModeCtx);
   const weightText = useWeightText();
+  const fr = useLocale() === 'fr';
   items = items.filter(it => it.bold !== '').map(it => ({ bold: weightText(it.bold), note: weightText(it.note) }));
   if (simple) {
     items = items.map(it => ({
@@ -185,7 +189,10 @@ function Steps({ items }: { items: { bold: string; note: string }[] }) {
       note: JARGON_RE.test(it.note) ? '' : it.note,
     }));
   }
-  return (
+  // The reasons go under one "Why?" so each line reads as what to do.
+  const whys: { bold: string; why: string }[] = [];
+  items = items.map(it => { const split = splitStepWhy(it.note); if (split.why) whys.push({ bold: it.bold, why: split.why }); return { bold: it.bold, note: split.note }; });
+  return (<>
     <ol style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       {items.map((item, i) => (
         <li key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
@@ -199,7 +206,13 @@ function Steps({ items }: { items: { bold: string; note: string }[] }) {
         </li>
       ))}
     </ol>
-  );
+    {whys.length > 0 && <details data-step-why style={{ marginTop: 8 }}>
+      <summary style={{ cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center', color: D.terra, fontSize: 14 }}>{fr ? 'Pourquoi ?' : 'Why?'}</summary>
+      <ul style={{ margin: '4px 0 0', paddingLeft: 18, display: 'grid', gap: 4, fontSize: 14, color: D.smoke }}>
+        {whys.map((w, k) => <li key={k}><span style={{ color: D.char }}>{w.bold}</span>: {w.why}</li>)}
+      </ul>
+    </details>}
+  </>);
 }
 
 // ── Pumpkin shape SVG (spiral mixer) ────────────────
@@ -289,7 +302,8 @@ function StepCard({
           <strong role={overview?undefined:'heading'} aria-level={overview?undefined:2} style={{ display: 'block', fontSize: overview ? 15 : 28, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}</strong>
           {!overview && !externalProgress && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {displayNumber}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
           {time && <span style={{ display: 'block', marginTop: 4, fontSize: 14, color: D.smoke }}>
-            {formatTime(time, locale)}{duration ? ` · ${overview ? (passive ? (fr ? 'repos ' : 'rest ') : (fr ? 'durée ' : 'duration ')) : ''}${duration < 1 ? `${Math.round(duration * 60)} min` : formatDuration(Math.round(duration * 12) / 12, fr ? 'fr' : 'en')}` : ''}
+            {/* Inside a step its own time is the one to read at a glance. */}
+            <strong style={overview ? { fontWeight: 400 } : { fontSize: 16, fontWeight: 700, color: 'var(--char)' }}>{formatTime(time, locale)}</strong>{duration ? ` · ${overview ? (passive ? (fr ? 'repos ' : 'rest ') : (fr ? 'durée ' : 'duration ')) : ''}${duration < 1 ? `${Math.round(duration * 60)} min` : formatDuration(Math.round(duration * 12) / 12, fr ? 'fr' : 'en')}` : ''}
           </span>}
           {overview && overviewNote && <span style={{display:'block',fontSize:14,lineHeight:1.5,color:D.terra,marginTop:4}}>{overviewNote}</span>}
           {done && <span style={{ fontSize: 14, color: D.sage }}>{fr ? 'Terminé' : 'Completed'}</span>}
@@ -856,7 +870,7 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   usingPeak2 = false, planningMode = 'last_fed',
   feedRatio = 1, starterLocation = 'rt',
   units, locale,
-  afterSteps, onBackToRecipe, onNavigateToPizzaParty, pizzaActionLabel, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
+  afterSteps, onBackToRecipe, onOverviewChange, onNavigateToPizzaParty, pizzaActionLabel, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
   phase, active = true, onNavigateToCooking, onNavigateToPreparation, progressTarget, pizzaDiameterCm,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
@@ -868,6 +882,7 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   const [currentStep, setCurrentStep] = useState(phase === 'preparation' ? 0 : 1);
   const [totalSteps, setTotalSteps] = useState(0);
   useEffect(() => { if (totalSteps > 0 && currentStep > totalSteps) setCurrentStep(totalSteps); }, [totalSteps, currentStep]);
+  useEffect(() => { if (phase === 'preparation') onOverviewChange?.(currentStep === 0); }, [phase, currentStep, onOverviewChange]);
   const [loadedProgressKey,setLoadedProgressKey]=useState<string|null>(null);
   const [doneSteps, setDoneSteps] = useState<Set<number>>(new Set());
   const [activeBatch, setActiveBatch] = useState(0);
@@ -1306,7 +1321,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         {bakeClosing}
         {onBackToRecipe && <button type="button" onClick={onBackToRecipe} style={{minHeight:48}}>{l==='fr'?'Retour à la recette':'Back to recipe'} →</button>}
       </StepCard>
-      {active&&afterSteps}
+      {active&&currentStep===0&&afterSteps}
       {overviewAction&&<BottomActions>
         {onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'Retour à la recette':'Back to recipe'}</button>}
         {overviewAction}
@@ -1377,14 +1392,12 @@ Actual dough condition and equipment may differ from these estimates.`;
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
-              {bold:l === 'fr' ? 'Pesez la farine, l’eau et la levure indiquées ci-dessus.' : 'Weigh the flour, water and yeast listed above.',
-                note:recipe?.preferment ? (needsScaleHelp(recipe.preferment.prefYeastGrams)
-                  ? (l === 'fr' ? `${formatPrefermentDose(recipe.preferment.prefYeastGrams,l)} de ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)} : trop peu pour une balance, utilisez la dilution de la recette.` : `${formatPrefermentDose(recipe.preferment.prefYeastGrams,l)} ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)}: too little to weigh, use the dilution in the Recipe.`)
-                  : l === 'fr' ? `Utilisez ${formatPrefermentDose(recipe.preferment.prefYeastGrams,l)} de ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)}.` : `Use ${formatPrefermentDose(recipe.preferment.prefYeastGrams,l)} ${rootT(`recipe.yeastNames.${recipe.preferment.prefYeastType ?? 'instant'}`)}.`) : ''},
+              // The yeast amount and what to do with it are the instruction itself, not a grey note.
+              {bold:(()=>{const pf=recipe?.preferment;if(!pf)return l === 'fr' ? 'Pesez la farine et l’eau.' : 'Weigh the flour and water.';const dose=formatPrefermentDose(pf.prefYeastGrams,l);const yeast=rootT(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`);return needsScaleHelp(pf.prefYeastGrams)?(l==='fr'?`Pesez la farine et l’eau. ${dose} de ${yeast.toLowerCase()} : utilisez la dilution de la recette.`:`Weigh flour and water. ${dose} ${yeast.toLowerCase()}: use the dilution in the Recipe.`):(l==='fr'?`Pesez la farine, l’eau et ${dose} de ${yeast.toLowerCase()}.`:`Weigh the flour, water and ${dose} ${yeast.toLowerCase()}.`);})(),note:''},
               {bold:isPoolish ? (l === 'fr' ? 'Mélangez jusqu’à disparition de la farine sèche.' : 'Stir until no dry flour remains.') : (l === 'fr' ? 'Mélangez pour humidifier toute la farine ; gardez une texture grumeleuse.' : 'Mix to moisten all the flour; keep a rough, lumpy texture.'),note:''},
               {bold:l === 'fr' ? 'Couvrez le récipient et laissez de la place pour la levée.' : 'Cover the container and leave room for expansion.',note:''},
-              {bold:recipe?.preferment?.cold ? (l === 'fr' ? 'Placez au réfrigérateur selon ce planning.' : 'Refrigerate according to this plan.') : chillPoolishAt ? (l==='fr'?`Laissez mûrir à température ambiante jusqu’à ${formatTime(chillPoolishAt,l)}, puis placez le poolish au réfrigérateur.`:`Let the poolish ripen at room temperature until ${formatTime(chillPoolishAt,l)}, then refrigerate it.`) : (l === 'fr' ? 'Laissez à température ambiante selon ce planning.' : 'Leave at room temperature according to this plan.'),
-                note:l === 'fr' ? `Pétrissage prévu : ${formatTime(bgMixStart, _fmtLocale)}. Vérifiez la maturité avant utilisation.` : `Main mix planned: ${formatTime(bgMixStart, _fmtLocale)}. Check maturity before use.`},
+              {bold:recipe?.preferment?.cold ? (l === 'fr' ? `Placez au réfrigérateur jusqu’à ${formatTime(bgMixStart, _fmtLocale)}.` : `Refrigerate until ${formatTime(bgMixStart, _fmtLocale)}.`) : chillPoolishAt ? (l==='fr'?`Laissez mûrir à température ambiante jusqu’à ${formatTime(chillPoolishAt,l)}, puis placez le poolish au réfrigérateur.`:`Let the poolish ripen at room temperature until ${formatTime(chillPoolishAt,l)}, then refrigerate it.`) : (l === 'fr' ? 'Laissez à température ambiante selon ce planning.' : 'Leave at room temperature according to this plan.'),
+                note:recipe?.preferment?.cold ? '' : (l === 'fr' ? `Pétrissage prévu : ${formatTime(bgMixStart, _fmtLocale)}.` : `Main mix planned: ${formatTime(bgMixStart, _fmtLocale)}.`)},
             ]} />
           </Section>
 
@@ -1751,7 +1764,14 @@ Actual dough condition and equipment may differ from these estimates.`;
                   (minutes === 15 && !schedule.coldRetardStart
                     // No fridge in this plan: the short first rise leads to shaping, not to the cold.
                     ? { ...(t.raw('bulk.setShort') as { bold: string; note: string }), note: l === 'fr' ? 'puis couvrez et laissez reposer jusqu’au façonnage' : 'then cover and rest until shaping' }
-                    : t.raw(minutes === 15 ? 'bulk.setShort' : `bulk.set${minutes / 30}`) as { bold: string; note: string }))
+                    : (() => {
+                      const set = t.raw(minutes === 15 ? 'bulk.setShort' : `bulk.set${minutes / 30}`) as { bold: string; note: string };
+                      // A planned fold reads as its clock time, as on the summary.
+                      const at = minutes === 15 ? undefined : schedule.availabilityActions?.find(a => a.id === `fold-${minutes / 30}`)?.at;
+                      if (!at) return set;
+                      const final = minutes / 30 === 4;
+                      return { ...set, bold: `${formatClock(new Date(at), l)} — ${l === 'fr' ? (final ? 'pli final' : 'rabat') : (final ? 'final fold' : 'stretch & fold')}` };
+                    })()))
               // "Straight into the fridge" only when the plan has a cold stage.
               : schedule.coldRetardStart ? [t.raw('bulk.setVeryShort') as { bold: string; note: string }] : []),
           ]} />}
@@ -2089,10 +2109,6 @@ Actual dough condition and equipment may differ from these estimates.`;
       <StepCard number={n()} {...sc(false, 'cooking')} icon={<IconPreheat />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle') : t('stepTitles.preheatOven')}
         time={schedule.preheatStart} accent={D.gold}>
 
-        <div style={{ fontSize: '12px', color: D.smoke, fontStyle: 'italic',
-          fontFamily: 'var(--font-ui)', padding: '12px 0 0' }}>
-          {t('preheatNote')}
-        </div>
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           {breadProtocol ? <Steps items={profileSteps(breadProtocol.preheat[l])} /> : leanBake ? <Steps items={ovenSteps(leanBake.preheat[l])} /> : isBread ? (
@@ -2127,7 +2143,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           )}
         </Section>
 
-        {!breadProtocol && <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Le four et la surface de cuisson sont chauds, et la pâte est prête.':'The oven and baking surface are heated, and the dough is ready.'}</p>}
+        {!breadProtocol && <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{(()=>{const min=schedule.preheatStart?Math.round((schedule.bakeStart.getTime()-schedule.preheatStart.getTime())/60000):0;return min>0?(l==='fr'?`${min} min à pleine puissance.`:`${min} min at full heat.`):(l==='fr'?'Le four et la surface de cuisson sont chauds.':'The oven and baking surface are hot.');})()}</p>}
 
         {!breadProtocol && <StepExtras
           tips={panGuide || (leanBake && (!leanBake.scored || (ovenType === 'dutch_oven' && isBaguette))) ? null :
@@ -2266,7 +2282,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         {bakeClosing}
         {onBackToRecipe && <button type="button" onClick={onBackToRecipe} style={{minHeight:48}}>{l==='fr'?'Retour à la recette':'Back to recipe'} →</button>}
       </StepCard>}
-      {active&&afterSteps}
+      {active&&currentStep===0&&afterSteps}
       {overviewAction&&<BottomActions>
         {onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'Retour à la recette':'Back to recipe'}</button>}
         {overviewAction}

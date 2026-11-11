@@ -476,20 +476,26 @@ test('landing photos stay above text and bread meal examples are readable',async
  const loaves=page.locator('#bread-group-loaves').locator('..').locator('.bh-bread-style-card');
  await expect(loaves).toHaveCount(6);
  const sources=[];
+ // Browsing: one photo per bread, no captions; the meal idea is on the card as data.
  for(const card of await loaves.all()){
   await card.scrollIntoViewIfNeeded();
-  const photos=card.locator('.bh-bread-photo');await expect(photos).toHaveCount(2);
+  const photos=card.locator('.bh-bread-photo');await expect(photos).toHaveCount(1);
+  await expect(card.locator('.bh-bread-photo-caption')).toHaveCount(0);
   const title=await card.locator('.bh-bread-card-title').boundingBox();
   expect(title.y+title.height).toBeLessThanOrEqual((await photos.first().boundingBox()).y);
   await expect.poll(()=>photos.locator('img').evaluateAll(images=>images.every(img=>img.complete&&img.naturalWidth>0))).toBe(true);
-  for(const photo of await photos.all()){
-   const frame=await photo.locator('.bh-bread-photo-frame').boundingBox();
-   expect((await photo.locator('.bh-bread-photo-caption').boundingBox()).y).toBeGreaterThanOrEqual(frame.y+frame.height);
-  }
-  const meal=photos.nth(1);const box=await meal.boundingBox();expect(box.width).toBeGreaterThanOrEqual(100);expect(box.height).toBeGreaterThanOrEqual(120);
-  expect((await card.locator('.bh-bread-card-copy').boundingBox()).y).toBeGreaterThanOrEqual(box.y+box.height);
-  sources.push(await meal.locator('img').getAttribute('src'));
+  sources.push(await card.getAttribute('data-meal-src'));
  }
+ // Choosing a bread shows its meal idea under its own caption.
+ const chosen=loaves.first();await chosen.tap();
+ const pair=chosen.locator('.bh-bread-photo');await expect(pair).toHaveCount(2);
+ for(const photo of await pair.all()){
+  const frame=await photo.locator('.bh-bread-photo-frame').boundingBox();
+  expect((await photo.locator('.bh-bread-photo-caption').boundingBox()).y).toBeGreaterThanOrEqual(frame.y+frame.height);
+ }
+ const meal=pair.nth(1);const box=await meal.boundingBox();expect(box.width).toBeGreaterThanOrEqual(100);expect(box.height).toBeGreaterThanOrEqual(120);
+ expect((await chosen.locator('.bh-bread-card-copy').boundingBox()).y).toBeGreaterThanOrEqual(box.y+box.height);
+ expect(await meal.locator('img').getAttribute('src')).toContain(sources[0].replace(/^\//,'').split('/').pop().replace('.webp',''));
  expect(new Set(sources).size).toBe(6);await noOverflow(page);
  await page.getByRole('button',{name:'Pain à wrap · Laffa',exact:true}).tap();
  await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();

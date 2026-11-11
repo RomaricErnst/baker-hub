@@ -500,7 +500,7 @@
     "waterFinalDough": "Eau (pâte finale)",
     "batchTotal": "Total pétrissage",
     "chillPoolishAt": "Placez le poolish au frigo à partir de {time}. Gardez-le au froid jusqu’au pétrissage.",
-    "weighOrDilute": "Trop peu pour une balance de cuisine : voir comment la mesurer ci-dessous.",
+    "weighOrDilute": "comment la peser ↓",
     "weighDose": "Pesez cette dose à la balance.",
     "precisionScaleTitle": "Peser une très petite quantité de levure",
     "precisionScaleBody": "{amount}, c’est trop peu pour la plupart des balances de cuisine. Utilisez une balance au 0,1 g, ou la méthode ci-dessous.",
@@ -706,7 +706,6 @@
       "learnMore": "En savoir plus",
       "whatToExpect": "À quoi s’attendre"
     },
-    "preheatNote": "Commencez le préchauffage pendant que la pâte finit son apprêt — ils doivent être prêts en même temps.",
     "poolish": {
       "stepsFridge": [
         {

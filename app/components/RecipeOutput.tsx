@@ -495,12 +495,15 @@ export default function RecipeOutput({
   function measureHint(spoon:string|null|undefined,tooSmall:boolean) {
     return [spoon, tooSmall ? t('recipeOutput.weighOrDilute') : ''].filter(Boolean).join(' · ');
   }
+  const smallDoseShown = !!yeastInfo && !hasPref && !!(yeastInfo.hitMinFloor || needsPrecision || dilutionTip);
+  const yeastAlternatives = yeastInfo && mode==='simple' && yeastInfo.yeastType==='instant' ? (locale==='fr' ? `Levure fraîche : ${formatYeastDose(yeastInfo.grams*3,locale)} · sèche active : ${formatYeastDose(yeastInfo.grams*1.33,locale)}` : `Fresh yeast: ${formatYeastDose(yeastInfo.grams*3,locale)} · active dry: ${formatYeastDose(yeastInfo.grams*1.33,locale)}`) : null;
   const yeastSub = yeastInfo
     ? (() => {
         const isInstant = yeastInfo.yeastType === 'instant';
         const idyPart = !isInstant ? (locale==='fr' ? `= ${formatYeastDose(yeastInfo.grams, locale)} de levure sèche instantanée` : `= ${formatYeastDose(yeastInfo.grams, locale)} instant dry yeast`) : null;
         const alternatives = mode==='simple' && isInstant ? (locale==='fr' ? `Levure fraîche : ${formatYeastDose(yeastInfo.grams*3,locale)} · sèche active : ${formatYeastDose(yeastInfo.grams*1.33,locale)}` : `Fresh yeast: ${formatYeastDose(yeastInfo.grams*3,locale)} · active dry: ${formatYeastDose(yeastInfo.grams*1.33,locale)}`) : null;
-        return [alternatives, measureHint(yeastSpoon,needsPrecision), idyPart].filter(Boolean).join(' · ') || undefined;
+        // With a small-dose section below, the other yeasts are listed there.
+        return [smallDoseShown ? null : alternatives, measureHint(yeastSpoon,needsPrecision), idyPart].filter(Boolean).join(' · ') || undefined;
       })()
     : undefined;
 
@@ -1010,6 +1013,7 @@ export default function RecipeOutput({
 
           {(yeastInfo.hitMinFloor || needsPrecision || dilutionTip) && <details className="bh-disclosure">
             <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Petite dose de levure' : 'Small yeast dose'}</summary>
+          {yeastAlternatives && <p data-yeast-alternatives style={{margin:'0 0 10px',fontSize:14,color:'var(--ash)'}}>{yeastAlternatives}</p>}
           {/* Min floor callout — shown when 0.5g IDY floor was applied */}
           {yeastInfo.hitMinFloor && !needsPrecision && (
             <div style={{

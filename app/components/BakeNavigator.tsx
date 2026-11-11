@@ -12,7 +12,7 @@ const icons:Record<BakeDestination,string>={
 export function DestinationIcon({destination}:{destination:BakeDestination}){
   return <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={icons[destination]} /></svg>;
 }
-export default function BakeNavigator({active,fr,onChange,top=0,progress,recipeMeal}:{active:BakeDestination;fr:boolean;onChange:(destination:BakeDestination)=>void;top?:number;progress?:ReactNode;recipeMeal?:{label:string;recipeLabel?:string;active:boolean;selected:boolean;onChoose:()=>void}}){
+export default function BakeNavigator({active,fr,onChange,top=0,progress,recipeMeal,contextLabel}:{contextLabel?:string;active:BakeDestination;fr:boolean;onChange:(destination:BakeDestination)=>void;top?:number;progress?:ReactNode;recipeMeal?:{label:string;recipeLabel?:string;active:boolean;selected:boolean;onChoose:()=>void}}){
   const [open,setOpen]=useState(false);
   const trigger=useRef<HTMLButtonElement>(null);
   const root=useRef<HTMLDivElement>(null);
@@ -44,7 +44,7 @@ export default function BakeNavigator({active,fr,onChange,top=0,progress,recipeM
   const current=destinations.find(item=>item.id===section)!;
   return <div ref={root} className="bh-bake-navigator" style={{top,scrollMarginTop:top,'--bh-navigator-top':`${top}px`} as CSSProperties}>
     <div className="bh-navigator-band">
-      <div className="bh-navigator-context"><span className="bh-navigator-current"><DestinationIcon destination={section}/><span>{active==='recipe'&&recipeMeal?.active?recipeMeal.label:fr?current.fr:current.en}</span></span>{progress}</div>
+      <div className="bh-navigator-context"><span className="bh-navigator-current"><DestinationIcon destination={section}/><span>{active==='recipe'&&recipeMeal?.active?recipeMeal.label:fr?current.fr:current.en}</span>{contextLabel&&<span data-navigator-bake className="bh-navigator-bake" style={{fontWeight:400,color:'var(--ash)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',minWidth:0}}>· {contextLabel}</span>}</span>{progress}</div>
       <button ref={trigger} type="button" className="bh-bake-navigator-trigger" aria-label={fr?'Voir les 5 rubriques':'View all 5 sections'} aria-expanded={open} aria-controls={id} onClick={()=>setOpen(value=>!value)}>
         <span className="bh-navigator-disclosure">{open?(fr?'Fermer':'Close'):(fr?'Rubriques':'Sections')} <span aria-hidden="true">{open?'⌃':'⌄'}</span></span>
       </button>
