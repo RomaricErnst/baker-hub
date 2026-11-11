@@ -595,7 +595,7 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale 
       {modeChip && <button type="button" data-mode-switch className="bh-back-action" style={{ minHeight: 44, marginTop: 12 }} onClick={modeChip.onClick}>{modeChip.value === 'simple' ? (fr ? 'Passer en mode Avancé' : 'Switch to Custom') : (fr ? 'Passer en mode Simple' : 'Switch to Simple')}</button>}
       <BottomActions>{(flow.recipeGenerated || flow.showGenerate) ? (
         <button onClick={onBackToRecipe} style={{ ...NEXT_CTA, marginTop: '22px' }}>
-          {returnLabel && flow.recipeGenerated ? returnLabel : !flow.recipeGenerated ? (fr ? 'Créer ma recette' : 'Create my recipe') : stale ? (fr ? 'Mettre à jour la recette et revenir' : 'Update recipe and return') : (fr ? 'Retour à la recette' : 'Back to recipe')}
+          {returnLabel && flow.recipeGenerated ? returnLabel : !flow.recipeGenerated ? (fr ? 'Créer ma recette' : 'Create my recipe') : stale ? (fr ? 'Mettre à jour et revenir à Recette' : 'Update and back to Recipe') : (fr ? 'Retour à Recette' : 'Back to Recipe')}
         </button>
       ) : <div style={{marginTop:22}}><SetupBlockerAction flow={flow} onJump={onJump} /></div>}</BottomActions>
     </div>
@@ -1173,7 +1173,11 @@ export default function Home() {
   // A plan-input edit made after generation: the plan step mounts the scheduler, it replans,
   // then the recipe is regenerated and the baker is told what moved.
   const [replanReturn, setReplanReturn] = useState<{from:number;settled:boolean}|null>(null);
-  const [planMoved, setPlanMoved] = useState<{from:number;to:number;bakeFrom?:number}|null>(null);
+  const [planMoved, setPlanMoved] = useState<{from:number;to:number;bakeFrom?:number;prepFrom?:number;prepTo?:number;yeastFrom?:number;yeastTo?:number;flourFrom?:number;flourTo?:number}|null>(null);
+  // The amounts of the last generated recipe, so an update can say what changed.
+  const acceptedAmountsRef = useRef<{yeast?:number;flour?:number}|null>(null);
+  // "Update my recipe" from a section's stale card brings the baker back to that section.
+  const stayAfterUpdateRef = useRef<BakeDestination|null>(null);
   const [journalRequest, setJournalRequest] = useState(0);
   // Bumped after a calendar export so the plan card re-reads what was exported.
   const [calendarExports, setCalendarExports] = useState(0);
@@ -1300,9 +1304,9 @@ export default function Home() {
   const readyTimeEstimate=getServingTimeEstimate({bakeType:bakeType??'pizza',styleKey:styleKey??'',numItems,itemWeight,ovenType:ovenType??'',hasFillings,pizzaOvenTemp:firstSelectedPizza?getPizzaById(firstSelectedPizza)?.ovenTemp:undefined});
   const companionVisible=browsingFillings||destination==='shopping'||destination==='protocol'&&protocolView==='fillings'||destination==='service'&&serviceView==='fillings';
   const companionPhase=destination==='shopping'?'shop':destination==='protocol'?'prep':destination==='service'?'bake':'pick';
-  const prepContinueLabel=prepReturnToService==null?undefined:prepReturnToService==='fillings'&&bakeType==='bread'?(locale==='fr'?'Revenir à l’assemblage':'Return to assembly'):(locale==='fr'?'Revenir à la cuisson':'Return to cooking');
-  const fillingsDoneLabel=fillingsReturn?(fillingsReturn.destination==='recipe'?(locale==='fr'?'Retour à la recette':'Return to recipe'):fillingsReturn.destination==='shopping'?(locale==='fr'?'Retour aux courses':'Return to shopping'):fillingsReturn.destination==='service'?(locale==='fr'?'Retour à la cuisson':'Return to cooking'):(locale==='fr'?'Retour à la préparation':'Return to preparation')):(locale==='fr'?'Définir ma recette':'Set up my recipe');
-  const setupReturnLabel=protocolStale?(locale==='fr'?'Mettre à jour la recette et revenir':'Update recipe and return'):fillingsReturn?fillingsDoneLabel:(locale==='fr'?'Retour à la recette':'Back to recipe');
+  const prepContinueLabel=prepReturnToService==null?undefined:prepReturnToService==='fillings'&&bakeType==='bread'?(locale==='fr'?'Revenir à l’assemblage':'Return to assembly'):(locale==='fr'?'Revenir à la cuisson':'Back to Baking & serving');
+  const fillingsDoneLabel=fillingsReturn?(fillingsReturn.destination==='recipe'?(locale==='fr'?'Retour à Recette':'Back to Recipe'):fillingsReturn.destination==='shopping'?(locale==='fr'?'Retour à Courses':'Back to Shopping list'):fillingsReturn.destination==='service'?(locale==='fr'?'Retour à Cuisson & service':'Back to Baking & serving'):(locale==='fr'?'Retour à Préparation':'Back to Preparation')):(locale==='fr'?'Définir ma recette':'Set up my recipe');
+  const setupReturnLabel=protocolStale?(locale==='fr'?'Mettre à jour et revenir à Recette':'Update and back to Recipe'):fillingsReturn?fillingsDoneLabel:(locale==='fr'?'Retour à Recette':'Back to Recipe');
   const bottomNavCollapsed = false;
   const stickTop = stickyHeadH;
   const pizzaPartyEnabled = bakeType === 'pizza';
@@ -2096,6 +2100,13 @@ export default function Home() {
       return null;
     }
   }, [mixExecution, execution, styleKey, ovenType, numItems, itemWeight, totalFlourTarget, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, customMixerCapacityG, humidity, schedule, fridgeTemp, yeastType, mixerType, priorityOverride, manualHydration, manualOil, manualSugar, flourChosen, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, prefGoesInFridge, feedToMixH, yeastPctOverride, starterPctOverride]);
+
+  // A restored, up-to-date recipe is the baseline the next update compares amounts with.
+  useEffect(() => {
+    if (!recipeGenerated || protocolStale || acceptedAmountsRef.current || !recipe) return;
+    acceptedAmountsRef.current = {yeast: recipe.preferment ? recipe.preferment.prefYeastGrams : recipe.yeast?.convertedGrams, flour: recipe.flour};
+  }, [recipeGenerated, protocolStale, recipe]);
+
 
   const displayRecipe = recipe;
   const advancedRecipe = recipe;
@@ -3171,12 +3182,27 @@ export default function Home() {
     setProtocolStale(false);
     const accepted:AcceptedPlan = {startTime:+startTime, preparationAt:plannedPreparationAt, ...(eatTime?{bakeAt:+eatTime}:{})};
     // Regenerating after an edit says what moved since the plan the baker had.
-    if (recipeGenerated) { const moved = acceptedPlanMove(acceptedPlan, +startTime, eatTime ? +eatTime : undefined); if (moved) setPlanMoved(moved); }
+    // Regenerating after an edit lists every key time that moved and the amounts that changed.
+    {
+      const amounts = {yeast: recipe ? (recipe.preferment ? recipe.preferment.prefYeastGrams : recipe.yeast?.convertedGrams) : undefined, flour: recipe?.flour};
+      const before = acceptedAmountsRef.current;
+      acceptedAmountsRef.current = amounts;
+      if (recipeGenerated) {
+        const moved = acceptedPlanMove(acceptedPlan, +startTime, eatTime ? +eatTime : undefined);
+        const prepMoved = acceptedPlan && acceptedPlan.preparationAt !== acceptedPlan.startTime && plannedPreparationAt !== +startTime && acceptedPlan.preparationAt !== plannedPreparationAt ? {prepFrom: acceptedPlan.preparationAt, prepTo: plannedPreparationAt} : {};
+        const yeastMoved = before?.yeast !== undefined && amounts.yeast !== undefined && Math.abs(before.yeast - amounts.yeast) >= 0.01 ? {yeastFrom: before.yeast, yeastTo: amounts.yeast} : {};
+        const flourMoved = before?.flour !== undefined && amounts.flour !== undefined && Math.round(before.flour) !== Math.round(amounts.flour) ? {flourFrom: before.flour, flourTo: amounts.flour} : {};
+        const bakeFrom = acceptedPlan?.bakeAt !== undefined && eatTime && acceptedPlan.bakeAt !== +eatTime ? {bakeFrom: acceptedPlan.bakeAt} : {};
+        if (moved || Object.keys(prepMoved).length || Object.keys(yeastMoved).length || Object.keys(flourMoved).length || Object.keys(bakeFrom).length)
+          setPlanMoved({...(moved ?? {from: +startTime, to: +startTime}), ...bakeFrom, ...prepMoved, ...yeastMoved, ...flourMoved});
+      }
+    }
     setAcceptedPlan(accepted);
     // Bake journal on this device: same entry across regenerations. Never blocks generation.
     try { const {dropped}=recordGeneratedBake(buildSessionPayload({bakeType:bakeType ?? '',recipeGenerated:true,protocolStale:false,activeTab:'plan',acceptedStartTime:accepted.startTime,acceptedPreparationAt:accepted.preparationAt,acceptedEatTime:accepted.bakeAt})); if(dropped.length) void deleteJournalPhotos(dropped.flatMap(entry=>entry.photoIds)); } catch {}
     setShowResults(true);
-    if(fillingsReturn)finishFillings();else setActiveTab('plan');
+    const stay = stayAfterUpdateRef.current; stayAfterUpdateRef.current = null;
+    if(fillingsReturn)finishFillings();else if(stay)openDestination(stay);else setActiveTab('plan');
     scrollToStepTop();
     if (user) {
       const sessionPayload = buildSessionPayload({
@@ -3903,6 +3929,34 @@ export default function Home() {
   const yeastOpen = !!yeastType && !isUnleavened && !(tab==='custom' && prefermentType==='levain') && !confirmed('yeast',yeastType);
   const equipmentOpen = (!!ovenType && !confirmed('oven',ovenType)) || (!!mixerType && !confirmed('mixer',mixerType));
   // Simple shows equipment, kitchen and leavening on one row (3).
+  // What the stale card names: the one setting that changed, and a way to keep the old value.
+  const staleChange = (()=>{
+    const generic = {sentence: fr ? 'Vous avez modifié vos choix.' : 'You changed your choices.', undo: undefined as undefined | {label:string; run:()=>void}};
+    if (!protocolStale || !generatedRecipeInputKey.current) return generic;
+    let before: unknown[], now: unknown[];
+    try { before = JSON.parse(generatedRecipeInputKey.current); now = JSON.parse(recipeInputKey); } catch { return generic; }
+    const changed = now.map((v,i)=>JSON.stringify(v)!==JSON.stringify(before[i])?i:-1).filter(i=>i>=0);
+    if (changed.length !== 1) return generic;
+    const i = changed[0], old = before[i];
+    const temp = (c:number) => `${cToDisplay(c,units)}${tempUnit(units)}`;
+    const named: Record<number, {what:(v:unknown)=>string; keep?:(v:unknown)=>{label:string; run:()=>void}}> = {
+      2: {what: v => fr ? `la quantité : ${bakeQuantityLabel(Number(v),bakeType,styleKey,fr)}` : `the quantity to ${bakeQuantityLabel(Number(v),bakeType,styleKey,fr)}`,
+          keep: v => ({label: fr ? `Garder ${bakeQuantityLabel(Number(v),bakeType,styleKey,fr)}` : `Keep ${bakeQuantityLabel(Number(v),bakeType,styleKey,fr)}`, run: () => setNumItems(Number(v))})},
+      3: {what: v => fr ? `le poids par pièce : ${displayWeight(Math.round(Number(v)),units,locale)}` : `the weight per piece to ${displayWeight(Math.round(Number(v)),units,locale)}`,
+          keep: v => ({label: fr ? `Garder ${displayWeight(Math.round(Number(v)),units,locale)}` : `Keep ${displayWeight(Math.round(Number(v)),units,locale)}`, run: () => setItemWeight(Number(v))})},
+      5: {what: () => fr ? 'le four' : 'the oven'},
+      7: {what: () => fr ? 'la méthode de pétrissage' : 'the mixing method'},
+      10: {what: () => fr ? 'la levure' : 'the yeast'},
+      11: {what: v => fr ? `la cuisine à ${temp(Number(v))}` : `the kitchen to ${temp(Number(v))}`,
+          keep: v => ({label: fr ? `Garder ${temp(Number(v))}` : `Keep ${temp(Number(v))}`, run: () => setKitchenTemp(Number(v))})},
+      13: {what: v => fr ? `le réfrigérateur à ${temp(Number(v))}` : `the fridge to ${temp(Number(v))}`,
+          keep: v => ({label: fr ? `Garder ${temp(Number(v))}` : `Keep ${temp(Number(v))}`, run: () => setFridgeTemp(Number(v))})},
+      19: {what: () => fr ? 'le préferment' : 'the preferment'},
+    };
+    const entry = named[i];
+    if (!entry) return generic;
+    return {sentence: fr ? `Vous avez modifié ${entry.what(now[i])}.` : `You changed ${entry.what(now[i])}.`, undo: entry.keep && old !== null && old !== undefined ? entry.keep(old) : undefined};
+  })();
   const simpleSuggestedRows = { '3': equipmentOpen || yeastOpen };
   const simpleKitchenSummary = [reviewEquipment,reviewAmbient,reviewLeavening].filter(Boolean).join(' · ');
   const firstRecipeAction = new Date(Math.min(
@@ -4396,10 +4450,20 @@ export default function Home() {
 })()}{destination==='service'&&!browsingFillings&&<h2 className="bh-visually-hidden">{fr?'Cuisson & service':'Baking & serving'}</h2>}<div style={{fontSize:12,color:'var(--smoke)',marginTop:4}}>{destination==='recipe'&&!browsingFillings&&!execution&&!mixExecution?<button type="button" className="bh-section-back" onClick={openQuantityEdit} aria-label={fr?'Modifier la quantité':'Edit quantity'}>{bakeQuantityLabel(numItems,bakeType,styleKey,fr)}</button>:bakeQuantityLabel(numItems,bakeType,styleKey,fr)} <span style={{display:'inline-block'}}>{styleKey ? styleDisplayName(styleKey) : ''}</span></div>{destination==='recipe'&&bakeType==='pizza'&&(()=>{const note=eachPizzaNote({styleKey,itemWeight,diameter:STYLE_HAS_DIAMETER.includes(styleKey??'')&&crustActive>=0?pizzaDiameter:undefined,units,locale});return note?<p data-each-pizza style={{margin:'4px 0 0',fontSize:13,color:'var(--ash)'}}>{note}</p>:null;})()}</div>}
 {recipeGenerated && planMoved && destination!=='batch' && destination!=='organisation' && eatTime && <div data-plan-moved role="status" style={{margin:'12px 0 0',padding:'12px 14px',border:'1px solid var(--gold)',borderRadius:14,fontSize:14,lineHeight:1.5,background:'var(--warm)'}}>
   <strong>{fr?'Plan mis à jour.':'Plan updated.'}</strong>{' '}
-  {fr?`Le pétrissage passe de ${formatBakeDateTime(new Date(planMoved.from),locale)} à ${formatBakeDateTime(new Date(planMoved.to),locale)}. ${planMoved.bakeFrom!==undefined?`La cuisson passe de ${formatBakeDateTime(new Date(planMoved.bakeFrom),locale)} à ${formatBakeDateTime(eatTime,locale)}.`:`La cuisson reste ${formatBakeDateTime(eatTime,locale)}.`} Si vous aviez ajouté le plan à votre agenda, ajoutez-le de nouveau.`
-     :`Start Dough moves from ${formatBakeDateTime(new Date(planMoved.from),locale)} to ${formatBakeDateTime(new Date(planMoved.to),locale)}. ${planMoved.bakeFrom!==undefined?`Bake moves from ${formatBakeDateTime(new Date(planMoved.bakeFrom),locale)} to ${formatBakeDateTime(eatTime,locale)}.`:`Bake stays ${formatBakeDateTime(eatTime,locale)}.`} If you had added the plan to your calendar, add it again.`}
+  {(()=>{
+    const at=(t:number)=>formatBakeDateTime(new Date(t),locale);
+    const prepName=prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):prefermentType==='poolish'?(fr?'Préparer le poolish':'Make Poolish'):(fr?'La préparation':'The preparation');
+    const parts:string[]=[];
+    if(planMoved.prepFrom!==undefined&&planMoved.prepTo!==undefined)parts.push(fr?`${prepName} : ${at(planMoved.prepTo)} (au lieu de ${at(planMoved.prepFrom)}).`:`${prepName} now ${at(planMoved.prepTo)} (was ${at(planMoved.prepFrom)}).`);
+    if(planMoved.from!==planMoved.to)parts.push(fr?`Pétrir la pâte : ${at(planMoved.to)} (au lieu de ${at(planMoved.from)}).`:`Start Dough ${at(planMoved.to)} (was ${at(planMoved.from)}).`);
+    parts.push(planMoved.bakeFrom!==undefined?(fr?`Enfourner : ${at(+eatTime)} (au lieu de ${at(planMoved.bakeFrom)}).`:`Bake ${at(+eatTime)} (was ${at(planMoved.bakeFrom)}).`):(fr?`La cuisson reste ${at(+eatTime)}.`:`Bake stays ${at(+eatTime)}.`));
+    const amounts:string[]=[];
+    if(planMoved.yeastFrom!==undefined&&planMoved.yeastTo!==undefined)amounts.push(fr?`levure${prefermentType==='poolish'||prefermentType==='biga'?' du préferment':''} ${formatYeastDose(planMoved.yeastTo,locale)} (au lieu de ${formatYeastDose(planMoved.yeastFrom,locale)})`:`yeast${prefermentType==='poolish'||prefermentType==='biga'?' in the preferment':''} ${formatYeastDose(planMoved.yeastTo,locale)} (was ${formatYeastDose(planMoved.yeastFrom,locale)})`);
+    if(planMoved.flourFrom!==undefined&&planMoved.flourTo!==undefined)amounts.push(fr?`farine ${displayWeight(Math.round(planMoved.flourTo),units,locale)} (au lieu de ${displayWeight(Math.round(planMoved.flourFrom),units,locale)})`:`flour ${displayWeight(Math.round(planMoved.flourTo),units,locale)} (was ${displayWeight(Math.round(planMoved.flourFrom),units,locale)})`);
+    return <>{parts.join(' ')}{amounts.length>0&&<span data-plan-amounts style={{display:'block',marginTop:4}}>{fr?'Quantités modifiées : ':'Amounts changed: '}{amounts.join(' · ')}.</span>}<span style={{display:'block',marginTop:4,color:'var(--ash)'}}>{fr?'Ajouté à votre agenda ? Ajoutez-le de nouveau.':'Added it to your calendar? Add it again.'}</span></>;
+  })()}
   <span style={{display:'flex',gap:16,marginTop:6}}>
-    {destination!=='protocol'&&<button type="button" className="bh-back-action" style={{minHeight:44}} onClick={()=>{setPlanMoved(null);openDestination('protocol');}}>{fr?'Voir les étapes':'See the steps'}</button>}
+    <button type="button" data-see-new-times className="bh-back-action" style={{minHeight:44}} onClick={()=>{setPlanMoved(null);editRecipeTiming();}}>{fr?'Voir les nouveaux horaires':'See the new times'}</button>
     <button type="button" className="bh-back-action" style={{minHeight:44}} onClick={()=>setPlanMoved(null)}>OK</button>
   </span>
 </div>}
@@ -4407,8 +4471,16 @@ export default function Home() {
 
 
 {showBakeTypeChooser&&bakeType&&<BakeTypeChooser fr={fr} current={bakeType} onChoose={selectBakeType} onClose={()=>setShowBakeTypeChooser(false)}/>}
-{recipeGenerated && protocolStale && ['recipe','shopping','protocol','service'].includes(destination) && <section role="status" className="bh-section-empty"><h2>{fr?'Recette à mettre à jour':'Update your recipe'}</h2><button type="button" style={NEXT_CTA} onClick={finishSetupEdit}>{canGenerate?(fr?'Mettre à jour ma recette':'Update my recipe'):(generationBlocker?.action??(fr?'Ajuster la recette':'Adjust recipe'))}</button></section>}
-<div hidden={recipeGenerated && protocolStale && ['recipe','shopping','protocol','service'].includes(destination)}>
+{recipeGenerated && protocolStale && ['recipe','shopping','protocol','service'].includes(destination) && <section role="status" data-stale-card className="bh-stale-card" style={{border:'1px solid var(--gold)',borderRadius:14,padding:'14px 16px',margin:'12px 0',background:'var(--warm)'}}>
+  <p style={{margin:'0 0 4px',fontSize:16,fontWeight:700,color:'var(--char)'}}>{staleChange.sentence}</p>
+  <p style={{margin:'0 0 10px',fontSize:14,color:'var(--ash)'}}>{fr?'Les quantités et les horaires suivront après la mise à jour.':'Your amounts and times will follow once you update.'}</p>
+  <span style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:'8px 18px'}}>
+    <button type="button" style={{...NEXT_CTA,width:'auto',flex:'0 1 auto',padding:'0 18px'}} onClick={()=>{if(canGenerate)stayAfterUpdateRef.current=destination;finishSetupEdit();}}>{canGenerate?(fr?'Mettre à jour ma recette':'Update my recipe'):(generationBlocker?.action??(fr?'Ajuster la recette':'Adjust recipe'))}</button>
+    {staleChange.undo&&<button type="button" data-stale-keep className="bh-back-action" style={{minHeight:44}} onClick={staleChange.undo.run}>{staleChange.undo.label}</button>}
+  </span>
+</section>}
+{/* The section stays readable underneath, dimmed and inactive, until the recipe is updated. */}
+<div inert={recipeGenerated && protocolStale && ['recipe','shopping','protocol','service'].includes(destination)} style={recipeGenerated && protocolStale && ['recipe','shopping','protocol','service'].includes(destination)?{opacity:.45}:undefined}>
 
 
 
@@ -4419,7 +4491,7 @@ export default function Home() {
                 {!styleKey&&<p id="bh-style-choice-hint" className="bh-visually-hidden">{fr?(bakeType==='bread'?'Choisissez un pain pour continuer.':'Choisissez un style de pizza pour continuer.'):(bakeType==='bread'?'Choose a bread to continue.':'Choose a pizza style to continue.')}</p>}
               <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
               <BottomActions className="bh-batch-actions bh-style-confirm">
-                <button type="button" className="bh-back-action" onClick={backToProducts}>{fr?'Retour':'Back'}</button>
+                <button type="button" className="bh-back-action" onClick={backToProducts}>{fr?'Étape précédente':'Previous step'}</button>
                 <button data-bh-forward type="button" disabled={!styleKey} aria-describedby={!styleKey?'bh-style-choice-hint':undefined} style={{...NEXT_CTA,opacity:styleKey?1:0.5,cursor:styleKey?'pointer':'not-allowed'}} onClick={()=>{if(!styleKey)return;setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{styleKey?`${fr?'Continuer avec':'Continue with'} ${styleDisplayName(styleKey)} →`:(fr?'Continuer':'Continue')}</button>
               </BottomActions>
             </> : batchView==='kitchen' ? <>
@@ -4482,7 +4554,7 @@ export default function Home() {
               {!modeChosen && destination === 'organisation' && (
                 <div style={{ padding: '4px 0 8px' }}>
                   <h1 className="bh-page-title">{locale === 'fr' ? 'Comment définir votre recette ?' : 'How would you like to set up your recipe?'}</h1>
-                  <BottomActions><button type="button" className="bh-back-action" onClick={()=>{setBatchView('quantity');openDestination('batch');}}>{fr?'Retour':'Back'}</button></BottomActions>
+                  <BottomActions><button type="button" className="bh-back-action" onClick={()=>{setBatchView('quantity');openDestination('batch');}}>{fr?'Étape précédente':'Previous step'}</button></BottomActions>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {([
                       { key: 'simple' as const, title: fr?'Créer une recette simple':'Create a simple recipe',

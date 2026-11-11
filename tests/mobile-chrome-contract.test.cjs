@@ -20,7 +20,7 @@ test('all journey action classes retain the shared measured action shell',()=>{
   for(const className of ['', 'bh-batch-actions bh-style-confirm', 'bh-batch-actions bh-batch-actions-navigation']) {
     const html=renderToStaticMarkup(React.createElement(BottomActions,{className},
       React.createElement('button',null,'Retour à mes choix'),
-      React.createElement('button',null,'Mettre à jour la recette et revenir')));
+      React.createElement('button',null,'Mettre à jour et revenir à Recette')));
     assert.match(html,/class="bh-step-action-slot"/);
     assert.ok(html.includes(`class="bh-step-actions${className?' '+className:''}"`));
   }

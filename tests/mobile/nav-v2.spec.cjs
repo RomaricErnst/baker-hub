@@ -151,7 +151,7 @@ for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}
     const bounds=await start.boundingBox();
     expect(page.viewportSize().height-bounds.y-bounds.height).toBeGreaterThanOrEqual(23);
    }
-   await actions.getByRole('button',{name:'Back to recipe',exact:true}).tap();
+   await actions.getByRole('button',{name:'Back to Recipe',exact:true}).tap();
    await expect(page.locator('.bh-navigator-current')).toHaveText('Recipe');
    const invitation=page.locator('.bh-fillings-invitation-compact');
    await expect(invitation).toHaveCount(1);
@@ -307,7 +307,7 @@ test('generated country bread offers optional tartines and preserves the recipe 
  await testInfo.attach('tartine-invitation',{body:await page.screenshot(),contentType:'image/png'});
  await page.getByRole('button',{name:'Ajouter des garnitures — facultatif',exact:true}).tap();
  await expect(page.getByRole('article').first()).toBeVisible();
- await page.locator('[data-companion-action]').getByRole('button',{name:'Retour à la recette',exact:true}).tap();
+ await page.locator('[data-companion-action]').getByRole('button',{name:'Retour à Recette',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
  expect((await stored(page)).numItems).toBe(before.numItems);
  await expect.poll(async()=>(await stored(page))?.styleKey).toBe('pain_campagne');

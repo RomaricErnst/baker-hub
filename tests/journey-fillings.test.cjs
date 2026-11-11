@@ -56,8 +56,8 @@ test('generated shopping uses active-only shared actions while existing bases re
   const bread=fs.readFileSync('app/components/SandwichParty.tsx','utf8');
   assert.match(bread,/onBackToRecipe \? active&&<BottomActions>/);
   for(const source of [pizza,bread]){
-    assert.match(source,/Retour à la recette/);
-    assert.match(source,/Back to recipe/);
+    assert.match(source,/Retour à Recette/);
+    assert.match(source,/Back to Recipe/);
     assert.match(source,/Go to preparation/);
   }
   const existing=fs.readFileSync('app/components/ExistingBaseJourney.tsx','utf8');

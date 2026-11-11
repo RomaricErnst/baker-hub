@@ -909,7 +909,7 @@ export function IngredientShoppingHelp({item,location,locale,onLocationChange,on
   const l = locale === 'fr' ? 'fr' : 'en';
   const help = ingredientHelpData(item,location,l);
   return <section aria-label={item.name[l] || item.name.en} style={{padding:'16px 12px',fontFamily:'var(--font-ui)'}}>
-    <button type="button" autoFocus onClick={onBack} style={SECONDARY_CTA}>{l === 'fr' ? 'Retour aux courses' : 'Back to shopping list'}</button>
+    <button type="button" autoFocus onClick={onBack} style={SECONDARY_CTA}>{l === 'fr' ? 'Retour à Courses' : 'Back to Shopping list'}</button>
     <h1 style={{fontFamily:'Georgia,serif',fontSize:30}}>{item.name[l] || item.name.en}</h1>
     <label style={{display:'grid',gap:8,marginBottom:24}}>{l === 'fr' ? 'Noms des ingrédients pour :' : 'Ingredient names for:'}
       <select value={location} onChange={event=>onLocationChange(event.target.value)} style={{minHeight:44,padding:10,border:'1px solid var(--border)',borderRadius:10,background:'var(--cream)'}}>
@@ -1327,7 +1327,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
         )}
       </div>
       {active && onBackToRecipe && <BottomActions>
-        <button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'Retour à la recette':'Back to recipe'}</button>
+        <button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'Retour à Recette':'Back to Recipe'}</button>
         <button type="button" onClick={()=>onGoPrep?.()} style={{...NEXT_CTA,flex:1,width:'auto',margin:0}}>{l==='fr'?'Passer à la préparation':'Go to preparation'} →</button>
       </BottomActions>}
     </div>

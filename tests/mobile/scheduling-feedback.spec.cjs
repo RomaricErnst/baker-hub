@@ -687,6 +687,6 @@ for(const locale of ['fr','en'])for(const way of ['keep','availability'])test(`$
  const moved=page.locator('[data-plan-moved]');
  if(after.startTime!==PARTY_MIX){
   await expect(moved).toBeVisible();
-  await expect(moved).toContainText(fr?'Le pétrissage passe de':'Start Dough moves from');
+  await expect(moved).toContainText(fr?/Pétrir la pâte : .* \(au lieu de /:/Start Dough .* \(was /);
  }else await expect(moved).toHaveCount(0);
 });

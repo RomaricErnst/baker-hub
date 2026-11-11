@@ -32,18 +32,18 @@ test('editing the yeast after generation updates the plan and says what moved',a
  const recommended=Number(await yeast.inputValue());
  await yeast.fill(String(Math.round(recommended*3*1000)/1000));await yeast.blur();
  await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBeGreaterThan(0);
- await page.getByRole('button',{name:'Update recipe and return',exact:true}).tap();
+ await page.getByRole('button',{name:'Update and back to Recipe',exact:true}).tap();
 
  // Back on the recipe, with the plan already re-timed and a note saying so.
  const moved=page.locator('[data-plan-moved]');
  await expect(moved).toBeVisible({timeout:20000});
  await expect(moved).toContainText('Plan updated.');
- await expect(moved).toContainText('Start Dough moves from');
+ await expect(moved).toContainText(/Start Dough .* \(was /);
  const after=await stored(page);
  expect(after.startTime-automatic).toBeGreaterThan(3*3600000);
  expect(after.eatTime).toBe(BAKE);
  expect(after.recipeGenerated).toBe(true);
- await moved.getByRole('button',{name:'See the steps',exact:true}).tap();
+ await moved.getByRole('button',{name:'See the new times',exact:true}).tap();
  await expect(page.locator('[data-plan-moved]')).toHaveCount(0);
  expect(errors).toEqual([]);
 });
