@@ -1881,6 +1881,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
   const [startComputed, setStartComputed] = useState(alreadySet);
 
   const [isDragging, setIsDragging] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
   const [customFrom, setCustomFrom] = useState('');
@@ -8785,14 +8786,14 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
           name:(action.id.startsWith('starter-')?displayStarterEvents.find(event=>+event.time===+action.at&&!event.historicalStorage)?.label:null)??foldActionLabel(action.id,locale,mixingBatches)??(conflictNames[action.id]??['Étape','Step'])[isFr?0:1],
           cover:()=>coverAction(action)}));
         return <ScheduleKeyTimings conflictRows={conflictRows} anchors={anchors} blocks={repairBlocks} isFr={isFr} onChange={isSourdough?starterChange:commercialChange} check={check} cacheKey={cacheKey} hasDraft={dirty} onInteractionChange={setKeyDragging} onCancel={cancel} ovenAt={+times.bake} personalized={hasTimingOverrides} adjustment={adjustment} onApply={accept} canApply={dirty&&valid} onOpenChange={setKeyEditorOpen} notice={notice} header={(dirty||hasTimingOverrides||(!dirty&&!valid&&(isSourdough||!!execution)))?<button type="button" className="bh-key-reset" disabled={keyDragging} onClick={resetToRecommendation}>{execution?(isFr?'Recalculer les étapes restantes':'Reset remaining times'):dirty||hasTimingOverrides?(isFr?'Revenir aux horaires recommandés':'Return to recommended times'):(isFr?'Trouver des horaires compatibles':'Find compatible times')}</button>:undefined}>
-          {mode==='custom' ? <details className="bh-key-detail" data-about-plan style={{marginTop:12}}>
+          {mode==='custom' ? <details className="bh-key-detail" data-about-plan style={{marginTop:12}} onToggle={e=>setAboutOpen((e.currentTarget as HTMLDetailsElement).open)}>
             <summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer',color:'var(--terra)'}}>{isFr?'À propos de ce planning':'About this plan'}</summary>
             <div>
             {/* Inside "About this plan" the curve shows at once; dragging a step moves it. */}
 
 
-            {<div id={scheduleViewId}>
-              <p style={{margin:'0 0 6px',fontSize:13,color:'var(--smoke)'}}>{isFr?'Faites glisser un losange pour déplacer une étape.':'Drag a diamond to move a step.'}</p>
+            <p style={{margin:'0 0 6px',fontSize:13,color:'var(--smoke)'}}>{isFr?'Faites glisser un losange pour déplacer une étape.':'Drag a diamond to move a step.'}</p>
+            {/* The curve mounts only once the section is opened. */}{aboutOpen && <div id={scheduleViewId}>
               {coldHours>0 && <p>{isFr
                 ? `La pâte passe ${duration(coldHours)} au réfrigérateur pour ralentir sa fermentation et conserver l’heure de cuisson choisie.`
                 : `The dough spends ${duration(coldHours)} in the fridge to slow fermentation and meet your bake time.`}</p>}
