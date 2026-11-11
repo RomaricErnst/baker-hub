@@ -455,7 +455,7 @@ test('bread family return preserves choices; wraps and meal examples are discove
  // The style is changed with Previous step (or the step summary); no recap line.
  await expect(page.locator('.bh-batch-context')).toHaveCount(0);
  await page.locator('.bh-batch-actions:visible').getByRole('button',{name:'Étape précédente',exact:true}).tap();
- await page.locator('.bh-style-confirm').getByRole('button',{name:'Retour',exact:true}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:'Étape précédente',exact:true}).tap();
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Que souhaitez-vous préparer ?',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();

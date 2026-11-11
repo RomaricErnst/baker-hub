@@ -180,7 +180,7 @@ test('a clash caused by the entered yeast amount offers the calculated amount',a
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
  await page.goto('/');
  const use=page.locator('[data-clash-use-calculated]:visible');
- await expect(use).toHaveText('Use the calculated yeast amount — the plan fits around your free time');
+ await expect(use).toHaveText('Use the calculated yeast amount The plan fits around your free time');
  await use.tap();
  await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBeUndefined();
  await expect(page.locator('[data-clash-use-calculated]:visible')).toHaveCount(0);
