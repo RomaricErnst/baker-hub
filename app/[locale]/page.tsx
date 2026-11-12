@@ -787,7 +787,7 @@ function BakeTitleField({ value, auto, fr, onCommit }: { value: string; auto: st
       ? <input ref={input} data-bake-title-input aria-label={fr ? 'Nom de la fournée' : 'Bake name'} value={draft} maxLength={100} enterKeyHint="done"
           onChange={e => setDraft(e.target.value)} onBlur={commit}
           onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') setDraft(null); }}
-          style={{ ...font, flex: 1, minWidth: 0, background: 'transparent', border: 0, borderBottom: '1px solid var(--terra)', borderRadius: 0, padding: '4px 0', margin: 0 }} />
+          style={{ ...font, flex: 1, minWidth: 0, border: 0, borderRadius: 6, padding: '4px 6px', margin: '0 -6px', background: 'var(--warm)' }} />
       : <h1 className="bh-page-title bh-bake-title" data-bake-title onClick={start}
           style={{ ...font, flex: 1, minWidth: 0, margin: 0, padding: '4px 0', borderBottom: '1px dashed var(--border)', cursor: 'text' }}>{value || auto}</h1>}
     {!editing && <button type="button" data-bake-rename aria-label={fr ? 'Renommer la fournée' : 'Rename this bake'} onClick={start}
