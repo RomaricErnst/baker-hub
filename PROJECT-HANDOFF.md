@@ -1,3 +1,7 @@
+# 12 November 2026 — the empty bake time opens on the best day, at a meal time (Claude)
+
+The native picker opened on "now" (6:14pm today). An empty bake time now opens the picker on the style's preferred fermentation (preferredColdH or coldH, plus rtH, from STYLE_FERM_DEFAULTS: about 50 h for a Neapolitan) at the nearest 7:00pm for pizza or 10:00am for bread, never before the earliest workable bake. The field still reads "Choose date and time" until the baker confirms; on a phone, confirming the picker without moving it keeps the opening value (blur on a coarse pointer applies it).
+
 # 12 November 2026 — a busy-time clash is asked once, when the recipe is created (Claude)
 
 Romaric walked pizza at 7:30pm with work hours: he answered the clash on the bake time, chose Customize my bake, and Custom's bake-time step asked again with the full editor (clash card, a per-step "I can cover this step" list, timeline warnings). He asked for the question once only. Now:
