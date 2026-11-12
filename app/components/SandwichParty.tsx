@@ -32,8 +32,11 @@ export interface SandwichPartyProps extends CompletionActions {
   onPhaseChange?:(phase:SandwichSnapshot['tab'])=>void;
   onSelectionBack?:()=>void;
   onBackToRecipe?:()=>void;
+  /** The shopping bar's back label when back leads to the fillings choice. */
+  backLabel?:string;
   onSelectionDone?:()=>void;
   selectionDoneLabel?:string;
+  selectionBackLabel?:string;
   directSelectionReturn?:boolean;
   prepContinueLabel?:string;
   onPrepProgress?:(progress:{done:number;total:number})=>void;
@@ -44,7 +47,7 @@ export interface SandwichPartyProps extends CompletionActions {
 
 const count = (value: number) => Number.isFinite(value) ? Math.max(0,Math.min(99,Math.floor(value))) : 0;
 
-export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRepeat,resultNotes,onResultNotesChange,isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onBackToRecipe,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,baseReady=false,deferBreadSteps=!baseReady}:SandwichPartyProps) {
+export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRepeat,resultNotes,onResultNotesChange,isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onBackToRecipe,backLabel,onSelectionDone,selectionDoneLabel,selectionBackLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,baseReady=false,deferBreadSteps=!baseReady}:SandwichPartyProps) {
   const tr = (value:Translation) => value[isFr ? 'fr' : 'en'];
   const t = (fr:string,en:string) => isFr ? fr : en;
   const [search,setSearch] = useState('');
@@ -160,7 +163,7 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
       <div><h2 className={styles.pageTitle} ref={headingRef} tabIndex={-1}>{tab==='shop'&&total===0&&breadIngredients.length>0?`${t('Liste de courses','Shopping list')} · ${breadIngredients.length} ${breadIngredients.length===1?t('article','item'):t('articles','items')}`:heading}</h2>
         {!(tab==='shop'&&total===0)&&<div className={styles.muted}>{breadName}</div>}
       </div>
-      {tab==='shop' ? <button type="button" className={styles.button} onClick={()=>go('pick')}>{total>0?t('Modifier les garnitures','Edit fillings'):t('Ajouter des garnitures — facultatif','Add fillings — optional')}</button> : family && <img src={breadImage} alt={breadName}/>}
+      {tab==='shop' ? (!backLabel&&<button type="button" className={styles.button} onClick={()=>go('pick')}>{total>0?t('Modifier les garnitures','Edit fillings'):t('Ajouter des garnitures — facultatif','Add fillings — optional')}</button>) : family && <img src={breadImage} alt={breadName}/>}
     </div>
 
     {(family||tab==='shop') && <>
@@ -199,8 +202,8 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
         {!filtered.length&&<p className={styles.empty}>{t('Aucune recette dans ce filtre. Essayez « Tout ».','No recipes in this filter. Try “All”.')}</p>}
         {active&&total>0&&!reviewOpen&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{directSelectionReturn ? <button type="button" className="bh-back-action" onClick={()=>setReviewOpen(true)}>{t('Ma sélection','My selection')} · {total}</button> : onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('Étape précédente','Previous step')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={()=>{if(directSelectionReturn&&onSelectionDone&&!needsQuantityReview)onSelectionDone();else setReviewOpen(true);}}>{directSelectionReturn?(needsQuantityReview?t('Vérifier la quantité de pain','Check bread quantity'):selectionDoneLabel):`${t('Voir ma sélection','Review selection')} · ${total}`}</button></div>}
 
-        {active&&baseReady&&total===0&&onSelectionBack&&<div data-companion-action className={styles.selectionBar}><button type="button" className="bh-back-action" onClick={onSelectionBack}>{directSelectionReturn?selectionDoneLabel:t('Étape précédente','Previous step')}</button></div>}
-        {active&&!baseReady&&total===0&&onSelectionDone&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{!directSelectionReturn&&onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('Étape précédente','Previous step')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={onSelectionDone}>{selectionDoneLabel??t('Définir ma recette','Set up my recipe')}</button></div>}
+        {active&&baseReady&&total===0&&onSelectionBack&&<div data-companion-action className={styles.selectionBar}>{directSelectionReturn&&selectionBackLabel?<><button type="button" className="bh-back-action" onClick={onSelectionBack}>{selectionBackLabel}</button><button type="button" className={`${button} ${styles.wide}`} style={{margin:0,width:'auto',flex:1}} onClick={onSelectionDone}>{selectionDoneLabel}</button></>:<button type="button" className="bh-back-action" onClick={onSelectionBack}>{directSelectionReturn?selectionDoneLabel:t('Étape précédente','Previous step')}</button>}</div>}
+        {active&&!baseReady&&total===0&&onSelectionDone&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{(!directSelectionReturn||selectionBackLabel)&&onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{directSelectionReturn?selectionBackLabel:t('Étape précédente','Previous step')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={onSelectionDone}>{selectionDoneLabel??t('Définir ma recette','Set up my recipe')}</button></div>}
       </>}
       {tab!=='pick'&&tab!=='shop'&&!total&&<div className={styles.empty}><p>{tartine ? t('Choisissez vos tartines et leurs quantités pour commencer.','Choose your toasts and quantities to begin.') : t(`Choisissez vos ${portionPlural} et leurs quantités pour commencer.`,`Choose your ${portionPlural} and quantities to begin.`)}</p><button className={button} type="button" onClick={()=>go('pick')}>{tartine ? t('Choisir mes tartines','Choose toasts') : t(`Choisir mes ${portionPlural}`,`Choose ${portionPlural}`)}</button></div>}
       {tab==='shop'&&<>
@@ -216,7 +219,7 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
         {total>0&&<div className={styles.panelHeading}><h3>{t('Garnitures regroupées','Combined fillings')}</h3></div>}
         {shopping.map(({ingredientId:id,grams,key})=><label key={id} className={styles.check}><input type="checkbox" checked={!!snapshot.shopTicks[key]} onChange={event=>update({shopTicks:{...snapshot.shopTicks,[key]:event.target.checked}})}/><span className={snapshot.shopTicks[key]?styles.checked:''}>{id==='chicken'?ingredientName('chicken_raw'):ingredientName(id)}{id==='mozzarella'&&<small style={{display:'block',fontSize:13,lineHeight:1.4}}>{drainedWeightShoppingNote[isFr?'fr':'en']}</small>}{id==='chicken'&&<small style={{display:'block',fontSize:13,lineHeight:1.4}}>{t(`Achat estimé pour ${amountText(grams)} cuits. Le rendement varie. Ou achetez ${amountText(grams)} déjà cuits.`,`Estimated purchase for ${amountText(grams)} cooked. Yield varies. Or buy ${amountText(grams)} already cooked.`)}</small>}</span><strong className={styles.checkAmount}>{id==='chicken'?'≈ ':''}{amountText(id==='chicken'?estimateRawChickenPurchase(grams):grams)}</strong></label>)}
         {onBackToRecipe ? active&&<BottomActions>
-          <button type="button" className="bh-back-action" onClick={onBackToRecipe}>{t('Retour à Recette','Back to Recipe')}</button>
+          <button type="button" className="bh-back-action" onClick={onBackToRecipe}>{backLabel??t('Retour à Recette','Back to Recipe')}</button>
           <button type="button" className={`${button} ${styles.wide}`} style={{margin:0,width:'auto',flex:1}} onClick={()=>go('prep')}>{doughConfigured?t('Passer à la préparation','Go to preparation'):t('Compléter l’organisation','Complete organisation')} →</button>
         </BottomActions> : <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('prep')}>{baseReady?t('Préparer les garnitures','Prepare the fillings'):doughConfigured?t('Commencer la préparation','Start the dough preparation'):t('Compléter l’organisation','Complete organisation')} →</button>}
       </>}

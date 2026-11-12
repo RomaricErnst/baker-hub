@@ -151,17 +151,15 @@ for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}
     const bounds=await start.boundingBox();
     expect(page.viewportSize().height-bounds.y-bounds.height).toBeGreaterThanOrEqual(23);
    }
-   // Back goes one section: Shopping list, then the Recipe.
+   // Back goes one section at a time: Shopping list, Toppings, then the Recipe.
    await actions.getByRole('button',{name:'Back to Shopping list',exact:true}).tap();
    await expect(page.locator('.bh-navigator-current')).toContainText('Shopping list');
-   await page.getByRole('button',{name:'Back to Recipe',exact:true}).filter({visible:true}).last().tap();
+   await page.getByRole('button',{name:/^Back to (Toppings|Fillings)$/}).filter({visible:true}).last().tap();
+   await page.locator('[data-companion-action]:visible').getByRole('button',{name:'Back to Recipe',exact:true}).tap();
    await expect(page.locator('.bh-navigator-current')).toHaveText('Recipe');
-   const invitation=page.locator('.bh-fillings-invitation-compact');
-   await expect(invitation).toHaveCount(1);
-   expect(await invitation.evaluate(el=>{
-    const total=[...document.querySelectorAll('div')].find(h=>h.textContent.trim()==='Total Dough');
-    return !!total&&!!(total.compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING);
-   })).toBe(true);
+   // Toppings are the next step after the Recipe, not a button inside it.
+   await expect(page.locator('.bh-fillings-invitation')).toHaveCount(0);
+   await expect(page.locator('.bh-step-actions:visible [data-toppings-step]')).toHaveText(/^(Toppings|Fillings) →$/);
    await expect(page.locator('.bh-step-actions:visible')).toHaveCount(1);
    await expect(page.locator('.bh-step-actions:visible')).toHaveClass(/bh-recipe-next/);
    await expect(page.locator('.bh-step-actions:visible')).toHaveCSS('position','fixed');
@@ -302,13 +300,12 @@ test('plain bread has useful shopping without requiring any filling selection',a
 test('generated country bread offers optional tartines and preserves the recipe on return',async({page},testInfo)=>{
  await seed(page,{bread:true,style:'pain_campagne'});
  const before=await stored(page);
- await expect(page.getByRole('button',{name:'Ajouter des garnitures — facultatif',exact:true})).toBeVisible();
- const invitation=page.getByRole('region',{name:'Garnitures facultatives'});
- await expect(invitation.getByRole('heading')).toHaveCount(0);
- await expect(invitation.getByRole('button')).toHaveCount(1);
+ // The Recipe leads on to the optional fillings step.
+ const step=page.locator('.bh-step-actions:visible [data-toppings-step]');
+ await expect(step).toHaveText('Garnitures →');
  await noOverflow(page);
  await testInfo.attach('tartine-invitation',{body:await page.screenshot(),contentType:'image/png'});
- await page.getByRole('button',{name:'Ajouter des garnitures — facultatif',exact:true}).tap();
+ await step.tap();
  await expect(page.getByRole('article').first()).toBeVisible();
  await page.locator('[data-companion-action]').getByRole('button',{name:'Retour à Recette',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
@@ -333,7 +330,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  const before=await stored(page);
  // The fillings button sits on the Preparation summary, not inside each step.
  await page.locator('.bh-local-progress').getByRole('button',{name:'Vue d’ensemble',exact:true}).tap();
- await page.getByRole('button',{name:bread?'Ajouter des sandwichs':'Choisir des garnitures',exact:true}).tap();
+ await navigate(page,'Garnitures');
  if(bread){
   const article=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Jambon-beurre',exact:true})});
   await article.getByRole('spinbutton').fill('2');
@@ -424,19 +421,18 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
 
 });
 
-test('late fillings opened from Recipe return to Recipe without changing the dough',async({page})=>{
+test('fillings chosen after the Recipe lead on to Shopping without changing the dough',async({page})=>{
  await seed(page,{bread:true});
  await navigate(page,'Recette');
  const before=await stored(page);
- await page.getByRole('button',{name:'Ajouter des garnitures — facultatif',exact:true}).tap();
+ await page.locator('.bh-step-actions:visible [data-toppings-step]').tap();
  const article=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Jambon-beurre',exact:true})});
  await article.getByRole('spinbutton').fill('1');
  await article.getByRole('spinbutton').blur();
  await expect.poll(async()=>(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']).toBe(1);
- await page.getByRole('button',{name:/^Retour à Recette(?: →)?$/}).tap();
- await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
- await expect(page.getByRole('button',{name:'Modifier les garnitures · 1 portion',exact:true})).toBeVisible();
- await expect(page.locator('.bh-recipe-fillings-link')).toHaveCount(0);
+ await page.locator('[data-companion-action]:visible').getByRole('button',{name:'Liste de courses →',exact:true}).tap();
+ await expect(page.locator('.bh-navigator-current')).toContainText('Courses');
+ await expect(page.getByRole('button',{name:'Retour à Garnitures',exact:true}).filter({visible:true})).toHaveCount(1);
  const after=await stored(page);
  for(const key of ['styleKey','numItems','itemWeight','eatTime','recipeGenerated'])expect(after[key],key).toEqual(before[key]);
  await noOverflow(page);
@@ -730,7 +726,7 @@ for(const bread of [false,true])test(`clean preparation ${bread?'bread':'pizza'}
 for(const bread of [false,true])test(`late ${bread?'bread':'pizza'} surplus keeps the quantity decision explicit`,async({page})=>{
  await seed(page,{activeTab:'guide',bread,style:bread?'pita':'neapolitan'});
  await navigate(page,'Préparation');
- await page.getByRole('button',{name:bread?'Ajouter des sandwichs':'Choisir des garnitures',exact:true}).tap();
+ await navigate(page,'Garnitures');
  if(bread){
   const input=page.getByRole('article').first().getByRole('spinbutton');
   await input.fill('6');await input.blur();

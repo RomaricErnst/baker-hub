@@ -193,8 +193,11 @@ interface Props {
   recipeIngredients?: Array<{ name: string; amount: string; tickKey?: string; hint?: string }>;
   onSelectionBack?:()=>void;
   onBackToRecipe?:()=>void;
+  shoppingBackLabel?:string;
   onSelectionDone?:()=>void;
   selectionDoneLabel?:string;
+  /** In the journey (Recipe → Toppings → Shopping), the bar's left link goes back to the Recipe. */
+  selectionBackLabel?:string;
   directSelectionReturn?:boolean;
   active?:boolean;
   baseReady?:boolean;
@@ -932,7 +935,7 @@ export function IngredientShoppingHelp({item,location,locale,onLocationChange,on
   </section>;
 }
 
-function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onGoPrep, onGoPizzas, onBackToRecipe, active=true, storagePrefix="bh", baseReady=false }: {
+function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onGoPrep, onGoPizzas, onBackToRecipe, backLabel, active=true, storagePrefix="bh", baseReady=false }: {
   qtys: Record<string, number>;
   locale: string;
   numItems: number;
@@ -943,6 +946,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
   onGoPrep?: () => void;
   onGoPizzas?: () => void;
   onBackToRecipe?:()=>void;
+  backLabel?:string;
   active?:boolean;
 }) {
   const l = locale as 'en' | 'fr';
@@ -1115,7 +1119,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{margin:'16px 12px',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
         <h1 className="bh-page-title" style={{margin:0}}>{l === 'fr' ? 'Liste de courses' : 'Shopping list'}</h1>
-        {onGoPizzas && <button type="button" onClick={onGoPizzas} style={{...SECONDARY_CTA,width:'auto',padding:'10px 14px'}}>
+        {onGoPizzas && !backLabel && <button type="button" onClick={onGoPizzas} style={{...SECONDARY_CTA,width:'auto',padding:'10px 14px'}}>
           {totalSelected>0?(l==='fr'?'Modifier les garnitures':'Edit toppings'):(l==='fr'?'Ajouter des garnitures — facultatif':'Add toppings — optional')}
         </button>}
       </div>
@@ -1329,7 +1333,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
         )}
       </div>
       {active && onBackToRecipe && <BottomActions>
-        <button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'Retour à Recette':'Back to Recipe'}</button>
+        <button type="button" className="bh-back-action" onClick={onBackToRecipe}>{backLabel??(l==='fr'?'Retour à Recette':'Back to Recipe')}</button>
         <button type="button" onClick={()=>onGoPrep?.()} style={{...NEXT_CTA,flex:1,width:'auto',margin:0}}>{l==='fr'?'Passer à la préparation':'Go to preparation'} →</button>
       </BottomActions>}
     </div>
@@ -1344,7 +1348,7 @@ export function shoppingSpoonNote(note: string | undefined, fr: boolean): string
   return spoon ? `${spoon[1]} ${fr ? 'par pizza' : 'per pizza'}` : note;
 }
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionBack,onBackToRecipe,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,active=true,storagePrefix="bh",baseReady=false }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionBack,onBackToRecipe, shoppingBackLabel,onSelectionDone,selectionDoneLabel, selectionBackLabel,directSelectionReturn=false,active=true,storagePrefix="bh",baseReady=false }: Props) {
   const l = locale as 'en' | 'fr';
 
   // On-screen keyboard detection — position:fixed bottom bars anchor to the
@@ -2462,6 +2466,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           onGoPrep={() => onPillChange('party')}
           onGoPizzas={() => onPillChange('pizzas')}
           onBackToRecipe={onBackToRecipe}
+          backLabel={shoppingBackLabel}
           active={active}
         />
 
@@ -2583,7 +2588,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             </div>
             <div style={{padding:'12px 16px',display:'grid',gap:8,borderTop:'1px solid var(--border)'}}>
               <button type="button" onClick={()=>{closeSummary();if(directSelectionReturn&&onSelectionDone)onSelectionDone();else if(baseReady)onPillChange('party');else if(onSelectionDone)onSelectionDone();else onPillChange('shopping');}} style={NEXT_CTA}>{directSelectionReturn?selectionDoneLabel:baseReady?(l==='fr'?'Préparer les garnitures':'Prepare toppings'):selectionDoneLabel??(l==='fr'?'Voir les courses':'View shopping')}</button>
-              {(baseReady||!doughConfigured)&&<button type="button" onClick={()=>{closeSummary();onPillChange(baseReady?'shopping':'party');}} style={SECONDARY_CTA}>{baseReady?(l==='fr'?'Voir les courses':'View shopping'):(l==='fr'?'Préparer les garnitures':'Prepare toppings')}</button>}
+              {(baseReady||!doughConfigured)&&!selectionBackLabel&&<button type="button" onClick={()=>{closeSummary();onPillChange(baseReady?'shopping':'party');}} style={SECONDARY_CTA}>{baseReady?(l==='fr'?'Voir les courses':'View shopping'):(l==='fr'?'Préparer les garnitures':'Prepare toppings')}</button>}
               <button type="button" onClick={closeSummary} className="bh-back-action">{l==='fr'?'← Modifier ma sélection':'← Edit my selection'}</button>
             </div>
           </div>
@@ -2739,7 +2744,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           justifyContent: 'space-between',
           zIndex: 90,
         }}>
-          {directSelectionReturn&&totalQty>0 ? <button type="button" className="bh-back-action" onClick={()=>setSummarySheetOpen(true)}>{l==='fr'?'Ma sélection':'My selection'} · {totalQty}</button> : !directSelectionReturn&&onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{l==='fr'?'Étape précédente':'Previous step'}</button>}
+          {directSelectionReturn&&totalQty>0 ? <button type="button" className="bh-back-action" onClick={()=>setSummarySheetOpen(true)}>{l==='fr'?'Ma sélection':'My selection'} · {totalQty}</button> : (!directSelectionReturn||selectionBackLabel)&&onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{directSelectionReturn?selectionBackLabel:(l==='fr'?'Étape précédente':'Previous step')}</button>}
           <button type="button" disabled={selectionActionDisabled} onClick={() => (totalQty===0||(directSelectionReturn&&totalQty<=numItems))?onSelectionDone?.():setSummarySheetOpen(true)} style={{...NEXT_CTA,width:'100%',minHeight:44,opacity:selectionActionDisabled ? .65 : 1}}>
             {directSelectionReturn&&onSelectionDone ? (totalQty>numItems?(l==='fr'?'Vérifier la quantité de pâte':'Check dough quantity'):selectionDoneLabel) : totalQty === 0 ? (onSelectionDone&&!baseReady?(selectionDoneLabel??(l==='fr'?'Définir ma recette':'Set up my recipe')):(l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas')) : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`)}
           </button>
