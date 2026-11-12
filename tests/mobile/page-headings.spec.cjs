@@ -53,7 +53,7 @@ for(const locale of ['en','fr'])test(`${locale}: Simple setup steps start at one
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await oneTitle(page,fr?'Quel style de pizza ?':'Which pizza style?');
  await page.getByRole('button',{name:fr?/^Pizza en moule|^Pan/:'Pan pizza'}).tap();
- await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Quantity|Quantité) →$/}).tap();
  await oneTitle(page,fr?'Quelle quantité de pâte ?':'How much dough?');
  await expect(page.locator('[data-each-pizza]:visible')).toHaveText(fr?/^Chaque pizza : \d+\s?g dans un moule d’environ \d+ × \d+ cm · Ajuster$/:/^Each pizza: \d+ g in a pan of about \d+ × \d+ cm · Adjust$/);
 });

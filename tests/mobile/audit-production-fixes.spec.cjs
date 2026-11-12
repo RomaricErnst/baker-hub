@@ -48,7 +48,7 @@ for(const bread of [false,true])test(`Fresh ${bread?'baguette lunch':'pizza nigh
  await page.goto('/fr');
  await page.getByRole('button',{name:bread?'Pain & repas':'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:bread?'Baguette':'Napolitaine classique',exact:true}).tap();
- await page.locator('.bh-style-confirm').getByRole('button',{name:/^Continuer avec/}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^Quantité →$/}).tap();
  const quantity=page.getByLabel(bread?'Nombre de baguettes':'Nombre de pizzas',{exact:true});
  await quantity.fill('4');await quantity.blur();
  await (async()=>{const b=page.locator('.bh-batch-actions:visible').getByRole('button',{name:/^(Cuisine|Kitchen) →$/});if(await b.count())await b.tap();})();

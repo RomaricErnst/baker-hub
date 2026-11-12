@@ -14,7 +14,7 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
  // Setup: one straight path to the bake time.
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:L('Classic Neapolitan','Napolitaine classique'),exact:true}).tap();
- await page.locator('.bh-style-confirm').getByRole('button',{name:L(/^Continue with/,/^Continuer avec/)}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:L(/^Quantity →$/,/^Quantité →$/)}).tap();
  const quantity=page.getByLabel(L('Number of pizzas','Nombre de pizzas'),{exact:true});
  await quantity.fill('4');await quantity.blur();
  await page.locator('.bh-step-actions:visible [data-bh-forward]:visible, .bh-batch-actions:visible [data-bh-forward]:visible').first().tap();

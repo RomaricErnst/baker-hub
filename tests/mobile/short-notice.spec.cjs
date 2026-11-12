@@ -13,7 +13,7 @@ async function toBakeTime(page,locale){
  await page.goto(fr?'/fr':'/');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
- await page.locator('.bh-style-confirm').getByRole('button',{name:fr?/^Continuer avec/:/^Continue with/}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:fr?/^Quantité →$/:/^Quantity →$/}).tap();
  await forward(page).tap();
  await page.getByRole('slider',{name:fr?'Température là où la pâte repose':'Temperature where the dough rests'}).fill('24');
  await forward(page).tap();

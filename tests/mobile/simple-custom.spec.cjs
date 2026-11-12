@@ -36,7 +36,7 @@ for(const locale of ['fr','en']){
   await page.goto(fr?'/fr':'/');
   await page.getByRole('button',{name:'Pizza',exact:true}).tap();
   await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
-  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
+  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Quantity|Quantité) →$/}).tap();
   await actions(page).locator('[data-bh-forward]:visible').tap();
   await (async()=>{const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();})();
   const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
@@ -102,7 +102,7 @@ for(const locale of ['fr','en']){
   await anonymous(page);await page.goto(fr?'/fr':'/');
   await page.getByRole('button',{name:'Pizza',exact:true}).tap();
   await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
-  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
+  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Quantity|Quantité) →$/}).tap();
   const quantity=page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true});
   await quantity.fill('4');await quantity.blur();
   await actions(page).locator('[data-bh-forward]:visible').tap();
@@ -182,7 +182,7 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
  await page.goto(fr?'/fr':'/');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
- await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Quantity|Quantité) →$/}).tap();
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).fill('12');
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).blur();
  await actions(page).locator('[data-bh-forward]:visible').tap();

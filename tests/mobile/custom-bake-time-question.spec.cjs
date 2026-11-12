@@ -10,7 +10,7 @@ test('Customize from the bake time: the clash is asked once, in a sheet, when th
  await page.goto('/');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:'Classic Neapolitan',exact:true}).tap();
- await page.locator('.bh-style-confirm').getByRole('button',{name:/^Continue with/}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^Quantity →$/}).tap();
  await page.locator('.bh-step-actions:visible [data-bh-forward]:visible, .bh-batch-actions:visible [data-bh-forward]:visible').first().tap();
  const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();
  // Tomorrow 7:30pm with weekday working hours: steps fall in the busy time.
@@ -57,7 +57,7 @@ test('Simple: the bake time shows no clash card; Generate asks it once, in a she
  await page.goto('/fr');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:'Napolitaine classique',exact:true}).tap();
- await page.locator('.bh-style-confirm').getByRole('button',{name:/^Continuer avec/}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^Quantité →$/}).tap();
  await page.locator('.bh-step-actions:visible [data-bh-forward]:visible, .bh-batch-actions:visible [data-bh-forward]:visible').first().tap();
  const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();
  const target=await page.evaluate(()=>{const d=new Date();d.setDate(d.getDate()+1);while([0,6].includes(d.getDay()))d.setDate(d.getDate()+1);d.setHours(19,30,0,0);return new Date(+d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);});

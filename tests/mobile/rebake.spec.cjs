@@ -13,7 +13,7 @@ for(const mode of ['simple','custom'])test(`${mode}: bake again opens the next w
  await page.goto('/');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:'Classic Neapolitan',exact:true}).tap();
- await page.locator('.bh-style-confirm').getByRole('button',{name:/^Continue with/}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^Quantity →$/}).tap();
  const quantity=page.getByLabel('Number of pizzas',{exact:true});
  await quantity.fill('4');await quantity.blur();
  await page.locator('.bh-step-actions:visible').locator('[data-bh-forward]:visible').tap();

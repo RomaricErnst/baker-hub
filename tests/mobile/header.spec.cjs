@@ -101,7 +101,7 @@ for (const locale of ['fr', 'en']) {
     await expect(page.locator('.bh-header-save')).toHaveCount(0);
     // Create a recipe: Save then appears in the header.
     await page.getByRole('button', { name: fr ? 'Napolitaine classique' : 'Classic Neapolitan', exact: true }).tap();
-    await page.locator('.bh-style-confirm').getByRole('button', { name: /^(Continue with|Continuer avec)/ }).tap();
+    await page.locator('.bh-style-confirm').getByRole('button', { name: /^(Quantity|Quantité) →$/ }).tap();
     const quantity = page.getByLabel(fr ? 'Nombre de pizzas' : 'Number of pizzas', { exact: true });
     await quantity.fill('4'); await quantity.blur();
     await page.locator('.bh-step-actions:visible').locator('[data-bh-forward]:visible').tap();
