@@ -7237,8 +7237,10 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
   const optionCard:React.CSSProperties={display:'block',width:'100%',minHeight:56,marginTop:8,padding:'12px 14px',border:'1.5px solid var(--border)',borderRadius:12,background:'var(--card, #fff)',color:'var(--char)',textAlign:'left',whiteSpace:'normal',fontSize:15,lineHeight:1.4,cursor:'pointer'};
   const simpleSuggestion=!searchingTargets?firstSuggestedTarget:undefined;
   // Custom: only for busy-time clashes; a fridge exit alone keeps its own arrangement card.
-  const customDecision=mode==='custom'&&!inputsOnly&&simpleConflicts.length>0&&!simpleOnlyFridgeClash;
-  const simpleDecision=eatTimeSet&&!currentCandidateValid&&(mode==='simple'?(simpleSuggestion||simpleOnlyFridgeClash):customDecision)
+  const customDecision=mode==='custom'&&simpleConflicts.length>0&&!simpleOnlyFridgeClash;
+  // The bake-time question (Simple, and Custom before the recipe or from My bake) asks one
+  // card for every clash; the full Custom editor keeps its own fridge arrangement card.
+  const simpleDecision=eatTimeSet&&!currentCandidateValid&&(mode==='simple'||inputsOnly?(simpleSuggestion||simpleOnlyFridgeClash||customDecision):customDecision)
     ? <div className="bh-simple-decision" data-simple-decision role="status" style={{border:'1px solid var(--border)',borderRadius:12,padding:'14px 16px',margin:'12px 0',background:'var(--warm)'}}>
         <p style={{margin:'0 0 12px',fontSize:15,lineHeight:1.5,color:'var(--char)'}}>{simpleDecisionSentence}</p>
         {simpleSuggestion&&<button type="button" className="bh-plan-option" data-simple-accept style={optionCard} onClick={()=>{setSimpleMoved({from:new Date(pendingEatTime),to:+simpleSuggestion.bake});applySuggestedTarget(simpleSuggestion);}}>

@@ -1209,6 +1209,9 @@ export default function Home() {
   // Preparation) opens the full plan editor. The Bake time row in My bake asks only
   // for the bake time and busy times.
   const [bakeTimeQuestion, setBakeTimeQuestion] = useState(false);
+  // Custom's bake-time step asks the same single question as Simple before the recipe;
+  // "See the plan" opens the full editor only when the question alone cannot settle it.
+  const [planDetail, setPlanDetail] = useState(false);
   const [planMoved, setPlanMoved] = useState<{from:number;to:number;bakeFrom?:number;prepFrom?:number;prepTo?:number;yeastFrom?:number;yeastTo?:number;flourFrom?:number;flourTo?:number}|null>(null);
   // The amounts of the last generated recipe, so an update can say what changed.
   const acceptedAmountsRef = useRef<{yeast?:number;flour?:number}|null>(null);
@@ -2680,8 +2683,10 @@ export default function Home() {
   // Guidance level never changes the selected dough or leavening.
   const collectingBakeTime=awaitingRecipeChoice && tab==='simple' && !recipeGenerated;
   const bakeTimeOnly=recipeGenerated && bakeTimeQuestion && !replanReturn;
+  const customQuestionOnly=!recipeGenerated && !planDetail;
   // The question-only view ends once the baker leaves the timing screen.
   useEffect(()=>{if(bakeTimeQuestion&&(destination!=='organisation'||setupOverview))setBakeTimeQuestion(false);},[bakeTimeQuestion,destination,setupOverview]);
+  useEffect(()=>{if(planDetail&&(destination!=='organisation'||setupOverview||recipeGenerated))setPlanDetail(false);},[planDetail,destination,setupOverview,recipeGenerated]);
   // Fetch the recipe chunk while the baker is still setting up, so Generate opens it at once.
   useEffect(()=>{if(bakeType)void loadRecipeOutput();},[bakeType]);
   // There is no mode screen. A route that lands on setup before a mode exists goes to
@@ -4136,7 +4141,7 @@ export default function Home() {
   const renderCustomScheduler = (section:'all'|'starter'|'plan') => (
               <SchedulePicker
                 {...poolishInputs}
-                inputsOnly={bakeTimeOnly&&section!=='starter'}
+                inputsOnly={(bakeTimeOnly||customQuestionOnly)&&section!=='starter'}
                 schedulerSection={section}
                 onUseCalculatedYeast={()=>{setYeastPctOverride(undefined);setPlanReplanPending(true);}}
                 onSimpleDecisionChange={setCustomDecisionPending}
@@ -5260,8 +5265,8 @@ export default function Home() {
                 <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>openSetupStep(customStarterStepId,true)}>{fr?'Votre levain →':'Your starter →'}</button>
               </div> : scheduleEditing ? null : !scheduleCandidateValid ? <div style={{width:'100%'}}>
                 {/* The way forward is never a button that only scrolls: the next step waits for a choice above. */}
-                <p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{customDecisionPending?(fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'):(fr?'Ajustez le planning ci-dessus pour continuer.':'Adjust the plan above to continue.')}</p>
-                <button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated?setupReturnLabel:customOrganisationFlow.steps.at(-1)?.id===9?customOrganisationFlow.generateLabel:`${customOrganisationFlow.steps.find(step=>step.id===nextCustomStep(9))?.chip ?? (fr?'Suivant':'Next')} →`}</button>
+                {customQuestionOnly&&!customDecisionPending?<button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setPlanDetail(true)}>{fr?'Voir le planning':'See the plan'} →</button>:<p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{customDecisionPending?(fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'):(fr?'Ajustez le planning ci-dessus pour continuer.':'Adjust the plan above to continue.')}</p>}
+                {customQuestionOnly&&!customDecisionPending?null:<button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated?setupReturnLabel:customOrganisationFlow.steps.at(-1)?.id===9?customOrganisationFlow.generateLabel:`${customOrganisationFlow.steps.find(step=>step.id===nextCustomStep(9))?.chip ?? (fr?'Suivant':'Next')} →`}</button>}
               </div> : undefined}>
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => customFlow.onJump(1)} />
