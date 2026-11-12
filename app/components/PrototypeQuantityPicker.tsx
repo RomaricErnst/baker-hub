@@ -150,6 +150,7 @@ export default function PrototypeQuantityPicker({
   const weightUnit = units === 'imperial' ? 'oz' : 'g';
   const [manualEditing, setManualEditing] = useState(false);
   const [adjustOpen, setAdjustOpen] = useState(false);
+  const [gramsOpen, setGramsOpen] = useState(false);
   const countMin = countBounds.min ?? 1;
   const countMax = countBounds.max ?? 24;
   const countStep = countBounds.step ?? 1;
@@ -159,6 +160,16 @@ export default function PrototypeQuantityPicker({
   const hasCalculatedWeight = roundPizza && calculatedWeight !== undefined;
   const matchesCalculated = hasCalculatedWeight && Math.round(itemWeight) === Math.round(calculatedWeight!);
   const usesManualWeight = manualEditing || weightIsManual || (hasCalculatedWeight && !matchesCalculated);
+  // Three sizes a baker recognises, from the style's own range; the table turns size and crust into grams.
+  const sizeChoices = (() => {
+    const lo = diameterBounds.min, hi = diameterBounds.max;
+    const mid = Math.min(hi, Math.max(lo, 30));
+    const small = Math.max(lo, mid - 4), large = Math.min(hi, mid + (hi - mid >= 5 ? 5 : 3));
+    return [{ d: small, en: 'Small', fr: 'Petite' }, { d: mid, en: 'Medium', fr: 'Moyenne' }, { d: large, en: 'Large', fr: 'Grande' }];
+  })();
+  const pickSize = (d: number) => { setManualEditing(false); setGramsOpen(false); onWeightModeChange?.(false); onDiameterChange?.(d); if (calculateWeight) onItemWeightChange(calculateWeight(d, crust)); };
+  const pickCrust = (c: QuantityCrust) => { setManualEditing(false); setGramsOpen(false); onWeightModeChange?.(false); onCrustChange?.(c); if (calculateWeight) onItemWeightChange(calculateWeight(diameter, c)); };
+  const chipStyle = (on: boolean): CSSProperties => ({ minHeight: 52, padding: '6px 4px', borderRadius: 10, border: on ? '2px solid var(--terra)' : '1px solid var(--border)', background: on ? 'var(--card, #fff)' : 'transparent', color: 'var(--char)', fontFamily: 'var(--font-ui)', fontSize: 15, cursor: 'pointer' });
   // Round pizzas already show their diameter on the size view; pans show their size on both views.
   const pizzaNote = bakeType === 'pizza' && (roundView === 'count' || (styleKey !== undefined && isPanPizzaStyle(styleKey)))
     ? eachPizzaNote({ styleKey, itemWeight, diameter: roundPizza && !usesManualWeight ? diameter : undefined, units, locale })
@@ -202,6 +213,17 @@ export default function PrototypeQuantityPicker({
     fontSize: '16px',
   };
 
+  const gramsField = <div style={{ marginTop: 8 }}>
+          <label htmlFor="quantity-count-weight" style={{ ...labelStyle, fontSize: 15 }}>{weightLabel ?? (bakeType === 'bread' ? (fr ? 'Poids de pâte par pièce' : 'Dough per piece') : (fr ? 'Pâte par pizza' : 'Dough per pizza'))} ({weightUnit})</label>
+          <DraftNumberInput id="quantity-count-weight" type="number" inputMode="decimal"
+            min={shownWeight(weightBounds.min)} max={shownWeight(weightBounds.max)}
+            step={units === 'imperial' ? 0.1 : weightBounds.step} value={shownWeight(itemWeight)}
+            onCommit={value => { if (roundPizza) { setManualEditing(true); onWeightModeChange?.(true); } onItemWeightChange(clamp(storedWeight(value), weightBounds.min, weightBounds.max, weightBounds.step)); }}
+            style={{ ...inputStyle, maxWidth: 160, boxSizing: 'border-box' }} />
+          {usesManualWeight && hasCalculatedWeight && <button type="button" onClick={() => { setManualEditing(false); onWeightModeChange?.(false); onUseCalculatedWeight?.(); }} style={{ display: 'block', minHeight: 44, padding: '8px 0', border: 0, background: 'transparent', color: 'var(--terra)', textDecoration: 'underline', font: 'inherit', cursor: 'pointer' }}>
+            {fr ? 'Revenir au poids conseillé' : 'Use suggested weight'}{calculatedWeight !== undefined ? ` · ${grams(calculatedWeight)}` : ''}
+          </button>}
+  </div>;
   return (
     <div style={{ fontFamily: 'var(--font-ui)', color: 'var(--char)' }}>
       {bakeType==='bread'&&onFlourTargetChange&&roundView!=='count'&&<div role="group" aria-label={fr?'Calculer la quantité':'Quantity basis'} style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
@@ -224,17 +246,40 @@ export default function PrototypeQuantityPicker({
         />
         {/* The size sits under the count, with its own way to change it, in Simple too. */}
         {roundView === 'count' && (pizzaNote || sizeNote) && <p data-each-pizza style={{ margin: '8px 0 0', fontSize: '14px', lineHeight: 1.45, color: 'var(--ash)' }}>{pizzaNote ?? sizeNote}{' · '}<button type="button" data-adjust-weight aria-expanded={adjustOpen} onClick={() => setAdjustOpen(open => !open)} style={{ minHeight: 44, padding: 0, border: 0, background: 'transparent', color: 'var(--terra)', textDecoration: 'underline', font: 'inherit', cursor: 'pointer' }}>{fr ? 'Ajuster' : 'Adjust'}</button></p>}
-        {roundView === 'count' && adjustOpen && <div data-adjust-weight-field style={{ marginTop: 8 }}>
-          <label htmlFor="quantity-count-weight" style={{ ...labelStyle, fontSize: 15 }}>{weightLabel ?? (bakeType === 'bread' ? (fr ? 'Poids de pâte par pièce' : 'Dough per piece') : (fr ? 'Pâte par pizza' : 'Dough per pizza'))} ({weightUnit})</label>
-          <DraftNumberInput id="quantity-count-weight" type="number" inputMode="decimal"
-            min={shownWeight(weightBounds.min)} max={shownWeight(weightBounds.max)}
-            step={units === 'imperial' ? 0.1 : weightBounds.step} value={shownWeight(itemWeight)}
-            onCommit={value => { if (roundPizza) { setManualEditing(true); onWeightModeChange?.(true); } onItemWeightChange(clamp(storedWeight(value), weightBounds.min, weightBounds.max, weightBounds.step)); }}
-            style={{ ...inputStyle, maxWidth: 160, boxSizing: 'border-box' }} />
-          {usesManualWeight && hasCalculatedWeight && <button type="button" onClick={() => { setManualEditing(false); onWeightModeChange?.(false); onUseCalculatedWeight?.(); }} style={{ display: 'block', minHeight: 44, padding: '8px 0', border: 0, background: 'transparent', color: 'var(--terra)', textDecoration: 'underline', font: 'inherit', cursor: 'pointer' }}>
-            {fr ? 'Revenir au poids conseillé' : 'Use suggested weight'}{calculatedWeight !== undefined ? ` · ${grams(calculatedWeight)}` : ''}
-          </button>}
-        </div>}
+        {roundView === 'count' && adjustOpen && (roundPizza && calculateWeight ? (
+          // Round pizzas: say it as a baker would (size and crust); the grams follow.
+          // Exact grams stay one tap away for bakers who know their number.
+          <div data-adjust-weight-field data-adjust-size style={{ marginTop: 8, padding: '14px', border: '1px solid var(--border)', borderRadius: 14, background: 'var(--warm)' }}>
+            <div role="group" aria-label={fr ? 'Taille' : 'Size'}>
+              <span style={{ ...labelStyle, fontSize: 15 }}>{fr ? 'Taille' : 'Size'}</span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                {sizeChoices.map(choice => {
+                  const on = !usesManualWeight && Math.round(diameter) === choice.d;
+                  return <button key={choice.d} type="button" aria-pressed={on} onClick={() => pickSize(choice.d)} style={chipStyle(on)}>
+                    <span style={{ display: 'block', fontWeight: on ? 650 : 500 }}>{fr ? choice.fr : choice.en}</span>
+                    <span style={{ display: 'block', fontSize: 13, color: 'var(--smoke)' }}>{units === 'imperial' ? `${Math.round(choice.d / 2.54)} in` : `${choice.d} cm`}</span>
+                  </button>;
+                })}
+              </div>
+            </div>
+            <div role="group" aria-label={fr ? 'Bordure' : 'Crust'} style={{ marginTop: 12 }}>
+              <span style={{ ...labelStyle, fontSize: 15 }}>{fr ? 'Bordure' : 'Crust'}</span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                {CRUSTS.map(option => {
+                  const on = !usesManualWeight && crust === option.id;
+                  return <button key={option.id} type="button" aria-pressed={on} onClick={() => pickCrust(option.id)} style={chipStyle(on)}>{fr ? option.fr : option.en}</button>;
+                })}
+              </div>
+            </div>
+            <p data-adjust-result style={{ margin: '14px 0 0', fontSize: 16, fontWeight: 650, color: 'var(--char)' }}>
+              {fr ? `${grams(itemWeight)} de pâte par pizza` : `${grams(itemWeight)} of dough per pizza`}
+            </p>
+            {!gramsOpen && !usesManualWeight && <button type="button" data-adjust-grams onClick={() => setGramsOpen(true)} style={{ minHeight: 44, padding: 0, border: 0, background: 'transparent', color: 'var(--terra)', textDecoration: 'underline', font: 'inherit', fontSize: 14, cursor: 'pointer' }}>
+              {fr ? 'Indiquer le poids en grammes' : 'Enter the weight in grams'}
+            </button>}
+            {(gramsOpen || usesManualWeight) && gramsField}
+          </div>
+        ) : <div data-adjust-weight-field style={{ marginTop: 8 }}>{gramsField}</div>)}
       </div>}
 
       {/* The count screen asks only how many; size, weight and flour basis are set in Custom. */}

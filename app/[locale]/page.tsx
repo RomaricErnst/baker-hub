@@ -5294,7 +5294,8 @@ export default function Home() {
 
             {/* Prototype: one clear field per dough setting. */}
             <StepPage flow={customOrganisationFlow} id={10} nextOverride={yeastEntryBlocked ? <button data-bh-forward type="button" disabled aria-describedby="bh-yeast-entry-note" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated ? setupReturnLabel : `${CUSTOM_STEPS.find(step=>step.id===nextCustomStep(10))?.chip ?? (fr?'Suivant':'Next')} →`}</button> : undefined}>
-              {styleKey && renderQuantity('size')}
+              {/* Pizza size and weight are set on Quantity (Adjust); bread keeps its weight or flour basis here. */}
+              {styleKey && bakeType==='bread' && renderQuantity('size')}
               {/* Oven and mixing are asked once, on Equipment. */}
               {(() => {
                 const style = styleKey ? ALL_STYLES[styleKey] : null;
