@@ -37,10 +37,10 @@ test('the quantity screen shows the note under the count, and Custom shows it un
  assert.doesNotMatch(render({bakeType:'bread',styleKey:'pain_campagne',roundView:'count'}),/data-each-pizza/);
 });
 
-test('the recipe card repeats what one pizza is, in the line under its title',()=>{
- assert.equal(eachPizzaShort({styleKey:'neapolitan',itemWeight:260,diameter:30,units:'metric',locale:'en'}),'260 g each, about 30 cm');
- assert.equal(eachPizzaShort({styleKey:'neapolitan',itemWeight:260,diameter:30,units:'metric',locale:'fr'}),'260\u202Fg chacune, environ 30 cm');
- assert.equal(eachPizzaShort({styleKey:'pan',itemWeight:600,units:'metric',locale:'en'}),'600 g each, in a pan of about 25 × 35 cm');
+test('the recipe summary gives the weight of each ball, not the size',()=>{
+ assert.equal(eachPizzaShort({styleKey:'neapolitan',itemWeight:260,diameter:30,units:'metric',locale:'en'}),'260 g each');
+ assert.equal(eachPizzaShort({styleKey:'neapolitan',itemWeight:260,diameter:30,units:'metric',locale:'fr'}),'260\u202Fg chacune');
+ assert.equal(eachPizzaShort({styleKey:'pan',itemWeight:600,units:'metric',locale:'en'}),'600 g each');
  assert.equal(eachPizzaShort({styleKey:'neapolitan',itemWeight:260,units:'metric',locale:'en'}),'260 g each');
  assert.equal(eachPizzaShort({styleKey:null,itemWeight:260,units:'metric',locale:'en'}),null);
  assert.match(page,/destination==='recipe'&&bakeType==='pizza'\?eachPizzaShort\(/);

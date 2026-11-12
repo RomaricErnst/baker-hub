@@ -37,13 +37,13 @@ test('editing the yeast after generation updates the plan and says what moved',a
  // Back on the recipe, with the plan already re-timed and a note saying so.
  const moved=page.locator('[data-plan-moved]');
  await expect(moved).toBeVisible({timeout:20000});
- await expect(moved).toContainText('Plan updated.');
- await expect(moved).toContainText(/Start Dough .* \(was /);
+ await expect(moved).toContainText('Plan updated');
+ await expect(moved).toContainText(/Start Dough \w{3} \d+ \w{3} · /);
  const after=await stored(page);
  expect(after.startTime-automatic).toBeGreaterThan(3*3600000);
  expect(after.eatTime).toBe(BAKE);
  expect(after.recipeGenerated).toBe(true);
- await moved.getByRole('button',{name:'See the new times',exact:true}).tap();
+ await moved.getByRole('button',{name:'OK',exact:true}).tap();
  await expect(page.locator('[data-plan-moved]')).toHaveCount(0);
  expect(errors).toEqual([]);
 });

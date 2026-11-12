@@ -921,30 +921,30 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
 // calendar file are one tap away.
 // The recipe says what goes in; below it, the plan says when: the key steps with
 // their times only. How to do each step lives in Preparation.
-function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,steps,editable=[],editing=null,onEditTime,editor,moreLabel,onMore}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;startKey?:string|null;bakeAt:Date;steps:{key:string;at:Date;label:string}[];editable?:string[];editing?:string|null;onEditTime?:(key:string)=>void;editor?:React.ReactNode;moreLabel?:string|null;onMore?:()=>void}){
+function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,steps,editable=[],editing=null,onEditTime,editor,notice,moreLabel,onMore}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;startKey?:string|null;bakeAt:Date;steps:{key:string;at:Date;label:string}[];editable?:string[];editing?:string|null;onEditTime?:(key:string)=>void;editor?:React.ReactNode;notice?:{key:string;node:React.ReactNode}|null;moreLabel?:string|null;onMore?:()=>void}){
   // The times the baker chooses (Start Dough; the preferment in Custom) are changed here,
+  // (the button's 44px reach overflows the row by negative margins, so the row keeps its height)
   // in place: the time is a button, its editor opens under the row, and applying it
   // updates the recipe. The other steps follow from those and stay plain text.
   const timeButton=(key:string,label:string,text:string)=><button type="button" data-plan-edit={key} aria-expanded={editing===key} aria-label={(fr?'Modifier l’heure : ':'Change time: ')+label}
-    onClick={()=>onEditTime?.(key)} style={{font:'inherit',color:'var(--terra)',background:'none',border:0,padding:0,minHeight:44,textDecoration:'underline',textUnderlineOffset:3,cursor:'pointer'}}>{text}</button>;
+    onClick={()=>onEditTime?.(key)} style={{font:'inherit',color:'var(--terra)',background:'none',border:0,padding:'12px 8px',margin:'-12px -8px',textDecoration:'underline',textUnderlineOffset:3,cursor:'pointer'}}>{text}</button>;
   const row={display:'flex',gap:12,padding:'7px 0',borderTop:'1px solid var(--border)',fontSize:15,lineHeight:1.4,color:'var(--char)'} as const;
   return <section data-recipe-plan aria-labelledby="bh-recipe-plan-title" style={{margin:'0 0 4px'}}>
     <h2 id="bh-recipe-plan-title" style={{margin:'0 0 6px',fontFamily:'var(--font-display)',fontSize:30,fontWeight:700,lineHeight:1.15,color:'var(--char)'}}>{fr?'Votre plan':'Your plan'}</h2>
-    <p style={{margin:'0 0 8px',fontSize:16,fontWeight:700,color:'var(--char)'}}>{startLabel ?? (fr?'Commencer':'Start')} · {(()=>{const text=soonStartLabel(startAt,Date.now(),locale) ?? formatBakeDateTime(startAt,locale);return startKey&&editable.includes(startKey)?timeButton(startKey,startLabel ?? (fr?'Commencer':'Start'),text):text;})()}</p>
-    {startKey&&editing===startKey&&<div data-plan-editor>{editor}</div>}
     {/* Grouped by day; steps at the same shown time share a row; times read to 5 min
         (the calendar keeps the exact ones). */}
     {(()=>{
       const round5=(d:Date)=>new Date(Math.round(+d/300000)*300000);
-      const all=[...steps.map(step=>({key:step.key,at:round5(step.at),label:step.label,bake:false})),{key:'bake',at:round5(bakeAt),label:fr?'Enfourner':'Bake',bake:true}].sort((a,b)=>+a.at-+b.at);
-      const rows:{key:string;at:Date;labels:string[];bake:boolean}[]=[];
-      for(const item of all){const last=rows[rows.length-1];if(last&&+last.at===+item.at&&!item.bake&&!last.bake)last.labels.push(item.label);else rows.push({key:item.key,at:item.at,labels:[item.label],bake:item.bake});}
+      // The first step is a row like the others, under its day; the baker's own times are the tappable ones.
+      const all=[{key:startKey??'start',at:round5(startAt),label:startLabel ?? (fr?'Commencer':'Start'),bake:false,own:true},...steps.map(step=>({key:step.key,at:round5(step.at),label:step.label,bake:false,own:false})),{key:'bake',at:round5(bakeAt),label:fr?'Enfourner':'Bake',bake:true,own:false}].sort((a,b)=>+a.at-+b.at||(a.own?-1:b.own?1:0));
+      const rows:{key:string;at:Date;labels:string[];bake:boolean;own:boolean}[]=[];
+      for(const item of all){const last=rows[rows.length-1];if(last&&+last.at===+item.at&&!item.bake&&!last.bake&&!item.own&&!last.own&&!editable.includes(item.key)&&!editable.includes(last.key))last.labels.push(item.label);else rows.push({key:item.key,at:item.at,labels:[item.label],bake:item.bake,own:item.own});}
       const days:{day:string;rows:typeof rows}[]=[];
       for(const r of rows){const day=r.at.toLocaleDateString(fr?'fr-FR':'en-GB',{weekday:'long',day:'numeric',month:'short'});const last=days[days.length-1];if(last&&last.day===day)last.rows.push(r);else days.push({day,rows:[r]});}
       const time={flex:'0 0 auto',minWidth:'4.5em',color:'var(--ash)',fontVariantNumeric:'tabular-nums'} as const;
       return <div data-recipe-plan-steps>{days.map(d=><div key={d.day} style={{marginTop:10}}>
         <p style={{margin:'0 0 2px',fontSize:14,fontWeight:700,color:'var(--char)'}}>{d.day.charAt(0).toUpperCase()+d.day.slice(1)}</p>
-        <ol style={{listStyle:'none',margin:0,padding:0}}>{d.rows.map(r=><React.Fragment key={r.key}><li data-plan-bake={r.bake||undefined} style={{...row,fontWeight:r.bake?600:400,alignItems:'baseline'}}><span style={{...time,...(r.bake?{color:'var(--char)'}:{})}}>{editable.includes(r.key)?timeButton(r.key,r.labels[0],formatClock(r.at,locale)):formatClock(r.at,locale)}</span><span>{r.labels.join(' · ')}</span></li>{editing===r.key&&<li data-plan-editor style={{listStyle:'none'}}>{editor}</li>}</React.Fragment>)}</ol>
+        <ol style={{listStyle:'none',margin:0,padding:0}}>{d.rows.map(r=><React.Fragment key={r.key}><li data-plan-bake={r.bake||undefined} data-plan-start={r.own||undefined} style={{...row,fontWeight:r.bake?600:400,alignItems:'baseline'}}><span style={{...time,...(r.bake?{color:'var(--char)'}:{})}}>{editable.includes(r.key)?timeButton(r.key,r.labels[0],formatClock(r.at,locale)):formatClock(r.at,locale)}</span><span>{r.labels.join(' · ')}</span></li>{editing===r.key&&<li data-plan-editor style={{listStyle:'none'}}>{editor}</li>}{editing!==r.key&&notice?.key===r.key&&<li style={{listStyle:'none'}}>{notice.node}</li>}</React.Fragment>)}</ol>
       </div>)}</div>;
     })()}
     {/* Custom keeps its curve and storage options behind one link; a sourdough plan keeps
@@ -2748,25 +2748,32 @@ export default function Home() {
   const planEditFrom = useRef<string|null>(null);
   // The scheduler re-reports its validity after the inline editor closes; regenerate once it has.
   const planRegenPending = useRef(false);
-  const [planYeastChange, setPlanYeastChange] = useState<{from:number;to:number}|null>(null);
+  // After an inline edit, a short line under the moved row replaces the "Plan updated" note.
+  const [planNote, setPlanNote] = useState<{key:string;yeast:{from:number;to:number}|null}|null>(null);
+  const planNoteKey = useRef<string|null>(null);
   const planYeastFrom = useRef<number|undefined>(undefined);
   const planYeastAwait = useRef(false);
   const doseOf = (r: typeof recipe) => r ? (r.preferment ? r.preferment.prefYeastGrams : r.yeast?.convertedGrams) : undefined;
   useEffect(()=>{
     if(!planRegenPending.current||planEdit||!recipeGenerated||!canGenerate)return;
     planRegenPending.current=false;planYeastAwait.current=true;handleGenerate(true);
+    // The line under the moved row replaces the "Plan updated" box handleGenerate would show.
+    setPlanMoved(null);
+    const from=planYeastFrom.current,to=doseOf(recipe);
+    setPlanNote({key:planNoteKey.current??'mix',yeast:from!==undefined&&to!==undefined&&Math.abs(from-to)>=0.001?{from,to}:null});
   });
-  // The note names the yeast change measured from the plan the editor opened on, once the new recipe is in.
-  useEffect(()=>{
+    useEffect(()=>{
     if(!planYeastAwait.current)return;
     planYeastAwait.current=false;
-    const from=planYeastFrom.current,to=doseOf(recipe);planYeastFrom.current=undefined;
-    setPlanYeastChange(from!==undefined&&to!==undefined&&Math.abs(from-to)>=0.001?{from,to}:null);
+    // If the recipe settles only after the regeneration, the yeast is measured again.
+    const from=planYeastFrom.current,to=doseOf(recipe);
+    setPlanMoved(null);
+    setPlanNote(note=>note&&{...note,yeast:from!==undefined&&to!==undefined&&Math.abs(from-to)>=0.001?{from,to}:null});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[recipe]);
   useEffect(()=>{
     const times=`${+startTime}|${prefStartTime?+prefStartTime:''}`;
-    if(planEdit){if(planEditFrom.current===null){planEditFrom.current=times;planYeastFrom.current=doseOf(recipe);}return;}
+    if(planEdit){if(planEditFrom.current===null){planEditFrom.current=times;planYeastFrom.current=doseOf(recipe);planNoteKey.current=planEdit==='pref'?'preferment':'mix';setPlanNote(null);}return;}
     if(planEditFrom.current===null)return;
     const moved=planEditFrom.current!==times;
     planEditFrom.current=null;
@@ -2775,6 +2782,7 @@ export default function Home() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[planEdit]);
   useEffect(()=>{if(planEdit&&destination!=='recipe')setPlanEdit(null);},[planEdit,destination]);
+  useEffect(()=>{if(planNote&&destination!=='recipe')setPlanNote(null);},[planNote,destination]);
   useEffect(()=>{
     if(!decisionSheet||sheetDecisionPending||!scheduleCandidateValid)return;
     const next=decisionSheet;setDecisionSheet(null);
@@ -4174,6 +4182,17 @@ export default function Home() {
     for(const [key,step] of Object.entries(sent)) if(!current[key]&&step.at>now) return true;
     return false;
   })();
+  // Yeast is named only when it changes by a tenth or more: a few hundredths of a gram
+  // are inside what a kitchen scale reads and what the dough notices.
+  const yeastChangeMatters=(from:number,to:number)=>from>0&&Math.abs(to-from)/from>=0.1;
+  const yeastChangeLine=(from:number,to:number)=>{const inPref=prefermentType==='poolish'||prefermentType==='biga';return fr?`Levure${inPref?' du préferment':''} : ${formatYeastDose(to,locale)} (au lieu de ${formatYeastDose(from,locale)}).`:`Yeast${inPref?' in the preferment':''} now ${formatYeastDose(to,locale)} (was ${formatYeastDose(from,locale)}).`;};
+  // Only a plan already sent to the calendar needs sending again.
+  const planCalendarLine=<span data-plan-calendar style={{display:'flex',flexWrap:'wrap',alignItems:'center',columnGap:12,color:'var(--ash)'}}>{fr?'Votre agenda a les anciens horaires.':'Your calendar has the old times.'}<button type="button" className="bh-back-action" style={{minHeight:44}} onClick={addPlanToCalendar}>{fr?'Mettre à jour l’agenda':'Update calendar'}</button></span>;
+  const planInlineNote = planNote ? <span role="status" data-plan-note style={{display:'block',padding:'2px 0 8px',fontSize:14,lineHeight:1.5,color:'var(--ash)'}}>
+    <span style={{color:'var(--sage)',fontWeight:600}}>{fr?'Recette mise à jour.':'Recipe updated.'}</span>
+    {planNote.yeast&&yeastChangeMatters(planNote.yeast.from,planNote.yeast.to)&&<>{' '}{yeastChangeLine(planNote.yeast.from,planNote.yeast.to)}</>}
+    {calendarOutdated&&planCalendarLine}
+  </span> : null;
   const setupSteps = tab==='custom' ? CUSTOM_STEPS : SIMPLE_STEPS.filter(step=>step.id!==3);
   // Equipment and yeast read in sentence case, as the summary does ("By hand", "Levure sèche
   // instantanée"), and French style names too; English style and flour brand names keep their capitals.
@@ -4700,26 +4719,26 @@ export default function Home() {
   const each=destination==='recipe'&&bakeType==='pizza'?eachPizzaShort({styleKey,itemWeight,diameter:STYLE_HAS_DIAMETER.includes(styleKey??'')&&crustActive>=0?pizzaDiameter:undefined,units,locale}):null;
   return [quantity,style,each].filter(Boolean).join(' · ');
 })()}</p></div>}
-{recipeGenerated && planMoved && destination!=='batch' && destination!=='organisation' && eatTime && <div data-plan-moved role="status" style={{margin:'12px 0 0',padding:'12px 14px',border:'1px solid var(--gold)',borderRadius:14,fontSize:14,lineHeight:1.5,background:'var(--warm)'}}>
-  <strong>{fr?'Plan mis à jour.':'Plan updated.'}</strong>{' '}
-  {(()=>{
-    const at=(t:number)=>formatBakeDateTime(new Date(t),locale);
-    const prepName=prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):prefermentType==='poolish'?(fr?'Préparer le poolish':'Make Poolish'):(fr?'La préparation':'The preparation');
-    const parts:string[]=[];
-    if(planMoved.prepFrom!==undefined&&planMoved.prepTo!==undefined)parts.push(fr?`${prepName} : ${at(planMoved.prepTo)} (au lieu de ${at(planMoved.prepFrom)}).`:`${prepName} now ${at(planMoved.prepTo)} (was ${at(planMoved.prepFrom)}).`);
-    if(planMoved.from!==planMoved.to)parts.push(fr?`Pétrir la pâte : ${at(planMoved.to)} (au lieu de ${at(planMoved.from)}).`:`Start Dough ${at(planMoved.to)} (was ${at(planMoved.from)}).`);
-    parts.push(planMoved.bakeFrom!==undefined?(fr?`Enfourner : ${at(+eatTime)} (au lieu de ${at(planMoved.bakeFrom)}).`:`Bake ${at(+eatTime)} (was ${at(planMoved.bakeFrom)}).`):(fr?`La cuisson reste ${at(+eatTime)}.`:`Bake stays ${at(+eatTime)}.`));
-    const amounts:string[]=[];
-    const yeastFrom=planMoved.yeastFrom??planYeastChange?.from,yeastTo=planMoved.yeastTo??planYeastChange?.to;
-    if(yeastFrom!==undefined&&yeastTo!==undefined)amounts.push(fr?`levure${prefermentType==='poolish'||prefermentType==='biga'?' du préferment':''} ${formatYeastDose(yeastTo,locale)} (au lieu de ${formatYeastDose(yeastFrom,locale)})`:`yeast${prefermentType==='poolish'||prefermentType==='biga'?' in the preferment':''} ${formatYeastDose(yeastTo,locale)} (was ${formatYeastDose(yeastFrom,locale)})`);
-    if(planMoved.flourFrom!==undefined&&planMoved.flourTo!==undefined)amounts.push(fr?`farine ${displayWeight(Math.round(planMoved.flourTo),units,locale)} (au lieu de ${displayWeight(Math.round(planMoved.flourFrom),units,locale)})`:`flour ${displayWeight(Math.round(planMoved.flourTo),units,locale)} (was ${displayWeight(Math.round(planMoved.flourFrom),units,locale)})`);
-    return <>{parts.join(' ')}{amounts.length>0&&<span data-plan-amounts style={{display:'block',marginTop:4}}>{fr?'Quantités modifiées : ':'Amounts changed: '}{amounts.join(' · ')}.</span>}<span style={{display:'block',marginTop:4,color:'var(--ash)'}}>{fr?'Ajouté à votre agenda ? Ajoutez-le de nouveau.':'Added it to your calendar? Add it again.'}</span></>;
-  })()}
-  <span style={{display:'flex',gap:16,marginTop:6}}>
-    <button type="button" data-see-new-times className="bh-back-action" style={{minHeight:44}} onClick={()=>{setPlanMoved(null);setPlanYeastChange(null);editRecipeTiming();}}>{fr?'Voir les nouveaux horaires':'See the new times'}</button>
-    <button type="button" className="bh-back-action" style={{minHeight:44}} onClick={()=>{setPlanMoved(null);setPlanYeastChange(null);}}>OK</button>
-  </span>
-</div>}
+{recipeGenerated && planMoved && destination!=='batch' && destination!=='organisation' && eatTime && (()=>{
+  // Only what moved, and an amount only when it changes what the baker weighs.
+  const at=(t:number)=>formatBakeDateTime(new Date(t),locale);
+  const prepName=prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):prefermentType==='poolish'?(fr?'Préparer le poolish':'Make Poolish'):(fr?'La préparation':'The preparation');
+  const parts:string[]=[];
+  if(planMoved.prepFrom!==undefined&&planMoved.prepTo!==undefined)parts.push(`${prepName} ${at(planMoved.prepTo)}`);
+  if(planMoved.from!==planMoved.to)parts.push(`${fr?'Pétrir la pâte':'Start Dough'} ${at(planMoved.to)}`);
+  if(planMoved.bakeFrom!==undefined)parts.push(`${fr?'Enfourner':'Bake'} ${at(+eatTime)}`);
+  const yeast=planMoved.yeastFrom!==undefined&&planMoved.yeastTo!==undefined&&yeastChangeMatters(planMoved.yeastFrom,planMoved.yeastTo)?yeastChangeLine(planMoved.yeastFrom,planMoved.yeastTo):null;
+  const flour=planMoved.flourFrom!==undefined&&planMoved.flourTo!==undefined?(fr?`Farine : ${displayWeight(Math.round(planMoved.flourTo),units,locale)} (au lieu de ${displayWeight(Math.round(planMoved.flourFrom),units,locale)}).`:`Flour ${displayWeight(Math.round(planMoved.flourTo),units,locale)} (was ${displayWeight(Math.round(planMoved.flourFrom),units,locale)}).`):null;
+  if(!parts.length&&!yeast&&!flour&&!calendarOutdated)return null;
+  return <div data-plan-moved role="status" style={{margin:'12px 0 0',padding:'10px 14px',border:'1px solid var(--border)',borderRadius:14,fontSize:14,lineHeight:1.5,background:'var(--warm)',display:'flex',gap:12,alignItems:'flex-start'}}>
+    <span style={{flex:1}}>
+      <strong>{fr?'Plan mis à jour':'Plan updated'}</strong>{parts.length>0&&<>{' · '}{parts.join(' · ')}</>}
+      {(yeast||flour)&&<span data-plan-amounts style={{display:'block'}}>{[yeast,flour].filter(Boolean).join(' ')}</span>}
+      {calendarOutdated&&planCalendarLine}
+    </span>
+    <button type="button" className="bh-back-action" style={{minHeight:44,flex:'0 0 auto'}} onClick={()=>setPlanMoved(null)}>OK</button>
+  </div>;
+})()}
 
 
 
@@ -5027,7 +5046,7 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
-                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={planEdit==='pref'?'preferment':planEdit} onEditTime={key=>setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;})} editor={planEditor} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
+                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={planEdit==='pref'?'preferment':planEdit} onEditTime={key=>setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;})} editor={planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
                         </div>
                       )}
                     </>
@@ -5589,7 +5608,7 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
-                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={planEdit==='pref'?'preferment':planEdit} onEditTime={key=>setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;})} editor={planEditor} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
+                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={planEdit==='pref'?'preferment':planEdit} onEditTime={key=>setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;})} editor={planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
                         </div>
                       )}
                     </>

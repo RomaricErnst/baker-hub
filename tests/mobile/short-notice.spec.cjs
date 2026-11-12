@@ -39,6 +39,7 @@ test('en simple: with a later start that still fits, the plan does not ask to st
  await expect(page.getByRole('button',{name:'Generate my recipe',exact:true})).toBeEnabled();
  await expect(page.locator('[data-start-soon]')).toHaveCount(0);
  await page.getByRole('button',{name:'Generate my recipe',exact:true}).tap();
- await expect(page.locator('[data-recipe-plan]')).toContainText('Start Dough · Tue 10 Nov · 1:15pm');
+ await expect(page.locator('[data-recipe-plan]')).toContainText('Tuesday 10 Nov');
+ await expect(page.locator('[data-plan-start]')).toHaveText(/^1:15pm\s*Start Dough$/);
  await expect.poll(async()=>(await stored(page))?.startTime).toBe(Date.parse('2026-11-10T13:15:00+08:00'));
 });

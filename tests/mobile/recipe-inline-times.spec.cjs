@@ -2,7 +2,7 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 
 // Romaric, 13 Nov 2026: the Recipe's top is one editable title and one line, and the plan's
 // own times move in place (Start Dough; Make Poolish in Custom). "Update recipe" applies the
-// new time and the recipe follows it, with a note naming what changed.
+// new time and the recipe follows it; one short line under the row confirms it.
 test.use({timezoneId:'Asia/Singapore'});
 const unauth=page=>page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
 
@@ -26,7 +26,7 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: Simple — title, summary, S
  // The title is the bake's name, editable in place; an evening bake is a pizza night.
  const title=page.getByRole('heading',{level:1});
  await expect(title).toHaveText(L(/^Pizza night · /,/^Soirée pizza · /));
- await expect(page.locator('[data-bake-summary]')).toContainText(L(/4 pizzas · Classic Neapolitan · \d+ g each, about \d+ cm/,/4 pizzas · Napolitaine classique · \d+\s?g chacune, environ \d+\s?cm/));
+ await expect(page.locator('[data-bake-summary]')).toContainText(L(/4 pizzas · Classic Neapolitan · \d+ g each$/,/4 pizzas · Napolitaine classique · \d+\s?g chacune$/));
  const rename=async name=>{await page.getByRole('button',{name:L('Rename this bake','Renommer la fournée')}).tap();const input=page.locator('[data-bake-title-input]');await expect(input).toBeFocused();await input.fill(name);await input.press('Enter');};
  await rename(L('Friday with friends','Vendredi entre amis'));
  await expect(title).toHaveText(L('Friday with friends','Vendredi entre amis'));
@@ -46,13 +46,21 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: Simple — title, summary, S
  await editor.getByRole('button',{name:'+ 30 min'}).tap();
  await editor.getByRole('button',{name:L('Update recipe','Mettre à jour la recette'),exact:true}).tap();
  await expect(editor).toHaveCount(0);
- await expect(page.locator('[data-plan-moved]')).toContainText(L('Start Dough','Pétrir la pâte'));
- await expect(page.locator('[data-plan-amounts]')).toContainText(L('yeast','levure'));
+ // One short line under the row; no "Plan updated" box, and no yeast for a change of a few hundredths
+ // of a gram; no calendar line for a plan never sent to the calendar.
+ const note=page.locator('[data-plan-note]');
+ await expect(note).toHaveText(L('Recipe updated.','Recette mise à jour.'));
+ await expect(page.locator('[data-plan-moved]')).toHaveCount(0);
  await expect(edit).not.toHaveText(before);
  // Close leaves the plan as it was.
  const after=await edit.innerText();
  await edit.tap();await editor.getByRole('button',{name:L('Close Start Dough','Fermer Pétrir la pâte'),exact:true}).tap();
  await expect(editor).toHaveCount(0);await expect(edit).toHaveText(after);
+ // Two hours earlier changes the yeast by more than a tenth: the line names it.
+ await edit.tap();
+ for(let i=0;i<4;i++)await editor.getByRole('button',{name:'- 30 min'}).tap();
+ await editor.getByRole('button',{name:L('Update recipe','Mettre à jour la recette'),exact:true}).tap();
+ await expect(note).toContainText(L(/Yeast now \d/,/Levure : \d/));
  expect(errors).toEqual([]);
 });
 
@@ -79,7 +87,8 @@ test('Custom poolish: Make Poolish and Start Dough both move from the plan',asyn
  await expect(editor).toContainText('Make Poolish');
  await editor.getByRole('button',{name:'+ 30 min'}).tap();
  await editor.getByRole('button',{name:'Update recipe',exact:true}).tap();
- await expect(page.locator('[data-plan-moved]')).toContainText('Make Poolish now');
+ await expect(page.locator('[data-plan-note]')).toContainText('Recipe updated.');
+ await expect(page.locator('[data-plan-moved]')).toHaveCount(0);
  await expect(edit.first()).not.toHaveText(before);
  expect(errors).toEqual([]);
 });
