@@ -4578,7 +4578,7 @@ export default function Home() {
               <StylePicker bakeType={bakeType} selected={styleKey} onSelect={selectStyle} />
               <BottomActions className="bh-batch-actions bh-style-confirm">
                 <button type="button" className="bh-back-action" onClick={backToProducts}>{fr?'Étape précédente':'Previous step'}</button>
-                <button data-bh-forward type="button" disabled={!styleKey} aria-describedby={!styleKey?'bh-style-choice-hint':undefined} style={{...NEXT_CTA,opacity:styleKey?1:0.5,cursor:styleKey?'pointer':'not-allowed'}} onClick={()=>{if(!styleKey)return;setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{styleKey?`${fr?'Continuer avec':'Continue with'} ${styleDisplayName(styleKey)} →`:(fr?'Continuer':'Continue')}</button>
+                <button data-bh-forward type="button" disabled={!styleKey} aria-describedby={!styleKey?'bh-style-choice-hint':undefined} style={{...NEXT_CTA,opacity:styleKey?1:0.5,cursor:styleKey?'pointer':'not-allowed'}} onClick={()=>{if(!styleKey)return;setBatchView('quantity');setActiveStep(2);setAdvancedStep(2);scrollToStepTop();}}>{/* Name where the button goes; the card already says what is selected. */}{fr?'Quantité':'Quantity'} →</button>
               </BottomActions>
             </> : batchView==='kitchen' ? <>
               <h1 className="bh-page-title">{fr?'Quelle température là où la pâte repose ?':'How warm is it where the dough rests?'}</h1>

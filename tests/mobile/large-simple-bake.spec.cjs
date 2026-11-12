@@ -18,7 +18,7 @@ for(const count of [6,12])test(`simple: ${count} Neapolitan pizzas generate a re
  await page.goto('/');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:'Classic Neapolitan',exact:true}).tap();
- await page.locator('.bh-style-confirm').getByRole('button',{name:/^Continue with/}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^Quantity →$/}).tap();
  const quantity=page.getByLabel('Number of pizzas',{exact:true});
  await quantity.fill(String(count));await quantity.blur();
  await forward(page).tap();
@@ -44,7 +44,7 @@ test('sourdough: a starter ready now with a bake tomorrow evening gets one more 
  await page.goto('/');
  await page.getByRole('button',{name:'Bread & meals',exact:true}).tap();
  await page.getByRole('button',{name:'Pain au levain',exact:true}).tap();
- await page.getByRole('button',{name:/^Continue with/}).tap();
+ await page.getByRole('button',{name:/^Quantity →$/}).tap();
  await forward(page).tap();
  await page.getByRole('slider').first().fill('22');
  await forward(page).tap();

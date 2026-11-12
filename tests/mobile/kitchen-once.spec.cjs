@@ -13,7 +13,7 @@ for(const locale of ['en','fr'])test(`${locale}: kitchen on its own screen, then
  await page.goto(fr?'/fr':'/');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
- await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Quantity|Quantité) →$/}).tap();
  await expect(page.getByText(fr?/par pâton/:/per dough ball/)).toHaveCount(0);
  const quantity=page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true});
  await quantity.fill('4');await quantity.blur();

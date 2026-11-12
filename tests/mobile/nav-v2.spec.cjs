@@ -201,13 +201,13 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
   const style=page.locator('.bh-batch-content').getByRole('button',{name:bread?'Baguette':'Napolitaine classique',exact:true});
   await style.tap();
   await expect(style).toHaveAttribute('aria-pressed','true');
-  const confirmation=page.locator('.bh-style-confirm').getByRole('button',{name:/^Continuer avec/});
+  const confirmation=page.locator('.bh-style-confirm').getByRole('button',{name:/^Quantité →$/});
   await unobscured(confirmation);
   const confirmationBounds=await confirmation.boundingBox();
   expect(confirmationBounds.y).toBeGreaterThanOrEqual(0);
   expect(confirmationBounds.y+confirmationBounds.height).toBeLessThanOrEqual(page.viewportSize().height);
   await expect(page.getByRole('heading',{name:bread?'Choisissez votre pain':'Quel style de pizza ?',exact:true})).toBeVisible();
- await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:/^Quantité →$/}).tap();
   const quantity=page.getByLabel(bread?'Nombre de baguettes':'Nombre de pizzas',{exact:true});
   await quantity.fill('5');await quantity.blur();
   await expect.poll(async()=>({style:(await stored(page))?.styleKey,count:(await stored(page))?.numItems})).toEqual({style:bread?'baguette':'neapolitan',count:5});
@@ -449,7 +449,7 @@ test('bread family return preserves choices; wraps and meal examples are discove
  await expect(wrap).toHaveAttribute('data-meal-src',/\.webp$/);
  const brioche=page.getByRole('button',{name:/^Brioche\b/});await expect(brioche.locator('img')).toHaveCount(1);
  await page.getByRole('button',{name:/^Pita à poche/}).tap();
- await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:/^Quantité →$/}).tap();
  const quantity=page.getByLabel('Nombre de pièces',{exact:true});await quantity.fill('5');await quantity.blur();
  // The style is changed with Previous step (or the step summary); no recap line.
  await expect(page.locator('.bh-batch-context')).toHaveCount(0);
@@ -458,7 +458,7 @@ test('bread family return preserves choices; wraps and meal examples are discove
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Que souhaitez-vous préparer ?',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();
- await page.getByRole('button',{name:/^Continuer avec/}).tap();
+ await page.getByRole('button',{name:/^Quantité →$/}).tap();
  await expect(quantity).toHaveValue('5');await noOverflow(page);
  await page.goBack();await expect(page.getByRole('heading',{name:'Choisissez votre pain',exact:true})).toBeVisible();
  await page.goForward();await expect(quantity).toHaveValue('5');
@@ -500,7 +500,7 @@ test('landing photos stay above text and bread meal examples are readable',async
  expect(await meal.locator('img').getAttribute('src')).toContain(sources[0].replace(/^\//,'').split('/').pop().replace('.webp',''));
  expect(new Set(sources).size).toBe(6);await noOverflow(page);
  await page.getByRole('button',{name:'Pain à wrap · Laffa',exact:true}).tap();
- await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:/^Quantité →$/}).tap();
  await expect(page.getByLabel('Nombre de pièces',{exact:true})).toBeVisible();
 });
 
@@ -508,7 +508,7 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
  await anonymous(page);await page.goto('/fr');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.locator('.bh-batch-content').getByRole('button',{name:/Napolitaine/i}).tap();
- await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:/^Quantité →$/}).tap();
  // Size, crust and weight sit behind Adjust on Quantity, in every path.
  const weight=page.getByLabel('Pâte par pizza (g)',{exact:true});
  await expect(weight).toHaveCount(0);
@@ -598,7 +598,7 @@ test('Custom: batch details are conditional and setup headings reset above the f
  await anonymous(page);await page.goto('/fr');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.locator('.bh-batch-content').getByRole('button',{name:/Napolitaine/i}).tap();
- await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:/^Quantité →$/}).tap();
  const count=page.getByLabel('Nombre de pizzas',{exact:true});
  await count.fill('7');await count.blur();
  await startCustom(page);
@@ -648,7 +648,7 @@ test('page landing survives delayed Safari viewport changes and history restore 
  await anonymous(page);await page.goto('/fr');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.locator('.bh-batch-content').getByRole('button',{name:/Napolitaine/i}).tap();
- await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:/^Quantité →$/}).tap();
  // Reproduce the recording: scroll the long quantity page, let the browser
  // viewport expand, then enter the short mode page via its bottom action.
  await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));window.scrollTo(0,document.documentElement.scrollHeight);});
@@ -795,7 +795,7 @@ test.describe('guided piadina with cooking time set in planning',()=>{
   await anonymous(page);await page.goto('/fr');
   await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();
   await page.locator('.bh-batch-content').getByRole('button',{name:'Galette à garnir · Piadina',exact:true}).tap();
-  await page.locator('.bh-batch-actions').getByRole('button',{name:/^Continuer avec/}).tap();
+  await page.locator('.bh-batch-actions').getByRole('button',{name:/^Quantité →$/}).tap();
   await page.getByLabel('Nombre de pièces',{exact:true}).fill('5');
   await page.getByLabel('Nombre de pièces',{exact:true}).blur();
   await expect(page.getByLabel('Horaire de cuisson souhaité',{exact:true})).toHaveCount(0);

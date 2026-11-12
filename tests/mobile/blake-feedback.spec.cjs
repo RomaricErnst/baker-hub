@@ -5,7 +5,7 @@ for(const lang of ['fr','en'])test(`${lang}: Simple asks only how many; flour qu
  await page.goto(fr?'/fr':'/');
  await page.getByRole('button',{name:fr?'Pain & repas':'Bread & meals',exact:true}).tap();
  await page.getByRole('button',{name:'Brioche',exact:true}).tap();
- await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Quantity|Quantité) →$/}).tap();
  await expect(page.locator('.bh-fillings-invitation')).toHaveCount(0);
  const byFlour=page.getByRole('button',{name:fr?'Par quantité de farine':'By flour weight',exact:true});
  // The quantity screen asks one thing.
@@ -41,7 +41,7 @@ test('compact navigation reaches every section above the footer and Custom keeps
  await page.goto('/fr');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:'Napolitaine classique',exact:true}).tap();
- await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Continue with|Continuer avec)/}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Quantity|Quantité) →$/}).tap();
  await page.locator('[data-bh-forward]:visible').tap();
  await (async()=>{const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();})();
  const bakeDate=page.getByLabel('Date et heure de cuisson',{exact:true});
