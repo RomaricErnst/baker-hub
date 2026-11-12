@@ -148,7 +148,7 @@ test('reopening during starter recovery preserves history and never revives the 
  const lastFed=NOW-48*H;
  const original=await seed(page,{method:'none',expectStatus:false,extra:{yeastType:'sourdough',prefermentType:'levain',startTime:NOW+10*H,planningMode:'last_fed',lastFedTime:lastFed,lastFedAge:'days23',starterLocation:'rt',starterState:'rt_fed',lastFeedRatio:2,nextFeedRatio:2,ratioMode:'keep',starterTimingValid:false,starterRecoveryPending:true,protocolStale:true,starterEvents:[{kind:'last_fed',time:lastFed}]}});
  const feed=page.getByRole('region',{name:'Starter feeding'});
- await expect(page.getByRole('button',{name:/^(Review|Adjust) timing$/}).filter({visible:true}).first().or(page.getByRole('button',{name:/^Have everything\? Go to Preparation/}).filter({visible:true}).first()).first()).toBeVisible();
+ await expect(page.getByRole('button',{name:/^(Review|Adjust) timing$/}).filter({visible:true}).first().or(page.locator('[data-change-times]').filter({visible:true}).first()).first()).toBeVisible();
  await expect(feed).toHaveCount(0);
  const validRecovery=async()=>{
   const s=await stored(page);
@@ -169,10 +169,10 @@ test('reopening during starter recovery preserves history and never revives the 
  expect((await stored(page)).lastFedTime).toBe(lastFed);
  expect((await stored(page)).eatTime).toBe(original.eatTime);
  expect((await stored(page)).starterFeedRecords??[]).toHaveLength(0);
- // Timing is adjusted from Preparation's summary; the recipe shows only the recipe.
- const prepare=page.getByRole('button',{name:/^Have everything\? Go to Preparation/}).filter({visible:true}).first();
- await expect(review.or(heading).or(prepare).first()).toBeVisible();
- if(!(await heading.isVisible())){if(!(await review.isVisible()))await prepare.tap();await review.tap();}
+ // Times change from the plan on the Recipe (Change times) or Preparation's summary.
+ const change=page.locator('[data-change-times]').filter({visible:true}).first();
+ await expect(review.or(heading).or(change).first()).toBeVisible();
+ if(!(await heading.isVisible())){if(await review.isVisible())await review.tap();else await change.tap();}
  await expect(heading).toBeVisible();
  await expect(feed).toHaveCount(0);
  await expect.poll(validRecovery).toBe(true);

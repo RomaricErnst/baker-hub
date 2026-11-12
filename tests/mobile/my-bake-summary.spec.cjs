@@ -21,10 +21,10 @@ async function seed(page,{locale='fr',mode='simple',bread=false,style,extra={},u
  await expect(page.getByRole('heading',{level:1,name:locale==='fr'?'Revoir mes choix':'Review my choices',exact:true})).toBeVisible();
 }
 
-test('fr Simple: My bake opens on the plan; assumed values and the mode are not listed',async({page})=>{
+test('fr Simple: My bake holds the choices only; assumed values and the mode are not listed',async({page})=>{
  await seed(page);
  const main=page.locator('body');
- await expect(page.locator('[data-my-bake-plan]')).toContainText('Enfourner');
+ await expect(page.locator('[data-my-bake-plan]')).toHaveCount(0);
  await expect(page.locator('[data-suggested-tag]')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Modifier : Mode',exact:true})).toHaveCount(0);
  await expect(page.locator('[data-mode-switch]')).toHaveText('Personnaliser ma fournée');

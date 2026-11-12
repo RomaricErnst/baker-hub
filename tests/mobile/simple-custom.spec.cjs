@@ -133,7 +133,7 @@ for(const locale of ['fr','en']){
   await actions(page).locator('[data-bh-forward]:visible').tap();
   await expect(page.getByRole('heading',{name:fr?'Recette à mettre à jour':'Update your recipe',exact:true})).toHaveCount(0);
 
-  await page.getByRole('button',{name:fr?/^Tout est prêt \? Aller à la Préparation/:/^Have everything\? Go to Preparation/}).first().tap();
+  await (async()=>{const t=page.locator('.bh-bake-navigator-trigger');if(await t.getAttribute('aria-expanded')!=='true')await t.tap();await page.getByRole('navigation',{name:fr?'Votre fournée':'Your bake',exact:true}).getByRole('button',{name:fr?/^Préparation/:/^Preparation/}).first().tap();})();
   await page.locator('[data-preparation-timing]:visible').getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true}).tap();
   await expect(page.locator('#step-7:visible')).toBeVisible();
   expect(errors).toEqual([]);
@@ -155,8 +155,8 @@ for(const locale of ['fr','en']){
    sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:3,advancedStep:9,setupOverview:true,activeTab:'setup',reviewMode:true}));
   },data);
   await page.goto(fr?'/fr':'/');
+  // Before a recipe exists, the switch continues to the bake time.
   await page.locator('[data-mode-switch]').tap();
-  await page.getByRole('button',{name:fr?/^Créer une recette simple/:/^Create a simple recipe/}).tap();
   const formula=async()=>{const s=await stored(page);return {tab:s?.tab,preferment:s?.prefermentType,hydration:s?.manualHydration,salt:s?.manualSalt,flour:s?.flourBlend};};
   await expect.poll(formula).toEqual({tab:'simple',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
   await page.reload();
@@ -170,8 +170,7 @@ for(const locale of ['fr','en']){
   await expect(stages.getByText(/Poolish/).first()).toBeVisible();
   await page.getByRole('button',{name:fr?'Mes choix':'My choices',exact:true}).tap();
   await page.locator('[data-mode-switch]').tap();
-  await page.evaluate(()=>{const el=document.querySelector('[data-customize-link]');if(el){document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));el.scrollIntoView({block:'center'});}});
-  await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
+  await expect(page.getByRole('heading',{level:1,name:fr?'Revoir mes choix':'Review my choices',exact:true})).toBeVisible();
   await expect.poll(formula).toEqual({tab:'custom',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
   expect(errors).toEqual([]);
  });

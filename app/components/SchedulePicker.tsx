@@ -7931,7 +7931,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
       {eatTimeSet && (<div>
 
       {/* Blocker section — always visible */}
-      <details ref={availabilityControlsRef} open={availabilityOpen} onToggle={e=>setAvailabilityOpen((e.currentTarget as HTMLDetailsElement).open)} tabIndex={-1} aria-label={isFr?'Mes indisponibilités':'My unavailable times'} style={{marginBottom:16}}><summary data-busy-question style={{minHeight:44,cursor:'pointer',fontWeight:600,fontSize:16}}>{isFr?'Quand êtes-vous occupé ?':'When are you busy?'}<span style={{display:'block',fontSize:13,fontWeight:400,color:'var(--smoke)'}}>{isFr?'Aucune étape à ces heures.':'No steps then.'}</span></summary>
+      <details ref={availabilityControlsRef} open={availabilityOpen} onToggle={e=>setAvailabilityOpen((e.currentTarget as HTMLDetailsElement).open)} tabIndex={-1} aria-label={isFr?'Mes indisponibilités':'My unavailable times'} style={{marginBottom:16}}><summary data-busy-question style={{minHeight:44,cursor:'pointer',fontWeight:600,fontSize:16}}>{isFr?'Quand êtes-vous occupé ? (facultatif)':'When are you busy? (optional)'}<span style={{display:'block',fontSize:13,fontWeight:400,color:'var(--smoke)'}}>{isFr?'Nous ne prévoirons aucune étape manuelle à ces heures.':'We won\u2019t plan any hands-on step at these times.'}</span></summary>
         <div>
 
 

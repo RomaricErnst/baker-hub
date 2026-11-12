@@ -151,7 +151,10 @@ for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}
     const bounds=await start.boundingBox();
     expect(page.viewportSize().height-bounds.y-bounds.height).toBeGreaterThanOrEqual(23);
    }
-   await actions.getByRole('button',{name:'Back to Recipe',exact:true}).tap();
+   // Back goes one section: Shopping list, then the Recipe.
+   await actions.getByRole('button',{name:'Back to Shopping list',exact:true}).tap();
+   await expect(page.locator('.bh-navigator-current')).toContainText('Shopping list');
+   await page.getByRole('button',{name:'Back to Recipe',exact:true}).filter({visible:true}).last().tap();
    await expect(page.locator('.bh-navigator-current')).toHaveText('Recipe');
    const invitation=page.locator('.bh-fillings-invitation-compact');
    await expect(invitation).toHaveCount(1);
@@ -259,7 +262,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
    // Five 320 g baguettes are one hand-mixed dough: Simple never asks the baker to reduce the bake.
    await expect(page.getByRole('button',{name:'Réduire ma quantité',exact:true})).toHaveCount(0);
    await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
-   await page.getByRole('button',{name:/^Tout est prêt \? Aller à la Préparation/}).first().tap();
+   await (async()=>{const t=page.locator('.bh-bake-navigator-trigger:visible');if(await t.getAttribute('aria-expanded')!=='true')await t.tap();await page.getByRole('navigation',{name:'Votre fournée',exact:true}).getByRole('button',{name:/^Préparation/}).first().tap();})();
    await page.locator('[data-preparation-timing]:visible').getByRole('button',{name:'Ajuster les horaires',exact:true}).tap();
    await expect(timing).toBeVisible();
   }

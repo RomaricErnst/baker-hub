@@ -1,3 +1,14 @@
+# 12 November 2026 — one route through the app (Claude)
+
+Romaric picked option A on all six cards of the journey map (artifact "Baker Hub Journey Map"). Rules: each section does one job; every section's bottom bar goes back one section (left) and on to the next (right); a changed choice returns to where the baker was; times change only from the plan; customizing continues the bake. Shipped:
+- My bake holds the choices only (the Next / Bake / Open preparation card is gone; Preparation already opens on the next step).
+- "Customize my bake" in My bake switches to Custom in place and stays on the list, which gains Equipment, Flour, Yeast & preferment and Fine-tune rows; "Use the recommended settings" switches back. The old "How would you like to set up your recipe?" screen is removed; any route that lands there goes to the bake time (or the style).
+- The Bake time row in My bake asks only the bake time and busy times, then "Back to …" (or "See the plan →" when the new time needs a decision). "Change times" on the Recipe's Your plan, and Adjust timing in Preparation, open the full timing editor. Custom's first-time plan step keeps its full editor (the baker chose to customize).
+- The Recipe has no in-page "Go to Preparation" button; Shopping's bar leads there. Preparation's bar goes back to Shopping list, Baking & serving's to Preparation. The route stays linear; Sections jumps anywhere.
+- Busy times: "When are you busy? (optional)" / "We won't plan any hands-on step at these times."
+- The flash after Generate is fixed: the ingredients chunk is fetched during setup and holds its height while it loads, so the plan never shows above it.
+- `tests/mobile/journey-route.spec.cjs` (CI) walks the whole route in EN and FR.
+
 # 11 November 2026 — starter temperature in the water calculation (Claude)
 
 Romaric's decision: consider the starter's temperature. Its flour and water were already counted (inside the dough totals, at room temperature). Now a fridge starter that goes into the dough without another feed counts at its warmed temperature: 41 of 192 fridge-starter plans in the sweep do this, 0.5–1.5 h after removal. Water rises about 1–2 °C (e.g. 22 °C kitchen, 1.5 h out: starter about 17 °C, water 16.9 → 18.0 °C). A measured temperature in Fine-tune still wins. Test: `tests/starter-temperature.test.cjs`.
