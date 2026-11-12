@@ -1,3 +1,10 @@
+# 12 November 2026 — toppings in the planning (Claude)
+
+Romaric: plan both (dough and toppings), then buy, then prepare, without extra buttons. For pizza and breads with fillings the route is now Recipe → Toppings (optional; "Fillings" for bread) → Shopping list → Preparation → Baking & serving.
+- Recipe bar: "My choices" · "Toppings →". Toppings bar: "Back to Recipe" · "Shopping list →" (works with none chosen; with a selection the left shows "My selection · N"). Shopping bar: "Back to Toppings" · "Go to preparation →".
+- Removed: the toppings invitation inside the Recipe (it split the ingredients from the plan), "Add toppings — optional" at the top of the Shopping list, "Choose toppings" at the end of Preparation, and the duplicate "View shopping" in the selection sheet.
+- Kept: "Toppings · Optional" in Sections (it now returns to the section it was opened from) and "No toppings planned? Pick pizzas" at the oven.
+
 # 12 November 2026 — one route through the app (Claude)
 
 Romaric picked option A on all six cards of the journey map (artifact "Baker Hub Journey Map"). Rules: each section does one job; every section's bottom bar goes back one section (left) and on to the next (right); a changed choice returns to where the baker was; times change only from the plan; customizing continues the bake. Shipped:

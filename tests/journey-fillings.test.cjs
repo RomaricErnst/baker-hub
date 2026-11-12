@@ -39,13 +39,16 @@ test('pizza partial and excess selections remain explicit; no toppings is not a 
   }
 });
 
-test('shopping has exactly one toppings action in its header, never its footer',()=>{
+// In the journey the Shopping list goes back to Toppings (backLabel) and carries no toppings button;
+// the header action remains only where shopping has no Toppings step before it (an existing base).
+test('shopping has at most one toppings action, in its header, hidden when back leads to Toppings',()=>{
   const source=fs.readFileSync('app/components/ToppingSelector.tsx','utf8');
   const shopping=source.slice(source.indexOf('function ShoppingList('),source.indexOf('// ───',source.indexOf('function ShoppingList(')+30));
   assert.equal((shopping.match(/onClick=\{onGoPizzas\}/g)||[]).length,1);
   assert.doesNotMatch(shopping,/onClick=\{\(\) => onGoPizzas\?\.\(\)\}/);
   const bread=fs.readFileSync('app/components/SandwichParty.tsx','utf8');
-  assert.match(bread,/tab==='shop' \? <button[^\n]+onClick=\{\(\)=>go\('pick'\)\}/);
+  assert.match(bread,/tab==='shop' \? \(!backLabel&&<button[^\n]+onClick=\{\(\)=>go\('pick'\)\}/);
+  assert.match(shopping,/onGoPizzas && !backLabel && <button/);
 });
 
 test('generated shopping uses active-only shared actions while existing bases retain their route',()=>{

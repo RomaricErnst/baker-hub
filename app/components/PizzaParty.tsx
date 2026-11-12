@@ -36,8 +36,11 @@ interface PizzaPartyProps extends CompletionActions {
   recipeIngredients?: Array<{ name: string; amount: string }>;
   onSelectionBack?:()=>void;
   onBackToRecipe?:()=>void;
+  /** The shopping bar's back label when back leads to the toppings choice. */
+  shoppingBackLabel?:string;
   onSelectionDone?:()=>void;
   selectionDoneLabel?:string;
+  selectionBackLabel?:string;
   directSelectionReturn?:boolean;
   prepContinueLabel?:string;
   onPrepProgress?:(progress:{done:number;total:number})=>void;
@@ -57,7 +60,7 @@ function pillToTab(pill: Pill): Tab {
   return 'pick';
 }
 
-export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onRepeat, resultNotes, onResultNotesChange, saveKind, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients,onSelectionBack,onBackToRecipe,onSelectionDone,selectionDoneLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,storagePrefix="bh",baseReady=false }: PizzaPartyProps) {
+export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initialStyleKey, t, activeTab, onTabChange, doughConfigured, onHasSelection, bakeEventId, initialQtys, onQtysSnapshot, getQtysRef, onGoToMyDough, ovenType, onEnsureBakeEvent, onSave, onShare, sessionSaved, onRepeat, resultNotes, onResultNotesChange, saveKind, onBakedQtysChange, bakedQtys, restoreToken, recipeIngredients,onSelectionBack,onBackToRecipe, shoppingBackLabel,onSelectionDone,selectionDoneLabel, selectionBackLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,storagePrefix="bh",baseReady=false }: PizzaPartyProps) {
   // initialQtys ne sert qu'au tout premier montage : un useState ne relit pas
   // sa valeur initiale. A la reprise d'une session, les pizzas etaient bien
   // dans l'etat de la page — donc dans le resume — mais le selecteur gardait
@@ -159,8 +162,10 @@ export default function PizzaParty({ locale, bakeTime, numItems, styleKey: initi
           recipeIngredients={recipeIngredients}
           onSelectionBack={onSelectionBack}
           onBackToRecipe={onBackToRecipe}
+          shoppingBackLabel={shoppingBackLabel}
           onSelectionDone={onSelectionDone}
           selectionDoneLabel={selectionDoneLabel}
+          selectionBackLabel={selectionBackLabel}
           directSelectionReturn={directSelectionReturn}
           active={active}
         />

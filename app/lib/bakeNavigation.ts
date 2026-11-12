@@ -15,7 +15,8 @@ export interface BakeNavigationMemory {
   serviceView?: 'dough'|'fillings';
   shoppingReturnToFillings?: boolean;
   prepReturnToService?: 'dough'|'fillings'|null;
-  returnTo?: {destination:'protocol'|'service'|'recipe'|'shopping';view:'dough'|'fillings'}|null;
+  /** forward: the choice is a step of the journey (Recipe → Toppings → Shopping), so done goes on to Shopping. */
+  returnTo?: {destination:'protocol'|'service'|'recipe'|'shopping';view:'dough'|'fillings';forward?:boolean}|null;
 }
 export function destinationForRoute(route:string,pizzaPhase='pick',sandwichPhase='pick'):BakeDestination {
   if(route==='setup')return 'organisation';
@@ -40,7 +41,7 @@ export function normalizeNavigation(value:unknown):BakeNavigationMemory {
     serviceView:v.serviceView==='fillings'?'fillings':'dough',
     shoppingReturnToFillings:v.shoppingReturnToFillings===true,
     prepReturnToService:v.prepReturnToService==='dough'||v.prepReturnToService==='fillings'?v.prepReturnToService:null,
-    returnTo:(returnTo.destination==='protocol'||returnTo.destination==='service'||returnTo.destination==='recipe'||returnTo.destination==='shopping')&&(returnTo.view==='dough'||returnTo.view==='fillings')?{destination:returnTo.destination,view:returnTo.view}:null,
+    returnTo:(returnTo.destination==='protocol'||returnTo.destination==='service'||returnTo.destination==='recipe'||returnTo.destination==='shopping')&&(returnTo.view==='dough'||returnTo.view==='fillings')?{destination:returnTo.destination,view:returnTo.view,...(returnTo.forward===true?{forward:true}:{})}:null,
   };
 }
 export function restoredBakeRoute(input:{activeTab?:string;navigation?:unknown;activeStep?:number;advancedStep?:number;tab?:string;modeChosen?:boolean;setupOverview?:boolean;styleKey?:string|null;bakeType?:string|null;pizzaPartyTab?:string;sandwichParty?:{tab?:string}|null},supportsFillings:boolean):{route:BakeRoute;memory:BakeNavigationMemory}{

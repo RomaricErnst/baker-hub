@@ -63,16 +63,16 @@ for(const bread of [false,true])test(`Fresh ${bread?'baguette lunch':'pizza nigh
  await expect(page.getByRole('region',{name:'Vos moments clés',exact:true})).toHaveCount(0);
  await page.getByRole('button',{name:'Générer ma recette',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
- await page.getByRole('button',{name:'Ajouter des garnitures — facultatif',exact:true}).tap();
+ await page.locator('.bh-step-actions:visible [data-toppings-step]').tap();
  if(bread){
    const item=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Jambon-beurre',exact:true})}).getByRole('spinbutton');
    await item.fill('1');await item.blur();
  }else{
    await page.getByRole('button',{name:/^Margherita(?: · \d+)?$/}).getByRole('button',{name:/^\+/}).tap();
  }
- await page.getByRole('button',{name:/^Retour à Recette(?: →)?$/}).tap();
- await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
- await navigate(page,'Courses','fr');
+ // Plan both, then buy: the toppings step leads on to the Shopping list.
+ await page.locator('[data-companion-action]:visible').getByRole('button',{name:'Liste de courses →',exact:true}).tap();
+ await expect(page.locator('.bh-navigator-current')).toContainText('Courses');
  const checkbox=page.getByRole('checkbox').first();
  await checkbox.check();await expect(checkbox).toBeChecked();
  await navigate(page,'Préparation','fr');
