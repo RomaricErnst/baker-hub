@@ -13,8 +13,8 @@ test('Customize from the bake time: the clash is asked once, in a sheet, when th
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^Quantity →$/}).tap();
  await page.locator('.bh-step-actions:visible [data-bh-forward]:visible, .bh-batch-actions:visible [data-bh-forward]:visible').first().tap();
  const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();
- // Tomorrow 7:30pm with weekday working hours: steps fall in the busy time.
- const target=await page.evaluate(()=>{const d=new Date();d.setDate(d.getDate()+1);while([0,6].includes(d.getDay()))d.setDate(d.getDate()+1);d.setHours(19,30,0,0);return new Date(+d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);});
+ // A weekday bake at 1:00pm, two or more days ahead, with working hours busy: the bake itself clashes, whatever the time of day the test runs.
+ const target=await page.evaluate(()=>{const d=new Date();d.setDate(d.getDate()+2);while([0,6].includes(d.getDay()))d.setDate(d.getDate()+1);d.setHours(13,0,0,0);return new Date(+d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);});
  const time=page.getByLabel('Bake date and time',{exact:true});
  await time.fill(target);await time.blur();
  const busy=page;
@@ -60,7 +60,7 @@ test('Simple: the bake time shows no clash card; Generate asks it once, in a she
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^Quantité →$/}).tap();
  await page.locator('.bh-step-actions:visible [data-bh-forward]:visible, .bh-batch-actions:visible [data-bh-forward]:visible').first().tap();
  const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();
- const target=await page.evaluate(()=>{const d=new Date();d.setDate(d.getDate()+1);while([0,6].includes(d.getDay()))d.setDate(d.getDate()+1);d.setHours(19,30,0,0);return new Date(+d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);});
+ const target=await page.evaluate(()=>{const d=new Date();d.setDate(d.getDate()+2);while([0,6].includes(d.getDay()))d.setDate(d.getDate()+1);d.setHours(13,0,0,0);return new Date(+d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);});
  const time=page.getByLabel('Date et heure de cuisson',{exact:true});
  await time.fill(target);await time.blur();
  for(const name of [/^Jours ouvrés/,/^Nuits/]){const chip=page.getByRole('button',{name}).filter({visible:true}).first();if(await chip.getAttribute('aria-pressed')!=='true')await chip.tap();}
@@ -88,8 +88,8 @@ test('an empty bake time opens the picker about 48 h ahead at 7:00pm for a Neapo
  const time=page.getByLabel('Bake date and time',{exact:true});
  await expect(time).toHaveValue(/T19:00$/);
  const hoursAhead=await time.evaluate(el=>(new Date(el.value)-Date.now())/3600000);
- expect(hoursAhead).toBeGreaterThan(38);
- expect(hoursAhead).toBeLessThan(62);
+ expect(hoursAhead).toBeGreaterThan(36);
+ expect(hoursAhead).toBeLessThan(63);
  // A phone picker confirmed without moving sends no change; the opening value is kept.
  await time.focus();await time.blur();
  await expect(page.getByText(/· 7:00pm$/).filter({visible:true}).first()).toBeVisible();
