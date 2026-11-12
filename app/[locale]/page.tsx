@@ -112,6 +112,27 @@ const PIZZA_WEIGHT_TABLE: Record<string, [number, number, number, number][]> = {
 };
 const STYLE_HAS_DIAMETER = ['neapolitan', 'newyork', 'sourdough', 'pizza_romana'];
 const STYLE_DEFAULT_DIAMETER: Record<string, number> = { neapolitan: 30, newyork: 35, sourdough: 30, pizza_romana: 30 };
+// Size choices under Adjust on Quantity.
+// Pizza (cm): AVPN allows 22–35 cm for Neapolitan, with 280 g balls at 28–35 cm; home
+// Neapolitan is usually 30–33 cm, so Large is 33. New York is 14–16 in at home (35–40 cm).
+const PIZZA_SIZE_CHOICES: Record<string, number[]> = {
+  neapolitan: [26, 30, 33], sourdough: [26, 30, 33], pizza_romana: [26, 30, 33], newyork: [30, 35, 40],
+};
+// Bread (dough per piece). The middle choice is the style's default weight. A baguette
+// bakes to about 250 g (France.fr), from about 320 g of dough; a ficelle is about half.
+// A 9 × 4 × 4 in Pullman tin takes about 800 g (The Perfect Loaf, pain de mie).
+const BREAD_SIZE_CHOICES: Record<string, { grams: number; en: string; fr: string }[]> = {
+  baguette: [{grams:160,en:'Ficelle',fr:'Ficelle'},{grams:320,en:'Baguette',fr:'Baguette'},{grams:450,en:'Bâtard',fr:'Bâtard'}],
+  pain_campagne: [{grams:500,en:'Small loaf',fr:'Petit pain'},{grams:800,en:'Family loaf',fr:'Pain familial'},{grams:1200,en:'Large loaf',fr:'Grosse miche'}],
+  pain_levain: [{grams:500,en:'Small loaf',fr:'Petit pain'},{grams:900,en:'Family loaf',fr:'Pain familial'},{grams:1200,en:'Large loaf',fr:'Grosse miche'}],
+  pain_complet: [{grams:500,en:'Small loaf',fr:'Petit pain'},{grams:750,en:'Family loaf',fr:'Pain familial'},{grams:1200,en:'Large loaf',fr:'Grosse miche'}],
+  pain_seigle: [{grams:500,en:'Small loaf',fr:'Petit pain'},{grams:700,en:'Family loaf',fr:'Pain familial'},{grams:1000,en:'Large loaf',fr:'Grand pain'}],
+  pain_au_seigle: [{grams:500,en:'Small loaf',fr:'Petit pain'},{grams:800,en:'Family loaf',fr:'Pain familial'},{grams:1200,en:'Large loaf',fr:'Grosse miche'}],
+  brioche: [{grams:300,en:'Small loaf',fr:'Petite brioche'},{grams:500,en:'Loaf tin',fr:'Brioche moule'},{grams:800,en:'Large loaf',fr:'Grande brioche'}],
+  pain_mie: [{grams:450,en:'Small tin',fr:'Petit moule'},{grams:600,en:'Loaf tin',fr:'Moule à cake'},{grams:800,en:'Pullman 9×4×4 in',fr:'Pullman 23 cm'}],
+  pain_viennois: [{grams:80,en:'Rolls',fr:'Petits pains'},{grams:200,en:'Viennoise',fr:'Baguette viennoise'},{grams:300,en:'Large',fr:'Grande'}],
+  fougasse: [{grams:250,en:'Small',fr:'Petite'},{grams:400,en:'Classic',fr:'Classique'},{grams:600,en:'Large',fr:'Grande'}],
+};
 const STYLE_BALL_DEFAULTS: Record<string, number> = {
   neapolitan: 4, newyork: 4, pizza_romana: 4, roman: 2, pan: 2, sourdough: 4,
   pain_campagne: 1, pain_levain: 1, baguette: 4, pain_complet: 1,
@@ -240,7 +261,7 @@ function getWeightBounds(sk: string | null, bt: string | null): { min: number; m
   const profile = getBreadProtocol(sk);
   if (profile) return {min: Math.max(40, Math.floor(profile.portions.weight / 2 / 5) * 5), max: Math.max(400, profile.portions.weight * 3), step: 5};
   switch (sk) {
-    case 'baguette':      return { min: 200, max: 450,  step: 10 };
+    case 'baguette':      return { min: 150, max: 450,  step: 10 };
     case 'pain_viennois': return { min: 50,  max: 300,  step: 10 };
     case 'brioche':       return { min: 150, max: 900,  step: 25 };
     case 'pain_mie':      return { min: 300, max: 1200, step: 25 };
@@ -4075,6 +4096,8 @@ export default function Home() {
                 weightLabel={breadProtocol ? (styleKey==='focaccia' ? (fr?'Pâte par plaque':'Dough per tray') : (fr?'Pâte par pièce':'Dough per piece')) : undefined}
                 roundPizza={bakeType === 'pizza' && STYLE_HAS_DIAMETER.includes(styleKey ?? '')}
                 count={numItems} itemWeight={itemWeight} diameter={pizzaDiameter}
+                pizzaSizes={PIZZA_SIZE_CHOICES[styleKey ?? '']}
+                breadSizes={bakeType==='bread'&&!breadProtocol&&totalFlourTarget===undefined?BREAD_SIZE_CHOICES[styleKey ?? '']:undefined}
                 sizeNote={bakeType==='bread'&&totalFlourTarget===undefined?`${bakeQuantityLabel(numItems,bakeType,styleKey,fr)} ${fr?'de':'of'} ${displayWeight(Math.round(itemWeight),units,locale)}`:undefined}
                 diameterBounds={{ min: PIZZA_WEIGHT_TABLE[styleKey ?? '']?.[0][0] ?? 22, max: PIZZA_WEIGHT_TABLE[styleKey ?? '']?.at(-1)?.[0] ?? 35 }}
                 crust={(['thin','classic','generous'] as const)[pizzaCorn] ?? 'classic'}
@@ -5294,7 +5317,8 @@ export default function Home() {
 
             {/* Prototype: one clear field per dough setting. */}
             <StepPage flow={customOrganisationFlow} id={10} nextOverride={yeastEntryBlocked ? <button data-bh-forward type="button" disabled aria-describedby="bh-yeast-entry-note" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated ? setupReturnLabel : `${CUSTOM_STEPS.find(step=>step.id===nextCustomStep(10))?.chip ?? (fr?'Suivant':'Next')} →`}</button> : undefined}>
-              {styleKey && renderQuantity('size')}
+              {/* Pizza size and weight are set on Quantity (Adjust); bread keeps its weight or flour basis here. */}
+              {styleKey && bakeType==='bread' && renderQuantity('size')}
               {/* Oven and mixing are asked once, on Equipment. */}
               {(() => {
                 const style = styleKey ? ALL_STYLES[styleKey] : null;
