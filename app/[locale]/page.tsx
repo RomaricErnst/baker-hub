@@ -781,14 +781,15 @@ function BakeTitleField({ value, auto, fr, onCommit }: { value: string; auto: st
   useEffect(() => { if (editing) { input.current?.focus(); input.current?.select(); } }, [editing]);
   const start = () => setDraft(value || auto);
   const commit = () => { const name = (draft ?? '').trim(); onCommit(name && name !== auto ? name : ''); setDraft(null); };
-  const font = { font: '700 20px/1.3 var(--font-ui)', color: 'var(--char)', letterSpacing: '-.2px' } as const;
+  // The page-title style used across the site (.bh-page-title), so the input matches the heading.
+  const font = { fontFamily: 'var(--font-display, Georgia, serif)', fontSize: 28, fontWeight: 700, lineHeight: 1.15, letterSpacing: '-.015em', color: 'var(--char)' } as const;
   return <div data-bake-title-field style={{ display: 'flex', alignItems: 'center', gap: 4, minHeight: 44 }}>
     {editing
       ? <input ref={input} data-bake-title-input aria-label={fr ? 'Nom de la fournée' : 'Bake name'} value={draft} maxLength={100} enterKeyHint="done"
           onChange={e => setDraft(e.target.value)} onBlur={commit}
           onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') setDraft(null); }}
           style={{ ...font, flex: 1, minWidth: 0, border: 0, borderRadius: 6, padding: '4px 6px', margin: '0 -6px', background: 'var(--warm)' }} />
-      : <h1 className="bh-page-title bh-bake-title" data-bake-title onClick={start}
+      : <h1 className="bh-page-title" data-bake-title onClick={start}
           style={{ ...font, flex: 1, minWidth: 0, margin: 0, padding: '4px 0', borderBottom: '1px dashed var(--border)', cursor: 'text' }}>{value || auto}</h1>}
     {!editing && <button type="button" data-bake-rename aria-label={fr ? 'Renommer la fournée' : 'Rename this bake'} onClick={start}
       style={{ width: 44, height: 44, flex: '0 0 44px', display: 'grid', placeItems: 'center', background: 'transparent', border: 0, padding: 0, cursor: 'pointer' }}>
@@ -927,10 +928,10 @@ function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,steps,edit
   // in place: the time is a button, its editor opens under the row, and applying it
   // updates the recipe. The other steps follow from those and stay plain text.
   const timeButton=(key:string,label:string,text:string)=><button type="button" data-plan-edit={key} aria-expanded={editing===key} aria-label={(fr?'Modifier l’heure : ':'Change time: ')+label}
-    onClick={()=>onEditTime?.(key)} style={{font:'inherit',color:'var(--terra)',background:'none',border:0,padding:'12px 8px',margin:'-12px -8px',textDecoration:'underline',textUnderlineOffset:3,cursor:'pointer'}}>{text}</button>;
+    onClick={()=>onEditTime?.(key)} style={{font:'inherit',color:'var(--terra)',background:'none',border:0,padding:'12px 8px',margin:'-12px -8px',textDecoration:'underline',textUnderlineOffset:3,cursor:'pointer',whiteSpace:'nowrap'}}>{text}<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline-block',marginLeft:5,verticalAlign:'-1px'}}><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg></button>;
   const row={display:'flex',gap:12,padding:'7px 0',borderTop:'1px solid var(--border)',fontSize:15,lineHeight:1.4,color:'var(--char)'} as const;
   return <section data-recipe-plan aria-labelledby="bh-recipe-plan-title" style={{margin:'0 0 4px'}}>
-    <h2 id="bh-recipe-plan-title" style={{margin:'0 0 6px',fontFamily:'var(--font-display)',fontSize:30,fontWeight:700,lineHeight:1.15,color:'var(--char)'}}>{fr?'Votre plan':'Your plan'}</h2>
+    <h2 id="bh-recipe-plan-title" className="bh-section-title" style={{margin:'0 0 4px'}}>{fr?'Votre plan':'Your plan'}</h2>
     {/* Grouped by day; steps at the same shown time share a row; times read to 5 min
         (the calendar keeps the exact ones). */}
     {(()=>{
@@ -941,7 +942,8 @@ function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,steps,edit
       for(const item of all){const last=rows[rows.length-1];if(last&&+last.at===+item.at&&!item.bake&&!last.bake&&!item.own&&!last.own&&!editable.includes(item.key)&&!editable.includes(last.key))last.labels.push(item.label);else rows.push({key:item.key,at:item.at,labels:[item.label],bake:item.bake,own:item.own});}
       const days:{day:string;rows:typeof rows}[]=[];
       for(const r of rows){const day=r.at.toLocaleDateString(fr?'fr-FR':'en-GB',{weekday:'long',day:'numeric',month:'short'});const last=days[days.length-1];if(last&&last.day===day)last.rows.push(r);else days.push({day,rows:[r]});}
-      const time={flex:'0 0 auto',minWidth:'4.5em',color:'var(--ash)',fontVariantNumeric:'tabular-nums'} as const;
+      // Room for a pencil when a time is editable, so every label starts on the same line.
+      const time={flex:'0 0 auto',minWidth:editable.length?'6em':'4.5em',color:'var(--ash)',fontVariantNumeric:'tabular-nums'} as const;
       return <div data-recipe-plan-steps>{days.map(d=><div key={d.day} style={{marginTop:10}}>
         <p style={{margin:'0 0 2px',fontSize:14,fontWeight:700,color:'var(--char)'}}>{d.day.charAt(0).toUpperCase()+d.day.slice(1)}</p>
         <ol style={{listStyle:'none',margin:0,padding:0}}>{d.rows.map(r=><React.Fragment key={r.key}><li data-plan-bake={r.bake||undefined} data-plan-start={r.own||undefined} style={{...row,fontWeight:r.bake?600:400,alignItems:'baseline'}}><span style={{...time,...(r.bake?{color:'var(--char)'}:{})}}>{editable.includes(r.key)?timeButton(r.key,r.labels[0],formatClock(r.at,locale)):formatClock(r.at,locale)}</span><span>{r.labels.join(' · ')}</span></li>{editing===r.key&&<li data-plan-editor style={{listStyle:'none'}}>{editor}</li>}{editing!==r.key&&notice?.key===r.key&&<li style={{listStyle:'none'}}>{notice.node}</li>}</React.Fragment>)}</ol>

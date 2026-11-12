@@ -6,6 +6,8 @@ Romaric: "My Pizza Night" was a template name editable only from My bake, the to
 - The "Plan updated" box for other re-plans (an edit in My bake, a yeast override) is one line too: only the times that moved, no "(was …)", no "Bake stays", yeast by the same tenth rule, the calendar line only when outdated, and OK. "See the new times" is gone: the plan is on the same page.
 - Simple has no "Change times" link; Custom shows "More timing options" and sourdough keeps "Change times" (the starter has its own scheduling). Past steps and a started bake are not editable inline.
 - One SchedulePicker instance at a time: the setup steps render nothing while the inline editor is open.
+- Editable times carry a small pencil after the underlined time (the same mark as the title), and the plan's time column widens to 6em so every label still starts on one line.
+- Recipe hierarchy follows the site: the bake title uses the page-title style (serif 28px, `.bh-page-title`), "Dough ingredients" and "Your plan" the section-title style (`.bh-section-title`, sans 18px); the ingredient rows keep their size. Baker's % in Custom: per row for a direct dough; for a preferment or levain dough in "Whole-dough totals" under the stages (since #88).
 - `tests/mobile/recipe-inline-times.spec.cjs` (CI) covers the title, the summary, Simple Start Dough in EN and FR, and Custom poolish.
 
 # 12 November 2026 — a quiet water line (Claude)

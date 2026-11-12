@@ -587,15 +587,13 @@ export default function RecipeOutput({
       {/* ── Compact header row ───────────────────── */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-        padding: '4px .1rem 8px',
+        padding: '0 .1rem',
       }}>
         <div>
-          <div style={{
-            fontFamily: 'Georgia, serif', fontSize: '30px',
-            fontWeight: 700, color: 'var(--char)', marginBottom: '.2rem',
-          }}>
+          {/* A section of the Recipe page: the site's section-title style, under the bake's title. */}
+          <h2 className="bh-section-title" style={{ margin: '0 0 .2rem' }}>
             {locale === 'fr' ? 'Ingrédients de la pâte' : 'Dough ingredients'}
-          </div>
+          </h2>
           {/* The recipe is the recipe: timing lives in Preparation. */}
           {wastePct !== undefined && wastePct > 0 && (
             <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginTop: '.2rem' }}>
