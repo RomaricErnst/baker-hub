@@ -7133,6 +7133,22 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
   },[targetSearch]);
   const searchingTargets=completedSearch?.source!==targetSearch;
   const suggestedTargets:SuggestedTargets=searchingTargets?[]:completedSearch!.targets;
+  // An empty bake time opens the picker where the dough is at its best, at a meal time:
+  // the style's preferred fermentation (cold + room temperature, e.g. about 48 h for a
+  // Neapolitan), on the nearest 7:00pm for pizza or 10:00am for bread, never before the
+  // earliest workable bake. Nothing is set until the baker confirms the picker.
+  const defaultPickValue=useMemo(()=>{
+    const hour=bakeType==='pizza'?19:10;
+    const ferm=STYLE_FERM_DEFAULTS[styleKey]??FERM_FALLBACK;
+    const ideal=Date.now()+((('preferredColdH' in ferm&&ferm.preferredColdH)||ferm.coldH)+ferm.rtH)*3600000;
+    const earliest=Math.max(Date.now()+ferm.minTotalFermH*3600000,suggestedTargets.length?Math.min(...suggestedTargets.map(target=>+target.bake)):0);
+    const at=new Date(ideal);at.setHours(hour,0,0,0);
+    // the meal time nearest the ideal: same day, or the next one when that is closer
+    if(ideal-+at>12*3600000)at.setDate(at.getDate()+1);
+    while(+at<earliest)at.setDate(at.getDate()+1);
+    const pad=(n:number)=>String(n).padStart(2,'0');
+    return `${at.getFullYear()}-${pad(at.getMonth()+1)}-${pad(at.getDate())}T${pad(hour)}:00`;
+  },[suggestedTargets,bakeType,styleKey]);
   const applySuggestedTarget=(candidate:typeof suggestedTargets[number])=>{
     const verify=candidate.starter?evaluateStarterCandidate({mix:+candidate.start,feed:null,refresh:null},
       candidate.blocks,undefined,false,candidate.starter.probe.result??undefined,candidate.bake):null;
@@ -7842,7 +7858,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
               ref={dateInputRef}
               type="datetime-local"
               aria-label={isFr?'Date et heure de cuisson':'Bake date and time'}
-              value={pickerDate ? `${pickerDate}T${String(pickerHour ?? 18).padStart(2,'0')}:${String(pickerMinute).padStart(2,'0')}` : ''}
+              value={pickerDate ? `${pickerDate}T${String(pickerHour ?? 18).padStart(2,'0')}:${String(pickerMinute).padStart(2,'0')}` : defaultPickValue}
               onChange={e=>{
                 const [date,clock]=e.currentTarget.value.split('T');
                 if(!date||!clock)return;
@@ -7852,6 +7868,12 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
                 applyDebounceRef.current=setTimeout(()=>{applyDebounceRef.current=null;applyTimePick(date,hour,minute);},350);
               }}
               onBlur={e=>{
+                // A phone picker confirmed on its opening value sends no change: keep that value.
+                if(!applyDebounceRef.current&&!pickerDate&&typeof window!=='undefined'&&window.matchMedia?.('(pointer: coarse)').matches){
+                  const [date,clock]=e.currentTarget.value.split('T');
+                  if(date&&clock){const [hour,minute]=clock.split(':').map(Number);setPickerDate(date);setPickerHour(hour);setPickerMinute(minute);applyTimePick(date,hour,minute);}
+                  return;
+                }
                 if(!applyDebounceRef.current)return;
                 clearTimeout(applyDebounceRef.current);applyDebounceRef.current=null;
                 const [date,clock]=e.currentTarget.value.split('T');

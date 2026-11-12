@@ -76,3 +76,21 @@ test('Simple: the bake time shows no clash card; Generate asks it once, in a she
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
  expect(errors).toEqual([]);
 });
+
+test('an empty bake time opens the picker about 48 h ahead at 7:00pm for a Neapolitan, and confirming it keeps that time',async({page})=>{
+ await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
+ await page.goto('/');
+ await page.getByRole('button',{name:'Pizza',exact:true}).tap();
+ await page.getByRole('button',{name:'Classic Neapolitan',exact:true}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^Quantity →$/}).tap();
+ await page.locator('.bh-step-actions:visible [data-bh-forward]:visible, .bh-batch-actions:visible [data-bh-forward]:visible').first().tap();
+ const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();
+ const time=page.getByLabel('Bake date and time',{exact:true});
+ await expect(time).toHaveValue(/T19:00$/);
+ const hoursAhead=await time.evaluate(el=>(new Date(el.value)-Date.now())/3600000);
+ expect(hoursAhead).toBeGreaterThan(38);
+ expect(hoursAhead).toBeLessThan(62);
+ // A phone picker confirmed without moving sends no change; the opening value is kept.
+ await time.focus();await time.blur();
+ await expect(page.getByText(/· 7:00pm$/).filter({visible:true}).first()).toBeVisible();
+});
