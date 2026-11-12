@@ -17,9 +17,9 @@ import { MIXER_TYPES, isLevainStyle, AUTOLYSE_MIN, autolyseMinFor, preMixAutolys
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
 import { toggleStepCompletion } from '../utils/guideProgress';
-import { mixingWaterCaption, mixingBatchPlan, largeManualDough } from '../utils/mixingBatches';
+import { mixingBatchPlan, largeManualDough } from '../utils/mixingBatches';
 import PhaseSummary from './PhaseSummary';
-import WaterPreparation, { waterSplit, type WaterSource, type WaterSettingsProps } from './WaterPreparation';
+import WaterPreparation, { waterSplit, waterGuideLine, type WaterSource, type WaterSettingsProps } from './WaterPreparation';
 import { type UnitSystem, displayTemp, displayWeight, formatClock, tempC, tempRange } from '../utils/units';
 import { getPrefPeakH_RT, getStarterFridgeWarmupH } from './FermentChart';
 import { GUIDE_FAQ } from '../lib/guideFaq';
@@ -1196,10 +1196,9 @@ Actual dough condition and equipment may differ from these estimates.`;
   const helpSummary = {display:'inline-flex',alignItems:'center',minHeight:44,cursor:'pointer',color:'var(--terra)'} as const;
   const waterHelp = (() => {
     if (enriched || recipe?.waterTemp == null || bgMainWater == null) return null;
-    const split = waterSplit({waterGrams:bgMainWater,targetTemp:recipe.waterTemp,kitchenTemp,fridgeTemp,source:waterSource,measuredWaterTemp,waterMethod,idealWaterTemp:recipe.thermal?.idealWaterTemp,directIceSupported:mixerType==='spiral'});
-    const temp = displayTemp(recipe.waterTemp,u);
-    const line = split && split.ice > 0 ? (l==='fr' ? `à ${temp}, avec ${displayWeight(split.ice,u,l)} de glace` : `at ${temp}, with ${displayWeight(split.ice,u,l)} ice`) : (l==='fr' ? `environ ${temp}` : `about ${temp}`);
-    return <div data-guide-water style={{fontSize:14,color:D.ash,marginTop:-4,marginBottom:6}}><span data-water-temp>{line}</span> · <details data-water-help style={{display:'inline'}}><summary style={helpSummary}>{l==='fr'?'comment l’obtenir ▾':'how to get it ▾'}</summary><div style={{padding:'4px 0 8px'}}>{simpleMode && <p style={{margin:'4px 0'}}>{mixingWaterCaption(mixerType,l)}.</p>}<WaterPreparation readOnly
+    const guide = waterGuideLine({waterGrams:bgMainWater,targetTemp:recipe.waterTemp,kitchenTemp,fridgeTemp,source:waterSource,measuredWaterTemp,waterMethod,idealWaterTemp:recipe.thermal?.idealWaterTemp,directIceSupported:mixerType==='spiral',locale:l,units:u});
+    if (!guide.help) return <div data-guide-water style={{fontSize:14,color:D.ash,marginTop:-4,marginBottom:6}}><span data-water-temp>{guide.text}</span></div>;
+    return <div data-guide-water style={{fontSize:14,color:D.ash,marginTop:-4,marginBottom:6}}><span data-water-temp>{guide.text}</span> · <details data-water-help style={{display:'inline'}}><summary style={helpSummary}>{l==='fr'?'comment l’obtenir ▾':'how to get it ▾'}</summary><div style={{padding:'4px 0 8px'}}><WaterPreparation readOnly
             waterGrams={bgMainWater} targetTemp={recipe.waterTemp} kitchenTemp={kitchenTemp}
             fridgeTemp={fridgeTemp} locale={l} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={recipe.thermal?.targetDoughTemp} achievedDoughTempC={recipe.thermal?.doughTempC} waterWasClamped={recipe.thermal?.waterWasClamped} idealWaterTemp={recipe.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && recipe.oil === 0 && recipe.sugar === 0 && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} /></div></details></div>;
   })();

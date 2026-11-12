@@ -55,6 +55,28 @@ export function waterSplit({waterGrams,targetTemp,kitchenTemp,fridgeTemp,source=
   if(!split) return null;
   return split.ice>0&&split.ice<ICE_METHOD_MIN_G ? {water:split.water+split.ice,ice:0,cool:true} : {...split,cool:false};
 }
+/** The one water line on the recipe and on Start Dough: how to reach the temperature without
+ *  a thermometer. help is true only when the preparation has steps worth a toggle (ice, or a
+ *  water source the baker measured). Kneading equipment is never mentioned here: Simple assumes
+ *  hand kneading, and Custom sets the equipment explicitly. */
+export function waterGuideLine(args: Parameters<typeof waterSplit>[0] & { locale: string; units: UnitSystem }): { text: string; help: boolean } {
+  const { waterGrams: grams, targetTemp, kitchenTemp, fridgeTemp, source = 'room', locale, units } = args;
+  const fr = locale === 'fr';
+  const split = waterSplit(args);
+  const temp = displayTemp(targetTemp, units);
+  const w = (g: number) => displayWeight(g, units, locale);
+  if (split && split.ice > 0) return { text: fr ? `à ${temp}, avec ${w(split.ice)} de glace` : `at ${temp}, with ${w(split.ice)} ice`, help: true };
+  if (source !== 'room') return { text: fr ? `environ ${temp}` : `about ${temp}`, help: true };
+  if (targetTemp < kitchenTemp - 2 && kitchenTemp - fridgeTemp > 1) {
+    const cold = Math.min(grams, Math.round(grams * (kitchenTemp - targetTemp) / (kitchenTemp - fridgeTemp) / 10) * 10);
+    if (cold >= grams) return { text: fr ? `froide, sortie du réfrigérateur (environ ${temp})` : `cold, from the fridge (about ${temp})`, help: false };
+    if (cold > 0) return { text: fr
+      ? `environ ${temp} : ${w(cold)} sortis du réfrigérateur + ${w(grams - cold)} à température ambiante`
+      : `about ${temp}: ${w(cold)} from the fridge + ${w(grams - cold)} at room temperature`, help: false };
+  }
+  if (targetTemp > kitchenTemp + 2) return { text: fr ? `tiède, environ ${temp}` : `lukewarm, about ${temp}`, help: false };
+  return { text: fr ? `à température ambiante, environ ${temp}` : `room temperature, about ${temp}`, help: false };
+}
 /** "405 g of cool water, about 21°C" — one line for a small cooling correction. */
 export function coolWaterLine(grams: number, targetTemp: number, units: UnitSystem, fr: boolean): string {
   return fr

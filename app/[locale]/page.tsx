@@ -1810,7 +1810,6 @@ export default function Home() {
   const recipeInputKey = JSON.stringify([bakeType,styleKey,numItems,itemWeight,totalFlourTarget,ovenType,ovenConstruction,mixerType,customMixerCapacityG,mixingBatches,yeastType,kitchenTemp,humidity,fridgeTemp,manualHydration,manualOil,manualSugar,manualSalt,flourChosen?flourBlend:null,prefermentType,prefermentType!=='none'?(prefermentFlourPct??20):prefermentFlourPct,targetDoughTemp,flourInFridge,measuredFlourTemp,measuredPrefermentTemp,wastePct,addSeeds,priorityOverride,yeastPctOverride,starterPctOverride,starterState,starterLocation,planningMode,lastFedTime?.getTime()??null,knownPeakTime?.getTime()??null,hasNotFedYet,lastFedAge,lastFeedRatio,nextFeedRatioOverride,ratioMode,tang]);
   const previousRecipeInputKey = useRef(recipeInputKey);
   const generatedRecipeInputKey = useRef<string | null>(null);
-  const pendingMixerRecipeUpdate = useRef(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const changed = previousRecipeInputKey.current !== recipeInputKey;
@@ -3648,21 +3647,6 @@ export default function Home() {
     archivedFlour:flourChosen&&archivedFlourNames.length>0,
     requirementsComplete:tab==='simple'?simpleRequiredDone:customRequiredDone,missingRequiredStep,
   }) : undefined;
-  useEffect(() => {
-    if (!pendingMixerRecipeUpdate.current || !canGenerate) return;
-    pendingMixerRecipeUpdate.current = false;
-    handleGenerate(true);
-  }, [mixerType, canGenerate, recipeInputKey]);
-  function changeRecipeMixer(value: 'hand' | 'stand') {
-    pendingMixerRecipeUpdate.current = true;
-    setMixerType(value);
-    setWaterMethod('premelt');
-    setSpiralIceConfirmed(false);
-    setCustomMixerCapacityG(undefined);
-    setMixingBatches(undefined);
-    confirmSetting('mixer',value);
-    updateProfile({mixerType:value});
-  }
   const manualMixing = mixerType === 'hand' || mixerType === 'no_knead';
   const mixingBatchControl = mixerType && (!manualMixing || suggestedMixingBatches > 1 || mixingBatches !== undefined) ? <MixingBatchControl total={plannedDoughG} capacity={mixerCapacityG} count={selectedMixingBatches} recommended={suggestedMixingBatches} manual={manualMixing} knownCapacity={customMixerCapacityG!==undefined} override={mixingBatches!==undefined} fr={locale==='fr'} onChange={setMixingBatches}/> : null;
 
@@ -4902,7 +4886,6 @@ export default function Home() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
 
                           <RecipeOutput
-                            onMixerChange={execution||mixExecution?undefined:changeRecipeMixer}
                             mixerConfirmed={confirmed('mixer',mixerType)}
                             starterEvents={starterEvents} mixingTime={startTime}
                             containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
@@ -5467,7 +5450,6 @@ export default function Home() {
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
                           <RecipeOutput
-                            onMixerChange={execution||mixExecution?undefined:changeRecipeMixer}
                             mixerConfirmed={confirmed('mixer',mixerType)}
                             starterEvents={starterEvents} mixingTime={startTime}
                             containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}

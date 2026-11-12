@@ -7142,9 +7142,10 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
     const ferm=STYLE_FERM_DEFAULTS[styleKey]??FERM_FALLBACK;
     const ideal=Date.now()+((('preferredColdH' in ferm&&ferm.preferredColdH)||ferm.coldH)+ferm.rtH)*3600000;
     const earliest=Math.max(Date.now()+ferm.minTotalFermH*3600000,suggestedTargets.length?Math.min(...suggestedTargets.map(target=>+target.bake)):0);
-    const at=new Date(ideal);at.setHours(hour,0,0,0);
-    // the meal time nearest the ideal: same day, or the next one when that is closer
-    if(ideal-+at>12*3600000)at.setDate(at.getDate()+1);
+    // the meal time nearest the ideal (the day before, the same day or the day after)
+    const base=new Date(ideal);base.setHours(hour,0,0,0);
+    const options=[-1,0,1].map(shift=>{const d=new Date(base);d.setDate(d.getDate()+shift);return d;});
+    const at=options.reduce((best,d)=>Math.abs(+d-ideal)<Math.abs(+best-ideal)?d:best);
     while(+at<earliest)at.setDate(at.getDate()+1);
     const pad=(n:number)=>String(n).padStart(2,'0');
     return `${at.getFullYear()}-${pad(at.getMonth()+1)}-${pad(at.getDate())}T${pad(hour)}:00`;

@@ -3,14 +3,14 @@ import { poolishCoolingAt } from '../utils/poolishCoolingAt';
 import { starterBuild, starterFeedLabelFor } from '../utils/starterBuild';
 import type { StarterEvent } from './SchedulePicker';
 import { recommendedFlourName, flourProductName } from '../lib/flourGuidance';
-import { mixingWaterCaption, mixingBatchPlan } from '../utils/mixingBatches';
+import { mixingBatchPlan } from '../utils/mixingBatches';
 import { useState, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { commercialDilution, type RecipeResult, type YeastResult, type YeastWarningKey } from '../utils';
 import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, FLOUR_DATA, type PrefermentType, type FlourBlend } from '../data';
 import { type UnitSystem, displayWeight, displayTemp, formatPercent, formatBakeDateTime } from '../utils/units';
 import PlanNav from './PlanNav';
-import WaterPreparation, { waterSplit, type WaterSource, type WaterSettingsProps } from './WaterPreparation';
+import WaterPreparation, { waterSplit, waterGuideLine, type WaterSource, type WaterSettingsProps } from './WaterPreparation';
 import { formatPrefermentDose, formatYeastDose, prefermentDilution } from '../utils/prefermentDose';
 import { needsScaleHelp, yeastSpoonMeasure, setPercent, DILUTION_BASE_YEAST_G, SCALE_HELP_BELOW_G } from '../utils/yeastMeasure';
 import { getBreadProtocol } from '../utils/breadProfiles';
@@ -18,7 +18,6 @@ import { eggCountLabel } from '../utils/breadNames';
 
 interface RecipeOutputProps extends WaterSettingsProps {
   afterIngredients?: ReactNode;
-  onMixerChange?: (value: 'hand' | 'stand') => void;
   mixerConfirmed?: boolean;
   containerCapacityLitres?: number;
   onContainerCapacityChange?: (litres: number | undefined) => void;
@@ -351,7 +350,7 @@ export default function RecipeOutput({
   containerCapacityLitres, onContainerCapacityChange, result, numItems, itemWeight, styleName, styleKey, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, explicitFlour = false, units,
   starterEvents, mixingTime, feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
-  afterIngredients, onMixerChange, mixerConfirmed=false, onEditSetup, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixerCapacityG, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
+  afterIngredients, mixerConfirmed=false, onEditSetup, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixerCapacityG, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
 }: RecipeOutputProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -443,17 +442,14 @@ export default function RecipeOutput({
   const itemLabel = numItems === 1 ? 'ball / loaf' : numItems <= 4 ? 'balls' : 'pieces';
 
   const isSpiral = mixerType === 'spiral';
-  const waterAssumption = mode==='simple' ? <p>{mixingWaterCaption(mixerType,locale)}
-    {onMixerChange && <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={()=>onMixerChange(mixerType==='hand'?'stand':'hand')}>{mixerType==='hand'?(locale==='fr'?'Utiliser un robot':'Use a mixer'):(locale==='fr'?'Pétrir à la main':'Knead by hand')}</button>}
-  </p>:null;
-  // One visible line for the water: its temperature, with ice named when the recipe needs it.
-  const waterTempLine = (() => {
-    const split = waterSplit({waterGrams:waterMain,targetTemp:waterTemp,kitchenTemp,fridgeTemp,source:waterSource,measuredWaterTemp,waterMethod,idealWaterTemp:result.thermal?.idealWaterTemp,directIceSupported:mixerType==='spiral'});
-    const fr = locale === 'fr';
-    const temp = displayTemp(waterTemp,u);
-    if (split && split.ice > 0) return fr ? `à ${temp}, avec ${displayWeight(split.ice,u,locale)} de glace` : `at ${temp}, with ${displayWeight(split.ice,u,locale)} ice`;
-    return fr ? `environ ${temp}` : `about ${temp}`;
-  })();
+  // The water line says how to get the temperature without a thermometer. Only ice has steps
+  // worth a toggle. Kneading equipment stays silent here: Simple assumes hand kneading (its
+  // effect on the water is a couple of degrees), and Custom sets the equipment explicitly.
+  const waterGuide = (grams: number) => waterGuideLine({waterGrams:grams,targetTemp:waterTemp,kitchenTemp,fridgeTemp,source:waterSource,measuredWaterTemp,waterMethod,idealWaterTemp:result.thermal?.idealWaterTemp,directIceSupported:mixerType==='spiral',locale,units:u});
+  const waterSub = (grams: number, help: React.ReactNode, extra?: React.ReactNode) => {
+    const guide = waterGuide(grams);
+    return <><span data-water-temp>{guide.text}</span>{guide.help && <> · <details data-water-help style={{display:'inline'}}><summary style={{display:'inline-flex',alignItems:'center',minHeight:44,cursor:'pointer',color:'var(--terra)'}}>{locale === 'fr' ? 'comment l’obtenir ▾' : 'how to get it ▾'}</summary>{extra}{help}</details></>}{!guide.help && extra}</>;
+  };
   const waterSubNode = <WaterPreparation readOnly waterGrams={waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} achievedDoughTempC={result.thermal?.doughTempC} waterWasClamped={result.thermal?.waterWasClamped} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
   const finalDoughWaterSubNode = <WaterPreparation readOnly waterGrams={result.preferment?.finalWater ?? waterMain} targetTemp={waterTemp} kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} locale={locale} units={u} source={waterSource} onSourceChange={onWaterSourceChange} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={onMeasuredWaterTempChange} waterMethod={waterMethod} onWaterMethodChange={onWaterMethodChange} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={onSpiralIceConfirmedChange} targetDoughTemp={result.thermal?.targetDoughTemp} achievedDoughTempC={result.thermal?.doughTempC} waterWasClamped={result.thermal?.waterWasClamped} idealWaterTemp={result.thermal?.idealWaterTemp} directIceSupported={mixerType === 'spiral' && oil === 0 && sugar === 0 && !!styleKey && !['brioche','pain_mie','pain_viennois'].includes(styleKey)} />;
 
@@ -718,7 +714,7 @@ export default function RecipeOutput({
                   grams={wStr(pf.finalFlour)} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
               )}
-              <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={<><span data-water-temp>{waterTempLine}</span> · <details data-water-help style={{display:'inline'}}><summary style={{display:'inline-flex',alignItems:'center',minHeight:44,cursor:'pointer',color:'var(--terra)'}}>{locale === 'fr' ? 'comment l’obtenir ▾' : 'how to get it ▾'}</summary>{waterAssumption}{finalDoughWaterSubNode}</details></>}
+              <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={waterSub(pf.finalWater, finalDoughWaterSubNode)}
                 advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalWater / flour * 1000) / 10) : undefined} />
               <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} noPct
                 advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
@@ -779,10 +775,7 @@ export default function RecipeOutput({
             </>}
           />}
           {water > 0 && <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(sdActive ? waterMain : water)} noPct={sdActive} pct={pctStr(waterPct)} sub={
-            !enrichment ? <><span data-water-temp>{waterTempLine}</span> · <details data-water-help style={{display:'inline'}}><summary style={{display:'inline-flex',alignItems:'center',minHeight:44,cursor:'pointer',color:'var(--terra)'}}>{locale === 'fr' ? 'comment l’obtenir ▾' : 'how to get it ▾'}</summary>
-              {sdActive && <p>{locale === 'fr' ? `${wStr(sdHalf)} d’eau sont déjà dans le levain indiqué ci-dessous.` : `${wStr(sdHalf)} water is already in the starter shown below.`}</p>}
-              {waterAssumption}{waterSubNode}
-            </details></> : undefined} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />}
+            !enrichment ? waterSub(waterMain, waterSubNode, sdActive ? <span style={{display:'block'}}>{locale === 'fr' ? `${wStr(sdHalf)} d’eau sont déjà dans le levain indiqué ci-dessous.` : `${wStr(sdHalf)} water is already in the starter shown below.`}</span> : undefined) : undefined} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />}
           {mode==='custom' && flourBlend?.flour2 && <p className="bh-key-detail">{[flourBlend.flour1,flourBlend.flour2,flourBlend.flour3].filter(Boolean).map((key,index)=>{
             const ratio=index===0?flourBlend.ratio1:index===1?(flourBlend.flour3?flourBlend.ratio2??0:100-flourBlend.ratio1):100-flourBlend.ratio1-(flourBlend.ratio2??0);
             const flourType=FLOUR_DATA[key as keyof typeof FLOUR_DATA];

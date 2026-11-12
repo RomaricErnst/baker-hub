@@ -1,3 +1,7 @@
+# 12 November 2026 — a quiet water line (Claude)
+
+Romaric: "Use a mixer" under Water asked a casual baker to revalidate the calculation, and "how to get it" with no ice said nothing useful. The recipe and Start Dough now show one water line (`waterGuideLine`): "room temperature, about 21°C", "about 21°C: 120 g from the fridge + 287 g at room temperature", "lukewarm, about 30°C", or "at 15°C, with 53 g ice". The "how to get it ▾" toggle appears only when the line has steps (ice, or a measured water source). The "Water · hand kneading" caption, the Use a mixer / Knead by hand switch and its replan path (`changeRecipeMixer`) are gone; Simple assumes hand kneading silently, Custom sets the equipment.
+
 # 12 November 2026 — the empty bake time opens on the best day, at a meal time (Claude)
 
 The native picker opened on "now" (6:14pm today). An empty bake time now opens the picker on the style's preferred fermentation (preferredColdH or coldH, plus rtH, from STYLE_FERM_DEFAULTS: about 50 h for a Neapolitan) at the nearest 7:00pm for pizza or 10:00am for bread, never before the earliest workable bake. The field still reads "Choose date and time" until the baker confirms; on a phone, confirming the picker without moving it keeps the opening value (blur on a coarse pointer applies it).
