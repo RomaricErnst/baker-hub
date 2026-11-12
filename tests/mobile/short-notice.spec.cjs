@@ -26,7 +26,8 @@ for(const locale of ['en','fr'])test(`${locale} simple: a bake tonight starts on
  const soon=page.locator('[data-start-soon]');
  await expect(soon).toHaveText(fr?'Pétrir la pâte · aujourd’hui 11h30 · dans 15 min':'Start Dough · today 11:30am · in 15 min');
  await page.getByRole('button',{name:fr?'Générer ma recette':'Generate my recipe',exact:true}).tap();
- await expect(page.locator('[data-recipe-plan]')).toContainText(fr?'aujourd’hui 11h30 · dans 15 min':'today 11:30am · in 15 min');
+ // An imminent first step says how soon, on its own row of the plan.
+ await expect(page.locator('[data-plan-start]')).toContainText(fr?'Pétrir la pâte · dans 15 min':'Start Dough · in 15 min');
  await expect.poll(async()=>(await stored(page))?.startTime).toBe(Date.parse('2026-11-10T11:30:00+08:00'));
  // Due within 30 minutes: Preparation opens on the summary with step 1's instructions open.
  await (async()=>{const t=page.locator('.bh-bake-navigator-trigger');if(await t.getAttribute('aria-expanded')!=='true')await t.tap();await page.getByRole('navigation',{name:fr?'Votre fournée':'Your bake',exact:true}).getByRole('button',{name:fr?/^Préparation/:/^Preparation/}).first().tap();})();
