@@ -29,6 +29,21 @@ export function eachPizzaNote({ styleKey, itemWeight, diameter, units, locale }:
     : `Each pizza: ${weight} for about ${across} across`;
 }
 
+/** "270 g each, about 30 cm" — the short form for the recipe's one-line summary. */
+export function eachPizzaShort(args: Parameters<typeof eachPizzaNote>[0]): string | null {
+  const { styleKey, itemWeight, diameter, units, locale } = args;
+  if (!styleKey || !Number.isFinite(itemWeight) || itemWeight <= 0) return null;
+  const fr = locale === 'fr';
+  const weight = displayWeight(Math.round(itemWeight), units, locale);
+  if (isPanPizzaStyle(styleKey)) {
+    const size = panSizeLabel(styleKey, itemWeight, units);
+    return size ? (fr ? `${weight} chacune, moule d’environ ${size}` : `${weight} each, in a pan of about ${size}`) : (fr ? `${weight} chacune` : `${weight} each`);
+  }
+  if (diameter === undefined || !Number.isFinite(diameter) || diameter <= 0) return fr ? `${weight} chacune` : `${weight} each`;
+  const across = units === 'imperial' ? `${Math.round(diameter / 2.54)} in` : `${Math.round(diameter)} cm`;
+  return fr ? `${weight} chacune, environ ${across}` : `${weight} each, about ${across}`;
+}
+
 /** Keep incomplete keystrokes local; normalize only when the baker commits. */
 function DraftNumberInput({ value, onCommit, ...props }: Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onBlur' | 'onKeyDown'> & { value: number; onCommit: (value: number) => void }) {
   const [draft, setDraft] = useState<string | null>(null);

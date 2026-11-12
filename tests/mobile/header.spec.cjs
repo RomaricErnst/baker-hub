@@ -127,7 +127,7 @@ for (const locale of ['fr', 'en']) {
     await dialog.getByRole('button', { name: fr ? 'Langue et unités' : 'Language & units', exact: true }).tap();
     await dialog.getByRole('combobox', { name: fr ? 'Langue' : 'Language', exact: true }).selectOption({ label: fr ? 'English' : 'Français' });
     // The recipe stays open in the other language.
-    await expect(page.getByRole('heading', { level: 1, name: fr ? 'My pizza night' : 'Ma soirée pizza', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: fr ? /^Pizza (night|lunch|brunch) · / : /^(Soirée|Déjeuner|Brunch) pizza · / })).toBeVisible();
     await expect(dialog).toBeHidden();
     await verifyHeader(page, testInfo, `${locale}-switched-language`);
     expect(errors, 'uncaught application errors').toEqual([]);

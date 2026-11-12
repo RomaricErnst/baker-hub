@@ -83,9 +83,12 @@ function TimingRow({anchor,isFr,onChange,check,cacheKey,open,onToggle}:{anchor:K
   </div>
  </li>;
 }
-export default function ScheduleKeyTimings({conflictRows,anchors,blocks,isFr,onChange,check,cacheKey,hasDraft,children,header,onCancel,onApply,canApply,onOpenChange,notice,ovenAt,personalized,adjustment}:{conflictRows?:{id:string;at:number;name:string;cover:()=>void}[];header?:ReactNode;notice?:ReactNode;adjustment?:ReactNode;onApply:()=>void;canApply:boolean;onOpenChange:(open:boolean)=>void;ovenAt:number;personalized:boolean;onCancel:()=>void;onInteractionChange:(value:boolean)=>void;anchors:KeyTimingAnchor[];blocks:AvailabilityBlock[];isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string;hasDraft?:boolean;children?:ReactNode}){
- const [selectedId,setSelectedId]=useState<string|null>(null);
+export default function ScheduleKeyTimings({conflictRows,anchors,blocks,isFr,onChange,check,cacheKey,hasDraft,children,header,onCancel,onApply,canApply,onOpenChange,notice,ovenAt,personalized,adjustment,focusId,inline=false,applyLabel,onClose}:{focusId?:string;inline?:boolean;applyLabel?:string;onClose?:()=>void;conflictRows?:{id:string;at:number;name:string;cover:()=>void}[];header?:ReactNode;notice?:ReactNode;adjustment?:ReactNode;onApply:()=>void;canApply:boolean;onOpenChange:(open:boolean)=>void;ovenAt:number;personalized:boolean;onCancel:()=>void;onInteractionChange:(value:boolean)=>void;anchors:KeyTimingAnchor[];blocks:AvailabilityBlock[];isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string;hasDraft?:boolean;children?:ReactNode}){
+ const [selectedId,setSelectedId]=useState<string|null>(focusId??null);
  const open=selectedId!==null;
+ // Inline, closing the one editor closes the panel: reported on the baker's action, never from
+ // an effect (a remount or a development double-run must not close it).
+ const select=(id:string|null)=>{setSelectedId(id);if(inline&&id===null)onClose?.();};
  useEffect(()=>{onOpenChange(open);return()=>onOpenChange(false);},[open,onOpenChange]);
  const gaps=anchors.filter(anchor=>!anchor.valid);
  const valid=gaps.length===0&&!conflictRows?.length;
@@ -94,17 +97,18 @@ export default function ScheduleKeyTimings({conflictRows,anchors,blocks,isFr,onC
    ? (isFr ? `${blocked.length} ${blocked.length===1?'étape pendant une indisponibilité':'étapes pendant vos indisponibilités'}` : `${blocked.length} ${blocked.length===1?'step falls':'steps fall'} during your unavailable hours`)
    : (isFr ? 'Le planning nécessite un autre créneau' : 'The plan needs another available time');
  const day=(at:number)=>formatLongDay(new Date(at),isFr?'fr':'en');
- const events=[...anchors,{id:'oven',name:isFr?'Enfournement':'Bake',at:ovenAt,from:ovenAt,to:ovenAt,editable:false,valid:true}].sort((a,b)=>a.at-b.at);
+ // Inline (on the Recipe's plan) the editor shows only the step being moved.
+ const events=inline?anchors.filter(anchor=>anchor.id===focusId):[...anchors,{id:'oven',name:isFr?'Enfournement':'Bake',at:ovenAt,from:ovenAt,to:ovenAt,editable:false,valid:true}].sort((a,b)=>a.at-b.at);
  return <section data-open={open||undefined} aria-label={isFr?'Vos moments clés':'Your key times'} id="schedule-anchor-panel" tabIndex={-1}>
-  <div className="bh-plan-heading"><span className="bh-plan-state" data-valid={valid} role="status">{!valid?gapTitle:hasDraft?(isFr?'Modifications à appliquer':'Changes to apply'):personalized?(isFr?'Planning personnalisé':'Your adjusted plan'):(isFr?'Planning recommandé':'Recommended plan')}</span>{header}</div>
+  {!inline&&<div className="bh-plan-heading"><span className="bh-plan-state" data-valid={valid} role="status">{!valid?gapTitle:hasDraft?(isFr?'Modifications à appliquer':'Changes to apply'):personalized?(isFr?'Planning personnalisé':'Your adjusted plan'):(isFr?'Planning recommandé':'Recommended plan')}</span>{header}</div>}
   {notice}
-  {blocked.length>0&&<ul data-availability-conflicts>{blocked.map(anchor=><li key={anchor.id+anchor.at} data-conflict-action={anchor.id} data-conflict-at={anchor.at}>{anchor.name} · {formatClock(new Date(anchor.at),isFr?'fr':'en')} <button type="button" className="bh-back-action" onClick={anchor.cover}>{isFr?'Je peux assurer cette étape':'I can cover this step'}</button></li>)}</ul>}
+  {!inline&&blocked.length>0&&<ul data-availability-conflicts>{blocked.map(anchor=><li key={anchor.id+anchor.at} data-conflict-action={anchor.id} data-conflict-at={anchor.at}>{anchor.name} · {formatClock(new Date(anchor.at),isFr?'fr':'en')} <button type="button" className="bh-back-action" onClick={anchor.cover}>{isFr?'Je peux assurer cette étape':'I can cover this step'}</button></li>)}</ul>}
   <div className="bh-linked-editor">
-   <ol className="bh-schedule-timeline">{events.map((anchor,index)=><TimelineEvent key={anchor.id} heading={index===0||day(events[index-1].at)!==day(anchor.at)?day(anchor.at):null}><TimingRow {...{anchor,isFr,onChange,check,cacheKey}} open={selectedId===anchor.id} onToggle={()=>setSelectedId(selectedId===anchor.id?null:anchor.id)}/></TimelineEvent>)}</ol>
-   {open&&!hasDraft&&<div className="bh-editor-exit"><button type="button" className="bh-apply-plan" onClick={()=>setSelectedId(null)}>{isFr?'Terminé':'Done'}</button></div>}
-   {hasDraft&&<div className="bh-linked-actions"><div className="bh-linked-feedback" role="status">{adjustment}</div><button type="button" className="bh-apply-plan" disabled={!canApply} onClick={()=>{onApply();setSelectedId(null);}}>{isFr?'Appliquer':'Apply'}</button><button type="button" className="bh-back-action" onClick={()=>{onCancel();setSelectedId(null);}}>{isFr?'Annuler':'Cancel'}</button></div>}
+   <ol className={inline?'bh-schedule-timeline bh-timeline-inline':'bh-schedule-timeline'}>{events.map((anchor,index)=><TimelineEvent key={anchor.id} heading={inline?null:index===0||day(events[index-1].at)!==day(anchor.at)?day(anchor.at):null}><TimingRow {...{anchor,isFr,onChange,check,cacheKey}} open={selectedId===anchor.id} onToggle={()=>select(selectedId===anchor.id?null:anchor.id)}/></TimelineEvent>)}</ol>
+   {open&&!hasDraft&&!inline&&<div className="bh-editor-exit"><button type="button" className="bh-apply-plan" onClick={()=>select(null)}>{isFr?'Terminé':'Done'}</button></div>}
+   {hasDraft&&<div className="bh-linked-actions"><div className="bh-linked-feedback" role="status">{adjustment}</div><button type="button" className="bh-apply-plan" disabled={!canApply} onClick={()=>{onApply();select(null);}}>{applyLabel??(isFr?'Appliquer':'Apply')}</button><button type="button" className="bh-back-action" onClick={()=>{onCancel();select(null);}}>{isFr?'Annuler':'Cancel'}</button></div>}
   </div>
-  {children}
+  {!inline&&children}
  </section>;
 }
 function TimelineEvent({heading,children}:{heading:string|null;children:ReactNode}){

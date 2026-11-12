@@ -2,7 +2,7 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 
 // The route agreed on the journey map (12 Nov 2026), walked end to end:
 // one setup path, sections in order with the same bottom bar, times changed only
-// from the plan, My bake holds the choices, and customizing continues in place.
+// from the plan (in place on the Recipe), My bake holds the choices, and customizing continues in place.
 test.use({timezoneId:'Asia/Singapore'});
 const bar=page=>page.locator('.bh-step-actions:visible, .bh-recipe-next:visible').last();
 
@@ -41,10 +41,13 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
  // Toppings are planned with the dough: the Recipe leads to them, and carries no toppings button of its own.
  await expect(bar(page).getByRole('button')).toHaveText([L('My choices','Mes choix'),L('Toppings →','Garnitures →')]);
  await expect(page.locator('.bh-fillings-invitation')).toHaveCount(0);
- await page.locator('[data-change-times]').tap();
- await expect(page.getByText(L('See all hands-on steps','Voir toutes les interventions')).filter({visible:true})).toHaveCount(1);
- await page.locator('.bh-step-actions:visible').getByRole('button',{name:L('Back to Recipe','Retour à Recette'),exact:true}).tap();
+ // Start Dough moves in place, on the Recipe: no trip to the timing screen.
+ await expect(page.locator('[data-change-times]')).toHaveCount(0);
+ await page.locator('[data-plan-edit]').tap();
+ await expect(page.locator('[data-plan-editor]')).toBeVisible();
  await expect(page.locator('.bh-navigator-current')).toContainText(L('Recipe','Recette'));
+ await page.locator('[data-plan-editor]').getByRole('button',{name:L(/^Close /,/^Fermer /)}).tap();
+ await expect(page.locator('[data-plan-editor]')).toHaveCount(0);
 
  // Sections in order: Recipe → Toppings → Shopping list → Preparation; each bar goes back one and on to the next.
  const companion=page.locator('[data-companion-action]:visible');

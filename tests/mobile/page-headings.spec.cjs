@@ -62,5 +62,5 @@ test('recipe card repeats the pan size, and follows imperial units',async({page}
  await page.addInitScript(()=>{try{localStorage.setItem('bh_units','imperial');}catch{}});
  await seed(page,{style:'pan'});
  await go(page,'Recipe','en');
- await expect(page.locator('.bh-bake-context [data-each-pizza]')).toHaveText(/^Each pizza: \d+(\.\d)? oz in a pan of about \d+ × \d+ in$/);
+ await expect(page.locator('.bh-bake-context [data-bake-summary]')).toHaveText(/^2 pizzas · Pan pizza · \d+(\.\d)? oz each, in a pan of about \d+ × \d+ in$/);
 });
