@@ -63,12 +63,11 @@ test('Simple respects an explicit mixer profile and falls back safely for obsole
  assert.equal(choose({loadProfile:()=>({mixerType:'stand'})}).writes.setMixerType,'stand');
  assert.equal(choose({loadProfile:()=>({mixerType:'obsolete'})}).writes.setMixerType,'hand');
 });
-test('inline mixer change updates the profile and requests recipe recalculation without opening setup',()=>{
- let fn;function find(n){if(ts.isFunctionDeclaration(n)&&n.name?.text==='changeRecipeMixer')fn=n.getText(tree);ts.forEachChild(n,find);}find(tree);
- const writes={},pending={current:false};const context={pendingMixerRecipeUpdate:pending,confirmSetting:(k,v)=>writes.confirm=[k,v],updateProfile:p=>writes.profile=p};
- for(const name of [...fn.matchAll(/\b(set\w+)\(/g)].map(m=>m[1]))context[name]=v=>writes[name]=v;
- vm.runInNewContext(ts.transpileModule(fn+';changeRecipeMixer("stand");',{}).outputText,context);
- assert.equal(writes.setMixerType,'stand');assert.equal(writes.profile.mixerType,'stand');assert.equal(pending.current,true);assert.equal(writes.setWaterMethod,'premelt');
+// 12 Nov 2026: Simple assumes hand kneading silently; the recipe no longer offers a mixer switch.
+test('the recipe asks no kneading-equipment question',()=>{
+ const recipe=require('fs').readFileSync('app/components/RecipeOutput.tsx','utf8');
+ assert.doesNotMatch(recipe,/Use a mixer|Utiliser un robot|mixingWaterCaption\(/);
+ assert.doesNotMatch(source,/function changeRecipeMixer/);
 });
 test('returning edited inputs to generated values clears stale recipe status',()=>{
  let effect;function find(n){if(ts.isCallExpression(n)&&n.expression.getText(tree)==='useEffect'&&n.arguments[0]?.getText(tree).includes('generatedRecipeInputKey.current'))effect=n.arguments[0].getText(tree);ts.forEachChild(n,find);}find(tree);

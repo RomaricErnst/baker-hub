@@ -35,6 +35,9 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
 
  // Recipe: times change from the plan; one bottom bar, no Preparation shortcut.
  await expect(page.locator('[data-go-preparation]')).toHaveCount(0);
+ // The water line: no kneading-equipment question, and a "how to get it" toggle only when it has steps (ice).
+ await expect(page.getByText(L(/Use a mixer|hand kneading/,/Utiliser un robot|pétrissage à la main/)).filter({visible:true})).toHaveCount(0);
+ if(await page.locator('[data-water-help]:visible').count())await expect(page.locator('[data-water-temp]:visible').first()).toContainText(L('ice','glace'));
  // Toppings are planned with the dough: the Recipe leads to them, and carries no toppings button of its own.
  await expect(bar(page).getByRole('button')).toHaveText([L('My choices','Mes choix'),L('Toppings →','Garnitures →')]);
  await expect(page.locator('.bh-fillings-invitation')).toHaveCount(0);
