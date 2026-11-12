@@ -1,6 +1,10 @@
-# 12 November 2026 — Custom asks the bake time once, like Simple (Claude)
+# 12 November 2026 — a busy-time clash is asked once, when the recipe is created (Claude)
 
-Romaric walked pizza at 7:30pm with work hours: he answered the clash on the bake time, chose Customize my bake, and on Custom's bake-time step met the full editor — a clash card, "4 steps fall during your unavailable hours" with a per-step "I can cover this step" list, and warnings in the timeline. That contradicted rule R4 (times change only from the plan). Custom's bake-time step before the recipe is now the same question as Simple's: the date, suggested times, busy times and one clash card (Bake at … / Keep … · I'll handle these steps / Use the calculated yeast amount / Change my unavailable times). When the card cannot settle the plan, "See the plan →" opens the full editor. Customizing can still raise a new clash (a poolish moves the steps, so earlier covers no longer match their times); it is asked once, in the same card. `tests/mobile/custom-bake-time-question.spec.cjs` (CI) walks this case.
+Romaric walked pizza at 7:30pm with work hours: he answered the clash on the bake time, chose Customize my bake, and Custom's bake-time step asked again with the full editor (clash card, a per-step "I can cover this step" list, timeline warnings). He asked for the question once only. Now:
+- The bake-time question never shows a clash inline. Generate my recipe (Simple) or Create my recipe (Custom's bake-time step) opens a "Before your recipe" sheet with the one card (Bake at … / Keep … · I'll handle these steps / Use the calculated yeast amount / Change my unavailable times) and Not now; answering creates the recipe. The Bake time edit from My bake does the same on its Back button.
+- Customize my bake from the bake time asks nothing; the question comes once, at the end of the customize steps, about the plan as customized (a poolish moves the steps, so an earlier answer would have been about other times).
+- Custom's bake-time step is the same question as Simple's when Custom was reached from the bake-time question (`customBakeQuestion`, persisted). Sessions that reach it otherwise keep the full editor. "See the plan →" opens the full editor when the sheet cannot settle the plan.
+- `tests/mobile/custom-bake-time-question.spec.cjs` (CI) walks both paths.
 
 # 12 November 2026 — toppings in the planning (Claude)
 

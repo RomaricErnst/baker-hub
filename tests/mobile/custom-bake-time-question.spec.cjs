@@ -4,7 +4,7 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 // stack of per-step cards. Before the recipe, Custom's bake-time step asks the same
 // single question as Simple; the full editor lives behind Change times.
 test.use({timezoneId:'Asia/Singapore'});
-test('Custom before the recipe: one bake-time question, no per-step cards',async({page},testInfo)=>{
+test('Customize from the bake time: the clash is asked once, in a sheet, when the recipe is created',async({page},testInfo)=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
  await page.goto('/');
@@ -19,8 +19,8 @@ test('Custom before the recipe: one bake-time question, no per-step cards',async
  await time.fill(target);await time.blur();
  const busy=page;
  for(const name of [/^Weekdays/,/^Nights/]){const chip=busy.getByRole('button',{name}).filter({visible:true}).first();if(await chip.getAttribute('aria-pressed')!=='true')await chip.tap();}
- const decision=page.locator('[data-simple-decision]:visible');
- if(await decision.count())await decision.locator('[data-simple-keep-all], [data-simple-keep]').first().tap();
+ // The clash is not asked here: customizing defers it to the moment the recipe is created.
+ await expect(page.locator('[data-simple-decision]:visible')).toHaveCount(0);
  await page.getByRole('button',{name:/^Customize my bake/}).tap();
  // Walk the Custom steps with their recommended values, choosing a poolish when offered.
  for(let i=0;i<14&&!(await time.isVisible());i++){
@@ -36,11 +36,43 @@ test('Custom before the recipe: one bake-time question, no per-step cards',async
  await expect(page.getByText('I can cover this step').filter({visible:true})).toHaveCount(0);
  await expect(page.getByText(/steps? falls? during your unavailable hours/).filter({visible:true})).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Yes, this step is covered'}).filter({visible:true})).toHaveCount(0);
- expect(await page.locator('[data-simple-decision]:visible').count()).toBeLessThanOrEqual(1);
- if(await decision.count())await decision.locator('.bh-plan-option').first().tap();
- const create=page.getByRole('button',{name:'Create my recipe',exact:true}).filter({visible:true}).first();
- await expect(create).toBeEnabled();
- await create.tap();
+ await expect(page.locator('[data-simple-decision]:visible')).toHaveCount(0);
+ // Create my recipe asks the one question, in a sheet; answering it creates the recipe.
+ await page.getByRole('button',{name:'Create my recipe',exact:true}).filter({visible:true}).first().tap();
+ const sheet=page.locator('[data-decision-sheet]');
+ {
+  await expect(sheet.getByRole('dialog',{name:'Before your recipe'})).toBeVisible();
+  await page.screenshot({path:'/tmp/claude-0/-home-claude/95a4be40-6056-5c1e-aeaf-75fb16280be2/scratchpad/nav3/sheet.png'});
+  await expect(sheet.locator('[data-simple-decision]')).toHaveCount(1);
+  await testInfo.attach('decision-sheet',{body:await page.screenshot(),contentType:'image/png'});
+  await sheet.locator('[data-simple-keep-all], [data-simple-keep], [data-simple-accept]').first().tap();
+ }
  await expect(page.locator('.bh-navigator-current')).toContainText('Recipe');
+ expect(errors).toEqual([]);
+});
+
+test('Simple: the bake time shows no clash card; Generate asks it once, in a sheet',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
+ await page.goto('/fr');
+ await page.getByRole('button',{name:'Pizza',exact:true}).tap();
+ await page.getByRole('button',{name:'Napolitaine classique',exact:true}).tap();
+ await page.locator('.bh-style-confirm').getByRole('button',{name:/^Continuer avec/}).tap();
+ await page.locator('.bh-step-actions:visible [data-bh-forward]:visible, .bh-batch-actions:visible [data-bh-forward]:visible').first().tap();
+ const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();
+ const target=await page.evaluate(()=>{const d=new Date();d.setDate(d.getDate()+1);while([0,6].includes(d.getDay()))d.setDate(d.getDate()+1);d.setHours(19,30,0,0);return new Date(+d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);});
+ const time=page.getByLabel('Date et heure de cuisson',{exact:true});
+ await time.fill(target);await time.blur();
+ for(const name of [/^Jours ouvrés/,/^Nuits/]){const chip=page.getByRole('button',{name}).filter({visible:true}).first();if(await chip.getAttribute('aria-pressed')!=='true')await chip.tap();}
+ await expect(page.locator('[data-simple-decision]:visible')).toHaveCount(0);
+ await page.locator('[data-generate-recipe]').tap();
+ const sheet=page.locator('[data-decision-sheet]');
+ await expect(sheet.getByRole('dialog',{name:'Avant votre recette'})).toBeVisible();
+ // Not now closes it without creating anything.
+ await sheet.locator('[data-decision-sheet-close]').tap();
+ await expect(sheet).toHaveCount(0);
+ await page.locator('[data-generate-recipe]').tap();
+ await sheet.locator('[data-simple-keep-all], [data-simple-keep], [data-simple-accept]').first().tap();
+ await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
  expect(errors).toEqual([]);
 });
