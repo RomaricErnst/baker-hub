@@ -24,7 +24,7 @@ import BottomActions from '../components/BottomActions';
 import FillingsInvitation from '../components/FillingsInvitation';
 import {destinationForRoute,routeForDestination,restoredBakeRoute,normalizeNavigation,type BakeRoute,type BakeDestination,type BatchView,type BakeNavigationMemory} from '../lib/bakeNavigation';
 import { useMobileKeyboard } from '../hooks/useMobileKeyboard';
-import { NEXT_CTA, BACK_CTA, SECONDARY_CTA } from '../lib/navButtons';
+import { NEXT_CTA, BACK_CTA } from '../lib/navButtons';
 import { getSetupBlocker, type SetupBlocker } from '../lib/setupBlocker';
 import OvenPicker from '../components/OvenPicker';
 import PrototypeQuantityPicker, { eachPizzaNote } from '../components/PrototypeQuantityPicker';
@@ -44,7 +44,10 @@ import { retainCurrentFridgeRemoval } from '../utils/fridgeRemovalSession';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 import ClimatePicker from '../components/ClimatePicker';
 import SimpleMixerPicker from '../components/SimpleMixerPicker';
-const RecipeOutput = dynamic(() => import('../components/RecipeOutput'), { ssr: false });
+// The ingredients load as their own chunk. A placeholder of their height keeps the plan
+// below them from showing first and jumping down once they arrive.
+const loadRecipeOutput = () => import('../components/RecipeOutput');
+const RecipeOutput = dynamic(loadRecipeOutput, { ssr: false, loading: () => <div aria-hidden="true" style={{ minHeight: '70vh' }} /> });
 const BakeGuide = dynamic(() => import('../components/BakeGuide'), { ssr: false });
 import { getPrefPeakH_RT } from '../components/FermentChart';
 import YeastHelper from '../components/YeastHelper';
@@ -564,11 +567,10 @@ function SetupBlockerAction({flow,onJump}: {flow:StepFlow;onJump?:(id:number)=>v
 }
 
 // ── Setup review ──────────────────────────────
-function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale = false, reviewValues = {}, returnLabel, kitchenRow, starterRow, suggestedRows = {}, hideSuggested = false, planCard }: {
+function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale = false, reviewValues = {}, returnLabel, kitchenRow, starterRow, suggestedRows = {}, hideSuggested = false }: {
   /** Simple: rows the baker never chose stay out of the summary. */
   hideSuggested?: boolean;
   /** Once there is a recipe, My bake opens on the plan. */
-  planCard?: React.ReactNode;
   returnLabel?: string;
   /** One sentence naming the values Baker Hub proposed and the baker has not chosen. */
   /** Rows whose value the baker has not chosen yet: a small "suggested" tag on the row. */
@@ -598,7 +600,6 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, nameField, stale 
   ].filter(row => !(hideSuggested && flow.recipeGenerated && suggestedRows[row.key]));
   return (
     <div style={{ padding: '4px 0 8px' }}>
-      {planCard}
       <h1 className="bh-page-title" style={{ fontSize: '26px', margin: '2px 0 6px', letterSpacing: '-.4px' }}>{fr ? 'Revoir mes choix' : 'Review my choices'}</h1>
       {nameField}
       <div>
@@ -878,7 +879,7 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
 // calendar file are one tap away.
 // The recipe says what goes in; below it, the plan says when: the key steps with
 // their times only. How to do each step lives in Preparation.
-function RecipePlanCard({fr,locale,startAt,startLabel,bakeAt,steps,onSeeSteps}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;steps:{key:string;at:Date;label:string}[];onSeeSteps:()=>void}){
+function RecipePlanCard({fr,locale,startAt,startLabel,bakeAt,steps,onChangeTimes}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;bakeAt:Date;steps:{key:string;at:Date;label:string}[];onChangeTimes:()=>void}){
   const row={display:'flex',gap:12,padding:'7px 0',borderTop:'1px solid var(--border)',fontSize:15,lineHeight:1.4,color:'var(--char)'} as const;
   return <section data-recipe-plan aria-labelledby="bh-recipe-plan-title" style={{margin:'0 0 4px'}}>
     <h2 id="bh-recipe-plan-title" style={{margin:'0 0 6px',fontFamily:'var(--font-display)',fontSize:30,fontWeight:700,lineHeight:1.15,color:'var(--char)'}}>{fr?'Votre plan':'Your plan'}</h2>
@@ -898,8 +899,8 @@ function RecipePlanCard({fr,locale,startAt,startLabel,bakeAt,steps,onSeeSteps}:{
         <ol style={{listStyle:'none',margin:0,padding:0}}>{d.rows.map(r=><li key={r.key} data-plan-bake={r.bake||undefined} style={{...row,fontWeight:r.bake?600:400}}><span style={{...time,...(r.bake?{color:'var(--char)'}:{})}}>{formatClock(r.at,locale)}</span><span>{r.labels.join(' · ')}</span></li>)}</ol>
       </div>)}</div>;
     })()}
-    {/* One way on: the calendar lives on the Preparation summary. */}
-    <button type="button" data-go-preparation style={{...SECONDARY_CTA,width:'100%',marginTop:14}} onClick={onSeeSteps}>{fr?'Tout est prêt ? Aller à la Préparation':'Have everything? Go to Preparation'} →</button>
+    {/* Times are changed here and only here; the way on is the bottom bar. */}
+    <button type="button" data-change-times className="bh-section-back" style={{minHeight:44,marginTop:8}} onClick={onChangeTimes}>{fr?'Modifier les horaires':'Change times'}</button>
   </section>;
 }
 
@@ -1204,6 +1205,10 @@ export default function Home() {
   // A plan-input edit made after generation: the plan step mounts the scheduler, it replans,
   // then the recipe is regenerated and the baker is told what moved.
   const [replanReturn, setReplanReturn] = useState<{from:number;settled:boolean}|null>(null);
+  // Times are changed from the plan: "Change times" on the Recipe (or Adjust timing in
+  // Preparation) opens the full plan editor. The Bake time row in My bake asks only
+  // for the bake time and busy times.
+  const [bakeTimeQuestion, setBakeTimeQuestion] = useState(false);
   const [planMoved, setPlanMoved] = useState<{from:number;to:number;bakeFrom?:number;prepFrom?:number;prepTo?:number;yeastFrom?:number;yeastTo?:number;flourFrom?:number;flourTo?:number}|null>(null);
   // The amounts of the last generated recipe, so an update can say what changed.
   const acceptedAmountsRef = useRef<{yeast?:number;flour?:number}|null>(null);
@@ -2674,6 +2679,18 @@ export default function Home() {
 
   // Guidance level never changes the selected dough or leavening.
   const collectingBakeTime=awaitingRecipeChoice && tab==='simple' && !recipeGenerated;
+  const bakeTimeOnly=recipeGenerated && bakeTimeQuestion && !replanReturn;
+  // The question-only view ends once the baker leaves the timing screen.
+  useEffect(()=>{if(bakeTimeQuestion&&(destination!=='organisation'||setupOverview))setBakeTimeQuestion(false);},[bakeTimeQuestion,destination,setupOverview]);
+  // Fetch the recipe chunk while the baker is still setting up, so Generate opens it at once.
+  useEffect(()=>{if(bakeType)void loadRecipeOutput();},[bakeType]);
+  // There is no mode screen. A route that lands on setup before a mode exists goes to
+  // the bake time (style first, if none), where customizing is offered as a link.
+  useEffect(()=>{
+    if(destination!=='organisation'||modeChosen||!bakeType)return;
+    if(styleKey)openBakeTimeInputs();else{setBatchView('style');setActiveTab('batch');}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[destination,modeChosen,bakeType,styleKey]);
   function openBakeTimeInputs(){
     chooseMode('simple');setSetupOverview(false);setAwaitingRecipeChoice(true);scrollToStepTop();
   }
@@ -2701,9 +2718,6 @@ export default function Home() {
       setStarterLocation(answer==='counter'?'rt':'fridge');setStarterState(answer==='counter'?'rt_fed':'fridge_unfed');
     }
     setStarterPlanResetKey(k=>k+1);
-  }
-  function openModeChoice() {
-    setModeChosen(false); setSetupOverview(false); setActiveTab('setup'); scrollToStepTop();
   }
   function chooseMode(key: 'simple' | 'custom') {
     const profile = styleKey ? getBreadProtocol(styleKey) : undefined;
@@ -2842,6 +2856,7 @@ export default function Home() {
     setSetupOverview(true);setActiveTab('setup');scrollToStepTop();
   }
   function editRecipeTiming() {
+    setBakeTimeQuestion(false);
     captureEditReturn();
     openSetupStep(tab==='custom'?9:7);
   }
@@ -3760,7 +3775,8 @@ export default function Home() {
       value: `${fr ? 'Frigo' : 'Fridge'} ${cToDisplay(fridgeTemp,units)}${tempUnit(units)}`, prefilled: true,
       gap: fr ? 'Le climat n\u2019est pas renseigné' : 'Climate not set' },
     { id: 6, group: 'dough', chip: fr ? 'Farine' : 'Flour', title: t('steps.flour.title'),
-      value: flourChosen && !archivedFlourNames.length ? flourSummary() : null, prefilled: false,
+      // Once a recipe exists, the flour it was made with is shown (switching to Custom after the recipe).
+      value: (flourChosen || recipeGenerated) && !archivedFlourNames.length ? flourSummary() : null, prefilled: false,
       gap: fr ? 'La farine n\u2019est pas confirmée' : 'Flour not confirmed' },
     ...(levainCustom ? [{
       // Levain breads: the starter's own questions, answered before the bake time.
@@ -3844,7 +3860,7 @@ export default function Home() {
     onPrev: (id) => {
       // Equipment is Custom's first page: before a recipe exists, back returns
       // to the bake time chosen before the Simple/Custom decision.
-      if(id===3){if(equipmentPanel==='mixer')setEquipmentPanel('oven');else if(!recipeGenerated){openBakeTimeInputs();return;}else setModeChosen(false);scrollToStepTop();return;}
+      if(id===3){if(equipmentPanel==='mixer')setEquipmentPanel('oven');else if(!recipeGenerated){openBakeTimeInputs();return;}else setSetupOverview(true);scrollToStepTop();return;}
       const i = CUSTOM_STEPS.findIndex(x => x.id === id);
       openSetupStep(CUSTOM_STEPS[Math.max(0, i - 1)].id,true);
     },
@@ -4019,12 +4035,6 @@ export default function Home() {
     ? (prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):(fr?'Préparer le poolish':'Make Poolish'))
     : (schedule?.availabilityActions ?? []).some(action=>action.id==='autolyse'&&+action.at===+firstRecipeAction) ? (fr?'Autolyse puis pétrissage':'Autolyse, then mixing')
     : +firstRecipeAction < +startTime ? (fr?'Préparer le préferment':'Make the preferment') : (fr?'Pétrir la pâte':'Start Dough'));
-  // My bake opens on the plan: what is next, the bake, and the way into Preparation.
-  const myBakePlanCard = recipeGenerated && eatTime && schedule && !isUnleavened ? <section data-my-bake-plan aria-label={fr?'Mon plan':'My plan'} style={{border:'1px solid var(--border)',borderRadius:14,padding:'14px 16px',margin:'4px 0 20px',background:'var(--warm)'}}>
-    <p style={{margin:'0 0 4px',fontSize:16,fontWeight:700,color:'var(--char)'}}>{fr?'Ensuite : ':'Next: '}{firstRecipeActionLabel ?? (fr?'Commencer':'Start')} · {formatBakeDateTime(firstRecipeAction,locale)}</p>
-    <p style={{margin:'0 0 6px',fontSize:15,color:'var(--char)'}}>{fr?'Enfourner':'Bake'} · {formatBakeDateTime(eatTime,locale)}</p>
-    <button type="button" className="bh-section-back" style={{minHeight:44}} onClick={()=>{setSetupOverview(false);setProtocolView('dough');openDestination('protocol');}}>{fr?'Ouvrir la Préparation':'Open preparation'} →</button>
-  </section> : null;
   // A fridge removal the baker arranged for someone at home, for the Preparation summary.
   const coveredFridgeRemovalAt = (()=>{const at=blocks.find(block=>block.fridgeRemoval&&eatTime&&block.fridgeRemoval.bake===+eatTime)?.fridgeRemoval?.at;return at?new Date(at):undefined;})();
   // Every remaining hands-on step, as calendar events with an alert at their time.
@@ -4127,6 +4137,7 @@ export default function Home() {
   const renderCustomScheduler = (section:'all'|'starter'|'plan') => (
               <SchedulePicker
                 {...poolishInputs}
+                inputsOnly={bakeTimeOnly&&section!=='starter'}
                 schedulerSection={section}
                 onUseCalculatedYeast={()=>{setYeastPctOverride(undefined);setPlanReplanPending(true);}}
                 onSimpleDecisionChange={setCustomDecisionPending}
@@ -4598,59 +4609,8 @@ export default function Home() {
           {bakeType && (
             <div style={{ padding: '2px 0' }}>
 
-              {/* Mode is the first step of setup, not a permanent bar.
-                  It was a fourth navigation layer above the content — under the
-                  brand header, the journey tabs and the stepper — for a
-                  decision taken once per session. Shown here only until it is
-                  made; afterwards it lives as a chip in the summary row, which
-                  is the same mechanic every other choice uses. */}
-              {!modeChosen && destination === 'organisation' && (
-                <div style={{ padding: '4px 0 8px' }}>
-                  <h1 className="bh-page-title">{locale === 'fr' ? 'Comment définir votre recette ?' : 'How would you like to set up your recipe?'}</h1>
-                  <BottomActions><button type="button" className="bh-back-action" onClick={()=>{setBatchView('quantity');openDestination('batch');}}>{fr?'Étape précédente':'Previous step'}</button></BottomActions>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {([
-                      { key: 'simple' as const, title: fr?'Créer une recette simple':'Create a simple recipe',
-                        desc: locale === 'fr'
-                          ? 'Baker Hub choisit la farine et les réglages de pâte. Indiquez ensuite quand vous voulez cuire.'
-                          : 'Baker Hub chooses the flour and dough settings. Next, tell us when you want to bake.' },
-                      { key: 'custom' as const, title: fr?'Personnaliser ma fournée':'Customize my bake',
-                        desc: locale === 'fr'
-                          ? (directMethodOnly ? 'Choisissez votre farine et ajustez les réglages de votre pâte.' : 'Choisissez votre farine, votre préferment (poolish, biga ou levain), votre matériel et votre hydratation.')
-                          : (directMethodOnly ? 'Choose your flour and adjust your dough settings.' : 'Choose your flour, preferment (poolish, biga or sourdough), equipment and hydration.') },
-                    ]).map(m => (
-                      <button
-                        key={m.key}
-                        onClick={() => {setAwaitingRecipeChoice(false);chooseMode(m.key);}}
-                        style={{
-                          display: 'flex', alignItems: 'flex-start', gap: '12px', textAlign: 'left',
-                          border: '1px solid var(--border)', background: 'var(--warm)',
-                          borderRadius: '12px', padding: '14px 16px', minHeight: '44px',
-                          cursor: 'pointer', fontFamily: 'var(--font-ui)',
-                        }}
-                      >
-                        <span style={{ flex: 1 }}>
-                          <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--char)' }}>{m.title}</span>
-                          {loadProfile()?.preferredMode === m.key && (
-                            <span style={{
-                              marginLeft: '8px', fontSize: '10px', letterSpacing: '.08em',
-                              textTransform: 'uppercase', color: '#9C8248', fontWeight: 700,
-                            }}>{locale === 'fr' ? 'votre habitude' : 'your usual'}</span>
-                          )}
-                          <span style={{ display: 'block', fontSize: '14px', color: 'var(--ash)', marginTop: '4px', lineHeight: 1.45 }}>
-                            {m.desc}
-                          </span>
-                        </span>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9C8248"
-                          strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
-                          style={{ marginTop: '3px', flexShrink: 0 }} aria-hidden="true">
-                          <line x1="4" y1="12" x2="19" y2="12" /><polyline points="13 6 19 12 13 18" />
-                        </svg>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* There is no mode screen: setup leads to the bake time, and customizing
+                  continues from there or from My bake (see the redirect effect). */}
 
 
 
@@ -4690,10 +4650,9 @@ export default function Home() {
                 flow={simpleFlow}
                 reviewValues={{ 3: simpleKitchenSummary, 7: reviewTiming }}
                 suggestedRows={simpleSuggestedRows}
-                modeChip={{ value: 'simple', onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
+                modeChip={{ value: 'simple', onClick: () => { chooseMode('custom'); if(recipeGenerated){setAdvancedHighestStep(h=>Math.max(h,CUSTOM_LAST)); setSetupOverview(true);} else setSetupOverview(false); scrollToStepTop(); } }}
                 hideSuggested
-                planCard={myBakePlanCard}
-                onJump={id => { setSetupOverview(false); simpleFlow.onJump(id); }}
+                onJump={id => { setSetupOverview(false); if(id===7)setBakeTimeQuestion(true); simpleFlow.onJump(id); }}
                 returnLabel={recipeGenerated?setupReturnLabel:undefined}
                 onBackToRecipe={finishSetupEdit}
               />
@@ -4730,7 +4689,7 @@ export default function Home() {
             </StepPage>
 
             {/* ─── STEP 8: Scheduler ───────────────── */}
-            <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={collectingBakeTime ? <></> : scheduleEditing ? null : !eatTime ?
+            <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={collectingBakeTime ? <></> : bakeTimeOnly && eatTime ? (simpleDecisionPending ? <div style={{width:'100%'}}><p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'}</p><button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{setupReturnLabel}</button></div> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : scheduleEditing ? null : !eatTime ?
               <button type="button" disabled style={{...NEXT_CTA,opacity:0.5}}>{fr?'Choisissez une date de cuisson':'Choose a bake date'}</button>
               : !scheduleCandidateValid ? (simpleDecisionPending
                 // As in Custom: the normal next step waits for a choice in the card above; it never only scrolls.
@@ -4745,7 +4704,7 @@ export default function Home() {
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => simpleFlow.onJump(1)} />
               ) : (
-              <SchedulePicker inputsOnly={collectingBakeTime} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor}
+              <SchedulePicker inputsOnly={collectingBakeTime||bakeTimeOnly} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor}
                 {...poolishInputs}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
@@ -4955,7 +4914,7 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
-                          {eatTime && schedule && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} onSeeSteps={()=>{setProtocolView('dough');openDestination('protocol');}}/>}
+                          {eatTime && schedule && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} onChangeTimes={editRecipeTiming}/>}
                         </div>
                       )}
                     </>
@@ -5015,8 +4974,6 @@ export default function Home() {
               {!bakeTimeIsPast && (
                 <div style={{ marginTop: '12px' }}>
 
-                  {/* With a plan, "Have everything? Go to Preparation" ends it; otherwise the way on sits here. */}
-                  {!(eatTime && schedule && !isUnleavened) && <button type="button" style={{...SECONDARY_CTA,width:'100%'}} onClick={()=>{setProtocolView('dough');openDestination('protocol');}}><DestinationIcon destination="protocol"/> {fr?'Tout est prêt ? Aller à la Préparation':'Have everything? Go to Preparation'} →</button>}
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
                     <button type="button" className="bh-back-action" onClick={openSetupReview}>{fr?'Mes choix':'My choices'}</button>
                     <button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}><DestinationIcon destination="shopping"/> {fr?'Liste de courses':'Shopping list'} →</button>
@@ -5036,6 +4993,7 @@ export default function Home() {
                   onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)}
                   preparationMade={!!execution} mixingMade={!!mixExecution||execution?.method==='none'} onMixComplete={!isUnleavened?recordGuideMix:undefined} onPreparationComplete={!isUnleavened&&yeastType!=='sourdough'&&prefermentType!=='none'?done=>{if(done)markPreparationMade(Date.now());else if(!mixExecution){setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}}:undefined}
                   onBackToRecipe={()=>openDestination('recipe')}
+                  backSection={destination==='service'?{label:fr?'Retour à Préparation':'Back to Preparation',onClick:()=>{setProtocolView('dough');openDestination('protocol');}}:{label:fr?'Retour à Courses':'Back to Shopping list',onClick:()=>openDestination('shopping')}}
                   onOverviewChange={setPrepOverview}
                   afterSteps={destination==='protocol'?lateFillingsHint:null}
                   onRepeat={repeatCurrentRecipe} resultNotes={resultNotes} onResultNotesChange={setResultNotes} onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved && !!user} onBakedChange={setBakedDone} completionEnabled={!hasFillings}
@@ -5164,9 +5122,8 @@ export default function Home() {
                 flow={customFlow}
                 reviewValues={{3:reviewEquipment, 4:reviewAmbient, 7:reviewLeavening, ...(levainCustom ? {} : {8: prefermentType==='none'?t('preferment.direct'):localName(PREFERMENT_TYPES[prefermentType])}), 10:(advancedRecipe ? advancedRecipe.hydration+'%' : (manualHydration ?? ALL_STYLES[styleKey!]?.hydration ?? 0)+'%'), 9:reviewTiming}}
                 suggestedRows={{ '3': equipmentOpen, '7': yeastOpen, '8': showPrefermentChoice && !levainCustom && !methodPicked, '10': manualHydration===undefined }}
-                modeChip={{ value: 'custom', onClick: () => { setSetupOverview(false); setModeChosen(false); } }}
-                planCard={myBakePlanCard}
-                onJump={id => { setSetupOverview(false); customFlow.onJump(id); }}
+                modeChip={{ value: 'custom', onClick: () => { chooseMode('simple'); setSetupOverview(recipeGenerated); scrollToStepTop(); } }}
+                onJump={id => { setSetupOverview(false); if(id===9)setBakeTimeQuestion(true); customFlow.onJump(id); }}
                 returnLabel={recipeGenerated?setupReturnLabel:undefined}
                 onBackToRecipe={finishSetupEdit}
               />
@@ -5300,7 +5257,7 @@ export default function Home() {
             )}
 
             {/* ─── ADV STEP 10: Scheduler ──────────── */}
-            <StepPage flow={customOrganisationFlow} id={9} nextOverride={customStarterStepId !== null && !starterStateDescribed ? <div style={{width:'100%'}}>
+            <StepPage flow={customOrganisationFlow} id={9} nextOverride={bakeTimeOnly && eatTime && (customStarterStepId === null || starterStateDescribed) ? (!scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : customStarterStepId !== null && !starterStateDescribed ? <div style={{width:'100%'}}>
                 <p style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Indiquez quand votre levain a été rafraîchi pour la dernière fois.':'Tell us when your starter was last fed.'}</p>
                 <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>openSetupStep(customStarterStepId,true)}>{fr?'Votre levain →':'Your starter →'}</button>
               </div> : scheduleEditing ? null : !scheduleCandidateValid ? <div style={{width:'100%'}}>
@@ -5524,7 +5481,7 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
-                          {eatTime && schedule && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} onSeeSteps={()=>{setProtocolView('dough');openDestination('protocol');}}/>}
+                          {eatTime && schedule && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} onChangeTimes={editRecipeTiming}/>}
                         </div>
                       )}
                     </>
@@ -5584,8 +5541,6 @@ export default function Home() {
               {!bakeTimeIsPast && (
                 <div style={{ marginTop: '12px' }}>
 
-                  {/* With a plan, "Have everything? Go to Preparation" ends it; otherwise the way on sits here. */}
-                  {!(eatTime && schedule && !isUnleavened) && <button type="button" style={{...SECONDARY_CTA,width:'100%'}} onClick={()=>{setProtocolView('dough');openDestination('protocol');}}><DestinationIcon destination="protocol"/> {fr?'Tout est prêt ? Aller à la Préparation':'Have everything? Go to Preparation'} →</button>}
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
                     <button type="button" className="bh-back-action" onClick={openSetupReview}>{fr?'Mes choix':'My choices'}</button>
                     <button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}><DestinationIcon destination="shopping"/> {fr?'Liste de courses':'Shopping list'} →</button>
@@ -5605,6 +5560,7 @@ export default function Home() {
                   onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)}
                   preparationMade={!!execution} mixingMade={!!mixExecution||execution?.method==='none'} onMixComplete={!isUnleavened?recordGuideMix:undefined} onPreparationComplete={!isUnleavened&&yeastType!=='sourdough'&&prefermentType!=='none'?done=>{if(done)markPreparationMade(Date.now());else if(!mixExecution){setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}}:undefined}
                   onBackToRecipe={()=>openDestination('recipe')}
+                  backSection={destination==='service'?{label:fr?'Retour à Préparation':'Back to Preparation',onClick:()=>{setProtocolView('dough');openDestination('protocol');}}:{label:fr?'Retour à Courses':'Back to Shopping list',onClick:()=>openDestination('shopping')}}
                   onOverviewChange={setPrepOverview}
                   afterSteps={destination==='protocol'?lateFillingsHint:null}
                   onRepeat={repeatCurrentRecipe} resultNotes={resultNotes} onResultNotesChange={setResultNotes} onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved && !!user} onBakedChange={setBakedDone} completionEnabled={!hasFillings}

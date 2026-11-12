@@ -40,6 +40,8 @@ interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   onPreparationComplete?: (done:boolean)=>void;
   afterSteps?: React.ReactNode;
   onBackToRecipe?: () => void;
+  /** The overview's bottom bar goes back one section (Shopping list before Preparation, Preparation before Baking). */
+  backSection?: { label: string; onClick: () => void };
   /** Preparation: true while the summary of steps is shown (no step open). */
   onOverviewChange?: (overview: boolean) => void;
   onBakedChange?: (done:boolean)=>void;
@@ -876,7 +878,7 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   usingPeak2 = false, planningMode = 'last_fed',
   feedRatio = 1, starterLocation = 'rt',
   units, locale,
-  afterSteps, onBackToRecipe, onOverviewChange, onNavigateToPizzaParty, pizzaActionLabel, pizzasChosen, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
+  afterSteps, onBackToRecipe, backSection, onOverviewChange, onNavigateToPizzaParty, pizzaActionLabel, pizzasChosen, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
   phase, active = true, onNavigateToCooking, onNavigateToPreparation, progressTarget, pizzaDiameterCm,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
@@ -1357,7 +1359,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       </StepCard>
       {active&&currentStep===0&&afterSteps}
       {overviewAction&&<BottomActions>
-        {onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'Retour à Recette':'Back to Recipe'}</button>}
+        {backSection?<button type="button" className="bh-back-action" onClick={backSection.onClick}>{backSection.label}</button>:onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'Retour à Recette':'Back to Recipe'}</button>}
         {overviewAction}
       </BottomActions>}
       {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange} sessionSaved={sessionSaved}/>}
@@ -2338,7 +2340,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       </StepCard>}
       {active&&currentStep===0&&afterSteps}
       {overviewAction&&<BottomActions>
-        {onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'Retour à Recette':'Back to Recipe'}</button>}
+        {backSection?<button type="button" className="bh-back-action" onClick={backSection.onClick}>{backSection.label}</button>:onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}>{l==='fr'?'Retour à Recette':'Back to Recipe'}</button>}
         {overviewAction}
       </BottomActions>}
       {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange} sessionSaved={sessionSaved}/>}
