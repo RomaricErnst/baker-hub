@@ -120,14 +120,14 @@ for(const locale of ['fr','en']){
   await expect(help.locator('summary')).toHaveText(fr?/^comment la peser ▾/:/^how to weigh it ▾/);
   await help.locator('summary').tap();
   await expect(help.locator('[data-yeast-alternatives]')).toContainText(fr?/^ou .* de levure fraîche$/:/^or .* fresh yeast$/);
-  await page.getByRole('button',{name:fr?'Modifier la quantité':'Edit quantity',exact:true}).tap();
+  await page.locator('.bh-recipe-next:visible').getByRole('button',{name:fr?'Mes choix':'My choices'}).tap();await page.getByRole('button',{name:/^(Edit|Modifier) : (Quantity|Quantité)$/}).tap();
   await quantity.fill('3');await quantity.blur();
   await actions(page).locator('[data-bh-forward]:visible').tap();
   await expect(page.locator('.bh-navigator-current')).toContainText(fr?'Recette':'Recipe');
   // The recipe is only the recipe: timing lives in Preparation.
   await expect(page.getByRole('button',{name:fr?'Ajuster les horaires':'Adjust timing',exact:true})).toHaveCount(0);
   await expect.poll(async()=>(await stored(page))?.numItems).toBe(3);
-  await page.getByRole('button',{name:fr?'Modifier la quantité':'Edit quantity',exact:true}).tap();
+  await page.locator('.bh-recipe-next:visible').getByRole('button',{name:fr?'Mes choix':'My choices'}).tap();await page.getByRole('button',{name:/^(Edit|Modifier) : (Quantity|Quantité)$/}).tap();
   await quantity.fill('4');await quantity.blur();
   await quantity.fill('3');await quantity.blur();
   await actions(page).locator('[data-bh-forward]:visible').tap();

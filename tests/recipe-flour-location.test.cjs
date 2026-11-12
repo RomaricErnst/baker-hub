@@ -85,7 +85,7 @@ test('preferment and starter total flour identities do not misstate final-dough 
  const blend={flour1:'bread',flour2:'rye',flour3:'wholemeal',ratio1:60,ratio2:25,brandProduct:'Selected wheat',customFlour2Name:'Selected rye',customFlour3Name:'Selected wholemeal'};
  for(const locale of ['fr','en'])for(const [pref,yeast] of [['poolish','instant'],['biga','instant'],['levain','sourdough']]){
   const {html,result}=render(locale,'custom',pref,yeast,blend);
-  const totalSection=html.match(/<section aria-label="(?:Quantités totales|Total ingredients)">([\s\S]*?)<\/section>/)?.[1];
+  const totalSection=html.match(/<section (?:aria-label="(?:Total ingredients|Quantités totales)"|data-whole-dough[^>]*)>([\s\S]*?)<\/section>/)?.[1];
   assert.ok(totalSection,`${locale}/${pref}: total ingredients are retained`);
   for(const name of ['Selected wheat','Selected rye','Selected wholemeal'])assert.ok(totalSection.includes(name));
   assert.ok(!totalSection.includes('Selected wheat + Selected rye'));

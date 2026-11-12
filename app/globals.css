@@ -526,6 +526,10 @@ html[data-preview="true"] vercel-live-feedback { display:none !important; }
 .bh-schedule-timeline .bh-key-timing:last-child { border-left-color:transparent; }
 .bh-timeline-node { position:absolute; left:-6px; top:15px; width:10px; height:10px; border-radius:50%; border:2px solid var(--terra); background:var(--warm); }
 .bh-schedule-timeline .bh-key-content { padding:0 8px; border-radius:10px; }
+/* On the Recipe's plan the row being moved already names its day and place. */
+.bh-timeline-inline { padding:0; }
+.bh-timeline-inline .bh-key-timing { padding:4px 0 8px; border-left:0; }
+.bh-timeline-inline .bh-timeline-node { display:none; }
 .bh-schedule-timeline [data-selected] .bh-key-content { background:var(--cream); padding:8px; margin-top:-8px; }
 .bh-schedule-timeline .bh-key-heading .bh-section-title { font-size:15px; }
 .bh-schedule-timeline .bh-key-time { font-size:22px; min-height:44px; }
@@ -675,3 +679,7 @@ body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="d
 .bh-page-title:focus{outline:none}
 /* The bake title heads the generated views but keeps the compact look of the context line. */
 .bh-page-title.bh-bake-title { font-family:var(--font-ui); font-size:14px; font-weight:700; line-height:1.4; letter-spacing:0; margin:0; }
+
+/* The Recipe's plan edits one step in place: the scheduler mounted there shows only
+   its key-timings panel (ScheduleKeyTimings inline), nothing around it. */
+.bh-plan-inline *:not(:has(#schedule-anchor-panel)):not(#schedule-anchor-panel):not(#schedule-anchor-panel *) { display: none !important; }

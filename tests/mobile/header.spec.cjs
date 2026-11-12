@@ -109,7 +109,13 @@ for (const locale of ['fr', 'en']) {
     const value = await page.evaluate(() => { const d = new Date(); d.setDate(d.getDate() + 2); d.setHours(19, 0, 0, 0); return new Date(+d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); });
     const bakeDate = page.getByLabel(fr ? 'Date et heure de cuisson' : 'Bake date and time', { exact: true });
     await bakeDate.fill(value); await bakeDate.blur();
-    await page.getByRole('button', { name: fr ? 'Générer ma recette' : 'Generate my recipe', exact: true }).tap();
+    // Seven in the evening two days ahead is past the longest plan when the test runs in the
+    // morning: the app then offers suggested times, and the first one is taken.
+    const generate = page.getByRole('button', { name: fr ? 'Générer ma recette' : 'Generate my recipe', exact: true });
+    const suggested = page.locator('.bh-target-presets button').first();
+    await expect(generate.or(suggested)).toBeVisible();
+    if (!(await generate.isVisible())) await suggested.tap();
+    await generate.tap();
     await expect(page.locator('.bh-header-save')).toBeVisible();
     await page.locator('.bh-header-save').tap();
     await expect(page.locator('.bh-header-save')).toHaveText(fr ? 'Enregistrer' : 'Save');
@@ -127,7 +133,7 @@ for (const locale of ['fr', 'en']) {
     await dialog.getByRole('button', { name: fr ? 'Langue et unités' : 'Language & units', exact: true }).tap();
     await dialog.getByRole('combobox', { name: fr ? 'Langue' : 'Language', exact: true }).selectOption({ label: fr ? 'English' : 'Français' });
     // The recipe stays open in the other language.
-    await expect(page.getByRole('heading', { level: 1, name: fr ? 'My pizza night' : 'Ma soirée pizza', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: fr ? /^Pizza (night|lunch|brunch) · / : /^(Soirée|Déjeuner|Brunch) pizza · / })).toBeVisible();
     await expect(dialog).toBeHidden();
     await verifyHeader(page, testInfo, `${locale}-switched-language`);
     expect(errors, 'uncaught application errors').toEqual([]);

@@ -29,6 +29,16 @@ export function eachPizzaNote({ styleKey, itemWeight, diameter, units, locale }:
     : `Each pizza: ${weight} for about ${across} across`;
 }
 
+/** "270 g each, about 30 cm" — the short form for the recipe's one-line summary. */
+// The Recipe's summary line: what to weigh for each ball. The size chose the weight on the
+// quantity step and is not repeated here.
+export function eachPizzaShort(args: Parameters<typeof eachPizzaNote>[0]): string | null {
+  const { styleKey, itemWeight, units, locale } = args;
+  if (!styleKey || !Number.isFinite(itemWeight) || itemWeight <= 0) return null;
+  const weight = displayWeight(Math.round(itemWeight), units, locale);
+  return locale === 'fr' ? `${weight} chacune` : `${weight} each`;
+}
+
 /** Keep incomplete keystrokes local; normalize only when the baker commits. */
 function DraftNumberInput({ value, onCommit, ...props }: Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onBlur' | 'onKeyDown'> & { value: number; onCommit: (value: number) => void }) {
   const [draft, setDraft] = useState<string | null>(null);
