@@ -235,6 +235,9 @@ interface SchedulePickerProps extends WarmupInputs {
   onScheduleValidityChange?: (valid: boolean) => void;
   /** Simple only: true while the one decision card awaits the baker's choice. */
   onSimpleDecisionChange?: (pending: boolean) => void;
+  /** Bake-time question: a clash is answered once, in a sheet opened by Create my recipe (or the edit's return). */
+  decisionSheet?: boolean;
+  onDecisionSheetClose?: () => void;
   onPrefOffsetChange?: (h: number) => void;
   onPrefGoesInFridgeChange?: (inFridge: boolean) => void;
   /** Custom only: the baker's poolish storage. 'auto' lets the planner compare both. */
@@ -1842,7 +1845,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, enteredYeastShownPct, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, enteredYeastShownPct, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, decisionSheet=false, onDecisionSheetClose, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   // A baker-chosen starter % lengthens or shortens the levain room-temperature
   // bulk (starterBulkFactor). The solver windows add the same hours the
   // schedule builder does, so scoring, card and chart stay on one bulk.
@@ -7237,8 +7240,10 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
   const optionCard:React.CSSProperties={display:'block',width:'100%',minHeight:56,marginTop:8,padding:'12px 14px',border:'1.5px solid var(--border)',borderRadius:12,background:'var(--card, #fff)',color:'var(--char)',textAlign:'left',whiteSpace:'normal',fontSize:15,lineHeight:1.4,cursor:'pointer'};
   const simpleSuggestion=!searchingTargets?firstSuggestedTarget:undefined;
   // Custom: only for busy-time clashes; a fridge exit alone keeps its own arrangement card.
-  const customDecision=mode==='custom'&&!inputsOnly&&simpleConflicts.length>0&&!simpleOnlyFridgeClash;
-  const simpleDecision=eatTimeSet&&!currentCandidateValid&&(mode==='simple'?(simpleSuggestion||simpleOnlyFridgeClash):customDecision)
+  const customDecision=mode==='custom'&&simpleConflicts.length>0&&!simpleOnlyFridgeClash;
+  // The bake-time question (Simple, and Custom before the recipe or from My bake) asks one
+  // card for every clash; the full Custom editor keeps its own fridge arrangement card.
+  const simpleDecision=eatTimeSet&&!currentCandidateValid&&(mode==='simple'||inputsOnly?(simpleSuggestion||simpleOnlyFridgeClash||customDecision):customDecision)
     ? <div className="bh-simple-decision" data-simple-decision role="status" style={{border:'1px solid var(--border)',borderRadius:12,padding:'14px 16px',margin:'12px 0',background:'var(--warm)'}}>
         <p style={{margin:'0 0 12px',fontSize:15,lineHeight:1.5,color:'var(--char)'}}>{simpleDecisionSentence}</p>
         {simpleSuggestion&&<button type="button" className="bh-plan-option" data-simple-accept style={optionCard} onClick={()=>{setSimpleMoved({from:new Date(pendingEatTime),to:+simpleSuggestion.bake});applySuggestedTarget(simpleSuggestion);}}>
@@ -7894,7 +7899,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
             :(isFr?'Aucun planning entièrement en journée ne convient à cet enfournement.':'No daytime plan fits this bake time.')}</p>}
         {searchingTargets&&eatTimeSet&&!currentCandidateValid&&<p role="status" data-searching-bakes>{isFr?'Recherche du premier créneau compatible…':'Finding the first available baking time…'}</p>}
         {/* Custom's single list of alternatives; Simple uses its decision card. */}
-        {(!eatTimeSet||(!currentCandidateValid&&mode!=='simple'))&&suggestedTargets.length>0&&<div className="bh-target-presets"><p>{eatTimeSet?(suggestedTargets[0]?.assistance?(isFr?'Ce créneau laisse le temps au levain. Certaines interventions nécessitent de l’aide.':'This bake gives the starter time to mature. Some steps need someone available.'):(isFr?'Ces enfournements conviennent à votre planning :':'These baking times fit your plan:')):(isFr?'Enfournements proposés':'Suggested baking times')}</p>{targetChoices}</div>}
+        {(!eatTimeSet||(!currentCandidateValid&&mode!=='simple'&&!inputsOnly))&&suggestedTargets.length>0&&<div className="bh-target-presets"><p>{eatTimeSet?(suggestedTargets[0]?.assistance?(isFr?'Ce créneau laisse le temps au levain. Certaines interventions nécessitent de l’aide.':'This bake gives the starter time to mature. Some steps need someone available.'):(isFr?'Ces enfournements conviennent à votre planning :':'These baking times fit your plan:')):(isFr?'Enfournements proposés':'Suggested baking times')}</p>{targetChoices}</div>}
         {eatTimeSet&&!currentCandidateValid&&!recipeGenerated&&suggestedTargets.length===0&&!searchingTargets&&!readinessUnsupported&&(!isSourdough||lastFedAge||knownPeakTime)&&<p role="status">{repairBlocks.length
           ?(isFr?'Les durées de préparation et vos indisponibilités ne laissent aucun créneau vérifié. Modifiez vos disponibilités ou choisissez un autre jour.':'Preparation and your unavailable hours leave no verified baking time. Change your availability or choose a different day.')
           :(isFr?'La préparation nécessite plus de temps. Choisissez un autre jour de cuisson.':'Preparation needs more time. Choose a later baking day.')}</p>}
@@ -8140,8 +8145,23 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
       )}
         </div>
       </details>
-      {/* Simple: the decision comes after the busy times it depends on. */}
-      {simpleDecision}{simpleCoveredNote}{simpleMovedNote}
+      {/* The full editor shows a clash where it arises. The bake-time question asks it once,
+          in a sheet, when the baker creates the recipe (or returns from an edit). */}
+      {inputsOnly
+        ? (decisionSheet&&simpleDecision
+          ? <div className="bh-decision-sheet" data-decision-sheet style={{position:'fixed',inset:0,zIndex:1000,background:'rgba(43,36,32,0.42)',display:'flex',alignItems:'flex-end',justifyContent:'center'}}
+              onClick={event=>{if(event.target===event.currentTarget)onDecisionSheetClose?.();}}>
+              <div role="dialog" aria-modal="true" aria-labelledby="bh-decision-sheet-title"
+                onClickCapture={event=>{if((event.target as HTMLElement).closest('[data-decision-availability]'))onDecisionSheetClose?.();}}
+                style={{width:'100%',maxWidth:560,maxHeight:'85vh',overflowY:'auto',background:'var(--cream)',borderRadius:'18px 18px 0 0',padding:'18px 16px calc(18px + env(safe-area-inset-bottom, 0px))',boxShadow:'0 -4px 24px rgba(43,36,32,0.18)'}}>
+                <h2 id="bh-decision-sheet-title" style={{margin:'0 0 4px',fontSize:19,fontWeight:700,color:'var(--char)'}}>{isFr?'Avant votre recette':'Before your recipe'}</h2>
+                {simpleDecision}
+                <button type="button" className="bh-back-action" data-decision-sheet-close style={{minHeight:44}} onClick={()=>onDecisionSheetClose?.()}>{isFr?'Pas maintenant':'Not now'}</button>
+              </div>
+            </div>
+          : null)
+        : simpleDecision}
+      {simpleCoveredNote}{simpleMovedNote}
       {bakingFromFridge&&committedSchedule?.coldRetard2End&&<p className="bh-key-detail" role="status" data-simple-from-fridge-note>{isFr
         ?`Cuisson à la sortie du frigo : sortez les pâtons à ${fmtCardHM(committedSchedule.coldRetard2End,isFr)}, pendant que le four chauffe.`
         :`Baking straight from the fridge: take the loaves out at ${fmtCardHM(committedSchedule.coldRetard2End,isFr)} while the oven heats.`}{' '}

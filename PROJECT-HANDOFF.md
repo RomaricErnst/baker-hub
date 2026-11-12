@@ -1,3 +1,11 @@
+# 12 November 2026 — a busy-time clash is asked once, when the recipe is created (Claude)
+
+Romaric walked pizza at 7:30pm with work hours: he answered the clash on the bake time, chose Customize my bake, and Custom's bake-time step asked again with the full editor (clash card, a per-step "I can cover this step" list, timeline warnings). He asked for the question once only. Now:
+- The bake-time question never shows a clash inline. Generate my recipe (Simple) or Create my recipe (Custom's bake-time step) opens a "Before your recipe" sheet with the one card (Bake at … / Keep … · I'll handle these steps / Use the calculated yeast amount / Change my unavailable times) and Not now; answering creates the recipe. The Bake time edit from My bake does the same on its Back button.
+- Customize my bake from the bake time asks nothing; the question comes once, at the end of the customize steps, about the plan as customized (a poolish moves the steps, so an earlier answer would have been about other times).
+- Custom's bake-time step is the same question as Simple's when Custom was reached from the bake-time question (`customBakeQuestion`, persisted). Sessions that reach it otherwise keep the full editor. "See the plan →" opens the full editor when the sheet cannot settle the plan.
+- `tests/mobile/custom-bake-time-question.spec.cjs` (CI) walks both paths.
+
 # 12 November 2026 — toppings in the planning (Claude)
 
 Romaric: plan both (dough and toppings), then buy, then prepare, without extra buttons. For pizza and breads with fillings the route is now Recipe → Toppings (optional; "Fillings" for bread) → Shopping list → Preparation → Baking & serving.
@@ -10,7 +18,7 @@ Romaric: plan both (dough and toppings), then buy, then prepare, without extra b
 Romaric picked option A on all six cards of the journey map (artifact "Baker Hub Journey Map"). Rules: each section does one job; every section's bottom bar goes back one section (left) and on to the next (right); a changed choice returns to where the baker was; times change only from the plan; customizing continues the bake. Shipped:
 - My bake holds the choices only (the Next / Bake / Open preparation card is gone; Preparation already opens on the next step).
 - "Customize my bake" in My bake switches to Custom in place and stays on the list, which gains Equipment, Flour, Yeast & preferment and Fine-tune rows; "Use the recommended settings" switches back. The old "How would you like to set up your recipe?" screen is removed; any route that lands there goes to the bake time (or the style).
-- The Bake time row in My bake asks only the bake time and busy times, then "Back to …" (or "See the plan →" when the new time needs a decision). "Change times" on the Recipe's Your plan, and Adjust timing in Preparation, open the full timing editor. Custom's first-time plan step keeps its full editor (the baker chose to customize).
+- The Bake time row in My bake asks only the bake time and busy times, then "Back to …" (or "See the plan →" when the new time needs a decision). "Change times" on the Recipe's Your plan, and Adjust timing in Preparation, open the full timing editor. (Superseded the same day: Custom's first-time bake-time step now asks the same single question too — see the entry above.)
 - The Recipe has no in-page "Go to Preparation" button; Shopping's bar leads there. Preparation's bar goes back to Shopping list, Baking & serving's to Preparation. The route stays linear; Sections jumps anywhere.
 - Busy times: "When are you busy? (optional)" / "We won't plan any hands-on step at these times."
 - The flash after Generate is fixed: the ingredients chunk is fetched during setup and holds its height while it loads, so the plan never shows above it.

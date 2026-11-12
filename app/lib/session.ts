@@ -106,6 +106,8 @@ export interface SessionData {
   sandwichParty?: SandwichSnapshot | null;
   modeChosen: boolean;
   awaitingRecipeChoice?: boolean;
+  /** Custom was reached from the bake-time question: its bake-time step asks only that question, and a clash is asked once, when the recipe is created. */
+  customBakeQuestion?: boolean;
   pizzaParty?: { qtys: Record<string, number>; bakedQtys?: Record<string, number>; shopTicks?: Record<string, boolean>; prepTicks?: string[] } | null;
   bakedDone?: boolean;
   prefGoesInFridge?: boolean;

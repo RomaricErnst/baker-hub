@@ -1209,6 +1209,13 @@ export default function Home() {
   // Preparation) opens the full plan editor. The Bake time row in My bake asks only
   // for the bake time and busy times.
   const [bakeTimeQuestion, setBakeTimeQuestion] = useState(false);
+  // Custom's bake-time step asks the same single question as Simple before the recipe;
+  // "See the plan" opens the full editor only when the question alone cannot settle it.
+  const [planDetail, setPlanDetail] = useState(false);
+  const [customBakeQuestion, setCustomBakeQuestion] = useState(false);
+  // A clash is asked once: in a sheet when the baker creates the recipe (or returns from an
+  // edit of the bake time), never inline on the bake-time question and never twice.
+  const [decisionSheet, setDecisionSheet] = useState<null|'generate'|'return'>(null);
   const [planMoved, setPlanMoved] = useState<{from:number;to:number;bakeFrom?:number;prepFrom?:number;prepTo?:number;yeastFrom?:number;yeastTo?:number;flourFrom?:number;flourTo?:number}|null>(null);
   // The amounts of the last generated recipe, so an update can say what changed.
   const acceptedAmountsRef = useRef<{yeast?:number;flour?:number}|null>(null);
@@ -1678,6 +1685,7 @@ export default function Home() {
     setProtocolStale(session.protocolStale === true);
     setModeChosen(session.modeChosen);
     setAwaitingRecipeChoice(session.awaitingRecipeChoice ?? !session.modeChosen);
+    setCustomBakeQuestion(session.customBakeQuestion === true);
 
     // Prefer what was stored; fall back to the end for older snapshots that
     // predate the field, because a generated recipe is itself proof that every
@@ -2287,7 +2295,7 @@ export default function Home() {
       startTime: startTime?.getTime() ?? null,
       eatTime: eatTime?.getTime() ?? null,
       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.coveredActions?.length?{coveredActions:b.coveredActions}:{}), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}), ...(b.bakeFromFridge ? {bakeFromFridge:b.bakeFromFridge} : {}) })),
-      recipeGenerated, protocolStale, activeTab, pizzaPartyTab, modeChosen, awaitingRecipeChoice,
+      recipeGenerated, protocolStale, activeTab, pizzaPartyTab, modeChosen, awaitingRecipeChoice, customBakeQuestion,
       acceptedStartTime: acceptedPlan?.startTime, acceptedPreparationAt: acceptedPlan?.preparationAt, acceptedEatTime: acceptedPlan?.bakeAt,
       navigation:{batchView,protocolView,serviceView,returnTo:fillingsReturn,prepReturnToService,shoppingReturnToFillings},
       // How far the baker got. Without it a resumed session reopened at
@@ -2680,8 +2688,20 @@ export default function Home() {
   // Guidance level never changes the selected dough or leavening.
   const collectingBakeTime=awaitingRecipeChoice && tab==='simple' && !recipeGenerated;
   const bakeTimeOnly=recipeGenerated && bakeTimeQuestion && !replanReturn;
+  const customQuestionOnly=customBakeQuestion && !recipeGenerated && !planDetail;
   // The question-only view ends once the baker leaves the timing screen.
   useEffect(()=>{if(bakeTimeQuestion&&(destination!=='organisation'||setupOverview))setBakeTimeQuestion(false);},[bakeTimeQuestion,destination,setupOverview]);
+  useEffect(()=>{if(planDetail&&(destination!=='organisation'||setupOverview||recipeGenerated))setPlanDetail(false);},[planDetail,destination,setupOverview,recipeGenerated]);
+  useEffect(()=>{if(decisionSheet&&destination!=='organisation')setDecisionSheet(null);},[decisionSheet,destination]);
+  const sheetDecisionPending = tab==='custom' ? customDecisionPending : simpleDecisionPending;
+  useEffect(()=>{
+    if(!decisionSheet||sheetDecisionPending||!scheduleCandidateValid)return;
+    const next=decisionSheet;setDecisionSheet(null);
+    if(next==='return'){finishSetupEdit();return;}
+    if(tab==='simple')setAwaitingRecipeChoice(false);
+    if(canGenerate)handleGenerate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[decisionSheet,sheetDecisionPending,scheduleCandidateValid]);
   // Fetch the recipe chunk while the baker is still setting up, so Generate opens it at once.
   useEffect(()=>{if(bakeType)void loadRecipeOutput();},[bakeType]);
   // There is no mode screen. A route that lands on setup before a mode exists goes to
@@ -3447,6 +3467,7 @@ export default function Home() {
     setProtocolStale(!rb && snap.protocolStale === true);
     setModeChosen(snap.modeChosen);
     setAwaitingRecipeChoice(snap.awaitingRecipeChoice ?? !snap.modeChosen);
+    setCustomBakeQuestion(snap.customBakeQuestion === true);
     // Sourdough starter state — snapshots saved after Jul 2026 include these
     setStarterState((snap.starterState ?? 'rt_fed') as 'rt_fed' | 'fridge_unfed' | 'fridge_fed');
     setStarterLocation((snap.starterLocation ?? 'rt') as 'rt' | 'fridge');
@@ -4136,10 +4157,12 @@ export default function Home() {
   const renderCustomScheduler = (section:'all'|'starter'|'plan') => (
               <SchedulePicker
                 {...poolishInputs}
-                inputsOnly={bakeTimeOnly&&section!=='starter'}
+                inputsOnly={(bakeTimeOnly||customQuestionOnly)&&section!=='starter'}
                 schedulerSection={section}
                 onUseCalculatedYeast={()=>{setYeastPctOverride(undefined);setPlanReplanPending(true);}}
                 onSimpleDecisionChange={setCustomDecisionPending}
+                decisionSheet={decisionSheet!==null&&tab==='custom'}
+                onDecisionSheetClose={()=>setDecisionSheet(null)}
                 enteredYeastShownPct={effectiveYeastOverride!==undefined&&yeastType?Math.round(effectiveYeastOverride*(YEAST_TYPES[yeastType]?.conversion??1)*1000)/1000:undefined}
                 poolishStorage={prefermentType==='poolish'?poolishStorage:'auto'}
                 yeastPctOverride={effectiveYeastOverride}
@@ -4649,7 +4672,7 @@ export default function Home() {
                 flow={simpleFlow}
                 reviewValues={{ 3: simpleKitchenSummary, 7: reviewTiming }}
                 suggestedRows={simpleSuggestedRows}
-                modeChip={{ value: 'simple', onClick: () => { chooseMode('custom'); if(recipeGenerated){setAdvancedHighestStep(h=>Math.max(h,CUSTOM_LAST)); setSetupOverview(true);} else setSetupOverview(false); scrollToStepTop(); } }}
+                modeChip={{ value: 'simple', onClick: () => { chooseMode('custom'); if(recipeGenerated){setAdvancedHighestStep(h=>Math.max(h,CUSTOM_LAST)); setSetupOverview(true);} else {setCustomBakeQuestion(true); setSetupOverview(false);} scrollToStepTop(); } }}
                 hideSuggested
                 onJump={id => { setSetupOverview(false); if(id===7)setBakeTimeQuestion(true); simpleFlow.onJump(id); }}
                 returnLabel={recipeGenerated?setupReturnLabel:undefined}
@@ -4688,7 +4711,7 @@ export default function Home() {
             </StepPage>
 
             {/* ─── STEP 8: Scheduler ───────────────── */}
-            <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={collectingBakeTime ? <></> : bakeTimeOnly && eatTime ? (simpleDecisionPending ? <div style={{width:'100%'}}><p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'}</p><button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{setupReturnLabel}</button></div> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : scheduleEditing ? null : !eatTime ?
+            <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={collectingBakeTime ? <></> : bakeTimeOnly && eatTime ? (simpleDecisionPending ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('return')}>{setupReturnLabel}</button> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : scheduleEditing ? null : !eatTime ?
               <button type="button" disabled style={{...NEXT_CTA,opacity:0.5}}>{fr?'Choisissez une date de cuisson':'Choose a bake date'}</button>
               : !scheduleCandidateValid ? (simpleDecisionPending
                 // As in Custom: the normal next step waits for a choice in the card above; it never only scrolls.
@@ -4716,6 +4739,8 @@ export default function Home() {
                 key={starterPlanResetKey}
                 mode="simple"
                 onSimpleDecisionChange={setSimpleDecisionPending}
+                decisionSheet={decisionSheet!==null&&tab==='simple'}
+                onDecisionSheetClose={()=>setDecisionSheet(null)}
                 mixerType={mixerType ?? 'hand'}
                 confirmedPlan={confirmedSchedulePlan}
                 timingOverrides={timingOverrides}
@@ -4794,12 +4819,12 @@ export default function Home() {
                 const soon=!simpleDecisionPending&&scheduleCandidateValid&&!isUnleavened?soonStartLabel(firstRecipeAction,Date.now(),locale):null;
                 return <div data-recipe-choice style={{display:'grid',gap:12,marginTop:16}}>
                   {soon&&<p data-start-soon role="status" style={{margin:0,fontSize:15,fontWeight:600,color:'var(--char)'}}>{firstRecipeActionLabel} · {soon}</p>}
-                  {simpleDecisionPending&&<p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:0}}>{fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'}</p>}
-                  {/* A pending decision holds Generate back, shown and disabled, with the reason above it. */}
-                  <button type="button" data-generate-recipe disabled={simpleDecisionPending} aria-describedby={simpleDecisionPending?'bh-plan-choice-hint':undefined} style={simpleDecisionPending?{...card,opacity:0.55,cursor:'not-allowed'}:card} onClick={()=>{if(simpleDecisionPending)return;setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>
+                  {/* A clash is asked here once, in a sheet, when the baker generates. Customizing
+                      first defers it to the end of the customize steps, so it is never asked twice. */}
+                  <button type="button" data-generate-recipe style={card} onClick={()=>{if(simpleDecisionPending){setDecisionSheet('generate');return;}setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>
                     <span style={title}>{fr?'Générer ma recette':'Generate my recipe'}<span aria-hidden="true">→</span></span>
                   </button>
-                  <button type="button" data-customize-link style={card} onClick={()=>{setAwaitingRecipeChoice(false);chooseMode('custom');}}>
+                  <button type="button" data-customize-link style={card} onClick={()=>{setAwaitingRecipeChoice(false);setCustomBakeQuestion(true);chooseMode('custom');}}>
                     <span style={title}>{fr?'Personnaliser ma fournée':'Customize my bake'}<span aria-hidden="true">→</span></span>
                     <span style={{fontSize:14,color:'var(--smoke)',fontWeight:400}}>{customDesc}</span>
                   </button>
@@ -5255,13 +5280,13 @@ export default function Home() {
             )}
 
             {/* ─── ADV STEP 10: Scheduler ──────────── */}
-            <StepPage flow={customOrganisationFlow} id={9} nextOverride={bakeTimeOnly && eatTime && (customStarterStepId === null || starterStateDescribed) ? (!scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : customStarterStepId !== null && !starterStateDescribed ? <div style={{width:'100%'}}>
+            <StepPage flow={customOrganisationFlow} id={9} nextOverride={bakeTimeOnly && eatTime && (customStarterStepId === null || starterStateDescribed) ? (customDecisionPending ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('return')}>{setupReturnLabel}</button> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : customStarterStepId !== null && !starterStateDescribed ? <div style={{width:'100%'}}>
                 <p style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Indiquez quand votre levain a été rafraîchi pour la dernière fois.':'Tell us when your starter was last fed.'}</p>
                 <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>openSetupStep(customStarterStepId,true)}>{fr?'Votre levain →':'Your starter →'}</button>
-              </div> : scheduleEditing ? null : !scheduleCandidateValid ? <div style={{width:'100%'}}>
+              </div> : scheduleEditing ? null : customQuestionOnly && customDecisionPending && customOrganisationFlow.steps.some(step=>step.id!==9&&!stepAnswered(step,customOrganisationFlow.highestStep,customOrganisationFlow.steps)) ? undefined : !scheduleCandidateValid ? <div style={{width:'100%'}}>
                 {/* The way forward is never a button that only scrolls: the next step waits for a choice above. */}
-                <p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{customDecisionPending?(fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'):(fr?'Ajustez le planning ci-dessus pour continuer.':'Adjust the plan above to continue.')}</p>
-                <button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated?setupReturnLabel:customOrganisationFlow.steps.at(-1)?.id===9?customOrganisationFlow.generateLabel:`${customOrganisationFlow.steps.find(step=>step.id===nextCustomStep(9))?.chip ?? (fr?'Suivant':'Next')} →`}</button>
+                {customQuestionOnly?(customDecisionPending?<button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('generate')}>{customOrganisationFlow.generateLabel}</button>:<button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setPlanDetail(true)}>{fr?'Voir le planning':'See the plan'} →</button>):<p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{customDecisionPending?(fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'):(fr?'Ajustez le planning ci-dessus pour continuer.':'Adjust the plan above to continue.')}</p>}
+                {customQuestionOnly?null:<button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated?setupReturnLabel:customOrganisationFlow.steps.at(-1)?.id===9?customOrganisationFlow.generateLabel:`${customOrganisationFlow.steps.find(step=>step.id===nextCustomStep(9))?.chip ?? (fr?'Suivant':'Next')} →`}</button>}
               </div> : undefined}>
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => customFlow.onJump(1)} />
