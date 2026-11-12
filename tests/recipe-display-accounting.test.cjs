@@ -33,7 +33,7 @@ test('preferment baker percentages describe the selected seed yeast actually wei
   const r=make('fresh',pref);
   // Distinct doses make an accidental reference to unused final-dough yeast observable.
   r.preferment.prefYeastGrams=r.flour*.0025;r.yeast.convertedPct=1.2;
-  const section=render(r,pref,undefined,'en',true).match(/<section aria-label="Total ingredients">([\s\S]*?)<\/section>/)?.[1].replace(/<[^>]+>/g,'');
+  const section=render(r,pref,undefined,'en',true).match(/<section (?:aria-label="(?:Total ingredients|Quantités totales)"|data-whole-dough[^>]*)>([\s\S]*?)<\/section>/)?.[1].replace(/<[^>]+>/g,'');
   a.ok(section);a.match(section,/Fresh yeast0\.25%[\d. ]+g/i);a.doesNotMatch(section,/Fresh yeast1\.2%[\d. ]+g/i);
  }
 });
@@ -59,7 +59,7 @@ test('small yeast precision and dilution instructions stay in one initially clos
 test('total formula percentages accompany total weights, never remaining stage water',()=>{
  for(const pref of ['biga','poolish']){
   const r=make('instant',pref),html=render(r,pref,undefined,'en',true);
-  const totals=html.match(/<section aria-label="Total ingredients">([\s\S]*?)<\/section>/)[1].replace(/<[^>]+>/g,'');
+  const totals=html.match(/<section (?:aria-label="(?:Total ingredients|Quantités totales)"|data-whole-dough[^>]*)>([\s\S]*?)<\/section>/)[1].replace(/<[^>]+>/g,'');
   a.match(totals,new RegExp('Flour100%'+Math.round(r.flour)+' g'));
   a.match(totals,new RegExp('Water[0-9.]+%'+Math.round(r.water)+' g'));
   a.match(totals,/Of which prefermented flour[\s\S]*20%/);
@@ -80,7 +80,7 @@ test('blend recipe totals show separate named flour weights and conserve stage a
  for(const pref of ['none','poolish','biga'])for(const locale of ['en','fr']){
   const r=make('instant',pref,blend),html=render(r,pref,blend,locale,true);
   a.equal(r.flourParts.reduce((sum,p)=>sum+p.grams,0),r.flour);
-  const content=(pref==='none'?html:html.match(/<section aria-label="(?:Total ingredients|Quantités totales)">([\s\S]*?)<\/section>/)[1]).replace(/<[^>]+>/g,'').replace(/[\u00a0\u202f]/g,' ');
+  const content=(pref==='none'?html:html.match(/<section (?:aria-label="(?:Total ingredients|Quantités totales)"|data-whole-dough[^>]*)>([\s\S]*?)<\/section>/)[1]).replace(/<[^>]+>/g,'').replace(/[\u00a0\u202f]/g,' ');
   for(const part of r.flourParts){a.ok(content.includes(part.name));a.ok(content.includes(part.grams+' g'));}
   if(r.preferment)a.equal(r.flourParts[0].grams,Math.round(r.preferment.finalFlour*.6)+r.preferment.prefFlour);
  }
@@ -142,4 +142,14 @@ test('water percentage is the hydration set, and the starter flour line reads as
  a.match(fr,/\+ \d+ g de farine apportés par le levain, soit [\d ]+ g au total/);
  a.doesNotMatch(fr,/équivalent\+|g via le levain/);
  a.ok(set>0);
+});
+
+test('custom preferment recipes put the whole dough first and keep the stages to weights',()=>{
+ for(const pref of ['poolish','biga']){
+  const html=render(make('instant',pref),pref,undefined,'en',true);
+  a.ok(html.indexOf('data-whole-dough')>-1&&html.indexOf('data-whole-dough')<html.indexOf('data-recipe-stages'));
+  const stages=html.slice(html.indexOf('data-recipe-stages')).replace(/<[^>]+>/g,'');
+  a.doesNotMatch(stages,/(Water|Remaining water|Salt|Pizza flour|Flour)[0-9.]+%/);
+  a.doesNotMatch(html.replace(/<[^>]+>/g,''),/hydration/i);
+ }
 });
