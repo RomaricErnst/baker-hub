@@ -8,8 +8,28 @@ html {
   text-size-adjust: 100%;
 }
 
+/* Figtree, preloaded in the layout head. "optional": the text is never swapped in front of the
+   baker — the font is there for the first paint (preload, then the service worker's cache), and on
+   a very slow first visit the metric-matched fallback simply stays for that page view. */
+@font-face {
+  font-family: "figtree";
+  src: url("/fonts/figtree-latin.woff2") format("woff2");
+  font-weight: 300 900;
+  font-display: optional;
+}
+/* Arial sized to Figtree's metrics (the values next/font generated), so nothing reflows either way. */
+@font-face {
+  font-family: "figtree Fallback";
+  src: local("Arial");
+  ascent-override: 95.06%;
+  descent-override: 25.02%;
+  line-gap-override: 0%;
+  size-adjust: 99.94%;
+}
+
 :root {
   --font-display: Georgia, 'Times New Roman', serif;
+  --font-ui: "figtree", "figtree Fallback";
   --cream: #F0EBE0;
   --warm: #FDFBF7;
   --char: #2B2420;
@@ -410,7 +430,7 @@ button,
 .bh-batch-actions .bh-dough-only { background:var(--cream)!important; color:var(--terra)!important; border:1px solid var(--border)!important; box-shadow:none!important; }
 .bh-section-back { display:block; min-height:44px; padding:10px 0; margin:0 0 8px; border:0; background:transparent; color:var(--terra); font:inherit; font-size:14px; text-align:left; cursor:pointer; }
 .bh-recipe-next { display:grid; gap:8px; }
-.bh-step-actions.bh-recipe-next { grid-template-columns:minmax(0,1fr); }
+/* The Recipe's bar is laid out like every section's: My choices on the left, as its way back, and the next section on the right (13 Nov 2026). */
 .bh-step-actions.bh-recipe-next .bh-section-back { margin:0; padding:4px; font-size:14px; }
 .bh-section-back:focus-visible { outline:2px solid var(--terra); outline-offset:2px; }
 .bh-batch-content input, .bh-batch-content button { scroll-margin-top:140px; scroll-margin-bottom:140px; }

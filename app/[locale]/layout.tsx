@@ -8,13 +8,14 @@ import { routing } from '@/i18n/routing';
 import { SITE_URL, pageMetadata } from '../lib/siteMeta';
 import ServiceWorkerRegistration from '../components/ServiceWorkerRegistration';
 
-// Figtree for interface text; page titles use the explicit --font-display
-// serif stack in globals.css, preserving the approved prototype typography.
-const figtree = localFont({ src: "../fonts/figtree-latin.woff2", weight: "300 900", display: "swap", variable: "--font-ui" });
+// Figtree for interface text is declared in globals.css from /fonts/figtree-latin.woff2 and
+// preloaded in the head below: next/font announced it only in the streamed page data, so the
+// first paint used the fallback and swapped a second later (13 Nov 2026). Page titles use the
+// explicit --font-display serif stack in globals.css.
 
 // Kept for one job only: the yeast formula panel, where monospacing carries
 // meaning. Everywhere else, tabular figures on the UI face do the aligning.
-const dmMono = localFont({ src: [{path: "../fonts/dm-mono-400-latin.woff2", weight: "400"}, {path: "../fonts/dm-mono-500-latin.woff2", weight: "500"}], display: "swap", variable: "--font-dm-mono" });
+const dmMono = localFont({ src: [{path: "../fonts/dm-mono-400-latin.woff2", weight: "400"}, {path: "../fonts/dm-mono-500-latin.woff2", weight: "500"}], display: "swap", preload: false, variable: "--font-dm-mono" });
 
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover' };
 
@@ -57,7 +58,10 @@ export default async function LocaleLayout({
   const messages = await getMessages();
   return (
     <html lang={locale} data-preview={process.env.VERCEL_ENV === 'preview' ? 'true' : undefined}>
-      <body className={`${figtree.variable} ${dmMono.variable} antialiased`}>
+      <head>
+        <link rel="preload" href="/fonts/figtree-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+      </head>
+      <body className={`${dmMono.variable} antialiased`}>
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>

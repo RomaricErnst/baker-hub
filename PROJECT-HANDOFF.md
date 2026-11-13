@@ -1,3 +1,8 @@
+# 13 November 2026 (evening) — no font swap on first load; Recipe bar like the others (Claude)
+
+- The "micro flash" a second after the first load was the font: next/font announced Figtree only in the streamed page data, so the browser fetched it after the first paint and swapped Arial-shaped text for Figtree (~1.4 s, with a layout shift on the opening cards). Figtree now lives at `public/fonts/figtree-latin.woff2`, is declared in globals.css (`font-display: optional`, with the same metric-matched Arial fallback next/font generated) and preloaded in the layout `<head>`. Measured locally: font ready at 0.30 s, first paint 0.38 s, no shift. DM Mono (yeast panel only) is no longer preloaded on every page.
+- The Recipe's bottom bar uses the section layout: My choices on the left (its way back), Toppings / Shopping list on the right.
+
 # 13 November 2026 — no undo banner after "New bake" (Claude)
 
 Romaric: "Previous bake kept on this device · Undo new bake" brought little. It is removed (with its 8-second timer, which broke the no-timed-messages rule). A bake with a recipe stays in Menu → My bakes with Resume; an unfinished setup is simply redone. The previous session is still written to `bh_previous_bake_v1` (session.ts); nothing in the page offers it any more.
