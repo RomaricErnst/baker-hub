@@ -11,11 +11,10 @@ for(const locale of ['fr','en']) {
   await page.getByRole('button',{name:locale==='fr'?'Nouvelle fournée':'Start a new bake',exact:true}).tap();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await expect(page.getByRole('button',{name:locale==='fr'?'Reprendre →':'Resume →',exact:true})).toHaveCount(0);
+  // No undo banner (13 Nov 2026): the earlier bake is found again in My bakes, below.
   const undo=page.getByRole('button',{name:locale==='fr'?'Annuler la nouvelle fournée':'Undo new bake',exact:true});
-  await expect(undo).toBeVisible();
-  await expect(undo).toHaveCount(0,{timeout:10000});
-  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
   await expect(undo).toHaveCount(0);
+  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('bh_previous_bake_v1')).session)).toBe(original);
   await page.locator('.bh-batch-content').getByRole('button',{name:locale==='fr'?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
