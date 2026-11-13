@@ -239,6 +239,8 @@ interface SchedulePickerProps extends WarmupInputs {
   decisionSheet?: boolean;
   /** On the Recipe's plan: only the editor for this step, "Update recipe" to apply; onClose when it closes. */
   planInline?: { focus: 'mix' | 'pref'; applyLabel: string; onClose: () => void };
+  /** The Recipe's "Fermentation curve": only the curve of "About this plan", read-only (Custom). */
+  planChart?: boolean;
   onDecisionSheetClose?: () => void;
   onPrefOffsetChange?: (h: number) => void;
   onPrefGoesInFridgeChange?: (inFridge: boolean) => void;
@@ -1847,7 +1849,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, enteredYeastShownPct, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, planInline, decisionSheet=false, onDecisionSheetClose, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, enteredYeastShownPct, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, planInline, planChart, decisionSheet=false, onDecisionSheetClose, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   // A baker-chosen starter % lengthens or shortens the levain room-temperature
   // bulk (starterBulkFactor). The solver windows add the same hours the
   // schedule builder does, so scoring, card and chart stay on one bulk.
@@ -7834,7 +7836,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
   if (schedulerSection === 'starter') return <div style={{ fontFamily: 'var(--font-ui)' }}>{starterCard}</div>;
 
   return (
-    <div className={planInline?'bh-plan-inline':undefined} style={{ fontFamily: 'var(--font-ui)' }}>
+    <div className={planInline?'bh-plan-inline':planChart?'bh-plan-chart':undefined} style={{ fontFamily: 'var(--font-ui)' }}>
 
       {/* Bake time inputs — always visible */}
       <div style={{ marginBottom: '16px' }}>
@@ -8835,14 +8837,14 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
           name:(action.id.startsWith('starter-')?displayStarterEvents.find(event=>+event.time===+action.at&&!event.historicalStorage)?.label:null)??foldActionLabel(action.id,locale,mixingBatches)??(conflictNames[action.id]??['Étape','Step'])[isFr?0:1],
           cover:()=>coverAction(action)}));
         return <ScheduleKeyTimings conflictRows={conflictRows} anchors={anchors} blocks={repairBlocks} isFr={isFr} onChange={isSourdough?starterChange:commercialChange} check={check} cacheKey={cacheKey} hasDraft={dirty} onInteractionChange={setKeyDragging} onCancel={cancel} ovenAt={+times.bake} personalized={hasTimingOverrides} adjustment={adjustment} onApply={accept} canApply={dirty&&valid} onOpenChange={handleKeyEditorOpen} focusId={planInline?.focus} inline={!!planInline} onClose={handleInlineClose} applyLabel={planInline?.applyLabel} notice={notice} header={(dirty||hasTimingOverrides||(!dirty&&!valid&&(isSourdough||!!execution)))?<button type="button" className="bh-key-reset" disabled={keyDragging} onClick={resetToRecommendation}>{execution?(isFr?'Recalculer les étapes restantes':'Reset remaining times'):dirty||hasTimingOverrides?(isFr?'Revenir aux horaires recommandés':'Return to recommended times'):(isFr?'Trouver des horaires compatibles':'Find compatible times')}</button>:undefined}>
-          {mode==='custom' ? <details className="bh-key-detail" data-about-plan style={{marginTop:12}} onToggle={e=>setAboutOpen((e.currentTarget as HTMLDetailsElement).open)}>
+          {mode==='custom' ? <details className="bh-key-detail" data-about-plan open={planChart||undefined} style={{marginTop:planChart?0:12}} onToggle={e=>setAboutOpen((e.currentTarget as HTMLDetailsElement).open)}>
             <summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer',color:'var(--terra)'}}>{isFr?'À propos de ce planning':'About this plan'}</summary>
             <div>
             {/* Inside "About this plan" the curve shows at once; dragging a step moves it. */}
 
 
-            <p style={{margin:'0 0 6px',fontSize:13,color:'var(--smoke)'}}>{isFr?'Faites glisser un losange pour déplacer une étape.':'Drag a diamond to move a step.'}</p>
-            {/* The curve mounts only once the section is opened. */}{aboutOpen && <div id={scheduleViewId}>
+            <p data-drag-hint style={{margin:'0 0 6px',fontSize:13,color:'var(--smoke)'}}>{isFr?'Faites glisser un losange pour déplacer une étape.':'Drag a diamond to move a step.'}</p>
+            {/* The curve mounts only once the section is opened. */}{(aboutOpen||planChart) && <div id={scheduleViewId}>
               {coldHours>0 && <p>{isFr
                 ? `La pâte passe ${duration(coldHours)} au réfrigérateur pour ralentir sa fermentation et conserver l’heure de cuisson choisie.`
                 : `The dough spends ${duration(coldHours)} in the fridge to slow fermentation and meet your bake time.`}</p>}

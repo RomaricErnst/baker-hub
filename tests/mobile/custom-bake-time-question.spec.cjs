@@ -3,6 +3,8 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 // Romaric, 12 Nov 2026: a clash answered on the bake time came back in Custom as a
 // stack of per-step cards. Before the recipe, Custom's bake-time step asks the same
 // single question as Simple; the full editor lives behind Change times.
+// 13 Nov 2026: the bake time was answered before customizing, so Custom ends on Fine-tune
+// with "Create my recipe" and never walks back to that question.
 test.use({timezoneId:'Asia/Singapore'});
 test('Customize from the bake time: the clash is asked once, in a sheet, when the recipe is created',async({page},testInfo)=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -23,7 +25,9 @@ test('Customize from the bake time: the clash is asked once, in a sheet, when th
  await expect(page.locator('[data-simple-decision]:visible')).toHaveCount(0);
  await page.getByRole('button',{name:/^Customize my bake/}).tap();
  // Walk the Custom steps with their recommended values, choosing a poolish when offered.
- for(let i=0;i<14&&!(await time.isVisible());i++){
+ const finish=page.locator('[data-finetune-generate]');
+ for(let i=0;i<14&&!(await finish.isVisible());i++){
+  await expect(time).toBeHidden();
   const poolish=page.getByRole('button',{name:/^Poolish/}).filter({visible:true});
   if(await poolish.count()&&await poolish.first().getAttribute('aria-pressed')!=='true')await poolish.first().tap();
   const forward=page.locator('.bh-step-actions:visible [data-bh-forward]:visible, .bh-batch-actions:visible [data-bh-forward]:visible').first();
@@ -31,18 +35,18 @@ test('Customize from the bake time: the clash is asked once, in a sheet, when th
   await forward.tap();
   await page.waitForTimeout(300);
  }
- await expect(time).toBeVisible();
- await testInfo.attach('custom-bake-time',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
+ await expect(finish).toHaveText('Create my recipe');
+ await expect(time).toBeHidden();
+ await testInfo.attach('custom-fine-tune-end',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
  await expect(page.getByText('I can cover this step').filter({visible:true})).toHaveCount(0);
  await expect(page.getByText(/steps? falls? during your unavailable hours/).filter({visible:true})).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Yes, this step is covered'}).filter({visible:true})).toHaveCount(0);
  await expect(page.locator('[data-simple-decision]:visible')).toHaveCount(0);
  // Create my recipe asks the one question, in a sheet; answering it creates the recipe.
- await page.getByRole('button',{name:'Create my recipe',exact:true}).filter({visible:true}).first().tap();
+ await finish.tap();
  const sheet=page.locator('[data-decision-sheet]');
  {
   await expect(sheet.getByRole('dialog',{name:'Before your recipe'})).toBeVisible();
-  await page.screenshot({path:'/tmp/claude-0/-home-claude/95a4be40-6056-5c1e-aeaf-75fb16280be2/scratchpad/nav3/sheet.png'});
   await expect(sheet.locator('[data-simple-decision]')).toHaveCount(1);
   await testInfo.attach('decision-sheet',{body:await page.screenshot(),contentType:'image/png'});
   await sheet.locator('[data-simple-keep-all], [data-simple-keep], [data-simple-accept]').first().tap();
