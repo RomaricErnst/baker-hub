@@ -1,3 +1,7 @@
+# 13 November 2026 — no undo banner after "New bake" (Claude)
+
+Romaric: "Previous bake kept on this device · Undo new bake" brought little. It is removed (with its 8-second timer, which broke the no-timed-messages rule). A bake with a recipe stays in Menu → My bakes with Resume; an unfinished setup is simply redone. The previous session is still written to `bh_previous_bake_v1` (session.ts); nothing in the page offers it any more.
+
 # 13 November 2026 (afternoon) — Fine-tune, one-line title, end of Custom (Claude)
 
 - Fine-tune: "Help with adjustments" is gone. Hydration carries "Classic for this style: 60–65%." (plus the calculated value when it leaves that range), the allowance "Covers dough left in the bowl; 1.5% is typical.", oil and sugar a note only above 0. "Reset recommended values" appears only when a value was changed.

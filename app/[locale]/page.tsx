@@ -62,7 +62,7 @@ import { archivedBlendSelections } from '../lib/flourRecovery';
 import { flourShoppingName } from '../lib/flourGuidance';
 import { recordGeneratedBake, refreshCurrentJournalSnapshot, forgetCurrentJournalBake, setCurrentJournalId, currentJournalId, type JournalEntry } from '../lib/localJournal';
 import { deleteJournalPhotos } from '../lib/journalPhotos';
-import { archiveLocalBake, hasPreviousBake, preservePreviousBake, restorePreviousBake, acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, normalizeFlourTarget, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
+import { archiveLocalBake, preservePreviousBake, acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, normalizeFlourTarget, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
 import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
@@ -3099,45 +3099,23 @@ export default function Home() {
     scrollToStepTop();
   }
 
-  // Starting a new bake is reversible without a second confirmation.
-  const [previousBakeAvailable, setPreviousBakeAvailable] = useState(false);
-  const [showNewBakeNotice, setShowNewBakeNotice] = useState(false);
+  // Starting a new bake needs no confirmation and shows no undo (13 Nov 2026): a bake with a
+  // recipe stays in Menu → My bakes, and an unfinished setup is quick to redo.
   const [restartFailed, setRestartFailed] = useState(false);
-  useEffect(() => { setPreviousBakeAvailable(hasPreviousBake()); }, []);
-  useEffect(() => {
-    if (!showNewBakeNotice) return;
-    const timer = window.setTimeout(() => setShowNewBakeNotice(false), 8000);
-    return () => window.clearTimeout(timer);
-  }, [showNewBakeNotice]);
-
-  const previousJournalIdRef = useRef<string | null>(null);
   function startRecoverableBake(): boolean {
-    const hadCurrentBake = Boolean(bakeType || loadSession());
     // Flush live edits before snapshotting; never accept a conflicting tab's draft.
     try { if (bakeType) refreshCurrentJournalSnapshot(buildSessionPayload()); } catch {}
     if ((bakeType && !saveSession(buildSessionPayload())) || !preservePreviousBake()) {
       setRestartFailed(true); return false;
     }
     if (!startOver()) { setRestartFailed(true); return false; }
-    try { previousJournalIdRef.current = forgetCurrentJournalBake(); } catch {}
+    try { forgetCurrentJournalBake(); } catch {}
     // A late account lookup must not offer another bake after this decision.
     freshDeviceRef.current = false;
     try { sessionStorage.setItem('bh_wb_answered', '1'); } catch {}
-    setPreviousBakeAvailable(hasPreviousBake()); setRestartFailed(false);
-    if (hadCurrentBake) setShowNewBakeNotice(hasPreviousBake());
+    setRestartFailed(false);
     scrollToStepTop();
     return true;
-  }
-
-  function undoNewBake() {
-    const previous = restorePreviousBake();
-    if (!previous) { setRestartFailed(true); return; }
-    setPreviousBakeAvailable(false); setRestartFailed(false);
-    try { if (previousJournalIdRef.current) setCurrentJournalId(previousJournalIdRef.current); previousJournalIdRef.current = null; } catch {}
-    setShowNewBakeNotice(false);
-    setShowProductHome(false); setShowWelcomeBack(false); setPendingSession(null);
-    applySession(previous);
-    scrollToStepTop();
   }
 
   async function confirmLocalReplacement(_rebake = false): Promise<boolean> {
@@ -4513,10 +4491,6 @@ export default function Home() {
 
 
         {restartFailed && <p role="alert">{fr ? 'Impossible de conserver ou reprendre la fournée. Vos choix restent protégés. Réessayez.' : 'Unable to preserve or restore the bake. Your choices remain protected. Please try again.'}</p>}
-        {showNewBakeNotice && !showWelcomeBack && !cloudResume && <div role="status" style={{padding:'8px 16px',display:'flex',gap:12,alignItems:'center',flexWrap:'wrap',fontSize:14}}>
-          <span>{fr ? 'Fournée précédente conservée sur cet appareil.' : 'Previous bake kept on this device.'}</span>
-          <button type="button" onClick={undoNewBake} style={{minHeight:44,padding:'8px 12px',background:'none',border:'1px solid var(--border)',borderRadius:10,color:'var(--terra)',font:'inherit',cursor:'pointer'}}>{fr ? 'Annuler la nouvelle fournée' : 'Undo new bake'}</button>
-        </div>}
 
 
       </div>
