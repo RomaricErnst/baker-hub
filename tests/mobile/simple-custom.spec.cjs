@@ -92,10 +92,10 @@ for(const locale of ['fr','en']){
   await expect(page.locator('#step-7:visible')).toBeVisible();
   await next();
   await expect(page.locator('#step-10:visible')).toBeVisible();
-  await next();
-  await expect(page.locator('#step-9:visible')).toBeVisible();
-  await expect.poll(async()=>(await stored(page))?.prefermentType).toBe('poolish');
   await geometry(page);
+  // The bake time was answered before customizing: Fine-tune creates the recipe instead of asking it again.
+  await expect(page.locator('#step-10 [data-finetune-generate]')).toHaveText(fr?'Créer ma recette':'Create my recipe');
+  await expect.poll(async()=>(await stored(page))?.prefermentType).toBe('poolish');
  });
  test(`${locale}: fresh Simple pizza goes from quantity to timing before recipe generation and creates a recipe`,async({page})=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));

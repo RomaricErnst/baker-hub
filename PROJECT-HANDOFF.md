@@ -1,3 +1,10 @@
+# 13 November 2026 (afternoon) — Fine-tune, one-line title, end of Custom (Claude)
+
+- Fine-tune: "Help with adjustments" is gone. Hydration carries "Classic for this style: 60–65%." (plus the calculated value when it leaves that range), the allowance "Covers dough left in the bowl; 1.5% is typical.", oil and sugar a note only above 0. "Reset recommended values" appears only when a value was changed.
+- The Recipe title is the name alone ("Pizza night"); the day leads the summary line ("Sun 15 Nov · 4 pizzas · Classic Neapolitan · 260 g each"). The calendar and saved bakes keep the name with the day (`bakeAutoTitle`); on screen `bakeAutoName`.
+- Custom reached from the bake-time question ends on Fine-tune with "Create my recipe" (`fineTuneFinishes`), never walking back to the bake time. A clash still opens the "Before your recipe" sheet once: the step mounts its planner showing only that sheet (`.bh-plan-sheet-only`).
+- "More timing options" is gone. Custom's Your plan has "Fermentation curve ▾", the planner's "About this plan" curve shown read-only in place (`planChart`, `.bh-plan-chart`); one planner instance at a time (`planChartOpen` unmounts the setup step's). Sourdough keeps "Change times".
+
 # 13 November 2026 — the Recipe's top, and times moved from the plan (Claude)
 
 Romaric: "My Pizza Night" was a template name editable only from My bake, the top of the Recipe was not tight, and moving Start Dough meant leaving the Recipe for the timing screen.

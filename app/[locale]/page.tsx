@@ -757,13 +757,13 @@ function bakeQuantityLabel(count: number, bakeType: string | null, styleKey: str
 
 /** The bake's title until the baker names it: what is made, when it is eaten, the day.
  *  "Pizza night · Sun 15 Nov", "Pizza lunch · Sat 14 Nov", "Baguettes · Sat 14 Nov". */
-function autoBakeTitle(bakeType: string | null, styleKey: string | null, count: number, bakeAt: Date | null, fr: boolean, styleName: string): string {
+function autoBakeTitle(bakeType: string | null, styleKey: string | null, count: number, bakeAt: Date | null, fr: boolean, styleName: string, bakeHour?: number): string {
   let what: string;
   if (bakeType === 'bread') {
     const noun = breadNoun(styleKey, count, fr);
     what = ['pain','pains','loaf','loaves'].includes(noun) ? (styleName || (fr ? 'Pain' : 'Bread')) : noun.charAt(0).toUpperCase() + noun.slice(1);
   } else {
-    const hour = bakeAt ? bakeAt.getHours() : 19;
+    const hour = bakeAt ? bakeAt.getHours() : bakeHour ?? 19;
     what = hour >= 17 || hour < 4 ? (fr ? 'Soirée pizza' : 'Pizza night') : hour >= 11 ? (fr ? 'Déjeuner pizza' : 'Pizza lunch') : (fr ? 'Brunch pizza' : 'Pizza brunch');
   }
   if (!bakeAt || !Number.isFinite(+bakeAt)) return what;
@@ -790,7 +790,7 @@ function BakeTitleField({ value, auto, fr, onCommit }: { value: string; auto: st
           onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') setDraft(null); }}
           style={{ ...font, flex: 1, minWidth: 0, border: 0, borderRadius: 6, padding: '4px 6px', margin: '0 -6px', background: 'var(--warm)' }} />
       : <h1 className="bh-page-title" data-bake-title onClick={start}
-          style={{ ...font, flex: 1, minWidth: 0, margin: 0, padding: '4px 0', borderBottom: '1px dashed var(--border)', cursor: 'text' }}>{value || auto}</h1>}
+          style={{ ...font, flex: '0 1 auto', minWidth: 0, margin: 0, padding: '4px 0', borderBottom: '1px dashed var(--border)', cursor: 'text' }}>{value || auto}</h1>}
     {!editing && <button type="button" data-bake-rename aria-label={fr ? 'Renommer la fournée' : 'Rename this bake'} onClick={start}
       style={{ width: 44, height: 44, flex: '0 0 44px', display: 'grid', placeItems: 'center', background: 'transparent', border: 0, padding: 0, cursor: 'pointer' }}>
       <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>
@@ -922,7 +922,7 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
 // calendar file are one tap away.
 // The recipe says what goes in; below it, the plan says when: the key steps with
 // their times only. How to do each step lives in Preparation.
-function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,steps,editable=[],editing=null,onEditTime,editor,notice,moreLabel,onMore}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;startKey?:string|null;bakeAt:Date;steps:{key:string;at:Date;label:string}[];editable?:string[];editing?:string|null;onEditTime?:(key:string)=>void;editor?:React.ReactNode;notice?:{key:string;node:React.ReactNode}|null;moreLabel?:string|null;onMore?:()=>void}){
+function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,steps,editable=[],editing=null,onEditTime,editor,notice,chart,moreLabel,onMore}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;startKey?:string|null;bakeAt:Date;steps:{key:string;at:Date;label:string}[];editable?:string[];editing?:string|null;onEditTime?:(key:string)=>void;editor?:React.ReactNode;notice?:{key:string;node:React.ReactNode}|null;chart?:{open:boolean;onToggle:(open:boolean)=>void;node:React.ReactNode}|null;moreLabel?:string|null;onMore?:()=>void}){
   // The times the baker chooses (Start Dough; the preferment in Custom) are changed here,
   // (the button's 44px reach overflows the row by negative margins, so the row keeps its height)
   // in place: the time is a button, its editor opens under the row, and applying it
@@ -951,6 +951,10 @@ function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,steps,edit
     })()}
     {/* Custom keeps its curve and storage options behind one link; a sourdough plan keeps
         the full editor (its starter steps are not edited in place). */}
+    {chart&&<details data-plan-curve open={chart.open} onToggle={e=>{const open=(e.currentTarget as HTMLDetailsElement).open;if(open!==chart.open)chart.onToggle(open);}} style={{marginTop:8}}>
+      <summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer',color:'var(--terra)'}}>{fr?'Courbe de fermentation':'Fermentation curve'}<span aria-hidden="true" style={{marginLeft:6}}>{chart.open?'▴':'▾'}</span></summary>
+      {chart.node}
+    </details>}
     {moreLabel&&onMore&&<button type="button" data-change-times className="bh-section-back" style={{minHeight:44,marginTop:8}} onClick={onMore}>{moreLabel}</button>}
   </section>;
 }
@@ -2753,6 +2757,8 @@ export default function Home() {
   // After an inline edit, a short line under the moved row replaces the "Plan updated" note.
   const [planNote, setPlanNote] = useState<{key:string;yeast:{from:number;to:number}|null}|null>(null);
   const planNoteKey = useRef<string|null>(null);
+  // Custom: the Recipe's "Fermentation curve" is open (it mounts the planner, so the setup steps unmount theirs).
+  const [planChartOpen, setPlanChartOpen] = useState(false);
   const planYeastFrom = useRef<number|undefined>(undefined);
   const planYeastAwait = useRef(false);
   const doseOf = (r: typeof recipe) => r ? (r.preferment ? r.preferment.prefYeastGrams : r.yeast?.convertedGrams) : undefined;
@@ -2785,6 +2791,7 @@ export default function Home() {
   },[planEdit]);
   useEffect(()=>{if(planEdit&&destination!=='recipe')setPlanEdit(null);},[planEdit,destination]);
   useEffect(()=>{if(planNote&&destination!=='recipe')setPlanNote(null);},[planNote,destination]);
+  useEffect(()=>{if(planChartOpen&&(destination!=='recipe'||planEdit))setPlanChartOpen(false);},[planChartOpen,destination,planEdit]);
   useEffect(()=>{
     if(!decisionSheet||sheetDecisionPending||!scheduleCandidateValid)return;
     const next=decisionSheet;setDecisionSheet(null);
@@ -3766,7 +3773,11 @@ export default function Home() {
     return (locale === 'fr' ? r.nameFr : undefined) ?? r.name ?? null;
   };
   const fr = locale === 'fr';
+  // With the day for the calendar and saved bakes; on screen the title is the name alone and the
+  // day leads the summary line, so the title fits one line on a phone.
   const bakeAutoTitle = autoBakeTitle(bakeType, styleKey, numItems, eatTime ?? null, fr, styleKey ? styleDisplayName(styleKey) : '');
+  const bakeAutoName = autoBakeTitle(bakeType, styleKey, numItems, null, fr, styleKey ? styleDisplayName(styleKey) : '', eatTime ? eatTime.getHours() : undefined);
+  const bakeDayLabel = eatTime && Number.isFinite(+eatTime) ? new Intl.DateTimeFormat(fr ? 'fr-FR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).format(eatTime) : null;
   const ovenDisplayName = ovenType === 'pizza_oven'
     ? (ovenConstruction === 'masonry' ? (fr ? 'Four à pizza traditionnel' : 'Traditional pizza oven') : (fr ? 'Four à pizza compact' : 'Tabletop pizza oven'))
     : ovenType === 'steam_oven'
@@ -4058,6 +4069,17 @@ export default function Home() {
   // and a 60px drag there must move a feed time, never the page.
   const simpleOrganisationFlow:StepFlow={...simpleFlow,steps:SIMPLE_STEPS.filter(step=>step.id>=3),activeId:Math.max(3,simpleFlow.activeId)};
   const customOrganisationFlow:StepFlow={...customFlow,steps:CUSTOM_STEPS.filter(step=>step.id>=3),activeId:customFlow.activeId<=2 ? 3 : customFlow.activeId};
+  // The bake time was answered before "Customize my bake": Fine-tune creates the recipe instead
+  // of walking back to that question. Its planner is mounted here showing only the
+  // "Before your recipe" sheet, so a clash is still asked once.
+  const fineTuneFinishes = tab==='custom' && customQuestionOnly && !!eatTime && advancedStep===10 && nextCustomStep(10)===9
+    && (customStarterStepId===null || starterStateDescribed)
+    && customOrganisationFlow.steps.every(step=>step.id===9||step.id===10||stepAnswered(step,customOrganisationFlow.highestStep,customOrganisationFlow.steps));
+  // A clash opens the sheet; a plan the sheet cannot settle opens the full planner; otherwise the sheet's effect creates the recipe.
+  const finishFromFineTune = () => {
+    if(!customDecisionPending&&!scheduleCandidateValid){openSetupStep(9,true);setPlanDetail(true);return;}
+    setDecisionSheet('generate');
+  };
   const simpleSwipeRef = useStepSwipe(simpleOrganisationFlow,
     tab === 'simple' && activeTab === 'setup' && simpleFlow.activeId !== SIMPLE_LAST && simpleFlow.activeId !== 3);
   const customSwipeRef = useStepSwipe(customOrganisationFlow,
@@ -4244,8 +4266,8 @@ export default function Home() {
   // Starter step and the plan on Bake time. Only one step is mounted at a time.
   // One simple scheduler element, rendered on the bake-time step or, for a step moved from
   // the Recipe's plan, inline there (never both: planEdit unmounts the step's copy).
-  const renderSimpleScheduler = (extra?: {planInline?: {focus:'mix'|'pref';applyLabel:string;onClose:()=>void}}) => (
-              <SchedulePicker {...extra} inputsOnly={!extra?.planInline&&(collectingBakeTime||bakeTimeOnly)} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor}
+  const renderSimpleScheduler = (extra?: {planInline?: {focus:'mix'|'pref';applyLabel:string;onClose:()=>void};planChart?:boolean}) => (
+              <SchedulePicker {...extra} inputsOnly={!extra?.planInline&&!extra?.planChart&&(collectingBakeTime||bakeTimeOnly)} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor}
                 {...poolishInputs}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
@@ -4320,11 +4342,11 @@ export default function Home() {
                 onTangChange={setTang}
               />
   );
-  const renderCustomScheduler = (section:'all'|'starter'|'plan', extra?: {planInline?: {focus:'mix'|'pref';applyLabel:string;onClose:()=>void}}) => (
+  const renderCustomScheduler = (section:'all'|'starter'|'plan', extra?: {planInline?: {focus:'mix'|'pref';applyLabel:string;onClose:()=>void};planChart?:boolean}) => (
               <SchedulePicker
                 {...extra}
                 {...poolishInputs}
-                inputsOnly={!extra?.planInline&&(bakeTimeOnly||customQuestionOnly)&&section!=='starter'}
+                inputsOnly={!extra?.planInline&&!extra?.planChart&&(bakeTimeOnly||customQuestionOnly)&&section!=='starter'}
                 schedulerSection={section}
                 onUseCalculatedYeast={()=>{setYeastPctOverride(undefined);setPlanReplanPending(true);}}
                 onSimpleDecisionChange={setCustomDecisionPending}
@@ -4415,7 +4437,9 @@ export default function Home() {
   ];
   const planInline = planEdit ? {focus:planEdit, applyLabel:fr?'Mettre à jour la recette':'Update recipe', onClose:()=>setPlanEdit(null)} : undefined;
   const planEditor = planInline ? (tab==='custom' ? renderCustomScheduler(customStarterStepId !== null?'plan':'all',{planInline}) : renderSimpleScheduler({planInline})) : null;
-  const planMoreLabel = yeastType==='sourdough' ? (fr?'Modifier les horaires':'Change times') : tab==='custom' ? (fr?'Plus d’options d’horaires':'More timing options') : null;
+  // Sourdough keeps the full planner (the starter has its own scheduling); Custom shows its curve in place.
+  const planMoreLabel = yeastType==='sourdough' ? (fr?'Modifier les horaires':'Change times') : null;
+  const planChart = tab==='custom' && yeastType!=='sourdough' ? {open:planChartOpen,onToggle:setPlanChartOpen,node:planChartOpen&&!planEdit?renderCustomScheduler(customStarterStepId !== null?'plan':'all',{planChart:true}):null} : null;
   return (
     <div data-navigation-page={visiblePageKey} data-reading={bottomNavCollapsed || undefined} data-keyboard-open={keyboardOpen || undefined} data-mobile-setup={(destination==='organisation'||destination==='batch')&&!recipeGenerated?'true':undefined} style={{ minHeight: '100vh', background: 'var(--warm)' }}>
       {/* ── Sticky header + journey bar (autohide on scroll down) ── */}
@@ -4706,20 +4730,20 @@ export default function Home() {
 {recipeGenerated && compactBakeContext && !(destination==='shopping'&&bakeType==='pizza') && <h1 className="bh-page-title bh-bake-title bh-visually-hidden">{bakeName || bakeAutoTitle}</h1>}
 {recipeGenerated && compactBakeContext && destination==='service' && <h2 className="bh-visually-hidden">{fr?'Cuisson & service':'Baking & serving'}</h2>}
 {recipeGenerated && !compactBakeContext && <div className="bh-bake-context" style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}>{(()=>{
-  const title=bakeName || bakeAutoTitle;
+  const title=bakeName || bakeAutoName;
   // The bake title is the page heading wherever the view has none of its own:
   // setup steps, the pizza lists and the pizza shopping list carry their own H1.
   // On the Recipe it is renamed in place.
-  if(destination==='recipe'&&!browsingFillings)return <BakeTitleField value={bakeName} auto={bakeAutoTitle} fr={fr} onCommit={setBakeName}/>;
+  if(destination==='recipe'&&!browsingFillings)return <BakeTitleField value={bakeName} auto={bakeAutoName} fr={fr} onCommit={setBakeName}/>;
   const isPageTitle=!browsingFillings&&['protocol','service'].includes(destination)||(destination==='shopping'&&bakeType!=='pizza');
   return isPageTitle?<h1 className="bh-page-title bh-bake-title">{title}</h1>:<strong style={{fontSize:14}}>{title}</strong>;
 })()}{destination==='service'&&!browsingFillings&&<h2 className="bh-visually-hidden">{fr?'Cuisson & service':'Baking & serving'}</h2>}<p data-bake-summary style={{margin:'2px 0 0',fontSize:14,color:'var(--ash)'}}>{(()=>{
-  // One line: what, which style, and for pizza the size of each.
+  // One line: the day, what, which style, and for pizza the weight of each.
   const quantity=bakeQuantityLabel(numItems,bakeType,styleKey,fr);
   const genericBread=bakeType==='bread'&&['pain','pains','loaf','loaves'].includes(breadNoun(styleKey,numItems,fr));
   const style=styleKey&&(bakeType==='pizza'||genericBread)?styleDisplayName(styleKey):'';
   const each=destination==='recipe'&&bakeType==='pizza'?eachPizzaShort({styleKey,itemWeight,diameter:STYLE_HAS_DIAMETER.includes(styleKey??'')&&crustActive>=0?pizzaDiameter:undefined,units,locale}):null;
-  return [quantity,style,each].filter(Boolean).join(' · ');
+  return [bakeDayLabel,quantity,style,each].filter(Boolean).join(' · ');
 })()}</p></div>}
 {recipeGenerated && planMoved && destination!=='batch' && destination!=='organisation' && eatTime && (()=>{
   // Only what moved, and an amount only when it changes what the baker weighs.
@@ -4911,7 +4935,7 @@ export default function Home() {
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => simpleFlow.onJump(1)} />
               ) : (
-              planEdit?null:renderSimpleScheduler()
+              (planEdit||planChartOpen)?null:renderSimpleScheduler()
               )}
 
               {/* One way forward. A pending decision carries its own buttons, so
@@ -5048,7 +5072,7 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
-                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={planEdit==='pref'?'preferment':planEdit} onEditTime={key=>setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;})} editor={planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
+                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={planEdit==='pref'?'preferment':planEdit} onEditTime={key=>setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;})} editor={planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} chart={planChart} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
                         </div>
                       )}
                     </>
@@ -5383,7 +5407,7 @@ export default function Home() {
                 <p id="bh-starter-fed-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Indiquez quand votre levain a été rafraîchi pour la dernière fois.':'Tell us when your starter was last fed.'}</p>
                 <button data-bh-forward type="button" disabled aria-describedby="bh-starter-fed-hint" style={{...NEXT_CTA,opacity:0.55}}>{(CUSTOM_STEPS.find(step=>step.id===nextCustomStep(customStarterStepId))?.chip ?? (fr?'Suivant':'Next'))} →</button>
               </div> : undefined}>
-                {planEdit?null:renderCustomScheduler('starter')}
+                {(planEdit||planChartOpen)?null:renderCustomScheduler('starter')}
               </StepPage>
             )}
 
@@ -5399,12 +5423,15 @@ export default function Home() {
               {!styleKey ? (
                 <NeedsStyleFirst fr={locale === 'fr'} onChoose={() => customFlow.onJump(1)} />
               ) : (
-              planEdit?null:renderCustomScheduler(customStarterStepId !== null?'plan':'all')
+              (planEdit||planChartOpen)?null:renderCustomScheduler(customStarterStepId !== null?'plan':'all')
               )}
             </StepPage>
 
             {/* Prototype: one clear field per dough setting. */}
-            <StepPage flow={customOrganisationFlow} id={10} nextOverride={yeastEntryBlocked ? <button data-bh-forward type="button" disabled aria-describedby="bh-yeast-entry-note" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated ? setupReturnLabel : `${CUSTOM_STEPS.find(step=>step.id===nextCustomStep(10))?.chip ?? (fr?'Suivant':'Next')} →`}</button> : undefined}>
+            <StepPage flow={customOrganisationFlow} id={10} nextOverride={yeastEntryBlocked ? <button data-bh-forward type="button" disabled aria-describedby="bh-yeast-entry-note" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated ? setupReturnLabel : fineTuneFinishes ? customOrganisationFlow.generateLabel : `${CUSTOM_STEPS.find(step=>step.id===nextCustomStep(10))?.chip ?? (fr?'Suivant':'Next')} →`}</button>
+              : fineTuneFinishes ? <button data-bh-forward data-finetune-generate type="button" style={NEXT_CTA} onClick={finishFromFineTune}>{customOrganisationFlow.generateLabel}</button>
+              : undefined}>
+              {fineTuneFinishes && !planEdit && !planChartOpen && <div className="bh-plan-sheet-only">{renderCustomScheduler(customStarterStepId !== null?'plan':'all')}</div>}
               {/* Pizza size and weight are set on Quantity (Adjust); bread keeps its weight or flour basis here. */}
               {styleKey && bakeType==='bread' && renderQuantity('size')}
               {/* Oven and mixing are asked once, on Equipment. */}
@@ -5418,17 +5445,24 @@ export default function Home() {
                 const leanBread = bakeType==='bread' && !!style && (style.oil ?? 0)===0 && (style.sugar ?? 0)===0;
                 const fields = [
                   ...(!enrichedDirectOnly ? [
-                    {group:'ingredient',label:fr?'Hydratation (%)':'Hydration (%)',value:manualHydration ?? recommendedHyd,min:zone.min,max:zone.max,step:0.5,set:setManualHydration},
+                    {group:'ingredient',label:fr?'Hydratation (%)':'Hydration (%)',value:manualHydration ?? recommendedHyd,min:zone.min,max:zone.max,step:0.5,set:setManualHydration,
+                      // The one fact worth having beside the number: the style's classic range, and why the app moved off it.
+                      hint:(()=>{const range=zone.classicMin===zone.classicMax?`${zone.classicMin}`:`${zone.classicMin}–${zone.classicMax}`;const outside=recommendedHyd>zone.classicMax+0.05||recommendedHyd<zone.classicMin-0.05;
+                        return fr?`Classique pour ce style : ${range} %.${outside?` ${String(recommendedHyd).replace('.',',')} % ici pour votre four, votre cuisine et votre farine.`:''}`:`Classic for this style: ${range}%.${outside?` ${recommendedHyd}% here for your oven, kitchen and flour.`:''}`;})()},
                     {group:'ingredient',label:fr?'Sel (% de farine)':'Salt (% of flour)',value:manualSalt ?? style?.salt ?? 2.5,min:1.5,max:3.5,step:0.1,set:setManualSalt},
-                    ...(leanBread && manualOil===undefined ? [] : [{group:'ingredient',label:fr?'Huile (% de farine)':'Oil (% of flour)',value:manualOil ?? style?.oil ?? 0,min:0,max:10,step:0.5,set:setManualOil}]),
-                    ...(leanBread && manualSugar===undefined ? [] : [{group:'ingredient',label:fr?'Sucre (% de farine)':'Sugar (% of flour)',value:manualSugar ?? style?.sugar ?? 0,min:0,max:10,step:0.5,set:setManualSugar}]),
+                    ...(leanBread && manualOil===undefined ? [] : [{group:'ingredient',label:fr?'Huile (% de farine)':'Oil (% of flour)',value:manualOil ?? style?.oil ?? 0,min:0,max:10,step:0.5,set:setManualOil,
+                      // Nothing to say about none; an amount gets what it does (and burning in a very hot oven).
+                      hint:(manualOil ?? style?.oil ?? 0)>0?oilGuidance(manualOil ?? style?.oil ?? 0,ovenType ?? '',styleKey ?? '',t):undefined}]),
+                    ...(leanBread && manualSugar===undefined ? [] : [{group:'ingredient',label:fr?'Sucre (% de farine)':'Sugar (% of flour)',value:manualSugar ?? style?.sugar ?? 0,min:0,max:10,step:0.5,set:setManualSugar,
+                      hint:(manualSugar ?? style?.sugar ?? 0)>0?sugarGuidance(manualSugar ?? style?.sugar ?? 0,ovenType ?? '',t).note:undefined}]),
                   ] : []),
                   {group:'process',label:fr?'Température de pâte après pétrissage (°C)':'Dough temperature after mixing (°C)',value:targetDoughTemp ?? defaultTemp,min:18,max:28,step:1,set:setTargetDoughTemp},
-                  ...(totalFlourTarget===undefined?[{group:'process',label:fr?'Marge de pâte supplémentaire (%)':'Extra dough allowance (%)',value:wastePct ?? 0,min:0,max:5,step:0.5,set:setWastePct}]:[]),
+                  ...(totalFlourTarget===undefined?[{group:'process',label:fr?'Marge de pâte supplémentaire (%)':'Extra dough allowance (%)',value:wastePct ?? 0,min:0,max:5,step:0.5,set:setWastePct,hint:fr?'Compense la pâte restée dans le bol ; 1,5 % est courant.':'Covers dough left in the bowl; 1.5% is typical.'}]:[]),
                 ];
-                const renderField = (field:typeof fields[number])=><div key={field.label}><label style={{display:'block',fontSize:16,marginBottom:18}}>{field.label}
+                const renderField = (field:typeof fields[number])=><div key={field.label}><label style={{display:'block',fontSize:16,marginBottom:'hint' in field&&field.hint?6:18}}>{field.label}
                     <input type="number" key={`${field.label}:${field.value}`} defaultValue={Math.round(field.value*100)/100} min={field.min} max={field.max} step={field.step} onBlur={e=>{const n=Number(e.target.value);if(e.target.value!==''&&Number.isFinite(n))field.set(Math.min(field.max,Math.max(field.min,n)));else e.target.value=String(field.value);}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}}} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white'}}/>
                   </label>
+                  {'hint' in field&&field.hint&&<p data-field-hint style={{margin:'0 0 16px',fontSize:14,lineHeight:1.45,color:'var(--smoke)'}}>{field.hint}</p>}
                   {field.set===setManualHydration&&<div style={{marginBottom:16,fontSize:14}}>{manualHydration!==undefined&&Math.abs(manualHydration-recommendedHyd)>0.005&&<button type="button" onClick={()=>setManualHydration(undefined)} style={{minHeight:44}}>{fr?'Rétablir l’hydratation conseillée':'Reset suggested hydration'}</button>}<details><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Pourquoi cette valeur ?':'Why this value?'}</summary><p>{fr?'Base du style':'Style starting point'} : {style?.hydration}%</p><p>{fr?'Four':'Oven'} : {['pan','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey??'')?Math.round((ovenData?.hydrationDelta??0)/2):(ovenData?.hydrationDelta??0)}%</p><p>{fr?'Conditions de stockage et cuisine':'Storage and kitchen conditions'} : {kitchenTemp>=28||humidity==='very-humid'?-2:kitchenTemp<=18?2:0}%</p><p>{fr?'Farine':'Flour'} : {flourBlend?Math.max(-5,Math.min(8,computeBlendProfile(flourBlend).hydrationDelta)):0}%</p></details></div>}
                   </div>;
                 return <>
@@ -5500,11 +5534,7 @@ export default function Home() {
                   <details style={{margin:'12px 0'}}><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Températures mesurées · facultatif':'Measured temperatures · optional'}</summary>
                     {[{label:fr?'Farine (°C)':'Flour (°C)',value:measuredFlourTemp,set:setMeasuredFlourTemp},...((prefermentType!=='none'||yeastType==='sourdough')?[{label:fr?'Préferment ou levain (°C)':'Preferment or starter (°C)',value:measuredPrefermentTemp,set:setMeasuredPrefermentTemp}]:[])].map(field=><label key={field.label} style={{display:'block',fontSize:16,margin:'12px 0'}}>{field.label}<input type="number" value={field.value??''} min={-5} max={45} step={0.5} placeholder={fr?'Estimation automatique':'Automatic estimate'} onChange={e=>field.set(e.target.value===''?undefined:Number(e.target.value))} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:10,border:'1px solid var(--border)',borderRadius:9}}/></label>)}
                   </details>
-                  <details style={{margin:'12px 0'}}><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Aide pour ajuster':'Help with adjustments'}</summary>
-                    {!enrichedDirectOnly&&<><p>{fr?'Hydratation de référence pour ce style':'Reference hydration for this style'}{fr?' : ':': '}{zone.classicMin===zone.classicMax ? zone.classicMin : `${zone.classicMin}–${zone.classicMax}`} %. {Math.abs(recommendedHyd-zone.classicMax)>0.05&&recommendedHyd>zone.classicMax?(fr?`Le calcul la porte à ${recommendedHyd} % pour votre four, votre cuisine et votre farine. `:`It is raised to ${recommendedHyd}% for your oven, kitchen and flour. `):recommendedHyd<zone.classicMin?(fr?`Le calcul la ramène à ${recommendedHyd} % pour votre four, votre cuisine et votre farine. `:`It is lowered to ${recommendedHyd}% for your oven, kitchen and flour. `):''}{fr?'Choisissez le bas de la plage pour une pâte plus facile à manipuler.':'Choose the lower end for easier handling.'}</p><p>{oilGuidance(manualOil ?? style?.oil ?? 0,ovenType ?? '',styleKey ?? '',t)}</p><p>{sugarGuidance(manualSugar ?? style?.sugar ?? 0,ovenType ?? '',t).note}</p></>}
-                    <p>{totalFlourTarget!==undefined?(fr?'Votre quantité de farine reste fixe : aucune marge de pâte supplémentaire n’est ajoutée.':'Your flour quantity stays fixed: no extra dough allowance is added.'):(fr?'La marge compense la pâte restant dans le bol. 1,5 % convient généralement.':'The allowance covers dough left in the bowl. 1.5% is a practical starting point.')}</p>
-                  </details>
-                  <button type="button" style={{minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:9}} onClick={()=>{setManualHydration(undefined);if(yeastPctOverride!==undefined){setYeastPctOverride(undefined);setPlanReplanPending(true);}if(starterPctOverride!==undefined){setStarterPctOverride(undefined);setPlanReplanPending(true);}setManualSalt(undefined);setManualOil(undefined);setManualSugar(undefined);setTargetDoughTemp(undefined);setWastePct(undefined);}}>{fr?'Rétablir les valeurs conseillées':'Reset recommended values'}</button>
+                  {[manualHydration,yeastPctOverride,starterPctOverride,manualSalt,manualOil,manualSugar,targetDoughTemp,wastePct].some(value=>value!=null)&&<button type="button" data-reset-finetune style={{minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:9}} onClick={()=>{setManualHydration(undefined);if(yeastPctOverride!==undefined){setYeastPctOverride(undefined);setPlanReplanPending(true);}if(starterPctOverride!==undefined){setStarterPctOverride(undefined);setPlanReplanPending(true);}setManualSalt(undefined);setManualOil(undefined);setManualSugar(undefined);setTargetDoughTemp(undefined);setWastePct(undefined);}}>{fr?'Rétablir les valeurs conseillées':'Reset recommended values'}</button>}
                 </>;
               })()}
             </StepPage>
@@ -5610,7 +5640,7 @@ export default function Home() {
                             feedRatio={nextFeedRatio}
                             starterLocation={starterLocation}
                           />
-                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={planEdit==='pref'?'preferment':planEdit} onEditTime={key=>setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;})} editor={planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
+                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={planEdit==='pref'?'preferment':planEdit} onEditTime={key=>setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;})} editor={planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} chart={planChart} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
                         </div>
                       )}
                     </>

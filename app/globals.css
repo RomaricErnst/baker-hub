@@ -683,3 +683,9 @@ body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="d
 /* The Recipe's plan edits one step in place: the scheduler mounted there shows only
    its key-timings panel (ScheduleKeyTimings inline), nothing around it. */
 .bh-plan-inline *:not(:has(#schedule-anchor-panel)):not(#schedule-anchor-panel):not(#schedule-anchor-panel *) { display: none !important; }
+/* The Recipe's "Fermentation curve" (Custom): the same planner, showing only the curve, read-only. */
+.bh-plan-chart *:not(:has([data-about-plan])):not([data-about-plan]):not([data-about-plan] *) { display: none !important; }
+.bh-plan-chart [data-about-plan] > summary, .bh-plan-chart [data-drag-hint] { display: none !important; }
+.bh-plan-chart [data-about-plan] svg { pointer-events: none; }
+/* Fine-tune, when it creates the recipe: the planner runs unseen and only its "Before your recipe" sheet can show. */
+.bh-plan-sheet-only *:not(:has([data-decision-sheet])):not([data-decision-sheet]):not([data-decision-sheet] *) { display: none !important; }

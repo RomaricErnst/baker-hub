@@ -25,15 +25,15 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: Simple — title, summary, S
 
  // The title is the bake's name, editable in place; an evening bake is a pizza night.
  const title=page.getByRole('heading',{level:1});
- await expect(title).toHaveText(L(/^Pizza night · /,/^Soirée pizza · /));
- await expect(page.locator('[data-bake-summary]')).toContainText(L(/4 pizzas · Classic Neapolitan · \d+ g each$/,/4 pizzas · Napolitaine classique · \d+\s?g chacune$/));
+ await expect(title).toHaveText(L('Pizza night','Soirée pizza'));
+ await expect(page.locator('[data-bake-summary]')).toContainText(L(/^\w{3} \d+ \w{3} · 4 pizzas · Classic Neapolitan · \d+ g each$/,/^\S+ \d+ \S+ · 4 pizzas · Napolitaine classique · \d+\s?g chacune$/));
  const rename=async name=>{await page.getByRole('button',{name:L('Rename this bake','Renommer la fournée')}).tap();const input=page.locator('[data-bake-title-input]');await expect(input).toBeFocused();await input.fill(name);await input.press('Enter');};
  await rename(L('Friday with friends','Vendredi entre amis'));
  await expect(title).toHaveText(L('Friday with friends','Vendredi entre amis'));
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'{}').bakeName)).toBe(L('Friday with friends','Vendredi entre amis'));
  // An empty name returns to the automatic one.
  await rename('');
- await expect(title).toHaveText(L(/^Pizza night · /,/^Soirée pizza · /));
+ await expect(title).toHaveText(L('Pizza night','Soirée pizza'));
 
  // Simple: only Start Dough is editable, and nothing sends the baker back to the timing screen.
  await expect(page.locator('[data-change-times]')).toHaveCount(0);
@@ -80,7 +80,12 @@ test('Custom poolish: Make Poolish and Start Dough both move from the plan',asyn
  await expect(page.locator('.bh-navigator-current')).toContainText('Recipe');
  const edit=page.locator('[data-plan-edit]');
  await expect(edit).toHaveCount(2);
- await expect(page.getByRole('button',{name:'More timing options'})).toBeVisible();
+ // Custom: no "More timing options"; the curve opens in place, read-only, without a second plan.
+ await expect(page.locator('[data-change-times]')).toHaveCount(0);
+ await page.locator('[data-plan-curve] > summary').tap();
+ await expect(page.locator('[data-plan-curve] svg').first()).toBeVisible();
+ await expect(page.locator('[data-plan-curve] [data-drag-hint]')).toBeHidden();
+ await page.locator('[data-plan-curve] > summary').tap();
  const before=await edit.first().innerText();
  await edit.first().tap();
  const editor=page.locator('[data-plan-editor]');
