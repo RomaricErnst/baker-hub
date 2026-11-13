@@ -300,7 +300,8 @@ function StepCard({
   const TitleContainer = overview ? 'button' : 'div';
   return (
     <section ref={divRef} data-guide-step={number} data-guide-phase={stepPhase} data-guide-title={title} hidden={hidden} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${displayNumber}`} style={{ display: !hidden && (open || overview) ? undefined : 'none', background: D.warm, borderRadius: 0,
-      border: 'none', borderBottom: overview ? `1px solid ${D.border}` : undefined, scrollMarginTop: 140 }}>
+      // Longhands only: the bottom border changes with the overview, and a shorthand beside it makes React warn.
+      borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: overview ? `1px solid ${D.border}` : 'none', scrollMarginTop: 140 }}>
       <TitleContainer type={overview ? "button" : undefined} onClick={overview ? onToggle : undefined}
          style={{ width: '100%', display: 'flex', gap: 12,
           alignItems: 'center', minHeight:44, padding: overview ? '12px 0' : '0 0 16px', border: 0, background: 'transparent', textAlign: 'left', cursor: overview ? 'pointer' : 'default', color: D.char }}>

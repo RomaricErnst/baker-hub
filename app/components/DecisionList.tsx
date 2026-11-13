@@ -38,15 +38,17 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
             style={{
               display: 'flex',
               flexWrap: layout === 'photo' ? 'wrap' : undefined,
-              border: layout === 'compact' ? undefined : `2px solid ${isSelected ? 'var(--terra)' : 'var(--border)'}`,
+              // One way of drawing the border per layout: a shorthand next to longhands (even
+              // undefined ones) makes React warn on every selection change.
+              ...(layout === 'compact'
+                ? { borderBottom: idx < options.length - 1 ? '1px solid var(--border)' : 'none', borderLeft: isSelected ? '3px solid var(--gold)' : 'none' }
+                : { border: `2px solid ${isSelected ? 'var(--terra)' : 'var(--border)'}` }),
               borderRadius: layout === 'compact' ? 0 : 12,
               alignItems: 'center',
               gap: '12px',
               padding: isSelected ? '10px 14px 10px 11px' : '10px 14px',
               minHeight: '62px',
               cursor: isDisabled ? 'default' : 'pointer',
-              borderBottom: layout === 'compact' ? (idx < options.length - 1 ? '1px solid var(--border)' : 'none') : undefined,
-              borderLeft: layout === 'compact' ? (isSelected ? '3px solid var(--gold)' : 'none') : undefined,
               background: isSelected ? 'rgba(156, 130, 72,0.08)' : 'white',
               opacity: isDisabled ? 0.5 : 1,
               pointerEvents: isDisabled ? 'none' : undefined,
