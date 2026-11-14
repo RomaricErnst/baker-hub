@@ -606,10 +606,10 @@ export default function Header({
           {menuPage === 'main' && <nav aria-label="Menu" style={{ display: 'grid', gap: 8 }}>
             {onNewSession && <>
               <div style={menuGroup}>{locale === 'fr' ? 'Ce plan' : 'This plan'}</div>
-              {onReviewPlan && <button style={menuButton} onClick={() => { setMenuOpen(false); onReviewPlan(); }}>{locale === 'fr' ? 'Revoir mes choix' : 'Review choices'}</button>}
-              {onOpenPizzas && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenPizzas(); }}>{locale === 'fr' ? 'Choisir mes pizzas' : 'Choose pizzas'}</button>}
+              {onReviewPlan && <button style={menuButton} onClick={() => { setMenuOpen(false); onReviewPlan(); }}>{locale === 'fr' ? 'Mes choix' : 'My choices'}</button>}
+              {onOpenPizzas && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenPizzas(); }}>{locale === 'fr' ? 'Pizzas' : 'Pizzas'}</button>}
               {onOpenSandwiches && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenSandwiches(); }}>{locale === 'fr' ? 'Sandwiches et garnitures' : 'Sandwiches & fillings'}</button>}
-              {onSaveSession && <button style={menuButton} onClick={() => { setMenuOpen(false); onSaveSession(); }}>{locale === 'fr' ? (recipeGenerated ? 'Enregistrer la recette' : 'Enregistrer mes choix') : (recipeGenerated ? 'Save recipe' : 'Save draft')}</button>}
+              {onSaveSession && !recipeGenerated && <button style={menuButton} onClick={() => { setMenuOpen(false); onSaveSession(); }}>{locale === 'fr' ? (recipeGenerated ? 'Enregistrer la recette' : 'Enregistrer mes choix') : (recipeGenerated ? 'Save recipe' : 'Save draft')}</button>}
               {recipeGenerated && onSharePlan && <button style={menuButton} onClick={() => { setMenuOpen(false); onSharePlan(); }}>{locale === 'fr' ? 'Partager la recette' : 'Share recipe'}</button>}
               <button style={menuButton} onClick={() => { setMenuOpen(false); onNewSession(); }}>{locale === 'fr' ? 'Commencer une nouvelle fournée' : 'Start a new bake'}</button>
             </>}
@@ -630,7 +630,7 @@ export default function Header({
             <label>{locale === 'fr' ? 'Noms des ingrédients pour :' : 'Ingredient names for:'}<select value={shoppingLocation} onChange={e=>{const location=e.target.value;setShoppingLocation(location);try{localStorage.setItem('bh_shopping_location',location);}catch{}window.dispatchEvent(new CustomEvent('bh-shopping-location',{detail:location}));}} style={{...menuButton,width:'100%',marginTop:6}}>
               {[['singapore',locale==='fr'?'Singapour':'Singapore'],['france','France'],['uk',locale==='fr'?'Royaume-Uni':'UK'],['us',locale==='fr'?'États-Unis':'US'],['australia',locale==='fr'?'Australie':'Australia'],['international','International']].map(([value,label])=><option key={value} value={value}>{label}</option>)}
             </select></label>
-            <button type="button" onClick={() => setMenuOpen(false)} style={{ ...menuButton, background: 'var(--terra)', color: 'white', textAlign: 'center', minHeight: 44 }}>{locale === 'fr' ? 'Terminé' : 'Done'}</button>
+            {/* Back to menu and Close are enough (14 Nov 2026 audit). */}
           </div>}
           {menuPage === 'library' && <>
             {hasCurrentBake && <button style={menuButton} onClick={()=>{setMenuOpen(false);onContinueBake?.();}}>{locale==='fr'?'Reprendre ma fournée':'Continue current bake'}</button>}

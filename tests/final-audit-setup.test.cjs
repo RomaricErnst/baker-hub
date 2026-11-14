@@ -52,7 +52,7 @@ test('starter assumption is plain visible content in the starter card, in both l
   const html=render(schedule.StarterHydrationNotice,{isFr});
   assert.match(html,isFr?/100 % d’hydratation/:/100% hydration/);
   assert.match(html,/1:1:1, 1:2:2/);
-  assert.match(html,isFr?/ne sont pas prises en charge/:/are not supported/);
+  assert.doesNotMatch(html,isFr?/ne sont pas prises en charge/:/are not supported/,'an assumption, not a refusal (14 Nov 2026)');
   assert.match(html,/data-starter-hydration/);
   assert.doesNotMatch(html,/<details|<summary|hidden/);
  }

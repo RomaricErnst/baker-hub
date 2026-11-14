@@ -105,3 +105,15 @@ test('country, wholemeal and rye loaves state °C and a time for the loaf weight
  assert.doesNotMatch(rye,/Score the dough|max with fan/);
  assert.match(render('pain_campagne','en',{weight:800,numItems:1,ovenType:'wood_fired',units:'imperial'}),/535–610°F floor/);
 });
+
+// 14 Nov 2026: more pieces than one oven load bake in rounds, said once at the head of the bake.
+test('large bakes are split into oven loads',()=>{
+ const {leanBreadBake,piecesPerOvenLoad}=require('../app/utils/leanBreadBake.ts');
+ assert.equal(piecesPerOvenLoad('baguette','home_oven_standard'),4);
+ assert.equal(piecesPerOvenLoad('pain_campagne','dutch_oven'),1);
+ const twenty=leanBreadBake('baguette',320,'home_oven_standard',20);
+ assert.match(twenty.bake.en[0].bold,/^Bake in 5 rounds of up to 4$/);
+ assert.match(twenty.bake.fr[0].bold,/^Cuisez en 5 fournées de 4 au plus$/);
+ const four=leanBreadBake('baguette',320,'home_oven_standard',4);
+ assert.doesNotMatch(four.bake.en[0].bold,/rounds/);
+});

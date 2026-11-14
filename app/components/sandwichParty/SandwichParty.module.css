@@ -53,7 +53,7 @@
 :where(.button,.tab,.detailButton,.check input):focus-visible { outline:2px solid var(--terra); outline-offset:3px; }
 @media (max-width:359px) { .hero { grid-template-columns:minmax(0,1fr) 80px; gap:10px; } .hero img { width:80px;height:80px; } .party h2 {font-size:25px;} .card {padding:12px;} .quantity {gap:5px;} .tab {font-size:12px;} }
 
-.recipeCard.selected { background:#FFF8F5; border-width:1.5px; }
+.recipeCard.selected { background:var(--cream); border-color:var(--terra); border-width:1.5px; }
 .recipeCard .recipePhoto { aspect-ratio:2/1; }
 .recipeCard p { margin:6px 0; }
 .recipeCard .tags { margin:4px 0; }

@@ -1,3 +1,16 @@
+# 14 November 2026 (evening) — polish audit, wording and smaller screens (Claude)
+
+- Busy times speak plainly: "Add a busy time / Name (optional) / From / To / Add" (FR "Ajouter un moment occupé"), "Change my busy times", and a step left in one reads "Someone else takes the dough out" (confirm: "Yes, someone will"). The decision sheet's close says where it goes: "Back to the bake time".
+- French: Pâtons au réfrigérateur, Préchauffer le four, "Répétez sur les 4 côtés.", "Votre plan".
+- Inline time editor: no repeated step name or tick above the field; after Update the page stays on the edited row and its note.
+- Fine-tune: number fields 96 px beside their labels; "Why this value?" is one line ("Style 62% · oven +3 · flour +2 → 67%"); the measured temperature field is named Poolish, Biga or Starter.
+- Starter card: no second "Your starter" label, questions in sentence case, the hydration line is an assumption without "not supported". (Not changed: activity and location stay preselected; changing them needs a stored "answered" flag, see notes.)
+- Pizzas filters: sheet titles are the chip names, a 44 px ✕, Dietary no longer repeated in More, Reset only once something is set, setup's style names. Busy times and the guide's tips use the app's chevron (`summary.bh-chevron`). Selected sandwich cards are cream and brown. Create my pizza: plain group headings, "Saved for your next bakes".
+- Menu: "My choices", "Pizzas", no "Save recipe" once there is a recipe (Save is in the header), no "Done" in Language & units.
+- Why? notes for the rise are whole sentences ("the dough is ready when it has grown by half to three quarters"); "Rising tips".
+- Large lean-bread bakes say "Bake in 5 rounds of up to 4" at the head of the bake (`piecesPerOvenLoad`: 4 baguettes or fougasses, 2 loaves, 1 per Dutch oven, more in a wood oven). The timeline is not yet shifted per round.
+- With-my-base entry: its title uses the page-title style.
+
 # 14 November 2026 (afternoon) — polish audit, one bottom bar and page tops (Claude)
 
 - Back controls show their destination short ("‹ Recipe", "‹ Shopping list", FR "‹ Recette"), so the bar never wraps; the full phrase ("Back to Recipe", "Retour à la recette") stays as the accessible name (`BackLabel`, `withBackLabel` in BottomActions). French back labels carry their article ("Retour à la recette", "aux courses", "à la préparation", "aux garnitures"). "Update and back to Recipe" is "Update recipe".

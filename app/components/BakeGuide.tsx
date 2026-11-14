@@ -803,7 +803,7 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
     starter:['Conseils pour le levain','Starter tips'],
     poolish:['Conseils pour le poolish','Poolish tips'],
     biga:['Conseils pour la biga','Biga tips'],
-    bulk:['Conseils de pointage','Bulk (first rise) tips'],
+    bulk:['Conseils de pointage','Rising tips'],
     cold:['Conseils pour le repos au froid','Cold fermentation tips'],
     divide:['Conseils de façonnage','Shaping tips'],
     proof:['Conseils pour l’apprêt','Final rise tips'],
@@ -815,7 +815,7 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
   return (
     <div>
       <details style={{ marginTop:16, borderTop:`1px solid ${D.border}`, paddingTop:8 }}>
-        <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:16}}>{helpTitle}</summary>
+        <summary className="bh-chevron" style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:16}}>{helpTitle}</summary>
         {visuals}
         <div>{tips}</div>
         {faq.length > 0 && <div role="group" aria-label={l === 'fr' ? 'Questions fréquentes' : 'Common questions'} style={{marginTop:12}}>

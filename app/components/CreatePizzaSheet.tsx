@@ -11,11 +11,11 @@ const UNITS: IngredientUnit[] = ['g', 'ml', 'pcs', 'slices', 'leaves', 'sprigs',
 
 // Guided groups, in topping order
 const GROUPS: Array<{ cats: IngredientCategory[]; en: string; fr: string; freeCat: IngredientCategory }> = [
-  { cats: ['sauce', 'base'], en: '1 · Base & sauce', fr: '1 · Base & sauce', freeCat: 'sauce' },
-  { cats: ['cheese'], en: '2 · Cheese', fr: '2 · Fromages', freeCat: 'cheese' },
-  { cats: ['meat', 'seafood'], en: '3 · Meat & sea', fr: '3 · Viandes & mer', freeCat: 'meat' },
-  { cats: ['veg'], en: '4 · Vegetables', fr: '4 · Légumes', freeCat: 'veg' },
-  { cats: ['spice', 'finish'], en: '5 · Finishing touches', fr: '5 · Finitions', freeCat: 'finish' },
+  { cats: ['sauce', 'base'], en: 'Base & sauce', fr: 'Base & sauce', freeCat: 'sauce' },
+  { cats: ['cheese'], en: 'Cheese', fr: 'Fromages', freeCat: 'cheese' },
+  { cats: ['meat', 'seafood'], en: 'Meat & sea', fr: 'Viandes & mer', freeCat: 'meat' },
+  { cats: ['veg'], en: 'Vegetables', fr: 'Légumes', freeCat: 'veg' },
+  { cats: ['spice', 'finish'], en: 'Finishing touches', fr: 'Finitions', freeCat: 'finish' },
 ];
 
 export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }: {
@@ -277,7 +277,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
                   onClick={() => setOpenGroup(isOpen ? -1 : gi)}
                   style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 12px', background: '#F0EBE0', border: 'none', cursor: 'pointer' }}
                 >
-                  <span style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: '#6B4423', textTransform: 'uppercase', letterSpacing: '1.2px', fontWeight: 700 }}>
+                  <span style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', color: 'var(--char)', fontWeight: 600 }}>
                     {fr ? g.fr : g.en}{nPicked > 0 ? ` · ${nPicked} ✓` : ''}
                   </span>
                   <span style={{ color: 'var(--smoke)', fontSize: '12px' }}>{isOpen ? '−' : '+'}</span>
@@ -340,7 +340,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
             {initial ? (fr ? 'Enregistrer les modifications' : 'Save changes') : (fr ? 'Enregistrer ma pizza' : 'Save my pizza')}
           </button>
           <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: 'var(--smoke)', textAlign: 'center', marginTop: '8px' }}>
-            {fr ? 'Sauvegardée dans votre profil — modifiable à tout moment.' : 'Saved to your profile — editable any time.'}
+            {fr ? 'Enregistrée pour vos prochaines fournées, modifiable à tout moment.' : 'Saved for your next bakes, editable any time.'}
           </div>
         </div>
       </div>

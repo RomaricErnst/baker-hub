@@ -34,7 +34,7 @@ export function TimingWindows({slots,at,isFr,onSelect}:{slots:EditSlot[];at:numb
  </div>;
 }
 
-function TimingRow({anchor,isFr,onChange,check,cacheKey,open,onToggle}:{anchor:KeyTimingAnchor;isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string;open:boolean;onToggle:()=>void}){
+function TimingRow({anchor,isFr,onChange,check,cacheKey,open,onToggle,inline=false}:{anchor:KeyTimingAnchor;isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string;open:boolean;onToggle:()=>void;inline?:boolean}){
  const [result,setResult]=useState<{key:string;slots:EditSlot[]}|null>(null);
  const checkRef=useRef(check);checkRef.current=check;
  const editorId=useId();
@@ -65,7 +65,8 @@ function TimingRow({anchor,isFr,onChange,check,cacheKey,open,onToggle}:{anchor:K
  return <li data-key-timing={id} data-at={at} data-selected={open||undefined} data-candidate-valid={anchor.valid===true?'true':'false'} className="bh-key-timing">
   <span className="bh-timeline-node" aria-hidden="true"/>
   <div className="bh-key-content">
-   <div className="bh-key-heading"><h3 className="bh-section-title">{anchor.name} {open&&anchor.valid===true&&<span className="bh-key-valid-selection" role="img" aria-label={isFr?'Compatible avec le planning estimé':'Compatible with the estimated schedule'}>✓</span>}</h3>
+   {/* Inline under its own Your plan row, the step is already named there (14 Nov 2026 audit). */}
+   <div className="bh-key-heading" style={inline?{justifyContent:'flex-end'}:undefined}>{!inline&&<h3 className="bh-section-title">{anchor.name} {open&&anchor.valid===true&&<span className="bh-key-valid-selection" role="img" aria-label={isFr?'Compatible avec le planning estimé':'Compatible with the estimated schedule'}>✓</span>}</h3>}
     {open&&<button type="button" className="bh-key-modify" aria-label={(isFr?'Fermer ':'Close ')+anchor.name} aria-expanded={open} aria-controls={editorId} onClick={onToggle}>{isFr?'Fermer':'Close'}</button>}
    </div>
    {open&&canEdit?<label className="bh-key-exact"><span className="bh-visually-hidden">{isFr?'Date et heure de ':'Date and time for '}{anchor.name}</span><ScheduleClockInput isFr={isFr} type="datetime-local" step={900} value={local} onChange={e=>{const next=+new Date(e.target.value);if(Number.isFinite(next))onChange(id,next);}}/></label>:canEdit?<button type="button" className="bh-key-time" aria-label={`${isFr?'Modifier':'Edit'} ${anchor.name}, ${fmt(at)}`} aria-expanded={false} aria-controls={editorId} onClick={onToggle}>{clock}{anchor.valid===true&&<span className="bh-key-valid-selection" role="img" aria-label={isFr?'Compatible avec le planning estimé':'Compatible with the estimated schedule'}>✓</span>}<span className="bh-time-edit" aria-hidden="true">{isFr?'Modifier':'Edit'}</span></button>:!anchor.dayOnly?<strong className="bh-key-fixed">{clock}</strong>:null}
@@ -104,7 +105,7 @@ export default function ScheduleKeyTimings({conflictRows,anchors,blocks,isFr,onC
   {notice}
   {!inline&&blocked.length>0&&<ul data-availability-conflicts>{blocked.map(anchor=><li key={anchor.id+anchor.at} data-conflict-action={anchor.id} data-conflict-at={anchor.at}>{anchor.name} · {formatPlanClock(new Date(anchor.at),isFr?'fr':'en')} <button type="button" className="bh-back-action" onClick={anchor.cover}>{isFr?'Je peux assurer cette étape':'I can cover this step'}</button></li>)}</ul>}
   <div className="bh-linked-editor">
-   <ol className={inline?'bh-schedule-timeline bh-timeline-inline':'bh-schedule-timeline'}>{events.map((anchor,index)=><TimelineEvent key={anchor.id} heading={inline?null:index===0||day(events[index-1].at)!==day(anchor.at)?day(anchor.at):null}><TimingRow {...{anchor,isFr,onChange,check,cacheKey}} open={selectedId===anchor.id} onToggle={()=>select(selectedId===anchor.id?null:anchor.id)}/></TimelineEvent>)}</ol>
+   <ol className={inline?'bh-schedule-timeline bh-timeline-inline':'bh-schedule-timeline'}>{events.map((anchor,index)=><TimelineEvent key={anchor.id} heading={inline?null:index===0||day(events[index-1].at)!==day(anchor.at)?day(anchor.at):null}><TimingRow {...{anchor,isFr,onChange,check,cacheKey,inline}} open={selectedId===anchor.id} onToggle={()=>select(selectedId===anchor.id?null:anchor.id)}/></TimelineEvent>)}</ol>
    {open&&!hasDraft&&!inline&&<div className="bh-editor-exit"><button type="button" className="bh-apply-plan" onClick={()=>select(null)}>{isFr?'Terminé':'Done'}</button></div>}
    {hasDraft&&<div className="bh-linked-actions"><div className="bh-linked-feedback" role="status">{adjustment}</div><button type="button" className="bh-apply-plan" disabled={!canApply} onClick={()=>{onApply();select(null);}}>{applyLabel??(isFr?'Appliquer':'Apply')}</button><button type="button" className="bh-back-action" onClick={()=>{onCancel();select(null);}}>{isFr?'Annuler':'Cancel'}</button></div>}
   </div>

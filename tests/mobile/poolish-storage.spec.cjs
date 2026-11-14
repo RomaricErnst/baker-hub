@@ -79,7 +79,7 @@ for(const locale of ['fr','en'])test(`${locale} 27C: Wednesday evening poolish f
  await openAvailability(page,locale);
  await page.getByRole('button',{name:locale==='fr'?/^Nuits/:/^Nights/}).tap();
  await page.getByRole('button',{name:locale==='fr'?/^Jours ouvrés/:/^Weekdays/}).tap();
- const covered=page.getByRole('button',{name:locale==='fr'?/Oui, cette étape est prévue/:/Yes, this step is covered/});
+ const covered=page.getByRole('button',{name:locale==='fr'?/Oui, quelqu’un s’en charge/:/Yes, someone will/});
  if(await covered.isVisible())await covered.tap();
  await expect(row(plan,'pref')).toHaveAttribute('data-candidate-valid','true');
  await expect.poll(async()=>{const s=await stored(page);return s.startTime-s.prefOffsetH*3600000;}).toBe(Date.parse('2026-10-28T22:30:00+08:00'));

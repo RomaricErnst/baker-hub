@@ -712,3 +712,10 @@ body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="d
 .bh-plan-chart [data-about-plan] svg { pointer-events: none; }
 /* Fine-tune, when it creates the recipe: the planner runs unseen and only its "Before your recipe" sheet can show. */
 .bh-plan-sheet-only *:not(:has([data-decision-sheet])):not([data-decision-sheet]):not([data-decision-sheet] *) { display: none !important; }
+
+/* The app's own chevron on a fold-out heading (14 Nov 2026 audit: the browser's black ▶/▼). */
+summary.bh-chevron { list-style:none; }
+summary.bh-chevron::-webkit-details-marker { display:none; }
+summary.bh-chevron::after { content:" ▾"; color:var(--terra); font-weight:400; }
+details[open] > summary.bh-chevron::after { content:" ▴"; }
+summary.bh-chevron-inline::-webkit-details-marker { display:none; }
