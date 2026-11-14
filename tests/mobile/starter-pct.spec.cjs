@@ -7,7 +7,8 @@ test.use({timezoneId:'Asia/Singapore'});
 const H=3600000,NOW=Date.parse('2026-10-03T09:00:00+08:00'),BAKE=Date.parse('2026-10-05T10:00:00+08:00');
 const stored=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null'));
 for(const location of ['fridge','rt'])test(`${location} starter: a chosen starter % reaches the plan and keeps the bake time`,async({page})=>{
- const errors=[];page.on('pageerror',error=>errors.push(error.message));
+ // Chromium/WebKit's benign ResizeObserver notice is not an app error.
+ const errors=[];page.on('pageerror',error=>{if(!/ResizeObserver loop/.test(error.message))errors.push(error.message);});
  await page.clock.setFixedTime(NOW);
  const data={version:1,savedAt:NOW,tab:'custom',bakeType:'bread',styleKey:'pain_levain',numItems:1,itemWeight:800,ovenType:'standard_bread',mixerType:'hand',yeastType:'sourdough',kitchenTemp:22,humidity:'normal',fridgeTemp:5,flourBlend:{flour1:'bread',flour2:null,ratio1:100},prefermentType:'levain',prefermentChosen:true,startTime:NOW+8*H,eatTime:BAKE,blocks:[],recipeGenerated:false,modeChosen:true,qtyChosen:true,flourChosen:true,customKitchenConfirmed:true,
   planningMode:'last_fed',lastFedTime:NOW-(location==='fridge'?72:20)*H,lastFedAge:location==='fridge'?'days23':'yesterday',starterLocation:location,lastFeedRatio:2,nextFeedRatio:2,ratioMode:'keep',
