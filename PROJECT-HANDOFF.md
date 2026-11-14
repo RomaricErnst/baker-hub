@@ -1,3 +1,11 @@
+# 14 November 2026 — the Pizzas page (Claude)
+
+Romaric: the top of the toppings page was busy for a first visit, and the section is about choosing pizzas.
+- The pizza section is named "Pizzas" everywhere (Sections, "Pizzas →" on the Recipe, "Back to Pizzas" / "Retour aux pizzas" on the Shopping list). Bread keeps "Fillings" or its family's word.
+- The page opens on "Which pizzas?" and one line: "Pick one for each of your 4 dough balls." Once pizzas are chosen it reads "N of M chosen · See my selection", which opens the existing selection sheet (scales to any number of pizzas; the bottom bar stays Back · Next).
+- No bake summary block on this page; the "Pizzas suited to: … · Change" bar is the first filter chip ("Neapolitan ▾", `data-style-chip`); the pool size is in the search placeholder ("Search 111 pizzas or an ingredient…"); the results count with "Clear filters" shows only while filtering (`data-results-count`); "+ Create my own pizza" sits above the first pizza until the baker has creations (`data-create-pizza`).
+- `tests/mobile/pizzas-page.spec.cjs` (CI) walks it in EN and FR.
+
 # 13 November 2026 (evening) — no font swap on first load; Recipe bar like the others (Claude)
 
 - The "micro flash" a second after the first load was the font: next/font announced Figtree only in the streamed page data, so the browser fetched it after the first paint and swapped Arial-shaped text for Figtree (~1.4 s, with a layout shift on the opening cards). Figtree now lives at `public/fonts/figtree-latin.woff2`, is declared in globals.css (`font-display: optional`, with the same metric-matched Arial fallback next/font generated) and preloaded in the layout `<head>`. Measured locally: font ready at 0.30 s, first paint 0.38 s, no shift. DM Mono (yeast panel only) is no longer preloaded on every page.

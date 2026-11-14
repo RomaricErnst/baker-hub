@@ -4080,7 +4080,8 @@ export default function Home() {
     </>}
   </>;
 
-  const mealNoun=fr?'Garnitures':bakeType==='pizza'?'Toppings':'Fillings';
+  // Pizza bakers choose whole pizzas, so the section is "Pizzas"; bread keeps its fillings.
+  const mealNoun=bakeType==='pizza'?'Pizzas':fr?'Garnitures':'Fillings';
   // Values the baker has not chosen are named once, in a note under the summary
   // title, instead of a "suggested" tag repeated on every row.
   // Catalogue names are title-cased ("Levure Sèche Instantanée"); summaries read in sentence case.
@@ -4236,7 +4237,7 @@ export default function Home() {
 
   // Toppings are planned with the dough, before buying: Recipe → Toppings → Shopping list.
   const fillingsStep = !!recipeGenerated && (pizzaPartyEnabled||sandwichEnabled);
-  const fillingsStepLabel = bakeType==='pizza' ? (fr?'Garnitures':'Toppings') : (fr?'Garnitures':'Fillings');
+  const fillingsStepLabel = bakeType==='pizza' ? 'Pizzas' : (fr?'Garnitures':'Fillings');
   function openToppingsStep(){setFillingsReturn({destination:'shopping',view:'dough',forward:true});setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}
 
   // ── Render ────────────────────────────────
@@ -4703,7 +4704,8 @@ export default function Home() {
 
 {recipeGenerated && compactBakeContext && !(destination==='shopping'&&bakeType==='pizza') && <h1 className="bh-page-title bh-bake-title bh-visually-hidden">{bakeName || bakeAutoTitle}</h1>}
 {recipeGenerated && compactBakeContext && destination==='service' && <h2 className="bh-visually-hidden">{fr?'Cuisson & service':'Baking & serving'}</h2>}
-{recipeGenerated && !compactBakeContext && <div className="bh-bake-context" style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}>{(()=>{
+{/* The Pizzas page opens on its own question; the bake's name and day add nothing to choosing (13 Nov 2026). */}
+{recipeGenerated && !compactBakeContext && !(browsingFillings && bakeType==='pizza') && <div className="bh-bake-context" style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}>{(()=>{
   const title=bakeName || bakeAutoName;
   // The bake title is the page heading wherever the view has none of its own:
   // setup steps, the pizza lists and the pizza shopping list carry their own H1.
@@ -5186,7 +5188,7 @@ export default function Home() {
                   activeTab={companionPhase}
                   onTabChange={openCompanionPhase}
                   onBackToRecipe={fillingsStep?openToppingsStep:()=>openDestination('recipe')}
-                  shoppingBackLabel={fillingsStep?(fr?'Retour à Garnitures':'Back to Toppings'):undefined}
+                  shoppingBackLabel={fillingsStep?(fr?'Retour aux pizzas':'Back to Pizzas'):undefined}
                   onSelectionBack={backFromFillings} onSelectionDone={finishFillings}
                   selectionDoneLabel={fillingsDoneLabel} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à Recette':'Back to Recipe'):undefined}
                   directSelectionReturn={!!fillingsReturn}
@@ -5754,7 +5756,7 @@ export default function Home() {
                   activeTab={companionPhase}
                   onTabChange={openCompanionPhase}
                   onBackToRecipe={fillingsStep?openToppingsStep:()=>openDestination('recipe')}
-                  shoppingBackLabel={fillingsStep?(fr?'Retour à Garnitures':'Back to Toppings'):undefined}
+                  shoppingBackLabel={fillingsStep?(fr?'Retour aux pizzas':'Back to Pizzas'):undefined}
                   onSelectionBack={backFromFillings} onSelectionDone={finishFillings}
                   selectionDoneLabel={fillingsDoneLabel} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à Recette':'Back to Recipe'):undefined}
                   directSelectionReturn={!!fillingsReturn}

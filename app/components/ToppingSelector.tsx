@@ -1557,6 +1557,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
     return matchesSearch ? base.filter(matchesSearch) : base;
   }, [filter, styleKey, matchesSearch, pizzaCourse]);
 
+  // The size of the list before any chip or search: named once, in the search field.
+  const stylePoolCount = useMemo(() => filterPizzas(pizzaCourse === 'sweet' ? DESSERT_PIZZAS : CATALOGUE_PIZZAS, { ...DEFAULT_FILTER, styleKey: (styleKey as import('../lib/toppingTypes').StyleKey) ?? undefined } as Parameters<typeof filterPizzas>[1]).length, [styleKey, pizzaCourse]);
   const pizzaPageCount = Math.max(1, Math.ceil(filtered.length / PIZZAS_PER_PAGE));
   const visibleFiltered = filtered.slice(
     pizzaPage * PIZZAS_PER_PAGE,
@@ -1703,55 +1705,24 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
       ══════════════════════════════════════ */}
       {/* Context line: style name + count */}
 
-      {activePill === 'pizzas' && !baseReady && (
-        <div style={{
-          background: '#FDFBF7',
-          borderBottom: '1px solid #E0D8CF',
-          padding: '8px 12px',
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between',
-          flexShrink: 0,
-        }}>
-          <span style={{
-            fontFamily: 'var(--font-ui)', fontSize: '13px',
-            color: '#3D3530',
-          }}>
-            {styleKey
-              ? `${l === 'fr' ? 'Pizzas adaptées à : ' : 'Pizzas suited to: '}${l === 'fr'
-                  ? (STYLE_NAMES_FR[styleKey] ?? styleKey)
-                  : (STYLE_NAMES[styleKey] ?? styleKey)}`
-              : (l === 'fr' ? 'Tous les styles' : 'All styles')}
-            {/* Count lives in the "Showing N" filter row below — next to the
-                style name it briefly read as "you're making 112 pizzas".
-                (A '· Clear' link lived here too — removed: redundant with
-                'Clear all' below, and next to the style name it read as
-                clearing the style.) */}
-          </span>
-          <span
-            onClick={() => setShowStylePicker(true)}
-            style={{
-              fontSize: '12px', color: '#6B4423',
-              fontFamily: 'var(--font-ui)',
-              cursor: 'pointer', textDecoration: 'underline',
-              textUnderlineOffset: '2px',
-            }}
-          >
-            {l === 'fr' ? 'Changer' : 'Change'}
-          </span>
-        </div>
-      )}
+      {/* The style the list is suited to is the first filter chip below ("Neapolitan ▾"). */}
 
       {activePill === 'pizzas' && (
         <>
-          <h1 className="bh-page-title">{l === 'fr' ? 'Quelles pizzas ?' : 'Which pizzas?'}</h1>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><span data-pizza-count style={{fontSize:13,color:'var(--smoke)'}}>{l === 'fr' ? `${totalQty} pizza${totalQty > 1 ? 's' : ''} choisie${totalQty > 1 ? 's' : ''} pour ${numItems} pâton${numItems > 1 ? 's' : ''}` : `${totalQty} pizza${totalQty === 1 ? '' : 's'} chosen for ${numItems} dough ball${numItems === 1 ? '' : 's'}`}</span><button type="button" onClick={() => setCreateOpen(true)} style={{minHeight:44,border:0,background:'none',color:'var(--terra)',textDecoration:'underline',padding:'4px 0',fontSize:13,cursor:'pointer'}}>{l === 'fr' ? 'Créer ma pizza' : 'Create my pizza'}</button></div>
+          <h1 className="bh-page-title" style={{marginBottom:4}}>{l === 'fr' ? 'Quelles pizzas ?' : 'Which pizzas?'}</h1>
+          {/* One line under the title: what to do, then a short tally (the full list is in the selection sheet). */}
+          <p data-pizza-count style={{margin:'0 0 12px',fontSize:14,lineHeight:1.45,color:'var(--ash)'}}>
+            {totalQty===0
+              ? (l === 'fr' ? `Choisissez une pizza pour chacun de vos ${numItems} pâton${numItems > 1 ? 's' : ''}.` : `Pick one for each of your ${numItems} dough ball${numItems === 1 ? '' : 's'}.`)
+              : <><strong style={{color:'var(--char)'}}>{l === 'fr' ? `${totalQty} sur ${numItems} choisie${totalQty > 1 ? 's' : ''}` : `${totalQty} of ${numItems} chosen`}</strong>{' · '}<button type="button" data-see-selection onClick={()=>setSummarySheetOpen(true)} style={{minHeight:44,border:0,background:'none',color:'var(--terra)',textDecoration:'underline',textUnderlineOffset:2,padding:0,font:'inherit',cursor:'pointer'}}>{l === 'fr' ? 'Voir ma sélection' : 'See my selection'}</button></>}
+          </p>
           {/* ── Results strip ── */}
           <div style={{ padding: '0 0 6px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
             <input
               type="search"
               value={nameSearch}
               onChange={e => setNameSearch(e.target.value)}
-              placeholder={l === 'fr' ? 'Rechercher une pizza ou un ingrédient…' : 'Search a pizza or ingredient…'}
+              placeholder={l === 'fr' ? `Rechercher parmi ${stylePoolCount} pizzas ou un ingrédient…` : `Search ${stylePoolCount} pizzas or an ingredient…`}
               style={{
                 width: '100%', boxSizing: 'border-box',
                 padding: '8px 12px',
@@ -1779,6 +1750,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             flexShrink: 0,
             alignItems: 'center',
           }}>
+            {!baseReady && <button type="button" data-style-chip onClick={() => setShowStylePicker(true)} style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 12px',minHeight:44,borderRadius:20,border:'1px solid var(--char)',background:'var(--char)',color:'#fff',fontSize:12,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0,fontFamily:'var(--font-ui)'}}>
+              {styleKey ? (l === 'fr' ? (STYLE_NAMES_FR[styleKey] ?? styleKey) : (STYLE_NAMES[styleKey] ?? styleKey)) : (l === 'fr' ? 'Tous les styles' : 'All styles')} ▾
+            </button>}
             {([
               { key: 'ingredient', label: l === 'fr' ? 'Ingrédients' : 'Ingredients', count: (filter.ingredientChips ?? []).length },
               { key: 'base', label: 'Base', count: filter.base !== null ? 1 : 0 },
@@ -2299,23 +2273,26 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             </>
           )}
 
-          <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F0EBE0', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
-            <span style={{ fontSize: '11px', color: 'var(--smoke)' }}>
-              {l === 'fr'
-                ? `${filtered.length} pizza${filtered.length !== 1 ? 's' : ''}`
-                : `Showing ${filtered.length} pizza${filtered.length !== 1 ? 's' : ''}`}
+          {/* The number of results is said only while it differs from the pool named in the search field. */}
+          {hasActiveFilters && <div data-results-count style={{ padding: '4px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+            <span style={{ fontSize: '13px', color: 'var(--ash)' }}>
+              {`${filtered.length} pizza${filtered.length !== 1 ? 's' : ''}`}
               {filter.season !== 'all' ? ` · ${SEASON_LABELS[filter.season][l]}` : ''}
             </span>
             {hasActiveFilters && <button onClick={clearAll} style={{ fontSize: '13px', color: '#6B4423', background: 'none', border: 'none', cursor: 'pointer', padding: '12px 8px', minHeight: '44px', margin: '-12px -8px' }}>
-              {l === 'fr' ? 'Tout effacer' : 'Clear all'}
+              {l === 'fr' ? 'Effacer les filtres' : 'Clear filters'}
             </button>}
-          </div>
+          </div>}
 
           {/* ── Cards + dessert + summary ── */}
           <div>
 
             <div>
 
+              {/* No creations yet: the way to make one sits above the first pizza, not beside a counter. */}
+              {!customPizzas.some(p => pizzaCourse === 'sweet' ? p.category === 'dessert' : p.category !== 'dessert') && <button type="button" data-create-pizza onClick={() => setCreateOpen(true)} style={{display:'flex',justifyContent:'space-between',alignItems:'center',width:'100%',minHeight:48,margin:'8px 0 0',padding:'10px 14px',border:'1.5px dashed rgba(107,68,35,.4)',borderRadius:14,background:'transparent',color:'var(--terra)',font:'inherit',fontSize:15,fontWeight:600,cursor:'pointer',textAlign:'left'}}>
+                {l === 'fr' ? '+ Créer ma pizza' : '+ Create my own pizza'}<span style={{fontWeight:400,fontSize:13,color:'var(--ash)'}}>{l === 'fr' ? 'vos garnitures' : 'your toppings'}</span>
+              </button>}
               {/* Mes pizzas — only once the baker has creations; the menu
                   always comes before the invitation to leave it */}
               {customPizzas.some(p => pizzaCourse === 'sweet' ? p.category === 'dessert' : p.category !== 'dessert') && (
