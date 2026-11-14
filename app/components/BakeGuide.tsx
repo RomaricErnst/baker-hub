@@ -1324,7 +1324,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       <span>{l==='fr'?'Étape':'Step'} {phase==='cooking'?Math.max(1,currentStep-preparationTotal):currentStep} / {phase==='cooking'?cookingStepTotal:preparationTotal}</span>
       <button type="button" className="bh-step-trigger" onClick={()=>{setCurrentStep(0);window.scrollTo({top:0,behavior:'instant'});}}>{l==='fr'?'Vue d’ensemble':'Overview'}</button>
     </div>, progressTarget) : null;
-  const breadGuide = isBread;
+  const breadGuide = isBread && breadProtocol?.cooking !== 'griddle';
   const overviewAction = active && currentStep===0 && phase ? <button type="button" onClick={resumeStep} style={{...NEXT_CTA,minHeight:48}}>
     {phase==='cooking' ? (Array.from(doneSteps).some(index=>stepRefs.current[index]?.dataset.guidePhase==='cooking') ? (l==='fr'?'Reprendre la cuisson':breadGuide?'Resume baking':'Resume cooking') : (l==='fr'?(breadGuide?'Cuire le pain':'Commencer la cuisson'):breadGuide?'Bake the bread':'Start cooking')) : phasePositions.current.preparation ? (l==='fr'?'Reprendre la préparation':'Resume preparation') : (l==='fr'?'Commencer la préparation':'Start preparation')} →
   </button> : null;

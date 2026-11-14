@@ -27,7 +27,7 @@ test('editing the yeast after generation updates the plan and says what moved',a
 
  // Review my choices → Fine-tune → Edit.
  await page.getByRole('button',{name:'My choices',exact:true}).first().tap();
- await page.getByRole('button',{name:'Edit : Fine-tune',exact:true}).tap();
+ await page.getByRole('button',{name:'Edit : Dough',exact:true}).tap();
  const yeast=page.locator('[data-yeast-override] input:visible');
  const recommended=Number(await yeast.inputValue());
  await yeast.fill(String(Math.round(recommended*3*1000)/1000));await yeast.blur();

@@ -40,14 +40,15 @@ test('pizza partial and excess selections remain explicit; no toppings is not a 
 
 // In the journey the Shopping list goes back to Pizzas (backLabel) and carries no toppings link;
 // the line under the title links to them only where shopping has no Pizzas step before it (an existing base).
-test('shopping has at most one toppings action, in its header line, hidden when back leads to Pizzas',()=>{
+test('shopping has at most one toppings action, a soft link in the line under its title',()=>{
   const source=fs.readFileSync('app/components/ToppingSelector.tsx','utf8');
   const shopping=source.slice(source.indexOf('function ShoppingList('),source.indexOf('// ───',source.indexOf('function ShoppingList(')+30));
   assert.equal((shopping.match(/onGoPizzas/g)||[]).filter(Boolean).length>=1,true);
   assert.doesNotMatch(shopping,/onClick=\{\(\) => onGoPizzas\?\.\(\)\}/);
   const bread=fs.readFileSync('app/components/SandwichParty.tsx','utf8');
   assert.match(bread,/tab==='shop' \? \(!backLabel&&<button[^\n]+onClick=\{\(\)=>go\('pick'\)\}/);
-  assert.match(shopping,/onChoose=\{!backLabel\?onGoPizzas:undefined\}/);
+  // 14 Nov 2026 (Romaric): "2 still to choose" is a soft link to Pizzas, also in the journey.
+  assert.match(shopping,/onChoose=\{onGoPizzas\}/);
 });
 
 test('generated shopping uses active-only shared actions while existing bases retain their route',()=>{

@@ -14,6 +14,8 @@ async function toCustom(page){
  await page.locator('.bh-step-actions:visible [data-bh-forward]:visible, .bh-batch-actions:visible [data-bh-forward]:visible').first().tap();
  const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();
  const time=page.getByLabel('Bake date and time',{exact:true});await time.focus();await time.blur();
+ // Generate is in the bar; bring the Customize card clear of it before tapping.
+ await page.locator('[data-customize-link]').evaluate(el=>el.scrollIntoView({block:'center'}));
  await page.getByRole('button',{name:/^Customize my bake/}).tap();
 }
 const forward=page=>page.locator('.bh-step-actions:visible [data-bh-forward]:visible').first();

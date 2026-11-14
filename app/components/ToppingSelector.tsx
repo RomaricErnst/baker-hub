@@ -1129,7 +1129,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
       </div>
       <div>{baseReady && totalSelected===0
         ? <p style={{fontSize:14,color:'var(--smoke)'}}>{l==='fr'?'Aucune garniture sélectionnée':'No toppings selected'}</p>
-        : <SelectionCoverage selected={totalSelected} planned={numItems} locale={locale} onChoose={!backLabel?onGoPizzas:undefined} />}</div>
+        : <SelectionCoverage selected={totalSelected} planned={numItems} locale={locale} onChoose={onGoPizzas} />}</div>
       {/* List */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
         {/* Dough is the first thing to buy. Keeping it above the toppings

@@ -53,21 +53,25 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
  const companion=page.locator('[data-companion-action]:visible');
  await bar(page).getByRole('button',{name:'Pizzas →',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Pizzas');
- await expect(companion.getByRole('button')).toHaveText([L('Back to Recipe','Retour à Recette'),L('Shopping list →','Liste de courses →')]);
- await companion.getByRole('button',{name:L('Back to Recipe','Retour à Recette'),exact:true}).tap();
+ // Back reads "‹ Recipe" and keeps "Back to Recipe" as its name (14 Nov 2026).
+ await expect(companion.getByRole('button')).toHaveCount(2);
+ await expect(companion.getByRole('button').first()).toHaveAccessibleName(L('Back to Recipe','Retour à la recette'));
+ await expect(companion.getByRole('button').first().locator('[aria-hidden="true"]')).toHaveText(L('‹ Recipe','‹ Recette'));
+ await expect(companion.getByRole('button').last()).toHaveText(L('Shopping list →','Liste de courses →'));
+ await companion.getByRole('button',{name:L('Back to Recipe','Retour à la recette'),exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText(L('Recipe','Recette'));
  await bar(page).getByRole('button',{name:'Pizzas →',exact:true}).tap();
  await companion.getByRole('button',{name:L('Shopping list →','Liste de courses →'),exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText(L('Shopping list','Courses'));
  await expect(page.getByRole('button',{name:L('Add toppings — optional','Ajouter des garnitures — facultatif')}).filter({visible:true})).toHaveCount(0);
- await expect(bar(page).getByRole('button').first()).toHaveText(L('Back to Pizzas','Retour aux pizzas'));
+ await expect(bar(page).getByRole('button').first()).toHaveAccessibleName(L('Back to Pizzas','Retour aux pizzas'));
  await bar(page).getByRole('button').last().tap();
  await expect(page.locator('.bh-navigator-current')).toContainText(L('Preparation','Préparation'));
- await expect(bar(page).getByRole('button').first()).toHaveText(L('Back to Shopping list','Retour à Courses'));
+ await expect(bar(page).getByRole('button').first()).toHaveAccessibleName(L('Back to Shopping list','Retour aux courses'));
  await expect(page.locator('.bh-late-fillings')).toHaveCount(0);
  const sections=async label=>{const t=page.locator('.bh-bake-navigator-trigger:visible').first();await t.scrollIntoViewIfNeeded();if(await t.getAttribute('aria-expanded')!=='true')await t.tap();await page.getByRole('navigation',{name:L('Your bake','Votre fournée'),exact:true}).getByRole('button',{name:label}).first().tap();};
  await sections(L(/^Baking/,/^Cuisson/));
- await expect(bar(page).getByRole('button').first()).toHaveText(L('Back to Preparation','Retour à Préparation'));
+ await expect(bar(page).getByRole('button').first()).toHaveAccessibleName(L('Back to Preparation','Retour à la préparation'));
 
  // My bake: the choices only. The bake time asks only the question.
  await sections(L(/^My bake/,/^Ma fournée/));
@@ -78,7 +82,7 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
  await expect(page.getByText(L('See all hands-on steps','Voir toutes les interventions')).filter({visible:true})).toHaveCount(0);
  // The edit returns to where the baker came from (Baking & serving here).
  const back=page.locator('.bh-step-actions:visible').getByRole('button').last();
- await expect(back).toHaveText(L('Back to Baking & serving','Retour à Cuisson & service'));
+ await expect(back).toHaveAccessibleName(L('Back to Baking & serving','Retour à Cuisson & service'));
  await back.tap();
  await expect(page.locator('.bh-navigator-current')).toContainText(L('Baking','Cuisson'));
 

@@ -174,7 +174,9 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
         steps={[{key:'pick',label:t('Choisir','Choose')},{key:'shop',label:t('Courses','Shopping')},{key:'prep',label:t('Préparer','Prepare')},{key:'serve',label:t('Servir','Serve')}]} />}
       {/* One line, on the choosing page only (14 Nov 2026 audit: the same block sat on five screens). */}
       {total>0 && tab==='pick' && <div className={styles.summary} aria-live="polite" data-portion-summary>
-        <strong>{total} {portionName(total)}</strong> · {numItems && availableDoughWeight && breadGrams>0
+        <strong>{total} {portionName(total)}</strong> · {breadSlices>0
+          ? t(`${breadSlices} tranches de pain`,`${breadSlices} slices of bread`)
+          : numItems && availableDoughWeight && breadGrams>0
           ? t(`vos ${numItems} ${breadNoun(styleKey,numItems,true)} en font environ ${Math.max(1,Math.floor(availableDoughWeight*total/breadGrams))}`,`your ${numItems} ${breadNoun(styleKey,numItems,false)} make about ${Math.max(1,Math.floor(availableDoughWeight*total/breadGrams))}`)
           : `${t('pain à prévoir','bread needed')} ≈ ${amountText(breadGrams)}`}
         {' · '}<button type="button" data-see-selection onClick={()=>setReviewOpen(true)} style={{font:'inherit',color:'var(--terra)',background:'none',border:0,padding:'12px 0',margin:'-12px 0',textDecoration:'underline',textUnderlineOffset:3,cursor:'pointer'}}>{t('Voir ma sélection','See my selection')}</button>
