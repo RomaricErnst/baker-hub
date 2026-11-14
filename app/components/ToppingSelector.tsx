@@ -1,4 +1,5 @@
 'use client';
+import { BackLabel } from './BackLabel';
 import { pizzaShoppingWeightNote } from '../lib/ingredientWeights';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { NEXT_CTA, SECONDARY_CTA } from '../lib/navButtons';
@@ -766,6 +767,7 @@ function formatQty(total: number, unit: string, locale: string): string {
     g:      { en: 'g',       fr: 'g' },
     ml:     { en: 'ml',      fr: 'ml' },
     pcs:    { en: 'pcs',     fr: 'pièces' },
+    cloves: { en: 'cloves',  fr: 'gousses' },
     slices: { en: 'slices',  fr: 'tranches' },
     leaves: { en: 'leaves',  fr: 'feuilles' },
     sprigs: { en: 'sprigs',  fr: 'brins' },
@@ -773,7 +775,7 @@ function formatQty(total: number, unit: string, locale: string): string {
     pinch:  { en: 'pinches', fr: 'pincées' },
     drizzle:{ en: 'drizzles', fr: 'filets' },
   };
-  const singular: Record<string, Locale> = { pcs: {en:'pc',fr:'pièce'}, slices: {en:'slice',fr:'tranche'}, leaves: {en:'leaf',fr:'feuille'}, sprigs: {en:'sprig',fr:'brin'}, pinch: {en:'pinch',fr:'pincée'}, drizzle: {en:'drizzle',fr:'filet'} };
+  const singular: Record<string, Locale> = { pcs: {en:'pc',fr:'pièce'}, cloves: {en:'clove',fr:'gousse'}, slices: {en:'slice',fr:'tranche'}, leaves: {en:'leaf',fr:'feuille'}, sprigs: {en:'sprig',fr:'brin'}, pinch: {en:'pinch',fr:'pincée'}, drizzle: {en:'drizzle',fr:'filet'} };
   const label = (total === 1 ? singular[unit]?.[l] : undefined) ?? unitLabels[unit]?.[l] ?? unit;
   return `${total} ${label}`;
 }
@@ -834,8 +836,10 @@ export function buildShoppingList(
           : 1;
         const prev = item.totalAmount ?? 0;
         item.totalAmount = prev + ing.qtyPerPizza.amount * qty * multiplier;
-        item.unit = ing.qtyPerPizza.unit;
-        item.qtyNote = shoppingSpoonNote(l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN, l === 'fr');
+        // A counted piece with its own noun reads as one amount: "2 cloves", not "2 pcs" over "cloves".
+        const counted = ing.qtyPerPizza.unit === 'pcs' && ing.qtyPerPizza.noteEN === 'cloves';
+        item.unit = counted ? 'cloves' : ing.qtyPerPizza.unit;
+        item.qtyNote = counted ? undefined : shoppingSpoonNote(l === 'fr' ? ing.qtyPerPizza.noteFR : ing.qtyPerPizza.noteEN, l === 'fr');
       }
       const pizzaName = pizza.name[l] ?? pizza.name.en;
       if (!item.pizzaCount[pizzaName]) item.pizzaCount[pizzaName] = 0;
@@ -914,7 +918,7 @@ export function IngredientShoppingHelp({item,location,locale,onLocationChange,on
   const l = locale === 'fr' ? 'fr' : 'en';
   const help = ingredientHelpData(item,location,l);
   return <section aria-label={item.name[l] || item.name.en} style={{padding:'16px 12px',fontFamily:'var(--font-ui)'}}>
-    <button type="button" autoFocus onClick={onBack} style={SECONDARY_CTA}>{l === 'fr' ? 'Retour à Courses' : 'Back to Shopping list'}</button>
+    <button type="button" autoFocus onClick={onBack} style={SECONDARY_CTA}>{l === 'fr' ? 'Retour aux courses' : 'Back to Shopping list'}</button>
     <h1 style={{fontFamily:'Georgia,serif',fontSize:30}}>{item.name[l] || item.name.en}</h1>
     <label style={{display:'grid',gap:8,marginBottom:24}}>{l === 'fr' ? 'Noms des ingrédients pour :' : 'Ingredient names for:'}
       <select value={location} onChange={event=>onLocationChange(event.target.value)} style={{minHeight:44,padding:10,border:'1px solid var(--border)',borderRadius:10,background:'var(--cream)'}}>
@@ -1036,6 +1040,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
     }
   }
 
+  const [shareOpen, setShareOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
@@ -1117,58 +1122,14 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{margin:'16px 12px',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
+      {/* Same left edge as every other page title (14 Nov 2026 audit). */}
+      <div style={{margin:'8px 0 0',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
         <h1 className="bh-page-title" style={{margin:0}}>{l === 'fr' ? 'Liste de courses' : 'Shopping list'}</h1>
-        {onGoPizzas && !backLabel && <button type="button" onClick={onGoPizzas} style={{...SECONDARY_CTA,width:'auto',padding:'10px 14px'}}>
-          {totalSelected>0?(l==='fr'?'Modifier les garnitures':'Edit toppings'):(l==='fr'?'Ajouter des garnitures — facultatif':'Add toppings — optional')}
-        </button>}
-      </div>
-      <div style={{padding:'0 12px'}}>{baseReady && totalSelected===0
-        ? <p style={{fontSize:14,color:'var(--smoke)'}}>{l==='fr'?'Aucune garniture sélectionnée':'No toppings selected'}</p>
-        : <SelectionCoverage selected={totalSelected} planned={numItems} locale={locale} />}</div>
-      {/* Header */}
-      <div style={{ padding: '12px 12px 8px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{
-            fontSize: '15px', fontWeight: 700, color: '#2B2420',
-            fontFamily: 'var(--font-ui)',
-          }}>
-            {(() => {
-              const toppingToBuy = sections.reduce((acc, s) => acc + s.items.filter(i => !ticked[i.id]).length, 0);
-              const doughToBuy = recipeIngredients?.filter((ing, i) => !ticked[ing.tickKey ?? ('dough_' + i)]).length ?? 0;
-              const toBuy = toppingToBuy + doughToBuy;
-              return l === 'fr'
-                ? `${toBuy} ingrédient${toBuy > 1 ? 's' : ''} à acheter`
-                : `${toBuy} ingredient${toBuy > 1 ? 's' : ''} to buy`;
-            })()}
-          </span>
-          <button
-            onClick={() => setShowLocationPicker(v => !v)}
-            style={{ fontSize: '12px', minHeight:44, color: 'var(--smoke)', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '4px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
-          >
-            {l === 'fr' ? `Noms des ingrédients pour : ${currentLocationLabel} ▾` : `Ingredient names for: ${currentLocationLabel} ▾`}
-          </button>
-        </div>
-        {showLocationPicker && (
-          <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-            {LOCATIONS.map(loc => (
-              <button
-                key={loc.key}
-                onClick={() => setLocation(loc.key)}
-                style={{
-                  fontSize: '11px', padding: '3px 12px', borderRadius: '12px', cursor: 'pointer',
-                  border: shoppingLocation === loc.key ? '1px solid #6B4423' : '1px solid #E0D8CF',
-                  background: shoppingLocation === loc.key ? '#6B4423' : '#FDFBF7',
-                  color: shoppingLocation === loc.key ? 'white' : '#3D3530',
-                }}
-              >
-                {l === 'fr' ? loc.labelFr : loc.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
 
+      </div>
+      <div>{baseReady && totalSelected===0
+        ? <p style={{fontSize:14,color:'var(--smoke)'}}>{l==='fr'?'Aucune garniture sélectionnée':'No toppings selected'}</p>
+        : <SelectionCoverage selected={totalSelected} planned={numItems} locale={locale} onChoose={!backLabel?onGoPizzas:undefined} />}</div>
       {/* List */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
         {/* Dough is the first thing to buy. Keeping it above the toppings
@@ -1286,6 +1247,36 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
       </div>
 
+      {/* Ingredient names: a setting, at the foot of the list (also in Language & units). */}
+      <div style={{ padding: '8px 12px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
+          <button
+            onClick={() => setShowLocationPicker(v => !v)}
+            style={{ fontSize: '12px', minHeight:44, color: 'var(--smoke)', background: 'none', border: '1px solid #E0D8CF', borderRadius: '12px', padding: '4px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            {l === 'fr' ? `Noms des ingrédients pour : ${currentLocationLabel} ▾` : `Ingredient names for: ${currentLocationLabel} ▾`}
+          </button>
+        </div>
+        {showLocationPicker && (
+          <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+            {LOCATIONS.map(loc => (
+              <button
+                key={loc.key}
+                onClick={() => setLocation(loc.key)}
+                style={{
+                  fontSize: '11px', padding: '3px 12px', borderRadius: '12px', cursor: 'pointer',
+                  border: shoppingLocation === loc.key ? '1px solid #6B4423' : '1px solid #E0D8CF',
+                  background: shoppingLocation === loc.key ? '#6B4423' : '#FDFBF7',
+                  color: shoppingLocation === loc.key ? 'white' : '#3D3530',
+                }}
+              >
+                {l === 'fr' ? loc.labelFr : loc.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Footer: primary = onward journey (prep), share is secondary */}
       <div style={{ padding: '12px 12px 16px', borderTop: '1px solid #E0D8CF', background: '#FDFBF7' }}>
         {!onBackToRecipe && <button
@@ -1294,38 +1285,22 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
         >
           {baseReady?(l==='fr'?'Préparer les garnitures →':'Prepare the toppings →'):(l==='fr'?'Commencer la préparation →':'Start the dough preparation →')}
         </button>}
-        <button
-          onClick={handleShare}
-          style={SECONDARY_CTA}
-        >
+        {/* One share button; the two ways to share open under it (14 Nov 2026 audit). */}
+        <button type="button" data-share-list aria-expanded={shareOpen} onClick={() => setShareOpen(v => !v)} style={SECONDARY_CTA}>
           <svg viewBox="0 0 20 20" width={15} height={15} fill="none" stroke="#3D3530" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10 3v10M6 7l4-4 4 4"/>
             <path d="M4 14v2a1 1 0 001 1h10a1 1 0 001-1v-2"/>
           </svg>
           {l === 'fr' ? 'Partager la liste' : 'Share list'}
         </button>
-        <button
-          onClick={handleShareLink}
-          disabled={linkBusy}
-          style={{
-            width: '100%', padding: '12px', minHeight: '44px', marginTop: '8px',
-            background: 'transparent', color: linkCopied ? '#6B7A5A' : '#3D3530',
-            border: `1px solid ${linkCopied ? '#6B7A5A' : '#E0D8CF'}`, borderRadius: '12px',
-            fontSize: '13px', fontWeight: 500, cursor: linkBusy ? 'default' : 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            opacity: linkBusy ? 0.6 : 1,
-          }}
-        >
-          {!linkCopied && (
-            <svg viewBox="0 0 20 20" width={14} height={14} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M8 12a3 3 0 004.24 0l2.5-2.5a3 3 0 00-4.24-4.24l-1 1"/>
-              <path d="M12 8a3 3 0 00-4.24 0l-2.5 2.5a3 3 0 004.24 4.24l1-1"/>
-            </svg>
-          )}
-          {linkCopied
-            ? (l === 'fr' ? 'Lien copié ✓' : 'Link copied ✓')
-            : (l === 'fr' ? 'Partager un lien cochable' : 'Share checkable link')}
-        </button>
+        {shareOpen && <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+          <button type="button" onClick={handleShare} style={{ minHeight: 44, padding: '10px 12px', border: '1px solid #E0D8CF', borderRadius: 12, background: 'transparent', color: '#3D3530', fontSize: 14, cursor: 'pointer' }}>
+            {l === 'fr' ? 'En texte' : 'As text'}
+          </button>
+          <button type="button" onClick={handleShareLink} disabled={linkBusy} style={{ minHeight: 44, padding: '10px 12px', border: `1px solid ${linkCopied ? '#6B7A5A' : '#E0D8CF'}`, borderRadius: 12, background: 'transparent', color: linkCopied ? '#6B7A5A' : '#3D3530', fontSize: 14, cursor: linkBusy ? 'default' : 'pointer', opacity: linkBusy ? 0.6 : 1 }}>
+            {linkCopied ? (l === 'fr' ? 'Lien copié ✓' : 'Link copied ✓') : (l === 'fr' ? 'En lien à cocher' : 'As a checklist link')}
+          </button>
+        </div>}
         {linkError && (
           <div style={{ fontSize: '11px', color: '#B5654A', marginTop: '8px', textAlign: 'center' }}>
             {l === 'fr' ? 'Échec de la création du lien : ' : "Couldn't create the link: "}{linkError}
@@ -1333,7 +1308,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
         )}
       </div>
       {active && onBackToRecipe && <BottomActions>
-        <button type="button" className="bh-back-action" onClick={onBackToRecipe}>{backLabel??(l==='fr'?'Retour à Recette':'Back to Recipe')}</button>
+        <button type="button" className="bh-back-action" onClick={onBackToRecipe}><BackLabel text={backLabel??(l==='fr'?'Retour à la recette':'Back to Recipe')}/></button>
         <button type="button" onClick={()=>onGoPrep?.()} style={{...NEXT_CTA,flex:1,width:'auto',margin:0}}>{l==='fr'?'Passer à la préparation':'Go to preparation'} →</button>
       </BottomActions>}
     </div>
@@ -2720,7 +2695,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           justifyContent: 'space-between',
           zIndex: 90,
         }}>
-          {directSelectionReturn&&totalQty>0 ? <button type="button" className="bh-back-action" onClick={()=>setSummarySheetOpen(true)}>{l==='fr'?'Ma sélection':'My selection'} · {totalQty}</button> : (!directSelectionReturn||selectionBackLabel)&&onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{directSelectionReturn?selectionBackLabel:(l==='fr'?'Étape précédente':'Previous step')}</button>}
+          {/* The bar goes back and forward only; the tally under the title opens the selection (14 Nov 2026 audit). */}
+          {(!directSelectionReturn||selectionBackLabel)&&onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}><BackLabel text={directSelectionReturn?selectionBackLabel:(l==='fr'?'Étape précédente':'Previous step')}/></button>}
           <button type="button" disabled={selectionActionDisabled} onClick={() => (totalQty===0||(directSelectionReturn&&totalQty<=numItems))?onSelectionDone?.():setSummarySheetOpen(true)} style={{...NEXT_CTA,width:'100%',minHeight:44,opacity:selectionActionDisabled ? .65 : 1}}>
             {directSelectionReturn&&onSelectionDone ? (totalQty>numItems?(l==='fr'?'Vérifier la quantité de pâte':'Check dough quantity'):selectionDoneLabel) : totalQty === 0 ? (onSelectionDone&&!baseReady?(selectionDoneLabel??(l==='fr'?'Définir ma recette':'Set up my recipe')):(l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas')) : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`)}
           </button>

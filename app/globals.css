@@ -570,6 +570,7 @@ html[data-preview="true"] vercel-live-feedback { display:none !important; }
 
 .bh-local-progress { margin:0 0 4px; min-height:44px; display:flex; align-items:center; color:var(--terra); font-size:14px; }
 .bh-local-progress .bh-step-trigger { font-size:14px; padding:0; }
+.bh-local-progress:empty { display:none; }
 
 /* Keep every mobile action above the home gesture area. */
 .bh-header-stack { padding-top:env(safe-area-inset-top,0px); background:var(--warm); }

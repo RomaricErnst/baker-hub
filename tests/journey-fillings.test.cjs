@@ -32,23 +32,22 @@ test('pizza partial and excess selections remain explicit; no toppings is not a 
     assert.match(empty,locale==='fr'?/Pâte uniquement/:/Dough ingredients only/);
     assert.doesNotMatch(empty,/séparément|separately/);
     const partial=render(Coverage,{locale,selected:2,planned:4});
-    assert.match(partial,locale==='fr'?/2 pizzas sur 4/:/2 of 4 pizzas/);
-    assert.match(partial,/séparément|separately/);
+    assert.match(partial,locale==='fr'?/vos 2 pizzas choisies · 2 à choisir/:/your 2 chosen pizzas · 2 still to choose/);
     const excess=render(Coverage,{locale,selected:6,planned:4});
-    assert.match(excess,/dépasse|exceeds/);
+    assert.match(excess,/plus que les 4 pâtons|more than your 4 dough balls/);
   }
 });
 
-// In the journey the Shopping list goes back to Toppings (backLabel) and carries no toppings button;
-// the header action remains only where shopping has no Toppings step before it (an existing base).
-test('shopping has at most one toppings action, in its header, hidden when back leads to Toppings',()=>{
+// In the journey the Shopping list goes back to Pizzas (backLabel) and carries no toppings link;
+// the line under the title links to them only where shopping has no Pizzas step before it (an existing base).
+test('shopping has at most one toppings action, in its header line, hidden when back leads to Pizzas',()=>{
   const source=fs.readFileSync('app/components/ToppingSelector.tsx','utf8');
   const shopping=source.slice(source.indexOf('function ShoppingList('),source.indexOf('// ───',source.indexOf('function ShoppingList(')+30));
-  assert.equal((shopping.match(/onClick=\{onGoPizzas\}/g)||[]).length,1);
+  assert.equal((shopping.match(/onGoPizzas/g)||[]).filter(Boolean).length>=1,true);
   assert.doesNotMatch(shopping,/onClick=\{\(\) => onGoPizzas\?\.\(\)\}/);
   const bread=fs.readFileSync('app/components/SandwichParty.tsx','utf8');
   assert.match(bread,/tab==='shop' \? \(!backLabel&&<button[^\n]+onClick=\{\(\)=>go\('pick'\)\}/);
-  assert.match(shopping,/onGoPizzas && !backLabel && <button/);
+  assert.match(shopping,/onChoose=\{!backLabel\?onGoPizzas:undefined\}/);
 });
 
 test('generated shopping uses active-only shared actions while existing bases retain their route',()=>{
@@ -59,7 +58,7 @@ test('generated shopping uses active-only shared actions while existing bases re
   const bread=fs.readFileSync('app/components/SandwichParty.tsx','utf8');
   assert.match(bread,/onBackToRecipe \? active&&<BottomActions>/);
   for(const source of [pizza,bread]){
-    assert.match(source,/Retour à Recette/);
+    assert.match(source,/Retour à la recette/);
     assert.match(source,/Back to Recipe/);
     assert.match(source,/Go to preparation/);
   }

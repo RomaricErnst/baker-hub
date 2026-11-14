@@ -406,7 +406,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  }
  await page.getByRole('button',{name:/^Préparer les garnitures(?: →)?$/}).tap();
  await expect(choices.getByRole('button',{name:'Garnitures',exact:true})).toHaveAttribute('aria-pressed','true');
- await page.getByRole('button',{name:bread?'Passer à la cuisson du pain →':'Cuire les pizzas →',exact:true}).tap();
+ await page.getByRole('button',{name:bread?'Cuisson & service →':'Cuire les pizzas →',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Cuisson & service');
  if(bread)await expect(choices.getByRole('button',{name:'Guide de cuisson',exact:true})).toHaveAttribute('aria-pressed','true');else await expect(choices).toHaveCount(0);
  const serveLabel=bread?'Assembler mes sandwichs →':'Commencer la cuisson des pizzas →';
