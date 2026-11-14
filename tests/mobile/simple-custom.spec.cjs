@@ -183,7 +183,7 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Quantity|Quantité) →$/}).tap();
- await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).fill('20'); // 5,200 g: more than the spiral's 5 kg, so the batch card shows (it shows only when splitting, 14 Nov 2026)
+ await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).fill('30'); // 7,800 g: more than the spiral holds, so the batch card shows (it shows only when splitting, 14 Nov 2026)
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).blur();
  await actions(page).locator('[data-bh-forward]:visible').tap();
   await (async()=>{const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();})();
@@ -194,7 +194,7 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
  await actions(page).locator('[data-bh-forward]:visible').tap();
  const section=page.getByRole('region',{name:fr?'Nombre de pétrissées':'Mixing batches',exact:true});
- await section.getByRole('button',{name:fr?'Modifier':'Adjust',exact:true}).tap();
+ // The card shows only when the dough needs splitting, already open on the recommended count.
  const input=section.getByRole('textbox');await expect(input).toHaveValue('2');
  await expect.poll(async()=>(await stored(page))?.mixingBatches).toBe(undefined);
  await section.getByRole('button',{name:fr?'Une pétrissée de plus':'One more batch'}).tap();await expect(input).toHaveValue('3');
@@ -203,7 +203,7 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
  await section.getByRole('button',{name:fr?'Utiliser la recommandation: 2':'Use recommended: 2',exact:true}).tap();
  // The mixer capacity is set inside Adjust.
  const capacity=page.getByLabel(fr?'Poids de pâte maximal (g)':'Maximum dough weight (g)',{exact:true});await capacity.fill('1000');await capacity.blur();
- await expect(input).toHaveValue('6');await geometry(page);
+ await expect(input).toHaveValue('7');await geometry(page);
  await page.screenshot({path:test.info().outputPath('mixing-batches.png'),fullPage:true});
 });
 

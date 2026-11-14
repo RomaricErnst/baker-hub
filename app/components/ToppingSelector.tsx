@@ -1128,7 +1128,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
       </div>
       <div>{baseReady && totalSelected===0
-        ? <p style={{fontSize:14,color:'var(--smoke)'}}>{l==='fr'?'Aucune garniture sélectionnée':'No toppings selected'}</p>
+        ? <p style={{fontSize:14,color:'var(--ash)',margin:'4px 0 12px'}}>{l==='fr'?'Aucune garniture sélectionnée':'No toppings selected'}{onGoPizzas&&<> · <button type="button" data-choose-pizzas onClick={onGoPizzas} style={{font:'inherit',color:'var(--terra)',background:'none',border:0,padding:'12px 0',margin:'-12px 0',textDecoration:'underline',textUnderlineOffset:3,cursor:'pointer'}}>{l==='fr'?'Ajouter des garnitures':'Add toppings'}</button></>}</p>
         : <SelectionCoverage selected={totalSelected} planned={numItems} locale={locale} onChoose={onGoPizzas} />}</div>
       {/* List */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>

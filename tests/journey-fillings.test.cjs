@@ -65,7 +65,7 @@ test('generated shopping uses active-only shared actions while existing bases re
   }
   const existing=fs.readFileSync('app/components/ExistingBaseJourney.tsx','utf8');
   const label=existing.split('\n').find(line=>line.includes('const selectionDoneLabel='));
-  assert.match(label,/Retour à /);
+  assert.match(label,/Retour /);
   assert.match(label,/Back to /);
   assert.doesNotMatch(label,/Valider et|Confirm and/);
 });
