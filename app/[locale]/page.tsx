@@ -3081,14 +3081,13 @@ export default function Home() {
   }
 
   function nextCustomStep(from:number) {
-    if(from===3&&!customKitchenConfirmed)return 4;
     if(from>=6){const index=CUSTOM_STEPS.findIndex(step=>step.id===from);return CUSTOM_STEPS[index+1]?.id ?? 9;}
     return nextUnanswered(CUSTOM_STEPS.filter(step=>step.id>=3),from,advancedHighestStep);
   }
   function advanceAdv(from: number) {
     if (from === 1 && !styleKey) return;
     if (from === 8 && !prefermentChosen) return;
-    if (from === 4) setCustomKitchenConfirmed(true);
+    if (from === 3) setCustomKitchenConfirmed(true);
     // Flour is settled only by choosing a product or entering a flour type.
     if (from === 6 && (!flourChosen || archivedFlourNames.length)) return;
     markStepSettled(from);
@@ -3725,7 +3724,11 @@ export default function Home() {
     requirementsComplete:tab==='simple'?simpleRequiredDone:customRequiredDone,missingRequiredStep,
   }) : undefined;
   const manualMixing = mixerType === 'hand' || mixerType === 'no_knead';
-  const mixingBatchControl = mixerType && (!manualMixing || suggestedMixingBatches > 1 || mixingBatches !== undefined) ? <MixingBatchControl total={plannedDoughG} capacity={mixerCapacityG} count={selectedMixingBatches} recommended={suggestedMixingBatches} manual={manualMixing} knownCapacity={customMixerCapacityG!==undefined} override={mixingBatches!==undefined} fr={locale==='fr'} onChange={setMixingBatches}/> : null;
+  // One batch that fits with room to spare needs no card: it shows once the dough nears the mixer's
+  // capacity, needs splitting, or the baker has set a count or a capacity (14 Nov 2026).
+  const batchComfortable = !manualMixing && suggestedMixingBatches===1 && mixingBatches===undefined && customMixerCapacityG===undefined && plannedDoughG <= mixerCapacityG*0.8;
+  const mixerCapacityField = !manualMixing ? <><label style={{display:'flex',alignItems:'center',gap:12}}>{locale==='fr'?'Poids de pâte maximal (g)':'Maximum dough weight (g)'}<input type="number" min={100} max={1000000} step={100} value={customMixerCapacityG ?? ''} placeholder={String(mixerCapacityG)} onChange={e=>{const value=Number(e.target.value);if(!e.target.value)setCustomMixerCapacityG(undefined);else if(Number.isFinite(value)&&value>=100&&value<=1000000)setCustomMixerCapacityG(value);}} style={{width:110,minHeight:44}}/></label><p style={{margin:'6px 0 0',fontSize:14,color:'var(--smoke)'}}>{locale==='fr'?'Utilisez la limite de pâte indiquée par le fabricant.':'Use the dough capacity stated by the manufacturer.'}</p></> : undefined;
+  const mixingBatchControl = mixerType && !batchComfortable && (!manualMixing || suggestedMixingBatches > 1 || mixingBatches !== undefined) ? <MixingBatchControl capacityField={mixerCapacityField} total={plannedDoughG} capacity={mixerCapacityG} count={selectedMixingBatches} recommended={suggestedMixingBatches} manual={manualMixing} knownCapacity={customMixerCapacityG!==undefined} override={mixingBatches!==undefined} fr={locale==='fr'} onChange={setMixingBatches}/> : null;
 
 
   // ── Styles ────────────────────────────────
@@ -3858,10 +3861,7 @@ export default function Home() {
       short: (ovenType && mixerType) ? ovenDisplayName : null,
       prefilled: profileFields.has('equip'),
       gap: fr ? 'L\u2019équipement n\u2019est pas renseigné' : 'Equipment not set' },
-    { id: 4, group: 'kitchen', chip: fr ? 'Frigo et eau' : 'Fridge & water', title: fr ? 'Dans votre cuisine' : 'In your kitchen',
-      // This step sets the fridge; the kitchen temperature has its own screen.
-      value: `${fr ? 'Frigo' : 'Fridge'} ${cToDisplay(fridgeTemp,units)}${tempUnit(units)}`, prefilled: true,
-      gap: fr ? 'Le climat n\u2019est pas renseigné' : 'Climate not set' },
+    // Fridge & water moved into Fine-tune (14 Nov 2026): one number with a good default and the water source.
     { id: 6, group: 'dough', chip: fr ? 'Farine' : 'Flour', title: t('steps.flour.title'),
       // Once a recipe exists, the flour it was made with is shown (switching to Custom after the recipe).
       value: (flourChosen || recipeGenerated) && !archivedFlourNames.length ? flourSummary() : null, prefilled: false,
@@ -4082,7 +4082,6 @@ export default function Home() {
     {(equipmentPanel==='mixer'||compactPiadina) && <>
       {compactPiadina&&<h3 className="bh-section-title">{fr?'Pétrissage':'Mixing'}</h3>}
       {tab==='simple' ? <SimpleMixerPicker locale={locale} selected={mixerType} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);}setCustomMixerCapacityG(undefined);setMixerType(value);confirmSetting('mixer',value);}} styleKey={styleKey ?? undefined} /> : <MixerPicker totalDoughG={numItems * itemWeight} locale={locale} selected={mixerPicked ? mixerType : null} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);}setCustomMixerCapacityG(undefined);setMixerType(value);confirmSetting('mixer',value);}} styleKey={styleKey ?? undefined} bakeType={bakeType ?? undefined} kitchenTemp={kitchenTemp} />}
-      {mixerPicked && !manualMixing && <details style={{marginTop:12}}><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Capacité de mon pétrin':'My mixer capacity'}</summary><label style={{display:'flex',alignItems:'center',gap:12}}>{fr?'Poids de pâte maximal (g)':'Maximum dough weight (g)'}<input type="number" min={100} max={1000000} step={100} value={customMixerCapacityG ?? ''} placeholder={String(mixerCapacityG)} onChange={e=>{const value=Number(e.target.value);if(!e.target.value)setCustomMixerCapacityG(undefined);else if(Number.isFinite(value)&&value>=100&&value<=1000000)setCustomMixerCapacityG(value);}} style={{width:110,minHeight:44}}/></label><p style={{fontSize:14,color:'var(--smoke)'}}>{fr?'Utilisez la limite de pâte indiquée par le fabricant.':'Use the dough capacity stated by the manufacturer.'}</p></details>}
       {mixingBatchControl}
     </>}
   </>;
@@ -5278,37 +5277,6 @@ export default function Home() {
             </StepPage>
 
             {/* ─── ADV STEP 5: Climate ─────────────── */}
-            <StepPage flow={customOrganisationFlow} id={4}>
-              {/* The kitchen is asked once, with the bake time; only an older
-                  session without that answer asks it here. */}
-              {!kitchenAnswered && <KitchenSlider value={kitchenTemp} units={units} fr={fr} onChange={c=>{setKitchenTemp(c);confirmSetting('climate',c);setPlanReplanPending(true);}}/>}
-              <ClimatePicker
-                kitchenTemp={kitchenTemp} humidity={humidity}
-                fridgeTemp={fridgeTemp} mode="custom" hideKitchen part="temperatures"
-                units={units}
-                onChange={(t, h, f) => { if(t!==kitchenTemp)confirmSetting('climate',t); setKitchenTemp(t); setHumidity(h); setFridgeTemp(f); }}
-              />
-              <details style={{marginTop:16}}>
-                <summary style={{minHeight:44,fontSize:16,cursor:'pointer'}}>{locale==='fr'?'Préparation de l’eau · facultatif':'Water preparation · optional'}</summary>
-                <label style={{display:'block',fontSize:16,margin:'12px 0 6px'}}>{locale==='fr'?'Origine de l’eau':'Water source'}
-                  <select value={waterSource==='tap'?'measured':waterSource} onChange={e=>{setWaterSource(e.target.value as 'room'|'fridge'|'measured');setMeasuredWaterTemp(undefined);}} style={{display:'block',width:'100%',fontSize:16,padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
-                    <option value="room">{locale==='fr'?'Eau à température ambiante':'Room-temperature water'}</option>
-                    <option value="fridge">{locale==='fr'?'Eau du réfrigérateur':'Water from the fridge'}</option>
-                    <option value="measured">{locale==='fr'?'Température mesurée':'Measured temperature'}</option>
-                  </select>
-                </label>
-                {(waterSource==='measured'||waterSource==='tap')&&<label style={{display:'block',fontSize:16,margin:'12px 0'}}>{locale==='fr'?'Température de l’eau':'Water temperature'} ({tempUnit(units)})
-                  <input type="number" min={cToDisplay(0,units)} max={cToDisplay(60,units)} step="0.1" value={measuredWaterTemp===undefined?'':cToDisplay(measuredWaterTemp,units)} onChange={e=>setMeasuredWaterTemp(e.target.value===''?undefined:inputTempToC(Number(e.target.value),units))} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
-                </label>}
-                {mixerType==='spiral' ? <label style={{display:'block',fontSize:16,margin:'12px 0'}}>{locale==='fr'?'Si un refroidissement est nécessaire':'When cooling is needed'}
-                  <select value={waterMethod} onChange={e=>{setWaterMethod(e.target.value as 'direct'|'premelt');setSpiralIceConfirmed(false);}} style={{display:'block',width:'100%',fontSize:16,padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
-                    <option value="direct">{locale==='fr'?'Glace pendant le pétrissage':'Ice during mixing'}</option>
-                    <option value="premelt">{locale==='fr'?'Faire fondre la glace dans l’eau avant':'Melt ice in the water first'}</option>
-                  </select>
-                  <small style={{display:'block',fontSize:14,lineHeight:1.5,marginTop:8}}>{locale==='fr'?'Vérifiez que votre pétrin accepte la glace.':'Check that your mixer allows ice.'}</small>
-                </label> : <p style={{fontSize:14,color:'var(--smoke)'}}>{locale==='fr'?'Si nécessaire, la glace refroidit l’eau avant le pétrissage. Aucun glaçon dans le robot.':'If cooling is needed, melt the ice in the water before mixing. No solid ice goes into the mixer.'}</p>}
-              </details>
-            </StepPage>
 
 
             {/* ─── ADV STEP 7: Flour ───────────────── */}
@@ -5430,22 +5398,22 @@ export default function Home() {
                 const leanBread = bakeType==='bread' && !!style && (style.oil ?? 0)===0 && (style.sugar ?? 0)===0;
                 const fields = [
                   ...(!enrichedDirectOnly ? [
-                    {group:'ingredient',label:fr?'Hydratation (%)':'Hydration (%)',value:manualHydration ?? recommendedHyd,min:zone.min,max:zone.max,step:0.5,set:setManualHydration,
+                    {group:'ingredient',label:fr?'Hydratation (%)':'Hydration (%)',value:manualHydration ?? recommendedHyd,rec:recommendedHyd,min:zone.min,max:zone.max,step:0.5,set:setManualHydration,
                       // The one fact worth having beside the number: the style's classic range, and why the app moved off it.
                       hint:(()=>{const range=zone.classicMin===zone.classicMax?`${zone.classicMin}`:`${zone.classicMin}–${zone.classicMax}`;const outside=recommendedHyd>zone.classicMax+0.05||recommendedHyd<zone.classicMin-0.05;
                         return fr?`Classique pour ce style : ${range} %.${outside?` ${String(recommendedHyd).replace('.',',')} % ici pour votre four, votre cuisine et votre farine.`:''}`:`Classic for this style: ${range}%.${outside?` ${recommendedHyd}% here for your oven, kitchen and flour.`:''}`;})()},
-                    {group:'ingredient',label:fr?'Sel (% de farine)':'Salt (% of flour)',value:manualSalt ?? style?.salt ?? 2.5,min:1.5,max:3.5,step:0.1,set:setManualSalt},
-                    ...(leanBread && manualOil===undefined ? [] : [{group:'ingredient',label:fr?'Huile (% de farine)':'Oil (% of flour)',value:manualOil ?? style?.oil ?? 0,min:0,max:10,step:0.5,set:setManualOil,
+                    {group:'ingredient',label:fr?'Sel (% de farine)':'Salt (% of flour)',value:manualSalt ?? style?.salt ?? 2.5,rec:style?.salt ?? 2.5,min:1.5,max:3.5,step:0.1,set:setManualSalt},
+                    ...(leanBread && manualOil===undefined ? [] : [{group:'ingredient',label:fr?'Huile (% de farine)':'Oil (% of flour)',value:manualOil ?? style?.oil ?? 0,rec:style?.oil ?? 0,min:0,max:10,step:0.5,set:setManualOil,
                       // Nothing to say about none; an amount gets what it does (and burning in a very hot oven).
                       hint:(manualOil ?? style?.oil ?? 0)>0?oilGuidance(manualOil ?? style?.oil ?? 0,ovenType ?? '',styleKey ?? '',t):undefined}]),
-                    ...(leanBread && manualSugar===undefined ? [] : [{group:'ingredient',label:fr?'Sucre (% de farine)':'Sugar (% of flour)',value:manualSugar ?? style?.sugar ?? 0,min:0,max:10,step:0.5,set:setManualSugar,
+                    ...(leanBread && manualSugar===undefined ? [] : [{group:'ingredient',label:fr?'Sucre (% de farine)':'Sugar (% of flour)',value:manualSugar ?? style?.sugar ?? 0,rec:style?.sugar ?? 0,min:0,max:10,step:0.5,set:setManualSugar,
                       hint:(manualSugar ?? style?.sugar ?? 0)>0?sugarGuidance(manualSugar ?? style?.sugar ?? 0,ovenType ?? '',t).note:undefined}]),
                   ] : []),
-                  {group:'process',label:fr?'Température de pâte après pétrissage (°C)':'Dough temperature after mixing (°C)',value:targetDoughTemp ?? defaultTemp,min:18,max:28,step:1,set:setTargetDoughTemp},
-                  ...(totalFlourTarget===undefined?[{group:'process',label:fr?'Marge de pâte supplémentaire (%)':'Extra dough allowance (%)',value:wastePct ?? 0,min:0,max:5,step:0.5,set:setWastePct,hint:fr?'Compense la pâte restée dans le bol ; 1,5 % est courant.':'Covers dough left in the bowl; 1.5% is typical.'}]:[]),
+                  {group:'process',label:fr?'Température de pâte après pétrissage (°C)':'Dough temperature after mixing (°C)',value:targetDoughTemp ?? defaultTemp,rec:defaultTemp,min:18,max:28,step:1,set:setTargetDoughTemp},
+                  ...(totalFlourTarget===undefined?[{group:'process',label:fr?'Marge de pâte supplémentaire (%)':'Extra dough allowance (%)',value:wastePct ?? 0,rec:0,min:0,max:5,step:0.5,set:setWastePct,hint:fr?'Compense la pâte restée dans le bol ; 1,5 % est courant.':'Covers dough left in the bowl; 1.5% is typical.'}]:[]),
                 ];
                 const renderField = (field:typeof fields[number])=><div key={field.label}><label style={{display:'block',fontSize:16,marginBottom:'hint' in field&&field.hint?6:18}}>{field.label}
-                    <input type="number" key={`${field.label}:${field.value}`} defaultValue={Math.round(field.value*100)/100} min={field.min} max={field.max} step={field.step} onBlur={e=>{const n=Number(e.target.value);if(e.target.value!==''&&Number.isFinite(n))field.set(Math.min(field.max,Math.max(field.min,n)));else e.target.value=String(field.value);}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}}} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white'}}/>
+                    <input type="number" key={`${field.label}:${field.value}`} defaultValue={Math.round(field.value*100)/100} min={field.min} max={field.max} step={field.step} onBlur={e=>{const n=Number(e.target.value);const next=Math.min(field.max,Math.max(field.min,n));if(e.target.value!==''&&Number.isFinite(n)&&Math.abs(next-Math.round(field.value*100)/100)>1e-9)field.set(next);else e.target.value=String(field.value);}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}}} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white'}}/>
                   </label>
                   {'hint' in field&&field.hint&&<p data-field-hint style={{margin:'0 0 16px',fontSize:14,lineHeight:1.45,color:'var(--smoke)'}}>{field.hint}</p>}
                   {field.set===setManualHydration&&<div style={{marginBottom:16,fontSize:14}}>{manualHydration!==undefined&&Math.abs(manualHydration-recommendedHyd)>0.005&&<button type="button" onClick={()=>setManualHydration(undefined)} style={{minHeight:44}}>{fr?'Rétablir l’hydratation conseillée':'Reset suggested hydration'}</button>}<details><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Pourquoi cette valeur ?':'Why this value?'}</summary><p>{fr?'Base du style':'Style starting point'} : {style?.hydration}%</p><p>{fr?'Four':'Oven'} : {['pan','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey??'')?Math.round((ovenData?.hydrationDelta??0)/2):(ovenData?.hydrationDelta??0)}%</p><p>{fr?'Conditions de stockage et cuisine':'Storage and kitchen conditions'} : {kitchenTemp>=28||humidity==='very-humid'?-2:kitchenTemp<=18?2:0}%</p><p>{fr?'Farine':'Flour'} : {flourBlend?Math.max(-5,Math.min(8,computeBlendProfile(flourBlend).hydrationDelta)):0}%</p></details></div>}
@@ -5516,10 +5484,36 @@ export default function Home() {
                   })()}
                   <h3 data-finetune-group="process" style={{margin:'8px 0 12px',fontSize:13,fontWeight:650,letterSpacing:'.06em',textTransform:'uppercase' as const,color:'var(--smoke)'}}>{fr?'Pétrissage et pâte':'Mixing and dough'}</h3>
                   {fields.filter(field=>field.group==='process').map(renderField)}
+                  {/* Fridge & water (a step of its own until 14 Nov 2026): the fridge as a number like the
+                      fields above, the water source in one line, the ice method only with a spiral mixer. */}
+                  <h3 data-finetune-group="kitchen" style={{margin:'8px 0 12px',fontSize:13,fontWeight:650,letterSpacing:'.06em',textTransform:'uppercase' as const,color:'var(--smoke)'}}>{fr?'Frigo et eau':'Fridge & water'}</h3>
+                  {!kitchenAnswered && <KitchenSlider value={kitchenTemp} units={units} fr={fr} onChange={c=>{setKitchenTemp(c);confirmSetting('climate',c);setPlanReplanPending(true);}}/>}
+                  <label style={{display:'block',fontSize:16,marginBottom:6}}>{fr?'Température du frigo':'Fridge temperature'} ({tempUnit(units)})
+                    <input type="number" data-fridge-temp key={`fridge:${fridgeTemp}:${units}`} defaultValue={Math.round(cToDisplay(fridgeTemp,units)*10)/10} min={cToDisplay(1,units)} max={cToDisplay(15,units)} step={units==='imperial'?1:0.5} onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const c=Math.min(15,Math.max(1,inputTempToC(n,units)));if(Math.abs(c-fridgeTemp)>0.01){setFridgeTemp(c);setPlanReplanPending(true);}}} style={{display:'block',width:'100%',boxSizing:'border-box',fontSize:16,padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:8}}/>
+                  </label>
+                  <p style={{margin:'0 0 16px',fontSize:14,lineHeight:1.45,color:'var(--smoke)'}}>{fr?'Mesurée dans le frigo, près de la pâte.':'Measured inside the fridge, near the dough.'}</p>
+                  <label style={{display:'block',fontSize:16,margin:'12px 0 6px'}}>{locale==='fr'?'Origine de l’eau':'Water source'}
+                    <select value={waterSource==='tap'?'measured':waterSource} onChange={e=>{setWaterSource(e.target.value as 'room'|'fridge'|'measured');setMeasuredWaterTemp(undefined);}} style={{display:'block',width:'100%',fontSize:16,padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
+                      <option value="room">{locale==='fr'?'Eau à température ambiante':'Room-temperature water'}</option>
+                      <option value="fridge">{locale==='fr'?'Eau du réfrigérateur':'Water from the fridge'}</option>
+                      <option value="measured">{locale==='fr'?'Température mesurée':'Measured temperature'}</option>
+                    </select>
+                  </label>
+                  {(waterSource==='measured'||waterSource==='tap')&&<label style={{display:'block',fontSize:16,margin:'12px 0'}}>{locale==='fr'?'Température de l’eau':'Water temperature'} ({tempUnit(units)})
+                    <input type="number" min={cToDisplay(0,units)} max={cToDisplay(60,units)} step="0.1" value={measuredWaterTemp===undefined?'':cToDisplay(measuredWaterTemp,units)} onChange={e=>setMeasuredWaterTemp(e.target.value===''?undefined:inputTempToC(Number(e.target.value),units))} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
+                  </label>}
+                  {mixerType==='spiral' && <label style={{display:'block',fontSize:16,margin:'12px 0'}}>{locale==='fr'?'Si un refroidissement est nécessaire':'When cooling is needed'}
+                    <select value={waterMethod} onChange={e=>{setWaterMethod(e.target.value as 'direct'|'premelt');setSpiralIceConfirmed(false);}} style={{display:'block',width:'100%',fontSize:16,padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
+                      <option value="direct">{locale==='fr'?'Glace pendant le pétrissage':'Ice during mixing'}</option>
+                      <option value="premelt">{locale==='fr'?'Faire fondre la glace dans l’eau avant':'Melt ice in the water first'}</option>
+                    </select>
+                    <small style={{display:'block',fontSize:14,lineHeight:1.5,marginTop:8}}>{locale==='fr'?'Vérifiez que votre pétrin accepte la glace.':'Check that your mixer allows ice.'}</small>
+                  </label>}
                   <details style={{margin:'12px 0'}}><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Températures mesurées · facultatif':'Measured temperatures · optional'}</summary>
                     {[{label:fr?'Farine (°C)':'Flour (°C)',value:measuredFlourTemp,set:setMeasuredFlourTemp},...((prefermentType!=='none'||yeastType==='sourdough')?[{label:fr?'Préferment ou levain (°C)':'Preferment or starter (°C)',value:measuredPrefermentTemp,set:setMeasuredPrefermentTemp}]:[])].map(field=><label key={field.label} style={{display:'block',fontSize:16,margin:'12px 0'}}>{field.label}<input type="number" value={field.value??''} min={-5} max={45} step={0.5} placeholder={fr?'Estimation automatique':'Automatic estimate'} onChange={e=>field.set(e.target.value===''?undefined:Number(e.target.value))} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:10,border:'1px solid var(--border)',borderRadius:9}}/></label>)}
                   </details>
-                  {[manualHydration,yeastPctOverride,starterPctOverride,manualSalt,manualOil,manualSugar,targetDoughTemp,wastePct].some(value=>value!=null)&&<button type="button" data-reset-finetune style={{minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:9}} onClick={()=>{setManualHydration(undefined);if(yeastPctOverride!==undefined){setYeastPctOverride(undefined);setPlanReplanPending(true);}if(starterPctOverride!==undefined){setStarterPctOverride(undefined);setPlanReplanPending(true);}setManualSalt(undefined);setManualOil(undefined);setManualSugar(undefined);setTargetDoughTemp(undefined);setWastePct(undefined);}}>{fr?'Rétablir les valeurs conseillées':'Reset recommended values'}</button>}
+                  {/* Only a value that differs from its recommendation calls for a reset (a tap through a field changes nothing). */}
+                  {(fields.some(field=>Math.abs(field.value-field.rec)>1e-6)||yeastPctOverride!=null||starterPctOverride!=null)&&<button type="button" data-reset-finetune style={{minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:9}} onClick={()=>{setManualHydration(undefined);if(yeastPctOverride!==undefined){setYeastPctOverride(undefined);setPlanReplanPending(true);}if(starterPctOverride!==undefined){setStarterPctOverride(undefined);setPlanReplanPending(true);}setManualSalt(undefined);setManualOil(undefined);setManualSugar(undefined);setTargetDoughTemp(undefined);setWastePct(undefined);}}>{fr?'Rétablir les valeurs conseillées':'Reset recommended values'}</button>}
                 </>;
               })()}
             </StepPage>

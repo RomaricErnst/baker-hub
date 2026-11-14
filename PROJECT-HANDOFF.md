@@ -1,3 +1,10 @@
+# 14 November 2026 — Custom asks instead of assuming; Fridge & water in Fine-tune (Claude)
+
+- Custom showed Simple's silent home oven, hand kneading and instant yeast as chosen, under "Your usual equipment" (shown whenever any profile value was prefilled). Now the oven, mixer and yeast start unselected in Custom and the step waits for a choice (`ovenPicked`, `mixerPicked`, `yeastPicked`: confirmed values only). A selection that really comes from the baker profile is preselected with "From your profile — check it for this bake." (`equipmentFromProfile`). Simple is unchanged.
+- The batch card ("1 batch · Adjust") is hidden while one batch fits with room to spare (`batchComfortable`: one batch, no count or capacity set, dough ≤ 80% of the estimated capacity). When it shows, the mixer capacity field is inside Adjust (`capacityField` on MixingBatchControl); the separate "My mixer capacity" disclosure is gone.
+- The Fridge & water step is removed from Custom; its content is a "Fridge & water" group at the end of Fine-tune: the fridge temperature as a number field, the water source, and the ice method only with a spiral mixer. Leaving the equipment step now settles `customKitchenConfirmed`.
+- Fine-tune saves a field only when its value changes (a tap through a field used to count as an edit), and "Reset recommended values" shows only when a value differs from its recommendation.
+
 # 14 November 2026 — the Pizzas page (Claude)
 
 Romaric: the top of the toppings page was busy for a first visit, and the section is about choosing pizzas.

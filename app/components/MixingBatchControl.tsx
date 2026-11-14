@@ -1,7 +1,7 @@
 'use client';
 import {useState} from 'react';
 
-export default function MixingBatchControl({total,capacity,count,recommended,manual,knownCapacity,override,fr,onChange}:{total:number;capacity:number;count:number;recommended:number;manual:boolean;knownCapacity:boolean;override:boolean;fr:boolean;onChange:(value:number|undefined)=>void}) {
+export default function MixingBatchControl({total,capacity,count,recommended,manual,knownCapacity,override,fr,onChange,capacityField}:{capacityField?:import('react').ReactNode;total:number;capacity:number;count:number;recommended:number;manual:boolean;knownCapacity:boolean;override:boolean;fr:boolean;onChange:(value:number|undefined)=>void}) {
  const [expanded,setExpanded]=useState(false);
  const [draft,setDraft]=useState<string|null>(null);
  const open=expanded||recommended>1||override;
@@ -23,6 +23,8 @@ export default function MixingBatchControl({total,capacity,count,recommended,man
  </div>:<button type="button" style={{...button,padding:'8px 12px'}} onClick={()=>setExpanded(true)}>{fr?'Modifier':'Adjust'}</button>}
  <p style={{margin:'8px 0 0',fontSize:14,width:'100%'}}>{Math.round(total/count)} g {fr?'par lot':'per batch'} · {fr?(manual?'Quantité indicative':knownCapacity?'Capacité indiquée':'Capacité estimée'):(manual?'Suggested batch size':knownCapacity?'Entered capacity':'Estimated capacity')}: {capacity} g</p>
  </div>
+ {/* The mixer's own limit is set where the batch count is adjusted. */}
+ {open&&capacityField&&<div style={{marginTop:12}}>{capacityField}</div>}
  {total/count>capacity&&<p role="alert">{fr?'La pâte par lot dépasse la capacité. Augmentez le nombre de lots.':'Dough per batch exceeds capacity. Increase the batch count.'}</p>}
  {override&&<button type="button" style={{...button,marginTop:8,padding:'8px 12px'}} onClick={()=>{setDraft(null);onChange(undefined);}}>{fr?'Utiliser la recommandation':'Use recommended'}: {recommended}</button>}
  </section>;
