@@ -32,6 +32,8 @@ test('Customize from the bake time: the clash is asked once, in a sheet, when th
   if(await poolish.count()&&await poolish.first().getAttribute('aria-pressed')!=='true')await poolish.first().tap();
   const forward=page.locator('.bh-step-actions:visible [data-bh-forward]:visible, .bh-batch-actions:visible [data-bh-forward]:visible').first();
   if(await forward.isDisabled()){const flour=page.getByText('Caputo Pizzeria',{exact:true}).filter({visible:true});if(await flour.count())await flour.first().tap();}
+  // Custom asks the equipment and the yeast (14 Nov 2026): pick the first option where nothing is chosen.
+  if(await forward.isDisabled()){const option=page.locator('.bh-step:visible [role="group"] [role="button"][aria-pressed="false"], #step-3:visible [role="button"][aria-pressed="false"], #step-7:visible [role="button"][aria-pressed="false"]').first();if(await option.count())await option.tap();}
   await forward.tap();
   await page.waitForTimeout(300);
  }

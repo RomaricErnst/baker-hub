@@ -540,7 +540,8 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
  await expect.poll(async()=>(await stored(page))?.mixerType).toBe('stand');
   await step.locator('.bh-step-actions').locator('[data-bh-forward]:visible').tap();
   await step.locator('.bh-step-actions').locator('[data-bh-forward]:visible').tap();
- const climate=page.locator('#step-4');await expect(climate).toBeVisible();
+ // Equipment leads to Flour: Fridge & water lives in Fine-tune since 14 Nov 2026.
+ const climate=page.locator('#step-6');await expect(climate).toBeVisible();
  const actionBar=climate.locator('.bh-step-actions');
  const forward=actionBar.locator('[data-bh-forward]:visible');
  async function fixedAction(){
@@ -581,13 +582,15 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
  await expect.poll(async()=>(await stored(page))?.ovenType).toBe('pizza_oven');
  await step.getByRole('button',{name:/Pétrin (?:à spirale|spiral)/}).tap();
  await expect.poll(async()=>(await stored(page))?.waterMethod).toBe('direct');
-  await step.locator('.bh-step-actions').locator('[data-bh-forward]:visible').tap();
-  await climate.getByText('Préparation de l’eau · facultatif',{exact:true}).tap();
-  const cooling=climate.getByRole('combobox',{name:/Si un refroidissement est nécessaire/});
+  // The ice method sits in Fine-tune's Fridge & water group, with a spiral mixer only.
+  await openCustomSection(page,'Peaufiner');
+  const fine=page.locator('#step-10');
+  const cooling=fine.getByRole('combobox',{name:/Si un refroidissement est nécessaire/});
   await expect(cooling).toHaveValue('direct');
-  await expect(climate.getByText('Vérifiez que votre pétrin accepte la glace.',{exact:true})).toBeVisible();
+  await expect(fine.getByText('Vérifiez que votre pétrin accepte la glace.',{exact:true})).toBeVisible();
   await cooling.selectOption('premelt');
-  await climate.getByRole('button',{name:'Étape précédente',exact:true}).tap();await step.locator('[data-bh-forward]:visible').tap();
+  await openCustomSection(page,'Équipement');
+  await step.locator('.bh-step-actions').locator('[data-bh-forward]:visible').tap();
   await step.getByRole('button',{name:/Pétrin (?:à spirale|spiral)/}).tap();
   await expect.poll(async()=>(await stored(page))?.waterMethod).toBe('premelt');
  await step.getByRole('button',{name:/Robot pâtissier/}).tap();
@@ -611,19 +614,12 @@ test('Custom: batch details are conditional and setup headings reset above the f
  await expect(step.getByRole('textbox',{name:'Nombre de pétrissées',exact:true})).toHaveValue('2');
  await step.getByRole('button',{name:/Pétrin (?:à spirale|spiral)/}).tap();
  await expect(step.getByRole('textbox',{name:'Nombre de pétrissées',exact:true})).toHaveCount(0);
- const batch=step.getByRole('region',{name:'Nombre de pétrissées',exact:true});
- await batch.getByRole('button',{name:'Modifier',exact:true}).tap();
- await expect(batch.getByRole('textbox')).toHaveValue('1');
- await batch.getByRole('button',{name:'Une pétrissée de plus',exact:true}).tap();
- await expect(batch.getByRole('textbox')).toHaveValue('2');
- await batch.getByRole('button',{name:'Utiliser la recommandation: 1',exact:true}).tap();
- await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1'))?.mixingBatches)).toBe(undefined);
+ // One spiral batch with room to spare needs no batch card (14 Nov 2026).
+ await expect(step.getByRole('region',{name:'Nombre de pétrissées',exact:true})).toHaveCount(0);
+ await expect(step.getByText('Capacité de mon pétrin')).toHaveCount(0);
  
+ // Equipment leads straight to Flour (Fridge & water is in Fine-tune since 14 Nov 2026).
  await step.locator('.bh-step-actions').locator('[data-bh-forward]:visible').tap();
- await expect(page.locator('#step-4')).toBeVisible();
- await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
- await unobscured(page.locator('#step-4 h1.bh-page-title'));
-  await page.locator('#step-4 .bh-step-actions').locator('[data-bh-forward]:visible').tap();
   const flour=page.locator('#step-6');
   await expect(flour).toBeVisible();await expect.poll(()=>page.evaluate(()=>scrollY)).toBe(0);
   await unobscured(flour.getByRole('heading',{name:'Quelle farine utilisez-vous ?',exact:true}));

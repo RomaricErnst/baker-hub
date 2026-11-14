@@ -44,12 +44,12 @@ for(const locale of ['fr','en']){
   await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toHaveCount(0);
   await page.evaluate(()=>{const el=document.querySelector('[data-customize-link]');if(el){document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));el.scrollIntoView({block:'center'});}});
   await page.getByRole('button',{name:fr?/^Personnaliser ma fournée/:/^Customize my bake/}).tap();
-  // Custom opens on equipment (oven, then mixing), then the kitchen.
+  // Custom opens on equipment (oven, then mixing), preselected from the profile and said so;
+  // leaving it settles the kitchen, then flour (Fridge & water is in Fine-tune since 14 Nov 2026).
   await expect(page.locator('#step-3')).toBeVisible();
-  await actions(page).locator('[data-bh-forward]:visible').tap();
-  await actions(page).locator('[data-bh-forward]:visible').tap();
-  await expect(page.locator('#step-4')).toBeVisible();
+  await expect(page.locator('#step-3 [data-equipment-profile]')).toBeVisible();
   await expect.poll(async()=>(await stored(page))?.customKitchenConfirmed).toBe(false);
+  await actions(page).locator('[data-bh-forward]:visible').tap();
   await actions(page).locator('[data-bh-forward]:visible').tap();
   await expect.poll(async()=>(await stored(page))?.customKitchenConfirmed).toBe(true);
   const flour=page.locator('#step-6');
@@ -183,7 +183,7 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Quantity|Quantité) →$/}).tap();
- await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).fill('12');
+ await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).fill('16'); // 4,160 g: close enough to the spiral's 5 kg for the batch card to show (14 Nov 2026)
  await page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true}).blur();
  await actions(page).locator('[data-bh-forward]:visible').tap();
   await (async()=>{const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();})();
@@ -201,9 +201,9 @@ for(const locale of ['fr','en'])test(`${locale}: mixer batches open without chan
  await input.fill('');await expect(input).toHaveValue('');await input.fill('1');await input.blur();await expect(input).toHaveValue('1');
  await expect.poll(async()=>(await stored(page))?.mixingBatches).toBe(1);
  await section.getByRole('button',{name:fr?'Utiliser la recommandation: 1':'Use recommended: 1',exact:true}).tap();
- await page.locator('summary').filter({hasText:fr?'Capacité de mon pétrin':'My mixer capacity'}).tap();
+ // The mixer capacity is set inside Adjust.
  const capacity=page.getByLabel(fr?'Poids de pâte maximal (g)':'Maximum dough weight (g)',{exact:true});await capacity.fill('1000');await capacity.blur();
- await expect(input).toHaveValue('4');await geometry(page);
+ await expect(input).toHaveValue('5');await geometry(page);
  await page.screenshot({path:test.info().outputPath('mixing-batches.png'),fullPage:true});
 });
 
