@@ -28,6 +28,7 @@ export function withBackLabel(node: ReactNode): ReactNode {
   return Children.map(node, child => {
     if (!isValidElement(child)) return child;
     const el = child as ReactElement<{ className?: string; children?: ReactNode }>;
+    if (el.type === Fragment) return createElement(Fragment, null, withBackLabel(el.props.children));
     const cls = el.props.className ?? '';
     if (!/\bbh-(back-action|section-back)\b/.test(cls)) return child;
     const kids = el.props.children;
