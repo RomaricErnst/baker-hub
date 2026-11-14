@@ -170,6 +170,6 @@ test('pizza shortcut opens the catalogue and lets the baker switch back to makin
  await page.getByRole('link',{name:'Faire ma pâte',exact:true}).tap();
  await expect(page.getByRole('heading',{name:'Quel style de pizza ?'})).toBeVisible();
  await page.locator('.bh-bake-navigator-trigger').tap();
- await page.getByRole('button',{name:'Garnitures Facultatif',exact:true}).tap();
+ await page.getByRole('button',{name:'Pizzas Facultatif',exact:true}).tap();
  await expect(page.getByRole('heading',{name:'Quelles pizzas ?'})).toBeVisible();
 });

@@ -88,11 +88,11 @@ for(const locale of ['fr','en'])test(`${locale}: compact recipe menu opens filli
  await navigator(page).tap();
  const nav=page.getByRole('navigation',{name:locale==='fr'?'Votre fournée':'Your bake',exact:true});
  await expect(nav.locator('[data-destination-label]')).toHaveCount(5);
- const meal=nav.getByRole('button',{name:locale==='fr'?'Garnitures Facultatif':'Toppings Optional',exact:true});
+ const meal=nav.getByRole('button',{name:locale==='fr'?'Pizzas Facultatif':'Pizzas Optional',exact:true});
  await fits(page,meal);await unobscured(meal);
  await testInfo.attach('compact-recipe-menu',{body:await page.screenshot(),contentType:'image/png'});
  await meal.tap();
- await expect(page.locator('.bh-navigator-current')).toContainText(locale==='fr'?'Garnitures':'Toppings');
+ await expect(page.locator('.bh-navigator-current')).toContainText('Pizzas');
  await expect(page.getByRole('heading',{name:locale==='fr'?'Quelles pizzas ?':'Which pizzas?',exact:true})).toBeVisible();
  await navigator(page).tap();
  await nav.getByRole('button',{name:locale==='fr'?'Pâte':'Dough',exact:true}).tap();
@@ -154,12 +154,12 @@ for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}
    // Back goes one section at a time: Shopping list, Toppings, then the Recipe.
    await actions.getByRole('button',{name:'Back to Shopping list',exact:true}).tap();
    await expect(page.locator('.bh-navigator-current')).toContainText('Shopping list');
-   await page.getByRole('button',{name:/^Back to (Toppings|Fillings)$/}).filter({visible:true}).last().tap();
+   await page.getByRole('button',{name:/^Back to (Pizzas|Fillings)$/}).filter({visible:true}).last().tap();
    await page.locator('[data-companion-action]:visible').getByRole('button',{name:'Back to Recipe',exact:true}).tap();
    await expect(page.locator('.bh-navigator-current')).toHaveText('Recipe');
    // Toppings are the next step after the Recipe, not a button inside it.
    await expect(page.locator('.bh-fillings-invitation')).toHaveCount(0);
-   await expect(page.locator('.bh-step-actions:visible [data-toppings-step]')).toHaveText(/^(Toppings|Fillings) →$/);
+   await expect(page.locator('.bh-step-actions:visible [data-toppings-step]')).toHaveText(/^(Pizzas|Fillings) →$/);
    await expect(page.locator('.bh-step-actions:visible')).toHaveCount(1);
    await expect(page.locator('.bh-step-actions:visible')).toHaveClass(/bh-recipe-next/);
    await expect(page.locator('.bh-step-actions:visible')).toHaveCSS('position','fixed');
@@ -330,7 +330,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  const before=await stored(page);
  // The fillings button sits on the Preparation summary, not inside each step.
  await page.locator('.bh-local-progress').getByRole('button',{name:'Vue d’ensemble',exact:true}).tap();
- await navigate(page,'Garnitures');
+ await navigate(page,bread?'Garnitures':'Pizzas');
  if(bread){
   const article=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Jambon-beurre',exact:true})});
   await article.getByRole('spinbutton').fill('2');
@@ -348,7 +348,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await expect(page.getByRole('button',{name:'Reprendre →',exact:true})).toHaveCount(0);
  await expect(page.getByRole('dialog',{name:'Ma sélection',exact:true})).toHaveCount(0);
  // The catalogue has its own heading while the return still points to Preparation.
- await expect(page.locator('.bh-navigator-current')).toContainText('Garnitures');
+ await expect(page.locator('.bh-navigator-current')).toContainText(bread?'Garnitures':'Pizzas');
  const back=page.getByRole('button',{name:/^Retour à Préparation(?: →)?$/});
  await back.scrollIntoViewIfNeeded();
  await fits(page,back);
@@ -726,7 +726,7 @@ for(const bread of [false,true])test(`clean preparation ${bread?'bread':'pizza'}
 for(const bread of [false,true])test(`late ${bread?'bread':'pizza'} surplus keeps the quantity decision explicit`,async({page})=>{
  await seed(page,{activeTab:'guide',bread,style:bread?'pita':'neapolitan'});
  await navigate(page,'Préparation');
- await navigate(page,'Garnitures');
+ await navigate(page,bread?'Garnitures':'Pizzas');
  if(bread){
   const input=page.getByRole('article').first().getByRole('spinbutton');
   await input.fill('6');await input.blur();
