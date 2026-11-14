@@ -283,7 +283,7 @@ test('custom full blackout has no green slots; removing it preserves the precedi
  const availability=await openAvailability(page);
  await availability.getByRole('button',{name:/^Jours ouvrés/}).tap();
  const workBlocks=(await stored(page)).blocks;
- await availability.getByRole('button',{name:/Personnalisé/}).tap();
+ await availability.getByRole('button',{name:/Ajouter un créneau/}).tap();
  await availability.getByPlaceholder('Nom (facultatif), ex. Week-end').fill('Absence totale');
  const dates=availability.locator('input[type="datetime-local"]');
  await dates.nth(0).fill('2026-09-25T08:45');await dates.nth(1).fill('2026-09-26T20:00');
@@ -394,7 +394,7 @@ test('overlapping midnight blockers reject a free start whose mixing duration cr
  const {plan}=await seed(page,{preferment:'none'});
  const availability=await openAvailability(page);
  const add=async(label,from,to)=>{
-  await availability.getByRole('button',{name:/Personnalisé/}).tap();
+  await availability.getByRole('button',{name:/Ajouter un créneau/}).tap();
   await availability.getByPlaceholder('Nom (facultatif), ex. Week-end').fill(label);
   const dates=availability.locator('input[type="datetime-local"]');
   await dates.nth(0).fill(from);await dates.nth(1).fill(to);

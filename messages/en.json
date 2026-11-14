@@ -206,7 +206,7 @@
       "noOvernights": "No overnight periods in this schedule.",
       "nightHours": "· 11pm → 7am",
       "cancel": "✕ Cancel",
-      "addCustom": "＋ Custom",
+      "addCustom": "＋ Add a time",
       "customTitle": "Add a busy time",
       "customLabelPlaceholder": "Name (optional), e.g. Weekend away",
       "from": "From",

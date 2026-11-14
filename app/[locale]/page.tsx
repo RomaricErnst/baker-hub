@@ -4974,11 +4974,7 @@ export default function Home() {
             </StepPage>
 
             {/* ─── STEP 8: Scheduler ───────────────── */}
-            <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={collectingBakeTime ? (eatTime && +eatTime>Date.now() && !kitchenPending && !simpleStarterPending
-              // Generate is the step's forward action, in the bar like every other step (14 Nov 2026 audit);
-              // Customize stays a card above it, the optional detour.
-              ? <button type="button" data-generate-recipe data-bh-forward style={NEXT_CTA} onClick={()=>{if(simpleDecisionPending){setDecisionSheet('generate');return;}setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>{fr?'Générer ma recette':'Generate my recipe'} <span aria-hidden="true">→</span></button>
-              : <></>) : bakeTimeOnly && eatTime ? (simpleDecisionPending ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('return')}>{setupReturnLabel}</button> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : scheduleEditing ? null : !eatTime ?
+            <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={collectingBakeTime ? <></> : bakeTimeOnly && eatTime ? (simpleDecisionPending ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('return')}>{setupReturnLabel}</button> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : scheduleEditing ? null : !eatTime ?
               <button type="button" disabled style={{...NEXT_CTA,opacity:0.5}}>{fr?'Choisissez une date de cuisson':'Choose a bake date'}</button>
               : !scheduleCandidateValid ? (simpleDecisionPending
                 // As in Custom: the normal next step waits for a choice in the card above; it never only scrolls.
@@ -5005,19 +5001,21 @@ export default function Home() {
               {collectingBakeTime && eatTime && +eatTime>Date.now() && (()=>{
                 if(kitchenPending)return <div data-recipe-choice style={{marginTop:16}}><button type="button" style={NEXT_CTA} onClick={()=>{openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}>{fr?'Température de la cuisine →':'Kitchen temperature →'}</button></div>;
                 if(simpleStarterPending)return <div data-recipe-choice style={{marginTop:16}}><button type="button" style={NEXT_CTA} onClick={openSimpleStarter}>{fr?'Votre levain →':'Your starter →'}</button></div>;
+                // 14 Nov 2026 (Romaric): the one fork in setup reads as a choice. Generate is the filled
+                // button, Customize the outlined one with three words naming what a serious baker changes.
                 const leaven=(yeastType==='sourdough'||isLevainStyle(styleKey))?(fr?'levain':'starter'):(fr?'préferment':'preferment');
-                const customDesc=directMethodOnly?(fr?'Vous choisissez matériel, farine et hydratation':'You choose equipment, flour and hydration'):(fr?`Vous choisissez matériel, farine, ${leaven} et hydratation`:`You choose equipment, flour, ${leaven} and hydration`);
-                const card:React.CSSProperties={display:'grid',gap:4,textAlign:'left',padding:'16px 18px',minHeight:56,border:'1.5px solid var(--border)',borderRadius:18,background:'var(--card)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:17,cursor:'pointer',boxShadow:'0 2px 12px rgba(43,36,32,.06)'};
-                const title:React.CSSProperties={display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,fontWeight:700};
+                const customDesc=directMethodOnly?(fr?'farine, hydratation':'flour, hydration'):(fr?`farine, ${leaven}, hydratation`:`flour, ${leaven}, hydration`);
+                const outlined:React.CSSProperties={...NEXT_CTA,display:'grid',gap:2,placeItems:'center',background:'transparent',color:'var(--terra)',border:'1.5px solid var(--terra)',boxShadow:'none',minHeight:56,padding:'8px 16px'};
                 // A start within the next two hours is said on this screen, before the recipe exists.
                 const soon=!simpleDecisionPending&&scheduleCandidateValid&&!isUnleavened?soonStartLabel(firstRecipeAction,Date.now(),locale):null;
                 return <div data-recipe-choice style={{display:'grid',gap:12,marginTop:16}}>
                   {soon&&<p data-start-soon role="status" style={{margin:0,fontSize:15,fontWeight:600,color:'var(--char)'}}>{firstRecipeActionLabel} · {soon}</p>}
                   {/* A clash is asked here once, in a sheet, when the baker generates. Customizing
                       first defers it to the end of the customize steps, so it is never asked twice. */}
-                  <button type="button" data-customize-link style={card} onClick={()=>{setAwaitingRecipeChoice(false);setCustomBakeQuestion(true);chooseMode('custom');}}>
-                    <span style={title}>{fr?'Personnaliser ma fournée':'Customize my bake'}<span aria-hidden="true">→</span></span>
-                    <span style={{fontSize:14,color:'var(--smoke)',fontWeight:400}}>{customDesc}</span>
+                  <button type="button" data-generate-recipe style={{...NEXT_CTA,minHeight:56}} onClick={()=>{if(simpleDecisionPending){setDecisionSheet('generate');return;}setAwaitingRecipeChoice(false);if(canGenerate)handleGenerate();}}>{fr?'Générer ma recette':'Generate my recipe'} <span aria-hidden="true">→</span></button>
+                  <button type="button" data-customize-link style={outlined} onClick={()=>{setAwaitingRecipeChoice(false);setCustomBakeQuestion(true);chooseMode('custom');}}>
+                    <span style={{fontWeight:700}}>{fr?'Personnaliser ma fournée':'Customize my bake'}</span>
+                    <span style={{fontSize:13,fontWeight:400,color:'var(--ash)'}}>{customDesc}</span>
                   </button>
                 </div>;
               })()}
