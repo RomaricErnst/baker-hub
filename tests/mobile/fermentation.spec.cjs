@@ -62,7 +62,7 @@ for(const scenario of cases){
    await expect(card.getByText(/Dans le créneau/)).toBeVisible();
    await expect(page.getByRole('tab',{name:'Actions',exact:true})).toHaveAttribute('aria-selected','true');
    // Baking exactly when a block starts is a conflict, even with a good mix window.
-   await page.getByRole('button',{name:'＋ Personnalisé',exact:true}).tap();
+   await page.getByRole('button',{name:'＋ Ajouter un créneau',exact:true}).tap();
    await page.getByPlaceholder('Nom (facultatif), ex. Week-end').fill('Indisponible cuisson');
    const local=d=>new Date(+d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
    await page.locator('input[type="datetime-local"]:visible').nth(0).fill(local(bake));
@@ -122,7 +122,7 @@ test.describe('verified availability repair',()=>{
   await inspectColdPhases();
   // Work intersects the second cold exit/preheat, but not mixing or baking.
   // Keeping today's bake is impossible; a proposal must require acceptance.
-  await page.getByRole('button',{name:'＋ Custom',exact:true}).tap();
+  await page.getByRole('button',{name:'＋ Add a time',exact:true}).tap();
   await page.getByPlaceholder('Name (optional), e.g. Weekend away').fill('Work');
   await page.locator('input[type="datetime-local"]:visible').nth(0).fill('2026-09-28T09:00');
   await page.locator('input[type="datetime-local"]:visible').nth(1).fill('2026-09-28T18:00');

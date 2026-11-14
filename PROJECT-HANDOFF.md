@@ -1,3 +1,8 @@
+# 14 November 2026 (evening) — the bake-time fork reads as a choice (Claude)
+
+- Romaric: with Generate in the bar and Customize as a lone card, the step no longer read as two paths. The bake-time step now ends on two stacked buttons: "Generate my recipe →" filled, "Customize my bake" outlined with three words of what it opens ("flour, preferment, hydration"; FR "farine, préferment, hydratation"; starter for levain styles, no preferment where only direct dough applies). Simple shows no equipment or hydration detail. The bar holds only "‹ Previous" on this step, the one fork in setup.
+- The busy-time chip "+ Custom" is "+ Add a time" (FR "+ Ajouter un créneau"), so "Custom" is not on the screen twice.
+
 # 14 November 2026 (evening) — starter asked, bread flour basis on Quantity, oven rounds (Claude)
 
 - The starter's place ("Where has it been since last fed?") and activity ("How active is it?") start unanswered on the Custom Starter step and the step waits for them; an answer is kept through reloads as a confirmed setting (`starterLocationAnswered`, `starterMatureAnswered`; `confirmSetting('starterLocation'|'starterMature')`). Simple's "Where is your starter now?" counts as the place.

@@ -206,7 +206,7 @@
       "noOvernights": "Pas de nuit dans ce planning.",
       "nightHours": "· 23h → 7h",
       "cancel": "✕ Annuler",
-      "addCustom": "＋ Personnalisé",
+      "addCustom": "＋ Ajouter un créneau",
       "customTitle": "Ajouter un moment occupé",
       "customLabelPlaceholder": "Nom (facultatif), ex. Week-end",
       "from": "De",
