@@ -4284,7 +4284,7 @@ export default function Home() {
                 count={numItems} itemWeight={itemWeight} diameter={pizzaDiameter}
                 pizzaSizes={PIZZA_SIZE_CHOICES[styleKey ?? '']}
                 breadSizes={bakeType==='bread'&&!breadProtocol&&totalFlourTarget===undefined?BREAD_SIZE_CHOICES[styleKey ?? '']:undefined}
-                sizeNote={bakeType==='bread'&&totalFlourTarget===undefined?`${bakeQuantityLabel(numItems,bakeType,styleKey,fr)} ${fr?'de':'of'} ${displayWeight(Math.round(itemWeight),units,locale)}`:undefined}
+                sizeNote={bakeType!=='bread'?undefined:totalFlourTarget===undefined?`${bakeQuantityLabel(numItems,bakeType,styleKey,fr)} ${fr?'de':'of'} ${displayWeight(Math.round(itemWeight),units,locale)}`:`${bakeQuantityLabel(numItems,bakeType,styleKey,fr)} · ${fr?'à partir de':'from'} ${displayWeight(totalFlourTarget,units,locale)} ${fr?'de farine':'of flour'}`}
                 diameterBounds={{ min: PIZZA_WEIGHT_TABLE[styleKey ?? '']?.[0][0] ?? 22, max: PIZZA_WEIGHT_TABLE[styleKey ?? '']?.at(-1)?.[0] ?? 35 }}
                 crust={(['thin','classic','generous'] as const)[pizzaCorn] ?? 'classic'}
                 weightIsManual={crustActive < 0} weightBounds={weightBounds}
