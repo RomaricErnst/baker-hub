@@ -36,7 +36,7 @@ app/
   auth/callback/route.ts
   data.ts               — styles (name/nameFr/descFr), ovens, mixers, yeasts, preferments
   utils.ts              — yeast engine, schedule engine, DDT, recipe calculator, formatTime(d, locale)
-  utils/units.ts        — g/°C ↔ oz/°F (weights <6 g stay grams in imperial)
+  utils/units.ts        — g/°C ↔ oz/°F (weights <10 g stay grams in imperial)
   utils/breadNames.ts   — what is being made (Ma brioche, 2 baguettes), oven question, egg count
   utils/planCalendar.ts — .ics export: key steps, close steps merged into one event, cancellations on re-export
   utils/stepWhy.ts      — reasons moved out of step lines into one "Why?"

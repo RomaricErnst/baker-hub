@@ -193,7 +193,8 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
               line it cost was the difference between this page fitting on one
               screen and not. Each option already carries its own tagline. */}
           <DecisionList layout="lateral"
-            options={orderedOptions.map(opt => ({
+            // An option the baker cannot pick is not shown; the note below says where it lives.
+            options={orderedOptions.filter(opt => !disabledIds?.includes(opt.id)).map(opt => ({
               ...opt,
               tagline: opt.id === 'sourdough' && sourdoughRecommended
                 ? (locale === 'fr'

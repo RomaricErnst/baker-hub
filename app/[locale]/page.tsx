@@ -968,8 +968,9 @@ const KITCHEN_ZONES=[
   {id:'cool',from:15,to:19,en:'Cool',fr:'Frais',color:'#A8B8D0'},
   {id:'mild',from:20,to:24,en:'Mild',fr:'Tempéré',color:'#8BA888'},
   {id:'warm',from:25,to:29,en:'Warm',fr:'Assez chaud',color:'#D4A853'},
-  {id:'hot',from:30,to:32,en:'Hot',fr:'Chaud',color:'#E8A898'},
-  {id:'veryhot',from:33,to:38,en:'Very hot',fr:'Très chaud',color:'#D9897A',
+  // Coral is kept for hydration; heat deepens the gold (14 Nov 2026 audit).
+  {id:'hot',from:30,to:32,en:'Hot',fr:'Chaud',color:'#C49A45'},
+  {id:'veryhot',from:33,to:38,en:'Very hot',fr:'Très chaud',color:'#A88038',
     hint:'A tropical kitchen without air conditioning',hintFr:'Cuisine tropicale sans climatisation'},
 ] as const;
 const KITCHEN_MIN=15,KITCHEN_MAX=38;
@@ -983,7 +984,8 @@ function KitchenSlider({value,units,fr,onChange}:{value:number;units:UnitSystem;
   const hint='hint' in zone?(fr?zone.hintFr:zone.hint):null;
   return <div data-kitchen-slider data-kitchen-zone={zone.id}>
     <p style={{margin:'0 0 4px',fontSize:40,fontWeight:700,lineHeight:1.1,color:'var(--char)'}} aria-hidden="true">{cToDisplay(t,units)}{tempUnit(units)}</p>
-    <p style={{margin:'0 0 16px',fontSize:16,color:'var(--ash)'}} aria-live="polite">{fr?zone.fr:zone.en}{hint?` · ${hint}`:''}</p>
+    {/* The zone is named once, in bold under the slider; this line carries only a hint. */}
+    <p style={{margin:hint?'0 0 16px':'0 0 8px',fontSize:16,color:'var(--ash)',minHeight:hint?undefined:0}} aria-live="polite"><span className="bh-visually-hidden">{fr?zone.fr:zone.en}{hint?' · ':''}</span>{hint??''}</p>
     <div style={{position:'relative',height:44,margin:'8px 0'}}>
     <div aria-hidden="true" style={{position:'absolute',left:0,right:0,top:16,height:12,borderRadius:6,background:`linear-gradient(to right,${stops})`}}/>
     <input type="range" min={KITCHEN_MIN} max={KITCHEN_MAX} step={1} value={t}
@@ -3741,7 +3743,7 @@ export default function Home() {
   const manualMixing = mixerType === 'hand' || mixerType === 'no_knead';
   // One batch that fits with room to spare needs no card: it shows once the dough nears the mixer's
   // capacity, needs splitting, or the baker has set a count or a capacity (14 Nov 2026).
-  const batchComfortable = !manualMixing && suggestedMixingBatches===1 && mixingBatches===undefined && customMixerCapacityG===undefined && plannedDoughG <= mixerCapacityG*0.8;
+  const batchComfortable = !manualMixing && suggestedMixingBatches===1 && mixingBatches===undefined && customMixerCapacityG===undefined && plannedDoughG <= mixerCapacityG; // shown only when the dough needs splitting (14 Nov 2026 audit)
   const mixerCapacityField = !manualMixing ? <><label style={{display:'flex',alignItems:'center',gap:12}}>{locale==='fr'?'Poids de pâte maximal (g)':'Maximum dough weight (g)'}<input type="number" min={100} max={1000000} step={100} value={customMixerCapacityG ?? ''} placeholder={String(mixerCapacityG)} onChange={e=>{const value=Number(e.target.value);if(!e.target.value)setCustomMixerCapacityG(undefined);else if(Number.isFinite(value)&&value>=100&&value<=1000000)setCustomMixerCapacityG(value);}} style={{width:110,minHeight:44}}/></label><p style={{margin:'6px 0 0',fontSize:14,color:'var(--smoke)'}}>{locale==='fr'?'Utilisez la limite de pâte indiquée par le fabricant.':'Use the dough capacity stated by the manufacturer.'}</p></> : undefined;
   const mixingBatchControl = mixerType && !batchComfortable && (!manualMixing || suggestedMixingBatches > 1 || mixingBatches !== undefined) ? <MixingBatchControl capacityField={mixerCapacityField} total={plannedDoughG} capacity={mixerCapacityG} count={selectedMixingBatches} recommended={suggestedMixingBatches} manual={manualMixing} knownCapacity={customMixerCapacityG!==undefined} override={mixingBatches!==undefined} fr={locale==='fr'} onChange={setMixingBatches}/> : null;
 
@@ -4750,8 +4752,11 @@ export default function Home() {
   if(planMoved.prepFrom!==undefined&&planMoved.prepTo!==undefined)parts.push(`${prepName} ${at(planMoved.prepTo)}`);
   if(planMoved.from!==planMoved.to)parts.push(`${fr?'Pétrir la pâte':'Start Dough'} ${at(planMoved.to)}`);
   if(planMoved.bakeFrom!==undefined)parts.push(`${fr?'Enfourner':'Bake'} ${at(+eatTime)}`);
-  const yeast=planMoved.yeastFrom!==undefined&&planMoved.yeastTo!==undefined&&yeastChangeMatters(planMoved.yeastFrom,planMoved.yeastTo)?yeastChangeLine(planMoved.yeastFrom,planMoved.yeastTo):null;
-  const flour=planMoved.flourFrom!==undefined&&planMoved.flourTo!==undefined?(fr?`Farine : ${displayWeight(Math.round(planMoved.flourTo),units,locale)} (au lieu de ${displayWeight(Math.round(planMoved.flourFrom),units,locale)}).`:`Flour ${displayWeight(Math.round(planMoved.flourTo),units,locale)} (was ${displayWeight(Math.round(planMoved.flourFrom),units,locale)}).`):null;
+  // The ingredients below already show new amounts. Yeast is named only when its share of the flour
+  // changed (a new timing), not when it simply follows the quantity; flour never (14 Nov 2026 audit).
+  const flourRatio=planMoved.flourFrom&&planMoved.flourTo?planMoved.flourTo/planMoved.flourFrom:1;
+  const yeast=planMoved.yeastFrom!==undefined&&planMoved.yeastTo!==undefined&&yeastChangeMatters(planMoved.yeastFrom*flourRatio,planMoved.yeastTo)?yeastChangeLine(planMoved.yeastFrom,planMoved.yeastTo):null;
+  const flour=null;
   if(!parts.length&&!yeast&&!flour&&!calendarOutdated)return null;
   return <div data-plan-moved role="status" style={{margin:'12px 0 0',padding:'10px 14px',border:'1px solid var(--border)',borderRadius:14,fontSize:14,lineHeight:1.5,background:'var(--warm)',display:'flex',gap:12,alignItems:'flex-start'}}>
     <span style={{flex:1}}>
@@ -5037,7 +5042,7 @@ export default function Home() {
                           <RecipeOutput
                             mixerConfirmed={confirmed('mixer',mixerType)}
                             starterEvents={starterEvents} mixingTime={startTime}
-                            containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
+                            
                             styleKey={styleKey ?? undefined}
                             waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixerCapacityG={customMixerCapacityG} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches}
                             ovenType={ovenType}
@@ -5618,7 +5623,7 @@ export default function Home() {
                           <RecipeOutput
                             mixerConfirmed={confirmed('mixer',mixerType)}
                             starterEvents={starterEvents} mixingTime={startTime}
-                            containerCapacityLitres={containerCapacityLitres} onContainerCapacityChange={setContainerCapacityLitres}
+                            
                             styleKey={styleKey ?? undefined}
                             waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixerCapacityG={customMixerCapacityG} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches}
                             ovenType={ovenType}

@@ -282,9 +282,7 @@ export default function PrototypeQuantityPicker({
                 })}
               </div>
             </div>
-            <p data-adjust-result style={{ margin: '14px 0 0', fontSize: 16, fontWeight: 650, color: 'var(--char)' }}>
-              {fr ? `${grams(itemWeight)} de pâte par pizza` : `${grams(itemWeight)} of dough per pizza`}
-            </p>
+            {/* The weight is read on the "Each pizza" line above, which follows every change. */}
             {!gramsOpen && !usesManualWeight && <button type="button" data-adjust-grams onClick={() => setGramsOpen(true)} style={{ minHeight: 44, padding: 0, border: 0, background: 'transparent', color: 'var(--terra)', textDecoration: 'underline', font: 'inherit', fontSize: 14, cursor: 'pointer' }}>
               {fr ? 'Indiquer le poids en grammes' : 'Enter the weight in grams'}
             </button>}

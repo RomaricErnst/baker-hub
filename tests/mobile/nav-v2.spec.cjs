@@ -515,7 +515,7 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
  await page.locator('[data-adjust-weight]').tap();
  await page.getByRole('button',{name:/^Grande/}).tap();
  await page.getByRole('button',{name:'Généreuse',exact:true}).tap();
- const sized=Number((await page.locator('[data-adjust-result]').innerText()).match(/\d+/)[0]);
+ const sized=Number((await page.locator('[data-each-pizza]').innerText()).match(/(\d+)\s*g/)[1]);
  expect(sized).toBeGreaterThan(260);
  await page.locator('[data-adjust-grams]').tap();
  await weight.fill('300');await weight.blur();
@@ -523,7 +523,7 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
  const reset=page.getByRole('button',{name:/^Revenir au poids conseillé/});
  await expect(reset).toBeVisible();await reset.tap();
  await expect(reset).toHaveCount(0);
- await expect(page.locator('[data-adjust-result]')).toContainText(`${sized} g`);
+ await expect(page.locator('[data-each-pizza]')).toContainText(new RegExp(`${sized}\\s*g`));
  await expect.poll(async()=>(await stored(page))?.itemWeight).toBe(sized);
  await startCustom(page);
  await openCustomSection(page,'Peaufiner');

@@ -27,8 +27,11 @@ test('controlled sandwich state supplies shopping, cooking and reversible servic
  const state={...createSandwichSnapshot('baguette'),qtys:{[recipe.id]:3},completed:{[recipe.id]:1}};
  for(const isFr of [false,true]){
    const shop=render({...state,tab:'shop'},{isFr,breadIngredients:[{id:'flour',name:'Test flour',grams:500}],availableDoughWeight:850,numItems:2});
-   assert.match(shop,/Test flour/);assert.match(shop,/500 g/);assert.match(shop,/850 g/);
-   assert.ok(shop.includes(isFr?'Garnitures regroupées':'Combined fillings'));
+   assert.match(shop,/Test flour/);assert.match(shop,/500 g/);assert.doesNotMatch(shop,/850 g/);
+   // The portion line sits on the choosing page only, as one line.
+   const pick=render({...state,tab:'pick'},{isFr,availableDoughWeight:850,numItems:2,styleKey:'baguette'});
+   assert.match(pick,isFr?/vos 2 baguettes en font environ \d+/:/your 2 baguettes make about \d+/);
+   assert.ok(shop.includes(isFr?'Pour les garnitures':'For the fillings'));
    const prep=render({...state,tab:'prep'},{isFr});
    assert.ok(prep.includes(isFr?'Préparez les garnitures':'Prepare the fillings'));
    assert.match(prep,/type="checkbox"/);
@@ -41,7 +44,7 @@ test('controlled sandwich state supplies shopping, cooking and reversible servic
 test('empty shopping never invents bread or filling purchases',()=>{
  const html=render({...createSandwichSnapshot('baguette'),tab:'shop'});
  assert.match(html,/>Shopping<\/h2>/);
- assert.doesNotMatch(html,/Combined fillings|type="checkbox"/);
+ assert.doesNotMatch(html,/For the fillings|type="checkbox"/);
 });
 test('plain bread shopping exposes real dough purchases without a sandwich selection',()=>{
  const html=render({...createSandwichSnapshot('baguette'),tab:'shop'},{breadIngredients:[{id:'flour',name:'Actual bread flour',grams:520}]});
@@ -49,7 +52,7 @@ test('plain bread shopping exposes real dough purchases without a sandwich selec
  assert.match(html,/Shopping list · 1 item/);
  assert.match(html,/Actual bread flour/);assert.match(html,/520 g/);
  assert.equal((html.match(/type="checkbox"/g)||[]).length,1);
- assert.doesNotMatch(html,/Combined fillings|Choose your sandwiches and quantities/);
+ assert.doesNotMatch(html,/For the fillings|Choose your sandwiches and quantities/);
 });
 
 test('cards state baked bread portions and warn only on a definite bread shortfall',()=>{
