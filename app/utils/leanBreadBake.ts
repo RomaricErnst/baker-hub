@@ -109,7 +109,28 @@ const both = <T,>(build: (lang: Lang) => T): Both<T> => ({ en: build('en'), fr: 
 /** Null when the style is not a lean bread, or when its existing oven card
  * already states real temperatures (round loaves in a wood-fired oven).
  */
+/** How many pieces one oven load takes (14 Nov 2026 audit: 20 baguettes in one "Bake the bread"
+ *  step). Conservative home figures: a tray of baguettes or fougasses, two loaves, one per pot. */
+export function piecesPerOvenLoad(styleKey: string, ovenType: string | undefined): number {
+  if (ovenType === 'dutch_oven') return 1;
+  const long = styleKey === 'baguette' || styleKey === 'fougasse';
+  if (ovenType === 'wood_fired') return long ? 8 : 6;
+  return long ? 4 : 2;
+}
+
 export function leanBreadBake(styleKey: string, pieceWeightG: number, ovenType: string | undefined, count = 1): LeanBreadBake | null {
+  const base = leanBreadBakeOneLoad(styleKey, pieceWeightG, ovenType, count);
+  if (!base) return null;
+  const perLoad = piecesPerOvenLoad(styleKey, ovenType);
+  if (count <= perLoad) return base;
+  const rounds = Math.ceil(count / perLoad);
+  const roundsStep = (lang: Lang) => lang === 'fr'
+    ? s(`Cuisez en ${rounds} fournées de ${perLoad} au plus`, 'gardez les autres au frais, couvertes, jusqu’à leur tour ; laissez le four reprendre sa température entre deux fournées')
+    : s(`Bake in ${rounds} rounds of up to ${perLoad}`, 'keep the waiting ones covered in the fridge until their turn; let the oven recover its heat between rounds');
+  return { ...base, bake: { en: [roundsStep('en'), ...base.bake.en], fr: [roundsStep('fr'), ...base.bake.fr] } };
+}
+
+function leanBreadBakeOneLoad(styleKey: string, pieceWeightG: number, ovenType: string | undefined, count = 1): LeanBreadBake | null {
   const minutes = leanBreadMinutes(styleKey, pieceWeightG);
   if (!minutes) return null;
   const [low, high] = minutes;

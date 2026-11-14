@@ -68,7 +68,7 @@ const PARTY_MIX=Date.parse('2026-10-29T18:00:00+08:00');
 const PARTY_BAKE=Date.parse('2026-10-30T19:00:00+08:00');
 const partyBlock=end=>({label:'Work',from:Date.parse('2026-10-30T09:00:00+08:00'),to:Date.parse(`2026-10-30T${end}:00+08:00`)});
 const plainBlocks=blocks=>blocks.map(({fridgeRemoval,...block})=>block);
-const arrangeButton=(card,locale)=>card.getByRole('button',{name:locale==='fr'?'Oui, cette étape est prévue':'Yes, this step is covered',exact:true});
+const arrangeButton=(card,locale)=>card.getByRole('button',{name:locale==='fr'?'Oui, quelqu’un s’en charge':'Yes, someone will',exact:true});
 async function seedParty(page,locale,mode,end='18:00'){
  return seed(page,{locale,mode,preferment:'none',now:PARTY_NOW,extra:{savedAt:PARTY_NOW,kitchenTemp:24,fridgeTemp:5,mixerType:'hand',startTime:PARTY_MIX,eatTime:PARTY_BAKE,blocks:[partyBlock(end)]}});
 }
@@ -616,7 +616,7 @@ async function customClash(page,locale){
  const fr=locale==='fr';
  const decision=page.locator('#step-9 [data-simple-decision]');
  await expect(decision).toBeVisible();
- await expect(decision.locator('[data-decision-availability]')).toHaveText(fr?'Modifier mes indisponibilités':'Change my unavailable times');
+ await expect(decision.locator('[data-decision-availability]')).toHaveText(fr?'Modifier mes moments occupés':'Change my busy times');
  await expect(plan.locator('[data-availability-conflicts]')).toBeVisible();
  await expect(plan.locator('[data-availability-conflicts]')).not.toContainText(/Mixing|Pétrissage ·/);
  // The last action of the step is its way forward.

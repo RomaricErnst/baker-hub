@@ -650,12 +650,12 @@ const LABEL_STYLE: React.CSSProperties = {
 };
 
 // ── Sourdough card helper styles ──────────────
+// Questions in sentence case, like every other step (14 Nov 2026 audit).
 const STARTER_LABEL_STYLE: React.CSSProperties = {
-  fontSize: '12px',
+  fontSize: '15px',
+  fontWeight: 600,
   fontFamily: 'var(--font-ui)',
-  color: 'var(--smoke)',
-  letterSpacing: '.06em',
-  textTransform: 'uppercase',
+  color: 'var(--char)',
   marginBottom: '8px',
 };
 const STARTER_SELECT_STYLE: React.CSSProperties = {
@@ -1727,7 +1727,7 @@ function PlanList({
 function StarterHydrationNotice({ isFr }: { isFr: boolean }) {
   // An assumption, not a question: stated once, quietly, inside the starter card.
   return <p data-starter-hydration style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--smoke)', margin: '16px 0 0' }}>
-    {isFr ? 'Le plan suppose un levain liquide à 100 % d’hydratation : autant de farine que d’eau, quel que soit le ratio (1:1:1, 1:2:2…). Les autres hydratations ne sont pas prises en charge.' : 'Plans assume a liquid starter at 100% hydration: equal weights of flour and water, whatever the ratio (1:1:1, 1:2:2…). Other hydrations are not supported.'}
+    {isFr ? 'Le plan suppose un levain liquide à 100 % d’hydratation : autant de farine que d’eau, quel que soit le ratio (1:1:1, 1:2:2…).' : 'Plans assume a liquid starter at 100% hydration: equal weights of flour and water, whatever the ratio (1:1:1, 1:2:2…).'}
   </p>;
 }
 
@@ -7315,7 +7315,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
           <strong style={{display:'block'}}>{isFr?'Utiliser la quantité de levure calculée':'Use the calculated yeast amount'}</strong>{' '}<small style={{display:'block',fontWeight:400}}>{isFr?'Le planning s’adapte à vos disponibilités':'The plan fits around your free time'}</small>
         </button>}
         {mode==='custom'&&<button type="button" className="bh-back-action" data-decision-availability style={{minHeight:44,marginTop:8,whiteSpace:'normal',textAlign:'left'}} onClick={openAvailability}>
-          {isFr?'Modifier mes indisponibilités':'Change my unavailable times'}
+          {isFr?'Modifier mes moments occupés':'Change my busy times'}
         </button>}
       </div>
     : null;
@@ -7355,13 +7355,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
           gap: '16px',
         }}>
 
-          {/* ── Card header ── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '-.25rem' }}>
-            <div style={{ width: 8, height: 8, background: '#4A7FA5', transform: 'rotate(45deg)', flexShrink: 0 }} />
-            <div style={{ fontSize: '13px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
-              {isFr ? 'Votre levain' : 'Your starter'}
-            </div>
-          </div>
+          {/* The step's title already says "Your starter": no second label on the card. */}
 
           {<div style={{ display: 'grid', gap: '16px' }}>
           {/* ── Q1: Where has it been since last fed? ── */}
@@ -7971,7 +7965,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
       {eatTimeSet && (<div>
 
       {/* Blocker section — always visible */}
-      <details ref={availabilityControlsRef} open={availabilityOpen} onToggle={e=>setAvailabilityOpen((e.currentTarget as HTMLDetailsElement).open)} tabIndex={-1} aria-label={isFr?'Mes indisponibilités':'My unavailable times'} style={{marginBottom:16}}><summary data-busy-question style={{minHeight:44,cursor:'pointer',fontWeight:600,fontSize:16}}>{isFr?'Quand êtes-vous occupé ? (facultatif)':'When are you busy? (optional)'}<span style={{display:'block',fontSize:13,fontWeight:400,color:'var(--smoke)'}}>{isFr?'Nous ne prévoirons aucune étape manuelle à ces heures.':'We won\u2019t plan any hands-on step at these times.'}</span></summary>
+      <details ref={availabilityControlsRef} open={availabilityOpen} onToggle={e=>setAvailabilityOpen((e.currentTarget as HTMLDetailsElement).open)} tabIndex={-1} aria-label={isFr?'Mes indisponibilités':'My unavailable times'} style={{marginBottom:16}}><summary data-busy-question className="bh-chevron-inline" style={{minHeight:44,cursor:'pointer',fontWeight:600,fontSize:16,listStyle:'none'}}>{isFr?'Quand êtes-vous occupé ? (facultatif)':'When are you busy? (optional)'}<span aria-hidden="true" style={{color:'var(--terra)',fontWeight:400}}>{availabilityOpen?' ▴':' ▾'}</span><span style={{display:'block',fontSize:13,fontWeight:400,color:'var(--smoke)'}}>{isFr?'Nous ne prévoirons aucune étape manuelle à ces heures.':'We won\u2019t plan any hands-on step at these times.'}</span></summary>
         <div>
 
 
@@ -8069,7 +8063,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
             />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: '8px' }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>
+                <div style={{ fontSize: '13px', color: 'var(--ash)', fontFamily: 'var(--font-ui)', marginBottom: '4px' }}>
                   {t('blockers.from')}
                 </div>
                 <input
@@ -8087,7 +8081,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
                 />
               </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>
+                <div style={{ fontSize: '13px', color: 'var(--ash)', fontFamily: 'var(--font-ui)', marginBottom: '4px' }}>
                   {t('blockers.to')}
                 </div>
                 <input
@@ -8192,7 +8186,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
                 style={{width:'100%',maxWidth:560,maxHeight:'85vh',overflowY:'auto',background:'var(--cream)',borderRadius:'18px 18px 0 0',padding:'18px 16px calc(18px + env(safe-area-inset-bottom, 0px))',boxShadow:'0 -4px 24px rgba(43,36,32,0.18)'}}>
                 <h2 id="bh-decision-sheet-title" style={{margin:'0 0 4px',fontSize:19,fontWeight:700,color:'var(--char)'}}>{isFr?'Avant votre recette':'Before your recipe'}</h2>
                 {simpleDecision}
-                <button type="button" className="bh-back-action" data-decision-sheet-close style={{minHeight:44}} onClick={()=>onDecisionSheetClose?.()}>{isFr?'Pas maintenant':'Not now'}</button>
+                <button type="button" className="bh-back-action" data-decision-sheet-close style={{minHeight:44}} onClick={()=>onDecisionSheetClose?.()}>{isFr?'Revenir à l’heure de cuisson':'Back to the bake time'}</button>
               </div>
             </div>
           : null)
@@ -8808,16 +8802,16 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
         if(showFridgeArrangement&&finalFridgeRemoval){
           const mix=anchors.find(anchor=>anchor.id==='mix');
           if(mix&&busyWithFridge&&otherConflicts.length===0){mix.note=null;mix.valid=true;}
-          anchors.push({id:'fridge-removal',name:isFr?'Sortir la pâte du réfrigérateur':'Take dough out',at:+finalFridgeRemoval.at,from:+finalFridgeRemoval.at,to:+finalFridgeRemoval.at,editable:false,valid:fridgeRemovalCovered,note:fridgeRemovalCovered?(isFr?'Cette étape est prévue.':'This step is covered.'):(isFr?'À confirmer ci-dessus.':'Confirm this step above.')});
+          anchors.push({id:'fridge-removal',name:isFr?'Sortir la pâte du réfrigérateur':'Take dough out',at:+finalFridgeRemoval.at,from:+finalFridgeRemoval.at,to:+finalFridgeRemoval.at,editable:false,valid:fridgeRemovalCovered,note:fridgeRemovalCovered?(isFr?'Quelqu’un d’autre sort la pâte.':'Someone else takes the dough out.'):(isFr?'À confirmer ci-dessus.':'Confirm this step above.')});
         }
-        const editAvailability=<button type="button" className="bh-back-action" onClick={()=>{if(availabilityControlsRef.current)availabilityControlsRef.current.open=true;availabilityControlsRef.current?.scrollIntoView({block:'center',behavior:'auto'});availabilityControlsRef.current?.focus({preventScroll:true});}}>{isFr?'Modifier mes indisponibilités':'Change my availability'}</button>;
+        const editAvailability=<button type="button" className="bh-back-action" onClick={()=>{if(availabilityControlsRef.current)availabilityControlsRef.current.open=true;availabilityControlsRef.current?.scrollIntoView({block:'center',behavior:'auto'});availabilityControlsRef.current?.focus({preventScroll:true});}}>{isFr?'Modifier mes moments occupés':'Change my busy times'}</button>;
         const fridgeArrangement=showFridgeArrangement?<div className="bh-fridge-arrangement" data-fridge-removal={fridgeRemovalCovered?'arranged':'pending'} style={{padding:'12px 14px',marginBottom:12,border:'1px solid var(--border)',borderRadius:12}}>
           <strong>{isFr?'Sortie du réfrigérateur · ':'Take dough out · '}{fmtCardDT(finalFridgeRemoval!.at,isFr)}</strong>
-          {fridgeRemovalCovered?<div role="status"><span>{isFr?'Cette étape est prévue.':'This step is covered.'}</span>{' '}<button type="button" className="bh-back-action" style={{minHeight:44,minWidth:44}} onClick={()=>setFridgeRemovalCovered(false)}>{isFr?'Annuler':'Undo'}</button></div>:<>
+          {fridgeRemovalCovered?<div role="status"><span>{isFr?'Quelqu’un d’autre sort la pâte.':'Someone else takes the dough out.'}</span>{' '}<button type="button" className="bh-back-action" style={{minHeight:44,minWidth:44}} onClick={()=>setFridgeRemovalCovered(false)}>{isFr?'Annuler':'Undo'}</button></div>:<>
             {showResolutionChoice&&<p style={{margin:'8px 0 16px',color:'var(--smoke)'}}>{isFr?'Vous êtes indisponible à ce moment-là.':'You’re unavailable then.'}</p>}
             {showResolutionChoice&&<h3 style={{fontSize:16,fontWeight:600,margin:'0 0 8px'}}>{isFr?'Garder l’enfournement à':'Keep baking at'} {fmtCardHM(pendingEatTime,isFr)}</h3>}
             <p style={{margin:'8px 0'}}>{showResolutionChoice?(isFr?`Vous ou quelqu’un sur place pouvez sortir la pâte à ${fmtCardHM(finalFridgeRemoval!.at,isFr)} ?`:`Can you or someone at home take the dough out at ${fmtCardHM(finalFridgeRemoval!.at,isFr)}?`):(isFr?'Pendant votre indisponibilité. Vous ou quelqu’un sur place pouvez sortir la pâte ?':'During your unavailable hours. Can you or someone at home take the dough out?')}</p>
-            <button type="button" className="bh-apply-plan" style={{minHeight:44,whiteSpace:'normal'}} onClick={()=>setFridgeRemovalCovered(true)}>{isFr?'Oui, cette étape est prévue':'Yes, this step is covered'}</button>
+            <button type="button" className="bh-apply-plan" style={{minHeight:44,whiteSpace:'normal'}} onClick={()=>setFridgeRemovalCovered(true)}>{isFr?'Oui, quelqu’un s’en charge':'Yes, someone will'}</button>
             {showResolutionChoice&&<p style={{margin:'12px 0 0',color:'var(--smoke)',fontSize:14}}>{isFr?'Ou choisissez un enfournement plus tard parmi ceux proposés plus haut.':'Or pick one of the later baking times above.'}</p>}
           </>}
         </div>:null;

@@ -49,14 +49,14 @@ test('fridge arrangement confirms and undoes one action while retaining the exac
   const html=renderToStaticMarkup(view.controls.notice);
   assert.match(html,/take dough out|sortie du réfrigérateur/i);
   assert.doesNotMatch(html,/bh-target-choices/,'The immediate cover action is available before the search resolves');
-  const confirm=control(view,locale==='fr'?'Oui, cette étape est prévue':'Yes, this step is covered');assert.ok(confirm,`${mode} ${locale}`);
+  const confirm=control(view,locale==='fr'?'Oui, quelqu’un s’en charge':'Yes, someone will');assert.ok(confirm,`${mode} ${locale}`);
   confirm.props.onClick();const [start,bake,blocks,options]=view.effects.at(-1);
   assert.equal(+start,+view.props.startTime);assert.equal(+bake,+view.props.eatTime);assert.equal(options.preservePlan,true);
   assert.equal(+blocks[0].from,+view.props.blocks[0].from);assert.equal(+blocks[0].to,+view.props.blocks[0].to);
   assert.ok(blocks[0].fridgeRemoval);
   const resumed=render({mode,locale,startTime:start,eatTime:bake,blocks});
   assert.equal(resumed.controls.anchors.find(a=>a.id==='mix').valid,true);
-  assert.equal(control(resumed,locale==='fr'?'Oui, cette étape est prévue':'Yes, this step is covered'),undefined);
+  assert.equal(control(resumed,locale==='fr'?'Oui, quelqu’un s’en charge':'Yes, someone will'),undefined);
   assert.doesNotMatch(renderToStaticMarkup(resumed.controls.notice),/bh-resolution-or|bh-target-choices/);
   const undo=control(resumed,locale==='fr'?'Annuler':'Undo');assert.ok(undo);undo.props.onClick();
   const [undoStart,undoBake,undoBlocks]=resumed.effects.at(-1);assert.equal(+undoStart,+start);assert.equal(+undoBake,+bake);
@@ -67,7 +67,7 @@ test('fridge arrangement confirms and undoes one action while retaining the exac
 test('preheating conflict is visible before confirmation and remains blocking afterward',()=>fixed(()=>{
  const view=render({blocks:work('18:30')});
  const html=renderToStaticMarkup(view.controls.notice);assert.match(html,/Other steps during your unavailable hours/);assert.match(html,/Preheat/);assert.doesNotMatch(html,/bh-resolution-or/);
- control(view,'Yes, this step is covered').props.onClick();
+ control(view,'Yes, someone will').props.onClick();
  const blocks=view.effects.at(-1)[2],resumed=render({blocks});
  assert.equal(resumed.controls.anchors.find(a=>a.id==='mix').valid,false);
  assert.match(renderToStaticMarkup(resumed.controls.notice),/Preheat/);
@@ -76,13 +76,13 @@ test('preheating conflict is visible before confirmation and remains blocking af
 test('no confirmation for a bulk fridge exit or a schedule without blocked final removal',()=>fixed(()=>{
  const blocks=[{from:date('2026-10-30T00:00Z'),to:date('2026-10-30T02:00Z'),label:'Away'}];
  for(const extra of [{blocks:[]},{blocks},{blocks:work(),styleKey:'piadina'}]){
-  const view=render(extra);assert.equal(control(view,'Yes, this step is covered'),undefined);
+  const view=render(extra);assert.equal(control(view,'Yes, someone will'),undefined);
  }
 }));
 test('levain uses the same confirmation and retains its known-peak plan',()=>fixed(()=>{
  for(const mode of ['simple','custom']){
   const args={mode,isSourdough:true,planningMode:'know_peak',knownPeakTime:date('2026-10-29T18:00Z'),lastFeedRatio:1,ratioMode:'keep',savedStarterEvents:[{kind:'known_peak',time:date('2026-10-29T18:00Z'),label:'Known peak',isDraggable:false}],blocks:work()};
-  const view=render(args);const confirm=mode==='simple'?{props:view.simple['data-simple-keep']}:control(view,'Yes, this step is covered');assert.ok(confirm?.props);confirm.props.onClick();
+  const view=render(args);const confirm=mode==='simple'?{props:view.simple['data-simple-keep']}:control(view,'Yes, someone will');assert.ok(confirm?.props);confirm.props.onClick();
   const [start,bake,blocks]=view.effects.at(-1);assert.equal(+start,+view.props.startTime);assert.equal(+bake,+view.props.eatTime);
   const resumed=render({...args,blocks});assert.ok(mode==='simple'?resumed.simple['data-simple-undo']:control(resumed,'Undo'));assert.equal(resumed.controls.anchors.find(a=>a.id==='mix').valid,true,renderToStaticMarkup(resumed.controls.notice));
  }

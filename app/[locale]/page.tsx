@@ -2804,6 +2804,13 @@ export default function Home() {
   },[planEdit]);
   useEffect(()=>{if(planEdit&&destination!=='recipe')setPlanEdit(null);},[planEdit,destination]);
   useEffect(()=>{if(planNote&&destination!=='recipe')setPlanNote(null);},[planNote,destination]);
+  // After an inline change the page stays on the row that moved, where its note is (14 Nov 2026 audit).
+  useEffect(()=>{
+    if(!planNote)return;
+    const id=window.setTimeout(()=>{const el=document.querySelector('[data-plan-note]');if(el)(el as HTMLElement).scrollIntoView({block:'center',behavior:'instant' as ScrollBehavior});},60);
+    return()=>window.clearTimeout(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[planNote]);
   useEffect(()=>{if(planChartOpen&&(destination!=='recipe'||planEdit))setPlanChartOpen(false);},[planChartOpen,destination,planEdit]);
   useEffect(()=>{
     if(!decisionSheet||sheetDecisionPending||!scheduleCandidateValid)return;
@@ -5482,13 +5489,21 @@ export default function Home() {
                       hint:(manualSugar ?? style?.sugar ?? 0)>0?sugarGuidance(manualSugar ?? style?.sugar ?? 0,ovenType ?? '',t).note:undefined}]),
                   ] : []),
                   {group:'process',label:fr?'Température de pâte après pétrissage (°C)':'Dough temperature after mixing (°C)',value:targetDoughTemp ?? defaultTemp,rec:defaultTemp,min:18,max:28,step:1,set:setTargetDoughTemp},
-                  ...(totalFlourTarget===undefined?[{group:'process',label:fr?'Marge de pâte supplémentaire (%)':'Extra dough allowance (%)',value:wastePct ?? 0,rec:0,min:0,max:5,step:0.5,set:setWastePct,hint:fr?'Compense la pâte restée dans le bol ; 1,5 % est courant.':'Covers dough left in the bowl; 1.5% is typical.'}]:[]),
+                  ...(totalFlourTarget===undefined?[{group:'process',label:fr?'Marge de pâte supplémentaire (%)':'Extra dough allowance (%)',value:wastePct ?? 0,rec:0,min:0,max:5,step:0.5,set:setWastePct,hint:fr?'Compense la pâte restée dans le bol, souvent 1 à 2 %.':'Covers dough left in the bowl, often 1–2%.'}]:[]),
                 ];
-                const renderField = (field:typeof fields[number])=><div key={field.label}><label style={{display:'block',fontSize:16,marginBottom:'hint' in field&&field.hint?6:18}}>{field.label}
-                    <input type="number" key={`${field.label}:${field.value}`} defaultValue={Math.round(field.value*100)/100} min={field.min} max={field.max} step={field.step} onBlur={e=>{const n=Number(e.target.value);const next=Math.min(field.max,Math.max(field.min,n));if(e.target.value!==''&&Number.isFinite(n)&&Math.abs(next-Math.round(field.value*100)/100)>1e-9)field.set(next);else e.target.value=String(field.value);}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}}} style={{display:'block',width:'100%',minHeight:44,fontSize:16,padding:12,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white'}}/>
+                const renderField = (field:typeof fields[number])=><div key={field.label}><label style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,fontSize:16,marginBottom:'hint' in field&&field.hint?6:14}}><span style={{minWidth:0}}>{field.label}</span>
+                    <input type="number" key={`${field.label}:${field.value}`} defaultValue={Math.round(field.value*100)/100} min={field.min} max={field.max} step={field.step} onBlur={e=>{const n=Number(e.target.value);const next=Math.min(field.max,Math.max(field.min,n));if(e.target.value!==''&&Number.isFinite(n)&&Math.abs(next-Math.round(field.value*100)/100)>1e-9)field.set(next);else e.target.value=String(field.value);}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}}} style={{flex:'0 0 96px',width:96,minHeight:44,fontSize:16,padding:'10px 12px',textAlign:'right',border:'1px solid var(--border)',borderRadius:9,background:'white'}}/>
                   </label>
                   {'hint' in field&&field.hint&&<p data-field-hint style={{margin:'0 0 16px',fontSize:14,lineHeight:1.45,color:'var(--smoke)'}}>{field.hint}</p>}
-                  {field.set===setManualHydration&&<div style={{marginBottom:16,fontSize:14}}>{manualHydration!==undefined&&Math.abs(manualHydration-recommendedHyd)>0.005&&<button type="button" onClick={()=>setManualHydration(undefined)} style={{minHeight:44}}>{fr?'Rétablir l’hydratation conseillée':'Reset suggested hydration'}</button>}<details><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Pourquoi cette valeur ?':'Why this value?'}</summary><p>{fr?'Base du style':'Style starting point'} : {style?.hydration}%</p><p>{fr?'Four':'Oven'} : {['pan','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey??'')?Math.round((ovenData?.hydrationDelta??0)/2):(ovenData?.hydrationDelta??0)}%</p><p>{fr?'Conditions de stockage et cuisine':'Storage and kitchen conditions'} : {kitchenTemp>=28||humidity==='very-humid'?-2:kitchenTemp<=18?2:0}%</p><p>{fr?'Farine':'Flour'} : {flourBlend?Math.max(-5,Math.min(8,computeBlendProfile(flourBlend).hydrationDelta)):0}%</p></details></div>}
+                  {field.set===setManualHydration&&<div style={{marginBottom:16,fontSize:14}}>{manualHydration!==undefined&&Math.abs(manualHydration-recommendedHyd)>0.005&&<button type="button" onClick={()=>setManualHydration(undefined)} style={{minHeight:44}}>{fr?'Rétablir l’hydratation conseillée':'Reset suggested hydration'}</button>}<details><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Pourquoi cette valeur ?':'Why this value?'}</summary>{(()=>{
+                    // One line, as a sum: "Style 62% · oven +3 · flour +2 = 67%" (14 Nov 2026 audit).
+                    const oven=['pan','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey??'')?Math.round((ovenData?.hydrationDelta??0)/2):(ovenData?.hydrationDelta??0);
+                    const kitchen=kitchenTemp>=28||humidity==='very-humid'?-2:kitchenTemp<=18?2:0;
+                    const flour=flourBlend?Math.max(-5,Math.min(8,computeBlendProfile(flourBlend).hydrationDelta)):0;
+                    const sign=(n:number)=>`${n>0?'+':'−'}${String(Math.abs(n)).replace('.',fr?',':'.')}`;
+                    const parts=[`${fr?'Style':'Style'} ${formatPercent(style?.hydration??0,locale)}`,...(oven?[`${fr?'four':'oven'} ${sign(oven)}`]:[]),...(kitchen?[`${fr?'cuisine':'kitchen'} ${sign(kitchen)}`]:[]),...(flour?[`${fr?'farine':'flour'} ${sign(flour)}`]:[])];
+                    return <p style={{margin:'4px 0 0'}}>{parts.join(' · ')} → {formatPercent(recommendedHyd,locale)}</p>;
+                  })()}</details></div>}
                   </div>;
                 return <>
 
@@ -5582,7 +5597,7 @@ export default function Home() {
                     <small style={{display:'block',fontSize:14,lineHeight:1.5,marginTop:8}}>{locale==='fr'?'Vérifiez que votre pétrin accepte la glace.':'Check that your mixer allows ice.'}</small>
                   </label>}
                   <details style={{margin:'12px 0'}}><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Températures mesurées · facultatif':'Measured temperatures · optional'}</summary>
-                    {[{label:fr?'Farine (°C)':'Flour (°C)',value:measuredFlourTemp,set:setMeasuredFlourTemp},...((prefermentType!=='none'||yeastType==='sourdough')?[{label:fr?'Préferment ou levain (°C)':'Preferment or starter (°C)',value:measuredPrefermentTemp,set:setMeasuredPrefermentTemp}]:[])].map(field=><label key={field.label} style={{display:'block',fontSize:16,margin:'12px 0'}}>{field.label}<input type="number" value={field.value??''} min={-5} max={45} step={0.5} placeholder={fr?'Estimation automatique':'Automatic estimate'} onChange={e=>field.set(e.target.value===''?undefined:Number(e.target.value))} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:10,border:'1px solid var(--border)',borderRadius:9}}/></label>)}
+                    {[{label:fr?'Farine (°C)':'Flour (°C)',value:measuredFlourTemp,set:setMeasuredFlourTemp},...((prefermentType!=='none'||yeastType==='sourdough')?[{label:yeastType==='sourdough'||prefermentType==='levain'?(fr?'Levain (°C)':'Starter (°C)'):prefermentType==='biga'?(fr?'Biga (°C)':'Biga (°C)'):(fr?'Poolish (°C)':'Poolish (°C)'),value:measuredPrefermentTemp,set:setMeasuredPrefermentTemp}]:[])].map(field=><label key={field.label} style={{display:'block',fontSize:16,margin:'12px 0'}}>{field.label}<input type="number" value={field.value??''} min={-5} max={45} step={0.5} placeholder={fr?'Estimation automatique':'Automatic estimate'} onChange={e=>field.set(e.target.value===''?undefined:Number(e.target.value))} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:10,border:'1px solid var(--border)',borderRadius:9}}/></label>)}
                   </details>
                   {/* Only a value that differs from its recommendation calls for a reset (a tap through a field changes nothing). */}
                   {(fields.some(field=>Math.abs(field.value-field.rec)>1e-6)||yeastPctOverride!=null||starterPctOverride!=null)&&<button type="button" data-reset-finetune style={{minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:9}} onClick={()=>{setManualHydration(undefined);if(yeastPctOverride!==undefined){setYeastPctOverride(undefined);setPlanReplanPending(true);}if(starterPctOverride!==undefined){setStarterPctOverride(undefined);setPlanReplanPending(true);}setManualSalt(undefined);setManualOil(undefined);setManualSugar(undefined);setTargetDoughTemp(undefined);setWastePct(undefined);}}>{fr?'Rétablir les valeurs conseillées':'Reset recommended values'}</button>}

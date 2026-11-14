@@ -124,10 +124,10 @@
       "title": "Quelle levure utilisez-vous ?"
     },
     "8pizza": {
-      "title": "Votre planning"
+      "title": "Votre plan"
     },
     "8bread": {
-      "title": "Votre planning"
+      "title": "Votre plan"
     },
     "flour": {
       "title": "Quelle farine utilisez-vous ?"
@@ -207,8 +207,8 @@
       "nightHours": "· 23h → 7h",
       "cancel": "✕ Annuler",
       "addCustom": "＋ Personnalisé",
-      "customTitle": "Indisponibilité personnalisée",
-      "customLabelPlaceholder": "Libellé — ex. Week-end en déplacement",
+      "customTitle": "Ajouter un moment occupé",
+      "customLabelPlaceholder": "Nom (facultatif), ex. Week-end",
       "from": "De",
       "to": "À",
       "addBlock": "Ajouter",
@@ -390,11 +390,11 @@
       "bulkFerm": "Pointage",
       "coldBulk": "Pousse au froid — pâton",
       "divideBall": "Division et Boulage",
-      "coldBalls": "Boules au réfrigérateur",
+      "coldBalls": "Pâtons au réfrigérateur",
       "restRT": "Sortir du froid — détente",
       "rtWarmup": "Détente à température ambiante",
       "finalProof": "Apprêt",
-      "preheat": "Préchauffage du four",
+      "preheat": "Préchauffer le four",
       "eat": "Cuisson & Dégustation !",
       "divideShape": "Division & Façonnage",
       "coldShaped": "Pousse au froid — façonné",
@@ -688,9 +688,9 @@
       "divideShape": "Division et façonnage",
       "divideBall": "Division et boulage",
       "coldProof": "Apprêt froid",
-      "coldRetardBalls": "Boules au réfrigérateur",
+      "coldRetardBalls": "Pâtons au réfrigérateur",
       "finalProof": "Apprêt",
-      "preheatOven": "Préchauffage du four",
+      "preheatOven": "Préchauffer le four",
       "bakeEat": "Cuisson & dégustation"
     },
     "sectionTitles": {
@@ -850,16 +850,16 @@
       "stepsBase": [
         {
           "bold": "Transférez dans un récipient légèrement huilé avec couvercle",
-          "note": "récipient transparent pour surveiller la pousse"
+          "note": "un récipient transparent montre la pousse"
         },
         {
           "bold": "Marquez le niveau avec un élastique",
-          "note": "suivi de la cible 50-75 % de pousse"
+          "note": "la pâte est prête quand elle a pris la moitié à trois quarts de volume"
         }
       ],
       "set1": {
         "bold": "Série 1 — après 30 min : rabat",
-        "note": "main mouillée, saisissez un côté, étirez vers le haut puis repliez au centre. Répétez 4 côtés"
+        "note": "main mouillée, saisissez un côté, étirez vers le haut puis repliez au centre. Répétez sur les 4 côtés."
       },
       "set2": {
         "bold": "Série 2 — après 1 h : rabat",

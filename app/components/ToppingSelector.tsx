@@ -156,18 +156,19 @@ const INGREDIENT_CHIPS: {
 const STYLE_NAMES: Record<string, string> = {
   neapolitan:   'Neapolitan',
   sourdough:    'Sourdough',
-  pizza_romana: 'Pizza Romana',
-  roman:        'Roman Teglia',
+  // The names setup uses (14 Nov 2026 audit), short enough for a chip.
+  pizza_romana: 'Thin Roman',
+  roman:        'Roman tray',
   newyork:      'New York',
-  pan:          'Pan / Detroit',
+  pan:          'Pan pizza',
 };
 const STYLE_NAMES_FR: Record<string, string> = {
   neapolitan:   'Napolitaine',
   sourdough:    'Au levain',
-  pizza_romana: 'Romaine',
-  roman:        'Teglia romaine',
-  newyork:      'New York',
-  pan:          'Pan / Detroit',
+  pizza_romana: 'Romaine fine',
+  roman:        'Romaine sur plaque',
+  newyork:      'New-yorkaise',
+  pan:          'En moule',
 };
 
 // ─── Types ───────────────────────────────────────────────────
@@ -1898,15 +1899,15 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px 12px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
                   <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'var(--font-ui)' }}>
                     {filterSheetKey === 'occasion'   ? (l === 'fr' ? 'Occasion' : 'Occasion')
-                    : filterSheetKey === 'diet'       ? (l === 'fr' ? 'Régime alimentaire' : 'Diet')
+                    : filterSheetKey === 'diet'       ? (l === 'fr' ? 'Préférences' : 'Dietary')
                     : filterSheetKey === 'base'       ? 'Base'
                     : filterSheetKey === 'complexity' ? (l === 'fr' ? 'Complexité' : 'Complexity')
-                    : filterSheetKey === 'ingredient' ? (l === 'fr' ? 'Par ingrédient' : 'By Ingredient')
+                    : filterSheetKey === 'ingredient' ? (l === 'fr' ? 'Ingrédients' : 'Ingredients')
                     : (l === 'fr' ? 'Plus de filtres' : 'More filters')}
                   </span>
                   <button
-                    onClick={closeFilterSheet}
-                    style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: 'var(--smoke)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'content-box', padding: '6px', margin: '-6px' }}
+                    onClick={closeFilterSheet} aria-label={l === 'fr' ? 'Fermer' : 'Close'}
+                    style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: 'var(--smoke)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'content-box', padding: '6px', margin: '-6px' }}
                   >✕</button>
                 </div>
                 <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
@@ -2039,9 +2040,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   {filterSheetKey === 'more' && (
                     <>
           <fieldset className="bh-course-choice"><legend className="bh-visually-hidden">{l==='fr'?'Salée ou dessert':'Savoury or dessert'}</legend>{(['savoury','sweet'] as const).map(course=><label key={course} data-selected={pizzaCourse===course}><input type="radio" name="pizza-course" checked={pizzaCourse===course} onChange={()=>setPizzaCourse(course)}/>{course==='sweet'?(l==='fr'?'Dessert':'Dessert'):(l==='fr'?'Salée':'Savoury')}</label>)}</fieldset>
-                      <FilterSection title={l === 'fr' ? 'Préférences alimentaires' : 'Dietary preferences'} open={open.diet} onToggle={() => togOpen('diet')}>
-                        {(['veg','vegan','no_pork','no_fish','no_nuts','dairy_free'] as DietaryTag[]).map(value => <button key={value} type="button" style={S.pill(filter.dietary.includes(value), 'terra')} onClick={() => toggleDietary(value)}>{({veg: l==='fr'?'Végétarien':'Vegetarian',vegan:l==='fr'?'Végétalien':'Vegan',no_pork:l==='fr'?'Sans porc':'No pork',no_fish:l==='fr'?'Sans poisson':'No fish',no_nuts:l==='fr'?'Sans fruits à coque':'No nuts',dairy_free:l==='fr'?'Sans produits laitiers':'Dairy free'} as Record<string,string>)[value]}</button>)}
-                      </FilterSection>
+                      {/* Dietary has its own chip; More does not repeat it (14 Nov 2026 audit). */}
 
                       <FilterSection
                         title={l === 'fr' ? 'Complexité' : 'Complexity'}
@@ -2218,7 +2217,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
                 {filterSheetKey === 'more' && (
                   <div style={{ padding: '12px 16px', borderTop: '1px solid #F0EAE3', display: 'flex', gap: '8px', flexShrink: 0 }}>
-                    <button
+                    {hasActiveFilters && <button
                       onClick={() => { clearAll(); }}
                       style={{
                         flex: 1, padding: '12px', border: '1px solid #E0D8CF',
@@ -2228,7 +2227,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       }}
                     >
                       {l === 'fr' ? 'Réinitialiser' : 'Reset'}
-                    </button>
+                    </button>}
                     <button
                       onClick={() => setFilterSheetKey(null)}
                       style={{

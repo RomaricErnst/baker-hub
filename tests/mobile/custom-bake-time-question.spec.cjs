@@ -42,7 +42,7 @@ test('Customize from the bake time: the clash is asked once, in a sheet, when th
  await testInfo.attach('custom-fine-tune-end',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
  await expect(page.getByText('I can cover this step').filter({visible:true})).toHaveCount(0);
  await expect(page.getByText(/steps? falls? during your unavailable hours/).filter({visible:true})).toHaveCount(0);
- await expect(page.getByRole('button',{name:'Yes, this step is covered'}).filter({visible:true})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Yes, someone will'}).filter({visible:true})).toHaveCount(0);
  await expect(page.locator('[data-simple-decision]:visible')).toHaveCount(0);
  // Create my recipe asks the one question, in a sheet; answering it creates the recipe.
  await finish.tap();

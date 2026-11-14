@@ -185,7 +185,7 @@
     "setByPlan": "Set by plan above",
     "startBeforeBake": "Start time must be before bake time.",
     "totalWindow": "{hours} total window",
-    "startMovedNote": "Start moved to {time} to avoid your unavailability block.",
+    "startMovedNote": "Start moved to {time} to avoid a busy time.",
     "scenario": {
       "plentyPreferred": "Aim to start between {start} and {end}.",
       "plentyPreferredSub": "Starting later shortens the cold rest.",
@@ -207,11 +207,11 @@
       "nightHours": "· 11pm → 7am",
       "cancel": "✕ Cancel",
       "addCustom": "＋ Custom",
-      "customTitle": "Custom unavailability block",
-      "customLabelPlaceholder": "Label — e.g. Weekend away",
+      "customTitle": "Add a busy time",
+      "customLabelPlaceholder": "Name (optional), e.g. Weekend away",
       "from": "From",
       "to": "To",
-      "addBlock": "Add block",
+      "addBlock": "Add",
       "nights": "Nights",
       "nightHoursLabel": "· 11pm → 7am"
     },
@@ -850,11 +850,11 @@
       "stepsBase": [
         {
           "bold": "Transfer dough to a lightly oiled container with a lid",
-          "note": "clear container lets you monitor rise"
+          "note": "a clear tub shows the rise"
         },
         {
           "bold": "Mark the level with a rubber band",
-          "note": "tracks 50-75% rise target"
+          "note": "the dough is ready when it has grown by half to three quarters"
         }
       ],
       "set1": {

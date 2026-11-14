@@ -126,7 +126,7 @@ test.describe('verified availability repair',()=>{
   await page.getByPlaceholder('Label — e.g. Weekend away').fill('Work');
   await page.locator('input[type="datetime-local"]:visible').nth(0).fill('2026-09-28T09:00');
   await page.locator('input[type="datetime-local"]:visible').nth(1).fill('2026-09-28T18:00');
-  await page.getByRole('button',{name:'Add block',exact:true}).tap();
+  await page.getByRole('button',{name:'Add',exact:true}).tap();
   const accept=card.getByRole('button',{name:/^Bake at /});
   await expect(accept).toBeVisible();
   await expect(card.getByText(/Proposal checked against your unavailable times/)).toBeVisible();
