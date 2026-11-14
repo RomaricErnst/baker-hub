@@ -50,7 +50,7 @@ export function FlourProductButton({entry,onChoose,selected=false,onChange,chang
  </dialog></>;
 }
 export default function FlourCatalogueBrowser({onChoose,recommendedIds,onGeneric,onScan,styleKey,blendMode=false}:{blendMode?:boolean;onChoose:(f:FlourEntry)=>void;recommendedIds:string[];onGeneric:()=>void;onScan:()=>void;styleKey?:string}){
- const fr=useLocale()==='fr',[query,setQuery]=useState(''),[brand,setBrand]=useState(''),[type,setType]=useState(''),[country,setCountry]=useState(''),[limit,setLimit]=useState(()=>Math.min(4,recommendedIds.filter(id=>FLOUR_DB.some(f=>f.id===id&&f.brand!=='Generic'&&f.bagImage)).length)||4);
+ const fr=useLocale()==='fr',[query,setQuery]=useState(''),[brand,setBrand]=useState(''),[type,setType]=useState(''),[country,setCountry]=useState('');const firstLimit=Math.min(4,recommendedIds.filter(id=>FLOUR_DB.some(f=>f.id===id&&f.brand!=='Generic'&&f.bagImage)).length)||4;const [limit,setLimit]=useState(firstLimit);
  const catalog=FLOUR_DB.filter(f=>f.brand!=='Generic'&&!!f.bagImage),active=!!(query||brand||type||country);
  const ordered=orderFlourCatalogue(catalog,recommendedIds);
  const filtered=ordered.filter(f=>matchesFlour(f,query)&&(!brand||brandOption(f.brand)===brand)&&(!type||flourTypeOption(f.type)===type)&&(!country||f.country===country));
@@ -64,7 +64,7 @@ export default function FlourCatalogueBrowser({onChoose,recommendedIds,onGeneric
  <div style={{display:'flex',flexWrap:'wrap',gap:10,margin:'12px 0'}}><button type="button" onClick={()=>{setType('rye');setQuery('');setBrand('');setCountry('');setLimit(15);}} aria-pressed={type==='rye'} style={{minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:9,fontSize:14}}>{fr?'Seigle':'Rye'}</button></div>
  </>;
  return <div>
- <label style={{display:'block',marginBottom:12}}>{blendMode?(fr?'Rechercher une farine':'Search flours'):(fr?'Rechercher une marque, un produit ou un type':'Search a brand, product or flour type')}<input type="search" value={query} onChange={e=>{setQuery(e.target.value);setLimit(15);}} onKeyDown={e=>{if(e.key==='Enter')e.currentTarget.blur();}} placeholder={fr?'Ex. Caputo, T65, complète':'e.g. Caputo, T65, wholemeal'} style={{...field,marginTop:6}}/></label>
+ <label style={{display:'block',marginBottom:12}}>{blendMode?(fr?'Rechercher une farine':'Search flours'):(fr?'Rechercher une marque, un produit ou un type':'Search a brand, product or flour type')}<input type="search" value={query} onChange={e=>{setQuery(e.target.value);setLimit(e.target.value?15:firstLimit);}} onKeyDown={e=>{if(e.key==='Enter')e.currentTarget.blur();}} placeholder={fr?'Ex. Caputo, T65, complète':'e.g. Caputo, T65, wholemeal'} style={{...field,marginTop:6}}/></label>
  <details style={{marginBottom:12}}>
  <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',color:'var(--terra)',overflowWrap:'anywhere'}}>{fr?'Filtres':'Filters'}{[brand,type?flourTypeLabel(type,fr):'',country?new Intl.DisplayNames([fr?'fr':'en'],{type:'region'}).of(country.toUpperCase()):''].filter(Boolean).map(value=>` · ${value}`).join('')}</summary>
  {controls}

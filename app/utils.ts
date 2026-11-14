@@ -2278,6 +2278,12 @@ export function mixerHydrationWarning(
 // 6. TIME UTILITIES
 // ══════════════════════════════════════════
 
+// A planned step's time, on the plan's 15-minute grid (see roundToQuarter in utils/units).
+export function formatPlanTime(d: Date, locale?: string): string {
+  if (!(d instanceof Date) || isNaN(d.getTime())) return '—';
+  return formatTime(new Date(Math.round(+d / 900000) * 900000), locale);
+}
+
 export function formatTime(d: Date, locale?: string): string {
   if (!(d instanceof Date) || isNaN(d.getTime())) return '—';
   const fr = locale === 'fr';

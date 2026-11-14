@@ -6,7 +6,7 @@ import { loadProfile, updateProfile, DEFAULT_BLOCKERS, type StandardBlocker } fr
 import { formatClock, formatBakeDateTime } from '../utils/units';
 import { useState, useMemo, useEffect, useRef, useId, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationHoursForYeast, sourdoughBulkH, bakeFromFridgeOption, BAKE_FROM_FRIDGE_STYLES } from '../utils';
+import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationHoursForYeast, fermentationBudget, sourdoughBulkH, bakeFromFridgeOption, BAKE_FROM_FRIDGE_STYLES } from '../utils';
 import { formatDuration } from '../utils/duration';
 import { earliestQuarterStart, quarterStartNoEarlier } from '../utils/startNotice';
 import FermentChart, { scheduleColdIntervals, getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
@@ -7116,6 +7116,10 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
       const input=commercialCandidateInput(candidateBlocks);
       const start=new Date(+bake-_optimalMix*3600000);
       const result=findFixedBakeSchedule({...input,start,at:start,bake,prefHours:hasPrefActive?getPrefOptH(prefermentType,kitchenTemp,prefGoesInFridge,styleKey,fridgeTemp):0},pins);
+      // A suggestion the dough cannot meet is no suggestion: even the most yeast the engine allows
+      // would leave it behind (14 Nov 2026 audit: a suggested pita bake was "78% risen").
+      const sched=result.found?result.candidate.schedule:undefined;
+      if(result.found&&!hasPrefActive&&sched&&fermentationBudget(1.5,(sched.bulkFermHours??0)+(sched.finalProofHours??0),kitchenTemp,sched.coldRetardHours??0,fridgeTemp)<0.9)continue;
       if(result.found)found.push({...result.candidate.times,blocks:chronologicalBlocks(candidateBlocks),clearedAction:firstReadinessConflict && result.candidate.schedule?.availabilityActions?.find(a=>a.id===firstReadinessConflict.action.id)});
       if(found.length===3)break;
     }
@@ -7973,7 +7977,8 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
 
       {/* Quick presets — all toggles on one row */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px', width: '100%', overflow: 'visible', paddingLeft: 0 }}>
-        {(
+        {/* No weekday in the plan (a weekend bake): the chip would do nothing. */}
+        {(isWorkActive||workdays.length>0)&&(
           <button
             aria-pressed={isWorkActive}
             onClick={toggleWork}
@@ -8848,7 +8853,7 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
               {coldHours>0 && <p>{isFr
                 ? `La pâte passe ${duration(coldHours)} au réfrigérateur pour ralentir sa fermentation et conserver l’heure de cuisson choisie.`
                 : `The dough spends ${duration(coldHours)} in the fridge to slow fermentation and meet your bake time.`}</p>}
-              <FermentChart eatTime={times.bake} prefermentType={isSourdough?'sourdough':prefermentType}
+              <FermentChart chartOnly={!!planChart} eatTime={times.bake} prefermentType={isSourdough?'sourdough':prefermentType}
                 kitchenTemp={kitchenTemp} fridgeTemp={fridgeTemp} styleKey={styleKey}
                 mixOffsetH={(+times.bake-+times.start)/hour} prefOffsetH={times.prefHours}
                 blocks={repairBlocks} windowH={windowH} prefInFridge={draftInFridge} hasColdRetard={coldHours>0}
@@ -8867,8 +8872,8 @@ function FermentedSchedulePicker({ afterBakeInput, onUseCalculatedYeast, entered
                 onRefreshChange={h=>chartChange('starter:refresh',+times.bake-h*hour)} />
             </div>}
             </div>
-          {interventionRows.length>0&&<div data-hands-on style={{marginTop:12}}><strong style={{display:'block',fontSize:15,marginBottom:4}}>{isFr?'Interventions':'Hands-on steps'}</strong><ol style={{listStyle:'none',padding:0,margin:0}}>{interventionRows.map(row=><li key={row.id} style={{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:'4px 12px',padding:'8px 0',borderBottom:'1px solid var(--border)'}}><span>{row.name}</span><time dateTime={new Date(row.at).toISOString()} style={{fontWeight:600}}>{fmtCardDT(new Date(row.at),isFr)}{row.endAt&&row.endAt>row.at?`–${fmtCardHM(new Date(row.endAt),isFr)}`:null}</time></li>)}</ol></div>}
-          <p className="bh-key-detail" style={{marginTop:12,fontSize:14,color:'var(--ash)'}}>{isFr?'Nous partons de votre heure de cuisson et plaçons chaque étape hors de vos indisponibilités.':'We work back from your bake time and keep every step out of your busy times.'}</p>
+          {!planChart&&interventionRows.length>0&&<div data-hands-on style={{marginTop:12}}><strong style={{display:'block',fontSize:15,marginBottom:4}}>{isFr?'Interventions':'Hands-on steps'}</strong><ol style={{listStyle:'none',padding:0,margin:0}}>{interventionRows.map(row=><li key={row.id} style={{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:'4px 12px',padding:'8px 0',borderBottom:'1px solid var(--border)'}}><span>{row.name}</span><time dateTime={new Date(row.at).toISOString()} style={{fontWeight:600}}>{fmtCardDT(new Date(row.at),isFr)}{row.endAt&&row.endAt>row.at?`–${fmtCardHM(new Date(row.endAt),isFr)}`:null}</time></li>)}</ol></div>}
+          {/* No claim that every step avoids busy times: the baker may keep one (14 Nov 2026 audit). */}
           </details> : <>
           {interventionRows.length>0&&<details className="bh-key-detail" style={{marginTop:12}}><summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer'}}>{isFr?'Voir toutes les interventions':'See all hands-on steps'}</summary><ol style={{listStyle:'none',padding:0,margin:0}}>{interventionRows.map(row=><li key={row.id} style={{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:'4px 12px',padding:'8px 0',borderBottom:'1px solid var(--border)'}}><span>{row.name}</span><time dateTime={new Date(row.at).toISOString()} style={{fontWeight:600}}>{fmtCardDT(new Date(row.at),isFr)}{row.endAt&&row.endAt>row.at?`–${fmtCardHM(new Date(row.endAt),isFr)}`:null}</time></li>)}</ol></details>}
           <details className="bh-key-detail" style={{marginTop:12}}><summary style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{isFr?'Comment fonctionne votre planning':'How your plan works'}</summary><p>{isFr?'Nous partons de votre heure de cuisson pour prévoir le temps de levée et organiser la préparation selon vos disponibilités. Si une étape tombe pendant une période où vous êtes indisponible, nous vous aidons à ajuster le planning.':'We work backwards from your baking time, allowing time for the dough to rise and fitting preparation around your availability. If a step clashes, we help you adjust the plan.'}</p></details>

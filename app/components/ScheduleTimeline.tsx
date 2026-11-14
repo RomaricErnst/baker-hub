@@ -1,5 +1,5 @@
 'use client';
-import {formatClock,formatLongDay} from '../utils/units';
+import {formatPlanClock,formatLongDay} from '../utils/units';
 import type {ReactNode} from 'react';
 import type {AvailabilityBlock} from '../utils';
 import type {PlanRow} from './SchedulePicker';
@@ -19,7 +19,7 @@ export default function ScheduleTimeline({rows,blocks,isFr,editingEnabled,editin
   rows:PlanRow[]; blocks:AvailabilityBlock[]; isFr:boolean; editingEnabled:boolean; editingId:string|null;
   onEdit:(id:string)=>void; editor:ReactNode; onToggleEditing:()=>void;
 }) {
-  const fmt=(at:number)=>formatClock(new Date(at),isFr?'fr':'en');
+  const fmt=(at:number)=>formatPlanClock(new Date(at),isFr?'fr':'en');
   const first=rows[0]?.at??0,last=rows.at(-1)?.at??0;
   const items=[...rows.map(row=>({at:row.at,row})),...blocks.filter(b=>+b.to>first&&+b.from<last).map((block,i)=>({at:Math.max(first,+block.from),block,key:`busy-${i}`}))].sort((a,b)=>a.at-b.at);
   const button={minHeight:44,padding:'8px 12px',fontSize:16,border:'1px solid var(--border)',borderRadius:10,background:'var(--paper)',color:'var(--char)',cursor:'pointer'};

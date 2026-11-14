@@ -449,9 +449,9 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
             </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, marginLeft: 'auto' }} onClick={e => e.stopPropagation()}>
-              <button aria-label={`− ${name}`} style={{ ...S.qtyBtn, visibility: qty > 0 ? 'visible' : 'hidden' }} onClick={e => onQtyChange(-1, e)}>−</button>
+              <button type="button" aria-label={`− ${name}`} aria-hidden={qty > 0 ? undefined : true} tabIndex={qty > 0 ? undefined : -1} style={{ ...S.qtyBtn, visibility: qty > 0 ? 'visible' : 'hidden' }} onClick={e => onQtyChange(-1, e)}>−</button>
               <span style={{ fontSize: '12px', fontWeight: 600, color: '#6B4423', minWidth: '14px', textAlign: 'center', visibility: qty > 0 ? 'visible' : 'hidden' }}>{qty}</span>
-              <button aria-label={`+ ${name}`} style={S.qtyBtn} onClick={e => onQtyChange(1, e)}>+</button>
+              <button type="button" aria-label={`+ ${name}`} style={S.qtyBtn} onClick={e => onQtyChange(1, e)}>+</button>
             </div>
           </div>
         </div>
@@ -2493,7 +2493,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               </span>
               <button onClick={closeSummary}
                 aria-label={l === 'fr' ? 'Fermer' : 'Close'}
-                style={{ minWidth: '88px', height: '44px', padding: '8px 12px', margin: '-8px', backgroundClip: 'border-box', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: 'var(--smoke)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
+                style={{ width: '44px', height: '44px', padding: 0, margin: '-4px', backgroundClip: 'border-box', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: 'var(--smoke)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
             </div>
             <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
 
@@ -2566,7 +2566,6 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             <div style={{padding:'12px 16px',display:'grid',gap:8,borderTop:'1px solid var(--border)'}}>
               <button type="button" onClick={()=>{closeSummary();if(directSelectionReturn&&onSelectionDone)onSelectionDone();else if(baseReady)onPillChange('party');else if(onSelectionDone)onSelectionDone();else onPillChange('shopping');}} style={NEXT_CTA}>{directSelectionReturn?selectionDoneLabel:baseReady?(l==='fr'?'Préparer les garnitures':'Prepare toppings'):selectionDoneLabel??(l==='fr'?'Voir les courses':'View shopping')}</button>
               {(baseReady||!doughConfigured)&&!selectionBackLabel&&<button type="button" onClick={()=>{closeSummary();onPillChange(baseReady?'shopping':'party');}} style={SECONDARY_CTA}>{baseReady?(l==='fr'?'Voir les courses':'View shopping'):(l==='fr'?'Préparer les garnitures':'Prepare toppings')}</button>}
-              <button type="button" onClick={closeSummary} className="bh-back-action">{l==='fr'?'← Modifier ma sélection':'← Edit my selection'}</button>
             </div>
           </div>
         </>

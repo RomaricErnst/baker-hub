@@ -1,7 +1,7 @@
 'use client';
 import { splitStepWhy, splitLineWhy } from '../utils/stepWhy';
 import { flourProductName } from '../lib/flourGuidance';
-import { formatDuration } from '../utils/duration';
+import { formatDuration, formatPlanDuration } from '../utils/duration';
 import { starterBuild, starterFeedLabelFor } from '../utils/starterBuild';
 import BottomActions from './BottomActions';
 import JourneyCompletion, { type CompletionActions } from './JourneyCompletion';
@@ -12,7 +12,7 @@ import { Fragment, useState, useRef, useEffect, useLayoutEffect, createContext, 
 import { useTranslations, useLocale } from 'next-intl';
 import { poolishCoolingAt } from '../utils/poolishCoolingAt';
 import { foldActionLabel } from '../utils/scheduleAvailability';
-import { type ScheduleResult, formatTime, finalProofWindow } from '../utils';
+import { type ScheduleResult, formatPlanTime, finalProofWindow } from '../utils';
 import { MIXER_TYPES, isLevainStyle, AUTOLYSE_MIN, autolyseMinFor, preMixAutolyseMinFor, type MixerType } from '../data';
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
@@ -20,7 +20,7 @@ import { toggleStepCompletion } from '../utils/guideProgress';
 import { mixingBatchPlan, largeManualDough } from '../utils/mixingBatches';
 import PhaseSummary from './PhaseSummary';
 import WaterPreparation, { waterSplit, waterGuideLine, type WaterSource, type WaterSettingsProps } from './WaterPreparation';
-import { type UnitSystem, displayTemp, displayWeight, formatClock, tempC, tempRange } from '../utils/units';
+import { type UnitSystem, displayTemp, displayWeight, formatPlanClock, tempC, tempRange } from '../utils/units';
 import { getPrefPeakH_RT, getStarterFridgeWarmupH } from './FermentChart';
 import { GUIDE_FAQ } from '../lib/guideFaq';
 import { WOOD_OVEN_FAQ } from '../lib/woodOvenFaq';
@@ -312,7 +312,7 @@ function StepCard({
           {!overview && !externalProgress && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {displayNumber}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
           {time && <span style={{ display: 'block', marginTop: 4, fontSize: 14, color: D.smoke }}>
             {/* Inside a step its own time is the one to read at a glance. */}
-            <strong style={overview ? { fontWeight: 400 } : { fontSize: 16, fontWeight: 700, color: 'var(--char)' }}>{formatTime(time, locale)}</strong>{duration ? ` · ${overview ? (passive ? (fr ? 'repos ' : 'rest ') : (fr ? 'durée ' : 'duration ')) : ''}${duration < 1 ? `${Math.round(duration * 60)} min` : formatDuration(Math.round(duration * 12) / 12, fr ? 'fr' : 'en')}` : ''}
+            <strong style={overview ? { fontWeight: 400 } : { fontSize: 16, fontWeight: 700, color: 'var(--char)' }}>{formatPlanTime(time, locale)}</strong>{duration ? ` · ${overview ? (passive ? (fr ? 'repos ' : 'rest ') : (fr ? 'durée ' : 'duration ')) : ''}${formatPlanDuration(duration, fr ? 'fr' : 'en')}` : ''}
           </span>}
           {overview && overviewNote && <span style={{display:'block',fontSize:14,lineHeight:1.5,color:D.terra,marginTop:4}}>{overviewNote}</span>}
           {done && <span style={{ fontSize: 14, color: D.sage }}>{fr ? 'Terminé' : 'Completed'}</span>}
@@ -1184,7 +1184,7 @@ Actual dough condition and equipment may differ from these estimates.`;
   const mixFinishAction = schedule.availabilityActions?.find(action => action.id === 'mix-finish' + batchSuffix);
   const mixRestMin = autolyseMinFor(mixerType, styleKey);
   const mixFirstMin = mixAction?.end ? Math.round((+mixAction.end - +mixAction.at) / 60000) : 0;
-  const clockFor = (date: Date, sameDayAs: Date) => date.toDateString() === sameDayAs.toDateString() ? formatClock(date, _fmtLocale) : formatTime(date, _fmtLocale);
+  const clockFor = (date: Date, sameDayAs: Date) => date.toDateString() === sameDayAs.toDateString() ? formatPlanClock(date, _fmtLocale) : formatPlanTime(date, _fmtLocale);
   const reserveWater = hydration > 70 && mixerType !== 'no_knead' && styleKey !== 'pain_seigle';
   const directIceMix = waterMethod === 'direct' && mixerType === 'spiral' && recipe?.oil === 0 && recipe?.sugar === 0 && !['brioche','pain_mie','pain_viennois'].includes(styleKey);
   // Liquid water actually poured: with ice in the mixer, the ice is not part of it.
@@ -1217,7 +1217,7 @@ Actual dough condition and equipment may differ from these estimates.`;
     ? (l === 'fr' ? `Après environ une heure, enfoncez un doigt fariné dans ${isBread ? 'la pâte' : 'un pâton'} toutes les 15–20 min — c’est prêt quand le creux remonte lentement.` : `After about an hour, press a floured fingertip into ${isBread ? 'the dough' : 'one ball'} every 15–20 min — it’s ready when the dent fills back slowly.`)
     : (l === 'fr' ? `Enfoncez un doigt fariné dans ${isBread ? 'la pâte' : 'un pâton'} toutes les 15–20 min — c’est prêt quand le creux remonte lentement.` : `Press a floured fingertip into ${isBread ? 'the dough' : 'one ball'} every 15–20 min — it’s ready when the dent fills back slowly.`), note: ''};
   const finalRisePreheat = {bold: schedule?.preheatStart
-    ? (l === 'fr' ? `${formatClock(schedule.preheatStart,_fmtLocale)} — préchauffez le four` : `${formatClock(schedule.preheatStart,_fmtLocale)} — preheat the oven`)
+    ? (l === 'fr' ? `${formatPlanClock(schedule.preheatStart,_fmtLocale)} — préchauffez le four` : `${formatPlanClock(schedule.preheatStart,_fmtLocale)} — preheat the oven`)
     : (l === 'fr' ? 'Préchauffez le four pendant l’apprêt' : 'Preheat the oven during the final rise'),
     note: l === 'fr' ? 'étape suivante : Cuisson & service' : 'next: Baking & serving'};
   const firstWater = liquidWater != null ? Math.round(liquidWater * 0.9) : null;
@@ -1382,7 +1382,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         <div style={{ fontSize: '12px', color: D.smoke, fontFamily: 'var(--font-ui)', marginTop: '.2rem' }}>
           {(() => {
             const rangeStart = hasPref && prefStartTime && prefStartTime < bgMixStart ? prefStartTime : bgMixStart;
-            return <>{formatTime(rangeStart, _fmtLocale)} → {formatTime(schedule.bakeStart, _fmtLocale)} · {formatDuration((schedule.bakeStart.getTime() - rangeStart.getTime()) / 3600000,l)} {_isFr ? 'au total' : 'total'}</>;
+            return <>{formatPlanTime(rangeStart, _fmtLocale)} → {formatPlanTime(schedule.bakeStart, _fmtLocale)} · {formatDuration((schedule.bakeStart.getTime() - rangeStart.getTime()) / 3600000,l)} {_isFr ? 'au total' : 'total'}</>;
           })()}
         </div>
       </div>
@@ -1432,8 +1432,8 @@ Actual dough condition and equipment may differ from these estimates.`;
               {bold:(()=>{const pf=recipe?.preferment;if(!pf)return l === 'fr' ? 'Pesez la farine et l’eau.' : 'Weigh the flour and water.';const dose=formatPrefermentDose(pf.prefYeastGrams,l);const yeast=rootT(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`);return needsScaleHelp(pf.prefYeastGrams)?(l==='fr'?`Pesez la farine et l’eau. ${dose} de ${yeast.toLowerCase()} : utilisez la dilution de la recette.`:`Weigh flour and water. ${dose} ${yeast.toLowerCase()}: use the dilution in the Recipe.`):(l==='fr'?`Pesez la farine, l’eau et ${dose} de ${yeast.toLowerCase()}.`:`Weigh the flour, water and ${dose} ${yeast.toLowerCase()}.`);})(),note:''},
               {bold:isPoolish ? (l === 'fr' ? 'Mélangez jusqu’à disparition de la farine sèche.' : 'Stir until no dry flour remains.') : (l === 'fr' ? 'Mélangez pour humidifier toute la farine ; gardez une texture grumeleuse.' : 'Mix to moisten all the flour; keep a rough, lumpy texture.'),note:''},
               {bold:l === 'fr' ? 'Couvrez le récipient et laissez de la place pour la levée.' : 'Cover the container and leave room for expansion.',note:''},
-              {bold:recipe?.preferment?.cold ? (l === 'fr' ? `Placez au réfrigérateur jusqu’à ${formatTime(bgMixStart, _fmtLocale)}.` : `Refrigerate until ${formatTime(bgMixStart, _fmtLocale)}.`) : chillPoolishAt ? (l==='fr'?`Laissez mûrir à température ambiante jusqu’à ${formatTime(chillPoolishAt,l)}, puis placez le poolish au réfrigérateur.`:`Let the poolish ripen at room temperature until ${formatTime(chillPoolishAt,l)}, then refrigerate it.`) : (l === 'fr' ? 'Laissez à température ambiante selon ce planning.' : 'Leave at room temperature according to this plan.'),
-                note:recipe?.preferment?.cold ? '' : (l === 'fr' ? `Pétrissage prévu : ${formatTime(bgMixStart, _fmtLocale)}.` : `Main mix planned: ${formatTime(bgMixStart, _fmtLocale)}.`)},
+              {bold:recipe?.preferment?.cold ? (l === 'fr' ? `Placez au réfrigérateur jusqu’à ${formatPlanTime(bgMixStart, _fmtLocale)}.` : `Refrigerate until ${formatPlanTime(bgMixStart, _fmtLocale)}.`) : chillPoolishAt ? (l==='fr'?`Laissez mûrir à température ambiante jusqu’à ${formatPlanTime(chillPoolishAt,l)}, puis placez le poolish au réfrigérateur.`:`Let the poolish ripen at room temperature until ${formatPlanTime(chillPoolishAt,l)}, then refrigerate it.`) : (l === 'fr' ? 'Laissez à température ambiante selon ce planning.' : 'Leave at room temperature according to this plan.'),
+                note:recipe?.preferment?.cold ? '' : (l === 'fr' ? `Pétrissage prévu : ${formatPlanTime(bgMixStart, _fmtLocale)}.` : `Main mix planned: ${formatPlanTime(bgMixStart, _fmtLocale)}.`)},
             ]} />
           </Section>
 
@@ -1552,7 +1552,7 @@ Actual dough condition and equipment may differ from these estimates.`;
                   { bold: (l === 'fr' ? 'Placez le levain rafraîchi au frigo immédiatement' : 'Place fed starter in fridge straight away'),
                     note: (l === 'fr' ? 'le froid ralentit la fermentation et prolonge le pic' : 'cold slows fermentation and holds the peak for longer') },
                   { bold: fridgeOutTime
-                      ? `${l==='fr'?'Sortez le levain à':'Take out at'} ${formatClock(fridgeOutTime,l)}`
+                      ? `${l==='fr'?'Sortez le levain à':'Take out at'} ${formatPlanClock(fridgeOutTime,l)}`
                       : (l==='fr'?'Sortez le levain avant le pétrissage.':'Take out when ready to mix'),
                     note: (l === 'fr' ? 'laissez-le revenir à température ambiante avant le pétrissage' : 'allow time to come to room temperature before mixing') },
                 ]} />
@@ -1655,7 +1655,7 @@ Actual dough condition and equipment may differ from these estimates.`;
 
       {/* ── STEP: Mix Dough ─────────────────────────── */}
       <StepCard number={n()} {...sc(true)} icon={<IconMix />} title={showAutolyseStart?(l==='fr'?'Autolyse puis pétrissage':'Autolyse, then mixing'):t('stepTitles.mixDough')}
-        time={showAutolyseStart?(autolyseAction?.at??new Date(+displayedMixTime-(preMixAutolyse+2*(schedule.mixingBatches??1))*60000)):displayedMixTime} duration={showAutolyseStart?(displayedMixDuration??0)+(preMixAutolyse+2*(schedule.mixingBatches??1))/60:displayedMixDuration} overviewNote={preMixAutolyse?<span>{recipe?.sourdough?(l==='fr'?'Levain et sel à ':'Starter and salt at '):(l==='fr'?'Levure et sel à ':'Yeast and salt at ')}{formatTime(displayedMixTime,_fmtLocale)}</span>:mixingOverviewNote} accent={D.ash}>
+        time={showAutolyseStart?(autolyseAction?.at??new Date(+displayedMixTime-(preMixAutolyse+2*(schedule.mixingBatches??1))*60000)):displayedMixTime} duration={showAutolyseStart?(displayedMixDuration??0)+(preMixAutolyse+2*(schedule.mixingBatches??1))/60:displayedMixDuration} overviewNote={preMixAutolyse?<span>{recipe?.sourdough?(l==='fr'?'Levain et sel à ':'Starter and salt at '):(l==='fr'?'Levure et sel à ':'Yeast and salt at ')}{formatPlanTime(displayedMixTime,_fmtLocale)}</span>:mixingOverviewNote} accent={D.ash}>
 
         {serialMixNote}
         {preMixAutolyse>0&&(schedule.mixingBatches??1)>1&&<p>{l==='fr'?'Avant la première pétrissée, préparez la farine et l’eau de chaque lot dans un récipient séparé : comptez 2 min par lot, puis couvrez au moins 30 min. Les lots suivants restent couverts en attendant leur pétrissage. N’ajoutez leur levure ou levain et leur sel qu’à leur tour.':'Before the first mix, combine each batch’s flour and water in a separate container: allow 2 minutes per batch, then cover for at least 30 minutes. Later batches stay covered until their mixing turn. Add their yeast or starter and salt only at that turn.'}</p>}
@@ -1788,7 +1788,7 @@ Actual dough condition and equipment may differ from these estimates.`;
 
       {/* ── STEP: Bulk Fermentation ──────────────────── */}
       <StepCard number={n()} {...sc()} icon={<IconBulk />} title={simpleMode ? (l==='fr'?'Pointage':'Let the dough rise') : t('stepTitles.bulkFerm')}
-        passive time={schedule.bulkFermStart} duration={schedule.bulkFermHours} overviewNote={schedule.availabilityActions?.filter(a=>a.id.startsWith('fold-')).slice().sort((a,b)=>+a.at-+b.at).map(a=><span key={a.id} style={{display:'block'}}>{foldActionLabel(a.id, l, schedule.mixingBatches)} · {formatTime(a.at,_fmtLocale)}</span>)} accent={D.terra}>
+        passive time={schedule.bulkFermStart} duration={schedule.bulkFermHours} overviewNote={schedule.availabilityActions?.filter(a=>a.id.startsWith('fold-')).slice().sort((a,b)=>+a.at-+b.at).map(a=><span key={a.id} style={{display:'block'}}>{foldActionLabel(a.id, l, schedule.mixingBatches)} · {formatPlanTime(a.at,_fmtLocale)}</span>)} accent={D.terra}>
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           {breadProtocol ? <Steps items={[
@@ -1819,7 +1819,7 @@ Actual dough condition and equipment may differ from these estimates.`;
                       const at = minutes === 15 ? undefined : schedule.availabilityActions?.find(a => a.id === `fold-${minutes / 30}`)?.at;
                       if (!at) return set;
                       const final = minutes / 30 === 4;
-                      return { ...set, bold: `${formatClock(new Date(at), l)} — ${l === 'fr' ? (final ? 'pli final' : 'rabat') : (final ? 'final fold' : 'stretch & fold')}` };
+                      return { ...set, bold: `${formatPlanClock(new Date(at), l)} — ${l === 'fr' ? (final ? 'pli final' : 'rabat') : (final ? 'final fold' : 'stretch & fold')}` };
                     })()))
               // "Straight into the fridge" only when the plan has a cold stage.
               : schedule.coldRetardStart ? [t.raw('bulk.setVeryShort') as { bold: string; note: string }] : []),
@@ -1893,7 +1893,7 @@ Actual dough condition and equipment may differ from these estimates.`;
               { bold: isBread
                   ? (_isFr ? 'Réglez une alarme pour la division & le façonnage' : 'Set your alarm for Divide & Shape time')
                   : (_isFr ? 'Réglez une alarme pour la division & le boulage' : 'Set your alarm for Divide & Ball time'),
-                note: formatTime(schedule.divideBallTime ?? schedule.coldRetard1End, _fmtLocale) },
+                note: formatPlanTime(schedule.divideBallTime ?? schedule.coldRetard1End, _fmtLocale) },
               (t.raw('coldRetard.steps') as { bold: string; note: string }[])[2],
             ]} />}
           </Section>
@@ -2039,7 +2039,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
               ...(isBread ? [{bold:l === 'fr' ? 'Couvrez la pâte façonnée sans l’écraser et placez-la au réfrigérateur sur son support.' : 'Cover the shaped dough without pressing it down and refrigerate on its support.',note:''}] : t.raw('coldBalls.steps') as { bold: string; note: string }[]),
-              { bold: _isFr ? 'Réglez une alarme pour la remise à température' : 'Set your alarm for warmup time', note: schedule.rtWarmupStart ? formatTime(schedule.rtWarmupStart, _fmtLocale) : (_isFr ? 'voir le planning' : 'see schedule') },
+              { bold: _isFr ? 'Réglez une alarme pour la remise à température' : 'Set your alarm for warmup time', note: schedule.rtWarmupStart ? formatPlanTime(schedule.rtWarmupStart, _fmtLocale) : (_isFr ? 'voir le planning' : 'see schedule') },
             ]} />
           </Section>
 
@@ -2067,7 +2067,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           duration={finalProofWindow(schedule, numItems).hours}
           accent="#7A8C6E">
 
-          {schedule.fridgeRemovalArranged && schedule.coldRetard2End && <p style={{fontSize:14,color:D.smoke}}>{formatTime(schedule.coldRetard2End, _fmtLocale)} · {l === 'fr' ? 'Sortie du réfrigérateur prévue' : 'Fridge removal arranged'}</p>}
+          {schedule.fridgeRemovalArranged && schedule.coldRetard2End && <p style={{fontSize:14,color:D.smoke}}>{formatPlanTime(schedule.coldRetard2End, _fmtLocale)} · {l === 'fr' ? 'Sortie du réfrigérateur prévue' : 'Fridge removal arranged'}</p>}
 
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             {breadProtocol ? <Steps items={profileSteps(breadProtocol.proof[l])} /> : isRye ? <Steps items={[

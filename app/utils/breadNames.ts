@@ -7,7 +7,21 @@ const NAMES: Record<string, Name> = {
   fougasse: {en: ['fougasse', 'fougasses'], fr: ['fougasse', 'fougasses'], frArticle: ['la', 'les'], title: {en: 'My fougasse', fr: 'Ma fougasse'}},
   pain_mie: {en: ['sandwich loaf', 'sandwich loaves'], fr: ['pain de mie', 'pains de mie'], frArticle: ['le', 'les'], title: {en: 'My sandwich loaf', fr: 'Mon pain de mie'}},
   pain_viennois: {en: ['Vienna loaf', 'Vienna loaves'], fr: ['pain viennois', 'pains viennois'], frArticle: ['le', 'les'], title: {en: 'My Vienna bread', fr: 'Mon pain viennois'}},
+  // Flatbreads and sandwich breads are counted as what they are, never as "loaves" (14 Nov 2026 audit).
+  pita: {en: ['pita', 'pitas'], fr: ['pita', 'pitas'], frArticle: ['la', 'les'], title: {en: 'My pitas', fr: 'Mes pitas'}},
+  greek_pita: {en: ['Greek pita', 'Greek pitas'], fr: ['pita grecque', 'pitas grecques'], frArticle: ['la', 'les'], title: {en: 'My Greek pitas', fr: 'Mes pitas grecques'}},
+  kebab_bread: {en: ['kebab bread', 'kebab breads'], fr: ['pain kebab', 'pains kebab'], frArticle: ['le', 'les'], title: {en: 'My kebab breads', fr: 'Mes pains kebab'}},
+  batbout: {en: ['batbout', 'batbouts'], fr: ['batbout', 'batbouts'], frArticle: ['le', 'les'], title: {en: 'My batbouts', fr: 'Mes batbouts'}},
+  laffa: {en: ['laffa', 'laffas'], fr: ['laffa', 'laffas'], frArticle: ['la', 'les'], title: {en: 'My laffas', fr: 'Mes laffas'}},
+  piadina: {en: ['piadina', 'piadinas'], fr: ['piadina', 'piadinas'], frArticle: ['la', 'les'], title: {en: 'My piadinas', fr: 'Mes piadinas'}},
+  bagel: {en: ['bagel', 'bagels'], fr: ['bagel', 'bagels'], frArticle: ['le', 'les'], title: {en: 'My bagels', fr: 'Mes bagels'}},
+  focaccia: {en: ['focaccia', 'focaccias'], fr: ['focaccia', 'focaccias'], frArticle: ['la', 'les'], title: {en: 'My focaccia', fr: 'Ma focaccia'}},
+  ciabatta: {en: ['ciabatta', 'ciabattas'], fr: ['ciabatta', 'ciabattas'], frArticle: ['la', 'les'], title: {en: 'My ciabatta', fr: 'Ma ciabatta'}},
+  pan_bagnat: {en: ['pan bagnat roll', 'pan bagnat rolls'], fr: ['pain bagnat', 'pains bagnats'], frArticle: ['le', 'les'], title: {en: 'My pan bagnat rolls', fr: 'Mes pains bagnats'}},
+  panuozzo: {en: ['panuozzo', 'panuozzi'], fr: ['panuozzo', 'panuozzi'], frArticle: ['le', 'les'], title: {en: 'My panuozzi', fr: 'Mes panuozzi'}},
 };
+
+const PAN_COOKED = new Set(['batbout', 'piadina']);
 
 /** "2 brioches", "1 pain", "3 loaves". */
 export function breadNoun(styleKey: string | null | undefined, count: number, fr: boolean): string {
@@ -28,6 +42,10 @@ export function breadOvenQuestion(styleKey: string | null | undefined, count: nu
   const name = styleKey ? NAMES[styleKey] : undefined;
   const plural = count > 1 ? 1 : 0;
   if (!name) return fr ? 'Quand enfourner le pain ?' : 'When will the bread go into the oven?';
+  // Pan-cooked breads are not put in an oven.
+  if (styleKey && PAN_COOKED.has(styleKey)) return fr
+    ? `Quand cuire ${name.frArticle[plural]} ${name.fr[plural]} ?`
+    : `When will you cook the ${name.en[plural]}?`;
   return fr
     ? `Quand enfourner ${name.frArticle[plural]} ${name.fr[plural]} ?`
     : `When will the ${name.en[plural]} go into the oven?`;

@@ -86,11 +86,11 @@ test('preferment instructions use actual dose and planned location without final
  }
 });
 
-test('short mixing duration retains exact minutes and hand instructions exclude machine speeds',()=>{
+test('short mixing duration reads to 5 minutes and hand instructions exclude machine speeds',()=>{
  const schedule=utils.buildSchedule(new Date('2026-09-24T08:00Z'),new Date('2026-09-24T18:00Z'),[],22,45,'hand','pain_campagne');
  schedule.mixingDurationH=.6;
  const html=renderToStaticMarkup(React.createElement(NextIntlClientProvider,{locale:'en',messages,timeZone:'UTC'},React.createElement(Guide,{schedule,mixerType:'hand',styleKey:'pain_campagne',kitchenTemp:22,numItems:1,oil:0,hydration:65,locale:'en'})));
- assert.match(html,/ · 36 min/);
+ assert.match(html,/ · 35 min/);
  assert.match(html,/Cover and rest 30 min, until \d{1,2}:\d{2}(am|pm)\./,"the rest is stated with its clock time");
  assert.match(html,/Knead by hand until smooth and stretchy/);
  assert.doesNotMatch(html,/using only your mixer’s permitted dough speeds/);
@@ -176,7 +176,9 @@ function renderGuideDetails(props,locale='en') {
  }}finally{React.useState=original;}return result;
 }
 
-test('guide keeps canonical minute times and quantity-aware shaping duration',()=>{
+// 14 Nov 2026: every screen shows planned times on the plan's 15-minute grid, rounded the same
+// way (the Recipe said 7:45 while the guide said 7:44), so the guide matches formatPlanTime.
+test('guide shows planned times on the quarter grid and a quantity-aware shaping duration',()=>{
  const schedule=utils.buildSchedule(new Date('2026-09-24T08:07Z'),new Date('2026-09-25T18:00Z'),[],22,45,'stand','neapolitan');
  schedule.bulkFermStart=new Date('2026-09-24T08:27Z');schedule.mixingDurationH=20/60;
  schedule.divisionMinutes=47;
@@ -184,9 +186,10 @@ test('guide keeps canonical minute times and quantity-aware shaping duration',()
  recipe.sourdough={starterGramsMid:100};
  const starterEvents=[{kind:'pre_mix',time:new Date('2026-09-24T06:07Z'),isPast:false,isActive:true,label:'Feed',isDraggable:false,cardTimeFormat:'absolute',bellStyle:'solid',bellSigmaScale:1}];
  const html=renderGuideDetails({schedule,recipe,starterEvents,mixerType:'stand',styleKey:'neapolitan',kitchenTemp:22,numItems:20,oil:0,hydration:65,locale:'en'});
- assert.ok(html.includes(utils.formatTime(new Date('2026-09-24T08:07Z'),'en')),'mix time must match canonical 08:07, not round to 08:00');
- assert.ok(html.includes(utils.formatTime(starterEvents[0].time,'en')),'feed time must match canonical 06:07');
- assert.match(html,/47 min/);assert.match(html,/260 g each/);
+ assert.ok(html.includes(utils.formatPlanTime(new Date('2026-09-24T08:07Z'),'en')),'mix time on the quarter grid');
+ assert.ok(!html.includes(utils.formatTime(new Date('2026-09-24T08:07Z'),'en')),'no off-grid minute');
+ assert.ok(html.includes(utils.formatPlanTime(starterEvents[0].time,'en')),'feed time on the quarter grid');
+ assert.match(html,/45 min/);assert.match(html,/260 g each/);
 });
 
 test('standard oven guide follows selected topping quantities and one rack position in both languages',()=>{
