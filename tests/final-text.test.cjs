@@ -70,7 +70,7 @@ test('sourdough mixing reads as one sequence with each rest at its clock time an
  const mix=text.slice(text.indexOf('Que faire'),text.indexOf('Prêt quand'));
  assert.match(mix,/Mélangez la farine avec \d+ g de l’eau préparée ; réservez les \d+ g restants\. Couvrez et laissez reposer jusqu’à \d+h\d{2}\./);
  assert.match(mix,/À \d+h\d{2}, ajoutez le levain mûr et le sel/);
- assert.match(mix,new RegExp(`Couvrez et laissez reposer 30 min ; reprenez le pétrissage à ${utils.formatTime(finish.at,'fr').split(' ').pop()}`));
+ assert.match(mix,new RegExp(`Couvrez et laissez reposer 30 min ; reprenez le pétrissage à ${utils.formatPlanTime(finish.at,'fr').split(' ').pop()}`));
  assert.equal((mix.match(/levain mûr et le sel/g)||[]).length,1,'starter and salt are added once');
  assert.doesNotMatch(mix,/90 ?%|Puis ajoutez/);
  const en=guide('pain_levain','en',{mixer:'stand',oven:'dutch_oven',numItems:1,weight:800,yeast:'sourdough',hours:30}).text;

@@ -4,7 +4,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import {
   type AvailabilityBlock,
   type ScheduleResult,
-  formatTime,
+  formatPlanTime,
   hoursLabel,
   finalProofWindow,
 } from '../utils';
@@ -527,7 +527,7 @@ export default function Timeline({
             {t('timeline.bakingProtocol')}
           </div>
           <div style={{ fontSize: '12px', color: 'var(--smoke)', marginTop: '.1rem', fontFamily: 'var(--font-ui)' }}>
-            {formatTime(displayStartTime, _fmtLocale)} → {formatTime(eatTime, _fmtLocale)}
+            {formatPlanTime(displayStartTime, _fmtLocale)} → {formatPlanTime(eatTime, _fmtLocale)}
             {' · '}{hoursLabel((eatTime.getTime() - displayStartTime.getTime()) / 3600000)} total
           </div>
           {/* Quick-bake honesty note — short windows silently produced an
@@ -617,7 +617,7 @@ export default function Timeline({
                 fontSize: '11px', color: 'var(--smoke)',
                 lineHeight: 1.4,
               }}>
-                {formatTime(item.time, _fmtLocale)}
+                {formatPlanTime(item.time, _fmtLocale)}
               </div>
 
               {/* Dot + line column */}
@@ -698,7 +698,7 @@ export default function Timeline({
                   );
                 })()}
 
-                {item.stepKind === 'final_proof' && schedule.fridgeRemovalArranged && schedule.coldRetard2End && <p style={{fontSize:14,color:'var(--smoke)'}}>{formatTime(schedule.coldRetard2End, _fmtLocale)} · {_fmtLocale === 'fr' ? 'Sortie du réfrigérateur prévue' : 'Fridge removal arranged'}</p>}
+                {item.stepKind === 'final_proof' && schedule.fridgeRemovalArranged && schedule.coldRetard2End && <p style={{fontSize:14,color:'var(--smoke)'}}>{formatPlanTime(schedule.coldRetard2End, _fmtLocale)} · {_fmtLocale === 'fr' ? 'Sortie du réfrigérateur prévue' : 'Fridge removal arranged'}</p>}
 
                 {/* Tip — hidden entirely for steps that carry none */}
                 {(item.tip || item.stepKind === 'rest_rt' || item.stepKind === 'final_proof') && (
@@ -734,7 +734,7 @@ export default function Timeline({
                       width: '6px', height: '6px', borderRadius: '50%',
                       background: th.dot, flexShrink: 0,
                     }} />
-                    {item.stepKind === 'cold' && `${formatTime(item.time, _fmtLocale)} → ${_fmtLocale === 'fr' ? "jusqu'\u00e0" : 'ends at'} ${formatTime(new Date(item.time.getTime() + (item.durationH ?? 0) * 3600000), _fmtLocale)}`}
+                    {item.stepKind === 'cold' && `${formatPlanTime(item.time, _fmtLocale)} → ${_fmtLocale === 'fr' ? "jusqu'\u00e0" : 'ends at'} ${formatPlanTime(new Date(item.time.getTime() + (item.durationH ?? 0) * 3600000), _fmtLocale)}`}
                     {item.stepKind === 'bulk_ferm' && t('timeline.blockLabels.bulkFerm', { dur: hoursLabel(item.durationH ?? 0) })}
                     {item.stepKind === 'final_proof' && t('timeline.blockLabels.finalProof', { dur: hoursLabel(schedule.finalProofHours) })}
                     {item.stepKind === 'rest_rt' && item.id !== 'remove_pref_fridge' && t('timeline.blockLabels.roomTemp', { dur: hoursLabel(item.durationH ?? 0) })}

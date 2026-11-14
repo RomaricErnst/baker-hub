@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useId,useRef,useState,type ReactNode} from 'react';
 import type {AvailabilityBlock} from '../utils';
-import {formatClock,formatLongDay} from '../utils/units';
+import {formatPlanClock,formatLongDay} from '../utils/units';
 import ScheduleClockInput from './ScheduleClockInput';
 import type {EditSlot} from '../utils/scheduleEdit';
 export type KeyTimingAnchor={id:string;name:string;at:number;from:number;to:number;editable:boolean;valid?:boolean;summary?:ReactNode;detail?:ReactNode;note?:ReactNode;control?:ReactNode;locked?:boolean;dayOnly?:boolean};
@@ -20,7 +20,7 @@ export function compatibleWindows(slots:EditSlot[]):SlotWindow[]{
 export function TimingWindows({slots,at,isFr,onSelect}:{slots:EditSlot[];at:number;isFr:boolean;onSelect:(at:number)=>void}){
  const days=new Map<string,EditSlot[]>();
  for(const slot of slots){const d=new Date(slot.at),key=[d.getFullYear(),d.getMonth(),d.getDate()].join('-');days.set(key,[...(days.get(key)??[]),slot]);}
- const hm=(value:number)=>formatClock(new Date(value),isFr?'fr':'en');
+ const hm=(value:number)=>formatPlanClock(new Date(value),isFr?'fr':'en');
  return <div className="bh-window-days">
   {[...days.entries()].map(([key,points])=>{
    const ranges=compatibleWindows(points);
@@ -57,8 +57,8 @@ function TimingRow({anchor,isFr,onChange,check,cacheKey,open,onToggle}:{anchor:K
   };
   timer=setTimeout(batch,120);return()=>{cancelled=true;clearTimeout(timer);};
  },[id,from,to,canEdit,queryKey,open,result?.key]);
- const fmt=(value:number)=>`${new Date(value).toLocaleDateString(isFr?'fr-FR':'en-GB',{weekday:'short'})} ${formatClock(new Date(value),isFr?'fr':'en')}`;
- const clock=formatClock(new Date(at),isFr?'fr':'en');
+ const fmt=(value:number)=>`${new Date(value).toLocaleDateString(isFr?'fr-FR':'en-GB',{weekday:'short'})} ${formatPlanClock(new Date(value),isFr?'fr':'en')}`;
+ const clock=formatPlanClock(new Date(at),isFr?'fr':'en');
  const windows=compatibleWindows(slots);
  const nearest=slots.filter(s=>s.valid).reduce<EditSlot|undefined>((best,s)=>!best||Math.abs(s.at-at)<Math.abs(best.at-at)?s:best,undefined);
  const date=new Date(at),local=new Date(at-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
@@ -102,7 +102,7 @@ export default function ScheduleKeyTimings({conflictRows,anchors,blocks,isFr,onC
  return <section data-open={open||undefined} aria-label={isFr?'Vos moments clés':'Your key times'} id="schedule-anchor-panel" tabIndex={-1}>
   {!inline&&<div className="bh-plan-heading"><span className="bh-plan-state" data-valid={valid} role="status">{!valid?gapTitle:hasDraft?(isFr?'Modifications à appliquer':'Changes to apply'):personalized?(isFr?'Planning personnalisé':'Your adjusted plan'):(isFr?'Planning recommandé':'Recommended plan')}</span>{header}</div>}
   {notice}
-  {!inline&&blocked.length>0&&<ul data-availability-conflicts>{blocked.map(anchor=><li key={anchor.id+anchor.at} data-conflict-action={anchor.id} data-conflict-at={anchor.at}>{anchor.name} · {formatClock(new Date(anchor.at),isFr?'fr':'en')} <button type="button" className="bh-back-action" onClick={anchor.cover}>{isFr?'Je peux assurer cette étape':'I can cover this step'}</button></li>)}</ul>}
+  {!inline&&blocked.length>0&&<ul data-availability-conflicts>{blocked.map(anchor=><li key={anchor.id+anchor.at} data-conflict-action={anchor.id} data-conflict-at={anchor.at}>{anchor.name} · {formatPlanClock(new Date(anchor.at),isFr?'fr':'en')} <button type="button" className="bh-back-action" onClick={anchor.cover}>{isFr?'Je peux assurer cette étape':'I can cover this step'}</button></li>)}</ul>}
   <div className="bh-linked-editor">
    <ol className={inline?'bh-schedule-timeline bh-timeline-inline':'bh-schedule-timeline'}>{events.map((anchor,index)=><TimelineEvent key={anchor.id} heading={inline?null:index===0||day(events[index-1].at)!==day(anchor.at)?day(anchor.at):null}><TimingRow {...{anchor,isFr,onChange,check,cacheKey}} open={selectedId===anchor.id} onToggle={()=>select(selectedId===anchor.id?null:anchor.id)}/></TimelineEvent>)}</ol>
    {open&&!hasDraft&&!inline&&<div className="bh-editor-exit"><button type="button" className="bh-apply-plan" onClick={()=>select(null)}>{isFr?'Terminé':'Done'}</button></div>}

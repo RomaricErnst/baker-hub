@@ -39,7 +39,7 @@ import { buildPlanCalendar, calendarBakeId, downloadPlanCalendar, exportedSteps,
 import { leanBreadPreheatMin } from '../utils/leanBreadBake';
 import {commercialPrefermentWindow, validateConfirmedBake, type StarterEvent } from '../components/SchedulePicker';
 import { prefermentConditioningAction } from '../utils/scheduleEdit';
-import { findAvailabilityConflicts, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake } from '../utils/scheduleAvailability';
+import { findAvailabilityConflicts, isTimeBlocked, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake } from '../utils/scheduleAvailability';
 import { retainCurrentFridgeRemoval } from '../utils/fridgeRemovalSession';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 import ClimatePicker from '../components/ClimatePicker';
@@ -71,6 +71,7 @@ import { soonStartLabel } from '../utils/startNotice';
 import { checkYeastEntry, entryHoursLabel, type YeastEntryCheck } from '../utils/yeastEntry';
 import { starterActionLabelFor } from '../utils/starterBuild';
 import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock, formatBakeDateTime, displayWeight } from '../utils/units';
+import { formatDuration } from '../utils/duration';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
   PIZZA_STYLES, BREAD_STYLES, FLOUR_DATA,
@@ -922,7 +923,7 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
 // calendar file are one tap away.
 // The recipe says what goes in; below it, the plan says when: the key steps with
 // their times only. How to do each step lives in Preparation.
-function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,steps,editable=[],editing=null,onEditTime,editor,notice,chart,moreLabel,onMore}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;startKey?:string|null;bakeAt:Date;steps:{key:string;at:Date;label:string}[];editable?:string[];editing?:string|null;onEditTime?:(key:string)=>void;editor?:React.ReactNode;notice?:{key:string;node:React.ReactNode}|null;chart?:{open:boolean;onToggle:(open:boolean)=>void;node:React.ReactNode}|null;moreLabel?:string|null;onMore?:()=>void}){
+function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,steps,editable=[],editing=null,onEditTime,editor,notice,chart,moreLabel,onMore}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;startKey?:string|null;bakeAt:Date;steps:{key:string;at:Date;label:string;busy?:boolean}[];editable?:string[];editing?:string|null;onEditTime?:(key:string)=>void;editor?:React.ReactNode;notice?:{key:string;node:React.ReactNode}|null;chart?:{open:boolean;onToggle:(open:boolean)=>void;node:React.ReactNode}|null;moreLabel?:string|null;onMore?:()=>void}){
   // The times the baker chooses (Start Dough; the preferment in Custom) are changed here,
   // (the button's 44px reach overflows the row by negative margins, so the row keeps its height)
   // in place: the time is a button, its editor opens under the row, and applying it
@@ -932,21 +933,21 @@ function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,steps,edit
   const row={display:'flex',gap:12,padding:'7px 0',borderTop:'1px solid var(--border)',fontSize:15,lineHeight:1.4,color:'var(--char)'} as const;
   return <section data-recipe-plan aria-labelledby="bh-recipe-plan-title" style={{margin:'0 0 4px'}}>
     <h2 id="bh-recipe-plan-title" className="bh-section-title" style={{margin:'0 0 4px'}}>{fr?'Votre plan':'Your plan'}</h2>
-    {/* Grouped by day; steps at the same shown time share a row; times read to 5 min
+    {/* Grouped by day; steps at the same shown time share a row; times read to 15 min
         (the calendar keeps the exact ones). */}
     {(()=>{
-      const round5=(d:Date)=>new Date(Math.round(+d/300000)*300000);
+      const round5=(d:Date)=>new Date(Math.round(+d/900000)*900000);
       // The first step is a row like the others, under its day; the baker's own times are the tappable ones.
-      const all=[{key:startKey??'start',at:round5(startAt),label:startLabel ?? (fr?'Commencer':'Start'),bake:false,own:true},...steps.map(step=>({key:step.key,at:round5(step.at),label:step.label,bake:false,own:false})),{key:'bake',at:round5(bakeAt),label:fr?'Enfourner':'Bake',bake:true,own:false}].sort((a,b)=>+a.at-+b.at||(a.own?-1:b.own?1:0));
-      const rows:{key:string;at:Date;labels:string[];bake:boolean;own:boolean}[]=[];
-      for(const item of all){const last=rows[rows.length-1];if(last&&+last.at===+item.at&&!item.bake&&!last.bake&&!item.own&&!last.own&&!editable.includes(item.key)&&!editable.includes(last.key))last.labels.push(item.label);else rows.push({key:item.key,at:item.at,labels:[item.label],bake:item.bake,own:item.own});}
+      const all=[{key:startKey??'start',at:round5(startAt),label:startLabel ?? (fr?'Commencer':'Start'),bake:false,own:true},...steps.map(step=>({key:step.key,at:round5(step.at),label:step.label,bake:false,own:false,busy:!!step.busy})),{key:'bake',at:round5(bakeAt),label:fr?'Enfourner':'Bake',bake:true,own:false}].sort((a,b)=>+a.at-+b.at||(a.own?-1:b.own?1:0));
+      const rows:{key:string;at:Date;labels:string[];bake:boolean;own:boolean;busy?:boolean}[]=[];
+      for(const item of all){const last=rows[rows.length-1];const busy='busy' in item&&!!item.busy;if(last&&+last.at===+item.at&&!item.bake&&!last.bake&&!item.own&&!last.own&&!editable.includes(item.key)&&!editable.includes(last.key)){last.labels.push(item.label);last.busy=last.busy||busy;}else rows.push({key:item.key,at:item.at,labels:[item.label],bake:item.bake,own:item.own,busy});}
       const days:{day:string;rows:typeof rows}[]=[];
       for(const r of rows){const day=r.at.toLocaleDateString(fr?'fr-FR':'en-GB',{weekday:'long',day:'numeric',month:'short'});const last=days[days.length-1];if(last&&last.day===day)last.rows.push(r);else days.push({day,rows:[r]});}
       // Room for a pencil when a time is editable, so every label starts on the same line.
       const time={flex:'0 0 auto',minWidth:editable.length?'6em':'4.5em',color:'var(--ash)',fontVariantNumeric:'tabular-nums'} as const;
       return <div data-recipe-plan-steps>{days.map(d=><div key={d.day} style={{marginTop:10}}>
         <p style={{margin:'0 0 2px',fontSize:14,fontWeight:700,color:'var(--char)'}}>{d.day.charAt(0).toUpperCase()+d.day.slice(1)}</p>
-        <ol style={{listStyle:'none',margin:0,padding:0}}>{d.rows.map(r=><React.Fragment key={r.key}><li data-plan-bake={r.bake||undefined} data-plan-start={r.own||undefined} style={{...row,fontWeight:r.bake?600:400,alignItems:'baseline'}}><span style={{...time,...(r.bake?{color:'var(--char)'}:{})}}>{editable.includes(r.key)?timeButton(r.key,r.labels[0],formatClock(r.at,locale)):formatClock(r.at,locale)}</span><span>{r.labels.join(' · ')}{r.own&&(()=>{const soon=soonStartLabel(startAt,Date.now(),locale);return soon?<span data-plan-soon style={{color:'var(--ash)'}}> · {soon.split(' · ').pop()}</span>:null;})()}</span></li>{editing===r.key&&<li data-plan-editor style={{listStyle:'none'}}>{editor}</li>}{editing!==r.key&&notice?.key===r.key&&<li style={{listStyle:'none'}}>{notice.node}</li>}</React.Fragment>)}</ol>
+        <ol style={{listStyle:'none',margin:0,padding:0}}>{d.rows.map(r=><React.Fragment key={r.key}><li data-plan-bake={r.bake||undefined} data-plan-start={r.own||undefined} style={{...row,fontWeight:r.bake?600:400,alignItems:'baseline'}}><span style={{...time,...(r.bake?{color:'var(--char)'}:{})}}>{editable.includes(r.key)?timeButton(r.key,r.labels[0],formatClock(r.at,locale)):formatClock(r.at,locale)}</span><span>{r.labels.join(' · ')}{r.busy&&<span data-plan-busy style={{color:'var(--ash)'}}> · {fr?'pendant un moment occupé':'during a busy time'}</span>}{r.own&&(()=>{const soon=soonStartLabel(startAt,Date.now(),locale);return soon?<span data-plan-soon style={{color:'var(--ash)'}}> · {soon.split(' · ').pop()}</span>:null;})()}</span></li>{editing===r.key&&<li data-plan-editor style={{listStyle:'none'}}>{editor}</li>}{editing!==r.key&&notice?.key===r.key&&<li style={{listStyle:'none'}}>{notice.node}</li>}</React.Fragment>)}</ol>
       </div>)}</div>;
     })()}
     {/* Custom keeps its curve and storage options behind one link; a sourdough plan keeps
@@ -3049,9 +3050,23 @@ export default function Home() {
     if (pt !== prefermentType) {
       setSessionRestored(false);
       setPrefermentValidity({ type: pt, valid: false });
+      // A share chosen for one preferment is not the other's: a biga starts from its own default.
+      setPrefermentFlourPct(undefined);
     }
     setPrefermentChosen(true);
     setPrefermentType(pt);
+  }
+
+  // Whether the chosen poolish or biga can still be ready before the bake (see the Preferment step).
+  function prefermentTooClose(){
+    if(!eatTime||execution||mixExecution||(prefermentType!=='biga'&&prefermentType!=='poolish'))return null;
+    const finalLeadH=(kitchenTemp>=28?0.5:1.5)+1+preheatMin/60;
+    const needH=(type:'biga'|'poolish')=>Math.min(...[true,false].map(f=>commercialPrefermentWindow(type,f,kitchenTemp,styleKey??'',fridgeTemp)?.min??Infinity))+finalLeadH;
+    const leftH=(+eatTime-Date.now())/3600000;
+    if(leftH>=needH(prefermentType))return null;
+    const poolishFits=prefermentType==='biga'&&leftH>=needH('poolish')&&!(breadProtocol&&!breadProtocol.supportedPreferments.includes('poolish'));
+    const later=new Date(Math.ceil((Date.now()+needH(prefermentType)*3600000)/900000)*900000);
+    return {needH,leftH,poolishFits,later};
   }
 
   function chooseYeast(yt: YeastType) {
@@ -4177,7 +4192,7 @@ export default function Home() {
   const recipePlanSteps = (()=>{
     if(!recipeGenerated||!eatTime||!schedule)return [];
     const from=Date.now()-60000;
-    return planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label}));
+    return planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label,busy:isTimeBlocked(e.at,blocks)}));
   })();
   // A plan already in the calendar whose steps have since moved (any step, not only
   // Start Dough or the bake): the card says so once, where the button is.
@@ -5329,7 +5344,7 @@ export default function Home() {
 
             {/* ─── ADV STEP 9: Preferment (hidden for sourdough) ── */}
             {showPrefermentChoice && (
-              <StepPage flow={customOrganisationFlow} id={8} nextOverride={!prefermentChosen ? <button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:0.55}}>{(CUSTOM_STEPS.find(step=>step.id===nextCustomStep(8))?.chip ?? (fr?'Suivant':'Next'))} →</button> : undefined}>
+              <StepPage flow={customOrganisationFlow} id={8} nextOverride={!prefermentChosen||prefermentTooClose() ? <button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:0.55}}>{(CUSTOM_STEPS.find(step=>step.id===nextCustomStep(8))?.chip ?? (fr?'Suivant':'Next'))} →</button> : undefined}>
                 <PrefermentPicker
                   selected={prefermentChosen ? prefermentType : null}
                   chooseMethod
@@ -5352,6 +5367,23 @@ export default function Home() {
                   </div>
                 </fieldset>}}
                 />
+                {prefermentChosen&&(()=>{
+                  // 14 Nov 2026: a preferment chosen for a bake that is too close (from My choices,
+                  // or after the bake time) left the baker on a plan starting in the past. Say so
+                  // here and offer what fits: the poolish, then direct dough, or a later bake.
+                  const close=prefermentTooClose();if(!close||prefermentType==='none'||prefermentType==='levain')return null;
+                  const {needH,leftH,poolishFits,later}=close;
+                  const name=prefermentType==='biga'?'biga':'poolish';
+                  const hours=(h:number)=>formatDuration(Math.max(1,Math.round(h)),locale);
+                  const choose=(pt:PrefermentType)=>{choosePreferment(pt);confirmSetting('method',pt);setPlanReplanPending(true);};
+                  const btn={minHeight:44,padding:'10px 14px',border:'1px solid var(--border)',borderRadius:10,background:'var(--warm)',color:'var(--char)',fontSize:15,cursor:'pointer',textAlign:'left'} as const;
+                  return <div data-preferment-too-close role="status" style={{marginTop:16,padding:'14px 16px',borderRadius:12,background:'var(--cream)',display:'grid',gap:10}}>
+                    <p style={{margin:0,fontSize:15,lineHeight:1.5}}>{fr?`${prefermentType==='biga'?'Une biga':'Un poolish'} demande environ ${hours(needH(prefermentType))} avant la cuisson ; il en reste ${hours(Math.max(0,leftH))}.`:`A ${name} needs about ${hours(needH(prefermentType))} before baking; your bake is in ${hours(Math.max(0,leftH))}.`}</p>
+                    {poolishFits&&<button type="button" data-preferment-fallback="poolish" style={btn} onClick={()=>choose('poolish')}>{fr?'Faire un poolish':'Make a poolish instead'}</button>}
+                    <button type="button" data-preferment-fallback="none" style={btn} onClick={()=>choose('none')}>{fr?'Pâte directe, sans préferment':'Direct dough, no preferment'}</button>
+                    <button type="button" data-preferment-fallback="later" style={btn} onClick={()=>{setEatTime(later);setPlanReplanPending(true);}}>{fr?`Garder ${prefermentType==='biga'?'la biga':'le poolish'} et cuire ${formatBakeDateTime(later,locale)}`:`Keep the ${name} and bake ${formatBakeDateTime(later,locale)}`}</button>
+                  </div>;
+                })()}
               </StepPage>
             )}
 

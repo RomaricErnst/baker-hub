@@ -308,7 +308,7 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
                       <input value={f.name}
                         onChange={e => setFree(prev => ({ ...prev, [gi]: { ...f, name: e.target.value } }))}
                         placeholder={fr ? 'Autre — texte libre' : 'Other — free text'}
-                        style={{ ...input, flex: 1, width: 'auto', padding: '8px 12px', fontSize: '13px' }} />
+                        style={{ ...input, flex: 1, minWidth: 0, width: 'auto', padding: '8px 12px', fontSize: '13px' }} />
                       <input type="number" inputMode="numeric" value={f.amount}
                         onChange={e => setFree(prev => ({ ...prev, [gi]: { ...f, amount: e.target.value } }))}
                         style={{ ...input, width: '56px', padding: '8px 8px', fontFamily: 'var(--font-ui)', fontSize: '12px', textAlign: 'right' }} />
@@ -317,8 +317,8 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
                         style={{ ...input, width: '72px', padding: '8px 4px', fontFamily: 'var(--font-ui)', fontSize: '12px' }}>
                         {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
                       </select>
-                      <button onClick={() => addFree(gi)} disabled={!f.name.trim()} style={{
-                        border: 'none', borderRadius: '12px', padding: '8px 12px', cursor: f.name.trim() ? 'pointer' : 'default',
+                      <button type="button" aria-label={fr ? 'Ajouter cet ingrédient' : 'Add this ingredient'} onClick={() => addFree(gi)} disabled={!f.name.trim()} style={{
+                        border: 'none', borderRadius: '12px', padding: 0, width: '44px', height: '44px', cursor: f.name.trim() ? 'pointer' : 'default',
                         background: f.name.trim() ? '#6B7A5A' : '#E0D8CF', color: 'white',
                         fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: 600, flexShrink: 0,
                       }}>+</button>

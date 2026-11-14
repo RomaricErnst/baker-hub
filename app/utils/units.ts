@@ -51,6 +51,17 @@ export function formatClock(date: Date, locale: string): string {
   return locale.startsWith('fr') ? `${h}h${m}` : `${h % 12 || 12}:${m}${h < 12 ? 'am' : 'pm'}`;
 }
 
+// Planned steps are shown on the plan's 15-minute grid. The engine keeps exact minutes; every
+// screen that shows a planned time rounds the same way, so the Recipe, the curve and Preparation
+// agree (14 Nov 2026 audit: 7:44 in one place, 7:45 in another).
+export function roundToQuarter(date: Date): Date {
+  if (!Number.isFinite(+date)) return date;
+  return new Date(Math.round(+date / 900000) * 900000);
+}
+export function formatPlanClock(date: Date, locale: string): string {
+  return formatClock(roundToQuarter(date), locale);
+}
+
 export function formatBakeDateTime(date: Date, locale: string): string {
   if (!Number.isFinite(+date)) return '—';
   const lang = locale.startsWith('fr') ? 'fr-FR' : 'en-GB';

@@ -37,6 +37,8 @@ export function starterColdIntervals(events: StarterEvent[], fallbackStart?: Dat
 }
 
 export interface FermentChartProps {
+  /** Only the curve and its caption: the Recipe's "Fermentation curve" sits under Your plan, which already lists the times. */
+  chartOnly?: boolean;
   eatTime: Date;
   prefermentType: string;   // 'none' | 'biga' | 'poolish' | 'levain' | 'sourdough'
   kitchenTemp: number;
@@ -492,7 +494,9 @@ function formatHours(h: number): string {
   return `${h.toFixed(1)}h`;
 }
 
-function fmtHM(d: Date, isFr = false): string {
+function fmtHM(d0: Date, isFr = false): string {
+  // Shown on the plan's 15-minute grid, like every other planned time.
+  const d = new Date(Math.round(+d0 / 900000) * 900000);
   const h = d.getHours();
   const m = d.getMinutes();
   if (isFr) return `${h}h${String(m).padStart(2, '0')}`;
@@ -509,7 +513,7 @@ function fmtDT(d: Date, isFr = false): string {
 
 // ── Component ─────────────────────────────────────────────────
 export default function FermentChart({
-  eatTime, prefermentType, kitchenTemp, fridgeTemp = 6, styleKey = 'neapolitan',
+  chartOnly = false, eatTime, prefermentType, kitchenTemp, fridgeTemp = 6, styleKey = 'neapolitan',
   mixOffsetH, prefOffsetH,
   blocks, onMixChange, onPrefChange, onRefreshChange, onDragStart, onDragEnd,
   windowH, prefEditable = true, prefInFridge, hasColdRetard, sweetCenterH, sweetFromH, sweetToH,
@@ -1219,7 +1223,7 @@ export default function FermentChart({
         <span>{isFr?'Barres : durées prévues. Courbes : évolution indicative, à vérifier sur la pâte.':'Bars show planned durations. Curves illustrate estimated activity. Check the dough for readiness.'}</span>
         {hasAnyCold && <span><span aria-hidden="true" style={{display:'inline-block',width:12,height:8,background:'#4A7FA5',marginRight:5}}/>{isFr?'Au réfrigérateur':'In the fridge'}</span>}
       </div>
-      <div aria-live="polite" aria-atomic="true" style={{fontSize:14,lineHeight:1.4}}>
+      {!chartOnly && <><div aria-live="polite" aria-atomic="true" style={{fontSize:14,lineHeight:1.4}}>
         {(() => {
           const actions: Array<{key:string;name:string;hbf:number}> = [];
           if (hasPref && isLevain && starterEvents.length) {
@@ -1248,7 +1252,7 @@ export default function FermentChart({
       <details style={{marginTop:8,fontSize:13,lineHeight:1.5}}><summary style={{minHeight:44,cursor:'pointer'}}>{isFr?'Ajuster le planning':'Adjust the schedule'}</summary>
         <p>{isFr?'Glissez un losange : les horaires ci-dessus se mettent à jour. Au clavier, utilisez les flèches gauche et droite par pas de 15 minutes.':'Drag a diamond to update the times above. With a keyboard, use left and right arrows in 15-minute steps.'}</p>
         <label style={{display:'flex',alignItems:'center',gap:8,minHeight:44}}><input type="checkbox" checked={layers.busy} onChange={event=>setLayers(prev=>({...prev,busy:event.target.checked}))}/>{isFr?'Afficher mes indisponibilités':'Show my busy times'}</label>
-      </details>
+      </details></>}
     </div>
   );
 }

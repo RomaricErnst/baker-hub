@@ -65,7 +65,15 @@ export function waterGuideLine(args: Parameters<typeof waterSplit>[0] & { locale
   const split = waterSplit(args);
   const temp = displayTemp(targetTemp, units);
   const w = (g: number) => displayWeight(g, units, locale);
-  if (split && split.ice > 0) return { text: fr ? `à ${temp}, avec ${w(split.ice)} de glace` : `at ${temp}, with ${w(split.ice)} ice`, help: true };
+  // Name what goes in the bowl: the liquid water as it comes, plus the ice. "At 6°C" beside a
+  // fold-out reading 22°C described the same water twice (14 Nov 2026 audit).
+  if (split && split.ice > 0) {
+    const entered = source === 'tap' || source === 'measured';
+    const liquid = entered && args.measuredWaterTemp != null
+      ? (fr ? `d’eau à ${displayTemp(args.measuredWaterTemp, units)}` : `water at ${displayTemp(args.measuredWaterTemp, units)}`)
+      : source === 'fridge' ? (fr ? 'd’eau sortie du réfrigérateur' : 'water from the fridge') : (fr ? 'd’eau à température ambiante' : 'room-temperature water');
+    return { text: fr ? `${w(split.water)} ${liquid} + ${w(split.ice)} de glace` : `${w(split.water)} ${liquid} + ${w(split.ice)} ice`, help: true };
+  }
   if (source !== 'room') return { text: fr ? `environ ${temp}` : `about ${temp}`, help: true };
   if (targetTemp < kitchenTemp - 2 && kitchenTemp - fridgeTemp > 1) {
     const cold = Math.min(grams, Math.round(grams * (kitchenTemp - targetTemp) / (kitchenTemp - fridgeTemp) / 10) * 10);

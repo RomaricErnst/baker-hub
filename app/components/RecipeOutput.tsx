@@ -89,7 +89,7 @@ const D = {
 
 // ── Ingredient row ─────────────────────────────
 function IngRow({
-  label, sub, grams, pct = '', highlight = false, range = false, advancedPct, noPct = false,
+  label, sub, grams, pct = '', highlight = false, range = false, advancedPct, noPct = false, wideSub = false,
 }: {
   label: React.ReactNode;
   sub?: React.ReactNode;
@@ -99,7 +99,21 @@ function IngRow({
   range?: boolean;
   advancedPct?: string;
   noPct?: boolean;
+  /** The sub line spans the whole row, so a panel opened from it is not squeezed beside the amount. */
+  wideSub?: boolean;
 }) {
+  const subEl = sub ? (
+          <div style={{
+            fontSize: '12px',
+            color: 'var(--smoke)',
+            fontFamily: 'var(--font-ui)',
+            marginTop: '.1rem',
+            lineHeight: 1.5,
+            ...(wideSub ? {gridColumn:'1 / -1'} : {}),
+          }}>
+            {sub}
+          </div>
+        ) : null;
   return (
     <div style={{
       display: 'grid',
@@ -118,17 +132,7 @@ function IngRow({
         }}>
           {label}
         </div>
-        {sub && (
-          <div style={{
-            fontSize: '12px',
-            color: 'var(--smoke)',
-            fontFamily: 'var(--font-ui)',
-            marginTop: '.1rem',
-            lineHeight: 1.5,
-          }}>
-            {sub}
-          </div>
-        )}
+        {!wideSub && subEl}
       </div>
 
       <div style={{
@@ -142,7 +146,7 @@ function IngRow({
         {!noPct && advancedPct && <span style={{fontSize:14,fontWeight:400,color:"var(--smoke)"}}>{advancedPct}</span>}
         <span>{grams}</span>
       </div>
-
+      {wideSub && subEl}
 
     </div>
   );
@@ -363,6 +367,7 @@ export default function RecipeOutput({
   const [showPriorityOverride, setShowPriorityOverride] = useState(false);
 
   const [showDilution, setShowDilution] = useState(false);
+  const [weighOpen, setWeighOpen] = useState(false);
 
   // Batch splitting — auto-triggered when total dough exceeds mixer default capacity
   const mixerMaxG   = (MIXER_TYPES as Record<string, { maxDoughG?: number }>)[mixerType]?.maxDoughG ?? 9999;
@@ -524,49 +529,11 @@ export default function RecipeOutput({
   // How to measure a small yeast dose: opens under the yeast row ("how to weigh it").
   const smallDoseBody = yeastInfo ? (<div data-small-dose style={{display:'flex',flexDirection:'column',gap:10,marginTop:6}}>
           {yeastAlternatives && <p data-yeast-alternatives style={{margin:'0 0 10px',fontSize:14,color:'var(--ash)'}}>{yeastAlternatives}</p>}
-          {/* Min floor callout — shown when 0.5g IDY floor was applied */}
-          {yeastInfo.hitMinFloor && !needsPrecision && (
-            <div style={{
-              background: '#FFFBEE',
-              border: '1.5px solid #9C8248',
-              borderRadius: '16px',
-              padding: '12px 16px',
-            }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#7A5A10' }}>
-                  {t('recipeOutput.precisionScaleMin')}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Precision scale callout */}
-          {needsPrecision && (
-            <div style={{
-              background: '#FFFBEE',
-              border: '1.5px solid #9C8248',
-              borderRadius: '16px',
-              padding: '12px 16px',
-            }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#7A5A10' }}>
-                  {t('recipeOutput.precisionScaleTitle')}
-                </span>
-              </div>
-              <div style={{ fontSize: '12px', color: '#5A4010', lineHeight: 1.6, paddingLeft: '24px' }}>
-                {t('recipeOutput.precisionScaleBody', { amount: formatYeastDose(yeastInfo.convertedGrams, locale) })}
-              </div>
-            </div>
-          )}
-
-
-          {/* Dilution tip */}
-          {dilutionTip && (
-            <InfoCard
-              icon=""
-              level="info"
-              title={t('recipeOutput.dilutionTitle')}
-              body={t('recipeOutput.dilutionBody', {
+          {/* One neutral note (14 Nov 2026 audit: a yellow and a blue box beside the amount). */}
+          {(needsPrecision || yeastInfo.hitMinFloor || dilutionTip) && <div data-weigh-note style={{background:'var(--cream)',borderRadius:12,padding:'12px 14px',display:'flex',flexDirection:'column',gap:10,fontSize:13,lineHeight:1.55,color:'var(--ash)'}}>
+            {yeastInfo.hitMinFloor && !needsPrecision && <p style={{margin:0}}>{t('recipeOutput.precisionScaleMin')}</p>}
+            {needsPrecision && <p style={{margin:0}}><strong style={{display:'block',color:'var(--char)',fontWeight:600}}>{t('recipeOutput.precisionScaleTitle')}</strong>{t('recipeOutput.precisionScaleBody', { amount: formatYeastDose(yeastInfo.convertedGrams, locale) })}</p>}
+            {dilutionTip && <p style={{margin:0}}><strong style={{display:'block',color:'var(--char)',fontWeight:600}}>{t('recipeOutput.dilutionTitle')}</strong>{t('recipeOutput.dilutionBody', {
                 yeastG: DILUTION_BASE_YEAST_G,
                 waterG: dilutionTip.waterG * DILUTION_BASE_YEAST_G,
                 // Kitchen-scale precision: whole grams from 10 g, one decimal below.
@@ -575,9 +542,8 @@ export default function RecipeOutput({
                 remainingWaterG: kitchenGrams((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG),
               })+(mainIceG>0?' '+t('recipeOutput.dilutionIce',{iceG:mainIceG}):'')
                 // Imperial bakers read the water line in ounces: say that this method stays in grams.
-                +(u==='imperial'?' '+t('recipeOutput.dilutionInGrams')+' '+t('recipeOutput.dilutionRemainingImperial',{grams:kitchenGrams((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG),ounces:displayWeight((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG,'imperial',locale)}):'')}
-            />
-          )}
+                +(u==='imperial'?' '+t('recipeOutput.dilutionInGrams')+' '+t('recipeOutput.dilutionRemainingImperial',{grams:kitchenGrams((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG),ounces:displayWeight((dilutionTip.remainingWaterGrams ?? waterMain - dilutionTip.solutionG * 100 / 101) - mainIceG,'imperial',locale)}):'')}</p>}
+          </div>}
 
   </div>) : null;
 
@@ -808,7 +774,8 @@ export default function RecipeOutput({
               label={
                 yeastTypeName
               }
-              sub={smallDoseShown ? <>{yeastSub && <span>{yeastSub} · </span>}<details data-yeast-help style={{display:'inline'}}><summary style={{display:'inline-flex',alignItems:'center',minHeight:44,cursor:'pointer',color:'var(--terra)'}}>{t('recipeOutput.weighOrDilute')}</summary>{smallDoseBody}</details></> : yeastSub}
+              sub={smallDoseShown ? <>{yeastSub && <span>{yeastSub} · </span>}<details data-yeast-help style={{display:'inline'}} onToggle={e=>setWeighOpen(e.currentTarget.open)}><summary style={{display:'inline-flex',alignItems:'center',minHeight:44,cursor:'pointer',color:'var(--terra)',listStyle:'none'}}>{weighOpen?t('recipeOutput.weighOrDilute').replace('▾','▴'):t('recipeOutput.weighOrDilute')}</summary>{smallDoseBody}</details></> : yeastSub}
+              wideSub={smallDoseShown}
               grams={formatYeastDose(yeastInfo.convertedGrams, locale)}
               pct={pctStr(yeastInfo.convertedPct)}
               advancedPct={mode === 'custom' ? pctStr(yeastInfo.convertedPct) : undefined}
