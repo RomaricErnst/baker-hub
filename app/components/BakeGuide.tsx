@@ -29,7 +29,7 @@ import { WOOD_OVEN_FAQ } from '../lib/woodOvenFaq';
 import { formatPrefermentDose, formatYeastDose } from '../utils/prefermentDose';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { firstBatchFoldMinutes, scheduledFoldMinutes } from '../utils/scheduleFolds';
-import { leanBreadBake, guideUnitText, guideWeightText } from '../utils/leanBreadBake';
+import { leanBreadBake, ovenRounds, guideUnitText, guideWeightText } from '../utils/leanBreadBake';
 import { panPizzaGuide, isPanPizzaStyle } from '../utils/panPizza';
 import { needsScaleHelp, yeastSpoonMeasure, DILUTION_BASE_YEAST_G } from '../utils/yeastMeasure';
 import { commercialDilution } from '../utils';
@@ -1024,7 +1024,14 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   const pieceWeight   = (recipe?.totalDough ?? numItems * 750) / Math.max(1, numItems);
   // Lean breads without a protocol get style-specific oven cards (real
   // temperatures and times); null keeps the oven-keyed message steps.
-  const leanBake      = !breadProtocol && isBread ? leanBreadBake(styleKey, pieceWeight, ovenType, numItems) : null;
+  const leanBakeBase  = !breadProtocol && isBread ? leanBreadBake(styleKey, pieceWeight, ovenType, numItems) : null;
+  // More pieces than one oven load: each round with its time, at the head of the bake (14 Nov 2026).
+  const rounds        = leanBakeBase ? ovenRounds(styleKey, pieceWeight, ovenType, numItems) : null;
+  const leanBake      = leanBakeBase && rounds ? {...leanBakeBase, bake: (['en','fr'] as const).reduce((acc, lang) => {
+    const steps = leanBakeBase.bake[lang];
+    const times = Array.from({length: rounds.rounds}, (_, i) => `${lang === 'fr' ? 'fournée' : 'round'} ${i + 1} · ${formatPlanClock(new Date(+schedule.bakeStart + i * rounds.intervalMin * 60000), lang)}`).join(', ');
+    return {...acc, [lang]: [{...steps[0], note: `${times}. ${steps[0].note}`}, ...steps.slice(1)]};
+  }, {} as typeof leanBakeBase.bake)} : leanBakeBase;
   // "Bake straight from the fridge" chosen: the cold proof runs up to the bake.
   // Several batches whose first fold waits for the last batch: one line says when.
   const batchFirstFoldShown = (schedule.batchMixWindows?.length ?? 0) > 1 && firstBatchFoldMinutes(schedule).length > 0 && firstBatchFoldMinutes(schedule)[0] !== scheduledFoldMinutes(schedule.bulkFermHours, styleKey)[0];

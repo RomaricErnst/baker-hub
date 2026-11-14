@@ -117,3 +117,9 @@ test('large bakes are split into oven loads',()=>{
  const four=leanBreadBake('baguette',320,'home_oven_standard',4);
  assert.doesNotMatch(four.bake.en[0].bold,/rounds/);
 });
+test('oven rounds are spaced on the plan grid',()=>{
+ const {ovenRounds}=require('../app/utils/leanBreadBake.ts');
+ const r=ovenRounds('baguette',320,'home_oven_standard',20);
+ assert.equal(r.rounds,5);assert.equal(r.perLoad,4);assert.equal(r.intervalMin%15,0);
+ assert.equal(ovenRounds('baguette',320,'home_oven_standard',4),null);
+});

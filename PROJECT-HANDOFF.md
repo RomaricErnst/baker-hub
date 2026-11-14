@@ -1,3 +1,9 @@
+# 14 November 2026 (evening) — starter asked, bread flour basis on Quantity, oven rounds (Claude)
+
+- The starter's place ("Where has it been since last fed?") and activity ("How active is it?") start unanswered on the Custom Starter step and the step waits for them; an answer is kept through reloads as a confirmed setting (`starterLocationAnswered`, `starterMatureAnswered`; `confirmSetting('starterLocation'|'starterMature')`). Simple's "Where is your starter now?" counts as the place.
+- Bread quantity by flour weight moved from Fine-tune to Quantity, behind Adjust, in Simple and Custom ("Set by flour weight instead" / "Set by piece weight instead"). Romaric: a baker who weighs by flour looks for it beside the quantity.
+- Lean breads larger than one oven load (`piecesPerOvenLoad`) bake in rounds spaced by the longest bake plus 10 min on the 15-minute grid (`ovenRounds`). Your plan lists "Bake round 2…" and "Last round out"; the guide's bake step names each round's time. The bake time stays the first round's.
+
 # 14 November 2026 (evening) — polish audit, wording and smaller screens (Claude)
 
 - Busy times speak plainly: "Add a busy time / Name (optional) / From / To / Add" (FR "Ajouter un moment occupé"), "Change my busy times", and a step left in one reads "Someone else takes the dough out" (confirm: "Yes, someone will"). The decision sheet's close says where it goes: "Back to the bake time".

@@ -73,6 +73,7 @@ import { checkYeastEntry, entryHoursLabel, type YeastEntryCheck } from '../utils
 import { starterActionLabelFor } from '../utils/starterBuild';
 import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock, formatBakeDateTime, displayWeight, formatPercent } from '../utils/units';
 import { formatDuration } from '../utils/duration';
+import { ovenRounds } from '../utils/leanBreadBake';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
   PIZZA_STYLES, BREAD_STYLES, FLOUR_DATA,
@@ -3877,6 +3878,10 @@ export default function Home() {
   // Custom keeps its detailed Starter step instead.
   const simpleStarterScreen = !isUnleavened && !!styleKey && (levainStyle || yeastType === 'sourdough') && !(tab === 'custom' && modeChosen);
   const starterStateDescribed = planningMode === 'know_peak' ? !!knownPeakTime : lastFedAge !== null && !!lastFedTime;
+  // The starter's place and activity are asked, not assumed (14 Nov 2026): shown unanswered until
+  // the baker taps one, and remembered through reloads with the other confirmed settings.
+  const starterLocationAnswered = confirmed('starterLocation',starterLocation) || !!simpleStarterAnswer;
+  const starterMatureAnswered = confirmed('starterMature',String(starterMature));
   const simpleStarterPending = simpleStarterScreen && !simpleStarterAnswer && !starterStateDescribed;
   // Custom with a levain preferment (pizza, or a bread whose method is chosen):
   // the same Starter step as the levain breads, just before Bake time.
@@ -4224,7 +4229,15 @@ export default function Home() {
   const recipePlanSteps = (()=>{
     if(!recipeGenerated||!eatTime||!schedule)return [];
     const from=Date.now()-60000;
-    return planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label,busy:isTimeBlocked(e.at,blocks)}));
+    const steps=planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label,busy:isTimeBlocked(e.at,blocks)}));
+    // A bake larger than one oven load: each further round and when the last comes out (14 Nov 2026).
+    const rounds=bakeType==='bread'&&styleKey&&!breadProtocol?ovenRounds(styleKey,itemWeight,ovenType??undefined,numItems):null;
+    if(rounds){
+      for(let i=2;i<=rounds.rounds;i++){const at=new Date(+eatTime+(i-1)*rounds.intervalMin*60000);steps.push({key:`round-${i}`,at,label:fr?`Enfourner la fournée ${i}`:`Bake round ${i}`,busy:isTimeBlocked(at,blocks)});}
+      const out=new Date(+eatTime+((rounds.rounds-1)*rounds.intervalMin+rounds.intervalMin-10)*60000);
+      steps.push({key:'rounds-out',at:out,label:fr?'Dernière fournée sortie':'Last round out',busy:false});
+    }
+    return steps;
   })();
   // A plan already in the calendar whose steps have since moved (any step, not only
   // Start Dough or the bake): the card says so once, where the button is.
@@ -4271,7 +4284,7 @@ export default function Home() {
                 count={numItems} itemWeight={itemWeight} diameter={pizzaDiameter}
                 pizzaSizes={PIZZA_SIZE_CHOICES[styleKey ?? '']}
                 breadSizes={bakeType==='bread'&&!breadProtocol&&totalFlourTarget===undefined?BREAD_SIZE_CHOICES[styleKey ?? '']:undefined}
-                sizeNote={bakeType==='bread'&&totalFlourTarget===undefined?`${bakeQuantityLabel(numItems,bakeType,styleKey,fr)} ${fr?'de':'of'} ${displayWeight(Math.round(itemWeight),units,locale)}`:undefined}
+                sizeNote={bakeType!=='bread'?undefined:totalFlourTarget===undefined?`${bakeQuantityLabel(numItems,bakeType,styleKey,fr)} ${fr?'de':'of'} ${displayWeight(Math.round(itemWeight),units,locale)}`:`${bakeQuantityLabel(numItems,bakeType,styleKey,fr)} · ${fr?'à partir de':'from'} ${displayWeight(totalFlourTarget,units,locale)} ${fr?'de farine':'of flour'}`}
                 diameterBounds={{ min: PIZZA_WEIGHT_TABLE[styleKey ?? '']?.[0][0] ?? 22, max: PIZZA_WEIGHT_TABLE[styleKey ?? '']?.at(-1)?.[0] ?? 35 }}
                 crust={(['thin','classic','generous'] as const)[pizzaCorn] ?? 'classic'}
                 weightIsManual={crustActive < 0} weightBounds={weightBounds}
@@ -4342,7 +4355,7 @@ export default function Home() {
                 planningMode={planningMode}
                 lastFedTime={lastFedTime}
                 knownPeakTime={knownPeakTime}
-                onStarterLocationChange={setStarterLocation}
+                onStarterLocationChange={loc=>{setStarterLocation(loc);confirmSetting('starterLocation',loc);}} starterLocationAnswered={starterLocationAnswered} starterMatureAnswered={starterMatureAnswered}
                 onPlanningModeChange={setPlanningMode}
                 onLastFedTimeChange={setLastFedTime}
                 onKnownPeakTimeChange={setKnownPeakTime}
@@ -4350,7 +4363,7 @@ export default function Home() {
                 onHasNotFedYetChange={setHasNotFedYet}
                 lastFedAge={lastFedAge}
                 onLastFedAgeChange={setLastFedAge}
-                starterMature={starterMature} starterHasRye={starterHasRye} onStarterMatureChange={setStarterMature} onStarterHasRyeChange={setStarterHasRye}
+                starterMature={starterMature} starterHasRye={starterHasRye} onStarterMatureChange={value=>{setStarterMature(value);confirmSetting('starterMature',String(value));}} onStarterHasRyeChange={setStarterHasRye}
                 lastFeedRatio={lastFeedRatio}
                 onLastFeedRatioChange={setLastFeedRatio}
                 nextFeedRatio={nextFeedRatio}
@@ -4426,7 +4439,7 @@ export default function Home() {
                 planningMode={planningMode}
                 lastFedTime={lastFedTime}
                 knownPeakTime={knownPeakTime}
-                onStarterLocationChange={setStarterLocation}
+                onStarterLocationChange={loc=>{setStarterLocation(loc);confirmSetting('starterLocation',loc);}} starterLocationAnswered={starterLocationAnswered} starterMatureAnswered={starterMatureAnswered}
                 onPlanningModeChange={setPlanningMode}
                 onLastFedTimeChange={setLastFedTime}
                 onKnownPeakTimeChange={setKnownPeakTime}
@@ -4434,7 +4447,7 @@ export default function Home() {
                 onHasNotFedYetChange={setHasNotFedYet}
                 lastFedAge={lastFedAge}
                 onLastFedAgeChange={setLastFedAge}
-                starterMature={starterMature} starterHasRye={starterHasRye} onStarterMatureChange={setStarterMature} onStarterHasRyeChange={setStarterHasRye}
+                starterMature={starterMature} starterHasRye={starterHasRye} onStarterMatureChange={value=>{setStarterMature(value);confirmSetting('starterMature',String(value));}} onStarterHasRyeChange={setStarterHasRye}
                 lastFeedRatio={lastFeedRatio}
                 onLastFeedRatioChange={setLastFeedRatio}
                 nextFeedRatio={nextFeedRatio}
@@ -5435,8 +5448,8 @@ export default function Home() {
             )}
 
             {customStarterStepId !== null && (
-              <StepPage flow={customOrganisationFlow} id={customStarterStepId} nextOverride={!starterStateDescribed ? <div style={{width:'100%'}}>
-                <p id="bh-starter-fed-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Indiquez quand votre levain a été rafraîchi pour la dernière fois.':'Tell us when your starter was last fed.'}</p>
+              <StepPage flow={customOrganisationFlow} id={customStarterStepId} nextOverride={!starterStateDescribed||!starterLocationAnswered||!starterMatureAnswered ? <div style={{width:'100%'}}>
+                <p id="bh-starter-fed-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{!starterLocationAnswered?(fr?'Indiquez où votre levain a été gardé.':'Tell us where your starter has been.'):!starterStateDescribed?(fr?'Indiquez quand votre levain a été rafraîchi pour la dernière fois.':'Tell us when your starter was last fed.'):(fr?'Indiquez comment est votre levain.':'Tell us how active your starter is.')}</p>
                 <button data-bh-forward type="button" disabled aria-describedby="bh-starter-fed-hint" style={{...NEXT_CTA,opacity:0.55}}>{(CUSTOM_STEPS.find(step=>step.id===nextCustomStep(customStarterStepId))?.chip ?? (fr?'Suivant':'Next'))} →</button>
               </div> : undefined}>
                 {(planEdit||planChartOpen)?null:renderCustomScheduler('starter')}
@@ -5464,8 +5477,7 @@ export default function Home() {
               : fineTuneFinishes ? <button data-bh-forward data-finetune-generate type="button" style={NEXT_CTA} onClick={finishFromFineTune}>{customOrganisationFlow.generateLabel}</button>
               : undefined}>
               {fineTuneFinishes && !planEdit && !planChartOpen && <div className="bh-plan-sheet-only">{renderCustomScheduler(customStarterStepId !== null?'plan':'all')}</div>}
-              {/* Pizza size and weight are set on Quantity (Adjust); bread keeps its weight or flour basis here. */}
-              {styleKey && bakeType==='bread' && renderQuantity('size')}
+              {/* Size, weight and the bread's flour basis are all set on Quantity, behind Adjust (14 Nov 2026). */}
               {/* Oven and mixing are asked once, on Equipment. */}
               {(() => {
                 const style = styleKey ? ALL_STYLES[styleKey] : null;

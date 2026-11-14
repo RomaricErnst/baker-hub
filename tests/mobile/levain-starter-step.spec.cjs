@@ -24,6 +24,9 @@ test('starter questions sit on the Starter step and the bake-time step shows the
  await expect(card.getByText('WHEN WAS IT LAST FED BEFORE GOING IN THE FRIDGE?')).toBeVisible();
  await card.getByRole('button',{name:'2–3 days ago',exact:true}).tap();
  await expect.poll(async()=>(await stored(page)).lastFedAge).toBe('days23');
+ // Its activity is asked too, never assumed (14 Nov 2026).
+ await expect(step.locator('[data-bh-forward]')).toBeDisabled();
+ await card.getByRole('button',{name:'Active & healthy',exact:true}).tap();
  await expect(step.locator('[data-bh-forward]')).toBeEnabled();
  await step.locator('[data-bh-forward]').tap();
  await expect(page.locator('#step-8:visible')).toHaveCount(0);
@@ -57,6 +60,7 @@ for(const locale of ['en','fr'])test(`pizza levain preferment: Starter step befo
  await card.getByRole('button',{name:fr?'Température ambiante':'Room temp',exact:true}).tap();
  await card.getByRole('button',{name:fr?'Hier':'Yesterday',exact:true}).tap();
  await expect.poll(async()=>(await stored(page)).lastFedAge).toBe('yesterday');
+ await card.getByRole('button',{name:fr?'Actif & en forme':'Active & healthy',exact:true}).tap();
  await expect(step.locator('[data-bh-forward]')).toBeEnabled();
  await step.locator('[data-bh-forward]').tap();
  await expect(page.locator('#step-9:visible')).toHaveCount(1);
