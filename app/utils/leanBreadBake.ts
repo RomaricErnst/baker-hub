@@ -118,6 +118,16 @@ export function piecesPerOvenLoad(styleKey: string, ovenType: string | undefined
   return long ? 4 : 2;
 }
 
+/** Oven loads for a bake: how many, and minutes from one load going in to the next (the longest
+ *  bake for the piece plus 10 min for the oven to recover), on the plan's 15-minute grid. */
+export function ovenRounds(styleKey: string, pieceWeightG: number, ovenType: string | undefined, count: number): { rounds: number; perLoad: number; intervalMin: number } | null {
+  const minutes = leanBreadMinutes(styleKey, pieceWeightG);
+  if (!minutes) return null;
+  const perLoad = piecesPerOvenLoad(styleKey, ovenType);
+  const rounds = Math.ceil(count / perLoad);
+  return rounds > 1 ? { rounds, perLoad, intervalMin: Math.ceil((minutes[1] + 10) / 15) * 15 } : null;
+}
+
 export function leanBreadBake(styleKey: string, pieceWeightG: number, ovenType: string | undefined, count = 1): LeanBreadBake | null {
   const base = leanBreadBakeOneLoad(styleKey, pieceWeightG, ovenType, count);
   if (!base) return null;

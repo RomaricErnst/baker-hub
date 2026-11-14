@@ -257,7 +257,7 @@ export default function PrototypeQuantityPicker({
         />
         {/* The size sits under the count, with its own way to change it, in Simple too. */}
         {roundView === 'count' && (pizzaNote || sizeNote) && <p data-each-pizza style={{ margin: '8px 0 0', fontSize: '14px', lineHeight: 1.45, color: 'var(--ash)' }}>{pizzaNote ?? sizeNote}{' · '}<button type="button" data-adjust-weight aria-expanded={adjustOpen} onClick={() => setAdjustOpen(open => !open)} style={{ minHeight: 44, padding: 0, border: 0, background: 'transparent', color: 'var(--terra)', textDecoration: 'underline', font: 'inherit', cursor: 'pointer' }}>{fr ? 'Ajuster' : 'Adjust'}</button></p>}
-        {roundView === 'count' && adjustOpen && (roundPizza && calculateWeight ? (
+        {roundView === 'count' && adjustOpen && !(bakeType==='bread'&&totalFlourTarget!==undefined) && (roundPizza && calculateWeight ? (
           // Round pizzas: say it as a baker would (size and crust); the grams follow.
           // Exact grams stay one tap away for bakers who know their number.
           <div data-adjust-weight-field data-adjust-size style={{ marginTop: 8, padding: '14px', border: '1px solid var(--border)', borderRadius: 14, background: 'var(--warm)' }}>
@@ -309,6 +309,20 @@ export default function PrototypeQuantityPicker({
             {(gramsOpen || !breadSizes.some(choice => Math.round(itemWeight) === choice.grams)) && gramsField}
           </div>
         ) : <div data-adjust-weight-field style={{ marginTop: 8 }}>{gramsField}</div>)}
+        {/* Bread: the flour basis is set here, behind Adjust, in Simple and Custom alike (14 Nov 2026):
+            a baker who weighs by flour looks for it beside the quantity, not in Fine-tune. */}
+        {roundView === 'count' && adjustOpen && bakeType === 'bread' && onFlourTargetChange && (totalFlourTarget === undefined
+          ? <button type="button" data-flour-basis="on" onClick={() => onFlourTargetChange(Math.max(100, Math.round(count * itemWeight * 0.6 / 10) * 10))} style={{ display: 'block', minHeight: 44, marginTop: 6, padding: 0, border: 0, background: 'transparent', color: 'var(--terra)', textDecoration: 'underline', font: 'inherit', fontSize: 14, cursor: 'pointer' }}>
+              {fr ? 'Partir plutôt d’un poids de farine' : 'Set by flour weight instead'}
+            </button>
+          : <div data-flour-basis-field style={{ marginTop: 8, padding: '14px', border: '1px solid var(--border)', borderRadius: 14, background: 'var(--warm)' }}>
+              <label htmlFor="quantity-total-flour" style={labelStyle}>{fr ? 'Farine totale' : 'Total flour'} ({weightUnit})</label>
+              <DraftNumberInput id="quantity-total-flour" type="number" inputMode="decimal" min={shownWeight(50)} max={shownWeight(25000)} step={units === 'imperial' ? 0.1 : 1} value={shownWeight(totalFlourTarget)} onCommit={value => onFlourTargetChange(clamp(storedWeight(value), 50, 25000, 1))} style={{ ...inputStyle, maxWidth: 160, boxSizing: 'border-box' }} />
+              <p style={{ fontSize: 14, lineHeight: 1.5, margin: '8px 0 0', color: 'var(--ash)' }}>{fr ? `Farine du levain ou du préferment comprise. La pâte est répartie en ${count} pièces.` : `Including any starter or preferment flour. The dough is divided into ${count} pieces.`}</p>
+              <button type="button" data-flour-basis="off" onClick={() => onFlourTargetChange(undefined)} style={{ display: 'block', minHeight: 44, padding: 0, border: 0, background: 'transparent', color: 'var(--terra)', textDecoration: 'underline', font: 'inherit', fontSize: 14, cursor: 'pointer' }}>
+                {fr ? 'Revenir au poids par pièce' : 'Set by piece weight instead'}
+              </button>
+            </div>)}
       </div>}
 
       {/* The count screen asks only how many; size, weight and flour basis are set in Custom. */}
