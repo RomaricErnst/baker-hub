@@ -36,10 +36,10 @@ async function go(page,label,locale){
 
 for(const bread of [false,true])test(`generated ${bread?'bread':'pizza'} views each have one H1`,async({page})=>{
  await seed(page,{bread});
- await go(page,'Preparation','en');await oneTitle(page,'Heading audit');
+ // 14 Nov 2026: Preparation and Baking & serving open on their own visible title.
+ await go(page,'Preparation','en');await oneTitle(page,'Preparation');
  await go(page,'Recipe','en');await oneTitle(page,'Heading audit');
- await go(page,'Baking & serving','en');await oneTitle(page,'Heading audit');
- await expect(page.getByRole('heading',{level:2,name:'Baking & serving',exact:true})).toHaveCount(1);
+ await go(page,'Baking & serving','en');await oneTitle(page,'Baking & serving');
  await go(page,'Shopping list','en');await oneTitle(page,bread?'Heading audit':'Shopping list');
  await go(page,'My bake','en');await oneTitle(page,'Review my choices');
 });

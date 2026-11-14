@@ -31,7 +31,7 @@ for(const locale of ['fr','en']){
  test(`${locale}: partial toppings are disclosed before cooking and throughout preparation`,async({page})=>{
   await seed(page,locale,true);
   const visible=()=>page.locator('[data-testid="selection-coverage"]:visible');
-  const coverage=locale==='fr'?'Garnitures pour 2 pizzas sur 24.':'Toppings for 2 of 24 pizzas.';
+  const coverage=locale==='fr'?'Garnitures pour vos 2 pizzas choisies':'Toppings for your 2 chosen pizzas';
   await expect(visible()).toContainText(coverage);
   await expect(visible()).toContainText('22');
   await expect(page.getByText(locale==='fr'?'Tout est prêt. Bon appétit !':'Everything is ready. Enjoy!',{exact:true})).toHaveCount(0);

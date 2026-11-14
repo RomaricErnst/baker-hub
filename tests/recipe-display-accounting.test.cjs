@@ -94,7 +94,7 @@ test('recipe shows only the recipe (timing lives in Preparation) with the select
   const text=html.replace(/<[^>]+>/g,'').replace(/[\u00a0\u202f]/g,' ');
   a.doesNotMatch(text,locale==='fr'?/Ajuster les horaires|Cuire /:/Adjust timing|· Bake /);
   a.match(text,locale==='fr'?/Sel2,8 %/:/Salt2.8%/);
-  a.ok(text.includes(locale==='fr'?'0,54 g':'0.54 g'));
+  a.ok(text.includes(locale==='fr'?'0,5 g':'0.5 g'),'yeast reads to what a kitchen scale shows');
  }
 });
 
@@ -124,13 +124,14 @@ test('poolish stage names the same chill time as the generated thermal schedule'
  }
 });
 
-test('Simple recipe omits the fermentation container; Custom keeps it',()=>{
+// 14 Nov 2026: the container question is gone from both modes; nothing used its answer.
+test('no recipe asks for a fermentation container',()=>{
  for(const locale of ['en','fr']){
   const label=locale==='fr'?'Récipient de fermentation':'Fermentation container';
   const simple=render(make(),'none',undefined,locale,false,{mode:'simple',onContainerCapacityChange(){}});
   const custom=render(make(),'none',undefined,locale,false,{mode:'custom',onContainerCapacityChange(){}});
   a.ok(!simple.includes(label),`${locale} simple`);
-  a.ok(custom.includes(label),`${locale} custom`);
+  a.ok(!custom.includes(label),`${locale} custom`);
  }
 });
 test('water percentage is the hydration set, and the starter flour line reads as a sentence',()=>{

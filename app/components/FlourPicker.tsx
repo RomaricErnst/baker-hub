@@ -279,7 +279,7 @@ export function BlendBar({ parts, onChange, locale, approx }: {
   return (
     <div>
       <div ref={ref} style={{
-        position: 'relative', height: '52px', borderRadius: '12px', overflow: 'hidden',
+        position: 'relative', height: '44px', borderRadius: '12px', overflow: 'hidden',
         display: 'flex', border: '1px solid var(--border)', background: 'var(--warm)',
         touchAction: 'none', marginBottom: '10px',
       }}>
@@ -289,13 +289,7 @@ export function BlendBar({ parts, onChange, locale, approx }: {
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             justifyContent: 'center', gap: '1px', overflow: 'hidden',
           }}>
-            {p.pct >= 14 && (
-              <span style={{
-                fontSize: '11.5px', fontWeight: 700, whiteSpace: 'nowrap',
-                overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '94%',
-              }}>{p.name}</span>
-            )}
-            <span style={{ fontSize: '11px', opacity: .85 }}>{p.pct}%</span>
+            {/* The rows below name each flour and its share; the bar is the handle (14 Nov 2026 audit). */}
           </div>
         ))}
         {parts.map((p, i) => {
@@ -336,8 +330,7 @@ export function BlendBar({ parts, onChange, locale, approx }: {
         display: 'flex', justifyContent: 'space-between', fontSize: '12px',
         color: 'var(--smoke)', fontFamily: 'var(--font-ui)',
       }}>
-        <span>{locale === 'fr' ? 'Glissez ou utilisez les flèches du clavier' : 'Drag or use the keyboard arrows'}</span>
-        <span style={{ color: 'var(--gold-text)' }}>{locale === 'fr' ? 'Force du mélange' : 'Blend strength'} W{approx ? ' ~' : ' '}{blendW}</span>
+        <span style={{ color: 'var(--gold-text)', marginLeft: 'auto' }}>{locale === 'fr' ? 'Force du mélange' : 'Blend strength'} W{approx ? ' ~' : ' '}{blendW}</span>
       </div>
     </div>
   );
@@ -741,7 +734,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
 
   return (
     <div ref={selectionRef}>
-      {blend.flour2 && <h3>{isFr?'Farine 1':'Flour 1'} · {blend.ratio1}%</h3>}
+      {blend.flour2 && <h3>{isFr?'Farine 1':'Flour 1'}</h3>}
       {styleKey && STARTING_BLEND_TEXT[styleKey] && <p style={{fontSize:14,lineHeight:1.5,marginBottom:12}}>{STARTING_BLEND_TEXT[styleKey][isFr?'fr':'en']}</p>}
       {unmatchedScan && <p role="status">{isFr ? `« ${unmatchedScan} » : aucun produit exact retrouvé. Choisissez le type correspondant au sachet, ou recherchez une autre farine. Votre sélection actuelle reste inchangée.` : `“${unmatchedScan}”: no exact product found. Choose the type shown on the bag, or search for another flour. Your current selection is unchanged.`}</p>}
 
@@ -892,7 +885,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
                   reuses the same search UI below */}
               {blendSelectedF2 && !blendShowFullSearch ? (
                 <div>
-                  <h3>{isFr?'Farine 2':'Flour 2'} · {blend.flour3 ? blend.ratio2 : 100-blend.ratio1}%</h3>
+                  <h3>{isFr?'Farine 2':'Flour 2'}</h3>
                   <FlourProductButton entry={blendSelectedF2} selected onChoose={()=>{}} onChange={()=>{setBlendSlot(2);setBlendShowFullSearch(true);setBlendRoad(null);}} changeLabel={isFr?'Changer la farine 2':'Change flour 2'}/>
                   {blendSelectedF3 && <FlourProductButton entry={blendSelectedF3} selected onChoose={()=>{}} onChange={()=>{setBlendSlot(3);setBlendShowFullSearch(true);setBlendRoad(null);}} changeLabel={isFr?'Changer la 3e farine':'Change third flour'}/>}
                   {/* The bar replaces two ranges that each owned a raw ratio

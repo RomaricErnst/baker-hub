@@ -19,8 +19,6 @@ import { eggCountLabel } from '../utils/breadNames';
 interface RecipeOutputProps extends WaterSettingsProps {
   afterIngredients?: ReactNode;
   mixerConfirmed?: boolean;
-  containerCapacityLitres?: number;
-  onContainerCapacityChange?: (litres: number | undefined) => void;
   mixingBatches?: number;
   mixerCapacityG?: number;
   onMixingBatchesChange?: (count: number) => void;
@@ -351,7 +349,7 @@ function StarterPrepCard({
 
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
-  containerCapacityLitres, onContainerCapacityChange, result, numItems, itemWeight, styleName, styleKey, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
+  result, numItems, itemWeight, styleName, styleKey, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, explicitFlour = false, units,
   starterEvents, mixingTime, feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
   afterIngredients, mixerConfirmed=false, onEditSetup, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixerCapacityG, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
@@ -906,17 +904,7 @@ export default function RecipeOutput({
       </section>}
       {afterIngredients}
 
-      {mode !== 'simple' && onContainerCapacityChange && breadProtocol?.method !== 'unleavened' && <details className="bh-disclosure">
-        <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Récipient de fermentation' : 'Fermentation container'}</summary>
-        <label style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',fontSize:14}}>
-          {locale === 'fr' ? 'Capacité du récipient (litres)' : 'Container capacity (litres)'}
-          <input type="number" min={0.5} step={0.5} defaultValue={containerCapacityLitres ?? 3} key={containerCapacityLitres ?? 'default'}
-            onBlur={e => { const value = Number(e.target.value); if (e.target.value !== '' && Number.isFinite(value) && value >= 0.5) onContainerCapacityChange(value); else { e.target.value = String(containerCapacityLitres ?? 3); } }}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-            style={{width:90,minHeight:44,padding:8,border:'1px solid var(--border)',borderRadius:8}} />
-        </label>
-        <p style={{fontSize:13}}>{locale === 'fr' ? 'Prévoyez de la place pour que la pâte gonfle.' : 'Allow room for the dough to expand.'}</p>
-      </details>}
+      {/* The fermentation container question is gone: nothing used its answer (14 Nov 2026). */}
 
       {/* ── Batch splitting callout ──────────────────────────────── */}
       {(needsBatches || effectiveBatches > 1) && (

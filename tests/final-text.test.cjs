@@ -134,7 +134,7 @@ test('shopping: a sachet hint for a tiny dry yeast dose, and the finish and dust
  assert.equal(yeastBuyingHint(6,'active_dry','fr'),undefined,'more than a French 5.5 g sachet');
  assert.equal(yeastBuyingHint(3,'fresh','fr'),undefined,'fresh yeast is sold by the cube');
  const items=doughShoppingItems({recipe:{flour:600,salt:17,yeast:{convertedGrams:0.75,yeastType:'instant'}},yeastType:'instant',locale:'en',flourName:'Flour'});
- assert.equal(items.find(i=>i.tickKey==='dough_2').amount,'1 sachet (7 g)');assert.equal(items.find(i=>i.tickKey==='dough_2').hint,'you’ll use 0.75 g');
+ assert.equal(items.find(i=>i.tickKey==='dough_2').amount,'1 sachet (7 g)');assert.equal(items.find(i=>i.tickKey==='dough_2').hint,'you’ll use 0.8 g');
  assert.deepEqual(breadFinishShopping('fougasse',2,'fr').map(r=>r.name),['Huile d’olive, pour badigeonner à la sortie du four','Fleur de sel (facultatif)']);
  assert.deepEqual(breadFinishShopping('pain_campagne',1,'en'),[{id:'finish_rice_flour',name:'Rice flour, for dusting the banneton',grams:20}]);
  assert.deepEqual(breadFinishShopping('baguette',3,'en'),[]);

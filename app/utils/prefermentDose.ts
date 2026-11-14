@@ -1,7 +1,10 @@
-// Keep small commercial preferment doses meaningful in both unit systems.
+// Yeast is shown to what a kitchen scale reads (14 Nov 2026 audit: "0.524 g" beside advice to use
+// a scale reading 0.1 g): one decimal from 0.1 g, one significant figure below. The exact dose
+// stays in the dilution arithmetic and, in Custom, in the baker's percentage.
 export function formatPrefermentDose(grams: number, locale='en'): string {
   if (!Number.isFinite(grams) || grams <= 0) return '0 g';
-  return `${new Intl.NumberFormat(locale,{maximumSignificantDigits:3}).format(grams)} g`;
+  const nf = grams >= 0.1 ? new Intl.NumberFormat(locale,{maximumFractionDigits:grams < 10 ? 1 : 0}) : new Intl.NumberFormat(locale,{maximumSignificantDigits:1});
+  return `${nf.format(grams)} g`;
 }
 
 export function prefermentDilution(doseGrams: number, prefermentWaterGrams: number, limitGrams = 0.5) {
@@ -21,11 +24,8 @@ export function prefermentDilution(doseGrams: number, prefermentWaterGrams: numb
 // Final-dough yeast is split to hundredths of a gram between mixing batches.
 export function formatYeastDose(grams:number, locale='en') {
   if (!(grams > 0) || !Number.isFinite(grams)) return '0 g';
-  if (grams < 0.01) return formatPrefermentDose(grams,locale);
-  // Under a gram, three significant figures (0.998 g, not "1 g" next to a
-  // "too little for a kitchen scale" note); the same as the preferment dose.
-  if (grams < 1) return formatPrefermentDose(grams,locale);
-  // From a gram, kitchen-scale precision: 4.5 g, not 4.45 g.
+  // One rule with the preferment dose: 0.5 g, 1.6 g, 4.5 g.
+  if (grams < 10) return formatPrefermentDose(grams,locale);
   return `${new Intl.NumberFormat(locale,{maximumFractionDigits:1}).format(grams)} g`;
 }
 

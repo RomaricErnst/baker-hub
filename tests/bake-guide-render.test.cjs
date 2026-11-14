@@ -80,7 +80,7 @@ test('preferment instructions use actual dose and planned location without final
  const section=html.split('aria-label="'+messages.bakeGuide.stepTitles[pref==='biga'?'makeBiga':'makePoolish'])[1];
  assert.ok(section,'preferment section is rendered');
  const prefHtml=section.split('</section>')[0];
- assert.ok(prefHtml.includes('0.175 g'));assert.match(prefHtml,/fresh yeast/i);
+ assert.ok(prefHtml.includes('0.2 g'));assert.match(prefHtml,/fresh yeast/i);
  assert.ok(cold?/Refrigerate until /.test(prefHtml):prefHtml.includes('Leave at room temperature according to this plan.'));
  assert.doesNotMatch(prefHtml,/Water temperature|50-60|0\.1-0\.2|always ferments cold|air exchange|pinch of IDY/);
  }

@@ -27,9 +27,9 @@ for(const scenario of [
  await expect(page.locator('.bh-bake-navigator .bh-step-trigger')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Vue d’ensemble',exact:true})).toHaveCount(1);
  await progress.tap();
- await expect(page.getByRole('button',{name:'Commencer la cuisson →',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:/^(Commencer la cuisson|Cuire le pain) →$/})).toBeVisible();
  await expect(page.locator('section[data-guide-phase="cooking"]:visible')).toHaveCount(scenario.total);
- await page.getByRole('button',{name:'Commencer la cuisson →',exact:true}).tap();
+ await page.getByRole('button',{name:/^(Commencer la cuisson|Cuire le pain) →$/}).tap();
  await expect(page.locator('.bh-local-progress')).toContainText(`Étape 1 / ${scenario.total}`);
  await expect(page.locator('section[data-guide-phase="cooking"]:visible')).toHaveCount(1);
 });
@@ -46,7 +46,7 @@ test('existing pizza: late selection returns to service after reload and prepara
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_existing_base_v1')).selectionReturn)).toBe('service');
  await page.reload();
  // Optional summary must honor the same late-return destination as direct confirmation.
- await page.getByRole('button',{name:'Ma sélection · 2',exact:true}).tap();
+ await page.locator('[data-see-selection]:visible').first().tap();
  await page.getByRole('dialog',{name:'Mes pizzas',exact:true}).getByRole('button',{name:'Retour à Cuisson & service',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Cuisson & service');
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_existing_base_v1')).done.margherita)).toBe(1);

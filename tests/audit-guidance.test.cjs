@@ -23,9 +23,10 @@ test('selection scope is explicit even before a pizza is baked, without declarin
  for(const locale of ['fr','en'])for(const selected of [0,1,2,24,25]){
   const html=renderToStaticMarkup(React.createElement(Coverage,{locale,selected,planned:24}));
   if(selected===0){assert.match(html,locale==='fr'?/Pâte uniquement/:/Dough ingredients only/);assert.doesNotMatch(html,/24/);}
-  else assert.ok(html.includes(locale==='fr'?`${selected} pizza${selected===1?'':'s'} sur 24`:`${selected} of 24 pizzas`));
-  if(selected>0&&selected<24){assert.ok(html.includes(String(24-selected)));assert.match(html,/séparément|separately/);}
-  if(selected>24)assert.match(html,locale==='fr'?/dépasse/:/exceeds/);
+  // 14 Nov 2026: one line, what the toppings cover and how many are left to choose.
+  else if(selected<=24)assert.ok(html.includes(locale==='fr'?(selected===1?'votre pizza choisie':selected===24?'vos 24 pizzas':`vos ${selected} pizzas choisies`):(selected===1?'your chosen pizza':selected===24?'your 24 pizzas':`your ${selected} chosen pizzas`)));
+  if(selected>0&&selected<24){assert.ok(html.includes(String(24-selected)));assert.match(html,/à choisir|still to choose/);}
+  if(selected>24)assert.match(html,locale==='fr'?/plus que les 24 pâtons/:/more than your 24 dough balls/);
   assert.doesNotMatch(html,/Tout est prêt|Everything is ready|Service terminé/);
  }
 });

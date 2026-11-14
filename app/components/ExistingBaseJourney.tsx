@@ -1,4 +1,5 @@
 'use client';
+import { BackLabel } from './BackLabel';
 import {createDraftStorage} from '../lib/draftStorage';
 import {usePageTop} from '../hooks/usePageTop';
 import {useCallback,useEffect,useState,useRef} from 'react';
@@ -147,7 +148,7 @@ export default function ExistingBaseJourney(){
  };
  const completionProps={onSave:saveFinished,onShare:shareFinished,saveKind:'download' as const,onRepeat:repeatRecipe,resultNotes:draft.resultNotes??'',onResultNotesChange:(resultNotes:string)=>{setDraft(d=>({...d,resultNotes}));setExported(null);},sessionSaved:exported===JSON.stringify(draft)};
 
- const selectionDoneLabel=draft.selectionReturn?tr('Retour à '+({recipe:'Recette',shopping:'Courses',protocol:'Préparation',service:'Cuisson & service',batch:'Ma fournée',organisation:'Organisation'}[draft.selectionReturn]),'Back to '+({recipe:'Recipe',shopping:'Shopping list',protocol:'Preparation',service:'Baking & serving',batch:'My bake',organisation:'Setup'}[draft.selectionReturn])):tr('Voir les courses','View shopping');
+ const selectionDoneLabel=draft.selectionReturn?tr('Retour '+({recipe:'à la recette',shopping:'aux courses',protocol:'à la préparation',service:'à Cuisson & service',batch:'à Ma fournée',organisation:'à l’organisation'}[draft.selectionReturn]),'Back to '+({recipe:'Recipe',shopping:'Shopping list',protocol:'Preparation',service:'Baking & serving',batch:'My bake',organisation:'Setup'}[draft.selectionReturn])):tr('Voir les courses','View shopping');
  const phase:Phase=draft.section==='shopping'?'shop':draft.section==='protocol'?'prep':draft.section==='service'?'bake':'pick';
  const control={maxWidth:'100%',minHeight:44,padding:'12px 16px',border:'1px solid var(--border)',borderRadius:12,background:'var(--card)',color:'var(--char)',fontSize:16};
  const instructions=draft.base==='pizza'?tr('Suivez votre recette ou les indications de l’emballage pour le repos et la cuisson.','Follow your recipe or package instructions for resting and baking.'):detail.origin==='purchased'?tr('Suivez l’emballage pour le repos, le préchauffage, la température et la durée.','Follow the package for resting, preheating, temperature and baking time.'):tr('Suivez votre recette d’origine pour le repos, la fermentation, la température et la durée de cuisson.','Follow your original recipe for resting, fermentation, baking temperature and duration.');
@@ -190,7 +191,7 @@ export default function ExistingBaseJourney(){
      <button style={control} onClick={()=>go('shopping')}>{tr('Voir les quantités et les courses','View quantities and shopping')}</button>
    </section>}
    {draft.section==='protocol'&&raw&&prep}
-   {draft.section==='service'&&<button type="button" className="bh-section-back" onClick={()=>go('protocol')}>{tr('Préparer les garnitures','Prepare toppings and fillings')}</button>}
+   {draft.section==='service'&&<button type="button" className="bh-section-back" onClick={()=>go('protocol')}><BackLabel text={tr('Préparer les garnitures','Prepare toppings and fillings')}/></button>}
    {draft.section==='service'&&needsBake&&<>{prep}<h2>{draft.base==='pizza'?tr('Préparer et cuire','Prepare and bake'):tr('Cuire avant de garnir','Bake before filling')}</h2><p>{tr('Vérifiez la cuisson du centre et du dessous. Pour du pain à garnir, laissez-le refroidir avant l’assemblage.','Check the centre and underside are baked. Let sandwich bread cool before assembly.')}</p>{draft.base!=='pizza'&&<button style={control} onClick={()=>updateDetail({baked:true})}>{tr('Mon pain est cuit et refroidi','My bread is baked and cooled')}</button>}</>}
    {draft.section==='service'&&raw&&detail.baked&&draft.base!=='pizza'&&<button style={control} onClick={()=>updateDetail({baked:false})}>{tr('Annuler « pain cuit »','Undo “bread baked”')}</button>}
    {!['organisation','recipe'].includes(draft.section)&&(draft.base==='pizza'?<>

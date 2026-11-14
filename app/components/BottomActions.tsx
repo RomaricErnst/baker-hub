@@ -1,4 +1,5 @@
 'use client';
+import { withBackLabel } from './BackLabel';
 import { useRef, useLayoutEffect, type ReactNode } from 'react';
 
 // The slot reserves the actual bar height, including wrapped labels and safe area.
@@ -16,6 +17,6 @@ export default function BottomActions({ children, className = '' }: { children: 
     return () => observer.disconnect();
   }, []);
   return <div ref={slot} className="bh-step-action-slot">
-    <div ref={bar} className={`bh-step-actions${className ? ` ${className}` : ''}`}>{children}</div>
+    <div ref={bar} className={`bh-step-actions${className ? ` ${className}` : ''}`}>{withBackLabel(children)}</div>
   </div>;
 }

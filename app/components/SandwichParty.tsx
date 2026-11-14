@@ -1,4 +1,5 @@
 'use client';
+import { BackLabel } from './BackLabel';
 import { breadNoun } from '../utils/breadNames';
 import { drainedWeightShoppingNote } from '../lib/ingredientWeights';
 
@@ -70,7 +71,7 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
   const breadImage = selectedBread?.image ?? family?.image;
   const destinationName = breadCompanionLabel(family?.id,isFr);
   const portionNames: Record<string,[string,string,string,string]> = {
-    tartine:['tartine','tartines','toast','toasts'], pita:['pita','pitas','pita','pitas'],
+    tartine:['tartine','tartines','tartine','tartines'], pita:['pita','pitas','pita','pitas'],
     greek_pita:['pita','pitas','pita','pitas'], laffa:['wrap','wraps','wrap','wraps'],
     piadina:['piadina','piadinas','piadina','piadine'], bagel:['bagel','bagels','bagel','bagels'],
     kebab_bread:['kebab','kebabs','kebab','kebabs'], batbout:['batbout','batbouts','batbout','batbouts'],
@@ -162,19 +163,23 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
     <div className={styles.hero} style={tab==='shop'?{display:'flex',flexWrap:'wrap',justifyContent:'space-between',gap:8}:undefined}>
       {/* With no fillings the shopping list is the bread batch alone: one heading with the item count. */}
       <div><h2 className={styles.pageTitle} ref={headingRef} tabIndex={-1}>{tab==='shop'&&total===0&&breadIngredients.length>0?`${t('Liste de courses','Shopping list')} · ${breadIngredients.length} ${breadIngredients.length===1?t('article','item'):t('articles','items')}`:heading}</h2>
-        {!(tab==='shop'&&total===0)&&<div className={styles.muted}>{breadName}</div>}
+        {/* The bread is named in the section bar and the portion line; no subtitle (14 Nov 2026 audit). */}
       </div>
       {tab==='shop' ? (!backLabel&&<button type="button" className={styles.button} onClick={()=>go('pick')}>{total>0?t('Modifier les garnitures','Edit fillings'):t('Ajouter des garnitures — facultatif','Add fillings — optional')}</button>) : family && <img src={breadImage} alt={breadName}/>}
     </div>
 
     {(family||tab==='shop') && <>
-      {legacyMieTartines&&tab==='pick'&&<div className={styles.card}><p>{t('Cette fournée conserve vos tartines choisies précédemment.','This bake keeps your previously selected toasts.')}</p><button type="button" className={styles.button} onClick={()=>onChange({...snapshot,familyId:'pain_mie',qtys:{},completed:{},prepTicks:{},ingredientOverrides:{}})}>{t('Remplacer par des clubs ou croques','Replace with clubs or croques')}</button></div>}
+      {legacyMieTartines&&tab==='pick'&&<div className={styles.card}><p>{t('Cette fournée conserve vos tartines choisies précédemment.','This bake keeps your previously selected tartines.')}</p><button type="button" className={styles.button} onClick={()=>onChange({...snapshot,familyId:'pain_mie',qtys:{},completed:{},prepTicks:{},ingredientOverrides:{}})}>{t('Remplacer par des clubs ou croques','Replace with clubs or croques')}</button></div>}
       {!hideNavigation && <CompanionSteps label={t('Étapes des garnitures','Filling steps')} active={tab} onChange={go}
         steps={[{key:'pick',label:t('Choisir','Choose')},{key:'shop',label:t('Courses','Shopping')},{key:'prep',label:t('Préparer','Prepare')},{key:'serve',label:t('Servir','Serve')}]} />}
-      {total>0 && <div className={styles.summary} aria-live="polite">
-        <strong>{total} {portionName(total)}</strong> · {t('Pain à prévoir','Bread needed')} {breadSlices>0?`${breadSlices} ${t('tranches','slices')} · `:''}≈ {amountText(breadGrams)}
-        <div className={styles.muted}>{tartine ? t('Une portion de tartine = 60 g de pain, soit une grande tranche ou plusieurs petites.','One toast portion = 60 g of bread: one large slice or several small ones.') : individualBread?t('Un pain par portion.','One bread per portion.'):t('Les quantités comptent les sandwichs, pas les pains.','Quantities count sandwiches, not loaves.')}
-          {numItems && availableDoughWeight ? ` ${t(`Vos ${numItems} ${breadNoun(styleKey,numItems,true)} : ${amountText(availableDoughWeight)} de pâte.`,`Your ${numItems} ${breadNoun(styleKey,numItems,false)} make ${amountText(availableDoughWeight)} of dough.`)}` : ''}</div>
+      {/* One line, on the choosing page only (14 Nov 2026 audit: the same block sat on five screens). */}
+      {total>0 && tab==='pick' && <div className={styles.summary} aria-live="polite" data-portion-summary>
+        <strong>{total} {portionName(total)}</strong> · {breadSlices>0
+          ? t(`${breadSlices} tranches de pain`,`${breadSlices} slices of bread`)
+          : numItems && availableDoughWeight && breadGrams>0
+          ? t(`vos ${numItems} ${breadNoun(styleKey,numItems,true)} en font environ ${Math.max(1,Math.floor(availableDoughWeight*total/breadGrams))}`,`your ${numItems} ${breadNoun(styleKey,numItems,false)} make about ${Math.max(1,Math.floor(availableDoughWeight*total/breadGrams))}`)
+          : `${t('pain à prévoir','bread needed')} ≈ ${amountText(breadGrams)}`}
+        {' · '}<button type="button" data-see-selection onClick={()=>setReviewOpen(true)} style={{font:'inherit',color:'var(--terra)',background:'none',border:0,padding:'12px 0',margin:'-12px 0',textDecoration:'underline',textUnderlineOffset:3,cursor:'pointer'}}>{t('Voir ma sélection','See my selection')}</button>
       </div>}
       {total>0 && insufficientBread && <div className={styles.card} role="status" style={{marginBottom:16}}>
         <strong>{t('Prévoyez davantage de pain','You will need more bread')}</strong>
@@ -201,26 +206,24 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
           <button className={`${styles.button} ${styles.wide}`} type="button" onClick={()=>setDetailId(recipe.id)}>{t('Recette et garnitures','Recipe and fillings')}</button>
         </article>)}</div>
         {!filtered.length&&<p className={styles.empty}>{t('Aucune recette dans ce filtre. Essayez « Tout ».','No recipes in this filter. Try “All”.')}</p>}
-        {active&&total>0&&!reviewOpen&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{directSelectionReturn ? <button type="button" className="bh-back-action" onClick={()=>setReviewOpen(true)}>{t('Ma sélection','My selection')} · {total}</button> : onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{t('Étape précédente','Previous step')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={()=>{if(directSelectionReturn&&onSelectionDone&&!needsQuantityReview)onSelectionDone();else setReviewOpen(true);}}>{directSelectionReturn?(needsQuantityReview?t('Vérifier la quantité de pain','Check bread quantity'):selectionDoneLabel):`${t('Voir ma sélection','Review selection')} · ${total}`}</button></div>}
+        {active&&total>0&&!reviewOpen&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}><BackLabel text={directSelectionReturn&&selectionBackLabel?selectionBackLabel:t('Étape précédente','Previous step')}/></button>}<button type="button" className={`${button} ${styles.wide}`} onClick={()=>{if(directSelectionReturn&&onSelectionDone&&!needsQuantityReview)onSelectionDone();else setReviewOpen(true);}}>{directSelectionReturn?(needsQuantityReview?t('Vérifier la quantité de pain','Check bread quantity'):selectionDoneLabel):`${t('Voir ma sélection','Review selection')} · ${total}`}</button></div>}
 
-        {active&&baseReady&&total===0&&onSelectionBack&&<div data-companion-action className={styles.selectionBar}>{directSelectionReturn&&selectionBackLabel?<><button type="button" className="bh-back-action" onClick={onSelectionBack}>{selectionBackLabel}</button><button type="button" className={`${button} ${styles.wide}`} style={{margin:0,width:'auto',flex:1}} onClick={onSelectionDone}>{selectionDoneLabel}</button></>:<button type="button" className="bh-back-action" onClick={onSelectionBack}>{directSelectionReturn?selectionDoneLabel:t('Étape précédente','Previous step')}</button>}</div>}
+        {active&&baseReady&&total===0&&onSelectionBack&&<div data-companion-action className={styles.selectionBar}>{directSelectionReturn&&selectionBackLabel?<><button type="button" className="bh-back-action" onClick={onSelectionBack}>{selectionBackLabel}</button><button type="button" className={`${button} ${styles.wide}`} style={{margin:0,width:'auto',flex:1}} onClick={onSelectionDone}>{selectionDoneLabel}</button></>:<button type="button" className="bh-back-action" onClick={onSelectionBack}><BackLabel text={directSelectionReturn?selectionDoneLabel:t('Étape précédente','Previous step')}/></button>}</div>}
         {active&&!baseReady&&total===0&&onSelectionDone&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{(!directSelectionReturn||selectionBackLabel)&&onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{directSelectionReturn?selectionBackLabel:t('Étape précédente','Previous step')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={onSelectionDone}>{selectionDoneLabel??t('Définir ma recette','Set up my recipe')}</button></div>}
       </>}
-      {tab!=='pick'&&tab!=='shop'&&!total&&<div className={styles.empty}><p>{tartine ? t('Choisissez vos tartines et leurs quantités pour commencer.','Choose your toasts and quantities to begin.') : t(`Choisissez vos ${portionPlural} et leurs quantités pour commencer.`,`Choose your ${portionPlural} and quantities to begin.`)}</p><button className={button} type="button" onClick={()=>go('pick')}>{tartine ? t('Choisir mes tartines','Choose toasts') : t(`Choisir mes ${portionPlural}`,`Choose ${portionPlural}`)}</button></div>}
+      {tab!=='pick'&&tab!=='shop'&&!total&&<div className={styles.empty}><p>{tartine ? t('Choisissez vos tartines et leurs quantités pour commencer.','Choose your tartines and quantities to begin.') : t(`Choisissez vos ${portionPlural} et leurs quantités pour commencer.`,`Choose your ${portionPlural} and quantities to begin.`)}</p><button className={button} type="button" onClick={()=>go('pick')}>{tartine ? t('Choisir mes tartines','Choose tartines') : t(`Choisir mes ${portionPlural}`,`Choose ${portionPlural}`)}</button></div>}
       {tab==='shop'&&<>
         {!doughConfigured && <div className={styles.card}><p>{t('Cette liste contient les garnitures. Complétez votre pâte pour ajouter les ingrédients du pain.','This list contains fillings. Finish your dough plan to include the bread ingredients.')}</p>{onAdjustBread&&<button className={styles.button} type="button" onClick={onAdjustBread}>{t('Compléter ma pâte','Finish my dough')}</button>}</div>}
-        {total>0&&<><h3>{t('Pain pour cette sélection','Bread for this selection')}</h3>
-        <p>{t('Prévoyez','Allow')} ≈ {amountText(breadGrams)} {t('de pain cuit pour votre sélection.','of baked bread for your selection.')}</p></>}
         {breadIngredients.length>0&&total===0&&<div>
-          {breadIngredients.map(item=><label key={item.id} className={styles.check}><input type="checkbox" checked={!!snapshot.shopTicks[`dough:${item.id}:${item.grams}`]} onChange={event=>update({shopTicks:{...snapshot.shopTicks,[`dough:${item.id}:${item.grams}`]:event.target.checked}})}/><span className={snapshot.shopTicks[`dough:${item.id}:${item.grams}`]?styles.checked:''}>{item.name}</span><strong className={styles.checkAmount}>{amountText(item.grams)}</strong></label>)}
+          {breadIngredients.filter(item=>item.id!=='water').map(item=><label key={item.id} className={styles.check}><input type="checkbox" checked={!!snapshot.shopTicks[`dough:${item.id}:${item.grams}`]} onChange={event=>update({shopTicks:{...snapshot.shopTicks,[`dough:${item.id}:${item.grams}`]:event.target.checked}})}/><span className={snapshot.shopTicks[`dough:${item.id}:${item.grams}`]?styles.checked:''}>{item.name}</span><strong className={styles.checkAmount}>{amountText(item.grams)}</strong></label>)}
         </div>}
-        {breadIngredients.length>0&&total>0&&<details open><summary className={styles.button}>{t('Ingrédients de ma fournée de pain','My bread batch ingredients')}</summary><p className={styles.muted}>{t('Fournée complète ; les quantités ne sont pas multipliées par le nombre de portions.','Whole batch; amounts are not multiplied by the portion count.')}</p>
-          {breadIngredients.map(item=><label key={item.id} className={styles.check}><input type="checkbox" checked={!!snapshot.shopTicks[`dough:${item.id}:${item.grams}`]} onChange={event=>update({shopTicks:{...snapshot.shopTicks,[`dough:${item.id}:${item.grams}`]:event.target.checked}})}/><span className={snapshot.shopTicks[`dough:${item.id}:${item.grams}`]?styles.checked:''}>{item.name}</span><strong className={styles.checkAmount}>{amountText(item.grams)}</strong></label>)}
-        </details>}
-        {total>0&&<div className={styles.panelHeading}><h3>{t('Garnitures regroupées','Combined fillings')}</h3></div>}
+        {breadIngredients.length>0&&total>0&&<div><div className={styles.panelHeading}><h3>{t('Pour la pâte','For the dough')}</h3></div>
+          {breadIngredients.filter(item=>item.id!=='water').map(item=><label key={item.id} className={styles.check}><input type="checkbox" checked={!!snapshot.shopTicks[`dough:${item.id}:${item.grams}`]} onChange={event=>update({shopTicks:{...snapshot.shopTicks,[`dough:${item.id}:${item.grams}`]:event.target.checked}})}/><span className={snapshot.shopTicks[`dough:${item.id}:${item.grams}`]?styles.checked:''}>{item.name}</span><strong className={styles.checkAmount}>{amountText(item.grams)}</strong></label>)}
+        </div>}
+        {total>0&&<div className={styles.panelHeading}><h3>{t('Pour les garnitures','For the fillings')}</h3></div>}
         {shopping.map(({ingredientId:id,grams,key})=><label key={id} className={styles.check}><input type="checkbox" checked={!!snapshot.shopTicks[key]} onChange={event=>update({shopTicks:{...snapshot.shopTicks,[key]:event.target.checked}})}/><span className={snapshot.shopTicks[key]?styles.checked:''}>{id==='chicken'?ingredientName('chicken_raw'):ingredientName(id)}{id==='mozzarella'&&<small style={{display:'block',fontSize:13,lineHeight:1.4}}>{drainedWeightShoppingNote[isFr?'fr':'en']}</small>}{id==='chicken'&&<small style={{display:'block',fontSize:13,lineHeight:1.4}}>{t(`Achat estimé pour ${amountText(grams)} cuits. Le rendement varie. Ou achetez ${amountText(grams)} déjà cuits.`,`Estimated purchase for ${amountText(grams)} cooked. Yield varies. Or buy ${amountText(grams)} already cooked.`)}</small>}</span><strong className={styles.checkAmount}>{id==='chicken'?'≈ ':''}{amountText(id==='chicken'?estimateRawChickenPurchase(grams):grams)}</strong></label>)}
         {onBackToRecipe ? active&&<BottomActions>
-          <button type="button" className="bh-back-action" onClick={onBackToRecipe}>{backLabel??t('Retour à Recette','Back to Recipe')}</button>
+          <button type="button" className="bh-back-action" onClick={onBackToRecipe}><BackLabel text={backLabel??t('Retour à la recette','Back to Recipe')}/></button>
           <button type="button" className={`${button} ${styles.wide}`} style={{margin:0,width:'auto',flex:1}} onClick={()=>go('prep')}>{doughConfigured?t('Passer à la préparation','Go to preparation'):t('Compléter l’organisation','Complete organisation')} →</button>
         </BottomActions> : <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('prep')}>{baseReady?t('Préparer les garnitures','Prepare the fillings'):doughConfigured?t('Commencer la préparation','Start the dough preparation'):t('Compléter l’organisation','Complete organisation')} →</button>}
       </>}
@@ -237,7 +240,7 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
           {partitionSandwichSteps(stepsFor(recipe),deferBreadSteps).prep.map(step=>{const key=sandwichPrepKey(recipe,step.id,count(snapshot.qtys[recipe.id]),snapshot.ingredientOverrides?.[recipe.id]);return <label key={key} className={styles.check}><input type="checkbox" checked={!!snapshot.prepTicks[key]} onChange={event=>update({prepTicks:{...snapshot.prepTicks,[key]:event.target.checked}})}/><span className={snapshot.prepTicks[key]?styles.checked:''}><strong>{tr(step.title)}</strong>{stepTiming(step)}<br/>{tr(step.instruction)}</span></label>;})}
           <button className={`${styles.button} ${styles.wide}`} type="button" onClick={()=>setDetailId(recipe.id)}>{t('Voir la recette','View recipe')}</button>
         </section>)}
-        <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('serve')}>{prepContinueLabel??(hideNavigation&&!baseReady?t('Passer à la cuisson du pain','Go to bread cooking'):t('Passer à l’assemblage','Start assembly'))} →</button>
+        <button type="button" className={`${button} ${styles.wide}`} onClick={()=>go('serve')}>{prepContinueLabel??(hideNavigation&&!baseReady?t('Cuisson & service','Baking & serving'):t('Passer à l’assemblage','Start assembly'))} →</button>
       </>}
       {tab==='serve'&&total>0&&<>
         <div className={styles.panelHeading}><h3>{t('Assembler et servir','Assemble and serve')}</h3><span aria-live="polite">{completed}/{total}</span></div>
@@ -264,7 +267,7 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
           <img className={styles.recipePhoto} src={detail.image} alt={tr(detail.name)} width={640} height={480} decoding="async"/>
           {Object.keys(snapshot.ingredientOverrides?.[detail.id]??{}).length>0&&<p className={styles.muted}>{t('Photo de la recette de base ; vos garnitures ont été personnalisées.','Photo shows the original recipe; you have customized the fillings.')}</p>}
           {detail.ingredients.some(item=>item.optionalGrams)&&<p className={styles.muted}>{t('Photo avec les garnitures facultatives proposées ci-dessous.','Photo includes the optional toppings offered below.')}</p>}
-          <p className={styles.muted}>{tartine ? t('Pour une portion de tartine','For one toast portion') : t(`Pour une portion de ${portionName(1)}`,`For one ${portionName(1)}`)} · ≈ {kcal(detail)} kcal · {t('pain inclus','bread included')}</p>
+          <p className={styles.muted}>{tartine ? t('Pour une tartine','For one tartine') : t(`Pour ${['pita','tartine','piadina'].includes(familyId??'')?'une':'un'} ${portionName(1)}`,`For one ${portionName(1)}`)} · ≈ {kcal(detail)} kcal · {t('pain inclus','bread included')}</p>
           <h3>{t('Pain','Bread')}</h3><p>{breadName} · {detail.breadSlices?`${detail.breadSlices} ${t('tranches','slices')} · `:''}≈ {detail.breadGrams} g</p>
           <p className={styles.muted}>{t('Calories estimées avec des aliments génériques ; le pain et les marques peuvent modifier le résultat.','Calories use generic food estimates; bread and brands can change the result.')}</p>
           <h3>{tartine ? t('Garnitures par portion','Toppings per portion') : t('Garnitures par portion','Fillings per portion')}</h3>

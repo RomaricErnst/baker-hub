@@ -4,6 +4,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const ts=require('typescript');
 const React=require('react');
+const {BackLabel,withBackLabel}=(require('./load-production.cjs'),require('../app/components/BackLabel.ts'));
 const {renderToStaticMarkup}=require('react-dom/server');
 
 const source=fs.readFileSync('app/components/BottomActions.tsx','utf8')
@@ -15,7 +16,7 @@ const css=fs.readFileSync('app/globals.css','utf8');
 
 test('all journey action classes retain the shared measured action shell',()=>{
   const BottomActions=vm.runInNewContext(compiled,{
-    React,useRef:React.useRef,useLayoutEffect:React.useLayoutEffect,
+    React,useRef:React.useRef,useLayoutEffect:React.useLayoutEffect,withBackLabel,
   });
   for(const className of ['', 'bh-batch-actions bh-style-confirm', 'bh-batch-actions bh-batch-actions-navigation']) {
     const html=renderToStaticMarkup(React.createElement(BottomActions,{className},
@@ -33,7 +34,7 @@ test('action spacer follows actual wrapping, keyboard hiding and resized safe-ar
   const bar={getBoundingClientRect:()=>({height})};
   const refs=[space,bar];
   const BottomActions=vm.runInNewContext(compiled,{
-    React,useRef:()=>({current:refs.shift()}),useLayoutEffect:fn=>{effect=fn;},
+    React,withBackLabel,useRef:()=>({current:refs.shift()}),useLayoutEffect:fn=>{effect=fn;},
     ResizeObserver:class {
       constructor(fn){resized=fn;}
       observe(node){observed=node;}

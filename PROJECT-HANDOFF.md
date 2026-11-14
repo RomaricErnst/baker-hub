@@ -1,3 +1,23 @@
+# 14 November 2026 (afternoon) — polish audit, one bottom bar and page tops (Claude)
+
+- Back controls show their destination short ("‹ Recipe", "‹ Shopping list", FR "‹ Recette"), so the bar never wraps; the full phrase ("Back to Recipe", "Retour à la recette") stays as the accessible name (`BackLabel`, `withBackLabel` in BottomActions). French back labels carry their article ("Retour à la recette", "aux courses", "à la préparation", "aux garnitures"). "Update and back to Recipe" is "Update recipe".
+- Generate my recipe is the bake-time step's forward button in the bar; Customize my bake stays a card above it.
+- My choices with a current recipe: "‹ Recipe" on the left, the next section (Pizzas →, else Shopping list →) on the right. Rows follow the order asked (style, quantity, kitchen, bake time, busy times, then Custom's), the bake time reads on one line, Busy times has its own row, and Fine-tune reads "Dough · 62% water · 2.8% salt".
+- The Pizzas and sandwich bars go back and forward only; the tally under the title (sandwiches: "See my selection" in the portion line) opens the selection.
+- Preparation and Baking & serving open on their own H1 and one line of times; the timing summary keeps only what acts on them (adjust, calendar); no "Overview" label, no step numbers in the overview list. The bake name and summary head the Recipe only.
+- Shopping list: title at the page edge, one line ("Toppings for your 2 chosen pizzas · 2 still to choose", the second part a soft link to Pizzas, at Romaric's request), ingredient names setting at the foot, one Share button with the two ways under it, garlic in cloves.
+- Guide step navigation has the bar's shape; the guide's start button is the primary style and says "Bake the bread" for oven breads. Bread wording: "Baking guide", "Baking & serving →" from fillings, "tartines" not "toasts"; Baking & serving offers the fillings link from the assembly view only.
+
+# 14 November 2026 (afternoon) — polish audit, one fact once (Claude)
+
+- Yeast reads to what a kitchen scale shows: one decimal from 0.1 g, one significant figure below (`formatPrefermentDose`, `formatYeastDose`): "0.5 g", not "0.524 g". The exact dose stays in the dilution arithmetic and the baker's % in Custom. Imperial keeps grams under 10 g (`displayWeight`).
+- The "Plan updated" card names yeast only when its share of the flour changed (a new timing), never the flour: the ingredients below already show new amounts.
+- The flour blend names each share once (the rows under the bar); the bar has no labels, the "Flour 1/2" headings no %.
+- Sandwiches and other meals: one portion line, on the choosing page only ("5 sandwiches · your 4 baguettes make about 11"). The Shopping list has two plain groups, "For the dough" (no water) and "For the fillings"; the bread preamble and "Whole batch…" line are gone.
+- Kitchen: the zone is named once, under the slider; the hot end is gold, not coral (coral is for hydration).
+- Quantity › Adjust: the weight is read on the "Each pizza" line, not repeated in the panel.
+- Hidden when they do not help: the greyed starter card on the Yeast step, the batch card unless the dough needs splitting, and the fermentation container question (nothing used its answer; `containerCapacityLitres` stays in saved sessions, unused).
+
 # 14 November 2026 (afternoon) — polish audit, fixes (Claude)
 
 Three phone walk-throughs of the live site (pizza Simple; Custom with poolish, biga and levain; bread, meals and returning visits) produced a proposal page; Romaric approved all of it. This first part is the fixes.

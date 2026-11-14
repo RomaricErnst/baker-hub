@@ -82,7 +82,7 @@ export function formatPercent(value: number, locale: string): string {
 }
 
 export function displayWeight(g: number, units: UnitSystem, locale='en'): string {
-  const oz = units === 'imperial' && (g <= 0 || g >= 6);
+  const oz = units === 'imperial' && (g <= 0 || g >= 10); // under 10 g an ounce reads too coarsely (0.3 oz salt) — 14 Nov 2026
   const value = oz ? gToOz(g) : g > 0 && g < 1 ? Math.max(0.1,g) : Math.max(0,g);
   const fr = locale.startsWith('fr');
   return value.toLocaleString(fr ? 'fr-FR' : 'en-US', {maximumFractionDigits:oz || g < 10 ? 1 : 0}) + (fr ? '\u202f' : ' ') + (oz ? 'oz' : 'g');

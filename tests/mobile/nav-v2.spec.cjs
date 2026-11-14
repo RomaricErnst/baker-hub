@@ -140,7 +140,7 @@ for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}
   if(label==='Preparation'){
    // A bake without fillings has only the dough guide, so no redundant tabs.
    await expect(page.getByRole('region',{name:'What to prepare',exact:true})).toHaveCount(0);
-   await expect(page.locator('.bh-local-progress')).toHaveText('Overview');
+   await expect(page.locator('.bh-local-progress')).toBeEmpty();
    const actions=page.locator('.bh-step-actions:visible');
    await expect(actions).toHaveCount(1);
    await expect(actions).toHaveCSS('position','fixed');
@@ -307,7 +307,7 @@ test('generated country bread offers optional tartines and preserves the recipe 
  await testInfo.attach('tartine-invitation',{body:await page.screenshot(),contentType:'image/png'});
  await step.tap();
  await expect(page.getByRole('article').first()).toBeVisible();
- await page.locator('[data-companion-action]').getByRole('button',{name:'Retour à Recette',exact:true}).tap();
+ await page.locator('[data-companion-action]').getByRole('button',{name:'Retour à la recette',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');
  expect((await stored(page)).numItems).toBe(before.numItems);
  await expect.poll(async()=>(await stored(page))?.styleKey).toBe('pain_campagne');
@@ -316,7 +316,7 @@ test('generated country bread offers optional tartines and preserves the recipe 
 for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppings'} return to the exact dough step and keep completion and quantities`,async({page},testInfo)=>{
  await seed(page,{activeTab:'guide',bread});
  await navigate(page,'Préparation');
- await expect(page.locator('.bh-local-progress')).toHaveText('Vue d’ensemble');
+ await expect(page.locator('.bh-local-progress')).toBeEmpty();
  await page.getByRole('button',{name:'Commencer la préparation →',exact:true}).tap();
  // Mixing records an actual time; this navigation test marks the next ordinary step.
  await advanceGuideStep(page);
@@ -349,7 +349,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await expect(page.getByRole('dialog',{name:'Ma sélection',exact:true})).toHaveCount(0);
  // The catalogue has its own heading while the return still points to Preparation.
  await expect(page.locator('.bh-navigator-current')).toContainText(bread?'Garnitures':'Pizzas');
- const back=page.getByRole('button',{name:/^Retour à Préparation(?: →)?$/});
+ const back=page.getByRole('button',{name:/^Retour à la préparation(?: →)?$/});
  await back.scrollIntoViewIfNeeded();
  await fits(page,back);
  await unobscured(back);
@@ -406,7 +406,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  }
  await page.getByRole('button',{name:/^Préparer les garnitures(?: →)?$/}).tap();
  await expect(choices.getByRole('button',{name:'Garnitures',exact:true})).toHaveAttribute('aria-pressed','true');
- await page.getByRole('button',{name:bread?'Passer à la cuisson du pain →':'Cuire les pizzas →',exact:true}).tap();
+ await page.getByRole('button',{name:bread?'Cuisson & service →':'Cuire les pizzas →',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Cuisson & service');
  if(bread)await expect(choices.getByRole('button',{name:'Guide de cuisson',exact:true})).toHaveAttribute('aria-pressed','true');else await expect(choices).toHaveCount(0);
  const serveLabel=bread?'Assembler mes sandwichs →':'Commencer la cuisson des pizzas →';
@@ -432,7 +432,7 @@ test('fillings chosen after the Recipe lead on to Shopping without changing the 
  await expect.poll(async()=>(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']).toBe(1);
  await page.locator('[data-companion-action]:visible').getByRole('button',{name:'Liste de courses →',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Courses');
- await expect(page.getByRole('button',{name:'Retour à Garnitures',exact:true}).filter({visible:true})).toHaveCount(1);
+ await expect(page.getByRole('button',{name:'Retour aux garnitures',exact:true}).filter({visible:true})).toHaveCount(1);
  const after=await stored(page);
  for(const key of ['styleKey','numItems','itemWeight','eatTime','recipeGenerated'])expect(after[key],key).toEqual(before[key]);
  await noOverflow(page);
@@ -515,7 +515,7 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
  await page.locator('[data-adjust-weight]').tap();
  await page.getByRole('button',{name:/^Grande/}).tap();
  await page.getByRole('button',{name:'Généreuse',exact:true}).tap();
- const sized=Number((await page.locator('[data-adjust-result]').innerText()).match(/\d+/)[0]);
+ const sized=Number((await page.locator('[data-each-pizza]').innerText()).match(/(\d+)\s*g/)[1]);
  expect(sized).toBeGreaterThan(260);
  await page.locator('[data-adjust-grams]').tap();
  await weight.fill('300');await weight.blur();
@@ -523,7 +523,7 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
  const reset=page.getByRole('button',{name:/^Revenir au poids conseillé/});
  await expect(reset).toBeVisible();await reset.tap();
  await expect(reset).toHaveCount(0);
- await expect(page.locator('[data-adjust-result]')).toContainText(`${sized} g`);
+ await expect(page.locator('[data-each-pizza]')).toContainText(new RegExp(`${sized}\\s*g`));
  await expect.poll(async()=>(await stored(page))?.itemWeight).toBe(sized);
  await startCustom(page);
  await openCustomSection(page,'Peaufiner');
@@ -710,7 +710,7 @@ for(const bread of [false,true])test(`clean preparation ${bread?'bread':'pizza'}
  await expect(current.locator('.bh-guide-actions')).toHaveCSS('position','relative');
  await expect(page.getByRole('button',{name:'Reprendre',exact:true})).toHaveCount(0);
  await progress.tap();
- await expect(page.locator('.bh-local-progress')).toHaveText('Vue d’ensemble');
+ await expect(page.locator('.bh-local-progress')).toBeEmpty();
  expect(await page.locator('[data-guide-phase="preparation"]:visible').count()).toBeGreaterThan(1);
  await page.locator('[data-guide-phase="preparation"]:visible').first().getByRole('button').first().tap();
  await expect(page.locator('.bh-local-progress')).toContainText(/Étape 1 \/ \d+/);
@@ -734,7 +734,7 @@ for(const bread of [false,true])test(`late ${bread?'bread':'pizza'} surplus keep
  await page.getByRole('button',{name:bread?'Vérifier la quantité de pain':'Vérifier la quantité de pâte',exact:true}).tap();
  await expect(page.getByRole('dialog')).toBeVisible();
  await expect.poll(async()=>(await stored(page))?.numItems).toBe(4);
- await page.getByRole('dialog').getByRole('button',{name:/^Retour à Préparation/}).tap();
+ await page.getByRole('dialog').getByRole('button',{name:/^Retour à la préparation/}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Préparation');
  expect((await stored(page)).numItems).toBe(4);
 });
