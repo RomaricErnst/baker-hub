@@ -1517,7 +1517,7 @@ export default function Home() {
     const ovenPool = bakeType === 'bread' ? BREAD_OVEN_TYPES : OVEN_TYPES;
     const prefOven = (bakeType === 'bread' ? prof.ovenTypeBread : prof.ovenTypePizza) ?? prof.ovenType;
     if (!ovenType && prefOven && prefOven in ovenPool) {
-      setOvenType(prefOven as AnyOvenType); confirmSetting('oven',prefOven); applied = true;
+      setOvenType(prefOven as AnyOvenType); confirmSetting('oven',prefOven); markProfile('oven'); applied = true;
     }
     const stylePool = bakeType === 'bread' ? BREAD_STYLES : PIZZA_STYLES;
     const prefStyle = (bakeType === 'bread' ? prof.styleKeyBread : prof.styleKeyPizza) ?? prof.styleKey;
@@ -2599,7 +2599,7 @@ export default function Home() {
       const ovenPool = bt === 'bread' ? BREAD_OVEN_TYPES : OVEN_TYPES;
       const prefOven = (bt === 'bread' ? prof.ovenTypeBread : prof.ovenTypePizza) ?? prof.ovenType;
       if (prefOven && prefOven in ovenPool) {
-        setOvenType(prefOven as AnyOvenType); confirmSetting('oven',prefOven); applied = true;
+        setOvenType(prefOven as AnyOvenType); confirmSetting('oven',prefOven); markProfile('oven'); applied = true;
       }
       // Style is deliberately NOT prefilled. Oven, mixer and yeast describe the
       // baker's kitchen and are stable between bakes; the style is the one
@@ -4066,16 +4066,23 @@ export default function Home() {
 
 
 
+  // Custom shows only what the baker (or their profile) chose: Simple's silent home oven and hand
+  // kneading are working assumptions, not answers (14 Nov 2026).
+  const ovenPicked = !!ovenType && (tab!=='custom' || confirmed('oven',ovenType));
+  const mixerPicked = !!mixerType && (tab!=='custom' || confirmed('mixer',mixerType));
+  // The same for the leavening: Simple never asks it. A sourdough style's starter is the style's own answer.
+  const yeastPicked = !!yeastType && (tab!=='custom' || confirmed('yeast',yeastType) || yeastType==='sourdough');
+  const equipmentFromProfile = (profileFields.has('oven') && ovenPicked) || (profileFields.has('equip') && mixerPicked);
   const equipmentChoices = <>
-    {!compactPiadina && equipmentPanel==='mixer' && ovenType && <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:12,fontSize:14}}>
+    {!compactPiadina && equipmentPanel==='mixer' && ovenPicked && <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:12,fontSize:14}}>
       <span>{ovenDisplayName}</span><button type="button" onClick={()=>{setEquipmentPanel('oven');scrollToStepTop();}} style={{minHeight:44,border:0,background:'transparent',color:'var(--terra)',textDecoration:'underline'}}>{fr?'Modifier le four':'Change oven'}</button>
     </div>}
     <h3 className="bh-section-title">{compactPiadina?(fr?'Cuisson à la poêle':'Pan cooking'):equipmentPanel==='oven'?(fr?'Four':'Oven'):(fr?'Pétrissage':'Mixing')}</h3>
-    {(equipmentPanel==='oven'||compactPiadina) && <OvenPicker bakeType={bakeType ?? 'pizza'} styleKey={styleKey} selected={ovenType} construction={ovenConstruction} onConstructionChange={setOvenConstruction} onSelect={value=>{setOvenType(value);confirmSetting('oven',value);}} />}
+    {(equipmentPanel==='oven'||compactPiadina) && <OvenPicker bakeType={bakeType ?? 'pizza'} styleKey={styleKey} selected={ovenPicked ? ovenType : null} construction={ovenConstruction} onConstructionChange={setOvenConstruction} onSelect={value=>{setOvenType(value);confirmSetting('oven',value);}} />}
     {(equipmentPanel==='mixer'||compactPiadina) && <>
       {compactPiadina&&<h3 className="bh-section-title">{fr?'Pétrissage':'Mixing'}</h3>}
-      {tab==='simple' ? <SimpleMixerPicker locale={locale} selected={mixerType} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);}setCustomMixerCapacityG(undefined);setMixerType(value);confirmSetting('mixer',value);}} styleKey={styleKey ?? undefined} /> : <MixerPicker totalDoughG={numItems * itemWeight} locale={locale} selected={mixerType} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);}setCustomMixerCapacityG(undefined);setMixerType(value);confirmSetting('mixer',value);}} styleKey={styleKey ?? undefined} bakeType={bakeType ?? undefined} kitchenTemp={kitchenTemp} />}
-      {mixerType && !manualMixing && <details style={{marginTop:12}}><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Capacité de mon pétrin':'My mixer capacity'}</summary><label style={{display:'flex',alignItems:'center',gap:12}}>{fr?'Poids de pâte maximal (g)':'Maximum dough weight (g)'}<input type="number" min={100} max={1000000} step={100} value={customMixerCapacityG ?? ''} placeholder={String(mixerCapacityG)} onChange={e=>{const value=Number(e.target.value);if(!e.target.value)setCustomMixerCapacityG(undefined);else if(Number.isFinite(value)&&value>=100&&value<=1000000)setCustomMixerCapacityG(value);}} style={{width:110,minHeight:44}}/></label><p style={{fontSize:14,color:'var(--smoke)'}}>{fr?'Utilisez la limite de pâte indiquée par le fabricant.':'Use the dough capacity stated by the manufacturer.'}</p></details>}
+      {tab==='simple' ? <SimpleMixerPicker locale={locale} selected={mixerType} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);}setCustomMixerCapacityG(undefined);setMixerType(value);confirmSetting('mixer',value);}} styleKey={styleKey ?? undefined} /> : <MixerPicker totalDoughG={numItems * itemWeight} locale={locale} selected={mixerPicked ? mixerType : null} onSelect={value=>{if(value!==mixerType){setWaterMethod(value==='spiral'?'direct':'premelt');setSpiralIceConfirmed(false);}setCustomMixerCapacityG(undefined);setMixerType(value);confirmSetting('mixer',value);}} styleKey={styleKey ?? undefined} bakeType={bakeType ?? undefined} kitchenTemp={kitchenTemp} />}
+      {mixerPicked && !manualMixing && <details style={{marginTop:12}}><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Capacité de mon pétrin':'My mixer capacity'}</summary><label style={{display:'flex',alignItems:'center',gap:12}}>{fr?'Poids de pâte maximal (g)':'Maximum dough weight (g)'}<input type="number" min={100} max={1000000} step={100} value={customMixerCapacityG ?? ''} placeholder={String(mixerCapacityG)} onChange={e=>{const value=Number(e.target.value);if(!e.target.value)setCustomMixerCapacityG(undefined);else if(Number.isFinite(value)&&value>=100&&value<=1000000)setCustomMixerCapacityG(value);}} style={{width:110,minHeight:44}}/></label><p style={{fontSize:14,color:'var(--smoke)'}}>{fr?'Utilisez la limite de pâte indiquée par le fabricant.':'Use the dough capacity stated by the manufacturer.'}</p></details>}
       {mixingBatchControl}
     </>}
   </>;
@@ -5263,8 +5270,10 @@ export default function Home() {
 
             {/* ─── ADV STEP 1: Style picker ────────── */}
             {/* ─── ADV STEP 4: Equipment (oven + mixing) ── */}
-            <StepPage flow={customOrganisationFlow} id={3} nextOverride={equipmentPanel==='oven' || !mixerType ? <button type="button" disabled={equipmentPanel==='oven'?!ovenType:!mixerType} style={{...NEXT_CTA,opacity:(equipmentPanel==='oven'?!ovenType:!mixerType)?.5:1}} onClick={()=>{setEquipmentPanel('mixer');scrollToStepTop();}} data-bh-forward>{fr?'Pétrissage →':'Mixing →'}</button> : undefined}>
-              {profilePrefilled && <p>{fr?'Votre équipement habituel — vérifiez-le pour cette fournée.':'Your usual equipment — check it for this bake.'}</p>}
+            <StepPage flow={customOrganisationFlow} id={3} nextOverride={equipmentPanel==='oven' ? <button type="button" disabled={!ovenPicked} style={{...NEXT_CTA,opacity:!ovenPicked?.5:1}} onClick={()=>{setEquipmentPanel('mixer');scrollToStepTop();}} data-bh-forward>{fr?'Pétrissage →':'Mixing →'}</button>
+              : !mixerPicked ? <button type="button" disabled style={{...NEXT_CTA,opacity:.5}} data-bh-forward>{recipeGenerated ? setupReturnLabel : `${CUSTOM_STEPS.find(step=>step.id===nextCustomStep(3))?.chip ?? (fr?'Suivant':'Next')} →`}</button> : undefined}>
+              {/* Said only when the selection really comes from the baker's profile. */}
+              {equipmentFromProfile && <p data-equipment-profile>{fr?'D’après votre profil — vérifiez-le pour cette fournée.':'From your profile — check it for this bake.'}</p>}
               {equipmentChoices}
             </StepPage>
 
@@ -5325,9 +5334,9 @@ export default function Home() {
             </StepPage>
 
             {/* ─── ADV STEP 8: Yeast ───────────────── */}
-            <StepPage flow={customOrganisationFlow} id={7}>
+            <StepPage flow={customOrganisationFlow} id={7} nextOverride={!yeastPicked ? <button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:.5}}>{recipeGenerated ? setupReturnLabel : `${CUSTOM_STEPS.find(step=>step.id===nextCustomStep(7))?.chip ?? (fr?'Suivant':'Next')} →`}</button> : undefined}>
               <YeastHelper
-                selected={yeastType}
+                selected={yeastPicked ? yeastType : null}
                 onSelect={(yt) => {
                   chooseYeast(yt);confirmSetting('yeast',yt);
                   if (yt === 'sourdough') {
