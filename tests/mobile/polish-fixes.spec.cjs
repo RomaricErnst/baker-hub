@@ -19,8 +19,9 @@ test('a biga that cannot be ready offers direct dough or a later bake',async({pa
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await start(page);
  const time=page.getByLabel('Bake date and time',{exact:true});
- const d=new Date(Date.now()+8*3600000);const p=n=>String(n).padStart(2,'0');
- await time.fill(`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:00`);await time.blur();
+ // About eight hours ahead, written in the page's time zone (the runner may be in UTC).
+ const local=new Date(Date.now()+8*3600000).toLocaleString('sv-SE',{timeZone:'Asia/Singapore'}).slice(0,13);
+ await time.fill(`${local.replace(' ','T')}:00`);await time.blur();
  await page.locator('[data-customize-link]').evaluate(b=>b.click());
  for(let i=0;i<8&&!(await page.locator('#step-8:visible').count());i++){
   if(await fwd(page).isDisabled()){
