@@ -2266,9 +2266,21 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   // re-plans normally — that is the escape hatch for someone who had not
   // actually started.
   const resumeFrozenRef = useRef(sessionRestored || confirmedPlan);
-  const [freezeReleased, setFreezeReleased] = useState(!resumeFrozenRef.current);
+  // Starter answers given while the mount freeze holds are not a resumed plan: they are new input,
+  // and the constraint effect below skipped them. When the freeze ends, re-run it if they changed
+  // (16 Nov 2026: answers landing inside the 150 ms on the Custom Starter step were never planned,
+  // so the bake-time step had no feeds; CI's levain-starter-step flake, reproduced 4/4).
+  const starterInputSig = JSON.stringify([lastFedTimeProp?.getTime?.() ?? null, knownPeakTimeProp?.getTime?.() ?? null, starterLocationProp, planningModeProp, starterMatureProp, starterHasRyeProp, lastFeedRatioProp, lastFedAgeProp, tang]);
+  const mountStarterSigRef = useRef(starterInputSig);
+  const latestStarterSigRef = useRef(starterInputSig);
+  latestStarterSigRef.current = starterInputSig;
+  const [starterSolveKick, setStarterSolveKick] = useState(0);
   useEffect(() => {
-    const t = setTimeout(() => { resumeFrozenRef.current = false; setFreezeReleased(true); }, 150);
+    const t = setTimeout(() => {
+      const wasFrozen = resumeFrozenRef.current;
+      resumeFrozenRef.current = false;
+      if (wasFrozen && latestStarterSigRef.current !== mountStarterSigRef.current) setStarterSolveKick(k => k + 1);
+    }, 150);
     return () => clearTimeout(t);
   }, []);
 
@@ -2858,19 +2870,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastFedTime, knownPeakTime, starterLocation, planningMode,
       starterMature, starterHasRye, lastFeedRatio, tang, eatTimeSet, pendingEatTime,
-      styleKey, kitchenTemp, fridgeTemp, ratioMode, nextFeedRatioOverride, lastFedAge]);
-
-  // A restored sourdough draft whose starter has no planned feeds yet has nothing to protect: plan it
-  // once the mount freeze ends. Starter answers that landed inside the freeze (on the Starter step,
-  // or while this step was unmounted) were otherwise never planned, and the bake-time step showed a
-  // plan with no feeds (16 Nov 2026: CI's levain-starter-step flake; reproduced 4/4 with instant answers).
-  useEffect(() => {
-    if (!freezeReleased || !isSourdough || recipeGenerated || confirmedPlan || !eatTimeSet || startTimeInPast) return;
-    if (planningMode==='last_fed'&&(!lastFedTime||lastFedAge===null) || planningMode==='know_peak'&&!knownPeakTime) return;
-    if (solverResult || savedStarterEvents.some(event=>event.kind!=='last_fed'&&event.kind!=='known_peak')) return;
-    replanCurrentSchedule(solverBlocksRef.current,manualTimesRef.current,true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [freezeReleased]);
+      styleKey, kitchenTemp, fridgeTemp, ratioMode, nextFeedRatioOverride, lastFedAge, starterSolveKick]);
 
   // Solver-applied ratio change → re-solve WITHOUT clearing baker state.
   // nextFeedRatio is written by the ratio-apply effect (solver output), so
