@@ -200,6 +200,8 @@ interface Props {
   selectionDoneLabel?:string;
   /** In the journey (Recipe → Toppings → Shopping), the bar's left link goes back to the Recipe. */
   selectionBackLabel?:string;
+  /** Nothing chosen yet in the journey: one full-width row at the top goes straight on to the shopping list. */
+  skipLabel?:string;
   /** False until the baker has set how many (16 Nov 2026 review: "2 dough balls" before Quantity said 4). */
   countKnown?:boolean;
   directSelectionReturn?:boolean;
@@ -1318,7 +1320,7 @@ export function shoppingSpoonNote(note: string | undefined, fr: boolean): string
   return spoon ? `${spoon[1]} ${fr ? 'par pizza' : 'per pizza'}` : note;
 }
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionBack,onBackToRecipe, shoppingBackLabel,onSelectionDone,selectionDoneLabel, selectionBackLabel,countKnown=true,directSelectionReturn=false,active=true,storagePrefix="bh",baseReady=false }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionBack,onBackToRecipe, shoppingBackLabel,onSelectionDone,selectionDoneLabel, selectionBackLabel,skipLabel,countKnown=true,directSelectionReturn=false,active=true,storagePrefix="bh",baseReady=false }: Props) {
   const l = locale as 'en' | 'fr';
 
   // On-screen keyboard detection — position:fixed bottom bars anchor to the
@@ -1687,6 +1689,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                 : l === 'fr' ? `Choisissez une pizza pour chacun de vos ${numItems} pâton${numItems > 1 ? 's' : ''}.` : `Pick one for each of your ${numItems} dough ball${numItems === 1 ? '' : 's'}.`)
               : <><strong style={{color:'var(--char)'}}>{!countKnown ? (l === 'fr' ? `${totalQty} choisie${totalQty > 1 ? 's' : ''}` : `${totalQty} chosen`) : l === 'fr' ? `${totalQty} sur ${numItems} choisie${totalQty > 1 ? 's' : ''}` : `${totalQty} of ${numItems} chosen`}</strong>{' · '}<button type="button" data-see-selection onClick={()=>setSummarySheetOpen(true)} style={{minHeight:44,margin:'-12px 0',verticalAlign:'baseline',border:0,background:'none',color:'var(--terra)',textDecoration:'underline',textUnderlineOffset:2,padding:0,font:'inherit',cursor:'pointer'}}>{l === 'fr' ? 'Voir ma sélection' : 'See my selection'}</button></>}
           </p>
+          {/* Dough only: skipping should not mean scrolling past the whole catalogue (16 Nov 2026 review). */}
+          {skipLabel && totalQty === 0 && onSelectionDone && <button type="button" data-skip-fillings onClick={onSelectionDone} className="bh-skip-row">{skipLabel}<span aria-hidden="true"> →</span></button>}
           {/* ── Results strip ── */}
           <div style={{ padding: '0 0 6px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
             <input

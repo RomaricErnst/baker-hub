@@ -39,6 +39,8 @@ export interface SandwichPartyProps extends CompletionActions {
   onSelectionDone?:()=>void;
   selectionDoneLabel?:string;
   selectionBackLabel?:string;
+  /** In the journey with nothing chosen yet: the top-of-page way on to the shopping list. */
+  skipLabel?:string;
   directSelectionReturn?:boolean;
   prepContinueLabel?:string;
   onPrepProgress?:(progress:{done:number;total:number})=>void;
@@ -49,7 +51,7 @@ export interface SandwichPartyProps extends CompletionActions {
 
 const count = (value: number) => Number.isFinite(value) ? Math.max(0,Math.min(99,Math.floor(value))) : 0;
 
-export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRepeat,resultNotes,onResultNotesChange,isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onBackToRecipe,backLabel,onSelectionDone,selectionDoneLabel,selectionBackLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,baseReady=false,deferBreadSteps=!baseReady}:SandwichPartyProps) {
+export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRepeat,resultNotes,onResultNotesChange,isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onBackToRecipe,backLabel,onSelectionDone,selectionDoneLabel,selectionBackLabel,skipLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,baseReady=false,deferBreadSteps=!baseReady}:SandwichPartyProps) {
   const tr = (value:Translation) => value[isFr ? 'fr' : 'en'];
   const t = (fr:string,en:string) => isFr ? fr : en;
   const [search,setSearch] = useState('');
@@ -166,6 +168,7 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
       {/* With no fillings the shopping list is the bread batch alone: one heading with the item count. */}
       <div><h2 className={tab==='prep'||tab==='serve'?'bh-section-title':styles.pageTitle} ref={headingRef} tabIndex={-1}>{tab==='shop'&&total===0&&breadIngredients.length>0?(()=>{const n=breadIngredients.filter(item=>item.id!=='water').length;return `${t('Liste de courses','Shopping list')} · ${n} ${n===1?t('article','item'):t('articles','items')}`;})():heading}</h2>
         {/* The bread is named in the section bar and the portion line; no subtitle (14 Nov 2026 audit). */}
+        {tab==='pick'&&skipLabel&&total===0&&onSelectionDone&&<button type="button" data-skip-fillings onClick={onSelectionDone} className="bh-skip-row">{skipLabel}<span aria-hidden="true"> →</span></button>}
       </div>
       {tab==='shop' ? (!backLabel&&<button type="button" className={styles.button} onClick={()=>go('pick')}>{total>0?t('Modifier les garnitures','Edit fillings'):t('Ajouter des garnitures — facultatif','Add fillings — optional')}</button>) : family && <img src={breadImage} alt={breadName}/>}
     </div>

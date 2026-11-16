@@ -182,7 +182,8 @@ test('Guide Done records planned mixing immediately with optional time correctio
  const original=await seed(page,{method:'none',lead:23});
  await page.locator('.bh-bake-navigator-trigger').tap();
  await page.getByRole('navigation',{name:'Your bake',exact:true}).getByRole('button').filter({has:page.getByText('Preparation',{exact:true})}).tap();
- await page.getByRole('button',{name:'Start preparation →',exact:true}).tap();
+ // Mixing is due: the overview goes straight to it (16 Nov 2026 review).
+ await page.getByRole('button',{name:/^(Start preparation|Go to: .+) →$/}).tap();
  const step=page.locator('section[aria-label*=" · Step "]:visible');
  await step.getByRole('checkbox',{name:'Step done',exact:true}).check();
  await expect.poll(async()=>(await stored(page)).execution?.actualAt).toBe(original.startTime);

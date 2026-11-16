@@ -39,7 +39,7 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
  await expect(page.getByText(L(/Use a mixer|hand kneading/,/Utiliser un robot|pétrissage à la main/)).filter({visible:true})).toHaveCount(0);
  if(await page.locator('[data-water-help]:visible').count())await expect(page.locator('[data-water-temp]:visible').first()).toContainText(L('ice','glace'));
  // Pizzas are planned with the dough: the Recipe leads to them, and carries no toppings button of its own.
- await expect(bar(page).getByRole('button')).toHaveText([L('My choices','Mes choix'),'Pizzas →']);
+ await expect(bar(page).getByRole('button')).toHaveText([L('‹ My choices','‹ Mes choix'),'Pizzas →']);
  await expect(page.locator('.bh-fillings-invitation')).toHaveCount(0);
  // Start Dough moves in place, on the Recipe: no trip to the timing screen.
  await expect(page.locator('[data-change-times]')).toHaveCount(0);
@@ -57,11 +57,13 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
  await expect(companion.getByRole('button')).toHaveCount(2);
  await expect(companion.getByRole('button').first()).toHaveAccessibleName(L('Back to Recipe','Retour à la recette'));
  await expect(companion.getByRole('button').first().locator('[aria-hidden="true"]')).toHaveText(L('‹ Recipe','‹ Recette'));
- await expect(companion.getByRole('button').last()).toHaveText(L('Shopping list →','Liste de courses →'));
+ await expect(companion.getByRole('button').last()).toHaveText(L('Shopping list · dough only →','Liste de courses · pâte seule →'));
+ // Nothing chosen: a full-width way on at the top too, before the catalogue (16 Nov 2026 review).
+ await expect(page.locator('[data-skip-fillings]')).toHaveText(L('Dough only? Skip to shopping list →','Pâte seule ? Passer à la liste de courses →'));
  await companion.getByRole('button',{name:L('Back to Recipe','Retour à la recette'),exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText(L('Recipe','Recette'));
  await bar(page).getByRole('button',{name:'Pizzas →',exact:true}).tap();
- await companion.getByRole('button',{name:L('Shopping list →','Liste de courses →'),exact:true}).tap();
+ await companion.getByRole('button',{name:L('Shopping list · dough only →','Liste de courses · pâte seule →'),exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText(L('Shopping list','Liste de courses'));
  await expect(page.getByRole('button',{name:L('Add toppings — optional','Ajouter des garnitures — facultatif')}).filter({visible:true})).toHaveCount(0);
  await expect(bar(page).getByRole('button').first()).toHaveAccessibleName(L('Back to Pizzas','Retour aux pizzas'));

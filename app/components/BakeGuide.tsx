@@ -10,7 +10,7 @@ import JourneyCompletion, { type CompletionActions } from './JourneyCompletion';
 import { SECONDARY_CTA } from '../lib/navButtons';
 import {createPortal} from 'react-dom';
 import type { StarterEvent } from './SchedulePicker';
-import { Fragment, useState, useRef, useEffect, useLayoutEffect, createContext, useContext, type ReactNode } from 'react';
+import { Fragment, useState, useReducer, useRef, useEffect, useLayoutEffect, createContext, useContext, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { poolishCoolingAt } from '../utils/poolishCoolingAt';
 import { foldActionLabel } from '../utils/scheduleAvailability';
@@ -281,11 +281,15 @@ function shownDuration(number: number, time: Date | undefined, duration: number 
 
 // ── Step card ────────────────────────────────────────
 function StepCard({
-  number, displayNumber = number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext, hidden = false, stepPhase = 'preparation', after, previousLabel, nextLabel, externalProgress = false, passive = false, overviewNote,
+  number, displayNumber = number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext, hidden = false, stepPhase = 'preparation', after, previousLabel, nextLabel, externalProgress = false, passive = false, overviewNote, mark, anchor = false,
 }: {
   number: number; displayNumber?: number; icon: React.ReactNode; title: string; overview?: boolean; totalSteps?: number;
   externalProgress?: boolean; hidden?: boolean; stepPhase?: 'preparation' | 'cooking'; previousLabel?: string; nextLabel?: string;
   time?: Date; duration?: number | null; accent?: string; passive?: boolean; overviewNote?: React.ReactNode;
+  /** The step the clock says the baker is on (now) or comes to next, marked in the overview. */
+  mark?: 'now' | 'next';
+  /** Mixing or making the preferment: the plan hangs on it, so an unticked one stays the step to be on. */
+  anchor?: boolean;
   /** Shown under the step's own actions (the end-of-bake block follows "Step done"). */
   after?: ReactNode;
   onPrevious?: () => void; onNext?: () => void; preview?: boolean; onReturnCurrent?: () => void; completeLabel?: string; batchCompletion?: boolean; final?: boolean; open: boolean; done: boolean; onToggle: () => void; onDone: () => void;
@@ -303,7 +307,7 @@ function StepCard({
   duration = shownDuration(number, time, duration, stepTimes);
   const TitleContainer = overview ? 'button' : 'div';
   return (
-    <section ref={divRef} data-guide-step={number} data-guide-phase={stepPhase} data-guide-title={title} hidden={hidden} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${displayNumber}`} style={{ display: !hidden && (open || overview) ? undefined : 'none', background: D.warm, borderRadius: 0,
+    <section ref={divRef} data-guide-step={number} data-guide-phase={stepPhase} data-guide-title={title} data-guide-done={done ? 'true' : undefined} data-guide-anchor={anchor ? 'true' : undefined} data-guide-mark={overview ? mark : undefined} hidden={hidden} tabIndex={-1} aria-label={`${title} · ${fr ? 'Étape' : 'Step'} ${displayNumber}`} style={{ display: !hidden && (open || overview) ? undefined : 'none', background: D.warm, borderRadius: 0,
       // Longhands only: the bottom border changes with the overview, and a shorthand beside it makes React warn.
       borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: overview ? `1px solid ${D.border}` : 'none', scrollMarginTop: 140 }}>
       <TitleContainer type={overview ? "button" : undefined} onClick={overview ? onToggle : undefined}
@@ -312,7 +316,7 @@ function StepCard({
         {/* The icon itself becomes the tick once done: no column reserved for it (16 Nov 2026). */}
         <span aria-hidden="true" style={{ color: done ? D.sage : D.terra, width: 22, height: 22, display: overview ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: done ? 18 : undefined }}>{done ? '✓' : icon}</span>
         <span style={{ flex: 1 }}>
-          <strong role={overview?undefined:'heading'} aria-level={overview?undefined:2} style={{ display: 'block', fontSize: overview ? 15 : 28, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}</strong>
+          <strong role={overview?undefined:'heading'} aria-level={overview?undefined:2} style={{ display: 'block', fontSize: overview ? 15 : 28, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}{overview && mark && !done && <span className="bh-step-mark" data-step-mark={mark}>{mark === 'now' ? (fr ? 'Maintenant' : 'Now') : (fr ? 'Ensuite' : 'Next')}</span>}</strong>
           {!overview && !externalProgress && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {displayNumber}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
           {time && <span style={{ display: 'block', marginTop: 4, fontSize: 14, color: D.smoke }}>
             {/* Inside a step its own time is the one to read at a glance. */}
@@ -895,6 +899,9 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   const autolyseAction=schedule.availabilityActions?.find(action=>action.id==='autolyse');
   const [learnTerm, setLearnTerm] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(phase === 'preparation' ? 0 : 1);
+  // The Now/Next mark follows the clock while Preparation stays open.
+  const [, clockTick] = useReducer((x: number) => x + 1, 0);
+  useEffect(() => { if (phase !== 'preparation') return; const t = setInterval(clockTick, 60000); return () => clearInterval(t); }, [phase]);
   const [totalSteps, setTotalSteps] = useState(0);
   useEffect(() => { if (totalSteps > 0 && currentStep > totalSteps) setCurrentStep(totalSteps); }, [totalSteps, currentStep]);
   useEffect(() => { if (phase === 'preparation') onOverviewChange?.(currentStep === 0); }, [phase, currentStep, onOverviewChange]);
@@ -1270,6 +1277,19 @@ Actual dough condition and equipment may differ from these estimates.`;
   if (directIceMix && reserveWater) mixSequence.push({bold:l==='fr'?'Ajoutez la glace mesurée au pétrissage si elle est indiquée ci-dessus.':'Add the measured ice during mixing if shown above.',note:''});
 
   const stepTimesCtx = useStepTimes();
+  // Coming back mid-bake: the clock picks the step to be on. The latest step whose time has come and
+  // that is not ticked is "Now"; before the first one, the first pending step is "Next" (16 Nov 2026 review).
+  const guideMark = (() => {
+    if (phase !== 'preparation' || !stepTimesCtx) return null;
+    const now = Date.now();
+    const pending = [...stepTimesCtx.times.entries()].filter(([n]) => { const el = stepRefs.current[n]; return !!el && el.dataset.guidePhase === 'preparation' && el.dataset.guideDone !== 'true'; }).sort((a, b) => a[1] - b[1]);
+    if (!pending.length) return null;
+    const due = pending.filter(([, at]) => at <= now);
+    // An unticked mix or preferment comes first: everything after it depends on it.
+    const anchorDue = due.find(([n]) => stepRefs.current[n]?.dataset.guideAnchor === 'true');
+    const [step, at] = anchorDue ?? (due.length ? due[due.length - 1] : pending[0]);
+    return { step, kind: (at <= now ? 'now' : 'next') as 'now' | 'next', started: due.length > 0 || doneSteps.size > 0, title: stepRefs.current[step]?.dataset.guideTitle ?? '' };
+  })();
   let firstPendingPreparation = 0;
   let stepNum = 0;
   let lastStep = 0;
@@ -1289,6 +1309,8 @@ Actual dough condition and equipment may differ from these estimates.`;
       hidden: !!phase && phase !== stepPhase,
       previousLabel: s === 1 ? (l === 'fr' ? 'Retour à la vue d’ensemble' : 'Back to Overview') : phase && stepRefs.current[s - 1]?.dataset.guidePhase === 'preparation' && stepPhase === 'cooking' ? (l === 'fr' ? 'Retour à la préparation' : 'Back to Preparation') : undefined,
       nextLabel: phase && stepRefs.current[s + 1]?.dataset.guidePhase === 'cooking' && stepPhase === 'preparation' ? (onPrepareFillings?(l === 'fr' ? 'Préparer les garnitures' : 'Prepare toppings and fillings'):(l === 'fr' ? 'Cuisson & service' : 'Baking & serving')) : stepRefs.current[s+1]?.dataset.guideTitle ? stepRefs.current[s+1]?.dataset.guideTitle : undefined,
+      mark: guideMark?.step === s ? guideMark.kind : undefined,
+      anchor: mixing || preferment,
       overview: currentStep === 0, totalSteps: phase === 'cooking' ? cookingStepTotal : phase === 'preparation' ? Math.max(0,totalSteps-cookingStepTotal) : totalSteps,
       // The first step goes back to the overview, so step-by-step always has a way back (16 Nov 2026 review).
       onPrevious: s > 1 ? () => navigateGuideStep(s - 1) : () => { setCurrentStep(0); window.scrollTo({top:0,behavior:'instant'}); },
@@ -1336,8 +1358,9 @@ Actual dough condition and equipment may differ from these estimates.`;
       <button type="button" className="bh-step-trigger" onClick={()=>{setCurrentStep(0);window.scrollTo({top:0,behavior:'instant'});}}>{l==='fr'?'Vue d’ensemble':'Overview'}</button>
     </div>, progressTarget) : null;
   const breadGuide = isBread && breadProtocol?.cooking !== 'griddle';
-  const overviewAction = active && currentStep===0 && phase ? <button type="button" onClick={resumeStep} style={{...NEXT_CTA,minHeight:48}}>
-    {phase==='cooking' ? (Array.from(doneSteps).some(index=>stepRefs.current[index]?.dataset.guidePhase==='cooking') ? (l==='fr'?'Reprendre la cuisson':breadGuide?'Resume baking':'Resume cooking') : (l==='fr'?(breadGuide?'Cuire le pain':'Commencer la cuisson'):breadGuide?'Bake the bread':'Start cooking')) : phasePositions.current.preparation ? (l==='fr'?'Reprendre la préparation':'Resume preparation') : (l==='fr'?'Commencer la préparation':'Start preparation')} →
+  const goToMarked = phase==='preparation' && guideMark?.started && guideMark.title ? guideMark : null;
+  const overviewAction = active && currentStep===0 && phase ? <button type="button" onClick={goToMarked ? () => navigateGuideStep(goToMarked.step) : resumeStep} style={{...NEXT_CTA,minHeight:48}}>
+    {goToMarked ? (l==='fr' ? `Aller à : ${goToMarked.title}` : `Go to: ${goToMarked.title}`) : phase==='cooking' ? (Array.from(doneSteps).some(index=>stepRefs.current[index]?.dataset.guidePhase==='cooking') ? (l==='fr'?'Reprendre la cuisson':breadGuide?'Resume baking':'Resume cooking') : (l==='fr'?(breadGuide?'Cuire le pain':'Commencer la cuisson'):breadGuide?'Bake the bread':'Start cooking')) : phasePositions.current.preparation ? (l==='fr'?'Reprendre la préparation':'Resume preparation') : (l==='fr'?'Commencer la préparation':'Start preparation')} →
   </button> : null;
 
   if (recipe?.protocolIssue) return <section role="alert"><h2>{l === 'fr' ? 'Ajustez ce pain avant de commencer' : 'Adjust this bread before starting'}</h2><p>{recipe.protocolIssue === 'equipment' ? (l === 'fr' ? 'Choisissez un matériel de cuisson compatible dans les réglages.' : 'Choose compatible cooking equipment in setup.') : recipe.protocolIssue === 'timing' ? (l === 'fr' ? 'Laissez assez de temps pour mélanger, reposer et abaisser la pâte avant cuisson.' : 'Allow enough time to mix, rest and roll the dough before cooking.') : (l === 'fr' ? 'Choisissez la méthode de levée prise en charge dans les réglages.' : 'Choose the supported leavening method in setup.')}</p></section>;
