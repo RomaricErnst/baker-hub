@@ -35,3 +35,14 @@ export const SECONDARY_CTA: React.CSSProperties = {
   fontWeight: 500,
   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
 };
+
+// One sheet header across Pizzas and Fillings (16 Nov 2026 design pass): a 17 px title and a
+// 44 px cream ✕ circle whose right edge sits on the 16 px gutter.
+export const SHEET_TITLE: React.CSSProperties = {
+  fontFamily: 'var(--font-ui)', fontSize: 17, fontWeight: 600, lineHeight: 1.3, color: 'var(--char)',
+};
+export const SHEET_CLOSE: React.CSSProperties = {
+  width: 44, height: 44, flexShrink: 0, padding: 0, margin: 0, borderRadius: '50%',
+  background: 'var(--cream)', border: 0, fontSize: 14, color: 'var(--ash)', cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+};

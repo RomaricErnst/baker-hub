@@ -1,4 +1,5 @@
 'use client';
+import { SHEET_CLOSE, SHEET_TITLE } from '../lib/navButtons';
 // « Créer ma pizza » v2 — guided flow: base → fromage → viande/mer → légumes
 // → finitions. Each group offers catalogue chips or free text; bake order is
 // preset per ingredient and toggleable. Also edits an existing creation.
@@ -171,10 +172,10 @@ export default function CreatePizzaSheet({ locale, onClose, onCreated, initial }
       }}>
         <div style={{ width: 32, height: 3, background: '#E0D8CF', borderRadius: 2, margin: '12px auto 0', flexShrink: 0 }} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px 12px', borderBottom: '1px solid #F0EAE3', flexShrink: 0 }}>
-          <span style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: '#2B2420' }}>
+          <span style={SHEET_TITLE}>
             {initial ? (fr ? 'Modifier ma pizza' : 'Edit my pizza') : (fr ? 'Créer ma pizza' : 'Create my pizza')}
           </span>
-          <button onClick={onClose} style={{ width: 44, height: 44, padding: 8, backgroundClip: 'content-box', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: 14, color: 'var(--smoke)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '-8px' }}>✕</button>
+          <button onClick={onClose} aria-label={fr ? 'Fermer' : 'Close'} style={SHEET_CLOSE}>✕</button>
         </div>
 
         <div style={{ overflowY: 'auto', flex: 1, padding: '12px 16px' }}>
