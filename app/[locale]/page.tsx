@@ -4167,8 +4167,10 @@ export default function Home() {
   const journeySummary = recipeGenerated&&eatTime ? `${bakeQuantityLabel(numItems,bakeType,styleKey,fr)} · ${formatBakeDateTime(eatTime,locale)}` : undefined;
   const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings?'recipe':destination} fr={fr} onChange={next=>{if(next==='batch'){if(recipeGenerated)openSetupReview();else if(styleKey&&qtyChosen)openDestination('organisation');else openDestination('batch');}else openDestination(next);}} top={stickTop}
     recipeMeal={pizzaPartyEnabled||(styleKey&&sandwichEnabled)?{label:mealNoun,selected:hasFillings,active:browsingFillings,onChoose:()=>{
-      // One Pizzas bar however you arrive (16 Nov 2026 review): after the recipe it is the journey step
-      // (‹ Recipe · Shopping list →); before it, back to My bake and on to setting up the recipe.
+      // From Preparation or Baking & serving, late toppings return to the exact step the baker was on.
+      // Elsewhere one Pizzas bar however you arrive (16 Nov 2026 review): after the recipe it is the
+      // journey step (‹ Recipe · Shopping list →); before it, back to My bake and on to the recipe.
+      if(styleKey&&(destination==='protocol'||destination==='service')){captureEditReturn();setBatchView('fillings');setActiveTab('batch');scrollToStepTop();return;}
       if(recipeGenerated){openToppingsStep();return;}
       setFillingsReturn(null);setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}}:undefined}
     contextLabel={compactBakeContext?bakeQuantityLabel(numItems,bakeType,styleKey,fr):undefined}
