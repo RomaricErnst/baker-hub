@@ -29,7 +29,7 @@ import { WOOD_OVEN_FAQ } from '../lib/woodOvenFaq';
 import { formatPrefermentDose, formatYeastDose } from '../utils/prefermentDose';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { firstBatchFoldMinutes, scheduledFoldMinutes } from '../utils/scheduleFolds';
-import { leanBreadBake, ovenRounds, guideUnitText, guideWeightText } from '../utils/leanBreadBake';
+import { leanBreadBake, guideUnitText, guideWeightText, type RoundsTakeOut } from '../utils/leanBreadBake';
 import { panPizzaGuide, isPanPizzaStyle } from '../utils/panPizza';
 import { needsScaleHelp, yeastSpoonMeasure, DILUTION_BASE_YEAST_G } from '../utils/yeastMeasure';
 import { commercialDilution } from '../utils';
@@ -1027,14 +1027,13 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   const pieceWeight   = (recipe?.totalDough ?? numItems * 750) / Math.max(1, numItems);
   // Lean breads without a protocol get style-specific oven cards (real
   // temperatures and times); null keeps the oven-keyed message steps.
-  const leanBakeBase  = !breadProtocol && isBread ? leanBreadBake(styleKey, pieceWeight, ovenType, numItems) : null;
-  // More pieces than one oven load: each round with its time, at the head of the bake (14 Nov 2026).
-  const rounds        = leanBakeBase ? ovenRounds(styleKey, pieceWeight, ovenType, numItems) : null;
-  const leanBake      = leanBakeBase && rounds ? {...leanBakeBase, bake: (['en','fr'] as const).reduce((acc, lang) => {
-    const steps = leanBakeBase.bake[lang];
-    const times = Array.from({length: rounds.rounds}, (_, i) => `${lang === 'fr' ? 'fournée' : 'round'} ${i + 1} · ${formatPlanClock(new Date(+schedule.bakeStart + i * rounds.intervalMin * 60000), lang)}`).join(', ');
-    return {...acc, [lang]: [{...steps[0], note: `${times}. ${steps[0].note}`}, ...steps.slice(1)]};
-  }, {} as typeof leanBakeBase.bake)} : leanBakeBase;
+  // Several pieces: if they don't all fit, the waiting ones leave the fridge relative to their own
+  // turn (the shaped cold proof's warm-up), or go straight in when the bake is from the fridge.
+  const shapedColdEnd = schedule.coldRetard2Start && schedule.coldRetard2End ? schedule.coldRetard2End : null;
+  const roundsTakeOut: RoundsTakeOut = !shapedColdEnd ? null
+    : !schedule.rtWarmupStart && +shapedColdEnd >= +schedule.bakeStart - 60000 ? { fromFridge: true }
+    : { takeOutMin: Math.round((+schedule.bakeStart - +shapedColdEnd) / 60000) };
+  const leanBake      = !breadProtocol && isBread ? leanBreadBake(styleKey, pieceWeight, ovenType, numItems, roundsTakeOut) : null;
   // "Bake straight from the fridge" chosen: the cold proof runs up to the bake.
   // Several batches whose first fold waits for the last batch: one line says when.
   const batchFirstFoldShown = (schedule.batchMixWindows?.length ?? 0) > 1 && firstBatchFoldMinutes(schedule).length > 0 && firstBatchFoldMinutes(schedule)[0] !== scheduledFoldMinutes(schedule.bulkFermHours, styleKey)[0];

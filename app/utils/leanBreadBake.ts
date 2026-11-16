@@ -7,6 +7,7 @@
  * baker's unit system by ovenTempText.
  */
 import { gToOz, type UnitSystem } from './units';
+import { formatPlanDuration } from './duration';
 
 export type GuideStep = { bold: string; note: string };
 type Lang = 'en' | 'fr';
@@ -109,34 +110,30 @@ const both = <T,>(build: (lang: Lang) => T): Both<T> => ({ en: build('en'), fr: 
 /** Null when the style is not a lean bread, or when its existing oven card
  * already states real temperatures (round loaves in a wood-fired oven).
  */
-/** How many pieces one oven load takes (14 Nov 2026 audit: 20 baguettes in one "Bake the bread"
- *  step). Conservative home figures: a tray of baguettes or fougasses, two loaves, one per pot. */
-export function piecesPerOvenLoad(styleKey: string, ovenType: string | undefined): number {
-  if (ovenType === 'dutch_oven') return 1;
-  const long = styleKey === 'baguette' || styleKey === 'fougasse';
-  if (ovenType === 'wood_fired') return long ? 8 : 6;
-  return long ? 4 : 2;
-}
+/** How the waiting pieces reach the oven when a bake goes in rounds: taken out of the fridge a set
+ *  time before their turn, baked straight from it, or (no shaped cold proof) simply kept cool. */
+export type RoundsTakeOut = { takeOutMin: number } | { fromFridge: true } | null;
 
-/** Oven loads for a bake: how many, and minutes from one load going in to the next (the longest
- *  bake for the piece plus 10 min for the oven to recover), on the plan's 15-minute grid. */
-export function ovenRounds(styleKey: string, pieceWeightG: number, ovenType: string | undefined, count: number): { rounds: number; perLoad: number; intervalMin: number } | null {
-  const minutes = leanBreadMinutes(styleKey, pieceWeightG);
-  if (!minutes) return null;
-  const perLoad = piecesPerOvenLoad(styleKey, ovenType);
-  const rounds = Math.ceil(count / perLoad);
-  return rounds > 1 ? { rounds, perLoad, intervalMin: Math.ceil((minutes[1] + 10) / 15) * 15 } : null;
-}
-
-export function leanBreadBake(styleKey: string, pieceWeightG: number, ovenType: string | undefined, count = 1): LeanBreadBake | null {
+/** Several pieces may not all fit in the oven at once, and only the baker knows how many do (several
+ *  Dutch ovens fit in many home ovens): one conditional step says how to bake in rounds, with the
+ *  fridge take-out relative to each round's turn instead of clock times from a guessed capacity
+ *  (16 Nov 2026, replacing the 14 Nov "N rounds of up to K" estimate). */
+export function leanBreadBake(styleKey: string, pieceWeightG: number, ovenType: string | undefined, count = 1, takeOut: RoundsTakeOut = null): LeanBreadBake | null {
   const base = leanBreadBakeOneLoad(styleKey, pieceWeightG, ovenType, count);
-  if (!base) return null;
-  const perLoad = piecesPerOvenLoad(styleKey, ovenType);
-  if (count <= perLoad) return base;
-  const rounds = Math.ceil(count / perLoad);
-  const roundsStep = (lang: Lang) => lang === 'fr'
-    ? s(`Cuisez en ${rounds} fournées de ${perLoad} au plus`, 'gardez les autres au frais, couvertes, jusqu’à leur tour ; laissez le four reprendre sa température entre deux fournées')
-    : s(`Bake in ${rounds} rounds of up to ${perLoad}`, 'keep the waiting ones covered in the fridge until their turn; let the oven recover its heat between rounds');
+  if (!base || count < 2) return base;
+  const lead = takeOut && 'takeOutMin' in takeOut && takeOut.takeOutMin > 0 ? takeOut.takeOutMin : null;
+  const fromFridge = !!takeOut && 'fromFridge' in takeOut;
+  const roundsStep = (lang: Lang) => {
+    const fr = lang === 'fr';
+    const wait = lead != null
+      ? (fr ? `gardez le reste couvert au frais et sortez chaque fournée ${formatPlanDuration(lead / 60, 'fr')} avant de l’enfourner` : `keep the rest covered in the fridge and take each round out ${formatPlanDuration(lead / 60, 'en')} before it goes in`)
+      : fromFridge
+        ? (fr ? 'gardez le reste couvert au frais et enfournez chaque fournée à la sortie du réfrigérateur' : 'keep the rest covered in the fridge and bake each round straight from it')
+        : (fr ? 'gardez le reste couvert au frais jusqu’à son tour' : 'keep the rest covered in the fridge until its turn');
+    return fr
+      ? s('Si tout ne tient pas dans le four, cuisez en plusieurs fournées', `${wait} ; laissez le four reprendre sa température entre deux fournées`)
+      : s('If they don’t all fit in the oven, bake in rounds', `${wait}; let the oven recover its heat between rounds`);
+  };
   return { ...base, bake: { en: [roundsStep('en'), ...base.bake.en], fr: [roundsStep('fr'), ...base.bake.fr] } };
 }
 
