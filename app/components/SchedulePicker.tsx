@@ -3138,6 +3138,18 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     return n;
   }
 
+  // The age a fridge-kept starter will have at a given moment: its clock keeps running while it waits
+  // in the fridge, so a revival started on Thursday treats a starter fed "4–5 days ago" on Monday as a
+  // week old. Never younger than the baker's answer (16 Nov 2026: distant bakes start the revival in
+  // the run-up, and need the cycles that age calls for).
+  const STARTER_AGE_ORDER = ['today','yesterday','days23','days45','week'] as const;
+  function starterAgeAt(ms: number): typeof lastFedAge {
+    if (!lastFedTime || !lastFedAge || starterLocation !== 'fridge') return lastFedAge;
+    const h = (ms - lastFedTime.getTime()) / 3600000;
+    const byClock = h < 24 ? 'today' : h < 48 ? 'yesterday' : h < 84 ? 'days23' : h < 132 ? 'days45' : 'week';
+    return STARTER_AGE_ORDER.indexOf(byClock) > STARTER_AGE_ORDER.indexOf(lastFedAge) ? byClock : lastFedAge;
+  }
+
   // ── Sourdough: derive peak time from inputs (returns values, no setState) ──
   function deriveStarterPeakTime(bakeTime: Date, targetMixTime?: Date | null, revivalBlocks?: AvailabilityBlock[]): DerivedStarterState {
     const NULL_RESULT: DerivedStarterState = {
@@ -3187,14 +3199,22 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           const refeedNow = (() => {
             const dough = STYLE_FERM_DEFAULTS[styleKey ?? ''] ?? FERM_FALLBACK;
             const cycleH = adjPeakH * 1.5;
-            const leadH = (dough.rtH ?? 0) + (dough.coldH ?? 0) + (_cycles + 1) * cycleH + warmupH + 12;
-            const ideal = Math.floor((bakeTime.getTime() - leadH * 3600000) / 900000) * 900000;
-            // Only a bake several days away moves the revival; nearer bakes keep it now.
-            if (ideal < earliestRefeed + 96 * 3600000) return new Date(earliestRefeed);
+            const leadFor = (cycles: number) => (dough.rtH ?? 0) + (dough.coldH ?? 0) + (cycles + 1) * cycleH + warmupH + 12;
+            // The cycles are those of the starter's age when the revival starts (it ages in the fridge).
+            let cycles = _cycles;
+            let ideal = Math.floor((bakeTime.getTime() - leadFor(cycles) * 3600000) / 900000) * 900000;
+            const older = revivalCycles(starterAgeAt(ideal), starterMature, tang);
+            if (older > cycles) { cycles = older; ideal = Math.floor((bakeTime.getTime() - leadFor(cycles) * 3600000) / 900000) * 900000; }
+            // A bake more than a day beyond the revival's own lead keeps the starter in the fridge until
+            // the run-up: one revival, close to the bake, instead of a feed now and a fridge hold
+            // (16 Nov 2026 review: feed Monday, fridge Tuesday, out Friday for a Sunday loaf; was 96 h).
+            if (ideal < earliestRefeed + 24 * 3600000) return new Date(earliestRefeed);
             // The removal, the first feed and each revival feed after it stay out of busy times.
-            const clear = (at: number) => !revivalBlocks?.length || [at - warmupH * 3600000, at, ...Array.from({length: _cycles}, (_, k) => at + (k + 1) * cycleH * 3600000)]
+            const clear = (at: number) => !revivalBlocks?.length || [at - warmupH * 3600000, at, ...Array.from({length: cycles}, (_, k) => at + (k + 1) * cycleH * 3600000)]
               .every(ms => !isTimeBlocked(ms, revivalBlocks));
             for (let at = ideal, i = 0; i < 192 && at > earliestRefeed + 24 * 3600000; i++, at -= 900000) if (clear(at)) return new Date(at);
+            // Busy all of that day: start later instead, inside the 12 h margin, before falling back to now.
+            for (let at = ideal + 900000; at <= ideal + 12 * 3600000; at += 900000) if (clear(at)) return new Date(at);
             return new Date(earliestRefeed);
           })();
           // A refresh from a long-dormant starter peaks LATER than a healthy
@@ -3655,7 +3675,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
             //   - days45: at least 1 revival refresh
             //   - else: no minimum (gap drives count)
             // cycles=1 → 0 intermediates (just the pre-mix); cycles=2 → 1 intermediate + pre-mix.
-            const MIN_INTERMEDIATES = Math.max(0, revivalCycles(lastFedAge, starterMature, tang) - 1);
+            const MIN_INTERMEDIATES = Math.max(0, revivalCycles(starterAgeAt(_starterRefeedTime ? _starterRefeedTime.getTime() : Date.now()), starterMature, tang) - 1);
             const gapBasedCount = Math.floor(gapH / refreshSpacingH);
             const numIntermediate = Math.min(MAX_INTERMEDIATES + 1,
               Math.max(MIN_INTERMEDIATES + 1, gapBasedCount));
@@ -5706,7 +5726,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       const startMs = _starterRefeedTime?.getTime() ?? lastFedTime.getTime();
       const gapH = (nextMajorFeedMs - startMs) / 3600000;
       const MAX_INT = 2;
-      const MIN_INT = Math.max(0, revivalCycles(lastFedAge, starterMature, tang) - 1);
+      const MIN_INT = Math.max(0, revivalCycles(starterAgeAt(startMs), starterMature, tang) - 1);
       const gapBased = Math.floor(gapH / refreshSpacingH);
       const numIntermediate = Math.min(MAX_INT + 1, Math.max(MIN_INT + 1, gapBased));
       // Minimum spacing between consecutive feeds — max(6, adjPeakH × 0.75)
