@@ -46,7 +46,7 @@ export default function DecisionList({ options, selectedId, onSelect, disabledId
               borderRadius: layout === 'compact' ? 0 : 12,
               alignItems: 'center',
               gap: '12px',
-              padding: isSelected ? '10px 14px 10px 11px' : '10px 14px',
+              padding: isSelected && layout === 'compact' ? '10px 14px 10px 11px' : '10px 14px',
               minHeight: '62px',
               cursor: isDisabled ? 'default' : 'pointer',
               background: isSelected ? 'rgba(156, 130, 72,0.08)' : 'white',

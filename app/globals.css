@@ -29,7 +29,7 @@ html {
 
 :root {
   --font-display: Georgia, 'Times New Roman', serif;
-  --font-ui: "figtree", "figtree Fallback";
+  --font-ui: "figtree", "figtree Fallback", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   --cream: #F0EBE0;
   --warm: #FDFBF7;
   --char: #2B2420;
