@@ -558,9 +558,10 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
  }
  // Reproduce the report at the top, with expanded sections, and while scrolling.
  await fixedAction();
- await navigator(page).tap();await fixedAction();await noOverflow(page);
- await navigator(page).tap();
- await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));window.scrollTo(0,document.body.scrollHeight/2);});
+ // "Your bake" is a modal sheet (16 Nov 2026): it covers the bar while open, and closing it gives the bar back.
+ await navigator(page).tap();await expect(page.getByRole('dialog',{name:'Votre fournée'})).toBeVisible();
+ await page.keyboard.press('Escape');await fixedAction();await noOverflow(page);
+ await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight/2));
  await fixedAction();
  // Stuck geometry only means something once the page has scrolled; a step
  // shorter than the screen (the kitchen step after the kitchen moved to the

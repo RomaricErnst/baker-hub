@@ -51,10 +51,13 @@ export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,conte
   const [open,setOpen]=useState(false);
   const trigger=useRef<HTMLButtonElement>(null);
   const sheet=useRef<HTMLDivElement>(null);
+  // After a choice the new page takes focus (its title); only a plain close returns it to the bar.
+  const navigated=useRef(false);
   const [openGroup,setOpenGroup]=useState<'basics'|'custom'|null>(null);
   useEffect(()=>setOpen(false),[active]);
   useEffect(()=>{
     if(!open)return;
+    navigated.current=false;
     const previous=document.activeElement as HTMLElement|null;
     const overflow=document.body.style.overflow;
     document.body.style.overflow='hidden';
@@ -69,9 +72,9 @@ export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,conte
       else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
     };
     document.addEventListener('keydown',keydown);
-    return()=>{document.removeEventListener('keydown',keydown);document.body.style.overflow=overflow;if(previous?.isConnected)previous.focus({preventScroll:true});};
+    return()=>{document.removeEventListener('keydown',keydown);document.body.style.overflow=overflow;if(!navigated.current&&previous?.isConnected)previous.focus({preventScroll:true});};
   },[open]);
-  function choose(action:()=>void){setOpen(false);action();}
+  function choose(action:()=>void){navigated.current=true;setOpen(false);action();}
 
   const section = active === 'organisation' ? 'batch' : active;
   const name=(id:BakeDestination)=>{const d=BAKE_DESTINATIONS.find(item=>item.id===id)!;return fr?d.fr:d.en;};

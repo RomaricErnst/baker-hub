@@ -49,8 +49,10 @@ test('compact navigation reaches every section above the footer and Custom keeps
  await page.locator('.bh-bake-navigator-trigger').tap();
  const summary=page.getByRole('dialog',{name:'Votre fournée'});
  await expect(summary.locator('[data-destination-label]')).toHaveCount(5);
- await expect(summary.getByRole('button',{name:/^Quantité/})).toBeVisible();
- await expect(summary.getByRole('button',{name:/^Personnaliser/})).toBeVisible();
+ // Custom groups the answers: the group being answered is open, the other is one line.
+ await expect(summary.getByRole('button',{name:/^Les bases/})).toHaveAttribute('aria-expanded','false');
+ await expect(summary.getByRole('button',{name:/^Personnaliser/})).toHaveAttribute('aria-expanded','true');
+ await expect(summary.getByRole('button',{name:/^Farine/})).toBeVisible();
  const last=summary.getByRole('button').last();
  await last.scrollIntoViewIfNeeded();
  await expect(last).toBeInViewport();
