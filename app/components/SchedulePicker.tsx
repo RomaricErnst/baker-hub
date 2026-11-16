@@ -2266,8 +2266,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   // re-plans normally — that is the escape hatch for someone who had not
   // actually started.
   const resumeFrozenRef = useRef(sessionRestored || confirmedPlan);
+  const [freezeReleased, setFreezeReleased] = useState(!resumeFrozenRef.current);
   useEffect(() => {
-    const t = setTimeout(() => { resumeFrozenRef.current = false; }, 150);
+    const t = setTimeout(() => { resumeFrozenRef.current = false; setFreezeReleased(true); }, 150);
     return () => clearTimeout(t);
   }, []);
 
@@ -2858,6 +2859,18 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   }, [lastFedTime, knownPeakTime, starterLocation, planningMode,
       starterMature, starterHasRye, lastFeedRatio, tang, eatTimeSet, pendingEatTime,
       styleKey, kitchenTemp, fridgeTemp, ratioMode, nextFeedRatioOverride, lastFedAge]);
+
+  // A restored sourdough draft whose starter has no planned feeds yet has nothing to protect: plan it
+  // once the mount freeze ends. Starter answers that landed inside the freeze (on the Starter step,
+  // or while this step was unmounted) were otherwise never planned, and the bake-time step showed a
+  // plan with no feeds (16 Nov 2026: CI's levain-starter-step flake; reproduced 4/4 with instant answers).
+  useEffect(() => {
+    if (!freezeReleased || !isSourdough || recipeGenerated || confirmedPlan || !eatTimeSet || startTimeInPast) return;
+    if (planningMode==='last_fed'&&(!lastFedTime||lastFedAge===null) || planningMode==='know_peak'&&!knownPeakTime) return;
+    if (solverResult || savedStarterEvents.some(event=>event.kind!=='last_fed'&&event.kind!=='known_peak')) return;
+    replanCurrentSchedule(solverBlocksRef.current,manualTimesRef.current,true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [freezeReleased]);
 
   // Solver-applied ratio change → re-solve WITHOUT clearing baker state.
   // nextFeedRatio is written by the ratio-apply effect (solver output), so
