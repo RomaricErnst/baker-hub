@@ -45,22 +45,15 @@ test('compact navigation reaches every section above the footer and Custom keeps
  await expect(bakeDate).toHaveValue('2026-10-05T19:30');
  await page.evaluate(()=>{const el=document.querySelector('[data-customize-link]');if(el){document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));el.scrollIntoView({block:'center'});}});
  await customize.tap();
- const sections=page.getByRole('button',{name:'Voir les 5 rubriques',exact:true});
- await sections.tap();
- const menu=page.locator('.bh-bake-navigator-grid:visible');
- await expect(menu.locator('[data-destination-label]')).toHaveCount(5);
- await expect(menu.getByRole('button',{name:'Farine',exact:true})).toHaveCount(0);
- const last=menu.getByRole('button').last();
+ // One bar opens "Your bake": the journey, with My bake's answers grouped (16 Nov 2026).
+ await page.locator('.bh-bake-navigator-trigger').tap();
+ const summary=page.getByRole('dialog',{name:'Votre fournée'});
+ await expect(summary.locator('[data-destination-label]')).toHaveCount(5);
+ await expect(summary.getByRole('button',{name:/^Quantité/})).toBeVisible();
+ await expect(summary.getByRole('button',{name:/^Personnaliser/})).toBeVisible();
+ const last=summary.getByRole('button').last();
  await last.scrollIntoViewIfNeeded();
- await expect.poll(async()=>{
-  const [button,footer]=await Promise.all([last.boundingBox(),actions.boundingBox()]);
-  return !!button&&!!footer&&button.y+button.height<=footer.y+1;
- }).toBe(true);
- await sections.tap();
- await page.locator('.bh-step-trigger:visible').tap();
- const summary=page.getByRole('dialog');
- await expect(summary.getByRole('button',{name:/Quantité/})).toBeVisible();
- await expect(summary.getByRole('button',{name:/Farine/})).toBeVisible();
+ await expect(last).toBeInViewport();
  await summary.getByRole('button',{name:'Terminé',exact:true}).tap();
  // Custom opens on its equipment page.
  await page.getByRole('button',{name:/^Four à pizza traditionnel/}).tap();

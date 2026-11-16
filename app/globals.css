@@ -371,17 +371,11 @@ button,
 /* Six destinations share one compact, inline navigator. Its expansion never
    changes bottom action offsets or covers the current page. */
 .bh-bake-navigator { position:sticky; z-index:95; margin:8px 0 16px; padding:4px 0; background:var(--warm); color:var(--char); transition:none; }
-.bh-navigator-band { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:52px; padding:2px 10px; border:1px solid var(--border); border-radius:12px; background:var(--cream); }
-.bh-navigator-context { display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-width:0; font-size:16px; font-weight:600; }
-.bh-bake-navigator-trigger { flex-shrink:0; display:flex; align-items:center; justify-content:center; min-height:44px; padding:0 4px; border:0; background:transparent; color:var(--char); font:inherit; text-align:right; cursor:pointer; }
+.bh-navigator-band { display:flex; align-items:center; gap:8px; width:100%; min-height:52px; padding:2px 14px; border:1px solid var(--border); border-radius:12px; background:var(--cream); color:var(--char); font:inherit; text-align:left; cursor:pointer; }
+
 .bh-step-trigger { display:inline-flex; align-items:center; gap:4px; min-height:44px; padding:0 4px; border:0; background:transparent; font:inherit; font-size:12px; font-weight:400; color:var(--terra); white-space:nowrap; cursor:pointer; }
 .bh-step-trigger > span { text-decoration:underline; text-underline-offset:3px; }
 .bh-step-trigger svg { align-self:center; flex-shrink:0; }
-.bh-organisation-progress { display:flex; align-items:baseline; }
-.bh-navigator-context:has(.bh-organisation-progress),
-.bh-navigator-context:has(.bh-organisation-progress) .bh-navigator-current { align-items:baseline; }
-.bh-navigator-context:has(.bh-organisation-progress) .bh-navigator-current svg { align-self:center; }
-@media(max-width:400px){ .bh-navigator-context { gap:4px; font-size:15px; } .bh-navigator-context:has(.bh-organisation-progress) .bh-navigator-current svg { display:none; } .bh-navigator-band { gap:4px; padding-inline:8px; } }
 .bh-bake-navigator-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:8px 3px 4px; max-height:calc(100dvh - var(--bh-navigator-top, 56px) - 92px); overflow-y:auto; overscroll-behavior:contain; }
 .bh-bake-navigator-card {
   display:flex; align-items:center; justify-content:flex-start;
@@ -399,9 +393,6 @@ button,
 .bh-navigator-with-meal .bh-navigator-service { grid-column:1/-1; }
 .bh-bake-navigator-card[aria-current="page"] { background:var(--terra); color:#fff; border-color:var(--terra); }
 .bh-bake-navigator button:focus-visible { outline:2px solid var(--terra); outline-offset:3px; }
-.bh-navigator-current { display:flex; align-items:center; gap:8px; min-width:0; }
-.bh-navigator-current svg { flex-shrink:0; }
-.bh-navigator-disclosure { font-size:12px; font-weight:500; text-align:right; max-width:120px; flex-shrink:0; }
 .bh-bake-navigator-card svg { flex-shrink:0; width:18px; height:18px; }
 .bh-fillings-context button, .bh-late-fillings, .bh-recipe-fillings-link { min-height:44px; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--cream); color:var(--terra); font:inherit; font-size:14px; cursor:pointer; }
 .bh-fillings-invitation { margin:24px 0 12px; padding:16px; border:1px solid var(--border); border-radius:16px; background:var(--cream); }
@@ -417,8 +408,6 @@ button,
 .bh-fillings-invitation .bh-fillings-optional { font-size:13px; font-weight:400; color:var(--smoke); white-space:nowrap; }
 .bh-fillings-preview:focus-visible { outline:2px solid var(--terra); outline-offset:3px; }
 @media (max-width:360px) {
-  .bh-bake-navigator-trigger { gap:8px; padding:10px; }
-  .bh-navigator-disclosure { max-width:94px; }
   .bh-fillings-invitation { padding:12px; }
 }
 .bh-section-choices { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 20px; }
@@ -722,3 +711,56 @@ summary.bh-chevron-inline::-webkit-details-marker { display:none; }
 
 /* An empty block in the recipe column would still take a gap (16 Nov 2026 design pass). */
 .bh-recipe-output > :empty { display:none; }
+
+/* ── Your bake: one bar, one journey sheet (16 Nov 2026) ── */
+.bh-navigator-current { display:flex; align-items:center; gap:6px; min-width:0; font-size:16px; }
+.bh-navigator-name { font-weight:700; white-space:nowrap; }
+.bh-navigator-bake { font-weight:400; color:var(--ash); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.bh-navigator-chevron { flex-shrink:0; margin-left:2px; color:var(--char); }
+.bh-journey-scrim { position:fixed; inset:0; z-index:150; background:rgba(26,22,18,.45); }
+.bh-journey-sheet { position:fixed; left:0; right:0; bottom:0; z-index:151; max-height:86dvh; overflow-y:auto; overscroll-behavior:contain;
+  background:var(--warm); border-radius:20px 20px 0 0; padding:8px max(16px,env(safe-area-inset-left,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-right,0px));
+  font-family:var(--font-ui); color:var(--char); outline:none; }
+@media (min-width:640px){ .bh-journey-sheet { left:50%; right:auto; width:560px; transform:translateX(-50%); } }
+.bh-journey-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:6px; }
+.bh-journey-head h2 { font:600 17px/1.3 var(--font-ui); margin:0; }
+.bh-journey-done { min-height:44px; padding:0 4px; border:0; background:none; color:var(--terra); font:inherit; font-size:16px; cursor:pointer; }
+.bh-journey-summary { margin:0 0 8px; font-size:14px; color:var(--smoke); }
+.bh-journey { list-style:none; margin:0; padding:0; }
+.bh-journey li { position:relative; padding-left:34px; }
+.bh-journey li::before { content:""; position:absolute; left:11px; top:0; bottom:0; width:2px; background:var(--border); }
+.bh-journey li:first-child::before { top:24px; }
+.bh-journey li:last-child::before { bottom:calc(100% - 24px); }
+.bh-journey li.is-done::before { background:var(--terra); }
+.bh-journey li.is-current::before { background:linear-gradient(var(--terra) 24px,var(--border) 24px); }
+.bh-journey li:first-child.is-current::before { background:var(--border); }
+.bh-journey-node { position:absolute; left:4px; top:17px; width:16px; height:16px; border-radius:50%; border:2px solid var(--border); background:var(--warm); display:flex; align-items:center; justify-content:center; box-sizing:border-box; }
+.bh-journey li.is-done .bh-journey-node { background:var(--terra); border-color:var(--terra); }
+.bh-journey li.is-done .bh-journey-node::after { content:""; width:6px; height:3px; border:solid #fff; border-width:0 0 2px 2px; transform:translateY(-1px) rotate(-45deg); }
+.bh-journey li.is-current .bh-journey-node { left:0; top:13px; width:24px; height:24px; border-color:var(--terra); }
+.bh-journey li.is-current .bh-journey-node::after { content:""; width:10px; height:10px; border-radius:50%; background:var(--terra); }
+.bh-journey li.is-optional .bh-journey-node { border-style:dashed; }
+.bh-journey-part { display:block; width:100%; min-height:56px; padding:10px 0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.bh-journey-part:disabled { cursor:default; }
+.bh-journey-name { display:flex; flex-wrap:wrap; align-items:center; gap:8px; font-size:17px; font-weight:600; }
+.bh-journey-sub { display:block; margin-top:1px; font-size:14px; color:var(--smoke); }
+.bh-journey li.is-locked .bh-journey-name { color:var(--smoke); font-weight:500; }
+.bh-journey-here { font-size:12px; font-weight:600; color:var(--terra); background:rgba(107,68,35,.08); border-radius:999px; padding:2px 8px; }
+.bh-journey-steps { margin:0 0 12px; border:1px solid var(--border); border-radius:14px; background:#fff; overflow:hidden; }
+.bh-journey-steps > :not(:first-child), .bh-journey-steps > div > button + button { border-top:1px solid var(--border); }
+.bh-journey-step, .bh-journey-group { display:grid; align-items:center; gap:10px; width:100%; min-height:48px; padding:0 14px; border:0; background:none; color:inherit; font:inherit; font-size:15px; text-align:left; cursor:pointer; }
+.bh-journey-step { grid-template-columns:minmax(84px,auto) minmax(0,1fr) auto; }
+.bh-journey-step:disabled { cursor:default; opacity:.55; }
+.bh-journey-group { grid-template-columns:auto minmax(0,1fr) auto; }
+.bh-journey-group.is-open { background:var(--cream); }
+.bh-journey-group.is-open ~ .bh-journey-step { padding-left:24px; }
+.bh-journey-group-label { font-weight:600; white-space:nowrap; }
+.bh-journey-group-value, .bh-journey-step-value { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--char); }
+.bh-journey-group-value { text-align:right; color:var(--ash); }
+.bh-journey-step-label { color:var(--ash); }
+.is-todo { color:var(--smoke) !important; }
+.bh-journey-step.is-now { background:rgba(107,68,35,.06); }
+.bh-journey-step.is-now .bh-journey-step-label { color:var(--terra); font-weight:600; }
+.bh-journey-arrow { color:var(--smoke); }
+.bh-journey button:focus-visible, .bh-journey-sheet button:focus-visible { outline:2px solid var(--terra); outline-offset:2px; }
+@media(max-width:360px){ .bh-navigator-band { padding-inline:12px; } .bh-navigator-current { font-size:15px; } }
