@@ -73,7 +73,6 @@ import { checkYeastEntry, entryHoursLabel, type YeastEntryCheck } from '../utils
 import { starterActionLabelFor } from '../utils/starterBuild';
 import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock, formatBakeDateTime, displayWeight, formatPercent } from '../utils/units';
 import { formatDuration } from '../utils/duration';
-import { ovenRounds } from '../utils/leanBreadBake';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
   PIZZA_STYLES, BREAD_STYLES, FLOUR_DATA,
@@ -4094,13 +4093,6 @@ export default function Home() {
     if(!recipeGenerated||!eatTime||!schedule)return [];
     const from=Date.now()-60000;
     const steps=planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label,busy:isTimeBlocked(e.at,blocks)}));
-    // A bake larger than one oven load: each further round and when the last comes out (14 Nov 2026).
-    const rounds=bakeType==='bread'&&styleKey&&!breadProtocol?ovenRounds(styleKey,itemWeight,ovenType??undefined,numItems):null;
-    if(rounds){
-      for(let i=2;i<=rounds.rounds;i++){const at=new Date(+eatTime+(i-1)*rounds.intervalMin*60000);steps.push({key:`round-${i}`,at,label:fr?`Enfourner la fournée ${i}`:`Bake round ${i}`,busy:isTimeBlocked(at,blocks)});}
-      const out=new Date(+eatTime+((rounds.rounds-1)*rounds.intervalMin+rounds.intervalMin-10)*60000);
-      steps.push({key:'rounds-out',at:out,label:fr?'Dernière fournée sortie':'Last round out',busy:false});
-    }
     return steps;
   })();
   // A plan already in the calendar whose steps have since moved (any step, not only

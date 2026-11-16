@@ -106,20 +106,17 @@ test('country, wholemeal and rye loaves state °C and a time for the loaf weight
  assert.match(render('pain_campagne','en',{weight:800,numItems:1,ovenType:'wood_fired',units:'imperial'}),/535–610°F floor/);
 });
 
-// 14 Nov 2026: more pieces than one oven load bake in rounds, said once at the head of the bake.
-test('large bakes are split into oven loads',()=>{
- const {leanBreadBake,piecesPerOvenLoad}=require('../app/utils/leanBreadBake.ts');
- assert.equal(piecesPerOvenLoad('baguette','home_oven_standard'),4);
- assert.equal(piecesPerOvenLoad('pain_campagne','dutch_oven'),1);
- const twenty=leanBreadBake('baguette',320,'home_oven_standard',20);
- assert.match(twenty.bake.en[0].bold,/^Bake in 5 rounds of up to 4$/);
- assert.match(twenty.bake.fr[0].bold,/^Cuisez en 5 fournées de 4 au plus$/);
- const four=leanBreadBake('baguette',320,'home_oven_standard',4);
- assert.doesNotMatch(four.bake.en[0].bold,/rounds/);
-});
-test('oven rounds are spaced on the plan grid',()=>{
- const {ovenRounds}=require('../app/utils/leanBreadBake.ts');
- const r=ovenRounds('baguette',320,'home_oven_standard',20);
- assert.equal(r.rounds,5);assert.equal(r.perLoad,4);assert.equal(r.intervalMin%15,0);
- assert.equal(ovenRounds('baguette',320,'home_oven_standard',4),null);
+// 16 Nov 2026: oven capacity is the baker's to know (several Dutch ovens fit many home ovens). Several
+// pieces get one conditional rounds step, its fridge take-out relative to each round's turn.
+test('several pieces get a conditional rounds step with a relative take-out',()=>{
+ const {leanBreadBake}=require('../app/utils/leanBreadBake.ts');
+ assert.doesNotMatch(leanBreadBake('pain_campagne',800,'dutch_oven',1).bake.en[0].bold,/rounds/);
+ const warm=leanBreadBake('pain_campagne',800,'dutch_oven',3,{takeOutMin:60});
+ assert.equal(warm.bake.en[0].bold,'If they don’t all fit in the oven, bake in rounds');
+ assert.match(warm.bake.en[0].note,/take each round out 1h before it goes in/);
+ assert.match(warm.bake.fr[0].note,/sortez chaque fournée 1 h avant de l’enfourner/);
+ assert.match(leanBreadBake('baguette',320,'home_oven_standard',20,{fromFridge:true}).bake.en[0].note,/bake each round straight from it/);
+ assert.match(leanBreadBake('baguette',320,'home_oven_standard',20).bake.en[0].note,/until its turn/);
+ for(const card of [warm,leanBreadBake('baguette',320,'home_oven_standard',20)])
+  assert.doesNotMatch(JSON.stringify(card.bake),/rounds of up to|fournées de \d|at a time/);
 });
