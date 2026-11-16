@@ -731,7 +731,7 @@ summary.bh-chevron-inline::-webkit-details-marker { display:none; }
 .bh-journey li::before { content:""; position:absolute; left:11px; top:0; bottom:0; width:2px; background:var(--border); }
 .bh-journey li:first-child::before { top:24px; }
 .bh-journey li:last-child::before { bottom:calc(100% - 24px); }
-.bh-journey li.is-done::before { background:var(--terra); }
+.bh-journey li.is-done::before, .bh-journey li.is-passed::before { background:var(--terra); }
 .bh-journey li.is-current::before { background:linear-gradient(var(--terra) 24px,var(--border) 24px); }
 .bh-journey li:first-child.is-current::before { background:var(--border); }
 .bh-journey-node { position:absolute; left:4px; top:17px; width:16px; height:16px; border-radius:50%; border:2px solid var(--border); background:var(--warm); display:flex; align-items:center; justify-content:center; box-sizing:border-box; }
@@ -749,11 +749,14 @@ summary.bh-chevron-inline::-webkit-details-marker { display:none; }
 .bh-journey-steps { margin:0 0 12px; border:1px solid var(--border); border-radius:14px; background:#fff; overflow:hidden; }
 .bh-journey-steps > :not(:first-child), .bh-journey-steps > div > button + button { border-top:1px solid var(--border); }
 .bh-journey-step, .bh-journey-group { display:grid; align-items:center; gap:10px; width:100%; min-height:48px; padding:0 14px; border:0; background:none; color:inherit; font:inherit; font-size:15px; text-align:left; cursor:pointer; }
-.bh-journey-step { grid-template-columns:minmax(84px,auto) minmax(0,1fr) auto; }
+.bh-journey-step { grid-template-columns:minmax(0,1fr) auto; padding-block:7px; }
+.bh-journey-step-text { display:flex; flex-direction:column; gap:1px; min-width:0; }
+.bh-journey-step .bh-journey-step-label { font-size:12px; letter-spacing:.02em; color:var(--smoke); }
+.bh-journey-step .bh-journey-step-value { white-space:normal; overflow:visible; overflow-wrap:anywhere; font-size:15px; }
 .bh-journey-step:disabled { cursor:default; opacity:.55; }
 .bh-journey-group { grid-template-columns:auto minmax(0,1fr) auto; }
 .bh-journey-group.is-open { background:var(--cream); }
-.bh-journey-group.is-open ~ .bh-journey-step { padding-left:24px; }
+
 .bh-journey-group-label { font-weight:600; white-space:nowrap; }
 .bh-journey-group-value, .bh-journey-step-value { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--char); }
 .bh-journey-group-value { text-align:right; color:var(--ash); }

@@ -20,7 +20,7 @@ export function BackLabel({ text }: { text: ReactNode }) {
   if (!short) return createElement(Fragment, null, text);
   return createElement(Fragment, null,
     createElement('span', { className: 'bh-visually-hidden' }, text),
-    createElement('span', { 'aria-hidden': 'true' }, short));
+    createElement('span', { 'aria-hidden': 'true', style: { whiteSpace: 'nowrap' } }, short));
 }
 
 /** Wraps a back button's plain text child in BackLabel; other children pass through. */

@@ -62,7 +62,7 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: the whole route, without det
  await expect(page.locator('.bh-navigator-current')).toContainText(L('Recipe','Recette'));
  await bar(page).getByRole('button',{name:'Pizzas →',exact:true}).tap();
  await companion.getByRole('button',{name:L('Shopping list →','Liste de courses →'),exact:true}).tap();
- await expect(page.locator('.bh-navigator-current')).toContainText(L('Shopping list','Courses'));
+ await expect(page.locator('.bh-navigator-current')).toContainText(L('Shopping list','Liste de courses'));
  await expect(page.getByRole('button',{name:L('Add toppings — optional','Ajouter des garnitures — facultatif')}).filter({visible:true})).toHaveCount(0);
  await expect(bar(page).getByRole('button').first()).toHaveAccessibleName(L('Back to Pizzas','Retour aux pizzas'));
  await bar(page).getByRole('button').last().tap();

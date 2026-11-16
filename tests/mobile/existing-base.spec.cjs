@@ -21,7 +21,7 @@ test('existing bread keeps optional garnishes and shopping through reload withou
  await expect(extra).not.toBeChecked();await extra.check();
  await dialog.getByRole('spinbutton',{name:'Quantité Avocat, œuf poché et feta',exact:true}).fill('2');
  await dialog.getByRole('button',{name:'Terminé',exact:true}).tap();
- await navigate(page,'Courses');
+ await navigate(page,'Liste de courses');
  const row=page.locator('label').filter({hasText:'Graines de grenade'});
  await expect(row).toContainText('30 g');await row.getByRole('checkbox').check();
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_existing_base_v1')).section)).toBe('shopping');
@@ -35,7 +35,7 @@ test('existing bread keeps optional garnishes and shopping through reload withou
 test('purchased pizza skips dough setup and persists served count',async({page})=>{
  await open(page);await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  const pizza=page.getByRole('button',{name:'Margherita',exact:true});await pizza.getByRole('button',{name:/^\+/}).tap();
- await navigate(page,'Courses');
+ await navigate(page,'Liste de courses');
  await page.getByRole('button',{name:'Préparer les garnitures →',exact:true}).tap();
  await navigate(page,'Cuisson & service');
  await expect(page.getByRole('heading',{name:'Cuire et servir vos pizzas',exact:true})).toBeVisible();
@@ -50,7 +50,7 @@ test('purchased pizza skips dough setup and persists served count',async({page})
 test('existing pizza with no toppings can return to shopping from the catalogue after reload',async({page})=>{
  await open(page);
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
- await navigate(page,'Courses');
+ await navigate(page,'Liste de courses');
  await page.locator('[data-choose-pizzas]').tap();
  const readDraft=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_existing_base_v1')));
  await expect.poll(async()=>({section:(await readDraft()).section,origin:(await readDraft()).selectionReturn})).toEqual({section:'batch',origin:'shopping'});
@@ -80,7 +80,7 @@ test('pain de mie clubs and croques use slices and cook after assembly',async({p
  await page.getByRole('spinbutton',{name:'Quantité Club sandwich au poulet et bacon',exact:true}).fill('2');
  await page.getByRole('spinbutton',{name:'Quantité Croque-monsieur à la béchamel',exact:true}).fill('1');
  await expect(page.getByText(/8 tranches/)).toBeVisible();
- await navigate(page,'Courses');
+ await navigate(page,'Liste de courses');
  await expect(page.locator('label').filter({hasText:'Lait demi-écrémé'})).toBeVisible();
  await page.getByRole('button',{name:'Préparer les garnitures →',exact:true}).tap();
  await expect(page.getByText(/béchamel/i).first()).toBeVisible();

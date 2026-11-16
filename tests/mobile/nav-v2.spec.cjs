@@ -2,7 +2,7 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 
 // These contracts cover the replacement journey. Legacy mobile specs remain
 // intact as the reference for functionality outside this navigation change.
-const destinations=['Ma fournée','Recette','Courses','Préparation','Cuisson & service'];
+const destinations=['Ma fournée','Recette','Liste de courses','Préparation','Cuisson & service'];
 // English labels match BAKE_DESTINATIONS in app/lib/bakeNavigation.ts.
 const englishDestinations=['My bake','Recipe','Shopping list','Preparation','Baking & serving'];
 const navigator=page=>page.locator('.bh-bake-navigator-trigger');
@@ -118,7 +118,7 @@ test('compact menu keeps bread-only recipes unsplit',async({page})=>{
 
 for(const locale of ['fr','en'])test(`${locale}: the recipe names the bake under the section bar; task screens carry it in the bar`,async({page})=>{
  await seed(page,{bread:false,locale});
- for(const label of locale==='fr'?['Recette','Courses','Préparation']:['Recipe','Shopping list','Preparation']){
+ for(const label of locale==='fr'?['Recette','Liste de courses','Préparation']:['Recipe','Shopping list','Preparation']){
   await navigate(page,label,locale);
   const recipe=label==='Recette'||label==='Recipe';
   const context=page.locator('.bh-bake-context');
@@ -276,7 +276,7 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
  test(`${mode} ${bread?'bread':'pizza'}: generated bake exposes five consistent destinations`,async({page},testInfo)=>{
   await seed(page,{mode,bread});
   const before=await stored(page);
-  for(const label of ['Courses','Préparation','Cuisson & service','Recette','Ma fournée']){
+  for(const label of ['Liste de courses','Préparation','Cuisson & service','Recette','Ma fournée']){
    await navigate(page,label);
    await expect(page.locator('#bh-bottom-nav')).toHaveCount(0);
   }
@@ -288,13 +288,13 @@ for(const mode of ['simple','custom'])for(const bread of [false,true]){
 
 test('plain bread has useful shopping without requiring any filling selection',async({page},testInfo)=>{
  await seed(page,{bread:true,style:'pain_campagne'});
- await navigate(page,'Courses');
+ await navigate(page,'Liste de courses');
  const flour=page.getByRole('checkbox',{name:/farine/i}).first();
  await expect(flour).toBeVisible();
  await flour.check();
  await expect(flour).toBeChecked();
  await navigate(page,'Recette');
- await navigate(page,'Courses');
+ await navigate(page,'Liste de courses');
  await expect(flour).toBeChecked();
  expect(Object.keys((await stored(page)).sandwichParty?.qtys||{})).toHaveLength(0);
  await noOverflow(page);
@@ -401,7 +401,7 @@ for(const bread of [true,false])test(`late ${bread?'bread fillings':'pizza toppi
  await noOverflow(page);
  // The recommended forward path must include dough and baking, not jump
  // directly from shopping through toppings to serving.
- await navigate(page,'Courses');
+ await navigate(page,'Liste de courses');
  await page.getByRole('button',{name:'Passer à la préparation →',exact:true}).tap();
  await expect(choices.getByRole('button',{name:'Pâte',exact:true})).toHaveAttribute('aria-pressed','true');
  for(let step=0;step<25;step++){
@@ -435,7 +435,7 @@ test('fillings chosen after the Recipe lead on to Shopping without changing the 
  await article.getByRole('spinbutton').blur();
  await expect.poll(async()=>(await stored(page))?.sandwichParty?.qtys?.['baguette-jambon-beurre']).toBe(1);
  await page.locator('[data-companion-action]:visible').getByRole('button',{name:'Liste de courses →',exact:true}).tap();
- await expect(page.locator('.bh-navigator-current')).toContainText('Courses');
+ await expect(page.locator('.bh-navigator-current')).toContainText('Liste de courses');
  await expect(page.getByRole('button',{name:'Retour aux garnitures',exact:true}).filter({visible:true})).toHaveCount(1);
  const after=await stored(page);
  for(const key of ['styleKey','numItems','itemWeight','eatTime','recipeGenerated'])expect(after[key],key).toEqual(before[key]);

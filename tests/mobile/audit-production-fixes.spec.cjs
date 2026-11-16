@@ -24,7 +24,7 @@ for(const locale of ['fr','en']){
   await seed(page,locale,false,chosen);
   const flour=locale==='fr'?'Farine à pizza 00':chosen?'Pizza flour 00':'00 pizza flour';
   await expect(page.getByText(new RegExp(flour)).filter({visible:true}).first()).toBeVisible();
-  await navigate(page,locale==='fr'?'Courses':'Shopping list',locale);
+  await navigate(page,locale==='fr'?'Liste de courses':'Shopping list',locale);
   await expect(page.getByText(new RegExp(flour)).filter({visible:true}).first()).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
  });
@@ -35,7 +35,7 @@ for(const locale of ['fr','en']){
   await expect(visible()).toContainText(coverage);
   await expect(visible()).toContainText('22');
   await expect(page.getByText(locale==='fr'?'Tout est prêt. Bon appétit !':'Everything is ready. Enjoy!',{exact:true})).toHaveCount(0);
-  await navigate(page,locale==='fr'?'Courses':'Shopping list',locale);
+  await navigate(page,locale==='fr'?'Liste de courses':'Shopping list',locale);
   await expect(visible()).toContainText(coverage);
   await navigate(page,locale==='fr'?'Préparation':'Preparation',locale);
   await expect(visible()).toContainText(coverage);
@@ -72,14 +72,14 @@ for(const bread of [false,true])test(`Fresh ${bread?'baguette lunch':'pizza nigh
  }
  // Plan both, then buy: the toppings step leads on to the Shopping list.
  await page.locator('[data-companion-action]:visible').getByRole('button',{name:'Liste de courses →',exact:true}).tap();
- await expect(page.locator('.bh-navigator-current')).toContainText('Courses');
+ await expect(page.locator('.bh-navigator-current')).toContainText('Liste de courses');
  const checkbox=page.getByRole('checkbox').first();
  await checkbox.check();await expect(checkbox).toBeChecked();
  await navigate(page,'Préparation','fr');
  await expect(page.locator('.bh-navigator-current')).toContainText('Préparation');
  await navigate(page,'Cuisson & service','fr');
  await expect(page.locator('.bh-navigator-current')).toContainText('Cuisson & service');
- await navigate(page,'Courses','fr');
+ await navigate(page,'Liste de courses','fr');
  await expect(page.getByRole('checkbox').first()).toBeChecked();
  // Task screens carry the bake in the section bar.
  await expect(page.locator('[data-navigator-bake]')).toContainText(bread?'4 baguettes':'4 pizzas');
