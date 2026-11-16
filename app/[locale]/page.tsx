@@ -15,7 +15,7 @@ import { DEFAULT_BLOCKERS, loadProfile, updateProfile, setProfileListener } from
 import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import { pushProfile, pullAndMergeProfile } from '../lib/supabase/profileSync';
 import OpeningChoices from '../components/OpeningChoices';
-import StylePicker from '../components/StylePicker';
+import StylePicker, { StylePhotoPreload } from '../components/StylePicker';
 import BakeNavigator, {DestinationIcon} from '../components/BakeNavigator';
 import BakeTypeChooser from '../components/BakeTypeChooser';
 import {getServingTimeEstimate} from '../utils/servingTime';
@@ -943,7 +943,7 @@ function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,steps,edit
     onClick={()=>onEditTime?.(key)} style={{font:'inherit',color:'var(--terra)',background:'none',border:0,padding:'12px 8px',margin:'-12px -8px',textDecoration:'underline',textUnderlineOffset:3,cursor:'pointer',whiteSpace:'nowrap'}}>{text}<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline-block',marginLeft:5,verticalAlign:'-1px'}}><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg></button>;
   const row={display:'flex',gap:12,padding:'7px 0',borderTop:'1px solid var(--border)',fontSize:15,lineHeight:1.4,color:'var(--char)'} as const;
   return <section data-recipe-plan aria-labelledby="bh-recipe-plan-title" style={{margin:'0 0 4px'}}>
-    <h2 id="bh-recipe-plan-title" className="bh-section-title" style={{margin:'0 0 4px'}}>{fr?'Votre plan':'Your plan'}</h2>
+    <h2 id="bh-recipe-plan-title" className="bh-section-title" style={{margin:'0 0 12px'}}>{fr?'Votre plan':'Your plan'}</h2>
     {/* Grouped by day; steps at the same shown time share a row; times read to 15 min
         (the calendar keeps the exact ones). */}
     {(()=>{
@@ -4758,6 +4758,7 @@ export default function Home() {
           <p data-home-promise style={{margin:'0 auto 20px',maxWidth:'34ch',fontSize:15,lineHeight:1.45,color:'var(--smoke)',textAlign:'center'}}>
             {locale === 'fr' ? 'On planifie à rebours de l’heure du repas.' : 'We plan back from when you want to eat.'}
           </p>
+          <StylePhotoPreload />
 
           <OpeningChoices fr={fr} onSelect={selectBakeType}/>
           </div>
@@ -5088,7 +5089,7 @@ export default function Home() {
                           {t('results.computeError')}
                         </div>
                       ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
 
                           <RecipeOutput
                             mixerConfirmed={confirmed('mixer',mixerType)}
@@ -5679,7 +5680,7 @@ export default function Home() {
                           {t('results.computeError')}
                         </div>
                       ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                           <RecipeOutput
                             mixerConfirmed={confirmed('mixer',mixerType)}
                             starterEvents={starterEvents} mixingTime={startTime}

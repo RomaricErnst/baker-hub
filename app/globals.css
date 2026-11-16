@@ -719,3 +719,6 @@ summary.bh-chevron::-webkit-details-marker { display:none; }
 summary.bh-chevron::after { content:" ▾"; color:var(--terra); font-weight:400; }
 details[open] > summary.bh-chevron::after { content:" ▴"; }
 summary.bh-chevron-inline::-webkit-details-marker { display:none; }
+
+/* An empty block in the recipe column would still take a gap (16 Nov 2026 design pass). */
+.bh-recipe-output > :empty { display:none; }
