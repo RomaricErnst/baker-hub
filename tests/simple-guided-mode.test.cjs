@@ -21,6 +21,8 @@ test('restored explicit unbranded flour survives bake-type initialization',()=>{
 function choose(overrides={},key='simple'){
  const writes={};const context={loadProfile:()=>null,MIXER_TYPES:data.MIXER_TYPES,customKitchenConfirmed:false,tab:'custom',styleKey:'pain_levain',yeastType:'sourdough',bakeType:'bread',ovenType:null,mixerType:null,flourBlend:{flour1:'bread'},manualHydration:70,manualOil:0,manualSugar:0,prefermentType:'none',prefermentFlourPct:20,customOnlyStateRef:{current:null},suppressNextScrollRef:{current:false},ALL_STYLES:data.ALL_STYLES,getBreadProtocol:()=>undefined,firstIncompleteStep:()=>7,simpleStarterAnswer:null,...overrides};
  for(const name of [...modeFunction.matchAll(/\b(set\w+)\(/g)].map(m=>m[1]))context[name]=v=>{writes[name]=typeof v==='function'?v(3):v;};
+ context.confirmSetting=(field,value)=>{writes['confirm:'+field]=value;};
+ if(!('starterLocation' in context))context.starterLocation='fridge';
  vm.runInNewContext(compiled+'\nchooseMode("'+key+'");',context);return {writes,context};
 }
 test('Simple keeps sourdough/style, confirms supported household defaults and preserves temperature',()=>{
@@ -88,5 +90,6 @@ test('Customize after the Simple starter answer asks Custom’s own starter ques
  const {writes}=choose({tab:'simple',simpleStarterAnswer:'fridge'},'custom');
  assert.equal(writes.setSimpleStarterAnswer,null);assert.equal(writes.setLastFedAge,null);assert.equal(writes.setLastFedTime,null);assert.equal(writes.setPlanningMode,'last_fed');
  assert.ok(!('setStarterLocation' in writes),'where the starter is stays a fact');
+ assert.ok('confirm:starterLocation' in writes,'and stays answered in Customize (16 Nov 2026 review)');
  const kept=choose({tab:'simple',simpleStarterAnswer:null},'custom').writes;assert.ok(!('setLastFedAge' in kept),'real answers are kept');
 });
