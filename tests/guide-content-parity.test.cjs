@@ -20,7 +20,7 @@ test('step cards render the supplied equipment icon',()=>{
  const guide=fs.readFileSync('app/components/BakeGuide.tsx','utf8');
  const card=guide.slice(guide.indexOf('function StepCard('),guide.indexOf('// ── Learn link'));
  a.match(card,/number, icon, title/);
- a.match(card,/<span aria-hidden="true"[^>]*>\{icon\}<\/span>/);
+ a.match(card,/<span aria-hidden="true"[^>]*>\{done \? '✓' : icon\}<\/span>/);
 });
 test('bread cooling is a separate completion step without fabricated schedule time',()=>{
  const guide=fs.readFileSync('app/components/BakeGuide.tsx','utf8');
