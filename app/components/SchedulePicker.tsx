@@ -2266,8 +2266,21 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   // re-plans normally — that is the escape hatch for someone who had not
   // actually started.
   const resumeFrozenRef = useRef(sessionRestored || confirmedPlan);
+  // Starter answers given while the mount freeze holds are not a resumed plan: they are new input,
+  // and the constraint effect below skipped them. When the freeze ends, re-run it if they changed
+  // (16 Nov 2026: answers landing inside the 150 ms on the Custom Starter step were never planned,
+  // so the bake-time step had no feeds; CI's levain-starter-step flake, reproduced 4/4).
+  const starterInputSig = JSON.stringify([lastFedTimeProp?.getTime?.() ?? null, knownPeakTimeProp?.getTime?.() ?? null, starterLocationProp, planningModeProp, starterMatureProp, starterHasRyeProp, lastFeedRatioProp, lastFedAgeProp, tang]);
+  const mountStarterSigRef = useRef(starterInputSig);
+  const latestStarterSigRef = useRef(starterInputSig);
+  latestStarterSigRef.current = starterInputSig;
+  const [starterSolveKick, setStarterSolveKick] = useState(0);
   useEffect(() => {
-    const t = setTimeout(() => { resumeFrozenRef.current = false; }, 150);
+    const t = setTimeout(() => {
+      const wasFrozen = resumeFrozenRef.current;
+      resumeFrozenRef.current = false;
+      if (wasFrozen && latestStarterSigRef.current !== mountStarterSigRef.current) setStarterSolveKick(k => k + 1);
+    }, 150);
     return () => clearTimeout(t);
   }, []);
 
@@ -2857,7 +2870,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastFedTime, knownPeakTime, starterLocation, planningMode,
       starterMature, starterHasRye, lastFeedRatio, tang, eatTimeSet, pendingEatTime,
-      styleKey, kitchenTemp, fridgeTemp, ratioMode, nextFeedRatioOverride, lastFedAge]);
+      styleKey, kitchenTemp, fridgeTemp, ratioMode, nextFeedRatioOverride, lastFedAge, starterSolveKick]);
 
   // Solver-applied ratio change → re-solve WITHOUT clearing baker state.
   // nextFeedRatio is written by the ratio-apply effect (solver output), so
