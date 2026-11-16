@@ -103,7 +103,11 @@ for(const horizon of [24,32,48])for(const work of [false,true])for(const starter
    const repair=query('.bh-target-choices button:not(:disabled)');
    assert.ok(repair,'No usable later bake offered: '+(query('.bh-plan-state')?.textContent||doc.body.textContent.slice(-300)));
    repair.click();await settle();selected++;
-   assert.ok(w.__h.rec.bake>clock+horizon*hour && w.__h.rec.bake<=clock+(horizon+72)*hour,'Offered bake must fit the stated 72 hour search');
+   // The search covers 72 hours, then the first weekend after them (SchedulePicker's weekend
+   // choices); a weekend bake is offered only when it needs no cover.
+   const weekendFrom=new Date(clock+(horizon+72)*hour);while(weekendFrom.getDay()!==6)weekendFrom.setDate(weekendFrom.getDate()+1);weekendFrom.setHours(7,0,0,0);
+   const offered=w.__h.rec.bake;
+   assert.ok(offered>clock+horizon*hour && (offered<=clock+(horizon+72)*hour || offered>=+weekendFrom && offered<+weekendFrom+160*900000),'Offered bake must fit the stated search: 72 hours, then the first weekend');
    await coverListedActions();
   }
   assert.ok(eligible(),'Starter or schedule still prevents recipe generation after the displayed action: '+JSON.stringify(w.__h.rec));

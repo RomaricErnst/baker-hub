@@ -94,7 +94,7 @@ location × last-fed × horizon × Nights cases and asserts card PEAK ≡ active
 means mix within the solver's tolerance of the shown peak. The trace's `scoredPeakMs` may differ
 from the shown peak when the render re-aligns a feed onto the mix; the pill is judged on the shown peak.
 
-**Fridge-kept starter, distant bake (11 Nov 2026):** `deriveStarterPeakTime` starts the revival in the run-up (cycles + dough + 12 h) when the bake is more than 96 h past the earliest feed, at a time clear of busy periods; `fridge-starter.mjs` asserts no feed in the first 48 h for 216–240 h bakes. Feed labels: the first planned feed is never "intermediate" (`starterFeedLabelFor`).
+**Fridge-kept starter, distant bake (11 Nov 2026):** `deriveStarterPeakTime` starts the revival in the run-up (cycles + dough + 12 h) when that leaves more than 24 h before it (16 Nov 2026; was 96 h), at a time clear of busy periods (earlier first, then later within the 12 h margin), with the cycles of the age the starter will have then (`starterAgeAt`: it ages in the fridge); `fridge-starter.mjs` asserts no feed in the first 48 h for 216–240 h bakes. Feed labels: the first planned feed is never "intermediate" (`starterFeedLabelFor`).
 
 **Intermediate refreshes (fixed 3 Nov 2026):** the winner's scored intermediates (`renderIntermediatesMs`) are rendered as-is; never recompute them in the event builder. `tests/roundtrip/fridge-starter.mjs` guards the fridge-kept starter case.
 
