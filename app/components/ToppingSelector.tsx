@@ -471,7 +471,7 @@ export function PizzaIngredientDetails({pizza,locale,styleKey}: {pizza: Pizza; l
       const ingredients = pizza.ingredients.filter(ingredient => (style && ingredient.bakeOrderByStyle?.[style] || ingredient.bakeOrder) === order);
       if (!ingredients.length) return null;
       return <section key={order}>
-        <h3 style={{fontSize:16,margin:'16px 0 8px'}}>{order === 'before' ? (l === 'fr' ? 'Avant cuisson' : 'Before baking') : (l === 'fr' ? 'Après cuisson' : 'After baking')}</h3>
+        <h3 style={{fontSize:16,fontWeight:600,margin:'16px 0 8px'}}>{order === 'before' ? (l === 'fr' ? 'Avant cuisson' : 'Before baking') : (l === 'fr' ? 'Après cuisson' : 'After baking')}</h3>
         {ingredients.map(ingredient => {
           const note = (style && ingredient.prepNoteByStyle?.[style]) || ingredient.prepNote;
           const quantity = ingredient.qtyPerPizza;
