@@ -10,7 +10,7 @@ import JourneyCompletion, { type CompletionActions } from './JourneyCompletion';
 import { SECONDARY_CTA } from '../lib/navButtons';
 import {createPortal} from 'react-dom';
 import type { StarterEvent } from './SchedulePicker';
-import { Fragment, useState, useRef, useEffect, useLayoutEffect, createContext, useContext } from 'react';
+import { Fragment, useState, useRef, useEffect, useLayoutEffect, createContext, useContext, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { poolishCoolingAt } from '../utils/poolishCoolingAt';
 import { foldActionLabel } from '../utils/scheduleAvailability';
@@ -281,11 +281,13 @@ function shownDuration(number: number, time: Date | undefined, duration: number 
 
 // ── Step card ────────────────────────────────────────
 function StepCard({
-  number, displayNumber = number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext, hidden = false, stepPhase = 'preparation', previousLabel, nextLabel, externalProgress = false, passive = false, overviewNote,
+  number, displayNumber = number, icon, title, time, duration, open, done, overview = false, totalSteps = 0, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext, hidden = false, stepPhase = 'preparation', after, previousLabel, nextLabel, externalProgress = false, passive = false, overviewNote,
 }: {
   number: number; displayNumber?: number; icon: React.ReactNode; title: string; overview?: boolean; totalSteps?: number;
   externalProgress?: boolean; hidden?: boolean; stepPhase?: 'preparation' | 'cooking'; previousLabel?: string; nextLabel?: string;
   time?: Date; duration?: number | null; accent?: string; passive?: boolean; overviewNote?: React.ReactNode;
+  /** Shown under the step's own actions (the end-of-bake block follows "Step done"). */
+  after?: ReactNode;
   onPrevious?: () => void; onNext?: () => void; preview?: boolean; onReturnCurrent?: () => void; completeLabel?: string; batchCompletion?: boolean; final?: boolean; open: boolean; done: boolean; onToggle: () => void; onDone: () => void;
   children: React.ReactNode; divRef?: React.RefCallback<HTMLDivElement>;
 }) {
@@ -337,6 +339,7 @@ function StepCard({
           {!final && <button type="button" className="bh-guide-next" onClick={onNext} style={{...NEXT_CTA,minHeight:48}}>{nextLabel ?? (fr ? 'Étape suivante' : 'Next step')} →</button>}
         </nav>
         </div>
+        {after}
       </div>}
     </section>
   );
@@ -1285,10 +1288,11 @@ Actual dough condition and equipment may differ from these estimates.`;
       displayNumber: phase === 'cooking' && stepPhase === 'cooking' ? cookingStepNumber : s,
       stepPhase,
       hidden: !!phase && phase !== stepPhase,
-      previousLabel: phase && stepRefs.current[s - 1]?.dataset.guidePhase === 'preparation' && stepPhase === 'cooking' ? (l === 'fr' ? 'Retour à la préparation' : 'Back to Preparation') : undefined,
+      previousLabel: s === 1 ? (l === 'fr' ? 'Retour à la vue d’ensemble' : 'Back to Overview') : phase && stepRefs.current[s - 1]?.dataset.guidePhase === 'preparation' && stepPhase === 'cooking' ? (l === 'fr' ? 'Retour à la préparation' : 'Back to Preparation') : undefined,
       nextLabel: phase && stepRefs.current[s + 1]?.dataset.guidePhase === 'cooking' && stepPhase === 'preparation' ? (onPrepareFillings?(l === 'fr' ? 'Préparer les garnitures' : 'Prepare toppings and fillings'):(l === 'fr' ? 'Cuisson & service' : 'Baking & serving')) : stepRefs.current[s+1]?.dataset.guideTitle ? stepRefs.current[s+1]?.dataset.guideTitle : undefined,
       overview: currentStep === 0, totalSteps: phase === 'cooking' ? cookingStepTotal : phase === 'preparation' ? Math.max(0,totalSteps-cookingStepTotal) : totalSteps,
-      onPrevious: s > 1 ? () => navigateGuideStep(s - 1) : undefined,
+      // The first step goes back to the overview, so step-by-step always has a way back (16 Nov 2026 review).
+      onPrevious: s > 1 ? () => navigateGuideStep(s - 1) : () => { setCurrentStep(0); window.scrollTo({top:0,behavior:'instant'}); },
       onNext: () => { const next = stepRefs.current.findIndex((el, i) => i > s && el !== null); if (next > s) {if(phase==='preparation'&&stepRefs.current[next]?.dataset.guidePhase==='cooking'&&onPrepareFillings)onPrepareFillings();else navigateGuideStep(next);} },
       batchCompletion: false,
       completeLabel: undefined,
@@ -1362,11 +1366,10 @@ Actual dough condition and equipment may differ from these estimates.`;
 <StepCard number={n()} {...sc(false, 'cooking')} icon={<IconPreheat />} title={l === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle'} time={schedule.preheatStart}>
         <Steps items={profileSteps(breadProtocol.preheat[l])} />
       </StepCard>
-      <StepCard final number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={l === 'fr' ? 'Cuire et garnir' : 'Cook and fill'} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined}>
+      <StepCard final after={bakeClosing} number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={l === 'fr' ? 'Cuire et garnir' : 'Cook and fill'} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined}>
         <Steps items={profileSteps(breadProtocol.cookingSteps[l])} />
         <Steps items={profileSteps(breadProtocol.cooling[l])} />
         {fillingsAction}
-        {bakeClosing}
         {onBackToRecipe && <button type="button" onClick={onBackToRecipe} style={{minHeight:48}}>{l==='fr'?'Retour à la recette':'Back to Recipe'} →</button>}
       </StepCard>
       {active&&currentStep===0&&afterSteps}
@@ -2331,7 +2334,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         {!isBread && bakeClosing}
       </StepCard>
 
-      {isBread && <StepCard final number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Garder les pains souples' : 'Keep the breads soft') : (l === 'fr' ? `Laisser refroidir ${breadNoun}` : `Cool ${breadNoun}`)}>
+      {isBread && <StepCard final after={bakeClosing} number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Garder les pains souples' : 'Keep the breads soft') : (l === 'fr' ? `Laisser refroidir ${breadNoun}` : `Cool ${breadNoun}`)}>
         {breadProtocol ? <Steps items={profileSteps(breadProtocol.cooling[l])} /> : (() => {
           const range = breadCoolingRange(styleKey, pieceWeight);
           return <><Section icon="" title={t('sectionTitles.whatToDo')}><Steps items={[
@@ -2347,7 +2350,6 @@ Actual dough condition and equipment may differ from these estimates.`;
         })()}
         {!breadProtocol && <StepExtras tips={null} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />}
         {fillingsAction}
-        {bakeClosing}
         {onBackToRecipe && <button type="button" onClick={onBackToRecipe} style={{minHeight:48}}>{l==='fr'?'Retour à la recette':'Back to Recipe'} →</button>}
       </StepCard>}
       {active&&currentStep===0&&afterSteps}

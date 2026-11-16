@@ -26,7 +26,7 @@ async function go(page,label,fr){
 for(const locale of ['fr','en'])test(`${locale}: reload on a bake destination reopens it, Back still works, a new visit offers Resume`,async({page,context})=>{
  const fr=locale==='fr';
  await seed(page,locale);
- const preparation=fr?'Préparation':'Preparation',shopping=fr?'Courses':'Shopping list';
+ const preparation=fr?'Préparation':'Preparation',shopping=fr?'Liste de courses':'Shopping list';
  await go(page,shopping,fr);
  await go(page,preparation,fr);
  await page.reload();

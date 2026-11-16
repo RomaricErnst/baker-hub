@@ -201,7 +201,7 @@ export default function ProfileSheet({ locale, onClose }: { locale: string; onCl
           profile.ovenTypeBread ?? profile.ovenType, key => patch({ ovenTypeBread: key }),
         )}
 
-        <span style={S.label}>{fr ? 'Pétrissage' : 'Mixing'}</span>
+        <span style={S.label}>{fr ? 'Pétrissage' : 'Kneading'}</span>
         {pillRow(
           Object.entries(MIXER_TYPES).map(([key, v]) => ({ key, label: fr ? v.nameFr : v.name })),
           profile.mixerType, key => patch({ mixerType: key }),

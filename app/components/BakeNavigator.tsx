@@ -81,11 +81,11 @@ export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,conte
   const currentName=active==='recipe'&&recipeMeal?.active?recipeMeal.label:name(section);
   const barDetail=stepLabel??contextLabel;
 
-  type Part={key:string;label:string;sub:string;current:boolean;locked:boolean;optional?:boolean;go:()=>void};
+  type Part={key:string;label:string;sub:string;current:boolean;locked:boolean;optional?:boolean;done?:boolean;go:()=>void};
   const parts:Part[]=[
-    {key:'batch',label:name('batch'),sub:fr?SUBTITLES.batch.fr:SUBTITLES.batch.en,current:section==='batch'&&!recipeMeal?.active,locked:false,go:()=>onChange('batch')},
-    {key:'recipe',label:recipeMeal?.recipeLabel??name('recipe'),sub:fr?SUBTITLES.recipe.fr:SUBTITLES.recipe.en,current:section==='recipe'&&!recipeMeal?.active,locked:!recipeReady,go:()=>onChange('recipe')},
-    ...(recipeMeal?[{key:'meal',label:recipeMeal.label,sub:fr?SUBTITLES.meal.fr:SUBTITLES.meal.en,current:recipeMeal.active,locked:false,optional:true,go:recipeMeal.onChoose}]:[]),
+    {key:'batch',label:name('batch'),sub:fr?SUBTITLES.batch.fr:SUBTITLES.batch.en,current:section==='batch'&&!recipeMeal?.active,locked:false,done:recipeReady,go:()=>onChange('batch')},
+    {key:'recipe',label:recipeMeal?.recipeLabel??name('recipe'),sub:fr?SUBTITLES.recipe.fr:SUBTITLES.recipe.en,current:section==='recipe'&&!recipeMeal?.active,locked:!recipeReady,done:recipeReady,go:()=>onChange('recipe')},
+    ...(recipeMeal?[{key:'meal',label:recipeMeal.label,sub:fr?SUBTITLES.meal.fr:SUBTITLES.meal.en,current:recipeMeal.active,locked:false,optional:true,done:recipeMeal.selected,go:recipeMeal.onChoose}]:[]),
     {key:'shopping',label:name('shopping'),sub:fr?SUBTITLES.shopping.fr:SUBTITLES.shopping.en,current:section==='shopping',locked:!recipeReady,go:()=>onChange('shopping')},
     {key:'protocol',label:name('protocol'),sub:fr?SUBTITLES.protocol.fr:SUBTITLES.protocol.en,current:section==='protocol',locked:!recipeReady,go:()=>onChange('protocol')},
     {key:'service',label:name('service'),sub:fr?SUBTITLES.service.fr:SUBTITLES.service.en,current:section==='service',locked:!recipeReady,go:()=>onChange('service')},
@@ -94,9 +94,11 @@ export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,conte
 
   const stepRow=(step:BakeStepLink)=><button key={step.label} type="button" disabled={step.disabled} aria-current={step.current?'step':undefined}
     className={`bh-journey-step${step.current?' is-now':''}`} onClick={()=>choose(step.onChoose)}>
-    <span className="bh-journey-step-label">{step.label}</span>
-    <span className={`bh-journey-step-value${step.value?'':' is-todo'}`}>{step.current&&!step.value?(fr?'En cours':'Choosing now'):step.value||(fr?'À choisir':'To choose')}</span>
-    <span aria-hidden="true" className="bh-journey-arrow">›</span>
+    <span className="bh-journey-step-text">
+      <span className="bh-journey-step-label">{step.label}</span>
+      <span className={`bh-journey-step-value${step.value?'':' is-todo'}`}>{step.current&&!step.value?(fr?'En cours':'Choosing now'):step.value||(fr?'À choisir':'To choose')}</span>
+    </span>
+    {!step.disabled&&<span aria-hidden="true" className="bh-journey-arrow">›</span>}
   </button>;
   const stepCard=()=>{
     if(!steps?.length)return null;
@@ -136,16 +138,18 @@ export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,conte
           <h2>{fr?'Votre fournée':'Your bake'}</h2>
           <button type="button" className="bh-journey-done" onClick={()=>setOpen(false)}>{fr?'Terminé':'Done'}</button>
         </div>
-        <p className="bh-journey-summary">{summary??(fr?'De vos choix jusqu’à table':'From your choices to the table')}</p>
+        <p className="bh-journey-summary">{summary??(fr?'De vos choix jusqu’à la table':'From your choices to the table')}</p>
         <nav aria-label={fr?'Votre fournée':'Your bake'}>
           <ol className="bh-journey">
             {parts.map((part,index)=>{
-              const done=!part.current&&!part.locked&&recipeReady&&curIndex>=0&&index<curIndex;
-              return <li key={part.key} className={[part.current?'is-current':'',done?'is-done':'',part.locked?'is-locked':'',part.optional?'is-optional':''].filter(Boolean).join(' ')}>
+              // A tick means done (choices made, recipe generated, pizzas chosen), not "earlier in the list".
+              const done=!part.current&&!!part.done;
+              const passed=!part.current&&curIndex>=0&&index<curIndex;
+              return <li key={part.key} className={[part.current?'is-current':'',done?'is-done':'',passed?'is-passed':'',part.locked?'is-locked':'',part.optional?'is-optional':''].filter(Boolean).join(' ')}>
                 <span aria-hidden="true" className="bh-journey-node"/>
                 <button type="button" disabled={part.locked} aria-current={part.current?'page':undefined} onClick={()=>choose(part.go)} className="bh-journey-part">
                   <span className="bh-journey-name"><span {...(part.key==='meal'?{}:{'data-destination-label':''})}>{part.label}</span>{part.current&&<span aria-hidden="true" className="bh-journey-here">{fr?'Vous êtes ici':'You are here'}</span>}</span>
-                  <span aria-hidden="true" className="bh-journey-sub">{part.locked?(fr?'Après votre recette':'After your recipe'):part.sub}</span>
+                  <span aria-hidden="true" className="bh-journey-sub">{part.locked?(part.key==='recipe'?(fr?'Prête dès l’heure de cuisson choisie':'Ready once you set the bake time'):(fr?'S’ouvre avec votre recette':'Opens with your recipe')):part.sub}</span>
                 </button>
                 {part.key==='batch'&&part.current&&stepCard()}
               </li>;

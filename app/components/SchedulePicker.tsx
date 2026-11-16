@@ -7407,7 +7407,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           </div>
 
           {/* ── Mode A: last fed — age chip flow ── */}
-          {planningMode === 'last_fed' && (
+          {/* Asked once the baker has said where it has been (16 Nov 2026 review: the fridge wording
+              appeared before the fridge was chosen). */}
+          {planningMode === 'last_fed' && starterLocationAnswered && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={STARTER_LABEL_STYLE}>
                 {/* For a fridge starter, time-since-feed and time-in-fridge are

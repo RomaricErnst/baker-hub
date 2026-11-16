@@ -124,7 +124,7 @@ test('French pocket pita: lighter filter, details dismissal and empty-stage reco
  await seedBread(page,{style:'pita',locale:'fr',tab:'sandwiches'});
  await expect(page.getByRole('heading',{name:'Quelles pitas ?',exact:true})).toBeVisible({timeout:20000});
  const nav=page.getByRole('navigation',{name:'Étapes des sandwichs',exact:true});
- await nav.getByRole('button',{name:'Courses',exact:true}).tap();
+ await nav.getByRole('button',{name:'Liste de courses',exact:true}).tap();
  await page.getByRole('button',{name:'Choisir mes sandwichs',exact:true}).tap();
  await page.getByRole('button',{name:'Plus légers',exact:true}).tap();
  await expect(page.getByText(/Au moins 20 % de calories/)).toBeVisible();
