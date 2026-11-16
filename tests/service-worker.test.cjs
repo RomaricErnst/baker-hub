@@ -102,20 +102,23 @@ test('redirected shells and query-string shells are not stored',async()=>{
   assert.equal([...w.stores.values()].reduce((n,s)=>n+s.size,0),0);
 });
 
-test('build files are cache first; fonts and images are served from cache and refreshed',async()=>{
+test('build files are cache first; fonts are served from cache and refreshed; images are left to the browser',async()=>{
   const w=world();
   const chunk=()=>w.request('/_next/static/chunks/app.js');
   await w.dispatch('fetch',{request:chunk()});
   await w.dispatch('fetch',{request:chunk()});
   assert.equal(w.fetched.filter(u=>u.endsWith('app.js')).length,1);
-  const image=()=>w.request('/images/approved/bread/levain.webp');
-  await w.dispatch('fetch',{request:image()});
-  const again=await w.dispatch('fetch',{request:image()});
+  const font=()=>w.request('/fonts/figtree-latin.woff2');
+  await w.dispatch('fetch',{request:font()});
+  const again=await w.dispatch('fetch',{request:font()});
   assert.equal(again.handled,true);
-  assert.equal(w.fetched.filter(u=>u.endsWith('levain.webp')).length,2);
+  assert.equal(w.fetched.filter(u=>u.endsWith('figtree-latin.woff2')).length,2);
   w.setOnline(false);
-  const offline=await w.dispatch('fetch',{request:image()});
-  assert.match(offline.result.body,/levain\.webp/);
+  const offline=await w.dispatch('fetch',{request:font()});
+  assert.match(offline.result.body,/figtree-latin\.woff2/);
+  // Photos use the browser's own month-long cache: the worker never answers for them.
+  for(const url of ['/images/approved/bread/levain.webp','/_next/image?url=%2Fimages%2Fa.webp&w=384&q=75','/logo.png'])
+    assert.equal((await w.dispatch('fetch',{request:w.request(url)})).handled,false,url);
 });
 
 test('activation removes caches from earlier versions only',async()=>{
@@ -136,7 +139,7 @@ test('warming keeps the same exclusions as live requests',async()=>{
     'https://mguwsdonfsyioyelseuf.supabase.co/rest/v1/bake_events', ORIGIN+'/oven_stone.webp',
   ]}});
   const kept=[...w.stores.values()].flatMap(s=>[...s.keys()]).sort();
-  assert.deepEqual(kept,[ORIGIN+'/_next/static/chunks/app.js',ORIGIN+'/fr',ORIGIN+'/oven_stone.webp']);
+  assert.deepEqual(kept,[ORIGIN+'/_next/static/chunks/app.js',ORIGIN+'/fr']);
   assert.ok(!w.fetched.some(u=>/\/api\/|\/auth\/|supabase/.test(u)));
 });
 

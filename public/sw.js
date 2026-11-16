@@ -5,14 +5,17 @@
  *     deployment is always picked up when there is signal; the last good copy
  *     is served only when the network fails or stalls.
  *   - Build assets under /_next/static/ (hashed, immutable): cache first.
- *   - Other same-origin fonts and images: served from cache, refreshed in the
- *     background.
+ *   - Same-origin fonts: served from cache, refreshed in the background.
  *
  * What it never touches
  *   - Anything that is not a same-origin GET (so Supabase and every other
  *     third party pass straight through).
  *   - /api/* and /auth/*.
  *   - React Server Component payloads and any other request not listed above.
+ *   - Images (/_next/image and image files). They carry a one-month browser
+ *     cache (next.config.ts), which also serves them offline. Going through
+ *     the worker made the style page wait ~0.4 s for photos the home page had
+ *     just loaded (16 Nov 2026: the first-visit "flash").
  *
  * The bake itself lives in localStorage (bh_session_v1), so a cached shell is
  * enough to reopen it without signal.
@@ -20,13 +23,13 @@
  * To retire the worker: bump VERSION and replace the fetch handler with
  * nothing; or ship a worker that calls self.registration.unregister().
  */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL_CACHE = 'bh-shell-' + VERSION;
 const STATIC_CACHE = 'bh-static-' + VERSION;
 const CURRENT_CACHES = [SHELL_CACHE, STATIC_CACHE];
 const SHELL_PATHS = ['/', '/fr'];
 const NEVER_CACHE_PREFIXES = ['/api/', '/auth/'];
-const STATIC_EXTENSION = /\.(?:woff2?|ttf|otf|webp|png|jpe?g|gif|avif|svg|ico)$/i;
+const STATIC_EXTENSION = /\.(?:woff2?|ttf|otf)$/i;
 const STATIC_LIMIT = 400;      // entries kept in the asset cache
 const SHELL_TIMEOUT_MS = 5000; // a stalled network falls back to the saved shell
 
@@ -46,7 +49,6 @@ function classify(request) {
   if (request.headers && request.headers.has && request.headers.has('range')) return null;
   if (request.mode === 'navigate') return shellPath(url.pathname) ? 'shell' : null;
   if (url.pathname.startsWith('/_next/static/')) return 'immutable';
-  if (url.pathname === '/_next/image') return 'asset';
   if (url.pathname.startsWith('/_next/')) return null;
   if (STATIC_EXTENSION.test(url.pathname)) return 'asset';
   return null;
