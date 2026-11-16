@@ -1,3 +1,11 @@
+# 16 November 2026 — design pass: one look across the journeys (Claude)
+
+- Three read-only agents screenshotted every page on the live site and proposed only clear visual improvements, each with a before/after; Romaric approved all 37. Shipped as #112 (setup, G1 and S1–S10), #114 (Pizzas, Shopping, Fillings, P1–P10 and F1–F6) and #113 (Recipe, Preparation, Baking, R1–R10).
+- Shared rules that came out of it: one sheet header (`SHEET_TITLE` / `SHEET_CLOSE` in `app/lib/navButtons.ts`: 17 px title, 44 px cream ✕ on the 16 px gutter), and Fillings sheets slide up like the pizza sheets. Fold-outs use `summary.bh-chevron` (▾ after, terra), not the browser marker or `.bh-disclosure`. Active filters are terra on `rgba(107,68,35,.07)`, never red on pink. Inline help links (`how to weigh it ▾`) keep a 44 px tap area through padding plus negative margin, so they add no line height.
+- R4 was a real bug: the preferment stage's "how to weigh it ▾" was plain text. It is now the same toggle as the direct-dough row, and the separate "Small yeast dose" fold-out is gone.
+- First-visit flash (Romaric's recording): the style page drew empty frames that filled in one by one. `StylePhotoPreload` on the home page loads the pizza style photos and the first bread group at low priority with the same `next/image` props.
+- Left as they are, on purpose: the purple wine-pairing box, two 28 px titles on a Preparation step, the French "Commencer la préparation →" wrap (it belongs to the shared bar), and the inline time editor's Close row (needs restructuring).
+
 # 14 November 2026 (evening) — the bake-time fork reads as a choice (Claude)
 
 - Romaric: with Generate in the bar and Customize as a lone card, the step no longer read as two paths. The bake-time step now ends on two stacked buttons: "Generate my recipe →" filled, "Customize my bake" outlined with three words of what it opens ("flour, preferment, hydration"; FR "farine, préferment, hydratation"; starter for levain styles, no preferment where only direct dough applies). Simple shows no equipment or hydration detail. The bar holds only "‹ Previous" on this step, the one fork in setup.
