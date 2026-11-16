@@ -21,8 +21,12 @@ async function startCustom(page){
  await page.getByRole('button',{name:/^Personnaliser ma fournée/}).tap();
 }
 async function openCustomSection(page,label){
- await page.locator('.bh-step-trigger:visible').tap();
- await page.getByRole('dialog').getByRole('button',{name:new RegExp('^'+label)}).tap();
+ // The bar opens "Your bake"; Custom answers sit in The basics and Customize (16 Nov 2026).
+ await navigator(page).tap();
+ const sheet=page.getByRole('dialog',{name:'Votre fournée'});
+ const row=sheet.getByRole('button',{name:new RegExp('^'+label)});
+ if(!(await row.count()))for(const group of await sheet.locator('.bh-journey-group[aria-expanded="false"]').all()){await group.tap();if(await row.count())break;}
+ await row.first().tap();
 }
 async function anonymous(page){
  await page.route('http://127.0.0.1:54321/**',route=>route.fulfill({status:401,contentType:'application/json',body:'{"message":"Anonymous journey test"}'}));
@@ -88,14 +92,14 @@ for(const locale of ['fr','en'])test(`${locale}: compact recipe menu opens filli
  await navigator(page).tap();
  const nav=page.getByRole('navigation',{name:locale==='fr'?'Votre fournée':'Your bake',exact:true});
  await expect(nav.locator('[data-destination-label]')).toHaveCount(5);
- const meal=nav.getByRole('button',{name:locale==='fr'?'Pizzas Facultatif':'Pizzas Optional',exact:true});
+ const meal=nav.getByRole('button',{name:'Pizzas',exact:true});
  await fits(page,meal);await unobscured(meal);
  await testInfo.attach('compact-recipe-menu',{body:await page.screenshot(),contentType:'image/png'});
  await meal.tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Pizzas');
  await expect(page.getByRole('heading',{name:locale==='fr'?'Quelles pizzas ?':'Which pizzas?',exact:true})).toBeVisible();
  await navigator(page).tap();
- await nav.getByRole('button',{name:locale==='fr'?'Pâte':'Dough',exact:true}).tap();
+ await nav.getByRole('button',{name:locale==='fr'?'Recette':'Recipe',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText(locale==='fr'?'Recette':'Recipe');
  await expect(page.getByRole('heading',{name:locale==='fr'?'Quelles pizzas ?':'Which pizzas?',exact:true})).toHaveCount(0);
  await expect.poll(async()=>(await stored(page))?.numItems).toBe(4);
@@ -554,9 +558,10 @@ test('Custom: editable weight and sequential equipment preserve choices when goi
  }
  // Reproduce the report at the top, with expanded sections, and while scrolling.
  await fixedAction();
- await navigator(page).tap();await fixedAction();await noOverflow(page);
- await navigator(page).tap();
- await page.evaluate(()=>{document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));window.scrollTo(0,document.body.scrollHeight/2);});
+ // "Your bake" is a modal sheet (16 Nov 2026): it covers the bar while open, and closing it gives the bar back.
+ await navigator(page).tap();await expect(page.getByRole('dialog',{name:'Votre fournée'})).toBeVisible();
+ await page.keyboard.press('Escape');await fixedAction();await noOverflow(page);
+ await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight/2));
  await fixedAction();
  // Stuck geometry only means something once the page has scrolled; a step
  // shorter than the screen (the kitchen step after the kitchen moved to the

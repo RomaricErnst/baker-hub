@@ -16,7 +16,7 @@ import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import { pushProfile, pullAndMergeProfile } from '../lib/supabase/profileSync';
 import OpeningChoices from '../components/OpeningChoices';
 import StylePicker, { StylePhotoPreload } from '../components/StylePicker';
-import BakeNavigator, {DestinationIcon} from '../components/BakeNavigator';
+import BakeNavigator, {DestinationIcon, type BakeStepLink} from '../components/BakeNavigator';
 import BakeTypeChooser from '../components/BakeTypeChooser';
 import {getServingTimeEstimate} from '../utils/servingTime';
 import {getPizzaById} from '../lib/toppingDatabase';
@@ -406,146 +406,8 @@ function stepAnswered(s: StepDef, highest: number, list?: StepDef[]): boolean {
   return isLast ? highest >= s.id : highest > s.id;
 }
 
-// ── Summary chip carousel ─────────────────────
-// Appears progressively while the baker advances, and becomes the navigation
-// once they come back from the recipe. One mechanic, two uses.
-// ── Step groups ───────────────────────────────
-// The review page asks four questions instead of listing ten settings.
-// Groups are display-only: ids, order and the flow are untouched.
-const GROUP_ORDER = ['making', 'kitchen', 'dough', 'plan'] as const;
-type StepGroup = typeof GROUP_ORDER[number];
-const GROUP_TITLE: Record<StepGroup, { en: string; fr: string }> = {
-  making:  { en: 'What you\u2019re making', fr: 'Ce que vous préparez' },
-  kitchen: { en: 'Your kitchen',          fr: 'Votre cuisine' },
-  dough:   { en: 'What goes in it',       fr: 'Ce qu\u2019il y a dedans' },
-  plan:    { en: 'When you\u2019re baking', fr: 'Quand vous enfournez' },
-};
-
-// `prefilled` means one thing now: the value came from the baker's profile
-// rather than from this session. It used to be set statically on Quantity,
-// Climate, Flour, Preferment and Fine-tune and stayed true after an edit,
-// which is why surfacing it as an ASSUMED badge told bakers that choices they
-// had just made were guesses.
-//
-// Quantity, Flour and Preferment no longer carry a static `prefilled` at all.
-// They report `value: null` until qtyChosen / flourChosen / prefermentChosen
-// says the baker or their profile settled them, so `stepAnswered` returns
-// false on its own and the door names the step. Nothing is drawn from
-// `prefilled` today; whether anything ever should be is a separate question.
-
-// ── Summary chip carousel ─────────────────────
-// Two questions, two controls. The rail shows what the baker has DECIDED —
-// real answers only, never placeholders, because ten grey slots on step one
-// turns a guided flow into a form. The pinned door shows HOW FAR ALONG they
-// are, and opening it shows WHAT IS LEFT. Neither has to compromise.
-//
-// The count is a tally (answers out of total), not a page position. The old
-// objection — that a number at the head of a line naming the current page
-// reads as position — does not apply once it wears a SET caption and sits
-// beside chips that are the very things being counted. The progress rule
-// below fills on the same tally, so the two can never disagree.
-// Not sticky. It renders inside the phase bar's sticky box, which is the
-// whole point: one sticky element for the module's navigation, so there is no
-// offset to compute and nothing to disagree with. Every previous version of
-// this — topOffset, raised, stickTop, phaseBarH — was arithmetic trying to
-// keep two independent sticky elements from landing on each other.
-type BakeLink = {label:string; value?:string|null; disabled?:boolean; onChoose:()=>void};
-function SummaryBar({links,current,fr}:{links:BakeLink[];current:string;fr:boolean}) {
-  const [open, setOpen] = React.useState(false);
-  const overviewRef = React.useRef<HTMLDivElement>(null);
-  React.useEffect(() => {
-    if (!open) return;
-    const previous = document.activeElement as HTMLElement | null;
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    overviewRef.current?.focus();
-    const keydown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-      if (e.key !== 'Tab') return;
-      const items = Array.from(overviewRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled)') ?? []);
-      const first = items[0], last = items[items.length - 1];
-      if (!first) return;
-      if (e.shiftKey && (document.activeElement === first || document.activeElement === overviewRef.current)) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && (document.activeElement === last || document.activeElement === overviewRef.current)) { e.preventDefault(); first.focus(); }
-    };
-    document.addEventListener('keydown', keydown);
-    return () => { document.removeEventListener('keydown', keydown); document.body.style.overflow = overflow; if (previous?.isConnected) previous.focus({preventScroll: true}); };
-  }, [open]);
-  // A bottom sheet that can only be dismissed by tapping outside is a sheet in
-  // appearance only — the grab handle promises a drag it did not accept.
-  const [dragY, setDragY] = React.useState(0);
-  const dragFrom = React.useRef<number | null>(null);
-  // `dragging` mirrors the ref for render use: reading a ref while rendering is
-  // untracked, so the transition could be computed from a stale value.
-  const [dragging, setDragging] = React.useState(false);
-  return (
-    <>
-      <div className="bh-organisation-progress">
-        <button type="button" aria-haspopup="dialog" aria-expanded={open} onClick={()=>setOpen(true)}
-          className="bh-step-trigger">
-          <span>{current}</span><svg aria-hidden="true" width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="m4 6 4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
-      </div>
-
-      {open && createPortal(
-        <>
-          <div onClick={() => setOpen(false)} style={{
-            position: 'fixed', inset: 0, background: 'rgba(26,22,18,0.45)', zIndex: 150,
-          }} />
-          <div ref={overviewRef} role="dialog" aria-modal="true" aria-label={fr ? 'Votre plan' : 'Your plan'} tabIndex={-1} style={{
-            position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 151,
-            background: 'var(--warm)', borderRadius: '20px 20px 0 0',
-            padding: '14px 16px calc(20px + env(safe-area-inset-bottom, 0px))',
-            maxHeight: '74vh', overflowY: 'auto',
-            transform: `translateY(${dragY}px)`,
-            transition: dragging ? 'none' : 'transform .22s ease',
-          }}>
-            <button type="button" onClick={() => setOpen(false)} style={{ display: 'block', marginLeft: 'auto', minHeight: 44, padding: '8px 12px', background: 'transparent', color: 'var(--terra)', border: 0, cursor: 'pointer' }}>{fr ? 'Terminé' : 'Done'}</button>
-            {/* The drag lives on the handle and the header, not the whole
-                sheet: the list below scrolls, and a sheet that follows the
-                finger while the list is trying to scroll fights the baker. */}
-            <div
-              onPointerDown={e => { dragFrom.current = e.clientY; setDragging(true); (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); }}
-              onPointerMove={e => { if (dragFrom.current !== null) setDragY(Math.max(0, e.clientY - dragFrom.current)); }}
-              onPointerUp={() => {
-                // Past a quarter of the sheet it closes; short of that it
-                // springs back, so a hesitant pull is not a decision.
-                const shouldClose = dragY > 120;
-                dragFrom.current = null;
-                setDragging(false);
-                setDragY(0);
-                if (shouldClose) setOpen(false);
-              }}
-              style={{ padding: '4px 0 10px', margin: '-4px 0 0', touchAction: 'none', cursor: 'grab' }}
-            >
-              <div style={{ width: '38px', height: '4px', borderRadius: '2px', background: '#E0D8CC', margin: '0 auto' }} />
-            </div>
-            <h3
-              onPointerDown={e => { dragFrom.current = e.clientY; setDragging(true); (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); }}
-              onPointerMove={e => { if (dragFrom.current !== null) setDragY(Math.max(0, e.clientY - dragFrom.current)); }}
-              onPointerUp={() => {
-                const shouldClose = dragY > 120;
-                dragFrom.current = null;
-                setDragging(false);
-                setDragY(0);
-                if (shouldClose) setOpen(false);
-              }}
-              style={{
-                fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700,
-                margin: '2px 0 12px', touchAction: 'none', cursor: 'grab',
-              }}
-            >
-              {fr ? 'Où vous en êtes' : 'Where you are'}
-            </h3>
-
-            {links.map(link=><button key={link.label} type="button" disabled={link.disabled} style={sheetRowStyle} onClick={()=>{setOpen(false);link.onChoose();}}><span style={sheetKeyStyle}>{link.label}</span><span style={{flex:1,minWidth:0,textAlign:'left'}}>{link.value || (fr?'À choisir':'To choose')}</span><SheetChevron /></button>)}
-          </div>
-        </>
-      , document.body)}
-    </>
-  );
-}
-
+// ── My bake's answers, as the "Your bake" sheet lists them (BakeNavigator) ──
+type BakeLink = {label:string; value?:string|null; disabled?:boolean; group?:'basics'|'custom'; onChoose:()=>void};
 const sheetHeadStyle: React.CSSProperties = {
   fontFamily: 'var(--font-ui)', fontSize: '12px', letterSpacing: '.06em',
   textTransform: 'uppercase', color: 'var(--smoke)', padding: '14px 2px 4px',
@@ -4271,7 +4133,7 @@ export default function Home() {
     ...setupSteps.filter(step=>step.id<=2).map(stepLink),
     ...(!isUnleavened&&styleKey?[{label:fr?'Cuisine':'Kitchen',value:kitchenAnswered?`${cToDisplay(kitchenTemp,units)}${tempUnit(units)}`:null,onChoose:()=>{openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}]:[]),
     ...(simpleStarterScreen?[{label:fr?'Levain':'Starter',value:simpleStarterLabel,onChoose:openSimpleStarter}]:[]),
-    ...(collectingBakeTime ? [{label:fr?'Heure de cuisson':'Bake time',value:eatTime?formatTime(eatTime,locale):null,onChoose:openBakeTimeInputs}] : modeChosen?setupSteps.filter(step=>step.id>2).map(stepLink):[]),
+    ...(collectingBakeTime ? [{label:fr?'Heure de cuisson':'Bake time',value:eatTime?formatTime(eatTime,locale):null,onChoose:openBakeTimeInputs}] : modeChosen?setupSteps.filter(step=>step.id>2).map(step=>({...stepLink(step),group:tab==='custom'&&step.group!=='plan'?'custom' as const:'basics' as const})):[]),
   ];
   const currentSubsection = destination==='batch' ? (batchView==='quantity'?(fr?'Quantité':'Quantity'):batchView==='kitchen'?(fr?'Cuisine':'Kitchen'):batchView==='starter'?(fr?'Levain':'Starter'):'Style') : !modeChosen ? 'Mode' : (tab==='simple'&&activeStep===7 ? (fr?'Heure de cuisson':'Bake time') : setupSteps.find(step=>step.id===(tab==='custom'?advancedStep:activeStep))?.chip ?? (fr?'Ma fournée':'My bake'));
   const renderQuantity = (roundView:'count'|'size') => (<PrototypeQuantityPicker roundView={roundView} bakeType={bakeType ?? 'pizza'} locale={locale} units={units} styleKey={styleKey ?? undefined}
@@ -4296,10 +4158,15 @@ export default function Home() {
               />);
   // Recipe and My bake name the bake in full; elsewhere the section bar carries it.
   const compactBakeContext = recipeGenerated && !browsingFillings && ['shopping','protocol','service'].includes(destination);
+  // "Your bake" lists My bake's answers; in Custom, The basics before Customize (16 Nov 2026).
+  const showStepInBar = !execution&&!mixExecution&&!browsingFillings&&!setupOverview&&['batch','organisation'].includes(destination);
+  const journeySteps:BakeStepLink[] = [...bakeLinks.filter(link=>link.group!=='custom'),...bakeLinks.filter(link=>link.group==='custom')]
+    .map(link=>({...link,current:showStepInBar&&link.label===currentSubsection}));
+  const journeySummary = recipeGenerated&&eatTime ? `${bakeQuantityLabel(numItems,bakeType,styleKey,fr)} · ${formatBakeDateTime(eatTime,locale)}` : undefined;
   const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings?'recipe':destination} fr={fr} onChange={next=>{if(next==='batch'){if(recipeGenerated)openSetupReview();else if(styleKey&&qtyChosen)openDestination('organisation');else openDestination('batch');}else openDestination(next);}} top={stickTop}
     recipeMeal={pizzaPartyEnabled||(styleKey&&sandwichEnabled)?{label:mealNoun,selected:hasFillings,active:browsingFillings,onChoose:()=>{if(styleKey){if(destination==='protocol'||destination==='service'||destination==='shopping')captureEditReturn();else setFillingsReturn({destination:'recipe',view:'dough'});}setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}}:undefined}
     contextLabel={compactBakeContext?bakeQuantityLabel(numItems,bakeType,styleKey,fr):undefined}
-    progress={!execution&&!mixExecution&&!browsingFillings&&!setupOverview&&['batch','organisation'].includes(destination)?<SummaryBar links={bakeLinks} current={currentSubsection} fr={fr}/>:undefined} /> : null;
+    stepLabel={showStepInBar?currentSubsection:undefined} steps={journeySteps} recipeReady={!!recipeGenerated} summary={journeySummary} /> : null;
 
   // Toppings are planned with the dough, before buying: Recipe → Toppings → Shopping list.
   const fillingsStep = !!recipeGenerated && (pizzaPartyEnabled||sandwichEnabled);

@@ -1,3 +1,9 @@
+# 16 November 2026 — navigation: one bar, "Your bake" (Claude)
+
+- A neutral review found three lists behind three buttons (Menu, the step link, Sections), a "My bake" label that did nothing, and Menu repeating My choices and Pizzas. Romaric compared four interactive mock-ups and chose one switcher with a journey layout.
+- The bar is one button and opens "Your bake": sections on one line with what each is for, "You are here", ticks behind, the recipe-dependent parts disabled until the recipe exists. My bake's answers sit under it while it is current; Custom groups them The basics / Customize. Menu lost My choices and Pizzas.
+- Next: independent first-time-baker reviews on the live site after deploy.
+
 # 16 November 2026 — design pass: one look across the journeys (Claude)
 
 - Three read-only agents screenshotted every page on the live site and proposed only clear visual improvements, each with a before/after; Romaric approved all 37. Shipped as #112 (setup, G1 and S1–S10), #114 (Pizzas, Shopping, Fillings, P1–P10 and F1–F6) and #113 (Recipe, Preparation, Baking, R1–R10).
