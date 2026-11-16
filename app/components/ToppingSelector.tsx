@@ -2,7 +2,7 @@
 import { BackLabel } from './BackLabel';
 import { pizzaShoppingWeightNote } from '../lib/ingredientWeights';
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { NEXT_CTA, SECONDARY_CTA } from '../lib/navButtons';
+import { NEXT_CTA, SECONDARY_CTA, SHEET_CLOSE, SHEET_TITLE } from '../lib/navButtons';
 import { createClient } from '@/app/lib/supabase/client';
 import {
   PIZZAS, CATALOGUE_PIZZAS, DESSERT_PIZZAS, getPizzaById, getCustomPizzaList,
@@ -291,7 +291,7 @@ const S = {
   }),
   secHdr: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    cursor: 'pointer', padding: '8px 12px 4px',
+    cursor: 'pointer', padding: '8px 16px 4px',
   } as React.CSSProperties,
   secTitle: {
     fontSize: '11px', color: '#3D3530', textTransform: 'uppercase' as const,
@@ -317,8 +317,8 @@ const S = {
     display: 'flex', flexWrap: 'wrap' as const, gap: '4px',
   } as React.CSSProperties,
   card: (selected: boolean): React.CSSProperties => ({
-    background: selected ? '#FFF8F5' : '#FDFBF7',
-    borderRadius: '8px',
+    background: selected ? 'var(--cream)' : '#FDFBF7',
+    borderRadius: '16px',
     border: selected ? '1.5px solid #6B4423' : '1.5px solid #E0D8CF',
     overflow: 'hidden', cursor: 'pointer', transition: 'all 0.12s',
   }),
@@ -335,8 +335,8 @@ const S = {
       :                      { background: '#F0EBE3', color: '#6B7A5A', border: '0.5px solid #E0D8CF' }),
   }),
   qtyBtn: {
-    width: '44px', height: '44px', borderRadius: '10px',
-    border: '1.5px solid #C8C0B8', background: '#F0EBE0',
+    width: '44px', height: '44px', borderRadius: '12px',
+    border: '1.5px solid #C8C0B8', background: 'var(--card)',
     fontSize: '15px', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     color: '#2B2420', fontWeight: 500, flexShrink: 0,
@@ -405,9 +405,9 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
       }}
       aria-label={`${name}${qty > 0 ? ` · ${qty}` : ''}`}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 12px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px' }}>
         {/* Left: image spanning all rows */}
-        <div style={{ width: '100%', aspectRatio: '2 / 1', maxHeight:120, borderRadius: '12px', overflow: 'hidden', flexShrink: 0, background: '#2B2420' }}>
+        <div style={{ width: '100%', aspectRatio: '2 / 1', maxHeight:120, borderRadius: '8px', overflow: 'hidden', flexShrink: 0, background: '#2B2420' }}>
           {pizza.id.startsWith('custom_') ? (
             pizza.photoUrl
               ? <img src={pizza.photoUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -446,13 +446,13 @@ function PizzaCard({ pizza, qty, locale, onQtyChange, onTap, styleKey }: {
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             {/* left group shrinks + clips so the qty stepper always stays fully visible */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
-            <span style={{ fontSize: '11px', color: 'var(--smoke)', flexShrink: 0 }}>
+            <span style={{ fontSize: '12px', color: 'var(--smoke)', flexShrink: 0 }}>
               {l === 'fr' ? `${pizza.prepMinutes} min de préparation` : `${pizza.prepMinutes} min prep`}
             </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, marginLeft: 'auto' }} onClick={e => e.stopPropagation()}>
               <button type="button" aria-label={`− ${name}`} aria-hidden={qty > 0 ? undefined : true} tabIndex={qty > 0 ? undefined : -1} style={{ ...S.qtyBtn, visibility: qty > 0 ? 'visible' : 'hidden' }} onClick={e => onQtyChange(-1, e)}>−</button>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: '#6B4423', minWidth: '14px', textAlign: 'center', visibility: qty > 0 ? 'visible' : 'hidden' }}>{qty}</span>
+              <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--char)', minWidth: '20px', textAlign: 'center', visibility: qty > 0 ? 'visible' : 'hidden' }}>{qty}</span>
               <button type="button" aria-label={`+ ${name}`} style={S.qtyBtn} onClick={e => onQtyChange(1, e)}>+</button>
             </div>
           </div>
@@ -471,7 +471,7 @@ export function PizzaIngredientDetails({pizza,locale,styleKey}: {pizza: Pizza; l
       const ingredients = pizza.ingredients.filter(ingredient => (style && ingredient.bakeOrderByStyle?.[style] || ingredient.bakeOrder) === order);
       if (!ingredients.length) return null;
       return <section key={order}>
-        <h3 style={{fontSize:16,margin:'16px 0 8px'}}>{order === 'before' ? (l === 'fr' ? 'Avant cuisson' : 'Before baking') : (l === 'fr' ? 'Après cuisson' : 'After baking')}</h3>
+        <h3 style={{fontSize:16,fontWeight:600,margin:'16px 0 8px'}}>{order === 'before' ? (l === 'fr' ? 'Avant cuisson' : 'Before baking') : (l === 'fr' ? 'Après cuisson' : 'After baking')}</h3>
         {ingredients.map(ingredient => {
           const note = (style && ingredient.prepNoteByStyle?.[style]) || ingredient.prepNote;
           const quantity = ingredient.qtyPerPizza;
@@ -581,23 +581,14 @@ export function PizzaSheet({ pizza, qty, locale, styleKey, onQtyChange, onClose 
         >
           {/* The visible handle says the header drags down to close, as on Bake's sheet. */}
           <span data-sheet-handle aria-hidden="true" style={{position:'absolute',top:6,left:'50%',transform:'translateX(-50%)',width:38,height:4,borderRadius:2,background:'#E0D8CC'}} />
-          <strong style={{flex:1,minWidth:0,fontFamily:'var(--font-ui)',fontSize:16}}>{pizza.name[l] ?? pizza.name.en}</strong>
+          <strong style={{...SHEET_TITLE,flex:1,minWidth:0}}>{pizza.name[l] ?? pizza.name.en}</strong>
           <button
             type="button"
             onPointerDown={e => e.stopPropagation()}
             onClick={onClose}
             aria-label={l === 'fr' ? 'Fermer les détails de la pizza' : 'Close pizza details'}
-            style={{
-              flexShrink: 0, fontFamily: 'var(--font-ui)',
-              minWidth: '88px', height: '44px', padding: '8px 12px',
-              background: 'var(--cream)',
-              backgroundClip: 'border-box',
-              border: '1px solid var(--border)', borderRadius: '10px',
-              color: 'var(--terra)', fontSize: '14px',
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >{l === 'fr' ? 'Fermer' : 'Close'}</button>
+            style={SHEET_CLOSE}
+          >✕</button>
         </div>
 
         <div data-pizza-detail-scroll style={{flex:'1 1 auto',minHeight:0,overflowY:'auto',overscrollBehavior:'contain',touchAction:'pan-y'}}>
@@ -1132,7 +1123,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
         ? <p style={{fontSize:14,color:'var(--ash)',margin:'4px 0 12px'}}>{l==='fr'?'Aucune garniture sélectionnée':'No toppings selected'}{onGoPizzas&&<> · <button type="button" data-choose-pizzas onClick={onGoPizzas} style={{font:'inherit',color:'var(--terra)',background:'none',border:0,padding:'12px 0',margin:'-12px 0',textDecoration:'underline',textUnderlineOffset:3,cursor:'pointer'}}>{l==='fr'?'Ajouter des garnitures':'Add toppings'}</button></>}</p>
         : <SelectionCoverage selected={totalSelected} planned={numItems} locale={locale} onChoose={onGoPizzas} />}</div>
       {/* List */}
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '80px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '16px' }}>
         {/* Dough is the first thing to buy. Keeping it above the toppings
             mirrors the recipe and prevents the same flour/water being hidden
             after a long topping catalogue. */}
@@ -1235,7 +1226,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
                       {help.available && <button type="button" onClick={() => setHelpIngredientId(item.id)}
                         aria-label={`${help.label} · ${name}`}
-                        style={{ background: 'none', border: 0, color:'var(--terra)',textDecoration:'underline', minHeight:44, padding: '4px 0', marginTop: 0, cursor: 'pointer' }}>
+                        style={{ background: 'none', border: 0, color:'var(--terra)',textDecoration:'underline',textUnderlineOffset:2, fontSize:13, minHeight:44, padding: '2px 0', marginTop: 0, cursor: 'pointer' }}>
                         {help.label}
                       </button>}
                     </div>
@@ -1248,8 +1239,9 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
       </div>
 
-      {/* Ingredient names: a setting, at the foot of the list (also in Language & units). */}
-      <div style={{ padding: '8px 12px' }}>
+      {/* Ingredient names: a setting, at the foot of the list (also in Language & units). On the
+          list's edge, with no extra gap above (16 Nov 2026 design pass). */}
+      <div style={{ padding: '8px 0' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
           <button
             onClick={() => setShowLocationPicker(v => !v)}
@@ -1265,7 +1257,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                 key={loc.key}
                 onClick={() => setLocation(loc.key)}
                 style={{
-                  fontSize: '11px', padding: '3px 12px', borderRadius: '12px', cursor: 'pointer',
+                  fontSize: '12px', minHeight: 44, padding: '3px 12px', borderRadius: '12px', cursor: 'pointer',
                   border: shoppingLocation === loc.key ? '1px solid #6B4423' : '1px solid #E0D8CF',
                   background: shoppingLocation === loc.key ? '#6B4423' : '#FDFBF7',
                   color: shoppingLocation === loc.key ? 'white' : '#3D3530',
@@ -1279,7 +1271,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
       </div>
 
       {/* Footer: primary = onward journey (prep), share is secondary */}
-      <div style={{ padding: '12px 12px 16px', borderTop: '1px solid #E0D8CF', background: '#FDFBF7' }}>
+      <div style={{ padding: '12px 0 16px', borderTop: '1px solid #E0D8CF', background: '#FDFBF7' }}>
         {!onBackToRecipe && <button
           onClick={() => onGoPrep?.()}
           style={{ ...NEXT_CTA, marginBottom: '8px' }}
@@ -1690,7 +1682,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           <p data-pizza-count style={{margin:'0 0 12px',fontSize:14,lineHeight:1.45,color:'var(--ash)'}}>
             {totalQty===0
               ? (l === 'fr' ? `Choisissez une pizza pour chacun de vos ${numItems} pâton${numItems > 1 ? 's' : ''}.` : `Pick one for each of your ${numItems} dough ball${numItems === 1 ? '' : 's'}.`)
-              : <><strong style={{color:'var(--char)'}}>{l === 'fr' ? `${totalQty} sur ${numItems} choisie${totalQty > 1 ? 's' : ''}` : `${totalQty} of ${numItems} chosen`}</strong>{' · '}<button type="button" data-see-selection onClick={()=>setSummarySheetOpen(true)} style={{minHeight:44,border:0,background:'none',color:'var(--terra)',textDecoration:'underline',textUnderlineOffset:2,padding:0,font:'inherit',cursor:'pointer'}}>{l === 'fr' ? 'Voir ma sélection' : 'See my selection'}</button></>}
+              : <><strong style={{color:'var(--char)'}}>{l === 'fr' ? `${totalQty} sur ${numItems} choisie${totalQty > 1 ? 's' : ''}` : `${totalQty} of ${numItems} chosen`}</strong>{' · '}<button type="button" data-see-selection onClick={()=>setSummarySheetOpen(true)} style={{minHeight:44,margin:'-12px 0',verticalAlign:'baseline',border:0,background:'none',color:'var(--terra)',textDecoration:'underline',textUnderlineOffset:2,padding:0,font:'inherit',cursor:'pointer'}}>{l === 'fr' ? 'Voir ma sélection' : 'See my selection'}</button></>}
           </p>
           {/* ── Results strip ── */}
           <div style={{ padding: '0 0 6px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
@@ -1726,7 +1718,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             flexShrink: 0,
             alignItems: 'center',
           }}>
-            {!baseReady && <button type="button" data-style-chip onClick={() => setShowStylePicker(true)} style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 12px',minHeight:44,borderRadius:20,border:'1px solid var(--char)',background:'var(--char)',color:'#fff',fontSize:12,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0,fontFamily:'var(--font-ui)'}}>
+            {!baseReady && <button type="button" data-style-chip onClick={() => setShowStylePicker(true)} style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 12px',minHeight:44,borderRadius:20,border:'1px solid var(--char)',background:'var(--char)',color:'#fff',fontSize:14,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0,fontFamily:'var(--font-ui)'}}>
               {styleKey ? (l === 'fr' ? (STYLE_NAMES_FR[styleKey] ?? styleKey) : (STYLE_NAMES[styleKey] ?? styleKey)) : (l === 'fr' ? 'Tous les styles' : 'All styles')} ▾
             </button>}
             {([
@@ -1744,10 +1736,11 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   gap: '4px',
                   padding: '4px 10px', minHeight:44,
                   borderRadius: '20px',
-                  border: chip.count > 0 ? '1px solid #6B4423' : '1px solid #E0D8CF',
-                  background: chip.count > 0 ? '#FBF0EB' : '#FDFBF7',
-                  color: chip.count > 0 ? '#993C1D' : '#3D3530',
-                  fontSize: '12px',
+                  // Active in the brand brown on a light tint, not red on pink (16 Nov 2026 design pass).
+                  border: chip.count > 0 ? '1px solid var(--terra)' : '1px solid var(--border)',
+                  background: chip.count > 0 ? 'rgba(107,68,35,.07)' : '#FDFBF7',
+                  color: chip.count > 0 ? 'var(--terra)' : 'var(--ash)',
+                  fontSize: '14px',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap' as const,
                   flexShrink: 0,
@@ -1780,10 +1773,10 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     + (filter.season !== 'all' ? 1 : 0)
                     + filter.wine.length
                     + (filter.budget !== null ? 1 : 0);
-                  return moreCnt > 0 ? '1px solid #3D3530' : '1px solid #8A7F78';
+                  return moreCnt > 0 ? '1px solid var(--terra)' : '1px solid var(--border)';
                 })(),
-                background: '#FDFBF7', color: 'var(--smoke)',
-                fontSize: '12px', cursor: 'pointer',
+                background: '#FDFBF7', color: 'var(--ash)',
+                fontSize: '14px', cursor: 'pointer',
                 whiteSpace: 'nowrap' as const, flexShrink: 0,
                 fontFamily: 'var(--font-ui)',
               }}
@@ -1850,7 +1843,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             return (
               <div style={{
                 display: 'flex', flexWrap: 'wrap', gap: '4px',
-                padding: '8px 12px',
+                padding: '8px 0',
                 background: '#FDFBF7',
                 borderBottom: '1px solid #E0D8CF',
               }}>
@@ -1861,8 +1854,8 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: '4px',
                       padding: '4px 8px', borderRadius: '20px',
-                      border: '1px solid #6B4423', background: '#FBF0EB',
-                      fontSize: '11px', color: '#993C1D', cursor: 'pointer',
+                      border: '1px solid var(--terra)', background: 'rgba(107,68,35,.07)',
+                      fontSize: '12px', color: 'var(--terra)', cursor: 'pointer',
                       whiteSpace: 'nowrap' as const,
                     }}
                   >
@@ -1897,7 +1890,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               >
                 {sheetHandle('filter', closeFilterSheet)}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px 12px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'var(--font-ui)' }}>
+                  <span style={SHEET_TITLE}>
                     {filterSheetKey === 'occasion'   ? (l === 'fr' ? 'Occasion' : 'Occasion')
                     : filterSheetKey === 'diet'       ? (l === 'fr' ? 'Préférences' : 'Dietary')
                     : filterSheetKey === 'base'       ? 'Base'
@@ -1907,7 +1900,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   </span>
                   <button
                     onClick={closeFilterSheet} aria-label={l === 'fr' ? 'Fermer' : 'Close'}
-                    style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: 'var(--smoke)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'content-box', padding: '6px', margin: '-6px' }}
+                    style={SHEET_CLOSE}
                   >✕</button>
                 </div>
                 <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
@@ -2014,9 +2007,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                       </div>
                       <fieldset style={{ margin: '8px 16px', border: 0, padding: 0 }}>
                         <legend>{l === 'fr' ? 'Correspondance' : 'Match ingredients'}</legend>
-                        {(['any', 'all'] as const).map(mode => <label key={mode} style={{ marginRight: 16 }}>
+                        {(['any', 'all'] as const).map(mode => <label key={mode} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 44, marginRight: 20, fontSize: 15 }}>
                           <input type="radio" name="ingredient-match" checked={(filter.ingredientMatchMode ?? 'any') === mode}
-                            onChange={() => setFilter(p => ({ ...p, ingredientMatchMode: mode }))} />
+                            onChange={() => setFilter(p => ({ ...p, ingredientMatchMode: mode }))} style={{ accentColor: 'var(--terra)', width: 18, height: 18, margin: 0 }} />
                           {mode === 'any' ? (l === 'fr' ? 'Au moins un' : 'At least one') : (l === 'fr' ? 'Tous les ingrédients' : 'All selected')}
                         </label>)}
                       </fieldset>
@@ -2026,7 +2019,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                         return <details key={group.category.en} open={!!ingSearch || !!ingredientSections[group.category.en]}
                           onToggle={e => { const value=e.currentTarget.open; setIngredientSections(p => p[group.category.en] === value ? p : ({ ...p, [group.category.en]: value })); }}
                           style={{ padding: '10px 16px', borderBottom: '1px solid #E0D8CF' }}>
-                          <summary>{group.category[l]}</summary>
+                          <summary className="bh-chevron" style={{ cursor: 'pointer' }}>{group.category[l]}</summary>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 10 }}>
                             {items.map(item => { const active=(filter.ingredientChips ?? []).includes(item.search); return <button type="button" key={item.search} aria-pressed={active}
                               onClick={() => setFilter(p => ({ ...p, ingredientChips: active ? (p.ingredientChips ?? []).filter(x => x !== item.search) : [...(p.ingredientChips ?? []), item.search] }))}
@@ -2039,7 +2032,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
 
                   {filterSheetKey === 'more' && (
                     <>
-          <fieldset className="bh-course-choice"><legend className="bh-visually-hidden">{l==='fr'?'Salée ou dessert':'Savoury or dessert'}</legend>{(['savoury','sweet'] as const).map(course=><label key={course} data-selected={pizzaCourse===course}><input type="radio" name="pizza-course" checked={pizzaCourse===course} onChange={()=>setPizzaCourse(course)}/>{course==='sweet'?(l==='fr'?'Dessert':'Dessert'):(l==='fr'?'Salée':'Savoury')}</label>)}</fieldset>
+          <fieldset className="bh-course-choice" style={{ padding: '0 16px' }}><legend className="bh-visually-hidden">{l==='fr'?'Salée ou dessert':'Savoury or dessert'}</legend>{(['savoury','sweet'] as const).map(course=><label key={course} data-selected={pizzaCourse===course}><input type="radio" name="pizza-course" checked={pizzaCourse===course} onChange={()=>setPizzaCourse(course)}/>{course==='sweet'?(l==='fr'?'Dessert':'Dessert'):(l==='fr'?'Salée':'Savoury')}</label>)}</fieldset>
                       {/* Dietary has its own chip; More does not repeat it (14 Nov 2026 audit). */}
 
                       <FilterSection
@@ -2462,12 +2455,12 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           >
             {sheetHandle('summary', closeSummary)}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px 12px', flexShrink: 0, borderBottom: '1px solid #F0EAE3' }}>
-              <span style={{ fontSize: '14px', fontWeight: 700, color: '#2B2420', fontFamily: 'var(--font-ui)' }}>
+              <span style={SHEET_TITLE}>
                 {l === 'fr' ? 'Mes pizzas' : 'My pizzas'}
               </span>
               <button onClick={closeSummary}
                 aria-label={l === 'fr' ? 'Fermer' : 'Close'}
-                style={{ width: '44px', height: '44px', padding: 0, margin: '-4px', backgroundClip: 'border-box', borderRadius: '50%', background: '#F0EBE0', border: 'none', fontSize: '14px', color: 'var(--smoke)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
+                style={SHEET_CLOSE}>✕</button>
             </div>
             <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
 
@@ -2477,13 +2470,13 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                     if (!pizza) return null;
                     return (
                       <div key={pizzaId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '0.5px solid #F0EAE3' }}>
-                        <span style={{ fontSize: '13px', color: '#2B2420', fontFamily: 'var(--font-ui)', flex: 1 }}>
+                        <span style={{ fontSize: '15px', color: 'var(--char)', fontFamily: 'var(--font-ui)', flex: 1 }}>
                           {pizza.name[l] ?? pizza.name.en}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <button aria-label={`− ${pizza.name[l] ?? pizza.name.en}`} onClick={() => changeQty(pizzaId, -1)} style={{ width: '44px', height: '44px', flexShrink: 0, borderRadius: '50%', border: '1px solid #E0D8CF', background: '#FDFBF7', cursor: 'pointer', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
-                          <span style={{ fontSize: '13px', fontWeight: 600, minWidth: '16px', textAlign: 'center', fontFamily: 'var(--font-ui)' }}>{qty as number}</span>
-                          <button aria-label={`+ ${pizza.name[l] ?? pizza.name.en}`} onClick={() => changeQty(pizzaId, 1)} style={{ width: '44px', height: '44px', flexShrink: 0, borderRadius: '50%', border: '1px solid #6B4423', background: '#6B4423', cursor: 'pointer', fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
+                          <span style={{ fontSize: '15px', fontWeight: 600, minWidth: '20px', textAlign: 'center', fontFamily: 'var(--font-ui)', color: 'var(--char)' }}>{qty as number}</span>
+                          <button aria-label={`+ ${pizza.name[l] ?? pizza.name.en}`} onClick={() => changeQty(pizzaId, 1)} style={{ width: '44px', height: '44px', flexShrink: 0, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--warm)', cursor: 'pointer', fontSize: '15px', color: 'var(--char)', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
                         </div>
                       </div>
                     );
@@ -2572,9 +2565,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
           >
             {sheetHandle('style', closeStylePicker)}
             <div style={{
-              fontFamily: 'var(--font-ui)',
-              fontSize: '17px', fontWeight: 700,
-              color: 'var(--char)',
+              ...SHEET_TITLE,
               padding: '12px 16px 8px',
               flexShrink: 0,
             }}>
