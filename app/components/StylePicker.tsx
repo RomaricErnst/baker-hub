@@ -35,3 +35,16 @@ export default function StylePicker({bakeType,selected,onSelect,disabledIds=[],d
   {BREAD_GROUPS.map(item=><section className="bh-bread-group" key={item.id} aria-labelledby={`bread-group-${item.id}`} style={{marginBottom:24}}><h3 className="bh-bread-group" id={`bread-group-${item.id}`} style={{fontSize:18,margin:'0 0 10px'}}>{fr?item.fr:item.en}</h3><div className="bh-bread-group-grid">{item.keys.map(card)}</div></section>)}
  </div>;
 }
+
+// Loads the style photos while the home page is open, with the same image props as the cards
+// (so the same file is chosen), so the style page never shows empty frames that fill in
+// one by one (16 Nov 2026: reported as a flash on first visit). Pizza's six and the bread
+// photos above the fold only; low priority, so the home photos come first.
+export function StylePhotoPreload(){
+ const pizza=[...new Set(Object.values(PIZZA_STYLES).map(s=>s.image))];
+ const bread=[...new Set((BREAD_GROUPS[0]?.keys??[]).map(k=>(BREAD_STYLES as Record<string,{image:string}>)[k]?.image).filter(Boolean))];
+ return <div aria-hidden="true" style={{position:'absolute',width:1,height:1,overflow:'hidden',opacity:0,pointerEvents:'none',left:0,top:0}}>
+  {pizza.map(src=><Image key={src} src={src} alt="" width={800} height={500} sizes="(max-width: 600px) 120px, 160px" loading="eager" fetchPriority="low"/>)}
+  {bread.map(src=><span key={src} style={{position:'relative',display:'block',width:1,height:1}}><Image src={src} alt="" fill sizes="(max-width:700px) 50vw, 220px" loading="eager" fetchPriority="low"/></span>)}
+ </div>;
+}

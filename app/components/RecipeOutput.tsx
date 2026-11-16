@@ -366,6 +366,7 @@ export default function RecipeOutput({
 
   const [showDilution, setShowDilution] = useState(false);
   const [weighOpen, setWeighOpen] = useState(false);
+  const [prefWeighOpen, setPrefWeighOpen] = useState(false);
 
   // Batch splitting — auto-triggered when total dough exceeds mixer default capacity
   const mixerMaxG   = (MIXER_TYPES as Record<string, { maxDoughG?: number }>)[mixerType]?.maxDoughG ?? 9999;
@@ -525,6 +526,19 @@ export default function RecipeOutput({
   if (enrichment?.unsupportedMethod) return <section role="alert"><h2>{locale === 'fr' ? 'Méthode non prise en charge' : 'Unsupported method'}</h2><p>{locale === 'fr' ? 'Cette formule enrichie nécessite une levure commerciale, sans préferment. Modifiez le choix de levure dans les réglages puis recalculez.' : 'This enriched formula requires commercial yeast without preferment. Update the leavening choice in setup and recalculate.'}</p>{onEditSetup && <button type="button" onClick={onEditSetup}>{locale === 'fr' ? 'Modifier les réglages' : 'Edit setup'}</button>}</section>;
 
   // How to measure a small yeast dose: opens under the yeast row ("how to weigh it").
+  const prefDoseBody = pf && needsScaleHelp(pf.prefYeastGrams) ? (<div data-weigh-note style={{background:'var(--cream)',borderRadius:12,padding:'12px 14px',marginTop:6,fontSize:13,lineHeight:1.55,color:'var(--ash)'}}>
+            <strong style={{display:'block',color:'var(--char)',fontWeight:600}}>{t('recipeOutput.precisionScaleTitle')}</strong>
+            {t('recipeOutput.precisionScaleBody', { amount: formatPrefermentDose(pf.prefYeastGrams,locale) })}
+            {(() => {
+              const dilution = prefermentDoseDilution;
+              if (!dilution) return null;
+              const yeastName = t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`).toLowerCase();
+              const f = (g:number)=>formatPrefermentDose(g,locale);
+              return <p style={{ margin: '8px 0 0' }}>{locale === 'fr'
+                ? `Ou mélangez ${DILUTION_BASE_YEAST_G} g de ${yeastName} avec ${DILUTION_BASE_YEAST_G*99} g d’eau. Remuez juste avant de prélever ${f(dilution.solutionGrams)} de ce mélange pour le préferment. Cette portion contient ${f(pf.prefYeastGrams)} de levure et ${f(dilution.waterInSolutionGrams)} d’eau : ajoutez seulement ${f(dilution.remainingWaterGrams)} d’eau supplémentaire au préferment. Jetez le reste du mélange. L’eau de la pâte finale ne change pas.${u==='imperial'?' '+t('recipeOutput.dilutionInGrams'):''}`
+                : `Or mix ${DILUTION_BASE_YEAST_G} g of ${yeastName} with ${DILUTION_BASE_YEAST_G*99} g water. Stir just before taking ${f(dilution.solutionGrams)} of this mixture for the preferment. This portion contains ${f(pf.prefYeastGrams)} yeast and ${f(dilution.waterInSolutionGrams)} water: add only ${f(dilution.remainingWaterGrams)} more water to the preferment. Discard the leftover mixture. Final-dough water stays unchanged.${u==='imperial'?' '+t('recipeOutput.dilutionInGrams'):''}`}</p>;
+            })()}
+          </div>) : null;
   const smallDoseBody = yeastInfo ? (<div data-small-dose style={{display:'flex',flexDirection:'column',gap:10,marginTop:6}}>
           {yeastAlternatives && <p data-yeast-alternatives style={{margin:'0 0 10px',fontSize:14,color:'var(--ash)'}}>{yeastAlternatives}</p>}
           {/* One neutral note (14 Nov 2026 audit: a yellow and a blue box beside the amount). */}
@@ -559,12 +573,13 @@ export default function RecipeOutput({
   </>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="bh-recipe-output" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
       {/* ── Compact header row ───────────────────── */}
+      {/* The first ingredient row sits as close under this heading as the plan's under its own (16 Nov 2026). */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-        padding: '0 .1rem',
+        padding: '0 .1rem', marginBottom: '-12px',
       }}>
         <div>
           {/* A section of the Recipe page: the site's section-title style, under the bake's title. */}
@@ -573,7 +588,7 @@ export default function RecipeOutput({
           </h2>
           {/* The recipe is the recipe: timing lives in Preparation. */}
           {wastePct !== undefined && wastePct > 0 && (
-            <div style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginTop: '.2rem' }}>
+            <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginTop: '.2rem' }}>
               {t('recipeOutput.mixingBuffer', { pct: wastePct })}
             </div>
           )}
@@ -594,7 +609,7 @@ export default function RecipeOutput({
       {/* Custom: the overall formula first, open, as professional formulas are written; its
           baker's percentages are the only ones (the stages below carry weights only). */}
       {(hasPref || sdActive) && mode === 'custom' && <section data-whole-dough aria-labelledby="bh-whole-dough-title">
-        <div id="bh-whole-dough-title" style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)' }}>{locale === 'fr' ? 'Pâte complète' : 'Whole dough'}</div>
+        <div id="bh-whole-dough-title" style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 600, color: 'var(--char)' }}>{locale === 'fr' ? 'Pâte complète' : 'Whole dough'}</div>
         {wholeDoughRows}
       </section>}
 
@@ -606,11 +621,12 @@ export default function RecipeOutput({
         const chillAt = mixingTime ? poolishCoolingAt(mixingTime,result) : null;
 
         return (
-          // The stages are the recipe: shown as they are made, not behind a toggle.
-          <div data-recipe-stages style={{display:'flex',flexDirection:'column',gap:16}}>
+          // The stages are the recipe: shown as they are made, not behind a toggle. Unboxed like
+          // Whole dough, so one grams column runs all the way down (16 Nov 2026 design pass).
+          <div data-recipe-stages style={{display:'flex',flexDirection:'column',gap:32}}>
             {/* CARD 1: Make your preferment */}
-            <div style={{ background: 'var(--warm)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: 'none' }}>
-              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)', marginBottom: '16px' }}>
+            <div>
+              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 600, color: 'var(--char)', marginBottom: '4px' }}>
                 {t('recipeOutput.makeYourPref', { name: pd.name })}
               </div>
               <IngRow
@@ -636,7 +652,7 @@ export default function RecipeOutput({
               {pf.prefYeastGrams > 0 && (
                 <IngRow
                   label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)}</span>}
-                  grams={formatPrefermentDose(pf.prefYeastGrams,locale)} sub={measureHint(prefermentSpoon,needsScaleHelp(pf.prefYeastGrams))} noPct
+                  grams={formatPrefermentDose(pf.prefYeastGrams,locale)} sub={prefDoseBody ? <>{prefermentSpoon && <span>{prefermentSpoon} · </span>}<details data-yeast-help style={{display:'inline'}} onToggle={e=>setPrefWeighOpen(e.currentTarget.open)}><summary style={{display:'inline',padding:'13px 0',margin:'-13px 0',cursor:'pointer',color:'var(--terra)',listStyle:'none'}}>{prefWeighOpen?t('recipeOutput.weighOrDilute').replace('▾','▴'):t('recipeOutput.weighOrDilute')}</summary>{prefDoseBody}</details></> : measureHint(prefermentSpoon,false)} wideSub={!!prefDoseBody} noPct
                   advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
@@ -651,8 +667,8 @@ export default function RecipeOutput({
             </div>
 
             {/* CARD 2: Final dough */}
-            <div style={{ background: 'var(--warm)', borderRadius: '16px', padding: '24px 24px', border: '1px solid rgba(156, 130, 72,0.12)', boxShadow: 'none' }}>
-              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 700, color: 'var(--char)', marginBottom: '4px' }}>
+            <div>
+              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 600, color: 'var(--char)', marginBottom: '4px' }}>
                 {t('recipeOutput.finalDoughTitle')}
               </div>
               <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: D.muted, marginBottom: '16px' }}>
@@ -772,7 +788,7 @@ export default function RecipeOutput({
               label={
                 yeastTypeName
               }
-              sub={smallDoseShown ? <>{yeastSub && <span>{yeastSub} · </span>}<details data-yeast-help style={{display:'inline'}} onToggle={e=>setWeighOpen(e.currentTarget.open)}><summary style={{display:'inline-flex',alignItems:'center',minHeight:44,cursor:'pointer',color:'var(--terra)',listStyle:'none'}}>{weighOpen?t('recipeOutput.weighOrDilute').replace('▾','▴'):t('recipeOutput.weighOrDilute')}</summary>{smallDoseBody}</details></> : yeastSub}
+              sub={smallDoseShown ? <>{yeastSub && <span>{yeastSub} · </span>}<details data-yeast-help style={{display:'inline'}} onToggle={e=>setWeighOpen(e.currentTarget.open)}><summary style={{display:'inline',padding:'13px 0',margin:'-13px 0',cursor:'pointer',color:'var(--terra)',listStyle:'none'}}>{weighOpen?t('recipeOutput.weighOrDilute').replace('▾','▴'):t('recipeOutput.weighOrDilute')}</summary>{smallDoseBody}</details></> : yeastSub}
               wideSub={smallDoseShown}
               grams={formatYeastDose(yeastInfo.convertedGrams, locale)}
               pct={pctStr(yeastInfo.convertedPct)}
@@ -981,36 +997,7 @@ export default function RecipeOutput({
           Hidden in preferment mode: all commercial yeast lives in the
           poolish/biga there, so callouts based on the main-dough yeast
           amount would contradict the preferment card. */}
-      {yeastInfo && hasPref && result.preferment && needsScaleHelp(result.preferment.prefYeastGrams) && (
-        <details className="bh-disclosure">
-          <summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Petite dose de levure' : 'Small yeast dose'}</summary>
-        <div style={{
-          background: '#FFFBEE',
-          border: '1.5px solid #9C8248',
-          borderRadius: '16px',
-          padding: '12px 16px',
-        }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#7A5A10' }}>
-              {t('recipeOutput.precisionScaleTitle')}
-            </span>
-          </div>
-          <div style={{ fontSize: '12px', color: '#5A4010', lineHeight: 1.6, paddingLeft: '24px' }}>
-            {t('recipeOutput.precisionScaleBody', { amount: formatPrefermentDose(result.preferment.prefYeastGrams,locale) })}
-            {(() => {
-              const pf = result.preferment!;
-              const dilution = prefermentDoseDilution;
-              if (!dilution) return null;
-              const yeastName = t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`).toLowerCase();
-              const f = (g:number)=>formatPrefermentDose(g,locale);
-              return <p style={{ margin: '8px 0 0' }}>{locale === 'fr'
-                ? `Ou mélangez ${DILUTION_BASE_YEAST_G} g de ${yeastName} avec ${DILUTION_BASE_YEAST_G*99} g d’eau. Remuez juste avant de prélever ${f(dilution.solutionGrams)} de ce mélange pour le préferment. Cette portion contient ${f(pf.prefYeastGrams)} de levure et ${f(dilution.waterInSolutionGrams)} d’eau : ajoutez seulement ${f(dilution.remainingWaterGrams)} d’eau supplémentaire au préferment. Jetez le reste du mélange. L’eau de la pâte finale ne change pas.${u==='imperial'?' '+t('recipeOutput.dilutionInGrams'):''}`
-                : `Or mix ${DILUTION_BASE_YEAST_G} g of ${yeastName} with ${DILUTION_BASE_YEAST_G*99} g water. Stir just before taking ${f(dilution.solutionGrams)} of this mixture for the preferment. This portion contains ${f(pf.prefYeastGrams)} yeast and ${f(dilution.waterInSolutionGrams)} water: add only ${f(dilution.remainingWaterGrams)} more water to the preferment. Discard the leftover mixture. Final-dough water stays unchanged.${u==='imperial'?' '+t('recipeOutput.dilutionInGrams'):''}`}</p>;
-            })()}
-          </div>
-        </div>
-        </details>
-      )}
+      {/* Small preferment yeast dose: the help opens under the yeast row in the stage (16 Nov 2026). */}
       {yeastInfo && !hasPref && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
@@ -1018,7 +1005,7 @@ export default function RecipeOutput({
 
           {/* Poolish recommendation */}
           {yeastInfo.recommendPoolish && (
-            <details className="bh-disclosure"><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Autre méthode pour ce planning' : 'Alternative method for this schedule'}</summary><InfoCard
+            <details><summary className="bh-chevron" style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Autre méthode pour ce planning' : 'Alternative method for this schedule'}</summary><InfoCard
               icon=""
               level="poolish"
               title={t('recipeOutput.poolishTitle')}
@@ -1046,7 +1033,7 @@ export default function RecipeOutput({
 
       {/* ── Sourdough guidance ────────────────────── */}
       {sourdough && (
-        <details className="bh-disclosure"><summary style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Préparer le levain' : 'Prepare the starter'}</summary>
+        <details><summary className="bh-chevron" style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Préparer le levain' : 'Prepare the starter'}</summary>
 
           {/* One amount line and one ready list, in the card below. The pointage
               signs live in the Pointage step of Preparation. */}

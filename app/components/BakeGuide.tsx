@@ -118,7 +118,7 @@ function Section({ icon, title, children }: {
   return (
     <div style={{ marginTop: '16px' }}>
       <div style={{
-        fontSize: '18px', fontWeight: 700, color: D.char,
+        fontSize: '18px', fontWeight: 600, color: D.char,
         fontFamily: 'var(--font-ui)', marginBottom: '8px',
         display: 'flex', alignItems: 'center', gap: '4px',
       }}>
@@ -211,13 +211,13 @@ function Steps({ items }: { items: { bold: string; note: string }[] }) {
           }}>{i + 1}.</span>
           <span>
             <strong style={{ color: D.char }}>{item.bold}</strong>
-            {item.note && <em style={{ color: D.smoke }}>{' — '}{item.note}</em>}
+            {item.note && <span style={{ color: D.smoke }}>{' — '}{item.note}</span>}
           </span>
         </li>
       ))}
     </ol>
     {whys.length > 0 && <details data-step-why style={{ marginTop: 8 }}>
-      <summary style={{ cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center', color: D.terra, fontSize: 14 }}>{fr ? 'Pourquoi ?' : 'Why?'}</summary>
+      <summary className="bh-chevron" style={{ cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center', gap: 4, color: D.terra, fontSize: 14 }}>{fr ? 'Pourquoi ?' : 'Why?'}</summary>
       <ul style={{ margin: '4px 0 0', paddingLeft: 18, display: 'grid', gap: 4, fontSize: 14, color: D.smoke }}>
         {whys.map((w, k) => <li key={k}>{w.why.charAt(0).toUpperCase() + w.why.slice(1)}.</li>)}
       </ul>
@@ -307,8 +307,8 @@ function StepCard({
       <TitleContainer type={overview ? "button" : undefined} onClick={overview ? onToggle : undefined}
          style={{ width: '100%', display: 'flex', gap: 12,
           alignItems: 'center', minHeight:44, padding: overview ? '12px 0' : '0 0 16px', border: 0, background: 'transparent', textAlign: 'left', cursor: overview ? 'pointer' : 'default', color: D.char }}>
-        <span aria-hidden="true" style={{ display: overview ? undefined : 'none', color: done ? D.sage : D.terra, minWidth: 18, textAlign: 'center' }}>{done ? '✓' : ''}</span>
-        <span aria-hidden="true" style={{ color: done ? D.sage : D.terra, width: 22, height: 22, display: overview ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</span>
+        {/* The icon itself becomes the tick once done: no column reserved for it (16 Nov 2026). */}
+        <span aria-hidden="true" style={{ color: done ? D.sage : D.terra, width: 22, height: 22, display: overview ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: done ? 18 : undefined }}>{done ? '✓' : icon}</span>
         <span style={{ flex: 1 }}>
           <strong role={overview?undefined:'heading'} aria-level={overview?undefined:2} style={{ display: 'block', fontSize: overview ? 15 : 28, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}</strong>
           {!overview && !externalProgress && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {displayNumber}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
@@ -513,8 +513,8 @@ function CoachButton({
 
       {MAESTRO_CONTENT[stepId]?.question && (
         <div style={{
-          fontFamily: 'var(--font-ui)', fontSize: '13px',
-          color: 'var(--char)', fontWeight: 500, marginBottom: '4px',
+          fontFamily: 'var(--font-ui)', fontSize: '14px',
+          color: 'var(--char)', fontWeight: 600, marginBottom: '4px',
         }}>
           {MAESTRO_CONTENT[stepId].question[l]}
         </div>
@@ -669,7 +669,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
   return (
     <div style={{ marginTop: '12px' }}>
       {MAESTRO_CONTENT[stepId]?.question && !answer && (
-        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', color: D.char, fontWeight: 500, marginBottom: '8px' }}>
+        <div style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', color: D.char, fontWeight: 600, marginBottom: '8px' }}>
           {MAESTRO_CONTENT[stepId].question[l]}
         </div>
       )}
@@ -723,7 +723,7 @@ export function AskMaestro({ stepId, stepTitle, styleKey, kitchenTemp, prefermen
           {loading ? '…' : (l === 'fr' ? 'Demander' : 'Ask')}
         </button>
       </div>
-      <div style={{ fontFamily: 'var(--font-ui)', fontSize: '11px', color: D.smoke, fontStyle: 'italic', marginTop: '4px' }}>
+      <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: D.smoke, marginTop: '4px' }}>
         {MAESTRO_CONTENT[stepId]?.question?.en === 'Ask about this step'
           ? (l === 'fr' ? 'Photo facultative.' : 'Photo optional.')
           : (l === 'fr' ? 'Une question sur cette étape ? Photo facultative.' : 'Ask about this step. Photo optional.')}
@@ -817,7 +817,7 @@ function StepExtras({ tips, visuals, faqKey, faqOverride, coachStepId, coachTitl
       <details style={{ marginTop:16, borderTop:`1px solid ${D.border}`, paddingTop:8 }}>
         <summary className="bh-chevron" style={{minHeight:44,padding:'10px 0',cursor:'pointer',fontSize:16}}>{helpTitle}</summary>
         {visuals}
-        <div>{tips}</div>
+        <div style={{fontSize:15,lineHeight:1.55}}>{tips}</div>
         {faq.length > 0 && <div role="group" aria-label={l === 'fr' ? 'Questions fréquentes' : 'Common questions'} style={{marginTop:12}}>
           {faq.map((f,i)=><div key={i} style={{marginBottom:16}}>
             <p style={{fontSize:14,fontWeight:600,margin:'0 0 4px',color:D.char}}>{guideUnitText(f.q[l], units, l)}</p>
@@ -1204,7 +1204,8 @@ Actual dough condition and equipment may differ from these estimates.`;
     return waterSplit({waterGrams:bgMainWater,targetTemp:recipe.waterTemp,kitchenTemp,fridgeTemp,source:waterSource,measuredWaterTemp,waterMethod,idealWaterTemp:recipe.thermal?.idealWaterTemp,directIceSupported:true})?.water ?? bgMainWater;
   })();
   // Same pattern as the recipe: the temperature on the line, the method behind a toggle.
-  const helpSummary = {display:'inline-flex',alignItems:'center',minHeight:44,cursor:'pointer',color:'var(--terra)'} as const;
+  // Inline with a 44 px tap area that adds no line height, so the hint sits under its ingredient (16 Nov 2026 design pass).
+  const helpSummary = {display:'inline',padding:'13px 0',margin:'-13px 0',cursor:'pointer',color:'var(--terra)'} as const;
   const waterHelp = (() => {
     if (enriched || recipe?.waterTemp == null || bgMainWater == null) return null;
     const guide = waterGuideLine({waterGrams:bgMainWater,targetTemp:recipe.waterTemp,kitchenTemp,fridgeTemp,source:waterSource,measuredWaterTemp,waterMethod,idealWaterTemp:recipe.thermal?.idealWaterTemp,directIceSupported:mixerType==='spiral',locale:l,units:u});
@@ -1448,7 +1449,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             ]} />
           </Section>
 
-          <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{isPoolish ? (l==='fr'?'La surface est bulleuse et commence à s’aplanir après la levée.':'The surface is bubbly and beginning to flatten after rising.') : (l==='fr'?'La biga a gonflé ; un morceau ouvert montre des alvéoles à l’intérieur.':'The biga has expanded; a broken-open piece shows aeration inside.')}</p>
+          <p style={{fontSize:15,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{isPoolish ? (l==='fr'?'La surface est bulleuse et commence à s’aplanir après la levée.':'The surface is bubbly and beginning to flatten after rising.') : (l==='fr'?'La biga a gonflé ; un morceau ouvert montre des alvéoles à l’intérieur.':'The biga has expanded; a broken-open piece shows aeration inside.')}</p>
           <StepExtras visuals={<StepVisual kind={isPoolish ? 'poolish' : 'biga'} locale={l} />}
             tips={<p>{l === 'fr' ? 'Fiez-vous aux quantités et à l’emplacement de cette recette. Si la maturité ne correspond pas au planning, revoyez le planning avant de poursuivre.' : 'Use this recipe’s quantities and planned location. If maturity does not match the schedule, review the plan before continuing.'}</p>}
             faqOverride={[
@@ -1724,7 +1725,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             ...(oil>0?[{bold:l==='fr'?'Ajoutez l’huile mesurée en dernier et pétrissez jusqu’à absorption.':'Add the measured oil last and mix until absorbed.',note:''}]:[]),
           ]}/>
         </Section>
-        <p style={{fontSize:16,lineHeight:1.5,margin:'16px 0'}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{mixerType==='no_knead'?(l==='fr'?'Il ne reste aucune farine sèche ; couvrez et poursuivez le repos prévu.':'No dry flour remains; cover and continue the planned rest.'):styleKey==='pain_seigle'?(l==='fr'?'La pâte est homogène, sans farine sèche ; elle peut rester collante.':'Evenly combined, without dry flour; it may stay sticky.'):styleKey==='pain_au_seigle'?(l==='fr'?'La pâte est homogène et souple ; le seigle la garde un peu collante et elle se déchire plus vite qu’une pâte de blé.':'Even and supple; the rye keeps it a little sticky and it tears sooner than an all-wheat dough.'):(l==='fr'?'La pâte est lisse, à peine collante, et s’étire sans se déchirer.':'Smooth, slightly tacky, and it stretches without tearing.')}</p>
+        <p style={{fontSize:15,lineHeight:1.5,margin:'16px 0'}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{mixerType==='no_knead'?(l==='fr'?'Il ne reste aucune farine sèche ; couvrez et poursuivez le repos prévu.':'No dry flour remains; cover and continue the planned rest.'):styleKey==='pain_seigle'?(l==='fr'?'La pâte est homogène, sans farine sèche ; elle peut rester collante.':'Evenly combined, without dry flour; it may stay sticky.'):styleKey==='pain_au_seigle'?(l==='fr'?'La pâte est homogène et souple ; le seigle la garde un peu collante et elle se déchire plus vite qu’une pâte de blé.':'Even and supple; the rye keeps it a little sticky and it tears sooner than an all-wheat dough.'):(l==='fr'?'La pâte est lisse, à peine collante, et s’étire sans se déchirer.':'Smooth, slightly tacky, and it stretches without tearing.')}</p>
         {recipe?.blendProfile?.displayName?.includes(' + ') && <p style={{fontSize:15,lineHeight:1.5}}>{l === 'fr'
           ? 'Pesez chaque farine selon les quantités indiquées et mélangez-les pour bien les répartir.'
           : 'Weigh each flour according to the listed amounts, then mix them to distribute evenly.'}</p>}
@@ -1837,7 +1838,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           ]} />}
         </Section>
 
-        <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{isRye ? (l==='fr'?'La pâte a un peu gonflé et de fines fissures apparaissent en surface.':'The dough has risen a little and fine cracks show on its surface.') : l==='fr'?'La pâte est aérée et se tient.':'Airy and holding its shape.'}</p>
+        <p style={{fontSize:15,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{isRye ? (l==='fr'?'La pâte a un peu gonflé et de fines fissures apparaissent en surface.':'The dough has risen a little and fine cracks show on its surface.') : l==='fr'?'La pâte est aérée et se tient.':'Airy and holding its shape.'}</p>
 
         {!breadProtocol && <StepExtras
           tips={<>
@@ -2206,7 +2207,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           )}
         </Section>
 
-        {!breadProtocol && <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{(()=>{const min=schedule.preheatStart?Math.round((schedule.bakeStart.getTime()-schedule.preheatStart.getTime())/60000):0;return min>0?(l==='fr'?`${min} min à pleine puissance.`:`${min} min at full heat.`):(l==='fr'?'Le four et la surface de cuisson sont chauds.':'The oven and baking surface are hot.');})()}</p>}
+        {!breadProtocol && <p style={{fontSize:15,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{(()=>{const min=schedule.preheatStart?Math.round((schedule.bakeStart.getTime()-schedule.preheatStart.getTime())/60000):0;return min>0?(l==='fr'?`${min} min à pleine puissance.`:`${min} min at full heat.`):(l==='fr'?'Le four et la surface de cuisson sont chauds.':'The oven and baking surface are hot.');})()}</p>}
 
         {!breadProtocol && <StepExtras
           tips={panGuide || (leanBake && (!leanBake.scored || (ovenType === 'dutch_oven' && isBaguette))) ? null :
@@ -2263,7 +2264,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           )}
         </Section>
 
-        {isBread && !breadProtocol && <p style={{fontSize:16,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Le pain est cuit à cœur ; posez-le sur la grille de refroidissement.':'The bread is baked through; move it to the cooling rack.'}</p>}
+        {isBread && !breadProtocol && <p style={{fontSize:15,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Le pain est cuit à cœur ; posez-le sur la grille de refroidissement.':'The bread is baked through; move it to the cooling rack.'}</p>}
         {!breadProtocol && <StepExtras
           tips={<>
             <Section icon="" title={t('sectionTitles.watchFor')}>
@@ -2326,7 +2327,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             pizzas is only an option at the oven, so it is a quiet link. */}
         {!isBread && onNavigateToPizzaParty && (pizzasChosen
           ? <button type="button" onClick={onNavigateToPizzaParty} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{pizzaActionLabel ?? (l === 'fr' ? 'Commencer la cuisson des pizzas' : 'Start baking the pizzas')} →</button>
-          : <button type="button" className="bh-back-action" data-pizza-link onClick={onNavigateToPizzaParty} style={{minHeight:44,marginTop:12,textAlign:'left'}}><BackLabel text={l === 'fr' ? 'Pas de garnitures prévues ? Choisir des pizzas' : 'No toppings planned? Pick pizzas'}/></button>)}
+          : <button type="button" className="bh-back-action" data-pizza-link onClick={onNavigateToPizzaParty} style={{minHeight:44,marginTop:12,textAlign:'left',paddingLeft:0,paddingRight:0}}><BackLabel text={l === 'fr' ? 'Pas de garnitures prévues ? Choisir des pizzas' : 'No toppings planned? Pick pizzas'}/></button>)}
         {!isBread && bakeClosing}
       </StepCard>
 
@@ -2342,7 +2343,7 @@ Actual dough condition and equipment may differ from these estimates.`;
             {bold:isFougasse
               ? (l === 'fr' ? `Comptez environ ${range} avant de servir : la fougasse se mange tiède.` : `Allow about ${range} before serving: fougasse is best warm.`)
               : (l === 'fr' ? `Comptez environ ${range} avant de trancher.` : `Allow about ${range} before slicing.`),note:''},
-          ]}/></Section><p style={{marginTop:16}}><strong>{l === 'fr' ? 'Prêt quand : ' : 'Ready when: '}</strong>{styleKey === 'pain_seigle' ? (l === 'fr' ? 'Attendez le lendemain pour trancher ; une fois refroidi, emballez-le pour éviter qu’il sèche.' : 'Wait until tomorrow to slice; once cool, wrap it to keep it from drying out.') : isFougasse ? (l === 'fr' ? 'Elle est encore tiède et se détache facilement à la main ; servez-la le jour même.' : 'Still warm and easy to tear by hand; serve it the same day.') : (l === 'fr' ? 'Le dessous du pain n’est plus chaud au toucher. Encore chaud ? Vérifiez dans 30 min.' : 'The loaf no longer feels warm underneath. Still warm? Check again in 30 min.')}</p></>;
+          ]}/></Section><p style={{marginTop:16,fontSize:15,lineHeight:1.5}}><strong>{l === 'fr' ? 'Prêt quand : ' : 'Ready when: '}</strong>{styleKey === 'pain_seigle' ? (l === 'fr' ? 'Attendez le lendemain pour trancher ; une fois refroidi, emballez-le pour éviter qu’il sèche.' : 'Wait until tomorrow to slice; once cool, wrap it to keep it from drying out.') : isFougasse ? (l === 'fr' ? 'Elle est encore tiède et se détache facilement à la main ; servez-la le jour même.' : 'Still warm and easy to tear by hand; serve it the same day.') : (l === 'fr' ? 'Le dessous du pain n’est plus chaud au toucher. Encore chaud ? Vérifiez dans 30 min.' : 'The loaf no longer feels warm underneath. Still warm? Check again in 30 min.')}</p></>;
         })()}
         {!breadProtocol && <StepExtras tips={null} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />}
         {fillingsAction}

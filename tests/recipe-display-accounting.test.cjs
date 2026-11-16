@@ -44,8 +44,8 @@ test('small yeast precision and dilution instructions stay in one initially clos
   if(r.preferment)r.preferment.prefYeastGrams=.04;
   else {r.yeast.convertedGrams=.04;r.yeast.hitMinFloor=true;r.yeast.dilutionTip=utils.commercialDilution(.04,r.water);}
   const html=render(r,pref,undefined,locale,true);
-  // Direct dough: the help opens from the yeast row itself; preferments keep their own disclosure.
-  const label=pref==='none'?(locale==='fr'?'comment la peser ▾':'how to weigh it ▾'):locale==='fr'?'Petite dose de levure':'Small yeast dose';
+  // The help opens from the yeast row itself, in the stage for preferments (16 Nov 2026).
+  const label=locale==='fr'?'comment la peser ▾':'how to weigh it ▾';
   const match=html.match(new RegExp('<details([^>]*)><summary[^>]*>'+label+'([\\s\\S]*?)</details>'));
   a.ok(match,`${locale}/${pref}`);a.doesNotMatch(match[1],/\bopen\b/);
   const messages=require(`../messages/${locale}.json`);
@@ -107,7 +107,7 @@ test('yeast rows offer a practical measure when a spoon would miss the dose',()=
   if(dose===.8)a.match(html,locale==='fr'?/¼ c. à café/:/¼ tsp/);
   else {
    a.match(html,locale==='fr'?/comment la peser ▾/:/how to weigh it ▾/);
-   if(pref!=='none')a.match(html,locale==='fr'?/Petite dose de levure/:/Small yeast dose/);
+   if(pref!=='none')a.ok(html.includes(require(`../messages/${locale}.json`).recipeOutput.precisionScaleTitle));
   }
  }
 });
