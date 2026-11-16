@@ -24,7 +24,7 @@ async function nextToRecipe(page,fr){
  const create=actions(page).getByRole('button',{name:fr?'Créer ma recette':'Create my recipe',exact:true});
  await expect(create).toBeEnabled();
  await create.tap();
- await expect(page.locator('.bh-navigator-current')).toHaveText(fr?'Recette':'Recipe');
+ await expect(page.locator('.bh-navigator-name')).toHaveText(fr?'Recette':'Recipe');
  await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
 }
 

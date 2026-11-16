@@ -1280,7 +1280,9 @@ export default function Home() {
   const companionVisible=browsingFillings||destination==='shopping'||destination==='protocol'&&protocolView==='fillings'||destination==='service'&&serviceView==='fillings';
   const companionPhase=destination==='shopping'?'shop':destination==='protocol'?'prep':destination==='service'?'bake':'pick';
   const prepContinueLabel=prepReturnToService==null?undefined:prepReturnToService==='fillings'&&bakeType==='bread'?(locale==='fr'?'Revenir à l’assemblage':'Return to assembly'):(locale==='fr'?'Retour à Cuisson & service':'Back to Baking & serving');
-  const fillingsDoneLabel=fillingsReturn?.forward?(locale==='fr'?'Liste de courses →':'Shopping list →'):fillingsReturn?(fillingsReturn.destination==='recipe'?(locale==='fr'?'Retour à la recette':'Back to Recipe'):fillingsReturn.destination==='shopping'?(locale==='fr'?'Retour aux courses':'Back to Shopping list'):fillingsReturn.destination==='service'?(locale==='fr'?'Retour à Cuisson & service':'Back to Baking & serving'):(locale==='fr'?'Retour à la préparation':'Back to Preparation')):(locale==='fr'?'Définir ma recette':'Set up my recipe');
+  // Nothing chosen on the way through: the forward button says so (16 Nov 2026 review).
+  const fillingsSkipLabel=fillingsReturn?.forward?(bakeType==='pizza'?(locale==='fr'?'Pâte seule ? Passer à la liste de courses':'Dough only? Skip to shopping list'):(locale==='fr'?'Pain seul ? Passer à la liste de courses':'Bread only? Skip to shopping list')):undefined;
+  const fillingsDoneLabel=fillingsReturn?.forward?(hasFillings?(locale==='fr'?'Liste de courses →':'Shopping list →'):bakeType==='pizza'?(locale==='fr'?'Liste de courses · pâte seule →':'Shopping list · dough only →'):(locale==='fr'?'Liste de courses · pain seul →':'Shopping list · bread only →')):fillingsReturn?(fillingsReturn.destination==='recipe'?(locale==='fr'?'Retour à la recette':'Back to Recipe'):fillingsReturn.destination==='shopping'?(locale==='fr'?'Retour aux courses':'Back to Shopping list'):fillingsReturn.destination==='service'?(locale==='fr'?'Retour à Cuisson & service':'Back to Baking & serving'):(locale==='fr'?'Retour à la préparation':'Back to Preparation')):(locale==='fr'?'Définir ma recette':'Set up my recipe');
   const setupReturnLabel=protocolStale?(locale==='fr'?'Mettre à jour la recette':'Update recipe'):fillingsReturn?fillingsDoneLabel:(locale==='fr'?'Retour à la recette':'Back to Recipe');
   const bottomNavCollapsed = false;
   const stickTop = stickyHeadH;
@@ -4156,6 +4158,16 @@ export default function Home() {
   const showStepInBar = !execution&&!mixExecution&&!browsingFillings&&!setupOverview&&['batch','organisation'].includes(destination);
   const journeySteps:BakeStepLink[] = [...bakeLinks.filter(link=>link.group!=='custom'),...bakeLinks.filter(link=>link.group==='custom')]
     .map(link=>({...link,current:showStepInBar&&link.label===currentSubsection}));
+  // The bar after the recipe says what comes next in the plan, not the page's own title (16 Nov 2026 review).
+  const journeyNext = (()=>{
+    if(!recipeGenerated||!eatTime||!schedule)return undefined;
+    const now=Date.now();
+    const next=[...planCalendarEvents(now),{key:'bake',at:eatTime,label:bakeCalendarLabel}].filter(e=>+e.at>now).sort((a,b)=>+a.at-+b.at)[0];
+    if(!next)return undefined;
+    const at=new Date(next.at);
+    const when=at.toDateString()===new Date(now).toDateString()?formatClock(at,locale):`${at.toLocaleDateString(fr?'fr-FR':'en-GB',{weekday:'short'})} ${formatClock(at,locale)}`;
+    return fr?`Ensuite : ${next.label}, ${when}`:`Next: ${next.label}, ${when}`;
+  })();
   const journeySummary = recipeGenerated&&eatTime ? `${bakeQuantityLabel(numItems,bakeType,styleKey,fr)} · ${formatBakeDateTime(eatTime,locale)}` : undefined;
   const bakeNavigator = bakeType && !showProductHome ? <BakeNavigator active={browsingFillings?'recipe':destination} fr={fr} onChange={next=>{if(next==='batch'){if(recipeGenerated)openSetupReview();else if(styleKey&&qtyChosen)openDestination('organisation');else openDestination('batch');}else openDestination(next);}} top={stickTop}
     recipeMeal={pizzaPartyEnabled||(styleKey&&sandwichEnabled)?{label:mealNoun,selected:hasFillings,active:browsingFillings,onChoose:()=>{
@@ -4166,7 +4178,7 @@ export default function Home() {
       if(recipeGenerated){openToppingsStep();return;}
       setFillingsReturn(null);setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}}:undefined}
     contextLabel={compactBakeContext?bakeQuantityLabel(numItems,bakeType,styleKey,fr):undefined}
-    stepLabel={showStepInBar?currentSubsection:undefined} steps={journeySteps} recipeReady={!!recipeGenerated} summary={journeySummary} /> : null;
+    stepLabel={showStepInBar?currentSubsection:undefined} steps={journeySteps} recipeReady={!!recipeGenerated} summary={journeySummary} nextStep={journeyNext} /> : null;
 
   // Toppings are planned with the dough, before buying: Recipe → Toppings → Shopping list.
   const fillingsStep = !!recipeGenerated && (pizzaPartyEnabled||sandwichEnabled);
@@ -5067,7 +5079,7 @@ export default function Home() {
                 <div style={{ marginTop: '12px' }}>
 
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
-                    <button type="button" className="bh-back-action" onClick={openSetupReview}>{fr?'Mes choix':'My choices'}</button>
+                    <button type="button" className="bh-back-action" onClick={openSetupReview}><span aria-hidden="true">‹ </span>{fr?'Mes choix':'My choices'}</button>
                     {fillingsStep?<button type="button" data-toppings-step style={NEXT_CTA} onClick={openToppingsStep}>{fillingsStepLabel} →</button>:<button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}><DestinationIcon destination="shopping"/> {fr?'Liste de courses':'Shopping list'} →</button>}
 
                   </BottomActions>}
@@ -5149,7 +5161,7 @@ export default function Home() {
                   onBackToRecipe={fillingsStep?openToppingsStep:()=>openDestination('recipe')}
                   shoppingBackLabel={fillingsStep?(fr?'Retour aux pizzas':'Back to Pizzas'):undefined}
                   onSelectionBack={backFromFillings} onSelectionDone={finishFillings}
-                  selectionDoneLabel={fillingsDoneLabel} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à la recette':'Back to Recipe'):undefined}
+                  selectionDoneLabel={fillingsDoneLabel} skipLabel={fillingsSkipLabel} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à la recette':'Back to Recipe'):undefined}
                   directSelectionReturn={!!fillingsReturn}
                   onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel}
                   active={companionVisible}
@@ -5659,7 +5671,7 @@ export default function Home() {
                 <div style={{ marginTop: '12px' }}>
 
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
-                    <button type="button" className="bh-back-action" onClick={openSetupReview}>{fr?'Mes choix':'My choices'}</button>
+                    <button type="button" className="bh-back-action" onClick={openSetupReview}><span aria-hidden="true">‹ </span>{fr?'Mes choix':'My choices'}</button>
                     {fillingsStep?<button type="button" data-toppings-step style={NEXT_CTA} onClick={openToppingsStep}>{fillingsStepLabel} →</button>:<button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}><DestinationIcon destination="shopping"/> {fr?'Liste de courses':'Shopping list'} →</button>}
 
                   </BottomActions>}
@@ -5741,7 +5753,7 @@ export default function Home() {
                   onBackToRecipe={fillingsStep?openToppingsStep:()=>openDestination('recipe')}
                   shoppingBackLabel={fillingsStep?(fr?'Retour aux pizzas':'Back to Pizzas'):undefined}
                   onSelectionBack={backFromFillings} onSelectionDone={finishFillings}
-                  selectionDoneLabel={fillingsDoneLabel} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à la recette':'Back to Recipe'):undefined}
+                  selectionDoneLabel={fillingsDoneLabel} skipLabel={fillingsSkipLabel} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à la recette':'Back to Recipe'):undefined}
                   directSelectionReturn={!!fillingsReturn}
                   onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel}
                   active={companionVisible}
@@ -5780,7 +5792,7 @@ export default function Home() {
         <SandwichParty onRepeat={repeatCurrentRecipe} resultNotes={resultNotes} onResultNotesChange={setResultNotes} onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved && !!user} isFr={locale === 'fr'} styleKey={styleKey} snapshot={sandwichParty}
           onBackToRecipe={fillingsStep&&sandwichEnabled?openToppingsStep:()=>openDestination('recipe')}
           backLabel={fillingsStep&&sandwichEnabled?(fr?'Retour aux garnitures':'Back to Fillings'):undefined}
-          onChange={setSandwichParty} phase={companionPhase==='bake'?'serve':companionPhase} onPhaseChange={openCompanionPhase} onSelectionBack={backFromFillings} onSelectionDone={finishFillings} selectionDoneLabel={fillingsDoneLabel} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à la recette':'Back to Recipe'):undefined} directSelectionReturn={!!fillingsReturn} onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel} active={companionVisible} hideNavigation doughConfigured={recipeGenerated} breadIngredients={recipeGenerated ? sandwichDoughIngredients : []}
+          onChange={setSandwichParty} phase={companionPhase==='bake'?'serve':companionPhase} onPhaseChange={openCompanionPhase} onSelectionBack={backFromFillings} onSelectionDone={finishFillings} selectionDoneLabel={fillingsDoneLabel} skipLabel={fillingsSkipLabel} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à la recette':'Back to Recipe'):undefined} directSelectionReturn={!!fillingsReturn} onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel} active={companionVisible} hideNavigation doughConfigured={recipeGenerated} breadIngredients={recipeGenerated ? sandwichDoughIngredients : []}
           onAdjustBread={openQuantityEdit} onMatchBreadCount={count=>{setNumItems(count);setQtyChosen(true);if(recipeGenerated)openQuantityEdit();}}
           availableDoughWeight={recipeGenerated ? ((tab === 'custom' ? advancedRecipe : recipe)?.totalDough ?? numItems * itemWeight) : undefined}
           numItems={numItems} />

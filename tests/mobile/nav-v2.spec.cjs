@@ -24,6 +24,8 @@ async function openCustomSection(page,label){
  // The bar opens "Your bake"; Custom answers sit in The basics and Customize (16 Nov 2026).
  await navigator(page).tap();
  const sheet=page.getByRole('dialog',{name:'Votre fournée'});
+ const choices=sheet.locator('.bh-journey-choices');
+ if(await choices.count())await choices.tap();
  const row=sheet.getByRole('button',{name:new RegExp('^'+label)});
  if(!(await row.count()))for(const group of await sheet.locator('.bh-journey-group[aria-expanded="false"]').all()){await group.tap();if(await row.count())break;}
  await row.first().tap();
@@ -113,7 +115,7 @@ test('compact menu keeps bread-only recipes unsplit',async({page})=>{
  await expect(nav.locator('[data-destination-label]')).toHaveCount(5);
  await expect(nav.locator('.bh-navigator-recipe')).toHaveCount(0);
  await nav.getByRole('button',{name:'Recette',exact:true}).tap();
- await expect(page.locator('.bh-navigator-current')).toHaveText('Recette');
+ await expect(page.locator('.bh-navigator-name')).toHaveText('Recette');
 });
 
 for(const locale of ['fr','en'])test(`${locale}: the recipe names the bake under the section bar; task screens carry it in the bar`,async({page})=>{
@@ -123,12 +125,14 @@ for(const locale of ['fr','en'])test(`${locale}: the recipe names the bake under
   const recipe=label==='Recette'||label==='Recipe';
   const context=page.locator('.bh-bake-context');
   await expect(context).toHaveCount(recipe?1:0);
-  await expect(page.locator('[data-navigator-bake]')).toHaveCount(recipe?0:1);
+  // After the recipe the bar says what comes next in the plan, else the bake on task screens (16 Nov 2026).
+  const detail=page.locator('[data-navigator-bake]');
+  if(await detail.count())await expect(detail).toContainText(recipe?/Next|Ensuite/:/pizzas|Next|Ensuite/);else expect(recipe).toBe(true);
   if(recipe){
    await expect(context).toContainText('Navigation audit');
    const navBounds=await page.locator('.bh-bake-navigator').boundingBox();
    expect((await context.boundingBox()).y).toBeGreaterThanOrEqual(navBounds.y+navBounds.height);
-  }else await expect(page.locator('[data-navigator-bake]')).toContainText(locale==='fr'?'pizzas':'pizzas');
+  }
  }
 });
 
@@ -160,7 +164,7 @@ for(const bread of [false,true])test(`English generated ${bread?'bread':'pizza'}
    await expect(page.locator('.bh-navigator-current')).toContainText('Shopping list');
    await page.getByRole('button',{name:/^Back to (Pizzas|Fillings)$/}).filter({visible:true}).last().tap();
    await page.locator('[data-companion-action]:visible').getByRole('button',{name:'Back to Recipe',exact:true}).tap();
-   await expect(page.locator('.bh-navigator-current')).toHaveText('Recipe');
+   await expect(page.locator('.bh-navigator-name')).toHaveText('Recipe');
    // Toppings are the next step after the Recipe, not a button inside it.
    await expect(page.locator('.bh-fillings-invitation')).toHaveCount(0);
    await expect(page.locator('.bh-step-actions:visible [data-toppings-step]')).toHaveText(/^(Pizzas|Fillings) →$/);

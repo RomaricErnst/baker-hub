@@ -49,6 +49,8 @@ test('compact navigation reaches every section above the footer and Custom keeps
  await page.locator('.bh-bake-navigator-trigger').tap();
  const summary=page.getByRole('dialog',{name:'Votre fournée'});
  await expect(summary.locator('[data-destination-label]')).toHaveCount(5);
+ // The answers fold into one line so the whole journey fits; See all opens them (16 Nov 2026 review).
+ await summary.locator('.bh-journey-choices').tap();
  // Custom groups the answers: the group being answered is open, the other is one line.
  await expect(summary.getByRole('button',{name:/^Les bases/})).toHaveAttribute('aria-expanded','false');
  await expect(summary.getByRole('button',{name:/^Personnaliser/})).toHaveAttribute('aria-expanded','true');
