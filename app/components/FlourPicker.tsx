@@ -804,7 +804,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
           <label style={{display:'block',marginBottom:16}}>{isFr?'Nom du produit · facultatif':'Product name · optional'}
             <input type="text" placeholder={isFr?'Ex. Farine T65 du moulin':'e.g. Local mill bread flour'} value={manualName} onChange={e=>setManualName(e.target.value)} className="manual-flour-input"/>
           </label>
-          <details><summary style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{isFr?'Ajouter les valeurs du sachet · facultatif':'Add values from the bag · optional'}</summary>
+          <details><summary className="bh-chevron" style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{isFr?'Ajouter les valeurs du sachet · facultatif':'Add values from the bag · optional'}</summary>
             <label style={{display:'block',marginBottom:16}}>{isFr?'Force W':'Strength W'}
               <input type="number" inputMode="numeric" placeholder="Ex. 280" min={1} max={500} value={manualQWText} onChange={e=>setManualQWText(e.target.value)} className="manual-flour-input"/>
             </label>
@@ -981,7 +981,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
           <label style={{display:'block',marginBottom:16}}>{isFr?'Nom du produit · facultatif':'Product name · optional'}
             <input type="text" placeholder={isFr?'Ex. Farine T65 du moulin':'e.g. Local mill bread flour'} value={manualName} onChange={e=>setManualName(e.target.value)} className="manual-flour-input"/>
           </label>
-          <details><summary style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{isFr?'Ajouter les valeurs du sachet · facultatif':'Add values from the bag · optional'}</summary>
+          <details><summary className="bh-chevron" style={{minHeight:44,padding:'10px 0',cursor:'pointer'}}>{isFr?'Ajouter les valeurs du sachet · facultatif':'Add values from the bag · optional'}</summary>
             <label style={{display:'block',marginBottom:16}}>{isFr?'Force W':'Strength W'}
               <input type="number" inputMode="numeric" placeholder="Ex. 280" min={1} max={500} value={manualQWText} onChange={e=>setManualQWText(e.target.value)} className="manual-flour-input"/>
             </label>

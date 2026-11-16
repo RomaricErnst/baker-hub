@@ -66,7 +66,7 @@ export default function FlourCatalogueBrowser({onChoose,recommendedIds,onGeneric
  return <div>
  <label style={{display:'block',marginBottom:12}}>{blendMode?(fr?'Rechercher une farine':'Search flours'):(fr?'Rechercher une marque, un produit ou un type':'Search a brand, product or flour type')}<input type="search" value={query} onChange={e=>{setQuery(e.target.value);setLimit(e.target.value?15:firstLimit);}} onKeyDown={e=>{if(e.key==='Enter')e.currentTarget.blur();}} placeholder={fr?'Ex. Caputo, T65, complète':'e.g. Caputo, T65, wholemeal'} style={{...field,marginTop:6}}/></label>
  <details style={{marginBottom:12}}>
- <summary style={{minHeight:44,padding:'10px 0',cursor:'pointer',color:'var(--terra)',overflowWrap:'anywhere'}}>{fr?'Filtres':'Filters'}{[brand,type?flourTypeLabel(type,fr):'',country?new Intl.DisplayNames([fr?'fr':'en'],{type:'region'}).of(country.toUpperCase()):''].filter(Boolean).map(value=>` · ${value}`).join('')}</summary>
+ <summary className="bh-chevron" style={{minHeight:44,padding:'10px 0',cursor:'pointer',color:'var(--terra)',overflowWrap:'anywhere'}}>{fr?'Filtres':'Filters'}{[brand,type?flourTypeLabel(type,fr):'',country?new Intl.DisplayNames([fr?'fr':'en'],{type:'region'}).of(country.toUpperCase()):''].filter(Boolean).map(value=>` · ${value}`).join('')}</summary>
  {controls}
  </details>
  <h3 style={{fontSize:16,fontWeight:600,margin:'20px 0 10px'}}>{active?`${filtered.length} ${fr?'résultats':'results'}`:(blendMode&&recommendedIds.length>0&&limit<=4?'Suggestions':limit>4?(fr?'Catalogue':'Catalogue'):(fr?`Choix courants${styleLabel?' · '+styleLabel:' pour ce style'}`:`Common choices${styleLabel?' · '+styleLabel:' for this style'}`))}</h3>

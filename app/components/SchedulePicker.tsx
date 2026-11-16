@@ -632,9 +632,9 @@ function getNightsInWindow(start:Date,end:Date){
 const INPUT_STYLE: React.CSSProperties = {
   width: '100%',
   padding: '12px 12px',
-  border: '2px solid var(--border)',
-  borderRadius: '16px',
-  background: 'var(--warm)',
+  border: '1px solid var(--border)',
+  borderRadius: '9px',
+  background: 'white',
   color: 'var(--char)',
   fontSize: '14px',
   fontFamily: 'var(--font-ui)',
@@ -7402,8 +7402,8 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
                     bakers actually remember. Label only; `lastFedAge` is
                     unchanged, so the engine reads exactly the same value. */}
                 {starterLocation === 'fridge'
-                  ? (isFr ? 'QUAND A-T-IL ÉTÉ RAFRAÎCHI AVANT D’ALLER AU FRIGO ?' : 'WHEN WAS IT LAST FED BEFORE GOING IN THE FRIDGE?')
-                  : (isFr ? 'QUAND A-T-IL ÉTÉ RAFRAÎCHI ?' : 'WHEN WAS IT LAST FED?')}
+                  ? (isFr ? 'Quand a-t-il été rafraîchi avant d’aller au frigo ?' : 'When was it last fed before going in the fridge?')
+                  : (isFr ? 'Quand a-t-il été rafraîchi ?' : 'When was it last fed?')}
               </div>
 
               {/* Age chips — always visible */}
@@ -7787,8 +7787,8 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           {_tangRelevant && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '11px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                  {isFr ? 'GOÛT' : 'TASTE'}
+                <span style={{ ...STARTER_LABEL_STYLE, marginBottom: 0 }}>
+                  {isFr ? 'Goût' : 'Taste'}
                 </span>
                 <button
                   aria-expanded={showTasteInfo} onClick={() => setShowTasteInfo(v => !v)}
@@ -7806,13 +7806,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
                   <button
                     key={t} aria-pressed={tang === t}
                     onClick={() => { onTangChange?.(t); }}
-                    style={{
-                      padding: '4px 12px', borderRadius: '20px',
-                      border: `1.5px solid ${tang === t ? 'var(--bread)' : 'var(--border)'}`,
-                      background: tang === t ? 'rgba(139,105,20,0.10)' : 'transparent',
-                      color: tang === t ? 'var(--bread)' : 'var(--smoke)',
-                      fontFamily: 'var(--font-ui)', fontSize: '12px', cursor: 'pointer',
-                    }}
+                    style={starterPillButton(tang === t)}
                   >
                     {t === 'mild'
                       ? (isFr ? 'Plus doux' : 'Milder')

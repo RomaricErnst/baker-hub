@@ -21,7 +21,7 @@ test('starter questions sit on the Starter step and the bake-time step shows the
  await expect(card).toBeVisible();
  await expect(step.locator('[data-bh-forward]')).toBeDisabled();
  await card.getByRole('button',{name:'Fridge',exact:true}).tap();
- await expect(card.getByText('WHEN WAS IT LAST FED BEFORE GOING IN THE FRIDGE?')).toBeVisible();
+ await expect(card.getByText('When was it last fed before going in the fridge?')).toBeVisible();
  await card.getByRole('button',{name:'2–3 days ago',exact:true}).tap();
  await expect.poll(async()=>(await stored(page)).lastFedAge).toBe('days23');
  // Its activity is asked too, never assumed (14 Nov 2026).

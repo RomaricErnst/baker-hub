@@ -538,7 +538,7 @@ function SummaryBar({links,current,fr}:{links:BakeLink[];current:string;fr:boole
               {fr ? 'Où vous en êtes' : 'Where you are'}
             </h3>
 
-            {links.map(link=><button key={link.label} type="button" disabled={link.disabled} style={sheetRowStyle} onClick={()=>{setOpen(false);link.onChoose();}}><span style={sheetKeyStyle}>{link.label}</span><span>{link.value || (fr?'À choisir':'To choose')}</span><SheetChevron /></button>)}
+            {links.map(link=><button key={link.label} type="button" disabled={link.disabled} style={sheetRowStyle} onClick={()=>{setOpen(false);link.onChoose();}}><span style={sheetKeyStyle}>{link.label}</span><span style={{flex:1,minWidth:0,textAlign:'left'}}>{link.value || (fr?'À choisir':'To choose')}</span><SheetChevron /></button>)}
           </div>
         </>
       , document.body)}
@@ -547,7 +547,7 @@ function SummaryBar({links,current,fr}:{links:BakeLink[];current:string;fr:boole
 }
 
 const sheetHeadStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-ui)', fontSize: '9.5px', letterSpacing: '.09em',
+  fontFamily: 'var(--font-ui)', fontSize: '12px', letterSpacing: '.06em',
   textTransform: 'uppercase', color: 'var(--smoke)', padding: '14px 2px 4px',
 };
 
@@ -608,8 +608,8 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, forward, busyRow,
   // Only what the baker chose: assumed values are not listed in Simple.
   ].filter(row => !(hideSuggested && flow.recipeGenerated && suggestedRows[row.key]));
   return (
-    <div style={{ padding: '4px 0 8px' }}>
-      <h1 className="bh-page-title" style={{ fontSize: '26px', margin: '2px 0 6px', letterSpacing: '-.4px' }}>{fr ? 'Revoir mes choix' : 'Review my choices'}</h1>
+    <div>
+      <h1 className="bh-page-title">{fr ? 'Revoir mes choix' : 'Review my choices'}</h1>
       {nameField}
       <div>
         {rows.map(row => (
@@ -623,7 +623,7 @@ function SetupReview({ flow, modeChip, onJump, onBackToRecipe, forward, busyRow,
         ))}
       </div>
       {/* Customizing is the optional next step, not a mode to review: one quiet link. */}
-      {modeChip && <button type="button" data-mode-switch className="bh-back-action" style={{ minHeight: 44, marginTop: 12 }} onClick={modeChip.onClick}>{modeChip.value === 'simple' ? (fr ? 'Personnaliser ma fournée' : 'Customize my bake') : (fr ? 'Revenir aux réglages conseillés' : 'Use the recommended settings')}</button>}
+      {modeChip && <button type="button" data-mode-switch className="bh-back-action" style={{ minHeight: 44, marginTop: 12, paddingLeft: 0 }} onClick={modeChip.onClick}>{modeChip.value === 'simple' ? (fr ? 'Personnaliser ma fournée' : 'Customize my bake') : (fr ? 'Revenir aux réglages conseillés' : 'Use the recommended settings')}</button>}
       <BottomActions>{forward && flow.recipeGenerated && !stale ? <>
         <button type="button" className="bh-back-action" onClick={onBackToRecipe}>{fr ? 'Retour à la recette' : 'Back to Recipe'}</button>
         <button type="button" data-review-forward style={NEXT_CTA} onClick={forward.onClick}>{forward.label}</button>
@@ -682,8 +682,8 @@ const sheetRowStyle: React.CSSProperties = {
   cursor: 'pointer', fontFamily: 'var(--font-ui)', minHeight: '44px',
 };
 const sheetKeyStyle: React.CSSProperties = {
-  fontSize: '10px', letterSpacing: '.1em', textTransform: 'uppercase',
-  color: 'var(--smoke)', width: '96px', flexShrink: 0, textAlign: 'left',
+  fontSize: '12px', letterSpacing: '.06em', textTransform: 'uppercase',
+  color: 'var(--smoke)', width: '104px', flexShrink: 0, textAlign: 'left',
 };
 function SheetChevron() {
   return (
@@ -895,7 +895,7 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
   // Both pages move together — only the incoming one animating reads as a
   // swap rather than a displacement, which is what loses the eye.
   return (
-    <div id={`step-${id}`} key={id} className="bh-step-page" style={{ padding: '8px 2px 4px' }}>
+    <div id={`step-${id}`} key={id} className="bh-step-page">
       {/* No step counter here: the summary bar above carries it, and two
           "3 of 9" forty pixels apart is just noise. */}
       <h1 className="bh-page-title">{step.title}</h1>
@@ -905,7 +905,7 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
       {isLast && !flow.editReturn && nextOverride === undefined && flow.onReview && <button type="button" className="bh-back-action" onClick={flow.onReview}>{fr ? 'Revoir mes choix' : 'Review my choices'}</button>}
 
       {nextOverride !== null && <StepActions>
-        <button type="button" onClick={()=>flow.editReturn ? flow.onReview?.() : flow.onPrev(id)} style={{minHeight:44,padding:'8px 4px',border:0,background:'transparent',color:'var(--terra)',fontSize:14,cursor:'pointer',textDecoration:'underline',textUnderlineOffset:4}}><BackLabel text={flow.editReturn ? (fr?'Retour à mes choix':'Back to my choices') : (fr?'Étape précédente':'Previous step')}/></button>
+        <button type="button" className="bh-back-action" onClick={()=>flow.editReturn ? flow.onReview?.() : flow.onPrev(id)}><BackLabel text={flow.editReturn ? (fr?'Retour à mes choix':'Back to my choices') : (fr?'Étape précédente':'Previous step')}/></button>
         {nextOverride !== undefined ? nextOverride : flow.editReturn ? <button type="button" style={nextStyle} onClick={flow.editReturn.onReturn}>{flow.editReturn.label}</button> : next}
       </StepActions>}
     </div>
@@ -4959,8 +4959,8 @@ export default function Home() {
               />
 
 
-              {!isUnleavened && <details className="bh-disclosure" open={!yeastType ? true : undefined} style={{marginTop:20}}>
-                <summary style={{minHeight:44,cursor:'pointer',padding:'10px 0'}}>{fr?'Ma levure':'My yeast'} · {yeastType ? localName(YEAST_TYPES[yeastType]) : (fr?'Choisir':'Choose')} <span style={{color:'var(--terra)'}}>— {fr?'Modifier':'Change'}</span></summary>
+              {!isUnleavened && <details open={!yeastType ? true : undefined} style={{marginTop:20}}>
+                <summary className="bh-chevron" style={{minHeight:44,cursor:'pointer',padding:'10px 0'}}>{fr?'Ma levure':'My yeast'} · {yeastType ? localName(YEAST_TYPES[yeastType]) : (fr?'Choisir':'Choose')} <span style={{color:'var(--terra)'}}>— {fr?'Modifier':'Change'}</span></summary>
               <YeastHelper
                 selected={yeastType}
                 onSelect={value=>{chooseYeast(value);confirmSetting('yeast',value);}}
@@ -5505,7 +5505,7 @@ export default function Home() {
                     <input type="number" key={`${field.label}:${field.value}`} defaultValue={Math.round(field.value*100)/100} min={field.min} max={field.max} step={field.step} onBlur={e=>{const n=Number(e.target.value);const next=Math.min(field.max,Math.max(field.min,n));if(e.target.value!==''&&Number.isFinite(n)&&Math.abs(next-Math.round(field.value*100)/100)>1e-9)field.set(next);else e.target.value=String(field.value);}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}}} style={{flex:'0 0 96px',width:96,minHeight:44,fontSize:16,padding:'10px 12px',textAlign:'right',border:'1px solid var(--border)',borderRadius:9,background:'white'}}/>
                   </label>
                   {'hint' in field&&field.hint&&<p data-field-hint style={{margin:'0 0 16px',fontSize:14,lineHeight:1.45,color:'var(--smoke)'}}>{field.hint}</p>}
-                  {field.set===setManualHydration&&<div style={{marginBottom:16,fontSize:14}}>{manualHydration!==undefined&&Math.abs(manualHydration-recommendedHyd)>0.005&&<button type="button" onClick={()=>setManualHydration(undefined)} style={{minHeight:44}}>{fr?'Rétablir l’hydratation conseillée':'Reset suggested hydration'}</button>}<details><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Pourquoi cette valeur ?':'Why this value?'}</summary>{(()=>{
+                  {field.set===setManualHydration&&<div style={{marginBottom:16,fontSize:14}}>{manualHydration!==undefined&&Math.abs(manualHydration-recommendedHyd)>0.005&&<button type="button" onClick={()=>setManualHydration(undefined)} style={{minHeight:44}}>{fr?'Rétablir l’hydratation conseillée':'Reset suggested hydration'}</button>}<details><summary className="bh-chevron" style={{minHeight:44,cursor:'pointer'}}>{fr?'Pourquoi cette valeur ?':'Why this value?'}</summary>{(()=>{
                     // One line, as a sum: "Style 62% · oven +3 · flour +2 = 67%" (14 Nov 2026 audit).
                     const oven=['pan','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey??'')?Math.round((ovenData?.hydrationDelta??0)/2):(ovenData?.hydrationDelta??0);
                     const kitchen=kitchenTemp>=28||humidity==='very-humid'?-2:kitchenTemp<=18?2:0;
@@ -5585,8 +5585,8 @@ export default function Home() {
                       fields above, the water source in one line, the ice method only with a spiral mixer. */}
                   <h3 data-finetune-group="kitchen" style={{margin:'8px 0 12px',fontSize:13,fontWeight:650,letterSpacing:'.06em',textTransform:'uppercase' as const,color:'var(--smoke)'}}>{fr?'Frigo et eau':'Fridge & water'}</h3>
                   {!kitchenAnswered && <KitchenSlider value={kitchenTemp} units={units} fr={fr} onChange={c=>{setKitchenTemp(c);confirmSetting('climate',c);setPlanReplanPending(true);}}/>}
-                  <label style={{display:'block',fontSize:16,marginBottom:6}}>{fr?'Température du frigo':'Fridge temperature'} ({tempUnit(units)})
-                    <input type="number" data-fridge-temp key={`fridge:${fridgeTemp}:${units}`} defaultValue={Math.round(cToDisplay(fridgeTemp,units)*10)/10} min={cToDisplay(1,units)} max={cToDisplay(15,units)} step={units==='imperial'?1:0.5} onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const c=Math.min(15,Math.max(1,inputTempToC(n,units)));if(Math.abs(c-fridgeTemp)>0.01){setFridgeTemp(c);setPlanReplanPending(true);}}} style={{display:'block',width:'100%',boxSizing:'border-box',fontSize:16,padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:8}}/>
+                  <label style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,fontSize:16,marginBottom:6}}>{fr?'Température du frigo':'Fridge temperature'} ({tempUnit(units)})
+                    <input type="number" data-fridge-temp key={`fridge:${fridgeTemp}:${units}`} defaultValue={Math.round(cToDisplay(fridgeTemp,units)*10)/10} min={cToDisplay(1,units)} max={cToDisplay(15,units)} step={units==='imperial'?1:0.5} onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const c=Math.min(15,Math.max(1,inputTempToC(n,units)));if(Math.abs(c-fridgeTemp)>0.01){setFridgeTemp(c);setPlanReplanPending(true);}}} style={{flex:'0 0 96px',width:96,boxSizing:'border-box',fontSize:16,padding:'10px 12px',minHeight:44,textAlign:'right',border:'1px solid var(--border)',borderRadius:9,background:'white'}}/>
                   </label>
                   <p style={{margin:'0 0 16px',fontSize:14,lineHeight:1.45,color:'var(--smoke)'}}>{fr?'Mesurée dans le frigo, près de la pâte.':'Measured inside the fridge, near the dough.'}</p>
                   <label style={{display:'block',fontSize:16,margin:'12px 0 6px'}}>{locale==='fr'?'Origine de l’eau':'Water source'}
@@ -5606,8 +5606,8 @@ export default function Home() {
                     </select>
                     <small style={{display:'block',fontSize:14,lineHeight:1.5,marginTop:8}}>{locale==='fr'?'Vérifiez que votre pétrin accepte la glace.':'Check that your mixer allows ice.'}</small>
                   </label>}
-                  <details style={{margin:'12px 0'}}><summary style={{minHeight:44,cursor:'pointer'}}>{fr?'Températures mesurées · facultatif':'Measured temperatures · optional'}</summary>
-                    {[{label:fr?'Farine (°C)':'Flour (°C)',value:measuredFlourTemp,set:setMeasuredFlourTemp},...((prefermentType!=='none'||yeastType==='sourdough')?[{label:yeastType==='sourdough'||prefermentType==='levain'?(fr?'Levain (°C)':'Starter (°C)'):prefermentType==='biga'?(fr?'Biga (°C)':'Biga (°C)'):(fr?'Poolish (°C)':'Poolish (°C)'),value:measuredPrefermentTemp,set:setMeasuredPrefermentTemp}]:[])].map(field=><label key={field.label} style={{display:'block',fontSize:16,margin:'12px 0'}}>{field.label}<input type="number" value={field.value??''} min={-5} max={45} step={0.5} placeholder={fr?'Estimation automatique':'Automatic estimate'} onChange={e=>field.set(e.target.value===''?undefined:Number(e.target.value))} style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:10,border:'1px solid var(--border)',borderRadius:9}}/></label>)}
+                  <details style={{margin:'12px 0'}}><summary className="bh-chevron" style={{minHeight:44,cursor:'pointer'}}>{fr?'Températures mesurées · facultatif':'Measured temperatures · optional'}</summary><p id="measured-temp-hint" style={{margin:'4px 0 0',fontSize:14,lineHeight:1.45,color:'var(--smoke)'}}>{fr?'Laissez vide pour une estimation automatique.':'Leave blank for an automatic estimate.'}</p>
+                    {[{label:fr?'Farine (°C)':'Flour (°C)',value:measuredFlourTemp,set:setMeasuredFlourTemp},...((prefermentType!=='none'||yeastType==='sourdough')?[{label:yeastType==='sourdough'||prefermentType==='levain'?(fr?'Levain (°C)':'Starter (°C)'):prefermentType==='biga'?(fr?'Biga (°C)':'Biga (°C)'):(fr?'Poolish (°C)':'Poolish (°C)'),value:measuredPrefermentTemp,set:setMeasuredPrefermentTemp}]:[])].map(field=><label key={field.label} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,fontSize:16,margin:'12px 0'}}>{field.label}<input type="number" value={field.value??''} min={-5} max={45} step={0.5} placeholder="Auto" aria-describedby="measured-temp-hint" onChange={e=>field.set(e.target.value===''?undefined:Number(e.target.value))} style={{flex:'0 0 96px',width:96,boxSizing:'border-box',fontSize:16,minHeight:44,padding:'10px 12px',textAlign:'right',border:'1px solid var(--border)',borderRadius:9,background:'white'}}/></label>)}
                   </details>
                   {/* Only a value that differs from its recommendation calls for a reset (a tap through a field changes nothing). */}
                   {(fields.some(field=>Math.abs(field.value-field.rec)>1e-6)||yeastPctOverride!=null||starterPctOverride!=null)&&<button type="button" data-reset-finetune style={{minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:9}} onClick={()=>{setManualHydration(undefined);if(yeastPctOverride!==undefined){setYeastPctOverride(undefined);setPlanReplanPending(true);}if(starterPctOverride!==undefined){setStarterPctOverride(undefined);setPlanReplanPending(true);}setManualSalt(undefined);setManualOil(undefined);setManualSugar(undefined);setTargetDoughTemp(undefined);setWastePct(undefined);}}>{fr?'Rétablir les valeurs conseillées':'Reset recommended values'}</button>}
