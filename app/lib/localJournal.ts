@@ -212,3 +212,20 @@ export function deleteJournalEntry(id: string): JournalEntry | null {
 export function journalBakeInProgress(entry: Pick<JournalEntry, 'eatTime'>, now = Date.now()): boolean {
   return entry.eatTime == null || entry.eatTime + 12 * 3600000 > now;
 }
+
+/** With several bakes under way, the one whose next key moment (preferment, mix, bake) is nearest
+ *  now; a moment up to two hours past still counts as due (17 Nov 2026 retention review). */
+export function dueJournalEntry(now = Date.now()): JournalEntry | null {
+  let best: { entry: JournalEntry; wait: number } | null = null;
+  for (const entry of listJournal()) {
+    if (entry.eatTime == null || !journalBakeInProgress(entry, now) || entry.session?.bakedDone) continue;
+    const s = entry.session as { startTime?: unknown; prefOffsetH?: unknown; prefermentType?: unknown };
+    const start = finite(s.startTime);
+    const pref = start != null && s.prefermentType !== 'none' && s.prefermentType !== 'levain' && finite(s.prefOffsetH) ? start - (s.prefOffsetH as number) * 3600000 : null;
+    const waits = [pref, start, entry.eatTime].filter((t): t is number => t != null && t >= now - 2 * 3600000).map(t => Math.max(0, t - now));
+    if (!waits.length) continue;
+    const wait = Math.min(...waits);
+    if (!best || wait < best.wait) best = { entry, wait };
+  }
+  return best?.entry ?? null;
+}

@@ -1378,8 +1378,11 @@ export function buildSchedule(
   const fermentationEnd = poachMinutes ? new Date(+eatTime - poachMinutes * 60000) : eatTime;
   // Poaching ends fermentation. For bagels only, derive the dough phases up
   // to that action; the selected oven time remains unchanged.
+  // Levain loaves bake straight from the cold proof (Modernist Bread; 17 Nov 2026 review: three
+  // hours on a 19 °C counter after a 12-hour cold proof was the slip). Commercial lean loaves still
+  // take it only as a repair around busy times.
   const fromFridge = !poachMinutes && BAKE_FROM_FRIDGE_STYLES.has(styleKey)
-    && availabilityBlocks.some(block => block.bakeFromFridge === +eatTime);
+    && (isSourdough || availabilityBlocks.some(block => block.bakeFromFridge === +eatTime));
   const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches, numItems, isSourdough, isSourdough ? starterFactor : 1, fromFridge);
   schedule.divisionMinutes = divisionMinutesFor(numItems);
   const requiredCold = REQUIRED_COLD_MIN_HOURS[styleKey] ?? 0;

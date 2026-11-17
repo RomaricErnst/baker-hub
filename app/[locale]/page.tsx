@@ -61,7 +61,7 @@ import { createClient } from '../lib/supabase/client';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
 import { archivedBlendSelections } from '../lib/flourRecovery';
 import { flourShoppingName } from '../lib/flourGuidance';
-import { recordGeneratedBake, refreshCurrentJournalSnapshot, forgetCurrentJournalBake, setCurrentJournalId, currentJournalId, getJournalEntry, type JournalEntry } from '../lib/localJournal';
+import { recordGeneratedBake, refreshCurrentJournalSnapshot, forgetCurrentJournalBake, setCurrentJournalId, currentJournalId, getJournalEntry, dueJournalEntry, type JournalEntry } from '../lib/localJournal';
 import { deleteJournalPhotos } from '../lib/journalPhotos';
 import { archiveLocalBake, preservePreviousBake, acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, normalizeFlourTarget, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
@@ -1461,8 +1461,9 @@ export default function Home() {
   //
   // Hold the session until the baker resumes it or starts a recoverable new bake.
   const [pendingSession, setPendingSession] = useState<SessionData | null>(null);
+  const [dueEntry, setDueEntry] = useState<JournalEntry | null>(null);
   // A bake that is over (baked, or three hours past its time) is offered again, not resumed.
-  const pendingFinished = !!pendingSession?.recipeGenerated && (!!pendingSession.bakedDone || (!!pendingSession.eatTime && +new Date(pendingSession.eatTime) + 3 * 3600000 < Date.now()));
+  const pendingFinished = !dueEntry && !!pendingSession?.recipeGenerated && (!!pendingSession.bakedDone || (!!pendingSession.eatTime && +new Date(pendingSession.eatTime) + 3 * 3600000 < Date.now()));
   const [localSaveConflict, setLocalSaveConflict] = useState(false);
   useEffect(() => {
     const conflict = () => setLocalSaveConflict(true);
@@ -1503,6 +1504,8 @@ export default function Home() {
       return;
     }
     setPendingSession(session);
+    // Another bake has the step that is due: the banner offers that one (17 Nov retention review).
+    try { const due = dueJournalEntry(); setDueEntry(due && due.id !== currentJournalId() ? due : null); } catch {}
     // A reload in the middle of a generated bake is not "coming back later"
     // either. The offer-on-mount rule (above) exists so values never appear
     // that the baker did not see being chosen; here they were on screen a
@@ -1752,12 +1755,16 @@ export default function Home() {
   const recipeInputKey = JSON.stringify([bakeType,styleKey,numItems,itemWeight,totalFlourTarget,ovenType,ovenConstruction,mixerType,customMixerCapacityG,mixingBatches,yeastType,kitchenTemp,humidity,fridgeTemp,manualHydration,manualOil,manualSugar,manualSalt,flourChosen?flourBlend:null,prefermentType,prefermentType!=='none'?(prefermentFlourPct??20):prefermentFlourPct,targetDoughTemp,flourInFridge,measuredFlourTemp,measuredPrefermentTemp,wastePct,addSeeds,priorityOverride,yeastPctOverride,starterPctOverride,starterState,starterLocation,planningMode,lastFedTime?.getTime()??null,knownPeakTime?.getTime()??null,hasNotFedYet,lastFedAge,lastFeedRatio,nextFeedRatioOverride,ratioMode,tang]);
   const previousRecipeInputKey = useRef(recipeInputKey);
   const generatedRecipeInputKey = useRef<string | null>(null);
+  const confirmationAt = useRef(0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const changed = previousRecipeInputKey.current !== recipeInputKey;
     previousRecipeInputKey.current = recipeInputKey;
     if (isRestoringRef.current) return;
     if (recipeGenerated && generatedRecipeInputKey.current === null) generatedRecipeInputKey.current = previousRecipeInputKey.current;
+    // Confirming what happened (mixed, fed, made the poolish) is not a change of choices:
+    // the recipe follows it without a "You changed your choices" card (17 Nov retention review).
+    if (changed && recipeGenerated && (()=>{try{return Date.now()-confirmationAt.current<3000;}catch{return false;}})()) { generatedRecipeInputKey.current = recipeInputKey; return; }
     if (changed && recipeGenerated) {
       setProtocolStale(generatedRecipeInputKey.current !== recipeInputKey);
     }
@@ -2305,6 +2312,7 @@ export default function Home() {
     saveSession(buildSessionPayload({starterRecoveryPending:true,starterEvents:serializeStarterEvents(history),timingOverrides:{},protocolStale:true,starterTimingValid:false,feed2Time:null,usingPeak2:false,fridgeOutTime:null,starterFridgeInTime:null}));
   }
   function updateStarterAfterMissedFeed(actualAt?:number,feedEvent:StarterEvent|undefined=missedStarterFeed) {
+    if(actualAt!==undefined)try{confirmationAt.current=Date.now();}catch{}
     if(!feedEvent||!['refresh','intermediate_refresh','pre_mix'].includes(feedEvent.kind)||actualAt!==undefined&&(!Number.isFinite(actualAt)||actualAt>Date.now()))return;
     const observations=starterEvents.filter(event=>event.kind==='last_fed'||event.kind==='known_peak');
     const usedRatio=feedEvent.feedingRatio??nextFeedRatio;
@@ -2338,6 +2346,7 @@ export default function Home() {
       &&same(calculated.yeast?.convertedGrams,used.yeast?.convertedGrams);
   }
   function markPreparationMade(at:number) {
+    try{confirmationAt.current=Date.now();}catch{}
     if(!recipe||!commercialMethod||!Number.isFinite(at)||at>Date.now())return;
     const actual:BakeExecution=execution?{...execution,actualAt:at,recordedAt:Date.now()}:{method:commercialMethod,actualAt:at,recordedAt:Date.now(),inFridge:prefGoesInFridge,prefHours:prefOffsetH,prefWindow:commercialPrefermentWindow(commercialMethod,prefGoesInFridge,kitchenTemp,styleKey??'',fridgeTemp),recipe};
     const mix=commercialMethod==='none'?new Date(at):startTime;
@@ -2345,18 +2354,22 @@ export default function Home() {
     const remainingValid=!!eatTime&&validateConfirmedBake({...poolishInputs,execution:actual,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength,preheatMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(actual,candidate,times)}).valid;
     setExecution(actual);setReplanRequested(false);setStartTime(mix);setPrefOffsetH(nextOffset);setTimingOverrides({});setSessionRestored(true);setProtocolStale(!remainingValid);setScheduleCandidateValid(remainingValid);
     saveSession(buildSessionPayload({execution:actual,startTime:+mix,prefOffsetH:nextOffset,timingOverrides:{},protocolStale:!remainingValid}));
-    if(destination!=='protocol'){if(remainingValid)openDestination('recipe');else{setSetupOverview(false);setActiveStep(7);setAdvancedStep(9);openDestination('organisation');}}
+    if(destination!=='protocol'&&destination!=='service'){if(remainingValid)openDestination('recipe');else{setSetupOverview(false);setActiveStep(7);setAdvancedStep(9);openDestination('organisation');}}
   }
   function markMixMade(at:number,prepared=execution) {
+    try{confirmationAt.current=Date.now();}catch{}
     if(!recipe||!eatTime||!Number.isFinite(at)||at>Date.now()||prepared&&at<prepared.actualAt)return;
     const actual:MixExecution={actualAt:at,recordedAt:Date.now(),recipe:mixExecution?.recipe??recipe};
     const mix=new Date(at),offset=prepared?(at-prepared.actualAt)/3600000:prefOffsetH;
-    const valid=prepared?validateConfirmedBake({...poolishInputs,completedMixAt:at,execution:prepared,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength,preheatMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(prepared,candidate,times,actual.recipe)}).valid:at===+startTime&&starterTimingValid&&scheduleCandidateValid;
+    // Mixed within half an hour of the plan: the plan holds; a few minutes are not a new plan (17 Nov review).
+    const onTime=Math.abs(at-+startTime)<=30*60_000&&!!scheduleCandidateValid;
+    const valid=onTime||(prepared?validateConfirmedBake({...poolishInputs,completedMixAt:at,execution:prepared,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength,preheatMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(prepared,candidate,times,actual.recipe)}).valid:at===+startTime&&starterTimingValid&&scheduleCandidateValid);
     if(prepared)setExecution(prepared);
     setStarterRecoveryPending(false);setMixExecution(actual);setStartTime(mix);setPrefOffsetH(offset);setTimingOverrides({});setSessionRestored(true);setScheduleCandidateValid(valid);setProtocolStale(!valid);
     saveSession(buildSessionPayload({execution:prepared,starterRecoveryPending:false,mixExecution:actual,startTime:at,prefOffsetH:offset,timingOverrides:{},protocolStale:!valid}));
     if(!valid){setSetupOverview(false);setActiveStep(7);setAdvancedStep(9);openDestination('organisation');}
-    else if(destination!=='protocol')openDestination('recipe');
+    // Confirmed from Preparation or Baking & serving: stay there.
+    else if(destination!=='protocol'&&destination!=='service')openDestination('recipe');
   }
   function requestRemainingMixPlan() {
     if(mixExecution)return;
@@ -3144,7 +3157,8 @@ export default function Home() {
     setStarterTimingValid(true);
     setResultNotes('');setCustomMixerCapacityG(undefined);setMixingBatches(undefined);
     setCustomKitchenConfirmed(false);
-    setKitchenTemp(22); setHumidity('normal'); setFridgeTemp(6); setWaterSource('room'); setMeasuredWaterTemp(undefined); setWaterMethod('premelt'); setSpiralIceConfirmed(false);
+    // Same kitchen, same fridge: the next bake starts from them, not from 22 °C (17 Nov retention review).
+    setHumidity('normal'); setWaterSource('room'); setMeasuredWaterTemp(undefined); setWaterMethod('premelt'); setSpiralIceConfirmed(false);
     setShowResults(false); setActiveStep(1); setHighestStep(1);
     setAdvancedStep(1); setAdvancedHighestStep(1); setFlourBlend({ flour1: bakeType === 'bread' ? 'bread' : 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
@@ -4079,7 +4093,7 @@ export default function Home() {
   const firstRecipeActionLabel = (firstStarterAction ? starterActionLabelFor(firstStarterAction,starterEvents,fr) : undefined) ?? (prefStartTime && +prefStartTime===+firstRecipeAction
     ? (prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):(fr?'Préparer le poolish':'Make Poolish'))
     : (schedule?.availabilityActions ?? []).some(action=>action.id==='autolyse'&&+action.at===+firstRecipeAction) ? (fr?'Autolyse puis pétrissage':'Autolyse, then mixing')
-    : +firstRecipeAction < +startTime ? (fr?'Préparer le préferment':'Make the preferment') : (fr?'Pétrir la pâte':'Start Dough'));
+    : +firstRecipeAction < +startTime ? (yeastType==='sourdough'?(fr?'Préparer le levain':'Build the levain'):(fr?'Préparer le préferment':'Make the preferment')) : (fr?'Pétrir la pâte':'Start Dough'));
   // A fridge removal the baker arranged for someone at home, for the Preparation summary.
   const coveredFridgeRemovalAt = (()=>{const at=blocks.find(block=>block.fridgeRemoval&&eatTime&&block.fridgeRemoval.bake===+eatTime)?.fridgeRemoval?.at;return at?new Date(at):undefined;})();
   // Every remaining hands-on step, as calendar events with an alert at their time.
@@ -4525,11 +4539,12 @@ export default function Home() {
                   those are the two facts that decide it. Progress is left out
                   on purpose; it speaks to sunk cost, not to fit. */}
               {(() => {
-                const st = pendingSession?.styleKey
-                  ? styleDisplayName(pendingSession.styleKey as StyleKey)
+                const shown = dueEntry?.session ?? pendingSession;
+                const st = shown?.styleKey
+                  ? styleDisplayName(shown.styleKey as StyleKey)
                   : null;
-                const when = pendingSession?.eatTime
-                  ? formatTime(new Date(pendingSession.eatTime), locale)
+                const when = shown?.eatTime
+                  ? formatTime(new Date(shown.eatTime), locale)
                   : null;
                 const head = pendingFinished && st ? (locale === 'fr' ? `Votre ${st}` : `Your ${st}`) : st
                   ? (locale === 'fr' ? `Reprendre votre ${st}` : `Resume your ${st}`)
@@ -4552,6 +4567,7 @@ export default function Home() {
                 // mount — see the comment on pendingSession — so Resume now
                 // does the thing it says rather than dismissing a banner over
                 // state that had already appeared by itself.
+                if (dueEntry) { const entry = dueEntry; setDueEntry(null); answerWelcomeBack(); resumeToNow.current = true; void openJournalEntry(entry, false); return; }
                 const s = loadSession();
                 acceptCurrentSessionStorage();
                 answerWelcomeBack();

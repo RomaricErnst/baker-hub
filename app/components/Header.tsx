@@ -14,7 +14,7 @@ import SessionViewer from './SessionViewer';
 import {localBakes, type LocalBake, type SessionData, readAuthIntent, type AuthIntent} from '../lib/session';
 import { PIZZAS, DESSERT_PIZZAS } from '@/app/lib/toppingDatabase';
 import { JournalCard, JournalEntrySheet } from './BakeJournal';
-import { listJournal, currentJournalId, type JournalEntry } from '../lib/localJournal';
+import { listJournal, currentJournalId, journalBakeInProgress, type JournalEntry } from '../lib/localJournal';
 
 function RecipeCard({ r, onUpdate, onLoad, onDelete }: {
   r: SavedRecipe;
@@ -637,7 +637,8 @@ export default function Header({
               <h3 style={{margin:0,fontSize:15}}>{tJ('onDevice')}</h3>
               <p style={{margin:'2px 0 0',fontSize:12,color:'var(--smoke)'}}>{tJ('deviceOnly')}</p>
               {journal.length===0 && <p style={{margin:'8px 0 0',fontSize:14,color:'var(--ash)'}}>{tJ('empty')}</p>}
-              {journal.map(entry=><JournalCard key={entry.id} entry={entry} units={units} current={currentBakeActive && entry.id===journalCurrent} onOpen={row=>{setMenuOpen(false);setViewingJournal(row);}} />)}
+              {/* Upcoming bakes first, soonest first; then past ones, latest first (17 Nov retention review). */}
+              {[...journal].sort((a,b)=>{const now=Date.now(),up=(e:typeof a)=>e.eatTime!=null&&journalBakeInProgress(e,now)&&!e.session?.bakedDone;const ua=up(a),ub=up(b);if(ua!==ub)return ua?-1:1;return ua?(a.eatTime??0)-(b.eatTime??0):(b.eatTime??b.updatedAt)-(a.eatTime??a.updatedAt);}).map(entry=><JournalCard key={entry.id} entry={entry} units={units} current={currentBakeActive && entry.id===journalCurrent} onOpen={row=>{setMenuOpen(false);setViewingJournal(row);}} />)}
               {(()=>{
                 // Recovery copies kept when switching bakes. A generated bake that
                 // already has a journal entry is not listed twice.

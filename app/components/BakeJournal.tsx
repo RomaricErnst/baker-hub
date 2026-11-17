@@ -154,7 +154,9 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
   const inProgress = journalBakeInProgress(current);
   // Before the bake there is nothing to rate: the entry shows the plan instead.
   const beforeBake = !rateNow && current.eatTime != null && current.eatTime > Date.now() && current.rating == null && !current.note && current.photoIds.length === 0;
-  const startAt = typeof current.session?.startTime === 'number' ? current.session.startTime : null;
+  // The first thing to do: a poolish or biga starts before the dough (17 Nov retention review).
+  const prefLead = current.session?.prefermentType && current.session.prefermentType !== 'none' && current.session.prefermentType !== 'levain' && typeof current.session.prefOffsetH === 'number' ? current.session.prefOffsetH * 3600000 : 0;
+  const startAt = typeof current.session?.startTime === 'number' ? current.session.startTime - prefLead : null;
   const nextWeek = current.eatTime != null ? new Date(current.eatTime + 7 * 86400000) : null;
   const nextWeekLabel = nextWeek ? nextWeek.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
   const noteChanged = note !== current.note;
