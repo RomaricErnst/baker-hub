@@ -220,6 +220,7 @@ function StarterPrepCard({
   // Compare the minutes the baker sees, so 7:45 vs 7:50 reads as 5 min.
   const peakGapMinutes = mixingTime && predictedPeak ? Math.round(+mixingTime / 60000) - Math.round(+predictedPeak / 60000) : null;
   const build = starterBuild(sourdough.starterGramsMid, sourdough.starterGramsMax, feedRatio ?? 1);
+  const starterLeft = Math.max(build.keep, build.total - sourdough.starterGramsMid);
   function describeFeed(ratio = feedRatio ?? 1) {
     const {seed, flour, water, total} = starterBuild(sourdough!.starterGramsMid, sourdough!.starterGramsMax, ratio);
     return isFr ? `1:${ratio}:${ratio} · ${seed} g de levain + ${flour} g de farine + ${water} g d’eau = ${total} g`
@@ -264,7 +265,8 @@ function StarterPrepCard({
       gap: '12px',
     }}>
       <div data-starter-amount style={{fontSize:16,fontWeight:600,color:'var(--char)'}}>
-        {isFr ? `${sourdough.starterGramsMid} g de levain pour la pâte · gardez ${build.keep} g pour la prochaine fois` : `${sourdough.starterGramsMid} g of starter for the dough · keep ${build.keep} g for next time`}
+        {/* What is left in the jar after the dough takes its share (17 Nov review: "keep 22 g" of a 150 g build). */}
+        {isFr ? `${sourdough.starterGramsMid} g de levain pour la pâte · gardez le reste (${starterLeft} g) pour la prochaine fois` : `${sourdough.starterGramsMid} g of starter for the dough · keep the rest (${starterLeft} g) for next time`}
       </div>
 
       {/* Scheduled timeline */}

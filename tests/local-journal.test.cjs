@@ -100,3 +100,15 @@ test('resume is offered for future and same-day bakes only',()=>{
  assert.equal(J.journalBakeInProgress({eatTime:now-3*86400000},now),false);
  assert.equal(J.journalBakeInProgress({eatTime:null},now),true);
 });
+
+// 17 Nov 2026 retention review: with two bakes under way, home offers the one whose step is due.
+test('the due bake is the one whose preferment, mix or bake is nearest now',()=>{
+ const h=3600000,now=Date.UTC(2026,10,21,6);// Sat 07:00 Paris
+ const baguette=J.recordGeneratedBake(bake({bakeType:'bread',styleKey:'baguette',eatTime:now+27*h,startTime:now+11.25*h,prefermentType:'poolish',prefOffsetH:11.25}),1000).entry;
+ J.forgetCurrentJournalBake();
+ const campagne=J.recordGeneratedBake(bake({bakeType:'bread',styleKey:'pain_campagne',eatTime:now+26.25*h,startTime:now+5.25*h,prefermentType:'none'}),2000).entry;
+ assert.equal(J.dueJournalEntry(now).id,baguette.id,'7:00 poolish beats a 12:15 mix');
+ assert.equal(J.dueJournalEntry(now+5.2*h).id,campagne.id,'at 12:10 the campagne mix is next');
+ assert.equal(J.dueJournalEntry(now+11.25*h).id,baguette.id,'at 18:15 the baguette mix is due');
+ assert.equal(J.dueJournalEntry(now+40*h),null,'nothing once both are over');
+});
