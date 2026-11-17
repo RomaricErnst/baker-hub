@@ -1,9 +1,10 @@
 'use client';
 import { BackLabel } from './BackLabel';
+import { oneLineCta } from '../lib/navButtons';
 import { breadNoun } from '../utils/breadNames';
 import { drainedWeightShoppingNote } from '../lib/ingredientWeights';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import { SANDWICH_FAMILIES, SANDWICH_RECIPES, SANDWICH_INGREDIENTS, estimateRawChickenPurchase, partitionSandwichSteps } from '../lib/sandwichCatalog';
 import { type SandwichSnapshot, sandwichFamilyForStyle, effectiveIngredients, estimatedSandwichKcal, aggregateSandwichShopping, sandwichPrepKey, updateSandwichRecipe, effectiveSandwichSteps, isLighterSandwich } from '../lib/sandwich';
 import styles from './sandwichParty/SandwichParty.module.css';
@@ -39,6 +40,8 @@ export interface SandwichPartyProps extends CompletionActions {
   onSelectionDone?:()=>void;
   selectionDoneLabel?:string;
   selectionBackLabel?:string;
+  /** Late toppings from Preparation or Baking & serving: the bar goes back there on the left and on to the shopping list on the right. */
+  selectionForward?:{label:string;onClick:()=>void};
   /** In the journey with nothing chosen yet: the top-of-page way on to the shopping list. */
   skipLabel?:string;
   directSelectionReturn?:boolean;
@@ -51,7 +54,7 @@ export interface SandwichPartyProps extends CompletionActions {
 
 const count = (value: number) => Number.isFinite(value) ? Math.max(0,Math.min(99,Math.floor(value))) : 0;
 
-export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRepeat,resultNotes,onResultNotesChange,isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onBackToRecipe,backLabel,onSelectionDone,selectionDoneLabel,selectionBackLabel,skipLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,baseReady=false,deferBreadSteps=!baseReady}:SandwichPartyProps) {
+export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRepeat,resultNotes,onResultNotesChange,isFr,styleKey,snapshot,onChange,breadIngredients=[],availableDoughWeight,numItems,onAdjustBread,onMatchBreadCount,hideNavigation=false,doughConfigured=true,onRevealNavigation,phase,onPhaseChange,onSelectionBack,onBackToRecipe,backLabel,onSelectionDone,selectionDoneLabel,selectionBackLabel,selectionForward,skipLabel,directSelectionReturn=false,prepContinueLabel,onPrepProgress,active=true,baseReady=false,deferBreadSteps=!baseReady}:SandwichPartyProps) {
   const tr = (value:Translation) => value[isFr ? 'fr' : 'en'];
   const t = (fr:string,en:string) => isFr ? fr : en;
   const [search,setSearch] = useState('');
@@ -160,6 +163,12 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
   useEffect(()=>{onPrepProgress?.({done:readySteps,total:prepTotal});},[readySteps,prepTotal,onPrepProgress]);
   const amountText = (grams:number) => grams>=1000 ? `${(Math.round(grams/10)/100).toLocaleString(isFr?'fr-FR':'en-GB')} kg` : `${(grams<10?Math.round(grams*10)/10:Math.round(grams)).toLocaleString(isFr?'fr-FR':'en-GB')} g`;
   const button = `${styles.button} ${styles.primary}`;
+  // Bottom-bar labels stay on one line; the full label is the accessible name (16 Nov 2026 design review).
+  const barButton = (label:string|undefined, onClick:()=>void, style?:CSSProperties) => {
+    const one = label && / →$/.test(label) ? oneLineCta(label) : null;
+    return <button type="button" className={`${button} ${styles.wide}${one?` ${one.className}`:''}`} aria-label={one?.['aria-label']} style={style} onClick={onClick}>{one?one.children:label}</button>;
+  };
+  const lateForward = !!selectionForward && directSelectionReturn && !selectionBackLabel ? selectionForward : null;
 
   return <div className={styles.party}>
     {/* In Preparation and Baking & serving the page already has its title: the fillings head a
@@ -168,10 +177,11 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
       {/* With no fillings the shopping list is the bread batch alone: one heading with the item count. */}
       <div><h2 className={tab==='prep'||tab==='serve'?'bh-section-title':styles.pageTitle} ref={headingRef} tabIndex={-1}>{tab==='shop'&&total===0&&breadIngredients.length>0?(()=>{const n=breadIngredients.filter(item=>item.id!=='water').length;return `${t('Liste de courses','Shopping list')} · ${n} ${n===1?t('article','item'):t('articles','items')}`;})():heading}</h2>
         {/* The bread is named in the section bar and the portion line; no subtitle (14 Nov 2026 audit). */}
-        {tab==='pick'&&skipLabel&&total===0&&onSelectionDone&&<button type="button" data-skip-fillings onClick={onSelectionDone} className="bh-skip-row">{skipLabel}<span aria-hidden="true"> →</span></button>}
       </div>
       {tab==='shop' ? (!backLabel&&<button type="button" className={styles.button} onClick={()=>go('pick')}>{total>0?t('Modifier les garnitures','Edit fillings'):t('Ajouter des garnitures — facultatif','Add fillings — optional')}</button>) : family && <img src={breadImage} alt={breadName}/>}
     </div>
+    {/* Under the title row, full width, as on Pizzas. */}
+    {tab==='pick'&&skipLabel&&total===0&&onSelectionDone&&<button type="button" data-skip-fillings onClick={onSelectionDone} className="bh-skip-row">{skipLabel}<span aria-hidden="true">{'\u00a0→'}</span></button>}
 
     {(family||tab==='shop') && <>
       {legacyMieTartines&&tab==='pick'&&<div className={styles.card}><p>{t('Cette fournée conserve vos tartines choisies précédemment.','This bake keeps your previously selected tartines.')}</p><button type="button" className={styles.button} onClick={()=>onChange({...snapshot,familyId:'pain_mie',qtys:{},completed:{},prepTicks:{},ingredientOverrides:{}})}>{t('Remplacer par des clubs ou croques','Replace with clubs or croques')}</button></div>}
@@ -211,10 +221,10 @@ export default function SandwichParty({onSave,onShare,sessionSaved,saveKind,onRe
           <button className={`${styles.button} ${styles.wide}`} type="button" onClick={()=>setDetailId(recipe.id)}>{t('Recette et garnitures','Recipe and fillings')}</button>
         </article>)}</div>
         {!filtered.length&&<p className={styles.empty}>{t('Aucune recette dans ce filtre. Essayez « Tout ».','No recipes in this filter. Try “All”.')}</p>}
-        {active&&total>0&&!reviewOpen&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}><BackLabel text={directSelectionReturn&&selectionBackLabel?selectionBackLabel:t('Étape précédente','Previous step')}/></button>}<button type="button" className={`${button} ${styles.wide}`} onClick={()=>{if(directSelectionReturn&&onSelectionDone&&!needsQuantityReview)onSelectionDone();else setReviewOpen(true);}}>{directSelectionReturn?(needsQuantityReview?t('Vérifier la quantité de pain','Check bread quantity'):selectionDoneLabel):`${t('Voir ma sélection','Review selection')} · ${total}`}</button></div>}
+        {active&&total>0&&!reviewOpen&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{lateForward&&!needsQuantityReview&&onSelectionDone?<><button type="button" className="bh-back-action" onClick={onSelectionDone}><BackLabel text={selectionDoneLabel}/></button>{barButton(lateForward.label,lateForward.onClick)}</>:<>{onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}><BackLabel text={directSelectionReturn&&selectionBackLabel?selectionBackLabel:t('Étape précédente','Previous step')}/></button>}{barButton(directSelectionReturn?(needsQuantityReview?t('Vérifier la quantité de pain','Check bread quantity'):selectionDoneLabel):`${t('Voir ma sélection','Review selection')} · ${total}`,()=>{if(directSelectionReturn&&onSelectionDone&&!needsQuantityReview)onSelectionDone();else setReviewOpen(true);})}</>}</div>}
 
-        {active&&baseReady&&total===0&&onSelectionBack&&<div data-companion-action className={styles.selectionBar}>{directSelectionReturn&&selectionBackLabel?<><button type="button" className="bh-back-action" onClick={onSelectionBack}><BackLabel text={selectionBackLabel}/></button><button type="button" className={`${button} ${styles.wide}`} style={{margin:0,width:'auto',flex:1}} onClick={onSelectionDone}>{selectionDoneLabel}</button></>:<button type="button" className="bh-back-action" onClick={onSelectionBack}><BackLabel text={directSelectionReturn?selectionDoneLabel:t('Étape précédente','Previous step')}/></button>}</div>}
-        {active&&!baseReady&&total===0&&onSelectionDone&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{(!directSelectionReturn||selectionBackLabel)&&onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}>{directSelectionReturn?selectionBackLabel:t('Étape précédente','Previous step')}</button>}<button type="button" className={`${button} ${styles.wide}`} onClick={onSelectionDone}>{selectionDoneLabel??t('Définir ma recette','Set up my recipe')}</button></div>}
+        {active&&baseReady&&total===0&&onSelectionBack&&<div data-companion-action className={styles.selectionBar}>{directSelectionReturn&&selectionBackLabel?<><button type="button" className="bh-back-action" onClick={onSelectionBack}><BackLabel text={selectionBackLabel}/></button>{barButton(selectionDoneLabel,()=>onSelectionDone?.(),{margin:0,width:'auto',flex:1})}</>:lateForward?<><button type="button" className="bh-back-action" onClick={onSelectionBack}><BackLabel text={selectionDoneLabel}/></button>{barButton(lateForward.label,lateForward.onClick,{margin:0,width:'auto',flex:1})}</>:<button type="button" className="bh-back-action" onClick={onSelectionBack}><BackLabel text={directSelectionReturn?selectionDoneLabel:t('Étape précédente','Previous step')}/></button>}</div>}
+        {active&&!baseReady&&total===0&&onSelectionDone&&<div data-companion-action className={styles.selectionBar} style={{bottom:0,paddingBottom:'calc(10px + env(safe-area-inset-bottom, 0px))'}}>{(!directSelectionReturn||selectionBackLabel)&&onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}><BackLabel text={directSelectionReturn?selectionBackLabel:t('Étape précédente','Previous step')}/></button>}{barButton(selectionDoneLabel??t('Définir ma recette','Set up my recipe'),()=>onSelectionDone())}</div>}
       </>}
       {tab!=='pick'&&tab!=='shop'&&!total&&<div className={styles.empty}><p>{tartine ? t('Choisissez vos tartines et leurs quantités pour commencer.','Choose your tartines and quantities to begin.') : t(`Choisissez vos ${portionPlural} et leurs quantités pour commencer.`,`Choose your ${portionPlural} and quantities to begin.`)}</p><button className={button} type="button" onClick={()=>go('pick')}>{tartine ? t('Choisir mes tartines','Choose tartines') : t(`Choisir mes ${portionPlural}`,`Choose ${portionPlural}`)}</button></div>}
       {tab==='shop'&&<>

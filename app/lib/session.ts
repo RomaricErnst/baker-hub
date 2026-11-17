@@ -51,6 +51,8 @@ export interface SessionData {
   mixingBatches?: number;
   mixerCapacityG?: number;
   resultNotes?: string;
+  /** Bake again: the note from the bake this one repeats ("Last time: …"), kept until a new bake starts. */
+  previousNote?: string;
   containerCapacityLitres?: number;
   flourBlend: unknown;
   prefermentType: string;
@@ -176,7 +178,7 @@ export function normalizeResultNotes(value: unknown): string {
 
 export function saveSession(data: Omit<SessionData, 'version' | 'savedAt'>): boolean {
   try {
-    const payload: SessionData = { ...data, execution: normalizeBakeExecution(data.execution), mixExecution:normalizeMixExecution(data.mixExecution), starterFeedRecords:normalizeStarterFeedRecords(data.starterFeedRecords), starterRecoveryPending:data.starterRecoveryPending===true, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), mixerCapacityG: normalizeMixerCapacity(data.mixerCapacityG), resultNotes: normalizeResultNotes(data.resultNotes), version: 1, savedAt: Date.now() };
+    const payload: SessionData = { ...data, execution: normalizeBakeExecution(data.execution), mixExecution:normalizeMixExecution(data.mixExecution), starterFeedRecords:normalizeStarterFeedRecords(data.starterFeedRecords), starterRecoveryPending:data.starterRecoveryPending===true, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), mixerCapacityG: normalizeMixerCapacity(data.mixerCapacityG), resultNotes: normalizeResultNotes(data.resultNotes), previousNote: normalizeResultNotes(data.previousNote), version: 1, savedAt: Date.now() };
     return sessionStore().write(JSON.stringify(payload));
   } catch { return false; }
 }
@@ -187,7 +189,7 @@ export function loadSession(): SessionData | null {
     if (!raw) return null;
     const data = JSON.parse(raw) as SessionData;
     if (data.version !== 1) return null;
-    return { ...data, execution: normalizeBakeExecution(data.execution), mixExecution:normalizeMixExecution(data.mixExecution), starterFeedRecords:normalizeStarterFeedRecords(data.starterFeedRecords), starterRecoveryPending:data.starterRecoveryPending===true, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), mixerCapacityG: normalizeMixerCapacity(data.mixerCapacityG), resultNotes: normalizeResultNotes(data.resultNotes) };
+    return { ...data, execution: normalizeBakeExecution(data.execution), mixExecution:normalizeMixExecution(data.mixExecution), starterFeedRecords:normalizeStarterFeedRecords(data.starterFeedRecords), starterRecoveryPending:data.starterRecoveryPending===true, timingOverrides: normalizeTimingOverrides(data.timingOverrides), sandwichParty: data.sandwichParty ? normalizeSandwichSnapshot(data.sandwichParty) : null, mixingBatches: normalizeMixingBatches(data.mixingBatches), mixerCapacityG: normalizeMixerCapacity(data.mixerCapacityG), resultNotes: normalizeResultNotes(data.resultNotes), previousNote: normalizeResultNotes(data.previousNote) };
   } catch { return null; }
 }
 

@@ -44,8 +44,8 @@ test('primary buttons have a hover state limited to fine pointers',()=>{
 
 test('busy-time chip hours and About diet chips are readable',()=>{
   const picker=fs.readFileSync(path.join(__dirname,'../app/components/SchedulePicker.tsx'),'utf8');
-  // The hours under "Nights" / "Weekdays": 12px in --smoke, no opacity fade (was 11px at 0.65, 3.18:1).
-  assert.equal((picker.match(/<span style=\{\{ fontFamily: 'var\(--font-ui\)', fontSize: '12px', color: 'var\(--smoke\)' \}\}>\s*\{fmtCardHM\(/g)||[]).length,2);
+  // The hours under "Nights" / "Weekdays": 14px in --smoke (16 Nov 2026 design review), no opacity fade (was 11px at 0.65, 3.18:1).
+  assert.equal((picker.match(/<span style=\{\{ fontFamily: 'var\(--font-ui\)', fontSize: '14px', color: 'var\(--smoke\)' \}\}>\s*\{fmtCardHM\(/g)||[]).length,2);
   assert.doesNotMatch(picker,/fontSize: '11px', opacity: \.65 \}\}>\s*\{fmtCardHM/);
   for(const ground of [token('warm'),token('cream')]) assert.ok(ratio(token('smoke'),ground)>=4.5);
   // Sage text on the 12% sage chip of the About page.

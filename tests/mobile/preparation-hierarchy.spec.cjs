@@ -23,14 +23,14 @@ for(const scenario of [
  await page.goto('/fr');
  const progress=page.locator('.bh-local-progress .bh-step-trigger');
  await expect(progress).toHaveCount(1);
- await expect(page.locator('.bh-local-progress')).toContainText(`Étape 1 / ${scenario.total}`);
+ await expect(page.locator('.bh-local-progress')).not.toContainText('Étape'); // no step numbers in Baking & serving (17 Nov design review)
  await expect(page.locator('.bh-bake-navigator .bh-step-trigger')).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Vue d’ensemble',exact:true})).toHaveCount(1);
  await progress.tap();
  await expect(page.getByRole('button',{name:/^(Commencer la cuisson|Cuire le pain) →$/})).toBeVisible();
  await expect(page.locator('section[data-guide-phase="cooking"]:visible')).toHaveCount(scenario.total);
  await page.getByRole('button',{name:/^(Commencer la cuisson|Cuire le pain) →$/}).tap();
- await expect(page.locator('.bh-local-progress')).toContainText(`Étape 1 / ${scenario.total}`);
+ await expect(page.locator('.bh-local-progress')).not.toContainText('Étape'); // no step numbers in Baking & serving (17 Nov design review)
  await expect(page.locator('section[data-guide-phase="cooking"]:visible')).toHaveCount(1);
 });
 

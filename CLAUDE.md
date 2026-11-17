@@ -23,10 +23,13 @@ npm run build      # must pass before every push (fails in remote sandboxes: Goo
 | Deploy | Vercel — auto on push to main (~90–120 s); a failed build never replaces the live deployment |
 
 ## Design Tokens (CSS vars in `app/globals.css`)
---terra #C4522A primary CTA (sparingly) · --cream #F5F0E8 page bg · --warm #FDFBF7 cards
---char #1A1612 text · --ash #3D3530 · --smoke #8A7F78 secondary · --border #E8E0D5
---sage #6B7A5A success · --gold #D4A853 trust · --bread #8B6914 bread accent
-Cards 18px radius, shadow 0 2px 12px rgba(26,22,18,0.06) · buttons 12px · inputs 8px · pills 20px
+`app/globals.css` is authoritative; these lines mirror it (checked 17 Nov 2026).
+--terra #6B4423 primary CTA, crust brown (sparingly; hover --terra-l #8B5A32) · --terra-on-dark #C88A52 dark surfaces only, never on cream
+--warm #FDFBF7 page bg (body) and cards · --cream #F0EBE0 bands, selected chips, secondary fills · --paper/--card #FFFFFF inputs
+--char #2B2420 text · --ash #3D3530 · --smoke #6B635D secondary · --border #E0D8CC
+--sage #6B7A5A success (--sage-text #4F5B42 for text) · --gold #9C8248 marks/borders (--gold-text #7A6332 for text) · --bread #8B6914 bread accent (--bread-l #F5EDD8)
+Cards 18px radius, shadow --card-shadow 0 2px 12px rgba(43,36,32,0.06) · buttons 12px · inputs 8px · pills 20px
+One brown filled (primary) button per screen; shared button styles in `app/lib/navButtons.ts` (NEXT_CTA, BACK_CTA, SECONDARY_CTA, SHEET_TITLE, SHEET_CLOSE, `oneLineCta` for bottom-bar labels that must not wrap). Selected chips: cream fill + brown border.
 90/10 rule: 90% neutrals, ≤10% accent. Sliders: blue slow · sage sweet spot · gold adventurous · coral challenging.
 
 ## File Map

@@ -1,4 +1,5 @@
 import type React from 'react';
+import { createElement } from 'react';
 
 // ── Step navigation ───────────────────────────
 // One Back and one Next for the whole app. These were duplicated per flow —
@@ -46,3 +47,18 @@ export const SHEET_CLOSE: React.CSSProperties = {
   background: 'var(--cream)', border: 0, fontSize: 14, color: 'var(--ash)', cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
+
+// A bottom-bar label that stays on one line (16 Nov 2026 design review): the words end in an
+// ellipsis and the arrow stays visible. The button carries the class `bh-cta-one-line` and the full
+// label as its aria-label, so the accessible name is the whole sentence however short it displays.
+export function oneLineCta(label: string): { className: string; 'aria-label': string; children: React.ReactNode } {
+  const text = label.replace(/\s*→\s*$/, '');
+  return {
+    className: 'bh-cta-one-line',
+    'aria-label': `${text} →`,
+    children: [
+      createElement('span', { key: 't', className: 'bh-cta-text' }, text),
+      createElement('span', { key: 'a', className: 'bh-cta-arrow', 'aria-hidden': 'true' }, ' →'),
+    ],
+  };
+}

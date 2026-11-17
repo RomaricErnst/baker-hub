@@ -4,6 +4,7 @@
 // Same sheet shape as SessionViewer, without the account calls.
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { SHEET_CLOSE, SHEET_TITLE } from '@/app/lib/navButtons';
 import { useLocale, useTranslations } from 'next-intl';
 import { ALL_STYLES } from '@/app/data';
 import { displayTemp, displayWeight, formatBakeDateTime, type UnitSystem } from '@/app/utils/units';
@@ -148,7 +149,8 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
     commit({ accountEventId: id });
   }
 
-  const sectionLabel: React.CSSProperties = { fontSize: 11, color: 'var(--smoke)', textTransform: 'uppercase', letterSpacing: '.08em', margin: '0 0 10px' };
+  // Sentence-case labels, as everywhere else (16 Nov 2026 design review).
+  const sectionLabel: React.CSSProperties = { fontSize: 15, fontWeight: 600, color: 'var(--char)', margin: '0 0 10px' };
   const secondary: React.CSSProperties = { width: '100%', minHeight: 44, padding: '10px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', font: 'inherit', cursor: 'pointer' };
   const divider = { height: 1, background: 'var(--border)', margin: '16px 20px 0' };
   const inProgress = journalBakeInProgress(current);
@@ -169,9 +171,10 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
         background: 'var(--warm)', color: 'var(--char)', borderRadius: '20px 20px 0 0', zIndex: 300,
         maxWidth: 680, margin: '0 auto', fontFamily: 'var(--font-ui)', fontSize: 15, lineHeight: 1.5,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-          <strong style={{ fontSize: 14 }}>{t('myBakes')}</strong>
-          <button type="button" onClick={onClose} style={{ ...secondary, width: 'auto' }}>{t('close')}</button>
+        {/* The same header as the other sheets: a 17 px title and the cream ✕ (SHEET_TITLE / SHEET_CLOSE). */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 16px 8px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <strong style={SHEET_TITLE}>{t('myBakes')}</strong>
+          <button type="button" onClick={onClose} aria-label={t('close')} style={SHEET_CLOSE}><span aria-hidden="true">✕</span></button>
         </div>
 
         <div style={{ overflowY: 'auto', flex: 1 }}>
@@ -215,10 +218,10 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
             <textarea id={`journal-note-${current.id}`} value={note} maxLength={JOURNAL_NOTE_LIMIT} rows={3}
               onChange={e => { setNote(e.target.value); if (status === 'noteSaved') setStatus(null); }}
               placeholder={t('notePlaceholder')}
-              style={{ width: '100%', boxSizing: 'border-box', padding: 12, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', font: 'inherit', fontSize: 16, resize: 'vertical' }} />
+              style={{ width: '100%', boxSizing: 'border-box', padding: 12, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--paper)', color: 'var(--char)', font: 'inherit', fontSize: 16, resize: 'vertical' }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
               <button type="button" disabled={!noteChanged} onClick={() => commit({ note }, 'noteSaved')}
-                style={{ ...secondary, width: 'auto', opacity: noteChanged ? 1 : 0.5, cursor: noteChanged ? 'pointer' : 'default' }}>{t('saveNote')}</button>
+                style={{ ...secondary, width: 'auto', ...(noteChanged ? { background: 'var(--warm)', borderColor: 'var(--terra)', color: 'var(--terra)', fontWeight: 600 } : { opacity: 0.5, cursor: 'default' }) }}>{t('saveNote')}</button>
               {status === 'noteSaved' && <span role="status" style={{ fontSize: 13, color: 'var(--sage)' }}>{t('noteSaved')}</span>}
             </div>
           </div>
@@ -265,7 +268,7 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
             </div>
           ) : <>
             {inProgress && <button type="button" onClick={() => { onResume(current); onClose(); }} style={{ ...secondary, background: 'var(--terra)', color: 'white', borderColor: 'var(--terra)', fontWeight: 600 }}>{t('resume')}</button>}
-            <button type="button" onClick={() => { onRebake(current); onClose(); }} style={inProgress ? secondary : { ...secondary, background: 'var(--terra)', color: 'white', borderColor: 'var(--terra)', fontWeight: 600 }}>{t('rebake', { date: nextWeekLabel }).replace(/ \(\)$/, '')}</button>
+            <button type="button" onClick={() => { onRebake(current); onClose(); }} style={inProgress ? secondary : { ...secondary, background: 'var(--terra)', color: 'white', borderColor: 'var(--terra)', fontWeight: 600 }}>{t('rebake', { date: nextWeekLabel }).replace(/ \(\)$/, '')} →</button>
             {signedIn && onSaveToAccount && !current.accountEventId && <>
               <button type="button" disabled={savingAccount} aria-busy={savingAccount} onClick={() => void saveToAccount()} style={secondary}>{savingAccount ? t('savingToAccount') : t('saveToAccount')}</button>
               <p style={{ margin: 0, fontSize: 12, color: 'var(--smoke)' }}>{t('saveToAccountNote')}</p>

@@ -112,7 +112,8 @@ test('cooking phase shows local step numbers while pizza advice leads into one q
    React.useState=(value)=>useState(value===1?globalStep:value);
    const html=render();
    const pizza=html.split('data-guide-title="Bake the pizzas"')[1].split('</section>')[0];
-   assert.match(pizza,/Step 2 \/ 2/);
+   // Baking & serving carries no step numbers (16 Nov 2026 design review).
+   assert.doesNotMatch(pizza,/Step 2 \/ 2/);
    assert.ok(pizza.indexOf('Bake 5–7 min')<pizza.indexOf('Start baking the pizzas'));
    assert.ok(pizza.includes('Stretch on a peel'));
    assert.doesNotMatch(pizza,/Your dough is ready|bh-guide-next/);

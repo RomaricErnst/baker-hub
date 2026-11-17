@@ -206,7 +206,7 @@
       "noOvernights": "Pas de nuit dans ce planning.",
       "nightHours": "· 23h → 7h",
       "cancel": "✕ Annuler",
-      "addCustom": "＋ Ajouter un créneau",
+      "addCustom": "+ Ajouter un créneau",
       "customTitle": "Ajouter un moment occupé",
       "customLabelPlaceholder": "Nom (facultatif), ex. Week-end",
       "from": "De",
@@ -386,17 +386,17 @@
     "startBaking": "Démarrer le mode cuisson",
     "autoAdjusted": "Planning ajusté automatiquement — une fenêtre à température ambiante était trop longue. Une phase de pousse au froid a été ajoutée pour éviter la surfermentation.",
     "steps": {
-      "mixing": "Frasage & pétrissage",
+      "mixing": "Frasage et pétrissage",
       "bulkFerm": "Pointage",
       "coldBulk": "Pousse au froid — pâton",
-      "divideBall": "Division et Boulage",
+      "divideBall": "Division et boulage",
       "coldBalls": "Pâtons au réfrigérateur",
       "restRT": "Sortir du froid — détente",
       "rtWarmup": "Détente à température ambiante",
       "finalProof": "Apprêt",
       "preheat": "Préchauffer le four",
-      "eat": "Cuisson & Dégustation !",
-      "divideShape": "Division & Façonnage",
+      "eat": "Cuisson et dégustation",
+      "divideShape": "Division et façonnage",
       "coldShaped": "Pousse au froid — façonné",
       "autolyse": "Repos"
     },
@@ -691,7 +691,7 @@
       "coldRetardBalls": "Pâtons au réfrigérateur",
       "finalProof": "Apprêt",
       "preheatOven": "Préchauffer le four",
-      "bakeEat": "Cuisson & dégustation"
+      "bakeEat": "Cuisson et dégustation"
     },
     "sectionTitles": {
       "whatToDo": "Que faire",

@@ -87,7 +87,8 @@ export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,conte
   const stepIndex=steps?steps.findIndex(step=>step.current):-1;
   const stepCount=stepIndex>=0&&steps?(fr?`${stepIndex+1} sur ${steps.length}`:`${stepIndex+1} of ${steps.length}`):null;
   // Setup says how far along the choices are; later parts say what comes next in the plan.
-  const showsNext=!!nextStep&&(section==='recipe'||section==='protocol'||section==='service')&&!recipeMeal?.active;
+  // The Recipe's own summary card already says what comes next, so its bar names the section alone.
+  const showsNext=!!nextStep&&(section==='protocol'||section==='service')&&!recipeMeal?.active;
   const barDetail=stepLabel?(stepCount?`${stepLabel} · ${stepCount}`:stepLabel):showsNext?nextStep:contextLabel;
 
   type Part={key:string;label:string;sub:string;current:boolean;locked:boolean;optional?:boolean;done?:boolean;go:()=>void};
@@ -100,6 +101,7 @@ export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,conte
     {key:'service',label:name('service'),sub:fr?SUBTITLES.service.fr:SUBTITLES.service.en,current:section==='service',locked:!recipeReady,go:()=>onChange('service')},
   ];
   const curIndex=parts.findIndex(p=>p.current);
+  const lastDone=parts.reduce((last,part,index)=>!part.current&&part.done?index:last,-1);
 
   const stepRow=(step:BakeStepLink)=><button key={step.label} type="button" disabled={step.disabled} aria-current={step.current?'step':undefined}
     className={`bh-journey-step${step.current?' is-now':''}`} onClick={()=>choose(step.onChoose)}>
@@ -145,8 +147,9 @@ export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,conte
   return <div className="bh-bake-navigator" style={{top,scrollMarginTop:top,'--bh-navigator-top':`${top}px`} as CSSProperties}>
     <button ref={trigger} type="button" className="bh-navigator-band bh-bake-navigator-trigger" aria-haspopup="dialog" aria-expanded={open} onClick={()=>{setOpenGroup(null);setChoicesOpen(false);setOpen(true);}}>
       <span className="bh-navigator-current">
-        <span className="bh-navigator-name">{currentName}</span>
-        {barDetail&&<span data-navigator-bake className="bh-navigator-bake">· {barDetail}</span>}
+        {/* One line, one run: the detail follows the name and ends in an ellipsis, never wrapping
+            into a second column that leaves "6:00pm" on its own (16 Nov 2026 design review). */}
+        <span className="bh-navigator-line"><span className="bh-navigator-name">{currentName}</span>{barDetail&&<> <span data-navigator-bake className="bh-navigator-bake">· {barDetail}</span></>}</span>
         <svg aria-hidden="true" className="bh-navigator-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5 6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
       </span>
       <span className="bh-visually-hidden">{fr?' · voir toute la fournée':' · see your whole bake'}</span>
@@ -169,7 +172,7 @@ export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,conte
               // A tick means done (choices made, recipe generated, pizzas chosen), not "earlier in the list".
               const done=!part.current&&!!part.done;
               const passed=!part.current&&curIndex>=0&&index<curIndex;
-              return <li key={part.key} className={[part.current?'is-current':'',done?'is-done':'',passed?'is-passed':'',part.locked?'is-locked':'',part.optional?'is-optional':''].filter(Boolean).join(' ')}>
+              return <li key={part.key} className={[part.current?'is-current':'',done?'is-done':'',passed?'is-passed':'',part.locked?'is-locked':'',part.optional?'is-optional':'',index<lastDone?'is-line-full':'',index===lastDone&&index>0?'is-line-top':''].filter(Boolean).join(' ')}>
                 <span aria-hidden="true" className="bh-journey-node"/>
                 <button type="button" disabled={part.locked} aria-current={part.current?'page':undefined} aria-describedby={part.locked?`bh-journey-sub-${part.key}`:undefined} onClick={()=>choose(part.go)} className="bh-journey-part">
                   <span className="bh-journey-name"><span {...(part.key==='meal'?{}:{'data-destination-label':''})}>{part.label}</span>{part.current&&<span aria-hidden="true" className="bh-journey-here">{fr?'Vous êtes ici':'You are here'}</span>}</span>
