@@ -1903,8 +1903,10 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   const probeBulkFactorRef = useRef<number | null>(null);
   const probeRatioRef = useRef<1 | 2 | 4 | 5 | 10 | null>(null);
   // A fixed-mix probe whose plan fails with the bake-relative revival start retries with
-  // the revival started from that mix (deriveStarterPeakTime, evaluateStarterCandidate).
+  // the revival started from that mix (deriveStarterPeakTime, evaluateStarterCandidate),
+  // only inside the requested bake's fallback passes (revivalRetryRef, searchStarterCandidate).
   const probeRevivalFromMixRef = useRef(false);
+  const revivalRetryRef = useRef(false);
   const solverBulkFactor = () => probeBulkFactorRef.current ?? starterBulkFactor;
   const solverBulkDeltaH = () => isSourdough && styleKey ? sourdoughBulkH(styleKey, kitchenTemp) * (solverBulkFactor() - 1) : 0;
   function thermalInputs(method:string,inFridge:boolean){
@@ -6381,9 +6383,8 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         for (const cand of candidates_r) {
           // Per-ratio candidates carry their own actionTimesMs (populated by
           // pushCand_r at gen time). candidateValid reads cand.actionTimesMs
-          // directly — no params needed. A ratio is only clear when the dough
-          // steps of its mix are too (folds, fridge, shaping: doughStepsClear).
-          if (candidateValid(cand) && doughStepsClear(bakeMs - cand.mixHBF * 3600000)) {
+          // directly — no params needed.
+          if (candidateValid(cand)) {
             bestR = cand;
             foundValidR = true;
             break;
@@ -6401,18 +6402,6 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       //   1) ratios that clear all blockers beat those that don't
       //   2) within same clear-state, higher combinedScore wins
       //   3) tie within RATIO_IMPROVE_THRESHOLD → prefer ratio closer to baker's usual
-      // Dough steps of a mix against the busy times (the production builder,
-      // as the bounded search checks them), memoised per mix for this solve.
-      const _doughClearMemo = new Map<number, boolean>();
-      function doughStepsClear(mixMs: number): boolean {
-        if (!effectiveBlocks.length || !styleKey) return true;
-        const known = _doughClearMemo.get(mixMs);
-        if (known !== undefined) return known;
-        const draft = buildSchedule(new Date(mixMs), et, effectiveBlocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, mixingBatches, true, solverBulkFactor());
-        const clear = findAvailabilityConflicts(draft.availabilityActions ?? [], effectiveBlocks, Date.now()).length === 0;
-        _doughClearMemo.set(mixMs, clear);
-        return clear;
-      }
       const RATIOS_ARR: (1 | 2 | 4 | 5 | 10)[] = [1, 2, 4, 5, 10];
       const RATIO_IMPROVE_THRESHOLD = 18;
       let chosenRatio: 1 | 2 | 4 | 5 | 10 = lastFeedRatio;
@@ -6676,7 +6665,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     const checked=evaluateStarterCandidateOnce(pins,candidateBlocks,expectedEvents,preserveStorage,committedResult,candidateBake);
     // Fridge revival at a fixed mix: when the bake-relative revival start finds no plan,
     // retry once with the revival started from this mix (deriveStarterPeakTime, fromMix).
-    if(checked.valid||committedResult||completedMixAt!==undefined||probeRevivalFromMixRef.current||pins.mix===null||!candidateBlocks.length
+    if(!revivalRetryRef.current||checked.valid||committedResult||completedMixAt!==undefined||probeRevivalFromMixRef.current||pins.mix===null||!candidateBlocks.length
       ||planningMode!=='last_fed'||starterLocation!=='fridge'||lastFedAge===null||revivalCycles(lastFedAge,starterMature,tang)<1)return checked;
     probeRevivalFromMixRef.current=true;
     try{const retry=evaluateStarterCandidateOnce(pins,candidateBlocks,expectedEvents,preserveStorage,committedResult,candidateBake);return retry.valid?retry:checked;}
@@ -6781,28 +6770,33 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   }
 
   function searchStarterCandidate(pins:StarterPins,candidateBlocks:AvailabilityBlock[],preserveStorage=true,candidateBake:Date=pendingEatTime,ratios=false,holdRatio=false) {
+    // Pass A is the established search, unchanged: whatever it finds is the plan.
     // holdRatio: a plan found at the current ratio keeps it (it recommends that
     // ratio), so a raised-levain plan is not re-timed by the ratio-apply effect.
-    let found:ReturnType<typeof searchStarterCandidateAtRatio>=null;
-    if(holdRatio&&probeRatioRef.current===null){
-      probeRatioRef.current=nextFeedRatio;
-      try{found=searchStarterCandidateAtRatio(pins,candidateBlocks,preserveStorage,candidateBake);}finally{probeRatioRef.current=null;}
-    }else found=searchStarterCandidateAtRatio(pins,candidateBlocks,preserveStorage,candidateBake);
-    // The requested bake (replanStarter) may time the levain with another
-    // last-feed ratio when the current one finds no plan: an evening mix after
-    // work needs the levain build fed before work (17 Nov 2026 cool-kitchen
-    // review). Nearest the baker's usual ratio first; 'keep' and a chosen
-    // ratio are never changed. The probe recommends its ratio, which the
-    // ratio-apply effect then sets, so the plan and the shown ratio agree.
-    if(found||!ratios||ratioMode!=='recommend'||nextFeedRatioOverride!==null||planningMode!=='last_fed'||probeRatioRef.current!==null)return found;
-    const order=([1,2,4,5,10] as const).filter(r=>r!==nextFeedRatio)
-      .sort((a,b)=>Math.abs(Math.log(a/lastFeedRatio))-Math.abs(Math.log(b/lastFeedRatio))||a-b);
-    for(const r of order){
-      probeRatioRef.current=r;
-      try{const checked=searchStarterCandidateAtRatio(pins,candidateBlocks,preserveStorage,candidateBake);if(checked)return checked;}
-      finally{probeRatioRef.current=null;}
-    }
-    return null;
+    const atRatio=(ratio:typeof nextFeedRatio|null)=>{
+      const previous=probeRatioRef.current;
+      if(ratio!==null)probeRatioRef.current=ratio;
+      try{return searchStarterCandidateAtRatio(pins,candidateBlocks,preserveStorage,candidateBake);}finally{probeRatioRef.current=previous;}
+    };
+    const found=atRatio(holdRatio&&probeRatioRef.current===null?nextFeedRatio:null);
+    if(found||!ratios||probeRatioRef.current!==null||revivalRetryRef.current)return found;
+    // Fallback passes, for the requested bake only (replanStarter), when pass A
+    // finds nothing (17 Nov 2026 cool-kitchen review: an evening mix after work
+    // needs the levain build fed before work).
+    //  B: a fridge revival may start from each fixed mix (fromMix), at the current ratio.
+    //  C: the same at the other last-feed ratios, nearest the baker's usual first;
+    //     never in 'keep' or with a chosen ratio.
+    // Every fallback probe recommends the ratio it was solved at, so the plan and
+    // the applied ratio agree.
+    revivalRetryRef.current=true;
+    try{
+      const held=atRatio(nextFeedRatio);
+      if(held||ratioMode!=='recommend'||nextFeedRatioOverride!==null||planningMode!=='last_fed')return held;
+      const order=([1,2,4,5,10] as const).filter(r=>r!==nextFeedRatio)
+        .sort((a,b)=>Math.abs(Math.log(a/lastFeedRatio))-Math.abs(Math.log(b/lastFeedRatio))||a-b);
+      for(const r of order){const checked=atRatio(r);if(checked)return checked;}
+      return null;
+    }finally{revivalRetryRef.current=false;}
   }
 
   function searchStarterCandidateAtRatio(pins:StarterPins,candidateBlocks:AvailabilityBlock[],preserveStorage=true,candidateBake:Date=pendingEatTime) {

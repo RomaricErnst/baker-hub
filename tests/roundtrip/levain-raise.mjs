@@ -87,6 +87,21 @@ for(const o of [{busy:'none'},{busy:'none',temp:25},{busy:'nights',temp:25},{bus
  assert.equal(b.rec.start,a.rec.start,`${JSON.stringify(o)}: same mix`);
  assert.deepEqual(b.events,a.events,`${JSON.stringify(o)}: same starter plan`);
 }
+// Plans the established search finds are not re-timed by the fallbacks (17 Nov 2026
+// follow-up: these nights-only bakes moved their mix or ratio when the from-mix revival
+// and a Stage 2 availability check ran outside the fallback passes).
+for(const [o,mixAt,buildAt,ratio] of [
+ [{busy:'nights',bake:+new Date(2026,10,21,12,0),mixer:'hand'},new Date(2026,10,20,8,0),new Date(2026,10,19,22,45),1],
+ [{busy:'nights',temp:25,bake:+new Date(2026,10,21,8,0),mixer:'hand'},new Date(2026,10,20,16,45),new Date(2026,10,20,8,30),4],
+ [{busy:'nights',temp:25,bake:+new Date(2026,10,21,8,0),mixer:'hand',loc:'rt',age:'today',fedH:-11.5},new Date(2026,10,20,7,45),new Date(2026,10,19,22,45),4],
+]){
+ const r=await run(o),label=JSON.stringify(o);
+ assert.ok(r.kept&&r.valid,`${label}: kept`);
+ assert.equal(+new Date(r.rec.start),+mixAt,`${label}: mix ${fmt(+new Date(r.rec.start))}`);
+ const last=r.feeds.filter(e=>e.k==='pre_mix').at(-1);
+ assert.equal(last?.t,+buildAt,`${label}: levain build ${last&&fmt(last.t)}`);
+ assert.equal(r.rec.nextRatio,ratio,`${label}: ratio`);
+}
 assert.deepEqual(errors,[],'no runtime errors');
 console.log('levain-raise: ok');
 process.exit(0);
