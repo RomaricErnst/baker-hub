@@ -1096,6 +1096,15 @@ function buildSchedulePhases(
         divideBallTime = new Date(scan);
         break;
       }
+      // Still no slot, and the loaf proofs shaped in the fridge and bakes from it:
+      // shape at the end of bulk, with no bulk cold (bulk → shape → overnight cold
+      // proof, the after-work levain plan: 17 Nov 2026 review). The shaped loaf
+      // spends the block in the fridge; the cold spell becomes one, not shorter.
+      const bulkEnd = new Date(Math.ceil(+coldRetard1Start / 900000) * 900000);
+      if (!availableDivide && fromFridge && +bulkEnd + (divideH + minCold2H) * 3600000 <= +bakeTime && !divideIsBlocked(bulkEnd)) {
+        availableDivide = new Date(bulkEnd);
+        divideBallTime = new Date(bulkEnd);
+      }
     }
     if (!constrainedExit && availableDivide) divideBallTime = availableDivide;
     const coldRetard1End = divideBallTime;

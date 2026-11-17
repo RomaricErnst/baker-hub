@@ -49,12 +49,17 @@ function Harness({ sc }: { sc: any }) {
     if (opts?.timingOverrides) rec.overrides = JSON.stringify(opts.timingOverrides);
   }, [rec]);
 
-  const schedule=useMemo(()=>sc.full?buildSchedule(startTime,eatTime,blocks,sc.temp,45,'hand',sc.style,4,sc.batches??1,!sc.commercial):undefined,[startTime,eatTime,blocks,sc]);
+  // sc.pageFactor: pass the starter-% bulk factor to buildSchedule as page.tsx does
+  // (opt-in so the historical cases keep their schedule). sc.mixer / sc.fridgeTemp
+  // default to the historical 'hand' and 6 °C.
+  const mixer=sc.mixer??'hand';
+  const schedule=useMemo(()=>sc.full?buildSchedule(startTime,eatTime,blocks,sc.temp,45,mixer,sc.style,sc.numItems??4,sc.batches??1,!sc.commercial,sc.pageFactor?bulkFactor:1):undefined,[startTime,eatTime,blocks,sc,bulkFactor,mixer]);
+  w.__h.schedule=schedule;
   return (
     <SchedulePicker
       startTime={startTime} eatTime={eatTime} blocks={blocks} preheatMin={45}
       styleKey={sc.style} kitchenTemp={sc.temp} starterBulkFactor={bulkFactor} replanPending={replanPending} onReplanHandled={()=>setReplanPending(false)} bakeType={sc.commercial||sc.full&&sc.style==='sourdough'?'pizza':'bread'} isSourdough={!sc.commercial} prefermentType={sc.commercial?'poolish':'levain'} mode="custom"
-      {...(sc.full?{schedule,mixerType:'hand' as const,numItems:4,mixingBatches:sc.batches??1}:{})}
+      {...(sc.full?{schedule,mixerType:mixer,numItems:sc.numItems??4,mixingBatches:sc.batches??1}:{})}
       onChange={onChange}
       starterLocation={starterLocation} onStarterLocationChange={(l) => { setStarterLocation(l); rec.loc = l; }}
       planningMode="last_fed"
@@ -65,7 +70,7 @@ function Harness({ sc }: { sc: any }) {
       nextFeedRatioOverride={nextFeedRatioOverride} onNextFeedRatioOverrideChange={setNextFeedRatioOverride}
       ratioMode={ratioMode} onRatioModeChange={setRatioMode}
       tang={tang} onTangChange={setTang}
-      fridgeTemp={6} flourStrength={1.0}
+      fridgeTemp={sc.fridgeTemp??6} flourStrength={1.0}
       {...(PAGE ? { timingOverrides, confirmedPlan: accepted === key(startTime, blocks), savedStarterEvents: starterEvents,
                     starterTimingValid } : {})}
       onStarterEventsChange={(ev) => { if (PAGE) setStarterEvents(ev || []); rec.events = (ev || []).map((e: any) => `${e.kind ?? e.type}@${e.time ? +new Date(e.time) : ''}`).join(','); }}
