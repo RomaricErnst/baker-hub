@@ -94,6 +94,8 @@ interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   addSeeds?: boolean;
   phase?: 'preparation' | 'cooking';
   active?: boolean;
+  /** Preparation reports the step the clock says the baker is on, or the next one, so the bar names the same step. */
+  onClockStep?: (step: { kind: 'now' | 'next'; title: string; at: number } | null) => void;
   onNavigateToCooking?: () => void;
   onNavigateToPreparation?: () => void;
   recipe?: import('../utils').RecipeResult | null;
@@ -890,7 +892,7 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   feedRatio = 1, starterLocation = 'rt',
   units, locale,
   afterSteps, onBackToRecipe, backSection, onOverviewChange, onNavigateToPizzaParty, pizzaActionLabel, pizzasChosen, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
-  phase, active = true, onNavigateToCooking, onNavigateToPreparation, progressTarget, pizzaDiameterCm,
+  phase, active = true, onClockStep, onNavigateToCooking, onNavigateToPreparation, progressTarget, pizzaDiameterCm,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
   const l = locale === 'fr' ? 'fr' : 'en';
@@ -1031,6 +1033,8 @@ export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,prepar
   // Pain de seigle: a rye paste, not a gluten dough. No folds and no poke test;
   // it is judged by the cracks on its surface.
   const isRye         = styleKey === 'pain_seigle';
+  // A short rise that goes straight into the fridge: most of the growth happens cold.
+  const shortColdBulk = !isRye && !isSourdough && !!schedule.coldRetardStart && schedule.bulkFermHours < 2;
   const pieceWeight   = (recipe?.totalDough ?? numItems * 750) / Math.max(1, numItems);
   // Lean breads without a protocol get style-specific oven cards (real
   // temperatures and times); null keeps the oven-keyed message steps.
@@ -1290,6 +1294,26 @@ Actual dough condition and equipment may differ from these estimates.`;
     const [step, at] = anchorDue ?? (due.length ? due[due.length - 1] : pending[0]);
     return { step, kind: (at <= now ? 'now' : 'next') as 'now' | 'next', started: due.length > 0 || doneSteps.size > 0, title: stepRefs.current[step]?.dataset.guideTitle ?? '' };
   })();
+  const markAt = guideMark ? stepTimesCtx?.times.get(guideMark.step) ?? 0 : 0;
+  useEffect(() => {
+    if (phase !== 'preparation') return;
+    onClockStep?.(guideMark ? { kind: guideMark.kind, title: guideMark.title, at: markAt } : null);
+  }, [phase, guideMark?.kind, guideMark?.title, markAt]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Coming back to the app (reopened, or back from another app): open the step that became due while
+  // away, not the card last viewed. Only on return, never while the baker is reading (16 Nov review).
+  const returning = useRef(true);
+  useEffect(() => {
+    const seen = () => { try { localStorage.setItem(progressKey.replace('bh_guide_done_v2:', 'bh_guide_seen_v1:'), String(Date.now())); } catch {} };
+    const onVisibility = () => { if (document.visibilityState === 'hidden') seen(); else { returning.current = true; clockTick(); } };
+    document.addEventListener('visibilitychange', onVisibility); window.addEventListener('pagehide', seen);
+    return () => { seen(); document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('pagehide', seen); };
+  }, [progressKey]);
+  useEffect(() => {
+    if (!returning.current || !active || phase !== 'preparation' || loadedProgressKey !== progressKey || !markAt) return;
+    returning.current = false;
+    let seenAt = 0; try { seenAt = Number(localStorage.getItem(progressKey.replace('bh_guide_done_v2:', 'bh_guide_seen_v1:'))) || 0; } catch {}
+    if (guideMark?.kind === 'now' && seenAt > 0 && markAt > seenAt && currentStep !== guideMark.step) navigateGuideStep(guideMark.step);
+  });
   let firstPendingPreparation = 0;
   let stepNum = 0;
   let lastStep = 0;
@@ -1863,11 +1887,12 @@ Actual dough condition and equipment may differ from these estimates.`;
           ]} />}
         </Section>
 
-        <p style={{fontSize:15,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{isRye ? (l==='fr'?'La pâte a un peu gonflé et de fines fissures apparaissent en surface.':'The dough has risen a little and fine cracks show on its surface.') : l==='fr'?'La pâte est aérée et se tient.':'Airy and holding its shape.'}</p>
+        <p style={{fontSize:15,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{shortColdBulk ? (l==='fr'?'La pâte est lisse ; elle lèvera au froid.':'Smooth; it rises in the fridge.') : isRye ? (l==='fr'?'La pâte a un peu gonflé et de fines fissures apparaissent en surface.':'The dough has risen a little and fine cracks show on its surface.') : l==='fr'?'La pâte est aérée et se tient.':'Airy and holding its shape.'}</p>
 
         {!breadProtocol && <StepExtras
           tips={<>
-            <Section icon="" title={l === 'fr' ? 'Le pointage est terminé quand' : 'Watch for — the bulk (first rise) is done when'}>
+            {/* A short rise that goes straight to the fridge shows little growth: volume targets would only worry (16 Nov 2026 review). */}
+            {!shortColdBulk && <Section icon="" title={l === 'fr' ? 'Le pointage est terminé quand' : 'Watch for — the bulk (first rise) is done when'}>
               <Bullets items={isRye ? (l === 'fr' ? [
                 'De fines fissures se dessinent à la surface',
                 'La pâte a gonflé, sans doubler',
@@ -1883,7 +1908,7 @@ Actual dough condition and equipment may differ from these estimates.`;
               <div style={{ marginTop: '8px' }}>
                 <LearnLink term="bulk_fermentation" label={l === 'fr' ? 'Guide du pointage' : 'Bulk fermentation guide'} onOpen={setLearnTerm} showSparkle={true} />
               </div>
-            </Section>
+            </Section>}
             <Section icon={null} title={t('sectionTitles.pitfalls')}>
               <Bullets items={isRye ? [
                 l === 'fr' ? 'Pétrir ou rabattre une pâte de seigle la rend plus collante, pas plus forte : laissez-la reposer.' : 'Kneading or folding rye dough makes it stickier, not stronger: leave it to rest.',

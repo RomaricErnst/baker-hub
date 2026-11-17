@@ -120,7 +120,8 @@ export type RoundsTakeOut = { takeOutMin: number } | { fromFridge: true } | null
  *  (16 Nov 2026, replacing the 14 Nov "N rounds of up to K" estimate). */
 export function leanBreadBake(styleKey: string, pieceWeightG: number, ovenType: string | undefined, count = 1, takeOut: RoundsTakeOut = null): LeanBreadBake | null {
   const base = leanBreadBakeOneLoad(styleKey, pieceWeightG, ovenType, count);
-  if (!base || count < 2) return base;
+  // Two pieces fit any oven; from three, the baker may need rounds (17 Nov review: shown for 2 baguettes).
+  if (!base || count < 3) return base;
   const lead = takeOut && 'takeOutMin' in takeOut && takeOut.takeOutMin > 0 ? takeOut.takeOutMin : null;
   const fromFridge = !!takeOut && 'fromFridge' in takeOut;
   const roundsStep = (lang: Lang) => {

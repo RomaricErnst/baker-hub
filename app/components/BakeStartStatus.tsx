@@ -12,6 +12,12 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
   const status=preparationStatus(plannedAt,execution,now);
   // A "Made now" button hours ahead invites a mistaken tap: offer it from 30 minutes before.
   if(status==='planned'&&(!preparing||plannedAt-now>30*60_000))return null;
+  // At the planned minute the honest answer is "starting now": for the first 45 minutes it is a start,
+  // not a question; in Preparation the step itself (marked Now) takes over (16 Nov retention review).
+  const starting=!execution&&status==='unconfirmed'&&now-plannedAt<45*60_000;
+  if(starting&&preparing)return null;
+  // Once confirmed, the note stays for half an hour, not for the rest of the bake (retention review).
+  if(execution&&now-(execution.recordedAt??execution.actualAt)>30*60_000)return null;
   const fmt=(at:number)=>formatBakeDateTime(new Date(at),fr?'fr':'en');
   const noun=method==='none'?(fr?'la pâte':'the dough'):method==='biga'?(fr?'la biga':'the biga'):(fr?'le poolish':'the poolish');
   const editTime=(at:number)=>{const date=new Date(at);date.setMinutes(date.getMinutes()-date.getTimezoneOffset());setTime(date.toISOString().slice(0,16));setDifferent(true);};
@@ -22,6 +28,10 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
       <p>{fr?'Les ingrédients utilisés sont conservés. Seules les étapes restantes peuvent changer.':'Ingredients already used are kept. Only remaining steps can change.'}</p>
       <div className="bh-start-actions">{!preparing&&<button type="button" onClick={onNext}>{fr?'Aller à la préparation →':'Go to preparation →'}</button>}<button type="button" onClick={()=>editTime(execution.actualAt)}>{fr?'Modifier l’heure':'Change time'}</button><button type="button" className="bh-start-link" onClick={onUndo}>{fr?'Annuler la confirmation':'Undo completion'}</button></div>
     </>:<>
+      {starting?<>
+        <p><strong>{method==='none'?(fr?'C’est l’heure de pétrir':'Time to mix the dough'):(fr?`C’est l’heure de préparer ${noun}`:`Time to make ${noun}`)}</strong></p>
+        <div className="bh-start-actions"><button type="button" className="bh-start-primary" onClick={onNext}>{fr?'Je commence →':'Start now →'}</button><button type="button" onClick={()=>onMade(plannedAt)}>{fr?'Déjà fait':'Already done'}</button></div>
+      </>:<>
       <p><strong>{method==='none'?(status==='unconfirmed'?(fr?'Avez-vous pétri la pâte ?':'Have you mixed the dough?'):(fr?'Pétrir la pâte':'Mix the dough')):status==='unconfirmed'?(fr?`Avez-vous préparé ${noun} ?`:`Have you made ${noun}?`):(fr?`Préparer ${noun}`:`Make ${noun}`)}</strong></p>
       <div className="bh-start-actions">
         {status==='unconfirmed'&&<button type="button" className="bh-start-primary" onClick={()=>onMade(plannedAt)}>{fr?'Oui, le':'Yes, at'} {fmt(plannedAt)}</button>}
@@ -30,6 +40,7 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
       </div>
       <button type="button" className="bh-start-link" onClick={()=>setDifferent(!different)}>{fr?'À une autre heure ?':'Different time?'}</button>
       {!preparing&&<button type="button" className="bh-start-link" onClick={onRecipe}>{fr?'Voir la recette':'View recipe'}</button>}
+      </>}
     </>}
     {different&&<div className="bh-start-actions"><label>{method==='none'?(fr?'Heure du pétrissage':'Mixing time'):(fr?'Heure réelle':'Actual time')}<input type="datetime-local" value={time} onChange={e=>setTime(e.target.value)}/></label><button type="button" disabled={!valid} onClick={()=>{onMade(parsed);setDifferent(false);}}>{fr?'Enregistrer':'Set time'}</button>{!execution&&<button type="button" onClick={()=>{onMade(now);setDifferent(false);}}>{fr?'Maintenant':'Now'}</button>}</div>}
   </section>;
