@@ -1,7 +1,7 @@
 const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 
 // The last step of Baking & serving closes the bake: "How did it turn out?" opens
-// this bake's journal entry, and "Start your next bake" starts a new one while
+// this bake's journal entry, and "Start your next bake" bakes it again (a new entry) while
 // this bake stays in My bakes.
 const journal=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_journal_v1')||'[]'));
 async function generate(page,fr){
@@ -52,8 +52,9 @@ for(const locale of ['en','fr'])test(`${locale}: the bake ends with the journal 
  await expect(sheet).toBeVisible();
  await sheet.getByRole('button',{name:fr?'Fermer':'Close',exact:true}).first().tap();
  await closing.getByRole('button',{name:fr?'Préparer ma prochaine fournée':'Start your next bake',exact:true}).tap();
- // A new bake starts at the beginning; the finished one is still in the journal.
- await expect(page.getByRole('button',{name:'Pizza',exact:true})).toBeVisible();
+ // The next bake is this one again, as Bake again (17 Nov 2026 retention round 2): the kitchen is asked
+ // again first; the finished one is still in the journal.
+ await expect(page.locator('[data-kitchen-slider]:visible')).toBeVisible();
  expect((await journal(page)).some(row=>row.id===entry.id)).toBe(true);
  expect(errors).toEqual([]);
 });

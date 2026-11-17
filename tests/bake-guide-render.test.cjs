@@ -127,7 +127,8 @@ test('cooking phase shows local step numbers while pizza advice leads into one q
    let zeroState=0;
    React.useState=(value)=>{ if(value===0){zeroState++;if(zeroState===1)return useState(1);if(zeroState===2)return useState(globalStep);} return useState(value); };
    const preparation=render().split('data-guide-title="Start Dough"')[1].split('</section>')[0];
-   assert.ok(preparation.includes(`Step 1 / ${globalStep-2}`),'preparation count excludes cooking stages');
+   // No step numbers on the cards (CLAUDE.md; 17 Nov 2026 retention round 2).
+   assert.doesNotMatch(preparation,/Step \d+ \/ \d+/,'preparation cards carry no step numbers');
  } finally { React.useState=useState; }
 });
 

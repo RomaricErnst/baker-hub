@@ -106,7 +106,8 @@ for(const locale of ['en','fr'])test(`${locale}: a yeast amount too slow for the
  await offer.tap();
  await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBe(minimum);
  await expect(note).toHaveCount(0);
- await fineTune.getByRole('button',{name:fr?'Retour à la recette':'Back to Recipe',exact:true}).tap();
+ // The yeast changed since the recipe was made, so the bar offers to update it (a restored bake keeps its baseline).
+ await fineTune.getByRole('button',{name:fr?'Mettre à jour la recette':'Update recipe',exact:true}).tap();
  // The plan regenerates around the fitting amount, starting in the future.
  await expect.poll(async()=>{const s=await stored(page);return s.recipeGenerated&&!s.protocolStale&&s.startTime>NOW&&s.acceptedStartTime===s.startTime;},{timeout:20000}).toBe(true);
  expect((await stored(page)).eatTime).toBe(bake);

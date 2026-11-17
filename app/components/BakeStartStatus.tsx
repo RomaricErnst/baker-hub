@@ -16,8 +16,10 @@ import {useState} from 'react';
 import type {BakeExecution} from '../utils/bakeExecution';
 import {preparationStatus} from '../utils/bakeExecution';
 
-export default function BakeStartStatus({fr,method,plannedAt,now,execution,preparing,onMade,onNotYet,onRecipe,onNext,onUndo}:{
+export default function BakeStartStatus({fr,method,plannedAt,now,execution,preparing,superseded=false,onMade,onNotYet,onRecipe,onNext,onUndo}:{
   fr:boolean;method:'none'|'poolish'|'biga';plannedAt:number;now:number;execution?:BakeExecution;preparing:boolean;
+  /** A later step of the plan is now current: the confirmation note has done its job. */
+  superseded?:boolean;
   onMade:(at:number)=>void;onNotYet:()=>void;onRecipe:()=>void;onNext:()=>void;onUndo:()=>void;
 }) {
   const [different,setDifferent]=useState(false),[time,setTime]=useState('');
@@ -30,6 +32,9 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
   if(starting&&preparing)return null;
   // Once confirmed, the note stays for half an hour, not for the rest of the bake (retention review).
   if(execution&&now-(execution.recordedAt??execution.actualAt)>30*60_000)return null;
+  // Once a later step is the one to do, the note goes (17 Nov 2026 retention round 2); right after the tap it
+  // stays a few minutes, for Change time and Undo.
+  if(execution&&superseded&&now-(execution.recordedAt??execution.actualAt)>5*60_000)return null;
   const fmt=(at:number)=>statusTime(at,now,fr);
   const noun=method==='none'?(fr?'la pâte':'the dough'):method==='biga'?(fr?'la biga':'the biga'):(fr?'le poolish':'the poolish');
   const editTime=(at:number)=>{const date=new Date(at);date.setMinutes(date.getMinutes()-date.getTimezoneOffset());setTime(date.toISOString().slice(0,16));setDifferent(true);};

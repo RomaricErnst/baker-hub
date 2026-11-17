@@ -229,3 +229,46 @@ export function dueJournalEntry(now = Date.now()): JournalEntry | null {
   }
   return best?.entry ?? null;
 }
+
+/** Plan steps spent waiting in the fridge: the row names what comes after them. */
+const WAITING_STEPS = new Set(['cold_1', 'cold_2', 'cold', 'rest', 'autolyse', 'poolish_ferment', 'biga_ferment']);
+
+export interface LiveJournalBake {
+  entry: JournalEntry;
+  /** The moment the row is ordered by: the step under way, or the next one. */
+  at: number;
+  /** The plan step's own label, as saved with the recipe; null for snapshots without steps. */
+  label: string | null;
+  /** True when the step is under way now (no time is shown). */
+  current: boolean;
+}
+
+/** Every bake under way on this device, one row each, the most pressing first: the step under way
+ *  (unless it is a wait in the fridge), else the next step with its time. Same bakes as dueJournalEntry
+ *  considers (in progress, not finished); a bake two hours past its time is over (17 Nov 2026 retention round 2). */
+export function liveJournalBakes(now = Date.now()): LiveJournalBake[] {
+  const rows: LiveJournalBake[] = [];
+  for (const entry of listJournal()) {
+    if (entry.eatTime == null || !journalBakeInProgress(entry, now) || entry.session?.bakedDone || !entry.session?.recipeGenerated) continue;
+    if (entry.eatTime + 2 * 3600000 <= now) continue;
+    const steps = (entry.session.computedRecipe?.timelineSteps ?? [])
+      .filter(step => Number.isFinite(step.time) && typeof step.label === 'string' && step.label)
+      .sort((a, b) => a.time - b.time);
+    if (steps.length) {
+      const started = steps.filter(step => step.time <= now);
+      // The rest inside the mix belongs to the mix.
+      const under = started.at(-1)?.id === 'autolyse' && started.length > 1 ? started.at(-2) : started.at(-1);
+      const next = steps.find(step => step.time > now);
+      if (under && !WAITING_STEPS.has(under.id)) rows.push({ entry, at: under.time, label: under.label, current: true });
+      else if (next) rows.push({ entry, at: next.time, label: next.label, current: false });
+      else if (under) rows.push({ entry, at: under.time, label: under.label, current: true });
+      continue;
+    }
+    const s = entry.session as { startTime?: unknown; prefOffsetH?: unknown; prefermentType?: unknown };
+    const start = finite(s.startTime);
+    const pref = start != null && s.prefermentType !== 'none' && s.prefermentType !== 'levain' && finite(s.prefOffsetH) ? start - (s.prefOffsetH as number) * 3600000 : null;
+    const at = [pref, start, entry.eatTime].filter((t): t is number => t != null && t > now)[0] ?? entry.eatTime;
+    rows.push({ entry, at, label: null, current: false });
+  }
+  return rows.sort((a, b) => (a.current === b.current ? a.at - b.at || (a.entry.eatTime ?? 0) - (b.entry.eatTime ?? 0) : a.current ? -1 : 1));
+}

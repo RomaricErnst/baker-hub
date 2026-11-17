@@ -712,7 +712,9 @@ for(const bread of [false,true])test(`clean preparation ${bread?'bread':'pizza'}
  await expect(page.getByRole('region',{name:'À préparer',exact:true})).toHaveCount(0);
  const progress=page.locator('.bh-local-progress .bh-step-trigger');
  await page.getByRole('button',{name:'Commencer la préparation →',exact:true}).tap();
- await expect(page.locator('.bh-local-progress')).toContainText(/Étape 1 \/ \d+/);
+ // No step numbers (CLAUDE.md): the progress line keeps only the way back to the overview (17 Nov 2026).
+ await expect(progress).toBeVisible();
+ await expect(page.locator('.bh-local-progress')).not.toContainText(/Étape \d/);
  const current=page.locator('[data-guide-phase="preparation"]:visible');
  await expect(current).toHaveCount(1);
  await expect(current.getByRole('heading',{level:2})).toBeVisible();
@@ -722,9 +724,11 @@ for(const bread of [false,true])test(`clean preparation ${bread?'bread':'pizza'}
  await expect(page.locator('.bh-local-progress')).toBeEmpty();
  expect(await page.locator('[data-guide-phase="preparation"]:visible').count()).toBeGreaterThan(1);
  await page.locator('[data-guide-phase="preparation"]:visible').first().getByRole('button').first().tap();
- await expect(page.locator('.bh-local-progress')).toContainText(/Étape 1 \/ \d+/);
+ await expect(progress).toBeVisible();
+ const firstTitle=await current.getAttribute('data-guide-title');
  await current.locator('.bh-guide-next').tap();
- await expect(page.locator('.bh-local-progress')).toContainText(/Étape 2 \/ \d+/);
+ await expect(current).not.toHaveAttribute('data-guide-title',firstTitle);
+ await expect(page.locator('.bh-local-progress')).not.toContainText(/Étape \d/);
  await noOverflow(page);
 });
 
