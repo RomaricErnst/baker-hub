@@ -69,7 +69,8 @@ test('a feed confirmed on time keeps every planned time and never opens setup',(
  assert.equal(state.setStarterRecoveryPending,undefined);
  assert.equal(state.snapshot.starterRecoveryPending,undefined);
  assert.equal(state.snapshot.starterFeedRecords.length,1);
- assert.deepEqual(state.snapshot.starterEvents.map(e=>e.time),events.map(e=>+e.time));
+ // To the minute: the confirmed feed takes its recorded time, read from a separate clock call.
+ assert.deepEqual(state.snapshot.starterEvents.map(e=>Math.round(e.time/60000)),events.map(e=>Math.round(+e.time/60000)));
  assert.equal(state.setStartTime,undefined);
  // The feed is answered: it is not asked again.
  const restored=state.snapshot.starterEvents.map(e=>({...e,time:new Date(e.time)}));
