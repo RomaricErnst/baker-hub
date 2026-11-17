@@ -151,6 +151,8 @@ jobs:
         run: node tests/roundtrip/peak-consistency.mjs .ci-tools/starter-path.js
       - name: After a starter % edit, every feed waits for the previous peak on a 15-minute mark
         run: node tests/roundtrip/starter-pct.mjs .ci-tools/starter-path.js
+      - name: After-work levain in a cool kitchen raises the levain % only when it must and can
+        run: node tests/roundtrip/levain-raise.mjs .ci-tools/starter-path.js
 
   schedule-repair-grid:
     runs-on: ubuntu-latest

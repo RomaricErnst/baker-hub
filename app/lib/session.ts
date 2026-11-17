@@ -119,6 +119,8 @@ export interface SessionData {
   yeastPctOverride?: number;
   /** Custom levain: baker's starter % of flour; the bulk is timed to it. */
   starterPctOverride?: number;
+  /** Levain without a baker %: the % the planner raised it to for this plan's bulk. */
+  autoStarterPct?: number;
   starterEvents?: Array<Omit<StarterEvent, 'time'|'bellPeakTime'|'bellStartTime'> & {time:number;bellPeakTime?:number;bellStartTime?:number}>;
   starterState?: string;
   starterLocation?: string;

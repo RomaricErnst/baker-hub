@@ -6,7 +6,7 @@ import { loadProfile, updateProfile, DEFAULT_BLOCKERS, type StandardBlocker } fr
 import { formatClock, formatBakeDateTime } from '../utils/units';
 import { useState, useMemo, useEffect, useRef, useId, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { type AvailabilityBlock, type ScheduleResult, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationHoursForYeast, fermentationBudget, sourdoughBulkH, bakeFromFridgeOption, BAKE_FROM_FRIDGE_STYLES } from '../utils';
+import { type AvailabilityBlock, type ScheduleResult, starterBulkFactor as starterBulkFactorFor, raisedStarterPcts, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationHoursForYeast, fermentationBudget, sourdoughBulkH, bakeFromFridgeOption, BAKE_FROM_FRIDGE_STYLES } from '../utils';
 import { formatDuration } from '../utils/duration';
 import { earliestQuarterStart, quarterStartNoEarlier } from '../utils/startNotice';
 import FermentChart, { scheduleColdIntervals, getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
@@ -263,6 +263,13 @@ interface SchedulePickerProps extends WarmupInputs {
   schedulerSection?: 'all' | 'starter' | 'plan';
   /** Levain: bulk multiplier for a baker-chosen starter % (starterBulkFactor); 1 by default. */
   starterBulkFactor?: number;
+  /** Levain: the % the planner raised the inoculation to for this plan (null: the default). */
+  autoStarterPct?: number | null;
+  /** The planner raised (a %) or restored (null) the levain inoculation with the plan it commits. */
+  onAutoStarterPctChange?: (pct: number | null) => void;
+  /** Present only when the planner may raise the levain % (no baker-entered %): whether
+   *  every planned feed, with these ratios, can build that amount (raisedLevainFits). */
+  canRaiseStarterPct?: (pct: number, feedRatios: number[]) => boolean;
   /** Simple sourdough: the answer from the "Your starter" screen. The page turns it
    *  into starter state (location, last feed, ready now); the picker only hides the
    *  inferred last feed, which the baker never told us. */
@@ -385,6 +392,39 @@ export function latestFeedPeakingByMs(mixMs: number, refPeakMs: number | null, a
   // The stretch only lengthens the rise, so stepping earlier converges.
   for (let guard = 0; guard < 96 && computeStarterPeakMs(feedMs, refPeakMs, adjPeakHEff) > mixMs; guard++) feedMs -= STARTER_QUARTER_MS;
   return feedMs;
+}
+
+/** Intermediate refresh times between a revival start and the next major feed.
+ * Shared by the solver's candidates (computeIntermediatesForCandidate) and the
+ * mix-relative revival start (deriveStarterPeakTime), so both place the same feeds. */
+function planIntermediateFeeds(startMs: number, nextMajorFeedMs: number, refreshSpacingH: number, minIntermediates: number, adjPeakHFor: number, nowMs: number): number[] {
+  const gapH = (nextMajorFeedMs - startMs) / 3600000;
+  const MAX_INT = 2;
+  const gapBased = Math.floor(gapH / refreshSpacingH);
+  const numIntermediate = Math.min(MAX_INT + 1, Math.max(minIntermediates + 1, gapBased));
+  // Minimum spacing between consecutive feeds — max(6, adjPeakH × 0.75)
+  // so tropical kitchens never cram feeds at <6h. The check is applied at
+  // BOTH the intermediate→nextMajor segment AND between successive
+  // intermediates, so no two feeds in the chain end up too close.
+  const minFeedGapH = Math.max(6, adjPeakHFor * 0.75);
+  const out: number[] = [];
+  let prevAcceptedMs = startMs;
+  for (let i = 1; i < numIntermediate; i++) {
+    const ft = new Date(ceilQuarterMs(startMs + i * refreshSpacingH * 3600000));
+    const h = ft.getHours();
+    if (h < 7) ft.setHours(7, 0, 0, 0);
+    else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
+    if (ft.getTime() <= nowMs) continue;
+    if (ft.getTime() >= nextMajorFeedMs - minFeedGapH * 3600000) continue;
+    // The next feed waits for this one's peak (the bell drawn for it).
+    if (ft.getTime() + adjPeakHFor * 3600000 > nextMajorFeedMs + STARTER_QUARTER_MS) continue;
+    // Drop intermediates that would land <minFeedGapH after the previous
+    // accepted feed (primary refresh or prior intermediate).
+    if (ft.getTime() - prevAcceptedMs < minFeedGapH * 3600000) continue;
+    out.push(ft.getTime());
+    prevAcceptedMs = ft.getTime();
+  }
+  return out;
 }
 
 // ── Time formatter ────────────────────────────
@@ -1852,11 +1892,21 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ starterLocationAnswered = true, starterMatureAnswered = true, afterBakeInput, onUseCalculatedYeast, enteredYeastShownPct, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, planInline, planChart, decisionSheet=false, onDecisionSheetClose, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ starterLocationAnswered = true, starterMatureAnswered = true, afterBakeInput, onUseCalculatedYeast, enteredYeastShownPct, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, autoStarterPct = null, onAutoStarterPctChange, canRaiseStarterPct, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, planInline, planChart, decisionSheet=false, onDecisionSheetClose, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   // A baker-chosen starter % lengthens or shortens the levain room-temperature
   // bulk (starterBulkFactor). The solver windows add the same hours the
   // schedule builder does, so scoring, card and chart stay on one bulk.
   const starterBulkDeltaH = isSourdough && styleKey ? sourdoughBulkH(styleKey, kitchenTemp) * (starterBulkFactor - 1) : 0;
+  // A bounded search may probe the plan at another levain % (a raised
+  // inoculation) or another last-feed ratio. Every solver and draft check of
+  // that probe reads these, so the probe is built on one bulk and one ratio.
+  const probeBulkFactorRef = useRef<number | null>(null);
+  const probeRatioRef = useRef<1 | 2 | 4 | 5 | 10 | null>(null);
+  // A fixed-mix probe whose plan fails with the bake-relative revival start retries with
+  // the revival started from that mix (deriveStarterPeakTime, evaluateStarterCandidate).
+  const probeRevivalFromMixRef = useRef(false);
+  const solverBulkFactor = () => probeBulkFactorRef.current ?? starterBulkFactor;
+  const solverBulkDeltaH = () => isSourdough && styleKey ? sourdoughBulkH(styleKey, kitchenTemp) * (solverBulkFactor() - 1) : 0;
   function thermalInputs(method:string,inFridge:boolean){
     return {prefermentType:method, prefInFridge:inFridge,
       styleKey, kitchenTemp, fridgeTemp, mixerType, targetDoughTemp,
@@ -2026,6 +2076,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   const [hasNotFedYet, setHasNotFedYet]         = useState<boolean | null>(hasNotFedYetProp ?? null);
   const [lastFedAge, setLastFedAge]             = useState<'today'|'yesterday'|'days23'|'days45'|'week'|null>(lastFedAgeProp ?? null);
   const [nextFeedRatio, setNextFeedRatio]         = useState<1 | 2 | 4 | 5 | 10>(nextFeedRatioProp ?? lastFeedRatioProp ?? 1);
+  const nextFeedRatioState = nextFeedRatio;
   const [nextFeedRatioOverride, setNextFeedRatioOverride] = useState<1 | 2 | 4 | 5 | 10 | null>(nextFeedRatioOverrideProp ?? null);
   const [ratioMode, setRatioMode] = useState<'recommend' | 'keep'>(ratioModeProp ?? 'recommend');
   const [lastFeedRatioEditing, setLastFeedRatioEditing] = useState(false);
@@ -3152,6 +3203,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
 
   // ── Sourdough: derive peak time from inputs (returns values, no setState) ──
   function deriveStarterPeakTime(bakeTime: Date, targetMixTime?: Date | null, revivalBlocks?: AvailabilityBlock[]): DerivedStarterState {
+    const starterBulkDeltaH = solverBulkDeltaH();
     const NULL_RESULT: DerivedStarterState = {
       peakTime: null, feedTime: null, fridgeOut: null,
       suggestedFridgeOut: null, suggestedFridgePeak: null,
@@ -3205,17 +3257,58 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
             let ideal = Math.floor((bakeTime.getTime() - leadFor(cycles) * 3600000) / 900000) * 900000;
             const older = revivalCycles(starterAgeAt(ideal), starterMature, tang);
             if (older > cycles) { cycles = older; ideal = Math.floor((bakeTime.getTime() - leadFor(cycles) * 3600000) / 900000) * 900000; }
-            // A bake more than a day beyond the revival's own lead keeps the starter in the fridge until
-            // the run-up: one revival, close to the bake, instead of a feed now and a fridge hold
-            // (16 Nov 2026 review: feed Monday, fridge Tuesday, out Friday for a Sunday loaf; was 96 h).
-            if (ideal < earliestRefeed + 24 * 3600000) return new Date(earliestRefeed);
-            // The removal, the first feed and each revival feed after it stay out of busy times.
-            const clear = (at: number) => !revivalBlocks?.length || [at - warmupH * 3600000, at, ...Array.from({length: cycles}, (_, k) => at + (k + 1) * cycleH * 3600000)]
-              .every(ms => !isTimeBlocked(ms, revivalBlocks));
-            for (let at = ideal, i = 0; i < 192 && at > earliestRefeed + 24 * 3600000; i++, at -= 900000) if (clear(at)) return new Date(at);
-            // Busy all of that day: start later instead, inside the 12 h margin, before falling back to now.
-            for (let at = ideal + 900000; at <= ideal + 12 * 3600000; at += 900000) if (clear(at)) return new Date(at);
-            return new Date(earliestRefeed);
+            // A known mix (each fixed-mix probe of the bounded search) with busy times: start the
+            // revival from that mix, so the chain the solver builds from this start — removal, the
+            // first feed, its intermediate feeds (planIntermediateFeeds, the solver's own placement)
+            // and any fridge spell before the levain build — stays in free time, and the last feed
+            // (pre-mix) can sit before work for an evening mix (17 Nov 2026 cool-kitchen review:
+            // the bake-relative start fed a 9-to-5 baker's starter at work and in the night).
+            const bakeRelative = (): Date => {
+              // A bake more than a day beyond the revival's own lead keeps the starter in the fridge until
+              // the run-up: one revival, close to the bake, instead of a feed now and a fridge hold
+              // (16 Nov 2026 review: feed Monday, fridge Tuesday, out Friday for a Sunday loaf; was 96 h).
+              if (ideal < earliestRefeed + 24 * 3600000) return new Date(earliestRefeed);
+              // The removal, the first feed and each revival feed after it stay out of busy times.
+              const clear = (at: number) => !revivalBlocks?.length || [at - warmupH * 3600000, at, ...Array.from({length: cycles}, (_, k) => at + (k + 1) * cycleH * 3600000)]
+                .every(ms => !isTimeBlocked(ms, revivalBlocks));
+              for (let at = ideal, i = 0; i < 192 && at > earliestRefeed + 24 * 3600000; i++, at -= 900000) if (clear(at)) return new Date(at);
+              // Busy all of that day: start later instead, inside the 12 h margin, before falling back to now.
+              for (let at = ideal + 900000; at <= ideal + 12 * 3600000; at += 900000) if (clear(at)) return new Date(at);
+              return new Date(earliestRefeed);
+            };
+            const usual = bakeRelative();
+            return ((): Date => {
+              if (!probeRevivalFromMixRef.current || !targetMixTime || !revivalBlocks?.length) return usual;
+              const ratioNext = probeRatioRef.current ?? nextFeedRatioState;
+              const adjNext = peakH * ryeF * matF * (1 + 0.5 * Math.log(ratioNext));
+              const spacingH = adjNext * 1.25;
+              const mixMs = +targetMixTime;
+              const preMixMs = latestFeedPeakingByMs(mixMs, null, adjNext);
+              const hSinceFed = (Date.now() - lastFedTime.getTime()) / 3600000;
+              const troughNext = getStarterTroughH(kitchenTemp, starterMature, styleKey ?? 'neapolitan') * ryeF * (1 + 0.5 * Math.log(ratioNext));
+              // The solver's refresh stretch (computeNonPathBFridgeTimes reads it for the fridge spell).
+              const stretch = hSinceFed <= adjNext ? 1 : hSinceFed <= adjNext * 1.5 ? 1.05 : hSinceFed <= troughNext ? 1.15
+                : hSinceFed <= troughNext * 1.5 ? 1.25 : hSinceFed <= troughNext * 2.5 ? 1.35 : 1.5;
+              const busy = (ms: number) => isTimeBlocked(ms, revivalBlocks);
+              const chainClear = (at: number) => {
+                const c = revivalCycles(starterAgeAt(at), starterMature, tang);
+                if (busy(at - warmupH * 3600000) || busy(at)) return false;
+                const ints = planIntermediateFeeds(at, preMixMs, spacingH, Math.max(0, c - 1), adjNext, Date.now());
+                if (ints.length < c - 1 || ints.some(busy)) return false;
+                const fridgeIn = Math.max(at + adjNext * stretch * 3600000, ...ints.map(ms => ms + adjNext * 3600000));
+                const fridgeOut = Math.min(preMixMs, mixMs) - warmupH * 3600000;
+                if (fridgeOut - fridgeIn >= 3 * 3600000 && (busy(fridgeIn) || busy(fridgeOut))) return false;
+                return true;
+              };
+              // The bake-relative start stays whenever its chain is already free for this mix.
+              if (chainClear(+usual)) return usual;
+              const c0 = revivalCycles(starterAgeAt(mixMs), starterMature, tang);
+              const anchor = Math.floor((preMixMs - c0 * spacingH * 3600000) / 900000) * 900000;
+              const earliest = earliestRefeed;
+              for (let at = anchor; at >= Math.max(earliest, anchor - 36 * 3600000); at -= 900000) if (chainClear(at)) return new Date(at);
+              for (let at = anchor + 900000; at <= anchor + 12 * 3600000 && at < preMixMs; at += 900000) if (at >= earliest && chainClear(at)) return new Date(at);
+              return usual;
+            })();
           })();
           // A refresh from a long-dormant starter peaks LATER than a healthy
           // one — the same refresh stretch the chart bell applies. Scoring
@@ -3428,6 +3521,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   type StarterProbe = {result:SourdoughSolverResult|null;start:Date;effects:Array<()=>void>;mix:number|null;feed:number|null;refresh:number|null};
   const starterEffects = {notifyFromSolver,onFeed2TimeChange,onFeedTimeChange,onFridgeOutTimeChange,onStarterEventsChange,onStarterFridgeInTimeChange,setFridgeOutTime,setGuardNote,setHasDragged,setPendingStart,setRefeedSuggestion,setSolverResult,setStartComputed,setWindowTooShort,hasManuallyDragged,lastSolvedBlocksRef,manualFeed2Ref,manualMixRef,manualRefreshRef,resumeFrozenRef,sourdoughPlanBlockedRef};
   function findOptimalPositionSourdough(et: Date, manualMixOverride?: Date, blocksOverride?: AvailabilityBlock[], probe?:StarterProbe) {
+    // The probe's bulk and last-feed ratio (see probeBulkFactorRef) for this whole solve.
+    const starterBulkDeltaH = solverBulkDeltaH();
+    const nextFeedRatio = probeRatioRef.current ?? nextFeedRatioState;
     const notifyFromSolver = (...args:Parameters<typeof starterEffects.notifyFromSolver>) => {if(probe){probe.start=args[0];probe.effects.push(()=>starterEffects.notifyFromSolver(...args));}else starterEffects.notifyFromSolver(...args);};
     const onFeed2TimeChange = (...args:Parameters<NonNullable<typeof starterEffects.onFeed2TimeChange>>) => {if(probe){probe.effects.push(()=>starterEffects.onFeed2TimeChange?.(...args));}else starterEffects.onFeed2TimeChange?.(...args);};
     const onFeedTimeChange = (...args:Parameters<NonNullable<typeof starterEffects.onFeedTimeChange>>) => {if(probe){probe.effects.push(()=>starterEffects.onFeedTimeChange?.(...args));}else starterEffects.onFeedTimeChange?.(...args);};
@@ -5724,34 +5820,8 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
             ? cand.feed2Ms
             : candMixMs - adjPeakH_for * 3600000;
       const startMs = _starterRefeedTime?.getTime() ?? lastFedTime.getTime();
-      const gapH = (nextMajorFeedMs - startMs) / 3600000;
-      const MAX_INT = 2;
       const MIN_INT = Math.max(0, revivalCycles(starterAgeAt(startMs), starterMature, tang) - 1);
-      const gapBased = Math.floor(gapH / refreshSpacingH);
-      const numIntermediate = Math.min(MAX_INT + 1, Math.max(MIN_INT + 1, gapBased));
-      // Minimum spacing between consecutive feeds — max(6, adjPeakH × 0.75)
-      // so tropical kitchens never cram feeds at <6h. The check is applied at
-      // BOTH the intermediate→nextMajor segment AND between successive
-      // intermediates, so no two feeds in the chain end up too close.
-      const minFeedGapH = Math.max(6, adjPeakH_for * 0.75);
-      const out: number[] = [];
-      let prevAcceptedMs = startMs;
-      for (let i = 1; i < numIntermediate; i++) {
-        const ft = new Date(ceilQuarterMs(startMs + i * refreshSpacingH * 3600000));
-        const h = ft.getHours();
-        if (h < 7) ft.setHours(7, 0, 0, 0);
-        else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
-        if (ft.getTime() <= Date.now()) continue;
-        if (ft.getTime() >= nextMajorFeedMs - minFeedGapH * 3600000) continue;
-        // The next feed waits for this one's peak (the bell drawn for it).
-        if (ft.getTime() + adjPeakH_for * 3600000 > nextMajorFeedMs + STARTER_QUARTER_MS) continue;
-        // Drop intermediates that would land <minFeedGapH after the previous
-        // accepted feed (primary refresh or prior intermediate).
-        if (ft.getTime() - prevAcceptedMs < minFeedGapH * 3600000) continue;
-        out.push(ft.getTime());
-        prevAcceptedMs = ft.getTime();
-      }
-      return out;
+      return planIntermediateFeeds(startMs, nextMajorFeedMs, refreshSpacingH, MIN_INT, adjPeakH_for, Date.now());
     }
 
     let best = candidates[0];
@@ -6311,8 +6381,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         for (const cand of candidates_r) {
           // Per-ratio candidates carry their own actionTimesMs (populated by
           // pushCand_r at gen time). candidateValid reads cand.actionTimesMs
-          // directly — no params needed.
-          if (candidateValid(cand)) {
+          // directly — no params needed. A ratio is only clear when the dough
+          // steps of its mix are too (folds, fridge, shaping: doughStepsClear).
+          if (candidateValid(cand) && doughStepsClear(bakeMs - cand.mixHBF * 3600000)) {
             bestR = cand;
             foundValidR = true;
             break;
@@ -6330,6 +6401,18 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       //   1) ratios that clear all blockers beat those that don't
       //   2) within same clear-state, higher combinedScore wins
       //   3) tie within RATIO_IMPROVE_THRESHOLD → prefer ratio closer to baker's usual
+      // Dough steps of a mix against the busy times (the production builder,
+      // as the bounded search checks them), memoised per mix for this solve.
+      const _doughClearMemo = new Map<number, boolean>();
+      function doughStepsClear(mixMs: number): boolean {
+        if (!effectiveBlocks.length || !styleKey) return true;
+        const known = _doughClearMemo.get(mixMs);
+        if (known !== undefined) return known;
+        const draft = buildSchedule(new Date(mixMs), et, effectiveBlocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, mixingBatches, true, solverBulkFactor());
+        const clear = findAvailabilityConflicts(draft.availabilityActions ?? [], effectiveBlocks, Date.now()).length === 0;
+        _doughClearMemo.set(mixMs, clear);
+        return clear;
+      }
       const RATIOS_ARR: (1 | 2 | 4 | 5 | 10)[] = [1, 2, 4, 5, 10];
       const RATIO_IMPROVE_THRESHOLD = 18;
       let chosenRatio: 1 | 2 | 4 | 5 | 10 = lastFeedRatio;
@@ -6363,6 +6446,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       // single-feed plan persisted at ratio 2).
       _recommendedNextFeedRatio = chosenRatio;
     }
+    // A probe solved at a chosen last-feed ratio recommends that ratio, so the
+    // committed plan and the applied ratio agree (searchStarterCandidate).
+    if (probeRatioRef.current != null) _recommendedNextFeedRatio = probeRatioRef.current;
 
     buildAndSetResult();
   }
@@ -6587,6 +6673,17 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   type StarterPins = {mix:number|null;feed:number|null;refresh:number|null};
   /** One read-only candidate check for the automatic search and slider probes. */
   function evaluateStarterCandidate(pins:StarterPins,candidateBlocks:AvailabilityBlock[]=solverBlocksRef.current,expectedEvents?:StarterEvent[],preserveStorage=true,committedResult?:SourdoughSolverResult,candidateBake:Date=pendingEatTime) {
+    const checked=evaluateStarterCandidateOnce(pins,candidateBlocks,expectedEvents,preserveStorage,committedResult,candidateBake);
+    // Fridge revival at a fixed mix: when the bake-relative revival start finds no plan,
+    // retry once with the revival started from this mix (deriveStarterPeakTime, fromMix).
+    if(checked.valid||committedResult||completedMixAt!==undefined||probeRevivalFromMixRef.current||pins.mix===null||!candidateBlocks.length
+      ||planningMode!=='last_fed'||starterLocation!=='fridge'||lastFedAge===null||revivalCycles(lastFedAge,starterMature,tang)<1)return checked;
+    probeRevivalFromMixRef.current=true;
+    try{const retry=evaluateStarterCandidateOnce(pins,candidateBlocks,expectedEvents,preserveStorage,committedResult,candidateBake);return retry.valid?retry:checked;}
+    finally{probeRevivalFromMixRef.current=false;}
+  }
+
+  function evaluateStarterCandidateOnce(pins:StarterPins,candidateBlocks:AvailabilityBlock[],expectedEvents:StarterEvent[]|undefined,preserveStorage:boolean,committedResult:SourdoughSolverResult|undefined,candidateBake:Date) {
     const hour=3600000,now=Date.now();
     if(completedMixAt!==undefined){
       // Mixing is a recorded start, not a future starter-plan candidate. Keep
@@ -6594,7 +6691,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       const start=new Date(completedMixAt);
       const probe:StarterProbe={...pins,result:solverResult,start,effects:[]};
       const anchorsKept=(pins.mix===null||pins.mix===completedMixAt)&&eatTime!==null&&+candidateBake===+eatTime;
-      const validation=assessScheduleDraft({starterFactor:starterBulkFactor,isSourdough,start,bake:candidateBake,from:readinessWindowFrom??new Date(+candidateBake-renderSweetFrom*hour),to:readinessWindowTo??new Date(+candidateBake-renderSweetTo*hour),completedMixAt,
+      const validation=assessScheduleDraft({starterFactor:solverBulkFactor(),isSourdough,start,bake:candidateBake,from:readinessWindowFrom??new Date(+candidateBake-renderSweetFrom*hour),to:readinessWindowTo??new Date(+candidateBake-renderSweetTo*hour),completedMixAt,
         blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,now,methodValid:anchorsKept});
       const valid=validation.valid;
       const message=valid?null:!anchorsKept?(isFr?'Le pétrissage a commencé. Conservez les horaires de cette pâte.':'Mixing has started. Keep this dough’s existing times.'):
@@ -6631,7 +6728,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       ?!!result?.peakTime&&knownPeakMixUsable(probe.start,result.peakTime,result.adjPeakHValue??getPrefPeakH_RT('sourdough',kitchenTemp,styleKey),flourStrength)
       :result?.starterPillState==='green'&&!result.planConstrained;
     const bounds={from:result?.sourdoughSweetFrom!=null?new Date(+candidateBake-result.sourdoughSweetFrom*hour):null,to:result?.sourdoughSweetTo!=null?new Date(+candidateBake-result.sourdoughSweetTo*hour):null};
-    const validation=assessScheduleDraft({starterFactor:starterBulkFactor,isSourdough,start:probe.start,bake:candidateBake,...bounds,blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,now,
+    const validation=assessScheduleDraft({starterFactor:solverBulkFactor(),isSourdough,start:probe.start,bake:candidateBake,...bounds,blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,now,
       extraActions:starterHandsOnActions(events,now),
       methodValid:!!result&&!result.windowTooShort&&pinKept&&peakOK&&historyKept&&noNewPastActions&&orderedActions&&storageKept&&displayedPlanKept});
     const allBatchPeaksUsable=planningMode!=='know_peak'||!validation.schedule?.batchMixWindows||!!result?.peakTime&&validation.schedule.batchMixWindows.every(batch=>knownPeakMixUsable(batch.start,result.peakTime!,result.adjPeakHValue??getPrefPeakH_RT('sourdough',kitchenTemp,styleKey),flourStrength));
@@ -6662,10 +6759,10 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   }
 
   /** Bounded fixed-bake search; the caller alone commits a validated result. */
-  function replanStarter(candidateBlocks:AvailabilityBlock[],overrides:TimingOverrides) {
+  function replanStarter(candidateBlocks:AvailabilityBlock[],overrides:TimingOverrides,holdRatio=false) {
     if(startTimeInPast||resumeFrozenRef.current||+pendingEatTime<=Date.now()||isTimeBlocked(pendingEatTime,candidateBlocks))return null;
     const pins:StarterPins={mix:overrides.mix??null,feed:overrides.feed??null,refresh:overrides.refresh??null};
-    let checked=searchStarterCandidate(pins,candidateBlocks,Object.keys(overrides).length>0);
+    let checked=searchStarterCandidate(pins,candidateBlocks,Object.keys(overrides).length>0,pendingEatTime,true,holdRatio);
     if(replanRequested&&checked){
       const missed=checked.probe.result?.starterEvents.find(event=>['refresh','intermediate_refresh','pre_mix'].includes(event.kind)&&+event.time<=Date.now());
       if(missed){
@@ -6683,7 +6780,32 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     return checked;
   }
 
-  function searchStarterCandidate(pins:StarterPins,candidateBlocks:AvailabilityBlock[],preserveStorage=true,candidateBake:Date=pendingEatTime) {
+  function searchStarterCandidate(pins:StarterPins,candidateBlocks:AvailabilityBlock[],preserveStorage=true,candidateBake:Date=pendingEatTime,ratios=false,holdRatio=false) {
+    // holdRatio: a plan found at the current ratio keeps it (it recommends that
+    // ratio), so a raised-levain plan is not re-timed by the ratio-apply effect.
+    let found:ReturnType<typeof searchStarterCandidateAtRatio>=null;
+    if(holdRatio&&probeRatioRef.current===null){
+      probeRatioRef.current=nextFeedRatio;
+      try{found=searchStarterCandidateAtRatio(pins,candidateBlocks,preserveStorage,candidateBake);}finally{probeRatioRef.current=null;}
+    }else found=searchStarterCandidateAtRatio(pins,candidateBlocks,preserveStorage,candidateBake);
+    // The requested bake (replanStarter) may time the levain with another
+    // last-feed ratio when the current one finds no plan: an evening mix after
+    // work needs the levain build fed before work (17 Nov 2026 cool-kitchen
+    // review). Nearest the baker's usual ratio first; 'keep' and a chosen
+    // ratio are never changed. The probe recommends its ratio, which the
+    // ratio-apply effect then sets, so the plan and the shown ratio agree.
+    if(found||!ratios||ratioMode!=='recommend'||nextFeedRatioOverride!==null||planningMode!=='last_fed'||probeRatioRef.current!==null)return found;
+    const order=([1,2,4,5,10] as const).filter(r=>r!==nextFeedRatio)
+      .sort((a,b)=>Math.abs(Math.log(a/lastFeedRatio))-Math.abs(Math.log(b/lastFeedRatio))||a-b);
+    for(const r of order){
+      probeRatioRef.current=r;
+      try{const checked=searchStarterCandidateAtRatio(pins,candidateBlocks,preserveStorage,candidateBake);if(checked)return checked;}
+      finally{probeRatioRef.current=null;}
+    }
+    return null;
+  }
+
+  function searchStarterCandidateAtRatio(pins:StarterPins,candidateBlocks:AvailabilityBlock[],preserveStorage=true,candidateBake:Date=pendingEatTime) {
     const initial=evaluateStarterCandidate(pins,candidateBlocks,undefined,preserveStorage,undefined,candidateBake);
     // Explicit time edits retain their protocol. An automatic recommendation
     // may adapt future fridge stages to availability; retaining the previous
@@ -6707,7 +6829,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       if(candidateBlocks.length){
         // Starter planning is much more expensive than constructing the dough
         // agenda. A feed cannot rescue a blocked preheat, fold or dough exit.
-        const dough=assessScheduleDraft({starterFactor:starterBulkFactor,isSourdough:true,start:new Date(mix),bake:candidateBake,
+        const dough=assessScheduleDraft({starterFactor:solverBulkFactor(),isSourdough:true,start:new Date(mix),bake:candidateBake,
           from:new Date(from),to:new Date(to),blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,now,methodValid:true});
         if(!dough.valid)continue;
       }
@@ -6968,14 +7090,21 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     resumeFrozenRef.current=false;
     acceptedBakeRef.current=+pendingEatTime;
     if(isSourdough){
-      let checked=replanStarter(candidateBlocks,overrides);
+      // The default levain % first (a planner-raised % is never its own baseline).
+      const baseFactor=autoStarterPct!=null?1:starterBulkFactor;
+      probeBulkFactorRef.current=baseFactor;
+      let checked:ReturnType<typeof evaluateStarterCandidate>|null=null;
+      let raisedPct:number|null=null;
+      let foundValid=false;
+      try{
+      checked=replanStarter(candidateBlocks,overrides);
       // Relaxing constraints must never discard an agenda still feasible at its
       // exact original times. Recheck method, maturity, folds and every action.
       if(removingOnly && !checked && solverResult && currentCandidateValid){
         const retained=validateCurrentStarterCandidate(candidateBlocks);
         if(retained.valid)checked=retained;
       }
-      const foundValid=!!checked;
+      foundValid=!!checked;
       // A failed full-agenda search must not leave the previous automatic
       // starter events on screen under newly enabled blockers. Recompute the
       // starter recommendation, but keep the complete-plan gate invalid.
@@ -6996,6 +7125,25 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           }
         }
       }
+      // The dough's warm bulk does not fit the free time at the default levain %:
+      // a larger inoculation shortens it (starterBulkFactor, Craig's regression),
+      // smallest raise first and never above AUTO_STARTER_MAX_PCT, when there is
+      // enough starter for every planned feed. Never over a baker-entered %
+      // (canRaiseStarterPct is absent then). Still nothing: another day, as before.
+      if(!foundValid&&canRaiseStarterPct&&styleKey&&candidateBlocks.length&&planningMode==='last_fed'){
+        for(const pct of raisedStarterPcts(kitchenTemp,flourStrength)){
+          probeBulkFactorRef.current=starterBulkFactorFor(pct,kitchenTemp,flourStrength);
+          const raised=replanStarter(candidateBlocks,overrides,true);
+          if(!raised?.valid||!raised.probe.result)continue;
+          const now=Date.now();
+          const ratios=raised.probe.result.starterEvents.filter(e=>['refresh','intermediate_refresh','pre_mix'].includes(e.kind)&&+e.time>=now)
+            .sort((a,b)=>+a.time-+b.time).map(e=>e.feedingRatio??nextFeedRatio);
+          if(!canRaiseStarterPct(pct,ratios))break; // more starter is needed at every higher %
+          checked=raised;raisedPct=pct;foundValid=true;break;
+        }
+      }
+      }finally{probeBulkFactorRef.current=null;}
+      if((raisedPct??null)!==(autoStarterPct??null))onAutoStarterPctChange?.(raisedPct);
       setSearchFailed(!foundValid);
       if(checked){
         const result=checked.probe.result!;
@@ -7135,6 +7283,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       if(localBlocks.some(b=>b.label.endsWith(' night')))append(getNightsInWindow(new Date(now),bake));
       if(isTimeBlocked(bake,candidateBlocks)||isTimeBlocked(+bake-preheatMin*60000,candidateBlocks))continue;
       if(isSourdough){
+        // Other days are offered at the default levain % (a raise is for the requested bake only).
+        probeBulkFactorRef.current=autoStarterPct!=null?1:starterBulkFactor;
+        try{
         const checked=searchStarterCandidate({mix:null,feed:null,refresh:null},candidateBlocks,false,bake);
         if(checked?.valid){
           found.push({start:checked.probe.start,bake,prefHours:prefOffsetH,blocks:chronologicalBlocks(candidateBlocks),starter:checked});
@@ -7155,6 +7306,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
             }
           }
         }
+        }finally{probeBulkFactorRef.current=null;}
         continue;
       }
       const input=commercialCandidateInput(candidateBlocks);
@@ -7207,8 +7359,12 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     return `${at.getFullYear()}-${pad(at.getMonth()+1)}-${pad(at.getDate())}T${pad(hour)}:00`;
   },[suggestedTargets,bakeType,styleKey]);
   const applySuggestedTarget=(candidate:typeof suggestedTargets[number])=>{
-    const verify=candidate.starter?evaluateStarterCandidate({mix:+candidate.start,feed:null,refresh:null},
-      candidate.blocks,undefined,false,candidate.starter.probe.result??undefined,candidate.bake):null;
+    // Suggested days are planned at the default levain % (targetSearch).
+    probeBulkFactorRef.current=autoStarterPct!=null?1:starterBulkFactor;
+    let verify:ReturnType<typeof evaluateStarterCandidate>|null=null;
+    try{verify=candidate.starter?evaluateStarterCandidate({mix:+candidate.start,feed:null,refresh:null},
+      candidate.blocks,undefined,false,candidate.starter.probe.result??undefined,candidate.bake):null;}
+    finally{probeBulkFactorRef.current=null;}
     const stillFits=verify?(verify.valid||(!!candidate.assistance&&verify.validation.reason==='busy'))
       :validateScheduleCandidate(commercialCandidateInput(candidate.blocks,prefGoesInFridge,candidate.start,candidate.bake),
           {start:candidate.start,bake:candidate.bake,prefHours:candidate.prefHours}).valid;
@@ -7223,6 +7379,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     setSearchFailed(false);setPrefAlgoRed(false);setWindowTooShort(false);
     const target=candidate.bake;setPickerDate(`${target.getFullYear()}-${String(target.getMonth()+1).padStart(2,'0')}-${String(target.getDate()).padStart(2,'0')}`);setPickerHour(target.getHours());setPickerMinute(target.getMinutes());
     if(candidate.starter){
+      if(autoStarterPct!=null)onAutoStarterPctChange?.(null);
       candidate.starter.probe.effects.forEach(effect=>effect());
       const result=candidate.starter.probe.result!;
       manualMixRef.current=null;manualFeed2Ref.current=null;manualRefreshRef.current=null;

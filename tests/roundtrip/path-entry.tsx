@@ -4,7 +4,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import SchedulePicker from '../../app/components/SchedulePicker';
-import {buildSchedule} from '../../app/utils';
+import {buildSchedule,starterBulkFactor,raisedLevainFits} from '../../app/utils';
 
 type Ratio = 1 | 2 | 4 | 5 | 10;
 const w = window as any;
@@ -16,6 +16,12 @@ function Harness({ sc }: { sc: any }) {
   const [bulkFactor,setBulkFactor]=useState<number>(sc.starterBulkFactor ?? 1);
   const [replanPending,setReplanPending]=useState(false);
   w.__changeStarterFactor=(factor:number)=>{setBulkFactor(factor);setReplanPending(true);};
+  // sc.levainAuto mirrors page.tsx's levain %: the baker's (sc.bakerPct) or the planner's raise
+  // (autoStarterPct, allowed only without a baker % and when raisedLevainFits for sc.flour g).
+  const [autoPct,setAutoPct]=useState<number|undefined>(undefined);
+  const AUTO=!!sc.levainAuto;
+  const factor=AUTO?starterBulkFactor(sc.bakerPct??autoPct,sc.temp):bulkFactor;
+  w.__h.rec.autoPct=autoPct;
   const [startTime, setStartTime] = useState<Date>(sc.start);
   const [blocks, setBlocks] = useState<any[]>([]);
   const [starterLocation, setStarterLocation] = useState<'rt' | 'fridge'>(sc.loc);
@@ -53,12 +59,15 @@ function Harness({ sc }: { sc: any }) {
   // (opt-in so the historical cases keep their schedule). sc.mixer / sc.fridgeTemp
   // default to the historical 'hand' and 6 °C.
   const mixer=sc.mixer??'hand';
-  const schedule=useMemo(()=>sc.full?buildSchedule(startTime,eatTime,blocks,sc.temp,45,mixer,sc.style,sc.numItems??4,sc.batches??1,!sc.commercial,sc.pageFactor?bulkFactor:1):undefined,[startTime,eatTime,blocks,sc,bulkFactor,mixer]);
+  const schedule=useMemo(()=>sc.full?buildSchedule(startTime,eatTime,blocks,sc.temp,45,mixer,sc.style,sc.numItems??4,sc.batches??1,!sc.commercial,sc.pageFactor||AUTO?factor:1):undefined,[startTime,eatTime,blocks,sc,factor,mixer,AUTO]);
   w.__h.schedule=schedule;
   return (
     <SchedulePicker
       startTime={startTime} eatTime={eatTime} blocks={blocks} preheatMin={45}
-      styleKey={sc.style} kitchenTemp={sc.temp} starterBulkFactor={bulkFactor} replanPending={replanPending} onReplanHandled={()=>setReplanPending(false)} bakeType={sc.commercial||sc.full&&sc.style==='sourdough'?'pizza':'bread'} isSourdough={!sc.commercial} prefermentType={sc.commercial?'poolish':'levain'} mode="custom"
+      styleKey={sc.style} kitchenTemp={sc.temp} starterBulkFactor={factor}
+      {...(AUTO?{autoStarterPct:sc.bakerPct===undefined?autoPct??null:null,onAutoStarterPctChange:(p:number|null)=>setAutoPct(p??undefined),
+        canRaiseStarterPct:sc.bakerPct===undefined?(pct:number,ratios:number[])=>sc.raiseFits!==false&&raisedLevainFits(sc.flour??500,sc.temp,undefined,1,pct,ratios):undefined}:{})}
+      replanPending={replanPending} onReplanHandled={()=>setReplanPending(false)} bakeType={sc.commercial||sc.full&&sc.style==='sourdough'?'pizza':'bread'} isSourdough={!sc.commercial} prefermentType={sc.commercial?'poolish':'levain'} mode="custom"
       {...(sc.full?{schedule,mixerType:mixer,numItems:sc.numItems??4,mixingBatches:sc.batches??1}:{})}
       onChange={onChange}
       starterLocation={starterLocation} onStarterLocationChange={(l) => { setStarterLocation(l); rec.loc = l; }}
