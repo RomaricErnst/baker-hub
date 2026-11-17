@@ -112,6 +112,7 @@ test('several pieces get a conditional rounds step with a relative take-out',()=
  const {leanBreadBake}=require('../app/utils/leanBreadBake.ts');
  assert.doesNotMatch(leanBreadBake('pain_campagne',800,'dutch_oven',1).bake.en[0].bold,/rounds/);
  const warm=leanBreadBake('pain_campagne',800,'dutch_oven',3,{takeOutMin:60});
+ assert.doesNotMatch(leanBreadBake('baguette',320,'home_oven_standard',2).bake.en[0].bold,/rounds/);
  assert.equal(warm.bake.en[0].bold,'If they don’t all fit in the oven, bake in rounds');
  assert.match(warm.bake.en[0].note,/take each round out 1h before it goes in/);
  assert.match(warm.bake.fr[0].note,/sortez chaque fournée 1 h avant de l’enfourner/);

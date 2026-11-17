@@ -49,3 +49,14 @@ test('planned mixing uses one completed action, without a separate start or fini
   assert.doesNotMatch(html,/Start mixing|Finish mixing|Commencer le pétrissage|Terminer le pétrissage|Yes, at|Oui, le/);
  }
 });
+// 16 Nov 2026 retention review: at the planned minute the honest answer is "starting now".
+test('the first 45 minutes after the planned start offer a start, not the did-you question',()=>{
+ for(const fr of [false,true]){
+  const html=render({fr,plannedAt:NOW-10*60000});
+  assert.match(html,fr?/C’est l’heure de pétrir/:/Time to mix the dough/);
+  assert.match(html,fr?/Je commence →/:/Start now →/);
+  assert.doesNotMatch(html,/Not yet|Pas encore|Have you mixed|Avez-vous pétri/);
+  assert.equal(render({fr,plannedAt:NOW-10*60000,preparing:true}),'','in Preparation the step marked Now takes over');
+  assert.match(render({fr,plannedAt:NOW-46*60000}),fr?/Avez-vous pétri/:/Have you mixed/);
+ }
+});
