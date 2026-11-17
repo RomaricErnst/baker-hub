@@ -82,7 +82,7 @@ import {
 import {
   buildSchedule, calculateRecipe, formatTime, requiredPrefWarmupH, requiredPrefCooldownH,
   type AvailabilityBlock, type ScheduleResult,
-  starterBulkFactor, referenceStarterPct, prefTempAfterWarmup, sourdoughBulkH, hasCoherentScheduleShape,
+  starterBulkFactor, raisedLevainFits, referenceStarterPct, prefTempAfterWarmup, sourdoughBulkH, hasCoherentScheduleShape,
 } from '../utils';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { breadNoun } from '../utils/breadNames';
@@ -1130,6 +1130,9 @@ export default function Home() {
   const [yeastEntryIssue, setYeastEntryIssue] = useState<{shownPct:number;bakeAt:number;check:YeastEntryCheck} | null>(null);
   // Custom, levain: the baker's starter % of flour; the levain bulk is re-timed to it.
   const [starterPctOverride, setStarterPctOverride] = useState<number | undefined>(undefined);
+  // Levain without a baker-entered %: the % the planner raised the inoculation to so the
+  // warm bulk fits the baker's free time (SchedulePicker); undefined is the default amount.
+  const [autoStarterPct, setAutoStarterPct] = useState<number | undefined>(undefined);
   // Set by explicit plan-input edits (yeast amount, starter %, poolish storage); the scheduler clears it after replanning.
   const [planReplanPending, setPlanReplanPending] = useState(false);
   // A plan-input edit made after generation: the plan step mounts the scheduler, it replans,
@@ -1616,6 +1619,7 @@ export default function Home() {
     setYeastPctOverride(session.yeastPctOverride);
     setAcceptedPlan(normalizeAcceptedPlan(session.acceptedStartTime, session.acceptedPreparationAt, session.acceptedEatTime));
     setStarterPctOverride(session.starterPctOverride);
+    setAutoStarterPct(session.autoStarterPct);
     setTargetDoughTemp(session.targetDoughTemp);
     setFlourInFridge(session.flourInFridge);
     setMeasuredFlourTemp(session.measuredFlourTemp); setMeasuredPrefermentTemp(session.measuredPrefermentTemp);
@@ -1757,7 +1761,7 @@ export default function Home() {
   // Starter choices below come from user controls. Do not include solver outputs
   // (nextFeedRatio, events, peak or validity): planner initialization can refresh
   // those without changing a restored, already validated recipe.
-  const recipeInputKey = JSON.stringify([bakeType,styleKey,numItems,itemWeight,totalFlourTarget,ovenType,ovenConstruction,mixerType,customMixerCapacityG,mixingBatches,yeastType,kitchenTemp,humidity,fridgeTemp,manualHydration,manualOil,manualSugar,manualSalt,flourChosen?flourBlend:null,prefermentType,prefermentType!=='none'?(prefermentFlourPct??20):prefermentFlourPct,targetDoughTemp,flourInFridge,measuredFlourTemp,measuredPrefermentTemp,wastePct,addSeeds,priorityOverride,yeastPctOverride,starterPctOverride,starterState,starterLocation,planningMode,lastFedTime?.getTime()??null,knownPeakTime?.getTime()??null,hasNotFedYet,lastFedAge,lastFeedRatio,nextFeedRatioOverride,ratioMode,tang]);
+  const recipeInputKey = JSON.stringify([bakeType,styleKey,numItems,itemWeight,totalFlourTarget,ovenType,ovenConstruction,mixerType,customMixerCapacityG,mixingBatches,yeastType,kitchenTemp,humidity,fridgeTemp,manualHydration,manualOil,manualSugar,manualSalt,flourChosen?flourBlend:null,prefermentType,prefermentType!=='none'?(prefermentFlourPct??20):prefermentFlourPct,targetDoughTemp,flourInFridge,measuredFlourTemp,measuredPrefermentTemp,wastePct,addSeeds,priorityOverride,yeastPctOverride,starterPctOverride,autoStarterPct,starterState,starterLocation,planningMode,lastFedTime?.getTime()??null,knownPeakTime?.getTime()??null,hasNotFedYet,lastFedAge,lastFeedRatio,nextFeedRatioOverride,ratioMode,tang]);
   const previousRecipeInputKey = useRef(recipeInputKey);
   const generatedRecipeInputKey = useRef<string | null>(null);
   const confirmationAt = useRef(0);
@@ -1927,11 +1931,13 @@ export default function Home() {
   const effectiveYeastOverride = !!yeastType && yeastType !== 'sourdough' && prefermentType === 'none' ? yeastPctOverride : undefined;
   // A typed amount that was not applied keeps Fine-tune from moving on as if it had been.
   const yeastEntryBlocked = !!yeastEntryIssue && !!eatTime && yeastEntryIssue.bakeAt === +eatTime && !!yeastType && yeastType !== 'sourdough' && prefermentType === 'none';
-  const effectiveStarterOverride = yeastType === 'sourdough' ? starterPctOverride : undefined;
+  // The levain % every consumer uses: the baker's, else the planner's raise, else the default.
+  const effectiveStarterOverride = yeastType === 'sourdough' ? starterPctOverride ?? autoStarterPct : undefined;
   // One multiplier, used by every schedule build and the sourdough solver alike.
   // The blend the recipe uses (a blend style's own flours until the baker chooses one).
   const flourStrength = recipeFlourStrength(styleKey ?? '', 'custom', flourChosen ? flourBlend : undefined);
   const levainBulkFactor = starterBulkFactor(effectiveStarterOverride, kitchenTemp, flourStrength);
+  const handleAutoStarterPct = React.useCallback((pct: number | null) => setAutoStarterPct(pct ?? undefined), []);
   const recipeForSchedule = (schedule: ReturnType<typeof buildSchedule>) => {
     if(!styleKey || !yeastType)throw new Error("Recipe setup incomplete");
     return calculateRecipe(
@@ -2103,7 +2109,7 @@ export default function Home() {
         prefermentType !== 'none' && prefermentType !== 'levain' && prefOffsetH > 0 ? prefOffsetH : undefined,
         measuredFlourTemp, prefTempForBalance, totalFlourTarget,
         yeastType !== 'sourdough' && prefermentType === 'none' ? yeastPctOverride : undefined,
-        yeastType === 'sourdough' ? starterPctOverride : undefined,
+        effectiveStarterOverride,
       );
       if(execution){
         const used=execution.recipe.preferment,next=calculated.preferment;
@@ -2114,8 +2120,14 @@ export default function Home() {
     } catch {
       return null;
     }
-  }, [mixExecution, execution, styleKey, ovenType, numItems, itemWeight, totalFlourTarget, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, customMixerCapacityG, humidity, schedule, fridgeTemp, yeastType, mixerType, priorityOverride, manualHydration, manualOil, manualSugar, flourChosen, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, measuredFlourTemp, prefTempForBalance, wastePct, addSeeds, prefGoesInFridge, feedToMixH, yeastPctOverride, starterPctOverride]);
+  }, [mixExecution, execution, styleKey, ovenType, numItems, itemWeight, totalFlourTarget, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, customMixerCapacityG, humidity, schedule, fridgeTemp, yeastType, mixerType, priorityOverride, manualHydration, manualOil, manualSugar, flourChosen, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, measuredFlourTemp, prefTempForBalance, wastePct, addSeeds, prefGoesInFridge, feedToMixH, yeastPctOverride, effectiveStarterOverride]);
 
+  // The planner may raise the levain % only without a baker-entered one, and only when
+  // every planned feed can build the larger amount (raisedLevainFits).
+  const levainFlourG = recipe?.flour;
+  const canRaiseStarterPct = React.useMemo(() => yeastType === 'sourdough' && starterPctOverride === undefined && levainFlourG
+    ? (pct: number, feedRatios: number[]) => raisedLevainFits(levainFlourG, kitchenTemp, feedToMixH, flourStrength, pct, feedRatios)
+    : undefined, [yeastType, starterPctOverride, levainFlourG, kitchenTemp, feedToMixH, flourStrength]);
   // A restored, up-to-date recipe is the baseline the next update compares amounts with.
   useEffect(() => {
     if (!recipeGenerated || protocolStale || acceptedAmountsRef.current || !recipe) return;
@@ -2242,7 +2254,7 @@ export default function Home() {
       kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, mixerCapacityG: customMixerCapacityG, resultNotes, previousNote, containerCapacityLitres, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, timingOverrides, execution, mixExecution, starterFeedRecords, starterRecoveryPending,
       qtyChosen, flourChosen, prefermentChosen, customKitchenConfirmed, confirmedSettings,
-      manualHydration, manualOil, manualSugar, manualSalt, yeastPctOverride, starterPctOverride,
+      manualHydration, manualOil, manualSugar, manualSalt, yeastPctOverride, starterPctOverride, autoStarterPct,
       targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
       prefGoesInFridge, poolishStorage,
       startTime: startTime?.getTime() ?? null,
@@ -3519,6 +3531,7 @@ export default function Home() {
     setYeastPctOverride(snap.yeastPctOverride);
     setAcceptedPlan(rb ? undefined : normalizeAcceptedPlan(snap.acceptedStartTime, snap.acceptedPreparationAt, snap.acceptedEatTime));
     setStarterPctOverride(snap.starterPctOverride);
+    setAutoStarterPct(snap.autoStarterPct);
     setTargetDoughTemp(snap.targetDoughTemp);
     setFlourInFridge(snap.flourInFridge ?? false);
     setAddSeeds(snap.addSeeds ?? false);
@@ -4297,7 +4310,7 @@ export default function Home() {
   // One simple scheduler element, rendered on the bake-time step or, for a step moved from
   // the Recipe's plan, inline there (never both: planEdit unmounts the step's copy).
   const renderSimpleScheduler = (extra?: {planInline?: {focus:'mix'|'pref';applyLabel:string;onClose:()=>void};planChart?:boolean}) => (
-              <SchedulePicker {...extra} inputsOnly={!extra?.planInline&&!extra?.planChart&&(collectingBakeTime||bakeTimeOnly)} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor}
+              <SchedulePicker {...extra} inputsOnly={!extra?.planInline&&!extra?.planChart&&(collectingBakeTime||bakeTimeOnly)} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct}
                 {...poolishInputs}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
@@ -4385,7 +4398,7 @@ export default function Home() {
                 enteredYeastShownPct={effectiveYeastOverride!==undefined&&yeastType?Math.round(effectiveYeastOverride*(YEAST_TYPES[yeastType]?.conversion??1)*1000)/1000:undefined}
                 poolishStorage={prefermentType==='poolish'?poolishStorage:'auto'}
                 yeastPctOverride={effectiveYeastOverride}
-                replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor}
+                replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
                 mixingBatches={selectedMixingBatches}

@@ -1,5 +1,6 @@
 import { formatClock } from './utils/units';
 import { formatDuration } from './utils/duration';
+import { starterBuild } from './utils/starterBuild';
 import { BREAD_FERMENTATION_DEFAULTS, getBreadProtocol, breadActiveCookMinutes, breadPoachMinutes } from './utils/breadProfiles';
 import { scheduledFoldMinutes } from './utils/scheduleFolds';
 import { actionConflicts, findAvailabilityConflicts, isTimeBlocked, isFridgeRemovalCovered, type AvailabilityAction, type AvailabilityConflict } from './utils/scheduleAvailability';
@@ -399,6 +400,36 @@ export function starterBulkFactor(starterPct: number | undefined, kitchenTemp: n
   const p = Math.max(5, Math.min(30, starterPct)) / 100;
   const p0 = referenceStarterPct(kitchenTemp, flourStrength) / 100;
   return Math.round(craigSourdoughHours(p) / craigSourdoughHours(p0) * 1000) / 1000;
+}
+
+/** Ceiling of a planner-chosen levain % (17 Nov 2026): the inoculation the planner
+ * may raise to when the default bulk does not fit the baker's free time. */
+export const AUTO_STARTER_MAX_PCT = 30;
+
+/** Levain % the planner may try, smallest first, when the default bulk does not fit:
+ * 2.5-point steps above the kitchen's reference % up to AUTO_STARTER_MAX_PCT. */
+export function raisedStarterPcts(kitchenTemp: number, flourStrength = 1): number[] {
+  const reference = referenceStarterPct(kitchenTemp, flourStrength);
+  const out: number[] = [];
+  for (let pct = Math.floor(reference / 2.5 + 1e-9) * 2.5 + 2.5; pct <= AUTO_STARTER_MAX_PCT + 1e-9; pct += 2.5) out.push(pct);
+  return out;
+}
+
+/** "Provided there is enough": a raised levain % is planned only when the last feed
+ * (the levain build, sized as the recipe shows it: starterBuild) can be seeded. The
+ * baker starts from the jar kept after a bake at the default amount (the recipe's
+ * "keep the rest"); each earlier feed of the plan multiplies what there is by its
+ * 1:R:R ratio, less the 10 % starterBuild leaves on the jar and utensils. */
+export function raisedLevainFits(flour: number, kitchenTemp: number, feedToMixH: number | undefined,
+  flourStrength: number | undefined, raisedPct: number, feedRatios: readonly number[]): boolean {
+  if (!(flour > 0) || !(raisedPct > 0)) return false;
+  const usual = sourdoughGuidance(kitchenTemp, flour, feedToMixH, flourStrength);
+  const usualBuild = starterBuild(usual.starterGramsMid, usual.starterGramsMax, 1);
+  const raised = sourdoughGuidance(kitchenTemp, flour, feedToMixH, flourStrength, raisedPct);
+  let available = Math.max(usualBuild.keep, usualBuild.total - usual.starterGramsMid);
+  const ratios = feedRatios.length ? feedRatios : [1];
+  for (const ratio of ratios.slice(0, -1)) available *= 0.9 * (1 + 2 * ratio);
+  return starterBuild(raised.starterGramsMid, raised.starterGramsMax, ratios[ratios.length - 1]).seed <= available;
 }
 
 /** Levain room-temperature bulk at the reference starter: 5 h at 22 °C, Q10 2. */
