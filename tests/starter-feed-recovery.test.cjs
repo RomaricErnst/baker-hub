@@ -3,14 +3,15 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript');
 require('./load-production.cjs');
 const {saveSession,loadSession,serializeStarterEvents}=require('../app/lib/session.ts');
-const {overdueStarterFeed}=require('../app/utils/bakeExecution.ts');
+const {overdueStarterFeed,shiftStarterPlanAfterFeed}=require('../app/utils/bakeExecution.ts');
 const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
-const handlers=source.slice(source.indexOf('  function requestSourdoughMixReplan()'),source.indexOf('  const commercialMethod=',source.indexOf('  function requestSourdoughMixReplan()')));
-function recover(actual,guide=false){
+const handlers=source.slice(source.indexOf('  function recordedFeedAnchor('),source.indexOf('  const commercialMethod=',source.indexOf('  function requestSourdoughMixReplan()')));
+function recover(actual,guide=false,extra={}){
  const now=Date.now(),last=new Date(now-24*3600000),peak=new Date(now-12*3600000),planned=new Date(now-3600000);
  const events=[{kind:'last_fed',time:last},{kind:'known_peak',time:peak},{kind:'refresh',time:planned,feedingRatio:4},{kind:'pre_mix',time:new Date(now+3600000)}];
- const state={},context={Date,Number,starterEvents:events,starterFeedRecords:[],missedStarterFeed:events[2],nextFeedRatio:1,lastFedTime:last,knownPeakTime:peak,serializeStarterEvents,saveSession:snapshot=>state.snapshot=snapshot,buildSessionPayload:overrides=>overrides,openDestination:value=>state.destination=value};
+ const state={},context={Date,Number,starterEvents:events,starterFeedRecords:[],missedStarterFeed:events[2],nextFeedRatio:1,recipeGenerated:false,starterRecoveryPending:false,shiftStarterPlanAfterFeed,lastFedTime:last,knownPeakTime:peak,serializeStarterEvents,saveSession:snapshot=>state.snapshot=snapshot,buildSessionPayload:overrides=>overrides,openDestination:value=>state.destination=value};
  for(const name of new Set(handlers.match(/\bset[A-Z]\w*/g)))context[name]=value=>state[name]=typeof value==='function'?value(0):value;
+ Object.assign(context,extra);
  if(guide){context.feedEvent=events[3];context.feedEvent.feedingRatio=5;context.missedStarterFeed=undefined;}
  const code=ts.transpileModule(handlers+'\nupdateStarterAfterMissedFeed('+ (actual?'Date.now()-1800000':'') +(guide?',feedEvent':'')+');',{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
  vm.runInNewContext(code,context);return {state,events,last,peak};
@@ -47,4 +48,53 @@ test('guide feed completion records the same fact even before its planned time',
  assert.ok(record.actualAt<record.plannedAt);
  assert.equal(state.snapshot.lastFedTime,record.actualAt);
  assert.equal(overdueStarterFeed([{kind:record.kind,time:new Date(record.plannedAt)}],state.snapshot.starterFeedRecords,record.plannedAt+1),undefined);
+});
+
+// Priya's retention review (17 Nov 2026): once the recipe exists, confirming a feed keeps the plan,
+// keeps her where she is, and a late feed moves only the steps that depend on it.
+const H=3600000;
+// recover() records the feed 30 minutes before now; the first overdue feed is the one confirmed.
+function runKeep(events,{fits=true,start}={}){
+ const now=Date.now(),eat=new Date(now+30*H),mix=start??new Date(now+12*H);
+ const planned=events.find(e=>['refresh','intermediate_refresh','pre_mix'].includes(e.kind)&&+e.time<=now);
+ return recover(true,false,{missedStarterFeed:planned,starterEvents:events,recipeGenerated:true,eatTime:eat,startTime:mix,timingOverrides:{},feedTime:null,feed2Time:null,fridgeOutTime:null,starterFridgeInTime:null,
+  starterPlanResetKey:3,confirmedSchedulePlan:false,acceptedPlan:{startTime:+mix,preparationAt:+mix,bakeAt:+eat},styleKey:fits?'pain_au_levain':undefined,mixerType:'hand',repairKey:()=>'k',blocks:[],prefOffsetH:0,prefGoesInFridge:false,
+  Date:class extends Date{static now(){return now;}}});
+}
+test('a feed confirmed on time keeps every planned time and never opens setup',()=>{
+ const now=Date.now(),t=h=>new Date(Math.round((now+h*H)/900000)*900000);
+ const events=[{kind:'last_fed',time:t(-120)},{kind:'refresh',time:new Date(now-1800000),feedingRatio:1},{kind:'fridge_in',time:t(14)},{kind:'fridge_out',time:t(40)},{kind:'pre_mix',time:t(42),feedingRatio:4}];
+ const {state}=runKeep(events);
+ assert.equal(state.destination,undefined);
+ assert.equal(state.setStarterRecoveryPending,undefined);
+ assert.equal(state.snapshot.starterRecoveryPending,undefined);
+ assert.equal(state.snapshot.starterFeedRecords.length,1);
+ assert.deepEqual(state.snapshot.starterEvents.map(e=>e.time),events.map(e=>+e.time));
+ assert.equal(state.setStartTime,undefined);
+ // The feed is answered: it is not asked again.
+ const restored=state.snapshot.starterEvents.map(e=>({...e,time:new Date(e.time)}));
+ assert.equal(overdueStarterFeed(restored,state.snapshot.starterFeedRecords,now),undefined);
+});
+test('a late pre-mix feed moves the later feeds and the mix by the same time; the bake stays',()=>{
+ const now=Date.now(),q=ms=>Math.round(ms/900000)*900000;
+ const planned=q(now-2.5*H),actual=planned+2*H;
+ const events=[{kind:'last_fed',time:new Date(planned-30*H)},{kind:'pre_mix',time:new Date(planned),feedingRatio:4},{kind:'pre_mix',time:new Date(q(now+5*H)),feedingRatio:4}];
+ const shifted=shiftStarterPlanAfterFeed(events,events[1],actual,q(now+12*H));
+ assert.equal(shifted.mixShiftMs,2*H);
+ assert.deepEqual(shifted.events.map(e=>+e.time),[+events[0].time,actual,+events[2].time+2*H]);
+ // A fridge spell after the feed absorbs the delay: the mix stays.
+ const cold=[...events.slice(0,2),{kind:'fridge_in',time:new Date(q(now+3*H))},{kind:'fridge_out',time:new Date(q(now+20*H))}];
+ const kept=shiftStarterPlanAfterFeed(cold,cold[1],actual,q(now+24*H));
+ assert.equal(kept.mixShiftMs,0);
+ assert.deepEqual(kept.events.map(e=>+e.time),[+cold[0].time,actual,+cold[2].time+2*H,+cold[3].time]);
+ // A feed recorded at its actual time is answered.
+ assert.equal(overdueStarterFeed(kept.events,[{kind:'pre_mix',plannedAt:planned,actualAt:actual,recordedAt:actual,ratio:4}],now),undefined);
+});
+test('when the moved mix no longer fits before the bake, the plan is replanned from the recorded feed',()=>{
+ const now=Date.now(),q=ms=>Math.round(ms/900000)*900000;
+ const events=[{kind:'last_fed',time:new Date(now-48*H)},{kind:'pre_mix',time:new Date(q(now-2.5*H)),feedingRatio:4}];
+ const late=runKeep(events,{fits:false});
+ assert.equal(late.state.destination,'organisation');
+ assert.equal(late.state.snapshot.starterRecoveryPending,true);
+ assert.equal(late.state.snapshot.lastFedTime,late.state.snapshot.starterFeedRecords[0].actualAt);
 });

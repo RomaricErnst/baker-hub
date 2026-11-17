@@ -37,6 +37,8 @@ import { commercialDilution } from '../utils';
 interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   preparationMade?: boolean;
   onStarterFed?:(event:StarterEvent)=>void;
+  /** Times of starter feeds already confirmed (planned and actual): their steps read as done. */
+  starterFedTimes?:number[];
   mixingMade?:boolean;
   onMixComplete?:(done:boolean)=>void;
   onPreparationComplete?: (done:boolean)=>void;
@@ -882,7 +884,7 @@ const TERM_TO_STEPID: Record<string, string> = {
   stretch_bake:      'open',
 };
 
-export default function BakeGuide({onStarterFed, mixingMade,onMixComplete,preparationMade, onPreparationComplete,
+export default function BakeGuide({onStarterFed, starterFedTimes, mixingMade,onMixComplete,preparationMade, onPreparationComplete,
   onSave,onShare,onRepeat,resultNotes,onResultNotesChange,sessionSaved,onBakedChange,completionEnabled=true,onRateBake,onNextBake,
   schedule, mixerType, styleKey, kitchenTemp, fridgeTemp = 4, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, mixerCapacityG, onMixingBatchesChange, waterSource = 'room', onWaterSourceChange, numItems,
   prefermentType, oil, hydration, ovenType, ovenConstruction, prefStartTime, feedTime, starterEvents,
@@ -1286,7 +1288,10 @@ Actual dough condition and equipment may differ from these estimates.`;
   const guideMark = (() => {
     if (phase !== 'preparation' || !stepTimesCtx) return null;
     const now = Date.now();
-    const pending = [...stepTimesCtx.times.entries()].filter(([n]) => { const el = stepRefs.current[n]; return !!el && el.dataset.guidePhase === 'preparation' && el.dataset.guideDone !== 'true'; }).sort((a, b) => a[1] - b[1]);
+    const steps = [...stepTimesCtx.times.entries()].filter(([n]) => stepRefs.current[n]?.dataset.guidePhase === 'preparation');
+    // A step done (or a feed confirmed) closes the steps planned before it: they were done too.
+    const lastDoneAt = Math.max(-Infinity, ...steps.filter(([n]) => stepRefs.current[n]?.dataset.guideDone === 'true').map(([, at]) => at));
+    const pending = steps.filter(([n, at]) => stepRefs.current[n]?.dataset.guideDone !== 'true' && at >= lastDoneAt).sort((a, b) => a[1] - b[1]);
     if (!pending.length) return null;
     const due = pending.filter(([, at]) => at <= now);
     // An unticked mix or preferment comes first: everything after it depends on it.
@@ -1322,7 +1327,7 @@ Actual dough condition and equipment may differ from these estimates.`;
   const n = () => { stepNum++; lastStep = stepNum; return stepNum; };
   const sc = (mixing = false, stepPhase: 'preparation' | 'cooking' = 'preparation', preferment=false,starterFeed?:StarterEvent) => {
     const firstAction=!!onPreparationComplete&&preferment;
-    const actionDone=mixing&&onMixComplete?!!mixingMade:firstAction?!!preparationMade:doneSteps.has(lastStep);
+    const actionDone=mixing&&onMixComplete?!!mixingMade:firstAction?!!preparationMade:doneSteps.has(lastStep)||!!starterFeed&&!!starterFedTimes?.includes(+starterFeed.time);
     const s = lastStep;
     if (!firstPendingPreparation && stepPhase === 'preparation' && !actionDone) firstPendingPreparation = s;
     if (stepPhase === 'cooking') cookingStepNumber++;

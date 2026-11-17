@@ -59,7 +59,31 @@ export function normalizeStarterFeedRecords(value:unknown):StarterFeedRecord[] {
 }
 export function overdueStarterFeed<T extends {kind:string;time:Date}>(events:T[],records:StarterFeedRecord[],now:number) {
   return events.filter(event=>['refresh','intermediate_refresh','pre_mix'].includes(event.kind)&&+event.time<=now
-    &&!records.some(record=>record.kind===event.kind&&record.plannedAt===+event.time)).sort((a,b)=>+a.time-+b.time)[0];
+    &&!records.some(record=>record.kind===event.kind&&(record.plannedAt===+event.time||record.actualAt===+event.time))).sort((a,b)=>+a.time-+b.time)[0];
+}
+
+/**
+ * A feed done at another time than planned moves only what depends on its rise: the steps after it,
+ * up to and including the starter going into the fridge (which resets the chain), or, when no fridge
+ * spell follows, every later feed and the mix (same feed-to-mix interval, so the same levain).
+ * The fed event takes the actual time; the shift is rounded to the plan's quarter hour.
+ * Earlier steps and the bake time never move (Priya's retention review, 17 Nov 2026).
+ */
+export function shiftStarterPlanAfterFeed<T extends {kind:string;time:Date}>(events:T[],fed:{kind:string;time:Date},actualAt:number,mixAt:number) {
+  const plannedAt=+fed.time,quarter=15*60000;
+  const shiftMs=Math.round((actualAt-plannedAt)/quarter)*quarter;
+  const moved=new Map<number,number>();
+  let chainOpen=true;
+  const sorted=[...events].sort((a,b)=>+a.time-+b.time);
+  const next=sorted.map(event=>{
+    if(event.kind===fed.kind&&+event.time===plannedAt){if(actualAt!==plannedAt)moved.set(plannedAt,actualAt);return {...event,time:new Date(actualAt)};}
+    if(+event.time<=plannedAt||!chainOpen||!shiftMs||event.kind==='last_fed'||event.kind==='known_peak')return event;
+    if(event.kind==='fridge_in'&&+event.time<mixAt)chainOpen=false;
+    moved.set(+event.time,+event.time+shiftMs);
+    return {...event,time:new Date(+event.time+shiftMs)};
+  });
+  // The mix follows only an unbroken chain of rises from this feed.
+  return {events:next,moved,mixShiftMs:chainOpen?shiftMs:0};
 }
 
 /** Mixing is one confirmed action, including for sourdough and a made preferment. */
