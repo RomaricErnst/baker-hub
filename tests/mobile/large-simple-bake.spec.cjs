@@ -31,7 +31,7 @@ for(const count of [6,12])test(`simple: ${count} Neapolitan pizzas generate a re
  await expect.poll(async()=>(await stored(page))?.recipeGenerated).toBe(true);
  await expect(page.getByText(/Split into|mixer capacity/i)).toHaveCount(0);
  await section(page,/^Preparation/);
- await page.getByRole('button',{name:/Start Dough/}).first().tap();
+ await page.getByRole('button',{name:/^Start Dough/}).first().tap(); // the bar may also name it ("Now: Start Dough")
  const note=page.locator('[data-large-dough-note]:visible');
  await expect(note).toContainText('is a large dough. If it is too much for your bowl or mixer');
  expect(errors).toEqual([]);
