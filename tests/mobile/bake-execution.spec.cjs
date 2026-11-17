@@ -129,7 +129,8 @@ for(const confirm of [true,false])test(`sourdough missed feed ${confirm?'confirm
  await expect(feed).toHaveCount(0);
  const saved=await stored(page);
  expect(saved.eatTime).toBe(original.eatTime);
- if(confirm){expect(saved.starterFeedRecords).toHaveLength(1);expect(saved.starterFeedRecords[0].actualAt).toBe(plannedAt);expect(saved.lastFedTime).toBe(plannedAt);}
+ // Confirming keeps the generated plan (17 Nov 2026 retention review): the fact is recorded, the times stay.
+ if(confirm){expect(saved.starterFeedRecords).toHaveLength(1);expect(saved.starterFeedRecords[0].actualAt).toBe(plannedAt);expect(saved.startTime).toBe(original.startTime);expect(saved.starterRecoveryPending??false).toBe(false);await expect(page.locator('.bh-navigator-current')).not.toContainText('My bake');}
  else {expect(saved.starterFeedRecords??[]).toHaveLength(0);expect(saved.lastFedTime).toBe(original.lastFedTime);}
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await page.reload();
@@ -138,8 +139,8 @@ for(const confirm of [true,false])test(`sourdough missed feed ${confirm?'confirm
  expect((await stored(page)).starterFeedRecords??[]).toEqual(saved.starterFeedRecords??[]);
  expect((await stored(page)).eatTime).toBe(original.eatTime);
  if(confirm){
-  await expect.poll(async()=>(await stored(page)).starterTimingValid).toBe(true);
-  expect((await stored(page)).startTime).toBeGreaterThan(NOW);
+  expect((await stored(page)).startTime).toBe(original.startTime);
+  expect((await stored(page)).starterEvents.map(e=>e.time)).toEqual(original.starterEvents.map(e=>e.time));
  }
 });
 

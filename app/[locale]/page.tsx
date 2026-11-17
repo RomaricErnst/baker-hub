@@ -7,7 +7,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import type { User } from '@supabase/supabase-js';
 import StarterFeedStatus from '../components/StarterFeedStatus';
 import BakeStartStatus from '../components/BakeStartStatus';
-import {normalizeMixExecution, type MixExecution, type AcceptedPlan, normalizeAcceptedPlan, acceptedPlanMove, promptedPreparationAt, normalizeBakeExecution, normalizeStarterFeedRecords, overdueStarterFeed, type StarterFeedRecord, type BakeExecution} from '../utils/bakeExecution';
+import {normalizeMixExecution, type MixExecution, type AcceptedPlan, normalizeAcceptedPlan, acceptedPlanMove, promptedPreparationAt, normalizeBakeExecution, normalizeStarterFeedRecords, overdueStarterFeed, shiftStarterPlanAfterFeed, type StarterFeedRecord, type BakeExecution} from '../utils/bakeExecution';
 import Header from '../components/Header';
 import dynamic from 'next/dynamic';
 const ProfileSheet = dynamic(() => import('../components/ProfileSheet'), { ssr: false });
@@ -38,7 +38,7 @@ import { doughShoppingItems as buildDoughShoppingItems, yeastShoppingName, yeast
 import { isPanPizzaStyle } from '../utils/panPizza';
 import { buildPlanCalendar, calendarBakeId, downloadPlanCalendar, exportedSteps, hasExportedPlan, keyPlanEvents, readExportedSteps, writeExportedSteps, type PlanCalendarEvent } from '../utils/planCalendar';
 import { leanBreadPreheatMin } from '../utils/leanBreadBake';
-import {commercialPrefermentWindow, validateConfirmedBake, type StarterEvent } from '../components/SchedulePicker';
+import {commercialPrefermentWindow, validateConfirmedBake, STYLE_FERM_DEFAULTS, type StarterEvent } from '../components/SchedulePicker';
 import { prefermentConditioningAction } from '../utils/scheduleEdit';
 import { findAvailabilityConflicts, isTimeBlocked, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake } from '../utils/scheduleAvailability';
 import { retainCurrentFridgeRemoval } from '../utils/fridgeRemovalSession';
@@ -82,7 +82,7 @@ import {
 import {
   buildSchedule, calculateRecipe, formatTime, requiredPrefWarmupH, requiredPrefCooldownH,
   type AvailabilityBlock, type ScheduleResult,
-  starterBulkFactor, referenceStarterPct, prefTempAfterWarmup,
+  starterBulkFactor, referenceStarterPct, prefTempAfterWarmup, sourdoughBulkH, hasCoherentScheduleShape,
 } from '../utils';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { breadNoun } from '../utils/breadNames';
@@ -2014,9 +2014,9 @@ export default function Home() {
 
   // Explicitly accepted proposals must survive the scheduler's bake-key remount.
   // Any changed recipe input, timestamp or availability invalidates this marker.
-  const repairKey = (st: Date, et: Date | null, bl: AvailabilityBlock[], offset = prefOffsetH, storage = prefGoesInFridge) =>
+  const repairKey = (st: Date, et: Date | null, bl: AvailabilityBlock[], offset = prefOffsetH, storage = prefGoesInFridge, resetKey = starterPlanResetKey) =>
     JSON.stringify([[kitchenTemp, fridgeTemp, preheatMin, mixerType, styleKey,
-      yeastType, prefermentType, offset, storage, tang, starterPlanResetKey],
+      yeastType, prefermentType, offset, storage, tang, resetKey],
       +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label, b.fridgeRemoval,b.coveredActions,b.bakeFromFridge])]);
   const confirmedSchedulePlan = acceptedScheduleRepair === repairKey(startTime, eatTime, blocks);
   const handleScheduleChange = (st: Date, et: Date, bl: AvailabilityBlock[], options?: {preservePlan: boolean; timingOverrides?: TimingOverrides; prefOffsetHours?: number; prefInFridge?: boolean; starterRecoveryResolved?:boolean; starterPlan?: {events:StarterEvent[];fridgeOutTime:Date|null;usingPeak2:boolean;feed2Time:Date|null;starterFridgeInTime:Date|null}}) => {
@@ -2300,16 +2300,42 @@ export default function Home() {
   }, [eatTime]);
 
   const startTimeInPast = !!mixExecution || !!execution && execution.method==='none';
+  const starterFedTimes=useMemo(()=>starterFeedRecords.flatMap(record=>[record.plannedAt,record.actualAt]),[starterFeedRecords]);
   const missedStarterFeed=yeastType==='sourdough'&&recipeGenerated&&!mixExecution&&!starterRecoveryPending?overdueStarterFeed(starterEvents,starterFeedRecords,executionClock):undefined;
+  // A replan after recorded feeds starts from the latest one (the plan itself is kept while feeds are
+  // confirmed, so the starter answers still describe the starter before the first of them). Where the
+  // kept plan has put it in the fridge since, it is planned from the fridge.
+  function recordedFeedAnchor(records:StarterFeedRecord[]) {
+    const latest=[...records].sort((a,b)=>a.actualAt-b.actualAt).at(-1);
+    if(!latest||lastFedTime&&+lastFedTime>=latest.actualAt)return null;
+    const now=Date.now(),passed=starterEvents.filter(e=>+e.time>latest.actualAt&&+e.time<=now&&(e.kind==='fridge_in'||e.kind==='fridge_out')).sort((a,b)=>+a.time-+b.time);
+    const fridge=passed.at(-1)?.kind==='fridge_in';
+    const ageH=(now-latest.actualAt)/3600000;
+    const age:'today'|'yesterday'|'days23'|'days45'|'week'=ageH<24?'today':ageH<48?'yesterday':ageH<96?'days23':ageH<144?'days45':'week';
+    return {lastFedTime:latest.actualAt,lastFeedRatio:latest.ratio as 1|2|4|5|10,planningMode:'last_fed' as const,lastFedAge:age,knownPeakTime:null,hasNotFedYet:false,
+      starterLocation:(fridge?'fridge':'rt') as 'rt'|'fridge',starterState:(fridge?'fridge_fed':'rt_fed') as 'rt_fed'|'fridge_fed'};
+  }
+  function applyFeedAnchor(a:NonNullable<ReturnType<typeof recordedFeedAnchor>>) {
+    setSimpleStarterAnswer(null);setLastFedTime(new Date(a.lastFedTime));setLastFeedRatio(a.lastFeedRatio);setPlanningMode('last_fed');setLastFedAge(a.lastFedAge);setKnownPeakTime(null);setHasNotFedYet(false);setStarterLocation(a.starterLocation);setStarterState(a.starterState);
+  }
   function requestSourdoughMixReplan() {
     // A planned mixing time passing says nothing about whether dough exists.
     // Preserve observed feeds; regenerate only the unconfirmed future chain.
-    const history=starterEvents.filter(event=>event.kind==='last_fed'||event.kind==='known_peak');
+    const anchor=recordedFeedAnchor(starterFeedRecords);if(anchor)applyFeedAnchor(anchor);
+    const history=anchor?[]:starterEvents.filter(event=>event.kind==='last_fed'||event.kind==='known_peak');
     setStarterRecoveryPending(true);setStarterEvents(history);setTimingOverrides({});
     setFeedTime(null);setFeed2Time(null);setUsingPeak2(false);setFridgeOutTime(null);setStarterFridgeInTime(null);
     setAcceptedScheduleRepair(null);setSessionRestored(false);setProtocolStale(true);setStarterTimingValid(false);setStarterPlanResetKey(k=>k+1);
     setSetupOverview(false);setActiveStep(7);setAdvancedStep(9);openDestination('organisation');
-    saveSession(buildSessionPayload({starterRecoveryPending:true,starterEvents:serializeStarterEvents(history),timingOverrides:{},protocolStale:true,starterTimingValid:false,feed2Time:null,usingPeak2:false,fridgeOutTime:null,starterFridgeInTime:null}));
+    saveSession(buildSessionPayload({starterRecoveryPending:true,starterEvents:serializeStarterEvents(history),timingOverrides:{},protocolStale:true,starterTimingValid:false,feed2Time:null,usingPeak2:false,fridgeOutTime:null,starterFridgeInTime:null,...(anchor?{...anchor,simpleStarterAnswer:null}:{})}));
+  }
+  // Whether the dough still fits before the fixed bake when a late or early feed moves the mix.
+  function sourdoughMixFits(mix:Date) {
+    if(!eatTime||!styleKey||!mixerType||+mix<=Date.now()||+mix>=+eatTime)return false;
+    const minH=Math.max(1,(STYLE_FERM_DEFAULTS[styleKey]?.minTotalFermH??4)+sourdoughBulkH(styleKey,kitchenTemp)*(levainBulkFactor-1));
+    if(+eatTime-+mix<minH*3600000)return false;
+    const plan=buildSchedule(mix,eatTime,blocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,selectedMixingBatches,true,levainBulkFactor);
+    return +plan.bakeStart===+eatTime&&hasCoherentScheduleShape(plan,mix)&&!plan.preparationInvalid&&!plan.bulkConflict;
   }
   function updateStarterAfterMissedFeed(actualAt?:number,feedEvent:StarterEvent|undefined=missedStarterFeed) {
     if(actualAt!==undefined)try{confirmationAt.current=Date.now();}catch{}
@@ -2317,15 +2343,42 @@ export default function Home() {
     const observations=starterEvents.filter(event=>event.kind==='last_fed'||event.kind==='known_peak');
     const usedRatio=feedEvent.feedingRatio??nextFeedRatio;
     const records=actualAt===undefined?starterFeedRecords:[...starterFeedRecords,{kind:feedEvent.kind as StarterFeedRecord['kind'],plannedAt:+feedEvent.time,actualAt,recordedAt:Date.now(),ratio:usedRatio,previousFedAt:lastFedTime?+lastFedTime:undefined,previousPeakAt:knownPeakTime?+knownPeakTime:undefined}];
+    // A generated plan keeps its times: a feed done records the fact and moves only the steps that
+    // depend on it (shiftStarterPlanAfterFeed). The baker stays where she is; nothing is re-solved
+    // unless the dough no longer fits before the bake (17 Nov 2026 retention review).
+    if(actualAt!==undefined&&recipeGenerated&&!starterRecoveryPending&&eatTime){
+      const shifted=shiftStarterPlanAfterFeed(starterEvents,feedEvent,actualAt,+startTime);
+      const nextStart=new Date(+startTime+shifted.mixShiftMs);
+      if(!shifted.mixShiftMs||sourdoughMixFits(nextStart)){
+        const remap=(d:Date|null)=>d&&shifted.moved.has(+d)?new Date(shifted.moved.get(+d)!):d;
+        const overrides:TimingOverrides={...timingOverrides};
+        for(const key of ['feed','refresh'] as const){const at=overrides[key];if(at!==undefined&&shifted.moved.has(at))overrides[key]=shifted.moved.get(at);}
+        if(overrides.mix!==undefined)overrides.mix+=shifted.mixShiftMs;
+        const nextKey=starterPlanResetKey+1;
+        const fridgeOut=remap(fridgeOutTime),fridgeIn=remap(starterFridgeInTime),feed2=remap(feed2Time);
+        setStarterFeedRecords(records);setStarterEvents(shifted.events);setTimingOverrides(overrides);
+        setFeedTime(remap(feedTime));setFeed2Time(feed2);setFridgeOutTime(fridgeOut);setStarterFridgeInTime(fridgeIn);
+        // Remount the hidden planner frozen on the kept plan, so it shows it rather than re-solving it.
+        setSessionRestored(true);setStarterPlanResetKey(nextKey);
+        setAcceptedScheduleRepair(confirmedSchedulePlan?repairKey(nextStart,eatTime,blocks,prefOffsetH,prefGoesInFridge,nextKey):null);
+        const accepted=acceptedPlan&&shifted.mixShiftMs?{...acceptedPlan,startTime:+nextStart,preparationAt:+nextStart}:acceptedPlan;
+        if(shifted.mixShiftMs){setStartTime(nextStart);setAcceptedPlan(accepted);setPlanMoved({from:+startTime,to:+nextStart});}
+        saveSession(buildSessionPayload({starterFeedRecords:records,starterEvents:serializeStarterEvents(shifted.events),timingOverrides:overrides,startTime:+nextStart,
+          fridgeOutTime:fridgeOut?+fridgeOut:null,feed2Time:feed2?+feed2:null,starterFridgeInTime:fridgeIn?+fridgeIn:null,
+          acceptedStartTime:accepted?.startTime,acceptedPreparationAt:accepted?.preparationAt}));
+        return;
+      }
+    }
     // Earlier observations stay archived in the feed record; only the latest
     // observed feed is the active solver anchor after a new feeding.
-    const history=actualAt===undefined?observations:[];
+    const anchor=actualAt===undefined?recordedFeedAnchor(records):null;if(anchor)applyFeedAnchor(anchor);
+    const history=actualAt===undefined&&!anchor?observations:[];
     setStarterRecoveryPending(true);setStarterFeedRecords(records);setStarterEvents(history);setTimingOverrides({});
     if(actualAt!==undefined){setSimpleStarterAnswer(null);setLastFedTime(new Date(actualAt));setLastFeedRatio(usedRatio);setPlanningMode('last_fed');setLastFedAge('today');setKnownPeakTime(null);setHasNotFedYet(false);setStarterLocation('rt');setStarterState('rt_fed');}
     setFeedTime(null);setFeed2Time(null);setUsingPeak2(false);setFridgeOutTime(null);setStarterFridgeInTime(null);
     setAcceptedScheduleRepair(null);setSessionRestored(false);setProtocolStale(true);setStarterTimingValid(false);setStarterPlanResetKey(k=>k+1);
     setSetupOverview(false);setActiveStep(7);setAdvancedStep(9);openDestination('organisation');
-    saveSession(buildSessionPayload({starterRecoveryPending:true,starterFeedRecords:records,starterEvents:serializeStarterEvents(history),timingOverrides:{},protocolStale:true,starterTimingValid:false,feed2Time:null,usingPeak2:false,fridgeOutTime:null,starterFridgeInTime:null,...(actualAt!==undefined?{lastFedTime:actualAt,lastFeedRatio:usedRatio,planningMode:'last_fed',lastFedAge:'today',knownPeakTime:null,hasNotFedYet:false,starterLocation:'rt',starterState:'rt_fed'}:{})}));
+    saveSession(buildSessionPayload({starterRecoveryPending:true,starterFeedRecords:records,starterEvents:serializeStarterEvents(history),timingOverrides:{},protocolStale:true,starterTimingValid:false,feed2Time:null,usingPeak2:false,fridgeOutTime:null,starterFridgeInTime:null,...(anchor?{...anchor,simpleStarterAnswer:null}:{}),...(actualAt!==undefined?{lastFedTime:actualAt,lastFeedRatio:usedRatio,planningMode:'last_fed',lastFedAge:'today',knownPeakTime:null,hasNotFedYet:false,starterLocation:'rt',starterState:'rt_fed'}:{})}));
   }
   const commercialMethod=prefermentType==='none'||prefermentType==='poolish'||prefermentType==='biga'?prefermentType:null;
   const plannedPreparationAt=+startTime-(commercialMethod&&commercialMethod!=='none'?prefOffsetH*3600000:0);
@@ -3273,6 +3326,8 @@ export default function Home() {
     setReviewMode(false);
     setRecipeGenerated(true);
     setProtocolStale(false);
+    // A recipe generated from a valid plan settles any pending starter recovery: one message, not two.
+    setStarterRecoveryPending(false);
     const accepted:AcceptedPlan = {startTime:+startTime, preparationAt:plannedPreparationAt, ...(eatTime?{bakeAt:+eatTime}:{})};
     // Regenerating after an edit says what moved since the plan the baker had.
     // Regenerating after an edit lists every key time that moved and the amounts that changed.
@@ -3292,7 +3347,7 @@ export default function Home() {
     }
     setAcceptedPlan(accepted);
     // Bake journal on this device: same entry across regenerations. Never blocks generation.
-    try { const {dropped}=recordGeneratedBake(buildSessionPayload({bakeType:bakeType ?? '',recipeGenerated:true,protocolStale:false,activeTab:'plan',acceptedStartTime:accepted.startTime,acceptedPreparationAt:accepted.preparationAt,acceptedEatTime:accepted.bakeAt})); if(dropped.length) void deleteJournalPhotos(dropped.flatMap(entry=>entry.photoIds)); } catch {}
+    try { const {dropped}=recordGeneratedBake(buildSessionPayload({bakeType:bakeType ?? '',recipeGenerated:true,protocolStale:false,starterRecoveryPending:false,activeTab:'plan',acceptedStartTime:accepted.startTime,acceptedPreparationAt:accepted.preparationAt,acceptedEatTime:accepted.bakeAt})); if(dropped.length) void deleteJournalPhotos(dropped.flatMap(entry=>entry.photoIds)); } catch {}
     setShowResults(true);
     const stay = stayAfterUpdateRef.current; stayAfterUpdateRef.current = null;
     if(fillingsReturn)finishFillings();else if(stay)openDestination(stay);else setActiveTab('plan');
@@ -3303,6 +3358,7 @@ export default function Home() {
         recipeGenerated: true,
         protocolStale: false,
         activeTab: 'plan',
+        starterRecoveryPending: false,
         acceptedStartTime: accepted.startTime,
         acceptedPreparationAt: accepted.preparationAt,
         acceptedEatTime: accepted.bakeAt,
@@ -5148,7 +5204,7 @@ export default function Home() {
                 {destination==='protocol'&&eatTime&&prepOverview&&<PreparationTimingSummary calendarOutdated={calendarOutdated} fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
                 <BakeGuide
                   pizzaDiameterCm={bakeType==='pizza'?pizzaDiameter:undefined}
-                  onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)}
+                  onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)} starterFedTimes={starterFedTimes}
                   preparationMade={!!execution} mixingMade={!!mixExecution||execution?.method==='none'} onMixComplete={!isUnleavened?recordGuideMix:undefined} onPreparationComplete={!isUnleavened&&yeastType!=='sourdough'&&prefermentType!=='none'?done=>{if(done)markPreparationMade(Date.now());else if(!mixExecution){setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}}:undefined}
                   onBackToRecipe={()=>openDestination('recipe')}
                   backSection={destination==='service'?{label:fr?'Retour à la préparation':'Back to Preparation',onClick:()=>{setProtocolView('dough');openDestination('protocol');}}:{label:fr?'Retour aux courses':'Back to Shopping list',onClick:()=>openDestination('shopping')}}
@@ -5740,7 +5796,7 @@ export default function Home() {
                 {destination==='protocol'&&eatTime&&prepOverview&&<PreparationTimingSummary calendarOutdated={calendarOutdated} fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
                 <BakeGuide
                   pizzaDiameterCm={bakeType==='pizza'?pizzaDiameter:undefined}
-                  onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)}
+                  onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)} starterFedTimes={starterFedTimes}
                   preparationMade={!!execution} mixingMade={!!mixExecution||execution?.method==='none'} onMixComplete={!isUnleavened?recordGuideMix:undefined} onPreparationComplete={!isUnleavened&&yeastType!=='sourdough'&&prefermentType!=='none'?done=>{if(done)markPreparationMade(Date.now());else if(!mixExecution){setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}}:undefined}
                   onBackToRecipe={()=>openDestination('recipe')}
                   backSection={destination==='service'?{label:fr?'Retour à la préparation':'Back to Preparation',onClick:()=>{setProtocolView('dough');openDestination('protocol');}}:{label:fr?'Retour aux courses':'Back to Shopping list',onClick:()=>openDestination('shopping')}}
