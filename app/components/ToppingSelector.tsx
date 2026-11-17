@@ -2,7 +2,7 @@
 import { BackLabel } from './BackLabel';
 import { pizzaShoppingWeightNote } from '../lib/ingredientWeights';
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { NEXT_CTA, SECONDARY_CTA, SHEET_CLOSE, SHEET_TITLE } from '../lib/navButtons';
+import { NEXT_CTA, SECONDARY_CTA, SHEET_CLOSE, SHEET_TITLE, oneLineCta } from '../lib/navButtons';
 import { createClient } from '@/app/lib/supabase/client';
 import {
   PIZZAS, CATALOGUE_PIZZAS, DESSERT_PIZZAS, getPizzaById, getCustomPizzaList,
@@ -200,6 +200,8 @@ interface Props {
   selectionDoneLabel?:string;
   /** In the journey (Recipe → Toppings → Shopping), the bar's left link goes back to the Recipe. */
   selectionBackLabel?:string;
+  /** Late toppings from Preparation or Baking & serving: the bar goes back there on the left and on to the shopping list on the right. */
+  selectionForward?:{label:string;onClick:()=>void};
   /** Nothing chosen yet in the journey: one full-width row at the top goes straight on to the shopping list. */
   skipLabel?:string;
   /** False until the baker has set how many (16 Nov 2026 review: "2 dough balls" before Quantity said 4). */
@@ -1133,8 +1135,9 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
             after a long topping catalogue. */}
         {recipeIngredients && recipeIngredients.length > 0 && (
           <div style={{ marginBottom: '20px' }}>
-            <div style={{ padding: '12px 12px 8px', background: '#F0EBE0', borderLeft: '3px solid #6B4423' }}>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-ui)' }}>
+            {/* Sentence-case group headings, no rule (16 Nov 2026 design review). */}
+            <div style={{ padding: '10px 12px 8px', background: '#F0EBE0' }}>
+              <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
                 {l === 'fr' ? 'Pour votre pâte' : 'For your dough'}
               </span>
             </div>
@@ -1159,11 +1162,11 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                     </svg>
                   )}
                 </button>
-                <span style={{ fontSize: '13px', color: ticked[ing.tickKey ?? ('dough_' + i)] ? '#B0A89E' : '#2B2420', flex: 1, textDecoration: 'none' }}>
+                <span style={{ fontSize: '15px', color: ticked[ing.tickKey ?? ('dough_' + i)] ? '#B0A89E' : '#2B2420', flex: 1, textDecoration: 'none' }}>
                   {ing.name}
                   {ing.hint && <span style={{ display: 'block', fontSize: '12px', color: '#6D625C' }}>{ing.hint}</span>}
                 </span>
-                <span style={{ fontSize: '12px', color: '#62574e', fontFamily: 'var(--font-ui)' }}>{shoppingAmount(ing.amount)}</span>
+                <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--char)', fontFamily: 'var(--font-ui)', textAlign: 'right' }}>{shoppingAmount(ing.amount)}</span>
               </div>
             ))}
           </div>
@@ -1171,8 +1174,8 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
 
         {sections.map(section => (
           <div key={section.label} style={{ marginBottom: '20px' }}>
-            <div style={{ padding: '12px 12px 8px 12px', background: '#F0EBE0', borderLeft: '3px solid #6B4423', marginTop: '8px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#3D3530', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-ui)' }}>
+            <div style={{ padding: '10px 12px 8px', background: '#F0EBE0', marginTop: '8px' }}>
+              <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
                 {section.label}
               </span>
             </div>
@@ -1219,7 +1222,7 @@ function ShoppingList({ qtys, locale, numItems, styleKey, recipeIngredients, onG
                           )}
 
                         </span>
-                        <span style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', flexShrink: 0 }}>
+                        <span style={{ fontSize: '16px', fontWeight: 700, color: isTicked ? '#B0A89E' : 'var(--char)', fontFamily: 'var(--font-ui)', flexShrink: 0 }}>
                           {item.totalAmount && item.unit ? formatQty(item.totalAmount, item.unit, locale) : ''}
                         </span>
                       </div>
@@ -1320,7 +1323,7 @@ export function shoppingSpoonNote(note: string | undefined, fr: boolean): string
   return spoon ? `${spoon[1]} ${fr ? 'par pizza' : 'per pizza'}` : note;
 }
 
-export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionBack,onBackToRecipe, shoppingBackLabel,onSelectionDone,selectionDoneLabel, selectionBackLabel,skipLabel,countKnown=true,directSelectionReturn=false,active=true,storagePrefix="bh",baseReady=false }: Props) {
+export default function ToppingSelector({ locale, numItems, activePill, onPillChange, t, styleKey, controlledQtys, onQtysChange, hidePillBar, onStyleChange, activeStyleKey, onStyleKeyChange, doughConfigured, onGoToMyDough, recipeIngredients,onSelectionBack,onBackToRecipe, shoppingBackLabel,onSelectionDone,selectionDoneLabel, selectionBackLabel,selectionForward,skipLabel,countKnown=true,directSelectionReturn=false,active=true,storagePrefix="bh",baseReady=false }: Props) {
   const l = locale as 'en' | 'fr';
 
   // On-screen keyboard detection — position:fixed bottom bars anchor to the
@@ -1690,7 +1693,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
               : <><strong style={{color:'var(--char)'}}>{!countKnown ? (l === 'fr' ? `${totalQty} choisie${totalQty > 1 ? 's' : ''}` : `${totalQty} chosen`) : l === 'fr' ? `${totalQty} sur ${numItems} choisie${totalQty > 1 ? 's' : ''}` : `${totalQty} of ${numItems} chosen`}</strong>{' · '}<button type="button" data-see-selection onClick={()=>setSummarySheetOpen(true)} style={{minHeight:44,margin:'-12px 0',verticalAlign:'baseline',border:0,background:'none',color:'var(--terra)',textDecoration:'underline',textUnderlineOffset:2,padding:0,font:'inherit',cursor:'pointer'}}>{l === 'fr' ? 'Voir ma sélection' : 'See my selection'}</button></>}
           </p>
           {/* Dough only: skipping should not mean scrolling past the whole catalogue (16 Nov 2026 review). */}
-          {skipLabel && totalQty === 0 && onSelectionDone && <button type="button" data-skip-fillings onClick={onSelectionDone} className="bh-skip-row">{skipLabel}<span aria-hidden="true"> →</span></button>}
+          {skipLabel && totalQty === 0 && onSelectionDone && <button type="button" data-skip-fillings onClick={onSelectionDone} className="bh-skip-row">{skipLabel}<span aria-hidden="true">{'\u00a0→'}</span></button>}
           {/* ── Results strip ── */}
           <div style={{ padding: '0 0 6px', background: '#FDFBF7', borderBottom: '1px solid #E0D8CF', flexShrink: 0 }}>
             <input
@@ -1725,7 +1728,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             flexShrink: 0,
             alignItems: 'center',
           }}>
-            {!baseReady && <button type="button" data-style-chip onClick={() => setShowStylePicker(true)} style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 12px',minHeight:44,borderRadius:20,border:'1px solid var(--char)',background:'var(--char)',color:'#fff',fontSize:14,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0,fontFamily:'var(--font-ui)'}}>
+            {!baseReady && <button type="button" data-style-chip onClick={() => setShowStylePicker(true)} style={{display:'inline-flex',alignItems:'center',gap:4,padding:'4px 12px',minHeight:44,borderRadius:20,border:'1px solid var(--terra)',background:'var(--cream)',color:'var(--char)',fontWeight:500,fontSize:14,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0,fontFamily:'var(--font-ui)'}}>
               {styleKey ? (l === 'fr' ? (STYLE_NAMES_FR[styleKey] ?? styleKey) : (STYLE_NAMES[styleKey] ?? styleKey)) : (l === 'fr' ? 'Tous les styles' : 'All styles')} ▾
             </button>}
             {([
@@ -1745,8 +1748,9 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
                   borderRadius: '20px',
                   // Active in the brand brown on a light tint, not red on pink (16 Nov 2026 design pass).
                   border: chip.count > 0 ? '1px solid var(--terra)' : '1px solid var(--border)',
-                  background: chip.count > 0 ? 'rgba(107,68,35,.07)' : '#FDFBF7',
-                  color: chip.count > 0 ? 'var(--terra)' : 'var(--ash)',
+                  // Selected chips across the app: cream fill, brown border (16 Nov 2026 design review).
+                  background: chip.count > 0 ? 'var(--cream)' : '#FDFBF7',
+                  color: chip.count > 0 ? 'var(--char)' : 'var(--ash)',
                   fontSize: '14px',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap' as const,
@@ -2694,9 +2698,18 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
         }}>
           {/* The bar goes back and forward only; the tally under the title opens the selection (14 Nov 2026 audit). */}
           {(!directSelectionReturn||selectionBackLabel)&&onSelectionBack&&<button type="button" className="bh-back-action" onClick={onSelectionBack}><BackLabel text={directSelectionReturn?selectionBackLabel:(l==='fr'?'Étape précédente':'Previous step')}/></button>}
-          <button type="button" disabled={selectionActionDisabled} onClick={() => (totalQty===0||(directSelectionReturn&&totalQty<=numItems))?onSelectionDone?.():setSummarySheetOpen(true)} style={{...NEXT_CTA,width:'100%',minHeight:44,opacity:selectionActionDisabled ? .65 : 1}}>
-            {directSelectionReturn&&onSelectionDone ? (totalQty>numItems?(l==='fr'?'Vérifier la quantité de pâte':'Check dough quantity'):selectionDoneLabel) : totalQty === 0 ? (onSelectionDone&&!baseReady?(selectionDoneLabel??(l==='fr'?'Définir ma recette':'Set up my recipe')):(l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas')) : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`)}
-          </button>
+          {/* Late toppings: the return is the back control, the shopping list the way on (16 Nov 2026 design review). */}
+          {selectionForward&&directSelectionReturn&&!selectionBackLabel&&onSelectionDone&&totalQty<=numItems&&<button type="button" className="bh-back-action" onClick={onSelectionDone}><BackLabel text={selectionDoneLabel}/></button>}
+          {selectionForward&&directSelectionReturn&&!selectionBackLabel&&totalQty<=numItems ? (()=>{
+            const cta=oneLineCta(selectionForward.label);
+            return <button type="button" className={cta.className} aria-label={cta['aria-label']} onClick={selectionForward.onClick} style={{...NEXT_CTA,width:'100%',minHeight:44}}>{cta.children}</button>;
+          })() : (()=>{
+            const label=directSelectionReturn&&onSelectionDone ? (totalQty>numItems?(l==='fr'?'Vérifier la quantité de pâte':'Check dough quantity'):selectionDoneLabel) : totalQty === 0 ? (onSelectionDone&&!baseReady?(selectionDoneLabel??(l==='fr'?'Définir ma recette':'Set up my recipe')):(l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas')) : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`);
+            const oneLine=label&&/ →$/.test(label)?oneLineCta(label):null;
+            return <button type="button" disabled={selectionActionDisabled} className={oneLine?.className} aria-label={oneLine?.['aria-label']} onClick={() => (totalQty===0||(directSelectionReturn&&totalQty<=numItems))?onSelectionDone?.():setSummarySheetOpen(true)} style={{...NEXT_CTA,width:'100%',minHeight:44,opacity:selectionActionDisabled ? .65 : 1}}>
+              {oneLine?oneLine.children:label}
+            </button>;
+          })()}
 
         </div>
       )}

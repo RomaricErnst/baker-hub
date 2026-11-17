@@ -8021,7 +8021,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
               border: `1.5px solid ${isWorkActive ? 'var(--terra)' : 'var(--border)'}`,
               background: isWorkActive ? 'var(--cream)' : 'var(--warm)',
               color: isWorkActive ? 'var(--terra)' : 'var(--char)',
-              fontSize: '12px', fontWeight: isWorkActive ? 500 : 400,
+              fontSize: '14px', fontWeight: isWorkActive ? 500 : 400,
               cursor: 'pointer', fontFamily: 'var(--font-ui)',
               transition: 'all .15s',
               display: 'inline-flex', alignItems: 'center', gap: '4px',
@@ -8029,7 +8029,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
             }}
           >
             {t('blockers.weekdays')}
-            <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
+            <span style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--smoke)' }}>
               {fmtCardHM(blockClock(pendingEatTime,presetHours('work').from),isFr)} – {fmtCardHM(blockClock(pendingEatTime,presetHours('work').to),isFr)}
             </span>
             {isWorkActive && <span style={{ opacity: .7 }}>✓</span>}
@@ -8046,7 +8046,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
                 border: `1.5px solid ${active ? 'var(--terra)' : 'var(--border)'}`,
                 background: active ? 'var(--cream)' : 'var(--warm)',
                 color: active ? 'var(--terra)' : 'var(--char)',
-                fontSize: '12px', fontWeight: active ? 500 : 400,
+                fontSize: '14px', fontWeight: active ? 500 : 400,
                 cursor: 'pointer', fontFamily: 'var(--font-ui)',
                 transition: 'all .15s',
                 display: 'inline-flex', alignItems: 'center', gap: '4px',
@@ -8054,7 +8054,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
               }}
             >
               {t('blockers.nights')}
-              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>
+              <span style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--smoke)' }}>
                 {fmtCardHM(blockClock(pendingEatTime,presetHours('sleep').from),isFr)} – {fmtCardHM(blockClock(pendingEatTime,presetHours('sleep').to),isFr)}
               </span>
               {active && <span style={{ opacity: .7 }}>✓</span>}
@@ -8070,7 +8070,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
             border: `1.5px solid ${showCustom ? 'var(--terra)' : 'var(--border)'}`,
             background: showCustom ? 'var(--cream)' : 'var(--warm)',
             color: showCustom ? 'var(--terra)' : 'var(--char)',
-            fontSize: '12px', cursor: 'pointer',
+            fontSize: '14px', cursor: 'pointer',
             fontFamily: 'var(--font-ui)', transition: 'all .15s',
           }}
         >

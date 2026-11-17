@@ -71,7 +71,7 @@ import { formatYeastDose } from '../utils/prefermentDose';
 import { soonStartLabel } from '../utils/startNotice';
 import { checkYeastEntry, entryHoursLabel, type YeastEntryCheck } from '../utils/yeastEntry';
 import { starterActionLabelFor } from '../utils/starterBuild';
-import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock, formatBakeDateTime, displayWeight, formatPercent } from '../utils/units';
+import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock, roundToQuarter, formatBakeDateTime, displayWeight, formatPercent } from '../utils/units';
 import { formatDuration } from '../utils/duration';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
@@ -1289,6 +1289,11 @@ export default function Home() {
   // Nothing chosen on the way through: the forward button says so (16 Nov 2026 review).
   const fillingsSkipLabel=fillingsReturn?.forward?(bakeType==='pizza'?(locale==='fr'?'Pâte seule ? Passer à la liste de courses':'Dough only? Skip to shopping list'):(locale==='fr'?'Pain seul ? Passer à la liste de courses':'Bread only? Skip to shopping list')):undefined;
   const fillingsDoneLabel=fillingsReturn?.forward?(hasFillings?(locale==='fr'?'Liste de courses →':'Shopping list →'):bakeType==='pizza'?(locale==='fr'?'Liste de courses · pâte seule →':'Shopping list · dough only →'):(locale==='fr'?'Liste de courses · pain seul →':'Shopping list · bread only →')):fillingsReturn?(fillingsReturn.destination==='recipe'?(locale==='fr'?'Retour à la recette':'Back to Recipe'):fillingsReturn.destination==='shopping'?(locale==='fr'?'Retour aux courses':'Back to Shopping list'):fillingsReturn.destination==='service'?(locale==='fr'?'Retour à Cuisson & service':'Back to Baking & serving'):(locale==='fr'?'Retour à la préparation':'Back to Preparation')):(locale==='fr'?'Définir ma recette':'Set up my recipe');
+  // Late toppings from Preparation or Baking & serving: the normal pair, the return on the left
+  // ("‹ Preparation") and the shopping list on the right (16 Nov 2026 design review).
+  const fillingsForward=recipeGenerated&&fillingsReturn&&!fillingsReturn.forward&&(fillingsReturn.destination==='protocol'||fillingsReturn.destination==='service')?{
+    label:hasFillings?(locale==='fr'?'Liste de courses →':'Shopping list →'):bakeType==='pizza'?(locale==='fr'?'Liste de courses · pâte seule →':'Shopping list · dough only →'):(locale==='fr'?'Liste de courses · pain seul →':'Shopping list · bread only →'),
+    onClick:()=>{setFillingsReturn(null);openDestination('shopping');}}:undefined;
   const setupReturnLabel=protocolStale?(locale==='fr'?'Mettre à jour la recette':'Update recipe'):fillingsReturn?fillingsDoneLabel:(locale==='fr'?'Retour à la recette':'Back to Recipe');
   const bottomNavCollapsed = false;
   const stickTop = stickyHeadH;
@@ -1579,7 +1584,7 @@ export default function Home() {
     setKitchenTemp(session.kitchenTemp);
     setCustomKitchenConfirmed(session.customKitchenConfirmed ?? true);
     setHumidity(session.humidity);
-    setFridgeTemp(session.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(session.waterSource ?? '') ? session.waterSource! : 'room'); setMeasuredWaterTemp(session.measuredWaterTemp); setWaterMethod(session.waterMethod ?? (session.mixerType==='spiral'?'direct':'premelt')); setSpiralIceConfirmed(session.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(session.mixingBatches)); setCustomMixerCapacityG(session.mixerCapacityG); setResultNotes((session.resultNotes ?? '')); setContainerCapacityLitres(session.containerCapacityLitres);
+    setFridgeTemp(session.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(session.waterSource ?? '') ? session.waterSource! : 'room'); setMeasuredWaterTemp(session.measuredWaterTemp); setWaterMethod(session.waterMethod ?? (session.mixerType==='spiral'?'direct':'premelt')); setSpiralIceConfirmed(session.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(session.mixingBatches)); setCustomMixerCapacityG(session.mixerCapacityG); setResultNotes((session.resultNotes ?? '')); setPreviousNote(session.previousNote ?? ''); setContainerCapacityLitres(session.containerCapacityLitres);
     if (session.flourBlend) setFlourBlend(session.flourBlend as FlourBlend);
     setPrefermentType(session.prefermentType as PrefermentType);
     // Absent means UNSETTLED, not settled. The `?? true` this replaces was
@@ -2234,7 +2239,7 @@ export default function Home() {
     return {
       tab, bakeType, bakeName, styleKey, numItems, itemWeight, totalFlourTarget, pizzaDiameter,
       ovenType, ovenConstruction, mixerType, yeastType,
-      kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, mixerCapacityG: customMixerCapacityG, resultNotes, containerCapacityLitres, humidity, fridgeTemp,
+      kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, mixerCapacityG: customMixerCapacityG, resultNotes, previousNote, containerCapacityLitres, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, timingOverrides, execution, mixExecution, starterFeedRecords, starterRecoveryPending,
       qtyChosen, flourChosen, prefermentChosen, customKitchenConfirmed, confirmedSettings,
       manualHydration, manualOil, manualSugar, manualSalt, yeastPctOverride, starterPctOverride,
@@ -3463,7 +3468,9 @@ export default function Home() {
     const snap = event.dough_snapshot;
     const rb = !!opts?.rebake;
     // Unit tests run this function alone; the note is a nicety, never a reason to fail a restore.
-    try{const snapNote=(event.dough_snapshot as {resultNotes?:string}|null)?.resultNotes?.trim()??'';setPreviousNote(rb?(pendingPreviousNote.current||snapNote):'');pendingPreviousNote.current='';}catch{}
+    // The note travels in the session (previousNote): Bake again, close the app, Resume, Generate
+    // still shows "Last time: …" (16 Nov 2026 design review: it was React state only and was lost).
+    try{const snapNote=(event.dough_snapshot as {resultNotes?:string}|null)?.resultNotes?.trim()??'';setPreviousNote(rb?(pendingPreviousNote.current||snapNote):(snap.previousNote??''));pendingPreviousNote.current='';}catch{}
     const freshStarterPlan = rb && snap.yeastType === 'sourdough';
     let deltaMs = 0;
     if (rb && snap.eatTime) {
@@ -4255,7 +4262,8 @@ export default function Home() {
   const journeyNext = (()=>{
     if(!recipeGenerated||!eatTime||!schedule)return undefined;
     const now=Date.now();
-    const whenOf=(at:Date)=>at.toDateString()===new Date(now).toDateString()?formatClock(at,locale):`${at.toLocaleDateString(fr?'fr-FR':'en-GB',{weekday:'short'})} ${formatClock(at,locale)}`;
+    // The same 15-minute grid as the step list (FR showed 18h40 here and 18h45 on the step).
+    const whenOf=(exact:Date)=>{const at=roundToQuarter(exact);return at.toDateString()===new Date(now).toDateString()?formatClock(at,locale):`${at.toLocaleDateString(fr?'fr-FR':'en-GB',{weekday:'short'})} ${formatClock(at,locale)}`;};
     // Preparation's own step, as the guide marks it: a due step reads "Now" (16 Nov retention review).
     if(guideClock&&!bakedDone){
       if(guideClock.kind==='now'||guideClock.at<=now)return fr?`Maintenant : ${guideClock.title}`:`Now: ${guideClock.title}`;
@@ -4569,19 +4577,19 @@ export default function Home() {
           <div style={{
             background: 'var(--warm)',
             border: '1px solid var(--border)',
-            borderRadius: '14px',
+            borderRadius: '18px',
             padding: '8px 8px 8px 14px',
             margin: '0 0 14px',
             minHeight: '56px',
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            // 16 px labels never wrap inside a button: side by side when they fit, stacked when not (16 Nov 2026 design review).
+            display: 'flex', flexWrap: 'wrap',
             alignItems: 'center',
             gap: '10px',
             boxShadow: 'var(--card-shadow, 0 2px 12px rgba(43, 36, 32,0.06))',
           }}>
             <span style={{
               fontFamily: 'var(--font-ui)', fontSize: '13.5px',
-              color: 'var(--ash)', gridColumn: '1 / -1', gridRow: 1, minWidth: 0, lineHeight: 1.35,
+              color: 'var(--ash)', flexBasis: '100%', minWidth: 0, lineHeight: 1.35,
             }}>
               {/* Sentence case, not uppercase with letter-spacing: the tracked
                   caps made the label long enough that the two controls could not
@@ -4610,7 +4618,8 @@ export default function Home() {
                     <span style={{ color: 'var(--char)', fontWeight: 600 }}>{head}</span>
                     {when && (
                       <span style={{ color: 'var(--smoke)' }}>
-                        {locale === 'fr' ? ` · cuisson ${when}` : ` · bake ${when}`}
+                        {/* The day and time travel together: FR never leaves "19h30" alone on a line. */}
+                        {locale === 'fr' ? ` · cuisson\u00a0${when.replace(/ /g, '\u00a0')}` : ` · bake\u00a0${when.replace(/ /g, '\u00a0')}`}
                       </span>
                     )}
                   </>
@@ -4641,10 +4650,10 @@ export default function Home() {
               }}
               style={{
                 background: 'var(--terra)', border: 'none',
-                color: 'white', cursor: 'pointer', fontSize: '13px',
+                color: 'white', cursor: 'pointer', fontSize: '16px',
                 fontFamily: 'var(--font-ui)', fontWeight: 600,
-                padding: '10px 12px', minHeight: '44px',
-                borderRadius: '12px', gridRow: 2,
+                padding: '10px 14px', minHeight: '44px',
+                borderRadius: '12px', flex: '1 1 auto', whiteSpace: 'nowrap',
               }}
             >
               {pendingFinished
@@ -4655,7 +4664,7 @@ export default function Home() {
             </button>
             <button
               onClick={() => { startRecoverableBake(); }}
-              style={{ gridRow: 2, background: 'none', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--char)', fontFamily: 'var(--font-ui)', fontSize: 13, padding: '10px 12px', minHeight: 44, cursor: 'pointer' }}
+              style={{ flex: '1 1 auto', whiteSpace: 'nowrap', background: 'none', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--char)', fontFamily: 'var(--font-ui)', fontSize: 16, padding: '10px 14px', minHeight: 44, cursor: 'pointer' }}
             >
               {fr ? 'Nouvelle fournée' : 'Start a new bake'}
             </button>
@@ -4674,7 +4683,7 @@ export default function Home() {
           <div style={{
             background: 'var(--warm)',
             border: '1px solid var(--border)',
-            borderRadius: '16px',
+            borderRadius: '18px',
             padding: '12px 16px',
             margin: '0 0 14px',
             display: 'flex',
@@ -4708,7 +4717,7 @@ export default function Home() {
               }}
               style={{
                 background: 'var(--terra)', border: 'none',
-                color: 'white', cursor: 'pointer', fontSize: '13px',
+                color: 'white', cursor: 'pointer', fontSize: '16px',
                 fontFamily: 'var(--font-ui)', fontWeight: 600,
                 padding: '8px 16px', minHeight: 44, borderRadius: '12px', whiteSpace: 'nowrap',
               }}
@@ -4734,8 +4743,9 @@ export default function Home() {
           <div style={{ minHeight: 'calc(100dvh - 260px)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <h1 style={{
-            fontFamily: 'var(--font-ui)',
-            fontSize: 'clamp(1.4rem, 5vw, 2rem)',
+            // The display serif, like every other page title (16 Nov 2026 design review).
+            fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(1.6rem, 6vw, 2rem)',
             fontWeight: 700,
             color: 'var(--char)',
             lineHeight: 1.2,
@@ -5189,7 +5199,7 @@ export default function Home() {
                 <div style={{ marginTop: '12px' }}>
 
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
-                    <button type="button" className="bh-back-action" onClick={openSetupReview}><span aria-hidden="true">‹ </span>{fr?'Mes choix':'My choices'}</button>
+                    <button type="button" className="bh-back-action" onClick={openSetupReview}><span style={{whiteSpace:'nowrap'}}><span aria-hidden="true">‹ </span>{fr?'Mes choix':'My choices'}</span></button>
                     {fillingsStep?<button type="button" data-toppings-step style={NEXT_CTA} onClick={openToppingsStep}>{fillingsStepLabel} →</button>:<button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}><DestinationIcon destination="shopping"/> {fr?'Liste de courses':'Shopping list'} →</button>}
 
                   </BottomActions>}
@@ -5271,7 +5281,7 @@ export default function Home() {
                   onBackToRecipe={fillingsStep?openToppingsStep:()=>openDestination('recipe')}
                   shoppingBackLabel={fillingsStep?(fr?'Retour aux pizzas':'Back to Pizzas'):undefined}
                   onSelectionBack={backFromFillings} onSelectionDone={finishFillings}
-                  selectionDoneLabel={fillingsDoneLabel} skipLabel={fillingsSkipLabel} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à la recette':'Back to Recipe'):undefined}
+                  selectionDoneLabel={fillingsDoneLabel} skipLabel={fillingsSkipLabel} selectionForward={fillingsForward} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à la recette':'Back to Recipe'):undefined}
                   directSelectionReturn={!!fillingsReturn}
                   onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel}
                   active={companionVisible}
@@ -5781,7 +5791,7 @@ export default function Home() {
                 <div style={{ marginTop: '12px' }}>
 
                   {activeTab==='plan'&&<BottomActions className="bh-recipe-next">
-                    <button type="button" className="bh-back-action" onClick={openSetupReview}><span aria-hidden="true">‹ </span>{fr?'Mes choix':'My choices'}</button>
+                    <button type="button" className="bh-back-action" onClick={openSetupReview}><span style={{whiteSpace:'nowrap'}}><span aria-hidden="true">‹ </span>{fr?'Mes choix':'My choices'}</span></button>
                     {fillingsStep?<button type="button" data-toppings-step style={NEXT_CTA} onClick={openToppingsStep}>{fillingsStepLabel} →</button>:<button type="button" style={NEXT_CTA} onClick={()=>openDestination('shopping')}><DestinationIcon destination="shopping"/> {fr?'Liste de courses':'Shopping list'} →</button>}
 
                   </BottomActions>}
@@ -5863,7 +5873,7 @@ export default function Home() {
                   onBackToRecipe={fillingsStep?openToppingsStep:()=>openDestination('recipe')}
                   shoppingBackLabel={fillingsStep?(fr?'Retour aux pizzas':'Back to Pizzas'):undefined}
                   onSelectionBack={backFromFillings} onSelectionDone={finishFillings}
-                  selectionDoneLabel={fillingsDoneLabel} skipLabel={fillingsSkipLabel} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à la recette':'Back to Recipe'):undefined}
+                  selectionDoneLabel={fillingsDoneLabel} skipLabel={fillingsSkipLabel} selectionForward={fillingsForward} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à la recette':'Back to Recipe'):undefined}
                   directSelectionReturn={!!fillingsReturn}
                   onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel}
                   active={companionVisible}
@@ -5902,7 +5912,7 @@ export default function Home() {
         <SandwichParty onRepeat={repeatCurrentRecipe} resultNotes={resultNotes} onResultNotesChange={setResultNotes} onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved && !!user} isFr={locale === 'fr'} styleKey={styleKey} snapshot={sandwichParty}
           onBackToRecipe={fillingsStep&&sandwichEnabled?openToppingsStep:()=>openDestination('recipe')}
           backLabel={fillingsStep&&sandwichEnabled?(fr?'Retour aux garnitures':'Back to Fillings'):undefined}
-          onChange={setSandwichParty} phase={companionPhase==='bake'?'serve':companionPhase} onPhaseChange={openCompanionPhase} onSelectionBack={backFromFillings} onSelectionDone={finishFillings} selectionDoneLabel={fillingsDoneLabel} skipLabel={fillingsSkipLabel} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à la recette':'Back to Recipe'):undefined} directSelectionReturn={!!fillingsReturn} onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel} active={companionVisible} hideNavigation doughConfigured={recipeGenerated} breadIngredients={recipeGenerated ? sandwichDoughIngredients : []}
+          onChange={setSandwichParty} phase={companionPhase==='bake'?'serve':companionPhase} onPhaseChange={openCompanionPhase} onSelectionBack={backFromFillings} onSelectionDone={finishFillings} selectionDoneLabel={fillingsDoneLabel} skipLabel={fillingsSkipLabel} selectionForward={fillingsForward} selectionBackLabel={fillingsReturn?.forward?(fr?'Retour à la recette':'Back to Recipe'):undefined} directSelectionReturn={!!fillingsReturn} onPrepProgress={setFillingsProgress} prepContinueLabel={prepContinueLabel} active={companionVisible} hideNavigation doughConfigured={recipeGenerated} breadIngredients={recipeGenerated ? sandwichDoughIngredients : []}
           onAdjustBread={openQuantityEdit} onMatchBreadCount={count=>{setNumItems(count);setQtyChosen(true);if(recipeGenerated)openQuantityEdit();}}
           availableDoughWeight={recipeGenerated ? ((tab === 'custom' ? advancedRecipe : recipe)?.totalDough ?? numItems * itemWeight) : undefined}
           numItems={numItems} />

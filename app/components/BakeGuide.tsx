@@ -1,6 +1,6 @@
 'use client';
 import { BackLabel } from './BackLabel';
-import { NEXT_CTA } from '../lib/navButtons';
+import { NEXT_CTA, oneLineCta } from '../lib/navButtons';
 import { splitStepWhy, splitLineWhy } from '../utils/stepWhy';
 import { flourProductName } from '../lib/flourGuidance';
 import { formatDuration, formatPlanDuration } from '../utils/duration';
@@ -320,8 +320,8 @@ function StepCard({
         {/* The icon itself becomes the tick once done: no column reserved for it (16 Nov 2026). */}
         <span aria-hidden="true" style={{ color: done ? D.sage : D.terra, width: 22, height: 22, display: overview ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: done ? 18 : undefined }}>{done ? '✓' : icon}</span>
         <span style={{ flex: 1 }}>
-          <strong role={overview?undefined:'heading'} aria-level={overview?undefined:2} style={{ display: 'block', fontSize: overview ? 15 : 28, fontFamily: overview ? 'inherit' : 'Georgia, serif', lineHeight:1.15 }}>{title}{overview && mark && !done && <span className="bh-step-mark" data-step-mark={mark}>{mark === 'now' ? (fr ? 'Maintenant' : 'Now') : (fr ? 'Ensuite' : 'Next')}</span>}</strong>
-          {!overview && !externalProgress && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {displayNumber}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
+          <strong role={overview?undefined:'heading'} aria-level={overview?undefined:2} style={{ display: 'block', fontSize: overview ? 15 : 22, fontFamily: 'inherit', fontWeight: 700, lineHeight:1.2 }}>{title}{overview && mark && !done && <span className="bh-step-mark" data-step-mark={mark}>{mark === 'now' ? (fr ? 'Maintenant' : 'Now') : (fr ? 'Ensuite' : 'Next')}</span>}</strong>
+          {!overview && !externalProgress && stepPhase !== 'cooking' && <span style={{display:'block',fontSize:14,color:D.smoke,marginTop:12}}>{fr ? 'Étape' : 'Step'} {displayNumber}{totalSteps > 0 ? ` / ${totalSteps}` : ''}</span>}
           {time && <span style={{ display: 'block', marginTop: 4, fontSize: 14, color: D.smoke }}>
             {/* Inside a step its own time is the one to read at a glance. */}
             <strong style={overview ? { fontWeight: 400 } : { fontSize: 16, fontWeight: 700, color: 'var(--char)' }}>{formatPlanTime(time, locale)}</strong>{duration ? ` · ${overview ? (passive ? (fr ? 'repos ' : 'rest ') : (fr ? 'durée ' : 'duration ')) : ''}${formatPlanDuration(duration, fr ? 'fr' : 'en')}` : ''}
@@ -344,7 +344,8 @@ function StepCard({
         {/* Same shape as the section bars: back as text on the left, next filled on the right (14 Nov 2026 audit). */}
         <nav aria-label={fr ? 'Navigation entre les étapes' : 'Step navigation'} className="bh-guide-step-nav" style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,2fr)',gap:12,alignItems:'center'}}>
           {onPrevious?<button type="button" className="bh-back-action" onClick={onPrevious} style={{minHeight:44,justifySelf:'start'}}><BackLabel text={previousLabel ?? (fr ? 'Étape précédente' : 'Previous step')}/></button>:<span/>}
-          {!final && <button type="button" className="bh-guide-next" onClick={onNext} style={{...NEXT_CTA,minHeight:48}}>{nextLabel ?? (fr ? 'Étape suivante' : 'Next step')} →</button>}
+          {/* Secondary: the bottom bar holds the screen's one primary button (16 Nov 2026 design review). */}
+          {!final && <button type="button" className="bh-guide-next" onClick={onNext} style={{...SECONDARY_CTA,minHeight:48,padding:'12px 16px',color:'var(--char)',fontWeight:600}}>{nextLabel ?? (fr ? 'Étape suivante' : 'Next step')} →</button>}
         </nav>
         </div>
         {after}
@@ -1383,14 +1384,22 @@ Actual dough condition and equipment may differ from these estimates.`;
   const progressControl = active && progressTarget ? createPortal(
     currentStep===0 ? null :
     <div style={{display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
-      <span>{l==='fr'?'Étape':'Step'} {phase==='cooking'?Math.max(1,currentStep-preparationTotal):currentStep} / {phase==='cooking'?cookingStepTotal:preparationTotal}</span>
+      {/* Baking & serving has two or three steps: no numbering there (CLAUDE.md, 16 Nov 2026 design review). */}
+      {phase!=='cooking'&&<span>{l==='fr'?'Étape':'Step'} {currentStep} / {preparationTotal}</span>}
       <button type="button" className="bh-step-trigger" onClick={()=>{setCurrentStep(0);window.scrollTo({top:0,behavior:'instant'});}}>{l==='fr'?'Vue d’ensemble':'Overview'}</button>
     </div>, progressTarget) : null;
   const breadGuide = isBread && breadProtocol?.cooking !== 'griddle';
   const goToMarked = phase==='preparation' && guideMark?.started && guideMark.title ? guideMark : null;
-  const overviewAction = active && currentStep===0 && phase ? <button type="button" onClick={goToMarked ? () => navigateGuideStep(goToMarked.step) : resumeStep} style={{...NEXT_CTA,minHeight:48}}>
-    {goToMarked ? (l==='fr' ? `Aller à : ${goToMarked.title}` : `Go to: ${goToMarked.title}`) : phase==='cooking' ? (Array.from(doneSteps).some(index=>stepRefs.current[index]?.dataset.guidePhase==='cooking') ? (l==='fr'?'Reprendre la cuisson':breadGuide?'Resume baking':'Resume cooking') : (l==='fr'?(breadGuide?'Cuire le pain':'Commencer la cuisson'):breadGuide?'Bake the bread':'Start cooking')) : phasePositions.current.preparation ? (l==='fr'?'Reprendre la préparation':'Resume preparation') : (l==='fr'?'Commencer la préparation':'Start preparation')} →
-  </button> : null;
+  const showsOverviewBar = active && currentStep===0 && !!phase;
+  // Called where the bar renders, after the steps: by then the overview knows which step it opened.
+  // "Go to: X" is hidden when X is the step already open on screen (16 Nov 2026 design review).
+  const overviewAction = () => {
+    if (!showsOverviewBar) return null;
+    if (goToMarked && goToMarked.step === firstPendingPreparation && (()=>{ const at = stepTimesCtx?.times.get(goToMarked.step); return at !== undefined && at - Date.now() <= 30 * 60000; })()) return null;
+    const label = goToMarked ? (l==='fr' ? `Aller à : ${goToMarked.title}` : `Go to: ${goToMarked.title}`) : phase==='cooking' ? (Array.from(doneSteps).some(index=>stepRefs.current[index]?.dataset.guidePhase==='cooking') ? (l==='fr'?'Reprendre la cuisson':breadGuide?'Resume baking':'Resume cooking') : (l==='fr'?(breadGuide?'Cuire le pain':'Commencer la cuisson'):breadGuide?'Bake the bread':'Start cooking')) : phasePositions.current.preparation ? (l==='fr'?'Reprendre la préparation':'Resume preparation') : (l==='fr'?'Commencer la préparation':'Start preparation');
+    const cta = oneLineCta(label);
+    return <button type="button" className={cta.className} aria-label={cta['aria-label']} onClick={goToMarked ? () => navigateGuideStep(goToMarked.step) : resumeStep} style={{...NEXT_CTA,minHeight:48}}>{cta.children}</button>;
+  };
 
   if (recipe?.protocolIssue) return <section role="alert"><h2>{l === 'fr' ? 'Ajustez ce pain avant de commencer' : 'Adjust this bread before starting'}</h2><p>{recipe.protocolIssue === 'equipment' ? (l === 'fr' ? 'Choisissez un matériel de cuisson compatible dans les réglages.' : 'Choose compatible cooking equipment in setup.') : recipe.protocolIssue === 'timing' ? (l === 'fr' ? 'Laissez assez de temps pour mélanger, reposer et abaisser la pâte avant cuisson.' : 'Allow enough time to mix, rest and roll the dough before cooking.') : (l === 'fr' ? 'Choisissez la méthode de levée prise en charge dans les réglages.' : 'Choose the supported leavening method in setup.')}</p></section>;
 
@@ -1421,12 +1430,12 @@ Actual dough condition and equipment may differ from these estimates.`;
         <Steps items={profileSteps(breadProtocol.cookingSteps[l])} />
         <Steps items={profileSteps(breadProtocol.cooling[l])} />
         {fillingsAction}
-        {onBackToRecipe && <button type="button" onClick={onBackToRecipe} style={{minHeight:48}}>{l==='fr'?'Retour à la recette':'Back to Recipe'} →</button>}
+        {onBackToRecipe && <button type="button" className="bh-back-action" onClick={onBackToRecipe} style={{minHeight:48,paddingLeft:0}}><BackLabel text={l==='fr'?'Retour à la recette':'Back to Recipe'}/></button>}
       </StepCard>
       {active&&currentStep===0&&afterSteps}
-      {overviewAction&&<BottomActions>
+      {showsOverviewBar&&<BottomActions>
         {backSection?<button type="button" className="bh-back-action" onClick={backSection.onClick}><BackLabel text={backSection.label}/></button>:onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}><BackLabel text={l==='fr'?'Retour à la recette':'Back to Recipe'}/></button>}
-        {overviewAction}
+        {overviewAction()}
       </BottomActions>}
       {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange} sessionSaved={sessionSaved}/>}
     </div>
@@ -1958,8 +1967,8 @@ Actual dough condition and equipment may differ from these estimates.`;
             ]} /> : <Steps items={[
               ...(t.raw('coldRetard.steps') as { bold: string; note: string }[]).slice(0, 2),
               { bold: isBread
-                  ? (_isFr ? 'Réglez une alarme pour la division & le façonnage' : 'Set your alarm for Divide & Shape time')
-                  : (_isFr ? 'Réglez une alarme pour la division & le boulage' : 'Set your alarm for Divide & Ball time'),
+                  ? (_isFr ? 'Réglez une alarme pour la division & le façonnage' : 'Set your alarm for dividing and shaping')
+                  : (_isFr ? 'Réglez une alarme pour la division & le boulage' : 'Set your alarm for dividing into balls'),
                 note: formatPlanTime(schedule.divideBallTime ?? schedule.coldRetard1End, _fmtLocale) },
               (t.raw('coldRetard.steps') as { bold: string; note: string }[])[2],
             ]} />}
@@ -2377,7 +2386,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           recipeContext={maestroRecipeContext}
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
         />}
-        {!isBread && !onNavigateToPizzaParty && onBackToRecipe && <button type="button" onClick={onBackToRecipe} style={{minHeight:48}}>{l==='fr'?'Retour à la recette':'Back to Recipe'} →</button>}
+        {!isBread && !onNavigateToPizzaParty && onBackToRecipe && <button type="button" className="bh-back-action" onClick={onBackToRecipe} style={{minHeight:48,paddingLeft:0}}><BackLabel text={l==='fr'?'Retour à la recette':'Back to Recipe'}/></button>}
         {/* With pizzas chosen, cooking them one by one is the next step; without, picking
             pizzas is only an option at the oven, so it is a quiet link. */}
         {!isBread && onNavigateToPizzaParty && (pizzasChosen
@@ -2402,12 +2411,12 @@ Actual dough condition and equipment may differ from these estimates.`;
         })()}
         {!breadProtocol && <StepExtras tips={null} faqKey="cool" coachStepId="cool" coachTitle={l === 'fr' ? 'Refroidissement' : 'Cooling'} recipeContext={maestroRecipeContext} styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} ovenType={ovenType} />}
         {fillingsAction}
-        {onBackToRecipe && <button type="button" onClick={onBackToRecipe} style={{minHeight:48}}>{l==='fr'?'Retour à la recette':'Back to Recipe'} →</button>}
+        {onBackToRecipe && <button type="button" className="bh-back-action" onClick={onBackToRecipe} style={{minHeight:48,paddingLeft:0}}><BackLabel text={l==='fr'?'Retour à la recette':'Back to Recipe'}/></button>}
       </StepCard>}
       {active&&currentStep===0&&afterSteps}
-      {overviewAction&&<BottomActions>
+      {showsOverviewBar&&<BottomActions>
         {backSection?<button type="button" className="bh-back-action" onClick={backSection.onClick}><BackLabel text={backSection.label}/></button>:onBackToRecipe&&<button type="button" className="bh-back-action" onClick={onBackToRecipe}><BackLabel text={l==='fr'?'Retour à la recette':'Back to Recipe'}/></button>}
-        {overviewAction}
+        {overviewAction()}
       </BottomActions>}
       {completionEnabled&&(!phase||phase==='cooking')&&!onNavigateToFillings&&doneSteps.has(totalSteps)&&<JourneyCompletion isFr={l==='fr'} onSave={onSave} onShare={onShare} onRepeat={onRepeat} resultNotes={resultNotes} onResultNotesChange={onResultNotesChange} sessionSaved={sessionSaved}/>}
 

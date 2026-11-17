@@ -899,7 +899,7 @@ export default function RecipeOutput({
 
           {/* TOTAL DOUGH row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
-            <div style={{ fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>
+            <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--char)', fontFamily: 'var(--font-ui)' }}>
               {t('recipeOutput.totalDough')}
             </div>
             <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold-text)', textAlign: 'right', whiteSpace: 'nowrap' }}>

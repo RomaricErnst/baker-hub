@@ -9,7 +9,8 @@ import { updateRecipe, deleteRecipe } from '@/app/lib/supabase/saveRecipe';
 import { fetchBakeEvents, deleteBakeEvent, bakeEventTitle, bakeEventDoughSpec, fetchPhotosForEvents, fetchPizzaPartySlots, type BakeEvent, type BakePhoto, type PizzaPartySlot } from '@/app/lib/supabase/fetchBakeEvents';
 import type { User } from '@supabase/supabase-js';
 import Link from 'next/link';
-import { type UnitSystem } from '../utils/units';
+import { type UnitSystem, displayWeight, formatBakeDateTime } from '../utils/units';
+import { ALL_STYLES } from '@/app/data';
 import SessionViewer from './SessionViewer';
 import {localBakes, type LocalBake, type SessionData, readAuthIntent, type AuthIntent} from '../lib/session';
 import { PIZZAS, DESSERT_PIZZAS } from '@/app/lib/toppingDatabase';
@@ -648,7 +649,13 @@ export default function Header({
                 if(!plans.length) return null;
                 return <>
                   <div style={{...menuGroup,marginTop:16}}>{tJ('earlierPlans')}</div>
-                  {plans.map(row=><button key={row.id} style={{...menuButton,width:'100%',marginTop:8}} onClick={()=>{setMenuOpen(false);onOpenLocalBake?.(row.session);}}>{row.session.bakeName || row.session.styleKey || (locale==='fr'?'Fournée':'Bake')} · {row.session.numItems} × {row.session.itemWeight}g · {new Date(row.session.savedAt).toLocaleString(locale)}</button>)}
+                  {/* The same naming as the journal cards: the style's name, "4 × 260 g" and a short local date (16 Nov 2026 design review). */}
+                  {plans.map(row=>{
+                    const style=(ALL_STYLES as Record<string,{name:string;nameFr?:string}>)[row.session.styleKey??''];
+                    const name=row.session.bakeName?.trim()||(style?(locale==='fr'?style.nameFr??style.name:style.name):(locale==='fr'?'Fournée':'Bake'));
+                    const facts=[row.session.numItems&&row.session.itemWeight?`${row.session.numItems} × ${displayWeight(row.session.itemWeight,units,locale)}`:null,row.session.savedAt?formatBakeDateTime(new Date(row.session.savedAt),locale):null].filter(Boolean).join(' · ');
+                    return <button key={row.id} style={{...menuButton,width:'100%',marginTop:8,textAlign:'left'}} onClick={()=>{setMenuOpen(false);onOpenLocalBake?.(row.session);}}><span style={{display:'block',fontWeight:600}}>{name}</span>{facts&&<span style={{display:'block',fontSize:13,color:'var(--ash)'}}>{facts}</span>}</button>;
+                  })}
                 </>;
               })()}
             </section>
