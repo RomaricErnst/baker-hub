@@ -1303,7 +1303,7 @@ Actual dough condition and equipment may differ from these estimates.`;
   // away, not the card last viewed. Only on return, never while the baker is reading (16 Nov review).
   const returning = useRef(true);
   useEffect(() => {
-    const seen = () => { try { localStorage.setItem(progressKey + ':seenAt', String(Date.now())); } catch {} };
+    const seen = () => { try { localStorage.setItem(progressKey.replace('bh_guide_done_v2:', 'bh_guide_seen_v1:'), String(Date.now())); } catch {} };
     const onVisibility = () => { if (document.visibilityState === 'hidden') seen(); else { returning.current = true; clockTick(); } };
     document.addEventListener('visibilitychange', onVisibility); window.addEventListener('pagehide', seen);
     return () => { seen(); document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('pagehide', seen); };
@@ -1311,7 +1311,7 @@ Actual dough condition and equipment may differ from these estimates.`;
   useEffect(() => {
     if (!returning.current || !active || phase !== 'preparation' || loadedProgressKey !== progressKey || !markAt) return;
     returning.current = false;
-    let seenAt = 0; try { seenAt = Number(localStorage.getItem(progressKey + ':seenAt')) || 0; } catch {}
+    let seenAt = 0; try { seenAt = Number(localStorage.getItem(progressKey.replace('bh_guide_done_v2:', 'bh_guide_seen_v1:'))) || 0; } catch {}
     if (guideMark?.kind === 'now' && seenAt > 0 && markAt > seenAt && currentStep !== guideMark.step) navigateGuideStep(guideMark.step);
   });
   let firstPendingPreparation = 0;
