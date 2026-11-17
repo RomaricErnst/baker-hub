@@ -1,4 +1,5 @@
 import type {RecipeResult} from '../utils';
+import {preMixPeakAfterMovedFeed} from './starterPeak';
 
 /** A clock crossing a planned time is never evidence that ingredients were used. */
 export interface BakeExecution {
@@ -69,18 +70,34 @@ export function overdueStarterFeed<T extends {kind:string;time:Date}>(events:T[]
  * The fed event takes the actual time; the shift is rounded to the plan's quarter hour.
  * Earlier steps and the bake time never move (Priya's retention review, 17 Nov 2026).
  */
-export function shiftStarterPlanAfterFeed<T extends {kind:string;time:Date}>(events:T[],fed:{kind:string;time:Date},actualAt:number,mixAt:number) {
+export function shiftStarterPlanAfterFeed<T extends {kind:string;time:Date;bellPeakTime?:Date;bellStartTime?:Date;cardNote?:string}>(events:T[],fed:{kind:string;time:Date},actualAt:number,mixAt:number,formatPeak?:(d:Date)=>string) {
   const plannedAt=+fed.time,quarter=15*60000;
   const shiftMs=Math.round((actualAt-plannedAt)/quarter)*quarter;
   const moved=new Map<number,number>();
   let chainOpen=true;
   const sorted=[...events].sort((a,b)=>+a.time-+b.time);
+  // A moved feed's peak moves with it ("Peak around…" on the card and the bell): a pre-mix
+  // feed through the shared peak model against the feed before it (preMixPeakAfterMovedFeed),
+  // any other step by its own move. The card's note names the new peak time.
+  const withTime=(event:T,at:number):T=>{
+    const delta=at-+event.time;
+    if(!delta)return event;
+    const out:T={...event,time:new Date(at)};
+    if(event.bellStartTime)out.bellStartTime=new Date(+event.bellStartTime+delta);
+    if(event.bellPeakTime){
+      const previous=sorted.filter(e=>+e.time<+event.time&&['last_fed','refresh','intermediate_refresh','pre_mix'].includes(e.kind)).at(-1);
+      const peak=event.kind==='pre_mix'?preMixPeakAfterMovedFeed(+event.time,+event.bellPeakTime,at,previous?+previous.time:null):+event.bellPeakTime+delta;
+      out.bellPeakTime=new Date(peak);
+      if(formatPeak&&event.cardNote)out.cardNote=event.cardNote.split(formatPeak(event.bellPeakTime)).join(formatPeak(out.bellPeakTime));
+    }
+    return out;
+  };
   const next=sorted.map(event=>{
-    if(event.kind===fed.kind&&+event.time===plannedAt){if(actualAt!==plannedAt)moved.set(plannedAt,actualAt);return {...event,time:new Date(actualAt)};}
+    if(event.kind===fed.kind&&+event.time===plannedAt){if(actualAt!==plannedAt)moved.set(plannedAt,actualAt);return withTime(event,actualAt);}
     if(+event.time<=plannedAt||!chainOpen||!shiftMs||event.kind==='last_fed'||event.kind==='known_peak')return event;
     if(event.kind==='fridge_in'&&+event.time<mixAt)chainOpen=false;
     moved.set(+event.time,+event.time+shiftMs);
-    return {...event,time:new Date(+event.time+shiftMs)};
+    return withTime(event,+event.time+shiftMs);
   });
   // The mix follows only an unbroken chain of rises from this feed.
   return {events:next,moved,mixShiftMs:chainOpen?shiftMs:0};

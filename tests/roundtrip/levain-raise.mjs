@@ -48,14 +48,22 @@ async function run(o){
  const events=(rec.events||'').split(',').filter(Boolean).map(e=>{const[k,t]=e.split('@');return{k,t:Number(t)};});
  const conflicts=[...doc.querySelectorAll('[data-availability-conflicts] > li')].length;
  const choices=doc.querySelectorAll('.bh-target-choices button').length;
- const out={rec,s,tr,events,conflicts,choices,feeds:events.filter(e=>FEEDS.includes(e.k)&&e.t>clock),busyFeeds:events.filter(e=>e.k!=='last_fed'&&e.t>clock&&busyAt(e.t)),
+ let remount;
+ if(o.remount){
+  // Fine-tune mounts a new picker over the page's state (17 Nov 2026 retention: the raised
+  // plan, found with the revival started from the mix, read "no time" there).
+  w.__remountPicker();await settle();await settle();
+  remount={valid:w.__h.rec.scheduleValid===true&&w.__h.rec.starterValid!==false,start:w.__h.rec.start,events:w.__h.rec.events,
+   message:doc.querySelector('.bh-plan-state')?.textContent.trim()};
+ }
+ const out={rec,s,tr,events,conflicts,choices,remount,feeds:events.filter(e=>FEEDS.includes(e.k)&&e.t>clock),busyFeeds:events.filter(e=>e.k!=='last_fed'&&e.t>clock&&busyAt(e.t)),
   kept:rec.bake===+eat,valid:rec.scheduleValid===true&&rec.starterValid!==false};
  m.unmount();await settle();
  return out;
 }
 
 // Her bake: raised, kept, nothing hands-on in busy time, green, levain build before work.
-const her=await run({busy:'weekdays+nights'});
+const her=await run({busy:'weekdays+nights',remount:true});
 assert.ok(her.kept&&her.valid,'Saturday 10:00 kept with a valid plan');
 assert.equal(her.conflicts,0,'no listed clash');
 assert.deepEqual(her.busyFeeds,[],'no starter step in busy time');
@@ -67,6 +75,9 @@ const build=her.feeds.filter(e=>e.k==='pre_mix').at(-1);
 assert.ok(build&&new Date(build.t).getDay()===5&&new Date(build.t).getHours()>=7&&+build.t<+new Date(2026,10,20,9,0),`levain build before work: ${build&&fmt(build.t)}`);
 const bulkEnd=+her.s.bulkFermStart+her.s.bulkFermHours*hour;
 assert.ok(bulkEnd<=+new Date(2026,10,20,23,0)&&+her.s.divideBallTime<+new Date(2026,10,20,23,0),'bulk and shaping before the night');
+assert.ok(her.remount.valid,`raised plan still valid on a remounted picker: ${her.remount.message}`);
+assert.equal(her.remount.start,her.rec.start,'remount keeps the mix');
+assert.equal(her.remount.events,her.rec.events,'remount keeps the starter plan');
 console.log('her bake',her.rec.autoPct+'%',fmt(mix),'build',fmt(build.t),'shape',fmt(+her.s.divideBallTime));
 
 // A baker-entered 20 % is never raised: the requested bake does not fit, another day is offered.

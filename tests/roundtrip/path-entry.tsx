@@ -12,6 +12,9 @@ const w = window as any;
 function Harness({ sc }: { sc: any }) {
   const [eatTime,setEatTime]=useState<Date>(sc.eat);
   w.__changeBake=setEatTime;
+  // A fresh picker over the same parent state: each Custom step mounts its own (page.tsx).
+  const [pickerKey,setPickerKey]=useState(0);
+  w.__remountPicker=()=>setPickerKey(k=>k+1);
   // A starter-% edit made on another step: new bulk factor + the page's replan flag.
   const [bulkFactor,setBulkFactor]=useState<number>(sc.starterBulkFactor ?? 1);
   const [replanPending,setReplanPending]=useState(false);
@@ -62,7 +65,7 @@ function Harness({ sc }: { sc: any }) {
   const schedule=useMemo(()=>sc.full?buildSchedule(startTime,eatTime,blocks,sc.temp,45,mixer,sc.style,sc.numItems??4,sc.batches??1,!sc.commercial,sc.pageFactor||AUTO?factor:1):undefined,[startTime,eatTime,blocks,sc,factor,mixer,AUTO]);
   w.__h.schedule=schedule;
   return (
-    <SchedulePicker
+    <SchedulePicker key={pickerKey}
       startTime={startTime} eatTime={eatTime} blocks={blocks} preheatMin={45}
       styleKey={sc.style} kitchenTemp={sc.temp} starterBulkFactor={factor}
       {...(AUTO?{autoStarterPct:sc.bakerPct===undefined?autoPct??null:null,onAutoStarterPctChange:(p:number|null)=>setAutoPct(p??undefined),

@@ -308,12 +308,12 @@ test('plain bread has useful shopping without requiring any filling selection',a
 test('generated country bread offers optional tartines and preserves the recipe on return',async({page},testInfo)=>{
  await seed(page,{bread:true,style:'pain_campagne'});
  const before=await stored(page);
- // The Recipe leads on to the optional fillings step.
- const step=page.locator('.bh-step-actions:visible [data-toppings-step]');
- await expect(step).toHaveText('Garnitures →');
+ // A plain loaf's Recipe leads on to the Shopping list (17 Nov 2026 retention); its tartines stay
+ // optional, one tap away in Your bake.
+ await expect(page.locator('.bh-step-actions:visible [data-toppings-step]')).toHaveCount(0);
  await noOverflow(page);
  await testInfo.attach('tartine-invitation',{body:await page.screenshot(),contentType:'image/png'});
- await step.tap();
+ await navigate(page,'Garnitures');
  await expect(page.getByRole('article').first()).toBeVisible();
  await page.locator('[data-companion-action]').getByRole('button',{name:'Retour à la recette',exact:true}).tap();
  await expect(page.locator('.bh-navigator-current')).toContainText('Recette');

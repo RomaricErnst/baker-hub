@@ -11,7 +11,7 @@ import {normalizeMixExecution, type MixExecution, type AcceptedPlan, normalizeAc
 import Header from '../components/Header';
 import dynamic from 'next/dynamic';
 const ProfileSheet = dynamic(() => import('../components/ProfileSheet'), { ssr: false });
-import { DEFAULT_BLOCKERS, loadProfile, updateProfile, setProfileListener } from '../lib/profile';
+import { DEFAULT_BLOCKERS, loadProfile, updateProfile, setProfileListener, loadLastEquipment, rememberLastEquipment } from '../lib/profile';
 import { useBottomNavHeight } from '../hooks/useBottomNavHeight';
 import { pushProfile, pullAndMergeProfile } from '../lib/supabase/profileSync';
 import OpeningChoices from '../components/OpeningChoices';
@@ -2409,7 +2409,7 @@ export default function Home() {
     // depend on it (shiftStarterPlanAfterFeed). The baker stays where she is; nothing is re-solved
     // unless the dough no longer fits before the bake (17 Nov 2026 retention review).
     if(actualAt!==undefined&&recipeGenerated&&!starterRecoveryPending&&eatTime){
-      const shifted=shiftStarterPlanAfterFeed(starterEvents,feedEvent,actualAt,+startTime);
+      const shifted=shiftStarterPlanAfterFeed(starterEvents,feedEvent,actualAt,+startTime,d=>formatClock(d,locale));
       const nextStart=new Date(+startTime+shifted.mixShiftMs);
       if(!shifted.mixShiftMs||sourdoughMixFits(nextStart)){
         const remap=(d:Date|null)=>d&&shifted.moved.has(+d)?new Date(shifted.moved.get(+d)!):d;
@@ -2625,6 +2625,15 @@ export default function Home() {
     // the top they could flip at any time. It is a page now, so choosing Pizza
     // has to lead to it rather than past it.
 
+    // ── Last bake's equipment (oven by family, kneading, commercial yeast), under the profile ──
+    const last = loadLastEquipment();
+    const lastOven = bt === 'bread' ? last.ovenBread : last.ovenPizza;
+    const keptOven = lastOven && lastOven in (bt === 'bread' ? BREAD_OVEN_TYPES : OVEN_TYPES) ? lastOven as AnyOvenType : null;
+    const keptMixer = last.mixer && last.mixer in MIXER_TYPES ? last.mixer as MixerType : null;
+    const keptYeast = last.yeast && last.yeast in YEAST_TYPES && last.yeast !== 'sourdough' ? last.yeast as YeastType : null;
+    if (keptOven) { setOvenType(keptOven); confirmSetting('oven',keptOven); markProfile('last'); }
+    if (keptMixer) { setMixerType(keptMixer); setWaterMethod(keptMixer==='spiral'?'direct':'premelt'); confirmSetting('mixer',keptMixer); markProfile('last'); }
+    if (keptYeast) { setYeastType(keptYeast); confirmSetting('yeast',keptYeast); markProfile('last'); }
     // ── Baker profile prefill — bakeType-compatible defaults, always overridable ──
     const prof = loadProfile();
     if (prof) {
@@ -2776,6 +2785,11 @@ export default function Home() {
 
   // Guidance level never changes the selected dough or leavening.
   const collectingBakeTime=awaitingRecipeChoice && tab==='simple' && !recipeGenerated;
+  // The cooling note is said once on this device, before the first bake time is picked
+  // (17 Nov 2026 retention: it repeated on every bake-time screen of every bake).
+  const [coolingNoteSeen]=useState(()=>{try{return localStorage.getItem('bh_cooling_note_v1')==='1';}catch{return false;}});
+  const showCoolingNote=!!styleKey&&collectingBakeTime&&!eatTime&&!coolingNoteSeen&&bakeType==='bread'&&!isUnleavened&&breadProtocol?.cooking!=='griddle'&&!['focaccia','fougasse'].includes(styleKey);
+  useEffect(()=>{if(showCoolingNote)try{localStorage.setItem('bh_cooling_note_v1','1');}catch{}},[showCoolingNote]);
   const bakeTimeOnly=recipeGenerated && bakeTimeQuestion && !replanReturn;
   const customQuestionOnly=customBakeQuestion && !recipeGenerated && !planDetail;
   // The question-only view ends once the baker leaves the timing screen.
@@ -3267,6 +3281,11 @@ export default function Home() {
   function startOver() {
     // Refuse to clear a draft another tab has changed since our last write.
     if (!clearSession()) return false;
+    // The oven, kneading and commercial yeast the baker chose carry to the next bake, like the
+    // kitchen and fridge (17 Nov 2026 retention): applied by family when nothing in the profile says otherwise.
+    rememberLastEquipment({bakeType,oven:confirmed('oven',ovenType)?ovenType:null,mixer:confirmed('mixer',mixerType)?mixerType:null,
+      yeast:yeastType&&yeastType!=='sourdough'&&confirmed('yeast',yeastType)?yeastType:null});
+    setAutoStarterPct(undefined);
     setPendingSession(null);
     setScheduleCandidateValid(true);
     setBatchView('style');setProtocolView('dough');setServiceView('dough');setFillingsReturn(null);setPrepReturnToService(null);setShoppingReturnToFillings(false);
@@ -4167,6 +4186,13 @@ export default function Home() {
   const mixerPicked = !!mixerType && (tab!=='custom' || confirmed('mixer',mixerType));
   // The same for the leavening: Simple never asks it. A sourdough style's starter is the style's own answer.
   const yeastPicked = !!yeastType && (tab!=='custom' || confirmed('yeast',yeastType) || yeastType==='sourdough');
+  // A generated recipe's equipment is the "last bake" the next one starts from (see rememberLastEquipment).
+  useEffect(() => {
+    if (!recipeGenerated || !bakeType) return;
+    rememberLastEquipment({bakeType,oven:ovenPicked&&confirmed('oven',ovenType)?ovenType:null,mixer:mixerPicked&&confirmed('mixer',mixerType)?mixerType:null,
+      yeast:yeastType&&yeastType!=='sourdough'&&confirmed('yeast',yeastType)?yeastType:null});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recipeGenerated, bakeType, ovenType, mixerType, yeastType, confirmedSettings]);
   const equipmentFromProfile = (profileFields.has('oven') && ovenPicked) || (profileFields.has('equip') && mixerPicked);
   const equipmentChoices = <>
     {!compactPiadina && equipmentPanel==='mixer' && ovenPicked && <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:12,fontSize:14}}>
@@ -4365,7 +4391,9 @@ export default function Home() {
     stepLabel={showStepInBar?currentSubsection:undefined} steps={journeySteps} recipeReady={!!recipeGenerated} summary={journeySummary} nextStep={journeyNext} /> : null;
 
   // Toppings are planned with the dough, before buying: Recipe → Toppings → Shopping list.
-  const fillingsStep = !!recipeGenerated && (pizzaPartyEnabled||sandwichEnabled);
+  // A plain loaf (tartine family) goes on to the Shopping list; its tartines stay optional in Your bake
+  // (17 Nov 2026 retention: "Fillings →" on a pain de campagne read as a step every loaf needs).
+  const fillingsStep = !!recipeGenerated && (pizzaPartyEnabled||sandwichEnabled&&sandwichFamilyForStyle(styleKey??'')!=='tartine');
   const fillingsStepLabel = bakeType==='pizza' ? 'Pizzas' : (fr?'Garnitures':'Fillings');
   function openToppingsStep(){setFillingsReturn({destination:'shopping',view:'dough',forward:true});setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}
 
@@ -5087,13 +5115,13 @@ export default function Home() {
             {/* ─── STEP 8: Scheduler ───────────────── */}
             <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={collectingBakeTime ? <></> : bakeTimeOnly && eatTime ? (simpleDecisionPending ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('return')}>{setupReturnLabel}</button> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : scheduleEditing ? null : !eatTime ?
               <button type="button" disabled style={{...NEXT_CTA,opacity:0.5}}>{fr?'Choisissez une date de cuisson':'Choose a bake date'}</button>
-              : !scheduleCandidateValid ? (simpleDecisionPending
-                // As in Custom: the normal next step waits for a choice in the card above; it never only scrolls.
+              : !scheduleCandidateValid
+                // As in Custom: the normal next step waits for the plan, with the reason; it never only
+                // scrolls (17 Nov 2026 retention: "Review affected times" did nothing).
                 ? <div style={{width:'100%'}}>
-                    <p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'}</p>
+                    <p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{simpleDecisionPending?(fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'):(fr?'Ajustez le planning ci-dessus pour continuer.':'Adjust the plan above to continue.')}</p>
                     <button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated?setupReturnLabel:simpleOrganisationFlow.generateLabel}</button>
                   </div>
-                : <button type="button" style={NEXT_CTA} onClick={()=>{const target=[...document.querySelectorAll<HTMLElement>('.bh-fridge-arrangement,.bh-plan-notice')].find(el=>el.offsetParent)??document.getElementById('schedule-anchor-panel');target?.scrollIntoView({block:'center'});(target?.querySelector<HTMLElement>('button')??target)?.focus({preventScroll:true});}}>{fr?'Voir les horaires à ajuster →':'Review affected times →'}</button>)
               : undefined}>
               {/* Simple assumes the kitchen temperature (shown with the plan in
                   Preparation); Custom asks for it on its own Kitchen step. */}
@@ -5104,7 +5132,7 @@ export default function Home() {
               )}
               {/* The bake time is when it goes in the oven; a loaf then needs time to cool (16 Nov 2026:
                   a baker entered lunch time). Not for flatbreads or breads served warm. */}
-              {styleKey && collectingBakeTime && bakeType==='bread' && !isUnleavened && breadProtocol?.cooking!=='griddle' && !['focaccia','fougasse'].includes(styleKey) &&
+              {showCoolingNote &&
                 <p data-cooling-note style={{fontSize:14,lineHeight:1.5,color:'var(--ash)',margin:'12px 0 0'}}>{fr?'Comptez 2 à 3 h de refroidissement avant de trancher : pour un repas, enfournez plus tôt.':'Allow 2–3 h for the bread to cool before slicing: for a meal, bake earlier.'}</p>}
 
               {/* One way forward. A pending decision carries its own buttons, so
@@ -5462,7 +5490,8 @@ export default function Home() {
             <StepPage flow={customOrganisationFlow} id={3} nextOverride={equipmentPanel==='oven' ? <div style={{width:'100%'}}>{!ovenPicked&&<p style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Choisissez votre four.':'Choose your oven.'}</p>}<button type="button" disabled={!ovenPicked} style={{...NEXT_CTA,opacity:!ovenPicked?.5:1}} onClick={()=>{setEquipmentPanel('mixer');scrollToStepTop();}} data-bh-forward>{fr?'Pétrissage →':'Kneading →'}</button></div>
               : !mixerPicked ? <div style={{width:'100%'}}><p style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Choisissez comment vous pétrissez.':'Choose how you knead.'}</p><button type="button" disabled style={{...NEXT_CTA,opacity:.5}} data-bh-forward>{recipeGenerated ? setupReturnLabel : `${CUSTOM_STEPS.find(step=>step.id===nextCustomStep(3))?.chip ?? (fr?'Suivant':'Next')} →`}</button></div> : undefined}>
               {/* Said only when the selection really comes from the baker's profile. */}
-              {equipmentFromProfile && <p data-equipment-profile>{fr?'D’après votre profil — vérifiez-le pour cette fournée.':'From your profile — check it for this bake.'}</p>}
+              {equipmentFromProfile ? <p data-equipment-profile>{fr?'D’après votre profil — vérifiez-le pour cette fournée.':'From your profile — check it for this bake.'}</p>
+                : profileFields.has('last') && (ovenPicked || mixerPicked) && <p data-equipment-profile>{fr?'Comme la dernière fois — vérifiez-le pour cette fournée.':'As last time — check it for this bake.'}</p>}
               {equipmentChoices}
             </StepPage>
 
@@ -5505,7 +5534,7 @@ export default function Home() {
                 }}
                 onClose={() => {}}
                 disabledIds={['sourdough']}
-                disabledNote={enrichedDirectOnly || !breadSupportsStarter ? (locale === 'fr' ? 'Cette recette est actuellement prévue avec de la levure et sans préferment.' : 'This recipe currently supports commercial yeast and no preferment.') : (locale === 'fr' ? 'Vous utilisez un levain ? Choisissez « Levain » à l’étape Préferment.' : 'Using a starter? Choose Levain on the Preferment step.')}
+                disabledNote={enrichedDirectOnly || !breadSupportsStarter ? (locale === 'fr' ? 'Cette recette est actuellement prévue avec de la levure et sans préferment.' : 'This recipe currently supports commercial yeast and no preferment.') : !yeastPicked ? (locale === 'fr' ? 'Choisissez votre levure.' : 'Choose your yeast.') : undefined}
                 styleKey={styleKey}
               />
               {(styleKey === 'pain_levain' || styleKey === 'pain_seigle') && yeastType === 'sourdough' && advancedStep === 7 && (
@@ -5650,6 +5679,8 @@ export default function Home() {
                       </label>
                       <p style={{margin:'6px 0 0',fontSize:14,color:'var(--smoke)',lineHeight:1.45}}>{starterPctOverride!==undefined
                         ? (fr?'Le pointage suit cette quantité : moins de levain, pointage plus long.':'The rise follows this amount: less starter, longer rise.')
+                        : autoStarterPct!==undefined
+                        ? (fr?'Augmenté pour que le pointage tienne dans votre temps libre.':'Raised so the rise fits your free time.')
                         : (fr?'Calculé pour votre cuisine. Modifiez-le, le pointage suit.':'Set for your kitchen. Change it and the rise follows.')}</p>
                       {starterPctOverride!==undefined&&<button type="button" onClick={()=>{setStarterPctOverride(undefined);setPlanReplanPending(true);}} style={{minHeight:44,marginTop:6,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:9,background:'var(--paper)',color:'var(--char)',fontSize:16,cursor:'pointer'}}>{fr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
                     </div>;

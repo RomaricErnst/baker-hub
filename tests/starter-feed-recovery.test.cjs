@@ -4,12 +4,14 @@ const fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript');
 require('./load-production.cjs');
 const {saveSession,loadSession,serializeStarterEvents}=require('../app/lib/session.ts');
 const {overdueStarterFeed,shiftStarterPlanAfterFeed}=require('../app/utils/bakeExecution.ts');
+const {formatClock}=require('../app/utils/units.ts');
+const {computeStarterPeakMs}=require('../app/utils/starterPeak.ts');
 const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
 const handlers=source.slice(source.indexOf('  function recordedFeedAnchor('),source.indexOf('  const commercialMethod=',source.indexOf('  function requestSourdoughMixReplan()')));
 function recover(actual,guide=false,extra={}){
  const now=Date.now(),last=new Date(now-24*3600000),peak=new Date(now-12*3600000),planned=new Date(now-3600000);
  const events=[{kind:'last_fed',time:last},{kind:'known_peak',time:peak},{kind:'refresh',time:planned,feedingRatio:4},{kind:'pre_mix',time:new Date(now+3600000)}];
- const state={},context={Date,Number,starterEvents:events,starterFeedRecords:[],missedStarterFeed:events[2],nextFeedRatio:1,recipeGenerated:false,starterRecoveryPending:false,shiftStarterPlanAfterFeed,lastFedTime:last,knownPeakTime:peak,serializeStarterEvents,saveSession:snapshot=>state.snapshot=snapshot,buildSessionPayload:overrides=>overrides,openDestination:value=>state.destination=value};
+ const state={},context={Date,Number,starterEvents:events,starterFeedRecords:[],missedStarterFeed:events[2],nextFeedRatio:1,recipeGenerated:false,starterRecoveryPending:false,shiftStarterPlanAfterFeed,formatClock,locale:'en',lastFedTime:last,knownPeakTime:peak,serializeStarterEvents,saveSession:snapshot=>state.snapshot=snapshot,buildSessionPayload:overrides=>overrides,openDestination:value=>state.destination=value};
  for(const name of new Set(handlers.match(/\bset[A-Z]\w*/g)))context[name]=value=>state[name]=typeof value==='function'?value(0):value;
  Object.assign(context,extra);
  if(guide){context.feedEvent=events[3];context.feedEvent.feedingRatio=5;context.missedStarterFeed=undefined;}
@@ -90,6 +92,26 @@ test('a late pre-mix feed moves the later feeds and the mix by the same time; th
  assert.deepEqual(kept.events.map(e=>+e.time),[+cold[0].time,actual,+cold[2].time+2*H,+cold[3].time]);
  // A feed recorded at its actual time is answered.
  assert.equal(overdueStarterFeed(kept.events,[{kind:'pre_mix',plannedAt:planned,actualAt:actual,recordedAt:actual,ratio:4}],now),undefined);
+});
+test('a recorded late feed moves its peak: card note and bell agree with the shared peak model',()=>{
+ // Priya, 17 Nov 2026: the pre-mix feed planned 10:00pm was done at midnight; the card still said
+ // "Peak around 7:12am" while the moved mix read 9:12am.
+ const now=Date.now(),q=ms=>Math.round(ms/900000)*900000,adj=9;
+ const refresh=q(now-10*H),planned=q(now-3*H),actual=planned+2*H;
+ const peakAt=feed=>computeStarterPeakMs(feed,refresh+adj*H,adj);
+ const note=at=>`Peak around ${formatClock(new Date(at),'en')}`;
+ const events=[{kind:'last_fed',time:new Date(refresh-60*H)},{kind:'refresh',time:new Date(refresh),bellPeakTime:new Date(refresh+adj*H)},
+  {kind:'pre_mix',time:new Date(planned),bellPeakTime:new Date(peakAt(planned)),bellStartTime:new Date(planned),cardNote:note(peakAt(planned))}];
+ // The plan fed 3 h early against the refresh peak: a stretched rise.
+ assert.ok(+events[2].bellPeakTime-planned>adj*H);
+ const shifted=shiftStarterPlanAfterFeed(events,events[2],actual,q(now+10*H),d=>formatClock(d,'en'));
+ const fed=shifted.events[2];
+ assert.equal(+fed.time,actual);
+ assert.equal(+fed.bellPeakTime,peakAt(actual),'peak from the recorded feed, same model');
+ assert.equal(fed.cardNote,note(peakAt(actual)),'card names the bell peak');
+ assert.equal(+fed.bellStartTime,actual);
+ // Earlier steps keep theirs.
+ assert.equal(+shifted.events[1].bellPeakTime,refresh+adj*H);
 });
 test('when the moved mix no longer fits before the bake, the plan is replanned from the recorded feed',()=>{
  const now=Date.now(),q=ms=>Math.round(ms/900000)*900000;

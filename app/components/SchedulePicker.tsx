@@ -6,6 +6,7 @@ import { loadProfile, updateProfile, DEFAULT_BLOCKERS, type StandardBlocker } fr
 import { formatClock, formatBakeDateTime } from '../utils/units';
 import { useState, useMemo, useEffect, useRef, useId, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { computePreMixStretchFactor, computeStarterPeakMs } from '../utils/starterPeak';
 import { type AvailabilityBlock, type ScheduleResult, starterBulkFactor as starterBulkFactorFor, raisedStarterPcts, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationHoursForYeast, fermentationBudget, sourdoughBulkH, bakeFromFridgeOption, BAKE_FROM_FRIDGE_STYLES } from '../utils';
 import { formatDuration } from '../utils/duration';
 import { earliestQuarterStart, quarterStartNoEarlier } from '../utils/startNotice';
@@ -350,36 +351,8 @@ export function fmtCardDT(d: Date, isFr = false): string {
   return formatBakeDateTime(d,isFr?'fr':'en');
 }
 
-// Pre-mix stretch factor: when pre-mix feed happens BEFORE refresh peak,
-// starter yeast population isn't fully matured → pre-mix peak takes longer.
-// 0h early = 1.0 (sweet spot), 1h early = 1.1, 2h early = 1.2 (max).
-// At-or-after refresh peak = 1.0 (no stretch).
-function computePreMixStretchFactor(preMixMs: number, refreshPeakMs: number | null): number {
-  if (refreshPeakMs == null) return 1.0;
-  const gapH = (preMixMs - refreshPeakMs) / 3600000;
-  if (gapH >= 0) return 1.0;
-  const hoursEarly = Math.min(2, Math.abs(gapH));
-  return 1.0 + 0.1 * hoursEarly;
-}
-
-// ── Unified starter-peak model ───────────────────────────────────────────────
-// SINGLE source of truth for "when does a starter peak after a feed at feedMs?"
-// A feed placed before its reference peak (yeast not fully matured) stretches its
-// own time-to-peak; a feed at/after the reference peak does not. Both the SCORING
-// peak (candidate generation) and the DISPLAY peak (chart bell `bellPeakTime` +
-// card "Peak around…"/PEAK row) call this with the SAME reference peak, so
-// scoring ≡ bell ≡ card by construction and the green pill can never fire while
-// the bell still peaks hours after mix (the "false green" class).
-//
-// refPeakMs is the reference peak the feed is measured against — canonically
-// `_starterRefeedTime ? refeed + adjPeakH : lastFed + adjPeakH` (bare adjPeakH),
-// matching the bell's `_preMixStretchFactor` reference. adjPeakHEff is the
-// temperature/ratio-adjusted peak hours for the ACTIVE ratio in this scope
-// (Stage-1 `adjPeakH`, or the per-ratio `adjPeakH_r` inside evaluatePlanForRatio),
-// so the same call is correct at every ratio.
-function computeStarterPeakMs(feedMs: number, refPeakMs: number | null, adjPeakHEff: number): number {
-  return feedMs + adjPeakHEff * computePreMixStretchFactor(feedMs, refPeakMs) * 3600000;
-}
+// Unified starter-peak model (computePreMixStretchFactor, computeStarterPeakMs): app/utils/starterPeak.ts,
+// shared with a recorded feed's shift so the moved card and bell keep the scored peak.
 
 // Every hands-on starter action sits on a 15-minute mark, like every dough step.
 const STARTER_QUARTER_MS = 15 * 60000;
@@ -6740,11 +6713,22 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   function validateCurrentStarterCandidate(candidateBlocks:AvailabilityBlock[]=solverBlocksRef.current) {
     // The active agenda is already solved. Validate its actual hands-on events
     // against the current blocks without turning automatic feeds into user pins.
-    if(solverResult) return evaluateStarterCandidate({mix:+pendingStart,feed:manualTimesRef.current.feed??null,refresh:manualTimesRef.current.refresh??null},
+    // A recorded mix is the plan's mix, even when it was done earlier or later than planned: the
+    // remaining steps are judged from it, never reported as "Mixing has started" (17 Nov 2026 retention).
+    if(solverResult) return evaluateStarterCandidate({mix:completedMixAt??+pendingStart,feed:manualTimesRef.current.feed??null,refresh:manualTimesRef.current.refresh??null},
       candidateBlocks,displayStarterEvents,true,solverResult);
     const feed=displayStarterEvents.find(e=>e.kind==='pre_mix'&&+e.time>=Date.now());
     const refresh=displayStarterEvents.find(e=>e.kind==='refresh'&&+e.time>=Date.now());
-    return evaluateStarterCandidate({mix:+pendingStart,feed:feed?+feed.time:null,refresh:refresh?+refresh.time:null},candidateBlocks,displayStarterEvents);
+    // A remounted picker (each Custom step mounts its own) has no solver result: re-derive
+    // the displayed plan. A plan the fallback search found with the fridge revival started
+    // from the mix (searchStarterCandidate pass B/C, raised levain %) re-derives only that
+    // way; the retry runs only when the bake-relative revival fails, and the displayed events
+    // must still match exactly (expectedEvents), so a plan the established search found is
+    // judged as before (17 Nov 2026 retention: a raised plan read "no time" on Fine-tune).
+    const previous=revivalRetryRef.current;
+    revivalRetryRef.current=true;
+    try{return evaluateStarterCandidate({mix:completedMixAt??+pendingStart,feed:feed?+feed.time:null,refresh:refresh?+refresh.time:null},candidateBlocks,displayStarterEvents);}
+    finally{revivalRetryRef.current=previous;}
   }
 
   /** Bounded fixed-bake search; the caller alone commits a validated result. */
@@ -7252,6 +7236,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     const now=Date.now();
     const overrides=normalizeTimingOverrides(manualTimes);
     const pins={mix:overrides.mix===undefined?undefined:new Date(overrides.mix),preferment:overrides.prefLocked&&overrides.pref!==undefined?new Date(overrides.pref):undefined};
+    // Before a bake time is chosen the busy times are not on the plan yet: suggest only bakes that
+    // the saved ones allow (17 Nov 2026 retention: "Fri 11:30" offered inside a 9:00–19:00 work day).
+    const savedPresets=!eatTimeSet?loadProfile()?.blockers:undefined;
     // A blocked selected bake needs alternatives relative to that bake, not
     // today's presets (which may all precede a bake planned for next week).
     const bakeChoices: Date[]=[];
@@ -7272,6 +7259,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       yield;
       if(+bake<=now||(eatTimeSet&&+bake===+pendingEatTime))continue;
       const candidateBlocks:AvailabilityBlock[]=localBlocks.map(({label,from,to})=>({label,from,to}));
+      if(savedPresets&&!candidateBlocks.length)candidateBlocks.push(...profileBlocksForBake(new Date(now),bake,savedPresets));
       const append=(entries:ReturnType<typeof getWorkdaysInWindow>)=>{for(const e of entries)if(!candidateBlocks.some(b=>+b.from===+e.blockStart&&+b.to===+e.blockEnd))candidateBlocks.push({from:e.blockStart,to:e.blockEnd,label:e.label});};
       if(localBlocks.some(b=>b.label.startsWith('Work · ')))append(getWorkdaysInWindow(new Date(now),bake));
       if(localBlocks.some(b=>b.label.endsWith(' night')))append(getNightsInWindow(new Date(now),bake));
@@ -8919,8 +8907,8 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           anchors.push({id:'pref',name:prefLabel,at,valid:preview?.valid,editable:!execution&&!startTimeInPast&&!readinessUnsupported,
             ...clampBounds(+(originalBounds.from??draftMix)-(prefWindow?.max??prefOffsetH+6)*hour,+(originalBounds.to??draftMix)-(prefWindow?.min??Math.max(.25,prefOffsetH-6))*hour,at),
             locked:!!activeOverrides.prefLocked,
+            // One line says where and how long (the summary); no second "Maturation" line (17 Nov 2026 retention).
             summary:(draftInFridge?(isFr?'Au réfrigérateur':'Refrigerated'):(isFr?'À température ambiante':'Room temperature'))+' · '+duration(draftPrefOffset),
-            detail:draftPrefOffset<=0?undefined:(isFr?'Maturation : ':'Maturation: ')+duration(draftPrefOffset)+' · '+(draftInFridge?(isFr?'au froid':'in the fridge'):(isFr?'à température ambiante':'at room temperature')),
             note:preview?.issue==='preferment'||preview?.conflict?.startsWith('preferment')?draftMessage:null});
         }
         const finalFeed=starterEvents.find(event=>event.kind==='pre_mix'&&+event.time>Date.now());
@@ -9014,12 +9002,19 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         </div>:null;
         // Simple's decision card replaces this notice; without a card (another
         // kind of conflict) Simple keeps the explanation so it is never a dead end.
-        const conflictNotice=!(mode==='simple'&&simpleDecisionPending)&&!valid&&!keyDragging&&!showResolutionChoice?<div className="bh-plan-notice" role="status">
-          {!busyWithFridge&&<strong>{isSourdough ? (starterPreview?.message || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.')) : (rangeExplanation || draftMessage || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.'))}</strong>}
+        // One statement, one action (17 Nov 2026 retention): when the busy steps are listed under the
+        // heading ("5 steps fall during…"), the notice does not say it again, and it offers "Change my
+        // busy times" only where the heading has no "Find compatible times". After mixing, the steps
+        // follow the dough: no search, the busy times are the one thing to change.
+        const listedConflicts=!planInline&&!(mode==='simple'&&(simpleDecisionPending||fridgeRemovalCovered))&&currentConflicts.length>0;
+        const headerReset=dirty||hasTimingOverrides||(!dirty&&!valid&&(isSourdough||!!execution)&&!(isSourdough&&completedMixAt!==undefined));
+        const noticeAction=batchConflict||simpleDecisionPending||!(listedConflicts&&headerReset);
+        const conflictNotice=!(mode==='simple'&&simpleDecisionPending)&&!valid&&!keyDragging&&!showResolutionChoice&&!(listedConflicts&&!busyWithFridge&&!noticeAction&&!hasTimingOverrides)?<div className="bh-plan-notice" role="status">
+          {!busyWithFridge&&!listedConflicts&&<strong>{isSourdough ? (starterPreview?.message || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.')) : (rangeExplanation || draftMessage || (isFr?'Aucun planning compatible trouvé.':'No compatible schedule found.'))}</strong>}
           {busyWithFridge&&otherConflicts.length>0&&<><strong>{isFr?'Autres étapes pendant votre indisponibilité :':'Other steps during your unavailable hours:'}</strong><ul>{otherConflicts.map(({action})=><li key={`${action.id}:${+action.at}`}>{foldActionLabel(action.id,locale,mixingBatches)??(conflictNames[action.id]??['Étape','Step'])[isFr?0:1]} · {fmtCardDT(action.at,isFr)}</li>)}</ul></>}
           {!busyWithFridge&&blockedPeriod&&['cold-out-2','preheat'].includes(preview?.conflict??'')&&<p>{isFr?`Cette intervention tombe dans votre indisponibilité de ${blockedPeriod}. Cette étape doit respecter la remise en température de la pâte ou le préchauffage du four. Choisissez une cuisson plus tardive, ou modifiez vos disponibilités si vous pouvez intervenir.`:`This hands-on step overlaps your unavailable period (${blockedPeriod}). The remaining step must fit the dough’s readiness window or oven preheating. Choose a later baking time, or change availability if you can do this step.`}</p>}
           {!dirty&&hasTimingOverrides&&<p>{isFr?'Vos horaires choisis sont conservés. Le retour à la recommandation les libère pour chercher un autre planning.':'Your chosen times are kept. Return to the recommendation to release them and find another plan.'}</p>}
-          {batchConflict ? <BatchRepairNotice isFr={isFr} numItems={numItems ?? 1} itemWeight={itemWeight} mixerCapacityG={mixerCapacityG} wastePct={wastePct} onEditQuantity={onEditQuantity} /> : simpleDecisionPending ? null : editAvailability}
+          {batchConflict ? <BatchRepairNotice isFr={isFr} numItems={numItems ?? 1} itemWeight={itemWeight} mixerCapacityG={mixerCapacityG} wastePct={wastePct} onEditQuantity={onEditQuantity} /> : simpleDecisionPending || !noticeAction ? null : editAvailability}
         </div>:undefined;
         const notice=(fridgeArrangement||conflictNotice||(!dirty&&fridgeArrangementChanged))?<>{!dirty&&fridgeArrangementChanged&&<p role="status" className="bh-key-detail">{isFr?'Le planning a changé. La sortie du réfrigérateur n’est plus confirmée.':'The plan changed. Fridge removal is no longer confirmed.'}</p>}{fridgeArrangement}{showResolutionChoice&&<div style={{marginBottom:12}}>{editAvailability}</div>}{conflictNotice}</>:undefined;
         const chartSchedule = isSourdough ? starterPreview?.validation.schedule : preview?.schedule;
@@ -9029,10 +9024,17 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           if (!anchors.some(anchor=>anchor.id===id && anchor.editable)) return;
           if (isSourdough) starterChange(id,at); else commercialChange(id,at);
         };
+        // Steps the baker agreed to handle in a busy time: the Recipe marks them "during a busy time",
+        // so the editor does too and does not call the plan "Recommended" (17 Nov 2026 retention).
+        const coveredConflicts=findAvailabilityConflicts(currentPlanActions(committedSchedule?.availabilityActions??[]),
+          repairBlocks.map(block=>({label:block.label,from:block.from,to:block.to})),Date.now())
+          .filter(conflict=>!currentConflicts.some(other=>other.action.id===conflict.action.id&&+other.action.at===+conflict.action.at));
+        // The autolyse and the end of mixing belong to the Start Dough row (the Recipe joins them too).
+        for(const anchor of anchors)if(!anchor.note&&coveredConflicts.some(({action})=>+action.at===anchor.at||anchor.id==='mix'&&['autolyse','mix-finish'].includes(action.id)))anchor.note=isFr?'Pendant un moment occupé':'During a busy time';
         const conflictRows=(mode==='simple'&&(simpleDecisionPending||fridgeRemovalCovered)?[]:currentConflicts).map(({action})=>({id:action.id,at:+action.at,
           name:(action.id.startsWith('starter-')?displayStarterEvents.find(event=>+event.time===+action.at&&!event.historicalStorage)?.label:null)??foldActionLabel(action.id,locale,mixingBatches)??(conflictNames[action.id]??['Étape','Step'])[isFr?0:1],
           cover:()=>coverAction(action)}));
-        return <ScheduleKeyTimings conflictRows={conflictRows} anchors={anchors} blocks={repairBlocks} isFr={isFr} onChange={isSourdough?starterChange:commercialChange} check={check} cacheKey={cacheKey} hasDraft={dirty} onInteractionChange={setKeyDragging} onCancel={cancel} ovenAt={+times.bake} personalized={hasTimingOverrides} adjustment={adjustment} onApply={accept} canApply={dirty&&valid} onOpenChange={handleKeyEditorOpen} focusId={planInline?.focus} inline={!!planInline} onClose={handleInlineClose} applyLabel={planInline?.applyLabel} notice={notice} header={(dirty||hasTimingOverrides||(!dirty&&!valid&&(isSourdough||!!execution)))?<button type="button" className="bh-key-reset" disabled={keyDragging} onClick={resetToRecommendation}>{execution?(isFr?'Recalculer les étapes restantes':'Reset remaining times'):dirty||hasTimingOverrides?(isFr?'Revenir aux horaires recommandés':'Return to recommended times'):(isFr?'Trouver des horaires compatibles':'Find compatible times')}</button>:undefined}>
+        return <ScheduleKeyTimings conflictRows={conflictRows} anchors={anchors} blocks={repairBlocks} isFr={isFr} onChange={isSourdough?starterChange:commercialChange} check={check} cacheKey={cacheKey} hasDraft={dirty} onInteractionChange={setKeyDragging} onCancel={cancel} ovenAt={+times.bake} personalized={hasTimingOverrides||coveredConflicts.length>0} adjustment={adjustment} onApply={accept} canApply={dirty&&valid} onOpenChange={handleKeyEditorOpen} focusId={planInline?.focus} inline={!!planInline} onClose={handleInlineClose} applyLabel={planInline?.applyLabel} notice={notice} header={headerReset?<button type="button" className="bh-key-reset" disabled={keyDragging} onClick={resetToRecommendation}>{execution?(isFr?'Recalculer les étapes restantes':'Reset remaining times'):dirty||hasTimingOverrides?(isFr?'Revenir aux horaires recommandés':'Return to recommended times'):(isFr?'Trouver des horaires compatibles':'Find compatible times')}</button>:undefined}>
           {mode==='custom' ? <details className="bh-key-detail" data-about-plan open={planChart||undefined} style={{marginTop:planChart?0:12}} onToggle={e=>setAboutOpen((e.currentTarget as HTMLDetailsElement).open)}>
             <summary style={{minHeight:44,display:'flex',alignItems:'center',cursor:'pointer',color:'var(--terra)'}}>{isFr?'À propos de ce planning':'About this plan'}</summary>
             <div>

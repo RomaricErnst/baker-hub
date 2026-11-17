@@ -138,3 +138,27 @@ export function deleteCustomPizza(id: string): void {
   updateProfile({ customPizzas: loadCustomPizzas().filter(p => p.id !== id) });
 }
 
+
+// ── Last bake's equipment ────────────────────────────────────────────────────
+// The oven (one per family), kneading and commercial yeast the baker confirmed on the last bake
+// carry to the next one, like the kitchen and fridge (17 Nov 2026 retention review). Kept on this
+// device beside the profile; the profile, when it names them, still wins.
+const LAST_EQUIPMENT_KEY = 'bh_last_equipment_v1';
+export interface LastEquipment { ovenPizza?: string; ovenBread?: string; mixer?: string; yeast?: string }
+export function loadLastEquipment(): LastEquipment {
+  if (typeof window === 'undefined') return {};
+  try {
+    const value = JSON.parse(localStorage.getItem(LAST_EQUIPMENT_KEY) ?? '{}') as LastEquipment;
+    return value && typeof value === 'object' ? value : {};
+  } catch { return {}; }
+}
+export function rememberLastEquipment({bakeType, oven, mixer, yeast}: {bakeType: string | null; oven: string | null; mixer: string | null; yeast: string | null}): void {
+  if (typeof window === 'undefined' || !bakeType) return;
+  try {
+    const next: LastEquipment = {...loadLastEquipment()};
+    if (oven) next[bakeType === 'bread' ? 'ovenBread' : 'ovenPizza'] = oven;
+    if (mixer) next.mixer = mixer;
+    if (yeast) next.yeast = yeast;
+    localStorage.setItem(LAST_EQUIPMENT_KEY, JSON.stringify(next));
+  } catch {}
+}

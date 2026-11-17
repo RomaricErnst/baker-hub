@@ -786,7 +786,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
           choice and the invitation to blend, nothing else. */}
       {pickerOpen && <>
         {blend.flour2 && <h3>{isFr?'Choisir la farine 1':'Choose flour 1'}</h3>}
-        {blend.flour2 && <p>{isFr?'Farine 2 conservée':'Flour 2 retained'}: {blend.customFlour2Name ?? FLOUR_DATA[blend.flour2].name}</p>}
+        {blend.flour2 && <p>{isFr?'Farine 2 conservée':'Flour 2 retained'}{isFr?' : ':': '}{blend.customFlour2Name ?? (isFr?FLOUR_DATA[blend.flour2].nameFr:FLOUR_DATA[blend.flour2].name)}</p>}
         {blend.brandProduct && <button type="button" style={{minHeight:44}} onClick={()=>{setPickerOpen(false);setRoad(null);}}>{isFr?'Annuler':'Cancel'}</button>}
         <div ref={flourSearchRef} hidden={road === 'scan' || road === 'type'}>
         <FlourCatalogueBrowser styleKey={styleKey ?? undefined} onChoose={selectDBEntry} recommendedIds={bakeType === 'bread' ? (BREAD_FAV_BY_STYLE[styleKey ?? ''] ?? BREAD_FAV_BY_STYLE.pain_campagne) : (PIZZA_FAV_BY_STYLE[styleKey ?? ''] ?? CROWD_FAV_IDS)} onGeneric={openManualFlour} onScan={()=>setRoad(road==='scan'?null:'scan')}/>

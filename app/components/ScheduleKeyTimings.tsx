@@ -74,7 +74,7 @@ function TimingRow({anchor,isFr,onChange,check,cacheKey,open,onToggle,inline=fal
    {anchor.locked&&<span className="bh-kept-time">{isFr?'Heure conservée':'Time kept'}</span>}
    {open&&canEdit&&<div id={editorId} className="bh-key-editor">
     <div className="bh-time-steps"><button type="button" aria-label="- 30 min" disabled={at-2*STEP<from} onClick={()=>onChange(id,at-2*STEP)}>− 30 min</button><button type="button" aria-label="+ 30 min" disabled={at+2*STEP>to} onClick={()=>onChange(id,at+2*STEP)}>+ 30 min</button></div>
-    <div className="bh-key-window" data-has-windows={windows.length>0} aria-busy={checking}>{checking?(isFr?'Vérification des créneaux…':'Checking available slots…'):windows.length>0?<><span>{isFr?'Horaires possibles':'Available times'}</span><TimingWindows slots={slots} at={at} isFr={isFr} onSelect={value=>onChange(id,value)}/></>:(anchor.valid?(isFr?'Horaire actuel compatible.':'Current time is compatible.'):(isFr?'Aucun créneau compatible avec ces contraintes.':'No compatible window with these constraints.'))}</div>
+    <div className="bh-key-window" data-has-windows={windows.length>0} aria-busy={checking}>{checking?null:windows.length>0?<><span>{isFr?'Horaires possibles':'Available times'}</span><TimingWindows slots={slots} at={at} isFr={isFr} onSelect={value=>onChange(id,value)}/></>:(anchor.valid?(isFr?'Horaire actuel compatible.':'Current time is compatible.'):(isFr?'Aucun créneau compatible avec ces contraintes.':'No compatible window with these constraints.'))}</div>
     {anchor.control}
     {anchor.detail&&<div className="bh-key-detail">{anchor.detail}</div>}
    </div>}

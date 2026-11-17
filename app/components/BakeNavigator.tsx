@@ -85,7 +85,9 @@ export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,conte
   const name=(id:BakeDestination)=>{const d=BAKE_DESTINATIONS.find(item=>item.id===id)!;return fr?d.fr:d.en;};
   const currentName=active==='recipe'&&recipeMeal?.active?recipeMeal.label:name(section);
   const stepIndex=steps?steps.findIndex(step=>step.current):-1;
-  const stepCount=stepIndex>=0&&steps?(fr?`${stepIndex+1} sur ${steps.length}`:`${stepIndex+1} of ${steps.length}`):null;
+  // No "3 of 6": the total grew as answers added steps (Style 2 of 4, Quantity 3 of 6, Bake time 5 of 9
+  // in Custom), so it read as unstable (17 Nov 2026 retention). The step's name is enough; the journey is in the sheet.
+  const stepCount:string|null=null;
   // Setup says how far along the choices are; later parts say what comes next in the plan.
   // The Recipe's own summary card already says what comes next, so its bar names the section alone.
   const showsNext=!!nextStep&&(section==='protocol'||section==='service')&&!recipeMeal?.active;

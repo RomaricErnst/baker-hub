@@ -289,7 +289,7 @@ test('custom full blackout has no green slots; removing it preserves the precedi
  await dates.nth(0).fill('2026-09-25T08:45');await dates.nth(1).fill('2026-09-26T20:00');
  await availability.getByRole('button',{name:'Ajouter',exact:true}).tap();
  await expect.poll(async()=>(await stored(page)).blocks.some(b=>b.label==='Absence totale')).toBe(true);
- await expect(plan.getByText('Vérification des créneaux…',{exact:true})).toHaveCount(0,{timeout:30000});
+ await expect(plan.locator('.bh-key-window[aria-busy="true"]')).toHaveCount(0,{timeout:30000});
  await expand(plan,'mix');await expect(row(plan,'mix').locator('.bh-key-window')).toHaveAttribute('data-has-windows','false');
  await enter(plan,'mix','2026-09-25T20:15');await expect(confirm(plan)).toBeDisabled();
  await plan.getByRole('button',{name:'Annuler',exact:true}).tap();
@@ -305,7 +305,7 @@ test('biga rapid overnight toggles keep the final blockers and fixed bake author
  const nights=(await openAvailability(page)).getByRole('button',{name:/^Nuits/});
  await nights.tap();await nights.tap();await nights.tap();
  await expect.poll(async()=>(await stored(page)).blocks.some(b=>b.label.endsWith(' night'))).toBe(true);
- await expect(plan.getByText('Vérification des créneaux…',{exact:true})).toHaveCount(0,{timeout:30000});
+ await expect(plan.locator('.bh-key-window[aria-busy="true"]')).toHaveCount(0,{timeout:30000});
  expect((await stored(page)).eatTime).toBe(bake);
  await nights.tap();
  await expect.poll(async()=>(await stored(page)).blocks.some(b=>b.label.endsWith(' night'))).toBe(false);
@@ -374,7 +374,7 @@ test('rapid time-step taps keep the last candidate authoritative for feedback an
  await expect(confirm(plan)).toBeVisible();
  const finalTime=Number(await mixRow.getAttribute('data-at'));
  expect(finalTime).toBe(before.startTime+90*60000);
- await expect(plan.getByText('Vérification des créneaux…',{exact:true})).toHaveCount(0,{timeout:30000});
+ await expect(plan.locator('.bh-key-window[aria-busy="true"]')).toHaveCount(0,{timeout:30000});
  await expect(mixRow).toHaveAttribute('data-at',String(finalTime));
  const valid=await mixRow.getAttribute('data-candidate-valid');
  expect((await stored(page)).startTime).toBe(before.startTime);
