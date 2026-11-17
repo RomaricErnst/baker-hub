@@ -22,11 +22,13 @@ async function restore(yeastType,rebake,starterTimingValid,overrides={},acceptRe
  Object.assign(context.event.dough_snapshot,{starterTimingValid,bakeType:'bread',styleKey:yeastType==='sourdough'?'pain_levain':'baguette'});
  Object.assign(context.event.dough_snapshot,overrides);
  context.openDestination=value=>{state.openDestination=value;};
+ // The restore resets the recipe-input baseline and sets the journal id of the opened bake (17 Nov 2026).
+ context.generatedRecipeInputKey={current:'previous bake'};context.restoredInputsPending={current:false};
  context.getBreadProtocol=require('../app/utils/breadProfiles.ts').getBreadProtocol;
  context.opts={rebake};
  const js=ts.transpileModule(navigationHandler+handler+'\nrestoreFromBakeEvent(event,opts)',{compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.CommonJS}}).outputText;
  await vm.runInNewContext(js,context);
- return {state,storage,snap:context.event.dough_snapshot};
+ return {state,storage,snap:context.event.dough_snapshot,context};
 }
 test('sourdough rebake retains recipe and future bake date but requires fresh starter planning',async()=>{
  const {state,snap}=await restore('sourdough',true);
@@ -72,4 +74,16 @@ test('restoring another cloud bake clears absent blockers, completion and starte
 test('declining a saved bake replacement preserves all current state and storage',async()=>{
  const {state,storage}=await restore('instant',false,true,{},false);
  assert.deepEqual(state,{});assert.deepEqual(storage,{});
+});
+
+test('opening a bake gives it its own recipe baseline and journal id; a confirmed mix stays recorded (17 Nov 2026)',async()=>{
+ const {state,context}=await restore('instant',false,true,{mixExecution:{actualAt:Date.now()-86400000*15,recordedAt:Date.now()-86400000*15+60000,recipe:{flour:500,water:350,salt:10,totalDough:860}},executionClash:true});
+ // The previous bake's inputs are never the baseline of this one: no "You changed your choices" after a switch.
+ assert.equal(context.generatedRecipeInputKey.current,null);
+ assert.equal(context.restoredInputsPending.current,true);
+ assert.equal(state.setJournalId,null,'without a journal entry the restored bake owns none');
+ assert.ok(state.setMixExecution,'the recorded mix travels with its bake');
+ assert.equal(state.setExecutionClash,true);
+ const rebake=await restore('instant',true,true,{executionClash:true});
+ assert.equal(rebake.state.setExecutionClash,false,'a new bake starts without the old clash');
 });

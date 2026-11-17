@@ -87,6 +87,8 @@ export interface SessionData {
   recipeGenerated: boolean;
   /** Edited inputs must be validated before using generated instructions. */
   protocolStale?: boolean;
+  /** A recorded mix or preferment left the rest of the plan without workable times; said in Preparation. */
+  executionClash?: boolean;
   // Which defaulted steps were actually settled — by the baker or by their
   // profile — rather than walked past. Optional: sessions written before this
   // existed restore as settled, because their values WERE decisions at the

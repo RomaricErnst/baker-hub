@@ -112,3 +112,35 @@ test('the due bake is the one whose preferment, mix or bake is nearest now',()=>
  assert.equal(J.dueJournalEntry(now+11.25*h).id,baguette.id,'at 18:15 the baguette mix is due');
  assert.equal(J.dueJournalEntry(now+40*h),null,'nothing once both are over');
 });
+
+test('home lists every bake under way, one row each, by the step that is due (17 Nov 2026 retention round 2)',()=>{
+ const h=3600000,t0=Date.UTC(2026,10,21,17,30);
+ const steps=list=>({timelineSteps:list.map(([id,at,label])=>({id,time:t0+at*h,label}))});
+ // Baguettes: cold proof overnight, out of the fridge at 7:00, bake 10:00. Campagne: shaping now, bake 9:30.
+ const baguettes=J.recordGeneratedBake(bake({bakeType:'bread',styleKey:'baguette',eatTime:t0+16.5*h,computedRecipe:steps([['mixing',-2,'Pétrissage'],['bulk_ferm',-1.25,'Pointage'],['cold_2',3,'Apprêt froid'],['final_proof',13.5,'Sortir du frigo'],['eat',16.5,'Cuisson']])}),1000).entry;
+ J.forgetCurrentJournalBake();
+ const campagne=J.recordGeneratedBake(bake({bakeType:'bread',styleKey:'pain_campagne',eatTime:t0+16*h,computedRecipe:steps([['mixing',-6,'Pétrissage'],['autolyse',-5.9,'Repos'],['divide_ball',-0.25,'Façonnage'],['cold_2',0.25,'Apprêt froid'],['final_proof',13.5,'Apprêt'],['eat',16,'Cuisson']])}),2000).entry;
+ J.forgetCurrentJournalBake();
+ // A bake already marked baked, and one over two hours past its time, are not under way.
+ J.recordGeneratedBake(bake({bakedDone:true,eatTime:t0+2*h}),3000);J.forgetCurrentJournalBake();
+ J.recordGeneratedBake(bake({eatTime:t0-3*h}),4000);J.forgetCurrentJournalBake();
+ let rows=J.liveJournalBakes(t0);
+ assert.deepEqual(rows.map(r=>[r.entry.id,r.label,r.current]),[[baguettes.id,'Pointage',true],[campagne.id,'Façonnage',true]],'steps under way, the earlier one first');
+ // 23:00: both wait in the fridge; each row names its next step and time.
+ rows=J.liveJournalBakes(t0+5.5*h);
+ assert.deepEqual(rows.map(r=>[r.entry.id,r.label,r.current,r.at]),[[campagne.id,'Apprêt',false,t0+13.5*h],[baguettes.id,'Sortir du frigo',false,t0+13.5*h]]);
+ // Sunday 7:00: both out of the fridge at the same time: the bake that comes first leads.
+ rows=J.liveJournalBakes(t0+13.6*h);
+ assert.deepEqual(rows.map(r=>r.label),['Apprêt','Sortir du frigo']);
+ assert.ok(rows.every(r=>r.current));
+ // The rest inside the mix belongs to the mix.
+ J.forgetCurrentJournalBake();
+ const mixing=J.recordGeneratedBake(bake({bakeType:'bread',styleKey:'baguette',eatTime:t0+20*h,computedRecipe:steps([['mixing',-0.5,'Pétrissage'],['autolyse',-0.3,'Repos'],['bulk_ferm',1,'Pointage'],['eat',20,'Cuisson']])}),5000).entry;
+ assert.equal(J.liveJournalBakes(t0).find(r=>r.entry.id===mixing.id).label,'Pétrissage');
+ // Without saved steps: the next key time, unlabeled.
+ J.forgetCurrentJournalBake();
+ const bare=J.recordGeneratedBake(bake({eatTime:t0+30*h,startTime:t0+10*h,prefermentType:'none'}),6000).entry;
+ const row=J.liveJournalBakes(t0).find(r=>r.entry.id===bare.id);
+ assert.equal(row.label,null);assert.equal(row.at,t0+10*h);
+ assert.equal(J.liveJournalBakes(t0+40*h).length,0,'nothing once all are over');
+});

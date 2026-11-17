@@ -32,7 +32,7 @@ test('finishing changed setup delegates validation without returning early; unch
 test('an explicitly returned clean but invalid generated edit remains pending and cannot bypass validation',()=>{
  for(const destination of [null,'recipe','shopping','protocol','service']){
   const calls=[];
-  evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{planReplanPending:false,replanReturn:null,tab:'simple',recipeGenerated:true,protocolStale:false,canGenerate:false,fillingsReturn:destination?{destination}:null,setProtocolStale(value){calls.push(['stale',value]);},handleGenerate(){calls.push('validate');},setSetupOverview(){throw Error('Invalid return cannot dismiss editing');},finishFillings(){throw Error('Invalid return cannot restore output');},openDestination(){throw Error('Invalid return cannot restore output');}});
+  evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{planReplanPending:false,replanReturn:null,tab:'simple',recipeGenerated:true,protocolStale:false,canGenerate:false,fillingsReturn:destination?{destination}:null,setProtocolStale(value){calls.push(['stale',value]);},setExecutionClash(){},handleGenerate(){calls.push('validate');},setSetupOverview(){throw Error('Invalid return cannot dismiss editing');},finishFillings(){throw Error('Invalid return cannot restore output');},openDestination(){throw Error('Invalid return cannot restore output');}});
   assert.deepEqual(calls,[['stale',true],'validate']);
  }
 });
@@ -128,7 +128,7 @@ test('successful validation clears stale status and restores the captured edit o
  for(const destination of [null,'recipe','shopping','protocol','service']){
   const calls=[];
   const context={flourChosen:false,canGenerate:true,styleKey:'neapolitan',scheduleCandidateValid:true,scheduleEditing:false,schedule:{},commercialPrefermentPlanReady:true,tab:'simple',recipe:{},yeastType:'instant',unsupportedEnrichedMethod:false,recipeGenerated:true,user:null,prefermentType:'none',generatedRecipeInputKey:{current:null},previousRecipeInputKey:{current:'old'},recipeInputKey:'updated',fillingsReturn:destination?{destination,view:'dough'}:null,
-   startTime:new Date(0),plannedPreparationAt:0,eatTime:null,acceptedPlan:undefined,acceptedPlanMove:()=>null,setPlanMoved(){},setStarterRecoveryPending(){},acceptedAmountsRef:{current:null},stayAfterUpdateRef:{current:null},openDestination(){},setAcceptedPlan(){},setSessionSaved(){},setSetupOverview(){},setReviewMode(){},setShowResults(){},setRecipeGenerated(value){calls.push(['generated',value]);},setProtocolStale(value){calls.push(['stale',value]);},finishFillings(){calls.push(['return',destination]);},setActiveTab(value){calls.push(['route',value]);},scrollToStepTop(){}};
+   startTime:new Date(0),plannedPreparationAt:0,eatTime:null,acceptedPlan:undefined,acceptedPlanMove:()=>null,setPlanMoved(){},setStarterRecoveryPending(){},acceptedAmountsRef:{current:null},stayAfterUpdateRef:{current:null},openDestination(){},setAcceptedPlan(){},setSessionSaved(){},setSetupOverview(){},setReviewMode(){},setShowResults(){},setRecipeGenerated(value){calls.push(['generated',value]);},setProtocolStale(value){calls.push(['stale',value]);},setExecutionClash(){},finishFillings(){calls.push(['return',destination]);},setActiveTab(value){calls.push(['route',value]);},scrollToStepTop(){}};
   evaluate(fn('handleGenerate')+';handleGenerate();',context);
   assert.deepEqual(calls,[['generated',true],['stale',false],destination?['return',destination]:['route','plan']]);
   assert.equal(context.previousRecipeInputKey.current,'updated');
