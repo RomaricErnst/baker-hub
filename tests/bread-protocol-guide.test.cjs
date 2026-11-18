@@ -25,7 +25,7 @@ test('all new bread guides render bilingual protocol stages and fillings handoff
  for(const style of Object.keys(BREAD_PROTOCOLS))for(const lang of ['en','fr']){
   let html='';for(let step=1;step<=10;step++)html+=render(style,lang,step);
   assert.doesNotMatch(html,/\{count\}|\{weight\}|undefined g/,style);
-  assert.match(html,lang==='fr'?/Sandwiches et garnitures/:/Sandwiches &amp; fillings/,style);
+  assert.match(html,lang==='fr'?/Sandwichs et garnitures/:/Sandwiches &amp; fillings/,style);
   if(style!=='focaccia')assert.match(html,/200/,style+' uses actual scaled piece weight');
   if(style==='piadina'){
    assert.doesNotMatch(html,lang==='fr'?/Pointage|Apprêt|Préchauffer le four/:/Bulk Fermentation|Final Proof|Preheat the oven/);

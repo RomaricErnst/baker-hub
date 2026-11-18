@@ -8212,9 +8212,10 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
             }}
           >
             {t('blockers.weekdays')}
-            <span style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--smoke)' }}>
+            {/* The hours once: in the editor below while it is open (18 Nov 2026 retention round 4). */}
+            {!(isWorkActive && workHoursOpen) && <span style={{ fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--smoke)' }}>
               {fmtCardHM(blockClock(pendingEatTime,presetHours('work').from),isFr)} – {fmtCardHM(blockClock(pendingEatTime,presetHours('work').to),isFr)}
-            </span>
+            </span>}
             {isWorkActive && <span style={{ opacity: .7 }}>✓</span>}
           </button>
         )}

@@ -154,6 +154,8 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
   const secondary: React.CSSProperties = { width: '100%', minHeight: 44, padding: '10px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--cream)', color: 'var(--char)', font: 'inherit', cursor: 'pointer' };
   const divider = { height: 1, background: 'var(--border)', margin: '16px 20px 0' };
   const inProgress = journalBakeInProgress(current);
+  const beforeOven = inProgress && (current.eatTime == null || current.eatTime > Date.now());
+  const justBaked = inProgress && !beforeOven;
   // Before the bake there is nothing to rate: the entry shows the plan instead.
   const beforeBake = !rateNow && current.eatTime != null && current.eatTime > Date.now() && current.rating == null && !current.note && current.photoIds.length === 0;
   // The first thing to do: a poolish or biga starts before the dough (17 Nov retention review).
@@ -267,13 +269,15 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
               </div>
             </div>
           ) : <>
-            {inProgress && <button type="button" onClick={() => { onResume(current); onClose(); }} style={{ ...secondary, background: 'var(--terra)', color: 'white', borderColor: 'var(--terra)', fontWeight: 600 }}>{t('resume')}</button>}
-            <button type="button" onClick={() => { onRebake(current); onClose(); }} style={inProgress ? secondary : { ...secondary, background: 'var(--terra)', color: 'white', borderColor: 'var(--terra)', fontWeight: 600 }}>{t('rebake', { date: nextWeekLabel }).replace(/ \(\)$/, '')} →</button>
+            {/* Right after the bake, opening it again is not the next thing to do: Bake again leads, and Delete waits
+                until the evening is over (18 Nov 2026 retention round 4). */}
+            {inProgress && <button type="button" onClick={() => { onResume(current); onClose(); }} style={beforeOven ? { ...secondary, background: 'var(--terra)', color: 'white', borderColor: 'var(--terra)', fontWeight: 600 } : secondary}>{t('resume')}</button>}
+            <button type="button" onClick={() => { onRebake(current); onClose(); }} style={beforeOven ? secondary : { ...secondary, background: 'var(--terra)', color: 'white', borderColor: 'var(--terra)', fontWeight: 600 }}>{t('rebake', { date: nextWeekLabel }).replace(/ \(\)$/, '')} →</button>
             {signedIn && onSaveToAccount && !current.accountEventId && <>
               <button type="button" disabled={savingAccount} aria-busy={savingAccount} onClick={() => void saveToAccount()} style={secondary}>{savingAccount ? t('savingToAccount') : t('saveToAccount')}</button>
               <p style={{ margin: 0, fontSize: 12, color: 'var(--smoke)' }}>{t('saveToAccountNote')}</p>
             </>}
-            <button type="button" onClick={() => setConfirmDelete(true)} style={{ minHeight: 44, border: 'none', background: 'transparent', color: 'var(--ash)', font: 'inherit', fontSize: 13, textDecoration: 'underline', cursor: 'pointer' }}>{t('delete')}</button>
+            {!justBaked && <button type="button" onClick={() => setConfirmDelete(true)} style={{ minHeight: 44, border: 'none', background: 'transparent', color: 'var(--ash)', font: 'inherit', fontSize: 13, textDecoration: 'underline', cursor: 'pointer' }}>{t('delete')}</button>}
           </>}
         </div>
       </div>

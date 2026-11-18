@@ -608,7 +608,7 @@ export default function Header({
             {onNewSession && <>
               <div style={menuGroup}>{locale === 'fr' ? 'Ce plan' : 'This plan'}</div>
               {/* My choices and Pizzas live in the bar's "Your bake" sheet only (16 Nov 2026). */}
-              {onOpenSandwiches && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenSandwiches(); }}>{locale === 'fr' ? 'Sandwiches et garnitures' : 'Sandwiches & fillings'}</button>}
+              {onOpenSandwiches && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenSandwiches(); }}>{locale === 'fr' ? 'Sandwichs et garnitures' : 'Sandwiches & fillings'}</button>}
               {onSaveSession && !recipeGenerated && <button style={menuButton} onClick={() => { setMenuOpen(false); onSaveSession(); }}>{locale === 'fr' ? (recipeGenerated ? 'Enregistrer la recette' : 'Enregistrer mes choix') : (recipeGenerated ? 'Save recipe' : 'Save draft')}</button>}
               {recipeGenerated && onSharePlan && <button style={menuButton} onClick={() => { setMenuOpen(false); onSharePlan(); }}>{locale === 'fr' ? 'Partager la recette' : 'Share recipe'}</button>}
               <button style={menuButton} onClick={() => { setMenuOpen(false); onNewSession(); }}>{locale === 'fr' ? 'Commencer une nouvelle fournée' : 'Start a new bake'}</button>

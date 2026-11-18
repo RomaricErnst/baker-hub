@@ -7,7 +7,7 @@ export default function StarterFeedStatus({fr,plannedAt,onFed,onNotYet}:{fr:bool
  const label=statusTime(plannedAt,Date.now(),fr);
  return <section className="bh-start-status" aria-label={fr?'Rafraîchi du levain':'Starter feeding'}>
   <p><strong>{fr?'Avez-vous rafraîchi le levain ?':'Have you fed the starter?'}</strong></p>
-  <div className="bh-start-actions"><button type="button" style={STATUS_ANSWER} onClick={()=>onFed(plannedAt)}>{fr?'Oui, le':'Yes, at'} {label}</button><button type="button" style={STATUS_BUTTON} onClick={onNotYet}>{fr?'Pas encore · Actualiser le plan':'Not yet · Update plan'}</button></div>
+  <div className="bh-start-actions"><button type="button" style={STATUS_ANSWER} onClick={()=>onFed(plannedAt)}>{/* FR "Oui, à 8h30" the same day, "Oui, le ven. 27 nov. · 22h00" another day, as the mix prompt (18 Nov 2026 retention round 4). */}{fr?(new Date(plannedAt).toDateString()===new Date().toDateString()?'Oui, à':'Oui, le'):'Yes, at'} {label}</button><button type="button" style={STATUS_BUTTON} onClick={onNotYet}>{fr?'Pas encore · Actualiser le plan':'Not yet · Update plan'}</button></div>
   <button type="button" className="bh-start-link" onClick={()=>{
    // The field opens on now, to the minute: a feed done a little late is usually one edit away (18 Nov 2026 retention).
    if(!editing&&!time){const d=new Date(Date.now());d.setSeconds(0,0);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());setTime(d.toISOString().slice(0,16));}

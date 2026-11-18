@@ -62,6 +62,13 @@ export function formatPlanClock(date: Date, locale: string): string {
   return formatClock(roundToQuarter(date), locale);
 }
 
+/** "7:30–9:00pm", "19h30–21h00". */
+export function clockRange(from: Date, to: Date, locale: string): string {
+  const a = formatClock(from, locale), b = formatClock(to, locale);
+  const suffix = /(am|pm)$/.exec(a)?.[1];
+  return `${suffix && b.endsWith(suffix) ? a.slice(0, -suffix.length) : a}–${b}`;
+}
+
 export function formatBakeDateTime(date: Date, locale: string): string {
   if (!Number.isFinite(+date)) return '—';
   const lang = locale.startsWith('fr') ? 'fr-FR' : 'en-GB';

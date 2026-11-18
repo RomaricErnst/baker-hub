@@ -42,7 +42,9 @@ test('made record persists actual time, recipe and dose; correction preserves in
  await expect.poll(async()=>!!(await stored(page)).execution).toBe(true);
  const first=(await stored(page)).execution;
  expect(first.actualAt).toBe(original.startTime-original.prefOffsetH*H);
- await status.getByRole('button',{name:'Change time',exact:true}).tap();
+ // A tap states no time (18 Nov 2026 retention round 4): "Made", and "Different time?" to give one.
+ await expect(status.getByText('Made',{exact:true})).toBeVisible();
+ await status.getByRole('button',{name:'Different time?',exact:true}).tap();
  await status.getByLabel('Actual time',{exact:true}).fill('2026-11-04T13:30');
  await status.getByRole('button',{name:'Set time',exact:true}).tap();
  await expect.poll(async()=>(await stored(page)).execution.actualAt).toBe(Date.parse('2026-11-04T13:30Z'));
@@ -75,7 +77,7 @@ for(const locale of ['en','fr'])test(`${locale}: mixing is one completed action;
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await page.reload();
  const resume=page.getByRole('button',{name:/^Resume|^Reprendre/}).first();if(await resume.isVisible())await resume.tap();
- await expect(status.getByRole('button',{name:fr?'Modifier l’heure':'Change time',exact:true})).toBeVisible();
+ await expect(status.getByRole('button',{name:fr?'À une autre heure ?':'Different time?',exact:true})).toBeVisible();
  expect((await stored(page)).execution).toEqual(mixed);
  await status.getByRole('button',{name:fr?'Annuler la confirmation':'Undo completion',exact:true}).tap();
  await expect.poll(async()=>(await stored(page)).execution).toBeUndefined();
@@ -110,7 +112,7 @@ test('post-preferment overdue mixing is confirmed once without changing the made
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await page.reload();
  const resumed=page.getByRole('button',{name:/^Resume/}).first();if(await resumed.isVisible())await resumed.tap();
- await expect(status.getByRole('button',{name:'Change time',exact:true})).toBeVisible();
+ await expect(status.getByRole('button',{name:'Different time?',exact:true})).toBeVisible();
  expect((await stored(page)).mixExecution).toEqual(mixed);
  expect((await stored(page)).execution).toEqual(prepared);
  await expect(status.getByText('Have you mixed the dough?',{exact:true})).toHaveCount(0);
@@ -189,8 +191,9 @@ test('Guide Done records planned mixing immediately with optional time correctio
  await expect(step.getByRole('checkbox',{name:'Step done',exact:true})).toBeChecked();
  // Said once, on the step: no strip above Preparation; Change time is in the step.
  await expect(page.getByRole('region',{name:'Bake preparation'})).toHaveCount(0);
- await expect(step.getByText(/^Completed · /)).toBeVisible();
+ // A tick states no time it was not given (18 Nov 2026 retention round 4): "Done", and "Different time?" to give one.
+ await expect(step.getByText('Done',{exact:true})).toBeVisible();
  await expect(page.getByRole('dialog')).toHaveCount(0);
- await step.getByRole('button',{name:'Change time',exact:true}).tap();
+ await step.getByRole('button',{name:'Different time?',exact:true}).tap();
  await expect(step.getByLabel('Actual time',{exact:true})).toBeVisible();
 });

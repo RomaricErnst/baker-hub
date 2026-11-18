@@ -203,7 +203,7 @@ test.describe('two bakes on one device',()=>{
   await reopen(page,'2026-11-18T09:00:00Z','/fr');
   await generatePizzas(page);
   const sheet=page.getByRole('dialog',{name:'Avant votre recette'});
-  await expect(sheet).toContainText('Pain de campagne occupe le four de 18h15 à 19h45.');
+  await expect(sheet).toContainText('Pain de campagne : le four est pris de 18h15 à 19h45.');
   await shot(page,'oven-sheet');
   await sheet.getByRole('button',{name:/^Enfourner à 20h15/}).tap();
   await expect.poll(async()=>(await stored(page))?.recipeGenerated??false,{timeout:20000}).toBe(true);

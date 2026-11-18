@@ -48,15 +48,15 @@ test('one mixing completion survives session storage with its already-used recip
  assert.equal(normalizeMixExecution({...mixed,recipe:{}}),undefined);
 });
 
-test('Guide Done uses the planned mixing time, or now if completed early, without another question',()=>{
+test('Guide Done records the planned mixing time, early or late, as a tap without a stated time (round 4)',()=>{
  const fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript');
  const source=fs.readFileSync('app/[locale]/page.tsx','utf8'),tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  let handler;function visit(n){if(ts.isFunctionDeclaration(n)&&n.name?.text==='recordGuideMix')handler=n.getText(tree);ts.forEachChild(n,visit);}visit(tree);
  const code=ts.transpileModule(handler,{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
  for(const delta of [-H,H])for(const yeastType of ['instant','sourdough']){
-  const calls=[],context={Date:class extends Date{static now(){return now;}},startTime:new Date(now+delta),mixExecution:undefined,execution:undefined,commercialMethod:'none',yeastType,markMixMade:at=>calls.push(['mix',at]),markPreparationMade:at=>calls.push(['direct',at])};
+  const calls=[],context={Date:class extends Date{static now(){return now;}},startTime:new Date(now+delta),mixExecution:undefined,execution:undefined,commercialMethod:'none',yeastType,markMixMade:(at,_p,tap)=>calls.push(['mix',at,tap]),markPreparationMade:(at,tap)=>calls.push(['direct',at,tap])};
   vm.createContext(context);vm.runInContext(code,context);context.recordGuideMix(true);
-  assert.deepEqual(calls,[[yeastType==='sourdough'?'mix':'direct',Math.min(now+delta,now)]]);
+  assert.deepEqual(calls,[[yeastType==='sourdough'?'mix':'direct',now+delta,true]]);
  }
  for(const method of ['poolish','biga']){
   const calls=[],plannedPreparationAt=now-13*H,mix=now-H;

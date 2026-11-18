@@ -28,8 +28,12 @@ test('future preparation does not interrupt recipe viewing; a recorded fact does
   // In Preparation the recorded fact is said on its step (Completed · time, Change time): no strip.
   if(preparing){assert.equal(html,'');continue;}
   assert.doesNotMatch(html,/Have you mixed|Not yet|Yes, at/);
-  assert.match(html,/Change time/);
+  // A tap states no time; a time the baker gave is shown with Change time (18 Nov 2026 retention round 4).
+  assert.match(html,/<strong>Mixed<\/strong>/);
+  assert.match(html,/Different time\?/);
   assert.match(html,/Undo completion/);
+  const stated=render({execution:{...execution,stated:true},preparing});
+  assert.match(stated,/Mixed · /);assert.match(stated,/Change time/);
   if(preparing)assert.doesNotMatch(html,/Go to preparation|Next step/,'already in preparation: no self-navigation action');
  }
 });

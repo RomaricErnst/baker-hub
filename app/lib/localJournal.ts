@@ -10,7 +10,8 @@
 // is far too small for images. Every storage call is wrapped: a private window
 // or a full quota must never block planning a bake.
 import type { SessionData } from './session';
-import { clockMark, type ClockStep } from '../utils/guideProgress';
+import { rowStep, type ClockStep } from '../utils/guideProgress';
+import { translateGuideTitle } from '../utils/guideTitles';
 
 export const JOURNAL_KEY = 'bh_journal_v1';
 export const JOURNAL_CURRENT_KEY = 'bh_journal_current_v1';
@@ -249,15 +250,26 @@ export interface LiveJournalBake {
  *  considers (in progress, not finished); a bake two hours past its time is over (17 Nov 2026 retention round 2). */
 /** The guide's own steps for a bake (titles in the language it was last shown in, times, ticks), saved by
  *  the guide under the bake's journal id. */
-export function guidePlanSnapshot(id: string): { locale: string; steps: (ClockStep & { title: string })[] } | null {
-  try {
-    const raw = storage()?.getItem('bh_guide_done_v2:' + JSON.stringify({ bake: id }) + ':plan');
-    const value = raw ? JSON.parse(raw) : null;
-    if (!value || typeof value.locale !== 'string' || !Array.isArray(value.steps)) return null;
-    const steps = value.steps.filter((s: unknown): s is ClockStep & { title: string } => !!s && typeof s === 'object'
-      && Number.isFinite((s as ClockStep).at) && Number.isInteger((s as ClockStep).step) && typeof (s as { title?: unknown }).title === 'string' && !!(s as { title: string }).title);
-    return steps.length ? { locale: value.locale, steps } : null;
-  } catch { return null; }
+export function guidePlanSnapshot(id: string, locale?: string): { locale: string; steps: (ClockStep & { title: string })[] } | null {
+  const read = (suffix: string) => {
+    try {
+      const raw = storage()?.getItem('bh_guide_done_v2:' + JSON.stringify({ bake: id }) + ':plan' + suffix);
+      const value = raw ? JSON.parse(raw) : null;
+      if (!value || typeof value.locale !== 'string' || !Array.isArray(value.steps)) return null;
+      const steps = value.steps.filter((s: unknown): s is ClockStep & { title: string } => !!s && typeof s === 'object'
+        && Number.isFinite((s as ClockStep).at) && Number.isInteger((s as ClockStep).step) && typeof (s as { title?: unknown }).title === 'string' && !!(s as { title: string }).title);
+      return steps.length ? { locale: value.locale as string, steps: steps as (ClockStep & { title: string })[] } : null;
+    } catch { return null; }
+  };
+  const plan = read('');
+  if (!plan || !locale || plan.locale === locale) return plan;
+  // Shown last in the other language: its titles in this one, from the guide's own copy when it was shown here
+  // (same step at the same time), else from the table of the guide's titles (18 Nov 2026 retention round 4).
+  const own = read(':' + locale);
+  return { locale, steps: plan.steps.map(step => {
+    const same = own?.steps.find(o => o.step === step.step && o.at === step.at);
+    return { ...step, title: same?.title ?? translateGuideTitle(step.title, locale) };
+  }) };
 }
 
 export function liveJournalBakes(now = Date.now(), locale?: string): LiveJournalBake[] {
@@ -265,11 +277,11 @@ export function liveJournalBakes(now = Date.now(), locale?: string): LiveJournal
   for (const entry of listJournal()) {
     if (entry.eatTime == null || !journalBakeInProgress(entry, now) || entry.session?.bakedDone || !entry.session?.recipeGenerated) continue;
     if (entry.eatTime + 2 * 3600000 <= now) continue;
-    // The guide's step the bar would name (Now, else Next), by its own name and time.
-    const plan = locale ? guidePlanSnapshot(entry.id) : null;
-    const mark = plan && plan.locale === locale ? clockMark(plan.steps, now) : null;
-    const marked = mark && plan ? plan.steps.find(step => step.step === mark.step) : undefined;
-    if (marked) { rows.push({ entry, at: marked.at, label: marked.title, current: mark!.kind === 'now' }); continue; }
+    // The guide's next thing to do (rowStep), by its own name in the page's language and its own time.
+    const plan = locale ? guidePlanSnapshot(entry.id, locale) : null;
+    const pick = plan ? rowStep(plan.steps, now) : null;
+    const marked = pick && plan ? plan.steps.find(step => step.step === pick.step) : undefined;
+    if (marked) { rows.push({ entry, at: marked.at, label: marked.title, current: pick!.current }); continue; }
     const steps = (entry.session.computedRecipe?.timelineSteps ?? [])
       .filter(step => Number.isFinite(step.time) && typeof step.label === 'string' && step.label)
       .sort((a, b) => a.time - b.time);

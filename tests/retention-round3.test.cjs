@@ -82,6 +82,6 @@ test('home rows use the guide’s own step name and time, in its language, order
  plan(b.id,'fr',[{step:1,at:t0-15*m,phase:'preparation',action:true,done:false,title:'Pétrir la pâte'},{step:2,at:t0+30*m,phase:'preparation',action:false,done:false,title:'Pointage'}]);
  const rows=J.liveJournalBakes(t0,'fr');
  assert.deepEqual(rows.map(r=>[r.entry.id,r.label,r.at]),[[b.id,'Pétrir la pâte',t0-15*m],[a.id,'Façonner le pain',t0+h]]);
- // Another language than the guide's: the saved plan labels, never English steps in a French row from the guide.
- assert.deepEqual(J.liveJournalBakes(t0,'en').map(r=>r.label),['Frasage et pétrissage','Shape the loaf']);
+ // Another language than the guide's: the guide's titles in that language (round 4), an unknown one as it is.
+ assert.deepEqual(J.liveJournalBakes(t0,'en').map(r=>r.label),['Start Dough','Façonner le pain']);
 });

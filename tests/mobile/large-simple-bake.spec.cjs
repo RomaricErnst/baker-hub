@@ -33,7 +33,7 @@ for(const count of [6,12])test(`simple: ${count} Neapolitan pizzas generate a re
  await section(page,/^Preparation/);
  await page.getByRole('button',{name:/^Start Dough/}).first().tap(); // the bar may also name it ("Now: Start Dough")
  const note=page.locator('[data-large-dough-note]:visible');
- await expect(note).toContainText('is a large dough. If it is too much for your bowl or mixer');
+ await expect(note).toContainText('Too much for your bowl? Mix it in two halves');
  expect(errors).toEqual([]);
 });
 

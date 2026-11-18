@@ -100,9 +100,9 @@ test('EN: mixing early with Step done records it and stays in Preparation (no se
  await page.getByRole('navigation',{name:'Your bake',exact:true}).getByRole('button').filter({has:page.getByText('Preparation',{exact:true})}).tap();
  await page.locator('section[data-guide-title="Start Dough"]').getByRole('button').first().tap();
  await page.locator('section[data-guide-title="Start Dough"]').getByRole('checkbox',{name:'Step done',exact:true}).click();
- // Recorded at the moment of the tick (the clock runs), an hour and a half before the plan.
- await expect.poll(async()=>(await stored(page)).execution?.actualAt??0).toBeGreaterThanOrEqual(Date.parse('2026-11-20T10:30:00Z'));
- expect((await stored(page)).execution.actualAt).toBeLessThan(Date.parse('2026-11-20T10:35:00Z'));
+ // A tick is the plan's time, never the minute of the tap (18 Nov 2026 retention round 4, owner's design).
+ await expect.poll(async()=>(await stored(page)).execution?.actualAt??0).toBe(Date.parse('2026-11-20T12:00:00Z'));
+ expect((await stored(page)).execution.stated).toBe(false);
  await expect(page.locator('.bh-navigator-current')).toContainText('Preparation');
  await expect(page.locator('[data-stale-card]')).toHaveCount(0);
  expect((await stored(page)).protocolStale??false).toBe(false);
