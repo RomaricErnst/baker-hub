@@ -105,7 +105,7 @@ test('one bulk-rise question, consistent with the 50–75% cue beside it',()=>{
 
 test('a rest named inside the shaping step carries no number that fights the step duration',()=>{
  const en=render('baguette','en',{weight:320,numItems:3}),fr=render('baguette','fr',{weight:320,numItems:3});
- assert.doesNotMatch(en,/bench rest 20 min/);assert.match(en,/let the pieces rest 20–30 min, until they no longer spring back/);
+ assert.doesNotMatch(en,/bench rest 20 min/);assert.match(en,/let the pieces relax until they no longer spring back/);
  assert.doesNotMatch(fr,/repos de 20 min/);assert.match(fr,/laissez les pâtons se détendre/);
  assert.doesNotMatch(render('pain_campagne','en',{weight:800,numItems:2}),/rest 15 min/);
 });
