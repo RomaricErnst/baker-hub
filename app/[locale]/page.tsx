@@ -61,6 +61,7 @@ import { createClient } from '../lib/supabase/client';
 import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
 import { archivedBlendSelections } from '../lib/flourRecovery';
 import { flourShoppingName } from '../lib/flourGuidance';
+import { ovenBusyMinutes, bakeEndAt, ovenClash, nextFreeOvenShift, type OvenUse } from '../utils/ovenWindow';
 import { recordGeneratedBake, refreshCurrentJournalSnapshot, forgetCurrentJournalBake, setCurrentJournalId, currentJournalId, getJournalEntry, dueJournalEntry, liveJournalBakes, type JournalEntry, type LiveJournalBake } from '../lib/localJournal';
 import { deleteJournalPhotos } from '../lib/journalPhotos';
 import { archiveLocalBake, preservePreviousBake, acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, normalizeFlourTarget, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
@@ -794,11 +795,32 @@ function PreparationTimingSummary({fr,locale,startAt,startLabel,bakeAt,helperAt,
   </section>;
 }
 
+// The Preheat time on the plan, earlier only (a longer preheat); applied with the plan's own "Update recipe".
+function PreheatTimeEditor({fr,at,bakeAt,baseMin,onApply}:{fr:boolean;at:Date;bakeAt:Date;baseMin:number;onApply:(minutes:number)=>void}){
+  const hm=(d:Date)=>`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  const [value,setValue]=React.useState(hm(at));
+  const [h,m]=value.split(':').map(Number);
+  const chosen=new Date(bakeAt);chosen.setHours(h||0,m||0,0,0);if(+chosen>=+bakeAt)chosen.setDate(chosen.getDate()-1);
+  const minutes=Math.round((+bakeAt-+chosen)/60000);
+  const valid=Number.isFinite(minutes)&&minutes>=baseMin&&minutes<=baseMin+120;
+  return <div style={{display:'flex',flexWrap:'wrap',gap:8,alignItems:'center',padding:'4px 0 10px'}}>
+    <input type="time" step={900} aria-label={fr?'Préchauffer le four':'Preheat the oven'} value={value} onChange={e=>setValue(e.target.value)} style={{minHeight:44,padding:'0 8px',border:'1px solid var(--border)',borderRadius:8}}/>
+    <button type="button" disabled={!valid} style={{...SECONDARY_CTA,width:'auto',minHeight:44,padding:'8px 14px'}} onClick={()=>onApply(minutes)}>{fr?'Mettre à jour la recette':'Update recipe'}</button>
+  </div>;
+}
+
+// Several pizzas baked one at a time: the bake row reads from the first in to the last out ("7:30–9:00pm").
+function clockRange(from:Date,to:Date,locale:string){
+  const a=formatClock(from,locale),b=formatClock(to,locale);
+  const suffix=/(am|pm)$/.exec(a)?.[1];
+  return `${suffix&&b.endsWith(suffix)?a.slice(0,-suffix.length):a}–${b}`;
+}
+
 // The recipe opens on the answer to "when do I start?"; the steps and the
 // calendar file are one tap away.
 // The recipe says what goes in; below it, the plan says when: the key steps with
 // their times only. How to do each step lives in Preparation.
-function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,steps,editable=[],editing=null,onEditTime,editor,notice,chart,moreLabel,onMore}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;startKey?:string|null;bakeAt:Date;steps:{key:string;at:Date;label:string;busy?:boolean}[];editable?:string[];editing?:string|null;onEditTime?:(key:string)=>void;editor?:React.ReactNode;notice?:{key:string;node:React.ReactNode}|null;chart?:{open:boolean;onToggle:(open:boolean)=>void;node:React.ReactNode}|null;moreLabel?:string|null;onMore?:()=>void}){
+function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,bakeEnd,steps,editable=[],editing=null,onEditTime,editor,notice,chart,moreLabel,onMore}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;startKey?:string|null;bakeAt:Date;bakeEnd?:Date|null;steps:{key:string;at:Date;label:string;busy?:boolean}[];editable?:string[];editing?:string|null;onEditTime?:(key:string)=>void;editor?:React.ReactNode;notice?:{key:string;node:React.ReactNode}|null;chart?:{open:boolean;onToggle:(open:boolean)=>void;node:React.ReactNode}|null;moreLabel?:string|null;onMore?:()=>void}){
   // The times the baker chooses (Start Dough; the preferment in Custom) are changed here,
   // (the button's 44px reach overflows the row by negative margins, so the row keeps its height)
   // in place: the time is a button, its editor opens under the row, and applying it
@@ -822,7 +844,7 @@ function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,steps,edit
       const time={flex:'0 0 auto',minWidth:editable.length?'6em':'4.5em',color:'var(--ash)',fontVariantNumeric:'tabular-nums'} as const;
       return <div data-recipe-plan-steps>{days.map(d=><div key={d.day} style={{marginTop:10}}>
         <p style={{margin:'0 0 2px',fontSize:14,fontWeight:700,color:'var(--char)'}}>{d.day.charAt(0).toUpperCase()+d.day.slice(1)}</p>
-        <ol style={{listStyle:'none',margin:0,padding:0}}>{d.rows.map(r=><React.Fragment key={r.key}><li data-plan-bake={r.bake||undefined} data-plan-start={r.own||undefined} style={{...row,fontWeight:r.bake?600:400,alignItems:'baseline'}}><span style={{...time,...(r.bake?{color:'var(--char)'}:{})}}>{editable.includes(r.key)?timeButton(r.key,r.labels[0],formatClock(r.at,locale)):formatClock(r.at,locale)}</span><span>{r.labels.join(' · ')}{r.busy&&<span data-plan-busy style={{color:'var(--ash)'}}> · {fr?'pendant un moment occupé':'during a busy time'}</span>}{r.own&&(()=>{const soon=soonStartLabel(startAt,Date.now(),locale);return soon?<span data-plan-soon style={{color:'var(--ash)'}}> · {soon.split(' · ').pop()}</span>:null;})()}</span></li>{editing===r.key&&<li data-plan-editor style={{listStyle:'none'}}>{editor}</li>}{editing!==r.key&&notice?.key===r.key&&<li style={{listStyle:'none'}}>{notice.node}</li>}</React.Fragment>)}</ol>
+        <ol style={{listStyle:'none',margin:0,padding:0}}>{d.rows.map(r=><React.Fragment key={r.key}><li data-plan-bake={r.bake||undefined} data-plan-start={r.own||undefined} style={{...row,fontWeight:r.bake?600:400,alignItems:'baseline'}}><span style={{...time,...(r.bake?{color:'var(--char)'}:{}),whiteSpace:'nowrap'}}>{editable.includes(r.key)?timeButton(r.key,r.labels[0],formatClock(r.at,locale)):r.bake&&bakeEnd?clockRange(r.at,bakeEnd,locale):formatClock(r.at,locale)}</span><span>{r.labels.join(' · ')}{r.busy&&<span data-plan-busy style={{color:'var(--ash)'}}> · {fr?'pendant un moment occupé':'during a busy time'}</span>}{r.own&&(()=>{const soon=soonStartLabel(startAt,Date.now(),locale);return soon?<span data-plan-soon style={{color:'var(--ash)'}}> · {soon.split(' · ').pop()}</span>:null;})()}</span></li>{editing===r.key&&<li data-plan-editor style={{listStyle:'none'}}>{editor}</li>}{editing!==r.key&&notice?.key===r.key&&<li style={{listStyle:'none'}}>{notice.node}</li>}</React.Fragment>)}</ol>
       </div>)}</div>;
     })()}
     {/* Custom keeps its curve and storage options behind one link; a sourdough plan keeps
@@ -1152,6 +1174,10 @@ export default function Home() {
   // A clash is asked once: in a sheet when the baker creates the recipe (or returns from an
   // edit of the bake time), never inline on the bake-time question and never twice.
   const [decisionSheet, setDecisionSheet] = useState<null|'generate'|'return'>(null);
+  // Two bakes needing the oven at once: offered once, at generate, in the "Before your recipe" sheet.
+  const [ovenOffer, setOvenOffer] = useState<{other:OvenUse;shift:number}|null>(null);
+  const ovenKept = useRef<number|null>(null);
+  const ovenSlotPending = useRef<number|null>(null);
   // A step moved from the Recipe's plan: Start Dough ('mix') or the preferment ('pref').
   const [planEdit, setPlanEdit] = useState<null|'mix'|'pref'>(null);
   const [planMoved, setPlanMoved] = useState<{from:number;to:number;bakeFrom?:number;prepFrom?:number;prepTo?:number;yeastFrom?:number;yeastTo?:number;flourFrom?:number;flourTo?:number}|null>(null);
@@ -1240,6 +1266,8 @@ export default function Home() {
   const resumeToNow = useRef(false);
   // Bake again: what the baker wrote last time, shown once on the new recipe (16 Nov retention review).
   const [previousNote, setPreviousNote] = useState('');
+  const [preheatExtraMin, setPreheatExtraMin] = useState(0);
+  const [preheatEdit, setPreheatEdit] = useState(false);
   const pendingPreviousNote = useRef('');
   useEffect(() => {
     if (!isRestoringRef.current) setSessionSaved(false);
@@ -1480,6 +1508,8 @@ export default function Home() {
   const [dueEntry, setDueEntry] = useState<JournalEntry | null>(null);
   // Home: one row per bake under way, the most pressing first (17 Nov 2026 retention round 2).
   const [liveBakes, setLiveBakes] = useState<LiveJournalBake[]>([]);
+  // Rows only with two or more bakes under way: one bake keeps the single Resume card, so the app looks exactly
+  // as a single-bake app for a baker who never runs two (18 Nov 2026 retention round 3, owner's rule B).
   const showLiveRows = liveBakes.length > 0;
   // A setup not finished yet sits under the bakes under way, so it is not lost behind them.
   const pendingSetupRow = showLiveRows && !!pendingSession && !pendingSession.recipeGenerated && !!pendingSession.styleKey;
@@ -1527,7 +1557,8 @@ export default function Home() {
     setPendingSession(session);
     // Another bake has the step that is due: the banner offers that one (17 Nov retention review).
     try { const due = dueJournalEntry(); setDueEntry(due && due.id !== currentJournalId() ? due : null); } catch {}
-    try { setLiveBakes(liveJournalBakes()); } catch {}
+    // One bake under way, the one in this browser's draft: the single Resume card, as before multi-bake.
+    try { const rows = liveJournalBakes(Date.now(), locale); setLiveBakes(rows.length === 1 && rows[0].entry.id === currentJournalId() ? [] : rows); } catch {}
     // After the bake: reopening within the evening goes straight to "How did it turn out?"; once the bake
     // is half a day past it is over, and home offers it again rather than reopening its last screen.
     const now = Date.now(), eatAt = session.eatTime ? +new Date(session.eatTime) : null;
@@ -1621,7 +1652,7 @@ export default function Home() {
     setKitchenTemp(session.kitchenTemp);
     setCustomKitchenConfirmed(session.customKitchenConfirmed ?? true);
     setHumidity(session.humidity);
-    setFridgeTemp(session.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(session.waterSource ?? '') ? session.waterSource! : 'room'); setMeasuredWaterTemp(session.measuredWaterTemp); setWaterMethod(session.waterMethod ?? (session.mixerType==='spiral'?'direct':'premelt')); setSpiralIceConfirmed(session.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(session.mixingBatches)); setCustomMixerCapacityG(session.mixerCapacityG); setResultNotes((session.resultNotes ?? '')); setPreviousNote(session.previousNote ?? ''); setContainerCapacityLitres(session.containerCapacityLitres);
+    setFridgeTemp(session.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(session.waterSource ?? '') ? session.waterSource! : 'room'); setMeasuredWaterTemp(session.measuredWaterTemp); setWaterMethod(session.waterMethod ?? (session.mixerType==='spiral'?'direct':'premelt')); setSpiralIceConfirmed(session.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(session.mixingBatches)); setCustomMixerCapacityG(session.mixerCapacityG); setResultNotes((session.resultNotes ?? '')); setPreviousNote(session.previousNote ?? ''); setPreheatExtraMin(Math.max(0, Math.min(120, session.preheatExtraMin ?? 0))); setContainerCapacityLitres(session.containerCapacityLitres);
     if (session.flourBlend) setFlourBlend(session.flourBlend as FlourBlend);
     setPrefermentType(session.prefermentType as PrefermentType);
     // Absent means UNSETTLED, not settled. The `?? true` this replaces was
@@ -1934,7 +1965,9 @@ export default function Home() {
       ? BREAD_OVEN_TYPES[ovenType as BreadOvenType]
       : OVEN_TYPES[ovenType as OvenType]
     : undefined;
-  const preheatMin = bakeType === 'bread' ? leanBreadPreheatMin(styleKey ?? undefined, ovenType ?? undefined, ovenData?.preheatMin ?? 30) : ovenData?.preheatMin ?? 30;
+  const basePreheatMin = bakeType === 'bread' ? leanBreadPreheatMin(styleKey ?? undefined, ovenType ?? undefined, ovenData?.preheatMin ?? 30) : ovenData?.preheatMin ?? 30;
+  // A longer preheat the baker chose on the plan (after "more preheat" last time): only ever longer.
+  const preheatMin = basePreheatMin + preheatExtraMin;
 
   const hasNightBlocker = blocks.some(b =>
     b.label.toLowerCase().includes('night') || b.from.getHours() >= 22 || b.to.getHours() <= 7
@@ -2283,11 +2316,55 @@ export default function Home() {
   // Used by autosave, the Save button AND handleGenerate — keeping these
   // three in sync is what preserves startTime / schedule / sourdough state
   // when the baker resumes a session (localStorage or DB).
+  // This bake's oven time, from the preheat to the last piece out (18 Nov 2026 retention round 3).
+  function currentOvenUse(){
+    if(!eatTime||!schedule)return null;
+    const from=Math.min(+(schedule.preheatStart??eatTime),+eatTime);
+    return {from,to:+eatTime+ovenBusyMinutes(bakeType,styleKey,numItems,ovenType)*60000,ovenType:ovenType??null};
+  }
+  // Other bakes under way on this device that use the oven: compared only when there are any, so a baker with one
+  // bake never sees anything of it (owner's rule B).
+  function otherOvenUses():OvenUse[]{
+    const own=journalId??currentJournalId();
+    const uses:OvenUse[]=[];
+    try{for(const row of liveJournalBakes()){
+      const other=row.entry;if(other.id===own||other.eatTime==null)continue;
+      const ses=other.session;
+      const to=ses.ovenTo??other.eatTime+ovenBusyMinutes(other.bakeType,other.styleKey,other.numItems,ses.ovenType)*60000;
+      uses.push({id:other.id,from:ses.ovenFrom??other.eatTime-30*60000,to,ovenType:ses.ovenType??null,name:other.bakeName||styleDisplayName(other.styleKey)});
+    }}catch{}
+    return uses;
+  }
+  // A function, so it reads the render's values when called (declared above them).
+  function renderOvenOfferSheet(){
+          if(!ovenOffer||!eatTime)return null;
+          // The same "Before your recipe" sheet as a clash (SchedulePicker's), here for the one fact the planner
+          // cannot see: another bake under way in the same oven (18 Nov 2026 retention round 3, item 13).
+          const optionCard:React.CSSProperties={display:'block',width:'100%',minHeight:56,marginTop:8,padding:'12px 14px',border:'1.5px solid var(--border)',borderRadius:12,background:'var(--card, #fff)',color:'var(--char)',textAlign:'left',whiteSpace:'normal',fontSize:15,lineHeight:1.4,cursor:'pointer'};
+          const at=(ms:number)=>new Date(ms).toDateString()===eatTime.toDateString()?formatClock(new Date(ms),locale):formatBakeDateTime(new Date(ms),locale);
+          const slot=+eatTime+ovenOffer.shift, other=ovenOffer.other;
+          const close=()=>setOvenOffer(null);
+          return <div className="bh-decision-sheet" data-decision-sheet data-oven-sheet style={{position:'fixed',inset:0,zIndex:1000,background:'rgba(43,36,32,0.42)',display:'flex',alignItems:'flex-end',justifyContent:'center'}} onClick={event=>{if(event.target===event.currentTarget)close();}}>
+            <div role="dialog" aria-modal="true" aria-labelledby="bh-oven-sheet-title" style={{width:'100%',maxWidth:560,maxHeight:'85vh',overflowY:'auto',background:'var(--cream)',borderRadius:'18px 18px 0 0',padding:'18px 16px calc(18px + env(safe-area-inset-bottom, 0px))',boxShadow:'0 -4px 24px rgba(43,36,32,0.18)'}}>
+              <h2 id="bh-oven-sheet-title" style={{margin:'0 0 4px',fontSize:19,fontWeight:700,color:'var(--char)'}}>{fr?'Avant votre recette':'Before your recipe'}</h2>
+              <div className="bh-simple-decision" role="status" style={{border:'1px solid var(--border)',borderRadius:12,padding:'14px 16px',margin:'12px 0',background:'var(--warm)'}}>
+                <p style={{margin:'0 0 12px',fontSize:15,lineHeight:1.5,color:'var(--char)'}}>{fr?`${other.name??'Votre autre fournée'} occupe le four de ${at(other.from)} à ${at(other.to)}.`:`${other.name??'Your other bake'} is in the oven ${at(other.from)}–${at(other.to)}.`}</p>
+                {ovenOffer.shift>0&&<button type="button" className="bh-plan-option" data-oven-slot style={optionCard} onClick={()=>{ovenSlotPending.current=slot;setOvenOffer(null);setEatTime(new Date(slot));}}>
+                  <strong style={{display:'block'}}>{fr?`Enfourner à ${at(slot)}`:`Bake at ${at(slot)}`}</strong>
+                </button>}
+                <button type="button" className="bh-plan-option" data-oven-keep style={optionCard} onClick={()=>{ovenKept.current=+eatTime;setOvenOffer(null);handleGenerate();}}>
+                  <strong style={{display:'block'}}>{fr?`Garder ${at(+eatTime)}`:`Keep ${at(+eatTime)}`}</strong>
+                </button>
+              </div>
+              <button type="button" className="bh-back-action" style={{minHeight:44}} onClick={close}>{fr?'Revenir à l’heure de cuisson':'Back to the bake time'}</button>
+            </div>
+          </div>;
+  }
   function buildSessionPayload(overrides?: Partial<Omit<SessionData, 'version' | 'savedAt'>>): Omit<SessionData, 'version' | 'savedAt'> {
     return {
       tab, bakeType, bakeName, styleKey, numItems, itemWeight, totalFlourTarget, pizzaDiameter,
       ovenType, ovenConstruction, mixerType, yeastType,
-      kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, mixerCapacityG: customMixerCapacityG, resultNotes, previousNote, containerCapacityLitres, humidity, fridgeTemp,
+      kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, mixerCapacityG: customMixerCapacityG, resultNotes, previousNote, preheatExtraMin, containerCapacityLitres, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, timingOverrides, execution, mixExecution, starterFeedRecords, starterRecoveryPending,
       qtyChosen, flourChosen, prefermentChosen, customKitchenConfirmed, confirmedSettings,
       manualHydration, manualOil, manualSugar, manualSalt, yeastPctOverride, starterPctOverride, autoStarterPct,
@@ -2298,6 +2375,7 @@ export default function Home() {
       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.coveredActions?.length?{coveredActions:b.coveredActions}:{}), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}), ...(b.bakeFromFridge ? {bakeFromFridge:b.bakeFromFridge} : {}) })),
       recipeGenerated, protocolStale, executionClash, activeTab, pizzaPartyTab, modeChosen, awaitingRecipeChoice, customBakeQuestion,
       acceptedStartTime: acceptedPlan?.startTime, acceptedPreparationAt: acceptedPlan?.preparationAt, acceptedEatTime: acceptedPlan?.bakeAt,
+      ovenFrom: currentOvenUse()?.from, ovenTo: currentOvenUse()?.to,
       navigation:{batchView,protocolView,serviceView,returnTo:fillingsReturn,prepReturnToService,shoppingReturnToFillings},
       // How far the baker got. Without it a resumed session reopened at
       // highestStep 1, so every step carrying a default read as unset —
@@ -2507,7 +2585,8 @@ export default function Home() {
   function requestRemainingMixPlan() {
     if(mixExecution)return;
     if(yeastType==='sourdough'){requestSourdoughMixReplan();return;}
-    setReplanRequested(true);setSetupOverview(false);setActiveStep(7);setAdvancedStep(9);openDestination('organisation');
+    // "Not yet" re-times through Adjust timing, with its way back (18 Nov 2026 retention round 3).
+    setReplanRequested(true);editRecipeTiming();
   }
   const needsMixCheck=!!mixExecution||((yeastType==='sourdough'||!!execution&&execution.method!=='none')&&!missedStarterFeed&&(promptedMixAt<=executionClock||destination==='protocol'));
   function recordGuideMix(done:boolean) {
@@ -2527,8 +2606,7 @@ export default function Home() {
   }
   function requestFreshPlan() {
     if(execution||mixExecution)return;
-    setReplanRequested(true);setSetupOverview(false);
-    setActiveStep(7);setAdvancedStep(9);openDestination('organisation');
+    setReplanRequested(true);editRecipeTiming();
   }
   useEffect(()=>{if(destination!=='organisation')setReplanRequested(false);},[destination]);
   useEffect(()=>{if(!recipeGenerated)setGuideClock(null);},[recipeGenerated]);
@@ -2640,7 +2718,12 @@ export default function Home() {
     // ── Last bake's equipment (oven by family, kneading, commercial yeast), under the profile ──
     const last = loadLastEquipment();
     const lastOven = bt === 'bread' ? last.ovenBread : last.ovenPizza;
-    const keptOven = lastOven && lastOven in (bt === 'bread' ? BREAD_OVEN_TYPES : OVEN_TYPES) ? lastOven as AnyOvenType : null;
+    // No oven of this family yet: the other family's oven maps across (18 Nov 2026 retention round 3: bread → pizza lost it).
+    const crossOven = bt === 'bread'
+      ? ({home_oven_steel:'home_oven_stone_bread',home_oven_standard:'standard_bread',pizza_oven:'wood_fired'} as Record<string,string>)[last.ovenPizza ?? '']
+      : ({home_oven_stone_bread:'home_oven_steel',dutch_oven:'home_oven_standard',standard_bread:'home_oven_standard',steam_oven:'home_oven_standard',wood_fired:'pizza_oven'} as Record<string,string>)[last.ovenBread ?? ''];
+    const ovenChoice = lastOven ?? crossOven;
+    const keptOven = ovenChoice && ovenChoice in (bt === 'bread' ? BREAD_OVEN_TYPES : OVEN_TYPES) ? ovenChoice as AnyOvenType : null;
     const keptMixer = last.mixer && last.mixer in MIXER_TYPES ? last.mixer as MixerType : null;
     const keptYeast = last.yeast && last.yeast in YEAST_TYPES && last.yeast !== 'sourdough' ? last.yeast as YeastType : null;
     if (keptOven) { setOvenType(keptOven); confirmSetting('oven',keptOven); markProfile('last'); }
@@ -2858,6 +2941,13 @@ export default function Home() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[planNote]);
   useEffect(()=>{if(planChartOpen&&(destination!=='recipe'||planEdit))setPlanChartOpen(false);},[planChartOpen,destination,planEdit]);
+  // The free oven slot was chosen: once the plan has settled on the new bake time, create the recipe as the sheet does.
+  useEffect(()=>{
+    const target=ovenSlotPending.current;
+    if(!target||!eatTime||+eatTime!==target)return;
+    const id=window.setTimeout(()=>{if(ovenSlotPending.current!==target)return;ovenSlotPending.current=null;ovenKept.current=target;setDecisionSheet('generate');},400);
+    return()=>window.clearTimeout(id);
+  },[eatTime,startTime,scheduleCandidateValid]);
   useEffect(()=>{
     if(!decisionSheet||sheetDecisionPending||!scheduleCandidateValid)return;
     const next=decisionSheet;setDecisionSheet(null);
@@ -3061,6 +3151,9 @@ export default function Home() {
     openDestination('recipe');
   }
   function editRecipeTiming() {
+    // A planned start that has passed with nothing recorded: Adjust timing is where "Not yet" goes — it offers the
+    // updated plan (the question itself goes once the clock is on a later step; 18 Nov 2026 retention round 3).
+    if(!execution&&!mixExecution&&commercialMethod&&yeastType!=='sourdough'&&plannedPreparationAt<=Date.now())setReplanRequested(true);
     setBakeTimeQuestion(false);
     rememberGoodPlan();
     captureEditReturn();
@@ -3204,7 +3297,7 @@ export default function Home() {
   // recipe stays in Menu → My bakes, and an unfinished setup is quick to redo.
   const [restartFailed, setRestartFailed] = useState(false);
   function startRecoverableBake(): boolean {
-    setPreviousNote('');
+    setPreviousNote('');setPreheatExtraMin(0);
     // Flush live edits before snapshotting; never accept a conflicting tab's draft.
     try { if (bakeType) refreshCurrentJournalSnapshot(buildSessionPayload()); } catch {}
     if ((bakeType && !saveSession(buildSessionPayload())) || !preservePreviousBake()) {
@@ -3438,6 +3531,12 @@ export default function Home() {
       return;
     }
     if (unsupportedEnrichedMethod || (flourChosen && archivedFlourNames.length)) { setActiveTab('setup'); setSetupOverview(true); return; }
+    // Another bake under way needs the oven at the same time: offer the next free slot, once (Keep is remembered).
+    if (!acceptedUpdate && eatTime && ovenKept.current !== +eatTime) {
+      const use = currentOvenUse(), others = use ? otherOvenUses() : [];
+      const other = use && others.length ? ovenClash(use, others) : null;
+      if (use && other) { setOvenOffer({other, shift: nextFreeOvenShift(use, others)}); return; }
+    }
     if (recipeGenerated && user && !acceptedUpdate) {
       const msg = t('generate.confirmOverwrite');
       if (!window.confirm(msg)) return;
@@ -3787,12 +3886,10 @@ export default function Home() {
     if (rb) {
       setRecipeGenerated(false);setShowResults(false);setScheduleCandidateValid(false);setScheduleReady(false);setSetupOverview(false);
       setReviewMode(false);setProtocolStale(false);
-      // Bake again is a new bake: the kitchen temperature is asked again (it
-      // changes with the day); its forward button leads on to the starter for
-      // sourdough, then the bake time, already a week later.
+      // Bake again opens on how much (18 Nov 2026 retention round 3: it opened on the kitchen); the kitchen and
+      // the bake time, already a week later, follow.
       setActiveStep(snap.tab==='simple'?7:1);setAdvancedStep(snap.tab==='custom'?9:1);
-      // An unleavened bread has no kitchen question (nothing ferments).
-      if (snap.styleKey && getBreadProtocol(snap.styleKey)?.method !== 'unleavened') { openDestination('batch'); setBatchView('kitchen'); }
+      if (snap.styleKey) { openDestination('batch'); setBatchView('quantity'); }
     }
     return true;
   }
@@ -4327,6 +4424,8 @@ export default function Home() {
     setCalendarExports(v=>v+1);
   }
   // Key steps after the first one, for the recipe's plan (the calendar's list).
+  // Several pizzas one at a time keep the oven busy: the plan's last line says until when (18 Nov 2026 retention round 3).
+  const recipeBakeEnd = (()=>{if(!eatTime||bakeType!=='pizza')return null;const end=bakeEndAt(+eatTime,ovenBusyMinutes(bakeType,styleKey,numItems,ovenType));return end?new Date(end):null;})();
   const recipePlanSteps = (()=>{
     if(!recipeGenerated||!eatTime||!schedule)return [];
     const from=Date.now()-60000;
@@ -4607,10 +4706,15 @@ export default function Home() {
   // scheduler opens under that row with only that step's editor; applying it updates the
   // recipe in place (the "Plan updated" note lists what changed).
   const recipeStartKey = prefStartTime && +prefStartTime===+firstRecipeAction ? 'preferment' : +startTime===+firstRecipeAction ? 'mix' : null;
-  const planEditable = yeastType==='sourdough' || execution || mixExecution ? [] : [
+  // Last time said the oven needed more preheat: the Preheat time is tappable like Start Dough (18 Nov 2026
+  // retention round 3), and only then — no new text.
+  const preheatEditable = /preheat|pr[ée]chauff/i.test(previousNote) && !!schedule?.preheatStart && +schedule.preheatStart>Date.now();
+  const planEditable = [...(yeastType==='sourdough' || execution || mixExecution ? [] : [
     ...(+startTime>Date.now() ? ['mix'] : []),
     ...(tab==='custom' && prefStartTime && +prefStartTime>Date.now() ? ['preferment'] : []),
-  ];
+  ]), ...(preheatEditable ? ['preheat'] : [])];
+  const preheatEditor = preheatEdit && eatTime && schedule?.preheatStart ? <PreheatTimeEditor fr={fr} at={schedule.preheatStart} bakeAt={eatTime} baseMin={basePreheatMin}
+    onApply={minutes=>{const extra=Math.max(0,Math.min(120,minutes-basePreheatMin));setPreheatExtraMin(extra);setPreheatEdit(false);saveSession(buildSessionPayload({preheatExtraMin:extra}));}}/> : null;
   const planInline = planEdit ? {focus:planEdit, applyLabel:fr?'Mettre à jour la recette':'Update recipe', onClose:()=>setPlanEdit(null)} : undefined;
   const planEditor = planInline ? (tab==='custom' ? renderCustomScheduler(customStarterStepId !== null?'plan':'all',{planInline}) : renderSimpleScheduler({planInline})) : null;
   // Sourdough keeps the full planner (the starter has its own scheduling); Custom shows its curve in place.
@@ -4697,6 +4801,7 @@ export default function Home() {
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: `${bakeType ? '0' : 'clamp(1rem, 3vw, 1.5rem)'} clamp(1rem, 3vw, 1.5rem) ${bakeType ? 'calc(80px + env(safe-area-inset-bottom, 0px))' : 'clamp(1rem, 3vw, 1.5rem)'}` }}>
 
         {bakeNavigator}
+        {renderOvenOfferSheet()}
         {starterRecoveryPending&&yeastType==='sourdough'&&!showProductHome&&!showWelcomeBack&&!bakedDone&&destination!=='organisation'&&<section className="bh-start-status" role="status">
           <p>{fr?'Votre plan de levain doit être actualisé.':'Your starter plan needs updating.'}</p>
           <button type="button" className="bh-start-primary" onClick={()=>{setSetupOverview(false);setActiveStep(7);setAdvancedStep(9);openDestination('organisation');}}>{fr?'Voir les horaires':'Review timing'}</button>
@@ -4704,7 +4809,7 @@ export default function Home() {
         {missedStarterFeed&&!showProductHome&&!showWelcomeBack&&!bakedDone&&<StarterFeedStatus key={`${missedStarterFeed.kind}:${+missedStarterFeed.time}`} fr={fr} plannedAt={+missedStarterFeed.time} onFed={updateStarterAfterMissedFeed} onNotYet={()=>updateStarterAfterMissedFeed()}/>}
         {!bakedDone&&!bakeTimeIsPast&&!needsMixCheck&&recipeGenerated&&commercialMethod&&yeastType!=='sourdough'&&!showProductHome&&!showWelcomeBack&&!isUnleavened&&!replanRequested&&<BakeStartStatus
           fr={fr} method={commercialMethod} plannedAt={promptedPrepAt} now={executionClock} execution={execution}
-          superseded={!!execution&&!!guideClock&&guideClock.kind==='now'&&guideClock.at>execution.actualAt}
+          superseded={!!guideClock&&guideClock.kind==='now'&&guideClock.at>(execution?execution.actualAt:promptedPrepAt+60_000)}
           preparing={destination==='protocol'&&protocolView==='dough'} onMade={markPreparationMade} onNotYet={requestFreshPlan}
           onRecipe={()=>openDestination('recipe')} onNext={()=>{setProtocolView('dough');openDestination('protocol');}}
           onUndo={()=>{setExecution(undefined);saveSession(buildSessionPayload({execution:undefined}));}}
@@ -4713,7 +4818,7 @@ export default function Home() {
         {!bakedDone&&!bakeTimeIsPast&&recipeGenerated&&needsMixCheck&&!starterRecoveryPending&&!showProductHome&&!showWelcomeBack&&!isUnleavened&&!replanRequested&&<BakeStartStatus
           key="mix" fr={fr} method="none" plannedAt={promptedMixAt} now={executionClock}
           execution={mixExecution?{...mixExecution,method:'none',inFridge:false,prefHours:0}:undefined}
-          superseded={!!mixExecution&&!!guideClock&&guideClock.kind==='now'&&guideClock.at>mixExecution.actualAt}
+          superseded={!!guideClock&&guideClock.kind==='now'&&guideClock.at>(mixExecution?mixExecution.actualAt:promptedMixAt+60_000)}
           preparing={destination==='protocol'&&protocolView==='dough'} onMade={markMixMade} onNotYet={requestRemainingMixPlan}
           onRecipe={()=>openDestination('recipe')} onNext={()=>{setProtocolView('dough');openDestination('protocol');}}
           onUndo={()=>{setMixExecution(undefined);setExecutionClash(false);saveSession(buildSessionPayload({mixExecution:undefined,executionClash:false}));}}
@@ -4727,7 +4832,8 @@ export default function Home() {
           {liveBakes.map((row, index) => {
             const name = row.entry.bakeName || styleDisplayName(row.entry.styleKey as StyleKey) || (fr ? 'Fournée' : 'Bake');
             const at = new Date(roundToQuarter(new Date(row.at)));
-            const when = row.current && row.label ? '' : !row.label || +at - Date.now() > 6 * 86400000 ? formatTime(at, locale) : at.toDateString() === new Date().toDateString() ? formatClock(at, locale) : `${at.toLocaleDateString(fr ? 'fr-FR' : 'en-GB', { weekday: 'short' })} ${formatClock(at, locale)}`;
+            // The step's own time beside its name (18 Nov 2026 retention round 3).
+            const when = !row.label || +at - Date.now() > 6 * 86400000 ? formatTime(at, locale) : at.toDateString() === new Date().toDateString() ? formatClock(at, locale) : `${at.toLocaleDateString(fr ? 'fr-FR' : 'en-GB', { weekday: 'short' })} ${formatClock(at, locale)}`;
             const text = [name, [row.label, when].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
             const cta = oneLineCta(text);
             return <button key={row.entry.id} type="button" data-live-bake={row.entry.id} className={cta.className} aria-label={cta['aria-label']}
@@ -5312,7 +5418,7 @@ export default function Home() {
                             starterLocation={starterLocation}
                           />
                           {executionClash && <p data-plan-clash role="status" style={{margin:'0 0 8px',fontSize:15,color:'var(--char)'}}>{fr?'La suite du plan demande de nouveaux horaires.':'The rest of the plan needs new times.'}</p>}
-                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={planEdit==='pref'?'preferment':planEdit} onEditTime={key=>setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;})} editor={planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} chart={planChart} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
+                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} bakeEnd={recipeBakeEnd} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={preheatEdit?'preheat':planEdit==='pref'?'preferment':planEdit} onEditTime={key=>{if(key==='preheat'){setPlanEdit(null);setPreheatEdit(v=>!v);return;}setPreheatEdit(false);setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;});}} editor={preheatEdit?preheatEditor:planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} chart={planChart} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
                         </div>
                       )}
                     </>
@@ -5394,7 +5500,8 @@ export default function Home() {
                   backSection={destination==='service'?{label:fr?'Retour à la préparation':'Back to Preparation',onClick:()=>{setProtocolView('dough');openDestination('protocol');}}:{label:fr?'Retour aux courses':'Back to Shopping list',onClick:()=>openDestination('shopping')}}
                   onOverviewChange={setPrepOverview}
                   onRepeat={repeatCurrentRecipe} resultNotes={resultNotes} onResultNotesChange={setResultNotes} onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved && !!user} onBakedChange={setBakedDone} completionEnabled={!hasFillings}
-                  onRateBake={currentJournalId()?()=>setJournalRequest(v=>v+1):undefined} onNextBake={()=>{void repeatCurrentRecipe();}} progressScope={journalId} previousNote={previousNote}
+                  progressScope={journalId} mixDoneAt={mixExecution?.actualAt??(execution?.method==='none'?execution.actualAt:null)} prefDoneAt={execution&&execution.method!=='none'?execution.actualAt:null}
+                  onMixTimeChange={at=>{if(mixExecution||execution?.method!=='none')markMixMade(at);else markPreparationMade(at);}} onPrefTimeChange={markPreparationMade} previousNote={previousNote}
                   progressTarget={(destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough')?guideProgressTarget:null} onClockStep={setGuideClock}
                   phase={destination==='service'?'cooking':'preparation'}
                   active={destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough'}
@@ -5534,7 +5641,7 @@ export default function Home() {
               : !mixerPicked ? <div style={{width:'100%'}}><p style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Choisissez comment vous pétrissez.':'Choose how you knead.'}</p><button type="button" disabled style={{...NEXT_CTA,opacity:.5}} data-bh-forward>{recipeGenerated ? setupReturnLabel : `${CUSTOM_STEPS.find(step=>step.id===nextCustomStep(3))?.chip ?? (fr?'Suivant':'Next')} →`}</button></div> : undefined}>
               {/* Said only when the selection really comes from the baker's profile. */}
               {equipmentFromProfile ? <p data-equipment-profile>{fr?'D’après votre profil — vérifiez-le pour cette fournée.':'From your profile — check it for this bake.'}</p>
-                : profileFields.has('last') && (ovenPicked || mixerPicked) && <p data-equipment-profile>{fr?'Comme la dernière fois — vérifiez-le pour cette fournée.':'As last time — check it for this bake.'}</p>}
+                : profileFields.has('last') && (equipmentPanel==='oven' ? ovenPicked : mixerPicked) && <p data-equipment-profile>{fr?'Comme la dernière fois — vérifiez-le pour cette fournée.':'As last time — check it for this bake.'}</p>}
               {equipmentChoices}
             </StepPage>
 
@@ -5909,7 +6016,7 @@ export default function Home() {
                             starterLocation={starterLocation}
                           />
                           {executionClash && <p data-plan-clash role="status" style={{margin:'0 0 8px',fontSize:15,color:'var(--char)'}}>{fr?'La suite du plan demande de nouveaux horaires.':'The rest of the plan needs new times.'}</p>}
-                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={planEdit==='pref'?'preferment':planEdit} onEditTime={key=>setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;})} editor={planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} chart={planChart} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
+                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} bakeEnd={recipeBakeEnd} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={preheatEdit?'preheat':planEdit==='pref'?'preferment':planEdit} onEditTime={key=>{if(key==='preheat'){setPlanEdit(null);setPreheatEdit(v=>!v);return;}setPreheatEdit(false);setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;});}} editor={preheatEdit?preheatEditor:planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} chart={planChart} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
                         </div>
                       )}
                     </>
@@ -5991,7 +6098,8 @@ export default function Home() {
                   backSection={destination==='service'?{label:fr?'Retour à la préparation':'Back to Preparation',onClick:()=>{setProtocolView('dough');openDestination('protocol');}}:{label:fr?'Retour aux courses':'Back to Shopping list',onClick:()=>openDestination('shopping')}}
                   onOverviewChange={setPrepOverview}
                   onRepeat={repeatCurrentRecipe} resultNotes={resultNotes} onResultNotesChange={setResultNotes} onSave={saveCurrentSession} onShare={shareCurrentSession} sessionSaved={sessionSaved && !!user} onBakedChange={setBakedDone} completionEnabled={!hasFillings}
-                  onRateBake={currentJournalId()?()=>setJournalRequest(v=>v+1):undefined} onNextBake={()=>{void repeatCurrentRecipe();}} progressScope={journalId} previousNote={previousNote}
+                  progressScope={journalId} mixDoneAt={mixExecution?.actualAt??(execution?.method==='none'?execution.actualAt:null)} prefDoneAt={execution&&execution.method!=='none'?execution.actualAt:null}
+                  onMixTimeChange={at=>{if(mixExecution||execution?.method!=='none')markMixMade(at);else markPreparationMade(at);}} onPrefTimeChange={markPreparationMade} previousNote={previousNote}
                   progressTarget={(destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough')?guideProgressTarget:null} onClockStep={setGuideClock}
                   phase={destination==='service'?'cooking':'preparation'}
                   active={destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough'}

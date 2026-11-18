@@ -25,7 +25,7 @@ test('step cards render the supplied equipment icon',()=>{
 test('bread cooling is a separate completion step without fabricated schedule time',()=>{
  const guide=fs.readFileSync('app/components/BakeGuide.tsx','utf8');
  a.match(guide,/<StepCard final={!isBread}/);
- const cooling=guide.slice(guide.indexOf('{isBread && <StepCard final after={bakeClosing} number={n()}'),guide.indexOf('      {learnTerm && ('));
+ const cooling=guide.slice(guide.indexOf('{isBread && <StepCard final number={n()}'),guide.indexOf('      {learnTerm && ('));
  a.match(cooling,/faqKey="cool"/);a.match(cooling,/\.\.\.sc\(false, 'cooking'\)/);a.doesNotMatch(cooling,/time=|duration=/);
  const diagnostics=ts.transpileModule(guide,{reportDiagnostics:true,compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).diagnostics||[];
  a.equal(diagnostics.filter(d=>d.category===ts.DiagnosticCategory.Error).length,0);

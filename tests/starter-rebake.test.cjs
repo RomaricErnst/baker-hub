@@ -36,7 +36,7 @@ test('sourdough rebake retains recipe and future bake date but requires fresh st
  assert.ok(state.setEatTime.getTime()>Date.now());
  for(const name of ['LastFedTime','KnownPeakTime','HasNotFedYet','LastFedAge','FeedTime','Feed2Time','FridgeOutTime','StarterFridgeInTime','StarterPeakTime']) assert.equal(state['set'+name],null,name);
  assert.deepEqual(JSON.parse(JSON.stringify(state.setTimingOverrides)),{});
- assert.equal(state.setStarterEvents.length,0);assert.equal(state.setRecipeGenerated,false);assert.equal(state.setSessionRestored,false);assert.equal(state.setShowResults,false);assert.equal(state.setAdvancedStep,9);assert.equal(state.openDestination,'batch');assert.equal(state.setBatchView,'kitchen');
+ assert.equal(state.setStarterEvents.length,0);assert.equal(state.setRecipeGenerated,false);assert.equal(state.setSessionRestored,false);assert.equal(state.setShowResults,false);assert.equal(state.setAdvancedStep,9);assert.equal(state.openDestination,'batch');assert.equal(state.setBatchView,'quantity');
 });
 test('normal sourdough resume preserves saved actions and generated guide',async()=>{
  const {state,snap}=await restore('sourdough',false);
@@ -48,7 +48,7 @@ test('normal sourdough resume preserves saved actions and generated guide',async
 test('commercial yeast rebake retains settings and requires validation of its new planning',async()=>{
  const {state}=await restore('instant',true);
  assert.deepEqual(JSON.parse(JSON.stringify(state.setTimingOverrides)),{});
- assert.equal(state.setRecipeGenerated,false);assert.equal(state.setShowResults,false);assert.equal(state.setAdvancedStep,9);assert.equal(state.setScheduleCandidateValid,false);assert.equal(state.openDestination,'batch');assert.equal(state.setBatchView,'kitchen');
+ assert.equal(state.setRecipeGenerated,false);assert.equal(state.setShowResults,false);assert.equal(state.setAdvancedStep,9);assert.equal(state.setScheduleCandidateValid,false);assert.equal(state.openDestination,'batch');assert.equal(state.setBatchView,'quantity');
 });
 
 test('cloud snapshot preserves a known starter timing blocker; legacy snapshot defaults valid',async()=>{

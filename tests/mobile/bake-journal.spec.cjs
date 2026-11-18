@@ -15,6 +15,8 @@ async function generate(page,fr,count=1){
  const bakeDate=page.getByLabel(fr?'Date et heure de cuisson':'Bake date and time',{exact:true});
  await bakeDate.fill(value);await bakeDate.blur();
  await page.getByRole('button',{name:fr?'Générer ma recette':'Generate my recipe',exact:true}).tap();
+ // A second bake in the same oven at the same time is asked once (18 Nov 2026 retention round 3): keep it.
+ if(count>1){await page.locator('[data-oven-keep]').tap();}
  await expect.poll(async()=>(await journal(page)).length).toBe(count);
 }
 async function openMyBakes(page,fr){

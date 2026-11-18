@@ -18,7 +18,7 @@ import {preparationStatus} from '../utils/bakeExecution';
 
 export default function BakeStartStatus({fr,method,plannedAt,now,execution,preparing,superseded=false,onMade,onNotYet,onRecipe,onNext,onUndo}:{
   fr:boolean;method:'none'|'poolish'|'biga';plannedAt:number;now:number;execution?:BakeExecution;preparing:boolean;
-  /** A later step of the plan is now current: the confirmation note has done its job. */
+  /** A later step of the plan is now current: the confirmation note, or the unanswered question, has done its job. */
   superseded?:boolean;
   onMade:(at:number)=>void;onNotYet:()=>void;onRecipe:()=>void;onNext:()=>void;onUndo:()=>void;
 }) {
@@ -35,7 +35,13 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
   // Once a later step is the one to do, the note goes (17 Nov 2026 retention round 2); right after the tap it
   // stays a few minutes, for Change time and Undo.
   if(execution&&superseded&&now-(execution.recordedAt??execution.actualAt)>5*60_000)return null;
-  const fmt=(at:number)=>statusTime(at,now,fr);
+  // A question is an optional shortcut, never a gate: once the clock has moved on to a later step the bake
+  // simply follows it, and the question goes (18 Nov 2026 retention round 3).
+  if(!execution&&superseded)return null;
+  // In Preparation a recorded mix or preferment is said once, on its step ("Completed · 7:00pm", Change time there):
+  // no second strip above the page (18 Nov 2026 retention round 3).
+  if(execution&&preparing)return null;
+    const fmt=(at:number)=>statusTime(at,now,fr);
   const noun=method==='none'?(fr?'la pâte':'the dough'):method==='biga'?(fr?'la biga':'the biga'):(fr?'le poolish':'the poolish');
   const editTime=(at:number)=>{const date=new Date(at);date.setMinutes(date.getMinutes()-date.getTimezoneOffset());setTime(date.toISOString().slice(0,16));setDifferent(true);};
   const parsed=+new Date(time), valid=!!time&&Number.isFinite(parsed)&&parsed<=now;
@@ -53,7 +59,8 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
       </>:<>
       <p><strong>{method==='none'?(status==='unconfirmed'?(fr?'Avez-vous pétri la pâte ?':'Have you mixed the dough?'):(fr?'Pétrir la pâte':'Mix the dough')):status==='unconfirmed'?(fr?`Avez-vous préparé ${noun} ?`:`Have you made ${noun}?`):(fr?`Préparer ${noun}`:`Make ${noun}`)}</strong></p>
       <div className="bh-start-actions">
-        {status==='unconfirmed'&&<button type="button" style={STATUS_ANSWER} onClick={()=>onMade(plannedAt)}>{fr?'Oui, le':'Yes, at'} {fmt(plannedAt)}</button>}
+        {/* FR: "Oui, à 19h00" the same day, "Oui, le ven. 20 nov. · 19h00" another day (18 Nov 2026 retention round 3). */}
+        {status==='unconfirmed'&&<button type="button" style={STATUS_ANSWER} onClick={()=>onMade(plannedAt)}>{fr?(new Date(plannedAt).toDateString()===new Date(now).toDateString()?'Oui, à':'Oui, le'):'Yes, at'} {fmt(plannedAt)}</button>}
         {preparing&&status==='planned'&&<button type="button" style={STATUS_ANSWER} onClick={()=>onMade(now)}>{method==='none'?(fr?'Pétrie maintenant':'Mixed now'):(fr?'Préparé maintenant':'Made now')}</button>}
         {status==='unconfirmed'&&<button type="button" style={STATUS_BUTTON} onClick={onNotYet}>{fr?'Pas encore · Actualiser le plan':'Not yet · Update plan'}</button>}
       </div>

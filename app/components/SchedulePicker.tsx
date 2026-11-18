@@ -1923,6 +1923,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   const [isDragging, setIsDragging] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
+  // The work hours are edited right after turning the chip on; a chip already on shows its hours once, on the chip
+  // (18 Nov 2026 retention round 3: chip and editable row said the same fact twice).
+  const [workHoursOpen, setWorkHoursOpen] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
@@ -6554,6 +6557,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     applyAndUpdate([..._effectiveBlocks.filter(b=>!b.label.startsWith('Work · ')),...days.map(d=>({from:d.blockStart,to:d.blockEnd,label:d.label}))]);
   }
   function toggleWork() {
+    setWorkHoursOpen(!isWorkActive);
     rememberPreset('work',!isWorkActive);
     const newBlocks = isWorkActive
       ? _effectiveBlocks.filter(b => !b.label.startsWith('Work · '))
@@ -8255,8 +8259,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         >
           {showCustom ? t('blockers.cancel') : t('blockers.addCustom')}
         </button>
-        {isWorkActive && <div data-work-hours style={{display:'flex',alignItems:'center',gap:8,width:'100%',fontSize:14,color:'var(--ash)'}}>
-          <span>{t('blockers.weekdays')}</span>
+        {isWorkActive && workHoursOpen && <div data-work-hours style={{display:'flex',alignItems:'center',gap:8,width:'100%',fontSize:14,color:'var(--ash)'}}>
           <input type="time" aria-label={isFr?'Début du travail':'Work starts'} value={presetHours('work').from} onChange={e=>setWorkHours(e.target.value,presetHours('work').to)} style={{minHeight:44,padding:'0 8px',border:'1px solid var(--border)',borderRadius:8,background:'#fff',font:'inherit'}}/>
           <span aria-hidden="true">–</span>
           <input type="time" aria-label={isFr?'Fin du travail':'Work ends'} value={presetHours('work').to} onChange={e=>setWorkHours(presetHours('work').from,e.target.value)} style={{minHeight:44,padding:'0 8px',border:'1px solid var(--border)',borderRadius:8,background:'#fff',font:'inherit'}}/>

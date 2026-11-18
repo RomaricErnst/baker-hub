@@ -79,6 +79,12 @@ export interface SessionData {
   acceptedPreparationAt?: number;
   /** Bake time of that accepted plan (ms). */
   acceptedEatTime?: number;
+  /** When this bake keeps the oven busy (preheat to last piece out, ms): two bakes on one device are
+   *  compared with it (18 Nov 2026 retention round 3). */
+  /** Minutes of preheat added on the plan after a "more preheat" note (18 Nov 2026 retention round 3). */
+  preheatExtraMin?: number;
+  ovenFrom?: number;
+  ovenTo?: number;
   starterFeedRecords?:StarterFeedRecord[];
   /** An overdue feed was answered; a validated replacement plan is still needed. */
   starterRecoveryPending?:boolean;
