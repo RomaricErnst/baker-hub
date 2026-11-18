@@ -86,7 +86,7 @@ test('simple starter screen: Previous goes back to the kitchen, and the review l
 
 // Bake again on a sourdough bake: kitchen, then the starter question again (the
 // starter is not where it was a week ago), then the bake time, then a recipe.
-test('simple sourdough: bake again asks the kitchen and the starter, then generates',async({page})=>{
+test('simple sourdough: bake again opens on Quantity, asks the starter, then generates',async({page})=>{
  test.setTimeout(120000);
  const c=copy.en;
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -111,7 +111,8 @@ test('simple sourdough: bake again asks the kitchen and the starter, then genera
  await page.getByRole('button',{name:'My bakes',exact:true}).tap();
  await page.locator(`#bakerhub-menu [data-journal-entry="${id}"]`).tap();
  await page.getByRole('dialog',{name:'Bake journal entry'}).getByRole('button',{name:/^Bake again next week/}).tap();
- await expect(page.locator('[data-kitchen-slider]:visible')).toBeVisible();
+ // Bake again opens on Quantity; the kitchen carries over, the starter is asked again.
+ await expect(page.locator('[data-kitchen-slider]:visible')).toHaveCount(0);
  await forward(page).tap();
  await expect(page.getByRole('heading',{name:c.question})).toBeVisible();
  await page.getByRole('button',{name:c.counter,exact:true}).tap();
