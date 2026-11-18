@@ -14,7 +14,8 @@ async function open(page,at){
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
  await page.addInitScript(([s])=>{if(sessionStorage.getItem('r3-seeded'))return;sessionStorage.setItem('r3-seeded','1');localStorage.clear();for(const k in s)localStorage.setItem(k,s[k]);},[storage]);
  await page.goto('/');
- await page.getByRole('button',{name:/^Pain au levain ·/}).tap();
+ // One bake under way: home keeps the single Resume card.
+ await page.getByRole('button',{name:'Resume →',exact:true}).tap();
  await page.locator('.bh-bake-navigator-trigger').tap();
  await page.getByRole('navigation',{name:'Your bake',exact:true}).getByRole('button').filter({has:page.getByText('Recipe',{exact:true})}).tap();
 }

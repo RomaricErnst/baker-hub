@@ -125,8 +125,11 @@ test('a preferment offer says it replaces the entered yeast amount',async({page}
  await page.addInitScript(data=>{if(sessionStorage.getItem('yeast-seeded'))return;sessionStorage.setItem('yeast-seeded','1');localStorage.setItem('bh_session_v1',JSON.stringify(data));sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:99,advancedStep:99,setupOverview:false,activeTab:'plan',reviewMode:true}));},data);
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
  await page.goto('/');
- const status=page.getByRole('region',{name:'Bake preparation'});
- await status.getByRole('button',{name:'Not yet · Update plan',exact:true}).tap();
+ // An hour past the planned mix with nothing recorded, the question has gone with the clock (18 Nov 2026
+ // retention round 3); Adjust timing in Preparation is where "Not yet" goes, with the updated plan.
+ await page.locator('.bh-bake-navigator-trigger').tap();
+ await page.getByRole('navigation',{name:'Your bake',exact:true}).getByRole('button').filter({has:page.getByText('Preparation',{exact:true})}).tap();
+ await page.getByRole('button',{name:'Adjust timing',exact:true}).filter({visible:true}).first().tap();
  const proposal=page.getByRole('region',{name:'Updated plan'}).filter({visible:true});
  await expect(proposal.locator('[data-replan-method]').first()).toBeVisible({timeout:20000});
  const preferment=proposal.locator('[data-replan-method="biga"],[data-replan-method="poolish"]').first();

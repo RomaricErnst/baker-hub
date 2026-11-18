@@ -845,7 +845,8 @@ test.describe('guided piadina with cooking time set in planning',()=>{
   await testInfo.attach('piadina-completion-notes',{body:await page.screenshot(),contentType:'image/png'});
   await end.getByRole('button',{name:'Refaire cette recette',exact:true}).tap();
   await expect(page.getByRole('dialog',{name:'Refaire cette recette ?',exact:true})).toHaveCount(0);
-  await expect(plan).toBeVisible();
+  // Bake again opens on how much (18 Nov 2026 retention round 3).
+  await expect(page.getByLabel('Nombre de pièces',{exact:true})).toBeVisible();
   await expect.poll(async()=>{const s=await stored(page);return {generated:s?.recipeGenerated,count:s?.numItems,style:s?.styleKey};}).toEqual({generated:false,count:5,style:'piadina'});
   await expect(end).toHaveCount(0);expect(errors).toEqual([]);
  });

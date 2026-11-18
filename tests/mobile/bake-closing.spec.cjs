@@ -24,6 +24,9 @@ async function go(page,name){
  await page.getByRole('navigation',{name:/^(Your bake|Votre fournée)$/}).getByRole('button',{name:new RegExp('^'+name)}).first().tap();
 }
 
+// 18 Nov 2026 retention round 3: the last step carries no end-of-bake block (it showed "Buon appetito … How did
+// it turn out?" at the bake time, before any pizza was in). After the bake, reopening opens this bake's journal
+// entry, whose Bake again starts the next bake; the finished one stays in the journal.
 for(const locale of ['en','fr'])test(`${locale}: the bake ends with the journal and the next bake`,async({page})=>{
  const fr=locale==='fr';
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -32,29 +35,21 @@ for(const locale of ['en','fr'])test(`${locale}: the bake ends with the journal 
  await generate(page,fr);
  const [entry]=await journal(page);
  await go(page,fr?'Cuisson & service':'Baking & serving');
- // Open the last step of the section (its title is a button while the section shows
- // the overview of steps; once open, the closing block is inside it).
- const steps=page.locator('[data-guide-step]:visible');
- const closing=page.locator('[data-bake-closing]:visible');
- await expect.poll(async()=>{
-  if(await closing.count())return true;
-  // The section may open on one step: go to its overview of steps first.
-  const overview=page.locator('button.bh-step-trigger:visible',{hasText:fr?'Vue d’ensemble':'Overview'});
-  if(await overview.count())await overview.first().tap();
-  const title=steps.last().locator(':scope > button').first();
-  if(await title.count()){await title.tap();await closing.first().waitFor({timeout:4000}).catch(()=>{});}
-  return (await closing.count())>0;
- },{timeout:20000}).toBe(true);
- await expect(closing).toBeVisible();
- await expect(closing.getByText(fr?'Cette fournée reste dans Mes fournées.':'This bake stays in My bakes.',{exact:true})).toBeVisible();
- await closing.getByRole('button',{name:fr?'Comment s’est passée cette fournée ?':'How did it turn out?',exact:true}).tap();
+ const overview=page.locator('button.bh-step-trigger:visible',{hasText:fr?'Vue d’ensemble':'Overview'});
+ if(await overview.count())await overview.first().tap();
+ await page.locator('[data-guide-step]:visible').last().locator(':scope > button').first().tap();
+ await expect(page.locator('[data-guide-step]:visible').last().getByRole('checkbox')).toBeVisible();
+ await expect(page.locator('[data-bake-closing]')).toHaveCount(0);
+ await expect(page.getByText(fr?'Cette fournée reste dans Mes fournées.':'This bake stays in My bakes.',{exact:true})).toHaveCount(0);
+ // Three hours after the bake time, reopening asks how it went; Bake again from there starts the next bake.
+ const eat=(await page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')))).eatTime;
+ await page.clock.install({time:new Date(eat+3*3600000)});
+ await page.goto('about:blank');await page.goto(fr?'/fr':'/');
  const sheet=page.getByRole('dialog',{name:fr?'Fournée du journal':'Bake journal entry'});
  await expect(sheet).toBeVisible();
- await sheet.getByRole('button',{name:fr?'Fermer':'Close',exact:true}).first().tap();
- await closing.getByRole('button',{name:fr?'Préparer ma prochaine fournée':'Start your next bake',exact:true}).tap();
- // The next bake is this one again, as Bake again (17 Nov 2026 retention round 2): the kitchen is asked
- // again first; the finished one is still in the journal.
- await expect(page.locator('[data-kitchen-slider]:visible')).toBeVisible();
+ await sheet.getByRole('button',{name:fr?/^Refaire la semaine suivante/:/^Bake again next week/}).tap();
+ // Bake again opens on how much (18 Nov 2026 retention round 3); the finished bake is still in the journal.
+ await expect(page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true})).toBeVisible();
  expect((await journal(page)).some(row=>row.id===entry.id)).toBe(true);
  expect(errors).toEqual([]);
 });

@@ -32,10 +32,13 @@ for(const mode of ['simple','custom'])test(`${mode}: bake again opens the next w
  await page.locator(`#bakerhub-menu [data-journal-entry="${first.id}"]`).tap();
  await page.getByRole('dialog',{name:'Bake journal entry'}).getByRole('button',{name:/^Bake again next week/}).tap();
  const nextWeek=await local(page,9,19);
- // A new bake asks the kitchen again first.
- await expect(page.locator('[data-kitchen-slider]:visible')).toBeVisible();
+ // Bake again opens on how much (18 Nov 2026 retention round 3); the kitchen follows, then the bake time.
+ await expect(page.getByLabel('Number of pizzas',{exact:true})).toBeVisible();
  if(mode==='custom')return expect(errors).toEqual([]);
- await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();
+ await page.locator('.bh-step-actions:visible [data-bh-forward]:visible, .bh-batch-actions:visible [data-bh-forward]:visible').first().tap();
+ const kitchen=page.locator('[data-kitchen-slider]:visible');
+ await expect(kitchen.or(page.getByLabel('Bake date and time',{exact:true})).first()).toBeVisible();
+ if(await kitchen.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();
  await expect(page.getByLabel('Bake date and time',{exact:true})).toHaveValue(nextWeek);
  await expect(page.getByText('Adjust the plan above to continue.')).toHaveCount(0);
  await page.getByRole('button',{name:'Generate my recipe',exact:true}).tap();

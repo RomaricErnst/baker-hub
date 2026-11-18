@@ -23,12 +23,14 @@ async function open(page,{at,tz='Asia/Singapore',locale='en-SG',path='/',storage
 }
 const mayaStorage=(session=pizzaSession(),more={})=>({bh_session_v1:JSON.stringify(session),bh_journal_v1:JSON.stringify([entryFor('maya-1',session,more)]),bh_journal_current_v1:'maya-1'});
 
+// One bake under way: home is the single-bake Resume card (18 Nov 2026 retention round 3: rows only with two).
+const resumeOne=async page=>{await expect(page.locator('[data-live-bakes]')).toHaveCount(0);await page.getByRole('button',{name:/^(Resume|View ingredients) →$/}).tap();};
 test.use({timezoneId:'Asia/Singapore',locale:'en-SG'});
 
 test('EN: Step done moves the bar and Go to at once; the overview opens on the step the bar names; no step numbers; no under-bulk scare',async({page})=>{
  await open(page,{at:new Date('2026-11-20T11:20:00Z'),storage:mayaStorage()});
  // Home: one row per bake under way, opening it at its due step.
- await page.locator('[data-live-bake="maya-1"]').tap();
+ await resumeOne(page);
  await expect(page.locator('.bh-navigator-current')).toContainText('Preparation');
  await expect(bar(page)).toContainText('Now: Refrigerate the dough');
  const fridge=page.locator('section[data-guide-title="Refrigerate the dough"]');
@@ -53,7 +55,7 @@ test('EN: Step done moves the bar and Go to at once; the overview opens on the s
 
 test('EN: preheat is its own Now moment and Preparation leads to Baking & serving',async({page},testInfo)=>{
  await open(page,{at:new Date('2026-11-21T11:00:00Z'),storage:mayaStorage()});
- await page.locator('[data-live-bake="maya-1"]').tap();
+ await resumeOne(page);
  // Within the hour and a half before the bake, the bake opens on Baking & serving.
  await expect(page.locator('.bh-navigator-current')).toContainText('Baking & serving');
  await expect(bar(page)).toContainText('Now: Preheat the oven');
@@ -69,7 +71,7 @@ test('EN: preheat is its own Now moment and Preparation leads to Baking & servin
  await expect(page.locator('section[data-guide-title="Preheat the oven"]').getByRole('heading',{name:'Preheat the oven'})).toBeVisible();
 });
 
-test('EN: after the bake the app opens on the rating; days later home offers Bake again; Start your next bake carries the note',async({page})=>{
+test('EN: after the bake the app opens on the rating; its Bake again carries the note',async({page})=>{
  const note='Bases a bit pale — preheat longer.';
  await open(page,{at:new Date('2026-11-21T14:30:00Z'),storage:mayaStorage(pizzaSession(),{note})});
  const sheet=page.getByRole('dialog',{name:'Bake journal entry'});
@@ -77,11 +79,9 @@ test('EN: after the bake the app opens on the rating; days later home offers Bak
  const box=await sheet.getByText('How did it turn out?').boundingBox();
  expect(box.y).toBeLessThan(page.viewportSize().height);
  await expect(page.getByText('Time to mix the dough')).toHaveCount(0);
- // Start your next bake behaves as Bake again: last time's note comes along.
- await sheet.getByRole('button',{name:/^(Close|✕)$/}).first().tap().catch(()=>page.keyboard.press('Escape'));
- await page.locator('.bh-local-progress').getByRole('button',{name:'Overview',exact:true}).tap().catch(()=>{});
- await page.locator('section[data-guide-title="Bake the pizzas"]').getByRole('button').first().tap();
- await page.locator('button[data-next-bake]:visible').tap();
+  // The rating sheet's Bake again: last time's note comes along (no end-of-bake block on the bake step since round 3).
+ await expect(page.locator('[data-bake-closing]')).toHaveCount(0);
+ await sheet.getByRole('button',{name:/^Bake again next week/}).tap();
  await expect.poll(async()=>(await stored(page)).previousNote).toBe(note);
 });
 
@@ -95,7 +95,7 @@ test('EN: days after the bake, home offers it again instead of reopening its las
 test('EN: mixing early with Step done records it and stays in Preparation (no setup, no stale card)',async({page})=>{
  const session=pizzaSession({execution:undefined,startTime:Date.parse('2026-11-20T12:00:00Z')});
  await open(page,{at:new Date('2026-11-20T10:30:00Z'),storage:mayaStorage(session)});
- await page.locator('[data-live-bake="maya-1"]').tap();
+ await resumeOne(page);
  await page.locator('.bh-bake-navigator-trigger').tap();
  await page.getByRole('navigation',{name:'Your bake',exact:true}).getByRole('button').filter({has:page.getByText('Preparation',{exact:true})}).tap();
  await page.locator('section[data-guide-title="Start Dough"]').getByRole('button').first().tap();

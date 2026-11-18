@@ -62,34 +62,29 @@ test('short lead explicitly replaces biga with direct dough',async({page})=>{
  await expect.poll(async()=>(await stored(page)).computedRecipe?.hasPreferment).toBe(false);
 });
 
-for(const locale of ['en','fr'])test(`${locale}: mixing is one completed action; reload preserves it and not-yet replans once`,async({page})=>{
- const fr=locale==='fr',original=await seed(page,{locale,method:'none'});
+for(const locale of ['en','fr'])test(`${locale}: mixing is one completed action; reload preserves it; an unanswered question goes with the clock`,async({page})=>{
+ const fr=locale==='fr',original=await seed(page,{locale,method:'none',extra:{startTime:NOW-30*60000}});
  const status=page.getByRole('region',{name:fr?'Préparation de la fournée':'Bake preparation'});
- const question=fr?'Avez-vous pétri la pâte ?':'Have you mixed the dough?';
+ const question=fr?'C’est l’heure de pétrir':'Time to mix the dough';
  await expect(status.getByText(question,{exact:true})).toBeVisible();
- await status.getByRole('button',{name:fr?/^Oui, le/:/^Yes, at/}).tap();
+ await status.getByRole('button',{name:fr?'Déjà fait':'Already done',exact:true}).tap();
  await expect.poll(async()=>(await stored(page)).execution?.actualAt).toBe(original.startTime);
  const mixed=(await stored(page)).execution;
  expect(mixed.method).toBe('none');
  await expect(status.getByText(question,{exact:true})).toHaveCount(0);
  await expect(page.getByRole('dialog')).toHaveCount(0);
- await expect(status.getByRole('button',{name:/finish|finished|terminer|terminé/i})).toHaveCount(0);
  await page.reload();
  const resume=page.getByRole('button',{name:/^Resume|^Reprendre/}).first();if(await resume.isVisible())await resume.tap();
  await expect(status.getByRole('button',{name:fr?'Modifier l’heure':'Change time',exact:true})).toBeVisible();
  expect((await stored(page)).execution).toEqual(mixed);
- await expect(status.getByText(question,{exact:true})).toHaveCount(0);
  await status.getByRole('button',{name:fr?'Annuler la confirmation':'Undo completion',exact:true}).tap();
- await expect(status.getByText(question,{exact:true})).toBeVisible();
- await status.getByRole('button',{name:fr?'Pas encore · Actualiser le plan':'Not yet · Update plan',exact:true}).tap();
- const proposal=page.getByRole('region',{name:fr?'Nouveau plan':'Updated plan'}).filter({visible:true});
- await expect(proposal.locator('[data-replan-method]').first()).toBeVisible();
- await proposal.locator('[data-replan-method]').first().tap();
- await expect(proposal).toHaveCount(0);
- await expect(page.getByRole('dialog')).toHaveCount(0);
- await expect.poll(async()=>(await stored(page)).startTime).toBeGreaterThan(NOW);
- expect((await stored(page)).eatTime).toBe(original.eatTime);
- expect((await stored(page)).execution).toBeUndefined();
+ await expect.poll(async()=>(await stored(page)).execution).toBeUndefined();
+ // Nothing recorded and the clock on a later step (the rise): the question is not left waiting (18 Nov 2026
+ // retention round 3, owner's rule A: prompts are optional shortcuts, never gates).
+ await page.clock.setFixedTime(NOW+60*60000);
+ await page.reload();
+ const again=page.getByRole('button',{name:/^Resume|^Reprendre/}).first();if(await again.isVisible())await again.tap();
+ await expect(page.getByText(fr?/^(Avez-vous pétri|C’est l’heure de pétrir)/:/^(Have you mixed|Time to mix)/)).toHaveCount(0);
 });
 
 
@@ -100,17 +95,18 @@ test('post-preferment overdue mixing is confirmed once without changing the made
  await expect.poll(async()=>!!(await stored(page)).execution).toBe(true);
  const prepared=(await stored(page)).execution;
  // Reopen the same bake after its mixing time, leaving the made preferment intact.
- const before=await stored(page),later=before.startTime+H;
+ const before=await stored(page),later=before.startTime+20*60000;
  await page.clock.setFixedTime(later);
  await page.reload();
  const resume=page.getByRole('button',{name:/^Resume/}).first();if(await resume.isVisible())await resume.tap();
- await expect(status.getByText('Have you mixed the dough?',{exact:true})).toBeVisible();
- await status.getByRole('button',{name:/^Yes, at/}).tap();
+ // While the mix is still the clock's step (18 Nov 2026 retention round 3: once a later step is, the question goes).
+ await expect(status.getByText('Time to mix the dough',{exact:true})).toBeVisible();
+ await status.getByRole('button',{name:'Already done',exact:true}).tap();
  await expect.poll(async()=>(await stored(page)).mixExecution?.actualAt).toBe(before.startTime);
  const mixed=(await stored(page)).mixExecution;
  expect((await stored(page)).execution).toEqual(prepared);
  expect((await stored(page)).eatTime).toBe(before.eatTime);
- await expect(status.getByText('Have you mixed the dough?',{exact:true})).toHaveCount(0);
+ await expect(status.getByText('Time to mix the dough',{exact:true})).toHaveCount(0);
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await page.reload();
  const resumed=page.getByRole('button',{name:/^Resume/}).first();if(await resumed.isVisible())await resumed.tap();
@@ -180,21 +176,21 @@ test('reopening during starter recovery preserves history and never revives the 
 });
 
 test('Guide Done records planned mixing immediately with optional time correction',async({page})=>{
- const original=await seed(page,{method:'none',lead:23});
+ const original=await seed(page,{method:'none',lead:23,expectStatus:false});
  await page.locator('.bh-bake-navigator-trigger').tap();
  await page.getByRole('navigation',{name:'Your bake',exact:true}).getByRole('button').filter({has:page.getByText('Preparation',{exact:true})}).tap();
- // Mixing is due: the overview goes straight to it (16 Nov 2026 review).
- // The due mixing step is already open in the overview, so it has no "Go to" (16 Nov 2026 design review): open it.
- await page.locator('[data-guide-mark="now"]:visible').getByRole('button').first().tap();
- const step=page.locator('section[aria-label*=" · Step "]:visible');
+ // An hour after the planned mix with nothing ticked, the clock's step is Now (18 Nov 2026 retention round 3);
+ // the mix is still there to tick.
+ const step=page.locator('section[data-guide-title="Start Dough"]');
+ await step.getByRole('button').first().tap();
  await step.getByRole('checkbox',{name:'Step done',exact:true}).check();
  await expect.poll(async()=>(await stored(page)).execution?.actualAt).toBe(original.startTime);
  await expect(page.locator('.bh-navigator-current')).toContainText('Preparation');
  await expect(step.getByRole('checkbox',{name:'Step done',exact:true})).toBeChecked();
- const status=page.getByRole('region',{name:'Bake preparation'});
- await expect(status.getByLabel('Mixing time',{exact:true})).toHaveCount(0);
- await expect(status.getByRole('button',{name:'Change time',exact:true})).toBeVisible();
+ // Said once, on the step: no strip above Preparation; Change time is in the step.
+ await expect(page.getByRole('region',{name:'Bake preparation'})).toHaveCount(0);
+ await expect(step.getByText(/^Completed · /)).toBeVisible();
  await expect(page.getByRole('dialog')).toHaveCount(0);
- await status.getByRole('button',{name:'Change time',exact:true}).tap();
- await expect(status.getByLabel('Mixing time',{exact:true})).toBeVisible();
+ await step.getByRole('button',{name:'Change time',exact:true}).tap();
+ await expect(step.getByLabel('Actual time',{exact:true})).toBeVisible();
 });
