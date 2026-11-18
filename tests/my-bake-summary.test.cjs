@@ -18,6 +18,7 @@ test('catalogue names read in sentence case in the summary',()=>{
 });
 
 test('Custom levain breads show the starter answer, and quantities follow the units',()=>{
-  assert.match(page,/\.\.\.\(levainCustom \? \{\} : \{8:/);
+  // The Starter row: the answer, or where the starter is when the feed is still to say (18 Nov 2026 retention).
+  assert.match(page,/\.\.\.\(levainCustom \? \(starterStepValue===null&&starterLocationAnswered\?\{8:starterLocation==='fridge'/);
   assert.equal((page.match(/`\$\{numItems\} × \$\{displayWeight\(Math\.round\(itemWeight\),units,locale\)\}`/g)||[]).length,2);
 });

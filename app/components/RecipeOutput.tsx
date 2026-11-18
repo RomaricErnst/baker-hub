@@ -322,7 +322,9 @@ function StarterPrepCard({
             </div>
           )}
           {mixingTime && <div style={rowStyle}><div style={labelStyle}>{isFr ? 'Incorporer au pétrissage' : 'Use when mixing'}</div><div style={valueStyle}>{fmtFull(mixingTime)}</div><div style={noteStyle}>{predictedPeak && peakGapMinutes !== null && (Math.abs(peakGapMinutes)<=30
-            ? (isFr ? `Au pic estimé (${fmtFull(predictedPeak)}).` : `At its estimated peak (${fmtFull(predictedPeak)}).`)
+            // "At" only when the times agree; a mix a few minutes off the peak is "near" it (18 Nov 2026 retention).
+            ? (peakGapMinutes===0 ? (isFr ? `Au pic estimé (${fmtFull(predictedPeak)}).` : `At its estimated peak (${fmtFull(predictedPeak)}).`)
+              : (isFr ? `Près du pic estimé (${fmtFull(predictedPeak)}).` : `Near its estimated peak (${fmtFull(predictedPeak)}).`))
             : peakGapMinutes<0
             ? (isFr ? `Un peu avant le pic estimé (${fmtFull(predictedPeak)}) : encore en train de monter.` : `A little before its estimated peak (${fmtFull(predictedPeak)}): still rising.`)
             : (isFr ? `Un peu après le pic estimé (${fmtFull(predictedPeak)}) : pas encore retombé.` : `A little after its estimated peak (${fmtFull(predictedPeak)}): not yet collapsed.`))}</div></div>}
@@ -570,7 +572,9 @@ export default function RecipeOutput({
         {pf && pf.prefYeastGrams > 0 && <IngRow label={t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)} grams={formatPrefermentDose(pf.prefYeastGrams,locale)} advancedPct={mode === 'custom' ? pctStr(pf.prefYeastGrams / flour * 100) : undefined} />}
         {oil > 0 && <IngRow label={t('recipeOutput.ingredientOil')} grams={wStr(oil)} advancedPct={mode === 'custom' ? pctStr(oilPct) : undefined} />}
         {sugar > 0 && <IngRow label={t('recipeOutput.ingredientSugar')} grams={wStr(sugar)} advancedPct={mode === 'custom' ? pctStr(sugarPct) : undefined} />}
-        {mode === 'custom' && <IngRow label={locale === 'fr' ? 'Dont farine préfermentée' : 'Of which prefermented flour'} grams={wStr(pf ? pf.prefFlour : sdHalf)} advancedPct={pctStr(pf ? pf.prefFlour / flour * 100 : sourdough ? (sourdough.starterPctMin + sourdough.starterPctMax) / 4 : 0)} sub={locale === 'fr' ? 'Déjà comprise dans la farine totale.' : 'Already included in total flour.'} />}
+        {/* A levain says its starter %, the number the plan was made with (and raised to fit free time), not half of it as prefermented flour (18 Nov 2026 retention). */}
+        {mode === 'custom' && (pf || !sourdough) && <IngRow label={locale === 'fr' ? 'Dont farine préfermentée' : 'Of which prefermented flour'} grams={wStr(pf ? pf.prefFlour : sdHalf)} advancedPct={pctStr(pf ? pf.prefFlour / flour * 100 : 0)} sub={locale === 'fr' ? 'Déjà comprise dans la farine totale.' : 'Already included in total flour.'} />}
+        {mode === 'custom' && !pf && sourdough && <IngRow label={locale === 'fr' ? 'Dont levain' : 'Of which starter'} grams={wStr(sdMid)} advancedPct={pctStr((sourdough.starterPctMin + sourdough.starterPctMax) / 2)} sub={locale === 'fr' ? 'Sa farine et son eau sont comprises ci-dessus.' : 'Its flour and water are included above.'} />}
           {mode==='custom' && flourBlend?.flour2 && <p className="bh-key-detail">{locale==='fr'?'Le mélange choisi concerne la farine ajoutée au pétrissage. Pour les totaux, la farine du levain ou du préferment est comptée dans la première farine.':'The selected blend applies to flour added at mixing. The totals count starter or preferment flour with the first flour.'}</p>}
   </>;
 

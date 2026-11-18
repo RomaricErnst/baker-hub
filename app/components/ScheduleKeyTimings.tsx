@@ -84,7 +84,7 @@ function TimingRow({anchor,isFr,onChange,check,cacheKey,open,onToggle,inline=fal
   </div>
  </li>;
 }
-export default function ScheduleKeyTimings({conflictRows,anchors,blocks,isFr,onChange,check,cacheKey,hasDraft,children,header,onCancel,onApply,canApply,onOpenChange,notice,ovenAt,personalized,adjustment,focusId,inline=false,applyLabel,onClose}:{focusId?:string;inline?:boolean;applyLabel?:string;onClose?:()=>void;conflictRows?:{id:string;at:number;name:string;cover:()=>void}[];header?:ReactNode;notice?:ReactNode;adjustment?:ReactNode;onApply:()=>void;canApply:boolean;onOpenChange:(open:boolean)=>void;ovenAt:number;personalized:boolean;onCancel:()=>void;onInteractionChange:(value:boolean)=>void;anchors:KeyTimingAnchor[];blocks:AvailabilityBlock[];isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string;hasDraft?:boolean;children?:ReactNode}){
+export default function ScheduleKeyTimings({conflictRows,anchors,blocks,isFr,onChange,check,cacheKey,hasDraft,children,header,onCancel,onApply,canApply,onOpenChange,notice,ovenAt,personalized,adjustment,focusId,inline=false,applyLabel,onClose,quietClash=false}:{quietClash?:boolean;focusId?:string;inline?:boolean;applyLabel?:string;onClose?:()=>void;conflictRows?:{id:string;at:number;name:string;cover:()=>void}[];header?:ReactNode;notice?:ReactNode;adjustment?:ReactNode;onApply:()=>void;canApply:boolean;onOpenChange:(open:boolean)=>void;ovenAt:number;personalized:boolean;onCancel:()=>void;onInteractionChange:(value:boolean)=>void;anchors:KeyTimingAnchor[];blocks:AvailabilityBlock[];isFr:boolean;onChange:(id:string,at:number)=>void;check:(id:string,at:number)=>boolean;cacheKey:string;hasDraft?:boolean;children?:ReactNode}){
  const [selectedId,setSelectedId]=useState<string|null>(focusId??null);
  const open=selectedId!==null;
  // Inline, closing the one editor closes the panel: reported on the baker's action, never from
@@ -101,7 +101,8 @@ export default function ScheduleKeyTimings({conflictRows,anchors,blocks,isFr,onC
  // Inline (on the Recipe's plan) the editor shows only the step being moved.
  const events=inline?anchors.filter(anchor=>anchor.id===focusId):[...anchors,{id:'oven',name:isFr?'Enfournement':'Bake',at:ovenAt,from:ovenAt,to:ovenAt,editable:false,valid:true}].sort((a,b)=>a.at-b.at);
  return <section data-open={open||undefined} aria-label={isFr?'Vos moments clés':'Your key times'} id="schedule-anchor-panel" tabIndex={-1}>
-  {!inline&&<div className="bh-plan-heading"><span className="bh-plan-state" data-valid={valid} role="status">{!valid?gapTitle:hasDraft?(isFr?'Modifications à appliquer':'Changes to apply'):personalized?(isFr?'Planning personnalisé':'Your adjusted plan'):(isFr?'Planning recommandé':'Recommended plan')}</span>{header}</div>}
+  {/* With the decision card above (quietClash), the card is the one clash statement. */}
+  {!inline&&<div className="bh-plan-heading">{!(quietClash&&!valid&&!hasDraft)&&<span className="bh-plan-state" data-valid={valid} role="status">{!valid?gapTitle:hasDraft?(isFr?'Modifications à appliquer':'Changes to apply'):personalized?(isFr?'Planning personnalisé':'Your adjusted plan'):(isFr?'Planning recommandé':'Recommended plan')}</span>}{header}</div>}
   {notice}
   {!inline&&blocked.length>0&&<ul data-availability-conflicts>{blocked.map(anchor=><li key={anchor.id+anchor.at} data-conflict-action={anchor.id} data-conflict-at={anchor.at}>{anchor.name} · {formatPlanClock(new Date(anchor.at),isFr?'fr':'en')} <button type="button" className="bh-back-action" onClick={anchor.cover}>{isFr?'Je peux assurer cette étape':'I can cover this step'}</button></li>)}</ul>}
   <div className="bh-linked-editor">

@@ -64,14 +64,15 @@ test('fridge arrangement confirms and undoes one action while retaining the exac
   assert.equal(render({mode,locale,blocks:undoBlocks}).controls.anchors.find(a=>a.id==='fridge-removal').valid,false);
  }
 }));
-test('preheating conflict is visible before confirmation and remains blocking afterward',()=>fixed(()=>{
- const view=render({blocks:work('18:30')});
- const html=renderToStaticMarkup(view.controls.notice);assert.match(html,/Other steps during your unavailable hours/);assert.match(html,/Preheat/);assert.doesNotMatch(html,/bh-resolution-or/);
- control(view,'Yes, someone will').props.onClick();
- const blocks=view.effects.at(-1)[2],resumed=render({blocks});
- assert.equal(resumed.controls.anchors.find(a=>a.id==='mix').valid,false);
- assert.match(renderToStaticMarkup(resumed.controls.notice),/Preheat/);
- assert.ok(control(resumed,'Undo'));
+test('preheating and fridge exit in a busy time: one card, one Keep for both, no second card or step list',()=>fixed(()=>{
+ // 18 Nov 2026 retention round 3: one clash statement and one action; the fridge exit is not asked again apart.
+ for(const locale of ['fr','en']){
+  const view=render({locale,blocks:work('18:30')});
+  assert.ok(view.simple['data-simple-decision'],'the decision card is the statement');
+  assert.equal(renderToStaticMarkup(view.controls.notice??null),'','no second card for the fridge exit');
+  assert.deepEqual(view.controls.conflictRows,[],'no "I can cover this step" list');
+  assert.equal(control(view,locale==='fr'?'Oui, quelqu’un s’en charge':'Yes, someone will'),undefined);
+ }
 }));
 test('no confirmation for a bulk fridge exit or a schedule without blocked final removal',()=>fixed(()=>{
  const blocks=[{from:date('2026-10-30T00:00Z'),to:date('2026-10-30T02:00Z'),label:'Away'}];

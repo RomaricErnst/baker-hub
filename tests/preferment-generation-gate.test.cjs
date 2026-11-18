@@ -100,7 +100,7 @@ test('whole-plan validation gates generation in both modes and directs invalid p
  assert.equal(nextOverrides.length,2);
  for(const expression of nextOverrides)for(const scheduleCandidateValid of [false,true])for(const scheduleEditing of [false,true]){
   const code=ts.transpileModule('globalThis.result=('+expression+');',{compilerOptions:{target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.React}}).outputText;
-  const context={execution:undefined,mixExecution:undefined,completedMixAt:undefined,schedule:undefined,scheduleCandidateValid,scheduleEditing,simpleDecisionPending:false,customDecisionPending:false,recipeGenerated:false,bakeTimeOnly:false,customQuestionOnly:false,eatTime:null,setBakeTimeQuestion(){},setPlanDetail(){},setupReturnLabel:'Retour à la recette',simpleOrganisationFlow:{generateLabel:'Générer ma recette'},customOrganisationFlow:{steps:[{id:9,chip:'Heure de cuisson'}],generateLabel:'Créer ma recette'},nextCustomStep:()=>9,collectingBakeTime:false,customStarterStepId:null,starterStateDescribed:true,eatTime:new Date(),fr:true,NEXT_CTA:{},React:{createElement:(type,props,...children)=>({type,props,children})}};
+  const context={execution:undefined,mixExecution:undefined,completedMixAt:undefined,schedule:undefined,scheduleCandidateValid,scheduleEditing,simpleDecisionPending:false,customDecisionPending:false,recipeGenerated:false,bakeTimeOnly:false,customQuestionOnly:false,eatTime:null,setBakeTimeQuestion(){},setPlanDetail(){},setupReturnLabel:'Retour à la recette',backToGoodPlanButton:{type:'button',props:{'data-back-to-good-plan':true},children:['Retour à la recette']},simpleOrganisationFlow:{generateLabel:'Générer ma recette'},customOrganisationFlow:{steps:[{id:9,chip:'Heure de cuisson'}],generateLabel:'Créer ma recette'},nextCustomStep:()=>9,collectingBakeTime:false,customStarterStepId:null,starterStateDescribed:true,eatTime:new Date(),fr:true,NEXT_CTA:{},React:{createElement:(type,props,...children)=>({type,props,children})}};
   vm.runInNewContext(code,context);
   if(scheduleEditing)assert.equal(context.result,null);
   else if(scheduleCandidateValid)assert.equal(context.result,undefined);
@@ -115,17 +115,19 @@ test('whole-plan validation gates generation in both modes and directs invalid p
    // Simple without a decision card: the next step waits with the reason too; no button that only scrolls.
    {const [hint,button]=context.result.children.filter(child=>child&&typeof child==='object');
     assert.equal(context.result.type,'div');assert.equal(hint.children[0],'Ajustez le planning ci-dessus pour continuer.');assert.equal(button.props.disabled,true);}
-   // Simple with its decision card shown: like Custom, the next step waits, disabled, with the reason.
-   for(const recipeGenerated of [false,true]){
-    Object.assign(context,{simpleDecisionPending:true,recipeGenerated,simpleOrganisationFlow:{generateLabel:'Créer ma recette'}});
-    vm.runInNewContext(code,context);
-    assert.equal(context.result.type,'div');
-    const [hint,button]=context.result.children.filter(child=>child&&typeof child==='object');
-    assert.equal(hint.children[0],'Choisissez une des options ci-dessus.');
-    assert.equal(button.props.disabled,true);assert.equal(button.props.onClick,undefined);
-    assert.equal(button.children[0],recipeGenerated?'Retour à la recette':'Créer ma recette');
-    Object.assign(context,{simpleDecisionPending:false,recipeGenerated:false});
-   }
+   // Simple with its decision card shown, before the recipe: the next step waits, disabled, with the reason.
+   Object.assign(context,{simpleDecisionPending:true,recipeGenerated:false,simpleOrganisationFlow:{generateLabel:'Créer ma recette'}});
+   vm.runInNewContext(code,context);
+   assert.equal(context.result.type,'div');
+   const [hint,button]=context.result.children.filter(child=>child&&typeof child==='object');
+   assert.equal(hint.children[0],'Choisissez une des options ci-dessus.');
+   assert.equal(button.props.disabled,true);assert.equal(button.props.onClick,undefined);
+   assert.equal(button.children[0],'Créer ma recette');
+   // A generated recipe: the bar is always a way back to it (18 Nov 2026 retention), never a disabled button.
+   Object.assign(context,{recipeGenerated:true});
+   vm.runInNewContext(code,context);
+   assert.equal(context.result,context.backToGoodPlanButton);
+   Object.assign(context,{simpleDecisionPending:false,recipeGenerated:false});
   }
  }
 

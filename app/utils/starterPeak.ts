@@ -36,9 +36,33 @@ export function computeStarterPeakMs(feedMs: number, refPeakMs: number | null, a
  * peak goes through computeStarterPeakMs with the same reference, so the moved card and bell
  * keep the model the solver scored with. Without a previous feed the rise is kept. */
 export function preMixPeakAfterMovedFeed(oldFeedMs: number, oldPeakMs: number, newFeedMs: number, refFeedMs: number | null): number {
+  return preMixPeakAfterMove(oldFeedMs, oldPeakMs, refFeedMs, newFeedMs, refFeedMs);
+}
+
+/** The bare rise (adjPeakH, hours) behind a planned pre-mix peak, measured against the feed before it. */
+export function preMixRiseH(feedMs: number, peakMs: number, refFeedMs: number | null): number {
+  const riseH = (peakMs - feedMs) / 3600000;
+  if (!(riseH > 0) || refFeedMs == null) return riseH;
+  let adjPeakH = riseH;
+  for (let i = 0; i < 30; i++) adjPeakH = riseH / computePreMixStretchFactor(feedMs, refFeedMs + adjPeakH * 3600000);
+  return adjPeakH;
+}
+
+/** The peak of a pre-mix feed when it, or the feed before it, happens at another time than planned
+ * (a recorded late feed, or the pre-mix feed moved to free time). The planned feed and peak give the
+ * rise (preMixRiseH); the new peak goes through computeStarterPeakMs against the new previous feed,
+ * so card, bell and scoring stay on the one model. */
+export function preMixPeakAfterMove(oldFeedMs: number, oldPeakMs: number, oldRefFeedMs: number | null, newFeedMs: number, newRefFeedMs: number | null): number {
   const riseMs = oldPeakMs - oldFeedMs;
-  if (!(riseMs > 0) || refFeedMs == null) return newFeedMs + riseMs;
-  let adjPeakH = riseMs / 3600000;
-  for (let i = 0; i < 30; i++) adjPeakH = riseMs / 3600000 / computePreMixStretchFactor(oldFeedMs, refFeedMs + adjPeakH * 3600000);
-  return computeStarterPeakMs(newFeedMs, refFeedMs + adjPeakH * 3600000, adjPeakH);
+  if (!(riseMs > 0) || oldRefFeedMs == null) return newFeedMs + riseMs;
+  const adjPeakH = preMixRiseH(oldFeedMs, oldPeakMs, oldRefFeedMs);
+  return computeStarterPeakMs(newFeedMs, newRefFeedMs == null ? null : newRefFeedMs + adjPeakH * 3600000, adjPeakH);
+}
+
+/** Whether a mix at mixMs uses a starter near its peak: the solver's green band (starterScore, room
+ * temperature: adjPeakH × 0.15 clamped 1–3 h, half an hour more on the rising side). */
+export function mixNearPeak(mixMs: number, peakMs: number, adjPeakH: number): boolean {
+  const tol = Math.max(1, Math.min(3, adjPeakH * 0.15));
+  const gapH = (mixMs - peakMs) / 3600000;
+  return gapH < 0 ? -gapH <= tol + 0.5 : gapH <= tol;
 }
