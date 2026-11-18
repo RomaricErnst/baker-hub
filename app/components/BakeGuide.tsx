@@ -1259,7 +1259,7 @@ export default function BakeGuide({onStarterFed, onStarterUnfed, starterFedTimes
     if (recipe.preferment && prefermentType && prefermentType !== 'none') {
       const p = recipe.preferment;
       const pf = Math.round((p.prefFlour / totalFlour) * 100);
-      leaven.push(`${prefermentType}: ${pf}% of the flour (${Math.round(p.prefFlour)}g flour + ${Math.round(p.prefWater)}g water), ${p.prefYeastGrams}g yeast, ferments ${p.fermentHoursMin}-${p.fermentHoursMax}h${p.cold ? ' in the fridge' : ' at room temp'}`);
+      leaven.push(`${prefermentType}: ${pf}% of the flour (${Math.round(p.prefFlour)}g flour + ${Math.round(p.prefWater)}g water), ${p.prefYeastGrams}g yeast${p.finalYeastGrams ? ` (+ ${p.finalYeastGrams}g yeast in the final dough)` : ''}, ferments ${p.fermentHoursMin}-${p.fermentHoursMax}h${p.cold ? ' in the fridge' : ' at room temp'}`);
     }
 
     return `Computed recipe estimates and settings, not measurements or proof of correctness.

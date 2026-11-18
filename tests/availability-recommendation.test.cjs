@@ -8,14 +8,14 @@ const original=new Date('2026-10-03T23:40:00Z'),bake=new Date('2026-10-04T20:31:
 const night={from:new Date('2026-10-03T23:00:00Z'),to:new Date('2026-10-04T07:00:00Z'),label:'Saturday night'};
 const source=fs.readFileSync('app/components/SchedulePicker.tsx','utf8');
 const tree=ts.createSourceFile('SchedulePicker.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
-const names=['applyAndUpdate','replanCurrentSchedule','commercialRecommendation'],declarations=[];
+const names=['applyAndUpdate','replanCurrentSchedule','commercialRecommendation','poolishLadder'],declarations=[];
 function visit(n){if(ts.isFunctionDeclaration(n)&&names.includes(n.name?.text))declarations.push(n.getText(tree));ts.forEachChild(n,visit);}visit(tree);
 function harness(overrides={}){
  const writes=[];
  class Clock extends Date{static now(){return now;}}
  const c={chronologicalBlocks,Date:Clock,isSourdough:false,recipeGenerated:false,eatTimeSet:true,startTimeInPast:false,execution:undefined,mixExecution:undefined,completedMixAt:undefined,replanRequested:false,hasPrefActive:true,
   pendingStart:original,pendingEatTime:bake,prefOffsetH:8,_optimalMix:(+bake-original)/H,
-  prefermentType:'poolish',poolishStorage:'auto',kitchenTemp:22,prefGoesInFridge:false,styleKey:'neapolitan',fridgeTemp:5,
+  prefermentType:'poolish',poolishStorage:'auto',poolishPeakAtMix:undefined,kitchenTemp:22,prefGoesInFridge:false,styleKey:'neapolitan',fridgeTemp:5,
   manualTimesRef:{current:overrides},solverNotifyBudgetRef:{current:{}},ratioApplyHistoryRef:{current:[]},
   draftOverridesRef:{current:{}},solverBlocksRef:{current:[]},resumeFrozenRef:{current:false},acceptedBakeRef:{current:0},
   findFixedBakeSchedule,recommendPreferment,getPrefOptH:()=>8,onChange:(start,bake,blocks,options)=>writes.push({start,bake,blocks,options})};

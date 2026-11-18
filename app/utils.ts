@@ -1825,6 +1825,10 @@ export interface RecipeResult {
     cold: boolean;
     schedule: string;
     scheduleFr: string;
+    /** Present only when a poolish would be past its peak with all the yeast:
+     * the rest of the same total, added to the final dough (selected yeast / IDY). */
+    finalYeastGrams?: number;
+    finalYeastGramsIDY?: number;
   } | null;
 }
 
@@ -2167,7 +2171,7 @@ export function calculateRecipe(
     // Do not change the pending sourdough model: starter flour and water
     // remain part of the formula totals, not an additional yeast mass.
     const addedYeast = yeastType === 'sourdough' ? 0
-      : preferment ? preferment.prefYeastGrams : yeast?.convertedGrams ?? 0;
+      : preferment ? preferment.prefYeastGrams + (preferment.finalYeastGrams ?? 0) : yeast?.convertedGrams ?? 0;
     if (fixedFlour !== undefined) { totalDough = Math.round(flour * ingredientRatio + addedYeast); break; }
     const nextFlour = Math.round((totalDough - addedYeast) / ingredientRatio);
     if (nextFlour === flour || pass === 3) break;

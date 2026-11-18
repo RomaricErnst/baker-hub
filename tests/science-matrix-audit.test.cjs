@@ -14,7 +14,7 @@ test('all 27 styles retain finite balanced recipes and explicit method gates acr
   const schedule=utils.buildSchedule(start,end,[],temperature,oven==='griddle'?5:30,'hand',style,4);
   const recipe=utils.calculateRecipe(style,oven,4,250,temperature,'normal',schedule,fridge,method==='levain'?'sourdough':'instant','custom','hand',undefined,undefined,undefined,undefined,method,undefined,20,undefined,undefined,false,0,true,undefined,24);
   const label=`${style}/${temperature}/${fridge}/${hours}/${method}`;
-  const ingredients=[recipe.flour,recipe.water,recipe.salt,recipe.oil,recipe.sugar,recipe.enrichment?.milk||0,recipe.enrichment?.eggs||0,recipe.enrichment?.butter||0,recipe.preferment?.prefYeastGrams??recipe.yeast?.convertedGrams??0];
+  const ingredients=[recipe.flour,recipe.water,recipe.salt,recipe.oil,recipe.sugar,recipe.enrichment?.milk||0,recipe.enrichment?.eggs||0,recipe.enrichment?.butter||0,recipe.preferment?(recipe.preferment.prefYeastGrams+(recipe.preferment.finalYeastGrams??0)):recipe.yeast?.convertedGrams??0];
   assert.ok(ingredients.every(value=>Number.isFinite(value)&&value>=0),label);
   assert.ok(Math.abs(ingredients.reduce((sum,value)=>sum+value,0)-1000)<=4,label+' mass');
   assert.equal(+schedule.bakeStart,+end,label+' oven time');

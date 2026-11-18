@@ -38,3 +38,10 @@ export function dryYeastSpoonHint(grams:number, type:string, locale:string) {
   return Math.abs(grams-nearest[0]*7/2.25)<=grams*0.15
     ? `≈ ${nearest[1]} ${locale==='fr'?'c. à café':'tsp'}` : '';
 }
+
+/** All the yeast the baker weighs for a recipe, in the selected yeast: the preferment's dose plus the
+ * final dough's share when a poolish would be past its peak with all of it (data.ts), else the direct dose. */
+export function recipeYeastTotal(recipe: { preferment?: { prefYeastGrams: number; finalYeastGrams?: number } | null; yeast?: { convertedGrams: number } | null } | null | undefined): number | undefined {
+  if (!recipe) return undefined;
+  return recipe.preferment != null ? recipe.preferment.prefYeastGrams + (recipe.preferment.finalYeastGrams ?? 0) : recipe.yeast?.convertedGrams;
+}

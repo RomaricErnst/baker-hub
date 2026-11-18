@@ -32,9 +32,14 @@ test('preferment baker percentages describe the selected seed yeast actually wei
  for(const pref of ['poolish','biga']){
   const r=make('fresh',pref);
   // Distinct doses make an accidental reference to unused final-dough yeast observable.
-  r.preferment.prefYeastGrams=r.flour*.0025;r.yeast.convertedPct=1.2;
-  const section=render(r,pref,undefined,'en',true).match(/<section (?:aria-label="(?:Total ingredients|Quantités totales)"|data-whole-dough[^>]*)>([\s\S]*?)<\/section>/)?.[1].replace(/<[^>]+>/g,'');
+  r.preferment.prefYeastGrams=r.flour*.0025;r.yeast.convertedPct=1.2;delete r.preferment.finalYeastGrams;
+  const whole=x=>render(x,pref,undefined,'en',true).match(/<section (?:aria-label="(?:Total ingredients|Quantités totales)"|data-whole-dough[^>]*)>([\s\S]*?)<\/section>/)?.[1].replace(/<[^>]+>/g,'');
+  const section=whole(r);
   a.ok(section);a.match(section,/Fresh yeast0\.25%[\d. ]+g/i);a.doesNotMatch(section,/Fresh yeast1\.2%[\d. ]+g/i);
+  // A poolish past its peak with all the yeast: the whole dough shows the total, the final dough its share.
+  const stageYeast=x=>(render(x,pref,undefined,'en',true).split('data-recipe-stages')[1]??'').replace(/<[^>]+>/g,'').match(/Fresh yeast/g)?.length??0;
+  a.equal(stageYeast(r),1,'no final-dough yeast line when the preferment holds it all');
+  if(pref==='poolish'){r.preferment.finalYeastGrams=r.flour*.001;a.match(whole(r),/Fresh yeast0\.35%[\d. ]+g/i);a.equal(stageYeast(r),2,'one more line, in the final dough');}
  }
 });
 
