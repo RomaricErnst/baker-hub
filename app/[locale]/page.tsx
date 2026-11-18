@@ -3602,6 +3602,8 @@ export default function Home() {
     previousRecipeInputKey.current = recipeInputKey;
     generatedRecipeInputKey.current = recipeInputKey;
     setReviewMode(false);
+    // Creating a recipe always opens the Recipe; a pending resume-to-Now is for a bake already generated.
+    resumeToNow.current = false;
     setRecipeGenerated(true);
     setProtocolStale(false);setExecutionClash(false);
     // A recipe generated from a valid plan settles any pending starter recovery: one message, not two.
