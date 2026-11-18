@@ -12,7 +12,7 @@ interface DoughShoppingRecipe {
   flourParts?: { key: string; name: string; nameFr: string; grams: number }[];
   yeast?: { convertedGrams: number; yeastType?: string } | null;
   sourdough?: unknown | null;
-  preferment?: { prefYeastGrams: number; prefYeastType?: string } | null;
+  preferment?: { prefYeastGrams: number; finalYeastGrams?: number; prefYeastType?: string } | null;
   enrichment?: { milk: number; eggs: number; butter: number } | null;
 }
 
@@ -94,7 +94,7 @@ export function doughShoppingItems(input: {
     ...flourRows,
     { tickKey: 'dough_1', name: fr ? 'Sel' : 'Salt', amount: weight(recipe.salt) },
   ];
-  const yeastGrams = recipe.preferment != null ? recipe.preferment.prefYeastGrams : recipe.yeast?.convertedGrams;
+  const yeastGrams = recipe.preferment != null ? recipe.preferment.prefYeastGrams + (recipe.preferment.finalYeastGrams ?? 0) : recipe.yeast?.convertedGrams;
   const leavened = yeastType === 'sourdough' || (!!yeastGrams && yeastGrams > 0);
   if (yeastType === 'sourdough') {
     items.push({ tickKey: 'dough_2', name: fr ? 'Levain actif' : 'Active starter', amount: '—' });

@@ -952,6 +952,8 @@ export function computePrefermentRecipe(
   cold: boolean;
   schedule: string;
   scheduleFr: string;
+  finalYeastGrams?: number;
+  finalYeastGramsIDY?: number;
 } | null {
   if (prefermentType === 'none') return null;
   const p = PREFERMENT_TYPES[prefermentType];
@@ -1038,6 +1040,21 @@ export function computePrefermentRecipe(
     const leaveningDoseIDY = nTargetGramsIDY / growth;
     prefYeastGramsIDY = Math.max(peakDoseIDY, leaveningDoseIDY);
   }
+  // ── Poolish past its peak at the mix (owner's decision, 18 Nov 2026) ──
+  // The leavening dose above can exceed the peak dose several times over
+  // (Thomas: 2 baguettes, 20 °C, 11 h poolish held the whole dough's yeast and
+  // would peak about 4.5 h after it was made). Read the dose back through the
+  // SAME peak model (poolishPeakHours) and, when the poolish would peak more
+  // than the engine's own past-peak tolerance before the mix, keep the peak
+  // dose in the poolish and add the rest to the final dough. Total yeast is
+  // unchanged; flour %, storage and timing are the baker's (or the planner's)
+  // and are not touched here. Passing poolishes return exactly as before.
+  let finalYeastGramsIDY: number | undefined;
+  if (prefermentType === 'poolish' && prefFlour > 0 && prefYeastGramsIDY > peakDoseIDY + 1e-12
+    && !poolishPeakAtMix(prefYeastGramsIDY / prefFlour * 100, actualFermentH !== undefined && actualFermentH > 0 ? actualFermentH : prefFermentH, isInFridge, effectiveKT, effectiveFT)) {
+    finalYeastGramsIDY = prefYeastGramsIDY - peakDoseIDY;
+    prefYeastGramsIDY = peakDoseIDY;
+  }
   // Preserve the model dose through conversion; round only for display.
 
   // Convert to baker's selected yeast type
@@ -1073,7 +1090,50 @@ export function computePrefermentRecipe(
     cold,
     schedule,
     scheduleFr,
+    // Only on a poolish that would be past its peak with all the yeast: the
+    // final dough's share, in the selected yeast and in IDY.
+    ...(finalYeastGramsIDY !== undefined ? {
+      finalYeastGrams: finalYeastGramsIDY * yeastConversion,
+      finalYeastGramsIDY,
+    } : {}),
   };
+}
+
+/** How long a poolish stays usable after its peak, in hours (owner review, 19 Nov 2026;
+ * sources in the PR / CLAUDE.md Preferments):
+ * - room temperature: a third of its own time to peak (fond.kitchen, citing Weekend Bakery,
+ *   BAKERpedia and Hamelman: a 12 h poolish is "past peak but usable" to 14–16 h and
+ *   over-fermented from 20 h; Suas's 0.1 % fresh-yeast poolish spans 12–15 h), never less than
+ *   the planner's own upper tolerance (prefZoneConstants rtTolUpper, 0.75–2 h);
+ * - fridge: 12 h (The Dough Formula: a refrigerated poolish past its peak is usable within
+ *   12 h of falling; fond.kitchen: a ripe poolish holds about 24 h in the fridge, the
+ *   conservative of the two). The fridge poolish itself stays within its 24 h window. */
+export function poolishPastPeakToleranceH(inFridge: boolean, kitchenTemp: number, peakH = 0): number {
+  if (inFridge) return 12;
+  const floor = kitchenTemp >= 30 ? 0.75 : kitchenTemp >= 28 ? 1.0 : kitchenTemp >= 24 ? 1.5 : 2.0;
+  return Math.max(floor, peakH / 3);
+}
+
+/** Hours from making a poolish to its peak for a yeast dose (IDY % of the
+ * poolish's own flour): the inverse of the peak dose computePrefermentRecipe
+ * gives a window (Craig's room-temperature or cold formula with the poolish
+ * correction, the same tropical factor and the same 0.5 h / 1 h floors). */
+export function poolishPeakHours(idyPctOfPrefFlour: number, inFridge: boolean, kitchenTemp: number, fridgeTemp: number): number {
+  if (!(idyPctOfPrefFlour > 0)) return Infinity;
+  if (inFridge) {
+    const raw = idyPctOfPrefFlour / 1.65 * Math.pow(2.0, (fridgeTemp - 4) / 10);
+    return Math.max(1, Math.pow(7.5 / raw, 1 / 1.313));
+  }
+  const tropical = kitchenTemp >= 33 ? 1.25 : kitchenTemp >= 30 ? 1.15 : 1.0;
+  const raw = idyPctOfPrefFlour * 3.1 * tropical;
+  return Math.max(0.5, Math.pow(9.5 / (raw * Math.pow(2.5, (kitchenTemp - 25) / 10)), 1 / 1.65));
+}
+
+/** True when a poolish holding this dose is still near its peak after
+ * `hours`: its peak is no more than the past-peak tolerance before the mix. */
+export function poolishPeakAtMix(idyPctOfPrefFlour: number, hours: number, inFridge: boolean, kitchenTemp: number, fridgeTemp: number): boolean {
+  const peak = poolishPeakHours(idyPctOfPrefFlour, inFridge, kitchenTemp, fridgeTemp);
+  return hours - peak <= poolishPastPeakToleranceH(inFridge, kitchenTemp, peak) + 1e-9;
 }
 
 export interface FlourBlend {

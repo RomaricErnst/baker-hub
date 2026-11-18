@@ -56,7 +56,7 @@ export function mixingBatchPlan(recipe: RecipeResult, mixer: string, requested?:
     salt: recipe.salt, oil: recipe.oil, sugar: recipe.sugar,
     milk: recipe.enrichment?.milk ?? 0, eggs: recipe.enrichment?.eggs ?? 0, butter: recipe.enrichment?.butter ?? 0,
     preferment: pref ? pref.prefFlour + pref.prefWater + pref.prefYeastGrams : 0,
-    starter, yeast: pref || starter ? 0 : recipe.yeast?.convertedGrams ?? 0,
+    starter, yeast: pref ? pref.finalYeastGrams ?? 0 : starter ? 0 : recipe.yeast?.convertedGrams ?? 0,
   };
   const portion = Object.fromEntries(Object.entries(totals).map(([key,value]) =>
     // Sugar is calculated to 0.1 g; keep that in the step so it reads as on the recipe card.

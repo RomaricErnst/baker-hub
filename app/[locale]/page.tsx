@@ -69,7 +69,7 @@ import { archiveLocalBake, preservePreviousBake, acceptCurrentSessionStorage, cl
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
 import { bakeEventTitle, type BakeEvent } from '../lib/supabase/fetchBakeEvents';
 import { useSessionSave } from '../hooks/useSessionSave';
-import { formatYeastDose } from '../utils/prefermentDose';
+import { formatYeastDose, recipeYeastTotal } from '../utils/prefermentDose';
 import { soonStartLabel } from '../utils/startNotice';
 import { checkYeastEntry, entryHoursLabel, type YeastEntryCheck } from '../utils/yeastEntry';
 import { starterActionLabelFor } from '../utils/starterBuild';
@@ -2049,6 +2049,19 @@ export default function Home() {
         measuredFlourTemp, prefTempForBalance, totalFlourTarget, effectiveYeastOverride, effectiveStarterOverride,
       );
   };
+  // The planner's poolish levers judge a candidate by the recipe it would show: true when that
+  // recipe keeps all its yeast in the poolish (near its peak at the mix, data.ts poolishPeakAtMix).
+  const poolishPeakAtMix = React.useMemo(() => prefermentType === 'poolish' && yeastType && yeastType !== 'sourdough' && styleKey && ovenType && mixerType
+    ? (plan: ReturnType<typeof buildSchedule>, prefHours: number, inFridge: boolean) => {
+      try {
+        const r = calculateRecipe(styleKey, ovenType as OvenType, numItems, itemWeight, kitchenTemp, humidity, plan, fridgeTemp, yeastType, 'custom',
+          mixerType as MixerType, manualHydration, manualOil, manualSugar, flourChosen ? flourBlend : undefined, 'poolish', priorityOverride,
+          prefermentFlourPct ?? 20, manualSalt, targetDoughTemp, flourInFridge, wastePct, inFridge, feedToMixH, prefHours > 0 ? prefHours : undefined,
+          measuredFlourTemp, prefTempForBalance, totalFlourTarget);
+        return r.preferment?.finalYeastGrams === undefined;
+      } catch { return true; }
+    } : undefined,
+  [prefermentType, yeastType, styleKey, ovenType, mixerType, numItems, itemWeight, kitchenTemp, humidity, fridgeTemp, manualHydration, manualOil, manualSugar, flourChosen, flourBlend, priorityOverride, prefermentFlourPct, manualSalt, targetDoughTemp, flourInFridge, wastePct, feedToMixH, measuredFlourTemp, prefTempForBalance, totalFlourTarget]);
   const mixerCapacityG = mixerDoughCapacity(mixerType ?? 'hand', customMixerCapacityG);
   const plannedDoughG = (() => {
     // Flour-target recipes need the same formula mass as the generated recipe.
@@ -2217,7 +2230,7 @@ export default function Home() {
   // A restored, up-to-date recipe is the baseline the next update compares amounts with.
   useEffect(() => {
     if (!recipeGenerated || protocolStale || acceptedAmountsRef.current || !recipe) return;
-    acceptedAmountsRef.current = {yeast: recipe.preferment ? recipe.preferment.prefYeastGrams : recipe.yeast?.convertedGrams, flour: recipe.flour};
+    acceptedAmountsRef.current = {yeast: recipeYeastTotal(recipe), flour: recipe.flour};
   }, [recipeGenerated, protocolStale, recipe]);
 
 
@@ -2251,7 +2264,7 @@ export default function Home() {
       {id:'salt', name:fr?'Sel':'Salt', grams:cr.salt},
       {id:'olive_oil', name:fr?'Huile d’olive':'Olive oil', grams:cr.oil},
       {id:'sugar', name:fr?'Sucre':'Sugar', grams:cr.sugar},
-      {id:'yeast', name:(()=>{const grams=cr.preferment?.prefYeastGrams ?? cr.yeast?.convertedGrams ?? 0, hint=yeastBuyingHint(grams, yeastType ?? 'instant', locale, units);return yeastShoppingName(yeastType ?? 'instant', locale)+(hint?` · ${hint}`:'');})(), grams:cr.preferment?.prefYeastGrams ?? cr.yeast?.convertedGrams ?? 0},
+      {id:'yeast', name:(()=>{const grams=recipeYeastTotal(cr) ?? 0, hint=yeastBuyingHint(grams, yeastType ?? 'instant', locale, units);return yeastShoppingName(yeastType ?? 'instant', locale)+(hint?` · ${hint}`:'');})(), grams:recipeYeastTotal(cr) ?? 0},
       ...(['milk','eggs','butter'] as const).map(id=>({id,name:({milk:fr?'Lait':'Milk',eggs:eggShoppingLabel(cr.enrichment?.eggs ?? 0,fr),butter:fr?'Beurre':'Butter'})[id],grams:cr.enrichment?.[id] ?? 0})),
     ];
     // What the steps ask for besides the dough (finish, dusting, egg wash).
@@ -2313,17 +2326,13 @@ export default function Home() {
       oil: cr.oil ?? 0,
       sugar: cr.sugar ?? 0,
       hydration: cr.hydration ?? Math.round((cr.water / cr.flour) * 100),
-      yeastGrams: cr.preferment != null
-        ? cr.preferment.prefYeastGrams
-        : (cr.yeast?.convertedGrams ?? null),
+      yeastGrams: recipeYeastTotal(cr) ?? null,
       coldH: schedule?.totalColdHours ?? 0,
       rtH: schedule?.totalRTHours ?? 0,
       enrichment: cr.enrichment,
       hasPreferment: !!(cr.preferment?.prefYeastGrams),
       totalIngredients: {
-        yeast: cr.preferment != null
-          ? cr.preferment.prefYeastGrams
-          : (cr.yeast?.convertedGrams ?? undefined),
+        yeast: recipeYeastTotal(cr),
       },
       timelineSteps,
     };
@@ -2978,7 +2987,7 @@ export default function Home() {
   const [planChartOpen, setPlanChartOpen] = useState(false);
   const planYeastFrom = useRef<number|undefined>(undefined);
   const planYeastAwait = useRef(false);
-  const doseOf = (r: typeof recipe) => r ? (r.preferment ? r.preferment.prefYeastGrams : r.yeast?.convertedGrams) : undefined;
+  const doseOf = (r: typeof recipe) => recipeYeastTotal(r);
   useEffect(()=>{
     if(!planRegenPending.current||planEdit||!recipeGenerated||!canGenerate)return;
     planRegenPending.current=false;planYeastAwait.current=true;handleGenerate(true);
@@ -3636,7 +3645,7 @@ export default function Home() {
     // Regenerating after an edit says what moved since the plan the baker had.
     // Regenerating after an edit lists every key time that moved and the amounts that changed.
     {
-      const amounts = {yeast: recipe ? (recipe.preferment ? recipe.preferment.prefYeastGrams : recipe.yeast?.convertedGrams) : undefined, flour: recipe?.flour};
+      const amounts = {yeast: recipeYeastTotal(recipe), flour: recipe?.flour};
       const before = acceptedAmountsRef.current;
       acceptedAmountsRef.current = amounts;
       if (recipeGenerated) {
@@ -4631,7 +4640,7 @@ export default function Home() {
   const keepOvenAt = (bakeMs:number) => { ovenKept.current = bakeMs; };
   const renderSimpleScheduler = (extra?: {planInline?: {focus:'mix'|'pref';applyLabel:string;onClose:()=>void};planChart?:boolean}) => (
               <SchedulePicker {...extra} inputsOnly={!extra?.planInline&&!extra?.planChart&&(collectingBakeTime||bakeTimeOnly)} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct} keptStarterPlan={starterFactsKept} holdStarterPct={starterFactsKept&&starterPctOverride===undefined&&autoStarterPct!=null}
-                {...poolishInputs}
+                {...poolishInputs} poolishPeakAtMix={poolishPeakAtMix}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
                 mixingBatches={selectedMixingBatches}
@@ -4708,7 +4717,7 @@ export default function Home() {
   const renderCustomScheduler = (section:'all'|'starter'|'plan', extra?: {planInline?: {focus:'mix'|'pref';applyLabel:string;onClose:()=>void};planChart?:boolean}) => (
               <SchedulePicker
                 {...extra}
-                {...poolishInputs}
+                {...poolishInputs} poolishPeakAtMix={poolishPeakAtMix}
                 inputsOnly={!extra?.planInline&&!extra?.planChart&&(bakeTimeOnly||customQuestionOnly)&&section!=='starter'}
                 schedulerSection={section}
                 onUseCalculatedYeast={()=>{setYeastPctOverride(undefined);setPlanReplanPending(true);}}
