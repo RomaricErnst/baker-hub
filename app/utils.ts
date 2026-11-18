@@ -896,6 +896,7 @@ function buildSchedulePhases(
   isSourdough = false,
   starterFactor = 1,
   fromFridge = false,
+  exitLeadMin?: number,
 ): ScheduleResult {
   const bakeTime = new Date(eatTime.getTime() - preheatMin * 60000);
   // Elapsed mixing time is style-dependent (Modernist publishes it per style);
@@ -1148,7 +1149,42 @@ function buildSchedulePhases(
     // Passive cold can overlap unavailable time. Only the joint action scan
     // above may move this exit; it preserves both cold phases and final proof.
     let coldRetard2End = constrainedExit ?? new Date(bakeTime.getTime() - rtWarmupH * 3600000 - maxFinalH * 3600000);
-    const wasAutoAdjusted = +r15(divideBallTime) !== +r15(earliestDivide) || (constrainedExit != null && +constrainedExit !== +naturalExit);
+    const plannedExit = +coldRetard2End;
+    // Where the exit may sit: after the shortest second cold spell, no later than the
+    // shortest warm-up and final proof before the oven (maxExit), never earlier than the
+    // longest final proof (naturalExit). Quarter-hour grid, blocker edges exclusive.
+    const exitFits = (ms: number) => ms % 900000 === 0 && ms >= +naturalExit && ms <= maxExit
+      && ms >= +coldRetard2Start + minCold2H * 3600000;
+    // A bake planned again with the same kitchen keeps the time its dough spent out of the
+    // fridge before the oven (18 Nov 2026 retention round 4, Thomas: one hour later, out at
+    // 8:00 instead of 7:00 with the same 3 h, not a 4 h proof). Only when that exit is free:
+    // the cold spell absorbs the later bake. Without a previous plan nothing changes.
+    if (exitLeadMin !== undefined && Number.isFinite(exitLeadMin) && exitLeadMin > 0
+      && (constrainedExit || !relevantBlocks.length) && !fromFridge) {
+      const kept = Math.round((+eatTime - exitLeadMin * 60000) / 900000) * 900000;
+      if (exitFits(kept) && !isTimeBlocked(kept, relevantBlocks)) coldRetard2End = new Date(kept);
+    }
+    // The exit still falls in busy time (no free quarter between the longest and the
+    // shortest final proof). An exit the baker already arranged for this very bake is kept
+    // as it was (an existing bake is never re-timed); a new plan proposes the LATEST
+    // workable exit, nearest the end of the busy time (18 Nov 2026 retention round 4:
+    // 6:45 after a night ending at 7:00 for a 9:15 bake, not 4:15).
+    // Only a plan that already has a real shaped cold spell: a window too short for one keeps its own handling.
+    if (!constrainedExit && relevantBlocks.length && isTimeBlocked(coldRetard2End, relevantBlocks)
+      && plannedExit >= +coldRetard2Start + minCold2H * 3600000) {
+      const arranged = availabilityBlocks.map(block => block.fridgeRemoval)
+        .find(removal => removal && removal.bake === +eatTime && Number.isFinite(removal.at));
+      let free: number | null = null;
+      for (let at = Math.ceil(+naturalExit / 900000) * 900000; at <= maxExit; at += 900000) {
+        if (exitFits(at) && !isTimeBlocked(at, relevantBlocks)) { free = at; break; }
+      }
+      const latest = Math.floor(maxExit / 900000) * 900000;
+      if (arranged && arranged.at % 900000 === 0 && arranged.at >= +coldRetard2Start + minCold2H * 3600000 && arranged.at <= maxExit) coldRetard2End = new Date(arranged.at);
+      else if (free !== null) coldRetard2End = new Date(free);
+      else if (exitFits(latest)) coldRetard2End = new Date(latest);
+    }
+    const wasAutoAdjusted = +r15(divideBallTime) !== +r15(earliestDivide) || (constrainedExit != null && +constrainedExit !== +naturalExit)
+      || +coldRetard2End !== plannedExit;
 
     // Safety: phase 2 end must not precede start
     if (coldRetard2End.getTime() < coldRetard2Start.getTime()) {
@@ -1412,6 +1448,9 @@ export function buildSchedule(
   styleKey: string = 'neapolitan', numItems?: number, requestedMixingBatches = 1,
   isSourdough = isLevainStyle(styleKey),
   starterFactor = 1,
+  /** Minutes from the final fridge exit to the bake that the previous plan of this bake had
+   *  (Bake again); kept when that exit is free. Undefined: the engine's own exit. */
+  exitLeadMin?: number,
 ): ScheduleResult {
   const mixingBatches = Number.isFinite(requestedMixingBatches) ? Math.max(1, Math.min(100, Math.floor(requestedMixingBatches))) : 1;
   const poachMinutes = breadPoachMinutes(styleKey, numItems);
@@ -1423,7 +1462,7 @@ export function buildSchedule(
   // take it only as a repair around busy times.
   const fromFridge = !poachMinutes && BAKE_FROM_FRIDGE_STYLES.has(styleKey)
     && (isSourdough || availabilityBlocks.some(block => block.bakeFromFridge === +eatTime));
-  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches, numItems, isSourdough, isSourdough ? starterFactor : 1, fromFridge);
+  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches, numItems, isSourdough, isSourdough ? starterFactor : 1, fromFridge, poachMinutes ? undefined : exitLeadMin);
   schedule.divisionMinutes = divisionMinutesFor(numItems);
   const requiredCold = REQUIRED_COLD_MIN_HOURS[styleKey] ?? 0;
   if (requiredCold) {
@@ -1584,6 +1623,17 @@ export function buildSchedule(
   return schedule;
 }
 
+/** A longer preheat the baker chose on the plan ("more preheat" last time) moves the Preheat
+ *  step alone. The dough's times come from the oven's own preheat (18 Nov 2026 retention
+ *  round 4: a 30 min longer preheat had moved the take-out 30 min earlier and lengthened
+ *  the final rise to 2.5 h at 30 °C). */
+export function withLongerPreheat(schedule: ScheduleResult, eatTime: Date, extraMin: number, blocks: AvailabilityBlock[]): ScheduleResult {
+  if (!(extraMin > 0) || !Number.isFinite(extraMin)) return schedule;
+  const at = new Date(Math.min(+schedule.preheatStart, +eatTime) - extraMin * 60000);
+  const actions = (schedule.availabilityActions ?? []).map(action => action.id === 'preheat' ? { ...action, at } : action);
+  return { ...schedule, preheatStart: at, availabilityActions: actions, availabilityConflicts: findAvailabilityConflicts(actions, blocks) };
+}
+
 /** The two storage intervals describe bulk and shaped dough independently.
  * Either interval can be absent when a short refrigerator visit was removed. */
 export function hasCoherentScheduleShape(schedule: ScheduleResult, start: Date): boolean {
@@ -1620,6 +1670,8 @@ export interface ScheduleRepairInput {
   styleKey?: string;
   /** Levain bulk multiplier for a baker-chosen starter % (starterBulkFactor). */
   starterFactor?: number;
+  /** The previous plan's fridge-exit lead (buildSchedule exitLeadMin). */
+  exitLeadMin?: number;
   /** Supply the planning clock explicitly for reproducible candidate checks. */
   now?: Date;
   allowStartShift?: boolean;
@@ -1645,7 +1697,7 @@ export function findScheduleRepair(input: ScheduleRepairInput): ScheduleRepair |
   const now = +(input.now ?? new Date());
   if (![+startTime, +eatTime, now, kitchenTemp, preheatMin].every(Number.isFinite)
       || +startTime < now || +startTime >= +eatTime || preheatMin < 0) return null;
-  const build = (start: Date, bake: Date) => buildSchedule(start, bake, availabilityBlocks, kitchenTemp, preheatMin, mixer, style, input.numItems, input.mixingBatches, input.isSourdough, input.starterFactor ?? 1);
+  const build = (start: Date, bake: Date) => buildSchedule(start, bake, availabilityBlocks, kitchenTemp, preheatMin, mixer, style, input.numItems, input.mixingBatches, input.isSourdough, input.starterFactor ?? 1, input.exitLeadMin);
   const original = build(startTime, eatTime);
   const valid = (schedule: ScheduleResult, start: Date, bake: Date) =>
     +schedule.bakeStart === +bake && hasCoherentScheduleShape(schedule, start)
@@ -1784,12 +1836,12 @@ export interface RecipeResult {
 export function fermentationHoursForYeast(modelIdyPct: number, o: {
   bake: Date; blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number;
   mixerType: MixerType; styleKey: string; numItems: number; itemWeight: number;
-  mixingBatches: number; fridgeTemp: number; hydration: number; budget?: number;
+  mixingBatches: number; fridgeTemp: number; hydration: number; budget?: number; exitLeadMin?: number;
 }): number | null {
   const target = o.budget ?? 1;
   const reached = (hours: number) => {
     try {
-      const schedule = buildSchedule(new Date(+o.bake - hours * 3600000), o.bake, o.blocks, o.kitchenTemp, o.preheatMin, o.mixerType, o.styleKey, o.numItems, o.mixingBatches, false);
+      const schedule = buildSchedule(new Date(+o.bake - hours * 3600000), o.bake, o.blocks, o.kitchenTemp, o.preheatMin, o.mixerType, o.styleKey, o.numItems, o.mixingBatches, false, 1, o.exitLeadMin);
       const exposure = doughCoolingExposure(schedule, o.numItems, o.itemWeight, o.hydration);
       return fermentationBudget(modelIdyPct, exposure.warmHours, o.kitchenTemp, exposure.coldHours, o.fridgeTemp);
     } catch { return NaN; }
@@ -1817,11 +1869,11 @@ export function fermentationHoursForYeast(modelIdyPct: number, o: {
 export function bakeFromFridgeOption(o: {
   start: Date; bake: Date; blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number;
   mixerType: MixerType; styleKey: string; numItems: number; itemWeight: number; mixingBatches: number;
-  fridgeTemp: number; hydration: number; isSourdough?: boolean; starterFactor?: number;
+  fridgeTemp: number; hydration: number; isSourdough?: boolean; starterFactor?: number; exitLeadMin?: number;
 }): { exitAt: Date; budget: number; blocks: AvailabilityBlock[] } | null {
   if (!BAKE_FROM_FRIDGE_STYLES.has(o.styleKey) || !o.blocks.length || +o.bake <= +o.start) return null;
   const plain = o.blocks.map(({ bakeFromFridge: _ignored, ...block }) => block);
-  const build = (blocks: AvailabilityBlock[]) => buildSchedule(o.start, o.bake, blocks, o.kitchenTemp, o.preheatMin, o.mixerType, o.styleKey, o.numItems, o.mixingBatches, o.isSourdough ?? isLevainStyle(o.styleKey), o.starterFactor ?? 1);
+  const build = (blocks: AvailabilityBlock[]) => buildSchedule(o.start, o.bake, blocks, o.kitchenTemp, o.preheatMin, o.mixerType, o.styleKey, o.numItems, o.mixingBatches, o.isSourdough ?? isLevainStyle(o.styleKey), o.starterFactor ?? 1, o.exitLeadMin);
   const base = build(plain);
   if (!base.coldRetard2Start || !base.coldRetard2End || !base.rtWarmupStart) return null;
   const exit = base.coldRetard2End;

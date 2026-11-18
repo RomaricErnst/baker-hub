@@ -5,6 +5,7 @@ import { normalizeSandwichSnapshot, type SandwichSnapshot } from './sandwich';
 import type { StarterEvent } from '../components/SchedulePicker';
 import type { RecipeEnrichment } from '../utils/enrichedFormulas';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
+import type { ExitLead } from '../utils/exitLead';
 const SESSION_KEY = 'bh_session_v1';
 
 const draftStores = new WeakMap<Storage, ReturnType<typeof createDraftStorage>>();
@@ -79,10 +80,15 @@ export interface SessionData {
   acceptedPreparationAt?: number;
   /** Bake time of that accepted plan (ms). */
   acceptedEatTime?: number;
+  /** Minutes of preheat added on the plan after a "more preheat" note (18 Nov 2026 retention round 3).
+   *  Only the preheat moves; the dough's times do not (round 4). */
+  preheatExtraMin?: number;
+  /** The fridge-exit lead this bake keeps from the bake it was made again from (Bake again). */
+  exitLead?: ExitLead;
+  /** This plan's own fridge-exit lead, carried to the next Bake again. */
+  planExitLead?: ExitLead;
   /** When this bake keeps the oven busy (preheat to last piece out, ms): two bakes on one device are
    *  compared with it (18 Nov 2026 retention round 3). */
-  /** Minutes of preheat added on the plan after a "more preheat" note (18 Nov 2026 retention round 3). */
-  preheatExtraMin?: number;
   ovenFrom?: number;
   ovenTo?: number;
   starterFeedRecords?:StarterFeedRecord[];

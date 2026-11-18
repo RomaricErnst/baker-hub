@@ -11,7 +11,11 @@ const build=(blocks,style='baguette',s=start)=>utils.buildSchedule(s,bake,blocks
 test('baguette: the only clash is the night-time fridge exit, so baking straight from the fridge is offered',()=>{
  const usual=build(night);
  assert.deepEqual(usual.availabilityConflicts.map(c=>c.action.id),['cold-out-2']);
- assert.ok(usual.rtWarmupStart&&usual.finalProofHours>3);
+ // Round 4 (18 Nov 2026, owner): an exit that must fall at night is the latest workable one,
+ // nearest the end of the night (5:45 here: 45 min warm-up and the shortest final proof before
+ // the 7:30 preheat), no longer the longest proof's 3:15.
+ assert.ok(usual.rtWarmupStart);
+ assert.equal(+usual.coldRetard2End,+new Date(2026,10,11,5,45));
  const option=utils.bakeFromFridgeOption(base);
  assert.ok(option);
  // Out of the fridge while the oven heats: 7:30 for an 8:00 bake with a 30 min preheat.

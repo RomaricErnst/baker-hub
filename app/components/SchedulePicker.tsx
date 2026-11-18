@@ -2,6 +2,7 @@
 import {starterFeedLabelFor} from '../utils/starterBuild';
 import { BREAD_FERMENTATION_DEFAULTS, getBreadProtocol, breadActiveCookMinutes } from '../utils/breadProfiles';
 import { breadOvenQuestion } from '../utils/breadNames';
+import { ovenClash, ovenBusyClause, type OvenUse } from '../utils/ovenWindow';
 import { loadProfile, updateProfile, DEFAULT_BLOCKERS, type StandardBlocker } from '../lib/profile';
 import { formatClock, formatBakeDateTime } from '../utils/units';
 import { useState, useMemo, useEffect, useRef, useId, useCallback } from 'react';
@@ -213,6 +214,15 @@ interface SchedulePickerProps extends WarmupInputs {
   eatTime: Date | null;
   blocks: AvailabilityBlock[];
   preheatMin: number;
+  /** The previous plan's fridge-exit lead (Bake again; buildSchedule exitLeadMin). */
+  exitLeadMin?: number;
+  /** Minutes of preheat the baker added on the plan (only the Preheat step moves). */
+  preheatExtraMin?: number;
+  /** Other bakes under way in the same oven (only with two live bakes): the "Before your recipe"
+   *  sheet names their oven time with the clash, and its suggestions avoid it (round 4). */
+  ovenShare?: {others: OvenUse[]; leadMin: number; busyMin: number; ovenType: string | null};
+  /** The baker kept a bake time that shares the oven: the page asks nothing more about it. */
+  onOvenKept?: (bakeMs: number) => void;
   mixerType?: MixerType;
   numItems?: number;
   mixingBatches?: number;
@@ -754,10 +764,10 @@ export function commercialPrefermentWindow(type:string,inFridge:boolean,kitchenT
 }
 
 /** Check only the remaining plan against an explicitly recorded first action. */
-export function validateConfirmedBake({prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp,completedMixAt,execution,start,bake,blocks,kitchenTemp,fridgeTemp,styleKey,flourStrength,preheatMin,mixerType,numItems,mixingBatches,formulaValid}:WarmupInputs & {completedMixAt?:number;formulaValid?:EditInput['formulaValid'];execution:BakeExecution;start:Date;bake:Date;blocks:AvailabilityBlock[];kitchenTemp:number;fridgeTemp:number;styleKey:string;flourStrength:number;preheatMin:number;mixerType:MixerType;numItems:number;mixingBatches:number}) {
+export function validateConfirmedBake({prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp,completedMixAt,execution,start,bake,blocks,kitchenTemp,fridgeTemp,styleKey,flourStrength,preheatMin,exitLeadMin,mixerType,numItems,mixingBatches,formulaValid}:WarmupInputs & {exitLeadMin?:number;completedMixAt?:number;formulaValid?:EditInput['formulaValid'];execution:BakeExecution;start:Date;bake:Date;blocks:AvailabilityBlock[];kitchenTemp:number;fridgeTemp:number;styleKey:string;flourStrength:number;preheatMin:number;mixerType:MixerType;numItems:number;mixingBatches:number}) {
   const prefHours=execution.method==='none'?0:(+start-execution.actualAt)/3600000;
   const thermal={prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp,mixerType,prefermentType:execution.method,prefInFridge:execution.inFridge,styleKey,kitchenTemp,fridgeTemp};
-  const input:EditInput={formulaValid,id:'mix',at:start,start,bake,blocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,
+  const input:EditInput={formulaValid,id:'mix',at:start,start,bake,blocks,kitchenTemp,preheatMin,exitLeadMin,mixerType,styleKey,numItems,mixingBatches,
     now:Date.now(),hasPreferment:execution.method!=='none',prefHours,preferDaytime:true,supported:!!STYLE_FERM_DEFAULTS[styleKey],
     completedPrefermentAt:execution.method!=='none'?execution.actualAt:undefined,completedMixAt:completedMixAt??(execution.method==='none'?execution.actualAt:undefined),
     prefWindow:execution.prefWindow,prefWarmupHours:requiredPrefWarmupH(thermal),prefCooldownHours:requiredPrefCooldownH(thermal),
@@ -1754,7 +1764,7 @@ function StarterHydrationNotice({ isFr }: { isFr: boolean }) {
 
 function findRequiredColdStart(input: {
   start: Date; bake: Date; from: Date; to: Date; now: number;
-  blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number;
+  blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number; exitLeadMin?: number;
   mixerType: MixerType; styleKey: string; numItems?: number; mixingBatches: number;
 }) {
   return findFixedBakeSchedule({ ...input, id: 'mix', at: input.start,
@@ -1870,7 +1880,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ starterLocationAnswered = true, starterMatureAnswered = true, afterBakeInput, onUseCalculatedYeast, enteredYeastShownPct, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, autoStarterPct = null, onAutoStarterPctChange, keptStarterPlan = false, holdStarterPct = false, canRaiseStarterPct, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, planInline, planChart, decisionSheet=false, onDecisionSheetClose, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ starterLocationAnswered = true, starterMatureAnswered = true, afterBakeInput, onUseCalculatedYeast, enteredYeastShownPct, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, autoStarterPct = null, onAutoStarterPctChange, keptStarterPlan = false, holdStarterPct = false, canRaiseStarterPct, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, planInline, planChart, decisionSheet=false, onDecisionSheetClose, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, exitLeadMin, preheatExtraMin = 0, ovenShare, onOvenKept, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   // A baker-chosen starter % lengthens or shortens the levain room-temperature
   // bulk (starterBulkFactor). The solver windows add the same hours the
   // schedule builder does, so scoring, card and chart stay on one bulk.
@@ -2645,7 +2655,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       const verified = findRequiredColdStart({
         start: new Date(+et - result.mixHBF * 3600000), bake: et,
         from: new Date(+et - sweetFromRaw * 3600000), to: new Date(+et - sweetToRaw * 3600000),
-        now: nowMs, blocks: currentBlocks, kitchenTemp, preheatMin,
+        now: nowMs, blocks: currentBlocks, kitchenTemp, preheatMin, exitLeadMin,
         mixerType, styleKey, numItems, mixingBatches,
       });
       if (verified.found) {
@@ -2964,7 +2974,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   // Zone guides the baker on what's ideal. Diamond clamped to nowHBF separately.
   const yeastTiming=useMemo(()=>yeastTimingFor(pendingEatTime,localBlocks),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  [yeastPctOverride,flourStrength,isSourdough,prefermentType,styleKey,+pendingEatTime,localBlocks,kitchenTemp,preheatMin,mixerType,numItems,itemWeight,mixingBatches,fridgeTemp,hydrationPct]);
+  [yeastPctOverride,flourStrength,isSourdough,prefermentType,styleKey,+pendingEatTime,localBlocks,kitchenTemp,preheatMin,exitLeadMin,preheatExtraMin,mixerType,numItems,itemWeight,mixingBatches,fridgeTemp,hydrationPct]);
   const renderSweetFrom = yeastTiming?.from ?? (_prefColdH + _rtH_render);
   const renderSweetTo   = yeastTiming?.to ?? Math.max(1, (_sfDef.minTotalFermH ?? 4) + starterBulkDeltaH);
   // Yellow zone extends 2h past green right edge
@@ -2975,7 +2985,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   function yeastTimingFor(bake:Date,candidateBlocks:AvailabilityBlock[],method:string=prefermentType){
     if(yeastPctOverride===undefined||isSourdough||(method!=='none'&&method!=='')||!styleKey||isNaN(+bake))return null;
     const model=yeastPctOverride*flourStrength;
-    const o={bake,blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems:numItems??1,itemWeight:itemWeight??250,mixingBatches,fridgeTemp,hydration:hydrationPct??65};
+    const o={bake,blocks:candidateBlocks,kitchenTemp,preheatMin,exitLeadMin,mixerType,styleKey,numItems:numItems??1,itemWeight:itemWeight??250,mixingBatches,fridgeTemp,hydration:hydrationPct??65};
     const center=fermentationHoursForYeast(model,o);
     if(center===null)return null;
     const from=fermentationHoursForYeast(model,{...o,budget:1.1})??center;
@@ -6663,7 +6673,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       const probe:StarterProbe={...pins,result:solverResult,start,effects:[]};
       const anchorsKept=(pins.mix===null||pins.mix===completedMixAt)&&eatTime!==null&&+candidateBake===+eatTime;
       const validation=assessScheduleDraft({starterFactor:solverBulkFactor(),isSourdough,start,bake:candidateBake,from:readinessWindowFrom??new Date(+candidateBake-renderSweetFrom*hour),to:readinessWindowTo??new Date(+candidateBake-renderSweetTo*hour),completedMixAt,
-        blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,now,methodValid:anchorsKept});
+        blocks:candidateBlocks,kitchenTemp,preheatMin,preheatExtraMin,mixerType,styleKey,numItems,mixingBatches,now,methodValid:anchorsKept});
       const valid=validation.valid;
       const message=valid?null:!anchorsKept?(isFr?'Le pétrissage a commencé. Conservez les horaires de cette pâte.':'Mixing has started. Keep this dough’s existing times.'):
         validation.reason==='busy'?(isFr?'Une étape restante tombe pendant vos indisponibilités.':'A remaining step falls during your unavailable hours.'):
@@ -6699,7 +6709,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       ?!!result?.peakTime&&knownPeakMixUsable(probe.start,result.peakTime,result.adjPeakHValue??getPrefPeakH_RT('sourdough',kitchenTemp,styleKey),flourStrength)
       :result?.starterPillState==='green'&&!result.planConstrained;
     const bounds={from:result?.sourdoughSweetFrom!=null?new Date(+candidateBake-result.sourdoughSweetFrom*hour):null,to:result?.sourdoughSweetTo!=null?new Date(+candidateBake-result.sourdoughSweetTo*hour):null};
-    const validation=assessScheduleDraft({starterFactor:solverBulkFactor(),isSourdough,start:probe.start,bake:candidateBake,...bounds,blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,now,
+    const validation=assessScheduleDraft({starterFactor:solverBulkFactor(),isSourdough,start:probe.start,bake:candidateBake,...bounds,blocks:candidateBlocks,kitchenTemp,preheatMin,preheatExtraMin,mixerType,styleKey,numItems,mixingBatches,now,
       extraActions:starterHandsOnActions(events,now),
       methodValid:!!result&&!result.windowTooShort&&pinKept&&peakOK&&historyKept&&noNewPastActions&&orderedActions&&storageKept&&displayedPlanKept});
     const allBatchPeaksUsable=planningMode!=='know_peak'||!validation.schedule?.batchMixWindows||!!result?.peakTime&&validation.schedule.batchMixWindows.every(batch=>knownPeakMixUsable(batch.start,result.peakTime!,result.adjPeakHValue??getPrefPeakH_RT('sourdough',kitchenTemp,styleKey),flourStrength));
@@ -6737,7 +6747,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     const actions=starterHandsOnActions(events,now);
     const ordered=actions.every(action=>+action.at<=+start);
     const validation=assessScheduleDraft({starterFactor:solverBulkFactor(),isSourdough,start,bake:pendingEatTime,from:readinessWindowFrom??new Date(+pendingEatTime-renderSweetFrom*hour),to:readinessWindowTo??new Date(+pendingEatTime-renderSweetTo*hour),
-      blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,now,extraActions:actions,methodValid:peakOK&&ordered&&events.length>0});
+      blocks:candidateBlocks,kitchenTemp,preheatMin,preheatExtraMin,mixerType,styleKey,numItems,mixingBatches,now,extraActions:actions,methodValid:peakOK&&ordered&&events.length>0});
     const valid=validation.valid;
     const message=valid?null:validation.reason==='busy'?(isFr?'Étape pendant une indisponibilité : ':'Step during unavailable hours: ')+(foldActionLabel(validation.conflict?.id??'',locale,mixingBatches) ?? (conflictNames[validation.conflict?.id??'']??['une étape','an action'])[isFr?0:1])+'.'
       :!peakOK?starterPeakGuidance:(isFr?'Aucun plan complet trouvé pour ces horaires. Essayez un autre créneau.':'No complete plan found for these times. Try another slot.');
@@ -6843,7 +6853,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         // Starter planning is much more expensive than constructing the dough
         // agenda. A feed cannot rescue a blocked preheat, fold or dough exit.
         const dough=assessScheduleDraft({starterFactor:solverBulkFactor(),isSourdough:true,start:new Date(mix),bake:candidateBake,
-          from:new Date(from),to:new Date(to),blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,now,methodValid:true});
+          from:new Date(from),to:new Date(to),blocks:candidateBlocks,kitchenTemp,preheatMin,preheatExtraMin,mixerType,styleKey,numItems,mixingBatches,now,methodValid:true});
         if(!dough.valid)continue;
       }
       const checked=evaluateStarterCandidate({...pins,mix},candidateBlocks,undefined,preserveStorage,undefined,candidateBake);
@@ -6918,14 +6928,14 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   const verifiedRepair = useMemo(() => !isSourdough && readinessBusy && readinessWindowValid && !restoredPrepOverdue && !startInvalid
     && !windowTooShort && !solverResult?.windowTooShort
     ? findScheduleRepair({ starterFactor: starterBulkFactor, isSourdough,startTime: pendingStart, eatTime: pendingEatTime, availabilityBlocks: repairBlocks, numItems, mixingBatches,
-      kitchenTemp, preheatMin, mixerType, styleKey, now: new Date(readinessNow), allowStartShift: true,
+      kitchenTemp, preheatMin, exitLeadMin, mixerType, styleKey, now: new Date(readinessNow), allowStartShift: true,
       mixWindow: bake=>{
         const bounds=commercialReadinessWindow({...(STYLE_FERM_DEFAULTS[styleKey]??FERM_FALLBACK),flourStrength,
           kitchenTemp,preheatMin,totalWindowH:(+bake-readinessNow)/3600000});
         return {from:new Date(+bake-bounds.from*3600000),to:new Date(+bake-bounds.to*3600000)};
       },
       acceptCandidate: candidate => acceptsCommercialRepair(candidate, readinessNow),
-    }) : null, [readinessBusy, readinessWindowValid, restoredPrepOverdue, startInvalid, windowTooShort, solverResult, pendingStart, pendingEatTime, localBlocks, kitchenTemp, preheatMin, mixerType, numItems, mixingBatches, styleKey, isSourdough, flourStrength, prefermentType, prefGoesInFridge, prefOffsetH, prefRTWarmupH, displayStarterEvents]);
+    }) : null, [readinessBusy, readinessWindowValid, restoredPrepOverdue, startInvalid, windowTooShort, solverResult, pendingStart, pendingEatTime, localBlocks, kitchenTemp, preheatMin,exitLeadMin,preheatExtraMin, mixerType, numItems, mixingBatches, styleKey, isSourdough, flourStrength, prefermentType, prefGoesInFridge, prefOffsetH, prefRTWarmupH, displayStarterEvents]);
   const applyVerifiedRepair = () => {
     if (!verifiedRepair) return;
     if (!acceptsCommercialRepair(verifiedRepair, Date.now())) {
@@ -6959,7 +6969,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     const hasPrefActive=method==='poolish'||method==='biga';
     const prefWindow=commercialPrefermentWindow(method,inFridge,kitchenTemp,styleKey,fridgeTemp);
     return {isSourdough:false,formulaValid:execution?validateMadeFormula:undefined,completedMixAt:completedMixAt??(execution?.method==='none'?execution.actualAt:undefined),completedPrefermentAt:execution&&execution.method!=='none'?execution.actualAt:undefined,id:'mix',at:start,start,bake,now:Date.now(),
-      blocks:candidateBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,
+      blocks:candidateBlocks,kitchenTemp,preheatMin,exitLeadMin,preheatExtraMin,mixerType,styleKey,numItems,mixingBatches,
       prefHours:hasPrefActive?prefOffsetH:0,hasPreferment:hasPrefActive,prefWindow:execution?.prefWindow??prefWindow,pins:execution&&execution.method!=='none'?{preferment:new Date(execution.actualAt)}:undefined,prefWarmupHours:warmupFor(method, inFridge),prefCooldownHours:cooldownFor(method,inFridge),
       preferDaytime:true,supported:!!STYLE_FERM_DEFAULTS[styleKey]&&(!getBreadProtocol(styleKey)||getBreadProtocol(styleKey)!.supportedPreferments.includes(method as 'none')),
       window:bake=>{const bounds=yeastTimingFor(bake,candidateBlocks,method)??commercialReadinessWindow({...(STYLE_FERM_DEFAULTS[styleKey]??FERM_FALLBACK),flourStrength,kitchenTemp,preheatMin,totalWindowH:(+bake-(completedMixAt??(execution?.method==='none'?execution.actualAt:Date.now())))/3600000});return {from:bounds.from!==null?new Date(+bake-bounds.from*3600000):null,to:bounds.to!==null?new Date(+bake-bounds.to*3600000):null};},
@@ -6994,7 +7004,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     });
     return results.sort((a,b)=>Number(b.method===prefermentType)-Number(a.method===prefermentType)||Number(b.targetFit)-Number(a.targetFit));
   // Re-run only on inputs that affect a whole-plan solve, never on proposal selection.
-  },[restartRevision,replanRequested,execution,isSourdough,eatTimeSet,+pendingEatTime,JSON.stringify(repairBlocks),kitchenTemp,fridgeTemp,styleKey,mixerType,numItems,mixingBatches,flourStrength,preheatMin,prefermentType,targetDoughTemp,prefermentFlourPct,doughMassG,hydrationPct,flourTempC]);
+  },[restartRevision,replanRequested,execution,isSourdough,eatTimeSet,+pendingEatTime,JSON.stringify(repairBlocks),kitchenTemp,fridgeTemp,styleKey,mixerType,numItems,mixingBatches,flourStrength,preheatMin,exitLeadMin,preheatExtraMin,prefermentType,targetDoughTemp,prefermentFlourPct,doughMassG,hydrationPct,flourTempC]);
   const restartCard=replanRequested&&!execution&&!isSourdough?<section className="bh-start-status" aria-label={isFr?'Nouveau plan':'Updated plan'}>
     <p><strong>{isFr?'Plan actualisé':'Updated plan'} · {fmtCardDT(pendingEatTime,isFr)}</strong></p>
     {restartOptions.length?<>
@@ -7262,6 +7272,12 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     && !isNaN(pendingEatTime.getTime())
     && pendingEatTime.getTime() < Date.now() - 2 * 60 * 1000;
 
+  // Another live bake's oven time (owner's rule B: nothing of it with one bake).
+  const ovenShareKey=JSON.stringify(ovenShare?.others.length?ovenShare:null);
+  const ovenClashAt=useCallback((bakeMs:number):OvenUse|null=>ovenShare&&ovenShare.others.length&&Number.isFinite(bakeMs)
+    ?ovenClash({from:bakeMs-ovenShare.leadMin*60000,to:bakeMs+ovenShare.busyMin*60000,ovenType:ovenShare.ovenType},ovenShare.others):null,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [ovenShareKey]);
   type SuggestedTargets=Array<{start:Date;bake:Date;prefHours:number;blocks:AvailabilityBlock[];assistance?:number;clearedAction?:AvailabilityAction;starter?:ReturnType<typeof evaluateStarterCandidate>}>;
   const [repairRevision,setRepairRevision]=useState(0);
   const targetSearch=useMemo(()=>function* ():Generator<void,SuggestedTargets>{
@@ -7306,7 +7322,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       const append=(entries:ReturnType<typeof getWorkdaysInWindow>)=>{for(const e of entries)if(!candidateBlocks.some(b=>+b.from===+e.blockStart&&+b.to===+e.blockEnd))candidateBlocks.push({from:e.blockStart,to:e.blockEnd,label:e.label});};
       if(localBlocks.some(b=>b.label.startsWith('Work · ')))append(getWorkdaysInWindow(new Date(now),bake));
       if(localBlocks.some(b=>b.label.endsWith(' night')))append(getNightsInWindow(new Date(now),bake));
-      if(isTimeBlocked(bake,candidateBlocks)||isTimeBlocked(+bake-preheatMin*60000,candidateBlocks))continue;
+      if(isTimeBlocked(bake,candidateBlocks)||isTimeBlocked(+bake-(preheatMin+preheatExtraMin)*60000,candidateBlocks))continue;
+      // A suggestion never puts this bake in the oven while another live bake is in it.
+      if(ovenClashAt(+bake))continue;
       if(isSourdough){
         // Other days are offered at the default levain % (a raise is for the requested bake only).
         probeBulkFactorRef.current=autoStarterPct!=null&&!holdStarterPct?1:starterBulkFactor;
@@ -7345,7 +7363,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       if(found.length===3)break;
     }
     return !found.length&&assisted?[assisted]:found;
-  },[repairRevision,isSourdough,readinessUnsupported,recipeGenerated,eatTimeSet,currentCandidateValid,+pendingEatTime,JSON.stringify(manualTimes),JSON.stringify(localBlocks.map(b=>[b.label,+b.from,+b.to])),styleKey,flourStrength,kitchenTemp,fridgeTemp,preheatMin,mixerType,numItems,mixingBatches,prefermentType,hasPrefActive,prefGoesInFridge,prefOffsetH,prefRTWarmupH,prefCooldownHours,_optimalMix,planningMode,lastFedTime?.getTime(),lastFedAge,starterLocation,lastFeedRatio,nextFeedRatio,ratioMode,starterMature,starterHasRye,knownPeakTime?.getTime(),tang,holdStarterPct,starterBulkFactor,autoStarterPct]);
+  },[ovenClashAt,repairRevision,isSourdough,readinessUnsupported,recipeGenerated,eatTimeSet,currentCandidateValid,+pendingEatTime,JSON.stringify(manualTimes),JSON.stringify(localBlocks.map(b=>[b.label,+b.from,+b.to])),styleKey,flourStrength,kitchenTemp,fridgeTemp,preheatMin,exitLeadMin,preheatExtraMin,mixerType,numItems,mixingBatches,prefermentType,hasPrefActive,prefGoesInFridge,prefOffsetH,prefRTWarmupH,prefCooldownHours,_optimalMix,planningMode,lastFedTime?.getTime(),lastFedAge,starterLocation,lastFeedRatio,nextFeedRatio,ratioMode,starterMature,starterHasRye,knownPeakTime?.getTime(),tang,holdStarterPct,starterBulkFactor,autoStarterPct]);
 
   // Each cover action updates validation immediately. The expensive later-bake
   // scan runs in small cancellable batches so it never holds up those controls.
@@ -7435,10 +7453,10 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   // Lean shaped loaves whose only clash is the final fridge exit can bake
   // straight from the fridge, when the dough still meets its fermentation target.
   const fromFridgeOption=useMemo(()=>mode==='simple'&&simpleOnlyFridgeClash&&finalFridgeRemoval
-    ? bakeFromFridgeOption({start:pendingStart,bake:pendingEatTime,blocks:repairBlocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems:numItems??4,itemWeight:itemWeight??250,mixingBatches,fridgeTemp,hydration:hydrationPct??65,isSourdough,starterFactor:starterBulkFactor})
+    ? bakeFromFridgeOption({start:pendingStart,bake:pendingEatTime,blocks:repairBlocks,kitchenTemp,preheatMin,exitLeadMin,mixerType,styleKey,numItems:numItems??4,itemWeight:itemWeight??250,mixingBatches,fridgeTemp,hydration:hydrationPct??65,isSourdough,starterFactor:starterBulkFactor})
     : null,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  [mode,simpleOnlyFridgeClash,finalFridgeRemoval?.at.getTime(),+pendingStart,+pendingEatTime,JSON.stringify(repairBlocks.map(b=>[+b.from,+b.to,b.label,b.bakeFromFridge])),kitchenTemp,preheatMin,mixerType,styleKey,numItems,itemWeight,mixingBatches,fridgeTemp,hydrationPct,isSourdough,starterBulkFactor]);
+  [mode,simpleOnlyFridgeClash,finalFridgeRemoval?.at.getTime(),+pendingStart,+pendingEatTime,JSON.stringify(repairBlocks.map(b=>[+b.from,+b.to,b.label,b.bakeFromFridge])),kitchenTemp,preheatMin,exitLeadMin,preheatExtraMin,mixerType,styleKey,numItems,itemWeight,mixingBatches,fridgeTemp,hydrationPct,isSourdough,starterBulkFactor]);
   const bakingFromFridge=mode==='simple'&&eatTimeSet&&BAKE_FROM_FRIDGE_STYLES.has(styleKey)&&localBlocks.some(block=>block.bakeFromFridge===+pendingEatTime)&&!!committedSchedule?.coldRetard2End&&!committedSchedule.rtWarmupStart;
   function setBakeFromFridge(on:boolean,nextBlocks?:AvailabilityBlock[]) {
     // Like the fridge-removal arrangement, this changes the plan's last step only:
@@ -7457,11 +7475,17 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   const during=clashKinds.size===1&&clashKinds.has('work')?(isFr?'pendant vos heures de travail':'during work hours')
     :clashKinds.size===1&&clashKinds.has('night')?(isFr?'pendant la nuit':'during the night')
     :(isFr?'pendant vos indisponibilités':'during your busy times');
-  const simpleDecisionSentence=simpleConflicts.length===1
+  // Two live bakes in one oven: the same sheet says it in the same statement, so the baker
+  // makes one decision for both (18 Nov 2026 retention round 4: a night-exit sheet, then an oven sheet).
+  const ovenOther=eatTimeSet&&!currentCandidateValid?ovenClashAt(+pendingEatTime):null;
+  const ovenClause=ovenOther?ovenBusyClause(ovenOther,isFr,ms=>simpleTimeLabel(new Date(ms))):null;
+  const ovenJoined=ovenClause?(isFr?', et ':', and ')+(ovenOther?.subject?ovenClause.charAt(0).toLowerCase()+ovenClause.slice(1):ovenClause):'';
+  const keepOven=()=>{if(ovenOther)onOvenKept?.(+pendingEatTime);};
+  const simpleDecisionSentence=(simpleConflicts.length===1
     ? isFridgeExit(simpleConflicts[0].action.id)
       // Lead with the baker's own time, so both options read as answers to it.
-      ? (isFr?`Pour enfourner à ${simpleTimeLabel(pendingEatTime)}, la pâte doit sortir du réfrigérateur à ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`
-        :`To bake at ${simpleTimeLabel(pendingEatTime)}, your dough needs to leave the fridge at ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`)
+      ? (isFr?`Pour enfourner à ${simpleTimeLabel(pendingEatTime)}, la pâte doit sortir du réfrigérateur à ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}${ovenJoined}.`
+        :`To bake at ${simpleTimeLabel(pendingEatTime)}, your dough needs to leave the fridge at ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}${ovenJoined}.`)
       : (isFr?`${simpleConflictName(simpleConflicts[0].action)} tombe à ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`
         :`${simpleConflictName(simpleConflicts[0].action)} falls at ${simpleTimeLabel(simpleConflicts[0].action.at)}, ${during}.`)
     : simpleConflicts.length>1
@@ -7490,7 +7514,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           return isFr
             ?`Cette pâte demande environ ${formatDuration(neededH,lang)} entre le pétrissage et la cuisson. ${fmtCardHM(pendingEatTime,true)}, c’est dans ${formatDuration(awayH,lang)}.`
             :`This dough needs about ${formatDuration(neededH,lang)} from mixing to baking. ${fmtCardHM(pendingEatTime,false)} is ${formatDuration(awayH,lang)} away.`;
-        })();
+        })())+(ovenClause&&!(simpleConflicts.length===1&&isFridgeExit(simpleConflicts[0].action.id))?` ${ovenClause}.`:'');
   // Every way out of a clash is an equal choice: same card, title and one line under it.
   const optionCard:React.CSSProperties={display:'block',width:'100%',minHeight:56,marginTop:8,padding:'12px 14px',border:'1.5px solid var(--border)',borderRadius:12,background:'var(--card, #fff)',color:'var(--char)',textAlign:'left',whiteSpace:'normal',fontSize:15,lineHeight:1.4,cursor:'pointer'};
   const simpleSuggestion=!searchingTargets?firstSuggestedTarget:undefined;
@@ -7526,13 +7550,13 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           })()}
           {simpleSuggestion.assistance?<small style={{display:'block',fontWeight:400}}>{isFr?`${simpleSuggestion.assistance} étapes demandent quelqu’un sur place`:`${simpleSuggestion.assistance} steps need someone at home`}</small>:null}
         </button>}
-        {simpleOnlyFridgeClash&&finalFridgeRemoval&&<button type="button" className="bh-plan-option" data-simple-keep style={optionCard} onClick={()=>setFridgeRemovalCovered(true)}>
+        {simpleOnlyFridgeClash&&finalFridgeRemoval&&<button type="button" className="bh-plan-option" data-simple-keep style={optionCard} onClick={()=>{keepOven();setFridgeRemovalCovered(true);}}>
           <strong style={{display:'block'}}>{isFr?`Garder ${fmtCardHM(pendingEatTime,isFr)}`:`Keep ${fmtCardHM(pendingEatTime,isFr)}`}</strong>{' '}<small style={{display:'block',fontWeight:400}}>{isFr?`Vous, ou quelqu’un d’autre, sortez la pâte à ${fmtCardHM(finalFridgeRemoval.at,isFr)}`:`You or someone else takes the dough out at ${fmtCardHM(finalFridgeRemoval.at,isFr)}`}</small>
         </button>}
-        {fromFridgeOption&&<button type="button" className="bh-plan-option" data-simple-from-fridge style={optionCard} onClick={()=>setBakeFromFridge(true,fromFridgeOption.blocks)}>
+        {fromFridgeOption&&<button type="button" className="bh-plan-option" data-simple-from-fridge style={optionCard} onClick={()=>{keepOven();setBakeFromFridge(true,fromFridgeOption.blocks);}}>
           <strong style={{display:'block'}}>{isFr?'Cuire à la sortie du frigo':'Bake straight from the fridge'}</strong>{' '}<small style={{display:'block',fontWeight:400}}>{isFr?`Sortez les pâtons à ${fmtCardHM(fromFridgeOption.exitAt,isFr)}, pendant que le four chauffe`:`Take the loaves out at ${fmtCardHM(fromFridgeOption.exitAt,isFr)} while the oven heats`}</small>
         </button>}
-        {!simpleOnlyFridgeClash&&simpleConflicts.length>0&&<button type="button" className="bh-plan-option" data-simple-keep-all style={optionCard} onClick={()=>coverAllActions(simpleConflicts.map(conflict=>conflict.action))}>
+        {!simpleOnlyFridgeClash&&simpleConflicts.length>0&&<button type="button" className="bh-plan-option" data-simple-keep-all style={optionCard} onClick={()=>{keepOven();coverAllActions(simpleConflicts.map(conflict=>conflict.action));}}>
           <strong style={{display:'block'}}>{isFr?`Garder ${simpleTimeLabel(pendingEatTime)}`:`Keep ${simpleTimeLabel(pendingEatTime)}`}</strong>{' '}<small style={{display:'block',fontWeight:400}}>{simpleConflicts.length===1
             ?(isFr?'Je m’occupe de cette étape':'I’ll handle this step')
             :(isFr?`Je m’occupe de ces ${simpleConflicts.length} étapes`:`I’ll handle these ${simpleConflicts.length} steps`)}</small>
@@ -8752,7 +8776,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         // Derived hands-on actions stay visible, using the protocol's canonical times.
         for(const action of schedule?.availabilityActions ?? []) {
           if(action.id === 'mix' || action.id === 'bake' || +action.at < +pendingStart || +action.at > +pendingEatTime) continue;
-          rows.push({id:`dough:${action.id}`,at:+action.at,endAt:action.id==='preheat'?+action.at+preheatMin*60000:action.end ? +action.end : undefined,
+          rows.push({id:`dough:${action.id}`,at:+action.at,endAt:action.id==='preheat'?+action.at+(preheatMin+preheatExtraMin)*60000:action.end ? +action.end : undefined,
             name:(foldActionLabel(action.id,locale,mixingBatches) ?? (conflictNames[action.id] ?? ['Étape','Step'])[isFr?0:1]),timeText:fmtCardDT(action.at,isFr),
             waitLabel:action.id==='cold-in'||action.id==='cold-in-2'?(isFr?'Fermentation au réfrigérateur':'Fermentation in the fridge'):action.id==='preheat'?(isFr?'Préchauffage du four':'Oven preheating'):action.id==='mix-finish'||action.id==='cold-out-2'?(isFr?'Levée à température ambiante':'Rise at room temperature'):action.id==='mix'?(isFr?'Repos de la pâte':'Dough rest'):undefined,
             marker:action.id.startsWith('cold')?'cold':'step',color:action.id.startsWith('cold')?'#5B87AD':'#3D5A30',editable:false,
@@ -8814,7 +8838,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         const previewRows=rows.filter(row=>(row.id!=='pref-in'||!!preview?.input.prefCooldownHours)&&(row.id!=='pref-out'||!!preview?.input.prefWarmupHours)).filter(row=>!row.id.startsWith('dough:')||!preview?.schedule||preview.schedule.availabilityActions?.some(a=>`dough:${a.id}`===row.id)).map(row=>{
           const action=preview?.schedule?.availabilityActions?.find(a=>`dough:${a.id}`===row.id||a.id===row.id);
           const at=row.id==='pref'?+draftMix-draftPrefOffset*3600000:row.id==='pref-out'?+draftMix-(preview?.input.prefWarmupHours??0)*3600000:row.id==='pref-in'?+draftMix-(preview?.input.prefCooldownHours??0)*3600000:row.id==='ready'?+draftBake+readyOffset*60000:action?+action.at:row.at;
-          return preview?.schedule?{...row,at,originalAt:at!==row.at?row.at:undefined,endAt:action?(action.id==='preheat'?+action.at+preheatMin*60000:action.end?+action.end:undefined):row.endAt,note:undefined,timeText:fmtCardDT(new Date(at),isFr)}:row;
+          return preview?.schedule?{...row,at,originalAt:at!==row.at?row.at:undefined,endAt:action?(action.id==='preheat'?+action.at+(preheatMin+preheatExtraMin)*60000:action.end?+action.end:undefined):row.endAt,note:undefined,timeText:fmtCardDT(new Date(at),isFr)}:row;
         }).sort((a,b)=>a.at-b.at);
         const conditioning=preview&&hasPrefActive?prefermentConditioningAction(preview.input,draftMix):undefined;
         if(conditioning&&!previewRows.some(r=>r.id===(conditioning.id==='preferment-cold-in'?'pref-in':'pref-out'))){
@@ -8823,7 +8847,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         // A new candidate may introduce or remove a cold phase: display its full action set.
         for(const action of preview?.schedule?.availabilityActions??[]) {
           if(action.id==='mix'||action.id==='bake'||action.id==='preferment-cold-in'||previewRows.some(row=>row.id===`dough:${action.id}`))continue;
-          previewRows.push({id:`dough:${action.id}`,at:+action.at,endAt:action.id==='preheat'?+action.at+preheatMin*60000:action.end?+action.end:undefined,name:(foldActionLabel(action.id,locale,mixingBatches) ?? (conflictNames[action.id]??['Étape','Step'])[isFr?0:1]),timeText:fmtCardDT(action.at,isFr),marker:action.id.startsWith('cold')?'cold':'step',color:action.id.startsWith('cold')?'#5B87AD':'#3D5A30',editable:false,waitLabel:action.id==='cold-in'||action.id==='cold-in-2'?(isFr?'Fermentation au réfrigérateur':'Fermentation in the fridge'):undefined});
+          previewRows.push({id:`dough:${action.id}`,at:+action.at,endAt:action.id==='preheat'?+action.at+(preheatMin+preheatExtraMin)*60000:action.end?+action.end:undefined,name:(foldActionLabel(action.id,locale,mixingBatches) ?? (conflictNames[action.id]??['Étape','Step'])[isFr?0:1]),timeText:fmtCardDT(action.at,isFr),marker:action.id.startsWith('cold')?'cold':'step',color:action.id.startsWith('cold')?'#5B87AD':'#3D5A30',editable:false,waitLabel:action.id==='cold-in'||action.id==='cold-in-2'?(isFr?'Fermentation au réfrigérateur':'Fermentation in the fridge'):undefined});
         }
         previewRows.sort((a,b)=>a.at-b.at);
         // "14 h 20", not "14.3 h".
