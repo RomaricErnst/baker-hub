@@ -145,19 +145,26 @@ for(const mode of ['custom'])test(`fr ${mode}: arranged fridge removal from a st
  await expect.poll(async()=>(await stored(page)).blocks).toEqual([partyBlock('18:00')]);
 });
 
-for(const locale of ['fr','en'])for(const mode of ['custom'])test(`${locale} ${mode}: arranged fridge removal never clears an overlapping preheat`,async({page})=>{
+// 18 Nov 2026 retention round 3: one clash statement, one action. The fridge exit and the preheat both fall
+// in the busy time: the card names both, its one Keep covers both; no separate fridge card, no step list.
+for(const locale of ['fr','en'])for(const mode of ['custom'])test(`${locale} ${mode}: a fridge exit and an overlapping preheat are one statement and one Keep`,async({page})=>{
  const {plan}=await seedParty(page,locale,mode,'18:45');
- const card=plan.locator('.bh-fridge-arrangement');
- await expect(card).toHaveAttribute('data-fridge-removal','pending');
- const preheat=plan.locator('.bh-plan-notice li').filter({hasText:locale==='fr'?/Préchauffage/:/Preheat/});
- await expect(preheat).toBeVisible();
- const before=await stored(page);await arrangeButton(card,locale).tap();
- await expect(card).toHaveAttribute('data-fridge-removal','arranged');
- await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','false');
- await expect(preheat).toBeVisible();
+ const decision=page.locator('#step-9 [data-simple-decision]');
+ await expect(decision).toBeVisible();
+ await expect(decision).toContainText(locale==='fr'?/préchauff/i:/preheat/i);
+ await expect(plan.locator('.bh-fridge-arrangement')).toHaveCount(0);
+ await expect(plan.locator('.bh-plan-notice')).toHaveCount(0);
+ await expect(page.getByRole('button',{name:locale==='fr'?/^Je peux assurer cette étape/:/^I can cover this step/})).toHaveCount(0);
+ // The card's choices are the sheet's: a verified later bake, or Keep; nothing else.
+ await expect(decision.locator('button:not([data-simple-accept]):not([data-simple-keep-all])')).toHaveCount(0);
+ await expect(decision.locator('[data-simple-keep-all]')).toHaveCount(1);
+ const before=await stored(page);await decision.locator('[data-simple-keep-all]').tap();
+ await expect(decision).toHaveCount(0);
+ await expect(row(plan,'mix')).toHaveAttribute('data-candidate-valid','true');
  const after=await stored(page);expect(after.startTime).toBe(before.startTime);expect(after.eatTime).toBe(before.eatTime);
- expect(plainBlocks(after.blocks)).toEqual(before.blocks);
- await expect(page.locator('.bh-target-presets .bh-target-choices')).toBeVisible();
+ const span=blocks=>blocks.map(({label,from,to})=>({label,from,to}));
+ expect(span(after.blocks)).toEqual(span(before.blocks));
+ expect(after.blocks.some(block=>(block.coveredActions?.length??0)>0)).toBe(true);
 });
 
 // Simple never hands the baker a list of steps to repair: one decision card
@@ -597,16 +604,15 @@ for(const mode of ['simple','custom'])test(mode+': blocked Friday finishing offe
 });
 
 
-// Custom shows Simple's decision card for busy-time clashes, keeps the per-step
-// list below it, and its forward button waits for a choice instead of scrolling.
+// Custom shows Simple's decision card for busy-time clashes and, since 18 Nov 2026, nothing else to
+// choose: no per-step list, no "Change my busy times" beside a Keep; the forward button waits.
 async function customClash(page,locale){
  const {plan}=await seedParty(page,locale,'custom','18:45');
  const fr=locale==='fr';
  const decision=page.locator('#step-9 [data-simple-decision]');
  await expect(decision).toBeVisible();
- await expect(decision.locator('[data-decision-availability]')).toHaveText(fr?'Modifier mes moments occupés':'Change my busy times');
- await expect(plan.locator('[data-availability-conflicts]')).toBeVisible();
- await expect(plan.locator('[data-availability-conflicts]')).not.toContainText(/Mixing|Pétrissage ·/);
+ await expect(decision.locator('[data-decision-availability]')).toHaveCount(0);
+ await expect(plan.locator('[data-availability-conflicts]')).toHaveCount(0);
  // The last action of the step is its way forward.
  const forward=page.locator('#step-9 .bh-step-actions button').last();
  await expect(forward).toBeDisabled();
@@ -659,8 +665,9 @@ for(const locale of ['fr','en'])for(const way of ['keep','availability'])test(`$
  await expect(decision).toBeVisible();
  if(way==='keep')await decision.locator('[data-simple-keep-all]').tap();
  else{
-  await decision.locator('[data-decision-availability]').tap();
+  // The busy times above the card are the way to change them (the card's one action is Keep).
   const group=page.getByRole('group',{name:fr?'Mes indisponibilités':'My unavailable times'});
+  if(await group.getAttribute('open')===null)await group.locator('summary').first().tap();
   await expect(group).toHaveAttribute('open','');
   await group.getByRole('button',{name:fr?/^Supprimer/:/^Remove/}).first().tap();
   await expect.poll(async()=>(await stored(page)).blocks.length).toBe(0);

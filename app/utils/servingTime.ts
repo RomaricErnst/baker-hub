@@ -19,7 +19,12 @@ export interface ServingTimeEstimate {
   noteEn: string;
 }
 
-/** Upper endpoints of BakeGuide.breadCoolingRange; keep boundary rules aligned.
+/** How long a bread cools before slicing: the guide's Cool step and the bake-time note say the same. */
+export function breadCoolingRange(style: string, weight: number): string {
+  return style === 'pain_seigle' ? '12–24 h' : style === 'fougasse' && weight <= 500 ? '10–15 min' : style === 'baguette' && weight <= 400 ? '20–30 min' : style === 'pain_viennois' && weight <= 400 ? '30–60 min' : weight <= 400 ? '1–2 h' : weight <= 1000 ? '2–3 h' : '3–4 h';
+}
+
+/** Upper endpoints of breadCoolingRange; keep boundary rules aligned.
  * This is a planning allowance, not a measured cooling model.
  */
 export function breadCoolingUpperMinutes(style: string, weight: number): number | null {

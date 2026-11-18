@@ -121,3 +121,62 @@ test('when the moved mix no longer fits before the bake, the plan is replanned f
  assert.equal(late.state.snapshot.starterRecoveryPending,true);
  assert.equal(late.state.snapshot.lastFedTime,late.state.snapshot.starterFeedRecords[0].actualAt);
 });
+
+// Priya's third retention review (18 Nov 2026): a refresh fed 2 h late re-times only what its rise affects.
+const {preMixPeakAfterMove,preMixRiseH,mixNearPeak}=require('../app/utils/starterPeak.ts');
+function priyaChain(){
+ // London, 19 °C: refresh Thu 8:30pm (peak Fri 5:42am), pre-mix Fri 8:30am (peak 5:42pm), mix Fri 5:30pm.
+ const P=s=>Date.parse(s),adj=9.2,refresh=P('2026-11-19T20:30:00Z'),preMix=P('2026-11-20T08:30:00Z'),mix=P('2026-11-20T17:30:00Z');
+ const preMixPeak=computeStarterPeakMs(preMix,refresh+adj*H,adj);
+ const events=[{kind:'last_fed',time:new Date(P('2026-11-13T21:00:00Z'))},
+  {kind:'intermediate_refresh',time:new Date(refresh),bellPeakTime:new Date(refresh+adj*H)},
+  {kind:'pre_mix',time:new Date(preMix),bellPeakTime:new Date(preMixPeak),cardNote:`Peak around ${formatClock(new Date(preMixPeak),'en')}`}];
+ // Weekdays 9:00–17:30 and nights 23:00–7:00.
+ const busy=ms=>{const d=new Date(ms),h=d.getUTCHours()+d.getUTCMinutes()/60,wd=d.getUTCDay();return h>=23||h<7||wd>=1&&wd<=5&&h>=9&&h<17.5;};
+ return {P,adj,refresh,preMix,mix,preMixPeak,events,busy};
+}
+test('a refresh fed 2 h late keeps the pre-mix feed and the mix when the starter is still near its peak at the mix',()=>{
+ const {P,preMix,mix,preMixPeak,events,busy}=priyaChain();
+ const actual=P('2026-11-19T22:30:00Z');
+ const shifted=shiftStarterPlanAfterFeed(events,events[1],actual,mix,d=>formatClock(d,'en'),{busy,now:actual+60000,mixFits:()=>'busy'});
+ assert.equal(shifted.fits,true);assert.equal(shifted.busy,false);
+ assert.equal(shifted.mixShiftMs,0,'the mix stays at 5:30pm');
+ assert.deepEqual(shifted.events.map(e=>+e.time),[+events[0].time,actual,preMix],'only the fed refresh moves');
+ // The pre-mix feed is fed after the moved refresh peak: no stretch, the same peak.
+ assert.equal(+shifted.events[2].bellPeakTime,preMixPeak);
+ assert.deepEqual([...shifted.moved.entries()],[[+events[1].time,actual]]);
+});
+test('when the planned mix would miss the peak, only the pre-mix feed moves, into free time',()=>{
+ const {P,adj,mix,events,busy}=priyaChain();
+ const actual=P('2026-11-20T02:00:00Z');
+ const shifted=shiftStarterPlanAfterFeed(events,events[1],actual,mix,undefined,{busy,now:actual+60000,mixFits:()=>'busy'});
+ assert.equal(shifted.mixShiftMs,0);assert.equal(shifted.busy,false);
+ const feed=shifted.events[2];
+ assert.ok(!busy(+feed.time),'pre-mix feed in free time');
+ assert.equal(+feed.time,P('2026-11-20T08:15:00Z'));
+ // Its peak goes through the shared model against the moved refresh, and the mix is near it.
+ assert.equal(+feed.bellPeakTime,computeStarterPeakMs(+feed.time,actual+adj*H,adj));
+ assert.ok(mixNearPeak(mix,+feed.bellPeakTime,adj));
+});
+test('with no free option the chain follows the feed and the result says a step is busy',()=>{
+ const {P,mix,events}=priyaChain();
+ const actual=P('2026-11-20T02:00:00Z'),allBusy=ms=>ms<P('2026-11-21T00:00:00Z');
+ const shifted=shiftStarterPlanAfterFeed(events,events[1],actual,mix,undefined,{busy:allBusy,now:actual+60000,mixFits:()=>'busy'});
+ assert.equal(shifted.mixShiftMs,5.5*H);assert.equal(shifted.fits,true);assert.equal(shifted.busy,true);
+ const none=shiftStarterPlanAfterFeed(events,events[1],actual,mix,undefined,{busy:allBusy,now:actual+60000,mixFits:()=>false});
+ assert.equal(none.fits,false,'the dough no longer fits: the caller re-plans from the recorded feed');
+});
+test('the moved-peak helpers keep the planned pre-mix model',()=>{
+ const {refresh,preMix,preMixPeak,adj}=priyaChain();
+ assert.ok(Math.abs(preMixRiseH(preMix,preMixPeak,refresh)-adj)<1e-9);
+ assert.equal(preMixPeakAfterMove(preMix,preMixPeak,refresh,preMix,refresh),preMixPeak);
+ // A pre-mix fed 2 h before the moved refresh peak stretches by 1.2 (computePreMixStretchFactor).
+ assert.equal(preMixPeakAfterMove(preMix,preMixPeak,refresh,preMix,preMix-adj*H+2*H),preMix+adj*1.2*H);
+});
+test('a feed planned before the last recorded one is never asked again',()=>{
+ const now=Date.parse('2026-11-20T08:00:00Z');
+ const records=[{kind:'intermediate_refresh',plannedAt:now-11.5*H,actualAt:now-9.5*H,recordedAt:now-9.5*H,ratio:1}];
+ assert.equal(overdueStarterFeed([{kind:'refresh',time:new Date(now-10*H)}],records,now),undefined);
+ const later={kind:'pre_mix',time:new Date(now-H)};
+ assert.equal(overdueStarterFeed([later],records,now),later);
+});

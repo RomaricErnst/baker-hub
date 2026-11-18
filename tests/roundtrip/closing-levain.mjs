@@ -30,8 +30,12 @@ const settle=()=>new Promise(resolve=>setTimeout(resolve,Number(process.env.CLOS
 const failures=[];
 const eligible=()=>w.__h.rec.scheduleValid===true && w.__h.rec.starterValid!==false && !!w.__h.rec.events;
 const query=(selector)=>doc.querySelector(selector);
+// 18 Nov 2026 retention round 3: with the decision card shown, the card is the one statement and its
+// "Keep" the one action (data-simple-keep-all): the steps are not listed again with a cover each.
+const card=()=>query('[data-simple-decision]');
 function conflictRows(){
  const rows=[...doc.querySelectorAll('[data-availability-conflicts] > li')];
+ if(card()){assert.equal(rows.length,0,'The decision card and a step list both shown');return rows;}
  const state=query('.bh-plan-state');
  assert.ok(state,'Scheduler status is missing');
  const headline=state.textContent.trim();
@@ -77,10 +81,18 @@ for(const horizon of [24,32,48])for(const work of [false,true])for(const starter
    if(!['refresh','intermediate_refresh','pre_mix','fridge_out','fridge_in'].includes(kind)||at<clock)continue;
    if(periods.some(([from,to])=>from<=at&&at<to)){
     const id=kind.startsWith('fridge')?'starter-cold':'starter-feed';
-    assert.ok(listed.has(id+'@'+at),'Missing blocked starter action: '+event);
+    assert.ok(listed.has(id+'@'+at)||card()?.querySelector('[data-simple-keep-all]'),'Missing blocked starter action: '+event);
    }
   }
   async function coverListedActions(){
+   const keepAll=card()?.querySelector('[data-simple-keep-all]');
+   if(keepAll){
+    // What the one Keep covers, as the card's statement names it.
+    const said=card().querySelector('p')?.textContent??'';
+    if(/feed|rafraîchi/i.test(said))coveredKinds.add('starter-feed');
+    if(/\bfolds?\b|rabats?/i.test(said))coveredKinds.add('fold-card');
+    keepAll.click();await settle();covered++;assert.equal(card(),null,'Keep did not settle the plan');
+   }
    let rows=conflictRows();
    const seen=new Set();
    while(rows.length){
@@ -104,10 +116,10 @@ for(const horizon of [24,32,48])for(const work of [false,true])for(const starter
    assert.ok(repair,'No usable later bake offered: '+(query('.bh-plan-state')?.textContent||doc.body.textContent.slice(-300)));
    repair.click();await settle();selected++;
    // The search covers 72 hours, then the first weekend after them (SchedulePicker's weekend
-   // choices); a weekend bake is offered only when it needs no cover.
+   // choices), then hourly to a week (18 Nov 2026, owner: 7 days before none).
    const weekendFrom=new Date(clock+(horizon+72)*hour);while(weekendFrom.getDay()!==6)weekendFrom.setDate(weekendFrom.getDate()+1);weekendFrom.setHours(7,0,0,0);
    const offered=w.__h.rec.bake;
-   assert.ok(offered>clock+horizon*hour && (offered<=clock+(horizon+72)*hour || offered>=+weekendFrom && offered<+weekendFrom+160*900000),'Offered bake must fit the stated search: 72 hours, then the first weekend');
+   assert.ok(offered>clock+horizon*hour && (offered<=clock+(horizon+168)*hour || offered>=+weekendFrom && offered<+weekendFrom+160*900000),'Offered bake must fit the stated search: 72 hours, the first weekend, then up to a week');
    await coverListedActions();
   }
   assert.ok(eligible(),'Starter or schedule still prevents recipe generation after the displayed action: '+JSON.stringify(w.__h.rec));

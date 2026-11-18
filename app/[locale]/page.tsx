@@ -18,7 +18,7 @@ import OpeningChoices from '../components/OpeningChoices';
 import StylePicker, { StylePhotoPreload } from '../components/StylePicker';
 import BakeNavigator, {DestinationIcon, type BakeStepLink} from '../components/BakeNavigator';
 import BakeTypeChooser from '../components/BakeTypeChooser';
-import {getServingTimeEstimate} from '../utils/servingTime';
+import {getServingTimeEstimate, breadCoolingRange} from '../utils/servingTime';
 import {getPizzaById} from '../lib/toppingDatabase';
 import { BackLabel } from '../components/BackLabel';
 import BottomActions from '../components/BottomActions';
@@ -2355,6 +2355,9 @@ export default function Home() {
 
   const startTimeInPast = !!mixExecution || !!execution && execution.method==='none';
   const starterFedTimes=useMemo(()=>starterFeedRecords.flatMap(record=>[record.plannedAt,record.actualAt]),[starterFeedRecords]);
+  // Feeds recorded on the generated plan: the plan is kept as recorded and every re-plan keeps the levain %
+  // it was built for (18 Nov 2026 retention, Priya's late feed).
+  const starterFactsKept=yeastType==='sourdough'&&!!recipeGenerated&&starterFeedRecords.length>0&&!starterRecoveryPending&&!mixExecution;
   const missedStarterFeed=yeastType==='sourdough'&&recipeGenerated&&!mixExecution&&!starterRecoveryPending?overdueStarterFeed(starterEvents,starterFeedRecords,executionClock):undefined;
   // A replan after recorded feeds starts from the latest one (the plan itself is kept while feeds are
   // confirmed, so the starter answers still describe the starter before the first of them). Where the
@@ -2409,15 +2412,21 @@ export default function Home() {
     // depend on it (shiftStarterPlanAfterFeed). The baker stays where she is; nothing is re-solved
     // unless the dough no longer fits before the bake (17 Nov 2026 retention review).
     if(actualAt!==undefined&&recipeGenerated&&!starterRecoveryPending&&eatTime){
-      const shifted=shiftStarterPlanAfterFeed(starterEvents,feedEvent,actualAt,+startTime,d=>formatClock(d,locale));
+      // Only what the feed's rise affects moves, into free time where there is some (shiftStarterPlanAfterFeed).
+      const shifted=shiftStarterPlanAfterFeed(starterEvents,feedEvent,actualAt,+startTime,d=>formatClock(d,locale),{
+        now:Date.now(),busy:ms=>isTimeBlocked(ms,blocks),
+        mixFits:ms=>!sourdoughMixFits(new Date(ms))?false:sourdoughDoughFitsFrom(new Date(ms))?'free':'busy'});
       const nextStart=new Date(+startTime+shifted.mixShiftMs);
-      if(!shifted.mixShiftMs||sourdoughMixFits(nextStart)){
+      if(shifted.fits){
         const remap=(d:Date|null)=>d&&shifted.moved.has(+d)?new Date(shifted.moved.get(+d)!):d;
         const overrides:TimingOverrides={...timingOverrides};
         for(const key of ['feed','refresh'] as const){const at=overrides[key];if(at!==undefined&&shifted.moved.has(at))overrides[key]=shifted.moved.get(at);}
         if(overrides.mix!==undefined)overrides.mix+=shifted.mixShiftMs;
         const nextKey=starterPlanResetKey+1;
         const fridgeOut=remap(fridgeOutTime),fridgeIn=remap(starterFridgeInTime),feed2=remap(feed2Time);
+        // The fed starter is the planner's starting point from now on: a later re-plan (Find compatible
+        // times, Fine-tune, a reload) starts from this feed, never from the starter answers before it.
+        setSimpleStarterAnswer(null);setLastFedTime(new Date(actualAt));setLastFeedRatio(usedRatio);setPlanningMode('last_fed');setLastFedAge('today');setKnownPeakTime(null);setHasNotFedYet(false);setStarterLocation('rt');setStarterState('rt_fed');
         setStarterFeedRecords(records);setStarterEvents(shifted.events);setTimingOverrides(overrides);
         setFeedTime(remap(feedTime));setFeed2Time(feed2);setFridgeOutTime(fridgeOut);setStarterFridgeInTime(fridgeIn);
         // Remount the hidden planner frozen on the kept plan, so it shows it rather than re-solving it.
@@ -2425,7 +2434,10 @@ export default function Home() {
         setAcceptedScheduleRepair(confirmedSchedulePlan?repairKey(nextStart,eatTime,blocks,prefOffsetH,prefGoesInFridge,nextKey):null);
         const accepted=acceptedPlan&&shifted.mixShiftMs?{...acceptedPlan,startTime:+nextStart,preparationAt:+nextStart}:acceptedPlan;
         if(shifted.mixShiftMs){setStartTime(nextStart);setAcceptedPlan(accepted);setPlanMoved({from:+startTime,to:+nextStart});}
-        saveSession(buildSessionPayload({starterFeedRecords:records,starterEvents:serializeStarterEvents(shifted.events),timingOverrides:overrides,startTime:+nextStart,
+        // No free option: the plan keeps the fed chain and Preparation says once that the rest needs new times.
+        setExecutionClash(shifted.busy);
+        saveSession(buildSessionPayload({starterFeedRecords:records,starterEvents:serializeStarterEvents(shifted.events),timingOverrides:overrides,startTime:+nextStart,executionClash:shifted.busy,
+          simpleStarterAnswer:null,lastFedTime:actualAt,lastFeedRatio:usedRatio,planningMode:'last_fed',lastFedAge:'today',knownPeakTime:null,hasNotFedYet:false,starterLocation:'rt',starterState:'rt_fed',
           fridgeOutTime:fridgeOut?+fridgeOut:null,feed2Time:feed2?+feed2:null,starterFridgeInTime:fridgeIn?+fridgeIn:null,
           acceptedStartTime:accepted?.startTime,acceptedPreparationAt:accepted?.preparationAt}));
         return;
@@ -3023,14 +3035,34 @@ export default function Home() {
     if(destination==='protocol'||destination==='service'||destination==='recipe'||destination==='shopping')setFillingsReturn({destination,view:destination==='protocol'?protocolView:destination==='service'?serviceView:'dough'});
   }
   function openSetupReview() {
+    rememberGoodPlan();
     if(execution||mixExecution){openSetupStep(tab==='custom'?9:7);return;}
     captureEditReturn();setActiveTab('setup');setReviewMode(true);setSetupOverview(true);scrollToStepTop();
   }
   function backToSetupChoices() {
     setSetupOverview(true);setActiveTab('setup');scrollToStepTop();
   }
+  // The plan the recipe was made with, kept while its times are edited: the way back when an edit
+  // leaves a clash (18 Nov 2026 retention: no Back to Recipe until "Keep…").
+  const lastGoodPlanRef = useRef<SessionData | null>(null);
+  function rememberGoodPlan() {
+    lastGoodPlanRef.current = recipeGenerated && !protocolStale && scheduleCandidateValid ? {...buildSessionPayload(), version: 1, savedAt: Date.now()} as SessionData : null;
+  }
+  function backToLastGoodPlan() {
+    const good = lastGoodPlanRef.current;
+    lastGoodPlanRef.current = null;
+    if (good && JSON.stringify({...buildSessionPayload(), savedAt: 0}) !== JSON.stringify({...good, version: undefined, savedAt: 0})) {
+      applySession({...good, activeTab: 'plan'});
+      saveSession(good);
+      // A fresh planner over the restored plan: the edited one must not write its draft back.
+      setStarterPlanResetKey(k => k + 1);
+    }
+    setReplanReturn(null); setPlanReplanPending(false);
+    openDestination('recipe');
+  }
   function editRecipeTiming() {
     setBakeTimeQuestion(false);
+    rememberGoodPlan();
     captureEditReturn();
     openSetupStep(tab==='custom'?9:7);
   }
@@ -4301,6 +4333,11 @@ export default function Home() {
     const steps=planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label,busy:isTimeBlocked(e.at,blocks)}));
     return steps;
   })();
+  // Preparation runs the Recipe's busy check (recipePlanSteps' "during a busy time") once a recorded fact
+  // (a feed, the preferment, the mix) has moved the plan without the clash sheet: a step still to come in a
+  // busy period the baker has not agreed to cover is the one clash line (18 Nov 2026 retention).
+  const coveredAt=new Set(blocks.flatMap(block=>[...(block.coveredActions??[]).map(action=>action.at),...(block.fridgeRemoval?[block.fridgeRemoval.at]:[])]));
+  const preparationBusy=(starterFeedRecords.length>0||!!execution||!!mixExecution)&&recipePlanSteps.some(step=>step.busy&&+step.at>Date.now()&&!coveredAt.has(+step.at));
   // A plan already in the calendar whose steps have since moved (any step, not only
   // Start Dough or the bake): the card says so once, where the button is.
   const calendarOutdated = (()=>{
@@ -4397,13 +4434,16 @@ export default function Home() {
   const fillingsStepLabel = bakeType==='pizza' ? 'Pizzas' : (fr?'Garnitures':'Fillings');
   function openToppingsStep(){setFillingsReturn({destination:'shopping',view:'dough',forward:true});setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}
 
+  // A clash on a generated plan's times: the choice is in the card above; the bar is the way back to the
+  // plan the recipe was made with (backToLastGoodPlan), never a disabled button (18 Nov 2026 retention).
+  const backToGoodPlanButton = <button data-bh-forward data-back-to-good-plan type="button" style={{...SECONDARY_CTA,width:'100%'}} onClick={backToLastGoodPlan}>{fr?'Retour à la recette':'Back to Recipe'}</button>;
   // ── Render ────────────────────────────────
   // One scheduler element: Custom levain shows its starter questions on the
   // Starter step and the plan on Bake time. Only one step is mounted at a time.
   // One simple scheduler element, rendered on the bake-time step or, for a step moved from
   // the Recipe's plan, inline there (never both: planEdit unmounts the step's copy).
   const renderSimpleScheduler = (extra?: {planInline?: {focus:'mix'|'pref';applyLabel:string;onClose:()=>void};planChart?:boolean}) => (
-              <SchedulePicker {...extra} inputsOnly={!extra?.planInline&&!extra?.planChart&&(collectingBakeTime||bakeTimeOnly)} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct}
+              <SchedulePicker {...extra} inputsOnly={!extra?.planInline&&!extra?.planChart&&(collectingBakeTime||bakeTimeOnly)} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct} keptStarterPlan={starterFactsKept} holdStarterPct={starterFactsKept&&starterPctOverride===undefined&&autoStarterPct!=null}
                 {...poolishInputs}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
@@ -4491,7 +4531,7 @@ export default function Home() {
                 enteredYeastShownPct={effectiveYeastOverride!==undefined&&yeastType?Math.round(effectiveYeastOverride*(YEAST_TYPES[yeastType]?.conversion??1)*1000)/1000:undefined}
                 poolishStorage={prefermentType==='poolish'?poolishStorage:'auto'}
                 yeastPctOverride={effectiveYeastOverride}
-                replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct}
+                replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct} keptStarterPlan={starterFactsKept} holdStarterPct={starterFactsKept&&starterPctOverride===undefined&&autoStarterPct!=null}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
                 mixingBatches={selectedMixingBatches}
@@ -5073,7 +5113,10 @@ export default function Home() {
                 reviewValues={{ 3: simpleKitchenSummary, 7: reviewTiming }}
                 busyRow={reviewBusy?{value:reviewBusy,onClick:()=>{setSetupOverview(false);setBakeTimeQuestion(true);simpleFlow.onJump(7);}}:undefined}
                 suggestedRows={simpleSuggestedRows}
-                modeChip={{ value: 'simple', onClick: () => { chooseMode('custom'); if(recipeGenerated){setAdvancedHighestStep(h=>Math.max(h,CUSTOM_LAST)); setSetupOverview(true);} else {setCustomBakeQuestion(true); setSetupOverview(false);} scrollToStepTop(); } }}
+                modeChip={{ value: 'simple', onClick: () => { chooseMode('custom'); if(recipeGenerated){
+                  // The recipe was made with this oven and kneading: the Equipment step shows them chosen,
+                  // as its row does (18 Nov 2026 retention: "Standard home oven" in the row, nothing selected on the step).
+                  if(ovenType)confirmSetting('oven',ovenType);if(mixerType)confirmSetting('mixer',mixerType);setAdvancedHighestStep(h=>Math.max(h,CUSTOM_LAST)); setSetupOverview(true);} else {setCustomBakeQuestion(true); setSetupOverview(false);} scrollToStepTop(); } }}
                 hideSuggested
                 onJump={id => { setSetupOverview(false); if(id===7)setBakeTimeQuestion(true); simpleFlow.onJump(id); }}
                 returnLabel={recipeGenerated?setupReturnLabel:undefined}
@@ -5118,9 +5161,9 @@ export default function Home() {
               : !scheduleCandidateValid
                 // As in Custom: the normal next step waits for the plan, with the reason; it never only
                 // scrolls (17 Nov 2026 retention: "Review affected times" did nothing).
-                ? <div style={{width:'100%'}}>
+                ? recipeGenerated ? backToGoodPlanButton : <div style={{width:'100%'}}>
                     <p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{simpleDecisionPending?(fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'):(fr?'Ajustez le planning ci-dessus pour continuer.':'Adjust the plan above to continue.')}</p>
-                    <button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated?setupReturnLabel:simpleOrganisationFlow.generateLabel}</button>
+                    <button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{simpleOrganisationFlow.generateLabel}</button>
                   </div>
               : undefined}>
               {/* Simple assumes the kitchen temperature (shown with the plan in
@@ -5133,7 +5176,7 @@ export default function Home() {
               {/* The bake time is when it goes in the oven; a loaf then needs time to cool (16 Nov 2026:
                   a baker entered lunch time). Not for flatbreads or breads served warm. */}
               {showCoolingNote &&
-                <p data-cooling-note style={{fontSize:14,lineHeight:1.5,color:'var(--ash)',margin:'12px 0 0'}}>{fr?'Comptez 2 à 3 h de refroidissement avant de trancher : pour un repas, enfournez plus tôt.':'Allow 2–3 h for the bread to cool before slicing: for a meal, bake earlier.'}</p>}
+                <p data-cooling-note style={{fontSize:14,lineHeight:1.5,color:'var(--ash)',margin:'12px 0 0'}}>{(()=>{const range=breadCoolingRange(styleKey??'',itemWeight);return fr?`Comptez ${range} de refroidissement avant de trancher : pour un repas, enfournez plus tôt.`:`Allow ${range} for the bread to cool before slicing: for a meal, bake earlier.`;})()}</p>}
 
               {/* One way forward. A pending decision carries its own buttons, so
                   Create waits for it; Custom stays reachable as an optional
@@ -5342,7 +5385,7 @@ export default function Home() {
             {/* ── Bake guide tab content ── */}
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && recipe && mixerType && (<>
-                {destination==='protocol'&&eatTime&&prepOverview&&<PreparationTimingSummary calendarOutdated={calendarOutdated} clash={executionClash} fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
+                {destination==='protocol'&&eatTime&&prepOverview&&<PreparationTimingSummary calendarOutdated={calendarOutdated} clash={executionClash||preparationBusy} fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
                 <BakeGuide
                   pizzaDiameterCm={bakeType==='pizza'?pizzaDiameter:undefined}
                   onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)} starterFedTimes={starterFedTimes}
@@ -5473,7 +5516,7 @@ export default function Home() {
                 kitchenRow={!isUnleavened&&kitchenAnswered?{value:`${cToDisplay(kitchenTemp,units)}${tempUnit(units)}`,onClick:()=>{captureEditReturn();openDestination('batch');setBatchView('kitchen');scrollToStepTop();}}:undefined}
                 stale={protocolStale}
                 flow={customFlow}
-                reviewValues={{3:reviewEquipment, 4:reviewAmbient, 7:reviewLeavening, ...(levainCustom ? {} : {8: prefermentType==='none'?t('preferment.direct'):localName(PREFERMENT_TYPES[prefermentType])}), 10:reviewDough, 9:reviewTiming}}
+                reviewValues={{3:reviewEquipment, 4:reviewAmbient, 7:reviewLeavening, ...(levainCustom ? (starterStepValue===null&&starterLocationAnswered?{8:starterLocation==='fridge'?(fr?'Frigo':'Fridge'):(fr?'Ambiante':'Room temperature')}:{}) : {8: prefermentType==='none'?t('preferment.direct'):localName(PREFERMENT_TYPES[prefermentType])}), 10:reviewDough, 9:reviewTiming}}
                 busyRow={reviewBusy?{value:reviewBusy,onClick:()=>{setSetupOverview(false);setBakeTimeQuestion(true);customFlow.onJump(9);}}:undefined}
                 suggestedRows={{ '3': equipmentOpen, '7': yeastOpen, '8': showPrefermentChoice && !levainCustom && !methodPicked, '10': manualHydration===undefined }}
                 modeChip={{ value: 'custom', onClick: () => { chooseMode('simple'); setSetupOverview(recipeGenerated); scrollToStepTop(); } }}
@@ -5604,7 +5647,7 @@ export default function Home() {
             <StepPage flow={customOrganisationFlow} id={9} nextOverride={bakeTimeOnly && eatTime && (customStarterStepId === null || starterStateDescribed) ? (customDecisionPending ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('return')}>{setupReturnLabel}</button> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : customStarterStepId !== null && !starterStateDescribed ? <div style={{width:'100%'}}>
                 <p style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Indiquez quand votre levain a été rafraîchi pour la dernière fois.':'Tell us when your starter was last fed.'}</p>
                 <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>openSetupStep(customStarterStepId,true)}>{fr?'Votre levain →':'Your starter →'}</button>
-              </div> : scheduleEditing ? null : customQuestionOnly && customDecisionPending && customOrganisationFlow.steps.some(step=>step.id!==9&&!stepAnswered(step,customOrganisationFlow.highestStep,customOrganisationFlow.steps)) ? undefined : !scheduleCandidateValid ? <div style={{width:'100%'}}>
+              </div> : scheduleEditing ? null : customQuestionOnly && customDecisionPending && customOrganisationFlow.steps.some(step=>step.id!==9&&!stepAnswered(step,customOrganisationFlow.highestStep,customOrganisationFlow.steps)) ? undefined : !scheduleCandidateValid && recipeGenerated && !customQuestionOnly ? backToGoodPlanButton : !scheduleCandidateValid ? <div style={{width:'100%'}}>
                 {/* The way forward is never a button that only scrolls: the next step waits for a choice above. */}
                 {customQuestionOnly?(customDecisionPending?<button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('generate')}>{customOrganisationFlow.generateLabel}</button>:<button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setPlanDetail(true)}>{fr?'Voir le planning':'See the plan'} →</button>):<p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{customDecisionPending?(fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'):(fr?'Ajustez le planning ci-dessus pour continuer.':'Adjust the plan above to continue.')}</p>}
                 {customQuestionOnly?null:<button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated?setupReturnLabel:customOrganisationFlow.steps.at(-1)?.id===9?customOrganisationFlow.generateLabel:`${customOrganisationFlow.steps.find(step=>step.id===nextCustomStep(9))?.chip ?? (fr?'Suivant':'Next')} →`}</button>}
@@ -5670,11 +5713,12 @@ export default function Home() {
                     // the fridge retard is not used to absorb it.
                     const flourG = recipe?.flour;
                     const recommendedPct = recipe?.sourdough && flourG ? Math.round(recipe.sourdough.starterGramsMid / flourG * 1000) / 10 : referenceStarterPct(kitchenTemp);
-                    const shownPct = starterPctOverride ?? recommendedPct;
+                    // The plan's value: the planner's raise as stored, not re-derived from rounded grams (18 Nov 2026 retention: 29.9 for 30).
+                    const shownPct = starterPctOverride ?? autoStarterPct ?? recommendedPct;
                     return <div data-starter-override style={{marginBottom:18}}>
                       <label style={{display:'block',fontSize:16}}>{fr?'Levain (% de farine)':'Starter (% of flour)'}
                         <input type="number" key={`starter:${starterPctOverride ?? 'auto'}:${shownPct}`} defaultValue={shownPct} min={5} max={30} step={1}
-                          onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const pct=Math.min(30,Math.max(5,Math.round(n*2)/2));if(starterPctOverride===undefined&&Math.abs(pct-recommendedPct)<0.25)return;setStarterPctOverride(pct);setPlanReplanPending(true);}}
+                          onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const pct=Math.min(30,Math.max(5,Math.round(n*2)/2));if(starterPctOverride===undefined&&Math.abs(pct-shownPct)<0.25)return;setStarterPctOverride(pct);setPlanReplanPending(true);}}
                           style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
                       </label>
                       <p style={{margin:'6px 0 0',fontSize:14,color:'var(--smoke)',lineHeight:1.45}}>{starterPctOverride!==undefined
@@ -5938,7 +5982,7 @@ export default function Home() {
             {/* ── Bake guide tab content ── */}
             <div style={{ display: (destination==='protocol'&&protocolView==='dough'||destination==='service'&&serviceView==='dough') ? 'block' : 'none' }}>
               {!recipeGenerated ? null : schedule && advancedRecipe && mixerType && (<>
-                {destination==='protocol'&&eatTime&&prepOverview&&<PreparationTimingSummary calendarOutdated={calendarOutdated} clash={executionClash} fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
+                {destination==='protocol'&&eatTime&&prepOverview&&<PreparationTimingSummary calendarOutdated={calendarOutdated} clash={executionClash||preparationBusy} fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} helperAt={coveredFridgeRemovalAt} onAdjustTiming={editRecipeTiming} onAddToCalendar={addPlanToCalendar}/>}
                 <BakeGuide
                   pizzaDiameterCm={bakeType==='pizza'?pizzaDiameter:undefined}
                   onStarterFed={event=>updateStarterAfterMissedFeed(Date.now(),event)} starterFedTimes={starterFedTimes}

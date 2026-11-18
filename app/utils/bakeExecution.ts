@@ -1,5 +1,5 @@
 import type {RecipeResult} from '../utils';
-import {preMixPeakAfterMovedFeed} from './starterPeak';
+import {mixNearPeak, preMixPeakAfterMove, preMixRiseH} from './starterPeak';
 
 /** A clock crossing a planned time is never evidence that ingredients were used. */
 export interface BakeExecution {
@@ -59,7 +59,9 @@ export function normalizeStarterFeedRecords(value:unknown):StarterFeedRecord[] {
     &&[v.plannedAt,v.actualAt,v.recordedAt,v.ratio].every(Number.isFinite)&&v.actualAt<=v.recordedAt&&[1,2,4,5,10].includes(v.ratio));
 }
 export function overdueStarterFeed<T extends {kind:string;time:Date}>(events:T[],records:StarterFeedRecord[],now:number) {
-  return events.filter(event=>['refresh','intermediate_refresh','pre_mix'].includes(event.kind)&&+event.time<=now
+  // A feed planned before the last recorded one is behind the baker: never asked again (18 Nov 2026 retention).
+  const lastFed=Math.max(-Infinity,...records.map(record=>record.actualAt));
+  return events.filter(event=>['refresh','intermediate_refresh','pre_mix'].includes(event.kind)&&+event.time<=now&&+event.time>lastFed
     &&!records.some(record=>record.kind===event.kind&&(record.plannedAt===+event.time||record.actualAt===+event.time))).sort((a,b)=>+a.time-+b.time)[0];
 }
 
@@ -70,37 +72,109 @@ export function overdueStarterFeed<T extends {kind:string;time:Date}>(events:T[]
  * The fed event takes the actual time; the shift is rounded to the plan's quarter hour.
  * Earlier steps and the bake time never move (Priya's retention review, 17 Nov 2026).
  */
-export function shiftStarterPlanAfterFeed<T extends {kind:string;time:Date;bellPeakTime?:Date;bellStartTime?:Date;cardNote?:string}>(events:T[],fed:{kind:string;time:Date},actualAt:number,mixAt:number,formatPeak?:(d:Date)=>string) {
-  const plannedAt=+fed.time,quarter=15*60000;
+export interface FeedShiftOptions {
+  /** Whether a hands-on starter step at this instant falls in a busy period. */
+  busy?:(ms:number)=>boolean;
+  /** Whether the dough, mixed at this instant, still fits before the fixed bake ('free': with its
+   * hands-on steps out of the busy periods; 'busy': it fits but a step falls in one; false: it does not fit). */
+  mixFits?:(mixMs:number)=>'free'|'busy'|false;
+  now?:number;
+}
+const FEEDS=['refresh','intermediate_refresh','pre_mix'];
+/**
+ * A feed done at another time than planned re-times only what its rise affects (Priya's retention
+ * reviews, 17–18 Nov 2026). Earlier steps and the bake time never move; the fed event takes the actual time.
+ * In order of preference:
+ *  1. keep: the next feed, or the mix, stays where it is when the starter is still near its peak at the
+ *     planned mix (the pre-mix peak re-derived through the shared peak model, starterPeak.ts);
+ *  2. the pre-mix feed alone moves, within free time, so the planned mix meets its peak;
+ *  3. every later starter step and the mix move by the feed's own shift (rounded to the quarter hour),
+ *     up to and including a starter going into the fridge (which resets the chain), when the dough
+ *     still fits; a fridge_in that lands in a busy period takes the nearest free quarter near its peak.
+ * `fits` is false only when the dough no longer fits before the bake; `busy` when a hands-on step of
+ * the result falls in a busy period although no free option was found.
+ */
+export function shiftStarterPlanAfterFeed<T extends {kind:string;time:Date;bellPeakTime?:Date;bellStartTime?:Date;cardNote?:string}>(events:T[],fed:{kind:string;time:Date},actualAt:number,mixAt:number,formatPeak?:(d:Date)=>string,options:FeedShiftOptions={}) {
+  const plannedAt=+fed.time,quarter=15*60000,hour=3600000;
   const shiftMs=Math.round((actualAt-plannedAt)/quarter)*quarter;
-  const moved=new Map<number,number>();
-  let chainOpen=true;
+  const busy=options.busy??(()=>false),now=options.now??-Infinity;
   const sorted=[...events].sort((a,b)=>+a.time-+b.time);
+  const feedBefore=(at:number)=>sorted.filter(e=>+e.time<at&&['last_fed',...FEEDS].includes(e.kind)).at(-1);
+  const notePeak=(event:T,out:T)=>{if(formatPeak&&event.cardNote&&event.bellPeakTime&&out.bellPeakTime)out.cardNote=event.cardNote.split(formatPeak(event.bellPeakTime)).join(formatPeak(out.bellPeakTime));};
   // A moved feed's peak moves with it ("Peak around…" on the card and the bell): a pre-mix
-  // feed through the shared peak model against the feed before it (preMixPeakAfterMovedFeed),
+  // feed through the shared peak model against the feed before it (refAt: where that feed now is),
   // any other step by its own move. The card's note names the new peak time.
-  const withTime=(event:T,at:number):T=>{
+  const withTime=(event:T,at:number,refAt?:number|null):T=>{
     const delta=at-+event.time;
-    if(!delta)return event;
+    const previous=feedBefore(+event.time);
+    const oldRef=previous?+previous.time:null,newRef=refAt===undefined?oldRef:refAt;
+    if(!delta&&newRef===oldRef)return event;
     const out:T={...event,time:new Date(at)};
     if(event.bellStartTime)out.bellStartTime=new Date(+event.bellStartTime+delta);
     if(event.bellPeakTime){
-      const previous=sorted.filter(e=>+e.time<+event.time&&['last_fed','refresh','intermediate_refresh','pre_mix'].includes(e.kind)).at(-1);
-      const peak=event.kind==='pre_mix'?preMixPeakAfterMovedFeed(+event.time,+event.bellPeakTime,at,previous?+previous.time:null):+event.bellPeakTime+delta;
+      const peak=event.kind==='pre_mix'?preMixPeakAfterMove(+event.time,+event.bellPeakTime,oldRef,at,newRef):+event.bellPeakTime+delta;
       out.bellPeakTime=new Date(peak);
-      if(formatPeak&&event.cardNote)out.cardNote=event.cardNote.split(formatPeak(event.bellPeakTime)).join(formatPeak(out.bellPeakTime));
+      notePeak(event,out);
     }
     return out;
   };
-  const next=sorted.map(event=>{
-    if(event.kind===fed.kind&&+event.time===plannedAt){if(actualAt!==plannedAt)moved.set(plannedAt,actualAt);return withTime(event,actualAt);}
-    if(+event.time<=plannedAt||!chainOpen||!shiftMs||event.kind==='last_fed'||event.kind==='known_peak')return event;
-    if(event.kind==='fridge_in'&&+event.time<mixAt)chainOpen=false;
-    moved.set(+event.time,+event.time+shiftMs);
-    return withTime(event,+event.time+shiftMs);
-  });
+  const fedEvent=sorted.find(e=>e.kind===fed.kind&&+e.time===plannedAt);
+  const fedOut=fedEvent?withTime(fedEvent,actualAt):undefined;
+  const result=(next:T[],moved:Map<number,number>,mixShiftMs:number,isBusy=false)=>({events:next,moved,mixShiftMs,fits:true,busy:isBusy});
+  const baseMoved=()=>{const m=new Map<number,number>();if(actualAt!==plannedAt)m.set(plannedAt,actualAt);return m;};
+  const swap=(replacements:Map<T,T>)=>sorted.map(e=>e===fedEvent?fedOut!:replacements.get(e)??e);
+  // The steps after the feed, up to the mix.
+  const after=sorted.filter(e=>+e.time>plannedAt&&+e.time<mixAt&&e!==fedEvent&&e.kind!=='last_fed'&&e.kind!=='known_peak');
+  const nextStep=after[0];
+  if(fedEvent&&shiftMs){
+    // 1 · keep: the next feed stays (a pre-mix through the peak model against the moved feed), or,
+    // when the moved feed is the pre-mix itself, the mix stays near its new peak.
+    if(nextStep?.kind==='pre_mix'&&nextStep.bellPeakTime){
+      const kept=withTime(nextStep,+nextStep.time,actualAt);
+      const riseH=preMixRiseH(+nextStep.time,+nextStep.bellPeakTime,feedBefore(+nextStep.time)?+feedBefore(+nextStep.time)!.time:null);
+      if(+nextStep.time>actualAt&&mixNearPeak(mixAt,+kept.bellPeakTime!,riseH))return result(swap(new Map([[nextStep,kept]])),baseMoved(),0);
+      // 2 · the pre-mix feed alone moves into free time so the planned mix meets its peak, nearest first.
+      if(!after.slice(1).some(e=>e.kind!=='pre_mix')){
+        const span=Math.max(Math.abs(shiftMs),3*hour);
+        for(let step=quarter;step<=span;step+=quarter)for(const sign of [1,-1]){
+          const at=+nextStep.time+sign*step;
+          if(at<=actualAt+hour||at<=now||at>=mixAt-hour||busy(at))continue;
+          const moved=withTime(nextStep,at,actualAt);
+          if(!mixNearPeak(mixAt,+moved.bellPeakTime!,riseH))continue;
+          const m=baseMoved();m.set(+nextStep.time,at);
+          return result(swap(new Map([[nextStep,moved]])),m,0);
+        }
+      }
+    }else if(fed.kind==='pre_mix'&&fedOut?.bellPeakTime&&fedEvent.bellPeakTime&&!after.length){
+      const previous=feedBefore(plannedAt);
+      if(mixNearPeak(mixAt,+fedOut.bellPeakTime,preMixRiseH(plannedAt,+fedEvent.bellPeakTime,previous?+previous.time:null)))return result(swap(new Map()),baseMoved(),0);
+    }else if(nextStep&&nextStep.kind==='intermediate_refresh'&&fedEvent.bellPeakTime&&+nextStep.time>=+fedEvent.bellPeakTime+shiftMs-2*hour){
+      // An intermediate refresh still fed near the moved peak keeps its time and everything after it.
+      return result(swap(new Map()),baseMoved(),0);
+    }
+  }
+  // 3 · the chain follows the feed's own shift.
+  const moved=baseMoved();
+  let chainOpen=true;
+  const replacements=new Map<T,T>();
+  for(const event of sorted){
+    if(event===fedEvent||+event.time<=plannedAt||!chainOpen||!shiftMs||event.kind==='last_fed'||event.kind==='known_peak')continue;
+    let at=+event.time+shiftMs;
+    if(event.kind==='fridge_in'&&+event.time<mixAt){
+      chainOpen=false;
+      // At the peak, within the solver's hold band: the nearest free quarter when the peak falls in a busy period.
+      if(busy(at))for(let step=quarter;step<=2*hour;step+=quarter){const free=[at-step,at+step].find(t=>t>now&&!busy(t));if(free!==undefined){at=free;break;}}
+    }
+    moved.set(+event.time,at);
+    const previous=feedBefore(+event.time);
+    replacements.set(event,withTime(event,at,!previous?null:previous===fedEvent?actualAt:moved.get(+previous.time)??+previous.time));
+  }
+  const mixShiftMs=chainOpen?shiftMs:0;
+  const next=swap(replacements);
+  const fit=mixShiftMs&&options.mixFits?options.mixFits(mixAt+mixShiftMs):'free';
+  const starterBusy=[...replacements.values()].some(e=>[...FEEDS,'fridge_in','fridge_out'].includes(e.kind)&&busy(+e.time));
   // The mix follows only an unbroken chain of rises from this feed.
-  return {events:next,moved,mixShiftMs:chainOpen?shiftMs:0};
+  return {events:next,moved,mixShiftMs,fits:fit!==false,busy:fit==='busy'||starterBusy};
 }
 
 /** Mixing is one confirmed action, including for sourdough and a made preferment. */

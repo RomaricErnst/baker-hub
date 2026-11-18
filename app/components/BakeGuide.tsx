@@ -15,6 +15,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { poolishCoolingAt } from '../utils/poolishCoolingAt';
 import { foldActionLabel } from '../utils/scheduleAvailability';
 import { type ScheduleResult, formatPlanTime, finalProofWindow } from '../utils';
+import { breadCoolingRange } from '../utils/servingTime';
 import { MIXER_TYPES, isLevainStyle, AUTOLYSE_MIN, autolyseMinFor, preMixAutolyseMinFor, type MixerType } from '../data';
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
@@ -874,9 +875,8 @@ function StepVisual({ kind, includeSpiral = false, locale }: { includeSpiral?: b
   </div>;
 }
 
-export function breadCoolingRange(style: string, weight: number): string {
-  return style === 'pain_seigle' ? '12–24 h' : style === 'fougasse' && weight <= 500 ? '10–15 min' : style === 'baguette' && weight <= 400 ? '20–30 min' : style === 'pain_viennois' && weight <= 400 ? '30–60 min' : weight <= 400 ? '1–2 h' : weight <= 1000 ? '2–3 h' : '3–4 h';
-}
+// The cooling allowance lives with the serving-time rules, shared with the bake-time note (page.tsx).
+export { breadCoolingRange };
 
 // ── Main component ───────────────────────────────────
 const TERM_TO_STEPID: Record<string, string> = {
@@ -1123,6 +1123,9 @@ export default function BakeGuide({onStarterFed, starterFedTimes, mixingMade,onM
   const isPoolish     = prefermentType === 'poolish';
   const isBiga        = prefermentType === 'biga';
   const isTwoPhase    = schedule.coldRetard2Start !== null;
+  // A cold-proofed loaf out of the fridge as the oven heats: the Recipe's plan calls this step "Take the
+  // shaped loaf out of the fridge · Preheat the oven"; Preparation names it the same (18 Nov 2026 retention).
+  const shapedOutAtPreheat = isBread && isTwoPhase && !bakesFromFridge && !!schedule.coldRetard2End && !!schedule.preheatStart && +schedule.coldRetard2End >= +schedule.preheatStart - 60000;
   const hasCold       = (schedule.coldRetardHours ?? 0) > 0;
   // Pan / Detroit and Roman teglia bake in their pan: own shaping, preheat and
   // bake cards on every oven, and no round-ball instructions.
@@ -2214,7 +2217,7 @@ Actual dough condition and equipment may differ from these estimates.`;
 
       {/* ── STEP: Final Proof (merged warmup + proof for cold-retard styles) */}
       {(schedule.finalProofHours > 0 || schedule.restRtHours > 0 || schedule.rtWarmupStart) && (
-        <StepCard number={n()} {...sc()} icon={<IconProof />} title={styleKey === 'greek_pita' ? (l === 'fr' ? 'Détendre les pâtons, couverts' : 'Relax the portions, covered') : t('stepTitles.finalProof')}
+        <StepCard number={n()} {...sc()} icon={<IconProof />} title={styleKey === 'greek_pita' ? (l === 'fr' ? 'Détendre les pâtons, couverts' : 'Relax the portions, covered') : shapedOutAtPreheat ? (numItems === 1 ? (l === 'fr' ? 'Sortir le pâton du réfrigérateur' : 'Take the shaped loaf out of the fridge') : (l === 'fr' ? 'Sortir les pâtons du réfrigérateur' : 'Take the shaped dough out of the fridge')) : t('stepTitles.finalProof')}
           passive time={finalProofWindow(schedule, numItems).start}
           duration={finalProofWindow(schedule, numItems).hours}
           accent="#7A8C6E">
