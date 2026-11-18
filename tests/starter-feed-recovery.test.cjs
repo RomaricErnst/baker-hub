@@ -180,3 +180,11 @@ test('a feed planned before the last recorded one is never asked again',()=>{
  const later={kind:'pre_mix',time:new Date(now-H)};
  assert.equal(overdueStarterFeed([later],records,now),later);
 });
+test('an unanswered feed question goes once the plan reaches its next step (rule A)',()=>{
+ const now=Date.parse('2026-11-20T08:00:00Z');
+ const refresh={kind:'refresh',time:new Date(now-3*H)},preMix={kind:'pre_mix',time:new Date(now+2*H)},mix={kind:'mix',time:new Date(now+8*H)};
+ const events=[refresh,preMix,mix];
+ assert.equal(overdueStarterFeed(events,[],now),refresh,'asked from its time');
+ assert.equal(overdueStarterFeed(events,[],now+3*H),preMix,'the next feed takes over; the earlier question is not stacked');
+ assert.equal(overdueStarterFeed(events,[],now+9*H),undefined,'past the mix the plan is assumed followed');
+});
