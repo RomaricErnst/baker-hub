@@ -24,10 +24,12 @@ test('the peak hours read back the peak dose the engine gives a window',()=>{
  }
 });
 
-test('the past-peak tolerance is the planner\'s own (rtTolUpper at room temperature, plateau in the fridge)',()=>{
+test('usable after the peak: a third of the time to peak at room temperature (never below the planner\'s rtTolUpper), 12 h in the fridge',()=>{
  for(const temp of [16,18,22,24,26,28,29,30,32,35]){
-  assert.equal(data.poolishPastPeakToleranceH(false,temp),prefZoneConstants('poolish',false,temp).rtTolUpper);
-  assert.equal(data.poolishPastPeakToleranceH(true,temp),prefZoneConstants('poolish',true,temp).plateauH);
+  const floor=prefZoneConstants('poolish',false,temp).rtTolUpper;
+  assert.equal(data.poolishPastPeakToleranceH(false,temp,0),floor);
+  assert.equal(data.poolishPastPeakToleranceH(false,temp,12),Math.max(floor,4),'a 12 h poolish: usable to 16 h');
+  assert.equal(data.poolishPastPeakToleranceH(true,temp,8),12);
  }
 });
 
@@ -89,10 +91,10 @@ test('storage auto: the fridge before anything else, inside its window, the bake
  const base=recommendPreferment(room,{});
  assert.equal(base.result.found,true);assert.equal(peakAtMix(base.result.candidate.schedule,base.result.candidate.times.prefHours,false),false,'room-temperature plan is past its peak');
  const chosen=recommendRipePoolish([...room,...both.filter(o=>o.inFridge)].sort((a,b)=>Number(b.inFridge)-Number(a.inFridge)),{},{},{peakAtMix,storage:'auto',timeSet:false});
- // Thomas (Sat 18:15 knead, Sun 10:00 bake, Paris): room temperature 11.25 h from 7:00 → fridge 10.75 h from 7:30, same knead.
+ // Thomas (Sat 18:15 knead, Sun 10:00 bake, Paris): room temperature 11.25 h from 7:00 → fridge, same 7:00 and same knead.
  assert.equal(base.result.candidate.times.prefHours,11.25);
  assert.equal(chosen.lever,'fridge');assert.equal(chosen.inFridge,true);
- assert.equal(chosen.result.candidate.times.prefHours,10.75);
+ assert.equal(chosen.result.candidate.times.prefHours,11.25);
  assert.equal(+chosen.result.candidate.times.start,+base.result.candidate.times.start);
  assert.equal(peakAtMix(chosen.result.candidate.schedule,chosen.result.candidate.times.prefHours,chosen.inFridge),true);
  assert.ok(chosen.result.candidate.times.prefHours<=24);
@@ -122,7 +124,8 @@ test('a set poolish time and a fixed storage are never moved',()=>{
  assert.equal(+chosen.result.candidate.times.start-chosen.result.candidate.times.prefHours*H,+pref);
  const fridge=thomasOptions().filter(o=>o.inFridge);
  const cold=recommendRipePoolish(fridge,{},{},{peakAtMix,storage:'fridge',timeSet:false});
- assert.equal(cold.inFridge,true);assert.equal(cold.lever,'later');assert.equal(cold.result.candidate.times.prefHours,10.75);
+ // A fridge poolish of the engine's own window holds well past its peak: nothing to change.
+ assert.equal(cold.inFridge,true);assert.equal(cold.lever,'none');
  // With the time set, a fridge poolish keeps it: the recipe splits instead.
  const fixed=recommendRipePoolish(fridge,{preferment:pref},{},{peakAtMix,storage:'fridge',timeSet:true});
  assert.ok(fixed.lever==='split'||fixed.lever==='none');

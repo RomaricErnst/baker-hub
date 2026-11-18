@@ -63,7 +63,7 @@ test('storage auto: Generate puts the poolish in the fridge for the same knead, 
  const s=await stored(page);
  expect(s.prefGoesInFridge).toBe(true);
  expect(s.eatTime).toBe(Z('2026-11-22T09:00'));
- expect(s.prefOffsetH).toBe(10.75);expect(s.startTime).toBe(Z('2026-11-21T17:15'));// poolish 7:30, knead 18:15 (Paris)
+ expect(s.prefOffsetH).toBe(11.25);expect(s.startTime).toBe(Z('2026-11-21T17:15'));// poolish 7:00, knead 18:15 (Paris), now in the fridge
  expect(s.prefermentFlourPct).toBe(20);
  await expect(page.locator('[data-recipe-stages]')).toBeVisible();
  await expect(finalDough(page)).not.toContainText('Fresh yeast');
