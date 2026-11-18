@@ -60,9 +60,14 @@ export function normalizeStarterFeedRecords(value:unknown):StarterFeedRecord[] {
 }
 export function overdueStarterFeed<T extends {kind:string;time:Date}>(events:T[],records:StarterFeedRecord[],now:number) {
   // A feed planned before the last recorded one is behind the baker: never asked again (18 Nov 2026 retention).
+  // Like the mix question, a feed is asked only from its time until the plan's next step: unanswered by then,
+  // the plan is assumed followed and the question goes (owner's rule A, 18 Nov 2026 retention round 3).
   const lastFed=Math.max(-Infinity,...records.map(record=>record.actualAt));
-  return events.filter(event=>['refresh','intermediate_refresh','pre_mix'].includes(event.kind)&&+event.time<=now&&+event.time>lastFed
-    &&!records.some(record=>record.kind===event.kind&&(record.plannedAt===+event.time||record.actualAt===+event.time))).sort((a,b)=>+a.time-+b.time)[0];
+  const due=events.filter(event=>['refresh','intermediate_refresh','pre_mix'].includes(event.kind)&&+event.time<=now&&+event.time>lastFed
+    &&!records.some(record=>record.kind===event.kind&&(record.plannedAt===+event.time||record.actualAt===+event.time))).sort((a,b)=>+b.time-+a.time)[0];
+  if(!due)return undefined;
+  const next=events.filter(event=>+event.time>+due.time).sort((a,b)=>+a.time-+b.time)[0];
+  return next&&+next.time<=now?undefined:due;
 }
 
 /**
