@@ -8,6 +8,9 @@ const {utils}=require('./load-production.cjs');
 // the bake) falls inside it. Without the block the exit moves with the bake. Either way the final proof
 // stays within the engine's bound for a cold-retarded dough at 20 °C (3.5 h before preheat), and the
 // yeast is dosed for the longer room-temperature time.
+// Round 4 (18 Nov 2026, owner): Bake again now passes the previous plan's exit lead (exitLeadMin), and the
+// exit moves to 7:00Z with the same 3 h when free: tests/retention-round4-engine.test.cjs. Without it (a new
+// plan, as here) the engine's own exit, the end of the night, stands.
 const H=3600000,d=s=>new Date(s+'Z');
 const nights=offsetDays=>[19,20,21].map(day=>({label:'night',from:new Date(+d(`2026-11-${day}T22:00`)+offsetDays*24*H),to:new Date(+d(`2026-11-${day+1}T06:00`)+offsetDays*24*H)}));
 const plan=(mix,bake,blocks,n)=>utils.buildSchedule(d(mix),d(bake),blocks,20,45,'hand','baguette',n,1,false);

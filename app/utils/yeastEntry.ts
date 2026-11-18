@@ -8,7 +8,7 @@ export const MAX_ENTERED_IDY_PCT = 2;
 export interface YeastEntryInput {
   bake: Date; now: number; blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number;
   mixerType: MixerType; styleKey: string; numItems: number; itemWeight: number;
-  mixingBatches: number; fridgeTemp: number; hydration: number;
+  mixingBatches: number; fridgeTemp: number; hydration: number; exitLeadMin?: number;
   /** Same multiplier the scheduler applies to the entered amount. */
   flourStrength: number;
   /** IDY → the baker's yeast (1 instant, 1.33 active dry, 3 fresh). */
@@ -39,7 +39,7 @@ export function checkYeastEntry(idyPct: number, o: YeastEntryInput): YeastEntryC
   const availableH = (+o.bake - earliest) / HOUR;
   const timing = { bake: o.bake, blocks: o.blocks, kitchenTemp: o.kitchenTemp, preheatMin: o.preheatMin, mixerType: o.mixerType,
     styleKey: o.styleKey, numItems: o.numItems, itemWeight: o.itemWeight, mixingBatches: o.mixingBatches,
-    fridgeTemp: o.fridgeTemp, hydration: o.hydration };
+    fridgeTemp: o.fridgeTemp, hydration: o.hydration, exitLeadMin: o.exitLeadMin };
   const hoursFor = (idy: number) => fermentationHoursForYeast(idy * o.flourStrength, timing);
   const fitsFor = (idy: number) => { const h = hoursFor(idy); return h !== null && h <= availableH; };
   const neededH = hoursFor(idyPct);

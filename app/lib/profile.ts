@@ -2,6 +2,7 @@
 // Supabase sync is a post-launch follow-up (see supabase/migrations note).
 // Types only from toppingTypes — no data imports (keeps this leaf-level).
 import type { Pizza, Ingredient, IngredientUnit, BakeOrder, OvenTempTag, IngredientCategory, StyleKey } from './toppingTypes';
+import type { FlourBlend } from '../data';
 
 const PROFILE_KEY = 'bh_profile_v1';
 
@@ -144,7 +145,11 @@ export function deleteCustomPizza(id: string): void {
 // carry to the next one, like the kitchen and fridge (17 Nov 2026 retention review). Kept on this
 // device beside the profile; the profile, when it names them, still wins.
 const LAST_EQUIPMENT_KEY = 'bh_last_equipment_v1';
-export interface LastEquipment { ovenPizza?: string; ovenBread?: string; mixer?: string; yeast?: string }
+export interface LastEquipment {
+  ovenPizza?: string; ovenBread?: string; mixer?: string; yeast?: string;
+  /** The kitchen and the flour of the last recipe (flour by family) carry over too (18 Nov 2026 retention round 4). */
+  kitchenTemp?: number; fridgeTemp?: number; flourPizza?: FlourBlend; flourBread?: FlourBlend;
+}
 export function loadLastEquipment(): LastEquipment {
   if (typeof window === 'undefined') return {};
   try {
@@ -152,13 +157,16 @@ export function loadLastEquipment(): LastEquipment {
     return value && typeof value === 'object' ? value : {};
   } catch { return {}; }
 }
-export function rememberLastEquipment({bakeType, oven, mixer, yeast}: {bakeType: string | null; oven: string | null; mixer: string | null; yeast: string | null}): void {
+export function rememberLastEquipment({bakeType, oven, mixer, yeast, kitchenTemp, fridgeTemp, flour}: {bakeType: string | null; oven: string | null; mixer: string | null; yeast: string | null; kitchenTemp?: number | null; fridgeTemp?: number | null; flour?: FlourBlend | null}): void {
   if (typeof window === 'undefined' || !bakeType) return;
   try {
     const next: LastEquipment = {...loadLastEquipment()};
     if (oven) next[bakeType === 'bread' ? 'ovenBread' : 'ovenPizza'] = oven;
     if (mixer) next.mixer = mixer;
     if (yeast) next.yeast = yeast;
+    if (typeof kitchenTemp === 'number' && Number.isFinite(kitchenTemp)) next.kitchenTemp = kitchenTemp;
+    if (typeof fridgeTemp === 'number' && Number.isFinite(fridgeTemp)) next.fridgeTemp = fridgeTemp;
+    if (flour && typeof flour === 'object' && flour.flour1) next[bakeType === 'bread' ? 'flourBread' : 'flourPizza'] = flour;
     localStorage.setItem(LAST_EQUIPMENT_KEY, JSON.stringify(next));
   } catch {}
 }

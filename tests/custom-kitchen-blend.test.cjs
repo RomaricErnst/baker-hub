@@ -5,14 +5,14 @@ const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
 const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 function fn(name){let found;function visit(n){if(ts.isFunctionDeclaration(n)&&n.name?.text===name)found=n.getText(tree);ts.forEachChild(n,visit);}visit(tree);return ts.transpileModule(found,{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;}
 test('new Custom bake confirms kitchen even when profile supplies all equipment',()=>{
- const context={styleKey:'neapolitan',ovenType:'home_oven_standard',mixerType:'hand',customKitchenConfirmed:false,flourChosen:false,archivedFlourNames:[],isUnleavened:false,yeastType:'instant'};
+ const context={styleKey:'neapolitan',ovenType:'home_oven_standard',mixerType:'hand',customKitchenConfirmed:false,flourChosen:false,flourAnswered:false,archivedFlourNames:[],isUnleavened:false,yeastType:'instant'};
  assert.equal(vm.runInNewContext(fn('firstIncompleteStep')+'firstIncompleteStep(true)',context),3);
  context.customKitchenConfirmed=true;
  assert.equal(vm.runInNewContext(fn('firstIncompleteStep')+'firstIncompleteStep(true)',context),6);
 });
 test('equipment leads on to the next Custom step and settles the kitchen (Fridge & water is in Fine-tune since 14 Nov 2026)',()=>{
  let next,confirmed=false;
- const context={styleKey:'neapolitan',customKitchenConfirmed:false,advancedHighestStep:10,CUSTOM_STEPS:[],flourChosen:false,archivedFlourNames:[],markStepSettled:()=>{},nextUnanswered:()=>6,setAdvancedStep:v=>next=v,setAdvancedHighestStep:()=>{},setCustomKitchenConfirmed:v=>confirmed=v,suppressNextScrollRef:{current:false},scrollToStepTop:()=>{}};
+ const context={styleKey:'neapolitan',customKitchenConfirmed:false,advancedHighestStep:10,CUSTOM_STEPS:[],flourChosen:false,flourAnswered:false,archivedFlourNames:[],markStepSettled:()=>{},nextUnanswered:()=>6,setAdvancedStep:v=>next=v,setAdvancedHighestStep:()=>{},setCustomKitchenConfirmed:v=>confirmed=v,suppressNextScrollRef:{current:false},scrollToStepTop:()=>{}};
  vm.runInNewContext(fn('nextCustomStep')+fn('advanceAdv')+'advanceAdv(3)',context);assert.equal(next,6);assert.equal(confirmed,true);
 });
 test('blend suggestions have a purpose, vary by style and do not strengthen already strong flour',()=>{

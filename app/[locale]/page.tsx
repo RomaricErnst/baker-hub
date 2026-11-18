@@ -62,7 +62,7 @@ import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
 import { archivedBlendSelections } from '../lib/flourRecovery';
 import { flourShoppingName } from '../lib/flourGuidance';
 import { clockMark } from '../utils/guideProgress';
-import { ovenBusyMinutes, bakeEndAt, ovenClash, nextFreeOvenShift, type OvenUse } from '../utils/ovenWindow';
+import { ovenBusyMinutes, bakeEndAt, ovenClash, nextFreeOvenShift, ovenBusyClause, type OvenUse } from '../utils/ovenWindow';
 import { recordGeneratedBake, refreshCurrentJournalSnapshot, forgetCurrentJournalBake, setCurrentJournalId, currentJournalId, getJournalEntry, dueJournalEntry, liveJournalBakes, guidePlanSnapshot, type JournalEntry, type LiveJournalBake } from '../lib/localJournal';
 import { deleteJournalPhotos } from '../lib/journalPhotos';
 import { archiveLocalBake, preservePreviousBake, acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, normalizeFlourTarget, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
@@ -84,10 +84,11 @@ import {
 import {
   buildSchedule, calculateRecipe, formatTime, requiredPrefWarmupH, requiredPrefCooldownH,
   type AvailabilityBlock, type ScheduleResult,
-  starterBulkFactor, raisedLevainFits, referenceStarterPct, prefTempAfterWarmup, sourdoughBulkH, hasCoherentScheduleShape,
+  starterBulkFactor, raisedLevainFits, referenceStarterPct, prefTempAfterWarmup, sourdoughBulkH, hasCoherentScheduleShape, withLongerPreheat,
 } from '../utils';
+import { exitLeadFor, normalizeExitLead, planExitLead, type ExitLead } from '../utils/exitLead';
 import { getBreadProtocol } from '../utils/breadProfiles';
-import { breadNoun } from '../utils/breadNames';
+import { breadNoun, bakeSubject } from '../utils/breadNames';
 import { buildItems } from '@/app/components/Timeline';
 
 
@@ -1263,6 +1264,8 @@ export default function Home() {
   // Bake again: what the baker wrote last time, shown once on the new recipe (16 Nov retention review).
   const [previousNote, setPreviousNote] = useState('');
   const [preheatExtraMin, setPreheatExtraMin] = useState(0);
+  // Bake again keeps the time the dough spent out of the fridge last time (exitLead.ts).
+  const [exitLead, setExitLead] = useState<ExitLead | undefined>(undefined);
   const [preheatEdit, setPreheatEdit] = useState(false);
   const pendingPreviousNote = useRef('');
   useEffect(() => {
@@ -1647,7 +1650,7 @@ export default function Home() {
     setKitchenTemp(session.kitchenTemp);
     setCustomKitchenConfirmed(session.customKitchenConfirmed ?? true);
     setHumidity(session.humidity);
-    setFridgeTemp(session.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(session.waterSource ?? '') ? session.waterSource! : 'room'); setMeasuredWaterTemp(session.measuredWaterTemp); setWaterMethod(session.waterMethod ?? (session.mixerType==='spiral'?'direct':'premelt')); setSpiralIceConfirmed(session.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(session.mixingBatches)); setCustomMixerCapacityG(session.mixerCapacityG); setResultNotes((session.resultNotes ?? '')); setPreviousNote(session.previousNote ?? ''); setPreheatExtraMin(Math.max(0, Math.min(120, session.preheatExtraMin ?? 0))); setContainerCapacityLitres(session.containerCapacityLitres);
+    setFridgeTemp(session.fridgeTemp); setWaterSource(['room','fridge','tap','measured'].includes(session.waterSource ?? '') ? session.waterSource! : 'room'); setMeasuredWaterTemp(session.measuredWaterTemp); setWaterMethod(session.waterMethod ?? (session.mixerType==='spiral'?'direct':'premelt')); setSpiralIceConfirmed(session.spiralIceConfirmed ?? false); setMixingBatches(normalizeMixingBatches(session.mixingBatches)); setCustomMixerCapacityG(session.mixerCapacityG); setResultNotes((session.resultNotes ?? '')); setPreviousNote(session.previousNote ?? ''); setPreheatExtraMin(Math.max(0, Math.min(120, session.preheatExtraMin ?? 0))); setExitLead(normalizeExitLead(session.exitLead)); setContainerCapacityLitres(session.containerCapacityLitres);
     if (session.flourBlend) setFlourBlend(session.flourBlend as FlourBlend);
     setPrefermentType(session.prefermentType as PrefermentType);
     // Absent means UNSETTLED, not settled. The `?? true` this replaces was
@@ -1971,7 +1974,12 @@ export default function Home() {
     : undefined;
   const basePreheatMin = bakeType === 'bread' ? leanBreadPreheatMin(styleKey ?? undefined, ovenType ?? undefined, ovenData?.preheatMin ?? 30) : ovenData?.preheatMin ?? 30;
   // A longer preheat the baker chose on the plan (after "more preheat" last time): only ever longer.
+  // It moves the Preheat step alone: the dough's times are planned with the oven's own preheat
+  // (planPreheatMin), so a longer preheat never lengthens the final rise (18 Nov 2026 retention
+  // round 4, Maya: preheat 7:00 → 6:30 moved the take-out 5:30 → 5:00 at 30 °C).
   const preheatMin = basePreheatMin + preheatExtraMin;
+  const planPreheatMin = basePreheatMin;
+  const exitLeadMin = exitLeadFor(exitLead, kitchenTemp, styleKey);
 
   const hasNightBlocker = blocks.some(b =>
     b.label.toLowerCase().includes('night') || b.from.getHours() >= 22 || b.to.getHours() <= 7
@@ -2008,6 +2016,11 @@ export default function Home() {
   const effectiveStarterOverride = yeastType === 'sourdough' ? starterPctOverride ?? autoStarterPct : undefined;
   // One multiplier, used by every schedule build and the sourdough solver alike.
   // The blend the recipe uses (a blend style's own flours until the baker chooses one).
+  // Customize after a Simple recipe keeps the flour that recipe was made with (the style's
+  // default, unnamed) as the answer: Update recipe does not send the baker to Flour, and the
+  // recipe keeps its numbers (18 Nov 2026 retention round 4: 77 % → 78 % water, starter
+  // 110 → 100 g once a flour was asked for). Choosing a flour still changes them, by choice.
+  const flourAnswered = flourChosen || confirmed('flour','recipe');
   const flourStrength = recipeFlourStrength(styleKey ?? '', 'custom', flourChosen ? flourBlend : undefined);
   const levainBulkFactor = starterBulkFactor(effectiveStarterOverride, kitchenTemp, flourStrength);
   const handleAutoStarterPct = React.useCallback((pct: number | null) => setAutoStarterPct(pct ?? undefined), []);
@@ -2040,7 +2053,7 @@ export default function Home() {
   const plannedDoughG = (() => {
     // Flour-target recipes need the same formula mass as the generated recipe.
     if(totalFlourTarget!==undefined && styleKey && ovenType && yeastType && mixerType && eatTime && startTime<eatTime){
-      try { return recipeForSchedule(buildSchedule(startTime,eatTime,blocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,1,yeastType==='sourdough',levainBulkFactor)).totalDough; } catch { /* Quantity estimate until setup is complete. */ }
+      try { return recipeForSchedule(buildSchedule(startTime,eatTime,blocks,kitchenTemp,planPreheatMin,mixerType,styleKey,numItems,1,yeastType==='sourdough',levainBulkFactor,exitLeadMin)).totalDough; } catch { /* Quantity estimate until setup is complete. */ }
     }
     return Math.round(numItems * itemWeight * (totalFlourTarget === undefined && wastePct && wastePct > 0 ? 1 + wastePct / 100 : 1));
   })();
@@ -2062,7 +2075,7 @@ export default function Home() {
     // retard at all — two different doughs on one screen, neither of them the
     // baker's. The recipe already refused without a style; now everything does.
     if (!styleKey) return null;
-    const plan = buildSchedule(startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches, (yeastType==='sourdough'||prefermentType==='levain'), levainBulkFactor);
+    const plan = buildSchedule(startTime, eatTime, blocks, kitchenTemp, planPreheatMin, mixerType, styleKey, numItems, selectedMixingBatches, (yeastType==='sourdough'||prefermentType==='levain'), levainBulkFactor, exitLeadMin);
     const cooldown = requiredPrefCooldownH({...poolishInputs, prefermentType:prefermentType ?? 'none',
       prefInFridge:prefGoesInFridgeState, styleKey, kitchenTemp, fridgeTemp, mixerType});
     const action = prefermentConditioningAction({prefWarmupHours:0, prefCooldownHours:cooldown},startTime);
@@ -2070,8 +2083,8 @@ export default function Home() {
       plan.prefermentCooldownHours = cooldown;
       plan.availabilityActions = [...(plan.availabilityActions ?? []), action].sort((a,b)=>+a.at-+b.at);
     }
-    return plan;
-  }, [startTime, eatTime, blocks, kitchenTemp, preheatMin, mixerType, styleKey, numItems, selectedMixingBatches, yeastType, prefermentType, prefermentFlourPct, itemWeight, manualHydration, measuredFlourTemp, flourInFridge, targetDoughTemp, fridgeTemp, prefGoesInFridgeState, prefOffsetH, levainBulkFactor]);
+    return withLongerPreheat(plan, eatTime, preheatExtraMin, blocks);
+  }, [startTime, eatTime, blocks, kitchenTemp, planPreheatMin, preheatExtraMin, exitLeadMin, mixerType, styleKey, numItems, selectedMixingBatches, yeastType, prefermentType, prefermentFlourPct, itemWeight, manualHydration, measuredFlourTemp, flourInFridge, targetDoughTemp, fridgeTemp, prefGoesInFridgeState, prefOffsetH, levainBulkFactor]);
 
   // Confirmation belongs to this exact committed action, never to a work preset.
   useEffect(() => {
@@ -2099,7 +2112,7 @@ export default function Home() {
   // Explicitly accepted proposals must survive the scheduler's bake-key remount.
   // Any changed recipe input, timestamp or availability invalidates this marker.
   const repairKey = (st: Date, et: Date | null, bl: AvailabilityBlock[], offset = prefOffsetH, storage = prefGoesInFridge, resetKey = starterPlanResetKey) =>
-    JSON.stringify([[kitchenTemp, fridgeTemp, preheatMin, mixerType, styleKey,
+    JSON.stringify([[kitchenTemp, fridgeTemp, planPreheatMin, exitLeadMin, mixerType, styleKey,
       yeastType, prefermentType, offset, storage, tang, resetKey],
       +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label, b.fridgeRemoval,b.coveredActions,b.bakeFromFridge])]);
   const confirmedSchedulePlan = acceptedScheduleRepair === repairKey(startTime, eatTime, blocks);
@@ -2109,7 +2122,7 @@ export default function Home() {
       if(options?.prefInFridge!==undefined&&options.prefInFridge!==execution.inFridge)return;
       const offset=options?.prefOffsetHours??prefOffsetH;
       if(execution.method==='none'?+st!==execution.actualAt:Math.abs(+st-offset*3600000-execution.actualAt)>1)return;
-      if((+st!==+startTime||+et!==+(eatTime??0)||offset!==prefOffsetH)&&!madeFormulaMatches(execution,buildSchedule(st,et,bl,kitchenTemp,preheatMin,mixerType??'hand',styleKey??'',numItems,selectedMixingBatches,yeastType==='sourdough',levainBulkFactor),{prefHours:offset}))return;
+      if((+st!==+startTime||+et!==+(eatTime??0)||offset!==prefOffsetH)&&!madeFormulaMatches(execution,buildSchedule(st,et,bl,kitchenTemp,planPreheatMin,mixerType??'hand',styleKey??'',numItems,selectedMixingBatches,yeastType==='sourdough',levainBulkFactor,exitLeadMin),{prefHours:offset}))return;
     }
     if (eatTime && +et!==+eatTime && bl.some(block=>block.coveredActions?.length)) {
       bl=bl.map(({coveredActions,...block})=>block);
@@ -2335,7 +2348,8 @@ export default function Home() {
       const other=row.entry;if(other.id===own||other.eatTime==null)continue;
       const ses=other.session;
       const to=ses.ovenTo??other.eatTime+ovenBusyMinutes(other.bakeType,other.styleKey,other.numItems,ses.ovenType)*60000;
-      uses.push({id:other.id,from:ses.ovenFrom??other.eatTime-30*60000,to,ovenType:ses.ovenType??null,name:other.bakeName||styleDisplayName(other.styleKey)});
+      const subject=other.bakeName?null:bakeSubject(other.styleKey,other.numItems,fr,other.bakeType);
+      uses.push({id:other.id,from:ses.ovenFrom??other.eatTime-30*60000,to,ovenType:ses.ovenType??null,name:other.bakeName||styleDisplayName(other.styleKey),...(subject?{subject:subject.text,plural:subject.plural}:{})});
     }}catch{}
     return uses;
   }
@@ -2352,7 +2366,7 @@ export default function Home() {
             <div role="dialog" aria-modal="true" aria-labelledby="bh-oven-sheet-title" style={{width:'100%',maxWidth:560,maxHeight:'85vh',overflowY:'auto',background:'var(--cream)',borderRadius:'18px 18px 0 0',padding:'18px 16px calc(18px + env(safe-area-inset-bottom, 0px))',boxShadow:'0 -4px 24px rgba(43,36,32,0.18)'}}>
               <h2 id="bh-oven-sheet-title" style={{margin:'0 0 4px',fontSize:19,fontWeight:700,color:'var(--char)'}}>{fr?'Avant votre recette':'Before your recipe'}</h2>
               <div className="bh-simple-decision" role="status" style={{border:'1px solid var(--border)',borderRadius:12,padding:'14px 16px',margin:'12px 0',background:'var(--warm)'}}>
-                <p style={{margin:'0 0 12px',fontSize:15,lineHeight:1.5,color:'var(--char)'}}>{fr?`${other.name??'Votre autre fournée'} : le four est pris de ${at(other.from)} à ${at(other.to)}.`:`${other.name??'Your other bake'} is in the oven ${at(other.from)}–${at(other.to)}.`}</p>
+                <p style={{margin:'0 0 12px',fontSize:15,lineHeight:1.5,color:'var(--char)'}}>{ovenBusyClause(other,fr,at)}.</p>
                 {ovenOffer.shift>0&&<button type="button" className="bh-plan-option" data-oven-slot style={optionCard} onClick={()=>{ovenSlotPending.current=slot;setOvenOffer(null);setEatTime(new Date(slot));}}>
                   <strong style={{display:'block'}}>{fr?`Enfourner à ${at(slot)}`:`Bake at ${at(slot)}`}</strong>
                 </button>}
@@ -2368,7 +2382,7 @@ export default function Home() {
     return {
       tab, bakeType, bakeName, styleKey, numItems, itemWeight, totalFlourTarget, pizzaDiameter,
       ovenType, ovenConstruction, mixerType, yeastType,
-      kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, mixerCapacityG: customMixerCapacityG, resultNotes, previousNote, preheatExtraMin, containerCapacityLitres, humidity, fridgeTemp,
+      kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, mixerCapacityG: customMixerCapacityG, resultNotes, previousNote, preheatExtraMin, exitLead, planExitLead: planExitLead(schedule, kitchenTemp, styleKey), containerCapacityLitres, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, timingOverrides, execution, mixExecution, starterFeedRecords, starterRecoveryPending,
       qtyChosen, flourChosen, prefermentChosen, customKitchenConfirmed, confirmedSettings,
       manualHydration, manualOil, manualSugar, manualSalt, yeastPctOverride, starterPctOverride, autoStarterPct,
@@ -2472,7 +2486,7 @@ export default function Home() {
   // A levain dough already mixed: whether its remaining steps still fit before the fixed bake.
   function sourdoughDoughFitsFrom(mix:Date) {
     if(!eatTime||!styleKey||!mixerType||+mix>=+eatTime)return false;
-    const plan=buildSchedule(mix,eatTime,blocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,selectedMixingBatches,true,levainBulkFactor);
+    const plan=buildSchedule(mix,eatTime,blocks,kitchenTemp,planPreheatMin,mixerType,styleKey,numItems,selectedMixingBatches,true,levainBulkFactor,exitLeadMin);
     // Its hands-on steps from now on must stay out of the busy times (a midnight shaping is a clash).
     return +plan.bakeStart===+eatTime&&hasCoherentScheduleShape(plan,mix)&&!plan.bulkConflict
       &&!findAvailabilityConflicts(planActions(plan.availabilityActions??[],[],+mix),blocks,Date.now()).length;
@@ -2482,7 +2496,7 @@ export default function Home() {
     if(!eatTime||!styleKey||!mixerType||+mix<=Date.now()||+mix>=+eatTime)return false;
     const minH=Math.max(1,(STYLE_FERM_DEFAULTS[styleKey]?.minTotalFermH??4)+sourdoughBulkH(styleKey,kitchenTemp)*(levainBulkFactor-1));
     if(+eatTime-+mix<minH*3600000)return false;
-    const plan=buildSchedule(mix,eatTime,blocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,selectedMixingBatches,true,levainBulkFactor);
+    const plan=buildSchedule(mix,eatTime,blocks,kitchenTemp,planPreheatMin,mixerType,styleKey,numItems,selectedMixingBatches,true,levainBulkFactor,exitLeadMin);
     return +plan.bakeStart===+eatTime&&hasCoherentScheduleShape(plan,mix)&&!plan.preparationInvalid&&!plan.bulkConflict;
   }
   // "Step done" on a feed: the plan's own time, nothing re-timed, no time shown; the plan assumes the feed was done
@@ -2577,7 +2591,7 @@ export default function Home() {
     const actual:BakeExecution=execution?{...execution,actualAt:at,recordedAt,stated}:{method:commercialMethod,actualAt:at,recordedAt,stated,inFridge:prefGoesInFridge,prefHours:prefOffsetH,prefWindow:commercialPrefermentWindow(commercialMethod,prefGoesInFridge,kitchenTemp,styleKey??'',fridgeTemp),recipe};
     const mix=commercialMethod==='none'?new Date(at):startTime;
     const nextOffset=commercialMethod==='none'?0:(+mix-at)/3600000;
-    const remainingValid=!!eatTime&&validateConfirmedBake({...poolishInputs,execution:actual,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength,preheatMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(actual,candidate,times)}).valid;
+    const remainingValid=!!eatTime&&validateConfirmedBake({...poolishInputs,execution:actual,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength,preheatMin:planPreheatMin,exitLeadMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(actual,candidate,times)}).valid;
     // A recorded fact is not a change of choices: no "You changed your choices" card and no trip to setup.
     // A remaining plan that no longer works is said in Preparation, by Adjust timing (17 Nov 2026 retention round 2).
     setExecution(actual);setReplanRequested(false);setStartTime(mix);setPrefOffsetH(nextOffset);setTimingOverrides({});setSessionRestored(true);setScheduleCandidateValid(remainingValid);setExecutionClash(!remainingValid);
@@ -2595,7 +2609,7 @@ export default function Home() {
     const mix=new Date(at),offset=prepared?(at-prepared.actualAt)/3600000:prefOffsetH;
     // Mixed within half an hour of the plan: the plan holds; a few minutes are not a new plan (17 Nov review).
     const onTime=Math.abs(at-+startTime)<=30*60_000&&!!scheduleCandidateValid;
-    const valid=onTime||(prepared?validateConfirmedBake({...poolishInputs,completedMixAt:at,execution:prepared,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength,preheatMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(prepared,candidate,times,actual.recipe)}).valid:yeastType==='sourdough'?sourdoughDoughFitsFrom(mix):at===+startTime&&starterTimingValid&&scheduleCandidateValid);
+    const valid=onTime||(prepared?validateConfirmedBake({...poolishInputs,completedMixAt:at,execution:prepared,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength,preheatMin:planPreheatMin,exitLeadMin,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(prepared,candidate,times,actual.recipe)}).valid:yeastType==='sourdough'?sourdoughDoughFitsFrom(mix):at===+startTime&&starterTimingValid&&scheduleCandidateValid);
     if(prepared)setExecution(prepared);
     // Recording the mix never routes into setup and never gates the guide: the dough exists, the steps that
     // follow are what the baker needs. A plan that no longer fits is said in Preparation (17 Nov 2026 retention round 2).
@@ -2781,6 +2795,15 @@ export default function Home() {
     if (keptOven) { setOvenType(keptOven); confirmSetting('oven',keptOven); markProfile('last'); }
     if (keptMixer) { setMixerType(keptMixer); setWaterMethod(keptMixer==='spiral'?'direct':'premelt'); confirmSetting('mixer',keptMixer); markProfile('last'); }
     if (keptYeast) { setYeastType(keptYeast); confirmSetting('yeast',keptYeast); markProfile('last'); }
+    // The kitchen and the flour of the last recipe carry over like the oven (18 Nov 2026 retention round 4:
+    // a new bake from scratch was back at 22 °C and the generic flour). The profile's fridge still wins below.
+    if (typeof last.kitchenTemp === 'number' && last.kitchenTemp >= 10 && last.kitchenTemp <= 40) {
+      setKitchenTemp(last.kitchenTemp); confirmSetting('climate',last.kitchenTemp); setCustomKitchenConfirmed(true);
+      if (typeof last.fridgeTemp === 'number' && last.fridgeTemp >= 0 && last.fridgeTemp <= 12) setFridgeTemp(last.fridgeTemp);
+    }
+    const lastFlour = bt === 'bread' ? last.flourBread : last.flourPizza;
+    const knownFlour = (key: unknown) => typeof key === 'string' && key in FLOUR_DATA;
+    if (lastFlour && knownFlour(lastFlour.flour1) && (!lastFlour.flour2 || knownFlour(lastFlour.flour2)) && (!lastFlour.flour3 || knownFlour(lastFlour.flour3)) && !archivedBlendSelections(lastFlour).length) { setFlourBlend({...lastFlour}); setFlourChosen(true); }
     // ── Baker profile prefill — bakeType-compatible defaults, always overridable ──
     const prof = loadProfile();
     if (prof) {
@@ -2921,7 +2944,7 @@ export default function Home() {
     // Oven and mixing share the equipment page (3) since A2.
     if (!ovenType || !mixerType) return 3;   // qty (2) + climate (4) have sane defaults
     if (isCustom) {
-      if (!flourChosen || archivedFlourNames.length) return 6;
+      if (!flourAnswered || archivedFlourNames.length) return 6;
       if (showPrefermentChoice && !prefermentChosen) return 8;
       if (!isUnleavened && !yeastType) return 7;       // flour (6) has a default blend
       return 9;                       // preferment (8) defaults to Direct — scheduler is the goal
@@ -3086,6 +3109,7 @@ export default function Home() {
     if (bakeType === 'bread' && sandwichParty.familyId !== nextFamily && Object.values(sandwichParty.qtys).some(q=>q>0)
       && !window.confirm(fr ? 'Changer de pain remplace vos garnitures sélectionnées. Continuer ?' : 'Changing bread replaces your selected fillings. Continue?')) return;
     setStyleKey(sk);
+    if (sk !== styleKey) setConfirmedSettings(previous => previous.filter(item => item !== 'flour=recipe'));
     setSandwichParty(previous => switchSandwichFamily(previous, sandwichFamilyForStyle(sk)));
     // A blend style starts on its own flours; leaving one drops its untouched blend.
     const styleBlend = STYLE_DEFAULT_BLENDS[sk];
@@ -3292,7 +3316,7 @@ export default function Home() {
   // Whether the chosen poolish or biga can still be ready before the bake (see the Preferment step).
   function prefermentTooClose(){
     if(!eatTime||execution||mixExecution||(prefermentType!=='biga'&&prefermentType!=='poolish'))return null;
-    const finalLeadH=(kitchenTemp>=28?0.5:1.5)+1+preheatMin/60;
+    const finalLeadH=(kitchenTemp>=28?0.5:1.5)+1+planPreheatMin/60;
     const needH=(type:'biga'|'poolish')=>Math.min(...[true,false].map(f=>commercialPrefermentWindow(type,f,kitchenTemp,styleKey??'',fridgeTemp)?.min??Infinity))+finalLeadH;
     const leftH=(+eatTime-Date.now())/3600000;
     if(leftH>=needH(prefermentType))return null;
@@ -3336,7 +3360,7 @@ export default function Home() {
     if (from === 8 && !prefermentChosen) return;
     if (from === 3) setCustomKitchenConfirmed(true);
     // Flour is settled only by choosing a product or entering a flour type.
-    if (from === 6 && (!flourChosen || archivedFlourNames.length)) return;
+    if (from === 6 && (!flourAnswered || archivedFlourNames.length)) return;
     markStepSettled(from);
     const next = nextCustomStep(from);
     setAdvancedStep(next);
@@ -3349,7 +3373,7 @@ export default function Home() {
   // recipe stays in Menu → My bakes, and an unfinished setup is quick to redo.
   const [restartFailed, setRestartFailed] = useState(false);
   function startRecoverableBake(): boolean {
-    setPreviousNote('');setPreheatExtraMin(0);
+    setPreviousNote('');setPreheatExtraMin(0);setExitLead(undefined);
     // Flush live edits before snapshotting; never accept a conflicting tab's draft.
     try { if (bakeType) refreshCurrentJournalSnapshot(buildSessionPayload()); } catch {}
     if ((bakeType && !saveSession(buildSessionPayload())) || !preservePreviousBake()) {
@@ -3573,7 +3597,7 @@ export default function Home() {
       if (tab === 'custom') setAdvancedStep(next); else setActiveStep(next);
       scrollToStepTop(); return;
     }
-    if ((tab === 'custom' && !flourChosen) || (flourChosen && archivedFlourNames.length)) {
+    if ((tab === 'custom' && !flourAnswered) || (flourChosen && archivedFlourNames.length)) {
       setActiveTab('setup'); setSetupOverview(false); setTab('custom'); setAdvancedStep(6); scrollToStepTop();
       return;
     }
@@ -3789,6 +3813,8 @@ export default function Home() {
     setPrefermentFlourPct(snap.prefermentFlourPct);
     setPrefOffsetH(snap.prefOffsetH);
     setTimingOverrides(rb ? {} : normalizeTimingOverrides(snap.timingOverrides));
+    // Bake again keeps the time the dough spent out of the fridge last time (when that exit is free).
+    setExitLead(rb ? normalizeExitLead(snap.planExitLead) ?? normalizeExitLead(snap.exitLead) : normalizeExitLead(snap.exitLead));
     setStarterRecoveryPending(!rb&&snap.starterRecoveryPending===true);setStarterFeedRecords(rb?[]:normalizeStarterFeedRecords(snap.starterFeedRecords));setExecution(rb?undefined:normalizeBakeExecution(snap.execution));setMixExecution(rb?undefined:normalizeMixExecution(snap.mixExecution));setReplanRequested(false);
     setManualHydration(snap.manualHydration);
     setManualOil(snap.manualOil);
@@ -3983,13 +4009,13 @@ export default function Home() {
   const archivedFlourNames = archivedBlendSelections(flourBlend);
   const simpleRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && qtyChosen);
   const customRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && flourBlend
-    && qtyChosen && flourChosen && (!showPrefermentChoice || prefermentChosen));
+    && qtyChosen && flourAnswered && (!showPrefermentChoice || prefermentChosen));
   const starterPlanReady = yeastType !== 'sourdough' || (starterTimingValid && (recipeGenerated || starterEvents.length > 0));
   const canGenerate = !schedule?.preparationInvalid && scheduleCandidateValid && !scheduleEditing && !(tab === 'custom' ? advancedRecipe : recipe)?.protocolIssue && commercialPrefermentPlanReady && starterPlanReady && !unsupportedEnrichedMethod && !(flourChosen && archivedFlourNames.length) && (tab === 'simple' ? simpleRequiredDone : customRequiredDone);
   const missingRequiredStep = !bakeType || !styleKey ? 1
     : !numItems || !itemWeight || !qtyChosen ? 2
     : !ovenType || !mixerType ? 3
-    : tab==='custom' && (!flourBlend || !flourChosen) ? 6
+    : tab==='custom' && (!flourBlend || !flourAnswered) ? 6
     : !yeastType ? (tab==='custom'?7:6)
     : tab==='custom' && showPrefermentChoice && !prefermentChosen ? 8
     : !eatTime ? (tab==='custom'?9:7) : undefined;
@@ -4224,7 +4250,7 @@ export default function Home() {
     ? advancedStep
     : advancedStep === 99 ? CUSTOM_LAST
     : showPrefermentChoice && !prefermentChosen ? 8
-    : !flourChosen ? 6 : 10;
+    : !flourAnswered ? 6 : 10;
   useEffect(() => {
     if (tab === 'custom' && activeTab === 'setup' && modeChosen && advancedStep !== 99 && advancedStep !== visibleCustomStep)
       setAdvancedStep(visibleCustomStep);
@@ -4266,7 +4292,7 @@ export default function Home() {
     // for ever and the CTA sends you to the page you just came from.
     onGapReturn: () => {
       if (advancedStep === 1 && !styleKey) return;
-      if (advancedStep === 6 && (!flourChosen || archivedFlourNames.length)) return;
+      if (advancedStep === 6 && (!flourAnswered || archivedFlourNames.length)) return;
       if (advancedStep === 8 && !prefermentChosen) return;
       // Leaving a gap step means the baker has seen it and settled it, so it
       // counts as answered from here on. `find` returns the FIRST unanswered
@@ -4373,9 +4399,10 @@ export default function Home() {
   useEffect(() => {
     if (!recipeGenerated || !bakeType) return;
     rememberLastEquipment({bakeType,oven:ovenPicked&&confirmed('oven',ovenType)?ovenType:null,mixer:mixerPicked&&confirmed('mixer',mixerType)?mixerType:null,
-      yeast:yeastType&&yeastType!=='sourdough'&&confirmed('yeast',yeastType)?yeastType:null});
+      yeast:yeastType&&yeastType!=='sourdough'&&confirmed('yeast',yeastType)?yeastType:null,
+      kitchenTemp:kitchenAnswered?kitchenTemp:null,fridgeTemp,flour:flourChosen&&!archivedFlourNames.length&&!(styleKey&&STYLE_DEFAULT_BLENDS[styleKey])?flourBlend:null});
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recipeGenerated, bakeType, ovenType, mixerType, yeastType, confirmedSettings]);
+  }, [recipeGenerated, bakeType, ovenType, mixerType, yeastType, confirmedSettings, kitchenTemp, fridgeTemp, flourChosen, flourBlend]);
   const equipmentFromProfile = (profileFields.has('oven') && ovenPicked) || (profileFields.has('equip') && mixerPicked);
   const equipmentChoices = <>
     {!compactPiadina && equipmentPanel==='mixer' && ovenPicked && <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:12,fontSize:14}}>
@@ -4598,6 +4625,10 @@ export default function Home() {
   // Starter step and the plan on Bake time. Only one step is mounted at a time.
   // One simple scheduler element, rendered on the bake-time step or, for a step moved from
   // the Recipe's plan, inline there (never both: planEdit unmounts the step's copy).
+  // Another live bake in the same oven: the planner's "Before your recipe" sheet says it with any clash, once.
+  const ovenOthers = eatTime && styleKey ? otherOvenUses() : [];
+  const ovenShare = ovenOthers.length ? {others:ovenOthers, leadMin:preheatMin, busyMin:ovenBusyMinutes(bakeType,styleKey,numItems,ovenType), ovenType:ovenType ?? null} : undefined;
+  const keepOvenAt = (bakeMs:number) => { ovenKept.current = bakeMs; };
   const renderSimpleScheduler = (extra?: {planInline?: {focus:'mix'|'pref';applyLabel:string;onClose:()=>void};planChart?:boolean}) => (
               <SchedulePicker {...extra} inputsOnly={!extra?.planInline&&!extra?.planChart&&(collectingBakeTime||bakeTimeOnly)} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct} keptStarterPlan={starterFactsKept} holdStarterPct={starterFactsKept&&starterPctOverride===undefined&&autoStarterPct!=null}
                 {...poolishInputs}
@@ -4618,7 +4649,7 @@ export default function Home() {
                 confirmedPlan={confirmedSchedulePlan}
                 timingOverrides={timingOverrides}
                 startTime={startTime} eatTime={eatTime} blocks={blocks}
-                preheatMin={preheatMin}
+                preheatMin={planPreheatMin} preheatExtraMin={preheatExtraMin} exitLeadMin={exitLeadMin} ovenShare={ovenShare} onOvenKept={keepOvenAt}
                 styleKey={styleKey ?? ''}
                 kitchenTemp={kitchenTemp}
                 fridgeTemp={fridgeTemp}
@@ -4702,7 +4733,7 @@ export default function Home() {
                 confirmedPlan={confirmedSchedulePlan}
                 timingOverrides={timingOverrides}
                 startTime={startTime} eatTime={eatTime} blocks={blocks}
-                preheatMin={preheatMin}
+                preheatMin={planPreheatMin} preheatExtraMin={preheatExtraMin} exitLeadMin={exitLeadMin} ovenShare={ovenShare} onOvenKept={keepOvenAt}
                 styleKey={styleKey ?? ''}
                 kitchenTemp={kitchenTemp}
                 fridgeTemp={fridgeTemp}
@@ -5279,7 +5310,7 @@ export default function Home() {
                 modeChip={{ value: 'simple', onClick: () => { chooseMode('custom'); if(recipeGenerated){
                   // The recipe was made with this oven and kneading: the Equipment step shows them chosen,
                   // as its row does (18 Nov 2026 retention: "Standard home oven" in the row, nothing selected on the step).
-                  if(ovenType)confirmSetting('oven',ovenType);if(mixerType)confirmSetting('mixer',mixerType);setAdvancedHighestStep(h=>Math.max(h,CUSTOM_LAST)); setSetupOverview(true);} else {setCustomBakeQuestion(true); setSetupOverview(false);} scrollToStepTop(); } }}
+                  if(ovenType)confirmSetting('oven',ovenType);if(mixerType)confirmSetting('mixer',mixerType);if(!flourChosen)confirmSetting('flour','recipe');setAdvancedHighestStep(h=>Math.max(h,CUSTOM_LAST)); setSetupOverview(true);} else {setCustomBakeQuestion(true); setSetupOverview(false);} scrollToStepTop(); } }}
                 hideSuggested
                 onJump={id => { setSetupOverview(false); if(id===7)setBakeTimeQuestion(true); simpleFlow.onJump(id); }}
                 returnLabel={recipeGenerated?setupReturnLabel:undefined}
@@ -5706,7 +5737,7 @@ export default function Home() {
 
 
             {/* ─── ADV STEP 7: Flour ───────────────── */}
-            <StepPage flow={customOrganisationFlow} id={6} nextOverride={manualFlourEntry ? null : !flourChosen || archivedFlourNames.length ? <><p data-flour-hint className={archivedFlourNames.length?undefined:'bh-visually-hidden'} style={{gridColumn:'1/-1',order:-1,margin:0,fontSize:14,color:'var(--smoke)',textAlign:'center'}}>{archivedFlourNames.length?(fr?'Remplacez la farine qui n’est plus proposée pour continuer.':'Replace the flour that is no longer listed to continue.'):(fr?'Choisissez une farine pour continuer.':'Choose a flour to continue.')}</p><button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{(CUSTOM_STEPS.find(step=>step.id===nextCustomStep(6))?.chip ?? (fr ? 'Suivant' : 'Next'))} →</button></> : undefined}>
+            <StepPage flow={customOrganisationFlow} id={6} nextOverride={manualFlourEntry ? null : !flourAnswered || archivedFlourNames.length ? <><p data-flour-hint className={archivedFlourNames.length?undefined:'bh-visually-hidden'} style={{gridColumn:'1/-1',order:-1,margin:0,fontSize:14,color:'var(--smoke)',textAlign:'center'}}>{archivedFlourNames.length?(fr?'Remplacez la farine qui n’est plus proposée pour continuer.':'Replace the flour that is no longer listed to continue.'):(fr?'Choisissez une farine pour continuer.':'Choose a flour to continue.')}</p><button data-bh-forward type="button" disabled style={{...NEXT_CTA,opacity:0.55,cursor:'default'}}>{(CUSTOM_STEPS.find(step=>step.id===nextCustomStep(6))?.chip ?? (fr ? 'Suivant' : 'Next'))} →</button></> : undefined}>
               <FlourPicker
                 onManualEntryChange={setManualFlourEntry}
                 blend={flourBlend}
@@ -5907,7 +5938,7 @@ export default function Home() {
                           aria-describedby={entryIssue?'bh-yeast-entry-note':undefined}
                           onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const idy=Math.min(2,Math.max(0.02,n/conversion));if(recipe?.yeast&&yeastPctOverride===undefined&&Math.abs(idy-recipe.yeast.pct)<0.0005){setYeastEntryIssue(null);return;}
                             // An amount that cannot ferment before the bake is not applied: say so here, before any plan moves.
-                            const check=eatTime&&+eatTime>Date.now()&&styleKey&&mixerType?checkYeastEntry(Math.round(idy*10000)/10000,{bake:eatTime,now:Date.now(),blocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,itemWeight,mixingBatches:selectedMixingBatches,fridgeTemp,hydration:poolishInputs.hydrationPct??65,flourStrength,conversion}):null;
+                            const check=eatTime&&+eatTime>Date.now()&&styleKey&&mixerType?checkYeastEntry(Math.round(idy*10000)/10000,{bake:eatTime,now:Date.now(),blocks,kitchenTemp,preheatMin:planPreheatMin,exitLeadMin,mixerType,styleKey,numItems,itemWeight,mixingBatches:selectedMixingBatches,fridgeTemp,hydration:poolishInputs.hydrationPct??65,flourStrength,conversion}):null;
                             if(check&&!check.fits){setYeastEntryIssue({shownPct:Math.round(idy*conversion*1000)/1000,bakeAt:+eatTime!,check});return;}
                             setYeastEntryIssue(null);setYeastPctOverride(Math.round(idy*10000)/10000);setPlanReplanPending(true);}}
                           style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />

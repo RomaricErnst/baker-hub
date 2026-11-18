@@ -51,6 +51,18 @@ export function breadOvenQuestion(styleKey: string | null | undefined, count: nu
     : `When will the ${name.en[plural]} go into the oven?`;
 }
 
+/** The other bake named as the subject of a sentence, with its number: "Les baguettes" (plural),
+ *  "La brioche", "Les pizzas"; a name the baker gave stays as written (singular). Null when the
+ *  style has no noun of its own (18 Nov 2026 retention round 4: "Baguette occupe" for 3 baguettes). */
+export function bakeSubject(styleKey: string | null | undefined, count: number, fr: boolean, bakeType?: string | null): {text: string; plural: boolean} | null {
+  const plural = count > 1 ? 1 : 0;
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  if (bakeType === 'pizza') return {text: fr ? (plural ? 'Les pizzas' : 'La pizza') : (plural ? 'The pizzas' : 'The pizza'), plural: !!plural};
+  const name = styleKey ? NAMES[styleKey] : undefined;
+  if (!name) return null;
+  return {text: fr ? cap(`${name.frArticle[plural]} ${name.fr[plural]}`) : `The ${name.en[plural]}`, plural: !!plural};
+}
+
 /** Eggs are weighed without shells; a count helps the shopping and the bowl. */
 export function eggCountLabel(grams: number, fr: boolean): string {
   const lo = Math.max(1, Math.floor(grams / 50)), hi = Math.max(1, Math.ceil(grams / 50));

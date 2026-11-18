@@ -30,10 +30,15 @@ test('Thursday balling is repaired independently of genuinely blocked Friday fin
  assert.ok(conflicts.includes('preheat'));
  assert.equal(validateScheduleCandidate(i).valid,false,'partial repair must not turn the whole schedule green');
  assert.equal(+s.bakeStart,+i.bake);
- assert.equal(+s.coldRetard2End,+baseline.coldRetard2End);
+ // Round 4 (18 Nov 2026, owner): the final exit that must fall in busy time is the latest workable
+ // one (15:30Z: warm-up and shortest final proof before the 17:15Z preheat), not the free plan's.
+ assert.equal(+s.coldRetard2End,+date('2026-10-30T15:30Z'));
+ assert.ok(+s.coldRetard2End>+baseline.coldRetard2End);
  // A sub-hour first fridge leg is now kept warm; the exposure must move
  // between phase totals rather than disappear.
- assert.ok(baseline.totalColdHours-s.totalColdHours>=0 && baseline.totalColdHours-s.totalColdHours<1);
+ // (The later exit adds its own cold time; compare without it.)
+ const laterExitH=(+s.coldRetard2End-+baseline.coldRetard2End)/H;
+ assert.ok(baseline.totalColdHours-(s.totalColdHours-laterExitH)>=0 && baseline.totalColdHours-(s.totalColdHours-laterExitH)<1);
  near(s.totalColdHours+s.totalRTHours,baseline.totalColdHours+baseline.totalRTHours,'total exposure is conserved');
  assert.deepEqual(s.availabilityActions.filter(a=>a.id.startsWith('fold-')),baseline.availabilityActions.filter(a=>a.id.startsWith('fold-')));
 });

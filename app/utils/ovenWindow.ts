@@ -26,7 +26,17 @@ export function bakeEndAt(bakeAt: number, busyMinutes: number): number | null {
   return roundUpToQuarter(bakeAt + busyMinutes * 60000);
 }
 
-export interface OvenUse { id: string; from: number; to: number; ovenType: string | null; name?: string }
+export interface OvenUse { id: string; from: number; to: number; ovenType: string | null; name?: string;
+  /** How a sentence names it ("Les baguettes", from bakeSubject) and whether its verb is plural. */
+  subject?: string; plural?: boolean }
+
+/** "Les baguettes occupent le four de 9h15 à 10h45" / "The baguettes are in the oven 9:15–10:45am"
+ *  (no full stop: the "Before your recipe" sheet joins it to a fridge-exit clause). */
+export function ovenBusyClause(other: OvenUse, fr: boolean, at: (ms: number) => string): string {
+  const subject = other.subject ?? other.name ?? (fr ? 'Votre autre fournée' : 'Your other bake');
+  return fr ? `${subject} ${other.plural ? 'occupent' : 'occupe'} le four de ${at(other.from)} à ${at(other.to)}`
+    : `${subject} ${other.plural ? 'are' : 'is'} in the oven ${at(other.from)}–${at(other.to)}`;
+}
 
 /** One oven at home: every home-oven setup (tray, stone, steel, Dutch oven) shares it; a pizza oven is its own. */
 export function sameOven(a: string | null | undefined, b: string | null | undefined): boolean {
