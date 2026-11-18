@@ -23,7 +23,7 @@ import { toggleStepCompletion, guideStepSignatures, remapCompletedSteps, clockMa
 import { mixingBatchPlan, largeManualDough } from '../utils/mixingBatches';
 import PhaseSummary from './PhaseSummary';
 import WaterPreparation, { waterSplit, waterGuideLine, type WaterSource, type WaterSettingsProps } from './WaterPreparation';
-import { type UnitSystem, displayTemp, displayWeight, formatPlanClock, tempC, tempRange } from '../utils/units';
+import { type UnitSystem, displayTemp, displayWeight, formatPlanClock, clockRange, tempC, tempRange } from '../utils/units';
 import { getPrefPeakH_RT, getStarterFridgeWarmupH } from './FermentChart';
 import { GUIDE_FAQ } from '../lib/guideFaq';
 import { WOOD_OVEN_FAQ } from '../lib/woodOvenFaq';
@@ -38,6 +38,8 @@ import { commercialDilution } from '../utils';
 interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   preparationMade?: boolean;
   onStarterFed?:(event:StarterEvent)=>void;
+  /** Undoing a feed's tick (a tap recorded no time of its own). */
+  onStarterUnfed?:(event:StarterEvent)=>void;
   /** Times of starter feeds already confirmed (planned and actual): their steps read as done. */
   starterFedTimes?:number[];
   mixingMade?:boolean;
@@ -94,7 +96,7 @@ interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   phase?: 'preparation' | 'cooking';
   active?: boolean;
   /** Preparation reports the step the clock says the baker is on, or the next one, so the bar names the same step. */
-  onClockStep?: (step: { kind: 'now' | 'next'; title: string; at: number } | null) => void;
+  onClockStep?: (step: { kind: 'now' | 'next'; title: string; at: number; cooking?: boolean } | null) => void;
   onNavigateToCooking?: () => void;
   onNavigateToPreparation?: () => void;
   recipe?: import('../utils').RecipeResult | null;
@@ -106,6 +108,11 @@ interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   /** When the mix / the preferment was recorded, and how to change it (shown on its step). */
   mixDoneAt?: number | null;
   prefDoneAt?: number | null;
+  /** Whether the baker gave that time ("Different time?"); a tap shows "Done" with no time (18 Nov 2026 retention round 4). */
+  mixDoneStated?: boolean;
+  prefDoneStated?: boolean;
+  /** Pizzas baked one after another: when the last comes out, for the bake step's time ("7:30–9:00pm"). */
+  bakeEnd?: Date | null;
   onMixTimeChange?: (at: number) => void;
   onPrefTimeChange?: (at: number) => void;
   /** Bake again: the note from the bake this one repeats, shown on the oven steps ("Last time: …"). */
@@ -291,11 +298,11 @@ function shownDuration(number: number, time: Date | undefined, duration: number 
 }
 
 // A recorded time, changed where it is shown (the strip above Preparation said it a second time).
-function DoneTimeEditor({at,fr,onChange}:{at:number;fr:boolean;onChange:(at:number)=>void}){
+function DoneTimeEditor({at,fr,stated,onChange}:{at:number;fr:boolean;stated:boolean;onChange:(at:number)=>void}){
   const [value,setValue]=useState<string|null>(null);
   const local=(ms:number)=>{const d=new Date(ms);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);};
   const link={minHeight:44,padding:'10px 0',border:0,background:'transparent',font:'inherit',fontSize:15,color:D.terra,textDecoration:'underline',textUnderlineOffset:3,cursor:'pointer'} as const;
-  if(value===null)return <p data-done-time style={{margin:'-8px 0 8px'}}><button type="button" style={link} onClick={()=>setValue(local(at))}>{fr?'Modifier l’heure':'Change time'}</button></p>;
+  if(value===null)return <p data-done-time style={{margin:'-8px 0 8px'}}><button type="button" style={link} onClick={()=>setValue(local(stated?at:Math.min(Date.now(),at)))}>{stated?(fr?'Modifier l’heure':'Change time'):(fr?'À une autre heure ?':'Different time?')}</button></p>;
   const parsed=+new Date(value),valid=!!value&&Number.isFinite(parsed);
   return <p data-done-time style={{display:'flex',flexWrap:'wrap',gap:8,alignItems:'center',margin:'-8px 0 8px'}}>
     <input type="datetime-local" aria-label={fr?'Heure réelle':'Actual time'} value={value} onChange={e=>setValue(e.target.value)} style={{minHeight:44}}/>
@@ -305,7 +312,7 @@ function DoneTimeEditor({at,fr,onChange}:{at:number;fr:boolean;onChange:(at:numb
 
 // ── Step card ────────────────────────────────────────
 function StepCard({
-  number, displayNumber = number, icon, title, time, duration, open, done, overview = false, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext, hidden = false, stepPhase = 'preparation', after, previousLabel, nextLabel, passive = false, overviewNote, mark, anchor = false, action, held = false, doneAt, onDoneTimeChange,
+  number, displayNumber = number, icon, title, time, duration, open, done, overview = false, onToggle, onDone, children, divRef, final = false, completeLabel, batchCompletion = false, preview = false, onReturnCurrent, onPrevious, onNext, hidden = false, stepPhase = 'preparation', after, previousLabel, nextLabel, passive = false, overviewNote, mark, anchor = false, action, held = false, doneAt, doneStated = false, onDoneTimeChange, until,
 }: {
   number: number; displayNumber?: number; icon: React.ReactNode; title: string; overview?: boolean; totalSteps?: number;
   externalProgress?: boolean; hidden?: boolean; stepPhase?: 'preparation' | 'cooking'; previousLabel?: string; nextLabel?: string;
@@ -320,7 +327,11 @@ function StepCard({
   held?: boolean;
   /** A recorded mix or preferment: its time, said on the step, with Change time inside it. */
   doneAt?: number;
+  /** The baker gave that time; otherwise the step reads "Done" with no time. */
+  doneStated?: boolean;
   onDoneTimeChange?: (at: number) => void;
+  /** When the step ends, shown as a range ("Sat 7:30–9:00pm"). */
+  until?: Date | null;
   /** Shown under the step's own actions (the end-of-bake block follows "Step done"). */
   after?: ReactNode;
   onPrevious?: () => void; onNext?: () => void; preview?: boolean; onReturnCurrent?: () => void; completeLabel?: string; batchCompletion?: boolean; final?: boolean; open: boolean; done: boolean; onToggle: () => void; onDone: () => void;
@@ -350,22 +361,24 @@ function StepCard({
           <strong role={overview?undefined:'heading'} aria-level={overview?undefined:2} style={{ display: 'block', fontSize: overview ? 15 : 22, fontFamily: 'inherit', fontWeight: 700, lineHeight:1.2 }}>{title}{overview && mark && !done && <span className="bh-step-mark" data-step-mark={mark}>{mark === 'now' ? (fr ? 'Maintenant' : 'Now') : (fr ? 'Ensuite' : 'Next')}</span>}</strong>
           {time && <span style={{ display: 'block', marginTop: 4, fontSize: 14, color: D.smoke }}>
             {/* Inside a step its own time is the one to read at a glance. */}
-            <strong style={overview ? { fontWeight: 400 } : { fontSize: 16, fontWeight: 700, color: 'var(--char)' }}>{formatPlanTime(time, locale)}</strong>{duration ? ` · ${overview ? (passive ? (fr ? 'repos ' : 'rest ') : (fr ? 'durée ' : 'duration ')) : ''}${formatPlanDuration(duration, fr ? 'fr' : 'en')}` : ''}
+            <strong style={overview ? { fontWeight: 400 } : { fontSize: 16, fontWeight: 700, color: 'var(--char)' }}>{until && +until > +time ? `${formatPlanTime(time, locale).replace(/\s*\S+$/, '')} ${clockRange(time, until, locale)}` : formatPlanTime(time, locale)}</strong>{duration && !(until && +until > +time) ? ` · ${overview ? (passive ? (fr ? 'repos ' : 'rest ') : (fr ? 'durée ' : 'duration ')) : ''}${formatPlanDuration(duration, fr ? 'fr' : 'en')}` : ''}
           </span>}
           {overview && overviewNote && <span style={{display:'block',fontSize:14,lineHeight:1.5,color:D.terra,marginTop:4}}>{overviewNote}</span>}
-          {done && <span style={{ fontSize: 14, color: D.sage }}>{fr ? 'Terminé' : 'Completed'}{doneAt ? ` · ${formatPlanClock(new Date(doneAt), locale)}` : ''}</span>}
+          {/* A tick never states a time the baker did not give (18 Nov 2026 retention round 4, owner's design). */}
+          {done && <span style={{ fontSize: 14, color: D.sage }}>{fr ? 'Terminé' : 'Done'}{doneAt && doneStated ? ` · ${formatPlanClock(new Date(doneAt), locale)}` : ''}</span>}
         </span>
         {overview && <span aria-hidden="true">{'›'}</span>}
       </TitleContainer>
       {open && <div id={`bake-step-${number}`} style={{ padding: overview ? '0 20px 20px' : '0 0 20px' }}>
         {preview && <p style={{color:D.smoke,fontSize:12}}>{fr ? 'Aperçu — votre progression ne change pas.' : 'Preview — your progress stays unchanged.'}</p>}
-        {done && doneAt && onDoneTimeChange && <DoneTimeEditor at={doneAt} fr={fr} onChange={onDoneTimeChange}/>}
+        {done && doneAt && onDoneTimeChange && <DoneTimeEditor at={doneAt} fr={fr} stated={doneStated} onChange={onDoneTimeChange}/>}
         {held && !done && <p data-held-step style={{margin:'-8px 0 12px',fontSize:15,color:D.ash}}>{fr ? 'Fait ?' : 'Done?'} · <button type="button" onClick={onDone} style={{minHeight:44,padding:'10px 0',border:0,background:'transparent',font:'inherit',color:D.terra,textDecoration:'underline',textUnderlineOffset:3,cursor:'pointer'}}>{fr ? 'Étape faite' : 'Step done'}</button></p>}
         {children}
         <div className="bh-guide-actions" style={{position:'relative',borderTop:`1px solid ${D.border}`,marginTop:24,background:D.warm,paddingTop:12,paddingBottom:'max(8px, env(safe-area-inset-bottom))'}}>
         {preview ? <button type="button" onClick={onReturnCurrent} style={{minHeight:44}}>{fr ? 'Revenir à l’étape en cours' : 'Back to current step'}</button>
           : batchCompletion && !done ? <button type="button" onClick={onDone} style={{minHeight:44,padding:'8px 12px',marginBottom:8,border:`1px solid ${D.terra}`,borderRadius:10,background:D.terra,color:'white',cursor:'pointer'}}>{completeLabel}</button>
-          : <label style={{display:'inline-flex',alignItems:'center',gap:8,fontSize:14,minHeight:44,margin:'0 0 4px',cursor:'pointer'}}>
+          // One "Step done" per step: with "Done? · Step done" above, the box below would say it twice (18 Nov 2026 retention round 4).
+          : held && !done ? null : <label style={{display:'inline-flex',alignItems:'center',gap:8,fontSize:14,minHeight:44,margin:'0 0 4px',cursor:'pointer'}}>
               <input type="checkbox" checked={done} onChange={onDone} title={done ? (fr ? 'Annuler cette étape' : 'Undo this step') : (fr ? 'Marquer comme terminée' : 'Mark as completed')} style={{width:18,height:18,margin:0,accentColor:D.terra}}/>
               {fr ? 'Étape faite' : 'Step done'}
             </label>}
@@ -912,7 +925,7 @@ const TERM_TO_STEPID: Record<string, string> = {
   stretch_bake:      'open',
 };
 
-export default function BakeGuide({onStarterFed, starterFedTimes, mixingMade,onMixComplete,preparationMade, onPreparationComplete,
+export default function BakeGuide({onStarterFed, onStarterUnfed, starterFedTimes, mixingMade,onMixComplete,preparationMade, onPreparationComplete,
   onSave,onShare,onRepeat,resultNotes,onResultNotesChange,sessionSaved,onBakedChange,completionEnabled=true,
   schedule, mixerType, styleKey, kitchenTemp, fridgeTemp = 4, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, mixerCapacityG, onMixingBatchesChange, waterSource = 'room', onWaterSourceChange, numItems,
   prefermentType, oil, hydration, ovenType, ovenConstruction, prefStartTime, feedTime, starterEvents,
@@ -923,7 +936,7 @@ export default function BakeGuide({onStarterFed, starterFedTimes, mixingMade,onM
   units, locale,
   afterSteps, onBackToRecipe, backSection, onOverviewChange, onNavigateToPizzaParty, pizzaActionLabel, pizzasChosen, onNavigateToFillings, fillingsActionLabel, onPrepareFillings, recipe, simpleMode, addSeeds,
   phase, active = true, onClockStep, onNavigateToCooking, onNavigateToPreparation, progressTarget, pizzaDiameterCm,
-  progressScope, previousNote, mixDoneAt, prefDoneAt, onMixTimeChange, onPrefTimeChange,
+  progressScope, previousNote, mixDoneAt, prefDoneAt, mixDoneStated, prefDoneStated, bakeEnd, onMixTimeChange, onPrefTimeChange,
 }: BakeGuideProps) {
   const u = units ?? 'metric';
   const l = locale === 'fr' ? 'fr' : 'en';
@@ -1090,7 +1103,7 @@ export default function BakeGuide({onStarterFed, starterFedTimes, mixingMade,onM
     .replace('Cut {count} rectangles of about', 'Cut one rectangle of about')
     .replace('Découpez {count} rectangles d’environ', 'Découpez un rectangle d’environ');
   const profileSteps = (lines: readonly string[]) => lines.map(line => splitLineWhy(guideUnitText(singlePiece(line).replaceAll('{count}', String(numItems)).replaceAll('{weight}', String(Math.round((recipe?.totalDough ?? numItems * (breadProtocol?.portions.weight ?? 100)) / Math.max(1,numItems)))), u, l)));
-  const fillingsAction = onNavigateToFillings && <button type="button" onClick={onNavigateToFillings} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{fillingsActionLabel ?? (l === 'fr' ? 'Sandwiches et garnitures' : 'Sandwiches & fillings')} →</button>;
+  const fillingsAction = onNavigateToFillings && <button type="button" onClick={onNavigateToFillings} style={{width:'100%',minHeight:48,margin:'14px 0',border:0,borderRadius:10,background:D.terra,color:'white'}}>{fillingsActionLabel ?? (l === 'fr' ? 'Sandwichs et garnitures' : 'Sandwiches & fillings')} →</button>;
   const isBread       = !!breadProtocol || ['pain_campagne','pain_levain','baguette','pain_complet','pain_seigle','pain_au_seigle','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey);
   const isNeapolitan  = styleKey === 'neapolitan';
   const isFougasse    = styleKey === 'fougasse';
@@ -1386,13 +1399,14 @@ Actual dough condition and equipment may differ from these estimates.`;
     ? JSON.stringify({ locale: l, steps: clockSteps().map(step => ({ ...step, title: stepRefs.current[step.step]?.dataset.guideTitle ?? '' })) }) : null;
   useEffect(() => {
     if (!planSnapshot) return;
-    try { if (localStorage.getItem(progressKey + ':plan') !== planSnapshot) localStorage.setItem(progressKey + ':plan', planSnapshot); } catch {}
-  }, [planSnapshot, progressKey]);
+    // One copy per language as well: home names a bake in the page's language (18 Nov 2026 retention round 4).
+    try { for (const key of [progressKey + ':plan', progressKey + ':plan:' + l]) if (localStorage.getItem(key) !== planSnapshot) localStorage.setItem(key, planSnapshot); } catch {}
+  }, [planSnapshot, progressKey, l]);
   const markAt = guideMark ? stepTimesCtx?.times.get(guideMark.step) ?? 0 : 0;
   useEffect(() => {
     if (!phase) return;
-    onClockStep?.(guideMark ? { kind: guideMark.kind, title: guideMark.title, at: markAt } : null);
-  }, [phase, guideMark?.kind, guideMark?.title, markAt]); // eslint-disable-line react-hooks/exhaustive-deps
+    onClockStep?.(guideMark ? { kind: guideMark.kind, title: guideMark.title, at: markAt, cooking: guideMark.cooking } : null);
+  }, [phase, guideMark?.kind, guideMark?.title, guideMark?.cooking, markAt]); // eslint-disable-line react-hooks/exhaustive-deps
   // Coming back to the app (reopened, resumed, or switched from another bake): open the step the bar names,
   // not an old finished card. Only on return, never while the baker is reading (16 Nov review).
   const returning = useRef(true);
@@ -1447,6 +1461,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       mark: guideMark?.step === s ? guideMark.kind : undefined,
       held: guideMark?.step === s && guideMark.held,
       doneAt: (mixing && onMixComplete ? mixDoneAt : firstAction ? prefDoneAt : undefined) ?? undefined,
+      doneStated: mixing && onMixComplete ? !!mixDoneStated : firstAction ? !!prefDoneStated : false,
       onDoneTimeChange: mixing && onMixComplete ? onMixTimeChange : firstAction ? onPrefTimeChange : undefined,
       anchor: mixing || preferment,
       overview: currentStep === 0, totalSteps: phase === 'cooking' ? cookingStepTotal : phase === 'preparation' ? Math.max(0,totalSteps-cookingStepTotal) : totalSteps,
@@ -1462,7 +1477,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       done: actionDone,
       onToggle: () => navigateGuideStep(s),
       onDone: () => {
-        if(starterFeed&&!actionDone)onStarterFed?.(starterFeed);
+        if(starterFeed)(actionDone?onStarterUnfed:onStarterFed)?.(starterFeed);
         if(firstAction)onPreparationComplete?.(!actionDone);
         if(mixing&&onMixComplete)onMixComplete(!actionDone);
         const next = mixing&&onMixComplete&&actionDone?new Set([...doneSteps].filter(step=>step!==s)):toggleStepCompletion(s, doneSteps);
@@ -1898,8 +1913,8 @@ Actual dough condition and equipment may differ from these estimates.`;
           {rows.map(row => <Fragment key={row.key}><div style={{display:'flex',justifyContent:'space-between',gap:12}}><span>{row.label}</span>{table ? <span style={{display:'flex',gap:8}}>{row.values.map((v,i) => <strong key={i} style={cell}>{v}</strong>)}</span> : <strong>{row.values[0]}</strong>}</div>{row.key==='water' && waterHelp}{row.key==='yeast' && yeastHelp(row.grams)}</Fragment>)}
           </div>
           {recipe && largeManualDough(recipe.totalDough, mixerType, batch.count, mixerCapacityG) && <p data-large-dough-note>{l === 'fr'
-            ? `${displayWeight(recipe.totalDough,u,l)}, c’est une grosse pâte. Si elle est trop volumineuse pour votre saladier ou votre robot, pétrissez-la en deux moitiés, l’une juste après l’autre, puis traitez-les comme une seule pâte.`
-            : `${displayWeight(recipe.totalDough,u,l)} is a large dough. If it is too much for your bowl or mixer, mix it in two halves, one straight after the other, then treat them as one dough.`}</p>}
+            ? 'Trop pour votre saladier ? Pétrissez-la en deux moitiés, l’une après l’autre.'
+            : 'Too much for your bowl? Mix it in two halves, one after the other.'}</p>}
           {batch.overCapacity && <p role="alert">{l === 'fr' ? 'Cette quantité dépasse la capacité indiquée du pétrin. Augmentez le nombre de pétrissées dans les réglages du matériel.' : 'This batch exceeds the stated mixer capacity. Increase batches in equipment settings.'}</p>}
           {batch.count > 1 && hasPref && <p>{l === 'fr' ? 'Préparez le préferment une seule fois ; chaque pétrissée en prend sa part.' : 'Make the preferment once; each batch takes its share.'}</p>}
         </Section>;
@@ -2031,7 +2046,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           ]} />}
         </Section>
 
-        <p style={{fontSize:15,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{shortColdBulk ? (l==='fr'?'La pâte est lisse ; elle lèvera au froid.':'Smooth; it rises in the fridge.') : isRye ? (l==='fr'?'La pâte a un peu gonflé et de fines fissures apparaissent en surface.':'The dough has risen a little and fine cracks show on its surface.') : l==='fr'?'La pâte est aérée et se tient.':'Airy and holding its shape.'}</p>
+        <p style={{fontSize:15,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{shortColdBulk ? (l==='fr'?'La pâte est lisse ; elle lèvera au froid.':'Smooth; it rises in the fridge.') : isRye ? (l==='fr'?'La pâte a un peu gonflé et de fines fissures apparaissent en surface.':'The dough has risen a little and fine cracks show on its surface.') : l==='fr'?'La pâte a pris environ 50 %, bombée, des bulles sur les bords.':'Risen by about half, domed, with bubbles at the edges.'}</p>
 
         {!breadProtocol && <StepExtras
           tips={<>
@@ -2288,6 +2303,13 @@ Actual dough condition and equipment may differ from these estimates.`;
             ] : [
               { bold: numItems === 1 ? 'Take the loaf out of the fridge as the oven starts heating' : 'Take the loaves out of the fridge as the oven starts heating', note: 'they stay cold: no proof at room temperature' },
               { bold: 'Keep them covered while the oven heats', note: 'no poke test: the cold proof did the work. Score them cold, just before baking' },
+            ]} /> : shapedOutAtPreheat && schedule.coldRetard2End ? <Steps items={[
+              // Out of the fridge as the oven heats, baked straight after: the plan's own line, not the poke test of a
+              // long room-temperature rise (18 Nov 2026 retention round 4, Priya).
+              { bold: l === 'fr'
+                ? `${formatPlanClock(schedule.coldRetard2End,_fmtLocale)} — sortez ${numItems === 1 ? 'le pâton' : 'les pâtons'} du réfrigérateur · préchauffez le four · enfournez à ${formatPlanClock(schedule.bakeStart,_fmtLocale)}`
+                : `${formatPlanClock(schedule.coldRetard2End,_fmtLocale)} — take ${numItems === 1 ? 'the loaf' : 'the loaves'} out of the fridge · preheat the oven · bake at ${formatPlanClock(schedule.bakeStart,_fmtLocale)}`,
+                note: l === 'fr' ? 'couvert pendant la chauffe · étape suivante : Cuisson & service' : 'covered while the oven heats · next: Baking & serving' },
             ]} /> : <Steps items={[
               ...(isTwoPhase ? [isBread ? {bold:l==='fr'?'Sortez la pâte façonnée du réfrigérateur.':'Take the shaped dough out of the fridge.',note:''} : t.raw('finalProof.removeFridge') as { bold: string; note: string }] : []),
               { bold: l === 'fr' ? (isBread && numItems===1 ? 'Laissez le pâton se détendre, couvert' : 'Laissez les pâtons se détendre, couverts') : 'Let the shaped dough relax, covered',
@@ -2327,7 +2349,8 @@ Actual dough condition and equipment may differ from these estimates.`;
             recipeContext={maestroRecipeContext}
             styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
           />}
-          {!breadProtocol && !isRye && <StepExtras
+          {/* Out of the fridge straight to the oven: no poke-test tips beside the plan's line (round 4). */}
+          {!breadProtocol && !isRye && !shapedOutAtPreheat && <StepExtras
             tips={<>
               <Section icon="" title={t('sectionTitles.pokeTest')}>
                 <Bullets items={t.raw('finalProof.pokeResponses') as string[]} />
@@ -2398,7 +2421,8 @@ Actual dough condition and equipment may differ from these estimates.`;
           ) : ovenType === 'home_oven_steel' ? (
             <Steps items={t.raw('preheat.homeSteel.steps') as { bold: string; note: string }[]} />
           ) : (
-            <Steps items={t.raw('preheat.homeStandard.steps') as { bold: string; note: string }[]} />
+            // "Allow 30 min minimum" beside a longer planned preheat read as a contradiction (18 Nov 2026 retention round 4).
+            <Steps items={(t.raw('preheat.homeStandard.steps') as { bold: string; note: string }[]).filter((_, index) => index !== 2 || !(schedule.preheatStart && +schedule.bakeStart - +schedule.preheatStart > 35 * 60000))} />
           )}
         </Section>
 
@@ -2440,7 +2464,7 @@ Actual dough condition and equipment may differ from these estimates.`;
       </StepCard>}
 
       {/* ── STEP: Bake & Eat ─────────────────────────── */}
-      <StepCard final={!isBread} number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'boil-bake' ? (hasPoachStep ? (l === 'fr' ? 'Cuire les bagels au four' : 'Bake the bagels') : (l === 'fr' ? 'Pocher puis cuire au four' : 'Poach, then bake')) : breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Cuire à la poêle' : 'Cook on the griddle') : isBread ? (l === 'fr' ? `Cuire ${breadNoun}` : `Bake ${breadNoun}`) : (l === 'fr' ? 'Cuire les pizzas' : 'Bake the pizzas')} time={schedule.bakeStart} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined} accent="#5A9A50">
+      <StepCard final={!isBread} number={n()} {...sc(false, 'cooking')} icon={<IconBake />} title={breadProtocol?.cooking === 'boil-bake' ? (hasPoachStep ? (l === 'fr' ? 'Cuire les bagels au four' : 'Bake the bagels') : (l === 'fr' ? 'Pocher puis cuire au four' : 'Poach, then bake')) : breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Cuire à la poêle' : 'Cook on the griddle') : isBread ? (l === 'fr' ? `Cuire ${breadNoun}` : `Bake ${breadNoun}`) : (l === 'fr' ? 'Cuire les pizzas' : 'Bake the pizzas')} time={schedule.bakeStart} until={isBread ? undefined : bakeEnd} duration={schedule.activeCookMinutes ? schedule.activeCookMinutes / 60 : undefined} accent="#5A9A50">
         {lastTimeLine}
         <Section icon="" title={t('sectionTitles.whatToDo')}>
           {/* Only genuinely smaller pieces: 4 × 200 g is the reference itself. */}

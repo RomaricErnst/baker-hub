@@ -10,6 +10,8 @@ export interface BakeExecution {
   prefHours: number;
   prefWindow?: {min:number;max:number};
   recipe: RecipeResult;
+  /** The baker gave this time ("Different time?"); a tap is recorded as planned and shows no time. */
+  stated?: boolean;
 }
 export function normalizeBakeExecution(value: unknown): BakeExecution | undefined {
   if (!value || typeof value !== 'object') return undefined;
@@ -52,13 +54,15 @@ export interface StarterFeedRecord {
   ratio:number;
   previousFedAt?:number;
   previousPeakAt?:number;
+  /** The baker gave this time ("Different time?"); a tick is recorded as planned. */
+  stated?:boolean;
 }
 export function normalizeStarterFeedRecords(value:unknown):StarterFeedRecord[] {
   if(!Array.isArray(value))return [];
   return value.filter((v):v is StarterFeedRecord=>!!v&&['refresh','intermediate_refresh','pre_mix'].includes(v.kind)
     &&[v.plannedAt,v.actualAt,v.recordedAt,v.ratio].every(Number.isFinite)&&v.actualAt<=v.recordedAt&&[1,2,4,5,10].includes(v.ratio));
 }
-export function overdueStarterFeed<T extends {kind:string;time:Date}>(events:T[],records:StarterFeedRecord[],now:number) {
+export function overdueStarterFeed<T extends {kind:string;time:Date}>(events:T[],records:StarterFeedRecord[],now:number,mixAt?:number) {
   // A feed planned before the last recorded one is behind the baker: never asked again (18 Nov 2026 retention).
   // Like the mix question, a feed is asked only from its time until the plan's next step: unanswered by then,
   // the plan is assumed followed and the question goes (owner's rule A, 18 Nov 2026 retention round 3).
@@ -66,8 +70,10 @@ export function overdueStarterFeed<T extends {kind:string;time:Date}>(events:T[]
   const due=events.filter(event=>['refresh','intermediate_refresh','pre_mix'].includes(event.kind)&&+event.time<=now&&+event.time>lastFed
     &&!records.some(record=>record.kind===event.kind&&(record.plannedAt===+event.time||record.actualAt===+event.time))).sort((a,b)=>+b.time-+a.time)[0];
   if(!due)return undefined;
-  const next=events.filter(event=>+event.time>+due.time).sort((a,b)=>+a.time-+b.time)[0];
-  return next&&+next.time<=now?undefined:due;
+  // The mix is the plan's next step after a pre-mix feed: the starter events alone have none, so the question
+  // stayed until the shaping (18 Nov 2026 retention round 4, 9–11 h).
+  const next=Math.min(Infinity,...events.filter(event=>+event.time>+due.time).map(event=>+event.time),...(mixAt!==undefined&&mixAt>+due.time?[mixAt]:[]));
+  return next<=now?undefined:due;
 }
 
 /**
@@ -183,7 +189,9 @@ export function shiftStarterPlanAfterFeed<T extends {kind:string;time:Date;bellP
 }
 
 /** Mixing is one confirmed action, including for sourdough and a made preferment. */
-export interface MixExecution {actualAt:number;recordedAt:number;recipe:RecipeResult}
+export interface MixExecution {actualAt:number;recordedAt:number;recipe:RecipeResult;
+ /** The baker gave this time; a tap ("Step done", "Yes, at …") is the plan's time and shows none (18 Nov 2026 retention round 4). */
+ stated?:boolean}
 export function normalizeMixExecution(value:unknown):MixExecution|undefined {
  if(!value||typeof value!=='object')return undefined;
  const v=value as MixExecution;

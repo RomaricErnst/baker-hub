@@ -47,11 +47,11 @@ export default function BakeStartStatus({fr,method,plannedAt,now,execution,prepa
   const parsed=+new Date(time), valid=!!time&&Number.isFinite(parsed)&&parsed<=now;
   return <section className="bh-start-status" aria-label={fr?'Préparation de la fournée':'Bake preparation'}>
     {execution?(preparing?<>
-      <p><strong>{method==='none'?(fr?'Pétrie':'Mixed'):(fr?'Préparé':'Made')} · {fmt(execution.actualAt)}</strong></p>
-      <div className="bh-start-actions"><button type="button" style={STATUS_BUTTON} onClick={()=>editTime(execution.actualAt)}>{fr?'Modifier l’heure':'Change time'}</button><button type="button" className="bh-start-link" onClick={onUndo}>{fr?'Annuler la confirmation':'Undo completion'}</button></div>
+      <p><strong>{method==='none'?(fr?'Pétrie':'Mixed'):(fr?'Préparé':'Made')}{execution.stated?` · ${fmt(execution.actualAt)}`:''}</strong></p>
+      <div className="bh-start-actions"><button type="button" style={STATUS_BUTTON} onClick={()=>editTime(execution.actualAt)}>{execution.stated?(fr?'Modifier l’heure':'Change time'):(fr?'À une autre heure ?':'Different time?')}</button><button type="button" className="bh-start-link" onClick={onUndo}>{fr?'Annuler la confirmation':'Undo completion'}</button></div>
     </>:
       // Outside Preparation the fact is one compact line; the bar above leads to the step (16 Nov 2026 design review).
-      <p className="bh-start-compact"><strong>{method==='none'?(fr?'Pétrie':'Mixed'):(fr?'Préparé':'Made')} · {fmt(execution.actualAt)}</strong><button type="button" className="bh-start-link" onClick={()=>editTime(execution.actualAt)}>{fr?'Modifier l’heure':'Change time'}</button><button type="button" className="bh-start-link" aria-label={fr?'Annuler la confirmation':'Undo completion'} onClick={onUndo}>{fr?'Annuler':'Undo'}</button></p>
+      <p className="bh-start-compact"><strong>{method==='none'?(fr?'Pétrie':'Mixed'):(fr?'Préparé':'Made')}{execution.stated?` · ${fmt(execution.actualAt)}`:''}</strong><button type="button" className="bh-start-link" onClick={()=>editTime(execution.actualAt)}>{execution.stated?(fr?'Modifier l’heure':'Change time'):(fr?'À une autre heure ?':'Different time?')}</button><button type="button" className="bh-start-link" aria-label={fr?'Annuler la confirmation':'Undo completion'} onClick={onUndo}>{fr?'Annuler':'Undo'}</button></p>
     ):<>
       {starting?<>
         <p><strong>{method==='none'?(fr?'C’est l’heure de pétrir':'Time to mix the dough'):(fr?`C’est l’heure de préparer ${noun}`:`Time to make ${noun}`)}</strong></p>

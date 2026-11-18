@@ -39,7 +39,7 @@ async function inspectGuideAndOpenFillings(page,fr,style){
   expect(guideText).toMatch(/Bake the bagels/);
   expect(guideText).toMatch(/Poach a few bagels/);
  }
- await page.getByRole('button',{name:fr?'Sandwiches et garnitures →':'Sandwiches & fillings →',exact:true}).tap();
+ await page.getByRole('button',{name:fr?'Sandwichs et garnitures →':'Sandwiches & fillings →',exact:true}).tap();
  await expect(page.getByRole('heading',{name:fr?'Quelles piadinas ?':'Which bagels?',exact:true})).toBeVisible();
 }
 
@@ -105,7 +105,7 @@ for(const scenario of [
   await page.reload();
   await page.getByRole('button',{name:fr?'Voir les ingrédients →':'View ingredients →',exact:true}).tap();
   await page.locator('.bh-header-menu').tap();
-  await page.getByRole('dialog',{name:'Menu',exact:true}).getByRole('button',{name:fr?'Sandwiches et garnitures':'Sandwiches & fillings',exact:true}).tap();
+  await page.getByRole('dialog',{name:'Menu',exact:true}).getByRole('button',{name:fr?'Sandwichs et garnitures':'Sandwiches & fillings',exact:true}).tap();
   await expect(ready).toBeDisabled();
   await expect(undo).toBeEnabled();
   await expect.poll(()=>savedParty(page)).toEqual(beforeReload);

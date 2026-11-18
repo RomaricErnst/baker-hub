@@ -70,11 +70,33 @@ export function clockMark(steps: readonly ClockStep[], now: number): ClockMark |
     for (const s of due) {
       if (!s.action || s.phase === 'cooking') continue;
       const nextAction = sorted.find(o => o.at > s.at && o.action);
-      if (!nextAction || now < nextAction.at) return { step: s.step, kind: 'now', held: due.at(-1) !== s };
+      if (!nextAction || now < nextAction.at) return { step: s.step, kind: 'now', held: due.some(o => o !== s && o.at >= s.at) };
     }
   }
-  const s = due.length ? due[due.length - 1] : pending[0];
+  // Steps planned at the same minute (a sourdough mix and its bulk, a take-out at the preheat): the first of
+  // them is the one to do, so an unticked mix is never skipped to the rise (18 Nov 2026 retention round 4).
+  const latest = due.length ? due[due.length - 1].at : undefined;
+  const s = due.length ? due.find(d => d.at === latest)! : pending[0];
   return { step: s.step, kind: s.at <= now ? 'now' : 'next', held: false };
+}
+
+/**
+ * The step a home row names for a bake (18 Nov 2026 retention round 4): the next thing to DO, by the guide's own
+ * step. Among the unticked action steps not behind the last tick (nor behind a later step that has begun), the
+ * one whose time is nearest now (a poolish made five hours ago gives way to a mix due in twenty minutes; a wait
+ * such as the final rise gives way to the take-out or the oven). Without an action left, the step the clock marks.
+ */
+export function rowStep(steps: readonly ClockStep[], now: number): { step: number; current: boolean } | null {
+  const lastDoneAt = Math.max(-Infinity, ...steps.filter(s => s.done).map(s => s.at));
+  // A past action counts only while the clock is still on it (no later step has begun): a shaping behind a
+  // final rise that has started is behind the baker.
+  const actions = [...steps].filter(s => !s.done && s.action && s.at >= lastDoneAt
+    && (s.at > now || !steps.some(o => o.at > s.at && o.at <= now))).sort((a, b) => a.at - b.at || a.step - b.step);
+  let best: ClockStep | undefined;
+  for (const s of actions) if (!best || Math.abs(s.at - now) < Math.abs(best.at - now)) best = s;
+  if (best) return { step: best.step, current: best.at <= now };
+  const mark = clockMark(steps, now);
+  return mark ? { step: mark.step, current: mark.kind === 'now' } : null;
 }
 
 /** Ticking a step ticks the unticked steps planned before it in the same bake: the baker's own act
