@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-// Commercial yeast model (19 Nov 2026). One model for every commercial-yeast
+// Commercial yeast model (19 Nov 2026; Phase 3 refit 20 Nov 2026: 157 rows, 28 lineages). One model for every commercial-yeast
 // dose and timing in the app: direct dough, cold retard, tropical kitchens,
 // poolish and biga, the inverse used for a baker-entered amount, and the
 // poolish peak. Sourdough (levain) has its own model and does not use this.
@@ -9,7 +9,7 @@
 //           T(t) relaxes to each phase's surroundings: dT/dt = (T_env − T) / τ
 //   dose  = A · M · R · Heq^(−b)                       instant yeast, % of the fermenting flour
 //           M  medium: salted dough 1, poolish MP, biga MB
-//           R  rise target: 1 (doubled, E1), 0.6 when the dough ends above 28 °C (E3)
+//           R  rise target: 1 (doubled, E1), 0.76 when the dough ends above 28 °C (E3)
 //
 // Every constant, its basis and its residuals: docs/YEAST-MODEL.md. The fit
 // script and data are referenced there; tests/yeast-model.test.cjs keeps the
@@ -18,16 +18,16 @@
 
 /** Cardinal temperatures of the activity curve (°C). */
 export const YEAST_T_MAX = 45.4;   // (a) Salvadó et al. 2011, S. cerevisiae Tmax
-export const YEAST_T_OPT = 32.3;   // (a) Salvadó et al. 2011, S. cerevisiae Topt (free fit 34 ± 4, not identifiable)
-export const YEAST_T_MIN = -0.5;   // (c) fitted: cold-recipe protocols + Nestec cold gas rates
+export const YEAST_T_OPT = 40;     // (c) fitted, at its 40 °C bound (SE 2.5): the data reach 35 °C; Salvadó's 32.3 fits worse
+export const YEAST_T_MIN = -3.2;   // (c) fitted ± 0.6 (bootstrap −4.1…−2.4); LOW CONFIDENCE: moves with the weighting
 /** Dose law: dose = A · Heq^(−b) for a salted dough doubling (E1). */
-export const YEAST_DOSE_A = 2.05;  // (c) fitted, IDY % at 1 h equivalent at 25 °C
-export const YEAST_DOSE_B = 1.24;  // (c) fitted, dose–time exponent
+export const YEAST_DOSE_A = 1.41;  // (c) fitted, IDY % at 1 h equivalent at 25 °C (bootstrap 0.93…1.96)
+export const YEAST_DOSE_B = 1.15;  // (c) fitted ± 0.06, dose–time exponent
 /** Medium factors (preferment dose relative to a salted dough at the same Heq, ripe endpoint). */
-export const YEAST_MEDIUM_POOLISH = 0.83; // (c) fitted: MP4 KM p. 2, MB6 KM p. 20 and 7 other poolish tables
-export const YEAST_MEDIUM_BIGA = 2.67;    // (c) fitted: MB6 KM pp. 19 and 22, Giorilli (via Dissapore)
-/** E3: smaller target rise in a warm dough. You Knead Sourdough: 30 % bulk rise at 28 °C+, 50 % below 25 °C. */
-export const YEAST_HEAT_RISE = 0.6;        // (a) 30/50, (b) dose ∝ rise target because gas ∝ dose · Heq^b
+export const YEAST_MEDIUM_POOLISH = 0.70; // (c) fitted ×/÷ 1.21: 8 poolish lineages (MP4, MB6, Suas, Pezzetta, …)
+export const YEAST_MEDIUM_BIGA = 1.55;    // (c) fitted ×/÷ 1.21: 9 biga lineages (MB6, Giorilli, Zaghini, …); professional-only 3.2
+/** E3: smaller target rise in a warm dough (fitted; practice: 20–50 % less yeast in heat beyond the speed-up). */
+export const YEAST_HEAT_RISE = 0.76;       // (c) fitted ± 0.06 (Phase 2 took 0.6 from 30/50 % bulk rise); dose ∝ rise target
 export const YEAST_HEAT_RISE_FROM_C = 25;  // (a) full target below 25 °C
 export const YEAST_HEAT_RISE_TO_C = 28;    // (a) reduced target from 28 °C
 

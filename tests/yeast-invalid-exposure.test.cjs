@@ -23,9 +23,9 @@ test('crossing the unsupported threshold cannot increase the dose or stay recomm
 
 test('single-phase doses and the practical floor remain stable',()=>{
  // Yeast model (19 Nov 2026). 12 h at 4 °C alone is 0.6 equivalent hours: the dose holds at the
- // 1.5 % ceiling (was 0.2871 % from the old cold law). 4 h at 22 °C: 0.4446 % (was 1.2697 %; dose–time
- // exponent 1.24, not 1.65). 29.9 h at 30 °C still reaches the 0.05 % floor.
- for(const [warm,temp,cold,pct] of [[0,30,12,1.5],[4,22,0,.4446],[29.9,30,12,.05]]){
+ // 1.5 % ceiling (was 0.2871 % from the old cold law). 4 h at 22 °C: 0.3664 % (Phase 3 refit, 20 Nov 2026;
+ // Phase 2 0.4446 %; the old engine 1.2697 %, dose–time exponent 1.65). 29.9 h at 30 °C still reaches the 0.05 % floor.
+ for(const [warm,temp,cold,pct] of [[0,30,12,1.5],[4,22,0,.3664],[29.9,30,12,.05]]){
   const r=dose(warm,temp,cold);
   assert.equal(r.pct,pct);assert.equal(r.notRecommended,false);
   assert.ok(!r.warnings.some(w=>w.key==='overFermentRT'));

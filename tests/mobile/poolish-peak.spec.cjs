@@ -34,13 +34,14 @@ test('storage fixed to room: the poolish holds its peak dose, the final dough it
  await page.getByRole('button',{name:/^(Resume|View ingredients) →$/}).first().tap();
  await goRecipe(page);
  await expect(page.locator('[data-recipe-stages]')).toBeVisible();
- // Before (#137): 0.2 g in the poolish and 0.5 g in the final dough (0.7 g). Yeast model: 0.2 g and 2.6 g
- // (the final dough's own need for 4.8 h at 20 °C and 10.25 h in the fridge), 2.8 g in all.
+ // Before (#137): 0.2 g in the poolish and 0.5 g in the final dough (0.7 g). Yeast model (Phase 3 refit,
+ // 20 Nov 2026): 0.2 g and 2.2 g (the final dough's own need for 4.8 h at 20 °C and 10.25 h in the fridge),
+ // 2.4 g in all (Phase 2: 2.6 g and 2.8 g).
  await expect(makePoolish(page)).toContainText('Fresh yeast');
  await expect(makePoolish(page)).toContainText('0.2 g');
  await expect(finalDough(page)).toContainText('Fresh yeast');
- await expect(finalDough(page)).toContainText('2.6 g');
- await expect(page.locator('[data-whole-dough]')).toContainText('2.8 g');
+ await expect(finalDough(page)).toContainText('2.2 g');
+ await expect(page.locator('[data-whole-dough]')).toContainText('2.4 g');
  const s=await stored(page);
  expect(s.prefGoesInFridge).toBe(false);expect(s.prefOffsetH).toBe(11.25);expect(s.prefermentFlourPct).toBe(20);
  expect(errors).toEqual([]);

@@ -1,4 +1,4 @@
-// Yeast model (19 Nov 2026; docs/YEAST-MODEL.md): unit properties, the data fit with the shipped constants,
+// Yeast model (19 Nov 2026, Phase 3 refit 20 Nov 2026; docs/YEAST-MODEL.md): unit properties, the data fit with the shipped constants,
 // reference recipes, and the About page's worked examples recomputed from the engine.
 const {test}=require('node:test'),a=require('node:assert/strict'),fs=require('node:fs');
 const {utils,data}=require('./load-production.cjs');
@@ -6,14 +6,14 @@ const m=require('../app/utils/yeastModel.ts');
 const H=3600000,d=s=>new Date(s+'Z');
 const lnDose=(heq,medium='dough',rise=1)=>Math.log(m.doseForHeq(heq,medium,rise));
 
-test('constants: published cardinal temperatures, fitted dose law and media, sourced endpoint',()=>{
- a.equal(m.YEAST_T_MAX,45.4);a.equal(m.YEAST_T_OPT,32.3);a.equal(m.YEAST_T_MIN,-0.5);
- a.equal(m.YEAST_DOSE_A,2.05);a.equal(m.YEAST_DOSE_B,1.24);
- a.equal(m.YEAST_MEDIUM_POOLISH,0.83);a.equal(m.YEAST_MEDIUM_BIGA,2.67);
- a.equal(m.YEAST_HEAT_RISE,0.6);a.equal(m.YEAST_HEAT_RISE_FROM_C,25);a.equal(m.YEAST_HEAT_RISE_TO_C,28);
+test('constants: Phase 3 refit (20 Nov 2026), published Tmax and yeast conversions',()=>{
+ a.equal(m.YEAST_T_MAX,45.4);a.equal(m.YEAST_T_OPT,40);a.equal(m.YEAST_T_MIN,-3.2);
+ a.equal(m.YEAST_DOSE_A,1.41);a.equal(m.YEAST_DOSE_B,1.15);
+ a.equal(m.YEAST_MEDIUM_POOLISH,0.70);a.equal(m.YEAST_MEDIUM_BIGA,1.55);
+ a.equal(m.YEAST_HEAT_RISE,0.76);a.equal(m.YEAST_HEAT_RISE_FROM_C,25);a.equal(m.YEAST_HEAT_RISE_TO_C,28);
  // The document states the same values.
  const doc=fs.readFileSync('docs/YEAST-MODEL.md','utf8');
- for(const v of ['45.4','32.3','−0.5','2.05','1.24','0.83','2.67','0.6'])a.ok(doc.includes(v),`docs/YEAST-MODEL.md states ${v}`);
+ for(const v of ['45.4','−3.2','1.41','1.15','0.70','1.55','0.76','LOW CONFIDENCE'])a.ok(doc.includes(v),`docs/YEAST-MODEL.md states ${v}`);
 });
 
 test('activity: 1 at 25 °C, rising to the optimum, falling above it, positive from 1 to 40 °C',()=>{
@@ -69,8 +69,8 @@ test('smooth: no step beyond the curve itself per 0.25 °C or 0.25 h, 2–40 °C
  }
 });
 
-test('rise target: doubled below 25 °C, 0.6 from 28 °C, smooth and monotone between',()=>{
- a.equal(m.riseTarget(20),1);a.equal(m.riseTarget(25),1);a.equal(m.riseTarget(28),0.6);a.equal(m.riseTarget(35),0.6);
+test('rise target: doubled below 25 °C, 0.76 from 28 °C, smooth and monotone between',()=>{
+ a.equal(m.riseTarget(20),1);a.equal(m.riseTarget(25),1);a.equal(m.riseTarget(28),0.76);a.equal(m.riseTarget(35),0.76);
  let prev=1;for(let T=25;T<=28;T+=0.05){const r=m.riseTarget(T);a.ok(r<=prev+1e-12);a.ok(prev-r<0.025);prev=r;}
 });
 
@@ -85,19 +85,30 @@ test('thermal path: a dough at its surroundings counts r(T) per hour; cooling an
  a.ok(cold.heq<warm.heq);a.equal(warm.warmHours,plan.totalRTHours);a.equal(warm.coldHours,plan.totalColdHours);
 });
 
-test('data fit: the shipped constants against 79 points from 21 sources (fit + 5 held-out sources)',()=>{
+test('data fit: the shipped constants against 157 rows from 28 lineages (Phase 3 fixture)',()=>{
  const F=JSON.parse(fs.readFileSync('tests/fixtures/yeast-model-data.json','utf8'));
- const res=r=>Math.log(r.dose/m.doseForHeq(m.pathHeq(r.T0,r.phases.map(([h,c])=>({hours:h,envC:c,tauH:F.tauH}))).heq,r.medium));
- const stat=rows=>{const rs=rows.map(res);return {n:rs.length,mean:rs.reduce((x,y)=>x+y,0)/rs.length,rms:Math.sqrt(rs.reduce((x,y)=>x+y*y,0)/rs.length),within2:rs.filter(r=>Math.abs(r)<=Math.log(2)).length};};
- const fit=stat(F.rows.filter(r=>r.set==='fit')),held=stat(F.rows.filter(r=>r.set==='heldout')),all=stat(F.rows.filter(r=>r.set!=='community-cold'));
- a.equal(all.n,79);a.equal(new Set(F.rows.filter(r=>r.set!=='community-cold').map(r=>r.source)).size,21);
- a.ok(all.rms<0.6,`rms ${all.rms}`);a.ok(Math.abs(all.mean)<0.1,`bias ${all.mean}`);a.ok(all.within2>=55);
- a.ok(fit.rms<0.6);a.ok(held.rms<0.65,`held-out rms ${held.rms}`);a.ok(held.within2>=8);
- // Per regime: no group off by more than a factor of 1.6 on average (≥ 28 °C has two points, documented).
- const by={};for(const r of F.rows.filter(r=>r.set!=='community-cold'))(by[r.regime]??=[]).push(r);
- for(const [k,rows] of Object.entries(by))if(rows.length>2)a.ok(Math.abs(stat(rows).mean)<Math.log(1.6),`${k}: ${stat(rows).mean}`);
- // The community cold tables (rise in the fridge) ask for less yeast than the model: the endpoint E2 differs.
- const cc=stat(F.rows.filter(r=>r.set==='community-cold'));a.ok(cc.mean<-0.6);
+ const res=r=>{const p=m.pathHeq(r.T0,r.phases.map(([h,c])=>({hours:h,envC:c,tauH:F.tauH})));return Math.log(r.dose/m.doseForHeq(p.heq,r.medium,r.medium==='dough'?m.riseTarget(p.endC):1));};
+ const rows=F.rows.filter(r=>r.set!=='flagged');rows.forEach(r=>{r.e=res(r);});
+ a.equal(F.rows.length,157);a.equal(new Set(F.rows.map(r=>r.lineage)).size,28);a.deepEqual(F.flagged.sort(),['D021','D050','N026']);
+ // Every row states its yeast type as the source gave it (normalised to instant: fresh / 3, active dry / 1.33).
+ for(const r of F.rows)a.ok(typeof r.yeastType==='string'&&r.yeastType.length>0,r.id);
+ // Mixed effects: each source has its own level (endpoint, flour, style); the shape is what is left inside a source.
+ const by={};for(const r of rows)(by[r.source]??=[]).push(r);
+ const off={};for(const [k,rs] of Object.entries(by))off[k]=rs.reduce((x,r)=>x+r.W*r.e,0)/rs.reduce((x,r)=>x+r.W,0);
+ const multi=rows.filter(r=>by[r.source].length>1);
+ const shape=Math.sqrt(multi.reduce((x,r)=>x+r.W*(r.e-off[r.source])**2,0)/multi.reduce((x,r)=>x+r.W,0));
+ a.ok(shape<Math.log(1.6),`shape residual ×${Math.exp(shape).toFixed(2)}`);
+ // A is anchored on the dough sources: their levels average about zero.
+ const ds=Object.keys(by).filter(k=>by[k].some(r=>r.medium==='dough'));
+ a.ok(Math.abs(ds.reduce((x,k)=>x+off[k],0)/ds.length)<0.15);
+ const offs=Object.values(off);a.ok(Math.sqrt(offs.reduce((x,y)=>x+y*y,0)/offs.length)<Math.log(2.1),'source spread');
+ // Inside the sources: no regime off by more than ×1.4, except the community cold tables (documented, LOW CONFIDENCE).
+ const reg={};for(const r of rows)(reg[r.regime]??=[]).push(r.e-off[r.source]);
+ for(const [k,v] of Object.entries(reg))if(k!=='cold'&&v.length>2)a.ok(Math.abs(v.reduce((x,y)=>x+y,0)/v.length)<Math.log(1.4),`${k}`);
+ const cold=reg.cold.reduce((x,y)=>x+y,0)/reg.cold.length;a.ok(cold<-0.4&&cold>-0.9,`cold ${cold}`);
+ // Pre-registered held-out lineages (no offset: a new source): within ×2 for most rows.
+ const ho=rows.filter(r=>r.set==='heldout');a.equal(ho.length,22);
+ a.ok(Math.sqrt(ho.reduce((x,r)=>x+r.e*r.e,0)/ho.length)<0.75);a.ok(ho.filter(r=>Math.abs(r.e)<=Math.log(2)).length>=12);
  // Proof pairs (same dough at 21 and 27 °C): the model's 27 °C proof is at most 1.35× slower than the books'.
  const pairs=F.pairs.map(p=>Math.log(m.pathHeq(p.T0,[{hours:p.h21,envC:21,tauH:2}]).heq/m.pathHeq(p.T0,[{hours:p.h27,envC:27,tauH:2}]).heq));
  a.ok(pairs.reduce((x,y)=>x+y,0)/pairs.length<Math.log(1.35));
@@ -115,11 +126,11 @@ test('reference recipes land inside their sources\' ranges',()=>{
  // Thomas: 11 h poolish at 20 °C peaks at the mix; the final dough has its own yeast (Modernist poolish doughs).
  const th=ref('baguette','home_oven_stone_bread',2,250,20,'2026-11-21T17:15','2026-11-22T09:00',nights,'fresh','poolish',20,11,false);
  a.ok(Math.abs(data.poolishPeakHours(th.poolishPct,false,20,6,{massG:th.pf.prefFlour+th.pf.prefWater})-11)<1e-6);
- a.ok(th.poolishPct>0.1&&th.poolishPct<0.2,'MP4 p. 2 / MB6 p. 20: 0.1–0.2 % at 12 h');
+ a.ok(th.poolishPct>0.07&&th.poolishPct<0.2,'poolish tables at 11–13 h, 20–22 °C: 0.067–0.15 % (MB6, Dissapore, fond.kitchen, Weekend Bakery)');
  a.ok(th.total>0.2&&th.total<0.6);
  // Neapolitan with a 12 h poolish at 22 °C: poolish in the books' 12–16 h row, total near MP4's 0.40 %.
  const np=ref('neapolitan','pizza_oven',4,250,22,'2026-11-20T18:00','2026-11-21T20:00',[],'instant','poolish',30,12,false);
- a.ok(np.poolishPct>0.08&&np.poolishPct<0.2);a.ok(np.total>0.12&&np.total<0.5);
+ a.ok(np.poolishPct>0.06&&np.poolishPct<0.2,'12–14 h at 22–23 °C: 0.067 % (biancolievito) to 0.15 % (MP4, Weekend Bakery)');a.ok(np.total>0.12&&np.total<0.5);
  // Fridge poolish 18 h at 6 °C: Weekend Bakery's 0.5 % for 18 h (fridge temperature unstated), within 2×.
  const fp=ref('newyork','home_oven_steel',4,280,22,'2026-11-20T18:00','2026-11-21T20:00',[],'instant','poolish',30,18,true);
  a.ok(fp.poolishPct>0.25&&fp.poolishPct<1.0);a.equal(fp.pf.pastPeak,undefined);
@@ -150,9 +161,10 @@ test('About page: every worked example and constant is the engine\'s, in both lo
  const ex=(T0,ph,med='dough')=>{const p=m.pathHeq(T0,ph.map(([h,c])=>({hours:h,envC:c,tauH:2})));return {p,dose:m.doseForHeq(p.heq,med,med==='dough'?m.riseTarget(p.endC):1)};};
  const e1=ex(21,[[12,21]]),e2=ex(24,[[2,21],[46,6],[2,21]]),e3=ex(21,[[12,21]],'poolish'),e4=ex(24,[[6,30]]);
  for(const e of [e1,e2,e3,e4]){has(e.p.heq,1,' h');has(e.dose,2,' %');}
- has(e4.p.endC,1,' °C');has(m.riseTarget(e4.p.endC),1,')');
- for(const [v,dp] of [[m.YEAST_DOSE_A,2],[m.YEAST_DOSE_B,2],[m.YEAST_MEDIUM_POOLISH,2],[m.YEAST_MEDIUM_BIGA,2],[m.YEAST_T_MAX,1],[m.YEAST_T_OPT,1]])has(v,dp);
- for(const src of [en,fr])a.ok(src.includes('−0'+(src===en?'.':',')+'5 °C'));
+ has(e4.p.endC,1,' °C');has(m.riseTarget(e4.p.endC),2,')');
+ for(const [v,dp] of [[m.YEAST_DOSE_A,2],[m.YEAST_DOSE_B,2],[m.YEAST_MEDIUM_POOLISH,2],[m.YEAST_MEDIUM_BIGA,2],[m.YEAST_T_MAX,1],[m.YEAST_HEAT_RISE,2]])has(v,dp);
+ for(const src of [en,fr])a.ok(src.includes('40 °C'));
+ for(const src of [en,fr])a.ok(src.includes('−3'+(src===en?'.':',')+'2 °C'));
 });
 
 test('inversion: every rising crossing of a non-monotone budget, the one nearest the style window within the time left',()=>{

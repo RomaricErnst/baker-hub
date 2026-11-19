@@ -21,9 +21,9 @@ test('a slow entered amount is refused with the smallest fitting amount, rounded
   assert.equal(check.fits, false);
   // 0.02 % has no window up to 96 h in a cold-retard Neapolitan (yeast model: the fridge mostly holds).
   assert.ok(check.neededH === null || check.neededH > check.availableH);
-  // Yeast model (19 Nov 2026): 0.13 % (was 0.06 % with the old cold law, which credited fridge hours
-  // at 60–75 % of room-temperature hours).
-  assert.equal(check.minimumShownPct, 0.13);
+  // Yeast model: 0.11 % (Phase 3 refit, 20 Nov 2026; 0.13 % in Phase 2; 0.06 % with the old cold law,
+  // which credited fridge hours at 60–75 % of room-temperature hours).
+  assert.equal(check.minimumShownPct, 0.11);
   // The offer fits, and one step less does not.
   assert.ok(hoursFor(check.minimumShownPct, o, check.availableH) <= check.availableH);
   assert.equal(hoursFor(check.minimumShownPct - 0.01, o, check.availableH), null);

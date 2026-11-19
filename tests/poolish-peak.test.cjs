@@ -46,9 +46,9 @@ test('Thomas: an 11 h room-temperature poolish holds its own peak dose, the fina
  // top-up's total). Yeast model: the poolish dose of an 11 h poolish at 20 °C, the final dough the direct need
  // of the dough's own path (Modernist's poolish doughs add about that much).
  assert.equal(pf.prefFlour,57);assert.equal(r.flour,287);
- assert.ok(Math.abs(pf.prefYeastGrams-0.2116)<0.001,`poolish ${pf.prefYeastGrams}`);
- assert.ok(Math.abs(pf.finalYeastGrams-r.yeast.convertedGrams)<0.001,'final dough = the direct need of its path');
- assert.ok(Math.abs(pf.finalYeastGrams-2.589)<0.01,`final ${pf.finalYeastGrams}`);
+ assert.ok(Math.abs(pf.prefYeastGrams-0.1647)<0.001,`poolish ${pf.prefYeastGrams}`);   // Phase 2 0.2116 (M_p 0.83 → 0.70, 20 Nov 2026)
+ assert.ok(Math.abs(pf.finalYeastGrams-r.yeast.convertedGrams)<0.002,'final dough = the direct need of its path');   // convertedGrams is rounded to 0.001 g on its own
+ assert.ok(Math.abs(pf.finalYeastGrams-2.211)<0.01,`final ${pf.finalYeastGrams}`);   // Phase 2 2.589
  assert.ok(Math.abs(pf.finalYeastGrams-3*pf.finalYeastGramsIDY)<1e-12);
  assert.ok(Math.abs(data.poolishPeakHours(pf.prefYeastGramsIDY/pf.prefFlour*100,false,20,6,{massG:pf.prefFlour+pf.prefWater})-11)<1e-6,'it peaks at the mix');
  assert.equal(pf.pastPeak,undefined);
