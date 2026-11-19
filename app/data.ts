@@ -1,4 +1,5 @@
 import { BREAD_STYLE_DEFINITIONS, getBreadProtocol } from './utils/breadProfiles';
+import { pathHeq, thermalTauH, doseForHeq, heqForDose, type PathResult } from './utils/yeastModel';
 // ══════════════════════════════════════════
 // BAKER HUB — Master Data File
 // Single source of truth for all recipe data
@@ -912,20 +913,24 @@ export const PREFERMENT_TYPES = {
 
 export type PrefermentType = keyof typeof PREFERMENT_TYPES;
 
-// ── Preferment yeast helpers (reproduced from Craig's model) ─────
-// These are local to the preferment calculation and intentionally
-// kept separate from the main yeast engine in utils.ts.
+// ── Preferment yeast (the engine's one yeast model, app/utils/yeastModel.ts) ─────
 const YEAST_MIN_PCT_PREF = 0.05;
+/** Same product ceiling as a direct dough (utils.ts): a short fridge biga would otherwise ask for 2–3 %. */
+const YEAST_MAX_PCT_PREF = 1.5;
 
-function rtIDYPref(hours: number, temp: number): number {
-  const raw = 9.5 / (Math.pow(Math.max(0.5, hours), 1.65) * Math.pow(2.5, (temp - 25) / 10));
-  const tropical = temp >= 33 ? 1.25 : temp >= 30 ? 1.15 : 1.0;
-  return raw / tropical;
-}
-
-function coldIDYPref(hours: number, fridgeT: number): number {
-  const raw = 7.5 / Math.pow(Math.max(1, hours), 1.313);
-  return raw / Math.pow(2.0, (fridgeT - 4) / 10);
+/** A preferment's temperature path: made at the kitchen temperature, then either
+ * at room temperature (chilled for `cooldownH` before the mix in a warm kitchen)
+ * or in the fridge (out for `warmupH` before the mix). */
+export function prefermentPath(hours: number, inFridge: boolean, kitchenTemp: number, fridgeTemp: number,
+  massG: number, hydrationPct: number, conditioning: { warmupH?: number; cooldownH?: number } = {}): PathResult {
+  const tauH = thermalTauH(massG, hydrationPct);
+  const H = Math.max(0, hours);
+  if (inFridge) {
+    const warm = Math.min(H, Math.max(0, conditioning.warmupH ?? 0));
+    return pathHeq(kitchenTemp, [{ hours: H - warm, envC: fridgeTemp, tauH }, { hours: warm, envC: kitchenTemp, tauH }]);
+  }
+  const chill = Math.min(H, Math.max(0, conditioning.cooldownH ?? 0));
+  return pathHeq(kitchenTemp, [{ hours: H - chill, envC: kitchenTemp, tauH }, { hours: chill, envC: fridgeTemp, tauH }]);
 }
 
 export function computePrefermentRecipe(
@@ -938,7 +943,8 @@ export function computePrefermentRecipe(
   flourPctOverride?: number,
   yeastType?: string,         // for output conversion (default 'instant' = IDY)
   actualFermentH?: number,    // baker's REAL planned window (from scheduler) — yeast calibrated to it
-  nTargetGramsIDY?: number,   // whole-dough leavening requirement (direct-engine IDY grams) — makes dosing fraction-independent
+  nTargetGramsIDY?: number,   // the final dough's own yeast: the direct-dough need of the dough's path (IDY grams)
+  conditioning?: { warmupH?: number; cooldownH?: number }, // warm-up after the fridge / chill before the mix (h)
 ): {
   prefFlour: number;
   prefWater: number;
@@ -954,6 +960,7 @@ export function computePrefermentRecipe(
   scheduleFr: string;
   finalYeastGrams?: number;
   finalYeastGramsIDY?: number;
+  pastPeak?: boolean;
 } | null {
   if (prefermentType === 'none') return null;
   const p = PREFERMENT_TYPES[prefermentType];
@@ -995,66 +1002,32 @@ export function computePrefermentRecipe(
     else                        prefFermentH = 14;
   }
 
-  // Environment correction factors — calibrated against Modernist Pizza Vol.4
-  // Craig's constants are for bulk dough (65% hydration, with salt).
-  // Preferments are different physical environments.
-  const rawPct = isInFridge
-    ? coldIDYPref(prefFermentH, effectiveFT)
-    : rtIDYPref(prefFermentH, effectiveKT);
-
-  const correctionFactor = prefermentType === 'biga'
-    ? 2.2          // stiff dough, constrained yeast — needs more IDY
-    : isInFridge
-      ? 1.65       // fridge poolish: liquid, CO₂ escapes freely
-      : 1 / 3.1;   // RT poolish: no salt, 100% hydration (tropical already in rtIDYPref)
-
-  const idyPct = Math.max(YEAST_MIN_PCT_PREF, rawPct * correctionFactor);
-
-  // ── Peak-ripening dose ──────────────────────────────────────────────
-  // The seed that makes THIS preferment ripe (at peak) at mix time, for its
-  // own flour and window. Scales with preferment flour — a bigger biga needs
-  // proportionally more seed to peak on the same clock.
+  // ── Peak-ripening dose (yeast model, ripe endpoint) ───────────────────
+  // dose = A · M · Heq^(−b) of the preferment's own flour over its own
+  // temperature path; M is the poolish or biga medium factor fitted to
+  // MP4 KM p. 2, MB6 KM pp. 19–22 and the other preferment tables
+  // (docs/YEAST-MODEL.md). It replaced ÷3.1 / ×1.65 / ×2.2 on Craig's laws.
+  const medium = prefermentType === 'biga' ? 'biga' as const : 'poolish' as const;
+  const prefHydPct = p.hydration;
+  const path = prefermentPath(prefFermentH, isInFridge, effectiveKT, effectiveFT, prefFlour + prefWater, prefHydPct, conditioning);
+  const idyPct = Math.min(YEAST_MAX_PCT_PREF, Math.max(YEAST_MIN_PCT_PREF, doseForHeq(path.heq, medium)));
   const peakDoseIDY = prefFlour * idyPct / 100;
 
-  // ── Whole-dough leavening requirement (fraction-independent) ─────────
-  // A preferment is a yeast farm: the seed multiplies while it ripens, and
-  // the grown population is what actually leavens the FINAL dough. So the
-  // seed must be large enough to DELIVER the leavening the whole dough needs
-  // over its whole schedule — that target (nTargetGramsIDY) comes from the
-  // direct-dough engine and is based on TOTAL flour, so it no longer depends
-  // on the preferment fraction.
-  //
-  //   delivered ≈ seed × G,   G = 2^(fermH / tD(T))   (population growth)
-  //   tD(T) = doubling time, Q10=2, anchored at 22.1h @6°C so this reproduces
-  //   the validated points (20% biga 46h≈0.1g, fridge poolish 18h≈0.3g).
-  //
-  // We take the LARGER of the peak dose and the leavening dose so the
-  // preferment is never under-ripe AND never under-delivers. This only ever
-  // tops up an underdose (low fraction + long/warm final ferment); at the
-  // validated fractions it is a no-op.
-  let prefYeastGramsIDY = peakDoseIDY;
-  if (nTargetGramsIDY !== undefined && nTargetGramsIDY > 0) {
-    const fermTemp = isInFridge ? effectiveFT : effectiveKT;
-    const tD = 22.1 * Math.pow(2, -(fermTemp - 6) / 10); // doubling time (h)
-    const growth = Math.pow(2, prefFermentH / tD);        // population multiple
-    const leaveningDoseIDY = nTargetGramsIDY / growth;
-    prefYeastGramsIDY = Math.max(peakDoseIDY, leaveningDoseIDY);
-  }
-  // ── Poolish past its peak at the mix (owner's decision, 18 Nov 2026) ──
-  // The leavening dose above can exceed the peak dose several times over
-  // (Thomas: 2 baguettes, 20 °C, 11 h poolish held the whole dough's yeast and
-  // would peak about 4.5 h after it was made). Read the dose back through the
-  // SAME peak model (poolishPeakHours) and, when the poolish would peak more
-  // than the engine's own past-peak tolerance before the mix, keep the peak
-  // dose in the poolish and add the rest to the final dough. Total yeast is
-  // unchanged; flour %, storage and timing are the baker's (or the planner's)
-  // and are not touched here. Passing poolishes return exactly as before.
-  let finalYeastGramsIDY: number | undefined;
-  if (prefermentType === 'poolish' && prefFlour > 0 && prefYeastGramsIDY > peakDoseIDY + 1e-12
-    && !poolishPeakAtMix(prefYeastGramsIDY / prefFlour * 100, actualFermentH !== undefined && actualFermentH > 0 ? actualFermentH : prefFermentH, isInFridge, effectiveKT, effectiveFT)) {
-    finalYeastGramsIDY = prefYeastGramsIDY - peakDoseIDY;
-    prefYeastGramsIDY = peakDoseIDY;
-  }
+  // ── The final dough's own yeast ───────────────────────────────────────
+  // Every Modernist poolish dough adds instant yeast to the final dough, and
+  // its total is about the direct-dough need of the dough's own schedule
+  // (0.4–1.9×, geometric mean 1.16, MP4 pp. 25–71, MB6), as Suas and Hamelman
+  // do. So the preferment holds its peak dose and the final dough the need of
+  // the path from the mix to the bake; it replaced the leavening top-up (a
+  // seed sized to carry the whole dough, which over-ripened room-temperature
+  // poolishes, 18–19 Nov 2026).
+  const prefYeastGramsIDY = peakDoseIDY;
+  const finalYeastGramsIDY = nTargetGramsIDY !== undefined && nTargetGramsIDY > 0 ? nTargetGramsIDY : undefined;
+  // Past its peak at the mix: only when the dose is held at the product floor or
+  // the window is longer than the dosed one (the levers in poolishRipeness.ts).
+  const pastPeak = prefermentType === 'poolish' && prefFlour > 0
+    && !poolishPeakAtMix(idyPct, actualFermentH !== undefined && actualFermentH > 0 ? actualFermentH : prefFermentH, isInFridge, effectiveKT, effectiveFT,
+      { massG: prefFlour + prefWater, ...conditioning });
   // Preserve the model dose through conversion; round only for display.
 
   // Convert to baker's selected yeast type
@@ -1090,12 +1063,12 @@ export function computePrefermentRecipe(
     cold,
     schedule,
     scheduleFr,
-    // Only on a poolish that would be past its peak with all the yeast: the
-    // final dough's share, in the selected yeast and in IDY.
+    // The final dough's own yeast, in the selected yeast and in IDY.
     ...(finalYeastGramsIDY !== undefined ? {
       finalYeastGrams: finalYeastGramsIDY * yeastConversion,
       finalYeastGramsIDY,
     } : {}),
+    ...(pastPeak ? { pastPeak: true } : {}),
   };
 }
 
@@ -1116,23 +1089,29 @@ export function poolishPastPeakToleranceH(inFridge: boolean, kitchenTemp: number
 
 /** Hours from making a poolish to its peak for a yeast dose (IDY % of the
  * poolish's own flour): the inverse of the peak dose computePrefermentRecipe
- * gives a window (Craig's room-temperature or cold formula with the poolish
- * correction, the same tropical factor and the same 0.5 h / 1 h floors). */
-export function poolishPeakHours(idyPctOfPrefFlour: number, inFridge: boolean, kitchenTemp: number, fridgeTemp: number): number {
+ * gives a window, on the same temperature path (yeast model, poolish medium).
+ * Floors: 0.5 h at room temperature, 1 h in the fridge. */
+export function poolishPeakHours(idyPctOfPrefFlour: number, inFridge: boolean, kitchenTemp: number, fridgeTemp: number,
+  o: { massG?: number; warmupH?: number; cooldownH?: number } = {}): number {
   if (!(idyPctOfPrefFlour > 0)) return Infinity;
-  if (inFridge) {
-    const raw = idyPctOfPrefFlour / 1.65 * Math.pow(2.0, (fridgeTemp - 4) / 10);
-    return Math.max(1, Math.pow(7.5 / raw, 1 / 1.313));
-  }
-  const tropical = kitchenTemp >= 33 ? 1.25 : kitchenTemp >= 30 ? 1.15 : 1.0;
-  const raw = idyPctOfPrefFlour * 3.1 * tropical;
-  return Math.max(0.5, Math.pow(9.5 / (raw * Math.pow(2.5, (kitchenTemp - 25) / 10)), 1 / 1.65));
+  const target = heqForDose(idyPctOfPrefFlour, 'poolish');
+  const massG = o.massG ?? 600, hyd = PREFERMENT_TYPES.poolish.hydration;
+  const reached = (hours: number) => prefermentPath(hours, inFridge, kitchenTemp, fridgeTemp, massG, hyd, o).heq;
+  const floor = inFridge ? 1 : 0.5;
+  if (reached(floor) >= target) return floor;
+  let hi = 2 * floor;
+  while (reached(hi) < target && hi < 2000) hi *= 2;
+  if (reached(hi) < target) return Infinity;
+  let lo = hi / 2;
+  for (let i = 0; i < 50; i++) { const mid = (lo + hi) / 2; if (reached(mid) < target) lo = mid; else hi = mid; }
+  return (lo + hi) / 2;
 }
 
 /** True when a poolish holding this dose is still near its peak after
  * `hours`: its peak is no more than the past-peak tolerance before the mix. */
-export function poolishPeakAtMix(idyPctOfPrefFlour: number, hours: number, inFridge: boolean, kitchenTemp: number, fridgeTemp: number): boolean {
-  const peak = poolishPeakHours(idyPctOfPrefFlour, inFridge, kitchenTemp, fridgeTemp);
+export function poolishPeakAtMix(idyPctOfPrefFlour: number, hours: number, inFridge: boolean, kitchenTemp: number, fridgeTemp: number,
+  o: { massG?: number; warmupH?: number; cooldownH?: number } = {}): boolean {
+  const peak = poolishPeakHours(idyPctOfPrefFlour, inFridge, kitchenTemp, fridgeTemp, o);
   return hours - peak <= poolishPastPeakToleranceH(inFridge, kitchenTemp, peak) + 1e-9;
 }
 

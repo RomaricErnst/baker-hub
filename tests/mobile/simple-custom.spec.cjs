@@ -104,7 +104,8 @@ for(const locale of ['fr','en']){
   await page.getByRole('button',{name:fr?'Napolitaine classique':'Classic Neapolitan',exact:true}).tap();
   await page.locator('.bh-style-confirm').getByRole('button',{name:/^(Quantity|Quantité) →$/}).tap();
   const quantity=page.getByLabel(fr?'Nombre de pizzas':'Number of pizzas',{exact:true});
-  await quantity.fill('4');await quantity.blur();
+  // Two pizzas: the yeast stays under the 1 g that brings the weighing help (yeast model: 4 pizzas now take ~1 g).
+  await quantity.fill('2');await quantity.blur();
   await actions(page).locator('[data-bh-forward]:visible').tap();
   await (async()=>{const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();})();
 

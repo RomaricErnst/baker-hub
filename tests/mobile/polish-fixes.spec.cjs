@@ -5,12 +5,13 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 // opens full width under its row; planned times read on the 15-minute grid.
 test.use({timezoneId:'Asia/Singapore'});
 const fwd=page=>page.locator('.bh-step-actions:visible [data-bh-forward]:visible, .bh-batch-actions:visible [data-bh-forward]:visible').first();
-async function start(page){
+async function start(page,count){
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
  await page.goto('/');
  await page.getByRole('button',{name:'Pizza',exact:true}).tap();
  await page.getByRole('button',{name:'Classic Neapolitan',exact:true}).tap();
  await page.locator('.bh-style-confirm').getByRole('button',{name:/^Quantity →$/}).tap();
+ if(count){const q=page.getByLabel('Number of pizzas',{exact:true});await q.fill(String(count));await q.blur();}
  await fwd(page).tap();
  const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();
 }
@@ -42,7 +43,8 @@ test('a biga that cannot be ready offers direct dough or a later bake',async({pa
 });
 
 test('the weighing help opens under the yeast row, at full width',async({page})=>{
- await start(page);
+ // Two pizzas keep the yeast under 1 g, where the help is offered (yeast model: four now take about 1 g).
+ await start(page,2);
  const time=page.getByLabel('Bake date and time',{exact:true});await time.focus();await time.blur();
  await page.locator('[data-generate-recipe]').tap();
  const help=page.locator('[data-yeast-help]:visible').first();

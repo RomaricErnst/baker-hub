@@ -1,4 +1,5 @@
 'use client';
+import { YEAST_DOSE_A, YEAST_DOSE_B } from '../utils/yeastModel';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations, useLocale } from 'next-intl';
@@ -156,6 +157,8 @@ function YeastInfoSheet({ id, onPick, onClose, fr }: {
   );
 }
 
+const fmtModel = (n: number, locale: string) => new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-US', { maximumFractionDigits: 2 }).format(n);
+
 export default function YeastHelper({ onSelect, onClose, selected, calcData, disabledIds, disabledNote, styleKey }: YeastHelperProps) {
   const t = useTranslations('yeast');
   const locale = useLocale();
@@ -252,21 +255,13 @@ export default function YeastHelper({ onSelect, onClose, selected, calcData, dis
               borderRadius: '16px', padding: '12px 16px', marginTop: '8px',
               fontSize: '12px', color: 'var(--ash)', lineHeight: 1.7,
             }}>
-              <div>{locale === 'fr' ? 'Modèle : formule par phase de Craig v1.1' : "Model: Craig's per-stage formula v1.1"}</div>
+              <div>{locale === 'fr' ? 'Modèle : une loi de dose sur le trajet de température de la pâte (À propos → Le moteur de levure)' : 'Model: one dose law over the dough’s temperature path (About → The yeast engine)'}</div>
               <div style={{ fontFamily: 'var(--font-dm-mono)' }}>
-                RT phases: IDY% = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))
+                {locale === 'fr' ? `IDY % = ${fmtModel(YEAST_DOSE_A, locale)} × Héq^−${fmtModel(YEAST_DOSE_B, locale)}` : `IDY % = ${fmtModel(YEAST_DOSE_A, locale)} × Heq^−${fmtModel(YEAST_DOSE_B, locale)}`}
               </div>
               <div style={{ fontFamily: 'var(--font-dm-mono)' }}>
-                Cold phase: IDY% = 7.5 / hours^1.313
+                {locale === 'fr' ? 'Héq = heures équivalentes à 25 °C (ambiante, refroidissement, frigo, remise en température)' : 'Heq = equivalent hours at 25 °C (room, cooling, fridge, warming)'}
               </div>
-              {calcData.kitchenTemp >= 30 && (
-                <div>
-                  Tropical correction applied:{' '}
-                  <span style={{ fontFamily: 'var(--font-dm-mono)' }}>
-                    ÷{calcData.kitchenTemp <= 32 ? '1.15' : '1.25'} at {calcData.kitchenTemp <= 32 ? '30–32°C' : '33–35°C'}
-                  </span>
-                </div>
-              )}
               <div style={{ marginTop: '4px' }}>
                 <span style={{ fontFamily: 'var(--font-dm-mono)' }}>
                   RT hours: {calcData.rtHours}h

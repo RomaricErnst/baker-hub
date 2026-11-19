@@ -50,19 +50,20 @@ test('more yeast plans a later start, and the calculated amount restores the pla
 });
 
 // Too little yeast for the time left: the cause in words, and a way back to
-// the calculated amount.
+// the calculated amount. Yeast model (19 Nov 2026): 0.08 % (was 0.02 %, which no window up to 96 h now
+// fits at 24 °C with a 6 °C fridge: the fridge mostly holds; 0.08 % needs about 80 h).
 test('a yeast amount too slow for the bake names the cause and offers the calculated amount',async({page})=>{
  const errors=[];page.on('pageerror',error=>errors.push(error.message));
  await page.clock.setFixedTime(NOW);
  const bake=NOW+58*3600000;
- const data={version:1,savedAt:NOW,tab:'custom',bakeType:'pizza',styleKey:'neapolitan',numItems:8,itemWeight:270,pizzaDiameter:30,ovenType:'pizza_oven',mixerType:'hand',yeastType:'instant',kitchenTemp:24,humidity:'normal',fridgeTemp:6,flourBlend:null,prefermentType:'none',prefOffsetH:0,prefGoesInFridge:false,flourInFridge:false,startTime:bake-24*3600000,eatTime:bake,blocks:[],recipeGenerated:true,protocolStale:true,yeastPctOverride:0.02,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,customKitchenConfirmed:true,activeStep:7,advancedStep:9,highestStep:7,advancedHighestStep:10,setupOverview:false,activeTab:'setup'};
+ const data={version:1,savedAt:NOW,tab:'custom',bakeType:'pizza',styleKey:'neapolitan',numItems:8,itemWeight:270,pizzaDiameter:30,ovenType:'pizza_oven',mixerType:'hand',yeastType:'instant',kitchenTemp:24,humidity:'normal',fridgeTemp:6,flourBlend:null,prefermentType:'none',prefOffsetH:0,prefGoesInFridge:false,flourInFridge:false,startTime:bake-24*3600000,eatTime:bake,blocks:[],recipeGenerated:true,protocolStale:true,yeastPctOverride:0.08,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,customKitchenConfirmed:true,activeStep:7,advancedStep:9,highestStep:7,advancedHighestStep:10,setupOverview:false,activeTab:'setup'};
  await page.addInitScript(data=>{
   if(!sessionStorage.getItem('yeast-seeded')){localStorage.setItem('bh_session_v1',JSON.stringify(data));sessionStorage.setItem('yeast-seeded','1');}
   sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:7,advancedStep:9,setupOverview:false,activeTab:'setup'}));
  },data);
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
  await page.goto('/');
- await expect(page.getByText(/^0\.02% yeast needs about .*: bake later or use more yeast\.$/)).toBeVisible({timeout:20000});
+ await expect(page.getByText(/^0\.08% yeast needs about .*: bake later or use more yeast\.$/)).toBeVisible({timeout:20000});
  await page.locator('[data-use-calculated-yeast]').tap();
  await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBeUndefined();
  await expect(page.locator('[data-use-calculated-yeast]')).toHaveCount(0);
@@ -87,13 +88,14 @@ for(const locale of ['en','fr'])test(`${locale}: a yeast amount too slow for the
  const fineTune=page.locator('#step-10:visible');
  await expect(fineTune.locator('[data-yeast-override] input')).toBeVisible({timeout:20000});
  const yeast=fineTune.locator('[data-yeast-override] input');
- await yeast.fill('0.02');await yeast.blur();
+ // 0.08 % (was 0.02 %): about 80 h with the yeast model, more than the 34 h left.
+ await yeast.fill('0.08');await yeast.blur();
  const note=fineTune.locator('[data-yeast-entry-issue]');
  await expect(note).toHaveText(fr
-  ?/^0,02 % demande environ \d+ h ; votre cuisson est dans \d+ h\. Mettez au moins 0,\d+ %, ou enfournez plus tard\.Utiliser 0,\d+ %Changer l’heure de cuisson$/
-  :/^0\.02% needs about \d+ h; your bake is in \d+ h\. Use at least 0\.\d+%, or bake later\.Use 0\.\d+%Change bake time$/);
+  ?/^0,08 % demande environ \d+ h ; votre cuisson est dans \d+ h\. Mettez au moins 0,\d+ %, ou enfournez plus tard\.Utiliser 0,\d+ %Changer l’heure de cuisson$/
+  :/^0\.08% needs about \d+ h; your bake is in \d+ h\. Use at least 0\.\d+%, or bake later\.Use 0\.\d+%Change bake time$/);
  // Not applied: the typed text stays, the plan does not move, and nobody is asked whether the dough is mixed.
- await expect(yeast).toHaveValue('0.02');
+ await expect(yeast).toHaveValue('0.08');
  expect((await stored(page)).yeastPctOverride).toBeUndefined();
  await expect(page.getByText(fr?'Avez-vous pétri la pâte ?':'Have you mixed the dough?',{exact:true})).toHaveCount(0);
  await expect(fineTune.locator('[data-bh-forward]')).toBeDisabled();
@@ -102,7 +104,7 @@ for(const locale of ['en','fr'])test(`${locale}: a yeast amount too slow for the
 
  const offer=note.locator('[data-use-minimum-yeast]');
  const minimum=Number((await offer.textContent()).match(/[\d.,]+/)[0].replace(',','.'));
- expect(minimum).toBeGreaterThan(0.02);
+ expect(minimum).toBeGreaterThan(0.08);
  await offer.tap();
  await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBe(minimum);
  await expect(note).toHaveCount(0);

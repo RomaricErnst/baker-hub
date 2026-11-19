@@ -2050,7 +2050,7 @@ export default function Home() {
       );
   };
   // The planner's poolish levers judge a candidate by the recipe it would show: true when that
-  // recipe keeps all its yeast in the poolish (near its peak at the mix, data.ts poolishPeakAtMix).
+  // recipe's poolish is near its peak at the mix (data.ts poolishPeakAtMix, `pastPeak` unset).
   const poolishPeakAtMix = React.useMemo(() => prefermentType === 'poolish' && yeastType && yeastType !== 'sourdough' && styleKey && ovenType && mixerType
     ? (plan: ReturnType<typeof buildSchedule>, prefHours: number, inFridge: boolean) => {
       try {
@@ -2058,7 +2058,7 @@ export default function Home() {
           mixerType as MixerType, manualHydration, manualOil, manualSugar, flourChosen ? flourBlend : undefined, 'poolish', priorityOverride,
           prefermentFlourPct ?? 20, manualSalt, targetDoughTemp, flourInFridge, wastePct, inFridge, feedToMixH, prefHours > 0 ? prefHours : undefined,
           measuredFlourTemp, prefTempForBalance, totalFlourTarget);
-        return r.preferment?.finalYeastGrams === undefined;
+        return !r.preferment?.pastPeak;
       } catch { return true; }
     } : undefined,
   [prefermentType, yeastType, styleKey, ovenType, mixerType, numItems, itemWeight, kitchenTemp, humidity, fridgeTemp, manualHydration, manualOil, manualSugar, flourChosen, flourBlend, priorityOverride, prefermentFlourPct, manualSalt, targetDoughTemp, flourInFridge, wastePct, feedToMixH, measuredFlourTemp, prefTempForBalance, totalFlourTarget]);

@@ -1,9 +1,10 @@
 const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 
 // 18 Nov 2026, owner's decision (round-4 retest, Thomas, Lyon 20 °C): a poolish is never past its peak at
-// the knead. 2 baguettes, poolish 20 %, fresh yeast, poolish 7:00, knead 18:15. Storage auto → the planner
-// puts the poolish in the fridge; storage fixed to room → the plan stands and the final dough gets the rest
-// of the same total yeast (one line, no explanation). The poolish % is the baker's.
+// the knead. 2 baguettes, poolish 20 %, fresh yeast, poolish 7:00, knead 18:15. Yeast model (19 Nov 2026):
+// the poolish holds the peak dose of its own 11.25 h and the final dough its own yeast, so the poolish peaks
+// at the knead whatever the storage: the plan is returned as found (room temperature), and the final dough
+// has its yeast line. The poolish % is the baker's.
 const H=3600000,Z=s=>Date.parse(s+'Z');
 const stored=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null'));
 test.use({actionTimeout:20000,timezoneId:'Europe/Paris'});
@@ -26,25 +27,26 @@ async function goRecipe(page){
 const finalDough=page=>page.locator('[data-recipe-stages] > div').filter({has:page.getByText(/^(Final dough|Pâte finale)$/)});
 const makePoolish=page=>page.locator('[data-recipe-stages] > div').first();
 
-test('storage fixed to room: the poolish keeps its peak dose, the final dough one yeast line, same total',async({page})=>{
+test('storage fixed to room: the poolish holds its peak dose, the final dough its own yeast line',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await open(page,{...thomas,savedAt:Z('2026-11-20T17:00'),poolishStorage:'room',recipeGenerated:true,activeStep:99,advancedStep:99,highestStep:99,advancedHighestStep:99,setupOverview:false,activeTab:'plan'});
  await page.goto('/');
  await page.getByRole('button',{name:/^(Resume|View ingredients) →$/}).first().tap();
  await goRecipe(page);
  await expect(page.locator('[data-recipe-stages]')).toBeVisible();
- // Before (main): 0.7 g fresh yeast in the poolish, nothing in the final dough.
+ // Before (#137): 0.2 g in the poolish and 0.5 g in the final dough (0.7 g). Yeast model: 0.2 g and 2.6 g
+ // (the final dough's own need for 4.8 h at 20 °C and 10.25 h in the fridge), 2.8 g in all.
  await expect(makePoolish(page)).toContainText('Fresh yeast');
  await expect(makePoolish(page)).toContainText('0.2 g');
  await expect(finalDough(page)).toContainText('Fresh yeast');
- await expect(finalDough(page)).toContainText('0.5 g');
- await expect(page.locator('[data-whole-dough]')).toContainText('0.7 g');
+ await expect(finalDough(page)).toContainText('2.6 g');
+ await expect(page.locator('[data-whole-dough]')).toContainText('2.8 g');
  const s=await stored(page);
  expect(s.prefGoesInFridge).toBe(false);expect(s.prefOffsetH).toBe(11.25);expect(s.prefermentFlourPct).toBe(20);
  expect(errors).toEqual([]);
 });
 
-test('storage auto: Generate puts the poolish in the fridge for the same knead, all its yeast inside',async({page})=>{
+test('storage auto: Generate keeps the room-temperature poolish, which now peaks at the knead',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await open(page,{...thomas,savedAt:Z('2026-11-20T17:00'),recipeGenerated:false,activeStep:7,advancedStep:9,highestStep:7,advancedHighestStep:9,setupOverview:false,activeTab:'setup'});
  await page.goto('/');
@@ -55,17 +57,18 @@ test('storage auto: Generate puts the poolish in the fridge for the same knead, 
  const nightsChip=page.getByRole('button',{name:/^Nights/});
  await nightsChip.tap();await expect(nightsChip).toHaveAttribute('aria-pressed','false');
  await nightsChip.tap();await expect(nightsChip).toHaveAttribute('aria-pressed','true');
- await expect(plan).toContainText('Refrigerated');
+ await expect(plan).toContainText('Room temperature');
  const generate=page.getByRole('button',{name:/^(Generate my recipe|Create my recipe)/}).first();
  for(let i=0;i<10&&!(await generate.isVisible());i++){await page.getByRole('button',{name:/^(Fine-tune|Continue|Next)\b.*→$|→$/}).filter({hasNotText:'‹'}).last().tap();await page.waitForTimeout(300);}
  await generate.tap();
  await expect.poll(async()=>(await stored(page))?.recipeGenerated??false,{timeout:30000}).toBe(true);
  const s=await stored(page);
- expect(s.prefGoesInFridge).toBe(true);
+ // Before (#137): the planner moved the poolish into the fridge. Now the room-temperature poolish is ripe at the knead.
+ expect(s.prefGoesInFridge).toBe(false);
  expect(s.eatTime).toBe(Z('2026-11-22T09:00'));
- expect(s.prefOffsetH).toBe(11.25);expect(s.startTime).toBe(Z('2026-11-21T17:15'));// poolish 7:00, knead 18:15 (Paris), now in the fridge
+ expect(s.prefOffsetH).toBe(11.25);expect(s.startTime).toBe(Z('2026-11-21T17:15'));// poolish 7:00, knead 18:15 (Paris)
  expect(s.prefermentFlourPct).toBe(20);
  await expect(page.locator('[data-recipe-stages]')).toBeVisible();
- await expect(finalDough(page)).not.toContainText('Fresh yeast');
+ await expect(finalDough(page)).toContainText('Fresh yeast');
  expect(errors).toEqual([]);
 });

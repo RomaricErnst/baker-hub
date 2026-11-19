@@ -17,7 +17,8 @@ test('all displayed commercial ingredients conserve requested mass within weighi
       for (const pref of ['none', 'poolish', 'biga']) {
         for (const weight of [250, 1000, 4000]) {
           const r = recipe(style, 1, weight, yeastType, pref);
-          const dose = r.preferment?.prefYeastGrams ?? r.yeast.convertedGrams;
+          // With a preferment the yeast is the preferment's dose plus the final dough's own (yeast model).
+          const dose = r.preferment ? r.preferment.prefYeastGrams + (r.preferment.finalYeastGrams ?? 0) : r.yeast.convertedGrams;
           const sum = r.flour + r.water + r.salt + r.oil + r.sugar + (r.enrichment?.milk ?? 0) + (r.enrichment?.eggs ?? 0) + (r.enrichment?.butter ?? 0) + dose;
           // Flour/water/salt/oil are weighed to 1g, sugar to 0.1g.
           assert.ok(Math.abs(sum - r.totalDough) <= (r.enrichment ? 4 : 2.6),

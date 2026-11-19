@@ -1,0 +1,89 @@
+Final constants: {'Topt': 32.3, 'b': 1.2443, 'Tmin': -0.5389, 'A': 2.0535, 'Mp': 0.8314, 'Mb': 2.6659}
+
+1. Same rows, old engine vs new model (old engine column from Phase 1, no thermal path):
+   direct RT  old engine n=44 rms 1.10 (x2.99) bias -0.79 | new n=44 rms 0.65 (x1.92) bias +0.13
+   cold       old engine n=4 rms 1.49 (x4.42) bias +1.02 | new n=4 rms 0.67 (x1.95) bias -0.45
+   poolish    old engine n=28 rms 0.58 (x1.78) bias +0.25 | new n=28 rms 0.47 (x1.59) bias +0.04
+   biga       old engine n=3 rms 0.43 (x1.54) bias -0.38 | new n=3 rms 0.14 (x1.15) bias +0.01
+   ALL        old engine n=79 rms 0.95 (x2.59) bias -0.31 | new n=79 rms 0.58 (x1.79) bias +0.06
+
+2. Community cold tables (endpoint "rise in the fridge", not used for the cold tail under E2):
+   D019 dough.school           [(2, 21), (22, 4), (2.0, 21.0)] obs 0.150 model 0.322 -> source/model x0.47
+   D020 dough.school           [(2, 21), (46, 4), (2.0, 21.0)] obs 0.080 model 0.239 -> source/model x0.33
+   D021 dough.school           [(2, 21), (70, 4), (2.0, 21.0)] obs 0.050 model 0.188 -> source/model x0.27
+   D022 dough.school           [(2, 21), (46, 3), (5, 21)] obs 0.125 model 0.198 -> source/model x0.63
+   D027 Crust Kingdom          [(0.25, 21), (24.0, 4.0), (2.0, 21.0)] obs 0.300 model 0.497 -> source/model x0.60
+   D028 Crust Kingdom          [(0.25, 21), (48.0, 4.0), (2.0, 21.0)] obs 0.100 model 0.333 -> source/model x0.30
+   D029 Crust Kingdom          [(0.25, 21), (72.0, 4.0), (2.0, 21.0)] obs 0.050 model 0.246 -> source/model x0.20
+   D033 My Pizza Night         [(0.25, 21), (24.0, 4.0), (2.0, 21.0)] obs 0.225 model 0.497 -> source/model x0.45
+   D034 My Pizza Night         [(0.25, 21), (48.0, 4.0), (2.0, 21.0)] obs 0.125 model 0.333 -> source/model x0.38
+   D035 My Pizza Night         [(0.25, 21), (72.0, 4.0), (2.0, 21.0)] obs 0.065 model 0.246 -> source/model x0.26
+   D039 Jordo's                [(0.25, 21), (24.0, 3.5), (2.0, 21.0)] obs 0.200 model 0.558 -> source/model x0.36
+   D040 Jordo's                [(0.25, 21), (48.0, 3.5), (2.0, 21.0)] obs 0.100 model 0.390 -> source/model x0.26
+   D041 Jordo's                [(0.25, 21), (72.0, 3.5), (2.0, 21.0)] obs 0.060 model 0.296 -> source/model x0.20
+   D044 fond.kitchen           [(0.25, 21), (60.0, 4.5), (2.0, 21.0)] obs 0.125 model 0.240 -> source/model x0.52
+   D045 fond.kitchen           [(0.25, 21), (108.0, 4.5), (2.0, 21.0)] obs 0.045 model 0.143 -> source/model x0.32
+   D050 Biorito                [(0.25, 21), (24.0, 5.0), (2.0, 21.0)] obs 0.017 model 0.397 -> source/model x0.04
+
+3. Poolish doughs: total yeast (% of all flour) vs the direct-dough need of the post-mix path:
+   D085 Gozney                 post-mix [(1.5, 21), (36, 4), (4.5, 21)] T0 21 obs total 0.200 direct need 0.209 ratio 0.96
+   D108 Modernist Pizza Vol. 4 post-mix [(2.83, 21.0)] T0 27 obs total 0.820 direct need 0.590 ratio 1.39
+   D109 Modernist Pizza Vol. 4 post-mix [(0.33, 21), (36, 4), (2, 21)] T0 27 obs total 0.400 direct need 0.332 ratio 1.21
+   D110 Modernist Pizza Vol. 4 post-mix [(2.08, 21.0)] T0 27 obs total 0.370 direct need 0.840 ratio 0.44
+   D111 Modernist Pizza Vol. 4 post-mix [(0.33, 21), (36, 4), (2, 21)] T0 27 obs total 0.480 direct need 0.332 ratio 1.45
+   D112 Modernist Pizza Vol. 4 post-mix [(3.58, 21.0)] T0 27 obs total 0.330 direct need 0.452 ratio 0.73
+   D113 Modernist Pizza Vol. 4 post-mix [(0.33, 21), (36, 4), (2, 21)] T0 27 obs total 0.480 direct need 0.332 ratio 1.45
+   D114 Modernist Pizza Vol. 4 post-mix [(0.33, 21), (36, 4), (2, 21)] T0 27 obs total 0.430 direct need 0.332 ratio 1.30
+   D115 Modernist Pizza Vol. 4 post-mix [(6.0, 21.0)] T0 27 obs total 0.490 direct need 0.252 ratio 1.94
+   D128 Modernist Bread        post-mix [(5.5, 24.0)] T0 25 obs total 0.490 direct need 0.255 ratio 1.92
+   D156 CalBeachBaker (TFL)    post-mix [(0.5, 21), (24, 3.3), (2.0, 21.0)] T0 21 obs total 0.510 direct need 0.535 ratio 0.95
+
+4. Other checks:
+   D001 dough.school           direct RT        [(4.0, 20.0)] obs 1.500 model 0.521 ratio 2.88  [not independent: the table reproduces the current engine (Ph]
+   D002 dough.school           direct RT        [(4.0, 25.0)] obs 1.000 model 0.366 ratio 2.73  [not independent: the table reproduces the current engine (Ph]
+   D003 dough.school           direct RT        [(4.0, 30.0)] obs 0.700 model 0.304 ratio 2.30  [not independent: the table reproduces the current engine (Ph]
+   D004 dough.school           direct RT        [(6.0, 20.0)] obs 0.800 model 0.314 ratio 2.54  [not independent: the table reproduces the current engine (Ph]
+   D005 dough.school           direct RT        [(6.0, 25.0)] obs 0.500 model 0.221 ratio 2.26  [not independent: the table reproduces the current engine (Ph]
+   D006 dough.school           direct RT        [(6.0, 30.0)] obs 0.350 model 0.184 ratio 1.91  [not independent: the table reproduces the current engine (Ph]
+   D007 dough.school           direct RT        [(8.0, 20.0)] obs 0.500 model 0.220 ratio 2.27  [not independent: the table reproduces the current engine (Ph]
+   D008 dough.school           direct RT        [(8.0, 25.0)] obs 0.300 model 0.154 ratio 1.94  [not independent: the table reproduces the current engine (Ph]
+   D009 dough.school           direct RT        [(8.0, 30.0)] obs 0.200 model 0.128 ratio 1.56  [not independent: the table reproduces the current engine (Ph]
+   D010 dough.school           direct RT        [(12.0, 20.0)] obs 0.250 model 0.133 ratio 1.88  [not independent: the table reproduces the current engine (Ph]
+   D011 dough.school           direct RT        [(12.0, 25.0)] obs 0.150 model 0.093 ratio 1.61  [not independent: the table reproduces the current engine (Ph]
+   D012 dough.school           direct RT        [(12.0, 30.0)] obs 0.100 model 0.078 ratio 1.29  [not independent: the table reproduces the current engine (Ph]
+   D013 dough.school           direct RT        [(24.0, 20.0)] obs 0.100 model 0.056 ratio 1.79  [not independent: the table reproduces the current engine (Ph]
+   D014 dough.school           direct RT        [(24.0, 25.0)] obs 0.050 model 0.039 ratio 1.27  [not independent: the table reproduces the current engine (Ph]
+   D015 dough.school           direct RT        [(24.0, 30.0)] obs 0.030 model 0.033 ratio 0.92  [not independent: the table reproduces the current engine (Ph]
+   D016 dough.school           direct RT        [(48.0, 20.0)] obs 0.040 model 0.024 ratio 1.69  [not independent: the table reproduces the current engine (Ph]
+   D017 dough.school           direct RT        [(48.0, 25.0)] obs 0.020 model 0.017 ratio 1.20  [not independent: the table reproduces the current engine (Ph]
+   D018 dough.school           direct RT        [(72.0, 20.0)] obs 0.020 model 0.014 ratio 1.40  [not independent: the table reproduces the current engine (Ph]
+   D063 yozzause (TFL)         direct RT        [(8.0, 26.5)] obs 0.222 model 0.144 ratio 1.55  [dough temperature not stated (26.5 °C assumed): check only]
+   D064 yozzause (TFL)         direct RT        [(7.0, 26.5)] obs 0.278 model 0.169 ratio 1.64  [dough temperature not stated (26.5 °C assumed): check only]
+   D065 yozzause (TFL)         direct RT        [(6.0, 26.5)] obs 0.333 model 0.205 ratio 1.62  [dough temperature not stated (26.5 °C assumed): check only]
+   D066 yozzause (TFL)         direct RT        [(5.0, 26.5)] obs 0.389 model 0.258 ratio 1.51  [dough temperature not stated (26.5 °C assumed): check only]
+   D067 yozzause (TFL)         direct RT        [(4.0, 26.5)] obs 0.444 model 0.340 ratio 1.31  [dough temperature not stated (26.5 °C assumed): check only]
+   D068 yozzause (TFL)         direct RT        [(3.0, 26.5)] obs 0.667 model 0.486 ratio 1.37  [dough temperature not stated (26.5 °C assumed): check only]
+   D069 yozzause (TFL)         direct RT        [(2.0, 26.5)] obs 0.889 model 0.806 ratio 1.10  [dough temperature not stated (26.5 °C assumed): check only]
+   D070 yozzause (TFL)         direct RT        [(1.0, 26.5)] obs 1.778 model 1.909 ratio 0.93  [dough temperature not stated (26.5 °C assumed): check only]
+   D073 Craig via GitHub PR    direct RT        [(12.0, 21.1)] obs 0.048 model 0.121 ratio 0.40  [secondary description of Craig; original unreachable]
+   D087 Elmo bakes             direct RT        [(0.75, 30.0)] obs 1.200 model 2.442 ratio 0.49  [enriched/sweet: tests the fixed enriched dose, not the lean ]
+   D106 Modernist Pizza Vol. 4 direct RT        [(4.25, 21.0)] obs 1.080 model 0.372 ratio 2.90  [enriched/sweet: tests the fixed enriched dose, not the lean ]
+   D126 Modernist Bread        other preferment [(12.0, 21.0)] obs 0.150 model 0.122 ratio 1.23  []
+   D127 Modernist Bread        other preferment [(12.0, 21.0)] obs 0.070 model 0.122 ratio 0.57  []
+   D152 Weekend Bakery         fridge poolish   [(0.5, 21), (18, 4), (1.0, 21)] obs 0.500 model 0.508 ratio 0.98  [fridge temperature not stated (4 °C assumed): check only]
+   D153 Weekend Bakery         fridge poolish   [(0.5, 21), (24, 4), (1.0, 21)] obs 0.300 model 0.445 ratio 0.67  [fridge temperature not stated (4 °C assumed): check only]
+
+5. Endpoint / temperature rules
+   r(21) = 0.806   time factor vs 21 °C at the same dose: 1.00
+   r(25) = 1.000   time factor vs 21 °C at the same dose: 1.24
+   r(28) = 1.111   time factor vs 21 °C at the same dose: 1.38
+   r(30) = 1.160   time factor vs 21 °C at the same dose: 1.44
+   r(32) = 1.181   time factor vs 21 °C at the same dose: 1.47
+   r(35) = 1.146   time factor vs 21 °C at the same dose: 1.42
+   r(38) = 1.008   time factor vs 21 °C at the same dose: 1.25
+   Pizzastunde: the 24 h / 21 °C dose (0.051 %) at 35 °C reaches rise target 1.0 after 16.9 h (source: 8-10 h)
+   Pizzastunde: the 24 h / 21 °C dose (0.051 %) at 35 °C reaches rise target 0.6 after 11.2 h (source: 8-10 h)
+   Elmo bakes 30 °C, 1.2 % 'dry' doubles in ~40 min: model hours to double at 30 °C 1.33 h; with E3 0.88 h
+   Istudor 2020 short-term CO2 33/30 °C: obs 1.08 model 1.02
+   Istudor 2020 short-term CO2 36/30 °C: obs 1.22 model 0.96
+   Istudor 2020 short-term CO2 39/30 °C: obs 1.52 model 0.80

@@ -8,7 +8,7 @@ import { formatClock, formatBakeDateTime } from '../utils/units';
 import { useState, useMemo, useEffect, useRef, useId, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { computePreMixStretchFactor, computeStarterPeakMs, mixNearPeak, preMixRiseH } from '../utils/starterPeak';
-import { type AvailabilityBlock, type ScheduleResult, starterBulkFactor as starterBulkFactorFor, raisedStarterPcts, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationHoursForYeast, fermentationBudget, sourdoughBulkH, bakeFromFridgeOption, BAKE_FROM_FRIDGE_STYLES } from '../utils';
+import { type AvailabilityBlock, type ScheduleResult, starterBulkFactor as starterBulkFactorFor, raisedStarterPcts, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationWindowForYeast, fermentationBudget, sourdoughBulkH, bakeFromFridgeOption, BAKE_FROM_FRIDGE_STYLES } from '../utils';
 import { formatDuration } from '../utils/duration';
 import { earliestQuarterStart, quarterStartNoEarlier } from '../utils/startNotice';
 import FermentChart, { scheduleColdIntervals, getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
@@ -2977,7 +2977,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   // Zone guides the baker on what's ideal. Diamond clamped to nowHBF separately.
   const yeastTiming=useMemo(()=>yeastTimingFor(pendingEatTime,localBlocks),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  [yeastPctOverride,flourStrength,isSourdough,prefermentType,styleKey,+pendingEatTime,localBlocks,kitchenTemp,preheatMin,exitLeadMin,preheatExtraMin,mixerType,numItems,itemWeight,mixingBatches,fridgeTemp,hydrationPct]);
+  [yeastPctOverride,flourStrength,isSourdough,prefermentType,styleKey,+pendingEatTime,localBlocks,kitchenTemp,preheatMin,exitLeadMin,preheatExtraMin,mixerType,numItems,itemWeight,mixingBatches,fridgeTemp,hydrationPct,targetDoughTemp]);
   const renderSweetFrom = yeastTiming?.from ?? (_prefColdH + _rtH_render);
   const renderSweetTo   = yeastTiming?.to ?? Math.max(1, (_sfDef.minTotalFermH ?? 4) + starterBulkDeltaH);
   // Yellow zone extends 2h past green right edge
@@ -2988,12 +2988,11 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   function yeastTimingFor(bake:Date,candidateBlocks:AvailabilityBlock[],method:string=prefermentType){
     if(yeastPctOverride===undefined||isSourdough||(method!=='none'&&method!=='')||!styleKey||isNaN(+bake))return null;
     const model=yeastPctOverride*flourStrength;
-    const o={bake,blocks:candidateBlocks,kitchenTemp,preheatMin,exitLeadMin,mixerType,styleKey,numItems:numItems??1,itemWeight:itemWeight??250,mixingBatches,fridgeTemp,hydration:hydrationPct??65};
-    const center=fermentationHoursForYeast(model,o);
-    if(center===null)return null;
-    const from=fermentationHoursForYeast(model,{...o,budget:1.1})??center;
-    const to=fermentationHoursForYeast(model,{...o,budget:0.9})??center;
-    return {center,from:Math.max(from,center),to:Math.min(to,center)};
+    const o={bake,blocks:candidateBlocks,kitchenTemp,preheatMin,exitLeadMin,mixerType,styleKey,numItems:numItems??1,itemWeight:itemWeight??250,mixingBatches,fridgeTemp,hydration:hydrationPct??65,doughTempC:targetDoughTemp};
+    // One scan of the yeast model's budget gives the centre and the readiness band; the budget is not
+    // monotone across the room-temperature / cold-retard switch, so each bound is the crossing nearest the
+    // centre. A window that fits in the time left wins; else the one the amount needs (yeastTooSlow says so).
+    return fermentationWindowForYeast(model,{...o,maxH:Math.max(0,(+bake-Date.now())/3600000)})??fermentationWindowForYeast(model,o);
   }
   // _optimalMix = style sweet spot where dough peaks at bake = coldH + rtH
   const _biasedColdRender = biasCold(
