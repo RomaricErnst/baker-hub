@@ -14,7 +14,10 @@ async function toCustom(page){
  await page.locator('.bh-step-actions:visible [data-bh-forward]:visible, .bh-batch-actions:visible [data-bh-forward]:visible').first().tap();
  const k=page.locator('[data-kitchen-slider]:visible');if(await k.count())await page.locator('.bh-batch-actions:visible [data-bh-forward]:visible').tap();
  const time=page.getByLabel('Bake date and time',{exact:true});await time.focus();await time.blur();
- // Generate is in the bar; bring the Customize card clear of it before tapping.
+ // Generate is in the bar; bring the Customize card clear of it before tapping. The page holds a new
+ // step at its top until the reader scrolls (usePageTop); a finger scroll says so with touchmove, a
+ // scripted scroll does not, so mark it as the reader's first (Chromium snapped back; 20 Nov 2026).
+ await page.evaluate(()=>window.dispatchEvent(new Event('touchmove')));
  await page.locator('[data-customize-link]').evaluate(el=>el.scrollIntoView({block:'center'}));
  await page.getByRole('button',{name:/^Customize my bake/}).tap();
 }

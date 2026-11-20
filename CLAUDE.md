@@ -149,6 +149,7 @@ utils.ts STYLE_FERM_DEFAULTS · SchedulePicker.tsx STYLE_FERM_DEFAULTS · Fermen
 - Cross-check chart SVG ↔ card text ↔ solver props; divergence = bug. Chart ticks are labels, not event times.
 - Minified prod stacks: install window error listener BEFORE reproducing; check console timestamps for staleness.
 - Sweep matrices via React-fiber injection (window.__audit pattern), then visual spot-check 3–5 scenarios.
+- Phone suite locally (20 Nov 2026; 25 sandbox failures that CI never had, none an app bug): run it as CI does — `npm run build`, `next start`, the curated list (the default since then; `BAKER_NAV_V2=0` selects the legacy bottom-nav specs, kept only for the old prototype branch). A dev server fails journey-route and nav-v2 (the dev overlay takes taps, compile pauses). WebKit cannot be downloaded in remote sandboxes; Chromium is a fallback, and a scripted scroll there is undone by `usePageTop` until the test marks the reader's first interaction (a real finger scroll does) — see `custom-equipment.spec.cjs`. A failure only on Chromium is checked on WebKit CI before it is called a bug.
 
 ## Session-End Checklist
 - [ ] `npx tsc --noEmit` — zero errors
