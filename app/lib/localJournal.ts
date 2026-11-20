@@ -10,7 +10,7 @@
 // is far too small for images. Every storage call is wrapped: a private window
 // or a full quota must never block planning a bake.
 import type { SessionData } from './session';
-import { rowStep, type ClockStep } from '../utils/guideProgress';
+import { rowStep, clockMark, type ClockStep } from '../utils/guideProgress';
 import { translateGuideTitle } from '../utils/guideTitles';
 
 export const JOURNAL_KEY = 'bh_journal_v1';
@@ -243,7 +243,13 @@ export interface LiveJournalBake {
   label: string | null;
   /** True when the step is under way now (no time is shown). */
   current: boolean;
+  /** Baked and not rated yet: the row offers the rating (20 Nov 2026 round 6). */
+  rate?: boolean;
 }
+
+/** A baked bake stays on home as "Rate" for this long after its bake time, until rated (20 Nov 2026 round 6,
+ *  Thomas: rating the baguettes dropped the campagne, baked that morning and never rated). */
+export const RATE_ROW_MS = 72 * 3600000;
 
 /** Every bake under way on this device, one row each, the most pressing first: the step under way
  *  (unless it is a wait in the fridge), else the next step with its time. Same bakes as dueJournalEntry
@@ -275,11 +281,18 @@ export function guidePlanSnapshot(id: string, locale?: string): { locale: string
 export function liveJournalBakes(now = Date.now(), locale?: string): LiveJournalBake[] {
   const rows: LiveJournalBake[] = [];
   for (const entry of listJournal()) {
-    if (entry.eatTime == null || !journalBakeInProgress(entry, now) || entry.session?.bakedDone || !entry.session?.recipeGenerated) continue;
-    if (entry.eatTime + 2 * 3600000 <= now) continue;
-    // The guide's next thing to do (rowStep), by its own name in the page's language and its own time.
+    if (entry.eatTime == null || !entry.session?.recipeGenerated) continue;
     const plan = locale ? guidePlanSnapshot(entry.id, locale) : null;
     const pick = plan ? rowStep(plan.steps, now) : null;
+    // Over: marked baked, every guide step ticked, or two hours past the bake time. Unrated, it stays as "Rate"
+    // (never a stale step such as "Cuisson et dégustation" at 9h15 at 10:00).
+    const over = !!entry.session.bakedDone || entry.eatTime + 2 * 3600000 <= now || (!!plan && !pick && entry.eatTime <= now);
+    if (over) {
+      if (entry.rating == null && entry.eatTime <= now && now - entry.eatTime < RATE_ROW_MS) rows.push({ entry, at: entry.eatTime, label: null, current: false, rate: true });
+      continue;
+    }
+    if (!journalBakeInProgress(entry, now)) continue;
+    // The guide's next thing to do (rowStep), by its own name in the page's language and its own time.
     const marked = pick && plan ? plan.steps.find(step => step.step === pick.step) : undefined;
     if (marked) { rows.push({ entry, at: marked.at, label: marked.title, current: pick!.current }); continue; }
     const steps = (entry.session.computedRecipe?.timelineSteps ?? [])
@@ -302,5 +315,19 @@ export function liveJournalBakes(now = Date.now(), locale?: string): LiveJournal
     rows.push({ entry, at, label: null, current: false });
   }
   // Ordered by time, as the steps come (18 Nov 2026 retention round 3).
-  return rows.sort((a, b) => a.at - b.at || (a.entry.eatTime ?? 0) - (b.entry.eatTime ?? 0));
+  // Bakes to rate come after the bakes under way.
+  return rows.sort((a, b) => Number(!!a.rate) - Number(!!b.rate) || a.at - b.at || (a.entry.eatTime ?? 0) - (b.entry.eatTime ?? 0));
+}
+
+/** What a bake under way is on, for the single home card (20 Nov 2026 round 6, owner's decision D1): the step the
+ *  guide's bar names (its `:plan` snapshot read by `clockMark`, so card and bar never disagree), "now" or "next"
+ *  with its time. Null before the bake's first step, after the bake (three hours past, as the guide), or when every
+ *  step is ticked: the card then keeps its dated line. */
+export function journalDueStep(id: string, locale: string, bakeAt: number | null, now = Date.now()): { kind: 'now' | 'next'; title: string; at: number } | null {
+  const plan = guidePlanSnapshot(id, locale);
+  if (!plan || (bakeAt != null && now > bakeAt + 3 * 3600000)) return null;
+  if (!plan.steps.some(step => step.at <= now || step.done)) return null;
+  const mark = clockMark(plan.steps, now);
+  const step = mark ? plan.steps.find(s => s.step === mark.step) : undefined;
+  return mark && step ? { kind: mark.kind, title: step.title, at: step.at } : null;
 }

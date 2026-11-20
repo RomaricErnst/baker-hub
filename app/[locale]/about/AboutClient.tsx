@@ -1,6 +1,5 @@
 'use client';
 import { YeastModelSectionEn, YeastModelSectionFr } from './yeastModelSection';
-import { YeastSourcesSectionEn, YeastSourcesSectionFr } from './yeastSourcesSection';
 import { useState } from 'react';
 import { useLocale } from 'next-intl';
 import Link from 'next/link';
@@ -339,10 +338,6 @@ const CONTENT: Record<string, LocaleContent> = {
           body: <YeastModelSectionEn />,
         },
         {
-          title: 'Behind the yeast model: comparing the sources',
-          body: <YeastSourcesSectionEn />,
-        },
-        {
           title: 'Hydration engine',
           body: (
             <>
@@ -624,10 +619,6 @@ const CONTENT: Record<string, LocaleContent> = {
       {
         title: 'Le moteur de levure',
         body: <YeastModelSectionFr />,
-      },
-      {
-        title: 'Les coulisses du modèle de levure : comparer les sources',
-        body: <YeastSourcesSectionFr />,
       },
       {
         title: 'Le moteur de farine',

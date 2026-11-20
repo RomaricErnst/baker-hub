@@ -34,9 +34,12 @@ test('one rule for small yeast doses: weighing help under 1 g, a spoon measure a
  a.equal(yeastSpoonMeasure(0.79,'instant','en'),'≈ ¼ tsp');
  a.equal(yeastSpoonMeasure(1.61,'instant','en'),'≈ ½ tsp');
  a.equal(yeastSpoonMeasure(2.88,'instant','en'),'≈ 1 tsp');
- a.equal(yeastSpoonMeasure(0.92,'instant','en'),'≈ between ¼ and ½ tsp');
- a.equal(yeastSpoonMeasure(1.95,'instant','en'),'≈ between ½ and ¾ tsp');
- a.equal(yeastSpoonMeasure(1.95,'active_dry','fr'),'≈ entre ½ et ¾ c. à café');
+ // One spoon, never "between ¼ and ½" (20 Nov 2026 round 6, Maya and Wei Ling).
+ a.equal(yeastSpoonMeasure(0.92,'instant','en'),'≈ ⅓ tsp');
+ a.equal(yeastSpoonMeasure(1.3,'instant','en'),'a scant ½ tsp');
+ a.equal(yeastSpoonMeasure(0.5,'instant','en'),'a heaped ⅛ tsp');
+ a.equal(yeastSpoonMeasure(1.95,'instant','en'),'≈ ⅔ tsp');
+ a.equal(yeastSpoonMeasure(1.3,'active_dry','fr'),'un peu moins de ½ c. à café');
  for(let grams=0.4;grams<=6;grams+=0.07)a.ok(yeastSpoonMeasure(grams,'instant','en'),'spoon for '+grams.toFixed(2));
  a.equal(yeastSpoonMeasure(1.95,'fresh','en'),'');a.equal(yeastSpoonMeasure(0.2,'instant','en'),'');a.equal(yeastSpoonMeasure(8,'instant','en'),'');
 });

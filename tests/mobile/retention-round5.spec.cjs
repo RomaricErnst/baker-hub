@@ -50,7 +50,8 @@ test('a long fridge rest names the step after it; the rest step is not opened wi
  // Saturday 10:00am: the dough balls went into the fridge on Friday night.
  await reopen(page,'2026-11-21T02:00:00Z');
  await resume(page);
- await expect(bar(page)).toContainText('Next: Let the shaped dough rise');
+ // Named by its action since round 6 (A5): "Let the shaped dough rise" hid the take-out.
+ await expect(bar(page)).toContainText('Next: Take the dough out of the fridge');
  await expect(page.locator('[data-held-step]')).toHaveCount(0);
  await expect(page.locator('section[data-guide-mark="now"]')).toHaveCount(0);
  // Nothing was ticked for her.
@@ -74,7 +75,9 @@ test('the rating sheet is titled with the bake, not "My bakes"; the row says whe
  const sheet=page.getByRole('dialog').first();
  await expect(sheet).toBeVisible();
  await expect(sheet.locator('strong').first()).not.toHaveText('My bakes');
- await expect(sheet.locator('strong').first()).toContainText('Neapolitan');
+ // One name per bake since round 6 (A6): the Recipe's title, the style beneath it.
+ await expect(sheet.locator('strong').first()).toHaveText('Pizza night');
+ await expect(sheet).toContainText('Neapolitan');
  // A week later, home says when it was baked.
  await reopen(page,'2026-11-25T12:00:00Z');
  await expect(page.getByText(/baked\sSat\s21\sNov\s·\s7:30pm/)).toBeVisible();

@@ -1043,7 +1043,11 @@ export default function BakeTab({ selectedPizzas, plannedPizzaCount, locale, sty
                         {
                           key: 'LAUNCH',
                           fr: 'ENFOURNEMENT',
-                          body: {
+                          // A tray in a home oven, no peel: the baking-paper way (20 Nov 2026 round 6, Wei Ling).
+                          body: ovenType === 'home_oven_standard' ? {
+                            en: 'No peel needed: top the pizza on baking paper, then slide it onto the hot tray, paper and all.',
+                            fr: 'Pas besoin de pelle : garnissez la pizza sur du papier cuisson, puis glissez-la sur la plaque chaude avec son papier.',
+                          } : {
                             en: 'Flour the peel well. Build the pizza on the peel, not on the counter. Launch with one confident forward push — hesitation causes sticking.',
                             fr: "Farinez bien la pelle. Montez la pizza sur la pelle, pas sur le plan de travail. Enfournez d'un seul geste confiant vers l'avant — l'hésitation colle.",
                           },

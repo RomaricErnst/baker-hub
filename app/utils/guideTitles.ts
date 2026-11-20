@@ -26,6 +26,7 @@ const PAIRS: ReadonlyArray<readonly [string, string]> = [
   ['Let the shaped dough rise', 'Apprêt'],
   ['Take the shaped loaf out of the fridge', 'Sortir le pâton du réfrigérateur'],
   ['Take the shaped dough out of the fridge', 'Sortir les pâtons du réfrigérateur'],
+  ['Take the dough out of the fridge', 'Sortir les pâtons'],
   ['Preheat the oven', 'Préchauffer le four'],
   ['Heat the griddle', 'Chauffer la poêle'],
   ['Bake the pizzas', 'Cuire les pizzas'],

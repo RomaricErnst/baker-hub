@@ -56,8 +56,9 @@ export interface ClockMark { step: number; kind: 'now' | 'next'; held: boolean }
  * A baker who ticks nothing simply follows the clock: the latest step whose time has come.
  * Once the baker has ticked something in this bake, an earlier unticked action step stays Now
  * after its time until the next action step's time (a grace period, never a gate); waits never
- * hold. A tick closes the steps planned before it. The bake is never blocked: nothing here
- * hides or disables anything, it only names a step.
+ * hold. A tick marks only its own step (20 Nov 2026 round 6, owner's decision D2): steps planned
+ * before the last tick stay unticked and plain, behind the baker, never held or named. The bake is
+ * never blocked: nothing here hides or disables anything, it only names a step.
  */
 export function clockMark(steps: readonly ClockStep[], now: number): ClockMark | null {
   const sorted = [...steps].sort((a, b) => a.at - b.at || a.step - b.step);
@@ -113,12 +114,4 @@ export function rowStep(steps: readonly ClockStep[], now: number): { step: numbe
   if (best) return { step: best.step, current: best.at <= now };
   const mark = clockMark(steps, now);
   return mark ? { step: mark.step, current: mark.kind === 'now' } : null;
-}
-
-/** Ticking a step ticks the unticked steps planned before it in the same bake: the baker's own act
- *  says they were done (you cannot shape a dough you have not mixed). Never inferred from the clock. */
-export function stepsClosedByTick(steps: readonly ClockStep[], ticked: number): number[] {
-  const target = steps.find(s => s.step === ticked);
-  if (!target) return [];
-  return steps.filter(s => !s.done && s.step !== ticked && (s.at < target.at || (s.at === target.at && s.step < ticked))).map(s => s.step);
 }

@@ -249,7 +249,7 @@ export default function Header({
   openSessionId,
   onShareSessionClose,
   onResumeJournalEntry,
-  onRebakeJournalEntry, openCurrentJournalRequest,
+  onRebakeJournalEntry, openCurrentJournalRequest, openJournalEntryRequest,
   currentBakeActive = false,
 }: {
   units?: UnitSystem;
@@ -286,6 +286,8 @@ export default function Header({
   onRebakeJournalEntry?: (entry: JournalEntry) => void;
   /** Increments to open the current bake's journal entry from elsewhere in the page. */
   openCurrentJournalRequest?: number;
+  /** A home "Rate" row: opens that bake's entry (20 Nov 2026 round 6). */
+  openJournalEntryRequest?: { id: string; n: number } | null;
   /** A bake is open in the page (not only waiting to be resumed). */
   currentBakeActive?: boolean;
 }) {
@@ -398,6 +400,11 @@ export default function Header({
     const entry = id ? listJournal().find(row => row.id === id) : undefined;
     if (entry) { setJournal(listJournal()); setViewingJournal(entry); }
   }, [openCurrentJournalRequest]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!openJournalEntryRequest) return;
+    const entry = listJournal().find(row => row.id === openJournalEntryRequest.id);
+    if (entry) { setJournal(listJournal()); setViewingJournal(entry); }
+  }, [openJournalEntryRequest]);
 
   useEffect(() => {
     if (!sessionSaved || !user) return;

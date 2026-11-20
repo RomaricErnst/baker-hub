@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom';
 import { SHEET_CLOSE, SHEET_TITLE } from '@/app/lib/navButtons';
 import { useLocale, useTranslations } from 'next-intl';
 import { ALL_STYLES } from '@/app/data';
+import { bakeTitleName } from '@/app/utils/bakeTitle';
 import { displayTemp, displayWeight, formatBakeDateTime, type UnitSystem } from '@/app/utils/units';
 import {
   JOURNAL_NOTE_LIMIT, JOURNAL_PHOTO_LIMIT, deleteJournalEntry, journalBakeInProgress, updateJournalEntry,
@@ -14,16 +15,25 @@ import {
 } from '@/app/lib/localJournal';
 import { addJournalPhoto, deleteJournalPhotos, readJournalPhotos } from '@/app/lib/journalPhotos';
 
+/** The bake's own name: the one the baker gave, else the Recipe's automatic one ("Pizza night", "Baguettes"),
+ *  so the rating sheet, the menu and home name a bake as its Recipe does (20 Nov 2026 round 6). */
 export function journalTitle(entry: JournalEntry, locale: string): string {
   const name = entry.bakeName.trim();
   if (name) return name;
+  if (!entry.bakeType) return locale === 'fr' ? 'Fournée' : 'Bake';
+  return bakeTitleName(entry.bakeType, entry.styleKey, entry.numItems, entry.eatTime != null ? new Date(entry.eatTime).getHours() : undefined, locale === 'fr', journalStyleName(entry, locale) ?? '');
+}
+
+/** The style, as the subtitle when the title does not already say it. */
+export function journalStyleName(entry: Pick<JournalEntry, 'styleKey'>, locale: string): string | null {
   const style = (ALL_STYLES as Record<string, { name: string; nameFr?: string }>)[entry.styleKey ?? ''];
-  if (style) return locale === 'fr' ? style.nameFr ?? style.name : style.name;
-  return locale === 'fr' ? 'Fournée' : 'Bake';
+  return style ? (locale === 'fr' ? style.nameFr ?? style.name : style.name) : null;
 }
 
 function journalFacts(entry: JournalEntry, locale: string, units: UnitSystem, t: ReturnType<typeof useTranslations>): string {
+  const style = journalStyleName(entry, locale);
   return [
+    style && style !== journalTitle(entry, locale) ? style : null,
     entry.numItems && entry.itemWeight ? `${entry.numItems} × ${displayWeight(entry.itemWeight, units, locale)}` : null,
     entry.kitchenTemp != null ? t('kitchen', { temp: displayTemp(entry.kitchenTemp, units) }) : null,
   ].filter(Boolean).join(' · ');

@@ -1,7 +1,7 @@
 const {test,beforeEach}=require('node:test'),assert=require('node:assert/strict');
 require('./load-production.cjs');
 // 18 Nov 2026 retention round 3 (flow): the bake proceeds without ticks; multi-bake costs nothing with one bake.
-const {clockMark,stepsClosedByTick}=require('../app/utils/guideProgress.ts');
+const {clockMark,rowStep}=require('../app/utils/guideProgress.ts');
 const O=require('../app/utils/ovenWindow.ts');
 const J=require('../app/lib/localJournal.ts');
 const m=60000,h=3600000,T=Date.UTC(2026,10,20,10);// Maya: Start Dough Fri 6:00pm SGT
@@ -45,11 +45,14 @@ test('after a tick, an unticked action step holds Now until the next action step
  assert.equal(clockMark(withWait,T+261*m).step,5);
 });
 
-test('ticking a later step ticks the earlier unticked ones; the clock never does',()=>{
- assert.deepEqual(stepsClosedByTick(maya(),4),[1,2,3]);
- assert.deepEqual(stepsClosedByTick(maya([1,2]),5),[3,4]);
- assert.deepEqual(stepsClosedByTick(maya(),1),[]);
- // A tick closes what was planned before it: the bar moves to the next step.
+// 20 Nov 2026 round 6 (owner's decision D2): a tick marks only the step tapped; the steps before it stay
+// unticked and plain, behind the baker: never held, never named by the bar or a home row.
+test('a later tick leaves the earlier steps unticked; the bar and the row move past them',()=>{
+ assert.deepEqual(clockMark(maya([4]),T+200*m),{step:5,kind:'next',held:false});
+ assert.deepEqual(rowStep(maya([4]),T+200*m),{step:5,current:false});
+ // Only Divide ticked, the balls' time come: the balls are Now, the unticked mix and fridge are not held.
+ assert.deepEqual(clockMark(maya([4]),T+215*m),{step:5,kind:'now',held:false});
+ // The same as a full set of ticks for what comes next.
  assert.equal(clockMark(maya([1,2,3,4]),T+200*m).kind,'next');
 });
 

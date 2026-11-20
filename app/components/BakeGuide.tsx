@@ -19,7 +19,8 @@ import { breadCoolingRange } from '../utils/servingTime';
 import { MIXER_TYPES, isLevainStyle, AUTOLYSE_MIN, autolyseMinFor, preMixAutolyseMinFor, type MixerType } from '../data';
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
-import { toggleStepCompletion, guideStepSignatures, remapCompletedSteps, clockMark, stepsClosedByTick, type ClockStep } from '../utils/guideProgress';
+import { ovenBackTitle } from '../utils/sharedOven';
+import { toggleStepCompletion, guideStepSignatures, remapCompletedSteps, clockMark, type ClockStep } from '../utils/guideProgress';
 import { mixingBatchPlan, largeManualDough } from '../utils/mixingBatches';
 import PhaseSummary from './PhaseSummary';
 import WaterPreparation, { waterSplit, waterGuideLine, type WaterSource, type WaterSettingsProps } from './WaterPreparation';
@@ -113,6 +114,9 @@ interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   prefDoneStated?: boolean;
   /** Pizzas baked one after another: when the last comes out, for the bake step's time ("7:30–9:00pm"). */
   bakeEnd?: Date | null;
+  /** Another live bake in the same oven comes out after this one's preheat would start (sharedOvenFor): the
+   *  preheat step is "Bring the oven back to 250 °C after the campagne", timed when it comes out. */
+  sharedOven?: { at: number; after: string } | null;
   onMixTimeChange?: (at: number) => void;
   onPrefTimeChange?: (at: number) => void;
   /** Bake again: the note from the bake this one repeats, shown on the oven steps ("Last time: …"). */
@@ -925,7 +929,7 @@ const TERM_TO_STEPID: Record<string, string> = {
   stretch_bake:      'open',
 };
 
-export default function BakeGuide({onStarterFed, onStarterUnfed, starterFedTimes, mixingMade,onMixComplete,preparationMade, onPreparationComplete,
+export default function BakeGuide({sharedOven,onStarterFed, onStarterUnfed, starterFedTimes, mixingMade,onMixComplete,preparationMade, onPreparationComplete,
   onSave,onShare,onRepeat,resultNotes,onResultNotesChange,sessionSaved,onBakedChange,completionEnabled=true,
   schedule, mixerType, styleKey, kitchenTemp, fridgeTemp = 4, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, mixerCapacityG, onMixingBatchesChange, waterSource = 'room', onWaterSourceChange, numItems,
   prefermentType, oil, hydration, ovenType, ovenConstruction, prefStartTime, feedTime, starterEvents,
@@ -1169,6 +1173,8 @@ export default function BakeGuide({onStarterFed, onStarterUnfed, starterFedTimes
   // shaped loaf out of the fridge · Preheat the oven"; Preparation names it the same (18 Nov 2026 retention).
   const shapedOutAtPreheat = isBread && isTwoPhase && !bakesFromFridge && !!schedule.coldRetard2End && !!schedule.preheatStart && +schedule.coldRetard2End >= +schedule.preheatStart - 60000;
   const hasCold       = (schedule.coldRetardHours ?? 0) > 0;
+  // Another live bake still in the same oven when this one's preheat would start (20 Nov 2026 round 6, Thomas).
+  const ovenBack = sharedOven && breadProtocol?.cooking !== 'griddle' && +sharedOven.at <= +schedule.bakeStart && (!schedule.preheatStart || +sharedOven.at > +schedule.preheatStart) ? sharedOven : null;
   // Pan / Detroit and Roman teglia bake in their pan: own shaping, preheat and
   // bake cards on every oven, and no round-ball instructions.
   const panGuide      = isBread ? null : panPizzaGuide({ styleKey, pieceWeightG: recipe?.totalDough ? recipe.totalDough / Math.max(1, numItems) : NaN, count: numItems, ovenType, units: u, chilledAfterShaping: isTwoPhase });
@@ -1493,19 +1499,9 @@ Actual dough condition and equipment may differ from these estimates.`;
         if(starterFeed)(actionDone?onStarterUnfed:onStarterFed)?.(starterFeed);
         if(firstAction)onPreparationComplete?.(!actionDone);
         if(mixing&&onMixComplete)onMixComplete(!actionDone);
+        // A tick marks only the step tapped (20 Nov 2026 round 6, owner's decision D2: ticking the shaping also ticked
+        // "Start Dough" and the folds, which read as "says I folded when I didn't"). Earlier unticked steps stay plain.
         const next = mixing&&onMixComplete&&actionDone?new Set([...doneSteps].filter(step=>step!==s)):toggleStepCompletion(s, doneSteps);
-        // Ticking a step ticks the unticked ones planned before it: the baker's own act says they were done
-        // (18 Nov 2026 retention round 3). A recorded mix or preferment is recorded as planned; a feed is ticked, not re-timed.
-        if(!actionDone){
-          const closed=stepsClosedByTick(clockSteps(),s);
-          for(const step of closed)next.add(step);
-          // Only a mix or preferment whose planned time has passed is recorded (as planned, so the plan holds);
-          // a tick days ahead does not re-time the bake.
-          const past=closed.filter(step=>(stepTimesCtx?.times.get(step)??Infinity)<=Date.now());
-          const kinds=past.map(step=>stepKinds.current.get(step));
-          if(!mixing&&onMixComplete&&!mixingMade&&kinds.some(kind=>kind?.mixing))onMixComplete(true);
-          else if(!firstAction&&onPreparationComplete&&!preparationMade&&kinds.some(kind=>kind?.firstAction))onPreparationComplete(true);
-        }
         if (doneSteps.has(s) && mixing) {
           setActiveBatch(0);
           try { localStorage.setItem(progressKey + ':batch', '0'); } catch {}
@@ -2035,7 +2031,9 @@ Actual dough condition and equipment may differ from these estimates.`;
             { bold: 'Smooth the surface with a wet hand', note: 'fine cracks will show on it once the dough has risen' },
           ]} /> : <Steps items={[
             // Levain doughs follow the recipe card's own rise target; the generic percentage does not apply.
-            ...(t.raw('bulk.stepsBase') as { bold: string; note: string }[]).map(step => isSourdough && /50[-–]75/.test(step.note) ? { ...step, note: l === 'fr' ? 'pour suivre la pousse' : 'to follow the rise' } : step),
+            // One readiness cue per step: a short rise that goes straight to the fridge is ready when smooth (its
+            // "Ready when"), so no "grown by half to three quarters" under it (20 Nov 2026 round 6, Wei Ling).
+            ...(t.raw('bulk.stepsBase') as { bold: string; note: string }[]).map((step, index) => index === 1 && shortColdBulk ? { ...step, note: '' } : isSourdough && /50[-–]75/.test(step.note) ? { ...step, note: l === 'fr' ? 'pour suivre la pousse' : 'to follow the rise' } : step),
             // Several batches: the first fold waits until the last batch is mixed.
             ...(batchFirstFoldShown
               ? [{ bold: l === 'fr' ? `Premier rabat ${firstBatchFoldMinutes(schedule)[0]} min après la fin du premier lot` : `First fold ${firstBatchFoldMinutes(schedule)[0]} min after the first batch is mixed`, note: l === 'fr' ? 'une fois tous les lots pétris ; suivez les horaires du planning' : 'once every batch is mixed; follow the times in the plan' }]
@@ -2043,9 +2041,13 @@ Actual dough condition and equipment may differ from these estimates.`;
             // With the batch line above, its first fold replaces the generic first set.
             ...(scheduledFoldMinutes(schedule.bulkFermHours, styleKey).length
               ? scheduledFoldMinutes(schedule.bulkFermHours, styleKey).filter((_, index) => !(index === 0 && batchFirstFoldShown)).map(minutes =>
-                  (minutes === 15 && !schedule.coldRetardStart
-                    // No fridge in this plan: the short first rise leads to shaping, not to the cold.
-                    ? { ...(t.raw('bulk.setShort') as { bold: string; note: string }), note: l === 'fr' ? 'puis couvrez et laissez reposer jusqu’au façonnage' : 'then cover and rest until shaping' }
+                  (minutes === 15
+                    // The one set of a short rise reads as its clock time and says how to do it, in one line
+                    // (20 Nov 2026 round 6, Wei Ling: "After 15 min" from when, and how do I fold?).
+                    ? { bold: l === 'fr' ? `${formatPlanClock(new Date(+schedule.bulkFermStart + 15 * 60000), _fmtLocale)} — une série de rabats` : `${formatPlanClock(new Date(+schedule.bulkFermStart + 15 * 60000), _fmtLocale)} — one set of stretch & folds`,
+                      note: l === 'fr'
+                        ? `main mouillée, soulevez un côté de la pâte, étirez-le et rabattez-le sur le centre ; tournez le bol et répétez sur les quatre côtés, puis couvrez${schedule.coldRetardStart ? '' : ' jusqu’au façonnage'}`
+                        : `with a wet hand, lift one side of the dough, stretch it up and fold it over the middle; turn the bowl and repeat on all four sides, then cover${schedule.coldRetardStart ? '' : ' until shaping'}` }
                     : (() => {
                       const set = t.raw(minutes === 15 ? 'bulk.setShort' : `bulk.set${minutes / 30}`) as { bold: string; note: string };
                       // A planned fold reads as its clock time, as on the summary.
@@ -2125,10 +2127,10 @@ Actual dough condition and equipment may differ from these estimates.`;
               {bold:l === 'fr' ? 'Suivez l’horaire prévu et vérifiez la pâte avant de la façonner.' : 'Follow the planned time and check the dough before shaping.',note: l==='fr'?'Le froid ralentit la fermentation et raffermit la pâte avant le façonnage.':'Chilling slows the rise and firms the dough for shaping.'},
             ]} /> : <Steps items={[
               ...(t.raw('coldRetard.steps') as { bold: string; note: string }[]).slice(0, 2),
-              { bold: isBread
-                  ? (_isFr ? 'Réglez une alarme pour la division & le façonnage' : 'Set your alarm for dividing and shaping')
-                  : (_isFr ? 'Réglez une alarme pour la division & le boulage' : 'Set your alarm for dividing into balls'),
-                note: formatPlanTime(schedule.divideBallTime ?? schedule.coldRetard1End, _fmtLocale) },
+              { bold: `${_isFr ? 'Alarme : ' : 'Alarm: '}${formatPlanTime(schedule.divideBallTime ?? schedule.coldRetard1End, _fmtLocale)} — ${isBread
+                  ? (_isFr ? 'division et façonnage' : 'divide and shape')
+                  : (_isFr ? 'division et boulage' : 'divide into balls')}`,
+                note: '' },
               (t.raw('coldRetard.steps') as { bold: string; note: string }[])[2],
             ]} />}
           </Section>
@@ -2274,7 +2276,17 @@ Actual dough condition and equipment may differ from these estimates.`;
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={[
               ...(isBread ? [{bold:l === 'fr' ? 'Couvrez la pâte façonnée sans l’écraser et placez-la au réfrigérateur sur son support.' : 'Cover the shaped dough without pressing it down and refrigerate on its support.',note:''}] : t.raw('coldBalls.steps') as { bold: string; note: string }[]),
-              { bold: _isFr ? 'Réglez une alarme pour la remise à température' : 'Set your alarm for warmup time', note: schedule.rtWarmupStart ? formatPlanTime(schedule.rtWarmupStart, _fmtLocale) : (_isFr ? 'voir le planning' : 'see schedule') },
+              // The alarm with its time and what it is for, in one line (20 Nov 2026 round 6, Priya: "Set your alarm
+              // for warmup time — see schedule"). A take-out at the preheat says both.
+              ...(() => {
+                const outAt = schedule.rtWarmupStart ?? schedule.coldRetard2End;
+                if (!outAt) return [];
+                const withPreheat = !!schedule.preheatStart && +outAt >= +schedule.preheatStart - 60000;
+                const what = _isFr
+                  ? (withPreheat ? `sortez ${isBread && numItems === 1 ? 'le pâton' : 'les pâtons'} et préchauffez le four` : `sortez ${isBread && numItems === 1 ? 'le pâton' : 'les pâtons'} du réfrigérateur`)
+                  : (withPreheat ? 'take out and preheat' : `take ${isBread && numItems === 1 ? 'the loaf' : 'the dough'} out of the fridge`);
+                return [{ bold: `${_isFr ? 'Alarme : ' : 'Alarm: '}${formatPlanTime(outAt, _fmtLocale)} — ${what}`, note: '' }];
+              })(),
             ]} />
           </Section>
 
@@ -2297,7 +2309,10 @@ Actual dough condition and equipment may differ from these estimates.`;
 
       {/* ── STEP: Final Proof (merged warmup + proof for cold-retard styles) */}
       {(schedule.finalProofHours > 0 || schedule.restRtHours > 0 || schedule.rtWarmupStart) && (
-        <StepCard number={n()} {...sc()} icon={<IconProof />} title={styleKey === 'greek_pita' ? (l === 'fr' ? 'Détendre les pâtons, couverts' : 'Relax the portions, covered') : shapedOutAtPreheat ? (numItems === 1 ? (l === 'fr' ? 'Sortir le pâton du réfrigérateur' : 'Take the shaped loaf out of the fridge') : (l === 'fr' ? 'Sortir les pâtons du réfrigérateur' : 'Take the shaped dough out of the fridge')) : t('stepTitles.finalProof')}
+        <StepCard number={n()} {...sc()} icon={<IconProof />} title={styleKey === 'greek_pita' ? (l === 'fr' ? 'Détendre les pâtons, couverts' : 'Relax the portions, covered') : shapedOutAtPreheat || (isBread && isTwoPhase && !breadProtocol) ? (numItems === 1 ? (l === 'fr' ? 'Sortir le pâton du réfrigérateur' : 'Take the shaped loaf out of the fridge') : (l === 'fr' ? 'Sortir les pâtons du réfrigérateur' : 'Take the shaped dough out of the fridge'))
+            // A step that starts with a fridge exit is named by that action, in the bar, the list and the home rows
+            // (20 Nov 2026 round 6, Maya and Thomas: "Next: Let the shaped dough rise" / "Apprêt 7h00" hid the take-out).
+            : !isBread && isTwoPhase && !panGuide ? (l === 'fr' ? 'Sortir les pâtons' : 'Take the dough out of the fridge') : t('stepTitles.finalProof')}
           passive action={hasCold} time={finalProofWindow(schedule, numItems).start}
           duration={finalProofWindow(schedule, numItems).hours}
           accent="#7A8C6E">
@@ -2401,12 +2416,18 @@ Actual dough condition and equipment may differ from these estimates.`;
           : 'Keep the rounds covered while the pan heats. If a portion springs back, cover it for a few more minutes before continuing.'}]} />
       </StepCard>}
 
-      <StepCard number={n()} {...sc(false, 'cooking')} icon={<IconPreheat />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle') : t('stepTitles.preheatOven')}
-        time={schedule.preheatStart} duration={schedule.preheatStart && +schedule.bakeStart > +schedule.preheatStart ? (+schedule.bakeStart - +schedule.preheatStart) / 3600000 : undefined} accent={D.gold}>
+      <StepCard number={n()} {...sc(false, 'cooking')} icon={<IconPreheat />} title={breadProtocol?.cooking === 'griddle' ? (l === 'fr' ? 'Chauffer la poêle' : 'Heat the griddle') : ovenBack ? ovenBackTitle(l === 'fr', ovenBack.after, { celsius: leanBake?.tempStaticC, max: !isBread && (ovenType ?? '').startsWith('home_oven') }, u) : t('stepTitles.preheatOven')}
+        time={ovenBack ? new Date(ovenBack.at) : schedule.preheatStart} duration={ovenBack ? (+schedule.bakeStart > ovenBack.at ? (+schedule.bakeStart - ovenBack.at) / 3600000 : undefined) : schedule.preheatStart && +schedule.bakeStart > +schedule.preheatStart ? (+schedule.bakeStart - +schedule.preheatStart) / 3600000 : undefined} accent={D.gold}>
         {lastTimeLine}
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
-          {breadProtocol ? <Steps items={profileSteps(breadProtocol.preheat[l])} /> : leanBake ? <Steps items={ovenSteps(leanBake.preheat[l])} /> : isBread ? (
+          {ovenBack ? <Steps items={l === 'fr' ? [
+            { bold: `${formatPlanClock(new Date(ovenBack.at), _fmtLocale)} — sortez ${ovenBack.after} et réglez le four pour cette cuisson`, note: 'le four et la surface de cuisson sont déjà chauds : pas de second préchauffage complet' },
+            { bold: `Enfournez à ${formatPlanClock(schedule.bakeStart, _fmtLocale)}, une fois le four revenu à température`, note: '' },
+          ] : [
+            { bold: `${formatPlanClock(new Date(ovenBack.at), _fmtLocale)} — take ${ovenBack.after} out and set the oven for this bake`, note: 'the oven and the baking surface are already hot: no second full preheat' },
+            { bold: `Bake at ${formatPlanClock(schedule.bakeStart, _fmtLocale)}, once the oven is back at temperature`, note: '' },
+          ]} /> : breadProtocol ? <Steps items={profileSteps(breadProtocol.preheat[l])} /> : leanBake ? <Steps items={ovenSteps(leanBake.preheat[l])} /> : isBread ? (
             <Steps items={ovenSteps(t.raw(
               ovenType === 'dutch_oven' ? 'preheat.dutch.steps' :
               ovenType === 'home_oven_stone_bread' ? 'preheat.stoneBread.steps' :
