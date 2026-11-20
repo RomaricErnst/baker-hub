@@ -85,3 +85,11 @@ test('imperial: temperatures read °F and are stored in °C',async({page})=>{
  await doughTemp.fill('77');await doughTemp.blur();
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')).targetDoughTemp)).toBe(25);
 });
+
+// Round 7 part 2: a poolish dough has "Yeast · instant dry" over "In the poolish" / "In the final dough"; still one line each.
+for(const locale of ['en','fr'])for(const width of [320,430])test(`${locale} ${width}px poolish: the yeast rows are one line`,async({page})=>{
+ const fineTune=await openFineTune(page,locale,width,{prefermentType:'poolish',prefermentFlourPct:25,prefOffsetH:13,poolishStorage:'room'});
+ const labels=await labelLines(fineTune);
+ for(const l of labels)expect(l,`${l.text} wraps at ${width}px`).toMatchObject({rows:1});
+ expect(labels.map(l=>l.text)).toEqual(expect.arrayContaining(locale==='fr'?['Levure · instantanée','Dans le poolish','Dans la pâte finale']:['Yeast · instant dry','In the poolish','In the final dough']));
+});

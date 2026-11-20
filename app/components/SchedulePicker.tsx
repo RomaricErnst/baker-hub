@@ -23,6 +23,7 @@ import {recommendRipePoolish, ripenFixedPoolish, ripenPoolish, type PoolishPeakC
 import {prefermentConditioningAction,proposeScheduleEdit, validateScheduleCandidate, findFixedBakeSchedule, recommendPreferment, laterBakeAlternative, scheduleEditSlots, type EditInput, type EditTimes} from '../utils/scheduleEdit';
 import { isOvernightPreparation, planActions, blockClock, chronologicalBlocks, profileBlocksForBake, recurringBlockEntries, selectedAvailabilityCount, foldActionLabel, isTimeBlocked, findAvailabilityConflicts, getFinalFridgeRemoval, isFridgeRemovalCovered, type AvailabilityAction } from '../utils/scheduleAvailability';
 import { kneadMinFor, type MixerType } from '../data';
+import { prefermentYeastTiming, prefermentYeastStorages, prefermentMassG, type FlourPreferment } from '../utils/prefermentYeast';
 import type {BakeExecution} from '../utils/bakeExecution';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 
@@ -262,8 +263,10 @@ interface SchedulePickerProps extends WarmupInputs {
   poolishStorage?: 'auto' | 'fridge' | 'room';
   /** Recipe test: does this poolish, with the yeast the recipe gives it, still peak near the mix? (absent: no ripeness levers) */
   poolishPeakAtMix?: PoolishPeakCheck;
-  /** Custom, direct dough: the baker's IDY % of flour. The plan is timed to it. */
+  /** Custom: the baker's IDY % of flour for the (final) dough. The plan's mix-to-bake is timed to it (with a poolish or biga too, round 7). */
   yeastPctOverride?: number;
+  /** Custom, poolish/biga: the baker's preferment yeast, IDY % of the preferment flour. The preferment window is timed to it (round 7). */
+  prefYeastPctOverride?: number;
   /** True after an explicit method/amount change; the picker replans, then calls onReplanHandled. */
   replanPending?: boolean;
   /** Custom, direct dough: drop the baker's yeast amount and plan with the calculated one. */
@@ -1851,7 +1854,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ starterLocationAnswered = true, starterMatureAnswered = true, afterBakeInput, onUseCalculatedYeast, enteredYeastShownPct, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, autoStarterPct = null, onAutoStarterPctChange, keptStarterPlan = false, holdStarterPct = false, canRaiseStarterPct, replanPending = false, onReplanHandled, yeastPctOverride, poolishStorage = 'auto', poolishPeakAtMix, onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, planInline, decisionSheet=false, onDecisionSheetClose, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, exitLeadMin, preheatExtraMin = 0, ovenShare, onOvenKept, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
+function FermentedSchedulePicker({ starterLocationAnswered = true, starterMatureAnswered = true, afterBakeInput, onUseCalculatedYeast, enteredYeastShownPct, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, autoStarterPct = null, onAutoStarterPctChange, keptStarterPlan = false, holdStarterPct = false, canRaiseStarterPct, replanPending = false, onReplanHandled, yeastPctOverride, prefYeastPctOverride, poolishStorage = 'auto', poolishPeakAtMix, onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, planInline, decisionSheet=false, onDecisionSheetClose, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, exitLeadMin, preheatExtraMin = 0, ovenShare, onOvenKept, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange }: SchedulePickerProps) {
   // A baker-chosen starter % lengthens or shortens the levain room-temperature
   // bulk (starterBulkFactor). The solver windows add the same hours the
   // schedule builder does, so scoring, card and chart stay on one bulk.
@@ -1878,6 +1881,22 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   }
   function warmupFor(method:string,inFridge:boolean){return requiredPrefWarmupH(thermalInputs(method,inFridge));}
   function cooldownFor(method:string,inFridge:boolean){return requiredPrefCooldownH(thermalInputs(method,inFridge));}
+  // A baker-entered preferment yeast times the preferment window (round 7, prefermentYeast.ts): the yeast
+  // model read backwards with the preferment's medium and the same path the recipe doses it on.
+  function prefYeastTimingFor(method:string,inFridge:boolean){
+    if(prefYeastPctOverride===undefined||isSourdough||method!==prefermentType||(method!=='poolish'&&method!=='biga'))return null;
+    return prefermentYeastTiming(method as FlourPreferment,prefYeastPctOverride,inFridge,{kitchenTemp,fridgeTemp,
+      massG:prefermentMassG(method as FlourPreferment,doughMassG,hydrationPct,prefermentFlourPct),warmupH:warmupFor(method,inFridge),cooldownH:cooldownFor(method,inFridge)});
+  }
+  /** The preferment's target window: the entered yeast's when there is one, else the planner's optimum. */
+  function prefTargetH(method:string,inFridge:boolean){
+    return prefYeastTimingFor(method,inFridge)?.hours??getPrefOptH(method,kitchenTemp,inFridge,styleKey,fridgeTemp);
+  }
+  /** The storages an entered preferment yeast can use, best first (null without one). */
+  function prefYeastModes(preferFridge:boolean):boolean[]|null{
+    if(prefYeastPctOverride===undefined||isSourdough||(prefermentType!=='poolish'&&prefermentType!=='biga'))return null;
+    return prefermentYeastStorages(prefermentType,poolishStorage,preferFridge).filter(inFridge=>!!prefYeastTimingFor(prefermentType,inFridge));
+  }
 
   const readyOffset = Number.isFinite(readyTimeOffsetMinutes) && readyTimeOffsetMinutes! > 0 ? readyTimeOffsetMinutes! : 0;
   const [editBoundaryMessage,setEditBoundaryMessage]=useState<string|null>(null);
@@ -2390,6 +2409,12 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     // A chosen yeast amount fixes the fermentation length; search availability
     // around that length instead of the style's default.
     if (yeastPctOverride !== undefined && !hasPrefActive && yeastTimingFor(et, currentBlocks)) {
+      replanCurrentSchedule(currentBlocks, manualTimesRef.current, true);
+      return;
+    }
+    // With a poolish or biga, an entered final-dough yeast (mix-to-bake) or preferment yeast (the
+    // preferment window) takes the same path: the fixed-bake search with those windows (round 7).
+    if (hasPrefActive && (yeastPctOverride !== undefined && yeastTimingFor(et, currentBlocks) || !!prefYeastModes(prefGoesInFridge)?.length)) {
       replanCurrentSchedule(currentBlocks, manualTimesRef.current, true);
       return;
     }
@@ -2956,7 +2981,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   // model through the schedule builder so timing and amount agree. The window
   // spans the same ±10% budget band the recipe uses for its budget note.
   function yeastTimingFor(bake:Date,candidateBlocks:AvailabilityBlock[],method:string=prefermentType){
-    if(yeastPctOverride===undefined||isSourdough||(method!=='none'&&method!=='')||!styleKey||isNaN(+bake))return null;
+    if(yeastPctOverride===undefined||isSourdough||(method!=='none'&&method!==''&&method!=='poolish'&&method!=='biga')||!styleKey||isNaN(+bake))return null;
     const model=yeastPctOverride*flourStrength;
     const o={bake,blocks:candidateBlocks,kitchenTemp,preheatMin,exitLeadMin,mixerType,styleKey,numItems:numItems??1,itemWeight:itemWeight??250,mixingBatches,fridgeTemp,hydration:hydrationPct??65,doughTempC:targetDoughTemp};
     // One scan of the yeast model's budget gives the centre and the readiness band; the budget is not
@@ -7084,7 +7109,8 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   };
   function commercialCandidateInput(candidateBlocks:AvailabilityBlock[]=solverBlocksRef.current,inFridge=prefGoesInFridge,start=pendingStart,bake=pendingEatTime,method=prefermentType):EditInput {
     const hasPrefActive=method==='poolish'||method==='biga';
-    const prefWindow=commercialPrefermentWindow(method,inFridge,kitchenTemp,styleKey,fridgeTemp);
+    const entered=prefYeastTimingFor(method,inFridge);
+    const prefWindow=entered?{min:entered.min,max:entered.max}:commercialPrefermentWindow(method,inFridge,kitchenTemp,styleKey,fridgeTemp);
     return {isSourdough:false,formulaValid:execution?validateMadeFormula:undefined,completedMixAt:completedMixAt??(execution?.method==='none'?execution.actualAt:undefined),completedPrefermentAt:execution&&execution.method!=='none'?execution.actualAt:undefined,id:'mix',at:start,start,bake,now:Date.now(),
       blocks:candidateBlocks,kitchenTemp,preheatMin,exitLeadMin,preheatExtraMin,mixerType,styleKey,numItems,mixingBatches,
       prefHours:hasPrefActive?prefOffsetH:0,hasPreferment:hasPrefActive,prefWindow:execution?.prefWindow??prefWindow,pins:execution&&execution.method!=='none'?{preferment:new Date(execution.actualAt)}:undefined,prefWarmupHours:warmupFor(method, inFridge),prefCooldownHours:cooldownFor(method,inFridge),
@@ -7096,10 +7122,11 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   function commercialRecommendation(candidateBlocks:AvailabilityBlock[],overrides:TimingOverrides,bake=pendingEatTime,start=new Date(+bake-_optimalMix*3600000)) {
     // Preserve storage for explicitly chosen preparation; automatic poolish can
     // compare both methods. Biga retains its existing refrigerated protocol.
-    const modes=execution?[execution.inFridge]:prefermentType==='poolish'?(poolishStorage==='fridge'?[true]:poolishStorage==='room'?[false]:[true,false]):[prefGoesInFridge];
+    const enteredModes=execution?null:prefYeastModes(true);
+    const modes=execution?[execution.inFridge]:enteredModes?.length?enteredModes:prefermentType==='poolish'?(poolishStorage==='fridge'?[true]:poolishStorage==='room'?[false]:[true,false]):[prefGoesInFridge];
     const options=modes.map(inFridge=>({inFridge,input:{
       ...commercialCandidateInput(candidateBlocks,inFridge,start,bake),
-      prefHours:getPrefOptH(prefermentType,kitchenTemp,inFridge,styleKey,fridgeTemp),
+      prefHours:prefTargetH(prefermentType,inFridge),
     }}));
     const pins={mix:overrides.mix===undefined?undefined:new Date(overrides.mix),preferment:execution&&execution.method!=='none'?new Date(execution.actualAt):overrides.pref===undefined?undefined:new Date(overrides.pref)};
     const preferences={preferCold:prefermentType==='poolish'&&kitchenTemp>=26,startThisEvening:prefermentType==='poolish'&&kitchenTemp>=26};
@@ -7108,7 +7135,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     return ladder?recommendRipePoolish(options,pins,preferences,ladder):recommendPreferment(options,pins,preferences);
   }
   function poolishLadder(overrides:TimingOverrides){
-    if(prefermentType!=='poolish'||isSourdough||execution||completedMixAt!==undefined||!poolishPeakAtMix)return undefined;
+    if(prefermentType!=='poolish'||isSourdough||execution||completedMixAt!==undefined||!poolishPeakAtMix||prefYeastPctOverride!==undefined)return undefined;
     return {peakAtMix:poolishPeakAtMix,storage:poolishStorage,timeSet:overrides.pref!==undefined||!!overrides.prefLocked};
   }
   const [restartRevision,setRestartRevision]=useState(0);
@@ -7121,7 +7148,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       const choices=modes.map(inFridge=>{
         const start=new Date(+pendingEatTime-_optimalMix*3600000);
         const input=commercialCandidateInput(repairBlocks,inFridge,start,pendingEatTime,method);
-        input.prefHours=method==='none'?0:getPrefOptH(method,kitchenTemp,inFridge,styleKey,fridgeTemp);
+        input.prefHours=method==='none'?0:prefTargetH(method,inFridge);
         return {inFridge,input};
       });
       const ladder=method==='poolish'&&poolishPeakAtMix&&!isSourdough?{peakAtMix:poolishPeakAtMix,storage:'auto' as const,timeSet:false}:undefined;
@@ -7370,7 +7397,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         // Re-seed from the current model's preferred centre, not the manual time.
         input.start=new Date(+pendingEatTime-_optimalMix*3600000);
         input.at=input.start;
-        input.prefHours=hasPrefActive?getPrefOptH(prefermentType,kitchenTemp,prefGoesInFridge,styleKey,fridgeTemp):0;
+        input.prefHours=hasPrefActive?prefTargetH(prefermentType,prefGoesInFridge):0;
       }
       const ladder=hasPrefActive?poolishLadder(overrides):undefined;
       const keptPins={mix:overrides.mix===undefined?undefined:new Date(overrides.mix),preferment:execution&&execution.method!=='none'?new Date(execution.actualAt):overrides.pref===undefined?undefined:new Date(overrides.pref)};
@@ -7387,12 +7414,12 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       setSearchFailed(!result.found);
       // A chosen yeast amount fixes the length even when no free slot fits it:
       // show that start (and its clash) rather than leaving the old one.
-      const yeastStart=!usable&&!hasPrefActive?yeastTimingFor(pendingEatTime,candidateBlocks):null;
+      const yeastStart=!usable?yeastTimingFor(pendingEatTime,candidateBlocks):null;
       // No clash-free plan and no explicit mix time: use the plan that needs
       // the baker during the fewest busy moments, not the previous start.
       const least=!usable&&!yeastStart&&!hasPrefActive&&overrides.mix===undefined&&result.leastConflict
         ?result.leastConflict.candidate.times:null;
-      const times=usable?result.candidate.times:yeastStart?{start:new Date(Math.round((+pendingEatTime-yeastStart.center*3600000)/900000)*900000),bake:pendingEatTime,prefHours:0}:least??{start:pendingStart,bake:pendingEatTime,prefHours:prefOffsetH};
+      const times=usable?result.candidate.times:yeastStart?{start:new Date(Math.round((+pendingEatTime-yeastStart.center*3600000)/900000)*900000),bake:pendingEatTime,prefHours:hasPrefActive?input.prefHours:0}:least??{start:pendingStart,bake:pendingEatTime,prefHours:prefYeastTimingFor(prefermentType,storage)?.hours??prefOffsetH};
       setPendingStart(times.start);setPrefOffsetH(times.prefHours);setStartComputed(true);
       setPrefAlgoRed(!result.found);setWindowTooShort(false);
       onChange(times.start,pendingEatTime,candidateBlocks,{preservePlan:true,prefOffsetHours:times.prefHours,prefInFridge:storage,timingOverrides:overrides});
@@ -7526,7 +7553,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       }
       const input=commercialCandidateInput(candidateBlocks);
       const start=new Date(+bake-_optimalMix*3600000);
-      const result=findFixedBakeSchedule({...input,start,at:start,bake,prefHours:hasPrefActive?getPrefOptH(prefermentType,kitchenTemp,prefGoesInFridge,styleKey,fridgeTemp):0},pins);
+      const result=findFixedBakeSchedule({...input,start,at:start,bake,prefHours:hasPrefActive?prefTargetH(prefermentType,prefGoesInFridge):0},pins);
       // A suggestion the dough cannot meet is no suggestion: even the most yeast the engine allows
       // would leave it behind (14 Nov 2026 audit: a suggested pita bake was "78% risen").
       const sched=result.found?result.candidate.schedule:undefined;
@@ -9005,7 +9032,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         const activeOverrides=normalizeTimingOverrides({...manualTimes,...draftOverridesRef.current});
         const editInput:EditInput={...commercialInput,
           id:editingRow??'mix',at:draft,start:editBaseTimes?.start??pendingStart,bake:alternativeBake??editBaseTimes?.bake??pendingEatTime,
-          prefHours:editingRow==='mix'&&hasPrefActive&&!activeOverrides.prefLocked?getPrefOptH(prefermentType,kitchenTemp,prefGoesInFridge,styleKey,fridgeTemp):editBaseTimes?.prefHours??prefOffsetH,
+          prefHours:editingRow==='mix'&&hasPrefActive&&!activeOverrides.prefLocked?prefTargetH(prefermentType,prefGoesInFridge):editBaseTimes?.prefHours??prefOffsetH,
           pins:{mix:activeOverrides.mix===undefined?undefined:new Date(activeOverrides.mix),preferment:execution&&execution.method!=='none'?new Date(execution.actualAt):activeOverrides.pref===undefined?undefined:new Date(activeOverrides.pref)},
         };
         const proposeCommercialEdit=(input:EditInput)=>{
@@ -9220,7 +9247,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
             return lead+duration((+times.bake-+times.start)/hour)+(isFr?' avant cuisson':' before baking');})(),
           note:isSourdough?(editBoundaryMessage??starterPreview?.message):(preview?.issue==='preferment'||preview?.conflict?.startsWith('preferment'))?null:draftMessage});
         const cacheKey=JSON.stringify([originalSignature,mixingBatches,activeOverrides,manualTimes,starterPins,editingRow,draftRowTime,editBaseTimes,kitchenTemp,fridgeTemp,flourStrength,lastFeedRatio,nextFeedRatio,ratioMode,starterLocation,planningMode,lastFedAge,knownPeakTime,prefermentType,repairBlocks,mixerType,targetDoughTemp,prefermentFlourPct,doughMassG,hydrationPct,flourTempC]);
-        const check=(id:string,at:number)=>isSourdough?evaluateStarter(pinsFor(id,at)).valid:proposeCommercialEdit({...slotInput,id,at:new Date(at),...(id==='mix'&&hasPrefActive&&!activeOverrides.prefLocked?{prefHours:getPrefOptH(prefermentType,kitchenTemp,prefGoesInFridge,styleKey,fridgeTemp),pins:{...slotInput.pins,preferment:undefined}}:{})}).valid;
+        const check=(id:string,at:number)=>isSourdough?evaluateStarter(pinsFor(id,at)).valid:proposeCommercialEdit({...slotInput,id,at:new Date(at),...(id==='mix'&&hasPrefActive&&!activeOverrides.prefLocked?{prefHours:prefTargetH(prefermentType,prefGoesInFridge),pins:{...slotInput.pins,preferment:undefined}}:{})}).valid;
         const overrideChanged=JSON.stringify(activeOverrides)!==JSON.stringify(normalizeTimingOverrides(manualTimes));
         const dirty=isSourdough?starterPins!==null&&(+starterMix!==+pendingStart||JSON.stringify(starterEvents.map(e=>[e.kind,+e.time]))!==JSON.stringify(displayStarterEvents.map(e=>[e.kind,+e.time]))||overrideChanged):changed&&(+draftMix!==+pendingStart||+draftBake!==+pendingEatTime||draftPrefOffset!==prefOffsetH||draftInFridge!==prefGoesInFridge||overrideChanged);
         const valid=isSourdough?!!starterPreview?.valid:!!preview?.valid;

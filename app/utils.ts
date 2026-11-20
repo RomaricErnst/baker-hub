@@ -2077,8 +2077,9 @@ export function calculateRecipe(
   measuredFlourTemp?: number,              // measured temperature at mixing, °C
   measuredPrefermentTemp?: number,         // measured poolish, biga or levain temperature, °C
   totalFlourTarget?: number,               // bread: total formula flour, preferment included
-  yeastPctOverride?: number,               // custom, direct dough: final IDY % chosen by the baker
+  yeastPctOverride?: number,               // custom: the (final) dough's IDY % of flour chosen by the baker; with a poolish/biga, the final dough's own yeast (round 7)
   starterPctOverride?: number,             // custom, levain: starter % of flour chosen by the baker
+  prefYeastPctOverride?: number,           // custom, poolish/biga: the preferment's IDY % of ITS flour chosen by the baker (round 7)
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = (ovenType in OVEN_TYPES)
@@ -2241,7 +2242,7 @@ export function calculateRecipe(
         styleKey,
         // The blend step below divides by the tolerance multiplier; multiply
         // here so the recipe shows exactly the amount the baker entered.
-        yeastPctOverride !== undefined && (!prefermentType || prefermentType === 'none')
+        yeastPctOverride !== undefined && (!prefermentType || prefermentType === 'none' || prefermentType === 'poolish' || prefermentType === 'biga')
           ? yeastPctOverride * (blendProfile?.fermToleranceMultiplier ?? 1) : undefined,
         schedule.totalRTHours,
         path,
@@ -2316,6 +2317,7 @@ export function calculateRecipe(
           prefActualHours,
           directNeedIDY,
           prefInFridge ? { warmupH: prefConditioningHours } : { cooldownH: prefConditioningHours },
+          prefermentType === 'poolish' || prefermentType === 'biga' ? prefYeastPctOverride : undefined,
         )
       : null;
 
