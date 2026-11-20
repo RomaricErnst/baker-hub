@@ -561,6 +561,8 @@ export interface ScheduleResult {
   // so the only remaining move belongs to the baker: bake later. Recorded here
   // so the plan step can say so instead of staying silent.
   coldExitConflict: null | { at: Date; blockLabel: string; suggestedBake: Date };
+  /** Set only when the style's own apprêt bound planned it (baguette, buildSchedule); absent on every other plan. */
+  finalProofBound?: 'style';
   scheduleNote: string | null;
 }
 
@@ -583,6 +585,29 @@ function maxFinalProofHours(kitchenTemp: number, hasColdRetard: boolean): number
   if (kitchenTemp >= 25) return 2.5;
   if (kitchenTemp >= 22) return 3.5;
   return 5;
+}
+
+/** Reference temperature of a style's `shapedProofH24` (°C). */
+const SHAPED_PROOF_REF_C = 24;
+
+/** Longest final proof (apprêt) of a style's shaped pieces in this kitchen (hours).
+ * A style with `shapedProofH24` (baguette, 20 Nov 2026 round 7) proofs at most that many
+ * hours at 24 °C, converted to the kitchen by the yeast model's activity and rounded to the
+ * quarter hour, never below the shortest final proof (1 h) nor above the generic bound.
+ * Sources (docs/YEAST-MODEL.md §13): Hamelman 1–1.5 h at 24 °C; Grands Moulins de Paris
+ * 30–60 min at 25 °C after a 12–14 h bulk retard at 4 °C; Bouabsa 45 min after 21 h cold;
+ * King Arthur Pro slow-rise 1.5–2 h at 24 °C after a 10 °C bulk retard. The generic bound
+ * (3.5 h after the fridge, 5 h without, at 20 °C) is a pizza-ball figure. Levain is not
+ * covered (its own solver; levain loaves bake from the fridge).
+ * The engine measures its proof bounds to the preheat start (the proof runs on while the oven
+ * heats), so the returned bound is that apprêt minus the preheat, never below the shortest final
+ * proof (1 h before the preheat): at 20 °C with a 45 min preheat, 1.25 h + 0.75 h = 2 h to the bake. */
+export function styleMaxFinalProofHours(styleKey: string, kitchenTemp: number, hasColdRetard: boolean, isSourdough: boolean, preheatH = 0): number {
+  const generic = maxFinalProofHours(kitchenTemp, hasColdRetard);
+  const ref = isSourdough ? undefined : STYLE_FERM_DEFAULTS[styleKey]?.shapedProofH24;
+  if (!ref) return generic;
+  const toBakeH = Math.round(ref * yeastActivity(SHAPED_PROOF_REF_C) / yeastActivity(kitchenTemp) * 4) / 4;
+  return Math.min(generic, Math.max(1, toBakeH - Math.max(0, preheatH)));
 }
 
 function restRtMinutes(kitchenTemp: number): number {
@@ -766,7 +791,10 @@ function prefermentConditioningHours(o: PrefermentThermalInputs): number {
 /** Existing supported lower bounds, also used by setup readiness windows. */
 export const REQUIRED_COLD_MIN_HOURS: Readonly<Record<string, number>> = { brioche: 4, pain_mie: 4, pain_viennois: 3 };
 
-const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHRequired?: boolean }> = {
+const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHRequired?: boolean;
+  /** Longest final proof of the shaped pieces, hours at 24 °C (styleMaxFinalProofHours). Used only by
+   * buildSchedule's exit and proof bounds; coldH and rtH (and so the three-engine sweet spot) are unchanged. */
+  shapedProofH24?: number }> = {
   ...BREAD_FERMENTATION_DEFAULTS,
   // Pizza — sweet spot = coldH + rtH (where dough peaks at bake)
   neapolitan:    { coldH: 24, rtH: 2 },                          // sweet: 26h
@@ -778,7 +806,7 @@ const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHReq
   // Bread
   pain_campagne: { coldH: 18, rtH: 3 },                          // sweet: 21h
   pain_levain:   { coldH: 16, rtH: 4 },                          // sweet: 20h
-  baguette:      { coldH: 12, rtH: 2 },                          // sweet: 14h
+  baguette:      { coldH: 12, rtH: 2, shapedProofH24: 1.5 },     // sweet: 14h · apprêt ≤ 1.5 h at 24 °C (2 h at 20 °C)
   pain_complet:  { coldH: 12, rtH: 3 },                          // sweet: 15h
   pain_seigle:   { coldH: 0,  rtH: 5 },                          // RT only: sweet 5h
   fougasse:      { coldH: 8,  rtH: 2 },                          // sweet: 10h
@@ -856,6 +884,7 @@ function buildSchedulePhases(
   starterFactor = 1,
   fromFridge = false,
   exitLeadMin?: number,
+  proofMode: FinalProofMode = 'style',
 ): ScheduleResult {
   const bakeTime = new Date(eatTime.getTime() - preheatMin * 60000);
   // Elapsed mixing time is style-dependent (Modernist publishes it per style);
@@ -937,7 +966,8 @@ function buildSchedulePhases(
   }
 
   const hasColdRetard = coldH > 0;
-  const maxFinalH = maxFinalProofHours(kitchenTemp, hasColdRetard);
+  const maxFinalH = proofMode === 'generic' ? maxFinalProofHours(kitchenTemp, hasColdRetard)
+    : styleMaxFinalProofHours(styleKey, kitchenTemp, hasColdRetard, isSourdough, preheatH);
 
   // Schedule note (first match wins)
   let scheduleNote: string | null = null;
@@ -967,7 +997,9 @@ function buildSchedulePhases(
   const minCold2H = 2;
   const divideH = divisionMinutesFor(numItems) / 60;
   const minTwoPhaseWindow = initialBulkH + minCold1H + divideH + minCold2H + minFinalRT + preheatH;
-  const isTwoPhase = hasColdRetard && totalWindowH >= minTwoPhaseWindow;
+  // 'styleRoom' keeps a plan at room temperature; 'styleBulk' keeps the cold before shaping (buildSchedule).
+  const isTwoPhase = hasColdRetard && totalWindowH >= minTwoPhaseWindow
+    && proofMode !== 'styleRoom' && proofMode !== 'styleBulk';
 
   // Filter blocks overlapping the fermentation window [fermStart, bakeTime)
   const relevantBlocks = availabilityBlocks
@@ -983,7 +1015,8 @@ function buildSchedulePhases(
   const pureRoomTemperatureFallback = (note: string): ScheduleResult => {
     const displayFermStart = fermStart.getTime() > bakeTime.getTime() ? bakeTime : fermStart;
     const totalH = Math.max(0, (bakeTime.getTime() - displayFermStart.getTime()) / 3600000);
-    const rtFinalMaxH = maxFinalProofHours(kitchenTemp, false);
+    const rtFinalMaxH = proofMode === 'generic' ? maxFinalProofHours(kitchenTemp, false)
+      : styleMaxFinalProofHours(styleKey, kitchenTemp, false, isSourdough, preheatH);
     // The final proof never takes the whole window: in a cool kitchen its cap (5 h)
     // exceeded a short plan and left the dough no first rise before shaping.
     const finalProofH = Math.min(rtFinalMaxH, totalH > minTotalRT ? totalH - minBulkRT : totalH);
@@ -1265,7 +1298,7 @@ function buildSchedulePhases(
   // ── SINGLE PHASE ─────────────────────────────────────────────
 
   // ── PURE RT: no cold retard for this style ───────────────────
-  if (!hasColdRetard) {
+  if (!hasColdRetard || proofMode === 'styleRoom') {
     return pureRoomTemperatureFallback(scheduleNote ?? 'Room-temperature fermentation fits this window.');
   }
 
@@ -1406,7 +1439,29 @@ export function divisionMinutesFor(numItems = 4): number {
   return 15 + 2 * Math.max(0, (Number.isFinite(numItems) ? Math.floor(numItems) : 4) - 4);
 }
 
-/** Build canonical phases, then describe only work with an existing time budget. */
+/** How buildSchedulePhases bounds the final proof: 'generic' is the bound every style had before
+ * 20 Nov 2026 (maxFinalProofHours); 'style' the style's own apprêt (styleMaxFinalProofHours); 'styleRoom'
+ * the style's apprêt in a room-temperature plan; 'styleBulk' the style's apprêt with the whole cold
+ * before shaping (no shaped cold spell). */
+type FinalProofMode = 'generic' | 'style' | 'styleRoom' | 'styleBulk';
+
+/** Local hour-of-day test for hands-on steps the plan must not newly put at night (22:00–07:00).
+ * A step the baker declared that time free for is not counted: they entered their own night (a ' night'
+ * block, the sleep preset) and the step falls outside every busy time they entered. */
+const NIGHT_FROM_H = 22, NIGHT_TO_H = 7;
+function nightActionIds(schedule: ScheduleResult, blocks: AvailabilityBlock[]): Set<string> {
+  const ownNight = blocks.some(block => block.label?.endsWith(' night'));
+  const free = (at: number) => ownNight && !blocks.some(block => at > +block.from && at < +block.to);
+  return new Set((schedule.availabilityActions ?? [])
+    .filter(action => { const h = action.at.getHours(); return (h >= NIGHT_FROM_H || h < NIGHT_TO_H) && !free(+action.at); })
+    .map(action => action.id));
+}
+
+/** Build canonical phases, then describe only work with an existing time budget.
+ * A style with its own apprêt bound (`shapedProofH24`, baguette) is planned with it only where that keeps
+ * what the generic bound's plan already promised (20 Nov 2026 round 7, owner): a room-temperature plan stays
+ * at room temperature (the time goes to the bulk), no hands-on step newly falls between 22:00 and 07:00,
+ * no new clash, no newly invalid preparation; else the cold stays before shaping, else the generic plan. */
 export function buildSchedule(
   startTime: Date, eatTime: Date, availabilityBlocks: AvailabilityBlock[],
   kitchenTemp: number, preheatMin: number, mixerType: MixerType = 'hand',
@@ -1416,6 +1471,38 @@ export function buildSchedule(
   /** Minutes from the final fridge exit to the bake that the previous plan of this bake had
    *  (Bake again); kept when that exit is free. Undefined: the engine's own exit. */
   exitLeadMin?: number,
+): ScheduleResult {
+  const build = (mode: FinalProofMode) => buildScheduleOnce(startTime, eatTime, availabilityBlocks, kitchenTemp, preheatMin,
+    mixerType, styleKey, numItems, requestedMixingBatches, isSourdough, starterFactor, exitLeadMin, mode);
+  if (isSourdough || !STYLE_FERM_DEFAULTS[styleKey]?.shapedProofH24) return build('style');
+  const generic = build('generic');
+  const night = nightActionIds(generic, availabilityBlocks);
+  const keeps = (plan: ScheduleResult) => (!plan.preparationInvalid || generic.preparationInvalid)
+    && (plan.availabilityConflicts?.length ?? 0) <= (generic.availabilityConflicts?.length ?? 0)
+    && [...nightActionIds(plan, availabilityBlocks)].every(id => night.has(id));
+  if (!(generic.totalColdHours > 0)) {
+    const room = build('styleRoom');
+    if (room.totalColdHours > 0 || !keeps(room)) return generic;
+    return { ...room, scheduleNote: generic.scheduleNote, finalProofBound: 'style' };
+  }
+  const styled = build('style');
+  if (styled.totalColdHours > 0 && keeps(styled)) return { ...styled, finalProofBound: 'style' };
+  const bulk = build('styleBulk');
+  const boundH = styleMaxFinalProofHours(styleKey, kitchenTemp, true, false, 0);
+  if (bulk.totalColdHours > 0 && keeps(bulk) && (+bulk.bakeStart - +bulk.finalProofStart) / 3600000 <= boundH + 1e-9) return { ...bulk, finalProofBound: 'style' };
+  return generic;
+}
+
+function buildScheduleOnce(
+  startTime: Date, eatTime: Date, availabilityBlocks: AvailabilityBlock[],
+  kitchenTemp: number, preheatMin: number, mixerType: MixerType = 'hand',
+  styleKey: string = 'neapolitan', numItems?: number, requestedMixingBatches = 1,
+  isSourdough = isLevainStyle(styleKey),
+  starterFactor = 1,
+  /** Minutes from the final fridge exit to the bake that the previous plan of this bake had
+   *  (Bake again); kept when that exit is free. Undefined: the engine's own exit. */
+  exitLeadMin?: number,
+  proofMode: FinalProofMode = 'style',
 ): ScheduleResult {
   const mixingBatches = Number.isFinite(requestedMixingBatches) ? Math.max(1, Math.min(100, Math.floor(requestedMixingBatches))) : 1;
   const poachMinutes = breadPoachMinutes(styleKey, numItems);
@@ -1427,7 +1514,7 @@ export function buildSchedule(
   // take it only as a repair around busy times.
   const fromFridge = !poachMinutes && BAKE_FROM_FRIDGE_STYLES.has(styleKey)
     && (isSourdough || availabilityBlocks.some(block => block.bakeFromFridge === +eatTime));
-  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches, numItems, isSourdough, isSourdough ? starterFactor : 1, fromFridge, poachMinutes ? undefined : exitLeadMin);
+  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches, numItems, isSourdough, isSourdough ? starterFactor : 1, fromFridge, poachMinutes ? undefined : exitLeadMin, proofMode);
   schedule.divisionMinutes = divisionMinutesFor(numItems);
   const requiredCold = REQUIRED_COLD_MIN_HOURS[styleKey] ?? 0;
   if (requiredCold) {

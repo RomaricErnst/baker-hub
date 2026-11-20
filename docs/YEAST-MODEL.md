@@ -468,3 +468,44 @@ Evidence for a higher level:
 Evidence against: each of the three is 1–2 SE and two of them hinge on one or two sources (Finney's optimised 30 °C test bakes; Baking Steel); the professionals themselves span ×12 (TSG to Finney); and the pre-registered rule set A from all E1 sources before any fit was run.
 
 **Recommendation: keep 1.41** for now. It is the pre-registered estimate and no alternative is more than about 2 SE away. The three hints all point the same way (about ×1.25–1.3 for instant-yeast bakers), so the owner's first kitchen trial (§9, the 20 °C fresh-against-instant dough) also decides the level: if an 8 h, 20 °C instant-yeast dough at 0.20 % is under-proofed at the bake, move A to 1.82 (shape unchanged; the tests and the About page follow the constant). This is the owner's decision; no constant was changed for it.
+
+## 13. Baguette final proof after a cold phase (20 Nov 2026, round 7, D4)
+
+**In plain words.** A shaped baguette now proofs (apprêt) at most about as long as published baguette recipes allow: the equivalent of 1.5 h at 24 °C, which is 2 h at 20 °C, 2.5 h at 18 °C, 3 h at 16 °C and 1 h 45 (the plan's shortest) from 22 °C. Before, the plan used the generic bound written for pizza balls (3.5 h after the fridge, 5 h without one, at 20 °C), so a free 14 h baguette plan at 20 °C took the dough out 4.5 h before the bake (1 h rest + 3.5 h apprêt). The fridge exit moves later and the cold spell absorbs the time; the yeast is re-solved on the new temperature path (the dose law is unchanged), so the dough still reaches its target at the bake, with a little more yeast because less of its rise happens warm.
+
+**Sources (final proof of baguettes).**
+
+| Source | Cold phase | After the fridge | Apprêt |
+|---|---|---|---|
+| Grands Moulins de Paris, fiches 00232 / 46041 (professional) | bulk, 12–14 h at 4 °C | divide, détente 20–60 min, pieces ≥ 13 °C at the core | 30–45 / 45–60 min at 25 °C |
+| Anis Bouabsa (The Fresh Loaf, node 8242) | bulk, 21 h | divide, pre-shape, 1 h rest | 45 min |
+| DonD, baguettes à l'ancienne (The Fresh Loaf, node 17415) | bulk, 18–24 h | pre-shape, 1 h rest | 45 min |
+| King Arthur Pro, slow-rise baguettes | bulk, ≤ 18 h at 10 °C | divide, pre-shape, rest | 1.5–2 h at 24 °C |
+| Hamelman, *Bread* (poolish baguettes, no retard) | — | — | 1–1.5 h at 24 °C |
+| ASBE, baguette | — | — | 60–90 min at 27 °C |
+
+Converted to 20 °C with r(T) (r(20)/r(25) = 0.69): GMP 0.7–1.4 h, Bouabsa/DonD ≈ 1 h, Hamelman 1.5–2 h, King Arthur Pro 2–2.7 h. The old 3.5 h was above all of them. Our plans keep the cold phase **before shaping** (pointage en bac: out, divide, rest 1 h, shape, apprêt) when the window is short or a night holds the exit, and split it (bulk cold, shape, shaped cold, 45 min warm-up, apprêt) when it is long; the bound applies to the apprêt in both.
+
+**Rule.** `styleMaxFinalProofHours` (utils.ts): for a style with `shapedProofH24` (baguette 1.5) the apprêt to the bake is `round¼(1.5 · r(24)/r(T_kitchen))`; the engine measures its proof bounds to the preheat start, so the bound it uses is that minus the preheat, at least the shortest final proof (1 h before the preheat), and never above the generic bound. It is the upper end of the published range: the smallest change that brings every plan inside it. Levain baguettes (own solver) and every other style keep the generic bound. coldH/rtH are unchanged, so the three-engine sweet spot (coldH + rtH = 14 h) and the readiness windows do not move.
+
+**Before → after** (4 × 320 g, 734 g flour, instant yeast, 45 min preheat, bake 12:00):
+
+| Case | Out of the fridge → bake | Apprêt | Cold | IDY |
+|---|---|---|---|---|
+| Thomas, 20 °C, mix 21:00, asleep 23:30–7:00 | 2 h 45 → **2 h 15** (out 9:15 → 9:45; 1 h rest) | 1 h 45 → **1 h 15** | 10 → 10.5 h | 0.213 → **0.223 %** (1.57 → 1.64 g) |
+| Same plan in the app (/fr, this oven's 30 min preheat; `tests/mobile/baguette-final-proof.spec.cjs`) | 2 h 45 → **2 h 30** (out 9h15 → 9h30) | 1 h 45 → **1 h 30** | 10 → 10.25 h | recipe 1,7 → **1,8 g** instant (5,2 → 5,3 g fresh) |
+| Same, no busy times | 4 h 30 → **3 h** (out 7:30 → 9:00, whole cold before shaping; 1 h rest) | 3 h 30 → **2 h** | 8.25 → 9.75 h | 0.180 → **0.209 %** |
+| 20 °C, 9 h free (room temperature on main, stays so) | — | 5 h 30 → **1 h 45** (shaped 6:15 → 10:00; the bulk takes the rest) | 0 → 0 | 0.1696 → **0.167 %** |
+| 20 °C, 20–30 h free | 5 h → 2 h 45 | 4 h 15 → 2 h | +2.25 h | ×1.18–1.24 |
+| 18 °C, 20–24 h | 5 h → 3 h 15 | 4 h 15 → 2 h 30 | +1.75 h | ×1.13–1.15 |
+| 24 °C, nights, 12–16 h | 2 h 45 → 1 h 45 | 2 h → 1 h | +1 h | ×1.11–1.12 |
+
+**Two limits (owner, 20 Nov 2026).** The first version (above, before these limits) gave 35 short plans a new fridge spell and put shaping of free 14–15 h plans at 3:15–4:15. `buildSchedule` now plans a baguette with the generic bound first (main's plan) and keeps the style's apprêt only where it promises no less:
+1. **A room-temperature plan stays at room temperature.** Where main's plan has no cold phase, the shorter apprêt's time goes to the room-temperature bulk (`styleRoom`), never to a new fridge spell; the yeast is re-solved on the path.
+2. **No new night step.** No hands-on step (any `availabilityActions` entry: mix, folds, fridge in/out, shaping, preheat) may newly start between 22:00 and 07:00 (local clock) unless main's plan already had that step there, or the baker declared the time free: they entered their own night (a ' night' block, the sleep preset) and the step is outside every busy time they entered. Nor may the plan gain a clash or a newly invalid preparation. In that order the engine tries: the split cold (`style`), then the whole cold before shaping (`styleBulk`, kept only when its apprêt is inside the bound), else main's plan (`finalProofBound` absent).
+
+**Sweep** (13 styles × 9 kitchens 16–32 °C × bakes 12:00/19:00 × no blocks / nights 23:00–07:00 / nights + work 9:00–17:00 × 6–30 h, 17,550 plans, `calculateRecipe` on `buildSchedule`, run with TZ=UTC so block and clock hours agree): **659 plans change, all baguette**; 0 changes for any other style; **0 plans gain a clash**; 0 newly invalid preparations; **0 newly night hands-on steps**; **0 room-temperature plans gain a cold phase**. Yeast on the changed plans: median ×1.12 (p10 ×0.99, p90 ×1.20, lowest ×0.94, highest ×1.46; 11 above ×1.3). The same grid with the night entered as the baker's own (' night' label): 0 steps newly in 22:00–07:00 outside it, 0 gained clashes.
+- **Room-temperature plans** (111 on main, 6–11 h; 108 change, 3 keep main's plan because a longer bulk would add folds before 7:00, 16–20 °C, 8 h to noon): 0 gain a cold phase. Yeast by kitchen: 16 °C −1.3 to −4.5 %, 18 °C −1.0 to −3.5 %, 20 °C −0.7 to −2.3 %, 22 °C −0.2 to −0.9 %, 24 °C 0, 26 °C **+0.4 to +1.3 %**. It goes down where the dough is mixed warmer than the kitchen (the target is 24 °C): a longer bulk keeps the mass warm longer than shaped pieces would. At 26 °C the dough is mixed cooler than the kitchen and the bulk mass warms more slowly than pieces, so a little more yeast; this is the thermal path, not a dose-law change, and was not overridden.
+- **14–15 h windows** (108 plans, 55 change): shaping between 22:00 and 07:00 on main 22, after 14, none new. Bake 12:00, no busy times: shaped 7:30 → 8:00–9:00 at 16–22 °C (the whole cold before shaping; splitting it would have shaped at 3:15–5:15), unchanged where main already shaped at 3:15–4:15 (22–26 °C); yeast +4 to +20 %. Nights: shaped 9:15 → 9:45–10:15, +4 to +11 %. Nights + work: 20–26 °C shaped 3:15/4:15 → 7:00 (out of the night), 16–18 °C unchanged at 3:15/4:15 as on main; −2 to +26 %. Bake 19:00: shaped 14:30–15:45 → 10:15–15:45, none at night; +7 to +20 %; with work hours unchanged.
+
+**Not changed, observed.** (1) Piece geometry: `thermalTauH` treats a 320 g baguette as a sphere (τ 1.8 h). A 35 cm cylinder has about 1.7× the surface for its volume, τ ≈ 0.9–1 h, so the model's baguette still sits near 16 °C at the bake where a real one is nearer 18–19 °C; the model under-credits the warm tail and doses slightly high (the dough would be ready a little early, consistent with Thomas baking at ~2 h). A shape factor in the piece τ would lower baguette doses; it was not made (a second science change, owner's call). (2) Main's artefact: a second fridge spell under 1 h is dropped and its time joins the proof (28 °C, 7 h: 3 h 15 apprêt), unchanged here. Tests: `tests/baguette-final-proof.test.cjs` (bound, Thomas, both limits).

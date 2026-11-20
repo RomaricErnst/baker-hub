@@ -36,9 +36,11 @@ test.describe('Maya: a longer preheat',()=>{
 
 test.describe('Thomas',()=>{
  test.use({timezoneId:'Europe/Paris',locale:'fr-FR'});
- test('Bake again one hour later: out of the fridge at 8:00 with the same 3 h',async({page})=>{
+ // Round 7 (D4, 20 Nov 2026): a baguette's longest apprêt at 20 °C is 2 h (2 h 45 out of the fridge with the
+ // warm-up), so a 3 h lead from an older plan is outside the bounds and not kept; this fixture's lead is 2 h 30.
+ test('Bake again one hour later: out of the fridge at 8:30 with the same 2 h 30',async({page})=>{
   const nights=[19,20,21,22].map(d=>({label:'Sat night',from:Z(`2026-11-${d}T22:00`),to:Z(`2026-11-${d+1}T06:00`)}));
-  const bag={...breadBase,savedAt:Z('2026-11-22T12:00'),styleKey:'baguette',numItems:2,itemWeight:250,ovenType:'home_oven_stone_bread',kitchenTemp:20,startTime:Z('2026-11-21T17:15'),eatTime:Z('2026-11-22T09:00'),blocks:nights,confirmedSettings:['oven=home_oven_stone_bread','mixer=hand','yeast=fresh','climate=20'],planExitLead:{min:180,kitchenTemp:20,styleKey:'baguette'},bakedDone:true};
+  const bag={...breadBase,savedAt:Z('2026-11-22T12:00'),styleKey:'baguette',numItems:2,itemWeight:250,ovenType:'home_oven_stone_bread',kitchenTemp:20,startTime:Z('2026-11-21T17:15'),eatTime:Z('2026-11-22T09:00'),blocks:nights,confirmedSettings:['oven=home_oven_stone_bread','mixer=hand','yeast=fresh','climate=20'],planExitLead:{min:150,kitchenTemp:20,styleKey:'baguette'},bakedDone:true};
   const entry={v:1,id:'bag-1',createdAt:bag.savedAt,updatedAt:bag.savedAt,bakeType:'bread',styleKey:'baguette',bakeName:'',numItems:2,itemWeight:250,kitchenTemp:20,eatTime:bag.eatTime,session:bag,rating:4,note:'Bonne grigne.',photoIds:[],accountEventId:null};
   await install(page,{bh_profile_v1:JSON.stringify(busy),bh_journal_v1:JSON.stringify([entry]),bh_session_v1:JSON.stringify(bag),bh_journal_current_v1:'bag-1'},'2026-11-26T19:30:00Z');
   page.on('dialog',d=>d.accept());
@@ -50,7 +52,7 @@ test.describe('Thomas',()=>{
   await bakeDate.fill('2026-11-29T11:00');await bakeDate.blur();
   await page.getByRole('button',{name:/^(Générer ma recette|Créer ma recette)/}).first().tap();
   await expect.poll(async()=>(await stored(page))?.recipeGenerated&&(await stored(page)).eatTime,{timeout:30000}).toBe(Z('2026-11-29T10:00'));
-  await expect(planRow(page,'Sortir les pâtons du réfrigérateur')).toContainText('8h00');
+  await expect(planRow(page,'Sortir les pâtons du réfrigérateur')).toContainText('8h30');
  });
  test('a night exit and the baguettes\' oven: one statement, one decision',async({page})=>{
   const bag={...breadBase,savedAt:Z('2026-11-19T18:00'),styleKey:'baguette',numItems:3,itemWeight:250,ovenType:'home_oven_stone_bread',kitchenTemp:20,startTime:Z('2026-11-21T17:15'),eatTime:Z('2026-11-22T09:00'),blocks:[],ovenFrom:Z('2026-11-22T08:15'),ovenTo:Z('2026-11-22T09:45')};

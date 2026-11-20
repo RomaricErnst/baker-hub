@@ -10,18 +10,21 @@ const nights=offsetDays=>[19,20,21].map(day=>({label:'Sat night',from:new Date(+
 const baguettes=(mix,bake,blocks,n,lead)=>utils.buildSchedule(d(mix),d(bake),blocks,20,45,'hand','baguette',n,1,false,1,lead);
 
 test('Bake again one hour later keeps the time out of the fridge when the later exit is free (item 7)',()=>{
- const first=baguettes('2026-11-21T17:15','2026-11-22T09:00',nights(0),2);
- assert.equal(+first.coldRetard2End,+d('2026-11-22T06:00'),'the night pins last week\'s exit');
+ // Round 7 (20 Nov 2026, D4): the baguette apprêt bound (2 h to the bake at 20 °C) puts the natural exit
+ // at 6:15Z, after a night ending 06:00Z; the nights here end 06:30Z so the night still pins last week's exit.
+ const late=o=>nights(o).map(b=>({...b,to:new Date(+b.to+30*60000)}));
+ const first=baguettes('2026-11-21T17:15','2026-11-22T09:00',late(0),2);
+ assert.equal(+first.coldRetard2End,+d('2026-11-22T06:30'),'the night pins last week\'s exit');
  const lead=planExitLead(first,20,'baguette');
- assert.deepEqual(lead,{min:180,kitchenTemp:20,styleKey:'baguette'});
- const again=baguettes('2026-11-28T17:15','2026-11-29T10:00',nights(7),3,exitLeadFor(lead,20,'baguette'));
- assert.equal(+again.coldRetard2End,+d('2026-11-29T07:00'),'out one hour later, when free');
- assert.equal(+again.bakeStart-+again.coldRetard2End,3*H,'the same 3 h out of the fridge');
+ assert.deepEqual(lead,{min:150,kitchenTemp:20,styleKey:'baguette'});
+ const again=baguettes('2026-11-28T17:15','2026-11-29T10:00',late(7),3,exitLeadFor(lead,20,'baguette'));
+ assert.equal(+again.coldRetard2End,+d('2026-11-29T07:30'),'out one hour later, when free');
+ assert.equal(+again.bakeStart-+again.coldRetard2End,2.5*H,'the same 2 h 30 out of the fridge');
  assert.equal(again.finalProofHours,first.finalProofHours);
  assert.ok(again.totalColdHours>first.totalColdHours,'the cold spell absorbs the later bake');
  assert.equal(again.availabilityConflicts.length,0);
- // Without the previous plan (a new bake) the engine's own exit stands: the end of the night.
- assert.equal(+baguettes('2026-11-28T17:15','2026-11-29T10:00',nights(7),3).coldRetard2End,+d('2026-11-29T06:00'));
+ // Without the previous plan (a new bake) the engine's own exit stands: the longest apprêt, 7:15Z.
+ assert.equal(+baguettes('2026-11-28T17:15','2026-11-29T10:00',late(7),3).coldRetard2End,+d('2026-11-29T07:15'));
  // A different kitchen or dough does not carry it.
  assert.equal(exitLeadFor(lead,24,'baguette'),undefined);
  assert.equal(exitLeadFor(lead,20,'pain_campagne'),undefined);
@@ -35,7 +38,8 @@ test('a kept lead never lands in busy time nor outside the proof bounds',()=>{
  assert.equal(+s.coldRetard2End,+d('2026-11-29T05:30'));
  assert.ok(s.availabilityConflicts.some(c=>c.action.id==='cold-out-2'));
  const t=baguettes('2026-11-28T17:15','2026-11-29T10:00',nights(7),3,300);
- assert.equal(+t.coldRetard2End,+d('2026-11-29T06:00'),'5:00Z is busy: the end of the night stands');
+ // Round 7: a 5 h lead is longer than the baguette's longest apprêt (2 h 45 out at 20 °C), so it is not used either.
+  assert.equal(+t.coldRetard2End,+d('2026-11-29T07:15'),'5:00Z is busy and beyond the bound: the engine\'s exit stands');
  // A lead longer than the longest final proof is never used (the engine's natural exit is the bound).
  const free=baguettes('2026-11-28T17:15','2026-11-29T10:00',[],3,600);
  assert.equal(+free.coldRetard2End,+baguettes('2026-11-28T17:15','2026-11-29T10:00',[],3).coldRetard2End);

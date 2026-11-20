@@ -14,16 +14,18 @@ const {utils}=require('./load-production.cjs');
 const H=3600000,d=s=>new Date(s+'Z');
 const nights=offsetDays=>[19,20,21].map(day=>({label:'night',from:new Date(+d(`2026-11-${day}T22:00`)+offsetDays*24*H),to:new Date(+d(`2026-11-${day+1}T06:00`)+offsetDays*24*H)}));
 const plan=(mix,bake,blocks,n)=>utils.buildSchedule(d(mix),d(bake),blocks,20,45,'hand','baguette',n,1,false);
-test('a later bake keeps the fridge exit at the end of the night, within the final-proof bound',()=>{
+test('a later bake moves the fridge exit with it, within the final-proof bound',()=>{
  const first=plan('2026-11-21T17:15','2026-11-22T09:00',nights(0),2);
  const again=plan('2026-11-28T17:15','2026-11-29T10:00',nights(7),3);
- assert.equal(+first.coldRetardEnd,+d('2026-11-22T06:00'));
- assert.equal(+again.coldRetardEnd,+d('2026-11-29T06:00'),'the exit cannot be earlier: the night ends at 06:00Z');
+ // Round 7 (20 Nov 2026, D4): a baguette's apprêt is at most 2 h to the bake at 20 °C (1.25 h before the
+ // preheat; was the generic 3.5 h), so the natural exit (6:15Z / 7:15Z) is after the night and moves with the bake.
+ assert.equal(+first.coldRetardEnd,+d('2026-11-22T06:15'));
+ assert.equal(+again.coldRetardEnd,+d('2026-11-29T07:15'),'the exit moves with the bake: the night ends before it');
  for(const s of [first,again]){
   const beforePreheat=(+s.preheatStart-+s.finalProofStart)/H;
-  assert.ok(beforePreheat<=3.5+1e-9,`final proof ${beforePreheat} h before preheat`);
+  assert.ok(beforePreheat<=1.25+1e-9,`final proof ${beforePreheat} h before preheat`);
  }
- assert.ok(again.totalRTHours>first.totalRTHours);
+ assert.ok(Math.abs(again.totalRTHours-first.totalRTHours)<1e-9,'the later bake adds cold, not counter time');
 });
 test('with nothing blocking, the fridge exit moves with the bake',()=>{
  const a=plan('2026-11-28T17:15','2026-11-29T09:00',[],3),b=plan('2026-11-28T17:15','2026-11-29T10:00',[],3);
