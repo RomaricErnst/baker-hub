@@ -183,3 +183,23 @@ test('inversion: every rising crossing of a non-monotone budget, the one nearest
  // More yeast is never slower within the same time left.
  let prev=Infinity;for(const dose of [0.14,0.16,0.2,0.3,0.5,1]){const h=utils.fermentationHoursForYeast(dose,{...o,maxH:30});if(h!==null){a.ok(h<=prev+1e-9);prev=h;}}
 });
+
+test('About page, comparing the sources: chart data and every quoted number come from the fit (20 Nov 2026)',()=>{
+ const {build,OUT}=require('../scripts/yeast-collapse-data.cjs');
+ const built=build(),file=JSON.parse(fs.readFileSync(OUT,'utf8'));
+ a.deepEqual(file,JSON.parse(JSON.stringify(built)),'app/[locale]/about/yeastCollapse.json is stale: run node scripts/yeast-collapse-data.cjs');
+ const page=fs.readFileSync('app/[locale]/about/yeastSourcesSection.tsx','utf8');
+ const fit=JSON.parse(fs.readFileSync('docs/yeast-model/fit3-results.json','utf8'));
+ const en=page.slice(page.indexOf('YeastSourcesSectionEn'),page.indexOf('YeastSourcesSectionFr')),fr=page.slice(page.indexOf('YeastSourcesSectionFr'));
+ const both=(s,label)=>{a.ok(en.includes(s),`EN states ${label??s}`);a.ok(fr.includes(s.replace('.',',')),`FR states ${label??s}`);};
+ for(const n of [built.rows,built.sources,built.lineages])both(`${n} `);
+ both(`×${Math.exp(fit.tau).toFixed(2)}`,'source spread');both(`×${Math.exp(fit.sigma).toFixed(2)}`,'shape residual');
+ const ln=Math.log,rms=k=>Math.exp(Math.sqrt(built.points.reduce((s,p)=>s+(ln(p[k])-ln(built.A)+built.b*ln(p.h))**2,0)/built.points.length));
+ both(` ${rms('raw').toFixed(1)} `,'unweighted spread as published');both(` ${rms('adj').toFixed(1)} `,'unweighted spread, levels removed');
+ a.equal(fit.holdout.length,7);a.ok(en.includes('Seven lineages')&&fr.includes('Sept lignées'));
+ for(const [k,sch] of Object.entries({...fit.schemes})){
+  if(!['equal','tier','pro'].includes(k))continue;
+  for(const v of [Math.exp(sch.lnA).toFixed(2),sch.b.toFixed(2),sch.Tmin.toFixed(1).replace('-','−'),Math.exp(sch.lnMb).toFixed(2),sch.Rh.toFixed(2)])both(`'${v}'`,`${k} ${v}`);
+ }
+ for(const v of [m.YEAST_DOSE_A.toFixed(2),m.YEAST_DOSE_B.toFixed(2),m.YEAST_T_MIN.toFixed(1).replace('-','−'),m.YEAST_MEDIUM_BIGA.toFixed(2),m.YEAST_HEAT_RISE.toFixed(2)])both(`'${v}'`,`shipped ${v}`);
+});
