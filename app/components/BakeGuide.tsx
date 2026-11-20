@@ -117,6 +117,9 @@ interface BakeGuideProps extends WaterSettingsProps, CompletionActions {
   /** Another live bake in the same oven comes out after this one's preheat would start (sharedOvenFor): the
    *  preheat step is "Bring the oven back to 250 °C after the campagne", timed when it comes out. */
   sharedOven?: { at: number; after: string } | null;
+  /** Another live sourdough bake builds its levain from the same feed (sharedStarterFeedFor, round 7 B5): the
+   *  pre-mix feed is sized for both and says so once ("Feed 1:2:2 for both bakes · 180 g: …"). */
+  sharedStarterFeed?: { at: number; line: string; seed: number; flour: number; water: number; ratio: number } | null;
   onMixTimeChange?: (at: number) => void;
   onPrefTimeChange?: (at: number) => void;
   /** Bake again: the note from the bake this one repeats, shown on the oven steps ("Last time: …"). */
@@ -929,7 +932,7 @@ const TERM_TO_STEPID: Record<string, string> = {
   stretch_bake:      'open',
 };
 
-export default function BakeGuide({sharedOven,onStarterFed, onStarterUnfed, starterFedTimes, mixingMade,onMixComplete,preparationMade, onPreparationComplete,
+export default function BakeGuide({sharedOven,sharedStarterFeed,onStarterFed, onStarterUnfed, starterFedTimes, mixingMade,onMixComplete,preparationMade, onPreparationComplete,
   onSave,onShare,onRepeat,resultNotes,onResultNotesChange,sessionSaved,onBakedChange,completionEnabled=true,
   schedule, mixerType, styleKey, kitchenTemp, fridgeTemp = 4, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixingBatches, mixerCapacityG, onMixingBatchesChange, waterSource = 'room', onWaterSourceChange, numItems,
   prefermentType, oil, hydration, ovenType, ovenConstruction, prefStartTime, feedTime, starterEvents,
@@ -1688,12 +1691,16 @@ Actual dough condition and equipment may differ from these estimates.`;
 
       {isSourdough && starterEvents?.filter(event => !['last_fed', 'known_peak'].includes(event.kind)&&(!event.isPast||['refresh','intermediate_refresh','pre_mix'].includes(event.kind))).map((event, index) => {
         const feeding = ['refresh', 'intermediate_refresh', 'pre_mix'].includes(event.kind);
-        const eventRatio=event.feedingRatio??feedR;
-        const {seed:eventSeed, flour:eventPart} = starterBuild(bgSdMid, feedMaximum, eventRatio);
+        // The pre-mix feed shared with another live bake: one feed of both builds, at its ratio (round 7 B5).
+        const shared = event.kind === 'pre_mix' && sharedStarterFeed && +event.time === sharedStarterFeed.at ? sharedStarterFeed : null;
+        const eventRatio=shared?.ratio??event.feedingRatio??feedR;
+        const own = starterBuild(bgSdMid, feedMaximum, eventRatio);
+        const eventSeed = shared?.seed ?? own.seed, eventPart = shared?.flour ?? own.flour;
         const title = feeding ? starterFeedLabelFor(event, starterEvents ?? [], l === 'fr')! : event.kind === 'fridge_in' ? (l === 'fr' ? 'Réfrigérer le levain' : 'Refrigerate your starter') : (l === 'fr' ? 'Sortir le levain du réfrigérateur' : 'Take starter out of the fridge');
         return <StepCard key={`${event.kind}-${index}`} number={n()} {...sc(false,'preparation',false,feeding?event:undefined)} icon={<IconStarter />} title={title} time={event.time} accent="#6A7FA8">
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={feeding ? [
+              ...(shared ? [{bold: shared.line, note: ''}] : []),
               {bold: l === 'fr' ? `Délayez ${displayWeight(eventSeed,u,l)} de levain dans ${displayWeight(eventPart,u,l)} d’eau, puis incorporez ${displayWeight(eventPart,u,l)} de farine.` : `Mix ${displayWeight(eventSeed,u,l)} starter, ${displayWeight(eventPart,u,l)} flour and ${displayWeight(eventPart,u,l)} water.`, note: `1:${eventRatio}:${eventRatio}`},
               {bold: l === 'fr' ? 'Couvrez le récipient et marquez le niveau.' : 'Cover the container and mark the level.', note: l === 'fr' ? `Laissez à ${displayTemp(kitchenTemp, u)}.` : `Keep at ${displayTemp(kitchenTemp, u)}.`},
               {bold: l === 'fr' ? 'Attendez une nette montée, des bulles et un dessus encore bombé avant utilisation.' : 'Wait for a clear rise, bubbles and a still-domed top before use.', note: l === 'fr' ? 'Le créneau suivant reste indicatif : vérifiez le levain.' : 'The next time is a guide: check the starter.'},

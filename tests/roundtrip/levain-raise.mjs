@@ -106,7 +106,9 @@ for(const [o,mixAt,buildAt,ratio] of [
  // Round 6 (B3, owner): its fridge-kept starter's run-up was refresh Tue, fridge Wed–Fri, pre-mix Fri 8:30;
  // one revival feed (Thu 9:15, 1:5:5) meeting the pre-mix feed Thu 22:45 replaces it (eveningRevival); mix Fri 7:45.
  [{busy:'nights',temp:25,bake:+new Date(2026,10,21,8,0),mixer:'hand'},new Date(2026,10,20,7,45),new Date(2026,10,19,22,45),5],
- [{busy:'nights',temp:25,bake:+new Date(2026,10,21,8,0),mixer:'hand',loc:'rt',age:'today',fedH:-11.5},new Date(2026,10,20,7,45),new Date(2026,10,19,22,45),4],
+ // Round 7 (B3): a counter starter's first feed after its rest (fed 11.5 h before) rises with the rest stretch,
+ // so the build that peaks at the same 7:45 mix is an hour earlier and lighter (was 22:45 at 1:4:4; now 21:45 at 1:2:2).
+ [{busy:'nights',temp:25,bake:+new Date(2026,10,21,8,0),mixer:'hand',loc:'rt',age:'today',fedH:-11.5},new Date(2026,10,20,7,45),new Date(2026,10,19,21,45),2],
 ]){
  const r=await run(o),label=JSON.stringify(o);
  assert.ok(r.kept&&r.valid,`${label}: kept`);

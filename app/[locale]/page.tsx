@@ -39,6 +39,7 @@ import { isPanPizzaStyle } from '../utils/panPizza';
 import { buildPlanCalendar, calendarBakeId, downloadPlanCalendar, exportedSteps, hasExportedPlan, keyPlanEvents, readExportedSteps, writeExportedSteps, type PlanCalendarEvent } from '../utils/planCalendar';
 import { leanBreadPreheatMin, leanBreadBake } from '../utils/leanBreadBake';
 import { sharedOvenFor, ovenBackTitle } from '../utils/sharedOven';
+import { sharedStarterFeedFor, sharedFeedLine, starterEventsWithSharedFeed, type StarterUse } from '../utils/sharedStarter';
 import { scalePicks, allPicksBaked } from '../utils/pizzaPicks';
 import { bakeTitleName } from '../utils/bakeTitle';
 import { journalTitle } from '../components/BakeJournal';
@@ -2379,6 +2380,29 @@ export default function Home() {
     const from=Math.min(+(schedule.preheatStart??eatTime),+eatTime);
     return {from,to:+eatTime+ovenBusyMinutes(bakeType,styleKey,numItems,ovenType)*60000,ovenType:ovenType??null};
   }
+  // The levain this dough takes, saved with the bake for another live bake sharing the jar (round 7, B5).
+  function currentLevainNeed(){
+    const cr=tab==='custom'?advancedRecipe:recipe;
+    if(yeastType!=='sourdough'||!cr?.sourdough)return undefined;
+    return {mid:cr.sourdough.starterGramsMid,max:cr.sourdough.starterGramsMax??cr.sourdough.starterGramsMid};
+  }
+  // Other sourdough bakes under way on this device with a levain build still to feed: compared only when there are
+  // any, as the oven is (owner's rule B).
+  function otherStarterUses():StarterUse[]{
+    const own=journalId??currentJournalId();
+    const uses:StarterUse[]=[];
+    try{for(const row of liveJournalBakes()){
+      const other=row.entry;if(row.rate||other.id===own||other.eatTime==null)continue;
+      const ses=other.session;
+      if(ses.yeastType!=='sourdough'||!ses.levainNeed||ses.startTime==null)continue;
+      const feed=(ses.starterEvents??[]).find(e=>e.kind==='pre_mix'&&e.bellPeakTime!=null&&e.time>Date.now());
+      if(!feed)continue;
+      const subject=bakeSubject(other.styleKey,other.numItems,fr,other.bakeType);
+      const name=subject?subject.text.charAt(0).toLowerCase()+subject.text.slice(1):other.bakeName||styleDisplayName(other.styleKey);
+      uses.push({id:other.id,name,feedAt:feed.time,peakAt:feed.bellPeakTime!,mixAt:ses.startTime,ratio:feed.feedingRatio??ses.nextFeedRatio??1,need:ses.levainNeed});
+    }}catch{}
+    return uses;
+  }
   // Other bakes under way on this device that use the oven: compared only when there are any, so a baker with one
   // bake never sees anything of it (owner's rule B).
   function otherOvenUses():OvenUse[]{
@@ -2434,6 +2458,7 @@ export default function Home() {
       recipeGenerated, protocolStale, executionClash, activeTab, pizzaPartyTab, modeChosen, awaitingRecipeChoice, customBakeQuestion,
       acceptedStartTime: acceptedPlan?.startTime, acceptedPreparationAt: acceptedPlan?.preparationAt, acceptedEatTime: acceptedPlan?.bakeAt,
       ovenFrom: currentOvenUse()?.from, ovenTo: currentOvenUse()?.to,
+      levainNeed: currentLevainNeed(),
       navigation:{batchView,protocolView,serviceView,returnTo:fillingsReturn,prepReturnToService,shoppingReturnToFillings},
       // How far the baker got. Without it a resumed session reopened at
       // highestStep 1, so every step carrying a default read as unset —
@@ -4538,6 +4563,22 @@ export default function Home() {
     const celsius=bakeType==='bread'&&styleKey?leanBreadBake(styleKey,itemWeight,ovenType??undefined,numItems)?.tempStaticC:undefined;
     return {...shared,title:ovenBackTitle(fr,shared.after,{celsius,max:bakeType==='pizza'&&(ovenType??'').startsWith('home_oven')},units)};
   })();
+  // One jar, two bakes (20 Nov 2026 round 7, B5, Priya): when another live sourdough bake feeds the jar for its levain
+  // close enough that one feed is ready for both mixes, both build their levain from that feed, said once with both
+  // amounts; the later bake's starter steps follow the earlier one's (sharedStarterFeedFor). Nothing with one bake
+  // (owner's rule B: no other bake, no other use; the events below are then the plan's own array).
+  const sharedStarter = (()=>{
+    if(!recipeGenerated||yeastType!=='sourdough'||!eatTime)return null;
+    const others=otherStarterUses();if(!others.length)return null;
+    const need=currentLevainNeed();
+    const feed=starterEvents.find(e=>e.kind==='pre_mix'&&e.bellPeakTime&&+e.time>Date.now());
+    if(!need||!feed)return null;
+    const subject=bakeSubject(styleKey,numItems,fr,bakeType);
+    const name=subject?subject.text.charAt(0).toLowerCase()+subject.text.slice(1):bakeName||styleDisplayName(styleKey);
+    return sharedStarterFeedFor({id:journalId??currentJournalId()??'current',name,feedAt:+feed.time,peakAt:+feed.bellPeakTime!,mixAt:+startTime,ratio:feed.feedingRatio??nextFeedRatio,need},others,Date.now());
+  })();
+  const guideStarterEvents = starterEventsWithSharedFeed(starterEvents, sharedStarter, Date.now());
+  const sharedFeedNote = sharedStarter ? {at:sharedStarter.at,line:sharedFeedLine(sharedStarter,fr,g=>displayWeight(g,units,locale)),seed:sharedStarter.build.seed,flour:sharedStarter.build.flour,water:sharedStarter.build.water,ratio:sharedStarter.ratio} : null;
   // Every remaining hands-on step, as calendar events with an alert at their time.
   function planCalendarEvents(from:number):PlanCalendarEvent[] {
     const singleLoaf=bakeType==='bread'&&numItems===1;
@@ -4548,9 +4589,9 @@ export default function Home() {
     if(prefStartTime&&+prefStartTime>=from&&yeastType!=='sourdough')events.push({key:'preferment',at:prefStartTime,label:prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):(fr?'Préparer le poolish':'Make Poolish')});
     if(yeastType==='sourdough'){
       const counts:Record<string,number>={};
-      for(const event of starterEvents){
+      for(const event of guideStarterEvents){
         if(event.isPast||event.kind==='last_fed'||event.kind==='known_peak'||+event.time<from)continue;
-        const label=starterActionLabelFor(event,starterEvents,fr);
+        const label=starterActionLabelFor(event,guideStarterEvents,fr);
         if(!label)continue;
         counts[event.kind]=(counts[event.kind]??0)+1;
         events.push({key:`starter-${event.kind}-${counts[event.kind]}`,at:new Date(event.time),label,alertBeforeMin:event.kind==='fridge_out'?10:0});
@@ -5696,7 +5737,7 @@ export default function Home() {
                   onNavigateToCooking={()=>{setServiceView('dough');openDestination('service');}}
                   onPrepareFillings={hasFillings?()=>{setProtocolView('fillings');openDestination('protocol');}:undefined}
                   onNavigateToPreparation={()=>openDestination('protocol')}
-                  starterEvents={starterEvents}
+                  starterEvents={guideStarterEvents} sharedStarterFeed={sharedFeedNote}
                   ovenConstruction={ovenConstruction}
                   waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixerCapacityG={customMixerCapacityG} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches} fridgeTemp={fridgeTemp}
                   schedule={schedule}
@@ -6294,7 +6335,7 @@ export default function Home() {
                   onNavigateToCooking={()=>{setServiceView('dough');openDestination('service');}}
                   onPrepareFillings={hasFillings?()=>{setProtocolView('fillings');openDestination('protocol');}:undefined}
                   onNavigateToPreparation={()=>openDestination('protocol')}
-                  starterEvents={starterEvents}
+                  starterEvents={guideStarterEvents} sharedStarterFeed={sharedFeedNote}
                   ovenConstruction={ovenConstruction}
                   waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixerCapacityG={customMixerCapacityG} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches} fridgeTemp={fridgeTemp}
                   schedule={schedule}
