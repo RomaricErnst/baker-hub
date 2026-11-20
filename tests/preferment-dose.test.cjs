@@ -4,12 +4,14 @@ const { data } = require('./load-production.cjs');
 const { formatPrefermentDose, prefermentDilution } = require('../app/utils/prefermentDose.ts');
 
 test('small preferment doses remain nonzero and convert from unrounded IDY', () => {
-  for (const type of ['poolish', 'biga']) {
+  // A biga is always in the fridge; at 14 h it now takes 2.3 % (the fridge mostly holds), so the small-dose
+  // case for biga is its 72 h window (yeast model, 19 Nov 2026).
+  for (const [type, hours] of [['poolish', 14], ['biga', 72]]) {
     const args = [type, 100, 70, 32, 6, false, 10];
-    const idy = data.computePrefermentRecipe(...args, 'instant', 14);
+    const idy = data.computePrefermentRecipe(...args, 'instant', hours);
     assert.ok(idy.prefYeastGramsIDY > 0 && idy.prefYeastGramsIDY < 0.05);
     for (const [yeast, factor] of [['instant', 1], ['active_dry', 1.33], ['fresh', 3]]) {
-      const result = data.computePrefermentRecipe(...args, yeast, 14);
+      const result = data.computePrefermentRecipe(...args, yeast, hours);
       assert.ok(Math.abs(result.prefYeastGrams - idy.prefYeastGramsIDY * factor) < 1e-12);
       assert.notEqual(formatPrefermentDose(result.prefYeastGrams), '0 g');
     }

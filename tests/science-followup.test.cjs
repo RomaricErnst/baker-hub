@@ -7,7 +7,10 @@ test('dose limits report fermentation outside target across four to seventy-two 
   const progress=utils.fermentationBudget(result.pct,4,temp,h-4,6);
   assert.equal(result.warnings.some(w=>w.key==='fermentationBudget'),progress<.9||progress>1.1);
  }
- const long=utils.recommendYeast(4,22,68,6,'instant',600,null,'neapolitan');
+ // The 0.05 % floor binds and is reported. Yeast model (19 Nov 2026): 4 h + 68 h cold no longer reaches
+ // the floor (the fridge mostly holds: 0.11 %), so a 30 h room-temperature window at 22 °C stands in.
+ const long=utils.recommendYeast(30,22,0,6,'instant',600,null,'neapolitan');
+ assert.equal(long.pct,.05);
  assert.ok(long.warnings.some(w=>w.key==='fermentationBudget'));
 });
 test('large cold poolish receives more than the obsolete two-hour warmup',()=>{

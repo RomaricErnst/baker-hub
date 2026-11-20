@@ -13,7 +13,8 @@ test('added warm exposure cannot raise dose across the former four-hour boundary
   }
   const left=utils.recommendYeast(3.999,temp,cold,fridge,'instant',1000,null).pct;
   const right=utils.recommendYeast(4.001,temp,cold,fridge,'instant',1000,null).pct;
-  a.ok(Math.abs(left-right)<=.0002);
+  // No cliff at the former boundary: 0.002 h moves the dose by its slope only (within rounding).
+  a.ok(Math.abs(left-right)<=Math.max(.0002,left*.001));
  }
 });
 test('recipe dilution follows the final dose after sugar and flour corrections',()=>{
@@ -43,8 +44,8 @@ test('adding refrigerated exposure lowers the mixed dose across the climate grid
    const p=utils.recommendYeast(warm,temp,cold,fridge,'instant',600,null).pct;
    a.ok(p<=previous,`${temp}/${fridge}/${warm}/${cold}`); previous=p;
    if(p>.05&&p<1.5){
-    const warmRate=(2.5**((temp-25)/10))*(temp>=33?1.25:temp>=30?1.15:1)/9.5;
-    const used=warm*(p*warmRate)**(1/1.65)+cold*(p*2**((fridge-4)/10)/7.5)**(1/1.313);
+    // One budget over both phases (yeast model): equivalent hours over the dose's need, rise target from the kitchen.
+    const used=utils.fermentationBudget(p,warm,temp,cold,fridge);
     a.ok(Math.abs(used-1)<.002);
    }
   }

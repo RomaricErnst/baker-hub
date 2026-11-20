@@ -11,17 +11,22 @@ const base = (hoursToBake, extra = {}) => ({
   styleKey: 'neapolitan', numItems: 8, itemWeight: 270, mixingBatches: 1, fridgeTemp: 6, hydration: 62,
   flourStrength: 1, conversion: 1, ...extra,
 });
-const hoursFor = (idy, o) => utils.fermentationHoursForYeast(idy * o.flourStrength, o);
+// Within the time left: the yeast model's budget is not monotone in the window, so the
+// check (and these assertions) ask the inversion for a window that fits before the bake.
+const hoursFor = (idy, o, maxH) => utils.fermentationHoursForYeast(idy * o.flourStrength, maxH === undefined ? o : { ...o, maxH });
 
 test('a slow entered amount is refused with the smallest fitting amount, rounded up', () => {
   const o = base(34);
   const check = checkYeastEntry(0.02, o);
   assert.equal(check.fits, false);
-  assert.ok(check.neededH > check.availableH);
-  assert.equal(check.minimumShownPct, 0.06);
+  // 0.02 % has no window up to 96 h in a cold-retard Neapolitan (yeast model: the fridge mostly holds).
+  assert.ok(check.neededH === null || check.neededH > check.availableH);
+  // Yeast model: 0.11 % (Phase 3 refit, 20 Nov 2026; 0.13 % in Phase 2; 0.06 % with the old cold law,
+  // which credited fridge hours at 60–75 % of room-temperature hours).
+  assert.equal(check.minimumShownPct, 0.11);
   // The offer fits, and one step less does not.
-  assert.ok(hoursFor(check.minimumShownPct, o) <= check.availableH);
-  assert.ok(hoursFor(check.minimumShownPct - 0.01, o) > check.availableH);
+  assert.ok(hoursFor(check.minimumShownPct, o, check.availableH) <= check.availableH);
+  assert.equal(hoursFor(check.minimumShownPct - 0.01, o, check.availableH), null);
   // Applying the offer passes the same check.
   assert.equal(checkYeastEntry(check.minimumShownPct, o).fits, true);
 });
@@ -30,15 +35,17 @@ test('the check uses the scheduler inversion and the next plannable quarter hour
   const o = base(34, { now: NOW + 5 * 60000 });
   const check = checkYeastEntry(0.052, o);
   assert.equal(check.availableH, 34 - 0.25);
-  assert.equal(check.neededH, hoursFor(0.052, o));
-  assert.equal(check.fits, check.neededH <= check.availableH);
+  assert.equal(check.neededH, hoursFor(0.052, o, check.availableH) ?? hoursFor(0.052, o));
+  assert.equal(check.fits, check.neededH !== null && check.neededH <= check.availableH);
+  const fitting = checkYeastEntry(0.3, o);
+  assert.equal(fitting.neededH, hoursFor(0.3, o, fitting.availableH));
 });
 
 test('the minimum is offered in the baker’s own yeast', () => {
   const instant = checkYeastEntry(0.02, base(34));
   const fresh = checkYeastEntry(0.02, base(34, { conversion: 3 }));
   assert.ok(fresh.minimumShownPct >= instant.minimumShownPct * 2.5);
-  assert.ok(hoursFor(Math.round(fresh.minimumShownPct / 3 * 10000) / 10000, base(34)) <= fresh.availableH);
+  assert.ok(hoursFor(Math.round(fresh.minimumShownPct / 3 * 10000) / 10000, base(34), fresh.availableH) <= fresh.availableH);
 });
 
 test('an amount that fits is accepted without an offer', () => {

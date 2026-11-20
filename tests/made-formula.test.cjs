@@ -14,7 +14,10 @@ for(const styleKey of ['neapolitan','baguette','pan'])for(const method of ['none
  const fact={method,inFridge:method!=='none',recipe};
  assert.equal(context.madeFormulaMatches(fact,schedule,{prefHours:hours}),!recipe.protocolIssue);
  const shifted=utils.buildSchedule(start,new Date(+bake+12*H),[],22,45,'hand',styleKey,4);
- if(!recipe.protocolIssue&&styleKey!=='pan')assert.equal(context.madeFormulaMatches(fact,shifted,{prefHours:hours}),false,'a substantially different exposure cannot be green with old yeast');
+ // A weighed direct dough holds its yeast: a substantially different exposure cannot be green with it. A made
+ // preferment holds only its own dose, sized for its own window (yeast model, 19 Nov 2026); the final dough's
+ // yeast is weighed at the mix for the dough's new path, so the same poolish or biga still fits.
+ if(!recipe.protocolIssue&&styleKey!=='pan')assert.equal(context.madeFormulaMatches(fact,shifted,{prefHours:hours}),method!=='none','a weighed direct dough cannot be green with old yeast; a made preferment stays valid');
  if(recipe.preferment){const wrongDose={...fact,recipe:{...recipe,preferment:{...recipe.preferment,prefYeastGrams:recipe.preferment.prefYeastGrams+1}}};assert.equal(context.madeFormulaMatches(wrongDose,schedule,{prefHours:hours}),false,'dose comparison applies even when the existing model clamps its recommendation');}
  assert.deepEqual(fact.recipe,recipe,'checking never changes the used ingredients');
 });

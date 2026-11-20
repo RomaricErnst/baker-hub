@@ -1,0 +1,149 @@
+Hold-out sources (pre-registered, seed 20261119): ['Baking Steel', 'Forkish', 'Lehmann', 'Suas', 'The Dough Formula']
+fit rows 69, held-out rows 10, pairs in fit 22/22, Nestec points 3
+
+Loss: soft_l1, f_scale 0.5
+
+== Fit on fit set (Topt fixed 32.3, Tmax 45.4): A=2.448 b=1.367 Tmin=-0.21 Topt=32.30 Mp=0.818 Mb=2.955
+   SE: {'lnA': 0.3, 'b': 0.148, 'Tmin': 0.899, 'lnMp': 0.208, 'lnMb': 0.474}
+== Final fit on all eligible sources: A=2.054 b=1.244 Tmin=-0.54 Topt=32.30 Mp=0.831 Mb=2.666
+   SE: {'lnA': 0.293, 'b': 0.146, 'Tmin': 0.907, 'lnMp': 0.194, 'lnMb': 0.52}
+
+-- FIT SET, fit-set parameters: per row (ln residual = ln observed - ln model; x = factor)
+   D023 Crust Kingdom                RT short (<=4 h)       obs 0.5000 model 1.2797 Heq  1.61 h  resid -0.94 (x0.39)  | old engine x0.11
+   D024 Crust Kingdom                RT long (4-12 h)       obs 0.2000 model 0.3657 Heq  4.02 h  resid -0.60 (x0.55)  | old engine x0.21
+   D025 Crust Kingdom                RT long (4-12 h)       obs 0.1000 model 0.1923 Heq  6.43 h  resid -0.65 (x0.52)  | old engine x0.23
+   D026 Crust Kingdom                RT very long (>12 h)   obs 0.0300 model 0.0635 Heq 14.47 h  resid -0.75 (x0.47)  | old engine x0.26
+   D030 My Pizza Night               RT long (4-12 h)       obs 0.6500 model 0.3355 Heq  4.28 h  resid +0.66 (x1.94)  | old engine x0.74
+   D031 My Pizza Night               RT long (4-12 h)       obs 0.4000 model 0.2114 Heq  6.00 h  resid +0.64 (x1.89)  | old engine x0.82
+   D032 My Pizza Night               RT long (4-12 h)       obs 0.2500 model 0.1506 Heq  7.69 h  resid +0.51 (x1.66)  | old engine x0.84
+   D036 Jordo's                      RT long (4-12 h)       obs 0.6000 model 0.3657 Heq  4.02 h  resid +0.50 (x1.64)  | old engine x0.62
+   D037 Jordo's                      RT long (4-12 h)       obs 0.3000 model 0.1637 Heq  7.23 h  resid +0.61 (x1.83)  | old engine x0.82
+   D038 Jordo's                      RT very long (>12 h)   obs 0.1000 model 0.0990 Heq 10.45 h  resid +0.01 (x1.01)  | old engine x0.50
+   D042 fond.kitchen                 RT long (4-12 h)       obs 0.4000 model 0.1958 Heq  6.35 h  resid +0.71 (x2.04)  | old engine x0.87
+   D043 fond.kitchen                 RT very long (>12 h)   obs 0.2250 model 0.0691 Heq 13.60 h  resid +1.18 (x3.26)  | old engine x1.72
+   D046 fond.kitchen                 cold (recipe)          obs 0.1000 model 0.2854 Heq  4.82 h  resid -1.05 (x0.35)  | old engine x2.43
+   D047 Biorito                      RT short (<=4 h)       obs 0.3333 model 0.8653 Heq  2.14 h  resid -0.95 (x0.39)  | old engine x0.12
+   D048 Biorito                      RT long (4-12 h)       obs 0.1000 model 0.2118 Heq  5.99 h  resid -0.75 (x0.47)  | old engine x0.20
+   D049 Biorito                      RT long (4-12 h)       obs 0.0500 model 0.1014 Heq 10.27 h  resid -0.71 (x0.49)  | old engine x0.24
+   D051 Pizza Napoletana DOC         RT short (<=4 h)       obs 0.8333 model 0.7699 Heq  2.33 h  resid +0.08 (x1.08)  | old engine x0.36
+   D053 Pizza Napoletana DOC         RT long (4-12 h)       obs 0.6667 model 0.3830 Heq  3.88 h  resid +0.55 (x1.74)  | old engine x0.66
+   D055 Pizza Napoletana DOC         RT long (4-12 h)       obs 0.5333 model 0.2014 Heq  6.22 h  resid +0.97 (x2.65)  | old engine x1.15
+   D057 Pizza Napoletana DOC         RT long (4-12 h)       obs 0.4000 model 0.1485 Heq  7.77 h  resid +0.99 (x2.69)  | old engine x1.25
+   D059 Pizza Napoletana DOC         RT long (4-12 h)       obs 0.2667 model 0.1157 Heq  9.32 h  resid +0.83 (x2.30)  | old engine x1.12
+   D061 Pizza Napoletana DOC         RT very long (>12 h)   obs 0.1333 model 0.0781 Heq 12.43 h  resid +0.53 (x1.71)  | old engine x0.90
+   D072 khymos/PizzApp+              RT very long (>12 h)   obs 0.0480 model 0.0604 Heq 15.00 h  resid -0.23 (x0.79)  | old engine x0.45
+   D076 EU TSG 97/2010               RT long (4-12 h)       obs 0.0556 model 0.1712 Heq  7.00 h  resid -1.12 (x0.32)  | old engine x0.15
+   D077 da Michele (Michelin SG)     cold (recipe)          obs 0.0583 model 0.1303 Heq  8.55 h  resid -0.80 (x0.45)  | old engine x0.50
+   D079 Ooni                         cold (recipe)          obs 0.2306 model 0.1948 Heq  6.37 h  resid +0.17 (x1.18)  | old engine x6.05
+   D091 Modernist Pizza Vol. 4       RT short (<=4 h)       obs 0.8100 model 1.0788 Heq  1.82 h  resid -0.29 (x0.75)  | old engine x0.16
+   D092 Modernist Pizza Vol. 4       RT short (<=4 h)       obs 0.4900 model 0.9637 Heq  1.98 h  resid -0.68 (x0.51)  | old engine x0.11
+   D093 Modernist Pizza Vol. 4       RT short (<=4 h)       obs 0.8200 model 1.0788 Heq  1.82 h  resid -0.27 (x0.76)  | old engine x0.16
+   D094 Modernist Pizza Vol. 4       RT very long (>12 h)   obs 0.0400 model 0.0389 Heq 20.69 h  resid +0.03 (x1.03)  | old engine x0.59
+   D095 Modernist Pizza Vol. 4       RT very long (>12 h)   obs 0.0400 model 0.0389 Heq 20.69 h  resid +0.03 (x1.03)  | old engine x0.59
+   D096 Modernist Pizza Vol. 4       RT short (<=4 h)       obs 1.0000 model 0.7947 Heq  2.28 h  resid +0.23 (x1.26)  | old engine x0.29
+   D097 Modernist Pizza Vol. 4       RT long (4-12 h)       obs 0.4700 model 0.2924 Heq  4.73 h  resid +0.47 (x1.61)  | old engine x0.52
+   D098 Modernist Pizza Vol. 4       RT short (<=4 h)       obs 1.0000 model 0.7947 Heq  2.28 h  resid +0.23 (x1.26)  | old engine x0.29
+   D099 Modernist Pizza Vol. 4       RT long (4-12 h)       obs 0.4200 model 0.2924 Heq  4.73 h  resid +0.36 (x1.44)  | old engine x0.47
+   D100 Modernist Pizza Vol. 4       RT short (<=4 h)       obs 0.8000 model 0.7947 Heq  2.28 h  resid +0.01 (x1.01)  | old engine x0.24
+   D101 Modernist Pizza Vol. 4       RT short (<=4 h)       obs 0.9000 model 0.4779 Heq  3.30 h  resid +0.63 (x1.88)  | old engine x0.52
+   D102 Modernist Pizza Vol. 4       RT short (<=4 h)       obs 0.9300 model 0.6992 Heq  2.50 h  resid +0.29 (x1.33)  | old engine x0.32
+   D103 Modernist Pizza Vol. 4       RT long (4-12 h)       obs 0.6700 model 0.2447 Heq  5.39 h  resid +1.01 (x2.74)  | old engine x0.94
+   D104 Modernist Pizza Vol. 4       RT long (4-12 h)       obs 0.5000 model 0.2727 Heq  4.98 h  resid +0.61 (x1.83)  | old engine x0.61
+   D105 Modernist Pizza Vol. 4       RT very long (>12 h)   obs 0.0367 model 0.0490 Heq 17.49 h  resid -0.29 (x0.75)  | old engine x0.41
+   D116 Modernist Pizza Vol. 4       poolish                obs 0.4500 model 0.5302 Heq  2.64 h  resid -0.16 (x0.85)  | old engine x0.72
+   D117 Modernist Pizza Vol. 4       poolish                obs 0.2800 model 0.1387 Heq  7.05 h  resid +0.70 (x2.02)  | old engine x2.25
+   D118 Modernist Pizza Vol. 4       poolish                obs 0.1500 model 0.0645 Heq 12.34 h  resid +0.84 (x2.32)  | old engine x3.03
+   D119 Modernist Pizza Vol. 4       poolish                obs 0.0500 model 0.0476 Heq 15.43 h  resid +0.05 (x1.05)  | old engine x1.46
+   D120 Modernist Bread              poolish                obs 0.4500 model 0.6300 Heq  2.33 h  resid -0.34 (x0.71)  | old engine x0.60
+   D121 Modernist Bread              poolish                obs 0.2800 model 0.1648 Heq  6.22 h  resid +0.53 (x1.70)  | old engine x1.87
+   D122 Modernist Bread              poolish                obs 0.1500 model 0.0947 Heq  9.32 h  resid +0.46 (x1.58)  | old engine x1.96
+   D123 Modernist Bread              poolish                obs 0.0300 model 0.0698 Heq 11.65 h  resid -0.84 (x0.43)  | old engine x0.56
+   D124 Modernist Bread              biga                   obs 0.3100 model 0.3265 Heq  9.64 h  resid -0.05 (x0.95)  | old engine x0.62
+   D125 Modernist Bread              biga                   obs 0.2850 model 0.3265 Heq  9.64 h  resid -0.14 (x0.87)  | old engine x0.57
+   D129 Modernist Bread              poolish                obs 0.0300 model 0.0544 Heq 13.99 h  resid -0.60 (x0.55)  | old engine x0.76
+   D137 Weekend Bakery               poolish                obs 0.2800 model 0.1444 Heq  6.85 h  resid +0.66 (x1.94)  | old engine x2.15
+   D138 Weekend Bakery               poolish                obs 0.1500 model 0.0830 Heq 10.27 h  resid +0.59 (x1.81)  | old engine x2.25
+   D139 Weekend Bakery               poolish                obs 0.0550 model 0.0560 Heq 13.70 h  resid -0.02 (x0.98)  | old engine x1.32
+   D140 fond.kitchen                 poolish                obs 0.2000 model 0.1574 Heq  6.43 h  resid +0.24 (x1.27)  | old engine x1.40
+   D141 fond.kitchen                 poolish                obs 0.1000 model 0.0904 Heq  9.64 h  resid +0.10 (x1.11)  | old engine x1.36
+   D142 fond.kitchen                 poolish                obs 0.0700 model 0.0610 Heq 12.86 h  resid +0.14 (x1.15)  | old engine x1.54
+   D143 Dissapore                    poolish                obs 0.8333 model 1.5518 Heq  1.21 h  resid -0.62 (x0.54)  | old engine x0.37
+   D144 Dissapore                    poolish                obs 0.5000 model 0.3456 Heq  3.62 h  resid +0.37 (x1.45)  | old engine x1.35
+   D145 Dissapore                    poolish                obs 0.3333 model 0.2091 Heq  5.22 h  resid +0.47 (x1.59)  | old engine x1.65
+   D146 Dissapore                    poolish                obs 0.1667 model 0.1449 Heq  6.83 h  resid +0.14 (x1.15)  | old engine x1.29
+   D147 Dissapore                    poolish                obs 0.1000 model 0.1018 Heq  8.84 h  resid -0.02 (x0.98)  | old engine x1.18
+   D148 Dissapore                    poolish                obs 0.0667 model 0.0770 Heq 10.85 h  resid -0.14 (x0.87)  | old engine x1.11
+   D149 Dissapore                    poolish                obs 0.0333 model 0.0637 Heq 12.46 h  resid -0.65 (x0.52)  | old engine x0.69
+   D150 Pezzetta                     poolish                obs 0.0333 model 0.0530 Heq 14.25 h  resid -0.47 (x0.63)  | old engine x0.89
+   D154 Dissapore                    biga                   obs 0.3333 model 0.2684 Heq 11.13 h  resid +0.22 (x1.24)  | old engine x0.89
+   D157 Finney et al. 1976           RT >=28 °C (dough)     obs 0.6667 model 0.3082 Heq  4.55 h  resid +0.77 (x2.16)  | old engine x1.22
+   D158 Finney et al. 1976           RT >=28 °C (dough)     obs 2.4000 model 1.1202 Heq  1.77 h  resid +0.76 (x2.14)  | old engine x0.92
+   per source: Biorito n=3 mean -0.80 sd 0.11; Crust Kingdom n=4 mean -0.74 sd 0.13; Dissapore n=8 mean -0.03 sd 0.39; EU TSG 97/2010 n=1 mean -1.12 sd 0.00; Finney et al. 1976 n=2 mean +0.77 sd 0.00; Jordo's n=3 mean +0.37 sd 0.26; Modernist Bread n=7 mean -0.14 sd 0.47; Modernist Pizza Vol. 4 n=19 mean +0.20 sd 0.43; My Pizza Night n=3 mean +0.60 sd 0.07; Ooni n=1 mean +0.17 sd 0.00; Pezzetta n=1 mean -0.47 sd 0.00; Pizza Napoletana DOC n=6 mean +0.66 sd 0.32; Weekend Bakery n=3 mean +0.41 sd 0.31; da Michele (Michelin SG) n=1 mean -0.80 sd 0.00; fond.kitchen n=6 mean +0.22 sd 0.68; khymos/PizzApp+ n=1 mean -0.23 sd 0.00
+   per regime: RT >=28 °C (dough) n=2 mean +0.77 rms 0.77; RT long (4-12 h) n=19 mean +0.29 rms 0.73; RT short (<=4 h) n=11 mean -0.15 rms 0.52; RT very long (>12 h) n=8 mean +0.06 rms 0.55; biga n=3 mean +0.01 rms 0.15; cold (recipe) n=3 mean -0.56 rms 0.77; poolish n=23 mean +0.06 rms 0.48
+   ALL n=69 mean +0.083 rms 0.585 (x1.80); within x2: 50/69
+
+-- HELD-OUT SET, fit-set parameters: per row (ln residual = ln observed - ln model; x = factor)
+   D080 Forkish                      RT long (4-12 h)       obs 0.4000 model 0.2789 Heq  4.90 h  resid +0.36 (x1.43)  | old engine x0.55
+   D081 Forkish                      RT long (4-12 h)       obs 0.0800 model 0.0969 Heq 10.62 h  resid -0.19 (x0.83)  | old engine x0.39
+   D082 Forkish                      RT long (4-12 h)       obs 0.1000 model 0.1879 Heq  6.54 h  resid -0.63 (x0.53)  | old engine x0.21
+   D083 Baking Steel                 RT very long (>12 h)   obs 0.2000 model 0.0428 Heq 19.29 h  resid +1.54 (x4.67)  | old engine x2.76
+   D084 Lehmann                      cold (recipe)          obs 0.3750 model 0.4564 Heq  3.42 h  resid -0.20 (x0.82)  | old engine x8.03
+   D130 Suas                         poolish                obs 1.0000 model 1.0144 Heq  1.65 h  resid -0.01 (x0.99)  | old engine x0.80
+   D131 Suas                         poolish                obs 0.5000 model 0.3185 Heq  3.84 h  resid +0.45 (x1.57)  | old engine x1.62
+   D132 Suas                         poolish                obs 0.2667 model 0.1124 Heq  8.23 h  resid +0.86 (x2.37)  | old engine x3.04
+   D133 Suas                         poolish                obs 0.0833 model 0.0503 Heq 14.81 h  resid +0.50 (x1.66)  | old engine x2.50
+   D151 The Dough Formula            poolish                obs 0.1750 model 0.1755 Heq  5.94 h  resid -0.00 (x1.00)  | old engine x1.14
+   per source: Baking Steel n=1 mean +1.54 sd 0.00; Forkish n=3 mean -0.15 sd 0.41; Lehmann n=1 mean -0.20 sd 0.00; Suas n=4 mean +0.45 sd 0.31; The Dough Formula n=1 mean -0.00 sd 0.00
+   per regime: RT long (4-12 h) n=3 mean -0.15 rms 0.43; RT very long (>12 h) n=1 mean +1.54 rms 1.54; cold (recipe) n=1 mean -0.20 rms 0.20; poolish n=5 mean +0.36 rms 0.49
+   ALL n=10 mean +0.268 rms 0.647 (x1.91); within x2: 8/10
+-- proof pairs, fit set: n=22 mean ln(Heq21/Heq27) +0.241 rms 0.261 (time factor x1.30)
+-- proof pairs, held out: n=0 mean ln(Heq21/Heq27) +nan rms nan (time factor xnan)
+-- Nestec (gas rate relative to 30 °C): 4.0 °C obs 0.051 model 0.043; 7.0 °C obs 0.061 model 0.113; 10.0 °C obs 0.095 model 0.211
+
+== Leave-one-source-out (each eligible source predicted by a fit without it)
+   Baking Steel                 n= 1 mean +1.56 rms 1.56   (A=2.340 b=1.356 Tmin=-0.44 Topt=32.30 Mp=0.907 Mb=3.026)
+   Biorito                      n= 3 mean -0.93 rms 0.93   (A=2.369 b=1.268 Tmin=-0.82 Topt=32.30 Mp=0.755 Mb=2.449)
+   Crust Kingdom                n= 4 mean -0.86 rms 0.86   (A=2.377 b=1.269 Tmin=-0.81 Topt=32.30 Mp=0.755 Mb=2.447)
+   Dissapore                    n= 8 mean -0.08 rms 0.42   (A=2.048 b=1.243 Tmin=-0.54 Topt=32.30 Mp=0.850 Mb=2.436)
+   EU TSG 97/2010               n= 1 mean -1.27 rms 1.27   (A=2.157 b=1.229 Tmin=-0.76 Topt=32.30 Mp=0.770 Mb=2.458)
+   Finney et al. 1976           n= 2 mean +0.98 rms 0.99   (A=1.578 b=1.151 Tmin=-0.17 Topt=32.30 Mp=0.901 Mb=2.783)
+   Forkish                      n= 3 mean -0.25 rms 0.50   (A=2.043 b=1.224 Tmin=-0.62 Topt=32.30 Mp=0.804 Mb=2.560)
+   Jordo's                      n= 3 mean +0.36 rms 0.47   (A=1.926 b=1.235 Tmin=-0.42 Topt=32.30 Mp=0.870 Mb=2.776)
+   Lehmann                      n= 1 mean -0.15 rms 0.15   (A=2.111 b=1.256 Tmin=-0.33 Topt=32.30 Mp=0.826 Mb=2.657)
+   Modernist Bread              n= 7 mean -0.28 rms 0.56   (A=2.087 b=1.253 Tmin=-0.56 Topt=32.30 Mp=0.859 Mb=3.292)
+   Modernist Pizza Vol. 4       n=19 mean +0.20 rms 0.46   (A=2.009 b=1.244 Tmin=-0.49 Topt=32.30 Mp=0.838 Mb=2.719)
+   My Pizza Night               n= 3 mean +0.64 rms 0.65   (A=1.874 b=1.238 Tmin=-0.35 Topt=32.30 Mp=0.899 Mb=2.870)
+   Ooni                         n= 1 mean +0.22 rms 0.22   (A=2.049 b=1.252 Tmin=-0.72 Topt=32.30 Mp=0.847 Mb=2.728)
+   Pezzetta                     n= 1 mean -0.76 rms 0.76   (A=1.824 b=1.180 Tmin=-0.47 Topt=32.30 Mp=0.902 Mb=2.581)
+   Pizza Napoletana DOC         n= 6 mean +0.71 rms 0.76   (A=1.916 b=1.257 Tmin=-0.33 Topt=32.30 Mp=0.912 Mb=2.931)
+   Suas                         n= 4 mean +0.50 rms 0.55   (A=2.017 b=1.235 Tmin=-0.50 Topt=32.30 Mp=0.761 Mb=2.657)
+   The Dough Formula            n= 1 mean -0.08 rms 0.08   (A=2.064 b=1.247 Tmin=-0.55 Topt=32.30 Mp=0.845 Mb=2.669)
+   Weekend Bakery               n= 3 mean +0.36 rms 0.49   (A=2.078 b=1.251 Tmin=-0.55 Topt=32.30 Mp=0.783 Mb=2.674)
+   da Michele (Michelin SG)     n= 1 mean -0.95 rms 0.95   (A=2.053 b=1.208 Tmin=-0.60 Topt=32.30 Mp=0.776 Mb=2.456)
+   fond.kitchen                 n= 6 mean +0.16 rms 0.68   (A=2.086 b=1.269 Tmin=-0.29 Topt=32.30 Mp=0.853 Mb=2.772)
+   khymos/PizzApp+              n= 1 mean -0.50 rms 0.50   (A=1.915 b=1.174 Tmin=-0.64 Topt=32.30 Mp=0.779 Mb=2.434)
+   LOSO ALL n=79 rms 0.635 (x1.89); within x2 52/79
+
+== Source bootstrap (B=200), final-fit parameters: 2.5/50/97.5 percentiles
+   A        0.971 / 1.829 / 3.183  (n=176)
+   b        0.911 / 1.204 / 1.428  (n=176)
+   Tmin     -1.227 / -0.360 / 0.524  (n=176)
+   Mp       0.536 / 0.841 / 1.248  (n=176)
+   Mb       1.749 / 2.701 / 4.323  (n=176)
+   r4       0.033 / 0.047 / 0.061  (n=176)
+   r6       0.078 / 0.097 / 0.114  (n=176)
+   r15      0.465 / 0.481 / 0.497  (n=176)
+   r30      1.156 / 1.161 / 1.166  (n=176)
+   r35      1.143 / 1.147 / 1.152  (n=176)
+   d12h21   0.084 / 0.124 / 0.185  (n=176)
+   d48cold  0.108 / 0.150 / 0.203  (n=176)
+
+== Sensitivity of the final fit to assumptions
+   tau 1.5 h                                  A=2.004 b=1.236 Tmin=-0.76 Topt=32.30 Mp=0.839 Mb=2.686  r(6)=0.105 r(30)=1.159  12h@21: 0.121%  2+46h@6+2: 0.141%
+   tau 3 h                                    A=2.153 b=1.257 Tmin=-0.14 Topt=32.30 Mp=0.811 Mb=2.605  r(6)=0.092 r(30)=1.162  12h@21: 0.125%  2+46h@6+2: 0.158%
+   proof-pair start 21 °C                     A=2.053 b=1.244 Tmin=-0.54 Topt=32.30 Mp=0.832 Mb=2.666  r(6)=0.100 r(30)=1.160  12h@21: 0.122%  2+46h@6+2: 0.146%
+   proof-pair start 25 °C                     A=2.052 b=1.244 Tmin=-0.54 Topt=32.30 Mp=0.831 Mb=2.665  r(6)=0.100 r(30)=1.160  12h@21: 0.122%  2+46h@6+2: 0.146%
+   Topt free                                  A=2.107 b=1.270 Tmin=-1.10 Topt=34.01 Mp=0.841 Mb=2.644  r(6)=0.098 r(30)=1.219  12h@21: 0.123%  2+46h@6+2: 0.148%
+   cold: all sources incl. community tables   A=1.800 b=1.209 Tmin=-2.76 Topt=32.30 Mp=0.894 Mb=2.878  r(6)=0.146 r(30)=1.148  12h@21: 0.113%  2+46h@6+2: 0.104%
+   no Nestec                                  A=2.448 b=1.320 Tmin=-1.22 Topt=32.30 Mp=0.812 Mb=2.691  r(6)=0.114 r(30)=1.156  12h@21: 0.121%  2+46h@6+2: 0.134%
+   no proof pairs                             A=2.202 b=1.282 Tmin=-0.59 Topt=32.30 Mp=0.834 Mb=2.713  r(6)=0.101 r(30)=1.160  12h@21: 0.120%  2+46h@6+2: 0.144%

@@ -1,0 +1,127 @@
+== Coverage by regime (independent lineages; tier as weighted in that regime)
+  rt_mild         lineages 14, at tier >= 0.6: 3   {'AVPN/TSG': 0.8, 'Baking Steel': 0.4, 'Biorito': 0.4, 'Craig': 0.4, 'Forkish': 0.8, "Jordo's": 0.4, 'Modernist': 0.8, 'My Pizza Night': 0.4, 'PizzApp': 0.4, 'Pizza Napoletana DOC': 0.4, 'agricolaconforti': 0.1, 'fond.kitchen': 0.4, 'pizzamateur': 0.4, 'teigformel': 0.4}
+  cool            lineages  2, at tier >= 0.6: 0  -> LOW CONFIDENCE   {'Giorilli': 0.2, 'pizzamateur': 0.4}
+  hot             lineages  9, at tier >= 0.6: 2  -> LOW CONFIDENCE   {'Craig': 0.2, 'Finney': 1.0, 'Giorilli': 0.2, 'Istudor': 0.8, 'My Pizza Night': 0.2, 'Pizzastunde': 0.4, 'TFL Mini Oven': 0.2, 'fond.kitchen': 0.2, 'pizzamateur': 0.2}
+  cold            lineages 12, at tier >= 0.6: 2  -> LOW CONFIDENCE   {'Biorito': 0.2, 'Craig': 0.2, "Jordo's": 0.2, 'Lehmann': 0.8, 'My Pizza Night': 0.2, 'Nestec': 1.0, 'Ooni': 0.4, 'Pizza Napoletana DOC': 0.2, 'da Michele': 0.4, 'fond.kitchen': 0.2, 'pizzamateur': 0.2, 'teigformel': 0.2}
+  biga            lineages  9, at tier >= 0.6: 3   {'Burnhard': 0.2, 'Giorilli': 0.8, "Jordo's": 0.2, 'Modernist': 0.8, 'Ooni': 0.2, 'Zaghini': 0.8, 'behindthecrust': 0.2, 'fond.kitchen': 0.2, 'italianpizzasecrets': 0.4}
+  poolish_rt      lineages  8, at tier >= 0.6: 3   {'Dissapore': 0.4, 'Giorilli': 0.4, 'Modernist': 0.8, 'Pezzetta': 0.8, 'Suas': 0.8, 'The Dough Formula': 0.4, 'Weekend Bakery': 0.4, 'fond.kitchen': 0.4}
+  poolish_fridge  lineages  1, at tier >= 0.6: 0  -> LOW CONFIDENCE   {'Weekend Bakery': 0.4}
+  rows 157, comparisons 23, proof pairs 22, sources 32, lineages 28
+  yeast types: {'idy': 88, 'cy': 34, 'fresh': 26, 'instant': 5, 'unstated': 3, 'dry': 1}
+
+== Primary (regime-weighted), all points: A=1.407 b=1.152 Tmin=-3.55 Topt=40.00 Mp=0.712 Mb=1.573 Rh=0.755 c=0.000 | r(4)=0.073 r(6)=0.116 r(30)=1.346 r(35)=1.692
+   sigma (shape residual) 0.349 (x1.42); tau (source offsets) 0.641 (x1.90)
+   SE: {'lnA': 0.188, 'b': 0.064, 'Tmin': 0.682, 'Topt': 2.667, 'lnMp': 0.195, 'lnMb': 0.199, 'Rh': 0.066}
+   robust SD of offset-corrected residuals 0.484; flagged (> 3 robust SD): [('D021', 'dough.school', np.float64(-1.51)), ('D050', 'Biorito', np.float64(-1.95)), ('N026', 'pizzamateur.fr', np.float64(-1.62))]
+== Primary without flagged points: A=1.409 b=1.147 Tmin=-3.21 Topt=40.00 Mp=0.704 Mb=1.549 Rh=0.762 c=0.000 | r(4)=0.068 r(6)=0.111 r(30)=1.350 r(35)=1.702
+   sigma 0.324 (x1.38); tau 0.624 (x1.87)
+   SE: {'lnA': 0.181, 'b': 0.061, 'Tmin': 0.626, 'Topt': 2.516, 'lnMp': 0.188, 'lnMb': 0.192, 'Rh': 0.064}
+
+== Weighting schemes (flagged points excluded)
+  equal   A=1.592 b=1.182 Tmin=-6.13 Topt=40.00 Mp=0.606 Mb=1.167 Rh=0.757 c=0.000 | r(4)=0.110 r(6)=0.158 r(30)=1.315 r(35)=1.628  sigma 0.32 tau 0.68
+  tier    A=1.383 b=1.153 Tmin=-3.85 Topt=40.00 Mp=0.717 Mb=1.429 Rh=0.754 c=0.000 | r(4)=0.077 r(6)=0.121 r(30)=1.342 r(35)=1.685  sigma 0.34 tau 0.65
+  pro     A=2.106 b=1.259 Tmin=-1.75 Topt=40.00 Mp=0.837 Mb=3.206 Rh=0.650 c=0.000 | r(4)=0.048 r(6)=0.088 r(30)=1.371 r(35)=1.745  sigma 0.26 tau 0.66
+  regime  A=1.409 b=1.147 Tmin=-3.21 Topt=40.00 Mp=0.704 Mb=1.549 Rh=0.762 c=0.000 | r(4)=0.068 r(6)=0.111 r(30)=1.350 r(35)=1.702  sigma 0.32 tau 0.62
+  shape moves beyond its own SE (vs regime):
+    b     SE 0.061  deltas {'equal': np.float64(0.035), 'tier': np.float64(0.006), 'pro': np.float64(0.112)}  MOVES with: pro
+    Tmin  SE 0.626  deltas {'equal': np.float64(-2.918), 'tier': np.float64(-0.634), 'pro': np.float64(1.46)}  MOVES with: equal, tier, pro
+    Topt  SE 2.516  deltas {'equal': np.float64(-0.0), 'tier': np.float64(-0.0), 'pro': np.float64(0.0)}  stable
+    Rh    SE 0.064  deltas {'equal': np.float64(-0.005), 'tier': np.float64(-0.008), 'pro': np.float64(-0.112)}  MOVES with: pro
+    lnMb  SE 0.192  deltas {'equal': np.float64(-0.283), 'tier': np.float64(-0.081), 'pro': np.float64(0.727)}  MOVES with: equal, pro
+    lnMp  SE 0.188  deltas {'equal': np.float64(-0.151), 'tier': np.float64(0.018), 'pro': np.float64(0.172)}  stable
+
+== Structure tests (regime-weighted, flagged excluded)
+  Topt fixed 32.3 (Salvado growth)           A=1.414 b=1.122 Tmin=-0.97 Topt=32.30 Mp=0.723 Mb=1.647 Rh=0.559 c=0.000 | r(4)=0.057 r(6)=0.109 r(30)=1.158 r(35)=1.144 tauc=2.00  sigma 0.338 tau 0.622 objective 309.8  cold-row mean -0.71
+  no E3 (Rh = 1)                             A=1.392 b=1.157 Tmin=-2.86 Topt=40.00 Mp=0.727 Mb=1.609 Rh=1.000 c=0.000 | r(4)=0.063 r(6)=0.105 r(30)=1.355 r(35)=1.712 tauc=2.00  sigma 0.327 tau 0.599 objective 280.3  cold-row mean -0.67
+  E3 Rh = 0.6 (Phase 2)                      A=1.609 b=1.203 Tmin=-3.62 Topt=40.00 Mp=0.690 Mb=1.539 Rh=0.600 c=0.000 | r(4)=0.074 r(6)=0.118 r(30)=1.345 r(35)=1.691 tauc=2.00  sigma 0.317 tau 0.647 objective 286.6  cold-row mean -0.62
+  + curvature c in ln Heq                    A=1.367 b=1.138 Tmin=-3.26 Topt=40.00 Mp=0.710 Mb=1.566 Rh=0.850 c=-0.022 | r(4)=0.069 r(6)=0.112 r(30)=1.350 r(35)=1.700 tauc=2.00  sigma 0.326 tau 0.611 objective 261.2  cold-row mean -0.63
+  ambiguous dry types read as active dry     A=1.410 b=1.147 Tmin=-3.21 Topt=40.00 Mp=0.688 Mb=1.450 Rh=0.762 c=0.000 | r(4)=0.068 r(6)=0.111 r(30)=1.350 r(35)=1.702 tauc=2.00  sigma 0.326 tau 0.633 objective 262.7  cold-row mean -0.64
+  free fridge cooling time constant (tau into cold) A=1.800 b=1.216 Tmin=-2.10 Topt=40.00 Mp=0.619 Mb=1.312 Rh=0.779 c=0.000 | r(4)=0.053 r(6)=0.093 r(30)=1.366 r(35)=1.735 tauc=8.00  sigma 0.302 tau 0.664 objective 249.4  cold-row mean -0.34
+  free fridge cooling, professional + measured only A=1.931 b=1.260 Tmin=-1.82 Topt=40.00 Mp=0.867 Mb=3.361 Rh=0.648 c=0.000 | r(4)=0.049 r(6)=0.089 r(30)=1.370 r(35)=1.743 tauc=0.56  sigma 0.262 tau 0.681 objective 60.1  cold-row mean -0.01
+  (primary objective 263.7)
+
+== Hold-out (pre-registered lineages): ['Baking Steel', 'Lehmann', 'Pezzetta', 'PizzApp', 'Pizza Napoletana DOC', 'Weekend Bakery', 'italianpizzasecrets']
+   fit without them: A=1.271 b=1.160 Tmin=-3.09 Topt=40.00 Mp=0.754 Mb=1.601 Rh=0.766 c=0.000 | r(4)=0.066 r(6)=0.109 r(30)=1.352 r(35)=1.705
+   held-out rows 22: rms (new source, no offset) 0.705 (x2.02); bias +0.487; within x2 14/22
+   held-out shape residual (each source minus its own mean, sources with >1 row) rms 0.441 (x1.55)
+   compare: source spread tau 0.617 (x1.85), total sqrt(sigma^2+tau^2) 0.718 (x2.05)
+     Baking Steel                 n=1 mean +1.50 rms 1.50
+     Lehmann                      n=1 mean +0.49 rms 0.49
+     Pezzetta                     n=1 mean -0.38 rms 0.38
+     Pizza Napoletana DOC         n=12 mean +0.50 rms 0.70
+     Weekend Bakery               n=5 mean +0.50 rms 0.60
+     italianpizzasecrets.com      n=1 mean +0.81 rms 0.81
+     khymos/PizzApp+              n=1 mean -0.24 rms 0.24
+
+== Lineage bootstrap (B=40), 2.5 / 50 / 97.5 %
+   b                                    0.997 / 1.141 / 1.238  (n=40)
+   Tmin                                 -4.103 / -3.108 / -2.402  (n=40)
+   Topt                                 40.000 / 40.000 / 40.000  (n=40)
+   Rh                                   0.732 / 0.762 / 0.779  (n=40)
+   A                                    0.931 / 1.434 / 1.961  (n=40)
+   Mp                                   0.422 / 0.691 / 0.825  (n=40)
+   Mb                                   0.829 / 1.426 / 2.221  (n=40)
+   dough 8 h at 18 C                    0.190 / 0.244 / 0.303  (n=40)
+   dough 8 h at 20 C                    0.158 / 0.199 / 0.247  (n=40)
+   dough 12 h at 21 C                   0.092 / 0.116 / 0.142  (n=40)
+   dough 6.5 h at 30 C vs 22 C          0.478 / 0.500 / 0.536  (n=40)
+   dough 2 h RT + 46 h at 6 C + 2 h     0.095 / 0.125 / 0.146  (n=40)
+   biga 16 h at 18 C                    0.102 / 0.163 / 0.250  (n=40)
+   biga 48 h fridge 5 C                 0.196 / 0.321 / 0.484  (n=40)
+   biga 2.5 h RT + 46 h at 5 C + 1.5 h  0.147 / 0.235 / 0.355  (n=40)
+   poolish 12 h at 21 C                 0.046 / 0.078 / 0.096  (n=40)
+   r(6)                                 0.098 / 0.109 / 0.125  (n=40)
+   r(30)                                1.339 / 1.352 / 1.362  (n=40)
+   r(35)                                1.678 / 1.705 / 1.725  (n=40)
+
+== Residual trends after source offsets (primary): weighted slope +- SE; |slope/SE| > 2 marks a trend
+   vs room temperature (all rows)               n=154 slope +0.0018 +- 0.0066  ok
+   vs ln hours (all rows)                       n=154 slope -0.0650 +- 0.0258  TREND
+   vs cold share (all rows)                     n=154 slope -0.1766 +- 0.0738  TREND
+   vs ln hours (rt_mild)                        n= 66 slope -0.0835 +- 0.0561  ok
+   vs room temperature (rt_mild)                n= 66 slope -0.0202 +- 0.0212  ok
+   vs ln hours (cold)                           n= 28 slope -0.1052 +- 0.1512  ok
+   vs ln hours (biga)                           n= 18 slope +0.2675 +- 0.1152  TREND
+   vs room temperature (biga)                   n= 18 slope -0.0034 +- 0.0151  ok
+   vs ln hours (poolish_rt)                     n= 33 slope -0.0511 +- 0.0658  ok
+   vs room temperature (poolish_rt)             n= 33 slope +0.0033 +- 0.0162  ok
+   mean residual by regime / yeast type (after offsets):
+     biga n=18 -0.16; cold n=28 -0.64; hot n=7 +0.30; poolish_fridge n=2 -0.12; poolish_rt n=33 +0.01; rt_mild n=66 +0.11
+     cy n=33 -0.06; dry n=1 +0.00; fresh n=25 -0.12; idy n=87 -0.02; instant n=5 -0.63; unstated n=3 -0.52
+   comparisons (stated vs model, ln-dose units):
+     C01 My Pizza Night         dose  stated 0.750 residual +0.51
+     C02 fond.kitchen           dose  stated 0.750 residual +0.16
+     C03 biancolievito.it       dose  stated 0.700 residual +0.23
+     C04 biancolievito.it       dose  stated 1.100 residual -0.36
+     C05 pizzamateur.fr         dose  stated 1.500 residual +0.16
+     C06 pizzamateur.fr         dose  stated 0.700 residual -0.13
+     C07 pizzamateur.fr         dose  stated 0.500 residual -0.11
+     C08 TFL Mini Oven          dose  stated 0.500 residual +0.24
+     C09 Pizzastunde            dose  stated 0.500 residual -1.27
+     C10 Pizzastunde            time  stated 2.667 residual -0.10
+     C11 technomitron (AAINB)   time  stated 3.000 residual +0.22
+     C12 Reinhart (secondhand)  time  stated 2.000 residual -0.22
+     C13 Weekend Bakery         time  stated 4.000 residual +0.00
+     C14 fond.kitchen           time  stated 2.000 residual -0.18
+     C15 My Pizza Night         time  stated 2.000 residual -0.19
+     C16 Biorito                time  stated 2.000 residual +0.32
+     C17 Bake Magazine          time  stated 2.600 residual +0.05
+     C18 Istudor 2020           rate  stated 1.079 residual -0.09
+     C19 Istudor 2020           rate  stated 1.216 residual -0.09
+     C20 Istudor 2020           rate  stated 1.520 residual +0.09
+     C21 Nestec                 rate  stated 0.051 residual +0.01
+     C22 Nestec                 rate  stated 0.061 residual -0.60
+     C23 Nestec                 rate  stated 0.095 residual -0.69
+
+== Regime checks (primary):
+   dough 8 h at 18 C                        0.244
+   dough 8 h at 20 C                        0.199
+   dough 12 h at 21 C                       0.114
+   dough 6.5 h at 30 C vs 22 C              0.501
+   dough 2 h RT + 46 h at 6 C + 2 h         0.121
+   biga 16 h at 18 C                        0.168
+   biga 48 h fridge 5 C                     0.326
+   biga 2.5 h RT + 46 h at 5 C + 1.5 h      0.241
+   poolish 12 h at 21 C                     0.080
+
+plots written to docs/yeast-model/plots

@@ -1,0 +1,7 @@
+offsets of dry            sources: n=14 mean +0.21 (x1.23)
+offsets of dry/unstated   sources: n= 1 mean -0.16 (x0.85)
+offsets of fresh          sources: n=16 mean +0.09 (x1.10)
+offsets of dry/fresh      sources: n= 1 mean +0.39 (x1.48)
+all lineages: 8 h at 20 C 0.199
+dry-yeast lineages only (62 rows, 11 lineages): A=1.89 b=1.20 Tmin=-2.4 8 h at 20 C 0.249
+fresh-yeast lineages only (57 rows, 15 lineages): A=1.04 b=1.17 Tmin=-2.4 8 h at 20 C 0.144

@@ -1,4 +1,5 @@
 'use client';
+import { YeastModelSectionEn, YeastModelSectionFr } from './yeastModelSection';
 import { useState } from 'react';
 import { useLocale } from 'next-intl';
 import Link from 'next/link';
@@ -25,16 +26,6 @@ const monoSm: React.CSSProperties = {
   color: SMOKE,
   letterSpacing: '.04em',
 };
-
-function Code({ children }: { children: React.ReactNode }) {
-  return (
-    <code style={{
-      fontFamily: 'var(--font-ui)', fontSize: '12px',
-      background: 'rgba(43, 36, 32,0.06)', padding: '2px 8px',
-      borderRadius: '4px', color: CHAR,
-    }}>{children}</code>
-  );
-}
 
 function BulletList({ items }: { items: React.ReactNode[] }) {
   return (
@@ -70,33 +61,6 @@ function Pill({ children, bg, color }: { children: React.ReactNode; bg: string; 
       padding: '3px 12px', borderRadius: '20px', margin: '3px',
       background: bg, color,
     }}>{children}</span>
-  );
-}
-
-function DataTable({ rows, headers }: { rows: [string, string, string][]; headers: [string, string, string] }) {
-  return (
-    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px' }}>
-      <thead>
-        <tr>
-          {headers.map(h => (
-            <th key={h} style={{
-              fontFamily: 'var(--font-ui)', fontSize: '12px', color: SMOKE,
-              textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 500,
-              padding: '8px 12px', textAlign: 'left',
-            }}>{h}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map(([a, b, c], i) => (
-          <tr key={i} style={{ background: i % 2 === 0 ? 'rgba(43, 36, 32,0.025)' : 'transparent' }}>
-            <td style={{ padding: '8px 12px', fontFamily: 'var(--font-ui)', fontSize: '13px', color: ASH }}>{a}</td>
-            <td style={{ padding: '8px 12px', fontFamily: 'var(--font-ui)', fontSize: '12px', color: CHAR }}>{b}</td>
-            <td style={{ padding: '8px 12px', fontFamily: 'var(--font-ui)', fontSize: '13px', color: SMOKE }}>{c}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
   );
 }
 
@@ -150,11 +114,6 @@ function P({ children }: { children: React.ReactNode }) {
 type SectionDef = { title: string; defaultOpen?: boolean; body: React.ReactNode };
 type LocaleContent = { pageTitle: string; pageSubtitle: string; promise: string; footer: string; sections: SectionDef[] };
 
-const PREF_TABLE_ROWS_FR: [string, string, string][] = [
-  ['Poolish à température ambiante', '÷3,1', 'Ajustement du modèle pour un préferment liquide et sans sel ; pas un multiplicateur d’activité mesuré'],
-  ['Poolish au frigo',               '×1,65', 'Milieu liquide → le CO₂ s’échappe librement'],
-  ['Biga',                           '×2,2', 'Pâte ferme (50–55 %) + froid → levure freinée'],
-];
 
 const CONTENT: Record<string, LocaleContent> = {
   en: {
@@ -231,9 +190,9 @@ const CONTENT: Record<string, LocaleContent> = {
             <>
               <P>Warmer dough usually ferments faster. The app uses separate empirical temperature adjustments for room and cold stages; there is no universal five-degree doubling rule.</P>
               <BulletList items={[
-                <>In a <strong style={{color:CHAR}}>tropical kitchen</strong> (≥28°C), the engine applies a full recalibration: shorter minimum bulk time (30min vs 90min in temperate conditions), compressed RT windows, and higher yeast correction. Above 30°C, an additional tropical factor is applied to the RT formula.</>,
+                <>In a <strong style={{color:CHAR}}>tropical kitchen</strong> (≥28°C), the planner shortens the room-temperature steps (30min minimum bulk vs 90min in temperate conditions) and leans on the fridge. The yeast model follows the dough's real temperature: it starts at the target dough temperature (iced water buys time), barely speeds up above 30°C, and plans a warm dough to a smaller rise (see The yeast engine).</>,
                 <>The <strong style={{color:CHAR}}>RT poolish</strong> peak shifts from ~13h at 18°C to ~5h at 30°C — the usable window narrows dramatically in warm kitchens. Plan poolish timing accordingly.</>,
-                <><strong style={{color:CHAR}}>Fridge temperature</strong> matters too. The cold retard formula includes a Q10 correction: <Code>Q10 = 2^((fridgeTemp − 4) / 10)</Code>, where 4°C is the calibration reference. A 6°C fridge (typical home fridge) is slightly more active than 4°C — slightly less yeast needed. A 2°C fridge needs slightly more. This empirical adjustment does not model dough-core cooling or establish validity at every temperature.</>,
+                <><strong style={{color:CHAR}}>Fridge temperature</strong> matters more than it looks. Near freezing, yeast activity falls steeply: an hour at 6°C does about twice the work of an hour at 4°C, and about a tenth of an hour at 25°C. The dough also takes a couple of hours to cool and to warm back, which the model follows. A warmer fridge means less yeast; a colder one, more.</>,
                 <>For <strong style={{color:CHAR}}>hydration handling</strong>: hot (≥28°C) or very humid kitchens get −2% hydration — a handling correction, not a fermentation one. The model does not apply a separate fermentation-speed correction for humidity; observe the dough. Cold kitchens (≤18°C) get +2%.</>,
               ]} />
             </>
@@ -376,20 +335,7 @@ const CONTENT: Record<string, LocaleContent> = {
         },
         {
           title: 'The yeast engine',
-          body: (
-            <>
-              <P>The yeast model uses empirical equations attributed to Craig’s community formula and internal recipe assumptions. These calculations are not a universal validation across flours, starters or temperatures.</P>
-              <P>The formulas compute the <strong style={{color:CHAR}}>instant yeast percentage</strong> — instant dry yeast as a percentage of flour weight. Baker Hub supports instant, fresh and active dry yeast; each is converted from instant yeast using recipe conversion ratios (fresh yeast = instant × 3, active dry = instant × 1.33).</P>
-              <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Room-temperature (RT) fermentation</strong></p>
-              <p style={{ marginBottom: '16px' }}><Code>yeast % = 9.5 / (hours^1.65 × 2.5^((temp−25)/10))</Code></p>
-              <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Cold retard fermentation</strong></p>
-              <p style={{ marginBottom: '8px' }}><Code>yeast % = (7.5 / hours^1.313) ÷ Q10</Code></p>
-            <P>The cold estimate uses Q10 = 2^((fridge temperature − 4)/10). This empirical adjustment does not model cooling of the dough’s centre or establish validity at every temperature.</P>
-              <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Mixed RT + cold</strong></p>
-              <P>Room and cold stages share one fermentation budget: each hour uses up a fraction of the total, at the rate its temperature allows, including the time the dough takes to cool in the fridge and warm up again. The dose is the one that completes the budget at bake time.</P>
-              <p style={{ margin: 0, ...bodyText }}>By default yeast is an output: change your schedule and it recalculates. When you customize your bake you can enter your own amount, in the yeast you use; the planner then runs the same budget the other way and re-times the plan so the dough is ready at your bake time. If your unavailable hours push the start away from that timing, the recipe tells you whether the dough will be ready earlier or later.</p>
-            </>
-          ),
+          body: <YeastModelSectionEn />,
         },
         {
           title: 'Hydration engine',
@@ -572,9 +518,9 @@ const CONTENT: Record<string, LocaleContent> = {
           <>
             <P>Une pâte plus chaude fermente généralement plus vite. L’application utilise des ajustements empiriques distincts pour les phases ambiantes et froides ; il n’existe pas de règle universelle de doublement tous les cinq degrés.</P>
             <BulletList items={[
-              <>Dans une <strong style={{color:CHAR}}>cuisine tropicale</strong> (≥28 °C), le moteur applique une recalibration complète : pointage minimum raccourci (30 min contre 90 min en climat tempéré), fenêtres à température ambiante raccourcies, correction de levure renforcée. Au-delà de 30 °C, un facteur tropical supplémentaire s’applique.</>,
+              <>Dans une <strong style={{color:CHAR}}>cuisine tropicale</strong> (≥28 °C), le planificateur raccourcit les étapes à température ambiante (pointage minimum de 30 min contre 90 min en climat tempéré) et s’appuie sur le frigo. Le modèle de levure suit la température réelle de la pâte : il part de la température de pâte visée (l’eau glacée fait gagner du temps), n’accélère presque plus au-delà de 30 °C, et vise une pousse plus faible pour une pâte chaude (voir Le moteur de levure).</>,
               <>Le pic du <strong style={{color:CHAR}}>poolish à température ambiante</strong> passe de ~13 h à 18 °C à ~5 h à 30 °C — la fenêtre utilisable se réduit fortement en cuisine chaude.</>,
-              <>La <strong style={{color:CHAR}}>température du frigo</strong> compte aussi. La formule de pousse froide inclut une correction Q10 : <Code>Q10 = 2^((tempFrigo − 4) / 10)</Code>. Un frigo à 6 °C (typique) est légèrement plus actif qu’à 4 °C — un peu moins de levure. À 2 °C, un peu plus. Toute température de frigo est gérée correctement.</>,
+              <>La <strong style={{color:CHAR}}>température du frigo</strong> compte plus qu’il n’y paraît. Près de zéro, l’activité de la levure chute vite : une heure à 6 °C fait environ deux fois le travail d’une heure à 4 °C, et environ un dixième d’une heure à 25 °C. La pâte met aussi deux heures environ à refroidir puis à se réchauffer, ce que le modèle suit. Un frigo plus chaud demande moins de levure ; un plus froid, davantage.</>,
               <>Pour l’<strong style={{color:CHAR}}>hydratation</strong> : cuisine chaude (≥28 °C) ou très humide : −2 % — une correction de manipulation, pas de fermentation. Cuisine froide (≤18 °C) : +2 %.</>,
             ]} />
           </>
@@ -672,29 +618,7 @@ const CONTENT: Record<string, LocaleContent> = {
       },
       {
         title: 'Le moteur de levure',
-        body: (
-          <>
-            <P>Le modèle de levure utilise des équations empiriques attribuées à la formule communautaire de Craig et des hypothèses de recette internes. Ces calculs ne constituent pas une validation universelle pour toutes les farines, cultures ou températures.</P>
-            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation à température ambiante</strong></p>
-            <p style={{ marginBottom: '16px' }}><Code>% levure = 9,5 / (heures^1,65 × 2,5^((temp−25)/10))</Code></p>
-            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation en pousse froide</strong></p>
-            <p style={{ marginBottom: '8px' }}><Code>% levure = 7,5 / heures^1,313 ÷ Q10(tempFrigo)</Code></p>
-            <P>où Q10 = 2^((tempFrigo−4)/10). Un réfrigérateur plus chaud est plus actif — le moteur tient compte de la température de votre réfrigérateur quand vous l’indiquez. Par défaut : 6 °C (frigo domestique typique).</P>
-            <P>Ces formules donnent un pourcentage de levure sèche instantanée par rapport au poids de farine.</P>
-            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Température ambiante puis froid</strong></p>
-            <P>Les phases ambiante et froide partagent un même budget de fermentation : chaque heure en consomme une part, au rythme permis par sa température, y compris le temps que met la pâte à refroidir au frigo puis à se réchauffer. La dose est celle qui termine le budget à l’heure de cuisson. Par défaut la levure est calculée ; en personnalisant votre fournée, vous pouvez saisir votre quantité, dans la levure que vous utilisez, et le planning est recalé pour que la pâte soit prête à votre heure de cuisson. Si vos indisponibilités décalent le départ, la recette indique si la pâte sera prête plus tôt ou plus tard.</P>
-            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Conversion du type de levure</strong></p>
-            <P>Tous les calculs partent de la levure sèche instantanée. Levure sèche active = levure instantanée × 1,33 · levure fraîche = levure instantanée × 3,0.</P>
-            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Correction climatique tropicale</strong></p>
-            <P>30–32 °C : ÷1,15 · 33–35 °C : ÷1,25. S'applique aux phases à température ambiante de la pâte et au poolish à température ambiante.</P>
-            <p style={{ marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Calibration du préferment</strong></p>
-            <P>La formule de Craig a été calibrée pour la pâte en vrac — 65 % d'hydratation, avec sel. Les préferments nécessitent une correction :</P>
-            <DataTable rows={PREF_TABLE_ROWS_FR} headers={['Préferment', 'Correction', 'Pourquoi']} />
-            <P>Les coefficients sont des hypothèses de calcul. Leur précision doit être évaluée avec vos ingrédients et vos conditions ; les essais logiciels ne remplacent pas des fournées de calibration.</P>
-            <p style={{ marginTop: '16px', marginBottom: '8px', ...bodyText }}><strong style={{ color: CHAR }}>Levain</strong></p>
-            <p style={{ margin: 0, ...bodyText }}>Baker Hub recommande une quantité de levain adaptée à votre cuisine, avec des repères visuels de maturité. Une quantité que vous choisissez recale le pointage (voir Le moteur de levain).</p>
-          </>
-        ),
+        body: <YeastModelSectionFr />,
       },
       {
         title: 'Le moteur de farine',
@@ -704,7 +628,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <P>W décrit la force mesurée de la farine, pas une durée de fermentation unique. Les valeurs publiées sont distinguées des estimations. La force des mélanges et leur hydratation restent des repères de recette à ajuster selon la pâte.</P>
             <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Écart d'hydratation</strong> — de combien décaler l'hydratation de base. Les farines fortes et riches en protéines absorbent plus d'eau ; les farines faibles en nécessitent moins. Pour les mélanges, les écarts sont pondérés par la proportion de chaque farine. Note : l'hydratation est définie après le planning — le modèle de durée ne corrige pas explicitement l’hydratation. Celle-ci peut néanmoins modifier la fermentation et le comportement réel de la pâte.</p>
             <p style={{ marginBottom: '12px', ...bodyText }}><strong style={{ color: CHAR }}>Tolérance de fermentation (ftm)</strong> — un multiplicateur appliqué à la zone idéale du planificateur. ftm = 1,0 pour W250 (référence), 1,2 pour W300+, 0,85 pour W220. Elle module la durée de pousse froide optimale, la zone idéale du poolish et la fenêtre de fermentation maximale utile. Deux boulangers utilisant le même style mais des farines différentes obtiennent des plannings recommandés différents — le boulanger W370 est orienté vers une pousse froide plus longue, le boulanger W220 vers une plus courte.</p>
-            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Par défaut, la levure est calculée.</strong> Baker Hub la calcule à partir de vos heures de fermentation réelles et de la température, avec les formules du moteur de levure (à température ambiante et au froid). Modifiez votre planning et la levure se met à jour automatiquement. La tolérance de fermentation de la farine module la zone idéale mais n'affecte pas directement la levure — la formule de levure s'ajuste déjà par les durées. Si vous fixez votre quantité, ce sont les horaires qui suivent.</p>
+            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Par défaut, la levure est calculée.</strong> Baker Hub la calcule à partir de vos heures de fermentation réelles et de la température, avec le modèle du moteur de levure (le même à température ambiante et au froid). Modifiez votre planning et la levure se met à jour automatiquement. La tolérance de fermentation de la farine module la zone idéale mais n'affecte pas directement la levure — la formule de levure s'ajuste déjà par les durées. Si vous fixez votre quantité, ce sont les horaires qui suivent.</p>
           </>
         ),
       },

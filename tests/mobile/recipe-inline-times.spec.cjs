@@ -57,11 +57,12 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: Simple — title, summary, S
  const after=await edit.innerText();
  await edit.tap();await editor.getByRole('button',{name:L('Close Start Dough','Fermer Pétrir la pâte'),exact:true}).tap();
  await expect(editor).toHaveCount(0);await expect(edit).toHaveText(after);
- // Two hours earlier changes the yeast by more than a tenth: the line names it.
+ // Yeast model (19 Nov 2026): two hours earlier only lengthens the cold retard, where the dough mostly holds,
+ // so the yeast moves by less than a tenth of a gram and the line stays short (before: "Yeast now …").
  await edit.tap();
  for(let i=0;i<4;i++)await editor.getByRole('button',{name:'- 30 min'}).tap();
  await editor.getByRole('button',{name:L('Update recipe','Mettre à jour la recette'),exact:true}).tap();
- await expect(note).toContainText(L(/Yeast now \d/,/Levure : \d/));
+ await expect(note).toHaveText(L('Recipe updated.','Recette mise à jour.'));
  expect(errors).toEqual([]);
 });
 

@@ -18,7 +18,9 @@ test('less yeast plans a longer fermentation, more yeast a shorter one',()=>{
  assert.ok(half>24&&twice<24,`${half} / ${twice}`);
 });
 test('the recipe shows the entered amount and stays within budget on the re-timed plan',()=>{
- const chosen=0.06,hours=utils.fermentationHoursForYeast(chosen,ctx());
+ // Yeast model (19 Nov 2026): 0.10 % (was 0.06 %). With the fridge mostly holding, 0.06 % has no
+ // Neapolitan window up to 96 h at 22 °C / 6 °C; 0.10 % is timed to a 66 h cold plan.
+ const chosen=0.1,hours=utils.fermentationHoursForYeast(chosen,ctx());
  const recipe=recipeAt(hours,chosen);
  assert.equal(recipe.yeast.pct,chosen);
  assert.ok(!recipe.yeast.warnings.some(w=>w.key==='fermentationBudget'));

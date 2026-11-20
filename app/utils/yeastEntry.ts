@@ -40,10 +40,14 @@ export function checkYeastEntry(idyPct: number, o: YeastEntryInput): YeastEntryC
   const timing = { bake: o.bake, blocks: o.blocks, kitchenTemp: o.kitchenTemp, preheatMin: o.preheatMin, mixerType: o.mixerType,
     styleKey: o.styleKey, numItems: o.numItems, itemWeight: o.itemWeight, mixingBatches: o.mixingBatches,
     fridgeTemp: o.fridgeTemp, hydration: o.hydration, exitLeadMin: o.exitLeadMin };
-  const hoursFor = (idy: number) => fermentationHoursForYeast(idy * o.flourStrength, timing);
-  const fitsFor = (idy: number) => { const h = hoursFor(idy); return h !== null && h <= availableH; };
-  const neededH = hoursFor(idyPct);
-  if (neededH !== null && neededH <= availableH) return { fits: true, neededH, availableH, minimumShownPct: null };
+  // Windows that end at the bake and start no earlier than the next quarter hour. The yeast
+  // model's budget is not monotone in the window (a cold-retard plan ferments less than a
+  // slightly shorter room-temperature one), so the inversion is asked within the time left.
+  const hoursWithin = (idy: number) => fermentationHoursForYeast(idy * o.flourStrength, { ...timing, maxH: availableH });
+  const fitsFor = (idy: number) => hoursWithin(idy) !== null;
+  const within = hoursWithin(idyPct);
+  if (within !== null) return { fits: true, neededH: within, availableH, minimumShownPct: null };
+  const neededH = fermentationHoursForYeast(idyPct * o.flourStrength, timing);
   if (!fitsFor(MAX_ENTERED_IDY_PCT)) return { fits: false, neededH, availableH, minimumShownPct: null };
   // More yeast is never slower: bisect on a log scale, then round up.
   let lo = Math.max(idyPct, 0.001), hi = MAX_ENTERED_IDY_PCT;

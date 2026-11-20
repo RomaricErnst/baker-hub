@@ -22,7 +22,10 @@ test('crossing the unsupported threshold cannot increase the dose or stay recomm
 });
 
 test('single-phase doses and the practical floor remain stable',()=>{
- for(const [warm,temp,cold,pct] of [[0,30,12,.2871],[4,22,0,1.2697],[29.9,30,12,.05]]){
+ // Yeast model (19 Nov 2026). 12 h at 4 °C alone is 0.6 equivalent hours: the dose holds at the
+ // 1.5 % ceiling (was 0.2871 % from the old cold law). 4 h at 22 °C: 0.3664 % (Phase 3 refit, 20 Nov 2026;
+ // Phase 2 0.4446 %; the old engine 1.2697 %, dose–time exponent 1.65). 29.9 h at 30 °C still reaches the 0.05 % floor.
+ for(const [warm,temp,cold,pct] of [[0,30,12,1.5],[4,22,0,.3664],[29.9,30,12,.05]]){
   const r=dose(warm,temp,cold);
   assert.equal(r.pct,pct);assert.equal(r.notRecommended,false);
   assert.ok(!r.warnings.some(w=>w.key==='overFermentRT'));
@@ -30,10 +33,11 @@ test('single-phase doses and the practical floor remain stable',()=>{
 });
 
 test('an ordinary mixed schedule spends one fermentation budget across its two phases',()=>{
+ // Yeast model: both phases add equivalent 25 °C hours into one dose law (A·Heq^-b).
+ const {yeastActivity,heqForDose}=require('../app/utils/yeastModel.ts');
  const r=dose(2,22,24);
- const roomHoursAtDose=(9.5/(r.pct*2.5**((22-25)/10)))**(1/1.65);
- const coldHoursAtDose=(7.5/r.pct)**(1/1.313);
- assert.ok(Math.abs(2/roomHoursAtDose+24/coldHoursAtDose-1)<.001);
+ const heq=2*yeastActivity(22)+24*yeastActivity(4);
+ assert.ok(Math.abs(heq/heqForDose(r.pct)-1)<.001);
  assert.equal(r.notRecommended,false);
 });
 

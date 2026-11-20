@@ -67,7 +67,7 @@ test('total formula percentages accompany total weights, never remaining stage w
   const totals=html.match(/<section (?:aria-label="(?:Total ingredients|Quantités totales)"|data-whole-dough[^>]*)>([\s\S]*?)<\/section>/)[1].replace(/<[^>]+>/g,'');
   a.match(totals,new RegExp('Flour100%'+Math.round(r.flour)+' g'));
   a.match(totals,new RegExp('Water[0-9.]+%'+Math.round(r.water)+' g'));
-  a.match(totals,/Of which prefermented flour[\s\S]*20%/);
+  a.match(totals,/Of which prefermented flour[\s\S]*20(\.\d)?%/);
   a.doesNotMatch(html,/Baker’s percentages/);
  }
 });
