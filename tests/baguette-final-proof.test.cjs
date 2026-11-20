@@ -48,14 +48,17 @@ test('Thomas, 20 °C, nights: out at 9:45 (was 9:15), 1 h rest and 1 h 15 apprê
  a.ok(Math.abs(r.yeast.grams-1.64)<0.015,`grams ${r.yeast.grams}`);
 });
 
-test('Thomas, 20 °C, no busy times: 2 h apprêt after a 45 min warm-up (main: 1 h rest and 3.5 h, 4.5 h out of the fridge)',()=>{
+test('Thomas, 20 °C, no busy times: out at 9:00 after the whole cold, 1 h rest and 2 h apprêt (main: out 7:30, 3.5 h)',()=>{
+ // Splitting the cold (shaping during it) would shape at 3:15, a night step main does not have:
+ // the whole cold stays before shaping (owner, 20 Nov 2026).
  const s=plan([]);
- a.equal(hm(s.coldRetardEnd),'9:15');        // main: 7:30
+ a.equal(hm(s.coldRetardEnd),'9:00');        // main: 7:30
+ a.ok(!s.coldRetard2Start);
  a.equal(hm(s.finalProofStart),'10:00');     // main: 8:30
  a.equal(s.finalProofHours,2);               // main: 3.5
- a.equal(outToBake(s),2.75);                 // main: 4.5
+ a.equal(outToBake(s),3);                    // main: 4.5
  const r=recipe(s);
- a.ok(Math.abs(r.yeast.pct-0.215)<0.0015,`IDY ${r.yeast.pct}`);   // main 0.180 %
+ a.ok(Math.abs(r.yeast.pct-0.209)<0.0015,`IDY ${r.yeast.pct}`);   // main 0.180 %
 });
 
 test('every baguette plan proofs within the bound; the dose meets its target on the new path',()=>{
@@ -63,6 +66,8 @@ test('every baguette plan proofs within the bound; the dose meets its target on 
  for(const T of [16,18,20,22,24,26,28,30,32])for(const blocks of blocksets)for(let w=6;w<=30;w++){
   const s=plan(blocks,T,'baguette',new Date(+bake-w*H));
   if(s.preparationInvalid||s.availabilityConflicts.length)continue;
+  // Main's own plan where the style's bound would add a night step or a cold phase (owner, 20 Nov 2026).
+  if(s.finalProofBound!=='style')continue;
   // Main's own artefact, unchanged here: a second fridge spell under 1 h is dropped (accountScheduleTime)
   // and its time joins the proof (28 °C, 7 h: 3.25 h on main too). Not a bound this change sets.
   if(s.totalColdHours>0&&!s.rtWarmupStart&&!s.restRtHours&&!s.coldRetard2Start)continue;
@@ -85,4 +90,49 @@ test('boules, bâtards and pizza keep their plans (main numbers)',()=>{
  a.equal(camp.finalProofHours,4.25);
  const nea=utils.buildSchedule(new Date(+bake-26*H),bake,[],20,45,'hand','neapolitan',4,1);
  a.equal(nea.finalProofHours,4.25);
+});
+
+// Owner adjustments (20 Nov 2026): a plan main runs at room temperature stays there, and no hands-on step
+// newly falls between 22:00 and 07:00 unless the baker declared that time free; else main's timing.
+const onMain=(s)=>s.finalProofBound===undefined;
+const nightIds=s=>s.availabilityActions.filter(x=>x.at.getHours()>=22||x.at.getHours()<7).map(x=>x.id);
+
+test('a room-temperature plan stays at room temperature: the shorter apprêt goes to the bulk, less yeast',()=>{
+ // 20 °C, 9 h, no busy times. Main: shaped 6:15, 5.5 h apprêt, 0.170 % IDY.
+ const s=plan([],20,'baguette',new Date(+bake-9*H));
+ a.equal(s.totalColdHours,0);
+ a.equal(s.finalProofBound,'style');
+ a.equal(hm(s.divideBallTime),'10:00');      // main: 6:15
+ a.equal(s.finalProofHours,1.75);            // main: 5.5
+ a.equal(+s.totalRTHours.toFixed(2),8.28);   // the window is unchanged; the bulk holds what the apprêt gave up
+ a.ok(Math.abs(recipe(s).yeast.pct-0.167)<0.0015,`IDY ${recipe(s).yeast.pct}`);   // main 0.1696 %
+ // Every window main plans at room temperature here (6–11 h at 16–20 °C, no busy times) stays there.
+ for(const T of [16,18,20])for(let w=6;w<=11;w++)
+  a.equal(plan([],T,'baguette',new Date(+bake-w*H)).totalColdHours,0,`${T} °C ${w} h`);
+});
+
+test('no new night shaping: a 14 h window to a noon bake keeps the whole cold before shaping at 9:00',()=>{
+ // 20 °C, mixed 22:00, no busy times. Main shaped at 7:30; splitting the cold would shape at 4:15.
+ const s=plan([],20,'baguette',new Date(+bake-14*H));
+ a.equal(s.finalProofBound,'style');
+ a.ok(!s.coldRetard2Start);
+ a.equal(hm(s.coldRetardEnd),'9:00');        // main: 7:30
+ a.equal(hm(s.divideBallTime),'9:00');
+ a.equal(s.finalProofHours,2);               // main: 3.5
+ a.deepEqual(nightIds(s).sort(),['cold-in','fold-1','fold-2','mix','mix-finish']);   // main's own night steps
+});
+
+test('no new night step: where the shorter apprêt would add folds before 7:00, main\'s plan stays',()=>{
+ // 16 °C, mixed 4:00 for noon. Main shapes at 6:15; a longer bulk would add folds 3 and 4 at 6:13 and 6:43.
+ const s=plan([],16,'baguette',new Date(+bake-8*H));
+ a.ok(onMain(s));
+ a.equal(hm(s.divideBallTime),'6:15');
+ a.equal(s.finalProofHours,5.5);
+ a.deepEqual(nightIds(s).sort(),['divide','fold-1','fold-2','mix','mix-finish']);
+ // Every baguette plan of the grid: a step at night only where main had that step at night.
+ for(const T of [16,18,20,22,24,26])for(const blocks of [[],night])for(let w=6;w<=30;w++){
+  const p=plan(blocks,T,'baguette',new Date(+bake-w*H));if(onMain(p))continue;
+  const base=new Set(nightIds(utils.buildSchedule(new Date(+bake-w*H),bake,blocks,T,45,'hand','baguette',4,1)));
+  for(const id of nightIds(p))a.ok(base.has(id),`${T} °C ${w} h: ${id}`);
+ }
 });
