@@ -40,7 +40,9 @@ test('storage fixed to room: the poolish holds its peak dose, the final dough it
  await expect(makePoolish(page)).toContainText('Fresh yeast');
  await expect(makePoolish(page)).toContainText('0.2 g');
  await expect(finalDough(page)).toContainText('Fresh yeast');
- await expect(finalDough(page)).toContainText('2.2 g');
+ // Round 7 (D4, 20 Nov 2026): the baguette apprêt bound (2 h to the bake at 20 °C) takes the dough out 15 min
+ // later, a shorter warm tail: the final dough's own need 2.2 → 2.3 g (tests/poolish-peak.test.cjs 2.211 → 2.271); the whole dough still rounds to 2.4 g.
+ await expect(finalDough(page)).toContainText('2.3 g');
  await expect(page.locator('[data-whole-dough]')).toContainText('2.4 g');
  const s=await stored(page);
  expect(s.prefGoesInFridge).toBe(false);expect(s.prefOffsetH).toBe(11.25);expect(s.prefermentFlourPct).toBe(20);

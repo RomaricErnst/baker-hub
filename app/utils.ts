@@ -585,6 +585,29 @@ function maxFinalProofHours(kitchenTemp: number, hasColdRetard: boolean): number
   return 5;
 }
 
+/** Reference temperature of a style's `shapedProofH24` (°C). */
+const SHAPED_PROOF_REF_C = 24;
+
+/** Longest final proof (apprêt) of a style's shaped pieces in this kitchen (hours).
+ * A style with `shapedProofH24` (baguette, 20 Nov 2026 round 7) proofs at most that many
+ * hours at 24 °C, converted to the kitchen by the yeast model's activity and rounded to the
+ * quarter hour, never below the shortest final proof (1 h) nor above the generic bound.
+ * Sources (docs/YEAST-MODEL.md §13): Hamelman 1–1.5 h at 24 °C; Grands Moulins de Paris
+ * 30–60 min at 25 °C after a 12–14 h bulk retard at 4 °C; Bouabsa 45 min after 21 h cold;
+ * King Arthur Pro slow-rise 1.5–2 h at 24 °C after a 10 °C bulk retard. The generic bound
+ * (3.5 h after the fridge, 5 h without, at 20 °C) is a pizza-ball figure. Levain is not
+ * covered (its own solver; levain loaves bake from the fridge).
+ * The engine measures its proof bounds to the preheat start (the proof runs on while the oven
+ * heats), so the returned bound is that apprêt minus the preheat, never below the shortest final
+ * proof (1 h before the preheat): at 20 °C with a 45 min preheat, 1.25 h + 0.75 h = 2 h to the bake. */
+export function styleMaxFinalProofHours(styleKey: string, kitchenTemp: number, hasColdRetard: boolean, isSourdough: boolean, preheatH = 0): number {
+  const generic = maxFinalProofHours(kitchenTemp, hasColdRetard);
+  const ref = isSourdough ? undefined : STYLE_FERM_DEFAULTS[styleKey]?.shapedProofH24;
+  if (!ref) return generic;
+  const toBakeH = Math.round(ref * yeastActivity(SHAPED_PROOF_REF_C) / yeastActivity(kitchenTemp) * 4) / 4;
+  return Math.min(generic, Math.max(1, toBakeH - Math.max(0, preheatH)));
+}
+
 function restRtMinutes(kitchenTemp: number): number {
   if (kitchenTemp >= 28) return 30;
   if (kitchenTemp >= 24) return 45;
@@ -766,7 +789,10 @@ function prefermentConditioningHours(o: PrefermentThermalInputs): number {
 /** Existing supported lower bounds, also used by setup readiness windows. */
 export const REQUIRED_COLD_MIN_HOURS: Readonly<Record<string, number>> = { brioche: 4, pain_mie: 4, pain_viennois: 3 };
 
-const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHRequired?: boolean }> = {
+const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHRequired?: boolean;
+  /** Longest final proof of the shaped pieces, hours at 24 °C (styleMaxFinalProofHours). Used only by
+   * buildSchedule's exit and proof bounds; coldH and rtH (and so the three-engine sweet spot) are unchanged. */
+  shapedProofH24?: number }> = {
   ...BREAD_FERMENTATION_DEFAULTS,
   // Pizza — sweet spot = coldH + rtH (where dough peaks at bake)
   neapolitan:    { coldH: 24, rtH: 2 },                          // sweet: 26h
@@ -778,7 +804,7 @@ const STYLE_FERM_DEFAULTS: Record<string, { coldH: number; rtH: number; coldHReq
   // Bread
   pain_campagne: { coldH: 18, rtH: 3 },                          // sweet: 21h
   pain_levain:   { coldH: 16, rtH: 4 },                          // sweet: 20h
-  baguette:      { coldH: 12, rtH: 2 },                          // sweet: 14h
+  baguette:      { coldH: 12, rtH: 2, shapedProofH24: 1.5 },     // sweet: 14h · apprêt ≤ 1.5 h at 24 °C (2 h at 20 °C)
   pain_complet:  { coldH: 12, rtH: 3 },                          // sweet: 15h
   pain_seigle:   { coldH: 0,  rtH: 5 },                          // RT only: sweet 5h
   fougasse:      { coldH: 8,  rtH: 2 },                          // sweet: 10h
@@ -937,7 +963,7 @@ function buildSchedulePhases(
   }
 
   const hasColdRetard = coldH > 0;
-  const maxFinalH = maxFinalProofHours(kitchenTemp, hasColdRetard);
+  const maxFinalH = styleMaxFinalProofHours(styleKey, kitchenTemp, hasColdRetard, isSourdough, preheatH);
 
   // Schedule note (first match wins)
   let scheduleNote: string | null = null;
@@ -983,7 +1009,7 @@ function buildSchedulePhases(
   const pureRoomTemperatureFallback = (note: string): ScheduleResult => {
     const displayFermStart = fermStart.getTime() > bakeTime.getTime() ? bakeTime : fermStart;
     const totalH = Math.max(0, (bakeTime.getTime() - displayFermStart.getTime()) / 3600000);
-    const rtFinalMaxH = maxFinalProofHours(kitchenTemp, false);
+    const rtFinalMaxH = styleMaxFinalProofHours(styleKey, kitchenTemp, false, isSourdough, preheatH);
     // The final proof never takes the whole window: in a cool kitchen its cap (5 h)
     // exceeded a short plan and left the dough no first rise before shaping.
     const finalProofH = Math.min(rtFinalMaxH, totalH > minTotalRT ? totalH - minBulkRT : totalH);

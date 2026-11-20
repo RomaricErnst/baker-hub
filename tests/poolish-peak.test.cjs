@@ -48,7 +48,7 @@ test('Thomas: an 11 h room-temperature poolish holds its own peak dose, the fina
  assert.equal(pf.prefFlour,57);assert.equal(r.flour,287);
  assert.ok(Math.abs(pf.prefYeastGrams-0.1647)<0.001,`poolish ${pf.prefYeastGrams}`);   // Phase 2 0.2116 (M_p 0.83 → 0.70, 20 Nov 2026)
  assert.ok(Math.abs(pf.finalYeastGrams-r.yeast.convertedGrams)<0.002,'final dough = the direct need of its path');   // convertedGrams is rounded to 0.001 g on its own
- assert.ok(Math.abs(pf.finalYeastGrams-2.211)<0.01,`final ${pf.finalYeastGrams}`);   // Phase 2 2.589
+ assert.ok(Math.abs(pf.finalYeastGrams-2.271)<0.01,`final ${pf.finalYeastGrams}`);   // Phase 2 2.589; Phase 3 2.211; round 7 (D4): out at 6:15Z, not 6:00Z (baguette apprêt ≤ 2 h at 20 °C), a shorter warm tail
  assert.ok(Math.abs(pf.finalYeastGrams-3*pf.finalYeastGramsIDY)<1e-12);
  assert.ok(Math.abs(data.poolishPeakHours(pf.prefYeastGramsIDY/pf.prefFlour*100,false,20,6,{massG:pf.prefFlour+pf.prefWater})-11)<1e-6,'it peaks at the mix');
  assert.equal(pf.pastPeak,undefined);

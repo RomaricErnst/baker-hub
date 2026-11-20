@@ -149,8 +149,10 @@ test.describe('a loaf, zero ticks and one tick',()=>{
   for(const [at,section,text] of [
    ['2026-11-21T07:10:00Z','Preparation','Now: Start Dough'],
    ['2026-11-21T08:00:00Z','Preparation','Now: Let the dough rise'],
-   ['2026-11-21T09:20:00Z','Preparation','Now: Divide and shape'],
-   ['2026-11-21T09:50:00Z','Preparation','Now: Let the shaped dough rise'],
+   // Round 7 (D4, 20 Nov 2026): a baguette's apprêt is at most 1 h 45 to the bake at 22 °C (was 2 h 45), so the
+   // first rise runs longer and the shaping moves 9:15 → 10:15.
+   ['2026-11-21T10:20:00Z','Preparation','Now: Divide and shape'],
+   ['2026-11-21T10:50:00Z','Preparation','Now: Let the shaped dough rise'],
    ['2026-11-21T11:20:00Z','Baking & serving','Now: Preheat the oven'],
    ['2026-11-21T12:05:00Z','Baking & serving','Now: Bake'],
   ]){
@@ -169,8 +171,9 @@ test.describe('a loaf, zero ticks and one tick',()=>{
   await resumeFromHome(page);
   await page.locator('section[data-guide-title="Start Dough"]').getByRole('checkbox',{name:'Step done',exact:true}).click();
   await expect.poll(async()=>(await stored(page)).execution?.actualAt??null).not.toBeNull();
-  // 9:50: the shaping (9:15) is unticked and the final rise (a wait) is the clock's step: Now stays on the shaping.
-  await reopen(page,'2026-11-21T09:50:00Z');
+  // 10:50: the shaping (10:15 since round 7's baguette apprêt bound) is unticked and the final rise (a wait) is
+  // the clock's step: Now stays on the shaping.
+  await reopen(page,'2026-11-21T10:50:00Z');
   await resumeFromHome(page);
   await expect(bar(page)).toContainText('Now: Divide and shape');
   const held=page.locator('[data-held-step]:visible');
