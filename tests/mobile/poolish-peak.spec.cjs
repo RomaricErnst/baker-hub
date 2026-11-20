@@ -44,6 +44,11 @@ test('storage fixed to room: the poolish holds its peak dose, the final dough it
  await expect(page.locator('[data-whole-dough]')).toContainText('2.4 g');
  const s=await stored(page);
  expect(s.prefGoesInFridge).toBe(false);expect(s.prefOffsetH).toBe(11.25);expect(s.prefermentFlourPct).toBe(20);
+ // The knead method adds that yeast (20 Nov 2026 round 6, Thomas: it was listed, never added in the steps).
+ await page.locator('.bh-bake-navigator-trigger').tap();
+ await page.getByRole('navigation',{name:'Your bake',exact:true}).getByRole('button').filter({has:page.getByText('Preparation',{exact:true})}).tap();
+ await page.getByRole('button',{name:/^Start Dough/}).first().tap();
+ await expect(page.getByText('Add the prepared poolish and the yeast, then the salt.',{exact:true}).first()).toBeVisible();
  expect(errors).toEqual([]);
 });
 
