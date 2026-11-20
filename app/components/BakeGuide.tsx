@@ -1337,12 +1337,19 @@ Actual dough condition and equipment may differ from these estimates.`;
       : `Mix ${flourEn} with ${displayWeight(firstWater,u,l)} of the ${directIceMix ? 'liquid' : 'prepared'} water; keep the other ${displayWeight(keptWater,u,l)} back${rest}.`;
   };
   const mixCardStart = showAutolyseStart ? (autolyseAction?.at ?? displayedMixTime) : displayedMixTime;
+  const finalDoughYeast = (recipe?.yeast?.convertedGrams ?? 0) > 0;
   const leavenLine = isSourdough ? (l === 'fr' ? 'le levain mûr et le sel' : 'the ripe starter and salt')
-    : hasPref ? (l === 'fr' ? `${isBiga ? 'la biga préparée' : 'le poolish préparé'}, puis le sel` : `the prepared ${isBiga ? 'biga' : 'poolish'}, then the salt`)
+    // Since the yeast model (19 Nov 2026) the final dough after a poolish or biga has its own yeast: the method
+    // names it (20 Nov 2026 round 6, Thomas: "Levure 2,8 g" was listed, never added in the steps).
+    : hasPref ? (finalDoughYeast
+      ? (l === 'fr' ? `${isBiga ? 'la biga préparée' : 'le poolish préparé'} et la levure, puis le sel` : `the prepared ${isBiga ? 'biga' : 'poolish'} and the yeast, then the salt`)
+      : (l === 'fr' ? `${isBiga ? 'la biga préparée' : 'le poolish préparé'}, puis le sel` : `the prepared ${isBiga ? 'biga' : 'poolish'}, then the salt`))
     : (l === 'fr' ? 'la levure et le sel' : 'the yeast and salt');
   // A mix started late says the rest's length, not a clock time it has already missed: at 6:20 "rest 30 min,
   // until 6:30pm" was wrong by 20 minutes (20 Nov 2026 retention round 5). The plan itself is unchanged.
-  const mixOpenedLate = !!phase && !mixingMade && Date.now() > +mixCardStart + 5 * 60000;
+  // Also after a one-tap tick, which records the plan's time (20 Nov 2026 round 6, Thomas: ticked at 14:50, the card
+  // read "until 14h45"); a time the baker typed re-times the card, so its clock times hold.
+  const mixOpenedLate = !!phase && !mixDoneStated && Date.now() > +mixCardStart + 5 * 60000;
   const kneadResumes = mixFinishAction && !mixOpenedLate ? clockFor(mixFinishAction.at, mixCardStart) : null;
   const mixSequence: { bold: string; note: string }[] = preMixAutolyse > 0 ? [
     // Wheat sourdough: autolyse before the mix, then starter and salt, then the planned rest.
