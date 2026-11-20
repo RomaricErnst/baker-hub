@@ -38,11 +38,13 @@ test('storage fixed to room: the poolish holds its peak dose, the final dough it
  // 20 Nov 2026): 0.2 g and 2.2 g (the final dough's own need for 4.8 h at 20 °C and 10.25 h in the fridge),
  // 2.4 g in all (Phase 2: 2.6 g and 2.8 g).
  await expect(makePoolish(page)).toContainText('Fresh yeast');
- await expect(makePoolish(page)).toContainText('0.2 g');
+ // Round 7 stage yeast (stageYeastDoses): 0.2 + 2.3 g would read 2.5 g against the whole dough's 2.4 g, so both stages
+ // take one more figure (0.16 + 2.27 g = 2.4 g).
+ await expect(makePoolish(page)).toContainText('0.16 g');
  await expect(finalDough(page)).toContainText('Fresh yeast');
  // Round 7 (D4, 20 Nov 2026): the baguette apprêt bound (2 h to the bake at 20 °C) takes the dough out 15 min
  // later, a shorter warm tail: the final dough's own need 2.2 → 2.3 g (tests/poolish-peak.test.cjs 2.211 → 2.271); the whole dough still rounds to 2.4 g.
- await expect(finalDough(page)).toContainText('2.3 g');
+ await expect(finalDough(page)).toContainText('2.27 g');
  await expect(page.locator('[data-whole-dough]')).toContainText('2.4 g');
  const s=await stored(page);
  expect(s.prefGoesInFridge).toBe(false);expect(s.prefOffsetH).toBe(11.25);expect(s.prefermentFlourPct).toBe(20);
