@@ -531,7 +531,7 @@
     },
     "recipeReady": "Votre recette est prête",
     "hydrationLabel": "hydratation",
-    "mixingBuffer": "Inclut {pct}% de marge au pétrissage",
+    "mixingBuffer": "Inclut {pct} % de marge pour les pertes",
     "ingredientFlour": "Farine",
     "ingredientWater": "Eau",
     "ingredientSalt": "Sel",

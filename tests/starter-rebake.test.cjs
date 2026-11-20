@@ -15,7 +15,7 @@ async function restore(yeastType,rebake,starterTimingValid,overrides={},acceptRe
  const state={};
  const storage={};
  const navigationHandler=source.slice(source.indexOf('  function restoreNavigation('),source.indexOf('  // Both advance functions'));
- const context={normalizeExitLead:require('../app/utils/exitLead.ts').normalizeExitLead,normalizeAcceptedPlan:require('../app/utils/bakeExecution.ts').normalizeAcceptedPlan,normalizeMixExecution:require('../app/utils/bakeExecution.ts').normalizeMixExecution,normalizeStarterFeedRecords:require('../app/utils/bakeExecution.ts').normalizeStarterFeedRecords,normalizeBakeExecution:require('../app/utils/bakeExecution.ts').normalizeBakeExecution,confirmLocalReplacement:()=>acceptReplacement,Date,Math,Boolean,Object,JSON,isRestoringRef:{current:false},restoreStarterEvents,normalizeMixingBatches,normalizeFlourTarget,normalizeTimingOverrides,normalizeSandwichSnapshot,sandwichFamilyForStyle,restoredBakeRoute,endRestore(){},setTimeout(){},localStorage:{setItem(key,value){storage[key]=value;}}};
+ const context={normalizeExitLead:require('../app/utils/exitLead.ts').normalizeExitLead,normalizeAcceptedPlan:require('../app/utils/bakeExecution.ts').normalizeAcceptedPlan,normalizeMixExecution:require('../app/utils/bakeExecution.ts').normalizeMixExecution,normalizeStarterFeedRecords:require('../app/utils/bakeExecution.ts').normalizeStarterFeedRecords,normalizeBakeExecution:require('../app/utils/bakeExecution.ts').normalizeBakeExecution,confirmLocalReplacement:()=>acceptReplacement,restoredWastePct:require('../app/utils/doughAllowance.ts').restoredWastePct,Date,Math,Boolean,Object,JSON,isRestoringRef:{current:false},restoreStarterEvents,normalizeMixingBatches,normalizeFlourTarget,normalizeTimingOverrides,normalizeSandwichSnapshot,sandwichFamilyForStyle,restoredBakeRoute,endRestore(){},setTimeout(){},localStorage:{setItem(key,value){storage[key]=value;}}};
  for(const name of new Set((handler+navigationHandler).match(/\bset[A-Z]\w*/g))) context[name]=value=>{state[name]=typeof value==='function'?value(0):value;};
  const time=Date.now()-14*86400000;
  context.event={id:'saved-bake',dough_snapshot:{yeastType,tab:'custom',recipeGenerated:true,modeChosen:true,eatTime:time,startTime:time-86400000,timingOverrides:{mix:time-86400000,feed:time-90000000},starterEvents:[{kind:'pre_mix',time:time-90000000,isPast:false}],lastFedTime:time-100000000,knownPeakTime:time-86400000,feed2Time:time-90000000,fridgeOutTime:time-87000000,starterFridgeInTime:time-95000000,lastFedAge:'today',planningMode:'know_peak',ovenType:'dutch_oven',mixerType:'hand',itemWeight:800,containerCapacityLitres:5,pizzaParty:{qtys:{}},activeTab:'guide'}};
@@ -92,4 +92,15 @@ test('opening a bake gives it its own recipe baseline and journal id; a confirme
  assert.equal(state.setExecutionClash,true);
  const rebake=await restore('instant',true,true,{executionClash:true});
  assert.equal(rebake.state.setExecutionClash,false,'a new bake starts without the old clash');
+});
+
+// Extra for bowl loss (20 Nov 2026 round 7): an old bake saved with 0 keeps 0; a missing value is the
+// 1.5 % default (state undefined); resuming a bake whose dough is recorded keeps what was weighed (0).
+test('bowl-loss allowance on restore: saved values kept, missing ones default, a weighed dough keeps none',async()=>{
+ assert.equal((await restore('instant',true,undefined,{wastePct:0})).state.setWastePct,0);
+ assert.equal((await restore('instant',true,undefined,{wastePct:2})).state.setWastePct,2);
+ const missing=await restore('instant',true,undefined,{wastePct:undefined});
+ assert.ok('setWastePct' in missing.state);assert.equal(missing.state.setWastePct,undefined);
+ const made=await restore('instant',false,undefined,{wastePct:undefined,mixExecution:{actualAt:Date.now()-15*86400000,recordedAt:Date.now()-15*86400000,recipe:{flour:600,water:390,salt:17,oil:0,sugar:0}}});
+ assert.equal(made.state.setWastePct,0);
 });

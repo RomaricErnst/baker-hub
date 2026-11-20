@@ -96,9 +96,12 @@ import {
   starterBulkFactor, raisedLevainFits, referenceStarterPct, prefTempAfterWarmup, sourdoughBulkH, hasCoherentScheduleShape, withLongerPreheat,
 } from '../utils';
 import { exitLeadFor, normalizeExitLead, planExitLead, type ExitLead } from '../utils/exitLead';
+import { DEFAULT_WASTE_PCT, effectiveWastePct, restoredWastePct } from '../utils/doughAllowance';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { breadNoun, bakeSubject } from '../utils/breadNames';
 import { buildItems } from '@/app/components/Timeline';
+import UnitInput from '@/app/components/UnitInput';
+import { yeastRowLabel, autoPctPlaceholder } from '../utils/yeastRow';
 
 
 // ── Constants ────────────────────────────────
@@ -1204,6 +1207,8 @@ export default function Home() {
   const [measuredPrefermentTemp, setMeasuredPrefermentTemp] = useState<number | undefined>(undefined);
   const [flourInFridge, setFlourInFridge]     = useState<boolean>(false);
   const [wastePct, setWastePct]               = useState<number | undefined>(undefined);
+  // Extra for bowl loss: the baker's value, else 1.5 % for every bake (20 Nov 2026 round 7).
+  const wasteAllowance = effectiveWastePct(wastePct);
 
   // Dial In tooltip visibility
 
@@ -1705,7 +1710,7 @@ export default function Home() {
     setFlourInFridge(session.flourInFridge);
     setMeasuredFlourTemp(session.measuredFlourTemp); setMeasuredPrefermentTemp(session.measuredPrefermentTemp);
     setAddSeeds(session.addSeeds ?? false);
-    setWastePct(session.wastePct);
+    setWastePct(restoredWastePct(session.wastePct, !!session.execution || !!session.mixExecution));
     setPriorityOverride(session.priorityOverride);
     if (session.eatTime) setEatTime(new Date(session.eatTime));
     if (session.startTime) setStartTime(new Date(session.startTime));
@@ -1865,7 +1870,7 @@ export default function Home() {
   // Starter choices below come from user controls. Do not include solver outputs
   // (nextFeedRatio, events, peak or validity): planner initialization can refresh
   // those without changing a restored, already validated recipe.
-  const recipeInputKey = JSON.stringify([bakeType,styleKey,numItems,itemWeight,totalFlourTarget,ovenType,ovenConstruction,mixerType,customMixerCapacityG,mixingBatches,yeastType,kitchenTemp,humidity,fridgeTemp,manualHydration,manualOil,manualSugar,manualSalt,flourChosen?flourBlend:null,prefermentType,prefermentType!=='none'?(prefermentFlourPct??20):prefermentFlourPct,targetDoughTemp,flourInFridge,measuredFlourTemp,measuredPrefermentTemp,wastePct,addSeeds,priorityOverride,yeastPctOverride,starterPctOverride,autoStarterPct,starterState,starterLocation,planningMode,lastFedTime?.getTime()??null,knownPeakTime?.getTime()??null,hasNotFedYet,lastFedAge,lastFeedRatio,nextFeedRatioOverride,ratioMode,tang]);
+  const recipeInputKey = JSON.stringify([bakeType,styleKey,numItems,itemWeight,totalFlourTarget,ovenType,ovenConstruction,mixerType,customMixerCapacityG,mixingBatches,yeastType,kitchenTemp,humidity,fridgeTemp,manualHydration,manualOil,manualSugar,manualSalt,flourChosen?flourBlend:null,prefermentType,prefermentType!=='none'?(prefermentFlourPct??20):prefermentFlourPct,targetDoughTemp,flourInFridge,measuredFlourTemp,measuredPrefermentTemp,wasteAllowance,addSeeds,priorityOverride,yeastPctOverride,starterPctOverride,autoStarterPct,starterState,starterLocation,planningMode,lastFedTime?.getTime()??null,knownPeakTime?.getTime()??null,hasNotFedYet,lastFedAge,lastFeedRatio,nextFeedRatioOverride,ratioMode,tang]);
   const previousRecipeInputKey = useRef(recipeInputKey);
   const generatedRecipeInputKey = useRef<string | null>(null);
   const confirmationAt = useRef(0);
@@ -2073,7 +2078,7 @@ export default function Home() {
         manualSalt,
         targetDoughTemp,
         flourInFridge,
-        wastePct,
+        wasteAllowance,
         prefGoesInFridge,
         feedToMixH,
         prefermentType !== 'none' && prefermentType !== 'levain' && prefOffsetH > 0 ? prefOffsetH : undefined,
@@ -2087,19 +2092,19 @@ export default function Home() {
       try {
         const r = calculateRecipe(styleKey, ovenType as OvenType, numItems, itemWeight, kitchenTemp, humidity, plan, fridgeTemp, yeastType, 'custom',
           mixerType as MixerType, manualHydration, manualOil, manualSugar, flourChosen ? flourBlend : undefined, 'poolish', priorityOverride,
-          prefermentFlourPct ?? 20, manualSalt, targetDoughTemp, flourInFridge, wastePct, inFridge, feedToMixH, prefHours > 0 ? prefHours : undefined,
+          prefermentFlourPct ?? 20, manualSalt, targetDoughTemp, flourInFridge, wasteAllowance, inFridge, feedToMixH, prefHours > 0 ? prefHours : undefined,
           measuredFlourTemp, prefTempForBalance, totalFlourTarget);
         return !r.preferment?.pastPeak;
       } catch { return true; }
     } : undefined,
-  [prefermentType, yeastType, styleKey, ovenType, mixerType, numItems, itemWeight, kitchenTemp, humidity, fridgeTemp, manualHydration, manualOil, manualSugar, flourChosen, flourBlend, priorityOverride, prefermentFlourPct, manualSalt, targetDoughTemp, flourInFridge, wastePct, feedToMixH, measuredFlourTemp, prefTempForBalance, totalFlourTarget]);
+  [prefermentType, yeastType, styleKey, ovenType, mixerType, numItems, itemWeight, kitchenTemp, humidity, fridgeTemp, manualHydration, manualOil, manualSugar, flourChosen, flourBlend, priorityOverride, prefermentFlourPct, manualSalt, targetDoughTemp, flourInFridge, wasteAllowance, feedToMixH, measuredFlourTemp, prefTempForBalance, totalFlourTarget]);
   const mixerCapacityG = mixerDoughCapacity(mixerType ?? 'hand', customMixerCapacityG);
   const plannedDoughG = (() => {
     // Flour-target recipes need the same formula mass as the generated recipe.
     if(totalFlourTarget!==undefined && styleKey && ovenType && yeastType && mixerType && eatTime && startTime<eatTime){
       try { return recipeForSchedule(buildSchedule(startTime,eatTime,blocks,kitchenTemp,planPreheatMin,mixerType,styleKey,numItems,1,yeastType==='sourdough',levainBulkFactor,exitLeadMin)).totalDough; } catch { /* Quantity estimate until setup is complete. */ }
     }
-    return Math.round(numItems * itemWeight * (totalFlourTarget === undefined && wastePct && wastePct > 0 ? 1 + wastePct / 100 : 1));
+    return Math.round(numItems * itemWeight * (totalFlourTarget === undefined && wasteAllowance > 0 ? 1 + wasteAllowance / 100 : 1));
   })();
   const suggestedMixingBatches = suggestedMixingBatchCount(plannedDoughG, mixerType ?? 'hand', customMixerCapacityG);
   const selectedMixingBatches = mixingBatches ?? suggestedMixingBatches;
@@ -2233,7 +2238,7 @@ export default function Home() {
         manualSalt,
         targetDoughTemp,
         flourInFridge,
-        wastePct,
+        wasteAllowance,
         prefGoesInFridge,
         feedToMixH,
         prefermentType !== 'none' && prefermentType !== 'levain' && prefOffsetH > 0 ? prefOffsetH : undefined,
@@ -2250,7 +2255,7 @@ export default function Home() {
     } catch {
       return null;
     }
-  }, [mixExecution, execution, styleKey, ovenType, numItems, itemWeight, totalFlourTarget, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, customMixerCapacityG, humidity, schedule, fridgeTemp, yeastType, mixerType, priorityOverride, manualHydration, manualOil, manualSugar, flourChosen, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, measuredFlourTemp, prefTempForBalance, wastePct, addSeeds, prefGoesInFridge, feedToMixH, yeastPctOverride, effectiveStarterOverride]);
+  }, [mixExecution, execution, styleKey, ovenType, numItems, itemWeight, totalFlourTarget, kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, customMixerCapacityG, humidity, schedule, fridgeTemp, yeastType, mixerType, priorityOverride, manualHydration, manualOil, manualSugar, flourChosen, flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, manualSalt, targetDoughTemp, flourInFridge, measuredFlourTemp, prefTempForBalance, wasteAllowance, addSeeds, prefGoesInFridge, feedToMixH, yeastPctOverride, effectiveStarterOverride]);
 
   // The planner may raise the levain % only without a baker-entered one, and only when
   // every planned feed can build the larger amount (raisedLevainFits).
@@ -2462,7 +2467,7 @@ export default function Home() {
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, timingOverrides, execution, mixExecution, starterFeedRecords, starterRecoveryPending,
       qtyChosen, flourChosen, prefermentChosen, customKitchenConfirmed, confirmedSettings,
       manualHydration, manualOil, manualSugar, manualSalt, yeastPctOverride, starterPctOverride, autoStarterPct,
-      targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct, addSeeds, priorityOverride,
+      targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct: wasteAllowance, addSeeds, priorityOverride,
       prefGoesInFridge, poolishStorage,
       startTime: startTime?.getTime() ?? null,
       eatTime: eatTime?.getTime() ?? null,
@@ -2647,7 +2652,7 @@ export default function Home() {
   const promptedMixAt=promptedPreparationAt(+startTime,execution?undefined:acceptedPlan?.startTime,protocolStale);
   function madeFormulaMatches(fact:BakeExecution,candidateSchedule:ScheduleResult,times:{prefHours:number},mixedRecipe?:NonNullable<typeof recipe>) {
     if(!styleKey||!ovenType||!yeastType)return false;
-    const calculated=calculateRecipe(styleKey,ovenType as OvenType,numItems,itemWeight,kitchenTemp,humidity,candidateSchedule,fridgeTemp,yeastType,'custom',mixerType??'hand',manualHydration,manualOil,manualSugar,flourChosen?flourBlend:undefined,fact.method,priorityOverride,prefermentFlourPct??20,manualSalt,targetDoughTemp,flourInFridge,wastePct,fact.inFridge,feedToMixH,fact.method!=='none'?times.prefHours:undefined,measuredFlourTemp,prefTempForBalance,totalFlourTarget);
+    const calculated=calculateRecipe(styleKey,ovenType as OvenType,numItems,itemWeight,kitchenTemp,humidity,candidateSchedule,fridgeTemp,yeastType,'custom',mixerType??'hand',manualHydration,manualOil,manualSugar,flourChosen?flourBlend:undefined,fact.method,priorityOverride,prefermentFlourPct??20,manualSalt,targetDoughTemp,flourInFridge,wasteAllowance,fact.inFridge,feedToMixH,fact.method!=='none'?times.prefHours:undefined,measuredFlourTemp,prefTempForBalance,totalFlourTarget);
     if(calculated.protocolIssue)return false;
     const same=(a:number|undefined,b:number|undefined)=>a!==undefined&&b!==undefined&&Math.abs(a-b)<0.0005;
     if(fact.method!=='none'&&!mixExecution&&!mixedRecipe)return !!calculated.preferment&&!!fact.recipe.preferment
@@ -3907,7 +3912,8 @@ export default function Home() {
     setPrefGoesInFridgeState(snap.prefGoesInFridge ?? true);
     setPoolishStorage(snap.poolishStorage ?? 'auto');
     setMeasuredFlourTemp(snap.measuredFlourTemp); setMeasuredPrefermentTemp(snap.measuredPrefermentTemp);
-    setWastePct(snap.wastePct);
+    // Bake again: the saved allowance, else 1.5 %; resuming a bake whose dough is recorded keeps what was weighed.
+    setWastePct(restoredWastePct(snap.wastePct, !rb && (!!snap.execution || !!snap.mixExecution)));
     setPriorityOverride(snap.priorityOverride);
     if (snap.eatTime) setEatTime(shiftD(new Date(snap.eatTime)));
     if (snap.startTime) setStartTime(shiftD(new Date(snap.startTime)));
@@ -4751,7 +4757,7 @@ export default function Home() {
   const renderSimpleScheduler = (extra?: {planInline?: {focus:'mix'|'pref';applyLabel:string;onClose:()=>void}}) => (
               <SchedulePicker {...extra} inputsOnly={!extra?.planInline&&(collectingBakeTime||bakeTimeOnly)} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct} keptStarterPlan={starterFactsKept} holdStarterPct={starterFactsKept&&starterPctOverride===undefined&&autoStarterPct!=null}
                 {...poolishInputs} poolishPeakAtMix={poolishPeakAtMix}
-                mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
+                mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wasteAllowance:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
                 mixingBatches={selectedMixingBatches}
                 onEditingChange={setScheduleEditing}
@@ -4838,7 +4844,7 @@ export default function Home() {
                 poolishStorage={prefermentType==='poolish'?poolishStorage:'auto'}
                 yeastPctOverride={effectiveYeastOverride}
                 replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct} keptStarterPlan={starterFactsKept} holdStarterPct={starterFactsKept&&starterPctOverride===undefined&&autoStarterPct!=null}
-                mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wastePct:0}
+                mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wasteAllowance:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
                 mixingBatches={selectedMixingBatches}
                 onEditingChange={setScheduleEditing}
@@ -5629,7 +5635,7 @@ export default function Home() {
                             result={displayRecipe ?? recipe}
                             prefermentType={prefermentType}
                             explicitFlour={flourChosen}
-                            wastePct={totalFlourTarget===undefined?wastePct:0}
+                            wastePct={totalFlourTarget===undefined?wasteAllowance:0}
                             numItems={numItems}
                             itemWeight={itemWeight}
                             styleName={styleDisplayName(styleKey)}
@@ -6010,29 +6016,34 @@ export default function Home() {
               {(() => {
                 const style = styleKey ? ALL_STYLES[styleKey] : null;
                 const zone = STYLE_HYDRATION_ZONES[styleKey!] ?? (breadProtocol ? {...FALLBACK_ZONE,classicMin:ALL_STYLES[styleKey!].hydration,classicMax:ALL_STYLES[styleKey!].hydration,name:ALL_STYLES[styleKey!].name} : FALLBACK_ZONE);
-                const recommendation = styleKey && schedule && ovenType && yeastType ? calculateRecipe(styleKey, ovenType as OvenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'custom', mixerType as MixerType, undefined, manualOil, manualSugar, flourBlend, prefermentType, priorityOverride, prefermentFlourPct ?? 20, manualSalt, targetDoughTemp, flourInFridge, wastePct, prefGoesInFridge, feedToMixH, prefOffsetH || undefined, measuredFlourTemp, prefTempForBalance) : null;
+                const recommendation = styleKey && schedule && ovenType && yeastType ? calculateRecipe(styleKey, ovenType as OvenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'custom', mixerType as MixerType, undefined, manualOil, manualSugar, flourBlend, prefermentType, priorityOverride, prefermentFlourPct ?? 20, manualSalt, targetDoughTemp, flourInFridge, wasteAllowance, prefGoesInFridge, feedToMixH, prefOffsetH || undefined, measuredFlourTemp, prefTempForBalance) : null;
                 const recommendedHyd = recommendation?.hydration ?? style?.hydration ?? 64;
                 const defaultTemp = styleKey ? ({neapolitan:23,newyork:24,roman:25,pan:25,sourdough:24,brioche:22,pain_viennois:23,fougasse:25} as Record<string,number>)[styleKey] ?? 24 : 24;
                 // Lean breads (no oil or sugar in the formula) don't offer them unless already set.
                 const leanBread = bakeType==='bread' && !!style && (style.oil ?? 0)===0 && (style.sugar ?? 0)===0;
                 const fields = [
                   ...(!enrichedDirectOnly ? [
-                    {group:'ingredient',label:fr?'Hydratation (%)':'Hydration (%)',value:manualHydration ?? recommendedHyd,rec:recommendedHyd,min:zone.min,max:zone.max,step:0.5,set:setManualHydration,
+                    {group:'ingredient',label:fr?'Hydratation':'Hydration',aria:fr?'Hydratation, % de farine':'Hydration, % of flour',unit:'%',value:manualHydration ?? recommendedHyd,rec:recommendedHyd,min:zone.min,max:zone.max,step:0.5,set:setManualHydration,
                       // The one fact worth having beside the number: the style's classic range, and why the app moved off it.
                       hint:(()=>{const range=zone.classicMin===zone.classicMax?`${zone.classicMin}`:`${zone.classicMin}–${zone.classicMax}`;const outside=recommendedHyd>zone.classicMax+0.05||recommendedHyd<zone.classicMin-0.05;
                         return fr?`Classique pour ce style : ${range} %.${outside?` ${String(recommendedHyd).replace('.',',')} % ici pour votre four, votre cuisine et votre farine.`:''}`:`Classic for this style: ${range}%.${outside?` ${recommendedHyd}% here for your oven, kitchen and flour.`:''}`;})()},
-                    {group:'ingredient',label:fr?'Sel (% de farine)':'Salt (% of flour)',value:manualSalt ?? style?.salt ?? 2.5,rec:style?.salt ?? 2.5,min:1.5,max:3.5,step:0.1,set:setManualSalt},
-                    ...(leanBread && manualOil===undefined ? [] : [{group:'ingredient',label:fr?'Huile (% de farine)':'Oil (% of flour)',value:manualOil ?? style?.oil ?? 0,rec:style?.oil ?? 0,min:0,max:10,step:0.5,set:setManualOil,
+                    {group:'ingredient',label:fr?'Sel':'Salt',aria:fr?'Sel, % de farine':'Salt, % of flour',unit:'%',value:manualSalt ?? style?.salt ?? 2.5,rec:style?.salt ?? 2.5,min:1.5,max:3.5,step:0.1,set:setManualSalt},
+                    ...(leanBread && manualOil===undefined ? [] : [{group:'ingredient',label:fr?'Huile':'Oil',aria:fr?'Huile, % de farine':'Oil, % of flour',unit:'%',value:manualOil ?? style?.oil ?? 0,rec:style?.oil ?? 0,min:0,max:10,step:0.5,set:setManualOil,
                       // Nothing to say about none; an amount gets what it does (and burning in a very hot oven).
                       hint:(manualOil ?? style?.oil ?? 0)>0?oilGuidance(manualOil ?? style?.oil ?? 0,ovenType ?? '',styleKey ?? '',t):undefined}]),
-                    ...(leanBread && manualSugar===undefined ? [] : [{group:'ingredient',label:fr?'Sucre (% de farine)':'Sugar (% of flour)',value:manualSugar ?? style?.sugar ?? 0,rec:style?.sugar ?? 0,min:0,max:10,step:0.5,set:setManualSugar,
+                    ...(leanBread && manualSugar===undefined ? [] : [{group:'ingredient',label:fr?'Sucre':'Sugar',aria:fr?'Sucre, % de farine':'Sugar, % of flour',unit:'%',value:manualSugar ?? style?.sugar ?? 0,rec:style?.sugar ?? 0,min:0,max:10,step:0.5,set:setManualSugar,
                       hint:(manualSugar ?? style?.sugar ?? 0)>0?sugarGuidance(manualSugar ?? style?.sugar ?? 0,ovenType ?? '',t).note:undefined}]),
                   ] : []),
-                  {group:'process',label:fr?'Température de pâte après pétrissage (°C)':'Dough temperature after mixing (°C)',value:targetDoughTemp ?? defaultTemp,rec:defaultTemp,min:18,max:28,step:1,set:setTargetDoughTemp},
-                  ...(totalFlourTarget===undefined?[{group:'process',label:fr?'Marge de pâte supplémentaire (%)':'Extra dough allowance (%)',value:wastePct ?? 0,rec:0,min:0,max:5,step:0.5,set:setWastePct,hint:fr?'Compense la pâte restée dans le bol, souvent 1 à 2 %.':'Covers dough left in the bowl, often 1–2%.'}]:[]),
+                  {group:'process',label:fr?'Pâte après pétrissage':'Dough after mixing',aria:fr?`Température de la pâte après pétrissage, ${tempUnit(units)}`:`Dough temperature after mixing, ${tempUnit(units)}`,unit:tempUnit(units),temp:true,value:targetDoughTemp ?? defaultTemp,rec:defaultTemp,min:18,max:28,step:1,set:setTargetDoughTemp},
+                  ...(totalFlourTarget===undefined?[{group:'process',label:fr?'Marge pour les pertes':'Extra for bowl loss',aria:fr?'Marge pour les pertes au pétrissage, % de la pâte':'Extra dough for bowl loss, % of the dough',unit:'%',value:wasteAllowance,rec:DEFAULT_WASTE_PCT,min:0,max:5,step:0.5,set:setWastePct}]:[]),
                 ];
-                const renderField = (field:typeof fields[number])=><div key={field.label}><label style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,fontSize:16,marginBottom:'hint' in field&&field.hint?6:14}}><span style={{minWidth:0}}>{field.label}</span>
-                    <input type="number" key={`${field.label}:${field.value}`} defaultValue={Math.round(field.value*100)/100} min={field.min} max={field.max} step={field.step} onBlur={e=>{const n=Number(e.target.value);const next=Math.min(field.max,Math.max(field.min,n));if(e.target.value!==''&&Number.isFinite(n)&&Math.abs(next-Math.round(field.value*100)/100)>1e-9)field.set(next);else e.target.value=String(field.value);}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}}} style={{flex:'0 0 96px',width:96,minHeight:44,fontSize:16,padding:'10px 12px',textAlign:'right',border:'1px solid var(--border)',borderRadius:9,background:'white'}}/>
+                const renderField = (field:typeof fields[number])=>{
+                  // A temperature row shows and takes the baker's unit; the value is kept in °C.
+                  const temp='temp' in field&&field.temp;
+                  const shown=(c:number)=>temp?cToDisplay(c,units):Math.round(c*100)/100;
+                  const stored=(n:number)=>temp?inputTempToC(n,units):n;
+                  return <div key={field.aria}><label data-finetune-row style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,fontSize:16,marginBottom:'hint' in field&&field.hint?6:14}}><span data-finetune-label style={{minWidth:0}}>{field.label}</span>
+                    <UnitInput suffix={field.unit} label={field.aria} key={`${field.aria}:${field.value}:${units}`} defaultValue={shown(field.value)} min={shown(field.min)} max={shown(field.max)} step={temp&&units==='imperial'?1:field.step} onBlur={e=>{const n=Number(e.target.value);const next=Math.min(field.max,Math.max(field.min,stored(n)));if(e.target.value!==''&&Number.isFinite(n)&&Math.abs(shown(next)-shown(field.value))>1e-9)field.set(temp?Math.round(next*10)/10:next);else e.target.value=String(shown(field.value));}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}}}/>
                   </label>
                   {'hint' in field&&field.hint&&<p data-field-hint style={{margin:'0 0 16px',fontSize:14,lineHeight:1.45,color:'var(--smoke)'}}>{field.hint}</p>}
                   {field.set===setManualHydration&&<div style={{marginBottom:16,fontSize:14}}>{manualHydration!==undefined&&Math.abs(manualHydration-recommendedHyd)>0.005&&<button type="button" onClick={()=>setManualHydration(undefined)} style={{minHeight:44}}>{fr?'Rétablir l’hydratation conseillée':'Reset suggested hydration'}</button>}<details><summary className="bh-chevron" style={{minHeight:44,cursor:'pointer'}}>{fr?'Pourquoi cette valeur ?':'Why this value?'}</summary>{(()=>{
@@ -6044,7 +6055,7 @@ export default function Home() {
                     const parts=[`${fr?'Style':'Style'} ${formatPercent(style?.hydration??0,locale)}`,...(oven?[`${fr?'four':'oven'} ${sign(oven)}`]:[]),...(kitchen?[`${fr?'cuisine':'kitchen'} ${sign(kitchen)}`]:[]),...(flour?[`${fr?'farine':'flour'} ${sign(flour)}`]:[])];
                     return <p style={{margin:'4px 0 0'}}>{parts.join(' · ')} → {formatPercent(recommendedHyd,locale)}</p>;
                   })()}</details></div>}
-                  </div>;
+                  </div>;};
                 return <>
 
                   <h3 data-finetune-group="ingredients" style={{margin:'8px 0 12px',fontSize:13,fontWeight:650,letterSpacing:'.06em',textTransform:'uppercase' as const,color:'var(--smoke)'}}>{fr?'Ingrédients':'Ingredients'}</h3>
@@ -6057,10 +6068,9 @@ export default function Home() {
                     // The plan's value: the planner's raise as stored, not re-derived from rounded grams (18 Nov 2026 retention: 29.9 for 30).
                     const shownPct = starterPctOverride ?? autoStarterPct ?? recommendedPct;
                     return <div data-starter-override style={{marginBottom:18}}>
-                      <label style={{display:'block',fontSize:16}}>{fr?'Levain (% de farine)':'Starter (% of flour)'}
-                        <input type="number" key={`starter:${starterPctOverride ?? 'auto'}:${shownPct}`} defaultValue={shownPct} min={5} max={30} step={1}
-                          onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const pct=Math.min(30,Math.max(5,Math.round(n*2)/2));if(starterPctOverride===undefined&&Math.abs(pct-shownPct)<0.25)return;setStarterPctOverride(pct);setPlanReplanPending(true);}}
-                          style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
+                      <label data-finetune-row style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,fontSize:16}}><span data-finetune-label style={{minWidth:0}}>{fr?'Levain':'Starter'}</span>
+                        <UnitInput suffix="%" label={fr?'Levain, % de farine':'Starter, % of flour'} key={`starter:${starterPctOverride ?? 'auto'}:${shownPct}`} defaultValue={shownPct} min={5} max={30} step={1}
+                          onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const pct=Math.min(30,Math.max(5,Math.round(n*2)/2));if(starterPctOverride===undefined&&Math.abs(pct-shownPct)<0.25)return;setStarterPctOverride(pct);setPlanReplanPending(true);}}/>
                       </label>
                       <p style={{margin:'6px 0 0',fontSize:14,color:'var(--smoke)',lineHeight:1.45}}>{starterPctOverride!==undefined
                         ? (fr?'Le pointage suit cette quantité : moins de levain, pointage plus long.':'The rise follows this amount: less starter, longer rise.')
@@ -6078,16 +6088,18 @@ export default function Home() {
                     const shownPct = yeastPctOverride!==undefined ? yeastPctOverride*conversion : planReady ? recipe?.yeast?.convertedPct : undefined;
                     const yeastName = (localName(YEAST_TYPES[yeastType]) ?? yeastType).toLowerCase();
                     const entryIssue = yeastEntryIssue && eatTime && yeastEntryIssue.bakeAt===+eatTime ? yeastEntryIssue : null;
+                    // Round 7 (owner): the box is empty until the baker types; it reads "Auto", or the
+                    // plan's amount greyed ("0.18 · auto"), so the calculation is visibly the app's.
+                    const autoPct = yeastPctOverride===undefined && shownPct!==undefined ? shownPct : undefined;
                     return <div data-yeast-override style={{marginBottom:18}}>
-                      <label style={{display:'block',fontSize:16}}>{fr?`Levure (% de farine, ${yeastName})`:`Yeast (% of flour, ${yeastName})`}
-                        <input type="number" key={`yeast:${yeastPctOverride ?? 'auto'}:${shownPct ?? ''}`} placeholder={shownPct===undefined?(fr?'Fixée après le planning':'Set after timing'):undefined} defaultValue={shownPct!==undefined?Math.round(shownPct*1000)/1000:''} min={Math.round(0.02*conversion*1000)/1000} max={Math.round(2*conversion*100)/100} step={0.01}
+                      <label data-finetune-row style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,fontSize:16}}><span data-finetune-label style={{minWidth:0}}>{yeastRowLabel(yeastType,fr)}</span>
+                        <UnitInput suffix="%" width={112} label={fr?`Levure, % de farine, ${yeastName}`:`Yeast, % of flour, ${yeastName}`} key={`yeast:${yeastPctOverride ?? 'auto'}:${shownPct ?? ''}`} defaultValue={yeastPctOverride!==undefined&&shownPct!==undefined?Math.round(shownPct*1000)/1000:''} placeholder={autoPctPlaceholder(autoPct,fr)} min={Math.round(0.02*conversion*1000)/1000} max={Math.round(2*conversion*100)/100} step={0.01}
                           aria-describedby={entryIssue?'bh-yeast-entry-note':undefined}
                           onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const idy=Math.min(2,Math.max(0.02,n/conversion));if(recipe?.yeast&&yeastPctOverride===undefined&&Math.abs(idy-recipe.yeast.pct)<0.0005){setYeastEntryIssue(null);return;}
                             // An amount that cannot ferment before the bake is not applied: say so here, before any plan moves.
                             const check=eatTime&&+eatTime>Date.now()&&styleKey&&mixerType?checkYeastEntry(Math.round(idy*10000)/10000,{bake:eatTime,now:Date.now(),blocks,kitchenTemp,preheatMin:planPreheatMin,exitLeadMin,mixerType,styleKey,numItems,itemWeight,mixingBatches:selectedMixingBatches,fridgeTemp,hydration:poolishInputs.hydrationPct??65,flourStrength,conversion}):null;
                             if(check&&!check.fits){setYeastEntryIssue({shownPct:Math.round(idy*conversion*1000)/1000,bakeAt:+eatTime!,check});return;}
-                            setYeastEntryIssue(null);setYeastPctOverride(Math.round(idy*10000)/10000);setPlanReplanPending(true);}}
-                          style={{display:'block',width:'100%',fontSize:16,minHeight:44,padding:12,border:'1px solid var(--border)',borderRadius:9,marginTop:6}} />
+                            setYeastEntryIssue(null);setYeastPctOverride(Math.round(idy*10000)/10000);setPlanReplanPending(true);}}/>
                       </label>
                       {entryIssue&&(()=>{
                         const pct=(value:number)=>fr?`${String(value).replace('.',',')} %`:`${value}%`;
@@ -6107,8 +6119,7 @@ export default function Home() {
                       })()}
                       <p style={{margin:'6px 0 0',fontSize:14,color:'var(--smoke)',lineHeight:1.45}}>{yeastPctOverride!==undefined
                         ? (fr?'Les horaires suivent cette quantité : moins de levure, pousse plus longue.':'Your timing follows this amount: less yeast, longer rise.')
-                        : planReady ? (fr?'Calculée pour vos horaires. Modifiez-la, les horaires suivent.':'Set for your timing. Change it and the timing follows.')
-                        : (fr?'Fixée après le planning. Vous pouvez aussi saisir votre quantité : les horaires suivront.':'Set after timing. You can also enter your own amount: the timing will follow.')}</p>
+                        : (fr?'Nous la calculons pour votre planning. Saisissez la vôtre, les horaires suivent.':'We calculate it for your plan. Enter your own and the timing follows.')}</p>
                       {yeastPctOverride!==undefined&&<button type="button" onClick={()=>{setYeastPctOverride(undefined);setPlanReplanPending(true);}} style={{minHeight:44,marginTop:6,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:9,background:'var(--paper)',color:'var(--char)',fontSize:16,cursor:'pointer'}}>{fr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
                     </div>;
                   })()}
@@ -6118,10 +6129,10 @@ export default function Home() {
                       fields above, the water source in one line, the ice method only with a spiral mixer. */}
                   <h3 data-finetune-group="kitchen" style={{margin:'8px 0 12px',fontSize:13,fontWeight:650,letterSpacing:'.06em',textTransform:'uppercase' as const,color:'var(--smoke)'}}>{fr?'Frigo et eau':'Fridge & water'}</h3>
                   {!kitchenAnswered && <KitchenSlider value={kitchenTemp} units={units} fr={fr} onChange={c=>{setKitchenTemp(c);confirmSetting('climate',c);setPlanReplanPending(true);}}/>}
-                  <label style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,fontSize:16,marginBottom:6}}>{fr?'Température du frigo':'Fridge temperature'} ({tempUnit(units)})
-                    <input type="number" data-fridge-temp key={`fridge:${fridgeTemp}:${units}`} defaultValue={Math.round(cToDisplay(fridgeTemp,units)*10)/10} min={cToDisplay(1,units)} max={cToDisplay(15,units)} step={units==='imperial'?1:0.5} onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const c=Math.min(15,Math.max(1,inputTempToC(n,units)));if(Math.abs(c-fridgeTemp)>0.01){setFridgeTemp(c);setPlanReplanPending(true);}}} style={{flex:'0 0 96px',width:96,boxSizing:'border-box',fontSize:16,padding:'10px 12px',minHeight:44,textAlign:'right',border:'1px solid var(--border)',borderRadius:9,background:'white'}}/>
+                  {/* "Inside the fridge" says where it is read (was a helper line, 20 Nov 2026 round 7). */}
+                  <label data-finetune-row style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,fontSize:16,marginBottom:14}}><span data-finetune-label style={{minWidth:0}}>{fr?'Dans le frigo':'Inside the fridge'}</span>
+                    <UnitInput data-fridge-temp suffix={tempUnit(units)} label={fr?`Température dans le frigo, près de la pâte, ${tempUnit(units)}`:`Temperature inside the fridge, near the dough, ${tempUnit(units)}`} key={`fridge:${fridgeTemp}:${units}`} defaultValue={Math.round(cToDisplay(fridgeTemp,units)*10)/10} min={cToDisplay(1,units)} max={cToDisplay(15,units)} step={units==='imperial'?1:0.5} onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const c=Math.min(15,Math.max(1,inputTempToC(n,units)));if(Math.abs(c-fridgeTemp)>0.01){setFridgeTemp(c);setPlanReplanPending(true);}}}/>
                   </label>
-                  <p style={{margin:'0 0 16px',fontSize:14,lineHeight:1.45,color:'var(--smoke)'}}>{fr?'Mesurée dans le frigo, près de la pâte.':'Measured inside the fridge, near the dough.'}</p>
                   <label style={{display:'block',fontSize:16,margin:'12px 0 6px'}}>{locale==='fr'?'Origine de l’eau':'Water source'}
                     <select value={waterSource==='tap'?'measured':waterSource} onChange={e=>{setWaterSource(e.target.value as 'room'|'fridge'|'measured');setMeasuredWaterTemp(undefined);}} style={{display:'block',width:'100%',fontSize:16,padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>
                       <option value="room">{locale==='fr'?'Eau à température ambiante':'Room-temperature water'}</option>
@@ -6140,7 +6151,7 @@ export default function Home() {
                     <small style={{display:'block',fontSize:14,lineHeight:1.5,marginTop:8}}>{locale==='fr'?'Vérifiez que votre pétrin accepte la glace.':'Check that your mixer allows ice.'}</small>
                   </label>}
                   <details style={{margin:'12px 0'}}><summary className="bh-chevron" style={{minHeight:44,cursor:'pointer'}}>{fr?'Températures mesurées · facultatif':'Measured temperatures · optional'}</summary><p id="measured-temp-hint" style={{margin:'4px 0 0',fontSize:14,lineHeight:1.45,color:'var(--smoke)'}}>{fr?'Laissez vide pour une estimation automatique.':'Leave blank for an automatic estimate.'}</p>
-                    {[{label:fr?'Farine (°C)':'Flour (°C)',value:measuredFlourTemp,set:setMeasuredFlourTemp},...((prefermentType!=='none'||yeastType==='sourdough')?[{label:yeastType==='sourdough'||prefermentType==='levain'?(fr?'Levain (°C)':'Starter (°C)'):prefermentType==='biga'?(fr?'Biga (°C)':'Biga (°C)'):(fr?'Poolish (°C)':'Poolish (°C)'),value:measuredPrefermentTemp,set:setMeasuredPrefermentTemp}]:[])].map(field=><label key={field.label} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,fontSize:16,margin:'12px 0'}}>{field.label}<input type="number" value={field.value??''} min={-5} max={45} step={0.5} placeholder="Auto" aria-describedby="measured-temp-hint" onChange={e=>field.set(e.target.value===''?undefined:Number(e.target.value))} style={{flex:'0 0 96px',width:96,boxSizing:'border-box',fontSize:16,minHeight:44,padding:'10px 12px',textAlign:'right',border:'1px solid var(--border)',borderRadius:9,background:'white'}}/></label>)}
+                    {[{label:fr?'Farine':'Flour',value:measuredFlourTemp,set:setMeasuredFlourTemp},...((prefermentType!=='none'||yeastType==='sourdough')?[{label:yeastType==='sourdough'||prefermentType==='levain'?(fr?'Levain':'Starter'):prefermentType==='biga'?'Biga':'Poolish',value:measuredPrefermentTemp,set:setMeasuredPrefermentTemp}]:[])].map(field=><label key={field.label} data-finetune-row style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,fontSize:16,margin:'12px 0'}}><span data-finetune-label style={{minWidth:0}}>{field.label}</span><UnitInput suffix="°C" label={fr?`${field.label}, température mesurée, °C`:`${field.label}, measured temperature, °C`} value={field.value??''} min={-5} max={45} step={0.5} placeholder="Auto" aria-describedby="measured-temp-hint" onChange={e=>field.set(e.target.value===''?undefined:Number(e.target.value))}/></label>)}
                   </details>
                   {/* Only a value that differs from its recommendation calls for a reset (a tap through a field changes nothing). */}
                   {(fields.some(field=>Math.abs(field.value-field.rec)>1e-6)||yeastPctOverride!=null||starterPctOverride!=null)&&<button type="button" data-reset-finetune style={{minHeight:44,padding:'10px 12px',border:'1px solid var(--border)',borderRadius:9}} onClick={()=>{setManualHydration(undefined);if(yeastPctOverride!==undefined){setYeastPctOverride(undefined);setPlanReplanPending(true);}if(starterPctOverride!==undefined){setStarterPctOverride(undefined);setPlanReplanPending(true);}setManualSalt(undefined);setManualOil(undefined);setManualSugar(undefined);setTargetDoughTemp(undefined);setWastePct(undefined);}}>{fr?'Rétablir les valeurs conseillées':'Reset recommended values'}</button>}
@@ -6239,7 +6250,7 @@ export default function Home() {
                             onPriorityOverride={v => setPriorityOverride(v)}
                             flourBlend={flourBlend}
                             units={units}
-                            wastePct={totalFlourTarget===undefined?wastePct:0}
+                            wastePct={totalFlourTarget===undefined?wasteAllowance:0}
                             feedTime={feedTime}
                             feed2Time={feed2Time}
                             fridgeOutTime={fridgeOutTime}

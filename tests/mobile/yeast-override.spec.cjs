@@ -25,7 +25,9 @@ test('more yeast plans a later start, and the calculated amount restores the pla
  const fineTune=page.locator('#step-10:visible');
  await expect(fineTune.getByRole('heading',{name:'Fine-tune your dough'})).toBeVisible();
  const yeast=fineTune.locator('[data-yeast-override] input');
- const recommended=Number(await yeast.inputValue());
+ // Round 7: the plan's amount is the greyed placeholder ("0.18 · auto"), the box itself empty until the baker types.
+ await expect(yeast).toHaveValue('');
+ const recommended=Number((await yeast.getAttribute('placeholder')).match(/^([\d.]+) · auto$/)[1]);
  expect(recommended).toBeGreaterThan(0);
  await yeast.fill(String(Math.round(recommended*2*1000)/1000));await yeast.blur();
  await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBeGreaterThan(0);
@@ -148,7 +150,7 @@ test('a preferment offer says it replaces the entered yeast amount',async({page}
 
 // Fine-tune comes before Custom's bake-time step: until that step has planned
 // the dough, the yeast field says so instead of showing another plan's amount.
-for(const locale of ['en','fr'])test(`${locale}: the yeast amount is "Set after timing" until the Custom plan exists`,async({page})=>{
+for(const locale of ['en','fr'])test(`${locale}: the yeast amount reads "Auto" until the Custom plan exists`,async({page})=>{
  const fr=locale==='fr';
  await page.clock.setFixedTime(NOW);
  const data={version:1,savedAt:NOW,tab:'custom',bakeType:'pizza',styleKey:'neapolitan',numItems:4,itemWeight:260,pizzaDiameter:30,ovenType:'pizza_oven',mixerType:'hand',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:5,flourBlend:null,prefermentType:'none',prefOffsetH:0,prefGoesInFridge:false,flourInFridge:false,startTime:BAKE-24*3600000,eatTime:BAKE,blocks:[],recipeGenerated:false,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,customKitchenConfirmed:true,activeStep:7,advancedStep:10,highestStep:7,advancedHighestStep:10,setupOverview:false,activeTab:'setup'};
@@ -162,14 +164,18 @@ for(const locale of ['en','fr'])test(`${locale}: the yeast amount is "Set after 
  const yeast=fineTune.locator('[data-yeast-override] input');
  await expect(yeast).toBeVisible({timeout:20000});
  await expect(yeast).toHaveValue('');
- await expect(yeast).toHaveAttribute('placeholder',fr?'Fixée après le planning':'Set after timing');
- await expect(fineTune.locator('[data-yeast-override]')).toContainText(fr?'Fixée après le planning. Vous pouvez aussi saisir votre quantité':'Set after timing. You can also enter your own amount');
+ // Round 7 (owner: it was not clear the app computes it): the empty box reads "Auto" and one line says who calculates it (was "Set after timing…").
+ await expect(yeast).toHaveAttribute('placeholder','Auto');
+ await expect(fineTune.locator('[data-yeast-override] [data-finetune-label]')).toHaveText(fr?'Levure · instantanée':'Yeast · instant dry');
+ await expect(fineTune.locator('[data-yeast-override]')).toContainText(fr?'Nous la calculons pour votre planning. Saisissez la vôtre, les horaires suivent.':'We calculate it for your plan. Enter your own and the timing follows.');
  // After the bake-time step has planned the dough, the field shows that plan's amount.
  await fineTune.locator('[data-bh-forward]').tap();
  await expect(page.getByRole('region',{name:fr?'Vos moments clés':'Your key times',exact:true})).toBeVisible();
  await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:fr?'Étape précédente':'Previous step',exact:true}).tap();
  await expect(yeast).toBeVisible();
- expect(Number((await yeast.inputValue()).replace(',','.'))).toBeGreaterThan(0);
+ // Round 7: the plan's amount shows greyed in the empty box ("0,18 · auto"), not as a typed value.
+ await expect(yeast).toHaveValue('');
+ await expect(yeast).toHaveAttribute('placeholder',fr?/^0,\d+ · auto$/:/^0\.\d+ · auto$/);
 });
 
 // An entered amount whose re-timed plan falls in busy time: the clash card offers
