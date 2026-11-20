@@ -1,6 +1,7 @@
 'use client';
 import { poolishCoolingAt } from '../utils/poolishCoolingAt';
 import { starterBuild, starterFeedLabelFor } from '../utils/starterBuild';
+import { peakAround } from '../utils/peakTime';
 import type { StarterEvent } from './SchedulePicker';
 import { recommendedFlourName, flourProductName } from '../lib/flourGuidance';
 import { mixingBatchPlan } from '../utils/mixingBatches';
@@ -8,7 +9,7 @@ import { useState, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { commercialDilution, type RecipeResult, type YeastResult, type YeastWarningKey } from '../utils';
 import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, FLOUR_DATA, type PrefermentType, type FlourBlend } from '../data';
-import { type UnitSystem, displayWeight, displayTemp, formatPercent, formatBakeDateTime } from '../utils/units';
+import { type UnitSystem, displayWeight, displayTemp, formatPercent, formatBakeDateTime, roundToQuarter } from '../utils/units';
 import PlanNav from './PlanNav';
 import WaterPreparation, { waterSplit, waterGuideLine, type WaterSource, type WaterSettingsProps } from './WaterPreparation';
 import { formatPrefermentDose, formatYeastDose, prefermentDilution } from '../utils/prefermentDose';
@@ -210,6 +211,8 @@ function StarterPrepCard({
   const isFr = locale === 'fr';
   // The app's one date format (EN 12 h, FR 24 h), never the browser's US default.
   const fmtFull = (d: Date) => formatBakeDateTime(d, locale);
+  // The peak on the plan's 15-minute grid, as the starter card and the strip write it (peakTime.ts).
+  const fmtPeakFull = (d: Date) => formatBakeDateTime(roundToQuarter(d), locale);
   // Canonical saved solver events survive reload and pair each feed with its own peak.
   // Independent legacy scalar props are only a fallback for older sessions.
   // An assumed last feed (Simple starter answer) is not a fact the baker gave.
@@ -276,7 +279,7 @@ function StarterPrepCard({
             <div style={labelStyle}>{starterFeedLabelFor(event, events, isFr) ?? eventLabels[event.kind]}</div>
             <div style={valueStyle}>{fmtFull(event.time)}</div>
             {['refresh','intermediate_refresh','pre_mix'].includes(event.kind) && <div style={noteStyle}>{describeFeed(event.feedingRatio)}</div>}
-            {event.bellPeakTime && event.kind !== 'known_peak' && <div style={noteStyle}>{isFr ? 'Pic estimé de ce rafraîchi : ' : 'Estimated peak of this feed: '}{fmtFull(event.bellPeakTime)}</div>}
+            {event.bellPeakTime && event.kind !== 'known_peak' && <div style={noteStyle}>{isFr ? 'Pic de ce rafraîchi ' : 'This feed peaks '}{peakAround(event.bellPeakTime, isFr, { day: true })}</div>}
             {['fridge_in','fridge_out'].includes(event.kind) && event.cardNote && <div style={noteStyle}>{event.cardNote}</div>}
           </div>)}
           {!events.length && feedTime && planningMode !== 'know_peak' && (
@@ -323,11 +326,11 @@ function StarterPrepCard({
           )}
           {mixingTime && <div style={rowStyle}><div style={labelStyle}>{isFr ? 'Incorporer au pétrissage' : 'Use when mixing'}</div><div style={valueStyle}>{fmtFull(mixingTime)}</div><div style={noteStyle}>{predictedPeak && peakGapMinutes !== null && (Math.abs(peakGapMinutes)<=30
             // "At" only when the times agree; a mix a few minutes off the peak is "near" it (18 Nov 2026 retention).
-            ? (peakGapMinutes===0 ? (isFr ? `Au pic estimé (${fmtFull(predictedPeak)}).` : `At its estimated peak (${fmtFull(predictedPeak)}).`)
-              : (isFr ? `Près du pic estimé (${fmtFull(predictedPeak)}).` : `Near its estimated peak (${fmtFull(predictedPeak)}).`))
+            ? (peakGapMinutes===0 ? (isFr ? `Au pic estimé (${fmtPeakFull(predictedPeak)}).` : `At its estimated peak (${fmtPeakFull(predictedPeak)}).`)
+              : (isFr ? `Près du pic estimé (${fmtPeakFull(predictedPeak)}).` : `Near its estimated peak (${fmtPeakFull(predictedPeak)}).`))
             : peakGapMinutes<0
-            ? (isFr ? `Un peu avant le pic estimé (${fmtFull(predictedPeak)}) : encore en train de monter.` : `A little before its estimated peak (${fmtFull(predictedPeak)}): still rising.`)
-            : (isFr ? `Un peu après le pic estimé (${fmtFull(predictedPeak)}) : pas encore retombé.` : `A little after its estimated peak (${fmtFull(predictedPeak)}): not yet collapsed.`))}</div></div>}
+            ? (isFr ? `Un peu avant le pic estimé (${fmtPeakFull(predictedPeak)}) : encore en train de monter.` : `A little before its estimated peak (${fmtPeakFull(predictedPeak)}): still rising.`)
+            : (isFr ? `Un peu après le pic estimé (${fmtPeakFull(predictedPeak)}) : pas encore retombé.` : `A little after its estimated peak (${fmtPeakFull(predictedPeak)}): not yet collapsed.`))}</div></div>}
         </div>
       )}
 

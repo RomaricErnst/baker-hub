@@ -1,7 +1,9 @@
-// One starter peak: the card PEAK equals the active bell peak for every
-// candidate family, and a green pill means the starter is within the solver's
-// tolerance of peak at mix. Sweeps temperature × location × last fed ×
-// horizon × Nights through the real picker.
+// One starter peak: the Recipe's starter strip ≡ the card ≡ scoring for every
+// candidate family (20 Nov 2026: the strip replaced the chart's bell). The strip
+// draws the pre-mix peak the card writes, in the same words (peakTime.ts), and a
+// green pill means Start Dough sits inside the strip's ready window (the solver's
+// green band). Sweeps temperature × location × last fed × horizon × Nights
+// through the real picker, with the strip rendered from the events the parent holds.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
@@ -47,7 +49,7 @@ function conflictRows(){
  return rows;
 }
 
-const bad=[];const realigned=[];const skipped={};let n=0;const fam={};
+const bad=[];let stripCases=0;const realigned=[];const skipped={};let n=0;const fam={};
 const fmt=ms=>new Date(ms).toISOString().slice(5,16);
 const T=[16,24,32],L=['fridge','rt'],A=[['today',-4],['yesterday',-20],['days23',-60],['week',-170]],HZ=[12,24,36,48],NI=[true,false];
 for(const temp of T)for(const loc of L)for(const age of A)for(const horizon of HZ)for(const nights of NI){
@@ -62,12 +64,29 @@ for(const temp of T)for(const loc of L)for(const age of A)for(const horizon of H
   if(!tr){skipped[loc+' +'+horizon+'h']=(skipped[loc+' +'+horizon+'h']||0)+1;continue;}
   n++;fam[tr.family]=(fam[tr.family]||0)+1;
   if(tr.planningMode==='know_peak'||tr.peakMs==null)continue;
-  const bells=tr.events.filter(e=>e.active&&e.bellPeak!=null&&['pre_mix','refresh','intermediate_refresh'].includes(e.kind));
-  // Card PEAK row ≡ the bell of the last active feed before mix.
-  const feeds=bells.filter(e=>e.t<=tr.mixMs);
+  const feeds=tr.events.filter(e=>e.active&&e.bellPeak!=null&&['pre_mix','refresh','intermediate_refresh'].includes(e.kind)&&e.t<=tr.mixMs);
   const last=feeds.at(-1);
-  if(last && Math.abs(last.bellPeak-tr.peakMs)>60000)
-   bad.push(`${label} [${tr.family}] card peak ${fmt(tr.peakMs)} ≠ bell ${fmt(last.bellPeak)} (${last.kind})`);
+  const strip=query('[data-starter-strip]');
+  if(process.env.DUMP&&!strip)console.log('NOSTRIP',label,tr.family,tr.events.map(e=>`${e.kind}${e.active?'*':''}@${fmt(e.t)}${e.bellPeak?'→'+fmt(e.bellPeak):''}`).join(' '),'mix',fmt(tr.mixMs),'peak',fmt(tr.peakMs));
+  const preMix=tr.events.filter(e=>e.kind==='pre_mix'&&e.bellPeak!=null&&e.t<=tr.mixMs).at(-1);
+  if(preMix){
+   // Strip ≡ card ≡ scoring: the strip's peak is the card's (tr.peakMs, the scored peak shown), and
+   // the strip's text alternative and the card's note write it the same way.
+   if(!strip){bad.push(`${label} [${tr.family}] no starter strip for a plan with a pre-mix feed`);}
+   else{
+    stripCases++;
+    const stripPeak=Number(strip.dataset.peakMs);
+    if(last?.kind==='pre_mix'&&Math.abs(stripPeak-tr.peakMs)>60000)bad.push(`${label} [${tr.family}] card peak ${fmt(tr.peakMs)} ≠ strip ${fmt(stripPeak)}`);
+    if(Math.abs(stripPeak-preMix.bellPeak)>60000)bad.push(`${label} [${tr.family}] strip ${fmt(stripPeak)} ≠ pre-mix peak ${fmt(preMix.bellPeak)}`);
+    const words=strip.querySelector('svg').getAttribute('aria-label').match(/peak (around \d+:\d\d[ap]m)/)?.[1];
+    if(preMix.note&&words&&!preMix.note.includes(words))bad.push(`${label} [${tr.family}] card "${preMix.note}" ≠ strip "${words}"`);
+    // Green ⇒ Start Dough inside the strip's ready window (the band the picker validates with).
+    if(tr.pill==='green'&&last?.kind==='pre_mix'){
+     const from=Number(strip.dataset.bandFrom),to=Number(strip.dataset.bandTo),slack=0.26*hour;
+     if(tr.mixMs<from-slack||tr.mixMs>to+slack)bad.push(`${label} [${tr.family}] green but Start Dough ${fmt(tr.mixMs)} outside the ready window ${fmt(from)}–${fmt(to)}`);
+    }
+   }
+  }
   // The render may re-align a feed so its peak meets the mix; the pill is then
   // checked against the peak the baker sees (below), not the scan's estimate.
   if(tr.scoredPeakMs!=null && Math.abs(tr.scoredPeakMs-tr.peakMs)>15*60000)realigned.push(`${label} [${tr.family}] scan ${fmt(tr.scoredPeakMs)} → shown ${fmt(tr.peakMs)}`);
@@ -81,7 +100,7 @@ for(const temp of T)for(const loc of L)for(const age of A)for(const horizon of H
  }catch(err){bad.push('ERR '+label+': '+err.message);}
  finally{m?.unmount();await settle();}
 }
-console.log('untraced',JSON.stringify(skipped));console.log('realigned',realigned.length,realigned.slice(0,5).join(' | '));console.log('cases',n,'families',JSON.stringify(fam),'violations',bad.length);console.log(bad.slice(0,25).join('\n'));
+console.log('untraced',JSON.stringify(skipped));console.log('realigned',realigned.length,realigned.slice(0,5).join(' | '));console.log('cases',n,'strip cases',stripCases,'families',JSON.stringify(fam),'violations',bad.length);console.log(bad.slice(0,25).join('\n'));
 assert.deepEqual(errors,[],'Runtime errors');
 assert.ok(n>=150,'Too few traced cases: '+n);
 assert.equal(bad.length,0,bad.join('\n'));

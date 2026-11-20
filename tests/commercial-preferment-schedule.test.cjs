@@ -53,17 +53,14 @@ test('full blockers and reversed or under-minimum phases cannot be accepted',()=
  }
  assert.equal(commercialPrefermentPlanValid({type:'levain',inFridge:false,mixTime:now,bakeTime:bake,offsetHours:0,blocks:[],now}),true);
 });
-test('selected method is never suppressed from chart or action rows; help does not enable layers',()=>{
- const picker=fs.readFileSync('app/components/SchedulePicker.tsx','utf8'),chart=fs.readFileSync('app/components/FermentChart.tsx','utf8');
+// The fermentation chart is no longer rendered (20 Nov 2026 chart review, owner): its drag and layer checks
+// are retired with it; the selected method still reaches the action rows.
+test('selected method is never suppressed from action rows; the chart is not rendered',()=>{
+ const picker=fs.readFileSync('app/components/SchedulePicker.tsx','utf8');
  assert.match(picker,/const effectiveHasPref = hasPrefActive;/);
- assert.match(picker,/prefermentType=\{isSourdough\s*\?\s*'sourdough'\s*:\s*prefermentType\}/);
  assert.match(picker,/if \(!isSourdough && cardPrefTime\)/);
- assert.match(chart,/const revealAll = dragging !== null;/);
- assert.doesNotMatch(chart,/L\.window \|\| focusId/);
- const cancel=chart.match(/onPointerCancel=\{\(\)=>\{([^}]+)\}\}/)?.[1]??'';
- assert.match(cancel,/setDragging\(null\)/);assert.match(cancel,/onDragEnd\?\.\(\)/);
- assert.doesNotMatch(cancel,/onMixChange|onPrefChange|onRefreshChange/);
- for(const lang of ['en','fr']){const guide=require(`../messages/${lang}.json`).fermentChart.guide;assert.doesNotMatch(guide.dragRest,/higher is riper|plus c’est haut/);}
+ assert.doesNotMatch(picker,/<FermentChart\b/);
+ assert.doesNotMatch(fs.readFileSync('app/[locale]/page.tsx','utf8'),/<FermentChart\b|data-plan-curve/);
 });
 
 test('blocked interval includes its start and excludes its end',()=>{

@@ -82,12 +82,12 @@ test('Custom poolish: Make Poolish and Start Dough both move from the plan',asyn
  await expect(page.locator('.bh-navigator-current')).toContainText('Recipe');
  const edit=page.locator('[data-plan-edit]');
  await expect(edit).toHaveCount(2);
- // Custom: no "More timing options"; the curve opens in place, read-only, without a second plan.
+ // Custom: no "More timing options" and no fermentation curve (20 Nov 2026 chart review): the poolish's
+ // storage, the one fact the curve carried, is a note on its row.
  await expect(page.locator('[data-change-times]')).toHaveCount(0);
- await page.locator('[data-plan-curve] > summary').tap();
- await expect(page.locator('[data-plan-curve] svg').first()).toBeVisible();
- await expect(page.locator('[data-plan-curve] [data-drag-hint]')).toBeHidden();
- await page.locator('[data-plan-curve] > summary').tap();
+ await expect(page.locator('[data-plan-curve]')).toHaveCount(0);
+ await expect(page.locator('[data-recipe-plan] svg[role=img], [data-starter-strip]')).toHaveCount(0);
+ await expect(page.locator('[data-plan-start] [data-plan-row-note]')).toHaveText(/^ · (keep it in the fridge until Start Dough|straight into the fridge)$/);
  const before=await edit.first().innerText();
  await edit.first().tap();
  const editor=page.locator('[data-plan-editor]');

@@ -2,6 +2,7 @@
 
 import { useId } from 'react';
 import { assessTimingWindow } from '../utils/fermentationAssessment';
+import { peakAround } from '../utils/peakTime';
 
 interface FermentationReadinessProps {
   compact?: boolean;
@@ -81,7 +82,7 @@ export default function FermentationReadiness({
   const hasPreferment = isSourdough || preferment === 'poolish' || preferment === 'biga';
   const prefermentName = isSourdough ? t('Levain', 'Starter') : preferment === 'biga' ? 'Biga' : 'Poolish';
   const prefermentNote = isSourdough && validDate(starterPeak)
-    ? `${t('Pic estimé', 'Estimated peak')} · ${format(starterPeak)}`
+    ? `${t('Pic', 'Peak')} ${peakAround(starterPeak, isFr, { day: true })}`
     : t('Maturité à vérifier au pétrissage', 'Check maturity at mixing');
 
   if(compact) {
