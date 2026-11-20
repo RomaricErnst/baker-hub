@@ -502,6 +502,9 @@ export interface AvailabilityBlock {
   /** Bake straight from the fridge for this bake (ms): the shaped loaves stay
    *  in their cold proof until the oven heats. Read by buildSchedule only. */
   bakeFromFridge?: number;
+  /** The shortest warm-up for this bake (ms): the dough leaves the fridge as late as the
+   *  warm-up and the shortest final proof allow, the oven heating meanwhile (shortWarmupOption). */
+  shortWarmup?: number;
 }
 
 export interface ScheduleResult {
@@ -1045,7 +1048,13 @@ function buildSchedulePhases(
     let availableDivide: Date | null = null;
     let constrainedExit: Date | null = null;
     const naturalExit = r15(new Date(+bakeTime - (rtWarmupH + maxFinalH) * 3600000));
-    const maxExit = +bakeTime - (rtWarmupH + minFinalRT) * 3600000;
+    // The shortest warm-up (shortWarmupOption, a bake the baker chose so): the final proof
+    // may run while the oven heats, so the exit is bounded by the warm-up before preheat and
+    // the shortest final proof before the bake (round 6, Thomas: out at 19:00 after work).
+    const shortWarmup = availabilityBlocks.some(block => block.shortWarmup === +eatTime);
+    const maxExit = shortWarmup
+      ? Math.min(+bakeTime - rtWarmupH * 3600000, +eatTime - (rtWarmupH + minFinalRT) * 3600000)
+      : +bakeTime - (rtWarmupH + minFinalRT) * 3600000;
     if (searchDivideFrom.getTime() <= latestDivide.getTime()) {
       // With constraints, scan the actual quarter-hour timestamps returned below.
       // Shape and the second cold exit are one choice: a clear shaping slot is
@@ -1916,6 +1925,40 @@ export function bakeFromFridgeOption(o: {
   const dose = Math.min(1.5, doseForHeq(basePath.heq, 'dough', riseTarget(basePath.endC)));
   const budget = fermentationBudget(dose, variantPath.warmHours, o.kitchenTemp, variantPath.coldHours, o.fridgeTemp, variantPath);
   return budget >= 0.9 ? { exitAt: new Date(variant.coldRetard2End), budget, blocks: marked } : null;
+}
+
+/** The bake that takes the dough out of the fridge when the baker is free again and bakes after the
+ * shortest workable warm-up (round 6, Thomas: kneaded Thursday 21:00, 20 °C, work 9:00–19:00; the
+ * exit for a 20:30 bake fell at 17:45). The exit is the end of the busy time holding the planned one;
+ * the bake follows after the warm-up and the shortest final proof (rtWarmupH + 1 h), never before the
+ * warm-up ends ahead of the preheat. The mix and every earlier step stay; null when that plan does not
+ * hold (another clash, the exit not reached, an invalid preparation) or would not bake earlier than
+ * `before` (the later bake already offered). */
+export function shortWarmupOption(o: {
+  start: Date; bake: Date; blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number;
+  mixerType: MixerType; styleKey: string; numItems: number; mixingBatches: number;
+  isSourdough?: boolean; starterFactor?: number; before?: Date;
+}): { bake: Date; exitAt: Date; warmMin: number; blocks: AvailabilityBlock[] } | null {
+  if (!o.blocks.length || +o.bake <= +o.start) return null;
+  const plain = o.blocks.map(({ shortWarmup: _ignored, ...block }) => block);
+  const sourdough = o.isSourdough ?? isLevainStyle(o.styleKey);
+  const build = (bake: Date, blocks: AvailabilityBlock[]) => buildSchedule(o.start, bake, blocks, o.kitchenTemp, o.preheatMin, o.mixerType, o.styleKey, o.numItems, o.mixingBatches, sourdough, o.starterFactor ?? 1);
+  const base = build(o.bake, plain);
+  if (!base.coldRetard2End || !base.rtWarmupStart || base.preparationInvalid) return null;
+  const holder = plain.findIndex(block => +block.from <= +base.coldRetard2End! && +base.coldRetard2End! < +block.to);
+  if (holder < 0) return null;
+  // The first free quarter at or after the end of that busy time (edges exclusive).
+  let exit = Math.ceil(+plain[holder].to / 900000) * 900000;
+  for (let guard = 0; guard < 96 && isTimeBlocked(exit, plain); guard++) exit += 900000;
+  const warmH = o.kitchenTemp >= 30 ? 0.5 : 0.75;
+  const bakeMs = Math.ceil(Math.max(exit + (warmH + 1) * 3600000, exit + warmH * 3600000 + o.preheatMin * 60000) / 900000) * 900000;
+  if (bakeMs <= +o.bake || (o.before && bakeMs >= +o.before)) return null;
+  const bake = new Date(bakeMs);
+  const marked = plain.map((block, index) => index === holder ? { ...block, shortWarmup: bakeMs } : block);
+  const variant = build(bake, marked);
+  if (variant.preparationInvalid || !variant.coldRetard2End || +variant.coldRetard2End !== exit || !variant.rtWarmupStart) return null;
+  if (findAvailabilityConflicts(variant.availabilityActions ?? [], plain).length) return null;
+  return { bake, exitAt: new Date(exit), warmMin: Math.round((bakeMs - exit) / 60000), blocks: marked };
 }
 
 export function calculateRecipe(

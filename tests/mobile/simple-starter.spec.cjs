@@ -35,7 +35,9 @@ for(const locale of ['en','fr'])for(const answer of ['counter','fridge','ready']
  await expect(forward(page)).toBeEnabled();
  await forward(page).tap();
  const bakeDate=page.getByLabel(c.date,{exact:true});
- await bakeDate.fill('2026-11-11T18:00');await bakeDate.blur();
+ // A fridge starter's first feed rises with the rest stretch since round 6 (B3): 18:00 put the dough's
+ // fridge step at 1:00am and the sheet offered 19:45, so the fridge answer bakes at 19:45.
+ await bakeDate.fill(answer==='fridge'?'2026-11-11T19:45':'2026-11-11T18:00');await bakeDate.blur();
  // The bake-time screen no longer asks about the starter.
  for(const name of [c.oldYes,c.oldNo])await expect(page.getByRole('button',{name,exact:true})).toHaveCount(0);
  const generate=page.getByRole('button',{name:c.generate,exact:true});
@@ -72,7 +74,7 @@ test('simple starter screen: Previous goes back to the kitchen, and the review l
  await page.getByRole('button',{name:'In the fridge',exact:true}).tap();
  await forward(page).tap();
  const bakeDate=page.getByLabel('Bake date and time',{exact:true});
- await bakeDate.fill('2026-11-11T18:00');await bakeDate.blur();
+ await bakeDate.fill('2026-11-11T19:45');await bakeDate.blur(); // fridge starter: 19:45 since round 6 (see above)
  await page.getByRole('button',{name:'Generate my recipe',exact:true}).tap();
  await expect.poll(async()=>(await stored(page))?.recipeGenerated,{timeout:20000}).toBe(true);
  const trigger=page.locator('.bh-bake-navigator-trigger');

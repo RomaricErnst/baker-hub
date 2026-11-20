@@ -103,7 +103,9 @@ for(const o of [{busy:'none'},{busy:'none',temp:25},{busy:'nights',temp:25},{bus
 // and a Stage 2 availability check ran outside the fallback passes).
 for(const [o,mixAt,buildAt,ratio] of [
  [{busy:'nights',bake:+new Date(2026,10,21,12,0),mixer:'hand'},new Date(2026,10,20,8,0),new Date(2026,10,19,22,45),1],
- [{busy:'nights',temp:25,bake:+new Date(2026,10,21,8,0),mixer:'hand'},new Date(2026,10,20,16,45),new Date(2026,10,20,8,30),4],
+ // Round 6 (B3, owner): its fridge-kept starter's run-up was refresh Tue, fridge Wed–Fri, pre-mix Fri 8:30;
+ // one revival feed (Thu 9:15, 1:5:5) meeting the pre-mix feed Thu 22:45 replaces it (eveningRevival); mix Fri 7:45.
+ [{busy:'nights',temp:25,bake:+new Date(2026,10,21,8,0),mixer:'hand'},new Date(2026,10,20,7,45),new Date(2026,10,19,22,45),5],
  [{busy:'nights',temp:25,bake:+new Date(2026,10,21,8,0),mixer:'hand',loc:'rt',age:'today',fedH:-11.5},new Date(2026,10,20,7,45),new Date(2026,10,19,22,45),4],
 ]){
  const r=await run(o),label=JSON.stringify(o);

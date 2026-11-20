@@ -30,7 +30,8 @@ for(const location of ['fridge','rt'])test(`${location} starter: a chosen starte
  const fineTune=page.locator('#step-10:visible');
  const starter=fineTune.locator('[data-starter-override] input');
  await expect(starter).toBeVisible();
- expect(Number(await starter.inputValue())).toBeGreaterThanOrEqual(15);
+ // The default follows the plan's timing: 14.7 % for the fridge plan since round 6 (B3, the rest stretch moved it).
+ expect(Number(await starter.inputValue())).toBeGreaterThanOrEqual(14);
  await starter.fill('10');await starter.blur();
  await expect.poll(async()=>(await stored(page)).starterPctOverride).toBe(10);
  await fineTune.locator('[data-bh-forward]').tap();

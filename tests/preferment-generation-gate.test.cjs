@@ -63,7 +63,7 @@ test('direct generate call sends unsupported bread protocols back to the relevan
 test('known peak timing conflict blocks both new and previously generated sourdough plans',()=>{
  const declaration=source.match(/const starterPlanReady =[\s\S]*?;/)[0];
  for(const recipeGenerated of [false,true]) for(const starterTimingValid of [false,true]) {
-  assert.equal(vm.runInNewContext(declaration+'\nstarterPlanReady',{yeastType:'sourdough',recipeGenerated,starterTimingValid,starterEvents:[{kind:'known_peak'}]}),starterTimingValid);
+  assert.equal(vm.runInNewContext(declaration+'\nstarterPlanReady',{yeastType:'sourdough',recipeGenerated,starterTimingValid,starterEvents:[{kind:'known_peak'}],planningMode:'know_peak',knownPeakTime:new Date()}),starterTimingValid);
  }
  const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);let handler;
  function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='handleGenerate')handler=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);
@@ -82,7 +82,7 @@ test('whole-plan validation gates generation in both modes and directs invalid p
  function visit(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='handleGenerate')handler=node.getText(tree);ts.forEachChild(node,visit);}visit(tree);
  const code=ts.transpileModule(handler+'\nhandleGenerate()',{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
  for(const tab of ['simple','custom'])for(const method of ['none','poolish','biga','levain'])for(const scheduleCandidateValid of [false,true])for(const scheduleEditing of [false,true]){
-  const context={execution:undefined,mixExecution:undefined,completedMixAt:undefined,schedule:undefined,tab,prefermentType:method,yeastType:method==='levain'?'sourdough':'instant',scheduleCandidateValid,scheduleEditing,commercialPrefermentPlanReady:true,starterPlanReady:true,unsupportedEnrichedMethod:false,flourChosen:false,archivedFlourNames:[],simpleRequiredDone:true,customRequiredDone:true,recipe:{},advancedRecipe:{}};
+  const context={customStarterStepId:null,starterStateDescribed:true,execution:undefined,mixExecution:undefined,completedMixAt:undefined,schedule:undefined,tab,prefermentType:method,yeastType:method==='levain'?'sourdough':'instant',scheduleCandidateValid,scheduleEditing,commercialPrefermentPlanReady:true,starterPlanReady:true,unsupportedEnrichedMethod:false,flourChosen:false,archivedFlourNames:[],simpleRequiredDone:true,customRequiredDone:true,recipe:{},advancedRecipe:{}};
   const allowed=vm.runInNewContext(gate+'\ncanGenerate',context);
   assert.equal(allowed,scheduleCandidateValid&&!scheduleEditing,`${tab}/${method}: valid=${scheduleCandidateValid}, editing=${scheduleEditing}`);
   if(!allowed){
