@@ -67,7 +67,8 @@ test('total formula percentages accompany total weights, never remaining stage w
   const totals=html.match(/<section (?:aria-label="(?:Total ingredients|Quantités totales)"|data-whole-dough[^>]*)>([\s\S]*?)<\/section>/)[1].replace(/<[^>]+>/g,'');
   a.match(totals,new RegExp('Flour100%'+Math.round(r.flour)+' g'));
   a.match(totals,new RegExp('Water[0-9.]+%'+Math.round(r.water)+' g'));
-  a.match(totals,/Of which prefermented flour[\s\S]*20(\.\d)?%/);
+  // Round 7 (owner): no "Of which prefermented flour" row; the poolish stage below shows its flour.
+  a.doesNotMatch(totals,/Of which prefermented flour/);
   a.doesNotMatch(html,/Baker’s percentages/);
  }
 });
@@ -145,17 +146,21 @@ test('water percentage is the hydration set, and the starter flour line reads as
  const text=render(r,'levain');
  a.doesNotMatch(text,/\d+\.\d%\s*hydration/);
  const fr=render(r,'levain',undefined,'fr');
- a.match(fr,/\+ \d+ g de farine apportés par le levain, soit [\d ]+ g au total/);
+ // Round 7: the whole dough gives the total flour and the final dough what is added, so no "+ N g from the starter" line.
+ a.doesNotMatch(fr,/apportés par le levain/);
  a.doesNotMatch(fr,/équivalent\+|g via le levain/);
  a.ok(set>0);
 });
 
-test('custom preferment recipes put the whole dough first and keep the stages to weights',()=>{
+test('custom preferment recipes put the whole dough first, the stages below in the same % column',()=>{
  for(const pref of ['poolish','biga']){
   const html=render(make('instant',pref),pref,undefined,'en',true);
   a.ok(html.indexOf('data-whole-dough')>-1&&html.indexOf('data-whole-dough')<html.indexOf('data-recipe-stages'));
   const stages=html.slice(html.indexOf('data-recipe-stages')).replace(/<[^>]+>/g,'');
-  a.doesNotMatch(stages,/(Water|Remaining water|Salt|Pizza flour|Flour)[0-9.]+%/);
+  // Round 7 (owner): Custom's % column runs through the stages too, as % of the whole dough's flour, so the stages add up.
+  const r=make('instant',pref);
+  a.match(stages,new RegExp('Water(At room temperature)?'+(Math.round(r.preferment.prefWater/r.flour*1000)/10)+'%'));
+  a.doesNotMatch(stages,/Remaining water/);
   a.doesNotMatch(html.replace(/<[^>]+>/g,''),/hydration/i);
  }
 });

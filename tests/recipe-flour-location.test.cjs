@@ -40,13 +40,15 @@ test('Simple retains explicit flour identities and stage weights without advance
    assert.ok(plain.includes(`Selected wheat${w1} g`));
    assert.ok(plain.includes(`Selected rye${w2} g`));
    assert.ok(plain.includes(`Selected wholemeal${w3} g`));
-   assert.ok(html.includes(locale==='fr'?'Utilisez votre farine principale (Selected wheat)':'Use your primary flour (Selected wheat)'));
+   // Round 7: the poolish/biga stage names the flour it takes instead of "Use your primary flour (…)".
+   assert.match(html.slice(html.indexOf('data-stage="preferment"'),html.indexOf('data-stage="final"')).replace(/<[^>]+>/g,''),/Selected wheat/);
   }
   if(result.sourdough){
    const breakdown=result.flourParts.map((part,index)=>part.grams-(index===0?Math.round(result.sourdough.starterGramsMid/2):0));
    for(const grams of breakdown)assert.ok(plain.includes(grams+' g'));
    assert.equal(breakdown.reduce((sum,n)=>sum+n,0),result.flour-Math.round(result.sourdough.starterGramsMid/2));
-   assert.ok(html.includes(locale==='fr'?'Quantités totales':'Total ingredients'));
+   // Round 7: the whole dough is open at the top in both modes (was a closed "Total ingredients" in Simple).
+   assert.ok(html.indexOf('data-whole-dough')>-1&&html.indexOf('data-whole-dough')<html.indexOf('data-recipe-stages'));
   }
  }
 });
@@ -61,13 +63,14 @@ test('selected unbranded flour names use the recipe language in both modes',()=>
  }
 });
 
-test('guided starter accounting remains visible alongside the flour recommendation',()=>{
+test('guided starter accounting: whole flour at the top, the flour added beside the levain in the final dough',()=>{
  for(const locale of ['fr','en']){
   const {html,result}=render(locale,'simple','levain','sourdough');
   assert.ok(html.includes(recommendedFlourName('neapolitan',locale)));
   const half=Math.round(result.sourdough.starterGramsMid/2);
-  const sp='[\\s\\u202f]';
-  assert.match(html,new RegExp(locale==='fr'?`\\+ ${half}${sp}g de farine apportés par le levain, soit ${result.flour}${sp}g au total`:`\\+ ${half} g flour from the starter, ${result.flour} g in total`));
+  // Round 7: the whole dough gives the total flour, the final dough what is added beside the levain.
+  assert.match(html.slice(0,html.indexOf('data-recipe-stages')).replace(/<[^>]+>/g,'|').replace(/[\u00a0\u202f]/g,' '),new RegExp(`\\|${result.flour} g\\|`));
+  assert.match(html.slice(html.indexOf('data-stage="final"')).replace(/<[^>]+>/g,'|').replace(/[\u00a0\u202f]/g,' '),new RegExp(`\\|${result.flour-half} g\\|`));
  }
 });
 
@@ -95,7 +98,7 @@ test('preferment and starter total flour identities do not misstate final-dough 
    const pf=result.preferment;
    const primaryFinal=Math.round(pf.finalFlour*blend.ratio1/100);
    assert.ok(pf.prefFlour+primaryFinal>result.flour*blend.ratio1/100,'Primary-flour preferment makes whole-recipe proportions differ');
-   assert.ok(html.includes(locale==='fr'?'Utilisez votre farine principale (Selected wheat)':'Use your primary flour (Selected wheat)'));
+   assert.match(html.slice(html.indexOf('data-stage="preferment"'),html.indexOf('data-stage="final"')).replace(/<[^>]+>/g,''),/Selected wheat/);
    assert.ok(html.includes('data-recipe-stages'));
   }
  }

@@ -17,6 +17,7 @@ import { pushProfile, pullAndMergeProfile } from '../lib/supabase/profileSync';
 import OpeningChoices from '../components/OpeningChoices';
 import StylePicker, { StylePhotoPreload } from '../components/StylePicker';
 import BakeNavigator, {DestinationIcon, type BakeStepLink} from '../components/BakeNavigator';
+import { bakeHeadline, recipeSummaryLine } from '../utils/bakeHeadline';
 import BakeTypeChooser from '../components/BakeTypeChooser';
 import {getServingTimeEstimate, breadCoolingRange} from '../utils/servingTime';
 import {getPizzaById} from '../lib/toppingDatabase';
@@ -28,7 +29,7 @@ import { useMobileKeyboard } from '../hooks/useMobileKeyboard';
 import { NEXT_CTA, BACK_CTA, SECONDARY_CTA, oneLineCta } from '../lib/navButtons';
 import { getSetupBlocker, type SetupBlocker } from '../lib/setupBlocker';
 import OvenPicker from '../components/OvenPicker';
-import PrototypeQuantityPicker, { eachPizzaShort } from '../components/PrototypeQuantityPicker';
+import PrototypeQuantityPicker from '../components/PrototypeQuantityPicker';
 import MixerPicker from '../components/MixerPicker';
 import MixingBatchControl from '../components/MixingBatchControl';
 const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { ssr: false });
@@ -4136,7 +4137,6 @@ export default function Home() {
   // day leads the summary line, so the title fits one line on a phone.
   const bakeAutoTitle = autoBakeTitle(bakeType, styleKey, numItems, eatTime ?? null, fr, styleKey ? styleDisplayName(styleKey) : '');
   const bakeAutoName = autoBakeTitle(bakeType, styleKey, numItems, null, fr, styleKey ? styleDisplayName(styleKey) : '', eatTime ? eatTime.getHours() : undefined);
-  const bakeDayLabel = eatTime && Number.isFinite(+eatTime) ? new Intl.DateTimeFormat(fr ? 'fr-FR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).format(eatTime) : null;
   const ovenDisplayName = ovenType === 'pizza_oven'
     ? (ovenConstruction === 'masonry' ? (fr ? 'Four à pizza traditionnel' : 'Traditional pizza oven') : (fr ? 'Four à pizza compact' : 'Tabletop pizza oven'))
     : ovenType === 'steam_oven'
@@ -4715,7 +4715,8 @@ export default function Home() {
       if(recipeGenerated){openToppingsStep();return;}
       setFillingsReturn(null);setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}}:undefined}
     contextLabel={compactBakeContext?bakeQuantityLabel(numItems,bakeType,styleKey,fr):undefined}
-    stepLabel={showStepInBar?currentSubsection:undefined} steps={journeySteps} recipeReady={!!recipeGenerated} summary={journeySummary} nextStep={journeyNext} /> : null;
+    stepLabel={showStepInBar?currentSubsection:undefined} steps={journeySteps} recipeReady={!!recipeGenerated} summary={journeySummary} nextStep={journeyNext}
+    headline={styleKey?(qtyChosen?bakeHeadline(bakeType,styleKey,numItems,eatTime,locale):styleDisplayName(styleKey)):undefined} bakeTimeSet={!!eatTime} /> : null;
 
   // Toppings are planned with the dough, before buying: Recipe → Toppings → Shopping list.
   // A plain loaf (tartine family) goes on to the Shopping list; its tartines stay optional in Your bake
@@ -5290,22 +5291,12 @@ export default function Home() {
   void title;
   return <BakeTitleField value={bakeName} auto={bakeAutoName} fr={fr} onCommit={setBakeName}/>;
 })()}<p data-bake-summary style={{margin:'2px 0 0',fontSize:14,color:'var(--ash)'}}>{(()=>{
-  // One line: the day, what, which style, and for pizza the weight of each.
-  const quantity=bakeQuantityLabel(numItems,bakeType,styleKey,fr);
-  const genericBread=bakeType==='bread'&&['pain','pains','loaf','loaves'].includes(breadNoun(styleKey,numItems,fr));
-  const style=styleKey&&(bakeType==='pizza'||genericBread)?styleDisplayName(styleKey):'';
-  const each=destination==='recipe'&&bakeType==='pizza'?eachPizzaShort({styleKey,itemWeight,diameter:STYLE_HAS_DIAMETER.includes(styleKey??'')&&crustActive>=0?pizzaDiameter:undefined,units,locale}):null;
-  // The day moves to the times below, which say when it starts as well as when it bakes.
-  return [eatTime?null:bakeDayLabel,quantity,style,each].filter(Boolean).join(' · ');
+  // One line led by the day: "Sun 22 Nov · 7:00pm · 4 × 260 g Neapolitan" (round 7: the Make Poolish / Bake
+  // card is gone; the plan below carries the times).
+  const each=bakeType==='pizza'&&styleKey?displayWeight(Math.round(itemWeight),units,locale):null;
+  return recipeSummaryLine(bakeType,styleKey,numItems,eatTime,locale,each);
 })()}</p>
-{/* When it starts, above the fold: the bake's day alone read as "all on Saturday" when the dough
-    starts the evening before (16 Nov 2026 first-baker review). */}
 {previousNote&&<p data-previous-note style={{margin:'8px 0 0',fontSize:15,color:'var(--ash)'}}><strong>{fr?'La dernière fois : ':'Last time: '}</strong>{previousNote}</p>}
-{eatTime&&<div data-recipe-when style={{display:'grid',gridTemplateColumns:'auto 1fr',columnGap:12,rowGap:2,margin:'10px 0 2px',padding:'10px 14px',border:'1px solid var(--border)',borderRadius:12,background:'var(--warm)',fontSize:15}}>
-  <span style={{color:'var(--smoke)'}}>{firstRecipeActionLabel}</span><strong style={{fontWeight:600}}>{formatBakeDateTime(firstRecipeAction,locale)}</strong>
-  <span style={{color:'var(--smoke)'}}>{fr?'Enfourner':'Bake'}</span><strong style={{fontWeight:600}}>{formatBakeDateTime(eatTime,locale)}</strong>
-  <button type="button" className="bh-back-action" style={{gridColumn:'1 / -1',justifySelf:'start',minHeight:44,margin:'-6px 0 -10px',paddingLeft:0}} onClick={()=>{document.getElementById('bh-recipe-plan-title')?.scrollIntoView({block:'start'});}}>{fr?'Voir tout le plan ↓':'See the full plan ↓'}</button>
-</div>}
 </div>}
 {recipeGenerated && planMoved && destination!=='batch' && destination!=='organisation' && eatTime && (()=>{
   // Only what moved, and an amount only when it changes what the baker weighs.
