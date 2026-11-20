@@ -17,19 +17,20 @@ const breadBase={version:1,tab:'custom',bakeType:'bread',bakeName:'',mixerType:'
 
 test.describe('Maya: a longer preheat',()=>{
  test.use({timezoneId:'Asia/Singapore',locale:'en-SG'});
- test('moves the Preheat step only; the take-out stays at 5:30pm',async({page})=>{
+ // The standard home oven preheats 45 min since 20 Nov 2026 (round 5): Preheat 6:45pm, take-out 5:15pm.
+ test('moves the Preheat step only; the take-out stays at 5:15pm',async({page})=>{
   const start=Z('2026-11-20T10:00'),eat=Z('2026-11-21T11:30');
   const s={...breadBase,tab:'simple',savedAt:start-48*H,bakeType:'pizza',styleKey:'neapolitan',numItems:6,itemWeight:250,pizzaDiameter:30,ovenType:'home_oven_standard',yeastType:'instant',kitchenTemp:30,humidity:'humid',prefermentType:'none',prefOffsetH:0,startTime:start,eatTime:eat,blocks:[],previousNote:'Bases a bit pale — preheat longer.'};
   await install(page,{bh_session_v1:JSON.stringify(s)},'2026-11-19T02:00:00Z');
   await page.goto('/');
   await page.getByRole('button',{name:/^(Resume|View ingredients) →$/}).first().tap();
-  await expect(planRow(page,'Take the shaped dough out of the fridge')).toContainText('5:30pm');
+  await expect(planRow(page,'Take the shaped dough out of the fridge')).toContainText('5:15pm');
   await page.getByRole('button',{name:/Preheat/}).first().tap();
   await page.getByLabel('Preheat the oven',{exact:true}).fill('18:30');
   await page.getByRole('button',{name:'Update recipe',exact:true}).first().tap();
-  await expect.poll(async()=>(await stored(page)).preheatExtraMin).toBe(30);
+  await expect.poll(async()=>(await stored(page)).preheatExtraMin).toBe(15);
   await expect(planRow(page,'Preheat the oven')).toContainText('6:30pm');
-  await expect(planRow(page,'Take the shaped dough out of the fridge')).toContainText('5:30pm');
+  await expect(planRow(page,'Take the shaped dough out of the fridge')).toContainText('5:15pm');
  });
 });
 

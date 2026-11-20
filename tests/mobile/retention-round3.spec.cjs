@@ -103,7 +103,10 @@ test.describe('Maya, zero ticks',()=>{
   await reopen(page,'2026-11-21T11:05:00Z');
   await resumeFromHome(page);
   const preheat=page.locator('section[data-guide-title="Preheat the oven"]');
-  await expect(preheat.getByText('Allow 30 min minimum')).toBeVisible();
+  // 20 Nov 2026 round 5: a standard home oven preheats 45 min; the step's own time says it, so "Allow 45 min"
+  // is not repeated (it was "Allow 30 min minimum" beside a planned 30 min before).
+  await expect(preheat).toContainText('45 min');
+  await expect(preheat.getByText('Allow 45 min')).toHaveCount(0);
   await expect(preheat.getByText(/Ready when: 30 min at full heat/)).toHaveCount(0);
   await page.locator('.bh-bake-navigator-trigger').tap();
   await page.getByRole('navigation',{name:'Your bake',exact:true}).getByRole('button').filter({has:page.getByText('Recipe',{exact:true})}).tap();
@@ -205,9 +208,10 @@ test.describe('two bakes on one device',()=>{
   const sheet=page.getByRole('dialog',{name:'Avant votre recette'});
   await expect(sheet).toContainText('Pain de campagne occupe le four de 18h15 à 19h45.');
   await shot(page,'oven-sheet');
-  await sheet.getByRole('button',{name:/^Enfourner à 20h15/}).tap();
+  // The oven's 45 min preheat (round 5, 20 Nov 2026) starts after the campagne leaves the oven at 19h45.
+  await sheet.getByRole('button',{name:/^Enfourner à 20h30/}).tap();
   await expect.poll(async()=>(await stored(page))?.recipeGenerated??false,{timeout:20000}).toBe(true);
-  expect((await stored(page)).eatTime).toBe(Date.parse('2026-11-20T19:15:00Z'));
+  expect((await stored(page)).eatTime).toBe(Date.parse('2026-11-20T19:30:00Z'));
   await expect(page.locator('[data-oven-sheet]')).toHaveCount(0);
  });
  test('one bake: generating never shows anything of multi-bake',async({page})=>{

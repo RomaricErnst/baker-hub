@@ -695,6 +695,9 @@ body:has([role="dialog"][aria-modal="true"]) .bh-step-actions, body:has([role="d
 }
 /* Programmatic focus on arrival: no ring on a heading that is not a control. */
 .bh-page-title:focus{outline:none}
+/* A guide step is focused when the guide opens it, so screen readers start there; the card itself is the
+   indicator. A black ring around the whole card on every reopen read as a selection (20 Nov 2026 round 5). */
+section[data-guide-step]:focus{outline:none}
 /* The bake title heads the generated views but keeps the compact look of the context line. */
 .bh-page-title.bh-bake-title { font-family:var(--font-ui); font-size:14px; font-weight:700; line-height:1.4; letter-spacing:0; margin:0; }
 
