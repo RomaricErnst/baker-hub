@@ -20,14 +20,30 @@ export function computePreMixStretchFactor(preMixMs: number, refreshPeakMs: numb
   return 1.0 + 0.1 * hoursEarly;
 }
 
+/** The rise stretch of the first feed after a rest: a starter fed `hSinceFeedH` hours ago (past
+ * its peak, declining, depleted or long dormant in the fridge) starts from fewer active yeasts, so
+ * that feed peaks later than a healthy one. One ladder for every path (round 6, B3): the planned
+ * refresh, a depleted or revived starter's first feed, and the first feed of a plan that shows no
+ * separate refresh. Values unchanged from the solver's former copies. */
+export function restStretchFactor(hSinceFeedH: number, adjPeakH: number, troughH: number): number {
+  if (hSinceFeedH <= adjPeakH) return 1.0;
+  if (hSinceFeedH <= adjPeakH * 1.5) return 1.05;
+  if (hSinceFeedH <= troughH) return 1.15;
+  if (hSinceFeedH <= troughH * 1.5) return 1.25;
+  if (hSinceFeedH <= troughH * 2.5) return 1.35;
+  return 1.5;
+}
+
 // refPeakMs is the reference peak the feed is measured against — canonically
 // `_starterRefeedTime ? refeed + adjPeakH : lastFed + adjPeakH` (bare adjPeakH),
 // matching the bell's `_preMixStretchFactor` reference. adjPeakHEff is the
 // temperature/ratio-adjusted peak hours for the ACTIVE ratio in this scope
 // (Stage-1 `adjPeakH`, or the per-ratio `adjPeakH_r` inside evaluatePlanForRatio),
 // so the same call is correct at every ratio.
-export function computeStarterPeakMs(feedMs: number, refPeakMs: number | null, adjPeakHEff: number): number {
-  return feedMs + adjPeakHEff * computePreMixStretchFactor(feedMs, refPeakMs) * 3600000;
+// restStretch: the first feed after a rest (restStretchFactor) rises with that stretch when it is
+// larger; 1 (the default) for a feed that follows a planned one.
+export function computeStarterPeakMs(feedMs: number, refPeakMs: number | null, adjPeakHEff: number, restStretch = 1): number {
+  return feedMs + adjPeakHEff * Math.max(computePreMixStretchFactor(feedMs, refPeakMs), restStretch) * 3600000;
 }
 
 /** The peak of a pre-mix feed done at newFeedMs instead of oldFeedMs (a recorded late or early

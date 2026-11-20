@@ -1699,8 +1699,8 @@ export default function Home() {
     if (session.startTime) setStartTime(new Date(session.startTime));
     if (session.blocks && session.blocks.length > 0) {
       setBlocks(session.blocks.map((b: unknown) => {
-        const block = b as { label: string; from: number; to: number; fridgeRemoval?: unknown; coveredActions?: unknown; bakeFromFridge?: unknown };
-        return { label: block.label, from: new Date(block.from), to: new Date(block.to), coveredActions:normalizeCoveredActions(block.coveredActions), fridgeRemoval: normalizeFridgeRemoval(block.fridgeRemoval), ...(typeof block.bakeFromFridge==='number'&&Number.isFinite(block.bakeFromFridge)?{bakeFromFridge:block.bakeFromFridge}:{}) };
+        const block = b as { label: string; from: number; to: number; fridgeRemoval?: unknown; coveredActions?: unknown; bakeFromFridge?: unknown; shortWarmup?: unknown };
+        return { label: block.label, from: new Date(block.from), to: new Date(block.to), coveredActions:normalizeCoveredActions(block.coveredActions), fridgeRemoval: normalizeFridgeRemoval(block.fridgeRemoval), ...(typeof block.bakeFromFridge==='number'&&Number.isFinite(block.bakeFromFridge)?{bakeFromFridge:block.bakeFromFridge}:{}), ...(typeof block.shortWarmup==='number'&&Number.isFinite(block.shortWarmup)?{shortWarmup:block.shortWarmup}:{}) };
       }));
     }
     setStarterEvents(restoreStarterEvents(session.starterEvents));
@@ -2146,7 +2146,7 @@ export default function Home() {
   const repairKey = (st: Date, et: Date | null, bl: AvailabilityBlock[], offset = prefOffsetH, storage = prefGoesInFridge, resetKey = starterPlanResetKey) =>
     JSON.stringify([[kitchenTemp, fridgeTemp, planPreheatMin, exitLeadMin, mixerType, styleKey,
       yeastType, prefermentType, offset, storage, tang, resetKey],
-      +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label, b.fridgeRemoval,b.coveredActions,b.bakeFromFridge])]);
+      +st, et ? +et : null, bl.map(b => [+b.from, +b.to, b.label, b.fridgeRemoval,b.coveredActions,b.bakeFromFridge,b.shortWarmup])]);
   const confirmedSchedulePlan = acceptedScheduleRepair === repairKey(startTime, eatTime, blocks);
   const handleScheduleChange = (st: Date, et: Date, bl: AvailabilityBlock[], options?: {preservePlan: boolean; timingOverrides?: TimingOverrides; prefOffsetHours?: number; prefInFridge?: boolean; starterRecoveryResolved?:boolean; starterPlan?: {events:StarterEvent[];fridgeOutTime:Date|null;usingPeak2:boolean;feed2Time:Date|null;starterFridgeInTime:Date|null}}) => {
     if(mixExecution&&+st!==mixExecution.actualAt)return;
@@ -2431,7 +2431,7 @@ export default function Home() {
       prefGoesInFridge, poolishStorage,
       startTime: startTime?.getTime() ?? null,
       eatTime: eatTime?.getTime() ?? null,
-      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.coveredActions?.length?{coveredActions:b.coveredActions}:{}), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}), ...(b.bakeFromFridge ? {bakeFromFridge:b.bakeFromFridge} : {}) })),
+      blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.coveredActions?.length?{coveredActions:b.coveredActions}:{}), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}), ...(b.bakeFromFridge ? {bakeFromFridge:b.bakeFromFridge} : {}), ...(b.shortWarmup ? {shortWarmup:b.shortWarmup} : {}) })),
       recipeGenerated, protocolStale, executionClash, activeTab, pizzaPartyTab, modeChosen, awaitingRecipeChoice, customBakeQuestion,
       acceptedStartTime: acceptedPlan?.startTime, acceptedPreparationAt: acceptedPlan?.preparationAt, acceptedEatTime: acceptedPlan?.bakeAt,
       ovenFrom: currentOvenUse()?.from, ovenTo: currentOvenUse()?.to,
@@ -3283,6 +3283,7 @@ export default function Home() {
     // A clean flag is not proof of current validity. Only an explicit return
     // attempt marks an invalid clean plan pending; never do this merely because
     // a restored planner is still initializing its readiness callbacks.
+    if(recipeGenerated&&tab==='custom'&&customStarterStepId!==null&&!starterStateDescribed){openSetupStep(customStarterStepId);return;}
     if(recipeGenerated&&planReplanPending&&tab==='custom'&&!replanReturn){
       setReplanReturn({from:+startTime,settled:false});
       setActiveTab('setup');setSetupOverview(false);setAdvancedStep(9);scrollToStepTop();
@@ -3619,7 +3620,9 @@ export default function Home() {
       return;
     }
     if (!canGenerate) {
-      openSetupStep(generationBlocker?.stepId ?? (tab === 'custom' ? 9 : 7));
+      // An unanswered Starter question goes to that question, never to a plan computed without it.
+      openSetupStep(tab === 'custom' && customStarterStepId !== null && !starterStateDescribed
+        ? customStarterStepId : generationBlocker?.stepId ?? (tab === 'custom' ? 9 : 7));
       return;
     }
     if (!scheduleCandidateValid || scheduleEditing || schedule?.preparationInvalid) {
@@ -3877,8 +3880,8 @@ export default function Home() {
     if (snap.startTime) setStartTime(shiftD(new Date(snap.startTime)));
     {
       setBlocks(((snap.blocks ?? []) as unknown[]).map((b) => {
-        const bl = b as { label: string; from: number; to: number; fridgeRemoval?: unknown; coveredActions?: unknown; bakeFromFridge?: unknown };
-        return { label: bl.label, from: shiftD(new Date(bl.from)), to: shiftD(new Date(bl.to)), coveredActions:rb?undefined:normalizeCoveredActions(bl.coveredActions), fridgeRemoval: rb ? undefined : normalizeFridgeRemoval(bl.fridgeRemoval), ...(!rb&&typeof bl.bakeFromFridge==='number'&&Number.isFinite(bl.bakeFromFridge)?{bakeFromFridge:bl.bakeFromFridge}:{}) };
+        const bl = b as { label: string; from: number; to: number; fridgeRemoval?: unknown; coveredActions?: unknown; bakeFromFridge?: unknown; shortWarmup?: unknown };
+        return { label: bl.label, from: shiftD(new Date(bl.from)), to: shiftD(new Date(bl.to)), coveredActions:rb?undefined:normalizeCoveredActions(bl.coveredActions), fridgeRemoval: rb ? undefined : normalizeFridgeRemoval(bl.fridgeRemoval), ...(!rb&&typeof bl.bakeFromFridge==='number'&&Number.isFinite(bl.bakeFromFridge)?{bakeFromFridge:bl.bakeFromFridge}:{}), ...(!rb&&typeof bl.shortWarmup==='number'&&Number.isFinite(bl.shortWarmup)?{shortWarmup:bl.shortWarmup}:{}) };
       }));
     }
     setStarterEvents(restoreStarterEvents(snap.starterEvents).map(event => ({...event, time:shiftD(event.time), bellPeakTime:event.bellPeakTime ? shiftD(event.bellPeakTime) : undefined, bellStartTime:event.bellStartTime ? shiftD(event.bellStartTime) : undefined})));
@@ -4055,7 +4058,10 @@ export default function Home() {
   const simpleRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && qtyChosen);
   const customRequiredDone = !!(bakeType && styleKey && numItems && itemWeight && ovenType && mixerType && yeastType && eatTime && flourBlend
     && qtyChosen && flourAnswered && (!showPrefermentChoice || prefermentChosen));
-  const starterPlanReady = yeastType !== 'sourdough' || (starterTimingValid && (recipeGenerated || starterEvents.length > 0));
+  // A sourdough plan needs its starter described (Customize clears the feed Simple implied):
+  // without it no recipe is made or updated (round 6, Priya: Update recipe made one with no starter steps).
+  const starterPlanReady = yeastType !== 'sourdough' || ((planningMode === 'know_peak' ? !!knownPeakTime : lastFedAge !== null && !!lastFedTime)
+    && starterTimingValid && (recipeGenerated || starterEvents.length > 0));
   const canGenerate = !schedule?.preparationInvalid && scheduleCandidateValid && !scheduleEditing && !(tab === 'custom' ? advancedRecipe : recipe)?.protocolIssue && commercialPrefermentPlanReady && starterPlanReady && !unsupportedEnrichedMethod && !(flourChosen && archivedFlourNames.length) && (tab === 'simple' ? simpleRequiredDone : customRequiredDone);
   const missingRequiredStep = !bakeType || !styleKey ? 1
     : !numItems || !itemWeight || !qtyChosen ? 2

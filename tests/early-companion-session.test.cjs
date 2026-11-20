@@ -45,6 +45,6 @@ test('generated starter timing blocker survives normalized local save and load',
   const fs=require('node:fs'),vm=require('node:vm');
   const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
   const gate=source.match(/const starterPlanReady =[\s\S]*?;/)[0];
-  assert.equal(vm.runInNewContext(gate+'\nstarterPlanReady',{...restored,yeastType:'sourdough'}),false);
+  assert.equal(vm.runInNewContext(gate+'\nstarterPlanReady',{lastFedAge:null,lastFedTime:null,knownPeakTime:null,...restored,yeastType:'sourdough'}),false);
  } finally {global.localStorage=previous;}
 });

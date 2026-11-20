@@ -138,7 +138,7 @@ test('successful validation clears stale status and restores the captured edit o
 test('the shared generation gate sends blocked edits to the exact correction without publishing results',()=>{
  for(const tab of ['simple','custom'])for(const stepId of [undefined,2,3,6,7,9]){
   const calls=[];
-  evaluate(fn('handleGenerate')+';handleGenerate();',{styleKey:'neapolitan',canGenerate:false,tab,generationBlocker:stepId===undefined?undefined:{stepId},openSetupStep(value){calls.push(value);},setProtocolStale(){throw Error('Blocked edits must remain stale');},setRecipeGenerated(){throw Error('Blocked edits must not publish');},finishFillings(){throw Error('Blocked edits must not return');}});
+  evaluate(fn('handleGenerate')+';handleGenerate();',{customStarterStepId:null,starterStateDescribed:true,styleKey:'neapolitan',canGenerate:false,tab,generationBlocker:stepId===undefined?undefined:{stepId},openSetupStep(value){calls.push(value);},setProtocolStale(){throw Error('Blocked edits must remain stale');},setRecipeGenerated(){throw Error('Blocked edits must not publish');},finishFillings(){throw Error('Blocked edits must not return');}});
   assert.deepEqual(calls,[stepId??(tab==='custom'?9:7)]);
  }
 });
@@ -167,7 +167,7 @@ test('separating blend flours cannot move existing salt or yeast shopping checks
 
 test('a pending plan edit in Custom opens the plan step so the scheduler replans before the recipe returns',()=>{
  const calls=[];
- evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{planReplanPending:true,replanReturn:null,tab:'custom',startTime:new Date(1000),recipeGenerated:true,protocolStale:false,canGenerate:true,previousRecipeInputKey:{current:'saved'},recipeInputKey:'edited',fillingsReturn:null,
+ evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{customStarterStepId:null,starterStateDescribed:true,planReplanPending:true,replanReturn:null,tab:'custom',startTime:new Date(1000),recipeGenerated:true,protocolStale:false,canGenerate:true,previousRecipeInputKey:{current:'saved'},recipeInputKey:'edited',fillingsReturn:null,
   setReplanReturn(value){calls.push(['replan',value.from,value.settled]);},setActiveTab(tab){calls.push(['tab',tab]);},setSetupOverview(value){calls.push(['overview',value]);},setAdvancedStep(step){calls.push(['step',step]);},scrollToStepTop(){},
   handleGenerate(){throw Error('The stale schedule must not be regenerated before the replan');},setProtocolStale(){throw Error('unexpected');},openDestination(){throw Error('unexpected');}});
  assert.deepEqual(calls,[['replan',1000,false],['tab','setup'],['overview',false],['step',9]]);
