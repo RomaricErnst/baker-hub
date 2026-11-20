@@ -65,7 +65,8 @@ test('after the late feed, a reload, Change times and a Fine-tune edit keep the 
  const hydration=page.locator('input[type=number]').first();
  await hydration.fill('74');await hydration.blur();
  await page.getByRole('button',{name:'Update recipe'}).tap();
- await expect(page.locator('[data-plan-start]')).toBeVisible();
+ // The plan's first row (a feed before the levain build) is under All steps since round 7; Bake is always shown.
+ await expect(page.locator('[data-plan-bake]:visible')).toBeVisible();
  expect(await planText(page)).toContain('5:30pm\nStart Dough');
  const s=await stored(page);
  expect(s.autoStarterPct).toBe(27.5);
@@ -90,7 +91,8 @@ test('a clash after an edit: one statement, one action, and Back to Recipe resto
  const back=page.locator('[data-back-to-good-plan]');
  await expect(back).toBeEnabled();
  await back.tap();
- await expect(page.locator('[data-plan-start]')).toBeVisible();
+ // The plan's first row (a feed before the levain build) is under All steps since round 7; Bake is always shown.
+ await expect(page.locator('[data-plan-bake]:visible')).toBeVisible();
  expect(await planText(page)).toContain('10:00am\nBake');
  const s=await stored(page);
  expect(new Date(s.eatTime).toISOString()).toBe('2026-11-21T10:00:00.000Z');

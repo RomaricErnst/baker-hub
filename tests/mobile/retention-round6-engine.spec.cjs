@@ -83,6 +83,8 @@ test.describe('Thomas: pizza kneaded after work',()=>{
   expect(s.eatTime).toBe(Date.parse('2026-12-04T19:45:00Z'));
   expect(s.blocks.some(b=>b.shortWarmup===s.eatTime)).toBe(true);
   const row=name=>page.locator('li,div').filter({hasText:new RegExp('^\\s*\\S+\\s*'+name+'$')}).last();
+  // Your plan opens on the key stages (round 7); the take-out and preheat rows are under All steps.
+  {const t=page.locator('[data-plan-all-steps]:visible').first();await expect(t).toBeVisible();if(await t.getAttribute('aria-expanded')==='false')await t.tap();}
   await expect(row('Sortir les pâtons du réfrigérateur')).toContainText('19h00');
   await expect(row('Préchauffer le four')).toContainText('19h45');
  });

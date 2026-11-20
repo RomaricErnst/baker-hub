@@ -97,4 +97,36 @@ for(const fr of [false,true]){
   await noOverflow(page);
   expect(errors).toEqual([]);
  });
+ test(`${fr?'fr':'en'}: Your plan shows Poolish, Start Dough and Bake; All steps opens the rest`,async({page})=>{
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await open(page,seed('custom','poolish',GENERATED),fr);
+  await toRecipe(page,fr);
+  const plan=page.locator('[data-recipe-plan]:visible');
+  const rows=plan.locator('[data-recipe-plan-steps] li:not([data-plan-editor]):not([data-plan-strip])');
+  await expect(plan.locator('[data-plan-key-only]')).toHaveCount(1);
+  const keyText=await rows.allInnerTexts();
+  expect(keyText.length,keyText.join('|')).toBe(3);
+  expect(keyText[0]).toMatch(L(/Make Poolish/,/poolish/i));
+  expect(keyText[1]).toMatch(L(/Start Dough/,/Pétrir la pâte/));
+  expect(keyText[2]).toMatch(L(/Bake/,/Enfourner/));
+  // The poolish's storage note stays on its row; both chosen times stay tappable.
+  await expect(plan.locator('[data-plan-row-note]')).toHaveCount(1);
+  await expect(plan.locator('[data-plan-edit]')).toHaveCount(2);
+  const toggle=plan.locator('[data-plan-all-steps]');
+  await expect(toggle).toHaveAttribute('aria-expanded','false');
+  await expect(toggle).toHaveText(L(/^All steps \(\d+\)/,/^Toutes les étapes \(\d+\)/));
+  const total=Number((await toggle.innerText()).match(/\((\d+)\)/)[1]);
+  expect(total).toBeGreaterThan(3);
+  await toggle.tap();
+  await expect(rows).toHaveCount(total);
+  await expect(plan.locator('[data-recipe-plan-steps]')).toContainText(L(/fridge/,/réfrigérateur/));
+  await expect(toggle).toHaveText(L(/^Key steps only/,/^Étapes clés seulement/));
+  await toggle.tap();
+  await expect(rows).toHaveCount(3);
+  // The time stays editable from the short plan.
+  await plan.locator('[data-plan-edit="mix"]').tap();
+  await expect(page.locator('[data-plan-editor]')).toBeVisible();
+  await noOverflow(page);
+  expect(errors).toEqual([]);
+ });
 }
