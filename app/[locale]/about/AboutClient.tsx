@@ -163,7 +163,7 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Answer a few questions — what you&rsquo;re making, how many, how warm your kitchen is, when it goes in the oven and when you&rsquo;re busy — and Baker Hub generates your recipe, choosing the flour, hydration and method that suit the style. For a sourdough bake it also asks about <strong style={{ color: CHAR }}>your starter</strong>: on the counter, in the fridge, or bubbly and risen right now; its feeds are planned from that answer. If your bake time clashes with your busy hours, one sheet names the clash and offers the nearest time that fits (or, when only taking the dough out of the fridge clashes, lets you keep your time with someone doing that step).</P>
-            <P>The recipe lists the ingredients, then <B>Your plan</B>: the key steps with their times. Preparation walks you through each step; its summary is where you add the plan to your calendar, with one reminder for each moment you need to be there. Adding it again after a change updates those events.</P>
+            <P>The recipe gives the whole dough first, then each stage — the poolish, biga or levain build, then the final dough — and the stages add up to the whole dough; customizing adds each ingredient&rsquo;s baker&rsquo;s percentage. Every bake adds 1.5 % to the total for the dough left in the bowl and on your hands, so the last ball weighs what the others do. Then comes <B>Your plan</B>: the key stages with their times, and every step one tap away. Preparation walks you through each step; its summary is where you add the plan to your calendar, with one reminder for each moment you need to be there. Adding it again after a change updates those events.</P>
             <p style={{ margin: 0, ...bodyText }}><B>Customize my bake</B> is there when you want more, before generating the recipe or at any time afterwards from My bake: equipment (oven, then mixing), kitchen and fridge temperatures, water, flour (product or blend, and how it&rsquo;s stored), preferment (poolish, biga or direct; for poolish, the fridge, room temperature or wherever the timing works best), yeast, fine-tuning (hydration, salt, oil, sugar, dough temperature, and your own yeast or starter amount), then bake time. Levain breads have a Starter step instead of the preferment: where your starter is, when and how it was last fed. The same engines run either way; customizing shows their inputs.</p>
           </>
         ),
@@ -272,6 +272,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <P>The scheduler works backwards from your bake time. It fills the window with a cold retard up to the style&rsquo;s preferred length (scaled by the flour&rsquo;s tolerance), then places the bulk, dividing and shaping, and the final proof, keeping hands-on steps out of your busy hours. If that isn&rsquo;t possible at your bake time, it offers the nearest time that is, looking up to four days ahead first.</P>
             <BulletList items={[
               <>Minimums: a bulk of 1½ hours (30 minutes in a kitchen at 28 °C or more) and a final proof of 1 hour.</>,
+              <>A shaped baguette proofs no longer than what 1½ hours at 24 °C is worth by the yeast model: about 2 hours to the bake at 20 °C, 2½ at 18 °C, 3 at 16 °C, as in professional practice (Hamelman, Grands Moulins de Paris, King Arthur). The fridge takes the extra time; a plan with no cold phase stays at room temperature, and the bound adds no step between 10pm and 7am.</>,
               <>Hot kitchen with 16 hours or more before the bake (28 °C or more): two cold spells — the bulk goes into the fridge, the dough is divided, the balls go back in — and a warm-up of 45 minutes (30 minutes from 30 °C) before the final proof.</>,
               <>Times are rounded to the quarter hour. The fridge is taken at 6 °C unless you say otherwise.</>,
               <>A plan long enough to take a cold retard can ferment less than a slightly shorter room-temperature one (the fridge holds the dough), so the yeast is always computed for the plan&rsquo;s own path.</>,
@@ -322,7 +323,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <P>A bigger feed has further to climb: 1:2:2 takes about 1.35 times as long, 1:5:5 about 1.8 times, 1:10:10 about 2.15 times. A young starter takes 1.2 times as long, a rye starter 0.8 times. Above 30 °C the estimate stays at its 30 °C value, where the evidence is thin.</P>
 
             <Sub>The first feed after a rest</Sub>
-            <P>A starter fed long ago — past its peak, depleted, or resting in the fridge — starts the next feed with fewer active yeasts, so that feed rises more slowly: up to 1.5 times as long after a long rest. The planner applies this to the first feed after the last one you recorded, whichever feed of the plan it is. A feed given before the feed ahead of it has peaked also rises more slowly, by up to 20 %.</P>
+            <P>A starter fed long ago — past its peak, depleted, or resting in the fridge — starts the next feed with fewer active yeasts, so that feed rises more slowly: up to 1.5 times as long after a long rest. The planner applies this to the first feed after the last one you recorded, whichever feed of the plan it is, for a starter on the counter or in the fridge, and places the feeds of a run-up back from the feed before the mix. A feed given before the feed ahead of it has peaked also rises more slowly, by up to 20 %.</P>
 
             <Sub>Waking a fridge starter</Sub>
             <Table headers={['Last fed', 'Refreshes (mature)', 'Refreshes (young)']} rows={[
@@ -332,6 +333,9 @@ const CONTENT: Record<string, LocaleContent> = {
 
             <Sub>When it counts as ready</Sub>
             <P>The planner counts the starter as ready inside a window around its estimated peak: 15 % of its time to peak on either side (between 1 and 3 hours), and half an hour more before the peak. Start Dough is placed inside that window.</P>
+
+            <Sub>One jar, two bakes</Sub>
+            <P>When two sourdough bakes under way use the same starter and the later mix falls inside the ready window of the other bake&rsquo;s feed before its mix, one feed serves both: it is sized for both levains and said once, with each bake&rsquo;s amount.</P>
 
             <Sub>Feed ratio & timing</Sub>
             <P>The ratio you feed at (1:1:1, 1:2:2, 1:4:4, 1:5:5 or 1:10:10) is a quiet but powerful lever. If your ideal feed time lands in the middle of your night or your workday, the engine can <B>recommend a different ratio</B> that moves the peak into a workable hour, and says in plain words what it changed and why — for example, a 3am feed becomes a 7am one at a higher ratio. Keep your usual ratio, or take the suggestion.</P>
@@ -460,7 +464,7 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Répondez à quelques questions — ce que vous préparez, combien, la température de votre cuisine, l’heure d’enfournement et vos indisponibilités — et Baker Hub génère votre recette, en choisissant la farine, l’hydratation et la méthode qui conviennent au style. Pour une fournée au levain, il demande aussi où en est <strong style={{ color: CHAR }}>votre levain</strong> : sur le plan de travail, au réfrigérateur, ou bien monté et bullé en ce moment ; ses rafraîchis sont planifiés à partir de cette réponse. Si l’heure de cuisson tombe pendant vos indisponibilités, une seule fenêtre nomme le conflit et propose l’heure la plus proche qui convient (ou, si seule la sortie du frigo pose problème, vous laisse garder votre heure avec quelqu’un qui s’en charge).</P>
-            <P>La recette donne les ingrédients, puis <B>Votre plan</B> : les étapes clés et leurs heures. La Préparation vous guide pas à pas ; son récapitulatif permet d’ajouter le plan à votre agenda, avec un rappel pour chaque moment où vous devez être là. L’ajouter à nouveau après un changement met ces événements à jour.</P>
+            <P>La recette donne d’abord la pâte entière, puis chaque étape — poolish, biga ou levain, puis pâte finale — et les étapes s’additionnent pour former la pâte entière ; personnaliser ajoute le pourcentage du boulanger de chaque ingrédient. Chaque fournée ajoute 1,5 % au total pour la pâte qui reste dans le bol et sur les mains, afin que le dernier pâton pèse autant que les autres. Vient ensuite <B>Votre plan</B> : les étapes clés et leurs heures, et toutes les étapes à une touche. La Préparation vous guide pas à pas ; son récapitulatif permet d’ajouter le plan à votre agenda, avec un rappel pour chaque moment où vous devez être là. L’ajouter à nouveau après un changement met ces événements à jour.</P>
             <p style={{ margin: 0, ...bodyText }}><B>Personnaliser ma fournée</B> est là quand vous voulez aller plus loin, avant de générer la recette ou à tout moment ensuite depuis Ma fournée : matériel (four, puis pétrissage), températures de la cuisine et du frigo, eau, farine (produit ou mélange, et sa conservation), préferment (poolish, biga ou direct ; pour le poolish, au frigo, à température ambiante ou là où le planning convient le mieux), levure, réglages fins (hydratation, sel, huile, sucre, température de pâte, et votre propre quantité de levure ou de levain), puis heure de cuisson. Les pains au levain ont une étape Levain à la place du préferment : où il est, quand et comment il a été rafraîchi. Les mêmes moteurs tournent dans tous les cas ; personnaliser montre leurs entrées.</p>
           </>
         ),
@@ -569,6 +573,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <P>Le planificateur remonte depuis votre heure de cuisson. Il remplit la fenêtre avec une pousse au froid jusqu’à la durée préférée du style (ajustée par la tolérance de la farine), puis place le pointage, la division et le façonnage, et l’apprêt, en gardant les étapes manuelles hors de vos indisponibilités. Si c’est impossible à votre heure, il propose l’heure la plus proche qui convient, en regardant d’abord jusqu’à quatre jours plus loin.</P>
             <BulletList items={[
               <>Minimums : un pointage d’1 h 30 (30 minutes dans une cuisine à 28 °C ou plus) et un apprêt d’1 heure.</>,
+              <>Une baguette façonnée ne pousse pas plus longtemps que ce que valent 1 h 30 à 24 °C selon le modèle de levure : environ 2 heures jusqu’à la cuisson à 20 °C, 2 h 30 à 18 °C, 3 heures à 16 °C, comme dans la pratique professionnelle (Hamelman, Grands Moulins de Paris, King Arthur). Le frigo prend le temps en plus ; un planning sans froid reste à température ambiante, et cette limite n’ajoute aucune étape entre 22 h et 7 h.</>,
               <>Cuisine chaude avec 16 heures ou plus avant la cuisson (28 °C ou plus) : deux passages au froid — la pâte en pointage va au frigo, elle est divisée, les pâtons y retournent — et une remise en température de 45 minutes (30 minutes dès 30 °C) avant l’apprêt.</>,
               <>Les heures sont arrondies au quart d’heure. Le frigo est pris à 6 °C sauf indication contraire.</>,
               <>Un plan assez long pour passer par le frigo peut fermenter moins qu’un plan un peu plus court à température ambiante (le frigo conserve la pâte) : la levure est toujours calculée pour le parcours propre au plan.</>,
@@ -619,7 +624,7 @@ const CONTENT: Record<string, LocaleContent> = {
             <P>Un rafraîchi plus important a plus de chemin à parcourir : 1:2:2 prend environ 1,35 fois plus de temps, 1:5:5 environ 1,8 fois, 1:10:10 environ 2,15 fois. Un levain jeune prend 1,2 fois plus de temps, un levain de seigle 0,8 fois. Au-delà de 30 °C, l’estimation garde sa valeur à 30 °C, faute de données solides.</P>
 
             <Sub>Le premier rafraîchi après un repos</Sub>
-            <P>Un levain rafraîchi il y a longtemps — passé son pic, épuisé, ou au repos au frigo — démarre le rafraîchi suivant avec moins de levures actives, et ce rafraîchi monte plus lentement : jusqu’à 1,5 fois plus longtemps après un long repos. Le planificateur l’applique au premier rafraîchi qui suit le dernier que vous avez noté, quel qu’il soit dans le plan. Un rafraîchi donné avant que le précédent ait culminé monte aussi plus lentement, jusqu’à 20 %.</P>
+            <P>Un levain rafraîchi il y a longtemps — passé son pic, épuisé, ou au repos au frigo — démarre le rafraîchi suivant avec moins de levures actives, et ce rafraîchi monte plus lentement : jusqu’à 1,5 fois plus longtemps après un long repos. Le planificateur l’applique au premier rafraîchi qui suit le dernier que vous avez noté, quel qu’il soit dans le plan, pour un levain sur le plan de travail comme au frigo, et place les rafraîchis de la mise en route à rebours depuis celui d’avant le pétrissage. Un rafraîchi donné avant que le précédent ait culminé monte aussi plus lentement, jusqu’à 20 %.</P>
 
             <Sub>Réveiller un levain au frigo</Sub>
             <Table headers={['Dernier rafraîchi', 'Rafraîchis (mature)', 'Rafraîchis (jeune)']} rows={[
@@ -629,6 +634,9 @@ const CONTENT: Record<string, LocaleContent> = {
 
             <Sub>Quand il compte comme prêt</Sub>
             <P>Le planificateur compte le levain comme prêt dans une fenêtre autour de son pic estimé : 15 % de son temps de montée de part et d’autre (entre 1 et 3 heures), plus une demi-heure avant le pic. Le pétrissage est placé dans cette fenêtre.</P>
+
+            <Sub>Un pot, deux fournées</Sub>
+            <P>Quand deux fournées au levain en cours utilisent le même levain et que le pétrissage de la seconde tombe dans la fenêtre de maturité du rafraîchi d’avant pétrissage de la première, un seul rafraîchi sert aux deux : il est dosé pour les deux levains et indiqué une fois, avec la quantité de chaque fournée.</P>
 
             <Sub>Ratio et timing du rafraîchi</Sub>
             <P>Le ratio de rafraîchi (1:1:1, 1:2:2, 1:4:4, 1:5:5 ou 1:10:10) est un levier discret mais puissant. Si votre rafraîchi idéal tombe au milieu de la nuit ou de votre journée de travail, le moteur peut <B>recommander un autre ratio</B> qui amène le pic à une heure praticable, et dit en mots simples ce qu’il a changé et pourquoi — par exemple, un rafraîchi à 3 h devient un rafraîchi à 7 h à un ratio plus élevé. Gardez votre ratio habituel, ou suivez la suggestion.</P>

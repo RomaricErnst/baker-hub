@@ -106,3 +106,13 @@ test('About: Reading your plan matches the readiness strip and the peak format',
   a.ok(fr.includes('« prêt 16h–19h »')&&fr.includes('« vers 17h45 »'));
   a.doesNotMatch(about,/Fermentation curve|Courbe de fermentation|gold curve|courbe dorée|diamond|losange/i);
 });
+
+test('About: the baguette apprêt bound and one jar for two bakes are the engine\'s',()=>{
+  // A shaped baguette: 1.5 h at 24 °C through the yeast model's activity (preheat 0: hours to the bake).
+  for(const [T,h] of [[20,2],[18,2.5],[16,3]])a.equal(utils.styleMaxFinalProofHours('baguette',T,true,false,0),h,`${T} °C`);
+  a.ok(en.includes('1½ hours at 24 °C')&&en.includes('about 2 hours to the bake at 20 °C, 2½ at 18 °C, 3 at 16 °C'));
+  a.ok(fr.includes('1 h 30 à 24 °C')&&fr.includes('environ 2 heures jusqu’à la cuisson à 20 °C, 2 h 30 à 18 °C, 3 heures à 16 °C'));
+  // Shared feed: the later mix inside the earlier feed's ready window (mixNearPeak).
+  const sh=read('app/utils/sharedStarter.ts');a.match(sh,/mixNearPeak/);
+  a.ok(en.includes('One jar, two bakes')&&fr.includes('Un pot, deux fournées'));
+});
