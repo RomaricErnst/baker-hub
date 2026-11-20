@@ -43,6 +43,7 @@ test('the recipe summary gives the weight of each ball, not the size',()=>{
  assert.equal(eachPizzaShort({styleKey:'pan',itemWeight:600,units:'metric',locale:'en'}),'600 g each');
  assert.equal(eachPizzaShort({styleKey:'neapolitan',itemWeight:260,units:'metric',locale:'en'}),'260 g each');
  assert.equal(eachPizzaShort({styleKey:null,itemWeight:260,units:'metric',locale:'en'}),null);
- assert.match(page,/destination==='recipe'&&bakeType==='pizza'\?eachPizzaShort\(/);
+ // Round 7: the summary line is led by the day and gives the weight of each in "4 × 260 g Neapolitan" (recipeSummaryLine).
+ assert.match(page,/recipeSummaryLine\(bakeType,styleKey,numItems,eatTime,locale,each\)/);
  assert.match(page,/<PrototypeQuantityPicker [^>]*styleKey=\{styleKey \?\? undefined\}/);
 });

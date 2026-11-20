@@ -11,6 +11,8 @@ async function install(page,storage,at){
  await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
  await page.addInitScript(([storage])=>{if(sessionStorage.getItem('r4-seeded'))return;sessionStorage.setItem('r4-seeded','1');localStorage.clear();for(const k in storage)localStorage.setItem(k,storage[k]);},[storage]);
 }
+// Your plan opens on the key stages (round 7); the rows these tests read are under All steps.
+const allSteps=async page=>{await expect(page.locator('[data-recipe-plan]:visible').first()).toBeVisible();const t=page.locator('[data-plan-all-steps]:visible').first();if(await t.count()&&await t.getAttribute('aria-expanded')==='false')await t.tap();};
 const planRow=(page,name)=>page.locator('li,div').filter({hasText:new RegExp('^\\s*\\S+\\s*'+name+'$')}).last();
 const busy={version:1,blockers:{sleep:{enabled:true,from:'23:00',to:'07:00'},work:{enabled:true,from:'09:00',to:'19:00'}}};
 const breadBase={version:1,tab:'custom',bakeType:'bread',bakeName:'',mixerType:'hand',yeastType:'fresh',humidity:'normal',fridgeTemp:6,flourBlend:{flour1:'bread',flour2:null,ratio1:100},flourChosen:true,prefermentType:'poolish',prefermentFlourPct:20,prefOffsetH:11,prefGoesInFridge:false,flourInFridge:false,recipeGenerated:true,modeChosen:true,qtyChosen:true,prefermentChosen:true,customKitchenConfirmed:true,activeStep:99,advancedStep:99,highestStep:99,advancedHighestStep:99,setupOverview:false,activeTab:'plan'};
@@ -24,6 +26,7 @@ test.describe('Maya: a longer preheat',()=>{
   await install(page,{bh_session_v1:JSON.stringify(s)},'2026-11-19T02:00:00Z');
   await page.goto('/');
   await page.getByRole('button',{name:/^(Resume|View ingredients) →$/}).first().tap();
+  await allSteps(page);
   await expect(planRow(page,'Take the shaped dough out of the fridge')).toContainText('5:15pm');
   await page.getByRole('button',{name:/Preheat/}).first().tap();
   await page.getByLabel('Preheat the oven',{exact:true}).fill('18:30');
@@ -52,6 +55,7 @@ test.describe('Thomas',()=>{
   await bakeDate.fill('2026-11-29T11:00');await bakeDate.blur();
   await page.getByRole('button',{name:/^(Générer ma recette|Créer ma recette)/}).first().tap();
   await expect.poll(async()=>(await stored(page))?.recipeGenerated&&(await stored(page)).eatTime,{timeout:30000}).toBe(Z('2026-11-29T10:00'));
+  await allSteps(page);
   await expect(planRow(page,'Sortir les pâtons du réfrigérateur')).toContainText('8h30');
  });
  test('a night exit and the baguettes\' oven: one statement, one decision',async({page})=>{

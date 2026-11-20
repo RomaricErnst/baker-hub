@@ -165,7 +165,8 @@ for(const locale of ['fr','en']){
   await expect(resume).toBeVisible();await resume.tap();
   await expect.poll(formula).toEqual({tab:'simple',preferment:'poolish',hydration:64,salt:2.7,flour:data.flourBlend});
   await nextToRecipe(page,fr);
-  await expect(page.getByRole('region',{name:fr?'Quantités totales':'Total ingredients',exact:true})).toBeVisible();
+  // Round 7: the whole dough is open at the top in Simple too (was a closed "Total ingredients" under the stages).
+  await expect(page.getByRole('region',{name:fr?'Pâte complète':'Whole dough',exact:true})).toBeVisible();
   // The stages show directly, as they are made.
   const stages=page.locator('[data-recipe-stages]:visible');
   await expect(stages.getByText(/Poolish/).first()).toBeVisible();

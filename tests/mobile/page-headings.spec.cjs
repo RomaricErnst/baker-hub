@@ -62,7 +62,7 @@ test('recipe card repeats the pan size, and follows imperial units',async({page}
  await page.addInitScript(()=>{try{localStorage.setItem('bh_units','imperial');}catch{}});
  await seed(page,{style:'pan'});
  await go(page,'Recipe','en');
- await expect(page.locator('.bh-bake-context [data-bake-summary]')).toHaveText(/^2 pizzas · Pan pizza · \d+(\.\d)? oz each$/);
- // The day sits in the times box under it, with when it starts (16 Nov 2026 review).
- await expect(page.locator('.bh-bake-context [data-recipe-when]')).toContainText(/Bake\s*\w{3} \d+ \w{3}/);
+ // Round 7: one line led by the day, the weight of each in the units chosen; the times box is gone (the plan carries the times).
+ await expect(page.locator('.bh-bake-context [data-bake-summary]')).toHaveText(/^\w{3} \d+ \w{3} · \d+:\d{2}(am|pm) · 2 × \d+(\.\d)? oz Pan$/);
+ await expect(page.locator('.bh-bake-context [data-recipe-when]')).toHaveCount(0);
 });

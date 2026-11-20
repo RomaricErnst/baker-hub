@@ -26,8 +26,9 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: Simple — title, summary, S
  // The title is the bake's name, editable in place; an evening bake is a pizza night.
  const title=page.getByRole('heading',{level:1});
  await expect(title).toHaveText(L('Pizza night','Soirée pizza'));
- await expect(page.locator('[data-bake-summary]')).toContainText(L(/^4 pizzas · Classic Neapolitan · \d+ g each$/,/^4 pizzas · Napolitaine classique · \d+\s?g chacune$/));
- await expect(page.locator('[data-recipe-when]')).toContainText(L('Start Dough','Pétrir la pâte'));
+ // Round 7: the summary line is led by the day; the Start Dough / Bake box under it is gone (the plan carries the times).
+ await expect(page.locator('[data-bake-summary]')).toHaveText(L(/^\w{3} \d+ \w{3} · \d+:\d{2}(am|pm) · 4 × \d+ g Neapolitan$/,/^\S+ \d+ \S+ · \d+h\d{2} · 4 pizzas napolitaines de \d+\s?g$/));
+ await expect(page.locator('[data-recipe-when]')).toHaveCount(0);
  const rename=async name=>{await page.getByRole('button',{name:L('Rename this bake','Renommer la fournée')}).tap();const input=page.locator('[data-bake-title-input]');await expect(input).toBeFocused();await input.fill(name);await input.press('Enter');};
  await rename(L('Friday with friends','Vendredi entre amis'));
  await expect(title).toHaveText(L('Friday with friends','Vendredi entre amis'));

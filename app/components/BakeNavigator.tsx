@@ -36,7 +36,7 @@ const SUBTITLES:Record<string,{en:string;fr:string}> = {
  * into The basics and Customize and only the group you are in is open. Replaces the step link
  * ("Where you are") and the Sections dropdown; Menu keeps the app.
  */
-export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,contextLabel,stepLabel,steps,recipeReady=true,summary,nextStep}:{
+export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,contextLabel,stepLabel,steps,recipeReady=true,summary,nextStep,headline,bakeTimeSet=false}:{
   contextLabel?:string;active:BakeDestination;fr:boolean;onChange:(destination:BakeDestination)=>void;top?:number;
   recipeMeal?:{label:string;recipeLabel?:string;active:boolean;selected:boolean;onChoose:()=>void};
   /** The setup step on screen, shown after the section name. */
@@ -49,6 +49,10 @@ export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,conte
   summary?:string;
   /** After the recipe: the plan's next step ("Next: Fold 1 · 4:00 pm"), shown in the bar instead of repeating the page title. */
   nextStep?:string;
+  /** My bake in one line while it is the current part: "4 Neapolitan pizzas · Sun 22 Nov, 7:00pm" (the what alone before a bake time). */
+  headline?:string;
+  /** The bake time is set: a Recipe still to come waits for "Create my recipe", not for the bake time. */
+  bakeTimeSet?:boolean;
 }){
   const [open,setOpen]=useState(false);
   const trigger=useRef<HTMLButtonElement>(null);
@@ -84,7 +88,6 @@ export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,conte
   const section = active === 'organisation' ? 'batch' : active;
   const name=(id:BakeDestination)=>{const d=BAKE_DESTINATIONS.find(item=>item.id===id)!;return fr?d.fr:d.en;};
   const currentName=active==='recipe'&&recipeMeal?.active?recipeMeal.label:name(section);
-  const stepIndex=steps?steps.findIndex(step=>step.current):-1;
   // No "3 of 6": the total grew as answers added steps (Style 2 of 4, Quantity 3 of 6, Bake time 5 of 9
   // in Custom), so it read as unstable (17 Nov 2026 retention). The step's name is enough; the journey is in the sheet.
   const stepCount:string|null=null;
@@ -116,15 +119,14 @@ export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,conte
   const stepCard=()=>{
     if(!steps?.length)return null;
     if(!choicesOpen){
-      const current=steps[stepIndex];
+      // One headline line and See all (round 7, owner's option A): the sheet is a map of the journey,
+      // not a second review screen; the bar already names the step, so no step label here.
       const answered=steps.filter(step=>step.value).map(step=>step.value).join(', ');
-      return <div className="bh-journey-steps"><button type="button" className="bh-journey-step bh-journey-choices" aria-expanded={false} onClick={()=>setChoicesOpen(true)}>
-        <span className="bh-journey-step-text">
-          <span className="bh-journey-step-label">{current?`${current.label}${stepCount?` · ${stepCount}`:''}`:(fr?'Vos choix':'Your choices')}</span>
-          <span className={`bh-journey-step-value${answered?'':' is-todo'}`}>{answered||(fr?'À choisir':'To choose')}</span>
-        </span>
-        <span className="bh-journey-more">{fr?'Tout voir':'See all'} <span aria-hidden="true">▾</span></span>
-      </button></div>;
+      const line=headline??answered;
+      return <div className="bh-journey-headline">
+        <p data-journey-headline className={line?undefined:'is-todo'}>{line||(fr?'À choisir':'To choose')}</p>
+        <button type="button" className="bh-journey-choices" aria-expanded={false} onClick={()=>setChoicesOpen(true)}>{fr?'Tout voir':'See all'} <span aria-hidden="true">▾</span></button>
+      </div>;
     }
     if(!steps.some(step=>step.group==='custom'))return <div className="bh-journey-steps">{steps.map(stepRow)}</div>;
     const groups:[('basics'|'custom'),string][]=[['basics',fr?'Les bases':'The basics'],['custom',fr?'Personnaliser':'Customize']];
@@ -178,7 +180,8 @@ export default function BakeNavigator({active,fr,onChange,top=0,recipeMeal,conte
                 <span aria-hidden="true" className="bh-journey-node"/>
                 <button type="button" disabled={part.locked} aria-current={part.current?'page':undefined} aria-describedby={part.locked?`bh-journey-sub-${part.key}`:undefined} onClick={()=>choose(part.go)} className="bh-journey-part">
                   <span className="bh-journey-name"><span {...(part.key==='meal'?{}:{'data-destination-label':''})}>{part.label}</span>{part.current&&<span aria-hidden="true" className="bh-journey-here">{fr?'Vous êtes ici':'You are here'}</span>}</span>
-                  <span aria-hidden="true" id={`bh-journey-sub-${part.key}`} className="bh-journey-sub">{part.locked?(part.key==='recipe'?(fr?'Prête dès l’heure de cuisson choisie':'Ready once you set the bake time'):(fr?'S’ouvre avec votre recette':'Opens with your recipe')):part.sub}</span>
+                  {/* The headline under My bake says what the choices are; "Your choices" above it would repeat that. */}
+                  {!(part.key==='batch'&&part.current&&steps?.length)&&<span aria-hidden="true" id={`bh-journey-sub-${part.key}`} className="bh-journey-sub">{part.locked?(part.key==='recipe'?(bakeTimeSet?(fr?'Prête quand vous créez votre recette':'Ready when you create your recipe'):(fr?'Prête dès l’heure de cuisson choisie':'Ready once you set the bake time')):(fr?'S’ouvre avec votre recette':'Opens with your recipe')):part.sub}</span>}
                 </button>
                 {part.key==='batch'&&part.current&&stepCard()}
               </li>;

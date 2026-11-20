@@ -17,6 +17,7 @@ import { pushProfile, pullAndMergeProfile } from '../lib/supabase/profileSync';
 import OpeningChoices from '../components/OpeningChoices';
 import StylePicker, { StylePhotoPreload } from '../components/StylePicker';
 import BakeNavigator, {DestinationIcon, type BakeStepLink} from '../components/BakeNavigator';
+import { bakeHeadline, recipeSummaryLine } from '../utils/bakeHeadline';
 import BakeTypeChooser from '../components/BakeTypeChooser';
 import {getServingTimeEstimate, breadCoolingRange} from '../utils/servingTime';
 import {getPizzaById} from '../lib/toppingDatabase';
@@ -28,7 +29,7 @@ import { useMobileKeyboard } from '../hooks/useMobileKeyboard';
 import { NEXT_CTA, BACK_CTA, SECONDARY_CTA, oneLineCta } from '../lib/navButtons';
 import { getSetupBlocker, type SetupBlocker } from '../lib/setupBlocker';
 import OvenPicker from '../components/OvenPicker';
-import PrototypeQuantityPicker, { eachPizzaShort } from '../components/PrototypeQuantityPicker';
+import PrototypeQuantityPicker from '../components/PrototypeQuantityPicker';
 import MixerPicker from '../components/MixerPicker';
 import MixingBatchControl from '../components/MixingBatchControl';
 const SchedulePicker = dynamic(() => import('../components/SchedulePicker'), { ssr: false });
@@ -58,6 +59,7 @@ const BakeGuide = dynamic(() => import('../components/BakeGuide'), { ssr: false 
 import { getPrefPeakH_RT } from '../components/FermentChart';
 import StarterStrip, { starterStripModel } from '../components/StarterStrip';
 import { peakClock } from '../utils/peakTime';
+import { isKeyPlanRow } from '../utils/planKeySteps';
 import YeastHelper from '../components/YeastHelper';
 const PizzaParty = dynamic(() => import('../components/PizzaParty'), { ssr: false });
 const SandwichParty = dynamic(() => import('../components/SandwichParty'), { ssr: false });
@@ -817,7 +819,10 @@ function PreheatTimeEditor({fr,at,bakeAt,baseMin,onApply}:{fr:boolean;at:Date;ba
 // calendar file are one tap away.
 // The recipe says what goes in; below it, the plan says when: the key steps with
 // their times only. How to do each step lives in Preparation.
-function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,bakeEnd,steps,editable=[],editing=null,onEditTime,editor,notice,notes,beforeRow,moreLabel,onMore}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;startKey?:string|null;bakeAt:Date;bakeEnd?:Date|null;steps:{key:string;at:Date;label:string;busy?:boolean}[];editable?:string[];editing?:string|null;onEditTime?:(key:string)=>void;editor?:React.ReactNode;notice?:{key:string;node:React.ReactNode}|null;notes?:Record<string,string>;beforeRow?:{key:string;node:React.ReactNode}|null;moreLabel?:string|null;onMore?:()=>void}){
+function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,bakeEnd,steps,editable=[],editing=null,onEditTime,editor,notice,notes,beforeRow,startIsKey,moreLabel,onMore}:{fr:boolean;locale:string;startAt:Date;startLabel?:string;startKey?:string|null;bakeAt:Date;bakeEnd?:Date|null;steps:{key:string;at:Date;label:string;busy?:boolean}[];editable?:string[];editing?:string|null;onEditTime?:(key:string)=>void;editor?:React.ReactNode;notice?:{key:string;node:React.ReactNode}|null;notes?:Record<string,string>;beforeRow?:{key:string;node:React.ReactNode}|null;
+  /** Key stages only (round 7): the plan's first action is one of them; omitted shows every step. */
+  startIsKey?:boolean;moreLabel?:string|null;onMore?:()=>void}){
+  const [allSteps,setAllSteps]=useState(false);
   // The times the baker chooses (Start Dough; the preferment in Custom) are changed here,
   // (the button's 44px reach overflows the row by negative margins, so the row keeps its height)
   // in place: the time is a button, its editor opens under the row, and applying it
@@ -833,16 +838,23 @@ function RecipePlanCard({fr,locale,startAt,startLabel,startKey,bakeAt,bakeEnd,st
       const round5=(d:Date)=>new Date(Math.round(+d/900000)*900000);
       // The first step is a row like the others, under its day; the baker's own times are the tappable ones.
       const all=[{key:startKey??'start',at:round5(startAt),label:startLabel ?? (fr?'Commencer':'Start'),bake:false,own:true},...steps.map(step=>({key:step.key,at:round5(step.at),label:step.label,bake:false,own:false,busy:!!step.busy})),{key:'bake',at:round5(bakeAt),label:fr?'Enfourner':'Bake',bake:true,own:false}].sort((a,b)=>+a.at-+b.at||(a.own?-1:b.own?1:0));
-      const rows:{key:string;at:Date;labels:string[];bake:boolean;own:boolean;busy?:boolean}[]=[];
-      for(const item of all){const last=rows[rows.length-1];const busy='busy' in item&&!!item.busy;if(last&&+last.at===+item.at&&!item.bake&&!last.bake&&!item.own&&!last.own&&!editable.includes(item.key)&&!editable.includes(last.key)){last.labels.push(item.label);last.busy=last.busy||busy;}else rows.push({key:item.key,at:item.at,labels:[item.label],bake:item.bake,own:item.own,busy});}
+      const rows:{key:string;keys:string[];at:Date;labels:string[];bake:boolean;own:boolean;busy?:boolean}[]=[];
+      for(const item of all){const last=rows[rows.length-1];const busy='busy' in item&&!!item.busy;if(last&&+last.at===+item.at&&!item.bake&&!last.bake&&!item.own&&!last.own&&!editable.includes(item.key)&&!editable.includes(last.key)){last.labels.push(item.label);last.keys.push(item.key);last.busy=last.busy||busy;}else rows.push({key:item.key,keys:[item.key],at:item.at,labels:[item.label],bake:item.bake,own:item.own,busy});}
+      // The key stages only (round 7, owner): the preferment or the levain build, the mix, the bake, and any
+      // row the baker acts on from here (a time to change, a busy step, an open editor or note); All steps opens the rest.
+      const keyRows=startIsKey===undefined?rows:rows.filter(r=>isKeyPlanRow(r,{startIsKey,editable,pinned:[editing,notice?.key,beforeRow?.key]}));
+      const hidden=rows.length-keyRows.length;
+      const shown=allSteps?rows:keyRows;
       const days:{day:string;rows:typeof rows}[]=[];
-      for(const r of rows){const day=r.at.toLocaleDateString(fr?'fr-FR':'en-GB',{weekday:'long',day:'numeric',month:'short'});const last=days[days.length-1];if(last&&last.day===day)last.rows.push(r);else days.push({day,rows:[r]});}
+      for(const r of shown){const day=r.at.toLocaleDateString(fr?'fr-FR':'en-GB',{weekday:'long',day:'numeric',month:'short'});const last=days[days.length-1];if(last&&last.day===day)last.rows.push(r);else days.push({day,rows:[r]});}
       // Room for a pencil when a time is editable, so every label starts on the same line.
       const time={flex:'0 0 auto',minWidth:editable.length?'6em':'4.5em',color:'var(--ash)',fontVariantNumeric:'tabular-nums'} as const;
-      return <div data-recipe-plan-steps>{days.map(d=><div key={d.day} style={{marginTop:10}}>
+      return <><div data-recipe-plan-steps data-plan-key-only={!allSteps&&hidden>0?'':undefined}>{days.map(d=><div key={d.day} style={{marginTop:10}}>
         <p style={{margin:'0 0 2px',fontSize:14,fontWeight:700,color:'var(--char)'}}>{d.day.charAt(0).toUpperCase()+d.day.slice(1)}</p>
-        <ol style={{listStyle:'none',margin:0,padding:0}}>{d.rows.map(r=><React.Fragment key={r.key}>{beforeRow?.key===r.key&&<li data-plan-strip style={{listStyle:'none',borderTop:'1px solid var(--border)',padding:'6px 0 2px'}}>{beforeRow.node}</li>}<li data-plan-bake={r.bake||undefined} data-plan-start={r.own||undefined} style={{...row,fontWeight:r.bake?600:400,alignItems:'baseline'}}><span style={{...time,...(r.bake?{color:'var(--char)'}:{}),whiteSpace:'nowrap'}}>{editable.includes(r.key)?timeButton(r.key,r.labels[0],formatClock(r.at,locale)):r.bake&&bakeEnd?clockRange(r.at,bakeEnd,locale):formatClock(r.at,locale)}</span><span>{r.labels.join(' · ')}{notes?.[r.key]&&<span data-plan-row-note style={{color:'var(--smoke)'}}> · {notes[r.key]}</span>}{r.busy&&<span data-plan-busy style={{color:'var(--ash)'}}> · {fr?'pendant un moment occupé':'during a busy time'}</span>}{r.own&&(()=>{const soon=soonStartLabel(startAt,Date.now(),locale);return soon?<span data-plan-soon style={{color:'var(--ash)'}}> · {soon.split(' · ').pop()}</span>:null;})()}</span></li>{editing===r.key&&<li data-plan-editor style={{listStyle:'none'}}>{editor}</li>}{editing!==r.key&&notice?.key===r.key&&<li style={{listStyle:'none'}}>{notice.node}</li>}</React.Fragment>)}</ol>
-      </div>)}</div>;
+        <ol style={{listStyle:'none',margin:0,padding:0}}>{d.rows.map(r=><React.Fragment key={r.key}>{beforeRow&&r.keys.includes(beforeRow.key)&&<li data-plan-strip style={{listStyle:'none',borderTop:'1px solid var(--border)',padding:'6px 0 2px'}}>{beforeRow.node}</li>}<li data-plan-bake={r.bake||undefined} data-plan-start={r.own||undefined} style={{...row,fontWeight:r.bake?600:400,alignItems:'baseline'}}><span style={{...time,...(r.bake?{color:'var(--char)'}:{}),whiteSpace:'nowrap'}}>{editable.includes(r.key)?timeButton(r.key,r.labels[0],formatClock(r.at,locale)):r.bake&&bakeEnd?clockRange(r.at,bakeEnd,locale):formatClock(r.at,locale)}</span><span>{r.labels.join(' · ')}{notes?.[r.key]&&<span data-plan-row-note style={{color:'var(--smoke)'}}> · {notes[r.key]}</span>}{r.busy&&<span data-plan-busy style={{color:'var(--ash)'}}> · {fr?'pendant un moment occupé':'during a busy time'}</span>}{r.own&&(()=>{const soon=soonStartLabel(startAt,Date.now(),locale);return soon?<span data-plan-soon style={{color:'var(--ash)'}}> · {soon.split(' · ').pop()}</span>:null;})()}</span></li>{editing===r.key&&<li data-plan-editor style={{listStyle:'none'}}>{editor}</li>}{editing!==r.key&&notice?.key===r.key&&<li style={{listStyle:'none'}}>{notice.node}</li>}</React.Fragment>)}</ol>
+      </div>)}</div>
+      {hidden>0&&<button type="button" data-plan-all-steps aria-expanded={allSteps} onClick={()=>setAllSteps(v=>!v)} style={{display:'flex',alignItems:'center',minHeight:44,marginTop:4,padding:0,border:0,background:'none',font:'inherit',fontSize:15,color:'var(--terra)',cursor:'pointer'}}>
+        {allSteps?(fr?'Étapes clés seulement':'Key steps only'):(fr?`Toutes les étapes (${rows.length})`:`All steps (${rows.length})`)}<span aria-hidden="true" style={{marginLeft:6}}>{allSteps?'▴':'▾'}</span></button>}</>;
     })()}
     {/* No fermentation curve (20 Nov 2026 chart review, owner): a commercial dough's one fact only the
         curve carried, the preferment's storage, is a note on its row (notes); a sourdough plan shows the
@@ -4136,7 +4148,6 @@ export default function Home() {
   // day leads the summary line, so the title fits one line on a phone.
   const bakeAutoTitle = autoBakeTitle(bakeType, styleKey, numItems, eatTime ?? null, fr, styleKey ? styleDisplayName(styleKey) : '');
   const bakeAutoName = autoBakeTitle(bakeType, styleKey, numItems, null, fr, styleKey ? styleDisplayName(styleKey) : '', eatTime ? eatTime.getHours() : undefined);
-  const bakeDayLabel = eatTime && Number.isFinite(+eatTime) ? new Intl.DateTimeFormat(fr ? 'fr-FR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).format(eatTime) : null;
   const ovenDisplayName = ovenType === 'pizza_oven'
     ? (ovenConstruction === 'masonry' ? (fr ? 'Four à pizza traditionnel' : 'Traditional pizza oven') : (fr ? 'Four à pizza compact' : 'Tabletop pizza oven'))
     : ovenType === 'steam_oven'
@@ -4715,7 +4726,8 @@ export default function Home() {
       if(recipeGenerated){openToppingsStep();return;}
       setFillingsReturn(null);setBatchView('fillings');setActiveTab('batch');scrollToStepTop();}}:undefined}
     contextLabel={compactBakeContext?bakeQuantityLabel(numItems,bakeType,styleKey,fr):undefined}
-    stepLabel={showStepInBar?currentSubsection:undefined} steps={journeySteps} recipeReady={!!recipeGenerated} summary={journeySummary} nextStep={journeyNext} /> : null;
+    stepLabel={showStepInBar?currentSubsection:undefined} steps={journeySteps} recipeReady={!!recipeGenerated} summary={journeySummary} nextStep={journeyNext}
+    headline={styleKey?(qtyChosen?bakeHeadline(bakeType,styleKey,numItems,eatTime,locale):styleDisplayName(styleKey)):undefined} bakeTimeSet={!!eatTime} /> : null;
 
   // Toppings are planned with the dough, before buying: Recipe → Toppings → Shopping list.
   // A plain loaf (tartine family) goes on to the Shopping list; its tartines stay optional in Your bake
@@ -4927,6 +4939,9 @@ export default function Home() {
       : (fr?'à température ambiante jusqu’au pétrissage':'at room temperature until Start Dough');
     return {preferment:note};
   })();
+  // Key stages (round 7): the first action is one unless it is a starter feed before the levain build
+  // (a revival or refresh days ahead), which the full list keeps.
+  const planStartIsKey = !firstStarterAction || firstStarterAction.kind==='pre_mix';
   // Custom sourdough: the starter readiness strip sits before Start Dough (it replaces the multi-day chart).
   const planStrip = tab==='custom' && yeastType==='sourdough' && recipeGenerated && +startTime>Date.now() && starterStripModel(starterEvents,startTime)
     ? {key:'mix',node:<StarterStrip events={starterEvents} mixAt={startTime} blocks={blocks} fr={fr}/>} : null;
@@ -5290,22 +5305,12 @@ export default function Home() {
   void title;
   return <BakeTitleField value={bakeName} auto={bakeAutoName} fr={fr} onCommit={setBakeName}/>;
 })()}<p data-bake-summary style={{margin:'2px 0 0',fontSize:14,color:'var(--ash)'}}>{(()=>{
-  // One line: the day, what, which style, and for pizza the weight of each.
-  const quantity=bakeQuantityLabel(numItems,bakeType,styleKey,fr);
-  const genericBread=bakeType==='bread'&&['pain','pains','loaf','loaves'].includes(breadNoun(styleKey,numItems,fr));
-  const style=styleKey&&(bakeType==='pizza'||genericBread)?styleDisplayName(styleKey):'';
-  const each=destination==='recipe'&&bakeType==='pizza'?eachPizzaShort({styleKey,itemWeight,diameter:STYLE_HAS_DIAMETER.includes(styleKey??'')&&crustActive>=0?pizzaDiameter:undefined,units,locale}):null;
-  // The day moves to the times below, which say when it starts as well as when it bakes.
-  return [eatTime?null:bakeDayLabel,quantity,style,each].filter(Boolean).join(' · ');
+  // One line led by the day: "Sun 22 Nov · 7:00pm · 4 × 260 g Neapolitan" (round 7: the Make Poolish / Bake
+  // card is gone; the plan below carries the times).
+  const each=bakeType==='pizza'&&styleKey?displayWeight(Math.round(itemWeight),units,locale):null;
+  return recipeSummaryLine(bakeType,styleKey,numItems,eatTime,locale,each);
 })()}</p>
-{/* When it starts, above the fold: the bake's day alone read as "all on Saturday" when the dough
-    starts the evening before (16 Nov 2026 first-baker review). */}
 {previousNote&&<p data-previous-note style={{margin:'8px 0 0',fontSize:15,color:'var(--ash)'}}><strong>{fr?'La dernière fois : ':'Last time: '}</strong>{previousNote}</p>}
-{eatTime&&<div data-recipe-when style={{display:'grid',gridTemplateColumns:'auto 1fr',columnGap:12,rowGap:2,margin:'10px 0 2px',padding:'10px 14px',border:'1px solid var(--border)',borderRadius:12,background:'var(--warm)',fontSize:15}}>
-  <span style={{color:'var(--smoke)'}}>{firstRecipeActionLabel}</span><strong style={{fontWeight:600}}>{formatBakeDateTime(firstRecipeAction,locale)}</strong>
-  <span style={{color:'var(--smoke)'}}>{fr?'Enfourner':'Bake'}</span><strong style={{fontWeight:600}}>{formatBakeDateTime(eatTime,locale)}</strong>
-  <button type="button" className="bh-back-action" style={{gridColumn:'1 / -1',justifySelf:'start',minHeight:44,margin:'-6px 0 -10px',paddingLeft:0}} onClick={()=>{document.getElementById('bh-recipe-plan-title')?.scrollIntoView({block:'start'});}}>{fr?'Voir tout le plan ↓':'See the full plan ↓'}</button>
-</div>}
 </div>}
 {recipeGenerated && planMoved && destination!=='batch' && destination!=='organisation' && eatTime && (()=>{
   // Only what moved, and an amount only when it changes what the baker weighs.
@@ -5647,7 +5652,7 @@ export default function Home() {
                             starterLocation={starterLocation}
                           />
                           {executionClash && <p data-plan-clash role="status" style={{margin:'0 0 8px',fontSize:15,color:'var(--char)'}}>{fr?'La suite du plan demande de nouveaux horaires.':'The rest of the plan needs new times.'}</p>}
-                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} bakeEnd={recipeBakeEnd} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={preheatEdit?'preheat':planEdit==='pref'?'preferment':planEdit} onEditTime={key=>{if(key==='preheat'){setPlanEdit(null);setPreheatEdit(v=>!v);return;}setPreheatEdit(false);setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;});}} editor={preheatEdit?preheatEditor:planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} notes={planRowNotes} beforeRow={planStrip} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
+                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} bakeEnd={recipeBakeEnd} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={preheatEdit?'preheat':planEdit==='pref'?'preferment':planEdit} onEditTime={key=>{if(key==='preheat'){setPlanEdit(null);setPreheatEdit(v=>!v);return;}setPreheatEdit(false);setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;});}} editor={preheatEdit?preheatEditor:planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} notes={planRowNotes} beforeRow={planStrip} startIsKey={planStartIsKey} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
                         </div>
                       )}
                     </>
@@ -6245,7 +6250,7 @@ export default function Home() {
                             starterLocation={starterLocation}
                           />
                           {executionClash && <p data-plan-clash role="status" style={{margin:'0 0 8px',fontSize:15,color:'var(--char)'}}>{fr?'La suite du plan demande de nouveaux horaires.':'The rest of the plan needs new times.'}</p>}
-                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} bakeEnd={recipeBakeEnd} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={preheatEdit?'preheat':planEdit==='pref'?'preferment':planEdit} onEditTime={key=>{if(key==='preheat'){setPlanEdit(null);setPreheatEdit(v=>!v);return;}setPreheatEdit(false);setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;});}} editor={preheatEdit?preheatEditor:planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} notes={planRowNotes} beforeRow={planStrip} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
+                          {eatTime && (schedule || planEdit) && !isUnleavened && <RecipePlanCard fr={fr} locale={locale} startAt={firstRecipeAction} startLabel={firstRecipeActionLabel} bakeAt={eatTime} bakeEnd={recipeBakeEnd} steps={recipePlanSteps} startKey={recipeStartKey} editable={planEditable} editing={preheatEdit?'preheat':planEdit==='pref'?'preferment':planEdit} onEditTime={key=>{if(key==='preheat'){setPlanEdit(null);setPreheatEdit(v=>!v);return;}setPreheatEdit(false);setPlanEdit(current=>{const next=key==='preferment'?'pref':'mix';return current===next?null:next;});}} editor={preheatEdit?preheatEditor:planEditor} notice={planNote?{key:planNote.key,node:planInlineNote}:null} notes={planRowNotes} beforeRow={planStrip} startIsKey={planStartIsKey} moreLabel={planMoreLabel} onMore={editRecipeTiming}/>}
                         </div>
                       )}
                     </>

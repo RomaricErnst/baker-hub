@@ -5,7 +5,7 @@ import { peakAround } from '../utils/peakTime';
 import type { StarterEvent } from './SchedulePicker';
 import { recommendedFlourName, flourProductName } from '../lib/flourGuidance';
 import { mixingBatchPlan } from '../utils/mixingBatches';
-import { useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { commercialDilution, type RecipeResult, type YeastResult, type YeastWarningKey } from '../utils';
 import { YEAST_TYPES, PREFERMENT_TYPES, MIXER_TYPES, FLOUR_DATA, type PrefermentType, type FlourBlend } from '../data';
@@ -16,6 +16,7 @@ import { formatPrefermentDose, formatYeastDose, prefermentDilution } from '../ut
 import { needsScaleHelp, yeastSpoonMeasure, setPercent, DILUTION_BASE_YEAST_G, SCALE_HELP_BELOW_G } from '../utils/yeastMeasure';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { eggCountLabel } from '../utils/breadNames';
+import { recipeStages, stageYeastDoses, levainSplit, type RecipeStage, type StageRow } from '../utils/recipeStages';
 
 interface RecipeOutputProps extends WaterSettingsProps {
   afterIngredients?: ReactNode;
@@ -87,12 +88,40 @@ const D = {
 // belongs with the protocol, not in the ingredient list.
 
 // ── Ingredient row ─────────────────────────────
+// Custom shows baker's % in a true column (round 7, owner): right-aligned, tabular figures, at the same x
+// on every row of the whole dough and of each stage. Fixed px tracks (not em) so the smaller stage rows
+// line up with the whole dough. Simple has no % column at all.
+const PctColumn = createContext(false);
+/** The stage breakdown's rows: a size smaller than the whole dough's. */
+const CompactRows = createContext(false);
+const PCT_COL_PX = 64;
+const GRAMS_COL_PX = 80;
+const rowColumns = (pctCol: boolean) => pctCol ? `minmax(0,1fr) ${PCT_COL_PX}px ${GRAMS_COL_PX}px` : 'minmax(0,1fr) auto';
+
+function PctHeader({ fr }: { fr: boolean }) {
+  // Over the two columns; the % label may be wider than its track and runs leftwards, never wrapping.
+  return <div data-pct-header style={{ display: 'grid', gridTemplateColumns: rowColumns(true), gap: '0 12px', padding: '0 .1rem', fontSize: 12, color: 'var(--smoke)', fontFamily: 'var(--font-ui)' }}>
+    <span />
+    <span style={{ display: 'flex', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>{fr ? '% de farine' : '% of flour'}</span>
+    <span style={{ display: 'flex', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>{fr ? 'Poids' : 'Weight'}</span>
+  </div>;
+}
+
+function TotalRow({ label, grams }: { label: string; grams: string }) {
+  const pctCol = useContext(PctColumn);
+  return <div data-total-dough style={{ display: 'grid', gridTemplateColumns: rowColumns(pctCol), gap: '0 12px', alignItems: 'center', padding: '12px .1rem 0' }}>
+    <div style={{ gridColumn: pctCol ? '1 / 3' : undefined, fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>{label}</div>
+    <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold-text)', textAlign: 'right', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{grams}</div>
+  </div>;
+}
+
 function IngRow({
-  label, sub, grams, pct = '', highlight = false, range = false, advancedPct, noPct = false, wideSub = false,
+  label, sub, grams, highlight = false, range = false, advancedPct, noPct = false, wideSub = false,
 }: {
   label: React.ReactNode;
   sub?: React.ReactNode;
   grams: string;
+  /** Legacy: the % now comes from advancedPct, in Custom only. */
   pct?: string;
   highlight?: boolean;
   range?: boolean;
@@ -101,6 +130,8 @@ function IngRow({
   /** The sub line spans the whole row, so a panel opened from it is not squeezed beside the amount. */
   wideSub?: boolean;
 }) {
+  const pctCol = useContext(PctColumn);
+  const compact = useContext(CompactRows);
   const subEl = sub ? (
           <div style={{
             fontSize: '12px',
@@ -116,15 +147,15 @@ function IngRow({
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: '1fr auto',
-      gap: '0 24px',
+      gridTemplateColumns: rowColumns(pctCol),
+      gap: '0 12px',
       alignItems: 'center',
-      padding: '12px .1rem',
+      padding: compact ? '8px .1rem' : '12px .1rem',
       borderBottom: `1px solid ${D.line}`,
     }}>
-      <div>
+      <div style={{ minWidth: 0 }}>
         <div style={{
-          fontSize: '15px',
+          fontSize: compact ? '14px' : '15px',
           fontWeight: highlight ? 600 : 400,
           color: highlight ? 'var(--char)' : D.muted,
           letterSpacing: '.02em',
@@ -133,18 +164,16 @@ function IngRow({
         </div>
         {!wideSub && subEl}
       </div>
-
-      <div style={{
+      {pctCol && <span data-pct style={{ fontSize: compact ? 13 : 14, fontWeight: 400, color: 'var(--smoke)', textAlign: 'right', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', fontFamily: 'var(--font-ui)' }}>{!noPct && advancedPct ? advancedPct : ''}</span>}
+      <span data-grams style={{
         fontFamily: 'var(--font-ui)',
-        fontSize: range ? '.82rem' : '1rem',
-        fontWeight: 700,
-        color: highlight ? 'var(--char)' : 'var(--char)',
+        fontSize: range ? '.82rem' : compact ? '15px' : '1rem',
+        fontWeight: compact ? 600 : 700,
+        color: 'var(--char)',
         textAlign: 'right',
-        whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 12,
-      }}>
-        {!noPct && advancedPct && <span style={{fontSize:14,fontWeight:400,color:"var(--smoke)"}}>{advancedPct}</span>}
-        <span>{grams}</span>
-      </div>
+        whiteSpace: 'nowrap',
+        fontVariantNumeric: 'tabular-nums',
+      }}>{grams}</span>
       {wideSub && subEl}
 
     </div>
@@ -398,7 +427,8 @@ export default function RecipeOutput({
   const sdHalf = sourdough ? Math.round(sdMid / 2) : 0;
   const sdActive = !!sourdough && result.preferment == null;
   const flourMain = sdActive ? flour - sdHalf : flour;
-  const waterMain = sdActive ? water - sdHalf : water;
+  // The starter's flour is half of it rounded, its water the rest, so the two add up to the starter (levainSplit).
+  const waterMain = sdActive ? water - levainSplit(sdMid).water : water;
   // Keep the buying identity beside its ingredient, not in a distant footer.
   // Only the optional explanation is collapsed; stage/starter quantities below
   // retain their existing accounting and custom blends keep their own names.
@@ -566,20 +596,82 @@ export default function RecipeOutput({
 
   </div>) : null;
 
-  // The whole dough's rows: the overall formula, with baker's % in Custom.
+  // ── The recipe by stage (round 7, owner's order) ──────────────────────────
+  // The whole dough first (the overall formula, baker's % in Custom only), then a smaller breakdown of
+  // what to weigh at each stage: the poolish or biga (or the levain build), then the final dough. The
+  // stages add up to the whole dough; a direct dough has the whole dough only.
+  const stagedPref = !!pf && !!prefermentType && prefermentType !== 'none';
+  const staged = stagedPref || sdActive;
+  const stages = staged ? recipeStages(result, feedRatio ?? 1) : [];
+  const yeastDoses = pf ? stageYeastDoses([pf.prefYeastGrams, pf.finalYeastGrams ?? 0], locale) : null;
+  const custom = mode === 'custom';
+  const pctOf = (g: number) => custom ? pctStr(Math.round(g / flour * 1000) / 10) : undefined;
+  const pctOfExact = (g: number) => custom ? pctStr(g / flour * 100) : undefined;
+  const parts = result.flourParts ?? [];
+  const flourName = (index: number) => { const part = parts[index]; return part ? flourProductName(locale === 'fr' ? part.nameFr : part.name, locale) : t('recipeOutput.ingredientFlour'); };
+  // One named flour reads by its name; the guided default reads "Flour".
+  const singleFlourLabel = showSelectedFlour && parts.length === 1 ? flourName(0) : t('recipeOutput.ingredientFlour');
+  const prefName = prefermentType ? PREFERMENT_TYPES[prefermentType]?.name ?? '' : '';
+  const prefYeastLabel = pf ? t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`) : '';
+  const totalDoughLabel = u === 'imperial' ? wStr(totalDough) : `${totalDough.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`;
+  const levainBuild = sourdough ? starterBuild(sourdough.starterGramsMid, sourdough.starterGramsMax, feedRatio ?? 1) : null;
+  const starterLeft = sourdough && levainBuild ? Math.max(levainBuild.keep, levainBuild.total - sourdough.starterGramsMid) : 0;
+
   const wholeDoughRows = <>
-          {mode === 'custom' && <div style={{textAlign:'right',fontSize:12,color:'var(--smoke)'}}>{locale === 'fr' ? '% de farine · Poids' : '% of flour · Weight'}</div>}
-        {showSelectedFlour && result.flourParts?.length ? result.flourParts.map((part, index) => <IngRow key={`${part.key}-${index}`} label={flourProductName(locale === 'fr' ? part.nameFr : part.name,locale)} grams={wStr(part.grams)} advancedPct={mode === 'custom' ? pctStr(part.pct) : undefined} />) : <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={mode === 'custom' ? '100%' : undefined} sub={guidedFlourGuidance} />}
-        <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} advancedPct={mode === 'custom' ? pctStr(waterPct) : undefined} />
-        <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
-        {pf && pf.prefYeastGrams > 0 && (() => { const total = pf.prefYeastGrams + (pf.finalYeastGrams ?? 0); return <IngRow label={t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)} grams={formatPrefermentDose(total,locale)} advancedPct={mode === 'custom' ? pctStr(total / flour * 100) : undefined} />; })()}
-        {oil > 0 && <IngRow label={t('recipeOutput.ingredientOil')} grams={wStr(oil)} advancedPct={mode === 'custom' ? pctStr(oilPct) : undefined} />}
-        {sugar > 0 && <IngRow label={t('recipeOutput.ingredientSugar')} grams={wStr(sugar)} advancedPct={mode === 'custom' ? pctStr(sugarPct) : undefined} />}
-        {/* A levain says its starter %, the number the plan was made with (and raised to fit free time), not half of it as prefermented flour (18 Nov 2026 retention). */}
-        {mode === 'custom' && (pf || !sourdough) && <IngRow label={locale === 'fr' ? 'Dont farine préfermentée' : 'Of which prefermented flour'} grams={wStr(pf ? pf.prefFlour : sdHalf)} advancedPct={pctStr(pf ? pf.prefFlour / flour * 100 : 0)} sub={locale === 'fr' ? 'Déjà comprise dans la farine totale.' : 'Already included in total flour.'} />}
-        {mode === 'custom' && !pf && sourdough && <IngRow label={locale === 'fr' ? 'Dont levain' : 'Of which starter'} grams={wStr(sdMid)} advancedPct={pctStr((sourdough.starterPctMin + sourdough.starterPctMax) / 2)} sub={locale === 'fr' ? 'Sa farine et son eau sont comprises ci-dessus.' : 'Its flour and water are included above.'} />}
-          {mode==='custom' && flourBlend?.flour2 && <p className="bh-key-detail">{locale==='fr'?'Le mélange choisi concerne la farine ajoutée au pétrissage. Pour les totaux, la farine du levain ou du préferment est comptée dans la première farine.':'The selected blend applies to flour added at mixing. The totals count starter or preferment flour with the first flour.'}</p>}
+    {/* Several flours with a preferment: one Flour line at 100 %, each flour under it in grams. Their
+        shares of the whole differ from the chosen blend (the poolish takes the first flour), so they are
+        not given percentages that would read as a contradiction of 85/15. */}
+    {parts.length > 1 && showSelectedFlour
+      ? <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={custom ? '100%' : undefined}
+          sub={<span data-flour-parts style={{display:'flex',flexDirection:'column'}}>{parts.map((part, index) => <span key={`${part.key}-${index}`}>{flourName(index)} · {wStr(part.grams)}</span>)}</span>} />
+      : <IngRow label={singleFlourLabel} grams={wStr(flour)} advancedPct={custom ? '100%' : undefined} sub={guidedFlourGuidance} />}
+    <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} advancedPct={custom ? pctStr(waterPct) : undefined} />
+    <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} advancedPct={custom ? pctStr(saltPct) : undefined} />
+    {pf && yeastDoses && yeastDoses.shownTotal > 0 && <IngRow label={prefYeastLabel} grams={yeastDoses.total} advancedPct={pctOfExact(pf.prefYeastGrams + (pf.finalYeastGrams ?? 0))} />}
+    {oil > 0 && <IngRow label={t('recipeOutput.ingredientOil')} grams={wStr(oil)} advancedPct={custom ? pctStr(oilPct) : undefined} />}
+    {sugar > 0 && <IngRow label={t('recipeOutput.ingredientSugar')} grams={wStr(sugar)} advancedPct={custom ? pctStr(sugarPct) : undefined} />}
+    <TotalRow label={t('recipeOutput.totalDough')} grams={totalDoughLabel} />
   </>;
+
+  const stageTitle = (key: RecipeStage['key']) => key === 'final' ? t('recipeOutput.finalDoughTitle')
+    : key === 'levain' ? (locale === 'fr' ? 'Rafraîchi du levain' : 'Levain build') : prefName;
+  const stageRow = (stage: RecipeStage, row: StageRow, index: number) => {
+    const key = `${stage.key}-${row.kind}-${row.part ?? ''}-${index}`;
+    switch (row.kind) {
+      case 'flour': return <IngRow key={key} label={row.part !== undefined ? flourName(row.part) : singleFlourLabel} grams={wStr(row.grams)} advancedPct={stage.key === 'levain' ? undefined : pctOf(row.grams)} />;
+      case 'water':
+        if (stage.key === 'preferment') return <IngRow key={key} label={t('recipeOutput.ingredientWater')} grams={wStr(row.grams)} advancedPct={pctOf(row.grams)} sub={t('recipeOutput.atRoomTemp')} />;
+        if (stage.key === 'levain') return <IngRow key={key} label={t('recipeOutput.ingredientWater')} grams={wStr(row.grams)} />;
+        return <IngRow key={key} label={t('recipeOutput.ingredientWater')} grams={wStr(row.grams)} advancedPct={pctOf(row.grams)} sub={!enrichment ? waterSub(row.grams, stagedPref ? finalDoughWaterSubNode : waterSubNode) : undefined} />;
+      case 'salt': return <IngRow key={key} label={t('recipeOutput.ingredientSalt')} grams={wStr(row.grams)} advancedPct={custom ? pctStr(saltPct) : undefined} />;
+      case 'oil': return <IngRow key={key} label={t('recipeOutput.ingredientOil')} grams={wStr(row.grams)} advancedPct={custom ? pctStr(oilPct) : undefined} />;
+      case 'sugar': return <IngRow key={key} label={t('recipeOutput.ingredientSugar')} grams={wStr(row.grams)} advancedPct={custom ? pctStr(sugarPct) : undefined} />;
+      case 'yeast': {
+        const dose = yeastDoses?.parts[stage.key === 'preferment' ? 0 : 1] ?? formatYeastDose(row.grams, locale);
+        if (stage.key === 'preferment' && pf) return <IngRow key={key} label={prefYeastLabel} grams={dose} advancedPct={pctOfExact(row.grams)}
+          sub={prefDoseBody ? <>{prefermentSpoon && <span>{prefermentSpoon} · </span>}<details data-yeast-help style={{display:'inline'}} onToggle={e=>setPrefWeighOpen(e.currentTarget.open)}><summary style={{display:'inline',padding:'13px 0',margin:'-13px 0',cursor:'pointer',color:'var(--terra)',listStyle:'none'}}>{prefWeighOpen?t('recipeOutput.weighOrDilute').replace('▾','▴'):t('recipeOutput.weighOrDilute')}</summary>{prefDoseBody}</details></> : measureHint(prefermentSpoon,false) || undefined}
+          wideSub={!!prefDoseBody} />;
+        return <IngRow key={key} label={prefYeastLabel} grams={dose} advancedPct={pctOfExact(row.grams)} />;
+      }
+      case 'preferment': return <IngRow key={key} highlight label={prefermentType === 'biga' ? (locale === 'fr' ? 'Toute la biga' : 'All the biga') : (locale === 'fr' ? `Tout le ${prefName.toLowerCase()}` : `All the ${prefName.toLowerCase()}`)} grams={wStr(Math.round(row.grams))} advancedPct={pctOf(row.grams)} />;
+      case 'starter':
+        if (stage.key === 'levain') return <IngRow key={key} label={locale === 'fr' ? 'Levain de votre pot' : 'Starter from your jar'} grams={wStr(row.grams)} sub={locale === 'fr' ? `Levain liquide · 100 % d’hydratation · rafraîchi 1:${feedRatio ?? 1}:${feedRatio ?? 1}` : `Liquid starter · 100% hydration · feed 1:${feedRatio ?? 1}:${feedRatio ?? 1}`} />;
+        return <IngRow key={key} highlight label={locale === 'fr' ? 'Levain' : 'Levain'} grams={wStr(row.grams)} advancedPct={pctOf(row.grams)} sub={locale === 'fr' ? `Gardez le reste (${wStr(starterLeft)}) pour la prochaine fois` : `Keep the rest (${wStr(starterLeft)}) for next time`} />;
+    }
+  };
+  const chillAt = stagedPref && mixingTime ? poolishCoolingAt(mixingTime, result) : null;
+  const stagesSection = staged ? (
+    // Visually secondary: smaller rows under the whole dough, one block per stage, in the order it is made.
+    <section data-recipe-stages aria-label={locale === 'fr' ? 'Par étape' : 'By stage'} style={{display:'flex',flexDirection:'column',gap:24,marginTop:12}}>
+      {stages.map(stage => <div key={stage.key} data-stage={stage.key}>
+        <h3 style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 600, color: 'var(--char)', margin: '0 0 2px' }}>{stageTitle(stage.key)}</h3>
+        <CompactRows.Provider value>
+          {stage.rows.map((row, index) => stageRow(stage, row, index))}
+        </CompactRows.Provider>
+        {stage.key === 'preferment' && chillAt && <p style={{margin:'8px 0 0',fontSize:14,color:'var(--ash)'}}>{t('recipeOutput.chillPoolishAt',{time:formatTimeLabel(chillAt)})}</p>}
+      </div>)}
+    </section>
+  ) : null;
 
   return (
     <div className="bh-recipe-output" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -592,8 +684,8 @@ export default function RecipeOutput({
       }}>
         <div>
           {/* A section of the Recipe page: the site's section-title style, under the bake's title. */}
-          <h2 className="bh-section-title" style={{ margin: '0 0 .2rem' }}>
-            {locale === 'fr' ? 'Ingrédients de la pâte' : 'Dough ingredients'}
+          <h2 id="bh-whole-dough-title" className="bh-section-title" style={{ margin: '0 0 .2rem' }}>
+            {staged ? (locale === 'fr' ? 'Pâte complète' : 'Whole dough') : (locale === 'fr' ? 'Ingrédients de la pâte' : 'Dough ingredients')}
           </h2>
           {/* The recipe is the recipe: timing lives in Preparation. */}
           {wastePct !== undefined && wastePct > 0 && (
@@ -612,138 +704,16 @@ export default function RecipeOutput({
             ? (locale === 'fr' ? 'Cuisson à la poêle ou sur une plaque : gardez les pains cuits couverts pour qu’ils restent souples.' : 'Cook on a skillet or griddle; keep cooked breads covered to stay soft.')
             : (locale === 'fr' ? 'Le façonnage et la cuisson de ce pain sont dans Préparation et Cuisson & service.' : 'This bread’s shaping and baking are in Preparation and Baking & serving.')}</p>}
 
-      {/* The % column header only where the rows carry percentages. */}
-      {mode === 'custom' && !hasPref && !sdActive && <div style={{textAlign:'right',fontSize:12,color:'var(--smoke)'}}>{locale === 'fr' ? '% de farine · Poids' : '% of flour · Weight'}</div>}
-
-      {/* Custom: the overall formula first, open, as professional formulas are written; its
-          baker's percentages are the only ones (the stages below carry weights only). */}
-      {(hasPref || sdActive) && mode === 'custom' && <section data-whole-dough aria-labelledby="bh-whole-dough-title">
-        <div id="bh-whole-dough-title" style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 600, color: 'var(--char)' }}>{locale === 'fr' ? 'Pâte complète' : 'Whole dough'}</div>
-        {wholeDoughRows}
-      </section>}
-
-      {/* ── Ingredients / Preferment cards ──────── */}
-      {result.preferment && prefermentType && prefermentType !== 'none' ? (() => {
-        const pf = result.preferment!;
-        const pd = PREFERMENT_TYPES[prefermentType];
-        const prefTotal = Math.round(pf.prefFlour + pf.prefWater + pf.prefYeastGrams);
-        const chillAt = mixingTime ? poolishCoolingAt(mixingTime,result) : null;
-
-        return (
-          // The stages are the recipe: shown as they are made, not behind a toggle. Unboxed like
-          // Whole dough, so one grams column runs all the way down (16 Nov 2026 design pass).
-          <div data-recipe-stages style={{display:'flex',flexDirection:'column',gap:32}}>
-            {/* CARD 1: Make your preferment */}
-            <div>
-              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 600, color: 'var(--char)', marginBottom: '4px' }}>
-                {t('recipeOutput.makeYourPref', { name: pd.name })}
-              </div>
-              <IngRow
-                label={t('recipeOutput.ingredientFlour')}
-                grams={wStr(pf.prefFlour)}
-                noPct
-                highlight
-                sub={!showSelectedFlour
-              ? (styleKey ? recommendedFlourName(styleKey, locale) : undefined)
-              : showSelectedFlour && flourBlend ? (() => {
-                  const f1 = FLOUR_DATA[flourBlend.flour1];
-                  const f1DisplayName = (flourBlend.brandProduct ? flourProductName(flourBlend.brandProduct,locale) : undefined) ?? (locale === 'fr' ? f1.nameFr : f1.name);
-                  if (!flourBlend.flour2 || flourBlend.ratio1 >= 100) {
-                    return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>{f1DisplayName}</span>;
-                  }
-                  return <span style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: 'var(--smoke)' }}>{locale === 'fr' ? `Utilisez votre farine principale (${f1DisplayName})` : `Use your primary flour (${f1DisplayName})`}</span>;
-                })() : undefined}
-              />
-              <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(pf.prefWater)} noPct
-                advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefWater / pf.prefFlour * 1000) / 10) : undefined}
-                sub={t('recipeOutput.atRoomTemp')} />
-              {chillAt && <p>{t('recipeOutput.chillPoolishAt',{time:formatTimeLabel(chillAt)})}</p>}
-              {pf.prefYeastGrams > 0 && (
-                <IngRow
-                  label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)}</span>}
-                  grams={formatPrefermentDose(pf.prefYeastGrams,locale)} sub={prefDoseBody ? <>{prefermentSpoon && <span>{prefermentSpoon} · </span>}<details data-yeast-help style={{display:'inline'}} onToggle={e=>setPrefWeighOpen(e.currentTarget.open)}><summary style={{display:'inline',padding:'13px 0',margin:'-13px 0',cursor:'pointer',color:'var(--terra)',listStyle:'none'}}>{prefWeighOpen?t('recipeOutput.weighOrDilute').replace('▾','▴'):t('recipeOutput.weighOrDilute')}</summary>{prefDoseBody}</details></> : measureHint(prefermentSpoon,false)} wideSub={!!prefDoseBody} noPct
-                  advancedPct={mode === 'custom' ? pctStr(Math.round(pf.prefYeastGrams / pf.prefFlour * 1000) / 10) : undefined} />
-              )}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
-                <div style={{ fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>
-                  {t('recipeOutput.prefTotalRow', { name: pd.name })}
-                </div>
-                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold-text)', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  ~{wStr(prefTotal)}
-                </div>
-
-              </div>
-            </div>
-
-            {/* CARD 2: Final dough */}
-            <div>
-              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 600, color: 'var(--char)', marginBottom: '4px' }}>
-                {t('recipeOutput.finalDoughTitle')}
-              </div>
-              <div style={{ fontFamily: 'var(--font-ui)', fontSize: '12px', color: D.muted, marginBottom: '16px' }}>
-                {t('recipeOutput.addPrefToRest', { name: pd.name })}
-              </div>
-              <IngRow label={t('recipeOutput.yourPrefAll', { name: pd.name })} grams={wStr(prefTotal)} noPct highlight />
-              {showSelectedFlour && flourBlend && flourBlend.flour2 && flourBlend.ratio1 < 100 ? (() => {
-                // The final dough split only ever listed two flours: flour 2
-                // took "everything that is not flour 1", so with a preferment a
-                // three-flour blend lost its third flour — its weight silently
-                // folded into the second. The direct-dough breakdown already
-                // handled three; this one did not.
-                const f1 = FLOUR_DATA[flourBlend.flour1];
-                const f2 = FLOUR_DATA[flourBlend.flour2];
-                const hasF3 = !!flourBlend.flour3 && flourBlend.ratio2 !== undefined
-                  && (100 - flourBlend.ratio1 - flourBlend.ratio2) > 0;
-                const f3 = hasF3 ? FLOUR_DATA[flourBlend.flour3!] : null;
-                const p2 = hasF3 ? flourBlend.ratio2! : 100 - flourBlend.ratio1;
-                const f1Weight = Math.round(pf.finalFlour * flourBlend.ratio1 / 100);
-                const f2Weight = hasF3
-                  ? Math.round(pf.finalFlour * p2 / 100)
-                  : pf.finalFlour - f1Weight;
-                // The last flour absorbs the rounding, so the parts always sum
-                // to the flour the recipe actually calls for.
-                const f3Weight = hasF3 ? pf.finalFlour - f1Weight - f2Weight : 0;
-                const pctOf = (w: number) => mode === 'custom' ? pctStr(Math.round(w / flour * 1000) / 10) : undefined;
-                return (
-                  <>
-                    <IngRow label={(flourBlend.brandProduct ? flourProductName(flourBlend.brandProduct,locale) : undefined) ?? (locale === 'fr' ? f1.nameFr : f1.name)} grams={wStr(f1Weight)} noPct advancedPct={pctOf(f1Weight)} />
-                    <IngRow label={flourBlend.customFlour2Name ?? (locale === 'fr' ? f2.nameFr : f2.name)} grams={wStr(f2Weight)} noPct advancedPct={pctOf(f2Weight)} />
-                    {hasF3 && f3 && (
-                      <IngRow label={flourBlend.customFlour3Name ?? (locale === 'fr' ? f3.nameFr : f3.name)} grams={wStr(f3Weight)} noPct advancedPct={pctOf(f3Weight)} />
-                    )}
-                  </>
-                );
-              })() : (
-                <IngRow
-                  label={showSelectedFlour && flourBlend && (!flourBlend.flour2 || flourBlend.ratio1 >= 100)
-                    ? ((flourBlend.brandProduct ? flourProductName(flourBlend.brandProduct,locale) : undefined) ?? (locale === 'fr' ? FLOUR_DATA[flourBlend.flour1].nameFr : FLOUR_DATA[flourBlend.flour1].name))
-                    : t('recipeOutput.remainingFlour')}
-                  grams={wStr(pf.finalFlour)} noPct
-                  advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalFlour / flour * 1000) / 10) : undefined} />
-              )}
-              <IngRow label={t('recipeOutput.remainingWater')} grams={wStr(pf.finalWater)} noPct sub={waterSub(pf.finalWater, finalDoughWaterSubNode)}
-                advancedPct={mode === 'custom' ? pctStr(Math.round(pf.finalWater / flour * 1000) / 10) : undefined} />
-              <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} noPct
-                advancedPct={mode === 'custom' ? pctStr(saltPct) : undefined} />
-              {/* A poolish that would be past its peak with all the yeast keeps its peak dose; the rest goes here (data.ts). */}
-              {pf.finalYeastGrams !== undefined && pf.finalYeastGrams > 0 && <IngRow label={t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`)} grams={formatYeastDose(pf.finalYeastGrams,locale)} noPct
-                advancedPct={mode === 'custom' ? pctStr(pf.finalYeastGrams / flour * 100) : undefined} />}
-              {oil > 0 && <IngRow label={t('recipeOutput.ingredientOil')} grams={wStr(oil)} noPct />}
-              {sugar > 0 && <IngRow label={t('recipeOutput.ingredientSugar')} grams={wStr(sugar)} noPct />}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0 24px', alignItems: 'center', padding: '12px .1rem 0', marginTop: '.1rem' }}>
-                <div style={{ fontSize: '12px', color: D.muted, textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: 'var(--font-ui)' }}>
-                  {t('recipeOutput.totalDough')}
-                </div>
-                <div style={{ fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 700, color: 'var(--gold-text)', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  {u === 'imperial' ? wStr(totalDough) : `${totalDough.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`}
-                </div>
-
-              </div>
-            </div>
-          </div>
-        );
-      })() : (
-        /* Direct dough additions */
+      <PctColumn.Provider value={custom}>
+      {staged ? <>
+        <section data-whole-dough aria-labelledby="bh-whole-dough-title">
+          {custom && <PctHeader fr={locale === 'fr'} />}
+          {wholeDoughRows}
+        </section>
+        {stagesSection}
+      </> : <>
+        {custom && <PctHeader fr={locale === 'fr'} />}
+        {/* Direct dough: the whole dough only. */}
         <div>
 
           {result.flourParts?.length ? result.flourParts.map((part, index) => { const grams = part.grams - (sdActive && index === 0 ? sdHalf : 0); return <IngRow key={`${part.key}-${index}`} label={flourProductName(locale === 'fr' ? part.nameFr : part.name,locale)} grams={wStr(grams)} noPct={sdActive} pct={pctStr(grams / flour * 100)} highlight advancedPct={mode === 'custom' && !sdActive ? pctStr(grams / flour * 100) : undefined} />; }) : <IngRow
@@ -918,18 +888,8 @@ export default function RecipeOutput({
 
           </div>
         </div>
-      )}
-
-
-      {/* Simple: the whole dough stays a closed reference under the stages, without percentages. */}
-      {(hasPref || sdActive) && mode !== 'custom' && <section aria-label={locale==='fr'?'Quantités totales':'Total ingredients'}>
-        <details>
-          <summary style={{minHeight:44,cursor:'pointer',alignContent:'center'}}>
-            {locale==='fr'?'Totaux de la pâte':'Whole-dough totals'} · {wStr(flour)} {locale==='fr'?'de farine':'flour'}
-          </summary>
-          {wholeDoughRows}
-        </details>
-      </section>}
+      </>}
+      </PctColumn.Provider>
       {afterIngredients}
 
       {/* The fermentation container question is gone: nothing used its answer (14 Nov 2026). */}

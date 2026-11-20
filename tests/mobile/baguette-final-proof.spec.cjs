@@ -26,6 +26,8 @@ test('Thomas, baguettes at 20 °C: out of the fridge at 9h30, a short apprêt, t
  await page.goto('/fr');
  await page.getByRole('button',{name:/^(Reprendre|Voir les ingrédients)/}).first().tap();
  await page.screenshot({path:process.env.SHOT??'test-results/baguette-final-proof.png',fullPage:true});
+ // Your plan opens on the key stages (round 7); the take-out, fridge and preheat rows are under All steps.
+ {const t=page.locator('[data-plan-all-steps]:visible').first();await expect(t).toBeVisible();if(await t.getAttribute('aria-expanded')==='false')await t.tap();}
  await expect(planRow(page,'Sortir la pâte du réfrigérateur · Diviser et façonner')).toContainText('9h30');
  await expect(planRow(page,'Mettre la pâte au réfrigérateur')).toContainText('23h15');
  await expect(planRow(page,'Préchauffer le four')).toContainText('11h30');
