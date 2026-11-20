@@ -4,6 +4,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import SchedulePicker from '../../app/components/SchedulePicker';
+import StarterStrip from '../../app/components/StarterStrip';
 import {buildSchedule,starterBulkFactor,raisedLevainFits} from '../../app/utils';
 
 type Ratio = 1 | 2 | 4 | 5 | 10;
@@ -64,7 +65,9 @@ function Harness({ sc }: { sc: any }) {
   const mixer=sc.mixer??'hand';
   const schedule=useMemo(()=>sc.full?buildSchedule(startTime,eatTime,blocks,sc.temp,45,mixer,sc.style,sc.numItems??4,sc.batches??1,!sc.commercial,sc.pageFactor||AUTO?factor:1):undefined,[startTime,eatTime,blocks,sc,factor,mixer,AUTO]);
   w.__h.schedule=schedule;
-  return (
+  // PAGE mode also renders the Recipe's starter strip from the events the parent holds (peak-consistency.mjs).
+  return (<>
+    {PAGE && !sc.commercial && <StarterStrip events={starterEvents} mixAt={startTime} blocks={blocks} fr={false} />}
     <SchedulePicker key={pickerKey}
       startTime={startTime} eatTime={eatTime} blocks={blocks} preheatMin={45}
       styleKey={sc.style} kitchenTemp={sc.temp} starterBulkFactor={factor}
@@ -91,7 +94,7 @@ function Harness({ sc }: { sc: any }) {
       onScheduleValidityChange={(v) => { rec.scheduleValid = v; }}
       onStarterTimingValidityChange={(v) => { if (PAGE) setStarterTimingValid(v); rec.starterValid = v; }}
     />
-  );
+  </>);
 }
 
 w.__mount = async (el: HTMLElement, sc: any) => {

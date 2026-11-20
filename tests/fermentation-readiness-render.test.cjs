@@ -37,7 +37,7 @@ test('preferments retain distinct guidance and starter uncertainty is not interp
  assert.match(render({prefermentType:'biga'}),/aerated interior/);
  assert.match(render({prefermentType:'poolish'}),/Check maturity at mixing/);
  const html=render({isSourdough:true,prefermentType:'levain',starterPeak:date(21),starterState:'yellow'});
- assert.match(html,/Estimated peak/);
+ assert.match(html,/Peak around /); // one peak format (peakTime.ts), 20 Nov 2026 chart review
  assert.doesNotMatch(html,/Starter too early|Starter too late|Starter ready/);
  assert.doesNotMatch(render({busy:true}),/Adjust mixing time/);
 });

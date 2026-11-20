@@ -36,17 +36,19 @@ for(const mode of ['simple','custom'])test(`${mode}: inline draft, cancel, inval
  await expect(reset(page)).toHaveCount(0);
  await expect(confirm(plan)).toHaveCount(0);await expect(plan.getByRole('button',{name:'Annuler',exact:true})).toHaveCount(0);
  await expand(plan,'mix');await expect(confirm(plan)).toHaveCount(0);await expect(row(plan,'mix').getByRole('button',{name:'- 30 min',exact:true})).toBeVisible();await expect(row(plan,'mix').getByRole('button',{name:'+ 30 min',exact:true})).toBeVisible();
- // Simple: a closed list of hands-on steps. Custom: the list sits open under « À propos de ce planning ».
- const interventions=mode==='custom'?plan.locator('[data-hands-on]'):plan.locator('details:not([data-about-plan])').filter({has:page.locator('summary').filter({hasText:'Voir toutes les interventions'})});
+ // Simple: a closed list of hands-on steps. Custom: one list of times, the plan's rows (20 Nov 2026 chart
+ // review: « À propos de ce planning », its curve and the Interventions list repeated them).
  await expect(plan.getByText('Préchauffage',{exact:true})).toBeHidden();
- if(mode==='custom')await plan.locator('[data-about-plan] > summary').tap();
- else {await expect(interventions).not.toHaveAttribute('open','');await interventions.locator('summary').tap();}
- await expect(interventions.getByText('Préchauffage',{exact:true})).toBeVisible();
- const preheat=interventions.locator('li').filter({has:page.getByText('Préchauffage',{exact:true})});
- const preheatAt=Date.parse(await preheat.locator('time').getAttribute('datetime'));
- expect(preheatAt).toBeGreaterThan(+start);expect(preheatAt).toBeLessThan(+bake);
- if(mode==='custom')await plan.locator('[data-about-plan] > summary').tap();
- else await interventions.locator('summary').tap();
+ if(mode==='custom'){await expect(plan.locator('[data-about-plan], [data-hands-on], [data-drag-hint]')).toHaveCount(0);}
+ else {
+  const interventions=plan.locator('details').filter({has:page.locator('summary').filter({hasText:'Voir toutes les interventions'})});
+  await expect(interventions).not.toHaveAttribute('open','');await interventions.locator('summary').tap();
+  await expect(interventions.getByText('Préchauffage',{exact:true})).toBeVisible();
+  const preheat=interventions.locator('li').filter({has:page.getByText('Préchauffage',{exact:true})});
+  const preheatAt=Date.parse(await preheat.locator('time').getAttribute('datetime'));
+  expect(preheatAt).toBeGreaterThan(+start);expect(preheatAt).toBeLessThan(+bake);
+  await interventions.locator('summary').tap();
+ }
  const proposed=new Date(+start+900000);await enter(plan,'mix',proposed);await expect(confirm(plan)).toBeEnabled();
  expect((await stored(page)).startTime).toBe(+start);await plan.getByRole('button',{name:'Annuler',exact:true}).click();await expect(reset(page)).toHaveCount(0);
  await enter(plan,'mix',new Date(+bake-3600000));await expect(confirm(plan)).toBeDisabled();
@@ -129,21 +131,12 @@ test('levain final-feed lock is a persistent edit, constrains mixing, releases a
  await page.reload();await expect(plan).toBeVisible();await expand(plan,'mix');await expect(keep).not.toBeChecked();expect((await stored(page)).eatTime).toBe(+bake);
 });
 
-test('Custom fermentation curve uses the card draft, Apply and reset',async({page})=>{
- const {plan,start,bake}=await openPlan(page,'custom',[],true);
- // The curve sits under « À propos de ce planning ».
- await plan.locator('[data-about-plan] > summary').tap();
- const marker=plan.getByRole('slider',{name:'Heure du pétrissage',exact:true});
- await expect(marker).toHaveAttribute('aria-valuenow',String((+bake-+start)/3600000));
- await marker.press('ArrowRight');
- await expectAt(plan,'mix',+start+900000);
- await expect(marker).toHaveAttribute('aria-valuenow',String((+bake-+start)/3600000-.25));
- expect((await stored(page)).startTime).toBe(+start);
- await expect(confirm(plan)).toBeEnabled();await confirm(plan).tap();
- await expect.poll(async()=>(await stored(page)).startTime).toBe(+start+900000);
- await expect(reset(page)).toBeVisible();await reset(page).tap();
- await expect(reset(page)).toHaveCount(0);
- const restored=Number(await row(plan,'mix').getAttribute('data-at'));
- await expect(marker).toHaveAttribute('aria-valuenow',String((+bake-restored)/3600000));
- expect((await stored(page)).eatTime).toBe(+bake);
+// Retired 20 Nov 2026 (chart review, owner): the curve and its draggable markers are gone; the Edit ±30 min
+// rows, tested above, are the one way to move a step.
+test('Custom has no curve to drag; the plan rows stay editable',async({page})=>{
+ const {plan,start}=await openPlan(page,'custom',[],true);
+ await expect(plan.getByRole('slider',{name:'Heure du pétrissage',exact:true})).toHaveCount(0);
+ await expect(plan.locator('[data-about-plan]')).toHaveCount(0);
+ await expand(plan,'mix');
+ await row(plan,'mix').getByRole('button',{name:'+ 30 min',exact:true}).click();await expectAt(plan,'mix',+start+1800000);
 });

@@ -230,48 +230,12 @@ const CONTENT: Record<string, LocaleContent> = {
           ),
         },
         {
-          title: 'Reading the fermentation chart',
+          title: 'Reading your plan',
           body: (
             <>
-              <P>The chart compares timing with estimated recipe windows. Its colours are planning guidance, not measurements of biological readiness.</P>
-
-              {/* Inline illustration */}
-              <div style={{ margin: '16px 0', borderRadius: '16px', background: 'rgba(43, 36, 32,0.03)', padding: '16px' }}>
-                <svg viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: 'auto' }}>
-                  {/* RT poolish bell - narrow */}
-                  <path d="M 30 120 Q 50 120 60 115 Q 70 108 75 85 Q 80 55 85 30 Q 90 55 95 85 Q 100 108 110 115 Q 120 120 140 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
-                  <text x="85" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#6B635D">RT poolish</text>
-                  <text x="85" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#6B635D">narrow peak</text>
-                  {/* Fridge poolish bell - wide plateau */}
-                  <path d="M 155 120 Q 175 120 185 114 Q 195 105 198 90 Q 200 70 202 55 L 218 55 Q 220 70 222 90 Q 225 105 235 114 Q 245 120 265 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
-                  <line x1="202" y1="55" x2="218" y2="55" stroke="#9C8248" strokeWidth="1.5" />
-                  <text x="210" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#6B635D">Fridge poolish</text>
-                  <text x="210" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#6B635D">wide plateau</text>
-                  {/* Plateau annotation */}
-                  <line x1="202" y1="48" x2="218" y2="48" stroke="#9C8248" strokeWidth="1" strokeDasharray="2,2" />
-                  <text x="210" y="46" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="7" fill="#9C8248">plateau</text>
-                  {/* Dough bell - wide plateau, right side */}
-                  <path d="M 285 120 Q 295 120 300 115 Q 305 108 308 95 Q 310 80 312 65 L 330 65 Q 332 80 334 95 Q 337 108 342 115 Q 350 120 390 120 Z" fill="rgba(107,122,90,0.2)" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
-                  <line x1="312" y1="65" x2="330" y2="65" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
-                  <text x="335" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#6B635D">Dough</text>
-                  <text x="335" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#6B635D">peaks at bake</text>
-                  {/* Mix diamond */}
-                  <rect x="279" y="113" width="8" height="8" transform="rotate(45 283 117)" fill="#9C8248" />
-                  <text x="283" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#9C8248">mix ◆</text>
-                  {/* Bake triangle */}
-                  <polygon points="390,120 386,108 394,108" fill="#6B4423" />
-                  <text x="390" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#6B4423">bake ▲</text>
-                  {/* Time axis */}
-                  <line x1="30" y1="120" x2="400" y2="120" stroke="#E8E0D5" strokeWidth="1" />
-                  <text x="215" y="138" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#6B635D">← earlier ——————————— time ——————————— bake →</text>
-                </svg>
-              </div>
-
-              <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Two curves, two stories.</strong> The gold curve is the preferment (poolish or biga) — it should peak at mix time (gold ◆). The grey-green curve is the final dough — it should peak at bake (red ▲). When both align, you get the best possible result from your schedule.</p>
-              <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Curve shapes reflect the biology.</strong> RT fermentation produces a tall, narrow bell — yeast peaks fast and declines rapidly. Small timing errors have large quality effects. Cold retard produces a wide plateau bell — slower biology, much wider quality window. This is why cold retard is preferred: it's forgiving.</p>
-              <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Fermentation windows</strong> (shown when "Show timing guide" is checked) are the horizontal arrows above the curves — the range where each stage should ideally sit. The left arrow marks the earliest viable start; the right arrow marks where quality begins to decline. Landing within the arrows = green pill.</p>
-              <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Status pills.</strong> Green &ldquo;Ready&rdquo; = on the plateau. Amber &ldquo;Still developing&rdquo; = approaching peak, usable but not optimal. Red &ldquo;Not ready&rdquo; = under-fermentation risk. When no viable preferment window exists, the gold curve disappears entirely — the card recommends going direct.</p>
-              <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Interact with the chart.</strong> Drag the gold diamond to adjust preferment start. Drag the green diamond to adjust mix time. Both curves update in real time. <em>Reset to recommendation</em> snaps back to the engine's optimal placement.</p>
+              <P>Your plan lists each hands-on step once, with its time.</P>
+              <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Poolish and biga.</strong> The Make Poolish (or Make Biga) row says where it waits until Start Dough: in the fridge, or at room temperature until it goes into the fridge. Its fridge steps are rows of their own.</p>
+              <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Sourdough starter.</strong> When you customize a levain bake, a strip between the pre-mix feed and Start Dough shows the run-up day&rsquo;s feeds, the hours in which the starter is ready (&ldquo;ready 4–7pm&rdquo;, the window around its estimated peak in which the planner counts it as ready), Start Dough inside that window, and your busy times. The peak is an estimate written to the nearest quarter hour (&ldquo;around 5:45pm&rdquo;): check the starter&rsquo;s rise before mixing.</p>
             </>
           ),
         },
@@ -286,7 +250,7 @@ const CONTENT: Record<string, LocaleContent> = {
                 <><strong style={{color:CHAR}}>Biga</strong> (50% hydration, always cold-fermented) — the stiffest preferment. Cold, slow fermentation gives a very wide quality plateau (~38–58h). This version supports a refrigerated biga protocol; room-temperature biga methods are outside this preset.</>,
                 <><strong style={{color:CHAR}}>Sourdough starter</strong> — the most demanding to time. Unlike commercial yeast preferments, the starter's activity depends on its maturity (young vs established), feeding schedule, and kitchen temperature. The peak window is narrower than poolish — a well-fed mature starter at 22°C peaks roughly 6–9h after feeding. The engine computes the recommended feed time based on your mix time and climate. Missing the window by 1–2h in either direction has more impact than with poolish or biga.</>,
               ]} />
-              <p style={{ margin: '14px 0 0', ...bodyText }}>When the planning window is too short for any preferment, the gold curve disappears and the card reads: <em>{"Window too short — your dough will ferment directly and still taste great."}</em></p>
+              <p style={{ margin: '14px 0 0', ...bodyText }}>When the planning window is too short for any preferment, the card reads: <em>{"Window too short — your dough will ferment directly and still taste great."}</em></p>
             </>
           ),
         },
@@ -694,37 +658,12 @@ const CONTENT: Record<string, LocaleContent> = {
         ),
       },
       {
-        title: 'Lire le graphique de fermentation',
+        title: 'Lire votre planning',
         body: (
           <>
-            <P>Le graphique compare le planning à des fenêtres estimées pour la recette. Ses couleurs aident à organiser la préparation, sans mesurer la maturité biologique.</P>
-            <div style={{ margin: '16px 0', borderRadius: '16px', background: 'rgba(43, 36, 32,0.03)', padding: '16px' }}>
-              <svg viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: 'auto' }}>
-                <path d="M 30 120 Q 50 120 60 115 Q 70 108 75 85 Q 80 55 85 30 Q 90 55 95 85 Q 100 108 110 115 Q 120 120 140 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
-                <text x="85" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#6B635D">Poolish ambiant</text>
-                <text x="85" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#6B635D">pic étroit</text>
-                <path d="M 155 120 Q 175 120 185 114 Q 195 105 198 90 Q 200 70 202 55 L 218 55 Q 220 70 222 90 Q 225 105 235 114 Q 245 120 265 120 Z" fill="rgba(156, 130, 72,0.25)" stroke="#9C8248" strokeWidth="1.5" />
-                <line x1="202" y1="55" x2="218" y2="55" stroke="#9C8248" strokeWidth="1.5" />
-                <text x="210" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#6B635D">Poolish frigo</text>
-                <text x="210" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#6B635D">large plateau</text>
-                <line x1="202" y1="48" x2="218" y2="48" stroke="#9C8248" strokeWidth="1" strokeDasharray="2,2" />
-                <text x="210" y="46" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="7" fill="#9C8248">plateau</text>
-                <path d="M 285 120 Q 295 120 300 115 Q 305 108 308 95 Q 310 80 312 65 L 330 65 Q 332 80 334 95 Q 337 108 342 115 Q 350 120 390 120 Z" fill="rgba(107,122,90,0.2)" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
-                <line x1="312" y1="65" x2="330" y2="65" stroke="rgba(107,122,90,0.8)" strokeWidth="1.5" />
-                <text x="335" y="24" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="9" fill="#6B635D">Pâte</text>
-                <text x="335" y="34" textAnchor="middle" fontFamily="DM Sans, sans-serif" fontSize="8" fill="#6B635D">pic à la cuisson</text>
-                <rect x="279" y="113" width="8" height="8" transform="rotate(45 283 117)" fill="#9C8248" />
-                <text x="283" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#9C8248">pétrissage ◆</text>
-                <polygon points="390,120 386,108 394,108" fill="#6B4423" />
-                <text x="388" y="134" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#6B4423">cuisson ▲</text>
-                <line x1="30" y1="120" x2="400" y2="120" stroke="#E8E0D5" strokeWidth="1" />
-                <text x="215" y="138" textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="8" fill="#6B635D">← plus tôt ——————— temps ——————— cuisson →</text>
-              </svg>
-            </div>
-            <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Deux courbes, deux histoires.</strong> La courbe dorée est le préferment (poolish ou biga) — elle doit culminer au pétrissage (◆ doré). La courbe vert-gris est la pâte finale — elle doit culminer à la cuisson (▲ rouge). Quand les deux s’alignent, vous obtenez le meilleur résultat possible de votre planning.</p>
-            <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Les formes reflètent la biologie.</strong> La fermentation à température ambiante produit une cloche haute et étroite — la levure culmine vite et décline vite ; une petite erreur de timing a un grand effet. La pousse froide produit un large plateau — biologie plus lente, fenêtre bien plus large. C’est pourquoi le froid est préféré : il pardonne.</p>
-            <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Les pastilles de statut.</strong> Verte &laquo;&nbsp;Prêt&nbsp;&raquo; = sur le plateau. Ambre &laquo;&nbsp;En développement&nbsp;&raquo; = proche du pic, utilisable mais pas optimal. Quand aucune fenêtre de préferment viable n’existe, la courbe dorée disparaît — la carte recommande la pâte directe.</p>
-            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Interagissez avec le graphique.</strong> Glissez le losange doré pour ajuster le départ du préferment, le losange vert pour l’heure de pétrissage. Les deux courbes se mettent à jour en temps réel. <em>Revenir à la recommandation</em> replace tout à l’optimum calculé.</p>
+            <P>Votre planning donne chaque intervention une fois, avec son heure.</P>
+            <p style={{ margin: '0 0 10px', ...bodyText }}><strong style={{ color: CHAR }}>Poolish et biga.</strong> La ligne « Préparer le poolish » (ou la biga) dit où il attend jusqu’au pétrissage : au réfrigérateur, ou à température ambiante jusqu’à sa mise au froid. Ses étapes au réfrigérateur ont leurs propres lignes.</p>
+            <p style={{ margin: 0, ...bodyText }}><strong style={{ color: CHAR }}>Levain.</strong> Quand vous personnalisez une fournée au levain, un bandeau entre le rafraîchi avant pétrissage et le pétrissage montre les rafraîchis de la veille et du jour, les heures où le levain est prêt (« prêt 16h–19h », la fenêtre autour de son pic estimé où le planificateur le compte prêt), le pétrissage dans cette fenêtre et vos indisponibilités. Le pic est une estimation au quart d’heure près (« vers 17h45 ») : vérifiez la montée du levain avant de pétrir.</p>
           </>
         ),
       },
@@ -733,7 +672,7 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Quand votre recette inclut un poolish ou un biga, Baker Hub cherche un planning où le préferment et la pâte finale sont simultanément dans leurs fenêtres de fermentation optimales. Il ne suffit pas qu'un seul soit prêt — les deux doivent s'aligner.</P>
-            <P>Le graphique de fermentation affiche deux courbes en cloche. La courbe du préferment culmine au moment du pétrissage ; la courbe de la pâte culmine au moment de la cuisson. Les pastilles vertes signifient que les deux sont sur cible. Jaune signifie en développement mais utilisable. Le graphique disparaît quand aucune fenêtre de préferment viable n'existe — le boulanger est clairement invité à passer en pâte directe.</P>
+            <P>Le préferment est dosé pour culminer au moment du pétrissage, et la pâte pour être prête à la cuisson. Quand aucune fenêtre de préferment viable n'existe, le planning le dit et propose de passer en pâte directe.</P>
             <P>Chaque type de préferment a sa propre fenêtre idéale, façonnée par la température et la force de la farine :</P>
             <BulletList items={[
               <><strong style={{color:CHAR}}>Poolish au frigo</strong> — optimal vers 13h au froid à 6°C (plateau ±5h). Nécessite au moins 16,5h de fenêtre de planification totale. Pousse froide plus longue = saveurs plus complexes. Le W de la farine module cette durée : une farine W370 bénéficie d'un poolish plus long qu'une W250.</>,

@@ -4,7 +4,7 @@ const fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript'),React
 const {renderToStaticMarkup}=require('react-dom/server');
 require('./load-production.cjs');
 const {starterBuild,starterFeedRoleLabel,starterFeedLabelFor}=require('../app/utils/starterBuild.ts');
-function component(file,name){const tree=ts.createSourceFile(file,fs.readFileSync(file,'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);const source=tree.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text===name).getText(tree).replace(/^export /,'');return vm.runInNewContext(ts.transpileModule(source+'\n'+name,{compilerOptions:{jsx:ts.JsxEmit.React,target:ts.ScriptTarget.ES2020}}).outputText,{React,starterBuild,starterFeedRoleLabel,starterFeedLabelFor,formatBakeDateTime:require('../app/utils/units.ts').formatBakeDateTime});}
+function component(file,name){const tree=ts.createSourceFile(file,fs.readFileSync(file,'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);const source=tree.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text===name).getText(tree).replace(/^export /,'');return vm.runInNewContext(ts.transpileModule(source+'\n'+name,{compilerOptions:{jsx:ts.JsxEmit.React,target:ts.ScriptTarget.ES2020}}).outputText,{React,starterBuild,starterFeedRoleLabel,starterFeedLabelFor,formatBakeDateTime:require('../app/utils/units.ts').formatBakeDateTime,roundToQuarter:require('../app/utils/units.ts').roundToQuarter,peakAround:require('../app/utils/peakTime.ts').peakAround});}
 const Starter=component('app/components/RecipeOutput.tsx','StarterPrepCard');
 const Repair=component('app/components/SchedulePicker.tsx','BatchRepairNotice');
 test('recipe pairs canonical feed with dated peak after reload, ignoring historical scalar peak',()=>{
@@ -12,7 +12,7 @@ test('recipe pairs canonical feed with dated peak after reload, ignoring histori
   const feed=new Date('2035-09-28T10:24:00Z'),peak=new Date('2035-09-28T19:14:00Z');
   const props={sourdough:{starterGramsMin:100,starterGramsMid:110,starterGramsMax:120},locale,feedRatio:2,feedTime:feed,starterPeakTime:new Date('2035-09-27T11:35:00Z'),mixingTime:peak,starterEvents:[{kind:'pre_mix',time:feed,bellPeakTime:peak}]};
   const html=renderToStaticMarkup(React.createElement(Starter,props));
-  assert.doesNotMatch(html,/equal parts|parts égales|11:35/);assert.match(html,/1:2:2/);assert.match(html,locale==='fr'?/32 g de levain \+ 64 g de farine \+ 64 g d’eau = 160 g/:/32 g starter \+ 64 g flour \+ 64 g water = 160 g/);assert.match(html,locale==='fr'?/gardez le reste \((2[4-9]|[3-9]\d) g\)/:/keep the rest \((2[4-9]|[3-9]\d) g\)/);assert.match(html,/28/);assert.match(html,locale==='fr'?/Pic estimé de ce rafraîchi/:/Estimated peak of this feed/);assert.match(html,locale==='fr'?/Incorporer au pétrissage/:/Use when mixing/);
+  assert.doesNotMatch(html,/equal parts|parts égales|11:35/);assert.match(html,/1:2:2/);assert.match(html,locale==='fr'?/32 g de levain \+ 64 g de farine \+ 64 g d’eau = 160 g/:/32 g starter \+ 64 g flour \+ 64 g water = 160 g/);assert.match(html,locale==='fr'?/gardez le reste \((2[4-9]|[3-9]\d) g\)/:/keep the rest \((2[4-9]|[3-9]\d) g\)/);assert.match(html,/28/);assert.match(html,locale==='fr'?/Pic de ce rafraîchi vers /:/This feed peaks around /);assert.match(html,locale==='fr'?/Incorporer au pétrissage/:/Use when mixing/);
  }
 });
 test('small mixer repair gives capacity-safe quantity and invokes real quantity navigation',()=>{
