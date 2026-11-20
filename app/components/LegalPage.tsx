@@ -1,7 +1,7 @@
 'use client';
 import { useLocale } from 'next-intl';
 import Link from 'next/link';
-import Header from './Header';
+import Header, { pageBackClick } from './Header';
 
 // Tokens mirror AboutClient — the legal pages are the same reading surface.
 const CHAR = '#2B2420';
@@ -34,7 +34,7 @@ export default function LegalPage({
 
   return (
     <div style={{ background: 'var(--cream)', minHeight: '100vh', paddingBottom: '48px' }}>
-      <Header hideActionBar backHref={home} />
+      <div className="bh-existing-header"><Header hideActionBar backHref={home} /></div>
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '24px 16px' }}>
 
         <h1 style={{
@@ -77,6 +77,7 @@ export default function LegalPage({
         <Link
           className="bh-primary"
           href={home}
+          onClick={pageBackClick}
           style={{
             marginTop: '20px',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
@@ -86,7 +87,7 @@ export default function LegalPage({
             fontFamily: 'var(--font-ui)', textDecoration: 'none',
           }}
         >
-          ← {locale === 'fr' ? 'Retour à Baker Hub' : 'Back to Baker Hub'}
+          {locale === 'fr' ? '‹ Retour à Baker Hub' : '‹ Back to Baker Hub'}
         </Link>
 
         <div style={{ borderTop: `1px solid ${BORDER}`, marginTop: '24px' }} />
