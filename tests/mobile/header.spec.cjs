@@ -1,5 +1,5 @@
 const { test, expect } = require('../../.ci-tools/node_modules/@playwright/test');
-const navV2 = process.env.BAKER_NAV_V2 === '1';
+const navV2 = process.env.BAKER_NAV_V2 !== '0';
 
 async function capture(page, testInfo, name) {
   const path = testInfo.outputPath(`${name}.png`);
