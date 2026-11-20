@@ -175,13 +175,13 @@ export function JournalEntrySheet({ entry: initial, units, signedIn, onClose, on
       }}>
         {/* The same header as the other sheets: a 17 px title and the cream ✕ (SHEET_TITLE / SHEET_CLOSE). */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 16px 8px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-          <strong style={SHEET_TITLE}>{t('myBakes')}</strong>
+          {/* One bake's sheet is titled with that bake, not "My bakes" (20 Nov 2026 retention round 5, Maya). */}
+          <strong style={SHEET_TITLE}>{journalTitle(current, locale)}</strong>
           <button type="button" onClick={onClose} aria-label={t('close')} style={SHEET_CLOSE}><span aria-hidden="true">✕</span></button>
         </div>
 
         <div style={{ overflowY: 'auto', flex: 1 }}>
           <div style={{ padding: '16px 20px 0' }}>
-            <p style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>{journalTitle(current, locale)}</p>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--ash)' }}>{journalFacts(current, locale, units, t)}</p>
             {current.eatTime != null && !beforeBake && <p style={{ margin: 0, fontSize: 13, color: 'var(--ash)' }}>{t('bakeAt', { date: formatBakeDateTime(new Date(current.eatTime), locale) })}</p>}
             <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--smoke)' }}>{current.accountEventId ? t('savedToAccount') : t('deviceOnly')}</p>

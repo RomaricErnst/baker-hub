@@ -1594,6 +1594,10 @@ export default function Home() {
         if (typeof reloadedOn.simpleStep === 'number') setActiveStep(reloadedOn.simpleStep);
         if (typeof reloadedOn.customStep === 'number') setAdvancedStep(reloadedOn.customStep);
         setSetupOverview(!!reloadedOn.overview);
+        // A tab reopened the next day keeps its history entry and reads as a reload: once the session is more than
+        // 30 minutes old it is a return, and the bake opens at its due step as Resume does (20 Nov 2026 retention
+        // round 5, Maya: Friday's mix time reopened on Thursday's Shopping list under a "Time to mix" card).
+        if (now - (session.savedAt ?? now) > 30 * 60000) resumeToNow.current = true;
       }
       restoreSettledRef.current = true;
       setAuthTick(t => t + 1);
@@ -4985,8 +4989,10 @@ export default function Home() {
                 const st = shown?.styleKey
                   ? styleDisplayName(shown.styleKey as StyleKey)
                   : null;
+                // With the date (20 Nov 2026 retention round 5, Maya): on a Wednesday "bake Sat 7:30pm" could be last
+                // week's bake or this week's, and read the same before and after Bake again.
                 const when = shown?.eatTime
-                  ? formatTime(new Date(shown.eatTime), locale)
+                  ? formatBakeDateTime(new Date(shown.eatTime), locale)
                   : null;
                 const head = pendingFinished && st ? (locale === 'fr' ? `Votre ${st}` : `Your ${st}`) : st
                   ? (locale === 'fr' ? `Reprendre votre ${st}` : `Resume your ${st}`)
@@ -4997,7 +5003,7 @@ export default function Home() {
                     {when && (
                       <span style={{ color: 'var(--smoke)' }}>
                         {/* The day and time travel together: FR never leaves "19h30" alone on a line. */}
-                        {locale === 'fr' ? ` · cuisson\u00a0${when.replace(/ /g, '\u00a0')}` : ` · bake\u00a0${when.replace(/ /g, '\u00a0')}`}
+                        {locale === 'fr' ? ` · ${pendingFinished ? 'cuisson du' : 'cuisson'}\u00a0${when.replace(/ /g, '\u00a0')}` : ` · ${pendingFinished ? 'baked' : 'bake'}\u00a0${when.replace(/ /g, '\u00a0')}`}
                       </span>
                     )}
                   </>

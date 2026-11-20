@@ -1340,18 +1340,21 @@ Actual dough condition and equipment may differ from these estimates.`;
   const leavenLine = isSourdough ? (l === 'fr' ? 'le levain mûr et le sel' : 'the ripe starter and salt')
     : hasPref ? (l === 'fr' ? `${isBiga ? 'la biga préparée' : 'le poolish préparé'}, puis le sel` : `the prepared ${isBiga ? 'biga' : 'poolish'}, then the salt`)
     : (l === 'fr' ? 'la levure et le sel' : 'the yeast and salt');
-  const kneadResumes = mixFinishAction ? clockFor(mixFinishAction.at, mixCardStart) : null;
+  // A mix started late says the rest's length, not a clock time it has already missed: at 6:20 "rest 30 min,
+  // until 6:30pm" was wrong by 20 minutes (20 Nov 2026 retention round 5). The plan itself is unchanged.
+  const mixOpenedLate = !!phase && !mixingMade && Date.now() > +mixCardStart + 5 * 60000;
+  const kneadResumes = mixFinishAction && !mixOpenedLate ? clockFor(mixFinishAction.at, mixCardStart) : null;
   const mixSequence: { bold: string; note: string }[] = preMixAutolyse > 0 ? [
     // Wheat sourdough: autolyse before the mix, then starter and salt, then the planned rest.
     laterAutolysedBatch
       ? {bold:l==='fr'?'Reprenez le mélange farine-eau de ce lot, préparé avant la première pétrissée : son autolyse est faite.':'Take this batch’s flour-water mixture, prepared before the first mix: it has already autolysed.',note:''}
       : {bold:`${flourWaterLine('')} ${l === 'fr' ? `Couvrez et laissez reposer jusqu’à ${clockFor(displayedMixTime, mixCardStart)}.` : `Cover and rest until ${clockFor(displayedMixTime, mixCardStart)}.`}`,note:l==='fr'?AUTOLYSE_NOTE.fr:AUTOLYSE_NOTE.en},
     {bold:l==='fr'?`À ${clockFor(displayedMixTime, mixCardStart)}, ajoutez ${leavenLine}${mixFirstMin ? ` et pétrissez ${mixFirstMin} min pour les incorporer` : ''}.`:`At ${clockFor(displayedMixTime, mixCardStart)}, add ${leavenLine}${mixFirstMin ? ` and mix ${mixFirstMin} min to combine` : ''}.`,note:''},
-    ...(mixRestMin > 0 && kneadResumes ? [{bold:l==='fr'?`Couvrez et laissez reposer ${mixRestMin} min ; reprenez le pétrissage à ${kneadResumes}.`:`Cover and rest ${mixRestMin} min; resume kneading at ${kneadResumes}.`,note:''}] : []),
+    ...(mixRestMin > 0 && kneadResumes ? [{bold:l==='fr'?`Couvrez et laissez reposer ${mixRestMin} min ; reprenez le pétrissage à ${kneadResumes}.`:`Cover and rest ${mixRestMin} min; resume kneading at ${kneadResumes}.`,note:''}] : mixRestMin > 0 && mixOpenedLate && mixFinishAction ? [{bold:l==='fr'?`Couvrez et laissez reposer ${mixRestMin} min, puis reprenez le pétrissage.`:`Cover and rest ${mixRestMin} min, then resume kneading.`,note:''}] : []),
   ] : mixRestMin > 0 ? [
     // Autolyse inside the mixing window: flour and water, the planned rest, then leavening and salt.
     {bold:flourWaterLine(''),note:''},
-    {bold:kneadResumes?(l==='fr'?`Couvrez et laissez reposer ${mixRestMin} min, jusqu’à ${kneadResumes}.`:`Cover and rest ${mixRestMin} min, until ${kneadResumes}.`):(l==='fr'?`Couvrez et laissez reposer ${mixRestMin} min, comme prévu au planning.`:`Cover and rest ${mixRestMin} min, as scheduled.`),note:l==='fr'?AUTOLYSE_NOTE.fr:AUTOLYSE_NOTE.en},
+    {bold:kneadResumes?(l==='fr'?`Couvrez et laissez reposer ${mixRestMin} min, jusqu’à ${kneadResumes}.`:`Cover and rest ${mixRestMin} min, until ${kneadResumes}.`):(mixOpenedLate?(l==='fr'?`Couvrez et laissez reposer ${mixRestMin} min.`:`Cover and rest ${mixRestMin} min.`):l==='fr'?`Couvrez et laissez reposer ${mixRestMin} min, comme prévu au planning.`:`Cover and rest ${mixRestMin} min, as scheduled.`),note:l==='fr'?AUTOLYSE_NOTE.fr:AUTOLYSE_NOTE.en},
     {bold:l==='fr'?`Ajoutez ${leavenLine}.`:`Add ${leavenLine}.`,note:''},
   ] : [
     {bold:flourWaterLine(''),note:''},
@@ -1429,6 +1432,9 @@ Actual dough condition and equipment may differ from these estimates.`;
     if (!oldCard && !becameDue) return;
     // The oven step lives in Baking & serving: Preparation shows its overview, whose button leads there.
     if (guideMark.cooking && phase === 'preparation') { if (oldCard) { setCurrentStep(0); phasePositions.current.preparation = 0; } return; }
+    // During a long rest the bar names the next action ("Next: take the dough out, 5:30pm"): an old card closes to
+    // the overview rather than opening that step hours early (20 Nov 2026 retention round 5).
+    if (guideMark.kind === 'next' && markAt - Date.now() > 30 * 60000) { if (oldCard) { setCurrentStep(0); phasePositions.current[phase] = 0; } return; }
     navigateGuideStep(guideMark.step);
   });
   let firstPendingPreparation = 0;
@@ -2421,12 +2427,14 @@ Actual dough condition and equipment may differ from these estimates.`;
           ) : ovenType === 'home_oven_steel' ? (
             <Steps items={t.raw('preheat.homeSteel.steps') as { bold: string; note: string }[]} />
           ) : (
-            // "Allow 30 min minimum" beside a longer planned preheat read as a contradiction (18 Nov 2026 retention round 4).
-            <Steps items={(t.raw('preheat.homeStandard.steps') as { bold: string; note: string }[]).filter((_, index) => index !== 2 || !(schedule.preheatStart && +schedule.bakeStart - +schedule.preheatStart > 35 * 60000))} />
+            // The duration line ("Allow 45 min") is said only when the plan does not already give the preheat a
+            // time of at least that long: beside a planned 1 h it read as a contradiction (18 Nov 2026 retention
+            // round 4), and the plan's own 45 min default says it (20 Nov 2026 round 5).
+            <Steps items={(t.raw('preheat.homeStandard.steps') as { bold: string; note: string }[]).filter((_, index) => index !== 2 || !(schedule.preheatStart && +schedule.bakeStart - +schedule.preheatStart >= 45 * 60000))} />
           )}
         </Section>
 
-        {/* The steps above already say how long to preheat ("Allow 30 min minimum"): no second "Ready when: 30 min at
+        {/* The steps above already say how long to preheat ("Allow 45 min"): no second "Ready when: 30 min at
             full heat" (18 Nov 2026 retention round 3). Without a planned preheat, the plain cue stays. */}
         {!breadProtocol && !(schedule.preheatStart && +schedule.bakeStart > +schedule.preheatStart) && <p style={{fontSize:15,lineHeight:1.5}}><strong>{l==='fr'?'Prêt quand : ':'Ready when: '}</strong>{l==='fr'?'Le four et la surface de cuisson sont chauds.':'The oven and baking surface are hot.'}</p>}
 

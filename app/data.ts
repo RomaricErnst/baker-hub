@@ -315,7 +315,10 @@ export const OVEN_TYPES = {
     hydrationDelta: 4,
     forceOil: null,
     forceSugar: null,
-    preheatMin: 30,
+    // 45 min (20 Nov 2026, retention round 5): a tray at the oven's maximum took the first bake's
+    // 30 min and gave pale bases; the oven reaches temperature in ~15–20 min, the tray and the
+    // oven walls need longer to hold heat through a launch.
+    preheatMin: 45,
   },
   electric_pizza: {
     name: 'Electric pizza oven',

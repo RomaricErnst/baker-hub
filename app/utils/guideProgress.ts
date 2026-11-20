@@ -70,14 +70,30 @@ export function clockMark(steps: readonly ClockStep[], now: number): ClockMark |
     for (const s of due) {
       if (!s.action || s.phase === 'cooking') continue;
       const nextAction = sorted.find(o => o.at > s.at && o.action);
-      if (!nextAction || now < nextAction.at) return { step: s.step, kind: 'now', held: due.some(o => o !== s && o.at >= s.at) };
+      if (!nextAction || now < nextAction.at) return restOrNow(sorted, s, now) ?? { step: s.step, kind: 'now', held: due.some(o => o !== s && o.at >= s.at) };
     }
   }
   // Steps planned at the same minute (a sourdough mix and its bulk, a take-out at the preheat): the first of
   // them is the one to do, so an unticked mix is never skipped to the rise (18 Nov 2026 retention round 4).
   const latest = due.length ? due[due.length - 1].at : undefined;
   const s = due.length ? due.find(d => d.at === latest)! : pending[0];
+  if (s.at <= now && s.action && s.phase !== 'cooking') { const rest = restOrNow(sorted, s, now); if (rest) return rest; }
   return { step: s.step, kind: s.at <= now ? 'now' : 'next', held: false };
+}
+
+/** During a long rest the next thing to do is what the bar names (20 Nov 2026 retention round 5, Maya: at
+ *  10:00 a 20-hour fridge rest opened as "Now" with an empty "Step done" and read as a missed step). An action
+ *  that starts a wait of at least LONG_REST_MS (into the fridge, a poolish made) stays Now for REST_GRACE_MS
+ *  after its time; then the step after the rest is "Next". The earlier step is neither ticked nor marked missed. */
+export const REST_GRACE_MS = 2 * 3600000;
+export const LONG_REST_MS = 4 * 3600000;
+function restOrNow(sorted: readonly ClockStep[], s: ClockStep, now: number): ClockMark | null {
+  if (now - s.at < REST_GRACE_MS) return null;
+  // The step after the rest, whatever its kind (the take-out can be the final rise's own step). Nothing is
+  // planned between them, so the rest is one wait, not a sequence of steps the baker may be on.
+  const next = sorted.find(o => o.at > s.at && !o.done);
+  if (!next || next.at <= now || next.at - s.at < LONG_REST_MS) return null;
+  return { step: next.step, kind: 'next', held: false };
 }
 
 /**
