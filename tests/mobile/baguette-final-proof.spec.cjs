@@ -32,5 +32,6 @@ test('Thomas, baguettes at 20 °C: out of the fridge at 9h30, a short apprêt, t
  await expect(planRow(page,'Mettre la pâte au réfrigérateur')).toContainText('23h15');
  await expect(planRow(page,'Préchauffer le four')).toContainText('11h30');
  // The yeast is re-solved for the shorter warm tail: 1,7 g → 1,8 g instant (5,2 → 5,3 g fresh) on main → here.
- await expect(page.getByText('ou 5,3 g de levure fraîche',{exact:false}).first()).toBeVisible();
+ // Round 7 Fine-tune: the 1.5 % bowl-loss margin adds dough, so 5,3 → 5,4 g fresh.
+ await expect(page.getByText('ou 5,4 g de levure fraîche',{exact:false}).first()).toBeVisible();
 });

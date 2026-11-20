@@ -40,12 +40,13 @@ test('storage fixed to room: the poolish holds its peak dose, the final dough it
  await expect(makePoolish(page)).toContainText('Fresh yeast');
  // Round 7 stage yeast (stageYeastDoses): 0.2 + 2.3 g would read 2.5 g against the whole dough's 2.4 g, so both stages
  // take one more figure (0.16 + 2.27 g = 2.4 g).
- await expect(makePoolish(page)).toContainText('0.16 g');
+ // Round 7 Fine-tune: with the 1.5 % bowl-loss margin the stages add up at one decimal again (0.2 g poolish).
+ await expect(makePoolish(page)).toContainText('0.2 g');
  await expect(finalDough(page)).toContainText('Fresh yeast');
  // Round 7 (D4, 20 Nov 2026): the baguette apprêt bound (2 h to the bake at 20 °C) takes the dough out 15 min
  // later, a shorter warm tail: the final dough's own need 2.2 → 2.3 g (tests/poolish-peak.test.cjs 2.211 → 2.271); the whole dough still rounds to 2.4 g.
- await expect(finalDough(page)).toContainText('2.27 g');
- await expect(page.locator('[data-whole-dough]')).toContainText('2.4 g');
+ await expect(finalDough(page)).toContainText('2.3 g'); // Fine-tune 1.5 % margin: stages add up at one decimal (0.2 + 2.3 g)
+ await expect(page.locator('[data-whole-dough]')).toContainText('2.5 g'); // Fine-tune 1.5 % margin: whole dough 2.4 → 2.5 g = 0.2 + 2.3 g
  const s=await stored(page);
  expect(s.prefGoesInFridge).toBe(false);expect(s.prefOffsetH).toBe(11.25);expect(s.prefermentFlourPct).toBe(20);
  // The knead method adds that yeast (20 Nov 2026 round 6, Thomas: it was listed, never added in the steps).
