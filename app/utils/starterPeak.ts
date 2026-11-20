@@ -82,3 +82,72 @@ export function mixNearPeak(mixMs: number, peakMs: number, adjPeakH: number): bo
   const gapH = (mixMs - peakMs) / 3600000;
   return gapH < 0 ? -gapH <= tol + 0.5 : gapH <= tol;
 }
+
+// Every hands-on starter action sits on a 15-minute mark (as SchedulePicker's ceilQuarterMs/floorQuarterMs).
+const QUARTER_MS = 15 * 60000;
+
+/** Intermediate refresh times between a revival start and the next major feed.
+ * Shared by the solver's candidates (computeIntermediatesForCandidate) and the
+ * mix-relative revival start (deriveStarterPeakTime), so both place the same feeds. */
+export function planIntermediateFeeds(startMs: number, nextMajorFeedMs: number, refreshSpacingH: number, minIntermediates: number, adjPeakHFor: number, nowMs: number, firstStretch = 1, fromRest = false): number[] {
+  const gapH = (nextMajorFeedMs - startMs) / 3600000;
+  const MAX_INT = 2;
+  const gapBased = Math.floor(gapH / refreshSpacingH);
+  const numIntermediate = Math.min(MAX_INT + 1, Math.max(minIntermediates + 1, gapBased));
+  // Minimum spacing between consecutive feeds — max(6, adjPeakH × 0.75)
+  // so tropical kitchens never cram feeds at <6h. The check is applied at
+  // BOTH the intermediate→nextMajor segment AND between successive
+  // intermediates, so no two feeds in the chain end up too close.
+  const minFeedGapH = Math.max(6, adjPeakHFor * 0.75);
+  const out: number[] = [];
+  let prevAcceptedMs = startMs;
+  for (let i = 1; i < numIntermediate; i++) {
+    const ft = new Date(Math.ceil((startMs + i * refreshSpacingH * 3600000) / QUARTER_MS) * QUARTER_MS);
+    const h = ft.getHours();
+    if (h < 7) ft.setHours(7, 0, 0, 0);
+    else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
+    if (ft.getTime() <= nowMs) continue;
+    if (ft.getTime() >= nextMajorFeedMs - minFeedGapH * 3600000) continue;
+    // The next feed waits for this one's peak (the bell drawn for it). The first feed of a plan
+    // that shows no refresh before it rises with the rest stretch (firstStretch, round 6 B3).
+    if (ft.getTime() + adjPeakHFor * (out.length === 0 ? firstStretch : 1) * 3600000 > nextMajorFeedMs + QUARTER_MS) continue;
+    // Drop intermediates that would land <minFeedGapH after the previous
+    // accepted feed (primary refresh or prior intermediate).
+    if (ft.getTime() - prevAcceptedMs < minFeedGapH * 3600000) continue;
+    out.push(ft.getTime());
+    prevAcceptedMs = ft.getTime();
+  }
+  // Placed forward from the start, a multi-day chain ends early and leaves the next major feed
+  // (the pre-mix) after a long rest (round 7, B3). When the last feed before it is more than a
+  // regular cadence away (1.5 × adjPeakH: past the rest ladder's 1.05 step), the same number of
+  // feeds is placed back from that feed instead, one cadence apart, so the pre-mix follows a regular
+  // feeding and the rest falls before the first of them. Chains already on cadence are unchanged.
+  // Only from a rest (startMs the last recorded feed, `fromRest`): after a planned refresh the
+  // revival feeds follow it, as before.
+  const lastBeforeMs = out.length ? out[out.length - 1] : startMs;
+  if (!fromRest || numIntermediate - 1 < 1 || nextMajorFeedMs - lastBeforeMs <= adjPeakHFor * 1.5 * 3600000) return out;
+  const back: number[] = [];
+  let nextMs = nextMajorFeedMs;
+  for (let i = 1; i < numIntermediate; i++) {
+    const at = Math.floor((nextMs - refreshSpacingH * 3600000) / QUARTER_MS) * QUARTER_MS;
+    // The waking day (7am–11pm), as the forward placement keeps: a night feed moves to 7am, when its
+    // peak still comes before the next feed, else to 10pm the evening before.
+    const ft = new Date(at), h = ft.getHours();
+    const options: number[] = [];
+    if (h >= 7 && h <= 22) options.push(at);
+    else {
+      const morning = new Date(at); if (h > 22) morning.setDate(morning.getDate() + 1); morning.setHours(7, 0, 0, 0);
+      const evening = new Date(at); if (h < 7) evening.setDate(evening.getDate() - 1); evening.setHours(22, 0, 0, 0);
+      options.push(morning.getTime(), evening.getTime());
+    }
+    const t = options.find(o => nextMs - o >= minFeedGapH * 3600000 && o + adjPeakHFor * 3600000 <= nextMs + QUARTER_MS);
+    if (t == null || t <= nowMs || t - startMs < minFeedGapH * 3600000) break;
+    back.unshift(t);
+    nextMs = t;
+  }
+  // The earliest is the first feed after the rest (firstStretch): its peak still precedes the next feed.
+  while (back.length && back[0] + adjPeakHFor * firstStretch * 3600000 > (back[1] ?? nextMajorFeedMs) + QUARTER_MS) back.shift();
+  const backLast = back.length ? back[back.length - 1] : startMs;
+  return back.length >= out.length && nextMajorFeedMs - backLast < nextMajorFeedMs - lastBeforeMs ? back : out;
+}
+

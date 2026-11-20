@@ -91,6 +91,9 @@ export interface SessionData {
    *  compared with it (18 Nov 2026 retention round 3). */
   ovenFrom?: number;
   ovenTo?: number;
+  /** Sourdough: the levain this dough takes (recipe.sourdough.starterGramsMid / Max), so another live bake
+   *  sharing the jar can size one feed for both (sharedStarter.ts, 20 Nov 2026 round 7). */
+  levainNeed?: { mid: number; max: number };
   starterFeedRecords?:StarterFeedRecord[];
   /** An overdue feed was answered; a validated replacement plan is still needed. */
   starterRecoveryPending?:boolean;

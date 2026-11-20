@@ -7,7 +7,7 @@ import { loadProfile, updateProfile, DEFAULT_BLOCKERS, type StandardBlocker } fr
 import { formatClock, formatBakeDateTime } from '../utils/units';
 import { useState, useMemo, useEffect, useRef, useId, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { computePreMixStretchFactor, computeStarterPeakMs, mixNearPeak, preMixRiseH, restStretchFactor } from '../utils/starterPeak';
+import { computePreMixStretchFactor, computeStarterPeakMs, mixNearPeak, planIntermediateFeeds, preMixRiseH, restStretchFactor } from '../utils/starterPeak';
 import { peakAround, peakNote } from '../utils/peakTime';
 import { type AvailabilityBlock, type ScheduleResult, starterBulkFactor as starterBulkFactorFor, raisedStarterPcts, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationWindowForYeast, fermentationBudget, sourdoughBulkH, bakeFromFridgeOption, shortWarmupOption, BAKE_FROM_FRIDGE_STYLES } from '../utils';
 import { formatDuration } from '../utils/duration';
@@ -384,39 +384,7 @@ export function latestFeedPeakingByMs(mixMs: number, refPeakMs: number | null, a
   return feedMs;
 }
 
-/** Intermediate refresh times between a revival start and the next major feed.
- * Shared by the solver's candidates (computeIntermediatesForCandidate) and the
- * mix-relative revival start (deriveStarterPeakTime), so both place the same feeds. */
-function planIntermediateFeeds(startMs: number, nextMajorFeedMs: number, refreshSpacingH: number, minIntermediates: number, adjPeakHFor: number, nowMs: number, firstStretch = 1): number[] {
-  const gapH = (nextMajorFeedMs - startMs) / 3600000;
-  const MAX_INT = 2;
-  const gapBased = Math.floor(gapH / refreshSpacingH);
-  const numIntermediate = Math.min(MAX_INT + 1, Math.max(minIntermediates + 1, gapBased));
-  // Minimum spacing between consecutive feeds — max(6, adjPeakH × 0.75)
-  // so tropical kitchens never cram feeds at <6h. The check is applied at
-  // BOTH the intermediate→nextMajor segment AND between successive
-  // intermediates, so no two feeds in the chain end up too close.
-  const minFeedGapH = Math.max(6, adjPeakHFor * 0.75);
-  const out: number[] = [];
-  let prevAcceptedMs = startMs;
-  for (let i = 1; i < numIntermediate; i++) {
-    const ft = new Date(ceilQuarterMs(startMs + i * refreshSpacingH * 3600000));
-    const h = ft.getHours();
-    if (h < 7) ft.setHours(7, 0, 0, 0);
-    else if (h > 22) { ft.setHours(7, 0, 0, 0); ft.setDate(ft.getDate() + 1); }
-    if (ft.getTime() <= nowMs) continue;
-    if (ft.getTime() >= nextMajorFeedMs - minFeedGapH * 3600000) continue;
-    // The next feed waits for this one's peak (the bell drawn for it). The first feed of a plan
-    // that shows no refresh before it rises with the rest stretch (firstStretch, round 6 B3).
-    if (ft.getTime() + adjPeakHFor * (out.length === 0 ? firstStretch : 1) * 3600000 > nextMajorFeedMs + STARTER_QUARTER_MS) continue;
-    // Drop intermediates that would land <minFeedGapH after the previous
-    // accepted feed (primary refresh or prior intermediate).
-    if (ft.getTime() - prevAcceptedMs < minFeedGapH * 3600000) continue;
-    out.push(ft.getTime());
-    prevAcceptedMs = ft.getTime();
-  }
-  return out;
-}
+// planIntermediateFeeds (intermediate feed placement): app/utils/starterPeak.ts.
 
 // ── Time formatter ────────────────────────────
 // "4pm" / "4:30pm" — minutes omitted when zero
@@ -2241,6 +2209,8 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   const [keyDragging,setKeyDragging]=useState(false);
   const [manualTimes,setManualTimes]=useState<TimingOverrides>(timingOverrides);
   const [searchFailed,setSearchFailed]=useState(false);
+  // A pinned mix the busy times no longer allow, kept on screen with the nearest mix that works (round 7, Task 2).
+  const [unkeptPin,setUnkeptPin]=useState<{mix:number;nearest:number|null}|null>(null);
   const manualTimesRef=useRef<TimingOverrides>(timingOverrides);
   const draftOverridesRef=useRef<TimingOverrides>({});
   const hasTimingOverrides=Object.keys(manualTimes).length>0;
@@ -3765,7 +3735,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         // The first feed after the rest (no refresh drawn, no intermediate before it) rises with the
         // rest stretch, as the candidate was scored (withFirstFeedRest).
         const refreshDrawn = !!_starterRefeedTime && !_usingPeak2;
-        if (refreshDrawn || (_bridgeRefreshMs && _bridgeRefreshMs.length) || planningMode !== 'last_fed' || starterLocation !== 'fridge' || !lastFedTime) return preMix;
+        if (refreshDrawn || (_bridgeRefreshMs && _bridgeRefreshMs.length) || planningMode !== 'last_fed' || !lastFedTime) return preMix;
         // The rest since the feed before it: the last intermediate drawn, else the last recorded feed.
         const prevMs = _intermediateRefreshFeeds.length ? Math.max(..._intermediateRefreshFeeds.map(d => d.getTime())) : lastFedTime.getTime();
         if (_feed2Time.getTime() <= prevMs) return preMix;
@@ -4187,7 +4157,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         for (let i = 0; i < _intermediateRefreshFeeds.length; i++) {
           const ft = _intermediateRefreshFeeds[i];
           if (_starterRefeedTime && Math.abs(ft.getTime() - _starterRefeedTime.getTime()) < 30 * 60 * 1000) continue;
-          const intStretch = i === 0 && !refreshDrawn && !_bridgeRefreshMs && starterLocation === 'fridge' && planningMode === 'last_fed' ? refreshStretch : 1;
+          const intStretch = i === 0 && !refreshDrawn && !_bridgeRefreshMs && planningMode === 'last_fed' ? refreshStretch : 1;
           const intPeakAt = new Date(ft.getTime() + adjPeakH_next_eff * intStretch * 3600000);
           const refreshCount = events.filter(e => e.kind === 'refresh' || e.kind === 'intermediate_refresh').length + 1;
           events.push({
@@ -4865,11 +4835,11 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       };
     }
 
-    // The rest-stretch rules below apply to a fridge-kept starter (round 6 B3: every path of its revival
-    // on one model). A room-temperature starter keeps the established model: its intermediates are placed
-    // from the last feed, not back from the pre-mix, so a multi-day plan would leave the pre-mix after a
-    // long rest and lose plans the search keeps today (a pinned mix with Nights; follow-up).
-    function restRules(): boolean { return planningMode === 'last_fed' && starterLocation === 'fridge'; }
+    // The rest-stretch rules below apply to every starter planned from its last feed, kept in the fridge
+    // (round 6 B3) or on the counter (round 7 B3). From a rest, the intermediate feeds are placed back
+    // from the pre-mix feed (planIntermediateFeeds `fromRest`), so a multi-day plan's pre-mix follows a
+    // regular feeding and only the first feed after the rest rises with the stretch.
+    function restRules(): boolean { return planningMode === 'last_fed'; }
 
     // The first feed the baker does after the last recorded one rises with the rest stretch,
     // whichever family the plan comes from (round 6 B3, Priya: a 5-day fridge starter's first feed
@@ -5865,7 +5835,11 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
             : candMixMs - adjPeakH_for * 3600000;
       const startMs = _starterRefeedTime?.getTime() ?? lastFedTime.getTime();
       const MIN_INT = Math.max(0, revivalCycles(starterAgeAt(startMs), starterMature, tang) - 1);
-      return planIntermediateFeeds(startMs, nextMajorFeedMs, refreshSpacingH, MIN_INT, adjPeakH_for, Date.now(), firstIntermediateStretch(cand));
+      // A counter starter from a rest (no refresh planned: the chain starts at the last recorded feed):
+      // the feeds are placed back from the next major feed when forward placement would leave it after a
+      // long rest (round 7 B3). A fridge-kept starter waits in the fridge after its chain (fridge_in at the
+      // last feed's peak), and its run-up is the round-6 one (eveningRevival): unchanged.
+      return planIntermediateFeeds(startMs, nextMajorFeedMs, refreshSpacingH, MIN_INT, adjPeakH_for, Date.now(), firstIntermediateStretch(cand), restRules() && !_starterRefeedTime && starterLocation !== 'fridge');
     }
 
     let best = candidates[0];
@@ -6580,7 +6554,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     setEditBoundaryMessage(null);hasManuallyDragged.current=false;setHasDragged(false);
     setStarterPins(null);setEditingRow(null);setEditingEnabled(false);setEditBaseTimes(null);
     setKeyAdjusted(false);keyBaselineRef.current=null;draftOverridesRef.current={};
-    setAppliedSuggestion(null);setFocusRow(null);
+    setAppliedSuggestion(null);setFocusRow(null);setUnkeptPin(null);
     manualRefreshRef.current=null;manualFeed2Ref.current=null;manualMixRef.current=null;
     rememberOverrides({});ratioApplyHistoryRef.current.length=0;
     // Current blockers and method are retained; Reset never restores an old plan.
@@ -6783,7 +6757,8 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     const valid=validation.valid&&allBatchPeaksUsable;
     const message=valid?null:isTimeBlocked(candidateBake,candidateBlocks)
       ?(isFr?'La cuisson tombe pendant une indisponibilité. Décalez la cuisson ou ajustez vos disponibilités.':'Your bake falls during an unavailable period. Change your baking time or availability.')
-      :!historyKept||!noNewPastActions||validation.reason==='date'
+      // No plan at all is not "a past preparation moved" (its empty events only fail the history check; round 7 Task 4).
+      :result&&(!historyKept||!noNewPastActions)||validation.reason==='date'
       ?(isFr?'Ce changement déplacerait une préparation passée. Choisissez un autre horaire.':'This change would move a past preparation. Choose another time.')
       :validation.schedule?.batchTimingConflict?(isFr?'Le premier lot nécessite un rabat avant la fin des pétrissées. Réduisez la quantité de cette fournée.':'The first batch needs a fold before all mixing finishes. Reduce the quantity of this bake.')
       :validation.reason==='busy'?(isFr?'Étape pendant une indisponibilité : ':'Step during unavailable hours: ')+(foldActionLabel(validation.conflict?.id??'',locale,mixingBatches) ?? (conflictNames[validation.conflict?.id??'']??['une étape','an action'])[isFr?0:1])+'.'
@@ -6839,8 +6814,19 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     // judged as before (17 Nov 2026 retention: a raised plan read "no time" on Fine-tune).
     const previous=revivalRetryRef.current;
     revivalRetryRef.current=true;
-    try{return evaluateStarterCandidate({mix:completedMixAt??+pendingStart,feed:feed?+feed.time:null,refresh:refresh?+refresh.time:null},candidateBlocks,displayStarterEvents);}
+    let derived:ReturnType<typeof evaluateStarterCandidate>;
+    try{derived=evaluateStarterCandidate({mix:completedMixAt??+pendingStart,feed:feed?+feed.time:null,refresh:refresh?+refresh.time:null},candidateBlocks,displayStarterEvents);}
     finally{revivalRetryRef.current=previous;}
+    // A generated recipe's saved plan that the current model no longer re-derives (made before a model change:
+    // Priya's levain, planned Tuesday, opened Thursday, round 7 Task 4) is judged as shown, as a plan kept after
+    // recorded feeds is: its remaining steps against the busy times, the mix near the pre-mix feed's shown peak.
+    // Only the plan as saved (its own mix and bake), only when it is valid so; a plan that re-derives is judged as before.
+    if(!derived.valid&&recipeGenerated&&completedMixAt===undefined&&!execution&&savedStarterEvents.length&&displayStarterEvents.length
+      &&+pendingStart===+startTime&&eatTime!=null&&+pendingEatTime===+eatTime){
+      const asShown=validateKeptStarterPlan(candidateBlocks);
+      if(asShown.valid)return asShown;
+    }
+    return derived;
   }
 
   /** Bounded fixed-bake search; the caller alone commits a validated result. */
@@ -7248,6 +7234,25 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   useEffect(()=>{onScheduleValidityChange?.(currentCandidateValid);},[currentCandidateValid,onScheduleValidityChange]);
   useEffect(()=>{if(!isSourdough)onPrefermentValidityChange?.(currentCandidateValid);},[isSourdough,currentCandidateValid,onPrefermentValidityChange]);
   useEffect(()=>{if(isSourdough)onStarterTimingValidityChange?.((completedMixAt!==undefined||starterTimingValid)&&currentCandidateValid);},[isSourdough,completedMixAt,starterTimingValid,currentCandidateValid,onStarterTimingValidityChange]);
+  /** Take the nearest mix that keeps a complete plan, as a pin (round 7, Task 2). */
+  function applyNearestKeptMix(){
+    if(!unkeptPin?.nearest)return;
+    const overrides=normalizeTimingOverrides({...manualTimesRef.current,mix:unkeptPin.nearest,feed:undefined,feedLocked:undefined,refresh:undefined});
+    rememberOverrides(overrides);setUnkeptPin(null);
+    replanCurrentSchedule(solverBlocksRef.current,overrides);
+  }
+  /** The mix nearest a pinned one that keeps a complete plan with these busy times (30 min steps, up to
+   * 8 h either way, earlier first at equal distance); null when none (round 7, Task 2). */
+  function nearestKeptMix(mixMs:number,candidateBlocks:AvailabilityBlock[]):number|null{
+    const step=1800000,now=Date.now();
+    for(let k=1;k<=16;k++)for(const at of [mixMs-k*step,mixMs+k*step]){
+      if(at<=now||at>=+pendingEatTime)continue;
+      // As replanStarter will search it (searchStarterCandidate keeps the storage of a pinned plan).
+      if(searchStarterCandidate({mix:at,feed:null,refresh:null},candidateBlocks,true)?.valid)return at;
+    }
+    return null;
+  }
+
   function replanCurrentSchedule(candidateBlocks:AvailabilityBlock[],overrides:TimingOverrides,resetRecommendation=false,removingOnly=false) {
     // Historical preparation is immutable; changing availability cannot restart it.
     const pastPreparation=startTimeInPast||(recipeGenerated&&!execution&&!replanRequested&&(+pendingStart<=Date.now()||(!isSourdough&&hasPrefActive&&+pendingStart-prefOffsetH*3600000<Date.now())));
@@ -7262,6 +7267,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       let checked:ReturnType<typeof evaluateStarterCandidate>|null=null;
       let raisedPct:number|null=null;
       let foundValid=false;
+      let unkept:{mix:number;nearest:number|null}|null=null;
       try{
       checked=replanStarter(candidateBlocks,overrides);
       // Relaxing constraints must never discard an agenda still feasible at its
@@ -7308,9 +7314,22 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           checked=raised;raisedPct=pct;foundValid=true;break;
         }
       }
+      // A pinned mix that can no longer be kept (round 7, Task 2: a confirmed mix, then Nights) keeps the plan
+      // on screen at that mix (the displayed plan, judged against the new busy times), so the time editor and
+      // its ways on remain: the nearest mix that works (unkeptPin.nearest) and Return to recommended times.
+      // Never valid: the recipe still waits for a plan that fits.
+      if(!foundValid&&overrides.mix!=null&&+pendingStart===overrides.mix&&completedMixAt===undefined&&!execution&&displayStarterEvents.length){
+        probeBulkFactorRef.current=baseFactor;
+        const kept=validateCurrentStarterCandidate(candidateBlocks);
+        if(!kept.valid&&kept.probe.result&&+kept.probe.start===overrides.mix&&kept.probe.result.starterEvents.length){
+          checked=kept;
+          unkept={mix:overrides.mix,nearest:nearestKeptMix(overrides.mix,candidateBlocks)};
+        }
+      }
       }finally{probeBulkFactorRef.current=null;}
       if((raisedPct??null)!==(autoStarterPct??null)&&!(holdStarterPct&&raisedPct===null))onAutoStarterPctChange?.(raisedPct);
       setSearchFailed(!foundValid);
+      setUnkeptPin(unkept);
       if(checked){
         const result=checked.probe.result!;
         checked.probe.effects.forEach(effect=>effect());
@@ -7332,7 +7351,11 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       }else{
         // An unsuccessful solve must clear the old plan's future timestamps.
         // Otherwise a bake-time edit leaves a previous bake's feeds on screen.
-        const unresolvedStart=new Date((Math.floor(Date.now()/900000)+1)*900000);
+        // A pin with no plan to keep (none displayed yet) stays the editor's mix, so the editor and its ways on
+        // remain (round 7, Task 2); otherwise the next quarter, as before.
+        const pinStays=overrides.mix!=null&&overrides.mix>Date.now()&&overrides.mix<+pendingEatTime&&completedMixAt===undefined&&!execution;
+        const unresolvedStart=pinStays?new Date(overrides.mix!):new Date((Math.floor(Date.now()/900000)+1)*900000);
+        if(pinStays)setUnkeptPin({mix:overrides.mix!,nearest:nearestKeptMix(overrides.mix!,candidateBlocks)});
         setPendingStart(unresolvedStart);
         setSolverResult(null);
         onFeedTimeChange?.(null);onFeed2TimeChange?.(null);
@@ -7581,8 +7604,11 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   };
   const previewStarter='probe' in currentCandidate?currentCandidate.probe.result:null;
   const timelineStarterEvents=displayStarterEvents.length?displayStarterEvents:(previewStarter?.starterEvents??[]);
+  // A pinned mix with no starter plan at it (round 7, Task 2): the editor stays, at the pin, with its ways on.
+  const starterPlanCoherent=!previewStarter?.windowTooShort&&!!timelineStarterEvents.length&&starterHandsOnActions(timelineStarterEvents,Date.now()).every(action=>+action.at<=+pendingStart);
+  const pinWithoutPlan=isSourdough&&completedMixAt===undefined&&!execution&&manualTimes.mix!=null&&+pendingStart===manualTimes.mix&&!starterPlanCoherent;
   const coherentTimes=+pendingStart<+pendingEatTime&&(!committedSchedule||(+committedSchedule.divideBallTime<=+pendingEatTime&&
-    (committedSchedule.availabilityActions??[]).every(action=>+action.at<=+pendingEatTime)))&&(!isSourdough||
+    (committedSchedule.availabilityActions??[]).every(action=>+action.at<=+pendingEatTime)))&&(!isSourdough||pinWithoutPlan||
     (completedMixAt!==undefined||!previewStarter?.windowTooShort&&!!timelineStarterEvents.length&&starterHandsOnActions(timelineStarterEvents,Date.now()).every(action=>+action.at<=+pendingStart)));
   // ── One decision, never a repair workshop ──
   // Simple never asks the baker to inspect or cover individual steps. When the
@@ -7714,6 +7740,10 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
                 : <>{foldActionLabel(cleared.id,locale,mixingBatches)??conflictNames[cleared.id]?.[isFr?0:1]} · {at(cleared.at)}</>}</small>;
           })()}
           {simpleSuggestion.assistance?<small style={{display:'block',fontWeight:400}}>{isFr?`${simpleSuggestion.assistance} étapes demandent quelqu’un sur place`:`${simpleSuggestion.assistance} steps need someone at home`}</small>:null}
+        </button>}
+        {/* A pinned mix the busy times no longer allow: the nearest mix that keeps this bake time (round 7, Task 2). */}
+        {isSourdough&&unkeptPin?.nearest!=null&&+pendingStart===unkeptPin.mix&&<button type="button" className="bh-plan-option" data-nearest-mix style={optionCard} onClick={applyNearestKeptMix}>
+          <strong style={{display:'block'}}>{isFr?`Pétrir ${fmtCardDT(new Date(unkeptPin.nearest),true)}`:`Start Dough ${fmtCardDT(new Date(unkeptPin.nearest),false)}`}</strong>{' '}<small style={{display:'block',fontWeight:400}}>{isFr?`L’horaire le plus proche qui convient · cuisson à ${simpleTimeLabel(pendingEatTime)}`:`The nearest time that fits · bake at ${simpleTimeLabel(pendingEatTime)}`}</small>
         </button>}
         {shortWarmupChoice&&<button type="button" className="bh-plan-option" data-simple-short-warmup style={optionCard} onClick={()=>{keepOven();setSimpleMoved({from:new Date(pendingEatTime),to:+shortWarmupChoice.bake});applySuggestedTarget({start:pendingStart,bake:shortWarmupChoice.bake,prefHours:prefOffsetH,blocks:shortWarmupChoice.blocks});}}>
           <strong style={{display:'block'}}>{isFr?`Enfourner à ${simpleTimeLabel(shortWarmupChoice.bake)}`:`Bake at ${simpleTimeLabel(shortWarmupChoice.bake)}`}</strong>{' '}<small style={{display:'block',fontWeight:400}}>{(()=>{const warm=formatDuration(shortWarmupChoice.warmMin/60,isFr?'fr':'en');
@@ -9128,7 +9158,8 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         const bounds=isSourdough&&starterResult?{from:starterResult.sourdoughSweetFrom!=null?new Date(+times.bake-starterResult.sourdoughSweetFrom*hour):null,to:starterResult.sourdoughSweetTo!=null?new Date(+times.bake-starterResult.sourdoughSweetTo*hour):null}:editInput.window(times.bake);
         const clampBounds=(from:number,to:number,at:number)=>({from:Math.floor(Math.min(at,Math.max(Date.now(),from))/step)*step,to:Math.ceil(Math.max(at,to)/step)*step});
         const anchors:KeyTimingAnchor[]=[];
-        if(isSourdough){
+        // A pin with no starter plan that reaches it lists no starter steps (round 7, Task 2): only the mix and the bake.
+        if(isSourdough&&!(pinWithoutPlan&&!starterPins)){
           for(const event of starterEvents){
             if(event.kind==='known_peak')continue;
             // An age chip ("2–3 days ago") is not a date: don't print an invented one.
@@ -9201,7 +9232,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
             manualMixRef.current=basePins.mix;manualFeed2Ref.current=basePins.feed;manualRefreshRef.current=basePins.refresh;
             checked.probe.effects.forEach(effect=>effect());setHasDragged(true);hasManuallyDragged.current=true;
             const result=checked.probe.result!;acceptedBakeRef.current=+pendingEatTime;
-            const overrides=normalizeTimingOverrides({...manualTimesRef.current,...draftOverridesRef.current});rememberOverrides(overrides);setSearchFailed(false);
+            const overrides=normalizeTimingOverrides({...manualTimesRef.current,...draftOverridesRef.current});rememberOverrides(overrides);setSearchFailed(false);setUnkeptPin(null);
             onChange(checked.probe.start,pendingEatTime,repairBlocks,{preservePlan:true,timingOverrides:overrides,starterRecoveryResolved:replanRequested&&checked.valid&&result.starterEvents.every(event=>!['refresh','intermediate_refresh','pre_mix'].includes(event.kind)||+event.time>Date.now()),starterPlan:{events:result.starterEvents,fridgeOutTime:result.fridgeOutTime,usingPeak2:result.usingPeak2,feed2Time:result.feed2Time,starterFridgeInTime:result.starterFridgeInTime}});
             setKeyAdjusted(JSON.stringify([+checked.probe.start,+pendingEatTime,prefOffsetH,result.starterEvents.map(e=>[e.kind,+e.time])])!==keyBaselineRef.current);setStarterPins(null);closeEdit();
           }else{setKeyAdjusted(JSON.stringify([+draftMix,+draftBake,draftPrefOffset,displayStarterEvents.map(e=>[e.kind,+e.time])])!==keyBaselineRef.current);saveEdit();}
@@ -9264,7 +9295,21 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           {!dirty&&hasTimingOverrides&&<p>{isFr?'Vos horaires choisis sont conservés. Le retour à la recommandation les libère pour chercher un autre planning.':'Your chosen times are kept. Return to the recommendation to release them and find another plan.'}</p>}
           {batchConflict ? <BatchRepairNotice isFr={isFr} numItems={numItems ?? 1} itemWeight={itemWeight} mixerCapacityG={mixerCapacityG} wastePct={wastePct} onEditQuantity={onEditQuantity} /> : simpleDecisionPending || !noticeAction ? null : editAvailability}
         </div>:undefined;
-        const notice=(fridgeArrangement||conflictNotice||(!dirty&&fridgeArrangementChanged))?<>{!dirty&&fridgeArrangementChanged&&<p role="status" className="bh-key-detail">{isFr?'Le planning a changé. La sortie du réfrigérateur n’est plus confirmée.':'The plan changed. Fridge removal is no longer confirmed.'}</p>}{fridgeArrangement}{showResolutionChoice&&<div style={{marginBottom:12}}>{editAvailability}</div>}{conflictNotice}</>:undefined;
+        // A pinned mix the busy times no longer allow (round 7, Task 2): one statement, and the ways on: the nearest
+        // mix that works, or Return to recommended times (the header). No step list, no per-row busy note beside it.
+        const pinUnkept=isSourdough&&!dirty&&(!!unkeptPin&&+times.start===unkeptPin.mix||pinWithoutPlan);
+        const unkeptMix=unkeptPin?.mix??manualTimes.mix??+times.start,unkeptNearest=unkeptPin?.nearest??null;
+        // With the clash card above, the card says it and carries the nearest mix: nothing more here.
+        const unkeptOwnNotice=pinUnkept&&!simpleDecisionPending;
+        const unkeptNotice=unkeptOwnNotice?<div className="bh-plan-notice" role="status" data-unkept-pin>
+          <strong>{isFr?`Pétrir ${fmtCardDT(new Date(unkeptMix),true)} ne s’accorde plus avec vos indisponibilités.`:`Starting the dough ${fmtCardDT(new Date(unkeptMix),false)} no longer fits your busy times.`}</strong>
+          {unkeptNearest!=null&&<button type="button" className="bh-plan-option" data-nearest-mix style={{display:'block',width:'100%',minHeight:48,marginTop:10,padding:'10px 14px',border:'1.5px solid var(--border)',borderRadius:12,background:'var(--card, #fff)',color:'var(--char)',textAlign:'left',whiteSpace:'normal',fontSize:15,cursor:'pointer'}} onClick={applyNearestKeptMix}>
+            <strong style={{display:'block'}}>{isFr?`Pétrir ${fmtCardDT(new Date(unkeptNearest),true)}`:`Start Dough ${fmtCardDT(new Date(unkeptNearest),false)}`}</strong>
+            <span style={{color:'var(--smoke)',fontSize:14}}>{isFr?'L’horaire le plus proche qui convient':'The nearest time that fits'}</span>
+          </button>}
+        </div>:null;
+        if(pinUnkept)for(const anchor of anchors)anchor.note=null;
+        const notice=pinUnkept&&simpleDecisionPending?undefined:unkeptNotice??((fridgeArrangement||conflictNotice||(!dirty&&fridgeArrangementChanged))?<>{!dirty&&fridgeArrangementChanged&&<p role="status" className="bh-key-detail">{isFr?'Le planning a changé. La sortie du réfrigérateur n’est plus confirmée.':'The plan changed. Fridge removal is no longer confirmed.'}</p>}{fridgeArrangement}{showResolutionChoice&&<div style={{marginBottom:12}}>{editAvailability}</div>}{conflictNotice}</>:undefined);
         // Steps the baker agreed to handle in a busy time: the Recipe marks them "during a busy time",
         // so the editor does too and does not call the plan "Recommended" (17 Nov 2026 retention).
         const coveredConflicts=findAvailabilityConflicts(currentPlanActions(committedSchedule?.availabilityActions??[]),
@@ -9273,7 +9318,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         // The autolyse and the end of mixing belong to the Start Dough row (the Recipe joins them too).
         for(const anchor of anchors)if(!anchor.note&&coveredConflicts.some(({action})=>+action.at===anchor.at||anchor.id==='mix'&&['autolyse','mix-finish'].includes(action.id)))anchor.note=isFr?'Pendant un moment occupé':'During a busy time';
         if(simpleDecisionPending&&!dirty)for(const anchor of anchors)if(anchor.id==='mix')anchor.note=null;
-        const conflictRows=(simpleDecisionPending||mode==='simple'&&fridgeRemovalCovered?[]:currentConflicts).map(({action})=>({id:action.id,at:+action.at,
+        const conflictRows=(simpleDecisionPending||pinUnkept||mode==='simple'&&fridgeRemovalCovered?[]:currentConflicts).map(({action})=>({id:action.id,at:+action.at,
           name:(action.id.startsWith('starter-')?displayStarterEvents.find(event=>+event.time===+action.at&&!event.historicalStorage)?.label:null)??foldActionLabel(action.id,locale,mixingBatches)??(conflictNames[action.id]??['Étape','Step'])[isFr?0:1],
           cover:()=>coverAction(action)}));
         return <ScheduleKeyTimings quietClash={simpleDecisionPending} conflictRows={conflictRows} anchors={anchors} blocks={repairBlocks} isFr={isFr} onChange={isSourdough?starterChange:commercialChange} check={check} cacheKey={cacheKey} hasDraft={dirty} onInteractionChange={setKeyDragging} onCancel={cancel} ovenAt={+times.bake} personalized={hasTimingOverrides||coveredConflicts.length>0} adjustment={adjustment} onApply={accept} canApply={dirty&&valid} onOpenChange={handleKeyEditorOpen} focusId={planInline?.focus} inline={!!planInline} onClose={handleInlineClose} applyLabel={planInline?.applyLabel} notice={notice} header={headerReset?<button type="button" className="bh-key-reset" disabled={keyDragging} onClick={resetToRecommendation}>{execution?(isFr?'Recalculer les étapes restantes':'Reset remaining times'):dirty||hasTimingOverrides?(isFr?'Revenir aux horaires recommandés':'Return to recommended times'):(isFr?'Trouver des horaires compatibles':'Find compatible times')}</button>:undefined}>
