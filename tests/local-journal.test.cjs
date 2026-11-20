@@ -123,24 +123,30 @@ test('home lists every bake under way, one row each, by the step that is due (17
  J.forgetCurrentJournalBake();
  // A bake already marked baked, and one over two hours past its time, are not under way.
  J.recordGeneratedBake(bake({bakedDone:true,eatTime:t0+2*h}),3000);J.forgetCurrentJournalBake();
- J.recordGeneratedBake(bake({eatTime:t0-3*h}),4000);J.forgetCurrentJournalBake();
+ const past=J.recordGeneratedBake(bake({eatTime:t0-3*h}),4000).entry;J.forgetCurrentJournalBake();
  let rows=J.liveJournalBakes(t0);
+ // 20 Nov 2026 round 6: the bake over and unrated stays, after the bakes under way, as a row to rate.
+ assert.deepEqual(rows.filter(r=>r.rate).map(r=>r.entry.id),[past.id]);
+ rows=rows.filter(r=>!r.rate);
+ const live=t=>J.liveJournalBakes(t).filter(r=>!r.rate);
  assert.deepEqual(rows.map(r=>[r.entry.id,r.label,r.current]),[[baguettes.id,'Pointage',true],[campagne.id,'Façonnage',true]],'steps under way, the earlier one first');
  // 23:00: both wait in the fridge; each row names its next step and time.
- rows=J.liveJournalBakes(t0+5.5*h);
+ rows=live(t0+5.5*h);
  assert.deepEqual(rows.map(r=>[r.entry.id,r.label,r.current,r.at]),[[campagne.id,'Apprêt',false,t0+13.5*h],[baguettes.id,'Sortir du frigo',false,t0+13.5*h]]);
  // Sunday 7:00: both out of the fridge at the same time: the bake that comes first leads.
- rows=J.liveJournalBakes(t0+13.6*h);
+ rows=live(t0+13.6*h);
  assert.deepEqual(rows.map(r=>r.label),['Apprêt','Sortir du frigo']);
  assert.ok(rows.every(r=>r.current));
  // The rest inside the mix belongs to the mix.
  J.forgetCurrentJournalBake();
  const mixing=J.recordGeneratedBake(bake({bakeType:'bread',styleKey:'baguette',eatTime:t0+20*h,computedRecipe:steps([['mixing',-0.5,'Pétrissage'],['autolyse',-0.3,'Repos'],['bulk_ferm',1,'Pointage'],['eat',20,'Cuisson']])}),5000).entry;
- assert.equal(J.liveJournalBakes(t0).find(r=>r.entry.id===mixing.id).label,'Pétrissage');
+ assert.equal(live(t0).find(r=>r.entry.id===mixing.id).label,'Pétrissage');
  // Without saved steps: the next key time, unlabeled.
  J.forgetCurrentJournalBake();
  const bare=J.recordGeneratedBake(bake({eatTime:t0+30*h,startTime:t0+10*h,prefermentType:'none'}),6000).entry;
- const row=J.liveJournalBakes(t0).find(r=>r.entry.id===bare.id);
+ const row=live(t0).find(r=>r.entry.id===bare.id);
  assert.equal(row.label,null);assert.equal(row.at,t0+10*h);
- assert.equal(J.liveJournalBakes(t0+40*h).length,0,'nothing once all are over');
+ assert.equal(live(t0+40*h).length,0,'nothing under way once all are over');
+ assert.ok(J.liveJournalBakes(t0+40*h).every(r=>r.rate),'the unrated ones are to rate');
+ assert.equal(J.liveJournalBakes(t0+120*h).length,0,'three days later, nothing');
 });

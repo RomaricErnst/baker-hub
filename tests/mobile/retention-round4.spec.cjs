@@ -78,8 +78,8 @@ test.describe('item 3 · home rows',()=>{
   await shot(page,'rows-fr-320');
   const sat=page.locator('[data-live-bake="sat"]');
   // Saturday 9:45: the final rise (a wait) is under way; the next thing to do is the oven at 11:15.
-  await expect(sat).toHaveAttribute('aria-label','Sam. · Baguette · Préchauffer le four 11h15 →');
-  await expect(page.locator('[data-live-bake="sun"]')).toHaveAttribute('aria-label','Dim. · Baguette · Pétrir la pâte dim. 7h00 →');
+  await expect(sat).toHaveAttribute('aria-label','Sam. · Baguettes · Préchauffer le four 11h15 →');
+  await expect(page.locator('[data-live-bake="sun"]')).toHaveAttribute('aria-label','Dim. · Baguettes · Pétrir la pâte dim. 7h00 →');
   // Ordered by that time, and the time fully on screen.
   await expect(page.locator('[data-live-bake]').first()).toHaveAttribute('data-live-bake','sat');
   for(const id of ['sat','sun']){
@@ -98,7 +98,7 @@ test.describe('item 3 · home rows',()=>{
   const pizza=session({startTime:Date.parse('2026-11-22T16:00:00Z'),eatTime:Date.parse('2026-11-22T19:00:00Z')});
   await install(page,{bh_journal_v1:JSON.stringify([entryFor('bag',loaf({prefermentType:'poolish',prefOffsetH:5.5,startTime:Date.parse('2026-11-21T12:30:00Z'),eatTime:Date.parse('2026-11-22T10:00:00Z')})),entryFor('pizza',pizza)]),[planKey('bag')]:plan},'2026-11-21T12:10:00Z');
   await reopen(page,'2026-11-21T12:10:00Z');
-  await expect(page.locator('[data-live-bake="bag"]')).toHaveAttribute('aria-label','Baguette · Pétrir la pâte 12h30 →');
+  await expect(page.locator('[data-live-bake="bag"]')).toHaveAttribute('aria-label','Baguettes · Pétrir la pâte 12h30 →');
  });
 });
 
@@ -163,19 +163,19 @@ test.describe('items 2 and 5 · a levain bake',()=>{
   await expect(mix).not.toContainText('Completed');
   await shot(page,'mix-done');
  });
- test('item 5: a later tick closes earlier steps as plain Done, with no invented time',async({page})=>{
+ test('item 5 (round 6, D2): a later tick marks only its step; the mix stays plain, nothing invented',async({page})=>{
   await openPriya(page,'2026-11-20T22:40:00Z');
   await preparation(page);
   const shape=page.locator('section[data-guide-title="Shape the loaf"]');
   if(!(await shape.getByRole('checkbox',{name:'Step done',exact:true}).isVisible()))await shape.locator('button').first().tap();
   await shape.getByRole('checkbox',{name:'Step done',exact:true}).click();
-  await expect.poll(async()=>(await stored(page)).mixExecution?.actualAt??null).toBe(Date.parse('2026-11-20T17:30:00Z'));
+  await expect(shape).toHaveAttribute('data-guide-done','true');
   const overview=page.locator('.bh-step-trigger');if(await overview.isVisible())await overview.tap();
   const mix=page.locator('section[data-guide-title="Start Dough"]');
   await shot(page,'closed-by-later-tick');
-  await expect(mix).toHaveAttribute('data-guide-done','true');
-  await expect(mix).toContainText('Done');
+  await expect(mix).not.toHaveAttribute('data-guide-done','true');
   await expect(mix).not.toContainText(/Done ·|Completed/);
+  expect((await stored(page)).mixExecution?.actualAt??null).toBe(null);
  });
 });
 

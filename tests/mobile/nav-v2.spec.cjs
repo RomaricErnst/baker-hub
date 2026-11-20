@@ -744,7 +744,8 @@ for(const bread of [false,true])test(`late ${bread?'bread':'pizza'} surplus keep
   for(let i=0;i<6;i++)await card.getByRole('button',{name:/^\+/}).tap();
  }
  await expect.poll(async()=>(await stored(page))?.numItems).toBe(4);
- await page.getByRole('button',{name:bread?'Vérifier la quantité de pain':'Vérifier la quantité de pâte',exact:true}).tap();
+ // Pizzas say what to do about the surplus since round 6 (A8): "Retirer 2 pizzas".
+ await page.getByRole('button',{name:bread?'Vérifier la quantité de pain':'Retirer 2 pizzas',exact:true}).tap();
  await expect(page.getByRole('dialog')).toBeVisible();
  await expect.poll(async()=>(await stored(page))?.numItems).toBe(4);
  await page.getByRole('dialog').getByRole('button',{name:/^Retour à la préparation/}).tap();

@@ -787,3 +787,7 @@ summary.bh-chevron-inline::-webkit-details-marker { display:none; }
 .bh-cta-one-line, .bh-step-actions .bh-cta-one-line { display:flex; align-items:center; justify-content:center; white-space:nowrap; min-width:0; }
 .bh-cta-one-line > .bh-cta-text { min-width:0; overflow:hidden; text-overflow:ellipsis; }
 .bh-cta-one-line > .bh-cta-arrow { flex-shrink:0; }
+/* A busy-time preset that is not applied reads as an offer (a dashed outline), never as a choice already made
+   (20 Nov 2026 round 6, Wei Ling read "Weekdays 9:00am – 6:00pm" as set). Applied chips keep the cream fill,
+   brown border and tick. No generated text: it would join the button's accessible name. */
+details:has(> summary[data-busy-question]) button[aria-pressed="false"]{border-style:dashed !important;background:transparent !important}

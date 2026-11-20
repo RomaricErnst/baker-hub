@@ -794,6 +794,44 @@ interface ShoppingItem {
   forPizzas: string[];
 }
 
+/** One product per thing bought (20 Nov 2026 round 6, Wei Ling and Maya): San Marzano tomatoes and a cooked
+ *  marinara were two tomato lines, and three olive oils (base, finish, drizzle) three lines. The tomato sauces
+ *  become one tomato line (the sauce is cooked from it), the olive oils one line ("30 ml" plus "+ 2 drizzles"). */
+const TOMATO_PRODUCTS = ['san_marzano', 'marinara_sauce', 'tomato_sauce_cooked'];
+const OLIVE_OILS = ['evo_oil', 'evo_oil_finish', 'olio_base', 'evo_oil_base'];
+type MapItem = ShoppingItem & { pizzaCount: Record<string, number> };
+function mergeInto(map: Record<string, MapItem>, ids: string[], primary: MapItem): MapItem[] {
+  const merged = ids.map(id => map[id]).filter((item): item is MapItem => !!item && item !== primary);
+  for (const item of merged) {
+    for (const [name, count] of Object.entries(item.pizzaCount)) primary.pizzaCount[name] = (primary.pizzaCount[name] ?? 0) + count;
+    primary.isCommonPantry = primary.isCommonPantry && item.isCommonPantry;
+    delete map[item.id];
+  }
+  return merged;
+}
+export function mergeShoppingProducts(map: Record<string, MapItem>, l: 'en' | 'fr'): void {
+  const tomatoes = TOMATO_PRODUCTS.map(id => map[id]).filter(Boolean);
+  if (tomatoes.length > 1) {
+    const primary = tomatoes[0];
+    const grams = tomatoes.reduce((sum, item) => sum + (item.unit === 'g' ? item.totalAmount ?? 0 : 0), 0);
+    const cooked = tomatoes.some(item => item.id !== 'san_marzano');
+    mergeInto(map, TOMATO_PRODUCTS, primary);
+    primary.totalAmount = grams; primary.unit = 'g';
+    if (cooked && primary.id === 'san_marzano') primary.qtyNote = l === 'fr' ? 'dont la sauce cuite : faites-la mijoter avec une partie' : 'includes the cooked sauce: simmer part of it';
+  }
+  const oils = OLIVE_OILS.map(id => map[id]).filter(Boolean);
+  if (oils.length > 1) {
+    const primary = map.evo_oil ?? oils[0];
+    const ml = oils.reduce((sum, item) => sum + (item.unit === 'ml' ? item.totalAmount ?? 0 : 0), 0);
+    const drizzles = oils.reduce((sum, item) => sum + (item.unit === 'drizzle' ? item.totalAmount ?? 0 : 0), 0);
+    mergeInto(map, OLIVE_OILS, primary);
+    if (ml > 0) {
+      primary.totalAmount = ml; primary.unit = 'ml';
+      primary.qtyNote = drizzles > 0 ? (l === 'fr' ? `+ ${drizzles} filet${drizzles > 1 ? 's' : ''} pour finir` : `+ ${drizzles} drizzle${drizzles > 1 ? 's' : ''} to finish`) : undefined;
+    } else { primary.totalAmount = drizzles; primary.unit = 'drizzle'; }
+  }
+}
+
 export function buildShoppingList(
   qtys: Record<string, number>,
   locale: string,
@@ -844,6 +882,8 @@ export function buildShoppingList(
       item.pizzaCount[pizzaName] += qty;
     });
   });
+
+  mergeShoppingProducts(ingredientMap, l);
 
   Object.values(ingredientMap).forEach(item => {
     item.qtyNote = pizzaShoppingWeightNote(item.id,item.totalAmount,item.unit,locale) || item.qtyNote;
@@ -2704,7 +2744,7 @@ export default function ToppingSelector({ locale, numItems, activePill, onPillCh
             const cta=oneLineCta(selectionForward.label);
             return <button type="button" className={cta.className} aria-label={cta['aria-label']} onClick={selectionForward.onClick} style={{...NEXT_CTA,width:'100%',minHeight:44}}>{cta.children}</button>;
           })() : (()=>{
-            const label=directSelectionReturn&&onSelectionDone ? (totalQty>numItems?(l==='fr'?'Vérifier la quantité de pâte':'Check dough quantity'):selectionDoneLabel) : totalQty === 0 ? (onSelectionDone&&!baseReady?(selectionDoneLabel??(l==='fr'?'Définir ma recette':'Set up my recipe')):(l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas')) : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`);
+            const label=directSelectionReturn&&onSelectionDone ? (totalQty>numItems?(l==='fr'?`Retirer ${totalQty-numItems} pizza${totalQty-numItems>1?'s':''}`:`Remove ${totalQty-numItems} pizza${totalQty-numItems>1?'s':''}`):selectionDoneLabel) : totalQty === 0 ? (onSelectionDone&&!baseReady?(selectionDoneLabel??(l==='fr'?'Définir ma recette':'Set up my recipe')):(l === 'fr' ? 'Choisissez vos pizzas' : 'Choose your pizzas')) : (l === 'fr' ? `Voir ma sélection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}` : `Review selection · ${totalQty} pizza${totalQty > 1 ? 's' : ''}`);
             const oneLine=label&&/ →$/.test(label)?oneLineCta(label):null;
             return <button type="button" disabled={selectionActionDisabled} className={oneLine?.className} aria-label={oneLine?.['aria-label']} onClick={() => (totalQty===0||(directSelectionReturn&&totalQty<=numItems))?onSelectionDone?.():setSummarySheetOpen(true)} style={{...NEXT_CTA,width:'100%',minHeight:44,opacity:selectionActionDisabled ? .65 : 1}}>
               {oneLine?oneLine.children:label}

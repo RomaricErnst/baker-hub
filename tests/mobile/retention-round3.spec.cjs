@@ -61,7 +61,7 @@ test.describe('Maya, zero ticks',()=>{
    ['2026-11-20T11:20:00Z','Preparation','Now: Refrigerate the dough'],
    ['2026-11-20T13:20:00Z','Preparation','Now: Divide and shape dough balls'],
    ['2026-11-20T13:40:00Z','Preparation','Now: Refrigerate the dough balls'],
-   ['2026-11-21T09:40:00Z','Preparation','Now: Let the shaped dough rise'],
+   ['2026-11-21T09:40:00Z','Preparation','Now: Take the dough out of the fridge'],// named by its action since round 6 (A5)
    ['2026-11-21T11:05:00Z','Baking & serving','Now: Preheat the oven'],
    ['2026-11-21T11:35:00Z','Baking & serving','Now: Bake the pizzas'],
   ];
@@ -113,18 +113,20 @@ test.describe('Maya, zero ticks',()=>{
   await expect(page.locator('[data-plan-bake]')).toContainText('7:30–9:00pm');
  });
 
- test('partial ticks: a later tick ticks the earlier steps, the mix recorded as planned',async({page})=>{
+ test('partial ticks: a later tick marks only its step; the earlier ones stay plain and the bar moves on',async({page})=>{
   await install(page,storageFor('maya-1',session()),'2026-11-20T13:20:00Z');
   await reopen(page,'2026-11-20T13:20:00Z');
   await resumeFromHome(page);
   await expect(bar(page)).toContainText('Now: Divide and shape dough balls');
   const divide=page.locator('section[data-guide-title="Divide and shape dough balls"]');
   await divide.getByRole('checkbox',{name:'Step done',exact:true}).click();
-  // Ticking the shaping says the dough was mixed, rose and chilled: all ticked, the mix recorded as planned.
-  for(const title of ['Start Dough','Let the dough rise','Refrigerate the dough','Divide and shape dough balls'])
-   await expect(page.locator(`section[data-guide-title="${title}"]`)).toHaveAttribute('data-guide-done','true');
-  await expect.poll(async()=>(await stored(page)).execution?.actualAt).toBe(Date.parse('2026-11-20T10:00:00Z'));
+  // 20 Nov 2026 round 6 (owner's decision D2): ticking the shaping no longer ticks the mix, the rise and the
+  // fridge ("says I folded when I didn't"); nothing is recorded for them.
+  await expect(divide).toHaveAttribute('data-guide-done','true');
+  for(const title of ['Start Dough','Let the dough rise','Refrigerate the dough'])
+   await expect(page.locator(`section[data-guide-title="${title}"]`)).not.toHaveAttribute('data-guide-done','true');
   await expect(bar(page)).toContainText('Next: Refrigerate the dough balls');
+  expect((await stored(page)).execution).toBeFalsy();
  });
 });
 

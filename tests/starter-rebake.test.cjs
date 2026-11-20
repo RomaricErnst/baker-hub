@@ -21,7 +21,7 @@ async function restore(yeastType,rebake,starterTimingValid,overrides={},acceptRe
  context.event={id:'saved-bake',dough_snapshot:{yeastType,tab:'custom',recipeGenerated:true,modeChosen:true,eatTime:time,startTime:time-86400000,timingOverrides:{mix:time-86400000,feed:time-90000000},starterEvents:[{kind:'pre_mix',time:time-90000000,isPast:false}],lastFedTime:time-100000000,knownPeakTime:time-86400000,feed2Time:time-90000000,fridgeOutTime:time-87000000,starterFridgeInTime:time-95000000,lastFedAge:'today',planningMode:'know_peak',ovenType:'dutch_oven',mixerType:'hand',itemWeight:800,containerCapacityLitres:5,pizzaParty:{qtys:{}},activeTab:'guide'}};
  Object.assign(context.event.dough_snapshot,{starterTimingValid,bakeType:'bread',styleKey:yeastType==='sourdough'?'pain_levain':'baguette'});
  Object.assign(context.event.dough_snapshot,overrides);
- context.openDestination=value=>{state.openDestination=value;};
+ context.openDestination=value=>{state.openDestination=value;};context.scrollToStepTop=()=>{};
  // The restore resets the recipe-input baseline and sets the journal id of the opened bake (17 Nov 2026).
  context.generatedRecipeInputKey={current:'previous bake'};context.restoredInputsPending={current:false};
  context.getBreadProtocol=require('../app/utils/breadProfiles.ts').getBreadProtocol;
@@ -36,7 +36,9 @@ test('sourdough rebake retains recipe and future bake date but requires fresh st
  assert.ok(state.setEatTime.getTime()>Date.now());
  for(const name of ['LastFedTime','KnownPeakTime','HasNotFedYet','LastFedAge','FeedTime','Feed2Time','FridgeOutTime','StarterFridgeInTime','StarterPeakTime']) assert.equal(state['set'+name],null,name);
  assert.deepEqual(JSON.parse(JSON.stringify(state.setTimingOverrides)),{});
- assert.equal(state.setStarterEvents.length,0);assert.equal(state.setRecipeGenerated,false);assert.equal(state.setSessionRestored,false);assert.equal(state.setShowResults,false);assert.equal(state.setAdvancedStep,9);assert.equal(state.openDestination,'batch');assert.equal(state.setBatchView,'quantity');
+ assert.equal(state.setStarterEvents.length,0);assert.equal(state.setRecipeGenerated,false);assert.equal(state.setSessionRestored,false);assert.equal(state.setShowResults,false);assert.equal(state.setAdvancedStep,9);
+ // 20 Nov 2026 round 6 (Priya): a Customized bake opens on its bake time, then the recipe, not on Quantity.
+ assert.equal(state.setActiveTab,'setup');assert.equal(state.setCustomBakeQuestion,true);assert.equal(state.setQuickRebake,true);assert.equal(state.openDestination,undefined);
 });
 test('normal sourdough resume preserves saved actions and generated guide',async()=>{
  const {state,snap}=await restore('sourdough',false);
@@ -48,7 +50,11 @@ test('normal sourdough resume preserves saved actions and generated guide',async
 test('commercial yeast rebake retains settings and requires validation of its new planning',async()=>{
  const {state}=await restore('instant',true);
  assert.deepEqual(JSON.parse(JSON.stringify(state.setTimingOverrides)),{});
- assert.equal(state.setRecipeGenerated,false);assert.equal(state.setShowResults,false);assert.equal(state.setAdvancedStep,9);assert.equal(state.setScheduleCandidateValid,false);assert.equal(state.openDestination,'batch');assert.equal(state.setBatchView,'quantity');
+ assert.equal(state.setRecipeGenerated,false);assert.equal(state.setShowResults,false);assert.equal(state.setAdvancedStep,9);assert.equal(state.setScheduleCandidateValid,false);
+ // A Customized bake (round 6): its bake time first. A Simple bake still opens on how much.
+ assert.equal(state.setCustomBakeQuestion,true);assert.equal(state.openDestination,undefined);
+ const simple=(await restore('instant',true,undefined,{tab:'simple'})).state;
+ assert.equal(simple.openDestination,'batch');assert.equal(simple.setBatchView,'quantity');assert.equal(simple.setQuickRebake,undefined);
 });
 
 test('cloud snapshot preserves a known starter timing blocker; legacy snapshot defaults valid',async()=>{

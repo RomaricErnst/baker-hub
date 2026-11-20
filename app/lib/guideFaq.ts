@@ -220,16 +220,6 @@ export const GUIDE_FAQ: Record<string,FaqEntry[]> = {
     },
     {
       "q": {
-        "en": "Do I really need the stretch & folds?",
-        "fr": "Les rabats sont-ils vraiment nécessaires ?"
-      },
-      "a": {
-        "en": "For higher-hydration doughs, yes — they build strength without kneading. For stiff doughs they matter less. Skipping one set is fine; skipping all of them gives a flatter result.",
-        "fr": "Pour les pâtes très hydratées, oui — ils donnent de la force sans pétrir. Pour les pâtes fermes, ils comptent moins. Sauter une série passe ; tout sauter donne un résultat plus plat."
-      }
-    },
-    {
-      "q": {
         "en": "My kitchen got warmer than planned",
         "fr": "Ma cuisine est devenue plus chaude que prévu"
       },
