@@ -42,7 +42,7 @@ async function headerBackReachable(page,fr){
 }
 async function scrollToEnd(page){
  await page.evaluate(()=>window.dispatchEvent(new Event('touchstart')));
- await page.mouse.wheel(0,4000);
+ await page.evaluate(()=>window.dispatchEvent(new Event('touchmove'))); // mobile WebKit has no mouse wheel: mark the reader's scroll as custom-equipment.spec does
  await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
 }
 
