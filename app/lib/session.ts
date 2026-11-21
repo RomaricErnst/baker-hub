@@ -140,6 +140,8 @@ export interface SessionData {
   bigaStorage?: 'auto' | 'fridge' | 'cool';
   /** Custom: baker's IDY % of flour for the (final) dough; the plan is timed to it (a poolish or biga's final dough too, round 7). */
   yeastPctOverride?: number;
+  /** The calculated plan's mix-to-bake hours when the baker entered yeastPctOverride (round 8, D2). */
+  yeastAnchorH?: number;
   /** Custom poolish/biga: baker's preferment yeast, IDY % of the preferment flour; its window is timed to it (round 7). */
   prefYeastOverride?: { type: 'poolish' | 'biga'; pct: number };
   /** Custom levain: baker's starter % of flour; the bulk is timed to it. */

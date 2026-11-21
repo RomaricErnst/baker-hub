@@ -94,10 +94,12 @@ for(const locale of ['en','fr'])test(`${locale}: a yeast amount too slow for the
  await yeast.fill('0.08');await yeast.blur();
  const note=fineTune.locator('[data-yeast-entry-issue]');
  await expect(note).toHaveText(fr
-  ?/^0,08 % demande environ \d+ h ; votre cuisson est dans \d+ h\. Mettez au moins 0,\d+ %, ou enfournez plus tard\.Utiliser 0,\d+ %Changer l’heure de cuisson$/
-  :/^0\.08% needs about \d+ h; your bake is in \d+ h\. Use at least 0\.\d+%, or bake later\.Use 0\.\d+%Change bake time$/);
+  // Round 8: one sentence names the amount that fits; its button applies it (S3).
+  ?/^0,08 % demande environ \d+ h ; votre cuisson est dans \d+ h\. 0,\d+ % convient\.Utiliser 0,\d+ %Changer l’heure de cuisson$/
+  :/^0\.08% needs about \d+ h; your bake is in \d+ h\. 0\.\d+% fits\.Use 0\.\d+%Change bake time$/);
  // Not applied: the typed text stays, the plan does not move, and nobody is asked whether the dough is mixed.
- await expect(yeast).toHaveValue('0.08');
+ // Round 8 (bug 2): the box reads in the locale's separator.
+ await expect(yeast).toHaveValue(fr?'0,08':'0.08');
  expect((await stored(page)).yeastPctOverride).toBeUndefined();
  await expect(page.getByText(fr?'Avez-vous pétri la pâte ?':'Have you mixed the dough?',{exact:true})).toHaveCount(0);
  await expect(fineTune.locator('[data-bh-forward]')).toBeDisabled();

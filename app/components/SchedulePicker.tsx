@@ -10,7 +10,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { computePreMixStretchFactor, computeStarterPeakMs, mixNearPeak, planIntermediateFeeds, preMixRiseH, restStretchFactor } from '../utils/starterPeak';
 import { peakAround, peakNote } from '../utils/peakTime';
 import { starterStepShownTime } from '../utils/sharedStarter';
-import { type AvailabilityBlock, type PlanLadder, type ScheduleResult, starterBulkFactor as starterBulkFactorFor, raisedStarterPcts, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationWindowForYeast, fermentationBudget, sourdoughBulkH, bakeFromFridgeOption, shortWarmupOption, BAKE_FROM_FRIDGE_STYLES } from '../utils';
+import { type AvailabilityBlock, type PlanLadder, type PlanShape, type ScheduleResult, enteredYeastTiming, starterBulkFactor as starterBulkFactorFor, raisedStarterPcts, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationBudget, sourdoughBulkH, bakeFromFridgeOption, shortWarmupOption, BAKE_FROM_FRIDGE_STYLES } from '../utils';
 import { formatDuration } from '../utils/duration';
 import { earliestQuarterStart, quarterStartNoEarlier } from '../utils/startNotice';
 import { getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
@@ -218,11 +218,13 @@ interface SchedulePickerProps extends WarmupInputs {
   eatTime: Date | null;
   blocks: AvailabilityBlock[];
   preheatMin: number;
-  /** The previous plan's fridge-exit lead (Bake again; buildSchedule exitLeadMin). */
-  exitLeadMin?: number;
+  /** The previous plan's fridge-exit lead (Bake again), or a baker-entered yeast's fit (buildSchedule exitLeadMin, PlanShape). */
+  exitLeadMin?: PlanShape;
   /** One-trip ladder scope for every plan this picker builds (buildSchedule planLadder): 'all' for a
    *  Simple bake, 'hot' in Custom, 'off' for a saved bake kept as made. */
   planLadder?: PlanLadder;
+  /** The calculated plan's mix-to-bake hours when the baker entered a yeast amount (round 8, D2). */
+  yeastAnchorH?: number;
   /** Minutes of preheat the baker added on the plan (only the Preheat step moves). */
   preheatExtraMin?: number;
   /** Other bakes under way in the same oven (only with two live bakes): the "Before your recipe"
@@ -747,7 +749,7 @@ export function commercialPrefermentWindow(type:string,inFridge:boolean,kitchenT
 }
 
 /** Check only the remaining plan against an explicitly recorded first action. */
-export function validateConfirmedBake({prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp,completedMixAt,execution,start,bake,blocks,kitchenTemp,fridgeTemp,styleKey,flourStrength,preheatMin,exitLeadMin,planLadder,mixerType,numItems,mixingBatches,formulaValid}:WarmupInputs & {exitLeadMin?:number;planLadder?:PlanLadder;completedMixAt?:number;formulaValid?:EditInput['formulaValid'];execution:BakeExecution;start:Date;bake:Date;blocks:AvailabilityBlock[];kitchenTemp:number;fridgeTemp:number;styleKey:string;flourStrength:number;preheatMin:number;mixerType:MixerType;numItems:number;mixingBatches:number}) {
+export function validateConfirmedBake({prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp,completedMixAt,execution,start,bake,blocks,kitchenTemp,fridgeTemp,styleKey,flourStrength,preheatMin,exitLeadMin,planLadder,mixerType,numItems,mixingBatches,formulaValid}:WarmupInputs & {exitLeadMin?:PlanShape;planLadder?:PlanLadder;completedMixAt?:number;formulaValid?:EditInput['formulaValid'];execution:BakeExecution;start:Date;bake:Date;blocks:AvailabilityBlock[];kitchenTemp:number;fridgeTemp:number;styleKey:string;flourStrength:number;preheatMin:number;mixerType:MixerType;numItems:number;mixingBatches:number}) {
   const prefHours=execution.method==='none'?0:(+start-execution.actualAt)/3600000;
   const thermal={prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp,mixerType,prefermentType:execution.method,prefInFridge:execution.inFridge,styleKey,kitchenTemp,fridgeTemp};
   const input:EditInput={formulaValid,id:'mix',at:start,start,bake,blocks,kitchenTemp,preheatMin,exitLeadMin,planLadder,mixerType,styleKey,numItems,mixingBatches,
@@ -776,7 +778,7 @@ export function withoutNightSteps(input:EditInput):EditInput{
  * out) — then no later bake is offered. A promise like "Keep the biga and bake Fri 10:30pm" must lead to a plan. */
 export function earliestPrefermentBake({type,storages,from,now=Date.now(),blocks,kitchenTemp,fridgeTemp,styleKey,flourStrength,preheatMin,exitLeadMin,mixerType,numItems,mixingBatches,maxDays=4,budgetMs=1500,...thermalInputs}:WarmupInputs & {
   type:'poolish'|'biga'; storages:boolean[]; from:Date; now?:number; blocks:AvailabilityBlock[]; kitchenTemp:number; fridgeTemp:number; styleKey:string; flourStrength:number;
-  preheatMin:number; exitLeadMin?:number; mixerType:MixerType; numItems:number; mixingBatches:number; maxDays?:number; budgetMs?:number;
+  preheatMin:number; exitLeadMin?:PlanShape; mixerType:MixerType; numItems:number; mixingBatches:number; maxDays?:number; budgetMs?:number;
 }):{bake:Date;inFridge:boolean;prefHours:number;start:Date}|null {
   const defaults=STYLE_FERM_DEFAULTS[styleKey];
   const protocol=getBreadProtocol(styleKey);
@@ -1792,7 +1794,7 @@ function StarterHydrationNotice({ isFr }: { isFr: boolean }) {
 
 function findRequiredColdStart(input: {
   start: Date; bake: Date; from: Date; to: Date; now: number;
-  blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number; exitLeadMin?: number; planLadder?: PlanLadder;
+  blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number; exitLeadMin?: PlanShape; planLadder?: PlanLadder;
   mixerType: MixerType; styleKey: string; numItems?: number; mixingBatches: number;
 }) {
   return findFixedBakeSchedule({ ...input, id: 'mix', at: input.start,
@@ -1908,7 +1910,7 @@ export default function SchedulePicker(props: SchedulePickerProps) {
     ? <UnleavenedSchedulePicker {...props} /> : <FermentedSchedulePicker {...props} />;
 }
 
-function FermentedSchedulePicker({ starterLocationAnswered = true, starterMatureAnswered = true, afterBakeInput, onUseCalculatedYeast, enteredYeastShownPct, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, autoStarterPct = null, onAutoStarterPctChange, keptStarterPlan = false, holdStarterPct = false, canRaiseStarterPct, replanPending = false, onReplanHandled, yeastPctOverride, prefYeastPctOverride, poolishStorage = 'auto', bigaStorage = 'auto', poolishPeakAtMix, onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, planInline, decisionSheet=false, onDecisionSheetClose, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, exitLeadMin, preheatExtraMin = 0, ovenShare, onOvenKept, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange ,planLadder}: SchedulePickerProps) {
+function FermentedSchedulePicker({ starterLocationAnswered = true, starterMatureAnswered = true, afterBakeInput, onUseCalculatedYeast, enteredYeastShownPct, schedulerSection = 'all', simpleStarterAnswer = null, starterBulkFactor = 1, autoStarterPct = null, onAutoStarterPctChange, keptStarterPlan = false, holdStarterPct = false, canRaiseStarterPct, replanPending = false, onReplanHandled, yeastPctOverride, prefYeastPctOverride, poolishStorage = 'auto', bigaStorage = 'auto', poolishPeakAtMix, onSimpleDecisionChange, prefermentFlourPct,doughMassG,hydrationPct,flourTempC,targetDoughTemp, inputsOnly=false, planInline, decisionSheet=false, onDecisionSheetClose, completedMixAt, execution, validateMadeFormula, replanRequested=false, onAcceptReplan, onCancelReplan, startTime, eatTime, blocks, preheatMin, exitLeadMin, yeastAnchorH, preheatExtraMin = 0, ovenShare, onOvenKept, mixerType = 'hand', numItems, mixingBatches = 1, mixerCapacityG, itemWeight, wastePct = 0, onEditQuantity, confirmedPlan = false, timingOverrides = {}, styleKey, kitchenTemp, schedule, onChange, bakeType = 'pizza', isSourdough = false, onFeedTimeChange, onStarterEventsChange, savedStarterEvents = [], prefermentType = 'none', onPrefermentValidityChange, onScheduleValidityChange, onPrefOffsetChange, onPrefGoesInFridgeChange, onFridgeOutTimeChange, onUsingPeak2Change, onFeed2TimeChange, onStarterFridgeInTimeChange, onStarterStateChange, starterLocation: starterLocationProp, planningMode: planningModeProp, lastFedTime: lastFedTimeProp, knownPeakTime: knownPeakTimeProp, onStarterLocationChange, onPlanningModeChange, onLastFedTimeChange, onKnownPeakTimeChange, hasNotFedYet: hasNotFedYetProp = null, onHasNotFedYetChange, lastFedAge: lastFedAgeProp, starterMature: starterMatureProp, starterHasRye: starterHasRyeProp, onStarterMatureChange, onStarterHasRyeChange, onLastFedAgeChange, lastFeedRatio: lastFeedRatioProp, onLastFeedRatioChange, nextFeedRatio: nextFeedRatioProp, onNextFeedRatioChange, nextFeedRatioOverride: nextFeedRatioOverrideProp, onNextFeedRatioOverrideChange, ratioMode: ratioModeProp, onRatioModeChange, onStarterPeakTimeChange, starterTimingValid: starterTimingValidProp = true, onStarterTimingValidityChange, mode = 'custom', readyTimeOffsetMinutes, readyTimeLabel, readyTimeNote, onReady, onEditingChange, fridgeTemp = 6, sessionRestored = false, savedPrefOffsetHours, savedPrefGoesInFridge, recipeGenerated = false, flourStrength = 1.0, startTimeInPast = false, tang = 'balanced', onTangChange ,planLadder}: SchedulePickerProps) {
   // A baker-chosen starter % lengthens or shortens the levain room-temperature
   // bulk (starterBulkFactor). The solver windows add the same hours the
   // schedule builder does, so scoring, card and chart stay on one bulk.
@@ -3036,7 +3038,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   // Zone guides the baker on what's ideal. Diamond clamped to nowHBF separately.
   const yeastTiming=useMemo(()=>yeastTimingFor(pendingEatTime,localBlocks),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  [yeastPctOverride,flourStrength,isSourdough,prefermentType,styleKey,+pendingEatTime,localBlocks,kitchenTemp,preheatMin,exitLeadMin,planLadder,preheatExtraMin,mixerType,numItems,itemWeight,mixingBatches,fridgeTemp,hydrationPct,targetDoughTemp]);
+  [yeastPctOverride,yeastAnchorH,flourStrength,isSourdough,prefermentType,styleKey,+pendingEatTime,localBlocks,kitchenTemp,preheatMin,exitLeadMin,planLadder,preheatExtraMin,mixerType,numItems,itemWeight,mixingBatches,fridgeTemp,hydrationPct,targetDoughTemp]);
   const renderSweetFrom = yeastTiming?.from ?? (_prefColdH + _rtH_render);
   const renderSweetTo   = yeastTiming?.to ?? Math.max(1, (_sfDef.minTotalFermH ?? 4) + starterBulkDeltaH);
   // Yellow zone extends 2h past green right edge
@@ -3052,7 +3054,10 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     // One scan of the yeast model's budget gives the centre and the readiness band; the budget is not
     // monotone across the room-temperature / cold-retard switch, so each bound is the crossing nearest the
     // centre. A window that fits in the time left wins; else the one the amount needs (yeastTooSlow says so).
-    return fermentationWindowForYeast(model,{...o,maxH:Math.max(0,(+bake-Date.now())/3600000)})??fermentationWindowForYeast(model,o);
+    // Round 8 (D2): near the calculated plan's knead (yeastAnchorH), with the page's fit (exitLeadMin) the
+    // fridge absorbing the difference; the same timing Fine-tune checks the amount with (checkYeastEntry).
+    const anchored={...o,anchorH:yeastAnchorH};
+    return enteredYeastTiming(model,{...anchored,maxH:Math.max(0,(+bake-Date.now())/3600000)})??enteredYeastTiming(model,anchored);
   }
   // _optimalMix = style sweet spot where dough peaks at bake = coldH + rtH
   const _biasedColdRender = biasCold(

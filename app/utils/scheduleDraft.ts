@@ -1,4 +1,4 @@
-import {buildSchedule,hasCoherentScheduleShape,withLongerPreheat,type AvailabilityBlock,type PlanLadder,type ScheduleResult} from '../utils';
+import {buildSchedule,hasCoherentScheduleShape,withLongerPreheat,type AvailabilityBlock,type PlanLadder,type PlanShape,type ScheduleResult} from '../utils';
 import type {MixerType} from '../data';
 import {planActions,findAvailabilityConflicts,type AvailabilityAction} from './scheduleAvailability';
 export interface ScheduleDraftInput {
@@ -8,8 +8,8 @@ export interface ScheduleDraftInput {
   completedMixAt?:number;
   /** Levain bulk multiplier for a baker-chosen starter % (starterBulkFactor). */
   starterFactor?:number;
-  /** The previous plan's fridge-exit lead in minutes (Bake again; buildSchedule exitLeadMin). */
-  exitLeadMin?:number;
+  /** The previous plan's fridge-exit lead in minutes (Bake again), or an entered yeast's fit (buildSchedule exitLeadMin, PlanShape). */
+  exitLeadMin?:PlanShape;
   /** One-trip ladder scope (buildSchedule planLadder): 'all' for a Simple bake, 'off' for a bake kept as made. */
   planLadder?:PlanLadder;
   /** Minutes of preheat the baker added on the plan: the Preheat step alone moves (withLongerPreheat). */
