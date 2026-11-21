@@ -58,9 +58,9 @@ test.describe('Maya, zero ticks',()=>{
    // [UTC instant, section the bake opens on, bar text]
    ['2026-11-20T10:10:00Z','Preparation','Now: Start Dough'],
    ['2026-11-20T10:50:00Z','Preparation','Now: Let the dough rise'],
-   ['2026-11-20T11:20:00Z','Preparation','Now: Refrigerate the dough'],
-   ['2026-11-20T13:20:00Z','Preparation','Now: Divide and shape dough balls'],
-   ['2026-11-20T13:40:00Z','Preparation','Now: Refrigerate the dough balls'],
+   // Round 8 (hot kitchen, one fridge spell): shaped at 7:15pm after the warm rise, into the fridge at 7:34pm.
+   ['2026-11-20T11:20:00Z','Preparation','Now: Divide and shape dough balls'],
+   ['2026-11-20T11:40:00Z','Preparation','Now: Refrigerate the dough balls'],
    ['2026-11-21T09:40:00Z','Preparation','Now: Take the dough out of the fridge'],// named by its action since round 6 (A5)
    ['2026-11-21T11:05:00Z','Baking & serving','Now: Preheat the oven'],
    ['2026-11-21T11:35:00Z','Baking & serving','Now: Bake the pizzas'],
@@ -114,16 +114,17 @@ test.describe('Maya, zero ticks',()=>{
  });
 
  test('partial ticks: a later tick marks only its step; the earlier ones stay plain and the bar moves on',async({page})=>{
-  await install(page,storageFor('maya-1',session()),'2026-11-20T13:20:00Z');
-  await reopen(page,'2026-11-20T13:20:00Z');
+  // Round 8: the shaping is at 7:15pm (11:15Z), right after the warm rise.
+  await install(page,storageFor('maya-1',session()),'2026-11-20T11:20:00Z');
+  await reopen(page,'2026-11-20T11:20:00Z');
   await resumeFromHome(page);
   await expect(bar(page)).toContainText('Now: Divide and shape dough balls');
   const divide=page.locator('section[data-guide-title="Divide and shape dough balls"]');
   await divide.getByRole('checkbox',{name:'Step done',exact:true}).click();
   // 20 Nov 2026 round 6 (owner's decision D2): ticking the shaping no longer ticks the mix, the rise and the
-  // fridge ("says I folded when I didn't"); nothing is recorded for them.
+  // fridge ("says I folded when I didn't"); nothing is recorded for them. (No bulk fridge step since round 8.)
   await expect(divide).toHaveAttribute('data-guide-done','true');
-  for(const title of ['Start Dough','Let the dough rise','Refrigerate the dough'])
+  for(const title of ['Start Dough','Let the dough rise'])
    await expect(page.locator(`section[data-guide-title="${title}"]`)).not.toHaveAttribute('data-guide-done','true');
   await expect(bar(page)).toContainText('Next: Refrigerate the dough balls');
   expect((await stored(page)).execution).toBeFalsy();
