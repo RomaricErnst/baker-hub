@@ -9,6 +9,22 @@ import { updateRecipe, deleteRecipe } from '@/app/lib/supabase/saveRecipe';
 import { fetchBakeEvents, deleteBakeEvent, bakeEventTitle, bakeEventDoughSpec, fetchPhotosForEvents, fetchPizzaPartySlots, type BakeEvent, type BakePhoto, type PizzaPartySlot } from '@/app/lib/supabase/fetchBakeEvents';
 import type { User } from '@supabase/supabase-js';
 import Link from 'next/link';
+
+/** Set when About, Privacy or Terms is opened from inside the app, so its Back returns to the
+ *  very screen the baker left (history back, the bake intact) instead of reloading home. */
+const PAGE_BACK_KEY = 'bh_page_back';
+function markPageBack() { try { sessionStorage.setItem(PAGE_BACK_KEY, '1'); } catch { /* storage blocked: the link goes home */ } }
+/** Back from About/Privacy/Terms: opened from inside the app, history back to the very screen (and
+ *  bake) the baker left; opened directly (a shared link, a new tab), the link itself goes home.
+ *  The mark stays for the tab (sessionStorage), so About → Privacy → Back → Back also unwinds
+ *  to the app, and the system back gesture does the same through the history Next's links push. */
+export function pageBackClick(e: { preventDefault(): void }) {
+  try {
+    if (sessionStorage.getItem(PAGE_BACK_KEY) === '1' && window.history.length > 1) {
+      e.preventDefault(); window.history.back();
+    }
+  } catch { /* fall through to the link */ }
+}
 import { type UnitSystem, displayWeight, formatBakeDateTime } from '../utils/units';
 import { ALL_STYLES } from '@/app/data';
 import SessionViewer from './SessionViewer';
@@ -543,28 +559,27 @@ export default function Header({
         Menu
       </button>
 
-      {/* Back chip — pages outside the session flow (About) get a
-          persistent way home in the sticky header instead of session
-          actions that can't work there. */}
+      {/* Back — pages outside the session flow (About, Privacy, Terms) get a way back in the sticky
+          header, first in reading order, named by its destination for assistive tech. */}
       {backHref && (
         <a
           href={backHref}
+          className="bh-page-back"
+          aria-label={locale === 'fr' ? 'Retour à Baker Hub' : 'Back to Baker Hub'}
+          onClick={pageBackClick}
           style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            padding: '8px 12px', minHeight: '44px', minWidth: '44px',
-            border: '1px solid rgba(240, 235, 224,0.25)',
-            borderRadius: '20px',
+            order: -1, flexShrink: 0, marginRight: '8px',
+            display: 'inline-flex', alignItems: 'center', gap: '4px',
+            padding: '8px 10px 8px 4px', minHeight: '44px', minWidth: '44px',
             color: 'var(--char)',
-            fontSize: '12px',
+            fontSize: '16px', fontWeight: 500,
             fontFamily: 'var(--font-ui)',
             textDecoration: 'none',
             whiteSpace: 'nowrap',
           }}
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <line x1="20" y1="12" x2="4" y2="12" /><polyline points="11 5 4 12 11 19" />
-          </svg>
-          Baker Hub
+          <span aria-hidden="true" style={{ fontSize: '24px', lineHeight: 1 }}>‹</span>
+          {locale === 'fr' ? 'Retour' : 'Back'}
         </a>
       )}
 
@@ -626,9 +641,9 @@ export default function Header({
             <button style={menuButton} onClick={() => setMenuPage('account')}>{locale === 'fr' ? 'Compte' : 'Account'}</button>
             {onOpenProfile && <button style={menuButton} onClick={() => { setMenuOpen(false); onOpenProfile(); }}>{locale === 'fr' ? 'Préférences de cuisine' : 'Kitchen preferences'}</button>}
             <button style={menuButton} onClick={() => setMenuPage('settings')}>{locale === 'fr' ? 'Langue et unités' : 'Language & units'}</button>
-            <Link style={menuButton} href={locale === 'fr' ? '/fr/about' : '/about'} onClick={() => setMenuOpen(false)}>{locale === 'fr' ? 'À propos de Baker Hub' : 'About Baker Hub'}</Link>
-            <Link style={menuButton} href={locale === 'fr' ? '/fr/privacy' : '/privacy'} onClick={() => setMenuOpen(false)}>{locale === 'fr' ? 'Confidentialité' : 'Privacy'}</Link>
-            <Link style={menuButton} href={locale === 'fr' ? '/fr/terms' : '/terms'} onClick={() => setMenuOpen(false)}>{locale === 'fr' ? 'Conditions d’utilisation' : 'Terms of service'}</Link>
+            <Link style={menuButton} href={locale === 'fr' ? '/fr/about' : '/about'} onClick={() => { markPageBack(); setMenuOpen(false); }}>{locale === 'fr' ? 'À propos de Baker Hub' : 'About Baker Hub'}</Link>
+            <Link style={menuButton} href={locale === 'fr' ? '/fr/privacy' : '/privacy'} onClick={() => { markPageBack(); setMenuOpen(false); }}>{locale === 'fr' ? 'Confidentialité' : 'Privacy'}</Link>
+            <Link style={menuButton} href={locale === 'fr' ? '/fr/terms' : '/terms'} onClick={() => { markPageBack(); setMenuOpen(false); }}>{locale === 'fr' ? 'Conditions d’utilisation' : 'Terms of service'}</Link>
           </nav>}
 
           {menuPage === 'settings' && <div style={{display:'grid',gap:18}}>
@@ -1000,8 +1015,8 @@ export default function Header({
           </div>
           {/* The policies sit next to the place where an account is created. */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 8, paddingTop: 4, fontSize: 13 }}>
-            <Link href={locale === 'fr' ? '/fr/privacy' : '/privacy'} onClick={() => setMenuOpen(false)} style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 8px', color: 'var(--ash)', textDecoration: 'underline' }}>{locale === 'fr' ? 'Confidentialité' : 'Privacy'}</Link>
-            <Link href={locale === 'fr' ? '/fr/terms' : '/terms'} onClick={() => setMenuOpen(false)} style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 8px', color: 'var(--ash)', textDecoration: 'underline' }}>{locale === 'fr' ? 'Conditions d’utilisation' : 'Terms of service'}</Link>
+            <Link href={locale === 'fr' ? '/fr/privacy' : '/privacy'} onClick={() => { markPageBack(); setMenuOpen(false); }} style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 8px', color: 'var(--ash)', textDecoration: 'underline' }}>{locale === 'fr' ? 'Confidentialité' : 'Privacy'}</Link>
+            <Link href={locale === 'fr' ? '/fr/terms' : '/terms'} onClick={() => { markPageBack(); setMenuOpen(false); }} style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 8px', color: 'var(--ash)', textDecoration: 'underline' }}>{locale === 'fr' ? 'Conditions d’utilisation' : 'Terms of service'}</Link>
           </div>
 
           </>}

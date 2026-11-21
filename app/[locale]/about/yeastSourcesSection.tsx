@@ -1,8 +1,8 @@
 'use client';
-// "Behind the yeast model: comparing the sources" on the About page (20 Nov 2026, owner: "a geeky part
-// on source comparison and modelling"). A summary of docs/YEAST-MODEL.md §12 (Phase 3 refit).
-// The chart reads app/[locale]/about/yeastCollapse.json, built by scripts/yeast-collapse-data.cjs from
-// the shipped model and the fit; tests/yeast-model.test.cjs rebuilds it and checks the numbers quoted here.
+// "Behind the yeast model: comparing the sources" on the About page: how the dose law was fitted.
+// The chart reads yeastCollapse.json (built from the shipped model and the fit); tests/yeast-model.test.cjs
+// rebuilds it and checks every number quoted here. Bakers read it without access to any project file:
+// the text names its sources and never points at the repository.
 import React, { useState } from 'react';
 import collapse from './yeastCollapse.json';
 
@@ -28,9 +28,6 @@ function Table({ headers, rows }: { headers: string[]; rows: string[][] }) {
       </table>
     </div>
   );
-}
-function Repo({ path, children }: { path: string; children: React.ReactNode }) {
-  return <a href={`https://github.com/RomaricErnst/baker-hub/blob/main/${path}`} target="_blank" rel="noopener noreferrer" style={{ color: TERRA }}>{children}</a>;
 }
 
 // ── Chart: every published dose on one line ───────────────────────────────────
@@ -105,11 +102,11 @@ function CollapseChart({ labels, locale }: { labels: Labels; locale: 'en' | 'fr'
 export function YeastSourcesSectionEn() {
   return (
     <>
-      <P>For the curious: how the yeast formula was built from published doses, and how you can check it. Everything here is reproducible from the project’s repository: the data, the scripts and the reports.</P>
+      <P>For the curious: how the yeast formula is fitted to published doses, and how well it holds.</P>
       <H>The problem: sources disagree</H>
       <P>For the same schedule, published yeast amounts differ by three to five times. Most of that is not error but unstated choices: how far the dough should rise before it is “ready”, which yeast is meant (“dry yeast” can be instant or active dry), the flour, the real dough temperature, and tables copied from one another. A formula fitted naively to all of them averages these choices together.</P>
       <H>1. Collect and normalise</H>
-      <P>157 published doses from 32 sources (books, professional tables, yeast-science papers, calculators, recipe sites, forums), plus 23 statements such as “twice as fast at 27 °C”. Every dose is converted to instant yeast as a % of the flour that ferments with it: fresh ÷ 3 and active dry ÷ 1.33, a preferment’s yeast against the preferment’s own flour. The yeast type is recorded exactly as the source states it; the four rows that only say “dry” were fitted both as instant and as active dry, and no constant moved by more than a tenth of its uncertainty. Each schedule is turned into its equivalent hours at 25 °C by following the dough’s temperature, as the app does.</P>
+      <P>157 published doses from 32 sources (books, professional tables, yeast-science papers, calculators, recipe sites, forums), plus 23 statements such as “twice as fast at 27 °C”. Every dose is converted to instant yeast as a % of the flour that ferments with it: fresh ÷ 3 and active dry ÷ 1.33, a preferment’s yeast against the preferment’s own flour. The yeast type is recorded exactly as the source states it; fitted both as instant and as active dry, the four rows that only say “dry” move no constant by more than a tenth of its uncertainty. Each schedule is turned into its equivalent hours at 25 °C by following the dough’s temperature, as the app does.</P>
       <H>2. Count copies once, trust sources by what they tested</H>
       <P>Sources are grouped into 28 independent lineages: a calculator built on Craig’s charts and a site restating Giorilli are the same evidence as the original, so a lineage shares one weight however many pages repeat it. Each source then gets a credibility weight, fixed before any fitting, and keeps it only in the conditions it actually tested; elsewhere it drops one level.</P>
       <Table headers={['Weight', 'Kind of source']} rows={[
@@ -148,8 +145,8 @@ export function YeastSourcesSectionEn() {
       <P>How the dose falls with time (b) and the warm-dough rise (R) barely move. The cold end of the temperature curve (Tmin) and the biga factor do: they depend on whose numbers you believe. With professional sources only, the overall level would be about 30 % higher — fresh-yeast sources, mostly Italian, sit lower than “fresh = 3 × instant” predicts, which a side-by-side kitchen trial can settle.</P>
       <H>6. Where the evidence is thin</H>
       <P>Hot kitchens above 28 °C, cool kitchens below 18 °C, the long fridge hold and fridge poolish each rest on fewer than three strong independent sources. They are marked low confidence and are the first kitchen trials, in order: a 30–32 °C dough, a measured fridge at 4 and 6 °C, fresh against instant at 20 °C, a fridge poolish.</P>
-      <H>Check it yourself</H>
-      <P>The method, every constant with its source and uncertainty, and the before-and-after recipes are in <Repo path="docs/YEAST-MODEL.md">docs/YEAST-MODEL.md</Repo>. The data set, the source registry, the fitting scripts and their reports are in <Repo path="docs/yeast-model">docs/yeast-model</Repo>. To challenge a number, add a published dose with its yeast type, register its source before fitting, and rerun the fit: the constants move only if the held-out check is no worse.</P>
+      <H>The sources</H>
+      <P>Books and professional tables: Modernist Pizza (Vol. 4), Modernist Bread, Suas, Forkish, Lehmann, Giorilli, Pezzetta, Zaghini, The Dough Formula and the Neapolitan pizza specification (EU TSG 97/2010). Measurements: Finney et al. 1976 (test bakes), Nestec (gas production at 4–10 °C), Istudor et al. 2020 (gas production), Salvadó et al. 2011 (the yeast’s highest growth temperature) and Rosso et al. 1993 (the cardinal-temperature model). Recipe sites, calculators and forums complete the 32 sources: Weekend Bakery, fond.kitchen, dough.school, Dissapore, biancolievito, teigformel, pizzamateur and others. A new published dose with its yeast type can join the data; the constants move only if the check on the held-out sources is no worse.</P>
     </>
   );
 }
@@ -158,11 +155,11 @@ export function YeastSourcesSectionEn() {
 export function YeastSourcesSectionFr() {
   return (
     <>
-      <P>Pour les curieux : comment la formule de la levure a été construite à partir des doses publiées, et comment la vérifier. Tout ce qui suit se refait à partir du dépôt du projet : les données, les scripts et les rapports.</P>
+      <P>Pour les curieux : comment la formule de la levure est ajustée sur les doses publiées, et à quel point elle tient.</P>
       <H>Le problème : les sources ne sont pas d’accord</H>
       <P>Pour un même planning, les quantités de levure publiées varient de trois à cinq fois. L’essentiel n’est pas une erreur mais des choix non dits : jusqu’où la pâte doit lever pour être « prête », quelle levure est visée (« levure sèche » peut être instantanée ou active), la farine, la vraie température de la pâte, et des tableaux recopiés les uns des autres. Une formule ajustée naïvement sur tout cela fait la moyenne de ces choix.</P>
       <H>1. Rassembler et normaliser</H>
-      <P>157 doses publiées issues de 32 sources (livres, tableaux professionnels, articles scientifiques sur la levure, calculateurs, sites de recettes, forums), plus 23 affirmations du type « deux fois plus vite à 27 °C ». Chaque dose est convertie en levure instantanée, en % de la farine qui fermente avec elle : fraîche ÷ 3, sèche active ÷ 1,33, la levure d’un préferment rapportée à la farine du préferment. Le type de levure est noté exactement comme la source l’écrit ; les quatre lignes qui disent seulement « sèche » ont été ajustées comme instantanée et comme sèche active, et aucune constante n’a bougé de plus d’un dixième de son incertitude. Chaque planning devient ses heures équivalentes à 25 °C en suivant la température de la pâte, comme le fait l’app.</P>
+      <P>157 doses publiées issues de 32 sources (livres, tableaux professionnels, articles scientifiques sur la levure, calculateurs, sites de recettes, forums), plus 23 affirmations du type « deux fois plus vite à 27 °C ». Chaque dose est convertie en levure instantanée, en % de la farine qui fermente avec elle : fraîche ÷ 3, sèche active ÷ 1,33, la levure d’un préferment rapportée à la farine du préferment. Le type de levure est noté exactement comme la source l’écrit ; ajustées comme instantanée puis comme sèche active, les quatre lignes qui disent seulement « sèche » ne déplacent aucune constante de plus d’un dixième de son incertitude. Chaque planning devient ses heures équivalentes à 25 °C en suivant la température de la pâte, comme le fait l’app.</P>
       <H>2. Compter les copies une fois, croire chaque source sur ce qu’elle a testé</H>
       <P>Les sources sont regroupées en 28 lignées indépendantes : un calculateur construit sur les courbes de Craig ou un site qui reprend Giorilli apportent la même preuve que l’original, donc une lignée partage un seul poids, quel que soit le nombre de pages qui la répètent. Chaque source reçoit ensuite un poids de crédibilité, fixé avant tout ajustement, qu’elle garde seulement dans les conditions qu’elle a réellement testées ; ailleurs, elle descend d’un niveau.</P>
       <Table headers={['Poids', 'Type de source']} rows={[
@@ -201,8 +198,8 @@ export function YeastSourcesSectionFr() {
       <P>La baisse de la dose avec le temps (b) et la pousse d’une pâte chaude (R) bougent à peine. Le bas froid de la courbe de température (Tmin) et le facteur du biga, si : ils dépendent des chiffres auxquels on se fie. Avec les seules sources professionnelles, le niveau général serait environ 30 % plus haut — les sources à la levure fraîche, surtout italiennes, se situent plus bas que ne le prévoit « fraîche = 3 × instantanée », ce qu’un essai côte à côte en cuisine peut trancher.</P>
       <H>6. Là où les preuves sont minces</H>
       <P>Les cuisines chaudes au-delà de 28 °C, les cuisines fraîches sous 18 °C, la longue pousse au frigo et le poolish au frigo reposent chacun sur moins de trois sources solides indépendantes. Ils sont marqués confiance faible et sont les premiers essais en cuisine, dans l’ordre : une pâte à 30–32 °C, un frigo mesuré à 4 et 6 °C, fraîche contre instantanée à 20 °C, un poolish au frigo.</P>
-      <H>Vérifiez par vous-même</H>
-      <P>La méthode, chaque constante avec sa source et son incertitude, et les recettes avant et après sont dans <Repo path="docs/YEAST-MODEL.md">docs/YEAST-MODEL.md</Repo>. Les données, le registre des sources, les scripts d’ajustement et leurs rapports sont dans <Repo path="docs/yeast-model">docs/yeast-model</Repo>. Pour contester un chiffre, ajoutez une dose publiée avec son type de levure, enregistrez sa source avant l’ajustement et relancez-le : les constantes ne bougent que si la vérification sur les sources écartées n’est pas moins bonne.</P>
+      <H>Les sources</H>
+      <P>Livres et tableaux professionnels : Modernist Pizza (vol. 4), Modernist Bread, Suas, Forkish, Lehmann, Giorilli, Pezzetta, Zaghini, The Dough Formula et le cahier des charges de la pizza napolitaine (STG UE 97/2010). Mesures : Finney et al. 1976 (cuissons d’essai), Nestec (production de gaz entre 4 et 10 °C), Istudor et al. 2020 (production de gaz), Salvadó et al. 2011 (température maximale de croissance de la levure) et Rosso et al. 1993 (modèle à températures cardinales). Sites de recettes, calculateurs et forums complètent les 32 sources : Weekend Bakery, fond.kitchen, dough.school, Dissapore, biancolievito, teigformel, pizzamateur et d’autres. Une nouvelle dose publiée, avec son type de levure, peut rejoindre les données ; les constantes ne bougent que si la vérification sur les sources écartées n’est pas moins bonne.</P>
     </>
   );
 }

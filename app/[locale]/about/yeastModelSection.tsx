@@ -1,8 +1,7 @@
 'use client';
-// "The yeast engine" on the About page, in both locales (19 Nov 2026, yeast model; Phase 3 refit 20 Nov 2026).
-// A summary of docs/YEAST-MODEL.md. Every constant and worked example here is the
-// engine's own: tests/yeast-model.test.cjs recomputes the examples from
-// app/utils/yeastModel.ts and checks each number appears in both locales.
+// "The yeast engine" on the About page, in both locales. Every constant and worked example here is the
+// engine's own: tests/yeast-model.test.cjs recomputes the examples from app/utils/yeastModel.ts and
+// checks each number appears in both locales. Present tense, no file references (bakers cannot open them).
 import React from 'react';
 import { YeastSourcesSectionEn, YeastSourcesSectionFr } from './yeastSourcesSection';
 
@@ -16,7 +15,7 @@ const head: React.CSSProperties = { ...cell, borderTop: 'none', fontSize: '12px'
 function P({ children }: { children: React.ReactNode }) { return <p style={{ margin: '0 0 12px', ...text }}>{children}</p>; }
 function H({ children }: { children: React.ReactNode }) { return <p style={{ margin: '16px 0 8px', ...text }}><strong>{children}</strong></p>; }
 function Eq({ children }: { children: React.ReactNode }) { return <code style={{ ...mono, margin: '0 0 12px' }}>{children}</code>; }
-function Table({ headers, rows }: { headers: string[]; rows: string[][] }) {
+export function Table({ headers, rows }: { headers: string[]; rows: string[][] }) {
   return (
     <div style={{ overflowX: 'auto', margin: '4px 0 12px' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -28,10 +27,10 @@ function Table({ headers, rows }: { headers: string[]; rows: string[][] }) {
 }
 
 
-/** The equations, the constants, the worked examples and the comparison of the sources, under one disclosure
- *  (20 Nov 2026 round 6, owner's decision D3: the plain explanation and the temperature table build trust; the
- *  formulas are for reviewers). A native <details>, its summary a 44 px target. */
-function Maths({ fr, children }: { fr: boolean; children: React.ReactNode }) {
+/** The equations, the constants, the worked examples and the sources, under one disclosure (owner's rule C:
+ *  the plain explanation and the tables stay visible; the formulas are for reviewers). A native <details>, its
+ *  summary a 44 px target. The sourdough section reuses it. */
+export function Maths({ fr, children }: { fr: boolean; children: React.ReactNode }) {
   return (
     <details data-yeast-maths style={{ margin: '4px 0 12px' }}>
       <summary className="bh-chevron" style={{ minHeight: 44, display: 'flex', alignItems: 'center', cursor: 'pointer', ...text, color: 'var(--terra)', fontWeight: 600 }}>{fr ? 'Les calculs' : 'The maths'}</summary>
@@ -43,7 +42,7 @@ function Maths({ fr, children }: { fr: boolean; children: React.ReactNode }) {
 export function YeastModelSectionEn() {
   return (
     <>
-      <P>One model sets every commercial-yeast amount in the app: a straight dough, a cold retard, a hot kitchen, a poolish or a biga, and the timing when you enter your own amount. It replaced the earlier community curve, its separate fridge formula and its tropical corrections in November 2026. The full method, every data point and every residual are in the project’s <code>docs/YEAST-MODEL.md</code>.</P>
+      <P>One model sets every commercial-yeast amount in the app: a straight dough, a cold retard, a hot kitchen, a poolish or a biga, and the timing when you enter your own amount. It is fitted to 157 published doses from 32 sources, from professional books to measured test bakes (named under The maths).</P>
       <H>How it works</H>
       <P>Yeast works faster in warm dough and slower in cold dough. The engine follows your dough’s temperature through the plan: it leaves the bowl at its target dough temperature, drifts towards the kitchen, cools slowly in the fridge and warms again when it comes out. Each hour counts for what an hour at 25 °C would do at that temperature. The sum is the plan’s <strong>equivalent hours at 25 °C</strong> (Heq).</P>
       <Table headers={['Dough temperature', 'Activity vs 25 °C']} rows={[
@@ -53,7 +52,7 @@ export function YeastModelSectionEn() {
       <H>Preferments</H>
       <P>A poolish or biga gets the amount that ripens it for its own time and temperature, made at kitchen temperature and including its time in the fridge and its warm-up. The final dough then gets its own yeast for the time from the mix to the bake, as Modernist, Suas and Hamelman do: across Modernist’s poolish doughs, the total is about what a straight dough of the same schedule would take.</P>
       <H>Your own amount</H>
-      <P>When you enter an amount, the planner runs the same model backwards and times the plan so the dough is ready at your bake. A plan long enough to need the fridge can ferment less than a slightly shorter room-temperature plan, so the planner picks the window closest to your style’s usual one.</P>
+      <P>When you enter an amount, the planner runs the same model backwards and times the plan so the dough is ready at your bake. A plan long enough to need the fridge can ferment less than a slightly shorter room-temperature plan, so the planner picks the window closest to your style’s usual one. An amount you enter for a poolish or biga, as a % of its own flour, re-times that stage the same way: it is ready where the amount meets 0.9 to 1.1 of what the model asks, within 6–14 h at room temperature or 12–24 h in the fridge for a poolish, and 12–72 h in the fridge for a biga. The final dough can take its own entered amount too.</P>
       <H>Limits</H>
       <P>Measured dough data are rare. Hot kitchens, the fridge and fridge poolish rest on fewer than three strong independent sources each, so those numbers are marked low confidence and are the first to check in a kitchen trial. Community cold tables expect the dough to rise in the fridge and use about half the yeast the model gives; the measured and professional sources do not, and the model follows them. Fresh-yeast sources sit lower than dry-yeast sources on the same schedule, which may mean fresh yeast is worth less than three times instant in practice. Salt, hydration and flour have no separate factor because no source quantifies them. Enriched doughs (10 % sugar or more) keep a fixed 1 % instant yeast, and levain has its own model.</P>
 
@@ -90,7 +89,7 @@ export function YeastModelSectionEn() {
 export function YeastModelSectionFr() {
   return (
     <>
-      <P>Un seul modèle fixe toutes les quantités de levure du commerce dans l’app : pâte directe, pousse au froid, cuisine chaude, poolish ou biga, et le planning quand vous saisissez votre propre quantité. Il a remplacé en novembre 2026 l’ancienne courbe communautaire, sa formule séparée pour le frigo et ses corrections tropicales. La méthode complète, chaque point de données et chaque résidu sont dans le document du projet <code>docs/YEAST-MODEL.md</code>.</P>
+      <P>Un seul modèle fixe toutes les quantités de levure du commerce dans l’app : pâte directe, pousse au froid, cuisine chaude, poolish ou biga, et le planning quand vous saisissez votre propre quantité. Il est ajusté sur 157 doses publiées issues de 32 sources, des livres professionnels aux cuissons d’essai mesurées (citées sous Les calculs).</P>
       <H>Comment ça marche</H>
       <P>La levure travaille plus vite dans une pâte chaude, plus lentement dans une pâte froide. Le moteur suit la température de votre pâte tout au long du plan : elle sort du pétrin à sa température cible, rejoint peu à peu celle de la cuisine, refroidit lentement au frigo et se réchauffe à la sortie. Chaque heure compte pour ce qu’une heure à 25 °C ferait à cette température. La somme donne les <strong>heures équivalentes à 25 °C</strong> du plan (Héq).</P>
       <Table headers={['Température de la pâte', 'Activité par rapport à 25 °C']} rows={[
@@ -100,7 +99,7 @@ export function YeastModelSectionFr() {
       <H>Préferments</H>
       <P>Un poolish ou un biga reçoit la quantité qui le mène à maturité pour sa propre durée et sa température, préparé à la température de la cuisine, temps au frigo et remise en température compris. La pâte finale reçoit ensuite sa propre levure pour le temps du pétrissage à la cuisson, comme chez Modernist, Suas et Hamelman : sur les pâtes au poolish de Modernist, le total vaut à peu près ce que prendrait une pâte directe au même planning.</P>
       <H>Votre propre quantité</H>
-      <P>Quand vous saisissez une quantité, le planificateur fait tourner le même modèle à l’envers et cale le plan pour que la pâte soit prête à votre heure de cuisson. Un plan assez long pour passer par le frigo peut fermenter moins qu’un plan un peu plus court à température ambiante : le planificateur retient la durée la plus proche de celle de votre style.</P>
+      <P>Quand vous saisissez une quantité, le planificateur fait tourner le même modèle à l’envers et cale le plan pour que la pâte soit prête à votre heure de cuisson. Un plan assez long pour passer par le frigo peut fermenter moins qu’un plan un peu plus court à température ambiante : le planificateur retient la durée la plus proche de celle de votre style. Une quantité saisie pour un poolish ou une biga, en % de sa propre farine, recale cette étape de la même façon : elle est prête là où la quantité vaut 0,9 à 1,1 fois ce que demande le modèle, entre 6 et 14 h à température ambiante ou 12 et 24 h au frigo pour un poolish, et entre 12 et 72 h au frigo pour une biga. La pâte finale peut aussi recevoir sa propre quantité saisie.</P>
       <H>Limites</H>
       <P>Les mesures sur pâte sont rares. Les cuisines chaudes, le frigo et le poolish au frigo reposent chacun sur moins de trois sources solides indépendantes : ces chiffres sont marqués confiance faible et sont les premiers à vérifier par un essai en cuisine. Les tableaux communautaires pour le froid comptent sur une pousse au frigo et utilisent environ moitié moins de levure que le modèle ; les mesures et les sources professionnelles non, et le modèle les suit. Les sources à la levure fraîche se situent plus bas que celles à la levure sèche pour le même planning, ce qui pourrait vouloir dire que la levure fraîche vaut en pratique moins de trois fois l’instantanée. Le sel, l’hydratation et la farine n’ont pas de facteur propre, faute de source qui les chiffre. Les pâtes enrichies (10 % de sucre ou plus) gardent une dose fixe de 1 % de levure instantanée, et le levain a son propre modèle.</P>
 
