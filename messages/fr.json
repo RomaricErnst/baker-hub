@@ -1869,7 +1869,7 @@
     "shareBaked": "Partager cette fournée"
   },
   "yeastWarnings": {
-    "poolishSuggestion": "Au-delà de {hours} h à température ambiante, surveillez régulièrement la pâte. Un poolish nécessite son propre planning de préparation.",
+    "poolishSuggestion": "Au-delà de {hours} h à température ambiante, surveillez régulièrement la pâte.",
     "overFermentRT": "{hours} h à {temp} °C dépasse ce que cette pâte supporte à température ambiante — elle sur-fermentera. Une phase au froid la porterait.",
     "hotClimateRT": "Ce planning prévoit plus de 4 h à température ambiante dans une cuisine à {temp} °C. Observez la levée de la pâte vers la fin de chaque phase à température ambiante.",
     "fridgeWarm": "Votre réfrigérateur est à {temp} °C. La fermentation se poursuit au froid ; vérifiez la pousse avant l’étape suivante.",
