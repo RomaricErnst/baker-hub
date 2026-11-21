@@ -41,7 +41,7 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: a typed W 200/320/380 moves 
   await bake.fill('2026-10-05T19:30');await bake.blur();
   await expect(step).toContainText(L('Recommended plan','Planning recommandé'));
   const text=(await step.innerText()).replace(/\s+/g,' ');
-  const start=text.match(new RegExp(L('Start Dough','Pétrir la pâte')+' (\\S+)'))?.[1];
+  const start=text.match(new RegExp(L('Start Dough','Pétrir la pâte')+' ([0-9:h]+(?:am|pm)?)'))?.[1]; // time only: WebKit appends a ✓ to the row text
   seen.push({W,hydration,start});
   await page.evaluate(()=>{localStorage.clear();sessionStorage.clear();});
  }
