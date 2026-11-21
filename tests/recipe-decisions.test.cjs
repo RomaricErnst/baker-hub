@@ -31,7 +31,8 @@ test('the rye in pain de campagne applies the engine’s existing flour effects'
   const blended = recipe('pain_campagne');
   const wheatOnly = recipe('pain_campagne', { mode: 'custom', blend: { flour1: 'bread', flour2: null, ratio1: 100 } });
   assert.ok(blended.hydration > wheatOnly.hydration, 'rye absorbs more water');
-  assert.ok(blended.yeast.pct > wheatOnly.yeast.pct, 'rye tolerates a shorter ferment: more yeast for the same plan');
+  // 21 Nov 2026: the flour reaches the yeast only through the plan's hours, so the same plan takes the same yeast.
+  assert.equal(blended.yeast.pct, wheatOnly.yeast.pct, 'same plan, same yeast');
   assert.equal(blended.blendProfile.fermToleranceMultiplier, data.recipeFlourStrength('pain_campagne', 'simple'));
 });
 

@@ -11,7 +11,10 @@ export function flourTypeLabel(type:string,fr:boolean){
 export function flourBehaviour(entry:FlourEntry):FlourKey {
  const key=entry.type.toLowerCase().replace(/\s+/g,'_');
  const types:Record<string,FlourKey>={bread:'bread',t65:'bread',t55:'allpurpose',t45:'allpurpose',t45_blend:'allpurpose',t80:'bread',t110:'wholemeal',t150:'wholemeal',high_gluten:'manitoba',all_purpose:'allpurpose',allpurpose:'allpurpose',wholemeal:'wholemeal',whole_wheat:'wholemeal',whole_spelt:'wholemeal',rye:'rye',semolina:'semolina',manitoba:'manitoba',pastry:'allpurpose'};
- return types[key]||((entry.w??0)>=270?'strong00':'pizza00');
+ // Italian 00/0/1 and other unmapped types: an estimated or missing W says no more
+ // than the type (pizza 00); only a published W of 270+ reads as strong 00, and
+ // that W then sets the tolerance itself (flourTolerance in data.ts).
+ return types[key]||(entry.wPublished&&(entry.w??0)>=270?'strong00':'pizza00');
 }
 export function flourEngineW(entry:FlourEntry){return entry.w??FLOUR_DATA[flourBehaviour(entry)].w;}
 const normal=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[_-]/g,' ').replace(/[’‘]/g,"'");

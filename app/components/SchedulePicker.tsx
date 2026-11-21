@@ -2982,7 +2982,8 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   // spans the same ±10% budget band the recipe uses for its budget note.
   function yeastTimingFor(bake:Date,candidateBlocks:AvailabilityBlock[],method:string=prefermentType){
     if(yeastPctOverride===undefined||isSourdough||(method!=='none'&&method!==''&&method!=='poolish'&&method!=='biga')||!styleKey||isNaN(+bake))return null;
-    const model=yeastPctOverride*flourStrength;
+    // The recipe shows the entered amount as typed; the flour does not rescale it (21 Nov 2026).
+    const model=yeastPctOverride;
     const o={bake,blocks:candidateBlocks,kitchenTemp,preheatMin,exitLeadMin,mixerType,styleKey,numItems:numItems??1,itemWeight:itemWeight??250,mixingBatches,fridgeTemp,hydration:hydrationPct??65,doughTempC:targetDoughTemp};
     // One scan of the yeast model's budget gives the centre and the readiness band; the budget is not
     // monotone across the room-temperature / cold-retard switch, so each bound is the crossing nearest the

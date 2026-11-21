@@ -2240,28 +2240,16 @@ export function calculateRecipe(
         flour,
         effectivePriority,
         styleKey,
-        // The blend step below divides by the tolerance multiplier; multiply
-        // here so the recipe shows exactly the amount the baker entered.
         yeastPctOverride !== undefined && (!prefermentType || prefermentType === 'none' || prefermentType === 'poolish' || prefermentType === 'biga')
-          ? yeastPctOverride * (blendProfile?.fermToleranceMultiplier ?? 1) : undefined,
+          ? yeastPctOverride : undefined,
         schedule.totalRTHours,
         path,
       );
-
-      // STEP 4 — Apply fermentation tolerance from blend
-      if (yeast && blendProfile && blendProfile.fermToleranceMultiplier !== 1.0) {
-        let idyPct = yeast.pct / blendProfile.fermToleranceMultiplier;
-        idyPct = Math.round(idyPct * 10000) / 10000;
-        const rawGrams = Math.max(0.001, flour * idyPct / 100);
-        const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
-        yeast = {
-          ...yeast,
-          pct: idyPct,
-          grams: Math.round(rawGrams * 1000) / 1000,
-          convertedPct: Math.round(idyPct * conversion * 10000) / 10000,
-          convertedGrams: Math.round(flour * idyPct * conversion / 100 * 1000) / 1000,
-        };
-      }
+      // Flour tolerance reaches the yeast only through the plan (21 Nov 2026,
+      // owner): a stronger flour gets a longer cold retard, and the model's
+      // dose for those longer hours is already smaller. At a fixed schedule
+      // the dose does not depend on the flour; dividing it again by the
+      // tolerance counted the flour twice.
 
       // Enriched doughs (sugar >= 10 % of flour, brioche): a fixed dose of
       // 1 % instant yeast of flour replaces the temperature model, which gives

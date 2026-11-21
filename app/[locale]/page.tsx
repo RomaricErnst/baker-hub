@@ -6084,8 +6084,10 @@ export default function Home() {
                     const kitchen=kitchenTemp>=28||humidity==='very-humid'?-2:kitchenTemp<=18?2:0;
                     const flour=flourBlend?Math.max(-5,Math.min(8,computeBlendProfile(flourBlend).hydrationDelta)):0;
                     const sign=(n:number)=>`${n>0?'+':'−'}${String(Math.abs(n)).replace('.',fr?',':'.')}`;
-                    const parts=[`${fr?'Style':'Style'} ${formatPercent(style?.hydration??0,locale)}`,...(oven?[`${fr?'four':'oven'} ${sign(oven)}`]:[]),...(kitchen?[`${fr?'cuisine':'kitchen'} ${sign(kitchen)}`]:[]),...(flour?[`${fr?'farine':'flour'} ${sign(flour)}`]:[])];
-                    return <p style={{margin:'4px 0 0'}}>{parts.join(' · ')} → {formatPercent(recommendedHyd,locale)}</p>;
+                    const parts=[`${fr?'Style':'Style'} ${formatPercent(style?.hydration??0,locale)}`,...(oven?[`${fr?'four':'oven'} ${sign(oven)}`]:[]),...(kitchen?[`${fr?'cuisine':'kitchen'} ${sign(kitchen)}`]:[]),...(flour?[`${fr?'type de farine':'flour type'} ${sign(flour)}`]:[])];
+                    // W sets fermentation time, not water (21 Nov 2026): say so where the sum is read.
+                    return <><p style={{margin:'4px 0 0'}}>{parts.join(' · ')} → {formatPercent(recommendedHyd,locale)}</p>
+                      {flourBlend&&<p data-hydration-w-note style={{margin:'4px 0 0',color:'var(--smoke)'}}>{fr?'Le W de la farine fixe la durée de fermentation, pas l’eau.':'The flour’s W sets how long it can ferment, not the water.'}</p>}</>;
                   })()}</details></div>}
                   </div>;};
                 return <>
@@ -6169,7 +6171,7 @@ export default function Home() {
                           aria-describedby={entryIssue?'bh-yeast-entry-note':undefined}
                           onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const idy=Math.min(2,Math.max(0.02,n/conversion));if(recipe?.yeast&&yeastPctOverride===undefined&&Math.abs(idy-recipe.yeast.pct)<0.0005){setYeastEntryIssue(null);return;}
                             // An amount that cannot ferment before the bake is not applied: say so here, before any plan moves.
-                            const check=eatTime&&+eatTime>Date.now()&&styleKey&&mixerType?checkYeastEntry(Math.round(idy*10000)/10000,{bake:eatTime,now:Date.now(),blocks,kitchenTemp,preheatMin:planPreheatMin,exitLeadMin,mixerType,styleKey,numItems,itemWeight,mixingBatches:selectedMixingBatches,fridgeTemp,hydration:poolishInputs.hydrationPct??65,flourStrength,conversion}):null;
+                            const check=eatTime&&+eatTime>Date.now()&&styleKey&&mixerType?checkYeastEntry(Math.round(idy*10000)/10000,{bake:eatTime,now:Date.now(),blocks,kitchenTemp,preheatMin:planPreheatMin,exitLeadMin,mixerType,styleKey,numItems,itemWeight,mixingBatches:selectedMixingBatches,fridgeTemp,hydration:poolishInputs.hydrationPct??65,conversion}):null;
                             if(check&&!check.fits){setYeastEntryIssue({shownPct:Math.round(idy*conversion*1000)/1000,bakeAt:+eatTime!,check});return;}
                             setYeastEntryIssue(null);setYeastPctOverride(Math.round(idy*10000)/10000);setPlanReplanPending(true);}}/>
                       </label>

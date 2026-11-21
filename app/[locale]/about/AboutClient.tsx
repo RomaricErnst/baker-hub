@@ -183,7 +183,7 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Baker Hub&rsquo;s engines form a chain where each output feeds the next.</P>
-            <P><B>Style and oven</B> set the fermentation blueprint — target cold retard, room-temperature time and baseline hydration. <B>Flour</B> scales that blueprint through its fermentation tolerance: a stronger flour takes a longer cold retard and a little less yeast. <B>Kitchen temperature</B> sets how fast everything moves.</P>
+            <P><B>Style and oven</B> set the fermentation blueprint — target cold retard, room-temperature time and baseline hydration. <B>Flour</B> scales that blueprint through its fermentation tolerance: a stronger flour takes a longer cold retard, and the yeast is calculated for those longer hours. <B>Kitchen temperature</B> sets how fast everything moves.</P>
             <P>With those constraints, the <B>scheduler</B> finds the best mix time for your real availability and returns the hours at room temperature and in the fridge. The <B>yeast engine</B> follows the dough&rsquo;s temperature through those hours and computes the amount (the <B>sourdough engine</B> plans the starter&rsquo;s feeds and the levain amount instead). When you customize your bake you can set the yeast or starter amount yourself; the plan is then re-timed to match it. Finally <B>hydration</B> and <B>water temperature</B> are layered on.</P>
             <p style={{ margin: 0, ...bodyText }}>Change any input and everything downstream recalculates.</p>
           </>
@@ -226,8 +226,8 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Baker Hub&rsquo;s flour database holds an audited selection of branded and generic flours. W describes measured strength; published values are kept apart from estimates. Each flour carries two numbers that cascade through the recipe and the plan.</P>
-            <p style={{ margin: '0 0 12px', ...bodyText }}><B>Fermentation tolerance</B> — how much fermentation the flour stands, against a W 250 pizza 00 at 1.0: Manitoba 1.35, strong 00 1.2, bread flour 0.9, semolina 0.85, wholemeal 0.8, all-purpose 0.75, rye 0.7. Blends are weighted by their proportions. The tolerance scales the style&rsquo;s target cold retard (24 hours become about 29 with a 1.2 flour), divides the commercial yeast (a stronger flour gets a little less) and scales the levain amount.</p>
-            <p style={{ margin: 0, ...bodyText }}><B>Hydration</B> — how much water the flour asks for beyond the style&rsquo;s baseline: rye +6 %, wholemeal +4 %, Manitoba +3 %, strong 00 +2 %, bread flour +1 %, pizza 00 0, semolina −1 %, all-purpose −2 %. Blends and branded products stay within −5 to +8 %.</p>
+            <p style={{ margin: '0 0 12px', ...bodyText }}><B>Fermentation tolerance</B> — how much fermentation the flour stands, against a W 250 pizza 00 at 1.0: Manitoba 1.35, strong 00 1.2, bread flour 0.9, semolina 0.85, wholemeal 0.8, all-purpose 0.75, rye 0.7. A white wheat flour whose W is stated — typed from the bag, read off its label, or published for the product — takes its tolerance from that W: 0.75 at W 130, 0.9 at W 200, 1.0 at W 250, 1.2 at W 300 and 1.35 at W 360, in a straight line between and flat beyond. An estimated W goes by the flour type; rye, wholemeal and semolina keep their type&rsquo;s value. Blends are weighted by their proportions. The tolerance scales the style&rsquo;s target cold retard (24 hours become about 29 with a 1.2 flour) and the levain amount. The yeast is calculated for the plan&rsquo;s hours, so a stronger flour gets a little less only through its longer cold retard.</p>
+            <p style={{ margin: 0, ...bodyText }}><B>Hydration</B> — how much water the flour asks for beyond the style&rsquo;s baseline: rye +6 %, wholemeal +4 %, Manitoba +3 %, strong 00 +2 %, bread flour +1 %, pizza 00 0, semolina −1 %, all-purpose −2 %. Blends and branded products stay within −5 to +8 %. Hydration follows the flour type, never its W: W is measured at a fixed water content and does not say how much water a flour drinks.</p>
           </>
         ),
       },
@@ -240,7 +240,7 @@ const CONTENT: Record<string, LocaleContent> = {
               <><B>Style baseline</B> — Neapolitan and New York 62 %, baguette 68 %, pan pizza 70 %, pain au levain 75 %, Roman 78 %</>,
               <><B>Oven</B> — from −2 % (pizza oven) to +4 % (standard home oven), half for enriched and oily doughs</>,
               <><B>Kitchen</B> — 28 °C or more, or very humid: −2 % · 18 °C or less: +2 %</>,
-              <><B>Flour</B> — the flour&rsquo;s own correction, from −2 % (all-purpose) to +6 % (rye)</>,
+              <><B>Flour</B> — the flour type&rsquo;s correction, from −2 % (all-purpose) to +6 % (rye)</>,
               <><B>Style floor</B> — a minimum per style whatever the corrections (Neapolitan 56 %, baguette 65 %, Roman 70 %)</>,
             ]} />
             <p style={{ margin: '14px 0 0', ...bodyText }}>Hydration does not change the timing: no published source quantifies its effect on fermentation speed, so the models leave it out. Watch the dough.</p>
@@ -484,7 +484,7 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>Les moteurs de Baker Hub forment une chaîne où chaque sortie alimente la suivante.</P>
-            <P><B>Le style et le four</B> définissent le plan de fermentation — pousse au froid visée, temps à température ambiante, hydratation de base. <B>La farine</B> ajuste ce plan par sa tolérance à la fermentation : une farine plus forte prend une pousse au froid plus longue et un peu moins de levure. <B>La température de la cuisine</B> donne la vitesse de tout le reste.</P>
+            <P><B>Le style et le four</B> définissent le plan de fermentation — pousse au froid visée, temps à température ambiante, hydratation de base. <B>La farine</B> ajuste ce plan par sa tolérance à la fermentation : une farine plus forte prend une pousse au froid plus longue, et la levure est calculée pour ces heures plus longues. <B>La température de la cuisine</B> donne la vitesse de tout le reste.</P>
             <P>Ces contraintes posées, le <B>planificateur</B> trouve la meilleure heure de pétrissage pour votre disponibilité réelle, avec les heures à température ambiante et au frigo. Le <B>moteur de levure</B> suit la température de la pâte pendant ces heures et calcule la quantité (pour le levain, c’est le <B>moteur de levain</B> qui planifie les rafraîchis et la quantité). En personnalisant votre fournée, vous pouvez fixer vous-même la quantité de levure ou de levain ; le planning est alors recalé sur elle. Enfin s’ajoutent l’<B>hydratation</B> et la <B>température de l’eau</B>.</P>
             <p style={{ margin: 0, ...bodyText }}>Modifiez n’importe quelle entrée et tout ce qui suit se recalcule.</p>
           </>
@@ -527,8 +527,8 @@ const CONTENT: Record<string, LocaleContent> = {
         body: (
           <>
             <P>La base de farines de Baker Hub contient une sélection vérifiée de farines de marque et génériques. W décrit la force mesurée ; les valeurs publiées sont distinguées des estimations. Chaque farine porte deux nombres qui se répercutent sur la recette et le planning.</P>
-            <p style={{ margin: '0 0 12px', ...bodyText }}><B>Tolérance à la fermentation</B> — la fermentation que la farine supporte, par rapport à une farine à pizza 00 W 250 à 1,0 : Manitoba 1,35, 00 forte 1,2, farine à pain 0,9, semoule 0,85, farine complète 0,8, farine tout usage 0,75, seigle 0,7. Les mélanges sont pondérés par leurs proportions. La tolérance ajuste la pousse au froid visée par le style (24 heures deviennent environ 29 avec une farine à 1,2), divise la levure du commerce (une farine plus forte en reçoit un peu moins) et ajuste la quantité de levain.</p>
-            <p style={{ margin: 0, ...bodyText }}><B>Hydratation</B> — l’eau que la farine demande en plus de la base du style : seigle +6 %, complète +4 %, Manitoba +3 %, 00 forte +2 %, farine à pain +1 %, 00 à pizza 0, semoule −1 %, tout usage −2 %. Les mélanges et les produits de marque restent entre −5 et +8 %.</p>
+            <p style={{ margin: '0 0 12px', ...bodyText }}><B>Tolérance à la fermentation</B> — la fermentation que la farine supporte, par rapport à une farine à pizza 00 W 250 à 1,0 : Manitoba 1,35, 00 forte 1,2, farine à pain 0,9, semoule 0,85, farine complète 0,8, farine tout usage 0,75, seigle 0,7. Une farine de blé blanche dont le W est indiqué — saisi depuis le sachet, lu sur son étiquette ou publié pour le produit — prend sa tolérance de ce W : 0,75 à W 130, 0,9 à W 200, 1,0 à W 250, 1,2 à W 300 et 1,35 à W 360, en ligne droite entre ces points et constante au-delà. Un W estimé suit le type de farine ; seigle, complète et semoule gardent la valeur de leur type. Les mélanges sont pondérés par leurs proportions. La tolérance ajuste la pousse au froid visée par le style (24 heures deviennent environ 29 avec une farine à 1,2) et la quantité de levain. La levure est calculée pour les heures du planning : une farine plus forte en reçoit un peu moins uniquement par sa pousse au froid plus longue.</p>
+            <p style={{ margin: 0, ...bodyText }}><B>Hydratation</B> — l’eau que la farine demande en plus de la base du style : seigle +6 %, complète +4 %, Manitoba +3 %, 00 forte +2 %, farine à pain +1 %, 00 à pizza 0, semoule −1 %, tout usage −2 %. Les mélanges et les produits de marque restent entre −5 et +8 %. L’hydratation suit le type de farine, jamais son W : le W se mesure à teneur en eau fixe et ne dit pas combien d’eau une farine absorbe.</p>
           </>
         ),
       },
@@ -541,7 +541,7 @@ const CONTENT: Record<string, LocaleContent> = {
               <><B>Base du style</B> — napolitaine et New York 62 %, baguette 68 %, pizza en moule 70 %, pain au levain 75 %, romaine 78 %</>,
               <><B>Four</B> — de −2 % (four à pizza) à +4 % (four domestique standard), la moitié pour les pâtes enrichies ou riches en huile</>,
               <><B>Cuisine</B> — 28 °C ou plus, ou très humide : −2 % · 18 °C ou moins : +2 %</>,
-              <><B>Farine</B> — la correction propre à la farine, de −2 % (tout usage) à +6 % (seigle)</>,
+              <><B>Farine</B> — la correction propre au type de farine, de −2 % (tout usage) à +6 % (seigle)</>,
               <><B>Plancher du style</B> — un minimum par style quelles que soient les corrections (napolitaine 56 %, baguette 65 %, romaine 70 %)</>,
             ]} />
             <p style={{ margin: '14px 0 0', ...bodyText }}>L’hydratation ne change pas le planning : aucune source publiée ne chiffre son effet sur la vitesse de fermentation, donc les modèles la laissent de côté. Observez la pâte.</p>

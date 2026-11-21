@@ -1163,6 +1163,47 @@ export function blendWIsApproximate(b: FlourBlend): boolean {
   return used.some(s => s === 'typical');
 }
 
+/** Fermentation tolerance from a stated W (21 Nov 2026, owner): piecewise
+ * linear through the flour types' own points — all-purpose W130 0.75, bread
+ * W200 0.90, pizza 00 W250 1.00, strong 00 W300 1.20, Manitoba W360 1.35 —
+ * and flat outside 130–360. Every mill and AVPN agree that a higher W holds a
+ * longer fermentation (Grandi Molini, Zanichelli, 5 Stagioni, AVPN); the
+ * magnitudes are the engine's own type values, so a flour at its type's
+ * typical W gets exactly the type's tolerance. W does not set hydration: the
+ * alveograph measures it at a fixed water content, and it does not predict
+ * absorption (Pasini Verde W295 58.8 % vs Marrone W390 58.7 %). */
+const FTM_FROM_W: readonly (readonly [number, number])[] = [[130, 0.75], [200, 0.90], [250, 1.00], [300, 1.20], [360, 1.35]];
+export function ftmFromW(w: number): number {
+  const pts = FTM_FROM_W;
+  if (!(w > pts[0][0])) return pts[0][1];
+  for (let i = 1; i < pts.length; i++) {
+    const [w1, t1] = pts[i];
+    if (w <= w1) { const [w0, t0] = pts[i - 1]; return t0 + (t1 - t0) * (w - w0) / (w1 - w0); }
+  }
+  return pts[pts.length - 1][1];
+}
+
+/** White-wheat flour types whose tolerance a stated W replaces. Rye,
+ * wholemeal and semolina keep their type's value: W is a white-wheat
+ * measurement and says little about their bran or durum behaviour. */
+export const W_TOLERANCE_FLOURS: ReadonlySet<FlourKey> = new Set<FlourKey>(['pizza00', 'strong00', 'bread', 'allpurpose', 'manitoba']);
+
+/** A W the baker or the bag states: typed, read off the label, or a product's
+ * published value. A typical or estimated W ('typical') and a record without a
+ * source say nothing beyond the flour type. */
+export function wIsStated(source: WSource | undefined): boolean {
+  return source === 'manual' || source === 'photo' || source === 'exact';
+}
+
+/** One flour's fermentation tolerance: from its stated W for a white-wheat
+ * type (replacing, never multiplying, the type's value), else the type's. */
+export function flourTolerance(key: FlourKey, w: number | undefined, source: WSource | undefined): number {
+  if (wIsStated(source) && W_TOLERANCE_FLOURS.has(key) && typeof w === 'number' && Number.isFinite(w) && w > 0) {
+    return Math.round(ftmFromW(w) * 100) / 100;
+  }
+  return FLOUR_DATA[key].fermTolerance;
+}
+
 export interface BlendProfile {
   blendedW: number;
   hydrationDelta: number;
@@ -1178,11 +1219,14 @@ export function computeBlendProfile(blend: FlourBlend): BlendProfile {
   // using it as flour1's W double-counted flour2. w1 fixes that; legacy
   // blends fall back to the old behaviour unchanged.
   const w1 = blend.w1 ?? blend.wOverride ?? f1.w;
+  // Tolerance reads flour 1's own W (w1) only: a legacy wOverride may hold a
+  // blended W and is never taken as flour 1's stated W.
+  const t1 = flourTolerance(blend.flour1, blend.w1, blend.w1Source);
   if (!blend.flour2 || blend.ratio1 === 100) {
     return {
       blendedW: w1,
       hydrationDelta: f1.hydrationDelta,
-      fermToleranceMultiplier: f1.fermTolerance,
+      fermToleranceMultiplier: t1,
       displayName: f1.name,
       displayNameFr: f1.nameFr,
     };
@@ -1205,7 +1249,9 @@ export function computeBlendProfile(blend: FlourBlend): BlendProfile {
   return {
     blendedW: Math.round(w1 * r1 + w2 * r2 + w3 * r3),
     hydrationDelta: Math.round((f1.hydrationDelta * r1 + f2.hydrationDelta * r2 + (f3 ? f3.hydrationDelta : 0) * r3) * 10) / 10,
-    fermToleranceMultiplier: two(f1.fermTolerance * r1 + f2.fermTolerance * r2 + (f3 ? f3.fermTolerance : 1) * r3),
+    // Each component weighs in with its own tolerance (its stated W where it has one).
+    fermToleranceMultiplier: two(t1 * r1 + flourTolerance(blend.flour2, blend.w2, blend.w2Source) * r2
+      + (f3 ? flourTolerance(blend.flour3!, blend.w3, blend.w3Source) : 1) * r3),
     displayName: parts.join(' + '),
     displayNameFr: partsFr.join(' + '),
   };
