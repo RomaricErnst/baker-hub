@@ -2,6 +2,7 @@
 import { poolishCoolingAt } from '../utils/poolishCoolingAt';
 import { starterBuild, starterFeedLabelFor } from '../utils/starterBuild';
 import { peakAround } from '../utils/peakTime';
+import { starterStepShownTime } from '../utils/sharedStarter';
 import type { StarterEvent } from './SchedulePicker';
 import { recommendedFlourName, flourProductName } from '../lib/flourGuidance';
 import { mixingBatchPlan } from '../utils/mixingBatches';
@@ -50,6 +51,8 @@ interface RecipeOutputProps extends WaterSettingsProps {
   flourBlend?: FlourBlend;
   units?: UnitSystem;
   starterEvents?: StarterEvent[];
+  /** Another live bake builds its levain from the same feed (one jar, two bakes; page.tsx sharedFeedNote). */
+  sharedStarterFeed?: SharedFeedNote | null;
   mixingTime?: Date;
   feedTime?: Date | null;
   feed2Time?: Date | null;
@@ -218,13 +221,15 @@ function InfoCard({
 
 
 // ── Starter prep card ─────────────────────────
+type SharedFeedNote = { at: number; line: string; seed: number; flour: number; water: number; ratio: number; keep: number };
 function StarterPrepCard({
-  sourdough, feedTime, feed2Time, fridgeOutTime, starterEvents = [], mixingTime,
+  sourdough, feedTime, feed2Time, fridgeOutTime, starterEvents = [], sharedStarterFeed, mixingTime,
   starterPeakTime, planningMode, usingPeak2,
   feedRatio, starterLocation, locale,
 }: {
   sourdough: { starterGramsMid: number; starterGramsMin: number; starterGramsMax: number } | null;
   starterEvents?: StarterEvent[];
+  sharedStarterFeed?: SharedFeedNote | null;
   mixingTime?: Date;
   feedTime?: Date | null;
   feed2Time?: Date | null;
@@ -252,7 +257,8 @@ function StarterPrepCard({
   // Compare the minutes the baker sees, so 7:45 vs 7:50 reads as 5 min.
   const peakGapMinutes = mixingTime && predictedPeak ? Math.round(+mixingTime / 60000) - Math.round(+predictedPeak / 60000) : null;
   const build = starterBuild(sourdough.starterGramsMid, sourdough.starterGramsMax, feedRatio ?? 1);
-  const starterLeft = Math.max(build.keep, build.total - sourdough.starterGramsMid);
+  // One jar, two bakes (round 8, S6): what stays in the jar once both doughs have taken theirs.
+  const starterLeft = sharedStarterFeed ? sharedStarterFeed.keep : Math.max(build.keep, build.total - sourdough.starterGramsMid);
   function describeFeed(ratio = feedRatio ?? 1) {
     const {seed, flour, water, total} = starterBuild(sourdough!.starterGramsMid, sourdough!.starterGramsMax, ratio);
     return isFr ? `1:${ratio}:${ratio} · ${seed} g de levain + ${flour} g de farine + ${water} g d’eau = ${total} g`
@@ -306,8 +312,10 @@ function StarterPrepCard({
         <div style={{ display:'flex', flexDirection:'column', gap: '8px' }}>
           {events.length > 0 && events.map((event,index) => <div style={rowStyle} key={`${event.kind}:${index}`}>
             <div style={labelStyle}>{starterFeedLabelFor(event, events, isFr) ?? eventLabels[event.kind]}</div>
-            <div style={valueStyle}>{fmtFull(event.time)}</div>
-            {['refresh','intermediate_refresh','pre_mix'].includes(event.kind) && <div style={noteStyle}>{describeFeed(event.feedingRatio)}</div>}
+            {/* Fridge steps on the plan's quarter-hour grid (round 8, S8: "8:02am"). */}
+            <div style={valueStyle}>{fmtFull(starterStepShownTime(event))}</div>
+            {/* The feed shared with another bake: one feed, both amounts (round 8, S6). */}
+            {['refresh','intermediate_refresh','pre_mix'].includes(event.kind) && <div style={noteStyle} data-starter-feed-line>{event.kind === 'pre_mix' && sharedStarterFeed && +event.time === sharedStarterFeed.at ? sharedStarterFeed.line : describeFeed(event.feedingRatio)}</div>}
             {event.bellPeakTime && event.kind !== 'known_peak' && <div style={noteStyle}>{isFr ? 'Pic de ce rafraîchi ' : 'This feed peaks '}{peakAround(event.bellPeakTime, isFr, { day: true })}</div>}
             {['fridge_in','fridge_out'].includes(event.kind) && event.cardNote && <div style={noteStyle}>{event.cardNote}</div>}
           </div>)}
@@ -387,7 +395,7 @@ function StarterPrepCard({
 export default function RecipeOutput({
   result, numItems, itemWeight, styleName, styleKey, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
   priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, explicitFlour = false, units,
-  starterEvents, mixingTime, feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
+  starterEvents, sharedStarterFeed, mixingTime, feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
   afterIngredients, mixerConfirmed=false, onEditSetup, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixerCapacityG, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
 }: RecipeOutputProps) {
   const t = useTranslations();
@@ -1013,6 +1021,7 @@ export default function RecipeOutput({
           <StarterPrepCard
             sourdough={sourdough}
             starterEvents={starterEvents}
+            sharedStarterFeed={sharedStarterFeed}
             mixingTime={mixingTime}
             feedTime={feedTime}
             feed2Time={feed2Time}

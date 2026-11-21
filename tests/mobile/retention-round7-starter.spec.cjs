@@ -143,7 +143,7 @@ test.describe('one jar, two bakes (London)',()=>{
   await page.getByRole('button',{name:/^(Resume|Pain au levain|Sourdough)/}).first().tap();
   await preparation(page);
   await page.getByRole('button',{name:/^Pre-mix feed (Next )?Fri 8:30am/}).tap();
-  const line=page.getByText(/^Feed 1:1:1 for both bakes · \d+ g: \d+ g for .+, \d+ g for the baguettes$/);
+  const line=page.getByText(/^Feed 1:1:1 for both bakes · \d+ g: \d+ g for .+, \d+ g for the baguettes$/).filter({visible:true}); // the Recipe's starter card (round 8, S6) carries the line too, hidden here
   await expect(line).toHaveCount(1);
   await line.scrollIntoViewIfNeeded();
   await shot(page,'b5-leader-shared-feed');
@@ -159,10 +159,11 @@ test.describe('one jar, two bakes (London)',()=>{
   await open(page,{...fixture,bh_session_v1:JSON.stringify(mine),bh_journal_v1:JSON.stringify([entryOf('camp-1',camp),{...baseEntry,session:mine}])});
   await page.getByRole('button',{name:/^(Resume|Pain au levain|Sourdough)/}).first().tap();
   await preparation(page);
-  // Its own Thursday 8:30pm feed is the campagne's to do: not planned again here; its pre-mix feed is the campagne's.
-  await expect(page.getByRole('button',{name:/^(Refresh feed|Intermediate feed)/})).toHaveCount(0);
+  // Its own Thursday 8:30pm feed is the campagne's to do: planned once, the jar's (round 8, S6: the bake that follows
+  // shows the jar's own steps, so one Thursday feed, the campagne's, at its time); its pre-mix feed is the campagne's.
+  await expect(page.getByRole('button',{name:/^(Refresh feed|Intermediate feed)/})).toHaveCount(1);
   await page.getByRole('button',{name:/^Pre-mix feed (Next )?Fri 8:15am/}).tap();
-  const line=page.getByText(/^Feed 1:1:1 for both bakes · \d+ g: \d+ g for Campagne, \d+ g for .+$/);
+  const line=page.getByText(/^Feed 1:1:1 for both bakes · \d+ g: \d+ g for Campagne, \d+ g for .+$/).filter({visible:true}); // the Recipe's starter card (round 8, S6) carries the line too, hidden here
   await expect(line).toHaveCount(1);
   await line.scrollIntoViewIfNeeded();
   await shot(page,'b5-follower-shared-feed');

@@ -9,6 +9,7 @@
 // localStorage. Photo bytes live in IndexedDB (journalPhotos.ts) — localStorage
 // is far too small for images. Every storage call is wrapped: a private window
 // or a full quota must never block planning a bake.
+import { sharedStarterFeedFor, savedStarterUse, type StarterUse } from '../utils/sharedStarter';
 import type { SessionData } from './session';
 import { rowStep, clockMark, type ClockStep } from '../utils/guideProgress';
 import { translateGuideTitle } from '../utils/guideTitles';
@@ -245,6 +246,8 @@ export interface LiveJournalBake {
   current: boolean;
   /** Baked and not rated yet: the row offers the rating (20 Nov 2026 round 6). */
   rate?: boolean;
+  /** Other bakes whose starter step this row is too: one jar, two bakes (round 8, S6; mergeSharedJarRows). */
+  jarWith?: JournalEntry[];
 }
 
 /** A baked bake stays on home as "Rate" for this long after its bake time, until rated (20 Nov 2026 round 6,
@@ -330,4 +333,43 @@ export function journalDueStep(id: string, locale: string, bakeAt: number | null
   const mark = clockMark(plan.steps, now);
   const step = mark ? plan.steps.find(s => s.step === mark.step) : undefined;
   return mark && step ? { kind: mark.kind, title: step.title, at: step.at } : null;
+}
+
+/** One jar, two bakes on home (21 Nov 2026 round 8, S6, Priya: two identical "Take starter out of the fridge 6:00pm"
+ *  rows). When two live sourdough bakes share a feed (sharedStarterFeedFor) and both rows are on a step of the jar up
+ *  to that feed (their own starter steps, the shared feed, or the leading bake's), the jar's step is one row: the
+ *  leading bake's, naming both bakes (`jarWith`). The bake that follows keeps a row of its own, for its next step
+ *  after the shared feed (its guide's step, else its mix), so both bakes stay one tap away. Nothing with fewer than
+ *  two sourdough bakes (owner's rule B: the rows are returned as they are). */
+export function mergeSharedJarRows(rows: LiveJournalBake[], now = Date.now(), locale?: string): LiveJournalBake[] {
+  const uses = new Map<string, StarterUse>();
+  for (const row of rows) {
+    if (row.rate) continue;
+    const use = savedStarterUse(row.entry as Parameters<typeof savedStarterUse>[0], row.entry.id);
+    if (use) uses.set(row.entry.id, use);
+  }
+  if (uses.size < 2) return rows;
+  const all = [...uses.values()];
+  const STARTER = ['refresh', 'intermediate_refresh', 'pre_mix', 'fridge_in', 'fridge_out'];
+  const nearAny = (at: number, times: number[]) => times.some(t => Math.abs(t - at) <= 8 * 60000);
+  const jarTimes = (use: StarterUse, until: number) => (use.events ?? []).filter(e => STARTER.includes(e.kind) && +e.time <= until + 60000).map(e => +e.time);
+  const joined = new Map<string, JournalEntry[]>();
+  const moved = new Map<string, LiveJournalBake>();
+  for (const follower of all) {
+    const shared = sharedStarterFeedFor(follower, all, now);
+    if (!shared || shared.leads || moved.has(shared.otherId)) continue;
+    const leader = uses.get(shared.otherId);
+    const fRow = rows.find(r => r.entry.id === follower.id), lRow = rows.find(r => r.entry.id === shared.otherId);
+    if (!leader || !fRow || !lRow || fRow.rate || lRow.rate || !fRow.label || !lRow.label) continue;
+    const times = [shared.at, ...jarTimes(follower, Math.max(shared.at, follower.feedAt)), ...jarTimes(leader, shared.at)];
+    if (!nearAny(fRow.at, times) || !nearAny(lRow.at, [shared.at, ...jarTimes(leader, shared.at)])) continue;
+    // The follower's next step after the shared feed: its guide's, else its mix.
+    const after = Math.max(shared.at, follower.feedAt) + 60000;
+    const next = (locale ? guidePlanSnapshot(follower.id, locale)?.steps : undefined)?.filter(step => step.at > after && !step.done).sort((a, b) => a.at - b.at)[0];
+    moved.set(follower.id, next ? { entry: fRow.entry, at: next.at, label: next.title, current: false } : { entry: fRow.entry, at: follower.mixAt, label: null, current: false });
+    joined.set(leader.id, [...(joined.get(leader.id) ?? []), fRow.entry]);
+  }
+  if (!moved.size) return rows;
+  return rows.map(r => moved.get(r.entry.id) ?? (joined.has(r.entry.id) ? { ...r, jarWith: joined.get(r.entry.id) } : r))
+    .sort((a, b) => Number(!!a.rate) - Number(!!b.rate) || a.at - b.at || (a.entry.eatTime ?? 0) - (b.entry.eatTime ?? 0));
 }

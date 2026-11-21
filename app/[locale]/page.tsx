@@ -40,7 +40,7 @@ import { isPanPizzaStyle } from '../utils/panPizza';
 import { buildPlanCalendar, calendarBakeId, downloadPlanCalendar, exportedSteps, hasExportedPlan, keyPlanEvents, readExportedSteps, writeExportedSteps, type PlanCalendarEvent } from '../utils/planCalendar';
 import { leanBreadPreheatMin, leanBreadBake } from '../utils/leanBreadBake';
 import { sharedOvenFor, ovenBackTitle } from '../utils/sharedOven';
-import { sharedStarterFeedFor, sharedFeedLine, starterEventsWithSharedFeed, type StarterUse } from '../utils/sharedStarter';
+import { sharedStarterFeedFor, sharedFeedLine, starterEventsWithSharedFeed, savedStarterUse, carriedJarRecords, starterStepShownTime, type StarterUse } from '../utils/sharedStarter';
 import { scalePicks, allPicksBaked } from '../utils/pizzaPicks';
 import { bakeTitleName } from '../utils/bakeTitle';
 import { journalTitle } from '../components/BakeJournal';
@@ -72,7 +72,7 @@ import { archivedBlendSelections } from '../lib/flourRecovery';
 import { flourShoppingName } from '../lib/flourGuidance';
 import { clockMark } from '../utils/guideProgress';
 import { ovenBusyMinutes, bakeEndAt, ovenClash, nextFreeOvenShift, ovenBusyClause, type OvenUse } from '../utils/ovenWindow';
-import { recordGeneratedBake, refreshCurrentJournalSnapshot, forgetCurrentJournalBake, setCurrentJournalId, currentJournalId, getJournalEntry, dueJournalEntry, liveJournalBakes, guidePlanSnapshot, journalDueStep, type JournalEntry, type LiveJournalBake } from '../lib/localJournal';
+import { recordGeneratedBake, refreshCurrentJournalSnapshot, forgetCurrentJournalBake, setCurrentJournalId, currentJournalId, getJournalEntry, dueJournalEntry, liveJournalBakes, mergeSharedJarRows, guidePlanSnapshot, journalDueStep, type JournalEntry, type LiveJournalBake } from '../lib/localJournal';
 import { deleteJournalPhotos } from '../lib/journalPhotos';
 import { archiveLocalBake, preservePreviousBake, acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, normalizeFlourTarget, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
 import { upsertBakeEvent } from '../lib/supabase/saveBakeEvent';
@@ -2301,6 +2301,33 @@ export default function Home() {
   const displayRecipe = recipe;
   const advancedRecipe = recipe;
   const advancedDisplayRecipe = advancedRecipe;
+  // One jar, two bakes (20 Nov 2026 round 7, B5, Priya): when another live sourdough bake feeds the jar for its levain
+  // close enough that one feed is ready for both mixes, both build their levain from that feed, said once with both
+  // amounts; the later bake's starter steps follow the earlier one's (sharedStarterFeedFor). Nothing with one bake
+  // (owner's rule B: no other bake, no other use; the events below are then the plan's own array).
+  // Round 8 (S6): computed before the recipe's starter card, the shopping list and the feed question, which all
+  // read it; the bake that follows shows the jar's own steps (its fridge dates, its feeds) up to the shared feed, and
+  // a feed recorded in either bake is done in both. `fr` is declared further down: the locale is read here.
+  const sharedStarterPair = (()=>{
+    if(!recipeGenerated||yeastType!=='sourdough'||!eatTime)return null;
+    const others=otherStarterUses();if(!others.length)return null;
+    const need=currentLevainNeed();
+    const isFr=locale==='fr';
+    const feeds=starterEvents.filter(e=>e.kind==='pre_mix'&&e.bellPeakTime&&+e.time<+startTime).sort((a,b)=>+a.time-+b.time);
+    const feed=feeds.find(e=>+e.time>Date.now())??feeds.at(-1);
+    if(!need||!feed)return null;
+    const subject=bakeSubject(styleKey,numItems,isFr,bakeType);
+    const name=subject?subject.text.charAt(0).toLowerCase()+subject.text.slice(1):bakeName||jarStyleName(styleKey);
+    const ownId=journalId??currentJournalId()??'current';
+    const createdAt=(()=>{try{return getJournalEntry(ownId)?.createdAt;}catch{return undefined;}})();
+    const shared=sharedStarterFeedFor({id:ownId,name,feedAt:+feed.time,peakAt:+feed.bellPeakTime!,mixAt:+startTime,ratio:feed.feedingRatio??nextFeedRatio,need,createdAt},others,Date.now());
+    return shared?{shared,other:others.find(o=>o.id===shared.otherId)}:null;
+  })();
+  const sharedStarter = sharedStarterPair?.shared ?? null;
+  const guideStarterEvents = starterEventsWithSharedFeed(starterEvents, sharedStarter, Date.now(), sharedStarterPair?.other?.events as StarterEvent[]|undefined);
+  // The other bake's recorded feeds of the jar's steps count here too (a tick in one bake is done in the other).
+  const jarRecords = carriedJarRecords(sharedStarter, sharedStarterPair?.other) as StarterFeedRecord[];
+  const sharedFeedNote = sharedStarter ? {at:sharedStarter.at,line:sharedFeedLine(sharedStarter,locale==='fr',g=>displayWeight(g,units,locale)),seed:sharedStarter.build.seed,flour:sharedStarter.build.flour,water:sharedStarter.build.water,ratio:sharedStarter.ratio,keep:sharedStarter.keep} : null;
   // Flour is authoritative in this mode. Keep equipment and portion displays
   // aligned with the canonical formula, including enriched ingredients/yeast.
   const flourModeRecipe = tab==='custom' ? advancedRecipe : recipe;
@@ -2316,9 +2343,11 @@ export default function Home() {
     const cr = tab === 'custom' ? advancedRecipe : recipe;
     if (yeastType !== 'sourdough' || !cr?.sourdough) return 0;
     const mid = cr.sourdough.starterGramsMid, max = cr.sourdough.starterGramsMax ?? mid;
-    return starterEvents.filter(event => !event.isPast && ['refresh','intermediate_refresh','pre_mix'].includes(event.kind))
-      .reduce((sum, event) => sum + starterBuild(mid, max, event.feedingRatio ?? nextFeedRatio).flour, 0);
-  }, [tab, advancedRecipe, recipe, yeastType, starterEvents, nextFeedRatio]);
+    // One jar, two bakes (round 8, S6): the feeds this bake shows. The jar's earlier steps, which the bake that leads
+    // plans and buys for, are not counted again; the shared feed is this dough's share of it, at the shared ratio.
+    return guideStarterEvents.filter(event => !event.isPast && !(event as {jar?:boolean}).jar && ['refresh','intermediate_refresh','pre_mix'].includes(event.kind))
+      .reduce((sum, event) => sum + starterBuild(mid, max, (event.kind==='pre_mix'&&sharedStarter&&+event.time===sharedStarter.at?sharedStarter.ratio:undefined) ?? event.feedingRatio ?? nextFeedRatio).flour, 0);
+  }, [tab, advancedRecipe, recipe, yeastType, guideStarterEvents, sharedStarter, nextFeedRatio]);
   const starterFeedFlourName = locale === 'fr' ? 'Farine pour les rafraîchis du levain' : 'Flour for the starter feeds';
   // Dough ingredients for the Pizza Party shopping list — the host shops once.
   const doughShoppingItems = useMemo(() => {
@@ -2433,18 +2462,22 @@ export default function Home() {
   }
   // Other sourdough bakes under way on this device with a levain build still to feed: compared only when there are
   // any, as the oven is (owner's rule B).
+  // The style's name, as styleDisplayName (declared further down) gives it: read before it during the render.
+  function jarStyleName(sk:string|null|undefined):string{
+    if(!sk)return '';
+    const st=(ALL_STYLES as Record<string,{name?:string;nameFr?:string}>)[sk];
+    return (locale==='fr'?st?.nameFr:undefined)??st?.name??sk;
+  }
   function otherStarterUses():StarterUse[]{
     const own=journalId??currentJournalId();
+    const isFr=locale==='fr';
     const uses:StarterUse[]=[];
     try{for(const row of liveJournalBakes()){
       const other=row.entry;if(row.rate||other.id===own||other.eatTime==null)continue;
-      const ses=other.session;
-      if(ses.yeastType!=='sourdough'||!ses.levainNeed||ses.startTime==null)continue;
-      const feed=(ses.starterEvents??[]).find(e=>e.kind==='pre_mix'&&e.bellPeakTime!=null&&e.time>Date.now());
-      if(!feed)continue;
-      const subject=bakeSubject(other.styleKey,other.numItems,fr,other.bakeType);
-      const name=subject?subject.text.charAt(0).toLowerCase()+subject.text.slice(1):other.bakeName||styleDisplayName(other.styleKey);
-      uses.push({id:other.id,name,feedAt:feed.time,peakAt:feed.bellPeakTime!,mixAt:ses.startTime,ratio:feed.feedingRatio??ses.nextFeedRatio??1,need:ses.levainNeed});
+      const subject=bakeSubject(other.styleKey,other.numItems,isFr,other.bakeType);
+      const name=subject?subject.text.charAt(0).toLowerCase()+subject.text.slice(1):other.bakeName||jarStyleName(other.styleKey);
+      const use=savedStarterUse(other,name);
+      if(use)uses.push(use);
     }}catch{}
     return uses;
   }
@@ -2560,11 +2593,13 @@ export default function Home() {
   }, [eatTime]);
 
   const startTimeInPast = !!mixExecution || !!execution && execution.method==='none';
-  const starterFedTimes=useMemo(()=>starterFeedRecords.flatMap(record=>[record.plannedAt,record.actualAt]),[starterFeedRecords]);
+  // A feed of the shared jar recorded in the other bake counts here too (round 8, S6); with one bake, none.
+  const shownFeedRecords=jarRecords.length?[...starterFeedRecords,...jarRecords]:starterFeedRecords;
+  const starterFedTimes=useMemo(()=>shownFeedRecords.flatMap(record=>[record.plannedAt,record.actualAt]),[shownFeedRecords]);
   // Feeds recorded on the generated plan: the plan is kept as recorded and every re-plan keeps the levain %
   // it was built for (18 Nov 2026 retention, Priya's late feed).
   const starterFactsKept=yeastType==='sourdough'&&!!recipeGenerated&&starterFeedRecords.length>0&&!starterRecoveryPending&&!mixExecution;
-  const missedStarterFeed=yeastType==='sourdough'&&recipeGenerated&&!mixExecution&&!starterRecoveryPending?overdueStarterFeed(starterEvents,starterFeedRecords,executionClock,+startTime):undefined;
+  const missedStarterFeed=yeastType==='sourdough'&&recipeGenerated&&!mixExecution&&!starterRecoveryPending?overdueStarterFeed(guideStarterEvents,shownFeedRecords,executionClock,+startTime):undefined;
   // A replan after recorded feeds starts from the latest one (the plan itself is kept while feeds are
   // confirmed, so the starter answers still describe the starter before the first of them). Where the
   // kept plan has put it in the fridge since, it is planned from the fridge.
@@ -2624,6 +2659,14 @@ export default function Home() {
   function updateStarterAfterMissedFeed(actualAt?:number,feedEvent:StarterEvent|undefined=missedStarterFeed) {
     if(actualAt!==undefined)try{confirmationAt.current=Date.now();}catch{}
     if(!feedEvent||!['refresh','intermediate_refresh','pre_mix'].includes(feedEvent.kind)||actualAt!==undefined&&(!Number.isFinite(actualAt)||actualAt>Date.now()))return;
+    // A feed of the jar the other bake plans (one jar, two bakes; round 8, S6): recorded here as a fact, so both
+    // bakes show it done; the plan that owns it is the other bake's, so nothing is re-planned from this one.
+    if(!starterEvents.includes(feedEvent)){
+      if(actualAt===undefined)return;
+      const records=[...starterFeedRecords,{kind:feedEvent.kind as StarterFeedRecord['kind'],plannedAt:+feedEvent.time,actualAt,recordedAt:Date.now(),ratio:feedEvent.feedingRatio??nextFeedRatio,stated:actualAt!==+feedEvent.time}];
+      setStarterFeedRecords(records);saveSession(buildSessionPayload({starterFeedRecords:records}));
+      return;
+    }
     const observations=starterEvents.filter(event=>event.kind==='last_fed'||event.kind==='known_peak');
     const usedRatio=feedEvent.feedingRatio??nextFeedRatio;
     const records=actualAt===undefined?starterFeedRecords:[...starterFeedRecords,{kind:feedEvent.kind as StarterFeedRecord['kind'],plannedAt:+feedEvent.time,actualAt,recordedAt:Date.now(),ratio:usedRatio,stated:actualAt!==+feedEvent.time,previousFedAt:lastFedTime?+lastFedTime:undefined,previousPeakAt:knownPeakTime?+knownPeakTime:undefined}];
@@ -2813,7 +2856,8 @@ export default function Home() {
     try {
       const rows = liveJournalBakes(Date.now(), locale);
       const draftShown = !!pendingSession?.recipeGenerated || (!!bakeType && recipeGenerated);
-      setLiveBakes(rows.length === 1 && rows[0].entry.id === currentJournalId() && draftShown ? [] : rows);
+      // Two bakes on one jar: one row for the jar's step (round 8, S6); with one bake the rows are unchanged.
+      setLiveBakes(rows.length === 1 && rows[0].entry.id === currentJournalId() && draftShown ? [] : mergeSharedJarRows(rows, Date.now(), locale));
     } catch {}
   }, [homeShown, locale, pendingSession, bakeType, recipeGenerated, journalId]);
   const navigationHistory=useRef<string|null>(null);
@@ -4612,22 +4656,6 @@ export default function Home() {
     const celsius=bakeType==='bread'&&styleKey?leanBreadBake(styleKey,itemWeight,ovenType??undefined,numItems)?.tempStaticC:undefined;
     return {...shared,title:ovenBackTitle(fr,shared.after,{celsius,max:bakeType==='pizza'&&(ovenType??'').startsWith('home_oven')},units)};
   })();
-  // One jar, two bakes (20 Nov 2026 round 7, B5, Priya): when another live sourdough bake feeds the jar for its levain
-  // close enough that one feed is ready for both mixes, both build their levain from that feed, said once with both
-  // amounts; the later bake's starter steps follow the earlier one's (sharedStarterFeedFor). Nothing with one bake
-  // (owner's rule B: no other bake, no other use; the events below are then the plan's own array).
-  const sharedStarter = (()=>{
-    if(!recipeGenerated||yeastType!=='sourdough'||!eatTime)return null;
-    const others=otherStarterUses();if(!others.length)return null;
-    const need=currentLevainNeed();
-    const feed=starterEvents.find(e=>e.kind==='pre_mix'&&e.bellPeakTime&&+e.time>Date.now());
-    if(!need||!feed)return null;
-    const subject=bakeSubject(styleKey,numItems,fr,bakeType);
-    const name=subject?subject.text.charAt(0).toLowerCase()+subject.text.slice(1):bakeName||styleDisplayName(styleKey);
-    return sharedStarterFeedFor({id:journalId??currentJournalId()??'current',name,feedAt:+feed.time,peakAt:+feed.bellPeakTime!,mixAt:+startTime,ratio:feed.feedingRatio??nextFeedRatio,need},others,Date.now());
-  })();
-  const guideStarterEvents = starterEventsWithSharedFeed(starterEvents, sharedStarter, Date.now());
-  const sharedFeedNote = sharedStarter ? {at:sharedStarter.at,line:sharedFeedLine(sharedStarter,fr,g=>displayWeight(g,units,locale)),seed:sharedStarter.build.seed,flour:sharedStarter.build.flour,water:sharedStarter.build.water,ratio:sharedStarter.ratio} : null;
   // Every remaining hands-on step, as calendar events with an alert at their time.
   function planCalendarEvents(from:number):PlanCalendarEvent[] {
     const singleLoaf=bakeType==='bread'&&numItems===1;
@@ -4643,7 +4671,7 @@ export default function Home() {
         const label=starterActionLabelFor(event,guideStarterEvents,fr);
         if(!label)continue;
         counts[event.kind]=(counts[event.kind]??0)+1;
-        events.push({key:`starter-${event.kind}-${counts[event.kind]}`,at:new Date(event.time),label,alertBeforeMin:event.kind==='fridge_out'?10:0});
+        events.push({key:`starter-${event.kind}-${counts[event.kind]}`,at:starterStepShownTime(event),label,alertBeforeMin:event.kind==='fridge_out'?10:0});
       }
     }
     return events;
@@ -4981,8 +5009,9 @@ export default function Home() {
   // (a revival or refresh days ahead), which the full list keeps.
   const planStartIsKey = !firstStarterAction || firstStarterAction.kind==='pre_mix';
   // Custom sourdough: the starter readiness strip sits before Start Dough (it replaces the multi-day chart).
-  const planStrip = tab==='custom' && yeastType==='sourdough' && recipeGenerated && +startTime>Date.now() && starterStripModel(starterEvents,startTime)
-    ? {key:'mix',node:<StarterStrip events={starterEvents} mixAt={startTime} blocks={blocks} fr={fr}/>} : null;
+  // The feeds the bake shows: with one jar for two bakes, the jar's and the shared feed (round 8, S6); else its own.
+  const planStrip = tab==='custom' && yeastType==='sourdough' && recipeGenerated && +startTime>Date.now() && starterStripModel(guideStarterEvents,startTime)
+    ? {key:'mix',node:<StarterStrip events={guideStarterEvents} mixAt={startTime} blocks={blocks} fr={fr}/>} : null;
   return (
     <div data-navigation-page={visiblePageKey} data-reading={bottomNavCollapsed || undefined} data-keyboard-open={keyboardOpen || undefined} data-mobile-setup={(destination==='organisation'||destination==='batch')&&!recipeGenerated?'true':undefined} style={{ minHeight: '100vh', background: 'var(--warm)' }}>
       {/* ── Sticky header + journey bar (autohide on scroll down) ── */}
@@ -5096,7 +5125,8 @@ export default function Home() {
           {liveBakes.map((row, index) => {
             // One name per bake: the Recipe's title ("Pizza night", "Baguettes"), as the rating sheet (20 Nov 2026 round 6).
             const nameOf = (entry: JournalEntry) => journalTitle(entry, locale);
-            const name = nameOf(row.entry);
+            // A row for the shared jar names both bakes (round 8, S6).
+            const name = [row.entry, ...(row.jarWith ?? [])].map(nameOf).join(fr ? ' et ' : ' & ');
             // Two bakes of the same name: the bake day tells them apart ("Sam. · Baguette · …", 18 Nov 2026 retention round 4).
             const twin = liveBakes.some(other => other !== row && nameOf(other.entry) === name) && row.entry.eatTime != null;
             const day = twin ? new Date(row.entry.eatTime!).toLocaleDateString(fr ? 'fr-FR' : 'en-GB', { weekday: 'short' }) : '';
@@ -5106,7 +5136,7 @@ export default function Home() {
             // Baked and not rated: the row's action is the rating (20 Nov 2026 round 6, Thomas).
             const text = [day && day[0].toUpperCase() + day.slice(1), name, row.rate ? (fr ? 'Noter' : 'Rate') : row.label].filter(Boolean).join(' · ');
             // The name and step may shorten; the time never does (320–390 px, 18 Nov 2026 retention round 4).
-            return <button key={row.entry.id} type="button" data-live-bake={row.entry.id} aria-label={`${text} ${when} →`}
+            return <button key={row.entry.id} type="button" data-live-bake={row.entry.id} data-live-jar={row.jarWith?.length ? row.jarWith.map(entry => entry.id).join(' ') : undefined} aria-label={`${text} ${when} →`}
               style={index === 0 ? {...NEXT_CTA, minHeight: 48, display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', minWidth: 0, textAlign: 'left'} : {...SECONDARY_CTA, minHeight: 48, display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', minWidth: 0, textAlign: 'left'}}
               data-live-rate={row.rate ? true : undefined}
               onClick={() => {
@@ -5656,7 +5686,7 @@ export default function Home() {
 
                           <RecipeOutput
                             mixerConfirmed={confirmed('mixer',mixerType)}
-                            starterEvents={starterEvents} mixingTime={startTime}
+                            starterEvents={guideStarterEvents} sharedStarterFeed={sharedFeedNote} mixingTime={startTime}
                             
                             styleKey={styleKey ?? undefined}
                             waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixerCapacityG={customMixerCapacityG} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches}
@@ -6305,7 +6335,7 @@ export default function Home() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                           <RecipeOutput
                             mixerConfirmed={confirmed('mixer',mixerType)}
-                            starterEvents={starterEvents} mixingTime={startTime}
+                            starterEvents={guideStarterEvents} sharedStarterFeed={sharedFeedNote} mixingTime={startTime}
                             
                             styleKey={styleKey ?? undefined}
                             waterSource={waterSource} onWaterSourceChange={value=>{setWaterSource(value);setMeasuredWaterTemp(undefined);}} measuredWaterTemp={measuredWaterTemp} onMeasuredWaterTempChange={setMeasuredWaterTemp} waterMethod={waterMethod} onWaterMethodChange={setWaterMethod} spiralIceConfirmed={spiralIceConfirmed} onSpiralIceConfirmedChange={setSpiralIceConfirmed} mixerCapacityG={customMixerCapacityG} mixingBatches={mixingBatches} onMixingBatchesChange={setMixingBatches}

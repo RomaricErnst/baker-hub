@@ -115,8 +115,18 @@ test('About: Reading your plan matches the readiness strip and the peak format',
 test('About: the baguette apprêt bound and one jar for two bakes are the engine\'s',()=>{
   // A shaped baguette: 1.5 h at 24 °C through the yeast model's activity (preheat 0: hours to the bake).
   for(const [T,h] of [[20,2],[18,2.5],[16,3]])a.equal(utils.styleMaxFinalProofHours('baguette',T,true,false,0),h,`${T} °C`);
-  a.ok(en.includes('1½ hours at 24 °C')&&en.includes('about 2 hours to the bake at 20 °C, 2½ at 18 °C, 3 at 16 °C'));
-  a.ok(fr.includes('1 h 30 à 24 °C')&&fr.includes('environ 2 heures jusqu’à la cuisson à 20 °C, 2 h 30 à 18 °C, 3 heures à 16 °C'));
+  a.ok(en.includes('1½ hours at 24 °C')&&en.includes('about 2 hours at 20 °C, 2½ at 18 °C, 3 at 16 °C'));
+  a.ok(fr.includes('1 h 30 à 24 °C')&&fr.includes('environ 2 heures à 20 °C, 2 h 30 à 18 °C, 3 heures à 16 °C'));
+  // Round 8 (M3): the 2 h is the apprêt. The plan takes shaped pieces out 45 min before it (2 h 45 to the bake at
+  // 20 °C), and dough chilled before shaping rests 1 h out of the fridge before it: the sentence says both.
+  const H=3600000,bake=new Date(2026,10,28,12,0);
+  const split=utils.buildSchedule(new Date(2026,10,27,12,0),bake,[],20,45,'hand','baguette',4,1);
+  a.ok(split.coldRetard2Start&&split.rtWarmupStart,'a long plan shapes in the fridge');
+  a.equal((+split.bakeStart-+split.finalProofStart)/H,2);a.equal((+split.bakeStart-+split.coldRetardEnd)/H,2.75);
+  const bulk=utils.buildSchedule(new Date(2026,10,27,22,0),bake,[],20,45,'hand','baguette',4,1);
+  a.ok(!bulk.coldRetard2Start);a.equal(bulk.restRtHours,1);a.equal((+bulk.bakeStart-+bulk.finalProofStart)/H,2);
+  a.ok(en.includes('Shaped pieces kept in the fridge first take 45 minutes to lose its chill, so they come out about 2¾ hours before the bake at 20 °C; dough chilled before shaping rests an hour out of the fridge, then is shaped.'));
+  a.ok(fr.includes('perdent d’abord leur froid pendant 45 minutes : ils sortent environ 2 h 45 avant la cuisson à 20 °C ; une pâte mise au froid avant le façonnage repose une heure à la sortie'));
   // Shared feed: the later mix inside the earlier feed's ready window (mixNearPeak).
   const sh=read('app/utils/sharedStarter.ts');a.match(sh,/mixNearPeak/);
   a.ok(en.includes('One jar, two bakes')&&fr.includes('Un pot, deux fournées'));

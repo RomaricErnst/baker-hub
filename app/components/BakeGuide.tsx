@@ -20,6 +20,7 @@ import { MIXER_TYPES, isLevainStyle, AUTOLYSE_MIN, autolyseMinFor, preMixAutolys
 import LearnModal from './LearnModal';
 import { IconPreferment, IconStarter, IconMix, IconBulk, IconCold, IconDivide, IconProof, IconPreheat, IconBake } from './StepIcons';
 import { ovenBackTitle } from '../utils/sharedOven';
+import { starterStepShownTime } from '../utils/sharedStarter';
 import { toggleStepCompletion, guideStepSignatures, remapCompletedSteps, clockMark, type ClockStep } from '../utils/guideProgress';
 import { mixingBatchPlan, largeManualDough } from '../utils/mixingBatches';
 import PhaseSummary from './PhaseSummary';
@@ -1697,7 +1698,7 @@ Actual dough condition and equipment may differ from these estimates.`;
         const own = starterBuild(bgSdMid, feedMaximum, eventRatio);
         const eventSeed = shared?.seed ?? own.seed, eventPart = shared?.flour ?? own.flour;
         const title = feeding ? starterFeedLabelFor(event, starterEvents ?? [], l === 'fr')! : event.kind === 'fridge_in' ? (l === 'fr' ? 'Réfrigérer le levain' : 'Refrigerate your starter') : (l === 'fr' ? 'Sortir le levain du réfrigérateur' : 'Take starter out of the fridge');
-        return <StepCard key={`${event.kind}-${index}`} number={n()} {...sc(false,'preparation',false,feeding?event:undefined)} icon={<IconStarter />} title={title} time={event.time} accent="#6A7FA8">
+        return <StepCard key={`${event.kind}-${index}`} number={n()} {...sc(false,'preparation',false,feeding?event:undefined)} icon={<IconStarter />} title={title} time={starterStepShownTime(event)} accent="#6A7FA8">
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             <Steps items={feeding ? [
               ...(shared ? [{bold: shared.line, note: ''}] : []),

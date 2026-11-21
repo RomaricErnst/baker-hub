@@ -9,6 +9,7 @@ import { useState, useMemo, useEffect, useRef, useId, useCallback } from 'react'
 import { useTranslations, useLocale } from 'next-intl';
 import { computePreMixStretchFactor, computeStarterPeakMs, mixNearPeak, planIntermediateFeeds, preMixRiseH, restStretchFactor } from '../utils/starterPeak';
 import { peakAround, peakNote } from '../utils/peakTime';
+import { starterStepShownTime } from '../utils/sharedStarter';
 import { type AvailabilityBlock, type ScheduleResult, starterBulkFactor as starterBulkFactorFor, raisedStarterPcts, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationWindowForYeast, fermentationBudget, sourdoughBulkH, bakeFromFridgeOption, shortWarmupOption, BAKE_FROM_FRIDGE_STYLES } from '../utils';
 import { formatDuration } from '../utils/duration';
 import { earliestQuarterStart, quarterStartNoEarlier } from '../utils/startNotice';
@@ -8934,8 +8935,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           for (const ev of displayStarterEvents) {
             if (ev.kind === 'last_fed' && (lastFedAssumed || ev.assumed)) continue;
             const isHist = ev.isPast && !ev.isActive;
+            // Fridge steps on the quarter-hour grid (round 8, S8; display only, the event time is unchanged).
             const timeText = ev.kind === 'fridge_out'
-              ? fmtCardDT(ev.time, isFr)
+              ? fmtCardDT(starterStepShownTime(ev), isFr)
               : ev.cardTimeFormat === 'relative'
                 ? (() => {
                     const fifteen = 15 * 60 * 1000;
@@ -8944,7 +8946,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
                   })()
                 : ev.timeIsEstimate && ev.isPast
                   ? dayOnly(ev.time)
-                  : `${ev.timeIsEstimate ? '≈ ' : ''}${fmtCardDT(ev.time, isFr)}`;
+                  : `${ev.timeIsEstimate ? '≈ ' : ''}${fmtCardDT(starterStepShownTime(ev), isFr)}`;
             const isCold = ev.kind === 'fridge_out' || ev.kind === 'fridge_in';
             rows.push({
               id: `ev:${displayStarterEvents.indexOf(ev)}`,
