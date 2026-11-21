@@ -15,7 +15,7 @@ function forward(type,inFridge,T,hours,cond={}){
 }
 
 test('the window read back from a dose is the window that dosed it (poolish room/fridge, biga)',()=>{
- const cases=[['poolish',false,[18,20,22,24],[6,8,10,12,14]],['poolish',true,[20,24,28],[12,16,20,24]],['biga',true,[18,22,26,30],[12,18,24,48,72]]];
+ const cases=[['poolish',false,[18,20,22,24],[6,8,10,12,14]],['poolish',true,[20,24,28],[12,16,20,24]],['biga',true,[18,22,26,30],[24,30,48,58]],['biga',false,[16,18,20],[12,16,20]]];
  let checked=0;
  for(const [type,inFridge,temps,windows] of cases)for(const T of temps)for(const h of windows){
   const {dose,ctx}=forward(type,inFridge,T,h,inFridge&&type==='poolish'?{warmupH:1.5}:{});
@@ -28,7 +28,8 @@ test('the window read back from a dose is the window that dosed it (poolish room
 });
 
 test('entered amount -> timing -> the recipe shows the same amount on that window',()=>{
- for(const [type,inFridge,T,pct] of [['poolish',false,20,0.1],['poolish',true,22,0.3],['biga',true,20,0.5],['biga',true,24,0.5]]){
+ // S5 (round 8): the fridge biga's one window is 24–58 h, so 24 °C takes 0.4 % (0.5 % ripens in 20.6 h there).
+ for(const [type,inFridge,T,pct] of [['poolish',false,20,0.1],['poolish',true,22,0.3],['biga',true,20,0.5],['biga',true,24,0.4]]){
   const ctx={kitchenTemp:T,fridgeTemp:6,massG:type==='biga'?560:500,...(inFridge?{warmupH:type==='poolish'?1.5:0}:{cooldownH:0})};
   const timing=py.prefermentYeastTiming(type,pct,inFridge,ctx);
   assert.ok(timing,`${type} ${pct} % at ${T} °C has a window`);
@@ -66,14 +67,15 @@ test('more preferment yeast, a shorter preferment; outside the bounds it does no
  // A window that holds the amount but not before the mix: the time is the reason.
  const late=py.choosePrefermentYeastTiming('poolish',0.1,[false],ctx,2);
  assert.equal(late.fits,false);assert.equal(late.reason,'time');
- // Storage: a fixed storage is the only one; auto tries the planner's first, a biga is always cold.
+ // Storage: a fixed storage is the only one; auto tries the planner's first. A biga: the fridge, its cool spot
+ // only where offered ('room' is the cool spot for a biga, round 8 D1).
  assert.deepEqual(py.prefermentYeastStorages('poolish','room',true),[false]);
  assert.deepEqual(py.prefermentYeastStorages('poolish','auto',true),[true,false]);
  assert.deepEqual(py.prefermentYeastStorages('poolish','auto',false),[false,true]);
- assert.deepEqual(py.prefermentYeastStorages('biga','room',false),[true]);
+ assert.deepEqual(py.prefermentYeastStorages('biga','auto',false),[true]);assert.deepEqual(py.prefermentYeastStorages('biga','room',false),[false]);
  assert.deepEqual(py.prefermentYeastBounds('poolish',false),{min:6,max:14});
  assert.deepEqual(py.prefermentYeastBounds('poolish',true),{min:12,max:24});
- assert.deepEqual(py.prefermentYeastBounds('biga',true),{min:12,max:72});
+ assert.deepEqual(py.prefermentYeastBounds('biga',true),{min:24,max:58});assert.deepEqual(py.prefermentYeastBounds('biga',false),{min:12,max:20});
 });
 
 const recipe=(hours,prefHours,o={})=>utils.calculateRecipe('neapolitan','home_oven_standard',4,260,o.T??22,'normal',

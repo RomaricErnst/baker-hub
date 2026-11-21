@@ -88,6 +88,15 @@ test('About: schedule and preferment limits are the planner\'s',()=>{
   const {commercialPrefermentWindow}=require('../app/components/SchedulePicker.tsx');
   const w=(t,f,T)=>commercialPrefermentWindow(t,f,T,'neapolitan',6);
   a.deepEqual(w('poolish',true,22),{min:8,max:24});a.deepEqual(w('biga',true,22),{min:24,max:58});
+  // One biga window per storage everywhere (S5, round 8): the planner's, the entered yeast's and About's.
+  a.deepEqual(w('biga',false,18),{min:12,max:20});
+  const py=require('../app/utils/prefermentYeast.ts');
+  a.deepEqual(py.prefermentYeastBounds('biga',true),{min:24,max:58});a.deepEqual(py.prefermentYeastBounds('biga',false),{min:12,max:20});
+  a.equal(data.BIGA_COOL_C,18);a.equal(data.BIGA_COOL_OFFER_MAX_KITCHEN_C,20);
+  for(const s of ['aimed at 48 hours, from 24 to 58','about 18 °C','aimed at 16 hours, from 12 to 20','at 20 °C or cooler'])a.ok(en.includes(s),s);
+  const ym=read(`${aboutDir}/yeastModelSection.tsx`);a.ok(ym.includes('24–58 h in the fridge or 12–20 h in a cool spot for a biga')&&ym.includes('entre 24 et 58 h au frigo ou 12 et 20 h dans un endroit frais pour une biga'));a.doesNotMatch(ym,/12–72|12 et 72 h/);
+  for(const s of ['visée à 48 heures, de 24 à 58','vers 18 °C','visée à 16 heures, de 12 à 20','à 20 °C ou moins'])a.ok(fr.includes(s),s);
+  a.doesNotMatch(about,/12–72|12 et 72|never beyond 72|jamais au-delà de 72|always in the fridge|toujours au frigo/);
   a.equal(w('poolish',false,22).max,13);
   const {getPrefPeakH_RT}=require('../app/components/FermentChart.tsx');
   for(const [T,h] of [[22,11],[24,9],[26,7],[28,5],[30,4],[32,3]])a.equal(getPrefPeakH_RT('poolish',T,'neapolitan'),h);

@@ -2,10 +2,12 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),fs=requir
 const source=fs.readFileSync('app/[locale]/page.tsx','utf8');
 const tree=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 function fn(name){let found;function visit(n){if(ts.isFunctionDeclaration(n)&&n.name?.text===name)found=n.getText(tree);ts.forEachChild(n,visit);}visit(tree);assert.ok(found);return ts.transpileModule(found,{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;}
-function setup(){const state={execution:undefined,mixExecution:undefined,completedMixAt:undefined,sessionRestored:true,prefermentType:'biga',yeastType:'instant',prefermentValidity:{type:'biga',valid:true}};// Round 7: a method change also clears the dough's entered yeast and any unapplied entry note.
- for(const key of ['sessionRestored','prefermentType','yeastType','prefermentValidity','prefermentChosen','prefermentFlourPct','yeastPctOverride','yeastEntryIssue','prefYeastIssue'])state['set'+key[0].toUpperCase()+key.slice(1)]=v=>state[key]=v;vm.createContext(state);vm.runInContext(fn('choosePreferment')+fn('chooseYeast'),state);return state;}
+function setup(){const state={bigaStorage:'auto',prefGoesInFridgeState:true,execution:undefined,mixExecution:undefined,completedMixAt:undefined,sessionRestored:true,prefermentType:'biga',yeastType:'instant',prefermentValidity:{type:'biga',valid:true}};// Round 7: a method change also clears the dough's entered yeast and any unapplied entry note.
+ for(const key of ['sessionRestored','prefermentType','yeastType','prefermentValidity','prefermentChosen','prefermentFlourPct','yeastPctOverride','yeastEntryIssue','prefYeastIssue','prefGoesInFridgeState'])state['set'+key[0].toUpperCase()+key.slice(1)]=v=>state[key]=v;vm.createContext(state);vm.runInContext(fn('choosePreferment')+fn('chooseYeast'),state);return state;}
 test('method round trip cannot reuse a saved plan or previous approval',()=>{
- const state=setup();vm.runInContext("choosePreferment('poolish'); choosePreferment('biga');",state);
+ const state=setup();vm.runInContext("choosePreferment('poolish'); state_room(); choosePreferment('biga');".replace('state_room();','prefGoesInFridgeState=false;'),state);
+ // A biga starts in the fridge again, never in the poolish's room storage (round 8, D1).
+ assert.equal(state.prefGoesInFridgeState,true);
  assert.equal(state.sessionRestored,false);assert.equal(state.prefermentValidity.type,'biga');assert.equal(state.prefermentValidity.valid,false);
 });
 test('same method preserves resume; yeast transitions revoke it',()=>{

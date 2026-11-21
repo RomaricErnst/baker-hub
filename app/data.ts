@@ -921,6 +921,45 @@ const YEAST_MIN_PCT_PREF = 0.05;
 /** Same product ceiling as a direct dough (utils.ts): a short fridge biga would otherwise ask for 2–3 %. */
 const YEAST_MAX_PCT_PREF = 1.5;
 
+// ── Biga storage (21 Nov 2026, owner decision D1) ─────────────────────────────
+// A biga ripens either in the fridge (the planner's long biga) or at a cool room
+// temperature: Giorilli's classic biga, codified in Italian professional teaching —
+// 16 h at 18–20 °C with ~1 % fresh yeast on the biga flour and 44–45 % water
+// (dissapore.com "Cos'è la biga", citing Giorilli; Zaghini, scattidigusto.it
+// "Le 10 regole per preparare la biga vincente": short biga 16 h, ideal maturation
+// 18–19 °C, long biga 24 h at 4 °C + 24 h at 18–20 °C with the same 1 % yeast).
+// The app models the cool spot at 18 °C (or the kitchen when it is cooler) and
+// allows 12–20 h around the classic 16 h; the yeast model doses it with the biga
+// medium M on that path. One window per storage, used by the planner, an entered
+// biga yeast, the recipe and every text (S5): fridge 24–58 h aimed at 48 (the
+// planner's band since the fridge biga was introduced: Modernist Pizza's 24–48 h
+// standard + its 10 h plateau), cool spot 12–20 h aimed at 16.
+export type BigaStorage = 'auto' | 'fridge' | 'cool';
+export const BIGA_COOL_C = 18;
+/** In 'auto', the cool spot is considered only in a kitchen this cool or cooler (°C). */
+export const BIGA_COOL_OFFER_MAX_KITCHEN_C = 20;
+export const BIGA_WINDOWS = {
+  fridge: { min: 24, max: 58, aim: 48 },
+  cool: { min: 12, max: 20, aim: 16 },
+} as const;
+export function bigaWindow(inFridge: boolean): { min: number; max: number; aim: number } {
+  return inFridge ? BIGA_WINDOWS.fridge : BIGA_WINDOWS.cool;
+}
+/** The temperature a cool-spot biga sits at: 18 °C, or the kitchen when it is cooler. */
+export function bigaCoolTempC(kitchenTemp: number): number {
+  return Math.min(kitchenTemp, BIGA_COOL_C);
+}
+/** Whether the planner may put the biga in a cool spot: the baker chose it, or 'auto' in a cool kitchen. */
+export function bigaCoolOffered(storage: BigaStorage | undefined, kitchenTemp: number): boolean {
+  return storage === 'cool' || ((storage ?? 'auto') === 'auto' && kitchenTemp <= BIGA_COOL_OFFER_MAX_KITCHEN_C);
+}
+/** The professional bigas (Giorilli, Zaghini, Modernist) carry about twice the yeast the fitted biga
+ * medium asks for a ripe biga at the mix (docs/YEAST-MODEL.md §8.5: professional-only M_b 3.2 against
+ * the fitted 1.55), and Zaghini uses the same 1 % for a 16 h and a 48 h biga: a stiff biga holds.
+ * An entered cool-spot biga yeast is therefore ready from the window where it ripens to the one where
+ * it is 3.2 / 1.55 of the model's need. */
+export const BIGA_COOL_HOLD = 3.2 / 1.55;
+
 /** A preferment's temperature path: made at the kitchen temperature, then either
  * at room temperature (chilled for `cooldownH` before the mix in a warm kitchen)
  * or in the fridge (out for `warmupH` before the mix). */
@@ -977,7 +1016,8 @@ export function computePrefermentRecipe(
   // Climate-aware preferment yeast calibrated to the preferment's own fermentation window
   const effectiveKT = kitchenTemp ?? 22;
   const effectiveFT = fridgeTemp ?? 4;
-  const isInFridge = prefermentType === 'biga' || (prefGoesInFridge ?? false);
+  // A biga is in the fridge unless the plan put it in a cool spot (prefGoesInFridge false, D1).
+  const isInFridge = prefermentType === 'biga' ? (prefGoesInFridge ?? true) : (prefGoesInFridge ?? false);
 
   // Calibrate yeast to the baker's ACTUAL planned window when the scheduler
   // provides it — a 20h biga needs more yeast than a 48h one. Falls back to
@@ -985,9 +1025,10 @@ export function computePrefermentRecipe(
   // dragged/degenerate offset can't produce absurd yeast amounts.
   let prefFermentH: number;
   if (prefermentType === 'biga') {
+    const w = bigaWindow(isInFridge);
     prefFermentH = actualFermentH !== undefined && actualFermentH > 0
-      ? Math.max(12, Math.min(72, actualFermentH))
-      : 48;
+      ? Math.max(w.min, Math.min(w.max, actualFermentH))
+      : w.aim;
   } else if (isInFridge) {
     prefFermentH = actualFermentH !== undefined && actualFermentH > 0
       ? Math.max(6, Math.min(24, actualFermentH))
@@ -1013,7 +1054,9 @@ export function computePrefermentRecipe(
   // (docs/YEAST-MODEL.md). It replaced ÷3.1 / ×1.65 / ×2.2 on Craig's laws.
   const medium = prefermentType === 'biga' ? 'biga' as const : 'poolish' as const;
   const prefHydPct = p.hydration;
-  const path = prefermentPath(prefFermentH, isInFridge, effectiveKT, effectiveFT, prefFlour + prefWater, prefHydPct, conditioning);
+  // A cool-spot biga sits at bigaCoolTempC (D1); every other room preferment at the kitchen temperature.
+  const pathKT = prefermentType === 'biga' && !isInFridge ? bigaCoolTempC(effectiveKT) : effectiveKT;
+  const path = prefermentPath(prefFermentH, isInFridge, pathKT, effectiveFT, prefFlour + prefWater, prefHydPct, prefermentType === 'biga' && !isInFridge ? {} : conditioning);
   // A baker-entered amount is shown as entered: the planner timed the window by it (prefermentYeast.ts).
   const idyPct = idyPctOverride !== undefined && idyPctOverride > 0 ? idyPctOverride
     : Math.min(YEAST_MAX_PCT_PREF, Math.max(YEAST_MIN_PCT_PREF, doseForHeq(path.heq, medium)));
@@ -1048,12 +1091,15 @@ export function computePrefermentRecipe(
   const fermentHoursMin = prefFermentH;
   const fermentHoursMax = prefFermentH;
 
+  const coolBiga = prefermentType === 'biga' && !cold;
   const schedule = cold
     ? `Ferment for ${prefFermentH}h in the fridge at ${effectiveFT}°C before mixing the final dough.`
+    : coolBiga ? `Ferment for ${prefFermentH}h in a cool spot at about ${pathKT}°C before mixing the final dough.`
     : `Ferment for ${prefFermentH}h at room temperature before mixing the final dough.`;
 
   const scheduleFr = cold
     ? `Laissez fermenter ${prefFermentH}h au réfrigérateur à ${effectiveFT}°C avant de pétrir la pâte finale.`
+    : coolBiga ? `Laissez fermenter ${prefFermentH}h dans un endroit frais, vers ${pathKT}°C, avant de pétrir la pâte finale.`
     : `Laissez fermenter ${prefFermentH}h à température ambiante avant de pétrir la pâte finale.`;
 
   return {

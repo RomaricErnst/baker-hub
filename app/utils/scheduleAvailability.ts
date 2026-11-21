@@ -53,6 +53,20 @@ export function isOvernightPreparation(action:AvailabilityAction):boolean {
   return atNight(action.at)||Boolean(action.end&&atNight(new Date(+action.end-1)));
 }
 
+/** Hands-on steps that fall in the night (22:00–07:00 local) and that the baker did not declare free for
+ * (round 7 owner rule D4, as utils.ts nightActionIds): free means they entered their own night (a ' night'
+ * block) and the step is outside every busy time. Used to keep a planner-chosen cool-spot biga (round 8 D1)
+ * from adding night steps. */
+export function newNightHandsOn(actions:AvailabilityAction[],blocks:AvailabilityPeriod[]):AvailabilityAction[] {
+  const ownNight=blocks.some(block=>block.label?.endsWith(' night'));
+  const free=(at:number)=>ownNight&&!blocks.some(block=>at>+block.from&&at<+block.to);
+  return actions.filter(action=>{
+    if(action.id==='bake')return false;
+    const h=action.at.getHours();
+    return (h>=22||h<7)&&!free(+action.at);
+  });
+}
+
 export function planActions(dough:AvailabilityAction[],method:AvailabilityAction[],completedMixAt?:number):AvailabilityAction[] {
   const seen=new Set<string>();
   return [...dough,...method].filter(action=>{

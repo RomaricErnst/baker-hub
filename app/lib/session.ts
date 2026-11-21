@@ -132,6 +132,8 @@ export interface SessionData {
   prefGoesInFridge?: boolean;
   /** Custom poolish storage chosen by the baker; absent means the planner chooses. */
   poolishStorage?: 'auto' | 'fridge' | 'room';
+  /** Custom biga storage (21 Nov 2026, D1): 'cool' = a cool spot at about 18 °C; absent means 'auto' (fridge, cool spot only when no fridge plan fits). */
+  bigaStorage?: 'auto' | 'fridge' | 'cool';
   /** Custom: baker's IDY % of flour for the (final) dough; the plan is timed to it (a poolish or biga's final dough too, round 7). */
   yeastPctOverride?: number;
   /** Custom poolish/biga: baker's preferment yeast, IDY % of the preferment flour; its window is timed to it (round 7). */

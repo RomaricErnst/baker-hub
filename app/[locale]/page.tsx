@@ -44,7 +44,7 @@ import { sharedStarterFeedFor, sharedFeedLine, starterEventsWithSharedFeed, save
 import { scalePicks, allPicksBaked } from '../utils/pizzaPicks';
 import { bakeTitleName } from '../utils/bakeTitle';
 import { journalTitle } from '../components/BakeJournal';
-import {commercialPrefermentWindow, validateConfirmedBake, STYLE_FERM_DEFAULTS, type StarterEvent } from '../components/SchedulePicker';
+import {commercialPrefermentWindow, earliestPrefermentBake, validateConfirmedBake, STYLE_FERM_DEFAULTS, type StarterEvent } from '../components/SchedulePicker';
 import { prefermentConditioningAction } from '../utils/scheduleEdit';
 import { findAvailabilityConflicts, planActions, isTimeBlocked, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake } from '../utils/scheduleAvailability';
 import { retainCurrentFridgeRemoval } from '../utils/fridgeRemovalSession';
@@ -87,7 +87,7 @@ import { formatDuration } from '../utils/duration';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
   PIZZA_STYLES, BREAD_STYLES, FLOUR_DATA,
-  computeBlendProfile, isLevainStyle, STYLE_DEFAULT_BLENDS, isStyleDefaultBlend, recipeFlourStrength,
+  computeBlendProfile, isLevainStyle, STYLE_DEFAULT_BLENDS, isStyleDefaultBlend, recipeFlourStrength, bigaCoolOffered, BIGA_WINDOWS, type BigaStorage,
   type BakeType, type StyleKey, type OvenType, type BreadOvenType, type AnyOvenType, type MixerType, type YeastType, type FlourBlend, type PrefermentType,
 } from '../data';
 import {
@@ -1151,6 +1151,8 @@ export default function Home() {
   // Driven by SchedulePicker algo result — single source of truth for fridge/RT decision
   const [prefGoesInFridgeState, setPrefGoesInFridgeState] = useState<boolean>(true);
   const [poolishStorage, setPoolishStorage] = useState<'auto'|'fridge'|'room'>('auto');
+  // Biga storage (D1, 21 Nov 2026): 'auto' keeps the fridge, a cool spot only when no fridge plan fits (kitchen ≤ 20 °C).
+  const [bigaStorage, setBigaStorage] = useState<BigaStorage>('auto');
 
   const [manualHydration, setManualHydration] = useState<number | undefined>(undefined);
   const [manualOil, setManualOil]             = useState<number | undefined>(undefined);
@@ -1701,6 +1703,7 @@ export default function Home() {
     setPrefOffsetH(session.prefOffsetH);
     setPrefGoesInFridgeState(session.prefGoesInFridge ?? true);
     setPoolishStorage(session.poolishStorage ?? 'auto');
+    setBigaStorage(session.bigaStorage ?? 'auto');
     setTimingOverrides(normalizeTimingOverrides(session.timingOverrides));
     setStarterRecoveryPending(session.starterRecoveryPending===true);setStarterFeedRecords(normalizeStarterFeedRecords(session.starterFeedRecords));setExecution(normalizeBakeExecution(session.execution));setMixExecution(normalizeMixExecution(session.mixExecution));setReplanRequested(false);
     setManualHydration(session.manualHydration);
@@ -2065,7 +2068,7 @@ export default function Home() {
   };
   const prefYeastFit = (type: FlourPreferment, pct: number, availableH = Infinity) => {
     // prefGoesInFridge is declared further down (a TDZ here): its own rule, from the same state.
-    const storages = prefermentYeastStorages(type, type === 'poolish' ? poolishStorage : 'auto', type === 'biga' || prefGoesInFridgeState);
+    const storages = prefermentYeastStorages(type, type === 'poolish' ? poolishStorage : bigaStorage === 'cool' ? 'room' : bigaStorage, type === 'biga' || prefGoesInFridgeState, bigaCoolOffered(bigaStorage, kitchenTemp));
     // Each storage reads its own path (warm-up after the fridge, or a chill before the mix).
     for (const inFridge of storages) { const fit = choosePrefermentYeastTiming(type, pct, [inFridge], prefYeastCtx(type, inFridge), availableH); if (fit.fits) return fit; }
     return choosePrefermentYeastTiming(type, pct, storages, prefYeastCtx(type, storages[0]), availableH);
@@ -2182,7 +2185,8 @@ export default function Home() {
   const prefGoesInFridge = !prefermentType || prefermentType === 'none' || prefermentType === 'levain'
     ? false
     : prefermentType === 'biga'
-      ? true
+      // The fridge unless the baker chose the cool spot or the plan put it there (D1).
+      ? bigaStorage === 'cool' ? false : bigaStorage === 'fridge' ? true : prefGoesInFridgeState
       : prefGoesInFridgeState;
 
   // Explicitly accepted proposals must survive the scheduler's bake-key remount.
@@ -2529,7 +2533,7 @@ export default function Home() {
       qtyChosen, flourChosen, prefermentChosen, customKitchenConfirmed, confirmedSettings,
       manualHydration, manualOil, manualSugar, manualSalt, yeastPctOverride, prefYeastOverride, starterPctOverride, autoStarterPct,
       targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct: wasteAllowance, addSeeds, priorityOverride,
-      prefGoesInFridge, poolishStorage,
+      prefGoesInFridge, poolishStorage, bigaStorage,
       startTime: startTime?.getTime() ?? null,
       eatTime: eatTime?.getTime() ?? null,
       blocks: blocks.map(b => ({ label: b.label, from: b.from.getTime(), to: b.to.getTime(), ...(b.coveredActions?.length?{coveredActions:b.coveredActions}:{}), ...(b.fridgeRemoval ? {fridgeRemoval:b.fridgeRemoval} : {}), ...(b.bakeFromFridge ? {bakeFromFridge:b.bakeFromFridge} : {}), ...(b.shortWarmup ? {shortWarmup:b.shortWarmup} : {}) })),
@@ -3465,19 +3469,42 @@ export default function Home() {
       setYeastPctOverride(undefined);setYeastEntryIssue(null);setPrefYeastIssue(null);
     }
     setPrefermentChosen(true);
+    // A biga starts in the fridge (or the cool spot the baker chose), never in a poolish's room storage.
+    if (pt === 'biga' && pt !== prefermentType) setPrefGoesInFridgeState(bigaStorage !== 'cool');
     setPrefermentType(pt);
   }
 
   // Whether the chosen poolish or biga can still be ready before the bake (see the Preferment step).
-  function prefermentTooClose(){
+  // The storages a preferment may use here: a poolish either (as before); a biga its fridge, and its cool spot per D1.
+  const prefStoragesFor=(type:'biga'|'poolish'):boolean[]=>type==='biga'
+    ?(bigaStorage==='cool'?[false]:bigaStorage==='fridge'||!bigaCoolOffered(bigaStorage,kitchenTemp)?[true]:[true,false])
+    :[true,false];
+  const prefermentTooCloseBase=(()=>{
     if(!eatTime||execution||mixExecution||(prefermentType!=='biga'&&prefermentType!=='poolish'))return null;
     const finalLeadH=(kitchenTemp>=28?0.5:1.5)+1+planPreheatMin/60;
-    const needH=(type:'biga'|'poolish')=>Math.min(...[true,false].map(f=>commercialPrefermentWindow(type,f,kitchenTemp,styleKey??'',fridgeTemp)?.min??Infinity))+finalLeadH;
+    const needH=(type:'biga'|'poolish')=>Math.min(...prefStoragesFor(type).map(f=>commercialPrefermentWindow(type,f,kitchenTemp,styleKey??'',fridgeTemp)?.min??Infinity))+finalLeadH;
     const leftH=(+eatTime-Date.now())/3600000;
     if(leftH>=needH(prefermentType))return null;
+    return {needH,leftH,naiveH:needH(prefermentType)};
+  })();
+  // The later bake offered with "Keep the biga and bake …" is one the planner finds a complete plan for
+  // (bug 4, round 8: now + window minimum + a nominal final rise was offered, and its plan did not exist).
+  const tooCloseKey=prefermentTooCloseBase?JSON.stringify([prefermentType,Math.round(prefermentTooCloseBase.naiveH*4),kitchenTemp,fridgeTemp,styleKey,planPreheatMin,exitLeadMin,mixerType,numItems,selectedMixingBatches,bigaStorage,blocks.map(b=>[+b.from,+b.to]),flourStrength,prefermentFlourPct,Math.floor(Date.now()/900000)]):null;
+  const tooCloseLater=React.useMemo(()=>{
+    if(!prefermentTooCloseBase||!styleKey||(prefermentType!=='biga'&&prefermentType!=='poolish'))return null;
+    const now=Date.now();
+    return earliestPrefermentBake({...poolishInputs,type:prefermentType,storages:prefStoragesFor(prefermentType),from:new Date(now+prefermentTooCloseBase.naiveH*3600000),now,blocks,kitchenTemp,fridgeTemp,styleKey,flourStrength,
+      preheatMin:planPreheatMin,exitLeadMin,mixerType:(mixerType??'hand') as MixerType,numItems,mixingBatches:selectedMixingBatches});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[tooCloseKey]);
+  function prefermentTooClose(){
+    if(!prefermentTooCloseBase)return null;
+    const {needH,leftH}=prefermentTooCloseBase;
     const poolishFits=prefermentType==='biga'&&leftH>=needH('poolish')&&!(breadProtocol&&!breadProtocol.supportedPreferments.includes('poolish'));
-    const later=new Date(Math.ceil((Date.now()+needH(prefermentType)*3600000)/900000)*900000);
-    return {needH,leftH,poolishFits,later};
+    const later=tooCloseLater?.bake??null;
+    // The hours stated are the ones the plan needs when a later bake is found.
+    const shownH=(type:'biga'|'poolish')=>type===prefermentType&&later?(+later-Date.now())/3600000:needH(type);
+    return {needH:shownH,leftH,poolishFits,later};
   }
 
   function chooseYeast(yt: YeastType) {
@@ -3666,7 +3693,7 @@ export default function Home() {
     setShowResults(false); setActiveStep(1); setHighestStep(1);
     setAdvancedStep(1); setAdvancedHighestStep(1); setFlourBlend({ flour1: bakeType === 'bread' ? 'bread' : 'pizza00', flour2: null, ratio1: 100 }); setPriorityOverride(undefined); setPrefermentType('none');
     setManualHydration(undefined); setManualOil(undefined); setManualSugar(undefined);
-    setManualSalt(undefined); setTargetDoughTemp(undefined); setWastePct(undefined); setFlourInFridge(false); setPoolishStorage('auto'); setYeastPctOverride(undefined); setStarterPctOverride(undefined); setMeasuredFlourTemp(undefined); setMeasuredPrefermentTemp(undefined); setPrefermentFlourPct(undefined);
+    setManualSalt(undefined); setTargetDoughTemp(undefined); setWastePct(undefined); setFlourInFridge(false); setPoolishStorage('auto'); setBigaStorage('auto'); setYeastPctOverride(undefined); setStarterPctOverride(undefined); setMeasuredFlourTemp(undefined); setMeasuredPrefermentTemp(undefined); setPrefermentFlourPct(undefined);
     setRecipeGenerated(false); setProtocolStale(false); setActiveTab('batch'); setAcceptedPlan(undefined); setCustomPlanSeen(false);
     setReviewMode(false); setSetupOverview(false);
     setModeChosen(false);
@@ -3987,6 +4014,7 @@ export default function Home() {
     setAddSeeds(snap.addSeeds ?? false);
     setPrefGoesInFridgeState(snap.prefGoesInFridge ?? true);
     setPoolishStorage(snap.poolishStorage ?? 'auto');
+    setBigaStorage(snap.bigaStorage ?? 'auto');
     setMeasuredFlourTemp(snap.measuredFlourTemp); setMeasuredPrefermentTemp(snap.measuredPrefermentTemp);
     // Bake again: the saved allowance, else 1.5 %; resuming a bake whose dough is recorded keeps what was weighed.
     setWastePct(restoredWastePct(snap.wastePct, !rb && (!!snap.execution || !!snap.mixExecution)));
@@ -4804,7 +4832,11 @@ export default function Home() {
 
   // A clash on a generated plan's times: the choice is in the card above; the bar is the way back to the
   // plan the recipe was made with (backToLastGoodPlan), never a disabled button (18 Nov 2026 retention).
-  const backToGoodPlanButton = <button data-bh-forward data-back-to-good-plan type="button" style={{...SECONDARY_CTA,width:'100%'}} onClick={backToLastGoodPlan}>{fr?'Retour à la recette':'Back to Recipe'}</button>;
+  // Going back restores the recipe as it was made: when that drops a preferment chosen since, the label says so (bug 4, round 8).
+  const goodPlanMethod = lastGoodPlanRef.current?.prefermentType;
+  const backDropsMethod = !!goodPlanMethod && goodPlanMethod !== prefermentType && (prefermentType==='biga'||prefermentType==='poolish');
+  const goodMethodName = goodPlanMethod==='biga'?(fr?'à la biga':'biga'):goodPlanMethod==='poolish'?(fr?'au poolish':'poolish'):goodPlanMethod==='levain'?(fr?'au levain':'levain'):(fr?'en pâte directe':'direct-dough');
+  const backToGoodPlanButton = <button data-bh-forward data-back-to-good-plan type="button" style={{...SECONDARY_CTA,width:'100%'}} onClick={backToLastGoodPlan}>{backDropsMethod?(fr?`Retour à la recette ${goodMethodName}`:`Back to the ${goodMethodName} recipe`):(fr?'Retour à la recette':'Back to Recipe')}</button>;
   // ── Render ────────────────────────────────
   // One scheduler element: Custom levain shows its starter questions on the
   // Starter step and the plan on Bake time. Only one step is mounted at a time.
@@ -4815,7 +4847,7 @@ export default function Home() {
   const ovenShare = ovenOthers.length ? {others:ovenOthers, leadMin:preheatMin, busyMin:ovenBusyMinutes(bakeType,styleKey,numItems,ovenType), ovenType:ovenType ?? null} : undefined;
   const keepOvenAt = (bakeMs:number) => { ovenKept.current = bakeMs; };
   const renderSimpleScheduler = (extra?: {planInline?: {focus:'mix'|'pref';applyLabel:string;onClose:()=>void}}) => (
-              <SchedulePicker {...extra} inputsOnly={!extra?.planInline&&(collectingBakeTime||bakeTimeOnly)} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} prefYeastPctOverride={effectivePrefYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct} keptStarterPlan={starterFactsKept} holdStarterPct={starterFactsKept&&starterPctOverride===undefined&&autoStarterPct!=null}
+              <SchedulePicker {...extra} bigaStorage={bigaStorage} inputsOnly={!extra?.planInline&&(collectingBakeTime||bakeTimeOnly)} simpleStarterAnswer={simpleStarterAnswer} yeastPctOverride={effectiveYeastOverride} prefYeastPctOverride={effectivePrefYeastOverride} replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct} keptStarterPlan={starterFactsKept} holdStarterPct={starterFactsKept&&starterPctOverride===undefined&&autoStarterPct!=null}
                 {...poolishInputs} poolishPeakAtMix={poolishPeakAtMix}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wasteAllowance:0}
                 onEditQuantity={() => {setBatchView('quantity'); openDestination('batch'); scrollToStepTop();}}
@@ -4901,7 +4933,7 @@ export default function Home() {
                 decisionSheet={decisionSheet!==null&&tab==='custom'}
                 onDecisionSheetClose={()=>setDecisionSheet(null)}
                 enteredYeastShownPct={effectiveYeastOverride!==undefined&&yeastType?Math.round(effectiveYeastOverride*(YEAST_TYPES[yeastType]?.conversion??1)*1000)/1000:undefined}
-                poolishStorage={prefermentType==='poolish'?poolishStorage:'auto'}
+                poolishStorage={prefermentType==='poolish'?poolishStorage:'auto'} bigaStorage={bigaStorage}
                 yeastPctOverride={effectiveYeastOverride} prefYeastPctOverride={effectivePrefYeastOverride}
                 replanPending={planReplanPending} onReplanHandled={()=>setPlanReplanPending(false)} starterBulkFactor={levainBulkFactor} autoStarterPct={yeastType==='sourdough'&&starterPctOverride===undefined?autoStarterPct??null:null} onAutoStarterPctChange={handleAutoStarterPct} canRaiseStarterPct={canRaiseStarterPct} keptStarterPlan={starterFactsKept} holdStarterPct={starterFactsKept&&starterPctOverride===undefined&&autoStarterPct!=null}
                 mixerCapacityG={mixerCapacityG} itemWeight={itemWeight} wastePct={totalFlourTarget===undefined?wasteAllowance:0}
@@ -5001,6 +5033,7 @@ export default function Home() {
     const coldOut=recipePlanSteps.some(step=>step.key==='preferment-cold-out');
     const note=prefGoesInFridge
       ? (coldOut?(fr?'directement au réfrigérateur':'straight into the fridge'):(fr?'au réfrigérateur jusqu’au pétrissage':'keep it in the fridge until Start Dough'))
+      : prefermentType==='biga'?(fr?'dans un endroit frais (16–18 °C) jusqu’au pétrissage':'in a cool spot (16–18 °C) until Start Dough')
       : coldIn?(fr?`à température ambiante jusqu’à ${formatPlanClock(coldIn.at,locale)}`:`at room temperature until ${formatPlanClock(coldIn.at,locale)}`)
       : (fr?'à température ambiante jusqu’au pétrissage':'at room temperature until Start Dough');
     return {preferment:note};
@@ -6021,6 +6054,15 @@ export default function Home() {
                       return <button key={value} type="button" aria-pressed={active} onClick={()=>{if(value!==poolishStorage){setPoolishStorage(value);setPlanReplanPending(true);}}} style={{minHeight:44,padding:'9px 12px',display:'flex',flexDirection:'column',alignItems:'flex-start',gap:2,textAlign:'left',border:`1.5px solid ${active?'var(--terra)':'var(--border)'}`,borderRadius:9,background:active?'var(--warm)':'var(--paper)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:16,cursor:'pointer'}}><span>{label}</span>{note&&<span style={{fontSize:14,color:'var(--smoke)'}}>{note}</span>}</button>;
                     })}
                   </div>
+                </fieldset>,biga:<fieldset data-biga-storage style={{border:0,padding:0,margin:'16px 0 0'}}>
+                  <legend style={{fontSize:16,fontWeight:650,marginBottom:8}}>{fr?'Où la biga fermente':'Where the biga ferments'}</legend>
+                  <div style={{display:'grid',gap:7}}>
+                    {/* D1 (21 Nov 2026): the fridge biga, or Giorilli's classic biga in a cool spot. One window per storage (data.ts BIGA_WINDOWS). */}
+                    {([['auto',fr?'Au mieux pour mon planning':'Best for my timing',''],['fridge',fr?'Au réfrigérateur':'In the fridge',fr?`Plus longue, ${BIGA_WINDOWS.fridge.min} à ${BIGA_WINDOWS.fridge.max} h.`:`Longer, ${BIGA_WINDOWS.fridge.min} to ${BIGA_WINDOWS.fridge.max} h.`],['cool',fr?'Dans un endroit frais, 16–18 °C':'In a cool spot, 16–18 °C',fr?`La biga italienne classique, ${BIGA_WINDOWS.cool.min} à ${BIGA_WINDOWS.cool.max} h.`:`The classic Italian biga, ${BIGA_WINDOWS.cool.min} to ${BIGA_WINDOWS.cool.max} h.`]] as const).map(([value,label,note])=>{
+                      const active=bigaStorage===value;
+                      return <button key={value} type="button" data-biga-storage-option={value} aria-pressed={active} onClick={()=>{if(value!==bigaStorage){setBigaStorage(value);setPrefGoesInFridgeState(value!=='cool');setPlanReplanPending(true);}}} style={{minHeight:44,padding:'9px 12px',display:'flex',flexDirection:'column',alignItems:'flex-start',gap:2,textAlign:'left',border:`1.5px solid ${active?'var(--terra)':'var(--border)'}`,borderRadius:9,background:active?'var(--warm)':'var(--paper)',color:'var(--char)',fontFamily:'var(--font-ui)',fontSize:16,cursor:'pointer'}}><span>{label}</span>{note&&<span style={{fontSize:14,color:'var(--smoke)'}}>{note}</span>}</button>;
+                    })}
+                  </div>
                 </fieldset>}}
                 />
                 {prefermentChosen&&(()=>{
@@ -6037,7 +6079,7 @@ export default function Home() {
                     <p style={{margin:0,fontSize:15,lineHeight:1.5}}>{fr?`${prefermentType==='biga'?'Une biga':'Un poolish'} demande environ ${hours(needH(prefermentType))} avant la cuisson ; il en reste ${hours(Math.max(0,leftH))}.`:`A ${name} needs about ${hours(needH(prefermentType))} before baking; your bake is in ${hours(Math.max(0,leftH))}.`}</p>
                     {poolishFits&&<button type="button" data-preferment-fallback="poolish" style={btn} onClick={()=>choose('poolish')}>{fr?'Faire un poolish':'Make a poolish instead'}</button>}
                     <button type="button" data-preferment-fallback="none" style={btn} onClick={()=>choose('none')}>{fr?'Pâte directe, sans préferment':'Direct dough, no preferment'}</button>
-                    <button type="button" data-preferment-fallback="later" style={btn} onClick={()=>{setEatTime(later);setPlanReplanPending(true);}}>{fr?`Garder ${prefermentType==='biga'?'la biga':'le poolish'} et cuire ${formatBakeDateTime(later,locale)}`:`Keep the ${name} and bake ${formatBakeDateTime(later,locale)}`}</button>
+                    {later&&<button type="button" data-preferment-fallback="later" style={btn} onClick={()=>{setEatTime(later);setPlanReplanPending(true);}}>{fr?`Garder ${prefermentType==='biga'?'la biga':'le poolish'} et cuire ${formatBakeDateTime(later,locale)}`:`Keep the ${name} and bake ${formatBakeDateTime(later,locale)}`}</button>}
                   </div>;
                 })()}
               </StepPage>
@@ -6175,8 +6217,8 @@ export default function Home() {
                             setPrefYeastIssue(null);setPrefYeastOverride({type:pref,pct:Math.round(idy*10000)/10000});setPlanReplanPending(true);}}/>
                       </label>
                       {prefIssue&&(()=>{
-                        const storages=prefermentYeastStorages(pref,pref==='poolish'?poolishStorage:'auto',prefGoesInFridge);
-                        const range=(inFridge:boolean)=>{const b=prefermentYeastBounds(pref,inFridge);return fr?`${b.min} à ${b.max} h ${inFridge?'au frigo':'à température ambiante'}`:`${b.min}–${b.max} h ${inFridge?'in the fridge':'at room temperature'}`;};
+                        const storages=prefermentYeastStorages(pref,pref==='poolish'?poolishStorage:bigaStorage==='cool'?'room':bigaStorage,prefGoesInFridge,bigaCoolOffered(bigaStorage,kitchenTemp));
+                        const range=(inFridge:boolean)=>{const b=prefermentYeastBounds(pref,inFridge);return fr?`${b.min} à ${b.max} h ${inFridge?'au frigo':pref==='biga'?'dans un endroit frais':'à température ambiante'}`:`${b.min}–${b.max} h ${inFridge?'in the fridge':pref==='biga'?'in a cool spot':'at room temperature'}`;};
                         const ranges=storages.map(range).join(fr?' ou ':' or ');
                         const inPref=fr?(pref==='biga'?'dans la biga':'dans le poolish'):`in the ${prefName}`;
                         const ripens=Number.isFinite(prefIssue.hours)?(fr?`mûrit en environ ${hoursText(prefIssue.hours)}`:`ripens in about ${hoursText(prefIssue.hours)}`):(fr?'demande plus de 72 h':'needs more than 72 h');

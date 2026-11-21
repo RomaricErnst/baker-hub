@@ -208,7 +208,8 @@ function getPrefSig(type: string, temp: number, inFridge = false, prefOffsetH = 
 }
 
 export function getPrefOptH(type: string, temp: number, inFridge = false, styleKey = 'neapolitan', fridgeTemp = 6): number {
-  if (type === 'biga') return 48;       // biga fridge: 48h optimal, up to 72h safe
+  // Biga (data.ts BIGA_WINDOWS): fridge 48 h within 24–58; cool spot 16 h within 12–20 (Giorilli, D1).
+  if (type === 'biga') return inFridge ? 48 : 16;
   if (type === 'poolish') {
     if (inFridge) return Math.max(10, Math.min(22, Math.round(22 - fridgeTemp * 1.5)));
     // RT poolish optimal = RT peak time for this style+temp
