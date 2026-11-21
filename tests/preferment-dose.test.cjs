@@ -34,10 +34,12 @@ test('dilution conserves selected yeast dose and preferment water', () => {
 test('poolish and biga doses follow actual duration, storage temperature and yeast conversion',()=>{
  for(const type of ['poolish','biga']){
   const make=(hours,cold,temp=27,fridge=6)=>data.computePrefermentRecipe(type,1000,650,temp,fridge,cold,20,'instant',hours);
-  const short=make(12,true),long=make(24,true);
+  // A fridge biga's window is 24–58 h (round 8, S5): it is compared at 24 and 48 h.
+  const [s,l]=type==='biga'?[24,48]:[12,24];
+  const short=make(s,true),long=make(l,true);
   assert.ok(short.prefYeastGrams>long.prefYeastGrams);
-  assert.ok(make(18,true,27,4).prefYeastGrams>make(18,true,27,6).prefYeastGrams);
-  assert.equal(long.cold,true);assert.equal(long.fermentHoursMax,24);
+  assert.ok(make(type==='biga'?30:18,true,27,4).prefYeastGrams>make(type==='biga'?30:18,true,27,6).prefYeastGrams);
+  assert.equal(long.cold,true);assert.equal(long.fermentHoursMax,l);
  }
  const cold=data.computePrefermentRecipe('poolish',1000,650,27,6,true,20,'instant',19.5);
  const room=data.computePrefermentRecipe('poolish',1000,650,27,6,false,20,'instant',7);

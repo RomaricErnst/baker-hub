@@ -34,6 +34,7 @@ import {
   isLevainStyle,
   computePrefermentRecipe,
   PREFERMENT_TYPES,
+  bigaCoolTempC,
   type OvenType,
   type BreadOvenType,
   type AnyOvenType,
@@ -2344,9 +2345,11 @@ export function calculateRecipe(
     const prefHydPct = PREFERMENT_TYPES[prefermentType as PrefermentType].hydration;
     const conditioningHours = prefConditioningHours;
     if (!prefInFridge) prefermentCooldownHours = conditioningHours;
+    // A cool-spot biga (D1) goes into the mix at the cool spot's temperature.
+    const roomPrefC = prefermentType === 'biga' ? bigaCoolTempC(kitchenTemp) : kitchenTemp;
     prefTempC = prefTempAfterWarmup(
       preferment.prefFlour + preferment.prefWater, prefHydPct,
-      prefInFridge ? fridgeTemp : kitchenTemp, prefInFridge ? kitchenTemp : fridgeTemp, conditioningHours,
+      prefInFridge ? fridgeTemp : roomPrefC, prefInFridge ? kitchenTemp : fridgeTemp, prefermentType === 'biga' && !prefInFridge ? 0 : conditioningHours,
     );
   }
   // The levain's flour and water are ALREADY inside `flour` and `water` — the

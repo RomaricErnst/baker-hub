@@ -3,7 +3,7 @@
 // reading the yeast model backwards with the preferment's medium factor M (the same law and the same
 // temperature path computePrefermentRecipe uses to dose a window, data.ts `prefermentPath`), so the
 // amount shown and the hours planned agree by construction (CLAUDE.md "Baker overrides (Custom)").
-import { PREFERMENT_TYPES, prefermentPath } from '../data';
+import { PREFERMENT_TYPES, prefermentPath, bigaWindow, bigaCoolTempC, BIGA_COOL_HOLD } from '../data';
 import { heqForDose } from './yeastModel';
 
 export type FlourPreferment = 'poolish' | 'biga';
@@ -20,9 +20,10 @@ export interface PrefermentYeastContext {
 }
 
 /** The windows a preferment may take (CLAUDE.md Preferments): poolish 6–14 h at room temperature,
- * 12–24 h in the fridge (the planner's own fridge minimum); biga 12–72 h, always in the fridge. */
+ * 12–24 h in the fridge (the planner's own fridge minimum); biga 24–58 h in the fridge, 12–20 h in a
+ * cool spot (data.ts BIGA_WINDOWS, one window per storage everywhere, 21 Nov 2026). */
 export function prefermentYeastBounds(type: FlourPreferment, inFridge: boolean): { min: number; max: number } {
-  if (type === 'biga') return { min: 12, max: 72 };
+  if (type === 'biga') { const w = bigaWindow(inFridge); return { min: w.min, max: w.max }; }
   return inFridge ? { min: 12, max: 24 } : { min: 6, max: 14 };
 }
 
@@ -41,7 +42,9 @@ export function prefermentHoursForYeast(type: FlourPreferment, idyPct: number, i
   const hyd = PREFERMENT_TYPES[type].hydration;
   const massG = ctx.massG ?? 600;
   const cond = inFridge ? { warmupH: ctx.warmupH } : { cooldownH: ctx.cooldownH };
-  const reached = (hours: number) => prefermentPath(hours, inFridge, ctx.kitchenTemp, ctx.fridgeTemp, massG, hyd, cond).heq;
+  // A cool-spot biga sits at bigaCoolTempC, with no conditioning (as computePrefermentRecipe doses it).
+  const coolBiga = type === 'biga' && !inFridge;
+  const reached = (hours: number) => prefermentPath(hours, inFridge, coolBiga ? bigaCoolTempC(ctx.kitchenTemp) : ctx.kitchenTemp, ctx.fridgeTemp, massG, hyd, coolBiga ? {} : cond).heq;
   const floor = 0.25;
   if (reached(floor) >= target) return floor;
   let hi = 2 * floor;
@@ -64,6 +67,7 @@ export interface PrefermentYeastTiming {
 /** The timing of an entered dose in one storage, or null when its window falls outside the bounds. */
 export function prefermentYeastTiming(type: FlourPreferment, idyPct: number, inFridge: boolean, ctx: PrefermentYeastContext): PrefermentYeastTiming | null {
   const bounds = prefermentYeastBounds(type, inFridge);
+  if (type === 'biga' && !inFridge) return coolBigaYeastTiming(idyPct, bounds, ctx);
   const exact = prefermentHoursForYeast(type, idyPct, inFridge, ctx);
   if (!Number.isFinite(exact)) return null;
   const hours = Math.round(exact * 4) / 4;
@@ -76,10 +80,27 @@ export function prefermentYeastTiming(type: FlourPreferment, idyPct: number, inF
   return { inFridge, hours, min, max };
 }
 
+/** A cool-spot biga (D1): ready from the window where the dose ripens it (the model read backwards)
+ * to the one where it is BIGA_COOL_HOLD × the model's need (the professional bigas' level, Giorilli's
+ * 1 % fresh at 16 h, 18 °C among them), within 12–20 h; the planned window is the point of that band
+ * nearest the classic 16 h. Null when the band misses the bounds. */
+function coolBigaYeastTiming(idyPct: number, bounds: { min: number; max: number }, ctx: PrefermentYeastContext): PrefermentYeastTiming | null {
+  const ripe = prefermentHoursForYeast('biga', idyPct, false, ctx);
+  if (!Number.isFinite(ripe)) return null;
+  const held = prefermentHoursForYeast('biga', idyPct / BIGA_COOL_HOLD, false, ctx);
+  const min = Math.max(bounds.min, Math.ceil(ripe * 4) / 4);
+  const max = Math.min(bounds.max, Math.floor((Number.isFinite(held) ? held : bounds.max) * 4) / 4);
+  if (min > max + 1e-9) return null;
+  const aim = bigaWindow(false).aim;
+  return { inFridge: false, hours: Math.max(min, Math.min(max, aim)), min, max };
+}
+
 /** The storages an entered dose may use, best first: a fixed storage only itself; 'auto' the one the
- * planner would choose first, then the other. A biga is always in the fridge. */
-export function prefermentYeastStorages(type: FlourPreferment, storage: 'auto' | 'fridge' | 'room', preferFridge: boolean): boolean[] {
-  if (type === 'biga') return [true];
+ * planner would choose first, then the other. A biga: the fridge, then a cool spot when the planner may
+ * use one (`bigaCool`: chosen, or 'auto' in a kitchen ≤ 20 °C — data.ts bigaCoolOffered); 'room' is the
+ * cool spot for a biga. */
+export function prefermentYeastStorages(type: FlourPreferment, storage: 'auto' | 'fridge' | 'room', preferFridge: boolean, bigaCool = false): boolean[] {
+  if (type === 'biga') return storage === 'room' ? [false] : storage === 'fridge' || !bigaCool ? [true] : [true, false];
   if (storage === 'fridge') return [true];
   if (storage === 'room') return [false];
   return preferFridge ? [true, false] : [false, true];

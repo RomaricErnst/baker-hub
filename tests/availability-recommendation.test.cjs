@@ -8,7 +8,8 @@ const original=new Date('2026-10-03T23:40:00Z'),bake=new Date('2026-10-04T20:31:
 const night={from:new Date('2026-10-03T23:00:00Z'),to:new Date('2026-10-04T07:00:00Z'),label:'Saturday night'};
 const source=fs.readFileSync('app/components/SchedulePicker.tsx','utf8');
 const tree=ts.createSourceFile('SchedulePicker.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
-const names=['applyAndUpdate','replanCurrentSchedule','commercialRecommendation','poolishLadder'],declarations=[];
+// Round 8 (D1): the biga's storage order and the chosen-storage note live beside them.
+const names=['applyAndUpdate','replanCurrentSchedule','commercialRecommendation','poolishLadder','noteChosenStorage','recommendBiga','bigaModes'],declarations=[];
 function visit(n){if(ts.isFunctionDeclaration(n)&&names.includes(n.name?.text))declarations.push(n.getText(tree));ts.forEachChild(n,visit);}visit(tree);
 function harness(overrides={}){
  const writes=[];
@@ -21,7 +22,7 @@ function harness(overrides={}){
   findFixedBakeSchedule,recommendPreferment,getPrefOptH:()=>8,
   // Round 7: the preferment window seeds through prefTargetH (the planner's optimum without a baker yeast) and prefYeastModes (null without one).
   prefTargetH:()=>8,prefYeastModes:()=>null,prefYeastTimingFor:()=>null,prefYeastPctOverride:undefined,onChange:(start,bake,blocks,options)=>writes.push({start,bake,blocks,options})};
- c.setAlgoChoseFridge=()=>{};
+ c.setAlgoChoseFridge=()=>{};c.setBigaChoseCool=()=>{};c.bigaStorage='auto';c.bigaCoolAllowed=false;
  for(const name of ['MovedNote','BlockerNote','StarterPins','EditingRow','EditingEnabled','EditBaseTimes','LocalBlocks','SearchFailed','StartComputed','PrefAlgoRed','WindowTooShort'])c['set'+name]=()=>{};
  c.setPendingStart=v=>{c.pendingStart=v;};c.setPrefOffsetH=v=>{c.prefOffsetH=v;};
  c.commercialCandidateInput=(blocks,inFridge,start=c.pendingStart)=>({id:'mix',at:start,start,bake,now,prefHours:c.prefOffsetH,

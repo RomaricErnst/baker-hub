@@ -81,7 +81,8 @@ test('preferment instructions use actual dose and planned location without final
  assert.ok(section,'preferment section is rendered');
  const prefHtml=section.split('</section>')[0];
  assert.ok(prefHtml.includes('0.2 g'));assert.match(prefHtml,/fresh yeast/i);
- assert.ok(cold?/Refrigerate until /.test(prefHtml):prefHtml.includes('Leave at room temperature according to this plan.'));
+ // A biga out of the fridge is the cool-spot biga (round 8, D1).
+ assert.ok(cold?/Refrigerate until /.test(prefHtml):pref==='biga'?/Let it ripen in a cool spot \(16–18 °C\) until /.test(prefHtml):prefHtml.includes('Leave at room temperature according to this plan.'));
  assert.doesNotMatch(prefHtml,/Water temperature|50-60|0\.1-0\.2|always ferments cold|air exchange|pinch of IDY/);
  }
 });
