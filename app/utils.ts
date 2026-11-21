@@ -334,15 +334,11 @@ function starterBand(kitchenTemp: number): { min: number; max: number } {
   return kitchenTemp >= 28 ? { min: 10, max: 15 } : kitchenTemp >= 24 ? { min: 15, max: 20 } : { min: 20, max: 25 };
 }
 
-/** Recommended mid starter % before feed-timing adjustment, with the same
- * flour-strength scaling sourdoughGuidance applies. Reference for starterBulkFactor. */
-export function referenceStarterPct(kitchenTemp: number, flourStrength = 1): number {
-  let { min, max } = starterBand(kitchenTemp);
-  if (flourStrength && flourStrength !== 1.0) {
-    const ftm = Math.max(0.6, Math.min(1.5, flourStrength));
-    min = Math.max(5, Math.round(min * ftm));
-    max = Math.min(30, Math.round(max * ftm));
-  }
+/** Recommended mid starter % before feed-timing adjustment. Reference for starterBulkFactor.
+ * The same for every flour (21 Nov 2026): no source ties the inoculation to flour strength,
+ * which sets how long a dough holds, not how fast it ferments. */
+export function referenceStarterPct(kitchenTemp: number): number {
+  const { min, max } = starterBand(kitchenTemp);
   return (min + max) / 2;
 }
 
@@ -362,11 +358,27 @@ function craigSourdoughHours(fraction: number): number {
  * (Q10 in sourdoughBulkH). Cold phases are not scaled: by the Gänzle et al.
  * (1998) growth curves Craig uses, an hour at 5 °C does about 5 % of an hour
  * at 24 °C, so a fridge retard cannot absorb an inoculation change. */
-export function starterBulkFactor(starterPct: number | undefined, kitchenTemp: number, flourStrength = 1): number {
+export function starterBulkFactor(starterPct: number | undefined, kitchenTemp: number): number {
   if (starterPct === undefined || !Number.isFinite(starterPct) || starterPct <= 0) return 1;
   const p = Math.max(5, Math.min(30, starterPct)) / 100;
-  const p0 = referenceStarterPct(kitchenTemp, flourStrength) / 100;
+  const p0 = referenceStarterPct(kitchenTemp) / 100;
   return Math.round(craigSourdoughHours(p) / craigSourdoughHours(p0) * 1000) / 1000;
+}
+
+/** A levain bake saved before 21 Nov 2026 timed its bulk against the reference % scaled by its
+ * flour's tolerance (min/max × ftm, 0.6–1.5, rounded, 5–30). The page keeps that factor for that
+ * bake's plan, at the same % and flour (`levainLegacy`), so a saved bake is never re-timed; every
+ * new plan uses starterBulkFactor. */
+export function legacyStarterBulkFactor(starterPct: number | undefined, kitchenTemp: number, flourStrength: number): number {
+  if (starterPct === undefined || !Number.isFinite(starterPct) || starterPct <= 0) return 1;
+  let { min, max } = starterBand(kitchenTemp);
+  if (flourStrength && flourStrength !== 1.0) {
+    const ftm = Math.max(0.6, Math.min(1.5, flourStrength));
+    min = Math.max(5, Math.round(min * ftm));
+    max = Math.min(30, Math.round(max * ftm));
+  }
+  const p = Math.max(5, Math.min(30, starterPct)) / 100;
+  return Math.round(craigSourdoughHours(p) / craigSourdoughHours((min + max) / 200) * 1000) / 1000;
 }
 
 /** Ceiling of a planner-chosen levain % (17 Nov 2026): the inoculation the planner
@@ -375,8 +387,8 @@ export const AUTO_STARTER_MAX_PCT = 30;
 
 /** Levain % the planner may try, smallest first, when the default bulk does not fit:
  * 2.5-point steps above the kitchen's reference % up to AUTO_STARTER_MAX_PCT. */
-export function raisedStarterPcts(kitchenTemp: number, flourStrength = 1): number[] {
-  const reference = referenceStarterPct(kitchenTemp, flourStrength);
+export function raisedStarterPcts(kitchenTemp: number): number[] {
+  const reference = referenceStarterPct(kitchenTemp);
   const out: number[] = [];
   for (let pct = Math.floor(reference / 2.5 + 1e-9) * 2.5 + 2.5; pct <= AUTO_STARTER_MAX_PCT + 1e-9; pct += 2.5) out.push(pct);
   return out;
@@ -388,11 +400,11 @@ export function raisedStarterPcts(kitchenTemp: number, flourStrength = 1): numbe
  * "keep the rest"); each earlier feed of the plan multiplies what there is by its
  * 1:R:R ratio, less the 10 % starterBuild leaves on the jar and utensils. */
 export function raisedLevainFits(flour: number, kitchenTemp: number, feedToMixH: number | undefined,
-  flourStrength: number | undefined, raisedPct: number, feedRatios: readonly number[]): boolean {
+  raisedPct: number, feedRatios: readonly number[]): boolean {
   if (!(flour > 0) || !(raisedPct > 0)) return false;
-  const usual = sourdoughGuidance(kitchenTemp, flour, feedToMixH, flourStrength);
+  const usual = sourdoughGuidance(kitchenTemp, flour, feedToMixH);
   const usualBuild = starterBuild(usual.starterGramsMid, usual.starterGramsMax, 1);
-  const raised = sourdoughGuidance(kitchenTemp, flour, feedToMixH, flourStrength, raisedPct);
+  const raised = sourdoughGuidance(kitchenTemp, flour, feedToMixH, undefined, raisedPct);
   let available = Math.max(usualBuild.keep, usualBuild.total - usual.starterGramsMid);
   const ratios = feedRatios.length ? feedRatios : [1];
   for (const ratio of ratios.slice(0, -1)) available *= 0.9 * (1 + 2 * ratio);
@@ -429,14 +441,8 @@ function sourdoughGuidance(
     max = Math.min(30, adjMid + 3);
   }
 
-  // Apply flour strength to starter % — weaker flour needs less starter to
-  // avoid over-acidification; stronger flour tolerates more.
-  if (flourStrength && flourStrength !== 1.0) {
-    const ftm = Math.max(0.6, Math.min(1.5, flourStrength));
-    min = Math.max(5,  Math.round(min * ftm));
-    max = Math.min(30, Math.round(max * ftm));
-  }
-
+  // Flour strength does not change the starter % (21 Nov 2026): it sets how long
+  // the dough holds (the bulk cues below), not how much leavening it needs.
   const isWeakFlour   = flourStrength !== undefined && flourStrength < 0.85;
   const isStrongFlour = flourStrength !== undefined && flourStrength > 1.15;
 
@@ -446,7 +452,7 @@ function sourdoughGuidance(
         'Surface looks domed — stop before it jiggles freely',
         'Sides of container look slightly pulled away',
         'Smells pleasantly tangy, not strongly sour',
-        'Weaker flour ferments faster — watch closely',
+        'Weaker flour holds less — end the bulk at a smaller rise',
       ]
     : isStrongFlour
     ? [

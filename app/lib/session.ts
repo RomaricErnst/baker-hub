@@ -148,6 +148,10 @@ export interface SessionData {
   starterPctOverride?: number;
   /** Levain without a baker %: the % the planner raised it to for this plan's bulk. */
   autoStarterPct?: number;
+  /** A bake saved before 21 Nov 2026 with a levain % (baker's or raised): the % and flour strength its
+   * bulk was timed with against the flour-scaled reference (legacyStarterBulkFactor). null for every
+   * bake saved since; absent = saved before the field (the page derives it). */
+  levainLegacy?: { pct: number; strength: number } | null;
   starterEvents?: Array<Omit<StarterEvent, 'time'|'bellPeakTime'|'bellStartTime'> & {time:number;bellPeakTime?:number;bellStartTime?:number}>;
   starterState?: string;
   starterLocation?: string;

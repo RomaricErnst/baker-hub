@@ -4,6 +4,9 @@
 // green pill means Start Dough sits inside the strip's ready window (the solver's
 // green band). Sweeps temperature × location × last fed × horizon × Nights
 // through the real picker, with the strip rendered from the events the parent holds.
+// Flour strength (21 Nov 2026, round 8) is a dimension too: it scales the peak tolerance
+// and the cold windows, and since the levain % no longer follows it, the invariant must hold
+// for a weak, a reference and a strong flour alike (FLOURS=1 runs the reference only).
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
@@ -52,17 +55,18 @@ function conflictRows(){
 const bad=[];let stripCases=0;const realigned=[];const skipped={};let n=0;const fam={};
 const fmt=ms=>new Date(ms).toISOString().slice(5,16);
 const T=[16,24,32],L=['fridge','rt'],A=[['today',-4],['yesterday',-20],['days23',-60],['week',-170]],HZ=[12,24,36,48],NI=[true,false];
-for(const temp of T)for(const loc of L)for(const age of A)for(const horizon of HZ)for(const nights of NI){
+const FS=(process.env.FLOURS||'0.75,1,1.35').split(',').map(Number);const perFlour={};
+for(const fs of FS)for(const temp of T)for(const loc of L)for(const age of A)for(const horizon of HZ)for(const nights of NI){
  w.localStorage.clear();
  w.localStorage.setItem('bh_profile_v1',JSON.stringify({version:1,blockers:{sleep:{enabled:nights,from:'23:00',to:'07:00'},work:{enabled:false,from:'09:00',to:'18:00'}}}));
  w.__bhTrace=[];
- let m;const label=`${temp}C ${loc} ${age[0]} +${horizon}h nights=${nights}`;
+ let m;const label=`ftm${fs} ${temp}C ${loc} ${age[0]} +${horizon}h nights=${nights}`;
  try{
-  m=await w.__mount(query('#root'),{temp,style:'pain_levain',loc,age:age[0],eat:new w.Date(clock+horizon*hour),start:new w.Date(clock),lastFed:new w.Date(clock+age[1]*hour),page:true,full:true,ratioMode:'recommend'});
+  m=await w.__mount(query('#root'),{temp,style:'pain_levain',loc,age:age[0],eat:new w.Date(clock+horizon*hour),start:new w.Date(clock),lastFed:new w.Date(clock+age[1]*hour),page:true,full:true,ratioMode:'recommend',flourStrength:fs});
   await settle();await settle();
   const tr=w.__bhTrace.at(-1);
   if(!tr){skipped[loc+' +'+horizon+'h']=(skipped[loc+' +'+horizon+'h']||0)+1;continue;}
-  n++;fam[tr.family]=(fam[tr.family]||0)+1;
+  n++;fam[tr.family]=(fam[tr.family]||0)+1;perFlour[fs]=(perFlour[fs]||0)+1;
   if(tr.planningMode==='know_peak'||tr.peakMs==null)continue;
   const feeds=tr.events.filter(e=>e.active&&e.bellPeak!=null&&['pre_mix','refresh','intermediate_refresh'].includes(e.kind)&&e.t<=tr.mixMs);
   const last=feeds.at(-1);
@@ -92,7 +96,8 @@ for(const temp of T)for(const loc of L)for(const age of A)for(const horizon of H
   if(tr.scoredPeakMs!=null && Math.abs(tr.scoredPeakMs-tr.peakMs)>15*60000)realigned.push(`${label} [${tr.family}] scan ${fmt(tr.scoredPeakMs)} → shown ${fmt(tr.peakMs)}`);
   // Green ⇒ starter near peak at mix.
   if(tr.pill==='green'){
-   const tol=(loc==='fridge'&&tr.family==='pathB_fridge_hold')?2.0:Math.max(1.0,Math.min(3.0,(tr.adjPeakH||8)*0.15));
+   // The solver's tolerance: its base band × the flour's tolerance (TOL = baseTOL × ftm, clamped 0.7–1.5).
+   const tol=((loc==='fridge'&&tr.family==='pathB_fridge_hold')?2.0:Math.max(1.0,Math.min(3.0,(tr.adjPeakH||8)*0.15)))*Math.max(0.7,Math.min(1.5,fs));
    const gapH=(tr.mixMs-tr.peakMs)/hour; // >0 mix after peak
    const lim=gapH<0?tol+0.5:tol;
    if(Math.abs(gapH)>lim+0.26)bad.push(`${label} [${tr.family}] green but mix ${fmt(tr.mixMs)} is ${gapH.toFixed(2)} h from peak ${fmt(tr.peakMs)} (tol ${lim.toFixed(2)})`);
@@ -100,8 +105,8 @@ for(const temp of T)for(const loc of L)for(const age of A)for(const horizon of H
  }catch(err){bad.push('ERR '+label+': '+err.message);}
  finally{m?.unmount();await settle();}
 }
-console.log('untraced',JSON.stringify(skipped));console.log('realigned',realigned.length,realigned.slice(0,5).join(' | '));console.log('cases',n,'strip cases',stripCases,'families',JSON.stringify(fam),'violations',bad.length);console.log(bad.slice(0,25).join('\n'));
+console.log('untraced',JSON.stringify(skipped));console.log('realigned',realigned.length,realigned.slice(0,5).join(' | '));console.log('cases',n,'per flour',JSON.stringify(perFlour),'strip cases',stripCases,'families',JSON.stringify(fam),'violations',bad.length);console.log(bad.slice(0,25).join('\n'));
 assert.deepEqual(errors,[],'Runtime errors');
-assert.ok(n>=150,'Too few traced cases: '+n);
+assert.ok(n>=150*FS.length,'Too few traced cases: '+n);
 assert.equal(bad.length,0,bad.join('\n'));
 process.exit(0);

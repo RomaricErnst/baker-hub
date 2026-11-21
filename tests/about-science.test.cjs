@@ -50,6 +50,10 @@ test('About: style blueprints, oven and flour corrections are the engine\'s',()=
   for(const s of ['0.75 at W 130','0.9 at W 200','1.0 at W 250','1.2 at W 300','1.35 at W 360','Hydration follows the flour type, never its W'])a.ok(en.includes(s),s);
   for(const s of ['0,75 à W 130','0,9 à W 200','1,0 à W 250','1,2 à W 300','1,35 à W 360','L’hydratation suit le type de farine, jamais son W'])a.ok(fr.includes(s),s);
   a.doesNotMatch(about,/divides the commercial yeast|divise la levure/,'the yeast is not divided by the tolerance');
+  // The levain amount does not follow flour strength (21 Nov 2026, round 8).
+  a.doesNotMatch(about,/and the levain amount\.|et la quantité de levain\./,'the tolerance does not scale the levain amount');
+  a.ok(en.includes('it does not change the levain amount')&&fr.includes('elle ne change pas la quantité de levain'));
+  for(const ftm of [0.7,1.35])a.equal(utils.referenceStarterPct(22,ftm),utils.referenceStarterPct(22));
   // Style hydration and floors.
   const S={...data.PIZZA_STYLES,...data.BREAD_STYLES};
   for(const [k,v] of [['neapolitan',62],['newyork',62],['baguette',68],['pan',70],['pain_levain',75],['roman',78]])a.equal(S[k].hydration,v,k);

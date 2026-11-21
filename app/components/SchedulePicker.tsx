@@ -7414,8 +7414,8 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       // enough starter for every planned feed. Never over a baker-entered %
       // (canRaiseStarterPct is absent then). Still nothing: another day, as before.
       if(!foundValid&&canRaiseStarterPct&&styleKey&&candidateBlocks.length&&planningMode==='last_fed'){
-        for(const pct of raisedStarterPcts(kitchenTemp,flourStrength)){
-          probeBulkFactorRef.current=starterBulkFactorFor(pct,kitchenTemp,flourStrength);
+        for(const pct of raisedStarterPcts(kitchenTemp)){
+          probeBulkFactorRef.current=starterBulkFactorFor(pct,kitchenTemp);
           const raised=replanStarter(candidateBlocks,overrides,true);
           if(!raised?.valid||!raised.probe.result)continue;
           const now=Date.now();
