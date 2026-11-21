@@ -55,7 +55,8 @@ for(const locale of ['en','fr'])test(`${locale}: an entered poolish yeast re-tim
  expect((await stored(page)).eatTime).toBe(BAKE);
  // Back on Fine-tune the entered amount is kept; the calculated amount restores the planner's window.
  await page.locator('#step-9 .bh-step-actions').getByRole('button',{name:fr?'Étape précédente':'Previous step',exact:true}).tap();
- await expect(pref).toHaveValue('0.15');
+ // Round 8 (bug 2): shown with the locale's separator.
+ await expect(pref).toHaveValue(fr?'0,15':'0.15');
  await fineTune.locator('[data-pref-yeast-reset]').tap();
  await expect.poll(async()=>(await stored(page)).prefYeastOverride).toBeUndefined();
  await fineTune.locator('[data-bh-forward]').tap();
