@@ -72,7 +72,7 @@ function Harness({ sc }: { sc: any }) {
       startTime={startTime} eatTime={eatTime} blocks={blocks} preheatMin={45}
       styleKey={sc.style} kitchenTemp={sc.temp} starterBulkFactor={factor}
       {...(AUTO?{autoStarterPct:sc.bakerPct===undefined?autoPct??null:null,onAutoStarterPctChange:(p:number|null)=>setAutoPct(p??undefined),
-        canRaiseStarterPct:sc.bakerPct===undefined?(pct:number,ratios:number[])=>sc.raiseFits!==false&&raisedLevainFits(sc.flour??500,sc.temp,undefined,1,pct,ratios):undefined}:{})}
+        canRaiseStarterPct:sc.bakerPct===undefined?(pct:number,ratios:number[])=>sc.raiseFits!==false&&raisedLevainFits(sc.flour??500,sc.temp,undefined,pct,ratios):undefined}:{})}
       replanPending={replanPending} onReplanHandled={()=>setReplanPending(false)} bakeType={sc.commercial||sc.full&&sc.style==='sourdough'?'pizza':'bread'} isSourdough={!sc.commercial} prefermentType={sc.commercial?'poolish':'levain'} mode="custom"
       {...(sc.full?{schedule,mixerType:mixer,numItems:sc.numItems??4,mixingBatches:sc.batches??1}:{})}
       onChange={onChange}
@@ -85,7 +85,7 @@ function Harness({ sc }: { sc: any }) {
       nextFeedRatioOverride={nextFeedRatioOverride} onNextFeedRatioOverrideChange={setNextFeedRatioOverride}
       ratioMode={ratioMode} onRatioModeChange={setRatioMode}
       tang={tang} onTangChange={setTang}
-      fridgeTemp={sc.fridgeTemp??6} flourStrength={1.0}
+      fridgeTemp={sc.fridgeTemp??6} flourStrength={sc.flourStrength??1.0}
       {...(PAGE ? { timingOverrides, confirmedPlan: accepted === key(startTime, blocks), savedStarterEvents: starterEvents,
                     starterTimingValid } : {})}
       onStarterEventsChange={(ev) => { if (PAGE) setStarterEvents(ev || []); rec.events = (ev || []).map((e: any) => `${e.kind ?? e.type}@${e.time ? +new Date(e.time) : ''}`).join(','); }}

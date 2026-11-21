@@ -63,12 +63,12 @@ test('a raised % reaches the recipe as one amount (and its levain build)',()=>{
 
 test('enough starter: a single 1:1:1 build cannot reach 30 % from the kept jar; a feed before it, or a lighter build, can',()=>{
  const flour=508;
- assert.equal(utils.raisedLevainFits(flour,19,undefined,1,30,[1]),false);
- assert.equal(utils.raisedLevainFits(flour,19,undefined,1,25,[1]),false);
- assert.equal(utils.raisedLevainFits(flour,19,undefined,1,30,[1,1]),true);
- assert.equal(utils.raisedLevainFits(flour,19,undefined,1,30,[2]),true);
+ assert.equal(utils.raisedLevainFits(flour,19,undefined,30,[1]),false);
+ assert.equal(utils.raisedLevainFits(flour,19,undefined,25,[1]),false);
+ assert.equal(utils.raisedLevainFits(flour,19,undefined,30,[1,1]),true);
+ assert.equal(utils.raisedLevainFits(flour,19,undefined,30,[2]),true);
  // the jar is the default bake's "keep the rest"
  const usual={mid:Math.round(flour*0.225/5)*5};
  assert.ok(usual.mid>0);
- assert.equal(utils.raisedLevainFits(0,19,undefined,1,30,[1,1]),false);
+ assert.equal(utils.raisedLevainFits(0,19,undefined,30,[1,1]),false);
 });

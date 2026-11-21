@@ -25,6 +25,8 @@ async function restore(yeastType,rebake,starterTimingValid,overrides={},acceptRe
  // The restore resets the recipe-input baseline and sets the journal id of the opened bake (17 Nov 2026).
  context.generatedRecipeInputKey={current:'previous bake'};context.restoredInputsPending={current:false};
  context.getBreadProtocol=require('../app/utils/breadProfiles.ts').getBreadProtocol;
+ // A bake saved before 21 Nov 2026 keeps its levain bulk (round 8).
+ context.restoredLevainLegacy=require('../app/utils/levainLegacy.ts').restoredLevainLegacy;
  context.opts={rebake};
  const js=ts.transpileModule(navigationHandler+handler+'\nrestoreFromBakeEvent(event,opts)',{compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.CommonJS}}).outputText;
  await vm.runInNewContext(js,context);

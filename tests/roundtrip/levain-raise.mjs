@@ -37,7 +37,7 @@ async function run(o){
  const eat=new w.Date(o.bake??+new Date(2026,10,21,10,0));
  const m=await w.__mount(doc.querySelector('#root'),{temp:o.temp??19,style:'pain_levain',loc:o.loc??'fridge',age:o.age??'days45',eat,start:new w.Date(clock),
   lastFed:new w.Date(clock+(o.fedH??-120)*hour),page:true,full:true,ratioMode:'recommend',starterBulkFactor:1,levainAuto:o.auto??true,bakerPct:o.bakerPct,raiseFits:o.raiseFits,
-  flour:508,fridgeTemp:5,numItems:1,mixer:o.mixer??'no_knead'});
+  flour:508,fridgeTemp:5,numItems:1,mixer:o.mixer??'no_knead',flourStrength:o.ftm??1});
  await settle();await settle();
  const deadline=Date.now()+90000;
  while(doc.querySelector('[data-searching-bakes]')&&Date.now()<deadline)await settle(400);
@@ -79,6 +79,21 @@ assert.ok(her.remount.valid,`raised plan still valid on a remounted picker: ${he
 assert.equal(her.remount.start,her.rec.start,'remount keeps the mix');
 assert.equal(her.remount.events,her.rec.events,'remount keeps the starter plan');
 console.log('her bake',her.rec.autoPct+'%',fmt(mix),'build',fmt(build.t),'shape',fmt(+her.s.divideBallTime));
+
+// The same evening on a weak and a strong flour (21 Nov 2026, round 8): the levain % and its
+// raise no longer follow flour strength, so the planner tries the same ladder and keeps the
+// bake with a raised levain in the same range; the starter's ready band is the same too.
+for(const ftm of [0.75,1.35]){
+ const f=await run({busy:'weekdays+nights',ftm});
+ assert.ok(f.kept&&f.valid,`ftm ${ftm}: Saturday 10:00 kept`);
+ assert.deepEqual(f.busyFeeds,[],`ftm ${ftm}: no starter step in busy time`);
+ assert.ok(f.rec.autoPct>22.5&&f.rec.autoPct<=30,`ftm ${ftm}: raised levain ${f.rec.autoPct}`);
+ const fmix=+new Date(f.rec.start);
+ assert.ok(new Date(fmix).getDay()===5&&new Date(fmix).getHours()>=17,`ftm ${ftm}: evening mix ${fmt(fmix)}`);
+ const fEnd=+f.s.bulkFermStart+f.s.bulkFermHours*hour;
+ assert.ok(fEnd<=+new Date(2026,10,20,23,0)&&+f.s.divideBallTime<+new Date(2026,10,20,23,0),`ftm ${ftm}: bulk and shaping before the night`);
+ console.log('flour',ftm,f.rec.autoPct+'%',fmt(fmix),'shape',fmt(+f.s.divideBallTime));
+}
 
 // A baker-entered 20 % is never raised: the requested bake does not fit, another day is offered.
 const typed=await run({busy:'weekdays+nights',bakerPct:20});

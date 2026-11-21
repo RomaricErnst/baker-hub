@@ -93,10 +93,11 @@ import {
 import {
   buildSchedule, type PlanLadder, calculateRecipe, formatTime, requiredPrefWarmupH, requiredPrefCooldownH,
   type AvailabilityBlock, type ScheduleResult,
-  starterBulkFactor, raisedLevainFits, referenceStarterPct, prefTempAfterWarmup, sourdoughBulkH, hasCoherentScheduleShape, withLongerPreheat,
+  starterBulkFactor, legacyStarterBulkFactor, raisedLevainFits, referenceStarterPct, prefTempAfterWarmup, sourdoughBulkH, hasCoherentScheduleShape, withLongerPreheat,
 } from '../utils';
 import { exitLeadFor, normalizeExitLead, planExitLead, type ExitLead } from '../utils/exitLead';
 import { HOT_PLAN_RULES, legacyHotPlanFor } from '../utils/hotPlanRules';
+import { restoredLevainLegacy, type LevainLegacy } from '../utils/levainLegacy';
 import { DEFAULT_WASTE_PCT, effectiveWastePct, restoredWastePct } from '../utils/doughAllowance';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { breadNoun, bakeSubject } from '../utils/breadNames';
@@ -1177,6 +1178,7 @@ export default function Home() {
   // Levain without a baker-entered %: the % the planner raised the inoculation to so the
   // warm bulk fits the baker's free time (SchedulePicker); undefined is the default amount.
   const [autoStarterPct, setAutoStarterPct] = useState<number | undefined>(undefined);
+  const [levainLegacy, setLevainLegacy] = useState<LevainLegacy>(null);
   // Set by explicit plan-input edits (yeast amount, starter %, poolish storage); the scheduler clears it after replanning.
   const [planReplanPending, setPlanReplanPending] = useState(false);
   // A plan-input edit made after generation: the plan step mounts the scheduler, it replans,
@@ -1720,6 +1722,7 @@ export default function Home() {
     setAcceptedPlan(normalizeAcceptedPlan(session.acceptedStartTime, session.acceptedPreparationAt, session.acceptedEatTime));
     setStarterPctOverride(session.starterPctOverride);
     setAutoStarterPct(session.autoStarterPct);
+    setLevainLegacy(restoredLevainLegacy(session));
     setTargetDoughTemp(session.targetDoughTemp);
     setFlourInFridge(session.flourInFridge);
     setMeasuredFlourTemp(session.measuredFlourTemp); setMeasuredPrefermentTemp(session.measuredPrefermentTemp);
@@ -2099,7 +2102,11 @@ export default function Home() {
   // 110 → 100 g once a flour was asked for). Choosing a flour still changes them, by choice.
   const flourAnswered = flourChosen || confirmed('flour','recipe');
   const flourStrength = recipeFlourStrength(styleKey ?? '', 'custom', flourChosen ? flourBlend : undefined);
-  const levainBulkFactor = starterBulkFactor(effectiveStarterOverride, kitchenTemp, flourStrength);
+  // A bake saved before 21 Nov 2026 keeps its bulk while its levain % and flour stay (restoredLevainLegacy).
+  const levainLegacyApplies = !!levainLegacy && effectiveStarterOverride === levainLegacy.pct && flourStrength === levainLegacy.strength;
+  const levainBulkFactor = levainLegacyApplies
+    ? legacyStarterBulkFactor(effectiveStarterOverride, kitchenTemp, flourStrength)
+    : starterBulkFactor(effectiveStarterOverride, kitchenTemp);
   const handleAutoStarterPct = React.useCallback((pct: number | null) => setAutoStarterPct(pct ?? undefined), []);
   const recipeForSchedule = (schedule: ReturnType<typeof buildSchedule>) => {
     if(!styleKey || !yeastType)throw new Error("Recipe setup incomplete");
@@ -2351,8 +2358,8 @@ export default function Home() {
   // every planned feed can build the larger amount (raisedLevainFits).
   const levainFlourG = recipe?.flour;
   const canRaiseStarterPct = React.useMemo(() => yeastType === 'sourdough' && starterPctOverride === undefined && levainFlourG
-    ? (pct: number, feedRatios: number[]) => raisedLevainFits(levainFlourG, kitchenTemp, feedToMixH, flourStrength, pct, feedRatios)
-    : undefined, [yeastType, starterPctOverride, levainFlourG, kitchenTemp, feedToMixH, flourStrength]);
+    ? (pct: number, feedRatios: number[]) => raisedLevainFits(levainFlourG, kitchenTemp, feedToMixH, pct, feedRatios)
+    : undefined, [yeastType, starterPctOverride, levainFlourG, kitchenTemp, feedToMixH]);
   // A restored, up-to-date recipe is the baseline the next update compares amounts with.
   useEffect(() => {
     if (!recipeGenerated || protocolStale || acceptedAmountsRef.current || !recipe) return;
@@ -2589,7 +2596,7 @@ export default function Home() {
       kitchenTemp, waterSource, measuredWaterTemp, waterMethod, spiralIceConfirmed, mixingBatches, mixerCapacityG: customMixerCapacityG, resultNotes, previousNote, preheatExtraMin, exitLead, planExitLead: planExitLead(schedule, kitchenTemp, styleKey), planRules: HOT_PLAN_RULES, ...(legacyHotPlan ? {legacyHotPlan: true} : {}), containerCapacityLitres, humidity, fridgeTemp,
       flourBlend, prefermentType, prefermentFlourPct, prefOffsetH, timingOverrides, execution, mixExecution, starterFeedRecords, starterRecoveryPending,
       qtyChosen, flourChosen, prefermentChosen, customKitchenConfirmed, confirmedSettings,
-      manualHydration, manualOil, manualSugar, manualSalt, yeastPctOverride, yeastAnchorH: yeastPctOverride !== undefined ? yeastAnchorH : undefined, prefYeastOverride, starterPctOverride, autoStarterPct,
+      manualHydration, manualOil, manualSugar, manualSalt, yeastPctOverride, yeastAnchorH: yeastPctOverride !== undefined ? yeastAnchorH : undefined, prefYeastOverride, starterPctOverride, autoStarterPct, levainLegacy: levainLegacyApplies ? levainLegacy : null,
       targetDoughTemp, flourInFridge, measuredFlourTemp, measuredPrefermentTemp, wastePct: wasteAllowance, addSeeds, priorityOverride,
       prefGoesInFridge, poolishStorage, bigaStorage,
       startTime: startTime?.getTime() ?? null,
@@ -3727,6 +3734,7 @@ export default function Home() {
     rememberLastEquipment({bakeType,oven:confirmed('oven',ovenType)?ovenType:null,mixer:confirmed('mixer',mixerType)?mixerType:null,
       yeast:yeastType&&yeastType!=='sourdough'&&confirmed('yeast',yeastType)?yeastType:null});
     setAutoStarterPct(undefined);
+    setLevainLegacy(null);
     setPendingSession(null);
     setScheduleCandidateValid(true);
     setBatchView('style');setProtocolView('dough');setServiceView('dough');setFillingsReturn(null);setPrepReturnToService(null);setShoppingReturnToFillings(false);
@@ -4068,6 +4076,7 @@ export default function Home() {
     setAcceptedPlan(rb ? undefined : normalizeAcceptedPlan(snap.acceptedStartTime, snap.acceptedPreparationAt, snap.acceptedEatTime));
     setStarterPctOverride(snap.starterPctOverride);
     setAutoStarterPct(snap.autoStarterPct);
+    setLevainLegacy(rb ? null : restoredLevainLegacy(snap));
     setTargetDoughTemp(snap.targetDoughTemp);
     setFlourInFridge(snap.flourInFridge ?? false);
     setAddSeeds(snap.addSeeds ?? false);
