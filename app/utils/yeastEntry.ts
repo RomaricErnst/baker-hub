@@ -1,4 +1,4 @@
-import { fermentationHoursForYeast, type AvailabilityBlock } from '../utils';
+import { fermentationHoursForYeast, type AvailabilityBlock, type PlanLadder } from '../utils';
 import type { MixerType } from '../data';
 
 const HOUR = 3600000, QUARTER = 15 * 60000;
@@ -8,7 +8,7 @@ export const MAX_ENTERED_IDY_PCT = 2;
 export interface YeastEntryInput {
   bake: Date; now: number; blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number;
   mixerType: MixerType; styleKey: string; numItems: number; itemWeight: number;
-  mixingBatches: number; fridgeTemp: number; hydration: number; exitLeadMin?: number;
+  mixingBatches: number; fridgeTemp: number; hydration: number; exitLeadMin?: number; planLadder?: PlanLadder;
   /** IDY → the baker's yeast (1 instant, 1.33 active dry, 3 fresh). */
   conversion: number;
 }
@@ -37,7 +37,7 @@ export function checkYeastEntry(idyPct: number, o: YeastEntryInput): YeastEntryC
   const availableH = (+o.bake - earliest) / HOUR;
   const timing = { bake: o.bake, blocks: o.blocks, kitchenTemp: o.kitchenTemp, preheatMin: o.preheatMin, mixerType: o.mixerType,
     styleKey: o.styleKey, numItems: o.numItems, itemWeight: o.itemWeight, mixingBatches: o.mixingBatches,
-    fridgeTemp: o.fridgeTemp, hydration: o.hydration, exitLeadMin: o.exitLeadMin };
+    fridgeTemp: o.fridgeTemp, hydration: o.hydration, exitLeadMin: o.exitLeadMin, planLadder: o.planLadder };
   // Windows that end at the bake and start no earlier than the next quarter hour. The yeast
   // model's budget is not monotone in the window (a cold-retard plan ferments less than a
   // slightly shorter room-temperature one), so the inversion is asked within the time left.

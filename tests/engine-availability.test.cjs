@@ -136,7 +136,10 @@ test('the same validator accepts shaped dough storage without a bulk fridge stag
  assert.ok(utils.hasCoherentScheduleShape(moved,base.startTime));
  const start=new Date('2030-04-02T10:00Z'),bake=new Date(+start+6.75*3600000);
  const short=utils.buildSchedule(start,bake,[],32,45,'hand','neapolitan',4);
- assert.equal(+short.coldRetard2End-+short.coldRetard2Start,3600000);
+ // Round 8 (hot kitchen, one fridge spell): the balls are shaped after the warm bulk and take the whole
+ // cold (3 h) instead of a 2 h bulk spell and a 1 h shaped one; still a shaped stage without a bulk stage.
+ assert.equal(short.coldRetard1Start,null);
+ assert.equal(+short.coldRetard2End-+short.coldRetard2Start,3*3600000);
  assert.ok(utils.hasCoherentScheduleShape(short,start));
  assert.equal(utils.hasCoherentScheduleShape({...short,coldRetard2End:new Date(+short.coldRetard2Start+15*60000)},start),false);
 });

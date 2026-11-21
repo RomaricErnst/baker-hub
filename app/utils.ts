@@ -886,6 +886,7 @@ function buildSchedulePhases(
   fromFridge = false,
   exitLeadMin?: number,
   proofMode: FinalProofMode = 'style',
+  hotPlan: HotPlan = 'engine',
 ): ScheduleResult {
   const bakeTime = new Date(eatTime.getTime() - preheatMin * 60000);
   // Elapsed mixing time is style-dependent (Modernist publishes it per style);
@@ -999,8 +1000,11 @@ function buildSchedulePhases(
   const divideH = divisionMinutesFor(numItems) / 60;
   const minTwoPhaseWindow = initialBulkH + minCold1H + divideH + minCold2H + minFinalRT + preheatH;
   // 'styleRoom' keeps a plan at room temperature; 'styleBulk' keeps the cold before shaping (buildSchedule).
+  // Hot kitchen, one fridge spell (buildSchedule's hot ladder): 'shapeFirst' shapes at the end of the
+  // warm bulk and the balls take the whole cold; 'bulkCold' keeps the cold before shaping.
+  const shapeFirst = hotPlan === 'shapeFirst';
   const isTwoPhase = hasColdRetard && totalWindowH >= minTwoPhaseWindow
-    && proofMode !== 'styleRoom' && proofMode !== 'styleBulk';
+    && proofMode !== 'styleRoom' && proofMode !== 'styleBulk' && hotPlan !== 'bulkCold' && hotPlan !== 'room';
 
   // Filter blocks overlapping the fermentation window [fermStart, bakeTime)
   const relevantBlocks = availabilityBlocks
@@ -1067,7 +1071,8 @@ function buildSchedulePhases(
     const actualBulkH = initialBulkH;
     const coldRetard1Start = new Date(fermStart.getTime() + actualBulkH * 3600000);
 
-    const earliestDivide = new Date(coldRetard1Start.getTime() + minCold1H * 3600000);
+    const earliestDivide = shapeFirst ? new Date(Math.ceil(+coldRetard1Start / 900000) * 900000)
+      : new Date(coldRetard1Start.getTime() + minCold1H * 3600000);
     const latestDivide   = new Date(bakeTime.getTime() - (minCold2H + minFinalRT + preheatH) * 3600000);
     const divideIsBlocked = (t: Date) => actionConflicts({ id: 'divide', at: t, end: new Date(+t + divideH * 3600000) }, relevantBlocks)
       || isTimeBlocked(+t + divideH * 3600000, relevantBlocks);
@@ -1076,7 +1081,7 @@ function buildSchedulePhases(
     // proof. Keep the existing bulk/folds and total cold budget. The 15-minute
     // floor separates the two fridge actions; it is not a maturation minimum.
     const flexibleColdSplit = ['neapolitan', 'newyork', 'pizza_romana'].includes(styleKey);
-    const searchDivideFrom = relevantBlocks.length && flexibleColdSplit && divideIsBlocked(r15(earliestDivide))
+    const searchDivideFrom = !shapeFirst && relevantBlocks.length && flexibleColdSplit && divideIsBlocked(r15(earliestDivide))
       ? new Date(+coldRetard1Start + 15 * 60000) : earliestDivide;
     let divideBallTime: Date = earliestDivide;
     let availableDivide: Date | null = null;
@@ -1106,6 +1111,7 @@ function buildSchedulePhases(
           }
           if (constrainedExit) { divideBallTime = scan; break; }
         }
+        if (shapeFirst) break;   // shaping stays at the end of the bulk; a busy slot fails the plan upstream
         scan = new Date(scan.getTime() + 15 * 60000);
       }
     }
@@ -1114,7 +1120,7 @@ function buildSchedulePhases(
     // block, with a shorter first cold spell. Two hours chill the dough enough
     // to shape (one in a tropical kitchen); the shaped loaves then spend the
     // block in the fridge and the total cold time is unchanged or longer.
-    if (!availableDivide && !constrainedExit && relevantBlocks.length) {
+    if (!availableDivide && !constrainedExit && relevantBlocks.length && !shapeFirst) {
       const shortestCold1H = isTropical ? 1 : 2;
       for (let scan = new Date(Math.floor((+earliestDivide - 900000) / 900000) * 900000);
         +scan >= +coldRetard1Start + shortestCold1H * 3600000; scan = new Date(+scan - 900000)) {
@@ -1299,7 +1305,7 @@ function buildSchedulePhases(
   // ── SINGLE PHASE ─────────────────────────────────────────────
 
   // ── PURE RT: no cold retard for this style ───────────────────
-  if (!hasColdRetard || proofMode === 'styleRoom') {
+  if (!hasColdRetard || proofMode === 'styleRoom' || hotPlan === 'room') {
     return pureRoomTemperatureFallback(scheduleNote ?? 'Room-temperature fermentation fits this window.');
   }
 
@@ -1458,6 +1464,69 @@ function nightActionIds(schedule: ScheduleResult, blocks: AvailabilityBlock[]): 
     .map(action => action.id));
 }
 
+/** How a hot kitchen's plan uses the fridge (buildSchedule's hot ladder, 21 Nov 2026 round 8):
+ * 'engine' the engine's own structure; 'room' no fridge; 'shapeFirst' shape at the end of the warm
+ * bulk, the balls in the fridge until the warm-up; 'bulkCold' the bulk in the fridge, shaped after it. */
+type HotPlan = 'engine' | 'room' | 'shapeFirst' | 'bulkCold';
+
+/** Lowest instant-yeast dose (% of flour) a hot kitchen's room-temperature plan may call for: the
+ * low end of Naples' room-temperature doses (0.10–0.20 %, Gemignani, Pizza Today), and weighable on a
+ * kitchen scale for a usual batch (0.6 g for 600 g of flour). */
+export const HOT_ROOM_MIN_IDY_PCT = 0.1;
+
+/** Fridge spells in a plan: the bulk's and the shaped dough's (accountScheduleTime drops a spell under 1 h). */
+export function fridgeSpellCount(schedule: ScheduleResult): number {
+  return (schedule.coldRetard1Start ? 1 : 0) + (schedule.coldRetard2Start ? 1 : 0)
+    || (schedule.coldRetardStart && schedule.totalColdHours > 0 ? 1 : 0);
+}
+
+/** Which plans the one-trip ladder may use: 'hot' only in a kitchen at 28 °C or more (both modes); 'all' in
+ * every kitchen (Simple, owner 21 Nov 2026: one trip to the fridge whatever the temperature); 'off' none (a
+ * saved bake under way keeps the plan shape it was made with, app/utils/hotPlanRules.ts). */
+export type PlanLadder = 'hot' | 'all' | 'off';
+
+/** The ladder's plans for a commercial dough with a cold retard (none for levain: its own solver, and it bakes
+ * from the fridge). No fridge ('room') only in a hot kitchen; below 28 °C (Simple) the one-trip plans only. An
+ * enriched dough that requires the fridge keeps it and is shaped cold (brioche practice): only the bulk-cold plan. */
+function hotKitchenLadder(styleKey: string, kitchenTemp: number, isSourdough: boolean, scope: PlanLadder = 'hot'): HotPlan[] {
+  const ferm = STYLE_FERM_DEFAULTS[styleKey];
+  const hot = kitchenTemp >= 28;
+  if (scope === 'off' || (!hot && scope !== 'all') || isSourdough || !ferm || !(ferm.coldH > 0)) return [];
+  return ferm.coldHRequired ? ['bulkCold'] : hot ? ['room', 'shapeFirst', 'bulkCold'] : ['shapeFirst', 'bulkCold'];
+}
+
+/** Hot kitchen, short or same-day plans (21 Nov 2026 round 8, owner: "simplify for hot kitchen on short plan,
+ * especially for the Simple protocol"). The engine's two-phase plan moved the dough in and out of the fridge
+ * twice (into the fridge 2 h, out to shape, back in). In order, the first plan that keeps what the engine's
+ * plan promised (no new clash, no newly invalid preparation, no hands-on step newly between 22:00 and 07:00):
+ * (a) no fridge, when the room-temperature plan still calls for at least HOT_ROOM_MIN_IDY_PCT of instant yeast
+ *     on the kitchen-temperature path (the recipe's own path, starting cooler with ice, calls for more);
+ * (b) one fridge spell: shape at the end of the warm bulk and the balls take the whole cold (Modernist Pizza,
+ *     Kitchen Manual pp. 17, 24, 41: balling before the cold proof; Gemignani: cool the balls), else the bulk
+ *     in the fridge and shaping after it;
+ * (c) else the engine's plan. A plan with at most one fridge spell that (a) does not reach is returned as is. */
+function simplerHotPlan(plan: ScheduleResult, build: (hot: HotPlan) => ScheduleResult, blocks: AvailabilityBlock[], kitchenTemp: number, ladder: HotPlan[]): ScheduleResult {
+  const night = nightActionIds(plan, blocks);
+  const keeps = (other: ScheduleResult) => (!other.preparationInvalid || !!plan.preparationInvalid)
+    && (other.availabilityConflicts?.length ?? 0) <= (plan.availabilityConflicts?.length ?? 0)
+    && [...nightActionIds(other, blocks)].every(id => night.has(id));
+  const spells = fridgeSpellCount(plan);
+  if (spells > 0 && ladder.includes('room')) {
+    const room = build('room');
+    const dose = doseForHeq(simpleYeastPath(room.totalRTHours, kitchenTemp, 0, 6).heq, 'dough', riseTarget(kitchenTemp));
+    if (room.totalColdHours === 0 && dose >= HOT_ROOM_MIN_IDY_PCT && keeps(room)) return room;
+  }
+  if (spells <= 1) return plan;
+  // The bulk-cold plan keeps the fridge's share: no more room-temperature time than the engine's plan (with
+  // only the style's cold hours it left an enriched dough 13 h at 27 °C on the yeast floor). Shaping first
+  // moves the bulk's cold to the balls and keeps the warm time.
+  for (const hot of ladder.filter(step => step !== 'room')) {
+    const one = build(hot);
+    if (fridgeSpellCount(one) === 1 && keeps(one) && (hot !== 'bulkCold' || one.totalRTHours <= plan.totalRTHours + 0.25)) return one;
+  }
+  return plan;
+}
+
 /** Build canonical phases, then describe only work with an existing time budget.
  * A style with its own apprêt bound (`shapedProofH24`, baguette) is planned with it only where that keeps
  * what the generic bound's plan already promised (20 Nov 2026 round 7, owner): a room-temperature plan stays
@@ -1472,10 +1541,31 @@ export function buildSchedule(
   /** Minutes from the final fridge exit to the bake that the previous plan of this bake had
    *  (Bake again); kept when that exit is free. Undefined: the engine's own exit. */
   exitLeadMin?: number,
+  /** Which plans may take one fridge trip (PlanLadder): 'hot' the hot-kitchen ladder (default, Custom),
+   *  'all' every kitchen (Simple), 'off' the engine's plan shape (a bake under way when it shipped). */
+  planLadder: PlanLadder = 'hot',
 ): ScheduleResult {
-  const build = (mode: FinalProofMode) => buildScheduleOnce(startTime, eatTime, availabilityBlocks, kitchenTemp, preheatMin,
-    mixerType, styleKey, numItems, requestedMixingBatches, isSourdough, starterFactor, exitLeadMin, mode);
-  if (isSourdough || !STYLE_FERM_DEFAULTS[styleKey]?.shapedProofH24) return build('style');
+  const build = (mode: FinalProofMode, hot: HotPlan = 'engine') => buildScheduleOnce(startTime, eatTime, availabilityBlocks, kitchenTemp, preheatMin,
+    mixerType, styleKey, numItems, requestedMixingBatches, isSourdough, starterFactor, exitLeadMin, mode, hot);
+  // A shaped fridge spell the baker chose for this bake (bake from the fridge, the shortest warm-up, an
+  // arranged take-out, Bake again's exit lead) is kept: only the plan that keeps the shaped spell may replace it.
+  const shapedSpellChosen = (exitLeadMin !== undefined && Number.isFinite(exitLeadMin) && exitLeadMin > 0)
+    || availabilityBlocks.some(block => block.bakeFromFridge === +eatTime || block.shortWarmup === +eatTime || block.fridgeRemoval?.bake === +eatTime);
+  const ladder = hotKitchenLadder(styleKey, kitchenTemp, isSourdough, planLadder).filter(step => !shapedSpellChosen || step === 'shapeFirst');
+  if (isSourdough || !STYLE_FERM_DEFAULTS[styleKey]?.shapedProofH24) {
+    const plan = build('style');
+    return ladder.length ? simplerHotPlan(plan, hot => build('style', hot), availabilityBlocks, kitchenTemp, ladder) : plan;
+  }
+  const chosen = styleBoundPlan(build, availabilityBlocks, styleKey, kitchenTemp);
+  if (!ladder.length) return chosen.plan;
+  return simplerHotPlan(chosen.plan, hot => {
+    const plan = build(chosen.mode, hot);
+    return chosen.mode === 'generic' ? plan : { ...plan, finalProofBound: 'style' };
+  }, availabilityBlocks, kitchenTemp, ladder);
+}
+
+/** The style's own apprêt (baguette), kept only where it keeps what the generic bound's plan promised. */
+function styleBoundPlan(build: (mode: FinalProofMode) => ScheduleResult, availabilityBlocks: AvailabilityBlock[], styleKey: string, kitchenTemp: number): { plan: ScheduleResult; mode: FinalProofMode } {
   const generic = build('generic');
   const night = nightActionIds(generic, availabilityBlocks);
   const keeps = (plan: ScheduleResult) => (!plan.preparationInvalid || generic.preparationInvalid)
@@ -1483,15 +1573,15 @@ export function buildSchedule(
     && [...nightActionIds(plan, availabilityBlocks)].every(id => night.has(id));
   if (!(generic.totalColdHours > 0)) {
     const room = build('styleRoom');
-    if (room.totalColdHours > 0 || !keeps(room)) return generic;
-    return { ...room, scheduleNote: generic.scheduleNote, finalProofBound: 'style' };
+    if (room.totalColdHours > 0 || !keeps(room)) return { plan: generic, mode: 'generic' };
+    return { plan: { ...room, scheduleNote: generic.scheduleNote, finalProofBound: 'style' }, mode: 'styleRoom' };
   }
   const styled = build('style');
-  if (styled.totalColdHours > 0 && keeps(styled)) return { ...styled, finalProofBound: 'style' };
+  if (styled.totalColdHours > 0 && keeps(styled)) return { plan: { ...styled, finalProofBound: 'style' }, mode: 'style' };
   const bulk = build('styleBulk');
   const boundH = styleMaxFinalProofHours(styleKey, kitchenTemp, true, false, 0);
-  if (bulk.totalColdHours > 0 && keeps(bulk) && (+bulk.bakeStart - +bulk.finalProofStart) / 3600000 <= boundH + 1e-9) return { ...bulk, finalProofBound: 'style' };
-  return generic;
+  if (bulk.totalColdHours > 0 && keeps(bulk) && (+bulk.bakeStart - +bulk.finalProofStart) / 3600000 <= boundH + 1e-9) return { plan: { ...bulk, finalProofBound: 'style' }, mode: 'styleBulk' };
+  return { plan: generic, mode: 'generic' };
 }
 
 function buildScheduleOnce(
@@ -1504,6 +1594,7 @@ function buildScheduleOnce(
    *  (Bake again); kept when that exit is free. Undefined: the engine's own exit. */
   exitLeadMin?: number,
   proofMode: FinalProofMode = 'style',
+  hotPlan: HotPlan = 'engine',
 ): ScheduleResult {
   const mixingBatches = Number.isFinite(requestedMixingBatches) ? Math.max(1, Math.min(100, Math.floor(requestedMixingBatches))) : 1;
   const poachMinutes = breadPoachMinutes(styleKey, numItems);
@@ -1515,7 +1606,7 @@ function buildScheduleOnce(
   // take it only as a repair around busy times.
   const fromFridge = !poachMinutes && BAKE_FROM_FRIDGE_STYLES.has(styleKey)
     && (isSourdough || availabilityBlocks.some(block => block.bakeFromFridge === +eatTime));
-  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches, numItems, isSourdough, isSourdough ? starterFactor : 1, fromFridge, poachMinutes ? undefined : exitLeadMin, proofMode);
+  const schedule = buildSchedulePhases(startTime, fermentationEnd, availabilityBlocks, kitchenTemp, poachMinutes ? 0 : preheatMin, mixerType, styleKey, mixingBatches, numItems, isSourdough, isSourdough ? starterFactor : 1, fromFridge, poachMinutes ? undefined : exitLeadMin, proofMode, hotPlan);
   schedule.divisionMinutes = divisionMinutesFor(numItems);
   const requiredCold = REQUIRED_COLD_MIN_HOURS[styleKey] ?? 0;
   if (requiredCold) {
@@ -1725,6 +1816,8 @@ export interface ScheduleRepairInput {
   starterFactor?: number;
   /** The previous plan's fridge-exit lead (buildSchedule exitLeadMin). */
   exitLeadMin?: number;
+  /** One-trip ladder scope (buildSchedule planLadder): 'all' for a Simple bake. */
+  planLadder?: PlanLadder;
   /** Supply the planning clock explicitly for reproducible candidate checks. */
   now?: Date;
   allowStartShift?: boolean;
@@ -1750,7 +1843,7 @@ export function findScheduleRepair(input: ScheduleRepairInput): ScheduleRepair |
   const now = +(input.now ?? new Date());
   if (![+startTime, +eatTime, now, kitchenTemp, preheatMin].every(Number.isFinite)
       || +startTime < now || +startTime >= +eatTime || preheatMin < 0) return null;
-  const build = (start: Date, bake: Date) => buildSchedule(start, bake, availabilityBlocks, kitchenTemp, preheatMin, mixer, style, input.numItems, input.mixingBatches, input.isSourdough, input.starterFactor ?? 1, input.exitLeadMin);
+  const build = (start: Date, bake: Date) => buildSchedule(start, bake, availabilityBlocks, kitchenTemp, preheatMin, mixer, style, input.numItems, input.mixingBatches, input.isSourdough, input.starterFactor ?? 1, input.exitLeadMin, input.planLadder);
   const original = build(startTime, eatTime);
   const valid = (schedule: ScheduleResult, start: Date, bake: Date) =>
     +schedule.bakeStart === +bake && hasCoherentScheduleShape(schedule, start)
@@ -1901,7 +1994,7 @@ export interface RecipeResult {
 interface FermentationTimingInput {
   bake: Date; blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number;
   mixerType: MixerType; styleKey: string; numItems: number; itemWeight: number;
-  mixingBatches: number; fridgeTemp: number; hydration: number; budget?: number; exitLeadMin?: number;
+  mixingBatches: number; fridgeTemp: number; hydration: number; budget?: number; exitLeadMin?: number; planLadder?: PlanLadder;
   /** Dough temperature at the mix (°C); the style's target dough temperature by default. */
   doughTempC?: number;
   /** Longest window considered (hours), e.g. the time left before the bake. */
@@ -1916,7 +2009,7 @@ function budgetCrossings(modelIdyPct: number, o: FermentationTimingInput, target
   const doughTempC = o.doughTempC ?? TARGET_FDT[o.styleKey] ?? 24;
   const reached = (hours: number) => {
     try {
-      const schedule = buildSchedule(new Date(+o.bake - hours * 3600000), o.bake, o.blocks, o.kitchenTemp, o.preheatMin, o.mixerType, o.styleKey, o.numItems, o.mixingBatches, false, 1, o.exitLeadMin);
+      const schedule = buildSchedule(new Date(+o.bake - hours * 3600000), o.bake, o.blocks, o.kitchenTemp, o.preheatMin, o.mixerType, o.styleKey, o.numItems, o.mixingBatches, false, 1, o.exitLeadMin, o.planLadder);
       const path = doughThermalPath(schedule, o.numItems, o.itemWeight, o.hydration, o.kitchenTemp, o.fridgeTemp, doughTempC);
       const b = fermentationBudget(modelIdyPct, path.warmHours, o.kitchenTemp, path.coldHours, o.fridgeTemp, path);
       return Number.isFinite(b) ? b : -Infinity;
@@ -1991,13 +2084,13 @@ export function fermentationWindowForYeast(modelIdyPct: number, o: FermentationT
 export function bakeFromFridgeOption(o: {
   start: Date; bake: Date; blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number;
   mixerType: MixerType; styleKey: string; numItems: number; itemWeight: number; mixingBatches: number;
-  fridgeTemp: number; hydration: number; isSourdough?: boolean; starterFactor?: number; exitLeadMin?: number;
+  fridgeTemp: number; hydration: number; isSourdough?: boolean; starterFactor?: number; exitLeadMin?: number; planLadder?: PlanLadder;
   /** Dough temperature at the mix (°C); the style's target dough temperature by default. */
   doughTempC?: number;
 }): { exitAt: Date; budget: number; blocks: AvailabilityBlock[] } | null {
   if (!BAKE_FROM_FRIDGE_STYLES.has(o.styleKey) || !o.blocks.length || +o.bake <= +o.start) return null;
   const plain = o.blocks.map(({ bakeFromFridge: _ignored, ...block }) => block);
-  const build = (blocks: AvailabilityBlock[]) => buildSchedule(o.start, o.bake, blocks, o.kitchenTemp, o.preheatMin, o.mixerType, o.styleKey, o.numItems, o.mixingBatches, o.isSourdough ?? isLevainStyle(o.styleKey), o.starterFactor ?? 1, o.exitLeadMin);
+  const build = (blocks: AvailabilityBlock[]) => buildSchedule(o.start, o.bake, blocks, o.kitchenTemp, o.preheatMin, o.mixerType, o.styleKey, o.numItems, o.mixingBatches, o.isSourdough ?? isLevainStyle(o.styleKey), o.starterFactor ?? 1, o.exitLeadMin, o.planLadder);
   const base = build(plain);
   if (!base.coldRetard2Start || !base.coldRetard2End || !base.rtWarmupStart) return null;
   const exit = base.coldRetard2End;
@@ -2025,12 +2118,12 @@ export function bakeFromFridgeOption(o: {
 export function shortWarmupOption(o: {
   start: Date; bake: Date; blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number;
   mixerType: MixerType; styleKey: string; numItems: number; mixingBatches: number;
-  isSourdough?: boolean; starterFactor?: number; before?: Date;
+  isSourdough?: boolean; starterFactor?: number; before?: Date; planLadder?: PlanLadder;
 }): { bake: Date; exitAt: Date; warmMin: number; blocks: AvailabilityBlock[] } | null {
   if (!o.blocks.length || +o.bake <= +o.start) return null;
   const plain = o.blocks.map(({ shortWarmup: _ignored, ...block }) => block);
   const sourdough = o.isSourdough ?? isLevainStyle(o.styleKey);
-  const build = (bake: Date, blocks: AvailabilityBlock[]) => buildSchedule(o.start, bake, blocks, o.kitchenTemp, o.preheatMin, o.mixerType, o.styleKey, o.numItems, o.mixingBatches, sourdough, o.starterFactor ?? 1);
+  const build = (bake: Date, blocks: AvailabilityBlock[]) => buildSchedule(o.start, bake, blocks, o.kitchenTemp, o.preheatMin, o.mixerType, o.styleKey, o.numItems, o.mixingBatches, sourdough, o.starterFactor ?? 1, undefined, o.planLadder);
   const base = build(o.bake, plain);
   if (!base.coldRetard2End || !base.rtWarmupStart || base.preparationInvalid) return null;
   const holder = plain.findIndex(block => +block.from <= +base.coldRetard2End! && +base.coldRetard2End! < +block.to);

@@ -63,8 +63,9 @@ test('warm-spot and hot-kitchen tips follow the real kitchen temperature',()=>{
 test('the cold-phase pitfall appears only when the plan has a long cold rest',()=>{
  const start=new Date('2030-06-01T08:00Z');
  const plan=(kitchen,hours)=>utils.buildSchedule(start,new Date(+start+hours*3600000),[],kitchen,45,'hand','neapolitan');
- const short=plan(30,6),long=plan(20,30);
- assert.ok(short.coldRetard1Start&&short.totalColdHours<8,'short cold plan');
+ // 30 °C, 7 h: since round 8 the hot same-day plan has one fridge spell, the shaped balls' (6 h is room-only now).
+ const short=plan(30,7),long=plan(20,30);
+ assert.ok((short.coldRetard1Start||short.coldRetard2Start)&&short.totalColdHours>0&&short.totalColdHours<8,'short cold plan');
  assert.ok(long.coldRetard1Start&&long.totalColdHours>=8,'long cold plan');
  assert.doesNotMatch(render('neapolitan','en',{kitchen:30,schedule:short}),/Rushing the cold phase/);
  assert.doesNotMatch(render('neapolitan','fr',{kitchen:30,schedule:short}),/Précipiter la phase froide/);

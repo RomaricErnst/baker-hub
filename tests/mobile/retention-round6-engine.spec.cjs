@@ -59,7 +59,7 @@ test.describe('Priya: Customize after a Simple levain recipe',()=>{
 
 test.describe('Thomas: pizza kneaded after work',()=>{
  test.use({timezoneId:'Europe/Paris',locale:'fr-FR'});
- test('the sheet offers out at 19h00 and a 20h45 bake after the shortest warm-up',async({page})=>{
+ test('one fridge trip: the dough stays whole until after work, shaped at 19h00, bake 21h00',async({page})=>{
   const busy={version:1,blockers:{sleep:{enabled:true,from:'23:00',to:'07:00'},work:{enabled:true,from:'09:00',to:'19:00'}}};
   await install(page,{bh_profile_v1:JSON.stringify(busy),bh_last_equipment_v1:JSON.stringify({ovenPizza:'home_oven_steel',mixer:'hand',kitchenTemp:20,fridgeTemp:6,yeast:'fresh'})},'2026-12-03T19:00:00Z');
   await page.goto('/fr');
@@ -70,22 +70,27 @@ test.describe('Thomas: pizza kneaded after work',()=>{
   await bakeDate.fill('2026-12-04T20:30');await bakeDate.blur();
   await page.getByRole('button',{name:/^Générer ma recette/}).tap();
   const sheet=page.getByRole('dialog',{name:'Avant votre recette'});
-  await expect(sheet).toContainText('Pour enfourner à 20h30, la pâte doit sortir du réfrigérateur à 17h45, pendant vos heures de travail.');
+  // Round 8 (owner: one fridge trip in Simple, every kitchen): shaping after the 21h00 knead's rise would be a
+  // new step at night, so the dough stays in the fridge in one piece until after work and is shaped then (was:
+  // shaped at 7h00, the balls out at 17h45). The clash is that take-out, in the generic sentence (it is not the
+  // shaped balls' final exit), at 18h30 (the latest before the 60 min preheat and a 1 h rest).
+  await expect(sheet).toContainText('Sortir la pâte du réfrigérateur tombe à 18h30, pendant vos heures de travail.');
   const options=sheet.locator('.bh-plan-option');
-  await expect(options).toHaveCount(3);
-  await expect(options.nth(0)).toContainText('Enfourner à 21h45');
-  await expect(options.nth(1)).toContainText('Enfourner à 20h45');
-  await expect(options.nth(1)).toContainText('Sortie du frigo à 19h00, quand vous êtes libre · 1 h 45 pour se réchauffer');
-  await expect(options.nth(2)).toContainText('Garder 20h30');
-  await options.nth(1).tap();
+  // The shortest warm-up is for shaped balls (none in this plan); the later bake is the one that takes the dough
+  // out at 19h00, when he is free: 2 h before the bake (1 h rest after shaping, then the proof while the oven heats).
+  await expect(options).toHaveCount(2);
+  await expect(options.nth(0)).toContainText('Enfourner à 21h00');
+  await expect(options.nth(0)).toContainText('Sortie du frigo à 19h00');
+  await expect(options.nth(0)).toContainText('2 h pour se réchauffer');
+  await expect(options.nth(1)).toContainText('Garder 20h30');
+  await options.nth(0).tap();
   await expect.poll(async()=>(await stored(page))?.recipeGenerated??false,{timeout:20000}).toBe(true);
   const s=await stored(page);
-  expect(s.eatTime).toBe(Date.parse('2026-12-04T19:45:00Z'));
-  expect(s.blocks.some(b=>b.shortWarmup===s.eatTime)).toBe(true);
+  expect(s.eatTime).toBe(Date.parse('2026-12-04T20:00:00Z'));
   const row=name=>page.locator('li,div').filter({hasText:new RegExp('^\\s*\\S+\\s*'+name+'$')}).last();
   // Your plan opens on the key stages (round 7); the take-out and preheat rows are under All steps.
   {const t=page.locator('[data-plan-all-steps]:visible').first();await expect(t).toBeVisible();if(await t.getAttribute('aria-expanded')==='false')await t.tap();}
-  await expect(row('Sortir les pâtons du réfrigérateur')).toContainText('19h00');
-  await expect(row('Préchauffer le four')).toContainText('19h45');
+  await expect(row('Sortir la pâte du réfrigérateur · Diviser et façonner')).toContainText('19h00');
+  await expect(row('Préchauffer le four')).toContainText('20h00');
  });
 });

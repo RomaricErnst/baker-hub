@@ -32,6 +32,8 @@ test('EN: Step done moves the bar and Go to at once; the overview opens on the s
  // Home: one row per bake under way, opening it at its due step.
  await resumeOne(page);
  await expect(page.locator('.bh-navigator-current')).toContainText('Preparation');
+ // A bake saved before round 8 and already under way keeps the plan it was made with (hotPlanRules.ts):
+ // the bulk into the fridge at 7:15pm, shaped at 9:15pm.
  await expect(bar(page)).toContainText('Now: Refrigerate the dough');
  const fridge=page.locator('section[data-guide-title="Refrigerate the dough"]');
  // The step the bar names is the one open in the overview, not an older unticked one.

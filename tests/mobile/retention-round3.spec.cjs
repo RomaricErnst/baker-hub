@@ -58,9 +58,9 @@ test.describe('Maya, zero ticks',()=>{
    // [UTC instant, section the bake opens on, bar text]
    ['2026-11-20T10:10:00Z','Preparation','Now: Start Dough'],
    ['2026-11-20T10:50:00Z','Preparation','Now: Let the dough rise'],
-   ['2026-11-20T11:20:00Z','Preparation','Now: Refrigerate the dough'],
-   ['2026-11-20T13:20:00Z','Preparation','Now: Divide and shape dough balls'],
-   ['2026-11-20T13:40:00Z','Preparation','Now: Refrigerate the dough balls'],
+   // Round 8 (hot kitchen, one fridge spell): shaped at 7:15pm after the warm rise, into the fridge at 7:34pm.
+   ['2026-11-20T11:20:00Z','Preparation','Now: Divide and shape dough balls'],
+   ['2026-11-20T11:40:00Z','Preparation','Now: Refrigerate the dough balls'],
    ['2026-11-21T09:40:00Z','Preparation','Now: Take the dough out of the fridge'],// named by its action since round 6 (A5)
    ['2026-11-21T11:05:00Z','Baking & serving','Now: Preheat the oven'],
    ['2026-11-21T11:35:00Z','Baking & serving','Now: Bake the pizzas'],
@@ -114,6 +114,7 @@ test.describe('Maya, zero ticks',()=>{
  });
 
  test('partial ticks: a later tick marks only its step; the earlier ones stay plain and the bar moves on',async({page})=>{
+  // Saved before round 8 and opened under way: the plan keeps the shape it was made with (hotPlanRules.ts).
   await install(page,storageFor('maya-1',session()),'2026-11-20T13:20:00Z');
   await reopen(page,'2026-11-20T13:20:00Z');
   await resumeFromHome(page);

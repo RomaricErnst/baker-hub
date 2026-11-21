@@ -87,6 +87,10 @@ export interface SessionData {
   exitLead?: ExitLead;
   /** This plan's own fridge-exit lead, carried to the next Bake again. */
   planExitLead?: ExitLead;
+  /** Plan rules the recipe was made with (`HOT_PLAN_RULES`, app/utils/hotPlanRules.ts); absent before round 8. */
+  planRules?: number;
+  /** A bake under way when the hot-kitchen ladder shipped keeps the plan shape it was made with. */
+  legacyHotPlan?: boolean;
   /** When this bake keeps the oven busy (preheat to last piece out, ms): two bakes on one device are
    *  compared with it (18 Nov 2026 retention round 3). */
   ovenFrom?: number;

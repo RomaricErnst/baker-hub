@@ -1,4 +1,4 @@
-import {buildSchedule,hasCoherentScheduleShape,withLongerPreheat,type AvailabilityBlock,type ScheduleResult} from '../utils';
+import {buildSchedule,hasCoherentScheduleShape,withLongerPreheat,type AvailabilityBlock,type PlanLadder,type ScheduleResult} from '../utils';
 import type {MixerType} from '../data';
 import {planActions,findAvailabilityConflicts,type AvailabilityAction} from './scheduleAvailability';
 export interface ScheduleDraftInput {
@@ -10,6 +10,8 @@ export interface ScheduleDraftInput {
   starterFactor?:number;
   /** The previous plan's fridge-exit lead in minutes (Bake again; buildSchedule exitLeadMin). */
   exitLeadMin?:number;
+  /** One-trip ladder scope (buildSchedule planLadder): 'all' for a Simple bake, 'off' for a bake kept as made. */
+  planLadder?:PlanLadder;
   /** Minutes of preheat the baker added on the plan: the Preheat step alone moves (withLongerPreheat). */
   preheatExtraMin?:number;
   extraActions?:AvailabilityAction[]; methodValid:boolean; now?:number;
@@ -18,7 +20,7 @@ export interface ScheduleDraftInput {
 export function assessScheduleDraft(input:ScheduleDraftInput):{schedule:ScheduleResult|null; valid:boolean; reason:'date'|'range'|'method'|'busy'|'timing'|null; conflict?:AvailabilityAction} {
   const {start,bake,from,to,extraActions=[],now=Date.now()}=input;
   if(![+start,+bake].every(Number.isFinite)||(input.completedMixAt===undefined&&+start<=now)||+bake<=+start)return {schedule:null,valid:false,reason:'date'};
-  const schedule=withLongerPreheat(buildSchedule(start,bake,input.blocks,input.kitchenTemp,input.preheatMin,input.mixerType,input.styleKey,input.numItems,input.mixingBatches,input.isSourdough,input.starterFactor??1,input.exitLeadMin),bake,input.preheatExtraMin??0,input.blocks);
+  const schedule=withLongerPreheat(buildSchedule(start,bake,input.blocks,input.kitchenTemp,input.preheatMin,input.mixerType,input.styleKey,input.numItems,input.mixingBatches,input.isSourdough,input.starterFactor??1,input.exitLeadMin,input.planLadder),bake,input.preheatExtraMin??0,input.blocks);
   // The builder historically rounds bake anchors. Never approve a candidate
   // whose rendered agenda silently differs from the requested fixed time.
   if(+schedule.bakeStart!==+bake)return {schedule,valid:false,reason:'timing'};
