@@ -132,8 +132,10 @@ export interface SessionData {
   prefGoesInFridge?: boolean;
   /** Custom poolish storage chosen by the baker; absent means the planner chooses. */
   poolishStorage?: 'auto' | 'fridge' | 'room';
-  /** Custom direct dough: baker's IDY % of flour; the plan is timed to it. */
+  /** Custom: baker's IDY % of flour for the (final) dough; the plan is timed to it (a poolish or biga's final dough too, round 7). */
   yeastPctOverride?: number;
+  /** Custom poolish/biga: baker's preferment yeast, IDY % of the preferment flour; its window is timed to it (round 7). */
+  prefYeastOverride?: { type: 'poolish' | 'biga'; pct: number };
   /** Custom levain: baker's starter % of flour; the bulk is timed to it. */
   starterPctOverride?: number;
   /** Levain without a baker %: the % the planner raised it to for this plan's bulk. */

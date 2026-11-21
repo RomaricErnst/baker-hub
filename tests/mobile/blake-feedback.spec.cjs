@@ -82,5 +82,6 @@ test('flour-first recipe edits ignore a restored extra-dough allowance',async({p
  await expect(page.locator('[data-mode-switch]')).toBeVisible();
  await page.getByRole('button',{name:'Modifier : Pâte',exact:true}).tap();
  await expect(page.getByRole('heading',{name:'Peaufinez votre pâte',exact:true})).toBeVisible();
- await expect(page.getByLabel('Marge de pâte supplémentaire (%)',{exact:true})).toHaveCount(0);
+ // Round 7: the row is "Marge pour les pertes" (accessible name below); still absent on a flour-first bread.
+ await expect(page.getByLabel('Marge pour les pertes au pétrissage, % de la pâte',{exact:true})).toHaveCount(0);
 });

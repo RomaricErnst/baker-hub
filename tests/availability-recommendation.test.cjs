@@ -18,7 +18,9 @@ function harness(overrides={}){
   prefermentType:'poolish',poolishStorage:'auto',poolishPeakAtMix:undefined,kitchenTemp:22,prefGoesInFridge:false,styleKey:'neapolitan',fridgeTemp:5,
   manualTimesRef:{current:overrides},solverNotifyBudgetRef:{current:{}},ratioApplyHistoryRef:{current:[]},
   draftOverridesRef:{current:{}},solverBlocksRef:{current:[]},resumeFrozenRef:{current:false},acceptedBakeRef:{current:0},
-  findFixedBakeSchedule,recommendPreferment,getPrefOptH:()=>8,onChange:(start,bake,blocks,options)=>writes.push({start,bake,blocks,options})};
+  findFixedBakeSchedule,recommendPreferment,getPrefOptH:()=>8,
+  // Round 7: the preferment window seeds through prefTargetH (the planner's optimum without a baker yeast) and prefYeastModes (null without one).
+  prefTargetH:()=>8,prefYeastModes:()=>null,prefYeastTimingFor:()=>null,prefYeastPctOverride:undefined,onChange:(start,bake,blocks,options)=>writes.push({start,bake,blocks,options})};
  c.setAlgoChoseFridge=()=>{};
  for(const name of ['MovedNote','BlockerNote','StarterPins','EditingRow','EditingEnabled','EditBaseTimes','LocalBlocks','SearchFailed','StartComputed','PrefAlgoRed','WindowTooShort'])c['set'+name]=()=>{};
  c.setPendingStart=v=>{c.pendingStart=v;};c.setPrefOffsetH=v=>{c.prefOffsetH=v;};

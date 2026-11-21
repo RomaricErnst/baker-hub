@@ -2070,15 +2070,16 @@ export function calculateRecipe(
   manualSalt?: number,                     // custom mode only
   targetDoughTemp?: number,                // custom mode only — overrides TARGET_FDT
   flourInFridge?: boolean,                 // custom mode only — flour temp = 4°C vs kitchenTemp
-  wastePct?: number,                       // custom mode only — mixing loss buffer
+  wastePct?: number,                       // mixing loss buffer (bowl loss), % of the total dough
   prefGoesInFridgeOverride?: boolean,      // custom mode only — from SchedulePicker
   feedToMixH?: number,                     // sourdough only — hours from feed to mix
   prefActualHours?: number,                // actual planned preferment window (prefOffsetH)
   measuredFlourTemp?: number,              // measured temperature at mixing, °C
   measuredPrefermentTemp?: number,         // measured poolish, biga or levain temperature, °C
   totalFlourTarget?: number,               // bread: total formula flour, preferment included
-  yeastPctOverride?: number,               // custom, direct dough: final IDY % chosen by the baker
+  yeastPctOverride?: number,               // custom: the (final) dough's IDY % of flour chosen by the baker; with a poolish/biga, the final dough's own yeast (round 7)
   starterPctOverride?: number,             // custom, levain: starter % of flour chosen by the baker
+  prefYeastPctOverride?: number,           // custom, poolish/biga: the preferment's IDY % of ITS flour chosen by the baker (round 7)
 ): RecipeResult {
   const s = ALL_STYLES[styleKey];
   const oven = (ovenType in OVEN_TYPES)
@@ -2161,8 +2162,9 @@ export function calculateRecipe(
     ? manualSugar
     : oven.forceSugar !== null ? oven.forceSugar : s.sugar;
 
-  // Quantities — apply waste buffer if set
-  const wasteMult = mode === 'custom' && wastePct !== undefined && wastePct > 0
+  // Quantities — apply waste buffer if set (any mode since 20 Nov 2026: the page defaults it to
+  // 1.5 % for every bake, doughAllowance.ts; undefined here still means none)
+  const wasteMult = wastePct !== undefined && wastePct > 0
     ? 1 + wastePct / 100
     : 1;
   let totalDough = Math.round(numItems * itemWeight * wasteMult);
@@ -2240,7 +2242,7 @@ export function calculateRecipe(
         styleKey,
         // The blend step below divides by the tolerance multiplier; multiply
         // here so the recipe shows exactly the amount the baker entered.
-        yeastPctOverride !== undefined && (!prefermentType || prefermentType === 'none')
+        yeastPctOverride !== undefined && (!prefermentType || prefermentType === 'none' || prefermentType === 'poolish' || prefermentType === 'biga')
           ? yeastPctOverride * (blendProfile?.fermToleranceMultiplier ?? 1) : undefined,
         schedule.totalRTHours,
         path,
@@ -2315,6 +2317,7 @@ export function calculateRecipe(
           prefActualHours,
           directNeedIDY,
           prefInFridge ? { warmupH: prefConditioningHours } : { cooldownH: prefConditioningHours },
+          prefermentType === 'poolish' || prefermentType === 'biga' ? prefYeastPctOverride : undefined,
         )
       : null;
 
@@ -2436,7 +2439,7 @@ export function calculateRecipe(
       doughTempResidualC: thermal.doughTempC - targetFDT,
     }, hydration, totalDough,
     autoPriority,
-    wastePct: mode === 'custom' && wastePct !== undefined && wastePct > 0 ? wastePct : undefined,
+    wastePct: wastePct !== undefined && wastePct > 0 ? wastePct : undefined,
     targetDoughTemp: mode === 'custom' && targetDoughTemp !== undefined ? targetDoughTemp : undefined,
     blendProfile: blendProfile ?? undefined,
     preferment,

@@ -690,7 +690,7 @@ export default function RecipeOutput({
           {/* The recipe is the recipe: timing lives in Preparation. */}
           {wastePct !== undefined && wastePct > 0 && (
             <div style={{ fontSize: '12px', color: 'var(--smoke)', fontFamily: 'var(--font-ui)', marginTop: '.2rem' }}>
-              {t('recipeOutput.mixingBuffer', { pct: wastePct })}
+              {t('recipeOutput.mixingBuffer', { pct: locale === 'fr' ? String(wastePct).replace('.', ',') : String(wastePct) })}
             </div>
           )}
         </div>

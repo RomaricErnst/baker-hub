@@ -948,6 +948,7 @@ export function computePrefermentRecipe(
   actualFermentH?: number,    // baker's REAL planned window (from scheduler) — yeast calibrated to it
   nTargetGramsIDY?: number,   // the final dough's own yeast: the direct-dough need of the dough's path (IDY grams)
   conditioning?: { warmupH?: number; cooldownH?: number }, // warm-up after the fridge / chill before the mix (h)
+  idyPctOverride?: number,    // baker-entered preferment yeast, IDY % of the preferment flour (Custom, round 7); the plan is timed by it
 ): {
   prefFlour: number;
   prefWater: number;
@@ -1013,7 +1014,9 @@ export function computePrefermentRecipe(
   const medium = prefermentType === 'biga' ? 'biga' as const : 'poolish' as const;
   const prefHydPct = p.hydration;
   const path = prefermentPath(prefFermentH, isInFridge, effectiveKT, effectiveFT, prefFlour + prefWater, prefHydPct, conditioning);
-  const idyPct = Math.min(YEAST_MAX_PCT_PREF, Math.max(YEAST_MIN_PCT_PREF, doseForHeq(path.heq, medium)));
+  // A baker-entered amount is shown as entered: the planner timed the window by it (prefermentYeast.ts).
+  const idyPct = idyPctOverride !== undefined && idyPctOverride > 0 ? idyPctOverride
+    : Math.min(YEAST_MAX_PCT_PREF, Math.max(YEAST_MIN_PCT_PREF, doseForHeq(path.heq, medium)));
   const peakDoseIDY = prefFlour * idyPct / 100;
 
   // ── The final dough's own yeast ───────────────────────────────────────

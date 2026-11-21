@@ -531,7 +531,7 @@
     },
     "recipeReady": "Your recipe is ready",
     "hydrationLabel": "hydration",
-    "mixingBuffer": "Includes {pct}% mixing buffer",
+    "mixingBuffer": "Includes {pct}% extra for bowl loss",
     "ingredientFlour": "Flour",
     "ingredientWater": "Water",
     "ingredientSalt": "Salt",
