@@ -813,7 +813,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             </label>
             <p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Protéines : information du sachet, non utilisée pour calculer W.':'Protein is recorded from the bag; it is not used to calculate W.'}</p>
           </details>
-          <p style={{fontSize:14}}>{isFr?'Sans force W indiquée, nous utilisons une estimation pour le type choisi.':'Without a stated W, we use an estimate for the selected flour type.'}</p>
+          <p data-flour-w-note style={{fontSize:14}}>{isFr?'L’hydratation suit le type de farine. Le W du sachet mesure la force — combien de temps la pâte tient — et fixe la durée de fermentation d’une farine de blé blanche ; il ne mesure pas l’eau que la farine absorbe. Sans W, nous suivons le type.':'Hydration follows the flour type. The bag’s W measures strength — how long the dough holds — and sets how long a white wheat flour can ferment; it doesn’t measure how much water the flour drinks. Without a W, we go by the type.'}</p>
           <button type="button" disabled={!manualFlourSelection(blend,manualType,manualName,manualQWText,manualProtein,locale)} onClick={()=>{
             const selection=manualFlourSelection(blend,manualType,manualName,manualQWText,manualProtein,locale);
             if(!selection)return;
@@ -990,7 +990,7 @@ export default function FlourPicker({ blend, onBlendChange, bakeType = 'pizza', 
             </label>
             <p style={{fontSize:14,color:'var(--smoke)'}}>{isFr?'Protéines : information du sachet, non utilisée pour calculer W.':'Protein is recorded from the bag; it is not used to calculate W.'}</p>
           </details>
-          <p style={{fontSize:14}}>{isFr?'Sans force W indiquée, nous utilisons une estimation pour le type choisi.':'Without a stated W, we use an estimate for the selected flour type.'}</p>
+          <p data-flour-w-note style={{fontSize:14}}>{isFr?'L’hydratation suit le type de farine. Le W du sachet mesure la force — combien de temps la pâte tient — et fixe la durée de fermentation d’une farine de blé blanche ; il ne mesure pas l’eau que la farine absorbe. Sans W, nous suivons le type.':'Hydration follows the flour type. The bag’s W measures strength — how long the dough holds — and sets how long a white wheat flour can ferment; it doesn’t measure how much water the flour drinks. Without a W, we go by the type.'}</p>
           <button type="button" disabled={!manualFlourSelection(blend,manualType,manualName,manualQWText,manualProtein,locale)} onClick={()=>{
             const selection=manualFlourSelection(blend,manualType,manualName,manualQWText,manualProtein,locale);
             if(!selection)return;

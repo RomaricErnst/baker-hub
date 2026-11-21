@@ -9,11 +9,11 @@ const NOW = Date.parse('2026-11-10T09:00:00+08:00');
 const base = (hoursToBake, extra = {}) => ({
   bake: new Date(NOW + hoursToBake * H), now: NOW, blocks: [], kitchenTemp: 24, preheatMin: 45, mixerType: 'hand',
   styleKey: 'neapolitan', numItems: 8, itemWeight: 270, mixingBatches: 1, fridgeTemp: 6, hydration: 62,
-  flourStrength: 1, conversion: 1, ...extra,
+  conversion: 1, ...extra,
 });
 // Within the time left: the yeast model's budget is not monotone in the window, so the
 // check (and these assertions) ask the inversion for a window that fits before the bake.
-const hoursFor = (idy, o, maxH) => utils.fermentationHoursForYeast(idy * o.flourStrength, maxH === undefined ? o : { ...o, maxH });
+const hoursFor = (idy, o, maxH) => utils.fermentationHoursForYeast(idy, maxH === undefined ? o : { ...o, maxH });
 
 test('a slow entered amount is refused with the smallest fitting amount, rounded up', () => {
   const o = base(34);

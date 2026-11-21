@@ -45,6 +45,11 @@ test('About: style blueprints, oven and flour corrections are the engine\'s',()=
   const F=data.FLOUR_DATA;
   for(const [k,t,h] of [['manitoba',1.35,3],['strong00',1.2,2],['pizza00',1,0],['bread',0.9,1],['semolina',0.85,-1],['wholemeal',0.8,4],['allpurpose',0.75,-2],['rye',0.7,6]]){a.equal(F[k].fermTolerance,t,k);a.equal(F[k].hydrationDelta,h,k);}
   a.ok(en.includes('Manitoba 1.35')&&fr.includes('Manitoba 1,35'));
+  // A stated W sets tolerance through ftmFromW's anchors; hydration never follows W; the yeast follows the hours (21 Nov 2026).
+  for(const [w,t] of [[130,0.75],[200,0.9],[250,1],[300,1.2],[360,1.35]])a.ok(Math.abs(data.ftmFromW(w)-t)<1e-9,`W${w}`);
+  for(const s of ['0.75 at W 130','0.9 at W 200','1.0 at W 250','1.2 at W 300','1.35 at W 360','Hydration follows the flour type, never its W'])a.ok(en.includes(s),s);
+  for(const s of ['0,75 à W 130','0,9 à W 200','1,0 à W 250','1,2 à W 300','1,35 à W 360','L’hydratation suit le type de farine, jamais son W'])a.ok(fr.includes(s),s);
+  a.doesNotMatch(about,/divides the commercial yeast|divise la levure/,'the yeast is not divided by the tolerance');
   // Style hydration and floors.
   const S={...data.PIZZA_STYLES,...data.BREAD_STYLES};
   for(const [k,v] of [['neapolitan',62],['newyork',62],['baguette',68],['pan',70],['pain_levain',75],['roman',78]])a.equal(S[k].hydration,v,k);
