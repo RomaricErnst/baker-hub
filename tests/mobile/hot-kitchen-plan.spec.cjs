@@ -56,3 +56,41 @@ for(const lang of ['en','fr'])for(const [name,b] of Object.entries(bakers)){
   if(SHOTS)await page.screenshot({path:`${SHOTS}/${name}-${lang}-${info.project.name}.png`,fullPage:true});
  });
 }
+
+// A bake under way when the one-spell rule shipped is never re-shaped under the baker (hotPlanRules.ts):
+// Maya's bake saved before it (no planRules), reopened Friday 8:40pm after her 6:00pm Start Dough, keeps the
+// bulk in the fridge at 7:15pm and the shaping at 9:15pm, across a reload. (Her fresh bake above has one spell.)
+test('en: Maya\'s bake already under way keeps the plan it was made with, across a reload',async({page})=>{
+ const stored=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null'));
+ const s={...bakers.maya.session,savedAt:Z('2026-11-27T10:05')};
+ await install(page,{bh_session_v1:JSON.stringify(s)},Z('2026-11-27T12:40'));
+ await page.goto('/');
+ await page.getByRole('button',{name:words.en.resume}).first().tap();
+ const check=async()=>{
+  await expect(page.locator('section[data-guide-title="Refrigerate the dough"]').first()).toContainText('7:15pm');
+  await expect(page.locator('section[data-guide-title="Divide and shape dough balls"]').first()).toContainText('9:15pm');
+ };
+ await check();
+ await expect.poll(async()=>(await stored())?.legacyHotPlan).toBe(true);
+ await page.reload();
+ const again=page.getByRole('button',{name:words.en.resume});
+ if(await again.count())await again.first().tap();
+ await check();
+});
+
+// Owner (21 Nov 2026): in Simple the one-trip plan holds in every kitchen. A 24 °C kitchen, Start Dough Fri
+// 11:00pm for Sat 7:00pm (20 h): shaped at 1:15am after the warm rise, into the fridge at 1:30am, out at 3:00pm
+// (was: into the fridge 1:15am, out to shape 5:15am, back in 5:30am).
+test('en: Simple at 24 °C, a long plan moves the dough into the fridge once',async({page})=>{
+ const s={...base,kitchenTemp:24,humidity:'normal',startTime:Z('2026-11-27T15:00'),eatTime:Z('2026-11-28T11:00'),savedAt:Z('2026-11-26T03:55'),blocks:[]};
+ await install(page,{bh_session_v1:JSON.stringify(s)},Z('2026-11-26T04:00'));
+ await page.goto('/');
+ await page.getByRole('button',{name:words.en.resume}).first().tap();
+ const toggle=page.locator('[data-plan-all-steps]:visible').first();
+ await expect(toggle).toBeVisible();
+ if(await toggle.getAttribute('aria-expanded')==='false')await toggle.tap();
+ const rows=(await toggle.locator('xpath=ancestor::*[.//li][1]').locator('li').allInnerTexts()).map(t=>t.replace(/\s+/g,' ').trim());
+ expect(rows.filter(t=>words.en.into.test(t)),rows.join(' | ')).toHaveLength(1);
+ expect(rows.filter(t=>words.en.out.test(t)),rows.join(' | ')).toHaveLength(1);
+ expect(rows.find(t=>words.en.shape.test(t)),rows.join(' | ')).toContain('1:15am');
+});

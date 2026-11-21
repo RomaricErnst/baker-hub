@@ -114,17 +114,17 @@ test.describe('Maya, zero ticks',()=>{
  });
 
  test('partial ticks: a later tick marks only its step; the earlier ones stay plain and the bar moves on',async({page})=>{
-  // Round 8: the shaping is at 7:15pm (11:15Z), right after the warm rise.
-  await install(page,storageFor('maya-1',session()),'2026-11-20T11:20:00Z');
-  await reopen(page,'2026-11-20T11:20:00Z');
+  // Saved before round 8 and opened under way: the plan keeps the shape it was made with (hotPlanRules.ts).
+  await install(page,storageFor('maya-1',session()),'2026-11-20T13:20:00Z');
+  await reopen(page,'2026-11-20T13:20:00Z');
   await resumeFromHome(page);
   await expect(bar(page)).toContainText('Now: Divide and shape dough balls');
   const divide=page.locator('section[data-guide-title="Divide and shape dough balls"]');
   await divide.getByRole('checkbox',{name:'Step done',exact:true}).click();
   // 20 Nov 2026 round 6 (owner's decision D2): ticking the shaping no longer ticks the mix, the rise and the
-  // fridge ("says I folded when I didn't"); nothing is recorded for them. (No bulk fridge step since round 8.)
+  // fridge ("says I folded when I didn't"); nothing is recorded for them.
   await expect(divide).toHaveAttribute('data-guide-done','true');
-  for(const title of ['Start Dough','Let the dough rise'])
+  for(const title of ['Start Dough','Let the dough rise','Refrigerate the dough'])
    await expect(page.locator(`section[data-guide-title="${title}"]`)).not.toHaveAttribute('data-guide-done','true');
   await expect(bar(page)).toContainText('Next: Refrigerate the dough balls');
   expect((await stored(page)).execution).toBeFalsy();

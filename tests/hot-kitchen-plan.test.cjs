@@ -91,3 +91,50 @@ test('an enriched dough keeps its required fridge and is never shaped warm',()=>
     if(utils.fridgeSpellCount(s)===1) assert.ok(s.coldRetard1Start,'the bulk is chilled before shaping');
   }
 });
+
+test('a bake under way when the ladder shipped keeps its plan shape; new bakes and Bake again get one spell',()=>{
+  const {legacyHotPlanFor,HOT_PLAN_RULES}=require('../app/utils/hotPlanRules.ts');
+  const now=Date.parse('2026-11-27T12:00:00Z');
+  const saved={recipeGenerated:true,startTime:Date.parse('2026-11-27T10:00:00Z')};
+  assert.equal(legacyHotPlanFor(saved,now),true);                                   // its Start Dough has passed
+  assert.equal(legacyHotPlanFor({...saved,startTime:now+3600000},now),false);        // not under way yet
+  assert.equal(legacyHotPlanFor({...saved,startTime:now+3600000,mixExecution:{at:now}},now),true); // a recorded mix
+  assert.equal(legacyHotPlanFor({...saved,planRules:HOT_PLAN_RULES},now),false);     // made with the ladder
+  assert.equal(legacyHotPlanFor({...saved,planRules:HOT_PLAN_RULES,legacyHotPlan:true},now),true); // kept so once
+  assert.equal(legacyHotPlanFor({...saved,recipeGenerated:false},now),false);
+  // Maya's saved bake rebuilt as it was made: into the fridge, out to shape, back in.
+  const blocks=[wk(26,9,18),wk(27,9,18),nt(26),nt(27),nt(28)];
+  const kept=utils.buildSchedule(new Date(2026,10,27,18,0),new Date(2026,10,28,19,30),blocks,30,45,'hand','neapolitan',4,1,undefined,1,undefined,'off');
+  assert.equal(utils.fridgeSpellCount(kept),2);
+  assert.deepEqual(ids(kept).filter(id=>id.startsWith('cold')),['cold-in','cold-out','cold-in-2','cold-out-2']);
+});
+
+test('Simple, every kitchen (owner): a mild long plan shapes after the warm rise and goes into the fridge once; Custom keeps two stages',()=>{
+  const bake=new Date(2026,10,28,19,0);
+  const at=(s)=>Object.fromEntries(s.availabilityActions.map(a=>[a.id,clock(a.at)]));
+  const simple=utils.buildSchedule(new Date(+bake-20*H),bake,[],24,45,'hand','neapolitan',4,1,undefined,1,undefined,'all');
+  const custom=utils.buildSchedule(new Date(+bake-20*H),bake,[],24,45,'hand','neapolitan',4,1,undefined,1,undefined,'hot');
+  assert.equal(utils.fridgeSpellCount(simple),1);
+  assert.equal(at(simple).divide,'1:15');          // was: into the fridge 1:15, out to shape 5:15, back in 5:30
+  assert.equal(at(simple)['cold-in-2'],'1:30');
+  assert.equal(at(simple)['cold-out-2'],'15:00'); // the take-out is unchanged
+  assert.equal(utils.fridgeSpellCount(custom),2);
+  const y=s=>utils.calculateRecipe('neapolitan','home_oven_standard',4,260,24,'normal',s,6,'instant','simple','hand').yeast.pct;
+  assert.ok(y(simple)/y(custom)>0.95&&y(simple)/y(custom)<1.2,`${y(simple)} vs ${y(custom)}`);
+  // Simple at 20–27 °C, no busy time, a daytime start: at most one spell for pizza and lean loaves. (A night
+  // start keeps the engine's plan where shaping after the rise would be a new step between 22:00 and 07:00.)
+  for(const style of ['neapolitan','pain_campagne','focaccia'])for(const temp of [20,22,24,26,27])for(let hours=10;hours<=30;hours+=2){
+    const start=new Date(+bake-hours*H);if(start.getHours()<7||start.getHours()>=19)continue;
+    const s=utils.buildSchedule(start,bake,[],temp,45,'hand',style,4,1,undefined,1,undefined,'all');
+    assert.ok(utils.fridgeSpellCount(s)<=1,`${style} ${temp}°C ${hours}h`);
+  }
+});
+
+test('an enriched dough is never left on the yeast floor by a one-trip plan (bulk cold keeps the fridge share)',()=>{
+  const bake=new Date(2026,10,28,19,0);
+  for(const ladder of ['hot','all'])for(const temp of [24,27,31])for(const hours of [14,20,26]){
+    const base=utils.buildSchedule(new Date(+bake-hours*H),bake,[],temp,45,'hand','pain_viennois',4,1,undefined,1,undefined,'off');
+    const s=utils.buildSchedule(new Date(+bake-hours*H),bake,[],temp,45,'hand','pain_viennois',4,1,undefined,1,undefined,ladder);
+    assert.ok(s.totalRTHours<=base.totalRTHours+0.25,`${ladder} ${temp}°C ${hours}h: ${s.totalRTHours} vs ${base.totalRTHours}`);
+  }
+});
