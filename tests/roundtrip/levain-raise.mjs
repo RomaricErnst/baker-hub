@@ -82,7 +82,7 @@ console.log('her bake',her.rec.autoPct+'%',fmt(mix),'build',fmt(build.t),'shape'
 
 // The same evening on a weak and a strong flour (21 Nov 2026, round 8): the levain % and its
 // raise no longer follow flour strength, so the planner tries the same ladder and keeps the
-// bake with a raised levain in the same range; the flour still moves the peak tolerance.
+// bake with a raised levain in the same range; the starter's ready band is the same too.
 for(const ftm of [0.75,1.35]){
  const f=await run({busy:'weekdays+nights',ftm});
  assert.ok(f.kept&&f.valid,`ftm ${ftm}: Saturday 10:00 kept`);

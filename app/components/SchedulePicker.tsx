@@ -189,11 +189,12 @@ export function commercialPrefermentPlanValid({type, inFridge, mixTime, bakeTime
   });
 }
 
-/** Reuse the solver's peak-use band; an observed peak cannot move with the bake date. */
-export function knownPeakMixUsable(mixTime: Date, peakTime: Date, peakRiseH: number, flourStrength = 1): boolean {
+/** Reuse the solver's peak-use band; an observed peak cannot move with the bake date.
+ * The starter's readiness is the starter's: the dough's flour never widens it (21 Nov 2026). */
+export function knownPeakMixUsable(mixTime: Date, peakTime: Date, peakRiseH: number): boolean {
   const gapH = (+mixTime - +peakTime) / 3600000;
-  if (![gapH, peakRiseH, flourStrength].every(Number.isFinite) || peakRiseH <= 0) return false;
-  const tolerance = Math.max(1, Math.min(3, peakRiseH * 0.15)) * Math.max(0.7, Math.min(1.5, flourStrength));
+  if (![gapH, peakRiseH].every(Number.isFinite) || peakRiseH <= 0) return false;
+  const tolerance = Math.max(1, Math.min(3, peakRiseH * 0.15));
   return gapH >= -tolerance - 0.5 && gapH <= tolerance;
 }
 
@@ -2090,7 +2091,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     :'The starter may be outside its peak window at mixing time. Move the refresh or adjust its ratio.';
   const simpleKnownPeakConflict = mode === 'simple' && isSourdough && planningMode === 'know_peak'
     && !!knownPeakTime && !knownPeakMixUsable(pendingStart, knownPeakTime,
-      getPrefPeakH_RT('sourdough', kitchenTemp, styleKey) * (starterHasRye ? 0.8 : 1) * (starterMature ? 1 : 1.2) * (1 + 0.5 * Math.log(lastFeedRatio)), flourStrength);
+      getPrefPeakH_RT('sourdough', kitchenTemp, styleKey) * (starterHasRye ? 0.8 : 1) * (starterMature ? 1 : 1.2) * (1 + 0.5 * Math.log(lastFeedRatio)));
   const starterTimingValid = !simpleKnownPeakConflict && (mode !== 'simple' || !simpleStarterUncertain
     || !!solverResult?.starterEvents.length);
 
@@ -3678,7 +3679,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         return;
       }
       if (mode === 'simple' && planningMode === 'know_peak' && knownPeakTime
-        && !knownPeakMixUsable(safeStart, knownPeakTime, adjPeakH_derived, flourStrength)) {
+        && !knownPeakMixUsable(safeStart, knownPeakTime, adjPeakH_derived)) {
         // A starter that is ready now cannot wait for a mix hours away. Plan from
         // the feed that produced this peak instead, so the solver adds a refresh.
         const fedAt = new Date(+knownPeakTime - adjPeakH_derived * 3600000);
@@ -4687,12 +4688,12 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       ? _starterRefeedTime.getTime() + adjPeakH * 3600000
       : (lastFedTime ? lastFedTime.getTime() + adjPeakH * 3600000 : null);
     const warmupH  = getStarterFridgeWarmupH(kitchenTemp);
-    const ftm      = Math.max(0.7, Math.min(1.5, flourStrength ?? 1.0));
     // Peak hold window scales with peak time — faster biology = narrower window.
     // RT: adjPeakH × 0.15, clamped 1.0–3.0h. Fridge: always 2.0h (cold = stable).
+    // The starter's own band: the dough's flour does not widen or narrow it (21 Nov 2026;
+    // no source ties a starter's readiness to the dough's flour), so green ≡ the strip's band.
     const rtTOL   = Math.max(1.0, Math.min(3.0, adjPeakH * 0.15));
-    const baseTOL = starterLocation === 'fridge' ? 2.0 : rtTOL;
-    const TOL     = baseTOL * ftm;
+    const TOL     = starterLocation === 'fridge' ? 2.0 : rtTOL;
 
     const sweetFromHBF = localSweetFrom;
     const sweetToHBF   = localSweetTo;
@@ -4802,7 +4803,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     }
     function candidateValid(cand: Candidate): boolean {
       if (planningMode==='know_peak' && knownPeakTime &&
-          !knownPeakMixUsable(new Date(bakeMs-cand.mixHBF*3600000),knownPeakTime,adjPeakH_derived,flourStrength)) return false;
+          !knownPeakMixUsable(new Date(bakeMs-cand.mixHBF*3600000),knownPeakTime,adjPeakH_derived)) return false;
       for (const ms of candidateActionTimes(cand)) {
         // isBlockedActionMs (not inBlockerMs): firmly-past times are history
         // and exempt; present and future actions must clear blockers.
@@ -6198,8 +6199,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
           ? _starterRefeedTime.getTime() + adjPeakH_r * 3600000
           : (lastFedTime ? lastFedTime.getTime() + adjPeakH_r * 3600000 : null);
         const rtTOL_r   = Math.max(1.0, Math.min(3.0, adjPeakH_r * 0.15));
-        const baseTOL_r = starterLocation === 'fridge' ? 2.0 : rtTOL_r;
-        const TOL_r     = baseTOL_r * ftm;
+        const TOL_r     = starterLocation === 'fridge' ? 2.0 : rtTOL_r;
 
         // Local scoring helpers using TOL_r (others are ratio-independent and
         // close over from the outer scope: doughScore/retardBonus/reasonableHour/feedComfort).
@@ -6842,13 +6842,13 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     const orderedActions=actions.every(e=>+e.time<=+probe.start);
     const noNewPastActions=actions.every(e=>+e.time>=now||history.some(old=>old.kind===e.kind&&+old.time===+e.time));
     const peakOK=planningMode==='know_peak'
-      ?!!result?.peakTime&&knownPeakMixUsable(probe.start,result.peakTime,result.adjPeakHValue??getPrefPeakH_RT('sourdough',kitchenTemp,styleKey),flourStrength)
+      ?!!result?.peakTime&&knownPeakMixUsable(probe.start,result.peakTime,result.adjPeakHValue??getPrefPeakH_RT('sourdough',kitchenTemp,styleKey))
       :result?.starterPillState==='green'&&!result.planConstrained;
     const bounds={from:result?.sourdoughSweetFrom!=null?new Date(+candidateBake-result.sourdoughSweetFrom*hour):null,to:result?.sourdoughSweetTo!=null?new Date(+candidateBake-result.sourdoughSweetTo*hour):null};
     const validation=assessScheduleDraft({planLadder,starterFactor:solverBulkFactor(),isSourdough,start:probe.start,bake:candidateBake,...bounds,blocks:candidateBlocks,kitchenTemp,preheatMin,preheatExtraMin,mixerType,styleKey,numItems,mixingBatches,now,
       extraActions:starterHandsOnActions(events,now),
       methodValid:!!result&&!result.windowTooShort&&pinKept&&peakOK&&historyKept&&noNewPastActions&&orderedActions&&storageKept&&displayedPlanKept});
-    const allBatchPeaksUsable=planningMode!=='know_peak'||!validation.schedule?.batchMixWindows||!!result?.peakTime&&validation.schedule.batchMixWindows.every(batch=>knownPeakMixUsable(batch.start,result.peakTime!,result.adjPeakHValue??getPrefPeakH_RT('sourdough',kitchenTemp,styleKey),flourStrength));
+    const allBatchPeaksUsable=planningMode!=='know_peak'||!validation.schedule?.batchMixWindows||!!result?.peakTime&&validation.schedule.batchMixWindows.every(batch=>knownPeakMixUsable(batch.start,result.peakTime!,result.adjPeakHValue??getPrefPeakH_RT('sourdough',kitchenTemp,styleKey)));
     const valid=validation.valid&&allBatchPeaksUsable;
     const message=valid?null:isTimeBlocked(candidateBake,candidateBlocks)
       ?(isFr?'La cuisson tombe pendant une indisponibilité. Décalez la cuisson ou ajustez vos disponibilités.':'Your bake falls during an unavailable period. Change your baking time or availability.')

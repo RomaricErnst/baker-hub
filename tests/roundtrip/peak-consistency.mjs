@@ -4,8 +4,8 @@
 // green pill means Start Dough sits inside the strip's ready window (the solver's
 // green band). Sweeps temperature × location × last fed × horizon × Nights
 // through the real picker, with the strip rendered from the events the parent holds.
-// Flour strength (21 Nov 2026, round 8) is a dimension too: it scales the peak tolerance
-// and the cold windows, and since the levain % no longer follows it, the invariant must hold
+// Flour strength (21 Nov 2026, round 8) is a dimension too: it scales the dough's cold windows
+// but neither the levain % nor the starter's ready band, so the same strict invariant must hold
 // for a weak, a reference and a strong flour alike (FLOURS=1 runs the reference only).
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -96,8 +96,8 @@ for(const fs of FS)for(const temp of T)for(const loc of L)for(const age of A)for
   if(tr.scoredPeakMs!=null && Math.abs(tr.scoredPeakMs-tr.peakMs)>15*60000)realigned.push(`${label} [${tr.family}] scan ${fmt(tr.scoredPeakMs)} → shown ${fmt(tr.peakMs)}`);
   // Green ⇒ starter near peak at mix.
   if(tr.pill==='green'){
-   // The solver's tolerance: its base band × the flour's tolerance (TOL = baseTOL × ftm, clamped 0.7–1.5).
-   const tol=((loc==='fridge'&&tr.family==='pathB_fridge_hold')?2.0:Math.max(1.0,Math.min(3.0,(tr.adjPeakH||8)*0.15)))*Math.max(0.7,Math.min(1.5,fs));
+   // The starter's own band, the same for every dough flour (no flour widening since 21 Nov 2026).
+   const tol=(loc==='fridge'&&tr.family==='pathB_fridge_hold')?2.0:Math.max(1.0,Math.min(3.0,(tr.adjPeakH||8)*0.15));
    const gapH=(tr.mixMs-tr.peakMs)/hour; // >0 mix after peak
    const lim=gapH<0?tol+0.5:tol;
    if(Math.abs(gapH)>lim+0.26)bad.push(`${label} [${tr.family}] green but mix ${fmt(tr.mixMs)} is ${gapH.toFixed(2)} h from peak ${fmt(tr.peakMs)} (tol ${lim.toFixed(2)})`);

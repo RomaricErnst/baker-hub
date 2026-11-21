@@ -108,3 +108,29 @@ test('restoredLevainLegacy: only an old session with a % on a flour other than t
   a.deepEqual(restoredLevainLegacy({yeastType:'sourdough',styleKey:'pain_seigle',flourChosen:false,flourBlend:null,starterPctOverride:20}).strength,data.recipeFlourStrength('pain_seigle','custom'));
   a.equal(restoredLevainLegacy({...old,yeastType:'instant'}),null);
 });
+
+// The starter's ready band is the starter's (21 Nov 2026, round 8 follow-up): the dough's flour
+// no longer widens the solver's green band (TOL × ftm), so solver ≡ strip ≡ mixNearPeak for every flour.
+test('the starter peak band takes no flour and equals mixNearPeak and the strip band',()=>{
+  const ts=require('typescript'),fs=require('node:fs'),path=require('node:path'),Module=require('node:module');
+  const resolve=Module._resolveFilename;
+  Module._resolveFilename=function(request,...args){return resolve.call(this,request.startsWith('@/')?path.join(__dirname,'..',request.slice(2)):request,...args)};
+  require.extensions['.tsx']??=(module,filename)=>module._compile(ts.transpileModule(fs.readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true},fileName:filename}).outputText,filename);
+  const {knownPeakMixUsable}=require('../app/components/SchedulePicker.tsx');
+  const {mixNearPeak}=require('../app/utils/starterPeak.ts');
+  const {readyBand}=require('../app/utils/peakTime.ts');
+  a.equal(knownPeakMixUsable.length,3);
+  const H=3600000,peak=Date.parse('2026-11-20T17:00:00Z');
+  for(const adj of [3,5,7,9,12,20,30])for(let m=-6*60;m<=5*60;m+=15){
+    const mix=peak+m*60000;
+    a.equal(knownPeakMixUsable(new Date(mix),new Date(peak),adj),mixNearPeak(mix,peak,adj),`adj ${adj} gap ${m} min`);
+    // Extra arguments (an old caller passing a strength) change nothing.
+    a.equal(knownPeakMixUsable(new Date(mix),new Date(peak),adj,1.35),knownPeakMixUsable(new Date(mix),new Date(peak),adj));
+  }
+  // The strip's ready window lies inside the same band.
+  for(const adj of [5,9,20]){const b=readyBand(peak,adj);a.ok(mixNearPeak(b.from+1,peak,adj)&&mixNearPeak(b.to-1,peak,adj)&&!mixNearPeak(b.from-60000,peak,adj)&&!mixNearPeak(b.to+60000,peak,adj),String(adj));}
+  // A mix 4.3 h before the peak is never "ready", whatever the dough's flour.
+  a.equal(knownPeakMixUsable(new Date(peak-4.3*H),new Date(peak),30),false);
+  const src=require('node:fs').readFileSync(require('node:path').join(__dirname,'../app/components/SchedulePicker.tsx'),'utf8');
+  a.doesNotMatch(src,/TOL(_r)?\s*=\s*baseTOL(_r)?\s*\*\s*ftm/,'no flour widening of the solver band');
+});
