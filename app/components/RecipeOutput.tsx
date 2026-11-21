@@ -394,7 +394,7 @@ function StarterPrepCard({
 // ── Component ─────────────────────────────────
 export default function RecipeOutput({
   result, numItems, itemWeight, styleName, styleKey, mixerType, kitchenTemp, fridgeTemp = 6, fermEquivHours, totalColdHours = 0, mode = 'simple', bakeType = 'pizza', ovenType = null, prefermentType,
-  priorityOverride, onPriorityOverride, saveStatus, onSave, wastePct, flourBlend, explicitFlour = false, units,
+  saveStatus, onSave, wastePct, flourBlend, explicitFlour = false, units,
   starterEvents, sharedStarterFeed, mixingTime, feedTime, feed2Time, fridgeOutTime, starterPeakTime, planningMode, usingPeak2, feedRatio, starterLocation,
   afterIngredients, mixerConfirmed=false, onEditSetup, onShare, measuredWaterTemp, onMeasuredWaterTempChange, waterMethod, onWaterMethodChange, spiralIceConfirmed, onSpiralIceConfirmedChange, mixerCapacityG, mixingBatches, onMixingBatchesChange, waterSource, onWaterSourceChange,
 }: RecipeOutputProps) {
@@ -406,7 +406,6 @@ export default function RecipeOutput({
   const pctStr = (n:number) => n>0&&n<1
     ? n.toLocaleString(locale,{maximumSignificantDigits:2})+(locale==='fr'?' %':'%')
     : formatPercent(n,locale);
-  const [showPriorityOverride, setShowPriorityOverride] = useState(false);
 
   const [showDilution, setShowDilution] = useState(false);
   const [weighOpen, setWeighOpen] = useState(false);
@@ -656,9 +655,20 @@ export default function RecipeOutput({
       case 'sugar': return <IngRow key={key} label={t('recipeOutput.ingredientSugar')} grams={wStr(row.grams)} advancedPct={custom ? pctStr(sugarPct) : undefined} />;
       case 'yeast': {
         const dose = yeastDoses?.parts[stage.key === 'preferment' ? 0 : 1] ?? formatYeastDose(row.grams, locale);
-        if (stage.key === 'preferment' && pf) return <IngRow key={key} label={prefYeastLabel} grams={dose} advancedPct={pctOfExact(row.grams)}
-          sub={prefDoseBody ? <>{prefermentSpoon && <span>{prefermentSpoon} · </span>}<details data-yeast-help style={{display:'inline'}} onToggle={e=>setPrefWeighOpen(e.currentTarget.open)}><summary style={{display:'inline',padding:'13px 0',margin:'-13px 0',cursor:'pointer',color:'var(--terra)',listStyle:'none'}}>{prefWeighOpen?t('recipeOutput.weighOrDilute').replace('▾','▴'):t('recipeOutput.weighOrDilute')}</summary>{prefDoseBody}</details></> : measureHint(prefermentSpoon,false) || undefined}
+        if (stage.key === 'preferment' && pf) {
+          // Round 8 (S1): the column stays the whole dough's flour (it adds up); Custom adds the preferment's own
+          // share, as the baker types it in Fine-tune ("0.1% of the poolish flour").
+          const ownShare = custom && pf.prefFlour > 0 ? (() => {
+            const pct = row.grams / pf.prefFlour * 100;
+            const shown = pct < 0.1 ? Math.round(pct * 1000) / 1000 : Math.round(pct * 100) / 100;
+            const value = locale === 'fr' ? `${String(shown).replace('.', ',')} %` : `${shown}%`;
+            return locale === 'fr' ? `${value} de la farine ${prefermentType === 'biga' ? 'de la biga' : 'du poolish'}` : `${value} of the ${prefName.toLowerCase()} flour`;
+          })() : null;
+          const hint = measureHint(prefermentSpoon,false);
+          return <IngRow key={key} label={prefYeastLabel} grams={dose} advancedPct={pctOfExact(row.grams)}
+          sub={prefDoseBody ? <>{ownShare && <span data-pref-own-share>{ownShare} · </span>}{prefermentSpoon && <span>{prefermentSpoon} · </span>}<details data-yeast-help style={{display:'inline'}} onToggle={e=>setPrefWeighOpen(e.currentTarget.open)}><summary style={{display:'inline',padding:'13px 0',margin:'-13px 0',cursor:'pointer',color:'var(--terra)',listStyle:'none'}}>{prefWeighOpen?t('recipeOutput.weighOrDilute').replace('▾','▴'):t('recipeOutput.weighOrDilute')}</summary>{prefDoseBody}</details></> : (ownShare || hint) ? <>{ownShare && <span data-pref-own-share>{ownShare}</span>}{ownShare && hint ? ' · ' : ''}{hint}</> : undefined}
           wideSub={!!prefDoseBody} />;
+        }
         return <IngRow key={key} label={prefYeastLabel} grams={dose} advancedPct={pctOfExact(row.grams)} />;
       }
       case 'preferment': return <IngRow key={key} highlight label={prefermentType === 'biga' ? (locale === 'fr' ? 'Toute la biga' : 'All the biga') : (locale === 'fr' ? `Tout le ${prefName.toLowerCase()}` : `All the ${prefName.toLowerCase()}`)} grams={wStr(Math.round(row.grams))} advancedPct={pctOf(row.grams)} />;
@@ -786,63 +796,8 @@ export default function RecipeOutput({
             />
           )}
 
-          {yeastInfo && (() => {
-            return (
-              <>
-                {mode === 'custom' && (
-                  <div style={{
-                    fontSize: '12px',
-                    fontStyle: 'italic', fontFamily: 'var(--font-ui)',
-                    padding: '.2rem .1rem 8px',
-                    display: 'flex', alignItems: 'center',
-                    justifyContent: 'flex-end',
-                  }}>
-                    <button
-                      onClick={() => setShowPriorityOverride(v => !v)}
-                      style={{
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        color: 'var(--char)', fontSize: '11px',
-                        fontFamily: 'var(--font-ui)', textDecoration: 'underline',
-                        textUnderlineOffset: '2px', padding: 0,
-                      }}
-                    >
-                      {showPriorityOverride ? (locale==='fr'?'Fermer':'Close') : (locale==='fr'?'Ajuster le dosage de levure':'Adjust yeast dose')}
-                    </button>
-                  </div>
-                )}
-                {showPriorityOverride && mode === 'custom' && (
-                  <div style={{ display: 'flex', gap: '8px', padding: '4px .1rem 8px', borderBottom: `1px solid rgba(156, 130, 72,0.16)` }}>
-                    {([
-                      {value:null,label:locale==='fr'?'Automatique':'Automatic',desc:locale==='fr'?'Selon le planning':'From the schedule'},
-                      {value:'flavor',label:t('recipeOutput.priorityFlavour'),desc:locale==='fr'?'Réduire la dose':'Lower the dose'},
-                      {value:'speed',label:t('recipeOutput.prioritySpeed'),desc:locale==='fr'?'Augmenter la dose':'Increase the dose'},
-                    ] as { value: string | null; label: string; desc: string }[]).map(opt => {
-                      const effective = priorityOverride ?? null;
-                      const isActive = effective === opt.value;
-                      return (
-                        <button
-                          key={String(opt.value)}
-                          aria-pressed={isActive} onClick={() => onPriorityOverride?.(opt.value)}
-                          style={{
-                            minHeight:44, padding: '4px 12px', borderRadius: '20px', cursor: 'pointer',
-                            border: `1.5px solid ${isActive ? 'var(--gold)' : 'rgba(156, 130, 72,0.2)'}`,
-                            background: isActive ? 'rgba(156, 130, 72,0.15)' : 'transparent',
-                            color: isActive ? 'var(--gold)' : 'var(--char)',
-                            fontSize: '11px', fontFamily: 'var(--font-ui)',
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '.1rem',
-                          }}
-                        >
-                          <span style={{ fontWeight: isActive ? 600 : 400 }}>{opt.label}</span>
-                          <span style={{ fontSize: '11px', opacity: .7 }}>{opt.desc}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
-            );
-          })()}
-
+          {/* Round 8 (owner D3): no "Adjust yeast dose" (flavour/speed) on the Recipe in Custom: Custom sets its
+              yeast in Fine-tune. Simple never showed it. */}
 
           {sachetDilutionNote && (
             <div style={{ padding: '.2rem .1rem 4px', borderBottom: `1px solid ${D.line}` }}>

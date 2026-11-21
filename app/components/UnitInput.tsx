@@ -12,6 +12,9 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> & {
   label: string;
   /** Outer width; the label takes the rest of the row. */
   width?: number | string;
+  /** A decimal typed in either separator (round 8: « 0,1 » in French): a text box with the decimal keypad, read
+   * with parseDecimal. A number box drops or misreads a comma in some browsers ("0,1" became 1). */
+  decimal?: boolean;
 };
 
 export const UNIT_INPUT_STYLE: React.CSSProperties = {
@@ -21,7 +24,9 @@ export const UNIT_INPUT_STYLE: React.CSSProperties = {
 
 const isEmpty = (v: unknown) => v === undefined || v === null || v === '';
 
-export default function UnitInput({ suffix, label, width = 96, style, onInput, ...input }: Props) {
+export default function UnitInput({ suffix, label, width = 96, style, onInput, decimal = false, ...rest }: Props) {
+  // A text box takes no min/max/step (the page clamps the value it reads).
+  const input = decimal ? Object.fromEntries(Object.entries(rest).filter(([key]) => !['min', 'max', 'step'].includes(key))) as typeof rest : rest;
   // Uncontrolled boxes are re-keyed by the page when their value changes, so the initial state is enough;
   // typing updates it. A controlled box follows its value.
   const [typedEmpty, setTypedEmpty] = useState(isEmpty(input.defaultValue));
@@ -31,7 +36,7 @@ export default function UnitInput({ suffix, label, width = 96, style, onInput, .
   const suffixRoom = 12 + Math.ceil(suffix.length * 9.5) + 5;
   return (
     <span data-unit-input style={{ position: 'relative', display: 'inline-flex', flex: typeof width === 'number' ? `0 0 ${width}px` : undefined, width }}>
-      <input type="number" aria-label={label} {...input}
+      <input type={decimal ? 'text' : 'number'} {...(decimal ? { inputMode: 'decimal' as const, autoComplete: 'off', spellCheck: false } : {})} aria-label={label} {...input}
         onInput={e => { setTypedEmpty(e.currentTarget.value === ''); onInput?.(e); }}
         style={{ ...UNIT_INPUT_STYLE, ...style, paddingRight: showSuffix ? suffixRoom : 12 }} />
       {showSuffix && <span aria-hidden="true" data-unit-suffix

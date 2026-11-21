@@ -871,6 +871,15 @@ function accountScheduleTime(schedule: ScheduleResult): ScheduleResult {
   };
 }
 
+/** How a plan sizes its phases beyond the engine's own choice (buildSchedule's last argument):
+ * a number is the previous plan's fridge-exit lead in minutes (Bake again, kept when that exit is free);
+ * `{ rtScale }` is a baker-entered yeast amount's fit (round 8, owner D2): the commercial dough's bulk and
+ * final-proof bound are scaled together so the knead stays near the calculated plan's and the fridge time
+ * absorbs the difference (`enteredYeastTiming`). Sourdough ignores the fit. */
+export type PlanShape = number | { rtScale: number };
+/** Bounds of an entered yeast's fit: half to twice the engine's room-temperature phases. */
+export const RT_SCALE_MIN = 0.5, RT_SCALE_MAX = 2;
+
 function buildSchedulePhases(
   startTime: Date,
   eatTime: Date,
@@ -884,10 +893,15 @@ function buildSchedulePhases(
   isSourdough = false,
   starterFactor = 1,
   fromFridge = false,
-  exitLeadMin?: number,
+  planShape?: PlanShape,
   proofMode: FinalProofMode = 'style',
   hotPlan: HotPlan = 'engine',
 ): ScheduleResult {
+  // A number is Bake again's fridge-exit lead; an object is a baker-entered yeast's fit, which sizes the
+  // room-temperature phases of a commercial dough (rtScale) so the fridge absorbs the difference.
+  const exitLeadMin = typeof planShape === 'number' ? planShape : undefined;
+  const rtScale = typeof planShape === 'object' && planShape && !isSourdough && Number.isFinite(planShape.rtScale)
+    ? Math.max(RT_SCALE_MIN, Math.min(RT_SCALE_MAX, planShape.rtScale)) : 1;
   const bakeTime = new Date(eatTime.getTime() - preheatMin * 60000);
   // Elapsed mixing time is style-dependent (Modernist publishes it per style);
   // see kneadMinFor in data.ts. This drives WHEN bulk fermentation starts and
@@ -968,8 +982,11 @@ function buildSchedulePhases(
   }
 
   const hasColdRetard = coldH > 0;
-  const maxFinalH = proofMode === 'generic' ? maxFinalProofHours(kitchenTemp, hasColdRetard)
+  const baseMaxFinalH = proofMode === 'generic' ? maxFinalProofHours(kitchenTemp, hasColdRetard)
     : styleMaxFinalProofHours(styleKey, kitchenTemp, hasColdRetard, isSourdough, preheatH);
+  // An entered yeast's fit scales the final proof (never below the 1 h minimum, at most 2 h longer).
+  const maxFinalH = rtScale === 1 ? baseMaxFinalH
+    : Math.max(1, Math.min(baseMaxFinalH + 2, Math.round(baseMaxFinalH * rtScale * 4) / 4));
 
   // Schedule note (first match wins)
   let scheduleNote: string | null = null;
@@ -991,9 +1008,10 @@ function buildSchedulePhases(
   // that independent of the commercial dough minimum. This temperature
   // adjustment is a planning estimate; the protocol still uses rise cues.
   // A baker-chosen starter % scales this bulk (starterBulkFactor, 1 by default).
+  const commercialBulkH = isVeryHot ? 0.5 : isTropical ? 0.75 : 1.5;
   const initialBulkH = isSourdough
     ? sourdoughBulkH(styleKey, kitchenTemp) * starterFactor
-    : isVeryHot ? 0.5 : isTropical ? 0.75 : 1.5;
+    : rtScale === 1 ? commercialBulkH : Math.max(0.5, Math.round(commercialBulkH * rtScale * 4) / 4);
 
   const minCold1H = isTropical ? 2 : 4;
   const minCold2H = 2;
@@ -1539,8 +1557,9 @@ export function buildSchedule(
   isSourdough = isLevainStyle(styleKey),
   starterFactor = 1,
   /** Minutes from the final fridge exit to the bake that the previous plan of this bake had
-   *  (Bake again); kept when that exit is free. Undefined: the engine's own exit. */
-  exitLeadMin?: number,
+   *  (Bake again); kept when that exit is free. Undefined: the engine's own exit. An object is an
+   *  entered yeast's fit (PlanShape). */
+  exitLeadMin?: PlanShape,
   /** Which plans may take one fridge trip (PlanLadder): 'hot' the hot-kitchen ladder (default, Custom),
    *  'all' every kitchen (Simple), 'off' the engine's plan shape (a bake under way when it shipped). */
   planLadder: PlanLadder = 'hot',
@@ -1549,7 +1568,7 @@ export function buildSchedule(
     mixerType, styleKey, numItems, requestedMixingBatches, isSourdough, starterFactor, exitLeadMin, mode, hot);
   // A shaped fridge spell the baker chose for this bake (bake from the fridge, the shortest warm-up, an
   // arranged take-out, Bake again's exit lead) is kept: only the plan that keeps the shaped spell may replace it.
-  const shapedSpellChosen = (exitLeadMin !== undefined && Number.isFinite(exitLeadMin) && exitLeadMin > 0)
+  const shapedSpellChosen = (typeof exitLeadMin === 'number' && Number.isFinite(exitLeadMin) && exitLeadMin > 0)
     || availabilityBlocks.some(block => block.bakeFromFridge === +eatTime || block.shortWarmup === +eatTime || block.fridgeRemoval?.bake === +eatTime);
   const ladder = hotKitchenLadder(styleKey, kitchenTemp, isSourdough, planLadder).filter(step => !shapedSpellChosen || step === 'shapeFirst');
   if (isSourdough || !STYLE_FERM_DEFAULTS[styleKey]?.shapedProofH24) {
@@ -1591,8 +1610,8 @@ function buildScheduleOnce(
   isSourdough = isLevainStyle(styleKey),
   starterFactor = 1,
   /** Minutes from the final fridge exit to the bake that the previous plan of this bake had
-   *  (Bake again); kept when that exit is free. Undefined: the engine's own exit. */
-  exitLeadMin?: number,
+   *  (Bake again); kept when that exit is free. Undefined: the engine's own exit. Or an entered yeast's fit. */
+  exitLeadMin?: PlanShape,
   proofMode: FinalProofMode = 'style',
   hotPlan: HotPlan = 'engine',
 ): ScheduleResult {
@@ -1814,8 +1833,8 @@ export interface ScheduleRepairInput {
   styleKey?: string;
   /** Levain bulk multiplier for a baker-chosen starter % (starterBulkFactor). */
   starterFactor?: number;
-  /** The previous plan's fridge-exit lead (buildSchedule exitLeadMin). */
-  exitLeadMin?: number;
+  /** The previous plan's fridge-exit lead, or an entered yeast's fit (buildSchedule exitLeadMin, PlanShape). */
+  exitLeadMin?: PlanShape;
   /** One-trip ladder scope (buildSchedule planLadder): 'all' for a Simple bake. */
   planLadder?: PlanLadder;
   /** Supply the planning clock explicitly for reproducible candidate checks. */
@@ -1994,7 +2013,7 @@ export interface RecipeResult {
 interface FermentationTimingInput {
   bake: Date; blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number;
   mixerType: MixerType; styleKey: string; numItems: number; itemWeight: number;
-  mixingBatches: number; fridgeTemp: number; hydration: number; budget?: number; exitLeadMin?: number; planLadder?: PlanLadder;
+  mixingBatches: number; fridgeTemp: number; hydration: number; budget?: number; exitLeadMin?: PlanShape; planLadder?: PlanLadder;
   /** Dough temperature at the mix (°C); the style's target dough temperature by default. */
   doughTempC?: number;
   /** Longest window considered (hours), e.g. the time left before the bake. */
@@ -2074,6 +2093,65 @@ export function fermentationWindowForYeast(modelIdyPct: number, o: FermentationT
   return { center, from: Math.max(from, center), to: Math.min(to, center) };
 }
 
+export interface EnteredYeastTiming { center: number; from: number; to: number; shape?: { rtScale: number } }
+
+/** Timing for a baker-entered amount (round 8, owner D2): keep the knead near the calculated plan's and
+ * let the fridge absorb the difference. `anchorH` is the calculated plan's mix-to-bake window. At that
+ * window the room-temperature phases are scaled (`PlanShape` rtScale, bulk and final-proof bound together,
+ * ½–2×) until the budget meets the target; the cold spell takes what is left. Used only when the plan at the
+ * anchor has a cold phase, the scaled plan keeps one, and it adds no busy-time clash. When no scale within
+ * the bounds (on a 0.05 grid) meets the target within 5 %, or every such plan adds a clash, it is
+ * fermentationWindowForYeast nearest the anchor (else the style's window): the established inversion.
+ * Callers build every schedule with the returned shape (buildSchedule's last argument). An `exitLeadMin`
+ * that is already a fit (the page solved it) is kept: only the band around the anchor is read with it. */
+export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInput & { anchorH?: number }): EnteredYeastTiming | null {
+  const { anchorH, ...input } = o;
+  const plain = () => fermentationWindowForYeast(modelIdyPct, anchorH !== undefined && Number.isFinite(anchorH) ? { ...input, nearH: anchorH } : input);
+  const maximum = Math.min(96, input.maxH ?? 96), minimum = 2 + input.preheatMin / 60;
+  if (!(modelIdyPct > 0) || anchorH === undefined || !Number.isFinite(anchorH)) return plain();
+  const h0 = Math.round(anchorH * 4) / 4;
+  if (typeof input.exitLeadMin === 'object' && input.exitLeadMin) {
+    const fixed = { rtScale: input.exitLeadMin.rtScale };
+    if (h0 < minimum || h0 > maximum) return fermentationWindowForYeast(modelIdyPct, { ...input, nearH: anchorH });
+    const band = fermentationWindowForYeast(modelIdyPct, { ...input, nearH: h0, budget: undefined });
+    // The anchor must sit inside the readiness band with this fit (else the amount is timed elsewhere).
+    if (!band || h0 > band.from + 1e-9 || h0 < band.to - 1e-9) return band ? { ...band, shape: fixed } : null;
+    return { center: h0, from: Math.min(maximum, band ? Math.max(band.from, h0) : h0), to: band ? Math.min(band.to, h0) : h0, shape: fixed };
+  }
+  if (h0 < minimum || h0 > maximum) return plain();
+  const doughTempC = input.doughTempC ?? TARGET_FDT[input.styleKey] ?? 24;
+  const start = new Date(+input.bake - h0 * 3600000);
+  const build = (shape?: PlanShape) => buildSchedule(start, input.bake, input.blocks, input.kitchenTemp, input.preheatMin, input.mixerType,
+    input.styleKey, input.numItems, input.mixingBatches, false, 1, shape, input.planLadder);
+  const clashes = (s: ScheduleResult) => s.availabilityConflicts?.length ?? 0;
+  let base: ScheduleResult;
+  try { base = build(); } catch { return plain(); }
+  if (!(base.totalColdHours > 0)) return plain();
+  const budgetAt = (rtScale: number) => {
+    try {
+      const s = build({ rtScale });
+      const path = doughThermalPath(s, input.numItems, input.itemWeight, input.hydration, input.kitchenTemp, input.fridgeTemp, doughTempC);
+      const b = fermentationBudget(modelIdyPct, path.warmHours, input.kitchenTemp, path.coldHours, input.fridgeTemp, path);
+      return { s, b: Number.isFinite(b) ? b : NaN };
+    } catch { return { s: null, b: NaN }; }
+  };
+  const target = input.budget ?? 1;
+  const usable = (s: ScheduleResult | null) => !!s && s.totalColdHours > 0 && clashes(s) <= clashes(base) && !s.preparationInvalid;
+  // Every 0.05 step of the scale; the clash-free one whose budget is nearest the target, within 5 %.
+  let best: { rtScale: number; gap: number } | null = null;
+  for (let k = Math.round(RT_SCALE_MIN * 20); k <= Math.round(RT_SCALE_MAX * 20); k++) {
+    const rtScale = k / 20, { s, b } = budgetAt(rtScale);
+    if (!Number.isFinite(b) || !usable(s)) continue;
+    const gap = Math.abs(b - target);
+    if (!best || gap < best.gap - 1e-9 || (Math.abs(gap - best.gap) <= 1e-9 && Math.abs(rtScale - 1) < Math.abs(best.rtScale - 1))) best = { rtScale, gap };
+  }
+  if (!best || best.gap > 0.05 * target) return plain();
+  const shape = { rtScale: best.rtScale };
+  const band = fermentationWindowForYeast(modelIdyPct, { ...input, exitLeadMin: shape, nearH: h0, budget: undefined });
+  const from = band ? Math.max(band.from, h0) : h0, to = band ? Math.min(band.to, h0) : h0;
+  return { center: h0, from: Math.min(from, maximum), to, shape };
+}
+
 /** The "bake straight from the fridge" variant of a plan whose final fridge exit
  * falls in unavailable time, when it applies: the final room-temperature proof
  * after the cold proof is replaced by the oven's preheat. Offered only when the
@@ -2084,7 +2162,7 @@ export function fermentationWindowForYeast(modelIdyPct: number, o: FermentationT
 export function bakeFromFridgeOption(o: {
   start: Date; bake: Date; blocks: AvailabilityBlock[]; kitchenTemp: number; preheatMin: number;
   mixerType: MixerType; styleKey: string; numItems: number; itemWeight: number; mixingBatches: number;
-  fridgeTemp: number; hydration: number; isSourdough?: boolean; starterFactor?: number; exitLeadMin?: number; planLadder?: PlanLadder;
+  fridgeTemp: number; hydration: number; isSourdough?: boolean; starterFactor?: number; exitLeadMin?: PlanShape; planLadder?: PlanLadder;
   /** Dough temperature at the mix (°C); the style's target dough temperature by default. */
   doughTempC?: number;
 }): { exitAt: Date; budget: number; blocks: AvailabilityBlock[] } | null {

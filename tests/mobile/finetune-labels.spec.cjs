@@ -63,7 +63,9 @@ test('the unit is a painted suffix: full accessible names, 44 px boxes, nothing 
  await expect(loss).toHaveValue('1.5');
  for(const box of await fineTune.locator('[data-unit-input] input:visible').all()){
   expect((await box.boundingBox()).height).toBeGreaterThanOrEqual(44);
-  await expect(box).toHaveAttribute('type','number');
+  // Round 8 (bug 2): the yeast boxes are decimal text boxes (« 0,1 » in French), the others number boxes.
+  if(await box.getAttribute('inputmode')==='decimal')await expect(box).toHaveAttribute('type','text');
+  else await expect(box).toHaveAttribute('type','number');
  }
  const suffix=doughTemp.locator('xpath=..').locator('[data-unit-suffix]');
  await expect(suffix).toHaveText('°C');
