@@ -7856,7 +7856,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   // A bake time the baker just moved to that has no plan (round 13, item 1): the bakes that fit, offered above, are the
   // answer; no plan is drawn for it (the seed start read "too long", a preferment "0 min … in the past").
   const chipsAlone=eatTimeSet&&!currentCandidateValid&&mode!=='simple'&&!inputsOnly&&movedBakeRef.current===+pendingEatTime
-    &&!execution&&completedMixAt===undefined&&(searchingTargets||suggestedTargets.length>0);
+    &&!execution&&completedMixAt===undefined&&(searchingTargets||suggestedTargets.length>0)
+    // A plan that only meets a busy time keeps its ways (cover a step, the fridge arrangement): it exists.
+    &&('validation' in currentCandidate?currentCandidate.validation.reason:currentCandidate.issue)!=='busy';
   const coherentTimes=+pendingStart<+pendingEatTime&&(!committedSchedule||(+committedSchedule.divideBallTime<=+pendingEatTime&&
     (committedSchedule.availabilityActions??[]).every(action=>+action.at<=+pendingEatTime)))&&(!isSourdough||pinWithoutPlan||
     (completedMixAt!==undefined||!previewStarter?.windowTooShort&&!!timelineStarterEvents.length&&starterHandsOnActions(timelineStarterEvents,Date.now()).every(action=>+action.at<=+pendingStart)));
