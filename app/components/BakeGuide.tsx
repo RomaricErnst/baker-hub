@@ -1705,8 +1705,9 @@ Actual dough condition and equipment may differ from these estimates.`;
 
       {isSourdough && starterEvents?.filter(event => !['last_fed', 'known_peak'].includes(event.kind)&&(!event.isPast||['refresh','intermediate_refresh','pre_mix'].includes(event.kind))).map((event, index) => {
         const feeding = ['refresh', 'intermediate_refresh', 'pre_mix'].includes(event.kind);
-        // The pre-mix feed shared with another live bake: one feed of both builds, at its ratio (round 7 B5).
-        const shared = event.kind === 'pre_mix' && sharedStarterFeed && +event.time === sharedStarterFeed.at ? sharedStarterFeed : null;
+        // The feed shared with another live bake: one feed of both builds, at its ratio (round 7 B5; any feed of the jar at
+        // the other bake's pre-mix time since round 11).
+        const shared = feeding && sharedStarterFeed && +event.time === sharedStarterFeed.at ? sharedStarterFeed : null;
         const eventRatio=shared?.ratio??event.feedingRatio??feedR;
         const own = starterBuild(bgSdMid, feedMaximum, eventRatio);
         const eventSeed = shared?.seed ?? own.seed, eventPart = shared?.flour ?? own.flour;

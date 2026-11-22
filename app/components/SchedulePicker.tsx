@@ -10,7 +10,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { computePreMixStretchFactor, computeStarterPeakMs, mixNearPeak, planIntermediateFeeds, preMixRiseH, restStretchFactor } from '../utils/starterPeak';
 import { peakAround, peakNote } from '../utils/peakTime';
 import { starterStepShownTime, inventedStarterHistory } from '../utils/sharedStarter';
-import { type AvailabilityBlock, type PlanLadder, type PlanShape, type ScheduleResult, enteredYeastTiming, starterBulkFactor as starterBulkFactorFor, raisedStarterPcts, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationBudget, sourdoughBulkH, bakeFromFridgeOption, shortWarmupOption, BAKE_FROM_FRIDGE_STYLES } from '../utils';
+import { type AvailabilityBlock, type PlanLadder, type PlanShape, type ScheduleResult, enteredYeastTiming, starterBulkFactor as starterBulkFactorFor, raisedStarterPcts, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationBudget, sourdoughBulkH, bakeFromFridgeOption, shortWarmupOption, BAKE_FROM_FRIDGE_STYLES, fridgeSpellCount } from '../utils';
 import { formatDuration } from '../utils/duration';
 import { earliestQuarterStart, quarterStartNoEarlier } from '../utils/startNotice';
 import { getPrefOptH, getPrefPeakH_RT, getStarterTroughH, getStarterFridgeWarmupH } from './FermentChart';
@@ -6992,9 +6992,13 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       try{return searchStarterCandidateAtRatio(pins,candidateBlocks,preserveStorage,candidateBake);}finally{probeRatioRef.current=previous;}
     };
     const found=atRatio(holdRatio&&probeRatioRef.current===null?nextFeedRatio:null);
-    // Whichever pass found the requested bake's plan, a lighter run-up is preferred when it fits.
-    const lighter=(plan:ReturnType<typeof searchStarterCandidateAtRatio>)=>plan&&ratios&&probeRatioRef.current===null&&!revivalRetryRef.current
-      ?eveningRevival(plan,pins,candidateBlocks,preserveStorage,candidateBake,holdRatio)??plan:plan;
+    // Whichever pass found the requested bake's plan, a lighter run-up is preferred when it fits, and in Simple a
+    // mix whose dough goes into the fridge once (oneTripLevain).
+    const lighter=(plan:ReturnType<typeof searchStarterCandidateAtRatio>)=>{
+      if(!plan||!ratios||probeRatioRef.current!==null||revivalRetryRef.current)return plan;
+      const one=oneTripLevain(plan,pins,candidateBlocks,preserveStorage,candidateBake)??plan;
+      return eveningRevival(one,pins,candidateBlocks,preserveStorage,candidateBake,holdRatio)??one;
+    };
     if(found&&ratios&&probeRatioRef.current===null&&!revivalRetryRef.current)return lighter(found);
     if(found||!ratios||probeRatioRef.current!==null||revivalRetryRef.current)return found;
     // Fallback passes, for the requested bake only (replanStarter), when pass A
@@ -7016,6 +7020,38 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       }
     }finally{revivalRetryRef.current=false;}
     return lighter(fallback);
+  }
+
+  /** One trip to the fridge for a Simple levain dough (round 11, owner decision 4; Priya: sourdough pizza, 22 °C,
+   * bake Sat 7:30pm, nights). The search's 5pm mix ended the bulk at 10:45pm, too late for the balls' spell to start
+   * before the night, so the plan went in, out at 7:00 to shape, and back in. When the plan found (Simple: planLadder
+   * 'all', no pinned or recorded mix) puts the dough in the fridge twice, the nearest other mix (15-minute steps, up
+   * to 8 h, earlier first) whose complete plan is valid, puts it in once, keeps the starter pill, adds no starter
+   * step (feed, fridge in/out) and no hands-on step in the night beyond the found plan's replaces it; else the found
+   * plan stands. Plans with one trip are untouched. */
+  function oneTripLevain(found:ReturnType<typeof evaluateStarterCandidate>,pins:StarterPins,candidateBlocks:AvailabilityBlock[],preserveStorage:boolean,candidateBake:Date) {
+    const sched=found.validation?.schedule;
+    if(planLadder!=='all'||!found.valid||!sched||fridgeSpellCount(sched)<2||pins.mix!==null||pins.feed!==null||pins.refresh!==null
+      ||completedMixAt!==undefined||keptStarterPlan)return null;
+    const now=Date.now(),quarter=900000,mix=+found.probe.start;
+    const STEPS=['refresh','intermediate_refresh','pre_mix','fridge_in','fridge_out'];
+    const starter=(list:StarterEvent[])=>list.filter(e=>+e.time>=now&&!e.historicalStorage&&STEPS.includes(e.kind));
+    const nightIds=(c:ReturnType<typeof evaluateStarterCandidate>)=>newNightHandsOn([...(c.validation?.schedule?.availabilityActions??[]),
+      ...starter(c.probe.result?.starterEvents??[]).map(e=>({id:'starter-'+e.kind,at:e.time}))],candidateBlocks).map(a=>a.id);
+    const steps=starter(found.probe.result?.starterEvents??[]).length,night=nightIds(found),pill=found.probe.result?.starterPillState;
+    for(let step=quarter;step<=8*3600000;step+=quarter)for(const sign of [-1,1]){
+      const at=mix+sign*step;
+      if(at<=now||at>=+candidateBake)continue;
+      const checked=evaluateStarterCandidate({mix:at,feed:null,refresh:null},candidateBlocks,undefined,preserveStorage,undefined,candidateBake);
+      const dough=checked.validation?.schedule;
+      if(!checked.valid||+checked.probe.start!==at||!dough||fridgeSpellCount(dough)!==1)continue;
+      if(pill==='green'&&checked.probe.result?.starterPillState!=='green')continue;
+      if(starter(checked.probe.result?.starterEvents??[]).length>steps)continue;
+      const nights=nightIds(checked);
+      if(nights.length>night.length||nights.some(id=>!night.includes(id)))continue;
+      return checked;
+    }
+    return null;
   }
 
   /** A fridge-kept starter's run-up without a fridge spell (round 6 B3, owner: Simple's weekly run-up

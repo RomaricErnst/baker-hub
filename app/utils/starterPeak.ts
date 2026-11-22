@@ -151,3 +151,10 @@ export function planIntermediateFeeds(startMs: number, nextMajorFeedMs: number, 
   return back.length >= out.length && nextMajorFeedMs - backLast < nextMajorFeedMs - lastBeforeMs ? back : out;
 }
 
+/** Hours a starter takes out of the fridge to reach the kitchen's temperature (re-exported by FermentChart). */
+export function getStarterFridgeWarmupH(temp: number): number {
+  if (temp >= 30) return 0.5;
+  if (temp >= 28) return 0.75;
+  if (temp >= 26) return 1.0;
+  return 1.5;
+}

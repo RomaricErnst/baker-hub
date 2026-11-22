@@ -4,7 +4,7 @@
 // both, said once with both amounts, and the later bake's starter steps follow the earlier bake's plan.
 // Nothing with one bake (owner's rule B): with no other bake the caller never calls this, and a null result
 // leaves the plan as it is.
-import { mixNearPeak } from './starterPeak';
+import { mixNearPeak, getStarterFridgeWarmupH } from './starterPeak';
 import { starterBuild } from './starterBuild';
 import { roundToQuarter } from './units';
 
@@ -28,6 +28,9 @@ export interface StarterUse {
    *  and either bake's tick carries to the other (round 8, S6). Not used to decide the pair. */
   events?: readonly JarEvent[];
   records?: readonly JarRecord[];
+  /** Every feed the bake plans before its mix (refresh, intermediate, pre-mix): a feed of the jar at the same time as
+   *  the other bake's pre-mix feed is that one feed (round 11). */
+  feeds?: readonly { at: number; ratio: number }[];
 }
 /** A saved starter step, in either shape (session: ms numbers; page: Dates). */
 export type JarEvent = { kind: string; time: Date; isPast?: boolean; historicalStorage?: boolean; bellPeakTime?: Date; feedingRatio?: number; [key: string]: unknown };
@@ -68,7 +71,7 @@ export function sharedStarterFeedFor(own: StarterUse, others: readonly StarterUs
     const gap = Math.abs(other.feedAt - own.feedAt);
     if (!best || gap < best.gap) best = { other, gap };
   }
-  if (!best) return null;
+  if (!best) return sameFeedFor(own, others, now);
   const other = best.other;
   const leads = own.feedAt < other.feedAt || (own.feedAt === other.feedAt && own.id < other.id);
   const [early, late] = leads ? [own, other] : [other, own];
@@ -84,10 +87,45 @@ export function sharedStarterFeedFor(own: StarterUse, others: readonly StarterUs
   };
 }
 
+/** Two bakes feeding the same jar at the same time (round 11, Priya: the pizza's refresh and the loaf's pre-mix feed
+ *  both Wed 9:45pm, never said): one feed for both. The bake whose pre-mix feed it is follows (its levain comes from
+ *  that feed); the other leads and goes on with its own later feeds. Within 15 minutes and at the same ratio only:
+ *  the follower keeps its own peak, moved with its feed. The jar's rest is what stays once both doughs have their
+ *  levain, the leader's later feeds included, so both bakes say the same "keep the rest". */
+function sameFeedFor(own: StarterUse, others: readonly StarterUse[], now: number): SharedStarterFeed | null {
+  let best: { leader: StarterUse; follower: StarterUse; at: number; gap: number } | null = null;
+  for (const other of others) {
+    if (other.id === own.id || !(other.mixAt > now) || !(other.peakAt > other.feedAt)) continue;
+    for (const [leader, follower] of [[other, own], [own, other]] as const) {
+      const feed = (leader.feeds ?? []).filter(f => f.at < leader.feedAt && f.ratio === follower.ratio && Math.abs(f.at - follower.feedAt) <= SAME_FEED_MS)
+        .sort((a, b) => Math.abs(a.at - follower.feedAt) - Math.abs(b.at - follower.feedAt))[0];
+      if (!feed || !(follower.mixAt > feed.at)) continue;
+      const plannedBefore = (use: StarterUse) => use.createdAt != null && use.createdAt < feed.at;
+      if (!(feed.at > now) && !(plannedBefore(leader) && plannedBefore(follower))) continue;
+      const gap = Math.abs(feed.at - follower.feedAt);
+      if (!best || gap < best.gap) best = { leader, follower, at: feed.at, gap };
+    }
+  }
+  if (!best) return null;
+  const { leader, follower, at } = best;
+  const ratio = follower.ratio;
+  const a = starterBuild(leader.need.mid, leader.need.max, ratio), b = starterBuild(follower.need.mid, follower.need.max, ratio);
+  const later = (leader.feeds ?? []).filter(f => f.at > at && f.at < leader.mixAt)
+    .reduce((sum, f) => { const x = starterBuild(leader.need.mid, leader.need.max, f.ratio); return sum + x.flour + x.water; }, 0);
+  const total = a.total + b.total;
+  return {
+    at, peakAt: follower.peakAt + (at - follower.feedAt), ratio, leads: leader.id === own.id, otherId: (leader.id === own.id ? follower : leader).id,
+    keep: Math.max(0, total + later - leader.need.mid - follower.need.mid),
+    first: { name: leader.name, grams: a.total, bakeAt: leader.bakeAt }, second: { name: follower.name, grams: b.total, bakeAt: follower.bakeAt },
+    build: { seed: a.seed + b.seed, flour: a.flour + b.flour, water: a.water + b.water, total },
+  };
+}
+const SAME_FEED_MS = 15 * 60000;
+
 /** A saved bake's levain build (journal entry → StarterUse), or null when it has none to share: not sourdough,
  *  no saved levain need (bakes older than that field), no mix, or no planned pre-mix feed with a peak. */
-export function savedStarterUse(entry: { id: string; createdAt?: number; eatTime?: number | null; session: { yeastType?: unknown; levainNeed?: { mid: number; max: number }; startTime?: number | null; nextFeedRatio?: number; starterEvents?: readonly { kind: string; time: number; bellPeakTime?: number; feedingRatio?: number }[]; starterFeedRecords?: readonly JarRecord[] } },
-  name: string): StarterUse | null {
+export function savedStarterUse(entry: { id: string; createdAt?: number; eatTime?: number | null; session: { yeastType?: unknown; levainNeed?: { mid: number; max: number }; startTime?: number | null; nextFeedRatio?: number; starterEvents?: readonly { kind: string; time: number; bellPeakTime?: number; feedingRatio?: number }[]; starterFeedRecords?: readonly JarRecord[]; starterLocation?: unknown; kitchenTemp?: unknown } },
+  name: string, fr = false, now = Date.now()): StarterUse | null {
   const ses = entry.session;
   if (ses.yeastType !== 'sourdough' || !ses.levainNeed || ses.startTime == null) return null;
   const events = (ses.starterEvents ?? []).filter(e => Number.isFinite(e.time));
@@ -97,8 +135,12 @@ export function savedStarterUse(entry: { id: string; createdAt?: number; eatTime
   return {
     id: entry.id, name, feedAt: feed.time, peakAt: feed.bellPeakTime!, mixAt, ratio: feed.feedingRatio ?? ses.nextFeedRatio ?? 1, need: ses.levainNeed,
     createdAt: entry.createdAt, bakeAt: entry.eatTime ?? undefined,
-    events: events.map(e => ({ ...e, time: new Date(e.time), bellPeakTime: e.bellPeakTime == null ? undefined : new Date(e.bellPeakTime) })) as JarEvent[],
+    // Its jar steps include the take-out its plan shows (round 11, withStarterTakeOut).
+    events: withStarterTakeOut(events.map(e => ({ ...e, time: new Date(e.time), bellPeakTime: e.bellPeakTime == null ? undefined : new Date(e.bellPeakTime) })) as JarEvent[],
+      ses.starterLocation === 'fridge', getStarterFridgeWarmupH(typeof ses.kitchenTemp === 'number' ? ses.kitchenTemp : 22), now, fr),
     records: ses.starterFeedRecords ?? [],
+    feeds: events.filter(e => (e.kind === 'refresh' || e.kind === 'intermediate_refresh' || e.kind === 'pre_mix') && e.time < mixAt)
+      .map(e => ({ at: e.time, ratio: e.feedingRatio ?? ses.nextFeedRatio ?? 1 })),
   };
 }
 
@@ -158,6 +200,29 @@ export function starterEventsWithSharedFeed<E extends TimedEvent>(events: E[], s
   return events.filter(e => !(starterStep(e) && +e.time <= +own.time))
     .map(e => e === own ? sharedFeed : e);
 }
+
+/** A starter kept in the fridge always has its take-out step (round 11, Priya: the pizza's plan began with "Refresh
+ *  feed 9:45pm" and never said to take the starter out). The planner times a fridge starter's first feed after its
+ *  warm-up (the revival's removal is part of its busy-time check) but draws the removal only for some plans; here the
+ *  first planned feed with no removal before it gets one, `warmupH` earlier (never before `now`). Display only: the
+ *  plan's saved events, its validation and the solver are unchanged. `inFridge`: the starter is in the fridge now
+ *  (no feed recorded since). Without a missing removal the same array is returned. */
+export function withStarterTakeOut<E extends { kind: string; time: Date }>(events: E[], inFridge: boolean, warmupH: number, now: number, fr: boolean): E[] {
+  if (!inFridge || !events.length) return events;
+  const sorted = [...events].sort((a, b) => +a.time - +b.time);
+  const lastFed = sorted.filter(e => e.kind === 'last_fed').at(-1);
+  const feed = sorted.find(e => FEED_KINDS.includes(e.kind) && (!lastFed || +e.time > +lastFed.time));
+  if (!feed || !(+feed.time > now)) return events;
+  // A removal already planned after the starter went in (or after its last feed) and before this feed.
+  const since = Math.max(lastFed ? +lastFed.time : -Infinity, ...sorted.filter(e => e.kind === 'fridge_in' && +e.time < +feed.time).map(e => +e.time));
+  if (sorted.some(e => e.kind === 'fridge_out' && +e.time >= since && +e.time <= +feed.time)) return events;
+  const minutes = Math.round(warmupH * 60);
+  const out = { kind: 'fridge_out', time: new Date(Math.max(+feed.time - warmupH * 3600000, now)), isPast: false, isActive: false, isDraggable: false,
+    label: fr ? 'Sortir le levain' : 'Starter out of the fridge', cardTimeFormat: 'absolute',
+    cardNote: fr ? `~${minutes} min pour atteindre la temp. ambiante` : `~${minutes} min to reach room temp`, bellStyle: 'none', bellSigmaScale: 1 } as unknown as E;
+  return [...events, out].sort((a, b) => +a.time - +b.time);
+}
+const FEED_KINDS = ['refresh', 'intermediate_refresh', 'pre_mix'];
 
 /** A fridge step's time as the plan shows it: on the quarter-hour grid (round 8, S8: "8:02am" was a removal
  *  floored to now, or a feed answer's clock time). Feeds and peaks are already on the grid or have their own format. */
