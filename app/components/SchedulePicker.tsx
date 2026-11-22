@@ -784,12 +784,14 @@ export function withoutNightSteps(input:EditInput):EditInput{
  * window from now, the storage's preferment window, its warm-up, busy times, the method check), storages in
  * order. 15-minute steps for 12 h, then hourly, up to `maxDays`, never 11pm–7am; null when none (or the time budget runs
  * out) — then no later bake is offered. A promise like "Keep the biga and bake Fri 10:30pm" must lead to a plan. */
-export function earliestPrefermentBake({type,storages,from,now=Date.now(),blocks:currentBlocks,blocksFor,kitchenTemp,fridgeTemp,styleKey,flourStrength,preheatMin,exitLeadMin,mixerType,numItems,mixingBatches,maxDays=4,budgetMs=1500,...thermalInputs}:WarmupInputs & {
+export function earliestPrefermentBake({type,storages,from,now=Date.now(),blocks:currentBlocks,blocksFor,allowNight=false,kitchenTemp,fridgeTemp,styleKey,flourStrength,preheatMin,exitLeadMin,mixerType,numItems,mixingBatches,maxDays=4,budgetMs=1500,...thermalInputs}:WarmupInputs & {
   type:'poolish'|'biga'; storages:boolean[]; from:Date; now?:number; blocks:AvailabilityBlock[]; kitchenTemp:number; fridgeTemp:number; styleKey:string; flourStrength:number;
   /** The baker's busy times for a later bake (their recurring nights and work carried to it); `blocks` without. */
   blocksFor?:(bake:Date)=>AvailabilityBlock[];
+  /** Round 9 (owner, 22 Nov 2026): the baker's own choice may keep night steps; the result then names them. */
+  allowNight?:boolean;
   preheatMin:number; exitLeadMin?:PlanShape; mixerType:MixerType; numItems:number; mixingBatches:number; maxDays?:number; budgetMs?:number;
-}):{bake:Date;inFridge:boolean;prefHours:number;start:Date}|null {
+}):{bake:Date;inFridge:boolean;prefHours:number;start:Date;nightSteps:AvailabilityAction[]}|null {
   const defaults=STYLE_FERM_DEFAULTS[styleKey];
   const protocol=getBreadProtocol(styleKey);
   if(!defaults||(protocol&&!protocol.supportedPreferments.includes(type)))return null;
@@ -801,7 +803,7 @@ export function earliestPrefermentBake({type,storages,from,now=Date.now(),blocks
     // The busy times as they will be for that bake: a later bake carries the baker's recurring nights and work (bug G).
     const blocks=blocksFor?blocksFor(new Date(bake)):currentBlocks;
     // The preheat is a hands-on step at a fixed time: a bake whose preheat falls in the night is skipped before any search.
-    if(newNightHandsOn([{id:'preheat',at:new Date(bake-preheatMin*60000)}],blocks).length)continue;
+    if(!allowNight&&newNightHandsOn([{id:'preheat',at:new Date(bake-preheatMin*60000)}],blocks).length)continue;
     for(const inFridge of storages){
       const thermal={...thermalInputs,mixerType,prefermentType:type,prefInFridge:inFridge,styleKey,kitchenTemp,fridgeTemp};
       const bakeAt=new Date(bake),centre=commercialReadinessWindow({...defaults,flourStrength,kitchenTemp,preheatMin,totalWindowH:(bake-now)/3600000});
@@ -817,8 +819,8 @@ export function earliestPrefermentBake({type,storages,from,now=Date.now(),blocks
       // A cheap check first: some mix in the readiness window whose dough steps keep out of the night (the dough's
       // steps do not depend on the preferment), else the full search could only reject every candidate.
       const bounds=input.window(bakeAt);
-      let doughDay=false;
-      if(bounds.from&&bounds.to)for(let at=Math.max(Math.ceil(+bounds.from/step)*step,earliestQuarterStart(now));at<=+bounds.to&&!doughDay;at+=step){
+      let doughDay=allowNight;
+      if(!allowNight&&bounds.from&&bounds.to)for(let at=Math.max(Math.ceil(+bounds.from/step)*step,earliestQuarterStart(now));at<=+bounds.to&&!doughDay;at+=step){
         // …and a preferment start in its window that is after now and out of the night.
         const win=input.prefWindow;
         let prefDay=!win;
@@ -827,8 +829,12 @@ export function earliestPrefermentBake({type,storages,from,now=Date.now(),blocks
         try{doughDay=!newNightHandsOn(buildSchedule(new Date(at),bakeAt,blocks,kitchenTemp,preheatMin,mixerType,styleKey,numItems,mixingBatches,false,1,exitLeadMin).availabilityActions??[],blocks).length;}catch{/* no plan at this mix */}
       }
       if(!doughDay)continue;
-      const result=findFixedBakeSchedule(withNightRule(input,[]),{});
-      if(result.found)return {bake:bakeAt,inFridge,prefHours:result.candidate.times.prefHours,start:result.candidate.times.start};
+      const result=findFixedBakeSchedule(allowNight?input:withNightRule(input,[]),{});
+      if(result.found){
+        const t=result.candidate.times;
+        const nightSteps=newNightHandsOn([...(result.candidate.schedule?.availabilityActions??[]),{id:'preferment',at:new Date(+t.start-t.prefHours*3600000)}],blocks).filter(a=>+a.at>now);
+        return {bake:bakeAt,inFridge,prefHours:t.prefHours,start:t.start,nightSteps};
+      }
     }
   }
   return null;
@@ -2415,6 +2421,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   }, []);
 
   const solverBlocksRef = useRef<AvailabilityBlock[]>(blocks);
+  // Round 9 (owner, 22 Nov 2026): set only during replanCurrentSchedule's first search, where an entered amount's plan
+  // avoids new night steps; the fallback search, previews and the editor accept them (a preference, never a refusal).
+  const entryNightOnRef = useRef(false);
   // Keep localBlocks in sync with the parent's blocks prop. Without this, any
   // sourdough re-solve NOT triggered by a chip toggle (e.g. age/location/
   // taste/ratio change → useEffect re-solve) could read a STALE localBlocks
@@ -7204,12 +7213,13 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     setFocusRow(row);
     beginRowEdit(row, +(row === 'mix' ? pendingStart : pendingEatTime));
   };
+  const entryNightRuleOn=()=>!execution&&completedMixAt===undefined&&!!entryNightIds&&(yeastPctOverride!==undefined||prefYeastPctOverride!==undefined);
   function commercialCandidateInput(candidateBlocks:AvailabilityBlock[]=solverBlocksRef.current,inFridge=prefGoesInFridge,start=pendingStart,bake=pendingEatTime,method=prefermentType):EditInput {
     const hasPrefActive=method==='poolish'||method==='biga';
     const entered=prefYeastTimingFor(method,inFridge);
     const prefWindow=entered?{min:entered.min,max:entered.max}:commercialPrefermentWindow(method,inFridge,kitchenTemp,styleKey,fridgeTemp);
     // An entered amount's plan adds no night step its calculated plan did not have (round 9, bugs G, H; the statement's rule).
-    const nightRule=!execution&&completedMixAt===undefined&&entryNightIds&&(yeastPctOverride!==undefined||(hasPrefActive&&!!entered));
+    const nightRule=entryNightOnRef.current&&!execution&&completedMixAt===undefined&&entryNightIds&&(yeastPctOverride!==undefined||(hasPrefActive&&!!entered));
     const input:EditInput={isSourdough:false,formulaValid:execution?validateMadeFormula:undefined,completedMixAt:completedMixAt??(execution?.method==='none'?execution.actualAt:undefined),completedPrefermentAt:execution&&execution.method!=='none'?execution.actualAt:undefined,id:'mix',at:start,start,bake,now:Date.now(),
       blocks:candidateBlocks,kitchenTemp,preheatMin,exitLeadMin,planLadder,preheatExtraMin,mixerType,styleKey,numItems,mixingBatches,
       prefHours:hasPrefActive?prefOffsetH:0,hasPreferment:hasPrefActive,prefWindow:execution?.prefWindow??prefWindow,pins:execution&&execution.method!=='none'?{preferment:new Date(execution.actualAt)}:undefined,prefWarmupHours:warmupFor(method, inFridge),prefCooldownHours:cooldownFor(method,inFridge),
@@ -7506,6 +7516,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         onChange(unresolvedStart,pendingEatTime,candidateBlocks,{preservePlan:true,timingOverrides:overrides,starterPlan:{events:[],fridgeOutTime:null,usingPeak2:false,feed2Time:null,starterFridgeInTime:null}});
       }
     }else{
+      // Round 9 (owner, 22 Nov 2026): a baker-entered amount is planned without new night steps when such a plan exists,
+      // else with them (the page names them in one line); the automatic plan keeps its rule (searchOnce runs once).
+      const searchOnce=()=>{
       // A cool-spot biga the planner chose keeps its no-night-step rule on every replan (D1).
       const plainInput=commercialCandidateInput(candidateBlocks);
       const input=prefermentType==='biga'&&!prefGoesInFridge&&bigaStorage==='auto'?withoutNightSteps(plainInput):plainInput;
@@ -7529,6 +7542,14 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         const alt=commercialRecommendation(candidateBlocks,overrides);
         if(alt.result.found){recommendation=alt;result=alt.result;}
       }
+      return {input,recommendation,result};
+      };
+      const nightFirst=entryNightRuleOn();
+      entryNightOnRef.current=nightFirst;
+      let first:ReturnType<typeof searchOnce>;
+      try{first=searchOnce();}finally{entryNightOnRef.current=false;}
+      let {input,recommendation,result}=first;
+      if(!result.found&&nightFirst){const again=searchOnce();if(again.result.found||(again.result.preparationRepaired&&!result.preparationRepaired))({input,recommendation,result}=again);}
       const usable=result.found||result.preparationRepaired;
       const storage=usable&&recommendation?recommendation.inFridge:prefGoesInFridge;
       if(usable&&recommendation)noteChosenStorage(storage);

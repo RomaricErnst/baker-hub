@@ -40,16 +40,17 @@ export interface YeastEntryInput {
   /** Round 9 (bug I): the timing also reads room-temperature plans (enteredYeastTiming roomPlans); off for a
    * bake saved under way before it (legacyEntryTiming), which keeps its plan. */
   roomPlans?: boolean;
-  /** Round 9 (bugs G, H): the night steps (newNightHandsOn ids) the calculated plan already has; an entered
-   * amount's plan may add no other hands-on step between 22:00 and 07:00. Undefined: no night rule (a bake
+  /** Round 9 (bugs G, H; owner 22 Nov 2026): the night steps (newNightHandsOn ids) the calculated plan already has.
+   * An entered amount's plan avoids any other hands-on step between 22:00 and 07:00 when it can; when it cannot,
+   * the amount is still planned and `checkYeastEntry` says so (`nightSteps`). Undefined: no night rule (a bake
    * saved before it). */
   nightAllowed?: string[];
 }
 
 /** Why an amount gives no plan: 'time' it needs longer than the time left; 'busy' every plan runs into the busy
- * times; 'night' every plan puts a new step between 22:00 and 07:00; 'fast' it rises faster than the dough's
- * steps take; 'plan' no plan fits before the bake (a preferment would have to start before now). */
-export type YeastEntryReason = 'time' | 'busy' | 'night' | 'fast' | 'plan';
+ * times; 'fast' it rises faster than the dough's steps take; 'plan' no plan fits before the bake (a preferment
+ * would have to start before now). Night steps are never a reason (owner, 22 Nov 2026): see `nightSteps`. */
+export type YeastEntryReason = 'time' | 'busy' | 'fast' | 'plan';
 export interface YeastEntryCheck {
   fits: boolean;
   /** Why it does not fit: 'time' (it needs longer than the time left), 'busy' (no plan clear of the busy times). */
@@ -62,6 +63,11 @@ export interface YeastEntryCheck {
   suggestedShownPct: number | null;
   /** The suggestion when it is more yeast (kept for older callers). */
   minimumShownPct: number | null;
+  /** It fits, but every plan adds a hands-on step between 22:00 and 07:00 beyond the calculated plan's: it is
+   * planned anyway and the page names those steps (owner, 22 Nov 2026). */
+  nightSteps?: boolean;
+  /** With `nightSteps`, the amount nearest the entered one, towards the calculated one, whose plan has none. */
+  nightFreeShownPct?: number | null;
 }
 
 /** Round a yeast % up to a step a baker can weigh and type: 0.01 below 1 %, 0.1 above. */
@@ -170,10 +176,13 @@ export function checkYeastEntry(idyPct: number, o: YeastEntryInput): YeastEntryC
   // When the calculated amount has no clear plan either, an entered one is no worse if it plans once the busy
   // times are set aside (the night rule still holds): it is applied and the planner offers its usual ways on.
   let calcClear: boolean | undefined;
-  const noWorse = (idy: number) => o.blocks.length > 0 && !(calcClear ??= entryPlanFound(undefined, o))
-    && entryPlanSearch(idy, o, undefined, { ignoreBlocks: true }) !== null;
+  // Night steps never refuse an amount (owner, 22 Nov 2026): every check below lifts the night rule; only the
+  // night-free search says whether the plan has new night steps.
+  const loose = { allowNight: true } as const;
+  const noWorse = (idy: number) => o.blocks.length > 0 && !(calcClear ??= entryPlanSearch(undefined, o, undefined, loose) !== null)
+    && entryPlanSearch(idy, o, undefined, { ignoreBlocks: true, allowNight: true }) !== null;
   const memo = new Map<number, boolean>();
-  const plans = (idy: number) => { if (!memo.has(idy)) memo.set(idy, fitsTime(idy) && (entryPlanFound(idy, o) || noWorse(idy))); return memo.get(idy)!; };
+  const plans = (idy: number) => { if (!memo.has(idy)) memo.set(idy, fitsTime(idy) && (entryPlanSearch(idy, o, undefined, loose) !== null || noWorse(idy))); return memo.get(idy)!; };
   const enteredShown = Math.round(idyPct * o.conversion * 1000) / 1000;
   const calcShown = o.calculatedIdyPct !== undefined ? Math.round(o.calculatedIdyPct * o.conversion * 1000) / 1000 : undefined;
   const result = (fits: boolean, reason: YeastEntryReason | null, neededH: number | null, suggested: number | null): YeastEntryCheck =>
@@ -198,17 +207,28 @@ export function checkYeastEntry(idyPct: number, o: YeastEntryInput): YeastEntryC
     return result(false, 'time', neededH, suggested);
   }
   const centerH = entryTiming(idyPct, o, availableH)?.center ?? null;
-  if (plans(idyPct)) return result(true, null, centerH, null);
+  if (plans(idyPct)) {
+    if (!o.nightAllowed || entryPlanFound(idyPct, o) || noWorse(idyPct)) return result(true, null, centerH, null);
+    return { ...result(true, null, centerH, null), nightSteps: true, nightFreeShownPct: nightFreeShownPct(idyPct, o) };
+  }
   // Why, said honestly (round 9, bug D): busy times only when there are some and they are the reason.
-  // A night the baker declared (their own ' night' block) is their busy time: steps in it are 'busy', not 'night'.
-  const ownNight = o.blocks.some(block => block.label?.endsWith(' night'));
-  const reason: YeastEntryReason = o.blocks.length > 0 && (entryPlanSearch(idyPct, o, undefined, { ignoreBlocks: true })
-    || (ownNight && entryPlanSearch(idyPct, o, undefined, { ignoreBlocks: true, allowNight: true })))
+  // A night the baker declared (their own ' night' block) is their busy time: steps in it are 'busy'.
+  const reason: YeastEntryReason = o.blocks.length > 0 && entryPlanSearch(idyPct, o, undefined, { ignoreBlocks: true, allowNight: true })
     ? 'busy'
-    : o.nightAllowed && entryPlanSearch(idyPct, o, undefined, { ignoreBlocks: true, allowNight: true }) ? 'night'
     : centerH !== null && centerH <= 2 + o.preheatMin / 60 + 0.25 ? 'fast' : 'plan';
   const suggested = calcShown === undefined || Math.abs(calcShown - enteredShown) < 0.0005 ? null : nearestFittingShownPct(enteredShown, calcShown, s => plans(toIdy(s)));
   return result(false, reason, null, suggested);
+}
+
+/** The amount nearest an entered dough yeast (IDY %), shown in the baker's yeast, towards the calculated one, whose
+ * plan has no new night step (the night-free search within the time left); null when not even the calculated one. */
+export function nightFreeShownPct(idyPct: number, o: YeastEntryInput): number | null {
+  const availableH = (+o.bake - earliestOf(o.now)) / HOUR;
+  const enteredShown = Math.round(idyPct * o.conversion * 1000) / 1000;
+  const calcShown = o.calculatedIdyPct !== undefined ? Math.round(o.calculatedIdyPct * o.conversion * 1000) / 1000 : undefined;
+  if (calcShown === undefined || Math.abs(calcShown - enteredShown) < 0.0005) return null;
+  const toIdy = (shown: number) => Math.round(shown / o.conversion * 10000) / 10000;
+  return nearestFittingShownPct(enteredShown, calcShown, v => entryTiming(toIdy(v), o, availableH) !== null && entryPlanFound(toIdy(v), o));
 }
 
 /** Hours in the entry message: whole hours from 10 h, quarter hours below. */
@@ -264,4 +284,13 @@ export function legacyEntryTimingFor(session: { entryRules?: number; legacyEntry
 /** A saved list of night step ids (entryNightIds), else none. */
 export function normalizeEntryNightIds(value: unknown): string[] | undefined {
   return Array.isArray(value) && value.every(id => typeof id === 'string') ? [...value] : undefined;
+}
+
+/** The amounts whose night steps the baker kept (entryNightKept), else none. */
+export function normalizeEntryNightKept(value: unknown): { yeast?: number; pref?: { type: 'poolish' | 'biga'; pct: number } } | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const v = value as { yeast?: unknown; pref?: { type?: unknown; pct?: unknown } };
+  const yeast = typeof v.yeast === 'number' && Number.isFinite(v.yeast) ? v.yeast : undefined;
+  const pref = v.pref && (v.pref.type === 'poolish' || v.pref.type === 'biga') && typeof v.pref.pct === 'number' && Number.isFinite(v.pref.pct) ? { type: v.pref.type as 'poolish' | 'biga', pct: v.pref.pct as number } : undefined;
+  return yeast === undefined && !pref ? undefined : { ...(yeast !== undefined ? { yeast } : {}), ...(pref ? { pref } : {}) };
 }

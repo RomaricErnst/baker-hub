@@ -73,15 +73,43 @@ for(const locale of ['en','fr']){
   expect(errors).toEqual([]);
  });
 
- test(`${locale}: I/G — B3, 0.14 % keeps the 8:30pm knead only with folds after 10pm: said, and the nearest amount kneads at the calculated time`,async({page})=>{
+ test(`${locale}: night steps (owner) — B3, 0.14 % is planned; its folds after 10pm are named once; Keep is remembered`,async({page})=>{
   const errors=await open(page,b3(),locale,B3_NOW);const ft=await fineTune(page);
   const yeast=ft.locator('[data-yeast-override] input');
   await yeast.fill(fr?'0,14':'0.14');await yeast.blur();
-  const note=ft.locator('[data-yeast-entry-issue]');
-  await expect(note).toHaveAttribute('data-reason','night');
-  await expect(note.locator('p')).toHaveText(fr?/^Avec 0,14 %, le planning ajoute des étapes entre 22 h et 7 h\. 0,1\d % convient\.$/:/^With 0\.14%, the plan adds steps between 10pm and 7am\. 0\.1\d% fits\.$/);
-  await shot(page,`i-night-${locale}`,note);
-  await note.locator('[data-use-minimum-yeast]').tap();
+  // Never refused for night steps: applied, no statement.
+  await expect(ft.locator('[data-yeast-entry-issue]')).toHaveCount(0);
+  await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBe(0.14);
+  const night=ft.locator('[data-entry-night]');
+  await expect(night.locator('p')).toHaveText(fr?/^Ce planning a des rabats à 2[23]h\d\d et 2[23]h\d\d\.$/:/^This plan has folds at 1[01]:\d\dpm and 1[01]:\d\dpm\.$/);
+  // Two choices, neither a primary button.
+  await expect(night.getByRole('button')).toHaveText([fr?/^Utiliser 0,1\d % \(sans étape de nuit\)$/:/^Use 0\.1\d% \(no night steps\)$/,fr?'Garder 0,14 %':'Keep 0.14%']);
+  await expect(night.locator('.bh-apply-plan')).toHaveCount(0);
+  await expect(ft.locator('[data-yeast-helper]')).toHaveCount(0);
+  await shot(page,`night-line-${locale}`,night);
+  await night.locator('[data-entry-night-keep]').tap();
+  await expect(night).toHaveCount(0);
+  await expect.poll(async()=>(await stored(page)).entryNightKept).toEqual({yeast:0.14});
+  // Remembered with the amount: not shown again on the next visit.
+  await page.reload();
+  const again=await fineTune(page);
+  await expect(again.locator('[data-yeast-override] input')).toHaveValue(fr?'0,14':'0.14');
+  await page.waitForTimeout(1500);
+  await expect(again.locator('[data-entry-night]')).toHaveCount(0);
+  expect((await stored(page)).yeastPctOverride).toBe(0.14);
+  expect((await stored(page)).entryNightKept).toEqual({yeast:0.14});
+  expect(errors).toEqual([]);
+ });
+
+ test(`${locale}: night steps (owner) — "Use … (no night steps)" takes the nearest amount and keeps the 8:30pm knead`,async({page})=>{
+  const errors=await open(page,b3(),locale,B3_NOW);const ft=await fineTune(page);
+  const yeast=ft.locator('[data-yeast-override] input');
+  await yeast.fill(fr?'0,14':'0.14');await yeast.blur();
+  const avoid=ft.locator('[data-entry-night] [data-entry-night-avoid]');
+  const shown=num(await avoid.textContent());
+  await avoid.tap();
+  await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBe(shown);
+  await expect(ft.locator('[data-entry-night]')).toHaveCount(0);
   await update(page,ft,fr);
   const s=await stored(page);
   expect(Math.abs(s.startTime-B3_MIX)).toBeLessThanOrEqual(H);

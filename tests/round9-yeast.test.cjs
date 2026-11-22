@@ -12,6 +12,7 @@ const utils = require('../app/utils.ts');
 const Y = require('../app/utils/yeastEntry.ts');
 const av = require('../app/utils/scheduleAvailability.ts');
 const sp = require('../app/components/SchedulePicker.tsx');
+const N = require('../app/utils/nightSteps.ts');
 
 const H = 3600000;
 const SG = s => new Date(s + '+08:00');
@@ -66,18 +67,42 @@ test('bug I: the statement and the re-timing read one path (0.1 % at 22 °C fits
   assert.equal(Y.checkYeastEntry(0.1, b3Entry({ roomPlans: false, nightAllowed: undefined })).reason, 'time');
 });
 
-test('bugs G, H: an entered amount\'s plan adds no hands-on step between 22:00 and 07:00 (nightAllowed)', () => {
+test('owner 22 Nov: night steps never refuse an entered amount; they are named, with the nearest amount that avoids them', () => {
   const o = b3Entry();
   // 0.14 % keeps the 20:30 knead with a longer bulk: two folds after 22:00 the calculated plan did not have.
   const c = Y.checkYeastEntry(0.14, o);
-  assert.equal(c.fits, false);
-  assert.equal(c.reason, 'night');
-  assert.ok(c.suggestedShownPct > 0.14 && c.suggestedShownPct <= 0.16, String(c.suggestedShownPct));
-  const plan = Y.entryPlanSearch(c.suggestedShownPct, o);
+  assert.equal(c.fits, true, JSON.stringify(c));
+  assert.equal(c.reason, null);
+  assert.equal(c.nightSteps, true);
+  assert.ok(c.nightFreeShownPct > 0.14 && c.nightFreeShownPct <= 0.16, String(c.nightFreeShownPct));
+  assert.equal(Y.nightFreeShownPct(0.14, o), c.nightFreeShownPct);
+  // The amount is planned with its night steps; the offer is planned without any.
+  const night = Y.entryPlanSearch(0.14, o, undefined, { allowNight: true });
+  assert.ok(night, 'a plan with the night steps');
+  assert.equal(Y.entryPlanSearch(0.14, o), null, 'none without');
+  const steps = av.newNightHandsOn(utils.buildSchedule(night.times.start, b3Bake, [], 22, 45, 'hand', 'neapolitan', 4, 1, false, 1, night.shape).availabilityActions, [])
+    .filter(a => !o.nightAllowed.includes(a.id));
+  assert.deepEqual(steps.map(a => a.id), ['fold-3', 'fold-4']);
+  assert.match(N.nightStepsLine(steps, false), /^This plan has folds at 1[01]:\d\dpm and 1[01]:\d\dpm\.$/);
+  assert.match(N.nightStepsLine(steps, true), /^Ce planning a des rabats à 2[23]h\d\d et 2[23]h\d\d\.$/);
+  const plan = Y.entryPlanSearch(c.nightFreeShownPct, o);
   const s = utils.buildSchedule(plan.times.start, b3Bake, [], 22, 45, 'hand', 'neapolitan', 4, 1, false, 1, plan.shape);
   assert.deepEqual(av.newNightHandsOn(s.availabilityActions, []).map(a => a.id).filter(id => !o.nightAllowed.includes(id)), []);
-  // Without the rule (a bake saved before it) the same amount plans as before.
-  assert.equal(Y.checkYeastEntry(0.14, b3Entry({ nightAllowed: undefined })).fits, true);
+  // An amount with a night-free plan says nothing; without the rule (a bake saved before it) nothing either.
+  assert.equal(Y.checkYeastEntry(c.nightFreeShownPct, o).nightSteps, undefined);
+  assert.equal(Y.checkYeastEntry(0.14, b3Entry({ nightAllowed: undefined })).nightSteps, undefined);
+  // Kept choices are remembered with the amounts.
+  assert.deepEqual(Y.normalizeEntryNightKept({ yeast: 0.14 }), { yeast: 0.14 });
+  assert.deepEqual(Y.normalizeEntryNightKept({ pref: { type: 'biga', pct: 0.5 } }), { pref: { type: 'biga', pct: 0.5 } });
+  assert.equal(Y.normalizeEntryNightKept({ yeast: 'x' }), undefined);
+});
+
+test('the night line names each kind of step once', () => {
+  const at = (h, m = 0) => new Date(2026, 10, 28, h, m);
+  assert.equal(N.nightStepsLine([], false), null);
+  assert.equal(N.nightStepsLine([{ id: 'preheat', at: at(6, 15) }, { id: 'cold-out-2', at: at(4, 30) }], false), 'This plan has the take-out at 4:30am, the preheat at 6:15am.');
+  assert.equal(N.nightStepsLine([{ id: 'preferment', at: at(23, 0) }], true, 'biga'), 'Ce planning a la biga à 23h00.');
+  assert.equal(N.nightStepsLine([{ id: 'fold-1', at: at(22, 30) }], false), 'This plan has a fold at 10:30pm.');
 });
 
 test('bug D: busy times are never the reason when there are none', () => {
@@ -97,7 +122,7 @@ test('bug D: busy times are never the reason when there are none', () => {
     if (!r.fits) assert.notEqual(r.reason, 'busy', `${dose}: ${r.reason}`);
   }
   // The page names busy times only for 'busy' (and the preferment row only with blocks).
-  assert.match(page, /const reason=entry\.blocks\.length&&\(entryPlanSearch\(effectiveYeastOverride,entry,undefined,\{ignoreBlocks:true\}\)/);
+  assert.match(page, /const reason=entry\.blocks\.length&&entryPlanSearch\(effectiveYeastOverride,entry,undefined,\{ignoreBlocks:true,allowNight:true\}\)\?'busy':'plan';/);
 });
 
 test('bug G: a later bake keeps the baker\'s recurring nights and adds no night step; F: the cool spot at this bake', () => {
@@ -118,6 +143,10 @@ test('bug G: a later bake keeps the baker\'s recurring nights and adds no night 
   const s = utils.buildSchedule(later.start, later.bake, blocks, 22, 45, 'hand', 'neapolitan', 4, 1, false, 1);
   assert.deepEqual(av.newNightHandsOn([...s.availabilityActions, { id: 'preferment', at: new Date(+later.start - later.prefHours * H) }], blocks).map(a => a.id), []);
   assert.ok(+later.start - later.prefHours * H > now, 'the biga starts in the future');
+  // The baker's own choice may keep night steps (owner, 22 Nov 2026): never later than the night-free bake, and named.
+  const loose = sp.earliestPrefermentBake({ ...common, allowNight: true, type: 'biga', storages: [true], from: new Date(now + 27 * H) });
+  assert.ok(loose && +loose.bake <= +later.bake && Array.isArray(loose.nightSteps));
+  assert.deepEqual(later.nightSteps, []);
   // Owner decision 1: at 22 °C the cool spot is not automatic, but a cool-spot plan exists at this bake: offered.
   const cool = sp.earliestPrefermentBake({ ...common, type: 'biga', storages: [false], from: b3Bake, maxDays: 0 });
   assert.equal(+cool.bake, +b3Bake);assert.equal(cool.inFridge, false);
@@ -136,7 +165,7 @@ test('bug H: a plan shown without a fit never starts its preferment in the past'
   // 3 % fresh in the final dough: kneaded about 2 h 45 before a 7:00 bake, in the night: refused, and not for busy times alone.
   const c = Y.checkYeastEntry(1, o);
   assert.equal(c.fits, false, JSON.stringify(c));
-  assert.ok(['night', 'fast', 'plan'].includes(c.reason), c.reason);
+  assert.ok(['fast', 'plan'].includes(c.reason), c.reason);
 });
 
 test('bug B: a preferment amount is cleared, visibly, when the storage changes or it loses its window', () => {

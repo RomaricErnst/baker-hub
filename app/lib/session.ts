@@ -144,6 +144,8 @@ export interface SessionData {
   yeastAnchorH?: number;
   /** Round 9: the night steps (ids) the calculated plan had when the baker entered an amount; the entered plan adds no other. */
   entryNightIds?: string[];
+  /** Round 9 (owner, 22 Nov 2026): the entered amounts whose night steps the baker chose to keep. */
+  entryNightKept?: { yeast?: number; pref?: { type: 'poolish' | 'biga'; pct: number } };
   /** Round 9: the entered-amount rules the bake was made with (app/utils/yeastEntry.ts ENTRY_RULES). */
   entryRules?: number;
   /** Round 9: a bake under way before those rules keeps its entered-amount timing (legacyEntryTimingFor). */
