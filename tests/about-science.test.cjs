@@ -174,6 +174,20 @@ test('About: one fridge trip for hot kitchens and when the bake is not customize
   a.ok(fr.includes('Un seul passage au frigo pour une pâte à la levure dans une cuisine à 28 °C ou plus, et dans toutes les cuisines quand vous ne personnalisez pas votre fournée'));
   a.ok(fr.includes('au moins 0,1 % de levure instantanée')&&fr.includes('Les pâtons sortent du frigo 45 minutes avant l’apprêt (30 minutes dès 30 °C)'));
   a.doesNotMatch(about,/two cold spells|deux passages au froid/);
+  // Sourdough (round 9, K): not customized ('all') one trip, shaped before the cold; customized ('hot') keeps the engine's plan.
+  // Priya, 20 °C, Fri 7:00 → Sat 8:30pm: shape 1:30pm, in 1:45pm (Custom: two spells).
+  const s0=new Date(2026,10,27,7,0),s1=new Date(2026,10,28,20,30);
+  const lev=(style,ladder,from=s0,T=20)=>utils.buildSchedule(from,s1,[],T,45,'hand',style,4,1,true,1,undefined,ladder);
+  for(const style of ['sourdough','pain_levain']){
+    const one=lev(style,'all');a.equal(spells(one),1,style);a.ok(+one.divideBallTime<+(one.coldRetard2Start??one.coldRetardStart),`${style} shaped first`);
+    a.equal(spells(lev(style,'hot')),2,`${style} customized keeps its plan`);
+    // Same fallbacks: where one trip would add a clash or a night step it keeps the engine's plan; never the room plan.
+    for(const T of [18,22,26,30])for(const h of [14,24,36]){const from=new Date(+s1-h*H),p=lev(style,'all',from,T),eng=lev(style,'off',from,T);
+      a.ok(spells(eng)===0||p.totalColdHours>0,`${style} ${T} °C ${h} h never skips the fridge`);
+      a.ok(spells(p)<=1||(spells(p)===spells(eng)&&+p.divideBallTime===+eng.divideBallTime),`${style} ${T} °C ${h} h: one trip or the engine's plan`);}
+  }
+  a.ok(en.includes('A sourdough bake you do not customize takes the same one trip, with the same fallbacks, and never skips the fridge; a customized sourdough bake keeps its own plan.'));
+  a.ok(fr.includes('Une fournée au levain que vous ne personnalisez pas fait le même passage unique, avec les mêmes solutions de repli, et ne se passe jamais du frigo ; une fournée au levain personnalisée garde son propre planning.'));
 });
 
 test('About: the cold retard follows the flour tolerance, and a stated W moves the plan (round 9, J)',()=>{
