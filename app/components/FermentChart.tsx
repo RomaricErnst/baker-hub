@@ -4,6 +4,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { type AvailabilityBlock, type ScheduleResult } from '../utils';
 import { createClient } from '@/app/lib/supabase/client';
 import type { StarterEvent } from './SchedulePicker';
+import { getStarterFridgeWarmupH } from '../utils/starterPeak';
 
 /** Exact cold stages; handling/warm-up gaps are not refrigeration. */
 export function scheduleColdIntervals(schedule: ScheduleResult | null | undefined): Array<{from: Date; to: Date}> {
@@ -189,12 +190,8 @@ export function getStarterTroughH(temp: number, mature: boolean, styleKey = 'nea
 }
 
 // How long starter needs at RT after coming out of fridge to reach peak
-export function getStarterFridgeWarmupH(temp: number): number {
-  if (temp >= 30) return 0.5;
-  if (temp >= 28) return 0.75;
-  if (temp >= 26) return 1.0;
-  return 1.5;
-}
+// The warm-up lives in app/utils/starterPeak.ts so plain modules (the shared jar, the journal) read the same hours.
+export { getStarterFridgeWarmupH };
 
 function getPrefSig(type: string, temp: number, inFridge = false, prefOffsetH = 10): number {
   if (type === 'biga') return Math.max(8, prefOffsetH * 0.4);

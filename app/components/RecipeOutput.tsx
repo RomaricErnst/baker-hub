@@ -316,7 +316,7 @@ function StarterPrepCard({
             {/* Fridge steps on the plan's quarter-hour grid (round 8, S8: "8:02am"). */}
             <div style={valueStyle}>{fmtFull(starterStepShownTime(event))}</div>
             {/* The feed shared with another bake: one feed, both amounts (round 8, S6). */}
-            {['refresh','intermediate_refresh','pre_mix'].includes(event.kind) && <div style={noteStyle} data-starter-feed-line>{event.kind === 'pre_mix' && sharedStarterFeed && +event.time === sharedStarterFeed.at ? sharedStarterFeed.line : describeFeed(event.feedingRatio)}</div>}
+            {['refresh','intermediate_refresh','pre_mix'].includes(event.kind) && <div style={noteStyle} data-starter-feed-line>{sharedStarterFeed && +event.time === sharedStarterFeed.at ? sharedStarterFeed.line : describeFeed(event.feedingRatio)}</div>}
             {event.bellPeakTime && event.kind !== 'known_peak' && <div style={noteStyle}>{isFr ? 'Pic de ce rafraîchi ' : 'This feed peaks '}{peakAround(event.bellPeakTime, isFr, { day: true })}</div>}
             {['fridge_in','fridge_out'].includes(event.kind) && event.cardNote && <div style={noteStyle}>{event.cardNote}</div>}
           </div>)}
@@ -377,8 +377,9 @@ function StarterPrepCard({
         <strong>{isFr ? 'Prêt quand : ' : 'Ready when: '}</strong>{isFr ? 'doublé, bombé, plein de bulles, odeur doucement acidulée.' : 'doubled, domed, full of bubbles, smelling mildly sour.'}
       </div>
 
-      {/* Post-mix maintenance */}
-      <div style={{
+      {/* Post-mix maintenance. Not with a shared feed (round 11): the jar still serves the other bake, and the line
+          above already says what stays in it. */}
+      {!sharedStarterFeed && <div style={{
         ...noteStyle,
         paddingTop: '8px',
         borderTop: '1px solid var(--border)',
@@ -387,7 +388,7 @@ function StarterPrepCard({
         {isFr
           ? 'Après avoir prélevé votre levain, rafraîchissez le reste et remettez-le au frigo.'
           : 'After taking your starter, feed what remains and return it to the fridge.'}
-      </div>
+      </div>}
     </div>
   );
 }

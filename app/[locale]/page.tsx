@@ -7,7 +7,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import type { User } from '@supabase/supabase-js';
 import StarterFeedStatus from '../components/StarterFeedStatus';
 import BakeStartStatus from '../components/BakeStartStatus';
-import {normalizeMixExecution, type MixExecution, type AcceptedPlan, normalizeAcceptedPlan, acceptedPlanMove, promptedPreparationAt, normalizeBakeExecution, normalizeStarterFeedRecords, overdueStarterFeed, shiftStarterPlanAfterFeed, type StarterFeedRecord, type BakeExecution} from '../utils/bakeExecution';
+import {normalizeMixExecution, type MixExecution, type AcceptedPlan, normalizeAcceptedPlan, acceptedPlanMove, promptedPreparationAt, normalizeBakeExecution, normalizeStarterFeedRecords, overdueStarterFeed, shiftStarterPlanAfterFeed, recordedOnPlan, type StarterFeedRecord, type BakeExecution} from '../utils/bakeExecution';
 import Header from '../components/Header';
 import dynamic from 'next/dynamic';
 const ProfileSheet = dynamic(() => import('../components/ProfileSheet'), { ssr: false });
@@ -40,7 +40,7 @@ import { isPanPizzaStyle } from '../utils/panPizza';
 import { buildPlanCalendar, calendarBakeId, downloadPlanCalendar, exportedSteps, hasExportedPlan, keyPlanEvents, readExportedSteps, writeExportedSteps, type PlanCalendarEvent } from '../utils/planCalendar';
 import { leanBreadPreheatMin, leanBreadBake } from '../utils/leanBreadBake';
 import { sharedOvenFor, ovenBackTitle } from '../utils/sharedOven';
-import { sharedStarterFeedFor, sharedFeedLine, starterEventsWithSharedFeed, savedStarterUse, carriedJarRecords, starterStepShownTime, type StarterUse } from '../utils/sharedStarter';
+import { sharedStarterFeedFor, sharedFeedLine, starterEventsWithSharedFeed, savedStarterUse, carriedJarRecords, starterStepShownTime, withStarterTakeOut, type StarterUse } from '../utils/sharedStarter';
 import { scalePicks, allPicksBaked } from '../utils/pizzaPicks';
 import { bakeTitleName } from '../utils/bakeTitle';
 import { journalTitle } from '../components/BakeJournal';
@@ -56,7 +56,7 @@ import SimpleMixerPicker from '../components/SimpleMixerPicker';
 const loadRecipeOutput = () => import('../components/RecipeOutput');
 const RecipeOutput = dynamic(loadRecipeOutput, { ssr: false, loading: () => <div aria-hidden="true" style={{ minHeight: '70vh' }} /> });
 const BakeGuide = dynamic(() => import('../components/BakeGuide'), { ssr: false });
-import { getPrefPeakH_RT } from '../components/FermentChart';
+import { getPrefPeakH_RT, getStarterFridgeWarmupH } from '../components/FermentChart';
 import StarterStrip, { starterStripModel } from '../components/StarterStrip';
 import { peakClock } from '../utils/peakTime';
 import { isKeyPlanRow } from '../utils/planKeySteps';
@@ -2444,11 +2444,14 @@ export default function Home() {
     const name=subject?subject.text.charAt(0).toLowerCase()+subject.text.slice(1):bakeName||jarStyleName(styleKey);
     const ownId=journalId??currentJournalId()??'current';
     const createdAt=(()=>{try{return getJournalEntry(ownId)?.createdAt;}catch{return undefined;}})();
-    const shared=sharedStarterFeedFor({id:ownId,name,feedAt:+feed.time,peakAt:+feed.bellPeakTime!,mixAt:+startTime,ratio:feed.feedingRatio??nextFeedRatio,need,createdAt,bakeAt:+eatTime},others,Date.now());
+    const feedList=starterEvents.filter(e=>['refresh','intermediate_refresh','pre_mix'].includes(e.kind)&&+e.time<+startTime).map(e=>({at:+e.time,ratio:e.feedingRatio??nextFeedRatio}));
+    const shared=sharedStarterFeedFor({id:ownId,name,feedAt:+feed.time,peakAt:+feed.bellPeakTime!,mixAt:+startTime,ratio:feed.feedingRatio??nextFeedRatio,need,createdAt,bakeAt:+eatTime,feeds:feedList},others,Date.now());
     return shared?{shared,other:others.find(o=>o.id===shared.otherId)}:null;
   })();
   const sharedStarter = sharedStarterPair?.shared ?? null;
-  const guideStarterEvents = starterEventsWithSharedFeed(starterEvents, sharedStarter, Date.now(), sharedStarterPair?.other?.events as StarterEvent[]|undefined);
+  // A starter in the fridge always shows its take-out step before its first feed (round 11, withStarterTakeOut).
+  const shownStarterEvents = withStarterTakeOut(starterEvents, yeastType==='sourdough'&&starterLocation==='fridge', getStarterFridgeWarmupH(kitchenTemp), Date.now(), locale==='fr');
+  const guideStarterEvents = starterEventsWithSharedFeed(shownStarterEvents, sharedStarter, Date.now(), sharedStarterPair?.other?.events as StarterEvent[]|undefined);
   // The other bake's recorded feeds of the jar's steps count here too (a tick in one bake is done in the other).
   const jarRecords = carriedJarRecords(sharedStarter, sharedStarterPair?.other) as StarterFeedRecord[];
   const sharedFeedNote = sharedStarter ? {at:sharedStarter.at,line:sharedFeedLine(sharedStarter,locale==='fr',g=>displayWeight(g,units,locale),(own,other)=>twinBakeWhen(own,[other],locale)),seed:sharedStarter.build.seed,flour:sharedStarter.build.flour,water:sharedStarter.build.water,ratio:sharedStarter.ratio,keep:sharedStarter.keep} : null;
@@ -2470,7 +2473,7 @@ export default function Home() {
     // One jar, two bakes (round 8, S6): the feeds this bake shows. The jar's earlier steps, which the bake that leads
     // plans and buys for, are not counted again; the shared feed is this dough's share of it, at the shared ratio.
     return guideStarterEvents.filter(event => !event.isPast && !(event as {jar?:boolean}).jar && ['refresh','intermediate_refresh','pre_mix'].includes(event.kind))
-      .reduce((sum, event) => sum + starterBuild(mid, max, (event.kind==='pre_mix'&&sharedStarter&&+event.time===sharedStarter.at?sharedStarter.ratio:undefined) ?? event.feedingRatio ?? nextFeedRatio).flour, 0);
+      .reduce((sum, event) => sum + starterBuild(mid, max, (sharedStarter&&+event.time===sharedStarter.at?sharedStarter.ratio:undefined) ?? event.feedingRatio ?? nextFeedRatio).flour, 0);
   }, [tab, advancedRecipe, recipe, yeastType, guideStarterEvents, sharedStarter, nextFeedRatio]);
   const starterFeedFlourName = locale === 'fr' ? 'Farine pour les rafraîchis du levain' : 'Flour for the starter feeds';
   // Dough ingredients for the Pizza Party shopping list — the host shops once.
@@ -2600,7 +2603,7 @@ export default function Home() {
       const other=row.entry;if(row.rate||other.id===own||other.eatTime==null)continue;
       const subject=bakeSubject(other.styleKey,other.numItems,isFr,other.bakeType);
       const name=subject?subject.text.charAt(0).toLowerCase()+subject.text.slice(1):other.bakeName||jarStyleName(other.styleKey);
-      const use=savedStarterUse(other,name);
+      const use=savedStarterUse(other,name,isFr);
       if(use)uses.push(use);
     }}catch{}
     return uses;
@@ -2868,7 +2871,10 @@ export default function Home() {
     const actual:BakeExecution=execution?{...execution,actualAt:at,recordedAt,stated}:{method:commercialMethod,actualAt:at,recordedAt,stated,inFridge:prefGoesInFridge,prefHours:prefOffsetH,prefWindow:commercialPrefermentWindow(commercialMethod,prefGoesInFridge,kitchenTemp,styleKey??'',fridgeTemp),recipe};
     const mix=commercialMethod==='none'?new Date(at):startTime;
     const nextOffset=commercialMethod==='none'?0:(+mix-at)/3600000;
-    const remainingValid=!!eatTime&&validateConfirmedBake({...poolishInputs,execution:actual,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength,preheatMin:planPreheatMin,exitLeadMin,planLadder,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:(candidate,times)=>madeFormulaMatches(actual,candidate,times)}).valid;
+    // Recorded within the plan's 15 minutes (round 11, Maya: mixed 1 min early): the dough in the bowl is the plan's,
+    // so the remaining plan is judged on its times and busy periods only, never on the dose that minute would call for.
+    const onPlan=recordedOnPlan(at,plannedPreparationAt);
+    const remainingValid=!!eatTime&&validateConfirmedBake({...poolishInputs,execution:actual,start:mix,bake:eatTime,blocks,kitchenTemp,fridgeTemp,styleKey:styleKey??'',flourStrength,preheatMin:planPreheatMin,exitLeadMin,planLadder,mixerType:mixerType??'hand',numItems,mixingBatches:selectedMixingBatches,formulaValid:onPlan?undefined:(candidate,times)=>madeFormulaMatches(actual,candidate,times)}).valid;
     // A recorded fact is not a change of choices: no "You changed your choices" card and no trip to setup.
     // A remaining plan that no longer works is said in Preparation, by Adjust timing (17 Nov 2026 retention round 2).
     setExecution(actual);setReplanRequested(false);setStartTime(mix);setPrefOffsetH(nextOffset);setTimingOverrides({});setSessionRestored(true);setScheduleCandidateValid(remainingValid);setExecutionClash(!remainingValid);

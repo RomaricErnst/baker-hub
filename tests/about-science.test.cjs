@@ -149,6 +149,9 @@ test('About: the baguette apprêt bound and one jar for two bakes are the engine
   a.ok(en.includes('when the window is short it keeps its share and the apprêt shortens, never below an hour'));
   a.ok(fr.includes('des pâtons façonnés gardés au frigo y mettent 45 minutes, ils sortent donc environ 2 h 45 avant la cuisson à 20 °C ; une pâte mise au froid avant le façonnage est divisée et façonnée dès la sortie et a une heure avant son apprêt, elle sort donc environ 3 heures avant.'));
   a.ok(fr.includes('quand la fenêtre est courte, il garde sa part et l’apprêt raccourcit, jamais sous une heure'));
+  // Round 11 (M): the short window's take-out is said with the engine's number (Thomas: out 9:15 for 11:30).
+  a.ok(en.includes('so the dough comes out later: 2¼ hours before the bake in a 12-hour plan at 20 °C.'));
+  a.ok(fr.includes('et la pâte sort plus tard : 2 h 15 avant la cuisson dans un planning de 12 heures à 20 °C.'));
   a.doesNotMatch(about,/rests an hour out of the fridge, then is shaped|repose une heure à la sortie, puis/);
   // Shared feed: the later mix inside the earlier feed's ready window (mixNearPeak).
   const sh=read('app/utils/sharedStarter.ts');a.match(sh,/mixNearPeak/);

@@ -1,6 +1,14 @@
 import type {RecipeResult} from '../utils';
 import {mixNearPeak, preMixPeakAfterMove, preMixRiseH} from './starterPeak';
 
+/** A mix, preferment or feed recorded within 15 minutes of its planned time is the plan's step (round 11, Maya:
+ * "Mixed now" 1 min early read "The rest of the plan needs new times."). Every time the plan shows sits on the
+ * quarter-hour grid, so 15 minutes is the plan's own precision; at 30 °C a 15 min shift moves the instant yeast
+ * the remaining plan would call for by about 6 % (1.32 → 1.24 g for 623 g of flour), within a kitchen scale's
+ * reading at that weight. A record inside it never re-times the starter chain and is never judged on that dose. */
+export const RECORDED_ON_PLAN_MS=15*60_000;
+export function recordedOnPlan(at:number,plannedAt:number){return Number.isFinite(at)&&Number.isFinite(plannedAt)&&Math.abs(at-plannedAt)<=RECORDED_ON_PLAN_MS;}
+
 /** A clock crossing a planned time is never evidence that ingredients were used. */
 export interface BakeExecution {
   method: 'none' | 'poolish' | 'biga';
@@ -107,7 +115,8 @@ const FEEDS=['refresh','intermediate_refresh','pre_mix'];
  */
 export function shiftStarterPlanAfterFeed<T extends {kind:string;time:Date;bellPeakTime?:Date;bellStartTime?:Date;cardNote?:string}>(events:T[],fed:{kind:string;time:Date},actualAt:number,mixAt:number,formatPeak?:(d:Date)=>string,options:FeedShiftOptions={}) {
   const plannedAt=+fed.time,quarter=15*60000,hour=3600000;
-  const shiftMs=Math.round((actualAt-plannedAt)/quarter)*quarter;
+  // Within the plan's precision the plan holds: only the fed step shows its recorded time (round 11).
+  const shiftMs=recordedOnPlan(actualAt,plannedAt)?0:Math.round((actualAt-plannedAt)/quarter)*quarter;
   const busy=options.busy??(()=>false),now=options.now??-Infinity;
   const sorted=[...events].sort((a,b)=>+a.time-+b.time);
   const feedBefore=(at:number)=>sorted.filter(e=>+e.time<at&&['last_fed',...FEEDS].includes(e.kind)).at(-1);

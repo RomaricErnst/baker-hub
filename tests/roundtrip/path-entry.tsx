@@ -60,10 +60,11 @@ function Harness({ sc }: { sc: any }) {
   }, [rec]);
 
   // sc.pageFactor: pass the starter-% bulk factor to buildSchedule as page.tsx does
-  // (opt-in so the historical cases keep their schedule). sc.mixer / sc.fridgeTemp
+  // (opt-in so the historical cases keep their schedule). sc.planLadder / sc.mode: the page's Simple ladder and mode
+  // (round 11, one-trip-levain.mjs; undefined keeps the historical Custom cases). sc.mixer / sc.fridgeTemp
   // default to the historical 'hand' and 6 °C.
   const mixer=sc.mixer??'hand';
-  const schedule=useMemo(()=>sc.full?buildSchedule(startTime,eatTime,blocks,sc.temp,45,mixer,sc.style,sc.numItems??4,sc.batches??1,!sc.commercial,sc.pageFactor||AUTO?factor:1):undefined,[startTime,eatTime,blocks,sc,factor,mixer,AUTO]);
+  const schedule=useMemo(()=>sc.full?buildSchedule(startTime,eatTime,blocks,sc.temp,45,mixer,sc.style,sc.numItems??4,sc.batches??1,!sc.commercial,sc.pageFactor||AUTO?factor:1,undefined,sc.planLadder):undefined,[startTime,eatTime,blocks,sc,factor,mixer,AUTO]);
   w.__h.schedule=schedule;
   // PAGE mode also renders the Recipe's starter strip from the events the parent holds (peak-consistency.mjs).
   return (<>
@@ -73,7 +74,7 @@ function Harness({ sc }: { sc: any }) {
       styleKey={sc.style} kitchenTemp={sc.temp} starterBulkFactor={factor}
       {...(AUTO?{autoStarterPct:sc.bakerPct===undefined?autoPct??null:null,onAutoStarterPctChange:(p:number|null)=>setAutoPct(p??undefined),
         canRaiseStarterPct:sc.bakerPct===undefined?(pct:number,ratios:number[])=>sc.raiseFits!==false&&raisedLevainFits(sc.flour??500,sc.temp,undefined,pct,ratios):undefined}:{})}
-      replanPending={replanPending} onReplanHandled={()=>setReplanPending(false)} bakeType={sc.commercial||sc.full&&sc.style==='sourdough'?'pizza':'bread'} isSourdough={!sc.commercial} prefermentType={sc.commercial?'poolish':'levain'} mode="custom"
+      replanPending={replanPending} onReplanHandled={()=>setReplanPending(false)} bakeType={sc.commercial||sc.full&&sc.style==='sourdough'?'pizza':'bread'} isSourdough={!sc.commercial} prefermentType={sc.commercial?'poolish':'levain'} mode={sc.mode??'custom'} planLadder={sc.planLadder}
       {...(sc.full?{schedule,mixerType:mixer,numItems:sc.numItems??4,mixingBatches:sc.batches??1}:{})}
       onChange={onChange}
       starterLocation={starterLocation} onStarterLocationChange={(l) => { setStarterLocation(l); rec.loc = l; }}
