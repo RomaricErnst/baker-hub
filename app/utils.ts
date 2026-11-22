@@ -882,9 +882,22 @@ function accountScheduleTime(schedule: ScheduleResult): ScheduleResult {
  * `{ rtScale }` is a baker-entered yeast amount's fit (round 8, owner D2): the commercial dough's bulk and
  * final-proof bound are scaled together so the knead stays near the calculated plan's and the fridge time
  * absorbs the difference (`enteredYeastTiming`). Sourdough ignores the fit. */
-export type PlanShape = number | { rtScale: number };
+export type PlanShape = number | { rtScale: number; room?: boolean };
 /** Bounds of an entered yeast's fit: half to twice the engine's room-temperature phases. */
 export const RT_SCALE_MIN = 0.5, RT_SCALE_MAX = 2;
+/** A baker-entered yeast amount timed on a room-temperature plan (round 9, bug I): no fridge, the bulk takes
+ * the window (`enteredYeastTiming` with `roomPlans`, when the fridge cannot absorb the amount). */
+export const ROOM_PLAN = { rtScale: 1, room: true } as const;
+/** The longest room-temperature plan an entered amount is timed on: the Neapolitan disciplinare's 8–24 h at room
+ * temperature (AVPN); beyond it a dough takes the fridge. */
+export const ROOM_PLAN_MAX_H = 24;
+/** Whether a commercial style may be planned without its fridge for an entered amount: it has a cold retard
+ * to drop and none is required (enriched doughs keep theirs); levain has its own solver. */
+export function roomPlanAllowed(styleKey: string): boolean {
+  const ferm = STYLE_FERM_DEFAULTS[styleKey];
+  return !!ferm && ferm.coldH > 0 && !ferm.coldHRequired && !REQUIRED_COLD_MIN_HOURS[styleKey] && !isLevainStyle(styleKey);
+}
+const isRoomShape = (shape: PlanShape | undefined): boolean => typeof shape === 'object' && !!shape && shape.room === true;
 
 function buildSchedulePhases(
   startTime: Date,
@@ -1580,6 +1593,11 @@ export function buildSchedule(
   // arranged take-out, Bake again's exit lead) is kept: only the plan that keeps the shaped spell may replace it.
   const shapedSpellChosen = (typeof exitLeadMin === 'number' && Number.isFinite(exitLeadMin) && exitLeadMin > 0)
     || availabilityBlocks.some(block => block.bakeFromFridge === +eatTime || block.shortWarmup === +eatTime || block.fridgeRemoval?.bake === +eatTime);
+  // An entered amount timed at room temperature (ROOM_PLAN): the plan without its fridge, nothing else.
+  if (isRoomShape(exitLeadMin) && !isSourdough && roomPlanAllowed(styleKey)) {
+    const room = build('style', 'room');
+    return STYLE_FERM_DEFAULTS[styleKey]?.shapedProofH24 ? { ...room, finalProofBound: 'style' } : room;
+  }
   const ladder = hotKitchenLadder(styleKey, kitchenTemp, isSourdough, planLadder).filter(step => !shapedSpellChosen || step === 'shapeFirst');
   if (isSourdough || !STYLE_FERM_DEFAULTS[styleKey]?.shapedProofH24) {
     const plan = build('style');
@@ -2103,7 +2121,7 @@ export function fermentationWindowForYeast(modelIdyPct: number, o: FermentationT
   return { center, from: Math.max(from, center), to: Math.min(to, center) };
 }
 
-export interface EnteredYeastTiming { center: number; from: number; to: number; shape?: { rtScale: number } }
+export interface EnteredYeastTiming { center: number; from: number; to: number; shape?: { rtScale: number; room?: boolean } }
 
 /** Timing for a baker-entered amount (round 8, owner D2): keep the knead near the calculated plan's and
  * let the fridge absorb the difference. `anchorH` is the calculated plan's mix-to-bake window. At that
@@ -2114,11 +2132,31 @@ export interface EnteredYeastTiming { center: number; from: number; to: number; 
  * fermentationWindowForYeast nearest the anchor (else the style's window): the established inversion.
  * Callers build every schedule with the returned shape (buildSchedule's last argument). An `exitLeadMin`
  * that is already a fit (the page solved it) is kept: only the band around the anchor is read with it. */
-export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInput & { anchorH?: number }): EnteredYeastTiming | null {
-  const { anchorH, ...input } = o;
-  const plain = () => fermentationWindowForYeast(modelIdyPct, anchorH !== undefined && Number.isFinite(anchorH) ? { ...input, nearH: anchorH } : input);
+export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInput & { anchorH?: number; roomPlans?: boolean }): EnteredYeastTiming | null {
+  const { anchorH, roomPlans, ...input } = o;
+  const anchored = anchorH !== undefined && Number.isFinite(anchorH);
+  // A room-temperature timing the page already chose (ROOM_PLAN): its window nearest the anchor, kept.
+  if (isRoomShape(input.exitLeadMin)) {
+    const room = fermentationWindowForYeast(modelIdyPct, { ...(anchored ? { ...input, nearH: anchorH } : input), maxH: Math.min(input.maxH ?? 96, ROOM_PLAN_MAX_H) });
+    return room ? { ...room, shape: { ...ROOM_PLAN } } : null;
+  }
+  // Round 9 (bug I): with `roomPlans`, when the engine's plans give no window within `maxH` (the time left), the
+  // room-temperature plans are read (window nearest the anchor, else the style's). The statement and the
+  // re-timing both read this one timing.
+  const plain = (): EnteredYeastTiming | null => {
+    const engine = fermentationWindowForYeast(modelIdyPct, anchored ? { ...input, nearH: anchorH } : input);
+    if (!roomPlans || !roomPlanAllowed(input.styleKey)) return engine;
+    const style = STYLE_FERM_DEFAULTS[input.styleKey];
+    const near = anchored ? anchorH! : style ? style.coldH + style.rtH : engine?.center ?? 0;
+    const room = fermentationWindowForYeast(modelIdyPct, { ...input, exitLeadMin: ROOM_PLAN, nearH: near, maxH: Math.min(input.maxH ?? 96, ROOM_PLAN_MAX_H) });
+    // The engine's plans first (a fridge spell once the window allows one); a room plan only when they have no
+    // window within the time considered (`maxH`: the time left). A nearer room window must not replace an engine
+    // plan that fits (Thomas, 20 °C, 0.13 %: the room window fell in his night).
+    if (!room || engine) return engine;
+    return { ...room, shape: { ...ROOM_PLAN } };
+  };
   const maximum = Math.min(96, input.maxH ?? 96), minimum = 2 + input.preheatMin / 60;
-  if (!(modelIdyPct > 0) || anchorH === undefined || !Number.isFinite(anchorH)) return plain();
+  if (!(modelIdyPct > 0) || !anchored) return plain();
   const h0 = Math.round(anchorH * 4) / 4;
   if (typeof input.exitLeadMin === 'object' && input.exitLeadMin) {
     const fixed = { rtScale: input.exitLeadMin.rtScale };

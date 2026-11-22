@@ -74,8 +74,9 @@ for(const locale of ['en','fr'])test(`${locale}: biga yeast — 1 % ripens too f
  const note=fineTune.locator('[data-pref-yeast-issue]');
  await expect(note).toHaveText(fr
   // One biga window per storage (S5); at 20 °C 'auto' may also use the cool spot (D1, round 8).
-  ?/^1 % dans la biga mûrit en environ [\d,]+ h ; une biga demande 24 à 58 h au frigo ou 12 à 20 h dans un endroit frais\.Utiliser la quantité calculée$/
-  :/^1% in the biga ripens in about [\d.]+ h; a biga takes 24–58 h in the fridge or 12–20 h in a cool spot\.Use the calculated amount$/);
+  // Round 9 (S2): the hours name where they apply, and an amount that fits is offered.
+  ?/^1 % dans la biga mûrit en environ [\d,]+ h au frigo ; une biga demande 24 à 58 h au frigo ou 12 à 20 h dans un endroit frais\.( 0,\d+ % convient\.Utiliser 0,\d+ %)?Utiliser la quantité calculée$/
+  :/^1% in the biga ripens in about [\d.]+ h in the fridge; a biga takes 24–58 h in the fridge or 12–20 h in a cool spot\.( 0\.\d+% fits\.Use 0\.\d+%)?Use the calculated amount$/);
  await expect(pref).toHaveValue('1');
  expect((await stored(page)).prefYeastOverride).toBeUndefined();
  await expect(fineTune.locator('[data-bh-forward]')).toBeDisabled();

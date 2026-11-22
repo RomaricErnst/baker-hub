@@ -105,14 +105,15 @@ for(const locale of ['en','fr']){
   expect(errors).toEqual([]);
  });
 
- test(`${locale}: Thomas, 0.1 % is too slow for the time left: said in baker time, with the amount that fits`,async({page})=>{
+ test(`${locale}: Thomas, 0.03 % is too slow for the time left: said in baker time, with the amount that fits`,async({page})=>{
   const {fineTune,errors}=await open(page,thomas(),locale);
   const yeast=fineTune.locator('[data-yeast-override] input');
-  await yeast.fill(fr?'0,1':'0.1');await yeast.blur();
+  // Round 9 (bug I): 0.1 % now plans at room temperature within the time left; 0.03 % is too slow even so.
+  await yeast.fill(fr?'0,03':'0.03');await yeast.blur();
   const note=fineTune.locator('[data-yeast-entry-issue]');
   await expect(note).toHaveAttribute('data-reason','time');
   // Baker time and the locale's separator (S2): "needs about 59 h; your bake is in 39 h" / « 59 h ».
-  await expect(note.locator('p')).toHaveText(fr?/^0,1 % demande environ \d+ h ; votre cuisson est dans \d+ h\. 0,\d+ % convient\.$/:/^0\.1% needs about \d+ h; your bake is in \d+ h\. 0\.\d+% fits\.$/);
+  await expect(note.locator('p')).toHaveText(fr?/^0,03 % demande (environ \d+ h|plus de 96 h) ; votre cuisson est dans \d+ h\. 0,\d+ % convient\.$/:/^0\.03% needs (about \d+ h|more than 96 h); your bake is in \d+ h\. 0\.\d+% fits\.$/);
   await expect(note.locator('[data-yeast-change-bake]')).toBeVisible();
   await shot(page,`thomas-01-${locale}`,note);log(await note.locator('p').textContent());
   expect(errors).toEqual([]);
@@ -208,17 +209,18 @@ for(const locale of ['en','fr']){
  });
 }
 
-for(const locale of ['en','fr'])test(`${locale}: B3, 0.1 % at 22 °C, bake in 24 h: the statement and the plan read the same paths (M2)`,async({page})=>{
+for(const locale of ['en','fr'])test(`${locale}: B3, 0.03 % at 22 °C, bake in 24 h: the statement and the plan read the same paths (M2)`,async({page})=>{
  const fr=locale==='fr';
  const now=Z('2026-11-26T19:30:00+08:00'),bake=Z('2026-11-27T19:30:00+08:00'),mix=Z('2026-11-27T07:00:00+08:00');
  const data={version:1,savedAt:now,tab:'custom',bakeType:'pizza',styleKey:'neapolitan',numItems:4,itemWeight:260,pizzaDiameter:30,ovenType:'home_oven_standard',mixerType:'hand',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:6,flourBlend:null,prefermentType:'none',prefOffsetH:0,prefGoesInFridge:false,flourInFridge:false,
   startTime:mix,eatTime:bake,acceptedStartTime:mix,acceptedPreparationAt:mix,acceptedEatTime:bake,blocks:[],recipeGenerated:true,protocolStale:false,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,customKitchenConfirmed:true,confirmedSettings:['oven=home_oven_standard','yeast=instant','climate=22','mixer=hand'],activeStep:7,advancedStep:10,highestStep:7,advancedHighestStep:10,setupOverview:false,activeTab:'setup'};
  const {fineTune,errors}=await open(page,data,locale,now);
  const yeast=fineTune.locator('[data-yeast-override] input');
- await yeast.fill(fr?'0,1':'0.1');await yeast.blur();
+ // Round 9 (bug I): 0.1 % plans at room temperature within the day (round9-yeast.spec); 0.03 % needs longer.
+ await yeast.fill(fr?'0,03':'0.03');await yeast.blur();
  const note=fineTune.locator('[data-yeast-entry-issue]');
  await expect(note).toHaveAttribute('data-reason','time');
- await expect(note.locator('p')).toHaveText(fr?/^0,1 % demande environ \d+ h ; votre cuisson est dans \d+ h\. 0,\d+ % convient\.$/:/^0\.1% needs about \d+ h; your bake is in \d+ h\. 0\.\d+% fits\.$/);
+ await expect(note.locator('p')).toHaveText(fr?/^0,03 % demande (environ \d+ h|plus de 96 h) ; votre cuisson est dans \d+ h\. 0,\d+ % convient\.$/:/^0\.03% needs (about \d+ h|more than 96 h); your bake is in \d+ h\. 0\.\d+% fits\.$/);
  await shot(page,`b3-01-${locale}`,note);log(await note.locator('p').textContent());
  const offer=note.locator('[data-use-minimum-yeast]');
  const suggested=num(await offer.textContent());
@@ -230,6 +232,6 @@ for(const locale of ['en','fr'])test(`${locale}: B3, 0.1 % at 22 °C, bake in 24
  expect(s.startTime).toBeGreaterThan(now);
  expect(s.eatTime).toBe(bake);
  await expect(page.locator('.bh-plan-sheet,[data-decision-sheet]').filter({visible:true})).toHaveCount(0);
- log('0.1 → use',suggested,'mix',new Date(s.startTime).toISOString());
+ log('0.03 → use',suggested,'mix',new Date(s.startTime).toISOString());
  expect(errors).toEqual([]);
 });

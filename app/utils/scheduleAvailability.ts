@@ -162,3 +162,12 @@ export function profileBlocksForBake(now:Date,target:Date,presets:Record<PresetN
   return chronologicalBlocks((['sleep','work'] as const).flatMap(kind=>presets[kind].enabled?
     recurringBlockEntries(kind,presets[kind],now,target).map(entry=>({from:entry.blockStart,to:entry.blockEnd,label:entry.label})):[]));
 }
+
+/** The baker's busy times for a later bake (round 9, bug G): the blocks they have, with the recurring nights and
+ * work days they use (by label) carried up to that bake from their saved hours. */
+export function blocksForLaterBake<T extends AvailabilityPeriod>(blocks:T[],now:Date,bake:Date,presets:Record<PresetName,RecurringPreset>):Array<T|{from:Date;to:Date;label:string}> {
+  const sleep=blocks.some(block=>block.label?.endsWith(' night')), work=blocks.some(block=>block.label?.startsWith('Work · '));
+  if(!sleep&&!work)return blocks;
+  const carried=profileBlocksForBake(now,bake,{sleep:{...presets.sleep,enabled:sleep},work:{...presets.work,enabled:work}});
+  return [...blocks,...carried.filter(extra=>!blocks.some(block=>+block.from===+extra.from&&+block.to===+extra.to))];
+}
