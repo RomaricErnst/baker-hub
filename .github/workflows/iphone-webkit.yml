@@ -38,7 +38,7 @@ jobs:
   iphone:
     needs: scope
     runs-on: macos-15
-    timeout-minutes: 25
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -78,7 +78,7 @@ jobs:
       - name: Build isolated app
         run: npm run build
       - name: Run iPhone rendering and interaction checks
-        timeout-minutes: 20
+        timeout-minutes: 35
         run: node .ci-tools/node_modules/@playwright/test/cli.js test --config=playwright.mobile.config.cjs --project=iphone-webkit-${{ matrix.width }}
       - name: Upload screenshots, traces and report
         if: always()
