@@ -70,11 +70,15 @@ export function prefermentYeastTiming(type: FlourPreferment, idyPct: number, inF
   if (type === 'biga' && !inFridge) return coolBigaYeastTiming(idyPct, bounds, ctx);
   const exact = prefermentHoursForYeast(type, idyPct, inFridge, ctx);
   if (!Number.isFinite(exact)) return null;
-  const hours = Math.round(exact * 4) / 4;
-  if (hours < bounds.min - 1e-9 || hours > bounds.max + 1e-9) return null;
   // need(h) falls with h: budget ≥ 0.9 from H(dose / 0.9), budget ≤ 1.1 up to H(dose / 1.1).
   const from = prefermentHoursForYeast(type, idyPct / 0.9, inFridge, ctx);
   const to = prefermentHoursForYeast(type, idyPct / 1.1, inFridge, ctx);
+  // Round 11 (item 8): the amount is ready across that band, so it fits when the band meets the storage's window,
+  // timed at the nearest point of it (B3's 0.5 % poolish ripens in 5 h 45, ready by 6 h: no "0.49 % fits").
+  const bandFrom = Math.ceil(Math.min(exact, from) * 4) / 4, bandTo = Math.floor((Number.isFinite(to) ? Math.max(exact, to) : bounds.max) * 4) / 4;
+  const lo = Math.max(bounds.min, bandFrom), hi = Math.min(bounds.max, bandTo);
+  if (lo > hi + 1e-9) return null;
+  const hours = Math.max(lo, Math.min(hi, Math.round(exact * 4) / 4));
   const min = Math.max(bounds.min, Math.min(hours, Math.ceil(from * 4) / 4));
   const max = Math.min(bounds.max, Math.max(hours, Math.floor((Number.isFinite(to) ? to : bounds.max) * 4) / 4));
   return { inFridge, hours, min, max };

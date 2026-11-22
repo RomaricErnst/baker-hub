@@ -2185,7 +2185,8 @@ export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInp
   };
   const target = input.budget ?? 1;
   const usable = (s: ScheduleResult | null) => !!s && s.totalColdHours > 0 && clashes(s) <= clashes(base) && !s.preparationInvalid;
-  // Every 0.05 step of the scale; the clash-free one whose budget is nearest the target, within 5 %.
+  // Every 0.05 step of the scale; the clash-free one whose budget is nearest the target, within the readiness band
+  // (round 11, D2: ±10 %, the band the plan's dough is judged ready in; 5 % moved B3's 0.1 % knead by 13 h).
   let best: { rtScale: number; gap: number } | null = null;
   for (let k = Math.round(RT_SCALE_MIN * 20); k <= Math.round(RT_SCALE_MAX * 20); k++) {
     const rtScale = k / 20, { s, b } = budgetAt(rtScale);
@@ -2193,7 +2194,8 @@ export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInp
     const gap = Math.abs(b - target);
     if (!best || gap < best.gap - 1e-9 || (Math.abs(gap - best.gap) <= 1e-9 && Math.abs(rtScale - 1) < Math.abs(best.rtScale - 1))) best = { rtScale, gap };
   }
-  if (!best || best.gap > 0.05 * target) return plain();
+  // A bake saved under way before these rules (no `roomPlans`) keeps the 5 % it was timed with.
+  if (!best || best.gap > (roomPlans ? 0.1 : 0.05) * target + 1e-9) return plain();
   const shape = { rtScale: best.rtScale };
   const band = fermentationWindowForYeast(modelIdyPct, { ...input, exitLeadMin: shape, nearH: h0, budget: undefined });
   const from = band ? Math.max(band.from, h0) : h0, to = band ? Math.min(band.to, h0) : h0;

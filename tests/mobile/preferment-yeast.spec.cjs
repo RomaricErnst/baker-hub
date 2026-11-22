@@ -102,11 +102,12 @@ test('the final dough of a poolish takes an entered amount and the mix moves wit
  const before=(await stored(page)).startTime;
  const final=fineTune.locator('[data-yeast-override] input');
  const auto=Number((await final.getAttribute('placeholder')).match(/^([\d.]+) · auto$/)[1]);
- await final.fill(String(Math.round(auto*3*1000)/1000));await final.blur();
+ // Round 11 (D2): up to the readiness band the fridge absorbs an amount at the calculated knead; four times the yeast cannot be absorbed.
+ await final.fill(String(Math.round(auto*4*1000)/1000));await final.blur();
  await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBeGreaterThan(0);
  await expect(fineTune.getByText('The final dough follows its amount: less yeast, longer rise.',{exact:false})).toBeVisible();
  await fineTune.locator('[data-bh-forward]').tap();
- // Three times the yeast: a shorter dough, so a later mix for the same bake.
+ // Four times the yeast: a shorter dough, so a later mix for the same bake.
  await expect.poll(async()=>(await stored(page)).startTime-before,{timeout:20000}).toBeGreaterThan(2*3600000);
  expect((await stored(page)).eatTime).toBe(BAKE);
  expect(errors).toEqual([]);
