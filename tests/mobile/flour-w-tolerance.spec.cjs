@@ -51,3 +51,47 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: a typed W 200/320/380 moves 
  expect(seen.map(s=>s.start)).toEqual(fr?['19h30','11h30',expect.stringMatching(/^0?9h30$/)]:['7:30pm','11:30am','9:30am']);
  expect(errors).toEqual([]);
 });
+
+// Round 9 (J): a W changed after the recipe exists re-times the plan as a fresh choice would (W 200 → 380:
+// Start Dough Sun 7:30pm → 9:30am, a smaller yeast amount); hydration stays 60 %.
+test('a W changed after the recipe re-times the plan',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.clock.setFixedTime(NOW);
+ await page.route('http://127.0.0.1:54321/**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));
+ await page.addInitScript(data=>{if(sessionStorage.getItem('fw-seeded'))return;sessionStorage.setItem('fw-seeded','1');localStorage.setItem('bh_session_v1',JSON.stringify(data));
+  sessionStorage.setItem('bh_locale_resume',JSON.stringify({activeStep:6,advancedStep:6,setupOverview:false,activeTab:'setup'}));},seed);
+ const stored=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null'));
+ const enterW=async W=>{
+  await page.getByRole('button',{name:'Enter my flour',exact:true}).filter({visible:true}).first().tap();
+  const form=page.locator('section.manual-flour-form:visible');
+  await form.locator('select').selectOption('pizza00');
+  await form.locator('summary').tap();
+  await form.getByRole('spinbutton',{name:'Strength W',exact:true}).fill(W);
+  await form.getByRole('button',{name:'Use this flour',exact:true}).tap();
+ };
+ await page.goto('/');
+ await enterW('200');
+ for(let i=0;i<4;i++)await page.locator('[data-bh-forward]:visible').last().tap();
+ const step=page.locator('#step-9:visible');
+ const bake=step.locator('input[type="datetime-local"]').first();
+ await bake.fill('2026-10-05T19:30');await bake.blur();
+ await expect(step).toContainText('Recommended plan');
+ await page.getByRole('button',{name:'Create my recipe',exact:true}).tap();
+ await expect.poll(async()=>(await stored())?.recipeGenerated).toBe(true);
+ const before=await stored();
+ expect(new Date(before.startTime).toLocaleTimeString('en-GB',{timeZone:'Asia/Singapore',hour:'2-digit',minute:'2-digit'})).toBe('19:30');
+ // My choices → Flour → a W 380 flour → Update recipe.
+ await page.getByRole('button',{name:'My choices',exact:true}).first().tap();
+ await page.getByRole('button',{name:/^Edit : Flour/}).first().tap();
+ await page.getByRole('button',{name:'Change flour',exact:true}).filter({visible:true}).first().tap();
+ await enterW('380');
+ await page.getByRole('button',{name:'Update recipe',exact:true}).filter({visible:true}).last().tap();
+ const moved=page.locator('[data-plan-moved]');
+ await expect(moved).toBeVisible({timeout:20000});
+ await expect(moved).toContainText(/Start Dough Sun 4 Oct · 9:30am/);
+ await expect.poll(async()=>(await stored()).startTime-before.startTime,{timeout:15000}).toBe(-10*3600000);
+ const after=await stored();
+ expect(after.eatTime).toBe(BAKE+15*60000);
+ expect(after.flourBlend.w1).toBe(380);
+ expect(errors).toEqual([]);
+});
