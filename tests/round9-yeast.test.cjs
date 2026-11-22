@@ -1,4 +1,6 @@
 // Round 9 (22 Nov 2026): baker-set yeast and preferments (FINDINGS B, C, D, F, G, H, I, S2).
+// The scenarios are Singapore bakes and the night (22:00–07:00) is read in local time: pin the zone before any Date.
+process.env.TZ = 'Asia/Singapore';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path'), ts = require('typescript'), Module = require('node:module');
