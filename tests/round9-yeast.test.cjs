@@ -201,6 +201,6 @@ test('saved bakes keep their entered timing (legacyEntryTimingFor)', () => {
   assert.equal(Y.legacyEntryTimingFor({ ...saved, yeastPctOverride: undefined }, now), false, 'no entered amount');
   assert.equal(Y.legacyEntryTimingFor({ ...saved, entryRules: Y.ENTRY_RULES, legacyEntryTiming: true }, now), true, 'kept so once');
   assert.equal(Y.legacyEntryTimingFor({ recipeGenerated: true, prefYeastOverride: { type: 'biga', pct: 0.5 }, startTime: now + H, mixExecution: { at: now } }, now), true, 'a recorded mix');
-  assert.deepEqual(Y.normalizeEntryNightIds(['fold-2', 'preheat']), ['fold-2', 'preheat']);
-  assert.equal(Y.normalizeEntryNightIds([1]), undefined);
+  // Round 15 (O2): no night ids are remembered with an amount any more (normalizeEntryNightIds removed).
+  assert.equal(Y.normalizeEntryNightIds, undefined);
 });

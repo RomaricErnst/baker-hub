@@ -75,7 +75,7 @@ for(const lang of ['en','fr']){
    // One "keep the rest": the card's and the final dough's Levain row give the same amount.
    const cardKeep=(await page.locator('[data-starter-amount]').innerText()).match(/\((\d+)\s*g\)/)[1];
    const stages=await page.locator('[data-recipe-stages]').first().innerText();
-   expect(stages.match(fr?/Gardez le reste \((\d+)\s*g\)/:/Keep the rest \((\d+)\s*g\)/)[1]).toBe(cardKeep);
+   expect(stages.match(fr?/Gardez le reste dans le bocal \((\d+)\s*g\)/:/Keep the rest in the jar \((\d+)\s*g\)/)[1]).toBe(cardKeep);
    await card.scrollIntoViewIfNeeded();
    await shot(page,`r9-feed-line-${lang}`);
   });

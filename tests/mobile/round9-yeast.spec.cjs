@@ -59,7 +59,7 @@ for(const locale of ['en','fr']){
   // No statement: a plan at room temperature fits within the day.
   await expect(ft.locator('[data-yeast-entry-issue]')).toHaveCount(0);
   await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBe(0.1);
-  expect((await stored(page)).yeastAnchorH).toBe(23);
+  expect((await stored(page)).calcAnchor.anchorH).toBe(23); // round 15: keyed by the inputs, not remembered with the amount
   await update(page,ft,fr);
   const s=await stored(page);
   expect(s.startTime).toBeGreaterThan(B3_NOW);
@@ -91,14 +91,16 @@ for(const locale of ['en','fr']){
   await expect(ft.locator('[data-yeast-helper]')).toHaveCount(0);
   await shot(page,`night-line-${locale}`,night);
   await night.locator('[data-entry-night-keep]').tap();
-  await expect(night).toHaveCount(0);
+  // Round 15 (item 5): kept, the line still names the steps (one line, no buttons).
+  await expect(night).toHaveAttribute('data-kept-night','');
+  await expect(night.getByRole('button')).toHaveCount(0);
   await expect.poll(async()=>(await stored(page)).entryNightKept).toEqual({yeast:0.08});
   // Remembered with the amount: not shown again on the next visit.
   await page.reload();
   const again=await fineTune(page);
   await expect(again.locator('[data-yeast-override] input')).toHaveValue(fr?'0,08':'0.08');
   await page.waitForTimeout(1500);
-  await expect(again.locator('[data-entry-night]')).toHaveCount(0);
+  await expect(again.locator('[data-entry-night] button')).toHaveCount(0);
   expect((await stored(page)).yeastPctOverride).toBe(0.08);
   expect((await stored(page)).entryNightKept).toEqual({yeast:0.08});
   expect(errors).toEqual([]);

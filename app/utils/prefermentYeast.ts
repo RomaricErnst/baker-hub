@@ -99,6 +99,20 @@ function coolBigaYeastTiming(idyPct: number, bounds: { min: number; max: number 
   return { inFridge: false, hours: Math.max(min, Math.min(max, aim)), min, max };
 }
 
+/** Round 15 (item 3): what a statement may say about a dose that one storage's window does not hold, read from the
+ * same band the window check uses (so "fits" and the statement never contradict): too much yeast ('fast') is past its
+ * best after `hours` (the band's late edge: 1.1 of the need, or a cool-spot biga's held level), too little ('slow')
+ * needs `hours` (the band's early edge). Null when that storage's window holds it. */
+export function prefermentWindowMiss(type: FlourPreferment, idyPct: number, inFridge: boolean, ctx: PrefermentYeastContext): { fast: boolean; hours: number } | null {
+  if (prefermentYeastTiming(type, idyPct, inFridge, ctx)) return null;
+  const bounds = prefermentYeastBounds(type, inFridge);
+  const coolBiga = type === 'biga' && !inFridge;
+  const late = prefermentHoursForYeast(type, idyPct / (coolBiga ? BIGA_COOL_HOLD : 1.1), inFridge, ctx);
+  const early = prefermentHoursForYeast(type, coolBiga ? idyPct : idyPct / 0.9, inFridge, ctx);
+  if (Number.isFinite(late) && late < bounds.min) return { fast: true, hours: late };
+  return { fast: false, hours: early };
+}
+
 /** The storages an entered dose may use, best first: a fixed storage only itself; 'auto' the one the
  * planner would choose first, then the other. A biga: the fridge, then a cool spot when the planner may
  * use one (`bigaCool`: chosen, or 'auto' in a kitchen ≤ 20 °C — data.ts bigaCoolOffered); 'room' is the

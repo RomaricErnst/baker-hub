@@ -66,7 +66,9 @@ for(const locale of ['en','fr']){
   await yeast.fill(fr?String(more).replace('.',','):String(more));await yeast.blur();
   await expect(fineTune.locator('[data-yeast-entry-issue]')).toHaveCount(0);
   await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBe(more);
-  expect((await stored(page)).yeastAnchorH).toBe((BAKE-CALC_MIX)/H);
+  // Round 15 (O2): the knead is the automatic plan's for these inputs (calcAnchor, keyed by them), not remembered with the amount.
+  expect((await stored(page)).yeastAnchorH).toBeUndefined();
+  expect((await stored(page)).calcAnchor.anchorH).toBe((BAKE-CALC_MIX)/H);
   await update(page,fineTune,fr);
   const s=await stored(page);
   expect(Math.abs(s.startTime-CALC_MIX)).toBeLessThanOrEqual(H);
@@ -161,7 +163,7 @@ for(const locale of ['en','fr']){
   await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBe(more);
   await fineTune.locator('[data-yeast-override] input').fill('');await fineTune.locator('[data-yeast-override] input').blur();
   await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBeUndefined();
-  expect((await stored(page)).yeastAnchorH).toBeUndefined();
+  expect((await stored(page)).calcAnchor).toBeUndefined();
   await expect(fineTune.locator('[data-yeast-override] input')).toHaveValue('');
   await expect(fineTune.locator('[data-yeast-override] input')).toHaveAttribute('placeholder',new RegExp(`^${String(calc).replace('.',fr?',':'\\.')} · auto$`));
   expect(errors).toEqual([]);
