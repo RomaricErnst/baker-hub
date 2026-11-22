@@ -138,3 +138,11 @@ export function stageYeastDoses(parts: number[], locale = 'en'): { parts: string
   const sum = roundAt(out.shownParts.reduce((n, g) => n + g, 0), decimals);
   return { ...out, shownTotal: sum, total: format(sum, decimals, locale) };
 }
+
+/** The levain's % of the whole dough's flour as the recipe shows it (22 Nov 2026 round 9, S4): the % the amount was
+ *  sized from (the middle of the engine's band, or the baker's or the planner's single %), not grams ÷ flour. The
+ *  amount is rounded to 5 g, so grams ÷ flour moved with the flour's weight (80 g / 504 g Manitoba 15.9 %, 85 g /
+ *  516 g all-purpose 16.5 %, both sized at 16 %) and read as the flour changing the starter, which no flour does. */
+export function levainPlannedPct(sourdough: { starterPctMin: number; starterPctMax: number }): number {
+  return Math.round((sourdough.starterPctMin + sourdough.starterPctMax) / 2 * 10) / 10;
+}

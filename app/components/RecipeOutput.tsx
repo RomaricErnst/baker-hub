@@ -2,7 +2,7 @@
 import { poolishCoolingAt } from '../utils/poolishCoolingAt';
 import { starterBuild, starterFeedLabelFor } from '../utils/starterBuild';
 import { peakAround } from '../utils/peakTime';
-import { starterStepShownTime } from '../utils/sharedStarter';
+import { starterStepShownTime, inventedStarterHistory } from '../utils/sharedStarter';
 import type { StarterEvent } from './SchedulePicker';
 import { recommendedFlourName, flourProductName } from '../lib/flourGuidance';
 import { mixingBatchPlan } from '../utils/mixingBatches';
@@ -17,7 +17,7 @@ import { formatPrefermentDose, formatYeastDose, prefermentDilution } from '../ut
 import { needsScaleHelp, yeastSpoonMeasure, setPercent, DILUTION_BASE_YEAST_G, SCALE_HELP_BELOW_G } from '../utils/yeastMeasure';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { eggCountLabel } from '../utils/breadNames';
-import { recipeStages, stageYeastDoses, levainSplit, type RecipeStage, type StageRow } from '../utils/recipeStages';
+import { recipeStages, stageYeastDoses, levainSplit, levainPlannedPct, type RecipeStage, type StageRow } from '../utils/recipeStages';
 
 interface RecipeOutputProps extends WaterSettingsProps {
   afterIngredients?: ReactNode;
@@ -250,7 +250,8 @@ function StarterPrepCard({
   // Canonical saved solver events survive reload and pair each feed with its own peak.
   // Independent legacy scalar props are only a fallback for older sessions.
   // An assumed last feed (Simple starter answer) is not a fact the baker gave.
-  const events = starterEvents.filter(event => event.kind !== 'last_fed' || (event.isActive && !event.assumed)).slice().sort((a,b) => +a.time-+b.time);
+  // Nor a past fridge spell dated from an estimated or assumed feed (round 9, N: "Refrigerate · Wed 18 Nov").
+  const events = starterEvents.filter(event => (event.kind !== 'last_fed' || (event.isActive && !event.assumed)) && !inventedStarterHistory(event)).slice().sort((a,b) => +a.time-+b.time);
   const hasSchedule = !!(events.length || feedTime || starterPeakTime);
   const finalCycle = events.filter(event=>event.kind==='pre_mix' || event.kind==='refresh' || event.kind==='known_peak' || event.kind==='last_fed').at(-1);
   const predictedPeak = finalCycle?.bellPeakTime ?? (finalCycle?.kind==='known_peak' ? finalCycle.time : starterPeakTime);
@@ -622,7 +623,8 @@ export default function RecipeOutput({
   const prefYeastLabel = pf ? t(`recipe.yeastNames.${pf.prefYeastType ?? 'instant'}`) : '';
   const totalDoughLabel = u === 'imperial' ? wStr(totalDough) : `${totalDough.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} g`;
   const levainBuild = sourdough ? starterBuild(sourdough.starterGramsMid, sourdough.starterGramsMax, feedRatio ?? 1) : null;
-  const starterLeft = sourdough && levainBuild ? Math.max(levainBuild.keep, levainBuild.total - sourdough.starterGramsMid) : 0;
+  // One jar, two bakes: the jar's rest after both doughs, the amount the starter card gives (round 9, N: 61 g here, 122 g there).
+  const starterLeft = sharedStarterFeed ? sharedStarterFeed.keep : sourdough && levainBuild ? Math.max(levainBuild.keep, levainBuild.total - sourdough.starterGramsMid) : 0;
 
   const wholeDoughRows = <>
     {/* Several flours with a preferment: one Flour line at 100 %, each flour under it in grams. Their
@@ -674,7 +676,9 @@ export default function RecipeOutput({
       case 'preferment': return <IngRow key={key} highlight label={prefermentType === 'biga' ? (locale === 'fr' ? 'Toute la biga' : 'All the biga') : (locale === 'fr' ? `Tout le ${prefName.toLowerCase()}` : `All the ${prefName.toLowerCase()}`)} grams={wStr(Math.round(row.grams))} advancedPct={pctOf(row.grams)} />;
       case 'starter':
         if (stage.key === 'levain') return <IngRow key={key} label={locale === 'fr' ? 'Levain de votre pot' : 'Starter from your jar'} grams={wStr(row.grams)} sub={locale === 'fr' ? `Levain liquide · 100 % d’hydratation · rafraîchi 1:${feedRatio ?? 1}:${feedRatio ?? 1}` : `Liquid starter · 100% hydration · feed 1:${feedRatio ?? 1}:${feedRatio ?? 1}`} />;
-        return <IngRow key={key} highlight label={locale === 'fr' ? 'Levain' : 'Levain'} grams={wStr(row.grams)} advancedPct={pctOf(row.grams)} sub={locale === 'fr' ? `Gardez le reste (${wStr(starterLeft)}) pour la prochaine fois` : `Keep the rest (${wStr(starterLeft)}) for next time`} />;
+        // The levain's % is the % it was sized from (round 9, S4): its grams are rounded to 5 g, so grams ÷ flour moved
+        // with the flour's weight (15.9 % Manitoba, 16.5 % all-purpose) though no flour changes the starter.
+        return <IngRow key={key} highlight label={locale === 'fr' ? 'Levain' : 'Levain'} grams={wStr(row.grams)} advancedPct={custom && sourdough ? pctStr(levainPlannedPct(sourdough)) : pctOf(row.grams)} sub={locale === 'fr' ? `Gardez le reste (${wStr(starterLeft)}) pour la prochaine fois` : `Keep the rest (${wStr(starterLeft)}) for next time`} />;
     }
   };
   const chillAt = stagedPref && mixingTime ? poolishCoolingAt(mixingTime, result) : null;

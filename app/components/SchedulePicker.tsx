@@ -9,7 +9,7 @@ import { useState, useMemo, useEffect, useRef, useId, useCallback } from 'react'
 import { useTranslations, useLocale } from 'next-intl';
 import { computePreMixStretchFactor, computeStarterPeakMs, mixNearPeak, planIntermediateFeeds, preMixRiseH, restStretchFactor } from '../utils/starterPeak';
 import { peakAround, peakNote } from '../utils/peakTime';
-import { starterStepShownTime } from '../utils/sharedStarter';
+import { starterStepShownTime, inventedStarterHistory } from '../utils/sharedStarter';
 import { type AvailabilityBlock, type PlanLadder, type PlanShape, type ScheduleResult, enteredYeastTiming, starterBulkFactor as starterBulkFactorFor, raisedStarterPcts, hoursLabel, requiredPrefWarmupH, requiredPrefCooldownH, findScheduleRepair, buildSchedule, REQUIRED_COLD_MIN_HOURS, fermentationBudget, sourdoughBulkH, bakeFromFridgeOption, shortWarmupOption, BAKE_FROM_FRIDGE_STYLES } from '../utils';
 import { formatDuration } from '../utils/duration';
 import { earliestQuarterStart, quarterStartNoEarlier } from '../utils/startNotice';
@@ -9295,6 +9295,8 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
             if(event.kind==='last_fed'&&event.timeIsEstimate)continue;
             // Inferred from the Simple starter answer: not something the baker told us, so not shown as a fact.
             if(event.kind==='last_fed'&&(lastFedAssumed||event.assumed))continue;
+            // Nor its fridge spell: "Refrigerate starter · Wed 18 Nov · Already done" was dated from that estimate (round 9, N).
+            if(inventedStarterHistory(event))continue;
             const editable=!startTimeInPast&&!readinessUnsupported&&!event.isPast&&+event.time>Date.now()&&['refresh','pre_mix'].includes(event.kind);
             const id='starter:'+event.kind;
             const requested=editingRow===id?(event.kind==='pre_mix'?basePins.feed:basePins.refresh):null;

@@ -1509,13 +1509,17 @@ export function fridgeSpellCount(schedule: ScheduleResult): number {
  * saved bake under way keeps the plan shape it was made with, app/utils/hotPlanRules.ts). */
 export type PlanLadder = 'hot' | 'all' | 'off';
 
-/** The ladder's plans for a commercial dough with a cold retard (none for levain: its own solver, and it bakes
- * from the fridge). No fridge ('room') only in a hot kitchen; below 28 °C (Simple) the one-trip plans only. An
- * enriched dough that requires the fridge keeps it and is shaped cold (brioche practice): only the bulk-cold plan. */
+/** The ladder's plans for a dough with a cold retard. No fridge ('room') only for a commercial dough in a hot
+ * kitchen; below 28 °C (Simple) the one-trip plans only. An enriched dough that requires the fridge keeps it and
+ * is shaped cold (brioche practice): only the bulk-cold plan. Levain (22 Nov 2026 round 9, owner decision 4):
+ * Simple ('all') gives it the one-trip plans, as a yeast dough, never the room plan (a levain dough's bulk is
+ * its own, the dose test is commercial yeast's); Custom ('hot') keeps the engine's plan for levain. */
 function hotKitchenLadder(styleKey: string, kitchenTemp: number, isSourdough: boolean, scope: PlanLadder = 'hot'): HotPlan[] {
   const ferm = STYLE_FERM_DEFAULTS[styleKey];
   const hot = kitchenTemp >= 28;
-  if (scope === 'off' || (!hot && scope !== 'all') || isSourdough || !ferm || !(ferm.coldH > 0)) return [];
+  if (scope === 'off' || !ferm || !(ferm.coldH > 0)) return [];
+  if (isSourdough) return scope === 'all' ? ['shapeFirst', 'bulkCold'] : [];
+  if (!hot && scope !== 'all') return [];
   return ferm.coldHRequired ? ['bulkCold'] : hot ? ['room', 'shapeFirst', 'bulkCold'] : ['shapeFirst', 'bulkCold'];
 }
 
