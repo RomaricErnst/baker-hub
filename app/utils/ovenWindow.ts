@@ -26,6 +26,20 @@ export function bakeEndAt(bakeAt: number, busyMinutes: number): number | null {
   return roundUpToQuarter(bakeAt + busyMinutes * 60000);
 }
 
+/** When this bake frees the oven: the last piece out, on the plan's 15-minute grid (round 9 S6: "in the oven
+ *  6:45pm–8:27pm"). Every oven window ends here, so the sheet, the clash and the next free slot agree. A saved
+ *  end (session ovenTo, before 22 Nov 2026) is put on the grid the same way. */
+export function ovenFreeAt(endMs: number): number {
+  return roundUpToQuarter(endMs);
+}
+/** When this bake takes the oven (its preheat), on the same grid: earlier, never later. */
+export function ovenTakenAt(startMs: number): number {
+  return Math.floor(startMs / QUARTER) * QUARTER;
+}
+export function ovenUseEnd(bakeAt: number, busyMinutes: number): number {
+  return ovenFreeAt(bakeAt + busyMinutes * 60000);
+}
+
 export interface OvenUse { id: string; from: number; to: number; ovenType: string | null; name?: string;
   /** How a sentence names it ("Les baguettes", from bakeSubject) and whether its verb is plural. */
   subject?: string; plural?: boolean }

@@ -54,19 +54,22 @@ for(const locale of ['en','fr'])for(const width of [320,390,430])test(`${locale}
 
 test('the unit is a painted suffix: full accessible names, 44 px boxes, nothing to select, no helper lines',async({page})=>{
  const fineTune=await openFineTune(page,'en',390);
- const doughTemp=fineTune.getByRole('spinbutton',{name:'Dough temperature after mixing, °C',exact:true});
+ // Round 9 S3: the Fine-tune boxes are decimal text boxes (role textbox, was spinbutton).
+ const doughTemp=fineTune.getByRole('textbox',{name:'Dough temperature after mixing, °C',exact:true});
  await expect(doughTemp).toHaveValue('23');
- await expect(fineTune.getByRole('spinbutton',{name:'Salt, % of flour',exact:true})).toBeVisible();
- await expect(fineTune.getByRole('spinbutton',{name:'Temperature inside the fridge, near the dough, °C',exact:true})).toHaveValue('6');
- const loss=fineTune.getByRole('spinbutton',{name:'Extra dough for bowl loss, % of the dough',exact:true});
+ await expect(fineTune.getByRole('textbox',{name:'Salt, % of flour',exact:true})).toBeVisible();
+ await expect(fineTune.getByRole('textbox',{name:'Temperature inside the fridge, near the dough, °C',exact:true})).toHaveValue('6');
+ const loss=fineTune.getByRole('textbox',{name:'Extra dough for bowl loss, % of the dough',exact:true});
  // 1.5 % for every bake (was 0).
  await expect(loss).toHaveValue('1.5');
  for(const box of await fineTune.locator('[data-unit-input] input:visible').all()){
   expect((await box.boundingBox()).height).toBeGreaterThanOrEqual(44);
-  // Round 8 (bug 2): the yeast boxes are decimal text boxes (« 0,1 » in French), the others number boxes.
+  // Round 8 (bug 2): the yeast boxes are decimal text boxes (« 0,1 » in French). Round 9 S3: every Fine-tune
+  // ingredient and process box too (« 2,2 % »); the starter % box (sourdough track) is still a number box.
   if(await box.getAttribute('inputmode')==='decimal')await expect(box).toHaveAttribute('type','text');
   else await expect(box).toHaveAttribute('type','number');
  }
+ await expect(fineTune.getByRole('textbox',{name:'Salt, % of flour',exact:true})).toHaveAttribute('inputmode','decimal');
  const suffix=doughTemp.locator('xpath=..').locator('[data-unit-suffix]');
  await expect(suffix).toHaveText('°C');
  await expect(suffix).toHaveAttribute('aria-hidden','true');
@@ -82,7 +85,7 @@ test('the unit is a painted suffix: full accessible names, 44 px boxes, nothing 
 test('imperial: temperatures read °F and are stored in °C',async({page})=>{
  await page.addInitScript(()=>localStorage.setItem('bh_units','imperial'));
  const fineTune=await openFineTune(page,'en',390);
- const doughTemp=fineTune.getByRole('spinbutton',{name:'Dough temperature after mixing, °F',exact:true});
+ const doughTemp=fineTune.getByRole('textbox',{name:'Dough temperature after mixing, °F',exact:true});
  await expect(doughTemp).toHaveValue('73');
  await doughTemp.fill('77');await doughTemp.blur();
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')).targetDoughTemp)).toBe(25);

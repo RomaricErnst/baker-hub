@@ -33,7 +33,8 @@ for(const fr of [false,true])test(`${fr?'fr':'en'}: a typed W 200/320/380 moves 
   // Flour → Preferment → Yeast → Fine-tune → Bake time.
   let hydration;
   for(let i=0;i<4;i++){
-   if(i===3)hydration=await page.locator('#step-10:visible').getByRole('spinbutton',{name:L(/^Hydration/,/^Hydratation/)}).evaluate(n=>n.value||n.placeholder);
+   // Round 9 S3: the hydration box is a decimal text box (role textbox, was spinbutton).
+   if(i===3)hydration=await page.locator('#step-10:visible').getByRole('textbox',{name:L(/^Hydration/,/^Hydratation/)}).evaluate(n=>n.value||n.placeholder);
    await page.locator('[data-bh-forward]:visible').last().tap();
   }
   const step=page.locator('#step-9:visible');

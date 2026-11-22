@@ -515,8 +515,6 @@
     "prioritySpeed": "Speed",
     "prioritySpeedDesc": "More yeast, faster",
     "dilutionTitle": "No precision scale? Dilute it",
-    "poolishTitle": "Poolish preferment recommended",
-    "poolishBody": "For a poolish, use the flour, water and yeast amounts shown in your recipe and follow its preparation time.",
     "notRecommendedTitle": "This fermentation schedule is not recommended",
     "notRecommendedBody": "The combination of time and temperature will likely cause over-fermentation. Add a cold retard phase or reduce your start time.",
     "watchOut": "Note",

@@ -2230,6 +2230,50 @@ export function shortWarmupOption(o: {
   return { bake, exitAt: new Date(exit), warmMin: Math.round((bakeMs - exit) / 60000), blocks: marked };
 }
 
+/** The suggested hydration as a sum: style baseline + oven + kitchen climate + flour type, never below
+ * the style's workable minimum. One source for the recipe (calculateRecipe) and the Fine-tune "Why this
+ * value?" line (22 Nov 2026 round 9 A: the line added a flour the recipe was not made with, 72 % vs 71 %).
+ * Pass the blend the recipe uses (recipeFlourBlend), or its profile. W does not enter it (#151). */
+export function recommendedHydration(
+  styleKey: string,
+  ovenType: AnyOvenType,
+  kitchenTemp: number,
+  humidity: string,
+  blend?: FlourBlend | BlendProfile | null,
+): { style: number; oven: number; kitchen: number; flour: number; floor: number; total: number } {
+  const s = ALL_STYLES[styleKey as StyleKey];
+  const ovenData = (ovenType in OVEN_TYPES)
+    ? OVEN_TYPES[ovenType as OvenType]
+    : BREAD_OVEN_TYPES[ovenType as BreadOvenType];
+  const style = s?.hydration ?? 64;
+  const HYDRATION_FLOOR: Record<string, number> = {
+    focaccia: 70, bagel: 55, pita: 58, greek_pita: 62, kebab_bread: 60,
+    batbout: 60, laffa: 62, piadina: 48, pan_bagnat: 58, ciabatta: 72, panuozzo: 60,
+    neapolitan: 56, newyork: 58, roman: 70, pan: 68,
+    sourdough: 58, pain_campagne: 68, pain_levain: 70,
+    baguette: 65, pain_complet: 68, pain_seigle: 70, pain_au_seigle: 64,
+    fougasse: 68, brioche: 52, pain_mie: 55, pain_viennois: 52,
+  };
+  // Enriched or high-oil styles: fat retains moisture, so oven environment
+  // matters less. Apply half the oven hydration delta, rounded to nearest integer.
+  // Scientific basis: Modernist Bread Vol. 6 — fat coats gluten strands and
+  // reduces water absorption sensitivity to baking environment.
+  const ENRICHED_STYLES = new Set(['pan', 'fougasse', 'brioche', 'pain_mie', 'pain_viennois']);
+  const ovenDelta = ovenData?.hydrationDelta ?? 0;
+  const oven = ENRICHED_STYLES.has(styleKey) || ['focaccia', 'piadina', 'pan_bagnat', 'laffa'].includes(styleKey)
+    ? Math.round(ovenDelta / 2) : ovenDelta;
+  // Climate is a physical reality, not a UI mode concept.
+  const kitchen = kitchenTemp >= 28 || humidity === 'very-humid' ? -2 : kitchenTemp <= 18 ? 2 : 0;
+  const profile = !blend ? null : 'flour1' in blend ? computeBlendProfile(blend) : blend;
+  const flour = profile ? Math.max(-5, Math.min(8, profile.hydrationDelta)) : 0;
+  let total = style + oven + kitchen;
+  if (profile) total = Math.round((total + flour) * 10) / 10;
+  // Never go below the style's minimum workable hydration.
+  const floor = HYDRATION_FLOOR[styleKey] ?? 55;
+  total = Math.max(floor, total);
+  return { style, oven, kitchen, flour, floor, total };
+}
+
 export function calculateRecipe(
   styleKey: StyleKey,
   ovenType: AnyOvenType,
@@ -2288,45 +2332,9 @@ export function calculateRecipe(
   const unsupportedEnrichedMethod = !!enrichedFormula && (yeastType === 'sourdough' || !!prefermentType && prefermentType !== 'none');
   // Published direct-dough formula, explicitly marked if a legacy method is incompatible.
   if (enrichedFormula) { prefermentType = 'none'; if (yeastType === 'sourdough') yeastType = 'instant'; }
-  // Hydration
-  // manualHydration = baker's exact value, zero engine adjustment
-  // Otherwise: style baseline + oven + climate + blend — all modes
-  // Climate is a physical reality, not a UI mode concept
-  const HYDRATION_FLOOR: Record<string, number> = {
-    focaccia: 70, bagel: 55, pita: 58, greek_pita: 62, kebab_bread: 60,
-    batbout: 60, laffa: 62, piadina: 48, pan_bagnat: 58, ciabatta: 72, panuozzo: 60,
-    neapolitan: 56, newyork: 58, roman: 70, pan: 68,
-    sourdough: 58, pain_campagne: 68, pain_levain: 70,
-    baguette: 65, pain_complet: 68, pain_seigle: 70, pain_au_seigle: 64,
-    fougasse: 68, brioche: 52, pain_mie: 55, pain_viennois: 52,
-  };
-  // Enriched or high-oil styles: fat retains moisture, so oven environment
-  // matters less. Apply half the oven hydration delta, rounded to nearest integer.
-  // Scientific basis: Modernist Bread Vol. 6 — fat coats gluten strands and
-  // reduces water absorption sensitivity to baking environment.
-  const ENRICHED_STYLES = new Set([
-    'pan', 'fougasse', 'brioche', 'pain_mie', 'pain_viennois',
-  ]);
-  const isEnriched = ENRICHED_STYLES.has(styleKey) || ['focaccia', 'piadina', 'pan_bagnat', 'laffa'].includes(styleKey);
-
-  let hydration: number;
-  if (mode === 'custom' && manualHydration !== undefined) {
-    hydration = manualHydration;
-  } else {
-    const effectiveDelta = isEnriched
-      ? Math.round(oven.hydrationDelta / 2)
-      : oven.hydrationDelta;
-    hydration = s.hydration + effectiveDelta;
-    if (kitchenTemp >= 28 || humidity === 'very-humid') hydration -= 2;
-    else if (kitchenTemp <= 18) hydration += 2;
-    if (blendProfile) {
-      const delta = Math.max(-5, Math.min(8, blendProfile.hydrationDelta));
-      hydration = Math.round((hydration + delta) * 10) / 10;
-    }
-    // Never go below the style's minimum workable hydration
-    const hydFloor = HYDRATION_FLOOR[styleKey] ?? 55;
-    hydration = Math.max(hydFloor, hydration);
-  }
+  // Hydration: the baker's exact value in Custom, else the suggested sum (recommendedHydration).
+  const hydration0 = recommendedHydration(styleKey, ovenType, kitchenTemp, humidity, blendProfile).total;
+  let hydration: number = mode === 'custom' && manualHydration !== undefined ? manualHydration : hydration0;
 
   if (unleavened && !(mode === 'custom' && manualHydration !== undefined)) hydration = s.hydration;
   if (enrichedFormula) hydration = enrichedFormula.water + enrichedFormula.milk * ENRICHMENT_WATER_FRACTIONS.milk + enrichedFormula.eggs * ENRICHMENT_WATER_FRACTIONS.eggs + enrichedFormula.butter * ENRICHMENT_WATER_FRACTIONS.butter;
