@@ -515,8 +515,6 @@
     "prioritySpeed": "Rapidité",
     "prioritySpeedDesc": "Plus de levure, plus vite",
     "dilutionTitle": "Pas de balance de précision ? Diluez-la",
-    "poolishTitle": "Poolish recommandé",
-    "poolishBody": "Pour un poolish, utilisez les quantités de farine, d’eau et de levure de la recette et suivez l’heure de préparation.",
     "notRecommendedTitle": "Ce planning de fermentation n’est pas recommandé",
     "notRecommendedBody": "La combinaison de temps et de température risque de provoquer une surfermentation. Ajoutez une pousse au froid ou réduisez votre heure de démarrage.",
     "watchOut": "À noter",

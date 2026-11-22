@@ -71,7 +71,7 @@ import type { SavedRecipe } from '../lib/supabase/fetchRecipes';
 import { archivedBlendSelections } from '../lib/flourRecovery';
 import { flourShoppingName } from '../lib/flourGuidance';
 import { clockMark } from '../utils/guideProgress';
-import { ovenBusyMinutes, bakeEndAt, ovenClash, nextFreeOvenShift, ovenBusyClause, type OvenUse } from '../utils/ovenWindow';
+import { ovenBusyMinutes, bakeEndAt, ovenClash, nextFreeOvenShift, ovenBusyClause, ovenUseEnd, ovenFreeAt, ovenTakenAt, type OvenUse } from '../utils/ovenWindow';
 import { recordGeneratedBake, refreshCurrentJournalSnapshot, forgetCurrentJournalBake, setCurrentJournalId, currentJournalId, getJournalEntry, dueJournalEntry, liveJournalBakes, mergeSharedJarRows, guidePlanSnapshot, journalDueStep, type JournalEntry, type LiveJournalBake } from '../lib/localJournal';
 import { deleteJournalPhotos } from '../lib/journalPhotos';
 import { archiveLocalBake, preservePreviousBake, acceptCurrentSessionStorage, clearSession, loadSession, saveSession, serializeStarterEvents, restoreStarterEvents, normalizeMixingBatches, normalizeFlourTarget, stashAuthIntent, readAuthIntent, clearAuthIntent, type SessionData } from '../lib/session';
@@ -87,11 +87,11 @@ import { formatDuration } from '../utils/duration';
 import {
   ALL_STYLES, OVEN_TYPES, BREAD_OVEN_TYPES, MIXER_TYPES, YEAST_TYPES, PREFERMENT_TYPES,
   PIZZA_STYLES, BREAD_STYLES, FLOUR_DATA,
-  computeBlendProfile, isLevainStyle, STYLE_DEFAULT_BLENDS, isStyleDefaultBlend, recipeFlourStrength, bigaCoolOffered, BIGA_WINDOWS, type BigaStorage,
+  isLevainStyle, STYLE_DEFAULT_BLENDS, isStyleDefaultBlend, recipeFlourStrength, recipeFlourBlend, bigaCoolOffered, BIGA_WINDOWS, type BigaStorage,
   type BakeType, type StyleKey, type OvenType, type BreadOvenType, type AnyOvenType, type MixerType, type YeastType, type FlourBlend, type PrefermentType,
 } from '../data';
 import {
-  buildSchedule, type PlanLadder, calculateRecipe, formatTime, requiredPrefWarmupH, requiredPrefCooldownH,
+  buildSchedule, type PlanLadder, calculateRecipe, recommendedHydration, formatTime, requiredPrefWarmupH, requiredPrefCooldownH,
   type AvailabilityBlock, type ScheduleResult,
   starterBulkFactor, legacyStarterBulkFactor, raisedLevainFits, referenceStarterPct, prefTempAfterWarmup, sourdoughBulkH, hasCoherentScheduleShape, withLongerPreheat,
 } from '../utils';
@@ -687,7 +687,7 @@ function StepActions({ children }: { children: React.ReactNode }) {
   return <BottomActions>{children}</BottomActions>;
 }
 
-function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: number; children: React.ReactNode; nextOverride?: React.ReactNode }) {
+function StepPage({ flow, id, children, nextOverride, backOverride }: { flow: StepFlow; id: number; children: React.ReactNode; nextOverride?: React.ReactNode; backOverride?: React.ReactNode }) {
   if (flow.activeId !== id) return null;
   const idx  = flow.steps.findIndex(s => s.id === id);
   const step = flow.steps[idx];
@@ -778,7 +778,7 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
       {isLast && !flow.editReturn && nextOverride === undefined && flow.onReview && <button type="button" className="bh-back-action" onClick={flow.onReview}>{fr ? 'Revoir mes choix' : 'Review my choices'}</button>}
 
       {nextOverride !== null && <StepActions>
-        <button type="button" className="bh-back-action" onClick={()=>flow.editReturn ? flow.onReview?.() : flow.onPrev(id)}><BackLabel text={flow.editReturn ? (fr?'Retour à mes choix':'Back to my choices') : (fr?'Étape précédente':'Previous step')}/></button>
+        {backOverride ?? <button type="button" className="bh-back-action" onClick={()=>flow.editReturn ? flow.onReview?.() : flow.onPrev(id)}><BackLabel text={flow.editReturn ? (fr?'Retour à mes choix':'Back to my choices') : (fr?'Étape précédente':'Previous step')}/></button>}
         {nextOverride !== undefined ? nextOverride : flow.editReturn ? <button type="button" style={nextStyle} onClick={flow.editReturn.onReturn}>{flow.editReturn.label}</button> : next}
       </StepActions>}
     </div>
@@ -2018,6 +2018,21 @@ export default function Home() {
     if (advancedStep === 8) setAdvancedStep(9);
   }, [directMethodOnly, prefermentType, prefermentChosen, prefOffsetH, advancedStep]);
 
+  // The recipe was made with this preferment and this yeast, defaulted or chosen: after Customize in place
+  // the Preferment and Yeast steps show them selected, and their buttons are never disabled for a choice the
+  // recipe already has (22 Nov 2026 round 9 E, owner decision 5). Unanswered, Update recipe walked the bake
+  // time and then "Which preferment?" with nothing selected. A bake restored in that state heals here.
+  function adoptRecipeMethod() {
+    if (!recipeGenerated) return;
+    if (!prefermentChosen) setPrefermentChosen(true);
+    if (yeastType && yeastType !== 'sourdough') confirmSetting('yeast', yeastType);
+  }
+  useEffect(() => {
+    if (tab !== 'custom' || !recipeGenerated || execution || mixExecution) return;
+    if (!prefermentChosen || (yeastType && yeastType !== 'sourdough' && !confirmedSettings.some(item => item.startsWith('yeast=')))) adoptRecipeMethod();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, recipeGenerated, prefermentChosen, yeastType, confirmedSettings]);
+
   const weightBounds = getWeightBounds(styleKey, bakeType);
 
   // ── Computed ──────────────────────────────
@@ -2521,8 +2536,8 @@ export default function Home() {
   // This bake's oven time, from the preheat to the last piece out (18 Nov 2026 retention round 3).
   function currentOvenUse(){
     if(!eatTime||!schedule)return null;
-    const from=Math.min(+(schedule.preheatStart??eatTime),+eatTime);
-    return {from,to:+eatTime+ovenBusyMinutes(bakeType,styleKey,numItems,ovenType)*60000,ovenType:ovenType??null};
+    const from=ovenTakenAt(Math.min(+(schedule.preheatStart??eatTime),+eatTime));
+    return {from,to:ovenUseEnd(+eatTime,ovenBusyMinutes(bakeType,styleKey,numItems,ovenType)),ovenType:ovenType??null};
   }
   // The levain this dough takes, saved with the bake for another live bake sharing the jar (round 7, B5).
   function currentLevainNeed(){
@@ -2559,9 +2574,9 @@ export default function Home() {
     try{for(const row of liveJournalBakes()){
       const other=row.entry;if(row.rate||other.id===own||other.eatTime==null)continue;
       const ses=other.session;
-      const to=ses.ovenTo??other.eatTime+ovenBusyMinutes(other.bakeType,other.styleKey,other.numItems,ses.ovenType)*60000;
+      const to=ses.ovenTo!=null?ovenFreeAt(ses.ovenTo):ovenUseEnd(other.eatTime,ovenBusyMinutes(other.bakeType,other.styleKey,other.numItems,ses.ovenType));
       const subject=other.bakeName?null:bakeSubject(other.styleKey,other.numItems,fr,other.bakeType);
-      uses.push({id:other.id,from:ses.ovenFrom??other.eatTime-30*60000,to,ovenType:ses.ovenType??null,name:other.bakeName||styleDisplayName(other.styleKey),...(subject?{subject:subject.text,plural:subject.plural}:{})});
+      uses.push({id:other.id,from:ovenTakenAt(ses.ovenFrom??other.eatTime-30*60000),to,ovenType:ses.ovenType??null,name:other.bakeName||styleDisplayName(other.styleKey),...(subject?{subject:subject.text,plural:subject.plural}:{})});
     }}catch{}
     return uses;
   }
@@ -2586,7 +2601,7 @@ export default function Home() {
                   <strong style={{display:'block'}}>{fr?`Garder ${at(+eatTime)}`:`Keep ${at(+eatTime)}`}</strong>
                 </button>
               </div>
-              <button type="button" className="bh-back-action" style={{minHeight:44}} onClick={close}>{fr?'Revenir à l’heure de cuisson':'Back to the bake time'}</button>
+              <button type="button" className="bh-back-action" style={{minHeight:44}} onClick={backToBakeTime}>{fr?'Revenir à l’heure de cuisson':'Back to the bake time'}</button>
             </div>
           </div>;
   }
@@ -3390,6 +3405,16 @@ export default function Home() {
     }
     scrollToStepTop();
   }
+  // "Back to the bake time" opens the bake time (round 9 S5): from Fine-tune, My choices or a hidden replan the
+  // sheet sat over another screen and only closed. On the bake-time question itself it just closes.
+  function backToBakeTime() {
+    setDecisionSheet(null);setOvenOffer(null);
+    const planStep=tab==='custom'?9:7;
+    const onIt=activeTab==='setup'&&!setupOverview&&(tab==='custom'?customOrganisationFlow.activeId:simpleFlow.activeId)===planStep;
+    if(onIt)return;
+    if(recipeGenerated)captureEditReturn();
+    setBakeTimeQuestion(true);openSetupStep(planStep);
+  }
   function openSetupStep(id:number,custom=tab==='custom') {
     if(execution||mixExecution)id=custom?9:7;
     if (!custom && (id === 4 || id === 6)) id = 3;
@@ -3465,8 +3490,10 @@ export default function Home() {
     // a restored planner is still initializing its readiness callbacks.
     if(recipeGenerated&&tab==='custom'&&customStarterStepId!==null&&!starterStateDescribed){openSetupStep(customStarterStepId);return;}
     if(recipeGenerated&&planReplanPending&&tab==='custom'&&!replanReturn){
+      // The plan is re-derived where the baker is (the step's own planner, or a hidden one: customReplanHost),
+      // then the recipe opens. Update recipe never walks the bake time (22 Nov 2026 round 9 E); a plan that
+      // no longer fits opens where it can be settled (the settle effect hands it to handleGenerate).
       setReplanReturn({from:+startTime,settled:false});
-      setActiveTab('setup');setSetupOverview(false);setAdvancedStep(9);scrollToStepTop();
       return;
     }
     if(recipeGenerated&&!canGenerate){setProtocolStale(true);handleGenerate(true);return;}
@@ -3933,9 +3960,9 @@ export default function Home() {
     if(!replanReturn?.settled)return;
     const from=replanReturn.from;
     setReplanReturn(null);
-    // An invalid plan stays on the plan step, where the baker can see and resolve it.
-    if(!canGenerate)return;
-    if(+startTime!==from)setPlanMoved({from,to:+startTime});
+    // An invalid plan opens where the baker can see and resolve it (handleGenerate routes it: the plan step,
+    // or the question still unanswered).
+    if(canGenerate&&+startTime!==from)setPlanMoved({from,to:+startTime});
     handleGenerate(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[replanReturn?.settled]);
@@ -4638,6 +4665,11 @@ export default function Home() {
   const fineTuneFinishes = tab==='custom' && customQuestionOnly && !!eatTime && advancedStep===10 && nextCustomStep(10)===9
     && (customStarterStepId===null || starterStateDescribed)
     && customOrganisationFlow.steps.every(step=>step.id===9||step.id===10||stepAnswered(step,customOrganisationFlow.highestStep,customOrganisationFlow.steps));
+  // While Update recipe re-derives the plan (replanReturn), a step without its own planner hosts a hidden one,
+  // so the bake time is not walked (round 9 E). Never a second instance: only when no step planner is mounted.
+  const customStepPlannerMounted = !!styleKey && !planEdit && (customOrganisationFlow.activeId===9
+    || (customStarterStepId!==null && customOrganisationFlow.activeId===customStarterStepId) || (customOrganisationFlow.activeId===10 && fineTuneFinishes));
+  const customReplanHost = tab==='custom' && !!replanReturn && !replanReturn.settled && !planEdit && !customStepPlannerMounted;
   // Bake again of a Customized bake: once the bake time (and a sourdough starter) is answered, Create my recipe.
   const rebakeFinishes = quickRebake && tab==='custom' && !recipeGenerated && !!eatTime && customQuestionOnly
     && (customStarterStepId===null || (starterStateDescribed && starterLocationAnswered && starterMatureAnswered))
@@ -4908,7 +4940,15 @@ export default function Home() {
   const goodPlanMethod = lastGoodPlanRef.current?.prefermentType;
   const backDropsMethod = !!goodPlanMethod && goodPlanMethod !== prefermentType && (prefermentType==='biga'||prefermentType==='poolish');
   const goodMethodName = goodPlanMethod==='biga'?(fr?'à la biga':'biga'):goodPlanMethod==='poolish'?(fr?'au poolish':'poolish'):goodPlanMethod==='levain'?(fr?'au levain':'levain'):(fr?'en pâte directe':'direct-dough');
-  const backToGoodPlanButton = <button data-bh-forward data-back-to-good-plan type="button" style={{...SECONDARY_CTA,width:'100%'}} onClick={backToLastGoodPlan}>{backDropsMethod?(fr?`Retour à la recette ${goodMethodName}`:`Back to the ${goodMethodName} recipe`):(fr?'Retour à la recette':'Back to Recipe')}</button>;
+  const backToGoodPlanLabel = backDropsMethod?(fr?`Retour à la recette ${goodMethodName}`:`Back to the ${goodMethodName} recipe`):(fr?'Retour à la recette':'Back to Recipe');
+  const backToGoodPlanButton = <button data-bh-forward data-back-to-good-plan type="button" style={{...SECONDARY_CTA,width:'100%'}} onClick={backToLastGoodPlan}>{backToGoodPlanLabel}</button>;
+  // While a clash card asks its question (round 9, bug G footnote), the card holds the one forward action: the way
+  // back to the recipe as it was made is the bar's back control ("‹ Recipe"), and the forward slot stays empty, so
+  // no button reads "Back to Recipe" where the baker reads forward.
+  const backToGoodPlanBack = <button type="button" className="bh-back-action" data-back-to-good-plan onClick={backToLastGoodPlan}><BackLabel text={backToGoodPlanLabel}/></button>;
+  // The bars below reach backToGoodPlanButton only on a generated recipe whose plan clashes (the full editor).
+  const simpleClashCardBar = recipeGenerated && simpleDecisionPending && !collectingBakeTime && !(bakeTimeOnly && eatTime) && !scheduleEditing && !!eatTime && !scheduleCandidateValid;
+  const customClashCardBar = recipeGenerated && customDecisionPending && !rebakeFinishes && !(bakeTimeOnly && eatTime && (customStarterStepId === null || starterStateDescribed)) && !(customStarterStepId !== null && !starterStateDescribed) && !scheduleEditing && !customQuestionOnly && !scheduleCandidateValid;
   // ── Render ────────────────────────────────
   // One scheduler element: Custom levain shows its starter questions on the
   // Starter step and the plan on Bake time. Only one step is mounted at a time.
@@ -4933,7 +4973,7 @@ export default function Home() {
                 mode="simple"
                 onSimpleDecisionChange={setSimpleDecisionPending}
                 decisionSheet={decisionSheet!==null&&tab==='simple'}
-                onDecisionSheetClose={()=>setDecisionSheet(null)}
+                onDecisionSheetClose={()=>setDecisionSheet(null)} onDecisionSheetBack={backToBakeTime}
                 mixerType={mixerType ?? 'hand'}
                 confirmedPlan={confirmedSchedulePlan}
                 timingOverrides={timingOverrides}
@@ -5003,7 +5043,7 @@ export default function Home() {
                 onUseCalculatedYeast={()=>{setYeastPctOverride(undefined);setPlanReplanPending(true);}}
                 onSimpleDecisionChange={setCustomDecisionPending}
                 decisionSheet={decisionSheet!==null&&tab==='custom'}
-                onDecisionSheetClose={()=>setDecisionSheet(null)}
+                onDecisionSheetClose={()=>setDecisionSheet(null)} onDecisionSheetBack={backToBakeTime}
                 enteredYeastShownPct={effectiveYeastOverride!==undefined&&yeastType?Math.round(effectiveYeastOverride*(YEAST_TYPES[yeastType]?.conversion??1)*1000)/1000:undefined}
                 poolishStorage={prefermentType==='poolish'?poolishStorage:'auto'} bigaStorage={bigaStorage}
                 yeastPctOverride={effectiveYeastOverride} yeastAnchorH={effectiveYeastOverride!==undefined?yeastAnchorH:undefined} prefYeastPctOverride={effectivePrefYeastOverride}
@@ -5632,7 +5672,7 @@ export default function Home() {
                 modeChip={{ value: 'simple', onClick: () => { chooseMode('custom'); if(recipeGenerated){
                   // The recipe was made with this oven and kneading: the Equipment step shows them chosen,
                   // as its row does (18 Nov 2026 retention: "Standard home oven" in the row, nothing selected on the step).
-                  if(ovenType)confirmSetting('oven',ovenType);if(mixerType)confirmSetting('mixer',mixerType);if(!flourChosen)confirmSetting('flour','recipe');setAdvancedHighestStep(h=>Math.max(h,CUSTOM_LAST)); setSetupOverview(true);} else {setCustomBakeQuestion(true); setSetupOverview(false);} scrollToStepTop(); } }}
+                  if(ovenType)confirmSetting('oven',ovenType);if(mixerType)confirmSetting('mixer',mixerType);if(!flourChosen)confirmSetting('flour','recipe');adoptRecipeMethod();setAdvancedHighestStep(h=>Math.max(h,CUSTOM_LAST)); setSetupOverview(true);} else {setCustomBakeQuestion(true); setSetupOverview(false);} scrollToStepTop(); } }}
                 hideSuggested
                 onJump={id => { setSetupOverview(false); if(id===7)setBakeTimeQuestion(true); simpleFlow.onJump(id); }}
                 returnLabel={recipeGenerated?setupReturnLabel:undefined}
@@ -5672,12 +5712,12 @@ export default function Home() {
             </StepPage>
 
             {/* ─── STEP 8: Scheduler ───────────────── */}
-            <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={collectingBakeTime ? <></> : bakeTimeOnly && eatTime ? (simpleDecisionPending ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('return')}>{setupReturnLabel}</button> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : scheduleEditing ? null : !eatTime ?
+            <StepPage flow={simpleOrganisationFlow} id={7} backOverride={simpleClashCardBar ? backToGoodPlanBack : undefined} nextOverride={collectingBakeTime ? <></> : bakeTimeOnly && eatTime ? (simpleDecisionPending ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('return')}>{setupReturnLabel}</button> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : scheduleEditing ? null : !eatTime ?
               <button type="button" disabled style={{...NEXT_CTA,opacity:0.5}}>{fr?'Choisissez une date de cuisson':'Choose a bake date'}</button>
               : !scheduleCandidateValid
                 // As in Custom: the normal next step waits for the plan, with the reason; it never only
                 // scrolls (17 Nov 2026 retention: "Review affected times" did nothing).
-                ? recipeGenerated ? backToGoodPlanButton : <div style={{width:'100%'}}>
+                ? recipeGenerated ? (simpleClashCardBar ? <></> : backToGoodPlanButton) : <div style={{width:'100%'}}>
                     <p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{simpleDecisionPending?(fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'):(fr?'Ajustez le planning ci-dessus pour continuer.':'Adjust the plan above to continue.')}</p>
                     <button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{simpleOrganisationFlow.generateLabel}</button>
                   </div>
@@ -6011,6 +6051,7 @@ export default function Home() {
         {tab === 'custom' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
+            {customReplanHost && <div className="bh-plan-sheet-only" data-replan-host>{renderCustomScheduler(customStarterStepId !== null?'plan':'all')}</div>}
             {/* ── Setup tab content ── */}
             <div style={{ display: destination === 'organisation' && !!bakeType && modeChosen ? 'flex' : 'none', flexDirection: 'column', gap: '16px' }}>
 
@@ -6176,10 +6217,10 @@ export default function Home() {
             )}
 
             {/* ─── ADV STEP 10: Scheduler ──────────── */}
-            <StepPage flow={customOrganisationFlow} id={9} nextOverride={rebakeFinishes ? rebakeCreateButton : bakeTimeOnly && eatTime && (customStarterStepId === null || starterStateDescribed) ? (customDecisionPending ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('return')}>{setupReturnLabel}</button> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : customStarterStepId !== null && !starterStateDescribed ? <div style={{width:'100%'}}>
+            <StepPage flow={customOrganisationFlow} id={9} backOverride={customClashCardBar ? backToGoodPlanBack : undefined} nextOverride={rebakeFinishes ? rebakeCreateButton : bakeTimeOnly && eatTime && (customStarterStepId === null || starterStateDescribed) ? (customDecisionPending ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('return')}>{setupReturnLabel}</button> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : customStarterStepId !== null && !starterStateDescribed ? <div style={{width:'100%'}}>
                 <p style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Indiquez quand votre levain a été rafraîchi pour la dernière fois.':'Tell us when your starter was last fed.'}</p>
                 <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>openSetupStep(customStarterStepId,true)}>{fr?'Votre levain →':'Your starter →'}</button>
-              </div> : scheduleEditing ? null : customQuestionOnly && customDecisionPending && customOrganisationFlow.steps.some(step=>step.id!==9&&!stepAnswered(step,customOrganisationFlow.highestStep,customOrganisationFlow.steps)) ? undefined : !scheduleCandidateValid && recipeGenerated && !customQuestionOnly ? backToGoodPlanButton : !scheduleCandidateValid ? <div style={{width:'100%'}}>
+              </div> : scheduleEditing ? null : customQuestionOnly && customDecisionPending && customOrganisationFlow.steps.some(step=>step.id!==9&&!stepAnswered(step,customOrganisationFlow.highestStep,customOrganisationFlow.steps)) ? undefined : !scheduleCandidateValid && recipeGenerated && !customQuestionOnly ? (customClashCardBar ? <></> : backToGoodPlanButton) : !scheduleCandidateValid ? <div style={{width:'100%'}}>
                 {/* The way forward is never a button that only scrolls: the next step waits for a choice above. */}
                 {customQuestionOnly?(customDecisionPending?<button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('generate')}>{customOrganisationFlow.generateLabel}</button>:<button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setPlanDetail(true)}>{fr?'Voir le planning':'See the plan'} →</button>):<p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{customDecisionPending?(fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'):(fr?'Ajustez le planning ci-dessus pour continuer.':'Adjust the plan above to continue.')}</p>}
                 {customQuestionOnly?null:<button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated?setupReturnLabel:customOrganisationFlow.steps.at(-1)?.id===9?customOrganisationFlow.generateLabel:`${customOrganisationFlow.steps.find(step=>step.id===nextCustomStep(9))?.chip ?? (fr?'Suivant':'Next')} →`}</button>}
@@ -6201,8 +6242,10 @@ export default function Home() {
               {(() => {
                 const style = styleKey ? ALL_STYLES[styleKey] : null;
                 const zone = STYLE_HYDRATION_ZONES[styleKey!] ?? (breadProtocol ? {...FALLBACK_ZONE,classicMin:ALL_STYLES[styleKey!].hydration,classicMax:ALL_STYLES[styleKey!].hydration,name:ALL_STYLES[styleKey!].name} : FALLBACK_ZONE);
-                const recommendation = styleKey && schedule && ovenType && yeastType ? calculateRecipe(styleKey, ovenType as OvenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'custom', mixerType as MixerType, undefined, manualOil, manualSugar, flourBlend, prefermentType, priorityOverride, prefermentFlourPct ?? 20, manualSalt, targetDoughTemp, flourInFridge, wasteAllowance, prefGoesInFridge, feedToMixH, prefOffsetH || undefined, measuredFlourTemp, prefTempForBalance) : null;
+                const recommendation = styleKey && schedule && ovenType && yeastType ? calculateRecipe(styleKey, ovenType as OvenType, numItems, itemWeight, kitchenTemp, humidity, schedule, fridgeTemp, yeastType, 'custom', mixerType as MixerType, undefined, manualOil, manualSugar, flourChosen ? flourBlend : undefined, prefermentType, priorityOverride, prefermentFlourPct ?? 20, manualSalt, targetDoughTemp, flourInFridge, wasteAllowance, prefGoesInFridge, feedToMixH, prefOffsetH || undefined, measuredFlourTemp, prefTempForBalance) : null;
                 const recommendedHyd = recommendation?.hydration ?? style?.hydration ?? 64;
+                // The suggested sum, with the flour the recipe uses (round 9 A): the hint and "Why this value?" read it.
+                const hydSum = recommendedHydration(styleKey??'',ovenType as OvenType,kitchenTemp,humidity,recipeFlourBlend(styleKey??'','custom',flourChosen?flourBlend:undefined));
                 const defaultTemp = styleKey ? ({neapolitan:23,newyork:24,roman:25,pan:25,sourdough:24,brioche:22,pain_viennois:23,fougasse:25} as Record<string,number>)[styleKey] ?? 24 : 24;
                 // Lean breads (no oil or sugar in the formula) don't offer them unless already set.
                 const leanBread = bakeType==='bread' && !!style && (style.oil ?? 0)===0 && (style.sugar ?? 0)===0;
@@ -6211,7 +6254,10 @@ export default function Home() {
                     {group:'ingredient',label:fr?'Hydratation':'Hydration',aria:fr?'Hydratation, % de farine':'Hydration, % of flour',unit:'%',value:manualHydration ?? recommendedHyd,rec:recommendedHyd,min:zone.min,max:zone.max,step:0.5,set:setManualHydration,
                       // The one fact worth having beside the number: the style's classic range, and why the app moved off it.
                       hint:(()=>{const range=zone.classicMin===zone.classicMax?`${zone.classicMin}`:`${zone.classicMin}–${zone.classicMax}`;const outside=recommendedHyd>zone.classicMax+0.05||recommendedHyd<zone.classicMin-0.05;
-                        return fr?`Classique pour ce style : ${range} %.${outside?` ${String(recommendedHyd).replace('.',',')} % ici pour votre four, votre cuisine et votre farine.`:''}`:`Classic for this style: ${range}%.${outside?` ${recommendedHyd}% here for your oven, kitchen and flour.`:''}`;})()},
+                        // Name only what moved it (round 9 A: "…and your flour" with no flour in the sum).
+                        const why=[hydSum.oven?(fr?'votre four':'your oven'):null,hydSum.kitchen?(fr?'votre cuisine':'your kitchen'):null,hydSum.flour?(fr?'votre farine':'your flour'):null].filter(Boolean) as string[];
+                        const list=why.length>1?`${why.slice(0,-1).join(', ')} ${fr?'et':'and'} ${why.at(-1)}`:why[0];
+                        return fr?`Classique pour ce style : ${range} %.${outside&&list?` ${formatPercent(recommendedHyd,locale)} ici pour ${list}.`:''}`:`Classic for this style: ${range}%.${outside&&list?` ${formatPercent(recommendedHyd,locale)} here for ${list}.`:''}`;})()},
                     {group:'ingredient',label:fr?'Sel':'Salt',aria:fr?'Sel, % de farine':'Salt, % of flour',unit:'%',value:manualSalt ?? style?.salt ?? 2.5,rec:style?.salt ?? 2.5,min:1.5,max:3.5,step:0.1,set:setManualSalt},
                     ...(leanBread && manualOil===undefined ? [] : [{group:'ingredient',label:fr?'Huile':'Oil',aria:fr?'Huile, % de farine':'Oil, % of flour',unit:'%',value:manualOil ?? style?.oil ?? 0,rec:style?.oil ?? 0,min:0,max:10,step:0.5,set:setManualOil,
                       // Nothing to say about none; an amount gets what it does (and burning in a very hot oven).
@@ -6228,19 +6274,19 @@ export default function Home() {
                   const shown=(c:number)=>temp?cToDisplay(c,units):Math.round(c*100)/100;
                   const stored=(n:number)=>temp?inputTempToC(n,units):n;
                   return <div key={field.aria}><label data-finetune-row style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,fontSize:16,marginBottom:'hint' in field&&field.hint?6:14}}><span data-finetune-label style={{minWidth:0}}>{field.label}</span>
-                    <UnitInput suffix={field.unit} label={field.aria} key={`${field.aria}:${field.value}:${units}`} defaultValue={shown(field.value)} min={shown(field.min)} max={shown(field.max)} step={temp&&units==='imperial'?1:field.step} onBlur={e=>{const n=Number(e.target.value);const next=Math.min(field.max,Math.max(field.min,stored(n)));if(e.target.value!==''&&Number.isFinite(n)&&Math.abs(shown(next)-shown(field.value))>1e-9)field.set(temp?Math.round(next*10)/10:next);else e.target.value=String(shown(field.value));}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}}}/>
+                    {/* A decimal box in the locale's separator: « 2,2 % » in French, typed either way (round 9 S3). */}
+                    <UnitInput decimal suffix={field.unit} label={field.aria} key={`${field.aria}:${field.value}:${units}`} defaultValue={formatDecimal(shown(field.value),fr)} onBlur={e=>{const n=parseDecimal(e.target.value);const next=Math.min(field.max,Math.max(field.min,stored(n)));if(e.target.value!==''&&Number.isFinite(n)&&Math.abs(shown(next)-shown(field.value))>1e-9)field.set(temp?Math.round(next*10)/10:next);else e.target.value=formatDecimal(shown(field.value),fr);}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.currentTarget.blur();}}}/>
                   </label>
                   {'hint' in field&&field.hint&&<p data-field-hint style={{margin:'0 0 16px',fontSize:14,lineHeight:1.45,color:'var(--smoke)'}}>{field.hint}</p>}
                   {field.set===setManualHydration&&<div style={{marginBottom:16,fontSize:14}}>{manualHydration!==undefined&&Math.abs(manualHydration-recommendedHyd)>0.005&&<button type="button" onClick={()=>setManualHydration(undefined)} style={{minHeight:44}}>{fr?'Rétablir l’hydratation conseillée':'Reset suggested hydration'}</button>}<details><summary className="bh-chevron" style={{minHeight:44,cursor:'pointer'}}>{fr?'Pourquoi cette valeur ?':'Why this value?'}</summary>{(()=>{
-                    // One line, as a sum: "Style 62% · oven +3 · flour +2 = 67%" (14 Nov 2026 audit).
-                    const oven=['pan','fougasse','brioche','pain_mie','pain_viennois'].includes(styleKey??'')?Math.round((ovenData?.hydrationDelta??0)/2):(ovenData?.hydrationDelta??0);
-                    const kitchen=kitchenTemp>=28||humidity==='very-humid'?-2:kitchenTemp<=18?2:0;
-                    const flour=flourBlend?Math.max(-5,Math.min(8,computeBlendProfile(flourBlend).hydrationDelta)):0;
+                    // One line, as a sum: "Style 62% · oven +3 · flour +2 = 67%" (14 Nov 2026 audit), from the sum the recipe
+                    // uses, with the flour the recipe uses (round 9 A: an unchosen flour added "+1" the recipe did not).
+                    const sum=hydSum;const {oven,kitchen,flour}=sum;
                     const sign=(n:number)=>`${n>0?'+':'−'}${String(Math.abs(n)).replace('.',fr?',':'.')}`;
-                    const parts=[`${fr?'Style':'Style'} ${formatPercent(style?.hydration??0,locale)}`,...(oven?[`${fr?'four':'oven'} ${sign(oven)}`]:[]),...(kitchen?[`${fr?'cuisine':'kitchen'} ${sign(kitchen)}`]:[]),...(flour?[`${fr?'type de farine':'flour type'} ${sign(flour)}`]:[])];
+                    const parts=[`Style ${formatPercent(sum.style,locale)}`,...(oven?[`${fr?'four':'oven'} ${sign(oven)}`]:[]),...(kitchen?[`${fr?'cuisine':'kitchen'} ${sign(kitchen)}`]:[]),...(flour?[`${fr?'type de farine':'flour type'} ${sign(flour)}`]:[])];
                     // W sets fermentation time, not water (21 Nov 2026): say so where the sum is read.
                     return <><p style={{margin:'4px 0 0'}}>{parts.join(' · ')} → {formatPercent(recommendedHyd,locale)}</p>
-                      {flourBlend&&<p data-hydration-w-note style={{margin:'4px 0 0',color:'var(--smoke)'}}>{fr?'Le W de la farine fixe la durée de fermentation, pas l’eau.':'The flour’s W sets how long it can ferment, not the water.'}</p>}</>;
+                      {flourChosen&&<p data-hydration-w-note style={{margin:'4px 0 0',color:'var(--smoke)'}}>{fr?'Le W de la farine fixe la durée de fermentation, pas l’eau.':'The flour’s W sets how long it can ferment, not the water.'}</p>}</>;
                   })()}</details></div>}
                   </div>;};
                 return <>
@@ -6404,7 +6450,7 @@ export default function Home() {
                   {!kitchenAnswered && <KitchenSlider value={kitchenTemp} units={units} fr={fr} onChange={c=>{setKitchenTemp(c);confirmSetting('climate',c);setPlanReplanPending(true);}}/>}
                   {/* "Inside the fridge" says where it is read (was a helper line, 20 Nov 2026 round 7). */}
                   <label data-finetune-row style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,fontSize:16,marginBottom:14}}><span data-finetune-label style={{minWidth:0}}>{fr?'Dans le frigo':'Inside the fridge'}</span>
-                    <UnitInput data-fridge-temp suffix={tempUnit(units)} label={fr?`Température dans le frigo, près de la pâte, ${tempUnit(units)}`:`Temperature inside the fridge, near the dough, ${tempUnit(units)}`} key={`fridge:${fridgeTemp}:${units}`} defaultValue={Math.round(cToDisplay(fridgeTemp,units)*10)/10} min={cToDisplay(1,units)} max={cToDisplay(15,units)} step={units==='imperial'?1:0.5} onBlur={e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const c=Math.min(15,Math.max(1,inputTempToC(n,units)));if(Math.abs(c-fridgeTemp)>0.01){setFridgeTemp(c);setPlanReplanPending(true);}}}/>
+                    <UnitInput data-fridge-temp suffix={tempUnit(units)} label={fr?`Température dans le frigo, près de la pâte, ${tempUnit(units)}`:`Temperature inside the fridge, near the dough, ${tempUnit(units)}`} key={`fridge:${fridgeTemp}:${units}`} decimal defaultValue={formatDecimal(Math.round(cToDisplay(fridgeTemp,units)*10)/10,fr)} onBlur={e=>{const n=parseDecimal(e.target.value);if(e.target.value===''||!Number.isFinite(n))return;const c=Math.min(15,Math.max(1,inputTempToC(n,units)));if(Math.abs(c-fridgeTemp)>0.01){setFridgeTemp(c);setPlanReplanPending(true);}}}/>
                   </label>
                   <label style={{display:'block',fontSize:16,margin:'12px 0 6px'}}>{locale==='fr'?'Origine de l’eau':'Water source'}
                     <select value={waterSource==='tap'?'measured':waterSource} onChange={e=>{setWaterSource(e.target.value as 'room'|'fridge'|'measured');setMeasuredWaterTemp(undefined);}} style={{display:'block',width:'100%',fontSize:16,padding:12,minHeight:44,marginTop:6,border:'1px solid var(--border)',borderRadius:9,background:'white',color:'var(--char)'}}>

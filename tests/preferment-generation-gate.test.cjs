@@ -100,7 +100,7 @@ test('whole-plan validation gates generation in both modes and directs invalid p
  assert.equal(nextOverrides.length,2);
  for(const expression of nextOverrides)for(const scheduleCandidateValid of [false,true])for(const scheduleEditing of [false,true]){
   const code=ts.transpileModule('globalThis.result=('+expression+');',{compilerOptions:{target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.React}}).outputText;
-  const context={execution:undefined,mixExecution:undefined,completedMixAt:undefined,schedule:undefined,scheduleCandidateValid,scheduleEditing,simpleDecisionPending:false,customDecisionPending:false,recipeGenerated:false,bakeTimeOnly:false,customQuestionOnly:false,rebakeFinishes:false,eatTime:null,setBakeTimeQuestion(){},setPlanDetail(){},setupReturnLabel:'Retour à la recette',backToGoodPlanButton:{type:'button',props:{'data-back-to-good-plan':true},children:['Retour à la recette']},simpleOrganisationFlow:{generateLabel:'Générer ma recette'},customOrganisationFlow:{steps:[{id:9,chip:'Heure de cuisson'}],generateLabel:'Créer ma recette'},nextCustomStep:()=>9,collectingBakeTime:false,customStarterStepId:null,starterStateDescribed:true,eatTime:new Date(),fr:true,NEXT_CTA:{},React:{createElement:(type,props,...children)=>({type,props,children})}};
+  const context={execution:undefined,mixExecution:undefined,completedMixAt:undefined,schedule:undefined,scheduleCandidateValid,scheduleEditing,simpleDecisionPending:false,customDecisionPending:false,simpleClashCardBar:false,customClashCardBar:false,recipeGenerated:false,bakeTimeOnly:false,customQuestionOnly:false,rebakeFinishes:false,eatTime:null,setBakeTimeQuestion(){},setPlanDetail(){},setupReturnLabel:'Retour à la recette',backToGoodPlanButton:{type:'button',props:{'data-back-to-good-plan':true},children:['Retour à la recette']},simpleOrganisationFlow:{generateLabel:'Générer ma recette'},customOrganisationFlow:{steps:[{id:9,chip:'Heure de cuisson'}],generateLabel:'Créer ma recette'},nextCustomStep:()=>9,collectingBakeTime:false,customStarterStepId:null,starterStateDescribed:true,eatTime:new Date(),fr:true,NEXT_CTA:{},React:{createElement:(type,props,...children)=>({type,props,children})}};
   vm.runInNewContext(code,context);
   if(scheduleEditing)assert.equal(context.result,null);
   else if(scheduleCandidateValid)assert.equal(context.result,undefined);
@@ -127,7 +127,11 @@ test('whole-plan validation gates generation in both modes and directs invalid p
    Object.assign(context,{recipeGenerated:true});
    vm.runInNewContext(code,context);
    assert.equal(context.result,context.backToGoodPlanButton);
-   Object.assign(context,{simpleDecisionPending:false,recipeGenerated:false});
+   // Round 9 (bug G footnote): with the card open the forward slot is empty; the way back is the bar's back control.
+   Object.assign(context,{simpleClashCardBar:true});
+   vm.runInNewContext(code,context);
+   assert.ok(context.result&&context.result!==context.backToGoodPlanButton&&!(context.result.children||[]).some(Boolean),'an empty forward slot');
+   Object.assign(context,{simpleDecisionPending:false,recipeGenerated:false,simpleClashCardBar:false});
   }
  }
 

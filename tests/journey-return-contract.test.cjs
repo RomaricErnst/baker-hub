@@ -165,10 +165,12 @@ test('separating blend flours cannot move existing salt or yeast shopping checks
  }
 });
 
-test('a pending plan edit in Custom opens the plan step so the scheduler replans before the recipe returns',()=>{
+// Round 9 E (22 Nov 2026): the replan runs where the baker is (the step's planner or the hidden customReplanHost);
+// Update recipe no longer opens the plan step.
+test('a pending plan edit in Custom replans in place before the recipe returns, without opening the plan step',()=>{
  const calls=[];
  evaluate(fn('finishSetupEdit')+';finishSetupEdit();',{customStarterStepId:null,starterStateDescribed:true,planReplanPending:true,replanReturn:null,tab:'custom',startTime:new Date(1000),recipeGenerated:true,protocolStale:false,canGenerate:true,previousRecipeInputKey:{current:'saved'},recipeInputKey:'edited',fillingsReturn:null,
   setReplanReturn(value){calls.push(['replan',value.from,value.settled]);},setActiveTab(tab){calls.push(['tab',tab]);},setSetupOverview(value){calls.push(['overview',value]);},setAdvancedStep(step){calls.push(['step',step]);},scrollToStepTop(){},
   handleGenerate(){throw Error('The stale schedule must not be regenerated before the replan');},setProtocolStale(){throw Error('unexpected');},openDestination(){throw Error('unexpected');}});
- assert.deepEqual(calls,[['replan',1000,false],['tab','setup'],['overview',false],['step',9]]);
+ assert.deepEqual(calls,[['replan',1000,false]]);
 });

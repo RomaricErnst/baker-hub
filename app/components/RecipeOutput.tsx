@@ -631,9 +631,9 @@ export default function RecipeOutput({
         shares of the whole differ from the chosen blend (the poolish takes the first flour), so they are
         not given percentages that would read as a contradiction of 85/15. */}
     {parts.length > 1 && showSelectedFlour
-      ? <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={custom ? '100%' : undefined}
+      ? <IngRow label={t('recipeOutput.ingredientFlour')} grams={wStr(flour)} advancedPct={custom ? formatPercent(100, locale) : undefined}
           sub={<span data-flour-parts style={{display:'flex',flexDirection:'column'}}>{parts.map((part, index) => <span key={`${part.key}-${index}`}>{flourName(index)} · {wStr(part.grams)}</span>)}</span>} />
-      : <IngRow label={singleFlourLabel} grams={wStr(flour)} advancedPct={custom ? '100%' : undefined} sub={guidedFlourGuidance} />}
+      : <IngRow label={singleFlourLabel} grams={wStr(flour)} advancedPct={custom ? formatPercent(100, locale) : undefined} sub={guidedFlourGuidance} />}
     <IngRow label={t('recipeOutput.ingredientWater')} grams={wStr(water)} advancedPct={custom ? pctStr(waterPct) : undefined} />
     <IngRow label={t('recipeOutput.ingredientSalt')} grams={wStr(salt)} advancedPct={custom ? pctStr(saltPct) : undefined} />
     {pf && yeastDoses && yeastDoses.shownTotal > 0 && <IngRow label={prefYeastLabel} grams={yeastDoses.total} advancedPct={pctOfExact(pf.prefYeastGrams + (pf.finalYeastGrams ?? 0))} />}
@@ -744,7 +744,7 @@ export default function RecipeOutput({
             noPct={sdActive}
             pct="100%"
             highlight
-            advancedPct={mode === 'custom' ? '100%' : undefined}
+            advancedPct={mode === 'custom' ? formatPercent(100, locale) : undefined}
             sub={showSelectedFlour && flourBlend ? (() => {
               const f1 = FLOUR_DATA[flourBlend.flour1];
               const f1DisplayName = (flourBlend.brandProduct ? flourProductName(flourBlend.brandProduct,locale) : undefined) ?? (locale === 'fr' ? f1.nameFr : f1.name);
@@ -942,15 +942,8 @@ export default function RecipeOutput({
 
           {/* The small-dose help now opens under the yeast row itself. */}
 
-          {/* Poolish recommendation */}
-          {yeastInfo.recommendPoolish && (
-            <details><summary className="bh-chevron" style={{minHeight:44,cursor:'pointer'}}>{locale === 'fr' ? 'Autre méthode pour ce planning' : 'Alternative method for this schedule'}</summary><InfoCard
-              icon=""
-              level="poolish"
-              title={t('recipeOutput.poolishTitle')}
-              body={t('recipeOutput.poolishBody')}
-            /></details>
-          )}
+          {/* No poolish card on a direct dough (round 9 S1): its "use the amounts shown" pointed at amounts
+              this recipe does not have; the direct-dough note (poolishSuggestion) says what is actionable. */}
 
           {/* Not recommended warning */}
           {yeastInfo.notRecommended && (
