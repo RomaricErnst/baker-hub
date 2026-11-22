@@ -22,6 +22,8 @@ function harness(overrides={}){
   findFixedBakeSchedule,recommendPreferment,getPrefOptH:()=>8,
   // Round 7: the preferment window seeds through prefTargetH (the planner's optimum without a baker yeast) and prefYeastModes (null without one).
   prefTargetH:()=>8,prefYeastModes:()=>null,prefYeastTimingFor:()=>null,prefYeastPctOverride:undefined,onChange:(start,bake,blocks,options)=>writes.push({start,bake,blocks,options})};
+ // Round 9 (owner): no entered amount here, so the picker's entry night preference is off.
+ c.entryNightRuleOn=()=>false;c.entryNightOnRef={current:false};
  c.setAlgoChoseFridge=()=>{};c.setBigaChoseCool=()=>{};c.bigaStorage='auto';c.bigaCoolAllowed=false;
  for(const name of ['MovedNote','BlockerNote','StarterPins','EditingRow','EditingEnabled','EditBaseTimes','LocalBlocks','SearchFailed','StartComputed','PrefAlgoRed','WindowTooShort'])c['set'+name]=()=>{};
  c.setPendingStart=v=>{c.pendingStart=v;};c.setPrefOffsetH=v=>{c.prefOffsetH=v;};

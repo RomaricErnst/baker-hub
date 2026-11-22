@@ -2408,46 +2408,6 @@ export default function Home() {
       preferment: pref ? { options: prefPlanOptions(pref, prefPct),
         valid: (times, inFridge) => commercialPrefermentPlanValid({ type: pref, inFridge, mixTime: times.start, bakeTime: times.bake, offsetHours: times.prefHours, blocks, now: new Date() }) } : undefined };
   };
-  // Round 9 (owner, 22 Nov 2026): an entered amount is planned even when every plan adds a hands-on step between
-  // 22:00 and 07:00; Fine-tune names those steps in one quiet line (`entryNight`), from the same search the plan
-  // uses, with the nearest amount that avoids them and Keep (remembered with the amounts, `entryNightKept`).
-  const entryNightKeptNow = !!entryNightKept && entryNightKept.yeast === yeastPctOverride
-    && (entryNightKept.pref?.type ?? null) === (prefYeastOverride?.type ?? null) && entryNightKept.pref?.pct === prefYeastOverride?.pct;
-  const entryNightKey = entryInForce && !legacyEntryTiming && !entryNightKeptNow && tab === 'custom' && advancedStep === 10 && eatTime && yeastType && yeastType !== 'sourdough'
-    ? JSON.stringify([effectiveYeastOverride, effectivePrefYeastOverride, prefermentType, +eatTime, blocks.map(b => [+b.from, +b.to]), entryNightAllowed, kitchenTemp, styleKey, Math.floor(Date.now() / 900000)]) : null;
-  const entryNight = useMemo(() => {
-    if (!entryNightKey || !eatTime || !styleKey || !mixerType || !yeastType) return null;
-    const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
-    const o = yeastEntryInput(conversion);
-    if (!o?.nightAllowed) return null;
-    try {
-      if (entryPlanSearch(effectiveYeastOverride, o)) return null;
-      const r = entryPlanSearch(effectiveYeastOverride, o, undefined, { allowNight: true });
-      if (!r) return null;
-      const plan = buildSchedule(r.times.start, eatTime, blocks, kitchenTemp, planPreheatMin, mixerType as MixerType, styleKey, numItems, selectedMixingBatches, false, 1, r.shape, planLadder);
-      const actions = [...(plan.availabilityActions ?? []), ...(o.preferment && r.times.prefHours > 0 ? [{id:'preferment', at:new Date(+r.times.start - r.times.prefHours * 3600000)}] : [])];
-      const steps = newNightHandsOn(actions, blocks).filter(a => !o.nightAllowed!.includes(a.id) && +a.at > Date.now());
-      if (!steps.length) return null;
-      const pref = prefermentType === 'poolish' || prefermentType === 'biga' ? prefermentType as FlourPreferment : null;
-      // The amount to offer: the final dough's when entered, else the preferment's.
-      let offer: {shown:number; apply:()=>void} | null = null;
-      if (effectiveYeastOverride !== undefined) {
-        const shown = nightFreeShownPct(effectiveYeastOverride, o);
-        if (shown !== null) offer = {shown, apply: () => { setYeastAnchorH(yeastAnchorH ?? calculatedAnchorRef.current); setYeastPctOverride(Math.round(shown / conversion * 10000) / 10000); setPlanReplanPending(true); }};
-      } else if (pref && effectivePrefYeastOverride !== undefined && calculatedPrefYeastRef.current?.type === pref) {
-        const entered = Math.round(effectivePrefYeastOverride * conversion * 1000) / 1000, calc = Math.round(calculatedPrefYeastRef.current.pct * conversion * 1000) / 1000;
-        const shown = Math.abs(calc - entered) < 0.0005 ? null : nearestFittingShownPct(entered, calc, v => {
-          const p = Math.round(v / conversion * 10000) / 10000;
-          if (!prefYeastFit(pref, p).fits) return false;
-          const e = yeastEntryInput(conversion, p);
-          return !!e && !!entryPlanSearch(effectiveYeastOverride, e);
-        });
-        if (shown !== null) offer = {shown, apply: () => { setPrefYeastOverride({type: pref, pct: Math.round(shown / conversion * 10000) / 10000}); setPlanReplanPending(true); }};
-      }
-      return {steps, pref, offer};
-    } catch { return null; }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entryNightKey]);
 
   // The planner may raise the levain % only without a baker-entered one, and only when
   // every planned feed can build the larger amount (raisedLevainFits).
@@ -4657,6 +4617,47 @@ export default function Home() {
   // The calculated plan's knead while no amount is entered (round 9, bug I): an amount entered later keeps it,
   // and so does one entered after an earlier amount recorded no anchor (typed before the plan existed).
   if (yeastPctOverride === undefined && (recipeGenerated || customPlanSeen) && eatTime && +startTime < +eatTime) calculatedAnchorRef.current = (+eatTime - +startTime) / 3600000;
+  // Below customPlanSeen: yeastEntryInput reads it, and this memo calls it during render.
+  // Round 9 (owner, 22 Nov 2026): an entered amount is planned even when every plan adds a hands-on step between
+  // 22:00 and 07:00; Fine-tune names those steps in one quiet line (`entryNight`), from the same search the plan
+  // uses, with the nearest amount that avoids them and Keep (remembered with the amounts, `entryNightKept`).
+  const entryNightKeptNow = !!entryNightKept && entryNightKept.yeast === yeastPctOverride
+    && (entryNightKept.pref?.type ?? null) === (prefYeastOverride?.type ?? null) && entryNightKept.pref?.pct === prefYeastOverride?.pct;
+  const entryNightKey = entryInForce && !legacyEntryTiming && !entryNightKeptNow && tab === 'custom' && advancedStep === 10 && eatTime && yeastType && yeastType !== 'sourdough'
+    ? JSON.stringify([effectiveYeastOverride, effectivePrefYeastOverride, prefermentType, +eatTime, blocks.map(b => [+b.from, +b.to]), entryNightAllowed, kitchenTemp, styleKey, Math.floor(Date.now() / 900000)]) : null;
+  const entryNight = useMemo(() => {
+    if (!entryNightKey || !eatTime || !styleKey || !mixerType || !yeastType) return null;
+    const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
+    const o = yeastEntryInput(conversion);
+    if (!o?.nightAllowed) return null;
+    try {
+      if (entryPlanSearch(effectiveYeastOverride, o)) return null;
+      const r = entryPlanSearch(effectiveYeastOverride, o, undefined, { allowNight: true });
+      if (!r) return null;
+      const plan = buildSchedule(r.times.start, eatTime, blocks, kitchenTemp, planPreheatMin, mixerType as MixerType, styleKey, numItems, selectedMixingBatches, false, 1, r.shape, planLadder);
+      const actions = [...(plan.availabilityActions ?? []), ...(o.preferment && r.times.prefHours > 0 ? [{id:'preferment', at:new Date(+r.times.start - r.times.prefHours * 3600000)}] : [])];
+      const steps = newNightHandsOn(actions, blocks).filter(a => !o.nightAllowed!.includes(a.id) && +a.at > Date.now());
+      if (!steps.length) return null;
+      const pref = prefermentType === 'poolish' || prefermentType === 'biga' ? prefermentType as FlourPreferment : null;
+      // The amount to offer: the final dough's when entered, else the preferment's.
+      let offer: {shown:number; apply:()=>void} | null = null;
+      if (effectiveYeastOverride !== undefined) {
+        const shown = nightFreeShownPct(effectiveYeastOverride, o);
+        if (shown !== null) offer = {shown, apply: () => { setYeastAnchorH(yeastAnchorH ?? calculatedAnchorRef.current); setYeastPctOverride(Math.round(shown / conversion * 10000) / 10000); setPlanReplanPending(true); }};
+      } else if (pref && effectivePrefYeastOverride !== undefined && calculatedPrefYeastRef.current?.type === pref) {
+        const entered = Math.round(effectivePrefYeastOverride * conversion * 1000) / 1000, calc = Math.round(calculatedPrefYeastRef.current.pct * conversion * 1000) / 1000;
+        const shown = Math.abs(calc - entered) < 0.0005 ? null : nearestFittingShownPct(entered, calc, v => {
+          const p = Math.round(v / conversion * 10000) / 10000;
+          if (!prefYeastFit(pref, p).fits) return false;
+          const e = yeastEntryInput(conversion, p);
+          return !!e && !!entryPlanSearch(effectiveYeastOverride, e);
+        });
+        if (shown !== null) offer = {shown, apply: () => { setPrefYeastOverride({type: pref, pct: Math.round(shown / conversion * 10000) / 10000}); setPlanReplanPending(true); }};
+      }
+      return {steps, pref, offer};
+    } catch { return null; }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entryNightKey]);
 
   const customFlow: StepFlow = {
     editReturn: recipeGenerated ? {label:setupReturnLabel,onReturn:finishSetupEdit} : undefined,

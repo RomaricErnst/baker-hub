@@ -2140,16 +2140,19 @@ export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInp
     const room = fermentationWindowForYeast(modelIdyPct, { ...(anchored ? { ...input, nearH: anchorH } : input), maxH: Math.min(input.maxH ?? 96, ROOM_PLAN_MAX_H) });
     return room ? { ...room, shape: { ...ROOM_PLAN } } : null;
   }
-  // Round 9 (bug I): with `roomPlans`, the established inversion reads the engine's plans (a fridge spell once
-  // the window allows one) and the room-temperature plans alike, and keeps the window nearest the anchor (else
-  // the style's window); the engine's on a tie. The statement and the re-timing both read this one timing.
+  // Round 9 (bug I): with `roomPlans`, when the engine's plans give no window within `maxH` (the time left), the
+  // room-temperature plans are read (window nearest the anchor, else the style's). The statement and the
+  // re-timing both read this one timing.
   const plain = (): EnteredYeastTiming | null => {
     const engine = fermentationWindowForYeast(modelIdyPct, anchored ? { ...input, nearH: anchorH } : input);
     if (!roomPlans || !roomPlanAllowed(input.styleKey)) return engine;
     const style = STYLE_FERM_DEFAULTS[input.styleKey];
     const near = anchored ? anchorH! : style ? style.coldH + style.rtH : engine?.center ?? 0;
     const room = fermentationWindowForYeast(modelIdyPct, { ...input, exitLeadMin: ROOM_PLAN, nearH: near, maxH: Math.min(input.maxH ?? 96, ROOM_PLAN_MAX_H) });
-    if (!room || (engine && Math.abs(engine.center - near) <= Math.abs(room.center - near) + 1e-9)) return engine;
+    // The engine's plans first (a fridge spell once the window allows one); a room plan only when they have no
+    // window within the time considered (`maxH`: the time left). A nearer room window must not replace an engine
+    // plan that fits (Thomas, 20 °C, 0.13 %: the room window fell in his night).
+    if (!room || engine) return engine;
     return { ...room, shape: { ...ROOM_PLAN } };
   };
   const maximum = Math.min(96, input.maxH ?? 96), minimum = 2 + input.preheatMin / 60;
