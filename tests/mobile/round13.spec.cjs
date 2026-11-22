@@ -42,11 +42,11 @@ const shot=(page,name)=>page.screenshot({path:test.info().outputPath(`${name}.pn
 for(const locale of ['en','fr']){
  const fr=locale==='fr';
 
- test(`${locale}: 3 — less yeast keeps the calculated knead (Thu 8:30pm) with the fridge, no night steps`,async({page})=>{
+ test(`${locale}: 3 — less yeast (0.12 %) keeps the calculated knead (Thu 8:30pm) with the fridge, no night steps`,async({page})=>{
   const errors=await open(page,b3(),locale);const ft=await fineTune(page);
   const yeast=ft.locator('[data-yeast-override] input');
-  await yeast.fill(fr?'0,1':'0.1');await yeast.blur();
-  await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBe(0.1);
+  await yeast.fill(fr?'0,12':'0.12');await yeast.blur();
+  await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBe(0.12);
   await expect(ft.locator('[data-entry-night]')).toHaveCount(0);
   // Less than the calculated amount: the helper says so.
   await expect(ft.getByText(fr?'Les horaires suivent cette quantité : moins de levure, pousse plus longue.':'Your timing follows this amount: less yeast, longer rise.',{exact:true})).toBeVisible();

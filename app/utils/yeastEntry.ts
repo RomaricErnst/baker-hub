@@ -1,7 +1,7 @@
 import { buildSchedule, enteredYeastTiming, fermentationWindowForYeast, roomPlanAllowed, ROOM_PLAN, ROOM_PLAN_MAX_H, type AvailabilityBlock, type EnteredYeastTiming, type PlanLadder, type PlanShape } from '../utils';
 import type { MixerType } from '../data';
 import { findFixedBakeSchedule, withNightRule, prefermentConditioningAction, type EditInput, type EditTimes } from './scheduleEdit';
-import { findAvailabilityConflicts, newNightHandsOn, type AvailabilityAction } from './scheduleAvailability';
+import { findAvailabilityConflicts, newNightHandsOn, nightScore, type AvailabilityAction } from './scheduleAvailability';
 
 const HOUR = 3600000, QUARTER = 15 * 60000;
 /** Largest IDY % the Fine-tune field accepts. */
@@ -46,6 +46,12 @@ export interface YeastEntryInput {
    * the amount is still planned and `checkYeastEntry` says so (`nightSteps`). Undefined: no night rule (a bake
    * saved before it). */
   nightAllowed?: string[];
+  /** The entered-amount rules a bake under way was saved with when older than ENTRY_RULES (`keptEntryRulesFor`): 2 keeps
+   * the round-9 fit (no proof fit, no night ranking in the timing). Undefined: the current rules. */
+  rules?: number;
+  /** A poolish or biga's hours before the mix (the plan's), so the timing's night ranking counts its start; the page's
+   * shape and `entryPlan` read the same value. */
+  prefStartH?: number;
 }
 
 /** Why an amount gives no plan: 'time' it needs longer than the time left; 'busy' every plan runs into the busy
@@ -98,7 +104,7 @@ const earliestOf = (now: number) => (Math.floor(now / QUARTER) + 1) * QUARTER;
 /** The timing the plan uses for an entered dough yeast (IDY %): `enteredYeastTiming` near the calculated
  * plan's window, within `maxH` when given. Its shape is what every schedule of that plan is built with. */
 export function entryTiming(idyPct: number, o: YeastEntryInput, maxH?: number): EnteredYeastTiming | null {
-  return enteredYeastTiming(idyPct, { ...timingInput(o), anchorH: o.anchorH, roomPlans: o.roomPlans, ...(maxH !== undefined ? { maxH } : {}) });
+  return enteredYeastTiming(idyPct, { ...timingInput(o), anchorH: o.anchorH, roomPlans: o.roomPlans, rules: o.rules, prefStartH: o.prefStartH, ...(maxH !== undefined ? { maxH } : {}) });
 }
 
 /** The plan shape for an entered amount (buildSchedule's last argument); Bake again's lead without one. Read
@@ -184,7 +190,9 @@ export function entryPlan(idyPct: number | undefined, o: YeastEntryInput): Entry
     entryPlanSearch(idyPct, input, undefined, { softNights: true })]
     .filter((p): p is NonNullable<typeof p> => !!p).map(p => ({ p, night: p === strict ? [] : nightStepsOf(p) }));
   if (!candidates.length) return null;
-  candidates.sort((a, b) => a.night.length - b.night.length || distance(a.p) - distance(b.p));
+  // A step between 23:00 and 06:00 (a wake-up) outweighs any number of shoulder steps (nightScore).
+  const score = (c: { night: AvailabilityAction[] }) => nightScore(c.night, blocks);
+  candidates.sort((a, b) => score(a) - score(b) || distance(a.p) - distance(b.p));
   const { p: soft, night: nightSteps } = candidates[0];
   if (soft === strict) return { ...strict, blocks, nightSteps: [] };
   const actions = entryPlanActions(soft, input);
@@ -332,7 +340,9 @@ export function formatDecimal(value: number, fr: boolean): string {
 
 /** Round 9 rules for a baker-entered amount: the timing also reads room-temperature plans, and its plan adds
  * no night step. Sessions saved since carry `entryRules` = ENTRY_RULES. */
-export const ENTRY_RULES = 2;
+export const ENTRY_RULES = 3;
+/** The round-9 rules (room plans, the night rule): bakes saved with them are not legacy (`legacyEntryTimingFor`). */
+const ROOM_PLAN_RULES = 2;
 
 /** True when a restored bake keeps the entered-amount timing it was made with (room plans and the night rule
  * off): it was kept so already, or it was saved before them with an entered amount and is under way (its Start
@@ -342,10 +352,23 @@ export function legacyEntryTimingFor(session: { entryRules?: number; legacyEntry
   execution?: unknown; mixExecution?: unknown; yeastPctOverride?: number; prefYeastOverride?: unknown } | null | undefined, now: number): boolean {
   if (!session) return false;
   if (session.legacyEntryTiming === true) return true;
-  if ((session.entryRules ?? 0) >= ENTRY_RULES || !session.recipeGenerated) return false;
+  if ((session.entryRules ?? 0) >= ROOM_PLAN_RULES || !session.recipeGenerated) return false;
   if (session.yeastPctOverride === undefined && !session.prefYeastOverride) return false;
   const start = typeof session.startTime === 'number' && Number.isFinite(session.startTime) ? session.startTime : Infinity;
   return start <= now || !!session.execution || !!session.mixExecution;
+}
+
+/** The rules a restored bake keeps (round 13, owner: a saved bake is never re-timed): a bake saved with the round-9
+ * rules (entryRules 2) and an entered amount, under way (its Start Dough time has come, or a mix or preferment is
+ * recorded), keeps them (`entryRulesKept` once saved so); else undefined (the current rules, or legacyEntryTimingFor). */
+export function keptEntryRulesFor(session: { entryRules?: number; entryRulesKept?: number; recipeGenerated?: boolean; startTime?: number | null;
+  execution?: unknown; mixExecution?: unknown; yeastPctOverride?: number; prefYeastOverride?: unknown } | null | undefined, now: number): number | undefined {
+  if (!session) return undefined;
+  if (session.entryRulesKept === ROOM_PLAN_RULES) return ROOM_PLAN_RULES;
+  if (session.entryRules !== ROOM_PLAN_RULES || !session.recipeGenerated) return undefined;
+  if (session.yeastPctOverride === undefined && !session.prefYeastOverride) return undefined;
+  const start = typeof session.startTime === 'number' && Number.isFinite(session.startTime) ? session.startTime : Infinity;
+  return start <= now || !!session.execution || !!session.mixExecution ? ROOM_PLAN_RULES : undefined;
 }
 
 /** A saved list of night step ids (entryNightIds), else none. */

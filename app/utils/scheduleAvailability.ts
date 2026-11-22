@@ -67,6 +67,14 @@ export function newNightHandsOn(actions:AvailabilityAction[],blocks:Availability
   });
 }
 
+/** How heavy a plan's night steps are for an entered amount's ranking (round 13): each step between 23:00 and 06:00
+ * (a wake-up) outweighs any number of steps in the 22:00–23:00 and 06:00–07:00 shoulders; `newNightHandsOn` decides
+ * which steps count (the preferment's start included when the caller passes it). */
+export function nightScore(actions:AvailabilityAction[],blocks:AvailabilityPeriod[]):number {
+  const steps=newNightHandsOn(actions,blocks);
+  return steps.length+100*steps.filter(action=>{const h=action.at.getHours();return h>=23||h<6;}).length;
+}
+
 export function planActions(dough:AvailabilityAction[],method:AvailabilityAction[],completedMixAt?:number):AvailabilityAction[] {
   const seen=new Set<string>();
   return [...dough,...method].filter(action=>{

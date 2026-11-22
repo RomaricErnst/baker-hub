@@ -33,29 +33,68 @@ const b3 = (bake, anchorH, calc, extra = {}) => ({ bake: SG(bake), blocks: night
   defaultWindow: b => sp.commercialReadinessWindow({ ...sp.STYLE_FERM_DEFAULTS.neapolitan, flourStrength: 1.2, kitchenTemp: 22, preheatMin: 45, totalWindowH: (+b - now) / H }), ...extra });
 const hhmm = d => new Date(d).toLocaleTimeString('en-GB', { timeZone: 'Asia/Singapore', weekday: 'short', hour: '2-digit', minute: '2-digit' });
 
-test('item 3 (D2): 0.1–0.15 % at 22 °C keep the calculated knead (Thu 20:30) without night steps; the plan does not jump', () => {
+test('item 3 (D2): 0.11–0.15 % at 22 °C keep the calculated knead (Thu 20:30) without night steps; 0.1 % beyond the ball-proof cap falls back', () => {
   // The calculated plan: 0.15 % kneaded Thu 20:30 for Fri 19:30 (23 h).
   const o = b3('2026-11-27T19:30:00', 23, 0.146);
-  for (const pct of [0.1, 0.11, 0.12, 0.13, 0.14, 0.15]) {
+  for (const pct of [0.11, 0.12, 0.13, 0.14, 0.15]) {
     const plan = Y.entryPlan(pct, o);
     assert.ok(plan, `${pct}: a plan`);
     assert.equal(hhmm(plan.times.start), 'Thu 20:30', `${pct}: knead kept`);
     assert.equal(plan.nightSteps.length, 0, `${pct}: no night step`);
-    // The fridge absorbs the difference (no room-temperature plan).
     const s = utils.buildSchedule(plan.times.start, o.bake, nights, 22, 45, 'hand', 'neapolitan', 4, 1, false, 1, plan.shape, 'hot');
     assert.ok(s.totalColdHours > 0, `${pct}: a fridge plan`);
+    // The balls' room time after the fridge stays within the published 4–6 h second rising (EU TSG 97/2010).
+    const exit = s.coldRetard2End ?? s.coldRetardEnd;
+    assert.ok((+o.bake - +exit) / H <= utils.BALL_PROOF_MAX_H + 1e-9, `${pct}: ${(+o.bake - +exit) / H} h out of the fridge`);
   }
   // Less yeast lengthens the final proof only (proof fit): the bulk and its folds stay the calculated plan's.
-  const p1 = Y.entryPlan(0.1, o);
+  const p1 = Y.entryPlan(0.11, o);
   assert.equal(p1.shape.proof, true);
   const calc = utils.buildSchedule(p1.times.start, o.bake, nights, 22, 45, 'hand', 'neapolitan', 4, 1, false, 1, undefined, 'hot');
   const kept = utils.buildSchedule(p1.times.start, o.bake, nights, 22, 45, 'hand', 'neapolitan', 4, 1, false, 1, p1.shape, 'hot');
   assert.equal(+kept.coldRetard1Start || +kept.coldRetardStart, +calc.coldRetard1Start || +calc.coldRetardStart, 'same fridge entry');
   assert.ok(+kept.finalProofStart < +calc.finalProofStart, 'out of the fridge earlier');
-  // Its readiness: within ±10 % of the target at the anchor.
   const path_ = utils.doughThermalPath(kept, 4, 260, 65, 22, 6, 24);
-  const budget = utils.fermentationBudget(0.1, path_.warmHours, 22, path_.coldHours, 6, path_);
+  const budget = utils.fermentationBudget(0.11, path_.warmHours, 22, path_.coldHours, 6, path_);
   assert.ok(Math.abs(budget - 1) <= 0.1, String(budget));
+  // 0.1 % would need about 8 h out of the fridge: beyond the cap, it is the established timing (a room plan, no night step).
+  const p0 = Y.entryPlan(0.1, o);
+  assert.ok(p0 && !p0.shape?.proof && p0.nightSteps.length === 0, JSON.stringify(p0 && p0.shape));
+  // Only Neapolitan has a published ball rise: no proof fit for a baguette.
+  assert.ok(utils.BALL_PROOF_STYLES.has('neapolitan') && !utils.BALL_PROOF_STYLES.has('baguette'));
+});
+
+test('owner: a bake under way saved with the round-9 rules keeps its timing (entryRules 2)', () => {
+  // Round 12 timed 0.12 % (B3, no busy time, Thu 19:30, bake Fri 19:30, knead recorded 23 h before) with {rtScale 1.6}.
+  const o = { ...b3('2026-11-27T19:30:00', 23, 0.146), blocks: [] };
+  delete o.defaultWindow;
+  const round12 = { center: 23, from: 23, to: 16.75, shape: { rtScale: 1.6 } };
+  assert.deepEqual(Y.entryTiming(0.12, { ...o, rules: 2 }, 24), round12);
+  assert.deepEqual(Y.entryPlanShape(0.12, { ...o, rules: 2 }), round12.shape);
+  // A new bake gets the current fit.
+  assert.notDeepEqual(Y.entryPlanShape(0.12, o), round12.shape);
+  // Restoring: entryRules 2, an entered amount, under way (Start Dough has come, or a mix is recorded) keeps rules 2.
+  const saved = { entryRules: 2, recipeGenerated: true, yeastPctOverride: 0.12, startTime: +SG('2026-11-26T20:30:00') };
+  assert.equal(Y.ENTRY_RULES, 3);
+  assert.equal(Y.keptEntryRulesFor(saved, +SG('2026-11-26T21:00:00')), 2);
+  assert.equal(Y.keptEntryRulesFor({ ...saved, entryRulesKept: 2 }, +SG('2026-11-26T19:00:00')), 2);
+  assert.equal(Y.keptEntryRulesFor(saved, +SG('2026-11-26T19:00:00')), undefined, 'not under way: the current rules');
+  assert.equal(Y.keptEntryRulesFor({ ...saved, entryRules: 3 }, +SG('2026-11-26T21:00:00')), undefined);
+  // Not the older legacy timing (no room plans, no night rule).
+  assert.equal(Y.legacyEntryTimingFor(saved, +SG('2026-11-26T21:00:00')), false);
+  assert.match(page, /roomPlans: !legacyEntryTiming, rules: keptEntryRules,/);
+  assert.match(page, /\.\.\.\(keptEntryRules \? \{entryRulesKept: keptEntryRules\} : \{\}\)/);
+});
+
+test('items 3–4: the ranking counts the preferment\'s start, and a wake-up (23:00–06:00) outweighs shoulder steps', () => {
+  const av = require('../app/utils/scheduleAvailability.ts');
+  const at = (d, h, m = 0) => new Date(2026, 10, d, h, m);
+  // Three steps in the 22:00–23:00 / 06:00–07:00 shoulders weigh less than one at 3am.
+  assert.ok(av.nightScore([{ id: 'fold-1', at: at(26, 22, 10) }, { id: 'fold-2', at: at(26, 22, 40) }, { id: 'cold-out', at: at(27, 6, 30) }], [])
+    < av.nightScore([{ id: 'cold-out', at: at(27, 3, 0) }], []));
+  assert.ok(av.nightScore([{ id: 'preferment', at: at(26, 23, 30) }], []) > 0);
+  const utilsSrc = read('app/utils.ts');
+  assert.match(utilsSrc, /\.\.\.\(prefStartH \? \[\{ id: 'preferment', at: new Date\(\+input\.bake - \(h \+ prefStartH\) \* 3600000\) \}\] : \[\]\)/);
 });
 
 test('the established fit is unchanged: a {rtScale} shape scales bulk and proof as before; a proof fit keeps the bulk', () => {
