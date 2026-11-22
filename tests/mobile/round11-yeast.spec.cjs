@@ -277,7 +277,7 @@ for(const locale of ['en','fr']){
   log('placeholder',shown,'before',before,'recipe',pct);
   expect(errors).toEqual([]);
  });
- test(`${locale}: 8 — a cool-spot biga's suggestion ripens in its window, as the calculated amount does`,async({page})=>{
+ test(`${locale}: 8 — a cool-spot biga's suggestion is an amount the same window check accepts`,async({page})=>{
   const biga=b3({prefermentType:'biga',bigaStorage:'cool',prefOffsetH:16,prefGoesInFridge:false,eatTime:Z('2026-11-28T09:45:00+08:00'),acceptedEatTime:Z('2026-11-28T09:45:00+08:00'),startTime:Z('2026-11-27T12:00:00+08:00'),acceptedStartTime:Z('2026-11-27T12:00:00+08:00'),acceptedPreparationAt:Z('2026-11-26T20:00:00+08:00'),confirmedSettings:['oven=home_oven_standard','yeast=instant','climate=22','mixer=hand','method=biga']});
   const errors=await open(page,biga,locale,B3_NOW);
   const ft=page.locator('#step-10:visible');
@@ -287,10 +287,15 @@ for(const locale of ['en','fr']){
   const issue=ft.locator('[data-pref-yeast-issue]');
   await expect(issue).toBeVisible();
   const suggested=issue.locator('[data-use-suggested-pref-yeast]');
-  // 0.48 % (held 12 h) was offered beside an automatic 0.17 %; the offer now ripens within 12–20 h (≤ 0.25 %).
-  if(await suggested.count())expect(num(await suggested.textContent())).toBeLessThanOrEqual(0.25);
+  // Round 13 (item 6): the suggestion passes the entry's own window check (round 11 required it to ripen within 12–20 h,
+  // so 1.5 % fresh read "0.7 % fits" while 1 % was accepted): typed, it is accepted.
   log('suggested',await suggested.count()?await suggested.textContent():null);
   await shot(page,`8-cool-${locale}`,issue);
+  if(await suggested.count()){
+   const value=num(await suggested.textContent());
+   await pref.fill(fr?String(value).replace('.',','):String(value));await pref.blur();
+   await expect(ft.locator('[data-pref-yeast-issue]')).toHaveCount(0);
+  }
   expect(errors).toEqual([]);
  });
 

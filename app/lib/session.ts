@@ -150,6 +150,8 @@ export interface SessionData {
   entryRules?: number;
   /** Round 9: a bake under way before those rules keeps its entered-amount timing (legacyEntryTimingFor). */
   legacyEntryTiming?: boolean;
+  /** Round 13: a bake under way saved with the round-9 entered-amount rules keeps them (keptEntryRulesFor). */
+  entryRulesKept?: number;
   /** Custom poolish/biga: baker's preferment yeast, IDY % of the preferment flour; its window is timed to it (round 7). */
   prefYeastOverride?: { type: 'poolish' | 'biga'; pct: number };
   /** Custom levain: baker's starter % of flour; the bulk is timed to it. */

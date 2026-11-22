@@ -3,7 +3,7 @@ import { formatDuration } from './utils/duration';
 import { starterBuild } from './utils/starterBuild';
 import { BREAD_FERMENTATION_DEFAULTS, getBreadProtocol, breadActiveCookMinutes, breadPoachMinutes } from './utils/breadProfiles';
 import { scheduledFoldMinutes } from './utils/scheduleFolds';
-import { actionConflicts, findAvailabilityConflicts, isTimeBlocked, isFridgeRemovalCovered, type AvailabilityAction, type AvailabilityConflict } from './utils/scheduleAvailability';
+import { actionConflicts, findAvailabilityConflicts, isTimeBlocked, isFridgeRemovalCovered, newNightHandsOn, nightScore, type AvailabilityAction, type AvailabilityConflict } from './utils/scheduleAvailability';
 import { ENRICHED_FORMULAS, ENRICHMENT_WATER_FRACTIONS, type RecipeEnrichment } from './utils/enrichedFormulas';
 import { yeastActivity, pathHeq, riseTarget, doseForHeq, yeastBudget, thermalTauH, type PathResult, type ThermalPhase } from './utils/yeastModel';
 // ══════════════════════════════════════════
@@ -882,9 +882,18 @@ function accountScheduleTime(schedule: ScheduleResult): ScheduleResult {
  * `{ rtScale }` is a baker-entered yeast amount's fit (round 8, owner D2): the commercial dough's bulk and
  * final-proof bound are scaled together so the knead stays near the calculated plan's and the fridge time
  * absorbs the difference (`enteredYeastTiming`). Sourdough ignores the fit. */
-export type PlanShape = number | { rtScale: number; room?: boolean };
+export type PlanShape = number | { rtScale: number; room?: boolean; proof?: boolean };
 /** Bounds of an entered yeast's fit: half to twice the engine's room-temperature phases. */
 export const RT_SCALE_MIN = 0.5, RT_SCALE_MAX = 2;
+/** A proof fit (round 13) lengthens the final proof alone, up to three times the style's bound and within
+ * BALL_PROOF_MAX_H of room time after the fridge. */
+export const PROOF_SCALE_MAX = 3;
+/** The longest published room-temperature rise of shaped balls: the Pizza Napoletana TSG specification (Regulation
+ * (EU) No 97/2010, annex: "a second rising phase lasting four to six hours", at room temperature). Modernist Pizza tempers
+ * cold-proofed balls about 2 h; the AVPN disciplinare (2022, 2024) leaves the ball rise "di durata variabile". */
+export const BALL_PROOF_MAX_H = 6;
+/** Styles whose ball rise those sources describe: the proof fit is offered only for them. */
+export const BALL_PROOF_STYLES = new Set(['neapolitan']);
 /** A baker-entered yeast amount timed on a room-temperature plan (round 9, bug I): no fridge, the bulk takes
  * the window (`enteredYeastTiming` with `roomPlans`, when the fridge cannot absorb the amount). */
 export const ROOM_PLAN = { rtScale: 1, room: true } as const;
@@ -919,8 +928,9 @@ function buildSchedulePhases(
   // A number is Bake again's fridge-exit lead; an object is a baker-entered yeast's fit, which sizes the
   // room-temperature phases of a commercial dough (rtScale) so the fridge absorbs the difference.
   const exitLeadMin = typeof planShape === 'number' ? planShape : undefined;
+  const proofFit = typeof planShape === 'object' && !!planShape && planShape.proof === true && !isSourdough;
   const rtScale = typeof planShape === 'object' && planShape && !isSourdough && Number.isFinite(planShape.rtScale)
-    ? Math.max(RT_SCALE_MIN, Math.min(RT_SCALE_MAX, planShape.rtScale)) : 1;
+    ? proofFit ? Math.max(1, Math.min(PROOF_SCALE_MAX, planShape.rtScale)) : Math.max(RT_SCALE_MIN, Math.min(RT_SCALE_MAX, planShape.rtScale)) : 1;
   const bakeTime = new Date(eatTime.getTime() - preheatMin * 60000);
   // Elapsed mixing time is style-dependent (Modernist publishes it per style);
   // see kneadMinFor in data.ts. This drives WHEN bulk fermentation starts and
@@ -1003,9 +1013,15 @@ function buildSchedulePhases(
   const hasColdRetard = coldH > 0;
   const baseMaxFinalH = proofMode === 'generic' ? maxFinalProofHours(kitchenTemp, hasColdRetard)
     : styleMaxFinalProofHours(styleKey, kitchenTemp, hasColdRetard, isSourdough, preheatH);
-  // An entered yeast's fit scales the final proof (never below the 1 h minimum, at most 2 h longer).
+  // An entered yeast's fit scales the final proof (never below the 1 h minimum, at most 2 h longer). A proof fit
+  // (`proof`, round 13) puts the extra room time of less yeast in the final proof alone, up to 3×: the bulk keeps its
+  // length, so its folds and the fridge entry stay where the calculated plan has them (B3's 0.1 % at 22 °C kneads
+  // at the calculated 8:30pm and comes out of the fridge earlier the next day).
+  // The proof fit's room time after the fridge (warm-up, final proof, the preheat the balls wait through) stays within
+  // BALL_PROOF_MAX_H, the published second rising of Neapolitan balls (EU TSG 97/2010: 4–6 h at room temperature).
+  const ballRoomCapH = Math.floor((BALL_PROOF_MAX_H - (kitchenTemp >= 30 ? 0.5 : 0.75) - preheatMin / 60) * 4) / 4;
   const maxFinalH = rtScale === 1 ? baseMaxFinalH
-    : Math.max(1, Math.min(baseMaxFinalH + 2, Math.round(baseMaxFinalH * rtScale * 4) / 4));
+    : Math.max(1, proofFit ? Math.max(baseMaxFinalH, Math.min(ballRoomCapH, Math.round(baseMaxFinalH * rtScale * 4) / 4)) : Math.min(baseMaxFinalH + 2, Math.round(baseMaxFinalH * rtScale * 4) / 4));
 
   // Schedule note (first match wins)
   let scheduleNote: string | null = null;
@@ -1030,7 +1046,7 @@ function buildSchedulePhases(
   const commercialBulkH = isVeryHot ? 0.5 : isTropical ? 0.75 : 1.5;
   const initialBulkH = isSourdough
     ? sourdoughBulkH(styleKey, kitchenTemp) * starterFactor
-    : rtScale === 1 ? commercialBulkH : Math.max(0.5, Math.round(commercialBulkH * rtScale * 4) / 4);
+    : rtScale === 1 || proofFit ? commercialBulkH : Math.max(0.5, Math.round(commercialBulkH * rtScale * 4) / 4);
 
   const minCold1H = isTropical ? 2 : 4;
   const minCold2H = 2;
@@ -2121,7 +2137,7 @@ export function fermentationWindowForYeast(modelIdyPct: number, o: FermentationT
   return { center, from: Math.max(from, center), to: Math.min(to, center) };
 }
 
-export interface EnteredYeastTiming { center: number; from: number; to: number; shape?: { rtScale: number; room?: boolean } }
+export interface EnteredYeastTiming { center: number; from: number; to: number; shape?: { rtScale: number; room?: boolean; proof?: boolean } }
 
 /** Timing for a baker-entered amount (round 8, owner D2): keep the knead near the calculated plan's and
  * let the fridge absorb the difference. `anchorH` is the calculated plan's mix-to-bake window. At that
@@ -2132,8 +2148,11 @@ export interface EnteredYeastTiming { center: number; from: number; to: number; 
  * fermentationWindowForYeast nearest the anchor (else the style's window): the established inversion.
  * Callers build every schedule with the returned shape (buildSchedule's last argument). An `exitLeadMin`
  * that is already a fit (the page solved it) is kept: only the band around the anchor is read with it. */
-export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInput & { anchorH?: number; roomPlans?: boolean }): EnteredYeastTiming | null {
-  const { anchorH, roomPlans, ...input } = o;
+export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInput & { anchorH?: number; roomPlans?: boolean; rules?: number; prefStartH?: number }): EnteredYeastTiming | null {
+  const { anchorH, roomPlans, rules, prefStartH, ...input } = o;
+  // The round-13 fit (proof fit, night ranking, own nights soft, the contiguous band) for bakes under the current rules;
+  // a bake saved under way with the round-9 rules (`rules` 2) keeps the fit it was timed with (owner: never re-timed).
+  const current = !!roomPlans && rules !== 2;
   const anchored = anchorH !== undefined && Number.isFinite(anchorH);
   // A room-temperature timing the page already chose (ROOM_PLAN): its window nearest the anchor, kept.
   if (isRoomShape(input.exitLeadMin)) {
@@ -2158,48 +2177,125 @@ export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInp
   const maximum = Math.min(96, input.maxH ?? 96), minimum = 2 + input.preheatMin / 60;
   if (!(modelIdyPct > 0) || !anchored) return plain();
   const h0 = Math.round(anchorH * 4) / 4;
+  const doughTempC = input.doughTempC ?? TARGET_FDT[input.styleKey] ?? 24;
+  const target = input.budget ?? 1;
+  const tolerance = (roomPlans ? 0.1 : 0.05) * target + 1e-9;
+  // The readiness band around the anchor (round 13): the quarter hours on either side, up to 6 h, whose plan with this fit
+  // keeps a cold phase and a budget within the tolerance. The budget is not monotone across the room/cold switch, so the
+  // nearest crossings (fermentationWindowForYeast) could enclose room-temperature plans at 130 % (B3's kept 0.14 %).
+  const inBand = (shape: { rtScale: number; proof?: boolean }, h: number) => {
+    try {
+      const s = buildSchedule(new Date(+input.bake - h * 3600000), input.bake, input.blocks, input.kitchenTemp, input.preheatMin, input.mixerType,
+        input.styleKey, input.numItems, input.mixingBatches, false, 1, shape, input.planLadder);
+      if (!(s.totalColdHours > 0)) return false;
+      const path = doughThermalPath(s, input.numItems, input.itemWeight, input.hydration, input.kitchenTemp, input.fridgeTemp, doughTempC);
+      const b = fermentationBudget(modelIdyPct, path.warmHours, input.kitchenTemp, path.coldHours, input.fridgeTemp, path);
+      return Number.isFinite(b) && Math.abs(b - target) <= tolerance;
+    } catch { return false; }
+  };
+  const bandAround = (shape: { rtScale: number; proof?: boolean }): EnteredYeastTiming => {
+    if (!current) {
+      // A bake saved under way before these rules keeps the band it was timed with.
+      const band = fermentationWindowForYeast(modelIdyPct, { ...input, exitLeadMin: shape, nearH: h0, budget: undefined });
+      return { center: h0, from: Math.min(maximum, band ? Math.max(band.from, h0) : h0), to: band ? Math.min(band.to, h0) : h0, shape };
+    }
+    let from = h0, to = h0;
+    while (from + 0.25 <= Math.min(maximum, h0 + 6) + 1e-9 && inBand(shape, from + 0.25)) from += 0.25;
+    while (to - 0.25 >= Math.max(minimum, h0 - 6) - 1e-9 && inBand(shape, to - 0.25)) to -= 0.25;
+    // The anchor alone is a window no search accepts (from must precede to): give it the quarter hour before (round 13:
+    // B3's 0.17 % at lunch was within the band at the calculated knead and had no plan).
+    return { center: h0, from: Math.min(from > to ? from : to + 0.25, maximum), to, shape };
+  };
   if (typeof input.exitLeadMin === 'object' && input.exitLeadMin) {
-    const fixed = { rtScale: input.exitLeadMin.rtScale };
+    const fixed = { rtScale: input.exitLeadMin.rtScale, ...(input.exitLeadMin.proof ? { proof: true } : {}) };
     if (h0 < minimum || h0 > maximum) return fermentationWindowForYeast(modelIdyPct, { ...input, nearH: anchorH });
-    const band = fermentationWindowForYeast(modelIdyPct, { ...input, nearH: h0, budget: undefined });
     // The anchor must sit inside the readiness band with this fit (else the amount is timed elsewhere).
-    if (!band || h0 > band.from + 1e-9 || h0 < band.to - 1e-9) return band ? { ...band, shape: fixed } : null;
-    return { center: h0, from: Math.min(maximum, band ? Math.max(band.from, h0) : h0), to: band ? Math.min(band.to, h0) : h0, shape: fixed };
+    if (!current) {
+      const band = fermentationWindowForYeast(modelIdyPct, { ...input, nearH: h0, budget: undefined });
+      if (!band || h0 > band.from + 1e-9 || h0 < band.to - 1e-9) return band ? { ...band, shape: fixed } : null;
+      return { center: h0, from: Math.min(maximum, Math.max(band.from, h0)), to: Math.min(band.to, h0), shape: fixed };
+    }
+    if (!inBand(fixed, h0)) { const band = fermentationWindowForYeast(modelIdyPct, { ...input, nearH: h0, budget: undefined }); return band ? { ...band, shape: fixed } : null; }
+    return bandAround(fixed);
   }
   if (h0 < minimum || h0 > maximum) return plain();
-  const doughTempC = input.doughTempC ?? TARGET_FDT[input.styleKey] ?? 24;
   const start = new Date(+input.bake - h0 * 3600000);
   const build = (shape?: PlanShape) => buildSchedule(start, input.bake, input.blocks, input.kitchenTemp, input.preheatMin, input.mixerType,
     input.styleKey, input.numItems, input.mixingBatches, false, 1, shape, input.planLadder);
-  const clashes = (s: ScheduleResult) => s.availabilityConflicts?.length ?? 0;
+  // Under the current rules (`roomPlans`, round 13) the fit with the fewest steps between 22:00 and 07:00 not declared
+  // free (`newNightHandsOn`) is taken first, so the knead stays at the calculated one without night steps when such a
+  // fit exists. When no fit clears the busy times, a fit whose steps fall only in the baker's own nights is still one
+  // (decision O1: those are night steps, named), taken when it has fewer night steps than the established timing
+  // (`plain`) at its best placement. A bake saved under way before these rules counts every clash and has no proof fit.
+  let ownNightsSoft = false;
+  const clashes = (s: ScheduleResult) => (s.availabilityConflicts ?? []).filter(c => !ownNightsSoft || !c.block.label?.endsWith(' night')).length;
+  // Night steps of a plan kneaded `h` hours before the bake, its preferment's start included (round 13: the sweep's two
+  // poolish plans gained a night step the dough's steps alone did not show).
+  const nightOf = (s: ScheduleResult, h: number) => nightScore([...(s.availabilityActions ?? []),
+    ...(prefStartH ? [{ id: 'preferment', at: new Date(+input.bake - (h + prefStartH) * 3600000) }] : [])], input.blocks);
+  const nightSteps = (s: ScheduleResult) => current ? nightOf(s, h0) : 0;
   let base: ScheduleResult;
   try { base = build(); } catch { return plain(); }
   if (!(base.totalColdHours > 0)) return plain();
-  const budgetAt = (rtScale: number) => {
+  const budgetAt = (shape: { rtScale: number; proof?: boolean }) => {
     try {
-      const s = build({ rtScale });
+      const s = build(shape);
       const path = doughThermalPath(s, input.numItems, input.itemWeight, input.hydration, input.kitchenTemp, input.fridgeTemp, doughTempC);
       const b = fermentationBudget(modelIdyPct, path.warmHours, input.kitchenTemp, path.coldHours, input.fridgeTemp, path);
       return { s, b: Number.isFinite(b) ? b : NaN };
     } catch { return { s: null, b: NaN }; }
   };
-  const target = input.budget ?? 1;
-  const usable = (s: ScheduleResult | null) => !!s && s.totalColdHours > 0 && clashes(s) <= clashes(base) && !s.preparationInvalid;
-  // Every 0.05 step of the scale; the clash-free one whose budget is nearest the target, within the readiness band
-  // (round 11, D2: ±10 %, the band the plan's dough is judged ready in; 5 % moved B3's 0.1 % knead by 13 h).
-  let best: { rtScale: number; gap: number } | null = null;
-  for (let k = Math.round(RT_SCALE_MIN * 20); k <= Math.round(RT_SCALE_MAX * 20); k++) {
-    const rtScale = k / 20, { s, b } = budgetAt(rtScale);
-    if (!Number.isFinite(b) || !usable(s)) continue;
-    const gap = Math.abs(b - target);
-    if (!best || gap < best.gap - 1e-9 || (Math.abs(gap - best.gap) <= 1e-9 && Math.abs(rtScale - 1) < Math.abs(best.rtScale - 1))) best = { rtScale, gap };
+  const usable = (s: ScheduleResult | null): s is ScheduleResult => !!s && s.totalColdHours > 0 && clashes(s) <= clashes(base) && !s.preparationInvalid;
+  // Every 0.05 step of the scale, within the readiness band (round 11, D2: ±10 %, the band the plan's dough is judged
+  // ready in; 5 % moved B3's 0.1 % knead by 13 h): fewest night steps, then the scaled bulk-and-proof fit before a proof
+  // fit, then the budget nearest the target, then the scale nearest 1.
+  type Fit = { shape: { rtScale: number; proof?: true }; night: number; family: number; gap: number };
+  const scaled = new Map<string, ReturnType<typeof budgetAt>>();
+  const fit = (): Fit | null => {
+    let best: Fit | null = null;
+    const consider = (shape: Fit['shape'], family: number) => {
+      const id = JSON.stringify(shape);
+      if (!scaled.has(id)) scaled.set(id, budgetAt(shape));
+      const { s, b } = scaled.get(id)!;
+      if (!Number.isFinite(b) || !usable(s)) return;
+      const gap = Math.abs(b - target);
+      if (gap > tolerance) return;
+      const next: Fit = { shape, night: nightSteps(s), family, gap };
+      const key = (f: Fit) => [f.night, f.family, f.gap, Math.abs(f.shape.rtScale - 1)];
+      const a = key(next), c = best ? key(best) : null;
+      if (!c) { best = next; return; }
+      for (let i = 0; i < a.length; i++) {
+        if (Math.abs(a[i] - c[i]) <= 1e-9) continue;
+        if (a[i] < c[i]) best = next;
+        return;
+      }
+    };
+    for (let k = Math.round(RT_SCALE_MIN * 20); k <= Math.round(RT_SCALE_MAX * 20); k++) consider({ rtScale: k / 20 }, 0);
+    if (current && BALL_PROOF_STYLES.has(input.styleKey)) for (let k = 21; k <= Math.round(PROOF_SCALE_MAX * 20); k++) consider({ rtScale: k / 20, proof: true }, 1);
+    return best;
+  };
+  let chosen = fit();
+  if (!chosen && current && input.blocks.some(b => b.label?.endsWith(' night'))) {
+    ownNightsSoft = true;
+    const soft = fit();
+    ownNightsSoft = false;
+    if (!soft) return plain();
+    // The established timing's fewest night steps over its window (quarter hours within the time left, no other clash).
+    const other = plain();
+    let otherNight = Infinity;
+    for (let h = other ? Math.ceil(other.to * 4) / 4 : Infinity; other && h <= Math.min(other.from, maximum) + 1e-9; h += 0.25) {
+      try {
+        const s = buildSchedule(new Date(+input.bake - h * 3600000), input.bake, input.blocks, input.kitchenTemp, input.preheatMin, input.mixerType,
+          input.styleKey, input.numItems, input.mixingBatches, false, 1, other.shape ?? input.exitLeadMin, input.planLadder);
+        if (s.preparationInvalid || (s.availabilityConflicts ?? []).some(c => !c.block.label?.endsWith(' night'))) continue;
+        otherNight = Math.min(otherNight, nightOf(s, h));
+      } catch { /* not buildable at this window */ }
+    }
+    if (otherNight < soft.night) return other;
+    chosen = soft;
   }
-  // A bake saved under way before these rules (no `roomPlans`) keeps the 5 % it was timed with.
-  if (!best || best.gap > (roomPlans ? 0.1 : 0.05) * target + 1e-9) return plain();
-  const shape = { rtScale: best.rtScale };
-  const band = fermentationWindowForYeast(modelIdyPct, { ...input, exitLeadMin: shape, nearH: h0, budget: undefined });
-  const from = band ? Math.max(band.from, h0) : h0, to = band ? Math.min(band.to, h0) : h0;
-  return { center: h0, from: Math.min(from, maximum), to, shape };
+  if (!chosen) return plain();
+  return bandAround(chosen.shape);
 }
 
 /** The "bake straight from the fridge" variant of a plan whose final fridge exit
