@@ -122,10 +122,11 @@ test('item 8: a preferment amount fits when its readiness band meets the window 
   if (exact < 6) { assert.ok(t, String(exact)); assert.equal(t.hours, 6); }
   // Far outside the band: still refused.
   assert.equal(P.prefermentYeastTiming('poolish', 2, false, ctx), null);
-  // Cool-spot biga: the suggestion ripens in the window (the held band accepts entries, it is not offered).
-  assert.match(page, /const ripensInWindow=\(p:number\)=>/);
-  // The calculated amount is never offered twice; the placeholder waits for the replan; the cleared line ends with a new plan.
-  assert.match(page, /const suggested=check\.reason!=='time'&&check\.suggestedShownPct!==null&&calcShown!==null&&Math\.abs\(check\.suggestedShownPct-calcShown\)<0\.005\?null:check\.suggestedShownPct;/);
+  // Round 13 (item 6): a cool-spot biga's suggestion passes the entry's own window check (round13.test.cjs); ripensInWindow is gone.
+  assert.doesNotMatch(page, /const ripensInWindow=/);
+  // The calculated amount is never offered twice (round 13, item 4: nor an amount weighing the same); the placeholder waits
+  // for the replan; the cleared line ends with a new plan.
+  assert.match(page, /const suggested=check\.reason!=='time'&&check\.suggestedShownPct!==null&&sameGrams\(check\.suggestedShownPct,calcShown,recipe\?\.flour\)\?null:check\.suggestedShownPct;/);
   assert.match(page, /planReplanPending && calculatedYeastRef\.current!==undefined \? calculatedYeastRef\.current\*conversion : shownPct/);
   assert.match(page, /useEffect\(\(\) => \{ setPrefYeastCleared\(null\); \}, \[acceptedPlan\]\);/);
 });

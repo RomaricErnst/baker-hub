@@ -2357,6 +2357,9 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   const [alternativeBake,setAlternativeBake]=useState<Date|null>(null);
   const [noLaterBake,setNoLaterBake]=useState(false);
   const acceptedBakeRef=useRef<number|null>(null);
+  // A bake time the baker moved to in this editor (round 13, item 1): its plan is new, so the "historical preparation"
+  // guard of replanCurrentSchedule does not hold it at the seed (now), which read "too long" / "in the past".
+  const movedBakeRef=useRef<number|null>(null);
   function beginRowEdit(id:string,at:number) {
     setEditBaseTimes(null);
     const d=new Date(at);
@@ -2468,6 +2471,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       const defaults=STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
       const preferredHours=(defaults.preferredColdH ?? defaults.coldH ?? 0)+(climateRtH(defaults.rtH,kitchenTemp,isSourdough)+starterBulkDeltaH);
       seedStart=new Date(Math.max(Date.now(),+d-preferredHours*3600000));
+      movedBakeRef.current=+d;
       if(isSourdough && ratioMode==='recommend' && nextFeedRatioOverride===null) {
         setNextFeedRatio(lastFeedRatio);
         onNextFeedRatioChange?.(lastFeedRatio);
@@ -7453,7 +7457,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   }
   function replanCurrentSchedule(candidateBlocks:AvailabilityBlock[],overrides:TimingOverrides,resetRecommendation=false,removingOnly=false) {
     // Historical preparation is immutable; changing availability cannot restart it.
-    const pastPreparation=startTimeInPast||(recipeGenerated&&!execution&&!replanRequested&&(+pendingStart<=Date.now()||(!isSourdough&&hasPrefActive&&+pendingStart-prefOffsetH*3600000<Date.now())));
+    const pastPreparation=startTimeInPast||(recipeGenerated&&!execution&&!replanRequested&&movedBakeRef.current!==+pendingEatTime&&(+pendingStart<=Date.now()||(!isSourdough&&hasPrefActive&&+pendingStart-prefOffsetH*3600000<Date.now())));
     if(!eatTimeSet||pastPreparation){onChange(pendingStart,pendingEatTime,candidateBlocks,{preservePlan:true,timingOverrides:overrides});return;}
     resumeFrozenRef.current=false;
     acceptedBakeRef.current=+pendingEatTime;
@@ -7849,6 +7853,10 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   // A pinned mix with no starter plan at it (round 7, Task 2): the editor stays, at the pin, with its ways on.
   const starterPlanCoherent=!previewStarter?.windowTooShort&&!!timelineStarterEvents.length&&starterHandsOnActions(timelineStarterEvents,Date.now()).every(action=>+action.at<=+pendingStart);
   const pinWithoutPlan=isSourdough&&completedMixAt===undefined&&!execution&&manualTimes.mix!=null&&+pendingStart===manualTimes.mix&&!starterPlanCoherent;
+  // A bake time the baker just moved to that has no plan (round 13, item 1): the bakes that fit, offered above, are the
+  // answer; no plan is drawn for it (the seed start read "too long", a preferment "0 min … in the past").
+  const chipsAlone=eatTimeSet&&!currentCandidateValid&&mode!=='simple'&&!inputsOnly&&movedBakeRef.current===+pendingEatTime
+    &&!execution&&completedMixAt===undefined&&(searchingTargets||suggestedTargets.length>0);
   const coherentTimes=+pendingStart<+pendingEatTime&&(!committedSchedule||(+committedSchedule.divideBallTime<=+pendingEatTime&&
     (committedSchedule.availabilityActions??[]).every(action=>+action.at<=+pendingEatTime)))&&(!isSourdough||pinWithoutPlan||
     (completedMixAt!==undefined||!previewStarter?.windowTooShort&&!!timelineStarterEvents.length&&starterHandsOnActions(timelineStarterEvents,Date.now()).every(action=>+action.at<=+pendingStart)));
@@ -8598,7 +8606,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
         {afterBakeInput&&<div style={{marginTop:16}}>{afterBakeInput}</div>}
         {inputsOnly&&eatTimeSet&&!bakeInPast&&simpleRefreshNote}
         {/* A chosen yeast amount too slow for the time left: say why, and offer the way out. */}
-        {!inputsOnly&&eatTimeSet&&!bakeInPast&&yeastTooSlow&&yeastTiming&&<div className="bh-plan-notice" data-yeast-too-slow role="status" style={{margin:'8px 0 12px'}}>
+        {!inputsOnly&&eatTimeSet&&!bakeInPast&&yeastTooSlow&&yeastTiming&&!chipsAlone&&<div className="bh-plan-notice" data-yeast-too-slow role="status" style={{margin:'8px 0 12px'}}>
           <p style={{margin:'0 0 10px',fontSize:15,lineHeight:1.5}}>{isFr
             ?`${String(enteredYeastShownPct??yeastPctOverride).replace('.',',')} % de levure demande environ ${formatDuration(Math.round(yeastTiming.center*4)/4,'fr')} : enfournez plus tard ou mettez plus de levure.`
             :`${enteredYeastShownPct??yeastPctOverride}% yeast needs about ${formatDuration(Math.round(yeastTiming.center*4)/4,'en')}: bake later or use more yeast.`}</p>
@@ -9087,7 +9095,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
 
       {/* Both modes use the full action list, including starter and preferment actions. */}
       <div>
-      {startComputed && coherentTimes && (() => {
+      {startComputed && coherentTimes && !chipsAlone && (() => {
         const isLevainType = prefermentType === 'levain' || isSourdough;
         const cardPrefColor = isLevainType ? '#4A7FA5' : '#C4A030';
         // The pref/mix ZONE-TIER computation (green/gold/red bands and their

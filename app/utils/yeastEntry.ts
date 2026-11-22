@@ -170,18 +170,24 @@ export function entryPlan(idyPct: number | undefined, o: YeastEntryInput): Entry
   const blocks = o.blocks.map(b => isNightBlock(b) && b.coveredActions ? uncovered([b])[0] : b);
   const input = { ...o, blocks };
   const strict = entryPlanSearch(idyPct, input);
-  // D2 (round 11): the knead stays near the calculated plan's when a plan exists there; a night-free plan that
-  // moves it further than an hour (B3's 0.1 %: 20:30 → 7:00) gives way to the plan there, its night steps named.
   const anchorMs = idyPct !== undefined && o.anchorH !== undefined ? +o.bake - o.anchorH * HOUR : null;
-  const near = (p: { times: EditTimes } | null) => !!p && (anchorMs === null || Math.abs(+p.times.start - anchorMs) <= HOUR);
-  if (strict && (near(strict) || !o.nightAllowed)) return { ...strict, blocks, nightSteps: [] };
+  const distance = (p: { times: EditTimes }) => anchorMs === null ? 0 : Math.abs(+p.times.start - anchorMs);
+  if (strict && (!o.nightAllowed || distance(strict) <= HOUR)) return { ...strict, blocks, nightSteps: [] };
   if (!o.nightAllowed) return null;
-  const atAnchor = anchorMs !== null ? entryPlanSearch(idyPct, input, undefined, { softNights: true, mix: new Date(Math.round(anchorMs / QUARTER) * QUARTER) }) : null;
-  const soft = atAnchor ?? entryPlanSearch(idyPct, input, undefined, { softNights: true });
-  if (strict && !near(soft)) return { ...strict, blocks, nightSteps: [] };
-  if (!soft) return null;
+  // Round 13 (owner): among the plans for the amount — the night-free one, the one at the calculated knead and the
+  // search's own with night steps — the fewest new night hands-on steps, then the knead nearest the calculated one
+  // (B3's 0.14 % at lunch: Thu 8:00pm with the fridge, not 1:45am with four folds).
+  const nightStepsOf = (p: { times: EditTimes; shape?: PlanShape; inFridge?: boolean }) =>
+    newNightHandsOn(entryPlanActions(p, input), blocks).filter(a => !o.nightAllowed!.includes(a.id) && +a.at > o.now);
+  const candidates = [strict,
+    anchorMs !== null ? entryPlanSearch(idyPct, input, undefined, { softNights: true, mix: new Date(Math.round(anchorMs / QUARTER) * QUARTER) }) : null,
+    entryPlanSearch(idyPct, input, undefined, { softNights: true })]
+    .filter((p): p is NonNullable<typeof p> => !!p).map(p => ({ p, night: p === strict ? [] : nightStepsOf(p) }));
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => a.night.length - b.night.length || distance(a.p) - distance(b.p));
+  const { p: soft, night: nightSteps } = candidates[0];
+  if (soft === strict) return { ...strict, blocks, nightSteps: [] };
   const actions = entryPlanActions(soft, input);
-  const nightSteps = newNightHandsOn(actions, blocks).filter(a => !o.nightAllowed!.includes(a.id) && +a.at > o.now);
   const covered = blocks.map(b => {
     if (!isNightBlock(b)) return b;
     const hits = findAvailabilityConflicts(actions, [b]).map(c => c.action);
@@ -242,6 +248,10 @@ export function checkYeastEntry(idyPct: number, o: YeastEntryInput): YeastEntryC
   const plans = (idy: number) => { if (!memo.has(idy)) memo.set(idy, fitsTime(idy) && (entryPlanSearch(idy, o, undefined, loose) !== null || noWorse(idy))); return memo.get(idy)!; };
   const enteredShown = Math.round(idyPct * o.conversion * 1000) / 1000;
   const calcShown = o.calculatedIdyPct !== undefined ? Math.round(o.calculatedIdyPct * o.conversion * 1000) / 1000 : undefined;
+  // Round 13 (item 7): a suggestion is an amount whose own plan has no new night step when one exists (0.03 % was told
+  // "0.05 % fits" and 0.05 % needed a night fold); else the nearest that plans, whose night steps Fine-tune names.
+  const nightFree = (idy: number) => plans(idy) && (!o.nightAllowed || entryPlanFound(idy, o) || noWorse(idy));
+  const nearest = (from: number, to: number) => nearestFittingShownPct(from, to, s => nightFree(toIdy(s))) ?? nearestFittingShownPct(from, to, s => plans(toIdy(s)));
   const result = (fits: boolean, reason: YeastEntryReason | null, neededH: number | null, suggested: number | null): YeastEntryCheck =>
     ({ fits, reason, neededH, availableH, suggestedShownPct: suggested, minimumShownPct: suggested !== null && suggested > enteredShown ? suggested : null });
   if (!fitsTime(idyPct)) {
@@ -253,7 +263,7 @@ export function checkYeastEntry(idyPct: number, o: YeastEntryInput): YeastEntryC
     const neededH = centers.length ? Math.min(...centers) : null;
     // A slow amount: towards the calculated one when it plans, else up to the field's maximum.
     const maxShown = Math.round(MAX_ENTERED_IDY_PCT * o.conversion * 100) / 100;
-    let suggested = calcShown !== undefined && calcShown > enteredShown ? nearestFittingShownPct(enteredShown, calcShown, s => plans(toIdy(s))) : null;
+    let suggested = calcShown !== undefined && calcShown > enteredShown ? nearest(enteredShown, calcShown) : null;
     if (suggested === null) {
       // The smallest amount that fits the time, then up the typing steps to the first that gives a plan.
       let shown = nearestFittingShownPct(enteredShown, maxShown, s => fitsTime(toIdy(s)));
@@ -273,7 +283,7 @@ export function checkYeastEntry(idyPct: number, o: YeastEntryInput): YeastEntryC
   const reason: YeastEntryReason = o.blocks.length > 0 && entryPlanSearch(idyPct, o, undefined, { ...loose, ignoreBlocks: true })
     ? 'busy'
     : centerH !== null && centerH <= 2 + o.preheatMin / 60 + 0.25 ? 'fast' : 'plan';
-  const suggested = calcShown === undefined || Math.abs(calcShown - enteredShown) < 0.0005 ? null : nearestFittingShownPct(enteredShown, calcShown, s => plans(toIdy(s)));
+  const suggested = calcShown === undefined || Math.abs(calcShown - enteredShown) < 0.0005 ? null : nearest(enteredShown, calcShown);
   return result(false, reason, null, suggested);
 }
 

@@ -105,7 +105,8 @@ test('the final dough of a poolish takes an entered amount and the mix moves wit
  // Round 11 (D2): up to the readiness band the fridge absorbs an amount at the calculated knead; four times the yeast cannot be absorbed.
  await final.fill(String(Math.round(auto*4*1000)/1000));await final.blur();
  await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBeGreaterThan(0);
- await expect(fineTune.getByText('The final dough follows its amount: less yeast, longer rise.',{exact:false})).toBeVisible();
+ // Round 13 (item 7): four times the yeast is more, so no "less yeast, longer rise".
+ await expect(fineTune.getByText('The final dough follows its amount.',{exact:true})).toBeVisible();
  await fineTune.locator('[data-bh-forward]').tap();
  // Four times the yeast: a shorter dough, so a later mix for the same bake.
  await expect.poll(async()=>(await stored(page)).startTime-before,{timeout:20000}).toBeGreaterThan(2*3600000);

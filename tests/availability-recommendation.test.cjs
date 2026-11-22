@@ -18,7 +18,7 @@ function harness(overrides={}){
   pendingStart:original,pendingEatTime:bake,prefOffsetH:8,_optimalMix:(+bake-original)/H,
   prefermentType:'poolish',poolishStorage:'auto',poolishPeakAtMix:undefined,kitchenTemp:22,prefGoesInFridge:false,styleKey:'neapolitan',fridgeTemp:5,
   manualTimesRef:{current:overrides},solverNotifyBudgetRef:{current:{}},ratioApplyHistoryRef:{current:[]},
-  draftOverridesRef:{current:{}},solverBlocksRef:{current:[]},resumeFrozenRef:{current:false},acceptedBakeRef:{current:0},
+  draftOverridesRef:{current:{}},solverBlocksRef:{current:[]},resumeFrozenRef:{current:false},acceptedBakeRef:{current:0},movedBakeRef:{current:null},
   findFixedBakeSchedule,recommendPreferment,getPrefOptH:()=>8,
   // Round 7: the preferment window seeds through prefTargetH (the planner's optimum without a baker yeast) and prefYeastModes (null without one).
   prefTargetH:()=>8,prefYeastModes:()=>null,prefYeastTimingFor:()=>null,prefYeastPctOverride:undefined,onChange:(start,bake,blocks,options)=>writes.push({start,bake,blocks,options})};

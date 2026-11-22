@@ -1126,6 +1126,7 @@ export default function BakeGuide({sharedOven,sharedStarterFeed,onStarterFed, on
   // it is judged by the cracks on its surface.
   const isRye         = styleKey === 'pain_seigle';
   // A short rise that goes straight into the fridge: most of the growth happens cold.
+  const briefBulk = !isSourdough && schedule.bulkFermHours < 0.25 && !schedule.availabilityActions?.some(a => a.id.startsWith('fold-'));
   const shortColdBulk = !isRye && !isSourdough && !!schedule.coldRetardStart && schedule.bulkFermHours < 2;
   const pieceWeight   = (recipe?.totalDough ?? numItems * 750) / Math.max(1, numItems);
   // Lean breads without a protocol get style-specific oven cards (real
@@ -2038,7 +2039,8 @@ Actual dough condition and equipment may differ from these estimates.`;
       </StepCard>
 
       {/* ── STEP: Bulk Fermentation ──────────────────── */}
-      <StepCard number={n()} {...sc()} icon={<IconBulk />} title={simpleMode ? (l==='fr'?'Pointage':'Let the dough rise') : t('stepTitles.bulkFerm')}
+      {/* Round 13 (item 7): a rise of a few minutes before dividing (a fast dough, B3's 0.5 %) is not its own step. */}
+      {!briefBulk && <StepCard number={n()} {...sc()} icon={<IconBulk />} title={simpleMode ? (l==='fr'?'Pointage':'Let the dough rise') : t('stepTitles.bulkFerm')}
         passive time={schedule.bulkFermStart} duration={schedule.bulkFermHours} overviewNote={schedule.availabilityActions?.filter(a=>a.id.startsWith('fold-')).slice().sort((a,b)=>+a.at-+b.at).map(a=><span key={a.id} style={{display:'block'}}>{foldActionLabel(a.id, l, schedule.mixingBatches)} · {formatPlanTime(a.at,_fmtLocale)}</span>)} accent={D.terra}>
 
         <Section icon="" title={t('sectionTitles.whatToDo')}>
@@ -2133,7 +2135,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           styleKey={styleKey} kitchenTemp={kitchenTemp} prefermentType={prefermentType} locale={locale ?? 'en'} ovenType={ovenType}
         />}
         {breadProtocol && styleKey !== 'pain_seigle' && (hydration > 70 || mixerType === 'no_knead') && <StepExtras tips={null} visuals={<StepVisual kind="fold" locale={l} />} coachTitle={t('stepTitles.bulkFerm')} coachStepId="bulk" styleKey={styleKey} kitchenTemp={kitchenTemp} locale={l} recipeContext={maestroRecipeContext} />}
-      </StepCard>
+      </StepCard>}
 
       {/* ── STEP: Cold Retard 1 ──────────────────────── */}
       {hasCold && schedule.coldRetard1Start && schedule.coldRetard1End && (

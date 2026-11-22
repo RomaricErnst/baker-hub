@@ -74,29 +74,31 @@ test('bug I: the statement and the re-timing read one path (0.1 % at 22 °C fits
 
 test('owner 22 Nov: night steps never refuse an entered amount; they are named, with the nearest amount that avoids them', () => {
   const o = b3Entry();
-  // 0.14 % keeps the 20:30 knead with a longer bulk: two folds after 22:00 the calculated plan did not have.
-  const c = Y.checkYeastEntry(0.14, o);
+  // Round 13 (item 3): 0.14 % keeps the 20:30 knead without a night step now (fewest night steps first: a fit with the
+  // calculated bulk); 0.08 % is the amount whose plan has night steps (a room plan kneaded at 5:30am).
+  assert.equal(Y.checkYeastEntry(0.14, o).nightSteps, undefined);
+  const c = Y.checkYeastEntry(0.08, o);
   assert.equal(c.fits, true, JSON.stringify(c));
   assert.equal(c.reason, null);
   assert.equal(c.nightSteps, true);
-  assert.ok(c.nightFreeShownPct > 0.14 && c.nightFreeShownPct <= 0.16, String(c.nightFreeShownPct));
-  assert.equal(Y.nightFreeShownPct(0.14, o), c.nightFreeShownPct);
+  assert.ok(c.nightFreeShownPct > 0.08 && c.nightFreeShownPct <= 0.12, String(c.nightFreeShownPct));
+  assert.equal(Y.nightFreeShownPct(0.08, o), c.nightFreeShownPct);
   // The amount is planned with its night steps; the offer is planned without any.
   // Round 11: the night rule is lifted by softNights (which also reads the baker's own nights as free, O1).
-  const night = Y.entryPlanSearch(0.14, o, undefined, { softNights: true });
+  const night = Y.entryPlanSearch(0.08, o, undefined, { softNights: true });
   assert.ok(night, 'a plan with the night steps');
-  assert.equal(Y.entryPlanSearch(0.14, o), null, 'none without');
+  assert.equal(Y.entryPlanSearch(0.08, o), null, 'none without');
   const steps = av.newNightHandsOn(utils.buildSchedule(night.times.start, b3Bake, [], 22, 45, 'hand', 'neapolitan', 4, 1, false, 1, night.shape).availabilityActions, [])
     .filter(a => !o.nightAllowed.includes(a.id));
-  assert.deepEqual(steps.map(a => a.id), ['fold-3', 'fold-4']);
-  assert.match(N.nightStepsLine(steps, false), /^This plan has folds at 1[01]:\d\dpm and 1[01]:\d\dpm\.$/);
-  assert.match(N.nightStepsLine(steps, true), /^Ce planning a des rabats à 2[23]h\d\d et 2[23]h\d\d\.$/);
+  assert.ok(steps.some(a => a.id === 'mix'), JSON.stringify(steps));
+  assert.match(N.nightStepsLine(steps, false), /^This plan has Start Dough at \d{1,2}:\d\dam/);
+  assert.match(N.nightStepsLine(steps, true), /^Ce planning a le pétrissage à \dh\d\d/);
   const plan = Y.entryPlanSearch(c.nightFreeShownPct, o);
   const s = utils.buildSchedule(plan.times.start, b3Bake, [], 22, 45, 'hand', 'neapolitan', 4, 1, false, 1, plan.shape);
   assert.deepEqual(av.newNightHandsOn(s.availabilityActions, []).map(a => a.id).filter(id => !o.nightAllowed.includes(id)), []);
   // An amount with a night-free plan says nothing; without the rule (a bake saved before it) nothing either.
   assert.equal(Y.checkYeastEntry(c.nightFreeShownPct, o).nightSteps, undefined);
-  assert.equal(Y.checkYeastEntry(0.14, b3Entry({ nightAllowed: undefined })).nightSteps, undefined);
+  assert.equal(Y.checkYeastEntry(0.08, b3Entry({ nightAllowed: undefined })).nightSteps, undefined);
   // Kept choices are remembered with the amounts.
   assert.deepEqual(Y.normalizeEntryNightKept({ yeast: 0.14 }), { yeast: 0.14 });
   assert.deepEqual(Y.normalizeEntryNightKept({ pref: { type: 'biga', pct: 0.5 } }), { pref: { type: 'biga', pct: 0.5 } });
