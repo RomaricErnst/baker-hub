@@ -161,11 +161,13 @@ for(const lang of ['en','fr']){
    const acc=page.getByRole('button',{name:fr?'Le moteur de planning':'Schedule engine',exact:true});
    await acc.scrollIntoViewIfNeeded();
    if(await acc.getAttribute('aria-expanded')!=='true')await acc.tap();
-   const text=fr?'perdent d’abord leur froid pendant 45 minutes : ils sortent environ 2 h 45 avant la cuisson à 20 °C':'first take 45 minutes to lose its chill, so they come out about 2¾ hours before the bake at 20 °C';
+   // Round 9 (M): the sentence also says the bulk-chilled dough is shaped at the take-out (out 3 h before).
+   const text=fr?'y mettent 45 minutes, ils sortent donc environ 2 h 45 avant la cuisson à 20 °C':'take 45 minutes, so they come out about 2¾ hours before the bake at 20 °C';
    const sentence=page.getByText(text,{exact:false});
    await expect(sentence.first()).toBeVisible();
    await expect(page.getByText(fr?'environ 2 heures à 20 °C, 2 h 30 à 18 °C, 3 heures à 16 °C':'about 2 hours at 20 °C, 2½ at 18 °C, 3 at 16 °C',{exact:false}).first()).toBeVisible();
    await expect(page.getByText(fr?'jusqu’à la cuisson à 20 °C, 2 h 30':'to the bake at 20 °C, 2½')).toHaveCount(0);
+   await expect(page.getByText(fr?'divisée et façonnée dès la sortie':'divided and shaped as it comes out',{exact:false}).first()).toBeVisible();
    await sentence.first().scrollIntoViewIfNeeded();
    await shot(page,`r8-about-baguette-${lang}`);
   });

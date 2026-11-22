@@ -138,9 +138,51 @@ test('About: the baguette apprêt bound and one jar for two bakes are the engine
   a.equal((+split.bakeStart-+split.finalProofStart)/H,2);a.equal((+split.bakeStart-+split.coldRetardEnd)/H,2.75);
   const bulk=utils.buildSchedule(new Date(2026,10,27,22,0),bake,[],20,45,'hand','baguette',4,1);
   a.ok(!bulk.coldRetard2Start);a.equal(bulk.restRtHours,1);a.equal((+bulk.bakeStart-+bulk.finalProofStart)/H,2);
-  a.ok(en.includes('Shaped pieces kept in the fridge first take 45 minutes to lose its chill, so they come out about 2¾ hours before the bake at 20 °C; dough chilled before shaping rests an hour out of the fridge, then is shaped.'));
-  a.ok(fr.includes('perdent d’abord leur froid pendant 45 minutes : ils sortent environ 2 h 45 avant la cuisson à 20 °C ; une pâte mise au froid avant le façonnage repose une heure à la sortie'));
+  // Round 9 (M): dough chilled before shaping is divided and shaped at the take-out (the plan's divide step),
+  // with an hour before the apprêt: out 3 h before the bake. A short window keeps the cold and shortens the apprêt (≥ 1 h).
+  a.equal(+bulk.divideBallTime,+bulk.coldRetardEnd,'shaped at the take-out');
+  a.equal((+bulk.finalProofStart-+bulk.coldRetardEnd)/H,1);a.equal((+bulk.bakeStart-+bulk.coldRetardEnd)/H,3);
+  const short=utils.buildSchedule(new Date(+bake-12*H),bake,[],20,45,'hand','baguette',2,1,false,1,undefined,'all');
+  a.ok(!short.coldRetard2Start&&short.finalProofHours>=1&&short.finalProofHours<2,`short apprêt ${short.finalProofHours}`);
+  a.equal((+short.bakeStart-+short.coldRetardEnd)/H,2.25,'Thomas, Simple: out 9:15 for 11:30');
+  a.ok(en.includes('shaped pieces kept in the fridge take 45 minutes, so they come out about 2¾ hours before the bake at 20 °C; dough chilled before shaping is divided and shaped as it comes out and has an hour before its apprêt, so it comes out about 3 hours before.'));
+  a.ok(en.includes('when the window is short it keeps its share and the apprêt shortens, never below an hour'));
+  a.ok(fr.includes('des pâtons façonnés gardés au frigo y mettent 45 minutes, ils sortent donc environ 2 h 45 avant la cuisson à 20 °C ; une pâte mise au froid avant le façonnage est divisée et façonnée dès la sortie et a une heure avant son apprêt, elle sort donc environ 3 heures avant.'));
+  a.ok(fr.includes('quand la fenêtre est courte, il garde sa part et l’apprêt raccourcit, jamais sous une heure'));
+  a.doesNotMatch(about,/rests an hour out of the fridge, then is shaped|repose une heure à la sortie, puis/);
   // Shared feed: the later mix inside the earlier feed's ready window (mixNearPeak).
   const sh=read('app/utils/sharedStarter.ts');a.match(sh,/mixNearPeak/);
   a.ok(en.includes('One jar, two bakes')&&fr.includes('Un pot, deux fournées'));
 });
+
+test('About: one fridge trip for hot kitchens and when the bake is not customized (round 8 kitchen plans)',()=>{
+  const H=3600000,bake=new Date(2026,10,28,19,0),spells=p=>utils.fridgeSpellCount(p);
+  const plan=(T,h,ladder,style='neapolitan')=>utils.buildSchedule(new Date(+bake-h*H),bake,[],T,45,'hand',style,4,1,false,1,undefined,ladder);
+  // Not customized ('all'): one trip at every temperature, shaped before the cold.
+  for(const T of [18,22,26,30])for(const h of [14,20,30]){const p=plan(T,h,'all');a.ok(spells(p)<=1,`Simple ${T} °C ${h} h`);}
+  const simple=plan(22,20,'all');a.equal(spells(simple),1);a.ok(+simple.divideBallTime<+(simple.coldRetard2Start??simple.coldRetardStart),'shaped before the cold');
+  // Customized: one trip from 28 °C, the two-stage cold below it when the window holds it.
+  for(const T of [28,30,32])for(const h of [16,20,30])a.ok(spells(plan(T,h,'hot'))<=1,`Custom ${T} °C ${h} h`);
+  a.equal(spells(plan(24,30,'hot')),2,'Custom 24 °C keeps two stages');
+  // A short hot plan that still calls for 0.1 % instant yeast stays out of the fridge.
+  a.equal(utils.HOT_ROOM_MIN_IDY_PCT,0.1);
+  const room=plan(31,6,'hot');a.equal(room.totalColdHours,0);
+  // Shaped pieces out of the fridge: 45 min, 30 min from 30 °C.
+  for(const [T,m] of [[24,45],[28,45],[30,30]]){const two=plan(T,30,'off');a.ok(two.rtWarmupStart,`${T}`);a.equal((+two.rtWarmupEnd-+two.rtWarmupStart)/60000,m,`${T} °C warm-up`);}
+  a.ok(en.includes('One trip to the fridge for a yeast dough in a kitchen at 28 °C or more, and in every kitchen when you do not customize your bake'));
+  a.ok(en.includes('at least 0.1 % instant yeast')&&en.includes('Shaped pieces take 45 minutes out of the fridge before the final proof (30 minutes from 30 °C)'));
+  a.ok(fr.includes('Un seul passage au frigo pour une pâte à la levure dans une cuisine à 28 °C ou plus, et dans toutes les cuisines quand vous ne personnalisez pas votre fournée'));
+  a.ok(fr.includes('au moins 0,1 % de levure instantanée')&&fr.includes('Les pâtons sortent du frigo 45 minutes avant l’apprêt (30 minutes dès 30 °C)'));
+  a.doesNotMatch(about,/two cold spells|deux passages au froid/);
+});
+
+test('About: the cold retard follows the flour tolerance, and a stated W moves the plan (round 9, J)',()=>{
+  // The planner aims the cold at the style's coldH × tolerance (SchedulePicker scaledDefaults); 24 h × 1.2 ≈ 29.
+  const sp=read('app/components/SchedulePicker.tsx');
+  a.match(sp,/coldH:\s+Math\.round\(defaults\.coldH \* ftm\)/);a.match(sp,/preferredColdH: Math\.round\(\(defaults\.preferredColdH \?\? defaults\.coldH\) \* ftm\)/);
+  a.equal(Math.round(24*1.2),29);a.ok(en.includes('24 hours become about 29 with a 1.2 flour')&&fr.includes('24 heures deviennent environ 29 avec une farine à 1,2'));
+  // A flour change re-times a yeast plan (the planner is unmounted on the Flour step: the page's replan flag).
+  const page=read('app/[locale]/page.tsx');
+  a.match(page,/onBlendChange=\{b => \{[\s\S]{0,400}recipeFlourStrength\(styleKey \?\? '', 'custom', b\) !== flourStrength\) setPlanReplanPending\(true\)/);
+});
+

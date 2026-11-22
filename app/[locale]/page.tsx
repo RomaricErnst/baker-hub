@@ -6063,7 +6063,13 @@ export default function Home() {
               <FlourPicker
                 onManualEntryChange={setManualFlourEntry}
                 blend={flourBlend}
-                onBlendChange={b => { setFlourChosen(true); setFlourBlend(b); }}
+                onBlendChange={b => {
+                  // A flour that holds a different length of fermentation (its tolerance) re-times a yeast plan:
+                  // the planner is unmounted on this step, so the flag carries the change (round 9, J).
+                  // A levain plan does not follow the flour (round 8): it is left as it is.
+                  if (yeastType !== 'sourdough' && recipeFlourStrength(styleKey ?? '', 'custom', b) !== flourStrength) setPlanReplanPending(true);
+                  setFlourChosen(true); setFlourBlend(b);
+                }}
                 bakeType={bakeType ?? 'pizza'}
                 mode={tab === 'custom' ? 'custom' : 'simple'}
                 styleKey={styleKey}
