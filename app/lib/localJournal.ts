@@ -341,7 +341,8 @@ export function journalDueStep(id: string, locale: string, bakeAt: number | null
  *  leading bake's, naming both bakes (`jarWith`). The bake that follows keeps a row of its own, for its next step
  *  after the shared feed (its guide's step, else its mix), so both bakes stay one tap away. Nothing with fewer than
  *  two sourdough bakes (owner's rule B: the rows are returned as they are). */
-export function mergeSharedJarRows(rows: LiveJournalBake[], now = Date.now(), locale?: string): LiveJournalBake[] {
+export function mergeSharedJarRows(rowsIn: LiveJournalBake[], now = Date.now(), locale?: string): LiveJournalBake[] {
+  let rows = rowsIn;
   const uses = new Map<string, StarterUse>();
   for (const row of rows) {
     if (row.rate) continue;
@@ -355,6 +356,28 @@ export function mergeSharedJarRows(rows: LiveJournalBake[], now = Date.now(), lo
   const jarTimes = (use: StarterUse, until: number) => (use.events ?? []).filter(e => STARTER.includes(e.kind) && +e.time <= until + 60000).map(e => +e.time);
   const joined = new Map<string, JournalEntry[]>();
   const moved = new Map<string, LiveJournalBake>();
+  // A jar step done in either bake is done in both (round 9, N: after the feed was ticked in one bake, the other's row
+  // still read "Pre-mix feed 6:30pm" until that bake was opened, since its guide had not yet re-saved its steps). A row
+  // on a jar step (at or before the shared feed) that either bake recorded (a feed record, or a ticked guide step at
+  // that time) moves to that bake's next step not done in either, else its mix.
+  const doneJarTimes = (use: StarterUse, until: number) => [
+    ...(use.records ?? []).flatMap(record => [record.plannedAt, record.actualAt]),
+    ...((locale ? guidePlanSnapshot(use.id, locale)?.steps : undefined) ?? []).filter(step => step.done).map(step => step.at),
+  ].filter(t => Number.isFinite(t) && t <= until + 60000);
+  const doneMoves = new Map<string, LiveJournalBake>();
+  for (const use of all) {
+    const shared = sharedStarterFeedFor(use, all, now);
+    const other = shared ? uses.get(shared.otherId) : undefined;
+    const row = rows.find(r => r.entry.id === use.id);
+    if (!shared || !other || !row || row.rate || !row.label || row.at > shared.at + 60000) continue;
+    const done = [...doneJarTimes(use, shared.at), ...doneJarTimes(other, shared.at)];
+    if (!nearAny(row.at, done)) continue;
+    const next = (locale ? guidePlanSnapshot(use.id, locale)?.steps : undefined)
+      ?.filter(step => step.at > row.at + 60000 && !step.done && !(step.at <= shared.at + 60000 && nearAny(step.at, done)))
+      .sort((x, y) => x.at - y.at)[0];
+    doneMoves.set(use.id, next ? { entry: row.entry, at: next.at, label: next.title, current: false } : { entry: row.entry, at: use.mixAt, label: null, current: false });
+  }
+  if (doneMoves.size) rows = rows.map(r => doneMoves.get(r.entry.id) ?? r);
   for (const follower of all) {
     const shared = sharedStarterFeedFor(follower, all, now);
     if (!shared || shared.leads || moved.has(shared.otherId)) continue;
@@ -369,7 +392,8 @@ export function mergeSharedJarRows(rows: LiveJournalBake[], now = Date.now(), lo
     moved.set(follower.id, next ? { entry: fRow.entry, at: next.at, label: next.title, current: false } : { entry: fRow.entry, at: follower.mixAt, label: null, current: false });
     joined.set(leader.id, [...(joined.get(leader.id) ?? []), fRow.entry]);
   }
-  if (!moved.size) return rows;
-  return rows.map(r => moved.get(r.entry.id) ?? (joined.has(r.entry.id) ? { ...r, jarWith: joined.get(r.entry.id) } : r))
-    .sort((a, b) => Number(!!a.rate) - Number(!!b.rate) || a.at - b.at || (a.entry.eatTime ?? 0) - (b.entry.eatTime ?? 0));
+  if (!moved.size) return doneMoves.size ? sortRows(rows) : rows;
+  return sortRows(rows.map(r => moved.get(r.entry.id) ?? (joined.has(r.entry.id) ? { ...r, jarWith: joined.get(r.entry.id) } : r)));
 }
+const sortRows = (rows: LiveJournalBake[]) => rows.slice()
+  .sort((a, b) => Number(!!a.rate) - Number(!!b.rate) || a.at - b.at || (a.entry.eatTime ?? 0) - (b.entry.eatTime ?? 0));

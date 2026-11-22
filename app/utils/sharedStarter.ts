@@ -22,6 +22,8 @@ export interface StarterUse {
   /** When the bake was planned (its journal entry's createdAt): once the earlier feed's time has passed, the pair
    *  still shares it only when both bakes were planned before it (round 8: the share held only until the feed). */
   createdAt?: number;
+  /** The bake time (ms): two bakes of the same name are told apart by it in the feed line (round 9, S7). */
+  bakeAt?: number;
   /** The bake's starter steps (saved events) and recorded feeds, so the bake that follows shows the jar's steps
    *  and either bake's tick carries to the other (round 8, S6). Not used to decide the pair. */
   events?: readonly JarEvent[];
@@ -42,8 +44,8 @@ export interface SharedStarterFeed {
   otherId: string;
   /** What stays in the jar once both doughs have taken their levain. */
   keep: number;
-  first: { name: string; grams: number };
-  second: { name: string; grams: number };
+  first: { name: string; grams: number; bakeAt?: number };
+  second: { name: string; grams: number; bakeAt?: number };
   build: { seed: number; flour: number; water: number; total: number };
 }
 
@@ -77,14 +79,14 @@ export function sharedStarterFeedFor(own: StarterUse, others: readonly StarterUs
   return {
     at: early.feedAt, peakAt: early.peakAt, ratio, leads, otherId: other.id,
     keep: Math.max(0, total - early.need.mid - late.need.mid),
-    first: { name: early.name, grams: a.total }, second: { name: late.name, grams: b.total },
+    first: { name: early.name, grams: a.total, bakeAt: early.bakeAt }, second: { name: late.name, grams: b.total, bakeAt: late.bakeAt },
     build: { seed: a.seed + b.seed, flour: a.flour + b.flour, water: a.water + b.water, total },
   };
 }
 
 /** A saved bake's levain build (journal entry → StarterUse), or null when it has none to share: not sourdough,
  *  no saved levain need (bakes older than that field), no mix, or no planned pre-mix feed with a peak. */
-export function savedStarterUse(entry: { id: string; createdAt?: number; session: { yeastType?: unknown; levainNeed?: { mid: number; max: number }; startTime?: number | null; nextFeedRatio?: number; starterEvents?: readonly { kind: string; time: number; bellPeakTime?: number; feedingRatio?: number }[]; starterFeedRecords?: readonly JarRecord[] } },
+export function savedStarterUse(entry: { id: string; createdAt?: number; eatTime?: number | null; session: { yeastType?: unknown; levainNeed?: { mid: number; max: number }; startTime?: number | null; nextFeedRatio?: number; starterEvents?: readonly { kind: string; time: number; bellPeakTime?: number; feedingRatio?: number }[]; starterFeedRecords?: readonly JarRecord[] } },
   name: string): StarterUse | null {
   const ses = entry.session;
   if (ses.yeastType !== 'sourdough' || !ses.levainNeed || ses.startTime == null) return null;
@@ -94,7 +96,7 @@ export function savedStarterUse(entry: { id: string; createdAt?: number; session
   if (!feed) return null;
   return {
     id: entry.id, name, feedAt: feed.time, peakAt: feed.bellPeakTime!, mixAt, ratio: feed.feedingRatio ?? ses.nextFeedRatio ?? 1, need: ses.levainNeed,
-    createdAt: entry.createdAt,
+    createdAt: entry.createdAt, bakeAt: entry.eatTime ?? undefined,
     events: events.map(e => ({ ...e, time: new Date(e.time), bellPeakTime: e.bellPeakTime == null ? undefined : new Date(e.bellPeakTime) })) as JarEvent[],
     records: ses.starterFeedRecords ?? [],
   };
@@ -107,12 +109,29 @@ export function carriedJarRecords(shared: SharedStarterFeed | null, other: Start
   return other.records.filter(record => Math.min(record.plannedAt, record.actualAt) <= shared.at + 60000);
 }
 
-/** "Feed 1:2:2 for both bakes · 180 g: 90 g for the campagne, 90 g for the baguettes". */
-export function sharedFeedLine(shared: SharedStarterFeed, fr: boolean, weight: (grams: number) => string): string {
+/** "Feed 1:2:2 for both bakes · 180 g: 90 g for the campagne, 90 g for the baguettes". Two bakes of the same name
+ *  are told apart by their bake day, and time when they bake the same day (`when`, twinBakeWhen; round 9, S7):
+ *  "156 g for the pizzas (Sat 7:30pm), 156 g for the pizzas (Sat 8:30pm)". */
+export function sharedFeedLine(shared: SharedStarterFeed, fr: boolean, weight: (grams: number) => string,
+  when?: (bakeAt: number | undefined, other: number | undefined) => string): string {
   const r = shared.ratio;
+  const twins = shared.first.name === shared.second.name && !!when;
+  const label = (own: SharedStarterFeed['first'], other: SharedStarterFeed['first']) => {
+    const at = twins ? when!(own.bakeAt, other.bakeAt) : '';
+    return at ? `${own.name} (${at})` : own.name;
+  };
+  const a = label(shared.first, shared.second), b = label(shared.second, shared.first);
   return fr
-    ? `Rafraîchir 1:${r}:${r} pour les deux fournées · ${weight(shared.build.total)} : ${weight(shared.first.grams)} pour ${shared.first.name}, ${weight(shared.second.grams)} pour ${shared.second.name}`
-    : `Feed 1:${r}:${r} for both bakes · ${weight(shared.build.total)}: ${weight(shared.first.grams)} for ${shared.first.name}, ${weight(shared.second.grams)} for ${shared.second.name}`;
+    ? `Rafraîchir 1:${r}:${r} pour les deux fournées · ${weight(shared.build.total)} : ${weight(shared.first.grams)} pour ${a}, ${weight(shared.second.grams)} pour ${b}`
+    : `Feed 1:${r}:${r} for both bakes · ${weight(shared.build.total)}: ${weight(shared.first.grams)} for ${a}, ${weight(shared.second.grams)} for ${b}`;
+}
+
+/** A starter step the baker never gave: a past fridge spell drawn from an ESTIMATED or assumed last feed (Simple's
+ *  "In the fridge" assumes a week; Custom's age chips "2–3 days ago" … "A week+"). It stays in the plan's events (the
+ *  solver's history) but is never shown as a dated fact ("Refrigerate · Wed 18 Nov · 8:00am · Already done", round 9,
+ *  N): not in the Recipe's starter card, the planner's rows, or the jar steps a following bake shows. */
+export function inventedStarterHistory(event: { kind: string; historicalStorage?: boolean; timeIsEstimate?: unknown; assumed?: unknown }): boolean {
+  return event.kind !== 'last_fed' && !!event.historicalStorage && (!!event.timeIsEstimate || !!event.assumed);
 }
 
 type TimedEvent = { kind: string; time: Date; isPast?: boolean; historicalStorage?: boolean; bellPeakTime?: Date };
@@ -130,7 +149,7 @@ export function starterEventsWithSharedFeed<E extends TimedEvent>(events: E[], s
   if (!own) return events;
   const sharedFeed = { ...own, time: new Date(shared.at), bellPeakTime: new Date(shared.peakAt) };
   if (jar?.length) {
-    const jarSteps = jar.filter(e => +e.time < shared.at && e.kind !== 'known_peak')
+    const jarSteps = jar.filter(e => +e.time < shared.at && e.kind !== 'known_peak' && !inventedStarterHistory(e))
       .map(e => ({ ...e, jar: true }) as unknown as E);
     return [...jarSteps, sharedFeed, ...events.filter(e => +e.time > +own.time && e.kind !== 'pre_mix')]
       .sort((a, b) => +a.time - +b.time);

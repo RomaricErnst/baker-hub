@@ -101,6 +101,7 @@ import { restoredLevainLegacy, type LevainLegacy } from '../utils/levainLegacy';
 import { DEFAULT_WASTE_PCT, effectiveWastePct, restoredWastePct } from '../utils/doughAllowance';
 import { getBreadProtocol } from '../utils/breadProfiles';
 import { breadNoun, bakeSubject } from '../utils/breadNames';
+import { twinBakeWhen, jarRowName } from '../utils/twinBakes';
 import { buildItems } from '@/app/components/Timeline';
 import UnitInput from '@/app/components/UnitInput';
 import { yeastRowLabel, autoPctPlaceholder, roundShownPct } from '../utils/yeastRow';
@@ -2389,14 +2390,14 @@ export default function Home() {
     const name=subject?subject.text.charAt(0).toLowerCase()+subject.text.slice(1):bakeName||jarStyleName(styleKey);
     const ownId=journalId??currentJournalId()??'current';
     const createdAt=(()=>{try{return getJournalEntry(ownId)?.createdAt;}catch{return undefined;}})();
-    const shared=sharedStarterFeedFor({id:ownId,name,feedAt:+feed.time,peakAt:+feed.bellPeakTime!,mixAt:+startTime,ratio:feed.feedingRatio??nextFeedRatio,need,createdAt},others,Date.now());
+    const shared=sharedStarterFeedFor({id:ownId,name,feedAt:+feed.time,peakAt:+feed.bellPeakTime!,mixAt:+startTime,ratio:feed.feedingRatio??nextFeedRatio,need,createdAt,bakeAt:+eatTime},others,Date.now());
     return shared?{shared,other:others.find(o=>o.id===shared.otherId)}:null;
   })();
   const sharedStarter = sharedStarterPair?.shared ?? null;
   const guideStarterEvents = starterEventsWithSharedFeed(starterEvents, sharedStarter, Date.now(), sharedStarterPair?.other?.events as StarterEvent[]|undefined);
   // The other bake's recorded feeds of the jar's steps count here too (a tick in one bake is done in the other).
   const jarRecords = carriedJarRecords(sharedStarter, sharedStarterPair?.other) as StarterFeedRecord[];
-  const sharedFeedNote = sharedStarter ? {at:sharedStarter.at,line:sharedFeedLine(sharedStarter,locale==='fr',g=>displayWeight(g,units,locale)),seed:sharedStarter.build.seed,flour:sharedStarter.build.flour,water:sharedStarter.build.water,ratio:sharedStarter.ratio,keep:sharedStarter.keep} : null;
+  const sharedFeedNote = sharedStarter ? {at:sharedStarter.at,line:sharedFeedLine(sharedStarter,locale==='fr',g=>displayWeight(g,units,locale),(own,other)=>twinBakeWhen(own,[other],locale)),seed:sharedStarter.build.seed,flour:sharedStarter.build.flour,water:sharedStarter.build.water,ratio:sharedStarter.ratio,keep:sharedStarter.keep} : null;
   // Flour is authoritative in this mode. Keep equipment and portion displays
   // aligned with the canonical formula, including enriched ingredients/yeast.
   const flourModeRecipe = tab==='custom' ? advancedRecipe : recipe;
@@ -5229,11 +5230,14 @@ export default function Home() {
           {liveBakes.map((row, index) => {
             // One name per bake: the Recipe's title ("Pizza night", "Baguettes"), as the rating sheet (20 Nov 2026 round 6).
             const nameOf = (entry: JournalEntry) => journalTitle(entry, locale);
-            // A row for the shared jar names both bakes (round 8, S6).
-            const name = [row.entry, ...(row.jarWith ?? [])].map(nameOf).join(fr ? ' et ' : ' & ');
-            // Two bakes of the same name: the bake day tells them apart ("Sam. · Baguette · …", 18 Nov 2026 retention round 4).
-            const twin = liveBakes.some(other => other !== row && nameOf(other.entry) === name) && row.entry.eatTime != null;
-            const day = twin ? new Date(row.entry.eatTime!).toLocaleDateString(fr ? 'fr-FR' : 'en-GB', { weekday: 'short' }) : '';
+            // A row for the shared jar names both bakes (round 8, S6); two of the same name read once, "· both bakes" (round 9, N).
+            const jarEntries = [row.entry, ...(row.jarWith ?? [])];
+            const name = jarRowName(jarEntries.map(nameOf), locale);
+            // Two bakes of the same name: the bake day tells them apart ("Sam. · Baguette · …", 18 Nov 2026 retention round 4),
+            // and the bake time too when they bake the same day ("Sat 8:30pm · Pizza night · …", round 9, S7). Every
+            // bake on home counts, those named inside a jar row included.
+            const homeEntries = liveBakes.flatMap(other => [other.entry, ...(other.jarWith ?? [])]);
+            const day = jarEntries.length > 1 ? '' : twinBakeWhen(row.entry.eatTime, homeEntries.filter(other => other.id !== row.entry.id && nameOf(other) === nameOf(row.entry)).map(other => other.eatTime), locale);
             const at = new Date(roundToQuarter(new Date(row.at)));
             // The step's own time beside its name (18 Nov 2026 retention round 3).
             const when = row.rate ? '' : !row.label || +at - Date.now() > 6 * 86400000 ? formatTime(at, locale) : at.toDateString() === new Date().toDateString() ? formatClock(at, locale) : `${at.toLocaleDateString(fr ? 'fr-FR' : 'en-GB', { weekday: 'short' })} ${formatClock(at, locale)}`;

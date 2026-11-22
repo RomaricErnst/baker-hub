@@ -185,6 +185,9 @@ function Bullets({ items }: { items: (string | React.ReactNode)[] }) {
 // Context (not a module flag) because Simple and Custom layouts can both
 // keep a BakeGuide mounted at once with different modes.
 const SimpleModeCtx = createContext(false);
+/** A first line every step list of a section starts with (round 9 nit: the shaping step after a fridge spell
+ *  says to take the dough out first, whichever list the style shows). */
+const StepsLeadCtx = createContext<{ bold: string; note: string } | null>(null);
 // The baker's unit system, so every weight a step or tip writes in grams reads
 // in ounces for imperial bakers (weights under 6 g stay in grams).
 const UnitsCtx = createContext<UnitSystem>('metric');
@@ -218,7 +221,8 @@ function Steps({ items }: { items: { bold: string; note: string }[] }) {
   const simple = useContext(SimpleModeCtx);
   const weightText = useWeightText();
   const fr = useLocale() === 'fr';
-  items = items.filter(it => it.bold !== '').map(it => ({ bold: weightText(it.bold), note: weightText(it.note) }));
+  const lead = useContext(StepsLeadCtx);
+  items = (lead ? [lead, ...items] : items).filter(it => it.bold !== '').map(it => ({ bold: weightText(it.bold), note: weightText(it.note) }));
   if (simple) {
     items = items.map(it => ({
       bold: easyBold(it.bold),
@@ -1177,6 +1181,15 @@ export default function BakeGuide({sharedOven,sharedStarterFeed,onStarterFed, on
   // shaped loaf out of the fridge · Preheat the oven"; Preparation names it the same (18 Nov 2026 retention).
   const shapedOutAtPreheat = isBread && isTwoPhase && !bakesFromFridge && !!schedule.coldRetard2End && !!schedule.preheatStart && +schedule.coldRetard2End >= +schedule.preheatStart - 60000;
   const hasCold       = (schedule.coldRetardHours ?? 0) > 0;
+  // Shaping after a fridge spell (the bulk chilled before shaping): the shaping step starts with the take-out, as the
+  // plan's line does ("Take the dough out of the fridge · Divide and shape"; round 9 nit, Maya). At the exit itself
+  // one line; when shaping waits after it (busy time), the exit's time.
+  const bulkExit = hasCold && schedule.coldRetard1Start && schedule.coldRetard1End && schedule.divideBallTime
+    && +schedule.coldRetard1End <= +schedule.divideBallTime + 60000 ? schedule.coldRetard1End : null;
+  const shapeAfterFridgeLead = !bulkExit ? null
+    : +schedule.divideBallTime - +bulkExit <= 5 * 60000
+      ? { bold: l === 'fr' ? 'Sortez la pâte du réfrigérateur.' : 'Take the dough out of the fridge.', note: '' }
+      : { bold: l === 'fr' ? `Sortez la pâte du réfrigérateur à ${formatPlanClock(bulkExit, _fmtLocale)} et gardez-la couverte jusqu’au façonnage.` : `Take the dough out of the fridge at ${formatPlanClock(bulkExit, _fmtLocale)} and keep it covered until shaping.`, note: '' };
   // Another live bake still in the same oven when this one's preheat would start (20 Nov 2026 round 6, Thomas).
   const ovenBack = sharedOven && breadProtocol?.cooking !== 'griddle' && +sharedOven.at <= +schedule.bakeStart && (!schedule.preheatStart || +sharedOven.at > +schedule.preheatStart) ? sharedOven : null;
   // Pan / Detroit and Roman teglia bake in their pan: own shaping, preheat and
@@ -2173,6 +2186,7 @@ Actual dough condition and equipment may differ from these estimates.`;
           title={panGuide ? panGuide.title[l] : styleKey === 'greek_pita' ? (l === 'fr' ? 'Diviser et bouler' : 'Divide and round') : isBread ? (numItems===1 ? (l==='fr'?`Façonner ${breadNoun}`:(styleKey === 'brioche' ? 'Shape the brioche' : 'Shape the loaf')) : t('stepTitles.divideShape')) : t('stepTitles.divideBall')}
           time={schedule.divideBallTime} duration={divideMin / 60} accent="#8A6A4A">
 
+          <StepsLeadCtx.Provider value={shapeAfterFridgeLead}>
           <Section icon="" title={t('sectionTitles.whatToDo')}>
             {breadProtocol ? <Steps items={profileSteps(numItems===1 && breadProtocol.singleShape ? [breadProtocol.singleShape[l]] : breadProtocol.shaping[l])} /> : isBread ? (
               <Steps items={isFougasse ? [
@@ -2211,6 +2225,7 @@ Actual dough condition and equipment may differ from these estimates.`;
               </>
             )}
           </Section>
+          </StepsLeadCtx.Provider>
 
           {!breadProtocol && <StepExtras
             tips={<>
