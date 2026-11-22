@@ -1,6 +1,6 @@
-import { enteredYeastTiming, fermentationWindowForYeast, type AvailabilityBlock, type EnteredYeastTiming, type PlanLadder, type PlanShape } from '../utils';
+import { enteredYeastTiming, fermentationWindowForYeast, roomPlanAllowed, ROOM_PLAN, ROOM_PLAN_MAX_H, type AvailabilityBlock, type EnteredYeastTiming, type PlanLadder, type PlanShape } from '../utils';
 import type { MixerType } from '../data';
-import { findFixedBakeSchedule, type EditInput, type EditTimes } from './scheduleEdit';
+import { findFixedBakeSchedule, withNightRule, type EditInput, type EditTimes } from './scheduleEdit';
 
 const HOUR = 3600000, QUARTER = 15 * 60000;
 /** Largest IDY % the Fine-tune field accepts. */
@@ -37,9 +37,19 @@ export interface YeastEntryInput {
   defaultWindow?: (bake: Date) => { from: number | null; to: number | null };
   /** A poolish or biga: its storages and the planner's own validity rule (commercialPrefermentPlanValid). */
   preferment?: { options: PrefermentPlanOption[]; valid: (times: EditTimes, inFridge: boolean) => boolean };
+  /** Round 9 (bug I): the timing also reads room-temperature plans (enteredYeastTiming roomPlans); off for a
+   * bake saved under way before it (legacyEntryTiming), which keeps its plan. */
+  roomPlans?: boolean;
+  /** Round 9 (bugs G, H): the night steps (newNightHandsOn ids) the calculated plan already has; an entered
+   * amount's plan may add no other hands-on step between 22:00 and 07:00. Undefined: no night rule (a bake
+   * saved before it). */
+  nightAllowed?: string[];
 }
 
-export type YeastEntryReason = 'time' | 'busy';
+/** Why an amount gives no plan: 'time' it needs longer than the time left; 'busy' every plan runs into the busy
+ * times; 'night' every plan puts a new step between 22:00 and 07:00; 'fast' it rises faster than the dough's
+ * steps take; 'plan' no plan fits before the bake (a preferment would have to start before now). */
+export type YeastEntryReason = 'time' | 'busy' | 'night' | 'fast' | 'plan';
 export interface YeastEntryCheck {
   fits: boolean;
   /** Why it does not fit: 'time' (it needs longer than the time left), 'busy' (no plan clear of the busy times). */
@@ -74,13 +84,16 @@ const earliestOf = (now: number) => (Math.floor(now / QUARTER) + 1) * QUARTER;
 /** The timing the plan uses for an entered dough yeast (IDY %): `enteredYeastTiming` near the calculated
  * plan's window, within `maxH` when given. Its shape is what every schedule of that plan is built with. */
 export function entryTiming(idyPct: number, o: YeastEntryInput, maxH?: number): EnteredYeastTiming | null {
-  return enteredYeastTiming(idyPct, { ...timingInput(o), anchorH: o.anchorH, ...(maxH !== undefined ? { maxH } : {}) });
+  return enteredYeastTiming(idyPct, { ...timingInput(o), anchorH: o.anchorH, roomPlans: o.roomPlans, ...(maxH !== undefined ? { maxH } : {}) });
 }
 
-/** The plan shape for an entered amount (buildSchedule's last argument); Bake again's lead without one. */
+/** The plan shape for an entered amount (buildSchedule's last argument); Bake again's lead without one. Read
+ * as the picker reads it: within the time left first (round 9), else the amount's own window. */
 export function entryPlanShape(idyPct: number | undefined, o: YeastEntryInput): PlanShape | undefined {
   if (idyPct === undefined || !(idyPct > 0)) return o.exitLeadMin;
-  return entryTiming(idyPct, o)?.shape ?? o.exitLeadMin;
+  const left = Math.max(0, (+o.bake - o.now) / HOUR);
+  const timing = (o.now > 0 ? entryTiming(idyPct, o, left) : null) ?? entryTiming(idyPct, o);
+  return timing?.shape ?? o.exitLeadMin;
 }
 
 /** Whether the planner's own search (findFixedBakeSchedule, the picker's fixed-bake search) finds a plan clear of
@@ -89,8 +102,12 @@ export function entryPlanFound(idyPct: number | undefined, o: YeastEntryInput, p
   return entryPlanSearch(idyPct, o, prefOptions) !== null;
 }
 
+/** How the search is read: `ignoreBlocks` plans as if the baker had no busy time (the night is still read
+ * against them), `allowNight` lifts the night rule. Both serve only to say why an amount has no plan. */
+export interface EntrySearchMode { ignoreBlocks?: boolean; allowNight?: boolean }
+
 /** The plan the search finds (its times and shape), or null. */
-export function entryPlanSearch(idyPct: number | undefined, o: YeastEntryInput, prefOptions = o.preferment?.options): { times: EditTimes; shape?: PlanShape; inFridge?: boolean } | null {
+export function entryPlanSearch(idyPct: number | undefined, o: YeastEntryInput, prefOptions = o.preferment?.options, mode: EntrySearchMode = {}): { times: EditTimes; shape?: PlanShape; inFridge?: boolean } | null {
   const now = o.now;
   const timingAt = (bake: Date): EnteredYeastTiming | null => idyPct === undefined ? null
     : entryTiming(idyPct, { ...o, bake }, Math.max(0, (+bake - now) / HOUR));
@@ -106,13 +123,14 @@ export function entryPlanSearch(idyPct: number | undefined, o: YeastEntryInput, 
   const start = new Date(Math.round((+o.bake - seedH * HOUR) / QUARTER) * QUARTER);
   const options: (PrefermentPlanOption | null)[] = prefOptions?.length ? prefOptions : [null];
   for (const option of options) {
-    const input: EditInput = {
-      isSourdough: false, id: 'mix', at: start, start, bake: o.bake, now, blocks: o.blocks, kitchenTemp: o.kitchenTemp, preheatMin: o.preheatMin,
+    const plain: EditInput = {
+      isSourdough: false, id: 'mix', at: start, start, bake: o.bake, now, blocks: mode.ignoreBlocks ? [] : o.blocks, kitchenTemp: o.kitchenTemp, preheatMin: o.preheatMin,
       exitLeadMin: shape, planLadder: o.planLadder, mixerType: o.mixerType, styleKey: o.styleKey, numItems: o.numItems, mixingBatches: o.mixingBatches,
       prefHours: option?.prefHours ?? 0, hasPreferment: !!option, prefWindow: option?.prefWindow,
       prefWarmupHours: option?.warmupH ?? 0, prefCooldownHours: option?.cooldownH ?? 0, preferDaytime: true, supported: true, window,
       methodValid: times => !option || (o.preferment?.valid(times, option.inFridge) ?? true),
     };
+    const input = o.nightAllowed && !mode.allowNight ? withNightRule(plain, o.nightAllowed, o.blocks) : plain;
     try {
       const found = findFixedBakeSchedule(input, {});
       if (found.found) return { times: found.candidate.times, shape, inFridge: option?.inFridge };
@@ -149,16 +167,24 @@ export function checkYeastEntry(idyPct: number, o: YeastEntryInput): YeastEntryC
   const availableH = (+o.bake - earliestOf(o.now)) / HOUR;
   const toIdy = (shown: number) => Math.round(shown / o.conversion * 10000) / 10000;
   const fitsTime = (idy: number) => entryTiming(idy, o, availableH) !== null;
+  // When the calculated amount has no clear plan either, an entered one is no worse if it plans once the busy
+  // times are set aside (the night rule still holds): it is applied and the planner offers its usual ways on.
+  let calcClear: boolean | undefined;
+  const noWorse = (idy: number) => o.blocks.length > 0 && !(calcClear ??= entryPlanFound(undefined, o))
+    && entryPlanSearch(idy, o, undefined, { ignoreBlocks: true }) !== null;
   const memo = new Map<number, boolean>();
-  const plans = (idy: number) => { if (!memo.has(idy)) memo.set(idy, fitsTime(idy) && entryPlanFound(idy, o)); return memo.get(idy)!; };
+  const plans = (idy: number) => { if (!memo.has(idy)) memo.set(idy, fitsTime(idy) && (entryPlanFound(idy, o) || noWorse(idy))); return memo.get(idy)!; };
   const enteredShown = Math.round(idyPct * o.conversion * 1000) / 1000;
   const calcShown = o.calculatedIdyPct !== undefined ? Math.round(o.calculatedIdyPct * o.conversion * 1000) / 1000 : undefined;
   const result = (fits: boolean, reason: YeastEntryReason | null, neededH: number | null, suggested: number | null): YeastEntryCheck =>
     ({ fits, reason, neededH, availableH, suggestedShownPct: suggested, minimumShownPct: suggested !== null && suggested > enteredShown ? suggested : null });
   if (!fitsTime(idyPct)) {
-    // The shortest window beyond the time left where the amount works (same inversion, unshaped beyond the anchor).
-    const beyond = fermentationWindowForYeast(idyPct, { ...timingInput(o), nearH: availableH });
-    const neededH = beyond && beyond.center > availableH ? beyond.center : null;
+    // The shortest window beyond the time left where the amount works, on the engine's plans and (round 9) on
+    // the room-temperature plans the timing also reads.
+    const beyondOf = (shape?: PlanShape) => fermentationWindowForYeast(idyPct, { ...timingInput(o), ...(shape ? { exitLeadMin: shape, maxH: ROOM_PLAN_MAX_H } : {}), nearH: availableH });
+    const centers = [beyondOf(), ...(o.roomPlans && roomPlanAllowed(o.styleKey) ? [beyondOf(ROOM_PLAN)] : [])]
+      .map(w => w?.center).filter((h): h is number => h !== undefined && h > availableH);
+    const neededH = centers.length ? Math.min(...centers) : null;
     // A slow amount: towards the calculated one when it plans, else up to the field's maximum.
     const maxShown = Math.round(MAX_ENTERED_IDY_PCT * o.conversion * 100) / 100;
     let suggested = calcShown !== undefined && calcShown > enteredShown ? nearestFittingShownPct(enteredShown, calcShown, s => plans(toIdy(s))) : null;
@@ -171,12 +197,18 @@ export function checkYeastEntry(idyPct: number, o: YeastEntryInput): YeastEntryC
     }
     return result(false, 'time', neededH, suggested);
   }
-  if (entryPlanFound(idyPct, o)) return result(true, null, entryTiming(idyPct, o, availableH)?.center ?? null, null);
-  // It fits the time but every plan runs into busy time. If the calculated amount has no clear plan either, the
-  // entered one is no worse: it is applied (the planner then offers its usual ways on).
-  if (calcShown === undefined || !entryPlanFound(undefined, o)) return result(true, null, entryTiming(idyPct, o, availableH)?.center ?? null, null);
-  const suggested = Math.abs(calcShown - enteredShown) < 0.0005 ? null : nearestFittingShownPct(enteredShown, calcShown, s => plans(toIdy(s)));
-  return result(false, 'busy', null, suggested);
+  const centerH = entryTiming(idyPct, o, availableH)?.center ?? null;
+  if (plans(idyPct)) return result(true, null, centerH, null);
+  // Why, said honestly (round 9, bug D): busy times only when there are some and they are the reason.
+  // A night the baker declared (their own ' night' block) is their busy time: steps in it are 'busy', not 'night'.
+  const ownNight = o.blocks.some(block => block.label?.endsWith(' night'));
+  const reason: YeastEntryReason = o.blocks.length > 0 && (entryPlanSearch(idyPct, o, undefined, { ignoreBlocks: true })
+    || (ownNight && entryPlanSearch(idyPct, o, undefined, { ignoreBlocks: true, allowNight: true })))
+    ? 'busy'
+    : o.nightAllowed && entryPlanSearch(idyPct, o, undefined, { ignoreBlocks: true, allowNight: true }) ? 'night'
+    : centerH !== null && centerH <= 2 + o.preheatMin / 60 + 0.25 ? 'fast' : 'plan';
+  const suggested = calcShown === undefined || Math.abs(calcShown - enteredShown) < 0.0005 ? null : nearestFittingShownPct(enteredShown, calcShown, s => plans(toIdy(s)));
+  return result(false, reason, null, suggested);
 }
 
 /** Hours in the entry message: whole hours from 10 h, quarter hours below. */
@@ -209,4 +241,27 @@ export function parseDecimal(text: string): number {
 export function formatDecimal(value: number, fr: boolean): string {
   const s = String(Math.round(value * 1000) / 1000);
   return fr ? s.replace('.', ',') : s;
+}
+
+/** Round 9 rules for a baker-entered amount: the timing also reads room-temperature plans, and its plan adds
+ * no night step. Sessions saved since carry `entryRules` = ENTRY_RULES. */
+export const ENTRY_RULES = 2;
+
+/** True when a restored bake keeps the entered-amount timing it was made with (room plans and the night rule
+ * off): it was kept so already, or it was saved before them with an entered amount and is under way (its Start
+ * Dough time has come, or a mix or preferment is recorded). A saved bake is never re-timed under the baker
+ * (owner's principle, as legacyHotPlanFor). */
+export function legacyEntryTimingFor(session: { entryRules?: number; legacyEntryTiming?: boolean; recipeGenerated?: boolean; startTime?: number | null;
+  execution?: unknown; mixExecution?: unknown; yeastPctOverride?: number; prefYeastOverride?: unknown } | null | undefined, now: number): boolean {
+  if (!session) return false;
+  if (session.legacyEntryTiming === true) return true;
+  if ((session.entryRules ?? 0) >= ENTRY_RULES || !session.recipeGenerated) return false;
+  if (session.yeastPctOverride === undefined && !session.prefYeastOverride) return false;
+  const start = typeof session.startTime === 'number' && Number.isFinite(session.startTime) ? session.startTime : Infinity;
+  return start <= now || !!session.execution || !!session.mixExecution;
+}
+
+/** A saved list of night step ids (entryNightIds), else none. */
+export function normalizeEntryNightIds(value: unknown): string[] | undefined {
+  return Array.isArray(value) && value.every(id => typeof id === 'string') ? [...value] : undefined;
 }

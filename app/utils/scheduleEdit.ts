@@ -1,5 +1,5 @@
 import {assessScheduleDraft, type ScheduleDraftInput} from './scheduleDraft';
-import {findAvailabilityConflicts,isOvernightPreparation,type AvailabilityAction} from './scheduleAvailability';
+import {findAvailabilityConflicts,isOvernightPreparation,newNightHandsOn,type AvailabilityAction,type AvailabilityPeriod} from './scheduleAvailability';
 import {earliestQuarterStart} from './startNotice';
 
 const HOUR = 3600000;
@@ -91,6 +91,23 @@ export function prefermentConditioningAction(input:{prefWarmupHours:number;prefC
   const hours=input.prefWarmupHours||input.prefCooldownHours;
   if(!hours)return undefined;
   return {id:input.prefWarmupHours?'preferment-cold-out':'preferment-cold-in',at:new Date(+mix-hours*HOUR)};
+}
+/** Round 9 (bugs G, H): a candidate keeps no hands-on step between 22:00 and 07:00 that the baker did not
+ * declare free (newNightHandsOn) beyond the ones in `allowed` (the night steps the plan it replaces already
+ * had, by step id); the preferment and its fridge exit or chill count. `nightBlocks` are the baker's busy
+ * times the night is read against (the candidate's own blocks by default). */
+export function withNightRule(input:EditInput,allowed:readonly string[],nightBlocks:AvailabilityPeriod[]=input.blocks):EditInput{
+  const previous=input.formulaValid, ok=new Set(allowed);
+  return {...input,formulaValid:(schedule,times)=>{
+    if(previous&&!previous(schedule,times))return false;
+    const actions:AvailabilityAction[]=[...(schedule.availabilityActions??[])];
+    if(input.hasPreferment&&input.completedPrefermentAt===undefined){
+      actions.push({id:'preferment',at:new Date(+times.start-times.prefHours*HOUR)});
+      const conditioning=prefermentConditioningAction(input,times.start);
+      if(conditioning&&!actions.some(action=>action.id===conditioning.id))actions.push(conditioning);
+    }
+    return newNightHandsOn(actions,nightBlocks).every(action=>ok.has(action.id));
+  }};
 }
 function overnightSteps(input:EditInput, candidate:EditResult):number {
   if(!input.preferDaytime)return 0;

@@ -142,6 +142,12 @@ export interface SessionData {
   yeastPctOverride?: number;
   /** The calculated plan's mix-to-bake hours when the baker entered yeastPctOverride (round 8, D2). */
   yeastAnchorH?: number;
+  /** Round 9: the night steps (ids) the calculated plan had when the baker entered an amount; the entered plan adds no other. */
+  entryNightIds?: string[];
+  /** Round 9: the entered-amount rules the bake was made with (app/utils/yeastEntry.ts ENTRY_RULES). */
+  entryRules?: number;
+  /** Round 9: a bake under way before those rules keeps its entered-amount timing (legacyEntryTimingFor). */
+  legacyEntryTiming?: boolean;
   /** Custom poolish/biga: baker's preferment yeast, IDY % of the preferment flour; its window is timed to it (round 7). */
   prefYeastOverride?: { type: 'poolish' | 'biga'; pct: number };
   /** Custom levain: baker's starter % of flour; the bulk is timed to it. */
