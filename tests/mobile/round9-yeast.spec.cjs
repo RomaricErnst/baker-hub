@@ -64,7 +64,8 @@ for(const locale of ['en','fr']){
   const s=await stored(page);
   expect(s.startTime).toBeGreaterThan(B3_NOW);
   expect(s.eatTime).toBe(B3_BAKE);
-  const hour=new Date(s.startTime).getHours();
+  // The bake's own clock (Singapore), not the test runner's zone: a UTC runner read Fri 07:00 as 23:00 (round 11).
+  const hour=Number(new Intl.DateTimeFormat('en-GB',{hour:'numeric',hourCycle:'h23',timeZone:'Asia/Singapore'}).format(s.startTime));
   expect(hour>=7&&hour<22).toBe(true);
   // A room plan: no fridge step on the recipe's plan.
   await expect(page.locator('.bh-plan-sheet,[data-decision-sheet]').filter({visible:true})).toHaveCount(0);

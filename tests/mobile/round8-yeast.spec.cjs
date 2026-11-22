@@ -80,17 +80,15 @@ for(const locale of ['en','fr']){
   const {fineTune,errors}=await open(page,thomas(),locale);
   const yeast=fineTune.locator('[data-yeast-override] input');
   await yeast.fill(fr?'0,3':'0.3');await yeast.blur();
-  const note=fineTune.locator('[data-yeast-entry-issue]');
-  await expect(note).toHaveAttribute('data-reason','busy');
-  await expect(note.locator('p')).toHaveText(fr?/^Avec 0,3 %, chaque planning empiète sur vos moments occupés\. 0,\d+ % convient\.$/:/^With 0\.3%, every plan runs into your busy times\. 0\.\d+% fits\.$/);
-  // The amount's own answers only: no later start, no busy times to change.
-  await expect(note.getByRole('button')).toHaveText([fr?/^Utiliser 0,\d+ %$/:/^Use 0\.\d+%$/,fr?'Utiliser la quantité calculée':'Use the calculated amount']);
-  // No helper line beside the statement (S3), the typed text stays, nothing applied.
+  // Round 11 (decision O1): the steps it puts in Thomas's nights are named, never refused; the nearest amount
+  // without night steps is the offer (it was "every plan runs into your busy times. 0.25% fits.").
+  await expect(fineTune.locator('[data-yeast-entry-issue]')).toHaveCount(0);
+  const note=fineTune.locator('[data-entry-night]');
+  await expect(note.locator('p')).toHaveText(fr?/^Ce planning a /:/^This plan has /);
+  await expect(note.getByRole('button')).toHaveText([fr?/^Utiliser 0,\d+ % \(sans étape de nuit\)$/:/^Use 0\.\d+% \(no night steps\)$/,fr?'Garder 0,3 %':'Keep 0.3%']);
   await expect(fineTune.locator('[data-yeast-helper]')).toHaveCount(0);
-  await expect(yeast).toHaveValue(fr?'0,3':'0.3');
-  expect((await stored(page)).yeastPctOverride).toBeUndefined();
   await shot(page,`thomas-03-${locale}`,note);
-  const offer=note.locator('[data-use-minimum-yeast]');
+  const offer=note.locator('[data-entry-night-avoid]');
   const suggested=num(await offer.textContent());
   expect(suggested).toBeLessThan(0.3);
   await offer.tap();
@@ -148,8 +146,9 @@ for(const locale of ['en','fr']){
   const yeast=fineTune.locator('[data-yeast-override] input');
   // The bar's way on: "Update recipe" while a typed amount waits, else "Back to Recipe".
   const forward=fineTune.getByRole('button',{name:fr?/^(Mettre à jour la recette|Retour à la recette)$/:/^(Update recipe|Back to Recipe)$/});
-  // A statement, then an empty box: the statement goes and the way on is open again.
-  await yeast.fill(fr?'0,3':'0.3');await yeast.blur();
+  // A statement, then an empty box: the statement goes and the way on is open again (round 11: 0.03 %, too slow;
+  // 0.3 % is planned since decision O1, its night steps named).
+  await yeast.fill(fr?'0,03':'0.03');await yeast.blur();
   await expect(fineTune.locator('[data-yeast-entry-issue]')).toBeVisible();
   await expect(forward).toBeDisabled();
   await yeast.fill('');await yeast.blur();
