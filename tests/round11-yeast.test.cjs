@@ -47,6 +47,8 @@ test('item 1: the night line names the plan the picker applies, on the quarter-h
   assert.equal(N.nightStepsLine([{ id: 'mix', at: at(22, 0) }, { id: 'mix-finish', at: at(22, 32) }, { id: 'fold-1', at: at(0, 10) }, { id: 'fold-2', at: at(0, 40) }], false),
     'This plan has Start Dough at 10:00pm, folds at 12:15am and 12:45am.');
   assert.equal(N.nightStepsLine([{ id: 'mix', at: at(22, 2) }, { id: 'mix-finish', at: at(22, 43) }], true), 'Ce planning a le pétrissage à 22h00.');
+  // Start Dough before 22:00: its finish reads as what it is, not as Start Dough at another time.
+  assert.equal(N.nightStepsLine([{ id: 'mix-finish', at: at(22, 17) }, { id: 'fold-1', at: at(23, 0) }], false), 'This plan has resume kneading at 10:15pm, a fold at 11:00pm.');
   // The picker applies the page's plan (one builder) and the page reads its night steps for the line.
   assert.match(picker, /const shared=planEntry\(candidateBlocks,pendingEatTime\);/);
   assert.match(page, /const steps = entryPlan\(effectiveYeastOverride, o\)\?\.nightSteps \?\? \[\];/);

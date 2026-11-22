@@ -37,6 +37,8 @@ async function open(page,data,locale,now,resume={activeStep:7,advancedStep:10,se
 async function fineTune(page){
  const ft=page.locator('#step-10:visible');
  await expect(ft.locator('[data-yeast-override] input')).toBeVisible({timeout:30000});
+ // The restored bake settles before the baker types (a first change made while it restores is read as the recipe's own).
+ await page.waitForTimeout(800);
  return ft;
 }
 const shot=async(page,name,target)=>{

@@ -8,6 +8,8 @@ import { roundToQuarter } from './units';
 /** What a step is called in the line, by its plan id (the plural for repeated folds). */
 function stepNoun(id: string, fr: boolean, preferment: 'poolish' | 'biga' | null, count: number): string {
   if (/^fold-\d+/.test(id)) return fr ? (count > 1 ? 'des rabats' : 'un rabat') : (count > 1 ? 'folds' : 'a fold');
+  // The kneading's later parts (its finish, later batches) read as such when Start Dough itself is before 22:00.
+  if (/^mix-(finish|batch)/.test(id)) return fr ? 'la reprise du pétrissage' : 'resume kneading';
   if (/^(mix|autolyse)/.test(id)) return fr ? 'le pétrissage' : 'Start Dough';
   if (id === 'divide' || id === 'roll') return fr ? 'le façonnage' : 'shaping';
   if (/^cold-in/.test(id)) return fr ? 'la pâte au frigo' : 'the dough into the fridge';
@@ -36,8 +38,9 @@ export function nightStepsLine(steps: readonly AvailabilityAction[], fr: boolean
   for (const step of sorted) {
     const key = stepNoun(step.id, fr, preferment, 2);
     const group = groups.find(g => g.key === key);
-    // One knead (round 11): the kneading's later parts (resume, batches) are the same Start Dough.
-    if (group && /^(mix|autolyse)/.test(step.id)) continue;
+    // One knead (round 11): the kneading's later parts are the same Start Dough, named once.
+    const knead = /^(mix|autolyse)/.test(step.id);
+    if (knead && groups.some(g => /^(mix|autolyse)/.test(g.ids[0]))) continue;
     const at = roundToQuarter(step.at);
     if (group) { if (!group.times.some(t => +roundToQuarter(t) === +at)) { group.times.push(step.at); group.ids.push(step.id); } }
     else groups.push({ key, ids: [step.id], times: [step.at] });
