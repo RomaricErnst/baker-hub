@@ -90,6 +90,11 @@ test('a clash after an edit: one statement, one action, and Back to Recipe resto
  await expect(page.getByText('Choose one of the options above.')).toHaveCount(0);
  const back=page.locator('[data-back-to-good-plan]');
  await expect(back).toBeEnabled();
+ // Round 9 (bug G footnote): with the card open the way back is the bar's back control ("‹ Recipe"), and no
+ // forward button reads "Back to Recipe".
+ await expect(back).toHaveClass(/bh-back-action/);
+ await expect(back).toHaveAccessibleName('Back to Recipe');
+ await expect(page.locator('.bh-step-actions:visible [data-bh-forward]')).toHaveCount(0);
  await back.tap();
  // The plan's first row (a feed before the levain build) is under All steps since round 7; Bake is always shown.
  await expect(page.locator('[data-plan-bake]:visible')).toBeVisible();

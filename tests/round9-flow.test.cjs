@@ -105,3 +105,13 @@ test('S6: four pizzas in a home oven from 7:30pm leave it at 8:30pm, not 8:27pm'
  for(const src of [page,picker])assert.match(src,/ovenUseEnd\(/);
  assert.match(page,/to=ses\.ovenTo!=null\?ovenFreeAt\(ses\.ovenTo\):ovenUseEnd\(/);
 });
+
+test('G footnote: with a clash card open, "Back to Recipe" is the bar\'s back control and the forward slot is empty',()=>{
+ assert.match(page,/function StepPage\(\{ flow, id, children, nextOverride, backOverride \}/);
+ assert.match(page,/\{backOverride \?\? <button type="button" className="bh-back-action"/);
+ assert.match(page,/const backToGoodPlanBack = <button type="button" className="bh-back-action" data-back-to-good-plan onClick=\{backToLastGoodPlan\}><BackLabel text=\{backToGoodPlanLabel\}\/><\/button>;/);
+ assert.match(page,/id=\{7\} backOverride=\{simpleClashCardBar \? backToGoodPlanBack : undefined\}/);
+ assert.match(page,/id=\{9\} backOverride=\{customClashCardBar \? backToGoodPlanBack : undefined\}/);
+ assert.match(page,/recipeGenerated \? \(simpleClashCardBar \? <><\/> : backToGoodPlanButton\)/);
+ assert.match(page,/\(customClashCardBar \? <><\/> : backToGoodPlanButton\)/);
+});

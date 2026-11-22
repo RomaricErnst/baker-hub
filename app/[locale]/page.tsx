@@ -687,7 +687,7 @@ function StepActions({ children }: { children: React.ReactNode }) {
   return <BottomActions>{children}</BottomActions>;
 }
 
-function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: number; children: React.ReactNode; nextOverride?: React.ReactNode }) {
+function StepPage({ flow, id, children, nextOverride, backOverride }: { flow: StepFlow; id: number; children: React.ReactNode; nextOverride?: React.ReactNode; backOverride?: React.ReactNode }) {
   if (flow.activeId !== id) return null;
   const idx  = flow.steps.findIndex(s => s.id === id);
   const step = flow.steps[idx];
@@ -778,7 +778,7 @@ function StepPage({ flow, id, children, nextOverride }: { flow: StepFlow; id: nu
       {isLast && !flow.editReturn && nextOverride === undefined && flow.onReview && <button type="button" className="bh-back-action" onClick={flow.onReview}>{fr ? 'Revoir mes choix' : 'Review my choices'}</button>}
 
       {nextOverride !== null && <StepActions>
-        <button type="button" className="bh-back-action" onClick={()=>flow.editReturn ? flow.onReview?.() : flow.onPrev(id)}><BackLabel text={flow.editReturn ? (fr?'Retour à mes choix':'Back to my choices') : (fr?'Étape précédente':'Previous step')}/></button>
+        {backOverride ?? <button type="button" className="bh-back-action" onClick={()=>flow.editReturn ? flow.onReview?.() : flow.onPrev(id)}><BackLabel text={flow.editReturn ? (fr?'Retour à mes choix':'Back to my choices') : (fr?'Étape précédente':'Previous step')}/></button>}
         {nextOverride !== undefined ? nextOverride : flow.editReturn ? <button type="button" style={nextStyle} onClick={flow.editReturn.onReturn}>{flow.editReturn.label}</button> : next}
       </StepActions>}
     </div>
@@ -4940,7 +4940,15 @@ export default function Home() {
   const goodPlanMethod = lastGoodPlanRef.current?.prefermentType;
   const backDropsMethod = !!goodPlanMethod && goodPlanMethod !== prefermentType && (prefermentType==='biga'||prefermentType==='poolish');
   const goodMethodName = goodPlanMethod==='biga'?(fr?'à la biga':'biga'):goodPlanMethod==='poolish'?(fr?'au poolish':'poolish'):goodPlanMethod==='levain'?(fr?'au levain':'levain'):(fr?'en pâte directe':'direct-dough');
-  const backToGoodPlanButton = <button data-bh-forward data-back-to-good-plan type="button" style={{...SECONDARY_CTA,width:'100%'}} onClick={backToLastGoodPlan}>{backDropsMethod?(fr?`Retour à la recette ${goodMethodName}`:`Back to the ${goodMethodName} recipe`):(fr?'Retour à la recette':'Back to Recipe')}</button>;
+  const backToGoodPlanLabel = backDropsMethod?(fr?`Retour à la recette ${goodMethodName}`:`Back to the ${goodMethodName} recipe`):(fr?'Retour à la recette':'Back to Recipe');
+  const backToGoodPlanButton = <button data-bh-forward data-back-to-good-plan type="button" style={{...SECONDARY_CTA,width:'100%'}} onClick={backToLastGoodPlan}>{backToGoodPlanLabel}</button>;
+  // While a clash card asks its question (round 9, bug G footnote), the card holds the one forward action: the way
+  // back to the recipe as it was made is the bar's back control ("‹ Recipe"), and the forward slot stays empty, so
+  // no button reads "Back to Recipe" where the baker reads forward.
+  const backToGoodPlanBack = <button type="button" className="bh-back-action" data-back-to-good-plan onClick={backToLastGoodPlan}><BackLabel text={backToGoodPlanLabel}/></button>;
+  // The bars below reach backToGoodPlanButton only on a generated recipe whose plan clashes (the full editor).
+  const simpleClashCardBar = recipeGenerated && simpleDecisionPending && !collectingBakeTime && !(bakeTimeOnly && eatTime) && !scheduleEditing && !!eatTime && !scheduleCandidateValid;
+  const customClashCardBar = recipeGenerated && customDecisionPending && !rebakeFinishes && !(bakeTimeOnly && eatTime && (customStarterStepId === null || starterStateDescribed)) && !(customStarterStepId !== null && !starterStateDescribed) && !scheduleEditing && !customQuestionOnly && !scheduleCandidateValid;
   // ── Render ────────────────────────────────
   // One scheduler element: Custom levain shows its starter questions on the
   // Starter step and the plan on Bake time. Only one step is mounted at a time.
@@ -5704,12 +5712,12 @@ export default function Home() {
             </StepPage>
 
             {/* ─── STEP 8: Scheduler ───────────────── */}
-            <StepPage flow={simpleOrganisationFlow} id={7} nextOverride={collectingBakeTime ? <></> : bakeTimeOnly && eatTime ? (simpleDecisionPending ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('return')}>{setupReturnLabel}</button> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : scheduleEditing ? null : !eatTime ?
+            <StepPage flow={simpleOrganisationFlow} id={7} backOverride={simpleClashCardBar ? backToGoodPlanBack : undefined} nextOverride={collectingBakeTime ? <></> : bakeTimeOnly && eatTime ? (simpleDecisionPending ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('return')}>{setupReturnLabel}</button> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : scheduleEditing ? null : !eatTime ?
               <button type="button" disabled style={{...NEXT_CTA,opacity:0.5}}>{fr?'Choisissez une date de cuisson':'Choose a bake date'}</button>
               : !scheduleCandidateValid
                 // As in Custom: the normal next step waits for the plan, with the reason; it never only
                 // scrolls (17 Nov 2026 retention: "Review affected times" did nothing).
-                ? recipeGenerated ? backToGoodPlanButton : <div style={{width:'100%'}}>
+                ? recipeGenerated ? (simpleClashCardBar ? <></> : backToGoodPlanButton) : <div style={{width:'100%'}}>
                     <p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{simpleDecisionPending?(fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'):(fr?'Ajustez le planning ci-dessus pour continuer.':'Adjust the plan above to continue.')}</p>
                     <button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{simpleOrganisationFlow.generateLabel}</button>
                   </div>
@@ -6209,10 +6217,10 @@ export default function Home() {
             )}
 
             {/* ─── ADV STEP 10: Scheduler ──────────── */}
-            <StepPage flow={customOrganisationFlow} id={9} nextOverride={rebakeFinishes ? rebakeCreateButton : bakeTimeOnly && eatTime && (customStarterStepId === null || starterStateDescribed) ? (customDecisionPending ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('return')}>{setupReturnLabel}</button> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : customStarterStepId !== null && !starterStateDescribed ? <div style={{width:'100%'}}>
+            <StepPage flow={customOrganisationFlow} id={9} backOverride={customClashCardBar ? backToGoodPlanBack : undefined} nextOverride={rebakeFinishes ? rebakeCreateButton : bakeTimeOnly && eatTime && (customStarterStepId === null || starterStateDescribed) ? (customDecisionPending ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('return')}>{setupReturnLabel}</button> : !scheduleCandidateValid ? <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setBakeTimeQuestion(false)}>{fr?'Voir le planning':'See the plan'} →</button> : undefined) : customStarterStepId !== null && !starterStateDescribed ? <div style={{width:'100%'}}>
                 <p style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{fr?'Indiquez quand votre levain a été rafraîchi pour la dernière fois.':'Tell us when your starter was last fed.'}</p>
                 <button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>openSetupStep(customStarterStepId,true)}>{fr?'Votre levain →':'Your starter →'}</button>
-              </div> : scheduleEditing ? null : customQuestionOnly && customDecisionPending && customOrganisationFlow.steps.some(step=>step.id!==9&&!stepAnswered(step,customOrganisationFlow.highestStep,customOrganisationFlow.steps)) ? undefined : !scheduleCandidateValid && recipeGenerated && !customQuestionOnly ? backToGoodPlanButton : !scheduleCandidateValid ? <div style={{width:'100%'}}>
+              </div> : scheduleEditing ? null : customQuestionOnly && customDecisionPending && customOrganisationFlow.steps.some(step=>step.id!==9&&!stepAnswered(step,customOrganisationFlow.highestStep,customOrganisationFlow.steps)) ? undefined : !scheduleCandidateValid && recipeGenerated && !customQuestionOnly ? (customClashCardBar ? <></> : backToGoodPlanButton) : !scheduleCandidateValid ? <div style={{width:'100%'}}>
                 {/* The way forward is never a button that only scrolls: the next step waits for a choice above. */}
                 {customQuestionOnly?(customDecisionPending?<button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setDecisionSheet('generate')}>{customOrganisationFlow.generateLabel}</button>:<button data-bh-forward type="button" style={NEXT_CTA} onClick={()=>setPlanDetail(true)}>{fr?'Voir le planning':'See the plan'} →</button>):<p id="bh-plan-choice-hint" style={{fontSize:14,color:'var(--ash)',margin:'0 0 8px'}}>{customDecisionPending?(fr?'Choisissez une des options ci-dessus.':'Choose one of the options above.'):(fr?'Ajustez le planning ci-dessus pour continuer.':'Adjust the plan above to continue.')}</p>}
                 {customQuestionOnly?null:<button data-bh-forward type="button" disabled aria-describedby="bh-plan-choice-hint" style={{...NEXT_CTA,opacity:0.55}}>{recipeGenerated?setupReturnLabel:customOrganisationFlow.steps.at(-1)?.id===9?customOrganisationFlow.generateLabel:`${customOrganisationFlow.steps.find(step=>step.id===nextCustomStep(9))?.chip ?? (fr?'Suivant':'Next')} →`}</button>}
