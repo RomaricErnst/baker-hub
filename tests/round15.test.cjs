@@ -89,7 +89,9 @@ test('saved bakes: ENTRY_RULES 4; a bake under way saved with 3 keeps its rememb
   assert.notDeepEqual(Y.entryPlanShape(0.15, current(b3('2026-11-27T19:30:00'))), remembered, 'a new bake reads the current knead');
   // The page reads the remembered knead only then, and writes it only then.
   assert.match(page, /const rememberedAnchor = legacyEntryTiming \|\| keptEntryRules !== undefined;/);
-  assert.match(page, /const entryAnchor = rememberedAnchor \? \(yeastPctOverride !== undefined \? yeastAnchorH : undefined\) : calcPlan\?\.anchorH;/);
+  assert.match(page, /const entryAnchor = rememberedAnchor \? \(yeastPctOverride !== undefined \? yeastAnchorH : undefined\) : seen\?\.anchorH \?\? calcPlan\?\.anchorH;/);
+  // The automatic plan shown for exactly these inputs (keyed by them), else the derived one; the session keeps only the current key's.
+  assert.match(page, /calcAnchor: entryInForce && seen \? \{ key: calcKey, \.\.\.seen \} : undefined/);
   assert.match(page, /yeastAnchorH: yeastPctOverride !== undefined && rememberedAnchor \? yeastAnchorH : undefined/);
 });
 
