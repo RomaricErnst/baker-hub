@@ -82,32 +82,7 @@ test('the bulk cues still follow the flour',()=>{
   a.ok(fr.recipeOutput.bulkCues.weak.some(s=>/tient moins/.test(s)));
 });
 
-// Bakes saved before the change keep the bulk they were timed with (never re-timed on opening).
-test('a saved bake keeps its old bulk: legacyStarterBulkFactor is the old flour-scaled factor',()=>{
-  const before=require('./fixtures/levain-flour-before.json');
-  let n=0;
-  for(const [k,v] of Object.entries(before)){
-    const [f,T,,pct]=k.split('|');if(pct==='-')continue;
-    a.equal(utils.legacyStarterBulkFactor(Number(pct),Number(T),v.ftm),v.factor,k);n++;
-  }
-  a.ok(n>=400,String(n));
-  a.equal(utils.legacyStarterBulkFactor(undefined,19,0.9),1);
-  for(const T of TEMPS)for(const p of [15,25])a.equal(utils.legacyStarterBulkFactor(p,T,1),utils.starterBulkFactor(p,T),'reference flour: same factor');
-});
 
-test('restoredLevainLegacy: only an old session with a % on a flour other than the reference',()=>{
-  const {restoredLevainLegacy}=require('../app/utils/levainLegacy.ts');
-  const bread={flour1:'bread',flour2:null,ratio1:100};
-  const old={yeastType:'sourdough',styleKey:'pain_levain',flourChosen:true,flourBlend:bread,autoStarterPct:27.5};
-  a.deepEqual(restoredLevainLegacy(old),{pct:27.5,strength:0.9});
-  a.deepEqual(restoredLevainLegacy({...old,autoStarterPct:undefined,starterPctOverride:15}),{pct:15,strength:0.9});
-  a.equal(restoredLevainLegacy({...old,autoStarterPct:undefined}),null,'default %: factor 1 either way');
-  a.equal(restoredLevainLegacy({...old,flourBlend:{flour1:'pizza00',flour2:null,ratio1:100}}),null,'reference flour');
-  a.equal(restoredLevainLegacy({...old,levainLegacy:null}),null,'saved since the change');
-  a.deepEqual(restoredLevainLegacy({...old,levainLegacy:{pct:20,strength:1.35}}),{pct:20,strength:1.35});
-  a.deepEqual(restoredLevainLegacy({yeastType:'sourdough',styleKey:'pain_seigle',flourChosen:false,flourBlend:null,starterPctOverride:20}).strength,data.recipeFlourStrength('pain_seigle','custom'));
-  a.equal(restoredLevainLegacy({...old,yeastType:'instant'}),null);
-});
 
 // The starter's ready band is the starter's (21 Nov 2026, round 8 follow-up): the dough's flour
 // no longer widens the solver's green band (TOL × ftm), so solver ≡ strip ≡ mixNearPeak for every flour.

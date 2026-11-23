@@ -22,15 +22,12 @@ test('a bake with no allowance set uses 1.5 %; a set value, 0 included, wins', (
   assert.equal(allowance.effectiveWastePct(Number.NaN), 1.5);
 });
 
-test('restore: a saved value is kept (an old bake saved with 0 stays 0); a missing one defaults, unless the dough is made', () => {
+test('restore: a saved value is kept; a missing one defaults (O3: no old-bake exception)', () => {
   assert.equal(allowance.restoredWastePct(0), 0);
   assert.equal(allowance.restoredWastePct(2.5), 2.5);
   assert.equal(allowance.restoredWastePct(undefined), undefined); // → 1.5 through effectiveWastePct
   assert.equal(allowance.effectiveWastePct(allowance.restoredWastePct(undefined)), 1.5);
   assert.equal(allowance.restoredWastePct(null), undefined);
-  // Weighed without it: a bake whose dough or preferment is recorded keeps its recipe.
-  assert.equal(allowance.restoredWastePct(undefined, true), 0);
-  assert.equal(allowance.restoredWastePct(1.5, true), 1.5);
 });
 
 test('the balls stay what the baker asked; the total grows 1.5 %, in Simple too', () => {
@@ -52,8 +49,8 @@ test('the balls stay what the baker asked; the total grows 1.5 %, in Simple too'
 
 test('the page feeds the effective allowance everywhere and restores through restoredWastePct', () => {
   assert.match(page, /const wasteAllowance = effectiveWastePct\(wastePct\);/);
-  assert.match(page, /setWastePct\(restoredWastePct\(session\.wastePct, !!session\.execution \|\| !!session\.mixExecution\)\);/);
-  assert.match(page, /setWastePct\(restoredWastePct\(snap\.wastePct, !rb && \(!!snap\.execution \|\| !!snap\.mixExecution\)\)\);/);
+  assert.match(page, /setWastePct\(restoredWastePct\(session\.wastePct\)\);/);
+  assert.match(page, /setWastePct\(restoredWastePct\(snap\.wastePct\)\);/);
   assert.match(page, /wastePct: wasteAllowance, addSeeds/); // the session records what the recipe used
   assert.doesNotMatch(page, /flourInFridge,\s*wastePct,/);
   assert.doesNotMatch(page, /wastePct=\{totalFlourTarget===undefined\?wastePct:0\}/);

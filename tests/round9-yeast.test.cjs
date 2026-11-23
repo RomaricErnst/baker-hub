@@ -26,7 +26,7 @@ const nightIdsOf = (bake, hours, shape, blocks = []) => {
   const s = utils.buildSchedule(new Date(+bake - hours * H), bake, blocks, 22, 45, 'hand', 'neapolitan', 4, 1, false, 1, shape);
   return [...new Set(av.newNightHandsOn(s.availabilityActions, blocks).map(a => a.id))];
 };
-const b3Entry = (extra = {}) => ({ ...b3, now, conversion: 1, anchorH: 23, calculatedIdyPct: 0.16, roomPlans: true, nightAllowed: nightIdsOf(b3Bake, 23), ...extra });
+const b3Entry = (extra = {}) => ({ ...b3, now, conversion: 1, anchorH: 23, calculatedIdyPct: 0.16, nightAllowed: nightIdsOf(b3Bake, 23), ...extra });
 
 test('bug I: a room-temperature plan is one of the timing\'s plans; without the option nothing moves', () => {
   // The room plan: no fridge, the bulk takes the window.
@@ -37,21 +37,18 @@ test('bug I: a room-temperature plan is one of the timing\'s plans; without the 
   assert.equal(utils.roomPlanAllowed('pain_levain'), false);
   assert.equal(utils.roomPlanAllowed('brioche'), false);
   assert.equal(utils.roomPlanAllowed('neapolitan'), true);
-  // Without roomPlans, the established timing, byte for byte.
-  for (const dose of [0.08, 0.1, 0.14, 0.2, 0.3]) for (const anchorH of [23, undefined])
-    assert.equal(JSON.stringify(utils.enteredYeastTiming(dose, { ...b3, anchorH, roomPlans: false })), JSON.stringify(utils.enteredYeastTiming(dose, { ...b3, anchorH })));
   // Round 11 (D2): 0.1 % keeps the 23 h knead, the fridge absorbing it within the readiness band (±10 %).
-  const kept = utils.enteredYeastTiming(0.1, { ...b3, anchorH: 23, roomPlans: true, maxH: 23.75 });
+  const kept = utils.enteredYeastTiming(0.1, { ...b3, anchorH: 23, maxH: 23.75 });
   assert.equal(kept.center, 23); assert.equal(kept.shape.room, undefined);
   // 0.08 %: the fridge cannot absorb it at 23 h; the room plan is the window nearest the knead within the day.
-  const t = utils.enteredYeastTiming(0.08, { ...b3, anchorH: 23, roomPlans: true, maxH: 23.75 });
+  const t = utils.enteredYeastTiming(0.08, { ...b3, anchorH: 23, maxH: 23.75 });
   assert.deepEqual(t.shape, { rtScale: 1, room: true });
   assert.ok(t.center > 10 && t.center < 16, String(t.center));
   // A dose the fridge absorbs keeps the calculated knead (D2): the room plan is not used.
-  const fit = utils.enteredYeastTiming(0.2, { ...b3, anchorH: 23, roomPlans: true, maxH: 23.75 });
+  const fit = utils.enteredYeastTiming(0.2, { ...b3, anchorH: 23, maxH: 23.75 });
   assert.equal(fit.center, 23);assert.equal(fit.shape.room, undefined);
   // A room timing the page already chose is kept (the picker reads it back).
-  assert.deepEqual(utils.enteredYeastTiming(0.08, { ...b3, anchorH: 23, roomPlans: true, exitLeadMin: utils.ROOM_PLAN, maxH: 23.75 }), t);
+  assert.deepEqual(utils.enteredYeastTiming(0.08, { ...b3, anchorH: 23, exitLeadMin: utils.ROOM_PLAN, maxH: 23.75 }), t);
 });
 
 test('bug I: the statement and the re-timing read one path (0.1 % at 22 °C fits a room plan in the day)', () => {
@@ -68,8 +65,6 @@ test('bug I: the statement and the re-timing read one path (0.1 % at 22 °C fits
   // 0.1 %: the plan the page applies keeps the 20:30 knead (its night steps named), the fridge absorbing it.
   const kept = Y.entryPlan(0.1, o);
   assert.ok(Math.abs(+kept.times.start - (+b3Bake - 23 * H)) <= H, new Date(kept.times.start).toISOString());
-  // Without the room plans (a bake saved before), the established statement: it needs longer than the day.
-  assert.equal(Y.checkYeastEntry(0.1, b3Entry({ roomPlans: false, nightAllowed: undefined })).reason, 'time');
 });
 
 test('owner 22 Nov: night steps never refuse an entered amount; they are named, with the nearest amount that avoids them', () => {
@@ -96,9 +91,8 @@ test('owner 22 Nov: night steps never refuse an entered amount; they are named, 
   const plan = Y.entryPlanSearch(c.nightFreeShownPct, o);
   const s = utils.buildSchedule(plan.times.start, b3Bake, [], 22, 45, 'hand', 'neapolitan', 4, 1, false, 1, plan.shape);
   assert.deepEqual(av.newNightHandsOn(s.availabilityActions, []).map(a => a.id).filter(id => !o.nightAllowed.includes(id)), []);
-  // An amount with a night-free plan says nothing; without the rule (a bake saved before it) nothing either.
+  // An amount with a night-free plan says nothing.
   assert.equal(Y.checkYeastEntry(c.nightFreeShownPct, o).nightSteps, undefined);
-  assert.equal(Y.checkYeastEntry(0.08, b3Entry({ nightAllowed: undefined })).nightSteps, undefined);
   // Kept choices are remembered with the amounts.
   assert.deepEqual(Y.normalizeEntryNightKept({ yeast: 0.14 }), { yeast: 0.14 });
   assert.deepEqual(Y.normalizeEntryNightKept({ pref: { type: 'biga', pct: 0.5 } }), { pref: { type: 'biga', pct: 0.5 } });
@@ -117,7 +111,7 @@ test('bug D: busy times are never the reason when there are none', () => {
   // Thomas: baguette, 20 °C, cool-spot biga (12–20 h), no busy times, bake Sat 11:30; 3 % fresh in the final dough (1 % IDY).
   const bake = SG('2026-11-28T11:30:00');
   const o = { bake, now: +SG('2026-11-26T20:00:00'), blocks: [], kitchenTemp: 20, preheatMin: 30, mixerType: 'hand', styleKey: 'baguette', numItems: 4, itemWeight: 320,
-    mixingBatches: 1, fridgeTemp: 6, hydration: 72, conversion: 3, anchorH: 4, calculatedIdyPct: 0.446, roomPlans: true, nightAllowed: [],
+    mixingBatches: 1, fridgeTemp: 6, hydration: 72, conversion: 3, anchorH: 4, calculatedIdyPct: 0.446, nightAllowed: [],
     preferment: { options: [{ inFridge: false, prefWindow: { min: 12, max: 20 }, prefHours: 16, warmupH: 0, cooldownH: 0 }], valid: () => true } };
   const c = Y.checkYeastEntry(1, o);
   assert.equal(c.fits, false);
@@ -170,7 +164,7 @@ test('bug H: a plan shown without a fit never starts its preferment in the past'
   // The entry search itself never proposes a past preferment (findFixedBakeSchedule), with the night rule too.
   const bake = SG('2026-11-28T07:00:00');
   const nights = ['2026-11-26', '2026-11-27'].map(d => ({ label: d + ' night', from: SG(d + 'T23:00:00'), to: new Date(+SG(d + 'T23:00:00') + 8 * H) }));
-  const o = { ...b3, bake, blocks: nights, now, conversion: 3, anchorH: 35, calculatedIdyPct: 0.16, roomPlans: true, nightAllowed: ['cold-out-2', 'preheat'],
+  const o = { ...b3, bake, blocks: nights, now, conversion: 3, anchorH: 35, calculatedIdyPct: 0.16, nightAllowed: ['cold-out-2', 'preheat'],
     preferment: { options: [{ inFridge: true, prefWindow: { min: 24, max: 58 }, prefHours: 48, warmupH: 0, cooldownH: 0 }], valid: () => true } };
   // 3 % fresh in the final dough: kneaded about 2 h 45 before a 7:00 bake, in the night: refused, and not for busy times alone.
   const c = Y.checkYeastEntry(1, o);
@@ -193,14 +187,9 @@ test('bug C: with a poolish or biga the change line names the total yeast', () =
   assert.doesNotMatch(page, /in the preferment' *:/);
 });
 
-test('saved bakes keep their entered timing (legacyEntryTimingFor)', () => {
-  const saved = { recipeGenerated: true, yeastPctOverride: 0.1, startTime: now - H };
-  assert.equal(Y.legacyEntryTimingFor(saved, now), true, 'under way');
-  assert.equal(Y.legacyEntryTimingFor({ ...saved, startTime: now + H }, now), false, 'not under way yet');
-  assert.equal(Y.legacyEntryTimingFor({ ...saved, entryRules: Y.ENTRY_RULES }, now), false, 'made with the rules');
-  assert.equal(Y.legacyEntryTimingFor({ ...saved, yeastPctOverride: undefined }, now), false, 'no entered amount');
-  assert.equal(Y.legacyEntryTimingFor({ ...saved, entryRules: Y.ENTRY_RULES, legacyEntryTiming: true }, now), true, 'kept so once');
-  assert.equal(Y.legacyEntryTimingFor({ recipeGenerated: true, prefYeastOverride: { type: 'biga', pct: 0.5 }, startTime: now + H, mixExecution: { at: now } }, now), true, 'a recorded mix');
+test('O3 (round 17): no saved-bake rules; no night ids remembered with an amount', () => {
+  assert.equal(Y.legacyEntryTimingFor, undefined);
+  assert.equal(Y.ENTRY_RULES, undefined);
   // Round 15 (O2): no night ids are remembered with an amount any more (normalizeEntryNightIds removed).
   assert.equal(Y.normalizeEntryNightIds, undefined);
 });

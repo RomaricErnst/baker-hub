@@ -1,5 +1,4 @@
 'use client';
-import { legacyHotPlanFor } from '../utils/hotPlanRules';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
@@ -130,7 +129,7 @@ export default function SessionViewer({
         (snap.mixerType ?? 'hand') as MixerType,
         (snap.styleKey ?? 'neapolitan') as StyleKey,
         snap.numItems, snap.mixingBatches ?? 1, snap.yeastType === 'sourdough', 1, undefined,
-        legacyHotPlanFor(snap, Date.now()) ? 'off' : snap.tab === 'simple' ? 'all' : 'hot',
+        snap.tab === 'simple' ? 'all' : 'hot',
       );
     } catch { return null; }
   }, [snap, cr]);

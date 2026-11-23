@@ -14,7 +14,7 @@ const nights=[{label:'Thursday night',from:Z('2026-11-26T23:00:00+08:00'),to:Z('
  {label:'Friday night',from:Z('2026-11-27T23:00:00+08:00'),to:Z('2026-11-28T07:00:00+08:00')}];
 // 0.15 % entered for Fri 7:30pm: kneaded Thu 8:30pm, no night step.
 const b3={version:1,savedAt:NOW,tab:'custom',bakeType:'pizza',styleKey:'neapolitan',numItems:4,itemWeight:260,pizzaDiameter:30,ovenType:'home_oven_standard',mixerType:'hand',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:6,flourBlend:null,prefermentType:'none',prefOffsetH:0,prefGoesInFridge:false,flourInFridge:false,
- yeastPctOverride:0.15,entryRules:4,startTime:MIX,eatTime:DINNER,acceptedStartTime:MIX,acceptedPreparationAt:MIX,acceptedEatTime:DINNER,blocks:nights,recipeGenerated:true,protocolStale:false,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,customKitchenConfirmed:true,confirmedSettings:['oven=home_oven_standard','yeast=instant','climate=22','mixer=hand','method=none'],activeStep:7,advancedStep:10,highestStep:7,advancedHighestStep:10,setupOverview:false,activeTab:'plan'};
+ yeastPctOverride:0.15,startTime:MIX,eatTime:DINNER,acceptedStartTime:MIX,acceptedPreparationAt:MIX,acceptedEatTime:DINNER,blocks:nights,recipeGenerated:true,protocolStale:false,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,customKitchenConfirmed:true,confirmedSettings:['oven=home_oven_standard','yeast=instant','climate=22','mixer=hand','method=none'],activeStep:7,advancedStep:10,highestStep:7,advancedHighestStep:10,setupOverview:false,activeTab:'plan'};
 
 async function open(page,data,locale){
  const errors=[];page.on('pageerror',error=>errors.push(error.message));

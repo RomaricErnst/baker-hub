@@ -61,7 +61,7 @@ for(const locale of ['en','fr']){
  test(`${locale}: 1 — the time editor plans the requested bake; a bake with no plan shows only the bakes that fit`,async({page})=>{
   // 0.5 % entered over the 7:30pm plan (its knead recorded 23 h before): Start Dough Fri 4:00pm.
   const fast=Z('2026-11-27T16:00:00+08:00');
-  const errors=await open(page,b3({yeastPctOverride:0.5,yeastAnchorH:23,entryRules:2,entryNightIds:[],startTime:fast,acceptedStartTime:fast,acceptedPreparationAt:fast,activeTab:'plan'}),locale,null);
+  const errors=await open(page,b3({yeastPctOverride:0.5,startTime:fast,acceptedStartTime:fast,acceptedPreparationAt:fast,activeTab:'plan'}),locale,null);
   await page.getByRole('button',{name:/ingrédients|ingredients/i}).first().tap();
   await expect(page.locator('[data-recipe-plan]:visible')).toHaveCount(1,{timeout:30000});
   await page.locator('button:visible').filter({hasText:fr?/^Recette/:/^Recipe/}).first().tap();

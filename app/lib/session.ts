@@ -87,10 +87,6 @@ export interface SessionData {
   exitLead?: ExitLead;
   /** This plan's own fridge-exit lead, carried to the next Bake again. */
   planExitLead?: ExitLead;
-  /** Plan rules the recipe was made with (`HOT_PLAN_RULES`, app/utils/hotPlanRules.ts); absent before round 8. */
-  planRules?: number;
-  /** A bake under way when the hot-kitchen ladder shipped keeps the plan shape it was made with. */
-  legacyHotPlan?: boolean;
   /** When this bake keeps the oven busy (preheat to last piece out, ms): two bakes on one device are
    *  compared with it (18 Nov 2026 retention round 3). */
   ovenFrom?: number;
@@ -140,28 +136,15 @@ export interface SessionData {
   bigaStorage?: 'auto' | 'fridge' | 'cool';
   /** Custom: baker's IDY % of flour for the (final) dough; the plan is timed to it (a poolish or biga's final dough too, round 7). */
   yeastPctOverride?: number;
-  /** The calculated plan's mix-to-bake hours when the baker entered yeastPctOverride (rounds 8–13). Round 15 (O2) derives it
-   * from the current inputs; it is read and saved only for a bake under way kept with older rules (entryRulesKept). */
-  yeastAnchorH?: number;
   /** Round 9 (owner, 22 Nov 2026): the entered amounts whose night steps the baker chose to keep ("keep night steps for this
    * amount", never a plan). */
   entryNightKept?: { yeast?: number; pref?: { type: 'poolish' | 'biga'; pct: number } };
-  /** Round 9: the entered-amount rules the bake was made with (app/utils/yeastEntry.ts ENTRY_RULES). */
-  entryRules?: number;
-  /** Round 9: a bake under way before those rules keeps its entered-amount timing (legacyEntryTimingFor). */
-  legacyEntryTiming?: boolean;
-  /** Round 13/15: a bake under way saved with older entered-amount rules (2, 3) keeps them (keptEntryRulesFor). */
-  entryRulesKept?: number;
   /** Custom poolish/biga: baker's preferment yeast, IDY % of the preferment flour; its window is timed to it (round 7). */
   prefYeastOverride?: { type: 'poolish' | 'biga'; pct: number };
   /** Custom levain: baker's starter % of flour; the bulk is timed to it. */
   starterPctOverride?: number;
   /** Levain without a baker %: the % the planner raised it to for this plan's bulk. */
   autoStarterPct?: number;
-  /** A bake saved before 21 Nov 2026 with a levain % (baker's or raised): the % and flour strength its
-   * bulk was timed with against the flour-scaled reference (legacyStarterBulkFactor). null for every
-   * bake saved since; absent = saved before the field (the page derives it). */
-  levainLegacy?: { pct: number; strength: number } | null;
   starterEvents?: Array<Omit<StarterEvent, 'time'|'bellPeakTime'|'bellStartTime'> & {time:number;bellPeakTime?:number;bellStartTime?:number}>;
   starterState?: string;
   starterLocation?: string;

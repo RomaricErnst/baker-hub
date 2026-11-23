@@ -28,7 +28,7 @@ const nights = [
 ];
 const b3 = (bake, anchorH, calc, extra = {}) => ({ bake: SG(bake), blocks: nights, kitchenTemp: 22, preheatMin: 45, mixerType: 'hand', styleKey: 'neapolitan',
   numItems: 4, itemWeight: 260, mixingBatches: 1, fridgeTemp: 6, hydration: 65, planLadder: 'hot', doughTempC: 24, now, conversion: 1,
-  anchorH, calculatedIdyPct: calc, roomPlans: true, nightAllowed: [],
+  anchorH, calculatedIdyPct: calc, nightAllowed: [],
   // The planner's window for the calculated amount, as the page passes it (yeastEntryInput).
   defaultWindow: b => sp.commercialReadinessWindow({ ...sp.STYLE_FERM_DEFAULTS.neapolitan, flourStrength: 1.2, kitchenTemp: 22, preheatMin: 45, totalWindowH: (+b - now) / H }), ...extra });
 const hhmm = d => new Date(d).toLocaleTimeString('en-GB', { timeZone: 'Asia/Singapore', weekday: 'short', hour: '2-digit', minute: '2-digit' });
@@ -64,29 +64,6 @@ test('item 3 (D2): 0.11–0.15 % at 22 °C keep the calculated knead (Thu 20:30)
   assert.ok(utils.BALL_PROOF_STYLES.has('neapolitan') && !utils.BALL_PROOF_STYLES.has('baguette'));
 });
 
-test('owner: a bake under way saved with the round-9 rules keeps its timing (entryRules 2)', () => {
-  // Round 12 timed 0.12 % (B3, no busy time, Thu 19:30, bake Fri 19:30, knead recorded 23 h before) with {rtScale 1.6}.
-  const o = { ...b3('2026-11-27T19:30:00', 23, 0.146), blocks: [] };
-  delete o.defaultWindow;
-  const round12 = { center: 23, from: 23, to: 16.75, shape: { rtScale: 1.6 } };
-  assert.deepEqual(Y.entryTiming(0.12, { ...o, rules: 2 }, 24), round12);
-  assert.deepEqual(Y.entryPlanShape(0.12, { ...o, rules: 2 }), round12.shape);
-  // A new bake gets the current fit.
-  assert.notDeepEqual(Y.entryPlanShape(0.12, o), round12.shape);
-  // Restoring: entryRules 2, an entered amount, under way (Start Dough has come, or a mix is recorded) keeps rules 2.
-  const saved = { entryRules: 2, recipeGenerated: true, yeastPctOverride: 0.12, startTime: +SG('2026-11-26T20:30:00') };
-  assert.equal(Y.ENTRY_RULES, 4); // round 15 (O2): the knead is derived from the current inputs
-  assert.equal(Y.keptEntryRulesFor(saved, +SG('2026-11-26T21:00:00')), 2);
-  assert.equal(Y.keptEntryRulesFor({ ...saved, entryRulesKept: 2 }, +SG('2026-11-26T19:00:00')), 2);
-  assert.equal(Y.keptEntryRulesFor(saved, +SG('2026-11-26T19:00:00')), undefined, 'not under way: the current rules');
-  // Round 15: a bake under way saved with 3 keeps its remembered knead (rules 3); one saved with the current rules is re-derived.
-  assert.equal(Y.keptEntryRulesFor({ ...saved, entryRules: 3 }, +SG('2026-11-26T21:00:00')), 3);
-  assert.equal(Y.keptEntryRulesFor({ ...saved, entryRules: 4 }, +SG('2026-11-26T21:00:00')), undefined);
-  // Not the older legacy timing (no room plans, no night rule).
-  assert.equal(Y.legacyEntryTimingFor(saved, +SG('2026-11-26T21:00:00')), false);
-  assert.match(page, /roomPlans: !legacyEntryTiming, rules: keptEntryRules,/);
-  assert.match(page, /\.\.\.\(keptEntryRules \? \{entryRulesKept: keptEntryRules\} : \{\}\)/);
-});
 
 test('items 3–4: the ranking counts the preferment\'s start, and a wake-up (23:00–06:00) outweighs shoulder steps', () => {
   const av = require('../app/utils/scheduleAvailability.ts');

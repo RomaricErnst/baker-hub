@@ -365,22 +365,6 @@ export function starterBulkFactor(starterPct: number | undefined, kitchenTemp: n
   return Math.round(craigSourdoughHours(p) / craigSourdoughHours(p0) * 1000) / 1000;
 }
 
-/** A levain bake saved before 21 Nov 2026 timed its bulk against the reference % scaled by its
- * flour's tolerance (min/max × ftm, 0.6–1.5, rounded, 5–30). The page keeps that factor for that
- * bake's plan, at the same % and flour (`levainLegacy`), so a saved bake is never re-timed; every
- * new plan uses starterBulkFactor. */
-export function legacyStarterBulkFactor(starterPct: number | undefined, kitchenTemp: number, flourStrength: number): number {
-  if (starterPct === undefined || !Number.isFinite(starterPct) || starterPct <= 0) return 1;
-  let { min, max } = starterBand(kitchenTemp);
-  if (flourStrength && flourStrength !== 1.0) {
-    const ftm = Math.max(0.6, Math.min(1.5, flourStrength));
-    min = Math.max(5, Math.round(min * ftm));
-    max = Math.min(30, Math.round(max * ftm));
-  }
-  const p = Math.max(5, Math.min(30, starterPct)) / 100;
-  return Math.round(craigSourdoughHours(p) / craigSourdoughHours((min + max) / 200) * 1000) / 1000;
-}
-
 /** Ceiling of a planner-chosen levain % (17 Nov 2026): the inoculation the planner
  * may raise to when the default bulk does not fit the baker's free time. */
 export const AUTO_STARTER_MAX_PCT = 30;
@@ -2148,23 +2132,20 @@ export interface EnteredYeastTiming { center: number; from: number; to: number; 
  * fermentationWindowForYeast nearest the anchor (else the style's window): the established inversion.
  * Callers build every schedule with the returned shape (buildSchedule's last argument). An `exitLeadMin`
  * that is already a fit (the page solved it) is kept: only the band around the anchor is read with it. */
-export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInput & { anchorH?: number; roomPlans?: boolean; rules?: number; prefStartH?: number }): EnteredYeastTiming | null {
-  const { anchorH, roomPlans, rules, prefStartH, ...input } = o;
-  // The round-13 fit (proof fit, night ranking, own nights soft, the contiguous band) for bakes under the current rules;
-  // a bake saved under way with the round-9 rules (`rules` 2) keeps the fit it was timed with (owner: never re-timed).
-  const current = !!roomPlans && rules !== 2;
+export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInput & { anchorH?: number; prefStartH?: number }): EnteredYeastTiming | null {
+  const { anchorH, prefStartH, ...input } = o;
   const anchored = anchorH !== undefined && Number.isFinite(anchorH);
   // A room-temperature timing the page already chose (ROOM_PLAN): its window nearest the anchor, kept.
   if (isRoomShape(input.exitLeadMin)) {
     const room = fermentationWindowForYeast(modelIdyPct, { ...(anchored ? { ...input, nearH: anchorH } : input), maxH: Math.min(input.maxH ?? 96, ROOM_PLAN_MAX_H) });
     return room ? { ...room, shape: { ...ROOM_PLAN } } : null;
   }
-  // Round 9 (bug I): with `roomPlans`, when the engine's plans give no window within `maxH` (the time left), the
+  // Round 9 (bug I): when the engine's plans give no window within `maxH` (the time left), the
   // room-temperature plans are read (window nearest the anchor, else the style's). The statement and the
   // re-timing both read this one timing.
   const plain = (): EnteredYeastTiming | null => {
     const engine = fermentationWindowForYeast(modelIdyPct, anchored ? { ...input, nearH: anchorH } : input);
-    if (!roomPlans || !roomPlanAllowed(input.styleKey)) return engine;
+    if (!roomPlanAllowed(input.styleKey)) return engine;
     const style = STYLE_FERM_DEFAULTS[input.styleKey];
     const near = anchored ? anchorH! : style ? style.coldH + style.rtH : engine?.center ?? 0;
     const room = fermentationWindowForYeast(modelIdyPct, { ...input, exitLeadMin: ROOM_PLAN, nearH: near, maxH: Math.min(input.maxH ?? 96, ROOM_PLAN_MAX_H) });
@@ -2179,7 +2160,7 @@ export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInp
   const h0 = Math.round(anchorH * 4) / 4;
   const doughTempC = input.doughTempC ?? TARGET_FDT[input.styleKey] ?? 24;
   const target = input.budget ?? 1;
-  const tolerance = (roomPlans ? 0.1 : 0.05) * target + 1e-9;
+  const tolerance = 0.1 * target + 1e-9;
   // The readiness band around the anchor (round 13): the quarter hours on either side, up to 6 h, whose plan with this fit
   // keeps a cold phase and a budget within the tolerance. The budget is not monotone across the room/cold switch, so the
   // nearest crossings (fermentationWindowForYeast) could enclose room-temperature plans at 130 % (B3's kept 0.14 %).
@@ -2194,11 +2175,6 @@ export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInp
     } catch { return false; }
   };
   const bandAround = (shape: { rtScale: number; proof?: boolean }): EnteredYeastTiming => {
-    if (!current) {
-      // A bake saved under way before these rules keeps the band it was timed with.
-      const band = fermentationWindowForYeast(modelIdyPct, { ...input, exitLeadMin: shape, nearH: h0, budget: undefined });
-      return { center: h0, from: Math.min(maximum, band ? Math.max(band.from, h0) : h0), to: band ? Math.min(band.to, h0) : h0, shape };
-    }
     let from = h0, to = h0;
     while (from + 0.25 <= Math.min(maximum, h0 + 6) + 1e-9 && inBand(shape, from + 0.25)) from += 0.25;
     while (to - 0.25 >= Math.max(minimum, h0 - 6) - 1e-9 && inBand(shape, to - 0.25)) to -= 0.25;
@@ -2210,11 +2186,6 @@ export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInp
     const fixed = { rtScale: input.exitLeadMin.rtScale, ...(input.exitLeadMin.proof ? { proof: true } : {}) };
     if (h0 < minimum || h0 > maximum) return fermentationWindowForYeast(modelIdyPct, { ...input, nearH: anchorH });
     // The anchor must sit inside the readiness band with this fit (else the amount is timed elsewhere).
-    if (!current) {
-      const band = fermentationWindowForYeast(modelIdyPct, { ...input, nearH: h0, budget: undefined });
-      if (!band || h0 > band.from + 1e-9 || h0 < band.to - 1e-9) return band ? { ...band, shape: fixed } : null;
-      return { center: h0, from: Math.min(maximum, Math.max(band.from, h0)), to: Math.min(band.to, h0), shape: fixed };
-    }
     if (!inBand(fixed, h0)) { const band = fermentationWindowForYeast(modelIdyPct, { ...input, nearH: h0, budget: undefined }); return band ? { ...band, shape: fixed } : null; }
     return bandAround(fixed);
   }
@@ -2222,18 +2193,17 @@ export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInp
   const start = new Date(+input.bake - h0 * 3600000);
   const build = (shape?: PlanShape) => buildSchedule(start, input.bake, input.blocks, input.kitchenTemp, input.preheatMin, input.mixerType,
     input.styleKey, input.numItems, input.mixingBatches, false, 1, shape, input.planLadder);
-  // Under the current rules (`roomPlans`, round 13) the fit with the fewest steps between 22:00 and 07:00 not declared
-  // free (`newNightHandsOn`) is taken first, so the knead stays at the calculated one without night steps when such a
-  // fit exists. When no fit clears the busy times, a fit whose steps fall only in the baker's own nights is still one
-  // (decision O1: those are night steps, named), taken when it has fewer night steps than the established timing
-  // (`plain`) at its best placement. A bake saved under way before these rules counts every clash and has no proof fit.
+  // The fit with the fewest steps between 22:00 and 07:00 not declared free (`newNightHandsOn`) is taken first, so the
+  // knead stays at the calculated one without night steps when such a fit exists. When no fit clears the busy times, a
+  // fit whose steps fall only in the baker's own nights is still one (decision O1: those are night steps, named), taken
+  // when it has fewer night steps than the established timing (`plain`) at its best placement.
   let ownNightsSoft = false;
   const clashes = (s: ScheduleResult) => (s.availabilityConflicts ?? []).filter(c => !ownNightsSoft || !c.block.label?.endsWith(' night')).length;
   // Night steps of a plan kneaded `h` hours before the bake, its preferment's start included (round 13: the sweep's two
   // poolish plans gained a night step the dough's steps alone did not show).
   const nightOf = (s: ScheduleResult, h: number) => nightScore([...(s.availabilityActions ?? []),
     ...(prefStartH ? [{ id: 'preferment', at: new Date(+input.bake - (h + prefStartH) * 3600000) }] : [])], input.blocks);
-  const nightSteps = (s: ScheduleResult) => current ? nightOf(s, h0) : 0;
+  const nightSteps = (s: ScheduleResult) => nightOf(s, h0);
   let base: ScheduleResult;
   try { base = build(); } catch { return plain(); }
   if (!(base.totalColdHours > 0)) return plain();
@@ -2271,11 +2241,11 @@ export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInp
       }
     };
     for (let k = Math.round(RT_SCALE_MIN * 20); k <= Math.round(RT_SCALE_MAX * 20); k++) consider({ rtScale: k / 20 }, 0);
-    if (current && BALL_PROOF_STYLES.has(input.styleKey)) for (let k = 21; k <= Math.round(PROOF_SCALE_MAX * 20); k++) consider({ rtScale: k / 20, proof: true }, 1);
+    if (BALL_PROOF_STYLES.has(input.styleKey)) for (let k = 21; k <= Math.round(PROOF_SCALE_MAX * 20); k++) consider({ rtScale: k / 20, proof: true }, 1);
     return best;
   };
   let chosen = fit();
-  if (!chosen && current && input.blocks.some(b => b.label?.endsWith(' night'))) {
+  if (!chosen && input.blocks.some(b => b.label?.endsWith(' night'))) {
     ownNightsSoft = true;
     const soft = fit();
     ownNightsSoft = false;

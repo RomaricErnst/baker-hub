@@ -71,10 +71,13 @@ test('M1: without an anchor, or beyond what the fridge can absorb, it is the est
 });
 
 test('bug 7: a statement suggests only an amount that gives a plan clear of the busy times', () => {
+  // Round 17 (O3): every check reads the baker's nights as night steps (O1): 0.3 % plans, its night step named, and the
+  // offer is the nearest amount whose plan is clear of the busy times and of night steps.
   const o = entry();
   const fast = Y.checkYeastEntry(0.3, o);
-  assert.equal(fast.fits, false);
-  assert.equal(fast.reason, 'busy');
+  assert.equal(fast.fits, true);
+  assert.equal(fast.nightSteps, true);
+  fast.suggestedShownPct = fast.nightFreeShownPct;
   assert.ok(fast.suggestedShownPct < 0.3 && fast.suggestedShownPct > CALC, `${fast.suggestedShownPct}`);
   assert.equal(Y.checkYeastEntry(fast.suggestedShownPct, o).fits, true, 'the suggestion passes the same check');
   const found = Y.entryPlanSearch(fast.suggestedShownPct, o);
@@ -90,29 +93,29 @@ test('M2 / bug 3: the statement and the re-timing read the same timing and the s
     const check = Y.checkYeastEntry(dose, o);
     const availableH = check.availableH;
     const timed = Y.entryTiming(dose, o, availableH);
-    if (check.fits) assert.ok(timed && Y.entryPlanFound(dose, o), `${dose}: fits ⇒ timed and found`);
+    if (check.fits) assert.ok(timed && (check.nightSteps ? Y.entryPlan(dose, o) : Y.entryPlanFound(dose, o)), `${dose}: fits ⇒ timed and found`);
     else if (check.reason === 'time') {
       assert.equal(timed, null, `${dose}: no window in the time left`);
       assert.ok(check.neededH === null || check.neededH > availableH);
     } else assert.ok(timed && !Y.entryPlanFound(dose, o), `${dose}: busy ⇒ timed, no plan`);
   }
-  // B3: Neapolitan, 22 °C, no busy times, bake in 24 h: 0.1 % needs longer; the suggestion plans in time.
+  // B3: Neapolitan, 22 °C, no busy times, bake in 24 h: 0.1 % plans (round 9, a room plan within the day).
   const now = +SG('2026-11-26T19:30:00'), b3 = SG('2026-11-27T19:30:00');
   const b3o = { bake: b3, now, blocks: [], kitchenTemp: 22, preheatMin: 45, mixerType: 'hand', styleKey: 'neapolitan', numItems: 4, itemWeight: 260,
     mixingBatches: 1, fridgeTemp: 6, hydration: 66, conversion: 1, anchorH: 12.5, calculatedIdyPct: 0.21 };
   const c = Y.checkYeastEntry(0.1, b3o);
-  assert.equal(c.reason, 'time');
-  assert.ok(c.neededH > c.availableH);
-  const plan = Y.entryPlanSearch(c.suggestedShownPct, b3o);
-  assert.ok(plan && +plan.times.start > now, 'the suggestion gives a plan before the bake');
+  assert.equal(c.fits, true);
+  const plan = Y.entryPlan(0.1, b3o);
+  assert.ok(plan && +plan.times.start > now, 'a plan before the bake');
 });
 
 test('bug 6: a fresh-yeast amount is checked in IDY and suggested in fresh yeast', () => {
   const o = entry({ conversion: 3 });
   const check = Y.checkYeastEntry(0.5 / 3, o);
-  assert.equal(check.fits, false);
-  assert.ok(check.suggestedShownPct > 0.5 && check.suggestedShownPct < 0.7, `${check.suggestedShownPct}`);
-  assert.equal(Y.checkYeastEntry(Math.round(check.suggestedShownPct / 3 * 10000) / 10000, o).fits, true);
+  assert.equal(check.nightSteps, true);
+  assert.ok(check.nightFreeShownPct > 0.5 && check.nightFreeShownPct < 0.7, `${check.nightFreeShownPct}`);
+  const offer = Y.checkYeastEntry(Math.round(check.nightFreeShownPct / 3 * 10000) / 10000, o);
+  assert.equal(offer.fits, true); assert.equal(offer.nightSteps, undefined);
 });
 
 test('bug 2 / S2: either decimal separator, baker time, the locale separator', () => {

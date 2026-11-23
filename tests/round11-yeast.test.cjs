@@ -28,7 +28,7 @@ const b3 = (blocks = [], extra = {}) => {
   const base = { bake: lunch, blocks, kitchenTemp: 22, preheatMin: 45, mixerType: 'hand', styleKey: 'neapolitan', numItems: 4, itemWeight: 260, mixingBatches: 1, fridgeTemp: 6, hydration: 65 };
   const calc = utils.buildSchedule(new Date(+lunch - 15.5 * H), lunch, blocks, 22, 45, 'hand', 'neapolitan', 4, 1, false, 1);
   const nightAllowed = [...new Set(av.newNightHandsOn(calc.availabilityActions, blocks).map(a => a.id))];
-  return { ...base, now, conversion: 1, anchorH: 15.5, calculatedIdyPct: 0.19, roomPlans: true, nightAllowed, ...extra };
+  return { ...base, now, conversion: 1, anchorH: 15.5, calculatedIdyPct: 0.19, nightAllowed, ...extra };
 };
 const actionsOf = (plan, o) => utils.buildSchedule(plan.times.start, o.bake, plan.blocks, o.kitchenTemp, o.preheatMin, o.mixerType, o.styleKey, o.numItems, o.mixingBatches, false, 1, plan.shape).availabilityActions;
 
@@ -73,8 +73,6 @@ test('O1: steps in the nights the baker marked busy are named, never refused; th
   // Covered in the baker's night: the saved plan has no open clash.
   assert.ok(plan.blocks[0].coveredActions.length > 0);
   assert.equal(av.findAvailabilityConflicts(actionsOf(plan, o), plan.blocks, now).length, 0);
-  // A bake saved before the night rule keeps its busy times hard.
-  assert.equal(Y.entryPlan(0.14, { ...o, nightAllowed: undefined }), null);
   // Another busy time (not a night) stays hard: the amount is refused for it.
   const dinner = [{ label: 'Dinner', from: SG('2026-11-26T19:45:00'), to: SG('2026-11-27T10:00:00') }];
   const hard = b3(dinner, { bake: SG('2026-11-27T13:00:00') });
@@ -93,9 +91,6 @@ test('I/D2: an entered amount keeps the knead near the calculated one when a pla
   assert.equal(t.center, 23); assert.equal(t.shape.room, undefined);
   const plan = Y.entryPlan(0.1, o);
   assert.ok(Math.abs(+plan.times.start - (+dinner - 23 * H)) <= H, new Date(plan.times.start).toISOString());
-  // A bake saved under way before the rules (no room plans) keeps the 5 % tolerance.
-  const legacy = utils.enteredYeastTiming(0.1, { ...o, roomPlans: false, maxH: 24 });
-  assert.notEqual(legacy?.center, 23);
 });
 
 test('item 2: a biga is judged on whether a complete plan exists at this bake, in setup and from My choices alike', () => {

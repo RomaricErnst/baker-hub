@@ -8,12 +8,7 @@ export function effectiveWastePct(set: number | undefined): number {
   return typeof set === 'number' && Number.isFinite(set) ? set : DEFAULT_WASTE_PCT;
 }
 
-/**
- * The allowance state a restored session starts from. A saved number is kept (an old bake saved
- * with 0 stays at 0). A missing value means "not set": the default applies, except for a bake
- * whose dough (or preferment) is already made: it was weighed without the allowance, so it keeps 0.
- */
-export function restoredWastePct(saved: unknown, doughMade = false): number | undefined {
-  if (typeof saved === 'number' && Number.isFinite(saved)) return saved;
-  return doughMade ? 0 : undefined;
+/** The allowance state a restored session starts from: a saved number (the baker's), else not set (the default). */
+export function restoredWastePct(saved: unknown): number | undefined {
+  return typeof saved === 'number' && Number.isFinite(saved) ? saved : undefined;
 }
