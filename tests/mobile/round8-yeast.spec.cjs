@@ -2,7 +2,7 @@ const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 
 // Round 8 (21 Nov 2026): the baker-entered yeast in Custom Fine-tune (FINDINGS "Baker-set yeast").
 // Thomas: 4 baguettes, 20 °C, bake Sat 28 Nov 11:30, busy weekdays 9:00–18:00 and nights 23:00–7:00; the
-// calculated plan kneads Fri 18:15 with a fridge night. B3: 4 Neapolitan pizzas, 22 °C, bake in 24 h.
+// calculated plan kneads Fri 20:30 with a fridge night (Fri 18:15 before round 15's single anchor source). B3: 4 Neapolitan pizzas, 22 °C, bake in 24 h.
 // D2: an entered amount keeps the knead near the calculated plan's and the fridge absorbs the difference;
 // an amount that leaves no plan clear of the busy times (or no time) is said on Fine-tune with the nearest
 // amount that gives one (bugs 3, 6, 7; M2), never "choose a later start / change my busy times".
@@ -14,7 +14,8 @@ test.setTimeout(120000);
 
 const NOW=Z('2026-11-26T20:00:00+08:00');
 const BAKE=Z('2026-11-28T11:30:00+08:00');
-const CALC_MIX=Z('2026-11-27T18:15:00+08:00');
+// Round 15: the automatic plan for these inputs (SchedulePicker automaticCommercialPlan, the anchor of an entered amount).
+const CALC_MIX=Z('2026-11-27T20:30:00+08:00');
 const thomasBlocks=()=>{
  const blocks=[];
  for(const day of ['2026-11-23','2026-11-24','2026-11-25','2026-11-26','2026-11-27'])
@@ -61,14 +62,14 @@ for(const locale of ['en','fr']){
   const {fineTune,errors}=await open(page,thomas(),locale);
   const yeast=fineTune.locator('[data-yeast-override] input');
   const calc=num(await yeast.getAttribute('placeholder'));
-  // About a tenth more: the fridge absorbs it, the knead stays near 18:15.
+  // About a tenth more: the fridge absorbs it, the knead stays near 20:30.
   const more=Math.round(calc*1.1*100)/100;
   await yeast.fill(fr?String(more).replace('.',','):String(more));await yeast.blur();
   await expect(fineTune.locator('[data-yeast-entry-issue]')).toHaveCount(0);
   await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBe(more);
-  // Round 15 (O2): the knead is the automatic plan's for these inputs (calcAnchor, keyed by them), not remembered with the amount.
+  // Round 15 (O2): the knead is the automatic plan's for these inputs (the picker's own, derived), never remembered or saved.
   expect((await stored(page)).yeastAnchorH).toBeUndefined();
-  expect((await stored(page)).calcAnchor.anchorH).toBe((BAKE-CALC_MIX)/H);
+  expect((await stored(page)).calcAnchor).toBeUndefined();
   await update(page,fineTune,fr);
   const s=await stored(page);
   expect(Math.abs(s.startTime-CALC_MIX)).toBeLessThanOrEqual(H);
@@ -99,7 +100,7 @@ for(const locale of ['en','fr']){
   const s=await stored(page);
   // Kneaded Friday evening after work, before the night: no clash sheet.
   expect(s.startTime).toBeGreaterThanOrEqual(Z('2026-11-27T18:00:00+08:00'));
-  expect(s.startTime).toBeLessThanOrEqual(Z('2026-11-27T20:00:00+08:00'));
+  expect(s.startTime).toBeLessThanOrEqual(CALC_MIX);
   await expect(page.locator('.bh-plan-sheet,[data-decision-sheet]').filter({visible:true})).toHaveCount(0);
   log('0.3 → use',suggested,'mix',new Date(s.startTime).toISOString());
   expect(errors).toEqual([]);

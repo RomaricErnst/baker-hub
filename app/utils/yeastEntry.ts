@@ -42,7 +42,7 @@ export interface YeastEntryInput {
    * bake saved under way before it (legacyEntryTiming), which keeps its plan. */
   roomPlans?: boolean;
   /** Round 9 (bugs G, H; owner 22 Nov 2026): the night steps (newNightHandsOn ids) the calculated plan already has
-   * (round 15: derived from the current inputs, `calculatedPlan(…).nightIds`, never remembered).
+   * (round 15: derived from the current inputs, the page's `autoPlan` (SchedulePicker automaticCommercialPlan), never remembered).
    * An entered amount's plan avoids any other hands-on step between 22:00 and 07:00 when it can; when it cannot,
    * the amount is still planned and `checkYeastEntry` says so (`nightSteps`). Undefined: no night rule (a bake
    * saved before it). */
@@ -53,9 +53,6 @@ export interface YeastEntryInput {
   /** A poolish or biga's hours before the mix (the plan's), so the timing's night ranking counts its start; the page's
    * shape and `entryPlan` read the same value. */
   prefStartH?: number;
-  /** Round 15: where the picker seeds its automatic plan (hours before the bake: findOptimalPosition's mix for a direct
-   * dough, the sweet centre for a preferment), so `calculatedPlan` finds the plan the page shows without an amount. */
-  calcSeedH?: number;
 }
 
 /** Why an amount gives no plan: 'time' it needs longer than the time left; 'busy' every plan runs into the busy
@@ -148,7 +145,7 @@ export function entryPlanSearch(idyPct: number | undefined, o: YeastEntryInput, 
     const hours = t ? { from: t.from, to: t.to } : idyPct === undefined ? o.defaultWindow?.(bake) ?? null : null;
     return { from: hours?.from != null ? new Date(+bake - hours.from * HOUR) : null, to: hours?.to != null ? new Date(+bake - hours.to * HOUR) : null };
   };
-  const seedH = own?.center ?? o.anchorH ?? o.calcSeedH ?? o.defaultWindow?.(o.bake)?.from ?? 12;
+  const seedH = own?.center ?? o.anchorH ?? o.defaultWindow?.(o.bake)?.from ?? 12;
   const start = new Date(Math.round((+o.bake - seedH * HOUR) / QUARTER) * QUARTER);
   const options: (PrefermentPlanOption | null)[] = prefOptions?.length ? prefOptions : [null];
   for (const option of options) {
@@ -214,20 +211,6 @@ export function entryPlan(idyPct: number | undefined, o: YeastEntryInput): Entry
     return hits.length ? { ...b, coveredActions: hits.map(a => ({ id: a.id, at: +a.at, ...(a.end ? { end: +a.end } : {}) })) } : b;
   });
   return { ...chosen, blocks: covered, nightSteps };
-}
-
-/** The calculated plan for the current inputs (owner decision O2): the planner's own search with no entered amount,
- * busy times as the baker set them. Its knead is the anchor an entered amount is planned near; it is derived each
- * time, never remembered, so the same inputs give the same plan whatever the route. */
-export function calculatedPlan(o: YeastEntryInput): { times: EditTimes; anchorH: number; nightIds: string[] } | null {
-  try {
-    const input = { ...o, blocks: uncovered(o.blocks), anchorH: undefined };
-    // As the picker plans it: its search seeded where the picker seeds it (`calcSeedH`).
-    const found = entryPlanSearch(undefined, input);
-    if (!found) return null;
-    const nightIds = [...new Set(newNightHandsOn(entryPlanActions(found, input), input.blocks).filter(a => +a.at > o.now).map(a => a.id))];
-    return { times: found.times, anchorH: (+o.bake - +found.times.start) / HOUR, nightIds };
-  } catch { return null; }
 }
 
 /** The hands-on steps of a found plan, its preferment start included (as the night rule reads them). */

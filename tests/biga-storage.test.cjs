@@ -113,9 +113,11 @@ test('bug 5: Thomas, 20 °C, Sat 11:30 baguettes, nights + work — no fridge bi
 
 test('picker: a biga uses the fridge first and a cool spot only when no fridge plan fits (byte-identical fridge plans)',()=>{
   const src=fs.readFileSync(path.join(__dirname,'../app/components/SchedulePicker.tsx'),'utf8');
-  a.match(src,/function recommendBiga\(/);
-  a.match(src,/const kept=recommendPreferment\(fridge,pins,preferences\);\n    if\(kept\.result\.found\)return kept;/);
-  a.match(src,/function bigaModes\(\):boolean\[\]\{return bigaStorage==='cool'\?\[false\]:bigaStorage==='fridge'\|\|!bigaCoolAllowed\?\[true\]:\[true,false\];\}/);
+  a.match(src,/export function recommendBiga\(/);
+  a.match(src,/const kept=recommendPreferment\(fridge,pins,preferences\);\n  if\(kept\.result\.found\)return kept;/);
+  // Round 15: one storage order for the picker and the page's calculated plan (bigaPlanModes).
+  a.match(src,/return bigaStorage==='cool'\?\[false\]:bigaStorage==='fridge'\|\|!bigaCoolOffered\(bigaStorage,kitchenTemp\)\?\[true\]:\[true,false\];/);
+  a.match(src,/function bigaModes\(\):boolean\[\]\{return bigaPlanModes\(bigaStorage,kitchenTemp\);\}/);
   // A biga never inherits a poolish's room storage.
   a.match(fs.readFileSync(path.join(__dirname,'../app/[locale]/page.tsx'),'utf8'),/if \(pt === 'biga' && pt !== prefermentType\) setPrefGoesInFridgeState\(bigaStorage !== 'cool'\);/);
 });

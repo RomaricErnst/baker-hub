@@ -104,7 +104,7 @@ test('item 2: a biga is judged on whether a complete plan exists at this bake, i
   assert.match(page, /allowNight:true,type:prefermentType,storages:prefStoragesFor\(prefermentType\),from:eatTime,maxDays:0\}\);/);
   // A plan shown without a fit: the preferment within its storage's window and never before the next quarter hour.
   assert.match(picker, /function shownPrefHours\(hours:number,start:Date,inFridge:boolean\)/);
-  assert.match(picker, /const held=shownPrefHours\(optimalPrefOffset,pendingStart,localPrefGoesInFridge\);/);
+  assert.match(picker, /const held=shownPrefHours\(plan\.optimalPrefOffset,pendingStart,plan\.inFridge\);/);
 });
 
 test('item 4: the time editor offers bakes that fit after a recipe too; "Change my busy times" only for busy times', () => {

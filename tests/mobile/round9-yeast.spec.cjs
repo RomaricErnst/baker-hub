@@ -1,7 +1,8 @@
 const {test,expect}=require('../../.ci-tools/node_modules/@playwright/test');
 
 // Round 9 (22 Nov 2026): baker-set yeast and preferments (FINDINGS B, C, D, F, G, H, I, S2).
-// B3: 4 Neapolitan pizzas, 22 °C, Thu 7:30pm, bake Fri 7:30pm; the calculated plan kneads Thu 8:30pm.
+// B3: 4 Neapolitan pizzas, 22 °C, Thu 7:30pm, bake Fri 7:30pm, no busy times; the calculated plan kneads Fri 7:00am
+// (round 15: an amount is anchored on the automatic plan for the current inputs; Thu 8:30pm only with her nights).
 // Thomas: 4 baguettes, 20 °C, bake Sat 28 Nov 11:30.
 const Z=s=>Date.parse(s);
 const H=3600000;
@@ -10,7 +11,7 @@ test.use({timezoneId:'Asia/Singapore',actionTimeout:20000});
 test.setTimeout(150000);
 const L=(fr,en,frText)=>fr?frText:en;
 
-const B3_NOW=Z('2026-11-26T19:30:00+08:00'),B3_BAKE=Z('2026-11-27T19:30:00+08:00'),B3_MIX=Z('2026-11-26T20:30:00+08:00');
+const B3_NOW=Z('2026-11-26T19:30:00+08:00'),B3_BAKE=Z('2026-11-27T19:30:00+08:00'),B3_MIX=Z('2026-11-27T07:00:00+08:00');
 const nights=days=>days.map(d=>({label:d+' night',from:Z(d+'T23:00:00+08:00'),to:Z(d+'T23:00:00+08:00')+8*H}));
 const b3=(extra={})=>({version:1,savedAt:B3_NOW,tab:'custom',bakeType:'pizza',styleKey:'neapolitan',numItems:4,itemWeight:260,pizzaDiameter:30,ovenType:'home_oven_standard',mixerType:'hand',yeastType:'instant',kitchenTemp:22,humidity:'normal',fridgeTemp:6,flourBlend:null,prefermentType:'none',prefOffsetH:0,prefGoesInFridge:false,flourInFridge:false,
  startTime:B3_MIX,eatTime:B3_BAKE,acceptedStartTime:B3_MIX,acceptedPreparationAt:B3_MIX,acceptedEatTime:B3_BAKE,blocks:[],recipeGenerated:true,protocolStale:false,modeChosen:true,qtyChosen:true,flourChosen:true,prefermentChosen:true,customKitchenConfirmed:true,confirmedSettings:['oven=home_oven_standard','yeast=instant','climate=22','mixer=hand'],activeStep:7,advancedStep:10,highestStep:7,advancedHighestStep:10,setupOverview:false,activeTab:'setup',...extra});
@@ -59,7 +60,7 @@ for(const locale of ['en','fr']){
   // No statement: a plan at room temperature fits within the day.
   await expect(ft.locator('[data-yeast-entry-issue]')).toHaveCount(0);
   await expect.poll(async()=>(await stored(page)).yeastPctOverride).toBe(0.1);
-  expect((await stored(page)).calcAnchor.anchorH).toBe(23); // round 15: keyed by the inputs, not remembered with the amount
+  expect((await stored(page)).calcAnchor).toBeUndefined(); // round 15: the anchor is the picker's automatic plan, derived, never saved
   await update(page,ft,fr);
   const s=await stored(page);
   expect(s.startTime).toBeGreaterThan(B3_NOW);
@@ -86,7 +87,7 @@ for(const locale of ['en','fr']){
   const night=ft.locator('[data-entry-night]');
   await expect(night.locator('p')).toHaveText(fr?/^Ce planning a le pétrissage à \dh\d\d/:/^This plan has Start Dough at \d{1,2}:\d\dam/);
   // Two choices, neither a primary button.
-  await expect(night.getByRole('button')).toHaveText([fr?/^Utiliser 0,\d\d % \(sans étape de nuit\)$/:/^Use 0\.\d\d% \(no night steps\)$/,fr?'Garder 0,08 %':'Keep 0.08%']);
+  await expect(night.getByRole('button')).toHaveText([fr?/^Utiliser 0,\d\d? % \(sans étape de nuit\)$/:/^Use 0\.\d\d?% \(no night steps\)$/,fr?'Garder 0,08 %':'Keep 0.08%']);
   await expect(night.locator('.bh-apply-plan')).toHaveCount(0);
   await expect(ft.locator('[data-yeast-helper]')).toHaveCount(0);
   await shot(page,`night-line-${locale}`,night);
@@ -106,7 +107,7 @@ for(const locale of ['en','fr']){
   expect(errors).toEqual([]);
  });
 
- test(`${locale}: night steps (owner) — "Use … (no night steps)" takes the nearest amount and keeps the 8:30pm knead`,async({page})=>{
+ test(`${locale}: night steps (owner) — "Use … (no night steps)" takes the nearest amount and keeps the calculated knead`,async({page})=>{
   const errors=await open(page,b3(),locale,B3_NOW);const ft=await fineTune(page);
   const yeast=ft.locator('[data-yeast-override] input');
   await yeast.fill(fr?'0,08':'0.08');await yeast.blur();

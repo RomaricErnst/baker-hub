@@ -9,8 +9,10 @@ const night={from:new Date('2026-10-03T23:00:00Z'),to:new Date('2026-10-04T07:00
 const source=fs.readFileSync('app/components/SchedulePicker.tsx','utf8');
 const tree=ts.createSourceFile('SchedulePicker.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 // Round 8 (D1): the biga's storage order and the chosen-storage note live beside them.
-const names=['applyAndUpdate','replanCurrentSchedule','commercialRecommendation','poolishLadder','noteChosenStorage','recommendBiga','bigaModes'],declarations=[];
-function visit(n){if(ts.isFunctionDeclaration(n)&&names.includes(n.name?.text))declarations.push(n.getText(tree));ts.forEachChild(n,visit);}visit(tree);
+// Round 15: the recommendation itself is the module's (commercialPlanRecommendation, read with the picker's planCtx).
+const names=['applyAndUpdate','replanCurrentSchedule','commercialRecommendation','poolishLadder','noteChosenStorage','recommendBiga','bigaModes',
+ 'commercialPlanRecommendation','poolishLadderFor','bigaPlanModes'],declarations=[];
+function visit(n){if(ts.isFunctionDeclaration(n)&&names.includes(n.name?.text))declarations.push(n.getText(tree).replace(/^export /,''));ts.forEachChild(n,visit);}visit(tree);
 function harness(overrides={}){
  const writes=[];
  class Clock extends Date{static now(){return now;}}
@@ -31,6 +33,10 @@ function harness(overrides={}){
   hasPreferment:true,prefWarmupHours:0,prefWindow:{min:7,max:10},supported:true,blocks,kitchenTemp:22,
   preheatMin:45,mixerType:'hand',styleKey:'neapolitan',numItems:4,
   window:()=>({from:original,to:new Date('2026-10-04T10:00:00Z')}),methodValid:()=>true});
+ c.planCtx=()=>({prefermentType:c.prefermentType,poolishStorage:c.poolishStorage,bigaStorage:c.bigaStorage,kitchenTemp:c.kitchenTemp,execution:c.execution,
+  completedMixAt:c.completedMixAt,poolishPeakAtMix:c.poolishPeakAtMix,prefInFridge:c.prefGoesInFridge,prefEnteredModes:c.prefYeastModes(true),prefYeastEntered:false});
+ c.commercialPlanInput=(ctx,blocks,inFridge,start)=>c.commercialCandidateInput(blocks,inFridge,start);
+ c.planPrefTargetH=()=>c.prefTargetH();c.bigaCoolOffered=()=>c.bigaCoolAllowed;
  vm.createContext(c);vm.runInContext(ts.transpileModule(declarations.join('\n'),{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText,c);
  return {c,writes};
 }

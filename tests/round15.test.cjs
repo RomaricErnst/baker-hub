@@ -30,16 +30,29 @@ const b3 = (bake, blocks = nights) => ({ bake: SG(bake), blocks, kitchenTemp: 22
   numItems: 4, itemWeight: 260, mixingBatches: 1, fridgeTemp: 6, hydration: 65, planLadder: 'hot', doughTempC: 24, now, conversion: 1,
   calculatedIdyPct: 0.146, roomPlans: true, nightAllowed: [],
   defaultWindow: b => sp.commercialReadinessWindow({ ...sp.STYLE_FERM_DEFAULTS.neapolitan, flourStrength: 1.2, kitchenTemp: 22, preheatMin: 45, totalWindowH: (+b - now) / H }) });
-// The page's input: the anchor is the calculated plan for these inputs (calcPlan → calculatedPlan), never remembered.
-// The page seeds the calculated plan where the picker seeds its automatic plan (automaticSeedH → calcSeedH).
-const calc = o => Y.calculatedPlan({ ...o, calcSeedH: sp.automaticSeedH({ style: sp.STYLE_FERM_DEFAULTS.neapolitan, styleKey: 'neapolitan', flourStrength: 1.2,
-  kitchenTemp: 22, fridgeTemp: 6, preheatMin: 45, tang: 'balanced', bake: o.bake, now, blocks: o.blocks, preferment: false }) });
+// The page's input: the anchor is the calculated plan for these inputs (autoPlan), never remembered: the picker's own
+// automatic plan, one pure function (SchedulePicker automaticCommercialPlan) both apply.
+const sa = require('../app/utils/scheduleAvailability.ts');
+const planCtx = (flourStrength = 1.2) => ({ now, styleKey: 'neapolitan', kitchenTemp: 22, fridgeTemp: 6, flourStrength, tang: 'balanced', preheatMin: 45, preheatExtraMin: 0,
+  planLadder: 'hot', mixerType: 'hand', numItems: 4, mixingBatches: 1, prefermentType: 'none', poolishStorage: 'auto', bigaStorage: 'auto', prefOffsetH: 0, prefInFridge: false, targetDoughTemp: 24 });
+const calc = (o, flourStrength) => {
+  const blocks = Y.uncovered(o.blocks);
+  const p = sp.automaticCommercialPlan(planCtx(flourStrength), blocks, o.bake, {});
+  if (!p.times) return null;
+  const times = { start: p.times.start, bake: o.bake, prefHours: p.times.prefHours };
+  const nightIds = [...new Set(sa.newNightHandsOn(Y.entryPlanActions({ times }, { ...o, blocks }), blocks).filter(a => +a.at > now).map(a => a.id))];
+  return { times, anchorH: (+o.bake - +times.start) / H, nightIds };
+};
 const current = o => { const c = calc(o); return { ...o, anchorH: c?.anchorH, nightAllowed: c?.nightIds ?? [] }; };
 const same = (a, b) => JSON.stringify(a && [a.times, a.shape, a.nightSteps.map(s => s.id + +s.at)]) === JSON.stringify(b && [b.times, b.shape, b.nightSteps.map(s => s.id + +s.at)]);
 
 test('O2: the calculated plan is derived from the current inputs (Thu 20:00 for Fri 11:30, Thu 20:30 for Fri 19:30)', () => {
   assert.equal(hhmm(calc(b3('2026-11-27T11:30:00')).times.start), 'Thu 20:00');
   assert.equal(calc(b3('2026-11-27T19:30:00')).anchorH, 23);
+  // Round 15b: the page's anchor is the picker's plan (one function, as the phone probe shows it): B3 with no amount,
+  // default flour, the Thursday night the picker carries to the bake, bake Fri 7:30pm → Thu 8:30pm (the page's
+  // reconstruction read Fri 7:00am).
+  assert.equal(hhmm(calc(b3('2026-11-27T19:30:00', nights.slice(0, 1)), 1).times.start), 'Thu 20:30');
   // Covers an earlier plan put on the nights never move it.
   const kept = Y.entryPlan(0.15, current(b3('2026-11-27T11:30:00')));
   assert.ok(kept.blocks.some(b => b.coveredActions?.length), 'the lunch plan covers its night steps');
@@ -67,7 +80,6 @@ test('O2 ranking: no hands-on step 23:00–06:00 first, then the fewest night st
     const chosen = Y.entryPlan(pct, o);
     if (!chosen) continue;
     // Every candidate the builder considers scores no better.
-    const sa = require('../app/utils/scheduleAvailability.ts');
     const score = p => sa.nightScore(sa.newNightHandsOn(Y.entryPlanActions(p, o), nights).filter(a => +a.at > now), nights);
     const others = [Y.entryPlanSearch(pct, o), Y.entryPlanSearch(pct, o, undefined, { softNights: true })].filter(Boolean);
     for (const other of others) assert.ok(score(chosen) <= score(other), `${pct} ${bake}: ${score(chosen)} > ${score(other)}`);
@@ -89,9 +101,11 @@ test('saved bakes: ENTRY_RULES 4; a bake under way saved with 3 keeps its rememb
   assert.notDeepEqual(Y.entryPlanShape(0.15, current(b3('2026-11-27T19:30:00'))), remembered, 'a new bake reads the current knead');
   // The page reads the remembered knead only then, and writes it only then.
   assert.match(page, /const rememberedAnchor = legacyEntryTiming \|\| keptEntryRules !== undefined;/);
-  assert.match(page, /const entryAnchor = rememberedAnchor \? \(yeastPctOverride !== undefined \? yeastAnchorH : undefined\) : seen\?\.anchorH \?\? calcPlan\?\.anchorH;/);
-  // The automatic plan shown for exactly these inputs (keyed by them), else the derived one; the session keeps only the current key's.
-  assert.match(page, /calcAnchor: entryInForce && seen \? \{ key: calcKey, \.\.\.seen \} : undefined/);
+  assert.match(page, /const entryAnchor = rememberedAnchor \? \(yeastPctOverride !== undefined \? yeastAnchorH : undefined\) : autoPlan\?\.anchorH;/);
+  // One anchor source (round 15b): the picker's automatic plan; nothing keyed, recorded or saved beside it.
+  assert.match(page, /const plan = automaticCommercialPlan\(/);
+  assert.match(picker, /const plan = automaticCommercialPlan\(planCtx\(\), currentBlocks, et, manualTimesRef\.current\);/);
+  assert.doesNotMatch(page, /calcAnchor|calcSeen|calcKey|calculatedPlan|automaticSeedH/);
   assert.match(page, /yeastAnchorH: yeastPctOverride !== undefined && rememberedAnchor \? yeastAnchorH : undefined/);
 });
 
@@ -143,4 +157,24 @@ test('item 3: one window check per storage; a statement quotes the band edge tha
   assert.doesNotMatch(page, /const ranges=storages\.map\(range\)/);
   assert.match(page, /is more than this field takes \(/);
   assert.match(page, /dépasse ce que ce champ accepte \(/);
+});
+
+test('item 4 (round 15b): Nights turned on after Keep: a fresh anchor from the new inputs, the plan complete as saved (no clash sheet)', () => {
+  const later = now + 2.25 * H; // Thu 9:45pm, as the phone spec (round11-yeast "Nights turned on after Keep")
+  const at = (blocks) => ({ ...b3('2026-11-27T11:30:00', blocks), now: later });
+  const currentAt = o => { const c = calc({ ...o, now: later }); return { ...o, anchorH: c?.anchorH, nightAllowed: c?.nightIds ?? [] }; };
+  const kept = Y.entryPlan(0.14, currentAt(at([])));
+  assert.ok(kept, 'planned without busy times');
+  const o = currentAt(at(nights));
+  // The anchor is the automatic plan for the new busy times, not the one before them.
+  assert.notEqual(o.anchorH, currentAt(at([])).anchorH);
+  const plan = Y.entryPlan(0.14, o);
+  assert.ok(plan, 'still planned with Nights on');
+  // Its night steps (Start Dough 2:00am and the folds) are named by the one Use/Keep line, and every step in the baker's
+  // nights is covered: nothing is left for the "… fall during the night" sheet.
+  assert.ok(plan.nightSteps.length > 0);
+  assert.ok(plan.blocks.some(b => b.coveredActions?.length));
+  assert.equal(sa.findAvailabilityConflicts(Y.entryPlanActions(plan, { ...o, blocks: plan.blocks }), plan.blocks).length, 0);
+  // The page reads the anchor afresh for the picker's busy times (planEntryFor / entryTimingFor pass them).
+  assert.match(page, /const fresh = at && !rememberedAnchor && \(\+at\.bake !== \+\(eatTime \?\? 0\) \|\| busyKey\(at\.blocks\) !== busyKey\(blocks\)\) \? automaticAnchor\(at\.blocks, at\.bake\) : autoPlan;/);
 });

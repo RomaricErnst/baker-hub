@@ -110,7 +110,10 @@ test('the page and the planner use one helper; the picker times the preferment b
  const page=fs.readFileSync('app/[locale]/page.tsx','utf8'),picker=fs.readFileSync('app/components/SchedulePicker.tsx','utf8');
  assert.match(page,/prefYeastPctOverride=\{effectivePrefYeastOverride\}/);
  assert.match(page,/const effectivePrefYeastOverride = enteredPrefYeast && prefYeastFit\(/);
- assert.match(picker,/function prefTargetH\(method:string,inFridge:boolean\)\{\n\s*return prefYeastTimingFor\(method,inFridge\)\?\.hours\?\?getPrefOptH/);
+ // Round 15: the picker's prefTargetH is the module's planPrefTargetH, fed the picker's prefYeastTimingFor (planCtx).
+ assert.match(picker,/function prefTargetH\(method:string,inFridge:boolean\)\{\n\s*return planPrefTargetH\(planCtx\(\),method,inFridge\);/);
+ assert.match(picker,/return c\.prefTiming\?\.\(method,inFridge\)\?\.hours\?\?getPrefOptH\(method,c\.kitchenTemp,inFridge,c\.styleKey,c\.fridgeTemp\);/);
+ assert.match(picker,/prefTiming:prefYeastTimingFor,/);
  // Every planner seed of the preferment window goes through prefTargetH (no direct optimum left in the component).
  const component=picker.slice(picker.indexOf('function FermentedSchedulePicker('));
  assert.doesNotMatch(component.replace(/return prefYeastTimingFor\(method,inFridge\)\?\.hours\?\?getPrefOptH\(method,kitchenTemp,inFridge,styleKey,fridgeTemp\)/,''),/prefHours:getPrefOptH|prefHours=[^;]*getPrefOptH/);

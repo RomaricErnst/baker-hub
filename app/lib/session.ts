@@ -143,9 +143,6 @@ export interface SessionData {
   /** The calculated plan's mix-to-bake hours when the baker entered yeastPctOverride (rounds 8–13). Round 15 (O2) derives it
    * from the current inputs; it is read and saved only for a bake under way kept with older rules (entryRulesKept). */
   yeastAnchorH?: number;
-  /** Round 15 (O2): the automatic plan the page showed for the current inputs (`key`: those inputs), so an entered amount
-   * keeps its anchor across a reload; read only while the inputs are the same. */
-  calcAnchor?: { key: string; anchorH: number; idyPct?: number; pref?: { type: string; pct: number }; nightIds: string[] };
   /** Round 9 (owner, 22 Nov 2026): the entered amounts whose night steps the baker chose to keep ("keep night steps for this
    * amount", never a plan). */
   entryNightKept?: { yeast?: number; pref?: { type: 'poolish' | 'biga'; pct: number } };

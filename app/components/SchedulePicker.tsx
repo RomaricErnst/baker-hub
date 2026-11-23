@@ -849,26 +849,255 @@ export function earliestPrefermentBake({type,storages,from,now=Date.now(),blocks
   return null;
 }
 
-/** Round 15 (O2): where computeAndApplyRecommendation seeds a commercial dough's automatic plan, in hours before the bake:
- * the cold-maximised sweet centre (the style's cold scaled by the flour, biased by the tang, plus its room hours), through
- * findOptimalPosition for a direct dough, the centre itself for a poolish or biga (commercialRecommendation). The page's
- * `calculatedPlan` searches from it, so an entered amount is anchored on the plan the page shows without one. */
-export function automaticSeedH(o: { style: { coldH: number; rtH: number; preferredColdH?: number; minColdH?: number; minTotalFermH?: number; coldHRequired?: boolean };
-  styleKey: string; flourStrength: number; kitchenTemp: number; fridgeTemp: number; preheatMin: number; tang: string; bake: Date; now: number;
-  blocks: AvailabilityBlock[]; preferment: boolean }): number {
-  const H = 3600000;
-  const ftm = Math.max(0.5, Math.min(2, o.flourStrength));
-  const coldS = Math.round(o.style.coldH * ftm), prefS = Math.round((o.style.preferredColdH ?? o.style.coldH) * ftm);
-  const windowH = (+o.bake - o.now) / H, minRT = (o.kitchenTemp >= 28 ? 0.5 : 1.5) + 1 + o.preheatMin / 60;
-  const expectedCold = coldS === 0 ? 0 : windowH >= prefS + minRT ? prefS : windowH >= coldS + minRT ? coldS : windowH > minRT ? windowH - minRT : 0;
-  const tangMult = o.tang === 'tangy' ? 1.15 : o.tang === 'mild' ? 0.85 : 1;
-  const biased = coldS <= 0 ? 0 : tangMult === 1 ? coldS : Math.max(o.style.minColdH ?? 0, Math.min(prefS, coldS * tangMult));
-  const centreRaw = expectedCold > 0 ? biased + o.style.rtH : o.style.rtH;
-  if (o.preferment) return centreRaw;
-  const raw = commercialReadinessWindow({ ...o.style, flourStrength: o.flourStrength, kitchenTemp: o.kitchenTemp, preheatMin: o.preheatMin, totalWindowH: windowH });
-  const centre = Math.min(centreRaw, (+o.bake - (Math.floor(o.now / 900000) + 1) * 900000) / H);
-  const from = Math.min(raw.from, windowH - 0.25), to = Math.min(raw.to, from - 0.5);
-  return findOptimalPosition(centre, from, to, o.blocks, o.bake, false, 0, o.kitchenTemp, windowH, 'none', 3, minRT, 0, false, o.fridgeTemp, o.styleKey).mixHBF;
+/** Round 15 (owner O2): ONE source for a commercial dough's automatic plan. Everything the picker's
+ * computeAndApplyRecommendation reads, as plain values (its props and state); the picker applies the result and the
+ * page anchors an entered amount on the same result, so the anchor is the plan the picker shows for these inputs. */
+export interface CommercialPlanContext extends WarmupInputs {
+  now: number;
+  styleKey: string; kitchenTemp: number; fridgeTemp: number; flourStrength: number; tang: string;
+  preheatMin: number; preheatExtraMin: number; exitLeadMin?: PlanShape; planLadder?: PlanLadder;
+  mixerType: MixerType; numItems?: number; mixingBatches: number;
+  prefermentType: string; poolishStorage: 'auto' | 'fridge' | 'room'; bigaStorage: BigaStorage;
+  /** The preferment hours and storage the plan input starts from (the picker's prefOffsetH / prefGoesInFridge). */
+  prefOffsetH: number; prefInFridge: boolean;
+  poolishPeakAtMix?: PoolishPeakCheck;
+  execution?: BakeExecution; completedMixAt?: number; formulaValid?: EditInput['formulaValid'];
+  /** An entered amount's readiness window (the picker's yeastTimingFor); absent for the calculated plan. */
+  yeastTiming?: (bake: Date, blocks: AvailabilityBlock[], method: string) => EnteredYeastTiming | null;
+  /** An entered preferment amount's window (the picker's prefYeastTimingFor), the storages it can use and whether one
+   * is entered; absent for the calculated plan. */
+  prefTiming?: (method: string, inFridge: boolean) => { min: number; max: number; hours: number } | null;
+  prefEnteredModes?: boolean[] | null; prefYeastEntered?: boolean;
+}
+export function planThermal(c: WarmupInputs & { styleKey: string; kitchenTemp: number; fridgeTemp: number; mixerType: MixerType }, method: string, inFridge: boolean) {
+  return {prefermentType:method, prefInFridge:inFridge,
+    styleKey:c.styleKey, kitchenTemp:c.kitchenTemp, fridgeTemp:c.fridgeTemp, mixerType:c.mixerType, targetDoughTemp:c.targetDoughTemp,
+    prefermentFlourPct:c.prefermentFlourPct, doughMassG:c.doughMassG, hydrationPct:c.hydrationPct, flourTempC:c.flourTempC};
+}
+/** A biga's storages in order (D1): the fridge plan as before; the cool spot only when no fridge plan fits. */
+export function bigaPlanModes(bigaStorage: BigaStorage, kitchenTemp: number): boolean[] {
+  return bigaStorage==='cool'?[false]:bigaStorage==='fridge'||!bigaCoolOffered(bigaStorage,kitchenTemp)?[true]:[true,false];
+}
+/** The preferment's target window: the entered yeast's when there is one, else the planner's optimum. */
+export function planPrefTargetH(c: CommercialPlanContext, method: string, inFridge: boolean) {
+  return c.prefTiming?.(method,inFridge)?.hours??getPrefOptH(method,c.kitchenTemp,inFridge,c.styleKey,c.fridgeTemp);
+}
+/** The plan input of a commercial dough for these busy times, storage, start, bake and method. */
+export function commercialPlanInput(c: CommercialPlanContext, candidateBlocks: AvailabilityBlock[], inFridge: boolean, start: Date, bake: Date, method: string): EditInput {
+  const {execution,completedMixAt,styleKey,kitchenTemp,fridgeTemp,flourStrength,preheatMin}=c;
+  const hasPrefActive=method==='poolish'||method==='biga';
+  const entered=c.prefTiming?.(method,inFridge)??null;
+  const prefWindow=entered?{min:entered.min,max:entered.max}:commercialPrefermentWindow(method,inFridge,kitchenTemp,styleKey,fridgeTemp);
+  const input:EditInput={isSourdough:false,formulaValid:execution?c.formulaValid:undefined,completedMixAt:completedMixAt??(execution?.method==='none'?execution.actualAt:undefined),completedPrefermentAt:execution&&execution.method!=='none'?execution.actualAt:undefined,id:'mix',at:start,start,bake,now:c.now,
+    blocks:candidateBlocks,kitchenTemp,preheatMin,exitLeadMin:c.exitLeadMin,planLadder:c.planLadder,preheatExtraMin:c.preheatExtraMin,mixerType:c.mixerType,styleKey,numItems:c.numItems,mixingBatches:c.mixingBatches,
+    prefHours:hasPrefActive?c.prefOffsetH:0,hasPreferment:hasPrefActive,prefWindow:execution?.prefWindow??prefWindow,pins:execution&&execution.method!=='none'?{preferment:new Date(execution.actualAt)}:undefined,prefWarmupHours:requiredPrefWarmupH(planThermal(c,method,inFridge)),prefCooldownHours:requiredPrefCooldownH(planThermal(c,method,inFridge)),
+    preferDaytime:true,supported:!!STYLE_FERM_DEFAULTS[styleKey]&&(!getBreadProtocol(styleKey)||getBreadProtocol(styleKey)!.supportedPreferments.includes(method as 'none')),
+    window:bake=>{const bounds=c.yeastTiming?.(bake,candidateBlocks,method)??commercialReadinessWindow({...(STYLE_FERM_DEFAULTS[styleKey]??FERM_FALLBACK),flourStrength,kitchenTemp,preheatMin,totalWindowH:(+bake-(completedMixAt??(execution?.method==='none'?execution.actualAt:c.now)))/3600000});return {from:bounds.from!==null?new Date(+bake-bounds.from*3600000):null,to:bounds.to!==null?new Date(+bake-bounds.to*3600000):null};},
+    methodValid:times=>commercialPrefermentPlanValid({type:method,inFridge,mixTime:times.start,bakeTime:times.bake,offsetHours:times.prefHours,blocks:candidateBlocks,alreadyStarted:!!execution,mixCompleted:completedMixAt!==undefined}),
+  };
+  return input;
+}
+/** A biga's storages in order (D1): the fridge plan as before; the cool spot only when no fridge plan fits. */
+export function recommendBiga(options:{inFridge:boolean;input:EditInput}[],pins:Parameters<typeof recommendPreferment>[1],preferences:Parameters<typeof recommendPreferment>[2]){
+  const fridge=options.filter(o=>o.inFridge),cool=options.filter(o=>!o.inFridge);
+  if(!fridge.length||!cool.length)return recommendPreferment(options,pins,preferences);
+  const kept=recommendPreferment(fridge,pins,preferences);
+  if(kept.result.found)return kept;
+  // The planner's own fallback: no new night step (a chosen cool spot is planned like the fridge).
+  const spot=recommendPreferment(cool.map(o=>({...o,input:withoutNightSteps(o.input)})),pins,preferences);
+  // Only a complete cool-spot plan replaces the fridge one (a plan with no fit stays as it was).
+  return spot.result.found?spot:kept;
+}
+export function poolishLadderFor(c: CommercialPlanContext, overrides: TimingOverrides){
+  if(c.prefermentType!=='poolish'||c.execution||c.completedMixAt!==undefined||!c.poolishPeakAtMix||c.prefYeastEntered)return undefined;
+  return {peakAtMix:c.poolishPeakAtMix,storage:c.poolishStorage,timeSet:overrides.pref!==undefined||!!overrides.prefLocked};
+}
+/** A poolish or biga's recommended plan: the storages the baker left open compared (preferments only). */
+export function commercialPlanRecommendation(c: CommercialPlanContext, candidateBlocks: AvailabilityBlock[], overrides: TimingOverrides, bake: Date, start: Date) {
+  const {execution,prefermentType,poolishStorage,kitchenTemp}=c;
+  // Preserve storage for explicitly chosen preparation; automatic poolish can
+  // compare both methods. Biga retains its existing refrigerated protocol.
+  const enteredModes=execution?null:c.prefEnteredModes??null;
+  const modes=execution?[execution.inFridge]:enteredModes?.length?enteredModes:prefermentType==='poolish'?(poolishStorage==='fridge'?[true]:poolishStorage==='room'?[false]:[true,false]):prefermentType==='biga'?bigaPlanModes(c.bigaStorage,kitchenTemp):[c.prefInFridge];
+  const options=modes.map(inFridge=>({inFridge,input:{
+    ...commercialPlanInput(c,candidateBlocks,inFridge,start,bake,prefermentType),
+    prefHours:planPrefTargetH(c,prefermentType,inFridge),
+  }}));
+  const pins={mix:overrides.mix===undefined?undefined:new Date(overrides.mix),preferment:execution&&execution.method!=='none'?new Date(execution.actualAt):overrides.pref===undefined?undefined:new Date(overrides.pref)};
+  const preferences={preferCold:prefermentType==='poolish'&&kitchenTemp>=26,startThisEvening:prefermentType==='poolish'&&kitchenTemp>=26};
+  // A poolish past its peak at the mix: fridge (auto storage), then a later start (time not set); else the recipe splits the yeast.
+  const ladder=poolishLadderFor(c,overrides);
+  // A biga: the fridge as before; a cool spot only when no fridge plan fits (D1), so every fridge plan stays as it was.
+  if(prefermentType==='biga'&&!execution)return recommendBiga(options,pins,preferences);
+  return ladder?recommendRipePoolish(options,pins,preferences,ladder):recommendPreferment(options,pins,preferences);
+}
+
+/** The automatic plan of a commercial dough (no entered amount timing it): what computeAndApplyRecommendation shows.
+ * `times` is its knead (and preferment); when no plan fits, the knead the search itself falls back to (null only when
+ * the bake is past or the window holds no fermentation). */
+type PlanBase = { minTotalRT: number; preferredColdH: number };
+export type AutomaticCommercialPlan =
+  | PlanBase & { kind: 'past'; times: null }
+  | PlanBase & { kind: 'short'; times: null }
+  | PlanBase & { kind: 'preferment'; times: { start: Date; prefHours: number; inFridge?: boolean }; expectedColdH: number; skipPoolish: boolean;
+      optimalPrefOffset: number; inFridge: boolean; chosen: ReturnType<typeof commercialPlanRecommendation> }
+  | PlanBase & { kind: 'direct'; times: { start: Date; prefHours: number; inFridge?: boolean }; expectedColdH: number; guardShort: boolean;
+      sweetCenter: number; sweetFrom: number; popup: boolean; result: ReturnType<typeof findOptimalPosition> };
+export function automaticCommercialPlan(c: CommercialPlanContext, currentBlocks: AvailabilityBlock[], et: Date, overrides: TimingOverrides): AutomaticCommercialPlan {
+  const {styleKey,kitchenTemp,fridgeTemp,preheatMin,flourStrength,prefermentType,poolishStorage,execution,completedMixAt}=c;
+  const hasPrefActive=prefermentType!=='none'&&prefermentType!=='';
+  const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
+  // Scale fermentation windows by flour strength (W value / fermToleranceMultiplier).
+  // Stronger flour tolerates longer fermentation and benefits from more cold retard.
+  // rtH and minTotalFermH are NOT scaled — those are fixed by physiology and style.
+  const ftm = Math.max(0.5, Math.min(2.0, flourStrength));
+  const scaledDefaults = {
+    ...defaults,
+    coldH:          Math.round(defaults.coldH * ftm),
+    preferredColdH: Math.round((defaults.preferredColdH ?? defaults.coldH) * ftm),
+  };
+  const isTrop = kitchenTemp >= 28;
+  const minBulkRTLocal = isTrop ? 0.5 : 1.5;
+  const minTotalRTLocal = minBulkRTLocal + 1.0 + (preheatMin / 60);
+  const nowMs = c.now;
+  const totalWindowH = (et.getTime() - nowMs) / 3600000;
+  const nowHBF = totalWindowH;
+  // CT maximization — exact same model as buildSchedule
+  const preferredColdH = scaledDefaults.preferredColdH ?? scaledDefaults.coldH;
+  const base = { minTotalRT: minTotalRTLocal, preferredColdH };
+  // Guard: bake time in the past
+  if (totalWindowH <= 0) return { ...base, kind: 'past', times: null };
+  // Guard: window too short for any fermentation
+  if (totalWindowH < minTotalRTLocal) return { ...base, kind: 'short', times: null };
+
+  let expectedColdH: number;
+  if (scaledDefaults.coldH === 0) {
+    expectedColdH = 0;
+  } else if (totalWindowH >= preferredColdH + minTotalRTLocal) {
+    expectedColdH = preferredColdH;
+  } else if (totalWindowH >= scaledDefaults.coldH + minTotalRTLocal) {
+    expectedColdH = scaledDefaults.coldH;
+  } else if (totalWindowH > minTotalRTLocal) {
+    expectedColdH = totalWindowH - minTotalRTLocal;
+  } else {
+    expectedColdH = 0;
+  }
+  const hasColdLocal = expectedColdH > 0;
+
+  // Compute fridge decision locally — same logic as render-time prefGoesInFridge
+  // but using fresh values to avoid stale closure
+  // Never use mixOffsetH (stale UI state) to compute the recommendation.
+  // Fridge is viable if total window allows: poolish min 12h + RT fermentation.
+  // Exclude preheat from fridge viability — preheat is post-load, irrelevant to poolish window.
+  const minTotalRT_noPreheat = (kitchenTemp >= 28 ? 0.5 : 1.5) + 1.0;
+  const localEnoughTimeForFridge = nowHBF >= (14 + minTotalRT_noPreheat);
+  const localPrefGoesInFridge = hasPrefActive && (
+    prefermentType === 'biga'
+    || (prefermentType === 'poolish' && (poolishStorage === 'fridge' || (poolishStorage !== 'room' && (kitchenTemp >= 26 || localEnoughTimeForFridge))))
+  );
+  // Scale fridge poolish optimal time by flour strength — stronger flour benefits from longer poolish.
+  // RT poolish is temp-driven (not gluten-driven), so only fridge poolish gets scaled.
+  const basePrefOptH = hasPrefActive
+    ? getPrefOptH(prefermentType, kitchenTemp, localPrefGoesInFridge, styleKey ?? 'neapolitan', fridgeTemp)
+    : c.prefOffsetH;
+  const rawPrefOffset = localPrefGoesInFridge
+    ? Math.min(24, Math.round(basePrefOptH * ftm * 2) / 2)
+    : basePrefOptH;
+  // fridge-aware minimum: 12h for fridge poolish/biga, 3h for RT poolish
+  const poolishMinH = localPrefGoesInFridge ? 12 : 3;
+
+  // sweetCenter = coldH + rtH = the style sweet spot where dough peaks at bake
+  // (commercial yeast: climateRtH returns baseRtH; climate adjusts the yeast dose, not timing).
+  // sweetFrom = leftmost boundary (preferredColdH + rtH) — widest useful cold
+  // sweetTo = rightmost boundary (minimum viable total fermentation)
+  const tangMult = c.tang === 'tangy' ? 1.15 : c.tang === 'mild' ? 0.85 : 1.0;
+  const biasCold = (coldH: number, minColdH: number, prefColdH: number) =>
+    coldH <= 0 ? 0 : tangMult === 1.0 ? coldH : Math.max(minColdH, Math.min(prefColdH, coldH * tangMult));
+  const _biasedColdSolver = biasCold(
+    scaledDefaults.coldH,
+    scaledDefaults.minColdH ?? 0,
+    scaledDefaults.preferredColdH ?? scaledDefaults.coldH
+  );
+  const _rtH_solver = climateRtH(defaults.rtH, kitchenTemp, false);
+  const sweetCenterRaw = hasColdLocal
+    ? _biasedColdSolver + _rtH_solver         // dough peaks at bake at this position
+    : _rtH_solver;                             // RT only: peak at rtH before bake
+  // sweetFrom = right edge of dough quality plateau (not preferredColdH which is the target).
+  // Scaled by flourStrength: stronger flour has wider plateau tolerance.
+  const rawWindow = commercialReadinessWindow({ ...defaults, rtH: _rtH_solver, flourStrength,
+    kitchenTemp, preheatMin, totalWindowH });
+  const sweetFromRaw = rawWindow.from;
+  // minTotalFermH as the right boundary — matches the card's green zone (style-sensitive).
+  const sweetToRaw = rawWindow.to;
+
+  // Clip all to nowHBF — cannot start in the past
+  // An ideal start already past is clipped to the first quarter hour at
+  // least 15 minutes away, never "now + 30 min". findFixedBakeSchedule then
+  // prefers a start two hours out when that still fits the bake.
+  const sweetCenter = Math.min(sweetCenterRaw, (et.getTime() - earliestQuarterStart(nowMs)) / 3600000);
+  const sweetFrom   = Math.min(sweetFromRaw,   nowHBF - 0.25);
+  const sweetTo     = Math.min(sweetToRaw,     sweetFrom - 0.5);
+
+  if (hasPrefActive) {
+    // Skip poolish if window too short for even a yellow result (poolishMinH + room time, preheat excluded).
+    const skipPoolish = totalWindowH < poolishMinH + minTotalRT_noPreheat;
+    // Use the same full-plan comparison as subsequent availability edits.
+    const chosen=commercialPlanRecommendation(c,currentBlocks,overrides,et,new Date(+et-sweetCenterRaw*3600000));
+    const t=chosen.result.candidate.times;
+    return { ...base, kind: 'preferment', expectedColdH, skipPoolish, optimalPrefOffset: rawPrefOffset, inFridge: localPrefGoesInFridge, chosen,
+      times: { start: t.start, prefHours: t.prefHours, inFridge: chosen.inFridge } };
+  }
+
+  let result = findOptimalPosition(
+    sweetCenter, sweetFrom, sweetTo,
+    currentBlocks, et,
+    false, c.prefOffsetH,
+    kitchenTemp,
+    nowHBF,
+    prefermentType,
+    poolishMinH,
+    minTotalRTLocal,
+    requiredPrefWarmupH(planThermal(c, prefermentType, false)),
+    false,
+    fridgeTemp,
+    styleKey ?? 'neapolitan',
+  );
+  // Cold-required methods must fit the actual preparation chronology, not
+  // just nominal cold + room-temperature hours. Keep the target and search
+  // the existing window; an unrepairable plan stays visibly invalid.
+  if (defaults.coldHRequired) {
+    const verified = findRequiredColdStart({
+      start: new Date(+et - result.mixHBF * 3600000), bake: et,
+      from: new Date(+et - sweetFromRaw * 3600000), to: new Date(+et - sweetToRaw * 3600000),
+      now: nowMs, blocks: currentBlocks, kitchenTemp, preheatMin, exitLeadMin: c.exitLeadMin, planLadder: c.planLadder,
+      mixerType: c.mixerType, styleKey, numItems: c.numItems, mixingBatches: c.mixingBatches,
+    });
+    if (verified.found) {
+      const mixHBF = (+et - +verified.candidate.times.start) / 3600000;
+      result = { ...result, mixHBF, prefHBF: mixHBF, mixInZone: true,
+        mixInBlocker: false, fallback: false, score: 2 };
+    }
+  }
+  if (!execution && completedMixAt===undefined) {
+    const preferredStart=new Date(+et-result.mixHBF*3600000);
+    const candidate=findFixedBakeSchedule(commercialPlanInput(c,currentBlocks,false,preferredStart,et,'none'));
+    if(candidate.found){
+      const mixHBF=(+et-+candidate.candidate.times.start)/3600000;
+      result={...result,mixHBF,prefHBF:mixHBF,fallback:false,mixInBlocker:false};
+    }else if(candidate.leastConflict){
+      // No plan avoids every busy time: start from the one that needs the
+      // baker least (e.g. mix tonight, only the fridge exit falls at work),
+      // never from a default that lands every step in the workday.
+      const mixHBF=(+et-+candidate.leastConflict.candidate.times.start)/3600000;
+      result={...result,mixHBF,prefHBF:mixHBF};
+    }
+  }
+  // Genuine conflict (score 0, every valid position blocked): the picker asks; the knead it falls back to is the
+  // position outside the zone. Else a proposed start speaks in quarter hours, at least 15 minutes from now.
+  const popup = result.score === 0 && result.fallback && result.mixInBlocker;
+  const start = popup ? new Date(+et - result.mixHBF * 3600000) : new Date(quarterStartNoEarlier(et.getTime() - result.mixHBF * 3600000, nowMs));
+  return { ...base, kind: 'direct', expectedColdH, guardShort: !hasColdLocal && totalWindowH < sweetToRaw, sweetCenter, sweetFrom, popup, result,
+    times: { start, prefHours: 0 } };
 }
 
 export function findOptimalPosition(
@@ -1996,9 +2225,7 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   const solverBulkFactor = () => probeBulkFactorRef.current ?? starterBulkFactor;
   const solverBulkDeltaH = () => isSourdough && styleKey ? sourdoughBulkH(styleKey, kitchenTemp) * (solverBulkFactor() - 1) : 0;
   function thermalInputs(method:string,inFridge:boolean){
-    return {prefermentType:method, prefInFridge:inFridge,
-      styleKey, kitchenTemp, fridgeTemp, mixerType, targetDoughTemp,
-      prefermentFlourPct, doughMassG, hydrationPct, flourTempC};
+    return planThermal({styleKey, kitchenTemp, fridgeTemp, mixerType, targetDoughTemp, prefermentFlourPct, doughMassG, hydrationPct, flourTempC},method,inFridge);
   }
   function warmupFor(method:string,inFridge:boolean){return requiredPrefWarmupH(thermalInputs(method,inFridge));}
   function cooldownFor(method:string,inFridge:boolean){return requiredPrefCooldownH(thermalInputs(method,inFridge));}
@@ -2011,13 +2238,13 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   }
   /** The preferment's target window: the entered yeast's when there is one, else the planner's optimum. */
   function prefTargetH(method:string,inFridge:boolean){
-    return prefYeastTimingFor(method,inFridge)?.hours??getPrefOptH(method,kitchenTemp,inFridge,styleKey,fridgeTemp);
+    return planPrefTargetH(planCtx(),method,inFridge);
   }
   // Biga storage (D1): the cool spot is open to the planner when chosen, or in 'auto' in a kitchen ≤ 20 °C.
   const bigaCoolAllowed=bigaCoolOffered(bigaStorage,kitchenTemp);
   const bigaYeastStorage:'auto'|'fridge'|'room'=bigaStorage==='cool'?'room':bigaStorage;
   /** The storages a biga plan may use, in order: the fridge first; the cool spot only when no fridge plan fits ('auto'), or alone when chosen. */
-  function bigaModes():boolean[]{return bigaStorage==='cool'?[false]:bigaStorage==='fridge'||!bigaCoolAllowed?[true]:[true,false];}
+  function bigaModes():boolean[]{return bigaPlanModes(bigaStorage,kitchenTemp);}
   /** The storages an entered preferment yeast can use, best first (null without one). */
   function prefYeastModes(preferFridge:boolean):boolean[]|null{
     if(prefYeastPctOverride===undefined||isSourdough||(prefermentType!=='poolish'&&prefermentType!=='biga'))return null;
@@ -2554,38 +2781,21 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       return;
     }
 
-    const defaults = STYLE_FERM_DEFAULTS[styleKey] ?? FERM_FALLBACK;
-    // Scale fermentation windows by flour strength (W value / fermToleranceMultiplier).
-    // Stronger flour tolerates longer fermentation and benefits from more cold retard.
-    // rtH and minTotalFermH are NOT scaled — those are fixed by physiology and style.
-    const ftm = Math.max(0.5, Math.min(2.0, flourStrength));
-    const scaledDefaults = {
-      ...defaults,
-      coldH:          Math.round(defaults.coldH * ftm),
-      preferredColdH: Math.round((defaults.preferredColdH ?? defaults.coldH) * ftm),
-    };
-    const isTrop = kitchenTemp >= 28;
-    const minBulkRTLocal = isTrop ? 0.5 : 1.5;
-    const minTotalRTLocal = minBulkRTLocal + 1.0 + (preheatMin / 60);
-    minTotalRTRef.current = minTotalRTLocal;
-    const nowMs = Date.now();
-    const totalWindowH = (et.getTime() - nowMs) / 3600000;
-    const nowHBF = totalWindowH;
-
+    // Round 15 (O2): the automatic plan is one pure function (automaticCommercialPlan); the picker applies it.
+    const plan = automaticCommercialPlan(planCtx(), currentBlocks, et, manualTimesRef.current);
+    minTotalRTRef.current = plan.minTotalRT;
     // Guard: bake time in the past
-    if (totalWindowH <= 0) {
+    if (plan.kind === 'past') {
       setGuardNote(tRoot('schedulePicker.guardPast'));
       return;
     }
-
     // Guard: window too short for any fermentation
-    if (totalWindowH < minTotalRTLocal) {
+    if (plan.kind === 'short') {
       setWindowTooShort(true);
       setGuardNote(null);
       setStartComputed(false);
       if (bakeType === 'bread') {
-        const prefColdH  = scaledDefaults.preferredColdH ?? scaledDefaults.coldH ?? 0;
-        const minNeededH = prefColdH + minTotalRTLocal + 1;
+        const minNeededH = plan.preferredColdH + plan.minTotalRT + 1;
         const suggested  = new Date(Date.now() + minNeededH * 3600000);
         suggested.setMinutes(0, 0, 0);
         suggested.setHours(suggested.getHours() + 1);
@@ -2601,85 +2811,8 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       }
       return;
     }
-
-    // CT maximization — exact same model as buildSchedule
-    const preferredColdH = scaledDefaults.preferredColdH ?? scaledDefaults.coldH;
-    let expectedColdH: number;
-    if (scaledDefaults.coldH === 0) {
-      expectedColdH = 0;
-    } else if (totalWindowH >= preferredColdH + minTotalRTLocal) {
-      expectedColdH = preferredColdH;
-    } else if (totalWindowH >= scaledDefaults.coldH + minTotalRTLocal) {
-      expectedColdH = scaledDefaults.coldH;
-    } else if (totalWindowH > minTotalRTLocal) {
-      expectedColdH = totalWindowH - minTotalRTLocal;
-    } else {
-      expectedColdH = 0;
-    }
-    const hasColdLocal = expectedColdH > 0;
-    setRecommendedColdH(expectedColdH);
-
-    const minColdH = defaults.minColdH ?? 0;
-    // Compute fridge decision locally — same logic as render-time prefGoesInFridge
-    // but using fresh values to avoid stale closure
-    // Never use mixOffsetH (stale UI state) to compute the recommendation.
-    // Fridge is viable if total window allows: poolish min 12h + RT fermentation.
-    // Exclude preheat from fridge viability — preheat is post-load, irrelevant to poolish window.
-    const minTotalRT_noPreheat = (kitchenTemp >= 28 ? 0.5 : 1.5) + 1.0;
-    const localEnoughTimeForFridge = nowHBF >= (14 + minTotalRT_noPreheat);
-    const localPrefGoesInFridge = hasPrefActive && (
-      prefermentType === 'biga'
-      || (prefermentType === 'poolish' && (poolishStorage === 'fridge' || (poolishStorage !== 'room' && (kitchenTemp >= 26 || localEnoughTimeForFridge))))
-    );
-    // Scale fridge poolish optimal time by flour strength — stronger flour benefits from longer poolish.
-    // RT poolish is temp-driven (not gluten-driven), so only fridge poolish gets scaled.
-    const basePrefOptH = hasPrefActive
-      ? getPrefOptH(prefermentType, kitchenTemp, localPrefGoesInFridge, styleKey ?? 'neapolitan', fridgeTemp)
-      : prefOffsetH;
-    const rawPrefOffset = localPrefGoesInFridge
-      ? Math.min(24, Math.round(basePrefOptH * ftm * 2) / 2)
-      : basePrefOptH;
-    // fridge-aware minimum: 12h for fridge poolish/biga, 3h for RT poolish
-    const poolishMinH = localPrefGoesInFridge ? 12 : 3;
-
-    // sweetCenter = coldH + rtH = the style sweet spot where dough peaks at bake
-    // For SOURDOUGH: rtH is climate-sensitive — hot kitchens over-ferment at RT,
-    // so climateRtH shifts more of the ferment toward cold (the freed warm time
-    // is absorbed by the cold cap downstream). For commercial yeast climateRtH
-    // returns baseRtH (climate adjusts yeast dose, not timing).
-    // sweetFrom = leftmost boundary (preferredColdH + rtH) — widest useful cold
-    // sweetTo = rightmost boundary (minimum viable total fermentation)
-    const _biasedColdSolver = biasCold(
-      scaledDefaults.coldH,
-      scaledDefaults.minColdH ?? 0,
-      scaledDefaults.preferredColdH ?? scaledDefaults.coldH
-    );
-    const _rtH_solver = (climateRtH(defaults.rtH, kitchenTemp, isSourdough) + starterBulkDeltaH);
-    const optimalColdH = hasColdLocal ? (_biasedColdSolver + _rtH_solver) : 0;
-    const sweetCenterRaw = hasColdLocal
-      ? _biasedColdSolver + _rtH_solver         // dough peaks at bake at this position
-      : _rtH_solver;                             // RT only: peak at rtH before bake
-    // sweetFrom = right edge of dough quality plateau (not preferredColdH which is the target).
-    // plateauHalfW is how far from sweetCenter bake can be while still at peak quality.
-    // Beyond this, dough is on the decline — mixInZone=false, score drops.
-    // Scaled by flourStrength: stronger flour has wider plateau tolerance.
-    const rawWindow = commercialReadinessWindow({ ...defaults, rtH: _rtH_solver, flourStrength,
-      kitchenTemp, preheatMin, totalWindowH });
-    const sweetFromRaw = rawWindow.from;
-    // Use minTotalFermH as the right boundary — matches the card's green zone
-    // and is the scientifically correct absolute minimum for acceptable results.
-    // This is style-sensitive: each style defines its own minTotalFermH.
-    const sweetToRaw = rawWindow.to;
-
-    // Clip all to nowHBF — cannot start in the past
-    // An ideal start already past is clipped to the first quarter hour at
-    // least 15 minutes away, never "now + 30 min". findFixedBakeSchedule then
-    // prefers a start two hours out when that still fits the bake.
-    const sweetCenter = Math.min(sweetCenterRaw, (et.getTime() - earliestQuarterStart(nowMs)) / 3600000);
-    const sweetFrom   = Math.min(sweetFromRaw,   nowHBF - 0.25);
-    const sweetTo     = Math.min(sweetToRaw,     sweetFrom - 0.5);
-
-    if (!hasPrefActive && !hasColdLocal && totalWindowH < sweetToRaw) {
+    setRecommendedColdH(plan.expectedColdH);
+    if (plan.kind === 'direct' && plan.guardShort) {
       setGuardNote(isFr
         ? 'Créneau court : surveillez la levée avant de cuire.'
         : 'Short window: check the rise before baking.');
@@ -2687,83 +2820,14 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       setGuardNote(null);
     }
 
-    // Pass full raw offset — findOptimalPosition computes per-candidate clamp:
-    //   maxPrefOffset = min(rawPrefOffset, nowHBF - candidate - 0.25)
-    // This correctly handles every candidate independently.
-    const optimalPrefOffset = hasPrefActive ? rawPrefOffset : prefOffsetH;
-    if (hasPrefActive) {
-      setPrefOffsetH(optimalPrefOffset);
-      onPrefOffsetChange?.(optimalPrefOffset);
-    }
-
-    // Skip poolish if window too short for even a yellow result.
-    // Yellow requires at least poolishMinH + minTotalRTLocal.
-    // This is style + temperature sensitive via poolishMinH and minTotalRTLocal.
-    // Consistent with localEnoughTimeForFridge — exclude preheat
-    const minWindowForYellowPoolish = poolishMinH + minTotalRT_noPreheat;
-    const skipPoolishDueToTime = hasPrefActive && totalWindowH < minWindowForYellowPoolish;
-    if (skipPoolishDueToTime) {
+    if (plan.kind === 'preferment') {
+      // findOptimalPosition computes per-candidate clamp: maxPrefOffset = min(rawPrefOffset, nowHBF - candidate - 0.25).
+      setPrefOffsetH(plan.optimalPrefOffset);
+      onPrefOffsetChange?.(plan.optimalPrefOffset);
       // Retain a short-window diagnostic; never erase the selected preferment.
-      setSkipPoolishNote(true);
-      setPrefAlgoRed(false);
-    } else {
-      setSkipPoolishNote(false);
-    }
-
-    // Always solve the selected method. A short window is a visible conflict, not permission to switch to direct dough.
-    const effectiveHasPref = hasPrefActive;
-
-    // Minimum viable poolish: 3h RT, 12h fridge
-    const prefMinViableH = poolishMinH;
-    // Always try both fridge and RT poolish modes when poolish is active.
-    // Pick the mode with the highest score. Fridge wins ties (better flavour development).
-    // This makes the recommendation style-sensitive and temperature-sensitive
-    // while always maximising fermentation quality.
-    let result = findOptimalPosition(
-      sweetCenter, sweetFrom, sweetTo,
-      currentBlocks, et,
-      effectiveHasPref, optimalPrefOffset,
-      kitchenTemp,
-      nowHBF,
-      prefermentType,
-      prefMinViableH,
-      minTotalRTLocal,
-      warmupFor(prefermentType, localPrefGoesInFridge),
-      localPrefGoesInFridge,
-      fridgeTemp,
-      styleKey ?? 'neapolitan',
-    );
-    let resultChoseFridge = localPrefGoesInFridge;
-
-    if (effectiveHasPref && prefermentType === 'poolish' && localPrefGoesInFridge && poolishStorage === 'auto') {
-      // Also try RT mode — RT poolish peaks earlier and may score higher
-      // when the window is too short for a full fridge poolish
-      const rtPrefOptH = getPrefOptH(prefermentType, kitchenTemp, false, styleKey ?? 'neapolitan', fridgeTemp);
-      const rtResult = findOptimalPosition(
-        sweetCenter, sweetFrom, sweetTo,
-        currentBlocks, et,
-        effectiveHasPref, rtPrefOptH,
-        kitchenTemp,
-        nowHBF,
-        prefermentType,
-        3,           // RT minimum 3h
-        minTotalRTLocal,
-        0,           // no warmup needed for RT poolish
-        false,       // RT mode
-        fridgeTemp,
-        styleKey ?? 'neapolitan',
-      );
-      // RT wins only if strictly better score — fridge wins all ties
-      if (rtResult.score > result.score) {
-        result = rtResult;
-        resultChoseFridge = false;
-      }
-    }
-
-    // Use the same full-plan comparison as subsequent availability edits.
-    // The legacy positioning above remains relevant to non-preferment dough.
-    if (effectiveHasPref) {
-      const chosen=commercialRecommendation(currentBlocks,manualTimesRef.current,et,new Date(+et-sweetCenterRaw*3600000));
+      setSkipPoolishNote(plan.skipPoolish);
+      if (plan.skipPoolish) setPrefAlgoRed(false);
+      const chosen=plan.chosen;
       if(chosen.result.found||chosen.result.preparationRepaired){
         const times=chosen.result.candidate.times;
         noteChosenStorage(chosen.inFridge);setPendingStart(times.start);setPrefOffsetH(times.prefHours);
@@ -2773,57 +2837,19 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       }else{
         setSearchFailed(true);setPrefAlgoRed(true);setStartComputed(false);
         // No plan: the preferment shown never starts in the past, nor longer than its storage takes (round 11, item 2).
-        const held=shownPrefHours(optimalPrefOffset,pendingStart,localPrefGoesInFridge);
-        if(held!==optimalPrefOffset){setPrefOffsetH(held);onPrefOffsetChange?.(held);}
+        const held=shownPrefHours(plan.optimalPrefOffset,pendingStart,plan.inFridge);
+        if(held!==plan.optimalPrefOffset){setPrefOffsetH(held);onPrefOffsetChange?.(held);}
       }
       return;
     }
-
-    // Report which mode won — display reads this as single source of truth
-    if (effectiveHasPref && prefermentType === 'poolish') {
-      setAlgoChoseFridge(resultChoseFridge);
-    }
-
-    // Cold-required methods must fit the actual preparation chronology, not
-    // just nominal cold + room-temperature hours. Keep the target and search
-    // the existing window; an unrepairable plan stays visibly invalid.
-    if (defaults.coldHRequired && !effectiveHasPref) {
-      const verified = findRequiredColdStart({
-        start: new Date(+et - result.mixHBF * 3600000), bake: et,
-        from: new Date(+et - sweetFromRaw * 3600000), to: new Date(+et - sweetToRaw * 3600000),
-        now: nowMs, blocks: currentBlocks, kitchenTemp, preheatMin, exitLeadMin,planLadder,
-        mixerType, styleKey, numItems, mixingBatches,
-      });
-      if (verified.found) {
-        const mixHBF = (+et - +verified.candidate.times.start) / 3600000;
-        result = { ...result, mixHBF, prefHBF: mixHBF, mixInZone: true,
-          mixInBlocker: false, fallback: false, score: 2 };
-      }
-    }
-
-    if (!effectiveHasPref && !execution && completedMixAt===undefined) {
-      const preferredStart=new Date(+et-result.mixHBF*3600000);
-      const candidate=findFixedBakeSchedule(commercialCandidateInput(currentBlocks,false,preferredStart,et,'none'));
-      if(candidate.found){
-        const mixHBF=(+et-+candidate.candidate.times.start)/3600000;
-        result={...result,mixHBF,prefHBF:mixHBF,fallback:false,mixInBlocker:false};
-      }else if(candidate.leastConflict){
-        // No plan avoids every busy time: start from the one that needs the
-        // baker least (e.g. mix tonight, only the fridge exit falls at work),
-        // never from a default that lands every step in the workday.
-        const mixHBF=(+et-+candidate.leastConflict.candidate.times.start)/3600000;
-        result={...result,mixHBF,prefHBF:mixHBF};
-      }
-    }
+    setSkipPoolishNote(false);
+    const { result, sweetCenter, sweetFrom } = plan;
     // Unified decision tree — single source of truth for all scheduler states.
-    // score 4: both green  → silent success
-    // score 3: mix green, poolish yellow  → success, subtle note shown in poolish card
     // score 2: mix green, no poolish (RT-only styles)  → silent success
-    // score 1: poolish yellow only  → success, subtle note in poolish card
     // score 0, slot found outside zone  → success with tight-window note in mix card
     // score 0, no slot, sweetCenter free  → guard note (window too tight)
     // score 0, no slot, sweetCenter blocked  → popup (genuine full conflict)
-    if (result.score === 0 && result.fallback && result.mixInBlocker) {
+    if (plan.popup) {
       // Genuine conflict — every valid position is blocked
       const outsideHBF = result.mixHBF;
       const maxDist = Math.max(1, sweetFrom - sweetCenter);
@@ -2846,30 +2872,17 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
       });
       setRecommendedHBF(null);
       setShowFallbackPopup(true);
-      if (hasPrefActive) setPrefAlgoRed(true);
     } else {
       // Valid slot found (score 1–4) or score 0 with sweetCenter free
       // A proposed start speaks in quarter hours, at least 15 minutes from now.
-      const newStart = new Date(quarterStartNoEarlier(et.getTime() - result.mixHBF * 3600000, nowMs));
+      const newStart = plan.times.start;
       setRecommendedHBF(result.mixHBF);
       setShowFallbackPopup(false);
       setPendingStart(newStart);
       notifyFromSolver(newStart, et, currentBlocks);
       setDismissedConflict(true);
-      if (hasPrefActive) {
-        setPrefOffsetH(result.prefHBF - result.mixHBF);
-        onPrefOffsetChange?.(result.prefHBF - result.mixHBF);
-        // Red = valid slot found but score=0 (under-fermentation risk, not a blocker issue)
-        // Hide poolish graph if: score=0 (no viable slot found) OR
-        // RT poolish is below climate-sensitive minimum (no meaningful fermentation).
-        const minViableRT = Math.max(1, Math.round(prefRTPeakH * 0.25));
-        setPrefAlgoRed(effectiveHasPref && (
-          (result.score === 0 && !result.mixInBlocker) ||
-          (!resultChoseFridge && (result.prefHBF - result.mixHBF) < minViableRT)
-        ));
-      }
       // Score 0 with sweetCenter free: tight window note via existing guardShort path
-      if (!hasPrefActive && result.score === 0 && !result.mixInBlocker) {
+      if (result.score === 0 && !result.mixInBlocker) {
         setGuardNote(isFr
         ? 'Créneau court : surveillez la levée avant de cuire.'
         : 'Short window: check the rise before baking.');
@@ -3156,7 +3169,6 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
   // Poolish: fridge when there is enough time (>= 14h between now and Start Dough),
   //          or when kitchen >= 26°C regardless of time (RT window too narrow/fragile).
   //          Falls back to RT only when window is short AND kitchen is cool (< 26°C).
-  const prefRTPeakH = hasPrefActive ? getPrefPeakH_RT(prefermentType, kitchenTemp, styleKey ?? 'neapolitan') : 0;
   // prefGoesInFridge is set by the algo after trying both fridge and RT modes.
   // Never recompute independently — algo result is the single source of truth.
   const prefGoesInFridge = hasPrefActive && (
@@ -7286,50 +7298,21 @@ function FermentedSchedulePicker({ starterLocationAnswered = true, starterMature
     beginRowEdit(row, +(row === 'mix' ? pendingStart : pendingEatTime));
   };
   const entryNightRuleOn=()=>!execution&&completedMixAt===undefined&&entryNightRule&&(yeastPctOverride!==undefined||prefYeastPctOverride!==undefined);
+  /** The picker's inputs for the one automatic-plan function and its helpers (automaticCommercialPlan, round 15). */
+  function planCtx():CommercialPlanContext{
+    return {now:Date.now(),styleKey,kitchenTemp,fridgeTemp,flourStrength,tang,preheatMin,preheatExtraMin,exitLeadMin,planLadder,mixerType,numItems,mixingBatches,
+      prefermentType,poolishStorage,bigaStorage,prefOffsetH,prefInFridge:prefGoesInFridge,poolishPeakAtMix,execution,completedMixAt,formulaValid:validateMadeFormula,
+      targetDoughTemp,prefermentFlourPct,doughMassG,hydrationPct,flourTempC,
+      yeastTiming:yeastTimingFor,prefTiming:prefYeastTimingFor,prefEnteredModes:prefYeastModes(true),prefYeastEntered:prefYeastPctOverride!==undefined};
+  }
   function commercialCandidateInput(candidateBlocks:AvailabilityBlock[]=solverBlocksRef.current,inFridge=prefGoesInFridge,start=pendingStart,bake=pendingEatTime,method=prefermentType):EditInput {
-    const hasPrefActive=method==='poolish'||method==='biga';
-    const entered=prefYeastTimingFor(method,inFridge);
-    const prefWindow=entered?{min:entered.min,max:entered.max}:commercialPrefermentWindow(method,inFridge,kitchenTemp,styleKey,fridgeTemp);
-    const input:EditInput={isSourdough:false,formulaValid:execution?validateMadeFormula:undefined,completedMixAt:completedMixAt??(execution?.method==='none'?execution.actualAt:undefined),completedPrefermentAt:execution&&execution.method!=='none'?execution.actualAt:undefined,id:'mix',at:start,start,bake,now:Date.now(),
-      blocks:candidateBlocks,kitchenTemp,preheatMin,exitLeadMin,planLadder,preheatExtraMin,mixerType,styleKey,numItems,mixingBatches,
-      prefHours:hasPrefActive?prefOffsetH:0,hasPreferment:hasPrefActive,prefWindow:execution?.prefWindow??prefWindow,pins:execution&&execution.method!=='none'?{preferment:new Date(execution.actualAt)}:undefined,prefWarmupHours:warmupFor(method, inFridge),prefCooldownHours:cooldownFor(method,inFridge),
-      preferDaytime:true,supported:!!STYLE_FERM_DEFAULTS[styleKey]&&(!getBreadProtocol(styleKey)||getBreadProtocol(styleKey)!.supportedPreferments.includes(method as 'none')),
-      window:bake=>{const bounds=yeastTimingFor(bake,candidateBlocks,method)??commercialReadinessWindow({...(STYLE_FERM_DEFAULTS[styleKey]??FERM_FALLBACK),flourStrength,kitchenTemp,preheatMin,totalWindowH:(+bake-(completedMixAt??(execution?.method==='none'?execution.actualAt:Date.now())))/3600000});return {from:bounds.from!==null?new Date(+bake-bounds.from*3600000):null,to:bounds.to!==null?new Date(+bake-bounds.to*3600000):null};},
-      methodValid:times=>commercialPrefermentPlanValid({type:method,inFridge,mixTime:times.start,bakeTime:times.bake,offsetHours:times.prefHours,blocks:candidateBlocks,alreadyStarted:!!execution,mixCompleted:completedMixAt!==undefined}),
-    };
-    return input;
+    return commercialPlanInput(planCtx(),candidateBlocks,inFridge,start,bake,method);
   }
   function commercialRecommendation(candidateBlocks:AvailabilityBlock[],overrides:TimingOverrides,bake=pendingEatTime,start=new Date(+bake-_optimalMix*3600000)) {
-    // Preserve storage for explicitly chosen preparation; automatic poolish can
-    // compare both methods. Biga retains its existing refrigerated protocol.
-    const enteredModes=execution?null:prefYeastModes(true);
-    const modes=execution?[execution.inFridge]:enteredModes?.length?enteredModes:prefermentType==='poolish'?(poolishStorage==='fridge'?[true]:poolishStorage==='room'?[false]:[true,false]):prefermentType==='biga'?bigaModes():[prefGoesInFridge];
-    const options=modes.map(inFridge=>({inFridge,input:{
-      ...commercialCandidateInput(candidateBlocks,inFridge,start,bake),
-      prefHours:prefTargetH(prefermentType,inFridge),
-    }}));
-    const pins={mix:overrides.mix===undefined?undefined:new Date(overrides.mix),preferment:execution&&execution.method!=='none'?new Date(execution.actualAt):overrides.pref===undefined?undefined:new Date(overrides.pref)};
-    const preferences={preferCold:prefermentType==='poolish'&&kitchenTemp>=26,startThisEvening:prefermentType==='poolish'&&kitchenTemp>=26};
-    // A poolish past its peak at the mix: fridge (auto storage), then a later start (time not set); else the recipe splits the yeast.
-    const ladder=poolishLadder(overrides);
-    // A biga: the fridge as before; a cool spot only when no fridge plan fits (D1), so every fridge plan stays as it was.
-    if(prefermentType==='biga'&&!execution)return recommendBiga(options,pins,preferences);
-    return ladder?recommendRipePoolish(options,pins,preferences,ladder):recommendPreferment(options,pins,preferences);
-  }
-  /** A biga's storages in order (D1): the fridge plan as before; the cool spot only when no fridge plan fits. */
-  function recommendBiga(options:{inFridge:boolean;input:EditInput}[],pins:Parameters<typeof recommendPreferment>[1],preferences:Parameters<typeof recommendPreferment>[2]){
-    const fridge=options.filter(o=>o.inFridge),cool=options.filter(o=>!o.inFridge);
-    if(!fridge.length||!cool.length)return recommendPreferment(options,pins,preferences);
-    const kept=recommendPreferment(fridge,pins,preferences);
-    if(kept.result.found)return kept;
-    // The planner's own fallback: no new night step (a chosen cool spot is planned like the fridge).
-    const spot=recommendPreferment(cool.map(o=>({...o,input:withoutNightSteps(o.input)})),pins,preferences);
-    // Only a complete cool-spot plan replaces the fridge one (a plan with no fit stays as it was).
-    return spot.result.found?spot:kept;
+    return commercialPlanRecommendation(planCtx(),candidateBlocks,overrides,bake,start);
   }
   function poolishLadder(overrides:TimingOverrides){
-    if(prefermentType!=='poolish'||isSourdough||execution||completedMixAt!==undefined||!poolishPeakAtMix||prefYeastPctOverride!==undefined)return undefined;
-    return {peakAtMix:poolishPeakAtMix,storage:poolishStorage,timeSet:overrides.pref!==undefined||!!overrides.prefLocked};
+    return isSourdough?undefined:poolishLadderFor(planCtx(),overrides);
   }
   const [restartRevision,setRestartRevision]=useState(0);
   useEffect(()=>{if(!replanRequested)return;const timer=setInterval(()=>setRestartRevision(v=>v+1),30000);return()=>clearInterval(timer);},[replanRequested]);
