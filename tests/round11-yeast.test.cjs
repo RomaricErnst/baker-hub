@@ -52,7 +52,7 @@ test('item 1: the night line names the plan the picker applies, on the quarter-h
   // The picker applies the page's plan (one builder) and the page reads its night steps for the line.
   assert.match(picker, /const shared=planEntry\(candidateBlocks,pendingEatTime\);/);
   // Round 15 (O2): the plan entryPlan builds while it waits to be derived, else the plan on screen (the same builder's).
-  assert.match(page, /const steps = planReplanPending \? entryPlan\(effectiveYeastOverride, o\)\?\.nightSteps \?\? \[\] : screenNightSteps;/);
+  assert.match(page, /const steps = planReplanPending \? cachedEntryPlan\(effectiveYeastOverride, o\)\?\.nightSteps \?\? \[\] : screenNightSteps;/);
   // The picker's own second (night) pass is gone.
   assert.doesNotMatch(picker, /entryNightOnRef/);
 });
@@ -66,9 +66,10 @@ test('item 1: after Keep, the Recipe and Preparation name the kept night steps i
 
 test('O1: steps in the nights the baker marked busy are named, never refused; the plan covers them; other busy times stay hard', () => {
   const o = b3(thuNight);
-  const c = Y.checkYeastEntry(0.14, o);
+  // Round 17: 0.12 % (0.14 % now has a plan with no step inside the night, its shaping at 10:30pm).
+  const c = Y.checkYeastEntry(0.12, o);
   assert.equal(c.fits, true, JSON.stringify(c));
-  const plan = Y.entryPlan(0.14, o);
+  const plan = Y.entryPlan(0.12, o);
   assert.ok(plan.nightSteps.length > 0);
   // Covered in the baker's night: the saved plan has no open clash.
   assert.ok(plan.blocks[0].coveredActions.length > 0);
@@ -79,18 +80,20 @@ test('O1: steps in the nights the baker marked busy are named, never refused; th
   const r = Y.checkYeastEntry(0.05, hard);
   assert.equal(r.fits, false);
   // Covers an earlier plan put on the nights are that plan's: the timing and search read the nights as set.
-  assert.deepEqual(Y.entryPlan(0.14, { ...o, blocks: plan.blocks }).times, plan.times);
+  assert.deepEqual(Y.entryPlan(0.12, { ...o, blocks: plan.blocks }).times, plan.times);
   assert.deepEqual(Y.uncovered(plan.blocks), thuNight);
 });
 
-test('I/D2: an entered amount keeps the knead near the calculated one when a plan exists there', () => {
-  // B3 dinner: bake Fri 19:30, calculated knead Thu 20:30 (23 h); 0.1 % keeps it, the fridge absorbing it (±10 % band).
+test('I/D2: the timing keeps the knead near the calculated one; the plan ranks night steps first (O2, round 17)', () => {
+  // B3 dinner: bake Fri 19:30, calculated knead Thu 20:30 (23 h); 0.1 %'s timing keeps it, the fridge absorbing it (±10 % band).
   const dinner = SG('2026-11-27T19:30:00');
-  const o = { ...b3([], { bake: dinner, anchorH: 23, calculatedIdyPct: 0.16 }), nightAllowed: [] };
+  const o = { ...b3([], { bake: dinner, anchorH: 23, calculatedIdyPct: 0.16 }) };
   const t = Y.entryTiming(0.1, o, (+dinner - now) / H);
   assert.equal(t.center, 23); assert.equal(t.shape.room, undefined);
+  // That plan has night steps (its fridge at 10:30pm); the room plan kneaded Fri 7:00am has none, so it ranks first.
   const plan = Y.entryPlan(0.1, o);
-  assert.ok(Math.abs(+plan.times.start - (+dinner - 23 * H)) <= H, new Date(plan.times.start).toISOString());
+  assert.equal(plan.nightSteps.length, 0);
+  assert.deepEqual(plan.shape, { rtScale: 1, room: true });
 });
 
 test('item 2: a biga is judged on whether a complete plan exists at this bake, in setup and from My choices alike', () => {

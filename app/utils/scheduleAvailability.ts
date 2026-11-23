@@ -70,9 +70,24 @@ export function newNightHandsOn(actions:AvailabilityAction[],blocks:Availability
 /** How heavy a plan's night steps are for an entered amount's ranking (round 13): each step between 23:00 and 06:00
  * (a wake-up) outweighs any number of steps in the 22:00–23:00 and 06:00–07:00 shoulders; `newNightHandsOn` decides
  * which steps count (the preferment's start included when the caller passes it). */
+/** Round 17 (findings 5, 6): THE night of an entered amount's plan, its ranking and its line, the same with and
+ * without the Nights chip: a hands-on step (never the bake) after 22:00 and before 07:00 local time, or inside the
+ * baker's own night (a ' night' block). Edges are exclusive, as for busy times: a step at 22:00 or 07:00 is not one. */
+const minuteOfDay=(at:Date)=>at.getHours()*60+at.getMinutes()+at.getSeconds()/60;
+export function nightHandsOn(actions:AvailabilityAction[],blocks:AvailabilityPeriod[]):AvailabilityAction[] {
+  const nights=blocks.filter(block=>block.label?.endsWith(' night'));
+  return actions.filter(action=>{
+    if(action.id==='bake')return false;
+    const m=minuteOfDay(action.at),t=+action.at;
+    return m>22*60||m<7*60||nights.some(block=>t>+block.from&&t<+block.to);
+  });
+}
+/** A wake-up: after 23:00 and before 06:00 (exclusive edges). */
+export const isDeepNight=(at:Date)=>{const m=minuteOfDay(at);return m>23*60||m<6*60;};
+/** The ranking's night weight (owner O2): a step between 23:00 and 06:00 outweighs any number of shoulder steps. */
 export function nightScore(actions:AvailabilityAction[],blocks:AvailabilityPeriod[]):number {
-  const steps=newNightHandsOn(actions,blocks);
-  return steps.length+100*steps.filter(action=>{const h=action.at.getHours();return h>=23||h<6;}).length;
+  const steps=nightHandsOn(actions,blocks);
+  return steps.length+100*steps.filter(action=>isDeepNight(action.at)).length;
 }
 
 export function planActions(dough:AvailabilityAction[],method:AvailabilityAction[],completedMixAt?:number):AvailabilityAction[] {

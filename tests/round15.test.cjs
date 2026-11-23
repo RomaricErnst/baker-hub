@@ -66,9 +66,9 @@ test('O2 path independence: Keep 0.15 % at 11:30 then bake back to 7:30pm ≡ ty
     const fresh = Y.entryPlan(pct, current(b3('2026-11-27T19:30:00')));
     assert.ok(same(viaLunch, fresh), `${pct}: ${viaLunch && hhmm(viaLunch.times.start)} vs ${fresh && hhmm(fresh.times.start)}`);
   }
-  // Round 14 read Start Dough Fri 4:00am on the kept route; both routes now knead Thu 8:30pm without a night step.
+  // Round 14 read Start Dough Fri 4:00am on the kept route. Round 17 (one night, 22:00–07:00 with the chip too): the
+  // Thu 8:30pm fridge plan puts the dough in the fridge after 22:00; the plan without a night step ranks first (O2).
   const plan = Y.entryPlan(0.15, current(b3('2026-11-27T19:30:00')));
-  assert.equal(hhmm(plan.times.start), 'Thu 20:30');
   assert.equal(plan.nightSteps.length, 0);
   // Same inputs, same plan: built twice, identical.
   assert.ok(same(plan, Y.entryPlan(0.15, current(b3('2026-11-27T19:30:00')))));

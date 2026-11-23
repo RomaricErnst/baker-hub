@@ -33,22 +33,26 @@ const b3 = (bake, anchorH, calc, extra = {}) => ({ bake: SG(bake), blocks: night
   defaultWindow: b => sp.commercialReadinessWindow({ ...sp.STYLE_FERM_DEFAULTS.neapolitan, flourStrength: 1.2, kitchenTemp: 22, preheatMin: 45, totalWindowH: (+b - now) / H }), ...extra });
 const hhmm = d => new Date(d).toLocaleTimeString('en-GB', { timeZone: 'Asia/Singapore', weekday: 'short', hour: '2-digit', minute: '2-digit' });
 
-test('item 3 (D2): 0.11–0.15 % at 22 °C keep the calculated knead (Thu 20:30) without night steps; 0.1 % beyond the ball-proof cap falls back', () => {
+test('item 3 (D2): 0.11–0.15 % at 22 °C: the proof fit keeps the calculated knead (Thu 20:30); the plan has no night step', () => {
   // The calculated plan: 0.15 % kneaded Thu 20:30 for Fri 19:30 (23 h).
   const o = b3('2026-11-27T19:30:00', 23, 0.146);
   for (const pct of [0.11, 0.12, 0.13, 0.14, 0.15]) {
+    // Round 17 (findings 2, 5): the fridge plan at Thu 20:30 puts the dough in the fridge after 22:00 (a night step, the
+    // same with or without the Nights chip); the room plan on Friday has none and ranks first (O2).
     const plan = Y.entryPlan(pct, o);
     assert.ok(plan, `${pct}: a plan`);
-    assert.equal(hhmm(plan.times.start), 'Thu 20:30', `${pct}: knead kept`);
     assert.equal(plan.nightSteps.length, 0, `${pct}: no night step`);
-    const s = utils.buildSchedule(plan.times.start, o.bake, nights, 22, 45, 'hand', 'neapolitan', 4, 1, false, 1, plan.shape, 'hot');
+    const t = Y.entryTiming(pct, o, 23.75);
+    assert.equal(t.center, 23, `${pct}: the timing keeps the knead`);
+    const s = utils.buildSchedule(new Date(+o.bake - 23 * H), o.bake, nights, 22, 45, 'hand', 'neapolitan', 4, 1, false, 1, t.shape, 'hot');
     assert.ok(s.totalColdHours > 0, `${pct}: a fridge plan`);
     // The balls' room time after the fridge stays within the published 4–6 h second rising (EU TSG 97/2010).
     const exit = s.coldRetard2End ?? s.coldRetardEnd;
     assert.ok((+o.bake - +exit) / H <= utils.BALL_PROOF_MAX_H + 1e-9, `${pct}: ${(+o.bake - +exit) / H} h out of the fridge`);
   }
   // Less yeast lengthens the final proof only (proof fit): the bulk and its folds stay the calculated plan's.
-  const p1 = Y.entryPlan(0.11, o);
+  const t1 = Y.entryTiming(0.11, o, 23.75);
+  const p1 = { times: { start: new Date(+o.bake - 23 * H) }, shape: t1.shape };
   assert.equal(p1.shape.proof, true);
   const calc = utils.buildSchedule(p1.times.start, o.bake, nights, 22, 45, 'hand', 'neapolitan', 4, 1, false, 1, undefined, 'hot');
   const kept = utils.buildSchedule(p1.times.start, o.bake, nights, 22, 45, 'hand', 'neapolitan', 4, 1, false, 1, p1.shape, 'hot');
@@ -92,20 +96,22 @@ test('item 2: a kept amount with busy nights takes the plan with the fewest nigh
   const o = b3('2026-11-27T11:30:00', 15.5, 0.19);
   const plan = Y.entryPlan(0.14, o);
   assert.ok(plan);
-  // Not the 1:45am room plan with four folds (six night steps): Thursday evening, with the fridge.
-  assert.equal(hhmm(plan.times.start), 'Thu 20:00');
-  assert.ok(plan.nightSteps.length < 6, String(plan.nightSteps.length));
+  // Not the 1:45am room plan with four folds, nor round 15's take-out and shaping at 3:00am: Thursday evening, shaped at
+  // the end of the warm bulk (round 17, one trip), no step after 3am.
+  assert.equal(hhmm(plan.times.start), 'Thu 19:45');
+  assert.ok(plan.nightSteps.every(a => new Date(a.at).getHours() >= 22), JSON.stringify(plan.nightSteps));
   // The amount next to the calculated one, within the band at the calculated knead, has a plan there (it had none:
-  // its window was the anchor alone).
+  // its window was the anchor alone); its shaping at 10:30pm is named.
   const near = Y.entryPlan(0.17, o);
-  assert.ok(near && hhmm(near.times.start) === 'Thu 20:00' && near.nightSteps.length === 0);
+  assert.ok(near && hhmm(near.times.start) === 'Thu 20:00' && near.nightSteps.every(a => new Date(a.at).getHours() === 22));
 });
 
 test('item 1: the time editor plans the requested bake (entryPlan) even when the recorded knead is far from it', () => {
   // 0.5 % entered over the 7:30pm plan (knead 23 h before), then the bake moved to 11:30: the plan at 8:00 fits.
   const o = b3('2026-11-27T11:30:00', 23, 0.146);
   const plan = Y.entryPlan(0.5, o);
-  assert.ok(plan && hhmm(plan.times.start) === 'Fri 08:00' && plan.nightSteps.length === 0);
+  // Round 17: the room plan Fri 7:45am ranks with 8:00 (no night step either) and is nearer the knead.
+  assert.ok(plan && hhmm(plan.times.start) === 'Fri 07:45' && plan.nightSteps.length === 0, plan && hhmm(plan.times.start));
   // The picker no longer holds a moved bake at its seed ("historical preparation" read the seed, now, as started).
   assert.match(picker, /movedBakeRef\.current=\+d;/);
   assert.match(picker, /movedBakeRef\.current!==\+pendingEatTime&&\(\+pendingStart<=Date\.now\(\)/);
@@ -140,6 +146,7 @@ test('item 7: a suggested amount has no night step when one exists', () => {
   const c = Y.checkYeastEntry(0.03, o);
   assert.equal(c.fits, false);
   assert.ok(c.suggestedShownPct !== null);
+  // Round 17: night-free is read on the plan the amount gets (entryPlan, the plan shown).
   const plan = Y.entryPlan(c.suggestedShownPct, o);
   assert.ok(plan && plan.nightSteps.length === 0, JSON.stringify(plan?.nightSteps));
 });
@@ -154,7 +161,7 @@ test('item 7: small texts and displays', () => {
   assert.match(guide, /\{!briefBulk && <StepCard/);
   // A kept night step is named once, in the night line, not again on its row.
   // Round 15: the night line (kept or not) names those steps once.
-  assert.match(page, /busy:isTimeBlocked\(e\.at,blocks\)&&!\(entryNight&&coveredAt\.has\(\+e\.at\)/);
+  assert.match(page, /busy:blocks\.some\(block=>\+e\.at>\+block\.from&&\+e\.at<\+block\.to\)&&!\(entryNight&&coveredAt\.has\(\+e\.at\)/);
   // The plan begins at the starter's take-out (Preparation header and the Recipe's steps); the header is on the quarter hour.
   assert.match(page, /shownStarterEvents\.filter\(e=>!e\.isPast && e\.kind!=='last_fed' && e\.kind!=='known_peak'\)\.map\(e=>\+e\.time\)/);
   assert.match(page, /formatBakeDateTime\(roundToQuarter\(firstRecipeAction\),locale\)/);

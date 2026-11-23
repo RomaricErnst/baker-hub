@@ -46,7 +46,7 @@ import { bakeTitleName } from '../utils/bakeTitle';
 import { journalTitle } from '../components/BakeJournal';
 import {commercialPrefermentWindow, commercialPrefermentPlanValid, commercialReadinessWindow, automaticCommercialPlan, earliestPrefermentBake, validateConfirmedBake, STYLE_FERM_DEFAULTS, type StarterEvent } from '../components/SchedulePicker';
 import { prefermentConditioningAction } from '../utils/scheduleEdit';
-import { findAvailabilityConflicts, planActions, isTimeBlocked, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake, newNightHandsOn, blocksForLaterBake } from '../utils/scheduleAvailability';
+import { findAvailabilityConflicts, planActions, isTimeBlocked, normalizeCoveredActions, normalizeFridgeRemoval, selectedAvailabilityCount, profileBlocksForBake, nightHandsOn, blocksForLaterBake } from '../utils/scheduleAvailability';
 import { retainCurrentFridgeRemoval } from '../utils/fridgeRemovalSession';
 import { normalizeTimingOverrides, type TimingOverrides } from '../utils/timingOverrides';
 import ClimatePicker from '../components/ClimatePicker';
@@ -81,7 +81,7 @@ import { useSessionSave } from '../hooks/useSessionSave';
 import { formatYeastDose, recipeYeastTotal } from '../utils/prefermentDose';
 import { soonStartLabel } from '../utils/startNotice';
 import { nightStepsLine } from '../utils/nightSteps';
-import { checkYeastEntry, entryPlan, entryTiming, type EntryPlan, entryPlanShape, entryPlanSearch, isNightBlock, nearestFittingShownPct, bakerHours, bakerPct, parseDecimal, formatDecimal, normalizeEntryNightKept, nightFreeShownPct, entryPlanActions, uncovered, type YeastEntryCheck, type YeastEntryInput, type PrefermentPlanOption } from '../utils/yeastEntry';
+import { checkYeastEntry, entryPlan, entryTiming, type EntryPlan, entryPlanShape, entryPlanSearch, isNightBlock, nearestFittingShownPct, bakerHours, bakerPct, parseDecimal, formatDecimal, normalizeEntryNightKept, nightFreeShownPct, uncovered, type YeastEntryCheck, type YeastEntryInput, type PrefermentPlanOption } from '../utils/yeastEntry';
 import { starterActionLabelFor, starterBuild } from '../utils/starterBuild';
 import { type UnitSystem, cToDisplay, inputTempToC, tempUnit, formatClock, formatPlanClock, clockRange, roundToQuarter, formatBakeDateTime, displayWeight, formatPercent } from '../utils/units';
 import { formatDuration } from '../utils/duration';
@@ -2235,21 +2235,35 @@ export default function Home() {
         planBlocks, eatTime, timingOverrides);
       if (!plan.times) return null;
       const times = { start: plan.times.start, bake: eatTime, prefHours: plan.times.prefHours };
-      const actions = entryPlanActions({ times, shape: exitLeadOnly, inFridge: plan.times.inFridge }, { ...yeastEntryRaw, blocks: planBlocks, now, preferment: entryPrefOptions(undefined, planBlocks) });
-      return { times, anchorH: (+eatTime - +times.start) / 3600000, nightIds: [...new Set(newNightHandsOn(actions, planBlocks).filter(a => +a.at > now).map(a => a.id))] };
+      return { times, anchorH: (+eatTime - +times.start) / 3600000 };
     } catch { return null; }
   };
   const autoPlan = useMemo(() => automaticAnchor(blocks, eatTime),
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [tab, yeastEntryRaw, yeastType, flourStrength, poolishStorage, bigaStorage, tang, preheatExtraMin, prefGoesInFridgeState, poolishPeakAtMix, execution, mixExecution, poolishInputs.prefermentFlourPct, poolishInputs.doughMassG, poolishInputs.flourTempC, timingOverrides]);
   const entryAnchor = autoPlan?.anchorH;
-  const entryNightAllowedIds = autoPlan?.nightIds ?? [];
   const yeastEntryBase = useMemo(() => yeastEntryRaw ? { ...yeastEntryRaw, anchorH: entryAnchor } : null, [yeastEntryRaw, entryAnchor]);
-  // Round 9 (bug I): read as the picker reads it (the time left first), so the shape the schedules are built with is
-  // the timing's own (a room-temperature plan included).
-  const exitLeadMin = useMemo(() => effectiveYeastOverride !== undefined && yeastEntryBase
-    ? entryPlanShape(effectiveYeastOverride, { ...yeastEntryBase, now: Date.now() }) : exitLeadOnly,
-  [effectiveYeastOverride, yeastEntryBase, exitLeadOnly]);
+  // Round 17 (finding 1): the shape every schedule is built with is the shape of the plan `entryPlan` builds for these
+  // inputs (the picker applies that plan), so the page's schedule, the line and the editor are one plan.
+  const entryPlanCache = useRef(new Map<string, EntryPlan | null>());
+  const cachedEntryPlan = (idy: number | undefined, o: YeastEntryInput): EntryPlan | null => {
+    const key = JSON.stringify([idy, { ...o, now: Math.floor(o.now / 900000), defaultWindow: undefined, preferment: o.preferment?.options }, flourStrength]);
+    const cache = entryPlanCache.current;
+    if (!cache.has(key)) {
+      let plan: EntryPlan | null = null;
+      try { plan = entryPlan(idy, o); } catch { plan = null; }
+      if (cache.size > 40) cache.delete(cache.keys().next().value as string);
+      cache.set(key, plan);
+    }
+    return cache.get(key) ?? null;
+  };
+  const exitLeadMin = useMemo(() => {
+    if (effectiveYeastOverride === undefined || !yeastEntryBase) return exitLeadOnly;
+    const o: YeastEntryInput = { ...yeastEntryBase, now: Date.now(), defaultWindow: entryDefaultWindow, preferment: entryPrefOptions(effectivePrefYeastOverride, blocks) };
+    const plan = cachedEntryPlan(effectiveYeastOverride, o);
+    return plan ? plan.shape : entryPlanShape(effectiveYeastOverride, o);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveYeastOverride, effectivePrefYeastOverride, yeastEntryBase, exitLeadOnly, poolishStorage, bigaStorage]);
   const schedule = useMemo(() => {
     if (!eatTime || startTime >= eatTime) return null;
     if (!mixerType) return null;
@@ -2418,7 +2432,6 @@ export default function Home() {
     const busyKey = (list: AvailabilityBlock[]) => JSON.stringify(uncovered(list).map(b => [+b.from, +b.to, b.label ?? '']));
     const fresh = at && (+at.bake !== +(eatTime ?? 0) || busyKey(at.blocks) !== busyKey(blocks)) ? automaticAnchor(at.blocks, at.bake) : autoPlan;
     return { ...yeastEntryBase, ...(at ?? {}), anchorH: fresh?.anchorH, now: Date.now(), conversion, calculatedIdyPct: calcYeast?.idyPct,
-      nightAllowed: fresh?.nightIds ?? [],
       defaultWindow: entryDefaultWindow, preferment: entryPrefOptions(prefPct, planBlocks) };
   };
   /** Round 11: the entered dough yeast's timing for the picker, the one `entryPlan` searches in (time left first). */
@@ -2426,13 +2439,14 @@ export default function Home() {
     if (effectiveYeastOverride === undefined || !yeastType || yeastType === 'sourdough') return null;
     const o = yeastEntryInput(YEAST_TYPES[yeastType]?.conversion ?? 1, effectivePrefYeastOverride, {blocks: planBlocks, bake});
     if (!o) return null;
-    try { return entryTiming(effectiveYeastOverride, o, Math.max(0, (+bake - o.now) / 3600000)) ?? entryTiming(effectiveYeastOverride, o); } catch { return null; }
+    // The timing of the plan the picker applies (entryPlan), else the amount's own.
+    try { return cachedEntryPlan(effectiveYeastOverride, o)?.timing ?? entryTiming(effectiveYeastOverride, o, Math.max(0, (+bake - o.now) / 3600000)) ?? entryTiming(effectiveYeastOverride, o); } catch { return null; }
   };
   /** Round 11: the plan an entered amount gets, for the picker (one builder with the night line: yeastEntry `entryPlan`). */
   const planEntryFor = (planBlocks: AvailabilityBlock[], bake: Date): EntryPlan | null => {
     if (!entryInForce || !yeastType || yeastType === 'sourdough') return null;
     const o = yeastEntryInput(YEAST_TYPES[yeastType]?.conversion ?? 1, effectivePrefYeastOverride, {blocks: planBlocks, bake});
-    try { return o ? entryPlan(effectiveYeastOverride, o) : null; } catch { return null; }
+    return o ? cachedEntryPlan(effectiveYeastOverride, o) : null;
   };
 
   // The planner may raise the levain % only without a baker-entered one, and only when
@@ -4673,10 +4687,10 @@ export default function Home() {
   const entryNightKeptNow = !!entryNightKept && entryNightKept.yeast === yeastPctOverride
     && (entryNightKept.pref?.type ?? null) === (prefYeastOverride?.type ?? null) && entryNightKept.pref?.pct === prefYeastOverride?.pct;
   const entryNightPref = prefermentType === 'poolish' || prefermentType === 'biga' ? prefermentType as FlourPreferment : null;
-  const screenNightSteps = useMemo(() => schedule ? newNightHandsOn([...(schedule.availabilityActions ?? []),
-    ...(prefStartTime && entryNightPref ? [{id:'preferment', at:prefStartTime}] : [])], blocks).filter(a => +a.at > Date.now() && !entryNightAllowedIds.includes(a.id)) : [],
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  [schedule, prefStartTime, entryNightPref, blocks, entryNightAllowedIds.join()]);
+  // Round 17 (findings 1, 5): the line names every night step of the plan on screen (nightHandsOn, one definition).
+  const screenNightSteps = useMemo(() => schedule ? nightHandsOn([...(schedule.availabilityActions ?? []),
+    ...(prefStartTime && entryNightPref ? [{id:'preferment', at:prefStartTime}] : [])], blocks).filter(a => +a.at > Date.now()) : [],
+  [schedule, prefStartTime, entryNightPref, blocks]);
   const entryNightKey = entryInForce && tab === 'custom' && (recipeGenerated || customPlanSeen) && eatTime && yeastType && yeastType !== 'sourdough'
     ? JSON.stringify([effectiveYeastOverride, effectivePrefYeastOverride, prefermentType, +eatTime, blocks.map(b => [+b.from, +b.to]), kitchenTemp, styleKey, poolishStorage, bigaStorage,
       planReplanPending ? null : screenNightSteps.map(a => a.id + '@' + +a.at), entryNightKeptNow, Math.floor(Date.now() / 900000)]) : null;
@@ -4684,9 +4698,9 @@ export default function Home() {
     if (!entryNightKey || !eatTime || !styleKey || !mixerType || !yeastType) return null;
     const conversion = YEAST_TYPES[yeastType]?.conversion ?? 1;
     const o = yeastEntryInput(conversion);
-    if (!o?.nightAllowed) return null;
+    if (!o) return null;
     try {
-      const steps = planReplanPending ? entryPlan(effectiveYeastOverride, o)?.nightSteps ?? [] : screenNightSteps;
+      const steps = planReplanPending ? cachedEntryPlan(effectiveYeastOverride, o)?.nightSteps ?? [] : screenNightSteps;
       if (!steps.length) return null;
       const pref = entryNightPref;
       if (entryNightKeptNow) return {steps, pref, offer: null, kept: true};
@@ -4722,7 +4736,9 @@ export default function Home() {
     if (!entryNight || (where !== 'finetune' && where !== 'editor' && protocolStale)) return null;
     const conversion = yeastType ? YEAST_TYPES[yeastType]?.conversion ?? 1 : 1;
     const pctText = (value: number) => bakerPct(value, fr);
-    const keptShown = yeastPctOverride !== undefined ? Math.round(yeastPctOverride * conversion * 1000) / 1000 : prefYeastOverride ? Math.round(prefYeastOverride.pct * conversion * 1000) / 1000 : null;
+    // Round 17 (finding 6): Keep names the amount as the recipe rounds it ("Keep 0.15%", not 0.151%).
+    const recipeRound = (v: number) => v < 1 ? Math.round(v * 100) / 100 : Math.round(v * 10) / 10;
+    const keptShown = yeastPctOverride !== undefined ? recipeRound(yeastPctOverride * conversion) : prefYeastOverride ? recipeRound(prefYeastOverride.pct * conversion) : null;
     const button: React.CSSProperties = {minHeight:44,padding:'8px 12px',border:'1px solid var(--border)',borderRadius:9,background:'var(--paper)',color:'var(--char)',fontSize:16,cursor:'pointer'};
     const rederive = () => { setPlanReplanPending(true); if (where !== 'finetune' && recipeGenerated && !replanReturn) setReplanReturn({from:+startTime,settled:false}); };
     const offer = entryNight.offer;
@@ -5017,7 +5033,7 @@ export default function Home() {
     // (18 Nov 2026 retention round 4: the pre-mix feed vanished from Your plan at 8:31).
     const dueFeed=yeastType==='sourdough'?overdueStarterFeed(starterEvents,[],Date.now(),+startTime):undefined;
     const from=Math.min(Date.now(),dueFeed?+dueFeed.time:Infinity)-60000;
-    const steps=planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label,busy:isTimeBlocked(e.at,blocks)&&!(entryNight&&coveredAt.has(+e.at)&&blocks.some(block=>isNightBlock(block)&&+e.at>+block.from&&+e.at<+block.to))}));
+    const steps=planCalendarEvents(from).filter(e=>+e.at>+firstRecipeAction&&+e.at<+eatTime).sort((a,b)=>+a.at-+b.at).map(e=>({key:e.key??String(+e.at),at:new Date(e.at),label:e.label,busy:blocks.some(block=>+e.at>+block.from&&+e.at<+block.to)&&!(entryNight&&coveredAt.has(+e.at)&&blocks.some(block=>isNightBlock(block)&&+e.at>+block.from&&+e.at<+block.to))}));
     // Round 13 (item 7): a night step is named once, in the night line (entryNightView), not again on its row.
     return steps;
   })();
@@ -5721,7 +5737,9 @@ export default function Home() {
 })()}</p>
 {previousNote&&<p data-previous-note style={{margin:'8px 0 0',fontSize:15,color:'var(--ash)'}}><strong>{fr?'La dernière fois : ':'Last time: '}</strong>{previousNote}</p>}
 </div>}
-{recipeGenerated && planMoved && destination!=='batch' && destination!=='organisation' && eatTime && (()=>{
+{/* Round 17 (finding 7): not in Preparation, whose heading already gives the plan's new times (one note at most
+    above its steps besides the night line). */}
+{recipeGenerated && planMoved && destination!=='batch' && destination!=='organisation' && destination!=='protocol' && eatTime && (()=>{
   // Only what moved, and an amount only when it changes what the baker weighs.
   const at=(t:number)=>formatBakeDateTime(new Date(t),locale);
   const prepName=prefermentType==='biga'?(fr?'Préparer la biga':'Make Biga'):prefermentType==='poolish'?(fr?'Préparer le poolish':'Make Poolish'):(fr?'La préparation':'The preparation');
@@ -6566,13 +6584,18 @@ export default function Home() {
                               const towards=nearestFittingShownPct(shown,ref,fitsShown);if(towards!==null)return towards;
                               // The calculated amount itself may be timed into the night as an entry (its window is narrower than the
                               // planner's): the typing steps between the typed amount and twice past the calculated one, nearest first.
-                              const steps:number[]=[];const lo=Math.min(shown,ref)/2,hi=Math.max(shown,ref)*2;
-                              for(let v=lo;v<=hi&&steps.length<60;v*=1.06)steps.push(v<1?Math.round(v*100)/100:Math.round(v*10)/10);
-                              return [...new Set(steps)].filter(v=>Math.abs(v-shown)>=0.0005).sort((a,b)=>Math.abs(Math.log(a/shown))-Math.abs(Math.log(b/shown))).slice(0,24).find(fitsShown)??null;
+                              // Round 17 (finding 3): every typing step from a quarter of the smaller to four times the larger, so a far
+                              // amount (1.5 % or 0.1 % in a biga) still hears of the nearest one that fits.
+                              const steps:number[]=[];const lo=Math.max(0.01,Math.min(shown,ref)/4),hi=Math.max(shown,ref)*4;
+                              for(let v=lo;v<=hi&&steps.length<120;v*=1.06)steps.push(v<1?Math.round(v*100)/100:Math.round(v*10)/10);
+                              return [...new Set(steps)].filter(v=>Math.abs(v-shown)>=0.0005&&v<=PREF_YEAST_MAX_PCT*conversion+1e-9).sort((a,b)=>Math.abs(Math.log(a/shown))-Math.abs(Math.log(b/shown))).find(fitsShown)??null;
                             };
                             if(!fit.fits){
-                              const miss=fit.reason==='window'?prefermentWindowMiss(pref,pct,stated,prefYeastCtx(pref,stated)):null;
-                              setPrefYeastIssue({type:pref,shownPct:shown,reason:miss?(miss.fast?'fast':'slow'):fit.reason==='window'?'slow':'time',hours:miss?miss.hours:fit.hours,inFridge:miss?stated:fit.inFridge,suggestedShownPct:nearest(),clampedFrom});return;}
+                              // Round 17 (finding 3): the statement speaks of the storage the plan uses (`stated`), never of another
+                              // storage's hours: its window's miss, else (its window holds the amount) the time it needs before the mix.
+                              const miss=prefermentWindowMiss(pref,pct,stated,prefYeastCtx(pref,stated));
+                              const there=miss?null:prefermentYeastTiming(pref,pct,stated,prefYeastCtx(pref,stated));
+                              setPrefYeastIssue({type:pref,shownPct:shown,reason:miss?(miss.fast?'fast':'slow'):there?'time':'slow',hours:miss?miss.hours:there?there.min:fit.hours,inFridge:stated,suggestedShownPct:nearest(),clampedFrom});return;}
                             // Round 8 (bug 6): the planner's own search with this preferment window (and the final dough's
                             // amount), so a fresh or active-dry amount that would leave no plan is said here, not on the plan.
                             const entry=planReady?yeastEntryInput(conversion,pct):null;
@@ -6631,7 +6654,12 @@ export default function Home() {
                     // One helper line, none while a statement shows (round 8, S3).
                     // Round 13 (item 7): "less yeast, longer rise" only when less than the calculated amount was entered.
                     const lessDough = yeastPctOverride!==undefined&&calcYeast?.idyPct!==undefined&&yeastPctOverride<calcYeast?.idyPct-1e-9;
-                    const lessPref = prefEntered!==undefined&&calcYeast?.pref?.type===pref&&prefEntered<calcYeast?.pref.pct-1e-9;
+                    // Round 17 (finding 6): "a longer biga" only when the plan's preferment is longer than the calculated plan's
+                    // (a biga held at its storage's shortest window stays 24 h whatever the amount).
+                    const lessPref = prefEntered!==undefined&&calcYeast?.pref?.type===pref&&prefEntered<calcYeast?.pref.pct-1e-9&&(!autoPlan||prefOffsetH>autoPlan.times.prefHours+0.01);
+                    // Round 17 (finding 6): no "use the calculated amount" for an amount that weighs what the calculated one weighs.
+                    const doughIsCalc = yeastPctOverride!==undefined&&calcYeast?.idyPct!==undefined&&sameGrams(yeastPctOverride*conversion,calcYeast.idyPct*conversion,recipe?.flour);
+                    const prefIsCalc = prefEntered!==undefined&&calcYeast?.pref?.type===pref&&sameGrams(prefEntered*conversion,calcYeast.pref.pct*conversion,recipe?.preferment?.prefFlour);
                     const helper = entryIssue||prefIssue||entryNight||(pref&&prefYeastClearedLine(pref)) ? null : pref
                       ? (prefEntered!==undefined&&yeastPctOverride!==undefined
                         ? (lessDough&&lessPref?(fr?'Chacun suit sa quantité : moins de levure, pousse plus longue.':'Each follows its amount: less yeast, a longer rise.'):(fr?'Chacun suit sa quantité.':'Each follows its amount.'))
@@ -6694,8 +6722,8 @@ export default function Home() {
                       {!entryIssue&&!prefIssue&&entryNightView('finetune')}
                       {helper&&<p data-yeast-helper style={{margin:'6px 0 0',fontSize:14,color:'var(--smoke)',lineHeight:1.45}}>{helper}</p>}
                       {/* One "calculated amount" per field (round 8, S3): none beside a statement that already offers it. */}
-                      {pref&&prefEntered!==undefined&&!prefIssue&&<button type="button" data-pref-yeast-reset onClick={clearPrefYeast} style={{...secondaryButton,marginTop:6,marginRight:8}}>{fr?(pref==='biga'?'Biga : quantité calculée':'Poolish : quantité calculée'):`${pref==='biga'?'Biga':'Poolish'}: use the calculated amount`}</button>}
-                      {yeastPctOverride!==undefined&&!entryIssue&&<button type="button" data-ft-use-calculated-yeast onClick={clearYeast} style={{...secondaryButton,marginTop:6}}>{pref?(fr?'Pâte finale : quantité calculée':'Final dough: use the calculated amount'):fr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
+                      {pref&&prefEntered!==undefined&&!prefIssue&&!prefIsCalc&&<button type="button" data-pref-yeast-reset onClick={clearPrefYeast} style={{...secondaryButton,marginTop:6,marginRight:8}}>{fr?(pref==='biga'?'Biga : quantité calculée':'Poolish : quantité calculée'):`${pref==='biga'?'Biga':'Poolish'}: use the calculated amount`}</button>}
+                      {yeastPctOverride!==undefined&&!entryIssue&&!doughIsCalc&&<button type="button" data-ft-use-calculated-yeast onClick={clearYeast} style={{...secondaryButton,marginTop:6}}>{pref?(fr?'Pâte finale : quantité calculée':'Final dough: use the calculated amount'):fr?'Revenir à la quantité calculée':'Use the calculated amount'}</button>}
                     </div></div>;
                   })()}
                   <h3 data-finetune-group="process" style={{margin:'8px 0 12px',fontSize:13,fontWeight:650,letterSpacing:'.06em',textTransform:'uppercase' as const,color:'var(--smoke)'}}>{fr?'Pétrissage et pâte':'Mixing and dough'}</h3>

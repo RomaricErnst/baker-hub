@@ -96,7 +96,7 @@ export function prefermentConditioningAction(input:{prefWarmupHours:number;prefC
  * declare free (newNightHandsOn) beyond the ones in `allowed` (the night steps the plan it replaces already
  * had, by step id); the preferment and its fridge exit or chill count. `nightBlocks` are the baker's busy
  * times the night is read against (the candidate's own blocks by default). */
-export function withNightRule(input:EditInput,allowed:readonly string[],nightBlocks:AvailabilityPeriod[]=input.blocks):EditInput{
+export function withNightRule(input:EditInput,allowed:readonly string[],nightBlocks:AvailabilityPeriod[]=input.blocks,steps:(actions:AvailabilityAction[],blocks:AvailabilityPeriod[])=>AvailabilityAction[]=newNightHandsOn):EditInput{
   const previous=input.formulaValid, ok=new Set(allowed);
   return {...input,formulaValid:(schedule,times)=>{
     if(previous&&!previous(schedule,times))return false;
@@ -106,7 +106,7 @@ export function withNightRule(input:EditInput,allowed:readonly string[],nightBlo
       const conditioning=prefermentConditioningAction(input,times.start);
       if(conditioning&&!actions.some(action=>action.id===conditioning.id))actions.push(conditioning);
     }
-    return newNightHandsOn(actions,nightBlocks).every(action=>ok.has(action.id));
+    return steps(actions,nightBlocks).every(action=>ok.has(action.id));
   }};
 }
 function overnightSteps(input:EditInput, candidate:EditResult):number {

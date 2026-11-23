@@ -866,7 +866,7 @@ function accountScheduleTime(schedule: ScheduleResult): ScheduleResult {
  * `{ rtScale }` is a baker-entered yeast amount's fit (round 8, owner D2): the commercial dough's bulk and
  * final-proof bound are scaled together so the knead stays near the calculated plan's and the fridge time
  * absorbs the difference (`enteredYeastTiming`). Sourdough ignores the fit. */
-export type PlanShape = number | { rtScale: number; room?: boolean; proof?: boolean };
+export type PlanShape = number | { rtScale: number; room?: boolean; proof?: boolean; oneTrip?: boolean };
 /** Bounds of an entered yeast's fit: half to twice the engine's room-temperature phases. */
 export const RT_SCALE_MIN = 0.5, RT_SCALE_MAX = 2;
 /** A proof fit (round 13) lengthens the final proof alone, up to three times the style's bound and within
@@ -1599,6 +1599,14 @@ export function buildSchedule(
     return STYLE_FERM_DEFAULTS[styleKey]?.shapedProofH24 ? { ...room, finalProofBound: 'style' } : room;
   }
   const ladder = hotKitchenLadder(styleKey, kitchenTemp, isSourdough, planLadder).filter(step => !shapedSpellChosen || step === 'shapeFirst');
+  // Round 17 (finding 4): an entered amount's one-trip candidate (yeastEntry entryPlan ranks it with the others): shaped at
+  // the end of the warm bulk, the balls take the whole cold; a dough that requires the fridge keeps its own plan.
+  const ferm = STYLE_FERM_DEFAULTS[styleKey];
+  if (typeof exitLeadMin === 'object' && exitLeadMin?.oneTrip && !isSourdough && ferm && ferm.coldH > 0 && !ferm.coldHRequired) {
+    const mode: FinalProofMode = ferm.shapedProofH24 ? styleBoundPlan(build, availabilityBlocks, styleKey, kitchenTemp).mode : 'style';
+    const one = build(mode, 'shapeFirst');
+    if (fridgeSpellCount(one) === 1) return mode === 'generic' || !ferm.shapedProofH24 ? one : { ...one, finalProofBound: 'style' };
+  }
   if (isSourdough || !STYLE_FERM_DEFAULTS[styleKey]?.shapedProofH24) {
     const plan = build('style');
     return ladder.length ? simplerHotPlan(plan, hot => build('style', hot), availabilityBlocks, kitchenTemp, ladder) : plan;
@@ -2121,7 +2129,7 @@ export function fermentationWindowForYeast(modelIdyPct: number, o: FermentationT
   return { center, from: Math.max(from, center), to: Math.min(to, center) };
 }
 
-export interface EnteredYeastTiming { center: number; from: number; to: number; shape?: { rtScale: number; room?: boolean; proof?: boolean } }
+export interface EnteredYeastTiming { center: number; from: number; to: number; shape?: { rtScale: number; room?: boolean; proof?: boolean; oneTrip?: boolean } }
 
 /** Timing for a baker-entered amount (round 8, owner D2): keep the knead near the calculated plan's and
  * let the fridge absorb the difference. `anchorH` is the calculated plan's mix-to-bake window. At that
@@ -2132,8 +2140,8 @@ export interface EnteredYeastTiming { center: number; from: number; to: number; 
  * fermentationWindowForYeast nearest the anchor (else the style's window): the established inversion.
  * Callers build every schedule with the returned shape (buildSchedule's last argument). An `exitLeadMin`
  * that is already a fit (the page solved it) is kept: only the band around the anchor is read with it. */
-export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInput & { anchorH?: number; prefStartH?: number }): EnteredYeastTiming | null {
-  const { anchorH, prefStartH, ...input } = o;
+export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInput & { anchorH?: number; prefStartH?: number; oneTrip?: boolean }): EnteredYeastTiming | null {
+  const { anchorH, prefStartH, oneTrip, ...input } = o;
   const anchored = anchorH !== undefined && Number.isFinite(anchorH);
   // A room-temperature timing the page already chose (ROOM_PLAN): its window nearest the anchor, kept.
   if (isRoomShape(input.exitLeadMin)) {
@@ -2183,7 +2191,7 @@ export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInp
     return { center: h0, from: Math.min(from > to ? from : to + 0.25, maximum), to, shape };
   };
   if (typeof input.exitLeadMin === 'object' && input.exitLeadMin) {
-    const fixed = { rtScale: input.exitLeadMin.rtScale, ...(input.exitLeadMin.proof ? { proof: true } : {}) };
+    const fixed = { rtScale: input.exitLeadMin.rtScale, ...(input.exitLeadMin.proof ? { proof: true } : {}), ...(input.exitLeadMin.oneTrip ? { oneTrip: true } : {}) };
     if (h0 < minimum || h0 > maximum) return fermentationWindowForYeast(modelIdyPct, { ...input, nearH: anchorH });
     // The anchor must sit inside the readiness band with this fit (else the amount is timed elsewhere).
     if (!inBand(fixed, h0)) { const band = fermentationWindowForYeast(modelIdyPct, { ...input, nearH: h0, budget: undefined }); return band ? { ...band, shape: fixed } : null; }
@@ -2219,7 +2227,7 @@ export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInp
   // Every 0.05 step of the scale, within the readiness band (round 11, D2: ±10 %, the band the plan's dough is judged
   // ready in; 5 % moved B3's 0.1 % knead by 13 h): fewest night steps, then the scaled bulk-and-proof fit before a proof
   // fit, then the budget nearest the target, then the scale nearest 1.
-  type Fit = { shape: { rtScale: number; proof?: true }; night: number; family: number; gap: number };
+  type Fit = { shape: { rtScale: number; proof?: true; oneTrip?: true }; night: number; family: number; gap: number };
   const scaled = new Map<string, ReturnType<typeof budgetAt>>();
   const fit = (): Fit | null => {
     let best: Fit | null = null;
@@ -2240,8 +2248,9 @@ export function enteredYeastTiming(modelIdyPct: number, o: FermentationTimingInp
         return;
       }
     };
-    for (let k = Math.round(RT_SCALE_MIN * 20); k <= Math.round(RT_SCALE_MAX * 20); k++) consider({ rtScale: k / 20 }, 0);
-    if (BALL_PROOF_STYLES.has(input.styleKey)) for (let k = 21; k <= Math.round(PROOF_SCALE_MAX * 20); k++) consider({ rtScale: k / 20, proof: true }, 1);
+    const trip = oneTrip ? { oneTrip: true as const } : {};
+    for (let k = Math.round(RT_SCALE_MIN * 20); k <= Math.round(RT_SCALE_MAX * 20); k++) consider({ rtScale: k / 20, ...trip }, 0);
+    if (BALL_PROOF_STYLES.has(input.styleKey)) for (let k = 21; k <= Math.round(PROOF_SCALE_MAX * 20); k++) consider({ rtScale: k / 20, proof: true, ...trip }, 1);
     return best;
   };
   let chosen = fit();
