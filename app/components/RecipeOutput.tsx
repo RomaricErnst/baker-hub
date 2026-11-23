@@ -305,7 +305,8 @@ function StarterPrepCard({
     }}>
       <div data-starter-amount style={{fontSize:16,fontWeight:600,color:'var(--char)'}}>
         {/* What is left in the jar after the dough takes its share (17 Nov review: "keep 22 g" of a 150 g build). */}
-        {isFr ? `${sourdough.starterGramsMid} g de levain pour la pâte · gardez le reste (${starterLeft} g) pour la prochaine fois` : `${sourdough.starterGramsMid} g of starter for the dough · keep the rest (${starterLeft} g) for next time`}
+        {/* Round 15 (item 5): it says where the rest stays (a shared jar read "keep the rest" as the dough's). */}
+        {isFr ? `${sourdough.starterGramsMid} g de levain pour la pâte · gardez le reste dans le bocal (${starterLeft} g) pour la prochaine fois` : `${sourdough.starterGramsMid} g of starter for the dough · keep the rest in the jar (${starterLeft} g) for next time`}
       </div>
 
       {/* Scheduled timeline */}
@@ -679,7 +680,7 @@ export default function RecipeOutput({
         if (stage.key === 'levain') return <IngRow key={key} label={locale === 'fr' ? 'Levain de votre pot' : 'Starter from your jar'} grams={wStr(row.grams)} sub={locale === 'fr' ? `Levain liquide · 100 % d’hydratation · rafraîchi 1:${feedRatio ?? 1}:${feedRatio ?? 1}` : `Liquid starter · 100% hydration · feed 1:${feedRatio ?? 1}:${feedRatio ?? 1}`} />;
         // The levain's % is the % it was sized from (round 9, S4): its grams are rounded to 5 g, so grams ÷ flour moved
         // with the flour's weight (15.9 % Manitoba, 16.5 % all-purpose) though no flour changes the starter.
-        return <IngRow key={key} highlight label={locale === 'fr' ? 'Levain' : 'Levain'} grams={wStr(row.grams)} advancedPct={custom && sourdough ? pctStr(levainPlannedPct(sourdough)) : pctOf(row.grams)} sub={locale === 'fr' ? `Gardez le reste (${wStr(starterLeft)}) pour la prochaine fois` : `Keep the rest (${wStr(starterLeft)}) for next time`} />;
+        return <IngRow key={key} highlight label={locale === 'fr' ? 'Levain' : 'Levain'} grams={wStr(row.grams)} advancedPct={custom && sourdough ? pctStr(levainPlannedPct(sourdough)) : pctOf(row.grams)} sub={locale === 'fr' ? `Gardez le reste dans le bocal (${wStr(starterLeft)}) pour la prochaine fois` : `Keep the rest in the jar (${wStr(starterLeft)}) for next time`} />;
     }
   };
   const chillAt = stagedPref && mixingTime ? poolishCoolingAt(mixingTime, result) : null;

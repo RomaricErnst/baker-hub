@@ -41,7 +41,8 @@ export interface YeastEntryInput {
   /** Round 9 (bug I): the timing also reads room-temperature plans (enteredYeastTiming roomPlans); off for a
    * bake saved under way before it (legacyEntryTiming), which keeps its plan. */
   roomPlans?: boolean;
-  /** Round 9 (bugs G, H; owner 22 Nov 2026): the night steps (newNightHandsOn ids) the calculated plan already has.
+  /** Round 9 (bugs G, H; owner 22 Nov 2026): the night steps (newNightHandsOn ids) the calculated plan already has
+   * (round 15: derived from the current inputs, the page's `autoPlan` (SchedulePicker automaticCommercialPlan), never remembered).
    * An entered amount's plan avoids any other hands-on step between 22:00 and 07:00 when it can; when it cannot,
    * the amount is still planned and `checkYeastEntry` says so (`nightSteps`). Undefined: no night rule (a bake
    * saved before it). */
@@ -56,8 +57,9 @@ export interface YeastEntryInput {
 
 /** Why an amount gives no plan: 'time' it needs longer than the time left; 'busy' every plan runs into the busy
  * times; 'fast' it rises faster than the dough's steps take; 'plan' no plan fits before the bake (a preferment
- * would have to start before now). Night steps are never a reason (owner, 22 Nov 2026): see `nightSteps`. */
-export type YeastEntryReason = 'time' | 'busy' | 'fast' | 'plan';
+ * would have to start before now); 'max' (the page's) a typed amount beyond the field's range, said with the clamp. Night
+ * steps are never a reason (owner, 22 Nov 2026): see `nightSteps`. */
+export type YeastEntryReason = 'time' | 'busy' | 'fast' | 'plan' | 'max';
 export interface YeastEntryCheck {
   fits: boolean;
   /** Why it does not fit: 'time' (it needs longer than the time left), 'busy' (no plan clear of the busy times). */
@@ -176,32 +178,39 @@ export function entryPlan(idyPct: number | undefined, o: YeastEntryInput): Entry
   const blocks = o.blocks.map(b => isNightBlock(b) && b.coveredActions ? uncovered([b])[0] : b);
   const input = { ...o, blocks };
   const strict = entryPlanSearch(idyPct, input);
+  if (!o.nightAllowed) return strict ? { ...strict, blocks, nightSteps: [] } : null;
+  const allowed = o.nightAllowed;
+  // Owner decision O2 (23 Nov 2026): built from scratch from the current inputs, ranked: no hands-on step between
+  // 23:00 and 06:00, then the fewest night steps (22:00–07:00, not declared free; every one counts), then the knead
+  // nearest the calculated one. Candidates: the plan without any night step, the plan with no night step beyond the
+  // calculated plan's (`nightAllowed`: that plan's own, derived for these inputs), the plan at the calculated knead and
+  // the search's own. The line names the steps beyond the calculated plan's.
   const anchorMs = idyPct !== undefined && o.anchorH !== undefined ? +o.bake - o.anchorH * HOUR : null;
   const distance = (p: { times: EditTimes }) => anchorMs === null ? 0 : Math.abs(+p.times.start - anchorMs);
-  if (strict && (!o.nightAllowed || distance(strict) <= HOUR)) return { ...strict, blocks, nightSteps: [] };
-  if (!o.nightAllowed) return null;
-  // Round 13 (owner): among the plans for the amount — the night-free one, the one at the calculated knead and the
-  // search's own with night steps — the fewest new night hands-on steps, then the knead nearest the calculated one
-  // (B3's 0.14 % at lunch: Thu 8:00pm with the fridge, not 1:45am with four folds).
-  const nightStepsOf = (p: { times: EditTimes; shape?: PlanShape; inFridge?: boolean }) =>
-    newNightHandsOn(entryPlanActions(p, input), blocks).filter(a => !o.nightAllowed!.includes(a.id) && +a.at > o.now);
-  const candidates = [strict,
+  const nightOf = (p: { times: EditTimes; shape?: PlanShape; inFridge?: boolean }) =>
+    newNightHandsOn(entryPlanActions(p, input), blocks).filter(a => +a.at > o.now);
+  const clean = allowed.length ? entryPlanSearch(idyPct, { ...input, nightAllowed: [] }) : null;
+  const found = [strict, clean,
     anchorMs !== null ? entryPlanSearch(idyPct, input, undefined, { softNights: true, mix: new Date(Math.round(anchorMs / QUARTER) * QUARTER) }) : null,
     entryPlanSearch(idyPct, input, undefined, { softNights: true })]
-    .filter((p): p is NonNullable<typeof p> => !!p).map(p => ({ p, night: p === strict ? [] : nightStepsOf(p) }));
+    .filter((p): p is NonNullable<typeof p> => !!p);
+  const candidates = found.map(p => ({ p, night: nightOf(p) }));
   if (!candidates.length) return null;
-  // A step between 23:00 and 06:00 (a wake-up) outweighs any number of shoulder steps (nightScore).
+  // A step between 23:00 and 06:00 (a wake-up) outweighs any number of shoulder steps (nightScore). Equal plans keep
+  // their order (the established night-free search, then the stricter one), so the result never depends on the route.
   const score = (c: { night: AvailabilityAction[] }) => nightScore(c.night, blocks);
   candidates.sort((a, b) => score(a) - score(b) || distance(a.p) - distance(b.p));
-  const { p: soft, night: nightSteps } = candidates[0];
-  if (soft === strict) return { ...strict, blocks, nightSteps: [] };
-  const actions = entryPlanActions(soft, input);
+  const { p: chosen, night } = candidates[0];
+  const nightSteps = night.filter(a => !allowed.includes(a.id));
+  // A plan found clear of the busy times needs no cover; the others carry their steps in the baker's nights covered.
+  if (chosen === clean || chosen === strict) return { ...chosen, blocks, nightSteps: [] };
+  const actions = entryPlanActions(chosen, input);
   const covered = blocks.map(b => {
     if (!isNightBlock(b)) return b;
     const hits = findAvailabilityConflicts(actions, [b]).map(c => c.action);
     return hits.length ? { ...b, coveredActions: hits.map(a => ({ id: a.id, at: +a.at, ...(a.end ? { end: +a.end } : {}) })) } : b;
   });
-  return { ...soft, blocks: covered, nightSteps };
+  return { ...chosen, blocks: covered, nightSteps };
 }
 
 /** The hands-on steps of a found plan, its preferment start included (as the night rule reads them). */
@@ -340,9 +349,12 @@ export function formatDecimal(value: number, fr: boolean): string {
 
 /** Round 9 rules for a baker-entered amount: the timing also reads room-temperature plans, and its plan adds
  * no night step. Sessions saved since carry `entryRules` = ENTRY_RULES. */
-export const ENTRY_RULES = 3;
+export const ENTRY_RULES = 4;
 /** The round-9 rules (room plans, the night rule): bakes saved with them are not legacy (`legacyEntryTimingFor`). */
 const ROOM_PLAN_RULES = 2;
+/** The round-13 rules: the knead an amount was planned near was remembered with it (`yeastAnchorH`). Round 15 (O2)
+ * derives it from the current inputs; a bake under way saved with 3 keeps its remembered knead. */
+const REMEMBERED_ANCHOR_RULES = 3;
 
 /** True when a restored bake keeps the entered-amount timing it was made with (room plans and the night rule
  * off): it was kept so already, or it was saved before them with an entered amount and is under way (its Start
@@ -358,22 +370,18 @@ export function legacyEntryTimingFor(session: { entryRules?: number; legacyEntry
   return start <= now || !!session.execution || !!session.mixExecution;
 }
 
-/** The rules a restored bake keeps (round 13, owner: a saved bake is never re-timed): a bake saved with the round-9
- * rules (entryRules 2) and an entered amount, under way (its Start Dough time has come, or a mix or preferment is
- * recorded), keeps them (`entryRulesKept` once saved so); else undefined (the current rules, or legacyEntryTimingFor). */
+/** The rules a restored bake keeps (round 13, owner: a saved bake is never re-timed): a bake saved with older rules
+ * (entryRules 2: the round-9 fit; 3: the knead remembered with the amount) and an entered amount, under way (its Start
+ * Dough time has come, or a mix or preferment is recorded), keeps them (`entryRulesKept` once saved so); else undefined
+ * (the current rules, or legacyEntryTimingFor). */
 export function keptEntryRulesFor(session: { entryRules?: number; entryRulesKept?: number; recipeGenerated?: boolean; startTime?: number | null;
   execution?: unknown; mixExecution?: unknown; yeastPctOverride?: number; prefYeastOverride?: unknown } | null | undefined, now: number): number | undefined {
   if (!session) return undefined;
-  if (session.entryRulesKept === ROOM_PLAN_RULES) return ROOM_PLAN_RULES;
-  if (session.entryRules !== ROOM_PLAN_RULES || !session.recipeGenerated) return undefined;
+  if (session.entryRulesKept === ROOM_PLAN_RULES || session.entryRulesKept === REMEMBERED_ANCHOR_RULES) return session.entryRulesKept;
+  if ((session.entryRules !== ROOM_PLAN_RULES && session.entryRules !== REMEMBERED_ANCHOR_RULES) || !session.recipeGenerated) return undefined;
   if (session.yeastPctOverride === undefined && !session.prefYeastOverride) return undefined;
   const start = typeof session.startTime === 'number' && Number.isFinite(session.startTime) ? session.startTime : Infinity;
-  return start <= now || !!session.execution || !!session.mixExecution ? ROOM_PLAN_RULES : undefined;
-}
-
-/** A saved list of night step ids (entryNightIds), else none. */
-export function normalizeEntryNightIds(value: unknown): string[] | undefined {
-  return Array.isArray(value) && value.every(id => typeof id === 'string') ? [...value] : undefined;
+  return start <= now || !!session.execution || !!session.mixExecution ? session.entryRules : undefined;
 }
 
 /** The amounts whose night steps the baker kept (entryNightKept), else none. */

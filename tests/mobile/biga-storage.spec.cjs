@@ -70,7 +70,9 @@ for(const locale of ['en','fr'])test(`${locale}: Giorilli's classic biga — 1 %
  expect(Math.abs((await stored(page)).prefYeastOverride.pct-1/3)).toBeLessThan(0.001);
  await fineTune.locator('[data-pref-yeast-override]').locator('..').screenshot({path:test.info().outputPath(`giorilli-${locale}.png`)});
  await forwardToPlan(page,fr);
- await expect.poll(async()=>(await stored(page)).prefOffsetH,{timeout:20000}).toBe(16);
+ // Round 15: anchored on the automatic plan (Tue 2:45pm, a 16 h biga made Mon 10:45pm); the amount's night-free plan
+ // kneads Tue 2:15pm with a 16 h 30 biga made Mon 9:45pm (O2: fewest night steps first).
+ await expect.poll(async()=>{const h=(await stored(page)).prefOffsetH;return h>=15.75&&h<=16.5;},{timeout:20000}).toBe(true);
  expect((await stored(page)).prefGoesInFridge).toBe(false);
  expect(errors).toEqual([]);
 });

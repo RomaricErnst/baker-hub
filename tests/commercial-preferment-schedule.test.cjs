@@ -57,7 +57,8 @@ test('full blockers and reversed or under-minimum phases cannot be accepted',()=
 // are retired with it; the selected method still reaches the action rows.
 test('selected method is never suppressed from action rows; the chart is not rendered',()=>{
  const picker=fs.readFileSync('app/components/SchedulePicker.tsx','utf8');
- assert.match(picker,/const effectiveHasPref = hasPrefActive;/);
+ // Round 15: the automatic plan (automaticCommercialPlan) always solves the selected preferment.
+ assert.match(picker,/const chosen=commercialPlanRecommendation\(c,currentBlocks,overrides,et,new Date\(\+et-sweetCenterRaw\*3600000\)\);/);
  assert.match(picker,/if \(!isSourdough && cardPrefTime\)/);
  assert.doesNotMatch(picker,/<FermentChart\b/);
  assert.doesNotMatch(fs.readFileSync('app/[locale]/page.tsx','utf8'),/<FermentChart\b|data-plan-curve/);

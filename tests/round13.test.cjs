@@ -75,11 +75,13 @@ test('owner: a bake under way saved with the round-9 rules keeps its timing (ent
   assert.notDeepEqual(Y.entryPlanShape(0.12, o), round12.shape);
   // Restoring: entryRules 2, an entered amount, under way (Start Dough has come, or a mix is recorded) keeps rules 2.
   const saved = { entryRules: 2, recipeGenerated: true, yeastPctOverride: 0.12, startTime: +SG('2026-11-26T20:30:00') };
-  assert.equal(Y.ENTRY_RULES, 3);
+  assert.equal(Y.ENTRY_RULES, 4); // round 15 (O2): the knead is derived from the current inputs
   assert.equal(Y.keptEntryRulesFor(saved, +SG('2026-11-26T21:00:00')), 2);
   assert.equal(Y.keptEntryRulesFor({ ...saved, entryRulesKept: 2 }, +SG('2026-11-26T19:00:00')), 2);
   assert.equal(Y.keptEntryRulesFor(saved, +SG('2026-11-26T19:00:00')), undefined, 'not under way: the current rules');
-  assert.equal(Y.keptEntryRulesFor({ ...saved, entryRules: 3 }, +SG('2026-11-26T21:00:00')), undefined);
+  // Round 15: a bake under way saved with 3 keeps its remembered knead (rules 3); one saved with the current rules is re-derived.
+  assert.equal(Y.keptEntryRulesFor({ ...saved, entryRules: 3 }, +SG('2026-11-26T21:00:00')), 3);
+  assert.equal(Y.keptEntryRulesFor({ ...saved, entryRules: 4 }, +SG('2026-11-26T21:00:00')), undefined);
   // Not the older legacy timing (no room plans, no night rule).
   assert.equal(Y.legacyEntryTimingFor(saved, +SG('2026-11-26T21:00:00')), false);
   assert.match(page, /roomPlans: !legacyEntryTiming, rules: keptEntryRules,/);
@@ -151,7 +153,8 @@ test('item 5: a method change after the recipe replans (Update recipe lands on t
 
 test('item 6: a cool-spot biga suggestion passes the same window check as an entry', () => {
   assert.doesNotMatch(page, /ripensInWindow/);
-  assert.match(page, /const fitsShown=\(v:number\)=>\{const p=Math\.round\(v\/conversion\*10000\)\/10000;if\(!prefYeastFit\(pref,p,availableH\)\.fits\)return false;/);
+  // Round 15 (item 3): one window check per storage: the stated storage's own window (prefermentYeastTiming), within the time left.
+  assert.match(page, /const fitsShown=\(v:number\)=>\{const p=Math\.round\(v\/conversion\*10000\)\/10000;const t=prefermentYeastTiming\(pref,p,stated,prefYeastCtx\(pref,stated\)\);if\(!t\|\|t\.min>availableH\+1e-9\)return false;/);
 });
 
 test('item 7: a suggested amount has no night step when one exists', () => {
@@ -166,13 +169,15 @@ test('item 7: a suggested amount has no night step when one exists', () => {
 
 test('item 7: small texts and displays', () => {
   // "less yeast, longer rise" only when less than the calculated amount was entered.
-  assert.match(page, /const lessDough = yeastPctOverride!==undefined&&calculatedYeastRef\.current!==undefined&&yeastPctOverride<calculatedYeastRef\.current-1e-9;/);
+  // Round 15: the calculated amount is derived for the current inputs (calcYeast).
+  assert.match(page, /const lessDough = yeastPctOverride!==undefined&&calcYeast\?\.idyPct!==undefined&&yeastPctOverride<calcYeast\?\.idyPct-1e-9;/);
   assert.match(page, /'Your timing follows this amount\.'/);
   // A rise of a few minutes is not its own guide step.
   assert.match(guide, /const briefBulk = !isSourdough && schedule\.bulkFermHours < 0\.25/);
   assert.match(guide, /\{!briefBulk && <StepCard/);
   // A kept night step is named once, in the night line, not again on its row.
-  assert.match(page, /busy:isTimeBlocked\(e\.at,blocks\)&&!\(keptNightLine&&coveredAt\.has\(\+e\.at\)/);
+  // Round 15: the night line (kept or not) names those steps once.
+  assert.match(page, /busy:isTimeBlocked\(e\.at,blocks\)&&!\(entryNight&&coveredAt\.has\(\+e\.at\)/);
   // The plan begins at the starter's take-out (Preparation header and the Recipe's steps); the header is on the quarter hour.
   assert.match(page, /shownStarterEvents\.filter\(e=>!e\.isPast && e\.kind!=='last_fed' && e\.kind!=='known_peak'\)\.map\(e=>\+e\.time\)/);
   assert.match(page, /formatBakeDateTime\(roundToQuarter\(firstRecipeAction\),locale\)/);

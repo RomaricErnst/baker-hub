@@ -51,15 +51,17 @@ test('item 1: the night line names the plan the picker applies, on the quarter-h
   assert.equal(N.nightStepsLine([{ id: 'mix-finish', at: at(22, 17) }, { id: 'fold-1', at: at(23, 0) }], false), 'This plan has resume kneading at 10:15pm, a fold at 11:00pm.');
   // The picker applies the page's plan (one builder) and the page reads its night steps for the line.
   assert.match(picker, /const shared=planEntry\(candidateBlocks,pendingEatTime\);/);
-  assert.match(page, /const steps = entryPlan\(effectiveYeastOverride, o\)\?\.nightSteps \?\? \[\];/);
+  // Round 15 (O2): the plan entryPlan builds while it waits to be derived, else the plan on screen (the same builder's).
+  assert.match(page, /const steps = planReplanPending \? entryPlan\(effectiveYeastOverride, o\)\?\.nightSteps \?\? \[\] : screenNightSteps;/);
   // The picker's own second (night) pass is gone.
   assert.doesNotMatch(picker, /entryNightOnRef/);
 });
 
 test('item 1: after Keep, the Recipe and Preparation name the kept night steps in one quiet line', () => {
-  assert.match(page, /\{keptNightLine && <p data-kept-night/);
-  assert.match(page, /nightLine=\{keptNightLine\}/);
-  assert.match(page, /\{nightLine && <p data-kept-night/);
+  // Round 15 (O2): one Use/Keep line everywhere (entryNightView); kept, it carries data-kept-night and no buttons.
+  assert.match(page, /\{entryNightView\('recipe'\)\}/);
+  assert.match(page, /nightLine=\{entryNightView\('preparation'\)\}/);
+  assert.match(page, /\{\.\.\.\(entryNight\.kept \? \{'data-kept-night': ''\} : \{\}\)\}/);
 });
 
 test('O1: steps in the nights the baker marked busy are named, never refused; the plan covers them; other busy times stay hard', () => {
@@ -102,7 +104,7 @@ test('item 2: a biga is judged on whether a complete plan exists at this bake, i
   assert.match(page, /allowNight:true,type:prefermentType,storages:prefStoragesFor\(prefermentType\),from:eatTime,maxDays:0\}\);/);
   // A plan shown without a fit: the preferment within its storage's window and never before the next quarter hour.
   assert.match(picker, /function shownPrefHours\(hours:number,start:Date,inFridge:boolean\)/);
-  assert.match(picker, /const held=shownPrefHours\(optimalPrefOffset,pendingStart,localPrefGoesInFridge\);/);
+  assert.match(picker, /const held=shownPrefHours\(plan\.optimalPrefOffset,pendingStart,plan\.inFridge\);/);
 });
 
 test('item 4: the time editor offers bakes that fit after a recipe too; "Change my busy times" only for busy times', () => {
@@ -127,6 +129,7 @@ test('item 8: a preferment amount fits when its readiness band meets the window 
   // The calculated amount is never offered twice (round 13, item 4: nor an amount weighing the same); the placeholder waits
   // for the replan; the cleared line ends with a new plan.
   assert.match(page, /const suggested=check\.reason!=='time'&&check\.suggestedShownPct!==null&&sameGrams\(check\.suggestedShownPct,calcShown,recipe\?\.flour\)\?null:check\.suggestedShownPct;/);
-  assert.match(page, /planReplanPending && calculatedYeastRef\.current!==undefined \? calculatedYeastRef\.current\*conversion : shownPct/);
+  // Round 15 (item 5): the calculated amount for the current inputs (calcYeast), not the one remembered from another bake time.
+  assert.match(page, /planReplanPending && calcYeast\?\.idyPct!==undefined \? calcYeast\?\.idyPct\*conversion : shownPct/);
   assert.match(page, /useEffect\(\(\) => \{ setPrefYeastCleared\(null\); \}, \[acceptedPlan\]\);/);
 });

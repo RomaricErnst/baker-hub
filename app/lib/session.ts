@@ -140,17 +140,17 @@ export interface SessionData {
   bigaStorage?: 'auto' | 'fridge' | 'cool';
   /** Custom: baker's IDY % of flour for the (final) dough; the plan is timed to it (a poolish or biga's final dough too, round 7). */
   yeastPctOverride?: number;
-  /** The calculated plan's mix-to-bake hours when the baker entered yeastPctOverride (round 8, D2). */
+  /** The calculated plan's mix-to-bake hours when the baker entered yeastPctOverride (rounds 8–13). Round 15 (O2) derives it
+   * from the current inputs; it is read and saved only for a bake under way kept with older rules (entryRulesKept). */
   yeastAnchorH?: number;
-  /** Round 9: the night steps (ids) the calculated plan had when the baker entered an amount; the entered plan adds no other. */
-  entryNightIds?: string[];
-  /** Round 9 (owner, 22 Nov 2026): the entered amounts whose night steps the baker chose to keep. */
+  /** Round 9 (owner, 22 Nov 2026): the entered amounts whose night steps the baker chose to keep ("keep night steps for this
+   * amount", never a plan). */
   entryNightKept?: { yeast?: number; pref?: { type: 'poolish' | 'biga'; pct: number } };
   /** Round 9: the entered-amount rules the bake was made with (app/utils/yeastEntry.ts ENTRY_RULES). */
   entryRules?: number;
   /** Round 9: a bake under way before those rules keeps its entered-amount timing (legacyEntryTimingFor). */
   legacyEntryTiming?: boolean;
-  /** Round 13: a bake under way saved with the round-9 entered-amount rules keeps them (keptEntryRulesFor). */
+  /** Round 13/15: a bake under way saved with older entered-amount rules (2, 3) keeps them (keptEntryRulesFor). */
   entryRulesKept?: number;
   /** Custom poolish/biga: baker's preferment yeast, IDY % of the preferment flour; its window is timed to it (round 7). */
   prefYeastOverride?: { type: 'poolish' | 'biga'; pct: number };
