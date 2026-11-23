@@ -193,14 +193,14 @@ export function entryPlan(idyPct: number | undefined, o: YeastEntryInput): Entry
   const nightOf = (p: { times: EditTimes; shape?: PlanShape; inFridge?: boolean }) =>
     newNightHandsOn(entryPlanActions(p, input), blocks).filter(a => +a.at > o.now);
   const clean = allowed.length ? entryPlanSearch(idyPct, { ...input, nightAllowed: [] }) : null;
-  const found = [clean, strict,
+  const found = [strict, clean,
     anchorMs !== null ? entryPlanSearch(idyPct, input, undefined, { softNights: true, mix: new Date(Math.round(anchorMs / QUARTER) * QUARTER) }) : null,
     entryPlanSearch(idyPct, input, undefined, { softNights: true })]
     .filter((p): p is NonNullable<typeof p> => !!p);
   const candidates = found.map(p => ({ p, night: nightOf(p) }));
   if (!candidates.length) return null;
   // A step between 23:00 and 06:00 (a wake-up) outweighs any number of shoulder steps (nightScore). Equal plans keep
-  // their order (night-free searches first), so the result never depends on how the baker got here.
+  // their order (the established night-free search, then the stricter one), so the result never depends on the route.
   const score = (c: { night: AvailabilityAction[] }) => nightScore(c.night, blocks);
   candidates.sort((a, b) => score(a) - score(b) || distance(a.p) - distance(b.p));
   const { p: chosen, night } = candidates[0];
