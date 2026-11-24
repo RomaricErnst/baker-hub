@@ -80,9 +80,11 @@ export function finalizeJournalRemoval(): void {
 }
 
 /** Each part of the app reports where it is ('page': section and home, 'menu': the menu page). A change after a
- *  removal is the next navigation, which ends Undo. */
-export function noteJournalNavigation(part: string, key: string): void {
+ *  removal is the next navigation, which ends Undo; `rebase` records a move the removal itself caused. */
+export function noteJournalNavigation(part: string, key: string, rebase = false): void {
   navigation[part] = key;
+  // The removal itself moved this part (the draft on screen went with the bake): not a navigation.
+  if (rebase && pending) { pending.at[part] = key; return; }
   if (pending && pending.at[part] !== undefined && pending.at[part] !== key) finalizeJournalRemoval();
   else if (pending && pending.at[part] === undefined) pending.at[part] = key;
 }

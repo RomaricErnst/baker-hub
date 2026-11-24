@@ -469,8 +469,10 @@ test('bread family card on home starts afresh, the unfinished bake kept; wraps a
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('bh_session_v1')||'null')?.numItems)).toBe(5);
  await page.getByRole('button',{name:'Pain & repas',exact:true}).tap();
  await expect(page.getByRole('heading',{name:'Choisissez votre pain',exact:true})).toBeVisible();
- await expect(page.getByRole('button',{name:/^Quantité →$/})).toHaveCount(0);
  await expect.poll(()=>page.evaluate(()=>JSON.parse(JSON.parse(localStorage.getItem('bh_previous_bake_v1')).session).numItems)).toBe(5);
+ await page.getByRole('button',{name:/^Pita à poche/}).tap();
+ await page.locator('.bh-batch-actions').getByRole('button',{name:/^Quantité →$/}).tap();
+ await expect(quantity).not.toHaveValue('5');
  await noOverflow(page);
 });
 

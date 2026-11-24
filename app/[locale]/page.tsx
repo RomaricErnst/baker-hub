@@ -3044,7 +3044,8 @@ export default function Home() {
   // journalRemoval: a removal or an Undo changes the rows (the sheet's delete left them stale).
   }, [homeShown, locale, pendingSession, bakeType, recipeGenerated, journalId, journalRemoval]);
   // Leaving home, or another section, ends Undo (round 18, H3).
-  useEffect(() => { noteJournalNavigation('page', `${homeShown ? 'home' : 'bake'}:${destination}:${activeTab}`); }, [homeShown, destination, activeTab]);
+  const removalMovedPage = useRef(false);
+  useEffect(() => { noteJournalNavigation('page', `${homeShown ? 'home' : 'bake'}:${destination}:${activeTab}`, removalMovedPage.current); removalMovedPage.current = false; }, [homeShown, destination, activeTab]);
   // A removed bake that was the draft on screen goes with it (bh_session_v1); Undo brings it back behind Resume.
   function journalEntryRemoved(id: string) {
     const removal = pendingJournalRemoval();
@@ -3052,6 +3053,7 @@ export default function Home() {
     setRemovedRowIndex(Math.max(0, liveBakes.findIndex(row => row.entry.id === id || !!row.jarWith?.some(entry => entry.id === id))));
     if (dueEntry?.id === id) setDueEntry(null);
     if (!removal.session) return;
+    removalMovedPage.current = true; window.setTimeout(() => { removalMovedPage.current = false; }, 0);
     if (bakeType) startOver(); else { clearSession(); setPendingSession(null); }
     setJournalId(null); setShowWelcomeBack(false);
   }
